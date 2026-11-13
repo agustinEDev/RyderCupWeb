@@ -1,5 +1,10 @@
 import { describe, it, expect } from 'vitest';
-import { aIsoConHuso, aEntradaDelCampo, horaEnElCampo, esZonaValida } from './horaDelCampo';
+import {
+  aIsoConHuso,
+  aEntradaDelCampo,
+  horaEnElCampo,
+  esZonaValida,
+} from './horaDelCampo';
 
 /**
  * D4 (FE #824, PR 5): la actualización se programa en la HORA DEL CAMPO
@@ -44,11 +49,15 @@ describe('horaDelCampo (FE #824)', () => {
   });
 
   it('el ISO lleva el desfase del campo, no Z', () => {
-    expect(aIsoConHuso('2030-07-12T03:00', 'Europe/Madrid')).toBe('2030-07-12T03:00:00+02:00');
+    expect(aIsoConHuso('2030-07-12T03:00', 'Europe/Madrid')).toBe(
+      '2030-07-12T03:00:00+02:00',
+    );
   });
 
   it('sin zona del campo, la del dispositivo (con su desfase)', () => {
-    expect(aIsoConHuso('2030-07-12T03:00', null)).toMatch(/^2030-07-12T03:00:00[+-]\d{2}:\d{2}$/);
+    expect(aIsoConHuso('2030-07-12T03:00', null)).toMatch(
+      /^2030-07-12T03:00:00[+-]\d{2}:\d{2}$/,
+    );
   });
 
   it('una entrada vacía o mal escrita no es una fecha', () => {
@@ -57,11 +66,15 @@ describe('horaDelCampo (FE #824)', () => {
   });
 
   it('un instante se escribe en la hora del campo para el campo del formulario', () => {
-    expect(aEntradaDelCampo('2030-07-12T01:00:00Z', 'Europe/Madrid')).toBe('2030-07-12T03:00');
+    expect(aEntradaDelCampo('2030-07-12T01:00:00Z', 'Europe/Madrid')).toBe(
+      '2030-07-12T03:00',
+    );
   });
 
   it('también con un campo en otra zona que el dispositivo (el Mac de las pruebas está en Madrid)', () => {
-    expect(aEntradaDelCampo('2030-07-12T01:00:00Z', 'America/New_York')).toBe('2030-07-11T21:00');
+    expect(aEntradaDelCampo('2030-07-12T01:00:00Z', 'America/New_York')).toBe(
+      '2030-07-11T21:00',
+    );
   });
 
   it('sin zona del campo, en la hora del dispositivo', () => {
@@ -73,11 +86,17 @@ describe('horaDelCampo (FE #824)', () => {
   });
 
   it('y se dice en la hora del campo', () => {
-    expect(horaEnElCampo('2030-07-12T01:00:00Z', 'Europe/Madrid', 'es')).toMatch(/3:00/);
+    expect(
+      horaEnElCampo('2030-07-12T01:00:00Z', 'Europe/Madrid', 'es'),
+    ).toMatch(/3:00/);
   });
 
   it('una zona que Intl no conoce no rompe: se usa la del dispositivo', () => {
-    expect(() => horaEnElCampo('2030-07-12T01:00:00Z', 'Marte/Olympus', 'es')).not.toThrow();
-    expect(aIsoConHuso('2030-07-12T03:00', 'Marte/Olympus')).toMatch(/^2030-07-12T03:00:00/);
+    expect(() =>
+      horaEnElCampo('2030-07-12T01:00:00Z', 'Marte/Olympus', 'es'),
+    ).not.toThrow();
+    expect(aIsoConHuso('2030-07-12T03:00', 'Marte/Olympus')).toMatch(
+      /^2030-07-12T03:00:00/,
+    );
   });
 });

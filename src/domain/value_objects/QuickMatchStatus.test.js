@@ -10,7 +10,9 @@ describe('QuickMatchStatus', () => {
     });
 
     it('should throw an error for an invalid state string', () => {
-      expect(() => new QuickMatchStatus('INVALID_STATE')).toThrow('Invalid QuickMatchStatus: INVALID_STATE');
+      expect(() => new QuickMatchStatus('INVALID_STATE')).toThrow(
+        'Invalid QuickMatchStatus: INVALID_STATE',
+      );
     });
 
     it('should have all 4 valid states', () => {
@@ -50,28 +52,50 @@ describe('QuickMatchStatus', () => {
 
     it('should allow IN_PROGRESS -> COMPLETED and IN_PROGRESS -> CANCELLED', () => {
       const inProgress = QuickMatchStatus.inProgress();
-      expect(inProgress.canTransitionTo(QuickMatchStatus.completed())).toBe(true);
-      expect(inProgress.canTransitionTo(QuickMatchStatus.cancelled())).toBe(true);
-      expect(inProgress.canTransitionTo(QuickMatchStatus.pending())).toBe(false);
+      expect(inProgress.canTransitionTo(QuickMatchStatus.completed())).toBe(
+        true,
+      );
+      expect(inProgress.canTransitionTo(QuickMatchStatus.cancelled())).toBe(
+        true,
+      );
+      expect(inProgress.canTransitionTo(QuickMatchStatus.pending())).toBe(
+        false,
+      );
     });
 
     it('should treat COMPLETED and CANCELLED as terminal', () => {
-      expect(QuickMatchStatus.completed().canTransitionTo(QuickMatchStatus.pending())).toBe(false);
-      expect(QuickMatchStatus.cancelled().canTransitionTo(QuickMatchStatus.pending())).toBe(false);
+      expect(
+        QuickMatchStatus.completed().canTransitionTo(
+          QuickMatchStatus.pending(),
+        ),
+      ).toBe(false);
+      expect(
+        QuickMatchStatus.cancelled().canTransitionTo(
+          QuickMatchStatus.pending(),
+        ),
+      ).toBe(false);
     });
 
     it('should throw if targetStatus is not a QuickMatchStatus instance', () => {
-      expect(() => QuickMatchStatus.pending().canTransitionTo('IN_PROGRESS')).toThrow(TypeError);
+      expect(() =>
+        QuickMatchStatus.pending().canTransitionTo('IN_PROGRESS'),
+      ).toThrow(TypeError);
     });
   });
 
   describe('equals', () => {
     it('should return true for the same status value', () => {
-      expect(QuickMatchStatus.pending().equals(QuickMatchStatus.fromString('PENDING'))).toBe(true);
+      expect(
+        QuickMatchStatus.pending().equals(
+          QuickMatchStatus.fromString('PENDING'),
+        ),
+      ).toBe(true);
     });
 
     it('should return false for a different status value or non-VO', () => {
-      expect(QuickMatchStatus.pending().equals(QuickMatchStatus.completed())).toBe(false);
+      expect(
+        QuickMatchStatus.pending().equals(QuickMatchStatus.completed()),
+      ).toBe(false);
       expect(QuickMatchStatus.pending().equals('PENDING')).toBe(false);
     });
   });

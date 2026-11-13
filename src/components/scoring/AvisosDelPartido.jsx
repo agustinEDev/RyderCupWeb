@@ -55,7 +55,9 @@ const AvisosDelPartido = ({
     {error && scoringView && (!pintadoDeMemoria || falloDeUnaAccion) && (
       <div className="max-w-4xl mx-auto px-4 pt-4">
         <div className="bg-red-50 border border-red-200 rounded-lg p-3 flex items-center justify-between">
-          <p className="text-sm text-red-600">{textoDelFallo(t, error, origenDelError)}</p>
+          <p className="text-sm text-red-600">
+            {textoDelFallo(t, error, origenDelError)}
+          </p>
           <button
             onClick={refetch}
             className="px-3 py-1 text-xs bg-red-600 text-white rounded hover:bg-red-700"

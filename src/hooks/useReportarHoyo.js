@@ -15,8 +15,16 @@ export const useReportarHoyo = ({ golfCourseId, userId }) => {
   const reportar = useCallback(
     async (holeNumber, reporte) => {
       try {
-        const { estado } = await sendHoleReportUseCase.execute({ userId, golfCourseId, holeNumber, ...reporte });
-        if (estado === 'pendiente') globalThis.dispatchEvent(new globalThis.CustomEvent(MUESTRA_PENDIENTE));
+        const { estado } = await sendHoleReportUseCase.execute({
+          userId,
+          golfCourseId,
+          holeNumber,
+          ...reporte,
+        });
+        if (estado === 'pendiente')
+          globalThis.dispatchEvent(
+            new globalThis.CustomEvent(MUESTRA_PENDIENTE),
+          );
       } catch {
         // Ya está en la cola o apuntado: el mapa sigue
       }

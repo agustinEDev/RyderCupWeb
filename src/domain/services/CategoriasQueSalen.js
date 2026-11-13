@@ -34,7 +34,10 @@ export const salenDeLosInscritos = (categoriasDeLosInscritos) => {
   return asignadas.length === 0 ? 0 : Math.max(...asignadas);
 };
 
-export const categoriasQueSalen = ({ categoryCount, categoryLimits }, categoriasDeLosInscritos) => {
+export const categoriasQueSalen = (
+  { categoryCount, categoryLimits },
+  categoriasDeLosInscritos,
+) => {
   const limites = categoryLimits?.length ?? 0;
   const pedidas = categoryCount ?? (limites > 0 ? limites + 1 : 0);
   const asignadas = categoriasDeLosInscritos.filter((c) => c != null);
@@ -48,8 +51,15 @@ export const categoriasQueSalen = ({ categoryCount, categoryLimits }, categorias
   const porLimites = limites + 1;
   // n son los que se repartieron: los que tienen categoría (el backend solo
   // reparte a quien tiene hándicap; /code-review)
-  const cabian = categoryCount != null ? Math.min(categoryCount, Math.floor(asignadas.length / MIN_JUGADORES_POR_CATEGORIA)) : pedidas;
+  const cabian =
+    categoryCount != null
+      ? Math.min(
+          categoryCount,
+          Math.floor(asignadas.length / MIN_JUGADORES_POR_CATEGORIA),
+        )
+      : pedidas;
   // Si además la regla de los seis fundió más, lo último que pasó es eso
-  const motivo = porLimites < cabian && salen === porLimites ? REPETIDOS : MENOS_DE_SEIS;
+  const motivo =
+    porLimites < cabian && salen === porLimites ? REPETIDOS : MENOS_DE_SEIS;
   return { pedidas, salen, motivo };
 };

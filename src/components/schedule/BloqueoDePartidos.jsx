@@ -33,7 +33,9 @@ const BloqueoDePartidos = ({ bloqueo, puedeReintentar = false }) => {
   const { t } = useTranslation('schedule');
   if (!bloqueo) return null;
 
-  const motivo = MOTIVOS_CONOCIDOS.has(bloqueo.reason) ? bloqueo.reason : 'UNEXPECTED';
+  const motivo = MOTIVOS_CONOCIDOS.has(bloqueo.reason)
+    ? bloqueo.reason
+    : 'UNEXPECTED';
   const jugadores = bloqueo.players || [];
 
   return (
@@ -58,8 +60,10 @@ const BloqueoDePartidos = ({ bloqueo, puedeReintentar = false }) => {
               <span>
                 {t(
                   `generationBlock.missing.${
-                    FALTAS_CONOCIDAS.has(jugador.missing) ? jugador.missing : 'OTHER'
-                  }`
+                    FALTAS_CONOCIDAS.has(jugador.missing)
+                      ? jugador.missing
+                      : 'OTHER'
+                  }`,
                 )}
               </span>
               {jugador.teeColor && <TeeColorBadge color={jugador.teeColor} />}
@@ -70,7 +74,9 @@ const BloqueoDePartidos = ({ bloqueo, puedeReintentar = false }) => {
         <p className="mt-1">{t(`generationBlock.reason.${motivo}`)}</p>
       )}
       {puedeReintentar && (
-        <p className="mt-2 text-xs text-amber-800">{t('generationBlock.retry')}</p>
+        <p className="mt-2 text-xs text-amber-800">
+          {t('generationBlock.retry')}
+        </p>
       )}
     </div>
   );

@@ -27,7 +27,8 @@ const PasswordRequirements = ({ password }) => {
       label: t('register.requirementLength'),
       // Con máximo: sin él una de 200 salía toda en verde y se rechazaba al enviar
       test: (pwd) =>
-        passwordLength(pwd) >= PASSWORD_MIN_LENGTH && passwordLength(pwd) <= PASSWORD_MAX_LENGTH,
+        passwordLength(pwd) >= PASSWORD_MIN_LENGTH &&
+        passwordLength(pwd) <= PASSWORD_MAX_LENGTH,
     },
     {
       id: 'uppercase',

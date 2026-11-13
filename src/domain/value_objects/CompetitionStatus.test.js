@@ -12,13 +12,17 @@ describe('CompetitionStatus', () => {
     });
 
     it('should throw an error for an invalid state string', () => {
-      expect(() => new CompetitionStatus('INVALID_STATE')).toThrow('Invalid competition status: INVALID_STATE');
+      expect(() => new CompetitionStatus('INVALID_STATE')).toThrow(
+        'Invalid competition status: INVALID_STATE',
+      );
     });
 
     it('should have predefined static instances', () => {
       expect(CompetitionStatus.DRAFT.value).toBe(CompetitionStatusEnum.DRAFT);
       expect(CompetitionStatus.ACTIVE.value).toBe(CompetitionStatusEnum.ACTIVE);
-      expect(CompetitionStatus.COMPLETED.value).toBe(CompetitionStatusEnum.COMPLETED);
+      expect(CompetitionStatus.COMPLETED.value).toBe(
+        CompetitionStatusEnum.COMPLETED,
+      );
     });
 
     it('static instances should be immutable', () => {
@@ -30,22 +34,44 @@ describe('CompetitionStatus', () => {
 
   describe('canTransitionTo', () => {
     it('should allow valid transitions', () => {
-      expect(CompetitionStatus.DRAFT.canTransitionTo(CompetitionStatus.ACTIVE)).toBe(true);
-      expect(CompetitionStatus.ACTIVE.canTransitionTo(CompetitionStatus.CLOSED)).toBe(true);
-      expect(CompetitionStatus.CLOSED.canTransitionTo(CompetitionStatus.IN_PROGRESS)).toBe(true);
-      expect(CompetitionStatus.IN_PROGRESS.canTransitionTo(CompetitionStatus.COMPLETED)).toBe(true);
-      expect(CompetitionStatus.ACTIVE.canTransitionTo(CompetitionStatus.CANCELLED)).toBe(true);
+      expect(
+        CompetitionStatus.DRAFT.canTransitionTo(CompetitionStatus.ACTIVE),
+      ).toBe(true);
+      expect(
+        CompetitionStatus.ACTIVE.canTransitionTo(CompetitionStatus.CLOSED),
+      ).toBe(true);
+      expect(
+        CompetitionStatus.CLOSED.canTransitionTo(CompetitionStatus.IN_PROGRESS),
+      ).toBe(true);
+      expect(
+        CompetitionStatus.IN_PROGRESS.canTransitionTo(
+          CompetitionStatus.COMPLETED,
+        ),
+      ).toBe(true);
+      expect(
+        CompetitionStatus.ACTIVE.canTransitionTo(CompetitionStatus.CANCELLED),
+      ).toBe(true);
     });
 
     it('should not allow invalid transitions', () => {
-      expect(CompetitionStatus.ACTIVE.canTransitionTo(CompetitionStatus.DRAFT)).toBe(false);
-      expect(CompetitionStatus.COMPLETED.canTransitionTo(CompetitionStatus.ACTIVE)).toBe(false);
-      expect(CompetitionStatus.IN_PROGRESS.canTransitionTo(CompetitionStatus.DRAFT)).toBe(false);
+      expect(
+        CompetitionStatus.ACTIVE.canTransitionTo(CompetitionStatus.DRAFT),
+      ).toBe(false);
+      expect(
+        CompetitionStatus.COMPLETED.canTransitionTo(CompetitionStatus.ACTIVE),
+      ).toBe(false);
+      expect(
+        CompetitionStatus.IN_PROGRESS.canTransitionTo(CompetitionStatus.DRAFT),
+      ).toBe(false);
     });
 
     it('should not allow transitions from final states', () => {
-      expect(CompetitionStatus.COMPLETED.canTransitionTo(CompetitionStatus.ACTIVE)).toBe(false);
-      expect(CompetitionStatus.CANCELLED.canTransitionTo(CompetitionStatus.ACTIVE)).toBe(false);
+      expect(
+        CompetitionStatus.COMPLETED.canTransitionTo(CompetitionStatus.ACTIVE),
+      ).toBe(false);
+      expect(
+        CompetitionStatus.CANCELLED.canTransitionTo(CompetitionStatus.ACTIVE),
+      ).toBe(false);
     });
   });
 
@@ -74,7 +100,9 @@ describe('CompetitionStatus', () => {
       ['COMPLETED', false],
       ['CANCELLED', false],
     ])('%s → %s', (estado, esperado) => {
-      expect(CompetitionStatus[estado].allowsAddingGolfCourses()).toBe(esperado);
+      expect(CompetitionStatus[estado].allowsAddingGolfCourses()).toBe(
+        esperado,
+      );
     });
   });
 

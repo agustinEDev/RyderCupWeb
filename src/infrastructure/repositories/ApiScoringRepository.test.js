@@ -34,9 +34,12 @@ describe('ApiScoringRepository', () => {
 
       const result = await repo.getScoringView('match-1');
 
-      expect(apiRequest).toHaveBeenCalledWith('/api/v1/competitions/matches/match-1/scoring-view', {
-        topeMs: TOPE_DE_ANOTAR_MS,
-      });
+      expect(apiRequest).toHaveBeenCalledWith(
+        '/api/v1/competitions/matches/match-1/scoring-view',
+        {
+          topeMs: TOPE_DE_ANOTAR_MS,
+        },
+      );
       expect(result.matchId).toBe('match-1');
       expect(result.matchFormat).toBe('SINGLES');
       expect(result.matchStatus).toBe('IN_PROGRESS');
@@ -60,15 +63,18 @@ describe('ApiScoringRepository', () => {
 
       const result = await repo.submitHoleScore('match-1', 3, scoreData);
 
-      expect(apiRequest).toHaveBeenCalledWith('/api/v1/competitions/matches/match-1/scores/holes/3', {
-        topeMs: TOPE_DE_ANOTAR_MS,
-        method: 'POST',
-        body: JSON.stringify({
-          own_score: 5,
-          marked_player_id: 'u2',
-          marked_score: 4,
-        }),
-      });
+      expect(apiRequest).toHaveBeenCalledWith(
+        '/api/v1/competitions/matches/match-1/scores/holes/3',
+        {
+          topeMs: TOPE_DE_ANOTAR_MS,
+          method: 'POST',
+          body: JSON.stringify({
+            own_score: 5,
+            marked_player_id: 'u2',
+            marked_score: 4,
+          }),
+        },
+      );
       expect(result.matchId).toBe('match-1');
     });
 
@@ -83,7 +89,10 @@ describe('ApiScoringRepository', () => {
         match_status: 'IN_PROGRESS',
       });
 
-      await repo.submitHoleScore('match-1', 4, { ownScore: 4, markedPlayerId: 'u2' });
+      await repo.submitHoleScore('match-1', 4, {
+        ownScore: 4,
+        markedPlayerId: 'u2',
+      });
 
       const cuerpo = JSON.parse(apiRequest.mock.calls[0][1].body);
       expect('marked_score' in cuerpo).toBe(false);
@@ -98,7 +107,10 @@ describe('ApiScoringRepository', () => {
         match_status: 'IN_PROGRESS',
       });
 
-      await repo.submitHoleScore('match-1', 6, { markedPlayerId: 'u2', markedScore: 5 });
+      await repo.submitHoleScore('match-1', 6, {
+        markedPlayerId: 'u2',
+        markedScore: 5,
+      });
 
       const cuerpo = JSON.parse(apiRequest.mock.calls[0][1].body);
       expect('own_score' in cuerpo).toBe(false);
@@ -121,15 +133,18 @@ describe('ApiScoringRepository', () => {
 
       await repo.submitHoleScore('match-1', 5, scoreData);
 
-      expect(apiRequest).toHaveBeenCalledWith('/api/v1/competitions/matches/match-1/scores/holes/5', {
-        topeMs: TOPE_DE_ANOTAR_MS,
-        method: 'POST',
-        body: JSON.stringify({
-          own_score: null,
-          marked_player_id: 'u2',
-          marked_score: null,
-        }),
-      });
+      expect(apiRequest).toHaveBeenCalledWith(
+        '/api/v1/competitions/matches/match-1/scores/holes/5',
+        {
+          topeMs: TOPE_DE_ANOTAR_MS,
+          method: 'POST',
+          body: JSON.stringify({
+            own_score: null,
+            marked_player_id: 'u2',
+            marked_score: null,
+          }),
+        },
+      );
     });
   });
 
@@ -156,11 +171,14 @@ describe('ApiScoringRepository', () => {
 
       const result = await repo.submitScorecard('match-1');
 
-      expect(apiRequest).toHaveBeenCalledWith('/api/v1/competitions/matches/match-1/scorecard/submit', {
-        topeMs: TOPE_DE_ANOTAR_MS,
-        method: 'POST',
-        body: JSON.stringify({}),
-      });
+      expect(apiRequest).toHaveBeenCalledWith(
+        '/api/v1/competitions/matches/match-1/scorecard/submit',
+        {
+          topeMs: TOPE_DE_ANOTAR_MS,
+          method: 'POST',
+          body: JSON.stringify({}),
+        },
+      );
       expect(result.matchId).toBe('match-1');
       expect(result.submittedBy).toBe('u1');
       expect(result.result.winner).toBe('A');
@@ -183,7 +201,9 @@ describe('ApiScoringRepository', () => {
 
       const result = await repo.getLeaderboard('comp-1');
 
-      expect(apiRequest).toHaveBeenCalledWith('/api/v1/competitions/comp-1/leaderboard');
+      expect(apiRequest).toHaveBeenCalledWith(
+        '/api/v1/competitions/comp-1/leaderboard',
+      );
       expect(result.competitionId).toBe('comp-1');
       expect(result.teamAPoints).toBe(4.5);
       expect(result.teamBPoints).toBe(3.5);
@@ -196,14 +216,17 @@ describe('ApiScoringRepository', () => {
 
       await repo.concedeMatch('match-1', 'A', 'Player injury');
 
-      expect(apiRequest).toHaveBeenCalledWith('/api/v1/competitions/matches/match-1/concede', {
-        topeMs: TOPE_DE_ANOTAR_MS,
-        method: 'PUT',
-        body: JSON.stringify({
-          conceding_team: 'A',
-          reason: 'Player injury',
-        }),
-      });
+      expect(apiRequest).toHaveBeenCalledWith(
+        '/api/v1/competitions/matches/match-1/concede',
+        {
+          topeMs: TOPE_DE_ANOTAR_MS,
+          method: 'PUT',
+          body: JSON.stringify({
+            conceding_team: 'A',
+            reason: 'Player injury',
+          }),
+        },
+      );
     });
 
     it('should omit reason when null', async () => {
@@ -211,13 +234,16 @@ describe('ApiScoringRepository', () => {
 
       await repo.concedeMatch('match-1', 'B', null);
 
-      expect(apiRequest).toHaveBeenCalledWith('/api/v1/competitions/matches/match-1/concede', {
-        topeMs: TOPE_DE_ANOTAR_MS,
-        method: 'PUT',
-        body: JSON.stringify({
-          conceding_team: 'B',
-        }),
-      });
+      expect(apiRequest).toHaveBeenCalledWith(
+        '/api/v1/competitions/matches/match-1/concede',
+        {
+          topeMs: TOPE_DE_ANOTAR_MS,
+          method: 'PUT',
+          body: JSON.stringify({
+            conceding_team: 'B',
+          }),
+        },
+      );
     });
 
     it('should omit reason when undefined', async () => {
@@ -225,13 +251,16 @@ describe('ApiScoringRepository', () => {
 
       await repo.concedeMatch('match-1', 'A');
 
-      expect(apiRequest).toHaveBeenCalledWith('/api/v1/competitions/matches/match-1/concede', {
-        topeMs: TOPE_DE_ANOTAR_MS,
-        method: 'PUT',
-        body: JSON.stringify({
-          conceding_team: 'A',
-        }),
-      });
+      expect(apiRequest).toHaveBeenCalledWith(
+        '/api/v1/competitions/matches/match-1/concede',
+        {
+          topeMs: TOPE_DE_ANOTAR_MS,
+          method: 'PUT',
+          body: JSON.stringify({
+            conceding_team: 'A',
+          }),
+        },
+      );
     });
   });
 });
@@ -274,21 +303,39 @@ describe('ApiScoringRepository · retirada del fourball', () => {
   });
 
   it('F1: retirar y deshacer llaman a sus rutas con POST y devuelven la respuesta en camelCase', async () => {
-    apiRequest.mockResolvedValue({ match_id: 'match-1', withdrawn_player_ids: ['u-1'], decided_result: null });
+    apiRequest.mockResolvedValue({
+      match_id: 'match-1',
+      withdrawn_player_ids: ['u-1'],
+      decided_result: null,
+    });
 
     const retirada = await repo.withdrawPlayer('match-1', 'u-1');
-    expect(apiRequest).toHaveBeenLastCalledWith('/api/v1/competitions/matches/match-1/players/u-1/withdraw', {
-      topeMs: TOPE_DE_ANOTAR_MS,
-      method: 'POST',
+    expect(apiRequest).toHaveBeenLastCalledWith(
+      '/api/v1/competitions/matches/match-1/players/u-1/withdraw',
+      {
+        topeMs: TOPE_DE_ANOTAR_MS,
+        method: 'POST',
+      },
+    );
+    expect(retirada).toEqual({
+      matchId: 'match-1',
+      withdrawnPlayerIds: ['u-1'],
+      decidedResult: null,
     });
-    expect(retirada).toEqual({ matchId: 'match-1', withdrawnPlayerIds: ['u-1'], decidedResult: null });
 
-    apiRequest.mockResolvedValue({ match_id: 'match-1', withdrawn_player_ids: [], decided_result: { winner: 'B', score: '3&2' } });
-    const vuelta = await repo.reinstatePlayer('match-1', 'u-1');
-    expect(apiRequest).toHaveBeenLastCalledWith('/api/v1/competitions/matches/match-1/players/u-1/reinstate', {
-      topeMs: TOPE_DE_ANOTAR_MS,
-      method: 'POST',
+    apiRequest.mockResolvedValue({
+      match_id: 'match-1',
+      withdrawn_player_ids: [],
+      decided_result: { winner: 'B', score: '3&2' },
     });
+    const vuelta = await repo.reinstatePlayer('match-1', 'u-1');
+    expect(apiRequest).toHaveBeenLastCalledWith(
+      '/api/v1/competitions/matches/match-1/players/u-1/reinstate',
+      {
+        topeMs: TOPE_DE_ANOTAR_MS,
+        method: 'POST',
+      },
+    );
     expect(vuelta.decidedResult).toEqual({ winner: 'B', score: '3&2' });
   });
 });

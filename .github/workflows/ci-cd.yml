@@ -449,8 +449,15 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Check formatting (Prettier)
+        id: prettier
+        # El formato lo fija Prettier (.prettierrc.json); 'npm run format' lo arregla
+        run: npm run format:check
+
       - name: Run ESLint
         id: eslint
+        # Corre aunque falle el formato: los dos fallos se ven en una sola vuelta
+        if: ${{ !cancelled() }}
         run: |
           # Una sola pasada: el informe JSON para la tarjeta y, a partir de él, el
           # de siempre (stylish) en el log. El código de salida es el de ESLint
@@ -478,9 +485,9 @@ jobs:
           RESULT=$(python3 .github/scripts/summary_results.py lint outcome="$OUTCOME" report="$RUNNER_TEMP/eslint.json")
           python3 .github/scripts/summary_card.py \
             --title "🔍 Lint" \
-            --what "ESLint over the whole repo (React hooks rules, unused code, undefined globals...). Zero warnings allowed (--max-warnings 0), so it also keeps the code consistent." \
+            --what "Prettier formatting check, then ESLint over the whole repo (React hooks rules, unused code, undefined globals...). Zero warnings allowed (--max-warnings 0)." \
             --status "$STATUS" --result "$RESULT" \
-            --if-fails "Run 'npm run lint' locally; many problems are fixed with 'npx eslint . --fix'."
+            --if-fails "Formatting: run 'npm run format'. ESLint: run 'npm run lint' locally; many problems are fixed with 'npx eslint . --fix'."
 
   test:
     name: 🧪 Tests + coverage

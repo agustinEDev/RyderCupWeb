@@ -2,11 +2,15 @@ import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 
 vi.mock('react-i18next', () => ({
-  useTranslation: () => ({ t: (clave, p) => (p ? `${clave} ${JSON.stringify(p)}` : clave), i18n: { language: 'es' } }),
+  useTranslation: () => ({
+    t: (clave, p) => (p ? `${clave} ${JSON.stringify(p)}` : clave),
+    i18n: { language: 'es' },
+  }),
 }));
 
 const { AccionDelJugador } = await import('./PlazasDeLaFranja');
-const { COGER, CAMBIAR, SOLTAR } = await import('../../domain/services/PlazasEnFranjas');
+const { COGER, CAMBIAR, SOLTAR } =
+  await import('../../domain/services/PlazasEnFranjas');
 
 /**
  * Lo que queda abierto en una franja tiene que seguir teniendo sentido cuando
@@ -31,18 +35,24 @@ const props = (accion, franja = franjasPorId.c) => ({
 
 describe('AccionDelJugador (FE #824)', () => {
   it('si con «¿cuál dejas?» abierto la franja pasa a «coger», no se cae y lo cierra', () => {
-    const { rerender } = render(<AccionDelJugador {...props({ tipo: CAMBIAR, dejar: ['a', 'b'] })} />);
+    const { rerender } = render(
+      <AccionDelJugador {...props({ tipo: CAMBIAR, dejar: ['a', 'b'] })} />,
+    );
     fireEvent.click(screen.getByRole('button', { name: 'franjas.switchFor' }));
     expect(screen.getByText('franjas.whichToLeave')).toBeInTheDocument();
 
     rerender(<AccionDelJugador {...props({ tipo: COGER })} />);
 
     expect(screen.queryByText('franjas.whichToLeave')).toBeNull();
-    expect(screen.getByRole('button', { name: 'franjas.take' })).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: 'franjas.take' }),
+    ).toBeInTheDocument();
   });
 
   it('si con «¿soltar?» abierto ya no es suya, la confirmación desaparece', () => {
-    const { rerender } = render(<AccionDelJugador {...props({ tipo: SOLTAR }, franjasPorId.a)} />);
+    const { rerender } = render(
+      <AccionDelJugador {...props({ tipo: SOLTAR }, franjasPorId.a)} />,
+    );
     fireEvent.click(screen.getByRole('button', { name: 'franjas.release' }));
     expect(screen.getByText('franjas.releaseConfirm')).toBeInTheDocument();
 
@@ -54,14 +64,18 @@ describe('AccionDelJugador (FE #824)', () => {
   it('sus botones se tocan con el dedo: 44 px de alto', () => {
     render(<AccionDelJugador {...props({ tipo: COGER })} />);
 
-    expect(screen.getByRole('button', { name: 'franjas.take' }).className).toContain('min-h-11');
+    expect(
+      screen.getByRole('button', { name: 'franjas.take' }).className,
+    ).toContain('min-h-11');
   });
 });
 
 describe('AccionDelJugador · lo abierto no vuelve solo (/code-review)', () => {
   it('si la acción cambia y luego vuelve, la confirmación de soltar no se reabre sola', () => {
     const a = franjasPorId.a;
-    const { rerender } = render(<AccionDelJugador {...props({ tipo: SOLTAR }, a)} />);
+    const { rerender } = render(
+      <AccionDelJugador {...props({ tipo: SOLTAR }, a)} />,
+    );
     fireEvent.click(screen.getByRole('button', { name: 'franjas.release' }));
 
     rerender(<AccionDelJugador {...props({ tipo: COGER }, a)} />);

@@ -13,7 +13,10 @@ const mockInvitation = Invitation.fromPersistence({
   createdAt: '2026-02-18T10:00:00Z',
   updatedAt: '2026-02-18T10:00:00Z',
 });
-mockInvitation._apiData = { competition_name: 'Summer Cup', inviter_name: 'Creator' };
+mockInvitation._apiData = {
+  competition_name: 'Summer Cup',
+  inviter_name: 'Creator',
+};
 
 describe('ListMyInvitationsUseCase', () => {
   let useCase;
@@ -30,20 +33,27 @@ describe('ListMyInvitationsUseCase', () => {
   });
 
   it('should throw if invitationRepository is missing', () => {
-    expect(() => new ListMyInvitationsUseCase({})).toThrow('requires invitationRepository');
+    expect(() => new ListMyInvitationsUseCase({})).toThrow(
+      'requires invitationRepository',
+    );
   });
 
   it('should list invitations and return DTOs', async () => {
     const result = await useCase.execute({ status: 'PENDING' });
 
-    expect(mockRepo.getMyInvitations).toHaveBeenCalledWith({ status: 'PENDING' });
+    expect(mockRepo.getMyInvitations).toHaveBeenCalledWith({
+      status: 'PENDING',
+    });
     expect(result.invitations).toHaveLength(1);
     expect(result.invitations[0].id).toBe('inv-1');
     expect(result.totalCount).toBe(1);
   });
 
   it('should handle empty result', async () => {
-    mockRepo.getMyInvitations.mockResolvedValue({ invitations: [], totalCount: 0 });
+    mockRepo.getMyInvitations.mockResolvedValue({
+      invitations: [],
+      totalCount: 0,
+    });
 
     const result = await useCase.execute();
 

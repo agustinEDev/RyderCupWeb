@@ -1,16 +1,26 @@
 import { useTranslation } from 'react-i18next';
 import ModalShell from '../ui/ModalShell';
 
-const EarlyEndModalContent = ({ decidedResult, onConfirm, listaParaEnviar }) => {
+const EarlyEndModalContent = ({
+  decidedResult,
+  onConfirm,
+  listaParaEnviar,
+}) => {
   const { t } = useTranslation('scoring');
 
   return (
     <>
-      <h2 id="early-end-title" className="text-lg font-semibold text-gray-900 mb-2">
+      <h2
+        id="early-end-title"
+        className="text-lg font-semibold text-gray-900 mb-2"
+      >
         {t('earlyEnd.title')}
       </h2>
       <p id="early-end-message" className="text-sm text-gray-600 mb-2">
-        {t('earlyEnd.message', { team: decidedResult?.winner, score: decidedResult?.score })}
+        {t('earlyEnd.message', {
+          team: decidedResult?.winner,
+          score: decidedResult?.score,
+        })}
       </p>
       <p className="text-sm text-gray-500 mb-6">{t('earlyEnd.description')}</p>
       <div className="flex gap-3 justify-end">
@@ -34,7 +44,13 @@ const EarlyEndModalContent = ({ decidedResult, onConfirm, listaParaEnviar }) => 
  * quedarse mirando los hoyos: el aviso vuelve a salir en la siguiente visita
  * mientras la tarjeta siga sin entregar.
  */
-const EarlyEndModal = ({ isOpen, decidedResult, onConfirm, onClose, listaParaEnviar = true }) => (
+const EarlyEndModal = ({
+  isOpen,
+  decidedResult,
+  onConfirm,
+  onClose,
+  listaParaEnviar = true,
+}) => (
   <ModalShell
     isOpen={isOpen}
     onClose={onClose}

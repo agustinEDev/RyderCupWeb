@@ -26,12 +26,19 @@ import { createMemoryRouter } from 'react-router';
  * | ir a un destino SIN loader y una petición da el 403    | la página actual               |
  * | el router de la app (App.jsx, en un efecto)             | lo fija App.routerDeDatos (R3c) |
  */
-const { llevaAAceptarLosTerminos, olvidaLaRedireccionATerminos } = await import('./terminosPendientes');
+const { llevaAAceptarLosTerminos, olvidaLaRedireccionATerminos } =
+  await import('./terminosPendientes');
 const { apuntaElRouterDeLaAplicacion } = await import('./navegacionEnCurso');
 
 const enUna = (pathname, search = '') => {
   const assign = vi.fn();
-  vi.stubGlobal('location', { pathname, search, hash: '', origin: 'http://localhost', assign });
+  vi.stubGlobal('location', {
+    pathname,
+    search,
+    hash: '',
+    origin: 'http://localhost',
+    assign,
+  });
   return assign;
 };
 
@@ -43,9 +50,16 @@ const routerDesde = (inicio, destinoConLoader) => {
       { path: '/dashboard', element: null },
       { path: '/accept-terms', element: null },
       // La petición del loader empieza al llamarlo, después de iniciarse la navegación
-      { path: destinoConLoader, element: null, loader: () => (llevaAAceptarLosTerminos({ inicio: globalThis.performance.now() }), null) },
+      {
+        path: destinoConLoader,
+        element: null,
+        loader: () => (
+          llevaAAceptarLosTerminos({ inicio: globalThis.performance.now() }),
+          null
+        ),
+      },
     ],
-    { initialEntries: [inicio] }
+    { initialEntries: [inicio] },
   );
   apuntaElRouterDeLaAplicacion(router);
   return router;
@@ -77,7 +91,9 @@ describe('Términos pendientes: volver a la página a la que se iba', () => {
 
     await router.navigate('/competitions?tab=mias');
 
-    expect(assign).toHaveBeenCalledWith('/accept-terms?from=%2Fcompetitions%3Ftab%3Dmias');
+    expect(assign).toHaveBeenCalledWith(
+      '/accept-terms?from=%2Fcompetitions%3Ftab%3Dmias',
+    );
   });
 
   it('desde una página pública, ir a una protegida: se lleva a aceptar y vuelve a la protegida', async () => {
@@ -95,7 +111,9 @@ describe('Términos pendientes: volver a la página a la que se iba', () => {
 
     llevaAAceptarLosTerminos();
 
-    expect(assign).toHaveBeenCalledWith('/accept-terms?from=%2Fcompetitions%2F7%3Ftab%3Dagenda');
+    expect(assign).toHaveBeenCalledWith(
+      '/accept-terms?from=%2Fcompetitions%2F7%3Ftab%3Dagenda',
+    );
   });
 
   it('ir a una ruta que se puede ver con los Términos pendientes: no se lleva a aceptar', async () => {
@@ -115,9 +133,14 @@ describe('Términos pendientes: volver a la página a la que se iba', () => {
         [
           { path: '/competitions/7', element: null },
           // La página de destino, pública o legal, tarda en cargar: mientras, sigue en curso
-          { path: destino, element: null, loader: () => new Promise((listo) => setTimeout(() => listo(null), 20)) },
+          {
+            path: destino,
+            element: null,
+            loader: () =>
+              new Promise((listo) => setTimeout(() => listo(null), 20)),
+          },
         ],
-        { initialEntries: ['/competitions/7'] }
+        { initialEntries: ['/competitions/7'] },
       );
       apuntaElRouterDeLaAplicacion(router);
 
@@ -127,7 +150,7 @@ describe('Términos pendientes: volver a la página a la que se iba', () => {
       await navegacion;
 
       expect(assign).not.toHaveBeenCalled();
-    }
+    },
   );
 
   it('una petición de la página actual, empezada antes de navegar a Torneos, vuelve a la página actual', async () => {
@@ -136,9 +159,14 @@ describe('Términos pendientes: volver a la página a la que se iba', () => {
       [
         { path: '/competitions/7', element: null },
         // Torneos tarda en cargar: mientras, la navegación sigue en curso
-        { path: '/competitions', element: null, loader: () => new Promise((listo) => setTimeout(() => listo(null), 20)) },
+        {
+          path: '/competitions',
+          element: null,
+          loader: () =>
+            new Promise((listo) => setTimeout(() => listo(null), 20)),
+        },
       ],
-      { initialEntries: ['/competitions/7'] }
+      { initialEntries: ['/competitions/7'] },
     );
     apuntaElRouterDeLaAplicacion(router);
     // Un sondeo de la página actual sale ahora…
@@ -149,7 +177,9 @@ describe('Términos pendientes: volver a la página a la que se iba', () => {
     llevaAAceptarLosTerminos({ inicio: inicioDelSondeo });
     await navegacion;
 
-    expect(assign).toHaveBeenCalledWith('/accept-terms?from=%2Fcompetitions%2F7');
+    expect(assign).toHaveBeenCalledWith(
+      '/accept-terms?from=%2Fcompetitions%2F7',
+    );
   });
 
   it('ir a un destino sin loader: una petición que da el 403 es de la página actual', async () => {
@@ -159,9 +189,15 @@ describe('Términos pendientes: volver a la página a la que se iba', () => {
       [
         { path: '/dashboard', element: null },
         // Sin loader, pero cargando su pantalla (lazy): la navegación sigue en curso
-        { path: '/friends', lazy: () => new Promise((listo) => { sigue = () => listo({ element: null }); }) },
+        {
+          path: '/friends',
+          lazy: () =>
+            new Promise((listo) => {
+              sigue = () => listo({ element: null });
+            }),
+        },
       ],
-      { initialEntries: ['/dashboard'] }
+      { initialEntries: ['/dashboard'] },
     );
     apuntaElRouterDeLaAplicacion(router);
 

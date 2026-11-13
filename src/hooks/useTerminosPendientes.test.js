@@ -1,6 +1,10 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
-import { anotaLaSesion, consultaLaSesion, olvidaLaSesion } from '../services/sesionCompartida';
+import {
+  anotaLaSesion,
+  consultaLaSesion,
+  olvidaLaSesion,
+} from '../services/sesionCompartida';
 import { useTerminosPendientes } from './useTerminosPendientes';
 
 /**
@@ -45,12 +49,21 @@ describe('useTerminosPendientes', () => {
   it('con la copia del dispositivo sin confirmar: pendientes, salvo con soloConfirmados', async () => {
     // El aviso de la clasificación compartida solo se fía del servidor (hotfix 2.50.1)
     vi.spyOn(console, 'error').mockImplementation(() => {});
-    vi.spyOn(globalThis, 'fetch').mockRejectedValue(new TypeError('Failed to fetch'));
-    localStorage.setItem('rydercup-sesion-conocida', JSON.stringify({ id: 'u-1', terms_accepted: false }));
-    await act(async () => { await consultaLaSesion(); });
+    vi.spyOn(globalThis, 'fetch').mockRejectedValue(
+      new TypeError('Failed to fetch'),
+    );
+    localStorage.setItem(
+      'rydercup-sesion-conocida',
+      JSON.stringify({ id: 'u-1', terms_accepted: false }),
+    );
+    await act(async () => {
+      await consultaLaSesion();
+    });
 
     const todos = renderHook(() => useTerminosPendientes());
-    const confirmados = renderHook(() => useTerminosPendientes({ soloConfirmados: true }));
+    const confirmados = renderHook(() =>
+      useTerminosPendientes({ soloConfirmados: true }),
+    );
 
     expect(todos.result.current).toBe(true);
     expect(confirmados.result.current).toBe(false);
@@ -59,13 +72,17 @@ describe('useTerminosPendientes', () => {
   it('con soloConfirmados y la sesión confirmada, pendientes', () => {
     act(() => anotaLaSesion({ id: 'u-1', terms_accepted: false }));
 
-    const { result } = renderHook(() => useTerminosPendientes({ soloConfirmados: true }));
+    const { result } = renderHook(() =>
+      useTerminosPendientes({ soloConfirmados: true }),
+    );
 
     expect(result.current).toBe(true);
   });
 
   it('no pregunta a la red: solo lee lo que ya se sabe', () => {
-    const red = vi.spyOn(globalThis, 'fetch').mockResolvedValue(new globalThis.Response('{}'));
+    const red = vi
+      .spyOn(globalThis, 'fetch')
+      .mockResolvedValue(new globalThis.Response('{}'));
 
     const { result } = renderHook(() => useTerminosPendientes());
 

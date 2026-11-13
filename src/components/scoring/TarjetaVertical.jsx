@@ -41,10 +41,16 @@ const TarjetaVertical = ({
 
   const filaDeSuma = (nombre, etiqueta, valor) => (
     <tr className="bg-gray-50 border-y border-gray-200">
-      <td colSpan={3} className="px-3 py-1.5 text-left text-[11px] font-bold text-gray-600">
+      <td
+        colSpan={3}
+        className="px-3 py-1.5 text-left text-[11px] font-bold text-gray-600"
+      >
         {etiqueta}
       </td>
-      <td data-testid={`suma-${nombre}`} className="py-1.5 text-center font-bold text-gray-800">
+      <td
+        data-testid={`suma-${nombre}`}
+        className="py-1.5 text-center font-bold text-gray-800"
+      >
         {valor || '-'}
       </td>
       {columnaExtra && (
@@ -57,8 +63,13 @@ const TarjetaVertical = ({
   );
 
   return (
-    <div data-testid={testId} className="rounded-xl border border-gray-200 bg-white overflow-hidden">
-      <div className={`px-3 py-2 ${CABECERA_DEL_EQUIPO[equipo] ?? 'bg-gray-50 border-b border-gray-200'}`}>
+    <div
+      data-testid={testId}
+      className="rounded-xl border border-gray-200 bg-white overflow-hidden"
+    >
+      <div
+        className={`px-3 py-2 ${CABECERA_DEL_EQUIPO[equipo] ?? 'bg-gray-50 border-b border-gray-200'}`}
+      >
         {cabecera}
       </div>
       <table className="w-full text-xs tabular-nums">
@@ -68,8 +79,12 @@ const TarjetaVertical = ({
             <th className="py-1.5 font-semibold">{t('scorecard.par')}</th>
             <th className="py-1.5 font-semibold">{t('scorecard.si')}</th>
             <th className="py-1.5 font-semibold">{t('scorecard.strokes')}</th>
-            {columnaExtra && <th className="py-1.5 font-semibold">{columnaExtra}</th>}
-            {conResultado && <th className="py-1.5 font-semibold">{t('scorecard.result')}</th>}
+            {columnaExtra && (
+              <th className="py-1.5 font-semibold">{columnaExtra}</th>
+            )}
+            {conResultado && (
+              <th className="py-1.5 font-semibold">{t('scorecard.result')}</th>
+            )}
           </tr>
         </thead>
         <tbody>
@@ -80,9 +95,21 @@ const TarjetaVertical = ({
                 data-mejor-bola={String(Boolean(h.mejorBola))}
                 className={`border-b border-gray-100 ${h.mejorBola ? 'bg-yellow-50' : ''}`}
               >
-                <td className="w-10 py-0.5 text-center font-bold text-gray-700">{h.holeNumber}</td>
-                <td data-testid="par" className="w-10 py-0.5 text-center text-gray-400">{h.par}</td>
-                <td data-testid="hcp" className="w-10 py-0.5 text-center text-gray-400">{h.strokeIndex}</td>
+                <td className="w-10 py-0.5 text-center font-bold text-gray-700">
+                  {h.holeNumber}
+                </td>
+                <td
+                  data-testid="par"
+                  className="w-10 py-0.5 text-center text-gray-400"
+                >
+                  {h.par}
+                </td>
+                <td
+                  data-testid="hcp"
+                  className="w-10 py-0.5 text-center text-gray-400"
+                >
+                  {h.strokeIndex}
+                </td>
                 <td className="py-0.5 text-center">{h.casilla}</td>
                 {columnaExtra && (
                   <td data-testid="extra" className="w-12 py-0.5 text-center">
@@ -100,10 +127,13 @@ const TarjetaVertical = ({
                   </td>
                 )}
               </tr>
-              {h.holeNumber === 9 && sumas.ida != null && filaDeSuma('ida', t('scorecard.out'), sumas.ida)}
+              {h.holeNumber === 9 &&
+                sumas.ida != null &&
+                filaDeSuma('ida', t('scorecard.out'), sumas.ida)}
             </Fragment>
           ))}
-          {sumas.vuelta != null && filaDeSuma('vuelta', t('scorecard.in'), sumas.vuelta)}
+          {sumas.vuelta != null &&
+            filaDeSuma('vuelta', t('scorecard.in'), sumas.vuelta)}
           {filaDeSuma('total', t('scorecard.total'), sumas.total)}
         </tbody>
       </table>

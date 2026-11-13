@@ -8,7 +8,8 @@
 // Y de qué partido es: la ruta no lleva `key`, así que ir de uno a otro
 // reutiliza el hook, y el fallo del anterior no es del nuevo (CodeRabbit en la
 // PR #627)
-const falloDe = (origen) => (err, matchId) => (err ? { err, origen, matchId } : null);
+const falloDe = (origen) => (err, matchId) =>
+  err ? { err, origen, matchId } : null;
 export const deCarga = falloDe('carga');
 export const delGolpe = falloDe('golpe');
 export const deLaTarjeta = falloDe('tarjeta');
@@ -17,8 +18,11 @@ export const deLaRetirada = falloDe('retirada');
 
 // Un 409 de la retirada trae su motivo (RyderCupAM#665): se explica con su texto
 export const conClaveDeRetirada = (err) => {
-  const motivo = err?.errorCode === 'WITHDRAWAL_NOT_ALLOWED' ? err?.data?.reason : null;
-  return motivo ? Object.assign(err, { i18nKey: `withdraw.errors.${motivo}` }) : err;
+  const motivo =
+    err?.errorCode === 'WITHDRAWAL_NOT_ALLOWED' ? err?.data?.reason : null;
+  return motivo
+    ? Object.assign(err, { i18nKey: `withdraw.errors.${motivo}` })
+    : err;
 };
 // Un fallo de carga no pisa el de una acción del mismo partido: con el servidor
 // caído el sondeo falla cada 10 s, y el aviso de un golpe que no se guardó
@@ -27,6 +31,6 @@ export const conClaveDeRetirada = (err) => {
 // función creada dentro del `catch` hace que el análisis de `react-hooks`
 // abandone el hook entero
 export const trasFallarLaCarga = (err, desmiente, matchId) => (antes) =>
-  (antes && antes.matchId === matchId && antes.origen !== 'carga' && !desmiente
+  antes && antes.matchId === matchId && antes.origen !== 'carga' && !desmiente
     ? antes
-    : deCarga(err, matchId));
+    : deCarga(err, matchId);

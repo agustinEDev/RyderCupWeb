@@ -38,7 +38,7 @@ class DraftMapper {
       teamBCaptainName: apiData.team_b_captain_name,
       teamA: apiData.team_a || [],
       teamB: apiData.team_b || [],
-      picks: (apiData.picks || []).map(pick => ({
+      picks: (apiData.picks || []).map((pick) => ({
         userId: pick.user_id,
         name: pick.name,
         team: pick.team,
@@ -48,7 +48,7 @@ class DraftMapper {
         // eligiendo por un minuto agotado, y un servidor anterior no lo manda
         lastRemaining: pick.last_remaining === true,
       })),
-      availablePlayers: (apiData.available_players || []).map(jugador => ({
+      availablePlayers: (apiData.available_players || []).map((jugador) => ({
         userId: jugador.user_id,
         name: jugador.name,
         // Viene de fuera: un valor que no sea un número acabaría pintado tal

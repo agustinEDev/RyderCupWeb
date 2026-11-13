@@ -25,14 +25,30 @@ vi.mock('react-i18next', () => ({
  *   C5  hoyos sin jugar                               | suma solo lo anotado; nada, «-»
  *   C6  match play y scratch                          | golpes brutos, sin cifra pequeña
  */
-const dieciocho = Array.from({ length: 18 }, (_, i) => ({ holeNumber: i + 1, par: 4, strokeIndex: i + 1 }));
+const dieciocho = Array.from({ length: 18 }, (_, i) => ({
+  holeNumber: i + 1,
+  par: 4,
+  strokeIndex: i + 1,
+}));
 const nueve = dieciocho.slice(0, 9);
-const participants = [{ participantId: 'p-1', name: 'Alice', handicap: 0, team: null, isGuest: false }];
+const participants = [
+  {
+    participantId: 'p-1',
+    name: 'Alice',
+    handicap: 0,
+    team: null,
+    isGuest: false,
+  },
+];
 
-const tablas = () => screen.getAllByTestId('vuelta-horizontal').map((d) => d.querySelector('table'));
+const tablas = () =>
+  screen
+    .getAllByTestId('vuelta-horizontal')
+    .map((d) => d.querySelector('table'));
 // Lo que se ve: la frase para el lector va aparte, en `sr-only`
 const visible = (casilla) => casilla.firstElementChild;
-const columnas = (tabla) => [...tabla.querySelectorAll('colgroup col')].map((c) => c.className);
+const columnas = (tabla) =>
+  [...tabla.querySelectorAll('colgroup col')].map((c) => c.className);
 
 const pintar = (props) =>
   render(
@@ -43,7 +59,7 @@ const pintar = (props) =>
       currentParticipantId="p-1"
       scoringFormat="MEDAL"
       {...props}
-    />
+    />,
   );
 
 describe('QuickMatchScorecardTable · columnas de la ida y la vuelta', () => {
@@ -72,10 +88,16 @@ describe('QuickMatchScorecardTable · columnas de la ida y la vuelta', () => {
     });
 
     const [, vuelta] = tablas();
-    expect(vuelta.querySelector('thead tr').lastElementChild).toHaveTextContent('scorecard.total');
-    expect(screen.getByTestId('quick-match-total-par-p-1')).toHaveTextContent(/^72$/);
+    expect(vuelta.querySelector('thead tr').lastElementChild).toHaveTextContent(
+      'scorecard.total',
+    );
+    expect(screen.getByTestId('quick-match-total-par-p-1')).toHaveTextContent(
+      /^72$/,
+    );
     const total = screen.getByTestId('quick-match-section-total-p-1-total');
-    expect(within(total).getByTestId('subtotal-net-strokes')).toHaveTextContent(/^11$/);
+    expect(within(total).getByTestId('subtotal-net-strokes')).toHaveTextContent(
+      /^11$/,
+    );
     expect(visible(total)).toHaveTextContent(/^1111$/);
   });
 
@@ -87,7 +109,9 @@ describe('QuickMatchScorecardTable · columnas de la ida y la vuelta', () => {
     for (const fila of ida.querySelectorAll('tr')) {
       expect(fila.lastElementChild.textContent).toBe('');
     }
-    expect(within(ida).queryByTestId('quick-match-section-total-p-1-total')).not.toBeInTheDocument();
+    expect(
+      within(ida).queryByTestId('quick-match-section-total-p-1-total'),
+    ).not.toBeInTheDocument();
   });
 
   it('C4: con 9 hoyos, la ida acaba en IDA | TOTAL con la misma cifra', () => {
@@ -101,26 +125,50 @@ describe('QuickMatchScorecardTable · columnas de la ida y la vuelta', () => {
 
     const [ida, ...resto] = tablas();
     expect(resto).toHaveLength(0);
-    expect(ida.querySelector('thead tr').lastElementChild).toHaveTextContent('scorecard.total');
-    expect(screen.getByTestId('quick-match-total-par-p-1')).toHaveTextContent(/^36$/);
-    expect(visible(screen.getByTestId('quick-match-section-total-p-1-total'))).toHaveTextContent(/^99$/);
-    expect(visible(screen.getByTestId('quick-match-section-total-p-1-ida'))).toHaveTextContent(/^99$/);
+    expect(ida.querySelector('thead tr').lastElementChild).toHaveTextContent(
+      'scorecard.total',
+    );
+    expect(screen.getByTestId('quick-match-total-par-p-1')).toHaveTextContent(
+      /^36$/,
+    );
+    expect(
+      visible(screen.getByTestId('quick-match-section-total-p-1-total')),
+    ).toHaveTextContent(/^99$/);
+    expect(
+      visible(screen.getByTestId('quick-match-section-total-p-1-ida')),
+    ).toHaveTextContent(/^99$/);
   });
 
   it('C5: suma solo lo anotado, y sin nada anotado pinta «-»', () => {
     pintar({ holeScores: [{ holeNumber: 3, participantId: 'p-1', score: 7 }] });
-    expect(visible(screen.getByTestId('quick-match-section-total-p-1-total'))).toHaveTextContent(/^77$/);
+    expect(
+      visible(screen.getByTestId('quick-match-section-total-p-1-total')),
+    ).toHaveTextContent(/^77$/);
   });
 
   it('C5: sin nada anotado, «-»', () => {
     pintar();
-    expect(screen.getByTestId('quick-match-section-total-p-1-total')).toHaveTextContent(/^-$/);
+    expect(
+      screen.getByTestId('quick-match-section-total-p-1-total'),
+    ).toHaveTextContent(/^-$/);
   });
 
   it('C6: en match play, los golpes brutos sin cifra pequeña', () => {
     const dos = [
-      { participantId: 'p-1', name: 'Alice', handicap: 0, team: null, isGuest: false },
-      { participantId: 'p-2', name: 'Bob', handicap: 0, team: null, isGuest: false },
+      {
+        participantId: 'p-1',
+        name: 'Alice',
+        handicap: 0,
+        team: null,
+        isGuest: false,
+      },
+      {
+        participantId: 'p-2',
+        name: 'Bob',
+        handicap: 0,
+        team: null,
+        isGuest: false,
+      },
     ];
     pintar({
       participants: dos,
@@ -133,8 +181,12 @@ describe('QuickMatchScorecardTable · columnas de la ida y la vuelta', () => {
 
     const total = screen.getByTestId('quick-match-section-total-p-1-total');
     expect(total).toHaveTextContent(/^8$/);
-    expect(within(total).queryByTestId('subtotal-net-strokes')).not.toBeInTheDocument();
-    expect(within(total).queryByTestId('subtotal-points')).not.toBeInTheDocument();
+    expect(
+      within(total).queryByTestId('subtotal-net-strokes'),
+    ).not.toBeInTheDocument();
+    expect(
+      within(total).queryByTestId('subtotal-points'),
+    ).not.toBeInTheDocument();
   });
 
   it('C6: en scratch tampoco lleva cifra pequeña', () => {
@@ -146,6 +198,8 @@ describe('QuickMatchScorecardTable · columnas de la ida y la vuelta', () => {
 
     const total = screen.getByTestId('quick-match-section-total-p-1-total');
     expect(total).toHaveTextContent(/^5$/);
-    expect(within(total).queryByTestId('subtotal-net-strokes')).not.toBeInTheDocument();
+    expect(
+      within(total).queryByTestId('subtotal-net-strokes'),
+    ).not.toBeInTheDocument();
   });
 });

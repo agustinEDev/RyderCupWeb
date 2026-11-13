@@ -18,7 +18,10 @@ import {
   getGolfCourseUseCase,
   listMyQuickMatchesUseCase,
 } from '../../composition';
-import { esNombrePorDefecto, nombrePorDefecto } from '../../utils/nombrePorDefecto';
+import {
+  esNombrePorDefecto,
+  nombrePorDefecto,
+} from '../../utils/nombrePorDefecto';
 import { barraPorDefecto, ultimasBarras } from '../../utils/barraPorDefecto';
 import {
   DEFAULT_ALLOWANCE_BY_MATCH_FORMAT,
@@ -36,7 +39,10 @@ import {
   formaDeAnotar,
 } from './createQuickMatchModalConstants';
 import { leeTodosLosAmigos } from './leeTodosLosAmigos';
-import { jugadorInvitado, jugadorRegistrado } from '../../utils/jugadoresDelAsistente';
+import {
+  jugadorInvitado,
+  jugadorRegistrado,
+} from '../../utils/jugadoresDelAsistente';
 
 // Cuánto se espera a tus partidas antes de sugerir la barra por tu género
 export const ESPERA_DE_TUS_PARTIDAS_MS = 2000;
@@ -57,16 +63,22 @@ const MOTIVO_POR_CODIGO = {
 // tenía la barra (ya no está en el campo)
 const GENERO_DE_LA_BARRA = { MALE: 'male', FEMALE: 'female', MIXED: 'mixed' };
 const barraDelAviso = (t, tCampos, aviso) => {
-  const color = tCampos(`form.teeColors.${aviso.color}`, { defaultValue: aviso.color });
+  const color = tCampos(`form.teeColors.${aviso.color}`, {
+    defaultValue: aviso.color,
+  });
   const genero = GENERO_DE_LA_BARRA[aviso.genero];
-  return genero ? `${color} ${t(`create.teePanel.${genero}`).toLowerCase()}` : color;
+  return genero
+    ? `${color} ${t(`create.teePanel.${genero}`).toLowerCase()}`
+    : color;
 };
 
 // El texto de cada aviso de lo que no se pudo copiar al repetir (FE #1021)
 const textoDelAviso = (t, tCampos, aviso) => {
   if (aviso.tipo === 'campo') return t('create.repetir.avisoCampo');
-  if (aviso.tipo === 'noAmigo') return t('create.repetir.avisoNoAmigo', { nombre: aviso.nombre });
-  if (aviso.tipo === 'invitado') return t('create.repetir.avisoInvitado', { nombre: aviso.nombre });
+  if (aviso.tipo === 'noAmigo')
+    return t('create.repetir.avisoNoAmigo', { nombre: aviso.nombre });
+  if (aviso.tipo === 'invitado')
+    return t('create.repetir.avisoInvitado', { nombre: aviso.nombre });
   if (aviso.tipo === 'faltan') return t('create.repetir.avisoFaltan');
   if (aviso.tipo === 'sinBarra') {
     return aviso.propia
@@ -91,7 +103,12 @@ const textoDelAviso = (t, tCampos, aviso) => {
  * Con `borrador` (repetir una partida, FE #1021) arranca relleno, en el paso
  * que diga, y enseña los avisos de lo que no se pudo copiar.
  */
-const CreateQuickMatchModal = ({ onClose, onStarted, currentUser, borrador = null }) => {
+const CreateQuickMatchModal = ({
+  onClose,
+  onStarted,
+  currentUser,
+  borrador = null,
+}) => {
   const { t } = useTranslation('quickMatch');
   const { t: tComun } = useTranslation('common');
   const { t: tCampos } = useTranslation('golfCourses');
@@ -103,34 +120,56 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser, borrador = nul
   // que alguien escribe el suyo; vacío, viaja ese (Agustín, 4 nov 2026). Al
   // repetir, uno de por defecto no se copia: llevaría la fecha de aquella
   const [matchName, setMatchName] = useState(() =>
-    esNombrePorDefecto(copia?.matchName, copia?.selectedCourse?.name) ? '' : (copia?.matchName ?? '')
+    esNombrePorDefecto(copia?.matchName, copia?.selectedCourse?.name)
+      ? ''
+      : (copia?.matchName ?? ''),
   );
-  const [nombreAMano, setNombreAMano] = useState(() => Boolean(copia?.matchName) && !esNombrePorDefecto(copia.matchName, copia?.selectedCourse?.name));
+  const [nombreAMano, setNombreAMano] = useState(
+    () =>
+      Boolean(copia?.matchName) &&
+      !esNombrePorDefecto(copia.matchName, copia?.selectedCourse?.name),
+  );
   const [abiertoEl] = useState(() => new Date());
   const [mode, setMode] = useState(copia?.mode ?? 'MATCH_PLAY');
-  const [matchFormat, setMatchFormat] = useState(copia?.matchFormat ?? 'SINGLES');
-  const [scoringFormat, setScoringFormat] = useState(copia?.scoringFormat ?? 'STABLEFORD');
-  const [selectedCourse, setSelectedCourse] = useState(copia?.selectedCourse ?? null);
-  const nombreSugerido = selectedCourse?.name ? nombrePorDefecto(selectedCourse.name, abiertoEl) : '';
+  const [matchFormat, setMatchFormat] = useState(
+    copia?.matchFormat ?? 'SINGLES',
+  );
+  const [scoringFormat, setScoringFormat] = useState(
+    copia?.scoringFormat ?? 'STABLEFORD',
+  );
+  const [selectedCourse, setSelectedCourse] = useState(
+    copia?.selectedCourse ?? null,
+  );
+  const nombreSugerido = selectedCourse?.name
+    ? nombrePorDefecto(selectedCourse.name, abiertoEl)
+    : '';
   const [courseTees, setCourseTees] = useState([]);
   // Lo dice la ficha completa del campo, que es la que trae su procedencia
   const [courseFromRfeg, setCourseFromRfeg] = useState(false);
   // null while following the WHS default for the current format; a number once the user overrides it
-  const [allowanceOverride, setAllowanceOverride] = useState(copia?.allowanceOverride ?? null);
+  const [allowanceOverride, setAllowanceOverride] = useState(
+    copia?.allowanceOverride ?? null,
+  );
   // El % de la partida repetida, con su modalidad: el paso 1 lo ofrece como un
   // botón más aunque no sea de los habituales (pasada del Kind, 4 nov 2026)
   const porcentajeCopiado =
-    copia?.allowanceOverride != null ? { pct: copia.allowanceOverride, libre: copia.mode === 'FREE_PLAY' } : null;
+    copia?.allowanceOverride != null
+      ? { pct: copia.allowanceOverride, libre: copia.mode === 'FREE_PLAY' }
+      : null;
   // Por defecto con hándicap: es como se juega normalmente, y el scratch es
   // la excepción que hay que pedir a propósito.
   const [playMode, setPlayMode] = useState(copia?.playMode ?? 'HANDICAP');
-  const [creatorTeeKey, setCreatorTeeKey] = useState(copia?.creatorTeeKey ?? NO_TEE_KEY);
+  const [creatorTeeKey, setCreatorTeeKey] = useState(
+    copia?.creatorTeeKey ?? NO_TEE_KEY,
+  );
   const [participants, setParticipants] = useState(copia?.participants ?? []);
   // Lo que no se pudo copiar al repetir (FE #1021), hasta cerrar el asistente
   const avisosDelBorrador = borrador?.avisos ?? [];
   // Cada uno, solo en el paso donde se arregla: fuera de él ya no dice nada
   // útil, y seguía a la vista con lo descrito ya arreglado (`/code-review`)
-  const avisosAlRepetir = avisosDelBorrador.filter((aviso) => aviso.paso === step);
+  const avisosAlRepetir = avisosDelBorrador.filter(
+    (aviso) => aviso.paso === step,
+  );
   // De qué campo son la barra elegida, las barras y la cita de la RFEG. Al
   // cambiar de campo (también a ninguno) se ajusta durante el render, no en un
   // efecto: la barra elegida ya no vale y la cita no es de este campo. Las
@@ -157,14 +196,18 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser, borrador = nul
         setCourseFromRfeg(course.isFromRfeg?.() === true);
       },
       alFallar: () => setCourseTees([]),
-    }
+    },
   );
   // Con qué campo y formato se hizo la plantilla: volver al paso 1 sin
   // cambiarlos la conserva (Agustín, 3 nov 2026); cambiarlos la vacía
   const plantillaDe = useRef(
     copia?.participants?.length
-      ? { campo: copia.selectedCourse?.id, mode: copia.mode, matchFormat: copia.matchFormat }
-      : null
+      ? {
+          campo: copia.selectedCourse?.id,
+          mode: copia.mode,
+          matchFormat: copia.matchFormat,
+        }
+      : null,
   );
   // El id del último intento y lo que se mandó: reintentar LO MISMO tras un
   // fallo reusa el id —si la respuesta se perdió, el servidor devuelve la que
@@ -178,7 +221,8 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser, borrador = nul
   // Un aviso nuevo cada vez, también si se repite: así vuelve a la vista (ver
   // el efecto de abajo)
   const setError = (clave) => setErrorDelAsistente(clave ? { clave } : null);
-  const quitaElAviso = (clave) => setErrorDelAsistente((e) => (e?.clave === clave ? null : e));
+  const quitaElAviso = (clave) =>
+    setErrorDelAsistente((e) => (e?.clave === clave ? null : e));
   // El aviso va arriba y el botón que lo provoca, abajo: en un móvil se
   // pintaba fuera de la vista y parecía que no pasaba nada
   const avisoDeError = useRef(null);
@@ -202,14 +246,19 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser, borrador = nul
   // sí se copia: es de la partida, no de sus jugadores (A5)
   const anotadoresElegidosCon = useRef(
     copia?.participants?.length
-      ? { jugadores: copia.participants, modo: copia.mode, formato: copia.matchFormat }
-      : null
+      ? {
+          jugadores: copia.participants,
+          modo: copia.mode,
+          formato: copia.matchFormat,
+        }
+      : null,
   );
   // En foursomes, si quien crea eligió «las dos parejas» o «solo la mía» (o
   // la copiada al repetir). Lo que la app pone sola no cuenta como elección
   const parejasElegidas = useRef(copia?.parejasDeAnotadores ?? null);
   // Which participant's handicap keypad is open (step 4 summary), or null when closed.
-  const [editingHandicapParticipant, setEditingHandicapParticipant] = useState(null);
+  const [editingHandicapParticipant, setEditingHandicapParticipant] =
+    useState(null);
   // Whether the guest-form handicap keypad (step 2) is open.
   const [showGuestHandicapPanel, setShowGuestHandicapPanel] = useState(false);
 
@@ -238,21 +287,38 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser, borrador = nul
     setSelectedCourse(campo);
     setEleccionDeCampo((n) => n + 1);
   };
-  const [partidasDe, setPartidasDe] = useState({ eleccion: null, partidas: null });
-  const misPartidas = campoElegido && partidasDe.eleccion === eleccionDeCampo ? partidasDe.partidas : null;
+  const [partidasDe, setPartidasDe] = useState({
+    eleccion: null,
+    partidas: null,
+  });
+  const misPartidas =
+    campoElegido && partidasDe.eleccion === eleccionDeCampo
+      ? partidasDe.partidas
+      : null;
   // Sin respuesta en 2 s desde que se elige el campo (poca cobertura), se
   // sugiere por tu género: la barra no se queda sin marcar esperando
   const [plazoAgotadoEn, setPlazoAgotadoEn] = useState(null);
-  const plazoAgotado = campoElegido !== null && plazoAgotadoEn === eleccionDeCampo;
+  const plazoAgotado =
+    campoElegido !== null && plazoAgotadoEn === eleccionDeCampo;
   useEffect(() => {
     if (!campoElegido) return undefined;
     let vigente = true;
     const eleccion = eleccionDeCampo;
-    const plazo = setTimeout(() => setPlazoAgotadoEn(eleccion), ESPERA_DE_TUS_PARTIDAS_MS);
+    const plazo = setTimeout(
+      () => setPlazoAgotadoEn(eleccion),
+      ESPERA_DE_TUS_PARTIDAS_MS,
+    );
     Promise.resolve()
-      .then(() => listMyQuickMatchesUseCase.execute({ page: 1, limit: 5, golfCourseId: campoElegido }))
+      .then(() =>
+        listMyQuickMatchesUseCase.execute({
+          page: 1,
+          limit: 5,
+          golfCourseId: campoElegido,
+        }),
+      )
       .then((r) => {
-        if (vigente) setPartidasDe({ eleccion, partidas: r?.quickMatches ?? [] });
+        if (vigente)
+          setPartidasDe({ eleccion, partidas: r?.quickMatches ?? [] });
       })
       .catch(() => {
         if (vigente) setPartidasDe({ eleccion, partidas: [] });
@@ -264,7 +330,10 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser, borrador = nul
       clearTimeout(plazo);
     };
   }, [campoElegido, eleccionDeCampo]);
-  const ultimas = useMemo(() => ultimasBarras(misPartidas, selectedCourse?.id), [misPartidas, selectedCourse?.id]);
+  const ultimas = useMemo(
+    () => ultimasBarras(misPartidas, selectedCourse?.id),
+    [misPartidas, selectedCourse?.id],
+  );
   // La que sale elegida: la de la última vez en ese campo; si no, la de tu
   // género. Solo si no hay ninguna elegida: la copiada al repetir (P7) o la
   // que hayas tocado tú mandan
@@ -281,10 +350,16 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser, borrador = nul
   // Al repetir con el aviso de que tu barra ya no vale, no se marca ninguna:
   // el aviso pide elegirla (Agustín, 4 nov 2026). Solo en el campo copiado
   const avisoDeTuBarra =
-    avisosDelBorrador.some((a) => a.propia && (a.tipo === 'barra' || a.tipo === 'sinBarra')) &&
-    selectedCourse?.id === copia?.selectedCourse?.id;
-  const sugerenciaLista = !teesLoading && !avisoDeTuBarra && (misPartidas !== null || plazoAgotado);
-  if (creatorTeeKey === NO_TEE_KEY && sugerenciaLista && barraSugerida !== NO_TEE_KEY) {
+    avisosDelBorrador.some(
+      (a) => a.propia && (a.tipo === 'barra' || a.tipo === 'sinBarra'),
+    ) && selectedCourse?.id === copia?.selectedCourse?.id;
+  const sugerenciaLista =
+    !teesLoading && !avisoDeTuBarra && (misPartidas !== null || plazoAgotado);
+  if (
+    creatorTeeKey === NO_TEE_KEY &&
+    sugerenciaLista &&
+    barraSugerida !== NO_TEE_KEY
+  ) {
     setCreatorTeeKey(barraSugerida);
     // Si ya se pidió elegirla, el aviso sobra: ya hay una (/code-review). Solo
     // si es ese, para no encolar nada durante el render sin motivo
@@ -293,21 +368,26 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser, borrador = nul
   // La de cada amigo, para preelegirla al añadirlo (P8)
   const barraDeAmigo = (userId) => {
     const ultima = ultimas.get(userId);
-    return ultima && courseTees.some((t) => teeKey(t.color, t.gender) === ultima) ? ultima : NO_TEE_KEY;
+    return ultima &&
+      courseTees.some((t) => teeKey(t.color, t.gender) === ultima)
+      ? ultima
+      : NO_TEE_KEY;
   };
 
   const isFreePlay = mode === 'FREE_PLAY';
   const defaultAllowance = isFreePlay
     ? DEFAULT_FREE_PLAY_ALLOWANCE
-    : DEFAULT_ALLOWANCE_BY_MATCH_FORMAT[matchFormat] ?? 100;
+    : (DEFAULT_ALLOWANCE_BY_MATCH_FORMAT[matchFormat] ?? 100);
   const allowancePercentage = allowanceOverride ?? defaultAllowance;
-  const capacity = isFreePlay ? FREE_PLAY_CAPACITY : (FORMAT_CAPACITY[matchFormat] ?? 2);
+  const capacity = isFreePlay
+    ? FREE_PLAY_CAPACITY
+    : (FORMAT_CAPACITY[matchFormat] ?? 2);
   const isTeamFormat = !isFreePlay && TEAM_FORMATS.includes(matchFormat);
   const isFoursomes = !isFreePlay && matchFormat === 'FOURSOMES';
   const rosterFull = participants.length >= capacity;
   const registeredParticipants = participants.filter((p) => !p.isGuest);
   const availableFriends = friends.filter(
-    (f) => !participants.some((p) => p.userId === f.otherUserId)
+    (f) => !participants.some((p) => p.userId === f.otherUserId),
   );
 
   // No hay nada en el servidor hasta confirmar: cerrar es solo cerrar
@@ -337,7 +417,9 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser, borrador = nul
       setError('create.course.errorTeeRequired');
       return;
     }
-    const creatorTeeIsValid = courseTees.some((tee) => teeKey(tee.color, tee.gender) === creatorTeeKey);
+    const creatorTeeIsValid = courseTees.some(
+      (tee) => teeKey(tee.color, tee.gender) === creatorTeeKey,
+    );
     if (courseTees.length > 0 && !creatorTeeIsValid) {
       setError('create.course.errorTeeRequired');
       return;
@@ -351,12 +433,15 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser, borrador = nul
       participants.length > 0 &&
       misma.campo === plantilla.campo &&
       misma.mode === plantilla.mode &&
-      (plantilla.mode === 'FREE_PLAY' || misma.matchFormat === plantilla.matchFormat)
+      (plantilla.mode === 'FREE_PLAY' ||
+        misma.matchFormat === plantilla.matchFormat)
     ) {
       // La misma plantilla: se conserva, con la barra que quien crea haya
       // podido cambiar en este paso
       setParticipants((prev) =>
-        prev.map((p) => (p.userId === currentUser.id ? { ...p, color, teeGender } : p))
+        prev.map((p) =>
+          p.userId === currentUser.id ? { ...p, color, teeGender } : p,
+        ),
       );
       setStep(2);
       return;
@@ -386,7 +471,10 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser, borrador = nul
     participants.filter((p) => p.team === selectedTeam).length >= capacity / 2;
 
   const handleAddFriend = (friend, friendTeeKeyValue) => {
-    if (courseTees.length > 0 && (!friendTeeKeyValue || friendTeeKeyValue === NO_TEE_KEY)) {
+    if (
+      courseTees.length > 0 &&
+      (!friendTeeKeyValue || friendTeeKeyValue === NO_TEE_KEY)
+    ) {
       setError('create.participants.errorTeeRequired');
       return;
     }
@@ -456,7 +544,9 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser, borrador = nul
   const handleRemoveParticipant = (participantId) => {
     setError(null);
     // Los anotadores se ajustan al entrar en el paso 3 (`goToScorers`)
-    setParticipants((prev) => prev.filter((p) => p.participantId !== participantId));
+    setParticipants((prev) =>
+      prev.filter((p) => p.participantId !== participantId),
+    );
   };
 
   // Volver a elegir campo o formato deja la plantilla sin sentido (equipos,
@@ -479,17 +569,20 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser, borrador = nul
   // marca a la otra, como se juega— o solo la de quien crea la partida, que
   // entonces lleva las dos tarjetas. Dentro de una pareja puede apuntar
   // cualquiera de los dos, asi que entran todos sus registrados.
-  const myTeam = () => participants.find((p) => p.userId === currentUser.id)?.team ?? null;
+  const myTeam = () =>
+    participants.find((p) => p.userId === currentUser.id)?.team ?? null;
 
   const registeredOfTeam = (team) =>
     registeredParticipants.filter((p) => (p.team ?? null) === team);
 
-  const rivalCanScore = () => isFoursomes && registeredOfTeam(oppositeTeam(myTeam())).length > 0;
+  const rivalCanScore = () =>
+    isFoursomes && registeredOfTeam(oppositeTeam(myTeam())).length > 0;
 
   // Dentro de una pareja puede apuntar cualquiera de los dos, asi que aqui solo
   // importa si hay ALGUN registrado mas en mi bando.
   const partnerCanScore = () =>
-    isFoursomes && registeredOfTeam(myTeam()).some((p) => p.userId !== currentUser.id);
+    isFoursomes &&
+    registeredOfTeam(myTeam()).some((p) => p.userId !== currentUser.id);
 
   // `choice` y no `mode`: `mode` es el estado del modal (MATCH_PLAY/FREE_PLAY).
   const chooseScoringSides = (choice) => {
@@ -501,28 +594,42 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser, borrador = nul
     // Los DOS bandos, no todos los registrados: un registrado sin equipo no
     // juega en ninguna de las dos parejas y se colaba como anotador.
     setScorerIds(
-      [...mine, ...registeredOfTeam(oppositeTeam(myTeam()))].map((p) => p.participantId)
+      [...mine, ...registeredOfTeam(oppositeTeam(myTeam()))].map(
+        (p) => p.participantId,
+      ),
     );
   };
 
   const goToScorers = () => {
-    const creatorParticipant = participants.find((p) => p.userId === currentUser.id);
+    const creatorParticipant = participants.find(
+      (p) => p.userId === currentUser.id,
+    );
     const antes = anotadoresElegidosCon.current;
     const ahora = { jugadores: participants, modo: mode, formato: matchFormat };
     const firmaDe = (f) => firmaDeLosAnotadores(f.jugadores, f.modo, f.formato);
     if (!antes || firmaDe(antes) !== firmaDe(ahora)) {
       // Con otra forma de anotar, lo de por defecto, también en foursomes: una
       // pareja elegida antes ya no se ha visto (`/code-review`)
-      if (antes && formaDeAnotar(antes.modo, antes.formato) !== formaDeAnotar(mode, matchFormat)) {
+      if (
+        antes &&
+        formaDeAnotar(antes.modo, antes.formato) !==
+          formaDeAnotar(mode, matchFormat)
+      ) {
         parejasElegidas.current = null;
       }
       anotadoresElegidosCon.current = ahora;
       const conservados =
         !isFoursomes && creatorParticipant
-          ? anotadoresAlVolver({ antes, ahora, anotadores: scorerIds, yo: creatorParticipant.participantId })
+          ? anotadoresAlVolver({
+              antes,
+              ahora,
+              anotadores: scorerIds,
+              yo: creatorParticipant.participantId,
+            })
           : null;
       if (conservados) setScorerIds(conservados);
-      else if (isFoursomes && parejasElegidas.current) chooseScoringSides(parejasElegidas.current);
+      else if (isFoursomes && parejasElegidas.current)
+        chooseScoringSides(parejasElegidas.current);
       else eligeLosAnotadoresDePorDefecto(creatorParticipant);
     }
     setError(null);
@@ -538,13 +645,16 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser, borrador = nul
       // paso acababa ofreciendo una cosa distinta de la que quedaba marcada.
       chooseScoringSides(rivalCanScore() ? 'BOTH' : 'MINE');
     } else {
-      setScorerIds(creatorParticipant ? [creatorParticipant.participantId] : []);
+      setScorerIds(
+        creatorParticipant ? [creatorParticipant.participantId] : [],
+      );
     }
   };
 
   const toggleScorer = (participantId) => {
     setScorerIds((prev) => {
-      if (prev.includes(participantId)) return prev.filter((id) => id !== participantId);
+      if (prev.includes(participantId))
+        return prev.filter((id) => id !== participantId);
       if (prev.length >= MAX_SCORERS) return prev;
       return [...prev, participantId];
     });
@@ -572,23 +682,34 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser, borrador = nul
     setParticipants((prev) =>
       prev.map((p) =>
         p.participantId === participantId
-          ? { ...p, handicap: newHandicap === null && !p.isGuest ? p.profileHandicap : newHandicap }
-          : p
-      )
+          ? {
+              ...p,
+              handicap:
+                newHandicap === null && !p.isGuest
+                  ? p.profileHandicap
+                  : newHandicap,
+            }
+          : p,
+      ),
     );
   };
 
   const handleConfirmGuestHandicap = (newHandicap) => {
-    setGuestForm((g) => ({ ...g, handicap: newHandicap === null ? '' : String(newHandicap) }));
+    setGuestForm((g) => ({
+      ...g,
+      handicap: newHandicap === null ? '' : String(newHandicap),
+    }));
     setShowGuestHandicapPanel(false);
   };
 
   // Un hándicap que no se tocó no viaja: el servidor usa el del perfil
-  const override = (p) => (p.handicap !== p.profileHandicap ? p.handicap : null);
+  const override = (p) =>
+    p.handicap !== p.profileHandicap ? p.handicap : null;
 
   const peticionDelBorrador = () => {
     const creador = participants.find((p) => p.userId === currentUser.id);
-    const { color: creatorTeeColor, teeGender: creatorTeeGender } = parseTeeKey(creatorTeeKey);
+    const { color: creatorTeeColor, teeGender: creatorTeeGender } =
+      parseTeeKey(creatorTeeKey);
     return {
       golfCourseId: selectedCourse.id,
       matchFormat: isFreePlay ? null : matchFormat,
@@ -619,7 +740,7 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser, borrador = nul
                 team: p.team,
                 teeColor: p.color,
                 teeGender: p.teeGender,
-              }
+              },
         ),
       // El `participantId` de un registrado es su UserId
       scorerUserIds: scorerIds,
@@ -653,12 +774,17 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser, borrador = nul
       // Con el id de un intento que quizá se creó y el borrador cambiado, el
       // servidor devuelve la que ya hay: se dice que valió lo de antes
       const cambiado =
-        ultimoIntento.current.quizaCreada && ultimoIntento.current.firma !== JSON.stringify(peticion);
-      const started = await createAndStartQuickMatchUseCase.execute({ quickMatchId, ...peticion });
+        ultimoIntento.current.quizaCreada &&
+        ultimoIntento.current.firma !== JSON.stringify(peticion);
+      const started = await createAndStartQuickMatchUseCase.execute({
+        quickMatchId,
+        ...peticion,
+      });
       if (cambiado) customToast.info(t('create.alreadyCreated'));
       onStarted(started.id);
     } catch (err) {
-      if (ultimoIntento.current) ultimoIntento.current.quizaCreada = pudoLlegar(err);
+      if (ultimoIntento.current)
+        ultimoIntento.current.quizaCreada = pudoLlegar(err);
       const motivo = MOTIVO_POR_CODIGO[err?.status];
       // Los nuestros, por clave (cambian de idioma con la página); solo el
       // motivo que manda el servidor va como texto (revisor)
@@ -670,7 +796,7 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser, borrador = nul
             ? { clave: 'sinConexion.mensaje', comun: true }
             : deLaRegla === 'generico'
               ? { clave: 'create.errors.generic' }
-              : { texto: deLaRegla.delServidor }
+              : { texto: deLaRegla.delServidor },
       );
     } finally {
       setIsProcessing(false);
@@ -692,10 +818,15 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser, borrador = nul
       >
         <div className="flex items-center justify-between p-4 border-b border-gray-200">
           <div>
-            <h2 id="quick-match-modal-title" className="text-lg font-semibold text-gray-900">
+            <h2
+              id="quick-match-modal-title"
+              className="text-lg font-semibold text-gray-900"
+            >
               {borrador ? t('create.repetir.titulo') : t('create.title')}
             </h2>
-            <p className="text-xs text-gray-500">{t('create.step', { current: step, total: 4 })}</p>
+            <p className="text-xs text-gray-500">
+              {t('create.step', { current: step, total: 4 })}
+            </p>
           </div>
           <button
             type="button"
@@ -714,12 +845,17 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser, borrador = nul
             className="mx-4 mt-4 bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-600"
             data-testid="quick-match-modal-error"
           >
-            {error.clave ? (error.comun ? tComun : t)(error.clave) : error.texto}
+            {error.clave
+              ? (error.comun ? tComun : t)(error.clave)
+              : error.texto}
           </div>
         )}
 
         {avisosAlRepetir.length > 0 && (
-          <div role="status" className="mx-4 mt-4 bg-amber-50 border border-amber-200 rounded-lg p-3 text-sm text-amber-900">
+          <div
+            role="status"
+            className="mx-4 mt-4 bg-amber-50 border border-amber-200 rounded-lg p-3 text-sm text-amber-900"
+          >
             <ul className="space-y-1" data-testid="avisos-al-repetir">
               {avisosAlRepetir.map((aviso, i) => (
                 // Por posición (no cambia mientras está abierto): dos
@@ -763,7 +899,9 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser, borrador = nul
             allowancePercentage={allowancePercentage}
             // El de por defecto elegido a mano no es «a mano»: así no sale en
             // la cabecera ni se pierde al cruzar de modalidad
-            onAllowanceChange={(valor) => setAllowanceOverride(valor === defaultAllowance ? null : valor)}
+            onAllowanceChange={(valor) =>
+              setAllowanceOverride(valor === defaultAllowance ? null : valor)
+            }
             playMode={playMode}
             onPlayModeChange={setPlayMode}
             isProcessing={isProcessing}

@@ -25,7 +25,14 @@ const tabla = () => within(screen.getByRole('table'));
 
 describe('AdminUsersTable', () => {
   it('renders the empty state when there are no users', () => {
-    render(<AdminUsersTable users={[]} onEdit={vi.fn()} onToggleActive={vi.fn()} onManageDelete={vi.fn()} />);
+    render(
+      <AdminUsersTable
+        users={[]}
+        onEdit={vi.fn()}
+        onToggleActive={vi.fn()}
+        onManageDelete={vi.fn()}
+      />,
+    );
 
     expect(screen.getByText('users.noResults')).toBeInTheDocument();
   });
@@ -37,7 +44,7 @@ describe('AdminUsersTable', () => {
         onEdit={vi.fn()}
         onToggleActive={vi.fn()}
         onManageDelete={vi.fn()}
-      />
+      />,
     );
 
     expect(tabla().getByText('Agus Estevez')).toBeInTheDocument();
@@ -52,7 +59,7 @@ describe('AdminUsersTable', () => {
         onEdit={vi.fn()}
         onToggleActive={vi.fn()}
         onManageDelete={vi.fn()}
-      />
+      />,
     );
 
     expect(tabla().getByText('—')).toBeInTheDocument();
@@ -65,7 +72,7 @@ describe('AdminUsersTable', () => {
         onEdit={vi.fn()}
         onToggleActive={vi.fn()}
         onManageDelete={vi.fn()}
-      />
+      />,
     );
     expect(tabla().getByText('users.rolePlayer')).toBeInTheDocument();
 
@@ -75,7 +82,7 @@ describe('AdminUsersTable', () => {
         onEdit={vi.fn()}
         onToggleActive={vi.fn()}
         onManageDelete={vi.fn()}
-      />
+      />,
     );
     expect(tabla().getByText('users.roleAdmin')).toBeInTheDocument();
   });
@@ -87,7 +94,7 @@ describe('AdminUsersTable', () => {
         onEdit={vi.fn()}
         onToggleActive={vi.fn()}
         onManageDelete={vi.fn()}
-      />
+      />,
     );
 
     expect(tabla().getByText('users.statusInactive')).toBeInTheDocument();
@@ -96,7 +103,12 @@ describe('AdminUsersTable', () => {
   it('calls onEdit with the user when the edit button is clicked', () => {
     const onEdit = vi.fn();
     render(
-      <AdminUsersTable users={[baseUser]} onEdit={onEdit} onToggleActive={vi.fn()} onManageDelete={vi.fn()} />
+      <AdminUsersTable
+        users={[baseUser]}
+        onEdit={onEdit}
+        onToggleActive={vi.fn()}
+        onManageDelete={vi.fn()}
+      />,
     );
 
     fireEvent.click(screen.getByRole('button', { name: 'users.editTooltip' }));
@@ -107,10 +119,17 @@ describe('AdminUsersTable', () => {
   it('calls onToggleActive with the user when the deactivate button is clicked', () => {
     const onToggleActive = vi.fn();
     render(
-      <AdminUsersTable users={[baseUser]} onEdit={vi.fn()} onToggleActive={onToggleActive} onManageDelete={vi.fn()} />
+      <AdminUsersTable
+        users={[baseUser]}
+        onEdit={vi.fn()}
+        onToggleActive={onToggleActive}
+        onManageDelete={vi.fn()}
+      />,
     );
 
-    fireEvent.click(screen.getByRole('button', { name: 'users.deactivateTooltip' }));
+    fireEvent.click(
+      screen.getByRole('button', { name: 'users.deactivateTooltip' }),
+    );
 
     expect(onToggleActive).toHaveBeenCalledWith(baseUser);
   });
@@ -124,10 +143,12 @@ describe('AdminUsersTable', () => {
         onEdit={vi.fn()}
         onToggleActive={onToggleActive}
         onManageDelete={vi.fn()}
-      />
+      />,
     );
 
-    fireEvent.click(screen.getByRole('button', { name: 'users.reactivateTooltip' }));
+    fireEvent.click(
+      screen.getByRole('button', { name: 'users.reactivateTooltip' }),
+    );
 
     expect(onToggleActive).toHaveBeenCalledWith(inactiveUser);
   });
@@ -139,11 +160,13 @@ describe('AdminUsersTable', () => {
         onEdit={vi.fn()}
         onToggleActive={vi.fn()}
         onManageDelete={vi.fn()}
-      />
+      />,
     );
 
     expect(
-      tabla().getByText(new Date('2026-07-30T10:00:00Z').toLocaleDateString('en'))
+      tabla().getByText(
+        new Date('2026-07-30T10:00:00Z').toLocaleDateString('en'),
+      ),
     ).toBeInTheDocument();
   });
 
@@ -154,7 +177,7 @@ describe('AdminUsersTable', () => {
         onEdit={vi.fn()}
         onToggleActive={vi.fn()}
         onManageDelete={vi.fn()}
-      />
+      />,
     );
 
     expect(tabla().getByText('users.lastLoginNever')).toBeInTheDocument();
@@ -163,10 +186,17 @@ describe('AdminUsersTable', () => {
   it('calls onManageDelete with the user when the manage button is clicked', () => {
     const onManageDelete = vi.fn();
     render(
-      <AdminUsersTable users={[baseUser]} onEdit={vi.fn()} onToggleActive={vi.fn()} onManageDelete={onManageDelete} />
+      <AdminUsersTable
+        users={[baseUser]}
+        onEdit={vi.fn()}
+        onToggleActive={vi.fn()}
+        onManageDelete={onManageDelete}
+      />,
     );
 
-    fireEvent.click(screen.getByRole('button', { name: 'users.deleteTooltip' }));
+    fireEvent.click(
+      screen.getByRole('button', { name: 'users.deleteTooltip' }),
+    );
 
     expect(onManageDelete).toHaveBeenCalledWith(baseUser);
   });

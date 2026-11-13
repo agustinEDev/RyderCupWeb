@@ -25,23 +25,33 @@ const PasswordStrengthMeter = ({ password }) => {
       hasUpperCase: /[A-Z]/.test(password),
       hasLowerCase: /[a-z]/.test(password),
       hasNumbers: /\d/.test(password),
-      hasSymbols: /[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/.test(password)
+      hasSymbols: /[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/.test(password),
     };
 
     // Weak level (0-25%): Missing basic requirements
-    if (!checks.length || !checks.hasUpperCase || !checks.hasLowerCase || !checks.hasNumbers) {
+    if (
+      !checks.length ||
+      !checks.hasUpperCase ||
+      !checks.hasLowerCase ||
+      !checks.hasNumbers
+    ) {
       return {
         level: 'weak',
         percentage: Math.min(25, (password.length / 12) * 25),
         label: t('passwordStrength.weak', 'Weak'),
         color: 'bg-red-500',
-        textColor: 'text-red-700'
+        textColor: 'text-red-700',
       };
     }
 
     // Fair level (25-50%): Meets basic requirements
     score = 25;
-    if (checks.length && checks.hasUpperCase && checks.hasLowerCase && checks.hasNumbers) {
+    if (
+      checks.length &&
+      checks.hasUpperCase &&
+      checks.hasLowerCase &&
+      checks.hasNumbers
+    ) {
       score = 40;
     }
 
@@ -64,7 +74,7 @@ const PasswordStrengthMeter = ({ password }) => {
         percentage: score,
         label: t('passwordStrength.strong', 'Strong'),
         color: 'bg-green-500',
-        textColor: 'text-green-700'
+        textColor: 'text-green-700',
       };
     } else if (score >= 50) {
       return {
@@ -72,7 +82,7 @@ const PasswordStrengthMeter = ({ password }) => {
         percentage: score,
         label: t('passwordStrength.good', 'Good'),
         color: 'bg-blue-500',
-        textColor: 'text-blue-700'
+        textColor: 'text-blue-700',
       };
     } else {
       return {
@@ -80,7 +90,7 @@ const PasswordStrengthMeter = ({ password }) => {
         percentage: score,
         label: t('passwordStrength.fair', 'Fair'),
         color: 'bg-yellow-500',
-        textColor: 'text-yellow-700'
+        textColor: 'text-yellow-700',
       };
     }
   };

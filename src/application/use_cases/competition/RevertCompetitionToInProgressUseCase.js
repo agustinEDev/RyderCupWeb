@@ -19,13 +19,14 @@ class RevertCompetitionToInProgressUseCase {
       throw new Error('Competition ID is required');
     }
 
-    const data = await this.competitionRepository.revertToInProgress(competitionId);
+    const data =
+      await this.competitionRepository.revertToInProgress(competitionId);
 
     return {
       id: data.id,
       name: data.name,
       status: data.status,
-      updatedAt: data.updated_at
+      updatedAt: data.updated_at,
     };
   }
 }

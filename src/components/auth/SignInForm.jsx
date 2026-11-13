@@ -4,7 +4,11 @@ import { Link, useLocation, useNavigate } from 'react-router';
 import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import customToast from '../../utils/toast';
-import { validateEmail, checkRateLimit, resetRateLimit } from '../../utils/validation';
+import {
+  validateEmail,
+  checkRateLimit,
+  resetRateLimit,
+} from '../../utils/validation';
 import { safeLog } from '../../utils/auth';
 import { vueltaTrasEntrar } from '../../utils/vueltaTrasEntrar';
 import { vuelvenLosAvisosDeCierre } from '../../utils/avisoDeCierreForzado';
@@ -12,7 +16,10 @@ import PasswordInput from '../ui/PasswordInput';
 import GoogleSignInButton from '../ui/GoogleSignInButton';
 import { loginUseCase } from '../../composition';
 import { useAuthContext } from '../../hooks/useAuthContext';
-import { lanzaElRefrescoDeHandicap, APUNTE_REFRESCAR } from '../../services/refrescoDeHandicap';
+import {
+  lanzaElRefrescoDeHandicap,
+  APUNTE_REFRESCAR,
+} from '../../services/refrescoDeHandicap';
 
 /**
  * El acceso con correo y contraseña, con Google debajo: el formulario entero y
@@ -36,19 +43,19 @@ const SignInForm = () => {
 
   const [formData, setFormData] = useState({
     email: '',
-    password: ''
+    password: '',
   });
   const [errors, setErrors] = useState({});
   const [isLoading, setIsLoading] = useState(false);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [name]: value
+      [name]: value,
     }));
     if (errors[name]) {
-      setErrors(prev => ({ ...prev, [name]: '' }));
+      setErrors((prev) => ({ ...prev, [name]: '' }));
     }
   };
 
@@ -57,7 +64,10 @@ const SignInForm = () => {
 
     const emailValidation = validateEmail(datos.email);
     if (!emailValidation.isValid) {
-      newErrors.email = t(emailValidation.messageKey, emailValidation.messageOptions);
+      newErrors.email = t(
+        emailValidation.messageKey,
+        emailValidation.messageOptions,
+      );
     }
 
     if (!datos.password) {
@@ -87,9 +97,12 @@ const SignInForm = () => {
 
     const rateLimit = checkRateLimit('login', 5, 300000);
     if (!rateLimit.allowed) {
-      customToast.error(t('errors.rateLimitSeconds', { seconds: rateLimit.remainingTime }), {
-        duration: 5000,
-      });
+      customToast.error(
+        t('errors.rateLimitSeconds', { seconds: rateLimit.remainingTime }),
+        {
+          duration: 5000,
+        },
+      );
       return;
     }
 
@@ -97,7 +110,10 @@ const SignInForm = () => {
 
     try {
       // v1.13.0: LoginUseCase now returns { user, csrfToken }
-      const { user: authenticatedUser, csrfToken } = await loginUseCase.execute(datos.email, datos.password);
+      const { user: authenticatedUser, csrfToken } = await loginUseCase.execute(
+        datos.email,
+        datos.password,
+      );
 
       // Update auth context with user and CSRF token
       setUser(authenticatedUser);
@@ -110,10 +126,14 @@ const SignInForm = () => {
       // `needs_handicap` era el apunte de la versión anterior
       localStorage.setItem(APUNTE_REFRESCAR, 'true');
       localStorage.removeItem('needs_handicap');
-      lanzaElRefrescoDeHandicap({ handicapDeAntes: authenticatedUser.handicap ?? null });
+      lanzaElRefrescoDeHandicap({
+        handicapDeAntes: authenticatedUser.handicap ?? null,
+      });
 
       resetRateLimit('login');
-      customToast.success(t('login.welcomeMessage', { name: authenticatedUser.firstName }));
+      customToast.success(
+        t('login.welcomeMessage', { name: authenticatedUser.firstName }),
+      );
 
       if (!authenticatedUser.emailVerified) {
         safeLog('info', 'Email verification required');
@@ -126,17 +146,21 @@ const SignInForm = () => {
       // de un cierre forzado que /login no llegara a enseñar ya no vale
       vuelvenLosAvisosDeCierre();
       olvidaElAvisoDelCierre();
-      navigate(vueltaTrasEntrar(location.state?.from, { cuenta: authenticatedUser.id }), {
-        replace: true,
-      });
-
+      navigate(
+        vueltaTrasEntrar(location.state?.from, {
+          cuenta: authenticatedUser.id,
+        }),
+        {
+          replace: true,
+        },
+      );
     } catch (error) {
       console.error('Login error:', error);
 
       // Limpiar el password por seguridad (OWASP A07 - Authentication Failures)
-      setFormData(prev => ({
+      setFormData((prev) => ({
         ...prev,
-        password: ''
+        password: '',
       }));
 
       // HTTP 423: bloqueada esta red para esta cuenta (BE #732). Se puede entrar desde
@@ -169,10 +193,12 @@ const SignInForm = () => {
   return (
     <>
       <form onSubmit={handleSubmit} className="space-y-5">
-
         {/* Email */}
         <div>
-          <label htmlFor="email" className="block text-sm font-semibold text-gray-700 mb-2">
+          <label
+            htmlFor="email"
+            className="block text-sm font-semibold text-gray-700 mb-2"
+          >
             {t('login.emailLabel')}
           </label>
           <input
@@ -196,7 +222,11 @@ const SignInForm = () => {
               className="text-red-500 text-xs mt-2 flex items-center gap-1"
             >
               <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                <path
+                  fillRule="evenodd"
+                  d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
+                  clipRule="evenodd"
+                />
               </svg>
               {errors.email}
             </motion.p>
@@ -206,7 +236,10 @@ const SignInForm = () => {
         {/* Password */}
         <div>
           <div className="flex items-center justify-between mb-2">
-            <label htmlFor="password" className="block text-sm font-semibold text-gray-700">
+            <label
+              htmlFor="password"
+              className="block text-sm font-semibold text-gray-700"
+            >
               {t('login.passwordLabel')}
             </label>
             <Link
@@ -238,7 +271,11 @@ const SignInForm = () => {
               className="text-red-500 text-xs mt-2 flex items-center gap-1"
             >
               <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                <path
+                  fillRule="evenodd"
+                  d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
+                  clipRule="evenodd"
+                />
               </svg>
               {errors.password}
             </motion.p>
@@ -259,9 +296,25 @@ const SignInForm = () => {
         >
           {isLoading ? (
             <span className="flex items-center justify-center gap-2">
-              <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              <svg
+                className="animate-spin h-5 w-5"
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+              >
+                <circle
+                  className="opacity-25"
+                  cx="12"
+                  cy="12"
+                  r="10"
+                  stroke="currentColor"
+                  strokeWidth="4"
+                ></circle>
+                <path
+                  className="opacity-75"
+                  fill="currentColor"
+                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                ></path>
               </svg>
               {t('loading', { ns: 'common' })}
             </span>
@@ -269,7 +322,6 @@ const SignInForm = () => {
             t('login.signInButton')
           )}
         </motion.button>
-
       </form>
 
       {/* Divider: dos rayas y el texto en medio, en vez de una raya tapada por

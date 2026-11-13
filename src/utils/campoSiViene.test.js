@@ -25,8 +25,13 @@ describe('siViene', () => {
   });
 
   it('sabe cambiarle el nombre, que la API habla otro idioma', () => {
-    expect(siViene({ scoring_opens_at: '2026-09-19T06:00:00+02:00' }, 'scoring_opens_at', 'scoringOpensAt'))
-      .toEqual({ scoringOpensAt: '2026-09-19T06:00:00+02:00' });
+    expect(
+      siViene(
+        { scoring_opens_at: '2026-09-19T06:00:00+02:00' },
+        'scoring_opens_at',
+        'scoringOpensAt',
+      ),
+    ).toEqual({ scoringOpensAt: '2026-09-19T06:00:00+02:00' });
     expect(siViene({}, 'scoring_opens_at', 'scoringOpensAt')).toEqual({});
   });
 

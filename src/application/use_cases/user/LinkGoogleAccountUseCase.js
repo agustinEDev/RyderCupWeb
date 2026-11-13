@@ -17,7 +17,11 @@ class LinkGoogleAccountUseCase {
    * @returns {Promise<{message: string, provider: string, providerEmail: string}>}
    */
   async execute(authorizationCode, codeVerifier) {
-    if (!authorizationCode || typeof authorizationCode !== 'string' || !authorizationCode.trim()) {
+    if (
+      !authorizationCode ||
+      typeof authorizationCode !== 'string' ||
+      !authorizationCode.trim()
+    ) {
       throw new Error('Authorization code is required');
     }
 
@@ -26,7 +30,10 @@ class LinkGoogleAccountUseCase {
       throw new Error('Code verifier is required');
     }
 
-    return await this.authRepository.linkGoogleAccount(authorizationCode.trim(), codeVerifier);
+    return await this.authRepository.linkGoogleAccount(
+      authorizationCode.trim(),
+      codeVerifier,
+    );
   }
 }
 

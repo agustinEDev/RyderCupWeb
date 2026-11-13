@@ -6,7 +6,10 @@ import HeaderAuth from '../../components/layout/HeaderAuth';
 import { useAuth } from '../../hooks/useAuth';
 import { useScoring } from '../../hooks/useScoring';
 import { useMapaDelHoyo } from '../../hooks/useMapaDelHoyo';
-import { abreMasTarde, horaDelCampo } from '../../services/partidosSinCobertura';
+import {
+  abreMasTarde,
+  horaDelCampo,
+} from '../../services/partidosSinCobertura';
 import AvisosDelPartido from '../../components/scoring/AvisosDelPartido';
 import CabeceraDelPartido from '../../components/scoring/CabeceraDelPartido';
 import MatchSummaryCard from '../../components/scoring/MatchSummaryCard';
@@ -84,7 +87,13 @@ const ScoringPage = () => {
   } = useScoring(matchId, user?.id, user?.is_admin ?? false);
 
   // Los hoyos que no se pudieron guardar, en orden (FE #622), y a quién marco
-  const { hoyosNoGuardados, primerMarcado, segundoMarcado, porAnotar, sinAnotar } = hoyosSinGuardar({
+  const {
+    hoyosNoGuardados,
+    primerMarcado,
+    segundoMarcado,
+    porAnotar,
+    sinAnotar,
+  } = hoyosSinGuardar({
     noGuardados,
     markerAssignments: scoringView?.markerAssignments,
     userId: user?.id,
@@ -98,7 +107,10 @@ const ScoringPage = () => {
   const falloDeUnaAccion = esFalloDeUnaAccion(origenDelError);
 
   // La clasificación, pedida al abrir su pestaña
-  const leaderboard = useClasificacionAlAbrir(activeTab, scoringView?.competitionId);
+  const leaderboard = useClasificacionAlAbrir(
+    activeTab,
+    scoringView?.competitionId,
+  );
 
   // Confirmar la entrega deja de ser posible si el marcador anota mientras el
   // diálogo está abierto. Ocultarlo no basta: `showSubmitModal` seguiría a true
@@ -117,7 +129,8 @@ const ScoringPage = () => {
 
   // Cómo acabó, si acabó: decidido o cerrado sin jugar (concedido, walkover)
   const cierreDeEste = cierreDelPartido(scoringView);
-  const { resultadoDecidido, cerradoSinJugar, claveDelCierre, cierre } = cierreDeEste;
+  const { resultadoDecidido, cerradoSinJugar, claveDelCierre, cierre } =
+    cierreDeEste;
   // Derived: show early end modal when match is decided and user hasn't dismissed.
   // Not shown once the player has already submitted — the "continue to submit" CTA
   // no longer applies, and re-showing it on every revisit is just noise.
@@ -162,9 +175,12 @@ const ScoringPage = () => {
   const esFoursomes = scoringView?.matchFormat === 'FOURSOMES';
   // El retirado no entrega: no se le espera (F4)
   const retirados = scoringView?.withdrawnPlayerIds ?? [];
-  const pendingPlayers = scoringView?.players?.filter(
-    (p) => !scoringView?.scorecardSubmittedBy?.includes(p.userId) && !retirados.includes(p.userId)
-  ) ?? [];
+  const pendingPlayers =
+    scoringView?.players?.filter(
+      (p) =>
+        !scoringView?.scorecardSubmittedBy?.includes(p.userId) &&
+        !retirados.includes(p.userId),
+    ) ?? [];
   const opcionesDeLaRetirada = opcionesDeRetirada(scoringView, currentUserId);
 
   // Mi barra (color y sexo), como en stroke play: con ella la Ryder marca y
@@ -220,7 +236,9 @@ const ScoringPage = () => {
 
   const handleConcede = async (reason) => {
     try {
-      const playerTeam = scoringView?.players?.find((p) => p.userId === currentUserId)?.team;
+      const playerTeam = scoringView?.players?.find(
+        (p) => p.userId === currentUserId,
+      )?.team;
       if (playerTeam) {
         await concedeMatch(playerTeam, reason);
       }
@@ -258,7 +276,14 @@ const ScoringPage = () => {
     totalHoyos: totalHoles,
     alCambiarDeHoyo: setCurrentHole,
     // El mapa se repone solo donde la pantalla ofrece su botón
-    mapa: { ...mapaDelHoyo, disponible: mapaDelHoyo.disponible && Boolean(currentHoleData) && !aunNoAbre && !cerradoSinJugar },
+    mapa: {
+      ...mapaDelHoyo,
+      disponible:
+        mapaDelHoyo.disponible &&
+        Boolean(currentHoleData) &&
+        !aunNoAbre &&
+        !cerradoSinJugar,
+    },
   });
   // «Volver» sin una pantalla detrás (se llegó al arrancar la app): al panel
   const volver = useGoBack('/dashboard');
@@ -302,7 +327,10 @@ const ScoringPage = () => {
             servidor—, así que usarlo para esto sería decirle algo falso */}
         {!isOffline && <PendientesASalvo count={pendingQueueSize} />}
 
-        <div className="max-w-4xl mx-auto px-4 py-6 text-center" data-testid="sin-nada-guardado">
+        <div
+          className="max-w-4xl mx-auto px-4 py-6 text-center"
+          data-testid="sin-nada-guardado"
+        >
           <SinNadaQuePintar t={t} error={error} refetch={refetch} />
         </div>
       </div>
@@ -334,7 +362,9 @@ const ScoringPage = () => {
       <HeaderAuth user={user} />
 
       {/* Solo quien anota (también un administrador): al organizador que no juega no le vale «lo que anotes se guarda» */}
-      {isOffline && canScore && <AnotarSinConexion pendingCount={pendingQueueSize} />}
+      {isOffline && canScore && (
+        <AnotarSinConexion pendingCount={pendingQueueSize} />
+      )}
 
       {/* El gemelo de la pantalla sin nada pintado (FE #625): con cobertura y el
           servidor caído, la casilla enseña el golpe y nada decía que el otro
@@ -342,7 +372,9 @@ const ScoringPage = () => {
           respuesta, el sondeo vacía la cola */}
       {/* Salvo con el aviso del almacenamiento: esos golpes no se van a enviar
           al responder el servidor, y prometerlo sería falso */}
-      {!isOffline && !avisoDelVaciado && <PendientesASalvo count={pendingQueueSize} />}
+      {!isOffline && !avisoDelVaciado && (
+        <PendientesASalvo count={pendingQueueSize} />
+      )}
 
       {/* Los hoyos que no se pudieron guardar (FE #622). Aparte del recuadro de
           errores, que lo limpia cada sondeo: este solo se va al guardar su
@@ -355,10 +387,20 @@ const ScoringPage = () => {
             className="bg-red-50 border border-red-200 text-red-700 rounded-lg p-3 text-sm space-y-1"
           >
             {porAnotar.length > 0 && (
-              <p>{t('offline.noGuardados', { count: porAnotar.length, holes: porAnotar.join(', ') })}</p>
+              <p>
+                {t('offline.noGuardados', {
+                  count: porAnotar.length,
+                  holes: porAnotar.join(', '),
+                })}
+              </p>
             )}
             {sinAnotar.length > 0 && (
-              <p>{t('offline.noGuardadosSinAnotar', { count: sinAnotar.length, holes: sinAnotar.join(', ') })}</p>
+              <p>
+                {t('offline.noGuardadosSinAnotar', {
+                  count: sinAnotar.length,
+                  holes: sinAnotar.join(', '),
+                })}
+              </p>
             )}
           </div>
         </div>

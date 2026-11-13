@@ -11,7 +11,8 @@ export const useClasificacionAlAbrir = (pestanaAbierta, competitionId) => {
   // Load leaderboard when tab changes to leaderboard
   useEffect(() => {
     if (pestanaAbierta === 'leaderboard' && competitionId) {
-      getLeaderboardUseCase.execute(competitionId)
+      getLeaderboardUseCase
+        .execute(competitionId)
         .then(setLeaderboard)
         .catch(() => {});
     }

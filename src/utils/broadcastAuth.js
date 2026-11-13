@@ -39,7 +39,9 @@ const isBroadcastSupported = typeof BroadcastChannel !== 'undefined';
 const initBroadcastChannel = () => {
   if (!isBroadcastSupported) {
     if (process.env.NODE_ENV === 'development') {
-      console.warn('⚠️ [BroadcastAuth] BroadcastChannel API not supported in this browser. Multi-tab logout will not work.');
+      console.warn(
+        '⚠️ [BroadcastAuth] BroadcastChannel API not supported in this browser. Multi-tab logout will not work.',
+      );
     }
     return null;
   }
@@ -53,12 +55,18 @@ const initBroadcastChannel = () => {
     authChannel = new BroadcastChannel(CHANNEL_NAME);
 
     if (process.env.NODE_ENV === 'development') {
-      console.log('✅ [BroadcastAuth] Broadcast channel initialized:', CHANNEL_NAME);
+      console.log(
+        '✅ [BroadcastAuth] Broadcast channel initialized:',
+        CHANNEL_NAME,
+      );
     }
 
     return authChannel;
   } catch (error) {
-    console.error('❌ [BroadcastAuth] Error initializing broadcast channel:', error);
+    console.error(
+      '❌ [BroadcastAuth] Error initializing broadcast channel:',
+      error,
+    );
     return null;
   }
 };
@@ -133,7 +141,9 @@ export const onAuthEvent = (callback) => {
   }
 
   if (typeof callback !== 'function') {
-    console.error('❌ [BroadcastAuth] onAuthEvent requires a callback function');
+    console.error(
+      '❌ [BroadcastAuth] onAuthEvent requires a callback function',
+    );
     return () => {};
   }
 
@@ -143,7 +153,10 @@ export const onAuthEvent = (callback) => {
    */
   const messageHandler = (event) => {
     if (process.env.NODE_ENV === 'development') {
-      console.log('📨 [BroadcastAuth] Received event from other tab:', event.data);
+      console.log(
+        '📨 [BroadcastAuth] Received event from other tab:',
+        event.data,
+      );
     }
 
     // Validar que el mensaje tiene la estructura correcta

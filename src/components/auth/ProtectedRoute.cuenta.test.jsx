@@ -9,11 +9,20 @@ import { MemoryRouter, Routes, Route, useLocation } from 'react-router';
  */
 const sesion = vi.hoisted(() => ({ user: null, sinConfirmar: false }));
 vi.mock('../../hooks/useAuth', () => ({
-  useAuth: () => ({ user: sesion.user, loading: false, sinConfirmar: sesion.sinConfirmar }),
+  useAuth: () => ({
+    user: sesion.user,
+    loading: false,
+    sinConfirmar: sesion.sinConfirmar,
+  }),
 }));
-const cuenta = vi.hoisted(() => ({ ultima: vi.fn(() => 'u-1'), anota: vi.fn() }));
+const cuenta = vi.hoisted(() => ({
+  ultima: vi.fn(() => 'u-1'),
+  anota: vi.fn(),
+}));
 vi.mock('../../utils/vueltaTrasEntrar', () => ({
-  estadoParaElLogin: (location) => ({ from: { ...location, cuenta: cuenta.ultima() } }),
+  estadoParaElLogin: (location) => ({
+    from: { ...location, cuenta: cuenta.ultima() },
+  }),
   anotaLaCuentaDeEstaPestana: cuenta.anota,
 }));
 
@@ -24,7 +33,8 @@ const Destino = ({ nombre }) => {
   const { state } = useLocation();
   return (
     <p>
-      {nombre} desde {state?.from?.pathname ?? 'ninguna'} de {String(state?.from?.cuenta ?? 'nadie')}
+      {nombre} desde {state?.from?.pathname ?? 'ninguna'} de{' '}
+      {String(state?.from?.cuenta ?? 'nadie')}
     </p>
   );
 };
@@ -33,13 +43,34 @@ const abrir = (ruta) =>
   render(
     <MemoryRouter initialEntries={[ruta]}>
       <Routes>
-        <Route path="/competitions/7" element={<ProtectedRoute><p>ficha</p></ProtectedRoute>} />
-        <Route path="/admin" element={<RoleGuard allowedRoles="ADMIN"><p>admin</p></RoleGuard>} />
-        <Route path="/dashboard" element={<ProtectedRoute><p>panel</p></ProtectedRoute>} />
+        <Route
+          path="/competitions/7"
+          element={
+            <ProtectedRoute>
+              <p>ficha</p>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin"
+          element={
+            <RoleGuard allowedRoles="ADMIN">
+              <p>admin</p>
+            </RoleGuard>
+          }
+        />
+        <Route
+          path="/dashboard"
+          element={
+            <ProtectedRoute>
+              <p>panel</p>
+            </ProtectedRoute>
+          }
+        />
         <Route path="/login" element={<Destino nombre="login" />} />
         <Route path="/accept-terms" element={<Destino nombre="terminos" />} />
       </Routes>
-    </MemoryRouter>
+    </MemoryRouter>,
   );
 
 describe('la página de la que venía lleva su cuenta', () => {
@@ -53,7 +84,9 @@ describe('la página de la que venía lleva su cuenta', () => {
   it('R1: ProtectedRoute sin sesión, al login con la última cuenta de la pestaña', () => {
     abrir('/competitions/7');
 
-    expect(screen.getByText('login desde /competitions/7 de u-1')).toBeInTheDocument();
+    expect(
+      screen.getByText('login desde /competitions/7 de u-1'),
+    ).toBeInTheDocument();
   });
 
   it('R1: RoleGuard sin sesión, igual', () => {
@@ -67,7 +100,9 @@ describe('la página de la que venía lleva su cuenta', () => {
 
     abrir('/competitions/7');
 
-    expect(screen.getByText('login desde /competitions/7 de nadie')).toBeInTheDocument();
+    expect(
+      screen.getByText('login desde /competitions/7 de nadie'),
+    ).toBeInTheDocument();
   });
 
   it('R9: a aceptar los Términos no se lleva cuenta', () => {
@@ -75,7 +110,9 @@ describe('la página de la que venía lleva su cuenta', () => {
 
     abrir('/dashboard');
 
-    expect(screen.getByText('terminos desde /dashboard de nadie')).toBeInTheDocument();
+    expect(
+      screen.getByText('terminos desde /dashboard de nadie'),
+    ).toBeInTheDocument();
   });
 
   it('con la sesión que confirma el backend, apunta su cuenta como la de la pestaña (revisión)', () => {
@@ -98,4 +135,3 @@ describe('la página de la que venía lleva su cuenta', () => {
     expect(cuenta.anota).not.toHaveBeenCalled();
   });
 });
-

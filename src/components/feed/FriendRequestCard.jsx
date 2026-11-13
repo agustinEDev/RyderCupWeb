@@ -14,7 +14,14 @@ import { fraseCon, horaDeLaTarjeta, personaDe } from './textosDeActividad';
  *
  * @param {'pendiente'|'enviando'|'aceptada'} estado
  */
-const FriendRequestCard = ({ solicitud, autores, estado, onAceptar, onRechazar, ahora = new Date() }) => {
+const FriendRequestCard = ({
+  solicitud,
+  autores,
+  estado,
+  onAceptar,
+  onRechazar,
+  ahora = new Date(),
+}) => {
   const { t, i18n } = useTranslation(['feed', 'common']);
   const persona = personaDe(solicitud.requesterId, autores, t);
   const hora = horaDeLaTarjeta(solicitud.createdAt, ahora, t, i18n.language);
@@ -29,7 +36,12 @@ const FriendRequestCard = ({ solicitud, autores, estado, onAceptar, onRechazar, 
       }`}
     >
       {persona.enlace ? (
-        <Link to={persona.enlace} className="shrink-0" aria-hidden="true" tabIndex={-1}>
+        <Link
+          to={persona.enlace}
+          className="shrink-0"
+          aria-hidden="true"
+          tabIndex={-1}
+        >
           <Avatar userId={solicitud.requesterId} size="md" />
         </Link>
       ) : (
@@ -49,7 +61,9 @@ const FriendRequestCard = ({ solicitud, autores, estado, onAceptar, onRechazar, 
           </p>
         ) : (
           <p className="text-sm text-gray-800 break-words">
-            <FraseDeActividad frase={fraseCon(t, 'feed:requests.wants', {}, { persona })} />
+            <FraseDeActividad
+              frase={fraseCon(t, 'feed:requests.wants', {}, { persona })}
+            />
           </p>
         )}
 
@@ -71,7 +85,9 @@ const FriendRequestCard = ({ solicitud, autores, estado, onAceptar, onRechazar, 
               type="button"
               onClick={onAceptar}
               disabled={enviando}
-              aria-label={t('feed:requests.acceptLabel', { name: persona.nombre })}
+              aria-label={t('feed:requests.acceptLabel', {
+                name: persona.nombre,
+              })}
               className="inline-flex min-h-[40px] items-center justify-center rounded-md bg-primary px-4 text-sm font-medium text-white hover:bg-primary/90 disabled:opacity-60"
             >
               {t('feed:requests.accept')}
@@ -80,7 +96,9 @@ const FriendRequestCard = ({ solicitud, autores, estado, onAceptar, onRechazar, 
               type="button"
               onClick={onRechazar}
               disabled={enviando}
-              aria-label={t('feed:requests.rejectLabel', { name: persona.nombre })}
+              aria-label={t('feed:requests.rejectLabel', {
+                name: persona.nombre,
+              })}
               className="inline-flex min-h-[40px] items-center justify-center rounded-md border border-gray-300 bg-white px-4 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-60"
             >
               {t('feed:requests.reject')}

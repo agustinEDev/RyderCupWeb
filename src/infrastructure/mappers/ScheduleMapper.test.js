@@ -38,16 +38,22 @@ describe('ScheduleMapper', () => {
     });
 
     it('sin formato (una franja de stroke play, RyderCupAm#541): null, nunca undefined', () => {
-      expect(ScheduleMapper.toRoundDTO({ id: 'r', match_format: null, matches: [] }).matchFormat).toBeNull();
-      expect(ScheduleMapper.toRoundDTO({ id: 'r', matches: [] }).matchFormat).toBeNull();
+      expect(
+        ScheduleMapper.toRoundDTO({ id: 'r', match_format: null, matches: [] })
+          .matchFormat,
+      ).toBeNull();
+      expect(
+        ScheduleMapper.toRoundDTO({ id: 'r', matches: [] }).matchFormat,
+      ).toBeNull();
     });
 
     it('D1: quién descansa viaja en la sesión, y un servidor anterior no lo manda (#710)', () => {
       const base = { id: 'r1', matches: [] };
 
-      expect(ScheduleMapper.toRoundDTO({ ...base, resting_player_ids: ['u3'] }).restingPlayerIds).toEqual([
-        'u3',
-      ]);
+      expect(
+        ScheduleMapper.toRoundDTO({ ...base, resting_player_ids: ['u3'] })
+          .restingPlayerIds,
+      ).toEqual(['u3']);
       expect(ScheduleMapper.toRoundDTO(base).restingPlayerIds).toEqual([]);
     });
 
@@ -78,10 +84,22 @@ describe('ScheduleMapper', () => {
         round_id: 'round-1',
         match_number: 1,
         team_a_players: [
-          { user_id: 'u1', playing_handicap: 12, color: 'YELLOW', tee_gender: 'MALE', strokes_received: [1, 3, 5] },
+          {
+            user_id: 'u1',
+            playing_handicap: 12,
+            color: 'YELLOW',
+            tee_gender: 'MALE',
+            strokes_received: [1, 3, 5],
+          },
         ],
         team_b_players: [
-          { user_id: 'u2', playing_handicap: 8, color: 'YELLOW', tee_gender: 'MALE', strokes_received: [] },
+          {
+            user_id: 'u2',
+            playing_handicap: 8,
+            color: 'YELLOW',
+            tee_gender: 'MALE',
+            strokes_received: [],
+          },
         ],
         status: 'SCHEDULED',
         handicap_strokes_given: 4,
@@ -115,12 +133,36 @@ describe('ScheduleMapper', () => {
         round_id: 'round-1',
         match_number: 2,
         team_a_players: [
-          { user_id: 'u1', playing_handicap: 10, color: 'YELLOW', tee_gender: 'MALE', strokes_received: [] },
-          { user_id: 'u2', playing_handicap: 14, color: 'YELLOW', tee_gender: 'MALE', strokes_received: [] },
+          {
+            user_id: 'u1',
+            playing_handicap: 10,
+            color: 'YELLOW',
+            tee_gender: 'MALE',
+            strokes_received: [],
+          },
+          {
+            user_id: 'u2',
+            playing_handicap: 14,
+            color: 'YELLOW',
+            tee_gender: 'MALE',
+            strokes_received: [],
+          },
         ],
         team_b_players: [
-          { user_id: 'u3', playing_handicap: 12, color: 'YELLOW', tee_gender: 'MALE', strokes_received: [] },
-          { user_id: 'u4', playing_handicap: 8, color: 'YELLOW', tee_gender: 'MALE', strokes_received: [] },
+          {
+            user_id: 'u3',
+            playing_handicap: 12,
+            color: 'YELLOW',
+            tee_gender: 'MALE',
+            strokes_received: [],
+          },
+          {
+            user_id: 'u4',
+            playing_handicap: 8,
+            color: 'YELLOW',
+            tee_gender: 'MALE',
+            strokes_received: [],
+          },
         ],
         status: 'SCHEDULED',
       };
@@ -138,10 +180,23 @@ describe('ScheduleMapper', () => {
         round_id: 'round-1',
         match_number: 1,
         team_a_players: [
-          { user_id: 'u1', playing_handicap: 12, color: 'YELLOW', tee_gender: 'MALE', strokes_received: [], player_handicap: 14.2 },
+          {
+            user_id: 'u1',
+            playing_handicap: 12,
+            color: 'YELLOW',
+            tee_gender: 'MALE',
+            strokes_received: [],
+            player_handicap: 14.2,
+          },
         ],
         team_b_players: [
-          { user_id: 'u2', playing_handicap: 8, color: 'YELLOW', tee_gender: 'MALE', strokes_received: [] },
+          {
+            user_id: 'u2',
+            playing_handicap: 8,
+            color: 'YELLOW',
+            tee_gender: 'MALE',
+            strokes_received: [],
+          },
         ],
         status: 'SCHEDULED',
       };

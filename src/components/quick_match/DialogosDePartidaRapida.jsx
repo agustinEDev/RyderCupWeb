@@ -38,15 +38,30 @@ const DialogosDePartidaRapida = ({
           aria-modal="true"
           aria-labelledby="quick-match-finish-title"
         >
-          <h3 id="quick-match-finish-title" className="text-lg font-semibold text-gray-900 mb-1">{t('scoring.finish.confirmTitle')}</h3>
-          <p className="text-sm text-gray-500 mb-4">{t('scoring.finish.confirmBody')}</p>
+          <h3
+            id="quick-match-finish-title"
+            className="text-lg font-semibold text-gray-900 mb-1"
+          >
+            {t('scoring.finish.confirmTitle')}
+          </h3>
+          <p className="text-sm text-gray-500 mb-4">
+            {t('scoring.finish.confirmBody')}
+          </p>
           {yaCerrada && !finishFailedKey && !isSubmitting && (
-            <p role="alert" className="text-sm text-red-600 mb-4" data-testid="quick-match-finish-stale">
+            <p
+              role="alert"
+              className="text-sm text-red-600 mb-4"
+              data-testid="quick-match-finish-stale"
+            >
               {t('scoring.finish.failed')}
             </p>
           )}
           {finishFailedKey && (
-            <p role="alert" className="text-sm text-red-600 mb-4" data-testid="quick-match-finish-error">
+            <p
+              role="alert"
+              className="text-sm text-red-600 mb-4"
+              data-testid="quick-match-finish-error"
+            >
               {t(finishFailedKey)}
             </p>
           )}
@@ -81,20 +96,30 @@ const DialogosDePartidaRapida = ({
           aria-modal="true"
           aria-labelledby="quick-match-discrepancia-title"
         >
-          <h3 id="quick-match-discrepancia-title" data-testid="quick-match-discrepancia-title" className="text-lg font-semibold text-gray-900 mb-1">
+          <h3
+            id="quick-match-discrepancia-title"
+            data-testid="quick-match-discrepancia-title"
+            className="text-lg font-semibold text-gray-900 mb-1"
+          >
             {/* Un anotador cubre a invitados, y en foursomes a los cuatro:
                 sin el nombre no se sabe qué tarjeta está en disputa. Cuando
                 es la propia, el nombre sobra y queda raro */}
             {discrepancia.participantId === myParticipant?.participantId
-              ? t('scoring.offline.conflictTitle', { hole: discrepancia.holeNumber })
+              ? t('scoring.offline.conflictTitle', {
+                  hole: discrepancia.holeNumber,
+                })
               : t('scoring.offline.conflictTitlePlayer', {
                   hole: discrepancia.holeNumber,
                   player: jugadorEnDisputa?.name ?? '',
                 })}
           </h3>
-          <p className="text-sm text-gray-500 mb-4" data-testid="quick-match-discrepancia-body">
+          <p
+            className="text-sm text-gray-500 mb-4"
+            data-testid="quick-match-discrepancia-body"
+          >
             {t('scoring.offline.conflictBody', {
-              scorer: nombreDelAnotador || t('scoring.offline.conflictScorerUnknown'),
+              scorer:
+                nombreDelAnotador || t('scoring.offline.conflictScorerUnknown'),
               theirs: comoSeLee(discrepancia.enElServidor),
               mine: comoSeLee(discrepancia.mio),
             })}
@@ -102,17 +127,33 @@ const DialogosDePartidaRapida = ({
           <div className="flex justify-end gap-3">
             <button
               data-testid="quick-match-discrepancia-servidor"
-              onClick={() => resuelveDiscrepancia(discrepancia.holeNumber, discrepancia.participantId, 'elQueHay')}
+              onClick={() =>
+                resuelveDiscrepancia(
+                  discrepancia.holeNumber,
+                  discrepancia.participantId,
+                  'elQueHay',
+                )
+              }
               className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200"
             >
-              {t('scoring.offline.conflictTheirs', { theirs: comoSeLee(discrepancia.enElServidor) })}
+              {t('scoring.offline.conflictTheirs', {
+                theirs: comoSeLee(discrepancia.enElServidor),
+              })}
             </button>
             <button
               data-testid="quick-match-discrepancia-mio"
-              onClick={() => resuelveDiscrepancia(discrepancia.holeNumber, discrepancia.participantId, 'mio')}
+              onClick={() =>
+                resuelveDiscrepancia(
+                  discrepancia.holeNumber,
+                  discrepancia.participantId,
+                  'mio',
+                )
+              }
               className="px-4 py-2 text-sm font-medium text-white bg-emerald-600 rounded-md hover:bg-emerald-700"
             >
-              {t('scoring.offline.conflictMine', { mine: comoSeLee(discrepancia.mio) })}
+              {t('scoring.offline.conflictMine', {
+                mine: comoSeLee(discrepancia.mio),
+              })}
             </button>
           </div>
         </div>
@@ -129,19 +170,33 @@ const DialogosDePartidaRapida = ({
           aria-modal="true"
           aria-labelledby="quick-match-cancel-title"
         >
-          <h3 id="quick-match-cancel-title" className="text-lg font-semibold text-gray-900 mb-1">
+          <h3
+            id="quick-match-cancel-title"
+            className="text-lg font-semibold text-gray-900 mb-1"
+          >
             {t('scoring.cancelMatch.confirmTitle')}
           </h3>
-          <p className="text-sm text-gray-500 mb-4" data-testid="quick-match-cancel-body">
+          <p
+            className="text-sm text-gray-500 mb-4"
+            data-testid="quick-match-cancel-body"
+          >
             {t('scoring.cancelMatch.confirmBody')}
           </p>
           {yaCerrada && !cancelFailedKey && !isSubmitting && (
-            <p role="alert" className="text-sm text-red-600 mb-4" data-testid="quick-match-cancel-stale">
+            <p
+              role="alert"
+              className="text-sm text-red-600 mb-4"
+              data-testid="quick-match-cancel-stale"
+            >
               {t('scoring.cancelMatch.failed')}
             </p>
           )}
           {cancelFailedKey && (
-            <p role="alert" className="text-sm text-red-600 mb-4" data-testid="quick-match-cancel-error">
+            <p
+              role="alert"
+              className="text-sm text-red-600 mb-4"
+              data-testid="quick-match-cancel-error"
+            >
               {t(cancelFailedKey)}
             </p>
           )}

@@ -1,7 +1,12 @@
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 import LocalStorageHoleMapCache from './LocalStorageHoleMapCache';
 
-const MAPA = { golfCourseId: 'gc-1', version: 'v1', attribution: null, holes: { 1: { green: null, playLine: [] } } };
+const MAPA = {
+  golfCourseId: 'gc-1',
+  version: 'v1',
+  attribution: null,
+  holes: { 1: { green: null, playLine: [] } },
+};
 
 describe('LocalStorageHoleMapCache', () => {
   let guardado;
@@ -52,9 +57,15 @@ describe('LocalStorageHoleMapCache', () => {
 
   it('sin almacenamiento (modo privado, cuota llena) no revienta', () => {
     vi.stubGlobal('localStorage', {
-      getItem: () => { throw new Error('denied'); },
-      setItem: () => { throw new Error('quota'); },
-      removeItem: () => { throw new Error('denied'); },
+      getItem: () => {
+        throw new Error('denied');
+      },
+      setItem: () => {
+        throw new Error('quota');
+      },
+      removeItem: () => {
+        throw new Error('denied');
+      },
     });
     const cache = new LocalStorageHoleMapCache();
 
@@ -81,7 +92,9 @@ describe('LocalStorageHoleMapCache — la forma de lo guardado', () => {
   it('se guarda con la versión de su forma en la clave', () => {
     new LocalStorageHoleMapCache().save(MAPA);
 
-    expect([...guardado.keys()].filter((k) => k !== 'mapaDeHoyos:v1:indice')).toEqual(['mapaDeHoyos:v1:gc-1']);
+    expect(
+      [...guardado.keys()].filter((k) => k !== 'mapaDeHoyos:v1:indice'),
+    ).toEqual(['mapaDeHoyos:v1:gc-1']);
   });
 
   it('una copia de antes de versionar no se lee', () => {
@@ -91,7 +104,10 @@ describe('LocalStorageHoleMapCache — la forma de lo guardado', () => {
   });
 
   it('una copia sin hoyos, o de otro campo, se lee como nada', () => {
-    guardado.set('mapaDeHoyos:v1:gc-1', JSON.stringify({ golfCourseId: 'gc-1', version: 'v1' }));
+    guardado.set(
+      'mapaDeHoyos:v1:gc-1',
+      JSON.stringify({ golfCourseId: 'gc-1', version: 'v1' }),
+    );
     guardado.set('mapaDeHoyos:v1:gc-2', JSON.stringify(MAPA));
     const cache = new LocalStorageHoleMapCache();
 
@@ -123,7 +139,9 @@ describe('LocalStorageHoleMapCache — D4: solo los 20 campos más recientes', (
     expect(cache.load('gc-1')).toBeNull();
     expect(cache.load('gc-2')).toEqual(mapaDe(2));
     expect(cache.load('gc-21')).toEqual(mapaDe(21));
-    expect([...guardado.keys()].filter((k) => k.startsWith('mapaDeHoyos:v1:gc-'))).toHaveLength(20);
+    expect(
+      [...guardado.keys()].filter((k) => k.startsWith('mapaDeHoyos:v1:gc-')),
+    ).toHaveLength(20);
   });
 
   it('volver a guardar uno lo hace el más reciente', () => {
@@ -163,11 +181,17 @@ describe('LocalStorageHoleMapCache — con el almacenamiento lleno', () => {
   it('se hace sitio quitando el más antiguo ANTES de guardar el nuevo', () => {
     const guardado = new Map();
     // Caben 20 mapas: el 21.º solo entra si antes se fue uno
-    const mapas = () => [...guardado.keys()].filter((k) => k.startsWith('mapaDeHoyos:v1:gc-')).length;
+    const mapas = () =>
+      [...guardado.keys()].filter((k) => k.startsWith('mapaDeHoyos:v1:gc-'))
+        .length;
     vi.stubGlobal('localStorage', {
       getItem: (k) => (guardado.has(k) ? guardado.get(k) : null),
       setItem: (k, v) => {
-        if (k.startsWith('mapaDeHoyos:v1:gc-') && !guardado.has(k) && mapas() >= 20) {
+        if (
+          k.startsWith('mapaDeHoyos:v1:gc-') &&
+          !guardado.has(k) &&
+          mapas() >= 20
+        ) {
           throw new globalThis.DOMException('lleno', 'QuotaExceededError');
         }
         guardado.set(k, String(v));
@@ -175,7 +199,8 @@ describe('LocalStorageHoleMapCache — con el almacenamiento lleno', () => {
       removeItem: (k) => guardado.delete(k),
     });
     const cache = new LocalStorageHoleMapCache();
-    for (let n = 1; n <= 20; n += 1) cache.save({ ...MAPA, golfCourseId: `gc-${n}` });
+    for (let n = 1; n <= 20; n += 1)
+      cache.save({ ...MAPA, golfCourseId: `gc-${n}` });
 
     cache.save({ ...MAPA, golfCourseId: 'gc-21' });
 
@@ -183,4 +208,3 @@ describe('LocalStorageHoleMapCache — con el almacenamiento lleno', () => {
     expect(cache.load('gc-1')).toBeNull();
   });
 });
-

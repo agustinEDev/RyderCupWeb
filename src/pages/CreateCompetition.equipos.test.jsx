@@ -12,15 +12,25 @@ import { nombresPorDefectoDeLosEquipos } from './nombresPorDefectoDeLosEquipos';
 
 describe('nombresPorDefectoDeLosEquipos', () => {
   it('N1: en español nacen en español', () => {
-    const t = (clave) => ({ 'create.defaultTeamOne': 'Europa', 'create.defaultTeamTwo': 'Estados Unidos' })[clave];
+    const t = (clave) =>
+      ({
+        'create.defaultTeamOne': 'Europa',
+        'create.defaultTeamTwo': 'Estados Unidos',
+      })[clave];
 
-    expect(nombresPorDefectoDeLosEquipos(t)).toEqual({ uno: 'Europa', dos: 'Estados Unidos' });
+    expect(nombresPorDefectoDeLosEquipos(t)).toEqual({
+      uno: 'Europa',
+      dos: 'Estados Unidos',
+    });
   });
 
   it('N2: y si falta la traducción, quedan los de siempre', () => {
     // Sin respaldo la competición nacería llamándose «create.defaultTeamOne»
     const t = (clave, opciones) => opciones?.defaultValue ?? clave;
 
-    expect(nombresPorDefectoDeLosEquipos(t)).toEqual({ uno: 'Europe', dos: 'USA' });
+    expect(nombresPorDefectoDeLosEquipos(t)).toEqual({
+      uno: 'Europe',
+      dos: 'USA',
+    });
   });
 });

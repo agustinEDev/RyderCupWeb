@@ -12,7 +12,10 @@
 
 import { MOTIVO_DEL_CIERRE } from '../../utils/motivosDelCierre';
 import { empiezaElCierreDeEstaCarga } from '../../utils/cierreDeEstaCarga';
-import { exigeLaInterfazDelTransporte, limpiaLaCuenta } from './deviceRevocationLogout';
+import {
+  exigeLaInterfazDelTransporte,
+  limpiaLaCuenta,
+} from './deviceRevocationLogout';
 // Sentry, la cuenta de la pestaña y la redirección: de la interfaz (composition root)
 import { interfaz } from './interfazDelTransporte';
 
@@ -38,10 +41,16 @@ export const handleCsrfLogout = (errorData = {}, contexto = {}) => {
   try {
     // Que se vea en Sentry (FE #1042), con la ruta que no se pudo recuperar. Antes de
     // limpiar, que quita el usuario de Sentry; no lanza
-    interfaz().avisaASentryDelCierre({ motivo: MOTIVO_DEL_CIERRE.CSRF_SIN_RECUPERAR, ...contexto });
+    interfaz().avisaASentryDelCierre({
+      motivo: MOTIVO_DEL_CIERRE.CSRF_SIN_RECUPERAR,
+      ...contexto,
+    });
 
     if (import.meta.env.DEV) {
-      console.error('🔒 [CSRF] Validation failed:', errorData?.detail || 'No details provided');
+      console.error(
+        '🔒 [CSRF] Validation failed:',
+        errorData?.detail || 'No details provided',
+      );
       console.warn('🚪 [CSRF] Forcing logout and redirect to login');
     }
 

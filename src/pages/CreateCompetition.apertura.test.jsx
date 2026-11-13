@@ -32,8 +32,12 @@ vi.mock('react-i18next', () => ({
 }));
 
 vi.mock('../components/layout/HeaderAuth', () => ({ default: () => null }));
-vi.mock('../hooks/useAuth', () => ({ useAuth: () => ({ user: { id: 'u-1', gender: 'MALE' }, loading: false }) }));
-vi.mock('../components/golf_course/GolfCourseSearchBox', () => ({ default: () => null }));
+vi.mock('../hooks/useAuth', () => ({
+  useAuth: () => ({ user: { id: 'u-1', gender: 'MALE' }, loading: false }),
+}));
+vi.mock('../components/golf_course/GolfCourseSearchBox', () => ({
+  default: () => null,
+}));
 const mockToastError = vi.fn();
 vi.mock('../utils/toast', () => ({
   default: {
@@ -59,11 +63,17 @@ const mockCrear = vi.fn().mockResolvedValue({
 const mockActualizar = vi.fn().mockResolvedValue({ id: 'c-1' });
 const mockDetalle = vi.fn();
 vi.mock('../composition', () => ({
-  createCompetitionWithGolfCoursesUseCase: { execute: (...args) => mockCrear(...args) },
+  createCompetitionWithGolfCoursesUseCase: {
+    execute: (...args) => mockCrear(...args),
+  },
   updateCompetitionUseCase: { execute: (...args) => mockActualizar(...args) },
   getCompetitionDetailUseCase: { execute: (...args) => mockDetalle(...args) },
   getCompetitionGolfCoursesUseCase: { execute: vi.fn().mockResolvedValue([]) },
-  fetchCountriesUseCase: { execute: vi.fn().mockResolvedValue([{ code: 'ES', name_es: 'España', name_en: 'Spain' }]) },
+  fetchCountriesUseCase: {
+    execute: vi
+      .fn()
+      .mockResolvedValue([{ code: 'ES', name_es: 'España', name_en: 'Spain' }]),
+  },
   getAdjacentCountriesUseCase: { execute: vi.fn().mockResolvedValue([]) },
   createGolfCourseRequestUseCase: { execute: vi.fn() },
 }));
@@ -75,8 +85,12 @@ vi.mock('../utils/competitionFormValidation', () => ({
   validateCompetitionForm: () => null,
 }));
 
-vi.mock('../components/ui/CountryAutocomplete', () => ({ default: () => null }));
-vi.mock('../components/golf_course/GolfCourseRequestModal', () => ({ default: () => null }));
+vi.mock('../components/ui/CountryAutocomplete', () => ({
+  default: () => null,
+}));
+vi.mock('../components/golf_course/GolfCourseRequestModal', () => ({
+  default: () => null,
+}));
 vi.mock('../components/ui/FullScreenLoader', () => ({ default: () => null }));
 vi.mock('../components/ui/CountryFlag', () => ({ CountryFlag: () => null }));
 
@@ -100,7 +114,11 @@ const enDias = (dias) => {
 
 /** Entra al formulario: el tipo se elige antes (FE #639). */
 const abreElFormulario = async () => {
-  render(<MemoryRouter><CreateCompetition /></MemoryRouter>);
+  render(
+    <MemoryRouter>
+      <CreateCompetition />
+    </MemoryRouter>,
+  );
   fireEvent.click(await screen.findByTestId('tipo-RYDER_CUP'));
   // Y el modo de configuración, que es el paso siguiente (FE #695). Estilo
   // RyderCup es lo que estas pantallas daban por hecho
@@ -121,8 +139,10 @@ const rellena = () => {
   });
 };
 
-const pulsaCrear = () => fireEvent.click(screen.getByText('create.createCompetition'));
-const haceLaPublica = () => fireEvent.click(screen.getByTestId('visibilidad-PUBLIC'));
+const pulsaCrear = () =>
+  fireEvent.click(screen.getByText('create.createCompetition'));
+const haceLaPublica = () =>
+  fireEvent.click(screen.getByTestId('visibilidad-PUBLIC'));
 
 describe('CreateCompetition · cuándo se abren las inscripciones (FE #666)', () => {
   beforeEach(() => {
@@ -190,7 +210,9 @@ describe('CreateCompetition · cuándo se abren las inscripciones (FE #666)', ()
     await screen.findByTestId('modal-apertura');
 
     fireEvent.click(screen.getByTestId('apertura-PROGRAMADA'));
-    fireEvent.change(screen.getByTestId('apertura-dias'), { target: { value: '7' } });
+    fireEvent.change(screen.getByTestId('apertura-dias'), {
+      target: { value: '7' },
+    });
     fireEvent.click(screen.getByTestId('confirmar-apertura'));
 
     await waitFor(() => expect(mockCrear).toHaveBeenCalled());
@@ -208,7 +230,7 @@ describe('CreateCompetition · cuándo se abren las inscripciones (FE #666)', ()
     fireEvent.click(screen.getByTestId('volver-al-formulario'));
 
     await waitFor(() =>
-      expect(screen.queryByTestId('modal-apertura')).not.toBeInTheDocument()
+      expect(screen.queryByTestId('modal-apertura')).not.toBeInTheDocument(),
     );
     expect(mockCrear).not.toHaveBeenCalled();
   });
@@ -231,7 +253,9 @@ describe('CreateCompetition · cuándo se abren las inscripciones (FE #666)', ()
     await screen.findByTestId('modal-apertura');
 
     fireEvent.click(screen.getByTestId('apertura-PROGRAMADA'));
-    fireEvent.change(screen.getByTestId('apertura-dias'), { target: { value: '14' } });
+    fireEvent.change(screen.getByTestId('apertura-dias'), {
+      target: { value: '14' },
+    });
 
     expect(await screen.findByTestId('aviso-abre-ya')).toBeInTheDocument();
   });
@@ -253,14 +277,18 @@ describe('CreateCompetition · cuándo se abren las inscripciones (FE #666)', ()
     await screen.findByTestId('modal-apertura');
 
     fireEvent.click(screen.getByTestId('apertura-PROGRAMADA'));
-    fireEvent.change(screen.getByTestId('apertura-dias'), { target: { value: '7' } });
+    fireEvent.change(screen.getByTestId('apertura-dias'), {
+      target: { value: '7' },
+    });
 
     // Siete días antes de un torneo que empieza dentro de siete es HOY: la
     // apertura no ha pasado, así que decir que abrirá «al crearla» sería un
     // aviso de más justo en el borde. Pero tampoco la fecha: «el 21 de
     // septiembre» el propio 21 obliga a mirar el calendario (FE #678)
     expect(screen.queryByTestId('aviso-abre-ya')).not.toBeInTheDocument();
-    expect(await screen.findByTestId('fecha-de-apertura')).toHaveTextContent('apertura.abreHoy');
+    expect(await screen.findByTestId('fecha-de-apertura')).toHaveTextContent(
+      'apertura.abreHoy',
+    );
   });
 
   it('10: volver y entrar otra vez NO conserva lo elegido antes', async () => {
@@ -272,10 +300,12 @@ describe('CreateCompetition · cuándo se abren las inscripciones (FE #666)', ()
     pulsaCrear();
     await screen.findByTestId('modal-apertura');
     fireEvent.click(screen.getByTestId('apertura-PROGRAMADA'));
-    fireEvent.change(screen.getByTestId('apertura-dias'), { target: { value: '7' } });
+    fireEvent.change(screen.getByTestId('apertura-dias'), {
+      target: { value: '7' },
+    });
     fireEvent.click(screen.getByTestId('volver-al-formulario'));
     await waitFor(() =>
-      expect(screen.queryByTestId('modal-apertura')).not.toBeInTheDocument()
+      expect(screen.queryByTestId('modal-apertura')).not.toBeInTheDocument(),
     );
 
     // Segunda vez: tiene que volver a empezar en «abrir ahora», o confirmar
@@ -299,7 +329,9 @@ describe('CreateCompetition · cuándo se abren las inscripciones (FE #666)', ()
     await screen.findByTestId('modal-apertura');
 
     fireEvent.click(screen.getByTestId('apertura-PROGRAMADA'));
-    fireEvent.change(screen.getByTestId('apertura-dias'), { target: { value: '5' } });
+    fireEvent.change(screen.getByTestId('apertura-dias'), {
+      target: { value: '5' },
+    });
 
     // El torneo empieza el 1 de junio de 2027, así que 5 días antes es el 27 de
     // mayo. «5 días antes» obliga a hacer la cuenta; la cuenta es lo que dice

@@ -21,5 +21,6 @@ export const elMasCercano = (a, b) => {
 export const porCuandoSeJuega = (a, b) =>
   (a.roundDate || '').localeCompare(b.roundDate || '') ||
   // Sin franja conocida, la primera: como ordena la lista de la Ryder
-  (ORDEN_DE_FRANJA[a.sessionType] ?? 0) - (ORDEN_DE_FRANJA[b.sessionType] ?? 0) ||
+  (ORDEN_DE_FRANJA[a.sessionType] ?? 0) -
+    (ORDEN_DE_FRANJA[b.sessionType] ?? 0) ||
   (a.teeTime ?? '').localeCompare(b.teeTime ?? '');

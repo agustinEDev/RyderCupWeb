@@ -13,9 +13,12 @@ import en from '../i18n/locales/en/auth.json';
  * los textos no cambian; este test lo vigila con la configuración real de i18next (no
  * con un Trans de mentira), por si una actualización de react-i18next lo cambiara.
  */
-vi.mock('../composition', () => ({ resendVerificationEmailUseCase: { execute: vi.fn() } }));
+vi.mock('../composition', () => ({
+  resendVerificationEmailUseCase: { execute: vi.fn() },
+}));
 
-const { default: EmailVerificationBanner } = await import('./EmailVerificationBanner');
+const { default: EmailVerificationBanner } =
+  await import('./EmailVerificationBanner');
 
 const i18n = i18next.createInstance();
 beforeAll(async () => {
@@ -40,13 +43,16 @@ const pinta = (correo, lng = 'es') => {
 };
 
 describe('EmailVerificationBanner · el correo es texto (FE-08)', () => {
-  it.each(['es', 'en'])('[%s] el correo sale en negrita dentro del mensaje', (lng) => {
-    pinta('ana@example.com', lng);
+  it.each(['es', 'en'])(
+    '[%s] el correo sale en negrita dentro del mensaje',
+    (lng) => {
+      pinta('ana@example.com', lng);
 
-    const correo = screen.getByText('ana@example.com');
-    expect(correo.tagName).toBe('STRONG');
-    expect(correo.className).toContain('wrap-anywhere');
-  });
+      const correo = screen.getByText('ana@example.com');
+      expect(correo.tagName).toBe('STRONG');
+      expect(correo.className).toContain('wrap-anywhere');
+    },
+  );
 
   it.each([
     '<strong>x</strong>@example.com',
@@ -67,10 +73,13 @@ describe('EmailVerificationBanner · el correo es texto (FE-08)', () => {
     ['en', '{{email}}@e.com'],
     ['es', '{{ email }}@e.com'],
     ['es', '$t(emailVerification.title)@e.com'],
-  ])('[%s] un correo con marcadores de i18next sale literal: %s', (lng, correo) => {
-    const { container } = pinta(correo, lng);
+  ])(
+    '[%s] un correo con marcadores de i18next sale literal: %s',
+    (lng, correo) => {
+      const { container } = pinta(correo, lng);
 
-    expect(screen.getByText(correo).tagName).toBe('STRONG');
-    expect(container.querySelectorAll('strong')).toHaveLength(1);
-  });
+      expect(screen.getByText(correo).tagName).toBe('STRONG');
+      expect(container.querySelectorAll('strong')).toHaveLength(1);
+    },
+  );
 });

@@ -44,10 +44,16 @@ vi.mock('../components/layout/Header', () => ({
   default: () => <Link to="/terms">a terminos</Link>,
 }));
 vi.mock('../components/layout/Footer', () => ({ default: () => <div /> }));
-vi.mock('../components/ui/InstallInstructionsModal', () => ({ default: () => null }));
+vi.mock('../components/ui/InstallInstructionsModal', () => ({
+  default: () => null,
+}));
 
 vi.mock('react-i18next', () => ({
-  useTranslation: () => ({ t: (k) => k, i18n: { language: 'es' }, ready: textosListos }),
+  useTranslation: () => ({
+    t: (k) => k,
+    i18n: { language: 'es' },
+    ready: textosListos,
+  }),
 }));
 
 /**
@@ -80,10 +86,17 @@ const recargarLaPagina = async (rutaDeEntrada = '/') => {
       <Routes>
         <Route path="/" element={<Landing />} />
         <Route path="/dashboard" element={<div data-testid="panel" />} />
-        <Route path="/start" element={<div data-testid="acceso"><Link to="/">que es esto</Link></div>} />
+        <Route
+          path="/start"
+          element={
+            <div data-testid="acceso">
+              <Link to="/">que es esto</Link>
+            </div>
+          }
+        />
         <Route path="/terms" element={<Link to="/">al inicio</Link>} />
       </Routes>
-    </MemoryRouter>
+    </MemoryRouter>,
   );
 };
 
@@ -100,7 +113,10 @@ describe('Landing · abrir la aplicacion instalada', () => {
 
     await abrirLaAplicacion();
 
-    expect(usosDelHook.at(-1)).toMatchObject({ enabled: true, entrarSinRed: true });
+    expect(usosDelHook.at(-1)).toMatchObject({
+      enabled: true,
+      entrarSinRed: true,
+    });
   });
 
   it('no la busca en el navegador: ahi la portada tiene sentido', async () => {
@@ -151,7 +167,10 @@ describe('Landing · abrir la aplicacion instalada', () => {
     instalada = true;
 
     await abrirLaAplicacion('/');
-    expect(usosDelHook.at(-1)).toMatchObject({ enabled: true, entrarSinRed: true });
+    expect(usosDelHook.at(-1)).toMatchObject({
+      enabled: true,
+      entrarSinRed: true,
+    });
 
     // Sin tocar `sessionStorage`: la pestana es la misma
     await recargarLaPagina('/');
@@ -175,8 +194,8 @@ describe('Landing · abrir la aplicacion instalada', () => {
             <Route path="/" element={<Landing />} />
             <Route path="/start" element={<div data-testid="acceso" />} />
           </Routes>
-        </MemoryRouter>
-      )
+        </MemoryRouter>,
+      ),
     );
 
     expect(usosDelHook.at(-1)).toMatchObject({ enabled: false });
@@ -235,7 +254,11 @@ describe('Landing y la cortina del arranque', () => {
     cortina = await import('../utils/cortinaDeArranque');
     cortina.reiniciaLaCortina();
     document.body.innerHTML = '<div id="arranque"></div>';
-    window.matchMedia = () => ({ matches: true, addEventListener: () => {}, removeEventListener: () => {} });
+    window.matchMedia = () => ({
+      matches: true,
+      addEventListener: () => {},
+      removeEventListener: () => {},
+    });
     // La ruta `/` avisa: al llegar, la cortina se queda esperando
     cortina.esperaElAviso();
   });

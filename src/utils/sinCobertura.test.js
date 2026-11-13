@@ -9,10 +9,18 @@
  *   el navegador dice que no hay red   | sí, aunque el error no lo parezca
  */
 import { describe, it, expect, afterEach } from 'vitest';
-import { esFalloDeRed, esFalloDeRedDeLaApi, mensajeDeError, motivoDelError } from './sinCobertura';
+import {
+  esFalloDeRed,
+  esFalloDeRedDeLaApi,
+  mensajeDeError,
+  motivoDelError,
+} from './sinCobertura';
 
 const fingeConexion = (hay) =>
-  Object.defineProperty(globalThis.navigator, 'onLine', { value: hay, configurable: true });
+  Object.defineProperty(globalThis.navigator, 'onLine', {
+    value: hay,
+    configurable: true,
+  });
 
 describe('esFalloDeRed', () => {
   afterEach(() => fingeConexion(true));
@@ -27,7 +35,7 @@ describe('esFalloDeRed', () => {
     // Es lo que se veía en rojo dentro del formulario, con la URL de la API
     fingeConexion(true);
     const delServiceWorker = new TypeError(
-      'FetchEvent.respondWith received an error: no-response'
+      'FetchEvent.respondWith received an error: no-response',
     );
 
     expect(esFalloDeRed(delServiceWorker)).toBe(true);
@@ -38,7 +46,9 @@ describe('esFalloDeRed', () => {
     // enteraba de que había algo roto
     fingeConexion(true);
 
-    expect(esFalloDeRed(Object.assign(new Error('boom'), { status: 500 }))).toBe(false);
+    expect(
+      esFalloDeRed(Object.assign(new Error('boom'), { status: 500 })),
+    ).toBe(false);
   });
 
   it('pero en modo avión cuenta, sea cual sea el error', () => {
@@ -51,23 +61,32 @@ describe('esFalloDeRed', () => {
     // El tope vencido y el cuerpo cortado llegan marcados: lo dice la marca
     fingeConexion(true);
 
-    expect(esFalloDeRed(Object.assign(new Error('x'), { sinConexion: true }))).toBe(true);
+    expect(
+      esFalloDeRed(Object.assign(new Error('x'), { sinConexion: true })),
+    ).toBe(true);
   });
 });
 
 describe('mensajeDeError · un fallo del servidor (FE #710)', () => {
   const textos = { sinConexion: 'sin red', generico: 'algo ha fallado' };
 
-  it.each([500, 502, 503])('un %i dice que algo ha fallado, no su texto crudo', (status) => {
-    fingeConexion(true);
-    const error = Object.assign(new Error('Internal Server Error'), { status });
+  it.each([500, 502, 503])(
+    'un %i dice que algo ha fallado, no su texto crudo',
+    (status) => {
+      fingeConexion(true);
+      const error = Object.assign(new Error('Internal Server Error'), {
+        status,
+      });
 
-    expect(mensajeDeError(error, textos)).toBe('algo ha fallado');
-  });
+      expect(mensajeDeError(error, textos)).toBe('algo ha fallado');
+    },
+  );
 
   it('un 4xx sigue diciendo su motivo', () => {
     fingeConexion(true);
-    const error = Object.assign(new Error('El torneo ya ha empezado'), { status: 499 });
+    const error = Object.assign(new Error('El torneo ya ha empezado'), {
+      status: 499,
+    });
 
     expect(mensajeDeError(error, textos)).toBe('El torneo ya ha empezado');
   });
@@ -84,8 +103,10 @@ describe('esFalloDeRedDeLaApi', () => {
   it('el error que marca api.js es falta de red', () => {
     fingeConexion(true);
     const marcado = Object.assign(
-      new TypeError('common:sinConexion.mensaje', { cause: new TypeError('Failed to fetch') }),
-      { sinConexion: true }
+      new TypeError('common:sinConexion.mensaje', {
+        cause: new TypeError('Failed to fetch'),
+      }),
+      { sinConexion: true },
     );
 
     expect(esFalloDeRedDeLaApi(marcado)).toBe(true);
@@ -94,25 +115,39 @@ describe('esFalloDeRedDeLaApi', () => {
   it('un TypeError del código, sin marca, NO es falta de red', () => {
     fingeConexion(true);
 
-    expect(esFalloDeRedDeLaApi(new TypeError("Cannot read properties of null (reading 'valid')"))).toBe(false);
+    expect(
+      esFalloDeRedDeLaApi(
+        new TypeError("Cannot read properties of null (reading 'valid')"),
+      ),
+    ).toBe(false);
   });
 
   it('un TypeError con cause pero sin la marca tampoco', () => {
     fingeConexion(true);
 
-    expect(esFalloDeRedDeLaApi(new TypeError('x', { cause: new TypeError('Failed to fetch') }))).toBe(false);
+    expect(
+      esFalloDeRedDeLaApi(
+        new TypeError('x', { cause: new TypeError('Failed to fetch') }),
+      ),
+    ).toBe(false);
   });
 
   it('una marca que no es true no cuenta', () => {
     fingeConexion(true);
 
-    expect(esFalloDeRedDeLaApi(Object.assign(new TypeError('x'), { sinConexion: 'sí' }))).toBe(false);
+    expect(
+      esFalloDeRedDeLaApi(
+        Object.assign(new TypeError('x'), { sinConexion: 'sí' }),
+      ),
+    ).toBe(false);
   });
 
   it('sin red en el navegador sí, aunque el error no lo parezca', () => {
     fingeConexion(false);
 
-    expect(esFalloDeRedDeLaApi(new SyntaxError('Unexpected token <'))).toBe(true);
+    expect(esFalloDeRedDeLaApi(new SyntaxError('Unexpected token <'))).toBe(
+      true,
+    );
   });
 
   it('con null o undefined no revienta', () => {
@@ -128,7 +163,11 @@ describe('motivoDelError · la misma regla, sin textos (4 nov 2026)', () => {
   it.each([
     ['sin red', new TypeError('Failed to fetch'), 'sinConexion'],
     ['un 5xx', { status: 503, message: 'Service Unavailable' }, 'generico'],
-    ['un 4xx con motivo', { status: 409, message: 'Ya es participante' }, { delServidor: 'Ya es participante' }],
+    [
+      'un 4xx con motivo',
+      { status: 409, message: 'Ya es participante' },
+      { delServidor: 'Ya es participante' },
+    ],
     ['un 4xx sin motivo', { status: 400 }, 'generico'],
     ['sin estado', new Error('boom'), 'generico'],
   ])('%s', (_, err, esperado) => {

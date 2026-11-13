@@ -1,6 +1,18 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
-import { MemoryRouter, Route, Routes, Link, useNavigationType } from 'react-router';
+import {
+  render,
+  screen,
+  fireEvent,
+  waitFor,
+  within,
+} from '@testing-library/react';
+import {
+  MemoryRouter,
+  Route,
+  Routes,
+  Link,
+  useNavigationType,
+} from 'react-router';
 import { aparecenInvisibles } from '../pruebas/aparecenInvisibles';
 import CompetitionDetail from './CompetitionDetail';
 
@@ -17,7 +29,11 @@ vi.mock('react-i18next', () => ({
   }),
 }));
 
-const mockAuthUser = { id: 'creator-1', first_name: 'Test', last_name: 'Creator' };
+const mockAuthUser = {
+  id: 'creator-1',
+  first_name: 'Test',
+  last_name: 'Creator',
+};
 
 vi.mock('../hooks/useAuth', () => ({
   useAuth: () => ({
@@ -36,7 +52,11 @@ vi.mock('../components/layout/HeaderAuth', () => ({
   default: ({ backTo, alVolver }) => (
     <div data-testid="header-auth" data-back-to={backTo}>
       Header
-      {alVolver && <button type="button" onClick={alVolver}>flecha de la cabecera</button>}
+      {alVolver && (
+        <button type="button" onClick={alVolver}>
+          flecha de la cabecera
+        </button>
+      )}
     </div>
   ),
 }));
@@ -78,25 +98,41 @@ const mockSetCustomHandicap = vi.fn().mockResolvedValue({});
 const mockRemoveCustomHandicap = vi.fn().mockResolvedValue({});
 
 vi.mock('../composition', () => ({
-  getCompetitionDetailUseCase: { execute: (...args) => mockGetCompetitionDetail(...args) },
+  getCompetitionDetailUseCase: {
+    execute: (...args) => mockGetCompetitionDetail(...args),
+  },
   getCompetitionGolfCoursesUseCase: { execute: vi.fn().mockResolvedValue([]) },
   activateCompetitionUseCase: { execute: vi.fn() },
-  closeEnrollmentsUseCase: { execute: (...args) => mockCloseEnrollments(...args) },
+  closeEnrollmentsUseCase: {
+    execute: (...args) => mockCloseEnrollments(...args),
+  },
   startCompetitionUseCase: { execute: vi.fn() },
   completeCompetitionUseCase: { execute: vi.fn() },
   cancelCompetitionUseCase: { execute: (...args) => mockCancel(...args) },
   deleteCompetitionUseCase: { execute: (...args) => mockDelete(...args) },
   reopenEnrollmentsUseCase: { execute: vi.fn() },
   revertCompetitionStatusUseCase: { execute: vi.fn() },
-  revertCompetitionToInProgressUseCase: { execute: (...args) => mockRevertToInProgress(...args) },
-  listEnrollmentsUseCase: { execute: (...args) => mockListEnrollments(...args) },
+  revertCompetitionToInProgressUseCase: {
+    execute: (...args) => mockRevertToInProgress(...args),
+  },
+  listEnrollmentsUseCase: {
+    execute: (...args) => mockListEnrollments(...args),
+  },
   requestEnrollmentUseCase: { execute: vi.fn() },
   approveEnrollmentUseCase: { execute: vi.fn() },
-  rejectEnrollmentUseCase: { execute: (...args) => mockRejectEnrollment(...args) },
+  rejectEnrollmentUseCase: {
+    execute: (...args) => mockRejectEnrollment(...args),
+  },
   assignTeamsUseCase: { execute: (...args) => mockAssignTeams(...args) },
-  setCustomHandicapUseCase: { execute: (...args) => mockSetCustomHandicap(...args) },
-  removeCustomHandicapUseCase: { execute: (...args) => mockRemoveCustomHandicap(...args) },
-  setNamePreferenceUseCase: { execute: (...args) => mockSetNamePreference(...args) },
+  setCustomHandicapUseCase: {
+    execute: (...args) => mockSetCustomHandicap(...args),
+  },
+  removeCustomHandicapUseCase: {
+    execute: (...args) => mockRemoveCustomHandicap(...args),
+  },
+  setNamePreferenceUseCase: {
+    execute: (...args) => mockSetNamePreference(...args),
+  },
 }));
 
 vi.mock('../utils/toast', () => ({
@@ -120,7 +156,7 @@ const renderPage = () => {
       <Routes>
         <Route path="/competitions/:id" element={<CompetitionDetail />} />
       </Routes>
-    </MemoryRouter>
+    </MemoryRouter>,
   );
 };
 
@@ -128,7 +164,12 @@ describe('CompetitionDetail - sale ya pintada (3 nov 2026)', () => {
   it('A1: ninguna sección aparece invisible al entrar', async () => {
     // Solo para esta prueba: `clearAllMocks` no quita lo que se deja puesto
     mockGetCompetitionDetail.mockResolvedValueOnce({
-      id: 'comp-1', name: 'Summer Cup', status: 'ACTIVE', creatorId: 'creator-1', maxPlayers: 20, countries: [],
+      id: 'comp-1',
+      name: 'Summer Cup',
+      status: 'ACTIVE',
+      creatorId: 'creator-1',
+      maxPlayers: 20,
+      countries: [],
     });
     mockListEnrollments.mockResolvedValueOnce([]);
     const sonda = aparecenInvisibles();
@@ -178,7 +219,11 @@ describe('CompetitionDetail - edición de hándicap', () => {
     fireEvent.click(saveButton);
 
     await waitFor(() => {
-      expect(mockSetCustomHandicap).toHaveBeenCalledWith('comp-1', 'enrollment-1', 12.5);
+      expect(mockSetCustomHandicap).toHaveBeenCalledWith(
+        'comp-1',
+        'enrollment-1',
+        12.5,
+      );
     });
     expect(customToast.error).not.toHaveBeenCalled();
   });
@@ -196,7 +241,11 @@ describe('CompetitionDetail - edición de hándicap', () => {
     fireEvent.click(saveButton);
 
     await waitFor(() => {
-      expect(mockSetCustomHandicap).toHaveBeenCalledWith('comp-1', 'enrollment-1', 12.5);
+      expect(mockSetCustomHandicap).toHaveBeenCalledWith(
+        'comp-1',
+        'enrollment-1',
+        12.5,
+      );
     });
   });
 
@@ -256,7 +305,9 @@ describe('CompetitionDetail - edición de hándicap', () => {
     const editButton = await screen.findByTitle('detail.editHandicap');
     fireEvent.click(editButton);
 
-    expect(screen.getByTitle('detail.revertToRfegHandicap')).toBeInTheDocument();
+    expect(
+      screen.getByTitle('detail.revertToRfegHandicap'),
+    ).toBeInTheDocument();
   });
 
   it('no muestra el botón de revertir a RFEG para jugadores no españoles', async () => {
@@ -278,7 +329,9 @@ describe('CompetitionDetail - edición de hándicap', () => {
     const editButton = await screen.findByTitle('detail.editHandicap');
     fireEvent.click(editButton);
 
-    expect(screen.queryByTitle('detail.revertToRfegHandicap')).not.toBeInTheDocument();
+    expect(
+      screen.queryByTitle('detail.revertToRfegHandicap'),
+    ).not.toBeInTheDocument();
   });
 
   it('al revertir a RFEG llama al use case y recarga los enrollments', async () => {
@@ -304,7 +357,10 @@ describe('CompetitionDetail - edición de hándicap', () => {
     fireEvent.click(revertButton);
 
     await waitFor(() => {
-      expect(mockRemoveCustomHandicap).toHaveBeenCalledWith('comp-1', 'enrollment-1');
+      expect(mockRemoveCustomHandicap).toHaveBeenCalledWith(
+        'comp-1',
+        'enrollment-1',
+      );
     });
     expect(customToast.error).not.toHaveBeenCalled();
   });
@@ -335,9 +391,12 @@ describe('CompetitionDetail · confirmar con el modal de la app (FE #730)', () =
   const pedirReabrir = async () => {
     await screen.findByText('Summer Cup');
     for (const boton of screen.queryAllByTestId('menu-acciones')) {
-      if (boton.getAttribute('aria-expanded') === 'false') fireEvent.click(boton);
+      if (boton.getAttribute('aria-expanded') === 'false')
+        fireEvent.click(boton);
     }
-    fireEvent.click(await screen.findByText('detail.actions.revert-to-in-progress'));
+    fireEvent.click(
+      await screen.findByText('detail.actions.revert-to-in-progress'),
+    );
   };
 
   it('W1: sale el modal de la app y no el diálogo nativo', async () => {
@@ -346,7 +405,9 @@ describe('CompetitionDetail · confirmar con el modal de la app (FE #730)', () =
     await pedirReabrir();
 
     expect(
-      await screen.findByText('detail.confirmDialogs.revert-to-in-progress.title')
+      await screen.findByText(
+        'detail.confirmDialogs.revert-to-in-progress.title',
+      ),
     ).toBeInTheDocument();
     expect(nativo).not.toHaveBeenCalled();
     nativo.mockRestore();
@@ -356,24 +417,31 @@ describe('CompetitionDetail · confirmar con el modal de la app (FE #730)', () =
     renderPage();
     await pedirReabrir();
     fireEvent.click(
-      await screen.findByRole('button', { name: 'detail.confirmDialogs.revert-to-in-progress.keep' })
+      await screen.findByRole('button', {
+        name: 'detail.confirmDialogs.revert-to-in-progress.keep',
+      }),
     );
 
     await waitFor(() =>
       expect(
-        screen.queryByText('detail.confirmDialogs.revert-to-in-progress.title')
-      ).not.toBeInTheDocument()
+        screen.queryByText('detail.confirmDialogs.revert-to-in-progress.title'),
+      ).not.toBeInTheDocument(),
     );
     expect(mockRevertToInProgress).not.toHaveBeenCalled();
   });
 
   it('W3: «Sí» lo hace', async () => {
-    mockRevertToInProgress.mockResolvedValueOnce({ status: 'IN_PROGRESS', updatedAt: '2026-09-26T08:00:00Z' });
+    mockRevertToInProgress.mockResolvedValueOnce({
+      status: 'IN_PROGRESS',
+      updatedAt: '2026-09-26T08:00:00Z',
+    });
     renderPage();
     await pedirReabrir();
     fireEvent.click(await screen.findByTestId('confirm-modal-confirm'));
 
-    await waitFor(() => expect(mockRevertToInProgress).toHaveBeenCalledWith('comp-1'));
+    await waitFor(() =>
+      expect(mockRevertToInProgress).toHaveBeenCalledWith('comp-1'),
+    );
   });
 
   // FE #742 · cada acción con sus palabras. «¿Cancelar la competición?» con los
@@ -384,10 +452,20 @@ describe('CompetitionDetail · confirmar con el modal de la app (FE #730)', () =
     await pedirReabrir();
 
     const dialogo = await screen.findByRole('dialog');
-    expect(within(dialogo).getByText('detail.confirmDialogs.revert-to-in-progress.title')).toBeInTheDocument();
-    expect(within(dialogo).getByText('detail.confirmDialogs.revert-to-in-progress.body')).toBeInTheDocument();
     expect(
-      within(dialogo).getByRole('button', { name: 'detail.confirmDialogs.revert-to-in-progress.confirm' })
+      within(dialogo).getByText(
+        'detail.confirmDialogs.revert-to-in-progress.title',
+      ),
+    ).toBeInTheDocument();
+    expect(
+      within(dialogo).getByText(
+        'detail.confirmDialogs.revert-to-in-progress.body',
+      ),
+    ).toBeInTheDocument();
+    expect(
+      within(dialogo).getByRole('button', {
+        name: 'detail.confirmDialogs.revert-to-in-progress.confirm',
+      }),
     ).toBeInTheDocument();
     expect(within(dialogo).queryByText('confirm')).not.toBeInTheDocument();
     expect(within(dialogo).queryByText('cancel')).not.toBeInTheDocument();
@@ -406,7 +484,13 @@ describe('CompetitionDetail · rechazar una solicitud se confirma en el modal (F
       countries: [],
     });
     mockListEnrollments.mockResolvedValue([
-      { id: 'enr-9', userId: 'u-9', status: 'REQUESTED', userName: 'Nuevo Nadal', userHandicap: 12 },
+      {
+        id: 'enr-9',
+        userId: 'u-9',
+        status: 'REQUESTED',
+        userName: 'Nuevo Nadal',
+        userHandicap: 12,
+      },
     ]);
     mockRejectEnrollment.mockResolvedValue({});
   });
@@ -417,15 +501,21 @@ describe('CompetitionDetail · rechazar una solicitud se confirma en el modal (F
 
     // FE #742 · dice a quién se rechaza, con sus propios botones
     expect(
-      await screen.findByText('detail.confirmDialogs.reject-enrollment.title_Nuevo Nadal')
+      await screen.findByText(
+        'detail.confirmDialogs.reject-enrollment.title_Nuevo Nadal',
+      ),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole('button', { name: 'detail.confirmDialogs.reject-enrollment.keep' })
+      screen.getByRole('button', {
+        name: 'detail.confirmDialogs.reject-enrollment.keep',
+      }),
     ).toBeInTheDocument();
     expect(mockRejectEnrollment).not.toHaveBeenCalled();
     fireEvent.click(screen.getByTestId('confirm-modal-confirm'));
 
-    await waitFor(() => expect(mockRejectEnrollment).toHaveBeenCalledWith('comp-1', 'enr-9'));
+    await waitFor(() =>
+      expect(mockRejectEnrollment).toHaveBeenCalledWith('comp-1', 'enr-9'),
+    );
   });
 });
 
@@ -450,7 +540,9 @@ describe('CompetitionDetail - reabrir torneo completado', () => {
     await screen.findByTestId('menu-acciones');
     abrirMenuDeAcciones();
     abrirMenuDeAcciones();
-    expect(screen.getByText('detail.actions.revert-to-in-progress')).toBeInTheDocument();
+    expect(
+      screen.getByText('detail.actions.revert-to-in-progress'),
+    ).toBeInTheDocument();
   });
 
   it('no muestra el botón de reabrir torneo si el estado no es COMPLETED', async () => {
@@ -467,7 +559,9 @@ describe('CompetitionDetail - reabrir torneo completado', () => {
 
     await waitFor(() => expect(mockListEnrollments).toHaveBeenCalled());
     abrirMenuDeAcciones();
-    expect(screen.queryByText('detail.actions.revert-to-in-progress')).not.toBeInTheDocument();
+    expect(
+      screen.queryByText('detail.actions.revert-to-in-progress'),
+    ).not.toBeInTheDocument();
   });
 
   it('al reabrir el torneo llama al use case y actualiza el estado a IN_PROGRESS', async () => {
@@ -495,7 +589,9 @@ describe('CompetitionDetail - reabrir torneo completado', () => {
     await waitFor(() => {
       expect(mockRevertToInProgress).toHaveBeenCalledWith('comp-1');
     });
-    expect(customToast.success).toHaveBeenCalledWith('detail.success.revertedToInProgress');
+    expect(customToast.success).toHaveBeenCalledWith(
+      'detail.success.revertedToInProgress',
+    );
     abrirMenuDeAcciones();
     expect(screen.getByText('detail.actions.complete')).toBeInTheDocument();
   });
@@ -551,17 +647,21 @@ describe('CompetitionDetail - alias o nombre real', () => {
 
     expect(interruptor).toHaveAttribute('aria-checked', 'false');
     expect(
-      screen.getByText('detail.namePreference.helpUsingRealName')
+      screen.getByText('detail.namePreference.helpUsingRealName'),
     ).toBeInTheDocument();
   });
 
   it('sale encendido si el jugador pidió su alias para esta competición', async () => {
-    mockListEnrollments.mockResolvedValue([miInscripcion({ useRealName: false })]);
+    mockListEnrollments.mockResolvedValue([
+      miInscripcion({ useRealName: false }),
+    ]);
 
     const interruptor = await encuentraElInterruptor();
 
     expect(interruptor).toHaveAttribute('aria-checked', 'true');
-    expect(screen.getByText('detail.namePreference.helpUsingAlias')).toBeInTheDocument();
+    expect(
+      screen.getByText('detail.namePreference.helpUsingAlias'),
+    ).toBeInTheDocument();
   });
 
   it.each(['REJECTED', 'CANCELLED', 'WITHDRAWN'])(
@@ -573,7 +673,7 @@ describe('CompetitionDetail - alias o nombre real', () => {
 
       await waitFor(() => expect(mockListEnrollments).toHaveBeenCalled());
       expect(screen.queryByRole('switch')).not.toBeInTheDocument();
-    }
+    },
   );
 
   it('no lo ofrece a quien no tiene alias: las dos opciones pintarían lo mismo', async () => {
@@ -608,7 +708,11 @@ describe('CompetitionDetail - alias o nombre real', () => {
 
   it('no lo ofrece sobre la inscripción de otro jugador', async () => {
     mockListEnrollments.mockResolvedValue([
-      miInscripcion({ id: 'enrollment-ajena', userId: 'otro-jugador', userName: 'Meis' }),
+      miInscripcion({
+        id: 'enrollment-ajena',
+        userId: 'otro-jugador',
+        userName: 'Meis',
+      }),
     ]);
 
     renderPage();
@@ -627,10 +731,16 @@ describe('CompetitionDetail - alias o nombre real', () => {
     fireEvent.click(interruptor);
 
     await waitFor(() => {
-      expect(mockSetNamePreference).toHaveBeenCalledWith('enrollment-mia', false);
+      expect(mockSetNamePreference).toHaveBeenCalledWith(
+        'enrollment-mia',
+        false,
+      );
     });
     await waitFor(() => {
-      expect(screen.getByRole('switch')).toHaveAttribute('aria-checked', 'true');
+      expect(screen.getByRole('switch')).toHaveAttribute(
+        'aria-checked',
+        'true',
+      );
     });
     expect(screen.getByText('Chuchi')).toBeInTheDocument();
     expect(customToast.error).not.toHaveBeenCalled();
@@ -643,7 +753,9 @@ describe('CompetitionDetail - alias o nombre real', () => {
     fireEvent.click(interruptor);
 
     await waitFor(() =>
-      expect(customToast.error).toHaveBeenCalledWith('detail.namePreference.failed')
+      expect(customToast.error).toHaveBeenCalledWith(
+        'detail.namePreference.failed',
+      ),
     );
     expect(screen.getByRole('switch')).toHaveAttribute('aria-checked', 'false');
   });
@@ -653,12 +765,17 @@ describe('CompetitionDetail - alias o nombre real', () => {
     // fallo mandaría al jugador a repetir el cambio y dejarlo como estaba
     mockSetNamePreference.mockResolvedValue({ useRealName: false });
     const interruptor = await encuentraElInterruptor();
-    mockListEnrollments.mockRejectedValue(new Error('500 Internal Server Error'));
+    mockListEnrollments.mockRejectedValue(
+      new Error('500 Internal Server Error'),
+    );
 
     fireEvent.click(interruptor);
 
     await waitFor(() => {
-      expect(screen.getByRole('switch')).toHaveAttribute('aria-checked', 'true');
+      expect(screen.getByRole('switch')).toHaveAttribute(
+        'aria-checked',
+        'true',
+      );
     });
     expect(customToast.error).not.toHaveBeenCalled();
     expect(screen.getByRole('switch')).not.toBeDisabled();
@@ -666,7 +783,11 @@ describe('CompetitionDetail - alias o nombre real', () => {
 
   it('se deshabilita mientras guarda, para que no salgan dos peticiones', async () => {
     let resuelve;
-    mockSetNamePreference.mockReturnValue(new Promise((r) => { resuelve = r; }));
+    mockSetNamePreference.mockReturnValue(
+      new Promise((r) => {
+        resuelve = r;
+      }),
+    );
 
     const interruptor = await encuentraElInterruptor();
     fireEvent.click(interruptor);
@@ -708,7 +829,9 @@ describe('CompetitionDetail - invitar desde el borrador (FE #660)', () => {
     await screen.findByTestId('menu-acciones');
     abrirMenuDeAcciones();
     abrirMenuDeAcciones();
-    expect(screen.getByText('detail.actions.manageInvitations')).toBeInTheDocument();
+    expect(
+      screen.getByText('detail.actions.manageInvitations'),
+    ).toBeInTheDocument();
   });
 
   it('y se avisa de lo que hace, porque no es evidente', async () => {
@@ -716,7 +839,9 @@ describe('CompetitionDetail - invitar desde el borrador (FE #660)', () => {
 
     renderPage();
 
-    expect(await screen.findByTestId('invitar-abre-inscripciones')).toBeInTheDocument();
+    expect(
+      await screen.findByTestId('invitar-abre-inscripciones'),
+    ).toBeInTheDocument();
   });
 
   it('en una competición cancelada no se invita', async () => {
@@ -726,7 +851,9 @@ describe('CompetitionDetail - invitar desde el borrador (FE #660)', () => {
 
     await screen.findByText('Summer Cup');
     abrirMenuDeAcciones();
-    expect(screen.queryByText('detail.actions.manageInvitations')).not.toBeInTheDocument();
+    expect(
+      screen.queryByText('detail.actions.manageInvitations'),
+    ).not.toBeInTheDocument();
   });
 
   it('con las inscripciones abiertas todavía se edita', async () => {
@@ -788,9 +915,9 @@ describe('CompetitionDetail - de quién es el torneo (FE #664)', () => {
 
     renderPage();
 
-    expect(await screen.findByTestId('visibilidad-competicion')).toHaveTextContent(
-      'detail.visibilityPrivate'
-    );
+    expect(
+      await screen.findByTestId('visibilidad-competicion'),
+    ).toHaveTextContent('detail.visibilityPrivate');
   });
 
   it('y una pública también', async () => {
@@ -798,14 +925,19 @@ describe('CompetitionDetail - de quién es el torneo (FE #664)', () => {
 
     renderPage();
 
-    expect(await screen.findByTestId('visibilidad-competicion')).toHaveTextContent(
-      'detail.visibilityPublic'
-    );
+    expect(
+      await screen.findByTestId('visibilidad-competicion'),
+    ).toHaveTextContent('detail.visibilityPublic');
   });
 });
 
 describe('CompetitionDetail - cuándo abre una programada (FE #678)', () => {
-  const programada = ({ status = 'DRAFT', dias = 5, creatorId = 'creator-1', isCreator = true } = {}) => {
+  const programada = ({
+    status = 'DRAFT',
+    dias = 5,
+    creatorId = 'creator-1',
+    isCreator = true,
+  } = {}) => {
     mockGetCompetitionDetail.mockResolvedValue({
       id: 'comp-1',
       name: 'Summer Cup',
@@ -875,14 +1007,16 @@ describe('CompetitionDetail - cuándo abre una programada (FE #678)', () => {
 
     renderPage();
 
-    expect(await screen.findByTestId('invitar-abre-inscripciones')).toHaveTextContent(
-      'detail.invitingOpensEnrollment'
-    );
+    expect(
+      await screen.findByTestId('invitar-abre-inscripciones'),
+    ).toHaveTextContent('detail.invitingOpensEnrollment');
   });
 });
 
 // Cómo se llegó a Torneos: POP es volver atrás de verdad (FE #647, fase 3)
-const EnCompeticiones = () => <div data-testid="en-competiciones">{useNavigationType()}</div>;
+const EnCompeticiones = () => (
+  <div data-testid="en-competiciones">{useNavigationType()}</div>
+);
 
 describe('CompetitionDetail - la vuelta lleva a donde se vino (FE #682)', () => {
   const desde = (state, { conTorneosDetras = false } = {}) => {
@@ -904,11 +1038,17 @@ describe('CompetitionDetail - la vuelta lleva a donde se vino (FE #682)', () => 
       >
         <Routes>
           <Route path="/competitions/:id" element={<CompetitionDetail />} />
-          <Route path="/player/invitations" element={<div data-testid="en-invitaciones" />} />
+          <Route
+            path="/player/invitations"
+            element={<div data-testid="en-invitaciones" />}
+          />
           <Route path="/competitions" element={<EnCompeticiones />} />
-          <Route path="/browse-competitions" element={<div data-testid="en-explorar" />} />
+          <Route
+            path="/browse-competitions"
+            element={<div data-testid="en-explorar" />}
+          />
         </Routes>
-      </MemoryRouter>
+      </MemoryRouter>,
     );
   };
 
@@ -929,7 +1069,10 @@ describe('CompetitionDetail - la vuelta lleva a donde se vino (FE #682)', () => 
     desde({ from: 'invitations' });
 
     await screen.findByText('Summer Cup');
-    expect(screen.getByTestId('header-auth')).toHaveAttribute('data-back-to', '/player/invitations');
+    expect(screen.getByTestId('header-auth')).toHaveAttribute(
+      'data-back-to',
+      '/player/invitations',
+    );
   });
 
   it('V4: desde explorar, a explorar (ya lo hacía, pero no lo vigilaba nadie)', async () => {
@@ -950,7 +1093,9 @@ describe('CompetitionDetail - la vuelta lleva a donde se vino (FE #682)', () => 
 
     fireEvent.click(await screen.findByText('detail.backToCompetitions'));
 
-    expect(await screen.findByTestId('en-competiciones')).toHaveTextContent('POP');
+    expect(await screen.findByTestId('en-competiciones')).toHaveTextContent(
+      'POP',
+    );
   });
 
   it('V5b: y la flecha de la cabecera móvil, también', async () => {
@@ -958,7 +1103,9 @@ describe('CompetitionDetail - la vuelta lleva a donde se vino (FE #682)', () => 
 
     fireEvent.click(await screen.findByText('flecha de la cabecera'));
 
-    expect(await screen.findByTestId('en-competiciones')).toHaveTextContent('POP');
+    expect(await screen.findByTestId('en-competiciones')).toHaveTextContent(
+      'POP',
+    );
   });
 
   it('V6: desde Torneos pero sin nada detrás, a Torneos como siempre', async () => {
@@ -966,7 +1113,9 @@ describe('CompetitionDetail - la vuelta lleva a donde se vino (FE #682)', () => 
 
     fireEvent.click(await screen.findByText('detail.backToCompetitions'));
 
-    expect(await screen.findByTestId('en-competiciones')).toHaveTextContent('PUSH');
+    expect(await screen.findByTestId('en-competiciones')).toHaveTextContent(
+      'PUSH',
+    );
     expect(screen.queryByText('flecha de la cabecera')).not.toBeInTheDocument();
   });
 
@@ -1010,7 +1159,7 @@ describe('CompetitionDetail - borrar con confirmación (FE #667)', () => {
         hasCustomHandicap: false,
         customHandicap: null,
         team: null,
-      }))
+      })),
     );
   // Eliminar vive en el menú «···», al final y separado (FE #705)
   const botonEliminar = async () => {
@@ -1067,7 +1216,9 @@ describe('CompetitionDetail - borrar con confirmación (FE #667)', () => {
     renderPage();
     fireEvent.click(await botonEliminar());
 
-    expect(await screen.findByText('detail.deleteModal.title')).toBeInTheDocument();
+    expect(
+      await screen.findByText('detail.deleteModal.title'),
+    ).toBeInTheDocument();
     expect(mockDelete).not.toHaveBeenCalled();
   });
 
@@ -1076,9 +1227,15 @@ describe('CompetitionDetail - borrar con confirmación (FE #667)', () => {
 
     renderPage();
     fireEvent.click(await botonEliminar());
-    fireEvent.click(await screen.findByRole('button', { name: 'detail.deleteModal.keep' }));
+    fireEvent.click(
+      await screen.findByRole('button', { name: 'detail.deleteModal.keep' }),
+    );
 
-    await waitFor(() => expect(screen.queryByText('detail.deleteModal.title')).not.toBeInTheDocument());
+    await waitFor(() =>
+      expect(
+        screen.queryByText('detail.deleteModal.title'),
+      ).not.toBeInTheDocument(),
+    );
     expect(mockDelete).not.toHaveBeenCalled();
   });
 
@@ -1089,7 +1246,9 @@ describe('CompetitionDetail - borrar con confirmación (FE #667)', () => {
     renderPage();
     fireEvent.click(await botonEliminar());
 
-    expect(await screen.findByText('detail.deleteModal.nobodyElse')).toBeInTheDocument();
+    expect(
+      await screen.findByText('detail.deleteModal.nobodyElse'),
+    ).toBeInTheDocument();
   });
 
   it('B6: con más gente, dice cuántos pierden su plaza, sin contar a quien borra', async () => {
@@ -1100,13 +1259,23 @@ describe('CompetitionDetail - borrar con confirmación (FE #667)', () => {
     renderPage();
     fireEvent.click(await botonEliminar());
 
-    expect(await screen.findByText('detail.deleteModal.othersLosePlace_2')).toBeInTheDocument();
+    expect(
+      await screen.findByText('detail.deleteModal.othersLosePlace_2'),
+    ).toBeInTheDocument();
   });
 
   it.each([
     // FE #728: un admin que no está inscrito; «más» solo encaja si quien borra está dentro
-    ['B6b: quien borra no está inscrito, sin «más»', ['jugador-2', 'jugador-3'], 'detail.deleteModal.playersLosePlace_2'],
-    ['B5b: y si no hay nadie inscrito, lo dice así', [], 'detail.deleteModal.nobodyEnrolled'],
+    [
+      'B6b: quien borra no está inscrito, sin «más»',
+      ['jugador-2', 'jugador-3'],
+      'detail.deleteModal.playersLosePlace_2',
+    ],
+    [
+      'B5b: y si no hay nadie inscrito, lo dice así',
+      [],
+      'detail.deleteModal.nobodyEnrolled',
+    ],
   ])('%s', async (_caso, ids, texto) => {
     ficha();
     inscritos(...ids);
@@ -1120,11 +1289,17 @@ describe('CompetitionDetail - borrar con confirmación (FE #667)', () => {
   it('B7: confirmar borra una sola vez, aunque se pulse dos veces', async () => {
     ficha();
     let terminar;
-    mockDelete.mockReturnValue(new Promise((resolver) => { terminar = resolver; }));
+    mockDelete.mockReturnValue(
+      new Promise((resolver) => {
+        terminar = resolver;
+      }),
+    );
 
     renderPage();
     fireEvent.click(await botonEliminar());
-    const confirmar = await screen.findByRole('button', { name: 'detail.deleteModal.confirm' });
+    const confirmar = await screen.findByRole('button', {
+      name: 'detail.deleteModal.confirm',
+    });
     fireEvent.click(confirmar);
     fireEvent.click(confirmar);
     terminar();
@@ -1135,17 +1310,24 @@ describe('CompetitionDetail - borrar con confirmación (FE #667)', () => {
   it('B8: si el borrado falla, avisa con el motivo del servidor y la competición sigue', async () => {
     ficha();
     mockDelete.mockRejectedValue(
-      Object.assign(new Error('No se puede eliminar una competición que ya tiene calendario'), { status: 400 })
+      Object.assign(
+        new Error(
+          'No se puede eliminar una competición que ya tiene calendario',
+        ),
+        { status: 400 },
+      ),
     );
 
     renderPage();
     fireEvent.click(await botonEliminar());
-    fireEvent.click(await screen.findByRole('button', { name: 'detail.deleteModal.confirm' }));
+    fireEvent.click(
+      await screen.findByRole('button', { name: 'detail.deleteModal.confirm' }),
+    );
 
     await waitFor(() =>
       expect(customToast.error).toHaveBeenCalledWith(
-        'No se puede eliminar una competición que ya tiene calendario'
-      )
+        'No se puede eliminar una competición que ya tiene calendario',
+      ),
     );
     expect(screen.getByText('Summer Cup')).toBeInTheDocument();
   });
@@ -1154,7 +1336,10 @@ describe('CompetitionDetail - borrar con confirmación (FE #667)', () => {
     // Las respuestas de los cambios de estado no traen can_delete: quedarse con
     // el de antes diría «se puede» de una que ya no, o al revés (RyderCupAM#347)
     ficha({ status: 'ACTIVE', canDelete: false });
-    mockCancel.mockResolvedValue({ status: 'CANCELLED', updatedAt: '2026-09-22T10:00:00Z' });
+    mockCancel.mockResolvedValue({
+      status: 'CANCELLED',
+      updatedAt: '2026-09-22T10:00:00Z',
+    });
 
     renderPage();
     await screen.findByText('Summer Cup');
@@ -1171,7 +1356,10 @@ describe('CompetitionDetail - borrar con confirmación (FE #667)', () => {
 
   it('B10: si ese refresco falla, deja de ofrecerlo: no se ofrece lo que no se sabe', async () => {
     ficha({ status: 'ACTIVE', canDelete: true });
-    mockCancel.mockResolvedValue({ status: 'CANCELLED', updatedAt: '2026-09-22T10:00:00Z' });
+    mockCancel.mockResolvedValue({
+      status: 'CANCELLED',
+      updatedAt: '2026-09-22T10:00:00Z',
+    });
 
     renderPage();
     expect(await botonEliminar()).toBeInTheDocument();
@@ -1194,30 +1382,44 @@ describe('CompetitionDetail - borrar con confirmación (FE #667)', () => {
     renderPage();
     fireEvent.click(await botonEliminar());
 
-    expect(await screen.findByText('detail.deleteModal.unknownOthers')).toBeInTheDocument();
-    expect(screen.queryByText('detail.deleteModal.nobodyElse')).not.toBeInTheDocument();
+    expect(
+      await screen.findByText('detail.deleteModal.unknownOthers'),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByText('detail.deleteModal.nobodyElse'),
+    ).not.toBeInTheDocument();
   });
 
   it('B12: una respuesta atrasada del refresco no pisa el estado de ahora', async () => {
     // Dos cambios seguidos: la ficha pedida tras el primero llega tarde, con el
     // estado de entonces, y no puede decidir el botón del estado actual
     ficha({ status: 'ACTIVE', canDelete: false });
-    mockCancel.mockResolvedValue({ status: 'CANCELLED', updatedAt: '2026-09-22T10:00:00Z' });
+    mockCancel.mockResolvedValue({
+      status: 'CANCELLED',
+      updatedAt: '2026-09-22T10:00:00Z',
+    });
 
     renderPage();
     await screen.findByText('Summer Cup');
 
     // La ficha que llega es la de un estado que ya no es el actual
     mockGetCompetitionDetail.mockResolvedValue({
-      id: 'comp-1', name: 'Summer Cup', status: 'CLOSED', creatorId: 'creator-1',
-      maxPlayers: 20, countries: [], canDelete: true,
+      id: 'comp-1',
+      name: 'Summer Cup',
+      status: 'CLOSED',
+      creatorId: 'creator-1',
+      maxPlayers: 20,
+      countries: [],
+      canDelete: true,
     });
     abrirMenuDeAcciones();
     fireEvent.click(screen.getByText('detail.actions.cancel'));
     // Se confirma en el modal de la app (FE #730)
     fireEvent.click(await screen.findByTestId('confirm-modal-confirm'));
 
-    await waitFor(() => expect(mockGetCompetitionDetail).toHaveBeenCalledTimes(2));
+    await waitFor(() =>
+      expect(mockGetCompetitionDetail).toHaveBeenCalledTimes(2),
+    );
     await new Promise((r) => setTimeout(r, 50));
     await noOfreceEliminar();
   });
@@ -1238,7 +1440,7 @@ describe('CompetitionDetail - borrar con confirmación (FE #667)', () => {
             }
           />
         </Routes>
-      </MemoryRouter>
+      </MemoryRouter>,
     );
     await botonEliminar();
 
@@ -1247,7 +1449,9 @@ describe('CompetitionDetail - borrar con confirmación (FE #667)', () => {
     await waitFor(() => expect(mockListEnrollments).toHaveBeenCalledTimes(2));
     fireEvent.click(await botonEliminar());
 
-    expect(await screen.findByText('detail.deleteModal.nobodyElse')).toBeInTheDocument();
+    expect(
+      await screen.findByText('detail.deleteModal.nobodyElse'),
+    ).toBeInTheDocument();
   });
 });
 
@@ -1263,7 +1467,8 @@ describe('CompetitionDetail - borrar con confirmación (FE #667)', () => {
  *   S4  gemelo: correo pendiente   | también se parte
  */
 describe('CompetitionDetail · solicitudes rechazadas (FE #744)', () => {
-  const CORREO_LARGO = 'bartolome.fernandez.villaverde@correo-muy-largo.example.com';
+  const CORREO_LARGO =
+    'bartolome.fernandez.villaverde@correo-muy-largo.example.com';
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -1276,8 +1481,20 @@ describe('CompetitionDetail · solicitudes rechazadas (FE #744)', () => {
       countries: [],
     });
     mockListEnrollments.mockResolvedValue([
-      { id: 'enr-r', userId: 'u-r', status: 'REJECTED', userName: 'Óscar Noche', userEmail: CORREO_LARGO },
-      { id: 'enr-p', userId: 'u-p', status: 'REQUESTED', userName: 'Pepa Pérez', userEmail: CORREO_LARGO },
+      {
+        id: 'enr-r',
+        userId: 'u-r',
+        status: 'REJECTED',
+        userName: 'Óscar Noche',
+        userEmail: CORREO_LARGO,
+      },
+      {
+        id: 'enr-p',
+        userId: 'u-p',
+        status: 'REQUESTED',
+        userName: 'Pepa Pérez',
+        userEmail: CORREO_LARGO,
+      },
     ]);
   });
 
@@ -1285,8 +1502,12 @@ describe('CompetitionDetail · solicitudes rechazadas (FE #744)', () => {
     renderPage();
 
     const seccion = await screen.findByTestId('solicitudes-rechazadas');
-    expect(within(seccion).getByText('detail.rejectedRequests')).toBeInTheDocument();
-    expect(within(seccion).getByTestId('numero-de-la-seccion')).toHaveTextContent('1');
+    expect(
+      within(seccion).getByText('detail.rejectedRequests'),
+    ).toBeInTheDocument();
+    expect(
+      within(seccion).getByTestId('numero-de-la-seccion'),
+    ).toHaveTextContent('1');
     expect(seccion.querySelector('.text-red-600')).toBeNull();
     expect(seccion.open).toBe(false);
   });
@@ -1301,7 +1522,9 @@ describe('CompetitionDetail · solicitudes rechazadas (FE #744)', () => {
     expect(within(fila).getByText('Óscar Noche')).toBeInTheDocument();
     // jsdom no maqueta: se comprueba lo que evita el desborde. El texto puede
     // encogerse y el correo partirse por cualquier sitio
-    expect(within(fila).getByText(CORREO_LARGO).parentElement).toHaveClass('min-w-0');
+    expect(within(fila).getByText(CORREO_LARGO).parentElement).toHaveClass(
+      'min-w-0',
+    );
     expect(within(fila).getByText(CORREO_LARGO)).toHaveClass('wrap-anywhere');
     expect(within(fila).getByText('detail.rejected')).toHaveClass('flex-none');
   });
@@ -1317,8 +1540,12 @@ describe('CompetitionDetail · solicitudes rechazadas (FE #744)', () => {
     renderPage();
 
     const pendiente = await screen.findByTestId('pendiente-u-p');
-    expect(within(pendiente).getByText(CORREO_LARGO)).toHaveClass('wrap-anywhere');
-    expect(within(pendiente).getByText(CORREO_LARGO).parentElement).toHaveClass('min-w-0');
+    expect(within(pendiente).getByText(CORREO_LARGO)).toHaveClass(
+      'wrap-anywhere',
+    );
+    expect(within(pendiente).getByText(CORREO_LARGO).parentElement).toHaveClass(
+      'min-w-0',
+    );
   });
 });
 
@@ -1343,27 +1570,65 @@ describe('CompetitionDetail · títulos con su número aparte', () => {
       countries: [],
     });
     mockListEnrollments.mockResolvedValue([
-      { id: 'a1', userId: 'u-a1', status: 'APPROVED', userName: 'Ana', userHandicap: 10 },
-      { id: 'a2', userId: 'u-a2', status: 'APPROVED', userName: 'Bea', userHandicap: 12 },
-      { id: 'a3', userId: 'u-a3', status: 'APPROVED', userName: 'Carla', userHandicap: 14 },
-      { id: 'p1', userId: 'u-p1', status: 'REQUESTED', userName: 'Pepa', userHandicap: 20 },
-      { id: 'r1', userId: 'u-r1', status: 'REJECTED', userName: 'Rosa', userHandicap: 22 },
+      {
+        id: 'a1',
+        userId: 'u-a1',
+        status: 'APPROVED',
+        userName: 'Ana',
+        userHandicap: 10,
+      },
+      {
+        id: 'a2',
+        userId: 'u-a2',
+        status: 'APPROVED',
+        userName: 'Bea',
+        userHandicap: 12,
+      },
+      {
+        id: 'a3',
+        userId: 'u-a3',
+        status: 'APPROVED',
+        userName: 'Carla',
+        userHandicap: 14,
+      },
+      {
+        id: 'p1',
+        userId: 'u-p1',
+        status: 'REQUESTED',
+        userName: 'Pepa',
+        userHandicap: 20,
+      },
+      {
+        id: 'r1',
+        userId: 'u-r1',
+        status: 'REJECTED',
+        userName: 'Rosa',
+        userHandicap: 22,
+      },
     ]);
   });
 
   it('N1: pendientes, el número en su pastilla y no entre paréntesis', async () => {
     renderPage();
 
-    const titulo = (await screen.findByText('detail.pendingRequests')).closest('h3');
-    expect(within(titulo).getByTestId('numero-de-la-seccion')).toHaveTextContent('1');
+    const titulo = (await screen.findByText('detail.pendingRequests')).closest(
+      'h3',
+    );
+    expect(
+      within(titulo).getByTestId('numero-de-la-seccion'),
+    ).toHaveTextContent('1');
     expect(titulo.textContent).not.toMatch(/\(/);
   });
 
   it('N2: aprobados, igual', async () => {
     renderPage();
 
-    const titulo = (await screen.findByText('detail.approvedPlayers')).closest('h3');
-    expect(within(titulo).getByTestId('numero-de-la-seccion')).toHaveTextContent('3');
+    const titulo = (await screen.findByText('detail.approvedPlayers')).closest(
+      'h3',
+    );
+    expect(
+      within(titulo).getByTestId('numero-de-la-seccion'),
+    ).toHaveTextContent('3');
   });
 
   // Ronda 2 de pruebas (Agustín): el número, al borde derecho de la fila del
@@ -1372,7 +1637,9 @@ describe('CompetitionDetail · títulos con su número aparte', () => {
     renderPage();
 
     const texto = await screen.findByText('detail.approvedPlayers');
-    const numero = within(texto.closest('h3')).getByTestId('numero-de-la-seccion');
+    const numero = within(texto.closest('h3')).getByTestId(
+      'numero-de-la-seccion',
+    );
     expect(texto).toHaveClass('flex-1', 'min-w-0');
     expect(texto).not.toContainElement(numero);
     expect(numero).toHaveClass('flex-none');
@@ -1382,14 +1649,22 @@ describe('CompetitionDetail · títulos con su número aparte', () => {
     renderPage();
 
     const seccion = await screen.findByTestId('solicitudes-rechazadas');
-    expect(within(seccion).getByTestId('numero-de-la-seccion')).toHaveTextContent('1');
+    expect(
+      within(seccion).getByTestId('numero-de-la-seccion'),
+    ).toHaveTextContent('1');
   });
 });
 
 // Release social 2 (27 oct 2026): el jugador ve de los inscritos solo a sus
 // amigos hasta que se publica; el número es el de todos (enrolled_count)
 describe('CompetitionDetail · lo que ve un jugador de los inscritos', () => {
-  const amiga = { id: 'a1', userId: 'u-amiga', status: 'APPROVED', userName: 'Ana', userHandicap: 10 };
+  const amiga = {
+    id: 'a1',
+    userId: 'u-amiga',
+    status: 'APPROVED',
+    userName: 'Ana',
+    userHandicap: 10,
+  };
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -1418,7 +1693,9 @@ describe('CompetitionDetail · lo que ve un jugador de los inscritos', () => {
     renderPage();
 
     const titulo = await tituloDeAprobados();
-    expect(within(titulo).getByTestId('numero-de-la-seccion')).toHaveTextContent('3');
+    expect(
+      within(titulo).getByTestId('numero-de-la-seccion'),
+    ).toHaveTextContent('3');
   });
 
   it('V2: si ve menos de los que hay, se le dice que solo ve a sus amigos', async () => {
@@ -1432,84 +1709,144 @@ describe('CompetitionDetail · lo que ve un jugador de los inscritos', () => {
     mockListEnrollments.mockResolvedValue([]);
     renderPage();
 
-    expect(await screen.findByText('detail.onlyFriendsVisible')).toBeInTheDocument();
-    expect(screen.queryByText('detail.noApprovedPlayers')).not.toBeInTheDocument();
+    expect(
+      await screen.findByText('detail.onlyFriendsVisible'),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByText('detail.noApprovedPlayers'),
+    ).not.toBeInTheDocument();
   });
 
   it('V4: si los ve a todos, sin aviso, aunque el número aún no esté al día', async () => {
     mockGetCompetitionDetail.mockResolvedValue({
-      id: 'comp-1', name: 'Summer Cup', status: 'ACTIVE', creatorId: 'otra-persona',
-      maxPlayers: 4, enrolledCount: 3, enrolledVisibility: 'ALL', countries: [],
+      id: 'comp-1',
+      name: 'Summer Cup',
+      status: 'ACTIVE',
+      creatorId: 'otra-persona',
+      maxPlayers: 4,
+      enrolledCount: 3,
+      enrolledVisibility: 'ALL',
+      countries: [],
     });
     renderPage();
 
     expect(await screen.findByText('Ana')).toBeInTheDocument();
-    expect(screen.queryByText('detail.onlyFriendsVisible')).not.toBeInTheDocument();
+    expect(
+      screen.queryByText('detail.onlyFriendsVisible'),
+    ).not.toBeInTheDocument();
   });
 
   it.each([
     [4, false],
     [3, true],
-  ])('V5: con %i de 4 inscritos (y viendo a una), pedir plaza: %p', async (inscritos, sePide) => {
-    mockGetCompetitionDetail.mockResolvedValue({
-      id: 'comp-1', name: 'Summer Cup', status: 'ACTIVE', creatorId: 'otra-persona',
-      visibility: 'PUBLIC', maxPlayers: 4, enrolledCount: inscritos, countries: [],
-    });
-    mockListEnrollments.mockResolvedValue([amiga]);
-    renderPage();
+  ])(
+    'V5: con %i de 4 inscritos (y viendo a una), pedir plaza: %p',
+    async (inscritos, sePide) => {
+      mockGetCompetitionDetail.mockResolvedValue({
+        id: 'comp-1',
+        name: 'Summer Cup',
+        status: 'ACTIVE',
+        creatorId: 'otra-persona',
+        visibility: 'PUBLIC',
+        maxPlayers: 4,
+        enrolledCount: inscritos,
+        countries: [],
+      });
+      mockListEnrollments.mockResolvedValue([amiga]);
+      renderPage();
 
-    await screen.findByText('Ana');
-    expect(Boolean(screen.queryByText('detail.actions.request-to-join'))).toBe(sePide);
-  });
+      await screen.findByText('Ana');
+      expect(
+        Boolean(screen.queryByText('detail.actions.request-to-join')),
+      ).toBe(sePide);
+    },
+  );
 
   it('V6: el organizador sigue contando su lista, sin aviso', async () => {
     mockRoles.isCreator = true;
     mockGetCompetitionDetail.mockResolvedValue({
-      id: 'comp-1', name: 'Summer Cup', status: 'ACTIVE', creatorId: 'creator-1',
-      maxPlayers: 4, enrolledCount: 3, countries: [],
+      id: 'comp-1',
+      name: 'Summer Cup',
+      status: 'ACTIVE',
+      creatorId: 'creator-1',
+      maxPlayers: 4,
+      enrolledCount: 3,
+      countries: [],
     });
     renderPage();
 
     const titulo = await tituloDeAprobados();
-    expect(within(titulo).getByTestId('numero-de-la-seccion')).toHaveTextContent('1');
-    expect(screen.queryByText('detail.onlyFriendsVisible')).not.toBeInTheDocument();
+    expect(
+      within(titulo).getByTestId('numero-de-la-seccion'),
+    ).toHaveTextContent('1');
+    expect(
+      screen.queryByText('detail.onlyFriendsVisible'),
+    ).not.toBeInTheDocument();
   });
 
   it('V6b: al organizador, con su lista aún vacía, tampoco se le avisa', async () => {
     mockRoles.isCreator = true;
     mockGetCompetitionDetail.mockResolvedValue({
-      id: 'comp-1', name: 'Summer Cup', status: 'ACTIVE', creatorId: 'creator-1',
-      maxPlayers: 4, enrolledCount: 2, countries: [],
+      id: 'comp-1',
+      name: 'Summer Cup',
+      status: 'ACTIVE',
+      creatorId: 'creator-1',
+      maxPlayers: 4,
+      enrolledCount: 2,
+      countries: [],
     });
     mockListEnrollments.mockResolvedValue([]);
     renderPage();
 
-    expect(await screen.findByText('detail.noApprovedPlayers')).toBeInTheDocument();
-    expect(screen.queryByText('detail.onlyFriendsVisible')).not.toBeInTheDocument();
+    expect(
+      await screen.findByText('detail.noApprovedPlayers'),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByText('detail.onlyFriendsVisible'),
+    ).not.toBeInTheDocument();
   });
 
   it('V9: en una privada en la que no está, que solo los ven quienes participan', async () => {
     mockGetCompetitionDetail.mockResolvedValue({
-      id: 'comp-1', name: 'Summer Cup', status: 'ACTIVE', creatorId: 'otra-persona',
-      maxPlayers: 4, enrolledCount: 3, enrolledVisibility: 'NONE', countries: [],
+      id: 'comp-1',
+      name: 'Summer Cup',
+      status: 'ACTIVE',
+      creatorId: 'otra-persona',
+      maxPlayers: 4,
+      enrolledCount: 3,
+      enrolledVisibility: 'NONE',
+      countries: [],
     });
     mockListEnrollments.mockResolvedValue([]);
     renderPage();
 
-    expect(await screen.findByText('detail.onlyParticipantsSee')).toBeInTheDocument();
-    expect(screen.queryByText('detail.onlyFriendsVisible')).not.toBeInTheDocument();
-    expect(screen.queryByText('detail.noApprovedPlayers')).not.toBeInTheDocument();
+    expect(
+      await screen.findByText('detail.onlyParticipantsSee'),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByText('detail.onlyFriendsVisible'),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByText('detail.noApprovedPlayers'),
+    ).not.toBeInTheDocument();
   });
 
   it('V8: el número nunca baja de las filas que ve', async () => {
     mockGetCompetitionDetail.mockResolvedValue({
-      id: 'comp-1', name: 'Summer Cup', status: 'ACTIVE', creatorId: 'otra-persona',
-      maxPlayers: 4, enrolledCount: 0, countries: [],
+      id: 'comp-1',
+      name: 'Summer Cup',
+      status: 'ACTIVE',
+      creatorId: 'otra-persona',
+      maxPlayers: 4,
+      enrolledCount: 0,
+      countries: [],
     });
     renderPage();
 
     const titulo = await tituloDeAprobados();
-    expect(within(titulo).getByTestId('numero-de-la-seccion')).toHaveTextContent('1');
+    expect(
+      within(titulo).getByTestId('numero-de-la-seccion'),
+    ).toHaveTextContent('1');
   });
 });
 
@@ -1517,8 +1854,16 @@ it('V7: el aviso, en los dos idiomas', async () => {
   const es = (await import('../i18n/locales/es/competitions.json')).default;
   const en = (await import('../i18n/locales/en/competitions.json')).default;
 
-  expect(es.detail.onlyFriendsVisible).toBe('De momento solo ves a tus amigos inscritos.');
-  expect(en.detail.onlyFriendsVisible).toBe('For now you only see your friends who have entered.');
-  expect(es.detail.onlyParticipantsSee).toBe('Los inscritos solo los ven quienes participan.');
-  expect(en.detail.onlyParticipantsSee).toBe('Only participants can see who has entered.');
+  expect(es.detail.onlyFriendsVisible).toBe(
+    'De momento solo ves a tus amigos inscritos.',
+  );
+  expect(en.detail.onlyFriendsVisible).toBe(
+    'For now you only see your friends who have entered.',
+  );
+  expect(es.detail.onlyParticipantsSee).toBe(
+    'Los inscritos solo los ven quienes participan.',
+  );
+  expect(en.detail.onlyParticipantsSee).toBe(
+    'Only participants can see who has entered.',
+  );
 });

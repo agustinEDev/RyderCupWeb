@@ -16,7 +16,7 @@ describe('UpdateGolfCourseUseCase · limites del backend', () => {
     vi.clearAllMocks();
 
     golfCourseRepository = {
-      update: vi.fn()
+      update: vi.fn(),
     };
 
     useCase = new UpdateGolfCourseUseCase({ golfCourseRepository });
@@ -27,7 +27,7 @@ describe('UpdateGolfCourseUseCase · limites del backend', () => {
     identifier: `Barra ${index + 1}`,
     courseRating: 70.0,
     slopeRating: 120,
-    gender: 'MALE'
+    gender: 'MALE',
   });
 
   const courseWith = (teeCount) => ({
@@ -38,27 +38,36 @@ describe('UpdateGolfCourseUseCase · limites del backend', () => {
     holes: Array.from({ length: 18 }, (_, i) => ({
       holeNumber: i + 1,
       par: 4,
-      strokeIndex: i + 1
-    }))
+      strokeIndex: i + 1,
+    })),
   });
 
-  it.each([1, 2, 10, 14])('accepts %i tees, which the backend stores', async (teeCount) => {
-    // Arrange
-    const data = courseWith(teeCount);
-    golfCourseRepository.update.mockResolvedValue({ golfCourse: data, pendingUpdate: null });
+  it.each([1, 2, 10, 14])(
+    'accepts %i tees, which the backend stores',
+    async (teeCount) => {
+      // Arrange
+      const data = courseWith(teeCount);
+      golfCourseRepository.update.mockResolvedValue({
+        golfCourse: data,
+        pendingUpdate: null,
+      });
 
-    // Act
-    const result = await useCase.execute('course-1', data);
+      // Act
+      const result = await useCase.execute('course-1', data);
 
-    // Assert
-    expect(golfCourseRepository.update).toHaveBeenCalledWith('course-1', data);
-    expect(result.golfCourse.tees).toHaveLength(teeCount);
-  });
+      // Assert
+      expect(golfCourseRepository.update).toHaveBeenCalledWith(
+        'course-1',
+        data,
+      );
+      expect(result.golfCourse.tees).toHaveLength(teeCount);
+    },
+  );
 
   it('rejects 15 tees, one past what the backend stores', async () => {
     // Act & Assert
     await expect(useCase.execute('course-1', courseWith(15))).rejects.toThrow(
-      'Golf course must have between 1 and 14 tees'
+      'Golf course must have between 1 and 14 tees',
     );
     expect(golfCourseRepository.update).not.toHaveBeenCalled();
   });
@@ -71,7 +80,7 @@ describe('UpdateGolfCourseUseCase · limites del backend', () => {
 
     // Act & Assert
     await expect(useCase.execute('course-1', data)).rejects.toThrow(
-      'Hole 1 par must be one of 3, 4, 5, 6 (current: 7)'
+      'Hole 1 par must be one of 3, 4, 5, 6 (current: 7)',
     );
     expect(golfCourseRepository.update).not.toHaveBeenCalled();
   });
@@ -81,7 +90,10 @@ describe('UpdateGolfCourseUseCase · limites del backend', () => {
     const data = courseWith(2);
     data.holes[0].par = 6;
     data.holes[1].par = 3;
-    golfCourseRepository.update.mockResolvedValue({ golfCourse: data, pendingUpdate: null });
+    golfCourseRepository.update.mockResolvedValue({
+      golfCourse: data,
+      pendingUpdate: null,
+    });
 
     // Act
     const result = await useCase.execute('course-1', data);
@@ -93,7 +105,7 @@ describe('UpdateGolfCourseUseCase · limites del backend', () => {
   it('rejects a course left with no tees', async () => {
     // Act & Assert
     await expect(useCase.execute('course-1', courseWith(0))).rejects.toThrow(
-      'Golf course must have between 1 and 14 tees'
+      'Golf course must have between 1 and 14 tees',
     );
     expect(golfCourseRepository.update).not.toHaveBeenCalled();
   });

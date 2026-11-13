@@ -21,24 +21,44 @@ export const crearRecienEnviadas = () => {
   // podía traerla, así que no la quita
   let turno = 0;
   return {
-    apuntar(userId, { golfCourseId, holeNumber, barra, tee, bends, greenCenter }) {
+    apuntar(
+      userId,
+      { golfCourseId, holeNumber, barra, tee, bends, greenCenter },
+    ) {
       turno += 1;
-      apuntadas.push({ turno, userId, golfCourseId, holeNumber, barra, puntos: { tee, bends, greenCenter } });
-      if (apuntadas.length > MAX_RECIEN_ENVIADAS) apuntadas.splice(0, apuntadas.length - MAX_RECIEN_ENVIADAS);
+      apuntadas.push({
+        turno,
+        userId,
+        golfCourseId,
+        holeNumber,
+        barra,
+        puntos: { tee, bends, greenCenter },
+      });
+      if (apuntadas.length > MAX_RECIEN_ENVIADAS)
+        apuntadas.splice(0, apuntadas.length - MAX_RECIEN_ENVIADAS);
     },
     /** El turno de ahora: se mira al pedir el resumen. */
     turno: () => turno,
     /** El resumen del campo cargó: fuera las que llegaron antes de pedirlo. */
     olvidar(golfCourseId, hastaTurno) {
       for (let i = apuntadas.length - 1; i >= 0; i -= 1) {
-        if (apuntadas[i].golfCourseId === golfCourseId && apuntadas[i].turno <= hastaTurno) apuntadas.splice(i, 1);
+        if (
+          apuntadas[i].golfCourseId === golfCourseId &&
+          apuntadas[i].turno <= hastaTurno
+        )
+          apuntadas.splice(i, 1);
       }
     },
     /** @returns {Object<number, {tee, bends, greenCenter}>} las del jugador en ese campo y barra, por hoyo */
     de(userId, golfCourseId, barra) {
       return Object.fromEntries(
         apuntadas
-          .filter((a) => a.userId === userId && a.golfCourseId === golfCourseId && esLaMismaBarra(a.barra, barra))
+          .filter(
+            (a) =>
+              a.userId === userId &&
+              a.golfCourseId === golfCourseId &&
+              esLaMismaBarra(a.barra, barra),
+          )
           .map((a) => [a.holeNumber, a.puntos]),
       );
     },

@@ -14,9 +14,12 @@ import { act, render, screen } from '@testing-library/react';
  *   T21f | tras una espera corta, otra     | también espera sus 150 ms
  */
 const navegacion = vi.hoisted(() => ({ state: 'idle' }));
-vi.mock('react-router', () => ({ useNavigation: () => ({ state: navegacion.state }) }));
+vi.mock('react-router', () => ({
+  useNavigation: () => ({ state: navegacion.state }),
+}));
 
-const { default: BarraDeCarga, ESPERA_ANTES_DE_LA_BARRA_MS } = await import('./BarraDeCarga');
+const { default: BarraDeCarga, ESPERA_ANTES_DE_LA_BARRA_MS } =
+  await import('./BarraDeCarga');
 
 describe('BarraDeCarga', () => {
   afterEach(() => {
@@ -47,7 +50,10 @@ describe('BarraDeCarga', () => {
 
     act(() => vi.advanceTimersByTime(ESPERA_ANTES_DE_LA_BARRA_MS));
 
-    expect(screen.getByTestId('barra-de-carga')).toHaveAttribute('role', 'progressbar');
+    expect(screen.getByTestId('barra-de-carga')).toHaveAttribute(
+      'role',
+      'progressbar',
+    );
   });
 
   it('T21d: al terminar, se va', () => {

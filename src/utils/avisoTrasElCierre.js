@@ -22,7 +22,10 @@ const AVISO_DEL_CIERRE = Object.freeze({
   revocation: { clave: 'errors.deviceRevoked', icono: '🔒' },
   expiration: { clave: 'errors.sessionExpired', icono: '⏱️' },
 });
-const AVISO_DE_SESION_TERMINADA = Object.freeze({ clave: 'errors.sessionEnded', icono: 'ℹ️' });
+const AVISO_DE_SESION_TERMINADA = Object.freeze({
+  clave: 'errors.sessionEnded',
+  icono: 'ℹ️',
+});
 
 /**
  * Guarda el motivo para /login.
@@ -31,7 +34,10 @@ const AVISO_DE_SESION_TERMINADA = Object.freeze({ clave: 'errors.sessionEnded', 
  */
 export const guardaElAvisoDelCierre = (motivo) => {
   try {
-    globalThis.sessionStorage.setItem(CLAVE, JSON.stringify({ motivo: String(motivo), hora: Date.now() }));
+    globalThis.sessionStorage.setItem(
+      CLAVE,
+      JSON.stringify({ motivo: String(motivo), hora: Date.now() }),
+    );
     return true;
   } catch {
     return false;
@@ -54,7 +60,13 @@ export const tomaElAvisoDelCierre = () => {
     const { motivo, hora } = JSON.parse(guardado) ?? {};
     const ahora = Date.now();
     // Ni caducado ni con una hora futura (un reloj cambiado, un valor manipulado)
-    if (typeof motivo !== 'string' || typeof hora !== 'number' || ahora < hora || ahora - hora > CADUCA_MS) return null;
+    if (
+      typeof motivo !== 'string' ||
+      typeof hora !== 'number' ||
+      ahora < hora ||
+      ahora - hora > CADUCA_MS
+    )
+      return null;
     return motivo;
   } catch {
     return null;
@@ -77,7 +89,13 @@ export const olvidaElAvisoDelCierre = () => {
  */
 export const muestraElAvisoDelCierre = (motivo, traduce) => {
   // `hasOwn`: un motivo como «toString» no puede sacar nada del prototipo
-  const { clave, icono } = Object.hasOwn(AVISO_DEL_CIERRE, motivo) ? AVISO_DEL_CIERRE[motivo] : AVISO_DE_SESION_TERMINADA;
+  const { clave, icono } = Object.hasOwn(AVISO_DEL_CIERRE, motivo)
+    ? AVISO_DEL_CIERRE[motivo]
+    : AVISO_DE_SESION_TERMINADA;
   // `delCierre`: el único aviso de error que sale con el cierre en marcha (A1)
-  customToast.error(traduce(clave, { ns: 'auth' }), { duration: 8000, icon: icono, delCierre: true });
+  customToast.error(traduce(clave, { ns: 'auth' }), {
+    duration: 8000,
+    icon: icono,
+    delCierre: true,
+  });
 };

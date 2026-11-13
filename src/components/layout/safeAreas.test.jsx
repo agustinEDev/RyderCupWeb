@@ -13,7 +13,8 @@ import { resolve } from 'node:path';
  * are still there. The visual result has to be checked on a real device.
  */
 
-const read = (relativePath) => readFileSync(resolve(process.cwd(), relativePath), 'utf8');
+const read = (relativePath) =>
+  readFileSync(resolve(process.cwd(), relativePath), 'utf8');
 
 describe('safe areas', () => {
   it('opts the viewport into the display cutout', () => {
@@ -37,9 +38,18 @@ describe('safe areas', () => {
     ['src/components/layout/Footer.jsx', 'env(safe-area-inset-bottom)'],
     ['src/components/ui/InstallBanner.jsx', 'env(safe-area-inset-bottom)'],
     ['src/components/layout/BottomNav.jsx', 'env(safe-area-inset-bottom)'],
-    ['src/components/scoring/ScoreInputPanel.jsx', 'env(safe-area-inset-bottom)'],
-    ['src/components/quick_match/HandicapInputPanel.jsx', 'env(safe-area-inset-bottom)'],
-    ['src/components/golf_course/GolfCourseForm.jsx', 'env(safe-area-inset-bottom)'],
+    [
+      'src/components/scoring/ScoreInputPanel.jsx',
+      'env(safe-area-inset-bottom)',
+    ],
+    [
+      'src/components/quick_match/HandicapInputPanel.jsx',
+      'env(safe-area-inset-bottom)',
+    ],
+    [
+      'src/components/golf_course/GolfCourseForm.jsx',
+      'env(safe-area-inset-bottom)',
+    ],
   ])('%s keeps its inset padding', (path, inset) => {
     expect(read(path)).toContain(inset);
   });

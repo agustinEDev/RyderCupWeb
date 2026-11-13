@@ -30,7 +30,9 @@ const RONDA = {
   matches: [],
   matchGenerationBlock: {
     reason: 'PLAYERS_WITHOUT_TEE',
-    players: [{ userId: 'u1', name: 'Bea Dos', missing: 'GENDER', teeColor: null }],
+    players: [
+      { userId: 'u1', name: 'Bea Dos', missing: 'GENDER', teeColor: null },
+    ],
   },
 };
 
@@ -47,14 +49,16 @@ const pintar = (ronda) =>
       playerHandicapMap={{}}
       teamNames={{}}
       t={(clave) => clave}
-    />
+    />,
   );
 
 describe('RoundCard · por qué no tiene partidos', () => {
   it('R1: enseña el motivo sin desplegarla, y «Generar» sigue para reintentar', () => {
     pintar(RONDA);
 
-    expect(screen.getByTestId('bloqueo-de-partidos')).toHaveTextContent('Bea Dos');
+    expect(screen.getByTestId('bloqueo-de-partidos')).toHaveTextContent(
+      'Bea Dos',
+    );
     expect(screen.getByTitle('matches.generate')).toBeInTheDocument();
   });
 
@@ -76,13 +80,14 @@ describe('RoundCard · por qué no tiene partidos', () => {
         playerHandicapMap={{}}
         teamNames={{}}
         t={(clave) => clave}
-      />
+      />,
     );
 
-    expect(screen.getByTestId('bloqueo-de-partidos')).not.toHaveTextContent('generationBlock.retry');
+    expect(screen.getByTestId('bloqueo-de-partidos')).not.toHaveTextContent(
+      'generationBlock.retry',
+    );
   });
 });
-
 
 /**
  * En modo Ryder, «Generar» solo como reintento (FE #711). Antes de abrirse los
@@ -110,7 +115,7 @@ describe('RoundCard · «Generar» en modo Ryder (FE #711)', () => {
         playerHandicapMap={{}}
         teamNames={{}}
         t={(clave) => clave}
-      />
+      />,
     );
 
   it('G1: en Ryder, con los sobres sin abrir, no se ofrece', () => {
@@ -134,7 +139,10 @@ describe('RoundCard · «Generar» en modo Ryder (FE #711)', () => {
   it('G5: con la competición aún reabierta no se ofrece: el servidor lo rechazaría', () => {
     render(
       <RoundCard
-        round={{ ...RONDA, matchGenerationBlock: { reason: 'ENROLLMENT_OPEN', players: [] } }}
+        round={{
+          ...RONDA,
+          matchGenerationBlock: { reason: 'ENROLLMENT_OPEN', players: [] },
+        }}
         canEdit
         soloReintento
         competicionCerrada={false}
@@ -146,15 +154,13 @@ describe('RoundCard · «Generar» en modo Ryder (FE #711)', () => {
         playerHandicapMap={{}}
         teamNames={{}}
         t={(clave) => clave}
-      />
+      />,
     );
 
     expect(screen.queryByTitle('matches.generate')).not.toBeInTheDocument();
     expect(screen.queryByText('generationBlock.retry')).not.toBeInTheDocument();
   });
 });
-
-
 
 /**
  * Quién descansa en la sesión (#710). Con equipos desiguales el que sobra se
@@ -184,7 +190,7 @@ describe('RoundCard · quién descansa', () => {
         playerHandicapMap={{}}
         teamNames={{}}
         t={(clave, opts) => `${clave}${opts ? JSON.stringify(opts) : ''}`}
-      />
+      />,
     );
 
   it('D2: el que descansa se nombra sin desplegar la sesión', () => {
@@ -199,7 +205,9 @@ describe('RoundCard · quién descansa', () => {
   it('D3: con dos, los dos y en plural', () => {
     pintarCon(conPartidos(['u3', 'u4']));
 
-    expect(screen.getByTestId('descansan')).toHaveTextContent('Óscar Noche, Luna Noche');
+    expect(screen.getByTestId('descansan')).toHaveTextContent(
+      'Óscar Noche, Luna Noche',
+    );
     expect(screen.getByTestId('descansan')).toHaveTextContent('"count":2');
   });
 
@@ -219,7 +227,9 @@ describe('RoundCard · quién descansa', () => {
 
   it('D5: las dos traducciones existen, en singular y plural', async () => {
     for (const idioma of ['es', 'en']) {
-      const textos = (await import(`../../i18n/locales/${idioma}/schedule.json`)).default;
+      const textos = (
+        await import(`../../i18n/locales/${idioma}/schedule.json`)
+      ).default;
       expect(textos.rounds.resting_one, idioma).toContain('{{names}}');
       expect(textos.rounds.resting_other, idioma).toContain('{{names}}');
     }

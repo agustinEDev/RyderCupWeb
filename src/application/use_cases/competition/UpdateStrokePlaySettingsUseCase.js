@@ -26,16 +26,26 @@ class UpdateStrokePlaySettingsUseCase {
     if (!competitionId || typeof competitionId !== 'string') {
       throw new Error('Competition ID is required and must be a string');
     }
-    const campos = Object.keys(cambios ?? {}).filter((campo) => cambios[campo] !== undefined);
+    const campos = Object.keys(cambios ?? {}).filter(
+      (campo) => cambios[campo] !== undefined,
+    );
     if (campos.length === 0) {
       throw new Error('There is nothing to change');
     }
     // Los dos modos de hacer categorías no van juntos: sería un 400
-    if (cambios.categoryLimits !== undefined && cambios.categoryCount !== undefined) {
-      throw new Error('Send either category limits or a category count, not both');
+    if (
+      cambios.categoryLimits !== undefined &&
+      cambios.categoryCount !== undefined
+    ) {
+      throw new Error(
+        'Send either category limits or a category count, not both',
+      );
     }
 
-    const ajustes = await this.competitionRepository.updateStrokePlay(competitionId, cambios);
+    const ajustes = await this.competitionRepository.updateStrokePlay(
+      competitionId,
+      cambios,
+    );
     return CompetitionAssembler.toStrokePlayDTO(ajustes);
   }
 }

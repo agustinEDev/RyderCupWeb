@@ -24,7 +24,12 @@ const tramoDeMinutos = (minutos) => {
 };
 
 /** @param {{tipo: string, pestana: string, mapa: boolean, minutos: number}} vuelta */
-export const avisaDeLaVueltaALaAnotacion = ({ tipo, pestana, mapa, minutos }) => {
+export const avisaDeLaVueltaALaAnotacion = ({
+  tipo,
+  pestana,
+  mapa,
+  minutos,
+}) => {
   if (avisado) return;
   avisado = true;
   try {

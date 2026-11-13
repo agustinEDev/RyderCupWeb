@@ -40,7 +40,9 @@ describe('StrokePlaySetup (FE #824)', () => {
     });
 
     it('S4: la general es acumulada o mejor tarjeta', () => {
-      expect(new StrokePlaySetup({ overallStanding: MEJOR_TARJETA }).overallStanding).toBe('BEST_CARD');
+      expect(
+        new StrokePlaySetup({ overallStanding: MEJOR_TARJETA }).overallStanding,
+      ).toBe('BEST_CARD');
       expect(() => new StrokePlaySetup({ overallStanding: 'OTRA' })).toThrow();
     });
   });
@@ -105,11 +107,15 @@ describe('StrokePlaySetup (FE #824)', () => {
     });
 
     it('V2: sin límites, una sola sin rango', () => {
-      expect(categoriasDeLosLimites([])).toEqual([{ numero: 1, desde: null, hasta: null, masDe: null }]);
+      expect(categoriasDeLosLimites([])).toEqual([
+        { numero: 1, desde: null, hasta: null, masDe: null },
+      ]);
     });
 
     it('V3: el «desde» es un decimal limpio, también con plus', () => {
-      expect(categoriasDeLosLimites([-0.5, 9.9, 20]).map((c) => c.desde)).toEqual([null, -0.4, 10, null]);
+      expect(
+        categoriasDeLosLimites([-0.5, 9.9, 20]).map((c) => c.desde),
+      ).toEqual([null, -0.4, 10, null]);
     });
   });
 });

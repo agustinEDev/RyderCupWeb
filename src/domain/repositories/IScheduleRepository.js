@@ -170,11 +170,15 @@ class IScheduleRepository {
   }
 
   async getMyAssignedPlaces() {
-    throw new Error('IScheduleRepository.getMyAssignedPlaces must be implemented');
+    throw new Error(
+      'IScheduleRepository.getMyAssignedPlaces must be implemented',
+    );
   }
 
   async acknowledgeAssignedPlace(roundId) {
-    throw new Error('IScheduleRepository.acknowledgeAssignedPlace must be implemented');
+    throw new Error(
+      'IScheduleRepository.acknowledgeAssignedPlace must be implemented',
+    );
   }
 
   // Partidas de las franjas de stroke play (FE #824, PR 6)
@@ -187,11 +191,15 @@ class IScheduleRepository {
   }
 
   async generateTeeGroups(roundId, order) {
-    throw new Error('IScheduleRepository.generateTeeGroups must be implemented');
+    throw new Error(
+      'IScheduleRepository.generateTeeGroups must be implemented',
+    );
   }
 
   async moveTeeGroupPlayer(roundId, movimiento) {
-    throw new Error('IScheduleRepository.moveTeeGroupPlayer must be implemented');
+    throw new Error(
+      'IScheduleRepository.moveTeeGroupPlayer must be implemented',
+    );
   }
 
   async reorderTeeGroups(roundId, groupIds) {
@@ -199,7 +207,9 @@ class IScheduleRepository {
   }
 
   async setTeeGroupMarkers(groupId, markers) {
-    throw new Error('IScheduleRepository.setTeeGroupMarkers must be implemented');
+    throw new Error(
+      'IScheduleRepository.setTeeGroupMarkers must be implemented',
+    );
   }
 
   async deleteTeeGroups(roundId) {

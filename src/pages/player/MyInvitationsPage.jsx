@@ -36,7 +36,10 @@ const MyInvitationsPage = () => {
   // La lista, con el filtro elegido. Si se cambia de filtro con una en vuelo,
   // la del filtro anterior ni se pinta ni avisa de su fallo
   const { cargando, recargar } = useCargaCancelableEffect(
-    () => listMyInvitationsUseCase.execute(statusFilter ? { status: statusFilter } : {}),
+    () =>
+      listMyInvitationsUseCase.execute(
+        statusFilter ? { status: statusFilter } : {},
+      ),
     [userId, statusFilter],
     {
       activa: Boolean(userId),
@@ -51,25 +54,28 @@ const MyInvitationsPage = () => {
           mensajeDeError(error, {
             sinConexion: t('common:sinConexion.mensaje'),
             generico: t('errors.failedToLoad'),
-          })
+          }),
         );
       },
-    }
+    },
   );
   // Sin usuario no se pide nada y se sigue esperando, como antes
   const isLoading = cargando || !user;
 
   // Aceptar o rechazar, con las mismas reglas que el cuadro de la ficha. Al
   // aceptar, a su ficha, con el origen para que «Volver» traiga de nuevo aquí
-  const { seEstaRespondiendo, aceptar, rechazar, preguntaDelGenero } = useResponderInvitacion({
-    alAceptar: (result) => {
-      if (result?.competitionId) {
-        navigate(`/competitions/${result.competitionId}`, { state: { from: 'invitations' } });
-      }
-    },
-    // Releer con la espera, como antes; se espera a que llegue
-    alCambiar: () => recargar(),
-  });
+  const { seEstaRespondiendo, aceptar, rechazar, preguntaDelGenero } =
+    useResponderInvitacion({
+      alAceptar: (result) => {
+        if (result?.competitionId) {
+          navigate(`/competitions/${result.competitionId}`, {
+            state: { from: 'invitations' },
+          });
+        }
+      },
+      // Releer con la espera, como antes; se espera a que llegue
+      alCambiar: () => recargar(),
+    });
 
   const isPageLoading = isLoadingUser || isLoading;
 
@@ -93,7 +99,9 @@ const MyInvitationsPage = () => {
         {/* Header */}
         <div className="mb-6">
           <div className="flex items-center gap-3">
-            <h1 className="hidden md:block text-2xl font-bold text-gray-900">{t('player.title')}</h1>
+            <h1 className="hidden md:block text-2xl font-bold text-gray-900">
+              {t('player.title')}
+            </h1>
             {/* Si la carga falló, el recuento es de la lista de antes */}
             {pendingCount > 0 && !cargaFallida && (
               <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
@@ -105,7 +113,9 @@ const MyInvitationsPage = () => {
         </div>
 
         {/* Sin el correo verificado no llegan las enviadas a su dirección (fase 3) */}
-        {user?.email_verified === false && <AvisoVerificaParaVerInvitaciones correo={user.email} />}
+        {user?.email_verified === false && (
+          <AvisoVerificaParaVerInvitaciones correo={user.email} />
+        )}
 
         {/* Filter */}
         <div className="mb-4">
@@ -129,16 +139,27 @@ const MyInvitationsPage = () => {
         {cargaFallida ? (
           // En vez de la lista, que sería la de antes del fallo o una vacía que
           // afirma algo que no se ha podido comprobar
-          <div data-testid="invitaciones-sin-cargar" className="text-center py-12">
+          <div
+            data-testid="invitaciones-sin-cargar"
+            className="text-center py-12"
+          >
             {cargaFallida === 'red' ? (
-              <WifiOff className="h-12 w-12 text-gray-400 mx-auto mb-3" aria-hidden="true" />
+              <WifiOff
+                className="h-12 w-12 text-gray-400 mx-auto mb-3"
+                aria-hidden="true"
+              />
             ) : (
-              <AlertCircle className="h-12 w-12 text-gray-400 mx-auto mb-3" aria-hidden="true" />
+              <AlertCircle
+                className="h-12 w-12 text-gray-400 mx-auto mb-3"
+                aria-hidden="true"
+              />
             )}
             <p className="text-gray-700 mb-4">
               {/* «mensaje» y no «aviso»: el aviso dice que lo que se ve puede no
                   estar al día, y aquí no queda nada a la vista */}
-              {cargaFallida === 'red' ? t('common:sinConexion.mensaje') : t('errors.failedToLoad')}
+              {cargaFallida === 'red'
+                ? t('common:sinConexion.mensaje')
+                : t('errors.failedToLoad')}
             </p>
             <button
               type="button"

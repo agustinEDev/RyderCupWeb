@@ -1,7 +1,12 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { renderHook } from '@testing-library/react';
 import { useCortinaDeArranque } from './useCortinaDeArranque';
-import { reiniciaLaCortina, laPantallaEstaLista, elArranqueHaTerminado, PLAZO_MAXIMO_MS } from '../utils/cortinaDeArranque';
+import {
+  reiniciaLaCortina,
+  laPantallaEstaLista,
+  elArranqueHaTerminado,
+  PLAZO_MAXIMO_MS,
+} from '../utils/cortinaDeArranque';
 
 /**
  * Quien decide si la cortina del arranque se queda o se levanta (FE #485).
@@ -13,7 +18,11 @@ describe('la cortina, segun la ruta', () => {
   beforeEach(() => {
     vi.useFakeTimers();
     // La cortina solo se sostiene en la aplicacion instalada
-    window.matchMedia = () => ({ matches: true, addEventListener: () => {}, removeEventListener: () => {} });
+    window.matchMedia = () => ({
+      matches: true,
+      addEventListener: () => {},
+      removeEventListener: () => {},
+    });
     reiniciaLaCortina();
     document.body.innerHTML = '<div id="arranque"></div>';
   });
@@ -30,7 +39,7 @@ describe('la cortina, segun la ruta', () => {
       renderHook(() => useCortinaDeArranque(ruta));
 
       expect(sigueLaCortina()).toBe(true);
-    }
+    },
   );
 
   it.each([['/login'], ['/competitions/7/leaderboard']])(
@@ -39,7 +48,7 @@ describe('la cortina, segun la ruta', () => {
       renderHook(() => useCortinaDeArranque(ruta));
 
       expect(sigueLaCortina()).toBe(false);
-    }
+    },
   );
 
   it('la portada tambien sostiene: es por donde arrancan los iconos viejos', () => {

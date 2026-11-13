@@ -47,8 +47,11 @@ describe('ApiInvitationRepository', () => {
         '/api/v1/competitions/comp-1/invitations',
         {
           method: 'POST',
-          body: JSON.stringify({ invitee_user_id: 'user-2', personal_message: 'Join us!' }),
-        }
+          body: JSON.stringify({
+            invitee_user_id: 'user-2',
+            personal_message: 'Join us!',
+          }),
+        },
       );
       expect(result.id).toBe('inv-1');
       expect(result.status.toString()).toBe('PENDING');
@@ -59,14 +62,18 @@ describe('ApiInvitationRepository', () => {
     it('should POST to /competitions/{id}/invitations/by-email', async () => {
       apiRequest.mockResolvedValue(mockInvitationApi);
 
-      const result = await repo.sendInvitationByEmail('comp-1', 'player@example.com', null);
+      const result = await repo.sendInvitationByEmail(
+        'comp-1',
+        'player@example.com',
+        null,
+      );
 
       expect(apiRequest).toHaveBeenCalledWith(
         '/api/v1/competitions/comp-1/invitations/by-email',
         {
           method: 'POST',
           body: JSON.stringify({ invitee_email: 'player@example.com' }),
-        }
+        },
       );
       expect(result.inviteeEmail).toBe('player@example.com');
     });
@@ -81,7 +88,9 @@ describe('ApiInvitationRepository', () => {
 
       const result = await repo.getMyInvitations({ status: 'PENDING' });
 
-      expect(apiRequest).toHaveBeenCalledWith('/api/v1/invitations/me?status=PENDING');
+      expect(apiRequest).toHaveBeenCalledWith(
+        '/api/v1/invitations/me?status=PENDING',
+      );
       expect(result.invitations).toHaveLength(1);
       expect(result.totalCount).toBe(1);
     });
@@ -98,7 +107,11 @@ describe('ApiInvitationRepository', () => {
 
   describe('respondToInvitation', () => {
     it('should POST to /invitations/{id}/respond with action', async () => {
-      const acceptedApi = { ...mockInvitationApi, status: 'ACCEPTED', responded_at: '2026-02-19T10:00:00Z' };
+      const acceptedApi = {
+        ...mockInvitationApi,
+        status: 'ACCEPTED',
+        responded_at: '2026-02-19T10:00:00Z',
+      };
       apiRequest.mockResolvedValue(acceptedApi);
 
       const result = await repo.respondToInvitation('inv-1', 'ACCEPT');
@@ -108,7 +121,7 @@ describe('ApiInvitationRepository', () => {
         {
           method: 'POST',
           body: JSON.stringify({ action: 'ACCEPT' }),
-        }
+        },
       );
       expect(result.status.toString()).toBe('ACCEPTED');
     });
@@ -121,10 +134,12 @@ describe('ApiInvitationRepository', () => {
         total_count: 1,
       });
 
-      const result = await repo.getCompetitionInvitations('comp-1', { status: 'PENDING' });
+      const result = await repo.getCompetitionInvitations('comp-1', {
+        status: 'PENDING',
+      });
 
       expect(apiRequest).toHaveBeenCalledWith(
-        '/api/v1/competitions/comp-1/invitations?status=PENDING'
+        '/api/v1/competitions/comp-1/invitations?status=PENDING',
       );
       expect(result.invitations).toHaveLength(1);
       expect(result.totalCount).toBe(1);
@@ -139,7 +154,10 @@ describe('ApiInvitationRepository · retirar (FE #724)', () => {
 
     const resultado = await repo.cancelInvitation('inv-1');
 
-    expect(apiRequest).toHaveBeenCalledWith('/api/v1/invitations/inv-1/cancel', { method: 'POST' });
+    expect(apiRequest).toHaveBeenCalledWith(
+      '/api/v1/invitations/inv-1/cancel',
+      { method: 'POST' },
+    );
     expect(resultado).toBeUndefined();
   });
 });

@@ -25,11 +25,19 @@ const fechas = `${new Date('2026-11-01').toLocaleDateString('en')} – ${new Dat
 
 const pintar = (props = {}) => {
   const manos = { onEdit: vi.fn(), onTransition: vi.fn() };
-  render(<AdminCompetitionsTable competitions={[BORRADOR, CERRADA]} {...manos} {...props} />);
+  render(
+    <AdminCompetitionsTable
+      competitions={[BORRADOR, CERRADA]}
+      {...manos}
+      {...props}
+    />,
+  );
   return manos;
 };
-const lista = () => screen.getByRole('list', { name: 'competitions.listLabel' });
-const fila = (nombre) => within(lista()).getByRole('button', { name: new RegExp(nombre) });
+const lista = () =>
+  screen.getByRole('list', { name: 'competitions.listLabel' });
+const fila = (nombre) =>
+  within(lista()).getByRole('button', { name: new RegExp(nombre) });
 const ficha = () => screen.getByRole('dialog');
 
 describe('AdminCompetitionsTable · móvil', () => {
@@ -37,8 +45,12 @@ describe('AdminCompetitionsTable · móvil', () => {
     pintar();
 
     expect(lista()).toHaveClass('md:hidden');
-    expect(screen.getByRole('table').parentElement).toHaveClass('hidden', 'md:block');
-    for (const boton of within(lista()).getAllByRole('button')) expect(boton).toHaveClass('w-full');
+    expect(screen.getByRole('table').parentElement).toHaveClass(
+      'hidden',
+      'md:block',
+    );
+    for (const boton of within(lista()).getAllByRole('button'))
+      expect(boton).toHaveClass('w-full');
   });
 
   it('F5: la fila dice el nombre y, debajo, el estado y las fechas', () => {
@@ -63,13 +75,18 @@ describe('AdminCompetitionsTable · móvil', () => {
     pintar();
     fireEvent.click(fila('Copa c'));
 
-    expect(within(ficha()).getByText('competitions.columnCreator').nextElementSibling).toHaveTextContent('competitions.unknownCreator');
+    expect(
+      within(ficha()).getByText('competitions.columnCreator')
+        .nextElementSibling,
+    ).toHaveTextContent('competitions.unknownCreator');
   });
 
   it('F6: en borrador se edita, y editar cierra la ficha', () => {
     const manos = pintar();
     fireEvent.click(fila('Copa b'));
-    fireEvent.click(within(ficha()).getByRole('button', { name: 'competitions.editTooltip' }));
+    fireEvent.click(
+      within(ficha()).getByRole('button', { name: 'competitions.editTooltip' }),
+    );
 
     expect(manos.onEdit).toHaveBeenCalledWith(BORRADOR);
     expect(screen.queryByRole('dialog')).toBeNull();
@@ -79,34 +96,56 @@ describe('AdminCompetitionsTable · móvil', () => {
     pintar();
     fireEvent.click(fila('Copa c'));
 
-    expect(within(ficha()).queryByRole('button', { name: /competitions.edit/ })).toBeNull();
-    const acciones = within(ficha()).getAllByRole('button').map((b) => b.textContent).filter((x) => x.startsWith('competitions.actions'));
-    expect(acciones).toEqual(['competitions.actions.start', 'competitions.actions.reopenEnrollments', 'competitions.actions.cancel']);
+    expect(
+      within(ficha()).queryByRole('button', { name: /competitions.edit/ }),
+    ).toBeNull();
+    const acciones = within(ficha())
+      .getAllByRole('button')
+      .map((b) => b.textContent)
+      .filter((x) => x.startsWith('competitions.actions'));
+    expect(acciones).toEqual([
+      'competitions.actions.start',
+      'competitions.actions.reopenEnrollments',
+      'competitions.actions.cancel',
+    ]);
   });
 
-  it.each(['start', 'cancel'])('F6: «%s» cierra la ficha y lo hace como siempre (cancelar pide confirmación fuera)', (accion) => {
-    const manos = pintar();
-    fireEvent.click(fila('Copa c'));
-    fireEvent.click(within(ficha()).getByRole('button', { name: `competitions.actions.${accion}` }));
+  it.each(['start', 'cancel'])(
+    'F6: «%s» cierra la ficha y lo hace como siempre (cancelar pide confirmación fuera)',
+    (accion) => {
+      const manos = pintar();
+      fireEvent.click(fila('Copa c'));
+      fireEvent.click(
+        within(ficha()).getByRole('button', {
+          name: `competitions.actions.${accion}`,
+        }),
+      );
 
-    expect(manos.onTransition).toHaveBeenCalledWith(CERRADA, accion);
-    expect(screen.queryByRole('dialog')).toBeNull();
-  });
+      expect(manos.onTransition).toHaveBeenCalledWith(CERRADA, accion);
+      expect(screen.queryByRole('dialog')).toBeNull();
+    },
+  );
 
   it('F6: mientras cambia un estado, las acciones de la ficha no se pueden tocar', () => {
     pintar({ disabled: true });
     fireEvent.click(fila('Copa b'));
 
-    for (const boton of within(ficha()).getAllByRole('button').filter((b) => b.textContent.startsWith('competitions.'))) {
+    for (const boton of within(ficha())
+      .getAllByRole('button')
+      .filter((b) => b.textContent.startsWith('competitions.'))) {
       expect(boton).toBeDisabled();
     }
-    expect(within(ficha()).getByRole('button', { name: 'common:close' })).toBeEnabled();
+    expect(
+      within(ficha()).getByRole('button', { name: 'common:close' }),
+    ).toBeEnabled();
   });
 
   it('F6: de la ficha se sale con «Cerrar», sin hacer nada', () => {
     const manos = pintar();
     fireEvent.click(fila('Copa b'));
-    fireEvent.click(within(ficha()).getByRole('button', { name: 'common:close' }));
+    fireEvent.click(
+      within(ficha()).getByRole('button', { name: 'common:close' }),
+    );
 
     expect(screen.queryByRole('dialog')).toBeNull();
     expect(manos.onEdit).not.toHaveBeenCalled();
@@ -115,31 +154,62 @@ describe('AdminCompetitionsTable · móvil', () => {
 
   it('/code-review: con la ficha abierta, si la competición cambia de estado, la ficha da las acciones de ahora', () => {
     const manos = { onEdit: vi.fn(), onTransition: vi.fn() };
-    const { rerender } = render(<AdminCompetitionsTable competitions={[BORRADOR, CERRADA]} {...manos} />);
+    const { rerender } = render(
+      <AdminCompetitionsTable competitions={[BORRADOR, CERRADA]} {...manos} />,
+    );
     fireEvent.click(fila('Copa b'));
-    rerender(<AdminCompetitionsTable competitions={[{ ...BORRADOR, status: 'ACTIVE' }, CERRADA]} {...manos} />);
+    rerender(
+      <AdminCompetitionsTable
+        competitions={[{ ...BORRADOR, status: 'ACTIVE' }, CERRADA]}
+        {...manos}
+      />,
+    );
 
-    expect(within(ficha()).queryByRole('button', { name: 'competitions.editTooltip' })).toBeNull();
-    expect(within(ficha()).getByRole('button', { name: 'competitions.actions.closeEnrollments' })).toBeInTheDocument();
+    expect(
+      within(ficha()).queryByRole('button', {
+        name: 'competitions.editTooltip',
+      }),
+    ).toBeNull();
+    expect(
+      within(ficha()).getByRole('button', {
+        name: 'competitions.actions.closeEnrollments',
+      }),
+    ).toBeInTheDocument();
     rerender(<AdminCompetitionsTable competitions={[CERRADA]} {...manos} />);
     expect(screen.queryByRole('dialog')).toBeNull();
   });
 
-  it.each(['ACTIVE', 'CLOSED', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED'])('G1: fuera de borrador (%s), la ficha dice por qué no se edita, antes de los botones', (estado) => {
-    render(<AdminCompetitionsTable competitions={[competicion('x', estado)]} onEdit={vi.fn()} onTransition={vi.fn()} />);
-    fireEvent.click(fila('Copa x'));
+  it.each(['ACTIVE', 'CLOSED', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED'])(
+    'G1: fuera de borrador (%s), la ficha dice por qué no se edita, antes de los botones',
+    (estado) => {
+      render(
+        <AdminCompetitionsTable
+          competitions={[competicion('x', estado)]}
+          onEdit={vi.fn()}
+          onTransition={vi.fn()}
+        />,
+      );
+      fireEvent.click(fila('Copa x'));
 
-    const aviso = within(ficha()).getByText('competitions.editDisabledTooltip');
-    expect(aviso).toHaveClass('text-gray-500');
-    const primerBoton = within(ficha()).getAllByRole('button')[0];
-    expect(aviso.compareDocumentPosition(primerBoton) & globalThis.Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-  });
+      const aviso = within(ficha()).getByText(
+        'competitions.editDisabledTooltip',
+      );
+      expect(aviso).toHaveClass('text-gray-500');
+      const primerBoton = within(ficha()).getAllByRole('button')[0];
+      expect(
+        aviso.compareDocumentPosition(primerBoton) &
+          globalThis.Node.DOCUMENT_POSITION_FOLLOWING,
+      ).toBeTruthy();
+    },
+  );
 
   it('G2: en borrador no hay aviso, porque se puede editar', () => {
     pintar();
     fireEvent.click(fila('Copa b'));
 
-    expect(within(ficha()).queryByText('competitions.editDisabledTooltip')).toBeNull();
+    expect(
+      within(ficha()).queryByText('competitions.editDisabledTooltip'),
+    ).toBeNull();
     expect(ficha()).not.toHaveAttribute('aria-describedby');
   });
 
@@ -147,6 +217,8 @@ describe('AdminCompetitionsTable · móvil', () => {
     pintar();
     fireEvent.click(fila('Copa c'));
 
-    expect(ficha()).toHaveAccessibleDescription('competitions.editDisabledTooltip');
+    expect(ficha()).toHaveAccessibleDescription(
+      'competitions.editDisabledTooltip',
+    );
   });
 });

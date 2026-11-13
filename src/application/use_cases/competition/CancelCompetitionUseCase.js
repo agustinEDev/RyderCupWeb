@@ -25,7 +25,7 @@ class CancelCompetitionUseCase {
       id: data.id,
       name: data.name,
       status: data.status,
-      updatedAt: data.updated_at
+      updatedAt: data.updated_at,
     };
   }
 }

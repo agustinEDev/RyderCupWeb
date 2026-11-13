@@ -36,7 +36,10 @@ const AgendaDeLaFicha = ({
         competitionId={competition.id}
         startDate={competition.startDate}
         endDate={competition.endDate}
-        canManage={canManage && ['DRAFT', 'ACTIVE', 'CLOSED'].includes(competition.status)}
+        canManage={
+          canManage &&
+          ['DRAFT', 'ACTIVE', 'CLOSED'].includes(competition.status)
+        }
         maxPlayers={competition.maxPlayers}
         // «Caben N de los M», solo mientras se apunta gente (FE #856)
         inscripcionesAbiertas={['DRAFT', 'ACTIVE'].includes(competition.status)}
@@ -46,7 +49,12 @@ const AgendaDeLaFicha = ({
         userId={user.id}
         genero={genero}
         // Con una sola categoría no se nombra (QA del 11 oct 2026)
-        miCategoria={salieron > 1 ? (approvedEnrollments.find((e) => e.userId === user.id)?.category ?? null) : null}
+        miCategoria={
+          salieron > 1
+            ? (approvedEnrollments.find((e) => e.userId === user.id)
+                ?.category ?? null)
+            : null
+        }
         estoyInscrito={estoyInscrito}
         puedeElegir={competition.status === 'ACTIVE'}
         maxMatchdaysPerPlayer={competition.strokePlay?.maxMatchdaysPerPlayer}
@@ -54,7 +62,10 @@ const AgendaDeLaFicha = ({
           userId: e.userId,
           userName: e.userName || t('detail.unknownUser'),
         }))}
-        puedeColocar={canManage && ['DRAFT', 'ACTIVE', 'CLOSED'].includes(competition.status)}
+        puedeColocar={
+          canManage &&
+          ['DRAFT', 'ACTIVE', 'CLOSED'].includes(competition.status)
+        }
         puedeQuitar={canManage && competition.status === 'ACTIVE'}
         version={`${competition.updatedAt}|${competition.status}|${versionFranjas}`}
         versionCampos={versionCampos}
@@ -63,7 +74,9 @@ const AgendaDeLaFicha = ({
         // Las partidas (PR 6): existen desde el cierre y se siguen
         // viendo acabada, sin nada que cambiar (Agustín, 11 oct);
         // hasta cuándo se cambian lo dice el servidor (la 1.ª salida)
-        verPartidas={['CLOSED', 'IN_PROGRESS', 'COMPLETED'].includes(competition.status)}
+        verPartidas={['CLOSED', 'IN_PROGRESS', 'COMPLETED'].includes(
+          competition.status,
+        )}
         // Verlas y cambiarlas son dos cosas: acabada, quien organiza
         // y no juega las sigue viendo (CodeRabbit)
         puedeVerPartidas={canManage}
@@ -71,19 +84,21 @@ const AgendaDeLaFicha = ({
         onCambioEnPartidas={() => setVersionDePartidas((n) => n + 1)}
       />
     ) : (
-    <AgendaDeLaCompeticion
-      competitionId={competition.id}
-      startDate={competition.startDate}
-      endDate={competition.endDate}
-      // Terminada o cancelada ya no se toca: el servidor lo rechaza
-      canManage={canManage && !['COMPLETED', 'CANCELLED'].includes(competition.status)}
-      jugadores={canManage ? approvedEnrollments.length : approvedCount}
-      // Cuando cambia la competición —estado, equipos— se vuelve a leer
-      version={`${competition.updatedAt}|${competition.status}|${competition.teamsAssigned}`}
-      // Y sus campos, cuando cambian en la sección de abajo (FE #715)
-      versionCampos={versionCampos}
-      onAgenda={recibirAgenda}
-    />
+      <AgendaDeLaCompeticion
+        competitionId={competition.id}
+        startDate={competition.startDate}
+        endDate={competition.endDate}
+        // Terminada o cancelada ya no se toca: el servidor lo rechaza
+        canManage={
+          canManage && !['COMPLETED', 'CANCELLED'].includes(competition.status)
+        }
+        jugadores={canManage ? approvedEnrollments.length : approvedCount}
+        // Cuando cambia la competición —estado, equipos— se vuelve a leer
+        version={`${competition.updatedAt}|${competition.status}|${competition.teamsAssigned}`}
+        // Y sus campos, cuando cambian en la sección de abajo (FE #715)
+        versionCampos={versionCampos}
+        onAgenda={recibirAgenda}
+      />
     )}
   </div>
 );

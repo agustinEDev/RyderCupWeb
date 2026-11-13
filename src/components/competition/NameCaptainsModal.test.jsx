@@ -4,7 +4,9 @@ import { render, screen, fireEvent, within } from '@testing-library/react';
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
     t: (clave, params) =>
-      params && typeof params === 'object' ? `${clave} ${Object.values(params).join(' ')}` : clave,
+      params && typeof params === 'object'
+        ? `${clave} ${Object.values(params).join(' ')}`
+        : clave,
   }),
 }));
 
@@ -38,7 +40,7 @@ const pintar = (props = {}) =>
       onClose={vi.fn()}
       isLoading={false}
       {...props}
-    />
+    />,
   );
 
 const opciones = (id) =>
@@ -52,7 +54,11 @@ describe('NameCaptainsModal · lo que se elige (FE #710)', () => {
     pintar();
 
     for (const id of ['capitan-a', 'capitan-b']) {
-      expect(opciones(id)).toEqual(['Carla Cruz (8.4)', 'Dani Díaz (20.0)', 'Eva Esteve']);
+      expect(opciones(id)).toEqual([
+        'Carla Cruz (8.4)',
+        'Dani Díaz (20.0)',
+        'Eva Esteve',
+      ]);
     }
   });
 
@@ -66,8 +72,12 @@ describe('NameCaptainsModal · lo que se elige (FE #710)', () => {
   it('C4: dos distintos: sin aviso, y se puede', () => {
     pintar();
 
-    fireEvent.change(document.getElementById('capitan-a'), { target: { value: 'carla' } });
-    fireEvent.change(document.getElementById('capitan-b'), { target: { value: 'dani' } });
+    fireEvent.change(document.getElementById('capitan-a'), {
+      target: { value: 'carla' },
+    });
+    fireEvent.change(document.getElementById('capitan-b'), {
+      target: { value: 'dani' },
+    });
 
     expect(screen.queryByTestId('capitanes-el-mismo')).not.toBeInTheDocument();
     expect(screen.getByText('detail.captains.confirm')).toBeEnabled();
@@ -75,8 +85,18 @@ describe('NameCaptainsModal · lo que se elige (FE #710)', () => {
 
   // Un hándicap plus se guarda negativo y se lee con «+»; el orden sigue el número (FE #797)
   it('H1: el plus con «+», y el primero por ser el más bajo', () => {
-    pintar({ players: [...JUGADORES, { userId: 'ana', name: 'Ana Alba', handicap: -2 }] });
+    pintar({
+      players: [
+        ...JUGADORES,
+        { userId: 'ana', name: 'Ana Alba', handicap: -2 },
+      ],
+    });
 
-    expect(opciones('capitan-a')).toEqual(['Ana Alba (+2.0)', 'Carla Cruz (8.4)', 'Dani Díaz (20.0)', 'Eva Esteve']);
+    expect(opciones('capitan-a')).toEqual([
+      'Ana Alba (+2.0)',
+      'Carla Cruz (8.4)',
+      'Dani Díaz (20.0)',
+      'Eva Esteve',
+    ]);
   });
 });

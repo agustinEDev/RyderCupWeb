@@ -20,10 +20,16 @@ afterEach(() => vi.unstubAllEnvs());
 
 describe('urlDeImagenDeLaApi (FE-11)', () => {
   it('I1 una ruta de la API, en la base de la API', async () => {
-    const { urlDeImagenDeLaApi } = await conBase('https://api.rydercupfriends.com');
+    const { urlDeImagenDeLaApi } = await conBase(
+      'https://api.rydercupfriends.com',
+    );
 
-    expect(urlDeImagenDeLaApi('/api/v1/avatar-presets/3/image')).toBe('https://api.rydercupfriends.com/api/v1/avatar-presets/3/image');
-    expect(urlDeImagenDeLaApi('/api/v1/users/me/avatar/uploads/abc/image?v=2')).toBe(
+    expect(urlDeImagenDeLaApi('/api/v1/avatar-presets/3/image')).toBe(
+      'https://api.rydercupfriends.com/api/v1/avatar-presets/3/image',
+    );
+    expect(
+      urlDeImagenDeLaApi('/api/v1/users/me/avatar/uploads/abc/image?v=2'),
+    ).toBe(
       'https://api.rydercupfriends.com/api/v1/users/me/avatar/uploads/abc/image?v=2',
     );
   });
@@ -31,7 +37,9 @@ describe('urlDeImagenDeLaApi (FE-11)', () => {
   it('I2 sin base: la ruta tal cual, como el resto de llamadas en local', async () => {
     const { urlDeImagenDeLaApi } = await conBase('');
 
-    expect(urlDeImagenDeLaApi('/api/v1/avatar-presets/3/image')).toBe('/api/v1/avatar-presets/3/image');
+    expect(urlDeImagenDeLaApi('/api/v1/avatar-presets/3/image')).toBe(
+      '/api/v1/avatar-presets/3/image',
+    );
   });
 
   it.each([
@@ -48,7 +56,9 @@ describe('urlDeImagenDeLaApi (FE-11)', () => {
     undefined,
     42,
   ])('I3 %j no vale', async (ruta) => {
-    const { urlDeImagenDeLaApi } = await conBase('https://api.rydercupfriends.com');
+    const { urlDeImagenDeLaApi } = await conBase(
+      'https://api.rydercupfriends.com',
+    );
 
     expect(urlDeImagenDeLaApi(ruta)).toBeNull();
   });

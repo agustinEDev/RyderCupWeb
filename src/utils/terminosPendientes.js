@@ -1,5 +1,12 @@
-import { esRutaPublica, normalizaLaRuta, sePuedeEstarConTerminosPendientes } from './rutasPublicas';
-import { destinoDeLaNavegacion, destinoSiLaPeticionEsSuya } from './navegacionEnCurso';
+import {
+  esRutaPublica,
+  normalizaLaRuta,
+  sePuedeEstarConTerminosPendientes,
+} from './rutasPublicas';
+import {
+  destinoDeLaNavegacion,
+  destinoSiLaPeticionEsSuya,
+} from './navegacionEnCurso';
 
 /**
  * Llevar a aceptar los Términos tras un 403 `TERMS_NOT_ACCEPTED` (F4).
@@ -64,16 +71,19 @@ export const llevaAAceptarLosTerminos = ({ inicio } = {}) => {
   const enCurso = destinoDeLaNavegacion();
   if (enCurso) {
     const destino = normalizaLaRuta(enCurso.pathname);
-    if (sePuedeEstarConTerminosPendientes(destino) || esRutaPublica(destino)) return false;
+    if (sePuedeEstarConTerminosPendientes(destino) || esRutaPublica(destino))
+      return false;
   }
 
   // La página a la que volver: la del destino si la petición es suya (empezó tras
   // iniciarse una navegación a una pantalla con `loader`: su llamada sale antes de
   // que cambie la dirección); si no, la página en la que se está (una recarga, una
   // pantalla sin `loader`, o un sondeo de esta página que salió antes de navegar)
-  const { pathname: tal = '/', search = '' } = destinoSiLaPeticionEsSuya(inicio) ?? globalThis.location ?? {};
+  const { pathname: tal = '/', search = '' } =
+    destinoSiLaPeticionEsSuya(inicio) ?? globalThis.location ?? {};
   const pathname = normalizaLaRuta(tal);
-  if (sePuedeEstarConTerminosPendientes(pathname) || esRutaPublica(pathname)) return false;
+  if (sePuedeEstarConTerminosPendientes(pathname) || esRutaPublica(pathname))
+    return false;
 
   const ruta = `${pathname}${search}`;
   if (leeLaMarca()?.ruta === ruta) {

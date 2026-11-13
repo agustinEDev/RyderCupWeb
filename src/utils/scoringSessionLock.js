@@ -32,7 +32,8 @@ const initChannel = () => {
   }
 };
 
-const storageKey = (userId, scope = '') => `${STORAGE_PREFIX}${userId}${scope ? `-${scope}` : ''}`;
+const storageKey = (userId, scope = '') =>
+  `${STORAGE_PREFIX}${userId}${scope ? `-${scope}` : ''}`;
 
 /**
  * Try to acquire a scoring session lock for a match.
@@ -91,7 +92,12 @@ export const release = (sessionId, userId, scope = '') => {
     const channel = initChannel();
     if (channel) {
       try {
-        channel.postMessage({ type: 'LOCK_RELEASED', sessionId, userId, scope });
+        channel.postMessage({
+          type: 'LOCK_RELEASED',
+          sessionId,
+          userId,
+          scope,
+        });
       } catch {
         // Silent fail
       }
@@ -151,7 +157,9 @@ export const getSession = (userId, scope = '') => {
 export const partidaConSesionViva = (userId) => {
   const sesion = getSession(userId);
   if (!sesion?.matchId) return null;
-  return Date.now() - sesion.timestamp < STALE_SESSION_THRESHOLD_MS ? sesion.matchId : null;
+  return Date.now() - sesion.timestamp < STALE_SESSION_THRESHOLD_MS
+    ? sesion.matchId
+    : null;
 };
 
 /**
@@ -189,7 +197,11 @@ export const forceRelease = (userId) => {
   const channel = initChannel();
   if (channel) {
     try {
-      channel.postMessage({ type: 'LOCK_RELEASED', sessionId: 'force', userId });
+      channel.postMessage({
+        type: 'LOCK_RELEASED',
+        sessionId: 'force',
+        userId,
+      });
     } catch {
       // Silent fail
     }

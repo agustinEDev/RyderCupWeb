@@ -29,7 +29,9 @@ const BrandMark = ({ className = 'size-8', tinta = 'verde', title }) => {
   // ni el lint ni los tests. Es la divergencia silenciosa que este componente
   // viene a evitar, asi que al menos se avisa mientras se desarrolla.
   if (import.meta.env.DEV && tinta !== 'auto' && !FUENTES[tinta]) {
-    console.warn(`BrandMark: tinta desconocida "${tinta}"; se pinta la verde. Use "verde" o "blanco".`);
+    console.warn(
+      `BrandMark: tinta desconocida "${tinta}"; se pinta la verde. Use "verde" o "blanco".`,
+    );
   }
 
   if (tinta === 'auto') {
@@ -48,13 +50,13 @@ const BrandMark = ({ className = 'size-8', tinta = 'verde', title }) => {
   }
 
   return (
-  <img
-    src={FUENTES[tinta] ?? FUENTES.verde}
-    className={`${className} object-contain`}
-    alt={title || ''}
-    aria-hidden={title ? undefined : 'true'}
-    draggable="false"
-  />
+    <img
+      src={FUENTES[tinta] ?? FUENTES.verde}
+      className={`${className} object-contain`}
+      alt={title || ''}
+      aria-hidden={title ? undefined : 'true'}
+      draggable="false"
+    />
   );
 };
 

@@ -14,33 +14,53 @@ describe('scrubSpan', () => {
   it('forma antigua: tapa description y data.url / data["http.url"]', () => {
     const span = {
       description: 'GET /api/v1/auth/reset?token=abc123',
-      data: { url: '/reset?token=abc123', 'http.url': 'https://api.x.com/r?access_token=zz' },
+      data: {
+        url: '/reset?token=abc123',
+        'http.url': 'https://api.x.com/r?access_token=zz',
+      },
     };
     scrubSpan(span);
     expect(span.description).toBe('GET /api/v1/auth/reset?token=[REDACTED]');
     expect(span.data.url).toBe('/reset?token=[REDACTED]');
-    expect(span.data['http.url']).toBe('https://api.x.com/r?access_token=[REDACTED]');
+    expect(span.data['http.url']).toBe(
+      'https://api.x.com/r?access_token=[REDACTED]',
+    );
   });
 
   it('Sentry 11: tapa el name', () => {
-    const span = { name: 'GET /api/v1/auth/verify?token=abc123', attributes: {} };
+    const span = {
+      name: 'GET /api/v1/auth/verify?token=abc123',
+      attributes: {},
+    };
     scrubSpan(span);
     expect(span.name).toBe('GET /api/v1/auth/verify?token=[REDACTED]');
   });
 
   it('Sentry 11: tapa attributes["url.full"] como texto', () => {
-    const span = { name: 'x', attributes: { 'url.full': 'https://api.x.com/v?token=abc' } };
+    const span = {
+      name: 'x',
+      attributes: { 'url.full': 'https://api.x.com/v?token=abc' },
+    };
     scrubSpan(span);
-    expect(span.attributes['url.full']).toBe('https://api.x.com/v?token=[REDACTED]');
+    expect(span.attributes['url.full']).toBe(
+      'https://api.x.com/v?token=[REDACTED]',
+    );
   });
 
   it('Sentry 11: tapa attributes["url.full"] como objeto { value }', () => {
     const span = {
       name: 'x',
-      attributes: { 'url.full': { value: 'https://api.x.com/v?refresh_token=abc', type: 'string' } },
+      attributes: {
+        'url.full': {
+          value: 'https://api.x.com/v?refresh_token=abc',
+          type: 'string',
+        },
+      },
     };
     scrubSpan(span);
-    expect(span.attributes['url.full'].value).toBe('https://api.x.com/v?refresh_token=[REDACTED]');
+    expect(span.attributes['url.full'].value).toBe(
+      'https://api.x.com/v?refresh_token=[REDACTED]',
+    );
     expect(span.attributes['url.full'].type).toBe('string');
   });
 
@@ -51,13 +71,19 @@ describe('scrubSpan', () => {
   });
 
   it('tapa http.target (ruta con query)', () => {
-    const span = { name: 'x', attributes: { 'http.target': '/reset?token=abc' } };
+    const span = {
+      name: 'x',
+      attributes: { 'http.target': '/reset?token=abc' },
+    };
     scrubSpan(span);
     expect(span.attributes['http.target']).toBe('/reset?token=[REDACTED]');
   });
 
   it('no toca lo que no es sensible ni falla si faltan campos', () => {
-    const span = { name: 'GET /api/v1/users/me', attributes: { 'url.full': '/api/v1/users/me?page=2', otra: 1 } };
+    const span = {
+      name: 'GET /api/v1/users/me',
+      attributes: { 'url.full': '/api/v1/users/me?page=2', otra: 1 },
+    };
     const antes = JSON.stringify(span);
     expect(scrubSpan(span)).toBe(span);
     expect(JSON.stringify(span)).toBe(antes);

@@ -20,7 +20,9 @@ const Numero = ({ testId = 'numero' }) => {
 };
 
 // El botón de Actividad tal como lo pintan la barra y la cabecera
-const InsigniaDeNovedadesConNumero = () => <InsigniaDeNovedades n={useNovedadesDeActividad()} />;
+const InsigniaDeNovedadesConNumero = () => (
+  <InsigniaDeNovedades n={useNovedadesDeActividad()} />
+);
 
 const Vigia = () => {
   useVigilanciaDeNovedades();
@@ -40,7 +42,11 @@ const ponVisibilidad = (estado) => {
 const conBadging = () => {
   const setAppBadge = vi.fn().mockResolvedValue(undefined);
   const clearAppBadge = vi.fn().mockResolvedValue(undefined);
-  vi.stubGlobal('navigator', { ...globalThis.navigator, setAppBadge, clearAppBadge });
+  vi.stubGlobal('navigator', {
+    ...globalThis.navigator,
+    setAppBadge,
+    clearAppBadge,
+  });
   return { setAppBadge, clearAppBadge };
 };
 
@@ -66,7 +72,7 @@ describe('useNovedadesDeActividad', () => {
         <Vigia />
         <Numero testId="abajo" />
         <Numero testId="arriba" />
-      </>
+      </>,
     );
 
     await waitFor(() => expect(numero('abajo')).toBe('4'));
@@ -88,7 +94,7 @@ describe('useNovedadesDeActividad', () => {
       <>
         <Vigia />
         <Numero />
-      </>
+      </>,
     );
     await waitFor(() => expect(numero()).toBe('1'));
 
@@ -106,7 +112,7 @@ describe('useNovedadesDeActividad', () => {
       <>
         <Vigia />
         <Numero />
-      </>
+      </>,
     );
     await waitFor(() => expect(numero()).toBe('1'));
 
@@ -118,12 +124,14 @@ describe('useNovedadesDeActividad', () => {
   });
 
   it('keeps the last value without errors when offline (case 3)', async () => {
-    contar.mockResolvedValueOnce(3).mockRejectedValueOnce(new TypeError('Failed to fetch'));
+    contar
+      .mockResolvedValueOnce(3)
+      .mockRejectedValueOnce(new TypeError('Failed to fetch'));
     render(
       <>
         <Vigia />
         <Numero />
-      </>
+      </>,
     );
     await waitFor(() => expect(numero()).toBe('3'));
 
@@ -153,7 +161,7 @@ describe('useNovedadesDeActividad', () => {
       <>
         <Vigia />
         <Numero />
-      </>
+      </>,
     );
     await waitFor(() => expect(numero()).toBe('5'));
 
@@ -168,13 +176,13 @@ describe('useNovedadesDeActividad', () => {
       () =>
         new Promise((resolve) => {
           responde = resolve;
-        })
+        }),
     );
     render(
       <>
         <Vigia />
         <Numero />
-      </>
+      </>,
     );
     await waitFor(() => expect(contar).toHaveBeenCalledTimes(1));
 
@@ -202,13 +210,13 @@ describe('useNovedadesDeActividad', () => {
           <Vigia />
           <Numero />
           <InsigniaDeNovedadesConNumero />
-        </>
+        </>,
       );
 
       await waitFor(() => expect(setAppBadge).toHaveBeenCalledWith(n));
       expect(numero()).toBe(String(n));
       expect(screen.getByTestId('insignia-novedades')).toHaveTextContent('9+');
-    }
+    },
   );
 
   it('clears the app icon at zero and when Actividad is opened (case 2, 4)', async () => {
@@ -230,7 +238,7 @@ describe('useNovedadesDeActividad', () => {
       <>
         <Vigia />
         <Numero />
-      </>
+      </>,
     );
 
     await waitFor(() => expect(numero()).toBe('3'));
@@ -249,7 +257,7 @@ describe('useNovedadesDeActividad', () => {
       <>
         <Vigia />
         <Numero />
-      </>
+      </>,
     );
 
     await waitFor(() => expect(numero()).toBe('2'));
@@ -264,7 +272,7 @@ describe('useNovedadesDeActividad', () => {
         <>
           <Vigia />
           <Numero />
-        </>
+        </>,
       );
       await waitFor(() => expect(numero()).toBe('7'));
       clearAppBadge.mockClear();
@@ -275,19 +283,19 @@ describe('useNovedadesDeActividad', () => {
       expect(clearAppBadge).toHaveBeenCalledTimes(1);
     });
 
-    it("a count on its way for the previous user does not come back", async () => {
+    it('a count on its way for the previous user does not come back', async () => {
       let responde;
       contar.mockImplementation(
         () =>
           new Promise((resolve) => {
             responde = resolve;
-          })
+          }),
       );
       render(
         <>
           <Vigia />
           <Numero />
-        </>
+        </>,
       );
       await waitFor(() => expect(contar).toHaveBeenCalledTimes(1));
 
@@ -310,13 +318,13 @@ describe('useNovedadesDeActividad', () => {
       () =>
         new Promise((resolve) => {
           respuestas.push(resolve);
-        })
+        }),
     );
     render(
       <>
         <Vigia />
         <Numero />
-      </>
+      </>,
     );
     await waitFor(() => expect(contar).toHaveBeenCalledTimes(1));
 

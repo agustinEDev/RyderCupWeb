@@ -26,7 +26,11 @@ describe('la cortina del arranque', () => {
     vi.useFakeTimers();
     equipo.instalada = true;
     // La cortina solo se sostiene en la aplicacion instalada
-    window.matchMedia = () => ({ matches: true, addEventListener: () => {}, removeEventListener: () => {} });
+    window.matchMedia = () => ({
+      matches: true,
+      addEventListener: () => {},
+      removeEventListener: () => {},
+    });
     reiniciaLaCortina();
     document.body.innerHTML = '<div id="arranque"></div>';
   });
@@ -104,7 +108,11 @@ describe('la cortina del arranque', () => {
     // casa `display-mode: standalone`, asi que la capa es BLANCA. Sostenerla
     // ahi convierte un parpadeo blanco en tres segundos de blanco
     equipo.instalada = true;
-    window.matchMedia = () => ({ matches: false, addEventListener: () => {}, removeEventListener: () => {} });
+    window.matchMedia = () => ({
+      matches: false,
+      addEventListener: () => {},
+      removeEventListener: () => {},
+    });
 
     esperaElAviso();
 
@@ -116,7 +124,11 @@ describe('la cortina del arranque', () => {
     // Sostenerla convertiria un F5 en el panel en una espera en blanco donde
     // antes se veia la aplicacion cargando
     equipo.instalada = false;
-    window.matchMedia = () => ({ matches: false, addEventListener: () => {}, removeEventListener: () => {} });
+    window.matchMedia = () => ({
+      matches: false,
+      addEventListener: () => {},
+      removeEventListener: () => {},
+    });
 
     esperaElAviso();
 

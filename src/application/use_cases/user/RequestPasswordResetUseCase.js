@@ -35,11 +35,14 @@ class RequestPasswordResetUseCase {
 
     // Llamada al repositorio para enviar el email de reset
     // El backend siempre retorna el mismo mensaje (anti-enumeración)
-    const result = await this.authRepository.requestPasswordReset(emailVO.getValue());
+    const result = await this.authRepository.requestPasswordReset(
+      emailVO.getValue(),
+    );
 
     return {
       success: true,
-      message: result?.message || 'If the email exists, a recovery link has been sent'
+      message:
+        result?.message || 'If the email exists, a recovery link has been sent',
     };
   }
 }

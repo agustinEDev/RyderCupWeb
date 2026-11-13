@@ -22,7 +22,7 @@ export const useAgendaDeLaFicha = () => {
   // Las franjas de la agenda, una vez por lectura: el diálogo las ordena
   const franjasDeLaAgenda = useMemo(
     () => (agendaLeida?.rounds ?? []).filter((r) => r.teeSheet),
-    [agendaLeida]
+    [agendaLeida],
   );
   return { agendaLeida, agendaFallo, recibirAgenda, franjasDeLaAgenda };
 };

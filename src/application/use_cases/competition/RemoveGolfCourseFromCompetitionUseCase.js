@@ -34,7 +34,10 @@ class RemoveGolfCourseFromCompetitionUseCase {
     }
 
     // Call repository (backend validates business rules)
-    const result = await this.competitionRepository.removeGolfCourse(competitionId, golfCourseId);
+    const result = await this.competitionRepository.removeGolfCourse(
+      competitionId,
+      golfCourseId,
+    );
 
     return result;
   }

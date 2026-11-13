@@ -17,13 +17,21 @@ export const useEnvioAlCerrar = (alCerrarRef) => {
   const enviadaRef = useRef({ version: null, id: null });
   useEffect(() => {
     const enviarSiHace = () => {
-      const { edicion: { linea: ultima, green: soloGreen, cambiada, version }, recoge: recogiendo, onMuestra: enviar, campo } = alCerrarRef.current;
+      const {
+        edicion: { linea: ultima, green: soloGreen, cambiada, version },
+        recoge: recogiendo,
+        onMuestra: enviar,
+        campo,
+      } = alCerrarRef.current;
       if (!cambiada || !recogiendo || !enviar) return;
       // Una línea que vale, o (17 oct) un green solo que no esté lejos del campo
       const muestra = muestraDeLaEdicion(ultima, soloGreen, campo);
       if (!muestra) return;
       if (enviadaRef.current.version === version) return;
-      enviadaRef.current = { version, id: enviadaRef.current.id ?? globalThis.crypto.randomUUID() };
+      enviadaRef.current = {
+        version,
+        id: enviadaRef.current.id ?? globalThis.crypto.randomUUID(),
+      };
       enviar({ id: enviadaRef.current.id, ...muestra });
     };
     // Si se cierra la app (o el móvil la mata) con el mapa abierto, lo hecho no

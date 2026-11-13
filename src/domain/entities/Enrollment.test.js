@@ -63,25 +63,33 @@ describe('Enrollment', () => {
     it('should throw an error if enrollmentId is not an EnrollmentId instance', () => {
       const props = createValidEnrollmentProps({ enrollmentId: 'invalid-id' });
 
-      expect(() => new Enrollment(props)).toThrow('enrollmentId must be an EnrollmentId instance');
+      expect(() => new Enrollment(props)).toThrow(
+        'enrollmentId must be an EnrollmentId instance',
+      );
     });
 
     it('should throw an error if status is not an EnrollmentStatus instance', () => {
       const props = createValidEnrollmentProps({ status: 'REQUESTED' });
 
-      expect(() => new Enrollment(props)).toThrow('status must be an EnrollmentStatus instance');
+      expect(() => new Enrollment(props)).toThrow(
+        'status must be an EnrollmentStatus instance',
+      );
     });
 
     it('should throw an error if competitionId is missing', () => {
       const props = createValidEnrollmentProps({ competitionId: null });
 
-      expect(() => new Enrollment(props)).toThrow('competitionId must be a non-empty string');
+      expect(() => new Enrollment(props)).toThrow(
+        'competitionId must be a non-empty string',
+      );
     });
 
     it('should throw an error if userId is missing', () => {
       const props = createValidEnrollmentProps({ userId: null });
 
-      expect(() => new Enrollment(props)).toThrow('userId must be a non-empty string');
+      expect(() => new Enrollment(props)).toThrow(
+        'userId must be a non-empty string',
+      );
     });
   });
 
@@ -159,7 +167,9 @@ describe('Enrollment', () => {
 
       expect(approved).toBeInstanceOf(Enrollment);
       expect(approved.status.toString()).toBe('APPROVED');
-      expect(approved.updatedAt.getTime()).toBeGreaterThanOrEqual(requested.updatedAt.getTime());
+      expect(approved.updatedAt.getTime()).toBeGreaterThanOrEqual(
+        requested.updatedAt.getTime(),
+      );
       expect(approved).not.toBe(requested); // Immutability check
     });
 
@@ -200,7 +210,9 @@ describe('Enrollment', () => {
         updatedAt: new Date(),
       });
 
-      expect(() => rejected.approve()).toThrow('Invalid transition: REJECTED → APPROVED');
+      expect(() => rejected.approve()).toThrow(
+        'Invalid transition: REJECTED → APPROVED',
+      );
     });
   });
 
@@ -216,7 +228,9 @@ describe('Enrollment', () => {
 
       expect(rejected).toBeInstanceOf(Enrollment);
       expect(rejected.status.toString()).toBe('REJECTED');
-      expect(rejected.updatedAt.getTime()).toBeGreaterThanOrEqual(requested.updatedAt.getTime());
+      expect(rejected.updatedAt.getTime()).toBeGreaterThanOrEqual(
+        requested.updatedAt.getTime(),
+      );
       expect(rejected).not.toBe(requested); // Immutability check
     });
 
@@ -239,7 +253,9 @@ describe('Enrollment', () => {
         userId: mockUserId,
       });
 
-      expect(() => approved.reject()).toThrow('Invalid transition: APPROVED → REJECTED');
+      expect(() => approved.reject()).toThrow(
+        'Invalid transition: APPROVED → REJECTED',
+      );
     });
   });
 
@@ -255,7 +271,9 @@ describe('Enrollment', () => {
 
       expect(cancelled).toBeInstanceOf(Enrollment);
       expect(cancelled.status.toString()).toBe('CANCELLED');
-      expect(cancelled.updatedAt.getTime()).toBeGreaterThanOrEqual(requested.updatedAt.getTime());
+      expect(cancelled.updatedAt.getTime()).toBeGreaterThanOrEqual(
+        requested.updatedAt.getTime(),
+      );
       expect(cancelled).not.toBe(requested); // Immutability check
     });
 
@@ -278,7 +296,9 @@ describe('Enrollment', () => {
         userId: mockUserId,
       });
 
-      expect(() => approved.cancel()).toThrow('Invalid transition: APPROVED → CANCELLED');
+      expect(() => approved.cancel()).toThrow(
+        'Invalid transition: APPROVED → CANCELLED',
+      );
     });
   });
 
@@ -294,7 +314,9 @@ describe('Enrollment', () => {
 
       expect(withdrawn).toBeInstanceOf(Enrollment);
       expect(withdrawn.status.toString()).toBe('WITHDRAWN');
-      expect(withdrawn.updatedAt.getTime()).toBeGreaterThanOrEqual(approved.updatedAt.getTime());
+      expect(withdrawn.updatedAt.getTime()).toBeGreaterThanOrEqual(
+        approved.updatedAt.getTime(),
+      );
       expect(withdrawn).not.toBe(approved); // Immutability check
     });
 
@@ -305,7 +327,9 @@ describe('Enrollment', () => {
         userId: mockUserId,
       });
 
-      expect(() => requested.withdraw()).toThrow('Invalid transition: REQUESTED → WITHDRAWN');
+      expect(() => requested.withdraw()).toThrow(
+        'Invalid transition: REQUESTED → WITHDRAWN',
+      );
     });
   });
 
@@ -321,7 +345,9 @@ describe('Enrollment', () => {
 
       expect(updated).toBeInstanceOf(Enrollment);
       expect(updated.customHandicap).toBe(18.5);
-      expect(updated.updatedAt.getTime()).toBeGreaterThanOrEqual(enrollment.updatedAt.getTime());
+      expect(updated.updatedAt.getTime()).toBeGreaterThanOrEqual(
+        enrollment.updatedAt.getTime(),
+      );
       expect(updated).not.toBe(enrollment); // Immutability check
     });
 
@@ -332,7 +358,9 @@ describe('Enrollment', () => {
         userId: mockUserId,
       });
 
-      expect(() => enrollment.setCustomHandicap('invalid')).toThrow('El handicap debe ser un número válido');
+      expect(() => enrollment.setCustomHandicap('invalid')).toThrow(
+        'El handicap debe ser un número válido',
+      );
     });
 
     it('should throw an error if customHandicap is below minimum', () => {
@@ -343,7 +371,7 @@ describe('Enrollment', () => {
       });
 
       expect(() => enrollment.setCustomHandicap(-11.0)).toThrow(
-        'El hándicap personalizado debe estar entre -10 y 54'
+        'El hándicap personalizado debe estar entre -10 y 54',
       );
     });
 
@@ -355,7 +383,7 @@ describe('Enrollment', () => {
       });
 
       expect(() => enrollment.setCustomHandicap(55.0)).toThrow(
-        'El hándicap personalizado debe estar entre -10 y 54'
+        'El hándicap personalizado debe estar entre -10 y 54',
       );
     });
 
@@ -386,7 +414,9 @@ describe('Enrollment', () => {
 
       expect(assigned).toBeInstanceOf(Enrollment);
       expect(assigned.teamId).toBe('1');
-      expect(assigned.updatedAt.getTime()).toBeGreaterThanOrEqual(enrollment.updatedAt.getTime());
+      expect(assigned.updatedAt.getTime()).toBeGreaterThanOrEqual(
+        enrollment.updatedAt.getTime(),
+      );
       expect(assigned).not.toBe(enrollment); // Immutability check
     });
 
@@ -398,7 +428,7 @@ describe('Enrollment', () => {
       });
 
       expect(() => requested.assignToTeam('1')).toThrow(
-        'Solo se pueden asignar equipos a enrollments aprobados'
+        'Solo se pueden asignar equipos a enrollments aprobados',
       );
     });
 
@@ -409,8 +439,12 @@ describe('Enrollment', () => {
         userId: mockUserId,
       });
 
-      expect(() => enrollment.assignToTeam('')).toThrow('El ID del equipo no puede estar vacío');
-      expect(() => enrollment.assignToTeam('  ')).toThrow('El ID del equipo no puede estar vacío');
+      expect(() => enrollment.assignToTeam('')).toThrow(
+        'El ID del equipo no puede estar vacío',
+      );
+      expect(() => enrollment.assignToTeam('  ')).toThrow(
+        'El ID del equipo no puede estar vacío',
+      );
     });
   });
 
@@ -547,84 +581,102 @@ describe('Enrollment', () => {
     });
 
     it('should accept color in constructor', () => {
-      const enrollment = new Enrollment(createValidEnrollmentProps({
-        color: TeeColor.fromString(TeeColor.YELLOW),
-      }));
+      const enrollment = new Enrollment(
+        createValidEnrollmentProps({
+          color: TeeColor.fromString(TeeColor.YELLOW),
+        }),
+      );
 
       expect(enrollment.color).toBeInstanceOf(TeeColor);
       expect(enrollment.color.toString()).toBe('YELLOW');
     });
 
     it('should include color as string in toPersistence()', () => {
-      const enrollment = new Enrollment(createValidEnrollmentProps({
-        color: TeeColor.fromString(TeeColor.BLUE),
-      }));
+      const enrollment = new Enrollment(
+        createValidEnrollmentProps({
+          color: TeeColor.fromString(TeeColor.BLUE),
+        }),
+      );
 
       const persisted = enrollment.toPersistence();
       expect(persisted.color).toBe('BLUE');
     });
 
     it('should propagate color through approve()', () => {
-      const enrollment = new Enrollment(createValidEnrollmentProps({
-        color: TeeColor.fromString(TeeColor.WHITE),
-      }));
+      const enrollment = new Enrollment(
+        createValidEnrollmentProps({
+          color: TeeColor.fromString(TeeColor.WHITE),
+        }),
+      );
 
       const approved = enrollment.approve();
       expect(approved.color.toString()).toBe('WHITE');
     });
 
     it('should propagate color through reject()', () => {
-      const enrollment = new Enrollment(createValidEnrollmentProps({
-        color: TeeColor.fromString(TeeColor.YELLOW),
-      }));
+      const enrollment = new Enrollment(
+        createValidEnrollmentProps({
+          color: TeeColor.fromString(TeeColor.YELLOW),
+        }),
+      );
 
       const rejected = enrollment.reject();
       expect(rejected.color.toString()).toBe('YELLOW');
     });
 
     it('should propagate color through cancel()', () => {
-      const enrollment = new Enrollment(createValidEnrollmentProps({
-        color: TeeColor.fromString(TeeColor.GREEN),
-      }));
+      const enrollment = new Enrollment(
+        createValidEnrollmentProps({
+          color: TeeColor.fromString(TeeColor.GREEN),
+        }),
+      );
 
       const cancelled = enrollment.cancel();
       expect(cancelled.color.toString()).toBe('GREEN');
     });
 
     it('should propagate color through withdraw()', () => {
-      const enrollment = new Enrollment(createValidEnrollmentProps({
-        status: EnrollmentStatus.approved(),
-        color: TeeColor.fromString(TeeColor.RED),
-      }));
+      const enrollment = new Enrollment(
+        createValidEnrollmentProps({
+          status: EnrollmentStatus.approved(),
+          color: TeeColor.fromString(TeeColor.RED),
+        }),
+      );
 
       const withdrawn = enrollment.withdraw();
       expect(withdrawn.color.toString()).toBe('RED');
     });
 
     it('should propagate color through assignToTeam()', () => {
-      const enrollment = new Enrollment(createValidEnrollmentProps({
-        status: EnrollmentStatus.approved(),
-        color: TeeColor.fromString(TeeColor.BLUE),
-      }));
+      const enrollment = new Enrollment(
+        createValidEnrollmentProps({
+          status: EnrollmentStatus.approved(),
+          color: TeeColor.fromString(TeeColor.BLUE),
+        }),
+      );
 
       const assigned = enrollment.assignToTeam('1');
       expect(assigned.color.toString()).toBe('BLUE');
     });
 
     it('should propagate color through setCustomHandicap()', () => {
-      const enrollment = new Enrollment(createValidEnrollmentProps({
-        color: TeeColor.fromString(TeeColor.YELLOW),
-      }));
+      const enrollment = new Enrollment(
+        createValidEnrollmentProps({
+          color: TeeColor.fromString(TeeColor.YELLOW),
+        }),
+      );
 
       const updated = enrollment.setCustomHandicap(18.0);
       expect(updated.color.toString()).toBe('YELLOW');
     });
 
     it('should propagate color through removeCustomHandicap()', () => {
-      const enrollment = new Enrollment(createValidEnrollmentProps({
-        color: TeeColor.fromString(TeeColor.WHITE),
-        customHandicap: 15.0,
-      }));
+      const enrollment = new Enrollment(
+        createValidEnrollmentProps({
+          color: TeeColor.fromString(TeeColor.WHITE),
+          customHandicap: 15.0,
+        }),
+      );
 
       const updated = enrollment.removeCustomHandicap();
       expect(updated.color.toString()).toBe('WHITE');
@@ -641,10 +693,11 @@ describe('Enrollment', () => {
 
     it('rechaza cualquier cosa que no sea un booleano', () => {
       expect(
-        () => new Enrollment(createValidEnrollmentProps({ useRealName: 'true' }))
+        () =>
+          new Enrollment(createValidEnrollmentProps({ useRealName: 'true' })),
       ).toThrow(TypeError);
       expect(
-        () => new Enrollment(createValidEnrollmentProps({ useRealName: null }))
+        () => new Enrollment(createValidEnrollmentProps({ useRealName: null })),
       ).toThrow(TypeError);
     });
 
@@ -670,7 +723,7 @@ describe('Enrollment', () => {
     // con `true` el test pasaría igual sin conservar nada
     it('sobrevive a aprobar, asignar equipo y tocar el hándicap', () => {
       const enrollment = new Enrollment(
-        createValidEnrollmentProps({ useRealName: false })
+        createValidEnrollmentProps({ useRealName: false }),
       );
 
       const aprobado = enrollment.approve();
@@ -687,7 +740,7 @@ describe('Enrollment', () => {
 
     it('sobrevive a retirarse, y a rechazar o cancelar una solicitud', () => {
       const pendiente = new Enrollment(
-        createValidEnrollmentProps({ useRealName: false })
+        createValidEnrollmentProps({ useRealName: false }),
       );
 
       expect(pendiente.reject().useRealName).toBe(false);
@@ -697,7 +750,7 @@ describe('Enrollment', () => {
 
     it('toPersistence() lo incluye', () => {
       const enrollment = new Enrollment(
-        createValidEnrollmentProps({ useRealName: false })
+        createValidEnrollmentProps({ useRealName: false }),
       );
 
       expect(enrollment.toPersistence().useRealName).toBe(false);

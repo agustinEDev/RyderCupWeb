@@ -59,7 +59,9 @@ class ActivityEventMapper {
     const pendingFriendRequests = [];
     (apiResponse.pending_friend_requests || []).forEach((request) => {
       if (!request?.friendship_id || !request.requester?.id) return;
-      authors[request.requester.id] ??= ActivityEventMapper.authorToDomain(request.requester);
+      authors[request.requester.id] ??= ActivityEventMapper.authorToDomain(
+        request.requester,
+      );
       pendingFriendRequests.push({
         friendshipId: request.friendship_id,
         requesterId: request.requester.id,

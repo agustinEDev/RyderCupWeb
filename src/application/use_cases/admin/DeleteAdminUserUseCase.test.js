@@ -20,7 +20,9 @@ describe('DeleteAdminUserUseCase', () => {
   });
 
   it('should propagate a 409 when the user has activity', async () => {
-    const error = new Error('Cannot permanently delete this account: has created one or more quick matches');
+    const error = new Error(
+      'Cannot permanently delete this account: has created one or more quick matches',
+    );
     error.status = 409;
     adminRepository.deleteUser.mockRejectedValue(error);
 

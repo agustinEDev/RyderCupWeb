@@ -14,6 +14,10 @@ const generoDe = (barra) => barra?.gender ?? null;
  * hoyo envía sus muestras; sin color, ninguna: solo se mide. La misma en la
  * Ryder, en stroke play y en la partida rápida (#880).
  */
-export const barraDe = (jugador) => (jugador?.color ? { color: jugador.color, gender: jugador.teeGender ?? null } : null);
+export const barraDe = (jugador) =>
+  jugador?.color
+    ? { color: jugador.color, gender: jugador.teeGender ?? null }
+    : null;
 
-export const esLaMismaBarra = (a, b) => Boolean(a?.color) && a.color === b?.color && generoDe(a) === generoDe(b);
+export const esLaMismaBarra = (a, b) =>
+  Boolean(a?.color) && a.color === b?.color && generoDe(a) === generoDe(b);

@@ -32,7 +32,12 @@ describe('FillCaptainUseCase', () => {
     });
     expect(resultado).toEqual({
       id: 'comp-1',
-      captains: { teamA: 'carla', teamB: 'bea', viceTeamA: null, viceTeamB: null },
+      captains: {
+        teamA: 'carla',
+        teamB: 'bea',
+        viceTeamA: null,
+        viceTeamB: null,
+      },
     });
   });
 
@@ -47,7 +52,9 @@ describe('FillCaptainUseCase', () => {
   });
 
   it('F3: los errores del servidor llegan tal cual', async () => {
-    const error = Object.assign(new Error('Ese equipo ya tiene capitán'), { status: 400 });
+    const error = Object.assign(new Error('Ese equipo ya tiene capitán'), {
+      status: 400,
+    });
     repositorio.fillTeamCaptain.mockRejectedValue(error);
 
     await expect(useCase.execute('comp-1', 'A', 'carla')).rejects.toBe(error);

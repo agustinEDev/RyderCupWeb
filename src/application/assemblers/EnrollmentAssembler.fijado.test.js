@@ -13,7 +13,8 @@ const api = (extra = {}) => ({
   user: { id: 'u', display_name: 'Ana', handicap: 14.2 },
   ...extra,
 });
-const dto = (apiData) => EnrollmentAssembler.toSimpleDTO(EnrollmentMapper.toDomain(apiData), apiData);
+const dto = (apiData) =>
+  EnrollmentAssembler.toSimpleDTO(EnrollmentMapper.toDomain(apiData), apiData);
 
 describe('EnrollmentAssembler · hándicap fijado y categoría (FE #824)', () => {
   it('desde el cierre, el fijado (llega como texto) y la categoría', () => {

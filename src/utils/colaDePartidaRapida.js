@@ -29,14 +29,23 @@
  * enviar, y dos dispositivos a la vez con la misma cuenta es raro al lado de
  * preguntar «habla con tu companero» en una partida que juega uno solo.
  */
-export const esDesacuerdo = (enElServidor, entrada, partida, miParticipanteId) => {
+export const esDesacuerdo = (
+  enElServidor,
+  entrada,
+  partida,
+  miParticipanteId,
+) => {
   if (!enElServidor) return false;
   if (enElServidor.score === entrada.scoreData.score) return false;
   if ((partida?.scorerIds?.length ?? 0) <= 1) return false;
   // Sin saber quien lo anoto —o sin saber quien soy— se pregunta: es lo que no
   // rompe nada de nadie. Sin el primer termino, dos `undefined` se daban por
   // iguales y lo desconocido pasaba por propio, que es justo lo contrario
-  if (miParticipanteId && enElServidor.recordedByParticipantId === miParticipanteId) return false;
+  if (
+    miParticipanteId &&
+    enElServidor.recordedByParticipantId === miParticipanteId
+  )
+    return false;
   return true;
 };
 
@@ -45,9 +54,13 @@ export const esDesacuerdo = (enElServidor, entrada, partida, miParticipanteId) =
 // mete en su sitio —o se añade— y lo demás —clasificación, golpes recibidos—
 // espera a la partida que se pide después
 export const conGolpe = (partida, golpe) => {
-  const mismo = (hs) => hs.holeNumber === golpe.holeNumber && hs.participantId === golpe.participantId;
+  const mismo = (hs) =>
+    hs.holeNumber === golpe.holeNumber &&
+    hs.participantId === golpe.participantId;
   const antes = partida.holeScores ?? [];
-  const holeScores = antes.some(mismo) ? antes.map((hs) => (mismo(hs) ? golpe : hs)) : [...antes, golpe];
+  const holeScores = antes.some(mismo)
+    ? antes.map((hs) => (mismo(hs) ? golpe : hs))
+    : [...antes, golpe];
   return { ...partida, holeScores };
 };
 
@@ -55,13 +68,20 @@ export const conGolpe = (partida, golpe) => {
  * Los golpes del servidor con lo guardado en la cola encima. Sin nada guardado
  * devuelve `delServidor` tal cual, el mismo objeto.
  */
-export const conLoGuardadoEncima = (delServidor, guardados, partida, miParticipanteId) => {
+export const conLoGuardadoEncima = (
+  delServidor,
+  guardados,
+  partida,
+  miParticipanteId,
+) => {
   if (guardados.length === 0) return delServidor;
 
   const salida = [...delServidor];
   for (const entrada of guardados) {
     const i = salida.findIndex(
-      (hs) => hs.holeNumber === entrada.holeNumber && hs.participantId === entrada.participantId
+      (hs) =>
+        hs.holeNumber === entrada.holeNumber &&
+        hs.participantId === entrada.participantId,
     );
     const mio = {
       holeNumber: entrada.holeNumber,
@@ -91,13 +111,21 @@ export const conLoGuardadoEncima = (delServidor, guardados, partida, miParticipa
  * es un desacuerdo con otro anotador va a `enConflicto` y el resto a
  * `porEnviar`, en el orden de la cola.
  */
-export const clasificaLaCola = ({ entradas, anotadosEnElServidor, partida, miParticipanteId, borra }) => {
+export const clasificaLaCola = ({
+  entradas,
+  anotadosEnElServidor,
+  partida,
+  miParticipanteId,
+  borra,
+}) => {
   const enConflicto = [];
   const porEnviar = [];
   let elDiscoNoBorra = false;
   for (const entrada of entradas) {
     const enElServidor = anotadosEnElServidor.find(
-      (hs) => hs.holeNumber === entrada.holeNumber && hs.participantId === entrada.participantId
+      (hs) =>
+        hs.holeNumber === entrada.holeNumber &&
+        hs.participantId === entrada.participantId,
     );
 
     // Ya está en el servidor con ese mismo resultado: enviarlo otra vez
@@ -120,7 +148,10 @@ export const clasificaLaCola = ({ entradas, anotadosEnElServidor, partida, miPar
     // lo haya decidido: entonces no se le vuelve a preguntar lo mismo.
     // Lo que no es desacuerdo —una corrección propia, o una partida que
     // anota una sola persona— se envía sin preguntar nada (FE #528)
-    if (!entrada.scoreData.decidido && esDesacuerdo(enElServidor, entrada, partida, miParticipanteId)) {
+    if (
+      !entrada.scoreData.decidido &&
+      esDesacuerdo(enElServidor, entrada, partida, miParticipanteId)
+    ) {
       enConflicto.push({
         holeNumber: entrada.holeNumber,
         participantId: entrada.participantId,
@@ -150,7 +181,9 @@ export const sobraTrasEnviar = (guardada, loEnviado) => {
   if (loEnviado === null) return true;
   const cuando = guardada.timestamp ?? 0;
   if (cuando < loEnviado.cuando) return true;
-  return cuando === loEnviado.cuando && guardada.scoreData?.score === loEnviado.score;
+  return (
+    cuando === loEnviado.cuando && guardada.scoreData?.score === loEnviado.score
+  );
 };
 
 // Del DTO que devuelve cerrar o cancelar se toma SOLO el estado: es el DTO

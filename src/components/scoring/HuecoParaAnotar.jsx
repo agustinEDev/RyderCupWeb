@@ -19,7 +19,9 @@ export const HuecoParaAnotar = ({ siguiente }) => {
       data-testid={siguiente ? 'anotar-siguiente' : 'anotar'}
       className="flex items-center justify-center gap-1 text-sm font-semibold"
     >
-      {siguiente && <Plus data-testid="anotar-mas" className="h-4 w-4" aria-hidden="true" />}
+      {siguiente && (
+        <Plus data-testid="anotar-mas" className="h-4 w-4" aria-hidden="true" />
+      )}
       {t('input.tapToScore')}
     </span>
   );

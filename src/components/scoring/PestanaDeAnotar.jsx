@@ -63,7 +63,11 @@ const PestanaDeAnotar = ({
   // El golpe del segundo marcado sale solo: ni el tuyo ni el del primero
   const handleSecondMarkedChange = (golpes) => {
     if (!segundoMarcado) return;
-    submitScore(currentHole, { markedPlayerId: segundoMarcado, markedScore: golpes }, { tocado: 'markedScore' });
+    submitScore(
+      currentHole,
+      { markedPlayerId: segundoMarcado, markedScore: golpes },
+      { tocado: 'markedScore' },
+    );
   };
 
   const handleScoreChange = (scoreData, tocado) => {
@@ -75,11 +79,15 @@ const PestanaDeAnotar = ({
       }
       return;
     }
-    submitScore(currentHole, {
-      ownScore: scoreData.ownScore,
-      markedPlayerId: markerAssignment.marksUserId,
-      markedScore: scoreData.markedScore,
-    }, { tocado });
+    submitScore(
+      currentHole,
+      {
+        ownScore: scoreData.ownScore,
+        markedPlayerId: markerAssignment.marksUserId,
+        markedScore: scoreData.markedScore,
+      },
+      { tocado },
+    );
   };
 
   return (
@@ -102,8 +110,16 @@ const PestanaDeAnotar = ({
           <p className="mt-1 text-amber-800">{t('notOpenYet.meanwhile')}</p>
           {/* A quién vas a marcar (16 oct): lo decía «Info del Partido» */}
           {aQuienMarco && (
-            <p data-testid="anotaras-a" className="mt-1 font-medium text-amber-900">
-              {t(scoringView?.matchFormat === 'FOURSOMES' ? 'notOpenYet.youWillMarkPair' : 'notOpenYet.youWillMark', { nombre: aQuienMarco })}
+            <p
+              data-testid="anotaras-a"
+              className="mt-1 font-medium text-amber-900"
+            >
+              {t(
+                scoringView?.matchFormat === 'FOURSOMES'
+                  ? 'notOpenYet.youWillMarkPair'
+                  : 'notOpenYet.youWillMark',
+                { nombre: aQuienMarco },
+              )}
             </p>
           )}
         </div>
@@ -133,7 +149,11 @@ const PestanaDeAnotar = ({
             matchFormat={scoringView?.matchFormat}
             holeNumber={currentHole}
             par={currentHoleData.par}
-            markedPar={holeFor(markerAssignment?.marksUserId)?.par ?? courseHoleData?.par ?? null}
+            markedPar={
+              holeFor(markerAssignment?.marksUserId)?.par ??
+              courseHoleData?.par ??
+              null
+            }
             markedName={aQuienMarco}
             markerName={markerAssignment?.markedByName ?? quienMeMarca}
             marksSomeone={Boolean(markerAssignment)}
@@ -147,18 +167,31 @@ const PestanaDeAnotar = ({
             strokesReceived={currentPlayerScore?.strokesReceivedThisHole}
             holeResult={currentHoleScore?.holeResult}
             standing={currentHoleScore?.holeResult?.standing}
-            isReadOnly={!canScore || (isOwnScoreLocked && marcaBloqueada && segundoBloqueado) || isSessionBlocked}
+            isReadOnly={
+              !canScore ||
+              (isOwnScoreLocked && marcaBloqueada && segundoBloqueado) ||
+              isSessionBlocked
+            }
             isOwnScoreLocked={isOwnScoreLocked || !canScore || isSessionBlocked}
-            isMarkerScoreLocked={marcaBloqueada || !canScore || isSessionBlocked}
+            isMarkerScoreLocked={
+              marcaBloqueada || !canScore || isSessionBlocked
+            }
             onScoreChange={handleScoreChange}
-            secondMarked={segundoMarcado ? {
-              id: segundoMarcado,
-              name: nombreDelSegundo,
-              par: holeFor(segundoMarcado)?.par ?? courseHoleData?.par ?? null,
-              playerScore: filaDelSegundo,
-              validationStatus: filaDelSegundo?.validationStatus,
-              isLocked: segundoBloqueado || !canScore || isSessionBlocked,
-            } : null}
+            secondMarked={
+              segundoMarcado
+                ? {
+                    id: segundoMarcado,
+                    name: nombreDelSegundo,
+                    par:
+                      holeFor(segundoMarcado)?.par ??
+                      courseHoleData?.par ??
+                      null,
+                    playerScore: filaDelSegundo,
+                    validationStatus: filaDelSegundo?.validationStatus,
+                    isLocked: segundoBloqueado || !canScore || isSessionBlocked,
+                  }
+                : null
+            }
             onSecondMarkedChange={handleSecondMarkedChange}
             teamAName={scoringView?.teamAName}
             teamBName={scoringView?.teamBName}
@@ -186,7 +219,10 @@ const PestanaDeAnotar = ({
         </button>
         {/* «Mapa», entre Anterior y Siguiente (Agustín, 16 oct): ni dentro de la tarjeta del hoyo ni en una fila más, que empujaba la navegación fuera de la pantalla */}
         {/* Solo con el hoyo a la vista: la ventana del mapa va con él. Y en España, la única con imagen (19 oct) */}
-        {currentHoleData && !aunNoAbre && !cerradoSinJugar && mapaDelHoyo.disponible && <BotonMapa onAbrir={mapaDelHoyo.abrir} />}
+        {currentHoleData &&
+          !aunNoAbre &&
+          !cerradoSinJugar &&
+          mapaDelHoyo.disponible && <BotonMapa onAbrir={mapaDelHoyo.abrir} />}
         <button
           onClick={onNextHole}
           disabled={currentHole >= totalHoles}
@@ -203,13 +239,13 @@ const PestanaDeAnotar = ({
         scoringView?.matchStatus === 'IN_PROGRESS' &&
         !scoringView?.isDecided &&
         !partidoAcabado && (
-        <button
-          onClick={onAbrirConcesion}
-          className="w-full px-4 py-2 text-red-600 border border-red-200 rounded-lg text-sm font-medium hover:bg-red-50"
-        >
-          {t('concede.button')}
-        </button>
-      )}
+          <button
+            onClick={onAbrirConcesion}
+            className="w-full px-4 py-2 text-red-600 border border-red-200 rounded-lg text-sm font-medium hover:bg-red-50"
+          >
+            {t('concede.button')}
+          </button>
+        )}
 
       {/* Fourball: retirarse, retirar a la pareja o volver (F2, F3) */}
       <RetiradaDelFourball

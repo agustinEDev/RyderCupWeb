@@ -1,5 +1,12 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, fireEvent, waitFor, within, act } from '@testing-library/react';
+import {
+  render,
+  screen,
+  fireEvent,
+  waitFor,
+  within,
+  act,
+} from '@testing-library/react';
 import { MemoryRouter, Routes, Route } from 'react-router';
 
 const mockNavigate = vi.fn();
@@ -26,7 +33,14 @@ const t = (clave, params) => {
 const traduccion = { i18n: { language: 'es' }, t };
 vi.mock('react-i18next', () => ({ useTranslation: () => traduccion }));
 vi.mock('framer-motion', () => ({
-  motion: new Proxy({}, { get: () => ({ children, ...props }) => <div {...props}>{children}</div> }),
+  motion: new Proxy(
+    {},
+    {
+      get:
+        () =>
+        ({ children, ...props }) => <div {...props}>{children}</div>,
+    },
+  ),
 }));
 vi.mock('../components/layout/HeaderAuth', () => ({ default: () => null }));
 vi.mock('../components/ui/FullScreenLoader', () => ({ default: () => null }));
@@ -45,7 +59,12 @@ vi.mock('../composition', () => ({
   revealEnvelopesUseCase: { execute: (...a) => mockAbrir(...a) },
 }));
 vi.mock('../utils/toast', () => ({
-  default: { success: vi.fn(), error: vi.fn(), warning: vi.fn(), info: vi.fn() },
+  default: {
+    success: vi.fn(),
+    error: vi.fn(),
+    warning: vi.fn(),
+    info: vi.fn(),
+  },
 }));
 import customToast from '../utils/toast';
 
@@ -82,29 +101,43 @@ const vista = (extra = {}) => ({
   rivalWantsEarly: false,
   revealScheduledAt: '2030-06-01T00:00:00+02:00',
   myPlayers: JUGADORES,
-  playerNames: { ana: 'Ana Alba', bea: 'Bea Blanco', carla: 'Carla Cruz', dani: 'Dani Díaz' },
+  playerNames: {
+    ana: 'Ana Alba',
+    bea: 'Bea Blanco',
+    carla: 'Carla Cruz',
+    dani: 'Dani Díaz',
+  },
   ...extra,
 });
 
 const pintar = () =>
   render(
-    <MemoryRouter initialEntries={['/competitions/comp-1/rounds/ronda-1/envelope']}>
+    <MemoryRouter
+      initialEntries={['/competitions/comp-1/rounds/ronda-1/envelope']}
+    >
       <Routes>
         <Route
           path="/competitions/:id/rounds/:roundId/envelope"
           element={<EnvelopePage />}
         />
       </Routes>
-    </MemoryRouter>
+    </MemoryRouter>,
   );
 
 describe('EnvelopePage · el sobre del capitán (FE #655)', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockVer.mockResolvedValue(vista());
-    mockEntregar.mockResolvedValue({ team: 'A', entries: [['bea'], ['ana']], automatic: false });
+    mockEntregar.mockResolvedValue({
+      team: 'A',
+      entries: [['bea'], ['ana']],
+      automatic: false,
+    });
     mockAbrir.mockResolvedValue({ matchups: [], filledAutomatically: [] });
-    mockCompeticion.mockResolvedValue({ team1Name: 'Europa', team2Name: 'América' });
+    mockCompeticion.mockResolvedValue({
+      team1Name: 'Europa',
+      team2Name: 'América',
+    });
   });
 
   it('V1: el capitán ve a los suyos con su hándicap', async () => {
@@ -145,7 +178,11 @@ describe('EnvelopePage · el sobre del capitán (FE #655)', () => {
 
     await waitFor(() =>
       // Sin marcar la casilla: se espera a la hora
-      expect(mockEntregar).toHaveBeenCalledWith('ronda-1', [['bea'], ['ana']], false)
+      expect(mockEntregar).toHaveBeenCalledWith(
+        'ronda-1',
+        [['bea'], ['ana']],
+        false,
+      ),
     );
   });
 
@@ -164,13 +201,20 @@ describe('EnvelopePage · el sobre del capitán (FE #655)', () => {
     mockVer.mockResolvedValue(
       vista({
         teamASubmitted: true,
-        mine: { team: 'A', entries: [['bea'], ['ana']], submitted: true, automatic: false },
-      })
+        mine: {
+          team: 'A',
+          entries: [['bea'], ['ana']],
+          submitted: true,
+          automatic: false,
+        },
+      }),
     );
     pintar();
 
     expect(await screen.findByTestId('sobre-entregado')).toBeInTheDocument();
-    expect(screen.getByTestId('orden-guardado')).toHaveTextContent('Bea Blanco');
+    expect(screen.getByTestId('orden-guardado')).toHaveTextContent(
+      'Bea Blanco',
+    );
     expect(screen.getByTestId('cambiar-sobre')).toBeInTheDocument();
   });
 
@@ -179,8 +223,13 @@ describe('EnvelopePage · el sobre del capitán (FE #655)', () => {
       vista({
         teamASubmitted: true,
         rivalSubmitted: true,
-        mine: { team: 'A', entries: [['bea'], ['ana']], submitted: true, automatic: false },
-      })
+        mine: {
+          team: 'A',
+          entries: [['bea'], ['ana']],
+          submitted: true,
+          automatic: false,
+        },
+      }),
     );
     pintar();
 
@@ -194,8 +243,13 @@ describe('EnvelopePage · el sobre del capitán (FE #655)', () => {
         teamASubmitted: true,
         rivalSubmitted: true,
         canReveal: true,
-        mine: { team: 'A', entries: [['bea'], ['ana']], submitted: true, automatic: false },
-      })
+        mine: {
+          team: 'A',
+          entries: [['bea'], ['ana']],
+          submitted: true,
+          automatic: false,
+        },
+      }),
     );
     pintar();
 
@@ -213,8 +267,13 @@ describe('EnvelopePage · el sobre del capitán (FE #655)', () => {
         teamASubmitted: true,
         rivalSubmitted: false,
         canReveal: false,
-        mine: { team: 'A', entries: [['bea'], ['ana']], submitted: true, automatic: false },
-      })
+        mine: {
+          team: 'A',
+          entries: [['bea'], ['ana']],
+          submitted: true,
+          automatic: false,
+        },
+      }),
     );
     pintar();
 
@@ -253,8 +312,11 @@ describe('EnvelopePage · el sobre del capitán (FE #655)', () => {
         revealed: true,
         teamASubmitted: true,
         teamBSubmitted: true,
-        matchups: [[['bea'], ['carla']], [['ana'], ['dani']]],
-      })
+        matchups: [
+          [['bea'], ['carla']],
+          [['ana'], ['dani']],
+        ],
+      }),
     );
     pintar();
 
@@ -271,13 +333,15 @@ describe('EnvelopePage · el sobre del capitán (FE #655)', () => {
         teamBSubmitted: true,
         teamBAutomatic: true,
         matchups: [[['bea'], ['carla']]],
-      })
+      }),
     );
     pintar();
 
     // Un aviso que nombra al equipo B (#710); el detalle, en N1-N3
     // Los nombres llegan después del aviso: se espera al texto
-    await waitFor(() => expect(screen.getByTestId('automatico')).toHaveTextContent('América'));
+    await waitFor(() =>
+      expect(screen.getByTestId('automatico')).toHaveTextContent('América'),
+    );
   });
 
   it('V11b: abiertos y sin partidos, dice por qué (BE #361)', async () => {
@@ -291,13 +355,22 @@ describe('EnvelopePage · el sobre del capitán (FE #655)', () => {
         matchups: [[['bea'], ['carla']]],
         matchGenerationBlock: {
           reason: 'PLAYERS_WITHOUT_TEE',
-          players: [{ userId: 'bea', name: 'Bea Blanco', missing: 'GENDER', teeColor: null }],
+          players: [
+            {
+              userId: 'bea',
+              name: 'Bea Blanco',
+              missing: 'GENDER',
+              teeColor: null,
+            },
+          ],
         },
-      })
+      }),
     );
     pintar();
 
-    expect(await screen.findByTestId('bloqueo-de-partidos')).toHaveTextContent('Bea Blanco');
+    expect(await screen.findByTestId('bloqueo-de-partidos')).toHaveTextContent(
+      'Bea Blanco',
+    );
   });
 
   it('V12: quien no capitanea no ve ninguna lista que ordenar', async () => {
@@ -315,7 +388,9 @@ describe('EnvelopePage · el sobre del capitán (FE #655)', () => {
     mockVer.mockRejectedValue(new Error('No participas en esta competición'));
     pintar();
 
-    expect(await screen.findByTestId('sobre-no-disponible')).toBeInTheDocument();
+    expect(
+      await screen.findByTestId('sobre-no-disponible'),
+    ).toBeInTheDocument();
     expect(screen.queryByTestId('solo-mirando')).not.toBeInTheDocument();
   });
 
@@ -325,8 +400,13 @@ describe('EnvelopePage · el sobre del capitán (FE #655)', () => {
     mockVer.mockResolvedValue(
       vista({
         teamASubmitted: true,
-        mine: { team: 'A', entries: [['bea'], ['ana']], submitted: true, automatic: false },
-      })
+        mine: {
+          team: 'A',
+          entries: [['bea'], ['ana']],
+          submitted: true,
+          automatic: false,
+        },
+      }),
     );
     pintar();
     fireEvent.click(await screen.findByTestId('cambiar-sobre'));
@@ -344,8 +424,13 @@ describe('EnvelopePage · el sobre del capitán (FE #655)', () => {
         teamASubmitted: true,
         rivalSubmitted: true,
         canReveal: true,
-        mine: { team: 'A', entries: [['bea'], ['ana']], submitted: true, automatic: false },
-      })
+        mine: {
+          team: 'A',
+          entries: [['bea'], ['ana']],
+          submitted: true,
+          automatic: false,
+        },
+      }),
     );
     pintar();
     expect(await screen.findByTestId('abrir-sobres')).toBeInTheDocument();
@@ -360,7 +445,7 @@ describe('EnvelopePage · el sobre del capitán (FE #655)', () => {
     // solos nunca y el organizador conserva la llave. Con el botón a secas
     // abriría sin saber que el sobre que falta lo va a rellenar la aplicación
     mockVer.mockResolvedValue(
-      vista({ canReveal: true, revealScheduledAt: null, teamASubmitted: true })
+      vista({ canReveal: true, revealScheduledAt: null, teamASubmitted: true }),
     );
     pintar();
 
@@ -370,7 +455,7 @@ describe('EnvelopePage · el sobre del capitán (FE #655)', () => {
 
   it('V17b: con plazo y los dos sobres dentro no hay aviso que dar', async () => {
     mockVer.mockResolvedValue(
-      vista({ canReveal: true, teamASubmitted: true, teamBSubmitted: true })
+      vista({ canReveal: true, teamASubmitted: true, teamBSubmitted: true }),
     );
     pintar();
 
@@ -399,8 +484,13 @@ describe('EnvelopePage · el sobre del capitán (FE #655)', () => {
         teamASubmitted: true,
         rivalSubmitted: true,
         canReveal: true,
-        mine: { team: 'A', entries: [['bea'], ['ana']], submitted: true, automatic: false },
-      })
+        mine: {
+          team: 'A',
+          entries: [['bea'], ['ana']],
+          submitted: true,
+          automatic: false,
+        },
+      }),
     );
     pintar();
 
@@ -428,12 +518,17 @@ describe('EnvelopePage · el sobre del capitán (FE #655)', () => {
   it('V20: y al entregar se manda lo que el capitán marcó', async () => {
     pintar();
     fireEvent.click(await screen.findByTestId('sin-esperar'));
-    for (const j of ['bea', 'ana']) fireEvent.click(screen.getByTestId(`jugador-${j}`));
+    for (const j of ['bea', 'ana'])
+      fireEvent.click(screen.getByTestId(`jugador-${j}`));
 
     fireEvent.click(screen.getByTestId('entregar-sobre'));
 
     await waitFor(() =>
-      expect(mockEntregar).toHaveBeenCalledWith('ronda-1', [['bea'], ['ana']], true)
+      expect(mockEntregar).toHaveBeenCalledWith(
+        'ronda-1',
+        [['bea'], ['ana']],
+        true,
+      ),
     );
   });
 
@@ -451,11 +546,13 @@ describe('EnvelopePage · el sobre del capitán (FE #655)', () => {
           automatic: false,
           revealWhenBothReady: true,
         },
-      })
+      }),
     );
     pintar();
 
-    expect(await screen.findByTestId('falta-que-lo-marque-el-rival')).toBeInTheDocument();
+    expect(
+      await screen.findByTestId('falta-que-lo-marque-el-rival'),
+    ).toBeInTheDocument();
   });
 
   it('V22: y cuando los dos lo han pedido no se anuncia que falte nadie', async () => {
@@ -471,12 +568,14 @@ describe('EnvelopePage · el sobre del capitán (FE #655)', () => {
           automatic: false,
           revealWhenBothReady: true,
         },
-      })
+      }),
     );
     pintar();
 
     await screen.findByTestId('sobre-entregado');
-    expect(screen.queryByTestId('falta-que-lo-marque-el-rival')).not.toBeInTheDocument();
+    expect(
+      screen.queryByTestId('falta-que-lo-marque-el-rival'),
+    ).not.toBeInTheDocument();
   });
 
   it('V23: y se dice a qué hora se abren solos, que es el plazo', async () => {
@@ -499,7 +598,7 @@ describe('EnvelopePage · el sobre del capitán (FE #655)', () => {
           automatic: false,
           revealWhenBothReady: true,
         },
-      })
+      }),
     );
     pintar();
 
@@ -519,16 +618,21 @@ describe('EnvelopePage · el sobre del capitán (FE #655)', () => {
           automatic: false,
           revealWhenBothReady: true,
         },
-      })
+      }),
     );
     pintar();
     fireEvent.click(await screen.findByTestId('cambiar-sobre'));
-    for (const j of ['ana', 'bea']) fireEvent.click(await screen.findByTestId(`jugador-${j}`));
+    for (const j of ['ana', 'bea'])
+      fireEvent.click(await screen.findByTestId(`jugador-${j}`));
 
     fireEvent.click(screen.getByTestId('entregar-sobre'));
 
     await waitFor(() =>
-      expect(mockEntregar).toHaveBeenCalledWith('ronda-1', [['ana'], ['bea']], true)
+      expect(mockEntregar).toHaveBeenCalledWith(
+        'ronda-1',
+        [['ana'], ['bea']],
+        true,
+      ),
     );
   });
 
@@ -546,7 +650,7 @@ describe('EnvelopePage · el sobre del capitán (FE #655)', () => {
           automatic: false,
           revealWhenBothReady: true,
         },
-      })
+      }),
     );
     pintar();
 
@@ -566,16 +670,21 @@ describe('EnvelopePage · el sobre del capitán (FE #655)', () => {
           automatic: false,
           revealWhenBothReady: true,
         },
-      })
+      }),
     );
     pintar();
     fireEvent.click(await screen.findByTestId('cambiar-sobre'));
-    for (const j of ['ana', 'bea']) fireEvent.click(await screen.findByTestId(`jugador-${j}`));
+    for (const j of ['ana', 'bea'])
+      fireEvent.click(await screen.findByTestId(`jugador-${j}`));
 
     fireEvent.click(screen.getByTestId('entregar-sobre'));
 
     await waitFor(() =>
-      expect(mockEntregar).toHaveBeenCalledWith('ronda-1', [['ana'], ['bea']], true)
+      expect(mockEntregar).toHaveBeenCalledWith(
+        'ronda-1',
+        [['ana'], ['bea']],
+        true,
+      ),
     );
   });
 
@@ -588,7 +697,9 @@ describe('EnvelopePage · el sobre del capitán (FE #655)', () => {
     fireEvent.click(screen.getByTestId('entregar-sobre'));
 
     await waitFor(() =>
-      expect(customToast.error).toHaveBeenCalledWith('Faltan jugadores del equipo')
+      expect(customToast.error).toHaveBeenCalledWith(
+        'Faltan jugadores del equipo',
+      ),
     );
     expect(screen.getByTestId('puesto-bea')).toHaveTextContent('1');
   });
@@ -634,8 +745,8 @@ describe('EnvelopePage · el sobre del capitán (FE #655)', () => {
           ['bea', 'ana'],
           ['carla', 'dani'],
         ],
-        false
-      )
+        false,
+      ),
     );
   });
 
@@ -657,8 +768,11 @@ describe('EnvelopePage · el sobre del capitán (FE #655)', () => {
     mockVer.mockResolvedValue(
       enParejas({
         teamsFitFormat: false,
-        myPlayers: [...CUATRO, { userId: 'eva', name: 'Eva Egea', handicap: 30 }],
-      })
+        myPlayers: [
+          ...CUATRO,
+          { userId: 'eva', name: 'Eva Egea', handicap: 30 },
+        ],
+      }),
     );
     pintar();
 
@@ -676,8 +790,11 @@ describe('EnvelopePage · el sobre del capitán (FE #655)', () => {
     mockVer.mockResolvedValue(
       enParejas({
         teamsFitFormat: false,
-        myPlayers: [...CUATRO, { userId: 'eva', name: 'Eva Egea', handicap: 30 }],
-      })
+        myPlayers: [
+          ...CUATRO,
+          { userId: 'eva', name: 'Eva Egea', handicap: 30 },
+        ],
+      }),
     );
     pintar();
 
@@ -701,8 +818,12 @@ describe('EnvelopePage · el sobre del capitán (FE #655)', () => {
     mockVer.mockResolvedValue(vista({ myPlayers: [] }));
     pintar();
 
-    expect(await screen.findByRole('heading', { name: 'envelope.titleOthers' })).toBeInTheDocument();
-    expect(screen.queryByRole('heading', { name: 'envelope.title' })).toBeNull();
+    expect(
+      await screen.findByRole('heading', { name: 'envelope.titleOthers' }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole('heading', { name: 'envelope.title' }),
+    ).toBeNull();
   });
 
   it('O2: con el equipo impar, a quien no capitanea solo le queda el aviso', async () => {
@@ -717,14 +838,18 @@ describe('EnvelopePage · el sobre del capitán (FE #655)', () => {
     mockVer.mockResolvedValue(vista({ myPlayers: [] }));
     pintar();
 
-    expect(await screen.findByText('envelope.onlyCaptains')).toBeInTheDocument();
+    expect(
+      await screen.findByText('envelope.onlyCaptains'),
+    ).toBeInTheDocument();
   });
 
   it('O4: el capitán sigue viendo «Tu sobre»', async () => {
     mockVer.mockResolvedValue(vista());
     pintar();
 
-    expect(await screen.findByRole('heading', { name: 'envelope.title' })).toBeInTheDocument();
+    expect(
+      await screen.findByRole('heading', { name: 'envelope.title' }),
+    ).toBeInTheDocument();
   });
 
   it('P7: y también después de entregar, si el equipo se queda impar', async () => {
@@ -732,8 +857,13 @@ describe('EnvelopePage · el sobre del capitán (FE #655)', () => {
       enParejas({
         teamsFitFormat: false,
         teamASubmitted: true,
-        mine: { team: 'A', entries: [['bea', 'ana']], submitted: true, automatic: false },
-      })
+        mine: {
+          team: 'A',
+          entries: [['bea', 'ana']],
+          submitted: true,
+          automatic: false,
+        },
+      }),
     );
     pintar();
 
@@ -747,8 +877,13 @@ describe('EnvelopePage · el sobre del capitán (FE #655)', () => {
       enParejas({
         teamsFitFormat: false,
         teamASubmitted: true,
-        mine: { team: 'A', entries: [['bea', 'ana']], submitted: true, automatic: false },
-      })
+        mine: {
+          team: 'A',
+          entries: [['bea', 'ana']],
+          submitted: true,
+          automatic: false,
+        },
+      }),
     );
     pintar();
 
@@ -767,13 +902,20 @@ describe('EnvelopePage · el sobre del capitán (FE #655)', () => {
         canReveal: true,
         revealScheduledAt: null,
         teamASubmitted: true,
-        mine: { team: 'A', entries: [['bea', 'ana']], submitted: true, automatic: false },
-      })
+        mine: {
+          team: 'A',
+          entries: [['bea', 'ana']],
+          submitted: true,
+          automatic: false,
+        },
+      }),
     );
     pintar();
 
     await screen.findByTestId('equipo-impar');
-    expect(screen.queryByRole('button', { name: 'envelope.reveal' })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: 'envelope.reveal' }),
+    ).not.toBeInTheDocument();
     expect(screen.queryByTestId('sin-plazo')).not.toBeInTheDocument();
   });
 
@@ -841,7 +983,11 @@ describe('EnvelopePage · el permiso para abrirlos antes de hora (FE #717)', () 
 
   beforeEach(() => {
     vi.clearAllMocks();
-    mockEntregar.mockResolvedValue({ team: 'A', entries: [['bea'], ['ana']], automatic: false });
+    mockEntregar.mockResolvedValue({
+      team: 'A',
+      entries: [['bea'], ['ana']],
+      automatic: false,
+    });
   });
 
   it('E1: ya entregado, se da el permiso sin volver a ordenar', async () => {
@@ -853,7 +999,11 @@ describe('EnvelopePage · el permiso para abrirlos antes de hora (FE #717)', () 
     fireEvent.click(await screen.findByTestId('dar-permiso'));
 
     await waitFor(() =>
-      expect(mockEntregar).toHaveBeenCalledWith('ronda-1', [['bea'], ['ana']], true)
+      expect(mockEntregar).toHaveBeenCalledWith(
+        'ronda-1',
+        [['bea'], ['ana']],
+        true,
+      ),
     );
     // Lo que vuelve del servidor: con el permiso dado, se puede retirar
     expect(await screen.findByTestId('retirar-permiso')).toBeInTheDocument();
@@ -864,13 +1014,19 @@ describe('EnvelopePage · el permiso para abrirlos antes de hora (FE #717)', () 
     mockVer.mockResolvedValue(entregado({}, { revealWhenBothReady: true }));
     pintar();
 
-    expect(await screen.findByTestId('falta-que-lo-marque-el-rival')).toBeInTheDocument();
+    expect(
+      await screen.findByTestId('falta-que-lo-marque-el-rival'),
+    ).toBeInTheDocument();
     expect(screen.queryByTestId('dar-permiso')).not.toBeInTheDocument();
     mockVer.mockResolvedValue(entregado());
     fireEvent.click(screen.getByTestId('retirar-permiso'));
 
     await waitFor(() =>
-      expect(mockEntregar).toHaveBeenCalledWith('ronda-1', [['bea'], ['ana']], false)
+      expect(mockEntregar).toHaveBeenCalledWith(
+        'ronda-1',
+        [['bea'], ['ana']],
+        false,
+      ),
     );
     // Retirado: vuelve a ofrecerse darlo
     expect(await screen.findByTestId('dar-permiso')).toBeInTheDocument();
@@ -878,12 +1034,14 @@ describe('EnvelopePage · el permiso para abrirlos antes de hora (FE #717)', () 
   });
 
   it('E3: si el otro ya dio el suyo, se dice', async () => {
-    mockVer.mockResolvedValue(entregado({ rivalWantsEarly: true, rivalSubmitted: true }));
+    mockVer.mockResolvedValue(
+      entregado({ rivalWantsEarly: true, rivalSubmitted: true }),
+    );
     pintar();
 
-    expect(await screen.findByTestId('el-rival-ya-dio-permiso')).toHaveTextContent(
-      'envelope.rivalConsented'
-    );
+    expect(
+      await screen.findByTestId('el-rival-ya-dio-permiso'),
+    ).toHaveTextContent('envelope.rivalConsented');
     expect(screen.getByTestId('dar-permiso')).toBeInTheDocument();
   });
 
@@ -891,7 +1049,9 @@ describe('EnvelopePage · el permiso para abrirlos antes de hora (FE #717)', () 
     mockVer.mockResolvedValue(entregado());
     pintar();
 
-    expect(await screen.findByTestId('se-abren-solos')).toHaveTextContent('envelope.opensOnItsOwn');
+    expect(await screen.findByTestId('se-abren-solos')).toHaveTextContent(
+      'envelope.opensOnItsOwn',
+    );
   });
 
   it('E5: sin plazo no se promete ninguna hora', async () => {
@@ -904,7 +1064,12 @@ describe('EnvelopePage · el permiso para abrirlos antes de hora (FE #717)', () 
 
   it('E6: con el envío en marcha, un segundo toque no manda nada', async () => {
     let soltar;
-    mockEntregar.mockImplementation(() => new Promise((r) => { soltar = r; }));
+    mockEntregar.mockImplementation(
+      () =>
+        new Promise((r) => {
+          soltar = r;
+        }),
+    );
     mockVer.mockResolvedValue(entregado());
     pintar();
 
@@ -918,7 +1083,12 @@ describe('EnvelopePage · el permiso para abrirlos antes de hora (FE #717)', () 
 
   it('E7: mientras se guarda el permiso no se puede ir a cambiar el orden', async () => {
     let soltar;
-    mockEntregar.mockImplementation(() => new Promise((r) => { soltar = r; }));
+    mockEntregar.mockImplementation(
+      () =>
+        new Promise((r) => {
+          soltar = r;
+        }),
+    );
     mockVer.mockResolvedValue(entregado());
     pintar();
 
@@ -931,15 +1101,15 @@ describe('EnvelopePage · el permiso para abrirlos antes de hora (FE #717)', () 
   });
 
   it('E8: si la hora no se puede enseñar, no sale la frase a medias', async () => {
-    mockVer.mockResolvedValue(entregado({ revealScheduledAt: '2030-06-01T00:00:00' }));
+    mockVer.mockResolvedValue(
+      entregado({ revealScheduledAt: '2030-06-01T00:00:00' }),
+    );
     pintar();
 
     await screen.findByTestId('dar-permiso');
     expect(screen.queryByTestId('se-abren-solos')).not.toBeInTheDocument();
   });
 });
-
-
 
 /**
  * La página se entera sola de que se abrieron (#710). Con los dos permisos, el
@@ -958,7 +1128,12 @@ describe('EnvelopePage · se entera sola de que se abrieron (#710)', () => {
   const entregadoYEsperando = () =>
     vista({
       teamASubmitted: true,
-      mine: { team: 'A', entries: [['ana'], ['bea']], submitted: true, automatic: false },
+      mine: {
+        team: 'A',
+        entries: [['ana'], ['bea']],
+        submitted: true,
+        automatic: false,
+      },
     });
 
   beforeEach(() => {
@@ -981,17 +1156,20 @@ describe('EnvelopePage · se entera sola de que se abrieron (#710)', () => {
   };
 
   it('S1: con el mío entregado y cerrados, pregunta sola y ve los enfrentamientos', async () => {
-    mockVer
-      .mockResolvedValueOnce(entregadoYEsperando())
-      .mockResolvedValue(
-        vista({
-          revealed: true,
-          teamASubmitted: true,
-          teamBSubmitted: true,
-          mine: { team: 'A', entries: [['ana'], ['bea']], submitted: true, automatic: false },
-          matchups: [[['ana'], ['carla']]],
-        })
-      );
+    mockVer.mockResolvedValueOnce(entregadoYEsperando()).mockResolvedValue(
+      vista({
+        revealed: true,
+        teamASubmitted: true,
+        teamBSubmitted: true,
+        mine: {
+          team: 'A',
+          entries: [['ana'], ['bea']],
+          submitted: true,
+          automatic: false,
+        },
+        matchups: [[['ana'], ['carla']]],
+      }),
+    );
     pintar();
     await screen.findByTestId('dar-permiso');
 
@@ -1005,9 +1183,12 @@ describe('EnvelopePage · se entera sola de que se abrieron (#710)', () => {
     // equipo impar: sin formulario (#741) y sin el entregado, la pantalla se
     // quedaba solo con el aviso hasta recargar
     let responder;
-    mockVer
-      .mockResolvedValueOnce(entregadoYEsperando())
-      .mockImplementationOnce(() => new Promise((r) => { responder = r; }));
+    mockVer.mockResolvedValueOnce(entregadoYEsperando()).mockImplementationOnce(
+      () =>
+        new Promise((r) => {
+          responder = r;
+        }),
+    );
     pintar();
     await screen.findByTestId('dar-permiso');
 
@@ -1041,9 +1222,14 @@ describe('EnvelopePage · se entera sola de que se abrieron (#710)', () => {
         revealed: true,
         teamASubmitted: true,
         teamBSubmitted: true,
-        mine: { team: 'A', entries: [['ana'], ['bea']], submitted: true, automatic: false },
+        mine: {
+          team: 'A',
+          entries: [['ana'], ['bea']],
+          submitted: true,
+          automatic: false,
+        },
         matchups: [[['ana'], ['carla']]],
-      })
+      }),
     );
     pintar();
     await waitFor(() => expect(mockVer).toHaveBeenCalledTimes(1));
@@ -1064,7 +1250,9 @@ describe('EnvelopePage · se entera sola de que se abrieron (#710)', () => {
   });
 
   it('S5: un fallo del refresco no salta como error', async () => {
-    mockVer.mockResolvedValueOnce(entregadoYEsperando()).mockRejectedValue(new Error('sin red'));
+    mockVer
+      .mockResolvedValueOnce(entregadoYEsperando())
+      .mockRejectedValue(new Error('sin red'));
     pintar();
     await screen.findByTestId('dar-permiso');
 
@@ -1080,7 +1268,12 @@ describe('EnvelopePage · se entera sola de que se abrieron (#710)', () => {
     let devolverLaVieja;
     mockVer
       .mockResolvedValueOnce(entregadoYEsperando())
-      .mockImplementationOnce(() => new Promise((resolve) => { devolverLaVieja = resolve; }))
+      .mockImplementationOnce(
+        () =>
+          new Promise((resolve) => {
+            devolverLaVieja = resolve;
+          }),
+      )
       .mockResolvedValue(
         vista({
           teamASubmitted: true,
@@ -1091,9 +1284,13 @@ describe('EnvelopePage · se entera sola de que se abrieron (#710)', () => {
             automatic: false,
             revealWhenBothReady: true,
           },
-        })
+        }),
       );
-    mockEntregar.mockResolvedValue({ team: 'A', entries: [['ana'], ['bea']], automatic: false });
+    mockEntregar.mockResolvedValue({
+      team: 'A',
+      entries: [['ana'], ['bea']],
+      automatic: false,
+    });
     pintar();
     await screen.findByTestId('dar-permiso');
     await pasan(11000);
@@ -1112,7 +1309,11 @@ describe('EnvelopePage · se entera sola de que se abrieron (#710)', () => {
       .mockResolvedValueOnce(entregadoYEsperando())
       .mockRejectedValueOnce(new Error('Boom'))
       .mockResolvedValue(entregadoYEsperando());
-    mockEntregar.mockResolvedValue({ team: 'A', entries: [['ana'], ['bea']], automatic: false });
+    mockEntregar.mockResolvedValue({
+      team: 'A',
+      entries: [['ana'], ['bea']],
+      automatic: false,
+    });
     pintar();
     // Dar el permiso recarga, y esa recarga falla: la pantalla enseña el error
     fireEvent.click(await screen.findByTestId('dar-permiso'));
@@ -1152,7 +1353,10 @@ describe('EnvelopePage · se entera sola de que se abrieron (#710)', () => {
 describe('EnvelopePage · lo que se lee (FE #710)', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockCompeticion.mockResolvedValue({ team1Name: 'Europa', team2Name: 'América' });
+    mockCompeticion.mockResolvedValue({
+      team1Name: 'Europa',
+      team2Name: 'América',
+    });
   });
 
   const abiertos = (extra) =>
@@ -1170,12 +1374,14 @@ describe('EnvelopePage · lo que se lee (FE #710)', () => {
 
     const aviso = await screen.findByTestId('automatico');
     await waitFor(() =>
-      expect(aviso).toHaveTextContent('envelope.filledByTheAppTeam América')
+      expect(aviso).toHaveTextContent('envelope.filledByTheAppTeam América'),
     );
   });
 
   it('N2: los dos: un solo aviso', async () => {
-    mockVer.mockResolvedValue(abiertos({ teamAAutomatic: true, teamBAutomatic: true }));
+    mockVer.mockResolvedValue(
+      abiertos({ teamAAutomatic: true, teamBAutomatic: true }),
+    );
     pintar();
 
     const avisos = await screen.findAllByTestId('automatico');
@@ -1188,7 +1394,9 @@ describe('EnvelopePage · lo que se lee (FE #710)', () => {
     mockVer.mockResolvedValue(abiertos({ teamAAutomatic: true }));
     pintar();
 
-    expect(await screen.findByTestId('automatico')).toHaveTextContent('envelope.filledByTheApp');
+    expect(await screen.findByTestId('automatico')).toHaveTextContent(
+      'envelope.filledByTheApp',
+    );
   });
 
   it('N3b: sin sobres rellenados por la app no se pregunta por los equipos', async () => {
@@ -1204,32 +1412,54 @@ describe('EnvelopePage · lo que se lee (FE #710)', () => {
     const { Link } = await import('react-router');
     mockVer.mockResolvedValue(abiertos({ teamBAutomatic: true }));
     render(
-      <MemoryRouter initialEntries={['/competitions/comp-1/rounds/ronda-1/envelope']}>
+      <MemoryRouter
+        initialEntries={['/competitions/comp-1/rounds/ronda-1/envelope']}
+      >
         <Link to="/competitions/comp-2/rounds/ronda-2/envelope">otra</Link>
         <Routes>
-          <Route path="/competitions/:id/rounds/:roundId/envelope" element={<EnvelopePage />} />
+          <Route
+            path="/competitions/:id/rounds/:roundId/envelope"
+            element={<EnvelopePage />}
+          />
         </Routes>
-      </MemoryRouter>
+      </MemoryRouter>,
     );
-    await waitFor(() => expect(screen.getByTestId('automatico')).toHaveTextContent('América'));
+    await waitFor(() =>
+      expect(screen.getByTestId('automatico')).toHaveTextContent('América'),
+    );
 
     mockCompeticion.mockRejectedValue(new TypeError('Failed to fetch'));
     fireEvent.click(screen.getByText('otra'));
 
     await waitFor(() => expect(mockCompeticion).toHaveBeenCalledWith('comp-2'));
     await waitFor(() =>
-      expect(screen.getByTestId('automatico').textContent).toBe('envelope.filledByTheApp')
+      expect(screen.getByTestId('automatico').textContent).toBe(
+        'envelope.filledByTheApp',
+      ),
     );
   });
 
   it('N4: las parejas se leen enteras, un nombre por línea', async () => {
     mockVer.mockResolvedValue(
-      abiertos({ playersPerRow: 2, matchups: [[['ana', 'bea'], ['carla', 'dani']]] })
+      abiertos({
+        playersPerRow: 2,
+        matchups: [
+          [
+            ['ana', 'bea'],
+            ['carla', 'dani'],
+          ],
+        ],
+      }),
     );
     pintar();
 
     const fila = await screen.findByTestId('enfrentamiento-0');
-    for (const nombre of ['Ana Alba', 'Bea Blanco', 'Carla Cruz', 'Dani Díaz']) {
+    for (const nombre of [
+      'Ana Alba',
+      'Bea Blanco',
+      'Carla Cruz',
+      'Dani Díaz',
+    ]) {
       expect(within(fila).getByText(nombre)).toBeInTheDocument();
     }
     expect(fila.querySelector('.truncate')).toBeNull();

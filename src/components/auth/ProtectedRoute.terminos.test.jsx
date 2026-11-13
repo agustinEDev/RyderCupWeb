@@ -15,26 +15,60 @@ import { MemoryRouter, Routes, Route, useLocation } from 'react-router';
  *   /profile/devices         | false          | los dispositivos: se pueden cerrar sin aceptar (decisión de Agustín)
  */
 const sesion = vi.hoisted(() => ({ user: null }));
-vi.mock('../../hooks/useAuth', () => ({ useAuth: () => ({ user: sesion.user, loading: false }) }));
+vi.mock('../../hooks/useAuth', () => ({
+  useAuth: () => ({ user: sesion.user, loading: false }),
+}));
 
 const { default: ProtectedRoute } = await import('./ProtectedRoute');
 
 const PantallaDeAceptar = () => {
   const location = useLocation();
-  return <p>aceptar los Términos desde {location.state?.from?.pathname ?? 'ninguna'}</p>;
+  return (
+    <p>
+      aceptar los Términos desde {location.state?.from?.pathname ?? 'ninguna'}
+    </p>
+  );
 };
 
 const abrir = (ruta) =>
   render(
     <MemoryRouter initialEntries={[ruta]}>
       <Routes>
-        <Route path="/dashboard" element={<ProtectedRoute><p>panel</p></ProtectedRoute>} />
-        <Route path="/accept-terms" element={<ProtectedRoute><PantallaDeAceptar /></ProtectedRoute>} />
-        <Route path="/auth/complete-profile" element={<ProtectedRoute><p>completar perfil</p></ProtectedRoute>} />
-        <Route path="/profile/devices" element={<ProtectedRoute><p>mis dispositivos</p></ProtectedRoute>} />
+        <Route
+          path="/dashboard"
+          element={
+            <ProtectedRoute>
+              <p>panel</p>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/accept-terms"
+          element={
+            <ProtectedRoute>
+              <PantallaDeAceptar />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/auth/complete-profile"
+          element={
+            <ProtectedRoute>
+              <p>completar perfil</p>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/profile/devices"
+          element={
+            <ProtectedRoute>
+              <p>mis dispositivos</p>
+            </ProtectedRoute>
+          }
+        />
         <Route path="/login" element={<p>entrar</p>} />
       </Routes>
-    </MemoryRouter>
+    </MemoryRouter>,
   );
 
 describe('ProtectedRoute · Términos sin aceptar (F3)', () => {
@@ -42,7 +76,9 @@ describe('ProtectedRoute · Términos sin aceptar (F3)', () => {
     sesion.user = { id: 'u-1', terms_accepted: false };
     abrir('/dashboard');
 
-    expect(screen.getByText('aceptar los Términos desde /dashboard')).toBeInTheDocument();
+    expect(
+      screen.getByText('aceptar los Términos desde /dashboard'),
+    ).toBeInTheDocument();
     expect(screen.queryByText('panel')).toBeNull();
   });
 
@@ -60,7 +96,9 @@ describe('ProtectedRoute · Términos sin aceptar (F3)', () => {
     sesion.user = { id: 'u-1', terms_accepted: false };
     abrir('/accept-terms');
 
-    expect(screen.getByText('aceptar los Términos desde ninguna')).toBeInTheDocument();
+    expect(
+      screen.getByText('aceptar los Términos desde ninguna'),
+    ).toBeInTheDocument();
   });
 
   it('completar perfil deja pasar: es donde acepta el usuario nuevo de Google', () => {

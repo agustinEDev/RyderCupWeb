@@ -43,7 +43,9 @@ class CreateGolfCourseAdminUseCase {
       throw new Error('Country code must be 2 characters (ISO 3166-1 alpha-2)');
     }
 
-    if (!['STANDARD_18', 'PITCH_AND_PUTT', 'EXECUTIVE'].includes(data.courseType)) {
+    if (
+      !['STANDARD_18', 'PITCH_AND_PUTT', 'EXECUTIVE'].includes(data.courseType)
+    ) {
       throw new Error('Invalid course type');
     }
 
@@ -52,7 +54,9 @@ class CreateGolfCourseAdminUseCase {
     // por color y genero— que el panel no podia ni abrir, y dos de una sola
     // barra que tampoco.
     if (!data.tees || !isTeeCountValid(data.tees.length)) {
-      throw new Error(`Golf course must have between ${MIN_TEES} and ${MAX_TEES} tees`);
+      throw new Error(
+        `Golf course must have between ${MIN_TEES} and ${MAX_TEES} tees`,
+      );
     }
 
     if (!data.holes || data.holes.length !== 18) {
@@ -65,13 +69,15 @@ class CreateGolfCourseAdminUseCase {
     data.holes.forEach((hole, index) => {
       if (!isHoleParValid(hole.par)) {
         throw new Error(
-          `Hole ${index + 1} par must be one of ${VALID_HOLE_PARS.join(', ')} (current: ${hole.par})`
+          `Hole ${index + 1} par must be one of ${VALID_HOLE_PARS.join(', ')} (current: ${hole.par})`,
         );
       }
     });
 
     // Validate unique stroke indices
-    const strokeIndices = data.holes.map(h => h.strokeIndex || h.stroke_index);
+    const strokeIndices = data.holes.map(
+      (h) => h.strokeIndex || h.stroke_index,
+    );
     const uniqueIndices = new Set(strokeIndices);
     if (uniqueIndices.size !== 18) {
       throw new Error('Each hole must have a unique stroke index (1-18)');
@@ -82,7 +88,9 @@ class CreateGolfCourseAdminUseCase {
     const totalPar = data.holes.reduce((sum, h) => sum + h.par, 0);
     const [minPar, maxPar] = parRangeFor(data.courseType);
     if (totalPar < minPar || totalPar > maxPar) {
-      throw new Error(`Total par must be between ${minPar} and ${maxPar}. Got: ${totalPar}`);
+      throw new Error(
+        `Total par must be between ${minPar} and ${maxPar}. Got: ${totalPar}`,
+      );
     }
   }
 }

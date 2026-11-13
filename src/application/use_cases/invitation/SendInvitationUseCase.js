@@ -26,7 +26,7 @@ class SendInvitationUseCase {
     const invitation = await this.#invitationRepository.sendInvitation(
       competitionId,
       inviteeUserId,
-      personalMessage
+      personalMessage,
     );
 
     return InvitationAssembler.toSimpleDTO(invitation, invitation._apiData);

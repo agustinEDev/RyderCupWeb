@@ -16,7 +16,9 @@ describe('UpdateManualHandicapUseCase', () => {
     };
 
     // Instanciar UpdateManualHandicapUseCase con el mock
-    updateManualHandicapUseCase = new UpdateManualHandicapUseCase({ handicapRepository });
+    updateManualHandicapUseCase = new UpdateManualHandicapUseCase({
+      handicapRepository,
+    });
   });
 
   it('should successfully update user manual handicap within valid range', async () => {
@@ -29,68 +31,107 @@ describe('UpdateManualHandicapUseCase', () => {
       last_name: 'User',
       email: 'test@example.com',
       handicap: validHandicap,
-      handicap_updated_at: new Date().toISOString()
+      handicap_updated_at: new Date().toISOString(),
     });
 
     // Configurar el mock del repositorio para devolver el usuario actualizado simulado
     handicapRepository.updateManual.mockResolvedValue(mockUpdatedUserEntity);
 
     // Act
-    const updatedUser = await updateManualHandicapUseCase.execute({ userId, handicap: validHandicap });
+    const updatedUser = await updateManualHandicapUseCase.execute({
+      userId,
+      handicap: validHandicap,
+    });
 
     // Assert
     // 1. Verificar que el método updateManual del repositorio fue llamado con los datos correctos
-    expect(handicapRepository.updateManual).toHaveBeenCalledWith(userId, validHandicap);
+    expect(handicapRepository.updateManual).toHaveBeenCalledWith(
+      userId,
+      validHandicap,
+    );
 
     // 2. Verificar que el caso de uso devuelve la entidad User correcta
     expect(updatedUser).toEqual(mockUpdatedUserEntity);
   });
 
   it('should throw an error if userId is not provided', async () => {
-    await expect(updateManualHandicapUseCase.execute({ userId: '', handicap: 10 }))
-      .rejects.toThrow('User ID and handicap value are required');
+    await expect(
+      updateManualHandicapUseCase.execute({ userId: '', handicap: 10 }),
+    ).rejects.toThrow('User ID and handicap value are required');
   });
 
   it('should throw an error if handicap is not provided', async () => {
-    await expect(updateManualHandicapUseCase.execute({ userId: 'user-123', handicap: undefined }))
-      .rejects.toThrow('User ID and handicap value are required');
+    await expect(
+      updateManualHandicapUseCase.execute({
+        userId: 'user-123',
+        handicap: undefined,
+      }),
+    ).rejects.toThrow('User ID and handicap value are required');
   });
 
   // Number('') is 0: an empty field was saved as handicap 0 (26 Oct)
-  it.each(['', '   '])('should throw an error if handicap is empty (%j), not save 0', async (vacio) => {
-    await expect(updateManualHandicapUseCase.execute({ userId: 'user-123', handicap: vacio }))
-      .rejects.toThrow('User ID and handicap value are required');
-    expect(handicapRepository.updateManual).not.toHaveBeenCalled();
-  });
+  it.each(['', '   '])(
+    'should throw an error if handicap is empty (%j), not save 0',
+    async (vacio) => {
+      await expect(
+        updateManualHandicapUseCase.execute({
+          userId: 'user-123',
+          handicap: vacio,
+        }),
+      ).rejects.toThrow('User ID and handicap value are required');
+      expect(handicapRepository.updateManual).not.toHaveBeenCalled();
+    },
+  );
 
   it('should throw an error if handicap is below the valid range', async () => {
-    await expect(updateManualHandicapUseCase.execute({ userId: 'user-123', handicap: -10.1 }))
-      .rejects.toThrow('Invalid handicap value. Must be between -10.0 and 54.0');
+    await expect(
+      updateManualHandicapUseCase.execute({
+        userId: 'user-123',
+        handicap: -10.1,
+      }),
+    ).rejects.toThrow('Invalid handicap value. Must be between -10.0 and 54.0');
   });
 
   it('should throw an error if handicap is above the valid range', async () => {
-    await expect(updateManualHandicapUseCase.execute({ userId: 'user-123', handicap: 54.1 }))
-      .rejects.toThrow('Invalid handicap value. Must be between -10.0 and 54.0');
+    await expect(
+      updateManualHandicapUseCase.execute({
+        userId: 'user-123',
+        handicap: 54.1,
+      }),
+    ).rejects.toThrow('Invalid handicap value. Must be between -10.0 and 54.0');
   });
 
   it('should throw an error if no parameters are provided', async () => {
-    await expect(updateManualHandicapUseCase.execute())
-      .rejects.toThrow('User ID and handicap value are required');
+    await expect(updateManualHandicapUseCase.execute()).rejects.toThrow(
+      'User ID and handicap value are required',
+    );
   });
 
   it('should throw an error if handicap is not a valid number', async () => {
-    await expect(updateManualHandicapUseCase.execute({ userId: 'user-123', handicap: 'invalid' }))
-      .rejects.toThrow('Invalid handicap value. Must be a valid number.');
+    await expect(
+      updateManualHandicapUseCase.execute({
+        userId: 'user-123',
+        handicap: 'invalid',
+      }),
+    ).rejects.toThrow('Invalid handicap value. Must be a valid number.');
   });
 
   it('should throw an error if handicap is a non-pure numeric string', async () => {
-    await expect(updateManualHandicapUseCase.execute({ userId: 'user-123', handicap: '15a' }))
-      .rejects.toThrow('Invalid handicap value. Must be a valid number.');
+    await expect(
+      updateManualHandicapUseCase.execute({
+        userId: 'user-123',
+        handicap: '15a',
+      }),
+    ).rejects.toThrow('Invalid handicap value. Must be a valid number.');
   });
 
   it('should throw an error for Infinity', async () => {
-    await expect(updateManualHandicapUseCase.execute({ userId: 'user-123', handicap: Infinity }))
-      .rejects.toThrow('Invalid handicap value. Must be a valid number.');
+    await expect(
+      updateManualHandicapUseCase.execute({
+        userId: 'user-123',
+        handicap: Infinity,
+      }),
+    ).rejects.toThrow('Invalid handicap value. Must be a valid number.');
   });
 
   it('should propagate errors from the handicap repository', async () => {
@@ -102,8 +143,12 @@ describe('UpdateManualHandicapUseCase', () => {
     handicapRepository.updateManual.mockRejectedValue(mockError);
 
     // Act & Assert
-    await expect(updateManualHandicapUseCase.execute({ userId, handicap }))
-      .rejects.toThrow('API error during handicap update');
-    expect(handicapRepository.updateManual).toHaveBeenCalledWith(userId, handicap);
+    await expect(
+      updateManualHandicapUseCase.execute({ userId, handicap }),
+    ).rejects.toThrow('API error during handicap update');
+    expect(handicapRepository.updateManual).toHaveBeenCalledWith(
+      userId,
+      handicap,
+    );
   });
 });

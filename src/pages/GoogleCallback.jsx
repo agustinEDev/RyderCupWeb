@@ -8,7 +8,10 @@ import {
   recogeLaVueltaDeGoogleConSuCuenta,
   recogeElVerificadorDeGoogle,
 } from '../utils/googleOAuth';
-import { olvidaLaVueltaTrasEntrar, vueltaTrasEntrar } from '../utils/vueltaTrasEntrar';
+import {
+  olvidaLaVueltaTrasEntrar,
+  vueltaTrasEntrar,
+} from '../utils/vueltaTrasEntrar';
 import { vuelvenLosAvisosDeCierre } from '../utils/avisoDeCierreForzado';
 import { stripSecretsFromAddressBar } from '../utils/stripSecretsFromAddressBar';
 import customToast from '../utils/toast';
@@ -71,7 +74,13 @@ const GoogleCallback = () => {
     // Sin verifier (la vuelta llegó a otra pestaña, o el almacenamiento se vació) el
     // backend no canjearía el código: ni se le pregunta
     if (!codeVerifier) {
-      setError(t(parsedFlow === 'link' ? 'google.missingVerifierLink' : 'google.missingVerifier'));
+      setError(
+        t(
+          parsedFlow === 'link'
+            ? 'google.missingVerifierLink'
+            : 'google.missingVerifier',
+        ),
+      );
       return;
     }
 
@@ -83,7 +92,10 @@ const GoogleCallback = () => {
         navigate('/profile/edit', { replace: true });
       } else {
         // Login/register flow. La vuelta ya se recogió arriba
-        const { user, csrfToken, isNewUser } = await googleLoginUseCase.execute(code, codeVerifier);
+        const { user, csrfToken, isNewUser } = await googleLoginUseCase.execute(
+          code,
+          codeVerifier,
+        );
 
         // Update auth context
         setUser(user);
@@ -98,15 +110,27 @@ const GoogleCallback = () => {
           navigate('/auth/complete-profile', { replace: true });
         } else {
           vuelvenLosAvisosDeCierre();
-          customToast.success(t('login.welcomeMessage', { name: user.firstName }));
+          customToast.success(
+            t('login.welcomeMessage', { name: user.firstName }),
+          );
           // A la página de la que se vino: la que trae Google (confirmar el correo) o
           // la guardada por una redirección dura, que se gasta; si no, al panel
           // Con la cuenta que la apuntó: si es otra la que entra, a su panel (FE #1064)
-          const url = vuelta ? new globalThis.URL(vuelta.ruta, globalThis.location.origin) : null;
-          const desdeGoogle = url
-            ? { pathname: url.pathname, search: url.search, hash: url.hash, cuenta: vuelta.cuenta }
+          const url = vuelta
+            ? new globalThis.URL(vuelta.ruta, globalThis.location.origin)
             : null;
-          navigate(vueltaTrasEntrar(desdeGoogle ?? undefined, { cuenta: user?.id }), { replace: true });
+          const desdeGoogle = url
+            ? {
+                pathname: url.pathname,
+                search: url.search,
+                hash: url.hash,
+                cuenta: vuelta.cuenta,
+              }
+            : null;
+          navigate(
+            vueltaTrasEntrar(desdeGoogle ?? undefined, { cuenta: user?.id }),
+            { replace: true },
+          );
         }
       }
     } catch (err) {
@@ -135,7 +159,11 @@ const GoogleCallback = () => {
         setError(t('google.alreadyLinked'));
       } else {
         // Texto propio y traducido: el del backend no sigue el idioma de la app
-        setError(parsedFlow === 'link' ? t('google.linkError') : t('google.genericError'));
+        setError(
+          parsedFlow === 'link'
+            ? t('google.linkError')
+            : t('google.genericError'),
+        );
       }
     }
   });
@@ -153,19 +181,33 @@ const GoogleCallback = () => {
       <div className="flex items-center justify-center min-h-screen bg-gray-50">
         <div className="bg-white rounded-2xl shadow-xl p-8 border border-gray-200 max-w-md w-full mx-4 text-center">
           <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            <svg
+              className="w-6 h-6 text-red-600"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M6 18L18 6M6 6l12 12"
+              />
             </svg>
           </div>
           <h2 className="text-xl font-bold text-gray-900 mb-2">
-            {flow === 'link' ? t('google.linkErrorTitle') : t('google.errorTitle')}
+            {flow === 'link'
+              ? t('google.linkErrorTitle')
+              : t('google.errorTitle')}
           </h2>
           <p className="text-gray-600 text-sm mb-6">{error}</p>
           <Link
             to={flow === 'link' ? '/profile/edit' : '/login'}
             className="inline-block bg-primary hover:bg-primary/90 text-white font-bold py-2.5 px-6 rounded-lg transition-colors"
           >
-            {flow === 'link' ? t('google.backToProfile') : t('login.signInButton')}
+            {flow === 'link'
+              ? t('google.backToProfile')
+              : t('login.signInButton')}
           </Link>
         </div>
       </div>

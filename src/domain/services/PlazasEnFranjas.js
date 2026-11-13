@@ -33,13 +33,16 @@ export const DEJAR_DE_ESPERAR = 'DEJAR_DE_ESPERAR';
  * salidas por jugadores por partida (release social 3, code-review).
  */
 const cupoDeLaFranja = (teeSheet) =>
-  teeSheet.capacity ?? (teeSheet.teeTimes?.length ?? 0) * (teeSheet.groupSize ?? 0);
+  teeSheet.capacity ??
+  (teeSheet.teeTimes?.length ?? 0) * (teeSheet.groupSize ?? 0);
 
 /** Si la franja está llena: entonces se entra a su espera (release social 3). */
-export const franjaLlena = (teeSheet) => teeSheet.placesTaken >= cupoDeLaFranja(teeSheet);
+export const franjaLlena = (teeSheet) =>
+  teeSheet.placesTaken >= cupoDeLaFranja(teeSheet);
 
 /** Sus plazas libres, nunca menos de cero. */
-export const plazasLibres = (teeSheet) => Math.max(0, cupoDeLaFranja(teeSheet) - teeSheet.placesTaken);
+export const plazasLibres = (teeSheet) =>
+  Math.max(0, cupoDeLaFranja(teeSheet) - teeSheet.placesTaken);
 
 export const situacionEnLasFranjas = (franjas, userId, maxJornadas) => {
   const conHoja = franjas.filter((f) => f.teeSheet);
@@ -50,13 +53,20 @@ export const situacionEnLasFranjas = (franjas, userId, maxJornadas) => {
 
   const accionEn = (f) => {
     if (!f.teeSheet) return null;
-    const { playerIds, waitingIds, placesTaken, capacity, myWaitingPosition } = f.teeSheet;
+    const { playerIds, waitingIds, placesTaken, capacity, myWaitingPosition } =
+      f.teeSheet;
     if (playerIds.includes(userId)) return { tipo: SOLTAR };
     const enEspera = waitingIds.indexOf(userId);
     // La espera llega filtrada (sus amigos y él): el puesto de verdad lo da el servidor
-    if (enEspera >= 0) return { tipo: DEJAR_DE_ESPERAR, posicion: myWaitingPosition ?? enEspera + 1 };
+    if (enEspera >= 0)
+      return {
+        tipo: DEJAR_DE_ESPERAR,
+        posicion: myWaitingPosition ?? enEspera + 1,
+      };
 
-    const delMismoDia = mias.filter((m) => m.roundDate === f.roundDate).map((m) => m.id);
+    const delMismoDia = mias
+      .filter((m) => m.roundDate === f.roundDate)
+      .map((m) => m.id);
     const hayHueco = placesTaken < capacity;
     if (hayHueco) {
       if (delMismoDia.length > 0) return { tipo: CAMBIAR, dejar: delMismoDia };
@@ -82,14 +92,16 @@ export const situacionEnLasFranjas = (franjas, userId, maxJornadas) => {
 export const destinosParaMover = (franjas, userId, desdeId) => {
   const desde = franjas.find((f) => f.id === desdeId);
   const diasQueJuega = new Set(
-    franjas.filter((f) => f.teeSheet?.playerIds.includes(userId)).map((f) => f.roundDate)
+    franjas
+      .filter((f) => f.teeSheet?.playerIds.includes(userId))
+      .map((f) => f.roundDate),
   );
   return franjas.filter(
     (f) =>
       f.id !== desdeId &&
       f.teeSheet &&
       f.teeSheet.placesTaken < f.teeSheet.capacity &&
-      (f.roundDate === desde?.roundDate || !diasQueJuega.has(f.roundDate))
+      (f.roundDate === desde?.roundDate || !diasQueJuega.has(f.roundDate)),
   );
 };
 

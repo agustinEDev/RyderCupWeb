@@ -24,10 +24,18 @@ class GetUpcomingMatchesUseCase {
   #getScheduleUseCase;
   #listEnrollmentsUseCase;
 
-  constructor({ listUserCompetitionsUseCase, getScheduleUseCase, listEnrollmentsUseCase }) {
-    if (!listUserCompetitionsUseCase || !getScheduleUseCase || !listEnrollmentsUseCase) {
+  constructor({
+    listUserCompetitionsUseCase,
+    getScheduleUseCase,
+    listEnrollmentsUseCase,
+  }) {
+    if (
+      !listUserCompetitionsUseCase ||
+      !getScheduleUseCase ||
+      !listEnrollmentsUseCase
+    ) {
       throw new Error(
-        'GetUpcomingMatchesUseCase requires listUserCompetitionsUseCase, getScheduleUseCase and listEnrollmentsUseCase'
+        'GetUpcomingMatchesUseCase requires listUserCompetitionsUseCase, getScheduleUseCase and listEnrollmentsUseCase',
       );
     }
     this.#listUserCompetitionsUseCase = listUserCompetitionsUseCase;
@@ -55,19 +63,20 @@ class GetUpcomingMatchesUseCase {
       throw new Error('GetUpcomingMatchesUseCase requires a userId');
     }
 
-    const all = competitions ?? (await this.#listUserCompetitionsUseCase.execute(userId));
+    const all =
+      competitions ?? (await this.#listUserCompetitionsUseCase.execute(userId));
     // Las que se juegan y las cerradas: en una cerrada los partidos ya están
     // hechos, y es el primer golpe a su hora lo que la pone en juego
     // (RyderCupAM#375). Sin ella en la lista, nadie tendría «Anotar» que pulsar
     const active = (all || []).filter((competition) =>
-      COMPETICIONES_CON_PARTIDOS.includes(competition.status)
+      COMPETICIONES_CON_PARTIDOS.includes(competition.status),
     );
     if (active.length === 0) {
       return { matches: [], complete: true };
     }
 
     const results = await Promise.allSettled(
-      active.map((competition) => this.#matchesOf(competition, userId))
+      active.map((competition) => this.#matchesOf(competition, userId)),
     );
 
     return {
@@ -92,7 +101,8 @@ class GetUpcomingMatchesUseCase {
         namesByUserId.set(enrollment.userId, enrollment.userName);
       }
     });
-    const nameOf = (player) => namesByUserId.get(player.userId) || player.userId;
+    const nameOf = (player) =>
+      namesByUserId.get(player.userId) || player.userId;
 
     const upcoming = [];
     (schedule?.rounds || []).forEach((round) => {
@@ -102,7 +112,10 @@ class GetUpcomingMatchesUseCase {
         const playsInTeamA = teamA.some((player) => player.userId === userId);
         const playsInTeamB = teamB.some((player) => player.userId === userId);
 
-        if ((!playsInTeamA && !playsInTeamB) || !UPCOMING_STATUSES.includes(match.status)) {
+        if (
+          (!playsInTeamA && !playsInTeamB) ||
+          !UPCOMING_STATUSES.includes(match.status)
+        ) {
           return;
         }
 
@@ -128,7 +141,9 @@ class GetUpcomingMatchesUseCase {
           teamBPlayerNames: teamB.map(nameOf),
           // Vistos desde quien pregunta, que es como se leen: uno juega con sus
           // compañeros y contra sus rivales, no con "el equipo A"
-          partnerNames: own.filter((player) => player.userId !== userId).map(nameOf),
+          partnerNames: own
+            .filter((player) => player.userId !== userId)
+            .map(nameOf),
           opponentNames: rival.map(nameOf),
         });
       });
@@ -143,7 +158,9 @@ class GetUpcomingMatchesUseCase {
       return byDate;
     }
     // Mismo día: manda la sesión, que es lo único que ordena mañana y tarde
-    return (SESSION_ORDER[a.sessionType] ?? 0) - (SESSION_ORDER[b.sessionType] ?? 0);
+    return (
+      (SESSION_ORDER[a.sessionType] ?? 0) - (SESSION_ORDER[b.sessionType] ?? 0)
+    );
   }
 }
 

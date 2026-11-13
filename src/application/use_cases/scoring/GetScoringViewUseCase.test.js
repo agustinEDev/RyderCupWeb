@@ -12,7 +12,11 @@ describe('GetScoringViewUseCase', () => {
   });
 
   it('should return scoring view for a match', async () => {
-    const mockView = { matchId: 'm-1', matchFormat: 'SINGLES', matchStatus: 'IN_PROGRESS' };
+    const mockView = {
+      matchId: 'm-1',
+      matchFormat: 'SINGLES',
+      matchStatus: 'IN_PROGRESS',
+    };
     scoringRepository.getScoringView.mockResolvedValue(mockView);
 
     const result = await useCase.execute('m-1');
@@ -29,7 +33,9 @@ describe('GetScoringViewUseCase', () => {
   });
 
   it('should throw if matchId is undefined', async () => {
-    await expect(useCase.execute(undefined)).rejects.toThrow('Match ID is required');
+    await expect(useCase.execute(undefined)).rejects.toThrow(
+      'Match ID is required',
+    );
   });
 
   it('should propagate repository errors', async () => {

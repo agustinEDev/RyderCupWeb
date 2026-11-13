@@ -44,7 +44,7 @@ describe('PlayerStatsCards', () => {
     render(
       <MemoryRouter>
         <PlayerStatsCards stats={fullStats} />
-      </MemoryRouter>
+      </MemoryRouter>,
     );
 
     expect(screen.getByText('14.2')).toBeInTheDocument();
@@ -56,7 +56,7 @@ describe('PlayerStatsCards', () => {
     render(
       <MemoryRouter>
         <PlayerStatsCards stats={fullStats} />
-      </MemoryRouter>
+      </MemoryRouter>,
     );
 
     expect(screen.getByText('statistics.overRounds:8')).toBeInTheDocument();
@@ -66,7 +66,7 @@ describe('PlayerStatsCards', () => {
     render(
       <MemoryRouter>
         <PlayerStatsCards stats={fullStats} />
-      </MemoryRouter>
+      </MemoryRouter>,
     );
 
     // -0.4 se enseña como 0.4: el signo lo dice la flecha
@@ -78,7 +78,7 @@ describe('PlayerStatsCards', () => {
     render(
       <MemoryRouter>
         <PlayerStatsCards stats={fullStats} />
-      </MemoryRouter>
+      </MemoryRouter>,
     );
 
     // El color y la flecha no dicen nada a quien no los ve
@@ -87,7 +87,9 @@ describe('PlayerStatsCards', () => {
 
   it('calls a worsening trend by its name', () => {
     render(
-      <PlayerStatsCards stats={PlayerStats.fromPersistence({ handicapTrend: 1.2 })} />
+      <PlayerStatsCards
+        stats={PlayerStats.fromPersistence({ handicapTrend: 1.2 })}
+      />,
     );
 
     expect(screen.getByText('statistics.trendWorsening')).toBeInTheDocument();
@@ -96,8 +98,10 @@ describe('PlayerStatsCards', () => {
   it('treats an unchanged trend as its own case, not as improvement', () => {
     render(
       <MemoryRouter>
-        <PlayerStatsCards stats={PlayerStats.fromPersistence({ handicapTrend: 0 })} />
-      </MemoryRouter>
+        <PlayerStatsCards
+          stats={PlayerStats.fromPersistence({ handicapTrend: 0 })}
+        />
+      </MemoryRouter>,
     );
 
     expect(screen.getByText('statistics.trendSteady')).toBeInTheDocument();
@@ -107,7 +111,7 @@ describe('PlayerStatsCards', () => {
     render(
       <MemoryRouter>
         <PlayerStatsCards stats={PlayerStats.empty()} />
-      </MemoryRouter>
+      </MemoryRouter>,
     );
 
     expect(screen.queryByTestId('handicap-trend')).not.toBeInTheDocument();
@@ -117,7 +121,7 @@ describe('PlayerStatsCards', () => {
     render(
       <MemoryRouter>
         <PlayerStatsCards stats={PlayerStats.empty()} />
-      </MemoryRouter>
+      </MemoryRouter>,
     );
 
     // Un 0.0 aquí se leería como "juega al par", que es lo contrario de la verdad
@@ -132,7 +136,7 @@ describe('PlayerStatsCards', () => {
     render(
       <MemoryRouter>
         <PlayerStatsCards stats={PlayerStats.empty()} />
-      </MemoryRouter>
+      </MemoryRouter>,
     );
 
     expect(screen.getByTestId('stat-card-tournaments')).toHaveTextContent('0');
@@ -149,38 +153,44 @@ describe('PlayerStatsCards', () => {
     render(
       <MemoryRouter>
         <PlayerStatsCards stats={null} fallbackTournaments={1} />
-      </MemoryRouter>
+      </MemoryRouter>,
     );
 
     expect(screen.getByTestId('stat-card-tournaments')).toHaveTextContent('1');
-    expect(screen.queryByText('statistics.activeCount:0')).not.toBeInTheDocument();
+    expect(
+      screen.queryByText('statistics.activeCount:0'),
+    ).not.toBeInTheDocument();
   });
 
   it('says nothing about active tournaments while still loading', () => {
     render(
       <MemoryRouter>
         <PlayerStatsCards stats={fullStats} isLoading fallbackTournaments={1} />
-      </MemoryRouter>
+      </MemoryRouter>,
     );
 
-    expect(screen.queryByText(/statistics.activeCount/)).not.toBeInTheDocument();
+    expect(
+      screen.queryByText(/statistics.activeCount/),
+    ).not.toBeInTheDocument();
   });
 
   it('makes no claim about missing rounds while still loading', () => {
     render(
       <MemoryRouter>
         <PlayerStatsCards stats={null} isLoading />
-      </MemoryRouter>
+      </MemoryRouter>,
     );
 
-    expect(screen.queryByText('statistics.needsMoreRounds')).not.toBeInTheDocument();
+    expect(
+      screen.queryByText('statistics.needsMoreRounds'),
+    ).not.toBeInTheDocument();
   });
 
   it('holds back only the figures that need the request, while loading', () => {
     render(
       <MemoryRouter>
         <PlayerStatsCards stats={fullStats} isLoading />
-      </MemoryRouter>
+      </MemoryRouter>,
     );
 
     // El indice y la tendencia solo existen en el resumen: hasta que llega, no
@@ -193,7 +203,7 @@ describe('PlayerStatsCards', () => {
     render(
       <MemoryRouter>
         <PlayerStatsCards stats={null} />
-      </MemoryRouter>
+      </MemoryRouter>,
     );
 
     expect(screen.getByTestId('player-stats-cards')).toBeInTheDocument();
@@ -208,66 +218,87 @@ describe('PlayerStatsCards', () => {
      */
     it('shows the profile handicap when the stats request brought none', () => {
       render(
-      <MemoryRouter>
-        <PlayerStatsCards stats={null} fallbackHandicap={18} />
-      </MemoryRouter>
-    );
+        <MemoryRouter>
+          <PlayerStatsCards stats={null} fallbackHandicap={18} />
+        </MemoryRouter>,
+      );
 
-      expect(screen.getByTestId('stat-card-handicap')).toHaveTextContent('18.0');
+      expect(screen.getByTestId('stat-card-handicap')).toHaveTextContent(
+        '18.0',
+      );
     });
 
     // Un hándicap plus se guarda negativo y se lee con «+» (FE #797)
     it('shows a plus handicap with its plus sign', () => {
       render(
-      <MemoryRouter>
-        <PlayerStatsCards stats={null} fallbackHandicap={-2} />
-      </MemoryRouter>
-    );
+        <MemoryRouter>
+          <PlayerStatsCards stats={null} fallbackHandicap={-2} />
+        </MemoryRouter>,
+      );
 
-      expect(screen.getByTestId('stat-card-handicap')).toHaveTextContent('+2.0');
-      expect(screen.getByTestId('stat-card-handicap')).not.toHaveTextContent('-2.0');
+      expect(screen.getByTestId('stat-card-handicap')).toHaveTextContent(
+        '+2.0',
+      );
+      expect(screen.getByTestId('stat-card-handicap')).not.toHaveTextContent(
+        '-2.0',
+      );
     });
 
     it('shows the competitions already loaded when stats are missing', () => {
       render(
-      <MemoryRouter>
-        <PlayerStatsCards stats={null} fallbackTournaments={3} />
-      </MemoryRouter>
-    );
+        <MemoryRouter>
+          <PlayerStatsCards stats={null} fallbackTournaments={3} />
+        </MemoryRouter>,
+      );
 
-      expect(screen.getByTestId('stat-card-tournaments')).toHaveTextContent('3');
+      expect(screen.getByTestId('stat-card-tournaments')).toHaveTextContent(
+        '3',
+      );
     });
 
     it('prefers the stats over the fallback once they arrive', () => {
-      const stats = PlayerStats.fromPersistence({ handicap: 14.2, tournamentsTotal: 5 });
+      const stats = PlayerStats.fromPersistence({
+        handicap: 14.2,
+        tournamentsTotal: 5,
+      });
 
       render(
-      <MemoryRouter>
-        <PlayerStatsCards stats={stats} fallbackHandicap={18} fallbackTournaments={3} />
-      </MemoryRouter>
-    );
+        <MemoryRouter>
+          <PlayerStatsCards
+            stats={stats}
+            fallbackHandicap={18}
+            fallbackTournaments={3}
+          />
+        </MemoryRouter>,
+      );
 
-      expect(screen.getByTestId('stat-card-handicap')).toHaveTextContent('14.2');
-      expect(screen.getByTestId('stat-card-tournaments')).toHaveTextContent('5');
+      expect(screen.getByTestId('stat-card-handicap')).toHaveTextContent(
+        '14.2',
+      );
+      expect(screen.getByTestId('stat-card-tournaments')).toHaveTextContent(
+        '5',
+      );
     });
 
     it('does not blink through dashes while the stats are loading', () => {
       render(
-      <MemoryRouter>
-        <PlayerStatsCards stats={null} isLoading fallbackHandicap={18} />
-      </MemoryRouter>
-    );
+        <MemoryRouter>
+          <PlayerStatsCards stats={null} isLoading fallbackHandicap={18} />
+        </MemoryRouter>,
+      );
 
       // Ir de "--" a "18" al llegar la respuesta se ve como un fallo
-      expect(screen.getByTestId('stat-card-handicap')).toHaveTextContent('18.0');
+      expect(screen.getByTestId('stat-card-handicap')).toHaveTextContent(
+        '18.0',
+      );
     });
 
     it('still shows dashes when nobody knows the handicap', () => {
       render(
-      <MemoryRouter>
-        <PlayerStatsCards stats={null} />
-      </MemoryRouter>
-    );
+        <MemoryRouter>
+          <PlayerStatsCards stats={null} />
+        </MemoryRouter>,
+      );
 
       expect(screen.getByTestId('stat-card-handicap')).toHaveTextContent('--');
     });
@@ -278,7 +309,7 @@ describe('PlayerStatsCards', () => {
       render(
         <MemoryRouter>
           <PlayerStatsCards stats={fullStats} />
-        </MemoryRouter>
+        </MemoryRouter>,
       );
 
       fireEvent.click(screen.getByTestId('stat-card-handicap'));
@@ -290,7 +321,7 @@ describe('PlayerStatsCards', () => {
       render(
         <MemoryRouter>
           <PlayerStatsCards stats={fullStats} />
-        </MemoryRouter>
+        </MemoryRouter>,
       );
 
       fireEvent.click(screen.getByTestId('stat-card-playing-to'));
@@ -302,12 +333,14 @@ describe('PlayerStatsCards', () => {
       render(
         <MemoryRouter>
           <PlayerStatsCards stats={fullStats} />
-        </MemoryRouter>
+        </MemoryRouter>,
       );
 
       // Un div con onClick deja fuera al teclado y a los lectores de pantalla
       expect(screen.getByTestId('stat-card-handicap').tagName).toBe('BUTTON');
-      expect(screen.getByTestId('stat-card-handicap')).toHaveAttribute('aria-label');
+      expect(screen.getByTestId('stat-card-handicap')).toHaveAttribute(
+        'aria-label',
+      );
     });
 
     it('leaves the tournaments card as plain content', () => {
@@ -315,10 +348,12 @@ describe('PlayerStatsCards', () => {
       render(
         <MemoryRouter>
           <PlayerStatsCards stats={fullStats} />
-        </MemoryRouter>
+        </MemoryRouter>,
       );
 
-      expect(screen.getByTestId('stat-card-tournaments').tagName).not.toBe('BUTTON');
+      expect(screen.getByTestId('stat-card-tournaments').tagName).not.toBe(
+        'BUTTON',
+      );
     });
   });
 
@@ -326,11 +361,13 @@ describe('PlayerStatsCards', () => {
     render(
       <MemoryRouter>
         <PlayerStatsCards stats={fullStats} />
-      </MemoryRouter>
+      </MemoryRouter>,
     );
 
     // El punto de la issue: en una columna, tres cifras ocupaban tres pantallas
-    expect(screen.getByTestId('player-stats-cards').className).toContain('grid-cols-3');
+    expect(screen.getByTestId('player-stats-cards').className).toContain(
+      'grid-cols-3',
+    );
   });
 
   it('aligns the three cards the same way whether or not they are buttons', () => {
@@ -343,10 +380,14 @@ describe('PlayerStatsCards', () => {
     render(
       <MemoryRouter>
         <PlayerStatsCards stats={fullStats} />
-      </MemoryRouter>
+      </MemoryRouter>,
     );
 
-    for (const testId of ['stat-card-handicap', 'stat-card-playing-to', 'stat-card-tournaments']) {
+    for (const testId of [
+      'stat-card-handicap',
+      'stat-card-playing-to',
+      'stat-card-tournaments',
+    ]) {
       const card = screen.getByTestId(testId);
       expect(card.className).toContain('flex-col');
     }

@@ -1,7 +1,17 @@
 import { Link } from 'react-router';
-import { Users, Calendar, CalendarClock, MapPin, Shield, Swords } from 'lucide-react';
+import {
+  Users,
+  Calendar,
+  CalendarClock,
+  MapPin,
+  Shield,
+  Swords,
+} from 'lucide-react';
 import { CountryFlag } from '../../ui/CountryFlag';
-import { getStatusColor, formatDateRange } from '../../../services/competitions';
+import {
+  getStatusColor,
+  formatDateRange,
+} from '../../../services/competitions';
 import { formatCountryName } from '../../../services/countries';
 
 /**
@@ -27,7 +37,7 @@ const ResumenDeLaCompeticion = ({
         <div className="flex flex-wrap items-center gap-3">
           <span
             className={`px-3 py-1 rounded-full text-xs font-semibold ${getStatusColor(
-              competition.status
+              competition.status,
             )}`}
           >
             {competition.status && t(`status.${competition.status}`)}
@@ -41,7 +51,7 @@ const ResumenDeLaCompeticion = ({
             {t(
               competition.visibility === 'PUBLIC'
                 ? 'detail.visibilityPublic'
-                : 'detail.visibilityPrivate'
+                : 'detail.visibilityPrivate',
             )}
           </span>
           {isCreator && (
@@ -68,15 +78,15 @@ const ResumenDeLaCompeticion = ({
       !competition.teamsAssigned &&
       competition.captains?.teamA &&
       competition.captains?.teamB && (
-      <Link
-        to={`/competitions/${competition.id}/draft`}
-        data-testid="ir-a-la-sala-de-draft"
-        className="mb-4 flex items-center justify-center gap-2 rounded-lg bg-green-600 px-4 py-3 font-semibold text-white shadow-md transition-colors hover:bg-green-700"
-      >
-        <Swords className="w-4 h-4" />
-        <span>{t('draft.open')}</span>
-      </Link>
-    )}
+        <Link
+          to={`/competitions/${competition.id}/draft`}
+          data-testid="ir-a-la-sala-de-draft"
+          className="mb-4 flex items-center justify-center gap-2 rounded-lg bg-green-600 px-4 py-3 font-semibold text-white shadow-md transition-colors hover:bg-green-700"
+        >
+          <Swords className="w-4 h-4" />
+          <span>{t('draft.open')}</span>
+        </Link>
+      )}
 
     {/* Quick Stats */}
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -85,7 +95,11 @@ const ResumenDeLaCompeticion = ({
         <div>
           <p className="text-xs text-gray-500">{t('detail.dates')}</p>
           <p className="text-sm font-medium">
-            {formatDateRange(competition.startDate, competition.endDate, i18n.language)}
+            {formatDateRange(
+              competition.startDate,
+              competition.endDate,
+              i18n.language,
+            )}
           </p>
         </div>
       </div>
@@ -94,8 +108,7 @@ const ResumenDeLaCompeticion = ({
         <div>
           <p className="text-xs text-gray-500">{t('detail.players')}</p>
           <p className="text-sm font-medium">
-            {approvedCount} /{' '}
-            {competition.maxPlayers || '∞'}
+            {approvedCount} / {competition.maxPlayers || '∞'}
           </p>
         </div>
       </div>
@@ -106,7 +119,10 @@ const ResumenDeLaCompeticion = ({
           <CalendarClock className="w-5 h-5" />
           <div>
             <p className="text-xs text-gray-500">{t('detail.enrollment')}</p>
-            <p className="text-sm font-medium" data-testid="apertura-programada">
+            <p
+              className="text-sm font-medium"
+              data-testid="apertura-programada"
+            >
               {t('detail.enrollmentOpensOn', { fecha: fechaDeAperturaLegible })}
             </p>
           </div>
@@ -131,7 +147,9 @@ const ResumenDeLaCompeticion = ({
         <div className="flex items-start gap-2">
           <MapPin className="w-5 h-5 text-gray-700 mt-0.5" />
           <div className="flex-1">
-            <p className="text-xs text-gray-500 mb-2">{t('detail.countries')}</p>
+            <p className="text-xs text-gray-500 mb-2">
+              {t('detail.countries')}
+            </p>
             <div className="flex flex-wrap gap-2">
               {competition.countries.map((country, index) => (
                 <span

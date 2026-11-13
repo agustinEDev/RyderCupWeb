@@ -1,5 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
+import {
+  render,
+  screen,
+  fireEvent,
+  waitFor,
+  act,
+} from '@testing-library/react';
 import { MemoryRouter, Routes, Route, Link } from 'react-router';
 
 /**
@@ -19,13 +25,22 @@ import { MemoryRouter, Routes, Route, Link } from 'react-router';
 const TEXTOS = { es: (clave) => clave, en: (clave) => `en:${clave}` };
 const idioma = vi.hoisted(() => ({ actual: 'es' }));
 vi.mock('react-i18next', () => ({
-  useTranslation: () => ({ t: TEXTOS[idioma.actual], i18n: { language: idioma.actual } }),
+  useTranslation: () => ({
+    t: TEXTOS[idioma.actual],
+    i18n: { language: idioma.actual },
+  }),
 }));
 
 vi.mock('../components/layout/HeaderAuth', () => ({ default: () => null }));
-vi.mock('../hooks/useAuth', () => ({ useAuth: () => ({ user: { id: 'u-1', gender: 'MALE' }, loading: false }) }));
-vi.mock('../components/golf_course/GolfCourseSearchBox', () => ({ default: () => null }));
-vi.mock('../utils/toast', () => ({ default: { error: vi.fn(), success: vi.fn(), info: vi.fn() } }));
+vi.mock('../hooks/useAuth', () => ({
+  useAuth: () => ({ user: { id: 'u-1', gender: 'MALE' }, loading: false }),
+}));
+vi.mock('../components/golf_course/GolfCourseSearchBox', () => ({
+  default: () => null,
+}));
+vi.mock('../utils/toast', () => ({
+  default: { error: vi.fn(), success: vi.fn(), info: vi.fn() },
+}));
 vi.mock('../services/countries', () => ({
   formatCountryName: (pais) => pais?.code ?? '',
   sortCountriesByName: (paises) => paises || [],
@@ -45,13 +60,21 @@ vi.mock('../composition', () => ({
 vi.mock('../components/ui/CountryAutocomplete', () => ({
   default: ({ countries, onChange }) => (
     <div>
-      <p data-testid="paises-del-selector">{countries.map((c) => c.code).join(',')}</p>
-      <button type="button" onClick={() => onChange('FR')}>elegir FR</button>
-      <button type="button" onClick={() => onChange('ES')}>elegir ES</button>
+      <p data-testid="paises-del-selector">
+        {countries.map((c) => c.code).join(',')}
+      </p>
+      <button type="button" onClick={() => onChange('FR')}>
+        elegir FR
+      </button>
+      <button type="button" onClick={() => onChange('ES')}>
+        elegir ES
+      </button>
     </div>
   ),
 }));
-vi.mock('../components/golf_course/GolfCourseRequestModal', () => ({ default: () => null }));
+vi.mock('../components/golf_course/GolfCourseRequestModal', () => ({
+  default: () => null,
+}));
 vi.mock('../components/ui/FullScreenLoader', () => ({ default: () => null }));
 vi.mock('../components/ui/CountryFlag', () => ({ CountryFlag: () => null }));
 
@@ -74,12 +97,17 @@ const competicion = (id, codigos, name) => ({
 
 /** Lo que ofrece un selector de país adyacente, sin la opción vacía. */
 const opciones = (id) =>
-  [...document.querySelectorAll(`#${id} option`)].map((o) => o.value).filter(Boolean);
+  [...document.querySelectorAll(`#${id} option`)]
+    .map((o) => o.value)
+    .filter(Boolean);
 
 const conVecinosEnEspera = () => {
   const pendientes = {};
   mockVecinos.mockImplementation(
-    (code) => new Promise((resolver) => { (pendientes[code] ??= []).push(resolver); })
+    (code) =>
+      new Promise((resolver) => {
+        (pendientes[code] ??= []).push(resolver);
+      }),
   );
   return pendientes;
 };
@@ -94,17 +122,27 @@ describe('CreateCompetition · países y vecinos', () => {
   });
 
   const abreElAlta = async () => {
-    render(<MemoryRouter><CreateCompetition /></MemoryRouter>);
+    render(
+      <MemoryRouter>
+        <CreateCompetition />
+      </MemoryRouter>,
+    );
     fireEvent.click(await screen.findByTestId('tipo-RYDER_CUP'));
     fireEvent.click(await screen.findByTestId('modo-RYDER_CUP'));
     await screen.findByText('create.competitionDetails');
-    await waitFor(() => expect(screen.getByTestId('paises-del-selector')).not.toBeEmptyDOMElement());
+    await waitFor(() =>
+      expect(
+        screen.getByTestId('paises-del-selector'),
+      ).not.toBeEmptyDOMElement(),
+    );
   };
 
   it('T3-1: al crear, pide los países una vez y salen en el selector', async () => {
     await abreElAlta();
 
-    expect(screen.getByTestId('paises-del-selector')).toHaveTextContent('ES,FR,PT,DE,BE,AD,IT');
+    expect(screen.getByTestId('paises-del-selector')).toHaveTextContent(
+      'ES,FR,PT,DE,BE,AD,IT',
+    );
     expect(mockPaises).toHaveBeenCalledTimes(1);
   });
 
@@ -132,8 +170,12 @@ describe('CreateCompetition · países y vecinos', () => {
     fireEvent.click(await screen.findByText('create.addAdjacentCountry'));
     const pendientes = conVecinosEnEspera();
 
-    fireEvent.change(document.querySelector('#adjacentCountry1'), { target: { value: 'FR' } });
-    fireEvent.change(document.querySelector('#adjacentCountry1'), { target: { value: 'PT' } });
+    fireEvent.change(document.querySelector('#adjacentCountry1'), {
+      target: { value: 'FR' },
+    });
+    fireEvent.change(document.querySelector('#adjacentCountry1'), {
+      target: { value: 'PT' },
+    });
     await act(async () => {
       pendientes.PT[0]([pais('ES')]);
     });
@@ -153,7 +195,9 @@ describe('CreateCompetition · países y vecinos', () => {
     fireEvent.click(screen.getByText('elegir ES'));
     fireEvent.click(await screen.findByText('create.addAdjacentCountry'));
     const pendientes = conVecinosEnEspera();
-    fireEvent.change(document.querySelector('#adjacentCountry1'), { target: { value: 'PT' } });
+    fireEvent.change(document.querySelector('#adjacentCountry1'), {
+      target: { value: 'PT' },
+    });
 
     // Otro principal con los de Portugal en camino
     fireEvent.click(screen.getByText('elegir FR'));
@@ -164,10 +208,14 @@ describe('CreateCompetition · países y vecinos', () => {
       pendientes.PT[0]([pais('IT')]);
     });
     fireEvent.click(screen.getByText('create.addAdjacentCountry'));
-    fireEvent.change(document.querySelector('#adjacentCountry1'), { target: { value: 'DE' } });
+    fireEvent.change(document.querySelector('#adjacentCountry1'), {
+      target: { value: 'DE' },
+    });
 
     // Los de Alemania aún no han llegado: no hay tercer país que ofrecer
-    expect(screen.queryByText('create.addThirdCountry')).not.toBeInTheDocument();
+    expect(
+      screen.queryByText('create.addThirdCountry'),
+    ).not.toBeInTheDocument();
   });
 
   it('T3-3d: quitado el adyacente, sus vecinos tardíos no ofrecen tercer país', async () => {
@@ -176,37 +224,64 @@ describe('CreateCompetition · países y vecinos', () => {
     fireEvent.click(screen.getByText('elegir ES'));
     fireEvent.click(await screen.findByText('create.addAdjacentCountry'));
     const pendientes = conVecinosEnEspera();
-    fireEvent.change(document.querySelector('#adjacentCountry1'), { target: { value: 'PT' } });
+    fireEvent.change(document.querySelector('#adjacentCountry1'), {
+      target: { value: 'PT' },
+    });
 
     fireEvent.click(screen.getByLabelText('create.removeCountryField'));
     await act(async () => {
       pendientes.PT[0]([pais('IT')]);
     });
     fireEvent.click(screen.getByText('create.addAdjacentCountry'));
-    fireEvent.change(document.querySelector('#adjacentCountry1'), { target: { value: 'FR' } });
+    fireEvent.change(document.querySelector('#adjacentCountry1'), {
+      target: { value: 'FR' },
+    });
 
-    expect(screen.queryByText('create.addThirdCountry')).not.toBeInTheDocument();
+    expect(
+      screen.queryByText('create.addThirdCountry'),
+    ).not.toBeInTheDocument();
   });
 
   it('T3-2b: lo que se pidió en el formulario de A y llega cargada B no pisa los vecinos de B', async () => {
     mockDetalle.mockImplementation((id) =>
-      Promise.resolve(id === 'c-1' ? competicion('c-1', ['FR', 'BE'], 'La de A') : competicion('c-2', ['ES', 'PT', 'AD'], 'La de B'))
+      Promise.resolve(
+        id === 'c-1'
+          ? competicion('c-1', ['FR', 'BE'], 'La de A')
+          : competicion('c-2', ['ES', 'PT', 'AD'], 'La de B'),
+      ),
     );
     mockVecinos.mockImplementation((code) =>
-      Promise.resolve({ FR: [pais('BE'), pais('DE')], BE: [], ES: [pais('PT'), pais('AD')], PT: [pais('IT')] }[code] ?? [])
+      Promise.resolve(
+        {
+          FR: [pais('BE'), pais('DE')],
+          BE: [],
+          ES: [pais('PT'), pais('AD')],
+          PT: [pais('IT')],
+        }[code] ?? [],
+      ),
     );
     render(
       <MemoryRouter initialEntries={['/competitions/c-1/edit']}>
         <Link to="/competitions/c-2/edit">a la B</Link>
         <Routes>
-          <Route path="/competitions/:id/edit" element={<CreateCompetition />} />
+          <Route
+            path="/competitions/:id/edit"
+            element={<CreateCompetition />}
+          />
         </Routes>
-      </MemoryRouter>
+      </MemoryRouter>,
     );
     await screen.findByDisplayValue('La de A');
     let deAlemania;
-    mockVecinos.mockImplementationOnce(() => new Promise((r) => { deAlemania = r; }));
-    fireEvent.change(document.querySelector('#adjacentCountry1'), { target: { value: 'DE' } });
+    mockVecinos.mockImplementationOnce(
+      () =>
+        new Promise((r) => {
+          deAlemania = r;
+        }),
+    );
+    fireEvent.change(document.querySelector('#adjacentCountry1'), {
+      target: { value: 'DE' },
+    });
 
     fireEvent.click(screen.getByText('a la B'));
     expect(await screen.findByDisplayValue('La de B')).toBeInTheDocument();
@@ -219,22 +294,37 @@ describe('CreateCompetition · países y vecinos', () => {
 
   it('T3-2c: otro principal elegido en el formulario de A, con B cargada, no pisa los vecinos de B', async () => {
     mockDetalle.mockImplementation((id) =>
-      Promise.resolve(id === 'c-1' ? competicion('c-1', ['FR', 'BE'], 'La de A') : competicion('c-2', ['IT', 'AD'], 'La de B'))
+      Promise.resolve(
+        id === 'c-1'
+          ? competicion('c-1', ['FR', 'BE'], 'La de A')
+          : competicion('c-2', ['IT', 'AD'], 'La de B'),
+      ),
     );
     mockVecinos.mockImplementation((code) =>
-      Promise.resolve({ FR: [pais('BE'), pais('DE')], IT: [pais('AD'), pais('FR')] }[code] ?? [])
+      Promise.resolve(
+        { FR: [pais('BE'), pais('DE')], IT: [pais('AD'), pais('FR')] }[code] ??
+          [],
+      ),
     );
     render(
       <MemoryRouter initialEntries={['/competitions/c-1/edit']}>
         <Link to="/competitions/c-2/edit">a la B</Link>
         <Routes>
-          <Route path="/competitions/:id/edit" element={<CreateCompetition />} />
+          <Route
+            path="/competitions/:id/edit"
+            element={<CreateCompetition />}
+          />
         </Routes>
-      </MemoryRouter>
+      </MemoryRouter>,
     );
     await screen.findByDisplayValue('La de A');
     let deEspana;
-    mockVecinos.mockImplementationOnce(() => new Promise((r) => { deEspana = r; }));
+    mockVecinos.mockImplementationOnce(
+      () =>
+        new Promise((r) => {
+          deEspana = r;
+        }),
+    );
     fireEvent.click(screen.getByText('elegir ES'));
 
     fireEvent.click(screen.getByText('a la B'));
@@ -251,17 +341,22 @@ describe('CreateCompetition · países y vecinos', () => {
     let fallaA;
     mockDetalle.mockImplementation((id) =>
       id === 'c-1'
-        ? new Promise((_, rechazar) => { fallaA = rechazar; })
-        : Promise.resolve(competicion('c-2', ['ES'], 'La de B'))
+        ? new Promise((_, rechazar) => {
+            fallaA = rechazar;
+          })
+        : Promise.resolve(competicion('c-2', ['ES'], 'La de B')),
     );
     render(
       <MemoryRouter initialEntries={['/competitions/c-1/edit']}>
         <Link to="/competitions/c-2/edit">a la B</Link>
         <Routes>
-          <Route path="/competitions/:id/edit" element={<CreateCompetition />} />
+          <Route
+            path="/competitions/:id/edit"
+            element={<CreateCompetition />}
+          />
           <Route path="/competitions" element={<p>el listado</p>} />
         </Routes>
-      </MemoryRouter>
+      </MemoryRouter>,
     );
     await waitFor(() => expect(mockDetalle).toHaveBeenCalledWith('c-1'));
     fireEvent.click(screen.getByText('a la B'));
@@ -291,7 +386,9 @@ describe('CreateCompetition · países y vecinos', () => {
     fireEvent.change(adyacente(), { target: { value: 'PT' } });
 
     // Los de Portugal aún no han llegado: no hay tercer país que ofrecer
-    expect(screen.queryByText('create.addThirdCountry')).not.toBeInTheDocument();
+    expect(
+      screen.queryByText('create.addThirdCountry'),
+    ).not.toBeInTheDocument();
   });
 
   it('T3-3f: de Francia a Portugal, la lista del tercer país de Francia no se ve mientras llegan los de Portugal', async () => {
@@ -310,7 +407,9 @@ describe('CreateCompetition · países y vecinos', () => {
 
     fireEvent.change(adyacente(), { target: { value: 'PT' } });
 
-    expect(screen.queryByText('create.addThirdCountry')).not.toBeInTheDocument();
+    expect(
+      screen.queryByText('create.addThirdCountry'),
+    ).not.toBeInTheDocument();
     await act(async () => {
       pendientes.PT[0]([pais('IT')]);
     });
@@ -320,16 +419,23 @@ describe('CreateCompetition · países y vecinos', () => {
 
   it('T3-2: editando A y pasando a B, los vecinos de A que llegan tarde no pisan los de B', async () => {
     mockDetalle.mockImplementation((id) =>
-      Promise.resolve(id === 'c-1' ? competicion('c-1', ['FR', 'BE'], 'La de A') : competicion('c-2', ['ES', 'PT', 'AD'], 'La de B'))
+      Promise.resolve(
+        id === 'c-1'
+          ? competicion('c-1', ['FR', 'BE'], 'La de A')
+          : competicion('c-2', ['ES', 'PT', 'AD'], 'La de B'),
+      ),
     );
     const pendientes = conVecinosEnEspera();
     render(
       <MemoryRouter initialEntries={['/competitions/c-1/edit']}>
         <Link to="/competitions/c-2/edit">a la B</Link>
         <Routes>
-          <Route path="/competitions/:id/edit" element={<CreateCompetition />} />
+          <Route
+            path="/competitions/:id/edit"
+            element={<CreateCompetition />}
+          />
         </Routes>
-      </MemoryRouter>
+      </MemoryRouter>,
     );
     await waitFor(() => expect(pendientes.FR).toHaveLength(1));
 
@@ -362,7 +468,10 @@ describe('CreateCompetition · países y vecinos', () => {
     const arbol = () => (
       <MemoryRouter initialEntries={['/competitions/c-1/edit']}>
         <Routes>
-          <Route path="/competitions/:id/edit" element={<CreateCompetition />} />
+          <Route
+            path="/competitions/:id/edit"
+            element={<CreateCompetition />}
+          />
         </Routes>
       </MemoryRouter>
     );

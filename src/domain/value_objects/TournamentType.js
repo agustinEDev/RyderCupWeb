@@ -8,4 +8,5 @@
  */
 export const RYDER_CUP = 'RYDER_CUP';
 
-export const tieneEquipos = (tournamentType) => (tournamentType ?? RYDER_CUP) === RYDER_CUP;
+export const tieneEquipos = (tournamentType) =>
+  (tournamentType ?? RYDER_CUP) === RYDER_CUP;

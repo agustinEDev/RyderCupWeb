@@ -30,11 +30,19 @@ describe('la ficha de la competición usa la regla (cableado)', () => {
   // La ficha es enorme para montarla aquí: se comprueba que el aviso de «falta el
   // hándicap» pasa por la regla con `sinConfirmar`, no por la comprobación de antes
   const ficha = Object.values(
-    import.meta.glob('/src/pages/CompetitionDetail.jsx', { query: '?raw', import: 'default', eager: true })
+    import.meta.glob('/src/pages/CompetitionDetail.jsx', {
+      query: '?raw',
+      import: 'default',
+      eager: true,
+    }),
   )[0];
 
   it('faltaHandicap sale de faltaElHandicap(user, sinConfirmar)', () => {
-    expect(ficha).toMatch(/faltaHandicap=\{esStrokePlay && faltaElHandicap\(user, sinConfirmar\)\}/);
-    expect(ficha).toMatch(/const \{ user, loading: isLoadingUser, sinConfirmar \} = useAuth\(\);/);
+    expect(ficha).toMatch(
+      /faltaHandicap=\{esStrokePlay && faltaElHandicap\(user, sinConfirmar\)\}/,
+    );
+    expect(ficha).toMatch(
+      /const \{ user, loading: isLoadingUser, sinConfirmar \} = useAuth\(\);/,
+    );
   });
 });

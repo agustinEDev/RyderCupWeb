@@ -17,7 +17,9 @@ export const hoyosSinGuardar = ({
   isOwnScoreLocked,
   marcaBloqueadaPara,
 }) => {
-  const hoyosNoGuardados = Object.keys(noGuardados).map(Number).sort((a, b) => a - b);
+  const hoyosNoGuardados = Object.keys(noGuardados)
+    .map(Number)
+    .sort((a, b) => a - b);
   // Cada marca, con el bloqueo de SU rival: quien marca a dos las nombra con él
   // y puede tener uno entregado y el otro no. A quien ya no marca (se deshizo
   // la retirada) no se le puede volver a anotar (26 oct 2026)
@@ -29,10 +31,17 @@ export const hoyosSinGuardar = ({
     if (rival) return !misMarcados.includes(rival) || marcaBloqueadaPara(rival);
     return marcaBloqueadaPara(primerMarcado);
   };
-  const yaNoSeAnota = (hoyo) => !canScore || noGuardados[hoyo].golpes.every(golpeBloqueado);
+  const yaNoSeAnota = (hoyo) =>
+    !canScore || noGuardados[hoyo].golpes.every(golpeBloqueado);
   const porAnotar = hoyosNoGuardados.filter((h) => !yaNoSeAnota(h));
   const sinAnotar = hoyosNoGuardados.filter(yaNoSeAnota);
-  return { hoyosNoGuardados, primerMarcado, segundoMarcado, porAnotar, sinAnotar };
+  return {
+    hoyosNoGuardados,
+    primerMarcado,
+    segundoMarcado,
+    porAnotar,
+    sinAnotar,
+  };
 };
 
 /**
@@ -51,17 +60,23 @@ export const lecturaDelHoyo = ({
   // Fourball con un retirado (F5): su pareja marca también al rival que él
   // marcaba. La casilla es del primero, como siempre, y la del segundo va
   // debajo (26 oct 2026: una casilla por marcado, sin elegir)
-  const nombreDe = (id) => scoringView?.players?.find((p) => p.userId === id)?.userName ?? id;
+  const nombreDe = (id) =>
+    scoringView?.players?.find((p) => p.userId === id)?.userName ?? id;
   // Quien no marca a nadie no tiene asignación propia de la que sacarlo
-  const quienMeMarcaId = scoringView?.markerAssignments?.find((ma) => ma.marksUserId === currentUserId)?.scorerUserId;
+  const quienMeMarcaId = scoringView?.markerAssignments?.find(
+    (ma) => ma.marksUserId === currentUserId,
+  )?.scorerUserId;
   const quienMeMarca = quienMeMarcaId ? nombreDe(quienMeMarcaId) : null;
   const markerAssignment = scoringView?.markerAssignments?.find(
-    (ma) => ma.scorerUserId === currentUserId && ma.marksUserId === primerMarcado
+    (ma) =>
+      ma.scorerUserId === currentUserId && ma.marksUserId === primerMarcado,
   );
   // Cada marcado con su bloqueo: con dos, el primero no dice nada del otro. Sin
   // marcado (el rival que marcaba al retirado) no hay marca que guardar
   const marcaBloqueada = marcaBloqueadaPara(markerAssignment?.marksUserId);
-  const segundoBloqueado = segundoMarcado ? marcaBloqueadaPara(segundoMarcado) : true;
+  const segundoBloqueado = segundoMarcado
+    ? marcaBloqueadaPara(segundoMarcado)
+    : true;
 
   // A quién marco, para «Anotas a …» del hoyo. En foursomes hay una bola por
   // pareja y se marca a la pareja rival (#710): «Luna / Óscar», no solo Luna.
@@ -70,9 +85,15 @@ export const lecturaDelHoyo = ({
   const formato = scoringView?.matchFormat;
   const jugadores = scoringView?.players;
   const marcoAId = markerAssignment?.marksUserId;
-  const equipoMarcado = formato === 'FOURSOMES' && marcoAId ? jugadores?.find((p) => p.userId === marcoAId)?.team : null;
+  const equipoMarcado =
+    formato === 'FOURSOMES' && marcoAId
+      ? jugadores?.find((p) => p.userId === marcoAId)?.team
+      : null;
   const parejaMarcada = equipoMarcado
-    ? jugadores.filter((p) => p.team === equipoMarcado).map((p) => p.userName).join(' / ')
+    ? jugadores
+        .filter((p) => p.team === equipoMarcado)
+        .map((p) => p.userName)
+        .join(' / ')
     : '';
   const aQuienMarco = parejaMarcada || markerAssignment?.marksName || null;
 
@@ -90,27 +111,37 @@ export const lecturaDelHoyo = ({
     holeCardOf(userId).find((h) => h.holeNumber === currentHole) ?? null;
 
   // Get current hole data
-  const courseHoleData = scoringView?.holes?.find((h) => h.holeNumber === currentHole);
+  const courseHoleData = scoringView?.holes?.find(
+    (h) => h.holeNumber === currentHole,
+  );
   const currentHoleData = holeFor(currentUserId) ?? courseHoleData;
 
   // Lo que se ve del hoyo: el servidor con lo que está en la cola encima, que lo
   // compone el hook (FE #606). La pantalla ya no guarda su propia copia de lo
   // anotado: nunca se vaciaba, así que un golpe rechazado seguía pintándose
-  const currentHoleScore = scoresVisibles.find((s) => s.holeNumber === currentHole);
+  const currentHoleScore = scoresVisibles.find(
+    (s) => s.holeNumber === currentHole,
+  );
   const currentPlayerScore = currentHoleScore?.playerScores?.find(
-    (ps) => ps.userId === currentUserId
+    (ps) => ps.userId === currentUserId,
   );
   // Score entry for the player the current user marks (to read what current user entered as marker)
   const markedPlayerScore = currentHoleScore?.playerScores?.find(
-    (ps) => ps.userId === markerAssignment?.marksUserId
+    (ps) => ps.userId === markerAssignment?.marksUserId,
   );
 
   // La fila del segundo marcado en este hoyo, y su nombre, de su asignación
   // como el del primero: sin él, `null`, y la casilla pone las palabras de
   // siempre (no su id)
-  const filaDelSegundo = currentHoleScore?.playerScores?.find((ps) => ps.userId === segundoMarcado);
-  const nombreDelSegundo = (segundoMarcado
-    && scoringView?.markerAssignments?.find((ma) => ma.marksUserId === segundoMarcado)?.marksName) || null;
+  const filaDelSegundo = currentHoleScore?.playerScores?.find(
+    (ps) => ps.userId === segundoMarcado,
+  );
+  const nombreDelSegundo =
+    (segundoMarcado &&
+      scoringView?.markerAssignments?.find(
+        (ma) => ma.marksUserId === segundoMarcado,
+      )?.marksName) ||
+    null;
 
   return {
     quienMeMarca,

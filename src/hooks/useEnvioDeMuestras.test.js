@@ -17,19 +17,41 @@ import { renderHook } from '@testing-library/react';
  * | R5   | los reportes de hoyo (entrega 7)                    | salen con las muestras, con la misma escalera         |
  */
 
-const envio = vi.hoisted(() => ({ execute: vi.fn(async () => ({ pendientes: 0 })) }));
-const reportes = vi.hoisted(() => ({ execute: vi.fn(async () => ({ pendientes: 0 })) }));
-vi.mock('../composition', () => ({ sendPendingHoleSamplesUseCase: envio, sendPendingHoleReportsUseCase: reportes }));
-const toastFalso = vi.hoisted(() => Object.assign(vi.fn(), { error: vi.fn(), success: vi.fn() }));
+const envio = vi.hoisted(() => ({
+  execute: vi.fn(async () => ({ pendientes: 0 })),
+}));
+const reportes = vi.hoisted(() => ({
+  execute: vi.fn(async () => ({ pendientes: 0 })),
+}));
+vi.mock('../composition', () => ({
+  sendPendingHoleSamplesUseCase: envio,
+  sendPendingHoleReportsUseCase: reportes,
+}));
+const toastFalso = vi.hoisted(() =>
+  Object.assign(vi.fn(), { error: vi.fn(), success: vi.fn() }),
+);
 vi.mock('react-hot-toast', () => ({ default: toastFalso }));
 
-const { useEnvioDeMuestras, ESPERAS_MS, MUESTRAS_CAMBIADAS, MUESTRA_PENDIENTE } = await import('./useEnvioDeMuestras');
+const {
+  useEnvioDeMuestras,
+  ESPERAS_MS,
+  MUESTRAS_CAMBIADAS,
+  MUESTRA_PENDIENTE,
+} = await import('./useEnvioDeMuestras');
 
 describe('useEnvioDeMuestras', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    envio.execute.mockResolvedValue({ enviadas: 0, descartadas: 0, pendientes: 0 });
-    reportes.execute.mockResolvedValue({ enviados: 0, descartados: 0, pendientes: 0 });
+    envio.execute.mockResolvedValue({
+      enviadas: 0,
+      descartadas: 0,
+      pendientes: 0,
+    });
+    reportes.execute.mockResolvedValue({
+      enviados: 0,
+      descartados: 0,
+      pendientes: 0,
+    });
     vi.stubGlobal('navigator', { onLine: true });
   });
 
@@ -44,13 +66,19 @@ describe('useEnvioDeMuestras', () => {
   it('al arrancar con sesión y red, envía las del jugador', () => {
     renderHook(() => useEnvioDeMuestras({ activo: true, userId: 'u1' }));
 
-    expect(envio.execute).toHaveBeenCalledWith('u1', { sigue: expect.any(Function) });
+    expect(envio.execute).toHaveBeenCalledWith('u1', {
+      sigue: expect.any(Function),
+    });
   });
 
   it('R5: al arrancar envía también los reportes del jugador, cortándose igual', () => {
-    const { unmount } = renderHook(() => useEnvioDeMuestras({ activo: true, userId: 'u1' }));
+    const { unmount } = renderHook(() =>
+      useEnvioDeMuestras({ activo: true, userId: 'u1' }),
+    );
 
-    expect(reportes.execute).toHaveBeenCalledWith('u1', { sigue: expect.any(Function) });
+    expect(reportes.execute).toHaveBeenCalledWith('u1', {
+      sigue: expect.any(Function),
+    });
     const { sigue } = reportes.execute.mock.calls[0][1];
     expect(sigue()).toBe(true);
     unmount();
@@ -60,7 +88,11 @@ describe('useEnvioDeMuestras', () => {
   it('R5: un reporte que se queda en la cola arma el reintento a los 30 s', async () => {
     vi.useFakeTimers();
     try {
-      reportes.execute.mockResolvedValueOnce({ enviados: 0, descartados: 0, pendientes: 1 });
+      reportes.execute.mockResolvedValueOnce({
+        enviados: 0,
+        descartados: 0,
+        pendientes: 1,
+      });
       renderHook(() => useEnvioDeMuestras({ activo: true, userId: 'u1' }));
       await vi.advanceTimersByTimeAsync(0);
 
@@ -75,7 +107,11 @@ describe('useEnvioDeMuestras', () => {
 
   it('R5: si los reportes fallan, las muestras se envían igual y avisan al mapa', async () => {
     reportes.execute.mockRejectedValueOnce(new Error('roto'));
-    envio.execute.mockResolvedValueOnce({ enviadas: 1, descartadas: 0, pendientes: 0 });
+    envio.execute.mockResolvedValueOnce({
+      enviadas: 1,
+      descartadas: 0,
+      pendientes: 0,
+    });
     const aviso = vi.fn();
     globalThis.addEventListener(MUESTRAS_CAMBIADAS, aviso);
 
@@ -89,7 +125,11 @@ describe('useEnvioDeMuestras', () => {
     vi.useFakeTimers();
     try {
       envio.execute.mockRejectedValueOnce(new Error('roto'));
-      reportes.execute.mockResolvedValueOnce({ enviados: 0, descartados: 0, pendientes: 1 });
+      reportes.execute.mockResolvedValueOnce({
+        enviados: 0,
+        descartados: 0,
+        pendientes: 1,
+      });
       renderHook(() => useEnvioDeMuestras({ activo: true, userId: 'u1' }));
       await vi.advanceTimersByTimeAsync(0);
 
@@ -136,7 +176,9 @@ describe('useEnvioDeMuestras', () => {
   });
 
   it('al desmontar deja de escuchar', () => {
-    const { unmount } = renderHook(() => useEnvioDeMuestras({ activo: true, userId: 'u1' }));
+    const { unmount } = renderHook(() =>
+      useEnvioDeMuestras({ activo: true, userId: 'u1' }),
+    );
     unmount();
     envio.execute.mockClear();
 
@@ -149,7 +191,9 @@ describe('useEnvioDeMuestras', () => {
   it('un fallo del envío no revienta nada ni avisa', async () => {
     envio.execute.mockRejectedValueOnce(new Error('x'));
 
-    expect(() => renderHook(() => useEnvioDeMuestras({ activo: true, userId: 'u1' }))).not.toThrow();
+    expect(() =>
+      renderHook(() => useEnvioDeMuestras({ activo: true, userId: 'u1' })),
+    ).not.toThrow();
     await Promise.resolve();
     await Promise.resolve();
     expect(toastFalso).not.toHaveBeenCalled();
@@ -157,14 +201,19 @@ describe('useEnvioDeMuestras', () => {
   });
 
   it('D19: al cambiar de sesión, el envío en marcha deja de seguir', () => {
-    const { rerender } = renderHook(({ userId }) => useEnvioDeMuestras({ activo: true, userId }), { initialProps: { userId: 'u1' } });
+    const { rerender } = renderHook(
+      ({ userId }) => useEnvioDeMuestras({ activo: true, userId }),
+      { initialProps: { userId: 'u1' } },
+    );
     const { sigue } = envio.execute.mock.calls[0][1];
     expect(sigue()).toBe(true);
 
     rerender({ userId: 'u2' });
 
     expect(sigue()).toBe(false);
-    expect(envio.execute).toHaveBeenLastCalledWith('u2', { sigue: expect.any(Function) });
+    expect(envio.execute).toHaveBeenLastCalledWith('u2', {
+      sigue: expect.any(Function),
+    });
   });
 
   describe('con la aplicación abierta, se reintenta (portal de un club, tope de peticiones)', () => {
@@ -172,7 +221,11 @@ describe('useEnvioDeMuestras', () => {
     afterEach(() => vi.useRealTimers());
 
     it('si queda algo pendiente, vuelve a intentarlo a los 30 s, 2 min y 5 min, y para', async () => {
-      envio.execute.mockResolvedValue({ enviadas: 0, descartadas: 0, pendientes: 1 });
+      envio.execute.mockResolvedValue({
+        enviadas: 0,
+        descartadas: 0,
+        pendientes: 1,
+      });
       renderHook(() => useEnvioDeMuestras({ activo: true, userId: 'u1' }));
       await vi.advanceTimersByTimeAsync(0);
       expect(envio.execute).toHaveBeenCalledTimes(1);
@@ -203,7 +256,9 @@ describe('useEnvioDeMuestras', () => {
 
     it('si una muestra se queda en la cola mientras va una tanda, al acabar esta no se arma otro reintento', async () => {
       let terminar;
-      envio.execute.mockImplementationOnce(() => new Promise((r) => (terminar = r))).mockResolvedValue({ pendientes: 1 });
+      envio.execute
+        .mockImplementationOnce(() => new Promise((r) => (terminar = r)))
+        .mockResolvedValue({ pendientes: 1 });
       renderHook(() => useEnvioDeMuestras({ activo: true, userId: 'u1' }));
       await vi.advanceTimersByTimeAsync(0);
 
@@ -229,7 +284,8 @@ describe('useEnvioDeMuestras', () => {
       envio.execute.mockResolvedValue({ pendientes: 1 });
       renderHook(() => useEnvioDeMuestras({ activo: true, userId: 'u1' }));
       await vi.advanceTimersByTimeAsync(0);
-      for (const espera of ESPERAS_MS) await vi.advanceTimersByTimeAsync(espera);
+      for (const espera of ESPERAS_MS)
+        await vi.advanceTimersByTimeAsync(espera);
       envio.execute.mockClear();
 
       globalThis.dispatchEvent(new globalThis.Event('online'));
@@ -240,7 +296,9 @@ describe('useEnvioDeMuestras', () => {
 
     it('al desmontar no queda ningún reintento armado', async () => {
       envio.execute.mockResolvedValue({ pendientes: 1 });
-      const { unmount } = renderHook(() => useEnvioDeMuestras({ activo: true, userId: 'u1' }));
+      const { unmount } = renderHook(() =>
+        useEnvioDeMuestras({ activo: true, userId: 'u1' }),
+      );
       await vi.advanceTimersByTimeAsync(0);
       unmount();
       envio.execute.mockClear();
@@ -254,19 +312,22 @@ describe('useEnvioDeMuestras', () => {
   it.each([
     ['envió', { enviadas: 1, descartadas: 0, pendientes: 0 }],
     ['descartó', { enviadas: 0, descartadas: 2, pendientes: 0 }],
-  ])('si %s algo, avisa al mapa abierto y NO dice nada al jugador', async (_caso, cuenta) => {
-    envio.execute.mockResolvedValue(cuenta);
-    const oyente = vi.fn();
-    globalThis.addEventListener(MUESTRAS_CAMBIADAS, oyente);
+  ])(
+    'si %s algo, avisa al mapa abierto y NO dice nada al jugador',
+    async (_caso, cuenta) => {
+      envio.execute.mockResolvedValue(cuenta);
+      const oyente = vi.fn();
+      globalThis.addEventListener(MUESTRAS_CAMBIADAS, oyente);
 
-    renderHook(() => useEnvioDeMuestras({ activo: true, userId: 'u1' }));
-    await vi.waitFor(() => expect(oyente).toHaveBeenCalledTimes(1));
+      renderHook(() => useEnvioDeMuestras({ activo: true, userId: 'u1' }));
+      await vi.waitFor(() => expect(oyente).toHaveBeenCalledTimes(1));
 
-    expect(toastFalso).not.toHaveBeenCalled();
-    expect(toastFalso.error).not.toHaveBeenCalled();
-    expect(toastFalso.success).not.toHaveBeenCalled();
-    globalThis.removeEventListener(MUESTRAS_CAMBIADAS, oyente);
-  });
+      expect(toastFalso).not.toHaveBeenCalled();
+      expect(toastFalso.error).not.toHaveBeenCalled();
+      expect(toastFalso.success).not.toHaveBeenCalled();
+      globalThis.removeEventListener(MUESTRAS_CAMBIADAS, oyente);
+    },
+  );
 
   it('sin nada que contar, ni evento ni aviso', async () => {
     const oyente = vi.fn();

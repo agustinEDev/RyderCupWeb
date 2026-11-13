@@ -17,8 +17,18 @@ import '../../composition/interfazDelTransporte';
  *   N2  el mismo 403 pero el reintento va bien         | ningún aviso de cierre: no hubo cierre
  */
 const sentry = vi.hoisted(() => {
-  const scope = { setLevel: vi.fn(), setTag: vi.fn(), setExtra: vi.fn(), setFingerprint: vi.fn() };
-  return { scope, withScope: vi.fn((fn) => fn(scope)), captureMessage: vi.fn(), captureException: vi.fn() };
+  const scope = {
+    setLevel: vi.fn(),
+    setTag: vi.fn(),
+    setExtra: vi.fn(),
+    setFingerprint: vi.fn(),
+  };
+  return {
+    scope,
+    withScope: vi.fn((fn) => fn(scope)),
+    captureMessage: vi.fn(),
+    captureException: vi.fn(),
+  };
 });
 vi.mock('@sentry/react', () => ({
   withScope: sentry.withScope,
@@ -40,33 +50,46 @@ vi.mock('./csrfTokenSync', () => ({
   getCsrfCookie: () => getCsrfToken(),
   setCsrfTokenGlobal: () => {},
 }));
-vi.mock('../../services/novedadesDeActividad', () => ({ olvidaLasNovedades: vi.fn() }));
+vi.mock('../../services/novedadesDeActividad', () => ({
+  olvidaLasNovedades: vi.fn(),
+}));
 vi.mock('i18next', () => ({ default: { t: (clave) => clave } }));
 
 // Lo que se borra de la cuenta lo registra la composition root, como en la app:
 // sin él, `handleCsrfLogout` se tragaba el «no hay limpiezas registradas»
 await import('../../composition/limpiezaAlCerrarLaSesion');
-const { olvidaLasNovedades } = await import('../../services/novedadesDeActividad');
+const { olvidaLasNovedades } =
+  await import('../../services/novedadesDeActividad');
 const { apiRequest } = await import('./api');
 
 const csrf403 = () => ({
   ok: false,
   status: 403,
   statusText: 'Forbidden',
-  json: async () => ({ detail: 'CSRF token missing or invalid', error_code: 'CSRF_VALIDATION_FAILED' }),
+  json: async () => ({
+    detail: 'CSRF token missing or invalid',
+    error_code: 'CSRF_VALIDATION_FAILED',
+  }),
 });
 
-const crearLaPartida = () => apiRequest('/api/v1/quick-matches/start', { method: 'POST', body: '{}' });
+const crearLaPartida = () =>
+  apiRequest('/api/v1/quick-matches/start', { method: 'POST', body: '{}' });
 
 const avisosDeCierre = () =>
-  sentry.captureMessage.mock.calls.filter(([titulo]) => String(titulo).startsWith('Forced logout'));
+  sentry.captureMessage.mock.calls.filter(([titulo]) =>
+    String(titulo).startsWith('Forced logout'),
+  );
 
 describe('el cierre del 4 nov llega a Sentry', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.spyOn(console, 'error').mockImplementation(() => {});
     vi.spyOn(console, 'warn').mockImplementation(() => {});
-    vi.stubGlobal('localStorage', { getItem: () => null, setItem: () => {}, removeItem: () => {} });
+    vi.stubGlobal('localStorage', {
+      getItem: () => null,
+      setItem: () => {},
+      removeItem: () => {},
+    });
     delete window.location;
     window.location = { href: '', pathname: '/quick-match/new' };
     getCsrfToken.mockReturnValue('VIEJO');
@@ -85,7 +108,10 @@ describe('el cierre del 4 nov llega a Sentry', () => {
 
     expect(window.location.href).toBe('/login');
     expect(avisosDeCierre()).toEqual([
-      ['Forced logout: unrecovered CSRF 403 / Cierre de sesión forzado: 403 CSRF sin recuperar', 'warning'],
+      [
+        'Forced logout: unrecovered CSRF 403 / Cierre de sesión forzado: 403 CSRF sin recuperar',
+        'warning',
+      ],
     ]);
     expect(Object.fromEntries(sentry.scope.setTag.mock.calls)).toMatchObject({
       'logout.reason': 'csrf_unrecovered',
@@ -94,13 +120,18 @@ describe('el cierre del 4 nov llega a Sentry', () => {
     });
     // Y la cuenta se limpió entera: sin el registro, el fallo se quedaba en la consola
     expect(olvidaLasNovedades).toHaveBeenCalledTimes(1);
-    expect(console.error).not.toHaveBeenCalledWith('[CSRF] Logout cleanup failed:', expect.anything());
+    expect(console.error).not.toHaveBeenCalledWith(
+      '[CSRF] Logout cleanup failed:',
+      expect.anything(),
+    );
   });
 
   it('N2: si el reintento va bien, no hay cierre ni aviso de cierre', async () => {
-    llamarAlBackend
-      .mockResolvedValueOnce(csrf403())
-      .mockResolvedValueOnce({ ok: true, status: 201, json: async () => ({ id: 'qm1' }) });
+    llamarAlBackend.mockResolvedValueOnce(csrf403()).mockResolvedValueOnce({
+      ok: true,
+      status: 201,
+      json: async () => ({ id: 'qm1' }),
+    });
 
     await expect(crearLaPartida()).resolves.toEqual({ id: 'qm1' });
 

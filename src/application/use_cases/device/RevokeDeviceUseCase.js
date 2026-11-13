@@ -30,15 +30,21 @@ class RevokeDeviceUseCase {
 
     // Validate response structure
     if (!result || typeof result !== 'object' || Array.isArray(result)) {
-      throw new Error('Invalid response from device repository: expected object');
+      throw new Error(
+        'Invalid response from device repository: expected object',
+      );
     }
 
     if (typeof result.message !== 'string') {
-      throw new Error('Invalid response from device repository: message must be a string');
+      throw new Error(
+        'Invalid response from device repository: message must be a string',
+      );
     }
 
     if (typeof result.device_id !== 'string') {
-      throw new Error('Invalid response from device repository: device_id must be a string');
+      throw new Error(
+        'Invalid response from device repository: device_id must be a string',
+      );
     }
 
     return result;

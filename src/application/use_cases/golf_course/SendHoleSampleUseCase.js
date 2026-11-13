@@ -21,8 +21,21 @@ import { crearRecienEnviadas } from './recienEnviadas';
  * @param {Object} [dependencies.recienEnviadas] - las que llegaron y el resumen aún no trae, compartido
  */
 class SendHoleSampleUseCase {
-  constructor({ golfCourseRepository, holeSampleStore, ahora = () => new Date().toISOString(), reportarFallo = () => {}, enVuelo = new Set(), recienEnviadas = crearRecienEnviadas() }) {
-    this.dependencias = { golfCourseRepository, holeSampleStore, reportarFallo, enVuelo, recienEnviadas };
+  constructor({
+    golfCourseRepository,
+    holeSampleStore,
+    ahora = () => new Date().toISOString(),
+    reportarFallo = () => {},
+    enVuelo = new Set(),
+    recienEnviadas = crearRecienEnviadas(),
+  }) {
+    this.dependencias = {
+      golfCourseRepository,
+      holeSampleStore,
+      reportarFallo,
+      enVuelo,
+      recienEnviadas,
+    };
     this.ahora = ahora;
   }
 
@@ -32,13 +45,27 @@ class SendHoleSampleUseCase {
    *
    * @param {{userId: string, golfCourseId: string, holeNumber: number, barra: {color: string, gender?: string|null}, id: string, tee: Object, bends?: Object[], greenCenter: Object, alQuedarEnCola?: Function}} datos
    */
-  async execute({ userId, golfCourseId, holeNumber, barra, id, tee, bends, greenCenter, alQuedarEnCola = () => {} }) {
+  async execute({
+    userId,
+    golfCourseId,
+    holeNumber,
+    barra,
+    id,
+    tee,
+    bends,
+    greenCenter,
+    alQuedarEnCola = () => {},
+  }) {
     // Sin sesión no hay cola de quién, sin campo no hay a dónde y sin barra no
     // se sabe de qué salida es
-    if (!userId || !golfCourseId || !barra?.color) return { estado: 'ignorada' };
+    if (!userId || !golfCourseId || !barra?.color)
+      return { estado: 'ignorada' };
     if (!id) {
       // El mapa siempre lo pone: si falta, es un fallo nuestro
-      this.dependencias.reportarFallo(new Error('Muestra de hoyo sin id'), { golfCourseId, holeNumber });
+      this.dependencias.reportarFallo(new Error('Muestra de hoyo sin id'), {
+        golfCourseId,
+        holeNumber,
+      });
       return { estado: 'ignorada' };
     }
     const entrada = {

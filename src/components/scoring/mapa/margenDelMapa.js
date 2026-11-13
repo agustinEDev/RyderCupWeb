@@ -20,8 +20,11 @@ export const margenMedido = (contenedor, arriba, abajo) => {
   const caja = contenedor?.getBoundingClientRect?.();
   const deArriba = arriba?.getBoundingClientRect?.();
   const deAbajo = abajo?.getBoundingClientRect?.();
-  if (!caja?.height || !deArriba?.height || !deAbajo?.height) return margenDelEncuadre(alto);
+  if (!caja?.height || !deArriba?.height || !deAbajo?.height)
+    return margenDelEncuadre(alto);
   const top = Math.round(deArriba.bottom - caja.top + AIRE);
   const bottom = Math.round(caja.bottom - deAbajo.top + AIRE);
-  return alto - top - bottom < 120 ? margenDelEncuadre(alto) : { top, bottom, left: LADOS, right: LADOS };
+  return alto - top - bottom < 120
+    ? margenDelEncuadre(alto)
+    : { top, bottom, left: LADOS, right: LADOS };
 };

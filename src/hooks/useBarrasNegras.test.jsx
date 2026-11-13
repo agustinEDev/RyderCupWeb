@@ -34,13 +34,17 @@ describe('useBarrasNegras', () => {
 
     unmount();
 
-    expect(document.documentElement.style.backgroundColor).toBe('rgb(62, 134, 66)');
+    expect(document.documentElement.style.backgroundColor).toBe(
+      'rgb(62, 134, 66)',
+    );
     expect(document.body.style.backgroundColor).toBe('rgb(250, 250, 250)');
     expect(tema().content).toBe('#123456');
   });
 
   it('en StrictMode (efecto dos veces) también vuelve a lo de antes', () => {
-    const { unmount } = renderHook(() => useBarrasNegras(), { wrapper: StrictMode });
+    const { unmount } = renderHook(() => useBarrasNegras(), {
+      wrapper: StrictMode,
+    });
     expect(tema().content).toBe('#000000');
 
     unmount();

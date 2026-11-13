@@ -15,7 +15,9 @@ export const rumbo = (a, b) => {
   const lat2 = radianes(b.lat);
   const dLon = radianes(b.lon - a.lon);
   const y = Math.sin(dLon) * Math.cos(lat2);
-  const x = Math.cos(lat1) * Math.sin(lat2) - Math.sin(lat1) * Math.cos(lat2) * Math.cos(dLon);
+  const x =
+    Math.cos(lat1) * Math.sin(lat2) -
+    Math.sin(lat1) * Math.cos(lat2) * Math.cos(dLon);
   return (grados(Math.atan2(y, x)) + 360) % 360;
 };
 
@@ -27,7 +29,8 @@ export const rumbo = (a, b) => {
 export const orientacionDelHoyo = (hoyo) => {
   const linea = hoyo?.playLine ?? [];
   if (linea.length === 0) return null;
-  const destino = hoyo.green?.center ?? (linea.length > 1 ? linea.at(-1) : null);
+  const destino =
+    hoyo.green?.center ?? (linea.length > 1 ? linea.at(-1) : null);
   if (!destino) return null;
   return rumbo(linea[0], destino);
 };
@@ -54,11 +57,15 @@ export const rumboDeLaLinea = (linea, par) => {
  */
 export const proyeccionEnElTramo = (p, a, b) => {
   const coseno = Math.cos(radianes(a.lat));
-  const xy = (q) => [radianes(q.lon - a.lon) * RADIO_TERRESTRE_M * coseno, radianes(q.lat - a.lat) * RADIO_TERRESTRE_M];
+  const xy = (q) => [
+    radianes(q.lon - a.lon) * RADIO_TERRESTRE_M * coseno,
+    radianes(q.lat - a.lat) * RADIO_TERRESTRE_M,
+  ];
   const [px, py] = xy(p);
   const [bx, by] = xy(b);
   const largo2 = bx * bx + by * by;
-  const t = largo2 > 0 ? Math.min(1, Math.max(0, (px * bx + py * by) / largo2)) : 0;
+  const t =
+    largo2 > 0 ? Math.min(1, Math.max(0, (px * bx + py * by) / largo2)) : 0;
   return { t, metros: Math.hypot(px - t * bx, py - t * by) };
 };
 
@@ -75,17 +82,25 @@ export const siguientePuntoDeLaLinea = (posicion, linea) => {
   let mejor = null;
   for (let i = 0; i < linea.length - 1; i += 1) {
     const { t, metros } = proyeccionEnElTramo(posicion, linea[i], linea[i + 1]);
-    if (!mejor || metros < mejor.metros) mejor = { metros, i: t === 1 ? i + 2 : i + 1 };
+    if (!mejor || metros < mejor.metros)
+      mejor = { metros, i: t === 1 ? i + 2 : i + 1 };
   }
   let i = Math.min(mejor.i, linea.length - 1);
-  while (i < linea.length - 1 && proyeccionEnElTramo(posicion, linea[i], linea[i]).metros < CERCA_DEL_PUNTO_M) i += 1;
+  while (
+    i < linea.length - 1 &&
+    proyeccionEnElTramo(posicion, linea[i], linea[i]).metros < CERCA_DEL_PUNTO_M
+  )
+    i += 1;
   return linea[i];
 };
 
 /** Los puntos que forman el hoyo: su línea de juego y su green (delante, centro y fondo). */
 const puntosDelHoyo = (hoyo) => {
   const green = hoyo?.green;
-  return [...(hoyo?.playLine ?? []), ...(green ? [green.front, green.center, green.back] : [])];
+  return [
+    ...(hoyo?.playLine ?? []),
+    ...(green ? [green.front, green.center, green.back] : []),
+  ];
 };
 
 /** Lo que hay que encuadrar para ver el hoyo entero, o `null` sin puntos. */
@@ -132,24 +147,52 @@ export const encuadreGirado = (hoyo, rumboGrados, { ancho, alto, padding }) => {
   const giradas = puntos.map((p) => {
     const este = radianes(p.lon - origen.lon) * RADIO_MERCATOR_M * coseno;
     const norte = radianes(p.lat - origen.lat) * RADIO_MERCATOR_M;
-    return { u: este * Math.sin(r) + norte * Math.cos(r), v: este * Math.cos(r) - norte * Math.sin(r) };
+    return {
+      u: este * Math.sin(r) + norte * Math.cos(r),
+      v: este * Math.cos(r) - norte * Math.sin(r),
+    };
   });
   const us = giradas.map((g) => g.u);
   const vs = giradas.map((g) => g.v);
-  const [uMin, uMax, vMin, vMax] = [Math.min(...us), Math.max(...us), Math.min(...vs), Math.max(...vs)];
-  const hayHueco = alto - padding.top - padding.bottom > 0 && ancho - padding.left - padding.right > 0;
+  const [uMin, uMax, vMin, vMax] = [
+    Math.min(...us),
+    Math.max(...us),
+    Math.min(...vs),
+    Math.max(...vs),
+  ];
+  const hayHueco =
+    alto - padding.top - padding.bottom > 0 &&
+    ancho - padding.left - padding.right > 0;
   const margen = hayHueco ? padding : { top: 0, bottom: 0, left: 0, right: 0 };
   const libreAlto = alto - margen.top - margen.bottom;
   const libreAncho = ancho - margen.left - margen.right;
-  const ajustado = Math.max((uMax - uMin) / libreAlto, (vMax - vMin) / libreAncho);
-  const zoom = ajustado > 0 ? Math.min(ZOOM_MAXIMO, Math.log2((2 * Math.PI * RADIO_MERCATOR_M * coseno) / (TESELA_PX * ajustado))) : ZOOM_MAXIMO;
-  const mPorPx = (2 * Math.PI * RADIO_MERCATOR_M * coseno) / (TESELA_PX * 2 ** zoom);
+  const ajustado = Math.max(
+    (uMax - uMin) / libreAlto,
+    (vMax - vMin) / libreAncho,
+  );
+  const zoom =
+    ajustado > 0
+      ? Math.min(
+          ZOOM_MAXIMO,
+          Math.log2(
+            (2 * Math.PI * RADIO_MERCATOR_M * coseno) / (TESELA_PX * ajustado),
+          ),
+        )
+      : ZOOM_MAXIMO;
+  const mPorPx =
+    (2 * Math.PI * RADIO_MERCATOR_M * coseno) / (TESELA_PX * 2 ** zoom);
   // El centro de la pantalla, desde el centro del hueco: el hoyo queda en medio del hueco
   const u = (uMin + uMax) / 2 + ((margen.top - margen.bottom) / 2) * mPorPx;
   const v = (vMin + vMax) / 2 + ((margen.right - margen.left) / 2) * mPorPx;
   const center = {
-    lat: origen.lat + (u * Math.cos(r) - v * Math.sin(r)) / RADIO_MERCATOR_M / (Math.PI / 180),
-    lon: origen.lon + (u * Math.sin(r) + v * Math.cos(r)) / (RADIO_MERCATOR_M * coseno) / (Math.PI / 180),
+    lat:
+      origen.lat +
+      (u * Math.cos(r) - v * Math.sin(r)) / RADIO_MERCATOR_M / (Math.PI / 180),
+    lon:
+      origen.lon +
+      (u * Math.sin(r) + v * Math.cos(r)) /
+        (RADIO_MERCATOR_M * coseno) /
+        (Math.PI / 180),
   };
   return { center, zoom };
 };
@@ -169,5 +212,7 @@ export const esPosicionValida = (posicion) =>
 export const camaraGirada = (hoyo, rumboGrados, pantalla) => {
   if (rumboGrados === null) return null;
   const encuadre = encuadreGirado(hoyo, rumboGrados, pantalla);
-  return encuadre ? { center: encuadre.center, zoom: encuadre.zoom, bearing: rumboGrados } : null;
+  return encuadre
+    ? { center: encuadre.center, zoom: encuadre.zoom, bearing: rumboGrados }
+    : null;
 };

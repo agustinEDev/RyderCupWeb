@@ -64,8 +64,12 @@ export const apuntaElRouterDeLaAplicacion = (elRouter) => {
  */
 export const destinoDeLaNavegacion = () => {
   const navegacion = router?.state?.navigation;
-  if (!navegacion || navegacion.state === 'idle' || !navegacion.location) return null;
-  return { pathname: navegacion.location.pathname, search: navegacion.location.search ?? '' };
+  if (!navegacion || navegacion.state === 'idle' || !navegacion.location)
+    return null;
+  return {
+    pathname: navegacion.location.pathname,
+    search: navegacion.location.search ?? '',
+  };
 };
 
 /**
@@ -80,8 +84,11 @@ export const destinoDeLaNavegacion = () => {
  */
 export const destinoSiLaPeticionEsSuya = (inicio) => {
   const destino = destinoDeLaNavegacion();
-  if (!destino || typeof inicio !== 'number' || inicioDeLaNavegacion === null) return null;
+  if (!destino || typeof inicio !== 'number' || inicioDeLaNavegacion === null)
+    return null;
   if (inicio < inicioDeLaNavegacion) return null;
-  const conLoader = (matchRoutes(router.routes ?? [], destino.pathname) ?? []).some(({ route }) => Boolean(route.loader));
+  const conLoader = (
+    matchRoutes(router.routes ?? [], destino.pathname) ?? []
+  ).some(({ route }) => Boolean(route.loader));
   return conLoader ? destino : null;
 };

@@ -18,7 +18,10 @@ const SRC = resolve(process.cwd(), 'src');
 let tailwind;
 
 beforeAll(async () => {
-  tailwind = await compile(readFileSync(resolve(SRC, 'index.css'), 'utf8'), { base: SRC, onDependency() {} });
+  tailwind = await compile(readFileSync(resolve(SRC, 'index.css'), 'utf8'), {
+    base: SRC,
+    onDependency() {},
+  });
 });
 
 /** La regla entera de una clase, contando llaves (lleva un `@supports` dentro). */
@@ -29,7 +32,8 @@ const reglaDe = (clase) => {
   let profundidad = 0;
   for (let i = css.indexOf('{', inicio); i < css.length; i++) {
     if (css[i] === '{') profundidad++;
-    else if (css[i] === '}' && --profundidad === 0) return css.slice(inicio, i + 1);
+    else if (css[i] === '}' && --profundidad === 0)
+      return css.slice(inicio, i + 1);
   }
   return null;
 };
@@ -46,7 +50,10 @@ const TONOS = {
 const conSuTono = (regla, color, css) => {
   const [hex, variable] = TONOS[color];
   if (regla.toLowerCase().includes(hex)) return true;
-  return regla.includes(`var(${variable})`) && css.toLowerCase().includes(`${variable}: ${hex}`);
+  return (
+    regla.includes(`var(${variable})`) &&
+    css.toLowerCase().includes(`${variable}: ${hex}`)
+  );
 };
 
 describe('colores de marca', () => {

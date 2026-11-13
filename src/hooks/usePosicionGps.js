@@ -17,9 +17,16 @@ const PERMISO_DENEGADO = 1;
  * @param {number} [precisionMaxima] peor que esto, se sigue buscando (30 m; el
  *   admin, para centrar su mapa, acepta cualquiera: un ordenador va por Wi-Fi)
  */
-export function usePosicionGps({ activo, precisionMaxima = PRECISION_MAXIMA_M }) {
+export function usePosicionGps({
+  activo,
+  precisionMaxima = PRECISION_MAXIMA_M,
+}) {
   const geolocation = globalThis.navigator?.geolocation;
-  const [lectura, setLectura] = useState({ estado: 'buscando', posicion: null, precision: null });
+  const [lectura, setLectura] = useState({
+    estado: 'buscando',
+    posicion: null,
+    precision: null,
+  });
 
   useEffect(() => {
     if (!activo || !geolocation) return undefined;
@@ -33,7 +40,7 @@ export function usePosicionGps({ activo, precisionMaxima = PRECISION_MAXIMA_M })
         setLectura(
           coords.accuracy <= precisionMaxima && esPosicionValida(posicion)
             ? { estado: 'listo', posicion, precision: coords.accuracy }
-            : { estado: 'buscando', posicion: null, precision: null }
+            : { estado: 'buscando', posicion: null, precision: null },
         );
       },
       (error) => {
@@ -45,7 +52,7 @@ export function usePosicionGps({ activo, precisionMaxima = PRECISION_MAXIMA_M })
         }
         // Sin señal o tiempo agotado: se sigue buscando
       },
-      { enableHighAccuracy: true, maximumAge: 5000, timeout: 20000 }
+      { enableHighAccuracy: true, maximumAge: 5000, timeout: 20000 },
     );
     if (denegado) geolocation.clearWatch(id);
     return () => {
@@ -56,6 +63,7 @@ export function usePosicionGps({ activo, precisionMaxima = PRECISION_MAXIMA_M })
   }, [activo, geolocation, precisionMaxima]);
 
   if (!activo) return { estado: 'inactivo', posicion: null, precision: null };
-  if (!geolocation) return { estado: 'no-disponible', posicion: null, precision: null };
+  if (!geolocation)
+    return { estado: 'no-disponible', posicion: null, precision: null };
   return lectura;
 }

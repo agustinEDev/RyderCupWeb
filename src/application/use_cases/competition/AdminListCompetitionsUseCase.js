@@ -14,7 +14,9 @@ class AdminListCompetitionsUseCase {
    */
   constructor(competitionRepository) {
     if (!competitionRepository) {
-      throw new Error('AdminListCompetitionsUseCase requires a competitionRepository');
+      throw new Error(
+        'AdminListCompetitionsUseCase requires a competitionRepository',
+      );
     }
     this.competitionRepository = competitionRepository;
   }
@@ -37,10 +39,11 @@ class AdminListCompetitionsUseCase {
       offset: filters.offset || 0,
     };
 
-    const competitions = await this.competitionRepository.findPublic(repositoryFilters);
+    const competitions =
+      await this.competitionRepository.findPublic(repositoryFilters);
 
     return competitions.map((competition) =>
-      CompetitionAssembler.toSimpleDTO(competition, competition._apiData)
+      CompetitionAssembler.toSimpleDTO(competition, competition._apiData),
     );
   }
 }

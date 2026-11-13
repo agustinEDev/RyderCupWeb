@@ -14,6 +14,8 @@ describe('erroresDeAnotacion (FE #551)', () => {
   });
 
   it('la clave del aviso del vaciado sale del paro', () => {
-    expect(claveDelAvisoDelVaciado('no-se-pudo-borrar')).toBe('scoring:errors.vaciado.no-se-pudo-borrar');
+    expect(claveDelAvisoDelVaciado('no-se-pudo-borrar')).toBe(
+      'scoring:errors.vaciado.no-se-pudo-borrar',
+    );
   });
 });

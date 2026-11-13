@@ -13,12 +13,19 @@ import { MemoryRouter, Routes, Route } from 'react-router';
  *   T3-15  esperando el canje, cambia el idioma o se repinta   | no hay un segundo canje
  */
 const traduccion = vi.hoisted(() => ({ actual: null }));
-const crearTraduccion = (idioma) => ({ t: (clave) => `${idioma}:${clave}`, i18n: { language: idioma } });
+const crearTraduccion = (idioma) => ({
+  t: (clave) => `${idioma}:${clave}`,
+  i18n: { language: idioma },
+});
 vi.mock('react-i18next', () => ({
   useTranslation: () => traduccion.actual,
 }));
-vi.mock('../utils/toast', () => ({ default: { error: vi.fn(), success: vi.fn(), info: vi.fn() } }));
-vi.mock('../hooks/useAuthContext', () => ({ useAuthContext: () => ({ setUser: vi.fn(), updateCsrfToken: vi.fn() }) }));
+vi.mock('../utils/toast', () => ({
+  default: { error: vi.fn(), success: vi.fn(), info: vi.fn() },
+}));
+vi.mock('../hooks/useAuthContext', () => ({
+  useAuthContext: () => ({ setUser: vi.fn(), updateCsrfToken: vi.fn() }),
+}));
 vi.mock('../composition', () => ({
   googleLoginUseCase: { execute: vi.fn() },
   linkGoogleAccountUseCase: { execute: vi.fn() },
@@ -56,13 +63,20 @@ describe('GoogleCallback · el código se canjea una vez', () => {
 
   it('T3-14: en StrictMode canjea una vez, navega y no enseña ningún error', async () => {
     traduccion.actual = crearTraduccion('es');
-    googleLoginUseCase.execute.mockResolvedValue({ user: { id: 'u-1', firstName: 'Ana' }, csrfToken: 't', isNewUser: false });
+    googleLoginUseCase.execute.mockResolvedValue({
+      user: { id: 'u-1', firstName: 'Ana' },
+      csrfToken: 't',
+      isNewUser: false,
+    });
 
     render(arbol());
 
     expect(await screen.findByText('panel')).toBeInTheDocument();
     expect(googleLoginUseCase.execute).toHaveBeenCalledTimes(1);
-    expect(googleLoginUseCase.execute).toHaveBeenCalledWith('abc', 'v'.repeat(43));
+    expect(googleLoginUseCase.execute).toHaveBeenCalledWith(
+      'abc',
+      'v'.repeat(43),
+    );
     expect(estado.verificadores).toBe(1);
     expect(screen.queryByText(/google\./)).not.toBeInTheDocument();
   });
@@ -70,7 +84,11 @@ describe('GoogleCallback · el código se canjea una vez', () => {
   it('T3-15: esperando el canje, cambiar de idioma o repintar no canjea otra vez', async () => {
     traduccion.actual = crearTraduccion('es');
     let responder;
-    googleLoginUseCase.execute.mockReturnValue(new Promise((r) => { responder = r; }));
+    googleLoginUseCase.execute.mockReturnValue(
+      new Promise((r) => {
+        responder = r;
+      }),
+    );
 
     const { rerender } = render(arbol());
     await act(async () => {});
@@ -85,7 +103,11 @@ describe('GoogleCallback · el código se canjea una vez', () => {
     expect(estado.verificadores).toBe(1);
 
     await act(async () => {
-      responder({ user: { id: 'u-1', firstName: 'Ana' }, csrfToken: 't', isNewUser: false });
+      responder({
+        user: { id: 'u-1', firstName: 'Ana' },
+        csrfToken: 't',
+        isNewUser: false,
+      });
     });
     expect(await screen.findByText('panel')).toBeInTheDocument();
     expect(googleLoginUseCase.execute).toHaveBeenCalledTimes(1);

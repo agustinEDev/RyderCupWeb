@@ -18,18 +18,25 @@ const llamarAlBackend = vi.fn();
 vi.mock('./tokenRefreshInterceptor', () => ({
   fetchWithTokenRefresh: (...args) => llamarAlBackend(...args),
 }));
-vi.mock('./csrfTokenSync', () => ({ getCsrfCookie: () => null, getCsrfToken: () => 'csrf' }));
+vi.mock('./csrfTokenSync', () => ({
+  getCsrfCookie: () => null,
+  getCsrfToken: () => 'csrf',
+}));
 vi.mock('i18next', () => ({ default: { t: (clave) => `t(${clave})` } }));
 
 const { apiRequest } = await import('./api');
-const { esFalloDeRed, esFalloDeRedDeLaApi } = await import('../../utils/sinCobertura');
-const { noLlegoAlServidor, seGuardaParaDespues } = await import('../../utils/politicaDeLaCola');
+const { esFalloDeRed, esFalloDeRedDeLaApi } =
+  await import('../../utils/sinCobertura');
+const { noLlegoAlServidor, seGuardaParaDespues } =
+  await import('../../utils/politicaDeLaCola');
 
 // Como el `fetch` de verdad: no contesta nunca, y al abortar su señal rechaza
 // con el motivo del aborto
 const queNoContesta = (config) =>
   new Promise((_, rechaza) => {
-    config.signal?.addEventListener('abort', () => rechaza(config.signal.reason));
+    config.signal?.addEventListener('abort', () =>
+      rechaza(config.signal.reason),
+    );
   });
 
 describe('apiRequest · el tope de tiempo (FE #624)', () => {
@@ -48,8 +55,13 @@ describe('apiRequest · el tope de tiempo (FE #624)', () => {
     llamarAlBackend.mockImplementation((_, config) => queNoContesta(config));
 
     let error = null;
-    const peticion = apiRequest('/api/v1/scoring/m-1/holes/9', { method: 'POST', body: '{}', topeMs: TOPE_MS })
-      .catch((e) => { error = e; });
+    const peticion = apiRequest('/api/v1/scoring/m-1/holes/9', {
+      method: 'POST',
+      body: '{}',
+      topeMs: TOPE_MS,
+    }).catch((e) => {
+      error = e;
+    });
 
     await vi.advanceTimersByTimeAsync(TOPE_MS - 100);
     expect(error).toBeNull();
@@ -75,7 +87,11 @@ describe('apiRequest · el tope de tiempo (FE #624)', () => {
     }));
 
     let error = null;
-    const peticion = apiRequest('/api/v1/scoring/m-1', { topeMs: TOPE_MS }).catch((e) => { error = e; });
+    const peticion = apiRequest('/api/v1/scoring/m-1', {
+      topeMs: TOPE_MS,
+    }).catch((e) => {
+      error = e;
+    });
     await vi.advanceTimersByTimeAsync(TOPE_MS);
     await peticion;
 
@@ -90,7 +106,9 @@ describe('apiRequest · el tope de tiempo (FE #624)', () => {
       return { ok: true, status: 200, json: async () => ({ hola: 1 }) };
     });
 
-    await expect(apiRequest('/api/v1/scoring/m-1', { topeMs: TOPE_MS })).resolves.toEqual({ hola: 1 });
+    await expect(
+      apiRequest('/api/v1/scoring/m-1', { topeMs: TOPE_MS }),
+    ).resolves.toEqual({ hola: 1 });
     await vi.advanceTimersByTimeAsync(TOPE_MS * 2);
 
     expect(senal).toBeDefined();
@@ -108,8 +126,13 @@ describe('apiRequest · el tope de tiempo (FE #624)', () => {
     }));
 
     let error = null;
-    const peticion = apiRequest('/api/v1/scoring/m-1/holes/9', { method: 'POST', body: '{}', topeMs: TOPE_MS })
-      .catch((e) => { error = e; });
+    const peticion = apiRequest('/api/v1/scoring/m-1/holes/9', {
+      method: 'POST',
+      body: '{}',
+      topeMs: TOPE_MS,
+    }).catch((e) => {
+      error = e;
+    });
     await vi.advanceTimersByTimeAsync(TOPE_MS);
     await peticion;
 
@@ -121,8 +144,11 @@ describe('apiRequest · el tope de tiempo (FE #624)', () => {
     llamarAlBackend.mockImplementation((_, config) => queNoContesta(config));
 
     let error = null;
-    apiRequest('/api/v1/auth/register', { method: 'POST', body: '{}' })
-      .catch((e) => { error = e; });
+    apiRequest('/api/v1/auth/register', { method: 'POST', body: '{}' }).catch(
+      (e) => {
+        error = e;
+      },
+    );
     await vi.advanceTimersByTimeAsync(TOPE_MS * 10);
 
     expect(error).toBeNull();
@@ -130,7 +156,11 @@ describe('apiRequest · el tope de tiempo (FE #624)', () => {
   });
 
   it('T6 · `topeMs` no se le pasa a fetch', async () => {
-    llamarAlBackend.mockResolvedValue({ ok: true, status: 200, json: async () => ({}) });
+    llamarAlBackend.mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({}),
+    });
 
     await apiRequest('/api/v1/scoring/m-1', { topeMs: TOPE_MS });
 
@@ -143,12 +173,19 @@ describe('apiRequest · el tope de tiempo (FE #624)', () => {
   // vencer, en cambio, no se sabe: eso sí es «sin conexión»
   it('T7 · un error que llega antes de vencer sigue siendo lo que es', async () => {
     const caducada = new Error('Refresh token expired. Please login again.');
-    llamarAlBackend.mockImplementation(() => new Promise((_r, rechaza) => {
-      setTimeout(() => rechaza(caducada), TOPE_MS - 5000);
-    }));
+    llamarAlBackend.mockImplementation(
+      () =>
+        new Promise((_r, rechaza) => {
+          setTimeout(() => rechaza(caducada), TOPE_MS - 5000);
+        }),
+    );
 
     let error = null;
-    const peticion = apiRequest('/api/v1/scoring/m-1', { topeMs: TOPE_MS }).catch((e) => { error = e; });
+    const peticion = apiRequest('/api/v1/scoring/m-1', {
+      topeMs: TOPE_MS,
+    }).catch((e) => {
+      error = e;
+    });
     await vi.advanceTimersByTimeAsync(TOPE_MS * 2);
     await peticion;
 
@@ -162,7 +199,11 @@ describe('apiRequest · el tope de tiempo (FE #624)', () => {
     llamarAlBackend.mockImplementation(() => new Promise(() => {}));
 
     let error = null;
-    const peticion = apiRequest('/api/v1/scoring/m-1', { topeMs: TOPE_MS }).catch((e) => { error = e; });
+    const peticion = apiRequest('/api/v1/scoring/m-1', {
+      topeMs: TOPE_MS,
+    }).catch((e) => {
+      error = e;
+    });
     await vi.advanceTimersByTimeAsync(TOPE_MS);
     await peticion;
 
@@ -176,13 +217,20 @@ describe('apiRequest · el tope de tiempo (FE #624)', () => {
     llamarAlBackend.mockImplementation(async (_, config) => ({
       ok: true,
       status: 200,
-      json: () => new Promise((_r, rechaza) => {
-        config.signal.addEventListener('abort', () => rechaza(new globalThis.DOMException('Aborted', 'AbortError')));
-      }),
+      json: () =>
+        new Promise((_r, rechaza) => {
+          config.signal.addEventListener('abort', () =>
+            rechaza(new globalThis.DOMException('Aborted', 'AbortError')),
+          );
+        }),
     }));
 
     let error = null;
-    const peticion = apiRequest('/api/v1/scoring/m-1', { topeMs: TOPE_MS }).catch((e) => { error = e; });
+    const peticion = apiRequest('/api/v1/scoring/m-1', {
+      topeMs: TOPE_MS,
+    }).catch((e) => {
+      error = e;
+    });
     await vi.advanceTimersByTimeAsync(TOPE_MS);
     await peticion;
 

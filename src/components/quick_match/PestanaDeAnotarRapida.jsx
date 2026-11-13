@@ -35,7 +35,9 @@ const PestanaDeAnotarRapida = ({
 }) => (
   <>
     {!isScorer && (
-      <p className="text-sm text-gray-600 bg-gray-100 rounded-lg p-3">{t('scoring.notAScorer')}</p>
+      <p className="text-sm text-gray-600 bg-gray-100 rounded-lg p-3">
+        {t('scoring.notAScorer')}
+      </p>
     )}
 
     {isScorer && (
@@ -89,7 +91,9 @@ const PestanaDeAnotarRapida = ({
           </button>
           {/* «Mapa», entre Anterior y Siguiente (Agustín, 16 oct): ni dentro de la tarjeta del hoyo ni en una fila más, que empujaba la navegación fuera de la pantalla */}
           {/* Solo con el hoyo a la vista: la ventana del mapa va con él. Y en España, la única con imagen (19 oct) */}
-          {currentHoleData && mapaDelHoyo.disponible && <BotonMapa onAbrir={mapaDelHoyo.abrir} />}
+          {currentHoleData && mapaDelHoyo.disponible && (
+            <BotonMapa onAbrir={mapaDelHoyo.abrir} />
+          )}
           <button
             onClick={onNextHole}
             disabled={currentHole >= totalHoles}

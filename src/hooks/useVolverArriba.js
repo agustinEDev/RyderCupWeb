@@ -24,7 +24,8 @@ import { useLocation, useMatches, useNavigationType } from 'react-router';
 export function useVolverArriba() {
   const { pathname } = useLocation();
   const tipo = useNavigationType();
-  const restauraElScroll = useMatches().at(-1)?.handle?.restauraElScroll === true;
+  const restauraElScroll =
+    useMatches().at(-1)?.handle?.restauraElScroll === true;
   // Recargar también llega como POP, y hoy empieza arriba: solo un «atrás» de
   // verdad, ya montada la aplicación, la deja donde estaba (Agustín, 2 nov 2026)
   const yaMontada = useRef(false);

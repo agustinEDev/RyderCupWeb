@@ -13,7 +13,10 @@ const respuesta = (extra = {}) => ({
 describe('FriendshipMapper · horas sin huso', () => {
   it('lee created_at y responded_at como UTC', () => {
     const amistad = FriendshipMapper.toDomain(
-      respuesta({ created_at: '2026-09-23T23:55:00', responded_at: '2026-09-23T23:59:00.25' })
+      respuesta({
+        created_at: '2026-09-23T23:55:00',
+        responded_at: '2026-09-23T23:59:00.25',
+      }),
     );
 
     expect(amistad.createdAt.toISOString()).toBe('2026-09-23T23:55:00.000Z');
@@ -21,7 +24,9 @@ describe('FriendshipMapper · horas sin huso', () => {
   });
 
   it('sin respuesta, sigue sin fecha de respuesta', () => {
-    const amistad = FriendshipMapper.toDomain(respuesta({ created_at: '2026-09-23T23:55:00' }));
+    const amistad = FriendshipMapper.toDomain(
+      respuesta({ created_at: '2026-09-23T23:55:00' }),
+    );
 
     expect(amistad.respondedAt).toBeNull();
   });

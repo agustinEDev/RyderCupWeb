@@ -3,7 +3,12 @@ import { useNavigate } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
 import { useAuth } from '../hooks/useAuth';
-import { updateUserProfileUseCase, updateManualHandicapUseCase, fetchCountriesUseCase, acceptTermsUseCase } from '../composition';
+import {
+  updateUserProfileUseCase,
+  updateManualHandicapUseCase,
+  fetchCountriesUseCase,
+  acceptTermsUseCase,
+} from '../composition';
 import customToast from '../utils/toast';
 import CountryAutocomplete from '../components/ui/CountryAutocomplete';
 import AceptacionDeTerminos from '../components/auth/AceptacionDeTerminos';
@@ -50,7 +55,7 @@ const CompleteProfile = () => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
   const handleAcceptTermsChange = (marcada) => {
@@ -162,8 +167,18 @@ const CompleteProfile = () => {
           {/* Header */}
           <div className="mb-8 text-center">
             <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
-              <svg className="w-8 h-8 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+              <svg
+                className="w-8 h-8 text-primary"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                />
               </svg>
             </div>
             <h2 className="text-2xl font-bold text-gray-900 font-poppins">
@@ -202,7 +217,10 @@ const CompleteProfile = () => {
 
             {/* Gender */}
             <div>
-              <label htmlFor="gender" className="block text-sm font-semibold text-gray-700 mb-2">
+              <label
+                htmlFor="gender"
+                className="block text-sm font-semibold text-gray-700 mb-2"
+              >
                 {t('google.completeProfile.genderLabel')}
               </label>
               <div className="relative">
@@ -214,13 +232,29 @@ const CompleteProfile = () => {
                   className="w-full py-3 px-4 rounded-lg border-2 border-gray-200 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none text-gray-900 bg-white disabled:bg-gray-50 disabled:cursor-not-allowed appearance-none pr-10"
                   disabled={isSaving}
                 >
-                  <option value="">{t('google.completeProfile.genderPlaceholder')}</option>
-                  <option value="MALE">{t('google.completeProfile.genderOptions.MALE')}</option>
-                  <option value="FEMALE">{t('google.completeProfile.genderOptions.FEMALE')}</option>
+                  <option value="">
+                    {t('google.completeProfile.genderPlaceholder')}
+                  </option>
+                  <option value="MALE">
+                    {t('google.completeProfile.genderOptions.MALE')}
+                  </option>
+                  <option value="FEMALE">
+                    {t('google.completeProfile.genderOptions.FEMALE')}
+                  </option>
                 </select>
                 <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                  <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  <svg
+                    className="w-5 h-5 text-gray-400"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M19 9l-7 7-7-7"
+                    />
                   </svg>
                 </div>
               </div>
@@ -228,14 +262,19 @@ const CompleteProfile = () => {
 
             {/* Handicap */}
             <div>
-              <label htmlFor="handicap" className="block text-sm font-semibold text-gray-700 mb-2">
+              <label
+                htmlFor="handicap"
+                className="block text-sm font-semibold text-gray-700 mb-2"
+              >
                 {t('google.completeProfile.handicapLabel')}
               </label>
               <CampoDeHandicap
                 id="handicap"
                 name="handicap"
                 value={formData.handicap}
-                onChange={(valor) => handleChange({ target: { name: 'handicap', value: valor } })}
+                onChange={(valor) =>
+                  handleChange({ target: { name: 'handicap', value: valor } })
+                }
                 placeholder={t('google.completeProfile.handicapPlaceholder')}
                 className="w-full px-4 py-3 rounded-lg border-2 border-gray-200 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none text-gray-900 placeholder:text-gray-400"
                 disabled={isSaving}
@@ -274,7 +313,9 @@ const CompleteProfile = () => {
                   : 'bg-primary hover:bg-primary/90 hover:shadow-xl'
               }`}
             >
-              {isSaving ? t('google.completeProfile.saving') : t('google.completeProfile.saveButton')}
+              {isSaving
+                ? t('google.completeProfile.saving')
+                : t('google.completeProfile.saveButton')}
             </motion.button>
 
             {/* Skip Button */}

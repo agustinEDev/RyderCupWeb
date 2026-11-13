@@ -19,16 +19,22 @@ const getTestCredentials = () => {
 // Skip all tests in this file if credentials are missing
 test.beforeEach(() => {
   const { hasCredentials } = getTestCredentials();
-  test.skip(!hasCredentials, 'Skipping integration tests: TEST_EMAIL and TEST_PASSWORD not set. See .env.example for setup instructions.');
+  test.skip(
+    !hasCredentials,
+    'Skipping integration tests: TEST_EMAIL and TEST_PASSWORD not set. See .env.example for setup instructions.',
+  );
 });
 
 // Add a small delay between tests to respect backend rate limits
 test.afterEach(async () => {
-  await new Promise(resolve => setTimeout(resolve, 500)); // 500ms delay
+  await new Promise((resolve) => setTimeout(resolve, 500)); // 500ms delay
 });
 
 test.describe('httpOnly Cookies - Basic Login', () => {
-  test('should login successfully and receive cookies', async ({ page, context }) => {
+  test('should login successfully and receive cookies', async ({
+    page,
+    context,
+  }) => {
     const { email, password } = getTestCredentials();
     await page.goto('/login');
 
@@ -43,8 +49,11 @@ test.describe('httpOnly Cookies - Basic Login', () => {
     // Check that cookies were set
     const cookies = await context.cookies();
     expect(cookies.length).toBeGreaterThan(0);
-    
-    console.log('✅ Cookies received:', cookies.map(c => c.name));
+
+    console.log(
+      '✅ Cookies received:',
+      cookies.map((c) => c.name),
+    );
   });
 
   test('should maintain authentication across navigation', async ({ page }) => {
@@ -62,8 +71,13 @@ test.describe('httpOnly Cookies - Basic Login', () => {
     await expect(page).toHaveURL('/profile');
 
     // Should see user email (proves authentication works)
-    const emailRegex = new RegExp(email.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
-    await expect(page.locator(`text=${emailRegex}`)).toBeVisible({ timeout: 5000 });
+    const emailRegex = new RegExp(
+      email.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'),
+      'i',
+    );
+    await expect(page.locator(`text=${emailRegex}`)).toBeVisible({
+      timeout: 5000,
+    });
   });
 });
 
@@ -78,9 +92,11 @@ test.describe('Backend Validation - Login', () => {
 
     // Should remain on login page
     await expect(page).toHaveURL('/login');
-    
+
     // Should show error message
-    await expect(page.getByText(/incorrect|invalid/i)).toBeVisible({ timeout: 3000 });
+    await expect(page.getByText(/incorrect|invalid/i)).toBeVisible({
+      timeout: 3000,
+    });
   });
 });
 
@@ -97,7 +113,9 @@ test.describe('Backend Validation - Registration', () => {
     await page.getByRole('button', { name: /create account|sign up/i }).click();
 
     // Should show validation error
-    await expect(page.getByText(/password.*12|at least 12/i)).toBeVisible({ timeout: 3000 });
+    await expect(page.getByText(/password.*12|at least 12/i)).toBeVisible({
+      timeout: 3000,
+    });
   });
 
   test('should validate registration form fields', async ({ page }) => {
@@ -109,29 +127,35 @@ test.describe('Backend Validation - Registration', () => {
     await expect(page.locator('input[name="lastName"]')).toBeVisible();
     await expect(page.locator('input[name="email"]')).toBeVisible();
     await expect(page.locator('input[name="password"]')).toBeVisible();
-    await expect(page.getByRole('button', { name: /create account/i })).toBeVisible();
+    await expect(
+      page.getByRole('button', { name: /create account/i }),
+    ).toBeVisible();
 
     // Fill valid data
     const timestamp = Date.now();
     await page.locator('input[name="firstName"]').fill('Integration');
     await page.locator('input[name="lastName"]').fill('Test');
-    await page.locator('input[name="email"]').fill(`test${timestamp}@example.com`);
+    await page
+      .locator('input[name="email"]')
+      .fill(`test${timestamp}@example.com`);
     await page.locator('input[name="password"]').fill('ValidPassword123.');
 
     // Verify no frontend validation errors appear
     await page.waitForTimeout(500);
-    
+
     // Check that no error messages are visible
-    const errorMessages = await page.locator('text=/error|invalid|required/i').count();
+    const errorMessages = await page
+      .locator('text=/error|invalid|required/i')
+      .count();
     expect(errorMessages).toBe(0);
-    
+
     console.log('✅ Registration form validation passed');
   });
 
   test('should complete registration and redirect', async ({ page }) => {
     // Monitor network
     let rateLimited = false;
-    page.on('response', async response => {
+    page.on('response', async (response) => {
       if (response.url().includes('/auth/register')) {
         if (response.status() === 429) {
           rateLimited = true;
@@ -145,7 +169,9 @@ test.describe('Backend Validation - Registration', () => {
     const timestamp = Date.now();
     await page.locator('input[name="firstName"]').fill('TestUser');
     await page.locator('input[name="lastName"]').fill('Registration');
-    await page.locator('input[name="email"]').fill(`newuser${timestamp}@example.com`);
+    await page
+      .locator('input[name="email"]')
+      .fill(`newuser${timestamp}@example.com`);
     await page.locator('input[name="password"]').fill('ValidPassword123.');
 
     await page.getByRole('button', { name: /create account/i }).click();
@@ -161,7 +187,9 @@ test.describe('Backend Validation - Registration', () => {
       expect(true).toBeTruthy();
     } else {
       // Si no, mostrar errores
-      const errors = await page.locator('[class*="error"], [class*="text-red"]').allTextContents();
+      const errors = await page
+        .locator('[class*="error"], [class*="text-red"]')
+        .allTextContents();
       console.log('Errors found:', errors);
       expect(errors.length).toBe(0);
     }
@@ -190,8 +218,13 @@ test.describe('Complete E2E Flow', () => {
     console.log('👤 Step 3: Profile');
     await page.goto('/profile');
     await expect(page).toHaveURL('/profile');
-    const emailRegex = new RegExp(email.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
-    await expect(page.locator(`text=${emailRegex}`)).toBeVisible({ timeout: 5000 });
+    const emailRegex = new RegExp(
+      email.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'),
+      'i',
+    );
+    await expect(page.locator(`text=${emailRegex}`)).toBeVisible({
+      timeout: 5000,
+    });
     console.log('✅ Profile loaded with user data');
 
     // Step 4: Navigate to Competitions
@@ -203,7 +236,10 @@ test.describe('Complete E2E Flow', () => {
 });
 
 test.describe('Session Persistence', () => {
-  test('should maintain session across page reload', async ({ page, context }) => {
+  test('should maintain session across page reload', async ({
+    page,
+    context,
+  }) => {
     const { email, password } = getTestCredentials();
 
     // Login
@@ -227,7 +263,7 @@ test.describe('Session Persistence', () => {
     // Cookies should still exist
     const cookiesAfter = await context.cookies();
     expect(cookiesAfter.length).toBeGreaterThan(0);
-    
+
     console.log('✅ Session maintained after reload');
   });
 });

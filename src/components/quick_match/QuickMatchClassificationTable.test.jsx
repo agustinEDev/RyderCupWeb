@@ -6,7 +6,8 @@ vi.mock('react-i18next', () => ({
   useTranslation: () => ({
     // Solo se interpola `value`, que es lo unico que se afirma por su numero;
     // el resto de claves se siguen comprobando peladas.
-    t: (key, opts) => (opts?.value !== undefined ? `${key} ${opts.value}` : key),
+    t: (key, opts) =>
+      opts?.value !== undefined ? `${key} ${opts.value}` : key,
     i18n: { language: 'en' },
   }),
 }));
@@ -17,8 +18,20 @@ const holes = [
 ];
 
 const participants = [
-  { participantId: 'p-1', name: 'Alice', handicap: 0, team: null, isGuest: false },
-  { participantId: 'p-2', name: 'Bob', handicap: 0, team: null, isGuest: false },
+  {
+    participantId: 'p-1',
+    name: 'Alice',
+    handicap: 0,
+    team: null,
+    isGuest: false,
+  },
+  {
+    participantId: 'p-2',
+    name: 'Bob',
+    handicap: 0,
+    team: null,
+    isGuest: false,
+  },
 ];
 
 describe('QuickMatchClassificationTable', () => {
@@ -35,10 +48,12 @@ describe('QuickMatchClassificationTable', () => {
         participants={participants}
         currentParticipantId="p-1"
         scoringFormat="STABLEFORD"
-      />
+      />,
     );
 
-    const classificationTable = screen.getByTestId('quick-match-classification-table');
+    const classificationTable = screen.getByTestId(
+      'quick-match-classification-table',
+    );
     const rows = within(classificationTable).getAllByRole('row').slice(1); // skip header row
     expect(within(rows[0]).getByText('Bob')).toBeInTheDocument();
     expect(within(rows[1]).getByText('Alice')).toBeInTheDocument();
@@ -52,13 +67,15 @@ describe('QuickMatchClassificationTable', () => {
         participants={participants}
         currentParticipantId="p-1"
         scoringFormat="STABLEFORD"
-      />
+      />,
     );
 
-    expect(screen.getByText('scoring.classification.you', { exact: false })).toBeInTheDocument();
+    expect(
+      screen.getByText('scoring.classification.you', { exact: false }),
+    ).toBeInTheDocument();
   });
 
-  it('should show each participant\'s holes played in the Hoyo column', () => {
+  it("should show each participant's holes played in the Hoyo column", () => {
     const holeScores = [
       { holeNumber: 1, participantId: 'p-1', score: 5 },
       { holeNumber: 2, participantId: 'p-1', score: 4 },
@@ -72,10 +89,12 @@ describe('QuickMatchClassificationTable', () => {
         participants={participants}
         currentParticipantId="p-1"
         scoringFormat="STABLEFORD"
-      />
+      />,
     );
 
-    const classificationTable = screen.getByTestId('quick-match-classification-table');
+    const classificationTable = screen.getByTestId(
+      'quick-match-classification-table',
+    );
     const rows = within(classificationTable).getAllByRole('row').slice(1);
     const aliceRow = rows.find((row) => within(row).queryByText('Alice'));
     const bobRow = rows.find((row) => within(row).queryByText('Bob'));
@@ -95,10 +114,12 @@ describe('QuickMatchClassificationTable', () => {
         currentParticipantId="p-1"
         scoringFormat="STABLEFORD"
         showFinalBadge={false}
-      />
+      />,
     );
 
-    expect(screen.queryByText('scoring.classification.finishedBadge')).not.toBeInTheDocument();
+    expect(
+      screen.queryByText('scoring.classification.finishedBadge'),
+    ).not.toBeInTheDocument();
   });
 
   it('should show the finished badge next to points and strokes once the match is completed', () => {
@@ -112,11 +133,13 @@ describe('QuickMatchClassificationTable', () => {
         currentParticipantId="p-1"
         scoringFormat="STABLEFORD"
         showFinalBadge
-      />
+      />,
     );
 
     // 2 participants x 2 cells each (points/netStrokes + strokes) = 4 badges
-    expect(screen.getAllByText('scoring.classification.finishedBadge')).toHaveLength(4);
+    expect(
+      screen.getAllByText('scoring.classification.finishedBadge'),
+    ).toHaveLength(4);
   });
 
   it('should rank by net strokes when scoringFormat is MEDAL', () => {
@@ -132,10 +155,12 @@ describe('QuickMatchClassificationTable', () => {
         participants={participants}
         currentParticipantId="p-1"
         scoringFormat="MEDAL"
-      />
+      />,
     );
 
-    const classificationTable = screen.getByTestId('quick-match-classification-table');
+    const classificationTable = screen.getByTestId(
+      'quick-match-classification-table',
+    );
     const rows = within(classificationTable).getAllByRole('row').slice(1);
     expect(within(rows[0]).getByText('Bob')).toBeInTheDocument();
     expect(within(rows[1]).getByText('Alice')).toBeInTheDocument();
@@ -155,11 +180,15 @@ describe('QuickMatchClassificationTable', () => {
         participants={participants}
         currentParticipantId="p-1"
         scoringFormat="MEDAL"
-      />
+      />,
     );
 
-    expect(screen.getByText('scoring.classification.result')).toBeInTheDocument();
-    const classificationTable = screen.getByTestId('quick-match-classification-table');
+    expect(
+      screen.getByText('scoring.classification.result'),
+    ).toBeInTheDocument();
+    const classificationTable = screen.getByTestId(
+      'quick-match-classification-table',
+    );
     const rows = within(classificationTable).getAllByRole('row').slice(1);
     const resultCell = (row) => within(row).getAllByRole('cell')[2]; // #, name, result, ...
     // Bob (-1) ranks above Alice (+1).
@@ -176,14 +205,22 @@ describe('QuickMatchClassificationTable', () => {
         holeScores={[]}
         participants={participants}
         currentParticipantId="p-1"
-        standing={{ status: '2UP', leadingTeam: 'A', holesPlayed: 5, holesRemaining: 13, isDecided: false }}
-      />
+        standing={{
+          status: '2UP',
+          leadingTeam: 'A',
+          holesPlayed: 5,
+          holesRemaining: 13,
+          isDecided: false,
+        }}
+      />,
     );
 
     expect(screen.getByTestId('quick-match-standing')).toBeInTheDocument();
     expect(screen.queryByRole('table')).not.toBeInTheDocument();
     // p-1 (Alice) resolves to team A positionally, since neither participant has an explicit team
-    expect(screen.getByText('scoring.classification.leads')).toBeInTheDocument();
+    expect(
+      screen.getByText('scoring.classification.leads'),
+    ).toBeInTheDocument();
   });
 
   it('should show an all-square message when the match-play standing has no leader', () => {
@@ -193,11 +230,19 @@ describe('QuickMatchClassificationTable', () => {
         holeScores={[]}
         participants={participants}
         currentParticipantId="p-1"
-        standing={{ status: 'AS', leadingTeam: null, holesPlayed: 4, holesRemaining: 14, isDecided: false }}
-      />
+        standing={{
+          status: 'AS',
+          leadingTeam: null,
+          holesPlayed: 4,
+          holesRemaining: 14,
+          isDecided: false,
+        }}
+      />,
     );
 
-    expect(screen.getByText('scoring.classification.allSquare')).toBeInTheDocument();
+    expect(
+      screen.getByText('scoring.classification.allSquare'),
+    ).toBeInTheDocument();
   });
 
   it('should show a placeholder when no holes have been played yet in a match-play quick match', () => {
@@ -208,10 +253,12 @@ describe('QuickMatchClassificationTable', () => {
         participants={participants}
         currentParticipantId="p-1"
         standing={null}
-      />
+      />,
     );
 
-    expect(screen.getByTestId('quick-match-standing-empty')).toBeInTheDocument();
+    expect(
+      screen.getByTestId('quick-match-standing-empty'),
+    ).toBeInTheDocument();
   });
 
   describe('en match play', () => {
@@ -220,7 +267,13 @@ describe('QuickMatchClassificationTable', () => {
      * por diferencia, así que el de hándicap más bajo recibe cero: su vuelta
      * saldría a bruto si se contara con el reparto del partido.
      */
-    const standing = { leadingTeam: 'A', status: '2', isDecided: false, holesRemaining: 16, holesPlayed: 2 };
+    const standing = {
+      leadingTeam: 'A',
+      status: '2',
+      isDecided: false,
+      holesRemaining: 16,
+      holesPlayed: 2,
+    };
 
     it("shows the current player's own round next to the match standing", () => {
       const holeScores = [
@@ -233,8 +286,20 @@ describe('QuickMatchClassificationTable', () => {
           holes={holes}
           holeScores={holeScores}
           participants={[
-            { participantId: 'p-1', name: 'Alice', handicap: 2, team: 'A', isGuest: false },
-            { participantId: 'p-2', name: 'Bob', handicap: 12, team: 'B', isGuest: false },
+            {
+              participantId: 'p-1',
+              name: 'Alice',
+              handicap: 2,
+              team: 'A',
+              isGuest: false,
+            },
+            {
+              participantId: 'p-2',
+              name: 'Bob',
+              handicap: 12,
+              team: 'B',
+              isGuest: false,
+            },
           ]}
           currentParticipantId="p-1"
           scoringFormat={null}
@@ -242,14 +307,20 @@ describe('QuickMatchClassificationTable', () => {
           // El reparto del partido no le da ningún golpe por ser la más baja
           participantStrokes={[
             { participantId: 'p-1', playingHandicap: 2, strokesByHole: {} },
-            { participantId: 'p-2', playingHandicap: 12, strokesByHole: { 1: 1, 2: 1 } },
+            {
+              participantId: 'p-2',
+              playingHandicap: 12,
+              strokesByHole: { 1: 1, 2: 1 },
+            },
           ]}
-        />
+        />,
       );
 
       // Su hándicap 2 le da un golpe en cada hoyo: netos 3 + 1 = 4 sobre un par
       // jugado de 7. A bruto, con el reparto del partido, sería -1.
-      expect(screen.getByTestId('quick-match-my-round')).toHaveTextContent('-3');
+      expect(screen.getByTestId('quick-match-my-round')).toHaveTextContent(
+        '-3',
+      );
       expect(screen.getByTestId('quick-match-standing')).toBeInTheDocument();
     });
 
@@ -268,22 +339,42 @@ describe('QuickMatchClassificationTable', () => {
             { holeNumber: 2, participantId: 'p-1', score: 2 },
           ]}
           participants={[
-            { participantId: 'p-1', name: 'Alice', handicap: 2, team: 'A', isGuest: false },
-            { participantId: 'p-2', name: 'Bob', handicap: 12, team: 'B', isGuest: false },
+            {
+              participantId: 'p-1',
+              name: 'Alice',
+              handicap: 2,
+              team: 'A',
+              isGuest: false,
+            },
+            {
+              participantId: 'p-2',
+              name: 'Bob',
+              handicap: 12,
+              team: 'B',
+              isGuest: false,
+            },
           ]}
           currentParticipantId="p-1"
           scoringFormat={null}
           standing={standing}
           participantStrokes={[
             { participantId: 'p-1', playingHandicap: 2, strokesByHole: {} },
-            { participantId: 'p-2', playingHandicap: 12, strokesByHole: { 1: 1, 2: 1 } },
+            {
+              participantId: 'p-2',
+              playingHandicap: 12,
+              strokesByHole: { 1: 1, 2: 1 },
+            },
           ]}
-        />
+        />,
       );
 
       // Su vuelta es -3; en el partido, sin golpes por ser la mas baja, -1
-      expect(screen.getByTestId('quick-match-my-round')).toHaveTextContent('-3');
-      expect(screen.getByTestId('quick-match-my-round-in-match')).toHaveTextContent('-1');
+      expect(screen.getByTestId('quick-match-my-round')).toHaveTextContent(
+        '-3',
+      );
+      expect(
+        screen.getByTestId('quick-match-my-round-in-match'),
+      ).toHaveTextContent('-1');
     });
 
     it('shows no match figure when both readings agree', () => {
@@ -295,22 +386,46 @@ describe('QuickMatchClassificationTable', () => {
             { holeNumber: 2, participantId: 'p-1', score: 2 },
           ]}
           participants={[
-            { participantId: 'p-1', name: 'Alice', handicap: 2, team: 'A', isGuest: false },
-            { participantId: 'p-2', name: 'Bob', handicap: 12, team: 'B', isGuest: false },
+            {
+              participantId: 'p-1',
+              name: 'Alice',
+              handicap: 2,
+              team: 'A',
+              isGuest: false,
+            },
+            {
+              participantId: 'p-2',
+              name: 'Bob',
+              handicap: 12,
+              team: 'B',
+              isGuest: false,
+            },
           ]}
           currentParticipantId="p-1"
           scoringFormat={null}
           standing={standing}
           // El mismo reparto que le sale por su handicap de juego entero
           participantStrokes={[
-            { participantId: 'p-1', playingHandicap: 2, strokesByHole: { 1: 1, 2: 1 } },
-            { participantId: 'p-2', playingHandicap: 12, strokesByHole: { 1: 1, 2: 1 } },
+            {
+              participantId: 'p-1',
+              playingHandicap: 2,
+              strokesByHole: { 1: 1, 2: 1 },
+            },
+            {
+              participantId: 'p-2',
+              playingHandicap: 12,
+              strokesByHole: { 1: 1, 2: 1 },
+            },
           ]}
-        />
+        />,
       );
 
-      expect(screen.getByTestId('quick-match-my-round')).toHaveTextContent('-3');
-      expect(screen.queryByTestId('quick-match-my-round-in-match')).not.toBeInTheDocument();
+      expect(screen.getByTestId('quick-match-my-round')).toHaveTextContent(
+        '-3',
+      );
+      expect(
+        screen.queryByTestId('quick-match-my-round-in-match'),
+      ).not.toBeInTheDocument();
     });
 
     /**
@@ -327,18 +442,34 @@ describe('QuickMatchClassificationTable', () => {
             { holeNumber: 2, participantId: 'p-1', score: 2 },
           ]}
           participants={[
-            { participantId: 'p-1', name: 'Alice', handicap: 2, team: 'A', isGuest: false },
-            { participantId: 'p-2', name: 'Bob', handicap: 12, team: 'B', isGuest: false },
+            {
+              participantId: 'p-1',
+              name: 'Alice',
+              handicap: 2,
+              team: 'A',
+              isGuest: false,
+            },
+            {
+              participantId: 'p-2',
+              name: 'Bob',
+              handicap: 12,
+              team: 'B',
+              isGuest: false,
+            },
           ]}
           currentParticipantId="p-1"
           scoringFormat={null}
           standing={null}
           participantStrokes={[]}
-        />
+        />,
       );
 
-      expect(screen.getByTestId('quick-match-standing-empty')).toBeInTheDocument();
-      expect(screen.getByTestId('quick-match-my-round')).toHaveTextContent('-3');
+      expect(
+        screen.getByTestId('quick-match-standing-empty'),
+      ).toBeInTheDocument();
+      expect(screen.getByTestId('quick-match-my-round')).toHaveTextContent(
+        '-3',
+      );
     });
 
     it('shows only the standing when the player has not scored a hole yet', () => {
@@ -350,10 +481,12 @@ describe('QuickMatchClassificationTable', () => {
           currentParticipantId="p-1"
           scoringFormat={null}
           standing={standing}
-        />
+        />,
       );
 
-      expect(screen.queryByTestId('quick-match-my-round')).not.toBeInTheDocument();
+      expect(
+        screen.queryByTestId('quick-match-my-round'),
+      ).not.toBeInTheDocument();
       expect(screen.getByTestId('quick-match-standing')).toBeInTheDocument();
     });
 
@@ -371,17 +504,31 @@ describe('QuickMatchClassificationTable', () => {
             { holeNumber: 2, participantId: 'p-1', score: 2 },
           ]}
           participants={[
-            { participantId: 'p-1', name: 'Alice', handicap: 2, team: 'A', isGuest: false },
-            { participantId: 'p-2', name: 'Bob', handicap: 12, team: 'B', isGuest: false },
+            {
+              participantId: 'p-1',
+              name: 'Alice',
+              handicap: 2,
+              team: 'A',
+              isGuest: false,
+            },
+            {
+              participantId: 'p-2',
+              name: 'Bob',
+              handicap: 12,
+              team: 'B',
+              isGuest: false,
+            },
           ]}
           currentParticipantId="p-1"
           scoringFormat={null}
           standing={standing}
           matchFormat="FOURSOMES"
-        />
+        />,
       );
 
-      expect(screen.queryByTestId('quick-match-my-round')).not.toBeInTheDocument();
+      expect(
+        screen.queryByTestId('quick-match-my-round'),
+      ).not.toBeInTheDocument();
       expect(screen.getByTestId('quick-match-standing')).toBeInTheDocument();
     });
 
@@ -399,21 +546,35 @@ describe('QuickMatchClassificationTable', () => {
             { holeNumber: 2, participantId: 'p-1', score: 2 },
           ]}
           participants={[
-            { participantId: 'p-1', name: 'Alice', handicap: 2, team: 'A', isGuest: false },
-            { participantId: 'p-2', name: 'Bob', handicap: 12, team: 'B', isGuest: false },
+            {
+              participantId: 'p-1',
+              name: 'Alice',
+              handicap: 2,
+              team: 'A',
+              isGuest: false,
+            },
+            {
+              participantId: 'p-2',
+              name: 'Bob',
+              handicap: 12,
+              team: 'B',
+              isGuest: false,
+            },
           ]}
           currentParticipantId="p-1"
           scoringFormat={null}
           standing={standing}
           matchFormat="SINGLES"
           allowancePercentage={50}
-        />
+        />,
       );
 
       // Con su hándicap entero (2) recibe un golpe en cada hoyo: netos 3 + 1 =
       // 4 sobre un par jugado de 7, o sea -3. Aplicando el 50% del partido
       // serían 1 golpe en total y saldría -2.
-      expect(screen.getByTestId('quick-match-my-round')).toHaveTextContent('-3');
+      expect(screen.getByTestId('quick-match-my-round')).toHaveTextContent(
+        '-3',
+      );
     });
   });
 
@@ -433,7 +594,12 @@ describe('QuickMatchClassificationTable', () => {
             { holeNumber: 2, participantId: 'p-1', score: 2 },
           ]}
           participants={[
-            { participantId: 'p-1', name: 'Alice', handicap: 2, isGuest: false },
+            {
+              participantId: 'p-1',
+              name: 'Alice',
+              handicap: 2,
+              isGuest: false,
+            },
             { participantId: 'p-2', name: 'Bob', handicap: 12, isGuest: false },
           ]}
           currentParticipantId="p-1"
@@ -441,13 +607,21 @@ describe('QuickMatchClassificationTable', () => {
           allowancePercentage={95}
           participantStrokes={[
             { participantId: 'p-1', playingHandicap: 2, strokesByHole: {} },
-            { participantId: 'p-2', playingHandicap: 11, strokesByHole: { 1: 1, 2: 1 } },
+            {
+              participantId: 'p-2',
+              playingHandicap: 11,
+              strokesByHole: { 1: 1, 2: 1 },
+            },
           ]}
-        />
+        />,
       );
 
-      expect(screen.getByTestId('quick-match-my-round')).toHaveTextContent('-3');
-      expect(screen.getByTestId('quick-match-my-round-in-match')).toHaveTextContent('-1');
+      expect(screen.getByTestId('quick-match-my-round')).toHaveTextContent(
+        '-3',
+      );
+      expect(
+        screen.getByTestId('quick-match-my-round-in-match'),
+      ).toHaveTextContent('-1');
     });
   });
   /**
@@ -487,12 +661,14 @@ describe('QuickMatchClassificationTable', () => {
           currentParticipantId="p-1"
           tees={tees}
           scoringFormat="STABLEFORD"
-        />
+        />,
       );
 
       // 3 golpes en su par 3 son 2 puntos. Contra el par 4 del campo eran 3, y
       // la tarjeta de al lado ya enseñaba 2.
-      expect(screen.getByTestId('quick-match-classification-table')).toHaveTextContent('2');
+      expect(
+        screen.getByTestId('quick-match-classification-table'),
+      ).toHaveTextContent('2');
     });
 
     it('cuenta la vuelta propia contra el mismo par que el ranking', () => {
@@ -504,11 +680,13 @@ describe('QuickMatchClassificationTable', () => {
           currentParticipantId="p-1"
           tees={tees}
           scoringFormat="MEDAL"
-        />
+        />,
       );
 
       // PAR sobre su barra; contra el par 4 del campo salía -1
-      expect(screen.getByTestId('quick-match-my-round')).toHaveTextContent('PAR');
+      expect(screen.getByTestId('quick-match-my-round')).toHaveTextContent(
+        'PAR',
+      );
     });
   });
 });
@@ -516,7 +694,9 @@ describe('QuickMatchClassificationTable', () => {
 describe('QuickMatchClassificationTable — positions with the handicap tie-break (H)', () => {
   const unHoyo = [{ holeNumber: 1, par: 4, strokeIndex: 5 }];
   const puestos = () =>
-    screen.getAllByTestId('quick-match-clasificacion-puesto').map((celda) => celda.textContent);
+    screen
+      .getAllByTestId('quick-match-clasificacion-puesto')
+      .map((celda) => celda.textContent);
   const nombres = () =>
     within(screen.getByTestId('quick-match-classification-table'))
       .getAllByRole('row')
@@ -539,7 +719,7 @@ describe('QuickMatchClassificationTable — positions with the handicap tie-brea
         ]}
         scoringFormat="STABLEFORD"
         playMode="SCRATCH"
-      />
+      />,
     );
 
     expect(nombres()).toEqual(['Bea', 'Ana', 'Carla']);
@@ -562,7 +742,7 @@ describe('QuickMatchClassificationTable — positions with the handicap tie-brea
         ]}
         scoringFormat="MEDAL"
         playMode="SCRATCH"
-      />
+      />,
     );
 
     expect(nombres()[2]).toBe('Ana');
@@ -581,7 +761,7 @@ describe('QuickMatchClassificationTable — positions with the handicap tie-brea
         ]}
         scoringFormat="MEDAL"
         playMode="SCRATCH"
-      />
+      />,
     );
 
     expect(nombres()).toEqual(['Ana', 'Bea', 'Carla']);

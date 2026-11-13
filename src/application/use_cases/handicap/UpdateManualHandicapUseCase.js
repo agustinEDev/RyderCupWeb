@@ -20,7 +20,12 @@ class UpdateManualHandicapUseCase {
     const { userId, handicap } = params;
 
     // An empty string would become 0 through Number('') and be saved as handicap 0
-    if (!userId || handicap === undefined || handicap === null || String(handicap).trim() === '') {
+    if (
+      !userId ||
+      handicap === undefined ||
+      handicap === null ||
+      String(handicap).trim() === ''
+    ) {
       throw new Error('User ID and handicap value are required');
     }
 
@@ -36,7 +41,10 @@ class UpdateManualHandicapUseCase {
       throw new Error('Invalid handicap value. Must be between -10.0 and 54.0');
     }
 
-    const updatedUser = await this.handicapRepository.updateManual(userId, handicapValue);
+    const updatedUser = await this.handicapRepository.updateManual(
+      userId,
+      handicapValue,
+    );
 
     return updatedUser;
   }

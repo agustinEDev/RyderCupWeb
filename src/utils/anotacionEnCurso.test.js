@@ -70,15 +70,28 @@ describe('la anotación en curso', () => {
   });
 
   it('A1: la anotación de grupo guarda su ?competition=', () => {
-    guarda({ pathname: `/player/groups/${ID}/scoring`, search: `?competition=${OTRO}` });
+    guarda({
+      pathname: `/player/groups/${ID}/scoring`,
+      search: `?competition=${OTRO}`,
+    });
 
-    expect(leeLaAnotacionEnCurso({ cuenta: CUENTA }, T0)?.ruta).toBe(`/player/groups/${ID}/scoring?competition=${OTRO}`);
+    expect(leeLaAnotacionEnCurso({ cuenta: CUENTA }, T0)?.ruta).toBe(
+      `/player/groups/${ID}/scoring?competition=${OTRO}`,
+    );
   });
 
   it('B1: la misma cuenta antes de 6 h la recupera con los minutos que pasó cerrada', () => {
-    guarda({ pathname: `/player/matches/${ID}/scoring`, pestana: 'leaderboard', hoyo: 7, mapa: true });
+    guarda({
+      pathname: `/player/matches/${ID}/scoring`,
+      pestana: 'leaderboard',
+      hoyo: 7,
+      mapa: true,
+    });
 
-    const vuelta = leeLaAnotacionEnCurso({ cuenta: CUENTA }, T0 + 25 * 60 * 1000);
+    const vuelta = leeLaAnotacionEnCurso(
+      { cuenta: CUENTA },
+      T0 + 25 * 60 * 1000,
+    );
 
     expect(vuelta).toEqual({
       ruta: `/player/matches/${ID}/scoring`,
@@ -93,13 +106,17 @@ describe('la anotación en curso', () => {
   it('B1: justo antes de las 6 h todavía vale', () => {
     guarda();
 
-    expect(leeLaAnotacionEnCurso({ cuenta: CUENTA }, T0 + SEIS_HORAS_MS - 1)).not.toBeNull();
+    expect(
+      leeLaAnotacionEnCurso({ cuenta: CUENTA }, T0 + SEIS_HORAS_MS - 1),
+    ).not.toBeNull();
   });
 
   it('B2: a las 6 h ya no vale y se borra', () => {
     guarda();
 
-    expect(leeLaAnotacionEnCurso({ cuenta: CUENTA }, T0 + SEIS_HORAS_MS)).toBeNull();
+    expect(
+      leeLaAnotacionEnCurso({ cuenta: CUENTA }, T0 + SEIS_HORAS_MS),
+    ).toBeNull();
     expect(localStorage.getItem(CLAVE)).toBeNull();
   });
 
@@ -127,12 +144,28 @@ describe('la anotación en curso', () => {
   it.each([
     ['el panel', '/dashboard', ''],
     ['la ficha de una competición', `/competitions/${ID}`, ''],
-    ['la vista compartida de una partida rápida', `/quick-matches/${ID}/shared`, ''],
+    [
+      'la vista compartida de una partida rápida',
+      `/quick-matches/${ID}/shared`,
+      '',
+    ],
     ['un id que no es un uuid', '/quick-matches/../../admin/scoring', ''],
     ['una ruta con algo detrás', `/quick-matches/${ID}/scoring/extra`, ''],
-    ['otra búsqueda en la partida rápida', `/quick-matches/${ID}/scoring`, '?competition=x'],
-    ['una competición que no es un uuid', `/player/groups/${ID}/scoring`, '?competition=javascript:alert(1)'],
-    ['otra clave en la de grupo', `/player/groups/${ID}/scoring`, `?next=${OTRO}`],
+    [
+      'otra búsqueda en la partida rápida',
+      `/quick-matches/${ID}/scoring`,
+      '?competition=x',
+    ],
+    [
+      'una competición que no es un uuid',
+      `/player/groups/${ID}/scoring`,
+      '?competition=javascript:alert(1)',
+    ],
+    [
+      'otra clave en la de grupo',
+      `/player/groups/${ID}/scoring`,
+      `?next=${OTRO}`,
+    ],
   ])('B9: %s no se guarda', (_caso, pathname, search) => {
     guarda({ pathname, search });
 
@@ -157,8 +190,14 @@ describe('la anotación en curso', () => {
 
   it.each([
     ['una ruta que no es de anotación', { ruta: '/admin' }],
-    ['una dirección de fuera', { ruta: `https://ejemplo.com/quick-matches/${ID}/scoring` }],
-    ['una ruta que empieza por //', { ruta: `//ejemplo.com/quick-matches/${ID}/scoring` }],
+    [
+      'una dirección de fuera',
+      { ruta: `https://ejemplo.com/quick-matches/${ID}/scoring` },
+    ],
+    [
+      'una ruta que empieza por //',
+      { ruta: `//ejemplo.com/quick-matches/${ID}/scoring` },
+    ],
     ['una pestaña desconocida', { pestana: 'cualquiera' }],
     ['un hoyo imposible', { hoyo: 99 }],
     ['un hoyo que no es número', { hoyo: '7' }],
@@ -184,7 +223,14 @@ describe('la anotación en curso', () => {
     guarda({ pestana: 'classification', hoyo: 9, mapa: true });
 
     expect(
-      estadoDeEstaAnotacion({ cuenta: CUENTA, pathname: `/quick-matches/${ID}/scoring`, search: '' }, T0 + 1000),
+      estadoDeEstaAnotacion(
+        {
+          cuenta: CUENTA,
+          pathname: `/quick-matches/${ID}/scoring`,
+          search: '',
+        },
+        T0 + 1000,
+      ),
     ).toEqual({ pestana: 'classification', hoyo: 9, mapa: true });
     expect(localStorage.getItem(CLAVE)).not.toBeNull();
   });
@@ -192,7 +238,16 @@ describe('la anotación en curso', () => {
   it('carga normal: otra anotación no recibe el estado de la guardada', () => {
     guarda();
 
-    expect(estadoDeEstaAnotacion({ cuenta: CUENTA, pathname: `/quick-matches/${OTRO}/scoring`, search: '' }, T0)).toBeNull();
+    expect(
+      estadoDeEstaAnotacion(
+        {
+          cuenta: CUENTA,
+          pathname: `/quick-matches/${OTRO}/scoring`,
+          search: '',
+        },
+        T0,
+      ),
+    ).toBeNull();
   });
 
   it('carga normal: pasadas 6 h o con otra cuenta, nada', () => {
@@ -200,7 +255,9 @@ describe('la anotación en curso', () => {
     const aqui = { pathname: `/quick-matches/${ID}/scoring`, search: '' };
 
     expect(estadoDeEstaAnotacion({ cuenta: OTRO, ...aqui }, T0)).toBeNull();
-    expect(estadoDeEstaAnotacion({ cuenta: CUENTA, ...aqui }, T0 + SEIS_HORAS_MS)).toBeNull();
+    expect(
+      estadoDeEstaAnotacion({ cuenta: CUENTA, ...aqui }, T0 + SEIS_HORAS_MS),
+    ).toBeNull();
   });
 
   it('C1: olvidarla la borra', () => {
@@ -242,7 +299,10 @@ describe('las rutas de la lista cerrada existen en el router', () => {
   ])('%s', async (ruta) => {
     const { readFileSync } = await import('node:fs');
     const { resolve } = await import('node:path');
-    const app = readFileSync(resolve(globalThis.process.cwd(), 'src/App.jsx'), 'utf8');
+    const app = readFileSync(
+      resolve(globalThis.process.cwd(), 'src/App.jsx'),
+      'utf8',
+    );
 
     expect(app).toContain(`path="${ruta}"`);
   });

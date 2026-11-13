@@ -25,7 +25,10 @@ describe('NameCaptainsUseCase', () => {
       uneven_teams: true,
     });
 
-    const resultado = await useCase.execute('comp-1', { teamA: 'ana', teamB: 'bea' });
+    const resultado = await useCase.execute('comp-1', {
+      teamA: 'ana',
+      teamB: 'bea',
+    });
 
     expect(repositorio.nameCaptains).toHaveBeenCalledWith('comp-1', {
       team_a_captain_id: 'ana',
@@ -50,11 +53,16 @@ describe('NameCaptainsUseCase', () => {
   });
 
   it('N3: los errores del servidor llegan tal cual', async () => {
-    const error = Object.assign(new Error('Los capitanes tienen que ser jugadores inscritos'), {
-      status: 400,
-    });
+    const error = Object.assign(
+      new Error('Los capitanes tienen que ser jugadores inscritos'),
+      {
+        status: 400,
+      },
+    );
     repositorio.nameCaptains.mockRejectedValue(error);
 
-    await expect(useCase.execute('comp-1', { teamA: 'ana', teamB: 'bea' })).rejects.toBe(error);
+    await expect(
+      useCase.execute('comp-1', { teamA: 'ana', teamB: 'bea' }),
+    ).rejects.toBe(error);
   });
 });

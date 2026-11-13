@@ -26,7 +26,11 @@ const CADA_FICHA = 5 * 60000;
 export const TOPE_DE_LA_FICHA_MS = 8000;
 // Sin sesión, una privada se dice sin preguntar por su clasificación: como el
 // 403 que daría (release social 3)
-const privada = () => Object.assign(new Error('PRIVATE_COMPETITION'), { status: 403, errorCode: 'PRIVATE_COMPETITION' });
+const privada = () =>
+  Object.assign(new Error('PRIVATE_COMPETITION'), {
+    status: 403,
+    errorCode: 'PRIVATE_COMPETITION',
+  });
 
 const LeaderboardPage = () => {
   const { id: competitionId } = useParams();
@@ -40,7 +44,8 @@ const LeaderboardPage = () => {
   // un stroke play, no hace falta preguntar nada para pintar su general
   // (/code-review)
   const traida = location.state?.competicion;
-  const desdeLaFicha = traida?.id === competitionId && traida?.hasTeams === false ? traida : null;
+  const desdeLaFicha =
+    traida?.id === competitionId && traida?.hasTeams === false ? traida : null;
 
   const [leaderboard, setLeaderboard] = useState(null);
   const [isLoading, setIsLoading] = useState(!desdeLaFicha);
@@ -76,7 +81,9 @@ const LeaderboardPage = () => {
   const enJuego = ['CLOSED', 'IN_PROGRESS'].includes(general?.status);
   // De qué torneo es, bajo el título: la de una Ryder lo trae ella (pasada del
   // Kind, 30 oct 2026: sin sesión, el enlace no decía de cuál era)
-  const nombre = general ? general.name : !error && leaderboard?.competitionName;
+  const nombre = general
+    ? general.name
+    : !error && leaderboard?.competitionName;
 
   // Dynamic back link based on where the user came from. La general de un
   // stroke play vuelve siempre a su ficha: su agenda es la de la Ryder
@@ -85,8 +92,16 @@ const LeaderboardPage = () => {
   // La ficha y la agenda piden sesión: el visitante vuelve a la portada (29 oct 2026)
   let volver;
   if (!user) volver = { to: '/', texto: t('leaderboard.backToHome') };
-  else if (aLaFicha) volver = { to: `/competitions/${competitionId}`, texto: t('summary.backToCompetition') };
-  else volver = { to: `/competitions/${competitionId}/schedule`, texto: t('summary.backToSchedule') };
+  else if (aLaFicha)
+    volver = {
+      to: `/competitions/${competitionId}`,
+      texto: t('summary.backToCompetition'),
+    };
+  else
+    volver = {
+      to: `/competitions/${competitionId}/schedule`,
+      texto: t('summary.backToSchedule'),
+    };
   // Se pregunta una vez por competición, no en cada refresco: el cubo de
   // límites es el mismo para todo el campo (ADR-038). Con la consulta en
   // curso: quien llega mientras tanto (el doble arranque de React en
@@ -112,7 +127,8 @@ const LeaderboardPage = () => {
     (conSesion ? getCompetitionDetailUseCase : getCompetitionSummaryUseCase)
       .execute(para)
       .then((competicion) => {
-        if (idActual.current === para && competicion?.hasTeams === false) setLaDeStrokePlay(competicion);
+        if (idActual.current === para && competicion?.hasTeams === false)
+          setLaDeStrokePlay(competicion);
       })
       .catch(() => {});
   }, [competitionId, conSesion]);
@@ -124,7 +140,8 @@ const LeaderboardPage = () => {
     // play salía un instante como error (/code-review). Y si la ficha ya dijo
     // que es un stroke play, la de la Ryder no hace falta
     // Sin sesión ya no vale lo que trajo la ficha: se mira el resumen (code-review)
-    if (!competitionId || sesionCargando || (yaSabida && conSesion)) return undefined;
+    if (!competitionId || sesionCargando || (yaSabida && conSesion))
+      return undefined;
     // La marca es de esa competición: al pasar a otra se olvida, o al volver a
     // la privada la página se quedaba cargando para siempre (CodeRabbit)
     // Privada con sesión lo es también sin ella; pero quien entra (otra pestaña)
@@ -133,24 +150,29 @@ const LeaderboardPage = () => {
     const marca = { id: competitionId, quien: quienMira.current };
     const vista = privadaRef.current;
     const entraOtro = conSesion && vista?.quien !== quienMira.current;
-    if (vista !== null && (vista.id !== competitionId || entraOtro)) privadaRef.current = null;
+    if (vista !== null && (vista.id !== competitionId || entraOtro))
+      privadaRef.current = null;
     if (privadaRef.current !== null) return undefined;
     let vigente = true;
 
     // Sin sesión no se puede leer la ficha (ni entrar en ella): quien llama ni
     // pregunta (`fetchLeaderboard`)
     const esDeStrokePlay = () => {
-      if (fichaMirada.current?.id === competitionId) return fichaMirada.current.promesa;
+      if (fichaMirada.current?.id === competitionId)
+        return fichaMirada.current.promesa;
       const marca = { id: competitionId, promesa: null };
       const ficha = getCompetitionDetailUseCase
         .execute(competitionId)
-        .then((competicion) => (competicion?.hasTeams === false ? competicion : null))
+        .then((competicion) =>
+          competicion?.hasTeams === false ? competicion : null,
+        )
         .catch((err) => {
           // Sin respuesta (sin red) no se sabe nada: el siguiente refresco vuelve
           // a preguntar. Con respuesta, aunque sea un error, no (CodeRabbit, #863).
           // Y solo si la marca sigue siendo esta: una consulta vieja no borra la
           // de la competición que se mira ahora (revisor)
-          if (esFalloDeRed(err) && fichaMirada.current === marca) fichaMirada.current = null;
+          if (esFalloDeRed(err) && fichaMirada.current === marca)
+            fichaMirada.current = null;
           return null;
         });
       // Con un plazo: vencido, se sigue sin ella (la de la Ryder) y, como sin
@@ -162,7 +184,9 @@ const LeaderboardPage = () => {
           resolver(null);
         }, TOPE_DE_LA_FICHA_MS);
       });
-      marca.promesa = Promise.race([ficha, plazo]).finally(() => clearTimeout(temporizador));
+      marca.promesa = Promise.race([ficha, plazo]).finally(() =>
+        clearTimeout(temporizador),
+      );
       fichaMirada.current = marca;
       return marca.promesa;
     };
@@ -170,16 +194,20 @@ const LeaderboardPage = () => {
     // Sin sesión, el resumen público dice qué es: una privada, un stroke play o
     // una Ryder. Si no contesta, se sigue como antes (la de la Ryder dirá)
     const delResumen = async () => {
-      if (resumenLeido.current?.id === competitionId) return resumenLeido.current.resumen;
+      if (resumenLeido.current?.id === competitionId)
+        return resumenLeido.current.resumen;
       try {
-        const resumen = await getCompetitionSummaryUseCase.execute(competitionId);
+        const resumen =
+          await getCompetitionSummaryUseCase.execute(competitionId);
         resumenLeido.current = { id: competitionId, resumen };
         return resumen;
       } catch (err) {
         // Un no definitivo (un 4xx) no se repite en cada refresco (el cupo es de
         // todos, ADR-038); sin red, un 429 o un 5xx, sí (revisor, code-review)
-        const definitivo = err?.status >= 400 && err?.status < 500 && err?.status !== 429;
-        if (definitivo) resumenLeido.current = { id: competitionId, resumen: null };
+        const definitivo =
+          err?.status >= 400 && err?.status < 500 && err?.status !== 429;
+        if (definitivo)
+          resumenLeido.current = { id: competitionId, resumen: null };
         return null;
       }
     };
@@ -238,10 +266,16 @@ const LeaderboardPage = () => {
   return (
     // La pantalla menos la barra inferior y el aviso de instalar, que App suma
     // al final: con `min-h-screen` hacía scroll casi vacía (pasada del Kind)
-    <div className={`${PANTALLA_MENOS_BARRA_INFERIOR} bg-gray-50 flex flex-col`}>
+    <div
+      className={`${PANTALLA_MENOS_BARRA_INFERIOR} bg-gray-50 flex flex-col`}
+    >
       {/* La flecha, adonde va el volver de la página (la agenda de una Ryder a
           la que se llegó desde ella); mientras carga no se sabe: sin flecha */}
-      {user ? <HeaderAuth user={user} backTo={isLoading ? null : volver.to} /> : <Header />}
+      {user ? (
+        <HeaderAuth user={user} backTo={isLoading ? null : volver.to} />
+      ) : (
+        <Header />
+      )}
 
       <main className="flex-1 max-w-4xl mx-auto w-full px-4 py-6">
         {/* Mientras carga no se sabe adónde: con un enlace compartido cambiaba
@@ -259,24 +293,30 @@ const LeaderboardPage = () => {
           </Link>
         )}
         {/* Con sesión, en el móvil lo dice la cabecera: dos <h1> no */}
-        <h1 className={`${user ? 'hidden md:block' : ''} text-2xl font-bold text-gray-900 ${nombre ? 'mb-1' : 'mb-6'}`}>
+        <h1
+          className={`${user ? 'hidden md:block' : ''} text-2xl font-bold text-gray-900 ${nombre ? 'mb-1' : 'mb-6'}`}
+        >
           {t('leaderboard.title')}
         </h1>
         {nombre && (
-          <p data-testid="nombre-de-la-competicion" className="mb-5 text-sm text-gray-500 break-words">
+          <p
+            data-testid="nombre-de-la-competicion"
+            className="mb-5 text-sm text-gray-500 break-words"
+          >
             {nombre}
           </p>
         )}
 
-        {isLoading && (
-          <BlockLoader texto={t('loading')} />
-        )}
+        {isLoading && <BlockLoader texto={t('loading')} />}
 
         {error && !isLoading && (
           <div className="text-center py-8">
             {esDeUnaPrivada(error) ? (
               <>
-                <p data-testid="clasificacion-privada" className="text-gray-600">
+                <p
+                  data-testid="clasificacion-privada"
+                  className="text-gray-600"
+                >
                   {t('leaderboard.private')}
                 </p>
                 {/* Sin sesión, quien participa entra y la ve (release social 3) */}
@@ -293,7 +333,9 @@ const LeaderboardPage = () => {
                 )}
               </>
             ) : (
-              <p className="text-red-600">{error.message || t('errors.generic')}</p>
+              <p className="text-red-600">
+                {error.message || t('errors.generic')}
+              </p>
             )}
           </div>
         )}
@@ -308,7 +350,10 @@ const LeaderboardPage = () => {
             enJuego={enJuego}
           />
         ) : (
-          !isLoading && !error && <LeaderboardView leaderboard={leaderboard} jugador={jugador} />
+          !isLoading &&
+          !error && (
+            <LeaderboardView leaderboard={leaderboard} jugador={jugador} />
+          )
         )}
       </main>
 

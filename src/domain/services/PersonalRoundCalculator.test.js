@@ -39,7 +39,11 @@ describe('PersonalRoundCalculator', () => {
       const result = compute({
         participantStrokes: [
           { participantId: 'p-1', playingHandicap: 2, strokesByHole: {} },
-          { participantId: 'p-2', playingHandicap: 12, strokesByHole: { 1: 1, 2: 1 } },
+          {
+            participantId: 'p-2',
+            playingHandicap: 12,
+            strokesByHole: { 1: 1, 2: 1 },
+          },
         ],
       });
 
@@ -50,8 +54,16 @@ describe('PersonalRoundCalculator', () => {
     it('deja la del partido en null cuando coincide con la personal', () => {
       const result = compute({
         participantStrokes: [
-          { participantId: 'p-1', playingHandicap: 2, strokesByHole: { 1: 1, 2: 1 } },
-          { participantId: 'p-2', playingHandicap: 12, strokesByHole: { 1: 1, 2: 1 } },
+          {
+            participantId: 'p-1',
+            playingHandicap: 2,
+            strokesByHole: { 1: 1, 2: 1 },
+          },
+          {
+            participantId: 'p-2',
+            playingHandicap: 12,
+            strokesByHole: { 1: 1, 2: 1 },
+          },
         ],
       });
 
@@ -68,7 +80,9 @@ describe('PersonalRoundCalculator', () => {
       const result = compute({
         matchFormat: null,
         allowancePercentage: 95,
-        participantStrokes: [{ participantId: 'p-1', playingHandicap: 1, strokesByHole: { 1: 1 } }],
+        participantStrokes: [
+          { participantId: 'p-1', playingHandicap: 1, strokesByHole: { 1: 1 } },
+        ],
       });
 
       // Con los golpes del backend: netos 3 y 2 sobre par jugado 7
@@ -92,11 +106,31 @@ describe('PersonalRoundCalculator', () => {
      */
     it('cuenta el par de su barra, no el del campo', () => {
       const result = PersonalRoundCalculator.compute({
-        me: { participantId: 'p-1', name: 'Alice', handicap: 0, color: 'RED', teeGender: 'FEMALE' },
-        participants: [{ participantId: 'p-1', name: 'Alice', handicap: 0, color: 'RED', teeGender: 'FEMALE' }],
+        me: {
+          participantId: 'p-1',
+          name: 'Alice',
+          handicap: 0,
+          color: 'RED',
+          teeGender: 'FEMALE',
+        },
+        participants: [
+          {
+            participantId: 'p-1',
+            name: 'Alice',
+            handicap: 0,
+            color: 'RED',
+            teeGender: 'FEMALE',
+          },
+        ],
         holes: [{ holeNumber: 1, par: 4, strokeIndex: 5 }],
         holeScores: [{ holeNumber: 1, participantId: 'p-1', score: 5 }],
-        tees: [{ color: 'RED', gender: 'FEMALE', holes: [{ holeNumber: 1, par: 5, strokeIndex: 5 }] }],
+        tees: [
+          {
+            color: 'RED',
+            gender: 'FEMALE',
+            holes: [{ holeNumber: 1, par: 5, strokeIndex: 5 }],
+          },
+        ],
         matchFormat: null,
         allowancePercentage: 100,
       });
@@ -147,11 +181,19 @@ describe('PersonalRoundCalculator', () => {
 });
 
 describe('PersonalRoundCalculator · los golpes del bando en foursomes', () => {
-  const partner = { participantId: 'p-3', name: 'Carol', handicap: 8, team: 'A' };
+  const partner = {
+    participantId: 'p-3',
+    name: 'Carol',
+    handicap: 8,
+    team: 'A',
+  };
   const teamMe = { ...me, team: 'A' };
   const teamRival = { ...rival, team: 'B' };
 
-  const computeFoursomes = (holeScores, participants = [teamMe, partner, teamRival]) =>
+  const computeFoursomes = (
+    holeScores,
+    participants = [teamMe, partner, teamRival],
+  ) =>
     PersonalRoundCalculator.compute({
       me: teamMe,
       participants,
@@ -238,7 +280,9 @@ describe('PersonalRoundCalculator · los golpes del bando en foursomes', () => {
   });
 
   it('sigue sin dar vuelta propia', () => {
-    const result = computeFoursomes([{ holeNumber: 1, participantId: 'p-3', score: 5 }]);
+    const result = computeFoursomes([
+      { holeNumber: 1, participantId: 'p-3', score: 5 },
+    ]);
 
     expect(result.personalToPar).toBeNull();
     expect(result.matchToPar).toBeNull();
@@ -305,7 +349,9 @@ describe('PersonalRoundCalculator · los golpes del bando en foursomes', () => {
 
   it('sigue sin contar el hoyo que nadie anoto', () => {
     // Solo el hoyo 1 tiene anotacion (una raya, par 4 -> 6); el 2 no existe.
-    const result = computeFoursomes([{ holeNumber: 1, participantId: 'p-1', score: null }]);
+    const result = computeFoursomes([
+      { holeNumber: 1, participantId: 'p-1', score: null },
+    ]);
 
     expect(result.totalStrokes).toBe(6);
   });
@@ -364,7 +410,11 @@ describe('PersonalRoundCalculator.runningResult · «Tu vuelta» al anotar', () 
       matchFormat: 'SINGLES',
       participantStrokes: [
         { participantId: 'p-1', playingHandicap: 2, strokesByHole: {} },
-        { participantId: 'p-2', playingHandicap: 12, strokesByHole: { 1: 1, 2: 1 } },
+        {
+          participantId: 'p-2',
+          playingHandicap: 12,
+          strokesByHole: { 1: 1, 2: 1 },
+        },
       ],
     });
 
@@ -385,7 +435,10 @@ describe('PersonalRoundCalculator.runningResult · «Tu vuelta» al anotar', () 
   });
 
   it('R5: sin reparto del backend lo calcula con su hándicap y el allowance', () => {
-    const result = running({ matchFormat: 'SINGLES', allowancePercentage: null });
+    const result = running({
+      matchFormat: 'SINGLES',
+      allowancePercentage: null,
+    });
 
     // Sin allowance conocido, el 100%: 2 golpes
     expect(result.toParLabel).toBe('-3');
@@ -401,7 +454,9 @@ describe('PersonalRoundCalculator.runningResult · «Tu vuelta» al anotar', () 
 
   it('R7: en ningún formato hay campo de puntos', () => {
     expect(running()).not.toHaveProperty('stablefordPoints');
-    expect(running({ matchFormat: 'SINGLES' })).not.toHaveProperty('stablefordPoints');
+    expect(running({ matchFormat: 'SINGLES' })).not.toHaveProperty(
+      'stablefordPoints',
+    );
   });
 
   it('R8: en foursomes no hay vuelta propia', () => {
@@ -411,7 +466,13 @@ describe('PersonalRoundCalculator.runningResult · «Tu vuelta» al anotar', () 
   it('R9: en SCRATCH no recibe golpes y se mide contra el par', () => {
     const result = running({
       playMode: 'SCRATCH',
-      participantStrokes: [{ participantId: 'p-1', playingHandicap: 2, strokesByHole: { 1: 1, 2: 1 } }],
+      participantStrokes: [
+        {
+          participantId: 'p-1',
+          playingHandicap: 2,
+          strokesByHole: { 1: 1, 2: 1 },
+        },
+      ],
     });
 
     // Brutos 4 y 2 sobre par 7
@@ -428,7 +489,10 @@ describe('PersonalRoundCalculator.runningResult · «Tu vuelta» al anotar', () 
 
   it('R11: la raya cuenta como doble bogey neto', () => {
     const result = running({
-      holeScores: [scores[0], { holeNumber: 2, participantId: 'p-1', score: null }],
+      holeScores: [
+        scores[0],
+        { holeNumber: 2, participantId: 'p-1', score: null },
+      ],
     });
 
     // Neto 3 + raya 5 sobre par 7
@@ -503,7 +567,13 @@ describe('PersonalRoundCalculator.runningResult · «Tu vuelta» al anotar', () 
 
     expect(result).toEqual({ toPar: null, toParLabel: null, holesPlayed: 0 });
     expect(
-      PersonalRoundCalculator.compute({ me, holes, holeScores: scores, tees: undefined, participants: undefined })
+      PersonalRoundCalculator.compute({
+        me,
+        holes,
+        holeScores: scores,
+        tees: undefined,
+        participants: undefined,
+      }),
     ).not.toBeNull();
   });
 
@@ -517,15 +587,27 @@ describe('PersonalRoundCalculator.runningResult · «Tu vuelta» al anotar', () 
       strokeIndex: i + 1,
     }));
     const alto = { participantId: 'p-1', name: 'Alice', handicap: 20 };
-    const todos = card.map((h) => ({ holeNumber: h.holeNumber, participantId: 'p-1', score: 4 }));
+    const todos = card.map((h) => ({
+      holeNumber: h.holeNumber,
+      participantId: 'p-1',
+      score: 4,
+    }));
     const deAlto = (overrides = {}) =>
-      running({ me: alto, participants: [alto, rival], holes: card, holeScores: todos, ...overrides });
+      running({
+        me: alto,
+        participants: [alto, rival],
+        holes: card,
+        holeScores: todos,
+        ...overrides,
+      });
 
     it('R16: si el reparto del backend no trae a quien anota, usa su hándicap local, no 0', () => {
       const result = deAlto({
         matchFormat: 'SINGLES',
         allowancePercentage: 100,
-        participantStrokes: [{ participantId: 'p-2', playingHandicap: 12, strokesByHole: {} }],
+        participantStrokes: [
+          { participantId: 'p-2', playingHandicap: 12, strokesByHole: {} },
+        ],
       });
 
       // Hcp 20 al 100% = 20 golpes: 72 brutos son 52 netos sobre par 72
@@ -536,7 +618,9 @@ describe('PersonalRoundCalculator.runningResult · «Tu vuelta» al anotar', () 
       const result = deAlto({
         matchFormat: 'FOURBALL',
         allowancePercentage: 90,
-        participantStrokes: [{ participantId: 'p-2', playingHandicap: 12, strokesByHole: {} }],
+        participantStrokes: [
+          { participantId: 'p-2', playingHandicap: 12, strokesByHole: {} },
+        ],
       });
 
       expect(result.toPar).toBe(-18);
@@ -553,7 +637,9 @@ describe('PersonalRoundCalculator.runningResult · «Tu vuelta» al anotar', () 
       const result = deAlto({
         matchFormat: 'FOURBALL',
         allowancePercentage: undefined,
-        participantStrokes: [{ participantId: 'p-2', playingHandicap: 12, strokesByHole: {} }],
+        participantStrokes: [
+          { participantId: 'p-2', playingHandicap: 12, strokesByHole: {} },
+        ],
       });
 
       expect(result.toPar).toBe(-18);
@@ -563,14 +649,18 @@ describe('PersonalRoundCalculator.runningResult · «Tu vuelta» al anotar', () 
       const result = deAlto({
         matchFormat: 'SINGLES',
         allowancePercentage: null,
-        participantStrokes: [{ participantId: 'p-2', playingHandicap: 12, strokesByHole: {} }],
+        participantStrokes: [
+          { participantId: 'p-2', playingHandicap: 12, strokesByHole: {} },
+        ],
       });
 
       expect(result.toPar).toBe(-20);
     });
 
     it('R17d: un allowance explícito manda sobre el del formato', () => {
-      expect(deAlto({ matchFormat: null, allowancePercentage: 100 }).toPar).toBe(-20);
+      expect(
+        deAlto({ matchFormat: null, allowancePercentage: 100 }).toPar,
+      ).toBe(-20);
     });
   });
 });
@@ -598,10 +688,19 @@ describe('PersonalRoundCalculator.vueltaDelHistorial', () => {
   it('V3: la cifra es la de anotar, con el allowance del formato', () => {
     const result = historial({ allowancePercentage: 50 });
 
-    expect(result.personalToPar).toBe(PersonalRoundCalculator.runningResult({
-      me, participants: [me, rival], holes, holeScores: scores, tees: [], participantStrokes: [],
-      matchFormat: null, allowancePercentage: 50, playMode: 'HANDICAP',
-    }).toParLabel);
+    expect(result.personalToPar).toBe(
+      PersonalRoundCalculator.runningResult({
+        me,
+        participants: [me, rival],
+        holes,
+        holeScores: scores,
+        tees: [],
+        participantStrokes: [],
+        matchFormat: null,
+        allowancePercentage: 50,
+        playMode: 'HANDICAP',
+      }).toParLabel,
+    );
     expect(result.personalToPar).toBe('-2');
   });
 
@@ -614,7 +713,11 @@ describe('PersonalRoundCalculator.vueltaDelHistorial', () => {
       matchFormat: 'SINGLES',
       participantStrokes: [
         { participantId: 'p-1', playingHandicap: 2, strokesByHole: {} },
-        { participantId: 'p-2', playingHandicap: 12, strokesByHole: { 1: 1, 2: 1 } },
+        {
+          participantId: 'p-2',
+          playingHandicap: 12,
+          strokesByHole: { 1: 1, 2: 1 },
+        },
       ],
     });
 
@@ -638,10 +741,25 @@ describe('PersonalRoundCalculator.vueltaDelHistorial', () => {
   });
 
   it.each([
-    ['con el reparto del backend', { participantStrokes: [{ participantId: 'p-1', playingHandicap: 1, strokesByHole: {} }] }],
+    [
+      'con el reparto del backend',
+      {
+        participantStrokes: [
+          { participantId: 'p-1', playingHandicap: 1, strokesByHole: {} },
+        ],
+      },
+    ],
     ['sin el reparto del backend', { allowancePercentage: 90 }],
     ['en SCRATCH', { playMode: 'SCRATCH' }],
-    ['con una raya', { holeScores: [{ holeNumber: 1, participantId: 'p-1', score: null }, ...scores.slice(1)] }],
+    [
+      'con una raya',
+      {
+        holeScores: [
+          { holeNumber: 1, participantId: 'p-1', score: null },
+          ...scores.slice(1),
+        ],
+      },
+    ],
     ['con hándicap plus', { me: { ...me, handicap: -2 } }],
   ])('V1 = V3: la misma cifra que al anotar, %s', (_caso, cambios) => {
     const params = {
@@ -658,8 +776,8 @@ describe('PersonalRoundCalculator.vueltaDelHistorial', () => {
     };
     if (cambios.me) params.participants = [cambios.me, rival];
 
-    expect(PersonalRoundCalculator.vueltaDelHistorial(params).personalToPar).toBe(
-      PersonalRoundCalculator.runningResult(params).toParLabel
-    );
+    expect(
+      PersonalRoundCalculator.vueltaDelHistorial(params).personalToPar,
+    ).toBe(PersonalRoundCalculator.runningResult(params).toParLabel);
   });
 });

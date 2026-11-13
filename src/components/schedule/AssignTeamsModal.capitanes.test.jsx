@@ -11,7 +11,14 @@ import AssignTeamsModal from './AssignTeamsModal';
  */
 
 vi.mock('framer-motion', () => ({
-  motion: new Proxy({}, { get: () => ({ children, ...props }) => <div {...props}>{children}</div> }),
+  motion: new Proxy(
+    {},
+    {
+      get:
+        () =>
+        ({ children, ...props }) => <div {...props}>{children}</div>,
+    },
+  ),
 }));
 
 const t = (clave, params) => {
@@ -22,9 +29,24 @@ const t = (clave, params) => {
 
 const INSCRITOS = [
   { userId: 'ana', userName: 'Ana Alba', status: 'APPROVED', userHandicap: 8 },
-  { userId: 'bea', userName: 'Bea Blanco', status: 'APPROVED', userHandicap: 12 },
-  { userId: 'carla', userName: 'Carla Cruz', status: 'APPROVED', userHandicap: 15 },
-  { userId: 'dani', userName: 'Dani Díaz', status: 'APPROVED', userHandicap: 20 },
+  {
+    userId: 'bea',
+    userName: 'Bea Blanco',
+    status: 'APPROVED',
+    userHandicap: 12,
+  },
+  {
+    userId: 'carla',
+    userName: 'Carla Cruz',
+    status: 'APPROVED',
+    userHandicap: 15,
+  },
+  {
+    userId: 'dani',
+    userName: 'Dani Díaz',
+    status: 'APPROVED',
+    userHandicap: 20,
+  },
 ];
 
 const NOMBRES = { teamA: 'Europa', teamB: 'América' };
@@ -40,12 +62,13 @@ const pintar = (props = {}) =>
       teamNames={NOMBRES}
       t={t}
       {...props}
-    />
+    />,
   );
 
 const aManual = () => fireEvent.click(screen.getByText('teams.manual'));
 
-const filaDe = (nombre) => screen.getByText(nombre).closest('div.flex.items-center.justify-between');
+const filaDe = (nombre) =>
+  screen.getByText(nombre).closest('div.flex.items-center.justify-between');
 
 const CAPITANES = { teamA: 'ana', teamB: 'bea' };
 
@@ -58,8 +81,12 @@ describe('AssignTeamsModal · los capitanes van fijos en su equipo (FE #692)', (
 
     const filaAna = filaDe('Ana Alba');
     const filaBea = filaDe('Bea Blanco');
-    expect(within(filaAna).getByRole('button', { name: 'Europa' })).toBeDisabled();
-    expect(within(filaBea).getByRole('button', { name: 'América' })).toBeDisabled();
+    expect(
+      within(filaAna).getByRole('button', { name: 'Europa' }),
+    ).toBeDisabled();
+    expect(
+      within(filaBea).getByRole('button', { name: 'América' }),
+    ).toBeDisabled();
   });
 
   it('M2: y no se pueden mover al otro equipo', () => {
@@ -67,9 +94,15 @@ describe('AssignTeamsModal · los capitanes van fijos en su equipo (FE #692)', (
     pintar({ captains: CAPITANES, onConfirm });
     aManual();
 
-    fireEvent.click(within(filaDe('Ana Alba')).getByRole('button', { name: 'América' }));
-    fireEvent.click(within(filaDe('Carla Cruz')).getByRole('button', { name: 'Europa' }));
-    fireEvent.click(within(filaDe('Dani Díaz')).getByRole('button', { name: 'América' }));
+    fireEvent.click(
+      within(filaDe('Ana Alba')).getByRole('button', { name: 'América' }),
+    );
+    fireEvent.click(
+      within(filaDe('Carla Cruz')).getByRole('button', { name: 'Europa' }),
+    );
+    fireEvent.click(
+      within(filaDe('Dani Díaz')).getByRole('button', { name: 'América' }),
+    );
     fireEvent.click(screen.getByRole('button', { name: 'teams.assign' }));
 
     expect(onConfirm).toHaveBeenCalledWith({
@@ -84,8 +117,12 @@ describe('AssignTeamsModal · los capitanes van fijos en su equipo (FE #692)', (
     pintar({ captains: CAPITANES, onConfirm });
     aManual();
 
-    fireEvent.click(within(filaDe('Carla Cruz')).getByRole('button', { name: 'Europa' }));
-    fireEvent.click(within(filaDe('Dani Díaz')).getByRole('button', { name: 'América' }));
+    fireEvent.click(
+      within(filaDe('Carla Cruz')).getByRole('button', { name: 'Europa' }),
+    );
+    fireEvent.click(
+      within(filaDe('Dani Díaz')).getByRole('button', { name: 'América' }),
+    );
     fireEvent.click(screen.getByRole('button', { name: 'teams.assign' }));
 
     expect(onConfirm).toHaveBeenCalledWith({
@@ -102,8 +139,12 @@ describe('AssignTeamsModal · los capitanes van fijos en su equipo (FE #692)', (
     expect(screen.getByText('teams.captainsFixed')).toBeInTheDocument();
     // Sin el nombre del equipo: lo dice el botón resaltado de al lado, y con
     // equipos de nombre largo la etiqueta se cortaba en «Capitán de E...»
-    expect(within(filaDe('Ana Alba')).getByText('teams.captainTag')).toBeInTheDocument();
-    expect(within(filaDe('Bea Blanco')).getByText('teams.captainTag')).toBeInTheDocument();
+    expect(
+      within(filaDe('Ana Alba')).getByText('teams.captainTag'),
+    ).toBeInTheDocument();
+    expect(
+      within(filaDe('Bea Blanco')).getByText('teams.captainTag'),
+    ).toBeInTheDocument();
   });
 
   it('M5: sin capitanes, el reparto de siempre: nadie fijo ni preasignado', () => {
@@ -112,11 +153,21 @@ describe('AssignTeamsModal · los capitanes van fijos en su equipo (FE #692)', (
     aManual();
 
     expect(screen.queryByText('teams.captainsFixed')).not.toBeInTheDocument();
-    expect(within(filaDe('Ana Alba')).getByRole('button', { name: 'Europa' })).toBeEnabled();
-    fireEvent.click(within(filaDe('Ana Alba')).getByRole('button', { name: 'Europa' }));
-    fireEvent.click(within(filaDe('Bea Blanco')).getByRole('button', { name: 'América' }));
-    fireEvent.click(within(filaDe('Carla Cruz')).getByRole('button', { name: 'Europa' }));
-    fireEvent.click(within(filaDe('Dani Díaz')).getByRole('button', { name: 'América' }));
+    expect(
+      within(filaDe('Ana Alba')).getByRole('button', { name: 'Europa' }),
+    ).toBeEnabled();
+    fireEvent.click(
+      within(filaDe('Ana Alba')).getByRole('button', { name: 'Europa' }),
+    );
+    fireEvent.click(
+      within(filaDe('Bea Blanco')).getByRole('button', { name: 'América' }),
+    );
+    fireEvent.click(
+      within(filaDe('Carla Cruz')).getByRole('button', { name: 'Europa' }),
+    );
+    fireEvent.click(
+      within(filaDe('Dani Díaz')).getByRole('button', { name: 'América' }),
+    );
     fireEvent.click(screen.getByRole('button', { name: 'teams.assign' }));
 
     expect(onConfirm).toHaveBeenCalledWith({
@@ -131,7 +182,9 @@ describe('AssignTeamsModal · los capitanes van fijos en su equipo (FE #692)', (
     aManual();
 
     expect(screen.queryByText('teams.captainsFixed')).not.toBeInTheDocument();
-    expect(within(filaDe('Ana Alba')).getByRole('button', { name: 'América' })).toBeEnabled();
+    expect(
+      within(filaDe('Ana Alba')).getByRole('button', { name: 'América' }),
+    ).toBeEnabled();
   });
 
   it('M7: no se reparte dejando gente fuera: todos los inscritos tienen equipo', () => {
@@ -145,9 +198,13 @@ describe('AssignTeamsModal · los capitanes van fijos en su equipo (FE #692)', (
     const asignar = () => screen.getByRole('button', { name: 'teams.assign' });
 
     expect(asignar()).toBeDisabled();
-    fireEvent.click(within(filaDe('Carla Cruz')).getByRole('button', { name: 'Europa' }));
+    fireEvent.click(
+      within(filaDe('Carla Cruz')).getByRole('button', { name: 'Europa' }),
+    );
     expect(asignar()).toBeDisabled();
-    fireEvent.click(within(filaDe('Dani Díaz')).getByRole('button', { name: 'América' }));
+    fireEvent.click(
+      within(filaDe('Dani Díaz')).getByRole('button', { name: 'América' }),
+    );
     expect(asignar()).toBeEnabled();
   });
 
@@ -156,9 +213,13 @@ describe('AssignTeamsModal · los capitanes van fijos en su equipo (FE #692)', (
     aManual();
 
     expect(screen.getByText('teams.everyoneNeedsTeam_2')).toBeInTheDocument();
-    fireEvent.click(within(filaDe('Carla Cruz')).getByRole('button', { name: 'Europa' }));
+    fireEvent.click(
+      within(filaDe('Carla Cruz')).getByRole('button', { name: 'Europa' }),
+    );
     expect(screen.getByText('teams.everyoneNeedsTeam_1')).toBeInTheDocument();
-    fireEvent.click(within(filaDe('Dani Díaz')).getByRole('button', { name: 'América' }));
+    fireEvent.click(
+      within(filaDe('Dani Díaz')).getByRole('button', { name: 'América' }),
+    );
     expect(screen.queryByText(/everyoneNeedsTeam/)).not.toBeInTheDocument();
   });
 

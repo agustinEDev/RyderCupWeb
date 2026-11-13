@@ -106,7 +106,9 @@ describe('useDeviceManagement', () => {
       const success = await result.current.revokeDevice('device-1');
 
       expect(success).toBe(true);
-      expect(composition.revokeDeviceUseCase.execute).toHaveBeenCalledWith('device-1');
+      expect(composition.revokeDeviceUseCase.execute).toHaveBeenCalledWith(
+        'device-1',
+      );
 
       // Wait for state update after revoke
       await waitFor(() => {

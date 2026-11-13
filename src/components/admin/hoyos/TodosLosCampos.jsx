@@ -14,8 +14,10 @@ import RevisarHoyo from './RevisarHoyo';
 const estadoDe = (hoyo, t) => {
   if (hoyo.guardada) return t('allCourses.saved');
   // Sin green, la de OSM se ve pero no es de la que se parte (17 oct)
-  if (hoyo.osm) return t(hoyo.osm.green ? 'allCourses.osm' : 'allCourses.osmWithoutGreen');
-  if (hoyo.muestras.length) return t('holeReviews.samples', { count: hoyo.muestras.length });
+  if (hoyo.osm)
+    return t(hoyo.osm.green ? 'allCourses.osm' : 'allCourses.osmWithoutGreen');
+  if (hoyo.muestras.length)
+    return t('holeReviews.samples', { count: hoyo.muestras.length });
   return t('allCourses.empty');
 };
 
@@ -56,10 +58,12 @@ const TodosLosCampos = () => {
     const esta = ultimaPeticion.current;
     try {
       const campo = await getHoleReviewUseCase.execute(id);
-      if (esta === ultimaPeticion.current) setEstado({ id, campo, fallo: false });
+      if (esta === ultimaPeticion.current)
+        setEstado({ id, campo, fallo: false });
     } catch {
       if (esta !== ultimaPeticion.current) return;
-      if (aLaVista.current === id) customToast.error(t('allCourses.reloadError'));
+      if (aLaVista.current === id)
+        customToast.error(t('allCourses.reloadError'));
       else setEstado({ id, campo: null, fallo: true });
     }
   };
@@ -99,22 +103,38 @@ const TodosLosCampos = () => {
   const cargado = estado.id === idDelCampo ? estado : null;
   return (
     <div className="flex flex-col gap-3 py-2">
-      <button type="button" onClick={cambiarDeCampo} className="min-h-11 self-start rounded-lg bg-gray-100 px-3 text-sm font-semibold text-gray-900">
+      <button
+        type="button"
+        onClick={cambiarDeCampo}
+        className="min-h-11 self-start rounded-lg bg-gray-100 px-3 text-sm font-semibold text-gray-900"
+      >
         {t('allCourses.changeCourse')}
       </button>
       {!cargado && <BlockLoader />}
       {cargado?.fallo && (
         <div className="flex flex-col items-start gap-2">
-          <p role="alert" className="text-sm text-red-700">{t('allCourses.error')}</p>
-          <button type="button" onClick={() => pedir(idDelCampo)} className="min-h-11 rounded-lg bg-primary px-4 text-sm font-semibold text-white">
+          <p role="alert" className="text-sm text-red-700">
+            {t('allCourses.error')}
+          </p>
+          <button
+            type="button"
+            onClick={() => pedir(idDelCampo)}
+            className="min-h-11 rounded-lg bg-primary px-4 text-sm font-semibold text-white"
+          >
             {t('allCourses.retry')}
           </button>
         </div>
       )}
       {cargado?.campo && (
-        <section aria-labelledby="todos-los-campos-nombre" className="rounded-xl border border-gray-200 bg-white">
+        <section
+          aria-labelledby="todos-los-campos-nombre"
+          className="rounded-xl border border-gray-200 bg-white"
+        >
           <header className="border-b border-gray-200 px-4 py-3">
-            <h3 id="todos-los-campos-nombre" className="font-semibold text-gray-900">
+            <h3
+              id="todos-los-campos-nombre"
+              className="font-semibold text-gray-900"
+            >
               {cargado.campo.name}
             </h3>
           </header>
@@ -123,12 +143,25 @@ const TodosLosCampos = () => {
               <li key={hoyo.holeNumber}>
                 <button
                   type="button"
-                  onClick={() => setAbierto({ golfCourseId: cargado.campo.golfCourseId, nombre: cargado.campo.name, numeroDeHoyo: hoyo.holeNumber })}
+                  onClick={() =>
+                    setAbierto({
+                      golfCourseId: cargado.campo.golfCourseId,
+                      nombre: cargado.campo.name,
+                      numeroDeHoyo: hoyo.holeNumber,
+                    })
+                  }
                   className="flex min-h-12 w-full items-center gap-3 px-4 py-3 text-left text-gray-900"
                 >
-                  <span className="flex-1 font-medium">{t('allCourses.hole', { numero: hoyo.holeNumber })}</span>
-                  <span className="text-sm text-gray-500">{estadoDe(hoyo, t)}</span>
-                  <ChevronRight className="h-4 w-4 shrink-0 text-gray-400" aria-hidden="true" />
+                  <span className="flex-1 font-medium">
+                    {t('allCourses.hole', { numero: hoyo.holeNumber })}
+                  </span>
+                  <span className="text-sm text-gray-500">
+                    {estadoDe(hoyo, t)}
+                  </span>
+                  <ChevronRight
+                    className="h-4 w-4 shrink-0 text-gray-400"
+                    aria-hidden="true"
+                  />
                 </button>
               </li>
             ))}

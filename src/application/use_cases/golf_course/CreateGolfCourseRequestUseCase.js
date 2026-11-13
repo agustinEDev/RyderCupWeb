@@ -34,20 +34,35 @@ class CreateGolfCourseRequestUseCase {
     }
 
     // Validate name
-    if (!golfCourseData.name || typeof golfCourseData.name !== 'string' || golfCourseData.name.trim().length === 0) {
-      throw new Error('Golf course name is required and must be a non-empty string');
+    if (
+      !golfCourseData.name ||
+      typeof golfCourseData.name !== 'string' ||
+      golfCourseData.name.trim().length === 0
+    ) {
+      throw new Error(
+        'Golf course name is required and must be a non-empty string',
+      );
     }
 
     // Validate country code
-    if (!golfCourseData.countryCode || typeof golfCourseData.countryCode !== 'string' || golfCourseData.countryCode.length !== 2) {
+    if (
+      !golfCourseData.countryCode ||
+      typeof golfCourseData.countryCode !== 'string' ||
+      golfCourseData.countryCode.length !== 2
+    ) {
       throw new Error('Golf course country is required');
     }
 
     // Validate tees
     // El techo lo pone el backend (MAX_TEES): sin el, un campo de 20 barras
     // pasaba por aqui y lo rechazaba la API con un 422 generico.
-    if (!Array.isArray(golfCourseData.tees) || !isTeeCountValid(golfCourseData.tees.length)) {
-      throw new Error(`Golf course must have between ${MIN_TEES} and ${MAX_TEES} tees`);
+    if (
+      !Array.isArray(golfCourseData.tees) ||
+      !isTeeCountValid(golfCourseData.tees.length)
+    ) {
+      throw new Error(
+        `Golf course must have between ${MIN_TEES} and ${MAX_TEES} tees`,
+      );
     }
 
     // Validate each tee has required fields
@@ -58,7 +73,9 @@ class CreateGolfCourseRequestUseCase {
       // El color nombra la salida; el identificador solo hace falta cuando no
       // lo es, porque OTHER puede repetirse en un mismo campo
       if (tee.color === 'OTHER' && !tee.identifier?.trim()) {
-        throw new Error(`Tee ${index + 1} must have an identifier when its colour is OTHER`);
+        throw new Error(
+          `Tee ${index + 1} must have an identifier when its colour is OTHER`,
+        );
       }
       if (typeof tee.slopeRating !== 'number') {
         throw new Error(`Tee ${index + 1} must have a numeric slope rating`);
@@ -69,7 +86,10 @@ class CreateGolfCourseRequestUseCase {
     });
 
     // Validate holes
-    if (!Array.isArray(golfCourseData.holes) || golfCourseData.holes.length !== 18) {
+    if (
+      !Array.isArray(golfCourseData.holes) ||
+      golfCourseData.holes.length !== 18
+    ) {
       throw new Error('Golf course must have exactly 18 holes');
     }
 
@@ -80,21 +100,27 @@ class CreateGolfCourseRequestUseCase {
       }
       if (!isHoleParValid(hole.par)) {
         throw new Error(
-          `Hole ${index + 1} par must be one of ${VALID_HOLE_PARS.join(', ')} (current: ${hole.par})`
+          `Hole ${index + 1} par must be one of ${VALID_HOLE_PARS.join(', ')} (current: ${hole.par})`,
         );
       }
     });
 
     // El par total es el del tipo de campo, no el de un 18 hoyos: un pitch &
     // putt es par 54-60 y un ejecutivo 61-65. Ver `courseTypeRanges`.
-    const totalPar = golfCourseData.holes.reduce((sum, hole) => sum + hole.par, 0);
+    const totalPar = golfCourseData.holes.reduce(
+      (sum, hole) => sum + hole.par,
+      0,
+    );
     const [minPar, maxPar] = parRangeFor(golfCourseData.courseType);
     if (totalPar < minPar || totalPar > maxPar) {
-      throw new Error(`Total par must be between ${minPar} and ${maxPar} (current: ${totalPar})`);
+      throw new Error(
+        `Total par must be between ${minPar} and ${maxPar} (current: ${totalPar})`,
+      );
     }
 
     // Call repository to create golf course request
-    const createdCourse = await this.golfCourseRepository.create(golfCourseData);
+    const createdCourse =
+      await this.golfCourseRepository.create(golfCourseData);
 
     return createdCourse;
   }

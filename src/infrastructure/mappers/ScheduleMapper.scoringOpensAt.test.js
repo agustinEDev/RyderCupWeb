@@ -50,7 +50,9 @@ const apiRound = (extra = {}) => ({
 
 describe('ScheduleMapper · la hora a la que abre la anotación', () => {
   it('la trae de la RONDA, que es donde la manda el servidor', () => {
-    const dto = ScheduleMapper.toRoundDTO(apiRound({ scoring_opens_at: '2026-09-19T06:00:00+02:00' }));
+    const dto = ScheduleMapper.toRoundDTO(
+      apiRound({ scoring_opens_at: '2026-09-19T06:00:00+02:00' }),
+    );
 
     expect(dto.scoringOpensAt).toBe('2026-09-19T06:00:00+02:00');
   });
@@ -71,7 +73,9 @@ describe('ScheduleMapper · la hora a la que abre la anotación', () => {
   it('el partido no la lleva ni aunque alguien la meta ahí: buscarla ahí fue el fallo', () => {
     // Con `apiMatch()` a secas este test pasaba con el defecto dentro, porque
     // el ejemplo tampoco traía el campo. Hay que dárselo para que signifique algo
-    const dto = ScheduleMapper.toMatchDTO(apiMatch({ scoring_opens_at: '2026-09-19T06:00:00+02:00' }));
+    const dto = ScheduleMapper.toMatchDTO(
+      apiMatch({ scoring_opens_at: '2026-09-19T06:00:00+02:00' }),
+    );
 
     expect('scoringOpensAt' in dto).toBe(false);
   });
@@ -82,10 +86,12 @@ describe('ScheduleMapper · la hora a la que abre la anotación', () => {
   it('y por el camino real, con el sobre de días que manda el servidor', () => {
     const dto = ScheduleMapper.toScheduleDTO({
       competition_id: 'c-1',
-      days: [{
-        date: '2026-09-19',
-        rounds: [apiRound({ scoring_opens_at: '2026-09-19T06:00:00+02:00' })],
-      }],
+      days: [
+        {
+          date: '2026-09-19',
+          rounds: [apiRound({ scoring_opens_at: '2026-09-19T06:00:00+02:00' })],
+        },
+      ],
     });
 
     expect(dto.rounds[0].scoringOpensAt).toBe('2026-09-19T06:00:00+02:00');

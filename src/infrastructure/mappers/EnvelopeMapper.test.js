@@ -88,7 +88,10 @@ describe('EnvelopeMapper', () => {
   it('E1c: y quien puede abrirlos lo decide el servidor, no la pantalla', () => {
     // La regla —el organizador siempre, un capitán solo con los dos dentro—
     // vive en un sitio: repetirla aquí es donde se desincronizan
-    const vista = EnvelopeMapper.toEnvelopesViewDTO({ ...RESPUESTA, can_reveal: true });
+    const vista = EnvelopeMapper.toEnvelopesViewDTO({
+      ...RESPUESTA,
+      can_reveal: true,
+    });
 
     expect(vista.canReveal).toBe(true);
   });
@@ -115,10 +118,16 @@ describe('EnvelopeMapper', () => {
     const vista = EnvelopeMapper.toEnvelopesViewDTO({
       ...RESPUESTA,
       revealed: true,
-      matchups: [[['ana'], ['carla']], [['bea'], ['dani']]],
+      matchups: [
+        [['ana'], ['carla']],
+        [['bea'], ['dani']],
+      ],
     });
 
-    expect(vista.matchups).toEqual([[['ana'], ['carla']], [['bea'], ['dani']]]);
+    expect(vista.matchups).toEqual([
+      [['ana'], ['carla']],
+      [['bea'], ['dani']],
+    ]);
   });
 
   it('E3: lo que rellenó la aplicación se distingue de lo que entregó un capitán', () => {
@@ -134,13 +143,19 @@ describe('EnvelopeMapper', () => {
   });
 
   it('E4: sin sobre propio no se inventa uno vacío', () => {
-    const vista = EnvelopeMapper.toEnvelopesViewDTO({ ...RESPUESTA, mine: null });
+    const vista = EnvelopeMapper.toEnvelopesViewDTO({
+      ...RESPUESTA,
+      mine: null,
+    });
 
     expect(vista.mine).toBeNull();
   });
 
   it('E5: sin listas en la respuesta, listas vacías y no undefined', () => {
-    const vista = EnvelopeMapper.toEnvelopesViewDTO({ round_id: 'r', revealed: false });
+    const vista = EnvelopeMapper.toEnvelopesViewDTO({
+      round_id: 'r',
+      revealed: false,
+    });
 
     expect(vista.matchups).toEqual([]);
     expect(vista.mine).toBeNull();
@@ -168,7 +183,10 @@ describe('EnvelopeMapper', () => {
   });
 
   it('y sin ese dato asume uno por fila', () => {
-    const vista = EnvelopeMapper.toEnvelopesViewDTO({ round_id: 'r1', revealed: false });
+    const vista = EnvelopeMapper.toEnvelopesViewDTO({
+      round_id: 'r1',
+      revealed: false,
+    });
 
     expect(vista.playersPerRow).toBe(1);
   });
@@ -179,7 +197,10 @@ describe('EnvelopeMapper', () => {
       revealed: false,
       teams_fit_format: false,
     });
-    const sinDato = EnvelopeMapper.toEnvelopesViewDTO({ round_id: 'r1', revealed: false });
+    const sinDato = EnvelopeMapper.toEnvelopesViewDTO({
+      round_id: 'r1',
+      revealed: false,
+    });
 
     expect(atascada.teamsFitFormat).toBe(false);
     // Un backend viejo no manda el campo: avisar de un atasco inventado sería

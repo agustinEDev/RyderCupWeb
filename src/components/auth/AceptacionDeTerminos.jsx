@@ -18,7 +18,13 @@ import { useTranslation } from 'react-i18next';
  * @param {string} [props.error] - texto del error, ya traducido
  * @param {boolean} [props.disabled]
  */
-const AceptacionDeTerminos = ({ id, checked, onChange, error, disabled = false }) => {
+const AceptacionDeTerminos = ({
+  id,
+  checked,
+  onChange,
+  error,
+  disabled = false,
+}) => {
   const { t } = useTranslation('auth');
   const idDelError = `${id}-error`;
 
@@ -46,8 +52,8 @@ const AceptacionDeTerminos = ({ id, checked, onChange, error, disabled = false }
             className="text-primary hover:text-primary-600 font-semibold"
           >
             {t('register.termsLink')}
-          </a>
-          {' '}{t('register.acceptTermsSuffix')}
+          </a>{' '}
+          {t('register.acceptTermsSuffix')}
         </label>
       </div>
       {error && (

@@ -5,7 +5,13 @@ import VolverDeLoLegal from '../../components/layout/VolverDeLoLegal';
 import { URL_RFEG } from '../../components/golf_course/FuenteRfeg';
 
 // La sexta es «Fuentes de datos y licencias», que lleva enlaces y se pinta aparte
-const ANTES_DE_LAS_FUENTES = ['section1', 'section2', 'section3', 'section4', 'section5'];
+const ANTES_DE_LAS_FUENTES = [
+  'section1',
+  'section2',
+  'section3',
+  'section4',
+  'section5',
+];
 const DESPUES_DE_LAS_FUENTES = ['section7'];
 
 /**
@@ -19,13 +25,18 @@ const FUENTES = [
   ['icgc', 'https://www.icgc.cat'],
   ['geoeuskadi', 'https://www.geo.euskadi.eus'],
   ['idena', 'https://idena.navarra.es'],
-  ['maplibre', 'https://github.com/maplibre/maplibre-gl-js/blob/main/LICENSE.txt'],
+  [
+    'maplibre',
+    'https://github.com/maplibre/maplibre-gl-js/blob/main/LICENSE.txt',
+  ],
   ['fonts', 'https://openfontlicense.org'],
 ];
 
 const Seccion = ({ t, clave }) => (
   <section className="mb-8">
-    <h2 className="text-xl font-semibold text-gray-900 mb-3">{t(`legalNotice.${clave}.title`)}</h2>
+    <h2 className="text-xl font-semibold text-gray-900 mb-3">
+      {t(`legalNotice.${clave}.title`)}
+    </h2>
     <p className="text-gray-600 leading-relaxed whitespace-pre-line break-words">
       {t(`legalNotice.${clave}.content`)}
     </p>
@@ -62,10 +73,15 @@ const LegalNotice = () => {
               <h2 className="text-xl font-semibold text-gray-900 mb-3">
                 {t('legalNotice.section6.title')}
               </h2>
-              <p className="text-gray-600 leading-relaxed mb-4">{t('legalNotice.section6.intro')}</p>
+              <p className="text-gray-600 leading-relaxed mb-4">
+                {t('legalNotice.section6.intro')}
+              </p>
               <ul className="space-y-3">
                 {FUENTES.map(([fuente, url]) => (
-                  <li key={fuente} className="text-gray-600 leading-relaxed break-words">
+                  <li
+                    key={fuente}
+                    className="text-gray-600 leading-relaxed break-words"
+                  >
                     <a
                       href={url}
                       target="_blank"
@@ -73,9 +89,10 @@ const LegalNotice = () => {
                       className="font-semibold text-primary hover:underline"
                     >
                       {t(`legalNotice.section6.sources.${fuente}.name`)}
-                    </a>
-                    {' '}
-                    <span>{t(`legalNotice.section6.sources.${fuente}.detail`)}</span>
+                    </a>{' '}
+                    <span>
+                      {t(`legalNotice.section6.sources.${fuente}.detail`)}
+                    </span>
                   </li>
                 ))}
               </ul>

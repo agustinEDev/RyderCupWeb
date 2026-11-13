@@ -12,7 +12,9 @@ describe('RequestPasswordResetUseCase', () => {
       requestPasswordReset: vi.fn(),
     };
 
-    requestPasswordResetUseCase = new RequestPasswordResetUseCase({ authRepository });
+    requestPasswordResetUseCase = new RequestPasswordResetUseCase({
+      authRepository,
+    });
   });
 
   describe('Successful password reset request', () => {
@@ -61,16 +63,16 @@ describe('RequestPasswordResetUseCase', () => {
     it('should throw error if email is empty', async () => {
       // Act & Assert
       await expect(requestPasswordResetUseCase.execute('')).rejects.toThrow(
-        'Email is required'
+        'Email is required',
       );
       expect(authRepository.requestPasswordReset).not.toHaveBeenCalled();
     });
 
     it('should throw error if email is invalid format', async () => {
       // Act & Assert
-      await expect(requestPasswordResetUseCase.execute('invalid-email')).rejects.toThrow(
-        'Invalid email address.'
-      );
+      await expect(
+        requestPasswordResetUseCase.execute('invalid-email'),
+      ).rejects.toThrow('Invalid email address.');
       expect(authRepository.requestPasswordReset).not.toHaveBeenCalled();
     });
 
@@ -79,16 +81,16 @@ describe('RequestPasswordResetUseCase', () => {
       const longEmail = 'a'.repeat(245) + '@example.com'; // 257 caracteres
 
       // Act & Assert
-      await expect(requestPasswordResetUseCase.execute(longEmail)).rejects.toThrow(
-        'Email must not exceed 254 characters'
-      );
+      await expect(
+        requestPasswordResetUseCase.execute(longEmail),
+      ).rejects.toThrow('Email must not exceed 254 characters');
       expect(authRepository.requestPasswordReset).not.toHaveBeenCalled();
     });
 
     it('should throw error if email is only whitespace', async () => {
       // Act & Assert
       await expect(requestPasswordResetUseCase.execute('   ')).rejects.toThrow(
-        'Email is required'
+        'Email is required',
       );
       expect(authRepository.requestPasswordReset).not.toHaveBeenCalled();
     });
@@ -103,20 +105,24 @@ describe('RequestPasswordResetUseCase', () => {
       authRepository.requestPasswordReset.mockRejectedValue(mockError);
 
       // Act & Assert
-      await expect(requestPasswordResetUseCase.execute(email)).rejects.toThrow('Network error');
+      await expect(requestPasswordResetUseCase.execute(email)).rejects.toThrow(
+        'Network error',
+      );
       expect(authRepository.requestPasswordReset).toHaveBeenCalledWith(email);
     });
 
     it('should propagate rate limiting errors (429)', async () => {
       // Arrange
       const email = 'test@example.com';
-      const mockError = new Error('Rate limit exceeded. Please wait 60 minutes.');
+      const mockError = new Error(
+        'Rate limit exceeded. Please wait 60 minutes.',
+      );
 
       authRepository.requestPasswordReset.mockRejectedValue(mockError);
 
       // Act & Assert
       await expect(requestPasswordResetUseCase.execute(email)).rejects.toThrow(
-        'Rate limit exceeded'
+        'Rate limit exceeded',
       );
       expect(authRepository.requestPasswordReset).toHaveBeenCalledWith(email);
     });
@@ -130,7 +136,7 @@ describe('RequestPasswordResetUseCase', () => {
 
       // Act & Assert
       await expect(requestPasswordResetUseCase.execute(email)).rejects.toThrow(
-        'Internal server error'
+        'Internal server error',
       );
       expect(authRepository.requestPasswordReset).toHaveBeenCalledWith(email);
     });
@@ -185,7 +191,9 @@ describe('RequestPasswordResetUseCase', () => {
 
       // Assert
       expect(result.success).toBe(true);
-      expect(authRepository.requestPasswordReset).toHaveBeenCalledWith('test@example.com');
+      expect(authRepository.requestPasswordReset).toHaveBeenCalledWith(
+        'test@example.com',
+      );
     });
 
     it('should return default message if repository returns no message', async () => {
@@ -200,7 +208,9 @@ describe('RequestPasswordResetUseCase', () => {
 
       // Assert
       expect(result.success).toBe(true);
-      expect(result.message).toBe('If the email exists, a recovery link has been sent');
+      expect(result.message).toBe(
+        'If the email exists, a recovery link has been sent',
+      );
     });
   });
 });

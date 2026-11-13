@@ -1,4 +1,17 @@
-import { Calendar, Edit, Trash2, Play, CheckCircle, XCircle, Mail, BarChart3, Undo2, Crown, Pause, Swords } from 'lucide-react';
+import {
+  Calendar,
+  Edit,
+  Trash2,
+  Play,
+  CheckCircle,
+  XCircle,
+  Mail,
+  BarChart3,
+  Undo2,
+  Crown,
+  Pause,
+  Swords,
+} from 'lucide-react';
 
 /**
  * Las acciones de la ficha: UNA principal —la que toca ahora (`paso`)— y el
@@ -38,7 +51,7 @@ export const accionesDelOrganizador = ({
       label: t(
         competition.captains?.teamA && competition.captains?.teamB
           ? 'detail.actions.changeCaptains'
-          : 'detail.actions.nameCaptains'
+          : 'detail.actions.nameCaptains',
       ),
       icon: Crown,
       onClick: abrirCapitanes,
@@ -59,7 +72,9 @@ export const accionesDelOrganizador = ({
       // Una Ryder abierta se cierra nombrando a los capitanes, y este botón
       // solo vuelve con los equipos ya hechos (una reabierta). Un Stableford o
       // un Medal no tiene capitanes: se cierra aquí (FE #824)
-      cuando: competition.status === 'ACTIVE' && (competition.teamsAssigned || esStrokePlay),
+      cuando:
+        competition.status === 'ACTIVE' &&
+        (competition.teamsAssigned || esStrokePlay),
     },
     draft: {
       id: 'draft',
@@ -123,7 +138,10 @@ export const accionesDelOrganizador = ({
       onClick: () => navigate(`/creator/competitions/${id}/schedule`),
       // Esa pantalla es de la Ryder (formatos, partidos): un stroke play tiene
       // sus franjas en la ficha, y sus partidas llegan con la PR 6 (FE #824)
-      cuando: !esStrokePlay && competition.status !== 'DRAFT' && competition.status !== 'CANCELLED',
+      cuando:
+        !esStrokePlay &&
+        competition.status !== 'DRAFT' &&
+        competition.status !== 'CANCELLED',
     },
     manageInvitations: {
       id: 'manageInvitations',
@@ -144,12 +162,17 @@ export const accionesDelOrganizador = ({
       label: t('detail.actions.leaderboard'),
       icon: BarChart3,
       onClick: irALaClasificacion,
-      cuando: competition.status === 'IN_PROGRESS' || competition.status === 'COMPLETED',
+      cuando:
+        competition.status === 'IN_PROGRESS' ||
+        competition.status === 'COMPLETED',
     },
   };
 
-  const disponibles = Object.values(accionesPosibles).filter((accion) => accion.cuando);
-  const accionPrincipal = disponibles.find((accion) => accion.id === paso) || null;
+  const disponibles = Object.values(accionesPosibles).filter(
+    (accion) => accion.cuando,
+  );
+  const accionPrincipal =
+    disponibles.find((accion) => accion.id === paso) || null;
   const accionesDeGestion = disponibles.filter((accion) => accion.id !== paso);
   const accionesDestructivas = [
     {

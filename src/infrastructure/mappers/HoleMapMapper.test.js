@@ -17,12 +17,43 @@ const API = {
   geojson: {
     type: 'FeatureCollection',
     features: [
-      feature(1, 'play_line', { type: 'LineString', coordinates: [[-5.33, 36.28], [-5.332, 36.29]] }),
-      feature(1, 'green_front', { type: 'Point', coordinates: [-5.332, 36.2898] }),
-      feature(1, 'green_center', { type: 'Point', coordinates: [-5.332, 36.29] }),
-      feature(1, 'green_back', { type: 'Point', coordinates: [-5.332, 36.2902] }),
-      feature(1, 'green_outline', { type: 'Polygon', coordinates: [[[-5.3323, 36.2897], [-5.3317, 36.2897], [-5.3317, 36.2903], [-5.3323, 36.2897]]] }),
-      feature(2, 'play_line', { type: 'LineString', coordinates: [[-5.332, 36.291], [-5.335, 36.295]] }),
+      feature(1, 'play_line', {
+        type: 'LineString',
+        coordinates: [
+          [-5.33, 36.28],
+          [-5.332, 36.29],
+        ],
+      }),
+      feature(1, 'green_front', {
+        type: 'Point',
+        coordinates: [-5.332, 36.2898],
+      }),
+      feature(1, 'green_center', {
+        type: 'Point',
+        coordinates: [-5.332, 36.29],
+      }),
+      feature(1, 'green_back', {
+        type: 'Point',
+        coordinates: [-5.332, 36.2902],
+      }),
+      feature(1, 'green_outline', {
+        type: 'Polygon',
+        coordinates: [
+          [
+            [-5.3323, 36.2897],
+            [-5.3317, 36.2897],
+            [-5.3317, 36.2903],
+            [-5.3323, 36.2897],
+          ],
+        ],
+      }),
+      feature(2, 'play_line', {
+        type: 'LineString',
+        coordinates: [
+          [-5.332, 36.291],
+          [-5.335, 36.295],
+        ],
+      }),
     ],
   },
 };
@@ -56,7 +87,12 @@ describe('HoleMapMapper.toDomain', () => {
   it('un green a medias (sin alguno de sus tres puntos) cuenta como sin green', () => {
     const sinFondo = {
       ...API,
-      geojson: { ...API.geojson, features: API.geojson.features.filter((f) => f.properties.kind !== 'green_back') },
+      geojson: {
+        ...API.geojson,
+        features: API.geojson.features.filter(
+          (f) => f.properties.kind !== 'green_back',
+        ),
+      },
     };
 
     expect(HoleMapMapper.toDomain(sinFondo).holes[1].green).toBeNull();

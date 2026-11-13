@@ -8,7 +8,13 @@ import { etiquetaDelDia } from './textosDeActividad';
  * de un amigo, cada uno pintando sus tarjetas con `pintaTarjeta`. `nivel` es
  * el del título del separador: en el perfil cuelga de «Su actividad» (h3).
  */
-const DiasDeActividad = ({ dias, ahora, pintaTarjeta, nivel = 2, ...resto }) => {
+const DiasDeActividad = ({
+  dias,
+  ahora,
+  pintaTarjeta,
+  nivel = 2,
+  ...resto
+}) => {
   const { t, i18n } = useTranslation(['feed', 'common']);
   const Titulo = `h${nivel}`;
 

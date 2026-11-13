@@ -18,11 +18,16 @@ const respuestas = [];
 vi.mock('../infrastructure/http/tokenRefreshInterceptor', () => ({
   fetchWithTokenRefresh: () => Promise.resolve(respuestas.shift()),
 }));
-vi.mock('../infrastructure/http/deviceRevocationLogout', () => ({ clearDeviceRevocationFlag: vi.fn() }));
+vi.mock('../infrastructure/http/deviceRevocationLogout', () => ({
+  clearDeviceRevocationFlag: vi.fn(),
+}));
 
-const { reiniciaLaSesionCompartida, MINIMO_ENTRE_REVALIDACIONES_MS } = await import('../services/sesionCompartida');
-const { useRevalidacionDeLaSesion } = await import('./useRevalidacionDeLaSesion');
-const { default: ProtectedRoute } = await import('../components/auth/ProtectedRoute');
+const { reiniciaLaSesionCompartida, MINIMO_ENTRE_REVALIDACIONES_MS } =
+  await import('../services/sesionCompartida');
+const { useRevalidacionDeLaSesion } =
+  await import('./useRevalidacionDeLaSesion');
+const { default: ProtectedRoute } =
+  await import('../components/auth/ProtectedRoute');
 
 const ok = (cuerpo) => ({ ok: true, status: 200, json: async () => cuerpo });
 let ahora = 5_000_000;
@@ -42,16 +47,26 @@ const abrir = ({ vigilando = true } = {}) =>
     <MemoryRouter initialEntries={['/dashboard']}>
       {vigilando && <Vigilancia />}
       <Routes>
-        <Route path="/dashboard" element={<ProtectedRoute><Panel /></ProtectedRoute>} />
+        <Route
+          path="/dashboard"
+          element={
+            <ProtectedRoute>
+              <Panel />
+            </ProtectedRoute>
+          }
+        />
         <Route path="/accept-terms" element={<p>aceptar los Términos</p>} />
         <Route path="/login" element={<p>entrar</p>} />
       </Routes>
-    </MemoryRouter>
+    </MemoryRouter>,
   );
 
 const vuelveAlFrente = async () => {
   await act(async () => {
-    Object.defineProperty(globalThis.document, 'visibilityState', { value: 'visible', configurable: true });
+    Object.defineProperty(globalThis.document, 'visibilityState', {
+      value: 'visible',
+      configurable: true,
+    });
     globalThis.document.dispatchEvent(new globalThis.Event('visibilitychange'));
     await new Promise((r) => setTimeout(r, 0));
   });
@@ -63,7 +78,11 @@ describe('useRevalidacionDeLaSesion · al volver, a aceptar los Términos', () =
     reiniciaLaSesionCompartida();
     respuestas.length = 0;
     pintadasDelPanel.n = 0;
-    try { localStorage.removeItem('rydercup-sesion-conocida'); } catch { /* sin almacenamiento */ }
+    try {
+      localStorage.removeItem('rydercup-sesion-conocida');
+    } catch {
+      /* sin almacenamiento */
+    }
   });
 
   afterEach(() => {

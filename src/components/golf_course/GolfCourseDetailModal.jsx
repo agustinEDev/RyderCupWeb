@@ -12,7 +12,9 @@ import { nombreDeLaBarra } from '../../utils/nombreDeLaBarra';
 // tipo nuevo en cada render y desmonta y vuelve a montar lo que hay debajo.
 const Dato = ({ etiqueta, children }) => (
   <div>
-    <dt className="text-xs uppercase tracking-wide text-gray-500">{etiqueta}</dt>
+    <dt className="text-xs uppercase tracking-wide text-gray-500">
+      {etiqueta}
+    </dt>
     <dd className="text-sm text-gray-900 mt-0.5">{children}</dd>
   </div>
 );
@@ -53,17 +55,19 @@ const GolfCourseDetailModal = ({ course, onClose }) => {
   // campo y `fromDTO` lo tira. Arreglarlo es el primer punto de la FE #413, y
   // vive en el value object, no aqui.
   const tarjetaPropia = Boolean(tee?.holes?.length);
-  const tarjeta = tarjetaPropia ? tee.holes : (course.holes || []);
+  const tarjeta = tarjetaPropia ? tee.holes : course.holes || [];
 
   const parDeLaTarjeta = tarjeta.reduce((suma, h) => suma + (h.par || 0), 0);
   // Solo se suman los metros si están TODOS: un total a medias es un número
   // que parece la longitud del campo y no lo es.
-  const todosLosMetros = tarjeta.length > 0 && tarjeta.every(h => h.meters != null);
+  const todosLosMetros =
+    tarjeta.length > 0 && tarjeta.every((h) => h.meters != null);
   const metrosDeLaTarjeta = todosLosMetros
     ? tarjeta.reduce((suma, h) => suma + h.meters, 0)
     : null;
 
-  const generoDe = (salida) => salida?.gender ?? salida?.teeGender ?? salida?.tee_gender ?? null;
+  const generoDe = (salida) =>
+    salida?.gender ?? salida?.teeGender ?? salida?.tee_gender ?? null;
 
   const tituloId = 'detalle-campo-titulo';
 
@@ -82,7 +86,9 @@ const GolfCourseDetailModal = ({ course, onClose }) => {
           </h2>
           <p className="text-sm text-gray-500 mt-0.5">{t('detail.subtitle')}</p>
           {/* Solo los federados: un campo dado de alta a mano no es de la RFEG */}
-          {course.isFromRfeg?.() && <FuenteRfeg variante="ficha" className="mt-1" />}
+          {course.isFromRfeg?.() && (
+            <FuenteRfeg variante="ficha" className="mt-1" />
+          )}
         </div>
         <button
           type="button"
@@ -100,11 +106,16 @@ const GolfCourseDetailModal = ({ course, onClose }) => {
       <div className="space-y-6 md:max-h-[70vh] md:overflow-y-auto md:pr-1">
         {/* Identidad */}
         <section>
-          <h3 className="text-sm font-bold text-gray-900 mb-2">{t('detail.general')}</h3>
+          <h3 className="text-sm font-bold text-gray-900 mb-2">
+            {t('detail.general')}
+          </h3>
           <dl className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <Dato etiqueta={t('table.country')}>
               <span className="inline-flex items-center gap-2">
-                <CountryFlag countryCode={course.countryCode} className="w-5 h-5" />
+                <CountryFlag
+                  countryCode={course.countryCode}
+                  className="w-5 h-5"
+                />
                 {course.countryCode}
               </span>
             </Dato>
@@ -132,20 +143,25 @@ const GolfCourseDetailModal = ({ course, onClose }) => {
                   <dt className="text-xs uppercase tracking-wide text-gray-500">
                     {t('detail.address')}
                   </dt>
-                  <dd className="text-sm text-gray-900 mt-0.5">{course.location.address}</dd>
+                  <dd className="text-sm text-gray-900 mt-0.5">
+                    {course.location.address}
+                  </dd>
                 </div>
               )}
               {course.location.city && (
                 <Dato etiqueta={t('detail.city')}>{course.location.city}</Dato>
               )}
               {course.location.province && (
-                <Dato etiqueta={t('detail.province')}>{course.location.province}</Dato>
-              )}
-              {course.location.latitude != null && course.location.longitude != null && (
-                <Dato etiqueta={t('detail.coordinates')}>
-                  {course.location.latitude}, {course.location.longitude}
+                <Dato etiqueta={t('detail.province')}>
+                  {course.location.province}
                 </Dato>
               )}
+              {course.location.latitude != null &&
+                course.location.longitude != null && (
+                  <Dato etiqueta={t('detail.coordinates')}>
+                    {course.location.latitude}, {course.location.longitude}
+                  </Dato>
+                )}
             </dl>
           </section>
         )}
@@ -157,7 +173,10 @@ const GolfCourseDetailModal = ({ course, onClose }) => {
           </h3>
           <div className="border border-gray-200 rounded-lg divide-y divide-gray-100">
             {tees.map((salida, i) => (
-              <div key={i} className="flex items-center justify-between gap-3 px-3 py-2">
+              <div
+                key={i}
+                className="flex items-center justify-between gap-3 px-3 py-2"
+              >
                 <TeeColorBadge
                   color={salida.color}
                   identifier={salida.identifier}
@@ -175,7 +194,9 @@ const GolfCourseDetailModal = ({ course, onClose }) => {
         {/* Tarjeta de la barra elegida */}
         <section>
           <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
-            <h3 className="text-sm font-bold text-gray-900">{t('detail.scorecard')}</h3>
+            <h3 className="text-sm font-bold text-gray-900">
+              {t('detail.scorecard')}
+            </h3>
             {tees.length > 1 && (
               <label className="text-xs text-gray-600 flex items-center gap-2">
                 {t('detail.pickTee')}
@@ -186,7 +207,11 @@ const GolfCourseDetailModal = ({ course, onClose }) => {
                 >
                   {tees.map((salida, i) => (
                     <option key={i} value={i}>
-                      {nombreDeLaBarra(t, { color: salida.color, identifier: salida.identifier, gender: generoDe(salida) })}
+                      {nombreDeLaBarra(t, {
+                        color: salida.color,
+                        identifier: salida.identifier,
+                        gender: generoDe(salida),
+                      })}
                     </option>
                   ))}
                 </select>
@@ -220,20 +245,33 @@ const GolfCourseDetailModal = ({ course, onClose }) => {
               </thead>
               <tbody>
                 {tarjeta.map((hoyo) => (
-                  <tr key={hoyo.holeNumber} className="border-t border-gray-100">
-                    <td className="py-1.5 px-3 font-medium text-gray-900">{hoyo.holeNumber}</td>
+                  <tr
+                    key={hoyo.holeNumber}
+                    className="border-t border-gray-100"
+                  >
+                    <td className="py-1.5 px-3 font-medium text-gray-900">
+                      {hoyo.holeNumber}
+                    </td>
                     <td className="py-1.5 px-3 text-gray-700">{hoyo.par}</td>
-                    <td className="py-1.5 px-3 text-gray-700">{hoyo.strokeIndex}</td>
+                    <td className="py-1.5 px-3 text-gray-700">
+                      {hoyo.strokeIndex}
+                    </td>
                     {/* Sin metros se deja VACÍO, no con un guion: aquí el guion
                         no significa "no consta" en ninguna otra tarjeta */}
-                    <td className="py-1.5 px-3 text-gray-700">{hoyo.meters ?? ''}</td>
+                    <td className="py-1.5 px-3 text-gray-700">
+                      {hoyo.meters ?? ''}
+                    </td>
                   </tr>
                 ))}
               </tbody>
               <tfoot className="bg-gray-50">
                 <tr>
-                  <td className="py-2 px-3 font-semibold text-gray-700">{t('detail.total')}</td>
-                  <td className="py-2 px-3 font-semibold text-gray-900">{parDeLaTarjeta}</td>
+                  <td className="py-2 px-3 font-semibold text-gray-700">
+                    {t('detail.total')}
+                  </td>
+                  <td className="py-2 px-3 font-semibold text-gray-900">
+                    {parDeLaTarjeta}
+                  </td>
                   <td className="py-2 px-3" />
                   <td className="py-2 px-3 font-semibold text-gray-900">
                     {metrosDeLaTarjeta ?? ''}

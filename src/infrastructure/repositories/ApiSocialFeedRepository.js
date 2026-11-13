@@ -17,7 +17,8 @@ import { segmento } from '../http/api';
  * - GET /api/v1/users/{id}/games-together
  * - PUT /api/v1/social/activity-sharing
  */
-const balanceDe = (r) => (r ? { won: r.won ?? 0, halved: r.halved ?? 0, lost: r.lost ?? 0 } : null);
+const balanceDe = (r) =>
+  r ? { won: r.won ?? 0, halved: r.halved ?? 0, lost: r.lost ?? 0 } : null;
 
 const partidaJuntos = (g) => ({
   kind: g.kind,
@@ -59,7 +60,9 @@ class ApiSocialFeedRepository extends ISocialFeedRepository {
   }
 
   async getFeed({ limit = 20, cursor = null } = {}) {
-    const data = await apiRequest(`/api/v1/users/me/feed${this.#buildQuery({ limit, cursor })}`);
+    const data = await apiRequest(
+      `/api/v1/users/me/feed${this.#buildQuery({ limit, cursor })}`,
+    );
     return ActivityEventMapper.feedToDomain(data);
   }
 
@@ -112,19 +115,23 @@ class ApiSocialFeedRepository extends ISocialFeedRepository {
             alongside: balanceDe(data.head_to_head.alongside),
           }
         : null,
-      gamesTogether: data.games_together ? paginaDePartidas(data.games_together) : null,
+      gamesTogether: data.games_together
+        ? paginaDePartidas(data.games_together)
+        : null,
     };
   }
 
   async getGamesTogether(userId, { cursor = null } = {}) {
     const query = cursor ? `?cursor=${encodeURIComponent(cursor)}` : '';
-    const data = await apiRequest(`/api/v1/users/${segmento(userId)}/games-together${query}`);
+    const data = await apiRequest(
+      `/api/v1/users/${segmento(userId)}/games-together${query}`,
+    );
     return paginaDePartidas(data);
   }
 
   async getPlayerActivity(userId, { limit = 20, cursor = null } = {}) {
     const data = await apiRequest(
-      `/api/v1/users/${segmento(userId)}/activity${this.#buildQuery({ limit, cursor })}`
+      `/api/v1/users/${segmento(userId)}/activity${this.#buildQuery({ limit, cursor })}`,
     );
     return ActivityEventMapper.feedToDomain(data);
   }

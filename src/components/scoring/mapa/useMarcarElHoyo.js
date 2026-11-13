@@ -7,13 +7,28 @@ import { useEffect, useState } from 'react';
  * a donde toca cuando el botón pulsado se va de la pantalla.
  */
 export const useMarcarElHoyo = (
-  { enlaceEnteroRef, loQueSePideRef, salidaRecienTocadaRef, hacerLineaAhoraRef, alejarAhoraRef },
+  {
+    enlaceEnteroRef,
+    loQueSePideRef,
+    salidaRecienTocadaRef,
+    hacerLineaAhoraRef,
+    alejarAhoraRef,
+  },
   { posicionBuena, greenConocido, preguntaPrimero, empezar },
-  { setAvisoDeMarca, setMarca, setDesdeMi, setCodoPendiente, setTocado, setCodoSinTocar, setMedido },
+  {
+    setAvisoDeMarca,
+    setMarca,
+    setDesdeMi,
+    setCodoPendiente,
+    setTocado,
+    setCodoSinTocar,
+    setMedido,
+  },
 ) => {
   const [contestadoNo, setContestadoNo] = useState(0);
   const [pedidoEntero, setPedidoEntero] = useState(0);
-  const hacerLinea = (desde, hasta) => hacerLineaAhoraRef.current?.(desde, hasta) ?? false;
+  const hacerLinea = (desde, hasta) =>
+    hacerLineaAhoraRef.current?.(desde, hasta) ?? false;
   const alejarDesde = (salida) => alejarAhoraRef.current?.(salida);
 
   const responder = (enLaSalida) => {
@@ -41,7 +56,8 @@ export const useMarcarElHoyo = (
     }
     if (greenConocido) {
       // Si tu posición y ese green no hacen un hoyo, se avisa y se toca la salida
-      if (!hacerLinea(aqui, greenConocido)) setMarca({ fase: 'pidiendo', tee: null });
+      if (!hacerLinea(aqui, greenConocido))
+        setMarca({ fase: 'pidiendo', tee: null });
       return;
     }
     setMarca({ fase: 'pidiendo', tee: aqui });

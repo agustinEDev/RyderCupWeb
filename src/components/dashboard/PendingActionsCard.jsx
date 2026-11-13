@@ -1,7 +1,19 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router';
 import { motion } from 'framer-motion';
-import { Mail, Users, Flag, TrendingUp, ChevronRight, Bell, UserPlus, Zap, Inbox, AlertTriangle, CalendarCheck } from 'lucide-react';
+import {
+  Mail,
+  Users,
+  Flag,
+  TrendingUp,
+  ChevronRight,
+  Bell,
+  UserPlus,
+  Zap,
+  Inbox,
+  AlertTriangle,
+  CalendarCheck,
+} from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useEntryMotion } from '../../hooks/useEntryMotion';
 import { slideUp, getEntryProps } from '../../utils/animations';
@@ -16,11 +28,20 @@ import {
   acknowledgeAssignedPlaceUseCase,
 } from '../../composition';
 import customToast from '../../utils/toast';
-import { loQueSeEnseñoAntes, recuerdaLasAccionesPendientes } from '../../services/accionesPendientes';
+import {
+  loQueSeEnseñoAntes,
+  recuerdaLasAccionesPendientes,
+} from '../../services/accionesPendientes';
 import BlockLoader from '../ui/BlockLoader';
 import { diaDeLaSesion } from '../../utils/diaDeLaSesion';
 
-const PendingActionsCard = ({ user, competitions, onHandicapAction, handicapPending = false , upcomingMatches = 0 }) => {
+const PendingActionsCard = ({
+  user,
+  competitions,
+  onHandicapAction,
+  handicapPending = false,
+  upcomingMatches = 0,
+}) => {
   const navigate = useNavigate();
   const { t, i18n } = useTranslation('dashboard');
   const { animateEntry } = useEntryMotion();
@@ -29,17 +50,29 @@ const PendingActionsCard = ({ user, competitions, onHandicapAction, handicapPend
   // sin esto cada vuelta empezaba de cero y pintaba el esqueleto amarillo
   const recordado = loQueSeEnseñoAntes();
 
-  const [pendingInvitations, setPendingInvitations] = useState(recordado?.pendingInvitations ?? 0);
-  const [pendingEnrollments, setPendingEnrollments] = useState(recordado?.pendingEnrollments ?? []);
-  const [pendingFriendRequests, setPendingFriendRequests] = useState(recordado?.pendingFriendRequests ?? 0);
-  const [activeQuickMatches, setActiveQuickMatches] = useState(recordado?.activeQuickMatches ?? []);
-  const [sobresPendientes, setSobresPendientes] = useState(recordado?.sobresPendientes ?? []);
+  const [pendingInvitations, setPendingInvitations] = useState(
+    recordado?.pendingInvitations ?? 0,
+  );
+  const [pendingEnrollments, setPendingEnrollments] = useState(
+    recordado?.pendingEnrollments ?? [],
+  );
+  const [pendingFriendRequests, setPendingFriendRequests] = useState(
+    recordado?.pendingFriendRequests ?? 0,
+  );
+  const [activeQuickMatches, setActiveQuickMatches] = useState(
+    recordado?.activeQuickMatches ?? [],
+  );
+  const [sobresPendientes, setSobresPendientes] = useState(
+    recordado?.sobresPendientes ?? [],
+  );
   const [sesionesSinPartidos, setSesionesSinPartidos] = useState(
-    recordado?.sesionesSinPartidos ?? []
+    recordado?.sesionesSinPartidos ?? [],
   );
   // Las plazas que le asignaron desde una lista de espera (FE #824): sin
   // correo, se entera aquí hasta que pulsa «Entendido»
-  const [plazasAsignadas, setPlazasAsignadas] = useState(recordado?.plazasAsignadas ?? []);
+  const [plazasAsignadas, setPlazasAsignadas] = useState(
+    recordado?.plazasAsignadas ?? [],
+  );
   // Las que ya se mandaron como vistas: un doble toque no repite el envío, y una
   // lectura lanzada antes no las devuelve a la lista (revisor)
   const [enviandoVista, setEnviandoVista] = useState(() => new Set());
@@ -84,9 +117,18 @@ const PendingActionsCard = ({ user, competitions, onHandicapAction, handicapPend
     plazasAsignadas: recordado?.plazasAsignadas ?? [],
   });
 
-  const isCreator = useMemo(() => user?.is_admin ||
-    (user?.roles && Array.isArray(user.roles) &&
-      user.roles.some(r => (typeof r === 'string' ? r : r.name) === 'CREATOR' || (typeof r === 'string' ? r : r.name) === 'ADMIN')), [user]);
+  const isCreator = useMemo(
+    () =>
+      user?.is_admin ||
+      (user?.roles &&
+        Array.isArray(user.roles) &&
+        user.roles.some(
+          (r) =>
+            (typeof r === 'string' ? r : r.name) === 'CREATOR' ||
+            (typeof r === 'string' ? r : r.name) === 'ADMIN',
+        )),
+    [user],
+  );
 
   // Quien organiza algo (BE #361): el rol, o tener alguna competición. La
   // lista que recibe esta tarjeta ya son las que ha CREADO (`findByCreator`)
@@ -105,9 +147,15 @@ const PendingActionsCard = ({ user, competitions, onHandicapAction, handicapPend
         const pedir = (peticion) => (async () => peticion())();
         const results = await Promise.allSettled([
           pedir(() => listMyInvitationsUseCase.execute({ status: 'PENDING' })),
-          isCreator ? pedir(() => loadPendingEnrollments(competitions)) : Promise.resolve([]),
-          pedir(() => listPendingFriendRequestsUseCase.execute(user.id, 'received')),
-          pedir(() => listMyQuickMatchesUseCase.execute({ status: 'IN_PROGRESS' })),
+          isCreator
+            ? pedir(() => loadPendingEnrollments(competitions))
+            : Promise.resolve([]),
+          pedir(() =>
+            listPendingFriendRequestsUseCase.execute(user.id, 'received'),
+          ),
+          pedir(() =>
+            listMyQuickMatchesUseCase.execute({ status: 'IN_PROGRESS' }),
+          ),
           pedir(() => listMyPendingEnvelopesUseCase.execute()),
           // Solo quien organiza algo: para los demás siempre es vacía, y cada
           // vuelta a Inicio era una petición más contra el límite compartido
@@ -130,13 +178,18 @@ const PendingActionsCard = ({ user, competitions, onHandicapAction, handicapPend
 
         if (results[0].status === 'fulfilled') {
           const invitations = results[0].value?.invitations;
-          aplicado.pendingInvitations = Array.isArray(invitations) ? invitations.length : 0;
+          aplicado.pendingInvitations = Array.isArray(invitations)
+            ? invitations.length
+            : 0;
           setPendingInvitations(aplicado.pendingInvitations);
         }
         // Las inscripciones se sacan de las competiciones, y al volver a Inicio
         // el panel se pinta antes de tenerlas: sin esta condicion se ponian a
         // cero en cada vuelta y la fila del creador parpadeaba
-        if (results[1].status === 'fulfilled' && (competitions.length > 0 || !isCreator)) {
+        if (
+          results[1].status === 'fulfilled' &&
+          (competitions.length > 0 || !isCreator)
+        ) {
           aplicado.pendingEnrollments = results[1].value;
           setPendingEnrollments(aplicado.pendingEnrollments);
         }
@@ -157,7 +210,9 @@ const PendingActionsCard = ({ user, competitions, onHandicapAction, handicapPend
           setSesionesSinPartidos(aplicado.sesionesSinPartidos);
         }
         if (results[6].status === 'fulfilled') {
-          aplicado.plazasAsignadas = (results[6].value || []).filter((p) => !vistas.current.has(p.roundId));
+          aplicado.plazasAsignadas = (results[6].value || []).filter(
+            (p) => !vistas.current.has(p.roundId),
+          );
           setPlazasAsignadas(aplicado.plazasAsignadas);
         }
 
@@ -181,7 +236,9 @@ const PendingActionsCard = ({ user, competitions, onHandicapAction, handicapPend
   // RangeError si la fecha no se puede leer, y esto vive dentro de la tarjeta
   // entera del panel
   const cuandoSeJuega = (sobre) => {
-    const franja = sobre.sessionType ? t(`nextMatch.session.${sobre.sessionType}`) : '';
+    const franja = sobre.sessionType
+      ? t(`nextMatch.session.${sobre.sessionType}`)
+      : '';
     let dia = '';
     try {
       // Como ese día en casa: leída como UTC, por detrás de UTC salía el anterior
@@ -206,7 +263,8 @@ const PendingActionsCard = ({ user, competitions, onHandicapAction, handicapPend
       await acknowledgeAssignedPlaceUseCase.execute(plaza.roundId);
       vistas.current.add(plaza.roundId);
       if (!montada.current) return;
-      const quedan = (lista) => lista.filter((p) => p.roundId !== plaza.roundId);
+      const quedan = (lista) =>
+        lista.filter((p) => p.roundId !== plaza.roundId);
       ultimoAplicado.current = {
         ...ultimoAplicado.current,
         plazasAsignadas: quedan(ultimoAplicado.current.plazasAsignadas),
@@ -218,15 +276,25 @@ const PendingActionsCard = ({ user, competitions, onHandicapAction, handicapPend
       console.error('No se ha podido marcar la plaza como vista:', error);
       customToast.error(t('pendingActions.placeAssignedOkFailed'));
     } finally {
-      if (montada.current) setEnviandoVista((s) => {
-        const sin = new Set(s);
-        sin.delete(plaza.roundId);
-        return sin;
-      });
+      if (montada.current)
+        setEnviandoVista((s) => {
+          const sin = new Set(s);
+          sin.delete(plaza.roundId);
+          return sin;
+        });
     }
   };
 
-  const totalItems = pendingInvitations + pendingEnrollments.length + (upcomingMatches > 0 ? 1 : 0) + (handicapPending ? 1 : 0) + (pendingFriendRequests > 0 ? 1 : 0) + activeQuickMatches.length + sobresPendientes.length + sesionesSinPartidos.length + plazasAsignadas.length;
+  const totalItems =
+    pendingInvitations +
+    pendingEnrollments.length +
+    (upcomingMatches > 0 ? 1 : 0) +
+    (handicapPending ? 1 : 0) +
+    (pendingFriendRequests > 0 ? 1 : 0) +
+    activeQuickMatches.length +
+    sobresPendientes.length +
+    sesionesSinPartidos.length +
+    plazasAsignadas.length;
 
   if (isLoading) {
     return (
@@ -258,7 +326,9 @@ const PendingActionsCard = ({ user, competitions, onHandicapAction, handicapPend
           <div className="p-1.5 bg-amber-500 rounded-lg">
             <Bell className="w-4 h-4 text-white" />
           </div>
-          <h3 className="text-lg font-bold text-amber-900">{t('pendingActions.title')}</h3>
+          <h3 className="text-lg font-bold text-amber-900">
+            {t('pendingActions.title')}
+          </h3>
         </div>
 
         <div className="space-y-3">
@@ -273,9 +343,13 @@ const PendingActionsCard = ({ user, competitions, onHandicapAction, handicapPend
                   <Mail className="w-4 h-4 text-blue-600" />
                 </div>
                 <div className="text-left">
-                  <p className="text-sm font-semibold text-gray-900">{t('pendingActions.invitations')}</p>
+                  <p className="text-sm font-semibold text-gray-900">
+                    {t('pendingActions.invitations')}
+                  </p>
                   <p className="text-xs text-gray-500">
-                    {t('pendingActions.invitations', { count: pendingInvitations })}
+                    {t('pendingActions.invitations', {
+                      count: pendingInvitations,
+                    })}
                   </p>
                 </div>
               </div>
@@ -299,9 +373,13 @@ const PendingActionsCard = ({ user, competitions, onHandicapAction, handicapPend
                   <UserPlus className="w-4 h-4 text-pink-600" />
                 </div>
                 <div className="text-left">
-                  <p className="text-sm font-semibold text-gray-900">{t('pendingActions.friendRequests')}</p>
+                  <p className="text-sm font-semibold text-gray-900">
+                    {t('pendingActions.friendRequests')}
+                  </p>
                   <p className="text-xs text-gray-500">
-                    {t('pendingActions.friendRequestsDesc', { count: pendingFriendRequests })}
+                    {t('pendingActions.friendRequestsDesc', {
+                      count: pendingFriendRequests,
+                    })}
                   </p>
                 </div>
               </div>
@@ -334,7 +412,7 @@ const PendingActionsCard = ({ user, competitions, onHandicapAction, handicapPend
                       ? t('pendingActions.quickMatchInProgress')
                       : t(
                           `pendingActions.quickMatchFormat.${qm.matchFormat ?? qm.scoringFormat}`,
-                          qm.matchFormat ?? qm.scoringFormat
+                          qm.matchFormat ?? qm.scoringFormat,
                         )}
                   </p>
                 </div>
@@ -350,7 +428,9 @@ const PendingActionsCard = ({ user, competitions, onHandicapAction, handicapPend
             <button
               key={sobre.roundId}
               onClick={() =>
-                navigate(`/competitions/${sobre.competitionId}/rounds/${sobre.roundId}/envelope`)
+                navigate(
+                  `/competitions/${sobre.competitionId}/rounds/${sobre.roundId}/envelope`,
+                )
               }
               className="flex items-center justify-between w-full p-3 bg-white/70 rounded-lg hover:bg-white transition-colors group"
               data-testid={`sobre-pendiente-${sobre.roundId}`}
@@ -367,7 +447,9 @@ const PendingActionsCard = ({ user, competitions, onHandicapAction, handicapPend
                       sin esto salen seis botones idénticos que llevan a sitios
                       distintos */}
                   <p className="truncate text-xs text-gray-500">
-                    {[cuandoSeJuega(sobre), sobre.competitionName].filter(Boolean).join(' · ')}
+                    {[cuandoSeJuega(sobre), sobre.competitionName]
+                      .filter(Boolean)
+                      .join(' · ')}
                   </p>
                 </div>
               </div>
@@ -394,9 +476,13 @@ const PendingActionsCard = ({ user, competitions, onHandicapAction, handicapPend
                   <CalendarCheck className="w-4 h-4 text-green-700" />
                 </div>
                 <div className="min-w-0">
-                  <p className="text-sm font-semibold text-gray-900">{t('pendingActions.placeAssigned')}</p>
+                  <p className="text-sm font-semibold text-gray-900">
+                    {t('pendingActions.placeAssigned')}
+                  </p>
                   <p className="truncate text-xs text-gray-500">
-                    {[cuandoSeJuega(plaza), plaza.competitionName].filter(Boolean).join(' · ')}
+                    {[cuandoSeJuega(plaza), plaza.competitionName]
+                      .filter(Boolean)
+                      .join(' · ')}
                   </p>
                 </div>
               </button>
@@ -417,7 +503,11 @@ const PendingActionsCard = ({ user, competitions, onHandicapAction, handicapPend
           {sesionesSinPartidos.map((sesion) => (
             <button
               key={sesion.roundId}
-              onClick={() => navigate(`/creator/competitions/${sesion.competitionId}/schedule`)}
+              onClick={() =>
+                navigate(
+                  `/creator/competitions/${sesion.competitionId}/schedule`,
+                )
+              }
               className="flex items-center justify-between w-full p-3 bg-white/70 rounded-lg hover:bg-white transition-colors group"
               data-testid={`sesion-sin-partidos-${sesion.roundId}`}
             >
@@ -430,7 +520,9 @@ const PendingActionsCard = ({ user, competitions, onHandicapAction, handicapPend
                     {t('pendingActions.sessionWithoutMatches')}
                   </p>
                   <p className="truncate text-xs text-gray-500">
-                    {[cuandoSeJuega(sesion), sesion.competitionName].filter(Boolean).join(' · ')}
+                    {[cuandoSeJuega(sesion), sesion.competitionName]
+                      .filter(Boolean)
+                      .join(' · ')}
                   </p>
                 </div>
               </div>
@@ -441,7 +533,9 @@ const PendingActionsCard = ({ user, competitions, onHandicapAction, handicapPend
           {pendingEnrollments.map((enrollment) => (
             <button
               key={enrollment.competitionId}
-              onClick={() => navigate(`/competitions/${enrollment.competitionId}`)}
+              onClick={() =>
+                navigate(`/competitions/${enrollment.competitionId}`)
+              }
               className="flex items-center justify-between w-full p-3 bg-white/70 rounded-lg hover:bg-white transition-colors group"
               data-testid="pending-enrollments-action"
             >
@@ -450,9 +544,14 @@ const PendingActionsCard = ({ user, competitions, onHandicapAction, handicapPend
                   <Users className="w-4 h-4 text-purple-600" />
                 </div>
                 <div className="text-left">
-                  <p className="text-sm font-semibold text-gray-900">{t('pendingActions.enrollments')}</p>
+                  <p className="text-sm font-semibold text-gray-900">
+                    {t('pendingActions.enrollments')}
+                  </p>
                   <p className="text-xs text-gray-500">
-                    {t('pendingActions.enrollments', { count: enrollment.count, name: enrollment.name })}
+                    {t('pendingActions.enrollments', {
+                      count: enrollment.count,
+                      name: enrollment.name,
+                    })}
                   </p>
                 </div>
               </div>
@@ -476,7 +575,9 @@ const PendingActionsCard = ({ user, competitions, onHandicapAction, handicapPend
                   <Flag className="w-4 h-4 text-green-600" />
                 </div>
                 <div className="text-left">
-                  <p className="text-sm font-semibold text-gray-900">{t('pendingActions.matches')}</p>
+                  <p className="text-sm font-semibold text-gray-900">
+                    {t('pendingActions.matches')}
+                  </p>
                   <p className="text-xs text-gray-500">
                     {t('pendingActions.matches', { count: upcomingMatches })}
                   </p>
@@ -502,8 +603,12 @@ const PendingActionsCard = ({ user, competitions, onHandicapAction, handicapPend
                   <TrendingUp className="w-4 h-4 text-amber-600" />
                 </div>
                 <div className="text-left">
-                  <p className="text-sm font-semibold text-gray-900">{t('pendingActions.handicap')}</p>
-                  <p className="text-xs text-gray-500">{t('pendingActions.handicapDesc')}</p>
+                  <p className="text-sm font-semibold text-gray-900">
+                    {t('pendingActions.handicap')}
+                  </p>
+                  <p className="text-xs text-gray-500">
+                    {t('pendingActions.handicapDesc')}
+                  </p>
                 </div>
               </div>
               <ChevronRight className="w-4 h-4 text-gray-400 group-hover:text-gray-600 transition-colors" />
@@ -519,14 +624,20 @@ async function loadPendingEnrollments(competitions) {
   if (!competitions || competitions.length === 0) return [];
 
   const createdCompetitions = competitions.filter(
-    (c) => c.status === 'ACTIVE' || c.status === 'ENROLLING'
+    (c) => c.status === 'ACTIVE' || c.status === 'ENROLLING',
   );
 
   const results = await Promise.allSettled(
     createdCompetitions.map(async (comp) => {
-      const enrollments = await listEnrollmentsUseCase.execute(comp.id, { status: 'REQUESTED' });
-      return { competitionId: comp.id, name: comp.name, count: enrollments.length };
-    })
+      const enrollments = await listEnrollmentsUseCase.execute(comp.id, {
+        status: 'REQUESTED',
+      });
+      return {
+        competitionId: comp.id,
+        name: comp.name,
+        count: enrollments.length,
+      };
+    }),
   );
 
   return results

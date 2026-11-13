@@ -40,7 +40,8 @@ const {
   EVENTO_HANDICAP_AL_DIA,
   reiniciaElRefrescoDeHandicap,
 } = await import('./refrescoDeHandicap');
-const { olvidaElRefrescoDeHandicap } = await import('./refrescoDeHandicapApuntes');
+const { olvidaElRefrescoDeHandicap } =
+  await import('./refrescoDeHandicapApuntes');
 
 describe('refrescoDeHandicap (FE #677)', () => {
   beforeEach(() => {
@@ -82,7 +83,11 @@ describe('refrescoDeHandicap (FE #677)', () => {
 
   it('F4: lanzado dos veces con uno en vuelo, sale una sola petición', async () => {
     let responder;
-    refresco.mockReturnValue(new Promise((resolver) => { responder = resolver; }));
+    refresco.mockReturnValue(
+      new Promise((resolver) => {
+        responder = resolver;
+      }),
+    );
 
     const primera = lanzaElRefrescoDeHandicap();
     const segunda = lanzaElRefrescoDeHandicap();
@@ -93,7 +98,9 @@ describe('refrescoDeHandicap (FE #677)', () => {
   });
 
   it('F5: un 4xx no se arregla solo: se borra el apunte', async () => {
-    refresco.mockRejectedValue(Object.assign(new Error('Not Found'), { status: 404 }));
+    refresco.mockRejectedValue(
+      Object.assign(new Error('Not Found'), { status: 404 }),
+    );
 
     await lanzaElRefrescoDeHandicap();
 
@@ -102,15 +109,21 @@ describe('refrescoDeHandicap (FE #677)', () => {
 
   it.each([
     ['sin respuesta', new Error('Failed to fetch')],
-    ['un 5xx', Object.assign(new Error('Service Unavailable'), { status: 503 })],
-  ])('F6: %s no afirma nada: el apunte se queda para reintentar', async (_, error) => {
-    refresco.mockRejectedValue(error);
+    [
+      'un 5xx',
+      Object.assign(new Error('Service Unavailable'), { status: 503 }),
+    ],
+  ])(
+    'F6: %s no afirma nada: el apunte se queda para reintentar',
+    async (_, error) => {
+      refresco.mockRejectedValue(error);
 
-    await lanzaElRefrescoDeHandicap();
+      await lanzaElRefrescoDeHandicap();
 
-    expect(localStorage.getItem('refrescar_handicap')).toBe('true');
-    expect(recogeElHandicapPorPedir()).toBeUndefined();
-  });
+      expect(localStorage.getItem('refrescar_handicap')).toBe('true');
+      expect(recogeElHandicapPorPedir()).toBeUndefined();
+    },
+  );
 
   it('F7: lo pendiente se recoge una sola vez', async () => {
     refresco.mockResolvedValue({ needsHandicap: true, handicap: null });
@@ -153,13 +166,21 @@ describe('refrescoDeHandicap (FE #677)', () => {
     // de que conteste lo de A. Esa respuesta no puede dejarle a B el modal con
     // el hándicap de A, ni borrarle a B su apunte
     let responderA;
-    refresco.mockReturnValueOnce(new Promise((resolver) => { responderA = resolver; }));
+    refresco.mockReturnValueOnce(
+      new Promise((resolver) => {
+        responderA = resolver;
+      }),
+    );
     const deA = lanzaElRefrescoDeHandicap({ handicapDeAntes: 18 });
 
     olvidaElRefrescoDeHandicap();
     localStorage.setItem('refrescar_handicap', 'true');
     let responderB;
-    refresco.mockReturnValueOnce(new Promise((resolver) => { responderB = resolver; }));
+    refresco.mockReturnValueOnce(
+      new Promise((resolver) => {
+        responderB = resolver;
+      }),
+    );
     const deB = lanzaElRefrescoDeHandicap({ handicapDeAntes: 9 });
 
     responderA({ needsHandicap: true, handicap: 18 });
@@ -179,7 +200,11 @@ describe('refrescoDeHandicap (FE #677)', () => {
 
   it('F12: tampoco un 4xx de la cuenta que salió borra el apunte de la siguiente', async () => {
     let fallarA;
-    refresco.mockReturnValueOnce(new Promise((_, rechazar) => { fallarA = rechazar; }));
+    refresco.mockReturnValueOnce(
+      new Promise((_, rechazar) => {
+        fallarA = rechazar;
+      }),
+    );
     const deA = lanzaElRefrescoDeHandicap();
 
     olvidaElRefrescoDeHandicap();

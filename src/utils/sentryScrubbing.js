@@ -48,7 +48,13 @@ const isPlain = (value) => {
  */
 export const scrubDeep = (value, visto = new WeakSet()) => {
   if (typeof value === 'string') return scrubUrl(value);
-  if (!value || typeof value !== 'object' || visto.has(value) || !isPlain(value)) return value;
+  if (
+    !value ||
+    typeof value !== 'object' ||
+    visto.has(value) ||
+    !isPlain(value)
+  )
+    return value;
   visto.add(value);
 
   for (const key of Object.keys(value)) {

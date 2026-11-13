@@ -46,12 +46,15 @@ const respuestaDelRefresco = () => ({
 });
 
 const refrescos = () =>
-  globalThis.fetch.mock.calls.filter(([url]) => String(url).includes('/auth/refresh-token')).length;
+  globalThis.fetch.mock.calls.filter(([url]) =>
+    String(url).includes('/auth/refresh-token'),
+  ).length;
 
 // Deja correr las promesas pendientes con los relojes falsos
-const vacia = () => act(async () => {
-  await vi.advanceTimersByTimeAsync(0);
-});
+const vacia = () =>
+  act(async () => {
+    await vi.advanceTimersByTimeAsync(0);
+  });
 
 describe('refresco proactivo por el compartido', () => {
   beforeEach(async () => {
@@ -59,7 +62,8 @@ describe('refresco proactivo por el compartido', () => {
     const hook = await import('./useProactiveTokenRefresh');
     useProactiveTokenRefresh = hook.default;
     PRIMERA = hook.REFRESH_BEFORE_MS;
-    ({ refrescoCompartido, getLastRefreshAt } = await import('../infrastructure/http/tokenRefreshInterceptor'));
+    ({ refrescoCompartido, getLastRefreshAt } =
+      await import('../infrastructure/http/tokenRefreshInterceptor'));
     vi.useFakeTimers();
     handleSessionExpiredLogout.mockReset();
     vi.spyOn(console, 'log').mockImplementation(() => {});
@@ -74,7 +78,10 @@ describe('refresco proactivo por el compartido', () => {
   });
 
   it('7: sin otro en vuelo, sale un solo POST', async () => {
-    vi.stubGlobal('fetch', vi.fn(async () => respuestaDelRefresco()));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => respuestaDelRefresco()),
+    );
     renderHook(() => useProactiveTokenRefresh({ enabled: true }));
 
     await act(async () => {
@@ -92,8 +99,8 @@ describe('refresco proactivo por el compartido', () => {
         () =>
           new Promise((resuelve) => {
             suelta = () => resuelve(respuestaDelRefresco());
-          })
-      )
+          }),
+      ),
     );
     renderHook(() => useProactiveTokenRefresh({ enabled: true }));
 
@@ -118,7 +125,15 @@ describe('refresco proactivo por el compartido', () => {
   });
 
   it('9: si el compartido falla, descansa 30 s antes de volver a intentarlo', async () => {
-    vi.stubGlobal('fetch', vi.fn(async () => ({ ok: false, status: 503, statusText: 'x', json: async () => ({}) })));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => ({
+        ok: false,
+        status: 503,
+        statusText: 'x',
+        json: async () => ({}),
+      })),
+    );
     renderHook(() => useProactiveTokenRefresh({ enabled: true }));
 
     await act(async () => {
@@ -144,7 +159,10 @@ describe('refresco proactivo por el compartido', () => {
   });
 
   it('10: si va bien, queda anotada su hora', async () => {
-    vi.stubGlobal('fetch', vi.fn(async () => respuestaDelRefresco()));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => respuestaDelRefresco()),
+    );
     renderHook(() => useProactiveTokenRefresh({ enabled: true }));
     expect(getLastRefreshAt()).toBeNull();
 
@@ -158,7 +176,12 @@ describe('refresco proactivo por el compartido', () => {
   it('36: si el compartido da 401, cierra la sesión con su aviso', async () => {
     vi.stubGlobal(
       'fetch',
-      vi.fn(async () => ({ ok: false, status: 401, statusText: 'x', json: async () => ({ detail: 'Invalid refresh token' }) }))
+      vi.fn(async () => ({
+        ok: false,
+        status: 401,
+        statusText: 'x',
+        json: async () => ({ detail: 'Invalid refresh token' }),
+      })),
     );
     renderHook(() => useProactiveTokenRefresh({ enabled: true }));
 
@@ -170,7 +193,12 @@ describe('refresco proactivo por el compartido', () => {
   });
 
   it('37: si falla por la red, la sesión se queda', async () => {
-    vi.stubGlobal('fetch', vi.fn(async () => { throw new TypeError('Load failed'); }));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => {
+        throw new TypeError('Load failed');
+      }),
+    );
     renderHook(() => useProactiveTokenRefresh({ enabled: true }));
 
     await act(async () => {

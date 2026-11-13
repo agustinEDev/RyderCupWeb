@@ -1,5 +1,9 @@
 import { describe, it, expect } from 'vitest';
-import { esNombrePorDefecto, nombrePorDefecto, LARGO_MAXIMO_DEL_NOMBRE } from './nombrePorDefecto';
+import {
+  esNombrePorDefecto,
+  nombrePorDefecto,
+  LARGO_MAXIMO_DEL_NOMBRE,
+} from './nombrePorDefecto';
 
 /**
  * El nombre que trae una partida rápida nueva (Agustín, 4 nov 2026):
@@ -16,7 +20,11 @@ import { esNombrePorDefecto, nombrePorDefecto, LARGO_MAXIMO_DEL_NOMBRE } from '.
 describe('nombrePorDefecto', () => {
   it.each([
     ['Abama', new Date(2026, 10, 4), 'Abama · 04/11'],
-    ['Real Club de Golf de Tenerife', new Date(2027, 0, 31), 'Real Club de Golf de Tenerife · 31/01'],
+    [
+      'Real Club de Golf de Tenerife',
+      new Date(2027, 0, 31),
+      'Real Club de Golf de Tenerife · 31/01',
+    ],
   ])('N1: %s el %s', (campo, fecha, esperado) => {
     expect(nombrePorDefecto(campo, fecha)).toBe(esperado);
   });
@@ -29,7 +37,11 @@ describe('nombrePorDefecto', () => {
 
   it.each([
     ['Abama · 28/10', 'Abama', true],
-    ['Real Club de Golf de Tenerife · 01/01', 'Real Club de Golf de Tenerife', true],
+    [
+      'Real Club de Golf de Tenerife · 01/01',
+      'Real Club de Golf de Tenerife',
+      true,
+    ],
     ['Domingo en Abama', 'Abama', false],
     ['Abama · 28/10/26', 'Abama', false],
     ['Fourball - 28/10/26', 'Abama', false],

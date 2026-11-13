@@ -6,17 +6,37 @@ const almacen = (() => {
   let datos = {};
   return {
     getItem: (clave) => datos[clave] ?? null,
-    setItem: (clave, valor) => { datos[clave] = String(valor); },
-    removeItem: (clave) => { delete datos[clave]; },
-    clear: () => { datos = {}; },
+    setItem: (clave, valor) => {
+      datos[clave] = String(valor);
+    },
+    removeItem: (clave) => {
+      delete datos[clave];
+    },
+    clear: () => {
+      datos = {};
+    },
   };
 })();
-Object.defineProperty(globalThis, 'localStorage', { value: almacen, writable: true });
+Object.defineProperty(globalThis, 'localStorage', {
+  value: almacen,
+  writable: true,
+});
 
-import { apunta, olvidaEl, olvidaLosDe, olvidaTodos, pendientes, ponleNombre } from './golpesPerdidos';
+import {
+  apunta,
+  olvidaEl,
+  olvidaLosDe,
+  olvidaTodos,
+  pendientes,
+  ponleNombre,
+} from './golpesPerdidos';
 
-const aviso = (holeNumber, userId, matchId = 'm-1') =>
-  ({ matchId, matchName: 'Meis', holeNumber, userId });
+const aviso = (holeNumber, userId, matchId = 'm-1') => ({
+  matchId,
+  matchName: 'Meis',
+  holeNumber,
+  userId,
+});
 
 describe('golpesPerdidos (FE #521)', () => {
   beforeEach(() => {
@@ -29,8 +49,12 @@ describe('golpesPerdidos (FE #521)', () => {
     // una entrada por participante. Sin mirar el participante, el segundo
     // rechazo se daba por apuntado, `apunta` devolvía true sin escribir, y
     // quien llamaba borraba el golpe igual: cuatro perdidos y un solo aviso
-    expect(apunta({ ...aviso(7, 'usuario-A'), participantId: 'p-1' })).toBe(true);
-    expect(apunta({ ...aviso(7, 'usuario-A'), participantId: 'p-2' })).toBe(true);
+    expect(apunta({ ...aviso(7, 'usuario-A'), participantId: 'p-1' })).toBe(
+      true,
+    );
+    expect(apunta({ ...aviso(7, 'usuario-A'), participantId: 'p-2' })).toBe(
+      true,
+    );
 
     expect(pendientes('usuario-A')).toHaveLength(2);
   });
@@ -133,34 +157,80 @@ describe('golpesPerdidos (FE #521)', () => {
 
   describe('ponleNombre (FE #551)', () => {
     it('rellena solo lo que falta, y no pisa lo que ya tenía', () => {
-      apunta({ matchId: 'm-1', matchName: null, matchNumber: null, holeNumber: 7, userId: 'usuario-A' });
-      apunta({ matchId: 'm-1', matchName: 'Como se apuntó', matchNumber: null, holeNumber: 8, userId: 'usuario-A' });
-      apunta({ matchId: 'm-2', matchName: null, matchNumber: null, holeNumber: 1, userId: 'usuario-A' });
+      apunta({
+        matchId: 'm-1',
+        matchName: null,
+        matchNumber: null,
+        holeNumber: 7,
+        userId: 'usuario-A',
+      });
+      apunta({
+        matchId: 'm-1',
+        matchName: 'Como se apuntó',
+        matchNumber: null,
+        holeNumber: 8,
+        userId: 'usuario-A',
+      });
+      apunta({
+        matchId: 'm-2',
+        matchName: null,
+        matchNumber: null,
+        holeNumber: 1,
+        userId: 'usuario-A',
+      });
 
-      expect(ponleNombre('m-1', { matchName: 'Meis', matchNumber: 3 })).toBe(true);
+      expect(ponleNombre('m-1', { matchName: 'Meis', matchNumber: 3 })).toBe(
+        true,
+      );
 
       expect(pendientes('usuario-A')).toEqual([
-        expect.objectContaining({ holeNumber: 7, matchName: 'Meis', matchNumber: 3 }),
-        expect.objectContaining({ holeNumber: 8, matchName: 'Como se apuntó', matchNumber: 3 }),
+        expect.objectContaining({
+          holeNumber: 7,
+          matchName: 'Meis',
+          matchNumber: 3,
+        }),
+        expect.objectContaining({
+          holeNumber: 8,
+          matchName: 'Como se apuntó',
+          matchNumber: 3,
+        }),
         // La otra partida no se toca
-        expect.objectContaining({ matchId: 'm-2', matchName: null, matchNumber: null }),
+        expect.objectContaining({
+          matchId: 'm-2',
+          matchName: null,
+          matchNumber: null,
+        }),
       ]);
     });
 
     it('no escribe si no hay nada que rellenar', () => {
       // Corre en cada carga de la vista: escribir siempre desgasta el disco y
       // hace fallar en un móvil lleno algo que no necesitaba escribir
-      apunta({ matchId: 'm-1', matchName: 'Meis', matchNumber: 3, holeNumber: 7, userId: 'usuario-A' });
+      apunta({
+        matchId: 'm-1',
+        matchName: 'Meis',
+        matchNumber: 3,
+        holeNumber: 7,
+        userId: 'usuario-A',
+      });
       const escribe = vi.spyOn(almacen, 'setItem');
 
-      expect(ponleNombre('m-1', { matchName: 'Otro', matchNumber: 9 })).toBe(true);
+      expect(ponleNombre('m-1', { matchName: 'Otro', matchNumber: 9 })).toBe(
+        true,
+      );
       expect(ponleNombre('m-1', {})).toBe(true);
 
       expect(escribe).not.toHaveBeenCalled();
     });
 
     it('dice que NO si hacía falta escribir y no se pudo', () => {
-      apunta({ matchId: 'm-1', matchName: null, matchNumber: null, holeNumber: 7, userId: 'usuario-A' });
+      apunta({
+        matchId: 'm-1',
+        matchName: null,
+        matchNumber: null,
+        holeNumber: 7,
+        userId: 'usuario-A',
+      });
       vi.spyOn(almacen, 'setItem').mockImplementation(() => {
         throw new Error('QuotaExceededError');
       });
@@ -189,7 +259,10 @@ describe('golpesPerdidos · qué golpe del hoyo se perdió (FE #813)', () => {
     apunta({ ...aviso(5, 'usuario-A'), golpes: ['markedScore'] });
 
     expect(pendientes('usuario-A')).toHaveLength(1);
-    expect(pendientes('usuario-A')[0].golpes).toEqual(['ownScore', 'markedScore']);
+    expect(pendientes('usuario-A')[0].golpes).toEqual([
+      'ownScore',
+      'markedScore',
+    ]);
   });
 
   it('G3 · si uno de los dos no dice golpes, el aviso es del hoyo entero', () => {
@@ -240,13 +313,20 @@ describe('golpesPerdidos · qué golpe del hoyo se perdió (FE #813)', () => {
   });
 });
 
-
 // CodeRabbit (FE #974): la marca se nombra siempre con su rival. Un aviso de
 // antes, sin rival, era de quien se marcaba entonces: reanotar esa marca lo retira
 describe('golpesPerdidos · la marca con su rival', () => {
-  beforeEach(() => { olvidaTodos(); });
+  beforeEach(() => {
+    olvidaTodos();
+  });
 
-  const aviso = (golpes) => ({ matchId: 'm-1', holeNumber: 3, participantId: null, userId: 'u1', golpes });
+  const aviso = (golpes) => ({
+    matchId: 'm-1',
+    holeNumber: 3,
+    participantId: null,
+    userId: 'u1',
+    golpes,
+  });
 
   it('reanotar la marca de un rival deja la del otro', () => {
     apunta(aviso(['markedScore@u2', 'markedScore@u4']));

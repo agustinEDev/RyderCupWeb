@@ -1,9 +1,16 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
+import {
+  render,
+  screen,
+  fireEvent,
+  waitFor,
+  within,
+} from '@testing-library/react';
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
-    t: (clave, valores) => (valores ? `${clave}|${JSON.stringify(valores)}` : clave),
+    t: (clave, valores) =>
+      valores ? `${clave}|${JSON.stringify(valores)}` : clave,
     i18n: { language: 'es' },
   }),
 }));
@@ -75,7 +82,12 @@ const sesion = (extra) => ({
 const AGENDA = {
   teamAssignment: null,
   rounds: [
-    sesion({ id: 'r3', roundDate: '2026-10-04', sessionType: 'MORNING', matchFormat: 'SINGLES' }),
+    sesion({
+      id: 'r3',
+      roundDate: '2026-10-04',
+      sessionType: 'MORNING',
+      matchFormat: 'SINGLES',
+    }),
     sesion({ id: 'r2', sessionType: 'AFTERNOON', matchFormat: 'FOURBALL' }),
     sesion({ id: 'r1' }),
   ],
@@ -90,7 +102,7 @@ const pintar = (props = {}) =>
       canManage
       jugadores={12}
       {...props}
-    />
+    />,
   );
 
 beforeEach(() => {
@@ -112,26 +124,38 @@ describe('AgendaDeLaCompeticion · lo que enseña', () => {
       'agenda-dia-2026-10-04',
     ]);
     const sabado = within(dias[0]).getAllByTestId(/^agenda-sesion-/);
-    expect(sabado.map((s) => s.dataset.testid)).toEqual(['agenda-sesion-r1', 'agenda-sesion-r2']);
+    expect(sabado.map((s) => s.dataset.testid)).toEqual([
+      'agenda-sesion-r1',
+      'agenda-sesion-r2',
+    ]);
     expect(sabado[0]).toHaveTextContent('sessions.MORNING');
   });
 
   it('AG2: con un solo campo, se dice una vez arriba y no en cada sesión', async () => {
     pintar();
 
-    expect(await screen.findByTestId('agenda-campo-unico')).toHaveTextContent('Altea');
-    expect(screen.getByTestId('agenda-sesion-r1')).not.toHaveTextContent('Altea');
+    expect(await screen.findByTestId('agenda-campo-unico')).toHaveTextContent(
+      'Altea',
+    );
+    expect(screen.getByTestId('agenda-sesion-r1')).not.toHaveTextContent(
+      'Altea',
+    );
   });
 
   it('AG2b: con varios, cada sesión dice el suyo', async () => {
     mockCampos.mockResolvedValue([ALTEA, MEIS]);
     mockVerAgenda.mockResolvedValue({
       ...AGENDA,
-      rounds: [sesion({ id: 'r1' }), sesion({ id: 'r2', sessionType: 'AFTERNOON', golfCourseId: 'g2' })],
+      rounds: [
+        sesion({ id: 'r1' }),
+        sesion({ id: 'r2', sessionType: 'AFTERNOON', golfCourseId: 'g2' }),
+      ],
     });
     pintar({ canManage: false });
 
-    expect(await screen.findByTestId('agenda-sesion-r2')).toHaveTextContent('Meis');
+    expect(await screen.findByTestId('agenda-sesion-r2')).toHaveTextContent(
+      'Meis',
+    );
     expect(screen.queryByTestId('agenda-campo-unico')).not.toBeInTheDocument();
   });
 
@@ -150,8 +174,12 @@ describe('AgendaDeLaCompeticion · lo que enseña', () => {
     });
     pintar();
 
-    expect(await screen.findByTestId('agenda-partidos-r1')).toHaveTextContent('"count":6');
-    expect(screen.getByTestId('agenda-partidos-r2')).toHaveTextContent('"count":2');
+    expect(await screen.findByTestId('agenda-partidos-r1')).toHaveTextContent(
+      '"count":6',
+    );
+    expect(screen.getByTestId('agenda-partidos-r2')).toHaveTextContent(
+      '"count":2',
+    );
   });
 
   it('AG4: quien solo mira no tiene nada que tocar', async () => {
@@ -164,7 +192,10 @@ describe('AgendaDeLaCompeticion · lo que enseña', () => {
   });
 
   it('AG19: una sesión sin formato no pinta «formats.null» (`/code-review`)', async () => {
-    mockVerAgenda.mockResolvedValue({ teamAssignment: null, rounds: [sesion({ matchFormat: null })] });
+    mockVerAgenda.mockResolvedValue({
+      teamAssignment: null,
+      rounds: [sesion({ matchFormat: null })],
+    });
     pintar({ canManage: false });
 
     const fila = await screen.findByTestId('agenda-sesion-r1');
@@ -186,14 +217,20 @@ describe('AgendaDeLaCompeticion · lo que cambia el organizador', () => {
 
     fireEvent.click(await screen.findByTestId('agenda-formato-r1-SINGLES'));
 
-    await waitFor(() => expect(mockCambiar).toHaveBeenCalledWith('r1', { match_format: 'SINGLES' }));
+    await waitFor(() =>
+      expect(mockCambiar).toHaveBeenCalledWith('r1', {
+        match_format: 'SINGLES',
+      }),
+    );
     await waitFor(() => expect(mockVerAgenda).toHaveBeenCalledTimes(2));
   });
 
   it('AG6: una sesión con partidos no se toca', async () => {
     mockVerAgenda.mockResolvedValue({
       ...AGENDA,
-      rounds: [sesion({ id: 'r1', status: 'SCHEDULED', matches: [{ id: 'm1' }] })],
+      rounds: [
+        sesion({ id: 'r1', status: 'SCHEDULED', matches: [{ id: 'm1' }] }),
+      ],
     });
     pintar();
 
@@ -215,8 +252,12 @@ describe('AgendaDeLaCompeticion · lo que cambia el organizador', () => {
     pintar();
 
     fireEvent.click(await screen.findByTestId('agenda-anadir'));
-    fireEvent.change(screen.getByTestId('agenda-anadir-dia'), { target: { value: '2026-10-04' } });
-    fireEvent.change(screen.getByTestId('agenda-anadir-franja'), { target: { value: 'AFTERNOON' } });
+    fireEvent.change(screen.getByTestId('agenda-anadir-dia'), {
+      target: { value: '2026-10-04' },
+    });
+    fireEvent.change(screen.getByTestId('agenda-anadir-franja'), {
+      target: { value: 'AFTERNOON' },
+    });
     fireEvent.click(screen.getByTestId('agenda-anadir-confirmar'));
 
     await waitFor(() =>
@@ -225,7 +266,7 @@ describe('AgendaDeLaCompeticion · lo que cambia el organizador', () => {
         round_date: '2026-10-04',
         session_type: 'AFTERNOON',
         match_format: 'SINGLES',
-      })
+      }),
     );
   });
 
@@ -233,9 +274,13 @@ describe('AgendaDeLaCompeticion · lo que cambia el organizador', () => {
     pintar();
 
     fireEvent.click(await screen.findByTestId('agenda-anadir'));
-    fireEvent.change(screen.getByTestId('agenda-anadir-dia'), { target: { value: '2026-10-03' } });
+    fireEvent.change(screen.getByTestId('agenda-anadir-dia'), {
+      target: { value: '2026-10-03' },
+    });
 
-    const franjas = [...screen.getByTestId('agenda-anadir-franja').options].map((o) => o.value);
+    const franjas = [...screen.getByTestId('agenda-anadir-franja').options].map(
+      (o) => o.value,
+    );
     expect(franjas).toEqual(['EVENING']);
   });
 
@@ -251,19 +296,27 @@ describe('AgendaDeLaCompeticion · lo que cambia el organizador', () => {
     mockCampos.mockResolvedValue([ALTEA, MEIS]);
     pintar();
 
-    fireEvent.change(await screen.findByTestId('agenda-campo-r1'), { target: { value: 'g2' } });
+    fireEvent.change(await screen.findByTestId('agenda-campo-r1'), {
+      target: { value: 'g2' },
+    });
 
-    await waitFor(() => expect(mockCambiar).toHaveBeenCalledWith('r1', { golf_course_id: 'g2' }));
+    await waitFor(() =>
+      expect(mockCambiar).toHaveBeenCalledWith('r1', { golf_course_id: 'g2' }),
+    );
   });
 
   it('AG11: si el servidor lo rechaza, dice por qué y la agenda sigue como estaba', async () => {
-    mockCambiar.mockRejectedValue(new Error('Ya existe una sesión MORNING en la fecha'));
+    mockCambiar.mockRejectedValue(
+      new Error('Ya existe una sesión MORNING en la fecha'),
+    );
     pintar();
 
     fireEvent.click(await screen.findByTestId('agenda-formato-r1-SINGLES'));
 
     await waitFor(() =>
-      expect(mockToastError).toHaveBeenCalledWith('Ya existe una sesión MORNING en la fecha')
+      expect(mockToastError).toHaveBeenCalledWith(
+        'Ya existe una sesión MORNING en la fecha',
+      ),
     );
     expect(mockVerAgenda).toHaveBeenCalledTimes(2);
   });
@@ -277,10 +330,16 @@ describe('AgendaDeLaCompeticion · lo que cambia el organizador', () => {
 
     fireEvent.click(await screen.findByTestId('agenda-formato-r1-SINGLES'));
     expect(mockCambiar).not.toHaveBeenCalled();
-    expect(screen.getByTestId('agenda-confirmar-r1')).toHaveTextContent('agenda.confirmFormat');
+    expect(screen.getByTestId('agenda-confirmar-r1')).toHaveTextContent(
+      'agenda.confirmFormat',
+    );
 
     fireEvent.click(screen.getByTestId('agenda-confirmar-si-r1'));
-    await waitFor(() => expect(mockCambiar).toHaveBeenCalledWith('r1', { match_format: 'SINGLES' }));
+    await waitFor(() =>
+      expect(mockCambiar).toHaveBeenCalledWith('r1', {
+        match_format: 'SINGLES',
+      }),
+    );
   });
 
   it('AG14: quitar una sesión se confirma, y «no» la deja', async () => {
@@ -308,7 +367,7 @@ describe('AgendaDeLaCompeticion · lo que cambia el organizador', () => {
         canManage
         jugadores={12}
         version="v2"
-      />
+      />,
     );
 
     await waitFor(() => expect(mockVerAgenda).toHaveBeenCalledTimes(2));
@@ -316,12 +375,17 @@ describe('AgendaDeLaCompeticion · lo que cambia el organizador', () => {
 
   it('AG16: un campo que ya no está en la competición no se hace pasar por otro', async () => {
     mockCampos.mockResolvedValue([ALTEA, MEIS]);
-    mockVerAgenda.mockResolvedValue({ ...AGENDA, rounds: [sesion({ id: 'r1', golfCourseId: 'gX' })] });
+    mockVerAgenda.mockResolvedValue({
+      ...AGENDA,
+      rounds: [sesion({ id: 'r1', golfCourseId: 'gX' })],
+    });
     pintar();
 
     const selector = await screen.findByTestId('agenda-campo-r1');
     expect(selector.value).toBe('gX');
-    expect(selector.selectedOptions[0]).toHaveTextContent('agenda.courseRemoved');
+    expect(selector.selectedOptions[0]).toHaveTextContent(
+      'agenda.courseRemoved',
+    );
   });
 
   it('AG17: tras un cambio solo se relee la agenda, no los campos', async () => {
@@ -336,7 +400,12 @@ describe('AgendaDeLaCompeticion · lo que cambia el organizador', () => {
   it('AG18: una lectura vieja que llega la última no pisa la de ahora (CodeRabbit)', async () => {
     let soltarLaVieja;
     mockVerAgenda
-      .mockImplementationOnce(() => new Promise((r) => { soltarLaVieja = r; }))
+      .mockImplementationOnce(
+        () =>
+          new Promise((r) => {
+            soltarLaVieja = r;
+          }),
+      )
       .mockResolvedValueOnce({
         ...AGENDA,
         rounds: [sesion({ id: 'nueva', matchFormat: 'SINGLES' })],
@@ -351,7 +420,7 @@ describe('AgendaDeLaCompeticion · lo que cambia el organizador', () => {
         canManage
         jugadores={12}
         version="v2"
-      />
+      />,
     );
     await screen.findByTestId('agenda-sesion-nueva');
 
@@ -377,7 +446,9 @@ describe('AgendaDeLaCompeticion · los campos que cambian en la ficha (FE #715)'
   );
 
   it('AG19: se añade un campo en la ficha y la agenda lo ofrece sin recargar', async () => {
-    mockCampos.mockResolvedValueOnce([ALTEA]).mockResolvedValueOnce([ALTEA, MEIS]);
+    mockCampos
+      .mockResolvedValueOnce([ALTEA])
+      .mockResolvedValueOnce([ALTEA, MEIS]);
     const { rerender } = render(conCampos(0));
     await screen.findByTestId('agenda-sesion-r1');
     // Con un solo campo no hay selector por sesión
@@ -386,14 +457,21 @@ describe('AgendaDeLaCompeticion · los campos que cambian en la ficha (FE #715)'
     rerender(conCampos(1));
 
     const selector = await screen.findByTestId('agenda-campo-r1');
-    expect(within(selector).getByRole('option', { name: 'Meis' })).toBeInTheDocument();
+    expect(
+      within(selector).getByRole('option', { name: 'Meis' }),
+    ).toBeInTheDocument();
     expect(mockCampos).toHaveBeenCalledTimes(2);
   });
 
   it('AG19b: una lectura vieja de los campos que llega la última no pisa la de ahora', async () => {
     let soltarLaVieja;
     mockCampos
-      .mockImplementationOnce(() => new Promise((r) => { soltarLaVieja = r; }))
+      .mockImplementationOnce(
+        () =>
+          new Promise((r) => {
+            soltarLaVieja = r;
+          }),
+      )
       .mockResolvedValueOnce([ALTEA, MEIS]);
     const { rerender } = render(conCampos(0));
     rerender(conCampos(1));
@@ -456,24 +534,35 @@ describe('AgendaDeLaCompeticion · lo leído, para la ficha (FE #710)', () => {
  */
 describe('AgendaDeLaCompeticion · avisos con nombres', () => {
   const rechazo = (errorCode, players) =>
-    Object.assign(new Error('Hay jugadores afectados'), { errorCode, data: { detail: 'x', error_code: errorCode, players } });
+    Object.assign(new Error('Hay jugadores afectados'), {
+      errorCode,
+      data: { detail: 'x', error_code: errorCode, players },
+    });
 
-  it.each(['PLAYERS_WITHOUT_TEE', 'PLAYERS_WITHOUT_HANDICAP', 'PLAYERS_WITHOUT_TEE_WINDOW'])(
-    'J1: %s nombra a los jugadores',
-    async (codigo) => {
-      mockCampos.mockResolvedValue([ALTEA, MEIS]);
-      mockCambiar.mockRejectedValue(rechazo(codigo, [{ user_id: 'u1', name: 'Ana' }, { user_id: 'u2', name: 'Luis' }]));
-      pintar();
+  it.each([
+    'PLAYERS_WITHOUT_TEE',
+    'PLAYERS_WITHOUT_HANDICAP',
+    'PLAYERS_WITHOUT_TEE_WINDOW',
+  ])('J1: %s nombra a los jugadores', async (codigo) => {
+    mockCampos.mockResolvedValue([ALTEA, MEIS]);
+    mockCambiar.mockRejectedValue(
+      rechazo(codigo, [
+        { user_id: 'u1', name: 'Ana' },
+        { user_id: 'u2', name: 'Luis' },
+      ]),
+    );
+    pintar();
 
-      fireEvent.change(await screen.findByTestId('agenda-campo-r1'), { target: { value: 'g2' } });
+    fireEvent.change(await screen.findByTestId('agenda-campo-r1'), {
+      target: { value: 'g2' },
+    });
 
-      await waitFor(() =>
-        expect(mockToastError).toHaveBeenCalledWith(
-          `agenda.errors.${codigo}|${JSON.stringify({ count: 2, jugadores: 'Ana, Luis' })}`
-        )
-      );
-    }
-  );
+    await waitFor(() =>
+      expect(mockToastError).toHaveBeenCalledWith(
+        `agenda.errors.${codigo}|${JSON.stringify({ count: 2, jugadores: 'Ana, Luis' })}`,
+      ),
+    );
+  });
 
   it('J2: sin nombres, el texto sin hueco', async () => {
     mockCambiar.mockRejectedValue(rechazo('PLAYERS_WITHOUT_TEE', []));
@@ -481,7 +570,11 @@ describe('AgendaDeLaCompeticion · avisos con nombres', () => {
 
     fireEvent.click(await screen.findByTestId('agenda-formato-r1-SINGLES'));
 
-    await waitFor(() => expect(mockToastError).toHaveBeenCalledWith('agenda.errors.PLAYERS_WITHOUT_TEE_unnamed'));
+    await waitFor(() =>
+      expect(mockToastError).toHaveBeenCalledWith(
+        'agenda.errors.PLAYERS_WITHOUT_TEE_unnamed',
+      ),
+    );
   });
 
   it('J3: otro código, su mensaje', async () => {
@@ -490,7 +583,9 @@ describe('AgendaDeLaCompeticion · avisos con nombres', () => {
 
     fireEvent.click(await screen.findByTestId('agenda-formato-r1-SINGLES'));
 
-    await waitFor(() => expect(mockToastError).toHaveBeenCalledWith('Hay jugadores afectados'));
+    await waitFor(() =>
+      expect(mockToastError).toHaveBeenCalledWith('Hay jugadores afectados'),
+    );
   });
 });
 
@@ -517,7 +612,12 @@ describe('AgendaDeLaCompeticion · lecturas que llegan tarde (T4)', () => {
 
   it('T4-1: desmontada con la lectura en vuelo, lo que llega no se le pasa a la ficha', async () => {
     let soltar;
-    mockVerAgenda.mockImplementationOnce(() => new Promise((r) => { soltar = r; }));
+    mockVerAgenda.mockImplementationOnce(
+      () =>
+        new Promise((r) => {
+          soltar = r;
+        }),
+    );
     const onAgenda = vi.fn();
     const { unmount } = pintar({ onAgenda });
     await waitFor(() => expect(mockVerAgenda).toHaveBeenCalledTimes(1));
@@ -534,8 +634,16 @@ describe('AgendaDeLaCompeticion · lecturas que llegan tarde (T4)', () => {
     await screen.findByTestId('agenda-sesion-r1');
     let soltarLaDelCambio;
     mockVerAgenda
-      .mockImplementationOnce(() => new Promise((r) => { soltarLaDelCambio = r; }))
-      .mockResolvedValueOnce({ ...AGENDA, rounds: [sesion({ id: 'nueva', matchFormat: 'SINGLES' })] });
+      .mockImplementationOnce(
+        () =>
+          new Promise((r) => {
+            soltarLaDelCambio = r;
+          }),
+      )
+      .mockResolvedValueOnce({
+        ...AGENDA,
+        rounds: [sesion({ id: 'nueva', matchFormat: 'SINGLES' })],
+      });
 
     fireEvent.click(screen.getByTestId('agenda-formato-r1-SINGLES'));
     await waitFor(() => expect(mockVerAgenda).toHaveBeenCalledTimes(2));
@@ -548,13 +656,22 @@ describe('AgendaDeLaCompeticion · lecturas que llegan tarde (T4)', () => {
 
     expect(screen.queryByTestId('agenda-sesion-vieja')).not.toBeInTheDocument();
     expect(screen.getByTestId('agenda-sesion-nueva')).toBeInTheDocument();
-    await waitFor(() => expect(screen.getByTestId('agenda-formato-nueva-FOURBALL')).not.toBeDisabled());
+    await waitFor(() =>
+      expect(
+        screen.getByTestId('agenda-formato-nueva-FOURBALL'),
+      ).not.toBeDisabled(),
+    );
   });
 
   it('T4-3: la lectura vieja que falla después de pintarse la nueva no dice «no se pudo leer»', async () => {
     let fallarLaVieja;
     mockVerAgenda
-      .mockImplementationOnce(() => new Promise((_, rechazar) => { fallarLaVieja = rechazar; }))
+      .mockImplementationOnce(
+        () =>
+          new Promise((_, rechazar) => {
+            fallarLaVieja = rechazar;
+          }),
+      )
       .mockResolvedValueOnce({ ...AGENDA, rounds: [sesion({ id: 'nueva' })] });
     const { rerender } = render(conVersion('v1'));
     await waitFor(() => expect(mockVerAgenda).toHaveBeenCalledTimes(1));

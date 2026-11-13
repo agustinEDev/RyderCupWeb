@@ -1,5 +1,8 @@
 import { useSyncExternalStore } from 'react';
-import { loQueHaySobreLaSesion, suscribeALaSesion } from '../services/sesionCompartida';
+import {
+  loQueHaySobreLaSesion,
+  suscribeALaSesion,
+} from '../services/sesionCompartida';
 import { debeAceptarLosTerminos } from '../domain/services/aceptacionDeTerminos';
 
 /**
@@ -18,7 +21,10 @@ import { debeAceptarLosTerminos } from '../domain/services/aceptacionDeTerminos'
  * @returns {boolean}
  */
 export const useTerminosPendientes = ({ soloConfirmados = false } = {}) => {
-  const { user, sinConfirmar } = useSyncExternalStore(suscribeALaSesion, loQueHaySobreLaSesion);
+  const { user, sinConfirmar } = useSyncExternalStore(
+    suscribeALaSesion,
+    loQueHaySobreLaSesion,
+  );
   if (soloConfirmados && sinConfirmar) return false;
   return debeAceptarLosTerminos(user);
 };

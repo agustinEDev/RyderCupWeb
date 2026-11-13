@@ -13,7 +13,10 @@ const mockList = vi.fn();
 vi.mock('../composition', () => ({
   listUserCompetitionsUseCase: { execute: (...a) => mockList(...a) },
 }));
-const sesion = vi.hoisted(() => ({ user: { id: 'u-1' }, instantanea: { user: { id: 'u-1' }, loading: false } }));
+const sesion = vi.hoisted(() => ({
+  user: { id: 'u-1' },
+  instantanea: { user: { id: 'u-1' }, loading: false },
+}));
 vi.mock('../hooks/useAuth', () => ({ useAuth: () => sesion.instantanea }));
 vi.mock('../services/sesionCompartida', () => ({
   consultaLaSesion: () => Promise.resolve(sesion.user),
@@ -25,7 +28,11 @@ vi.mock('../hooks/useAuthContext', () => ({
 vi.mock('../components/layout/HeaderAuth', () => ({ default: () => null }));
 // El idioma como una pieza que avisa al cambiar: cambiarlo vuelve a pintar
 // con una `t` nueva, como react-i18next
-const idioma = vi.hoisted(() => ({ prefijo: '', oyentes: new Set(), t: (k) => k }));
+const idioma = vi.hoisted(() => ({
+  prefijo: '',
+  oyentes: new Set(),
+  t: (k) => k,
+}));
 const cambiaElIdioma = (prefijo) => {
   idioma.prefijo = prefijo;
   idioma.t = (k) => `${prefijo}${k}`;
@@ -52,14 +59,25 @@ vi.mock('../utils/toast', () => ({
 const Competitions = (await import('./Competitions')).default;
 const { loader, shouldRevalidate } = await import('./Competitions.datos');
 const { olvidaTodo } = await import('../services/loUltimoConocido');
-const { marcaElArranque, olvidaLoQueEstaEnCamino } = await import('../services/cargaDeLaPantalla');
+const { marcaElArranque, olvidaLoQueEstaEnCamino } =
+  await import('../services/cargaDeLaPantalla');
 
 const delServidor = (status) => Object.assign(new Error('caído'), { status });
 
 const pinta = () => {
-  const router = createMemoryRouter([{ path: '/competitions', loader, shouldRevalidate, element: <Competitions /> }], {
-    initialEntries: ['/competitions'],
-  });
+  const router = createMemoryRouter(
+    [
+      {
+        path: '/competitions',
+        loader,
+        shouldRevalidate,
+        element: <Competitions />,
+      },
+    ],
+    {
+      initialEntries: ['/competitions'],
+    },
+  );
   render(<RouterProvider router={router} />);
   return router;
 };
@@ -78,7 +96,9 @@ describe('Torneos: un aviso por carga fallida (T2)', () => {
     mockList.mockRejectedValue(delServidor(500));
     pinta();
     await screen.findByTestId('competiciones-sin-cargar');
-    await waitFor(() => expect(toasts).toEqual(['detail.failedToLoadCompetitions']));
+    await waitFor(() =>
+      expect(toasts).toEqual(['detail.failedToLoadCompetitions']),
+    );
 
     act(() => cambiaElIdioma('en:'));
     await act(async () => {});

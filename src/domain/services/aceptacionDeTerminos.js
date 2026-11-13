@@ -22,6 +22,9 @@ export const TERMINOS_NO_ACEPTADOS = 'TERMS_NOT_ACCEPTED';
  */
 export const debeAceptarLosTerminos = (usuario) => {
   if (!usuario) return false;
-  const aceptados = 'terms_accepted' in usuario ? usuario.terms_accepted : usuario.termsAccepted;
+  const aceptados =
+    'terms_accepted' in usuario
+      ? usuario.terms_accepted
+      : usuario.termsAccepted;
   return aceptados === false;
 };

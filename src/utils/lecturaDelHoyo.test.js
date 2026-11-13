@@ -25,7 +25,13 @@ describe('lecturaDelHoyo', () => {
         isOwnScoreLocked: true,
         marcaBloqueadaPara: bloqueadaPara(['r1']),
       });
-      expect(r).toEqual({ hoyosNoGuardados: [3, 5, 9], primerMarcado: 'r1', segundoMarcado: 'r2', porAnotar: [3], sinAnotar: [5, 9] });
+      expect(r).toEqual({
+        hoyosNoGuardados: [3, 5, 9],
+        primerMarcado: 'r1',
+        segundoMarcado: 'r2',
+        porAnotar: [3],
+        sinAnotar: [5, 9],
+      });
     });
 
     it('dada una marca sin rival, cuando se lee, entonces se bloquea con el primer marcado', () => {
@@ -61,36 +67,71 @@ describe('lecturaDelHoyo', () => {
         isOwnScoreLocked: false,
         marcaBloqueadaPara: bloqueadaPara([]),
       });
-      expect(r).toEqual({ hoyosNoGuardados: [2], primerMarcado: null, segundoMarcado: null, porAnotar: [], sinAnotar: [2] });
+      expect(r).toEqual({
+        hoyosNoGuardados: [2],
+        primerMarcado: null,
+        segundoMarcado: null,
+        porAnotar: [],
+        sinAnotar: [2],
+      });
     });
   });
 
   describe('lecturaDelHoyo', () => {
     const vista = {
       matchFormat: 'FOURBALL',
-      holes: [{ holeNumber: 1, par: 4 }, { holeNumber: 2, par: 3 }],
+      holes: [
+        { holeNumber: 1, par: 4 },
+        { holeNumber: 2, par: 3 },
+      ],
       players: [
-        { userId: 'yo', userName: 'Yo', team: 'A', holeCard: [{ holeNumber: 1, par: 5 }] },
-        { userId: 'r1', userName: 'Rival Uno', team: 'B', holeCard: [{ holeNumber: 1, par: 3 }] },
+        {
+          userId: 'yo',
+          userName: 'Yo',
+          team: 'A',
+          holeCard: [{ holeNumber: 1, par: 5 }],
+        },
+        {
+          userId: 'r1',
+          userName: 'Rival Uno',
+          team: 'B',
+          holeCard: [{ holeNumber: 1, par: 3 }],
+        },
         { userId: 'r2', userName: 'Rival Dos', team: 'B' },
         { userId: 'mm', userName: 'Me Marca', team: 'B' },
       ],
       markerAssignments: [
-        { scorerUserId: 'yo', marksUserId: 'r1', marksName: 'Rival Uno', markedByName: 'Me Marca' },
+        {
+          scorerUserId: 'yo',
+          marksUserId: 'r1',
+          marksName: 'Rival Uno',
+          markedByName: 'Me Marca',
+        },
         { scorerUserId: 'yo', marksUserId: 'r2', marksName: 'Rival Dos' },
         { scorerUserId: 'mm', marksUserId: 'yo' },
       ],
     };
-    const scoresVisibles = [{
-      holeNumber: 1,
-      holeResult: { standing: '1UP' },
-      playerScores: [{ userId: 'yo', ownScore: 5 }, { userId: 'r1', markerScore: 3 }, { userId: 'r2', markerScore: 4 }],
-    }];
+    const scoresVisibles = [
+      {
+        holeNumber: 1,
+        holeResult: { standing: '1UP' },
+        playerScores: [
+          { userId: 'yo', ownScore: 5 },
+          { userId: 'r1', markerScore: 3 },
+          { userId: 'r2', markerScore: 4 },
+        ],
+      },
+    ];
 
     it('dado el hoyo 1, cuando se lee, entonces cada uno con su tarjeta, sus filas y sus bloqueos', () => {
       const h = lecturaDelHoyo({
-        scoringView: vista, currentUserId: 'yo', currentHole: 1, scoresVisibles,
-        primerMarcado: 'r1', segundoMarcado: 'r2', marcaBloqueadaPara: bloqueadaPara(['r2']),
+        scoringView: vista,
+        currentUserId: 'yo',
+        currentHole: 1,
+        scoresVisibles,
+        primerMarcado: 'r1',
+        segundoMarcado: 'r2',
+        marcaBloqueadaPara: bloqueadaPara(['r2']),
       });
       expect(h.quienMeMarca).toBe('Me Marca');
       expect(h.markerAssignment).toBe(vista.markerAssignments[0]);
@@ -110,8 +151,13 @@ describe('lecturaDelHoyo', () => {
 
     it('dado un hoyo sin tarjeta propia ni filas, cuando se lee, entonces la del campo y sin filas', () => {
       const h = lecturaDelHoyo({
-        scoringView: vista, currentUserId: 'yo', currentHole: 2, scoresVisibles,
-        primerMarcado: 'r1', segundoMarcado: null, marcaBloqueadaPara: bloqueadaPara([]),
+        scoringView: vista,
+        currentUserId: 'yo',
+        currentHole: 2,
+        scoresVisibles,
+        primerMarcado: 'r1',
+        segundoMarcado: null,
+        marcaBloqueadaPara: bloqueadaPara([]),
       });
       expect(h.currentHoleData).toEqual({ holeNumber: 2, par: 3 });
       expect(h.currentHoleScore).toBeUndefined();
@@ -121,17 +167,29 @@ describe('lecturaDelHoyo', () => {
 
     it('dado foursomes, cuando se lee, entonces marco a la pareja rival', () => {
       const h = lecturaDelHoyo({
-        scoringView: { ...vista, matchFormat: 'FOURSOMES' }, currentUserId: 'yo', currentHole: 1, scoresVisibles,
-        primerMarcado: 'r1', segundoMarcado: null, marcaBloqueadaPara: bloqueadaPara([]),
+        scoringView: { ...vista, matchFormat: 'FOURSOMES' },
+        currentUserId: 'yo',
+        currentHole: 1,
+        scoresVisibles,
+        primerMarcado: 'r1',
+        segundoMarcado: null,
+        marcaBloqueadaPara: bloqueadaPara([]),
       });
       expect(h.aQuienMarco).toBe('Rival Uno / Rival Dos / Me Marca');
     });
 
     it('dado quien no marca a nadie ni le marcan, cuando se lee, entonces sin nombres y la marca bloqueada', () => {
       const h = lecturaDelHoyo({
-        scoringView: { players: [], markerAssignments: [{ scorerUserId: 'x', marksUserId: 'z' }] },
-        currentUserId: 'yo', currentHole: 1, scoresVisibles: [],
-        primerMarcado: null, segundoMarcado: null, marcaBloqueadaPara: bloqueadaPara([]),
+        scoringView: {
+          players: [],
+          markerAssignments: [{ scorerUserId: 'x', marksUserId: 'z' }],
+        },
+        currentUserId: 'yo',
+        currentHole: 1,
+        scoresVisibles: [],
+        primerMarcado: null,
+        segundoMarcado: null,
+        marcaBloqueadaPara: bloqueadaPara([]),
       });
       expect(h.quienMeMarca).toBeNull();
       expect(h.aQuienMarco).toBeNull();
@@ -141,9 +199,16 @@ describe('lecturaDelHoyo', () => {
 
     it('dado que me marca alguien que no está en la lista, cuando se lee, entonces su id', () => {
       const h = lecturaDelHoyo({
-        scoringView: { players: [], markerAssignments: [{ scorerUserId: 'fantasma', marksUserId: 'yo' }] },
-        currentUserId: 'yo', currentHole: 1, scoresVisibles: [],
-        primerMarcado: null, segundoMarcado: null, marcaBloqueadaPara: bloqueadaPara([]),
+        scoringView: {
+          players: [],
+          markerAssignments: [{ scorerUserId: 'fantasma', marksUserId: 'yo' }],
+        },
+        currentUserId: 'yo',
+        currentHole: 1,
+        scoresVisibles: [],
+        primerMarcado: null,
+        segundoMarcado: null,
+        marcaBloqueadaPara: bloqueadaPara([]),
       });
       expect(h.quienMeMarca).toBe('fantasma');
     });

@@ -13,9 +13,9 @@ vi.mock('../../assemblers/CompetitionAssembler', () => ({
       endDate: competition.endDate,
       status: competition.status,
       maxPlayers: competition.maxPlayers,
-      creatorId: competition.creatorId
-    }))
-  }
+      creatorId: competition.creatorId,
+    })),
+  },
 }));
 
 describe('ListUserCompetitionsUseCase', () => {
@@ -31,7 +31,9 @@ describe('ListUserCompetitionsUseCase', () => {
     };
 
     // Re-instantiate the use case with the mock
-    listUserCompetitionsUseCase = new ListUserCompetitionsUseCase({ competitionRepository });
+    listUserCompetitionsUseCase = new ListUserCompetitionsUseCase({
+      competitionRepository,
+    });
   });
 
   it('should successfully list competitions for a user and return simple DTOs', async () => {
@@ -50,7 +52,7 @@ describe('ListUserCompetitionsUseCase', () => {
         endDate: '2025-01-05',
         status: 'DRAFT',
         maxPlayers: 24,
-        creatorId: 'user-123'
+        creatorId: 'user-123',
       },
       {
         id: 'comp-2',
@@ -61,8 +63,8 @@ describe('ListUserCompetitionsUseCase', () => {
         endDate: '2025-02-05',
         status: 'ACTIVE',
         maxPlayers: 20,
-        creatorId: 'user-123'
-      }
+        creatorId: 'user-123',
+      },
     ];
 
     // Expected simple DTOs (what the UI will receive)
@@ -76,7 +78,7 @@ describe('ListUserCompetitionsUseCase', () => {
         endDate: '2025-01-05',
         status: 'DRAFT',
         maxPlayers: 24,
-        creatorId: 'user-123'
+        creatorId: 'user-123',
       },
       {
         id: 'comp-2',
@@ -87,19 +89,24 @@ describe('ListUserCompetitionsUseCase', () => {
         endDate: '2025-02-05',
         status: 'ACTIVE',
         maxPlayers: 20,
-        creatorId: 'user-123'
-      }
+        creatorId: 'user-123',
+      },
     ];
 
     // Configure repository mock to return the competition entities
-    competitionRepository.findByCreator.mockResolvedValue(mockCompetitionEntities);
+    competitionRepository.findByCreator.mockResolvedValue(
+      mockCompetitionEntities,
+    );
 
     // Act
     const result = await listUserCompetitionsUseCase.execute(userId, filters);
 
     // Assert
     // 1. Verify repository.findByCreator was called with correct parameters
-    expect(competitionRepository.findByCreator).toHaveBeenCalledWith(userId, filters);
+    expect(competitionRepository.findByCreator).toHaveBeenCalledWith(
+      userId,
+      filters,
+    );
 
     // 2. Verify the use case returns the DTOs (not the entities)
     expect(result).toEqual(expectedDTOs);
@@ -112,9 +119,9 @@ describe('ListUserCompetitionsUseCase', () => {
     const filters = {};
 
     // Act & Assert
-    await expect(listUserCompetitionsUseCase.execute(userId, filters))
-      .rejects
-      .toThrow('User ID is required');
+    await expect(
+      listUserCompetitionsUseCase.execute(userId, filters),
+    ).rejects.toThrow('User ID is required');
 
     // Verify repository was not called
     expect(competitionRepository.findByCreator).not.toHaveBeenCalled();
@@ -134,7 +141,10 @@ describe('ListUserCompetitionsUseCase', () => {
     // Assert
     expect(result).toEqual([]);
     expect(result).toHaveLength(0);
-    expect(competitionRepository.findByCreator).toHaveBeenCalledWith(userId, filters);
+    expect(competitionRepository.findByCreator).toHaveBeenCalledWith(
+      userId,
+      filters,
+    );
   });
 
   it('should pass filters to the repository', async () => {
@@ -149,7 +159,10 @@ describe('ListUserCompetitionsUseCase', () => {
     await listUserCompetitionsUseCase.execute(userId, filters);
 
     // Assert
-    expect(competitionRepository.findByCreator).toHaveBeenCalledWith(userId, filters);
+    expect(competitionRepository.findByCreator).toHaveBeenCalledWith(
+      userId,
+      filters,
+    );
   });
 
   it('should propagate repository errors', async () => {
@@ -159,11 +172,13 @@ describe('ListUserCompetitionsUseCase', () => {
     const errorMessage = 'Database connection failed';
 
     // Configure repository mock to throw error
-    competitionRepository.findByCreator.mockRejectedValue(new Error(errorMessage));
+    competitionRepository.findByCreator.mockRejectedValue(
+      new Error(errorMessage),
+    );
 
     // Act & Assert
-    await expect(listUserCompetitionsUseCase.execute(userId, filters))
-      .rejects
-      .toThrow(errorMessage);
+    await expect(
+      listUserCompetitionsUseCase.execute(userId, filters),
+    ).rejects.toThrow(errorMessage);
   });
 });

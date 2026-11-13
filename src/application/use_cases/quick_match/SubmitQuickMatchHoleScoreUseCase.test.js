@@ -14,16 +14,24 @@ describe('SubmitQuickMatchHoleScoreUseCase', () => {
         recorded_by_participant_id: 'p-1',
       }),
     };
-    useCase = new SubmitQuickMatchHoleScoreUseCase({ quickMatchRepository: mockRepo });
+    useCase = new SubmitQuickMatchHoleScoreUseCase({
+      quickMatchRepository: mockRepo,
+    });
   });
 
   it('should throw if quickMatchRepository is missing', () => {
-    expect(() => new SubmitQuickMatchHoleScoreUseCase({})).toThrow('requires quickMatchRepository');
+    expect(() => new SubmitQuickMatchHoleScoreUseCase({})).toThrow(
+      'requires quickMatchRepository',
+    );
   });
 
   it('should throw for missing quickMatchId or holeNumber', async () => {
-    await expect(useCase.execute('', 3, 4)).rejects.toThrow('quickMatchId and holeNumber are required');
-    await expect(useCase.execute('qm-1', null, 4)).rejects.toThrow('quickMatchId and holeNumber are required');
+    await expect(useCase.execute('', 3, 4)).rejects.toThrow(
+      'quickMatchId and holeNumber are required',
+    );
+    await expect(useCase.execute('qm-1', null, 4)).rejects.toThrow(
+      'quickMatchId and holeNumber are required',
+    );
   });
 
   it('should submit the score and return a camelCase DTO', async () => {

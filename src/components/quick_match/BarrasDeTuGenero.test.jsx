@@ -18,32 +18,40 @@ const TEES = [
 ];
 
 const pinta = (value) =>
-  render(<BarrasDeTuGenero t={t} courseTees={TEES} genero="MALE" value={value} onChange={vi.fn()} />);
+  render(
+    <BarrasDeTuGenero
+      t={t}
+      courseTees={TEES}
+      genero="MALE"
+      value={value}
+      onChange={vi.fn()}
+    />,
+  );
 
 describe('BarrasDeTuGenero · el nombre de cada barra', () => {
   it('la de tu género, sin (M)', () => {
     pinta('YELLOW|MALE');
 
-    expect(screen.getByTestId('quick-match-creator-tee-option-YELLOW|MALE')).toHaveAttribute(
-      'aria-label',
-      'form.teeColors.YELLOW'
-    );
+    expect(
+      screen.getByTestId('quick-match-creator-tee-option-YELLOW|MALE'),
+    ).toHaveAttribute('aria-label', 'form.teeColors.YELLOW');
   });
 
   it('la del otro género, elegida en «Otras», con su (F)', () => {
     pinta('RED|FEMALE');
 
-    expect(screen.getByTestId('quick-match-creator-tee-option-RED|FEMALE')).toHaveAttribute(
-      'aria-label',
-      'form.teeColors.RED (F)'
-    );
+    expect(
+      screen.getByTestId('quick-match-creator-tee-option-RED|FEMALE'),
+    ).toHaveAttribute('aria-label', 'form.teeColors.RED (F)');
   });
 
   it('en el panel «Otras», sin sufijo: el grupo ya dice el género', () => {
     pinta('YELLOW|MALE');
     fireEvent.click(screen.getByTestId('quick-match-creator-tee-otras'));
 
-    const opcion = screen.getByTestId('quick-match-tee-panel-option-RED|FEMALE');
+    const opcion = screen.getByTestId(
+      'quick-match-tee-panel-option-RED|FEMALE',
+    );
     expect(within(opcion).getByText('form.teeColors.RED')).toBeInTheDocument();
     expect(opcion.textContent).not.toMatch(/\((M|F)\)/);
   });

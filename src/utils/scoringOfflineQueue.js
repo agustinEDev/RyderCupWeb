@@ -38,14 +38,20 @@ export const TIPO_PARTIDA_DE_FRANJA = 'TEE_GROUP';
  * guardarse: mismo partido, mismo hoyo, luego «la misma». Eran dos golpes de
  * dos personas, y uno desaparecía sin dejar rastro.
  */
-const mismaAnotacion = (entry, matchId, holeNumber, participantId, userId, marcado) =>
-  entry.matchId === matchId
-  && entry.holeNumber === holeNumber
-  && (entry.participantId ?? null) === (participantId ?? null)
-  && (entry.userId ?? null) === (userId ?? null)
+const mismaAnotacion = (
+  entry,
+  matchId,
+  holeNumber,
+  participantId,
+  userId,
+  marcado,
+) =>
+  entry.matchId === matchId &&
+  entry.holeNumber === holeNumber &&
+  (entry.participantId ?? null) === (participantId ?? null) &&
+  (entry.userId ?? null) === (userId ?? null) &&
   // Sin decir el marcado (`undefined`), cualquiera: todo el hoyo de esa persona
-  && (marcado === undefined || marcadoDe(entry.scoreData) === marcado);
-
+  (marcado === undefined || marcadoDe(entry.scoreData) === marcado);
 
 /** Los campos que son golpes, para saber si a una anotación le queda alguno. */
 const GOLPES = ['ownScore', 'markedScore', 'score'];
@@ -60,15 +66,28 @@ const sinElPropioDeOtroHueco = (cola, nueva) => {
   if (nueva.scoreData?.ownScore === undefined) return cola;
   return cola.flatMap((entry) => {
     // Las del mismo hoyo que quedan son de otro hueco
-    if (!mismaAnotacion(entry, nueva.matchId, nueva.holeNumber, nueva.participantId, nueva.userId)) return [entry];
+    if (
+      !mismaAnotacion(
+        entry,
+        nueva.matchId,
+        nueva.holeNumber,
+        nueva.participantId,
+        nueva.userId,
+      )
+    )
+      return [entry];
     const resto = { ...entry.scoreData };
     delete resto.ownScore;
     if (!GOLPES.some((g) => resto[g] !== undefined)) return [];
-    return [{
-      ...entry,
-      scoreData: resto,
-      ...(entry.tocados ? { tocados: entry.tocados.filter((g) => g !== 'ownScore') } : {}),
-    }];
+    return [
+      {
+        ...entry,
+        scoreData: resto,
+        ...(entry.tocados
+          ? { tocados: entry.tocados.filter((g) => g !== 'ownScore') }
+          : {}),
+      },
+    ];
   });
 };
 
@@ -130,17 +149,27 @@ export const enqueue = (
   participantId = null,
   userId = null,
   laPartida = {},
-  tocados = null
+  tocados = null,
 ) => {
   const { matchName = null, matchNumber = null, tipo = null } = laPartida;
   const queue = getAll();
   const marcado = marcadoDe(scoreData);
-  const anterior = queue.find(
-    entry => mismaAnotacion(entry, matchId, holeNumber, participantId, userId, marcado)
+  const anterior = queue.find((entry) =>
+    mismaAnotacion(entry, matchId, holeNumber, participantId, userId, marcado),
   );
   const filtered = sinElPropioDeOtroHueco(
-    queue.filter(entry => !mismaAnotacion(entry, matchId, holeNumber, participantId, userId, marcado)),
-    { matchId, holeNumber, participantId, userId, scoreData }
+    queue.filter(
+      (entry) =>
+        !mismaAnotacion(
+          entry,
+          matchId,
+          holeNumber,
+          participantId,
+          userId,
+          marcado,
+        ),
+    ),
+    { matchId, holeNumber, participantId, userId, scoreData },
   );
   filtered.push({
     matchId,
@@ -191,10 +220,24 @@ export const enqueue = (
  *   anotación sin marcado. Sin decirlo, todas las de ese hoyo y esa persona
  * @returns {boolean} Si de verdad quedó guardado el cambio
  */
-export const remove = (matchId, holeNumber, participantId = null, userId = null, marcado = undefined) => {
+export const remove = (
+  matchId,
+  holeNumber,
+  participantId = null,
+  userId = null,
+  marcado = undefined,
+) => {
   const queue = getAll();
   const filtered = queue.filter(
-    entry => !mismaAnotacion(entry, matchId, holeNumber, participantId, userId, marcado)
+    (entry) =>
+      !mismaAnotacion(
+        entry,
+        matchId,
+        holeNumber,
+        participantId,
+        userId,
+        marcado,
+      ),
   );
   return guarda(filtered);
 };
@@ -224,7 +267,9 @@ export const clear = () => {
 export const size = (matchId, userId) => {
   // Por `undefined` y no por veracidad: con una cadena vacía devolvía la cuenta
   // global, que es justo lo que se venía a quitar
-  return matchId === undefined ? getAll().length : getByMatch(matchId, userId).length;
+  return matchId === undefined
+    ? getAll().length
+    : getByMatch(matchId, userId).length;
 };
 
 /**
@@ -292,8 +337,10 @@ export const resumenPorPartida = (userId = null) => {
     actual.cuantas += 1;
     if (entrada.partidaDesaparecida) actual.desaparecida = true;
     if (entrada.participantId != null) actual.esPartidaRapida = true;
-    if (entrada.tipo === TIPO_PARTIDA_DE_FRANJA) actual.esPartidaDeFranja = true;
-    if (!actual.matchName && entrada.matchName) actual.matchName = entrada.matchName;
+    if (entrada.tipo === TIPO_PARTIDA_DE_FRANJA)
+      actual.esPartidaDeFranja = true;
+    if (!actual.matchName && entrada.matchName)
+      actual.matchName = entrada.matchName;
     if (actual.matchNumber == null && entrada.matchNumber != null) {
       actual.matchNumber = entrada.matchNumber;
     }
@@ -318,7 +365,11 @@ export const resumenPorPartida = (userId = null) => {
  * @param {boolean} [desaparecida]
  * @returns {boolean} Si hizo falta escribir y se pudo
  */
-export const marcaDesaparecida = (matchId, userId = null, desaparecida = true) => {
+export const marcaDesaparecida = (
+  matchId,
+  userId = null,
+  desaparecida = true,
+) => {
   const queue = getAll();
   let hayQueEscribir = false;
 
@@ -326,7 +377,8 @@ export const marcaDesaparecida = (matchId, userId = null, desaparecida = true) =
     // Con el mismo criterio de visibilidad que el aviso que la enseña: en un
     // móvil compartido, una cuenta que recibe un 403 porque esa partida es de
     // OTRA marcaba lo de esa otra, y a su dueño se le ofrecía tirarlo
-    if (entry.matchId !== matchId || !esVisiblePara(entry, userId)) return entry;
+    if (entry.matchId !== matchId || !esVisiblePara(entry, userId))
+      return entry;
     if (Boolean(entry.partidaDesaparecida) === desaparecida) return entry;
     hayQueEscribir = true;
     return { ...entry, partidaDesaparecida: desaparecida };
@@ -348,7 +400,9 @@ export const marcaDesaparecida = (matchId, userId = null, desaparecida = true) =
 export const olvidaLasDe = (matchId, userId = null) => {
   const queue = getAll();
   return guarda(
-    queue.filter((entry) => !(entry.matchId === matchId && esVisiblePara(entry, userId)))
+    queue.filter(
+      (entry) => !(entry.matchId === matchId && esVisiblePara(entry, userId)),
+    ),
   );
 };
 
@@ -364,7 +418,10 @@ export const olvidaLasDe = (matchId, userId = null) => {
  *
  * @returns {boolean} Si hizo falta escribir y se pudo
  */
-export const ponleNombre = (matchId, { matchName = null, matchNumber = null } = {}) => {
+export const ponleNombre = (
+  matchId,
+  { matchName = null, matchNumber = null } = {},
+) => {
   if (matchName == null && matchNumber == null) return true;
   const queue = getAll();
   let hayQueEscribir = false;

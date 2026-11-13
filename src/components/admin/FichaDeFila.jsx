@@ -15,7 +15,14 @@ import ModalShell from '../ui/ModalShell';
  * @param {Function} props.onClose
  * @param {React.ReactNode} props.children Las acciones
  */
-const FichaDeFila = ({ titulo, subtitulo, datos, describedBy, onClose, children }) => {
+const FichaDeFila = ({
+  titulo,
+  subtitulo,
+  datos,
+  describedBy,
+  onClose,
+  children,
+}) => {
   const { t } = useTranslation('admin');
   const idDelTitulo = useId();
 
@@ -28,12 +35,22 @@ const FichaDeFila = ({ titulo, subtitulo, datos, describedBy, onClose, children 
       hojaInferior
       boxClassName="bg-white w-full md:max-w-md md:mx-4 rounded-t-2xl md:rounded-2xl shadow-xl p-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))] max-h-[85dvh] overflow-y-auto"
     >
-      <h2 id={idDelTitulo} className="text-lg font-bold text-gray-900 break-words">{titulo}</h2>
-      {subtitulo && <p className="text-sm text-gray-500 break-all">{subtitulo}</p>}
+      <h2
+        id={idDelTitulo}
+        className="text-lg font-bold text-gray-900 break-words"
+      >
+        {titulo}
+      </h2>
+      {subtitulo && (
+        <p className="text-sm text-gray-500 break-all">{subtitulo}</p>
+      )}
 
       <dl className="mt-4 divide-y divide-gray-100 text-sm">
         {datos.map(({ etiqueta, valor }) => (
-          <div key={etiqueta} className="flex items-center justify-between gap-3 py-2">
+          <div
+            key={etiqueta}
+            className="flex items-center justify-between gap-3 py-2"
+          >
             <dt className="text-gray-500">{etiqueta}</dt>
             <dd className="text-right font-medium text-gray-900">{valor}</dd>
           </div>

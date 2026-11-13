@@ -54,10 +54,16 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
  *   C10 | la sesión no contesta, se sabía quién era y  | sinSesion: el guardia lleva a aceptarlos
  *       | le faltan los Términos                        |
  */
-const sesion = vi.hoisted(() => ({ user: { id: 'u-1' }, consulta: null, ahora: undefined }));
+const sesion = vi.hoisted(() => ({
+  user: { id: 'u-1' },
+  consulta: null,
+  ahora: undefined,
+}));
 vi.mock('./sesionCompartida', () => ({
   consultaLaSesion: () => sesion.consulta ?? Promise.resolve(sesion.user),
-  loQueHaySobreLaSesion: () => ({ user: sesion.ahora === undefined ? sesion.user : sesion.ahora }),
+  loQueHaySobreLaSesion: () => ({
+    user: sesion.ahora === undefined ? sesion.user : sesion.ahora,
+  }),
 }));
 
 const {
@@ -73,7 +79,8 @@ const { loGuardadoEnMemoria } = await import('./memoriaDeLasListas');
 const { olvidaTodo } = await import('./loUltimoConocido');
 
 const sinRed = () => new TypeError('Failed to fetch');
-const delServidor = (status) => Object.assign(new Error('Rate limit exceeded'), { status });
+const delServidor = (status) =>
+  Object.assign(new Error('Rate limit exceeded'), { status });
 const carga = (pedir) => cargaDeLaPantalla({ clave: 'competiciones', pedir });
 
 describe('cargaDeLaPantalla', () => {
@@ -84,12 +91,19 @@ describe('cargaDeLaPantalla', () => {
     sesion.ahora = undefined;
     marcaElArranque(true);
     olvidaLoQueEstaEnCamino();
-    Object.defineProperty(globalThis.navigator, 'onLine', { value: true, configurable: true });
+    Object.defineProperty(globalThis.navigator, 'onLine', {
+      value: true,
+      configurable: true,
+    });
   });
   afterEach(() => vi.useRealTimers());
 
   it('T1: responde: ok con los datos', async () => {
-    expect(await carga(async () => [{ id: 'c-1' }])).toEqual({ estado: 'ok', datos: [{ id: 'c-1' }], usuarioId: 'u-1' });
+    expect(await carga(async () => [{ id: 'c-1' }])).toEqual({
+      estado: 'ok',
+      datos: [{ id: 'c-1' }],
+      usuarioId: 'u-1',
+    });
   });
 
   it('C2: pide con el usuario de la sesión', async () => {
@@ -100,13 +114,21 @@ describe('cargaDeLaPantalla', () => {
   });
 
   it('T3: sin red y nada en memoria: sinRed sin datos', async () => {
-    expect(await carga(async () => { throw sinRed(); })).toEqual({ estado: 'sinRed', datos: null, usuarioId: 'u-1' });
+    expect(
+      await carga(async () => {
+        throw sinRed();
+      }),
+    ).toEqual({ estado: 'sinRed', datos: null, usuarioId: 'u-1' });
   });
 
   it('T4: sin red con lo de antes: sinRed con lo de antes', async () => {
     await carga(async () => [{ id: 'c-1' }]);
 
-    expect(await carga(async () => { throw sinRed(); })).toEqual({ estado: 'sinRed', datos: [{ id: 'c-1' }], usuarioId: 'u-1' });
+    expect(
+      await carga(async () => {
+        throw sinRed();
+      }),
+    ).toEqual({ estado: 'sinRed', datos: [{ id: 'c-1' }], usuarioId: 'u-1' });
   });
 
   it('T5: sin respuesta en 4 s: sinRed, con lo de antes', async () => {
@@ -117,13 +139,18 @@ describe('cargaDeLaPantalla', () => {
     await vi.advanceTimersByTimeAsync(TOPE_DE_LA_CARGA_MS);
 
     expect(TOPE_DE_LA_CARGA_MS).toBe(4000);
-    expect(await resultado).toMatchObject({ estado: 'sinRed', datos: [{ id: 'c-1' }] });
+    expect(await resultado).toMatchObject({
+      estado: 'sinRed',
+      datos: [{ id: 'c-1' }],
+    });
   });
 
   it('T5b: antes de los 4 s aún espera', async () => {
     vi.useFakeTimers();
     let resuelta = false;
-    carga(() => new Promise(() => {})).then(() => { resuelta = true; });
+    carga(() => new Promise(() => {})).then(() => {
+      resuelta = true;
+    });
 
     await vi.advanceTimersByTimeAsync(TOPE_DE_LA_CARGA_MS - 1);
 
@@ -131,20 +158,34 @@ describe('cargaDeLaPantalla', () => {
   });
 
   it('T6: 429 y nada en memoria: error sin datos', async () => {
-    expect(await carga(async () => { throw delServidor(429); })).toEqual({ estado: 'error', datos: null, usuarioId: 'u-1' });
+    expect(
+      await carga(async () => {
+        throw delServidor(429);
+      }),
+    ).toEqual({ estado: 'error', datos: null, usuarioId: 'u-1' });
   });
 
   it('T7: 500 con lo de antes: error con lo de antes', async () => {
     await carga(async () => [{ id: 'c-1' }]);
 
-    expect(await carga(async () => { throw delServidor(500); })).toEqual({ estado: 'error', datos: [{ id: 'c-1' }], usuarioId: 'u-1' });
+    expect(
+      await carga(async () => {
+        throw delServidor(500);
+      }),
+    ).toEqual({ estado: 'error', datos: [{ id: 'c-1' }], usuarioId: 'u-1' });
   });
 
   it('C1: un fallo no borra lo de antes', async () => {
     await carga(async () => [{ id: 'c-1' }]);
-    await carga(async () => { throw delServidor(500); });
+    await carga(async () => {
+      throw delServidor(500);
+    });
 
-    expect(await carga(async () => { throw sinRed(); })).toEqual({ estado: 'sinRed', datos: [{ id: 'c-1' }], usuarioId: 'u-1' });
+    expect(
+      await carga(async () => {
+        throw sinRed();
+      }),
+    ).toEqual({ estado: 'sinRed', datos: [{ id: 'c-1' }], usuarioId: 'u-1' });
   });
 
   it('T12: sin sesión no se pide nada', async () => {
@@ -185,20 +226,37 @@ describe('cargaDeLaPantalla', () => {
     const resultado = carga(vi.fn());
     await vi.advanceTimersByTimeAsync(TOPE_DE_LA_CARGA_MS);
 
-    expect(await resultado).toEqual({ estado: 'sinRed', datos: [{ id: 'c-1' }], usuarioId: 'u-1' });
+    expect(await resultado).toEqual({
+      estado: 'sinRed',
+      datos: [{ id: 'c-1' }],
+      usuarioId: 'u-1',
+    });
   });
 
   it('T42: dos cargas a la vez de la misma lista, una sola petición', async () => {
     let responde;
-    const pedir = vi.fn(() => new Promise((r) => { responde = r; }));
+    const pedir = vi.fn(
+      () =>
+        new Promise((r) => {
+          responde = r;
+        }),
+    );
 
     const una = carga(pedir);
     const otra = carga(pedir);
     await vi.waitFor(() => expect(pedir).toHaveBeenCalled());
     responde([{ id: 'c-1' }]);
 
-    expect(await una).toEqual({ estado: 'ok', datos: [{ id: 'c-1' }], usuarioId: 'u-1' });
-    expect(await otra).toEqual({ estado: 'ok', datos: [{ id: 'c-1' }], usuarioId: 'u-1' });
+    expect(await una).toEqual({
+      estado: 'ok',
+      datos: [{ id: 'c-1' }],
+      usuarioId: 'u-1',
+    });
+    expect(await otra).toEqual({
+      estado: 'ok',
+      datos: [{ id: 'c-1' }],
+      usuarioId: 'u-1',
+    });
     expect(pedir).toHaveBeenCalledTimes(1);
   });
 
@@ -235,7 +293,9 @@ describe('cargaDeLaPantalla', () => {
   it('T28b: sesión y lista comparten los 4 s', async () => {
     vi.useFakeTimers();
     let sesionLista;
-    sesion.consulta = new Promise((r) => { sesionLista = r; });
+    sesion.consulta = new Promise((r) => {
+      sesionLista = r;
+    });
     const resultado = carga(() => new Promise(() => {}));
 
     await vi.advanceTimersByTimeAsync(3000);
@@ -248,7 +308,12 @@ describe('cargaDeLaPantalla', () => {
   it('T29: la lista que llega tras el tope se guarda y la entrega `tardia`', async () => {
     vi.useFakeTimers();
     let responde;
-    const resultado = carga(() => new Promise((r) => { responde = r; }));
+    const resultado = carga(
+      () =>
+        new Promise((r) => {
+          responde = r;
+        }),
+    );
     await vi.advanceTimersByTimeAsync(TOPE_DE_LA_CARGA_MS);
     const { estado, tardia } = await resultado;
 
@@ -256,17 +321,26 @@ describe('cargaDeLaPantalla', () => {
 
     expect(estado).toBe('sinRed');
     expect(await tardia).toEqual([{ id: 'c-9' }]);
-    expect(loGuardadoEnMemoria('competiciones', 'u-1')).toEqual([{ id: 'c-9' }]);
+    expect(loGuardadoEnMemoria('competiciones', 'u-1')).toEqual([
+      { id: 'c-9' },
+    ]);
   });
 
   it('T29b: si al final falla, `tardia` no entrega nada y no rompe', async () => {
     vi.useFakeTimers();
     let falla;
-    const resultado = carga(() => new Promise((_, r) => { falla = r; }));
+    const resultado = carga(
+      () =>
+        new Promise((_, r) => {
+          falla = r;
+        }),
+    );
     await vi.advanceTimersByTimeAsync(TOPE_DE_LA_CARGA_MS);
     const { tardia } = await resultado;
     let entregada = false;
-    tardia.then(() => { entregada = true; });
+    tardia.then(() => {
+      entregada = true;
+    });
 
     falla(sinRed());
     await vi.advanceTimersByTimeAsync(10);
@@ -287,7 +361,12 @@ describe('cargaDeLaPantalla', () => {
     const consola = vi.spyOn(console, 'error').mockImplementation(() => {});
     const fallo = sinRed();
 
-    await cargaDeLaPantalla({ clave: 'competitions', pedir: async () => { throw fallo; } });
+    await cargaDeLaPantalla({
+      clave: 'competitions',
+      pedir: async () => {
+        throw fallo;
+      },
+    });
 
     expect(consola).toHaveBeenCalledWith('Error loading competitions:', fallo);
     consola.mockRestore();
@@ -311,20 +390,35 @@ describe('cargaDeLaPantalla', () => {
   });
 
   it('C8: con la marca puesta, una petición vieja en camino no se comparte', async () => {
-    const pedir = vi.fn().mockReturnValueOnce(new Promise(() => {})).mockResolvedValue([{ id: 'c-1' }]);
+    const pedir = vi
+      .fn()
+      .mockReturnValueOnce(new Promise(() => {}))
+      .mockResolvedValue([{ id: 'c-1' }]);
     carga(pedir);
     await vi.waitFor(() => expect(pedir).toHaveBeenCalledTimes(1));
 
     pideOtraVez({ revalidate: () => {} });
 
-    expect(await carga(pedir)).toEqual({ estado: 'ok', datos: [{ id: 'c-1' }], usuarioId: 'u-1' });
+    expect(await carga(pedir)).toEqual({
+      estado: 'ok',
+      datos: [{ id: 'c-1' }],
+      usuarioId: 'u-1',
+    });
     expect(pedir).toHaveBeenCalledTimes(2);
     olvidaQueSeVuelveAPedir();
   });
 
   it('C8b: la nueva queda para compartir con la siguiente sin marca', async () => {
     let responde;
-    const pedir = vi.fn().mockReturnValueOnce(new Promise(() => {})).mockImplementation(() => new Promise((r) => { responde = r; }));
+    const pedir = vi
+      .fn()
+      .mockReturnValueOnce(new Promise(() => {}))
+      .mockImplementation(
+        () =>
+          new Promise((r) => {
+            responde = r;
+          }),
+      );
     carga(pedir);
     await vi.waitFor(() => expect(pedir).toHaveBeenCalledTimes(1));
     pideOtraVez({ revalidate: () => {} });
@@ -337,8 +431,16 @@ describe('cargaDeLaPantalla', () => {
     await new Promise((r) => setTimeout(r, 0));
     responde([{ id: 'c-1' }]);
 
-    expect(await nueva).toEqual({ estado: 'ok', datos: [{ id: 'c-1' }], usuarioId: 'u-1' });
-    expect(await otra).toEqual({ estado: 'ok', datos: [{ id: 'c-1' }], usuarioId: 'u-1' });
+    expect(await nueva).toEqual({
+      estado: 'ok',
+      datos: [{ id: 'c-1' }],
+      usuarioId: 'u-1',
+    });
+    expect(await otra).toEqual({
+      estado: 'ok',
+      datos: [{ id: 'c-1' }],
+      usuarioId: 'u-1',
+    });
     expect(pedir).toHaveBeenCalledTimes(2);
   });
 
@@ -357,7 +459,15 @@ describe('cargaDeLaPantalla', () => {
 
   it('C8c: varias cargas con la misma marca, una sola petición nueva', async () => {
     let responde;
-    const pedir = vi.fn().mockReturnValueOnce(new Promise(() => {})).mockImplementation(() => new Promise((r) => { responde = r; }));
+    const pedir = vi
+      .fn()
+      .mockReturnValueOnce(new Promise(() => {}))
+      .mockImplementation(
+        () =>
+          new Promise((r) => {
+            responde = r;
+          }),
+      );
     carga(pedir);
     await vi.waitFor(() => expect(pedir).toHaveBeenCalledTimes(1));
 
@@ -368,12 +478,20 @@ describe('cargaDeLaPantalla', () => {
     responde([{ id: 'c-1' }]);
 
     // Todas con la nueva, ninguna con la vieja que no contesta
-    for (const una of await Promise.all(cargas)) expect(una).toEqual({ estado: 'ok', datos: [{ id: 'c-1' }], usuarioId: 'u-1' });
+    for (const una of await Promise.all(cargas))
+      expect(una).toEqual({
+        estado: 'ok',
+        datos: [{ id: 'c-1' }],
+        usuarioId: 'u-1',
+      });
     olvidaQueSeVuelveAPedir();
   });
 
   it('C8d: la carga que vio la marca pide nueva aunque se olvide mientras pregunta por la sesión', async () => {
-    const pedir = vi.fn().mockReturnValueOnce(new Promise(() => {})).mockResolvedValue([{ id: 'c-1' }]);
+    const pedir = vi
+      .fn()
+      .mockReturnValueOnce(new Promise(() => {}))
+      .mockResolvedValue([{ id: 'c-1' }]);
     carga(pedir);
     await vi.waitFor(() => expect(pedir).toHaveBeenCalledTimes(1));
 
@@ -381,7 +499,11 @@ describe('cargaDeLaPantalla', () => {
     const nueva = carga(pedir);
     olvidaQueSeVuelveAPedir();
 
-    expect(await nueva).toEqual({ estado: 'ok', datos: [{ id: 'c-1' }], usuarioId: 'u-1' });
+    expect(await nueva).toEqual({
+      estado: 'ok',
+      datos: [{ id: 'c-1' }],
+      usuarioId: 'u-1',
+    });
     expect(pedir).toHaveBeenCalledTimes(2);
   });
 });

@@ -21,7 +21,11 @@ import {
 } from '../../composition';
 import FullScreenLoader from '../../components/ui/FullScreenLoader';
 import BlockLoader from '../../components/ui/BlockLoader';
-import { GrupoDePestanas, ListaDePestanas, PanelDePestana } from '../../components/ui/Pestanas';
+import {
+  GrupoDePestanas,
+  ListaDePestanas,
+  PanelDePestana,
+} from '../../components/ui/Pestanas';
 
 /**
  * PendingGolfCourses Page (Admin)
@@ -48,25 +52,29 @@ const PendingGolfCourses = ({ embedded = false, onCambio }) => {
 
   // Derive isAdmin from authenticated user's roles or is_admin flag
   // Backend returns is_admin: true for admin users (see RoleGuard.jsx for reference)
-  const isAdmin = user?.is_admin === true || user?.roles?.some(role =>
-    typeof role === 'string' ? role === 'ADMIN' : role.name === 'ADMIN'
-  ) || false;
+  const isAdmin =
+    user?.is_admin === true ||
+    user?.roles?.some((role) =>
+      typeof role === 'string' ? role === 'ADMIN' : role.name === 'ADMIN',
+    ) ||
+    false;
 
   // Load pending courses, con useCargaCancelableEffect: al salir o al pedirla
   // otra vez, la respuesta anterior no toca nada. El aviso no es dependencia:
   // la lista no se vuelve a pedir por cambiar de idioma
-  const { cargando: isLoading, recargar: recargarPendientes } = useCargaCancelableEffect(
-    () => listPendingGolfCoursesUseCase.execute(),
-    [user],
-    {
-      activa: Boolean(user),
-      alCargar: setPendingCourses,
-      alFallar: (error) => {
-        console.error('Error loading pending golf courses:', error);
-        customToast.error(error.message || t('pages.pending.errorLoading'));
+  const { cargando: isLoading, recargar: recargarPendientes } =
+    useCargaCancelableEffect(
+      () => listPendingGolfCoursesUseCase.execute(),
+      [user],
+      {
+        activa: Boolean(user),
+        alCargar: setPendingCourses,
+        alFallar: (error) => {
+          console.error('Error loading pending golf courses:', error);
+          customToast.error(error.message || t('pages.pending.errorLoading'));
+        },
       },
-    }
-  );
+    );
 
   // Load countries for details modal
   useEffect(() => {
@@ -82,12 +90,18 @@ const PendingGolfCourses = ({ embedded = false, onCambio }) => {
   }, []);
 
   // Separate new requests from update proposals
-  const newRequests = pendingCourses.filter(c => c.originalGolfCourseId === null);
-  const updateProposals = pendingCourses.filter(c => c.originalGolfCourseId !== null);
+  const newRequests = pendingCourses.filter(
+    (c) => c.originalGolfCourseId === null,
+  );
+  const updateProposals = pendingCourses.filter(
+    (c) => c.originalGolfCourseId !== null,
+  );
 
   // Handle approve new request
   const handleApproveNew = async (course) => {
-    if (!window.confirm(t('pages.pending.confirmApprove', { name: course.name }))) {
+    if (
+      !window.confirm(t('pages.pending.confirmApprove', { name: course.name }))
+    ) {
       return;
     }
 
@@ -125,7 +139,10 @@ const PendingGolfCourses = ({ embedded = false, onCambio }) => {
     }
 
     try {
-      await rejectGolfCourseUseCase.execute(courseToReject.id, rejectReason.trim());
+      await rejectGolfCourseUseCase.execute(
+        courseToReject.id,
+        rejectReason.trim(),
+      );
       customToast.success(t('pages.pending.rejectSuccess'));
       onCambio?.();
       setShowRejectModal(false);
@@ -140,7 +157,11 @@ const PendingGolfCourses = ({ embedded = false, onCambio }) => {
 
   // Handle approve update
   const handleApproveUpdate = async (clone) => {
-    if (!window.confirm(t('pages.pending.confirmApproveUpdate', { name: clone.name }))) {
+    if (
+      !window.confirm(
+        t('pages.pending.confirmApproveUpdate', { name: clone.name }),
+      )
+    ) {
       return;
     }
 
@@ -151,13 +172,19 @@ const PendingGolfCourses = ({ embedded = false, onCambio }) => {
       recargarPendientes();
     } catch (error) {
       console.error('Error approving update:', error);
-      customToast.error(error.message || t('pages.pending.approveUpdateFailed'));
+      customToast.error(
+        error.message || t('pages.pending.approveUpdateFailed'),
+      );
     }
   };
 
   // Handle reject update
   const handleRejectUpdate = async (clone) => {
-    if (!window.confirm(t('pages.pending.confirmRejectUpdate', { name: clone.name }))) {
+    if (
+      !window.confirm(
+        t('pages.pending.confirmRejectUpdate', { name: clone.name }),
+      )
+    ) {
       return;
     }
 
@@ -190,12 +217,16 @@ const PendingGolfCourses = ({ embedded = false, onCambio }) => {
   const currentCourses = activeTab === 'new' ? newRequests : updateProposals;
 
   const content = (
-    <div className={embedded ? undefined : 'layout-content-container flex flex-col max-w-[1200px] flex-1'}>
+    <div
+      className={
+        embedded
+          ? undefined
+          : 'layout-content-container flex flex-col max-w-[1200px] flex-1'
+      }
+    >
       {/* Header */}
       {!embedded && (
-        <div
-          className="p-4"
-        >
+        <div className="p-4">
           <h1 className="text-gray-900 tracking-tight text-3xl md:text-[32px] font-bold leading-tight">
             {t('pages.pending.title')}
           </h1>
@@ -206,18 +237,22 @@ const PendingGolfCourses = ({ embedded = false, onCambio }) => {
       )}
 
       {/* Stats */}
-      <div
-        className="p-4"
-      >
+      <div className="p-4">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
             <p className="text-sm text-gray-600">
-              {t('pages.pending.newRequests')}: <span className="font-bold text-gray-900">{newRequests.length}</span>
+              {t('pages.pending.newRequests')}:{' '}
+              <span className="font-bold text-gray-900">
+                {newRequests.length}
+              </span>
             </p>
           </div>
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
             <p className="text-sm text-gray-600">
-              {t('pages.pending.updateProposals')}: <span className="font-bold text-gray-900">{updateProposals.length}</span>
+              {t('pages.pending.updateProposals')}:{' '}
+              <span className="font-bold text-gray-900">
+                {updateProposals.length}
+              </span>
             </p>
           </div>
         </div>
@@ -225,15 +260,19 @@ const PendingGolfCourses = ({ embedded = false, onCambio }) => {
 
       {/* Tabs: las dos comparten la tabla, que es su panel */}
       <GrupoDePestanas actual={activeTab} onElegir={setActiveTab} panelUnico>
-        <div
-          className="p-4"
-        >
+        <div className="p-4">
           <ListaDePestanas
             etiqueta={t('pages.pending.tabsLabel')}
             className="flex gap-2 border-b border-gray-200"
             pestanas={[
-              { id: 'new', contenido: `${t('pages.pending.tabNew')} (${newRequests.length})` },
-              { id: 'updates', contenido: `${t('pages.pending.tabUpdates')} (${updateProposals.length})` },
+              {
+                id: 'new',
+                contenido: `${t('pages.pending.tabNew')} (${newRequests.length})`,
+              },
+              {
+                id: 'updates',
+                contenido: `${t('pages.pending.tabUpdates')} (${updateProposals.length})`,
+              },
             ]}
             claseDePestana={(abierta) =>
               `px-4 py-2 font-medium border-b-2 transition-colors ${
@@ -251,8 +290,12 @@ const PendingGolfCourses = ({ embedded = false, onCambio }) => {
             <GolfCourseTable
               courses={currentCourses}
               onView={handleViewDetails}
-              onApprove={activeTab === 'new' ? handleApproveNew : handleApproveUpdate}
-              onReject={activeTab === 'new' ? handleRejectNew : handleRejectUpdate}
+              onApprove={
+                activeTab === 'new' ? handleApproveNew : handleApproveUpdate
+              }
+              onReject={
+                activeTab === 'new' ? handleRejectNew : handleRejectUpdate
+              }
               isAdmin={isAdmin}
               showActions={true}
             />
@@ -295,13 +338,23 @@ const PendingGolfCourses = ({ embedded = false, onCambio }) => {
             {/* Header */}
             <div className="p-6 border-b border-gray-200 flex items-center justify-between">
               <div>
-                <h2 id="detalle-campo-pendiente-titulo" className="text-2xl font-bold text-gray-900">{courseToView.name}</h2>
+                <h2
+                  id="detalle-campo-pendiente-titulo"
+                  className="text-2xl font-bold text-gray-900"
+                >
+                  {courseToView.name}
+                </h2>
                 <div className="flex items-center gap-2 mt-1">
-                  <CountryFlag countryCode={courseToView.countryCode} style={{ width: '20px', height: 'auto' }} />
+                  <CountryFlag
+                    countryCode={courseToView.countryCode}
+                    style={{ width: '20px', height: 'auto' }}
+                  />
                   <span className="text-sm text-gray-600">
                     {formatCountryName(
-                      allCountries.find(c => c.code === courseToView.countryCode) || { name_en: courseToView.countryCode },
-                      i18n.language
+                      allCountries.find(
+                        (c) => c.code === courseToView.countryCode,
+                      ) || { name_en: courseToView.countryCode },
+                      i18n.language,
                     )}
                   </span>
                 </div>
@@ -325,16 +378,28 @@ const PendingGolfCourses = ({ embedded = false, onCambio }) => {
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="bg-gray-50 rounded-lg p-4">
-                    <p className="text-xs text-gray-600 mb-1">{t('table.type')}</p>
-                    <p className="font-semibold text-gray-900">{t(`form.courseTypes.${courseToView.courseType}`)}</p>
+                    <p className="text-xs text-gray-600 mb-1">
+                      {t('table.type')}
+                    </p>
+                    <p className="font-semibold text-gray-900">
+                      {t(`form.courseTypes.${courseToView.courseType}`)}
+                    </p>
                   </div>
                   <div className="bg-gray-50 rounded-lg p-4">
-                    <p className="text-xs text-gray-600 mb-1">{t('table.par')}</p>
-                    <p className="font-semibold text-gray-900">{courseToView.totalPar}</p>
+                    <p className="text-xs text-gray-600 mb-1">
+                      {t('table.par')}
+                    </p>
+                    <p className="font-semibold text-gray-900">
+                      {courseToView.totalPar}
+                    </p>
                   </div>
                   <div className="bg-gray-50 rounded-lg p-4">
-                    <p className="text-xs text-gray-600 mb-1">{t('table.tees')}</p>
-                    <p className="font-semibold text-gray-900">{courseToView?.tees?.length ?? 0}</p>
+                    <p className="text-xs text-gray-600 mb-1">
+                      {t('table.tees')}
+                    </p>
+                    <p className="font-semibold text-gray-900">
+                      {courseToView?.tees?.length ?? 0}
+                    </p>
                   </div>
                 </div>
               </div>
@@ -349,17 +414,31 @@ const PendingGolfCourses = ({ embedded = false, onCambio }) => {
                   {(courseToView?.tees || []).map((tee, index) => (
                     <div key={index} className="bg-gray-50 rounded-lg p-4">
                       <div className="flex items-center justify-between mb-2">
-                        <TeeColorBadge color={tee.color} identifier={tee.identifier} gender={tee.teeGender || tee.tee_gender || tee.gender} />
-                        <span className="text-sm text-gray-600">{t('form.tee')} {index + 1}</span>
+                        <TeeColorBadge
+                          color={tee.color}
+                          identifier={tee.identifier}
+                          gender={tee.teeGender || tee.tee_gender || tee.gender}
+                        />
+                        <span className="text-sm text-gray-600">
+                          {t('form.tee')} {index + 1}
+                        </span>
                       </div>
                       <div className="grid grid-cols-2 gap-4 mt-3">
                         <div>
-                          <p className="text-xs text-gray-600">{t('form.courseRating')}</p>
-                          <p className="font-medium text-gray-900">{tee.courseRating}</p>
+                          <p className="text-xs text-gray-600">
+                            {t('form.courseRating')}
+                          </p>
+                          <p className="font-medium text-gray-900">
+                            {tee.courseRating}
+                          </p>
                         </div>
                         <div>
-                          <p className="text-xs text-gray-600">{t('form.slopeRating')}</p>
-                          <p className="font-medium text-gray-900">{tee.slopeRating}</p>
+                          <p className="text-xs text-gray-600">
+                            {t('form.slopeRating')}
+                          </p>
+                          <p className="font-medium text-gray-900">
+                            {tee.slopeRating}
+                          </p>
                         </div>
                       </div>
                     </div>
@@ -369,36 +448,63 @@ const PendingGolfCourses = ({ embedded = false, onCambio }) => {
 
               {/* Holes */}
               <div>
-                <h3 className="text-lg font-bold text-gray-900 mb-3">{t('form.holes')}</h3>
+                <h3 className="text-lg font-bold text-gray-900 mb-3">
+                  {t('form.holes')}
+                </h3>
                 {/* En el móvil, una fila por hoyo (17 oct 2026, entrega 5) */}
-                <ul aria-label={t('form.holes')} className="md:hidden divide-y divide-gray-100 text-sm">
+                <ul
+                  aria-label={t('form.holes')}
+                  className="md:hidden divide-y divide-gray-100 text-sm"
+                >
                   {(courseToView?.holes || []).map((hole, index) => (
                     <li key={index} className="py-2 text-gray-900">
-                      {t('form.holeRow', { hole: hole.holeNumber, par: hole.par, strokeIndex: hole.strokeIndex })}
+                      {t('form.holeRow', {
+                        hole: hole.holeNumber,
+                        par: hole.par,
+                        strokeIndex: hole.strokeIndex,
+                      })}
                     </li>
                   ))}
                 </ul>
-                <p className="md:hidden border-t border-gray-200 py-2 text-sm font-bold text-gray-900">{t('form.totalPar')} {courseToView?.totalPar}</p>
+                <p className="md:hidden border-t border-gray-200 py-2 text-sm font-bold text-gray-900">
+                  {t('form.totalPar')} {courseToView?.totalPar}
+                </p>
                 <div className="hidden md:block overflow-x-auto">
                   <table className="w-full text-sm">
                     <thead className="bg-gray-100 border-b border-gray-200">
                       <tr>
-                        <th className="text-center py-2 px-3 font-semibold text-gray-700">{t('form.hole')}</th>
-                        <th className="text-center py-2 px-3 font-semibold text-gray-700">{t('form.par')}</th>
-                        <th className="text-center py-2 px-3 font-semibold text-gray-700">{t('form.strokeIndex')}</th>
+                        <th className="text-center py-2 px-3 font-semibold text-gray-700">
+                          {t('form.hole')}
+                        </th>
+                        <th className="text-center py-2 px-3 font-semibold text-gray-700">
+                          {t('form.par')}
+                        </th>
+                        <th className="text-center py-2 px-3 font-semibold text-gray-700">
+                          {t('form.strokeIndex')}
+                        </th>
                       </tr>
                     </thead>
                     <tbody>
                       {(courseToView?.holes || []).map((hole, index) => (
                         <tr key={index} className="border-b border-gray-100">
-                          <td className="text-center py-2 px-3 font-medium text-gray-900">{hole.holeNumber}</td>
-                          <td className="text-center py-2 px-3 text-gray-700">{hole.par}</td>
-                          <td className="text-center py-2 px-3 text-gray-700">{hole.strokeIndex}</td>
+                          <td className="text-center py-2 px-3 font-medium text-gray-900">
+                            {hole.holeNumber}
+                          </td>
+                          <td className="text-center py-2 px-3 text-gray-700">
+                            {hole.par}
+                          </td>
+                          <td className="text-center py-2 px-3 text-gray-700">
+                            {hole.strokeIndex}
+                          </td>
                         </tr>
                       ))}
                       <tr className="bg-gray-50 font-bold">
-                        <td className="text-center py-2 px-3 text-gray-900">{t('form.totalPar')}</td>
-                        <td className="text-center py-2 px-3 text-gray-900">{courseToView.totalPar}</td>
+                        <td className="text-center py-2 px-3 text-gray-900">
+                          {t('form.totalPar')}
+                        </td>
+                        <td className="text-center py-2 px-3 text-gray-900">
+                          {courseToView.totalPar}
+                        </td>
                         <td className="text-center py-2 px-3"></td>
                       </tr>
                     </tbody>
@@ -439,11 +545,18 @@ const PendingGolfCourses = ({ embedded = false, onCambio }) => {
             className="bg-white rounded-xl shadow-2xl max-w-lg w-full"
           >
             <div className="p-6 border-b border-gray-200">
-              <h2 id="rechazar-campo-titulo" className="text-xl font-bold text-gray-900">{t('pages.pending.rejectModalTitle')}</h2>
+              <h2
+                id="rechazar-campo-titulo"
+                className="text-xl font-bold text-gray-900"
+              >
+                {t('pages.pending.rejectModalTitle')}
+              </h2>
             </div>
             <div className="p-6">
               <p className="text-gray-700 mb-4">
-                {t('pages.pending.rejectModalMessage', { name: courseToReject.name })}
+                {t('pages.pending.rejectModalMessage', {
+                  name: courseToReject.name,
+                })}
               </p>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 {t('pages.pending.rejectReason')} *

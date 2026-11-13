@@ -3,7 +3,9 @@ import ApiScheduleRepository from './ApiScheduleRepository';
 import * as apiModule from '../http/api';
 
 vi.mock('../http/api', async () => ({
-  segmento: (await vi.importActual('../http/rutaDeLaApi')).segmento, default: vi.fn() }));
+  segmento: (await vi.importActual('../http/rutaDeLaApi')).segmento,
+  default: vi.fn(),
+}));
 
 /**
  * D1-D2 (FE #824, PR 4): plazas, listas de espera y el aviso de plaza asignada
@@ -32,25 +34,37 @@ describe('ApiScheduleRepository · plazas y esperas (FE #824)', () => {
   it('cambiarse, o colocar a otro: con sus nombres de la API', async () => {
     await repo.takePlace('r-2', { userId: 'u-1', insteadOfRoundId: 'r-1' });
 
-    expect(JSON.parse(api.mock.calls[0][1].body)).toEqual({ user_id: 'u-1', instead_of_round_id: 'r-1' });
+    expect(JSON.parse(api.mock.calls[0][1].body)).toEqual({
+      user_id: 'u-1',
+      instead_of_round_id: 'r-1',
+    });
   });
 
   it('soltar plaza', async () => {
     await repo.releasePlace('r-1', 'u-1');
 
-    expect(api).toHaveBeenCalledWith('/api/v1/competitions/rounds/r-1/places/u-1', { method: 'DELETE' });
+    expect(api).toHaveBeenCalledWith(
+      '/api/v1/competitions/rounds/r-1/places/u-1',
+      { method: 'DELETE' },
+    );
   });
 
   it('apuntarse a la espera', async () => {
     await repo.joinWaitingList('r-1');
 
-    expect(api).toHaveBeenCalledWith('/api/v1/competitions/rounds/r-1/waiting-list', { method: 'POST' });
+    expect(api).toHaveBeenCalledWith(
+      '/api/v1/competitions/rounds/r-1/waiting-list',
+      { method: 'POST' },
+    );
   });
 
   it('salir de la espera', async () => {
     await repo.leaveWaitingList('r-1', 'u-1');
 
-    expect(api).toHaveBeenCalledWith('/api/v1/competitions/rounds/r-1/waiting-list/u-1', { method: 'DELETE' });
+    expect(api).toHaveBeenCalledWith(
+      '/api/v1/competitions/rounds/r-1/waiting-list/u-1',
+      { method: 'DELETE' },
+    );
   });
 
   it('mis plazas asignadas desde la espera, en camelCase y con la hora en HH:MM', async () => {
@@ -85,6 +99,9 @@ describe('ApiScheduleRepository · plazas y esperas (FE #824)', () => {
   it('«Entendido»', async () => {
     await repo.acknowledgeAssignedPlace('r-1');
 
-    expect(api).toHaveBeenCalledWith('/api/v1/competitions/me/assigned-places/r-1/acknowledge', { method: 'POST' });
+    expect(api).toHaveBeenCalledWith(
+      '/api/v1/competitions/me/assigned-places/r-1/acknowledge',
+      { method: 'POST' },
+    );
   });
 });

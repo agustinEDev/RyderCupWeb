@@ -12,11 +12,25 @@ import MatchPlayStrokeAllocator from './MatchPlayStrokeAllocator';
 
 // Golf de Meis (RFEG 487), recorrido Par 72
 const MEIS_TEES = [
-  { color: 'YELLOW', gender: 'MALE', courseRating: 73.1, slopeRating: 140, identifier: null },
-  { color: 'YELLOW', gender: 'FEMALE', courseRating: 79.4, slopeRating: 147, identifier: null },
+  {
+    color: 'YELLOW',
+    gender: 'MALE',
+    courseRating: 73.1,
+    slopeRating: 140,
+    identifier: null,
+  },
+  {
+    color: 'YELLOW',
+    gender: 'FEMALE',
+    courseRating: 79.4,
+    slopeRating: 147,
+    identifier: null,
+  },
 ];
 
-const MEIS_STROKE_INDEX = [7, 1, 13, 5, 15, 9, 3, 11, 17, 16, 2, 14, 12, 8, 18, 6, 4, 10];
+const MEIS_STROKE_INDEX = [
+  7, 1, 13, 5, 15, 9, 3, 11, 17, 16, 2, 14, 12, 8, 18, 6, 4, 10,
+];
 const MEIS_PARS = [4, 5, 4, 4, 3, 4, 5, 4, 3, 3, 4, 5, 4, 4, 3, 4, 5, 4];
 
 const meisHoles = () =>
@@ -28,7 +42,11 @@ const meisHoles = () =>
 
 // Campo genérico: par 72 y stroke index = número de hoyo
 const flatHoles = () =>
-  Array.from({ length: 18 }, (_, i) => ({ holeNumber: i + 1, par: 4, strokeIndex: i + 1 }));
+  Array.from({ length: 18 }, (_, i) => ({
+    holeNumber: i + 1,
+    par: 4,
+    strokeIndex: i + 1,
+  }));
 
 const player = (id, handicap, gender = 'MALE', team = null) => ({
   participantId: id,
@@ -112,7 +130,10 @@ describe('MatchPlayStrokeAllocator', () => {
       'no reparte nada en formato %s',
       (matchFormat) => {
         const result = MatchPlayStrokeAllocator.allocate({
-          participants: [player('a', 5.0, 'MALE', 'A'), player('b', 30.0, 'MALE', 'B')],
+          participants: [
+            player('a', 5.0, 'MALE', 'A'),
+            player('b', 30.0, 'MALE', 'B'),
+          ],
           holes: flatHoles(),
           tees: MEIS_TEES,
           matchFormat,
@@ -123,7 +144,7 @@ describe('MatchPlayStrokeAllocator', () => {
         expect(totalStrokes(result.a)).toBe(0);
         expect(totalStrokes(result.b)).toBe(0);
         expect(result.a.playingHandicap).toBe(0);
-      }
+      },
     );
   });
 
@@ -242,7 +263,9 @@ describe('MatchPlayStrokeAllocator', () => {
       });
 
       expect(totalStrokes(result.a1)).toBe(0);
-      const counts = ['a1', 'a2', 'b1', 'b2'].map((id) => totalStrokes(result[id]));
+      const counts = ['a1', 'a2', 'b1', 'b2'].map((id) =>
+        totalStrokes(result[id]),
+      );
       expect(counts).toEqual([...counts].sort((a, b) => a - b));
     });
   });
@@ -253,7 +276,11 @@ describe('MatchPlayStrokeAllocator', () => {
       { color: 'YELLOW', gender: 'MALE', courseRating: 72, slopeRating: 113 },
     ];
     const par72Holes = () =>
-      Array.from({ length: 18 }, (_, i) => ({ holeNumber: i + 1, par: 4, strokeIndex: i + 1 }));
+      Array.from({ length: 18 }, (_, i) => ({
+        holeNumber: i + 1,
+        par: 4,
+        strokeIndex: i + 1,
+      }));
 
     it('cede golpes al campo en partido libre, empezando por el hoyo más fácil', () => {
       const result = MatchPlayStrokeAllocator.allocate({
@@ -303,7 +330,14 @@ describe('MatchPlayStrokeAllocator', () => {
         par: 3,
         strokeIndex: i + 1,
       }));
-      const tees = [{ color: 'YELLOW', gender: 'MALE', courseRating: 46.8, slopeRating: 47 }];
+      const tees = [
+        {
+          color: 'YELLOW',
+          gender: 'MALE',
+          courseRating: 46.8,
+          slopeRating: 47,
+        },
+      ];
 
       const result = MatchPlayStrokeAllocator.allocate({
         participants: [player('a', 18.0)],
@@ -321,31 +355,49 @@ describe('MatchPlayStrokeAllocator', () => {
 
     it('acepta una barra de campo largo', () => {
       expect(
-        MatchPlayStrokeAllocator.isRatable({ courseRating: 73.1, slopeRating: 140 }, 72)
+        MatchPlayStrokeAllocator.isRatable(
+          { courseRating: 73.1, slopeRating: 140 },
+          72,
+        ),
       ).toBe(true);
     });
 
     it('acepta el par de un pitch & putt federado', () => {
       expect(
-        MatchPlayStrokeAllocator.isRatable({ courseRating: 54.9, slopeRating: 91 }, 58)
+        MatchPlayStrokeAllocator.isRatable(
+          { courseRating: 54.9, slopeRating: 91 },
+          58,
+        ),
       ).toBe(true);
     });
 
     it('acepta los extremos del catálogo federado', () => {
       expect(
-        MatchPlayStrokeAllocator.isRatable({ courseRating: 46.5, slopeRating: 46 }, 54)
+        MatchPlayStrokeAllocator.isRatable(
+          { courseRating: 46.5, slopeRating: 46 },
+          54,
+        ),
       ).toBe(true);
       expect(
-        MatchPlayStrokeAllocator.isRatable({ courseRating: 84.7, slopeRating: 157 }, 74)
+        MatchPlayStrokeAllocator.isRatable(
+          { courseRating: 84.7, slopeRating: 157 },
+          74,
+        ),
       ).toBe(true);
     });
 
     it('sigue rechazando lo que no puede ser válido en ningún tipo de campo', () => {
       expect(
-        MatchPlayStrokeAllocator.isRatable({ courseRating: 30.0, slopeRating: 140 }, 72)
+        MatchPlayStrokeAllocator.isRatable(
+          { courseRating: 30.0, slopeRating: 140 },
+          72,
+        ),
       ).toBe(false);
       expect(
-        MatchPlayStrokeAllocator.isRatable({ courseRating: 73.1, slopeRating: 140 }, 40)
+        MatchPlayStrokeAllocator.isRatable(
+          { courseRating: 73.1, slopeRating: 140 },
+          40,
+        ),
       ).toBe(false);
     });
   });
@@ -416,7 +468,10 @@ describe('MatchPlayStrokeAllocator', () => {
         playMode: 'HANDICAP',
       });
 
-      expect(result.a).toEqual({ playingHandicap: 27, strokesByHole: { 2: 1 } });
+      expect(result.a).toEqual({
+        playingHandicap: 27,
+        strokesByHole: { 2: 1 },
+      });
     });
 
     it('recalcula en local cuando no llega nada (sin conexión)', () => {
@@ -436,12 +491,20 @@ describe('MatchPlayStrokeAllocator', () => {
 
   describe('parFor', () => {
     it('usa el par propio de la barra cuando la trae', () => {
-      const tee = { color: 'YELLOW', gender: 'MALE', holes: [{ par: 3 }, { par: 4 }] };
-      expect(MatchPlayStrokeAllocator.parFor(tee, [{ par: 5 }, { par: 5 }])).toBe(7);
+      const tee = {
+        color: 'YELLOW',
+        gender: 'MALE',
+        holes: [{ par: 3 }, { par: 4 }],
+      };
+      expect(
+        MatchPlayStrokeAllocator.parFor(tee, [{ par: 5 }, { par: 5 }]),
+      ).toBe(7);
     });
 
     it('cae al par del campo si la barra no trae tarjeta', () => {
-      expect(MatchPlayStrokeAllocator.parFor({}, [{ par: 5 }, { par: 5 }])).toBe(10);
+      expect(
+        MatchPlayStrokeAllocator.parFor({}, [{ par: 5 }, { par: 5 }]),
+      ).toBe(10);
     });
   });
 
@@ -468,15 +531,23 @@ describe('MatchPlayStrokeAllocator', () => {
 
   describe('findTee', () => {
     it('distingue la misma barra por género', () => {
-      const male = MatchPlayStrokeAllocator.findTee(player('a', 18, 'MALE'), MEIS_TEES);
-      const female = MatchPlayStrokeAllocator.findTee(player('a', 18, 'FEMALE'), MEIS_TEES);
+      const male = MatchPlayStrokeAllocator.findTee(
+        player('a', 18, 'MALE'),
+        MEIS_TEES,
+      );
+      const female = MatchPlayStrokeAllocator.findTee(
+        player('a', 18, 'FEMALE'),
+        MEIS_TEES,
+      );
 
       expect(male.courseRating).toBe(73.1);
       expect(female.courseRating).toBe(79.4);
     });
 
     it('devuelve null si el participante no eligió barra', () => {
-      expect(MatchPlayStrokeAllocator.findTee({ color: null }, MEIS_TEES)).toBeNull();
+      expect(
+        MatchPlayStrokeAllocator.findTee({ color: null }, MEIS_TEES),
+      ).toBeNull();
     });
   });
 
@@ -501,24 +572,37 @@ describe('MatchPlayStrokeAllocator', () => {
       const card = MatchPlayStrokeAllocator.holeCardFor(
         player('a', 18, 'MALE'),
         meisHoles(),
-        teesWithCard
+        teesWithCard,
       );
 
       expect(card).toHaveLength(2);
-      expect(card[0]).toMatchObject({ holeNumber: 1, par: 3, strokeIndex: 15, meters: 142 });
+      expect(card[0]).toMatchObject({
+        holeNumber: 1,
+        par: 3,
+        strokeIndex: 15,
+        meters: 142,
+      });
     });
 
     it('cae a la tarjeta del campo cuando la barra no trae la suya', () => {
       const white = { ...player('a', 18, 'MALE'), color: 'WHITE' };
 
-      const card = MatchPlayStrokeAllocator.holeCardFor(white, meisHoles(), teesWithCard);
+      const card = MatchPlayStrokeAllocator.holeCardFor(
+        white,
+        meisHoles(),
+        teesWithCard,
+      );
 
       expect(card).toEqual(meisHoles());
       expect(card[0].meters).toBeUndefined();
     });
 
     it('cae a la tarjeta del campo cuando el jugador no eligió barra', () => {
-      const card = MatchPlayStrokeAllocator.holeCardFor({ color: null }, meisHoles(), teesWithCard);
+      const card = MatchPlayStrokeAllocator.holeCardFor(
+        { color: null },
+        meisHoles(),
+        teesWithCard,
+      );
 
       expect(card).toEqual(meisHoles());
     });
@@ -529,7 +613,7 @@ describe('MatchPlayStrokeAllocator', () => {
       const order = MatchPlayStrokeAllocator.holesByDifficultyFor(
         player('a', 18, 'MALE'),
         meisHoles(),
-        teesWithCard
+        teesWithCard,
       );
 
       expect(order).toEqual([2, 1]);
@@ -546,7 +630,9 @@ describe('MatchPlayStrokeAllocator', () => {
       // (18 + 8) / 2 = 13, y el 50% de 13 son 6,5 -> 7
       const side = [player('a', 18.0), player('b', 8.0)];
 
-      expect(MatchPlayStrokeAllocator.sidePlayingHandicap(side, [], [], 50)).toBe(7);
+      expect(
+        MatchPlayStrokeAllocator.sidePlayingHandicap(side, [], [], 50),
+      ).toBe(7);
     });
 
     it('reproduce el reparto: la resta de los dos bandos son los golpes que se dan', () => {
@@ -560,8 +646,18 @@ describe('MatchPlayStrokeAllocator', () => {
         { ...sideB[1], team: 'B' },
       ];
 
-      const phA = MatchPlayStrokeAllocator.sidePlayingHandicap(sideA, holes, MEIS_TEES, 50);
-      const phB = MatchPlayStrokeAllocator.sidePlayingHandicap(sideB, holes, MEIS_TEES, 50);
+      const phA = MatchPlayStrokeAllocator.sidePlayingHandicap(
+        sideA,
+        holes,
+        MEIS_TEES,
+        50,
+      );
+      const phB = MatchPlayStrokeAllocator.sidePlayingHandicap(
+        sideB,
+        holes,
+        MEIS_TEES,
+        50,
+      );
       const allocation = MatchPlayStrokeAllocator.allocate({
         participants,
         holes,
@@ -569,13 +665,23 @@ describe('MatchPlayStrokeAllocator', () => {
         matchFormat: 'FOURSOMES',
         allowancePercentage: 50,
       });
-      const received = Object.values(allocation.c.strokesByHole).reduce((a, b) => a + b, 0);
+      const received = Object.values(allocation.c.strokesByHole).reduce(
+        (a, b) => a + b,
+        0,
+      );
 
       expect(phB - phA).toBe(received);
     });
 
     it('sin jugadores no inventa un hándicap', () => {
-      expect(MatchPlayStrokeAllocator.sidePlayingHandicap([], meisHoles(), MEIS_TEES, 50)).toBe(0);
+      expect(
+        MatchPlayStrokeAllocator.sidePlayingHandicap(
+          [],
+          meisHoles(),
+          MEIS_TEES,
+          50,
+        ),
+      ).toBe(0);
     });
   });
 });

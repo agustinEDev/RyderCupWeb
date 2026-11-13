@@ -18,7 +18,10 @@ const API = {
 
 describe('InvitationAssembler · invitado sin nombre (fase 3)', () => {
   it('queda con el correo, sin nombre ni usuario', () => {
-    const dto = InvitationAssembler.toSimpleDTO(InvitationMapper.toDomain(API), API);
+    const dto = InvitationAssembler.toSimpleDTO(
+      InvitationMapper.toDomain(API),
+      API,
+    );
 
     expect(dto.inviteeEmail).toBe('sinverificar@example.com');
     expect(dto.inviteeUserId).toBeNull();

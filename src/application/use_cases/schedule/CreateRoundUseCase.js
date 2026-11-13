@@ -28,7 +28,9 @@ class CreateRoundUseCase {
       throw new Error('Match format or tee sheet is required');
     }
     if (roundData.match_format && roundData.tee_sheet) {
-      throw new Error('A round has either a match format or a tee sheet, not both');
+      throw new Error(
+        'A round has either a match format or a tee sheet, not both',
+      );
     }
     // La hoja, con las reglas del dominio: no solo las comprueba la pantalla
     if (roundData.tee_sheet) {

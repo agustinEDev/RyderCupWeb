@@ -22,7 +22,8 @@ class CreateCompetitionWithGolfCoursesUseCase {
    * @returns {Promise<{competition: Object, successCount: number, failedCourses: string[]}>}
    */
   async execute(competitionData, golfCourses = []) {
-    const newCompetition = await this.competitionRepository.save(competitionData);
+    const newCompetition =
+      await this.competitionRepository.save(competitionData);
     const competition = CompetitionAssembler.toSimpleDTO(newCompetition);
 
     let successCount = 0;
@@ -30,7 +31,10 @@ class CreateCompetitionWithGolfCoursesUseCase {
 
     for (const golfCourse of golfCourses) {
       try {
-        await this.competitionRepository.addGolfCourse(competition.id, golfCourse.id);
+        await this.competitionRepository.addGolfCourse(
+          competition.id,
+          golfCourse.id,
+        );
         successCount++;
       } catch (error) {
         console.error(`Error adding golf course ${golfCourse.name}:`, error);

@@ -20,9 +20,15 @@ describe('la memoria de las acciones pendientes', () => {
   });
 
   it('devuelve lo último que se enseñó', () => {
-    recuerdaLasAccionesPendientes({ pendingInvitations: 2, activeQuickMatches: [{ id: 'q1' }] });
+    recuerdaLasAccionesPendientes({
+      pendingInvitations: 2,
+      activeQuickMatches: [{ id: 'q1' }],
+    });
 
-    expect(loQueSeEnseñoAntes()).toEqual({ pendingInvitations: 2, activeQuickMatches: [{ id: 'q1' }] });
+    expect(loQueSeEnseñoAntes()).toEqual({
+      pendingInvitations: 2,
+      activeQuickMatches: [{ id: 'q1' }],
+    });
   });
 
   it('al cerrar sesión se olvida', () => {

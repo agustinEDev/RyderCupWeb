@@ -16,21 +16,31 @@ import { render, screen, act } from '@testing-library/react';
  *   S2  ni a las 8 h (una jornada de torneo)               | no se cierra
  */
 const mockLogout = vi.fn();
-vi.mock('./hooks/useLogout', () => ({ useLogout: () => ({ logout: mockLogout }) }));
+vi.mock('./hooks/useLogout', () => ({
+  useLogout: () => ({ logout: mockLogout }),
+}));
 vi.mock('./hooks/useAuth', () => ({
-  getUserData: vi.fn().mockResolvedValue({ id: 'u-1', email: 'ana@example.com' }),
+  getUserData: vi
+    .fn()
+    .mockResolvedValue({ id: 'u-1', email: 'ana@example.com' }),
   useAuth: () => ({ user: { id: 'u-1' }, loading: false }),
 }));
 vi.mock('./hooks/useVaciadoDeLaCola', () => ({ useVaciadoDeLaCola: () => {} }));
 vi.mock('./hooks/useProactiveTokenRefresh', () => ({ default: () => {} }));
-vi.mock('./hooks/useDeviceRevocationMonitor', () => ({ useDeviceRevocationMonitor: () => {} }));
-vi.mock('./hooks/useCortinaDeArranque', () => ({ useCortinaDeArranque: () => {} }));
+vi.mock('./hooks/useDeviceRevocationMonitor', () => ({
+  useDeviceRevocationMonitor: () => {},
+}));
+vi.mock('./hooks/useCortinaDeArranque', () => ({
+  useCortinaDeArranque: () => {},
+}));
 vi.mock('./hooks/useVolverArriba', () => ({ useVolverArriba: () => {} }));
 vi.mock('./utils/sentryHelpers', () => ({ setUserContext: () => {} }));
 vi.mock('./components/ui/InstallBanner', () => ({ default: () => null }));
 vi.mock('./components/ui/AvisoSinConexion', () => ({ default: () => null }));
 vi.mock('./components/layout/BottomNav', () => ({ default: () => null }));
-vi.mock('./components/auth/ProtectedRoute', () => ({ default: ({ children }) => children }));
+vi.mock('./components/auth/ProtectedRoute', () => ({
+  default: ({ children }) => children,
+}));
 vi.mock('./pages/Dashboard', () => ({ default: () => <p>panel</p> }));
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({ t: (k) => k, i18n: { language: 'es' } }),
@@ -46,9 +56,16 @@ describe('App · sin cierre de sesión por inactividad (BE #376)', () => {
   beforeEach(() => {
     mockLogout.mockReset();
     // La app mira si está instalada; jsdom no trae matchMedia
-    window.matchMedia = () => ({ matches: false, addEventListener() {}, removeEventListener() {} });
+    window.matchMedia = () => ({
+      matches: false,
+      addEventListener() {},
+      removeEventListener() {},
+    });
     window.history.pushState({}, '', '/dashboard');
-    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'Date'], shouldAdvanceTime: true });
+    vi.useFakeTimers({
+      toFake: ['setTimeout', 'clearTimeout', 'Date'],
+      shouldAdvanceTime: true,
+    });
   });
 
   afterEach(() => {
@@ -60,12 +77,15 @@ describe('App · sin cierre de sesión por inactividad (BE #376)', () => {
   it.each([
     ['S1', 31 * 60 * 1000],
     ['S2', 8 * 60 * 60 * 1000],
-  ])('%s: con la sesión abierta y sin tocar nada, no se cierra', async (_, ms) => {
-    render(<App />);
-    expect(await screen.findByText('panel')).toBeInTheDocument();
+  ])(
+    '%s: con la sesión abierta y sin tocar nada, no se cierra',
+    async (_, ms) => {
+      render(<App />);
+      expect(await screen.findByText('panel')).toBeInTheDocument();
 
-    await act(() => vi.advanceTimersByTimeAsync(ms));
+      await act(() => vi.advanceTimersByTimeAsync(ms));
 
-    expect(mockLogout).not.toHaveBeenCalled();
-  });
+      expect(mockLogout).not.toHaveBeenCalled();
+    },
+  );
 });

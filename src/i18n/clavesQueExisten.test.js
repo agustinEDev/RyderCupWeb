@@ -28,7 +28,10 @@ const LOCALES = resolve(SRC, 'i18n/locales/es');
 const espacios = Object.fromEntries(
   readdirSync(LOCALES)
     .filter((f) => f.endsWith('.json'))
-    .map((f) => [f.replace('.json', ''), JSON.parse(readFileSync(resolve(LOCALES, f), 'utf8'))])
+    .map((f) => [
+      f.replace('.json', ''),
+      JSON.parse(readFileSync(resolve(LOCALES, f), 'utf8')),
+    ]),
 );
 const TODOS = Object.keys(espacios);
 // `defaultNS` de `src/i18n/config.js`
@@ -45,7 +48,9 @@ const existe = (espacio, clave) => {
   }
   if (!nodo || typeof nodo !== 'object') return false;
   if (typeof nodo[ultima] === 'string') return true;
-  return Object.keys(nodo).some((k) => k.startsWith(`${ultima}_`) && typeof nodo[k] === 'string');
+  return Object.keys(nodo).some(
+    (k) => k.startsWith(`${ultima}_`) && typeof nodo[k] === 'string',
+  );
 };
 
 const ficheros = (dir) =>
@@ -56,10 +61,12 @@ const ficheros = (dir) =>
   });
 
 // Sin comentarios: una llamada comentada no es una clave en uso
-const sinComentarios = (codigo) => codigo.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:'"`])\/\/.*$/gm, '$1');
+const sinComentarios = (codigo) =>
+  codigo.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:'"`])\/\/.*$/gm, '$1');
 
 // `const { t } = useTranslation('ns')`, `{ t: tComun }`, `{ i18n, t }`, listas de espacios
-const DECLARACION = /const\s*\{([^}]*)\}\s*=\s*useTranslation\(\s*(\[[^\]]*\]|['"][^'"]*['"])?/g;
+const DECLARACION =
+  /const\s*\{([^}]*)\}\s*=\s*useTranslation\(\s*(\[[^\]]*\]|['"][^'"]*['"])?/g;
 // `t('…')`, `tComun("…")`, `t(\`…\`)` sin variables, con `{ ns: 'x' }` opcional;
 // no `toast('…')` ni `obj.trim('…')`
 const LLAMADA =
@@ -83,7 +90,11 @@ const espaciosDeCadaT = (codigo) => {
 
 const dondeBuscar = (clave, opcionNs, candidatos) => {
   const dosPuntos = clave.indexOf(':');
-  if (dosPuntos >= 0) return { espacios: [clave.slice(0, dosPuntos)], clave: clave.slice(dosPuntos + 1) };
+  if (dosPuntos >= 0)
+    return {
+      espacios: [clave.slice(0, dosPuntos)],
+      clave: clave.slice(dosPuntos + 1),
+    };
   if (opcionNs) return { espacios: [opcionNs], clave };
   return { espacios: candidatos ?? TODOS, clave };
 };
@@ -93,12 +104,21 @@ const clavesQueFaltan = () =>
     const codigo = sinComentarios(readFileSync(fichero, 'utf8'));
     const deCadaT = espaciosDeCadaT(codigo);
     const usos = [
-      ...[...codigo.matchAll(LLAMADA)].map(([, variable, , clave, ns]) => dondeBuscar(clave, ns, deCadaT.get(variable))),
-      ...[...codigo.matchAll(I18N_KEY)].map(([, , clave]) => dondeBuscar(clave, null, null)),
+      ...[...codigo.matchAll(LLAMADA)].map(([, variable, , clave, ns]) =>
+        dondeBuscar(clave, ns, deCadaT.get(variable)),
+      ),
+      ...[...codigo.matchAll(I18N_KEY)].map(([, , clave]) =>
+        dondeBuscar(clave, null, null),
+      ),
     ];
     return usos
-      .filter(({ espacios: suyos, clave }) => !suyos.some((e) => existe(e, clave)))
-      .map(({ espacios: suyos, clave }) => `${relative(SRC, fichero)}: '${clave}' en ${suyos.length === TODOS.length ? 'ninguno' : suyos.join(', ')}`);
+      .filter(
+        ({ espacios: suyos, clave }) => !suyos.some((e) => existe(e, clave)),
+      )
+      .map(
+        ({ espacios: suyos, clave }) =>
+          `${relative(SRC, fichero)}: '${clave}' en ${suyos.length === TODOS.length ? 'ninguno' : suyos.join(', ')}`,
+      );
   });
 
 describe('Las claves de traducción existen', () => {

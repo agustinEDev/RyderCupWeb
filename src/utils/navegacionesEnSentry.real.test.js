@@ -1,7 +1,13 @@
 import { describe, it, expect, beforeAll } from 'vitest';
 import { useEffect } from 'react';
 import * as Sentry from '@sentry/react';
-import { createBrowserRouter, useLocation, useNavigationType, createRoutesFromChildren, matchRoutes } from 'react-router';
+import {
+  createBrowserRouter,
+  useLocation,
+  useNavigationType,
+  createRoutesFromChildren,
+  matchRoutes,
+} from 'react-router';
 import { registrarRouterParaSentry } from './routerParaSentry';
 import { instrumentarRouterEnSentry } from './navegacionesEnSentry';
 
@@ -30,9 +36,13 @@ const RUTAS = [
   { path: '*' },
 ];
 const spans = [];
-const recoger = { name: 'RecogerSpans', setup: (cliente) => cliente.on('spanStart', (s) => spans.push(s)) };
+const recoger = {
+  name: 'RecogerSpans',
+  setup: (cliente) => cliente.on('spanStart', (s) => spans.push(s)),
+};
 const datos = (span) => Sentry.spanToJSON(span);
-const deTipo = (op) => spans.map(datos).filter((s) => s.attributes?.['sentry.op'] === op);
+const deTipo = (op) =>
+  spans.map(datos).filter((s) => s.attributes?.['sentry.op'] === op);
 
 let router;
 beforeAll(() => {
@@ -49,7 +59,13 @@ beforeAll(() => {
     transport: () => ({ send: async () => ({}), flush: async () => true }),
   });
   Sentry.getClient().addIntegration(
-    Sentry.reactRouterV7BrowserTracingIntegration({ useEffect, useLocation, useNavigationType, createRoutesFromChildren, matchRoutes })
+    Sentry.reactRouterV7BrowserTracingIntegration({
+      useEffect,
+      useLocation,
+      useNavigationType,
+      createRoutesFromChildren,
+      matchRoutes,
+    }),
   );
   instrumentarRouterEnSentry();
 });

@@ -13,7 +13,9 @@ class SetActivitySharingUseCase {
 
   constructor({ socialFeedRepository }) {
     if (!socialFeedRepository) {
-      throw new Error('SetActivitySharingUseCase requires socialFeedRepository');
+      throw new Error(
+        'SetActivitySharingUseCase requires socialFeedRepository',
+      );
     }
     this.#socialFeedRepository = socialFeedRepository;
   }

@@ -15,23 +15,21 @@ const SolicitudesDeInscripcion = ({
   handleApproveEnrollment,
   handleRejectEnrollment,
 }) => (
-  <div
-    className="px-4 space-y-4"
-  >
+  <div className="px-4 space-y-4">
     {/* Pending Requests Section */}
-    {enrollments.filter(e => e.status === 'REQUESTED').length > 0 && (
+    {enrollments.filter((e) => e.status === 'REQUESTED').length > 0 && (
       <div className="bg-white border border-orange-200 rounded-xl p-6 shadow-sm">
         <h3 className="text-gray-900 font-bold text-base sm:text-lg mb-4 flex items-center gap-2">
           <AlertCircle className="w-5 h-5 flex-none text-orange-600" />
           <TituloConNumero
             texto={t('detail.pendingRequests')}
-            numero={enrollments.filter(e => e.status === 'REQUESTED').length}
+            numero={enrollments.filter((e) => e.status === 'REQUESTED').length}
           />
         </h3>
 
         <div className="space-y-3">
           {enrollments
-            .filter(e => e.status === 'REQUESTED')
+            .filter((e) => e.status === 'REQUESTED')
             .map((enrollment) => (
               <div
                 key={enrollment.id}
@@ -47,11 +45,17 @@ const SolicitudesDeInscripcion = ({
                   <p className="text-gray-600 text-sm wrap-anywhere">
                     {enrollment.userEmail || t('detail.noEmail')}
                   </p>
-                  {enrollment.userHandicap !== null && enrollment.userHandicap !== undefined && (
-                    <p className="text-gray-500 text-sm mt-1">
-                      {t('detail.handicapLabel', { handicap: formatoDeIndice(enrollment.userHandicap, i18n.language) })}
-                    </p>
-                  )}
+                  {enrollment.userHandicap !== null &&
+                    enrollment.userHandicap !== undefined && (
+                      <p className="text-gray-500 text-sm mt-1">
+                        {t('detail.handicapLabel', {
+                          handicap: formatoDeIndice(
+                            enrollment.userHandicap,
+                            i18n.language,
+                          ),
+                        })}
+                      </p>
+                    )}
                 </div>
                 <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
                   <button
@@ -62,7 +66,13 @@ const SolicitudesDeInscripcion = ({
                         ? 'bg-gray-400 cursor-not-allowed'
                         : 'bg-green-600 hover:bg-green-700'
                     }`}
-                    title={isFull ? t('detail.competitionFull', { max: competition.maxPlayers }) : t('detail.approve')}
+                    title={
+                      isFull
+                        ? t('detail.competitionFull', {
+                            max: competition.maxPlayers,
+                          })
+                        : t('detail.approve')
+                    }
                   >
                     ✓ {t('detail.approve')}
                   </button>
@@ -84,22 +94,28 @@ const SolicitudesDeInscripcion = ({
         no es un error. Flecha propia en vez del triángulo del
         navegador, que iba suelto en su línea, y filas que no se
         salen de su tarjeta aunque el correo sea largo */}
-    {enrollments.some(e => e.status === 'REJECTED') && (
-      <details data-testid="solicitudes-rechazadas" className="group bg-white border border-gray-200 rounded-xl shadow-sm">
+    {enrollments.some((e) => e.status === 'REJECTED') && (
+      <details
+        data-testid="solicitudes-rechazadas"
+        className="group bg-white border border-gray-200 rounded-xl shadow-sm"
+      >
         <summary className="flex items-center gap-3 p-4 cursor-pointer list-none rounded-xl hover:bg-gray-50 [&::-webkit-details-marker]:hidden focus:outline-none focus-visible:ring-2 focus-visible:ring-primary">
           <span className="grid h-8 w-8 flex-none place-items-center rounded-lg bg-gray-100 text-gray-500">
             <UserX className="h-4 w-4" aria-hidden="true" />
           </span>
           <TituloConNumero
             texto={t('detail.rejectedRequests')}
-            numero={enrollments.filter(e => e.status === 'REJECTED').length}
+            numero={enrollments.filter((e) => e.status === 'REJECTED').length}
             claseDelTexto="font-semibold text-gray-700"
           />
-          <ChevronRight className="h-4 w-4 flex-none text-gray-400 transition-transform group-open:rotate-90 motion-reduce:transition-none" aria-hidden="true" />
+          <ChevronRight
+            className="h-4 w-4 flex-none text-gray-400 transition-transform group-open:rotate-90 motion-reduce:transition-none"
+            aria-hidden="true"
+          />
         </summary>
         <div className="space-y-2 border-t border-gray-100 px-4 pb-4 pt-3">
           {enrollments
-            .filter(e => e.status === 'REJECTED')
+            .filter((e) => e.status === 'REJECTED')
             .map((enrollment) => (
               <div
                 key={enrollment.id}

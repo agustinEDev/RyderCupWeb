@@ -23,14 +23,29 @@ export const useSePuedeTerminarLaCompeticion = ({
     (hasCreatorRole || isAdmin || competition?.creatorId === userId);
   // Solo las que tienen a alguien: una franja vacía no se juega (revisor). Se
   // mira con cada lectura de la agenda: también acaban partidas al entregar
-  const franjasJugadas = (agendaLeida?.rounds ?? []).filter((r) => r.teeSheet?.placesTaken > 0).map((r) => r.id);
+  const franjasJugadas = (agendaLeida?.rounds ?? [])
+    .filter((r) => r.teeSheet?.placesTaken > 0)
+    .map((r) => r.id);
   const claveDeFranjas = franjasJugadas.join('|');
   useEffect(() => {
     if (!leeSiTerminar || !claveDeFranjas) return undefined;
     let vigente = true;
-    Promise.all(claveDeFranjas.split('|').map((roundId) => getTeeGroupsUseCase.execute(roundId)))
-      .then((vistas) => vigente && setCierre({ clave: claveDeFranjas, cerradas: todasLasFranjasCerradas(vistas) }))
-      .catch(() => vigente && setCierre({ clave: claveDeFranjas, cerradas: false }));
+    Promise.all(
+      claveDeFranjas
+        .split('|')
+        .map((roundId) => getTeeGroupsUseCase.execute(roundId)),
+    )
+      .then(
+        (vistas) =>
+          vigente &&
+          setCierre({
+            clave: claveDeFranjas,
+            cerradas: todasLasFranjasCerradas(vistas),
+          }),
+      )
+      .catch(
+        () => vigente && setCierre({ clave: claveDeFranjas, cerradas: false }),
+      );
     return () => {
       vigente = false;
     };

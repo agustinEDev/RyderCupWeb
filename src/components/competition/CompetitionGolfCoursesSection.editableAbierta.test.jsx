@@ -9,7 +9,9 @@ import { render, screen, within } from '@testing-library/react';
  */
 const mockCampos = vi.fn();
 vi.mock('../../composition', () => ({
-  getCompetitionGolfCoursesUseCase: { execute: (...args) => mockCampos(...args) },
+  getCompetitionGolfCoursesUseCase: {
+    execute: (...args) => mockCampos(...args),
+  },
   addGolfCourseToCompetitionUseCase: { execute: vi.fn() },
   removeGolfCourseFromCompetitionUseCase: { execute: vi.fn() },
   reorderGolfCoursesUseCase: { execute: vi.fn() },
@@ -17,19 +19,30 @@ vi.mock('../../composition', () => ({
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
-    t: (clave, opciones) => (opciones?.name ? `${clave}:${opciones.name}` : clave),
+    t: (clave, opciones) =>
+      opciones?.name ? `${clave}:${opciones.name}` : clave,
     i18n: { language: 'es' },
   }),
 }));
 
 vi.mock('../golf_course/GolfCourseSearchBox', () => ({ default: () => null }));
-vi.mock('../../services/countries', () => ({ formatCountryName: () => 'España' }));
+vi.mock('../../services/countries', () => ({
+  formatCountryName: () => 'España',
+}));
 vi.mock('../ui/CountryFlag', () => ({ CountryFlag: () => null }));
-vi.mock('../../utils/toast', () => ({ default: { error: vi.fn(), success: vi.fn() } }));
+vi.mock('../../utils/toast', () => ({
+  default: { error: vi.fn(), success: vi.fn() },
+}));
 
-const CompetitionGolfCoursesSection = (await import('./CompetitionGolfCoursesSection')).default;
+const CompetitionGolfCoursesSection = (
+  await import('./CompetitionGolfCoursesSection')
+).default;
 
-const competicion = (status) => ({ id: 'c-1', status, countries: [{ code: 'ES' }] });
+const competicion = (status) => ({
+  id: 'c-1',
+  status,
+  countries: [{ code: 'ES' }],
+});
 
 describe('CompetitionGolfCoursesSection · poner el campo después de invitar', () => {
   beforeEach(() => {
@@ -37,9 +50,16 @@ describe('CompetitionGolfCoursesSection · poner el campo después de invitar', 
   });
 
   it('con las inscripciones abiertas todavía se puede añadir un campo', async () => {
-    render(<CompetitionGolfCoursesSection competition={competicion('ACTIVE')} canManage={true} />);
+    render(
+      <CompetitionGolfCoursesSection
+        competition={competicion('ACTIVE')}
+        canManage={true}
+      />,
+    );
 
-    expect(await screen.findByText('detail.golfCourses.addCourse')).toBeInTheDocument();
+    expect(
+      await screen.findByText('detail.golfCourses.addCourse'),
+    ).toBeInTheDocument();
   });
 
   // Los campos se editan desde la ficha en CUALQUIER tipo de torneo, no solo en
@@ -48,77 +68,148 @@ describe('CompetitionGolfCoursesSection · poner el campo después de invitar', 
     ['RYDER_CUP', true],
     ['STABLEFORD', false],
     ['MEDAL', false],
-  ])('un %s abierto también deja añadir campo', async (tournamentType, hasTeams) => {
-    render(
-      <CompetitionGolfCoursesSection
-        competition={{ ...competicion('ACTIVE'), tournamentType, hasTeams }}
-        canManage={true}
-      />
-    );
+  ])(
+    'un %s abierto también deja añadir campo',
+    async (tournamentType, hasTeams) => {
+      render(
+        <CompetitionGolfCoursesSection
+          competition={{ ...competicion('ACTIVE'), tournamentType, hasTeams }}
+          canManage={true}
+        />,
+      );
 
-    expect(await screen.findByText('detail.golfCourses.addCourse')).toBeInTheDocument();
-  });
+      expect(
+        await screen.findByText('detail.golfCourses.addCourse'),
+      ).toBeInTheDocument();
+    },
+  );
 
   it('en borrador, como siempre', async () => {
-    render(<CompetitionGolfCoursesSection competition={competicion('DRAFT')} canManage={true} />);
+    render(
+      <CompetitionGolfCoursesSection
+        competition={competicion('DRAFT')}
+        canManage={true}
+      />,
+    );
 
-    expect(await screen.findByText('detail.golfCourses.addCourse')).toBeInTheDocument();
+    expect(
+      await screen.findByText('detail.golfCourses.addCourse'),
+    ).toBeInTheDocument();
   });
 
   // FE #713: con la agenda propuesta al crear, toda competición Ryder nace con
   // sesiones; el servidor ya deja añadir campos hasta que se acaba (BE #368)
-  it.each(['CLOSED', 'IN_PROGRESS'])('%s: se sigue pudiendo añadir un campo', async (estado) => {
-    render(<CompetitionGolfCoursesSection competition={competicion(estado)} canManage={true} />);
+  it.each(['CLOSED', 'IN_PROGRESS'])(
+    '%s: se sigue pudiendo añadir un campo',
+    async (estado) => {
+      render(
+        <CompetitionGolfCoursesSection
+          competition={competicion(estado)}
+          canManage={true}
+        />,
+      );
 
-    expect(await screen.findByText('detail.golfCourses.addCourse')).toBeInTheDocument();
-  });
+      expect(
+        await screen.findByText('detail.golfCourses.addCourse'),
+      ).toBeInTheDocument();
+    },
+  );
 
   it.each(['COMPLETED', 'CANCELLED'])('%s: ya no', async (estado) => {
-    render(<CompetitionGolfCoursesSection competition={competicion(estado)} canManage={true} />);
+    render(
+      <CompetitionGolfCoursesSection
+        competition={competicion(estado)}
+        canManage={true}
+      />,
+    );
 
     await screen.findByText('detail.golfCourses.title');
-    expect(screen.queryByText('detail.golfCourses.addCourse')).not.toBeInTheDocument();
+    expect(
+      screen.queryByText('detail.golfCourses.addCourse'),
+    ).not.toBeInTheDocument();
   });
 
   it('con un estado que no conoce, no ofrece añadir pero la sección se pinta', async () => {
-    render(<CompetitionGolfCoursesSection competition={competicion(undefined)} canManage={true} />);
+    render(
+      <CompetitionGolfCoursesSection
+        competition={competicion(undefined)}
+        canManage={true}
+      />,
+    );
 
     await screen.findByText('detail.golfCourses.title');
-    expect(screen.queryByText('detail.golfCourses.addCourse')).not.toBeInTheDocument();
+    expect(
+      screen.queryByText('detail.golfCourses.addCourse'),
+    ).not.toBeInTheDocument();
   });
 
   it('cerradas las inscripciones, quitar y reordenar siguen sin poderse', async () => {
     mockCampos.mockResolvedValue([
-      { golf_course_id: 'g-1', display_order: 1, golf_course: { id: 'g-1', name: 'Altea' } },
-      { golf_course_id: 'g-2', display_order: 2, golf_course: { id: 'g-2', name: 'Villaitana' } },
+      {
+        golf_course_id: 'g-1',
+        display_order: 1,
+        golf_course: { id: 'g-1', name: 'Altea' },
+      },
+      {
+        golf_course_id: 'g-2',
+        display_order: 2,
+        golf_course: { id: 'g-2', name: 'Villaitana' },
+      },
     ]);
-    render(<CompetitionGolfCoursesSection competition={competicion('CLOSED')} canManage={true} />);
+    render(
+      <CompetitionGolfCoursesSection
+        competition={competicion('CLOSED')}
+        canManage={true}
+      />,
+    );
 
     await screen.findAllByText('Altea');
     expect(
-      screen.queryAllByRole('button', { name: /detail\.golfCourses\.remove/ })
+      screen.queryAllByRole('button', { name: /detail\.golfCourses\.remove/ }),
     ).toHaveLength(0);
-    expect(screen.queryByText('detail.golfCourses.dragToReorder')).not.toBeInTheDocument();
+    expect(
+      screen.queryByText('detail.golfCourses.dragToReorder'),
+    ).not.toBeInTheDocument();
   });
 
   // Ronda 2 de pruebas · el número aparte, y «Añadir Campo» sin partirse a
   // 360 px (salía en dos líneas y el título también)
   it('N3: el número en su pastilla y el botón de añadir en una línea', async () => {
     mockCampos.mockResolvedValue([
-      { golf_course_id: 'g-1', display_order: 1, golf_course: { id: 'g-1', name: 'Altea' } },
+      {
+        golf_course_id: 'g-1',
+        display_order: 1,
+        golf_course: { id: 'g-1', name: 'Altea' },
+      },
     ]);
-    render(<CompetitionGolfCoursesSection competition={competicion('ACTIVE')} canManage={true} />);
+    render(
+      <CompetitionGolfCoursesSection
+        competition={competicion('ACTIVE')}
+        canManage={true}
+      />,
+    );
 
-    const titulo = (await screen.findByText('detail.golfCourses.title')).closest('h3');
-    expect(within(titulo).getByTestId('numero-de-la-seccion')).toHaveTextContent('1');
-    expect(screen.getByText('detail.golfCourses.addCourse').closest('button')).toHaveClass('whitespace-nowrap');
+    const titulo = (
+      await screen.findByText('detail.golfCourses.title')
+    ).closest('h3');
+    expect(
+      within(titulo).getByTestId('numero-de-la-seccion'),
+    ).toHaveTextContent('1');
+    expect(
+      screen.getByText('detail.golfCourses.addCourse').closest('button'),
+    ).toHaveClass('whitespace-nowrap');
   });
 
   // CodeRabbit en la #749, visto a 360 px: con el botón al lado, el título se
   // estrujaba en tres líneas («Campos / de / golf») y «Campos» no cabía en su
   // caja. El título no se parte; si no cabe, el botón baja a su fila
   it('N3b: el título entero en una línea; el botón baja si no cabe', async () => {
-    render(<CompetitionGolfCoursesSection competition={competicion('ACTIVE')} canManage={true} />);
+    render(
+      <CompetitionGolfCoursesSection
+        competition={competicion('ACTIVE')}
+        canManage={true}
+      />,
+    );
 
     const texto = await screen.findByText('detail.golfCourses.title');
     // El título ocupa la fila en el móvil y su número va al borde derecho
@@ -127,14 +218,23 @@ describe('CompetitionGolfCoursesSection · poner el campo después de invitar', 
     expect(texto.closest('h3').parentElement).toHaveClass('flex-wrap');
     // En el móvil, de lado a lado y con el texto centrado (Agustín, ronda 2):
     // alineado a la derecha no quedaba bien. Desde tablet, a su tamaño
-    const boton = screen.getByText('detail.golfCourses.addCourse').closest('button');
+    const boton = screen
+      .getByText('detail.golfCourses.addCourse')
+      .closest('button');
     expect(boton).toHaveClass('w-full', 'justify-center', 'sm:w-auto');
   });
 
   it('y quien no gestiona no añade nada', async () => {
-    render(<CompetitionGolfCoursesSection competition={competicion('ACTIVE')} canManage={false} />);
+    render(
+      <CompetitionGolfCoursesSection
+        competition={competicion('ACTIVE')}
+        canManage={false}
+      />,
+    );
 
     await screen.findByText('detail.golfCourses.title');
-    expect(screen.queryByText('detail.golfCourses.addCourse')).not.toBeInTheDocument();
+    expect(
+      screen.queryByText('detail.golfCourses.addCourse'),
+    ).not.toBeInTheDocument();
   });
 });

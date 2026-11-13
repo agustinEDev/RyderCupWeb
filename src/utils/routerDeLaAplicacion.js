@@ -35,6 +35,9 @@ export const creaElRouterDeLaAplicacion = (rutas) => {
   // Con `??`: los `<Link>` mandan `preventScrollReset: undefined` explícito. Con
   // un número (`navigate(-1)`) el router va al historial y no mira las opciones
   router.navigate = (destino, opciones) =>
-    navega(destino, { ...opciones, preventScrollReset: opciones?.preventScrollReset ?? true });
+    navega(destino, {
+      ...opciones,
+      preventScrollReset: opciones?.preventScrollReset ?? true,
+    });
   return router;
 };

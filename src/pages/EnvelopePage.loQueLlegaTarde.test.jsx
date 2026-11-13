@@ -1,5 +1,11 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
+import {
+  render,
+  screen,
+  fireEvent,
+  waitFor,
+  act,
+} from '@testing-library/react';
 import { StrictMode } from 'react';
 import { MemoryRouter, Routes, Route, useNavigate } from 'react-router';
 
@@ -13,11 +19,20 @@ const t = (clave) => clave;
 const traduccion = { i18n: { language: 'es' }, t };
 vi.mock('react-i18next', () => ({ useTranslation: () => traduccion }));
 vi.mock('framer-motion', () => ({
-  motion: new Proxy({}, { get: () => ({ children, ...props }) => <div {...props}>{children}</div> }),
+  motion: new Proxy(
+    {},
+    {
+      get:
+        () =>
+        ({ children, ...props }) => <div {...props}>{children}</div>,
+    },
+  ),
 }));
 vi.mock('../components/layout/HeaderAuth', () => ({ default: () => null }));
 // Aquí la espera SÍ se pinta: es lo que se mira al cambiar de ronda
-vi.mock('../components/ui/FullScreenLoader', () => ({ default: () => <p data-testid="espera-de-pantalla" /> }));
+vi.mock('../components/ui/FullScreenLoader', () => ({
+  default: () => <p data-testid="espera-de-pantalla" />,
+}));
 
 const SESION = { user: { id: 'ana' }, loading: false };
 vi.mock('../hooks/useAuth', () => ({ useAuth: () => SESION }));
@@ -33,7 +48,12 @@ vi.mock('../composition', () => ({
   revealEnvelopesUseCase: { execute: (...a) => mockAbrir(...a) },
 }));
 vi.mock('../utils/toast', () => ({
-  default: { success: vi.fn(), error: vi.fn(), warning: vi.fn(), info: vi.fn() },
+  default: {
+    success: vi.fn(),
+    error: vi.fn(),
+    warning: vi.fn(),
+    info: vi.fn(),
+  },
 }));
 import customToast from '../utils/toast';
 
@@ -61,7 +81,12 @@ const vista = (extra = {}) => ({
   rivalWantsEarly: false,
   revealScheduledAt: '2030-06-01T00:00:00+02:00',
   myPlayers: JUGADORES,
-  playerNames: { ana: 'Ana Alba', bea: 'Bea Blanco', carla: 'Carla Cruz', dani: 'Dani Díaz' },
+  playerNames: {
+    ana: 'Ana Alba',
+    bea: 'Bea Blanco',
+    carla: 'Carla Cruz',
+    dani: 'Dani Díaz',
+  },
   ...extra,
 });
 
@@ -73,13 +98,18 @@ const Navegador = () => {
 
 const pintar = () =>
   render(
-    <MemoryRouter initialEntries={['/competitions/comp-1/rounds/ronda-1/envelope']}>
+    <MemoryRouter
+      initialEntries={['/competitions/comp-1/rounds/ronda-1/envelope']}
+    >
       <Navegador />
       <Routes>
-        <Route path="/competitions/:id/rounds/:roundId/envelope" element={<EnvelopePage />} />
+        <Route
+          path="/competitions/:id/rounds/:roundId/envelope"
+          element={<EnvelopePage />}
+        />
         <Route path="*" element={<p data-testid="otra-pantalla" />} />
       </Routes>
-    </MemoryRouter>
+    </MemoryRouter>,
   );
 
 // La ronda 2 tarda: se puede mirar la pantalla mientras llega
@@ -87,8 +117,10 @@ const rondaDosLenta = (laVista) => {
   let devolver;
   mockVer.mockImplementation((roundId) =>
     roundId === 'ronda-2'
-      ? new Promise((resolve) => { devolver = () => resolve(laVista); })
-      : Promise.resolve(vista())
+      ? new Promise((resolve) => {
+          devolver = () => resolve(laVista);
+        })
+      : Promise.resolve(vista()),
   );
   return () => devolver();
 };
@@ -97,12 +129,20 @@ describe('EnvelopePage · lo que llega tarde y el cambio de ronda (T5)', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockVer.mockResolvedValue(vista());
-    mockCompeticion.mockResolvedValue({ team1Name: 'Europa', team2Name: 'América' });
+    mockCompeticion.mockResolvedValue({
+      team1Name: 'Europa',
+      team2Name: 'América',
+    });
   });
 
   it('T5-12: la carga lenta que falla después de salir no avisa en la otra pantalla', async () => {
     let fallar;
-    mockVer.mockImplementation(() => new Promise((_, reject) => { fallar = () => reject(new Error('Boom')); }));
+    mockVer.mockImplementation(
+      () =>
+        new Promise((_, reject) => {
+          fallar = () => reject(new Error('Boom'));
+        }),
+    );
     pintar();
     await waitFor(() => expect(fallar).toBeTypeOf('function'));
 
@@ -146,8 +186,21 @@ describe('EnvelopePage · lo que llega tarde y el cambio de ronda (T5)', () => {
     // Cada ronda con su sobre: el de la 2 tiene otro orden
     mockVer.mockImplementation(async (roundId) =>
       roundId === 'ronda-2'
-        ? vista({ roundId, mine: { submitted: true, entries: [['bea'], ['ana']], revealWhenBothReady: false } })
-        : vista({ mine: { submitted: true, entries: [['ana'], ['bea']], revealWhenBothReady: false } })
+        ? vista({
+            roundId,
+            mine: {
+              submitted: true,
+              entries: [['bea'], ['ana']],
+              revealWhenBothReady: false,
+            },
+          })
+        : vista({
+            mine: {
+              submitted: true,
+              entries: [['ana'], ['bea']],
+              revealWhenBothReady: false,
+            },
+          }),
     );
     pintar();
     fireEvent.click(await screen.findByTestId('cambiar-sobre'));
@@ -171,8 +224,18 @@ describe('EnvelopePage · lo que llega tarde y el cambio de ronda (T5)', () => {
     let darLaRondaDos;
     mockVer.mockImplementation((roundId) =>
       roundId === 'ronda-2'
-        ? new Promise((resolve) => { darLaRondaDos = () => resolve(vista({ roundId })); })
-        : Promise.resolve(vista({ mine: { submitted: true, entries: [['ana'], ['bea']], revealWhenBothReady: false } }))
+        ? new Promise((resolve) => {
+            darLaRondaDos = () => resolve(vista({ roundId }));
+          })
+        : Promise.resolve(
+            vista({
+              mine: {
+                submitted: true,
+                entries: [['ana'], ['bea']],
+                revealWhenBothReady: false,
+              },
+            }),
+          ),
     );
     pintar();
     expect(await screen.findByTestId('dar-permiso')).toBeInTheDocument();
@@ -209,7 +272,10 @@ describe('EnvelopePage · lo que llega tarde y el cambio de ronda (T5)', () => {
         revealed: true,
         teamASubmitted: true,
         teamBSubmitted: true,
-        matchups: [[['ana'], ['carla']], [['bea'], ['dani']]],
+        matchups: [
+          [['ana'], ['carla']],
+          [['bea'], ['dani']],
+        ],
       });
     });
     pintar();
@@ -219,7 +285,9 @@ describe('EnvelopePage · lo que llega tarde y el cambio de ronda (T5)', () => {
       irA('/competitions/comp-1/rounds/ronda-2/envelope');
     });
 
-    expect(await screen.findByTestId('sobre-no-disponible')).toHaveTextContent('Boom');
+    expect(await screen.findByTestId('sobre-no-disponible')).toHaveTextContent(
+      'Boom',
+    );
     expect(screen.queryByTestId('enfrentamiento-0')).not.toBeInTheDocument();
     expect(screen.queryByTestId('espera-de-pantalla')).not.toBeInTheDocument();
   });
@@ -231,25 +299,48 @@ describe('EnvelopePage · lo que llega tarde y el cambio de ronda (T5)', () => {
     const entregadoYEsperando = () =>
       vista({
         teamASubmitted: true,
-        mine: { team: 'A', entries: [['ana'], ['bea']], submitted: true, automatic: false },
+        mine: {
+          team: 'A',
+          entries: [['ana'], ['bea']],
+          submitted: true,
+          automatic: false,
+        },
       });
     const conElPermiso = () =>
       vista({
         teamASubmitted: true,
-        mine: { team: 'A', entries: [['ana'], ['bea']], submitted: true, automatic: false, revealWhenBothReady: true },
+        mine: {
+          team: 'A',
+          entries: [['ana'], ['bea']],
+          submitted: true,
+          automatic: false,
+          revealWhenBothReady: true,
+        },
       });
     const abiertos = () =>
       vista({
         revealed: true,
         teamASubmitted: true,
         teamBSubmitted: true,
-        matchups: [[['ana'], ['carla']], [['bea'], ['dani']]],
-        mine: { team: 'A', entries: [['ana'], ['bea']], submitted: true, automatic: false },
+        matchups: [
+          [['ana'], ['carla']],
+          [['bea'], ['dani']],
+        ],
+        mine: {
+          team: 'A',
+          entries: [['ana'], ['bea']],
+          submitted: true,
+          automatic: false,
+        },
       });
 
     beforeEach(() => {
       vi.useFakeTimers({ shouldAdvanceTime: true });
-      mockEntregar.mockResolvedValue({ team: 'A', entries: [['ana'], ['bea']], automatic: false });
+      mockEntregar.mockResolvedValue({
+        team: 'A',
+        entries: [['ana'], ['bea']],
+        automatic: false,
+      });
     });
     afterEach(() => {
       vi.useRealTimers();
@@ -260,9 +351,12 @@ describe('EnvelopePage · lo que llega tarde y el cambio de ronda (T5)', () => {
       let terminarLaRecarga;
       mockVer
         .mockResolvedValueOnce(entregadoYEsperando())
-        .mockImplementationOnce(() => new Promise((resolve, reject) => {
-          terminarLaRecarga = () => recargaLenta(resolve, reject);
-        }))
+        .mockImplementationOnce(
+          () =>
+            new Promise((resolve, reject) => {
+              terminarLaRecarga = () => recargaLenta(resolve, reject);
+            }),
+        )
         .mockImplementation(despues);
       pintar();
       fireEvent.click(await screen.findByTestId('dar-permiso'));
@@ -279,33 +373,47 @@ describe('EnvelopePage · lo que llega tarde y el cambio de ronda (T5)', () => {
     };
 
     it('T5-10b: el tic no sale y lo que trae la recarga llega a la pantalla', async () => {
-      await darElPermisoConLaRecargaLenta((resolve) => resolve(conElPermiso()), async () => abiertos());
+      await darElPermisoConLaRecargaLenta(
+        (resolve) => resolve(conElPermiso()),
+        async () => abiertos(),
+      );
 
       expect(await screen.findByTestId('retirar-permiso')).toBeInTheDocument();
       expect(screen.queryByTestId('enfrentamiento-0')).not.toBeInTheDocument();
     });
 
     it('T5-10c: si la recarga falla, avisa una vez y el refresco siguiente lo arregla', async () => {
-      await darElPermisoConLaRecargaLenta((_, reject) => reject(new Error('Boom')), async () => abiertos());
+      await darElPermisoConLaRecargaLenta(
+        (_, reject) => reject(new Error('Boom')),
+        async () => abiertos(),
+      );
 
-      expect(await screen.findByTestId('sobre-no-disponible')).toHaveTextContent('Boom');
+      expect(
+        await screen.findByTestId('sobre-no-disponible'),
+      ).toHaveTextContent('Boom');
       expect(customToast.error).toHaveBeenCalledTimes(1);
       await act(async () => {
         await vi.advanceTimersByTimeAsync(10000);
       });
       expect(await screen.findByTestId('enfrentamiento-0')).toBeInTheDocument();
-      expect(screen.queryByTestId('sobre-no-disponible')).not.toBeInTheDocument();
+      expect(
+        screen.queryByTestId('sobre-no-disponible'),
+      ).not.toBeInTheDocument();
       expect(customToast.error).toHaveBeenCalledTimes(1);
     });
 
     it('T5-10d: con un refresco que fallaría, el estado tras dar el permiso llega igual, sin avisos', async () => {
       await darElPermisoConLaRecargaLenta(
         (resolve) => resolve(conElPermiso()),
-        async () => { throw new Error('Refresco caído'); }
+        async () => {
+          throw new Error('Refresco caído');
+        },
       );
 
       expect(await screen.findByTestId('retirar-permiso')).toBeInTheDocument();
-      expect(screen.queryByTestId('sobre-no-disponible')).not.toBeInTheDocument();
+      expect(
+        screen.queryByTestId('sobre-no-disponible'),
+      ).not.toBeInTheDocument();
       expect(customToast.error).not.toHaveBeenCalled();
     });
   });
@@ -315,7 +423,12 @@ describe('EnvelopePage · lo que llega tarde y el cambio de ronda (T5)', () => {
     try {
       const entregado = vista({
         teamASubmitted: true,
-        mine: { team: 'A', entries: [['ana'], ['bea']], submitted: true, automatic: false },
+        mine: {
+          team: 'A',
+          entries: [['ana'], ['bea']],
+          submitted: true,
+          automatic: false,
+        },
       });
       mockVer.mockImplementation(async (roundId) => {
         if (roundId === 'ronda-2') throw new Error('Boom');
@@ -332,7 +445,9 @@ describe('EnvelopePage · lo que llega tarde y el cambio de ronda (T5)', () => {
         irA('/competitions/comp-1/rounds/ronda-2/envelope');
       });
 
-      expect(await screen.findByTestId('sobre-no-disponible')).toHaveTextContent('Boom');
+      expect(
+        await screen.findByTestId('sobre-no-disponible'),
+      ).toHaveTextContent('Boom');
       expect(customToast.error).toHaveBeenCalledWith('Boom');
     } finally {
       vi.useRealTimers();
@@ -346,9 +461,15 @@ describe('EnvelopePage · lo que llega tarde y el cambio de ronda (T5)', () => {
     const entregarYPasarALaRonda2 = async (rondaDos) => {
       let terminarLaEntrega;
       mockEntregar.mockImplementation(
-        () => new Promise((resolve) => { terminarLaEntrega = () => resolve({ team: 'A', entries: [['ana'], ['bea']] }); })
+        () =>
+          new Promise((resolve) => {
+            terminarLaEntrega = () =>
+              resolve({ team: 'A', entries: [['ana'], ['bea']] });
+          }),
       );
-      mockVer.mockImplementation((roundId) => (roundId === 'ronda-2' ? rondaDos() : Promise.resolve(vista())));
+      mockVer.mockImplementation((roundId) =>
+        roundId === 'ronda-2' ? rondaDos() : Promise.resolve(vista()),
+      );
       pintar();
       fireEvent.click(await screen.findByTestId('jugador-ana'));
       fireEvent.click(screen.getByTestId('jugador-bea'));
@@ -361,15 +482,23 @@ describe('EnvelopePage · lo que llega tarde y el cambio de ronda (T5)', () => {
       return terminarLaEntrega;
     };
     it('en modo estricto (montar, desmontar y volver a montar), entregar sin cambiar de ronda sí recarga', async () => {
-      mockEntregar.mockResolvedValue({ team: 'A', entries: [['ana'], ['bea']] });
+      mockEntregar.mockResolvedValue({
+        team: 'A',
+        entries: [['ana'], ['bea']],
+      });
       render(
         <StrictMode>
-          <MemoryRouter initialEntries={['/competitions/comp-1/rounds/ronda-1/envelope']}>
+          <MemoryRouter
+            initialEntries={['/competitions/comp-1/rounds/ronda-1/envelope']}
+          >
             <Routes>
-              <Route path="/competitions/:id/rounds/:roundId/envelope" element={<EnvelopePage />} />
+              <Route
+                path="/competitions/:id/rounds/:roundId/envelope"
+                element={<EnvelopePage />}
+              />
             </Routes>
           </MemoryRouter>
-        </StrictMode>
+        </StrictMode>,
       );
       fireEvent.click(await screen.findByTestId('jugador-ana'));
       fireEvent.click(screen.getByTestId('jugador-bea'));
@@ -380,12 +509,24 @@ describe('EnvelopePage · lo que llega tarde y el cambio de ronda (T5)', () => {
       await waitFor(() => expect(mockVer.mock.calls.length).toBe(antes + 1));
     });
 
-    const llamadasDeLaRonda2 = () => mockVer.mock.calls.filter(([roundId]) => roundId === 'ronda-2').length;
+    const llamadasDeLaRonda2 = () =>
+      mockVer.mock.calls.filter(([roundId]) => roundId === 'ronda-2').length;
 
     it('con la carga de la ronda 2 en vuelo, no la deja vieja: llega la suya', async () => {
       let darLaRonda2;
       const terminarLaEntrega = await entregarYPasarALaRonda2(
-        () => new Promise((resolve) => { darLaRonda2 = () => resolve(vista({ roundId: 'ronda-2', myPlayers: [{ userId: 'carla', name: 'Carla Cruz', handicap: 20 }] })); })
+        () =>
+          new Promise((resolve) => {
+            darLaRonda2 = () =>
+              resolve(
+                vista({
+                  roundId: 'ronda-2',
+                  myPlayers: [
+                    { userId: 'carla', name: 'Carla Cruz', handicap: 20 },
+                  ],
+                }),
+              );
+          }),
       );
 
       await act(async () => {
@@ -405,7 +546,9 @@ describe('EnvelopePage · lo que llega tarde y el cambio de ronda (T5)', () => {
       let veces = 0;
       const terminarLaEntrega = await entregarYPasarALaRonda2(() => {
         veces += 1;
-        return veces === 1 ? Promise.resolve(vista({ roundId: 'ronda-2' })) : Promise.reject(new Error('Boom'));
+        return veces === 1
+          ? Promise.resolve(vista({ roundId: 'ronda-2' }))
+          : Promise.reject(new Error('Boom'));
       });
       expect(await screen.findByTestId('jugador-ana')).toBeInTheDocument();
 
@@ -415,7 +558,9 @@ describe('EnvelopePage · lo que llega tarde y el cambio de ronda (T5)', () => {
       });
 
       expect(llamadasDeLaRonda2()).toBe(1);
-      expect(screen.queryByTestId('sobre-no-disponible')).not.toBeInTheDocument();
+      expect(
+        screen.queryByTestId('sobre-no-disponible'),
+      ).not.toBeInTheDocument();
       expect(customToast.error).not.toHaveBeenCalled();
     });
   });
@@ -423,11 +568,17 @@ describe('EnvelopePage · lo que llega tarde y el cambio de ronda (T5)', () => {
   it('T5-21: los nombres de los equipos, solo con un sobre automático, y su fallo no se nota', async () => {
     mockCompeticion.mockRejectedValue(new Error('Boom'));
     mockVer.mockResolvedValue(
-      vista({ revealed: true, teamAAutomatic: true, matchups: [[['ana'], ['carla']]] })
+      vista({
+        revealed: true,
+        teamAAutomatic: true,
+        matchups: [[['ana'], ['carla']]],
+      }),
     );
     pintar();
 
-    expect(await screen.findByTestId('automatico')).toHaveTextContent('envelope.filledByTheApp');
+    expect(await screen.findByTestId('automatico')).toHaveTextContent(
+      'envelope.filledByTheApp',
+    );
     await waitFor(() => expect(mockCompeticion).toHaveBeenCalledWith('comp-1'));
     expect(customToast.error).not.toHaveBeenCalled();
     expect(screen.queryByTestId('sobre-no-disponible')).not.toBeInTheDocument();

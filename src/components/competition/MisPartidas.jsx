@@ -3,7 +3,13 @@ import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
 import { getMyTeeGroupsUseCase } from '../../composition';
 import { useLaMasNueva } from '../../hooks/useLaMasNueva';
-import { anotaSuTarjeta, companerosDe, esNoPresentado, juegan, seRetiro } from '../../domain/services/PartidasDeLaFranja';
+import {
+  anotaSuTarjeta,
+  companerosDe,
+  esNoPresentado,
+  juegan,
+  seRetiro,
+} from '../../domain/services/PartidasDeLaFranja';
 import { conGenero } from '../../utils/genero';
 import { nombreDeCompanero } from '../../utils/nombreDeCompanero';
 
@@ -20,7 +26,13 @@ import { nombreDeCompanero } from '../../utils/nombreDeCompanero';
  * @param {(dia: string) => string} props.fecha - «sáb 12 oct», la de las franjas
  * @param {number|null} [props.categoria] - La suya, si salió más de una (QA del 11 oct 2026)
  */
-const MisPartidas = ({ competitionId, userId, version, fecha, categoria = null }) => {
+const MisPartidas = ({
+  competitionId,
+  userId,
+  version,
+  fecha,
+  categoria = null,
+}) => {
   const { t } = useTranslation('schedule');
   const [mias, setMias] = useState([]);
   const lecturas = useLaMasNueva();
@@ -47,12 +59,18 @@ const MisPartidas = ({ competitionId, userId, version, fecha, categoria = null }
         // Sin los no presentados: siguen en la partida, pero no juegan (QA 2)
         // Quien se retiró sigue, dicho: «con Bea (retirada)» (QA de la release)
         const companeros = companerosDe(group, userId).map((p) =>
-          nombreDeCompanero(t, 'partidas.withdrawnPartner', { name: p.name, withdrawn: seRetiro(p), teeGender: p.teeGender })
+          nombreDeCompanero(t, 'partidas.withdrawnPartner', {
+            name: p.name,
+            withdrawn: seRetiro(p),
+            teeGender: p.teeGender,
+          }),
         );
         // Solo mientras anota: retirado (/code-review), con su tarjeta ya
         // entregada o la partida cerrada (QA de la release), no marca a nadie
         const anota = anotaSuTarjeta(group, userId);
-        const marcado = anota ? juegan(group).find((p) => p.userId === yo?.marksUserId) : null;
+        const marcado = anota
+          ? juegan(group).find((p) => p.userId === yo?.marksUserId)
+          : null;
         const datos = {
           franja: t(`sessions.${sessionType}`),
           dia: fecha(roundDate),
@@ -71,20 +89,37 @@ const MisPartidas = ({ competitionId, userId, version, fecha, categoria = null }
         const retirado = yo?.cardStatus === 'RETIRADO';
         const linea = retirado
           ? companeros.length > 0
-            ? t('partidas.youRetired', conGenero(yo.teeGender, { ...datos, companeros: companeros.join(', ') }))
+            ? t(
+                'partidas.youRetired',
+                conGenero(yo.teeGender, {
+                  ...datos,
+                  companeros: companeros.join(', '),
+                }),
+              )
             : t('partidas.youRetiredAlone', conGenero(yo.teeGender, datos))
           : companeros.length > 0
-            ? t('partidas.mine', { ...datos, companeros: companeros.join(', ') })
+            ? t('partidas.mine', {
+                ...datos,
+                companeros: companeros.join(', '),
+              })
             : t('partidas.mineAlone', datos);
         return (
           <li key={roundId} data-testid={`mi-partida-${roundId}`}>
             {linea}
-            {marcado && <span> · {t('partidas.youMark', { jugador: marcado.name })}</span>}
+            {marcado && (
+              <span> · {t('partidas.youMark', { jugador: marcado.name })}</span>
+            )}
             {/* Le pasaron de otra partida para que alguien no se quedara solo
                 (QA del 11 oct 2026, BE #539): su hora puede haber cambiado */}
             {yo?.broughtIn && (
-              <span data-testid={`traido-${roundId}`} className="block font-semibold text-amber-800">
-                {t('partidas.broughtIn', { numero: group.number, hora: group.teeTime })}
+              <span
+                data-testid={`traido-${roundId}`}
+                className="block font-semibold text-amber-800"
+              >
+                {t('partidas.broughtIn', {
+                  numero: group.number,
+                  hora: group.teeTime,
+                })}
               </span>
             )}
             {/* A anotarla (PR 7): antes de su hora, la pantalla dice cuándo abre */}

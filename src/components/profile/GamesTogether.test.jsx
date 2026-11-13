@@ -47,7 +47,7 @@ const pinta = (partida, lng = 'es') =>
   render(
     <MemoryRouter>
       <GamesTogether games={[partida]} t={instancias[lng].t} idioma={lng} />
-    </MemoryRouter>
+    </MemoryRouter>,
   );
 
 const fila = () => screen.getByTestId('player-profile-game-comp9');
@@ -57,7 +57,9 @@ describe('GamesTogether — a tournament stroke play (J)', () => {
     pinta(torneo());
 
     expect(fila()).toHaveTextContent('Liga de Otoño');
-    expect(screen.getByTestId('player-profile-game-positions')).toHaveTextContent('4.º y 7.º de 16');
+    expect(
+      screen.getByTestId('player-profile-game-positions'),
+    ).toHaveTextContent('4.º y 7.º de 16');
     expect(fila()).toHaveTextContent('25 oct 2026');
     expect(fila()).toHaveTextContent('Stableford');
     expect(fila()).toHaveTextContent('Ganada');
@@ -67,19 +69,31 @@ describe('GamesTogether — a tournament stroke play (J)', () => {
   it('in English: «4th and 7th of 16»', () => {
     pinta(torneo({ result: 'LOST' }), 'en');
 
-    expect(screen.getByTestId('player-profile-game-positions')).toHaveTextContent('4th and 7th of 16');
+    expect(
+      screen.getByTestId('player-profile-game-positions'),
+    ).toHaveTextContent('4th and 7th of 16');
     expect(fila()).toHaveTextContent('Lost');
   });
 
   it('a shared position says so: «4.º (empatado) y 7.º (empatado) de 16» / «(tied)»', () => {
     const a = pinta(torneo({ myTied: true, theirTied: true }));
-    expect(screen.getByTestId('player-profile-game-positions')).toHaveTextContent(
-      '4.º (empatado) y 7.º (empatado) de 16'
-    );
+    expect(
+      screen.getByTestId('player-profile-game-positions'),
+    ).toHaveTextContent('4.º (empatado) y 7.º (empatado) de 16');
     a.unmount();
 
-    pinta(torneo({ myTied: false, theirTied: true, myPosition: 1, theirPosition: 2 }), 'en');
-    expect(screen.getByTestId('player-profile-game-positions')).toHaveTextContent('1st and 2nd (tied) of 16');
+    pinta(
+      torneo({
+        myTied: false,
+        theirTied: true,
+        myPosition: 1,
+        theirPosition: 2,
+      }),
+      'en',
+    );
+    expect(
+      screen.getByTestId('player-profile-game-positions'),
+    ).toHaveTextContent('1st and 2nd (tied) of 16');
   });
 
   it('a tap goes to the tournament', () => {
@@ -104,7 +118,9 @@ describe('GamesTogether — a tournament stroke play (J)', () => {
 
   it('without both positions no positions line; with no result, «Sin resultado»', () => {
     pinta(torneo({ theirPosition: null, result: null }));
-    expect(screen.queryByTestId('player-profile-game-positions')).not.toBeInTheDocument();
+    expect(
+      screen.queryByTestId('player-profile-game-positions'),
+    ).not.toBeInTheDocument();
     expect(fila()).toHaveTextContent('Sin resultado');
   });
 
@@ -117,9 +133,18 @@ describe('GamesTogether — a tournament stroke play (J)', () => {
 // H5 (25 oct 2026): la partida rápida se fecha por su instante, en el día local
 describe('GamesTogether · la fecha de la partida rápida', () => {
   it('H5: con playedAt, su día local; no el día UTC de playedOn', () => {
-    pinta(torneo({ kind: 'QUICK_MATCH', playedOn: '2026-10-24', playedAt: new Date('2026-10-25T12:00:00Z') }));
+    pinta(
+      torneo({
+        kind: 'QUICK_MATCH',
+        playedOn: '2026-10-24',
+        playedAt: new Date('2026-10-25T12:00:00Z'),
+      }),
+    );
 
-    const esperado = new Date('2026-10-25T12:00:00Z').toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' });
+    const esperado = new Date('2026-10-25T12:00:00Z').toLocaleDateString(
+      'es-ES',
+      { day: 'numeric', month: 'short', year: 'numeric' },
+    );
     expect(fila()).toHaveTextContent(esperado);
   });
 });

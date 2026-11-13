@@ -21,9 +21,12 @@ describe('ApiHandicapRepository · refreshMine (FE #677)', () => {
 
     const resultado = await new ApiHandicapRepository().refreshMine();
 
-    expect(apiModule.default).toHaveBeenCalledWith('/api/v1/handicaps/refresh-mine', {
-      method: 'POST',
-    });
+    expect(apiModule.default).toHaveBeenCalledWith(
+      '/api/v1/handicaps/refresh-mine',
+      {
+        method: 'POST',
+      },
+    );
     expect(resultado).toEqual({ needsHandicap: true, handicap: 18 });
   });
 

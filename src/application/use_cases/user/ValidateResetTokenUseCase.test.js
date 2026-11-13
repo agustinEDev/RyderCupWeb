@@ -12,7 +12,9 @@ describe('ValidateResetTokenUseCase', () => {
       validateResetToken: vi.fn(),
     };
 
-    validateResetTokenUseCase = new ValidateResetTokenUseCase({ authRepository });
+    validateResetTokenUseCase = new ValidateResetTokenUseCase({
+      authRepository,
+    });
   });
 
   describe('Valid token scenarios', () => {
@@ -52,7 +54,9 @@ describe('ValidateResetTokenUseCase', () => {
 
       // Assert
       expect(result.valid).toBe(true);
-      expect(result.message).toBe('Token is valid. You can proceed to change your password.');
+      expect(result.message).toBe(
+        'Token is valid. You can proceed to change your password.',
+      );
     });
   });
 
@@ -70,14 +74,16 @@ describe('ValidateResetTokenUseCase', () => {
     it('V1: valid:false from the API is invalid, with its message', async () => {
       authRepository.validateResetToken.mockResolvedValue({
         valid: false,
-        message: 'Token de reseteo inválido o expirado. Solicita un nuevo enlace.',
+        message:
+          'Token de reseteo inválido o expirado. Solicita un nuevo enlace.',
       });
 
       const result = await validateResetTokenUseCase.execute('a'.repeat(48));
 
       expect(result).toEqual({
         valid: false,
-        message: 'Token de reseteo inválido o expirado. Solicita un nuevo enlace.',
+        message:
+          'Token de reseteo inválido o expirado. Solicita un nuevo enlace.',
       });
     });
 
@@ -86,7 +92,10 @@ describe('ValidateResetTokenUseCase', () => {
 
       const result = await validateResetTokenUseCase.execute('a'.repeat(48));
 
-      expect(result).toEqual({ valid: false, message: 'The token is invalid or has expired' });
+      expect(result).toEqual({
+        valid: false,
+        message: 'The token is invalid or has expired',
+      });
     });
 
     it('V3: an answer without valid is not a valid token', async () => {
@@ -115,31 +124,45 @@ describe('ValidateResetTokenUseCase', () => {
       const error = new TypeError('common:sinConexion.mensaje');
       authRepository.validateResetToken.mockRejectedValue(error);
 
-      await expect(validateResetTokenUseCase.execute('a'.repeat(48))).rejects.toBe(error);
-      expect(authRepository.validateResetToken).toHaveBeenCalledWith('a'.repeat(48));
+      await expect(
+        validateResetTokenUseCase.execute('a'.repeat(48)),
+      ).rejects.toBe(error);
+      expect(authRepository.validateResetToken).toHaveBeenCalledWith(
+        'a'.repeat(48),
+      );
     });
 
     it('E2: a 429 is rethrown with its status', async () => {
-      const error = Object.assign(new Error('common:demasiadasPeticiones'), { status: 429 });
+      const error = Object.assign(new Error('common:demasiadasPeticiones'), {
+        status: 429,
+      });
       authRepository.validateResetToken.mockRejectedValue(error);
 
-      await expect(validateResetTokenUseCase.execute('a'.repeat(48))).rejects.toMatchObject({
+      await expect(
+        validateResetTokenUseCase.execute('a'.repeat(48)),
+      ).rejects.toMatchObject({
         status: 429,
       });
     });
 
     it('E3: a server error is rethrown', async () => {
-      const error = Object.assign(new Error('Internal Server Error'), { status: 500 });
+      const error = Object.assign(new Error('Internal Server Error'), {
+        status: 500,
+      });
       authRepository.validateResetToken.mockRejectedValue(error);
 
-      await expect(validateResetTokenUseCase.execute('a'.repeat(48))).rejects.toBe(error);
+      await expect(
+        validateResetTokenUseCase.execute('a'.repeat(48)),
+      ).rejects.toBe(error);
     });
 
     it('E4: an unknown error is rethrown too', async () => {
       const error = new Error();
       authRepository.validateResetToken.mockRejectedValue(error);
 
-      await expect(validateResetTokenUseCase.execute('a'.repeat(48))).rejects.toBe(error);
+      await expect(
+        validateResetTokenUseCase.execute('a'.repeat(48)),
+      ).rejects.toBe(error);
     });
   });
 
@@ -147,7 +170,7 @@ describe('ValidateResetTokenUseCase', () => {
     it('should throw error if token is empty', async () => {
       // Act & Assert
       await expect(validateResetTokenUseCase.execute('')).rejects.toThrow(
-        'Reset token is required'
+        'Reset token is required',
       );
       expect(authRepository.validateResetToken).not.toHaveBeenCalled();
     });
@@ -155,23 +178,23 @@ describe('ValidateResetTokenUseCase', () => {
     it('should throw error if token is null', async () => {
       // Act & Assert
       await expect(validateResetTokenUseCase.execute(null)).rejects.toThrow(
-        'Reset token is required'
+        'Reset token is required',
       );
       expect(authRepository.validateResetToken).not.toHaveBeenCalled();
     });
 
     it('should throw error if token is undefined', async () => {
       // Act & Assert
-      await expect(validateResetTokenUseCase.execute(undefined)).rejects.toThrow(
-        'Reset token is required'
-      );
+      await expect(
+        validateResetTokenUseCase.execute(undefined),
+      ).rejects.toThrow('Reset token is required');
       expect(authRepository.validateResetToken).not.toHaveBeenCalled();
     });
 
     it('should throw error if token is only whitespace', async () => {
       // Act & Assert
       await expect(validateResetTokenUseCase.execute('   ')).rejects.toThrow(
-        'Reset token is required'
+        'Reset token is required',
       );
       expect(authRepository.validateResetToken).not.toHaveBeenCalled();
     });

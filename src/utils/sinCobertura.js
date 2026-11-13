@@ -17,7 +17,8 @@
  * suyos; donde confundirlos cuesta, `esFalloDeRedDeLaApi`. La consola sigue
  * siendo la red: en los sitios que usan esto, el error entero se registra ahí.
  */
-export const esFalloDeRed = (err) => err instanceof TypeError || esFalloDeRedDeLaApi(err);
+export const esFalloDeRed = (err) =>
+  err instanceof TypeError || esFalloDeRedDeLaApi(err);
 
 /**
  * La versión estricta, para las llamadas que pasan por `api.js`: solo lo que

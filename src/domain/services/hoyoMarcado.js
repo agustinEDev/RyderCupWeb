@@ -31,8 +31,15 @@ export const puntoDesde = (origen, rumboEnGrados, metros) => {
   const r = radianes(rumboEnGrados);
   const lat1 = radianes(origen.lat);
   const lon1 = radianes(origen.lon);
-  const lat2 = Math.asin(Math.sin(lat1) * Math.cos(d) + Math.cos(lat1) * Math.sin(d) * Math.cos(r));
-  const lon2 = lon1 + Math.atan2(Math.sin(r) * Math.sin(d) * Math.cos(lat1), Math.cos(d) - Math.sin(lat1) * Math.sin(lat2));
+  const lat2 = Math.asin(
+    Math.sin(lat1) * Math.cos(d) + Math.cos(lat1) * Math.sin(d) * Math.cos(r),
+  );
+  const lon2 =
+    lon1 +
+    Math.atan2(
+      Math.sin(r) * Math.sin(d) * Math.cos(lat1),
+      Math.cos(d) - Math.sin(lat1) * Math.sin(lat2),
+    );
   return { lat: grados(lat2), lon: grados(lon2) };
 };
 
@@ -40,9 +47,17 @@ const greenAlFinalDe = (linea) => {
   const center = linea.at(-1);
   const anterior = linea.at(-2);
   return {
-    front: puntoDesde(center, rumbo(center, anterior), METROS_AL_BORDE_DEL_GREEN),
+    front: puntoDesde(
+      center,
+      rumbo(center, anterior),
+      METROS_AL_BORDE_DEL_GREEN,
+    ),
     center,
-    back: puntoDesde(center, rumbo(anterior, center), METROS_AL_BORDE_DEL_GREEN),
+    back: puntoDesde(
+      center,
+      rumbo(anterior, center),
+      METROS_AL_BORDE_DEL_GREEN,
+    ),
   };
 };
 
@@ -60,14 +75,20 @@ export const hoyoDeUnaMarca = (marca) => {
 
 /** Lo que mide la línea siguiendo sus codos, en metros. */
 export const longitudDeLaLinea = (linea) =>
-  linea.slice(1).reduce((total, punto, i) => total + distanciaEnMetros(linea[i], punto), 0);
+  linea
+    .slice(1)
+    .reduce((total, punto, i) => total + distanciaEnMetros(linea[i], punto), 0);
 
 /** Lo mismo, sin redondear cada tramo: para comparar con otros metros. */
-const longitudExacta = (linea) => linea.slice(1).reduce((total, punto, i) => total + distanciaExacta(linea[i], punto), 0);
+const longitudExacta = (linea) =>
+  linea
+    .slice(1)
+    .reduce((total, punto, i) => total + distanciaExacta(linea[i], punto), 0);
 
 /** Si la posición está a más de 3 km del campo; sin una de las dos, no se sabe y no. */
 export const estaLejosDelCampo = (posicion, campo) =>
-  Boolean(posicion && campo) && distanciaEnMetros(posicion, campo) > MAX_DISTANCIA_AL_CAMPO_M;
+  Boolean(posicion && campo) &&
+  distanciaEnMetros(posicion, campo) > MAX_DISTANCIA_AL_CAMPO_M;
 
 /** 'cerca' o 'lejos' si la recta de la salida al green se sale de 40-750 m; si no, null. */
 export const salidaGreenFueraDeLimites = (salida, green) => {
@@ -101,7 +122,9 @@ export const conCodosDelPar = (linea, par) => {
   const green = linea.at(-1);
   const largo = distanciaEnMetros(desde, green);
   const hacia = rumbo(desde, green);
-  const nuevos = Array.from({ length: faltan }, (_, i) => puntoDesde(desde, hacia, (largo * (i + 1)) / (faltan + 1)));
+  const nuevos = Array.from({ length: faltan }, (_, i) =>
+    puntoDesde(desde, hacia, (largo * (i + 1)) / (faltan + 1)),
+  );
   return [...linea.slice(0, -1), ...nuevos, green];
 };
 
@@ -124,8 +147,14 @@ const distanciaAlTramo = (p, a, b) => proyeccionEnElTramo(p, a, b).metros;
 export const aCodosDelPar = (lineaEntera, par) => {
   const codos = codosDelPar(par);
   // OSM a veces repite un nodo seguido: dos codos en el mismo sitio, no
-  const sinRepetidos = lineaEntera.filter((p, i) => i === 0 || p.lat !== lineaEntera[i - 1].lat || p.lon !== lineaEntera[i - 1].lon);
-  const linea = sinRepetidos.length === lineaEntera.length ? lineaEntera : sinRepetidos;
+  const sinRepetidos = lineaEntera.filter(
+    (p, i) =>
+      i === 0 ||
+      p.lat !== lineaEntera[i - 1].lat ||
+      p.lon !== lineaEntera[i - 1].lon,
+  );
+  const linea =
+    sinRepetidos.length === lineaEntera.length ? lineaEntera : sinRepetidos;
   if (linea.length - 2 <= codos) return linea;
   const elegidos = [0, linea.length - 1];
   while (elegidos.length - 2 < codos) {
@@ -134,7 +163,11 @@ export const aCodosDelPar = (lineaEntera, par) => {
       const [desde, hasta] = [elegidos[k], elegidos[k + 1]];
       for (let i = desde + 1; i < hasta; i += 1) {
         const desvio = distanciaAlTramo(linea[i], linea[desde], linea[hasta]);
-        if (desvio >= MIN_DESVIO_DE_UN_CODO_M && (mejor === null || desvio > mejor.desvio)) mejor = { i, desvio };
+        if (
+          desvio >= MIN_DESVIO_DE_UN_CODO_M &&
+          (mejor === null || desvio > mejor.desvio)
+        )
+          mejor = { i, desvio };
       }
     }
     if (mejor === null) break;
@@ -153,12 +186,17 @@ export const aCodosDelPar = (lineaEntera, par) => {
  */
 export const lineaDeOsm = (lineaDeJuego, centroDelGreen, par) =>
   centroDelGreen && (lineaDeJuego?.length ?? 0) > 1
-    ? conCodosDelPar(aCodosDelPar([...lineaDeJuego.slice(0, -1), centroDelGreen], par), par)
+    ? conCodosDelPar(
+        aCodosDelPar([...lineaDeJuego.slice(0, -1), centroDelGreen], par),
+        par,
+      )
     : null;
 
 /** Un anillo cerrado de puntos a `metros` de `centro` (el arco de la tarjeta). */
 export const circuloAlrededor = (centro, metros, lados = 64) => {
-  const anillo = Array.from({ length: lados }, (_, i) => puntoDesde(centro, (360 / lados) * i, metros));
+  const anillo = Array.from({ length: lados }, (_, i) =>
+    puntoDesde(centro, (360 / lados) * i, metros),
+  );
   return [...anillo, anillo[0]];
 };
 
@@ -172,7 +210,8 @@ export const circuloAlrededor = (centro, metros, lados = 64) => {
  * del primer codo), ni si deja el green a menos de 40 o más de 750 m en recta.
  */
 export const salidaPorMetros = (linea, metros) => {
-  if (!Array.isArray(linea) || linea.length < 2 || !Number.isFinite(metros)) return linea;
+  if (!Array.isArray(linea) || linea.length < 2 || !Number.isFinite(metros))
+    return linea;
   const largo = longitudExacta(linea);
   // Un punto roto (NaN) no se arrastra a la salida
   if (!Number.isFinite(largo)) return linea;
@@ -188,7 +227,15 @@ export const salidaPorMetros = (linea, metros) => {
 };
 
 /** Los puntos de una línea `{ tee, bends, greenCenter }`, en orden: salida, codos y green. */
-export const puntosDeLaLinea = (linea) => [linea.tee, ...(linea.bends ?? []), linea.greenCenter];
+export const puntosDeLaLinea = (linea) => [
+  linea.tee,
+  ...(linea.bends ?? []),
+  linea.greenCenter,
+];
 
 /** La inversa: de los puntos en orden (salida, codos y green) a la línea. */
-export const lineaDePuntos = (puntos) => ({ tee: puntos[0], bends: puntos.slice(1, -1), greenCenter: puntos.at(-1) });
+export const lineaDePuntos = (puntos) => ({
+  tee: puntos[0],
+  bends: puntos.slice(1, -1),
+  greenCenter: puntos.at(-1),
+});

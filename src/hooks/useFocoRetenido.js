@@ -18,7 +18,9 @@ const ENFOCABLES = [
 // con `hidden` (`montadoSiempre`) y no puede ser ni el primero ni el último
 // (CodeRabbit, FE #932)
 const enfocablesVisibles = (caja) =>
-  [...(caja?.querySelectorAll(ENFOCABLES) ?? [])].filter((el) => !el.closest('[hidden]'));
+  [...(caja?.querySelectorAll(ENFOCABLES) ?? [])].filter(
+    (el) => !el.closest('[hidden]'),
+  );
 
 // Sin desplazar: en el móvil, enfocar desplazaba la página o el carril de las
 // tarjetas hasta el elemento, y la pantalla saltaba al abrir o cerrar una hoja
@@ -49,7 +51,10 @@ const pila = [];
  * @param {React.RefObject<HTMLElement>} [opciones.inicialRef] Dónde entra el
  *   foco al abrir, si no es en lo primero (el campo de una hoja para escribir)
  */
-export const useFocoRetenido = (cajaRef, { activo = true, alEscape, escapeExclusivo = false, inicialRef } = {}) => {
+export const useFocoRetenido = (
+  cajaRef,
+  { activo = true, alEscape, escapeExclusivo = false, inicialRef } = {},
+) => {
   // Dónde entra el foco, leído al abrir y no como dependencia: si quien llama
   // pasa otra ref (o la quita) con el diálogo abierto, el efecto de abajo
   // volvería a correr, el foco saltaría y la limpieza lo devolvería atrás
@@ -67,14 +72,23 @@ export const useFocoRetenido = (cajaRef, { activo = true, alEscape, escapeExclus
     // vez que este, cuyo efecto corre antes (los hijos van primero), y
     // quitárselo dejaría sin foco al de encima
     const yaDentro = caja?.contains(anterior) && anterior !== caja;
-    if (!yaDentro) (focoInicial() ?? enfocablesVisibles(caja)[0] ?? caja)?.focus(SIN_DESPLAZAR);
+    if (!yaDentro)
+      (focoInicial() ?? enfocablesVisibles(caja)[0] ?? caja)?.focus(
+        SIN_DESPLAZAR,
+      );
 
     return () => {
       // Solo si el foco sigue siendo mío. Con dos diálogos encima, al cerrarse
       // el de abajo devolvía el foco a la página y se lo robaba al que quedaba
       // abierto delante.
-      const esMio = caja?.contains(document.activeElement) || document.activeElement === document.body;
-      if (esMio && typeof anterior?.focus === 'function' && document.contains(anterior)) {
+      const esMio =
+        caja?.contains(document.activeElement) ||
+        document.activeElement === document.body;
+      if (
+        esMio &&
+        typeof anterior?.focus === 'function' &&
+        document.contains(anterior)
+      ) {
         anterior.focus(SIN_DESPLAZAR);
       }
     };
@@ -100,7 +114,10 @@ export const useFocoRetenido = (cajaRef, { activo = true, alEscape, escapeExclus
     // dentro de otro, el efecto del de dentro corre antes y quedaría debajo;
     // por eso el de fuera se mete por debajo de los que contiene
     const yo = { caja: cajaRef.current };
-    const contenido = pila.findIndex((otro) => otro.caja && otro.caja !== yo.caja && yo.caja?.contains(otro.caja));
+    const contenido = pila.findIndex(
+      (otro) =>
+        otro.caja && otro.caja !== yo.caja && yo.caja?.contains(otro.caja),
+    );
     if (contenido === -1) pila.push(yo);
     else pila.splice(contenido, 0, yo);
 
@@ -133,7 +150,10 @@ export const useFocoRetenido = (cajaRef, { activo = true, alEscape, escapeExclus
       if (e.shiftKey && (document.activeElement === primero || !dentro)) {
         e.preventDefault();
         ultimo.focus();
-      } else if (!e.shiftKey && (document.activeElement === ultimo || !dentro)) {
+      } else if (
+        !e.shiftKey &&
+        (document.activeElement === ultimo || !dentro)
+      ) {
         e.preventDefault();
         primero.focus();
       }

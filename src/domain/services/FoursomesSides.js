@@ -57,7 +57,9 @@ export const groupParticipantsBySide = (participants = []) => {
  * @returns {Object|null}
  */
 export const sideEntryOf = (members = [], entryOf) => {
-  const entries = members.map((member) => entryOf(member.participantId)).filter(Boolean);
+  const entries = members
+    .map((member) => entryOf(member.participantId))
+    .filter(Boolean);
   return entries.find((entry) => entry.score != null) ?? entries[0] ?? null;
 };
 
@@ -76,7 +78,8 @@ export const entryAtOf =
   (holeNumber) =>
   (participantId) =>
     holeScores.find(
-      (hs) => hs.participantId === participantId && hs.holeNumber === holeNumber
+      (hs) =>
+        hs.participantId === participantId && hs.holeNumber === holeNumber,
     ) ?? null;
 
 /**

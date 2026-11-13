@@ -27,7 +27,7 @@ export class CompetitionName {
   constructor(value) {
     if (!CompetitionName.isValid(value)) {
       throw new Error(
-        `Competition name must be between ${CompetitionName.MIN_LENGTH} and ${CompetitionName.MAX_LENGTH} characters long.`
+        `Competition name must be between ${CompetitionName.MIN_LENGTH} and ${CompetitionName.MAX_LENGTH} characters long.`,
       );
     }
     this.#value = value.trim();

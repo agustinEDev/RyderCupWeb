@@ -124,7 +124,12 @@ describe('ApiAdminRepository', () => {
     });
 
     it('should omit undefined/null filters from the query string', async () => {
-      apiRequestMock.mockResolvedValue({ users: [], total_count: 0, limit: 20, offset: 0 });
+      apiRequestMock.mockResolvedValue({
+        users: [],
+        total_count: 0,
+        limit: 20,
+        offset: 0,
+      });
 
       await repository.listUsers({});
 
@@ -152,7 +157,10 @@ describe('ApiAdminRepository', () => {
         created_at: '2026-07-27T00:00:00Z',
       });
 
-      const result = await repository.updateUser('u1', { firstName: 'Agus', isAdmin: false });
+      const result = await repository.updateUser('u1', {
+        firstName: 'Agus',
+        isAdmin: false,
+      });
 
       expect(apiRequestMock).toHaveBeenCalledWith('/api/v1/admin/users/u1', {
         method: 'PUT',
@@ -176,7 +184,9 @@ describe('ApiAdminRepository', () => {
         created_at: '2026-07-27T00:00:00Z',
       });
 
-      const result = await repository.updateUser('u1', { email: 'nuevo@test.com' });
+      const result = await repository.updateUser('u1', {
+        email: 'nuevo@test.com',
+      });
 
       expect(result.email).toBe('agus@test.com');
       expect(result.pendingEmail).toBe('nuevo@test.com');
@@ -189,10 +199,13 @@ describe('ApiAdminRepository', () => {
 
       await repository.setUserActive('u1', false);
 
-      expect(apiRequestMock).toHaveBeenCalledWith('/api/v1/admin/users/u1/active', {
-        method: 'PUT',
-        body: JSON.stringify({ is_active: false }),
-      });
+      expect(apiRequestMock).toHaveBeenCalledWith(
+        '/api/v1/admin/users/u1/active',
+        {
+          method: 'PUT',
+          body: JSON.stringify({ is_active: false }),
+        },
+      );
     });
   });
 
@@ -208,11 +221,15 @@ describe('ApiAdminRepository', () => {
     });
 
     it('should propagate a 409 conflict when the user has activity', async () => {
-      const error = new Error('Cannot permanently delete this account: has created one or more quick matches');
+      const error = new Error(
+        'Cannot permanently delete this account: has created one or more quick matches',
+      );
       error.status = 409;
       apiRequestMock.mockRejectedValue(error);
 
-      await expect(repository.deleteUser('u1')).rejects.toMatchObject({ status: 409 });
+      await expect(repository.deleteUser('u1')).rejects.toMatchObject({
+        status: 409,
+      });
     });
   });
 });

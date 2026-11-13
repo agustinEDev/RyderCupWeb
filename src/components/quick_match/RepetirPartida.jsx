@@ -18,7 +18,9 @@ const CreateQuickMatchModal = lazy(() => import('./CreateQuickMatchModal'));
  */
 export const IconoRepetir = ({ partida, onRepetir, preparando = false }) => {
   const { t } = useTranslation('quickMatch');
-  const nombre = partida.name ? t('create.repetir.botonDe', { nombre: partida.name }) : t('create.repetir.boton');
+  const nombre = partida.name
+    ? t('create.repetir.botonDe', { nombre: partida.name })
+    : t('create.repetir.boton');
   return (
     <button
       type="button"
@@ -53,9 +55,14 @@ export const AsistenteDeRepetir = ({ borrador, usuario, cierra }) => {
   };
   return createPortal(
     <Suspense fallback={null}>
-      <CreateQuickMatchModal onClose={cierra} onStarted={alEmpezar} currentUser={usuario} borrador={borrador} />
+      <CreateQuickMatchModal
+        onClose={cierra}
+        onStarted={alEmpezar}
+        currentUser={usuario}
+        borrador={borrador}
+      />
     </Suspense>,
-    document.body
+    document.body,
   );
 };
 
@@ -73,8 +80,16 @@ const RepetirPartida = ({ partida, usuario }) => {
   const { borrador, preparando, repetir, cierra } = useRepetirPartida(usuario);
   return (
     <>
-      <IconoRepetir partida={partida} onRepetir={repetir} preparando={preparando} />
-      <AsistenteDeRepetir borrador={borrador} usuario={usuario} cierra={cierra} />
+      <IconoRepetir
+        partida={partida}
+        onRepetir={repetir}
+        preparando={preparando}
+      />
+      <AsistenteDeRepetir
+        borrador={borrador}
+        usuario={usuario}
+        cierra={cierra}
+      />
     </>
   );
 };

@@ -22,12 +22,24 @@ const guardarHandicap = vi.fn();
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({ t: (clave) => clave, i18n: { language: 'es' } }),
 }));
-vi.mock('../utils/toast', () => ({ default: { error: (...a) => toastError(...a), success: vi.fn(), info: vi.fn() } }));
+vi.mock('../utils/toast', () => ({
+  default: {
+    error: (...a) => toastError(...a),
+    success: vi.fn(),
+    info: vi.fn(),
+  },
+}));
 const sesion = vi.hoisted(() => ({ user: null }));
-vi.mock('../hooks/useAuth', () => ({ useAuth: () => ({ user: sesion.user, refetch }) }));
-vi.mock('../components/ui/CountryAutocomplete', () => ({ default: () => null }));
+vi.mock('../hooks/useAuth', () => ({
+  useAuth: () => ({ user: sesion.user, refetch }),
+}));
+vi.mock('../components/ui/CountryAutocomplete', () => ({
+  default: () => null,
+}));
 const anotaLaSesion = vi.fn();
-vi.mock('../services/sesionCompartida', () => ({ anotaLaSesion: (...a) => anotaLaSesion(...a) }));
+vi.mock('../services/sesionCompartida', () => ({
+  anotaLaSesion: (...a) => anotaLaSesion(...a),
+}));
 const DTO = { id: 'u-1', is_admin: false, terms_accepted: true };
 vi.mock('../composition', () => ({
   updateUserProfileUseCase: { execute: (...a) => actualizarPerfil(...a) },
@@ -45,12 +57,19 @@ const abrir = () =>
         <Route path="/auth/complete-profile" element={<CompleteProfile />} />
         <Route path="/dashboard" element={<p>panel</p>} />
       </Routes>
-    </MemoryRouter>
+    </MemoryRouter>,
   );
 
-const casilla = () => screen.getByRole('checkbox', { name: /register\.acceptTerms/ });
-const guardar = () => fireEvent.click(screen.getByRole('button', { name: 'google.completeProfile.saveButton' }));
-const omitir = () => fireEvent.click(screen.getByRole('button', { name: 'google.completeProfile.skipButton' }));
+const casilla = () =>
+  screen.getByRole('checkbox', { name: /register\.acceptTerms/ });
+const guardar = () =>
+  fireEvent.click(
+    screen.getByRole('button', { name: 'google.completeProfile.saveButton' }),
+  );
+const omitir = () =>
+  fireEvent.click(
+    screen.getByRole('button', { name: 'google.completeProfile.skipButton' }),
+  );
 
 describe('CompleteProfile · Términos y edad para el usuario nuevo de Google (M1)', () => {
   beforeEach(() => {
@@ -78,9 +97,13 @@ describe('CompleteProfile · Términos y edad para el usuario nuevo de Google (M
 
     expect(casilla()).not.toBeChecked();
     expect(casilla()).not.toHaveAccessibleName(/privacy/i);
-    const privacidad = screen.getByRole('link', { name: 'register.privacyLink' });
+    const privacidad = screen.getByRole('link', {
+      name: 'register.privacyLink',
+    });
     expect(privacidad.closest('label')).toBeNull();
-    expect(privacidad.parentElement).toHaveTextContent('register.privacyNoticePrefix');
+    expect(privacidad.parentElement).toHaveTextContent(
+      'register.privacyNoticePrefix',
+    );
   });
 
   it('sin marcarla no se guarda: error accesible asociado a la casilla', async () => {
@@ -88,9 +111,13 @@ describe('CompleteProfile · Términos y edad para el usuario nuevo de Google (M
 
     guardar();
 
-    expect(await screen.findByText('google.completeProfile.acceptTermsRequired')).toBeInTheDocument();
+    expect(
+      await screen.findByText('google.completeProfile.acceptTermsRequired'),
+    ).toBeInTheDocument();
     expect(casilla()).toHaveAttribute('aria-invalid', 'true');
-    expect(casilla()).toHaveAccessibleDescription('google.completeProfile.acceptTermsRequired');
+    expect(casilla()).toHaveAccessibleDescription(
+      'google.completeProfile.acceptTermsRequired',
+    );
     expect(refetch).not.toHaveBeenCalled();
     expect(screen.queryByText('panel')).toBeNull();
   });
@@ -100,7 +127,9 @@ describe('CompleteProfile · Términos y edad para el usuario nuevo de Google (M
 
     omitir();
 
-    expect(screen.getByText('google.completeProfile.acceptTermsRequired')).toBeInTheDocument();
+    expect(
+      screen.getByText('google.completeProfile.acceptTermsRequired'),
+    ).toBeInTheDocument();
     expect(screen.queryByText('panel')).toBeNull();
   });
 
@@ -130,7 +159,11 @@ describe('CompleteProfile · Términos y edad para el usuario nuevo de Google (M
 
     fireEvent.click(casilla());
 
-    await waitFor(() => expect(screen.queryByText('google.completeProfile.acceptTermsRequired')).toBeNull());
+    await waitFor(() =>
+      expect(
+        screen.queryByText('google.completeProfile.acceptTermsRequired'),
+      ).toBeNull(),
+    );
     expect(casilla()).not.toHaveAttribute('aria-invalid', 'true');
   });
 });
@@ -139,14 +172,19 @@ describe('CompleteProfile · el texto del error (revisión)', () => {
   it.each([
     ['es', /continuar/i, /crear/i],
     ['en', /continue/i, /create/i],
-  ])('%s: pide aceptar para continuar, no para crear la cuenta', async (idioma, continuar, crear) => {
-    const { default: auth } = await import(`../i18n/locales/${idioma}/auth.json`);
-    const texto = auth.google.completeProfile.acceptTermsRequired;
+  ])(
+    '%s: pide aceptar para continuar, no para crear la cuenta',
+    async (idioma, continuar, crear) => {
+      const { default: auth } = await import(
+        `../i18n/locales/${idioma}/auth.json`
+      );
+      const texto = auth.google.completeProfile.acceptTermsRequired;
 
-    expect(texto).toMatch(continuar);
-    expect(texto).toMatch(/16/);
-    expect(texto).not.toMatch(crear);
-  });
+      expect(texto).toMatch(continuar);
+      expect(texto).toMatch(/16/);
+      expect(texto).not.toMatch(crear);
+    },
+  );
 });
 
 /**
@@ -164,7 +202,10 @@ describe('CompleteProfile · aceptar antes de guardar (F2)', () => {
   });
 
   const elegirGenero = () =>
-    fireEvent.change(screen.getByLabelText('google.completeProfile.genderLabel'), { target: { name: 'gender', value: 'FEMALE' } });
+    fireEvent.change(
+      screen.getByLabelText('google.completeProfile.genderLabel'),
+      { target: { name: 'gender', value: 'FEMALE' } },
+    );
 
   it('guardar: primero accept-terms, después el perfil', async () => {
     abrir();
@@ -176,7 +217,9 @@ describe('CompleteProfile · aceptar antes de guardar (F2)', () => {
     expect(await screen.findByText('panel')).toBeInTheDocument();
     expect(aceptarTerminos).toHaveBeenCalledTimes(1);
     expect(actualizarPerfil).toHaveBeenCalledTimes(1);
-    expect(aceptarTerminos.mock.invocationCallOrder[0]).toBeLessThan(actualizarPerfil.mock.invocationCallOrder[0]);
+    expect(aceptarTerminos.mock.invocationCallOrder[0]).toBeLessThan(
+      actualizarPerfil.mock.invocationCallOrder[0],
+    );
   });
 
   it('guardar: si accept-terms falla, error visible y ni perfil ni panel', async () => {
@@ -187,7 +230,9 @@ describe('CompleteProfile · aceptar antes de guardar (F2)', () => {
 
     guardar();
 
-    expect(await screen.findByRole('alert')).toHaveTextContent('acceptTermsPage.error');
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'acceptTermsPage.error',
+    );
     // Un solo aviso: el que va junto a la casilla, sin toast repetido
     expect(toastError).not.toHaveBeenCalled();
     expect(actualizarPerfil).not.toHaveBeenCalled();
@@ -225,7 +270,9 @@ describe('CompleteProfile · aceptar antes de guardar (F2)', () => {
 
     guardar();
 
-    await waitFor(() => expect(toastError).toHaveBeenCalledWith('no se pudo guardar'));
+    await waitFor(() =>
+      expect(toastError).toHaveBeenCalledWith('no se pudo guardar'),
+    );
     expect(anotaLaSesion).toHaveBeenCalledWith(DTO);
     expect(screen.queryByText('panel')).toBeNull();
   });
@@ -237,7 +284,9 @@ describe('CompleteProfile · aceptar antes de guardar (F2)', () => {
 
     omitir();
 
-    expect(await screen.findByRole('alert')).toHaveTextContent('acceptTermsPage.error');
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'acceptTermsPage.error',
+    );
     expect(toastError).not.toHaveBeenCalled();
     expect(screen.queryByText('panel')).toBeNull();
   });
@@ -267,19 +316,26 @@ describe('CompleteProfile · con los Términos ya aceptados', () => {
   it('no pinta la casilla', () => {
     abrir();
 
-    expect(screen.queryByRole('checkbox', { name: /register\.acceptTerms/ })).toBeNull();
+    expect(
+      screen.queryByRole('checkbox', { name: /register\.acceptTerms/ }),
+    ).toBeNull();
   });
 
   it('guardar va directo al perfil, sin casilla ni accept-terms', async () => {
     abrir();
-    fireEvent.change(screen.getByLabelText('google.completeProfile.genderLabel'), { target: { name: 'gender', value: 'MALE' } });
+    fireEvent.change(
+      screen.getByLabelText('google.completeProfile.genderLabel'),
+      { target: { name: 'gender', value: 'MALE' } },
+    );
 
     guardar();
 
     expect(await screen.findByText('panel')).toBeInTheDocument();
     expect(actualizarPerfil).toHaveBeenCalledTimes(1);
     expect(aceptarTerminos).not.toHaveBeenCalled();
-    expect(screen.queryByText('google.completeProfile.acceptTermsRequired')).toBeNull();
+    expect(
+      screen.queryByText('google.completeProfile.acceptTermsRequired'),
+    ).toBeNull();
   });
 
   it('omitir entra sin casilla ni accept-terms', async () => {
@@ -299,7 +355,10 @@ describe('CompleteProfile · la marca contra los bucles', () => {
     sesion.user = { id: 'u-1', terms_accepted: false };
     refetch.mockResolvedValue(undefined);
     aceptarTerminos.mockResolvedValue(DTO);
-    globalThis.sessionStorage.setItem('rydercup-terminos-redirigido', JSON.stringify({ ruta: '/dashboard' }));
+    globalThis.sessionStorage.setItem(
+      'rydercup-terminos-redirigido',
+      JSON.stringify({ ruta: '/dashboard' }),
+    );
   });
 
   it('al aceptar (omitiendo), se borra', async () => {
@@ -309,7 +368,9 @@ describe('CompleteProfile · la marca contra los bucles', () => {
     omitir();
 
     await screen.findByText('panel');
-    expect(globalThis.sessionStorage.getItem('rydercup-terminos-redirigido')).toBeNull();
+    expect(
+      globalThis.sessionStorage.getItem('rydercup-terminos-redirigido'),
+    ).toBeNull();
   });
 });
 
@@ -326,22 +387,38 @@ describe('CompleteProfile · el «+» del hándicap', () => {
   it('P3: con el «+» pulsado se guarda en negativo', async () => {
     abrir();
 
-    fireEvent.change(screen.getByLabelText('google.completeProfile.handicapLabel'), { target: { value: '1.5' } });
+    fireEvent.change(
+      screen.getByLabelText('google.completeProfile.handicapLabel'),
+      { target: { value: '1.5' } },
+    );
     fireEvent.click(screen.getByRole('button', { name: 'handicapField.plus' }));
     fireEvent.click(casilla());
     guardar();
 
-    await waitFor(() => expect(guardarHandicap).toHaveBeenCalledWith({ userId: 'u-1', handicap: '-1.5' }));
+    await waitFor(() =>
+      expect(guardarHandicap).toHaveBeenCalledWith({
+        userId: 'u-1',
+        handicap: '-1.5',
+      }),
+    );
   });
 
   // 26 oct: el campo es de texto y el caso de uso no entiende la coma
   it('P4: con coma, «1,5» se guarda 1.5', async () => {
     abrir();
 
-    fireEvent.change(screen.getByLabelText('google.completeProfile.handicapLabel'), { target: { value: '1,5' } });
+    fireEvent.change(
+      screen.getByLabelText('google.completeProfile.handicapLabel'),
+      { target: { value: '1,5' } },
+    );
     fireEvent.click(casilla());
     guardar();
 
-    await waitFor(() => expect(guardarHandicap).toHaveBeenCalledWith({ userId: 'u-1', handicap: '1.5' }));
+    await waitFor(() =>
+      expect(guardarHandicap).toHaveBeenCalledWith({
+        userId: 'u-1',
+        handicap: '1.5',
+      }),
+    );
   });
 });

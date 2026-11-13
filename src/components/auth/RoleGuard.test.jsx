@@ -19,10 +19,17 @@ const monta = () =>
   render(
     <MemoryRouter initialEntries={['/admin']}>
       <Routes>
-        <Route path="/admin" element={<RoleGuard allowedRoles="ADMIN"><p>el panel</p></RoleGuard>} />
+        <Route
+          path="/admin"
+          element={
+            <RoleGuard allowedRoles="ADMIN">
+              <p>el panel</p>
+            </RoleGuard>
+          }
+        />
         <Route path="/unauthorized" element={<p>fuera de aquí</p>} />
       </Routes>
-    </MemoryRouter>
+    </MemoryRouter>,
   );
 
 describe('RoleGuard', () => {

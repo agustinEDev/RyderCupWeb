@@ -3,7 +3,14 @@ import Header from '../../components/layout/Header';
 import Footer from '../../components/layout/Footer';
 import VolverDeLoLegal from '../../components/layout/VolverDeLoLegal';
 
-const SECTIONS = ['section1', 'section2', 'section3', 'section4', 'section5', 'section6'];
+const SECTIONS = [
+  'section1',
+  'section2',
+  'section3',
+  'section4',
+  'section5',
+  'section6',
+];
 
 const Cookies = () => {
   const { t } = useTranslation('legal');

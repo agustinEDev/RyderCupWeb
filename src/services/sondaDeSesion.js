@@ -19,7 +19,10 @@
  */
 
 import { refrescoCompartido } from '../infrastructure/http/tokenRefreshInterceptor';
-import { RUTA_DEL_REFRESCO, RUTA_DEL_USUARIO_ACTUAL } from '../utils/rutasDeLaSesion';
+import {
+  RUTA_DEL_REFRESCO,
+  RUTA_DEL_USUARIO_ACTUAL,
+} from '../utils/rutasDeLaSesion';
 import { isDeviceRevoked } from '../infrastructure/http/deviceRevocationLogout';
 import {
   avisaDelCierreForzado,
@@ -40,7 +43,10 @@ const avisaDeLaRevocacion = () =>
 // Misma prioridad que `api.js` y el interceptor: la configuración de ejecución
 // manda sobre la del build. Sin esto, `/current-user` y el refresco pueden
 // acabar apuntando a hosts distintos en un despliegue en contenedor
-const API_URL = globalThis.APP_CONFIG?.API_BASE_URL || import.meta.env.VITE_API_BASE_URL || '';
+const API_URL =
+  globalThis.APP_CONFIG?.API_BASE_URL ||
+  import.meta.env.VITE_API_BASE_URL ||
+  '';
 
 const pideElUsuario = (signal) =>
   fetch(`${API_URL}/api/v1/auth/current-user`, {
@@ -106,7 +112,10 @@ export const preguntaLaSesionSinInterceptor = async (signal) => {
     }
 
     if (!respuesta.ok) {
-      return { estado: 'fallo', error: new Error(`current-user respondió ${respuesta.status}`) };
+      return {
+        estado: 'fallo',
+        error: new Error(`current-user respondió ${respuesta.status}`),
+      };
     }
 
     return { estado: 'ok', usuario: await respuesta.json() };
@@ -116,7 +125,8 @@ export const preguntaLaSesionSinInterceptor = async (signal) => {
     // `get_current_user` (RyderCupAm src/config/dependencies.py), no en el refresco
     if (error?.response?.status === 401) {
       const detalle = error.errorData ?? {};
-      if (isDeviceRevoked(error.response, detalle)) return { estado: 'revocada', detalle };
+      if (isDeviceRevoked(error.response, detalle))
+        return { estado: 'revocada', detalle };
       // Al abrir la app con la sesión rechazada por algo raro, que se vea (FE #1042).
       // El final normal no: lo da cada visitante anónimo, sin cookie
       if (!esFinalNormalDelRefresco(detalle)) {

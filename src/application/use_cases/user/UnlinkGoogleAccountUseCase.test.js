@@ -6,7 +6,8 @@ describe('UnlinkGoogleAccountUseCase', () => {
     unlinkGoogleAccount: vi.fn(),
   };
 
-  const createUseCase = () => new UnlinkGoogleAccountUseCase({ authRepository: mockAuthRepository });
+  const createUseCase = () =>
+    new UnlinkGoogleAccountUseCase({ authRepository: mockAuthRepository });
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -14,7 +15,9 @@ describe('UnlinkGoogleAccountUseCase', () => {
 
   describe('constructor', () => {
     it('should throw if authRepository is not provided', () => {
-      expect(() => new UnlinkGoogleAccountUseCase({})).toThrow('UnlinkGoogleAccountUseCase requires authRepository');
+      expect(() => new UnlinkGoogleAccountUseCase({})).toThrow(
+        'UnlinkGoogleAccountUseCase requires authRepository',
+      );
     });
 
     it('should create instance with valid dependencies', () => {
@@ -39,7 +42,9 @@ describe('UnlinkGoogleAccountUseCase', () => {
       error.status = 400;
       mockAuthRepository.unlinkGoogleAccount.mockRejectedValue(error);
 
-      await expect(createUseCase().execute()).rejects.toThrow('Google account is not linked');
+      await expect(createUseCase().execute()).rejects.toThrow(
+        'Google account is not linked',
+      );
     });
 
     it('should propagate error when it is the only auth method', async () => {
@@ -47,7 +52,9 @@ describe('UnlinkGoogleAccountUseCase', () => {
       error.status = 400;
       mockAuthRepository.unlinkGoogleAccount.mockRejectedValue(error);
 
-      await expect(createUseCase().execute()).rejects.toThrow('Cannot unlink the only authentication method');
+      await expect(createUseCase().execute()).rejects.toThrow(
+        'Cannot unlink the only authentication method',
+      );
     });
   });
 });

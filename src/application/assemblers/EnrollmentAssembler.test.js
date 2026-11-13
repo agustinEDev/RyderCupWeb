@@ -58,14 +58,16 @@ describe('EnrollmentAssembler', () => {
   describe('useRealName', () => {
     it('viaja al DTO para que la pantalla sepa cómo pintar el interruptor', () => {
       const dto = EnrollmentAssembler.toSimpleDTO(
-        unaInscripcion({ useRealName: false })
+        unaInscripcion({ useRealName: false }),
       );
 
       expect(dto.useRealName).toBe(false);
     });
 
     it('es true cuando nadie ha elegido: la competición muestra el nombre legal', () => {
-      expect(EnrollmentAssembler.toSimpleDTO(unaInscripcion()).useRealName).toBe(true);
+      expect(
+        EnrollmentAssembler.toSimpleDTO(unaInscripcion()).useRealName,
+      ).toBe(true);
     });
   });
 });

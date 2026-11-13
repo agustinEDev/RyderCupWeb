@@ -21,7 +21,8 @@ import { resolve } from 'node:path';
  * | un motivo heredado del prototipo (toString…)     | /login lo enseña como sesión terminada     |
  * | main.jsx                                         | la carga antes que la aplicación           |
  */
-const SIN_INTERFAZ = /No hay interfaz del transporte registrada: falta importar composition\/interfazDelTransporte/;
+const SIN_INTERFAZ =
+  /No hay interfaz del transporte registrada: falta importar composition\/interfazDelTransporte/;
 
 const COMPLETA = () =>
   Object.fromEntries(
@@ -36,7 +37,7 @@ const COMPLETA = () =>
       'informaDelError',
       'llevaAAceptarLosTerminos',
       'silenciaElAviso',
-    ].map((nombre) => [nombre, vi.fn()])
+    ].map((nombre) => [nombre, vi.fn()]),
   );
 
 describe('la interfaz del transporte', () => {
@@ -52,65 +53,100 @@ describe('la interfaz del transporte', () => {
   });
 
   it('sin registrar, un cierre forzado falla en voz alta', async () => {
-    const { alCerrarLaSesion, handleDeviceRevocationLogout } = await import('./deviceRevocationLogout');
+    const { alCerrarLaSesion, handleDeviceRevocationLogout } =
+      await import('./deviceRevocationLogout');
     alCerrarLaSesion(() => {});
-    vi.stubGlobal('localStorage', { getItem: vi.fn(() => null), setItem: vi.fn(), removeItem: vi.fn() });
+    vi.stubGlobal('localStorage', {
+      getItem: vi.fn(() => null),
+      setItem: vi.fn(),
+      removeItem: vi.fn(),
+    });
 
     expect(() => handleDeviceRevocationLogout(null)).toThrow(SIN_INTERFAZ);
   });
 
   it.each([
     ['dispositivo revocado', null, 'handleDeviceRevocationLogout'],
-    ['dispositivo revocado, marca «propia»', 'propia', 'handleDeviceRevocationLogout'],
+    [
+      'dispositivo revocado, marca «propia»',
+      'propia',
+      'handleDeviceRevocationLogout',
+    ],
     ['sesión caducada', null, 'handleSessionExpiredLogout'],
     ['CSRF', null, 'handleCsrfLogout'],
-  ])('sin registrar, %s falla cerrado: borra lo de la cuenta y lanza, sin dejar la carga «cerrándose» ni redirigir', async (_caso, marca, cierre) => {
-    vi.useFakeTimers();
-    try {
-      vi.stubGlobal('localStorage', { getItem: vi.fn(() => marca), setItem: vi.fn(), removeItem: vi.fn() });
-      vi.stubGlobal('location', { href: '', pathname: '/competitions/7', search: '', hash: '' });
-      const cierres = { ...(await import('./deviceRevocationLogout')), ...(await import('./csrfLogout')) };
-      const limpieza = vi.fn();
-      cierres.alCerrarLaSesion(limpieza);
-      const { seEstaCerrandoLaSesion } = await import('../../utils/cierreDeEstaCarga');
+  ])(
+    'sin registrar, %s falla cerrado: borra lo de la cuenta y lanza, sin dejar la carga «cerrándose» ni redirigir',
+    async (_caso, marca, cierre) => {
+      vi.useFakeTimers();
+      try {
+        vi.stubGlobal('localStorage', {
+          getItem: vi.fn(() => marca),
+          setItem: vi.fn(),
+          removeItem: vi.fn(),
+        });
+        vi.stubGlobal('location', {
+          href: '',
+          pathname: '/competitions/7',
+          search: '',
+          hash: '',
+        });
+        const cierres = {
+          ...(await import('./deviceRevocationLogout')),
+          ...(await import('./csrfLogout')),
+        };
+        const limpieza = vi.fn();
+        cierres.alCerrarLaSesion(limpieza);
+        const { seEstaCerrandoLaSesion } =
+          await import('../../utils/cierreDeEstaCarga');
 
-      expect(() => cierres[cierre](null)).toThrow(SIN_INTERFAZ);
-      vi.advanceTimersByTime(1000);
+        expect(() => cierres[cierre](null)).toThrow(SIN_INTERFAZ);
+        vi.advanceTimersByTime(1000);
 
-      // Lo que no depende de la interfaz se borra igual: los datos de la cuenta no
-      // se quedan en el dispositivo por un registro que falta (decidido el 9 nov 2026)
-      expect(localStorage.removeItem).toHaveBeenCalledWith('user');
-      expect(localStorage.removeItem).toHaveBeenCalledWith('access_token');
-      expect(limpieza).toHaveBeenCalledTimes(1);
-      // Y nada más: ni la carga marcada, ni la marca del cierre, ni la redirección
-      expect(seEstaCerrandoLaSesion()).toBe(false);
-      expect(localStorage.setItem).not.toHaveBeenCalled();
-      expect(globalThis.location.href).toBe('');
-    } finally {
-      vi.useRealTimers();
-    }
-  });
+        // Lo que no depende de la interfaz se borra igual: los datos de la cuenta no
+        // se quedan en el dispositivo por un registro que falta (decidido el 9 nov 2026)
+        expect(localStorage.removeItem).toHaveBeenCalledWith('user');
+        expect(localStorage.removeItem).toHaveBeenCalledWith('access_token');
+        expect(limpieza).toHaveBeenCalledTimes(1);
+        // Y nada más: ni la carga marcada, ni la marca del cierre, ni la redirección
+        expect(seEstaCerrandoLaSesion()).toBe(false);
+        expect(localStorage.setItem).not.toHaveBeenCalled();
+        expect(globalThis.location.href).toBe('');
+      } finally {
+        vi.useRealTimers();
+      }
+    },
+  );
 
   it('sin registrar, un 429 de la API no sale con un texto vacío: lanza', async () => {
-    vi.stubGlobal('fetch', vi.fn(async () => ({ ok: false, status: 429, statusText: 'Too Many', json: async () => ({}) })));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => ({
+        ok: false,
+        status: 429,
+        statusText: 'Too Many',
+        json: async () => ({}),
+      })),
+    );
     const { apiRequest } = await import('./api');
 
     await expect(apiRequest('/api/v1/x')).rejects.toThrow(SIN_INTERFAZ);
   });
 
   it('registrada a medias, dice qué le falta', async () => {
-    const { registraLaInterfazDelTransporte } = await import('./interfazDelTransporte');
+    const { registraLaInterfazDelTransporte } =
+      await import('./interfazDelTransporte');
     const aMedias = COMPLETA();
     delete aMedias.traduce;
     delete aMedias.redirigeAlLogin;
 
     expect(() => registraLaInterfazDelTransporte(aMedias)).toThrow(
-      'La interfaz del transporte no trae: redirigeAlLogin, traduce'
+      'La interfaz del transporte no trae: redirigeAlLogin, traduce',
     );
   });
 
   it('registrada entera, es la que se usa', async () => {
-    const { registraLaInterfazDelTransporte, interfaz } = await import('./interfazDelTransporte');
+    const { registraLaInterfazDelTransporte, interfaz } =
+      await import('./interfazDelTransporte');
     const completa = COMPLETA();
 
     registraLaInterfazDelTransporte(completa);
@@ -119,18 +155,20 @@ describe('la interfaz del transporte', () => {
   });
 
   it('se registra una sola vez: la segunda lanza y sigue la primera', async () => {
-    const { registraLaInterfazDelTransporte, interfaz } = await import('./interfazDelTransporte');
+    const { registraLaInterfazDelTransporte, interfaz } =
+      await import('./interfazDelTransporte');
     const primera = COMPLETA();
     registraLaInterfazDelTransporte(primera);
 
     expect(() => registraLaInterfazDelTransporte(COMPLETA())).toThrow(
-      'La interfaz del transporte ya está registrada'
+      'La interfaz del transporte ya está registrada',
     );
     expect(interfaz()).toBe(primera);
   });
 
   it('lo registrado queda congelado: no se le cambia una pieza después', async () => {
-    const { registraLaInterfazDelTransporte, interfaz } = await import('./interfazDelTransporte');
+    const { registraLaInterfazDelTransporte, interfaz } =
+      await import('./interfazDelTransporte');
     registraLaInterfazDelTransporte(COMPLETA());
     const original = interfaz().redirigeAlLogin;
 
@@ -145,7 +183,8 @@ describe('la interfaz del transporte', () => {
     const primera = await import('./interfazDelTransporte');
     primera.registraLaInterfazDelTransporte(COMPLETA());
     vi.resetModules();
-    const { registraLaInterfazDelTransporte, interfaz } = await import('./interfazDelTransporte');
+    const { registraLaInterfazDelTransporte, interfaz } =
+      await import('./interfazDelTransporte');
     expect(() => interfaz()).toThrow(SIN_INTERFAZ);
     const otra = COMPLETA();
 
@@ -155,16 +194,25 @@ describe('la interfaz del transporte', () => {
   });
 
   it('sin registrar, el fallo de un refresco no sale de trataElFalloDelRefresco: borra lo de la cuenta y lo anota', async () => {
-    vi.stubGlobal('localStorage', { getItem: vi.fn(() => null), setItem: vi.fn(), removeItem: vi.fn() });
-    const consola = vi.spyOn(globalThis.console, 'error').mockImplementation(() => {});
+    vi.stubGlobal('localStorage', {
+      getItem: vi.fn(() => null),
+      setItem: vi.fn(),
+      removeItem: vi.fn(),
+    });
+    const consola = vi
+      .spyOn(globalThis.console, 'error')
+      .mockImplementation(() => {});
     vi.spyOn(globalThis.console, 'log').mockImplementation(() => {});
     const { alCerrarLaSesion } = await import('./deviceRevocationLogout');
     const limpieza = vi.fn();
     alCerrarLaSesion(limpieza);
-    const { trataElFalloDelRefresco } = await import('./tokenRefreshInterceptor');
+    const { trataElFalloDelRefresco } =
+      await import('./tokenRefreshInterceptor');
     const revocado = Object.assign(new Error('refresh failed'), {
       response: { status: 401, url: '/api/v1/auth/refresh-token' },
-      errorData: { detail: 'Dispositivo revocado. Por favor, inicia sesión nuevamente.' },
+      errorData: {
+        detail: 'Dispositivo revocado. Por favor, inicia sesión nuevamente.',
+      },
     });
 
     expect(() => trataElFalloDelRefresco(revocado)).not.toThrow();
@@ -173,14 +221,19 @@ describe('la interfaz del transporte', () => {
     expect(limpieza).toHaveBeenCalledTimes(1);
     expect(consola).toHaveBeenCalledWith(
       '[TokenRefresh] Forced logout failed:',
-      expect.objectContaining({ message: expect.stringMatching(SIN_INTERFAZ) })
+      expect.objectContaining({ message: expect.stringMatching(SIN_INTERFAZ) }),
     );
     consola.mockRestore();
   });
 
   it('sin registrar y con una limpieza que falla, el error dice que falta la interfaz y trae el de la limpieza como causa', async () => {
-    vi.stubGlobal('localStorage', { getItem: vi.fn(() => null), setItem: vi.fn(), removeItem: vi.fn() });
-    const { alCerrarLaSesion, handleDeviceRevocationLogout } = await import('./deviceRevocationLogout');
+    vi.stubGlobal('localStorage', {
+      getItem: vi.fn(() => null),
+      setItem: vi.fn(),
+      removeItem: vi.fn(),
+    });
+    const { alCerrarLaSesion, handleDeviceRevocationLogout } =
+      await import('./deviceRevocationLogout');
     const fallo = new Error('almacén lleno');
     alCerrarLaSesion(() => {
       throw fallo;
@@ -198,10 +251,17 @@ describe('la interfaz del transporte', () => {
   });
 
   it('sin interfaz se borra lo mismo que en un cierre forzado normal (sin Sentry)', async () => {
-    const pasos = (borrados, limpiezas) => [...borrados, `limpiezas:${limpiezas}`];
+    const pasos = (borrados, limpiezas) => [
+      ...borrados,
+      `limpiezas:${limpiezas}`,
+    ];
     const almacen = () => {
       const borrados = [];
-      vi.stubGlobal('localStorage', { getItem: vi.fn(() => null), setItem: vi.fn(), removeItem: vi.fn((k) => borrados.push(k)) });
+      vi.stubGlobal('localStorage', {
+        getItem: vi.fn(() => null),
+        setItem: vi.fn(),
+        removeItem: vi.fn((k) => borrados.push(k)),
+      });
       return borrados;
     };
 
@@ -210,7 +270,9 @@ describe('la interfaz del transporte', () => {
     const normal = await import('./deviceRevocationLogout');
     const enNormal = vi.fn();
     normal.alCerrarLaSesion(enNormal);
-    (await import('./interfazDelTransporte')).registraLaInterfazDelTransporte(COMPLETA());
+    (await import('./interfazDelTransporte')).registraLaInterfazDelTransporte(
+      COMPLETA(),
+    );
     normal.limpiaLaCuenta();
 
     // Sin la interfaz: lo que borra antes de lanzar
@@ -219,9 +281,13 @@ describe('la interfaz del transporte', () => {
     const cerrado = await import('./deviceRevocationLogout');
     const enCerrado = vi.fn();
     cerrado.alCerrarLaSesion(enCerrado);
-    expect(() => cerrado.handleDeviceRevocationLogout(null)).toThrow(SIN_INTERFAZ);
+    expect(() => cerrado.handleDeviceRevocationLogout(null)).toThrow(
+      SIN_INTERFAZ,
+    );
 
-    expect(pasos(sinInterfaz, enCerrado.mock.calls.length)).toEqual(pasos(conInterfaz, enNormal.mock.calls.length));
+    expect(pasos(sinInterfaz, enCerrado.mock.calls.length)).toEqual(
+      pasos(conInterfaz, enNormal.mock.calls.length),
+    );
   });
 
   it.each([['toString'], ['constructor'], ['__proto__'], ['ended']])(
@@ -229,33 +295,50 @@ describe('la interfaz del transporte', () => {
     async (motivo) => {
       const toast = { error: vi.fn() };
       vi.doMock('../../utils/toast', () => ({ default: toast }));
-      vi.doMock('i18next', () => ({ default: { t: (clave, { ns } = {}) => `${ns}:${clave}` } }));
+      vi.doMock('i18next', () => ({
+        default: { t: (clave, { ns } = {}) => `${ns}:${clave}` },
+      }));
       await import('../../composition/interfazDelTransporte');
       const { interfaz } = await import('./interfazDelTransporte');
 
       globalThis.sessionStorage.clear();
       interfaz().avisaAlUsuarioDelCierre(motivo);
       // Se guarda para /login, que lo enseña como sesión terminada
-      const { tomaElAvisoDelCierre, muestraElAvisoDelCierre } = await import('../../utils/avisoTrasElCierre');
+      const { tomaElAvisoDelCierre, muestraElAvisoDelCierre } =
+        await import('../../utils/avisoTrasElCierre');
       expect(toast.error).not.toHaveBeenCalled();
-      muestraElAvisoDelCierre(tomaElAvisoDelCierre(), (clave, { ns } = {}) => `${ns}:${clave}`);
+      muestraElAvisoDelCierre(
+        tomaElAvisoDelCierre(),
+        (clave, { ns } = {}) => `${ns}:${clave}`,
+      );
 
-      expect(toast.error).toHaveBeenCalledWith('auth:errors.sessionEnded', { duration: 8000, icon: 'ℹ️', delCierre: true });
+      expect(toast.error).toHaveBeenCalledWith('auth:errors.sessionEnded', {
+        duration: 8000,
+        icon: 'ℹ️',
+        delCierre: true,
+      });
       vi.doUnmock('../../utils/toast');
       vi.doUnmock('i18next');
-    }
+    },
   );
 
   it('la composition root la registra con todo', async () => {
     await import('../../composition/interfazDelTransporte');
     const { interfaz } = await import('./interfazDelTransporte');
 
-    expect(Object.keys(interfaz()).sort()).toEqual(Object.keys(COMPLETA()).sort());
+    expect(Object.keys(interfaz()).sort()).toEqual(
+      Object.keys(COMPLETA()).sort(),
+    );
   });
 
   it('main.jsx la carga antes que la aplicación (y que nada que llame a la API)', () => {
-    const lineas = readFileSync(resolve(globalThis.process.cwd(), 'src/main.jsx'), 'utf8').split('\n');
-    const cableado = lineas.indexOf("import './composition/interfazDelTransporte';");
+    const lineas = readFileSync(
+      resolve(globalThis.process.cwd(), 'src/main.jsx'),
+      'utf8',
+    ).split('\n');
+    const cableado = lineas.indexOf(
+      "import './composition/interfazDelTransporte';",
+    );
     const app = lineas.findIndex((linea) => linea.startsWith('import App '));
 
     expect(cableado).toBeGreaterThan(-1);

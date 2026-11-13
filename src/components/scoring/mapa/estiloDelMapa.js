@@ -6,10 +6,16 @@ import { geojsonDelHoyo, lngLat } from './geometriaDelMapa';
 
 export const ESTILO = {
   version: 8,
-  sources: { pnoa: { type: 'raster', tiles: [TESELAS_PNOA], tileSize: 256, maxzoom: 20 } },
+  sources: {
+    pnoa: { type: 'raster', tiles: [TESELAS_PNOA], tileSize: 256, maxzoom: 20 },
+  },
   layers: [
     // Sin teselas (sin cobertura), gris: el recuadro y las cifras siguen, que no dependen de ellas
-    { id: 'fondo', type: 'background', paint: { 'background-color': '#6b7280' } },
+    {
+      id: 'fondo',
+      type: 'background',
+      paint: { 'background-color': '#6b7280' },
+    },
     { id: 'pnoa', type: 'raster', source: 'pnoa' },
   ],
 };
@@ -44,14 +50,22 @@ export const ponerCapasDelHoyo = (mapa, { hoyo, medida, linea }) => {
     type: 'line',
     source: 'hoyo',
     filter: ['==', ['get', 'tipo'], 'linea'],
-    paint: { 'line-color': '#ffffff', 'line-width': 2, 'line-dasharray': [2, 2] },
+    paint: {
+      'line-color': '#ffffff',
+      'line-width': 2,
+      'line-dasharray': [2, 2],
+    },
   });
   mapa.addSource('medida', { type: 'geojson', data: medida });
   mapa.addLayer({
     id: 'medida-linea',
     type: 'line',
     source: 'medida',
-    paint: { 'line-color': '#facc15', 'line-width': 2.5, 'line-dasharray': [2, 1.5] },
+    paint: {
+      'line-color': '#facc15',
+      'line-width': 2.5,
+      'line-dasharray': [2, 1.5],
+    },
   });
   mapa.addSource('marcado', { type: 'geojson', data: linea });
   mapa.addLayer({
@@ -66,6 +80,11 @@ export const ponerCapasDelHoyo = (mapa, { hoyo, medida, linea }) => {
     type: 'circle',
     source: 'hoyo',
     filter: ['==', ['get', 'tipo'], 'green'],
-    paint: { 'circle-radius': 6, 'circle-color': '#facc15', 'circle-stroke-color': '#ffffff', 'circle-stroke-width': 2 },
+    paint: {
+      'circle-radius': 6,
+      'circle-color': '#facc15',
+      'circle-stroke-color': '#ffffff',
+      'circle-stroke-width': 2,
+    },
   });
 };

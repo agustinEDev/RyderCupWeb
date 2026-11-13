@@ -62,7 +62,11 @@ class MatchPlayStrokeAllocator {
    * @param {number} totalHoles
    * @returns {number} Positivo si recibe, negativo si cede
    */
-  static strokesOnHole(playingHandicap, strokeIndex, totalHoles = HOLES_PER_ROUND) {
+  static strokesOnHole(
+    playingHandicap,
+    strokeIndex,
+    totalHoles = HOLES_PER_ROUND,
+  ) {
     if (!playingHandicap || totalHoles === 0) return 0;
 
     const sign = playingHandicap > 0 ? 1 : -1;
@@ -99,7 +103,9 @@ class MatchPlayStrokeAllocator {
     // género juntos. Sin la reserva no acertaría nunca y caería al hándicap
     // índice, varios golpes por debajo.
     return (
-      sameColor.find((t) => (t.gender ?? null) === (participant.teeGender ?? null)) ??
+      sameColor.find(
+        (t) => (t.gender ?? null) === (participant.teeGender ?? null),
+      ) ??
       sameColor.find((t) => (t.gender ?? null) === null) ??
       null
     );
@@ -149,7 +155,9 @@ class MatchPlayStrokeAllocator {
 
   /** Orden de dificultad del campo, para lo que no es de un jugador concreto. */
   static courseHolesByDifficulty(holes) {
-    return [...holes].sort((a, b) => a.strokeIndex - b.strokeIndex).map((h) => h.holeNumber);
+    return [...holes]
+      .sort((a, b) => a.strokeIndex - b.strokeIndex)
+      .map((h) => h.holeNumber);
   }
 
   /**
@@ -197,11 +205,16 @@ class MatchPlayStrokeAllocator {
     const hi = participant?.handicap;
     if (hi == null) return 0;
 
-    const rated = MatchPlayStrokeAllocator.ratableTeeFor(participant, holes, tees);
+    const rated = MatchPlayStrokeAllocator.ratableTeeFor(
+      participant,
+      holes,
+      tees,
+    );
     if (!rated) return PlayingHandicapCalculator.roundHalfAwayFromZero(hi);
 
     const { tee, par } = rated;
-    const raw = hi * (tee.slopeRating / NEUTRAL_SLOPE) + (tee.courseRating - par);
+    const raw =
+      hi * (tee.slopeRating / NEUTRAL_SLOPE) + (tee.courseRating - par);
     return PlayingHandicapCalculator.roundHalfAwayFromZero(raw);
   }
 
@@ -224,16 +237,30 @@ class MatchPlayStrokeAllocator {
    * @param {Array<Object>} members - Jugadores del bando
    * @returns {number} Entero; negativo si el bando lo es (un plus baja la media)
    */
-  static sidePlayingHandicap(members = [], holes = [], tees = [], allowancePercentage = 100) {
+  static sidePlayingHandicap(
+    members = [],
+    holes = [],
+    tees = [],
+    allowancePercentage = 100,
+  ) {
     if (members.length === 0) return 0;
-    const average = MatchPlayStrokeAllocator.#averageCourseHandicap(members, holes, tees);
-    return PlayingHandicapCalculator.roundHalfAwayFromZero((average * allowancePercentage) / 100);
+    const average = MatchPlayStrokeAllocator.#averageCourseHandicap(
+      members,
+      holes,
+      tees,
+    );
+    return PlayingHandicapCalculator.roundHalfAwayFromZero(
+      (average * allowancePercentage) / 100,
+    );
   }
 
   static #averageCourseHandicap(members, holes, tees) {
     return (
-      members.reduce((sum, p) => sum + MatchPlayStrokeAllocator.courseHandicap(p, holes, tees), 0) /
-      members.length
+      members.reduce(
+        (sum, p) =>
+          sum + MatchPlayStrokeAllocator.courseHandicap(p, holes, tees),
+        0,
+      ) / members.length
     );
   }
 
@@ -255,12 +282,18 @@ class MatchPlayStrokeAllocator {
     const hi = participant?.handicap;
     if (hi == null) return 0;
 
-    const rated = MatchPlayStrokeAllocator.ratableTeeFor(participant, holes, tees);
+    const rated = MatchPlayStrokeAllocator.ratableTeeFor(
+      participant,
+      holes,
+      tees,
+    );
     if (!rated) {
       // El allowance se aplica igual: sin él, quien no tiene barra valorable
       // jugaría al 100% de su hándicap mientras el resto de la partida juega al
       // 95%, y saldría ganando por no tener datos.
-      return PlayingHandicapCalculator.roundHalfAwayFromZero((hi * allowancePercentage) / 100);
+      return PlayingHandicapCalculator.roundHalfAwayFromZero(
+        (hi * allowancePercentage) / 100,
+      );
     }
 
     const ph = PlayingHandicapCalculator.calculate(
@@ -270,7 +303,7 @@ class MatchPlayStrokeAllocator {
         slopeRating: rated.tee.slopeRating,
         par: rated.par,
       },
-      allowancePercentage
+      allowancePercentage,
     );
     return ph ?? 0;
   }
@@ -323,19 +356,34 @@ class MatchPlayStrokeAllocator {
         participants,
         holes,
         tees,
-        allowancePercentage
+        allowancePercentage,
       );
     }
 
     if (matchFormat === 'SINGLES') {
-      return MatchPlayStrokeAllocator.#singles(participants, holes, tees, allowancePercentage);
+      return MatchPlayStrokeAllocator.#singles(
+        participants,
+        holes,
+        tees,
+        allowancePercentage,
+      );
     }
 
     if (matchFormat === 'FOURBALL') {
-      return MatchPlayStrokeAllocator.#fourball(participants, holes, tees, allowancePercentage);
+      return MatchPlayStrokeAllocator.#fourball(
+        participants,
+        holes,
+        tees,
+        allowancePercentage,
+      );
     }
 
-    return MatchPlayStrokeAllocator.#foursomes(participants, holes, tees, allowancePercentage);
+    return MatchPlayStrokeAllocator.#foursomes(
+      participants,
+      holes,
+      tees,
+      allowancePercentage,
+    );
   }
 
   /**
@@ -354,8 +402,11 @@ class MatchPlayStrokeAllocator {
       return Object.fromEntries(
         participantStrokes.map((ps) => [
           ps.participantId,
-          { playingHandicap: ps.playingHandicap, strokesByHole: ps.strokesByHole ?? {} },
-        ])
+          {
+            playingHandicap: ps.playingHandicap,
+            strokesByHole: ps.strokesByHole ?? {},
+          },
+        ]),
       );
     }
     return MatchPlayStrokeAllocator.allocate(localParams);
@@ -378,7 +429,7 @@ class MatchPlayStrokeAllocator {
   static ownStrokes(participant, holes, tees, playingHandicap) {
     return MatchPlayStrokeAllocator.#build(
       playingHandicap,
-      MatchPlayStrokeAllocator.holesByDifficultyFor(participant, holes, tees)
+      MatchPlayStrokeAllocator.holesByDifficultyFor(participant, holes, tees),
     );
   }
 
@@ -390,10 +441,15 @@ class MatchPlayStrokeAllocator {
     const result = {};
     for (const p of participants) {
       // Un hándicap plus es negativo y cede golpes al campo
-      const ph = MatchPlayStrokeAllocator.playingHandicap(p, holes, tees, allowance);
+      const ph = MatchPlayStrokeAllocator.playingHandicap(
+        p,
+        holes,
+        tees,
+        allowance,
+      );
       result[p.participantId] = MatchPlayStrokeAllocator.#build(
         ph,
-        MatchPlayStrokeAllocator.holesByDifficultyFor(p, holes, tees)
+        MatchPlayStrokeAllocator.holesByDifficultyFor(p, holes, tees),
       );
     }
     return result;
@@ -405,20 +461,30 @@ class MatchPlayStrokeAllocator {
     }
 
     const [a, b] = participants;
-    const phA = MatchPlayStrokeAllocator.playingHandicap(a, holes, tees, allowance);
-    const phB = MatchPlayStrokeAllocator.playingHandicap(b, holes, tees, allowance);
+    const phA = MatchPlayStrokeAllocator.playingHandicap(
+      a,
+      holes,
+      tees,
+      allowance,
+    );
+    const phB = MatchPlayStrokeAllocator.playingHandicap(
+      b,
+      holes,
+      tees,
+      allowance,
+    );
     const diff = phA - phB;
 
     return {
       [a.participantId]: MatchPlayStrokeAllocator.#build(
         Math.max(0, diff),
         MatchPlayStrokeAllocator.holesByDifficultyFor(a, holes, tees),
-        phA
+        phA,
       ),
       [b.participantId]: MatchPlayStrokeAllocator.#build(
         Math.max(0, -diff),
         MatchPlayStrokeAllocator.holesByDifficultyFor(b, holes, tees),
-        phB
+        phB,
       ),
     };
   }
@@ -434,7 +500,7 @@ class MatchPlayStrokeAllocator {
     const result = {};
     for (const { participantId, ch, participant } of courseHandicaps) {
       const allocated = PlayingHandicapCalculator.roundHalfAwayFromZero(
-        (ch - lowest) * (allowance / 100)
+        (ch - lowest) * (allowance / 100),
       );
       // Se enseña su hándicap de juego, no la diferencia: "recibe 14 golpes"
       // junto a "Hcp de juego 14" era el mismo número dos veces, y ninguno de
@@ -442,7 +508,12 @@ class MatchPlayStrokeAllocator {
       result[participantId] = MatchPlayStrokeAllocator.#build(
         Math.max(0, allocated),
         MatchPlayStrokeAllocator.holesByDifficultyFor(participant, holes, tees),
-        MatchPlayStrokeAllocator.playingHandicap(participant, holes, tees, allowance)
+        MatchPlayStrokeAllocator.playingHandicap(
+          participant,
+          holes,
+          tees,
+          allowance,
+        ),
       );
     }
     return result;
@@ -455,10 +526,18 @@ class MatchPlayStrokeAllocator {
       return MatchPlayStrokeAllocator.#zeroed(participants);
     }
 
-    const avgA = MatchPlayStrokeAllocator.#averageCourseHandicap(teamA, holes, tees);
-    const avgB = MatchPlayStrokeAllocator.#averageCourseHandicap(teamB, holes, tees);
+    const avgA = MatchPlayStrokeAllocator.#averageCourseHandicap(
+      teamA,
+      holes,
+      tees,
+    );
+    const avgB = MatchPlayStrokeAllocator.#averageCourseHandicap(
+      teamB,
+      holes,
+      tees,
+    );
     const strokes = PlayingHandicapCalculator.roundHalfAwayFromZero(
-      Math.abs(avgA - avgB) * (allowance / 100)
+      Math.abs(avgA - avgB) * (allowance / 100),
     );
 
     const phA = avgA > avgB ? strokes : 0;
@@ -477,7 +556,7 @@ class MatchPlayStrokeAllocator {
       MatchPlayStrokeAllocator.#build(
         allocated,
         courseOrder,
-        MatchPlayStrokeAllocator.playingHandicap(p, holes, tees, allowance)
+        MatchPlayStrokeAllocator.playingHandicap(p, holes, tees, allowance),
       );
     for (const p of teamA) result[p.participantId] = build(p, phA);
     for (const p of teamB) result[p.participantId] = build(p, phB);
@@ -509,7 +588,10 @@ class MatchPlayStrokeAllocator {
     holesByDifficulty.forEach((holeNumber, position) => {
       // 18 fijo, no la longitud de la lista: `GolfCourse` valida exactamente 18
       // hoyos como invariante y el backend reparte contra esa misma constante.
-      const count = MatchPlayStrokeAllocator.strokesOnHole(allocated, position + 1);
+      const count = MatchPlayStrokeAllocator.strokesOnHole(
+        allocated,
+        position + 1,
+      );
       // Solo los hoyos con golpe, igual que el backend
       if (count !== 0) strokesByHole[holeNumber] = count;
     });

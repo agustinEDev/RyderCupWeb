@@ -1,5 +1,15 @@
-import { Play, CheckCircle, AlertTriangle, Eye, Users, ClipboardList } from 'lucide-react';
-import { formatoDeIndice, formatoDeHandicapDeJuego } from '../../utils/formatoDeHandicap';
+import {
+  Play,
+  CheckCircle,
+  AlertTriangle,
+  Eye,
+  Users,
+  ClipboardList,
+} from 'lucide-react';
+import {
+  formatoDeIndice,
+  formatoDeHandicapDeJuego,
+} from '../../utils/formatoDeHandicap';
 
 const STATUS_COLORS = {
   SCHEDULED: 'bg-blue-100 text-blue-800',
@@ -35,38 +45,57 @@ const MatchCard = ({
   const teamA = match.teamAPlayers || [];
   const teamB = match.teamBPlayers || [];
 
-  const isTeamFormat = matchFormat === 'FOURBALL' || matchFormat === 'FOURSOMES';
+  const isTeamFormat =
+    matchFormat === 'FOURBALL' || matchFormat === 'FOURSOMES';
 
   const renderTeamPlayers = (players, teamColor) => {
-    if (players.length === 0) return <p className="text-sm text-gray-400">--</p>;
+    if (players.length === 0)
+      return <p className="text-sm text-gray-400">--</p>;
 
     return players.map((p, i) => {
-      const realHcp = p.playerHandicap ?? playerHandicapMap?.get(p.userId) ?? null;
+      const realHcp =
+        p.playerHandicap ?? playerHandicapMap?.get(p.userId) ?? null;
       const ph = p.playingHandicap;
-      const isCapped = maxPlayingHandicap != null && ph != null && ph >= maxPlayingHandicap;
+      const isCapped =
+        maxPlayingHandicap != null && ph != null && ph >= maxPlayingHandicap;
       return (
-        <div key={p.userId || i} className="flex flex-wrap items-center justify-between gap-x-2 gap-y-0.5">
+        <div
+          key={p.userId || i}
+          className="flex flex-wrap items-center justify-between gap-x-2 gap-y-0.5"
+        >
           {/* Que encoja y parta: con «Hcp juego» al lado, un nombre largo sin
               espacios empujaba la fila fuera de la tarjeta a 360 px. Si no
               caben los dos, el HCP baja debajo antes que partir el nombre a
               mitad de palabra (pasada del Kind, 1 nov 2026) */}
-          <p className={`min-w-0 break-words text-sm ${i === 0 ? 'text-gray-900' : 'text-gray-700'}`}>
+          <p
+            className={`min-w-0 break-words text-sm ${i === 0 ? 'text-gray-900' : 'text-gray-700'}`}
+          >
             {getPlayerName(p.userId, playerNameMap, t)}
           </p>
           {/* Si baja, a la derecha, como en las filas que caben (/code-review) */}
           <div className="ml-auto flex items-center gap-1 shrink-0">
             {realHcp != null && (
-              <span className={`text-xs ${teamColor} font-medium`}>{t('handicapLabels.index', { value: formatoDeIndice(realHcp) })}</span>
+              <span className={`text-xs ${teamColor} font-medium`}>
+                {t('handicapLabels.index', { value: formatoDeIndice(realHcp) })}
+              </span>
             )}
             {ph != null && (
               <>
-                {realHcp != null && <span className="text-xs text-gray-400">|</span>}
+                {realHcp != null && (
+                  <span className="text-xs text-gray-400">|</span>
+                )}
                 {isCapped ? (
                   <span className="text-xs bg-orange-100 text-orange-700 font-semibold px-1.5 py-0.5 rounded">
-                    {t('handicapLabels.playingCapped', { value: formatoDeHandicapDeJuego(ph) })}
+                    {t('handicapLabels.playingCapped', {
+                      value: formatoDeHandicapDeJuego(ph),
+                    })}
                   </span>
                 ) : (
-                  <span className={`text-xs ${teamColor} font-medium`}>{t('handicapLabels.playing', { value: formatoDeHandicapDeJuego(ph) })}</span>
+                  <span className={`text-xs ${teamColor} font-medium`}>
+                    {t('handicapLabels.playing', {
+                      value: formatoDeHandicapDeJuego(ph),
+                    })}
+                  </span>
                 )}
               </>
             )}
@@ -83,7 +112,9 @@ const MatchCard = ({
         <span className="font-semibold text-gray-900">
           {t('matches.matchNumber', { number: match.matchNumber })}
         </span>
-        <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${STATUS_COLORS[status] || 'bg-gray-100 text-gray-700'}`}>
+        <span
+          className={`px-2 py-0.5 rounded-full text-xs font-semibold ${STATUS_COLORS[status] || 'bg-gray-100 text-gray-700'}`}
+        >
           {t(`status.${status}`)}
         </span>
       </div>
@@ -91,16 +122,26 @@ const MatchCard = ({
       {/* Teams */}
       <div className="space-y-2 mb-3">
         {/* Team A */}
-        <div className={`rounded-lg p-2 ${isTeamFormat ? 'bg-blue-50 border-l-4 border-blue-400' : 'bg-blue-50'}`}>
-          <p className="text-xs font-semibold text-blue-700 mb-1">{teamNames.teamA}</p>
+        <div
+          className={`rounded-lg p-2 ${isTeamFormat ? 'bg-blue-50 border-l-4 border-blue-400' : 'bg-blue-50'}`}
+        >
+          <p className="text-xs font-semibold text-blue-700 mb-1">
+            {teamNames.teamA}
+          </p>
           {renderTeamPlayers(teamA, 'text-blue-600')}
         </div>
 
-        <div className="text-center text-xs font-bold text-gray-400">{t('matches.vs')}</div>
+        <div className="text-center text-xs font-bold text-gray-400">
+          {t('matches.vs')}
+        </div>
 
         {/* Team B */}
-        <div className={`rounded-lg p-2 ${isTeamFormat ? 'bg-red-50 border-l-4 border-red-400' : 'bg-red-50'}`}>
-          <p className="text-xs font-semibold text-red-700 mb-1">{teamNames.teamB}</p>
+        <div
+          className={`rounded-lg p-2 ${isTeamFormat ? 'bg-red-50 border-l-4 border-red-400' : 'bg-red-50'}`}
+        >
+          <p className="text-xs font-semibold text-red-700 mb-1">
+            {teamNames.teamB}
+          </p>
           {renderTeamPlayers(teamB, 'text-red-600')}
         </div>
       </div>
@@ -108,10 +149,21 @@ const MatchCard = ({
       {/* Handicap info */}
       {match.handicapStrokesGiven != null && match.handicapStrokesGiven > 0 && (
         <div className="text-xs text-gray-500 mb-3">
-          {t('matches.handicapStrokes', { strokes: match.handicapStrokesGiven })}
+          {t('matches.handicapStrokes', {
+            strokes: match.handicapStrokesGiven,
+          })}
           {match.strokesGivenToTeam && (
             <span className="ml-1">
-              ({t('matches.strokesGivenTo', { team: match.strokesGivenToTeam === 'A' ? teamNames.teamA : match.strokesGivenToTeam === 'B' ? teamNames.teamB : '' })})
+              (
+              {t('matches.strokesGivenTo', {
+                team:
+                  match.strokesGivenToTeam === 'A'
+                    ? teamNames.teamA
+                    : match.strokesGivenToTeam === 'B'
+                      ? teamNames.teamB
+                      : '',
+              })}
+              )
             </span>
           )}
         </div>

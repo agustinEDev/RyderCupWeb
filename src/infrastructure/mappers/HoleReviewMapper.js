@@ -8,7 +8,13 @@ const aDominio = (p) => (p ? { lat: p.latitude, lon: p.longitude } : null);
 const aApi = (p) => ({ latitude: p.lat, longitude: p.lon });
 
 const lineaADominio = (linea) =>
-  linea ? { tee: aDominio(linea.tee), bends: (linea.bends ?? []).map(aDominio), greenCenter: aDominio(linea.green_center) } : null;
+  linea
+    ? {
+        tee: aDominio(linea.tee),
+        bends: (linea.bends ?? []).map(aDominio),
+        greenCenter: aDominio(linea.green_center),
+      }
+    : null;
 
 class HoleReviewMapper {
   /** @returns {{golfCourseId: string, name: string, holes: {holeNumber: number, samples: number}[]}[]} */
@@ -18,7 +24,11 @@ class HoleReviewMapper {
       name: curso.name,
       // Solo llegan los pendientes: el `saved` de la API es siempre false (17 oct)
       // Con reportes abiertos, un hoyo también está pendiente (entrega 7)
-      holes: (curso.holes ?? []).map((h) => ({ holeNumber: h.hole_number, samples: h.samples, reports: h.reports ?? 0 })),
+      holes: (curso.holes ?? []).map((h) => ({
+        holeNumber: h.hole_number,
+        samples: h.samples,
+        reports: h.reports ?? 0,
+      })),
     }));
   }
 
@@ -32,7 +42,14 @@ class HoleReviewMapper {
         holeNumber: h.hole_number,
         guardada: lineaADominio(h.saved_line),
         // La del mapa de OSM aprobado, entera (17 oct): se ve y se parte de ella
-        osm: h.osm_line ? { puntos: (h.osm_line.points ?? []).map(aDominio), green: h.osm_line.green_center ? aDominio(h.osm_line.green_center) : null } : null,
+        osm: h.osm_line
+          ? {
+              puntos: (h.osm_line.points ?? []).map(aDominio),
+              green: h.osm_line.green_center
+                ? aDominio(h.osm_line.green_center)
+                : null,
+            }
+          : null,
         muestras: (h.samples ?? []).map((m) => ({
           id: m.id,
           tee: aDominio(m.tee),
@@ -61,7 +78,11 @@ class HoleReviewMapper {
   }
 
   static lineToApi(linea) {
-    return { tee: aApi(linea.tee), bends: (linea.bends ?? []).map(aApi), green_center: aApi(linea.greenCenter) };
+    return {
+      tee: aApi(linea.tee),
+      bends: (linea.bends ?? []).map(aApi),
+      green_center: aApi(linea.greenCenter),
+    };
   }
 }
 

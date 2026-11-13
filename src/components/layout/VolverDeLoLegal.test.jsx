@@ -29,11 +29,13 @@ vi.mock('../../hooks/useAuthContext', () => ({
   useAuthContext: () => ({ clearAuth }),
 }));
 
-const { refrescoCompartido, fetchWithTokenRefresh } = await import('../../infrastructure/http/tokenRefreshInterceptor');
+const { refrescoCompartido, fetchWithTokenRefresh } =
+  await import('../../infrastructure/http/tokenRefreshInterceptor');
 const { anotaLaSesion } = await import('../../services/sesionCompartida');
 const { clearUserContext } = await import('../../utils/sentryHelpers');
 const { default: VolverDeLoLegal } = await import('./VolverDeLoLegal');
-const { TOPE_DE_LA_COMPROBACION_MS } = await import('../../services/sesionEnPaginaPublica');
+const { TOPE_DE_LA_COMPROBACION_MS } =
+  await import('../../services/sesionEnPaginaPublica');
 
 /**
  * Salir de los documentos legales sin pasar por la portada (20 oct 2026).
@@ -70,7 +72,7 @@ const abrir = (entradas = ['/terms'], indice = entradas.length - 1) =>
         <Route path="/profile" element={<p>perfil</p>} />
         <Route path="/terms" element={<VolverDeLoLegal />} />
       </Routes>
-    </MemoryRouter>
+    </MemoryRouter>,
   );
 
 const pulsar = async () => {
@@ -113,7 +115,8 @@ afterEach(() => {
 // la aplicacion, 0 en su primera entrada. MemoryRouter guarda su historial en
 // memoria y NO escribe `history.state.idx`, así que el test lo pone a mano para
 // recorrer esa rama; en la aplicación lo escribe el BrowserRouter de App.jsx
-const enLaPosicion = (idx) => window.history.replaceState({ usr: null, key: 'k', idx }, '');
+const enLaPosicion = (idx) =>
+  window.history.replaceState({ usr: null, key: 'k', idx }, '');
 
 describe('L1 · el botón', () => {
   it('L1a: pinta «Volver»', () => {
@@ -188,7 +191,9 @@ describe('L3 · sin página anterior (enlace directo o pestaña nueva)', () => {
 
   it('L3a2: sin usuario guardado ni sesión, a la portada', async () => {
     fetchFalso.mockResolvedValue(respuesta(401));
-    refrescoCompartido.mockRejectedValueOnce(Object.assign(new Error('sin sesión'), { response: { status: 401 } }));
+    refrescoCompartido.mockRejectedValueOnce(
+      Object.assign(new Error('sin sesión'), { response: { status: 401 } }),
+    );
     abrir();
 
     await pulsar();
@@ -207,15 +212,21 @@ describe('L3 · sin página anterior (enlace directo o pestaña nueva)', () => {
 
     expect(screen.getByText('panel')).toBeInTheDocument();
     expect(fetchFalso).toHaveBeenCalledTimes(1);
-    expect(fetchFalso.mock.calls[0][0]).toMatch(/\/api\/v1\/auth\/current-user$/);
-    expect(fetchFalso.mock.calls[0][1]).toMatchObject({ credentials: 'include' });
+    expect(fetchFalso.mock.calls[0][0]).toMatch(
+      /\/api\/v1\/auth\/current-user$/,
+    );
+    expect(fetchFalso.mock.calls[0][1]).toMatchObject({
+      credentials: 'include',
+    });
     expect(anotaLaSesion).toHaveBeenCalledWith(USUARIO);
     expect(refrescoCompartido).not.toHaveBeenCalled();
   });
 
   it('L3c: con el access caducado y el refresh vivo refresca y va al panel', async () => {
     conUsuarioGuardado();
-    fetchFalso.mockResolvedValueOnce(respuesta(401)).mockResolvedValueOnce(respuesta(200, USUARIO));
+    fetchFalso
+      .mockResolvedValueOnce(respuesta(401))
+      .mockResolvedValueOnce(respuesta(200, USUARIO));
     refrescoCompartido.mockResolvedValueOnce({});
     abrir();
 
@@ -229,7 +240,9 @@ describe('L3 · sin página anterior (enlace directo o pestaña nueva)', () => {
   it('L3d: con la sesión muerta (el refresco rechazado) va a la portada sin el interceptor', async () => {
     conUsuarioGuardado();
     fetchFalso.mockResolvedValueOnce(respuesta(401));
-    refrescoCompartido.mockRejectedValueOnce(Object.assign(new Error('caducada'), { response: { status: 401 } }));
+    refrescoCompartido.mockRejectedValueOnce(
+      Object.assign(new Error('caducada'), { response: { status: 401 } }),
+    );
     abrir();
 
     await pulsar();
@@ -276,7 +289,9 @@ describe('L3 · sin página anterior (enlace directo o pestaña nueva)', () => {
   it('L3e3: con el dispositivo revocado, a la portada y sin el `user` guardado', async () => {
     conUsuarioGuardado();
     fetchFalso.mockResolvedValueOnce(
-      respuesta(401, { detail: 'Dispositivo revocado. Por favor, inicia sesión nuevamente.' })
+      respuesta(401, {
+        detail: 'Dispositivo revocado. Por favor, inicia sesión nuevamente.',
+      }),
     );
     abrir();
 
@@ -291,7 +306,9 @@ describe('L3 · sin página anterior (enlace directo o pestaña nueva)', () => {
   it('L3e4: con el dispositivo revocado limpia como su cierre, pero sin mandar a /login', async () => {
     conUsuarioGuardado();
     fetchFalso.mockResolvedValueOnce(
-      respuesta(401, { detail: 'Dispositivo revocado. Por favor, inicia sesión nuevamente.' })
+      respuesta(401, {
+        detail: 'Dispositivo revocado. Por favor, inicia sesión nuevamente.',
+      }),
     );
     abrir();
 
@@ -350,7 +367,11 @@ describe('L3 · sin página anterior (enlace directo o pestaña nueva)', () => {
     vi.useFakeTimers();
     conUsuarioGuardado();
     let contesta;
-    fetchFalso.mockReturnValueOnce(new Promise((r) => { contesta = r; }));
+    fetchFalso.mockReturnValueOnce(
+      new Promise((r) => {
+        contesta = r;
+      }),
+    );
     abrir();
 
     await pulsar();

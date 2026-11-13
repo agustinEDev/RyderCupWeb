@@ -1,5 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, act, waitFor } from '@testing-library/react';
+import {
+  render,
+  screen,
+  fireEvent,
+  act,
+  waitFor,
+} from '@testing-library/react';
 import { MemoryRouter, Routes, Route } from 'react-router';
 
 /**
@@ -34,7 +40,9 @@ vi.mock('react-i18next', () => ({
 const toast = { error: vi.fn(), success: vi.fn(), info: vi.fn() };
 
 vi.mock('../components/layout/HeaderAuth', () => ({ default: () => null }));
-vi.mock('../hooks/useAuth', () => ({ useAuth: () => ({ user: { id: 'u-1', gender: 'MALE' }, loading: false }) }));
+vi.mock('../hooks/useAuth', () => ({
+  useAuth: () => ({ user: { id: 'u-1', gender: 'MALE' }, loading: false }),
+}));
 vi.mock('../utils/toast', () => ({ default: toast }));
 vi.mock('../services/countries', () => ({
   formatCountryName: () => 'España',
@@ -50,7 +58,9 @@ vi.mock('../composition', () => ({
   // La página descarta los países sin `name_en`/`name_es`, así que con `name` a
   // secas la lista se quedaba vacía y no se podía elegir ninguno
   fetchCountriesUseCase: {
-    execute: vi.fn().mockResolvedValue([{ code: 'ES', name_es: 'España', name_en: 'Spain' }]),
+    execute: vi
+      .fn()
+      .mockResolvedValue([{ code: 'ES', name_es: 'España', name_en: 'Spain' }]),
   },
   getAdjacentCountriesUseCase: { execute: vi.fn().mockResolvedValue([]) },
   createGolfCourseRequestUseCase: { execute: vi.fn() },
@@ -59,10 +69,14 @@ vi.mock('../composition', () => ({
 // selector tiene que poder elegirlo
 vi.mock('../components/ui/CountryAutocomplete', () => ({
   default: ({ onChange }) => (
-    <button type="button" onClick={() => onChange('ES')}>elegir país</button>
+    <button type="button" onClick={() => onChange('ES')}>
+      elegir país
+    </button>
   ),
 }));
-vi.mock('../components/golf_course/GolfCourseRequestModal', () => ({ default: () => null }));
+vi.mock('../components/golf_course/GolfCourseRequestModal', () => ({
+  default: () => null,
+}));
 vi.mock('../components/ui/FullScreenLoader', () => ({ default: () => null }));
 vi.mock('../components/ui/CountryFlag', () => ({ CountryFlag: () => null }));
 
@@ -81,17 +95,31 @@ const resumen = (id, name, provenance) => ({
   ...(provenance === undefined ? {} : { provenance }),
 });
 const LISTADO = {
-  rfeg: resumen('gc-1', 'Real Club de Golf', { source: 'RFEG', external_id: '77', imported_at: '2026-10-01T00:00:00Z' }),
-  manual: resumen('gc-2', 'Pitch and putt', { source: 'MANUAL', external_id: null, imported_at: null }),
+  rfeg: resumen('gc-1', 'Real Club de Golf', {
+    source: 'RFEG',
+    external_id: '77',
+    imported_at: '2026-10-01T00:00:00Z',
+  }),
+  manual: resumen('gc-2', 'Pitch and putt', {
+    source: 'MANUAL',
+    external_id: null,
+    imported_at: null,
+  }),
   sinProcedencia: resumen('gc-3', 'Campo de siempre', undefined),
 };
 
 // La API es lo único falso: repositorio y caso de uso son los de verdad
 const mockApi = vi.fn();
-vi.mock('../infrastructure/http/api', () => ({ default: (...a) => mockApi(...a) }));
-const { default: ApiGolfCourseRepository } = await import('../infrastructure/repositories/ApiGolfCourseRepository');
-const { default: ListGolfCoursesUseCase } = await import('../application/use_cases/golf_course/ListGolfCoursesUseCase');
-const listar = new ListGolfCoursesUseCase({ golfCourseRepository: new ApiGolfCourseRepository() });
+vi.mock('../infrastructure/http/api', () => ({
+  default: (...a) => mockApi(...a),
+}));
+const { default: ApiGolfCourseRepository } =
+  await import('../infrastructure/repositories/ApiGolfCourseRepository');
+const { default: ListGolfCoursesUseCase } =
+  await import('../application/use_cases/golf_course/ListGolfCoursesUseCase');
+const listar = new ListGolfCoursesUseCase({
+  golfCourseRepository: new ApiGolfCourseRepository(),
+});
 
 const elegir = async (clave, onCourseSelect) => {
   mockApi.mockResolvedValueOnce({ golf_courses: [LISTADO[clave]], total: 1 });
@@ -102,9 +130,18 @@ const elegir = async (clave, onCourseSelect) => {
 vi.mock('../components/golf_course/GolfCourseSearchBox', () => ({
   default: ({ onCourseSelect }) => (
     <div>
-      <button type="button" onClick={() => elegir('rfeg', onCourseSelect)}>elegir RFEG</button>
-      <button type="button" onClick={() => elegir('manual', onCourseSelect)}>elegir manual</button>
-      <button type="button" onClick={() => elegir('sinProcedencia', onCourseSelect)}>elegir sin procedencia</button>
+      <button type="button" onClick={() => elegir('rfeg', onCourseSelect)}>
+        elegir RFEG
+      </button>
+      <button type="button" onClick={() => elegir('manual', onCourseSelect)}>
+        elegir manual
+      </button>
+      <button
+        type="button"
+        onClick={() => elegir('sinProcedencia', onCourseSelect)}
+      >
+        elegir sin procedencia
+      </button>
     </div>
   ),
 }));
@@ -112,15 +149,23 @@ vi.mock('../components/golf_course/GolfCourseSearchBox', () => ({
 const CreateCompetition = (await import('./CreateCompetition')).default;
 
 const pulsar = async (texto) => {
-  await act(async () => { fireEvent.click(screen.getByText(texto)); });
+  await act(async () => {
+    fireEvent.click(screen.getByText(texto));
+  });
 };
 
 const abreElFormulario = async () => {
-  render(<MemoryRouter><CreateCompetition /></MemoryRouter>);
+  render(
+    <MemoryRouter>
+      <CreateCompetition />
+    </MemoryRouter>,
+  );
   fireEvent.click(await screen.findByTestId('tipo-RYDER_CUP'));
   fireEvent.click(await screen.findByTestId('modo-RYDER_CUP'));
   await screen.findByText('create.competitionDetails');
-  await act(async () => { await Promise.resolve(); });
+  await act(async () => {
+    await Promise.resolve();
+  });
   fireEvent.click(screen.getByText('elegir país'));
   await screen.findByText('elegir RFEG');
 };
@@ -144,7 +189,9 @@ describe('CreateCompetition · fuente de los datos de los campos (F3, B2)', () =
   ])('un campo del listado %s no se cita', async (clave, nombre) => {
     await abreElFormulario();
 
-    await pulsar(clave === 'manual' ? 'elegir manual' : 'elegir sin procedencia');
+    await pulsar(
+      clave === 'manual' ? 'elegir manual' : 'elegir sin procedencia',
+    );
 
     expect(screen.getByText(nombre)).toBeInTheDocument();
     expect(screen.queryByText('source.federatedData')).toBeNull();
@@ -157,7 +204,9 @@ describe('CreateCompetition · fuente de los datos de los campos (F3, B2)', () =
 
     expect(screen.getByText('Real Club de Golf')).toBeInTheDocument();
     expect(screen.getByText('source.federatedData')).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'source.rfegShort' })).toHaveAttribute('href', 'https://www.rfegolf.es');
+    expect(
+      screen.getByRole('link', { name: 'source.rfegShort' }),
+    ).toHaveAttribute('href', 'https://www.rfegolf.es');
   });
 
   it('al quitar el campo de la RFEG, la cita se va', async () => {
@@ -165,7 +214,11 @@ describe('CreateCompetition · fuente de los datos de los campos (F3, B2)', () =
     await pulsar('elegir RFEG');
     await pulsar('elegir manual');
 
-    fireEvent.click(screen.getByRole('button', { name: 'detail.golfCourses.remove Real Club de Golf' }));
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: 'detail.golfCourses.remove Real Club de Golf',
+      }),
+    );
 
     expect(screen.getByText('Pitch and putt')).toBeInTheDocument();
     expect(screen.queryByText('source.federatedData')).toBeNull();
@@ -210,9 +263,12 @@ describe('CreateCompetition · la cita al editar (B2)', () => {
     render(
       <MemoryRouter initialEntries={['/competitions/c-1/edit']}>
         <Routes>
-          <Route path="/competitions/:id/edit" element={<CreateCompetition />} />
+          <Route
+            path="/competitions/:id/edit"
+            element={<CreateCompetition />}
+          />
         </Routes>
-      </MemoryRouter>
+      </MemoryRouter>,
     );
 
   beforeEach(() => {
@@ -227,16 +283,21 @@ describe('CreateCompetition · la cita al editar (B2)', () => {
     ['de la RFEG', { source: 'RFEG', external_id: '77', imported_at: null }],
     ['sin procedencia (la API de hoy)', undefined],
     ['con origen MANUAL', { source: 'MANUAL' }],
-  ])('un campo guardado %s: ni sección de campos ni cita', async (_caso, provenance) => {
-    mockDetalle.mockResolvedValueOnce(competicion);
-    mockCampos.mockResolvedValueOnce(guardado(provenance));
-    pintaEdicion();
+  ])(
+    'un campo guardado %s: ni sección de campos ni cita',
+    async (_caso, provenance) => {
+      mockDetalle.mockResolvedValueOnce(competicion);
+      mockCampos.mockResolvedValueOnce(guardado(provenance));
+      pintaEdicion();
 
-    await screen.findByText('edit.updateCompetition');
-    await waitFor(() => expect(mockCampos).toHaveBeenCalled());
-    await act(async () => { await Promise.resolve(); });
+      await screen.findByText('edit.updateCompetition');
+      await waitFor(() => expect(mockCampos).toHaveBeenCalled());
+      await act(async () => {
+        await Promise.resolve();
+      });
 
-    expect(screen.queryByText('Real Club de Golf')).toBeNull();
-    expect(screen.queryByText('source.federatedData')).toBeNull();
-  });
+      expect(screen.queryByText('Real Club de Golf')).toBeNull();
+      expect(screen.queryByText('source.federatedData')).toBeNull();
+    },
+  );
 });

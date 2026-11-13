@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 
 /**
  * Security Tests Suite - Frontend v1.8.0
- * 
+ *
  * Tests de seguridad para validar protecciones contra ataques comunes:
  * - XSS (Cross-Site Scripting)
  * - CSRF (Cross-Site Request Forgery)
@@ -12,7 +12,9 @@ import { test, expect } from '@playwright/test';
  */
 
 test.describe('XSS Protection', () => {
-  test('should escape HTML in form inputs (React auto-escaping)', async ({ page }) => {
+  test('should escape HTML in form inputs (React auto-escaping)', async ({
+    page,
+  }) => {
     await page.goto('/register');
 
     const xssPayload = '<script>alert("XSS")</script>';
@@ -21,7 +23,9 @@ test.describe('XSS Protection', () => {
     await page.getByPlaceholder('John').fill(xssPayload);
     await page.getByPlaceholder('Doe').fill('Test');
     await page.getByPlaceholder('your.email@example.com').fill('xss@test.com');
-    await page.getByPlaceholder('Minimum 12 characters').fill('ValidPassword123.');
+    await page
+      .getByPlaceholder('Minimum 12 characters')
+      .fill('ValidPassword123.');
 
     // Click outside to trigger any rendering
     await page.click('body');
@@ -41,7 +45,7 @@ test.describe('XSS Protection', () => {
 
     // Listen for any alert dialogs (XSS would trigger alert)
     let alertFired = false;
-    page.on('dialog', async dialog => {
+    page.on('dialog', async (dialog) => {
       alertFired = true;
       await dialog.dismiss();
     });
@@ -61,11 +65,16 @@ test.describe('XSS Protection', () => {
 });
 
 test.describe('CSRF Protection', () => {
-  test('should use SameSite cookies for authentication', async ({ page, context }) => {
+  test('should use SameSite cookies for authentication', async ({
+    page,
+    context,
+  }) => {
     await page.goto('/login');
 
     // Attempt login
-    await page.getByPlaceholder('your.email@example.com').fill('test@example.com');
+    await page
+      .getByPlaceholder('your.email@example.com')
+      .fill('test@example.com');
     await page.getByPlaceholder('Enter your password').fill('TestPassword123.');
     await page.getByRole('button', { name: 'Sign In' }).click();
 
@@ -76,14 +85,16 @@ test.describe('CSRF Protection', () => {
     const cookies = await context.cookies();
 
     // Check for SameSite attribute
-    const authCookies = cookies.filter(c => 
-      c.name.includes('token') || c.name.includes('session')
+    const authCookies = cookies.filter(
+      (c) => c.name.includes('token') || c.name.includes('session'),
     );
 
     if (authCookies.length > 0) {
-      authCookies.forEach(cookie => {
+      authCookies.forEach((cookie) => {
         expect(['Lax', 'Strict']).toContain(cookie.sameSite);
-        console.log(`✅ Cookie ${cookie.name} has SameSite: ${cookie.sameSite}`);
+        console.log(
+          `✅ Cookie ${cookie.name} has SameSite: ${cookie.sameSite}`,
+        );
       });
     } else {
       console.log('ℹ️ No auth cookies found (using localStorage)');
@@ -96,9 +107,11 @@ test.describe('CSP Violations', () => {
     const cspViolations = [];
 
     // Listen for CSP violations
-    page.on('console', msg => {
-      if (msg.text().includes('Content Security Policy') || 
-          msg.text().includes('refused to execute')) {
+    page.on('console', (msg) => {
+      if (
+        msg.text().includes('Content Security Policy') ||
+        msg.text().includes('refused to execute')
+      ) {
         cspViolations.push(msg.text());
       }
     });
@@ -137,9 +150,11 @@ test.describe('CSP Violations', () => {
 
     for (const [header, expectedValue] of Object.entries(securityHeaders)) {
       const actualValue = headers[header];
-      
+
       if (actualValue) {
-        expect(actualValue.toLowerCase()).toContain(expectedValue.toLowerCase());
+        expect(actualValue.toLowerCase()).toContain(
+          expectedValue.toLowerCase(),
+        );
         console.log(`✅ ${header}: ${actualValue}`);
       } else {
         console.log(`⚠️ Missing header: ${header}`);
@@ -168,8 +183,12 @@ test.describe('Authentication Security', () => {
     await page.goto('/login');
 
     // Try with non-existent user
-    await page.getByPlaceholder('your.email@example.com').fill('nonexistent@test.com');
-    await page.getByPlaceholder('Enter your password').fill('WrongPassword123.');
+    await page
+      .getByPlaceholder('your.email@example.com')
+      .fill('nonexistent@test.com');
+    await page
+      .getByPlaceholder('Enter your password')
+      .fill('WrongPassword123.');
     await page.getByRole('button', { name: 'Sign In' }).click();
 
     await page.waitForTimeout(2000);
@@ -179,9 +198,9 @@ test.describe('Authentication Security', () => {
     // Should NOT reveal if user exists or not
     expect(pageContent).not.toContain('user not found');
     expect(pageContent).not.toContain('user does not exist');
-    
+
     // Should have generic error message
-    const hasGenericError = 
+    const hasGenericError =
       pageContent.toLowerCase().includes('invalid') ||
       pageContent.toLowerCase().includes('incorrect');
 
@@ -193,7 +212,9 @@ test.describe('Authentication Security', () => {
     await page.goto('/login');
 
     // Login
-    await page.getByPlaceholder('your.email@example.com').fill('test@example.com');
+    await page
+      .getByPlaceholder('your.email@example.com')
+      .fill('test@example.com');
     await page.getByPlaceholder('Enter your password').fill('Test123.');
     await page.getByRole('button', { name: 'Sign In' }).click();
 
@@ -209,7 +230,7 @@ test.describe('Authentication Security', () => {
       try {
         await page.goto('/dashboard');
         await page.waitForTimeout(1000);
-        
+
         // Try to find logout button
         const logoutButton = page.locator('text=/logout|sign out/i').first();
         if (await logoutButton.isVisible({ timeout: 2000 })) {
@@ -247,15 +268,18 @@ test.describe('Input Validation', () => {
       await page.getByPlaceholder('your.email@example.com').fill(email);
       await page.getByPlaceholder('John').fill('Test');
       await page.getByPlaceholder('Doe').fill('User');
-      await page.getByPlaceholder('Minimum 12 characters').fill('ValidPassword123.');
+      await page
+        .getByPlaceholder('Minimum 12 characters')
+        .fill('ValidPassword123.');
 
       // Try to submit
       await page.getByRole('button', { name: /create account/i }).click();
       await page.waitForTimeout(500);
 
       // Should show validation error
-      const hasError = await page.locator('text=/invalid|error/i').count() > 0;
-      
+      const hasError =
+        (await page.locator('text=/invalid|error/i').count()) > 0;
+
       console.log(`  ${email}: ${hasError ? '✅ Rejected' : '⚠️ Accepted'}`);
     }
   });
@@ -264,31 +288,44 @@ test.describe('Input Validation', () => {
     await page.goto('/register');
 
     const weakPasswords = [
-      'short',           // Too short
-      'password123',     // No uppercase
-      'PASSWORD123',     // No lowercase
-      'PasswordABC',     // No numbers
-      '12345678901',     // Only numbers
+      'short', // Too short
+      'password123', // No uppercase
+      'PASSWORD123', // No lowercase
+      'PasswordABC', // No numbers
+      '12345678901', // Only numbers
+    ];
+    // El log dice el motivo, nunca la contraseña (CodeQL js/clear-text-logging):
+    // una lista aparte, en el mismo orden
+    const motivos = [
+      'too short',
+      'no uppercase',
+      'no lowercase',
+      'no numbers',
+      'only numbers',
     ];
 
-    for (const password of weakPasswords) {
+    for (const [i, password] of weakPasswords.entries()) {
       await page.getByPlaceholder('Minimum 12 characters').fill(password);
       await page.getByPlaceholder('John').fill('Test');
       await page.getByPlaceholder('Doe').fill('User');
-      await page.getByPlaceholder('your.email@example.com').fill('test@example.com');
+      await page
+        .getByPlaceholder('your.email@example.com')
+        .fill('test@example.com');
 
       // Try to submit
       await page.getByRole('button', { name: /create account/i }).click();
       await page.waitForTimeout(500);
 
       const pageContent = await page.content();
-      const hasPasswordError = 
+      const hasPasswordError =
         pageContent.toLowerCase().includes('password') &&
         (pageContent.toLowerCase().includes('invalid') ||
-         pageContent.toLowerCase().includes('must') ||
-         pageContent.toLowerCase().includes('require'));
+          pageContent.toLowerCase().includes('must') ||
+          pageContent.toLowerCase().includes('require'));
 
-      console.log(`  "${password}": ${hasPasswordError ? '✅ Rejected' : '⚠️ May be weak'}`);
+      console.log(
+        `  ${motivos[i]}: ${hasPasswordError ? '✅ Rejected' : '⚠️ May be weak'}`,
+      );
     }
   });
 
@@ -302,9 +339,11 @@ test.describe('Input Validation', () => {
 
     // Check input value length (should be limited by maxLength)
     const actualValue = await page.getByPlaceholder('John').inputValue();
-    
+
     expect(actualValue.length).toBeLessThanOrEqual(100);
-    console.log(`✅ Long input truncated: ${longString.length} → ${actualValue.length}`);
+    console.log(
+      `✅ Long input truncated: ${longString.length} → ${actualValue.length}`,
+    );
   });
 });
 
@@ -314,15 +353,19 @@ test.describe('Rate Limiting Awareness', () => {
 
     // Attempt multiple rapid logins
     for (let i = 0; i < 3; i++) {
-      await page.getByPlaceholder('your.email@example.com').fill(`test${i}@example.com`);
-      await page.getByPlaceholder('Enter your password').fill('WrongPassword123.');
+      await page
+        .getByPlaceholder('your.email@example.com')
+        .fill(`test${i}@example.com`);
+      await page
+        .getByPlaceholder('Enter your password')
+        .fill('WrongPassword123.');
       await page.getByRole('button', { name: 'Sign In' }).click();
       await page.waitForTimeout(500);
     }
 
     // Check if rate limit message appears
     const pageContent = await page.content();
-    const hasRateLimitMessage = 
+    const hasRateLimitMessage =
       pageContent.toLowerCase().includes('too many') ||
       pageContent.toLowerCase().includes('rate limit') ||
       pageContent.toLowerCase().includes('try again later');

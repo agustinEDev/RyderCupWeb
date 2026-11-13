@@ -125,7 +125,7 @@ class ApiEnrollmentRepository extends IEnrollmentRepository {
   async findById(competitionId, enrollmentId) {
     try {
       const apiData = await this.#request(
-        `/api/v1/competitions/${segmento(competitionId)}/enrollments/${segmento(enrollmentId)}`
+        `/api/v1/competitions/${segmento(competitionId)}/enrollments/${segmento(enrollmentId)}`,
       );
 
       if (!apiData) {
@@ -158,7 +158,7 @@ class ApiEnrollmentRepository extends IEnrollmentRepository {
 
     const queryString = this.#buildQueryString(apiFilters);
     const apiDataArray = await this.#request(
-      `/api/v1/competitions/${segmento(competitionId)}/enrollments${queryString}`
+      `/api/v1/competitions/${segmento(competitionId)}/enrollments${queryString}`,
     );
 
     if (!Array.isArray(apiDataArray)) {
@@ -204,7 +204,9 @@ class ApiEnrollmentRepository extends IEnrollmentRepository {
     };
 
     const queryString = this.#buildQueryString(apiFilters);
-    const apiDataArray = await this.#request(`/api/v1/enrollments${queryString}`);
+    const apiDataArray = await this.#request(
+      `/api/v1/enrollments${queryString}`,
+    );
 
     if (!Array.isArray(apiDataArray)) {
       return [];
@@ -228,10 +230,13 @@ class ApiEnrollmentRepository extends IEnrollmentRepository {
     if (data.color) body.tee_color = data.color;
     if (data.roundId) body.round_id = data.roundId;
     if (data.waitingList) body.waiting_list = true;
-    const apiData = await this.#request(`/api/v1/competitions/${segmento(competitionId)}/enrollments`, {
-      method: 'POST',
-      body: JSON.stringify(body),
-    });
+    const apiData = await this.#request(
+      `/api/v1/competitions/${segmento(competitionId)}/enrollments`,
+      {
+        method: 'POST',
+        body: JSON.stringify(body),
+      },
+    );
 
     return {
       enrollment: EnrollmentMapper.toDomain(apiData),
@@ -256,7 +261,7 @@ class ApiEnrollmentRepository extends IEnrollmentRepository {
       {
         method: 'POST',
         body: JSON.stringify(body),
-      }
+      },
     );
 
     return EnrollmentMapper.toDomain(apiData);
@@ -274,7 +279,7 @@ class ApiEnrollmentRepository extends IEnrollmentRepository {
       `/api/v1/enrollments/${segmento(enrollmentId)}/reject`,
       {
         method: 'POST',
-      }
+      },
     );
 
     return EnrollmentMapper.toDomain(apiData);
@@ -293,8 +298,11 @@ class ApiEnrollmentRepository extends IEnrollmentRepository {
       `/api/v1/enrollments/${segmento(enrollmentId)}/handicap`,
       {
         method: 'PUT',
-        body: JSON.stringify({ enrollment_id: enrollmentId, custom_handicap: customHandicap }),
-      }
+        body: JSON.stringify({
+          enrollment_id: enrollmentId,
+          custom_handicap: customHandicap,
+        }),
+      },
     );
 
     return EnrollmentMapper.toDomain(apiData);
@@ -312,7 +320,7 @@ class ApiEnrollmentRepository extends IEnrollmentRepository {
       `/api/v1/enrollments/${segmento(enrollmentId)}/handicap`,
       {
         method: 'DELETE',
-      }
+      },
     );
 
     return EnrollmentMapper.toDomain(apiData);
@@ -335,7 +343,7 @@ class ApiEnrollmentRepository extends IEnrollmentRepository {
       {
         method: 'PUT',
         body: JSON.stringify({ use_real_name: useRealName }),
-      }
+      },
     );
 
     return EnrollmentMapper.toDomain(apiData);
@@ -351,9 +359,10 @@ class ApiEnrollmentRepository extends IEnrollmentRepository {
   async directEnroll(competitionId, data) {
     const payload = {
       user_id: data.userId,
-      ...(data.customHandicap !== null && data.customHandicap !== undefined && {
-        custom_handicap: data.customHandicap,
-      }),
+      ...(data.customHandicap !== null &&
+        data.customHandicap !== undefined && {
+          custom_handicap: data.customHandicap,
+        }),
       ...(data.teamId && { team_id: data.teamId }),
       ...(data.color && { color: data.color }),
     };
@@ -363,7 +372,7 @@ class ApiEnrollmentRepository extends IEnrollmentRepository {
       {
         method: 'POST',
         body: JSON.stringify(payload),
-      }
+      },
     );
 
     return EnrollmentMapper.toDomain(apiData);
@@ -376,7 +385,10 @@ class ApiEnrollmentRepository extends IEnrollmentRepository {
    * @returns {Promise<void>}
    */
   async remove(enrollmentId) {
-    await this.#request(`/api/v1/enrollments/${segmento(enrollmentId)}/remove`, { method: 'POST' });
+    await this.#request(
+      `/api/v1/enrollments/${segmento(enrollmentId)}/remove`,
+      { method: 'POST' },
+    );
   }
 }
 

@@ -14,9 +14,17 @@ const { tEstable } = vi.hoisted(() => ({ tEstable: (clave) => clave }));
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({ t: tEstable, i18n: { language: 'es' } }),
 }));
-vi.mock('../utils/toast', () => ({ default: { error: (...a) => toastError(...a), success: vi.fn(), info: vi.fn() } }));
+vi.mock('../utils/toast', () => ({
+  default: {
+    error: (...a) => toastError(...a),
+    success: vi.fn(),
+    info: vi.fn(),
+  },
+}));
 vi.mock('../composition', () => ({
-  validateResetTokenUseCase: { execute: vi.fn().mockResolvedValue({ valid: true }) },
+  validateResetTokenUseCase: {
+    execute: vi.fn().mockResolvedValue({ valid: true }),
+  },
   resetPasswordUseCase: { execute: (...a) => restablecer(...a) },
 }));
 
@@ -29,12 +37,18 @@ const enviarContrasena = async () => {
       <Routes>
         <Route path="/reset-password/:token" element={<ResetPassword />} />
       </Routes>
-    </BrowserRouter>
+    </BrowserRouter>,
   );
-  await vi.waitFor(() => expect(document.querySelectorAll('input[type="password"]').length).toBe(2));
+  await vi.waitFor(() =>
+    expect(document.querySelectorAll('input[type="password"]').length).toBe(2),
+  );
   const [nueva, repetida] = document.querySelectorAll('input[type="password"]');
-  fireEvent.change(nueva, { target: { name: nueva.name, value: 'Contrasena-Segura-123!' } });
-  fireEvent.change(repetida, { target: { name: repetida.name, value: 'Contrasena-Segura-123!' } });
+  fireEvent.change(nueva, {
+    target: { name: nueva.name, value: 'Contrasena-Segura-123!' },
+  });
+  fireEvent.change(repetida, {
+    target: { name: repetida.name, value: 'Contrasena-Segura-123!' },
+  });
   fireEvent.submit(nueva.closest('form'));
 };
 
@@ -50,13 +64,18 @@ describe('ResetPassword · demasiados intentos', () => {
 
   it('P1: un 429 enseña el aviso propio de la pantalla', async () => {
     restablecer.mockRejectedValue(
-      Object.assign(new Error('t(common:demasiadasPeticiones)'), { status: 429 })
+      Object.assign(new Error('t(common:demasiadasPeticiones)'), {
+        status: 429,
+      }),
     );
 
     await enviarContrasena();
 
     await waitFor(() =>
-      expect(toastError).toHaveBeenCalledWith('resetPassword.rateLimitError', expect.anything())
+      expect(toastError).toHaveBeenCalledWith(
+        'resetPassword.rateLimitError',
+        expect.anything(),
+      ),
     );
   });
 
@@ -65,13 +84,16 @@ describe('ResetPassword · demasiados intentos', () => {
       Object.assign(new Error('Esta contraseña es demasiado común…'), {
         status: 400,
         errorCode: 'PASSWORD_TOO_COMMON',
-      })
+      }),
     );
 
     await enviarContrasena();
 
     await waitFor(() =>
-      expect(toastError).toHaveBeenCalledWith('validation.passwordCommon', expect.anything())
+      expect(toastError).toHaveBeenCalledWith(
+        'validation.passwordCommon',
+        expect.anything(),
+      ),
     );
   });
 
@@ -80,23 +102,31 @@ describe('ResetPassword · demasiados intentos', () => {
       Object.assign(new Error('Token de reseteo inválido o expirado'), {
         status: 400,
         errorCode: 'RESET_TOKEN_INVALID',
-      })
+      }),
     );
 
     await enviarContrasena();
 
     await waitFor(() =>
-      expect(toastError).toHaveBeenCalledWith('resetPassword.tokenInvalidMessage', expect.anything())
+      expect(toastError).toHaveBeenCalledWith(
+        'resetPassword.tokenInvalidMessage',
+        expect.anything(),
+      ),
     );
     // Y la pantalla pasa a la de enlace inválido, en vez de dejar el formulario
     await waitFor(() =>
-      expect(document.body.textContent).toContain('resetPassword.invalidTokenTitle')
+      expect(document.body.textContent).toContain(
+        'resetPassword.invalidTokenTitle',
+      ),
     );
   });
 
   it('R3 (FE #1064): restablecer la contraseña olvida la última cuenta de la pestaña', async () => {
-    const { anotaLaCuentaDeEstaPestana, ultimaCuentaDeEstaPestana, olvidaLaCuentaDeEstaPestana } =
-      await import('../utils/vueltaTrasEntrar');
+    const {
+      anotaLaCuentaDeEstaPestana,
+      ultimaCuentaDeEstaPestana,
+      olvidaLaCuentaDeEstaPestana,
+    } = await import('../utils/vueltaTrasEntrar');
     olvidaLaCuentaDeEstaPestana();
     anotaLaCuentaDeEstaPestana('u-1');
     restablecer.mockResolvedValue({});
@@ -109,7 +139,8 @@ describe('ResetPassword · demasiados intentos', () => {
   });
 
   it('R3 (CodeRabbit #1069): también quita el usuario guardado, que una recarga volvería a leer', async () => {
-    const { ultimaCuentaDeEstaPestana, olvidaLaCuentaDeEstaPestana } = await import('../utils/vueltaTrasEntrar');
+    const { ultimaCuentaDeEstaPestana, olvidaLaCuentaDeEstaPestana } =
+      await import('../utils/vueltaTrasEntrar');
     localStorage.setItem('user', JSON.stringify({ id: 'u-1' }));
     restablecer.mockResolvedValue({});
 
@@ -121,4 +152,3 @@ describe('ResetPassword · demasiados intentos', () => {
     expect(ultimaCuentaDeEstaPestana()).toBeNull();
   });
 });
-

@@ -17,11 +17,15 @@ import { render, screen, fireEvent, within } from '@testing-library/react';
  */
 
 vi.mock('react-i18next', () => ({
-  useTranslation: () => ({ t: (k, o) => (o ? `${k} ${JSON.stringify(o)}` : k) }),
+  useTranslation: () => ({
+    t: (k, o) => (o ? `${k} ${JSON.stringify(o)}` : k),
+  }),
 }));
 
 const casos = vi.hoisted(() => ({ lista: vi.fn() }));
-vi.mock('../../composition', () => ({ listHoleReviewsUseCase: { execute: casos.lista } }));
+vi.mock('../../composition', () => ({
+  listHoleReviewsUseCase: { execute: casos.lista },
+}));
 const avisos = vi.hoisted(() => ({ success: vi.fn(), error: vi.fn() }));
 vi.mock('../../utils/toast', () => ({ default: avisos }));
 
@@ -36,7 +40,14 @@ vi.mock('../../components/admin/hoyos/RevisarHoyo', () => ({
 const { default: HoleReviews } = await import('./HoleReviews');
 
 const LISTA = [
-  { golfCourseId: 'gc-1', name: 'Alcanada', holes: [{ holeNumber: 1, samples: 2 }, { holeNumber: 7, samples: 1 }] },
+  {
+    golfCourseId: 'gc-1',
+    name: 'Alcanada',
+    holes: [
+      { holeNumber: 1, samples: 2 },
+      { holeNumber: 7, samples: 1 },
+    ],
+  },
 ];
 
 describe('HoleReviews', () => {
@@ -55,13 +66,24 @@ describe('HoleReviews', () => {
 
   it('Q2: la fila dice también cuántos reportes tiene; sin muestras, solo los reportes (entrega 7)', async () => {
     casos.lista.mockResolvedValue([
-      { golfCourseId: 'gc-1', name: 'Alcanada', holes: [{ holeNumber: 1, samples: 2, reports: 1 }, { holeNumber: 7, samples: 0, reports: 2 }] },
+      {
+        golfCourseId: 'gc-1',
+        name: 'Alcanada',
+        holes: [
+          { holeNumber: 1, samples: 2, reports: 1 },
+          { holeNumber: 7, samples: 0, reports: 2 },
+        ],
+      },
     ]);
 
     render(<HoleReviews />);
 
     const campo = await screen.findByRole('region', { name: 'Alcanada' });
-    expect(within(campo).getAllByRole('button').map((f) => f.textContent)).toEqual([
+    expect(
+      within(campo)
+        .getAllByRole('button')
+        .map((f) => f.textContent),
+    ).toEqual([
       'holeReviews.hole {"numero":1}holeReviews.samples {"count":2} · holeReviews.reports {"count":1}',
       'holeReviews.hole {"numero":7}holeReviews.reports {"count":2}',
     ]);
@@ -72,7 +94,9 @@ describe('HoleReviews', () => {
     casos.lista.mockResolvedValueOnce(LISTA);
 
     render(<HoleReviews />);
-    fireEvent.click(await screen.findByRole('button', { name: 'holeReviews.retry' }));
+    fireEvent.click(
+      await screen.findByRole('button', { name: 'holeReviews.retry' }),
+    );
 
     expect(await screen.findByText('Alcanada')).toBeInTheDocument();
   });
@@ -83,8 +107,12 @@ describe('HoleReviews', () => {
     render(<HoleReviews />);
 
     const campo = await screen.findByRole('region', { name: 'Alcanada' });
-    expect(within(campo).getByRole('heading', { name: 'Alcanada' })).toBeInTheDocument();
-    expect(within(campo).getByText('holeReviews.pendingHoles {"count":2}')).toBeInTheDocument();
+    expect(
+      within(campo).getByRole('heading', { name: 'Alcanada' }),
+    ).toBeInTheDocument();
+    expect(
+      within(campo).getByText('holeReviews.pendingHoles {"count":2}'),
+    ).toBeInTheDocument();
     const filas = within(campo).getAllByRole('button');
     expect(filas.map((f) => f.textContent)).toEqual([
       'holeReviews.hole {"numero":1}holeReviews.samples {"count":2}',
@@ -106,10 +134,18 @@ describe('HoleReviews', () => {
     casos.lista.mockResolvedValue(LISTA);
     render(<HoleReviews />);
 
-    fireEvent.click(await screen.findByRole('button', { name: /holeReviews.hole {"numero":1}/ }));
+    fireEvent.click(
+      await screen.findByRole('button', {
+        name: /holeReviews.hole {"numero":1}/,
+      }),
+    );
 
     expect(screen.getByTestId('revisar-hoyo')).toBeInTheDocument();
-    expect(revision.props).toMatchObject({ golfCourseId: 'gc-1', nombre: 'Alcanada', numeroDeHoyo: 1 });
+    expect(revision.props).toMatchObject({
+      golfCourseId: 'gc-1',
+      nombre: 'Alcanada',
+      numeroDeHoyo: 1,
+    });
     const { act } = await import('react');
     await act(async () => revision.props.onCerrar({ cambiado: true }));
     expect(screen.queryByTestId('revisar-hoyo')).toBeNull();
@@ -120,7 +156,11 @@ describe('HoleReviews', () => {
     casos.lista.mockResolvedValueOnce(LISTA);
     casos.lista.mockRejectedValueOnce(new Error('x'));
     render(<HoleReviews />);
-    fireEvent.click(await screen.findByRole('button', { name: /holeReviews.hole {"numero":1}/ }));
+    fireEvent.click(
+      await screen.findByRole('button', {
+        name: /holeReviews.hole {"numero":1}/,
+      }),
+    );
 
     const { act } = await import('react');
     await act(async () => revision.props.onCerrar({ cambiado: true }));
@@ -132,57 +172,103 @@ describe('HoleReviews', () => {
     casos.lista.mockResolvedValueOnce(LISTA);
     casos.lista.mockRejectedValueOnce(new Error('sin red'));
     render(<HoleReviews />);
-    fireEvent.click(await screen.findByRole('button', { name: /holeReviews.hole {"numero":1}/ }));
+    fireEvent.click(
+      await screen.findByRole('button', {
+        name: /holeReviews.hole {"numero":1}/,
+      }),
+    );
 
     const { act } = await import('react');
-    await act(async () => revision.props.onCerrar({ cambiado: true, guardado: true }));
+    await act(async () =>
+      revision.props.onCerrar({ cambiado: true, guardado: true }),
+    );
 
-    const filas = within(screen.getByRole('region', { name: 'Alcanada' })).getAllByRole('button');
-    expect(filas.map((f) => f.textContent)).toEqual([expect.stringContaining('"numero":7')]);
-    expect(screen.getByText('holeReviews.pendingHoles {"count":1}')).toBeInTheDocument();
+    const filas = within(
+      screen.getByRole('region', { name: 'Alcanada' }),
+    ).getAllByRole('button');
+    expect(filas.map((f) => f.textContent)).toEqual([
+      expect.stringContaining('"numero":7'),
+    ]);
+    expect(
+      screen.getByText('holeReviews.pendingHoles {"count":1}'),
+    ).toBeInTheDocument();
   });
 
   it('P12: guardado el último hoyo de un campo, el campo desaparece', async () => {
-    casos.lista.mockResolvedValueOnce([{ ...LISTA[0], holes: [LISTA[0].holes[0]] }]);
+    casos.lista.mockResolvedValueOnce([
+      { ...LISTA[0], holes: [LISTA[0].holes[0]] },
+    ]);
     casos.lista.mockReturnValueOnce(new Promise(() => {}));
     render(<HoleReviews />);
-    fireEvent.click(await screen.findByRole('button', { name: /holeReviews.hole {"numero":1}/ }));
+    fireEvent.click(
+      await screen.findByRole('button', {
+        name: /holeReviews.hole {"numero":1}/,
+      }),
+    );
 
     const { act } = await import('react');
-    await act(async () => revision.props.onCerrar({ cambiado: true, guardado: true }));
+    await act(async () =>
+      revision.props.onCerrar({ cambiado: true, guardado: true }),
+    );
 
     expect(screen.queryByRole('region', { name: 'Alcanada' })).toBeNull();
   });
   it('CodeRabbit: si dos recargas se cruzan, manda la última que se pidió', async () => {
     let primera;
     casos.lista.mockResolvedValueOnce(LISTA);
-    casos.lista.mockReturnValueOnce(new Promise((ok) => { primera = ok; }));
-    casos.lista.mockResolvedValueOnce([{ ...LISTA[0], holes: [LISTA[0].holes[1]] }]);
+    casos.lista.mockReturnValueOnce(
+      new Promise((ok) => {
+        primera = ok;
+      }),
+    );
+    casos.lista.mockResolvedValueOnce([
+      { ...LISTA[0], holes: [LISTA[0].holes[1]] },
+    ]);
     render(<HoleReviews />);
     const { act } = await import('react');
 
-    fireEvent.click(await screen.findByRole('button', { name: /holeReviews.hole {"numero":1}/ }));
+    fireEvent.click(
+      await screen.findByRole('button', {
+        name: /holeReviews.hole {"numero":1}/,
+      }),
+    );
     await act(async () => revision.props.onCerrar({ cambiado: true }));
-    fireEvent.click(screen.getByRole('button', { name: /holeReviews.hole {"numero":7}/ }));
+    fireEvent.click(
+      screen.getByRole('button', { name: /holeReviews.hole {"numero":7}/ }),
+    );
     await act(async () => revision.props.onCerrar({ cambiado: true }));
     // La primera recarga llega tarde, con la lista vieja: no pisa la nueva
     await act(async () => primera(LISTA));
 
-    const filas = within(screen.getByRole('region', { name: 'Alcanada' })).getAllByRole('button');
-    expect(filas.map((f) => f.textContent)).toEqual([expect.stringContaining('"numero":7')]);
+    const filas = within(
+      screen.getByRole('region', { name: 'Alcanada' }),
+    ).getAllByRole('button');
+    expect(filas.map((f) => f.textContent)).toEqual([
+      expect.stringContaining('"numero":7'),
+    ]);
   });
 
   it('CodeRabbit: un fallo de una recarga vieja tampoco cuenta', async () => {
     let primera;
     casos.lista.mockResolvedValueOnce(LISTA);
-    casos.lista.mockReturnValueOnce(new Promise((_, mal) => { primera = mal; }));
+    casos.lista.mockReturnValueOnce(
+      new Promise((_, mal) => {
+        primera = mal;
+      }),
+    );
     casos.lista.mockResolvedValueOnce(LISTA);
     render(<HoleReviews />);
     const { act } = await import('react');
 
-    fireEvent.click(await screen.findByRole('button', { name: /holeReviews.hole {"numero":1}/ }));
+    fireEvent.click(
+      await screen.findByRole('button', {
+        name: /holeReviews.hole {"numero":1}/,
+      }),
+    );
     await act(async () => revision.props.onCerrar({ cambiado: true }));
-    fireEvent.click(screen.getByRole('button', { name: /holeReviews.hole {"numero":1}/ }));
+    fireEvent.click(
+      screen.getByRole('button', { name: /holeReviews.hole {"numero":1}/ }),
+    );
     await act(async () => revision.props.onCerrar({ cambiado: true }));
     avisos.error.mockReset();
     await act(async () => primera(new Error('tarde')));

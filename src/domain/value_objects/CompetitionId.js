@@ -38,7 +38,9 @@ export class CompetitionId {
   static isValid(value) {
     // Basic UUID v4 validation (e.g., "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx")
     // A more robust regex could be: /^[0-9A-F]{8}-[0-9A-F]{4}-4[0-9A-F]{3}-[89AB][0-9A-F]{3}-[0-9A-F]{12}$/i
-    return typeof value === 'string' && value.length === 36 && value.includes('-');
+    return (
+      typeof value === 'string' && value.length === 36 && value.includes('-')
+    );
   }
 
   /**

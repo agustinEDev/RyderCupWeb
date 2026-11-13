@@ -8,15 +8,32 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
  *   M6  desde el navegador                | ninguna la lleva
  */
 const instalada = vi.hoisted(() => ({ valor: true }));
-vi.mock('../../utils/standalone', () => ({ detectStandalone: () => instalada.valor }));
+vi.mock('../../utils/standalone', () => ({
+  detectStandalone: () => instalada.valor,
+}));
 
-const ok = () => ({ ok: true, status: 200, json: async () => ({ csrf_token: 't' }), headers: new globalThis.Headers(), clone() { return ok(); } });
+const ok = () => ({
+  ok: true,
+  status: 200,
+  json: async () => ({ csrf_token: 't' }),
+  headers: new globalThis.Headers(),
+  clone() {
+    return ok();
+  },
+});
 
 describe('X-App-Mode en las peticiones', () => {
   beforeEach(() => {
     vi.resetModules();
-    vi.stubGlobal('fetch', vi.fn(async () => ok()));
-    vi.stubGlobal('localStorage', { getItem: () => null, setItem: () => {}, removeItem: () => {} });
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => ok()),
+    );
+    vi.stubGlobal('localStorage', {
+      getItem: () => null,
+      setItem: () => {},
+      removeItem: () => {},
+    });
   });
 
   it('M4: una petición de la app instalada lleva X-App-Mode', async () => {
@@ -35,7 +52,9 @@ describe('X-App-Mode en las peticiones', () => {
 
     await refreshAccessToken().catch(() => {});
 
-    const llamada = globalThis.fetch.mock.calls.find(([url]) => String(url).includes('/auth/refresh-token'));
+    const llamada = globalThis.fetch.mock.calls.find(([url]) =>
+      String(url).includes('/auth/refresh-token'),
+    );
     expect(llamada[1].headers['X-App-Mode']).toBe('standalone');
   });
 
@@ -45,6 +64,8 @@ describe('X-App-Mode en las peticiones', () => {
 
     await apiRequest('/api/v1/users/me/devices');
 
-    expect(globalThis.fetch.mock.calls[0][1].headers['X-App-Mode']).toBeUndefined();
+    expect(
+      globalThis.fetch.mock.calls[0][1].headers['X-App-Mode'],
+    ).toBeUndefined();
   });
 });

@@ -64,8 +64,10 @@ export function onInstallPromptCaptured(notify) {
  */
 export function resetInstallPromptCapture() {
   if (typeof window !== 'undefined') {
-    if (promptHandler) window.removeEventListener('beforeinstallprompt', promptHandler);
-    if (installedHandler) window.removeEventListener('appinstalled', installedHandler);
+    if (promptHandler)
+      window.removeEventListener('beforeinstallprompt', promptHandler);
+    if (installedHandler)
+      window.removeEventListener('appinstalled', installedHandler);
   }
   promptHandler = null;
   installedHandler = null;

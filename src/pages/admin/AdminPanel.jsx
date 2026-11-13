@@ -2,7 +2,18 @@ import { useState } from 'react';
 import { NavLink, Navigate, useParams, useSearchParams } from 'react-router';
 import ModalShell, { CAJA_PROPIA } from '../../components/ui/ModalShell';
 import { motion } from 'framer-motion';
-import { Loader, Users as UsersIcon, BarChart3, Flag, Search, Trophy, AlertTriangle, X, MapPin, ChevronRight } from 'lucide-react';
+import {
+  Loader,
+  Users as UsersIcon,
+  BarChart3,
+  Flag,
+  Search,
+  Trophy,
+  AlertTriangle,
+  X,
+  MapPin,
+  ChevronRight,
+} from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import customToast from '../../utils/toast';
 import HeaderAuth from '../../components/layout/HeaderAuth';
@@ -58,11 +69,36 @@ const PAGE_SIZE = 20;
 // revisar los hoyos.
 const SECCIONES = [
   // El nombre es el mismo título que pone la cabecera del móvil
-  { ruta: 'resumen', id: 'overview', label: 'common:screens.adminOverview', icon: BarChart3 },
-  { ruta: 'usuarios', id: 'users', label: 'common:screens.adminUsers', icon: UsersIcon },
-  { ruta: 'competiciones', id: 'competitions', label: 'common:screens.adminCompetitions', icon: Trophy },
-  { ruta: 'campos', id: 'golfCourses', label: 'common:screens.adminGolfCourses', icon: Flag },
-  { ruta: 'hoyos', id: 'holes', label: 'common:screens.adminHoles', icon: MapPin },
+  {
+    ruta: 'resumen',
+    id: 'overview',
+    label: 'common:screens.adminOverview',
+    icon: BarChart3,
+  },
+  {
+    ruta: 'usuarios',
+    id: 'users',
+    label: 'common:screens.adminUsers',
+    icon: UsersIcon,
+  },
+  {
+    ruta: 'competiciones',
+    id: 'competitions',
+    label: 'common:screens.adminCompetitions',
+    icon: Trophy,
+  },
+  {
+    ruta: 'campos',
+    id: 'golfCourses',
+    label: 'common:screens.adminGolfCourses',
+    icon: Flag,
+  },
+  {
+    ruta: 'hoyos',
+    id: 'holes',
+    label: 'common:screens.adminHoles',
+    icon: MapPin,
+  },
 ];
 
 // Las pestañas de las secciones que las tienen; todas menos la primera llevan
@@ -94,8 +130,11 @@ const AdminPanel = () => {
   const activeTab = abierta?.id ?? 'overview';
   const [parametros, setParametros] = useSearchParams();
   const deLaSeccion = PESTAÑAS[activeTab] ?? [];
-  const pestañaAbierta = (deLaSeccion.find((p) => p.ver === parametros.get('ver')) ?? deLaSeccion[0])?.id;
-  const pestanasDe = (id) => PESTAÑAS[id].map((p) => ({ id: p.id, label: t(p.label) }));
+  const pestañaAbierta = (
+    deLaSeccion.find((p) => p.ver === parametros.get('ver')) ?? deLaSeccion[0]
+  )?.id;
+  const pestanasDe = (id) =>
+    PESTAÑAS[id].map((p) => ({ id: p.id, label: t(p.label) }));
   const elegirPestaña = (id) => {
     const { ver } = deLaSeccion.find((p) => p.id === id);
     setParametros(ver ? { ver } : {}, { replace: true });
@@ -144,18 +183,15 @@ const AdminPanel = () => {
   // cambiar de sección o al salir, la respuesta anterior ya no toca nada. Los
   // avisos no son dependencia: el resumen no se vuelve a pedir por cambiar de
   // idioma; usuarios y competiciones sí (llevan `t`), como antes
-  const { cargando: isLoadingStats, recargar: recargarStats } = useCargaCancelableEffect(
-    () => getAdminStatsUseCase.execute(),
-    [user],
-    {
+  const { cargando: isLoadingStats, recargar: recargarStats } =
+    useCargaCancelableEffect(() => getAdminStatsUseCase.execute(), [user], {
       activa: Boolean(user),
       alCargar: setStats,
       alFallar: (error) => {
         console.error('Error loading admin stats:', error);
         customToast.error(error.message || t('overview.loadError'));
       },
-    }
-  );
+    });
 
   const { cargando: isLoadingUsers } = useCargaCancelableEffect(
     () =>
@@ -163,7 +199,8 @@ const AdminPanel = () => {
         search: search || undefined,
         isAdmin: roleFilter === '' ? undefined : roleFilter === 'admin',
         isActive: statusFilter === '' ? undefined : statusFilter === 'active',
-        emailVerified: verifiedFilter === '' ? undefined : verifiedFilter === 'verified',
+        emailVerified:
+          verifiedFilter === '' ? undefined : verifiedFilter === 'verified',
         limit: PAGE_SIZE,
         offset,
       }),
@@ -178,31 +215,32 @@ const AdminPanel = () => {
         console.error('Error loading users:', error);
         customToast.error(error.message || t('users.loadError'));
       },
-    }
+    },
   );
 
-  const { cargando: isLoadingCompetitions, recargar: recargarCompetitions } = useCargaCancelableEffect(
-    // Fetch one extra to know if there's a next page — the backend list
-    // endpoint returns a plain array with no total count to paginate against.
-    () =>
-      adminListCompetitionsUseCase.execute({
-        searchName: competitionSearch || undefined,
-        limit: PAGE_SIZE + 1,
-        offset: competitionOffset,
-      }),
-    [user, competitionSearch, competitionOffset, t],
-    {
-      activa: Boolean(user) && activeTab === 'competitions',
-      alCargar: (data) => {
-        setHasMoreCompetitions(data.length > PAGE_SIZE);
-        setCompetitions(data.slice(0, PAGE_SIZE));
+  const { cargando: isLoadingCompetitions, recargar: recargarCompetitions } =
+    useCargaCancelableEffect(
+      // Fetch one extra to know if there's a next page — the backend list
+      // endpoint returns a plain array with no total count to paginate against.
+      () =>
+        adminListCompetitionsUseCase.execute({
+          searchName: competitionSearch || undefined,
+          limit: PAGE_SIZE + 1,
+          offset: competitionOffset,
+        }),
+      [user, competitionSearch, competitionOffset, t],
+      {
+        activa: Boolean(user) && activeTab === 'competitions',
+        alCargar: (data) => {
+          setHasMoreCompetitions(data.length > PAGE_SIZE);
+          setCompetitions(data.slice(0, PAGE_SIZE));
+        },
+        alFallar: (error) => {
+          console.error('Error loading competitions:', error);
+          customToast.error(error.message || t('competitions.loadError'));
+        },
       },
-      alFallar: (error) => {
-        console.error('Error loading competitions:', error);
-        customToast.error(error.message || t('competitions.loadError'));
-      },
-    }
-  );
+    );
 
   const handleSearchSubmit = (e) => {
     e.preventDefault();
@@ -211,28 +249,41 @@ const AdminPanel = () => {
   };
 
   const handleUpdateUser = async (formData) => {
-    const updated = await updateAdminUserUseCase.execute(editingUser.id, formData);
+    const updated = await updateAdminUserUseCase.execute(
+      editingUser.id,
+      formData,
+    );
     setUsers((prev) => prev.map((u) => (u.id === updated.id ? updated : u)));
     // Un correo nuevo no se aplica: queda pendiente hasta que el usuario lo confirme
     // desde esa dirección (RyderCupAm #753). Solo si es el que escribió el admin: el
     // pendiente puede ser uno que pidió el propio usuario
     const pidioOtroCorreo =
       updated.pendingEmail &&
-      formData.email?.trim().toLowerCase() === updated.pendingEmail.toLowerCase();
+      formData.email?.trim().toLowerCase() ===
+        updated.pendingEmail.toLowerCase();
     customToast.success(
       pidioOtroCorreo
         ? t('editModal.emailPending', { email: updated.pendingEmail })
-        : t('editModal.success')
+        : t('editModal.success'),
     );
     setEditingUser(null);
   };
 
   const handleToggleActive = async (targetUser) => {
-    await setAdminUserActiveUseCase.execute(targetUser.id, !targetUser.isActive);
-    setUsers((prev) =>
-      prev.map((u) => (u.id === targetUser.id ? { ...u, isActive: !targetUser.isActive } : u))
+    await setAdminUserActiveUseCase.execute(
+      targetUser.id,
+      !targetUser.isActive,
     );
-    customToast.success(targetUser.isActive ? t('manageModal.deactivateSuccess') : t('manageModal.reactivateSuccess'));
+    setUsers((prev) =>
+      prev.map((u) =>
+        u.id === targetUser.id ? { ...u, isActive: !targetUser.isActive } : u,
+      ),
+    );
+    customToast.success(
+      targetUser.isActive
+        ? t('manageModal.deactivateSuccess')
+        : t('manageModal.reactivateSuccess'),
+    );
     setManagingUser(null);
   };
 
@@ -282,9 +333,7 @@ const AdminPanel = () => {
   };
 
   if (isLoadingUser) {
-    return (
-      <FullScreenLoader texto={t('common:loading')} />
-    );
+    return <FullScreenLoader texto={t('common:loading')} />;
   }
 
   if (!user) {
@@ -297,21 +346,23 @@ const AdminPanel = () => {
   const numeroDe = {
     users: stats?.totalUsers,
     competitions: stats?.totalCompetitions,
-    golfCourses: stats?.totalGolfCoursesPending ? t('menu.requests', { count: stats.totalGolfCoursesPending }) : null,
+    golfCourses: stats?.totalGolfCoursesPending
+      ? t('menu.requests', { count: stats.totalGolfCoursesPending })
+      : null,
   };
 
   const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
   const currentPage = Math.floor(offset / PAGE_SIZE) + 1;
 
   return (
-    <div className={`relative flex h-auto ${PANTALLA_MENOS_BARRA_INFERIOR} w-full flex-col bg-white`}>
+    <div
+      className={`relative flex h-auto ${PANTALLA_MENOS_BARRA_INFERIOR} w-full flex-col bg-white`}
+    >
       <div className="layout-container flex h-full grow flex-col">
         <HeaderAuth user={user} />
         <div className="px-4 md:px-40 flex flex-1 justify-center py-5">
           <div className="layout-content-container flex flex-col max-w-[1200px] flex-1 min-w-0">
-            <div
-              className={`p-4 ${abierta ? 'hidden md:block' : ''}`}
-            >
+            <div className={`p-4 ${abierta ? 'hidden md:block' : ''}`}>
               <h1 className="hidden md:block text-gray-900 tracking-tight text-3xl md:text-[32px] font-bold leading-tight">
                 {t('title')}
               </h1>
@@ -341,10 +392,20 @@ const AdminPanel = () => {
                                 : 'text-gray-900'
                           }`}
                         >
-                          <Icon className="h-5 w-5 shrink-0" aria-hidden="true" />
+                          <Icon
+                            className="h-5 w-5 shrink-0"
+                            aria-hidden="true"
+                          />
                           <span className="flex-1 font-medium">{t(label)}</span>
-                          {numero != null && <span className="text-sm text-gray-500">{numero}</span>}
-                          <ChevronRight className="h-4 w-4 shrink-0 text-gray-400" aria-hidden="true" />
+                          {numero != null && (
+                            <span className="text-sm text-gray-500">
+                              {numero}
+                            </span>
+                          )}
+                          <ChevronRight
+                            className="h-4 w-4 shrink-0 text-gray-400"
+                            aria-hidden="true"
+                          />
                         </NavLink>
                       </li>
                     );
@@ -352,9 +413,14 @@ const AdminPanel = () => {
                 </ul>
               </nav>
 
-              <div data-testid="seccion-del-panel" className={`${abierta ? '' : 'hidden md:block'} min-w-0 flex-1 py-4 md:py-0`}>
+              <div
+                data-testid="seccion-del-panel"
+                className={`${abierta ? '' : 'hidden md:block'} min-w-0 flex-1 py-4 md:py-0`}
+              >
                 {/* En el móvil el título lo pone la cabecera: un solo h1 */}
-                <h2 className="hidden md:block mb-4 text-xl font-bold text-gray-900">{t((abierta ?? SECCIONES[0]).label)}</h2>
+                <h2 className="hidden md:block mb-4 text-xl font-bold text-gray-900">
+                  {t((abierta ?? SECCIONES[0]).label)}
+                </h2>
                 {activeTab === 'overview' && (
                   <div>
                     {isLoadingStats ? (
@@ -362,24 +428,44 @@ const AdminPanel = () => {
                     ) : (
                       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                         <div className="bg-primary-50 border border-primary-200 rounded-xl p-5">
-                          <p className="text-sm text-gray-600">{t('overview.totalUsers')}</p>
-                          <p className="text-3xl font-bold text-gray-900 mt-1">{stats?.totalUsers ?? 0}</p>
+                          <p className="text-sm text-gray-600">
+                            {t('overview.totalUsers')}
+                          </p>
+                          <p className="text-3xl font-bold text-gray-900 mt-1">
+                            {stats?.totalUsers ?? 0}
+                          </p>
                         </div>
                         <div className="bg-blue-50 border border-blue-200 rounded-xl p-5">
-                          <p className="text-sm text-gray-600">{t('overview.totalCompetitions')}</p>
-                          <p className="text-3xl font-bold text-gray-900 mt-1">{stats?.totalCompetitions ?? 0}</p>
+                          <p className="text-sm text-gray-600">
+                            {t('overview.totalCompetitions')}
+                          </p>
+                          <p className="text-3xl font-bold text-gray-900 mt-1">
+                            {stats?.totalCompetitions ?? 0}
+                          </p>
                         </div>
                         <div className="bg-amber-50 border border-amber-200 rounded-xl p-5">
-                          <p className="text-sm text-gray-600">{t('overview.totalQuickMatches')}</p>
-                          <p className="text-3xl font-bold text-gray-900 mt-1">{stats?.totalQuickMatches ?? 0}</p>
+                          <p className="text-sm text-gray-600">
+                            {t('overview.totalQuickMatches')}
+                          </p>
+                          <p className="text-3xl font-bold text-gray-900 mt-1">
+                            {stats?.totalQuickMatches ?? 0}
+                          </p>
                         </div>
                         <div className="bg-green-50 border border-green-200 rounded-xl p-5">
-                          <p className="text-sm text-gray-600">{t('overview.totalGolfCoursesApproved')}</p>
-                          <p className="text-3xl font-bold text-gray-900 mt-1">{stats?.totalGolfCoursesApproved ?? 0}</p>
+                          <p className="text-sm text-gray-600">
+                            {t('overview.totalGolfCoursesApproved')}
+                          </p>
+                          <p className="text-3xl font-bold text-gray-900 mt-1">
+                            {stats?.totalGolfCoursesApproved ?? 0}
+                          </p>
                         </div>
                         <div className="bg-gray-50 border border-gray-200 rounded-xl p-5">
-                          <p className="text-sm text-gray-600">{t('overview.totalGolfCoursesPending')}</p>
-                          <p className="text-3xl font-bold text-gray-900 mt-1">{stats?.totalGolfCoursesPending ?? 0}</p>
+                          <p className="text-sm text-gray-600">
+                            {t('overview.totalGolfCoursesPending')}
+                          </p>
+                          <p className="text-3xl font-bold text-gray-900 mt-1">
+                            {stats?.totalGolfCoursesPending ?? 0}
+                          </p>
                         </div>
                       </div>
                     )}
@@ -387,10 +473,11 @@ const AdminPanel = () => {
                 )}
 
                 {activeTab === 'users' && (
-                  <div
-                    className="space-y-4"
-                  >
-                    <form onSubmit={handleSearchSubmit} className="flex flex-wrap gap-3 items-end">
+                  <div className="space-y-4">
+                    <form
+                      onSubmit={handleSearchSubmit}
+                      className="flex flex-wrap gap-3 items-end"
+                    >
                       <div className="basis-full md:basis-auto md:flex-1 md:min-w-[220px]">
                         <div className="relative">
                           <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
@@ -407,36 +494,59 @@ const AdminPanel = () => {
                       <div>
                         <select
                           value={roleFilter}
-                          onChange={(e) => { setOffset(0); setRoleFilter(e.target.value); }}
+                          onChange={(e) => {
+                            setOffset(0);
+                            setRoleFilter(e.target.value);
+                          }}
                           className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-400 focus:border-primary-400 outline-none"
                         >
                           <option value="">{t('users.filterRoleAll')}</option>
-                          <option value="admin">{t('users.filterRoleAdmin')}</option>
-                          <option value="player">{t('users.filterRolePlayer')}</option>
+                          <option value="admin">
+                            {t('users.filterRoleAdmin')}
+                          </option>
+                          <option value="player">
+                            {t('users.filterRolePlayer')}
+                          </option>
                         </select>
                       </div>
 
                       <div>
                         <select
                           value={statusFilter}
-                          onChange={(e) => { setOffset(0); setStatusFilter(e.target.value); }}
+                          onChange={(e) => {
+                            setOffset(0);
+                            setStatusFilter(e.target.value);
+                          }}
                           className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-400 focus:border-primary-400 outline-none"
                         >
                           <option value="">{t('users.filterStatusAll')}</option>
-                          <option value="active">{t('users.filterStatusActive')}</option>
-                          <option value="inactive">{t('users.filterStatusInactive')}</option>
+                          <option value="active">
+                            {t('users.filterStatusActive')}
+                          </option>
+                          <option value="inactive">
+                            {t('users.filterStatusInactive')}
+                          </option>
                         </select>
                       </div>
 
                       <div>
                         <select
                           value={verifiedFilter}
-                          onChange={(e) => { setOffset(0); setVerifiedFilter(e.target.value); }}
+                          onChange={(e) => {
+                            setOffset(0);
+                            setVerifiedFilter(e.target.value);
+                          }}
                           className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-400 focus:border-primary-400 outline-none"
                         >
-                          <option value="">{t('users.filterVerifiedAll')}</option>
-                          <option value="verified">{t('users.filterVerifiedYes')}</option>
-                          <option value="unverified">{t('users.filterVerifiedNo')}</option>
+                          <option value="">
+                            {t('users.filterVerifiedAll')}
+                          </option>
+                          <option value="verified">
+                            {t('users.filterVerifiedYes')}
+                          </option>
+                          <option value="unverified">
+                            {t('users.filterVerifiedNo')}
+                          </option>
                         </select>
                       </div>
 
@@ -468,17 +578,26 @@ const AdminPanel = () => {
                         {totalCount > PAGE_SIZE && (
                           <div className="flex items-center justify-between pt-2">
                             <button
-                              onClick={() => setOffset((prev) => Math.max(0, prev - PAGE_SIZE))}
+                              onClick={() =>
+                                setOffset((prev) =>
+                                  Math.max(0, prev - PAGE_SIZE),
+                                )
+                              }
                               disabled={offset === 0}
                               className="px-4 py-2 text-sm font-medium text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                               {t('users.previous')}
                             </button>
                             <span className="text-sm text-gray-500">
-                              {t('users.pageInfo', { current: currentPage, total: totalPages })}
+                              {t('users.pageInfo', {
+                                current: currentPage,
+                                total: totalPages,
+                              })}
                             </span>
                             <button
-                              onClick={() => setOffset((prev) => prev + PAGE_SIZE)}
+                              onClick={() =>
+                                setOffset((prev) => prev + PAGE_SIZE)
+                              }
                               disabled={offset + PAGE_SIZE >= totalCount}
                               className="px-4 py-2 text-sm font-medium text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
                             >
@@ -492,17 +611,20 @@ const AdminPanel = () => {
                 )}
 
                 {activeTab === 'competitions' && (
-                  <div
-                    className="space-y-4"
-                  >
-                    <form onSubmit={handleCompetitionSearchSubmit} className="flex flex-wrap gap-3 items-end">
+                  <div className="space-y-4">
+                    <form
+                      onSubmit={handleCompetitionSearchSubmit}
+                      className="flex flex-wrap gap-3 items-end"
+                    >
                       <div className="basis-full md:basis-auto md:flex-1 md:min-w-[220px]">
                         <div className="relative">
                           <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
                           <input
                             type="text"
                             value={competitionSearchInput}
-                            onChange={(e) => setCompetitionSearchInput(e.target.value)}
+                            onChange={(e) =>
+                              setCompetitionSearchInput(e.target.value)
+                            }
                             placeholder={t('competitions.searchPlaceholder')}
                             className="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-400 focus:border-primary-400 outline-none"
                           />
@@ -517,7 +639,9 @@ const AdminPanel = () => {
                     </form>
 
                     <p className="text-sm text-gray-500">
-                      {t('competitions.totalCount', { count: competitions.length })}
+                      {t('competitions.totalCount', {
+                        count: competitions.length,
+                      })}
                     </p>
 
                     {isLoadingCompetitions ? (
@@ -536,14 +660,20 @@ const AdminPanel = () => {
                         {(competitionOffset > 0 || hasMoreCompetitions) && (
                           <div className="flex items-center justify-between pt-2">
                             <button
-                              onClick={() => setCompetitionOffset((prev) => Math.max(0, prev - PAGE_SIZE))}
+                              onClick={() =>
+                                setCompetitionOffset((prev) =>
+                                  Math.max(0, prev - PAGE_SIZE),
+                                )
+                              }
                               disabled={competitionOffset === 0}
                               className="px-4 py-2 text-sm font-medium text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                               {t('competitions.previous')}
                             </button>
                             <button
-                              onClick={() => setCompetitionOffset((prev) => prev + PAGE_SIZE)}
+                              onClick={() =>
+                                setCompetitionOffset((prev) => prev + PAGE_SIZE)
+                              }
                               disabled={!hasMoreCompetitions}
                               className="px-4 py-2 text-sm font-medium text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
                             >
@@ -557,13 +687,31 @@ const AdminPanel = () => {
                 )}
 
                 {activeTab === 'golfCourses' && (
-                  <PestanasDeSeccion etiqueta={t(abierta.label)} pestanas={pestanasDe('golfCourses')} actual={pestañaAbierta} onElegir={elegirPestaña}>
-                    {pestañaAbierta === 'approved' ? <GolfCourses embedded /> : <PendingGolfCourses embedded onCambio={recargarStats} />}
+                  <PestanasDeSeccion
+                    etiqueta={t(abierta.label)}
+                    pestanas={pestanasDe('golfCourses')}
+                    actual={pestañaAbierta}
+                    onElegir={elegirPestaña}
+                  >
+                    {pestañaAbierta === 'approved' ? (
+                      <GolfCourses embedded />
+                    ) : (
+                      <PendingGolfCourses embedded onCambio={recargarStats} />
+                    )}
                   </PestanasDeSeccion>
                 )}
                 {activeTab === 'holes' && (
-                  <PestanasDeSeccion etiqueta={t(abierta.label)} pestanas={pestanasDe('holes')} actual={pestañaAbierta} onElegir={elegirPestaña}>
-                    {pestañaAbierta === 'pending' ? <HoleReviews /> : <TodosLosCampos />}
+                  <PestanasDeSeccion
+                    etiqueta={t(abierta.label)}
+                    pestanas={pestanasDe('holes')}
+                    actual={pestañaAbierta}
+                    onElegir={elegirPestaña}
+                  >
+                    {pestañaAbierta === 'pending' ? (
+                      <HoleReviews />
+                    ) : (
+                      <TodosLosCampos />
+                    )}
                   </PestanasDeSeccion>
                 )}
               </div>
@@ -616,8 +764,15 @@ const AdminPanel = () => {
               <div className="flex items-start gap-3">
                 <AlertTriangle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
                 <div>
-                  <h2 id="cancelar-competicion-titulo" className="text-xl font-bold text-gray-900">{t('competitions.confirmCancelTitle')}</h2>
-                  <p className="text-sm text-gray-500 mt-1">{t('competitions.confirmCancelBody')}</p>
+                  <h2
+                    id="cancelar-competicion-titulo"
+                    className="text-xl font-bold text-gray-900"
+                  >
+                    {t('competitions.confirmCancelTitle')}
+                  </h2>
+                  <p className="text-sm text-gray-500 mt-1">
+                    {t('competitions.confirmCancelBody')}
+                  </p>
                 </div>
               </div>
               <button

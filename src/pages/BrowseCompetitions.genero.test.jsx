@@ -1,5 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
+import {
+  render,
+  screen,
+  fireEvent,
+  waitFor,
+  act,
+} from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router';
 
 /**
@@ -12,14 +18,20 @@ vi.mock('react-i18next', () => ({ useTranslation: () => traduccion }));
 vi.mock('framer-motion', () => {
   const DE_ANIMACION = new Set(['initial', 'animate', 'exit', 'transition']);
   const Div = ({ children, ...props }) => (
-    <div {...Object.fromEntries(Object.entries(props).filter(([k]) => !DE_ANIMACION.has(k)))}>
+    <div
+      {...Object.fromEntries(
+        Object.entries(props).filter(([k]) => !DE_ANIMACION.has(k)),
+      )}
+    >
       {children}
     </div>
   );
   return { motion: new Proxy({}, { get: () => Div }) };
 });
 vi.mock('../components/layout/HeaderAuth', () => ({ default: () => null }));
-vi.mock('../utils/toast', () => ({ default: { success: vi.fn(), error: vi.fn() } }));
+vi.mock('../utils/toast', () => ({
+  default: { success: vi.fn(), error: vi.fn() },
+}));
 const SESION = { user: { id: 'p1' }, loading: false };
 let userCambiante = false;
 vi.mock('../hooks/useAuth', () => ({
@@ -68,7 +80,7 @@ const pintar = () =>
   render(
     <MemoryRouter>
       <BrowseCompetitions />
-    </MemoryRouter>
+    </MemoryRouter>,
   );
 
 describe('BrowseCompetitions · el género al pedir plaza', () => {
@@ -115,28 +127,36 @@ describe('BrowseCompetitions · el género al pedir plaza', () => {
   it('X4: el motivo del servidor se lee en el modal, que sigue abierto (#710)', async () => {
     faltaGenero = false;
     mockPedir.mockRejectedValueOnce(
-      Object.assign(new Error('El torneo ya ha empezado.'), { status: 400 })
+      Object.assign(new Error('El torneo ya ha empezado.'), { status: 400 }),
     );
     pintar();
 
     fireEvent.click(await screen.findByText('browse.card.request-to-join'));
     fireEvent.click(screen.getByText('competitions:enrollment.confirm'));
 
-    expect(await screen.findByTestId('apuntarse-error')).toHaveTextContent('ya ha empezado');
+    expect(await screen.findByTestId('apuntarse-error')).toHaveTextContent(
+      'ya ha empezado',
+    );
   });
 
   it('X7: las fechas de la tarjeta salen en el idioma de quien mira (#710)', async () => {
     pintar();
 
-    expect(await screen.findByText('1 jun 2030 - 2 jun 2030')).toBeInTheDocument();
+    expect(
+      await screen.findByText('1 jun 2030 - 2 jun 2030'),
+    ).toBeInTheDocument();
   });
 
   it('X8: una privada (la ve un admin) no ofrece pedir plaza, que el servidor rechaza (FE #734)', async () => {
     mockUnirse.mockResolvedValue([{ ...COMPETICION, visibility: 'PRIVATE' }]);
     pintar();
 
-    expect(await screen.findByText('browse.card.view-details')).toBeInTheDocument();
-    expect(screen.queryByText('browse.card.request-to-join')).not.toBeInTheDocument();
+    expect(
+      await screen.findByText('browse.card.view-details'),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByText('browse.card.request-to-join'),
+    ).not.toBeInTheDocument();
   });
 
   it('X9: una pública en juego, en la otra lista, se ve y no se pide (FE #734)', async () => {
@@ -146,24 +166,36 @@ describe('BrowseCompetitions · el género al pedir plaza', () => {
     ]);
     pintar();
 
-    expect(await screen.findByText('browse.card.view-details')).toBeInTheDocument();
-    expect(screen.queryByText('browse.card.request-to-join')).not.toBeInTheDocument();
+    expect(
+      await screen.findByText('browse.card.view-details'),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByText('browse.card.request-to-join'),
+    ).not.toBeInTheDocument();
   });
 
   it('X5: una llena se ve «LLENO» y no deja pedir plaza (#710)', async () => {
-    mockUnirse.mockResolvedValue([{ ...COMPETICION, enrolledCount: 4, maxPlayers: 4 }]);
+    mockUnirse.mockResolvedValue([
+      { ...COMPETICION, enrolledCount: 4, maxPlayers: 4 },
+    ]);
     pintar();
 
-    const boton = await screen.findByText('browse.card.full', { selector: 'button' });
+    const boton = await screen.findByText('browse.card.full', {
+      selector: 'button',
+    });
     expect(boton).toBeDisabled();
-    expect(screen.queryByText('browse.card.request-to-join')).not.toBeInTheDocument();
+    expect(
+      screen.queryByText('browse.card.request-to-join'),
+    ).not.toBeInTheDocument();
   });
 
   it('X6: ya inscrito (409): se cierra, se dice y se quita de la lista (revisión local)', async () => {
     // El mensaje del servidor no lleva «409»: se decide por el estado
     faltaGenero = false;
     mockPedir.mockRejectedValueOnce(
-      Object.assign(new Error('User x is already enrolled in competition y.'), { status: 409 })
+      Object.assign(new Error('User x is already enrolled in competition y.'), {
+        status: 409,
+      }),
     );
     pintar();
 
@@ -171,10 +203,14 @@ describe('BrowseCompetitions · el género al pedir plaza', () => {
     fireEvent.click(screen.getByText('competitions:enrollment.confirm'));
 
     await waitFor(() =>
-      expect(customToast.error).toHaveBeenCalledWith('browse.errors.alreadyEnrolled')
+      expect(customToast.error).toHaveBeenCalledWith(
+        'browse.errors.alreadyEnrolled',
+      ),
     );
     expect(screen.queryByTestId('apuntarse-error')).not.toBeInTheDocument();
-    expect(screen.queryByText('browse.card.request-to-join')).not.toBeInTheDocument();
+    expect(
+      screen.queryByText('browse.card.request-to-join'),
+    ).not.toBeInTheDocument();
   });
 
   it('X7: el resultado de una petición no va al modal de otra competición (CodeRabbit)', async () => {
@@ -184,7 +220,12 @@ describe('BrowseCompetitions · el género al pedir plaza', () => {
       COMPETICION,
       { ...COMPETICION, id: 'c2', name: 'Otra Ryder' },
     ]);
-    mockPedir.mockImplementationOnce(() => new Promise((listo) => { terminaLaDeA = listo; }));
+    mockPedir.mockImplementationOnce(
+      () =>
+        new Promise((listo) => {
+          terminaLaDeA = listo;
+        }),
+    );
     pintar();
 
     // Pide plaza en la primera, cierra antes de que conteste y abre la segunda
@@ -193,10 +234,14 @@ describe('BrowseCompetitions · el género al pedir plaza', () => {
     fireEvent.click(screen.getByText('competitions:enrollment.confirm'));
     fireEvent.click(screen.getByText('competitions:enrollment.cancel'));
     fireEvent.click(screen.getAllByText('browse.card.request-to-join').at(-1));
-    await act(async () => { terminaLaDeA({}); });
+    await act(async () => {
+      terminaLaDeA({});
+    });
 
     // El modal de la segunda sigue abierto
-    expect(screen.getByText('competitions:enrollment.confirm')).toBeInTheDocument();
+    expect(
+      screen.getByText('competitions:enrollment.confirm'),
+    ).toBeInTheDocument();
   });
 });
 
@@ -207,7 +252,9 @@ describe('BrowseCompetitions · sin hándicap en un Stableford (FE #824, PR 5)',
   });
 
   it('H1: en un stroke play no se abre aquí: la ficha lo pide al apuntarse (release social 3)', async () => {
-    mockUnirse.mockResolvedValue([{ ...COMPETICION, hasTeams: false, tournamentType: 'STABLEFORD' }]);
+    mockUnirse.mockResolvedValue([
+      { ...COMPETICION, hasTeams: false, tournamentType: 'STABLEFORD' },
+    ]);
     pintar();
 
     fireEvent.click(await screen.findByText('browse.card.request-to-join'));
@@ -243,9 +290,12 @@ describe('BrowseCompetitions · apuntarse (release social 3)', () => {
       <MemoryRouter initialEntries={['/browse']}>
         <Routes>
           <Route path="/browse" element={<BrowseCompetitions />} />
-          <Route path="/competitions/:id" element={<div data-testid="la-ficha" />} />
+          <Route
+            path="/competitions/:id"
+            element={<div data-testid="la-ficha" />}
+          />
         </Routes>
-      </MemoryRouter>
+      </MemoryRouter>,
     );
 
   it('en un stroke play lleva a la ficha, donde se elige la franja', async () => {
@@ -264,13 +314,18 @@ describe('BrowseCompetitions · apuntarse (release social 3)', () => {
     ]);
     conRutas();
 
-    expect(await screen.findByText('browse.card.request-to-join')).not.toBeDisabled();
+    expect(
+      await screen.findByText('browse.card.request-to-join'),
+    ).not.toBeDisabled();
   });
 
   it('con la sala de draft abierta se dice en el diálogo y no se quita la tarjeta (revisor)', async () => {
     mockUnirse.mockResolvedValue([COMPETICION]);
     mockPedir.mockRejectedValueOnce(
-      Object.assign(new Error('x'), { status: 409, errorCode: 'DRAFT_IN_PROGRESS' })
+      Object.assign(new Error('x'), {
+        status: 409,
+        errorCode: 'DRAFT_IN_PROGRESS',
+      }),
     );
     conRutas();
 
@@ -278,7 +333,7 @@ describe('BrowseCompetitions · apuntarse (release social 3)', () => {
     fireEvent.click(screen.getByText('competitions:enrollment.confirm'));
 
     expect(await screen.findByTestId('apuntarse-error')).toHaveTextContent(
-      'detail.errors.draftInProgress'
+      'detail.errors.draftInProgress',
     );
     expect(screen.getByText('browse.card.request-to-join')).toBeInTheDocument();
   });
@@ -286,7 +341,7 @@ describe('BrowseCompetitions · apuntarse (release social 3)', () => {
   it('con los equipos formados: se cierra, se dice y la tarjeta se va (29 oct 2026)', async () => {
     mockUnirse.mockResolvedValue([COMPETICION]);
     mockPedir.mockRejectedValueOnce(
-      Object.assign(new Error('x'), { status: 409, errorCode: 'TEAMS_FORMED' })
+      Object.assign(new Error('x'), { status: 409, errorCode: 'TEAMS_FORMED' }),
     );
     conRutas();
 
@@ -294,10 +349,14 @@ describe('BrowseCompetitions · apuntarse (release social 3)', () => {
     fireEvent.click(screen.getByText('competitions:enrollment.confirm'));
 
     await waitFor(() =>
-      expect(customToast.error).toHaveBeenCalledWith('detail.errors.teamsFormed')
+      expect(customToast.error).toHaveBeenCalledWith(
+        'detail.errors.teamsFormed',
+      ),
     );
     expect(screen.queryByTestId('apuntarse-error')).not.toBeInTheDocument();
-    expect(screen.queryByText('browse.card.request-to-join')).not.toBeInTheDocument();
+    expect(
+      screen.queryByText('browse.card.request-to-join'),
+    ).not.toBeInTheDocument();
   });
 
   it('en un stroke play no se pinta el máximo: mandan las franjas (revisor)', async () => {
@@ -318,7 +377,11 @@ describe('BrowseCompetitions · apuntarse (release social 3)', () => {
     fireEvent.click(await screen.findByText('browse.card.request-to-join'));
     fireEvent.click(screen.getByText('competitions:enrollment.confirm'));
 
-    await waitFor(() => expect(customToast.success).toHaveBeenCalledWith('browse.success.enrolled'));
+    await waitFor(() =>
+      expect(customToast.success).toHaveBeenCalledWith(
+        'browse.success.enrolled',
+      ),
+    );
   });
 
   it('si la respuesta dice que espera, se le dice (code-review)', async () => {
@@ -330,7 +393,9 @@ describe('BrowseCompetitions · apuntarse (release social 3)', () => {
     fireEvent.click(screen.getByText('competitions:enrollment.confirm'));
 
     await waitFor(() =>
-      expect(customToast.success).toHaveBeenCalledWith('detail.success.joinedWaitingList')
+      expect(customToast.success).toHaveBeenCalledWith(
+        'detail.success.joinedWaitingList',
+      ),
     );
   });
 });

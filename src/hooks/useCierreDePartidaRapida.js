@@ -1,5 +1,8 @@
 import { useCallback } from 'react';
-import { cancelQuickMatchUseCase, completeQuickMatchUseCase } from '../composition';
+import {
+  cancelQuickMatchUseCase,
+  completeQuickMatchUseCase,
+} from '../composition';
 import { conElEstadoDe } from '../utils/colaDePartidaRapida';
 
 // Terminar y cancelar hacen lo mismo con distinto caso de uso. Las dos piden
@@ -13,16 +16,19 @@ import { conElEstadoDe } from '../utils/colaDePartidaRapida';
 // espera al refetch porque si este falla —se cae la red justo despues
 // del POST— la pantalla seguiria creyendo la partida viva, editable y
 // anotando contra 409 en bucle.
-const cierraCon = async (casoDeUso, {
-  quickMatchId,
-  isCreator,
-  idVigenteRef,
-  marcaEscritura,
-  fetchQuickMatch,
-  setQuickMatch,
-  setSaveError,
-  setIsSubmitting,
-}) => {
+const cierraCon = async (
+  casoDeUso,
+  {
+    quickMatchId,
+    isCreator,
+    idVigenteRef,
+    marcaEscritura,
+    fetchQuickMatch,
+    setQuickMatch,
+    setSaveError,
+    setIsSubmitting,
+  },
+) => {
   if (!quickMatchId || !isCreator) return { ok: false };
 
   setIsSubmitting(true);
@@ -68,13 +74,53 @@ export const useCierreDePartidaRapida = ({
 }) => {
   // Espejo de `completeMatch`: el backend exige creador para las dos
   // (`NotQuickMatchCreatorError`), asi que el boton vive donde el de terminar.
-  const cancelMatch = useCallback(() => cierraCon(cancelQuickMatchUseCase, {
-    quickMatchId, isCreator, idVigenteRef, marcaEscritura, fetchQuickMatch, setQuickMatch, setSaveError, setIsSubmitting,
-  }), [quickMatchId, isCreator, fetchQuickMatch, marcaEscritura, idVigenteRef, setQuickMatch, setSaveError, setIsSubmitting]);
+  const cancelMatch = useCallback(
+    () =>
+      cierraCon(cancelQuickMatchUseCase, {
+        quickMatchId,
+        isCreator,
+        idVigenteRef,
+        marcaEscritura,
+        fetchQuickMatch,
+        setQuickMatch,
+        setSaveError,
+        setIsSubmitting,
+      }),
+    [
+      quickMatchId,
+      isCreator,
+      fetchQuickMatch,
+      marcaEscritura,
+      idVigenteRef,
+      setQuickMatch,
+      setSaveError,
+      setIsSubmitting,
+    ],
+  );
 
-  const completeMatch = useCallback(() => cierraCon(completeQuickMatchUseCase, {
-    quickMatchId, isCreator, idVigenteRef, marcaEscritura, fetchQuickMatch, setQuickMatch, setSaveError, setIsSubmitting,
-  }), [quickMatchId, isCreator, fetchQuickMatch, marcaEscritura, idVigenteRef, setQuickMatch, setSaveError, setIsSubmitting]);
+  const completeMatch = useCallback(
+    () =>
+      cierraCon(completeQuickMatchUseCase, {
+        quickMatchId,
+        isCreator,
+        idVigenteRef,
+        marcaEscritura,
+        fetchQuickMatch,
+        setQuickMatch,
+        setSaveError,
+        setIsSubmitting,
+      }),
+    [
+      quickMatchId,
+      isCreator,
+      fetchQuickMatch,
+      marcaEscritura,
+      idVigenteRef,
+      setQuickMatch,
+      setSaveError,
+      setIsSubmitting,
+    ],
+  );
 
   return { cancelMatch, completeMatch };
 };

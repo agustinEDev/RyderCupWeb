@@ -1,10 +1,18 @@
-import { useCallback, useEffect, useEffectEvent, useRef, useState } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useEffectEvent,
+  useRef,
+  useState,
+} from 'react';
 
 // Cómo acaba la promesa de un `recargar()` cuya carga no llegó a aplicarse
 const DESCARTADA = Object.freeze({ estado: 'descartada' });
 
 const mismasDependencias = (antes, ahora) =>
-  antes !== null && antes.length === ahora.length && antes.every((valor, i) => Object.is(valor, ahora[i]));
+  antes !== null &&
+  antes.length === ahora.length &&
+  antes.every((valor, i) => Object.is(valor, ahora[i]));
 
 /**
  * Una carga que vive en su efecto (patrón de la documentación de React) y
@@ -48,7 +56,11 @@ const mismasDependencias = (antes, ahora) =>
  *   pintado) no se pide nada y se cumple como descartada en ese momento.
  *   Nunca se rechaza: se puede esperar sin try/catch.
  */
-export const useCargaCancelableEffect = (pedir, deps, { activa = true, alCargar, alFallar } = {}) => {
+export const useCargaCancelableEffect = (
+  pedir,
+  deps,
+  { activa = true, alCargar, alFallar } = {},
+) => {
   // Hasta que no termine una carga se espera: también antes de la primera
   const [enCurso, setEnCurso] = useState(true);
   // Cada `recargar()` es un objeto nuevo: es lo que vuelve a lanzar el efecto

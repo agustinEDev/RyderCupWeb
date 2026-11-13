@@ -61,7 +61,7 @@ export const validatePassword = (password) => {
       isValid: false,
       messageKey: 'validation.passwordRequired',
       message: 'Password is required',
-      strength: 0
+      strength: 0,
     };
   }
 
@@ -87,7 +87,7 @@ export const validatePassword = (password) => {
       isValid: false,
       messageKey: 'validation.passwordSpaces',
       message: 'Password must not start or end with whitespace.',
-      strength
+      strength,
     };
   }
 
@@ -98,7 +98,7 @@ export const validatePassword = (password) => {
       messageKey: 'validation.passwordTooShort',
       messageOptions: { min: minLength },
       message: `Password must be at least ${minLength} characters long.`,
-      strength
+      strength,
     };
   }
 
@@ -109,7 +109,7 @@ export const validatePassword = (password) => {
       messageKey: 'validation.passwordTooLong',
       messageOptions: { max: maxLength },
       message: `Password must not exceed ${maxLength} characters.`,
-      strength
+      strength,
     };
   }
 
@@ -126,7 +126,7 @@ export const validatePassword = (password) => {
       isValid: false,
       messageKey: 'validation.passwordWeak',
       message: `Password must contain at least ${missing[1].replace(/^an? /, 'one ')}.`,
-      strength
+      strength,
     };
   }
 
@@ -138,13 +138,13 @@ export const validatePassword = (password) => {
       isValid: false,
       messageKey: 'validation.passwordNoSymbol',
       message: 'Password must contain at least one special character.',
-      strength
+      strength,
     };
   }
 
   return {
     isValid: true,
     message: 'Strong password',
-    strength
+    strength,
   };
 };

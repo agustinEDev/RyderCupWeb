@@ -56,7 +56,11 @@ const cleanAddressBar = () => {
     quitaRuta = true;
   }
 
-  return { limpia: `${ruta}${query}${hash}`, cambia: quitaQuery || quitaRuta, quitados };
+  return {
+    limpia: `${ruta}${query}${hash}`,
+    cambia: quitaQuery || quitaRuta,
+    quitados,
+  };
 };
 
 const addressBarHasSecrets = () => cleanAddressBar().cambia;
@@ -70,7 +74,11 @@ export const stripSecretsFromAddressBar = () => {
   for (const nombre of RECOVERABLE) {
     if (quitados[nombre]) guardados[nombre] = quitados[nombre];
   }
-  window.history.replaceState({ ...estado, [HISTORY_KEY]: guardados }, '', limpia);
+  window.history.replaceState(
+    { ...estado, [HISTORY_KEY]: guardados },
+    '',
+    limpia,
+  );
 };
 
 /**
@@ -80,7 +88,8 @@ export const stripSecretsFromAddressBar = () => {
  * @param {string} nombre p. ej. 'token'
  * @returns {string | null}
  */
-export const readStrippedSecret = (nombre) => window.history.state?.[HISTORY_KEY]?.[nombre] ?? null;
+export const readStrippedSecret = (nombre) =>
+  window.history.state?.[HISTORY_KEY]?.[nombre] ?? null;
 
 /**
  * Olvida un secreto guardado de esta entrada del historial, una vez usado: si no, una

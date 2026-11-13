@@ -5,7 +5,10 @@ import { CompetitionName } from '../value_objects/CompetitionName';
 import { DateRange } from '../value_objects/DateRange';
 import { Location } from '../value_objects/Location';
 import { CountryCode } from '../value_objects/CountryCode';
-import { HandicapSettings, PlayModeType } from '../value_objects/HandicapSettings';
+import {
+  HandicapSettings,
+  PlayModeType,
+} from '../value_objects/HandicapSettings';
 import { TeamAssignment } from '../value_objects/TeamAssignment';
 import { StrokePlaySetup } from '../value_objects/StrokePlaySetup';
 
@@ -25,21 +28,33 @@ const props = (extra = {}) => ({
 
 const ryder = (extra = {}) =>
   new Competition(
-    props({ team1Name: 'Europa', team2Name: 'USA', teamAssignment: TeamAssignment.MANUAL, ...extra })
+    props({
+      team1Name: 'Europa',
+      team2Name: 'USA',
+      teamAssignment: TeamAssignment.MANUAL,
+      ...extra,
+    }),
   );
 
 describe('Competition · los ajustes del stroke play (FE #824)', () => {
   it('P1: un Stableford sin ajustes tiene los de por defecto', () => {
-    const competicion = new Competition(props({ tournamentType: 'STABLEFORD' }));
+    const competicion = new Competition(
+      props({ tournamentType: 'STABLEFORD' }),
+    );
 
     expect(competicion.strokePlay).toBeInstanceOf(StrokePlaySetup);
     expect(competicion.strokePlay.maxMatchdaysPerPlayer).toBe(1);
   });
 
   it('P2: un Medal guarda los suyos', () => {
-    const ajustes = new StrokePlaySetup({ categoryCount: 3, maxMatchdaysPerPlayer: 2 });
+    const ajustes = new StrokePlaySetup({
+      categoryCount: 3,
+      maxMatchdaysPerPlayer: 2,
+    });
 
-    const competicion = new Competition(props({ tournamentType: 'MEDAL', strokePlay: ajustes }));
+    const competicion = new Competition(
+      props({ tournamentType: 'MEDAL', strokePlay: ajustes }),
+    );
 
     expect(competicion.strokePlay).toBe(ajustes);
   });
@@ -53,12 +68,22 @@ describe('Competition · los ajustes del stroke play (FE #824)', () => {
   });
 
   it('P5: lo que no es una pieza se rechaza', () => {
-    expect(() => new Competition(props({ tournamentType: 'STABLEFORD', strokePlay: { categoryCount: 3 } }))).toThrow();
+    expect(
+      () =>
+        new Competition(
+          props({
+            tournamentType: 'STABLEFORD',
+            strokePlay: { categoryCount: 3 },
+          }),
+        ),
+    ).toThrow();
   });
 
   it('P6: la pieza viaja con la copia al cambiar de estado', () => {
     const ajustes = new StrokePlaySetup({ categoryLimits: [12] });
-    const competicion = new Competition(props({ tournamentType: 'STABLEFORD', strokePlay: ajustes }));
+    const competicion = new Competition(
+      props({ tournamentType: 'STABLEFORD', strokePlay: ajustes }),
+    );
 
     expect(competicion.activate().strokePlay).toBe(ajustes);
   });

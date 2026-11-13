@@ -26,7 +26,9 @@ const GolpesSinEnviar = ({ userId = null }) => {
   // Con inicializador perezoso y no dentro de un efecto: leer el
   // almacenamiento al montar es dar el estado inicial, no sincronizar nada
   const [pendientes, setPendientes] = useState(() => resumenPorPartida(userId));
-  const [perdidos, setPerdidos] = useState(() => golpesPerdidos.pendientes(userId));
+  const [perdidos, setPerdidos] = useState(() =>
+    golpesPerdidos.pendientes(userId),
+  );
   // QUÉ partidas no se pudieron descartar, no si alguna ni cuál la última: el
   // aviso va en su tarjeta, y con un solo identificador el descarte que salía
   // bien en otra partida borraba el aviso de la que había fallado
@@ -119,10 +121,9 @@ const GolpesSinEnviar = ({ userId = null }) => {
         ? `/quick-matches/${partida.matchId}/scoring`
         : partida.esPartidaDeFranja
           ? `/player/groups/${partida.matchId}/scoring`
-          : `/player/matches/${partida.matchId}/scoring`
+          : `/player/matches/${partida.matchId}/scoring`,
     );
   };
-
 
   /**
    * Cómo se nombra una partida en el aviso. Tres formas y no una, porque en
@@ -133,7 +134,9 @@ const GolpesSinEnviar = ({ userId = null }) => {
   const nombreDe = (algo) => {
     // Una partida de stroke play se llama partida, por su número (PR 7). El
     // resumen de la cola lo marca; un aviso de golpe perdido lleva el tipo
-    const deFranja = algo.esPartidaDeFranja || algo.tipo === offlineQueue.TIPO_PARTIDA_DE_FRANJA;
+    const deFranja =
+      algo.esPartidaDeFranja ||
+      algo.tipo === offlineQueue.TIPO_PARTIDA_DE_FRANJA;
     if (deFranja && algo.matchNumber != null) {
       return t('golpesSinEnviar.partidaDeFranja', { numero: algo.matchNumber });
     }
@@ -170,91 +173,111 @@ const GolpesSinEnviar = ({ userId = null }) => {
           // hoyo se anunciaban como cuatro fallos sobre una lista de uno
           perdidos: perdidosPorPartida.reduce(
             (suma, [, delGrupo]) => suma + hoyosDe(delGrupo).length,
-            0
+            0,
           ),
         })}
       </span>
-      {pendientes.map((partida) => partida.desaparecida ? (
-        /* Esa partida ya no está en el servidor, así que sus golpes no los
+      {pendientes.map((partida) =>
+        partida.desaparecida ? (
+          /* Esa partida ya no está en el servidor, así que sus golpes no los
            puede mandar nadie: la de partida rápida solo la vacía su propia
            pantalla, que es la que responde 404. No es un botón que navegue
            —llevaba a la pantalla de una partida que no existe— y no se borra
            solo: se ofrece, y decide quien lo anotó (FE #557) */
-        <div
-          key={partida.matchId}
-          className="rounded-lg border border-amber-200 bg-amber-50 p-3"
-        >
-          <div className="flex items-start gap-3">
-            <CloudOff className="mt-0.5 h-5 w-5 flex-shrink-0 text-amber-600" aria-hidden="true" />
-            <div className="min-w-0 flex-1">
-              <p className="text-sm text-amber-900">
-                {t('golpesSinEnviar.desaparecida', {
-                  count: partida.cuantas,
-                  partida: nombreDe(partida),
-                })}
-              </p>
-              {/* Abrir la partida sigue estando: su pantalla es la única que
+          <div
+            key={partida.matchId}
+            className="rounded-lg border border-amber-200 bg-amber-50 p-3"
+          >
+            <div className="flex items-start gap-3">
+              <CloudOff
+                className="mt-0.5 h-5 w-5 flex-shrink-0 text-amber-600"
+                aria-hidden="true"
+              />
+              <div className="min-w-0 flex-1">
+                <p className="text-sm text-amber-900">
+                  {t('golpesSinEnviar.desaparecida', {
+                    count: partida.cuantas,
+                    partida: nombreDe(partida),
+                  })}
+                </p>
+                {/* Abrir la partida sigue estando: su pantalla es la única que
                   puede enviar esos golpes o retirar la marca si aquel 404 lo
                   dio un portal cautivo. Sin ella, la única salida que ofrecía
                   el aviso era borrarlos para siempre */}
-              <div className="mt-2 flex flex-wrap items-center gap-4">
-                <button
-                  type="button"
-                  onClick={() => abre(partida)}
-                  className="min-h-11 px-1 py-2 text-xs font-medium text-amber-800 underline active:text-amber-900"
-                >
-                  {t('golpesSinEnviar.abrir')}
-                </button>
-                {/* Sin sesión resuelta no se ofrece: `olvidaLasDe` solo se
+                <div className="mt-2 flex flex-wrap items-center gap-4">
+                  <button
+                    type="button"
+                    onClick={() => abre(partida)}
+                    className="min-h-11 px-1 py-2 text-xs font-medium text-amber-800 underline active:text-amber-900"
+                  >
+                    {t('golpesSinEnviar.abrir')}
+                  </button>
+                  {/* Sin sesión resuelta no se ofrece: `olvidaLasDe` solo se
                     llevaría las anotaciones sin dueño, diría que sí, y la
                     tarjeta se repintaría igual — un botón que dice haber hecho
                     algo y no hizo nada */}
-                {userId != null && (
-                  <button
-                    type="button"
-                    onClick={() => descarta(partida)}
-                    /* Su propio texto, y no el del botón gemelo: aquel dice
+                  {userId != null && (
+                    <button
+                      type="button"
+                      onClick={() => descarta(partida)}
+                      /* Su propio texto, y no el del botón gemelo: aquel dice
                        «quitar el aviso» y esto tira los golpes. Y el nombre
                        accesible empieza por lo que se lee en pantalla, o el
                        control por voz no lo activa */
-                    aria-label={t('golpesSinEnviar.descartarYPerderDe', {
-                      partida: nombreDe(partida),
-                    })}
-                    className="min-h-11 px-1 py-2 text-xs font-medium text-amber-800 underline active:text-amber-900"
-                  >
-                    {t('golpesSinEnviar.descartar')}
-                  </button>
+                      aria-label={t('golpesSinEnviar.descartarYPerderDe', {
+                        partida: nombreDe(partida),
+                      })}
+                      className="min-h-11 px-1 py-2 text-xs font-medium text-amber-800 underline active:text-amber-900"
+                    >
+                      {t('golpesSinEnviar.descartar')}
+                    </button>
+                  )}
+                </div>
+                {noSePudoDescartar.has(partida.matchId) && (
+                  <p className="mt-1 text-xs text-amber-800">
+                    {t('golpesSinEnviar.noSePudoDescartar')}
+                  </p>
                 )}
               </div>
-              {noSePudoDescartar.has(partida.matchId) && (
-                <p className="mt-1 text-xs text-amber-800">
-                  {t('golpesSinEnviar.noSePudoDescartar')}
-                </p>
-              )}
             </div>
           </div>
-        </div>
-      ) : (
-        <button
-          key={partida.matchId}
-          type="button"
-          onClick={() => abre(partida)}
-          className="flex w-full items-center gap-3 rounded-lg border border-amber-200 bg-amber-50 p-3 text-left active:bg-amber-100"
-        >
-          <CloudOff className="h-5 w-5 flex-shrink-0 text-amber-600" aria-hidden="true" />
-          {/* `min-w-0` para que un nombre largo se recorte en vez de empujar la
+        ) : (
+          <button
+            key={partida.matchId}
+            type="button"
+            onClick={() => abre(partida)}
+            className="flex w-full items-center gap-3 rounded-lg border border-amber-200 bg-amber-50 p-3 text-left active:bg-amber-100"
+          >
+            <CloudOff
+              className="h-5 w-5 flex-shrink-0 text-amber-600"
+              aria-hidden="true"
+            />
+            {/* `min-w-0` para que un nombre largo se recorte en vez de empujar la
               flecha fuera de la tarjeta */}
-          <span className="min-w-0 flex-1 text-sm text-amber-900">
-            {t('golpesSinEnviar.aviso', { count: partida.cuantas, partida: nombreDe(partida) })}
-          </span>
-          <ChevronRight className="h-4 w-4 flex-shrink-0 text-amber-600" aria-hidden="true" />
-        </button>
-      ))}
+            <span className="min-w-0 flex-1 text-sm text-amber-900">
+              {t('golpesSinEnviar.aviso', {
+                count: partida.cuantas,
+                partida: nombreDe(partida),
+              })}
+            </span>
+            <ChevronRight
+              className="h-4 w-4 flex-shrink-0 text-amber-600"
+              aria-hidden="true"
+            />
+          </button>
+        ),
+      )}
 
       {perdidosPorPartida.map(([matchId, delGrupo]) => (
-        <div key={matchId} className="rounded-lg border border-red-200 bg-red-50 p-3">
+        <div
+          key={matchId}
+          className="rounded-lg border border-red-200 bg-red-50 p-3"
+        >
           <div className="flex items-start gap-3">
-            <AlertTriangle className="mt-0.5 h-5 w-5 flex-shrink-0 text-red-600" aria-hidden="true" />
+            <AlertTriangle
+              className="mt-0.5 h-5 w-5 flex-shrink-0 text-red-600"
+              aria-hidden="true"
+            />
             <div className="min-w-0 flex-1">
               <p className="text-sm text-red-900">
                 {/* Cuenta HOYOS, como la lista de abajo: por avisos decía
@@ -288,10 +311,12 @@ const GolpesSinEnviar = ({ userId = null }) => {
                   }
                   apunta(matchId, false);
                   releeYDevuelveElFoco(
-                    pendientes.length > 0 || perdidos.length > delGrupo.length
+                    pendientes.length > 0 || perdidos.length > delGrupo.length,
                   );
                 }}
-                aria-label={t('golpesSinEnviar.descartarDe', { partida: nombreDe(delGrupo[0]) })}
+                aria-label={t('golpesSinEnviar.descartarDe', {
+                  partida: nombreDe(delGrupo[0]),
+                })}
                 className="mt-2 min-h-11 px-1 py-2 text-xs font-medium text-red-700 underline active:text-red-900"
               >
                 {t('golpesSinEnviar.entendido')}

@@ -31,13 +31,18 @@ const CLAVE_POR_ACCION = {
   concesion: 'errors.failedToConcede',
   retirada: 'withdraw.failed',
 };
-export const esFalloDeUnaAccion = (origenDelError) => Boolean(CLAVE_POR_ACCION[origenDelError]);
+export const esFalloDeUnaAccion = (origenDelError) =>
+  Boolean(CLAVE_POR_ACCION[origenDelError]);
 // Un error del hook puede traer la CLAVE de su texto: la pantalla pintaba
 // `error.message` tal cual, y así salía castellano fijo en la app en inglés
 export const textoDelFallo = (t, err, origenDelError) => {
   if (!esFalloDeUnaAccion(origenDelError)) return motivoDe(t, err);
-  const texto = err?.i18nKey ? t(err.i18nKey) : t(CLAVE_POR_ACCION[origenDelError]);
-  return err?.holeNumber != null ? `${texto} ${t('errors.enElHoyo', { hole: err.holeNumber })}` : texto;
+  const texto = err?.i18nKey
+    ? t(err.i18nKey)
+    : t(CLAVE_POR_ACCION[origenDelError]);
+  return err?.holeNumber != null
+    ? `${texto} ${t('errors.enElHoyo', { hole: err.holeNumber })}`
+    : texto;
 };
 
 /**
@@ -50,36 +55,48 @@ export const cierreDelPartido = (scoringView) => {
   const resultadoDecidido =
     ganadorDecidido === 'A' || ganadorDecidido === 'B'
       ? {
-        team: ganadorDecidido === 'A' ? scoringView.teamAName : scoringView.teamBName,
-        score: scoringView.decidedResult.score,
-      }
+          team:
+            ganadorDecidido === 'A'
+              ? scoringView.teamAName
+              : scoringView.teamBName,
+          score: scoringView.decidedResult.score,
+        }
       : null;
   // Cerrado sin jugarlo hasta el final —concedido o walkover—: ya no queda
   // nada que anotar ni que entregar, y se dice como en la clasificación (#732)
   const cerradoSinJugar =
-    scoringView?.matchStatus === 'CONCEDED' || scoringView?.matchStatus === 'WALKOVER';
-  const claveDelCierre = scoringView?.matchStatus === 'WALKOVER' ? 'walkover' : 'conceded';
-  const cierre = cerradoSinJugar && resultadoDecidido ? { team: resultadoDecidido.team } : null;
+    scoringView?.matchStatus === 'CONCEDED' ||
+    scoringView?.matchStatus === 'WALKOVER';
+  const claveDelCierre =
+    scoringView?.matchStatus === 'WALKOVER' ? 'walkover' : 'conceded';
+  const cierre =
+    cerradoSinJugar && resultadoDecidido
+      ? { team: resultadoDecidido.team }
+      : null;
   return { resultadoDecidido, cerradoSinJugar, claveDelCierre, cierre };
 };
 
 // El marcador de la cabecera, que repite la barra de entregar (FE #745).
 // Decidido, su resultado y no el marcador del último hoyo jugado: un 4&2 que
 // siguió hasta el 18 decía «4UP» (#710)
-export const textoDelMarcador = (t, scoringView, { cierre, claveDelCierre, cerradoSinJugar, resultadoDecidido }) =>
+export const textoDelMarcador = (
+  t,
+  scoringView,
+  { cierre, claveDelCierre, cerradoSinJugar, resultadoDecidido },
+) =>
   cierre
     ? t(`leaderboard.${claveDelCierre}`, cierre)
     : cerradoSinJugar
-    // Sin ganador (un backend anterior): cerrado, sin el marcador de los
-    // hoyos, que puede dar por ganador a quien concedió
-    ? t('closed.title')
-    : resultadoDecidido
-    ? t('leaderboard.wins', resultadoDecidido)
-    : !scoringView?.matchStanding
-    ? null
-    : scoringView.matchStanding.status === 'AS'
-    ? t('input.allSquare')
-    : `${scoringView.matchStanding.status} ${scoringView.matchStanding.leadingTeam === 'A' ? scoringView.teamAName : scoringView.teamBName}`;
+      ? // Sin ganador (un backend anterior): cerrado, sin el marcador de los
+        // hoyos, que puede dar por ganador a quien concedió
+        t('closed.title')
+      : resultadoDecidido
+        ? t('leaderboard.wins', resultadoDecidido)
+        : !scoringView?.matchStanding
+          ? null
+          : scoringView.matchStanding.status === 'AS'
+            ? t('input.allSquare')
+            : `${scoringView.matchStanding.status} ${scoringView.matchStanding.leadingTeam === 'A' ? scoringView.teamAName : scoringView.teamBName}`;
 
 // La barra de entregar la tarjeta, en las tres pestañas (FE #745): el botón
 // vivía solo en Tarjeta y la pantalla abre en Anotar, así que quien acababa
@@ -94,29 +111,35 @@ export const estadoDeEntrega = ({
   cerradoSinJugar,
   canSubmitScorecard,
   partidoAcabado,
-}) => (!isMatchPlayer || isWithdrawn
-  ? null
-  : hasSubmitted
-  ? 'entregada'
-  : cerradoSinJugar
-  ? null
-  : canSubmitScorecard
-  ? 'entregar'
-  : partidoAcabado
-  ? 'faltaValidar'
-  : null);
+}) =>
+  !isMatchPlayer || isWithdrawn
+    ? null
+    : hasSubmitted
+      ? 'entregada'
+      : cerradoSinJugar
+        ? null
+        : canSubmitScorecard
+          ? 'entregar'
+          : partidoAcabado
+            ? 'faltaValidar'
+            : null;
 
 // Quién ganó, para la pantalla del resumen: el equipo y sus jugadores
 export const ganadorDelResumen = (matchSummary, scoringView) => {
   const winnerTeam = matchSummary.result?.winner;
-  const winnerTeamName = winnerTeam === 'A'
-    ? scoringView?.teamAName
-    : winnerTeam === 'B'
-      ? scoringView?.teamBName
+  const winnerTeamName =
+    winnerTeam === 'A'
+      ? scoringView?.teamAName
+      : winnerTeam === 'B'
+        ? scoringView?.teamBName
+        : null;
+  const winnerPlayerNames =
+    winnerTeam === 'A' || winnerTeam === 'B'
+      ? scoringView?.players
+          ?.filter((p) => p.team === winnerTeam)
+          .map((p) => p.userName)
+          .join(' y ')
       : null;
-  const winnerPlayerNames = (winnerTeam === 'A' || winnerTeam === 'B')
-    ? scoringView?.players?.filter((p) => p.team === winnerTeam).map((p) => p.userName).join(' y ')
-    : null;
   return winnerTeamName && winnerPlayerNames
     ? `${winnerTeamName} (${winnerPlayerNames})`
     : winnerTeamName;
@@ -124,11 +147,15 @@ export const ganadorDelResumen = (matchSummary, scoringView) => {
 
 // El resultado decidido para el aviso de partido decidido, con el nombre del
 // equipo en vez de su letra
-export const resultadoParaElAviso = (scoringView) => (scoringView?.decidedResult ? {
-  ...scoringView.decidedResult,
-  winner: scoringView.decidedResult.winner === 'A'
-    ? (scoringView.teamAName || 'A')
-    : scoringView.decidedResult.winner === 'B'
-      ? (scoringView.teamBName || 'B')
-      : scoringView.decidedResult.winner,
-} : null);
+export const resultadoParaElAviso = (scoringView) =>
+  scoringView?.decidedResult
+    ? {
+        ...scoringView.decidedResult,
+        winner:
+          scoringView.decidedResult.winner === 'A'
+            ? scoringView.teamAName || 'A'
+            : scoringView.decidedResult.winner === 'B'
+              ? scoringView.teamBName || 'B'
+              : scoringView.decidedResult.winner,
+      }
+    : null;

@@ -21,7 +21,7 @@ import {
 
 const CUANTAS_IGUALES = Array.from(
   { length: MAX_CATEGORIAS_IGUALES - MIN_CATEGORIAS_IGUALES + 1 },
-  (_, i) => String(MIN_CATEGORIAS_IGUALES + i)
+  (_, i) => String(MIN_CATEGORIAS_IGUALES + i),
 );
 
 /**
@@ -49,25 +49,45 @@ const StrokePlaySettings = ({ valor, onCambio, tipo, dias }) => {
   const errorDeCategorias = delModo === 'categoryLimitEmpty' ? null : delModo;
   const errorDeJornadas = errorDeLasJornadas(valor, dias);
   // La vista previa, con los escritos: los huecos aún vacíos no cuentan
-  const escritos = valor.limites.filter((v) => !limiteVacio(v)).map(limiteEscrito);
-  const vistaPrevia = valor.modo === LIMITES && !errorDeLimites(escritos) ? categoriasDeLosLimites(escritos) : null;
+  const escritos = valor.limites
+    .filter((v) => !limiteVacio(v))
+    .map(limiteEscrito);
+  const vistaPrevia =
+    valor.modo === LIMITES && !errorDeLimites(escritos)
+      ? categoriasDeLosLimites(escritos)
+      : null;
   // Qué campos fallan, para marcarlos: el suyo propio, o estar desordenado
   const leidos = valor.limites.map(limiteEscrito);
   const fallan = valor.limites.map(
     (escrito, i) =>
       Boolean(errorDeCategorias) &&
       !limiteVacio(escrito) &&
-      (errorDeLimites([leidos[i]]) !== null || (i > 0 && leidos[i] <= leidos[i - 1]))
+      (errorDeLimites([leidos[i]]) !== null ||
+        (i > 0 && leidos[i] <= leidos[i - 1])),
   );
 
-  const ponLimite = (i, escrito) => cambia({ limites: valor.limites.map((v, j) => (j === i ? escrito : v)) });
-  const quitaLimite = (i) => cambia({ limites: valor.limites.filter((_, j) => j !== i) });
+  const ponLimite = (i, escrito) =>
+    cambia({ limites: valor.limites.map((v, j) => (j === i ? escrito : v)) });
+  const quitaLimite = (i) =>
+    cambia({ limites: valor.limites.filter((_, j) => j !== i) });
 
   const textoDeCategoria = ({ numero, desde, hasta, masDe }) => {
-    if (masDe !== null) return t('create.strokePlay.preview.above', { numero, masDe: conUnDecimal(masDe) });
+    if (masDe !== null)
+      return t('create.strokePlay.preview.above', {
+        numero,
+        masDe: conUnDecimal(masDe),
+      });
     if (hasta === null) return t('create.strokePlay.preview.single');
-    if (desde === null) return t('create.strokePlay.preview.upTo', { numero, hasta: conUnDecimal(hasta) });
-    return t('create.strokePlay.preview.between', { numero, desde: conUnDecimal(desde), hasta: conUnDecimal(hasta) });
+    if (desde === null)
+      return t('create.strokePlay.preview.upTo', {
+        numero,
+        hasta: conUnDecimal(hasta),
+      });
+    return t('create.strokePlay.preview.between', {
+      numero,
+      desde: conUnDecimal(desde),
+      hasta: conUnDecimal(hasta),
+    });
   };
 
   const botonDeModo = (modo) => (
@@ -91,15 +111,22 @@ const StrokePlaySettings = ({ valor, onCambio, tipo, dias }) => {
     <div className="space-y-5">
       {/* Categorías */}
       <fieldset className="space-y-3">
-        <legend className="block text-sm font-medium text-gray-700 mb-1">{t('create.strokePlay.categories')}</legend>
+        <legend className="block text-sm font-medium text-gray-700 mb-1">
+          {t('create.strokePlay.categories')}
+        </legend>
         <div className="flex gap-2">{[LIMITES, IGUALES].map(botonDeModo)}</div>
 
         {valor.modo === LIMITES ? (
           <div className="space-y-2">
-            <p className="text-xs text-gray-500">{t('create.strokePlay.limitsHint')}</p>
+            <p className="text-xs text-gray-500">
+              {t('create.strokePlay.limitsHint')}
+            </p>
             {valor.limites.map((escrito, i) => (
               <div key={i} className="flex items-center gap-2">
-                <label htmlFor={`limite-${i}`} className="w-28 shrink-0 text-sm text-gray-600">
+                <label
+                  htmlFor={`limite-${i}`}
+                  className="w-28 shrink-0 text-sm text-gray-600"
+                >
                   {t('create.strokePlay.limitLabel', { numero: i + 1 })}
                 </label>
                 <input
@@ -109,13 +136,17 @@ const StrokePlaySettings = ({ valor, onCambio, tipo, dias }) => {
                   value={escrito}
                   onChange={(e) => ponLimite(i, e.target.value)}
                   aria-invalid={fallan[i] || undefined}
-                  aria-describedby={fallan[i] ? 'error-de-categorias' : undefined}
+                  aria-describedby={
+                    fallan[i] ? 'error-de-categorias' : undefined
+                  }
                   className="w-24 min-w-0 rounded-lg border border-gray-300 px-3 py-2 text-sm"
                 />
                 <button
                   type="button"
                   onClick={() => quitaLimite(i)}
-                  aria-label={t('create.strokePlay.removeLimit', { numero: i + 1 })}
+                  aria-label={t('create.strokePlay.removeLimit', {
+                    numero: i + 1,
+                  })}
                   className="rounded-lg p-2 text-gray-500 hover:bg-gray-100 hover:text-red-600"
                 >
                   <X className="h-4 w-4" />
@@ -134,7 +165,10 @@ const StrokePlaySettings = ({ valor, onCambio, tipo, dias }) => {
             )}
             {/* Solo con límites válidos: unos desordenados darían rangos absurdos */}
             {vistaPrevia && (
-              <ul data-testid="vista-previa" className="space-y-0.5 rounded-lg bg-gray-50 px-3 py-2 text-sm text-gray-700">
+              <ul
+                data-testid="vista-previa"
+                className="space-y-0.5 rounded-lg bg-gray-50 px-3 py-2 text-sm text-gray-700"
+              >
                 {vistaPrevia.map((categoria) => (
                   <li key={categoria.numero}>{textoDeCategoria(categoria)}</li>
                 ))}
@@ -143,7 +177,10 @@ const StrokePlaySettings = ({ valor, onCambio, tipo, dias }) => {
           </div>
         ) : (
           <div className="space-y-2">
-            <label htmlFor="categorias-iguales" className="block text-sm text-gray-600">
+            <label
+              htmlFor="categorias-iguales"
+              className="block text-sm text-gray-600"
+            >
               {t('create.strokePlay.equalCount')}
             </label>
             <select
@@ -158,13 +195,21 @@ const StrokePlaySettings = ({ valor, onCambio, tipo, dias }) => {
                 </option>
               ))}
             </select>
-            <p className="text-xs text-gray-500">{t('create.strokePlay.equalHint')}</p>
+            <p className="text-xs text-gray-500">
+              {t('create.strokePlay.equalHint')}
+            </p>
           </div>
         )}
 
-        <p className="text-xs text-gray-500">{t('create.strokePlay.sixRule')}</p>
+        <p className="text-xs text-gray-500">
+          {t('create.strokePlay.sixRule')}
+        </p>
         {errorDeCategorias && (
-          <p id="error-de-categorias" role="alert" className="text-sm text-red-600">
+          <p
+            id="error-de-categorias"
+            role="alert"
+            className="text-sm text-red-600"
+          >
             {t(`create.errors.${errorDeCategorias}`)}
           </p>
         )}
@@ -172,7 +217,10 @@ const StrokePlaySettings = ({ valor, onCambio, tipo, dias }) => {
 
       {/* Jornadas por jugador */}
       <div className="space-y-1">
-        <label htmlFor="jornadas-por-jugador" className="block text-sm font-medium text-gray-700">
+        <label
+          htmlFor="jornadas-por-jugador"
+          className="block text-sm font-medium text-gray-700"
+        >
           {t('create.strokePlay.matchdays')}
         </label>
         <input
@@ -184,19 +232,31 @@ const StrokePlaySettings = ({ valor, onCambio, tipo, dias }) => {
           onChange={(e) => cambia({ jornadas: e.target.value })}
           className="w-24 rounded-lg border border-gray-300 px-3 py-2 text-sm"
         />
-        <p className="text-xs text-gray-500">{t('create.strokePlay.matchdaysHint')}</p>
+        <p className="text-xs text-gray-500">
+          {t('create.strokePlay.matchdaysHint')}
+        </p>
         {errorDeJornadas && (
           <p role="alert" className="text-sm text-red-600">
-            {t(`create.errors.${errorDeJornadas}`, errorDeJornadas === 'matchdaysMoreThanDays' ? { count: dias } : undefined)}
+            {t(
+              `create.errors.${errorDeJornadas}`,
+              errorDeJornadas === 'matchdaysMoreThanDays'
+                ? { count: dias }
+                : undefined,
+            )}
           </p>
         )}
       </div>
 
       {/* La general */}
       <fieldset className="space-y-2">
-        <legend className="block text-sm font-medium text-gray-700 mb-1">{t('create.strokePlay.overall.title')}</legend>
+        <legend className="block text-sm font-medium text-gray-700 mb-1">
+          {t('create.strokePlay.overall.title')}
+        </legend>
         {[ACUMULADO, MEJOR_TARJETA].map((general) => (
-          <label key={general} className="flex items-start gap-2 text-sm text-gray-700">
+          <label
+            key={general}
+            className="flex items-start gap-2 text-sm text-gray-700"
+          >
             <input
               type="radio"
               name="general"
@@ -207,7 +267,9 @@ const StrokePlaySettings = ({ valor, onCambio, tipo, dias }) => {
               className="mt-1"
             />
             <span>
-              <span className="block font-medium">{t(`create.strokePlay.overall.${general}.label`)}</span>
+              <span className="block font-medium">
+                {t(`create.strokePlay.overall.${general}.label`)}
+              </span>
               <span className="block text-xs text-gray-500">
                 {general === ACUMULADO
                   ? t(`create.strokePlay.overall.${ACUMULADO}.${tipo}`)

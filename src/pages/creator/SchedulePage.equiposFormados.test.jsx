@@ -1,5 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
+import {
+  render,
+  screen,
+  fireEvent,
+  waitFor,
+  within,
+} from '@testing-library/react';
 import { MemoryRouter, Routes, Route } from 'react-router';
 
 // `t` y el objeto que devuelve `useTranslation`, ESTABLES: la carga de la
@@ -15,7 +21,14 @@ const traduccion = { i18n: { language: 'es' }, t };
 vi.mock('react-i18next', () => ({ useTranslation: () => traduccion }));
 
 vi.mock('framer-motion', () => ({
-  motion: new Proxy({}, { get: () => ({ children, ...props }) => <div {...props}>{children}</div> }),
+  motion: new Proxy(
+    {},
+    {
+      get:
+        () =>
+        ({ children, ...props }) => <div {...props}>{children}</div>,
+    },
+  ),
 }));
 
 vi.mock('../../components/layout/HeaderAuth', () => ({ default: () => null }));
@@ -26,9 +39,17 @@ const SESION = { user: { id: 'org' }, loading: false };
 const ROLES = { isAdmin: false, isCreator: true, isLoading: false };
 vi.mock('../../hooks/useAuth', () => ({ useAuth: () => SESION }));
 vi.mock('../../hooks/useUserRoles', () => ({ useUserRoles: () => ROLES }));
-vi.mock('../../components/ui/FullScreenLoader', () => ({ default: () => null }));
+vi.mock('../../components/ui/FullScreenLoader', () => ({
+  default: () => null,
+}));
 vi.mock('../../utils/toast', () => ({
-  default: { success: vi.fn(), error: vi.fn(), warning: vi.fn(), info: vi.fn(), dismiss: vi.fn() },
+  default: {
+    success: vi.fn(),
+    error: vi.fn(),
+    warning: vi.fn(),
+    info: vi.fn(),
+    dismiss: vi.fn(),
+  },
 }));
 
 const mockDetalle = vi.fn();
@@ -70,7 +91,11 @@ const COMPETICION = {
   maxPlayingHandicap: null,
   captains: { teamA: null, teamB: null, viceTeamA: null, viceTeamB: null },
 };
-const EQUIPOS = { teamAPlayerIds: ['ana'], teamBPlayerIds: ['bea'], mode: 'DRAFT' };
+const EQUIPOS = {
+  teamAPlayerIds: ['ana'],
+  teamBPlayerIds: ['bea'],
+  mode: 'DRAFT',
+};
 const INSCRITOS = [
   { userId: 'ana', userName: 'Ana Alba', status: 'APPROVED' },
   { userId: 'bea', userName: 'Bea Blanco', status: 'APPROVED' },
@@ -81,12 +106,16 @@ const pintar = () =>
   render(
     <MemoryRouter initialEntries={['/creator/competitions/comp-1/schedule']}>
       <Routes>
-        <Route path="/creator/competitions/:id/schedule" element={<SchedulePage />} />
+        <Route
+          path="/creator/competitions/:id/schedule"
+          element={<SchedulePage />}
+        />
       </Routes>
-    </MemoryRouter>
+    </MemoryRouter>,
   );
 
-const fallo = (errorCode) => Object.assign(new Error('x'), { status: 409, errorCode });
+const fallo = (errorCode) =>
+  Object.assign(new Error('x'), { status: 409, errorCode });
 
 /**
  * Con los equipos formados, quedan así (decidido el 29-30 oct 2026, tabla aprobada).
@@ -104,7 +133,11 @@ describe('SchedulePage · equipos formados', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockDetalle.mockResolvedValue(COMPETICION);
-    mockAgenda.mockResolvedValue({ days: [], rounds: [], teamAssignment: EQUIPOS });
+    mockAgenda.mockResolvedValue({
+      days: [],
+      rounds: [],
+      teamAssignment: EQUIPOS,
+    });
     mockInscripciones.mockResolvedValue(INSCRITOS);
     mockDeshacer.mockResolvedValue(undefined);
   });
@@ -116,7 +149,11 @@ describe('SchedulePage · equipos formados', () => {
   });
 
   it('F4: con partidos, ya no', async () => {
-    mockAgenda.mockResolvedValue({ days: [], rounds: CON_PARTIDOS, teamAssignment: EQUIPOS });
+    mockAgenda.mockResolvedValue({
+      days: [],
+      rounds: CON_PARTIDOS,
+      teamAssignment: EQUIPOS,
+    });
     pintar();
 
     await screen.findByText('Ana Alba');
@@ -133,7 +170,11 @@ describe('SchedulePage · equipos formados', () => {
 
   describe('formar equipos', () => {
     beforeEach(() => {
-      mockAgenda.mockResolvedValue({ days: [], rounds: [], teamAssignment: null });
+      mockAgenda.mockResolvedValue({
+        days: [],
+        rounds: [],
+        teamAssignment: null,
+      });
     });
 
     const formar = async () => {
@@ -148,7 +189,9 @@ describe('SchedulePage · equipos formados', () => {
 
       await formar();
 
-      await waitFor(() => expect(customToast.error).toHaveBeenCalledWith('errors.waitForDraft'));
+      await waitFor(() =>
+        expect(customToast.error).toHaveBeenCalledWith('errors.waitForDraft'),
+      );
     });
 
     it('F3: si ya estaban formados, se dice y se relee', async () => {
@@ -159,8 +202,12 @@ describe('SchedulePage · equipos formados', () => {
 
       await formar();
 
-      await waitFor(() => expect(customToast.error).toHaveBeenCalledWith('errors.teamsFormed'));
-      await waitFor(() => expect(mockAgenda.mock.calls.length).toBeGreaterThan(lecturas));
+      await waitFor(() =>
+        expect(customToast.error).toHaveBeenCalledWith('errors.teamsFormed'),
+      );
+      await waitFor(() =>
+        expect(mockAgenda.mock.calls.length).toBeGreaterThan(lecturas),
+      );
     });
   });
 
@@ -178,8 +225,12 @@ describe('SchedulePage · equipos formados', () => {
       fireEvent.click(screen.getByText('teams.undoConfirm.confirm'));
 
       await waitFor(() => expect(mockDeshacer).toHaveBeenCalledWith('comp-1'));
-      await waitFor(() => expect(customToast.success).toHaveBeenCalledWith('success.teamsUndone'));
-      await waitFor(() => expect(mockAgenda.mock.calls.length).toBeGreaterThan(lecturas));
+      await waitFor(() =>
+        expect(customToast.success).toHaveBeenCalledWith('success.teamsUndone'),
+      );
+      await waitFor(() =>
+        expect(mockAgenda.mock.calls.length).toBeGreaterThan(lecturas),
+      );
     });
 
     it('la confirmación dice qué se borra', async () => {
@@ -197,7 +248,9 @@ describe('SchedulePage · equipos formados', () => {
       fireEvent.click(screen.getByText('teams.undoConfirm.keep'));
 
       await waitFor(() =>
-        expect(screen.queryByText('teams.undoConfirm.body')).not.toBeInTheDocument()
+        expect(
+          screen.queryByText('teams.undoConfirm.body'),
+        ).not.toBeInTheDocument(),
       );
       expect(mockDeshacer).not.toHaveBeenCalled();
     });
@@ -210,8 +263,12 @@ describe('SchedulePage · equipos formados', () => {
 
       fireEvent.click(screen.getByText('teams.undoConfirm.confirm'));
 
-      await waitFor(() => expect(customToast.error).toHaveBeenCalledWith('errors.teamsLocked'));
-      await waitFor(() => expect(mockAgenda.mock.calls.length).toBeGreaterThan(lecturas));
+      await waitFor(() =>
+        expect(customToast.error).toHaveBeenCalledWith('errors.teamsLocked'),
+      );
+      await waitFor(() =>
+        expect(mockAgenda.mock.calls.length).toBeGreaterThan(lecturas),
+      );
     });
 
     it('si ya estaban deshechos (otra pestaña), sin error: se relee y ya (revisor)', async () => {
@@ -222,19 +279,25 @@ describe('SchedulePage · equipos formados', () => {
 
       fireEvent.click(screen.getByText('teams.undoConfirm.confirm'));
 
-      await waitFor(() => expect(mockAgenda.mock.calls.length).toBeGreaterThan(lecturas));
+      await waitFor(() =>
+        expect(mockAgenda.mock.calls.length).toBeGreaterThan(lecturas),
+      );
       expect(customToast.error).not.toHaveBeenCalled();
     });
 
     it('sin conexión, lo dice así y no con el genérico (revisor)', async () => {
-      mockDeshacer.mockRejectedValueOnce(Object.assign(new TypeError('Failed to fetch'), { sinConexion: true }));
+      mockDeshacer.mockRejectedValueOnce(
+        Object.assign(new TypeError('Failed to fetch'), { sinConexion: true }),
+      );
       pintar();
       await pulsarDeshacer();
 
       fireEvent.click(screen.getByText('teams.undoConfirm.confirm'));
 
       await waitFor(() =>
-        expect(customToast.error).toHaveBeenCalledWith('common:sinConexion.mensaje')
+        expect(customToast.error).toHaveBeenCalledWith(
+          'common:sinConexion.mensaje',
+        ),
       );
     });
 
@@ -242,14 +305,21 @@ describe('SchedulePage · equipos formados', () => {
       pintar();
       await pulsarDeshacer();
       let soltar;
-      mockAgenda.mockImplementation(() => new Promise((r) => { soltar = r; }));
+      mockAgenda.mockImplementation(
+        () =>
+          new Promise((r) => {
+            soltar = r;
+          }),
+      );
 
       fireEvent.click(screen.getByText('teams.undoConfirm.confirm'));
 
       await waitFor(() => expect(mockDeshacer).toHaveBeenCalled());
       await waitFor(() => expect(soltar).toBeDefined());
       fireEvent.click(screen.getByTestId('deshacer-equipos'));
-      expect(screen.queryByText('teams.undoConfirm.body')).not.toBeInTheDocument();
+      expect(
+        screen.queryByText('teams.undoConfirm.body'),
+      ).not.toBeInTheDocument();
       soltar({ days: [], rounds: [], teamAssignment: null });
     });
   });

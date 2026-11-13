@@ -25,23 +25,38 @@ export const ORTOFOTOS = {
   // La vigente del ICGC (2025) en su mixto, como Navarra: su XYZ era JPEG y
   // fuera de Cataluña rellenaba con otra imagen (CodeRabbit)
   'ES-CT': {
-    tiles: [wms('https://geoserveis.icgc.cat/servei/catalunya/orto-territorial/wms', 'ortofoto_color_vigent', 'image/vnd.jpeg-png')],
+    tiles: [
+      wms(
+        'https://geoserveis.icgc.cat/servei/catalunya/orto-territorial/wms',
+        'ortofoto_color_vigent',
+        'image/vnd.jpeg-png',
+      ),
+    ],
   },
   // La caché de ArcGIS va con la fila antes que la columna
   'ES-PV': {
-    tiles: ['https://www.geo.euskadi.eus/geoeuskadi/rest/services/U11/WMTS_ORTO/MapServer/tile/{z}/{y}/{x}'],
+    tiles: [
+      'https://www.geo.euskadi.eus/geoeuskadi/rest/services/U11/WMTS_ORTO/MapServer/tile/{z}/{y}/{x}',
+    ],
   },
   // El mixto de IDENA: JPEG dentro (14 KB), PNG transparente fuera; en PNG
   // pesaba ocho veces más
   'ES-NC': {
-    tiles: [wms('https://idena.navarra.es/ogc/ows', 'ortofoto_maxima_actualidad', 'image/vnd.jpeg-png')],
+    tiles: [
+      wms(
+        'https://idena.navarra.es/ogc/ows',
+        'ortofoto_maxima_actualidad',
+        'image/vnd.jpeg-png',
+      ),
+    ],
   },
 };
 
 const CAPA = 'ortofoto';
 
 /** La clave de quién firma la ortofoto de la comunidad (su licencia lo pide), o null. */
-export const atribucionDeLaOrtofoto = (codigo) => (codigo && ORTOFOTOS[codigo] ? `mapa.ortofoto.${codigo}` : null);
+export const atribucionDeLaOrtofoto = (codigo) =>
+  codigo && ORTOFOTOS[codigo] ? `mapa.ortofoto.${codigo}` : null;
 
 // La que tiene puesta cada mapa: MapLibre rellena las teselas de la fuente un
 // fotograma después, así que compararlas rehacía la recién puesta (/code-review)
@@ -59,9 +74,18 @@ export const ponerOrtofoto = (mapa, codigo) => {
     if (mapa.getLayer(CAPA)) mapa.removeLayer(CAPA);
     if (mapa.getSource(CAPA)) mapa.removeSource(CAPA);
     if (!ortofoto) return;
-    mapa.addSource(CAPA, { type: 'raster', tiles: ortofoto.tiles, tileSize: 256, maxzoom: 19, bounds: limitesDeLaComunidad(codigo) });
+    mapa.addSource(CAPA, {
+      type: 'raster',
+      tiles: ortofoto.tiles,
+      tileSize: 256,
+      maxzoom: 19,
+      bounds: limitesDeLaComunidad(codigo),
+    });
     const capas = mapa.getStyle().layers.map((c) => c.id);
-    mapa.addLayer({ id: CAPA, type: 'raster', source: CAPA }, capas[capas.indexOf('pnoa') + 1]);
+    mapa.addLayer(
+      { id: CAPA, type: 'raster', source: CAPA },
+      capas[capas.indexOf('pnoa') + 1],
+    );
     puestas.set(mapa, codigo);
   } catch (error) {
     captureError(error, { tags: { modulo: 'mapa-de-hoyos' } });

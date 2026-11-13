@@ -18,7 +18,10 @@ const Header = () => {
   // Close mobile menu when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (mobileMenuRef.current && !mobileMenuRef.current.contains(event.target)) {
+      if (
+        mobileMenuRef.current &&
+        !mobileMenuRef.current.contains(event.target)
+      ) {
         setIsMobileMenuOpen(false);
       }
     };
@@ -35,18 +38,30 @@ const Header = () => {
   return (
     <header className="flex items-center justify-between whitespace-nowrap border-b border-solid border-b-gray-200 px-4 md:px-10 pb-3 pt-[calc(0.75rem+env(safe-area-inset-top))] overflow-visible">
       {isLandingPage ? (
-        <div className="flex items-center gap-3 text-gray-900" data-testid="header-logo-static">
+        <div
+          className="flex items-center gap-3 text-gray-900"
+          data-testid="header-logo-static"
+        >
           <div className="h-10 w-10 md:h-12 md:w-12 flex-shrink-0 flex items-center justify-center overflow-visible">
-            <BrandMark className="block h-full w-auto  transform -translate-y-[2px] md:-translate-y-[2px] scale-105 md:scale-110" title={t('brandMarkAlt')} />
+            <BrandMark
+              className="block h-full w-auto  transform -translate-y-[2px] md:-translate-y-[2px] scale-105 md:scale-110"
+              title={t('brandMarkAlt')}
+            />
           </div>
           <h2 className="hidden sm:block text-gray-900 text-lg md:text-xl font-bold leading-tight tracking-tight font-poppins">
             RyderCupFriends
           </h2>
         </div>
       ) : (
-        <Link to="/" className="flex items-center gap-3 text-gray-900 hover:opacity-80 transition-opacity">
+        <Link
+          to="/"
+          className="flex items-center gap-3 text-gray-900 hover:opacity-80 transition-opacity"
+        >
           <div className="h-10 w-10 md:h-12 md:w-12 flex-shrink-0 flex items-center justify-center overflow-visible">
-            <BrandMark className="block h-full w-auto  transform -translate-y-[2px] md:-translate-y-[2px] scale-105 md:scale-110" title={t('brandMarkAlt')} />
+            <BrandMark
+              className="block h-full w-auto  transform -translate-y-[2px] md:-translate-y-[2px] scale-105 md:scale-110"
+              title={t('brandMarkAlt')}
+            />
           </div>
           <h2 className="hidden sm:block text-gray-900 text-lg md:text-xl font-bold leading-tight tracking-tight font-poppins">
             RyderCupFriends
@@ -56,15 +71,27 @@ const Header = () => {
 
       {/* Desktop Menu — desde lg y no desde md: completa pide 928 px en español, y
           entre medias la página se desplazaba en horizontal (FE #689) */}
-      <div data-testid="cabecera-completa" className="hidden lg:flex flex-1 justify-end gap-8">
+      <div
+        data-testid="cabecera-completa"
+        className="hidden lg:flex flex-1 justify-end gap-8"
+      >
         <div className="flex items-center gap-9">
-          <a className="text-gray-900 text-sm font-medium leading-normal" href="/#features">
+          <a
+            className="text-gray-900 text-sm font-medium leading-normal"
+            href="/#features"
+          >
             {t('header.features')}
           </a>
-          <Link className="text-gray-900 text-sm font-medium leading-normal" to="/pricing">
+          <Link
+            className="text-gray-900 text-sm font-medium leading-normal"
+            to="/pricing"
+          >
             {t('header.pricing')}
           </Link>
-          <Link className="text-gray-900 text-sm font-medium leading-normal" to="/contact">
+          <Link
+            className="text-gray-900 text-sm font-medium leading-normal"
+            to="/contact"
+          >
             {t('header.support')}
           </Link>
         </div>
@@ -88,7 +115,10 @@ const Header = () => {
 
       {/* Mobile: the two actions the site exists for stay visible (#314). Hasta lg,
           con el menú de al lado (FE #689) */}
-      <div data-testid="acciones-compactas" className="lg:hidden flex items-center gap-2 ml-auto mr-2">
+      <div
+        data-testid="acciones-compactas"
+        className="lg:hidden flex items-center gap-2 ml-auto mr-2"
+      >
         <Link to="/register">
           <button className="flex items-center justify-center rounded-lg h-10 px-3 bg-primary text-white text-sm font-bold tracking-wide active:bg-primary-600 transition-colors">
             {t('header.register')}
@@ -127,7 +157,10 @@ const Header = () => {
 
         {/* Mobile Dropdown Menu */}
         {isMobileMenuOpen && (
-          <div data-testid="mobile-menu" className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
+          <div
+            data-testid="mobile-menu"
+            className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50"
+          >
             <a
               href="/#features"
               onClick={() => setIsMobileMenuOpen(false)}
@@ -155,7 +188,6 @@ const Header = () => {
             <div className="px-4 py-2">
               <LanguageSwitcher />
             </div>
-
           </div>
         )}
       </div>

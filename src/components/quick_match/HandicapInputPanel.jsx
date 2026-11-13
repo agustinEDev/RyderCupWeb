@@ -1,6 +1,9 @@
 import { useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { MAX_HANDICAP, MIN_HANDICAP } from '../../domain/services/handicapRange';
+import {
+  MAX_HANDICAP,
+  MIN_HANDICAP,
+} from '../../domain/services/handicapRange';
 import { useFocoRetenido } from '../../hooks/useFocoRetenido';
 
 const KEYPAD_DIGITS = [7, 8, 9, 4, 5, 6, 1, 2, 3];
@@ -17,9 +20,12 @@ const HandicapInputPanel = ({ value, onConfirm, onClose, label }) => {
   const [input, setInput] = useState(value != null ? String(value) : '');
 
   const isEmpty = input === '';
-  const parsed = isEmpty || input === '-' || input.endsWith('.') ? null : Number(input);
-  const isOutOfRange = parsed !== null && (parsed < MIN_HANDICAP || parsed > MAX_HANDICAP);
-  const canConfirm = isEmpty || (parsed !== null && !Number.isNaN(parsed) && !isOutOfRange);
+  const parsed =
+    isEmpty || input === '-' || input.endsWith('.') ? null : Number(input);
+  const isOutOfRange =
+    parsed !== null && (parsed < MIN_HANDICAP || parsed > MAX_HANDICAP);
+  const canConfirm =
+    isEmpty || (parsed !== null && !Number.isNaN(parsed) && !isOutOfRange);
 
   const appendDigit = (digit) => {
     setInput((prev) => {
@@ -71,7 +77,9 @@ const HandicapInputPanel = ({ value, onConfirm, onClose, label }) => {
           {/* `truncate` no recorta nada sin `min-w-0`: el ancho minimo del hijo
               de flex es el de su contenido, asi que un nombre largo empujaria
               la cruz de cerrar fuera del panel en vez de acortarse */}
-          <span className="min-w-0 truncate text-sm font-semibold text-gray-600">{label}</span>
+          <span className="min-w-0 truncate text-sm font-semibold text-gray-600">
+            {label}
+          </span>
           <button
             type="button"
             onClick={onClose}
@@ -85,11 +93,15 @@ const HandicapInputPanel = ({ value, onConfirm, onClose, label }) => {
         <div
           data-testid="handicap-panel-display"
           className={`mb-1 h-14 flex items-center justify-center rounded-xl border text-2xl font-bold ${
-            isOutOfRange ? 'border-red-300 bg-red-50 text-red-600' : 'border-gray-200 text-gray-900'
+            isOutOfRange
+              ? 'border-red-300 bg-red-50 text-red-600'
+              : 'border-gray-200 text-gray-900'
           }`}
         >
           {isEmpty ? (
-            <span className="text-base font-normal text-gray-400">{t('create.handicapPanel.placeholder')}</span>
+            <span className="text-base font-normal text-gray-400">
+              {t('create.handicapPanel.placeholder')}
+            </span>
           ) : (
             input
           )}

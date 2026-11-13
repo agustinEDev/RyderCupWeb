@@ -67,7 +67,9 @@ class ApiGolfCourseRepository extends IGolfCourseRepository {
     // `total` son los campos que cumplen el filtro, no los devueltos: es lo que
     // permite saber si hay más de los que caben en la página
     return {
-      courses: data.golf_courses.map(courseData => new GolfCourse(courseData)),
+      courses: data.golf_courses.map(
+        (courseData) => new GolfCourse(courseData),
+      ),
       total: data.total ?? data.golf_courses.length,
     };
   }
@@ -87,9 +89,12 @@ class ApiGolfCourseRepository extends IGolfCourseRepository {
    */
   async getHoleMap(id) {
     try {
-      return HoleMapMapper.toDomain(await apiRequest(`/api/v1/golf-courses/${segmento(id)}/hole-map`));
+      return HoleMapMapper.toDomain(
+        await apiRequest(`/api/v1/golf-courses/${segmento(id)}/hole-map`),
+      );
     } catch (error) {
-      if (error?.status === 404 && error?.errorCode === 'HOLE_MAP_NOT_FOUND') return null;
+      if (error?.status === 404 && error?.errorCode === 'HOLE_MAP_NOT_FOUND')
+        return null;
       throw error;
     }
   }
@@ -100,42 +105,65 @@ class ApiGolfCourseRepository extends IGolfCourseRepository {
    * mala cobertura la petición no falla, se queda colgada
    */
   async getHoleSamples(id) {
-    return HoleSampleMapper.toDomain(await apiRequest(`/api/v1/golf-courses/${segmento(id)}/hole-map/samples`, { topeMs: TOPE_DE_ANOTAR_MS }));
+    return HoleSampleMapper.toDomain(
+      await apiRequest(
+        `/api/v1/golf-courses/${segmento(id)}/hole-map/samples`,
+        { topeMs: TOPE_DE_ANOTAR_MS },
+      ),
+    );
   }
 
   /** @override */
   async listHoleReviews() {
-    return HoleReviewMapper.listToDomain(await apiRequest('/api/v1/golf-courses/admin/hole-reviews'));
+    return HoleReviewMapper.listToDomain(
+      await apiRequest('/api/v1/golf-courses/admin/hole-reviews'),
+    );
   }
 
   /** @override */
   async getHoleReview(id) {
-    return HoleReviewMapper.reviewToDomain(await apiRequest(`/api/v1/golf-courses/admin/${segmento(id)}/hole-reviews`));
+    return HoleReviewMapper.reviewToDomain(
+      await apiRequest(
+        `/api/v1/golf-courses/admin/${segmento(id)}/hole-reviews`,
+      ),
+    );
   }
 
   /** @override */
   async saveHoleLine(id, holeNumber, linea) {
-    await apiRequest(`/api/v1/golf-courses/admin/${segmento(id)}/hole-lines/${segmento(holeNumber)}`, {
-      method: 'PUT',
-      body: JSON.stringify(HoleReviewMapper.lineToApi(linea)),
-    });
+    await apiRequest(
+      `/api/v1/golf-courses/admin/${segmento(id)}/hole-lines/${segmento(holeNumber)}`,
+      {
+        method: 'PUT',
+        body: JSON.stringify(HoleReviewMapper.lineToApi(linea)),
+      },
+    );
   }
 
   /** @override */
   async reopenHole(id, holeNumber) {
-    await apiRequest(`/api/v1/golf-courses/admin/${segmento(id)}/hole-lines/${segmento(holeNumber)}`, { method: 'DELETE' });
+    await apiRequest(
+      `/api/v1/golf-courses/admin/${segmento(id)}/hole-lines/${segmento(holeNumber)}`,
+      { method: 'DELETE' },
+    );
   }
 
   /** @override */
   async deleteHoleSample(id, sampleId) {
-    await apiRequest(`/api/v1/golf-courses/admin/${segmento(id)}/hole-samples/${segmento(sampleId)}`, { method: 'DELETE' });
+    await apiRequest(
+      `/api/v1/golf-courses/admin/${segmento(id)}/hole-samples/${segmento(sampleId)}`,
+      { method: 'DELETE' },
+    );
   }
 
   /**
    * @override
    */
   async discardHoleReport(id, reportId) {
-    await apiRequest(`/api/v1/golf-courses/admin/${segmento(id)}/hole-reports/${segmento(reportId)}`, { method: 'DELETE' });
+    await apiRequest(
+      `/api/v1/golf-courses/admin/${segmento(id)}/hole-reports/${segmento(reportId)}`,
+      { method: 'DELETE' },
+    );
   }
 
   /**
@@ -146,11 +174,14 @@ class ApiGolfCourseRepository extends IGolfCourseRepository {
    */
   async sendHoleSample(id, holeNumber, muestra) {
     try {
-      await apiRequest(`/api/v1/golf-courses/${segmento(id)}/hole-map/samples/${segmento(holeNumber)}`, {
-        method: 'POST',
-        body: JSON.stringify(HoleSampleMapper.toApi(muestra)),
-        topeMs: TOPE_DE_ANOTAR_MS,
-      });
+      await apiRequest(
+        `/api/v1/golf-courses/${segmento(id)}/hole-map/samples/${segmento(holeNumber)}`,
+        {
+          method: 'POST',
+          body: JSON.stringify(HoleSampleMapper.toApi(muestra)),
+          topeMs: TOPE_DE_ANOTAR_MS,
+        },
+      );
     } catch (error) {
       // Un 2xx con un cuerpo que no es JSON (un proxy, un portal): llegó
       if (error instanceof SyntaxError) return;
@@ -163,11 +194,14 @@ class ApiGolfCourseRepository extends IGolfCourseRepository {
    */
   async sendHoleReport(id, holeNumber, reporte) {
     try {
-      await apiRequest(`/api/v1/golf-courses/${segmento(id)}/hole-map/reports/${segmento(holeNumber)}`, {
-        method: 'POST',
-        body: JSON.stringify(HoleSampleMapper.reportToApi(reporte)),
-        topeMs: TOPE_DE_ANOTAR_MS,
-      });
+      await apiRequest(
+        `/api/v1/golf-courses/${segmento(id)}/hole-map/reports/${segmento(holeNumber)}`,
+        {
+          method: 'POST',
+          body: JSON.stringify(HoleSampleMapper.reportToApi(reporte)),
+          topeMs: TOPE_DE_ANOTAR_MS,
+        },
+      );
     } catch (error) {
       // Un 2xx con un cuerpo que no es JSON (un proxy, un portal): llegó
       if (error instanceof SyntaxError) return;
@@ -218,13 +252,17 @@ class ApiGolfCourseRepository extends IGolfCourseRepository {
     if (!data.golf_course) {
       return {
         golfCourse: null,
-        pendingUpdate: data.pending_update ? new GolfCourse(data.pending_update) : null,
+        pendingUpdate: data.pending_update
+          ? new GolfCourse(data.pending_update)
+          : null,
       };
     }
 
     return {
       golfCourse: new GolfCourse(data.golf_course),
-      pendingUpdate: data.pending_update ? new GolfCourse(data.pending_update) : null,
+      pendingUpdate: data.pending_update
+        ? new GolfCourse(data.pending_update)
+        : null,
     };
   }
 
@@ -232,9 +270,12 @@ class ApiGolfCourseRepository extends IGolfCourseRepository {
    * @override
    */
   async approve(id) {
-    const data = await apiRequest(`/api/v1/golf-courses/admin/${segmento(id)}/approve`, {
-      method: 'PUT',
-    });
+    const data = await apiRequest(
+      `/api/v1/golf-courses/admin/${segmento(id)}/approve`,
+      {
+        method: 'PUT',
+      },
+    );
 
     return new GolfCourse(data.golf_course || data);
   }
@@ -243,9 +284,12 @@ class ApiGolfCourseRepository extends IGolfCourseRepository {
    * @override
    */
   async reject(id, reason) {
-    const data = await apiRequest(`/api/v1/golf-courses/admin/${segmento(id)}/reject?reason=${encodeURIComponent(reason)}`, {
-      method: 'PUT',
-    });
+    const data = await apiRequest(
+      `/api/v1/golf-courses/admin/${segmento(id)}/reject?reason=${encodeURIComponent(reason)}`,
+      {
+        method: 'PUT',
+      },
+    );
 
     return new GolfCourse(data.golf_course || data);
   }
@@ -254,9 +298,12 @@ class ApiGolfCourseRepository extends IGolfCourseRepository {
    * @override
    */
   async approveUpdate(cloneId) {
-    const data = await apiRequest(`/api/v1/golf-courses/admin/${segmento(cloneId)}/approve-update`, {
-      method: 'PUT',
-    });
+    const data = await apiRequest(
+      `/api/v1/golf-courses/admin/${segmento(cloneId)}/approve-update`,
+      {
+        method: 'PUT',
+      },
+    );
 
     return new GolfCourse(data.updated_golf_course || data.golf_course || data);
   }
@@ -265,11 +312,16 @@ class ApiGolfCourseRepository extends IGolfCourseRepository {
    * @override
    */
   async rejectUpdate(cloneId) {
-    const data = await apiRequest(`/api/v1/golf-courses/admin/${segmento(cloneId)}/reject-update`, {
-      method: 'PUT',
-    });
+    const data = await apiRequest(
+      `/api/v1/golf-courses/admin/${segmento(cloneId)}/reject-update`,
+      {
+        method: 'PUT',
+      },
+    );
 
-    return new GolfCourse(data.original_golf_course || data.golf_course || data);
+    return new GolfCourse(
+      data.original_golf_course || data.golf_course || data,
+    );
   }
 
   /**
@@ -277,7 +329,7 @@ class ApiGolfCourseRepository extends IGolfCourseRepository {
    */
   async listPending() {
     const data = await apiRequest('/api/v1/golf-courses/admin/pending');
-    return data.golf_courses.map(courseData => new GolfCourse(courseData));
+    return data.golf_courses.map((courseData) => new GolfCourse(courseData));
   }
 
   /**
@@ -289,14 +341,14 @@ class ApiGolfCourseRepository extends IGolfCourseRepository {
       name: golfCourseData.name,
       country_code: golfCourseData.countryCode || golfCourseData.country_code,
       course_type: golfCourseData.courseType || golfCourseData.course_type,
-      tees: (golfCourseData.tees || []).map(tee => ({
+      tees: (golfCourseData.tees || []).map((tee) => ({
         color: tee.color || tee.color,
         identifier: tee.identifier,
         course_rating: tee.courseRating || tee.course_rating,
         slope_rating: tee.slopeRating || tee.slope_rating,
         tee_gender: tee.teeGender ?? tee.tee_gender ?? tee.gender ?? null,
       })),
-      holes: (golfCourseData.holes || []).map(hole => ({
+      holes: (golfCourseData.holes || []).map((hole) => ({
         hole_number: hole.holeNumber || hole.hole_number,
         par: hole.par,
         stroke_index: hole.strokeIndex || hole.stroke_index,

@@ -8,9 +8,9 @@ import { rutaDeVuelta } from './auth';
  */
 describe('rutaDeVuelta', () => {
   it('conserva la búsqueda de la ruta de la que venía', () => {
-    expect(rutaDeVuelta({ pathname: '/confirm-email-change', search: '?token=abc' })).toBe(
-      '/confirm-email-change?token=abc'
-    );
+    expect(
+      rutaDeVuelta({ pathname: '/confirm-email-change', search: '?token=abc' }),
+    ).toBe('/confirm-email-change?token=abc');
   });
 
   it('sin búsqueda, la ruta tal cual', () => {
@@ -19,11 +19,15 @@ describe('rutaDeVuelta', () => {
 
   it('sin de dónde venía, o desde el login, al panel', () => {
     expect(rutaDeVuelta(undefined)).toBe('/dashboard');
-    expect(rutaDeVuelta({ pathname: '/login', search: '?x=1' })).toBe('/dashboard');
+    expect(rutaDeVuelta({ pathname: '/login', search: '?x=1' })).toBe(
+      '/dashboard',
+    );
   });
 
   it('una ruta de otro sitio no sale de la app', () => {
-    expect(rutaDeVuelta({ pathname: '//evil.example', search: '' })).toBe('/dashboard');
+    expect(rutaDeVuelta({ pathname: '//evil.example', search: '' })).toBe(
+      '/dashboard',
+    );
   });
 });
 
@@ -38,7 +42,9 @@ describe('rutaDeVuelta · solo rutas propias (revisión del front)', () => {
   });
 
   it('conserva también el hash', () => {
-    expect(rutaDeVuelta({ pathname: '/stats', search: '?a=1', hash: '#x' })).toBe('/stats?a=1#x');
+    expect(
+      rutaDeVuelta({ pathname: '/stats', search: '?a=1', hash: '#x' }),
+    ).toBe('/stats?a=1#x');
   });
 });
 
@@ -50,18 +56,29 @@ describe('rutaDeVuelta · solo rutas propias (revisión del front)', () => {
 describe('rutaDeVuelta · confirmar el correo sin token', () => {
   it.each([
     ['sin token', { pathname: '/confirm-email-change', search: '' }],
-    ['con el token vacío', { pathname: '/confirm-email-change', search: '?token=' }],
-    ['con otra búsqueda y sin token', { pathname: '/confirm-email-change', search: '?origen=correo' }],
+    [
+      'con el token vacío',
+      { pathname: '/confirm-email-change', search: '?token=' },
+    ],
+    [
+      'con otra búsqueda y sin token',
+      { pathname: '/confirm-email-change', search: '?origen=correo' },
+    ],
     ['con la barra final', { pathname: '/confirm-email-change/', search: '' }],
-    ['en otra capitalización', { pathname: '/Confirm-Email-Change', search: '' }],
+    [
+      'en otra capitalización',
+      { pathname: '/Confirm-Email-Change', search: '' },
+    ],
   ])('%s, al panel', (_caso, from) => {
     expect(rutaDeVuelta(from)).toBe('/dashboard');
   });
 
   it('con su token, a la página', () => {
-    expect(rutaDeVuelta({ pathname: '/confirm-email-change/', search: '?token=abc' })).toBe(
-      '/confirm-email-change/?token=abc'
-    );
+    expect(
+      rutaDeVuelta({
+        pathname: '/confirm-email-change/',
+        search: '?token=abc',
+      }),
+    ).toBe('/confirm-email-change/?token=abc');
   });
 });
-

@@ -12,7 +12,13 @@
  * para siempre; y mirando solo al titular de la tarjeta, una bola anotada a
  * nombre del compañero se veía en su casilla pero no aquí.
  */
-const QuickMatchHoleSelector = ({ currentHole, onSelect, holeScores = [], expectedScoreIdGroups = [], totalHoles = 18 }) => {
+const QuickMatchHoleSelector = ({
+  currentHole,
+  onSelect,
+  holeScores = [],
+  expectedScoreIdGroups = [],
+  totalHoles = 18,
+}) => {
   const getHoleStatus = (holeNumber) => {
     if (expectedScoreIdGroups.length === 0) return 'empty';
     const scoredCount = expectedScoreIdGroups.filter((scoreIds) =>
@@ -20,7 +26,10 @@ const QuickMatchHoleSelector = ({ currentHole, onSelect, holeScores = [], expect
       // cerrado, no uno pendiente. Exigiendo número, un hoyo recogido dejaba la
       // casilla en amarillo para siempre y la partida sin poder darse por
       // terminada de un vistazo.
-      holeScores.some((hs) => hs.holeNumber === holeNumber && scoreIds.includes(hs.participantId))
+      holeScores.some(
+        (hs) =>
+          hs.holeNumber === holeNumber && scoreIds.includes(hs.participantId),
+      ),
     ).length;
     if (scoredCount === 0) return 'empty';
     if (scoredCount === expectedScoreIdGroups.length) return 'complete';
@@ -34,7 +43,10 @@ const QuickMatchHoleSelector = ({ currentHole, onSelect, holeScores = [], expect
   };
 
   return (
-    <div data-testid="quick-match-hole-selector" className="grid grid-cols-9 gap-1">
+    <div
+      data-testid="quick-match-hole-selector"
+      className="grid grid-cols-9 gap-1"
+    >
       {Array.from({ length: totalHoles }, (_, i) => i + 1).map((hole) => (
         <button
           type="button"

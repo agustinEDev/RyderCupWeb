@@ -18,7 +18,14 @@ const MIN_SLOPE_RATING = 40;
 const MAX_SLOPE_RATING = 160;
 
 class Tee {
-  constructor({ color, identifier, courseRating, slopeRating, gender, holes = [] }) {
+  constructor({
+    color,
+    identifier,
+    courseRating,
+    slopeRating,
+    gender,
+    holes = [],
+  }) {
     this.color = color;
     this.identifier = identifier?.trim() || null;
     this.courseRating = courseRating;
@@ -44,9 +51,12 @@ class Tee {
     if (!Number.isFinite(this.courseRating)) {
       throw new Error('Course rating must be a finite number');
     }
-    if (this.courseRating < MIN_COURSE_RATING || this.courseRating > MAX_COURSE_RATING) {
+    if (
+      this.courseRating < MIN_COURSE_RATING ||
+      this.courseRating > MAX_COURSE_RATING
+    ) {
       throw new Error(
-        `Course rating must be between ${MIN_COURSE_RATING} and ${MAX_COURSE_RATING}`
+        `Course rating must be between ${MIN_COURSE_RATING} and ${MAX_COURSE_RATING}`,
       );
     }
 
@@ -54,8 +64,13 @@ class Tee {
     if (!Number.isFinite(this.slopeRating)) {
       throw new Error('Slope rating must be a finite number');
     }
-    if (this.slopeRating < MIN_SLOPE_RATING || this.slopeRating > MAX_SLOPE_RATING) {
-      throw new Error(`Slope rating must be between ${MIN_SLOPE_RATING} and ${MAX_SLOPE_RATING}`);
+    if (
+      this.slopeRating < MIN_SLOPE_RATING ||
+      this.slopeRating > MAX_SLOPE_RATING
+    ) {
+      throw new Error(
+        `Slope rating must be between ${MIN_SLOPE_RATING} and ${MAX_SLOPE_RATING}`,
+      );
     }
 
     // Gender is optional (not sent in creation payload, but returned by backend)

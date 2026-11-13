@@ -86,10 +86,7 @@ const ConfirmModal = ({
       >
         {/* Header */}
         <div className="px-6 pt-6 pb-4">
-          <h2
-            id="modal-title"
-            className="text-xl font-semibold text-gray-900"
-          >
+          <h2 id="modal-title" className="text-xl font-semibold text-gray-900">
             {title}
           </h2>
         </div>
@@ -123,9 +120,10 @@ const ConfirmModal = ({
             className={`
               w-full sm:w-auto px-4 py-2 rounded-lg text-sm font-medium transition-colors
               disabled:opacity-50 disabled:cursor-not-allowed
-              ${isDestructive
-                ? 'bg-red-600 hover:bg-red-700 text-white'
-                : 'bg-primary hover:bg-primary/90 text-white'
+              ${
+                isDestructive
+                  ? 'bg-red-600 hover:bg-red-700 text-white'
+                  : 'bg-primary hover:bg-primary/90 text-white'
               }
             `}
           >

@@ -35,10 +35,12 @@ describe('TarjetaDeLoProximo · idioma mal escrito', () => {
           }}
           puedeAnotar={false}
         />
-      </MemoryRouter>
+      </MemoryRouter>,
     );
 
-    expect(screen.getByTestId('con-quien')).toHaveTextContent('upcomingMatches.with {"companeros":"Bea, Cris"}');
+    expect(screen.getByTestId('con-quien')).toHaveTextContent(
+      'upcomingMatches.with {"companeros":"Bea, Cris"}',
+    );
     expect(screen.getByTestId('cuando')).toHaveTextContent(/12/);
   });
 });

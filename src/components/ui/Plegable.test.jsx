@@ -19,7 +19,9 @@ describe('Plegable', () => {
 
     const plegable = screen.getByText('contenido').closest('details');
     expect(plegable.open).toBe(false);
-    expect(screen.getByRole('heading', { name: 'Jugadores' }).closest('summary')).not.toBeNull();
+    expect(
+      screen.getByRole('heading', { name: 'Jugadores' }).closest('summary'),
+    ).not.toBeNull();
   });
 
   it('F8: si luego cambia lo pedido (empieza el torneo con la ficha abierta), no se cierra lo que estaba abierto', () => {

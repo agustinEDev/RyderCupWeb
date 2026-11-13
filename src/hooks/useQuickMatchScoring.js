@@ -8,7 +8,10 @@ import { useCierreDePartidaRapida } from './useCierreDePartidaRapida';
 import { useVaciadoDePartidaRapida } from './useVaciadoDePartidaRapida';
 import * as golpesPerdidos from '../utils/golpesPerdidos';
 import { apartaLaRechazada } from '../services/vaciaAnotaciones';
-import { conLoGuardadoEncima, sobraTrasEnviar } from '../utils/colaDePartidaRapida';
+import {
+  conLoGuardadoEncima,
+  sobraTrasEnviar,
+} from '../utils/colaDePartidaRapida';
 import { errorDeGuardado } from '../utils/erroresDeAnotacion';
 import { seGuardaParaDespues } from '../utils/politicaDeLaCola';
 import * as offlineQueue from '../utils/scoringOfflineQueue';
@@ -43,7 +46,7 @@ export const useQuickMatchScoring = (quickMatchId, currentUserId) => {
   // la app sin cobertura el aviso no saldría hasta el primer vaciado, que sin
   // cobertura no llega, y los golpes del jugador parecerían no existir
   const [pendientes, setPendientes] = useState(() =>
-    quickMatchId ? offlineQueue.size(quickMatchId, currentUserId) : 0
+    quickMatchId ? offlineQueue.size(quickMatchId, currentUserId) : 0,
   );
   // Hoyos que el servidor rechazó para siempre, para poder decir cuáles fueron
   const [perdidos, setPerdidos] = useState([]);
@@ -103,7 +106,8 @@ export const useQuickMatchScoring = (quickMatchId, currentUserId) => {
 
   // Quién soy yo en esta partida. Arriba de la lista porque de ahí sale si lo
   // que hay en el servidor lo anoté yo
-  const myParticipant = quickMatch?.participants?.find((p) => p.userId === currentUserId) ?? null;
+  const myParticipant =
+    quickMatch?.participants?.find((p) => p.userId === currentUserId) ?? null;
 
   // La tarjeta, el selector y la clasificación salen todos de esta lista, y la
   // clasificación se calcula aquí mismo: sumándole la cola, los tres ven el
@@ -115,19 +119,26 @@ export const useQuickMatchScoring = (quickMatchId, currentUserId) => {
     if (!quickMatchId) return delServidor;
 
     const guardados = offlineQueue.getByMatch(quickMatchId, currentUserId);
-    return conLoGuardadoEncima(delServidor, guardados, quickMatch, myParticipant?.participantId);
+    return conLoGuardadoEncima(
+      delServidor,
+      guardados,
+      quickMatch,
+      myParticipant?.participantId,
+    );
   })();
 
   const isCreator = quickMatch?.creatorId === currentUserId;
-  const isScorer = myParticipant ? quickMatch.scorerIds.includes(myParticipant.participantId) : false;
+  const isScorer = myParticipant
+    ? quickMatch.scorerIds.includes(myParticipant.participantId)
+    : false;
 
   const myAssignment = quickMatch?.scoringAssignments?.find(
-    (sa) => sa.scorerParticipantId === myParticipant?.participantId
+    (sa) => sa.scorerParticipantId === myParticipant?.participantId,
   );
   // The backend's assignment for a scorer already includes themselves in
   // covered_participant_ids (self-coverage), plus any delegated non-scorers.
   const coveredParticipantIds = isScorer
-    ? myAssignment?.coveredParticipantIds ?? [myParticipant.participantId]
+    ? (myAssignment?.coveredParticipantIds ?? [myParticipant.participantId])
     : [];
 
   const totalHoles = holes.length || 18;
@@ -154,7 +165,10 @@ export const useQuickMatchScoring = (quickMatchId, currentUserId) => {
     // este todavía se ve la anterior. Sin la guarda, a la nueva se le ponía
     // el nombre de la vieja, y como no se pisa, para siempre
     const esDeEsta = Boolean(quickMatchId) && quickMatch?.id === quickMatchId;
-    laPartidaRef.current = { matchName: esDeEsta ? quickMatch?.name ?? null : null, matchNumber: null };
+    laPartidaRef.current = {
+      matchName: esDeEsta ? (quickMatch?.name ?? null) : null,
+      matchNumber: null,
+    };
     // Y se le pone nombre a lo que se guardó sin él: en un arranque en frío
     // sin cobertura la partida no llega nunca, así que todo lo anotado quedó
     // sin nombre y el panel enseñaba «una partida anterior» —dos avisos
@@ -185,7 +199,10 @@ export const useQuickMatchScoring = (quickMatchId, currentUserId) => {
       // decía «1 golpe guardado» justo después de un envío que sí llegó
       const guardadas = offlineQueue
         .getByMatch(quickMatchId, currentUserId)
-        .filter((e) => e.holeNumber === holeNumber && e.participantId === participantId)
+        .filter(
+          (e) =>
+            e.holeNumber === holeNumber && e.participantId === participantId,
+        )
         // Y solo lo que ya está superado por lo que se acaba de enviar, cuando
         // se dice qué se envió (`sobraTrasEnviar`). Desde que la pantalla no se
         // bloquea mientras el golpe va de camino (FE #564), el jugador puede
@@ -194,10 +211,15 @@ export const useQuickMatchScoring = (quickMatchId, currentUserId) => {
         // que el vaciado pisara con ello lo que acaba de entrar
         .filter((e) => sobraTrasEnviar(e, loEnviado));
       for (const guardada of guardadas) {
-        offlineQueue.remove(quickMatchId, holeNumber, participantId, guardada.userId ?? null);
+        offlineQueue.remove(
+          quickMatchId,
+          holeNumber,
+          participantId,
+          guardada.userId ?? null,
+        );
       }
     },
-    [quickMatchId, currentUserId]
+    [quickMatchId, currentUserId],
   );
 
   /**
@@ -215,7 +237,10 @@ export const useQuickMatchScoring = (quickMatchId, currentUserId) => {
         // reencolaba a nombre de quien estuviera dentro
         const entrada = offlineQueue
           .getByMatch(quickMatchId, currentUserId)
-          .find((e) => e.holeNumber === holeNumber && e.participantId === participantId);
+          .find(
+            (e) =>
+              e.holeNumber === holeNumber && e.participantId === participantId,
+          );
         // Si ya no está —el vaciado la mandó, o el móvil no pudo guardarla— no
         // hay nada que decidir, pero el aviso tiene que cerrarse igual: es un
         // velo a pantalla completa sin salida, y quedarse debajo deja la
@@ -227,7 +252,7 @@ export const useQuickMatchScoring = (quickMatchId, currentUserId) => {
             { ...entrada.scoreData, decidido: true },
             participantId,
             entrada.userId ?? currentUserId,
-            laPartidaRef.current
+            laPartidaRef.current,
           );
         }
       } else if (cual === 'elQueHay') {
@@ -239,11 +264,14 @@ export const useQuickMatchScoring = (quickMatchId, currentUserId) => {
       }
 
       setDiscrepancias((antes) =>
-        antes.filter((d) => !(d.holeNumber === holeNumber && d.participantId === participantId))
+        antes.filter(
+          (d) =>
+            !(d.holeNumber === holeNumber && d.participantId === participantId),
+        ),
       );
       setPendientes(offlineQueue.size(quickMatchId, currentUserId));
     },
-    [quickMatchId, currentUserId, borraLoGuardadoDe]
+    [quickMatchId, currentUserId, borraLoGuardadoDe],
   );
 
   const submitScore = useCallback(
@@ -251,7 +279,11 @@ export const useQuickMatchScoring = (quickMatchId, currentUserId) => {
       if (!quickMatchId || !isScorer) return;
       const estaAnotacion = ++anotacionRef.current;
       const avisaQueNoSeGuardo = () => {
-        noSeGuardoRef.current = { holeNumber, participantId, anotacion: estaAnotacion };
+        noSeGuardoRef.current = {
+          holeNumber,
+          participantId,
+          anotacion: estaAnotacion,
+        };
         setSaveError(errorDeGuardado(holeNumber));
         // Lo sustituido ha podido salir de la cola, y el contador tiene que
         // decirlo ya: el siguiente sondeo tarda un minuto (CodeRabbit, PR #620)
@@ -259,17 +291,28 @@ export const useQuickMatchScoring = (quickMatchId, currentUserId) => {
       };
       const hayUnFalloPosterior = () => {
         const fallo = noSeGuardoRef.current;
-        return Boolean(fallo)
-          && fallo.holeNumber === holeNumber
-          && fallo.participantId === participantId
-          && fallo.anotacion > estaAnotacion;
+        return (
+          Boolean(fallo) &&
+          fallo.holeNumber === holeNumber &&
+          fallo.participantId === participantId &&
+          fallo.anotacion > estaAnotacion
+        );
       };
 
       // Con un vaciado en marcha no se manda: se guarda, y sale en el
       // siguiente sondeo detrás de lo que ya iba. Mandarlo ahora es la carrera
       // de arriba, y ahí lo que se pierde es la corrección del jugador
       if (escribiendoRef.current) {
-        if (guardaLaCorreccion(quickMatchId, holeNumber, { score }, participantId, currentUserId, laPartidaRef.current) === false) {
+        if (
+          guardaLaCorreccion(
+            quickMatchId,
+            holeNumber,
+            { score },
+            participantId,
+            currentUserId,
+            laPartidaRef.current,
+          ) === false
+        ) {
           avisaQueNoSeGuardo();
           return;
         }
@@ -277,9 +320,19 @@ export const useQuickMatchScoring = (quickMatchId, currentUserId) => {
         setSaveError(null);
         // Aquí sí se puede retirar el aviso: el `enqueue` de arriba devolvió
         // bien, así que el reemplazo está guardado en el móvil
-        golpesPerdidos.olvidaEl(quickMatchId, holeNumber, currentUserId, participantId);
+        golpesPerdidos.olvidaEl(
+          quickMatchId,
+          holeNumber,
+          currentUserId,
+          participantId,
+        );
         setPerdidos((antes) =>
-          antes.filter((x) => !(x.holeNumber === holeNumber && x.participantId === participantId))
+          antes.filter(
+            (x) =>
+              !(
+                x.holeNumber === holeNumber && x.participantId === participantId
+              ),
+          ),
         );
         return;
       }
@@ -294,7 +347,12 @@ export const useQuickMatchScoring = (quickMatchId, currentUserId) => {
       // rato el golpe no estaba en ninguna parte (FE #561). Si el envío sale
       // bien se retira unas líneas más abajo, que es lo que ya se hacía
       const seGuardo = guardaLaCorreccion(
-        quickMatchId, holeNumber, { score }, participantId, currentUserId, laPartidaRef.current
+        quickMatchId,
+        holeNumber,
+        { score },
+        participantId,
+        currentUserId,
+        laPartidaRef.current,
       );
       // Cuándo quedó guardado esto, para saber después qué es anterior —y hay
       // que borrar— y qué llegó DESPUÉS, que es una corrección del jugador y
@@ -302,13 +360,17 @@ export const useQuickMatchScoring = (quickMatchId, currentUserId) => {
       // anotación anterior de ese hoyo, y tomarle la hora a esa la hacía pasar
       // por esta: no se borraba al llegar el envío y el siguiente vaciado la
       // mandaba encima (FE #605, gemelo del 6b de la #604 en competición)
-      const cuandoSeGuardo = seGuardo === false
-        ? Date.now()
-        : offlineQueue
-          .getByMatch(quickMatchId, currentUserId)
-          .find((e) => e.holeNumber === holeNumber && e.participantId === participantId
-            && (e.userId ?? null) === (currentUserId ?? null))
-          ?.timestamp ?? Date.now();
+      const cuandoSeGuardo =
+        seGuardo === false
+          ? Date.now()
+          : (offlineQueue
+              .getByMatch(quickMatchId, currentUserId)
+              .find(
+                (e) =>
+                  e.holeNumber === holeNumber &&
+                  e.participantId === participantId &&
+                  (e.userId ?? null) === (currentUserId ?? null),
+              )?.timestamp ?? Date.now());
       // El contador de pendientes NO se toca aquí: con cobertura buena el
       // envío tarda un suspiro, y actualizarlo ya enseñaría «1 golpe guardado
       // en el móvil» en cada anotación para retirarlo acto seguido. Se pone
@@ -319,15 +381,35 @@ export const useQuickMatchScoring = (quickMatchId, currentUserId) => {
       // el móvil no puede encolarlo, el jugador se quedaría sin golpe y sin
       // aviso. Se retira abajo, cuando conste que está a salvo
       const yaNoSePierde = () => {
-        golpesPerdidos.olvidaEl(quickMatchId, holeNumber, currentUserId, participantId);
+        golpesPerdidos.olvidaEl(
+          quickMatchId,
+          holeNumber,
+          currentUserId,
+          participantId,
+        );
         setPerdidos((antes) =>
-          antes.filter((x) => !(x.holeNumber === holeNumber && x.participantId === participantId))
+          antes.filter(
+            (x) =>
+              !(
+                x.holeNumber === holeNumber && x.participantId === participantId
+              ),
+          ),
         );
       };
       try {
-        const golpe = participantId === myParticipant?.participantId
-          ? await submitQuickMatchHoleScoreUseCase.execute(quickMatchId, holeNumber, score)
-          : await submitQuickMatchProxyHoleScoreUseCase.execute(quickMatchId, participantId, holeNumber, score);
+        const golpe =
+          participantId === myParticipant?.participantId
+            ? await submitQuickMatchHoleScoreUseCase.execute(
+                quickMatchId,
+                holeNumber,
+                score,
+              )
+            : await submitQuickMatchProxyHoleScoreUseCase.execute(
+                quickMatchId,
+                participantId,
+                holeNumber,
+                score,
+              );
         // Antes de quitarlo de la cola: si no, hasta que llega la partida ese
         // hoyo sale vacío, o con el número de antes (FE #607)
         pintaElGolpe(golpe);
@@ -336,7 +418,10 @@ export const useQuickMatchScoring = (quickMatchId, currentUserId) => {
         // ese mismo hoyo sobra. Dejarlo hace que el siguiente vaciado compare
         // lo viejo con lo que acaba de entrar, no coincidan, y se le pregunte
         // al jugador si quiere recuperar el resultado que él mismo corrigió
-        borraLoGuardadoDe(holeNumber, participantId, { cuando: cuandoSeGuardo, score });
+        borraLoGuardadoDe(holeNumber, participantId, {
+          cuando: cuandoSeGuardo,
+          score,
+        });
         setPendientes(offlineQueue.size(quickMatchId, currentUserId));
         yaNoSePierde();
         await fetchQuickMatch();
@@ -373,14 +458,23 @@ export const useQuickMatchScoring = (quickMatchId, currentUserId) => {
           // escritura, la anotación se queda: mejor reintentada mil veces que
           // desaparecida sin que nadie lo sepa (FE #521)
           apartaLaRechazada(
-            { matchId: quickMatchId, holeNumber, participantId, userId: currentUserId ?? null,
-              ...laPartidaRef.current },
-            currentUserId ?? null
+            {
+              matchId: quickMatchId,
+              holeNumber,
+              participantId,
+              userId: currentUserId ?? null,
+              ...laPartidaRef.current,
+            },
+            currentUserId ?? null,
           );
           setPerdidos((antes) =>
-            antes.some((x) => x.holeNumber === holeNumber && x.participantId === participantId)
+            antes.some(
+              (x) =>
+                x.holeNumber === holeNumber &&
+                x.participantId === participantId,
+            )
               ? antes
-              : [...antes, { holeNumber, participantId }]
+              : [...antes, { holeNumber, participantId }],
           );
           setPendientes(offlineQueue.size(quickMatchId, currentUserId));
           // Se dice, y se dice DE QUÉ HOYO: el caso realista es anotar sin
@@ -394,7 +488,15 @@ export const useQuickMatchScoring = (quickMatchId, currentUserId) => {
         setIsSubmitting(false);
       }
     },
-    [quickMatchId, isScorer, myParticipant, fetchQuickMatch, currentUserId, borraLoGuardadoDe, pintaElGolpe]
+    [
+      quickMatchId,
+      isScorer,
+      myParticipant,
+      fetchQuickMatch,
+      currentUserId,
+      borraLoGuardadoDe,
+      pintaElGolpe,
+    ],
   );
 
   const { cancelMatch, completeMatch } = useCierreDePartidaRapida({

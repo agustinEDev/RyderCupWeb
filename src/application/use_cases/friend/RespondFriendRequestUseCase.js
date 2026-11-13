@@ -23,7 +23,10 @@ class RespondFriendRequestUseCase {
       throw new Error("action must be 'ACCEPT' or 'DECLINE'");
     }
 
-    const friendship = await this.#friendRepository.respondToRequest(friendshipId, action);
+    const friendship = await this.#friendRepository.respondToRequest(
+      friendshipId,
+      action,
+    );
     return FriendshipAssembler.toSimpleDTO(friendship, friendship._apiData);
   }
 }

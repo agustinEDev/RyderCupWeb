@@ -44,7 +44,9 @@ describe('InstallBanner iOS hint', () => {
 
     render(<InstallBanner />);
 
-    expect(screen.getByText('installBanner.iosHint.iphone')).toBeInTheDocument();
+    expect(
+      screen.getByText('installBanner.iosHint.iphone'),
+    ).toBeInTheDocument();
     expect(screen.queryByText(/inBottomBar/)).not.toBeInTheDocument();
   });
 
@@ -54,7 +56,9 @@ describe('InstallBanner iOS hint', () => {
 
     render(<InstallBanner />);
 
-    expect(screen.getByText(/installBanner.iosHint.inTopBar/)).toBeInTheDocument();
+    expect(
+      screen.getByText(/installBanner.iosHint.inTopBar/),
+    ).toBeInTheDocument();
   });
 
   it('claims no position on a non-Safari browser', () => {
@@ -63,7 +67,9 @@ describe('InstallBanner iOS hint', () => {
 
     render(<InstallBanner />);
 
-    expect(screen.getByText('installBanner.iosHint.otherBrowser')).toBeInTheDocument();
+    expect(
+      screen.getByText('installBanner.iosHint.otherBrowser'),
+    ).toBeInTheDocument();
     expect(screen.queryByText(/inBottomBar|inTopBar/)).not.toBeInTheDocument();
   });
 
@@ -87,7 +93,9 @@ describe('InstallBanner iOS hint', () => {
       onIOS(route);
       const { unmount } = render(<InstallBanner />);
 
-      expect(screen.getByLabelText('installBanner.dismiss')).toBeInTheDocument();
+      expect(
+        screen.getByLabelText('installBanner.dismiss'),
+      ).toBeInTheDocument();
       unmount();
     }
   });

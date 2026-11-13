@@ -9,7 +9,11 @@ vi.mock('../../composition', () => ({
 vi.mock('framer-motion', () => {
   const DE_ANIMACION = new Set(['initial', 'animate', 'exit', 'transition']);
   const Div = ({ children, ...props }) => (
-    <div {...Object.fromEntries(Object.entries(props).filter(([k]) => !DE_ANIMACION.has(k)))}>
+    <div
+      {...Object.fromEntries(
+        Object.entries(props).filter(([k]) => !DE_ANIMACION.has(k)),
+      )}
+    >
       {children}
     </div>
   );
@@ -47,7 +51,12 @@ const partido = {
 const nombres = new Map([['bea', 'Bea Blanco']]);
 const inscritos = [
   { userId: UUID, status: 'APPROVED', userHandicap: 12 },
-  { userId: 'bea', userName: 'Bea Blanco', status: 'APPROVED', userHandicap: 10 },
+  {
+    userId: 'bea',
+    userName: 'Bea Blanco',
+    status: 'APPROVED',
+    userHandicap: 10,
+  },
 ];
 
 const sinRastro = () => {
@@ -66,7 +75,7 @@ describe('Agenda · jugador sin nombre', () => {
         playerHandicapMap={new Map()}
         teamNames={{ teamA: 'A', teamB: 'B' }}
         t={t}
-      />
+      />,
     );
 
     expect(screen.getByText('unnamedPlayer')).toBeInTheDocument();
@@ -87,7 +96,7 @@ describe('Agenda · jugador sin nombre', () => {
           teamNames={{ teamA: 'A', teamB: 'B' }}
           t={t}
         />
-      </MemoryRouter>
+      </MemoryRouter>,
     );
 
     expect(await screen.findByText('unnamedPlayer')).toBeInTheDocument();
@@ -108,11 +117,13 @@ describe('Agenda · jugador sin nombre', () => {
         teamNames={{ teamA: 'A', teamB: 'B' }}
         playerNameMap={nombres}
         t={t}
-      />
+      />,
     );
     fireEvent.click(screen.getByDisplayValue('manual'));
 
-    expect(screen.getByRole('option', { name: /^unnamedPlayer/ })).toBeInTheDocument();
+    expect(
+      screen.getByRole('option', { name: /^unnamedPlayer/ }),
+    ).toBeInTheDocument();
     sinRastro();
   });
 
@@ -127,7 +138,7 @@ describe('Agenda · jugador sin nombre', () => {
         teamNames={{ teamA: 'A', teamB: 'B' }}
         captains={{ teamA: null, teamB: null }}
         t={t}
-      />
+      />,
     );
     fireEvent.click(screen.getByDisplayValue('manual'));
 
@@ -146,7 +157,7 @@ describe('Agenda · jugador sin nombre', () => {
         isProcessing={false}
         teamNames={{ teamA: 'A', teamB: 'B' }}
         t={t}
-      />
+      />,
     );
 
     expect(screen.getByText('unnamedPlayer')).toBeInTheDocument();

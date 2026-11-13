@@ -41,7 +41,8 @@ const recuerdaConTope = (mapa, donde, valor, tope) => {
   mapa.set(donde, valor);
   if (mapa.size > tope) mapa.delete(mapa.keys().next().value);
 };
-const deLosFiltros = (clave, usuarioId, entrada) => JSON.stringify([clave, usuarioId, entrada]);
+const deLosFiltros = (clave, usuarioId, entrada) =>
+  JSON.stringify([clave, usuarioId, entrada]);
 
 /** @param {{busqueda: string, estado: string}|null} losFiltros `null`, sin filtros */
 export const guardaLosFiltros = (clave, usuarioId, entrada, losFiltros) => {

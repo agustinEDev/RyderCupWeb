@@ -26,15 +26,21 @@ describe('GetLeaderboardUseCase', () => {
   });
 
   it('should throw if competitionId is empty', async () => {
-    await expect(useCase.execute('')).rejects.toThrow('Competition ID is required');
+    await expect(useCase.execute('')).rejects.toThrow(
+      'Competition ID is required',
+    );
   });
 
   it('should throw if competitionId is null', async () => {
-    await expect(useCase.execute(null)).rejects.toThrow('Competition ID is required');
+    await expect(useCase.execute(null)).rejects.toThrow(
+      'Competition ID is required',
+    );
   });
 
   it('should throw if competitionId is undefined', async () => {
-    await expect(useCase.execute(undefined)).rejects.toThrow('Competition ID is required');
+    await expect(useCase.execute(undefined)).rejects.toThrow(
+      'Competition ID is required',
+    );
   });
 
   it('should propagate repository errors', async () => {

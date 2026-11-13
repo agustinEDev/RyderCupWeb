@@ -21,10 +21,15 @@ const mockLee = vi.fn();
 const mockVista = vi.fn();
 vi.mock('../../composition', () => ({
   listUserCompetitionsUseCase: { execute: () => Promise.resolve([]) },
-  getUpcomingMatchesUseCase: { executeWithCompleteness: (...a) => mockLee(...a) },
+  getUpcomingMatchesUseCase: {
+    executeWithCompleteness: (...a) => mockLee(...a),
+  },
   getScoringViewUseCase: { execute: (...a) => mockVista(...a) },
   // Las partidas de stroke play van aparte (FE #845): aquí, ninguna
-  getUpcomingTeeGroupsUseCase: { executeWithCompleteness: () => Promise.resolve({ matches: [], complete: true }) },
+  getUpcomingTeeGroupsUseCase: {
+    executeWithCompleteness: () =>
+      Promise.resolve({ matches: [], complete: true }),
+  },
   getTeeGroupScoringViewUseCase: { execute: () => Promise.resolve(null) },
 }));
 
@@ -39,8 +44,10 @@ vi.mock('react-i18next', () => ({
 
 vi.mock('../../components/layout/HeaderAuth', () => ({ default: () => null }));
 
-const { recuerdaLosPartidos, losUltimosPartidos, loQueSeSupo, olvidaTodo } = await import('../../services/loUltimoConocido');
-const { olvidaLasPrecargas } = await import('../../services/partidosSinCobertura');
+const { recuerdaLosPartidos, losUltimosPartidos, loQueSeSupo, olvidaTodo } =
+  await import('../../services/loUltimoConocido');
+const { olvidaLasPrecargas } =
+  await import('../../services/partidosSinCobertura');
 const UpcomingMatchesPage = (await import('./UpcomingMatchesPage')).default;
 
 const HOY = '2026-09-17';
@@ -59,7 +66,12 @@ const partido = (extra = {}) => ({
   ...extra,
 });
 
-const pinta = () => render(<MemoryRouter><UpcomingMatchesPage /></MemoryRouter>);
+const pinta = () =>
+  render(
+    <MemoryRouter>
+      <UpcomingMatchesPage />
+    </MemoryRouter>,
+  );
 
 describe('Mis próximos partidos sin cobertura', () => {
   beforeEach(() => {
@@ -84,11 +96,16 @@ describe('Mis próximos partidos sin cobertura', () => {
 
   it('con red: pinta la lista, la guarda y precarga el partido de hoy', async () => {
     mockLee.mockResolvedValue({ matches: [partido()], complete: true });
-    mockVista.mockResolvedValue({ matchId: 'm-1', players: [{ userId: 'u-1' }] });
+    mockVista.mockResolvedValue({
+      matchId: 'm-1',
+      players: [{ userId: 'u-1' }],
+    });
 
     pinta();
 
-    expect(await screen.findByTestId('upcoming-match-card')).toBeInTheDocument();
+    expect(
+      await screen.findByTestId('upcoming-match-card'),
+    ).toBeInTheDocument();
     expect(losUltimosPartidos()).toHaveLength(1);
     await vi.waitFor(() => expect(loQueSeSupo('m-1')).not.toBeNull());
   });
@@ -100,8 +117,12 @@ describe('Mis próximos partidos sin cobertura', () => {
     pinta();
 
     await screen.findByTestId('upcoming-match-card');
-    expect(screen.queryByText('upcomingMatches.scoreMatch')).not.toBeInTheDocument();
-    expect(screen.queryByTestId('upcoming-matches-desde-memoria')).not.toBeInTheDocument();
+    expect(
+      screen.queryByText('upcomingMatches.scoreMatch'),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByTestId('upcoming-matches-desde-memoria'),
+    ).not.toBeInTheDocument();
   });
 
   it('cuando llega la hora de apertura, el botón sale solo (`/code-review`)', async () => {
@@ -120,17 +141,27 @@ describe('Mis próximos partidos sin cobertura', () => {
     });
     vi.setSystemTime(new Date(2026, 8, 17, 8, 0));
     const abre = new Date(Date.now() + 2000).toISOString();
-    mockLee.mockResolvedValue({ matches: [partido({ scoringOpensAt: abre })], complete: true });
-    mockVista.mockResolvedValue({ matchId: 'm-1', players: [{ userId: 'u-1' }] });
+    mockLee.mockResolvedValue({
+      matches: [partido({ scoringOpensAt: abre })],
+      complete: true,
+    });
+    mockVista.mockResolvedValue({
+      matchId: 'm-1',
+      players: [{ userId: 'u-1' }],
+    });
 
     pinta();
 
     await screen.findByTestId('upcoming-match-card');
-    expect(screen.queryByText('upcomingMatches.scoreMatch')).not.toBeInTheDocument();
+    expect(
+      screen.queryByText('upcomingMatches.scoreMatch'),
+    ).not.toBeInTheDocument();
 
     await act(() => vi.advanceTimersByTimeAsync(3000));
 
-    expect(await screen.findByText('upcomingMatches.scoreMatch')).toBeInTheDocument();
+    expect(
+      await screen.findByText('upcomingMatches.scoreMatch'),
+    ).toBeInTheDocument();
   });
 
   it('sin red y con lista guardada: la enseña, lo avisa y deja anotar el de hoy', async () => {
@@ -139,12 +170,15 @@ describe('Mis próximos partidos sin cobertura', () => {
 
     pinta();
 
-    expect(await screen.findByTestId('upcoming-match-card')).toBeInTheDocument();
-    expect(screen.getByTestId('upcoming-matches-desde-memoria')).toHaveTextContent('upcomingMatches.desdeMemoria');
-    expect(screen.getByText('upcomingMatches.scoreMatch').closest('a')).toHaveAttribute(
-      'href',
-      '/player/matches/m-1/scoring'
-    );
+    expect(
+      await screen.findByTestId('upcoming-match-card'),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByTestId('upcoming-matches-desde-memoria'),
+    ).toHaveTextContent('upcomingMatches.desdeMemoria');
+    expect(
+      screen.getByText('upcomingMatches.scoreMatch').closest('a'),
+    ).toHaveAttribute('href', '/player/matches/m-1/scoring');
   });
 
   it('sin red y sin nada guardado: que no se pudo preguntar, no que no hay partidos', async () => {
@@ -152,7 +186,11 @@ describe('Mis próximos partidos sin cobertura', () => {
 
     pinta();
 
-    expect(await screen.findByText('upcomingMatches.sinRespuesta')).toBeInTheDocument();
-    expect(screen.queryByText('upcomingMatches.noMatches')).not.toBeInTheDocument();
+    expect(
+      await screen.findByText('upcomingMatches.sinRespuesta'),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByText('upcomingMatches.noMatches'),
+    ).not.toBeInTheDocument();
   });
 });

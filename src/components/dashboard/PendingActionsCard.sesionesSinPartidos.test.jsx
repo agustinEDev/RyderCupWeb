@@ -23,7 +23,8 @@ import PendingActionsCard from './PendingActionsCard';
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
     t: (key, params) => {
-      if (params?.count !== undefined && params?.name) return `${key}_${params.count}_${params.name}`;
+      if (params?.count !== undefined && params?.name)
+        return `${key}_${params.count}_${params.name}`;
       if (params?.count !== undefined) return `${key}_${params.count}`;
       return key;
     },
@@ -33,8 +34,20 @@ vi.mock('react-i18next', () => ({
 
 vi.mock('framer-motion', () => ({
   motion: {
-    div: ({ children, initial, animate, transition, whileHover, whileTap, ...rest }) => {
-      void initial; void animate; void transition; void whileHover; void whileTap;
+    div: ({
+      children,
+      initial,
+      animate,
+      transition,
+      whileHover,
+      whileTap,
+      ...rest
+    }) => {
+      void initial;
+      void animate;
+      void transition;
+      void whileHover;
+      void whileTap;
       return <div {...rest}>{children}</div>;
     },
   },
@@ -58,13 +71,25 @@ const mockListMyPendingEnvelopes = vi.fn();
 const mockListMySessionsWithoutMatches = vi.fn();
 
 vi.mock('../../composition', () => ({
-  listMyInvitationsUseCase: { execute: (...args) => mockListMyInvitations(...args) },
-  listEnrollmentsUseCase: { execute: (...args) => mockListEnrollments(...args) },
+  listMyInvitationsUseCase: {
+    execute: (...args) => mockListMyInvitations(...args),
+  },
+  listEnrollmentsUseCase: {
+    execute: (...args) => mockListEnrollments(...args),
+  },
   getScheduleUseCase: { execute: (...args) => mockGetSchedule(...args) },
-  listPendingFriendRequestsUseCase: { execute: (...args) => mockListPendingFriendRequests(...args) },
-  listMyQuickMatchesUseCase: { execute: (...args) => mockListMyQuickMatches(...args) },
-  listMyPendingEnvelopesUseCase: { execute: (...args) => mockListMyPendingEnvelopes(...args) },
-  listMySessionsWithoutMatchesUseCase: { execute: (...args) => mockListMySessionsWithoutMatches(...args) },
+  listPendingFriendRequestsUseCase: {
+    execute: (...args) => mockListPendingFriendRequests(...args),
+  },
+  listMyQuickMatchesUseCase: {
+    execute: (...args) => mockListMyQuickMatches(...args),
+  },
+  listMyPendingEnvelopesUseCase: {
+    execute: (...args) => mockListMyPendingEnvelopes(...args),
+  },
+  listMySessionsWithoutMatchesUseCase: {
+    execute: (...args) => mockListMySessionsWithoutMatches(...args),
+  },
 }));
 
 const baseUser = {
@@ -79,7 +104,11 @@ const creatorUser = {
   roles: [{ name: 'CREATOR' }],
 };
 
-const renderCard = (user = baseUser, competitions = [], upcomingMatches = 0) => {
+const renderCard = (
+  user = baseUser,
+  competitions = [],
+  upcomingMatches = 0,
+) => {
   return render(
     <MemoryRouter>
       <PendingActionsCard
@@ -87,13 +116,14 @@ const renderCard = (user = baseUser, competitions = [], upcomingMatches = 0) => 
         competitions={competitions}
         upcomingMatches={upcomingMatches}
       />
-    </MemoryRouter>
+    </MemoryRouter>,
   );
 };
 
 describe('PendingActionsCard · sesiones sin partidos', () => {
   beforeEach(async () => {
-    const { olvidaLasAccionesPendientes } = await import('../../services/accionesPendientes');
+    const { olvidaLasAccionesPendientes } =
+      await import('../../services/accionesPendientes');
     olvidaLasAccionesPendientes();
     vi.clearAllMocks();
     mockListMyInvitations.mockResolvedValue({ invitations: [] });
@@ -111,7 +141,9 @@ describe('PendingActionsCard · sesiones sin partidos', () => {
     roundDate: '2026-10-03',
     sessionType: 'MORNING',
     reason: 'PLAYERS_WITHOUT_TEE',
-    players: [{ userId: 'u1', name: 'Bea Dos', missing: 'GENDER', teeColor: null }],
+    players: [
+      { userId: 'u1', name: 'Bea Dos', missing: 'GENDER', teeColor: null },
+    ],
   };
 
   it('D1: una fila por sesión, con el día y la competición', async () => {
@@ -130,7 +162,9 @@ describe('PendingActionsCard · sesiones sin partidos', () => {
 
     fireEvent.click(await screen.findByTestId('sesion-sin-partidos-r1'));
 
-    expect(mockNavigate).toHaveBeenCalledWith('/creator/competitions/c1/schedule');
+    expect(mockNavigate).toHaveBeenCalledWith(
+      '/creator/competitions/c1/schedule',
+    );
   });
 
   it('D3: sin ninguna no hay fila', async () => {
@@ -138,13 +172,23 @@ describe('PendingActionsCard · sesiones sin partidos', () => {
     renderCard(creatorUser);
 
     await screen.findAllByText(/pendingActions/);
-    expect(screen.queryByTestId(/sesion-sin-partidos-/)).not.toBeInTheDocument();
+    expect(
+      screen.queryByTestId(/sesion-sin-partidos-/),
+    ).not.toBeInTheDocument();
   });
 
   it('D4: si esa llamada falla, lo demás se enseña igual', async () => {
-    mockListMySessionsWithoutMatches.mockRejectedValue(new TypeError('Sin conexión'));
+    mockListMySessionsWithoutMatches.mockRejectedValue(
+      new TypeError('Sin conexión'),
+    );
     mockListMyPendingEnvelopes.mockResolvedValue([
-      { roundId: 'r9', competitionId: 'c9', competitionName: 'Otra', roundDate: '2026-10-04', sessionType: 'AFTERNOON' },
+      {
+        roundId: 'r9',
+        competitionId: 'c9',
+        competitionName: 'Otra',
+        roundDate: '2026-10-04',
+        sessionType: 'AFTERNOON',
+      },
     ]);
     renderCard(creatorUser);
 
@@ -158,7 +202,13 @@ describe('PendingActionsCard · sesiones sin partidos', () => {
       throw new TypeError('no es una función');
     });
     mockListMyPendingEnvelopes.mockResolvedValue([
-      { roundId: 'r9', competitionId: 'c9', competitionName: 'Otra', roundDate: '2026-10-04', sessionType: 'AFTERNOON' },
+      {
+        roundId: 'r9',
+        competitionId: 'c9',
+        competitionName: 'Otra',
+        roundDate: '2026-10-04',
+        sessionType: 'AFTERNOON',
+      },
     ]);
     renderCard(creatorUser);
 
@@ -180,7 +230,8 @@ describe('PendingActionsCard · sesiones sin partidos', () => {
     mockListMySessionsWithoutMatches.mockResolvedValue([SESION]);
     renderCard(baseUser, [{ id: 'c1' }]);
 
-    expect(await screen.findByTestId('sesion-sin-partidos-r1')).toBeInTheDocument();
+    expect(
+      await screen.findByTestId('sesion-sin-partidos-r1'),
+    ).toBeInTheDocument();
   });
 });
-

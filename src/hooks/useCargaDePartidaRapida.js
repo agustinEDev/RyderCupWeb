@@ -91,7 +91,9 @@ export const useCargaDePartidaRapida = ({
       return;
     }
     const salio = ++relojRef.current;
-    const esVieja = () => quickMatchId !== idVigenteRef.current || salio < ultimaAplicadaRef.current;
+    const esVieja = () =>
+      quickMatchId !== idVigenteRef.current ||
+      salio < ultimaAplicadaRef.current;
     // Si esta respuesta contó cuando llegó. Se decide ahí y no en el `finally`:
     // la primera carga espera al campo después de pintar, y un golpe del
     // vaciado que llega en ese rato la dejaba por vieja con la espera puesta
@@ -109,7 +111,11 @@ export const useCargaDePartidaRapida = ({
       setLoadError(null);
       // La partida está: si alguna vez se marcó como desaparecida, aquel 404
       // era mentira y la marca se retira
-      offlineQueue.marcaDesaparecida(quickMatchId, currentUserId ?? null, false);
+      offlineQueue.marcaDesaparecida(
+        quickMatchId,
+        currentUserId ?? null,
+        false,
+      );
 
       // El sondeo ha respondido, así que hay conexión: es el momento de enviar
       // lo que quedó guardado. Se le pasan los hoyos que el servidor ya tiene,
@@ -133,13 +139,19 @@ export const useCargaDePartidaRapida = ({
           // pantalla no se puede dibujar aunque se sepa quién juega
           campoRef.current = course;
           if (partidaAGuardarRef.current) {
-            recuerda(quickMatchId, { partida: partidaAGuardarRef.current, campo: course });
+            recuerda(quickMatchId, {
+              partida: partidaAGuardarRef.current,
+              campo: course,
+            });
           }
         } catch {
           if (quickMatchId !== idVigenteRef.current) return;
           holesLoadedRef.current = false;
           if (partidaAGuardarRef.current) {
-            recuerda(quickMatchId, { partida: partidaAGuardarRef.current, campo: campoRef.current });
+            recuerda(quickMatchId, {
+              partida: partidaAGuardarRef.current,
+              campo: campoRef.current,
+            });
           }
         }
       } else {
@@ -185,7 +197,11 @@ export const useCargaDePartidaRapida = ({
       // lento de un portal cautivo aterrizaba DESPUÉS del sondeo que ya había
       // cargado bien la partida, y volvía a marcarla
       if (estado === 404 && esLaUltimaPalabra) {
-        offlineQueue.marcaDesaparecida(quickMatchId, currentUserId ?? null, true);
+        offlineQueue.marcaDesaparecida(
+          quickMatchId,
+          currentUserId ?? null,
+          true,
+        );
       }
 
       // Se pinta lo último que se supo, que es lo que permite seguir anotando
@@ -203,7 +219,8 @@ export const useCargaDePartidaRapida = ({
       // cerrar la partida se aplica en local a propósito —para que un corte
       // justo después del POST no la deje viva— y reponer aquí la foto de
       // antes la devolvía a «en curso», con la pantalla dejando anotar otra vez
-      const recordado = desmentido || hayPartidaRef.current ? null : loQueSeSupo(quickMatchId);
+      const recordado =
+        desmentido || hayPartidaRef.current ? null : loQueSeSupo(quickMatchId);
       if (recordado && esLaUltimaPalabra) {
         setQuickMatch(recordado.partida);
         hayPartidaRef.current = true;
@@ -223,7 +240,8 @@ export const useCargaDePartidaRapida = ({
       // Si no, una respuesta rezagada de la partida anterior quitaba la espera
       // de la nueva estando todavía sin datos, y la pantalla pintaba la tarjeta
       // vacía —sin nombre, sin jugadores y con dieciocho «Anotar»—
-      if (seAplico && quickMatchId === idVigenteRef.current) setIsLoading(false);
+      if (seAplico && quickMatchId === idVigenteRef.current)
+        setIsLoading(false);
     }
   }, [quickMatchId, currentUserId, vaciarRef]);
 
@@ -237,11 +255,12 @@ export const useCargaDePartidaRapida = ({
   // cuenta, que haría descartar la vista de la nueva
   const pintaElGolpe = useCallback(
     (golpe) => {
-      if (golpe?.holeNumber == null || quickMatchId !== idVigenteRef.current) return;
+      if (golpe?.holeNumber == null || quickMatchId !== idVigenteRef.current)
+        return;
       marcaEscritura();
       setQuickMatch((previa) => (previa ? conGolpe(previa, golpe) : previa));
     },
-    [quickMatchId, marcaEscritura]
+    [quickMatchId, marcaEscritura],
   );
 
   // La ruta no lleva `key`, así que ir de una partida a otra reutiliza este
@@ -266,8 +285,16 @@ export const useCargaDePartidaRapida = ({
     setLoadError(null);
     setPerdidos([]);
     setDiscrepancias([]);
-    setPendientes(quickMatchId ? offlineQueue.size(quickMatchId, currentUserId) : 0);
-  }, [quickMatchId, currentUserId, setPerdidos, setDiscrepancias, setPendientes]);
+    setPendientes(
+      quickMatchId ? offlineQueue.size(quickMatchId, currentUserId) : 0,
+    );
+  }, [
+    quickMatchId,
+    currentUserId,
+    setPerdidos,
+    setDiscrepancias,
+    setPendientes,
+  ]);
 
   // Los dos momentos en los que de verdad importa preguntar, y que el reloj no
   // ve: cuando el navegador dice que vuelve la red, y cuando el jugador vuelve

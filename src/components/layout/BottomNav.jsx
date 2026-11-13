@@ -3,11 +3,16 @@ import { Link, useLocation, useNavigate } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import { Home, Trophy, Sparkles, User, Zap } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
-import { useNovedadesDeActividad, useVigilanciaDeNovedades } from '../../hooks/useNovedadesDeActividad';
+import {
+  useNovedadesDeActividad,
+  useVigilanciaDeNovedades,
+} from '../../hooks/useNovedadesDeActividad';
 import InsigniaDeNovedades from '../feed/InsigniaDeNovedades';
 
 // El modal solo se necesita cuando el usuario pulsa el FAB: fuera del bundle inicial
-const CreateQuickMatchModal = lazy(() => import('../quick_match/CreateQuickMatchModal'));
+const CreateQuickMatchModal = lazy(
+  () => import('../quick_match/CreateQuickMatchModal'),
+);
 
 /**
  * Lanzador de partida rápida.
@@ -22,7 +27,11 @@ const QuickMatchLauncher = ({ onClose, onStarted }) => {
 
   return (
     <Suspense fallback={null}>
-      <CreateQuickMatchModal onClose={onClose} onStarted={onStarted} currentUser={user} />
+      <CreateQuickMatchModal
+        onClose={onClose}
+        onStarted={onStarted}
+        currentUser={user}
+      />
     </Suspense>
   );
 };
@@ -39,8 +48,15 @@ const NavItem = ({ to, icon: Icon, label, isActive, novedades = 0 }) => (
     }`}
   >
     <span className="relative">
-      <Icon className="h-6 w-6" strokeWidth={isActive ? 2.4 : 2} aria-hidden="true" />
-      <InsigniaDeNovedades n={novedades} className="absolute -top-1.5 left-1/2 ml-1.5" />
+      <Icon
+        className="h-6 w-6"
+        strokeWidth={isActive ? 2.4 : 2}
+        aria-hidden="true"
+      />
+      <InsigniaDeNovedades
+        n={novedades}
+        className="absolute -top-1.5 left-1/2 ml-1.5"
+      />
     </span>
     <span className="text-[10px] font-medium leading-none">{label}</span>
   </Link>
@@ -58,12 +74,16 @@ const BottomNav = () => {
   const navigate = useNavigate();
   const [showQuickMatchModal, setShowQuickMatchModal] = useState(false);
 
-  const handleQuickMatchStarted = useCallback((quickMatchId) => {
-    setShowQuickMatchModal(false);
-    navigate(`/quick-matches/${quickMatchId}/scoring`);
-  }, [navigate]);
+  const handleQuickMatchStarted = useCallback(
+    (quickMatchId) => {
+      setShowQuickMatchModal(false);
+      navigate(`/quick-matches/${quickMatchId}/scoring`);
+    },
+    [navigate],
+  );
 
-  const isActive = (path) => pathname === path || pathname.startsWith(`${path}/`);
+  const isActive = (path) =>
+    pathname === path || pathname.startsWith(`${path}/`);
 
   // El número de Actividad se pide desde aquí: la barra está montada en toda
   // pantalla con sesión (en escritorio, oculta por CSS) y fuera de la

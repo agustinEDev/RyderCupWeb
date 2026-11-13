@@ -1,5 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor, within, act } from '@testing-library/react';
+import {
+  render,
+  screen,
+  fireEvent,
+  waitFor,
+  within,
+  act,
+} from '@testing-library/react';
 import { MemoryRouter, Route, Routes, useNavigate } from 'react-router';
 import CompetitionDetail from './CompetitionDetail';
 
@@ -36,7 +43,11 @@ vi.mock('../hooks/useUserRoles', () => ({
 }));
 
 vi.mock('../components/layout/HeaderAuth', () => ({
-  default: ({ backTo }) => <div data-testid="header-auth" data-back-to={backTo}>Header</div>,
+  default: ({ backTo }) => (
+    <div data-testid="header-auth" data-back-to={backTo}>
+      Header
+    </div>
+  ),
 }));
 
 const mockVersionDeFranjas = vi.fn();
@@ -96,33 +107,45 @@ const mockSetCustomHandicap = vi.fn().mockResolvedValue({});
 const mockRemoveCustomHandicap = vi.fn().mockResolvedValue({});
 
 vi.mock('../composition', () => ({
-  getCompetitionDetailUseCase: { execute: (...args) => mockGetCompetitionDetail(...args) },
+  getCompetitionDetailUseCase: {
+    execute: (...args) => mockGetCompetitionDetail(...args),
+  },
   getCompetitionGolfCoursesUseCase: { execute: vi.fn().mockResolvedValue([]) },
   activateCompetitionUseCase: { execute: vi.fn() },
-  closeEnrollmentsUseCase: { execute: (...args) => mockCloseEnrollments(...args) },
+  closeEnrollmentsUseCase: {
+    execute: (...args) => mockCloseEnrollments(...args),
+  },
   startCompetitionUseCase: { execute: vi.fn() },
   completeCompetitionUseCase: { execute: vi.fn() },
   cancelCompetitionUseCase: { execute: (...args) => mockCancel(...args) },
   deleteCompetitionUseCase: { execute: (...args) => mockDelete(...args) },
   reopenEnrollmentsUseCase: { execute: vi.fn() },
   revertCompetitionStatusUseCase: { execute: vi.fn() },
-  revertCompetitionToInProgressUseCase: { execute: (...args) => mockRevertToInProgress(...args) },
-  listEnrollmentsUseCase: { execute: (...args) => mockListEnrollments(...args) },
+  revertCompetitionToInProgressUseCase: {
+    execute: (...args) => mockRevertToInProgress(...args),
+  },
+  listEnrollmentsUseCase: {
+    execute: (...args) => mockListEnrollments(...args),
+  },
   requestEnrollmentUseCase: { execute: (...args) => mockRequest(...args) },
   approveEnrollmentUseCase: { execute: vi.fn() },
   rejectEnrollmentUseCase: { execute: vi.fn() },
   removeEnrolledPlayerUseCase: { execute: (...args) => mockQuitar(...args) },
   assignTeamsUseCase: { execute: (...args) => mockAssignTeams(...args) },
-  setCustomHandicapUseCase: { execute: (...args) => mockSetCustomHandicap(...args) },
-  removeCustomHandicapUseCase: { execute: (...args) => mockRemoveCustomHandicap(...args) },
-  setNamePreferenceUseCase: { execute: (...args) => mockSetNamePreference(...args) },
+  setCustomHandicapUseCase: {
+    execute: (...args) => mockSetCustomHandicap(...args),
+  },
+  removeCustomHandicapUseCase: {
+    execute: (...args) => mockRemoveCustomHandicap(...args),
+  },
+  setNamePreferenceUseCase: {
+    execute: (...args) => mockSetNamePreference(...args),
+  },
 }));
 
 const mockToast = vi.hoisted(() => ({ success: vi.fn(), error: vi.fn() }));
 vi.mock('../utils/toast', () => ({ default: mockToast }));
 const mockQuitar = vi.fn();
-
-
 
 const renderPage = () => {
   return render(
@@ -130,7 +153,7 @@ const renderPage = () => {
       <Routes>
         <Route path="/competitions/:id" element={<CompetitionDetail />} />
       </Routes>
-    </MemoryRouter>
+    </MemoryRouter>,
   );
 };
 
@@ -160,8 +183,20 @@ const FICHA = {
   teamsAssigned: false,
 };
 const INSCRITOS = [
-  { id: 'enr-org', userId: 'org-1', status: 'APPROVED', userName: 'Org Aniza', team: null },
-  { id: 'enr-pedro', userId: 'u-pedro', status: 'APPROVED', userName: 'Pedro Gil', team: null },
+  {
+    id: 'enr-org',
+    userId: 'org-1',
+    status: 'APPROVED',
+    userName: 'Org Aniza',
+    team: null,
+  },
+  {
+    id: 'enr-pedro',
+    userId: 'u-pedro',
+    status: 'APPROVED',
+    userName: 'Pedro Gil',
+    team: null,
+  },
 ];
 
 const pintaComo = async ({ ficha = {}, usuario = mockAuthUser } = {}) => {
@@ -193,11 +228,14 @@ describe('CompetitionDetail · quitar a un inscrito', () => {
     expect(screen.queryByTestId('quitar-u-pedro')).not.toBeInTheDocument();
   });
 
-  it.each(['IN_PROGRESS', 'COMPLETED', 'CANCELLED'])('en %s no se ofrece', async (status) => {
-    await pintaComo({ ficha: { status } });
+  it.each(['IN_PROGRESS', 'COMPLETED', 'CANCELLED'])(
+    'en %s no se ofrece',
+    async (status) => {
+      await pintaComo({ ficha: { status } });
 
-    expect(screen.queryByTestId('quitar-u-pedro')).not.toBeInTheDocument();
-  });
+      expect(screen.queryByTestId('quitar-u-pedro')).not.toBeInTheDocument();
+    },
+  );
 
   it.each(['DRAFT', 'CLOSED'])('en %s sí', async (status) => {
     await pintaComo({ ficha: { status } });
@@ -210,8 +248,12 @@ describe('CompetitionDetail · quitar a un inscrito', () => {
 
     fireEvent.click(screen.getByTestId('quitar-u-pedro'));
 
-    expect(await screen.findByText('detail.confirmDialogs.remove.title')).toBeInTheDocument();
-    expect(screen.getByText('detail.confirmDialogs.remove.body')).toBeInTheDocument();
+    expect(
+      await screen.findByText('detail.confirmDialogs.remove.title'),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText('detail.confirmDialogs.remove.body'),
+    ).toBeInTheDocument();
   });
 
   it('con equipos formados, avisa de que se desharán', async () => {
@@ -219,7 +261,9 @@ describe('CompetitionDetail · quitar a un inscrito', () => {
 
     fireEvent.click(screen.getByTestId('quitar-u-pedro'));
 
-    expect(await screen.findByText('detail.confirmDialogs.removeWithTeams.body')).toBeInTheDocument();
+    expect(
+      await screen.findByText('detail.confirmDialogs.removeWithTeams.body'),
+    ).toBeInTheDocument();
   });
 
   it('al confirmar, le quita, lo dice y relee la ficha', async () => {
@@ -227,11 +271,21 @@ describe('CompetitionDetail · quitar a un inscrito', () => {
     const leidas = mockGetCompetitionDetail.mock.calls.length;
 
     fireEvent.click(screen.getByTestId('quitar-u-pedro'));
-    fireEvent.click(await screen.findByText('detail.confirmDialogs.remove.confirm'));
+    fireEvent.click(
+      await screen.findByText('detail.confirmDialogs.remove.confirm'),
+    );
 
     await waitFor(() => expect(mockQuitar).toHaveBeenCalledWith('enr-pedro'));
-    await waitFor(() => expect(mockToast.success).toHaveBeenCalledWith('detail.success.playerRemoved'));
-    await waitFor(() => expect(mockGetCompetitionDetail.mock.calls.length).toBeGreaterThan(leidas));
+    await waitFor(() =>
+      expect(mockToast.success).toHaveBeenCalledWith(
+        'detail.success.playerRemoved',
+      ),
+    );
+    await waitFor(() =>
+      expect(mockGetCompetitionDetail.mock.calls.length).toBeGreaterThan(
+        leidas,
+      ),
+    );
   });
 
   it('se relee en silencio: la lista sigue montada, sin la espera de pantalla completa (revisor)', async () => {
@@ -244,9 +298,15 @@ describe('CompetitionDetail · quitar a un inscrito', () => {
     mockGetCompetitionDetail.mockReturnValue(new Promise(() => {}));
 
     fireEvent.click(screen.getByTestId('quitar-u-pedro'));
-    fireEvent.click(await screen.findByText('detail.confirmDialogs.remove.confirm'));
+    fireEvent.click(
+      await screen.findByText('detail.confirmDialogs.remove.confirm'),
+    );
 
-    await waitFor(() => expect(mockGetCompetitionDetail.mock.calls.length).toBeGreaterThan(leidas));
+    await waitFor(() =>
+      expect(mockGetCompetitionDetail.mock.calls.length).toBeGreaterThan(
+        leidas,
+      ),
+    );
     expect(screen.getByTestId('aprobado-org-1')).toBe(suya);
   });
 
@@ -255,21 +315,33 @@ describe('CompetitionDetail · quitar a un inscrito', () => {
     mockListEnrollments.mockResolvedValue([INSCRITOS[0]]);
 
     fireEvent.click(screen.getByTestId('quitar-u-pedro'));
-    fireEvent.click(await screen.findByText('detail.confirmDialogs.remove.confirm'));
+    fireEvent.click(
+      await screen.findByText('detail.confirmDialogs.remove.confirm'),
+    );
 
-    await waitFor(() => expect(screen.queryByTestId('aprobado-u-pedro')).not.toBeInTheDocument());
+    await waitFor(() =>
+      expect(screen.queryByTestId('aprobado-u-pedro')).not.toBeInTheDocument(),
+    );
   });
 
   it('si ya no estaba inscrito (404), lo dice y relee la lista (revisor)', async () => {
-    mockQuitar.mockRejectedValue(Object.assign(new Error('x'), { status: 404 }));
+    mockQuitar.mockRejectedValue(
+      Object.assign(new Error('x'), { status: 404 }),
+    );
     await pintaComo();
     const listas = mockListEnrollments.mock.calls.length;
 
     fireEvent.click(screen.getByTestId('quitar-u-pedro'));
-    fireEvent.click(await screen.findByText('detail.confirmDialogs.remove.confirm'));
+    fireEvent.click(
+      await screen.findByText('detail.confirmDialogs.remove.confirm'),
+    );
 
-    await waitFor(() => expect(mockToast.error).toHaveBeenCalledWith('detail.errors.removeGone'));
-    await waitFor(() => expect(mockListEnrollments.mock.calls.length).toBeGreaterThan(listas));
+    await waitFor(() =>
+      expect(mockToast.error).toHaveBeenCalledWith('detail.errors.removeGone'),
+    );
+    await waitFor(() =>
+      expect(mockListEnrollments.mock.calls.length).toBeGreaterThan(listas),
+    );
   });
 
   it('en un stroke play, las franjas se releen: ya no está colocado (/code-review)', async () => {
@@ -278,33 +350,57 @@ describe('CompetitionDetail · quitar a un inscrito', () => {
     const antes = mockVersionDeFranjas.mock.calls.at(-1)[0];
 
     fireEvent.click(screen.getByTestId('quitar-u-pedro'));
-    fireEvent.click(await screen.findByText('detail.confirmDialogs.remove.confirm'));
+    fireEvent.click(
+      await screen.findByText('detail.confirmDialogs.remove.confirm'),
+    );
 
-    await waitFor(() => expect(mockVersionDeFranjas.mock.calls.at(-1)[0]).not.toBe(antes));
+    await waitFor(() =>
+      expect(mockVersionDeFranjas.mock.calls.at(-1)[0]).not.toBe(antes),
+    );
   });
 
   it('si se estaba editando su hándicap, el editor se cierra (/code-review)', async () => {
     await pintaComo();
-    fireEvent.click(within(screen.getByTestId('aprobado-u-pedro')).getByTitle('detail.editHandicap'));
+    fireEvent.click(
+      within(screen.getByTestId('aprobado-u-pedro')).getByTitle(
+        'detail.editHandicap',
+      ),
+    );
     expect(screen.getByLabelText('detail.editHandicap')).toBeInTheDocument();
 
     fireEvent.click(screen.getByTestId('quitar-u-pedro'));
-    fireEvent.click(await screen.findByText('detail.confirmDialogs.remove.confirm'));
+    fireEvent.click(
+      await screen.findByText('detail.confirmDialogs.remove.confirm'),
+    );
 
     await waitFor(() => expect(mockQuitar).toHaveBeenCalled());
-    await waitFor(() => expect(screen.queryByLabelText('detail.editHandicap')).not.toBeInTheDocument());
+    await waitFor(() =>
+      expect(
+        screen.queryByLabelText('detail.editHandicap'),
+      ).not.toBeInTheDocument(),
+    );
   });
 
   it('si se cambia de competición mientras se relee, lo de la anterior no se pinta (/code-review)', async () => {
     Object.assign(mockAuthUser, { id: 'org-1' });
     let soltarLaVieja;
     mockGetCompetitionDetail.mockImplementation((id) =>
-      Promise.resolve(id === 'comp-2' ? { ...FICHA, id: 'comp-2', name: 'Copa Y' } : { ...FICHA })
+      Promise.resolve(
+        id === 'comp-2'
+          ? { ...FICHA, id: 'comp-2', name: 'Copa Y' }
+          : { ...FICHA },
+      ),
     );
     mockListEnrollments.mockResolvedValue(INSCRITOS);
     const Saltar = () => {
       const navegar = useNavigate();
-      return <button type="button" data-testid="saltar" onClick={() => navegar('/competitions/comp-2')} />;
+      return (
+        <button
+          type="button"
+          data-testid="saltar"
+          onClick={() => navegar('/competitions/comp-2')}
+        />
+      );
     };
     render(
       <MemoryRouter initialEntries={['/competitions/comp-1']}>
@@ -312,17 +408,21 @@ describe('CompetitionDetail · quitar a un inscrito', () => {
         <Routes>
           <Route path="/competitions/:id" element={<CompetitionDetail />} />
         </Routes>
-      </MemoryRouter>
+      </MemoryRouter>,
     );
     await screen.findByTestId('aprobado-u-pedro');
     mockGetCompetitionDetail.mockImplementation((id) =>
       id === 'comp-2'
         ? Promise.resolve({ ...FICHA, id: 'comp-2', name: 'Copa Y' })
-        : new Promise((r) => { soltarLaVieja = r; })
+        : new Promise((r) => {
+            soltarLaVieja = r;
+          }),
     );
 
     fireEvent.click(screen.getByTestId('quitar-u-pedro'));
-    fireEvent.click(await screen.findByText('detail.confirmDialogs.remove.confirm'));
+    fireEvent.click(
+      await screen.findByText('detail.confirmDialogs.remove.confirm'),
+    );
     await waitFor(() => expect(soltarLaVieja).toBeDefined());
     fireEvent.click(screen.getByTestId('saltar'));
     expect((await screen.findAllByText('Copa Y')).length).toBeGreaterThan(0);
@@ -335,9 +435,15 @@ describe('CompetitionDetail · quitar a un inscrito', () => {
     await pintaComo();
 
     fireEvent.click(screen.getByTestId('quitar-u-pedro'));
-    fireEvent.click(await screen.findByText('detail.confirmDialogs.remove.keep'));
+    fireEvent.click(
+      await screen.findByText('detail.confirmDialogs.remove.keep'),
+    );
 
-    await waitFor(() => expect(screen.queryByText('detail.confirmDialogs.remove.title')).not.toBeInTheDocument());
+    await waitFor(() =>
+      expect(
+        screen.queryByText('detail.confirmDialogs.remove.title'),
+      ).not.toBeInTheDocument(),
+    );
     expect(mockQuitar).not.toHaveBeenCalled();
   });
 
@@ -348,11 +454,15 @@ describe('CompetitionDetail · quitar a un inscrito', () => {
     ['CANNOT_REMOVE_ORGANIZER', 'detail.errors.removeOrganizer'],
     [undefined, 'detail.errors.removeFailed'],
   ])('si no se puede (%s), dice por qué', async (errorCode, texto) => {
-    mockQuitar.mockRejectedValue(Object.assign(new Error('x'), { status: 409, errorCode }));
+    mockQuitar.mockRejectedValue(
+      Object.assign(new Error('x'), { status: 409, errorCode }),
+    );
     await pintaComo();
 
     fireEvent.click(screen.getByTestId('quitar-u-pedro'));
-    fireEvent.click(await screen.findByText('detail.confirmDialogs.remove.confirm'));
+    fireEvent.click(
+      await screen.findByText('detail.confirmDialogs.remove.confirm'),
+    );
 
     await waitFor(() => expect(mockToast.error).toHaveBeenCalledWith(texto));
   });

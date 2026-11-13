@@ -25,7 +25,7 @@ export const casillasDelHoyo = ({
   // que no era el suyo, mientras sus golpes sí venían resueltos por su barra.
   const holeFor = (participant) =>
     MatchPlayStrokeAllocator.holeCardFor(participant, holes, tees).find(
-      (h) => h.holeNumber === currentHole
+      (h) => h.holeNumber === currentHole,
     ) ?? null;
 
   // Reserva para quien no traiga el hoyo en su barra. No es neutra —`holes` es
@@ -40,7 +40,8 @@ export const casillasDelHoyo = ({
   // campo y el reparto no cuenta ese hoyo. El backend hace lo mismo
   // (`TeeContextBuilder._card_for`), asi que hoy los dos calculos coinciden y
   // completar los huecos solo aqui los separaria. Ver RyderCupAm#215.
-  const courseHoleData = holes.find((h) => h.holeNumber === currentHole) ?? null;
+  const courseHoleData =
+    holes.find((h) => h.holeNumber === currentHole) ?? null;
 
   const currentHoleData = holeFor(myParticipant) ?? courseHoleData;
 
@@ -52,7 +53,8 @@ export const casillasDelHoyo = ({
   // entrada. Los dos dan `score` nulo y significan lo contrario.
   const entryOf = (participantId) =>
     holeScoresVisibles.find(
-      (hs) => hs.holeNumber === currentHole && hs.participantId === participantId
+      (hs) =>
+        hs.holeNumber === currentHole && hs.participantId === participantId,
     ) ?? null;
 
   const playerEntries = () =>
@@ -91,15 +93,20 @@ export const casillasDelHoyo = ({
         // primer miembro que sí se cubra: preferible a dejar al compañero con
         // la pantalla en blanco y sin poder anotar.
         const cardHolder = sideCardHolder(members);
-        const writable = coveredParticipantIds.includes(cardHolder.participantId)
+        const writable = coveredParticipantIds.includes(
+          cardHolder.participantId,
+        )
           ? cardHolder
-          : members.find((m) => coveredParticipantIds.includes(m.participantId));
+          : members.find((m) =>
+              coveredParticipantIds.includes(m.participantId),
+            );
         if (!writable) return null;
         // Lo que se lee tiene que ser lo que se escribe. Cuando el respaldo
         // manda, la casilla seguía enseñando la fila del titular: corriges el
         // golpe, se guarda bajo otro, y la pantalla te devuelve el viejo como
         // si la corrección se hubiera perdido.
-        const readOrder = writable === cardHolder ? members : [writable, ...members];
+        const readOrder =
+          writable === cardHolder ? members : [writable, ...members];
         const entry = sideEntryOf(readOrder, entryOf);
         return {
           participantId: writable.participantId,
@@ -110,7 +117,7 @@ export const casillasDelHoyo = ({
           // que es lo que mantiene la bola a nombre del titular del bando.
           name: conMiNombrePrimero(
             members,
-            (m) => m.participantId === myParticipant?.participantId
+            (m) => m.participantId === myParticipant?.participantId,
           )
             .map((m) => m.name)
             .join(' & '),

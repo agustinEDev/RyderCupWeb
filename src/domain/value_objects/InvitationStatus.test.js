@@ -10,7 +10,9 @@ describe('InvitationStatus', () => {
     });
 
     it('should throw an error for an invalid state string', () => {
-      expect(() => new InvitationStatus('INVALID_STATE')).toThrow('Invalid InvitationStatus: INVALID_STATE');
+      expect(() => new InvitationStatus('INVALID_STATE')).toThrow(
+        'Invalid InvitationStatus: INVALID_STATE',
+      );
     });
 
     it('should have all 4 valid states', () => {
@@ -38,7 +40,9 @@ describe('InvitationStatus', () => {
     });
 
     it('should throw for invalid string', () => {
-      expect(() => InvitationStatus.fromString('INVALID')).toThrow('Invalid InvitationStatus: INVALID');
+      expect(() => InvitationStatus.fromString('INVALID')).toThrow(
+        'Invalid InvitationStatus: INVALID',
+      );
     });
   });
 
@@ -75,12 +79,16 @@ describe('InvitationStatus', () => {
 
     it('validateTransition should throw for invalid transition', () => {
       const accepted = InvitationStatus.accepted();
-      expect(() => accepted.validateTransition(InvitationStatus.pending())).toThrow('Invalid transition');
+      expect(() =>
+        accepted.validateTransition(InvitationStatus.pending()),
+      ).toThrow('Invalid transition');
     });
 
     it('validateTransition should not throw for valid transition', () => {
       const pending = InvitationStatus.pending();
-      expect(() => pending.validateTransition(InvitationStatus.accepted())).not.toThrow();
+      expect(() =>
+        pending.validateTransition(InvitationStatus.accepted()),
+      ).not.toThrow();
     });
   });
 
@@ -121,7 +129,9 @@ describe('InvitationStatus', () => {
     });
 
     it('should return false for different value', () => {
-      expect(InvitationStatus.pending().equals(InvitationStatus.accepted())).toBe(false);
+      expect(
+        InvitationStatus.pending().equals(InvitationStatus.accepted()),
+      ).toBe(false);
     });
 
     it('should return false for non-InvitationStatus', () => {
@@ -158,7 +168,9 @@ describe('InvitationStatus', () => {
 
     it('se llega desde PENDING', () => {
       expect(
-        InvitationStatus.pending().canTransitionTo(InvitationStatus.fromString('NO_ROOM'))
+        InvitationStatus.pending().canTransitionTo(
+          InvitationStatus.fromString('NO_ROOM'),
+        ),
       ).toBe(true);
     });
   });

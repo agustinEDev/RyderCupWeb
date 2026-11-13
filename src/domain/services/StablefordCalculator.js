@@ -49,10 +49,12 @@ const ordenaConPuestos = (rows, compareResultado) => {
   const sinHoyos = rows.filter((row) => !(row.holesPlayed > 0));
   conHoyos.forEach((row, i) => {
     const anterior = conHoyos[i - 1];
-    row.position = anterior && compara(anterior, row) === 0 ? anterior.position : i + 1;
+    row.position =
+      anterior && compara(anterior, row) === 0 ? anterior.position : i + 1;
   });
   conHoyos.forEach((row) => {
-    row.tied = conHoyos.filter((otra) => otra.position === row.position).length > 1;
+    row.tied =
+      conHoyos.filter((otra) => otra.position === row.position).length > 1;
   });
   sinHoyos.forEach((row) => {
     row.position = null;
@@ -123,7 +125,13 @@ class StablefordCalculator {
    *   la barra del participante; sin ellas, contra `holes`, que es la tarjeta de la primera.
    * @returns {{stablefordPoints: number, totalStrokes: number, netStrokes: number, parPlayed: number, holesPlayed: number}}
    */
-  static computeParticipantTotals(participant, holes, holeScores, allocation = {}, tees = []) {
+  static computeParticipantTotals(
+    participant,
+    holes,
+    holeScores,
+    allocation = {},
+    tees = [],
+  ) {
     let stablefordPoints = 0;
     let totalStrokes = 0;
     let netStrokes = 0;
@@ -138,7 +146,9 @@ class StablefordCalculator {
 
     for (const hole of card) {
       const entry = holeScores.find(
-        (hs) => hs.participantId === participant.participantId && hs.holeNumber === hole.holeNumber
+        (hs) =>
+          hs.participantId === participant.participantId &&
+          hs.holeNumber === hole.holeNumber,
       );
       // Sin entrada, el hoyo está por jugar y no cuenta. Con entrada y sin
       // número está RECOGIDO, que es un hoyo jugado: cuenta, y se carga a doble
@@ -149,7 +159,7 @@ class StablefordCalculator {
       const strokesReceived = StablefordCalculator.strokesOnHole(
         allocation,
         participant.participantId,
-        hole.holeNumber
+        hole.holeNumber,
       );
 
       if (entry.score == null) {
@@ -158,21 +168,34 @@ class StablefordCalculator {
         // raya es par + golpes recibidos + 2»). El neto queda en `par + 2`, que
         // es lo que la deja en cero puntos: recoger no puntúa. El bruto pasa
         // así a depender del reparto, y se aceptó.
-        totalStrokes += StablefordCalculator.netDoubleBogey(hole.par, strokesReceived);
+        totalStrokes += StablefordCalculator.netDoubleBogey(
+          hole.par,
+          strokesReceived,
+        );
         netStrokes += hole.par + NET_DOUBLE_BOGEY_OVER_PAR;
         parPlayed += hole.par;
         holesPlayed += 1;
         continue;
       }
 
-      stablefordPoints += StablefordCalculator.holePoints(entry.score, hole.par, strokesReceived);
+      stablefordPoints += StablefordCalculator.holePoints(
+        entry.score,
+        hole.par,
+        strokesReceived,
+      );
       totalStrokes += entry.score;
       netStrokes += entry.score - strokesReceived;
       parPlayed += hole.par;
       holesPlayed += 1;
     }
 
-    return { stablefordPoints, totalStrokes, netStrokes, parPlayed, holesPlayed };
+    return {
+      stablefordPoints,
+      totalStrokes,
+      netStrokes,
+      parPlayed,
+      holesPlayed,
+    };
   }
 
   /**
@@ -198,7 +221,13 @@ class StablefordCalculator {
    * @param {Object<string, {strokesByHole: Object<number, number>}>} allocation
    * @returns {Array<{participantId: string, name: string, stablefordPoints: number, totalStrokes: number, holesPlayed: number}>}
    */
-  static rankParticipants(participants, holes, holeScores, allocation = {}, tees = []) {
+  static rankParticipants(
+    participants,
+    holes,
+    holeScores,
+    allocation = {},
+    tees = [],
+  ) {
     const rows = participants.map((participant) => ({
       participantId: participant.participantId,
       name: participant.name,
@@ -209,11 +238,14 @@ class StablefordCalculator {
         holes,
         holeScores,
         allocation,
-        tees
+        tees,
       ),
     }));
 
-    return ordenaConPuestos(rows, (a, b) => b.stablefordPoints - a.stablefordPoints);
+    return ordenaConPuestos(
+      rows,
+      (a, b) => b.stablefordPoints - a.stablefordPoints,
+    );
   }
 
   /**
@@ -230,7 +262,13 @@ class StablefordCalculator {
    * @param {Object<string, {strokesByHole: Object<number, number>}>} allocation
    * @returns {Array<{participantId: string, name: string, stablefordPoints: number, totalStrokes: number, netStrokes: number, parPlayed: number, holesPlayed: number}>}
    */
-  static rankParticipantsByMedal(participants, holes, holeScores, allocation = {}, tees = []) {
+  static rankParticipantsByMedal(
+    participants,
+    holes,
+    holeScores,
+    allocation = {},
+    tees = [],
+  ) {
     const rows = participants.map((participant) => ({
       participantId: participant.participantId,
       name: participant.name,
@@ -241,7 +279,7 @@ class StablefordCalculator {
         holes,
         holeScores,
         allocation,
-        tees
+        tees,
       ),
     }));
 
@@ -252,7 +290,7 @@ class StablefordCalculator {
       // Score-to-par (net strokes minus par for the holes actually played),
       // not raw net strokes: fair when participants have played a different
       // number of holes (partial rounds), matching standard golf leaderboards.
-      return (a.netStrokes - a.parPlayed) - (b.netStrokes - b.parPlayed);
+      return a.netStrokes - a.parPlayed - (b.netStrokes - b.parPlayed);
     });
   }
 }

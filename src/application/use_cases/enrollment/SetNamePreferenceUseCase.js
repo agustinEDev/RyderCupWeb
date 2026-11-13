@@ -58,7 +58,7 @@ class SetNamePreferenceUseCase {
 
     const enrollment = await this.#enrollmentRepository.setNamePreference(
       enrollmentId,
-      useRealName
+      useRealName,
     );
 
     return EnrollmentAssembler.toSimpleDTO(enrollment);

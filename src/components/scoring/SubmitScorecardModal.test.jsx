@@ -4,32 +4,65 @@ import SubmitScorecardModal from './SubmitScorecardModal';
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
-    t: (key, opts) => opts ? `${key} ${JSON.stringify(opts)}` : key,
+    t: (key, opts) => (opts ? `${key} ${JSON.stringify(opts)}` : key),
     i18n: { language: 'en' },
   }),
 }));
 
 describe('SubmitScorecardModal', () => {
   it('should not render when isOpen is false', () => {
-    const { container } = render(<SubmitScorecardModal isOpen={false} onConfirm={vi.fn()} onClose={vi.fn()} />);
+    const { container } = render(
+      <SubmitScorecardModal
+        isOpen={false}
+        onConfirm={vi.fn()}
+        onClose={vi.fn()}
+      />,
+    );
     expect(container.firstChild).toBeNull();
   });
 
   it('should render when isOpen is true', () => {
-    render(<SubmitScorecardModal isOpen={true} validatedHoles={18} totalHoles={18} onConfirm={vi.fn()} onClose={vi.fn()} />);
+    render(
+      <SubmitScorecardModal
+        isOpen={true}
+        validatedHoles={18}
+        totalHoles={18}
+        onConfirm={vi.fn()}
+        onClose={vi.fn()}
+      />,
+    );
     expect(screen.getByTestId('submit-scorecard-modal')).toBeInTheDocument();
   });
 
   it('should call onConfirm when submit clicked', () => {
     const onConfirm = vi.fn();
-    render(<SubmitScorecardModal isOpen={true} validatedHoles={18} totalHoles={18} onConfirm={onConfirm} onClose={vi.fn()} />);
+    render(
+      <SubmitScorecardModal
+        isOpen={true}
+        validatedHoles={18}
+        totalHoles={18}
+        onConfirm={onConfirm}
+        onClose={vi.fn()}
+      />,
+    );
     fireEvent.click(screen.getByTestId('submit-confirm'));
     expect(onConfirm).toHaveBeenCalled();
   });
 
   it('should show submitting state', () => {
-    render(<SubmitScorecardModal isOpen={true} validatedHoles={18} totalHoles={18} isSubmitting={true} onConfirm={vi.fn()} onClose={vi.fn()} />);
-    expect(screen.getByTestId('submit-scorecard-modal')).toHaveTextContent('submit.submitting');
+    render(
+      <SubmitScorecardModal
+        isOpen={true}
+        validatedHoles={18}
+        totalHoles={18}
+        isSubmitting={true}
+        onConfirm={vi.fn()}
+        onClose={vi.fn()}
+      />,
+    );
+    expect(screen.getByTestId('submit-scorecard-modal')).toHaveTextContent(
+      'submit.submitting',
+    );
   });
 
   /**
@@ -47,7 +80,7 @@ describe('SubmitScorecardModal', () => {
         isSubmitting={true}
         onConfirm={vi.fn()}
         onClose={onClose}
-      />
+      />,
     );
 
     fireEvent.keyDown(document, { key: 'Escape' });
@@ -55,7 +88,10 @@ describe('SubmitScorecardModal', () => {
     fireEvent.click(screen.getByTestId('submit-scorecard-modal'));
 
     expect(onClose).not.toHaveBeenCalled();
-    expect(screen.getByTestId('submit-scorecard-modal')).toHaveAttribute('aria-busy', 'true');
+    expect(screen.getByTestId('submit-scorecard-modal')).toHaveAttribute(
+      'aria-busy',
+      'true',
+    );
   });
 
   it('sin entrega en vuelo, Escape cierra y no hay nada ocupado', () => {
@@ -68,10 +104,12 @@ describe('SubmitScorecardModal', () => {
         isSubmitting={false}
         onConfirm={vi.fn()}
         onClose={onClose}
-      />
+      />,
     );
 
-    expect(screen.getByTestId('submit-scorecard-modal')).not.toHaveAttribute('aria-busy');
+    expect(screen.getByTestId('submit-scorecard-modal')).not.toHaveAttribute(
+      'aria-busy',
+    );
 
     fireEvent.keyDown(document, { key: 'Escape' });
 
@@ -81,14 +119,31 @@ describe('SubmitScorecardModal', () => {
   // 2.ª pasada del QA (12 oct 2026): en una partida el organizador la puede
   // reabrir; «no se puede deshacer» solo es verdad en la Ryder
   it('en una partida, que solo el organizador puede reabrirla', () => {
-    render(<SubmitScorecardModal isOpen reopenable validatedHoles={18} totalHoles={18} onConfirm={vi.fn()} onClose={vi.fn()} />);
+    render(
+      <SubmitScorecardModal
+        isOpen
+        reopenable
+        validatedHoles={18}
+        totalHoles={18}
+        onConfirm={vi.fn()}
+        onClose={vi.fn()}
+      />,
+    );
 
     expect(screen.getByText('submit.confirmReopenable')).toBeInTheDocument();
     expect(screen.queryByText('submit.confirm')).toBeNull();
   });
 
   it('en la Ryder, como siempre', () => {
-    render(<SubmitScorecardModal isOpen validatedHoles={18} totalHoles={18} onConfirm={vi.fn()} onClose={vi.fn()} />);
+    render(
+      <SubmitScorecardModal
+        isOpen
+        validatedHoles={18}
+        totalHoles={18}
+        onConfirm={vi.fn()}
+        onClose={vi.fn()}
+      />,
+    );
 
     expect(screen.getByText('submit.confirm')).toBeInTheDocument();
   });

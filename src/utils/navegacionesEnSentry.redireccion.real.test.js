@@ -1,7 +1,13 @@
 import { describe, it, expect, beforeAll } from 'vitest';
 import { useEffect } from 'react';
 import * as Sentry from '@sentry/react';
-import { createBrowserRouter, useLocation, useNavigationType, createRoutesFromChildren, matchRoutes } from 'react-router';
+import {
+  createBrowserRouter,
+  useLocation,
+  useNavigationType,
+  createRoutesFromChildren,
+  matchRoutes,
+} from 'react-router';
 import { registrarRouterParaSentry } from './routerParaSentry';
 import { instrumentarRouterEnSentry } from './navegacionesEnSentry';
 
@@ -24,14 +30,25 @@ const RUTAS = [
     children: [
       {
         id: 'pantallas',
-        children: [{ path: '/start' }, { path: '/competitions/:id' }, { path: '/admin/:seccion?' }, { path: '*' }],
+        children: [
+          { path: '/start' },
+          { path: '/competitions/:id' },
+          { path: '/admin/:seccion?' },
+          { path: '*' },
+        ],
       },
     ],
   },
 ];
 const spans = [];
-const recoger = { name: 'RecogerSpans', setup: (cliente) => cliente.on('spanStart', (s) => spans.push(s)) };
-const deTipo = (op) => spans.map((s) => Sentry.spanToJSON(s)).filter((s) => s.attributes?.['sentry.op'] === op);
+const recoger = {
+  name: 'RecogerSpans',
+  setup: (cliente) => cliente.on('spanStart', (s) => spans.push(s)),
+};
+const deTipo = (op) =>
+  spans
+    .map((s) => Sentry.spanToJSON(s))
+    .filter((s) => s.attributes?.['sentry.op'] === op);
 
 let router;
 beforeAll(async () => {
@@ -47,7 +64,13 @@ beforeAll(async () => {
     transport: () => ({ send: async () => ({}), flush: async () => true }),
   });
   Sentry.getClient().addIntegration(
-    Sentry.reactRouterV7BrowserTracingIntegration({ useEffect, useLocation, useNavigationType, createRoutesFromChildren, matchRoutes })
+    Sentry.reactRouterV7BrowserTracingIntegration({
+      useEffect,
+      useLocation,
+      useNavigationType,
+      createRoutesFromChildren,
+      matchRoutes,
+    }),
   );
   instrumentarRouterEnSentry();
 });
@@ -62,7 +85,9 @@ describe('navegaciones en Sentry, con redirección antes de que llegue', () => {
   });
 
   it('S6e: el scope lleva la ruta como transacción (los errores no se agrupan por id)', () => {
-    expect(Sentry.getCurrentScope().getScopeData().transactionName).toBe('/competitions/:id');
+    expect(Sentry.getCurrentScope().getScopeData().transactionName).toBe(
+      '/competitions/:id',
+    );
   });
 
   it('S6c: después, navegar sigue nombrando con la ruta', async () => {

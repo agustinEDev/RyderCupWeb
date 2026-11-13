@@ -44,9 +44,9 @@ const Contact = () => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    setFormData((prev) => ({ ...prev, [name]: value }));
     if (errors[name]) {
-      setErrors(prev => ({ ...prev, [name]: undefined }));
+      setErrors((prev) => ({ ...prev, [name]: undefined }));
     }
   };
 
@@ -70,7 +70,13 @@ const Contact = () => {
   };
 
   const handleReset = () => {
-    setFormData({ name: '', email: '', category: '', subject: '', message: '' });
+    setFormData({
+      name: '',
+      email: '',
+      category: '',
+      subject: '',
+      message: '',
+    });
     setErrors({});
     setIsSuccess(false);
   };
@@ -88,9 +94,7 @@ const Contact = () => {
         <Header />
         <main className="flex-1">
           <div className="max-w-7xl mx-auto px-4 md:px-8 py-12 md:py-16">
-            <div
-              className="text-center mb-12"
-            >
+            <div className="text-center mb-12">
               <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
                 {t('title')}
               </h1>
@@ -101,9 +105,7 @@ const Contact = () => {
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-12 max-w-6xl mx-auto">
               {/* Form */}
-              <div
-                className="lg:col-span-2"
-              >
+              <div className="lg:col-span-2">
                 {isSuccess ? (
                   <div className="bg-green-50 border border-green-200 rounded-2xl p-12 text-center">
                     <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
@@ -123,7 +125,10 @@ const Contact = () => {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       {/* Name */}
                       <div>
-                        <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
+                        <label
+                          htmlFor="name"
+                          className="block text-sm font-medium text-gray-700 mb-1"
+                        >
                           {t('form.name')}
                         </label>
                         <input
@@ -136,12 +141,19 @@ const Contact = () => {
                           className={inputClass('name')}
                           maxLength={100}
                         />
-                        {errors.name && <p className="mt-1 text-sm text-red-600">{errors.name}</p>}
+                        {errors.name && (
+                          <p className="mt-1 text-sm text-red-600">
+                            {errors.name}
+                          </p>
+                        )}
                       </div>
 
                       {/* Email */}
                       <div>
-                        <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+                        <label
+                          htmlFor="email"
+                          className="block text-sm font-medium text-gray-700 mb-1"
+                        >
                           {t('form.email')}
                         </label>
                         <input
@@ -154,14 +166,21 @@ const Contact = () => {
                           className={inputClass('email')}
                           maxLength={254}
                         />
-                        {errors.email && <p className="mt-1 text-sm text-red-600">{errors.email}</p>}
+                        {errors.email && (
+                          <p className="mt-1 text-sm text-red-600">
+                            {errors.email}
+                          </p>
+                        )}
                       </div>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       {/* Category */}
                       <div>
-                        <label htmlFor="category" className="block text-sm font-medium text-gray-700 mb-1">
+                        <label
+                          htmlFor="category"
+                          className="block text-sm font-medium text-gray-700 mb-1"
+                        >
                           {t('form.category')}
                         </label>
                         <select
@@ -171,17 +190,28 @@ const Contact = () => {
                           onChange={handleChange}
                           className={inputClass('category')}
                         >
-                          <option value="">{t('form.categoryPlaceholder')}</option>
+                          <option value="">
+                            {t('form.categoryPlaceholder')}
+                          </option>
                           {CATEGORIES.map((cat) => (
-                            <option key={cat} value={cat}>{t(`form.categories.${cat}`)}</option>
+                            <option key={cat} value={cat}>
+                              {t(`form.categories.${cat}`)}
+                            </option>
                           ))}
                         </select>
-                        {errors.category && <p className="mt-1 text-sm text-red-600">{errors.category}</p>}
+                        {errors.category && (
+                          <p className="mt-1 text-sm text-red-600">
+                            {errors.category}
+                          </p>
+                        )}
                       </div>
 
                       {/* Subject */}
                       <div>
-                        <label htmlFor="subject" className="block text-sm font-medium text-gray-700 mb-1">
+                        <label
+                          htmlFor="subject"
+                          className="block text-sm font-medium text-gray-700 mb-1"
+                        >
                           {t('form.subject')}
                         </label>
                         <input
@@ -194,13 +224,20 @@ const Contact = () => {
                           className={inputClass('subject')}
                           maxLength={200}
                         />
-                        {errors.subject && <p className="mt-1 text-sm text-red-600">{errors.subject}</p>}
+                        {errors.subject && (
+                          <p className="mt-1 text-sm text-red-600">
+                            {errors.subject}
+                          </p>
+                        )}
                       </div>
                     </div>
 
                     {/* Message */}
                     <div>
-                      <label htmlFor="message" className="block text-sm font-medium text-gray-700 mb-1">
+                      <label
+                        htmlFor="message"
+                        className="block text-sm font-medium text-gray-700 mb-1"
+                      >
                         {t('form.message')}
                       </label>
                       <textarea
@@ -213,7 +250,11 @@ const Contact = () => {
                         className={inputClass('message')}
                         maxLength={5000}
                       />
-                      {errors.message && <p className="mt-1 text-sm text-red-600">{errors.message}</p>}
+                      {errors.message && (
+                        <p className="mt-1 text-sm text-red-600">
+                          {errors.message}
+                        </p>
+                      )}
                     </div>
 
                     <button
@@ -228,9 +269,7 @@ const Contact = () => {
               </div>
 
               {/* Info Panel */}
-              <div
-                className="lg:col-span-1"
-              >
+              <div className="lg:col-span-1">
                 <div className="bg-gray-50 rounded-2xl p-8">
                   <h3 className="text-lg font-bold text-gray-900 mb-6">
                     {t('info.title')}
@@ -240,14 +279,18 @@ const Contact = () => {
                     <div className="flex items-start gap-4">
                       <Mail className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
                       <div>
-                        <p className="text-sm font-medium text-gray-900">{t('info.email')}</p>
+                        <p className="text-sm font-medium text-gray-900">
+                          {t('info.email')}
+                        </p>
                       </div>
                     </div>
 
                     <div className="flex items-start gap-4">
                       <Clock className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
                       <div>
-                        <p className="text-sm text-gray-600">{t('info.responseTime')}</p>
+                        <p className="text-sm text-gray-600">
+                          {t('info.responseTime')}
+                        </p>
                       </div>
                     </div>
                   </div>

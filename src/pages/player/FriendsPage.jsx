@@ -17,7 +17,11 @@ import {
   searchUsersUseCase,
 } from '../../composition';
 import BlockLoader from '../../components/ui/BlockLoader';
-import { GrupoDePestanas, ListaDePestanas, PanelDePestana } from '../../components/ui/Pestanas';
+import {
+  GrupoDePestanas,
+  ListaDePestanas,
+  PanelDePestana,
+} from '../../components/ui/Pestanas';
 import { PANTALLA_MENOS_BARRA_INFERIOR } from '../../utils/barraInferior';
 
 const TABS = ['friends', 'received', 'sent'];
@@ -71,7 +75,7 @@ const FriendsPage = () => {
         console.error('Error loading friends:', error);
         customToast.error(error.message || t('errors.failedToLoad'));
       },
-    }
+    },
   );
   // Sin usuario no se pide nada y se sigue esperando, como antes
   const isLoading = cargando || !user;
@@ -190,7 +194,9 @@ const FriendsPage = () => {
 
         <div className="mb-6 flex items-center justify-between">
           <div>
-            <h1 className="hidden md:block text-2xl font-bold text-gray-900">{t('title')}</h1>
+            <h1 className="hidden md:block text-2xl font-bold text-gray-900">
+              {t('title')}
+            </h1>
             <p className="text-sm text-gray-500 mt-1">{t('subtitle')}</p>
           </div>
           <button
@@ -246,7 +252,13 @@ const FriendsPage = () => {
                   <FriendCard
                     key={friendship.id}
                     friendship={friendship}
-                    mode={activeTab === 'friends' ? 'friend' : activeTab === 'received' ? 'received' : 'sent'}
+                    mode={
+                      activeTab === 'friends'
+                        ? 'friend'
+                        : activeTab === 'received'
+                          ? 'received'
+                          : 'sent'
+                    }
                     onAccept={handleAccept}
                     onDecline={handleDecline}
                     onRemove={handleRemoveOrCancel}

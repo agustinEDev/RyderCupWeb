@@ -12,8 +12,15 @@ const SessionBlockedModalContent = ({ onTakeOver, onGoBack }) => {
       closeOnBackdrop={false}
       closeOnEscape={false}
     >
-      <h2 id="sesion-ocupada-titulo" className="text-lg font-semibold text-gray-900 mb-2">{t('session.blocked')}</h2>
-      <p className="text-sm text-gray-600 mb-6">{t('session.blockedMessage')}</p>
+      <h2
+        id="sesion-ocupada-titulo"
+        className="text-lg font-semibold text-gray-900 mb-2"
+      >
+        {t('session.blocked')}
+      </h2>
+      <p className="text-sm text-gray-600 mb-6">
+        {t('session.blockedMessage')}
+      </p>
       <div className="flex gap-3 justify-end">
         <button
           data-testid="session-go-back"
@@ -36,7 +43,9 @@ const SessionBlockedModalContent = ({ onTakeOver, onGoBack }) => {
 
 const SessionBlockedModal = ({ isOpen, onTakeOver, onGoBack }) => {
   if (!isOpen) return null;
-  return <SessionBlockedModalContent onTakeOver={onTakeOver} onGoBack={onGoBack} />;
+  return (
+    <SessionBlockedModalContent onTakeOver={onTakeOver} onGoBack={onGoBack} />
+  );
 };
 
 export default SessionBlockedModal;

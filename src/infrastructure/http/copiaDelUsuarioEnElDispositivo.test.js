@@ -1,5 +1,8 @@
 import { describe, it, expect } from 'vitest';
-import { copiaDelUsuarioEnElDispositivo, esLaCopiaReducida } from './copiaDelUsuarioEnElDispositivo';
+import {
+  copiaDelUsuarioEnElDispositivo,
+  esLaCopiaReducida,
+} from './copiaDelUsuarioEnElDispositivo';
 
 /**
  * Lo que se guarda del usuario en el dispositivo (fase 3, FE-06; elegido por Agustín,
@@ -86,31 +89,57 @@ describe('copiaDelUsuarioEnElDispositivo (fase 3)', () => {
   });
 
   it('nunca el correo, el pendiente, el género ni nada de lo quitado', () => {
-    const texto = JSON.stringify([copiaDelUsuarioEnElDispositivo(DTO_COMPLETO), copiaDelUsuarioEnElDispositivo(ENTIDAD)]);
-    for (const prohibido of ['ana@example.com', 'nueva@example.com', 'FEMALE', 'secreto', '12.4', 'google', 'ES']) {
+    const texto = JSON.stringify([
+      copiaDelUsuarioEnElDispositivo(DTO_COMPLETO),
+      copiaDelUsuarioEnElDispositivo(ENTIDAD),
+    ]);
+    for (const prohibido of [
+      'ana@example.com',
+      'nueva@example.com',
+      'FEMALE',
+      'secreto',
+      '12.4',
+      'google',
+      'ES',
+    ]) {
       expect(texto).not.toContain(prohibido);
     }
   });
 
-  it.each([[null], [undefined], ['texto'], [42], [[1, 2]]])('con %s devuelve null', (valor) => {
-    expect(copiaDelUsuarioEnElDispositivo(valor)).toBeNull();
-  });
+  it.each([[null], [undefined], ['texto'], [42], [[1, 2]]])(
+    'con %s devuelve null',
+    (valor) => {
+      expect(copiaDelUsuarioEnElDispositivo(valor)).toBeNull();
+    },
+  );
 
   it('sabe si una copia ya está reducida', () => {
     expect(esLaCopiaReducida(DTO_COMPLETO)).toBe(false);
-    expect(esLaCopiaReducida(copiaDelUsuarioEnElDispositivo(DTO_COMPLETO))).toBe(true);
+    expect(
+      esLaCopiaReducida(copiaDelUsuarioEnElDispositivo(DTO_COMPLETO)),
+    ).toBe(true);
   });
 });
 
 describe('valores que no son un usuario (CodeRabbit, #1092)', () => {
-  it.each([[[]], [[{ id: 'u1' }]], [{}], [{ alias: 'x' }], [null], [undefined], ['texto'], [42], [true]])(
-    'esLaCopiaReducida(%j) es false',
-    (valor) => {
-      expect(esLaCopiaReducida(valor)).toBe(false);
-    }
-  );
-
-  it.each([[{}], [{ first_name: 'Ana' }], [[{ id: 'u1' }]]])('sin id no es un usuario: copia(%j) es null', (valor) => {
-    expect(copiaDelUsuarioEnElDispositivo(valor)).toBeNull();
+  it.each([
+    [[]],
+    [[{ id: 'u1' }]],
+    [{}],
+    [{ alias: 'x' }],
+    [null],
+    [undefined],
+    ['texto'],
+    [42],
+    [true],
+  ])('esLaCopiaReducida(%j) es false', (valor) => {
+    expect(esLaCopiaReducida(valor)).toBe(false);
   });
+
+  it.each([[{}], [{ first_name: 'Ana' }], [[{ id: 'u1' }]]])(
+    'sin id no es un usuario: copia(%j) es null',
+    (valor) => {
+      expect(copiaDelUsuarioEnElDispositivo(valor)).toBeNull();
+    },
+  );
 });

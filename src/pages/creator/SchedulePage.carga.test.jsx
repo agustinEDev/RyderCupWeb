@@ -24,7 +24,14 @@ const IDIOMA = { actual: { i18n: { language: 'es' }, t: tBase } };
 vi.mock('react-i18next', () => ({ useTranslation: () => IDIOMA.actual }));
 
 vi.mock('framer-motion', () => ({
-  motion: new Proxy({}, { get: () => ({ children, ...props }) => <div {...props}>{children}</div> }),
+  motion: new Proxy(
+    {},
+    {
+      get:
+        () =>
+        ({ children, ...props }) => <div {...props}>{children}</div>,
+    },
+  ),
 }));
 
 vi.mock('../../components/layout/HeaderAuth', () => ({ default: () => null }));
@@ -35,9 +42,17 @@ const SESION = { user: { id: 'org' }, loading: false };
 const ROLES = { isAdmin: false, isCreator: true, isLoading: false };
 vi.mock('../../hooks/useAuth', () => ({ useAuth: () => SESION }));
 vi.mock('../../hooks/useUserRoles', () => ({ useUserRoles: () => ROLES }));
-vi.mock('../../components/ui/FullScreenLoader', () => ({ default: () => null }));
+vi.mock('../../components/ui/FullScreenLoader', () => ({
+  default: () => null,
+}));
 vi.mock('../../utils/toast', () => ({
-  default: { success: vi.fn(), error: vi.fn(), warning: vi.fn(), info: vi.fn(), dismiss: vi.fn() },
+  default: {
+    success: vi.fn(),
+    error: vi.fn(),
+    warning: vi.fn(),
+    info: vi.fn(),
+    dismiss: vi.fn(),
+  },
 }));
 
 const mockDetalle = vi.fn();
@@ -92,7 +107,10 @@ const RONDA = {
 const AGENDA = {
   days: [{ date: '2026-06-01', rounds: [RONDA] }],
   rounds: [RONDA],
-  teamAssignment: { teamAPlayerIds: ['org', 'carla'], teamBPlayerIds: ['bea', 'eva'] },
+  teamAssignment: {
+    teamAPlayerIds: ['org', 'carla'],
+    teamBPlayerIds: ['bea', 'eva'],
+  },
 };
 
 const INSCRITOS = [
@@ -141,7 +159,9 @@ describe('SchedulePage · la carga de la agenda', () => {
 
     // Then el aviso y a la ficha
     expect(await screen.findByText('LA FICHA')).toBeInTheDocument();
-    expect(customToast.error).toHaveBeenCalledWith('errors.failedToLoadSchedule');
+    expect(customToast.error).toHaveBeenCalledWith(
+      'errors.failedToLoadSchedule',
+    );
   });
 
   it('T1-12: cambiar de idioma vuelve a pedir la agenda (como hoy)', async () => {
@@ -166,7 +186,9 @@ describe('SchedulePage · la carga de la agenda', () => {
     await screen.findByText('Ryder de los amigos');
     const vieja = aMano();
     const nueva = aMano();
-    mockDetalle.mockReturnValueOnce(vieja.promesa).mockReturnValueOnce(nueva.promesa);
+    mockDetalle
+      .mockReturnValueOnce(vieja.promesa)
+      .mockReturnValueOnce(nueva.promesa);
     IDIOMA.actual = { i18n: { language: 'en' }, t: (...a) => tBase(...a) };
     rerender(arbol());
     await waitFor(() => expect(mockDetalle).toHaveBeenCalledTimes(2));
@@ -174,7 +196,9 @@ describe('SchedulePage · la carga de la agenda', () => {
     rerender(arbol());
     await waitFor(() => expect(mockDetalle).toHaveBeenCalledTimes(3));
 
-    await act(async () => nueva.resolver({ ...COMPETICION, name: 'Ryder Nueva' }));
+    await act(async () =>
+      nueva.resolver({ ...COMPETICION, name: 'Ryder Nueva' }),
+    );
     expect(await screen.findByText('Ryder Nueva')).toBeInTheDocument();
     await act(async () => vieja.rechazar(new Error('vieja')));
 
@@ -188,7 +212,9 @@ describe('SchedulePage · la carga de la agenda', () => {
     await screen.findByText('Ryder de los amigos');
     const vieja = aMano();
     const nueva = aMano();
-    mockDetalle.mockReturnValueOnce(vieja.promesa).mockReturnValueOnce(nueva.promesa);
+    mockDetalle
+      .mockReturnValueOnce(vieja.promesa)
+      .mockReturnValueOnce(nueva.promesa);
     IDIOMA.actual = { i18n: { language: 'en' }, t: (...a) => tBase(...a) };
     rerender(arbol());
     await waitFor(() => expect(mockDetalle).toHaveBeenCalledTimes(2));
@@ -196,9 +222,13 @@ describe('SchedulePage · la carga de la agenda', () => {
     rerender(arbol());
     await waitFor(() => expect(mockDetalle).toHaveBeenCalledTimes(3));
 
-    await act(async () => nueva.resolver({ ...COMPETICION, name: 'Ryder Nueva' }));
+    await act(async () =>
+      nueva.resolver({ ...COMPETICION, name: 'Ryder Nueva' }),
+    );
     expect(await screen.findByText('Ryder Nueva')).toBeInTheDocument();
-    await act(async () => vieja.resolver({ ...COMPETICION, name: 'Ryder Vieja' }));
+    await act(async () =>
+      vieja.resolver({ ...COMPETICION, name: 'Ryder Vieja' }),
+    );
 
     expect(screen.getByText('Ryder Nueva')).toBeInTheDocument();
     expect(screen.queryByText('Ryder Vieja')).toBeNull();

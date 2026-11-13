@@ -7,15 +7,24 @@ import { CompetitionName } from '../value_objects/CompetitionName';
 import { DateRange } from '../value_objects/DateRange';
 import { Location } from '../value_objects/Location';
 import { CountryCode } from '../value_objects/CountryCode';
-import { HandicapSettings, PlayModeType } from '../value_objects/HandicapSettings';
+import {
+  HandicapSettings,
+  PlayModeType,
+} from '../value_objects/HandicapSettings';
 import { TeamAssignment } from '../value_objects/TeamAssignment';
 import { CompetitionStatus } from '../value_objects/CompetitionStatus';
 
 // Mock UserId for testing purposes
 class UserId {
-  constructor(value) { this.id = value; }
-  equals(other) { return other instanceof UserId && this.id === other.id; }
-  toString() { return this.id; }
+  constructor(value) {
+    this.id = value;
+  }
+  equals(other) {
+    return other instanceof UserId && this.id === other.id;
+  }
+  toString() {
+    return this.id;
+  }
 }
 
 describe('Competition', () => {
@@ -63,9 +72,13 @@ describe('Competition', () => {
       expect(competition.location.equals(props.location)).toBe(true);
       expect(competition.ryderCup.team1Name).toBe(props.team1Name);
       expect(competition.ryderCup.team2Name).toBe(props.team2Name);
-      expect(competition.handicapSettings.equals(props.handicapSettings)).toBe(true);
+      expect(competition.handicapSettings.equals(props.handicapSettings)).toBe(
+        true,
+      );
       expect(competition.maxPlayers).toBe(props.maxPlayers);
-      expect(competition.ryderCup.teamAssignment.equals(props.teamAssignment)).toBe(true);
+      expect(
+        competition.ryderCup.teamAssignment.equals(props.teamAssignment),
+      ).toBe(true);
       expect(competition.status.equals(CompetitionStatus.DRAFT)).toBe(true);
       expect(competition.createdAt).toBeInstanceOf(Date);
       expect(competition.updatedAt).toBeInstanceOf(Date);
@@ -81,17 +94,26 @@ describe('Competition', () => {
 
     it('should throw an error if team1Name is empty', () => {
       const props = createValidCompetitionProps({ team1Name: '' });
-      expect(() => new Competition(props)).toThrow('Team 1 name cannot be empty.');
+      expect(() => new Competition(props)).toThrow(
+        'Team 1 name cannot be empty.',
+      );
     });
 
     it('should throw an error if team2Name is empty', () => {
       const props = createValidCompetitionProps({ team2Name: '' });
-      expect(() => new Competition(props)).toThrow('Team 2 name cannot be empty.');
+      expect(() => new Competition(props)).toThrow(
+        'Team 2 name cannot be empty.',
+      );
     });
 
     it('should throw an error if team names are the same', () => {
-      const props = createValidCompetitionProps({ team1Name: 'Same', team2Name: 'Same' });
-      expect(() => new Competition(props)).toThrow('Team names must be different.');
+      const props = createValidCompetitionProps({
+        team1Name: 'Same',
+        team2Name: 'Same',
+      });
+      expect(() => new Competition(props)).toThrow(
+        'Team names must be different.',
+      );
     });
   });
 
@@ -101,65 +123,69 @@ describe('Competition', () => {
       const competition = new Competition(props);
       expect(competition.id.equals(props.id)).toBe(true);
     });
-    
+
     it('should return the correct creatorId', () => {
       const props = createValidCompetitionProps();
       const competition = new Competition(props);
-      expect(competition.creatorId.equals(props.creatorId)).toBe(true)
+      expect(competition.creatorId.equals(props.creatorId)).toBe(true);
     });
 
     it('should return the correct name', () => {
       const props = createValidCompetitionProps();
       const competition = new Competition(props);
-      expect(competition.name.equals(props.name)).toBe(true)
+      expect(competition.name.equals(props.name)).toBe(true);
     });
-    
+
     it('should return the correct dates', () => {
       const props = createValidCompetitionProps();
       const competition = new Competition(props);
-      expect(competition.dates.equals(props.dates)).toBe(true)
+      expect(competition.dates.equals(props.dates)).toBe(true);
     });
 
     it('should return the correct location', () => {
       const props = createValidCompetitionProps();
       const competition = new Competition(props);
-      expect(competition.location.equals(props.location)).toBe(true)
+      expect(competition.location.equals(props.location)).toBe(true);
     });
 
     it('should return the correct team1Name', () => {
       const props = createValidCompetitionProps();
       const competition = new Competition(props);
-      expect(competition.ryderCup.team1Name).toBe(props.team1Name)
+      expect(competition.ryderCup.team1Name).toBe(props.team1Name);
     });
 
     it('should return the correct team2Name', () => {
       const props = createValidCompetitionProps();
       const competition = new Competition(props);
-      expect(competition.ryderCup.team2Name).toBe(props.team2Name)
+      expect(competition.ryderCup.team2Name).toBe(props.team2Name);
     });
 
     it('should return the correct handicapSettings', () => {
       const props = createValidCompetitionProps();
       const competition = new Competition(props);
-      expect(competition.handicapSettings.equals(props.handicapSettings)).toBe(true)
+      expect(competition.handicapSettings.equals(props.handicapSettings)).toBe(
+        true,
+      );
     });
 
     it('should return the correct maxPlayers', () => {
       const props = createValidCompetitionProps();
       const competition = new Competition(props);
-      expect(competition.maxPlayers).toBe(props.maxPlayers)
+      expect(competition.maxPlayers).toBe(props.maxPlayers);
     });
 
     it('should return the correct teamAssignment', () => {
       const props = createValidCompetitionProps();
       const competition = new Competition(props);
-      expect(competition.ryderCup.teamAssignment.equals(props.teamAssignment)).toBe(true)
+      expect(
+        competition.ryderCup.teamAssignment.equals(props.teamAssignment),
+      ).toBe(true);
     });
 
     it('should return the correct status', () => {
       const props = createValidCompetitionProps();
       const competition = new Competition(props);
-      expect(competition.status.equals(CompetitionStatus.DRAFT)).toBe(true)
+      expect(competition.status.equals(CompetitionStatus.DRAFT)).toBe(true);
     });
   });
 
@@ -202,7 +228,11 @@ describe('Competition', () => {
 
     it('isCompleted should be true after complete', () => {
       let competition = Competition.create(createValidCompetitionProps());
-      competition = competition.activate().closeEnrollments().start().complete();
+      competition = competition
+        .activate()
+        .closeEnrollments()
+        .start()
+        .complete();
       expect(competition.isCompleted()).toBe(true);
     });
 
@@ -215,9 +245,13 @@ describe('Competition', () => {
 
   describe('Command Methods (State Transitions)', () => {
     it('activate() should transition from DRAFT to ACTIVE', () => {
-      const initialCompetition = Competition.create(createValidCompetitionProps());
+      const initialCompetition = Competition.create(
+        createValidCompetitionProps(),
+      );
       const activatedCompetition = initialCompetition.activate();
-      expect(activatedCompetition.status.equals(CompetitionStatus.ACTIVE)).toBe(true);
+      expect(activatedCompetition.status.equals(CompetitionStatus.ACTIVE)).toBe(
+        true,
+      );
       expect(activatedCompetition).not.toBe(initialCompetition); // Should return new instance
       // expect(activatedCompetition.updatedAt.getTime()).toBeGreaterThan(initialCompetition.updatedAt.getTime());
     });
@@ -227,60 +261,91 @@ describe('Competition', () => {
       competition = competition.activate(); // Now ACTIVE
       expect(() => competition.activate()).toThrow(CompetitionStateError);
     });
-    
+
     // Test closeEnrollments, start, complete, cancel similarly
     it('closeEnrollments() should transition from ACTIVE to CLOSED', () => {
-      let competition = Competition.create(createValidCompetitionProps()).activate();
+      let competition = Competition.create(
+        createValidCompetitionProps(),
+      ).activate();
       const closedCompetition = competition.closeEnrollments();
-      expect(closedCompetition.status.equals(CompetitionStatus.CLOSED)).toBe(true);
+      expect(closedCompetition.status.equals(CompetitionStatus.CLOSED)).toBe(
+        true,
+      );
       expect(closedCompetition).not.toBe(competition);
     });
 
     it('start() should transition from CLOSED to IN_PROGRESS', () => {
-      let competition = Competition.create(createValidCompetitionProps()).activate().closeEnrollments();
+      let competition = Competition.create(createValidCompetitionProps())
+        .activate()
+        .closeEnrollments();
       const startedCompetition = competition.start();
-      expect(startedCompetition.status.equals(CompetitionStatus.IN_PROGRESS)).toBe(true);
+      expect(
+        startedCompetition.status.equals(CompetitionStatus.IN_PROGRESS),
+      ).toBe(true);
       expect(startedCompetition).not.toBe(competition);
     });
 
     it('complete() should transition from IN_PROGRESS to COMPLETED', () => {
-      let competition = Competition.create(createValidCompetitionProps()).activate().closeEnrollments().start();
+      let competition = Competition.create(createValidCompetitionProps())
+        .activate()
+        .closeEnrollments()
+        .start();
       const completedCompetition = competition.complete();
-      expect(completedCompetition.status.equals(CompetitionStatus.COMPLETED)).toBe(true);
+      expect(
+        completedCompetition.status.equals(CompetitionStatus.COMPLETED),
+      ).toBe(true);
       expect(completedCompetition).not.toBe(competition);
     });
 
     it('cancel() should transition from DRAFT to CANCELLED', () => {
-      const initialCompetition = Competition.create(createValidCompetitionProps());
+      const initialCompetition = Competition.create(
+        createValidCompetitionProps(),
+      );
       const cancelledCompetition = initialCompetition.cancel();
-      expect(cancelledCompetition.status.equals(CompetitionStatus.CANCELLED)).toBe(true);
+      expect(
+        cancelledCompetition.status.equals(CompetitionStatus.CANCELLED),
+      ).toBe(true);
       expect(cancelledCompetition).not.toBe(initialCompetition);
     });
 
     it('cancel() should transition from ACTIVE to CANCELLED', () => {
-      let competition = Competition.create(createValidCompetitionProps()).activate();
+      let competition = Competition.create(
+        createValidCompetitionProps(),
+      ).activate();
       const cancelledCompetition = competition.cancel();
-      expect(cancelledCompetition.status.equals(CompetitionStatus.CANCELLED)).toBe(true);
+      expect(
+        cancelledCompetition.status.equals(CompetitionStatus.CANCELLED),
+      ).toBe(true);
       expect(cancelledCompetition).not.toBe(competition);
     });
 
     it('should throw CompetitionStateError if cancel() from final state', () => {
-      let competition = Competition.create(createValidCompetitionProps()).activate().closeEnrollments().start().complete(); // COMPLETED
-      
+      let competition = Competition.create(createValidCompetitionProps())
+        .activate()
+        .closeEnrollments()
+        .start()
+        .complete(); // COMPLETED
+
       try {
         competition.cancel();
         // If it gets here, the test fails because it didn't throw.
-        expect.fail('Expected cancel() to throw CompetitionStateError, but it did not.');
+        expect.fail(
+          'Expected cancel() to throw CompetitionStateError, but it did not.',
+        );
       } catch (e) {
         expect(e).toBeInstanceOf(CompetitionStateError);
       }
 
-      const cancelledCompetition = Competition.create(createValidCompetitionProps()).cancel(); // Now CANCELLED
-      
+      const cancelledCompetition = Competition.create(
+        createValidCompetitionProps(),
+      ).cancel(); // Now CANCELLED
+
       try {
         cancelledCompetition.cancel();
         // If it gets here, the test fails because it didn't throw.
-        expect.fail('Expected cancel() to throw CompetitionStateError, but it did not.');
+        expect.fail(
+          'Expected cancel() to throw CompetitionStateError, but it did not.',
+        );
       } catch (e) {
         expect(e).toBeInstanceOf(CompetitionStateError);
       }
@@ -289,32 +354,52 @@ describe('Competition', () => {
 
   describe('updateInfo()', () => {
     it('should update properties in DRAFT state and return a new instance', () => {
-      const initialCompetition = Competition.create(createValidCompetitionProps());
+      const initialCompetition = Competition.create(
+        createValidCompetitionProps(),
+      );
       const newName = new CompetitionName('Updated Name');
-      const updatedCompetition = initialCompetition.updateInfo({ name: newName });
+      const updatedCompetition = initialCompetition.updateInfo({
+        name: newName,
+      });
 
       expect(updatedCompetition).not.toBe(initialCompetition); // New instance
       expect(updatedCompetition.name.equals(newName)).toBe(true);
       // expect(updatedCompetition.updatedAt.getTime()).toBeGreaterThan(initialCompetition.updatedAt.getTime());
-      expect(updatedCompetition.status.equals(CompetitionStatus.DRAFT)).toBe(true); // Status should remain DRAFT
+      expect(updatedCompetition.status.equals(CompetitionStatus.DRAFT)).toBe(
+        true,
+      ); // Status should remain DRAFT
     });
 
     it('should throw CompetitionStateError if updateInfo() from non-DRAFT state', () => {
-      let competition = Competition.create(createValidCompetitionProps()).activate(); // Now ACTIVE
-      expect(() => competition.updateInfo({ name: new CompetitionName('New Name') })).toThrow(CompetitionStateError);
+      let competition = Competition.create(
+        createValidCompetitionProps(),
+      ).activate(); // Now ACTIVE
+      expect(() =>
+        competition.updateInfo({ name: new CompetitionName('New Name') }),
+      ).toThrow(CompetitionStateError);
     });
 
     it('should throw error for invalid team names during update', () => {
       const competition = Competition.create(createValidCompetitionProps());
-      expect(() => competition.updateInfo({ team1Name: '' })).toThrow('Team 1 name cannot be empty.');
-      expect(() => competition.updateInfo({ team1Name: 'Same', team2Name: 'Same' })).toThrow('Team names must be different.');
+      expect(() => competition.updateInfo({ team1Name: '' })).toThrow(
+        'Team 1 name cannot be empty.',
+      );
+      expect(() =>
+        competition.updateInfo({ team1Name: 'Same', team2Name: 'Same' }),
+      ).toThrow('Team names must be different.');
     });
 
     it('should throw error for invalid maxPlayers during update', () => {
       const competition = Competition.create(createValidCompetitionProps());
-      expect(() => competition.updateInfo({ maxPlayers: 1 })).toThrow('maxPlayers must be a number between 2 and 200.');
-      expect(() => competition.updateInfo({ maxPlayers: 201 })).toThrow('maxPlayers must be a number between 2 and 200.');
-      expect(() => competition.updateInfo({ maxPlayers: 'invalid' })).toThrow('maxPlayers must be a number between 2 and 200.');
+      expect(() => competition.updateInfo({ maxPlayers: 1 })).toThrow(
+        'maxPlayers must be a number between 2 and 200.',
+      );
+      expect(() => competition.updateInfo({ maxPlayers: 201 })).toThrow(
+        'maxPlayers must be a number between 2 and 200.',
+      );
+      expect(() => competition.updateInfo({ maxPlayers: 'invalid' })).toThrow(
+        'maxPlayers must be a number between 2 and 200.',
+      );
     });
 
     it('accepts up to 200 players, the API limit since BE #314', () => {
@@ -325,23 +410,39 @@ describe('Competition', () => {
 
     it('creating checks the same range as updating', () => {
       // Solo lo miraba `updateInfo`: crear con 500 daba una competición imposible
-      expect(() => Competition.create({ ...createValidCompetitionProps(), maxPlayers: 201 })).toThrow(
-        'maxPlayers must be a number between 2 and 200.'
-      );
-      expect(() => Competition.create({ ...createValidCompetitionProps(), maxPlayers: 1 })).toThrow(
-        'maxPlayers must be a number between 2 and 200.'
-      );
-      expect(Competition.create({ ...createValidCompetitionProps(), maxPlayers: 200 }).maxPlayers).toBe(200);
+      expect(() =>
+        Competition.create({
+          ...createValidCompetitionProps(),
+          maxPlayers: 201,
+        }),
+      ).toThrow('maxPlayers must be a number between 2 and 200.');
+      expect(() =>
+        Competition.create({ ...createValidCompetitionProps(), maxPlayers: 1 }),
+      ).toThrow('maxPlayers must be a number between 2 and 200.');
+      expect(
+        Competition.create({
+          ...createValidCompetitionProps(),
+          maxPlayers: 200,
+        }).maxPlayers,
+      ).toBe(200);
     });
 
-    it.each([2.5, Number.NaN, Infinity])('a non-whole count (%s) is not a count either', (cupo) => {
-      // `typeof NaN` es 'number' y no es ni < 2 ni > 200: pasaba (CodeRabbit en la #833)
-      const competition = Competition.create(createValidCompetitionProps());
-      expect(() => competition.updateInfo({ maxPlayers: cupo })).toThrow('maxPlayers must be a number between 2 and 200.');
-      expect(() => Competition.create({ ...createValidCompetitionProps(), maxPlayers: cupo })).toThrow(
-        'maxPlayers must be a number between 2 and 200.'
-      );
-    });
+    it.each([2.5, Number.NaN, Infinity])(
+      'a non-whole count (%s) is not a count either',
+      (cupo) => {
+        // `typeof NaN` es 'number' y no es ni < 2 ni > 200: pasaba (CodeRabbit en la #833)
+        const competition = Competition.create(createValidCompetitionProps());
+        expect(() => competition.updateInfo({ maxPlayers: cupo })).toThrow(
+          'maxPlayers must be a number between 2 and 200.',
+        );
+        expect(() =>
+          Competition.create({
+            ...createValidCompetitionProps(),
+            maxPlayers: cupo,
+          }),
+        ).toThrow('maxPlayers must be a number between 2 and 200.');
+      },
+    );
   });
 
   describe('equals', () => {
@@ -353,8 +454,12 @@ describe('Competition', () => {
     });
 
     it('should return false for two competitions with different IDs', () => {
-      const comp1 = new Competition(createValidCompetitionProps({ id: CompetitionId.generate() }));
-      const comp2 = new Competition(createValidCompetitionProps({ id: CompetitionId.generate() }));
+      const comp1 = new Competition(
+        createValidCompetitionProps({ id: CompetitionId.generate() }),
+      );
+      const comp2 = new Competition(
+        createValidCompetitionProps({ id: CompetitionId.generate() }),
+      );
       expect(comp1.equals(comp2)).toBe(false);
     });
 
@@ -369,7 +474,9 @@ describe('Competition', () => {
   describe('toString', () => {
     it('should return a string representation of the competition', () => {
       const competition = Competition.create(createValidCompetitionProps());
-      expect(competition.toString()).toBe(`${mockName.toString()} (${CompetitionStatus.DRAFT.toString()})`);
+      expect(competition.toString()).toBe(
+        `${mockName.toString()} (${CompetitionStatus.DRAFT.toString()})`,
+      );
     });
   });
 });

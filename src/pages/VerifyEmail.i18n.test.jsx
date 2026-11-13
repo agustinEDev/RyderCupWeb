@@ -43,7 +43,8 @@ const INGLES = [
   'has been verified successfully',
 ];
 const sinIngles = () => {
-  for (const texto of INGLES) expect(document.body.textContent).not.toContain(texto);
+  for (const texto of INGLES)
+    expect(document.body.textContent).not.toContain(texto);
 };
 
 const abrir = (url = '/verify-email?token=abc123') => {
@@ -53,7 +54,7 @@ const abrir = (url = '/verify-email?token=abc123') => {
       <Routes>
         <Route path="/verify-email" element={<VerifyEmail />} />
       </Routes>
-    </BrowserRouter>
+    </BrowserRouter>,
   );
 };
 
@@ -74,43 +75,78 @@ describe('VerifyEmail · textos traducidos (FE #776)', () => {
   it('E8: backend nuevo, sin sesión: verificado y a iniciar sesión, sin ir al panel', async () => {
     verifyEmailUseCase.execute.mockResolvedValue({ emailVerified: true });
     abrir();
-    expect(await screen.findByText('verifyEmail.successTitle', {}, { timeout: 4000 })).toBeInTheDocument();
+    expect(
+      await screen.findByText(
+        'verifyEmail.successTitle',
+        {},
+        { timeout: 4000 },
+      ),
+    ).toBeInTheDocument();
     expect(screen.getByText('verifyEmail.signInNow')).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'verifyEmail.goToLogin' })).toHaveAttribute('href', '/login');
-    expect(screen.queryByText('verifyEmail.redirecting')).not.toBeInTheDocument();
-    expect(screen.queryByText('verifyEmail.goToDashboard')).not.toBeInTheDocument();
+    expect(
+      screen.getByRole('link', { name: 'verifyEmail.goToLogin' }),
+    ).toHaveAttribute('href', '/login');
+    expect(
+      screen.queryByText('verifyEmail.redirecting'),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByText('verifyEmail.goToDashboard'),
+    ).not.toBeInTheDocument();
     sinIngles();
   });
 
   it('E3: sin token en el enlace', async () => {
     abrir('/verify-email');
-    expect(await screen.findByText('verifyEmail.invalidTitle')).toBeInTheDocument();
+    expect(
+      await screen.findByText('verifyEmail.invalidTitle'),
+    ).toBeInTheDocument();
     expect(screen.getByText('verifyEmail.invalidMessage')).toBeInTheDocument();
     sinIngles();
   });
 
   it('E7: cuenta desactivada: el correo SÍ se verificó, pero no entra (RyderCupAm #750)', async () => {
     verifyEmailUseCase.execute.mockRejectedValue(
-      Object.assign(new Error('deactivated'), { status: 403, errorCode: 'ACCOUNT_DEACTIVATED' })
+      Object.assign(new Error('deactivated'), {
+        status: 403,
+        errorCode: 'ACCOUNT_DEACTIVATED',
+      }),
     );
     abrir();
 
-    expect(await screen.findByText('verifyEmail.successTitle', {}, { timeout: 4000 })).toBeInTheDocument();
+    expect(
+      await screen.findByText(
+        'verifyEmail.successTitle',
+        {},
+        { timeout: 4000 },
+      ),
+    ).toBeInTheDocument();
     expect(screen.getByText('google.accountDeactivated')).toBeInTheDocument();
-    expect(screen.queryByText('verifyEmail.errorTitle')).not.toBeInTheDocument();
-    expect(screen.queryByText('verifyEmail.redirecting')).not.toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'verifyEmail.goToHome' })).toHaveAttribute('href', '/');
+    expect(
+      screen.queryByText('verifyEmail.errorTitle'),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByText('verifyEmail.redirecting'),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByRole('link', { name: 'verifyEmail.goToHome' }),
+    ).toHaveAttribute('href', '/');
     sinIngles();
   });
 
   it('E4 y E5: la verificación falla y el mensaje es el propio', async () => {
-    verifyEmailUseCase.execute.mockRejectedValue(new Error('Token de verificación inválido'));
+    verifyEmailUseCase.execute.mockRejectedValue(
+      new Error('Token de verificación inválido'),
+    );
     abrir();
-    expect(await screen.findByText('verifyEmail.errorTitle', {}, { timeout: 4000 })).toBeInTheDocument();
+    expect(
+      await screen.findByText('verifyEmail.errorTitle', {}, { timeout: 4000 }),
+    ).toBeInTheDocument();
     expect(screen.getByText('verifyEmail.errorMessage')).toBeInTheDocument();
     expect(screen.getByText('verifyEmail.goToLogin')).toBeInTheDocument();
     expect(screen.getByText('verifyEmail.goToHome')).toBeInTheDocument();
-    expect(document.body.textContent).not.toContain('Token de verificación inválido');
+    expect(document.body.textContent).not.toContain(
+      'Token de verificación inválido',
+    );
     sinIngles();
   });
 });

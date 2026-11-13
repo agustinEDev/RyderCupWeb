@@ -12,7 +12,9 @@ class GetScoringBreakdownUseCase {
 
   constructor({ playerStatsRepository }) {
     if (!playerStatsRepository) {
-      throw new Error('GetScoringBreakdownUseCase requires playerStatsRepository');
+      throw new Error(
+        'GetScoringBreakdownUseCase requires playerStatsRepository',
+      );
     }
     this.#playerStatsRepository = playerStatsRepository;
   }

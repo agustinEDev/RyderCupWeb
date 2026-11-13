@@ -17,7 +17,11 @@ class GoogleLoginUseCase {
    * @returns {Promise<{user: import('../../../domain/entities/User').default, csrfToken: string, isNewUser: boolean}>}
    */
   async execute(authorizationCode, codeVerifier) {
-    if (!authorizationCode || typeof authorizationCode !== 'string' || !authorizationCode.trim()) {
+    if (
+      !authorizationCode ||
+      typeof authorizationCode !== 'string' ||
+      !authorizationCode.trim()
+    ) {
       throw new Error('Authorization code is required');
     }
 
@@ -26,7 +30,10 @@ class GoogleLoginUseCase {
       throw new Error('Code verifier is required');
     }
 
-    return await this.authRepository.googleLogin(authorizationCode.trim(), codeVerifier);
+    return await this.authRepository.googleLogin(
+      authorizationCode.trim(),
+      codeVerifier,
+    );
   }
 }
 

@@ -64,7 +64,7 @@ class SetCustomHandicapUseCase {
 
     if (customHandicap < MIN_HANDICAP || customHandicap > MAX_HANDICAP) {
       throw new Error(
-        `El handicap debe estar entre ${MIN_HANDICAP} y ${MAX_HANDICAP}. Recibido: ${customHandicap}`
+        `El handicap debe estar entre ${MIN_HANDICAP} y ${MAX_HANDICAP}. Recibido: ${customHandicap}`,
       );
     }
 
@@ -72,7 +72,7 @@ class SetCustomHandicapUseCase {
     const enrollment = await this.#enrollmentRepository.setCustomHandicap(
       competitionId,
       enrollmentId,
-      customHandicap
+      customHandicap,
     );
 
     // Convertir a DTO simple para la UI

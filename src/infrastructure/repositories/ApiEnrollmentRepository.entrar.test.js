@@ -2,7 +2,9 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import ApiEnrollmentRepository from './ApiEnrollmentRepository';
 
 vi.mock('../http/api.js', async () => ({
-  segmento: (await vi.importActual('../http/rutaDeLaApi')).segmento, default: vi.fn() }));
+  segmento: (await vi.importActual('../http/rutaDeLaApi')).segmento,
+  default: vi.fn(),
+}));
 
 import apiRequest from '../http/api.js';
 
@@ -51,7 +53,10 @@ describe('ApiEnrollmentRepository · apuntarse', () => {
       created_at: '2027-01-01T00:00:00Z',
     });
 
-    const hecho = await new ApiEnrollmentRepository().requestEnrollment('c1', {});
+    const hecho = await new ApiEnrollmentRepository().requestEnrollment(
+      'c1',
+      {},
+    );
 
     expect(JSON.parse(apiRequest.mock.calls[0][1].body)).toEqual({});
     expect(hecho.waiting).toBe(false);

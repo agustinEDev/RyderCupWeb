@@ -14,7 +14,10 @@ import { AuthProvider } from '../contexts/AuthContext';
 import { useLogout } from './useLogout';
 import { logoutUseCase } from '../composition';
 import { broadcastLogout } from '../utils/broadcastAuth';
-import { reiniciaLaSesionCompartida, anotaLaSesion } from '../services/sesionCompartida';
+import {
+  reiniciaLaSesionCompartida,
+  anotaLaSesion,
+} from '../services/sesionCompartida';
 import { useAuth } from './useAuth';
 
 vi.mock('../composition', () => ({
@@ -45,9 +48,15 @@ const almacen = (() => {
   let store = {};
   return {
     getItem: (k) => (k in store ? store[k] : null),
-    setItem: (k, v) => { store[k] = String(v); },
-    removeItem: (k) => { delete store[k]; },
-    clear: () => { store = {}; },
+    setItem: (k, v) => {
+      store[k] = String(v);
+    },
+    removeItem: (k) => {
+      delete store[k];
+    },
+    clear: () => {
+      store = {};
+    },
   };
 })();
 vi.stubGlobal('localStorage', almacen);
@@ -75,16 +84,33 @@ const envoltorio = ({ children }) => (
 
 /** Todo lo que una cuenta deja escrito en el dispositivo. */
 const siembraLaCuenta = () => {
-  localStorage.setItem('user', JSON.stringify({ id: 'u-1', email: 'quien@sea.com' }));
+  localStorage.setItem(
+    'user',
+    JSON.stringify({ id: 'u-1', email: 'quien@sea.com' }),
+  );
   localStorage.setItem('access_token', 'lo-que-sea');
-  localStorage.setItem('rydercup-sesion-conocida', JSON.stringify({ first_name: 'Ana', handicap: 18 }));
-  localStorage.setItem('rydercup-ultima-lista', JSON.stringify([{ id: 'qm-1', name: 'Su partida' }]));
-  localStorage.setItem('rydercup-ultimo-conocido', JSON.stringify([{ id: 'qm-1', partida: {}, campo: {} }]));
+  localStorage.setItem(
+    'rydercup-sesion-conocida',
+    JSON.stringify({ first_name: 'Ana', handicap: 18 }),
+  );
+  localStorage.setItem(
+    'rydercup-ultima-lista',
+    JSON.stringify([{ id: 'qm-1', name: 'Su partida' }]),
+  );
+  localStorage.setItem(
+    'rydercup-ultimo-conocido',
+    JSON.stringify([{ id: 'qm-1', partida: {}, campo: {} }]),
+  );
 };
 
 const loQueQueda = () =>
-  ['user', 'access_token', 'rydercup-sesion-conocida', 'rydercup-ultima-lista', 'rydercup-ultimo-conocido']
-    .filter((k) => localStorage.getItem(k) !== null);
+  [
+    'user',
+    'access_token',
+    'rydercup-sesion-conocida',
+    'rydercup-ultima-lista',
+    'rydercup-ultimo-conocido',
+  ].filter((k) => localStorage.getItem(k) !== null);
 
 describe('useLogout · salir deja el dispositivo limpio (FE #531)', () => {
   beforeEach(() => {
@@ -99,38 +125,51 @@ describe('useLogout · salir deja el dispositivo limpio (FE #531)', () => {
     logoutUseCase.execute.mockResolvedValue(undefined);
 
     const { result } = renderHook(() => useLogout(), { wrapper: envoltorio });
-    await act(async () => { await result.current.logout({ recargarEn: '/' }); });
+    await act(async () => {
+      await result.current.logout({ recargarEn: '/' });
+    });
 
     expect(sessionStorage.getItem('vuelta_tras_entrar')).toBeNull();
   });
 
   it('cerrar sesión con el botón olvida el aviso de un cierre forzado que quedara guardado', async () => {
-    const { guardaElAvisoDelCierre, tomaElAvisoDelCierre } = await import('../utils/avisoTrasElCierre');
+    const { guardaElAvisoDelCierre, tomaElAvisoDelCierre } =
+      await import('../utils/avisoTrasElCierre');
     guardaElAvisoDelCierre('revocation');
     logoutUseCase.execute.mockResolvedValue(undefined);
 
     const { result } = renderHook(() => useLogout(), { wrapper: envoltorio });
-    await act(async () => { await result.current.logout({ recargarEn: '/' }); });
+    await act(async () => {
+      await result.current.logout({ recargarEn: '/' });
+    });
 
     expect(tomaElAvisoDelCierre()).toBeNull();
   });
 
   it('R3 (FE #1064): cerrar sesión a propósito olvida la última cuenta de la pestaña', async () => {
-    const { anotaLaCuentaDeEstaPestana, ultimaCuentaDeEstaPestana, olvidaLaCuentaDeEstaPestana } =
-      await import('../utils/vueltaTrasEntrar');
+    const {
+      anotaLaCuentaDeEstaPestana,
+      ultimaCuentaDeEstaPestana,
+      olvidaLaCuentaDeEstaPestana,
+    } = await import('../utils/vueltaTrasEntrar');
     olvidaLaCuentaDeEstaPestana();
     anotaLaCuentaDeEstaPestana('u-1');
     logoutUseCase.execute.mockResolvedValue(undefined);
     const { result } = renderHook(() => useLogout(), { wrapper: envoltorio });
 
-    await act(async () => { await result.current.logout({ recargarEn: '/' }); });
+    await act(async () => {
+      await result.current.logout({ recargarEn: '/' });
+    });
 
     expect(ultimaCuentaDeEstaPestana()).toBeNull();
   });
 
   it('R3 (FE #1064): un guardado que vuelve a anotar la cuenta durante la espera no la deja', async () => {
-    const { anotaLaCuentaDeEstaPestana, ultimaCuentaDeEstaPestana, olvidaLaCuentaDeEstaPestana } =
-      await import('../utils/vueltaTrasEntrar');
+    const {
+      anotaLaCuentaDeEstaPestana,
+      ultimaCuentaDeEstaPestana,
+      olvidaLaCuentaDeEstaPestana,
+    } = await import('../utils/vueltaTrasEntrar');
     olvidaLaCuentaDeEstaPestana();
     anotaLaCuentaDeEstaPestana('u-1');
     // Mientras se espera al servidor, termina un guardado del perfil y AuthContext anota
@@ -139,7 +178,9 @@ describe('useLogout · salir deja el dispositivo limpio (FE #531)', () => {
     });
     const { result } = renderHook(() => useLogout(), { wrapper: envoltorio });
 
-    await act(async () => { await result.current.logout({ recargarEn: '/' }); });
+    await act(async () => {
+      await result.current.logout({ recargarEn: '/' });
+    });
 
     expect(ultimaCuentaDeEstaPestana()).toBeNull();
     olvidaLaCuentaDeEstaPestana();
@@ -153,7 +194,9 @@ describe('useLogout · salir deja el dispositivo limpio (FE #531)', () => {
     logoutUseCase.execute.mockResolvedValue(undefined);
 
     const { result } = renderHook(() => useLogout(), { wrapper: envoltorio });
-    await act(async () => { await result.current.logout({ recargarEn: '/' }); });
+    await act(async () => {
+      await result.current.logout({ recargarEn: '/' });
+    });
 
     expect(loQueQueda()).toEqual([]);
     expect(window.location.href).toBe('/');
@@ -162,18 +205,30 @@ describe('useLogout · salir deja el dispositivo limpio (FE #531)', () => {
   it.each([
     { caso: 'with reload', opciones: { recargarEn: '/' } },
     { caso: 'without reload', opciones: {} },
-    { caso: 'when the backend fails', opciones: { recargarEn: '/' }, fallo: new TypeError('Failed to fetch') },
-    { caso: 'from another tab', opciones: { desdeOtraPestana: true, skipBackendCall: true } },
-  ])('forgets the Activity number and the app icon badge ($caso)', async ({ opciones, fallo }) => {
-    mockOlvidaLasNovedades.mockClear();
-    if (fallo) logoutUseCase.execute.mockRejectedValue(fallo);
-    else logoutUseCase.execute.mockResolvedValue(undefined);
+    {
+      caso: 'when the backend fails',
+      opciones: { recargarEn: '/' },
+      fallo: new TypeError('Failed to fetch'),
+    },
+    {
+      caso: 'from another tab',
+      opciones: { desdeOtraPestana: true, skipBackendCall: true },
+    },
+  ])(
+    'forgets the Activity number and the app icon badge ($caso)',
+    async ({ opciones, fallo }) => {
+      mockOlvidaLasNovedades.mockClear();
+      if (fallo) logoutUseCase.execute.mockRejectedValue(fallo);
+      else logoutUseCase.execute.mockResolvedValue(undefined);
 
-    const { result } = renderHook(() => useLogout(), { wrapper: envoltorio });
-    await act(async () => { await result.current.logout(opciones); });
+      const { result } = renderHook(() => useLogout(), { wrapper: envoltorio });
+      await act(async () => {
+        await result.current.logout(opciones);
+      });
 
-    expect(mockOlvidaLasNovedades).toHaveBeenCalledTimes(1);
-  });
+      expect(mockOlvidaLasNovedades).toHaveBeenCalledTimes(1);
+    },
+  );
 
   it('y también cuando el backend no contesta', async () => {
     // Quedarse sin cobertura al salir no deja los datos puestos
@@ -181,7 +236,9 @@ describe('useLogout · salir deja el dispositivo limpio (FE #531)', () => {
     logoutUseCase.execute.mockRejectedValue(new TypeError('Failed to fetch'));
 
     const { result } = renderHook(() => useLogout(), { wrapper: envoltorio });
-    await act(async () => { await result.current.logout({ recargarEn: '/' }); });
+    await act(async () => {
+      await result.current.logout({ recargarEn: '/' });
+    });
 
     expect(loQueQueda()).toEqual([]);
   });
@@ -195,8 +252,13 @@ describe('useLogout · salir deja el dispositivo limpio (FE #531)', () => {
 
     const { result } = renderHook(() => useLogout(), { wrapper: envoltorio });
     let salida;
-    act(() => { salida = result.current.logout({ recargarEn: '/' }); });
-    await act(async () => { await vi.advanceTimersByTimeAsync(5_000); await salida; });
+    act(() => {
+      salida = result.current.logout({ recargarEn: '/' });
+    });
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(5_000);
+      await salida;
+    });
     vi.useRealTimers();
 
     expect(loQueQueda()).toEqual([]);
@@ -207,7 +269,9 @@ describe('useLogout · salir deja el dispositivo limpio (FE #531)', () => {
     logoutUseCase.execute.mockResolvedValue(undefined);
 
     const { result } = renderHook(() => useLogout(), { wrapper: envoltorio });
-    await act(async () => { await result.current.logout(); });
+    await act(async () => {
+      await result.current.logout();
+    });
 
     expect(loQueQueda()).toEqual([]);
     expect(navigate).toHaveBeenCalledWith('/login', { replace: true });
@@ -249,27 +313,37 @@ describe('useLogout · el cierre que llega de otra pestaña no hace eco (FE #865
   // estuviera en una página que se ve sin sesión. Ahí se queda, recargando
   it.each([
     ['/terms', '', '/terms'],
-    ['/competitions/c1/leaderboard', '?categoria=2', '/competitions/c1/leaderboard?categoria=2'],
+    [
+      '/competitions/c1/leaderboard',
+      '?categoria=2',
+      '/competitions/c1/leaderboard?categoria=2',
+    ],
     ['/', '', '/'],
-  ])('O9: en una pública (%s%s) se queda en ella', async (pathname, search, destino) => {
-    vi.stubGlobal('location', { href: '', pathname, search });
-    const { result } = renderHook(() => useLogout(), { wrapper: envoltorio });
+  ])(
+    'O9: en una pública (%s%s) se queda en ella',
+    async (pathname, search, destino) => {
+      vi.stubGlobal('location', { href: '', pathname, search });
+      const { result } = renderHook(() => useLogout(), { wrapper: envoltorio });
 
-    await act(() => result.current.logout({ desdeOtraPestana: true }));
+      await act(() => result.current.logout({ desdeOtraPestana: true }));
 
-    expect(window.location.href).toBe(destino);
-    expect(loQueQueda()).toEqual([]);
-  });
+      expect(window.location.href).toBe(destino);
+      expect(loQueQueda()).toEqual([]);
+    },
+  );
 
   // /code-review: recargar el enlace del correo volvería a gastar su token
-  it.each(['/verify-email', '/reset-password/abc'])('O9d: en un enlace de un solo uso (%s), a /login', async (pathname) => {
-    vi.stubGlobal('location', { href: '', pathname, search: '?token=x' });
-    const { result } = renderHook(() => useLogout(), { wrapper: envoltorio });
+  it.each(['/verify-email', '/reset-password/abc'])(
+    'O9d: en un enlace de un solo uso (%s), a /login',
+    async (pathname) => {
+      vi.stubGlobal('location', { href: '', pathname, search: '?token=x' });
+      const { result } = renderHook(() => useLogout(), { wrapper: envoltorio });
 
-    await act(() => result.current.logout({ desdeOtraPestana: true }));
+      await act(() => result.current.logout({ desdeOtraPestana: true }));
 
-    expect(window.location.href).toBe('/login');
-  });
+      expect(window.location.href).toBe('/login');
+    },
+  );
 
   it('O9b: en una privada, a /login como antes', async () => {
     vi.stubGlobal('location', { href: '', pathname: '/profile', search: '' });
@@ -312,7 +386,9 @@ describe('useLogout · las demás pestañas se enteran al momento (FE #865)', ()
     logoutUseCase.execute.mockReturnValue(new Promise(() => {}));
     const { result } = renderHook(() => useLogout(), { wrapper: envoltorio });
 
-    act(() => { result.current.logout(); });
+    act(() => {
+      result.current.logout();
+    });
     await act(async () => {});
 
     expect(broadcastLogout).toHaveBeenCalledTimes(1);
@@ -322,7 +398,9 @@ describe('useLogout · las demás pestañas se enteran al momento (FE #865)', ()
     logoutUseCase.execute.mockRejectedValue(new TypeError('Failed to fetch'));
     const { result } = renderHook(() => useLogout(), { wrapper: envoltorio });
 
-    await act(async () => { await result.current.logout({ recargarEn: '/' }); });
+    await act(async () => {
+      await result.current.logout({ recargarEn: '/' });
+    });
 
     expect(broadcastLogout).toHaveBeenCalledTimes(1);
   });
@@ -330,7 +408,9 @@ describe('useLogout · las demás pestañas se enteran al momento (FE #865)', ()
   it('O6b: sin llamada al servidor (dispositivo ya revocado), avisa igual', async () => {
     const { result } = renderHook(() => useLogout(), { wrapper: envoltorio });
 
-    await act(async () => { await result.current.logout({ skipBackendCall: true }); });
+    await act(async () => {
+      await result.current.logout({ skipBackendCall: true });
+    });
 
     expect(logoutUseCase.execute).not.toHaveBeenCalled();
     expect(broadcastLogout).toHaveBeenCalledTimes(1);
@@ -392,4 +472,3 @@ describe('useLogout · al salir recargando no se vuelve a preguntar por la sesi�
     expect(mockPreguntas).toHaveLength(1);
   });
 });
-

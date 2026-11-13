@@ -27,7 +27,9 @@ const fechaCorta = (dia, idioma) => {
 };
 
 const juegaEn = (match, jugador) =>
-  [...(match.teamAPlayers ?? []), ...(match.teamBPlayers ?? [])].some((p) => p.userId === jugador);
+  [...(match.teamAPlayers ?? []), ...(match.teamBPlayers ?? [])].some(
+    (p) => p.userId === jugador,
+  );
 
 const LeaderboardView = ({ leaderboard, jugador = null }) => {
   const { t, i18n } = useTranslation(['scoring', 'schedule']);
@@ -36,11 +38,19 @@ const LeaderboardView = ({ leaderboard, jugador = null }) => {
   const primeroSuyoRef = useRef(null);
   const partidos = leaderboard?.matches ?? [];
   const enJuego = partidos.filter((m) => m.status === 'IN_PROGRESS');
-  const acabados = partidos.filter((m) => m.status === 'COMPLETED' || m.status === 'CONCEDED' || m.status === 'WALKOVER');
+  const acabados = partidos.filter(
+    (m) =>
+      m.status === 'COMPLETED' ||
+      m.status === 'CONCEDED' ||
+      m.status === 'WALKOVER',
+  );
   // El primero suyo en el orden en que se pintan: en juego, luego acabados
-  const primeroSuyo = jugador ? [...enJuego, ...acabados].find((m) => juegaEn(m, jugador))?.matchId : undefined;
+  const primeroSuyo = jugador
+    ? [...enJuego, ...acabados].find((m) => juegaEn(m, jugador))?.matchId
+    : undefined;
   useEffect(() => {
-    if (primeroSuyo) primeroSuyoRef.current?.scrollIntoView?.({ block: 'center' });
+    if (primeroSuyo)
+      primeroSuyoRef.current?.scrollIntoView?.({ block: 'center' });
   }, [primeroSuyo]);
 
   if (!leaderboard) return null;
@@ -49,8 +59,12 @@ const LeaderboardView = ({ leaderboard, jugador = null }) => {
   const completed = acabados;
 
   const renderMatch = (match) => {
-    const teamANames = (match.teamAPlayers ?? []).map(p => p.userName).join(' / ');
-    const teamBNames = (match.teamBPlayers ?? []).map(p => p.userName).join(' / ');
+    const teamANames = (match.teamAPlayers ?? [])
+      .map((p) => p.userName)
+      .join(' / ');
+    const teamBNames = (match.teamBPlayers ?? [])
+      .map((p) => p.userName)
+      .join(' / ');
     const teamAWon = match.result?.winner === 'A';
     const teamBWon = match.result?.winner === 'B';
     const isTeamALeading = match.leadingTeam === 'A';
@@ -79,45 +93,71 @@ const LeaderboardView = ({ leaderboard, jugador = null }) => {
             )}
             #{match.matchNumber}
             {/* Uno sin traducir sale tal cual, no «formats.X» (`/code-review`) */}
-            {match.matchFormat && ` - ${t(`formats.${match.matchFormat}`, { ns: 'schedule', defaultValue: match.matchFormat })}`}
+            {match.matchFormat &&
+              ` - ${t(`formats.${match.matchFormat}`, { ns: 'schedule', defaultValue: match.matchFormat })}`}
           </span>
           {match.status === 'IN_PROGRESS' && match.currentHole && (
-            <span className="text-xs text-gray-500">{t('leaderboard.hole')} {match.currentHole}</span>
+            <span className="text-xs text-gray-500">
+              {t('leaderboard.hole')} {match.currentHole}
+            </span>
           )}
         </div>
         <div className="text-center space-y-1">
-          <p className={`text-sm ${teamAHighlighted ? 'font-bold text-gray-900' : 'text-gray-600'}`}>
+          <p
+            className={`text-sm ${teamAHighlighted ? 'font-bold text-gray-900' : 'text-gray-600'}`}
+          >
             {teamANames}
           </p>
           <div className="py-1">
             {match.standing ? (
               <span className="text-lg font-bold text-primary">
-                {match.standing === 'AS' ? t('leaderboard.allSquare') : match.standing}
+                {match.standing === 'AS'
+                  ? t('leaderboard.allSquare')
+                  : match.standing}
               </span>
             ) : match.result ? (
               <span className="text-lg font-bold text-primary">
-                {match.status === 'WALKOVER' || match.result.score === 'WALKOVER'
+                {match.status === 'WALKOVER' ||
+                match.result.score === 'WALKOVER'
                   ? t('leaderboard.walkover', {
-                    team: match.result.winner === 'A' ? leaderboard.teamAName : leaderboard.teamBName,
-                  })
-                  : match.status === 'CONCEDED' || match.result.score === 'CONCEDED'
-                  ? t('leaderboard.conceded', {
-                    team: match.result.winner === 'A' ? leaderboard.teamAName : leaderboard.teamBName,
-                  })
-                  : match.result.winner === 'HALVED'
-                    ? t('leaderboard.allSquare')
-                    : match.result.winner
-                    ? t('leaderboard.wins', {
-                      team: match.result.winner === 'A' ? leaderboard.teamAName : leaderboard.teamBName,
-                      score: formatMatchPlayResult(match.result.score, match.currentHole),
+                      team:
+                        match.result.winner === 'A'
+                          ? leaderboard.teamAName
+                          : leaderboard.teamBName,
                     })
-                    : formatMatchPlayResult(match.result.score, match.currentHole)}
+                  : match.status === 'CONCEDED' ||
+                      match.result.score === 'CONCEDED'
+                    ? t('leaderboard.conceded', {
+                        team:
+                          match.result.winner === 'A'
+                            ? leaderboard.teamAName
+                            : leaderboard.teamBName,
+                      })
+                    : match.result.winner === 'HALVED'
+                      ? t('leaderboard.allSquare')
+                      : match.result.winner
+                        ? t('leaderboard.wins', {
+                            team:
+                              match.result.winner === 'A'
+                                ? leaderboard.teamAName
+                                : leaderboard.teamBName,
+                            score: formatMatchPlayResult(
+                              match.result.score,
+                              match.currentHole,
+                            ),
+                          })
+                        : formatMatchPlayResult(
+                            match.result.score,
+                            match.currentHole,
+                          )}
               </span>
             ) : (
               <span className="text-sm text-gray-400">-</span>
             )}
           </div>
-          <p className={`text-sm ${teamBHighlighted ? 'font-bold text-gray-900' : 'text-gray-600'}`}>
+          <p
+            className={`text-sm ${teamBHighlighted ? 'font-bold text-gray-900' : 'text-gray-600'}`}
+          >
             {teamBNames}
           </p>
         </div>
@@ -136,20 +176,26 @@ const LeaderboardView = ({ leaderboard, jugador = null }) => {
 
       {inProgress.length > 0 && (
         <div>
-          <h3 className="text-sm font-semibold text-gray-700 mb-2">{t('leaderboard.inProgress')}</h3>
+          <h3 className="text-sm font-semibold text-gray-700 mb-2">
+            {t('leaderboard.inProgress')}
+          </h3>
           <div className="space-y-2">{inProgress.map(renderMatch)}</div>
         </div>
       )}
 
       {completed.length > 0 && (
         <div>
-          <h3 className="text-sm font-semibold text-gray-700 mb-2">{t('leaderboard.completed')}</h3>
+          <h3 className="text-sm font-semibold text-gray-700 mb-2">
+            {t('leaderboard.completed')}
+          </h3>
           <div className="space-y-2">{completed.map(renderMatch)}</div>
         </div>
       )}
 
       {inProgress.length === 0 && completed.length === 0 && (
-        <p className="text-center text-gray-500 py-4">{t('leaderboard.noMatches')}</p>
+        <p className="text-center text-gray-500 py-4">
+          {t('leaderboard.noMatches')}
+        </p>
       )}
     </div>
   );

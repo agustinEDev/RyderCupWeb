@@ -7,7 +7,9 @@ import { X, Users } from 'lucide-react';
 // key={match?.id} forces remount if the match changes while the modal is open.
 const ReassignPlayersModal = ({ isOpen, match, ...props }) => {
   if (!isOpen) return null;
-  return <ReassignPlayersModalContent key={match?.id} match={match} {...props} />;
+  return (
+    <ReassignPlayersModalContent key={match?.id} match={match} {...props} />
+  );
 };
 
 const ReassignPlayersModalContent = ({
@@ -21,39 +23,40 @@ const ReassignPlayersModalContent = ({
   t,
 }) => {
   const [teamAIds, setTeamAIds] = useState(() =>
-    (match?.teamAPlayers || []).map(p => p.userId)
+    (match?.teamAPlayers || []).map((p) => p.userId),
   );
 
   const [teamBIds, setTeamBIds] = useState(() =>
-    (match?.teamBPlayers || []).map(p => p.userId)
+    (match?.teamBPlayers || []).map((p) => p.userId),
   );
 
   // Only approved enrollments
-  const approvedPlayers = enrollments.filter(e => e.status === 'APPROVED');
+  const approvedPlayers = enrollments.filter((e) => e.status === 'APPROVED');
 
   const togglePlayer = (playerId, team) => {
     if (team === 'A') {
       // Remove from B if present
-      setTeamBIds(prev => prev.filter(id => id !== playerId));
-      setTeamAIds(prev =>
+      setTeamBIds((prev) => prev.filter((id) => id !== playerId));
+      setTeamAIds((prev) =>
         prev.includes(playerId)
-          ? prev.filter(id => id !== playerId)
-          : [...prev, playerId]
+          ? prev.filter((id) => id !== playerId)
+          : [...prev, playerId],
       );
     } else {
       // Remove from A if present
-      setTeamAIds(prev => prev.filter(id => id !== playerId));
-      setTeamBIds(prev =>
+      setTeamAIds((prev) => prev.filter((id) => id !== playerId));
+      setTeamBIds((prev) =>
         prev.includes(playerId)
-          ? prev.filter(id => id !== playerId)
-          : [...prev, playerId]
+          ? prev.filter((id) => id !== playerId)
+          : [...prev, playerId],
       );
     }
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (inscritosSinCargar || teamAIds.length === 0 || teamBIds.length === 0) return;
+    if (inscritosSinCargar || teamAIds.length === 0 || teamBIds.length === 0)
+      return;
     onConfirm(teamAIds, teamBIds);
   };
 
@@ -82,7 +85,10 @@ const ReassignPlayersModalContent = ({
         <div className="flex justify-between items-center p-6 border-b border-gray-200">
           <div className="flex items-center gap-2">
             <Users className="w-5 h-5 text-primary" />
-            <h2 id="reasignar-jugadores-titulo" className="text-xl font-bold text-gray-900">
+            <h2
+              id="reasignar-jugadores-titulo"
+              className="text-xl font-bold text-gray-900"
+            >
               {t('matches.reassignPlayers')}
             </h2>
           </div>
@@ -120,9 +126,11 @@ const ReassignPlayersModalContent = ({
                 <div
                   key={player.userId}
                   className={`flex items-center justify-between p-3 rounded-lg border ${
-                    team === 'A' ? 'border-blue-300 bg-blue-50' :
-                    team === 'B' ? 'border-red-300 bg-red-50' :
-                    'border-gray-200 bg-white'
+                    team === 'A'
+                      ? 'border-blue-300 bg-blue-50'
+                      : team === 'B'
+                        ? 'border-red-300 bg-red-50'
+                        : 'border-gray-200 bg-white'
                   }`}
                 >
                   <span className="text-sm font-medium text-gray-900">
@@ -160,10 +168,14 @@ const ReassignPlayersModalContent = ({
           {/* Summary */}
           <div className="grid grid-cols-2 gap-3 text-sm">
             <div className="bg-blue-50 rounded-lg p-3 border border-blue-200">
-              <span className="font-semibold text-blue-800">{teamNames.teamA}: {teamAIds.length}</span>
+              <span className="font-semibold text-blue-800">
+                {teamNames.teamA}: {teamAIds.length}
+              </span>
             </div>
             <div className="bg-red-50 rounded-lg p-3 border border-red-200">
-              <span className="font-semibold text-red-800">{teamNames.teamB}: {teamBIds.length}</span>
+              <span className="font-semibold text-red-800">
+                {teamNames.teamB}: {teamBIds.length}
+              </span>
             </div>
           </div>
 
@@ -178,8 +190,17 @@ const ReassignPlayersModalContent = ({
             </button>
             <button
               type="submit"
-              disabled={inscritosSinCargar || isProcessing || teamAIds.length === 0 || teamBIds.length === 0}
-              aria-describedby={inscritosSinCargar ? 'reasignar-inscritos-sin-cargar' : undefined}
+              disabled={
+                inscritosSinCargar ||
+                isProcessing ||
+                teamAIds.length === 0 ||
+                teamBIds.length === 0
+              }
+              aria-describedby={
+                inscritosSinCargar
+                  ? 'reasignar-inscritos-sin-cargar'
+                  : undefined
+              }
               className="px-4 py-2 bg-primary text-white rounded-lg font-medium hover:bg-primary/90 transition-colors disabled:opacity-50"
             >
               {isProcessing ? '...' : t('matches.reassignPlayers')}

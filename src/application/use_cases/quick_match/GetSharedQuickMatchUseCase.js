@@ -12,7 +12,9 @@ class GetSharedQuickMatchUseCase {
 
   constructor({ quickMatchRepository }) {
     if (!quickMatchRepository) {
-      throw new Error('GetSharedQuickMatchUseCase requires quickMatchRepository');
+      throw new Error(
+        'GetSharedQuickMatchUseCase requires quickMatchRepository',
+      );
     }
     this.#quickMatchRepository = quickMatchRepository;
   }

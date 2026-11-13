@@ -35,9 +35,5 @@
     "src/**/*.jsx",
     "src/vite-env.d.ts"
   ],
-  "exclude": [
-    "node_modules",
-    "dist",
-    "coverage"
-  ]
+  "exclude": ["node_modules", "dist", "coverage"]
 }

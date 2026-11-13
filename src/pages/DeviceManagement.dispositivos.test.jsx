@@ -1,4 +1,12 @@
-import { describe, it, expect, vi, beforeEach, beforeAll, afterAll } from 'vitest';
+import {
+  describe,
+  it,
+  expect,
+  vi,
+  beforeEach,
+  beforeAll,
+  afterAll,
+} from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router';
 
@@ -17,7 +25,9 @@ import { MemoryRouter } from 'react-router';
  */
 const idiomaApp = vi.hoisted(() => ({ valor: 'es' }));
 vi.mock('../utils/cortinaDeArranque', () => ({ laPantallaEstaLista: vi.fn() }));
-vi.mock('../hooks/useTerminosPendientes', () => ({ useTerminosPendientes: () => false }));
+vi.mock('../hooks/useTerminosPendientes', () => ({
+  useTerminosPendientes: () => false,
+}));
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
     t: (k) =>
@@ -31,8 +41,12 @@ vi.mock('react-i18next', () => ({
   }),
 }));
 vi.mock('../components/layout/HeaderAuth', () => ({ default: () => null }));
-vi.mock('../hooks/useAuth', () => ({ useAuth: () => ({ user: { id: 'u-1' }, loading: false }) }));
-vi.mock('../hooks/useLogout', () => ({ useLogout: () => ({ logout: vi.fn() }) }));
+vi.mock('../hooks/useAuth', () => ({
+  useAuth: () => ({ user: { id: 'u-1' }, loading: false }),
+}));
+vi.mock('../hooks/useLogout', () => ({
+  useLogout: () => ({ logout: vi.fn() }),
+}));
 
 const IPHONE = {
   id: 'd-1',
@@ -58,11 +72,24 @@ const MAC = {
   isCurrentDevice: false,
 };
 vi.mock('../hooks/useDeviceManagement', () => ({
-  useDeviceManagement: () => ({ devices: [IPHONE, MAC], isLoading: false, error: null, revokeDevice: vi.fn(), refetch: vi.fn(), revokingDeviceIds: new Set(), deviceErrors: new Map() }),
+  useDeviceManagement: () => ({
+    devices: [IPHONE, MAC],
+    isLoading: false,
+    error: null,
+    revokeDevice: vi.fn(),
+    refetch: vi.fn(),
+    revokingDeviceIds: new Set(),
+    deviceErrors: new Map(),
+  }),
 }));
 
 const { default: DeviceManagement } = await import('./DeviceManagement');
-const abrir = () => render(<MemoryRouter><DeviceManagement /></MemoryRouter>);
+const abrir = () =>
+  render(
+    <MemoryRouter>
+      <DeviceManagement />
+    </MemoryRouter>,
+  );
 
 // En una zona fija distinta de UTC: el CI corre en UTC, y ahí leer la fecha sin «Z»
 // como hora local da lo mismo que leerla como UTC, así que el test no probaría nada
@@ -84,9 +111,21 @@ describe('DeviceManagement · lo que enseña cada dispositivo', () => {
     abrir();
 
     // 19:07 y 19:04 UTC son las 20:07 y 20:04 en Madrid (noviembre, UTC+1)
-    expect(screen.getAllByText((_, el) => el?.tagName === 'SPAN' && el.textContent.includes('20:07')).length).toBeGreaterThan(0);
-    expect(screen.getAllByText((_, el) => el?.tagName === 'SPAN' && el.textContent.includes('20:04')).length).toBeGreaterThan(0);
-    expect(screen.queryAllByText((_, el) => el?.tagName === 'SPAN' && el.textContent.includes('19:07'))).toHaveLength(0);
+    expect(
+      screen.getAllByText(
+        (_, el) => el?.tagName === 'SPAN' && el.textContent.includes('20:07'),
+      ).length,
+    ).toBeGreaterThan(0);
+    expect(
+      screen.getAllByText(
+        (_, el) => el?.tagName === 'SPAN' && el.textContent.includes('20:04'),
+      ).length,
+    ).toBeGreaterThan(0);
+    expect(
+      screen.queryAllByText(
+        (_, el) => el?.tagName === 'SPAN' && el.textContent.includes('19:07'),
+      ),
+    ).toHaveLength(0);
   });
 
   it('P2: el nombre traducido y el icono por tipo', () => {
@@ -108,14 +147,27 @@ describe('DeviceManagement · lo que enseña cada dispositivo', () => {
   it('P4: la IP tapada y el país', () => {
     abrir();
 
-    expect(screen.getAllByText((_, el) => el?.tagName === 'SPAN' && el.textContent.includes('90.71.66.***')).length).toBeGreaterThan(0);
-    expect(screen.getAllByText((_, el) => el?.tagName === 'SPAN' && el.textContent.includes('España')).length).toBe(1);
+    expect(
+      screen.getAllByText(
+        (_, el) =>
+          el?.tagName === 'SPAN' && el.textContent.includes('90.71.66.***'),
+      ).length,
+    ).toBeGreaterThan(0);
+    expect(
+      screen.getAllByText(
+        (_, el) => el?.tagName === 'SPAN' && el.textContent.includes('España'),
+      ).length,
+    ).toBe(1);
   });
 
   it('P5: con el idioma guardado como «es_ES», el país sale en castellano', () => {
     idiomaApp.valor = 'es_ES';
     abrir();
 
-    expect(screen.getAllByText((_, el) => el?.tagName === 'SPAN' && el.textContent.includes('España')).length).toBe(1);
+    expect(
+      screen.getAllByText(
+        (_, el) => el?.tagName === 'SPAN' && el.textContent.includes('España'),
+      ).length,
+    ).toBe(1);
   });
 });

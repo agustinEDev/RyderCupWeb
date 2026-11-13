@@ -3,7 +3,11 @@ import {
   submitQuickMatchHoleScoreUseCase,
   submitQuickMatchProxyHoleScoreUseCase,
 } from '../composition';
-import { PARO, avisoTrasElVaciado, vaciaAnotaciones } from '../services/vaciaAnotaciones';
+import {
+  PARO,
+  avisoTrasElVaciado,
+  vaciaAnotaciones,
+} from '../services/vaciaAnotaciones';
 import * as offlineQueue from '../utils/scoringOfflineQueue';
 import { clasificaLaCola } from '../utils/colaDePartidaRapida';
 
@@ -42,7 +46,7 @@ export const useVaciadoDePartidaRapida = ({
         // seria null, asi que un golpe propio se enviaria como proxy
         const anotadosEnElServidor = partida?.holeScores ?? [];
         const miParticipanteId = partida?.participants?.find(
-          (p) => p.userId === currentUserId
+          (p) => p.userId === currentUserId,
         )?.participantId;
 
         // Primero se clasifica la cola ENTERA, y solo despues se envia. Al
@@ -55,7 +59,12 @@ export const useVaciadoDePartidaRapida = ({
           partida,
           miParticipanteId,
           borra: (entrada) =>
-            offlineQueue.remove(quickMatchId, entrada.holeNumber, entrada.participantId, entrada.userId ?? null),
+            offlineQueue.remove(
+              quickMatchId,
+              entrada.holeNumber,
+              entrada.participantId,
+              entrada.userId ?? null,
+            ),
         });
         setDiscrepancias(enConflicto);
 
@@ -71,18 +80,19 @@ export const useVaciadoDePartidaRapida = ({
           : await vaciaAnotaciones({
               entradas: porEnviar,
               manda: async (entrada) => {
-                const golpe = entrada.participantId === miParticipanteId
-                  ? await submitQuickMatchHoleScoreUseCase.execute(
-                    quickMatchId,
-                    entrada.holeNumber,
-                    entrada.scoreData.score
-                  )
-                  : await submitQuickMatchProxyHoleScoreUseCase.execute(
-                    quickMatchId,
-                    entrada.participantId,
-                    entrada.holeNumber,
-                    entrada.scoreData.score
-                  );
+                const golpe =
+                  entrada.participantId === miParticipanteId
+                    ? await submitQuickMatchHoleScoreUseCase.execute(
+                        quickMatchId,
+                        entrada.holeNumber,
+                        entrada.scoreData.score,
+                      )
+                    : await submitQuickMatchProxyHoleScoreUseCase.execute(
+                        quickMatchId,
+                        entrada.participantId,
+                        entrada.holeNumber,
+                        entrada.scoreData.score,
+                      );
                 pintaElGolpe(golpe);
               },
               alDescartar: (entrada) => {
@@ -97,11 +107,18 @@ export const useVaciadoDePartidaRapida = ({
                 // cuando más falta hace
                 setPerdidos((antes) =>
                   antes.some(
-                    (x) => x.holeNumber === entrada.holeNumber
-                      && x.participantId === entrada.participantId
+                    (x) =>
+                      x.holeNumber === entrada.holeNumber &&
+                      x.participantId === entrada.participantId,
                   )
                     ? antes
-                    : [...antes, { holeNumber: entrada.holeNumber, participantId: entrada.participantId }]
+                    : [
+                        ...antes,
+                        {
+                          holeNumber: entrada.holeNumber,
+                          participantId: entrada.participantId,
+                        },
+                      ],
                 );
               },
               dueñoSiNoLoTiene: currentUserId ?? null,
@@ -131,7 +148,18 @@ export const useVaciadoDePartidaRapida = ({
         escribiendoRef.current = false;
       }
     },
-    [quickMatchId, currentUserId, fetchQuickMatch, pintaElGolpe, escribiendoRef, idVigenteRef, setDiscrepancias, setPerdidos, setPendientes, setAvisoDelVaciado]
+    [
+      quickMatchId,
+      currentUserId,
+      fetchQuickMatch,
+      pintaElGolpe,
+      escribiendoRef,
+      idVigenteRef,
+      setDiscrepancias,
+      setPerdidos,
+      setPendientes,
+      setAvisoDelVaciado,
+    ],
   );
 
   // La ref se asigna en un efecto, no durante el render. El sondeo la lee

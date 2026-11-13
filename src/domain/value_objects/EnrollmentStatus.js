@@ -63,7 +63,7 @@ class EnrollmentStatus {
     if (!EnrollmentStatus.isValid(value)) {
       throw new Error(
         `Invalid EnrollmentStatus: ${value}. ` +
-          `Valid values: ${EnrollmentStatus.getAllValues().join(', ')}`
+          `Valid values: ${EnrollmentStatus.getAllValues().join(', ')}`,
       );
     }
     this.#value = value;
@@ -173,7 +173,7 @@ class EnrollmentStatus {
     if (!this.canTransitionTo(targetStatus)) {
       throw new Error(
         `Invalid transition: ${this.#value} → ${targetStatus.toString()}. ` +
-          `Allowed transitions: ${EnrollmentStatus.VALID_TRANSITIONS[this.#value].join(', ') || 'none'}`
+          `Allowed transitions: ${EnrollmentStatus.VALID_TRANSITIONS[this.#value].join(', ') || 'none'}`,
       );
     }
   }
@@ -189,7 +189,8 @@ class EnrollmentStatus {
    */
   isPending() {
     return (
-      this.#value === EnrollmentStatus.REQUESTED || this.#value === EnrollmentStatus.INVITED
+      this.#value === EnrollmentStatus.REQUESTED ||
+      this.#value === EnrollmentStatus.INVITED
     );
   }
 

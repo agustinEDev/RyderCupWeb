@@ -6,7 +6,10 @@ import { X, Trophy, AlertTriangle, ClipboardList } from 'lucide-react';
 import { getMatchDetailUseCase } from '../../composition';
 import BlockLoader from '../ui/BlockLoader';
 import RetiradaPorElOrganizador from './RetiradaPorElOrganizador';
-import { formatoDeIndice, formatoDeHandicapDeJuego } from '../../utils/formatoDeHandicap';
+import {
+  formatoDeIndice,
+  formatoDeHandicapDeJuego,
+} from '../../utils/formatoDeHandicap';
 
 const MatchDetailModal = ({
   isOpen,
@@ -49,29 +52,42 @@ const MatchDetailModal = ({
 
   if (!isOpen) return null;
 
-  const getPlayerName = (playerId) => playerNameMap.get(playerId) || t('unnamedPlayer');
+  const getPlayerName = (playerId) =>
+    playerNameMap.get(playerId) || t('unnamedPlayer');
 
   const renderHandicapInfo = (p) => {
-    const realHcp = p.playerHandicap ?? playerHandicapMap?.get(p.userId) ?? null;
+    const realHcp =
+      p.playerHandicap ?? playerHandicapMap?.get(p.userId) ?? null;
     const ph = p.playingHandicap;
-    const isCapped = maxPlayingHandicap != null && ph != null && ph >= maxPlayingHandicap;
+    const isCapped =
+      maxPlayingHandicap != null && ph != null && ph >= maxPlayingHandicap;
 
     if (realHcp == null && ph == null) return null;
 
     return (
       <span className="ml-2 inline-flex items-center gap-1">
         {realHcp != null && (
-          <span className="text-xs text-gray-600 font-medium">{t('handicapLabels.index', { value: formatoDeIndice(realHcp) })}</span>
+          <span className="text-xs text-gray-600 font-medium">
+            {t('handicapLabels.index', { value: formatoDeIndice(realHcp) })}
+          </span>
         )}
         {ph != null && (
           <>
-            {realHcp != null && <span className="text-xs text-gray-400">|</span>}
+            {realHcp != null && (
+              <span className="text-xs text-gray-400">|</span>
+            )}
             {isCapped ? (
               <span className="text-xs bg-orange-100 text-orange-700 font-semibold px-1.5 py-0.5 rounded">
-                {t('handicapLabels.playingCapped', { value: formatoDeHandicapDeJuego(ph) })}
+                {t('handicapLabels.playingCapped', {
+                  value: formatoDeHandicapDeJuego(ph),
+                })}
               </span>
             ) : (
-              <span className="text-xs text-gray-600 font-medium">{t('handicapLabels.playing', { value: formatoDeHandicapDeJuego(ph) })}</span>
+              <span className="text-xs text-gray-600 font-medium">
+                {t('handicapLabels.playing', {
+                  value: formatoDeHandicapDeJuego(ph),
+                })}
+              </span>
             )}
           </>
         )}
@@ -94,7 +110,10 @@ const MatchDetailModal = ({
       >
         {/* Header */}
         <div className="flex justify-between items-center p-6 border-b border-gray-200">
-          <h2 id="detalle-partido-titulo" className="text-xl font-bold text-gray-900">
+          <h2
+            id="detalle-partido-titulo"
+            className="text-xl font-bold text-gray-900"
+          >
             {t('matches.viewDetail')}
           </h2>
           <button
@@ -126,22 +145,32 @@ const MatchDetailModal = ({
                 <span className="font-bold text-lg text-gray-900">
                   {t('matches.matchNumber', { number: match.matchNumber })}
                 </span>
-                <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${
-                  match.status === 'COMPLETED' ? 'bg-gray-100 text-gray-800' :
-                  match.status === 'IN_PROGRESS' ? 'bg-green-100 text-green-800' :
-                  match.status === 'WALKOVER' ? 'bg-orange-100 text-orange-800' :
-                  'bg-blue-100 text-blue-800'
-                }`}>
+                <span
+                  className={`px-2 py-0.5 rounded-full text-xs font-semibold ${
+                    match.status === 'COMPLETED'
+                      ? 'bg-gray-100 text-gray-800'
+                      : match.status === 'IN_PROGRESS'
+                        ? 'bg-green-100 text-green-800'
+                        : match.status === 'WALKOVER'
+                          ? 'bg-orange-100 text-orange-800'
+                          : 'bg-blue-100 text-blue-800'
+                  }`}
+                >
                   {t(`status.${match.status}`)}
                 </span>
               </div>
 
               {/* Team A */}
               <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
-                <h4 className="font-semibold text-blue-800 mb-2">{teamNames.teamA}</h4>
+                <h4 className="font-semibold text-blue-800 mb-2">
+                  {teamNames.teamA}
+                </h4>
                 <div className="space-y-1">
                   {(match.teamAPlayers || []).map((p, i) => (
-                    <p key={p.userId || i} className={`text-sm ${i === 0 ? 'text-gray-900' : 'text-gray-700'}`}>
+                    <p
+                      key={p.userId || i}
+                      className={`text-sm ${i === 0 ? 'text-gray-900' : 'text-gray-700'}`}
+                    >
                       {getPlayerName(p.userId)}
                       {renderHandicapInfo(p)}
                     </p>
@@ -154,10 +183,15 @@ const MatchDetailModal = ({
 
               {/* Team B */}
               <div className="bg-red-50 rounded-lg p-4 border border-red-200">
-                <h4 className="font-semibold text-red-800 mb-2">{teamNames.teamB}</h4>
+                <h4 className="font-semibold text-red-800 mb-2">
+                  {teamNames.teamB}
+                </h4>
                 <div className="space-y-1">
                   {(match.teamBPlayers || []).map((p, i) => (
-                    <p key={p.userId || i} className={`text-sm ${i === 0 ? 'text-gray-900' : 'text-gray-700'}`}>
+                    <p
+                      key={p.userId || i}
+                      className={`text-sm ${i === 0 ? 'text-gray-900' : 'text-gray-700'}`}
+                    >
                       {getPlayerName(p.userId)}
                       {renderHandicapInfo(p)}
                     </p>
@@ -169,70 +203,108 @@ const MatchDetailModal = ({
               </div>
 
               {/* Fourball: el organizador retira o devuelve a un jugador (F10) */}
-              {canManage && matchFormat === 'FOURBALL' && (match.status === 'SCHEDULED' || match.status === 'IN_PROGRESS') && (
-                <RetiradaPorElOrganizador key={matchId} matchId={matchId} />
-              )}
+              {canManage &&
+                matchFormat === 'FOURBALL' &&
+                (match.status === 'SCHEDULED' ||
+                  match.status === 'IN_PROGRESS') && (
+                  <RetiradaPorElOrganizador key={matchId} matchId={matchId} />
+                )}
 
               {/* Handicap Strokes */}
-              {match.handicapStrokesGiven != null && match.handicapStrokesGiven > 0 && (
-                <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-                  <p className="text-sm text-gray-700">
-                    {t('matches.handicapStrokes', { strokes: match.handicapStrokesGiven })}
-                  </p>
-                  {match.strokesGivenToTeam && (
-                    <p className="text-sm text-gray-500">
-                      {t('matches.strokesGivenTo', { team: match.strokesGivenToTeam === 'A' ? teamNames.teamA : teamNames.teamB })}
+              {match.handicapStrokesGiven != null &&
+                match.handicapStrokesGiven > 0 && (
+                  <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                    <p className="text-sm text-gray-700">
+                      {t('matches.handicapStrokes', {
+                        strokes: match.handicapStrokesGiven,
+                      })}
                     </p>
-                  )}
-                </div>
-              )}
+                    {match.strokesGivenToTeam && (
+                      <p className="text-sm text-gray-500">
+                        {t('matches.strokesGivenTo', {
+                          team:
+                            match.strokesGivenToTeam === 'A'
+                              ? teamNames.teamA
+                              : teamNames.teamB,
+                        })}
+                      </p>
+                    )}
+                  </div>
+                )}
 
               {/* Result */}
-              {match.result && (() => {
-                const isWalkover = match.result.score === 'W/O' || match.status === 'WALKOVER';
-                const bgClass = isWalkover ? 'bg-orange-50 border-orange-200' : 'bg-green-50 border-green-200';
-                const headerClass = isWalkover ? 'text-orange-800' : 'text-green-800';
-                const Icon = isWalkover ? AlertTriangle : Trophy;
-                const iconClass = isWalkover ? 'w-4 h-4 text-orange-500' : 'w-4 h-4 text-green-600';
+              {match.result &&
+                (() => {
+                  const isWalkover =
+                    match.result.score === 'W/O' || match.status === 'WALKOVER';
+                  const bgClass = isWalkover
+                    ? 'bg-orange-50 border-orange-200'
+                    : 'bg-green-50 border-green-200';
+                  const headerClass = isWalkover
+                    ? 'text-orange-800'
+                    : 'text-green-800';
+                  const Icon = isWalkover ? AlertTriangle : Trophy;
+                  const iconClass = isWalkover
+                    ? 'w-4 h-4 text-orange-500'
+                    : 'w-4 h-4 text-green-600';
 
-                return (
-                  <div className={`rounded-lg p-4 border ${bgClass}`}>
-                    <div className="flex items-center gap-2 mb-2">
-                      <Icon className={iconClass} />
-                      <h4 className={`font-semibold ${headerClass}`}>{t('matches.result')}</h4>
+                  return (
+                    <div className={`rounded-lg p-4 border ${bgClass}`}>
+                      <div className="flex items-center gap-2 mb-2">
+                        <Icon className={iconClass} />
+                        <h4 className={`font-semibold ${headerClass}`}>
+                          {t('matches.result')}
+                        </h4>
+                      </div>
+                      <div className="space-y-1 text-sm text-gray-700">
+                        {match.result.score && (
+                          <p className="font-medium">
+                            {t('matches.resultScore', {
+                              score: match.result.score,
+                            })}
+                          </p>
+                        )}
+                        {match.result.winner && (
+                          <p>
+                            {t('matches.resultWinner', {
+                              team:
+                                match.result.winner === 'A'
+                                  ? teamNames.teamA
+                                  : teamNames.teamB,
+                            })}
+                          </p>
+                        )}
+                        {match.result.reason && (
+                          <p className="text-gray-500 italic">
+                            {t('matches.resultReason', {
+                              reason: match.result.reason,
+                            })}
+                          </p>
+                        )}
+                      </div>
                     </div>
-                    <div className="space-y-1 text-sm text-gray-700">
-                      {match.result.score && (
-                        <p className="font-medium">{t('matches.resultScore', { score: match.result.score })}</p>
-                      )}
-                      {match.result.winner && (
-                        <p>{t('matches.resultWinner', { team: match.result.winner === 'A' ? teamNames.teamA : teamNames.teamB })}</p>
-                      )}
-                      {match.result.reason && (
-                        <p className="text-gray-500 italic">{t('matches.resultReason', { reason: match.result.reason })}</p>
-                      )}
-                    </div>
-                  </div>
-                );
-              })()}
+                  );
+                })()}
             </div>
           )}
         </div>
 
         {/* Footer */}
         <div className="flex justify-end gap-3 p-6 border-t border-gray-200">
-          {match && (match.status === 'IN_PROGRESS' || match.status === 'COMPLETED') && (
-            <button
-              onClick={() => {
-                onClose();
-                navigate(`/player/matches/${matchId}/scoring`);
-              }}
-              className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg font-medium hover:bg-primary/90 transition-colors"
-            >
-              <ClipboardList className="w-4 h-4" />
-              {t('matches.viewScorecard')}
-            </button>
-          )}
+          {match &&
+            (match.status === 'IN_PROGRESS' ||
+              match.status === 'COMPLETED') && (
+              <button
+                onClick={() => {
+                  onClose();
+                  navigate(`/player/matches/${matchId}/scoring`);
+                }}
+                className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg font-medium hover:bg-primary/90 transition-colors"
+              >
+                <ClipboardList className="w-4 h-4" />
+                {t('matches.viewScorecard')}
+              </button>
+            )}
           <button
             onClick={onClose}
             className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg font-medium hover:bg-gray-200 transition-colors"

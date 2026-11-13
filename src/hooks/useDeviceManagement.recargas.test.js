@@ -80,7 +80,9 @@ describe('useDeviceManagement · recargas (T4)', () => {
 
   it('T4-25: dos lecturas por un cambio de idioma y la primera llega la última: se ve la segunda', async () => {
     const primera = pendiente();
-    mockLeer.mockReturnValueOnce(primera.promesa).mockResolvedValueOnce({ devices: [PORTATIL] });
+    mockLeer
+      .mockReturnValueOnce(primera.promesa)
+      .mockResolvedValueOnce({ devices: [PORTATIL] });
     const { result, rerender } = renderHook(() => useDeviceManagement());
     await waitFor(() => expect(mockLeer).toHaveBeenCalledTimes(1));
 
@@ -96,7 +98,9 @@ describe('useDeviceManagement · recargas (T4)', () => {
   it('T4-26: revocar uno lo quita de la lista y lo dice, sin volver a pedirla', async () => {
     mockRevocar.mockResolvedValue(undefined);
     const { result } = renderHook(() => useDeviceManagement());
-    await waitFor(() => expect(result.current.devices).toEqual([MOVIL, PORTATIL]));
+    await waitFor(() =>
+      expect(result.current.devices).toEqual([MOVIL, PORTATIL]),
+    );
 
     let revocado;
     await act(async () => {

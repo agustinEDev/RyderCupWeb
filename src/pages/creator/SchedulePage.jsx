@@ -46,7 +46,11 @@ const SchedulePage = () => {
   const { t } = useTranslation('schedule');
   const { t: tComp } = useTranslation('competitions');
   const { user, loading: isLoadingUser } = useAuth();
-  const { isAdmin, isCreator: hasCreatorRole, isLoading: isLoadingRoles } = useUserRoles(id, user?.id);
+  const {
+    isAdmin,
+    isCreator: hasCreatorRole,
+    isLoading: isLoadingRoles,
+  } = useUserRoles(id, user?.id);
 
   // Data state
   const [competition, setCompetition] = useState(null);
@@ -103,46 +107,52 @@ const SchedulePage = () => {
   // al volver a pedirla o al salir, la anterior ya no toca nada, ni avisa ni se
   // lleva a nadie a la ficha. Con `t` entre las dependencias, como antes:
   // cambiar de idioma la vuelve a pedir
-  const { cargando: isLoading, recargar: recargarTodo } = useCargaCancelableEffect(
-    () => {
-      const turno = ordenInscritos.turno();
-      return Promise.all([
-        getCompetitionDetailUseCase.execute(id),
-        getScheduleUseCase.execute(id).catch(() => null),
-        getCompetitionGolfCoursesUseCase.execute(id).catch(() => []),
-        listEnrollmentsUseCase.execute(id).then(
-          (lista) => ({ ok: true, lista }),
-          () => ({ ok: false, lista: [] })
-        ),
-      ]).then((datos) => ({ turno, datos }));
-    },
-    [id, user, navigate, t, ordenInscritos],
-    {
-      activa: Boolean(user),
-      alCargar: ({ turno, datos: [compData, scheduleData, coursesResult, enrollmentsData] }) => {
-        setCompetition(compData);
-        setSchedule(scheduleData);
+  const { cargando: isLoading, recargar: recargarTodo } =
+    useCargaCancelableEffect(
+      () => {
+        const turno = ordenInscritos.turno();
+        return Promise.all([
+          getCompetitionDetailUseCase.execute(id),
+          getScheduleUseCase.execute(id).catch(() => null),
+          getCompetitionGolfCoursesUseCase.execute(id).catch(() => []),
+          listEnrollmentsUseCase.execute(id).then(
+            (lista) => ({ ok: true, lista }),
+            () => ({ ok: false, lista: [] }),
+          ),
+        ]).then((datos) => ({ turno, datos }));
+      },
+      [id, user, navigate, t, ordenInscritos],
+      {
+        activa: Boolean(user),
+        alCargar: ({
+          turno,
+          datos: [compData, scheduleData, coursesResult, enrollmentsData],
+        }) => {
+          setCompetition(compData);
+          setSchedule(scheduleData);
 
-        setGolfCourses(aCamposDeLaCompeticion(coursesResult));
+          setGolfCourses(aCamposDeLaCompeticion(coursesResult));
 
-        if (ordenInscritos.aplicar(turno)) {
-          setEnrollments(enrollmentsData.lista);
-          setInscritosSinCargar(!enrollmentsData.ok);
-          // Con id: si la carga se repite (StrictMode, cambio de idioma), un solo aviso
-          if (enrollmentsData.ok) {
-            customToast.dismiss(AVISO_INSCRITOS);
-          } else {
-            customToast.error(t('errors.failedToLoadEnrollments'), { id: AVISO_INSCRITOS });
+          if (ordenInscritos.aplicar(turno)) {
+            setEnrollments(enrollmentsData.lista);
+            setInscritosSinCargar(!enrollmentsData.ok);
+            // Con id: si la carga se repite (StrictMode, cambio de idioma), un solo aviso
+            if (enrollmentsData.ok) {
+              customToast.dismiss(AVISO_INSCRITOS);
+            } else {
+              customToast.error(t('errors.failedToLoadEnrollments'), {
+                id: AVISO_INSCRITOS,
+              });
+            }
           }
-        }
+        },
+        alFallar: (error) => {
+          console.error('Error loading schedule data:', error);
+          customToast.error(t('errors.failedToLoadSchedule'));
+          navigate(`/competitions/${id}`);
+        },
       },
-      alFallar: (error) => {
-        console.error('Error loading schedule data:', error);
-        customToast.error(t('errors.failedToLoadSchedule'));
-        navigate(`/competitions/${id}`);
-      },
-    }
-  );
+    );
 
   // El toast de los inscritos es de la agenda: al salir se va con ella (pasada
   // del Kind, 31 oct 2026: seguía ~1 s en la ficha)
@@ -154,21 +164,30 @@ const SchedulePage = () => {
 
   const jugadoresDelEquipo = (equipo) => {
     const lista =
-      equipo === 'A' ? teamAssignment?.teamAPlayerIds : teamAssignment?.teamBPlayerIds;
+      equipo === 'A'
+        ? teamAssignment?.teamAPlayerIds
+        : teamAssignment?.teamBPlayerIds;
     // Los que siguen inscritos: el reparto guarda la lista tal cual y una baja
     // no la toca, así que quien se retiró sigue ahí y ya no puede capitanear
     const aprobados = new Set(
-      enrollments.filter((e) => e.status === 'APPROVED').map((e) => e.userId)
+      enrollments.filter((e) => e.status === 'APPROVED').map((e) => e.userId),
     );
     return (lista || [])
       .filter((id) => aprobados.has(id))
-      .map((id) => ({ userId: id, name: playerNameMap.get(id) || t('unnamedPlayer') }));
+      .map((id) => ({
+        userId: id,
+        name: playerNameMap.get(id) || t('unnamedPlayer'),
+      }));
   };
 
   const cubrirCapitan = async (playerId) => {
     setIsProcessing(true);
     try {
-      const { captains } = await fillCaptainUseCase.execute(id, cubriendoCapitan, playerId);
+      const { captains } = await fillCaptainUseCase.execute(
+        id,
+        cubriendoCapitan,
+        playerId,
+      );
       setCompetition((prev) => ({ ...prev, captains }));
       setCubriendoCapitan(null);
       customToast.success(t('success.captainFilled'));
@@ -221,9 +240,7 @@ const SchedulePage = () => {
   const handleGenerateMatches = async (roundId, manualPairings = null) => {
     setIsProcessing(true);
     try {
-      const pairings = manualPairings
-        ? { manualPairings }
-        : {};
+      const pairings = manualPairings ? { manualPairings } : {};
       await generateMatchesUseCase.execute(roundId, pairings);
       customToast.success(t('success.matchesGenerated'));
       setShowGenerateModal(false);
@@ -303,7 +320,11 @@ const SchedulePage = () => {
     if (!walkoverMatch) return;
     setIsProcessing(true);
     try {
-      await declareWalkoverUseCase.execute(walkoverMatch.id, winningTeam, reason);
+      await declareWalkoverUseCase.execute(
+        walkoverMatch.id,
+        winningTeam,
+        reason,
+      );
       customToast.success(t('success.walkoverDeclared'));
       setShowWalkoverModal(false);
       setWalkoverMatch(null);
@@ -320,7 +341,11 @@ const SchedulePage = () => {
     if (!reassignMatch) return;
     setIsProcessing(true);
     try {
-      await reassignPlayersUseCase.execute(reassignMatch.id, teamAIds, teamBIds);
+      await reassignPlayersUseCase.execute(
+        reassignMatch.id,
+        teamAIds,
+        teamBIds,
+      );
       customToast.success(t('success.playersReassigned'));
       setShowReassignModal(false);
       setReassignMatch(null);
@@ -377,9 +402,9 @@ const SchedulePage = () => {
           error?.errorCode === 'TEAMS_LOCKED'
             ? t('errors.teamsLocked')
             : mensajeDeError(error, {
-              sinConexion: t('common:sinConexion.mensaje'),
-              generico: t('errors.failedToUndoTeams'),
-            })
+                sinConexion: t('common:sinConexion.mensaje'),
+                generico: t('errors.failedToUndoTeams'),
+              }),
         );
       }
     }
@@ -396,7 +421,7 @@ const SchedulePage = () => {
 
   // --- UI helpers ---
   const toggleRoundExpand = (roundId) => {
-    setExpandedRounds(prev => ({ ...prev, [roundId]: !prev[roundId] }));
+    setExpandedRounds((prev) => ({ ...prev, [roundId]: !prev[roundId] }));
   };
 
   const openWalkover = (match) => {
@@ -420,9 +445,7 @@ const SchedulePage = () => {
 
   // --- Loading ---
   if (isLoadingUser || isLoading || isLoadingRoles) {
-    return (
-      <FullScreenLoader texto={t('loading')} />
-    );
+    return <FullScreenLoader texto={t('loading')} />;
   }
 
   if (!user || !competition) {
@@ -440,8 +463,11 @@ const SchedulePage = () => {
   // entra también: es quien los abre cuando un capitán no aparece
   const esCapitan =
     Boolean(user?.id) &&
-    [competition.captains?.teamA, competition.captains?.teamB].includes(user.id);
-  const entraALosSobres = esCapitan || (Boolean(user?.id) && competition.creatorId === user.id);
+    [competition.captains?.teamA, competition.captains?.teamB].includes(
+      user.id,
+    );
+  const entraALosSobres =
+    esCapitan || (Boolean(user?.id) && competition.creatorId === user.id);
   const hayEquipos = Boolean(teamAssignment);
   // Con partidos, o ya en juego, los equipos son lo jugado: el servidor no los
   // deshace (TEAMS_LOCKED), así que ni se ofrece
@@ -450,16 +476,16 @@ const SchedulePage = () => {
     !rounds.some((r) => r.matches?.length > 0);
 
   return (
-    <div className={`relative flex h-auto ${PANTALLA_MENOS_BARRA_INFERIOR} w-full flex-col bg-white`}>
+    <div
+      className={`relative flex h-auto ${PANTALLA_MENOS_BARRA_INFERIOR} w-full flex-col bg-white`}
+    >
       <div className="layout-container flex h-full grow flex-col">
         <HeaderAuth user={user} />
 
         <div className="px-4 md:px-40 flex flex-1 justify-center py-5">
           <div className="layout-content-container flex flex-col max-w-[960px] flex-1">
             {/* Header */}
-            <div
-              className="p-4"
-            >
+            <div className="p-4">
               <button
                 onClick={() => navigate(`/competitions/${id}`)}
                 className="hidden md:flex items-center gap-2 text-gray-600 hover:text-primary transition-colors mb-4"
@@ -473,7 +499,9 @@ const SchedulePage = () => {
                   <h1 className="hidden md:block text-gray-900 text-3xl md:text-4xl font-bold">
                     {t('title')}
                   </h1>
-                  <p className="text-gray-500 text-sm mt-1">{competition.name}</p>
+                  <p className="text-gray-500 text-sm mt-1">
+                    {competition.name}
+                  </p>
                 </div>
                 {/* La agenda se cambia en la ficha (FE #654): aquí se quedan los
                     equipos, los partidos y los sobres. Solo para quien la puede
@@ -494,34 +522,30 @@ const SchedulePage = () => {
 
             {/* Team Assignment Section: solo una Ryder tiene equipos (FE #791) */}
             {competition.hasTeams && (
-            <div
-              className="p-4"
-            >
-              <TeamAssignmentSection
-                teamAssignment={teamAssignment}
-                onAssignTeams={() => setShowTeamsModal(true)}
-                onUndoTeams={() => {
-                  if (!isProcessing) setDeshaciendoEquipos(true);
-                }}
-                sePuedenDeshacer={sePuedenDeshacer}
-                canManage={canManage}
-                playerNameMap={playerNameMap}
-                enrollments={enrollments}
-                teamNames={teamNames}
-                maxPlayingHandicap={competition.maxPlayingHandicap ?? null}
-                captains={competition.captains}
-                status={competition.status}
-                onFillCaptain={setCubriendoCapitan}
-                inscritosSinCargar={inscritosSinCargar}
-                t={t}
-              />
-            </div>
+              <div className="p-4">
+                <TeamAssignmentSection
+                  teamAssignment={teamAssignment}
+                  onAssignTeams={() => setShowTeamsModal(true)}
+                  onUndoTeams={() => {
+                    if (!isProcessing) setDeshaciendoEquipos(true);
+                  }}
+                  sePuedenDeshacer={sePuedenDeshacer}
+                  canManage={canManage}
+                  playerNameMap={playerNameMap}
+                  enrollments={enrollments}
+                  teamNames={teamNames}
+                  maxPlayingHandicap={competition.maxPlayingHandicap ?? null}
+                  captains={competition.captains}
+                  status={competition.status}
+                  onFillCaptain={setCubriendoCapitan}
+                  inscritosSinCargar={inscritosSinCargar}
+                  t={t}
+                />
+              </div>
             )}
 
             {/* Rounds List */}
-            <div
-              className="p-4"
-            >
+            <div className="p-4">
               <h2 className="text-gray-900 font-bold text-xl mb-4 flex items-center gap-2">
                 <Calendar className="w-5 h-5 text-primary" />
                 {t('rounds.title')} ({rounds.length})
@@ -543,50 +567,56 @@ const SchedulePage = () => {
                       {entraALosSobres &&
                         competition.setupMode === 'RYDER_CUP' &&
                         hayEquipos && (
-                        <Link
-                          to={`/competitions/${id}/rounds/${round.id}/envelope`}
-                          data-testid={`ir-al-sobre-${round.id}`}
-                          className="flex items-center justify-center gap-2 rounded-lg bg-yellow-600 px-4 py-2 text-sm font-semibold text-white hover:bg-yellow-700"
-                        >
-                          <Mail className="h-4 w-4" />
-                          {tComp('envelope.open')}
-                        </Link>
-                      )}
+                          <Link
+                            to={`/competitions/${id}/rounds/${round.id}/envelope`}
+                            data-testid={`ir-al-sobre-${round.id}`}
+                            className="flex items-center justify-center gap-2 rounded-lg bg-yellow-600 px-4 py-2 text-sm font-semibold text-white hover:bg-yellow-700"
+                          >
+                            <Mail className="h-4 w-4" />
+                            {tComp('envelope.open')}
+                          </Link>
+                        )}
                       {/* Rehacer el proceso entero es cosa del organizador: el
                           capitán que entregó a tiempo no se queda sin su lista
                           por culpa del que se olvidó */}
-                      {canManage && competition.setupMode === 'RYDER_CUP' && hayEquipos && (
-                        <button
-                          type="button"
-                          data-testid={`rehacer-sobres-${round.id}`}
-                          onClick={() => setRehaciendoSobres(round.id)}
-                          className="flex w-full items-center justify-center gap-2 rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50"
-                        >
-                          <RotateCcw className="h-4 w-4" />
-                          {tComp('envelope.reset')}
-                        </button>
-                      )}
-                    <RoundCard
-                      round={round}
-                      onGenerateMatches={() => openGenerateModal(round)}
-                      soloReintento={competition.setupMode === 'RYDER_CUP'}
-                      competicionCerrada={['CLOSED', 'IN_PROGRESS'].includes(competition.status)}
-                      onToggleExpand={() => toggleRoundExpand(round.id)}
-                      isExpanded={!!expandedRounds[round.id]}
-                      canEdit={canManage}
-                      onStartMatch={handleStartMatch}
-                      onCompleteMatch={handleCompleteMatch}
-                      onDeclareWalkover={openWalkover}
-                      onReassignPlayers={openReassign}
-                      onViewMatchDetail={openMatchDetail}
-                      onScoreMatch={handleScoreMatch}
-                      playerNameMap={playerNameMap}
-                      playerHandicapMap={playerHandicapMap}
-                      maxPlayingHandicap={competition.maxPlayingHandicap ?? null}
-                      golfCourses={golfCourses}
-                      teamNames={teamNames}
-                      t={t}
-                    />
+                      {canManage &&
+                        competition.setupMode === 'RYDER_CUP' &&
+                        hayEquipos && (
+                          <button
+                            type="button"
+                            data-testid={`rehacer-sobres-${round.id}`}
+                            onClick={() => setRehaciendoSobres(round.id)}
+                            className="flex w-full items-center justify-center gap-2 rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50"
+                          >
+                            <RotateCcw className="h-4 w-4" />
+                            {tComp('envelope.reset')}
+                          </button>
+                        )}
+                      <RoundCard
+                        round={round}
+                        onGenerateMatches={() => openGenerateModal(round)}
+                        soloReintento={competition.setupMode === 'RYDER_CUP'}
+                        competicionCerrada={['CLOSED', 'IN_PROGRESS'].includes(
+                          competition.status,
+                        )}
+                        onToggleExpand={() => toggleRoundExpand(round.id)}
+                        isExpanded={!!expandedRounds[round.id]}
+                        canEdit={canManage}
+                        onStartMatch={handleStartMatch}
+                        onCompleteMatch={handleCompleteMatch}
+                        onDeclareWalkover={openWalkover}
+                        onReassignPlayers={openReassign}
+                        onViewMatchDetail={openMatchDetail}
+                        onScoreMatch={handleScoreMatch}
+                        playerNameMap={playerNameMap}
+                        playerHandicapMap={playerHandicapMap}
+                        maxPlayingHandicap={
+                          competition.maxPlayingHandicap ?? null
+                        }
+                        golfCourses={golfCourses}
+                        teamNames={teamNames}
+                        t={t}
+                      />
                     </div>
                   ))}
                 </div>
@@ -652,7 +682,10 @@ const SchedulePage = () => {
           teamNames={teamNames}
           t={t}
           canManage={canManage}
-          matchFormat={rounds.find((r) => r.matches?.some((m) => m.id === detailMatchId))?.matchFormat ?? null}
+          matchFormat={
+            rounds.find((r) => r.matches?.some((m) => m.id === detailMatchId))
+              ?.matchFormat ?? null
+          }
         />
       )}
 
@@ -689,7 +722,9 @@ const SchedulePage = () => {
         <FillCaptainModal
           isOpen
           team={cubriendoCapitan}
-          teamName={cubriendoCapitan === 'A' ? teamNames.teamA : teamNames.teamB}
+          teamName={
+            cubriendoCapitan === 'A' ? teamNames.teamA : teamNames.teamB
+          }
           players={jugadoresDelEquipo(cubriendoCapitan)}
           onConfirm={cubrirCapitan}
           onClose={() => setCubriendoCapitan(null)}
@@ -702,10 +737,18 @@ const SchedulePage = () => {
       {showGenerateModal && generateRound && (
         <GenerateMatchesModal
           isOpen={showGenerateModal}
-          onClose={() => { setShowGenerateModal(false); setGenerateRound(null); }}
-          onConfirm={(pairings) => handleGenerateMatches(generateRound.id, pairings)}
+          onClose={() => {
+            setShowGenerateModal(false);
+            setGenerateRound(null);
+          }}
+          onConfirm={(pairings) =>
+            handleGenerateMatches(generateRound.id, pairings)
+          }
           round={generateRound}
-          bloqueo={rounds.find((r) => r.id === generateRound.id)?.matchGenerationBlock ?? null}
+          bloqueo={
+            rounds.find((r) => r.id === generateRound.id)
+              ?.matchGenerationBlock ?? null
+          }
           enrollments={enrollments}
           teamAssignment={teamAssignment}
           isProcessing={isProcessing}

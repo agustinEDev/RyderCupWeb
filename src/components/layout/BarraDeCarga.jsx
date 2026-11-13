@@ -15,7 +15,10 @@ const BarraDeCarga = () => {
 
   useEffect(() => {
     if (!esperando) return undefined;
-    const reloj = setTimeout(() => setVisible(true), ESPERA_ANTES_DE_LA_BARRA_MS);
+    const reloj = setTimeout(
+      () => setVisible(true),
+      ESPERA_ANTES_DE_LA_BARRA_MS,
+    );
     return () => {
       clearTimeout(reloj);
       setVisible(false);

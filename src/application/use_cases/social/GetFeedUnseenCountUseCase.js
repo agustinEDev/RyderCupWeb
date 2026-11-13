@@ -10,7 +10,9 @@ class GetFeedUnseenCountUseCase {
 
   constructor({ socialFeedRepository }) {
     if (!socialFeedRepository) {
-      throw new Error('GetFeedUnseenCountUseCase requires socialFeedRepository');
+      throw new Error(
+        'GetFeedUnseenCountUseCase requires socialFeedRepository',
+      );
     }
     this.#socialFeedRepository = socialFeedRepository;
   }

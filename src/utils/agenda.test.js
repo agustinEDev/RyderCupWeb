@@ -1,5 +1,10 @@
 import { describe, it, expect } from 'vitest';
-import { agendaPropuesta, partidosDeLaSesion, franjasLibres, diasDelTorneo } from './agenda';
+import {
+  agendaPropuesta,
+  partidosDeLaSesion,
+  franjasLibres,
+  diasDelTorneo,
+} from './agenda';
 
 /**
  * Las cuentas de la agenda (FE #654), sin pantalla.
@@ -67,7 +72,10 @@ describe('franjasLibres y diasDelTorneo', () => {
       { roundDate: '2026-10-03', sessionType: 'AFTERNOON' },
       { roundDate: '2026-10-04', sessionType: 'MORNING' },
     ];
-    expect(franjasLibres(sesiones, '2026-10-03')).toEqual(['MORNING', 'EVENING']);
+    expect(franjasLibres(sesiones, '2026-10-03')).toEqual([
+      'MORNING',
+      'EVENING',
+    ]);
   });
 
   it('D1: los días del torneo, del primero al último', () => {

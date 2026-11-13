@@ -23,7 +23,7 @@ describe('RevokeDeviceUseCase', () => {
   describe('Constructor', () => {
     it('should throw error if deviceRepository is not provided', () => {
       expect(() => new RevokeDeviceUseCase({})).toThrow(
-        'deviceRepository is required'
+        'deviceRepository is required',
       );
     });
 
@@ -51,7 +51,7 @@ describe('RevokeDeviceUseCase', () => {
 
     it('should throw error if deviceId is null', async () => {
       await expect(useCase.execute(null)).rejects.toThrow(
-        'Valid device ID is required'
+        'Valid device ID is required',
       );
 
       expect(mockDeviceRepository.revokeDevice).not.toHaveBeenCalled();
@@ -59,7 +59,7 @@ describe('RevokeDeviceUseCase', () => {
 
     it('should throw error if deviceId is undefined', async () => {
       await expect(useCase.execute(undefined)).rejects.toThrow(
-        'Valid device ID is required'
+        'Valid device ID is required',
       );
 
       expect(mockDeviceRepository.revokeDevice).not.toHaveBeenCalled();
@@ -67,7 +67,7 @@ describe('RevokeDeviceUseCase', () => {
 
     it('should throw error if deviceId is empty string', async () => {
       await expect(useCase.execute('')).rejects.toThrow(
-        'Valid device ID is required'
+        'Valid device ID is required',
       );
 
       expect(mockDeviceRepository.revokeDevice).not.toHaveBeenCalled();
@@ -75,15 +75,15 @@ describe('RevokeDeviceUseCase', () => {
 
     it('should throw error if deviceId is not a string', async () => {
       await expect(useCase.execute(123)).rejects.toThrow(
-        'Valid device ID is required'
+        'Valid device ID is required',
       );
 
       await expect(useCase.execute({})).rejects.toThrow(
-        'Valid device ID is required'
+        'Valid device ID is required',
       );
 
       await expect(useCase.execute([])).rejects.toThrow(
-        'Valid device ID is required'
+        'Valid device ID is required',
       );
 
       expect(mockDeviceRepository.revokeDevice).not.toHaveBeenCalled();
@@ -95,7 +95,7 @@ describe('RevokeDeviceUseCase', () => {
       mockDeviceRepository.revokeDevice.mockRejectedValue(error);
 
       await expect(useCase.execute(deviceId)).rejects.toThrow(
-        'CSRF validation failed'
+        'CSRF validation failed',
       );
     });
 
@@ -105,7 +105,7 @@ describe('RevokeDeviceUseCase', () => {
       mockDeviceRepository.revokeDevice.mockRejectedValue(error);
 
       await expect(useCase.execute(deviceId)).rejects.toThrow(
-        'Device not found'
+        'Device not found',
       );
     });
 
@@ -115,7 +115,7 @@ describe('RevokeDeviceUseCase', () => {
       mockDeviceRepository.revokeDevice.mockRejectedValue(error);
 
       await expect(useCase.execute(deviceId)).rejects.toThrow(
-        'Device already revoked'
+        'Device already revoked',
       );
     });
   });
@@ -127,7 +127,7 @@ describe('RevokeDeviceUseCase', () => {
       mockDeviceRepository.revokeDevice.mockResolvedValue(null);
 
       await expect(useCase.execute(deviceId)).rejects.toThrow(
-        'Invalid response from device repository: expected object'
+        'Invalid response from device repository: expected object',
       );
     });
 
@@ -135,7 +135,7 @@ describe('RevokeDeviceUseCase', () => {
       mockDeviceRepository.revokeDevice.mockResolvedValue(undefined);
 
       await expect(useCase.execute(deviceId)).rejects.toThrow(
-        'Invalid response from device repository: expected object'
+        'Invalid response from device repository: expected object',
       );
     });
 
@@ -143,7 +143,7 @@ describe('RevokeDeviceUseCase', () => {
       mockDeviceRepository.revokeDevice.mockResolvedValue('success');
 
       await expect(useCase.execute(deviceId)).rejects.toThrow(
-        'Invalid response from device repository: expected object'
+        'Invalid response from device repository: expected object',
       );
     });
 
@@ -151,7 +151,7 @@ describe('RevokeDeviceUseCase', () => {
       mockDeviceRepository.revokeDevice.mockResolvedValue(123);
 
       await expect(useCase.execute(deviceId)).rejects.toThrow(
-        'Invalid response from device repository: expected object'
+        'Invalid response from device repository: expected object',
       );
     });
 
@@ -159,7 +159,7 @@ describe('RevokeDeviceUseCase', () => {
       mockDeviceRepository.revokeDevice.mockResolvedValue([]);
 
       await expect(useCase.execute(deviceId)).rejects.toThrow(
-        'Invalid response from device repository: expected object'
+        'Invalid response from device repository: expected object',
       );
     });
 
@@ -169,7 +169,7 @@ describe('RevokeDeviceUseCase', () => {
       });
 
       await expect(useCase.execute(deviceId)).rejects.toThrow(
-        'Invalid response from device repository: message must be a string'
+        'Invalid response from device repository: message must be a string',
       );
     });
 
@@ -180,7 +180,7 @@ describe('RevokeDeviceUseCase', () => {
       });
 
       await expect(useCase.execute(deviceId)).rejects.toThrow(
-        'Invalid response from device repository: message must be a string'
+        'Invalid response from device repository: message must be a string',
       );
     });
 
@@ -191,7 +191,7 @@ describe('RevokeDeviceUseCase', () => {
       });
 
       await expect(useCase.execute(deviceId)).rejects.toThrow(
-        'Invalid response from device repository: message must be a string'
+        'Invalid response from device repository: message must be a string',
       );
     });
 
@@ -201,7 +201,7 @@ describe('RevokeDeviceUseCase', () => {
       });
 
       await expect(useCase.execute(deviceId)).rejects.toThrow(
-        'Invalid response from device repository: device_id must be a string'
+        'Invalid response from device repository: device_id must be a string',
       );
     });
 
@@ -212,7 +212,7 @@ describe('RevokeDeviceUseCase', () => {
       });
 
       await expect(useCase.execute(deviceId)).rejects.toThrow(
-        'Invalid response from device repository: device_id must be a string'
+        'Invalid response from device repository: device_id must be a string',
       );
     });
 
@@ -223,7 +223,7 @@ describe('RevokeDeviceUseCase', () => {
       });
 
       await expect(useCase.execute(deviceId)).rejects.toThrow(
-        'Invalid response from device repository: device_id must be a string'
+        'Invalid response from device repository: device_id must be a string',
       );
     });
 

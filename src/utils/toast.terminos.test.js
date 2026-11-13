@@ -6,17 +6,29 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
  * nada útil—. Cualquier otro error se sigue viendo.
  */
 const custom = vi.fn();
-vi.mock('react-hot-toast', () => ({ default: { custom: (...a) => custom(...a), dismiss: vi.fn() } }));
+vi.mock('react-hot-toast', () => ({
+  default: { custom: (...a) => custom(...a), dismiss: vi.fn() },
+}));
 
 const { default: customToast } = await import('./toast');
-const { llevaAAceptarLosTerminos, olvidaLaRedireccionATerminos, silenciaElAviso } = await import('./terminosPendientes');
+const {
+  llevaAAceptarLosTerminos,
+  olvidaLaRedireccionATerminos,
+  silenciaElAviso,
+} = await import('./terminosPendientes');
 
 describe('customToast · solo se calla el aviso de Términos', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     globalThis.sessionStorage.clear();
     olvidaLaRedireccionATerminos();
-    vi.stubGlobal('location', { pathname: '/dashboard', search: '', hash: '', origin: 'http://localhost', assign: vi.fn() });
+    vi.stubGlobal('location', {
+      pathname: '/dashboard',
+      search: '',
+      hash: '',
+      origin: 'http://localhost',
+      assign: vi.fn(),
+    });
   });
 
   afterEach(() => {

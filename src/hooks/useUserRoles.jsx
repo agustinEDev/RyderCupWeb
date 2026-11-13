@@ -3,7 +3,11 @@ import { getUserRolesUseCase } from '../composition';
 import { useCargaCancelableEffect } from './useCargaCancelableEffect';
 
 // Sin saber los roles, ninguno: también ante cualquier error, por seguridad
-const SIN_ROLES = Object.freeze({ isAdmin: false, isCreator: false, isPlayer: false });
+const SIN_ROLES = Object.freeze({
+  isAdmin: false,
+  isCreator: false,
+  isPlayer: false,
+});
 
 /**
  * Hook para obtener los roles de un usuario en una competición específica
@@ -43,7 +47,12 @@ const SIN_ROLES = Object.freeze({ isAdmin: false, isCreator: false, isPlayer: fa
  */
 export const useUserRoles = (competitionId, userId) => {
   // Lo último leído, con el usuario y la competición para los que se pidió
-  const [leido, setLeido] = useState({ usuario: undefined, competicion: undefined, roles: SIN_ROLES, error: null });
+  const [leido, setLeido] = useState({
+    usuario: undefined,
+    competicion: undefined,
+    roles: SIN_ROLES,
+    error: null,
+  });
 
   const { cargando, recargar } = useCargaCancelableEffect(
     () => {
@@ -52,7 +61,11 @@ export const useUserRoles = (competitionId, userId) => {
       return (async () => getUserRolesUseCase.execute(competitionId))()
         .then((data) => ({
           ...para,
-          roles: { isAdmin: data.isAdmin, isCreator: data.isCreator, isPlayer: data.isPlayer },
+          roles: {
+            isAdmin: data.isAdmin,
+            isCreator: data.isCreator,
+            isPlayer: data.isPlayer,
+          },
           error: null,
         }))
         .catch((error) => ({ ...para, roles: SIN_ROLES, error }));
@@ -63,14 +76,16 @@ export const useUserRoles = (competitionId, userId) => {
       // parpadear los controles de organizador
       activa: Boolean(competitionId && userId),
       alCargar: (deLaPeticion) => {
-        if (deLaPeticion.error) console.error('Error fetching user roles:', deLaPeticion.error);
+        if (deLaPeticion.error)
+          console.error('Error fetching user roles:', deLaPeticion.error);
         setLeido(deLaPeticion);
       },
-    }
+    },
   );
 
   // Solo vale lo leído para este usuario y esta competición
-  const vigente = leido.usuario === userId && leido.competicion === competitionId;
+  const vigente =
+    leido.usuario === userId && leido.competicion === competitionId;
   const roles = vigente ? leido.roles : SIN_ROLES;
 
   // Volver a pedir quita el error y enseña la espera al momento; no pasa el

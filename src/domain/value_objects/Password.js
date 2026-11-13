@@ -8,13 +8,15 @@ export class PasswordValidationError extends Error {
 }
 
 class Password {
-  constructor(value, options = { validateStrength: true }) { // 1. Añadir opciones
+  constructor(value, options = { validateStrength: true }) {
+    // 1. Añadir opciones
     if (!value) {
       throw new PasswordValidationError('Password cannot be empty.');
     }
     this._value = value;
 
-    if (options.validateStrength) { // 2. Validar fortaleza condicionalmente
+    if (options.validateStrength) {
+      // 2. Validar fortaleza condicionalmente
       this.validateStrength();
     }
   }

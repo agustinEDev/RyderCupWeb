@@ -17,24 +17,31 @@ describe('GolfCourse', () => {
         identifier: 'Black',
         courseRating: 75.5,
         slopeRating: 140,
-        gender: 'MALE'
+        gender: 'MALE',
       }),
       new Tee({
         color: 'YELLOW',
         identifier: 'Blue',
         courseRating: 72.0,
         slopeRating: 130,
-        gender: 'MALE'
-      })
+        gender: 'MALE',
+      }),
     ];
 
     validHoles = [];
     for (let i = 1; i <= 18; i++) {
-      validHoles.push(new Hole({
-        holeNumber: i,
-        par: i <= 4 || i === 9 || i === 14 || i === 18 ? 4 : (i === 2 || i === 7 || i === 11 || i === 16 ? 5 : 3),
-        strokeIndex: i
-      }));
+      validHoles.push(
+        new Hole({
+          holeNumber: i,
+          par:
+            i <= 4 || i === 9 || i === 14 || i === 18
+              ? 4
+              : i === 2 || i === 7 || i === 11 || i === 16
+                ? 5
+                : 3,
+          strokeIndex: i,
+        }),
+      );
     }
 
     validGolfCourseData = {
@@ -51,7 +58,7 @@ describe('GolfCourse', () => {
       original_golf_course_id: null,
       is_pending_update: false,
       tees: validTees,
-      holes: validHoles
+      holes: validHoles,
     };
   });
 
@@ -88,7 +95,7 @@ describe('GolfCourse', () => {
         originalGolfCourseId: null,
         isPendingUpdate: false,
         tees: validTees.slice(0, 1),
-        holes: validHoles
+        holes: validHoles,
       };
 
       const course = new GolfCourse(camelCaseData);
@@ -109,9 +116,9 @@ describe('GolfCourse', () => {
             identifier: 'White',
             course_rating: 70.0,
             slope_rating: 120,
-            tee_gender: 'MALE'
-          }
-        ]
+            tee_gender: 'MALE',
+          },
+        ],
       };
 
       const course = new GolfCourse(dataWithTeeDTOs);
@@ -125,8 +132,8 @@ describe('GolfCourse', () => {
         ...validGolfCourseData,
         holes: [
           { hole_number: 1, par: 4, stroke_index: 1 },
-          { hole_number: 2, par: 5, stroke_index: 2 }
-        ]
+          { hole_number: 2, par: 5, stroke_index: 2 },
+        ],
       };
 
       const course = new GolfCourse(dataWithHoleDTOs);
@@ -140,7 +147,7 @@ describe('GolfCourse', () => {
     it('should handle empty tees array', () => {
       const dataWithoutTees = {
         ...validGolfCourseData,
-        tees: []
+        tees: [],
       };
 
       const course = new GolfCourse(dataWithoutTees);
@@ -151,7 +158,7 @@ describe('GolfCourse', () => {
     it('should handle empty holes array', () => {
       const dataWithoutHoles = {
         ...validGolfCourseData,
-        holes: []
+        holes: [],
       };
 
       const course = new GolfCourse(dataWithoutHoles);
@@ -162,7 +169,7 @@ describe('GolfCourse', () => {
     it('should set rejection_reason to null if not provided', () => {
       const dataWithoutRejectionReason = {
         ...validGolfCourseData,
-        rejection_reason: undefined
+        rejection_reason: undefined,
       };
 
       const course = new GolfCourse(dataWithoutRejectionReason);
@@ -183,7 +190,7 @@ describe('GolfCourse', () => {
         ...validGolfCourseData,
         id: 'golf-course-clone-456',
         original_golf_course_id: 'golf-course-123',
-        approval_status: 'PENDING_APPROVAL'
+        approval_status: 'PENDING_APPROVAL',
       };
 
       const course = new GolfCourse(cloneData);
@@ -202,7 +209,7 @@ describe('GolfCourse', () => {
     it('should return true when pending update exists', () => {
       const dataWithPendingUpdate = {
         ...validGolfCourseData,
-        is_pending_update: true
+        is_pending_update: true,
       };
 
       const course = new GolfCourse(dataWithPendingUpdate);
@@ -215,7 +222,7 @@ describe('GolfCourse', () => {
     it('should return true for APPROVED status', () => {
       const course = new GolfCourse({
         ...validGolfCourseData,
-        approval_status: 'APPROVED'
+        approval_status: 'APPROVED',
       });
 
       expect(course.isApproved()).toBe(true);
@@ -224,7 +231,7 @@ describe('GolfCourse', () => {
     it('should return false for PENDING_APPROVAL status', () => {
       const course = new GolfCourse({
         ...validGolfCourseData,
-        approval_status: 'PENDING_APPROVAL'
+        approval_status: 'PENDING_APPROVAL',
       });
 
       expect(course.isApproved()).toBe(false);
@@ -233,7 +240,7 @@ describe('GolfCourse', () => {
     it('should return false for REJECTED status', () => {
       const course = new GolfCourse({
         ...validGolfCourseData,
-        approval_status: 'REJECTED'
+        approval_status: 'REJECTED',
       });
 
       expect(course.isApproved()).toBe(false);
@@ -244,7 +251,7 @@ describe('GolfCourse', () => {
     it('should return true for PENDING_APPROVAL status', () => {
       const course = new GolfCourse({
         ...validGolfCourseData,
-        approval_status: 'PENDING_APPROVAL'
+        approval_status: 'PENDING_APPROVAL',
       });
 
       expect(course.isPending()).toBe(true);
@@ -253,7 +260,7 @@ describe('GolfCourse', () => {
     it('should return false for APPROVED status', () => {
       const course = new GolfCourse({
         ...validGolfCourseData,
-        approval_status: 'APPROVED'
+        approval_status: 'APPROVED',
       });
 
       expect(course.isPending()).toBe(false);
@@ -262,7 +269,7 @@ describe('GolfCourse', () => {
     it('should return false for REJECTED status', () => {
       const course = new GolfCourse({
         ...validGolfCourseData,
-        approval_status: 'REJECTED'
+        approval_status: 'REJECTED',
       });
 
       expect(course.isPending()).toBe(false);
@@ -274,7 +281,7 @@ describe('GolfCourse', () => {
       const course = new GolfCourse({
         ...validGolfCourseData,
         approval_status: 'REJECTED',
-        rejection_reason: 'Invalid course data'
+        rejection_reason: 'Invalid course data',
       });
 
       expect(course.isRejected()).toBe(true);
@@ -283,7 +290,7 @@ describe('GolfCourse', () => {
     it('should return false for APPROVED status', () => {
       const course = new GolfCourse({
         ...validGolfCourseData,
-        approval_status: 'APPROVED'
+        approval_status: 'APPROVED',
       });
 
       expect(course.isRejected()).toBe(false);
@@ -292,7 +299,7 @@ describe('GolfCourse', () => {
     it('should return false for PENDING_APPROVAL status', () => {
       const course = new GolfCourse({
         ...validGolfCourseData,
-        approval_status: 'PENDING_APPROVAL'
+        approval_status: 'PENDING_APPROVAL',
       });
 
       expect(course.isRejected()).toBe(false);
@@ -303,7 +310,7 @@ describe('GolfCourse', () => {
     it('should return green for APPROVED status', () => {
       const course = new GolfCourse({
         ...validGolfCourseData,
-        approval_status: 'APPROVED'
+        approval_status: 'APPROVED',
       });
 
       expect(course.getStatusColor()).toBe('green');
@@ -312,7 +319,7 @@ describe('GolfCourse', () => {
     it('should return yellow for PENDING_APPROVAL status', () => {
       const course = new GolfCourse({
         ...validGolfCourseData,
-        approval_status: 'PENDING_APPROVAL'
+        approval_status: 'PENDING_APPROVAL',
       });
 
       expect(course.getStatusColor()).toBe('yellow');
@@ -321,7 +328,7 @@ describe('GolfCourse', () => {
     it('should return red for REJECTED status', () => {
       const course = new GolfCourse({
         ...validGolfCourseData,
-        approval_status: 'REJECTED'
+        approval_status: 'REJECTED',
       });
 
       expect(course.getStatusColor()).toBe('red');
@@ -330,7 +337,7 @@ describe('GolfCourse', () => {
     it('should return gray for unknown status', () => {
       const course = new GolfCourse({
         ...validGolfCourseData,
-        approval_status: 'UNKNOWN_STATUS'
+        approval_status: 'UNKNOWN_STATUS',
       });
 
       expect(course.getStatusColor()).toBe('gray');
@@ -380,7 +387,7 @@ describe('GolfCourse', () => {
       const rejectedData = {
         ...validGolfCourseData,
         approval_status: 'REJECTED',
-        rejection_reason: 'Course does not meet standards'
+        rejection_reason: 'Course does not meet standards',
       };
 
       const course = new GolfCourse(rejectedData);
@@ -393,7 +400,7 @@ describe('GolfCourse', () => {
       const cloneData = {
         ...validGolfCourseData,
         id: 'clone-456',
-        original_golf_course_id: 'golf-course-123'
+        original_golf_course_id: 'golf-course-123',
       };
 
       const course = new GolfCourse(cloneData);
@@ -405,7 +412,7 @@ describe('GolfCourse', () => {
     it('should set is_pending_update flag correctly', () => {
       const dataWithPending = {
         ...validGolfCourseData,
-        is_pending_update: true
+        is_pending_update: true,
       };
 
       const course = new GolfCourse(dataWithPending);
@@ -431,7 +438,7 @@ describe('GolfCourse', () => {
         original_golf_course_id: null,
         is_pending_update: false,
         tees: validTees,
-        holes: validHoles
+        holes: validHoles,
       });
 
       expect(newRequest.isPending()).toBe(true);
@@ -454,13 +461,13 @@ describe('GolfCourse', () => {
         original_golf_course_id: 'golf-course-123',
         is_pending_update: false,
         tees: validTees,
-        holes: validHoles
+        holes: validHoles,
       });
 
       // Original course should show pending update flag
       const originalCourse = new GolfCourse({
         ...validGolfCourseData,
-        is_pending_update: true
+        is_pending_update: true,
       });
 
       expect(updateProposal.isClone()).toBe(true);
@@ -483,27 +490,30 @@ describe('GolfCourse', () => {
         original_golf_course_id: null,
         is_pending_update: false,
         tees: [],
-        holes: []
+        holes: [],
       });
 
       expect(rejectedCourse.isRejected()).toBe(true);
-      expect(rejectedCourse.rejectionReason).toBe('Invalid country code and incomplete hole data');
+      expect(rejectedCourse.rejectionReason).toBe(
+        'Invalid country code and incomplete hole data',
+      );
       expect(rejectedCourse.getStatusColor()).toBe('red');
     });
   });
 
   describe('distancia', () => {
-    const build = (extra) => new GolfCourse({
-      id: 'course-1',
-      name: 'Club de Campo',
-      country_code: 'ES',
-      course_type: 'STANDARD_18',
-      approval_status: 'APPROVED',
-      total_par: 72,
-      tees: [],
-      holes: [],
-      ...extra
-    });
+    const build = (extra) =>
+      new GolfCourse({
+        id: 'course-1',
+        name: 'Club de Campo',
+        country_code: 'ES',
+        course_type: 'STANDARD_18',
+        approval_status: 'APPROVED',
+        total_par: 72,
+        tees: [],
+        holes: [],
+        ...extra,
+      });
 
     it('recoge la distancia que devuelve una búsqueda por cercanía', () => {
       expect(build({ distance_km: 78.4 }).distanceKm).toBe(78.4);
@@ -520,20 +530,34 @@ describe('GolfCourse', () => {
   });
 
   describe('ubicación', () => {
-    const conUbicacion = (location) => new GolfCourse({
-      id: 'c1', name: 'Campo', country_code: 'ES', course_type: 'STANDARD_18',
-      approval_status: 'APPROVED', total_par: 72, tees: [], holes: [], location,
-    });
+    const conUbicacion = (location) =>
+      new GolfCourse({
+        id: 'c1',
+        name: 'Campo',
+        country_code: 'ES',
+        course_type: 'STANDARD_18',
+        approval_status: 'APPROVED',
+        total_par: 72,
+        tees: [],
+        holes: [],
+        location,
+      });
 
     it('la lee de la respuesta de la API', () => {
       const campo = conUbicacion({
-        latitude: 38.08, longitude: -0.71,
-        address: 'Ctra. San Miguel', city: 'Rojales', province: 'Alicante',
+        latitude: 38.08,
+        longitude: -0.71,
+        address: 'Ctra. San Miguel',
+        city: 'Rojales',
+        province: 'Alicante',
       });
 
       expect(campo.location).toEqual({
-        latitude: 38.08, longitude: -0.71,
-        address: 'Ctra. San Miguel', city: 'Rojales', province: 'Alicante',
+        latitude: 38.08,
+        longitude: -0.71,
+        address: 'Ctra. San Miguel',
+        city: 'Rojales',
+        province: 'Alicante',
       });
       expect(campo.hasLocation()).toBe(true);
     });
@@ -548,7 +572,13 @@ describe('GolfCourse', () => {
     // Un objeto con los cinco valores vacíos llega igual que uno ausente para
     // quien lo pinta, y sin esto cada pantalla repetiría las comprobaciones
     it('dice que no hay ubicación cuando viene entera a null', () => {
-      const campo = conUbicacion({ latitude: null, longitude: null, address: null, city: null, province: null });
+      const campo = conUbicacion({
+        latitude: null,
+        longitude: null,
+        address: null,
+        city: null,
+        province: null,
+      });
 
       expect(campo.hasLocation()).toBe(false);
     });
@@ -565,14 +595,20 @@ describe('GolfCourse', () => {
     });
 
     it('cuenta las coordenadas cuando están las dos', () => {
-      expect(conUbicacion({ latitude: 38.08, longitude: -0.71 }).hasLocation()).toBe(true);
+      expect(
+        conUbicacion({ latitude: 38.08, longitude: -0.71 }).hasLocation(),
+      ).toBe(true);
     });
 
     it('devuelve la ubicación también en toDTO', () => {
       const campo = conUbicacion({ city: 'Rojales' });
 
       expect(campo.toDTO().location).toEqual({
-        latitude: null, longitude: null, address: null, city: 'Rojales', province: null,
+        latitude: null,
+        longitude: null,
+        address: null,
+        city: 'Rojales',
+        province: null,
       });
     });
 
@@ -580,7 +616,11 @@ describe('GolfCourse', () => {
       const campo = conUbicacion({ city: 'Rojales' });
 
       expect(campo.location).toEqual({
-        latitude: null, longitude: null, address: null, city: 'Rojales', province: null,
+        latitude: null,
+        longitude: null,
+        address: null,
+        city: 'Rojales',
+        province: null,
       });
     });
   });
@@ -591,10 +631,18 @@ describe('GolfCourse', () => {
     it('F1: la normaliza desde la API', () => {
       const campo = new GolfCourse({
         ...validGolfCourseData,
-        provenance: { source: 'RFEG', external_id: '123', imported_at: '2026-10-01T00:00:00Z' },
+        provenance: {
+          source: 'RFEG',
+          external_id: '123',
+          imported_at: '2026-10-01T00:00:00Z',
+        },
       });
 
-      expect(campo.provenance).toEqual({ source: 'RFEG', externalId: '123', importedAt: '2026-10-01T00:00:00Z' });
+      expect(campo.provenance).toEqual({
+        source: 'RFEG',
+        externalId: '123',
+        importedAt: '2026-10-01T00:00:00Z',
+      });
       expect(campo.isFromRfeg()).toBe(true);
     });
 
@@ -619,7 +667,11 @@ describe('GolfCourse', () => {
         provenance: { source: 'RFEG', external_id: '123', imported_at: null },
       });
 
-      expect(campo.toDTO().provenance).toEqual({ source: 'RFEG', external_id: '123', imported_at: null });
+      expect(campo.toDTO().provenance).toEqual({
+        source: 'RFEG',
+        external_id: '123',
+        imported_at: null,
+      });
       expect(new GolfCourse(campo.toDTO()).isFromRfeg()).toBe(true);
     });
   });

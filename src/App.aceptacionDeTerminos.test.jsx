@@ -20,7 +20,9 @@ vi.mock('./composition', async (original) => ({
   ...(await original()),
   acceptTermsUseCase: { execute: (...a) => aceptar(...a) },
 }));
-vi.mock('./hooks/useLogout', () => ({ useLogout: () => ({ logout: vi.fn() }) }));
+vi.mock('./hooks/useLogout', () => ({
+  useLogout: () => ({ logout: vi.fn() }),
+}));
 vi.mock('./hooks/useVaciadoDeLaCola', () => ({ useVaciadoDeLaCola: () => {} }));
 vi.mock('./hooks/useEnvioDeMuestras', () => ({ useEnvioDeMuestras: () => {} }));
 // El número de Actividad se pide al montarse la barra inferior (FE-1): es red,
@@ -31,17 +33,29 @@ vi.mock('./hooks/useNovedadesDeActividad', () => ({
   ponLasNovedadesACero: () => {},
   olvidaLasNovedades: () => {},
 }));
-vi.mock('./hooks/useDeviceRevocationMonitor', () => ({ useDeviceRevocationMonitor: () => {} }));
+vi.mock('./hooks/useDeviceRevocationMonitor', () => ({
+  useDeviceRevocationMonitor: () => {},
+}));
 vi.mock('./hooks/useProactiveTokenRefresh', () => ({ default: () => {} }));
-vi.mock('./hooks/useCortinaDeArranque', () => ({ useCortinaDeArranque: () => {} }));
+vi.mock('./hooks/useCortinaDeArranque', () => ({
+  useCortinaDeArranque: () => {},
+}));
 vi.mock('./hooks/useVolverArriba', () => ({ useVolverArriba: () => {} }));
-vi.mock('./utils/sentryHelpers', () => ({ setUserContext: () => {}, captureError: () => {} }));
+vi.mock('./utils/sentryHelpers', () => ({
+  setUserContext: () => {},
+  captureError: () => {},
+}));
 vi.mock('./components/ui/InstallBanner', () => ({ default: () => null }));
 vi.mock('./components/ui/AvisoSinConexion', () => ({ default: () => null }));
 vi.mock('./pages/Dashboard', () => ({ default: () => <p>panel</p> }));
-vi.mock('./pages/DeviceManagement', () => ({ default: () => <p>mis dispositivos</p> }));
+vi.mock('./pages/DeviceManagement', () => ({
+  default: () => <p>mis dispositivos</p>,
+}));
 vi.mock('react-i18next', () => ({
-  useTranslation: () => ({ t: (k) => k, i18n: { language: 'es', changeLanguage: vi.fn() } }),
+  useTranslation: () => ({
+    t: (k) => k,
+    i18n: { language: 'es', changeLanguage: vi.fn() },
+  }),
 }));
 vi.mock('@sentry/react', async (original) => ({
   ...(await original()),
@@ -49,25 +63,47 @@ vi.mock('@sentry/react', async (original) => ({
 }));
 
 const App = (await import('./App')).default;
-const { anotaLaSesion, olvidaLaSesion, loQueHaySobreLaSesion } = await import('./services/sesionCompartida');
+const { anotaLaSesion, olvidaLaSesion, loQueHaySobreLaSesion } =
+  await import('./services/sesionCompartida');
 
-const USUARIO = { id: 'u-1', email: 'ana@example.com', first_name: 'Ana', last_name: 'Prueba', is_admin: false };
+const USUARIO = {
+  id: 'u-1',
+  email: 'ana@example.com',
+  first_name: 'Ana',
+  last_name: 'Prueba',
+  is_admin: false,
+};
 
 // Las pantallas se cargan perezosas: con la suite entera en marcha, el primer
 // import tarda más que el segundo de espera por defecto de `findBy`
 const ESPERA = { timeout: 5000 };
-const titulo = () => screen.findByRole('heading', { level: 1, name: 'acceptTermsPage.title' }, ESPERA);
+const titulo = () =>
+  screen.findByRole(
+    'heading',
+    { level: 1, name: 'acceptTermsPage.title' },
+    ESPERA,
+  );
 
 describe('App · aceptación de los Términos, de punta a punta', () => {
   let red;
 
   beforeEach(() => {
     vi.clearAllMocks();
-    window.matchMedia = () => ({ matches: false, addEventListener() {}, removeEventListener() {} });
-    red = vi.spyOn(globalThis, 'fetch').mockRejectedValue(new Error('no debería llamarse'));
+    window.matchMedia = () => ({
+      matches: false,
+      addEventListener() {},
+      removeEventListener() {},
+    });
+    red = vi
+      .spyOn(globalThis, 'fetch')
+      .mockRejectedValue(new Error('no debería llamarse'));
     act(() => {
       olvidaLaSesion();
-      anotaLaSesion({ ...USUARIO, terms_accepted: false, terms_version_required: '2026-10-20' });
+      anotaLaSesion({
+        ...USUARIO,
+        terms_accepted: false,
+        terms_version_required: '2026-10-20',
+      });
     });
   });
 
@@ -101,22 +137,37 @@ describe('App · aceptación de los Términos, de punta a punta', () => {
     render(<App />);
     await titulo();
 
-    fireEvent.click(screen.getByRole('link', { name: 'acceptTermsPage.devices' }));
+    fireEvent.click(
+      screen.getByRole('link', { name: 'acceptTermsPage.devices' }),
+    );
 
-    expect(await screen.findByText('mis dispositivos', {}, ESPERA)).toBeInTheDocument();
+    expect(
+      await screen.findByText('mis dispositivos', {}, ESPERA),
+    ).toBeInTheDocument();
   });
 
   it('al aceptar, la sesión queda aceptada y se llega al panel', async () => {
-    aceptar.mockResolvedValue({ ...USUARIO, is_admin: true, terms_accepted: true });
+    aceptar.mockResolvedValue({
+      ...USUARIO,
+      is_admin: true,
+      terms_accepted: true,
+    });
     window.history.pushState({}, '', '/dashboard');
     render(<App />);
     await titulo();
 
-    fireEvent.click(screen.getByRole('checkbox', { name: /register\.acceptTerms/ }));
-    fireEvent.click(screen.getByRole('button', { name: 'acceptTermsPage.acceptButton' }));
+    fireEvent.click(
+      screen.getByRole('checkbox', { name: /register\.acceptTerms/ }),
+    );
+    fireEvent.click(
+      screen.getByRole('button', { name: 'acceptTermsPage.acceptButton' }),
+    );
 
     expect(await screen.findByText('panel', {}, ESPERA)).toBeInTheDocument();
-    expect(loQueHaySobreLaSesion().user).toMatchObject({ terms_accepted: true, is_admin: true });
+    expect(loQueHaySobreLaSesion().user).toMatchObject({
+      terms_accepted: true,
+      is_admin: true,
+    });
     expect(red).not.toHaveBeenCalled();
   });
 });

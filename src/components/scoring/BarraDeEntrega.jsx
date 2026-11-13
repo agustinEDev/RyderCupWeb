@@ -37,7 +37,13 @@ const BarraDeEntrega = ({
   soloAnotado = false,
 }) => {
   const { t } = useTranslation('scoring');
-  const acabado = t(soloAnotado ? 'submit.allHolesScored' : dePartida ? 'submit.groupOver' : 'submit.matchOver');
+  const acabado = t(
+    soloAnotado
+      ? 'submit.allHolesScored'
+      : dePartida
+        ? 'submit.groupOver'
+        : 'submit.matchOver',
+  );
 
   return (
     <div
@@ -50,15 +56,25 @@ const BarraDeEntrega = ({
         {estado === 'entregada' ? (
           <div className="space-y-0.5 text-center text-sm">
             <p className="font-semibold text-green-700">
-              {t(esFoursomes ? 'submit.pairSubmitted' : 'submit.alreadySubmitted')}
+              {t(
+                esFoursomes
+                  ? 'submit.pairSubmitted'
+                  : 'submit.alreadySubmitted',
+              )}
             </p>
             {completado ? (
-              <p className="text-gray-500">{t(dePartida ? 'submit.groupCompleted' : 'submit.matchCompleted')}</p>
+              <p className="text-gray-500">
+                {t(
+                  dePartida ? 'submit.groupCompleted' : 'submit.matchCompleted',
+                )}
+              </p>
             ) : (
               pendientes.length > 0 && (
                 <p className="text-gray-500">
                   {esFoursomes
-                    ? t('submit.waitingForPair', { names: pendientes.join(' / ') })
+                    ? t('submit.waitingForPair', {
+                        names: pendientes.join(' / '),
+                      })
                     : t('submit.waitingForPlayers', {
                         count: pendientes.length,
                         names: pendientes.join(', '),
@@ -71,7 +87,11 @@ const BarraDeEntrega = ({
           <>
             <div className="flex items-baseline justify-between gap-3">
               <p className="font-bold text-gray-900">{acabado}</p>
-              {marcador && <p className="min-w-0 truncate font-bold text-primary">{marcador}</p>}
+              {marcador && (
+                <p className="min-w-0 truncate font-bold text-primary">
+                  {marcador}
+                </p>
+              )}
             </div>
             {estado === 'entregar' ? (
               <button
@@ -83,10 +103,14 @@ const BarraDeEntrega = ({
                 {t('submit.button')}
               </button>
             ) : (
-              <p className="text-center text-sm text-gray-500">{t('submit.notReady')}</p>
+              <p className="text-center text-sm text-gray-500">
+                {t('submit.notReady')}
+              </p>
             )}
             {sePuedeSeguir && (
-              <p className="text-center text-xs text-gray-500">{t('submit.keepPlaying')}</p>
+              <p className="text-center text-xs text-gray-500">
+                {t('submit.keepPlaying')}
+              </p>
             )}
           </>
         )}

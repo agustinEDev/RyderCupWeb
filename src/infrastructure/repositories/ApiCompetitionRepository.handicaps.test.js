@@ -3,7 +3,9 @@ import ApiCompetitionRepository from './ApiCompetitionRepository';
 import * as apiModule from '../http/api';
 
 vi.mock('../http/api', async () => ({
-  segmento: (await vi.importActual('../http/rutaDeLaApi')).segmento, default: vi.fn() }));
+  segmento: (await vi.importActual('../http/rutaDeLaApi')).segmento,
+  default: vi.fn(),
+}));
 
 /** D3 (FE #824, PR 5): las rutas de la actualización de hándicaps. */
 describe('ApiCompetitionRepository · actualizar hándicaps (FE #824)', () => {
@@ -19,24 +21,42 @@ describe('ApiCompetitionRepository · actualizar hándicaps (FE #824)', () => {
 
   it('lanzar', async () => {
     // HandicapUpdateLaunchedDTO: {id, status: IN_PROGRESS, origin, started_at, resumed}
-    api.mockResolvedValue({ id: 'u-1', status: 'IN_PROGRESS', origin: 'ORGANIZER', started_at: 'x', resumed: true });
+    api.mockResolvedValue({
+      id: 'u-1',
+      status: 'IN_PROGRESS',
+      origin: 'ORGANIZER',
+      started_at: 'x',
+      resumed: true,
+    });
 
-    expect(await repo.launchHandicapUpdate('c-1')).toStrictEqual({ status: 'IN_PROGRESS', resumed: true });
-    expect(api).toHaveBeenCalledWith('/api/v1/competitions/c-1/handicap-updates', { method: 'POST' });
+    expect(await repo.launchHandicapUpdate('c-1')).toStrictEqual({
+      status: 'IN_PROGRESS',
+      resumed: true,
+    });
+    expect(api).toHaveBeenCalledWith(
+      '/api/v1/competitions/c-1/handicap-updates',
+      { method: 'POST' },
+    );
   });
 
   it('programar', async () => {
     await repo.scheduleHandicapUpdate('c-1', '2030-10-12T03:00:00+02:00');
 
-    expect(api).toHaveBeenCalledWith('/api/v1/competitions/c-1/handicap-updates/schedule', {
-      method: 'PUT',
-      body: JSON.stringify({ run_at: '2030-10-12T03:00:00+02:00' }),
-    });
+    expect(api).toHaveBeenCalledWith(
+      '/api/v1/competitions/c-1/handicap-updates/schedule',
+      {
+        method: 'PUT',
+        body: JSON.stringify({ run_at: '2030-10-12T03:00:00+02:00' }),
+      },
+    );
   });
 
   it('anular lo programado', async () => {
     await repo.cancelScheduledHandicapUpdate('c-1');
 
-    expect(api).toHaveBeenCalledWith('/api/v1/competitions/c-1/handicap-updates/schedule', { method: 'DELETE' });
+    expect(api).toHaveBeenCalledWith(
+      '/api/v1/competitions/c-1/handicap-updates/schedule',
+      { method: 'DELETE' },
+    );
   });
 });

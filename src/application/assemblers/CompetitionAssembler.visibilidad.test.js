@@ -28,17 +28,24 @@ const respuestaDeLaApi = (extra = {}) => ({
 });
 
 const loQueLlegaALaPantalla = (apiData) =>
-  CompetitionAssembler.toSimpleDTO(CompetitionMapper.toDomain(apiData), apiData);
+  CompetitionAssembler.toSimpleDTO(
+    CompetitionMapper.toDomain(apiData),
+    apiData,
+  );
 
 describe('CompetitionAssembler · la visibilidad llega a la pantalla (FE #664)', () => {
   it('una pública llega como pública', () => {
-    const dto = loQueLlegaALaPantalla(respuestaDeLaApi({ visibility: 'PUBLIC' }));
+    const dto = loQueLlegaALaPantalla(
+      respuestaDeLaApi({ visibility: 'PUBLIC' }),
+    );
 
     expect(dto.visibility).toBe('PUBLIC');
   });
 
   it('y una privada, como privada', () => {
-    const dto = loQueLlegaALaPantalla(respuestaDeLaApi({ visibility: 'PRIVATE' }));
+    const dto = loQueLlegaALaPantalla(
+      respuestaDeLaApi({ visibility: 'PRIVATE' }),
+    );
 
     expect(dto.visibility).toBe('PRIVATE');
   });
@@ -54,7 +61,9 @@ describe('CompetitionAssembler · la apertura programada llega a la pantalla (FE
   // Sin esto la ficha de una programada no puede decir cuándo abre: el dato
   // existe en la respuesta y se perdía por el camino, como la visibilidad
   it('A1: los días de antelación llegan tal cual', () => {
-    const dto = loQueLlegaALaPantalla(respuestaDeLaApi({ enrollment_opens_days_before: 5 }));
+    const dto = loQueLlegaALaPantalla(
+      respuestaDeLaApi({ enrollment_opens_days_before: 5 }),
+    );
 
     expect(dto.enrollmentOpensDaysBefore).toBe(5);
   });
@@ -66,7 +75,9 @@ describe('CompetitionAssembler · la apertura programada llega a la pantalla (FE
   });
 
   it('A3: y con el campo a null, tampoco', () => {
-    const dto = loQueLlegaALaPantalla(respuestaDeLaApi({ enrollment_opens_days_before: null }));
+    const dto = loQueLlegaALaPantalla(
+      respuestaDeLaApi({ enrollment_opens_days_before: null }),
+    );
 
     expect(dto.enrollmentOpensDaysBefore).toBeNull();
   });
@@ -97,7 +108,7 @@ describe('CompetitionAssembler · los capitanes llegan a la pantalla (FE #692)',
         team_b_captain_id: 'bea',
         team_a_vice_captain_id: 'carla',
         team_b_vice_captain_id: 'dani',
-      })
+      }),
     );
 
     expect(dto.captains).toEqual({
@@ -111,7 +122,12 @@ describe('CompetitionAssembler · los capitanes llegan a la pantalla (FE #692)',
   it('K2: sin los campos, ninguno: una competición sin capitanes', () => {
     const dto = loQueLlegaALaPantalla(respuestaDeLaApi());
 
-    expect(dto.captains).toEqual({ teamA: null, teamB: null, viceTeamA: null, viceTeamB: null });
+    expect(dto.captains).toEqual({
+      teamA: null,
+      teamB: null,
+      viceTeamA: null,
+      viceTeamB: null,
+    });
   });
 });
 
@@ -119,7 +135,10 @@ describe('CompetitionAssembler · si ya hay equipos llega a la pantalla (FE #692
   // Con él la ficha elige entre «Nombrar capitanes», «Cambiar capitanes» y
   // «Cerrar inscripciones»; solo lo manda la ficha
   it('K3: teams_assigned llega tal cual', () => {
-    expect(loQueLlegaALaPantalla(respuestaDeLaApi({ teams_assigned: true })).teamsAssigned).toBe(true);
+    expect(
+      loQueLlegaALaPantalla(respuestaDeLaApi({ teams_assigned: true }))
+        .teamsAssigned,
+    ).toBe(true);
   });
 
   it('K4: sin el campo, no: no se afirma un reparto que nadie ha dicho', () => {
@@ -129,43 +148,67 @@ describe('CompetitionAssembler · si ya hay equipos llega a la pantalla (FE #692
 
 // Release social 2: qué ve de los inscritos lo dice el servidor; la ficha no lo adivina
 describe('CompetitionAssembler · qué ve de los inscritos', () => {
-  it.each(['ALL', 'FRIENDS', 'NONE'])('V1: enrolled_visibility %s llega tal cual', (valor) => {
-    expect(loQueLlegaALaPantalla(respuestaDeLaApi({ enrolled_visibility: valor })).enrolledVisibility).toBe(valor);
-  });
+  it.each(['ALL', 'FRIENDS', 'NONE'])(
+    'V1: enrolled_visibility %s llega tal cual',
+    (valor) => {
+      expect(
+        loQueLlegaALaPantalla(respuestaDeLaApi({ enrolled_visibility: valor }))
+          .enrolledVisibility,
+      ).toBe(valor);
+    },
+  );
 
   it('V2: sin el campo (los listados), null', () => {
-    expect(loQueLlegaALaPantalla(respuestaDeLaApi()).enrolledVisibility).toBeNull();
+    expect(
+      loQueLlegaALaPantalla(respuestaDeLaApi()).enrolledVisibility,
+    ).toBeNull();
   });
 });
 
 describe('CompetitionAssembler · el modo de configuración llega a la pantalla (FE #695)', () => {
   it('M1: el modo llega tal cual', () => {
-    expect(loQueLlegaALaPantalla(respuestaDeLaApi({ setup_mode: 'AUTOMATIC' })).setupMode).toBe(
-      'AUTOMATIC'
-    );
+    expect(
+      loQueLlegaALaPantalla(respuestaDeLaApi({ setup_mode: 'AUTOMATIC' }))
+        .setupMode,
+    ).toBe('AUTOMATIC');
   });
 
   it('M2: sin el campo, estilo RyderCup: es lo que son todas hoy', () => {
-    expect(loQueLlegaALaPantalla(respuestaDeLaApi()).setupMode).toBe('RYDER_CUP');
+    expect(loQueLlegaALaPantalla(respuestaDeLaApi()).setupMode).toBe(
+      'RYDER_CUP',
+    );
   });
 });
 
 describe('CompetitionAssembler · mi invitación pendiente llega a la ficha (release social 2, I1/I2)', () => {
   it('con ella, su id y su caducidad', () => {
     const dto = loQueLlegaALaPantalla(
-      respuestaDeLaApi({ my_pending_invitation: { id: 'inv-1', expires_at: '2026-11-03T10:00:00' } })
+      respuestaDeLaApi({
+        my_pending_invitation: {
+          id: 'inv-1',
+          expires_at: '2026-11-03T10:00:00',
+        },
+      }),
     );
 
-    expect(dto.myPendingInvitation).toEqual({ id: 'inv-1', expiresAt: '2026-11-03T10:00:00' });
+    expect(dto.myPendingInvitation).toEqual({
+      id: 'inv-1',
+      expiresAt: '2026-11-03T10:00:00',
+    });
   });
 
   it('sin caducidad, null en ella', () => {
-    const dto = loQueLlegaALaPantalla(respuestaDeLaApi({ my_pending_invitation: { id: 'inv-1' } }));
+    const dto = loQueLlegaALaPantalla(
+      respuestaDeLaApi({ my_pending_invitation: { id: 'inv-1' } }),
+    );
 
     expect(dto.myPendingInvitation).toEqual({ id: 'inv-1', expiresAt: null });
   });
 
   it.each([[null], [undefined]])('sin ella (%s), null', (valor) => {
-    expect(loQueLlegaALaPantalla(respuestaDeLaApi({ my_pending_invitation: valor })).myPendingInvitation).toBeNull();
+    expect(
+      loQueLlegaALaPantalla(respuestaDeLaApi({ my_pending_invitation: valor }))
+        .myPendingInvitation,
+    ).toBeNull();
   });
 });

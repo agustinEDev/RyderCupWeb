@@ -1,6 +1,10 @@
 import { useState } from 'react';
 import { User } from 'lucide-react';
-import { segmento, urlDeImagenDeLaApi, valeComoSegmento } from '../../composition/http';
+import {
+  segmento,
+  urlDeImagenDeLaApi,
+  valeComoSegmento,
+} from '../../composition/http';
 
 const SIZE_CLASSES = {
   sm: 'w-8 h-8',
@@ -37,7 +41,9 @@ const ICON_SIZE_CLASSES = {
 const rutaDelAvatar = (userId, version) => {
   // Se mira antes, sin avisar: `segmento` avisaría a Sentry en cada render
   if (!userId || !valeComoSegmento(userId)) return null;
-  return urlDeImagenDeLaApi(`/api/v1/users/${segmento(userId)}/avatar${version ? `?v=${encodeURIComponent(version)}` : ''}`);
+  return urlDeImagenDeLaApi(
+    `/api/v1/users/${segmento(userId)}/avatar${version ? `?v=${encodeURIComponent(version)}` : ''}`,
+  );
 };
 
 const Avatar = ({ userId, size = 'md', className = '', version }) => {

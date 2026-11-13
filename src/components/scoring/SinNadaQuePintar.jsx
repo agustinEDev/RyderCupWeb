@@ -22,9 +22,14 @@ const SinNadaQuePintar = ({ t, error, refetch }) => {
           fallo sin respuesta, que es lo que da un portal cautivo, es justo el
           consejo que hace falta */}
       {!contestoElServidor && (
-        <p className="mt-2 text-sm text-gray-500">{t('offline.nothingCachedHint')}</p>
+        <p className="mt-2 text-sm text-gray-500">
+          {t('offline.nothingCachedHint')}
+        </p>
       )}
-      <button onClick={refetch} className="mt-4 px-4 py-2 bg-primary text-white rounded-lg">
+      <button
+        onClick={refetch}
+        className="mt-4 px-4 py-2 bg-primary text-white rounded-lg"
+      >
         {t('retry')}
       </button>
     </>

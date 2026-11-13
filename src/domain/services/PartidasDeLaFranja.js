@@ -7,14 +7,17 @@
  * cada partida con `{id, number, teeTime: 'HH:MM', players: [{userId}]}`.
  */
 
-const enLaPartida = (partida, userId) => partida.players.some((p) => p.userId === userId);
+const enLaPartida = (partida, userId) =>
+  partida.players.some((p) => p.userId === userId);
 
 // Un no presentado sigue en su partida (su NP sale en la clasificación), pero
 // no ocupa sitio, no se mueve y no es compañero de nadie (RyderCupAm#543)
-export const esNoPresentado = (jugador) => jugador?.cardStatus === 'NO_PRESENTADO';
+export const esNoPresentado = (jugador) =>
+  jugador?.cardStatus === 'NO_PRESENTADO';
 
 /** Los de la partida que juegan: sin los no presentados. */
-export const juegan = (partida) => partida.players.filter((p) => !esNoPresentado(p));
+export const juegan = (partida) =>
+  partida.players.filter((p) => !esNoPresentado(p));
 
 /**
  * Si anota en esa partida: está en ella y su tarjeta sigue abierta. Con la
@@ -23,11 +26,16 @@ export const juegan = (partida) => partida.players.filter((p) => !esNoPresentado
 export const anotaSuTarjeta = (partida, userId) => {
   const yo = partida.players.find((p) => p.userId === userId);
   // Ni en una partida ya cerrada, aunque su tarjeta quedara abierta (/code-review)
-  return Boolean(yo) && (yo.cardStatus ?? 'JUGANDO') === 'JUGANDO' && partida.status !== 'COMPLETED';
+  return (
+    Boolean(yo) &&
+    (yo.cardStatus ?? 'JUGANDO') === 'JUGANDO' &&
+    partida.status !== 'COMPLETED'
+  );
 };
 
 /** Con quién juega: sin él ni los no presentados. */
-export const companerosDe = (partida, userId) => juegan(partida).filter((p) => p.userId !== userId);
+export const companerosDe = (partida, userId) =>
+  juegan(partida).filter((p) => p.userId !== userId);
 
 /**
  * Se retiró: sigue siendo de la partida, y se dice al nombrarlo —«Con Bea
@@ -62,7 +70,8 @@ export const seCambia = (partida) => partida.canChange !== false;
 export const destinosDelJugador = (vista, userId, { tamano, salidas }) => {
   const origen = vista.groups.find((g) => enLaPartida(g, userId)) ?? null;
   const sinDestinos = { conSitio: [], intercambios: [], nueva: false };
-  if (esNoPresentado(origen?.players.find((p) => p.userId === userId))) return sinDestinos;
+  if (esNoPresentado(origen?.players.find((p) => p.userId === userId)))
+    return sinDestinos;
   if (origen && !seCambia(origen)) return sinDestinos;
   const otras = vista.groups.filter((g) => g !== origen && seCambia(g));
   // Solo cuentan los que juegan: dejar a uno solo junto a no presentados
@@ -73,11 +82,19 @@ export const destinosDelJugador = (vista, userId, { tamano, salidas }) => {
   return {
     // A una solo de no presentados también: queda incompleta hasta que el
     // organizador traiga a otro, como una nueva (M1; decidido el 12 oct 2026)
-    conSitio: sinQuedarSolo ? otras.filter((g) => juegan(g).length < tamano) : [],
-    intercambios: origen
-      ? otras.filter((g) => juegan(g).length >= tamano).flatMap((g) => juegan(g).map((con) => ({ partida: g, con })))
+    conSitio: sinQuedarSolo
+      ? otras.filter((g) => juegan(g).length < tamano)
       : [],
-    nueva: sinQuedarSolo && unoDeVarios && vista.canAddGroup !== false && vista.groups.length < salidas,
+    intercambios: origen
+      ? otras
+          .filter((g) => juegan(g).length >= tamano)
+          .flatMap((g) => juegan(g).map((con) => ({ partida: g, con })))
+      : [],
+    nueva:
+      sinQuedarSolo &&
+      unoDeVarios &&
+      vista.canAddGroup !== false &&
+      vista.groups.length < salidas,
   };
 };
 
@@ -113,7 +130,9 @@ const minutos = (hhmm) => {
 export const partidasQueSeAdelantan = (antes, despues) => {
   const horaDe = new Map(antes.map((g) => [g.id, minutos(g.teeTime)]));
   // Llegan por número (el servidor las ordena)
-  const adelantadas = despues.filter((g) => horaDe.has(g.id) && minutos(g.teeTime) < horaDe.get(g.id));
+  const adelantadas = despues.filter(
+    (g) => horaDe.has(g.id) && minutos(g.teeTime) < horaDe.get(g.id),
+  );
   if (adelantadas.length === 0) return null;
   const primera = adelantadas[0];
   return {
@@ -131,7 +150,11 @@ export const partidasQueSeAdelantan = (antes, despues) => {
  * @param {Array<{groups: Array<{status: string}>}>} vistas - Las partidas de cada franja
  */
 export const todasLasFranjasCerradas = (vistas) =>
-  vistas.length > 0 && vistas.every((v) => v.groups.length > 0 && v.groups.every((g) => g.status === 'COMPLETED'));
+  vistas.length > 0 &&
+  vistas.every(
+    (v) =>
+      v.groups.length > 0 && v.groups.every((g) => g.status === 'COMPLETED'),
+  );
 
 /**
  * Si quien juega no tiene a nadie en juego que le marque: nadie, o su marcador
@@ -144,6 +167,8 @@ export const todasLasFranjasCerradas = (vistas) =>
 export const sinMarcadorEnJuego = (tarjetas, jugador) => {
   const estadoDe = (id) => tarjetas.find((c) => c.userId === id)?.cardStatus;
   const suya = tarjetas.find((c) => c.userId === jugador);
-  return suya?.cardStatus === 'JUGANDO' && (!suya.markedByUserId || estadoDe(suya.markedByUserId) !== 'JUGANDO');
+  return (
+    suya?.cardStatus === 'JUGANDO' &&
+    (!suya.markedByUserId || estadoDe(suya.markedByUserId) !== 'JUGANDO')
+  );
 };
-

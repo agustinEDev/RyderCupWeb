@@ -1,7 +1,14 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
-import { ArrowDown, ArrowRightLeft, ArrowUp, ChevronDown, ChevronUp, Users } from 'lucide-react';
+import {
+  ArrowDown,
+  ArrowRightLeft,
+  ArrowUp,
+  ChevronDown,
+  ChevronUp,
+  Users,
+} from 'lucide-react';
 import {
   getTeeGroupsUseCase,
   generateTeeGroupsUseCase,
@@ -13,10 +20,21 @@ import {
 } from '../../composition';
 import customToast from '../../utils/toast';
 import { mensajeConJugadores } from '../../utils/erroresConJugadores';
-import { anotaSuTarjeta, destinosDelJugador, esNoPresentado, juegan, errorDeMarcadores, partidasQueSeAdelantan, seCambia } from '../../domain/services/PartidasDeLaFranja';
+import {
+  anotaSuTarjeta,
+  destinosDelJugador,
+  esNoPresentado,
+  juegan,
+  errorDeMarcadores,
+  partidasQueSeAdelantan,
+  seCambia,
+} from '../../domain/services/PartidasDeLaFranja';
 import { useLaMasNueva } from '../../hooks/useLaMasNueva';
 import { conGenero } from '../../utils/genero';
-import { formatoDeIndice, formatoDeHandicapDeJuego } from '../../utils/formatoDeHandicap';
+import {
+  formatoDeIndice,
+  formatoDeHandicapDeJuego,
+} from '../../utils/formatoDeHandicap';
 
 /**
  * Las partidas de una franja de stroke play, en la ficha (FE #824, PR 6;
@@ -70,11 +88,14 @@ const CON_TEXTO = [
 ];
 
 // 44 px de alto: se tocan con el dedo
-const boton = 'min-h-11 rounded-lg border px-3 py-1.5 text-sm font-medium disabled:opacity-50';
+const boton =
+  'min-h-11 rounded-lg border px-3 py-1.5 text-sm font-medium disabled:opacity-50';
 const principal = `${boton} border-primary bg-primary text-white`;
 const secundario = `${boton} border-gray-300 bg-white text-gray-700 hover:bg-gray-50`;
-const icono = 'flex h-11 w-11 items-center justify-center rounded-lg text-gray-500 hover:bg-gray-100 disabled:opacity-50';
-const selector = 'min-h-11 max-w-full rounded-lg border border-gray-200 px-2 py-1 text-xs';
+const icono =
+  'flex h-11 w-11 items-center justify-center rounded-lg text-gray-500 hover:bg-gray-100 disabled:opacity-50';
+const selector =
+  'min-h-11 max-w-full rounded-lg border border-gray-200 px-2 py-1 text-xs';
 
 // El orden con el que se generaron por última vez las de una franja: al volver
 // se proponía siempre «altos primero» (QA del 11 oct 2026). Es una comodidad de
@@ -97,7 +118,16 @@ const recordarOrden = (roundId, orden) => {
   }
 };
 
-const PartidasEnLaFranja = ({ competitionId, franja, nombre, salidas, userId, organiza, version, onCambio }) => {
+const PartidasEnLaFranja = ({
+  competitionId,
+  franja,
+  nombre,
+  salidas,
+  userId,
+  organiza,
+  version,
+  onCambio,
+}) => {
   const { t, i18n } = useTranslation('schedule');
   const [abierta, setAbierta] = useState(false);
   const [vista, setVista] = useState(null);
@@ -114,12 +144,14 @@ const PartidasEnLaFranja = ({ competitionId, franja, nombre, salidas, userId, or
   // ese jugador, en cuanto se pueda pulsar; si ya no está, se olvida (revisor,
   // /code-review)
   const [volverAlIcono, setVolver] = useState(null);
-  const setVolverAlIcono = (userId) => setVolver((antes) => ({ userId, vez: (antes?.vez ?? 0) + 1 }));
+  const setVolverAlIcono = (userId) =>
+    setVolver((antes) => ({ userId, vez: (antes?.vez ?? 0) + 1 }));
   const atendida = useRef(0);
   const iconos = useRef(new Map());
   // Tras cada pintado: con su icono ya pulsable, el foco va a él
   useEffect(() => {
-    if (!volverAlIcono || ocupado || atendida.current === volverAlIcono.vez) return;
+    if (!volverAlIcono || ocupado || atendida.current === volverAlIcono.vez)
+      return;
     atendida.current = volverAlIcono.vez;
     iconos.current.get(volverAlIcono.userId)?.focus();
   }, [volverAlIcono, ocupado]);
@@ -133,20 +165,20 @@ const PartidasEnLaFranja = ({ competitionId, franja, nombre, salidas, userId, or
       setVista(leida);
       setSinCargar(false);
     },
-    [lecturas]
+    [lecturas],
   );
   const aplicarFallo = useCallback(
     (turno) => {
       if (lecturas.aplicar(turno)) setSinCargar(true);
     },
-    [lecturas]
+    [lecturas],
   );
 
   // Dentro de su función async: un fallo, aunque sea síncrono, es un rechazo
   // más y no se lleva la ficha entera
   const pedirPartidas = useCallback(
     () => (async () => getTeeGroupsUseCase.execute(franja.id))(),
-    [franja.id]
+    [franja.id],
   );
 
   // Para releer tras un cambio y para «Reintentar»
@@ -166,15 +198,16 @@ const PartidasEnLaFranja = ({ competitionId, franja, nombre, salidas, userId, or
     const turno = lecturas.turno();
     pedirPartidas().then(
       (leida) => aplicarLeida(turno, leida),
-      () => aplicarFallo(turno)
+      () => aplicarFallo(turno),
     );
   }, [abierta, version, lecturas, pedirPartidas, aplicarLeida, aplicarFallo]);
 
   const tamano = franja.teeSheet?.groupSize ?? 4;
   const grupos = useMemo(() => vista?.groups ?? [], [vista]);
   const nombres = useMemo(
-    () => new Map(grupos.flatMap((g) => g.players.map((p) => [p.userId, p.name]))),
-    [grupos]
+    () =>
+      new Map(grupos.flatMap((g) => g.players.map((p) => [p.userId, p.name]))),
+    [grupos],
   );
   // Generar y borrar, solo antes de que salga la primera; tocar una partida,
   // mientras no haya salido ella (#544)
@@ -184,7 +217,12 @@ const PartidasEnLaFranja = ({ competitionId, franja, nombre, salidas, userId, or
 
   const mensaje = (error) => {
     const codigo = error?.errorCode;
-    const conNombres = mensajeConJugadores(t, error, 'partidas.errors', CON_NOMBRES);
+    const conNombres = mensajeConJugadores(
+      t,
+      error,
+      'partidas.errors',
+      CON_NOMBRES,
+    );
     if (conNombres) return conNombres;
     if (CON_TEXTO.includes(codigo)) return t(`partidas.errors.${codigo}`);
     return error?.message || t('partidas.error');
@@ -196,7 +234,12 @@ const PartidasEnLaFranja = ({ competitionId, franja, nombre, salidas, userId, or
    * Lo de «salen antes» es solo al mover: cambiar el orden adelanta una a
    * propósito (revisor).
    */
-  const cambiar = async (accion, aviso, alAcabar, { avisarSiSeAdelantan = false, cierra = false } = {}) => {
+  const cambiar = async (
+    accion,
+    aviso,
+    alAcabar,
+    { avisarSiSeAdelantan = false, cierra = false } = {},
+  ) => {
     // Un doble toque no manda dos: React pinta los botones desactivados antes
     // del segundo
     setOcupado(true);
@@ -213,9 +256,17 @@ const PartidasEnLaFranja = ({ competitionId, franja, nombre, salidas, userId, or
       customToast.success(t(aviso));
       // La clasificación solo cambia al cerrar la franja: lo demás no la relee
       onCambio?.({ cerrada: cierra });
-      const adelantadas = aplicada && avisarSiSeAdelantan ? partidasQueSeAdelantan(antes, nueva.groups) : null;
+      const adelantadas =
+        aplicada && avisarSiSeAdelantan
+          ? partidasQueSeAdelantan(antes, nueva.groups)
+          : null;
       if (adelantadas) {
-        customToast.info(t('partidas.earlier', { ...adelantadas, count: adelantadas.hasta - adelantadas.desde + 1 }));
+        customToast.info(
+          t('partidas.earlier', {
+            ...adelantadas,
+            count: adelantadas.hasta - adelantadas.desde + 1,
+          }),
+        );
       }
       // Borrar no contesta con la vista; y si mientras tanto se aplicó una
       // lectura que salió antes de acabar, lo pintado puede ser de antes del
@@ -235,45 +286,70 @@ const PartidasEnLaFranja = ({ competitionId, franja, nombre, salidas, userId, or
   };
 
   const generar = () =>
-    cambiar(() => generateTeeGroupsUseCase.execute(franja.id, orden), 'partidas.generated', () => {
-      setConfirmando(null);
-      recordarOrden(franja.id, orden);
-    });
+    cambiar(
+      () => generateTeeGroupsUseCase.execute(franja.id, orden),
+      'partidas.generated',
+      () => {
+        setConfirmando(null);
+        recordarOrden(franja.id, orden);
+      },
+    );
   // Cerrar la franja (PR 7): lo sin acabar se da por terminado
   const cerrarLaFranja = () =>
-    cambiar(() => closeTeeWindowUseCase.execute(franja.id), 'partidas.windowClosed', () => setConfirmando(null), {
-      cierra: true,
-    });
+    cambiar(
+      () => closeTeeWindowUseCase.execute(franja.id),
+      'partidas.windowClosed',
+      () => setConfirmando(null),
+      {
+        cierra: true,
+      },
+    );
   const borrar = () =>
-    cambiar(() => deleteTeeGroupsUseCase.execute(franja.id), 'partidas.removed', () => setConfirmando(null));
+    cambiar(
+      () => deleteTeeGroupsUseCase.execute(franja.id),
+      'partidas.removed',
+      () => setConfirmando(null),
+    );
   const mover = (jugador, destino) => {
     if (!destino) return;
-    const [groupId, swapWithUserId] = destino === NUEVA ? [] : destino.split('|');
+    const [groupId, swapWithUserId] =
+      destino === NUEVA ? [] : destino.split('|');
     cambiar(
       // Lo que no viene lo quita el caso de uso
-      () => moveTeeGroupPlayerUseCase.execute(franja.id, { userId: jugador, groupId, swapWithUserId }),
+      () =>
+        moveTeeGroupPlayerUseCase.execute(franja.id, {
+          userId: jugador,
+          groupId,
+          swapWithUserId,
+        }),
       'partidas.moved',
       () => {
         setVolverAlIcono(jugador);
         setMoviendo(null);
       },
-      { avisarSiSeAdelantan: true }
+      { avisarSiSeAdelantan: true },
     );
   };
   const reordenar = (de, a) => {
     const ids = grupos.map((g) => g.id);
     [ids[de], ids[a]] = [ids[a], ids[de]];
-    cambiar(() => reorderTeeGroupsUseCase.execute(franja.id, ids), 'partidas.reordered');
+    cambiar(
+      () => reorderTeeGroupsUseCase.execute(franja.id, ids),
+      'partidas.reordered',
+    );
   };
   const guardarMarcadores = (partida) =>
     cambiar(
       () =>
         setTeeGroupMarkersUseCase.execute(
           partida.id,
-          juegan(partida).map((p) => ({ userId: p.userId, marksUserId: marcando.valores[p.userId] }))
+          juegan(partida).map((p) => ({
+            userId: p.userId,
+            marksUserId: marcando.valores[p.userId],
+          })),
         ),
       'partidas.markersSaved',
-      () => setMarcando(null)
+      () => setMarcando(null),
     );
 
   const abrirMarcadores = (partida) => {
@@ -282,7 +358,10 @@ const PartidasEnLaFranja = ({ competitionId, franja, nombre, salidas, userId, or
       groupId: partida.id,
       // A un no presentado no se le marca: como si faltara (revisor)
       valores: Object.fromEntries(
-        juegan(partida).map((p) => [p.userId, enJuego.has(p.marksUserId) ? p.marksUserId : ''])
+        juegan(partida).map((p) => [
+          p.userId,
+          enJuego.has(p.marksUserId) ? p.marksUserId : '',
+        ]),
       ),
     });
   };
@@ -290,18 +369,28 @@ const PartidasEnLaFranja = ({ competitionId, franja, nombre, salidas, userId, or
   const opcionesDeDestino = (jugador, { conIntercambios }) => {
     const d = destinosDelJugador(vista, jugador, { tamano, salidas });
     return [
-      ...d.conSitio.map((g) => ({ valor: g.id, texto: t('partidas.toGroup', { numero: g.number, hora: g.teeTime }) })),
+      ...d.conSitio.map((g) => ({
+        valor: g.id,
+        texto: t('partidas.toGroup', { numero: g.number, hora: g.teeTime }),
+      })),
       ...(conIntercambios
         ? d.intercambios.map(({ partida: g, con }) => ({
             valor: `${g.id}|${con.userId}`,
-            texto: t('partidas.swapWith', { jugador: con.name, numero: g.number }),
+            texto: t('partidas.swapWith', {
+              jugador: con.name,
+              numero: g.number,
+            }),
           }))
         : []),
       ...(d.nueva ? [{ valor: NUEVA, texto: t('partidas.newGroup') }] : []),
     ];
   };
 
-  const selectorDeDestino = (jugador, nombre, { etiqueta, placeholder, conIntercambios, enfocar = false }) => {
+  const selectorDeDestino = (
+    jugador,
+    nombre,
+    { etiqueta, placeholder, conIntercambios, enfocar = false },
+  ) => {
     const opciones = opcionesDeDestino(jugador, { conIntercambios });
     if (opciones.length === 0) return null;
     return (
@@ -334,7 +423,10 @@ const PartidasEnLaFranja = ({ competitionId, franja, nombre, salidas, userId, or
     return (
       <div className="mt-2 space-y-2 rounded-lg bg-gray-50 p-2">
         {enJuego.map((p) => (
-          <label key={p.userId} className="flex min-w-0 flex-wrap items-center gap-2 text-xs text-gray-700">
+          <label
+            key={p.userId}
+            className="flex min-w-0 flex-wrap items-center gap-2 text-xs text-gray-700"
+          >
             {/* El nombre entero en su línea: cortado a «Pa…» no se sabía quién
                 marca a quién (QA del 11 oct 2026) */}
             <span className="w-full break-words">{p.name}</span>
@@ -342,7 +434,10 @@ const PartidasEnLaFranja = ({ competitionId, franja, nombre, salidas, userId, or
               aria-label={t('partidas.whoMarks', { jugador: p.name })}
               value={marcando.valores[p.userId] ?? ''}
               onChange={(e) =>
-                setMarcando((m) => ({ ...m, valores: { ...m.valores, [p.userId]: e.target.value } }))
+                setMarcando((m) => ({
+                  ...m,
+                  valores: { ...m.valores, [p.userId]: e.target.value },
+                }))
               }
               className={selector}
             >
@@ -363,10 +458,19 @@ const PartidasEnLaFranja = ({ competitionId, franja, nombre, salidas, userId, or
           </p>
         )}
         <div className="flex flex-wrap gap-2">
-          <button type="button" disabled={ocupado || !!error} onClick={() => guardarMarcadores(partida)} className={principal}>
+          <button
+            type="button"
+            disabled={ocupado || !!error}
+            onClick={() => guardarMarcadores(partida)}
+            className={principal}
+          >
             {t('partidas.markersSave')}
           </button>
-          <button type="button" onClick={() => setMarcando(null)} className={secundario}>
+          <button
+            type="button"
+            onClick={() => setMarcando(null)}
+            className={secundario}
+          >
             {t('partidas.cancel')}
           </button>
         </div>
@@ -379,10 +483,19 @@ const PartidasEnLaFranja = ({ competitionId, franja, nombre, salidas, userId, or
       {/* El texto en su línea y los botones debajo: a su lado, a 360 px quedaba
           en una columna de una palabra (QA del 11 oct 2026) */}
       <span className="w-full">{texto}</span>
-      <button type="button" disabled={ocupado} onClick={accion} className="min-h-11 rounded-md bg-amber-600 px-3 font-semibold text-white">
+      <button
+        type="button"
+        disabled={ocupado}
+        onClick={accion}
+        className="min-h-11 rounded-md bg-amber-600 px-3 font-semibold text-white"
+      >
         {t(si)}
       </button>
-      <button type="button" onClick={() => setConfirmando(null)} className="min-h-11 rounded-md px-3">
+      <button
+        type="button"
+        onClick={() => setConfirmando(null)}
+        className="min-h-11 rounded-md px-3"
+      >
         {t('partidas.no')}
       </button>
     </div>
@@ -402,24 +515,47 @@ const PartidasEnLaFranja = ({ competitionId, franja, nombre, salidas, userId, or
           <option value="LOW_FIRST">{t('partidas.orderLowFirst')}</option>
         </select>
         {grupos.length === 0 ? (
-          <button type="button" disabled={ocupado} onClick={generar} className={principal}>
+          <button
+            type="button"
+            disabled={ocupado}
+            onClick={generar}
+            className={principal}
+          >
             {t('partidas.generate')}
           </button>
         ) : (
           <>
-            <button type="button" disabled={ocupado} onClick={() => setConfirmando('regenerar')} className={secundario}>
+            <button
+              type="button"
+              disabled={ocupado}
+              onClick={() => setConfirmando('regenerar')}
+              className={secundario}
+            >
               {t('partidas.regenerate')}
             </button>
-            <button type="button" disabled={ocupado} onClick={() => setConfirmando('borrar')} className={secundario}>
+            <button
+              type="button"
+              disabled={ocupado}
+              onClick={() => setConfirmando('borrar')}
+              className={secundario}
+            >
               {t('partidas.remove')}
             </button>
           </>
         )}
       </div>
       {confirmando === 'regenerar' &&
-        confirmacion(t('partidas.regenerateConfirm', { count: grupos.length }), 'partidas.regenerateYes', generar)}
+        confirmacion(
+          t('partidas.regenerateConfirm', { count: grupos.length }),
+          'partidas.regenerateYes',
+          generar,
+        )}
       {confirmando === 'borrar' &&
-        confirmacion(t('partidas.removeConfirm', { count: grupos.length }), 'partidas.removeYes', borrar)}
+        confirmacion(
+          t('partidas.removeConfirm', { count: grupos.length }),
+          'partidas.removeYes',
+          borrar,
+        )}
     </div>
   );
 
@@ -432,7 +568,11 @@ const PartidasEnLaFranja = ({ competitionId, franja, nombre, salidas, userId, or
         onClick={() => setAbierta((a) => !a)}
         className="flex min-h-11 items-center gap-1 text-sm font-medium text-primary"
       >
-        {abierta ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+        {abierta ? (
+          <ChevronUp className="h-4 w-4" />
+        ) : (
+          <ChevronDown className="h-4 w-4" />
+        )}
         {t('partidas.show')}
       </button>
 
@@ -447,7 +587,9 @@ const PartidasEnLaFranja = ({ competitionId, franja, nombre, salidas, userId, or
 
       {abierta && vista && !sinCargar && (
         <div className="mt-1 space-y-2">
-          {grupos.length === 0 && <p className="text-xs text-gray-500">{t('partidas.empty')}</p>}
+          {grupos.length === 0 && (
+            <p className="text-xs text-gray-500">{t('partidas.empty')}</p>
+          )}
 
           <ol className="space-y-2">
             {grupos.map((g, i) => {
@@ -463,7 +605,10 @@ const PartidasEnLaFranja = ({ competitionId, franja, nombre, salidas, userId, or
                 >
                   <div className="flex min-w-0 flex-wrap items-center gap-x-2">
                     <span className="font-semibold text-gray-900">
-                      {t('partidas.number', { numero: g.number, hora: g.teeTime })}
+                      {t('partidas.number', {
+                        numero: g.number,
+                        hora: g.teeTime,
+                      })}
                     </span>
                     {/* Cerrada, ya no le falta nadie (QA 3) */}
                     {g.incomplete && g.status !== 'COMPLETED' && (
@@ -475,17 +620,39 @@ const PartidasEnLaFranja = ({ competitionId, franja, nombre, salidas, userId, or
                       <span className="ml-auto flex">
                         {/* No se pasa por delante de una que ya salió */}
                         {i > 0 && seCambia(grupos[i - 1]) && (
-                          <button type="button" disabled={ocupado} aria-label={t('partidas.up', { numero: g.number })} onClick={() => reordenar(i, i - 1)} className={icono}>
+                          <button
+                            type="button"
+                            disabled={ocupado}
+                            aria-label={t('partidas.up', { numero: g.number })}
+                            onClick={() => reordenar(i, i - 1)}
+                            className={icono}
+                          >
                             <ArrowUp className="h-4 w-4" />
                           </button>
                         )}
                         {i < grupos.length - 1 && seCambia(grupos[i + 1]) && (
-                          <button type="button" disabled={ocupado} aria-label={t('partidas.down', { numero: g.number })} onClick={() => reordenar(i, i + 1)} className={icono}>
+                          <button
+                            type="button"
+                            disabled={ocupado}
+                            aria-label={t('partidas.down', {
+                              numero: g.number,
+                            })}
+                            onClick={() => reordenar(i, i + 1)}
+                            className={icono}
+                          >
                             <ArrowDown className="h-4 w-4" />
                           </button>
                         )}
                         {!g.incomplete && (
-                          <button type="button" disabled={ocupado} aria-label={t('partidas.markers', { numero: g.number })} onClick={() => abrirMarcadores(g)} className={icono}>
+                          <button
+                            type="button"
+                            disabled={ocupado}
+                            aria-label={t('partidas.markers', {
+                              numero: g.number,
+                            })}
+                            onClick={() => abrirMarcadores(g)}
+                            className={icono}
+                          >
                             <Users className="h-4 w-4" />
                           </button>
                         )}
@@ -502,39 +669,70 @@ const PartidasEnLaFranja = ({ competitionId, franja, nombre, salidas, userId, or
                         {/* Sus datos a la izquierda y el icono de mover en su
                             columna: en la línea de «marca a X» parecía cambiar
                             el marcador (QA del 11 oct 2026) */}
-                        <div data-testid={`datos-${p.userId}`} className="flex min-w-0 flex-1 flex-wrap items-center gap-x-2">
-                          <span className="font-medium break-words text-gray-900">{p.name}</span>
-                          <span>{formatoDeIndice(p.handicap, i18n.language)}</span>
-                          <span>{t('partidas.playing', { juego: formatoDeHandicapDeJuego(p.playingHandicap) })}</span>
+                        <div
+                          data-testid={`datos-${p.userId}`}
+                          className="flex min-w-0 flex-1 flex-wrap items-center gap-x-2"
+                        >
+                          <span className="font-medium break-words text-gray-900">
+                            {p.name}
+                          </span>
+                          <span>
+                            {formatoDeIndice(p.handicap, i18n.language)}
+                          </span>
+                          <span>
+                            {t('partidas.playing', {
+                              juego: formatoDeHandicapDeJuego(
+                                p.playingHandicap,
+                              ),
+                            })}
+                          </span>
                           {/* Sigue en su partida, pero no juega (2.ª pasada del QA) */}
                           {esNoPresentado(p) && (
-                            <span className="font-semibold text-red-700">{t('partidas.noShow', conGenero(p.teeGender))}</span>
-                          )}
-                          {p.cardStatus === 'RETIRADO' && (
-                            <span className="font-semibold text-amber-800">{t('partidas.withdrawn', conGenero(p.teeGender))}</span>
-                          )}
-                          {/* Ni el NP o el retirado marcan, ni se marca a un NP (CodeRabbit, /code-review) */}
-                          {p.marksUserId && !esNoPresentado(p) && p.cardStatus !== 'RETIRADO' && !esNoPresentado(g.players.find((o) => o.userId === p.marksUserId)) && (
-                            <span className="text-gray-500">
-                              {t('partidas.marks', { jugador: nombres.get(p.marksUserId) || t('partidas.unknownPlayer') })}
+                            <span className="font-semibold text-red-700">
+                              {t('partidas.noShow', conGenero(p.teeGender))}
                             </span>
                           )}
+                          {p.cardStatus === 'RETIRADO' && (
+                            <span className="font-semibold text-amber-800">
+                              {t('partidas.withdrawn', conGenero(p.teeGender))}
+                            </span>
+                          )}
+                          {/* Ni el NP o el retirado marcan, ni se marca a un NP (CodeRabbit, /code-review) */}
+                          {p.marksUserId &&
+                            !esNoPresentado(p) &&
+                            p.cardStatus !== 'RETIRADO' &&
+                            !esNoPresentado(
+                              g.players.find((o) => o.userId === p.marksUserId),
+                            ) && (
+                              <span className="text-gray-500">
+                                {t('partidas.marks', {
+                                  jugador:
+                                    nombres.get(p.marksUserId) ||
+                                    t('partidas.unknownPlayer'),
+                                })}
+                              </span>
+                            )}
                         </div>
-                        {tocable(g) && moviendo !== p.userId && opcionesDeDestino(p.userId, { conIntercambios: true }).length > 0 && (
-                          <button
-                            type="button"
-                            disabled={ocupado}
-                            aria-label={t('partidas.movePlayer', { jugador: p.name })}
-                            ref={(boton) => {
-                              if (boton) iconos.current.set(p.userId, boton);
-                              else iconos.current.delete(p.userId);
-                            }}
-                            onClick={() => setMoviendo(p.userId)}
-                            className={`${icono} shrink-0`}
-                          >
-                            <ArrowRightLeft className="h-4 w-4" />
-                          </button>
-                        )}
+                        {tocable(g) &&
+                          moviendo !== p.userId &&
+                          opcionesDeDestino(p.userId, { conIntercambios: true })
+                            .length > 0 && (
+                            <button
+                              type="button"
+                              disabled={ocupado}
+                              aria-label={t('partidas.movePlayer', {
+                                jugador: p.name,
+                              })}
+                              ref={(boton) => {
+                                if (boton) iconos.current.set(p.userId, boton);
+                                else iconos.current.delete(p.userId);
+                              }}
+                              onClick={() => setMoviendo(p.userId)}
+                              className={`${icono} shrink-0`}
+                            >
+                              <ArrowRightLeft className="h-4 w-4" />
+                            </button>
+                          )}
                         {tocable(g) && moviendo === p.userId && (
                           <span className="flex w-full items-center gap-1">
                             {selectorDeDestino(p.userId, p.name, {
@@ -559,7 +757,9 @@ const PartidasEnLaFranja = ({ competitionId, franja, nombre, salidas, userId, or
                       </li>
                     ))}
                   </ul>
-                  {tocable(g) && marcando?.groupId === g.id && editorDeMarcadores(g)}
+                  {tocable(g) &&
+                    marcando?.groupId === g.id &&
+                    editorDeMarcadores(g)}
                   {/* A su tarjeta (PR 7): anotar la mía, ver las demás */}
                   <Link
                     to={`/player/groups/${g.id}/scoring?competition=${competitionId}`}
@@ -573,15 +773,24 @@ const PartidasEnLaFranja = ({ competitionId, franja, nombre, salidas, userId, or
           </ol>
 
           {organiza && vista.unassignedPlayers.length > 0 && (
-            <div data-testid="partidas-sin-partida" className="rounded-lg border border-amber-200 bg-amber-50 p-2 text-xs">
+            <div
+              data-testid="partidas-sin-partida"
+              className="rounded-lg border border-amber-200 bg-amber-50 p-2 text-xs"
+            >
               <p className="font-semibold text-amber-900">
-                {t('partidas.unassigned', { count: vista.unassignedPlayers.length })}
+                {t('partidas.unassigned', {
+                  count: vista.unassignedPlayers.length,
+                })}
               </p>
               <ul className="mt-1 space-y-1">
                 {vista.unassignedPlayers.map((p) => (
-                  <li key={p.userId} className="flex min-w-0 flex-wrap items-center gap-2 text-gray-800">
+                  <li
+                    key={p.userId}
+                    className="flex min-w-0 flex-wrap items-center gap-2 text-gray-800"
+                  >
                     <span className="w-full break-words">{p.name}</span>
-                    {organiza && !sinCargar &&
+                    {organiza &&
+                      !sinCargar &&
                       selectorDeDestino(p.userId, p.name, {
                         etiqueta: 'partidas.placeIn',
                         placeholder: 'partidas.placeInPlaceholder',
@@ -597,16 +806,33 @@ const PartidasEnLaFranja = ({ competitionId, franja, nombre, salidas, userId, or
           {/* Ya salió la primera y queda alguna sin acabar: el organizador la
               cierra como red, con lo que haya (PR 7, P3). Antes de abrirse la
               anotación lo rechaza el servidor, y se dice por qué */}
-          {organiza && !vista.editable && grupos.some((g) => g.status !== 'COMPLETED') &&
+          {organiza &&
+            !vista.editable &&
+            grupos.some((g) => g.status !== 'COMPLETED') &&
             (confirmando === 'cerrar' ? (
-              confirmacion(t('partidas.closeWindowConfirm'), 'partidas.closeWindowYes', cerrarLaFranja)
+              confirmacion(
+                t('partidas.closeWindowConfirm'),
+                'partidas.closeWindowYes',
+                cerrarLaFranja,
+              )
             ) : (
-              <button type="button" disabled={ocupado} onClick={() => setConfirmando('cerrar')} className={secundario}>
+              <button
+                type="button"
+                disabled={ocupado}
+                onClick={() => setConfirmando('cerrar')}
+                className={secundario}
+              >
                 {t('partidas.closeWindow')}
               </button>
             ))}
           {organiza && !vista.editable && (
-            <p className="text-xs text-gray-500">{t(algunaSeCambia ? 'partidas.notEditablePartly' : 'partidas.notEditable')}</p>
+            <p className="text-xs text-gray-500">
+              {t(
+                algunaSeCambia
+                  ? 'partidas.notEditablePartly'
+                  : 'partidas.notEditable',
+              )}
+            </p>
           )}
         </div>
       )}

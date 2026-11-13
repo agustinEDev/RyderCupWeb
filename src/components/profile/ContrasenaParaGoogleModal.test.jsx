@@ -1,5 +1,11 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
+import {
+  render,
+  screen,
+  fireEvent,
+  waitFor,
+  act,
+} from '@testing-library/react';
 import ContrasenaParaGoogleModal from './ContrasenaParaGoogleModal';
 
 /**
@@ -18,15 +24,30 @@ vi.mock('react-i18next', () => ({
   useTranslation: () => ({ t: (clave) => clave }),
 }));
 
-const abre = (alConfirmar = vi.fn().mockResolvedValue(null), onClose = vi.fn()) => {
-  render(<ContrasenaParaGoogleModal isOpen onClose={onClose} alConfirmar={alConfirmar} />);
+const abre = (
+  alConfirmar = vi.fn().mockResolvedValue(null),
+  onClose = vi.fn(),
+) => {
+  render(
+    <ContrasenaParaGoogleModal
+      isOpen
+      onClose={onClose}
+      alConfirmar={alConfirmar}
+    />,
+  );
   return { alConfirmar, onClose };
 };
 const escribe = (texto) =>
-  fireEvent.change(screen.getByLabelText('edit.linkedAccounts.currentPassword'), {
-    target: { value: texto },
+  fireEvent.change(
+    screen.getByLabelText('edit.linkedAccounts.currentPassword'),
+    {
+      target: { value: texto },
+    },
+  );
+const continuar = () =>
+  screen.getByRole('button', {
+    name: /edit\.linkedAccounts\.(continue|checking)/,
   });
-const continuar = () => screen.getByRole('button', { name: /edit\.linkedAccounts\.(continue|checking)/ });
 
 describe('ContrasenaParaGoogleModal', () => {
   it('M1: sin contraseña, no se puede continuar', () => {
@@ -44,13 +65,17 @@ describe('ContrasenaParaGoogleModal', () => {
   });
 
   it('M3: si falla, dice por qué y deja reintentar', async () => {
-    const alConfirmar = vi.fn().mockResolvedValue('edit.linkedAccounts.wrongPassword');
+    const alConfirmar = vi
+      .fn()
+      .mockResolvedValue('edit.linkedAccounts.wrongPassword');
     abre(alConfirmar);
     escribe('Mala123!');
 
     fireEvent.click(continuar());
 
-    expect(await screen.findByRole('alert')).toHaveTextContent('edit.linkedAccounts.wrongPassword');
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'edit.linkedAccounts.wrongPassword',
+    );
     expect(continuar()).not.toBeDisabled();
   });
 
@@ -62,7 +87,11 @@ describe('ContrasenaParaGoogleModal', () => {
     fireEvent.click(continuar());
     fireEvent.click(continuar());
 
-    expect(await screen.findByRole('button', { name: 'edit.linkedAccounts.checking' })).toBeDisabled();
+    expect(
+      await screen.findByRole('button', {
+        name: 'edit.linkedAccounts.checking',
+      }),
+    ).toBeDisabled();
     expect(alConfirmar).toHaveBeenCalledTimes(1);
   });
 
@@ -70,7 +99,9 @@ describe('ContrasenaParaGoogleModal', () => {
     const alConfirmar = vi.fn(() => new Promise(() => {}));
     abre(alConfirmar);
     escribe('Actual123!');
-    const formulario = screen.getByLabelText('edit.linkedAccounts.currentPassword').closest('form');
+    const formulario = screen
+      .getByLabelText('edit.linkedAccounts.currentPassword')
+      .closest('form');
 
     fireEvent.submit(formulario);
     fireEvent.submit(formulario);
@@ -83,7 +114,9 @@ describe('ContrasenaParaGoogleModal', () => {
     escribe('Actual123!');
     fireEvent.click(continuar());
 
-    fireEvent.click(screen.getByRole('button', { name: 'edit.linkedAccounts.cancel' }));
+    fireEvent.click(
+      screen.getByRole('button', { name: 'edit.linkedAccounts.cancel' }),
+    );
 
     expect(onClose).toHaveBeenCalledTimes(1);
   });
@@ -94,22 +127,49 @@ describe('ContrasenaParaGoogleModal', () => {
 
     fireEvent.click(continuar());
 
-    expect(await screen.findByRole('alert')).toHaveTextContent('edit.linkedAccounts.passwordCheckFailed');
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'edit.linkedAccounts.passwordCheckFailed',
+    );
     expect(continuar()).not.toBeDisabled();
   });
 
   it('M7: lo que responde tras cancelar no aparece al volver a abrir', async () => {
     let suelta;
-    const alConfirmar = vi.fn(() => new Promise((r) => { suelta = r; }));
+    const alConfirmar = vi.fn(
+      () =>
+        new Promise((r) => {
+          suelta = r;
+        }),
+    );
     const onClose = vi.fn();
-    const { rerender } = render(<ContrasenaParaGoogleModal isOpen onClose={onClose} alConfirmar={alConfirmar} />);
+    const { rerender } = render(
+      <ContrasenaParaGoogleModal
+        isOpen
+        onClose={onClose}
+        alConfirmar={alConfirmar}
+      />,
+    );
     escribe('Actual123!');
     fireEvent.click(continuar());
-    fireEvent.click(screen.getByRole('button', { name: 'edit.linkedAccounts.cancel' }));
-    rerender(<ContrasenaParaGoogleModal isOpen={false} onClose={onClose} alConfirmar={alConfirmar} />);
+    fireEvent.click(
+      screen.getByRole('button', { name: 'edit.linkedAccounts.cancel' }),
+    );
+    rerender(
+      <ContrasenaParaGoogleModal
+        isOpen={false}
+        onClose={onClose}
+        alConfirmar={alConfirmar}
+      />,
+    );
 
     await act(async () => suelta('edit.linkedAccounts.wrongPassword'));
-    rerender(<ContrasenaParaGoogleModal isOpen onClose={onClose} alConfirmar={alConfirmar} />);
+    rerender(
+      <ContrasenaParaGoogleModal
+        isOpen
+        onClose={onClose}
+        alConfirmar={alConfirmar}
+      />,
+    );
 
     expect(screen.queryByRole('alert')).toBeNull();
     escribe('Otra123!');
@@ -138,9 +198,18 @@ describe('ContrasenaParaGoogleModal', () => {
  *   MD4 para vincular, si va bien, NO se cierra (la página se va a Google)
  */
 describe('ContrasenaParaGoogleModal · para desvincular', () => {
-  const abrePara = (para, alConfirmar = vi.fn().mockResolvedValue(null), onClose = vi.fn()) => {
+  const abrePara = (
+    para,
+    alConfirmar = vi.fn().mockResolvedValue(null),
+    onClose = vi.fn(),
+  ) => {
     render(
-      <ContrasenaParaGoogleModal isOpen onClose={onClose} alConfirmar={alConfirmar} para={para} />
+      <ContrasenaParaGoogleModal
+        isOpen
+        onClose={onClose}
+        alConfirmar={alConfirmar}
+        para={para}
+      />,
     );
     return { alConfirmar, onClose };
   };
@@ -148,28 +217,42 @@ describe('ContrasenaParaGoogleModal · para desvincular', () => {
   it('MD1: su explicación y su botón', () => {
     abrePara('desvincular');
 
-    expect(screen.getByText('edit.linkedAccounts.unlinkPasswordExplanation')).toBeInTheDocument();
-    expect(screen.queryByText('edit.linkedAccounts.passwordExplanation')).toBeNull();
-    expect(screen.getByRole('button', { name: 'edit.linkedAccounts.unlink' })).toBeInTheDocument();
+    expect(
+      screen.getByText('edit.linkedAccounts.unlinkPasswordExplanation'),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByText('edit.linkedAccounts.passwordExplanation'),
+    ).toBeNull();
+    expect(
+      screen.getByRole('button', { name: 'edit.linkedAccounts.unlink' }),
+    ).toBeInTheDocument();
   });
 
   it('MD2: si va bien, se cierra', async () => {
     const { onClose } = abrePara('desvincular');
     escribe('Actual123!');
 
-    fireEvent.click(screen.getByRole('button', { name: 'edit.linkedAccounts.unlink' }));
+    fireEvent.click(
+      screen.getByRole('button', { name: 'edit.linkedAccounts.unlink' }),
+    );
 
     await waitFor(() => expect(onClose).toHaveBeenCalledTimes(1));
   });
 
   it('MD3: si falla, lo dice en la ventana y no se cierra', async () => {
-    const alConfirmar = vi.fn().mockResolvedValue('edit.linkedAccounts.reauthExpired');
+    const alConfirmar = vi
+      .fn()
+      .mockResolvedValue('edit.linkedAccounts.reauthExpired');
     const { onClose } = abrePara('desvincular', alConfirmar);
     escribe('Actual123!');
 
-    fireEvent.click(screen.getByRole('button', { name: 'edit.linkedAccounts.unlink' }));
+    fireEvent.click(
+      screen.getByRole('button', { name: 'edit.linkedAccounts.unlink' }),
+    );
 
-    expect(await screen.findByRole('alert')).toHaveTextContent('edit.linkedAccounts.reauthExpired');
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'edit.linkedAccounts.reauthExpired',
+    );
     expect(onClose).not.toHaveBeenCalled();
   });
 
@@ -182,6 +265,8 @@ describe('ContrasenaParaGoogleModal · para desvincular', () => {
     await waitFor(() => expect(alConfirmar).toHaveBeenCalled());
     await act(async () => {});
     expect(onClose).not.toHaveBeenCalled();
-    expect(screen.getByText('edit.linkedAccounts.passwordExplanation')).toBeInTheDocument();
+    expect(
+      screen.getByText('edit.linkedAccounts.passwordExplanation'),
+    ).toBeInTheDocument();
   });
 });

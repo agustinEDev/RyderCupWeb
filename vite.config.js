@@ -1,10 +1,10 @@
-import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
-import { sri } from 'vite-plugin-sri3'
-import { VitePWA } from 'vite-plugin-pwa'
-import { readdirSync, existsSync, rmSync, readFileSync } from 'node:fs'
-import { join, resolve, relative } from 'node:path'
-import { execSync } from 'node:child_process'
+import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
+import { sri } from 'vite-plugin-sri3';
+import { VitePWA } from 'vite-plugin-pwa';
+import { readdirSync, existsSync, rmSync, readFileSync } from 'node:fs';
+import { join, resolve, relative } from 'node:path';
+import { execSync } from 'node:child_process';
 
 /**
  * Sella cada build con lo que se está publicando de verdad: una marca `app-build`
@@ -34,34 +34,38 @@ import { execSync } from 'node:child_process'
  * también se propaguen.
  */
 function emitVersionFile() {
-  let info
+  let info;
 
   /** Se calcula una vez por build: el HTML y el JSON tienen que decir lo mismo. */
   const buildInfo = () => {
-    if (info) return info
+    if (info) return info;
 
     // Render expone el commit en el entorno de build; fuera de ahí se pregunta
     // a git. `cwd` fijo al proyecto porque el build puede lanzarse desde otro
     // sitio (`npm --prefix`), y ahí git respondería por otro repositorio; su
     // stderr se descarta para que un "not a git repository" no parezca un fallo
     // del build cuando simplemente no hay repositorio
-    let commit = process.env.RENDER_GIT_COMMIT || process.env.GITHUB_SHA || ''
+    let commit = process.env.RENDER_GIT_COMMIT || process.env.GITHUB_SHA || '';
     if (!commit) {
       try {
         commit = execSync('git rev-parse HEAD', {
           encoding: 'utf8',
           cwd: __dirname,
           stdio: ['ignore', 'pipe', 'ignore'],
-        }).trim()
+        }).trim();
       } catch {
-        commit = 'unknown'
+        commit = 'unknown';
       }
     }
 
-    const version = VERSION_DE_LA_APP
-    info = { version, commit: commit.slice(0, 7), builtAt: new Date().toISOString() }
-    return info
-  }
+    const version = VERSION_DE_LA_APP;
+    info = {
+      version,
+      commit: commit.slice(0, 7),
+      builtAt: new Date().toISOString(),
+    };
+    return info;
+  };
 
   return {
     name: 'emit-version-file',
@@ -80,14 +84,17 @@ function emitVersionFile() {
      * nuevo con sus cabeceras nuevas.
      */
     transformIndexHtml() {
-      const { version, commit, builtAt } = buildInfo()
+      const { version, commit, builtAt } = buildInfo();
       return [
         {
           tag: 'meta',
-          attrs: { name: 'app-build', content: `${version} ${commit} ${builtAt}` },
+          attrs: {
+            name: 'app-build',
+            content: `${version} ${commit} ${builtAt}`,
+          },
           injectTo: 'head',
         },
-      ]
+      ];
     },
 
     generateBundle() {
@@ -95,9 +102,9 @@ function emitVersionFile() {
         type: 'asset',
         fileName: 'version.json',
         source: `${JSON.stringify(buildInfo(), null, 2)}\n`,
-      })
+      });
     },
-  }
+  };
 }
 
 /**
@@ -109,35 +116,37 @@ function emitVersionFile() {
  * árbol de fuentes no se tocan.
  */
 function stripMarkdownDocs() {
-  let outDir
+  let outDir;
 
   return {
     name: 'strip-markdown-docs',
     apply: 'build',
     configResolved(config) {
-      outDir = resolve(config.root, config.build.outDir)
+      outDir = resolve(config.root, config.build.outDir);
     },
     closeBundle() {
-      if (!outDir || !existsSync(outDir)) return
+      if (!outDir || !existsSync(outDir)) return;
 
-      const removed = []
+      const removed = [];
       const walk = (dir) => {
         for (const entry of readdirSync(dir, { withFileTypes: true })) {
-          const full = join(dir, entry.name)
-          if (entry.isDirectory()) walk(full)
+          const full = join(dir, entry.name);
+          if (entry.isDirectory()) walk(full);
           else if (entry.name.toLowerCase().endsWith('.md')) {
-            rmSync(full)
-            removed.push(relative(outDir, full))
+            rmSync(full);
+            removed.push(relative(outDir, full));
           }
         }
-      }
-      walk(outDir)
+      };
+      walk(outDir);
 
       if (removed.length) {
-        console.log(`strip-markdown-docs: retirados de dist -> ${removed.join(', ')}`)
+        console.log(
+          `strip-markdown-docs: retirados de dist -> ${removed.join(', ')}`,
+        );
       }
     },
-  }
+  };
 }
 
 // Security headers for the LOCAL dev and preview servers only.
@@ -161,15 +170,18 @@ const securityHeaders = {
   // unstyled — this was verified against production in #295, where the policy had
   // been strict since Dec 2025 without anyone noticing, because it never applied.
   // script-src stays strict, which is what actually stops an XSS.
-  'Content-Security-Policy': "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' https: data: http://localhost:8000; connect-src 'self' https://www.ign.es https://geoserveis.icgc.cat https://www.geo.euskadi.eus https://idena.navarra.es https://api.rydercupfriends.com http://localhost:8000 https://o4510427294662656.ingest.de.sentry.io; worker-src 'self' blob:; child-src 'self' blob:; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; object-src 'none';"
-}
+  'Content-Security-Policy':
+    "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' https: data: http://localhost:8000; connect-src 'self' https://www.ign.es https://geoserveis.icgc.cat https://www.geo.euskadi.eus https://idena.navarra.es https://api.rydercupfriends.com http://localhost:8000 https://o4510427294662656.ingest.de.sentry.io; worker-src 'self' blob:; child-src 'self' blob:; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; object-src 'none';",
+};
 
 // https://vitejs.dev/config/
 // La versión de la aplicación sale de `package.json`, como la de
 // `version.json`: la de Sentry venía de una variable del entorno de build que
 // decía 1.0.0 en producción, y cada error llegaba sin saber de qué build era
 // (Sentry RYDERCUP-FRONTEND-23, 24 oct 2026)
-const VERSION_DE_LA_APP = JSON.parse(readFileSync(resolve(__dirname, 'package.json'), 'utf8')).version
+const VERSION_DE_LA_APP = JSON.parse(
+  readFileSync(resolve(__dirname, 'package.json'), 'utf8'),
+).version;
 
 export default defineConfig(() => ({
   define: {
@@ -223,11 +235,26 @@ export default defineConfig(() => ({
         start_url: '/start',
         scope: '/',
         icons: [
-          { src: '/icons/pwa-192x192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
-          { src: '/icons/pwa-512x512.png', sizes: '512x512', type: 'image/png', purpose: 'any' },
+          {
+            src: '/icons/pwa-192x192.png',
+            sizes: '192x192',
+            type: 'image/png',
+            purpose: 'any',
+          },
+          {
+            src: '/icons/pwa-512x512.png',
+            sizes: '512x512',
+            type: 'image/png',
+            purpose: 'any',
+          },
           // El maskable es un fichero aparte: Android recorta un 40 % y el icono
           // 'any' perderia el anillo del monograma y sus esquinas redondeadas
-          { src: '/icons/pwa-maskable-512x512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
+          {
+            src: '/icons/pwa-maskable-512x512.png',
+            sizes: '512x512',
+            type: 'image/png',
+            purpose: 'maskable',
+          },
         ],
       },
       workbox: {
@@ -245,7 +272,9 @@ export default defineConfig(() => ({
         // devanagari) se quedan fuera: cada instalación los bajaría sin
         // usarlos. Siguen servidos: el navegador los pide por su
         // `unicode-range` si una página los necesita
-        globIgnores: ['**/*-{cyrillic,cyrillic-ext,greek,greek-ext,vietnamese,devanagari}-*.woff2'],
+        globIgnores: [
+          '**/*-{cyrillic,cyrillic-ext,greek,greek-ext,vietnamese,devanagari}-*.woff2',
+        ],
         // Explicit cap so oversized assets fail the SW build loudly instead of silently
         maximumFileSizeToCacheInBytes: 5 * 1024 * 1024, // 5 MB
         runtimeCaching: [
@@ -296,7 +325,7 @@ export default defineConfig(() => ({
                   // hay ni `Request` ni `URL` que valgan
                   cacheKeyWillBeUsed: async ({ request }) =>
                     new globalThis.Request(
-                      new globalThis.URL('/config.js', request.url).href
+                      new globalThis.URL('/config.js', request.url).href,
                     ),
                   // Aqui solo vale JavaScript, y se comprueba en
                   // POSITIVO. Rechazar «lo que parezca HTML» dejaba pasar los
@@ -326,7 +355,9 @@ export default defineConfig(() => ({
                   fetchDidSucceed: async ({ response }) => {
                     const tipo = response.headers.get('content-type') || '';
                     if (!response.ok || !/javascript|ecmascript/i.test(tipo)) {
-                      throw new Error('config.js no ha llegado como JavaScript');
+                      throw new Error(
+                        'config.js no ha llegado como JavaScript',
+                      );
                     }
                     return response;
                   },
@@ -347,23 +378,24 @@ export default defineConfig(() => ({
           // CSP más permisivo en desarrollo para soportar HMR de Vite
           const devHeaders = {
             ...securityHeaders,
-            'Content-Security-Policy': "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' https: data: http://localhost:8000; connect-src 'self' ws://localhost:* https://www.ign.es https://geoserveis.icgc.cat https://www.geo.euskadi.eus https://idena.navarra.es https://api.rydercupfriends.com http://localhost:8000 https://o4510427294662656.ingest.de.sentry.io; worker-src 'self' blob:; child-src 'self' blob:; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; object-src 'none';"
-          }
+            'Content-Security-Policy':
+              "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' https: data: http://localhost:8000; connect-src 'self' ws://localhost:* https://www.ign.es https://geoserveis.icgc.cat https://www.geo.euskadi.eus https://idena.navarra.es https://api.rydercupfriends.com http://localhost:8000 https://o4510427294662656.ingest.de.sentry.io; worker-src 'self' blob:; child-src 'self' blob:; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; object-src 'none';",
+          };
           for (const [key, value] of Object.entries(devHeaders)) {
-            res.setHeader(key, value)
+            res.setHeader(key, value);
           }
-          next()
-        })
+          next();
+        });
       },
       configurePreviewServer(server) {
         server.middlewares.use((req, res, next) => {
           // En preview usamos el CSP estricto (sin las concesiones que necesita el HMR)
           for (const [key, value] of Object.entries(securityHeaders)) {
-            res.setHeader(key, value)
+            res.setHeader(key, value);
           }
-          next()
-        })
-      }
+          next();
+        });
+      },
     },
     // Subresource Integrity (FE-09, fase 4 del plan a 9): integrity en los scripts, estilos y
     // precargas de index.html. vite-plugin-sri3 sustituye a vite-plugin-sri@0.0.2, sin
@@ -392,7 +424,12 @@ export default defineConfig(() => ({
       // el porcentaje (revisión del 30 sep 2026)
       include: ['src/**/*.{js,jsx,ts,tsx}'],
       // El arranque y la configuración: no son lógica de tests unitarios
-      exclude: ['src/main.jsx', 'src/sentry.ts', 'src/i18n/**', 'src/vite-env.d.ts'],
+      exclude: [
+        'src/main.jsx',
+        'src/sentry.ts',
+        'src/i18n/**',
+        'src/vite-env.d.ts',
+      ],
       // Al empezar a contar todos los ficheros (30 sep 2026) la cifra real era
       // 78,53 / 78,07 / 74,13 / 74,82. El 80% de antes no era real: no contaba
       // las páginas sin tests. Se sube al añadir tests.
@@ -415,8 +452,8 @@ export default defineConfig(() => ({
     exclude: ['**/node_modules/**', '**/dist/**', '**/e2e/**', '**/tests/**'], // Excluir directorios comunes de build, e2e y playwright
     env: {
       // Configure empty API_BASE_URL in tests (uses localhost:8000 proxy in dev)
-      VITE_API_BASE_URL: ''
-    }
+      VITE_API_BASE_URL: '',
+    },
   },
   server: {
     port: 5173,
@@ -426,8 +463,8 @@ export default defineConfig(() => ({
         target: 'http://localhost:8000',
         changeOrigin: true,
         secure: false,
-      }
-    }
+      },
+    },
   },
   preview: {
     port: 4173,
@@ -438,8 +475,8 @@ export default defineConfig(() => ({
     terserOptions: {
       compress: {
         drop_console: true,
-        drop_debugger: true
-      }
+        drop_debugger: true,
+      },
     },
     // Increase chunk size warning limit
     chunkSizeWarningLimit: 1000, // 1000 KB (default is 500 KB)
@@ -449,8 +486,12 @@ export default defineConfig(() => ({
       output: {
         // Vite 8 (Rolldown) requires manualChunks as a function, not an object
         manualChunks: (id) => {
-          if (['react', 'react-dom', 'react-router'].some(p => id.includes(`/node_modules/${p}/`))) {
-            return 'react-vendor'
+          if (
+            ['react', 'react-dom', 'react-router'].some((p) =>
+              id.includes(`/node_modules/${p}/`),
+            )
+          ) {
+            return 'react-vendor';
           }
           // El SDK de Sentry que usa el arranque, en un trozo estable entre releases.
           // Sin los envoltorios de routers: los pide src/sentry.ts ~2 s después, y
@@ -465,13 +506,13 @@ export default defineConfig(() => ({
             /\/node_modules\/@sentry\/(react|core|conventions)\//.test(id) &&
             !/\/react-?router|tanstackrouter/.test(id)
           ) {
-            return 'sentry'
+            return 'sentry';
           }
           if (id.includes('/node_modules/react-hot-toast/')) {
-            return 'ui-vendor'
+            return 'ui-vendor';
           }
-        }
-      }
-    }
-  }
-}))
+        },
+      },
+    },
+  },
+}));

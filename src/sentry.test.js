@@ -12,19 +12,25 @@ const sentry = vi.hoisted(() => ({
   addIntegration: vi.fn(),
   feedbackIntegration: vi.fn(() => ({ name: 'Feedback' })),
   replayIntegration: vi.fn(() => ({ name: 'Replay' })),
-  reactRouterV7BrowserTracingIntegration: vi.fn(() => ({ name: 'BrowserTracing' })),
+  reactRouterV7BrowserTracingIntegration: vi.fn(() => ({
+    name: 'BrowserTracing',
+  })),
 }));
 
 const navegaciones = vi.hoisted(() => ({ instrumentar: vi.fn() }));
-vi.mock('./utils/navegacionesEnSentry', () => ({ instrumentarRouterEnSentry: navegaciones.instrumentar }));
+vi.mock('./utils/navegacionesEnSentry', () => ({
+  instrumentarRouterEnSentry: navegaciones.instrumentar,
+}));
 
 const cliente = vi.hoisted(() => ({ hay: true }));
 vi.mock('@sentry/react', () => ({
   init: vi.fn(),
-  getClient: () => (cliente.hay ? { addIntegration: sentry.addIntegration } : undefined),
+  getClient: () =>
+    cliente.hay ? { addIntegration: sentry.addIntegration } : undefined,
   feedbackIntegration: sentry.feedbackIntegration,
   replayIntegration: sentry.replayIntegration,
-  reactRouterV7BrowserTracingIntegration: sentry.reactRouterV7BrowserTracingIntegration,
+  reactRouterV7BrowserTracingIntegration:
+    sentry.reactRouterV7BrowserTracingIntegration,
 }));
 
 describe('sentry', () => {
@@ -47,20 +53,25 @@ describe('sentry', () => {
     await import('./sentry');
 
     expect(sentry.feedbackIntegration).not.toHaveBeenCalled();
-    const nombres = sentry.addIntegration.mock.calls.map(([integracion]) => integracion.name);
+    const nombres = sentry.addIntegration.mock.calls.map(
+      ([integracion]) => integracion.name,
+    );
     expect(nombres).not.toContain('Feedback');
   });
 
   it('N8 (FE #647): con el seguimiento ya añadido, instrumenta el router de la aplicación', async () => {
     sentry.addIntegration.mockImplementation((integracion) => {
       // Lo que importa es el orden: el router, DESPUÉS de tener el seguimiento
-      if (integracion.name === 'BrowserTracing') expect(navegaciones.instrumentar).not.toHaveBeenCalled();
+      if (integracion.name === 'BrowserTracing')
+        expect(navegaciones.instrumentar).not.toHaveBeenCalled();
     });
 
     await import('./sentry');
 
     expect(navegaciones.instrumentar).toHaveBeenCalledTimes(1);
-    const nombres = sentry.addIntegration.mock.calls.map(([integracion]) => integracion.name);
+    const nombres = sentry.addIntegration.mock.calls.map(
+      ([integracion]) => integracion.name,
+    );
     expect(nombres).toContain('BrowserTracing');
   });
 
@@ -77,18 +88,24 @@ describe('sentry', () => {
 
   it('N10: sin cliente no dice «Sentry Initialized»: avisa de que no añadió nada', async () => {
     cliente.hay = false;
-    const aviso = vi.spyOn(globalThis.console, 'warn').mockImplementation(() => {});
+    const aviso = vi
+      .spyOn(globalThis.console, 'warn')
+      .mockImplementation(() => {});
 
     await import('./sentry');
 
-    expect(globalThis.console.log).not.toHaveBeenCalledWith(expect.stringContaining('Sentry Initialized'));
+    expect(globalThis.console.log).not.toHaveBeenCalledWith(
+      expect.stringContaining('Sentry Initialized'),
+    );
     expect(aviso).toHaveBeenCalledWith(expect.stringContaining('no client'));
   });
 
   it('sigue añadiendo las trazas y la grabación de las sesiones con error', async () => {
     await import('./sentry');
 
-    const nombres = sentry.addIntegration.mock.calls.map(([integracion]) => integracion.name);
+    const nombres = sentry.addIntegration.mock.calls.map(
+      ([integracion]) => integracion.name,
+    );
     expect(nombres).toEqual(['BrowserTracing', 'Replay']);
   });
 
@@ -101,19 +118,22 @@ describe('sentry', () => {
     await import('./sentry');
 
     expect(sentry.replayIntegration).toHaveBeenCalledWith(
-      expect.objectContaining({ maskAllText: true, blockAllMedia: true })
+      expect.objectContaining({ maskAllText: true, blockAllMedia: true }),
     );
   });
 
   // R2 (auditoría OWASP, 5 nov 2026): cada caducidad normal subía su grabación
   it('R2: la grabación no se sube por un aviso de caducidad normal, sí por los raros', async () => {
     vi.stubEnv('VITE_SENTRY_ENVIRONMENT', 'development');
-    const { grabaSoloLoQueNoEsNormal } = await import('./utils/avisoDeCierreForzado');
+    const { grabaSoloLoQueNoEsNormal } =
+      await import('./utils/avisoDeCierreForzado');
 
     await import('./sentry');
 
     expect(sentry.replayIntegration).toHaveBeenCalledWith(
-      expect.objectContaining({ beforeErrorSampling: grabaSoloLoQueNoEsNormal })
+      expect.objectContaining({
+        beforeErrorSampling: grabaSoloLoQueNoEsNormal,
+      }),
     );
   });
 });

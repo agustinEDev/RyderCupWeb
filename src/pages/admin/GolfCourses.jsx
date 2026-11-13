@@ -44,25 +44,29 @@ const GolfCourses = ({ embedded = false }) => {
 
   // Derive isAdmin from authenticated user's roles or is_admin flag
   // Backend returns is_admin: true for admin users (see RoleGuard.jsx for reference)
-  const isAdmin = user?.is_admin === true || user?.roles?.some(role =>
-    typeof role === 'string' ? role === 'ADMIN' : role.name === 'ADMIN'
-  ) || false;
+  const isAdmin =
+    user?.is_admin === true ||
+    user?.roles?.some((role) =>
+      typeof role === 'string' ? role === 'ADMIN' : role.name === 'ADMIN',
+    ) ||
+    false;
 
   // Load approved courses, con useCargaCancelableEffect: al salir o al pedirla
   // otra vez, la respuesta anterior no toca nada. El aviso no es dependencia:
   // la lista no se vuelve a pedir por cambiar de idioma
-  const { cargando: isLoading, recargar: recargarCourses } = useCargaCancelableEffect(
-    () => listGolfCoursesUseCase.execute({ approvalStatus: 'APPROVED' }),
-    [user],
-    {
-      activa: Boolean(user),
-      alCargar: (page) => setCourses(page.courses),
-      alFallar: (error) => {
-        console.error('Error loading golf courses:', error);
-        customToast.error(error.message || t('pages.admin.errorLoading'));
+  const { cargando: isLoading, recargar: recargarCourses } =
+    useCargaCancelableEffect(
+      () => listGolfCoursesUseCase.execute({ approvalStatus: 'APPROVED' }),
+      [user],
+      {
+        activa: Boolean(user),
+        alCargar: (page) => setCourses(page.courses),
+        alFallar: (error) => {
+          console.error('Error loading golf courses:', error);
+          customToast.error(error.message || t('pages.admin.errorLoading'));
+        },
       },
-    }
-  );
+    );
 
   // Handle create
   const handleCreate = async (formData) => {
@@ -154,11 +158,15 @@ const GolfCourses = ({ embedded = false }) => {
   }
 
   const content = (
-    <div className={embedded ? undefined : 'layout-content-container flex flex-col max-w-[1200px] flex-1'}>
+    <div
+      className={
+        embedded
+          ? undefined
+          : 'layout-content-container flex flex-col max-w-[1200px] flex-1'
+      }
+    >
       {/* Header */}
-      <div
-        className="flex flex-wrap justify-between items-center gap-3 p-4"
-      >
+      <div className="flex flex-wrap justify-between items-center gap-3 p-4">
         <div>
           {!embedded && (
             <>
@@ -183,20 +191,17 @@ const GolfCourses = ({ embedded = false }) => {
       </div>
 
       {/* Stats */}
-      <div
-        className="p-4"
-      >
+      <div className="p-4">
         <div className="bg-primary-50 border border-primary-200 rounded-lg p-4">
           <p className="text-sm text-gray-600">
-            {t('pages.admin.totalCourses')}: <span className="font-bold text-gray-900">{courses.length}</span>
+            {t('pages.admin.totalCourses')}:{' '}
+            <span className="font-bold text-gray-900">{courses.length}</span>
           </p>
         </div>
       </div>
 
       {/* Table */}
-      <div
-        className="p-4"
-      >
+      <div className="p-4">
         <div className="relative bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
           <GolfCourseTable
             courses={courses}
@@ -252,7 +257,12 @@ const GolfCourses = ({ embedded = false }) => {
             className="bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto"
           >
             <div className="p-6 border-b border-gray-200">
-              <h2 id="crear-campo-titulo" className="text-2xl font-bold text-gray-900">{t('pages.admin.createCourseTitle')}</h2>
+              <h2
+                id="crear-campo-titulo"
+                className="text-2xl font-bold text-gray-900"
+              >
+                {t('pages.admin.createCourseTitle')}
+              </h2>
             </div>
             <div className="p-6">
               <GolfCourseForm
@@ -296,7 +306,12 @@ const GolfCourses = ({ embedded = false }) => {
             className="bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto"
           >
             <div className="p-6 border-b border-gray-200">
-              <h2 id="editar-campo-titulo" className="text-2xl font-bold text-gray-900">{t('pages.admin.editCourseTitle')}</h2>
+              <h2
+                id="editar-campo-titulo"
+                className="text-2xl font-bold text-gray-900"
+              >
+                {t('pages.admin.editCourseTitle')}
+              </h2>
             </div>
             <div className="p-6">
               <GolfCourseForm

@@ -13,9 +13,20 @@ import SelectorDeGenero from './SelectorDeGenero';
  * @param {Function} props.onConfirm - Con el género elegido
  * @param {boolean} [props.isProcessing]
  */
-const GeneroParaApuntarseModal = ({ isOpen, onClose, onConfirm, isProcessing = false }) => {
+const GeneroParaApuntarseModal = ({
+  isOpen,
+  onClose,
+  onConfirm,
+  isProcessing = false,
+}) => {
   if (!isOpen) return null;
-  return <Contenido onClose={onClose} onConfirm={onConfirm} isProcessing={isProcessing} />;
+  return (
+    <Contenido
+      onClose={onClose}
+      onConfirm={onConfirm}
+      isProcessing={isProcessing}
+    />
+  );
 };
 
 const Contenido = ({ onClose, onConfirm, isProcessing }) => {
@@ -39,7 +50,9 @@ const Contenido = ({ onClose, onConfirm, isProcessing }) => {
         }}
         className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6 space-y-4"
       >
-        <h2 id="genero-titulo" className="text-lg font-bold text-gray-900">{t('genderModal.title')}</h2>
+        <h2 id="genero-titulo" className="text-lg font-bold text-gray-900">
+          {t('genderModal.title')}
+        </h2>
         <SelectorDeGenero value={genero} onChange={setGenero} />
         <div className="flex justify-end gap-3 pt-2">
           <button

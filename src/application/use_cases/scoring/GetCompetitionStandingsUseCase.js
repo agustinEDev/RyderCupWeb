@@ -6,7 +6,10 @@ class GetCompetitionStandingsUseCase {
 
   async execute(competitionId, category) {
     if (!competitionId) throw new Error('Competition ID is required');
-    return this.teeGroupScoringRepository.getCompetitionStandings(competitionId, category);
+    return this.teeGroupScoringRepository.getCompetitionStandings(
+      competitionId,
+      category,
+    );
   }
 }
 

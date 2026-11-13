@@ -27,11 +27,16 @@ const respuestaDeLaApi = (extra = {}) => ({
 });
 
 const loQueLlegaALaPantalla = (apiData) =>
-  CompetitionAssembler.toSimpleDTO(CompetitionMapper.toDomain(apiData), apiData);
+  CompetitionAssembler.toSimpleDTO(
+    CompetitionMapper.toDomain(apiData),
+    apiData,
+  );
 
 describe('CompetitionAssembler · el reparto real llega a la pantalla', () => {
   it('R1: el reparto que se hizo va en su propio campo, sin pisar el configurado', () => {
-    const dto = loQueLlegaALaPantalla(respuestaDeLaApi({ actual_team_assignment: 'DRAFT' }));
+    const dto = loQueLlegaALaPantalla(
+      respuestaDeLaApi({ actual_team_assignment: 'DRAFT' }),
+    );
 
     expect(dto.actualTeamAssignment).toBe('DRAFT');
     expect(dto.teamAssignment).toBe('MANUAL');
@@ -50,7 +55,10 @@ describe('CompetitionAssembler · el reparto real llega a la pantalla', () => {
     // el reparto real, al reabrir y volver a cerrar los que entraron después
     // se quedarían sin equipo
     const dto = loQueLlegaALaPantalla(
-      respuestaDeLaApi({ team_assignment: 'AUTOMATIC', actual_team_assignment: 'MANUAL' })
+      respuestaDeLaApi({
+        team_assignment: 'AUTOMATIC',
+        actual_team_assignment: 'MANUAL',
+      }),
     );
 
     expect(dto.teamAssignment).toBe('AUTOMATIC');

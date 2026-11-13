@@ -66,24 +66,39 @@ describe('avisaDelCierreForzado · lo que llega a Sentry', () => {
     expect(sentry.captureMessage).toHaveBeenCalledTimes(1);
     expect(sentry.captureMessage).toHaveBeenCalledWith(
       'Forced logout: refresh rejected / Cierre de sesión forzado: refresco rechazado',
-      'warning'
+      'warning',
     );
     expect(sentry.scope.setLevel).toHaveBeenCalledWith('warning');
   });
 
   it.each([
-    ['DISPOSITIVO_REVOCADO', 'device_revoked', 'Forced logout: device revoked / Cierre de sesión forzado: dispositivo revocado'],
-    ['CSRF_SIN_RECUPERAR', 'csrf_unrecovered', 'Forced logout: unrecovered CSRF 403 / Cierre de sesión forzado: 403 CSRF sin recuperar'],
-    ['SESION_CADUCADA', 'session_expired', 'Forced logout: session expired / Cierre de sesión forzado: sesión caducada'],
-  ])('A2-A4: %s va con el motivo %s y su título', async (clave, motivo, titulo) => {
-    const { avisaDelCierreForzado, MOTIVO_DEL_CIERRE } = await cargar();
+    [
+      'DISPOSITIVO_REVOCADO',
+      'device_revoked',
+      'Forced logout: device revoked / Cierre de sesión forzado: dispositivo revocado',
+    ],
+    [
+      'CSRF_SIN_RECUPERAR',
+      'csrf_unrecovered',
+      'Forced logout: unrecovered CSRF 403 / Cierre de sesión forzado: 403 CSRF sin recuperar',
+    ],
+    [
+      'SESION_CADUCADA',
+      'session_expired',
+      'Forced logout: session expired / Cierre de sesión forzado: sesión caducada',
+    ],
+  ])(
+    'A2-A4: %s va con el motivo %s y su título',
+    async (clave, motivo, titulo) => {
+      const { avisaDelCierreForzado, MOTIVO_DEL_CIERRE } = await cargar();
 
-    expect(MOTIVO_DEL_CIERRE[clave]).toBe(motivo);
-    avisaDelCierreForzado({ motivo: MOTIVO_DEL_CIERRE[clave] });
+      expect(MOTIVO_DEL_CIERRE[clave]).toBe(motivo);
+      avisaDelCierreForzado({ motivo: MOTIVO_DEL_CIERRE[clave] });
 
-    expect(sentry.captureMessage).toHaveBeenCalledWith(titulo, 'warning');
-    expect(etiquetas()['logout.reason']).toBe(motivo);
-  });
+      expect(sentry.captureMessage).toHaveBeenCalledWith(titulo, 'warning');
+      expect(etiquetas()['logout.reason']).toBe(motivo);
+    },
+  );
 
   it('A5: lleva el motivo, la ruta y el estado como etiquetas', async () => {
     const { avisaDelCierreForzado, MOTIVO_DEL_CIERRE } = await cargar();
@@ -106,24 +121,55 @@ describe('avisaDelCierreForzado · lo que llega a Sentry', () => {
   it('A6: se agrupa por motivo, no por ruta', async () => {
     const { avisaDelCierreForzado, MOTIVO_DEL_CIERRE } = await cargar();
 
-    avisaDelCierreForzado({ motivo: MOTIVO_DEL_CIERRE.DISPOSITIVO_REVOCADO, endpoint: '/api/v1/a' });
+    avisaDelCierreForzado({
+      motivo: MOTIVO_DEL_CIERRE.DISPOSITIVO_REVOCADO,
+      endpoint: '/api/v1/a',
+    });
 
-    expect(sentry.scope.setFingerprint).toHaveBeenCalledWith(['forced-logout', 'device_revoked']);
+    expect(sentry.scope.setFingerprint).toHaveBeenCalledWith([
+      'forced-logout',
+      'device_revoked',
+    ]);
   });
 
   it.each([
-    ['/api/v1/quick-matches/3f2a1c9e-1b2d-4c3e-8f9a-0b1c2d3e4f5a/start', '/api/v1/quick-matches/{id}/start'],
-    ['https://api.rydercupfriends.com/api/v1/auth/refresh-token', '/api/v1/auth/refresh-token'],
-    ['/api/v1/matches/42/status?token=secreto&x=1', '/api/v1/matches/{id}/status'],
-    ['/api/v1/golf-courses/abc/hole-map/samples/7#frag', '/api/v1/golf-courses/{id}/hole-map/samples/{id}'],
-    ['/api/v1/golf-courses/idenminusculas/hole-map/samples', '/api/v1/golf-courses/{id}/hole-map/samples'],
-    ['/api/v1/auth/validate-reset-token/AbC-x_9zQ', '/api/v1/auth/validate-reset-token/{id}'],
+    [
+      '/api/v1/quick-matches/3f2a1c9e-1b2d-4c3e-8f9a-0b1c2d3e4f5a/start',
+      '/api/v1/quick-matches/{id}/start',
+    ],
+    [
+      'https://api.rydercupfriends.com/api/v1/auth/refresh-token',
+      '/api/v1/auth/refresh-token',
+    ],
+    [
+      '/api/v1/matches/42/status?token=secreto&x=1',
+      '/api/v1/matches/{id}/status',
+    ],
+    [
+      '/api/v1/golf-courses/abc/hole-map/samples/7#frag',
+      '/api/v1/golf-courses/{id}/hole-map/samples/{id}',
+    ],
+    [
+      '/api/v1/golf-courses/idenminusculas/hole-map/samples',
+      '/api/v1/golf-courses/{id}/hole-map/samples',
+    ],
+    [
+      '/api/v1/auth/validate-reset-token/AbC-x_9zQ',
+      '/api/v1/auth/validate-reset-token/{id}',
+    ],
     ['/api/v1/auth/current-user#token=AbC', '/api/v1/auth/current-user'],
-    ['/api/v1/auth/verify-email/abcdefghijklmnopqrstuvwxyzabcdefghij', '/api/v1/auth/verify-email/{id}'],
+    [
+      '/api/v1/auth/verify-email/abcdefghijklmnopqrstuvwxyzabcdefghij',
+      '/api/v1/auth/verify-email/{id}',
+    ],
   ])('A7: la ruta %s sale como %s', async (endpoint, esperada) => {
     const { avisaDelCierreForzado, MOTIVO_DEL_CIERRE } = await cargar();
 
-    avisaDelCierreForzado({ motivo: MOTIVO_DEL_CIERRE.CSRF_SIN_RECUPERAR, metodo: 'POST', endpoint });
+    avisaDelCierreForzado({
+      motivo: MOTIVO_DEL_CIERRE.CSRF_SIN_RECUPERAR,
+      metodo: 'POST',
+      endpoint,
+    });
 
     expect(etiquetas()['logout.route']).toBe(`POST ${esperada}`);
   });
@@ -147,7 +193,9 @@ describe('avisaDelCierreForzado · lo que llega a Sentry', () => {
       throw new Error('Sentry no cargado');
     });
 
-    expect(() => avisaDelCierreForzado({ motivo: MOTIVO_DEL_CIERRE.REFRESCO_RECHAZADO })).not.toThrow();
+    expect(() =>
+      avisaDelCierreForzado({ motivo: MOTIVO_DEL_CIERRE.REFRESCO_RECHAZADO }),
+    ).not.toThrow();
   });
 
   it('A10: el mismo motivo dos veces en la misma página es un solo aviso; otro motivo, sí', async () => {
@@ -180,8 +228,12 @@ describe('avisaDelCierreForzado · lo que llega a Sentry', () => {
     });
 
     expect(sentry.scope.setTag).toHaveBeenCalledTimes(4);
-    expect(JSON.stringify(sentry.captureMessage.mock.calls)).not.toContain('ana@example.com');
-    expect(JSON.stringify(sentry.scope.setTag.mock.calls)).not.toContain('ana@example.com');
+    expect(JSON.stringify(sentry.captureMessage.mock.calls)).not.toContain(
+      'ana@example.com',
+    );
+    expect(JSON.stringify(sentry.scope.setTag.mock.calls)).not.toContain(
+      'ana@example.com',
+    );
   });
 
   it.each([
@@ -201,7 +253,9 @@ describe('avisaDelCierreForzado · lo que llega a Sentry', () => {
     // Vive en motivosDelCierre: lo usa el transporte, que no llega a Sentry
     const { motivoDelRefrescoRechazado } = await import('./motivosDelCierre');
 
-    expect(motivoDelRefrescoRechazado({ detail: 'x', error_code: codigo })).toBe(motivo);
+    expect(
+      motivoDelRefrescoRechazado({ detail: 'x', error_code: codigo }),
+    ).toBe(motivo);
   });
 
   it('A13b: sin cuerpo, es un rechazo', async () => {
@@ -219,12 +273,13 @@ describe('avisaDelCierreForzado · lo que llega a Sentry', () => {
 
     expect(sentry.captureMessage).toHaveBeenCalledWith(
       'Forced logout: session lost after a good refresh / Cierre de sesión forzado: sesión perdida tras refrescar bien',
-      'warning'
+      'warning',
     );
   });
 
   it('A15: si el usuario pidió cerrar la sesión, nada durante 30 s; después vuelve a avisar', async () => {
-    const { avisaDelCierreForzado, noAvisesDeCierres, MOTIVO_DEL_CIERRE } = await cargar();
+    const { avisaDelCierreForzado, noAvisesDeCierres, MOTIVO_DEL_CIERRE } =
+      await cargar();
     const ahora = vi.spyOn(Date, 'now').mockReturnValue(1_000_000);
 
     noAvisesDeCierres();
@@ -249,7 +304,9 @@ describe('avisaDelCierreForzado · lo que llega a Sentry', () => {
     primera.noAvisesDeCierres();
 
     const trasRecargar = await cargar();
-    trasRecargar.avisaDelCierreForzado({ motivo: trasRecargar.MOTIVO_DEL_CIERRE.REFRESCO_RECHAZADO });
+    trasRecargar.avisaDelCierreForzado({
+      motivo: trasRecargar.MOTIVO_DEL_CIERRE.REFRESCO_RECHAZADO,
+    });
 
     expect(sentry.captureMessage).not.toHaveBeenCalled();
     vi.unstubAllGlobals();
@@ -264,7 +321,8 @@ describe('avisaDelCierreForzado · lo que llega a Sentry', () => {
         throw new Error('bloqueado');
       },
     });
-    const { avisaDelCierreForzado, noAvisesDeCierres, MOTIVO_DEL_CIERRE } = await cargar();
+    const { avisaDelCierreForzado, noAvisesDeCierres, MOTIVO_DEL_CIERRE } =
+      await cargar();
 
     expect(() => noAvisesDeCierres()).not.toThrow();
     avisaDelCierreForzado({ motivo: MOTIVO_DEL_CIERRE.REFRESCO_RECHAZADO });
@@ -281,13 +339,21 @@ describe('avisaDelCierreForzado · lo que llega a Sentry', () => {
       },
     };
 
-    expect(() => avisaDelCierreForzado({ motivo: MOTIVO_DEL_CIERRE.CSRF_SIN_RECUPERAR, endpoint: raro })).not.toThrow();
+    expect(() =>
+      avisaDelCierreForzado({
+        motivo: MOTIVO_DEL_CIERRE.CSRF_SIN_RECUPERAR,
+        endpoint: raro,
+      }),
+    ).not.toThrow();
   });
 
   it('A17: lleva el código del backend en logout.code', async () => {
     const { avisaDelCierreForzado, MOTIVO_DEL_CIERRE } = await cargar();
 
-    avisaDelCierreForzado({ motivo: MOTIVO_DEL_CIERRE.REFRESCO_RECHAZADO, codigo: 'REFRESH_TOKEN_REVOKED' });
+    avisaDelCierreForzado({
+      motivo: MOTIVO_DEL_CIERRE.REFRESCO_RECHAZADO,
+      codigo: 'REFRESH_TOKEN_REVOKED',
+    });
 
     expect(etiquetas()['logout.code']).toBe('REFRESH_TOKEN_REVOKED');
   });
@@ -305,11 +371,14 @@ describe('avisaDelCierreForzado · lo que llega a Sentry', () => {
   });
 
   it('A19: todos los tramos fijos de las rutas del front están en la lista; si no, saldrían como {id}', async () => {
-    const fuentes = import.meta.glob(['../**/*.{js,jsx,ts}', '!../**/*.test.*'], {
-      query: '?raw',
-      import: 'default',
-      eager: true,
-    });
+    const fuentes = import.meta.glob(
+      ['../**/*.{js,jsx,ts}', '!../**/*.test.*'],
+      {
+        query: '?raw',
+        import: 'default',
+        eager: true,
+      },
+    );
     const { avisaDelCierreForzado, MOTIVO_DEL_CIERRE } = await cargar();
     const tramos = new Set();
     for (const codigo of Object.values(fuentes)) {
@@ -327,7 +396,11 @@ describe('avisaDelCierreForzado · lo que llega a Sentry', () => {
       sentry.scope.setTag.mockClear();
       vi.resetModules();
       const modulo = await cargar();
-      modulo.avisaDelCierreForzado({ motivo: modulo.MOTIVO_DEL_CIERRE.CSRF_SIN_RECUPERAR, metodo: 'GET', endpoint: `/${tramo}` });
+      modulo.avisaDelCierreForzado({
+        motivo: modulo.MOTIVO_DEL_CIERRE.CSRF_SIN_RECUPERAR,
+        metodo: 'GET',
+        endpoint: `/${tramo}`,
+      });
       expect(etiquetas()['logout.route'], tramo).toBe(`GET /${tramo}`);
     }
     expect(avisaDelCierreForzado).toBeTypeOf('function');

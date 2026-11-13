@@ -16,7 +16,11 @@ const participants = [
 
 describe('groupParticipantsBySide', () => {
   it('agrupa por bando respetando el orden de llegada', () => {
-    expect(groupParticipantsBySide(participants).map((s) => s.map((p) => p.participantId))).toEqual([
+    expect(
+      groupParticipantsBySide(participants).map((s) =>
+        s.map((p) => p.participantId),
+      ),
+    ).toEqual([
       ['a1', 'a2'],
       ['b1', 'b2'],
     ]);
@@ -27,12 +31,11 @@ describe('groupParticipantsBySide', () => {
 
     // Agruparlos a todos bajo el mismo bando convertía la partida en un bando
     // de cuatro: una tarjeta única y un total que suma a los rivales.
-    expect(groupParticipantsBySide(sinBando).map((s) => s.map((p) => p.participantId))).toEqual([
-      ['a1'],
-      ['a2'],
-      ['b1'],
-      ['b2'],
-    ]);
+    expect(
+      groupParticipantsBySide(sinBando).map((s) =>
+        s.map((p) => p.participantId),
+      ),
+    ).toEqual([['a1'], ['a2'], ['b1'], ['b2']]);
   });
 
   it('trata un bando vacío como falta de bando', () => {
@@ -40,17 +43,21 @@ describe('groupParticipantsBySide', () => {
     // en el mismo grupo y salía un bando de cuatro con el rival dentro.
     const vacio = participants.map((p) => ({ ...p, team: '' }));
 
-    expect(groupParticipantsBySide(vacio).map((s) => s.length)).toEqual([1, 1, 1, 1]);
+    expect(groupParticipantsBySide(vacio).map((s) => s.length)).toEqual([
+      1, 1, 1, 1,
+    ]);
   });
 
   it('no mezcla a los que sí tienen bando con los que no', () => {
-    const mixtos = [participants[0], { ...participants[1], team: null }, participants[2]];
+    const mixtos = [
+      participants[0],
+      { ...participants[1], team: null },
+      participants[2],
+    ];
 
-    expect(groupParticipantsBySide(mixtos).map((s) => s.map((p) => p.participantId))).toEqual([
-      ['a1'],
-      ['a2'],
-      ['b1'],
-    ]);
+    expect(
+      groupParticipantsBySide(mixtos).map((s) => s.map((p) => p.participantId)),
+    ).toEqual([['a1'], ['a2'], ['b1']]);
   });
 
   it('devuelve una lista vacía sin participantes', () => {
@@ -60,15 +67,23 @@ describe('groupParticipantsBySide', () => {
 
 describe('sideEntryOf: qué anotación es la del bando', () => {
   const side = [participants[0], participants[1]];
-  const entrada = (participantId, score) => ({ participantId, holeNumber: 1, score });
+  const entrada = (participantId, score) => ({
+    participantId,
+    holeNumber: 1,
+    score,
+  });
 
   it('toma la del primer miembro del bando que la tenga', () => {
     // La bola se guarda a nombre del primero, así que en la práctica es la suya.
-    expect(sideEntryOf(side, (id) => entrada(id, id === 'a1' ? 4 : 6)).score).toBe(4);
+    expect(
+      sideEntryOf(side, (id) => entrada(id, id === 'a1' ? 4 : 6)).score,
+    ).toBe(4);
   });
 
   it('sigue al compañero cuando el primero no tiene anotación', () => {
-    expect(sideEntryOf(side, (id) => (id === 'a2' ? entrada(id, 5) : null)).score).toBe(5);
+    expect(
+      sideEntryOf(side, (id) => (id === 'a2' ? entrada(id, 5) : null)).score,
+    ).toBe(5);
   });
 
   it('elige siempre la misma con dos anotaciones distintas del mismo hoyo', () => {
@@ -81,13 +96,17 @@ describe('sideEntryOf: qué anotación es la del bando', () => {
   });
 
   it('no confunde un 0 con la falta de anotación', () => {
-    expect(sideEntryOf(side, (id) => entrada(id, id === 'a1' ? 0 : 5)).score).toBe(0);
+    expect(
+      sideEntryOf(side, (id) => entrada(id, id === 'a1' ? 0 : 5)).score,
+    ).toBe(0);
   });
 });
 
 describe('sideCardHolder', () => {
   it('es el primer jugador del bando', () => {
-    expect(sideCardHolder([participants[0], participants[1]]).participantId).toBe('a1');
+    expect(
+      sideCardHolder([participants[0], participants[1]]).participantId,
+    ).toBe('a1');
   });
 
   it('no revienta con un bando vacío', () => {
@@ -104,7 +123,11 @@ describe('entryAtOf y sideEntryOf', () => {
     const holeScores = [{ participantId: 'a1', holeNumber: 1, score: null }];
     const entryAt = entryAtOf(holeScores);
 
-    expect(entryAt(1)('a1')).toEqual({ participantId: 'a1', holeNumber: 1, score: null });
+    expect(entryAt(1)('a1')).toEqual({
+      participantId: 'a1',
+      holeNumber: 1,
+      score: null,
+    });
     expect(entryAt(2)('a1')).toBeNull();
   });
 

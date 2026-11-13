@@ -13,7 +13,8 @@
  * móvil: con él, un reintento cuenta una sola vez.
  */
 
-const esPunto = (p) => Boolean(p) && Number.isFinite(p.latitude) && Number.isFinite(p.longitude);
+const esPunto = (p) =>
+  Boolean(p) && Number.isFinite(p.latitude) && Number.isFinite(p.longitude);
 const aDominio = (p) => ({ lat: p.latitude, lon: p.longitude });
 const aApi = (p) => ({ latitude: p.lat, longitude: p.lon });
 
@@ -23,7 +24,9 @@ const primeraADominio = (muestra) => {
   if (!esPunto(muestra?.tee) || !esPunto(muestra?.green_center)) return null;
   return {
     tee: aDominio(muestra.tee),
-    bends: (Array.isArray(muestra.bends) ? muestra.bends : []).filter(esPunto).map(aDominio),
+    bends: (Array.isArray(muestra.bends) ? muestra.bends : [])
+      .filter(esPunto)
+      .map(aDominio),
     greenCenter: aDominio(muestra.green_center),
   };
 };
@@ -41,7 +44,9 @@ class HoleSampleMapper {
   static toDomain(api) {
     if (!Array.isArray(api)) return {};
     return Object.fromEntries(
-      api.filter((hoyo) => Number.isInteger(hoyo?.hole_number)).map((hoyo) => [hoyo.hole_number, hoyoADominio(hoyo)]),
+      api
+        .filter((hoyo) => Number.isInteger(hoyo?.hole_number))
+        .map((hoyo) => [hoyo.hole_number, hoyoADominio(hoyo)]),
     );
   }
 

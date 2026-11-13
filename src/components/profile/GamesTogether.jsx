@@ -19,7 +19,9 @@ const SIN_RESULTADO = 'text-gray-500 bg-white border-gray-200';
  */
 const rutaDePartidaJuntos = (partida) => {
   if (partida.kind === 'QUICK_MATCH') {
-    return partida.quickMatchId ? `/quick-matches/${partida.quickMatchId}/scoring` : null;
+    return partida.quickMatchId
+      ? `/quick-matches/${partida.quickMatchId}/scoring`
+      : null;
   }
   if (partida.kind === 'TOURNAMENT_MATCH') {
     return partida.matchId ? rutaDeAnotacion({ id: partida.matchId }) : null;
@@ -51,18 +53,32 @@ const fechaDe = (dia, idioma) => {
   // Un instante (la partida rápida, H5) se pinta en su día local; un día sin
   // hora, a medianoche local. Lo que no se lea, tal cual
   const fecha = dia instanceof Date ? dia : diaDeLaSesion(dia);
-  if (!fecha || Number.isNaN(fecha.getTime())) return typeof dia === 'string' ? dia : '';
-  const locale = String(idioma || '').toLowerCase().startsWith('en') ? 'en-GB' : 'es-ES';
+  if (!fecha || Number.isNaN(fecha.getTime()))
+    return typeof dia === 'string' ? dia : '';
+  const locale = String(idioma || '')
+    .toLowerCase()
+    .startsWith('en')
+    ? 'en-GB'
+    : 'es-ES';
   try {
-    return fecha.toLocaleDateString(locale, { day: 'numeric', month: 'short', year: 'numeric' });
+    return fecha.toLocaleDateString(locale, {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+    });
   } catch {
     return dia;
   }
 };
 
 const puestoDe = (position, tied, t) => {
-  const texto = t('playerProfile:gamesTogether.position', { count: position, ordinal: true });
-  return tied ? t('playerProfile:gamesTogether.tied', { position: texto }) : texto;
+  const texto = t('playerProfile:gamesTogether.position', {
+    count: position,
+    ordinal: true,
+  });
+  return tied
+    ? t('playerProfile:gamesTogether.tied', { position: texto })
+    : texto;
 };
 
 /**
@@ -70,7 +86,12 @@ const puestoDe = (position, tied, t) => {
  * Sin los dos puestos o sin el total no se dice nada: a medias se leería mal.
  */
 const puestosDelTorneo = (partida, t) => {
-  if (partida.myPosition == null || partida.theirPosition == null || !partida.totalPlayers) return null;
+  if (
+    partida.myPosition == null ||
+    partida.theirPosition == null ||
+    !partida.totalPlayers
+  )
+    return null;
   return t('playerProfile:gamesTogether.positions', {
     mine: puestoDe(partida.myPosition, partida.myTied, t),
     theirs: puestoDe(partida.theirPosition, partida.theirTied, t),
@@ -84,7 +105,8 @@ const FilaDePartida = ({ partida, t, idioma }) => {
   // De un torneo stroke play no hay campo: el título es el torneo, y debajo,
   // los puestos de los dos
   const titulo = esTorneo
-    ? partida.competitionName || t('playerProfile:gamesTogether.unknownTournament')
+    ? partida.competitionName ||
+      t('playerProfile:gamesTogether.unknownTournament')
     : partida.golfCourseName || t('playerProfile:gamesTogether.unknownCourse');
   const subtitulo = esTorneo ? null : partida.competitionName;
   const puestos = esTorneo ? puestosDelTorneo(partida, t) : null;
@@ -93,17 +115,26 @@ const FilaDePartida = ({ partida, t, idioma }) => {
     : t('playerProfile:gamesTogether.result.none');
   const detalle = [
     fechaDe(partida.playedAt ?? partida.playedOn, idioma),
-    partida.format ? t(`playerProfile:gamesTogether.format.${partida.format}`) : null,
-    partida.relation ? t(`playerProfile:gamesTogether.relation.${partida.relation}`) : null,
+    partida.format
+      ? t(`playerProfile:gamesTogether.format.${partida.format}`)
+      : null,
+    partida.relation
+      ? t(`playerProfile:gamesTogether.relation.${partida.relation}`)
+      : null,
   ].filter(Boolean);
 
   const contenido = (
     <>
       <div className="min-w-0 flex-1">
         <p className="text-sm font-medium text-gray-900 truncate">{titulo}</p>
-        {subtitulo && <p className="text-xs text-gray-500 truncate">{subtitulo}</p>}
+        {subtitulo && (
+          <p className="text-xs text-gray-500 truncate">{subtitulo}</p>
+        )}
         {puestos && (
-          <p className="text-xs text-gray-700" data-testid="player-profile-game-positions">
+          <p
+            className="text-xs text-gray-700"
+            data-testid="player-profile-game-positions"
+          >
             {puestos}
           </p>
         )}
@@ -116,7 +147,12 @@ const FilaDePartida = ({ partida, t, idioma }) => {
       >
         {resultado}
       </span>
-      {ruta && <ChevronRight className="w-4 h-4 shrink-0 text-gray-400" aria-hidden="true" />}
+      {ruta && (
+        <ChevronRight
+          className="w-4 h-4 shrink-0 text-gray-400"
+          aria-hidden="true"
+        />
+      )}
     </>
   );
 
@@ -125,7 +161,11 @@ const FilaDePartida = ({ partida, t, idioma }) => {
   const testId = `player-profile-game-${partida.id}`;
 
   return ruta ? (
-    <Link to={ruta} className={`${clases} hover:bg-gray-50`} data-testid={testId}>
+    <Link
+      to={ruta}
+      className={`${clases} hover:bg-gray-50`}
+      data-testid={testId}
+    >
       {contenido}
     </Link>
   ) : (
@@ -140,7 +180,14 @@ const FilaDePartida = ({ partida, t, idioma }) => {
  * más antigua (el orden lo pone el backend), de 5 en 5 con «Ver más». Sin
  * ninguna no se pinta, igual que un apartado vacío del cara a cara.
  */
-const GamesTogether = ({ games, nextCursor, isLoadingMore, onLoadMore, t, idioma }) => {
+const GamesTogether = ({
+  games,
+  nextCursor,
+  isLoadingMore,
+  onLoadMore,
+  t,
+  idioma,
+}) => {
   // Una página puede llegar vacía y con cursor: entonces queda «Ver más»
   const sinPartidas = !games || games.length === 0;
   if (sinPartidas && !nextCursor) return null;
@@ -166,7 +213,10 @@ const GamesTogether = ({ games, nextCursor, isLoadingMore, onLoadMore, t, idioma
           data-testid="player-profile-games-more"
         >
           {isLoadingMore ? (
-            <Loader className="w-4 h-4 animate-spin mx-auto" aria-hidden="true" />
+            <Loader
+              className="w-4 h-4 animate-spin mx-auto"
+              aria-hidden="true"
+            />
           ) : (
             t('playerProfile:gamesTogether.loadMore')
           )}

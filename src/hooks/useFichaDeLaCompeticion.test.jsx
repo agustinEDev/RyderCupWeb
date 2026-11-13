@@ -18,16 +18,22 @@ vi.mock('../composition', () => ({
   listEnrollmentsUseCase: { execute: (id) => pide('lista')(id) },
 }));
 vi.mock('../utils/toast', () => ({ default: { error: vi.fn() } }));
-vi.mock('../utils/cierreDeEstaCarga', () => ({ seEstaCerrandoLaSesion: () => false }));
+vi.mock('../utils/cierreDeEstaCarga', () => ({
+  seEstaCerrandoLaSesion: () => false,
+}));
 
 const { useFichaDeLaCompeticion } = await import('./useFichaDeLaCompeticion');
 const customToast = (await import('../utils/toast')).default;
 
 const navigate = vi.fn();
 const monta = () =>
-  renderHook(({ id }) => useFichaDeLaCompeticion({ id, userId: 'u-1', t: (k) => k, navigate }), {
-    initialProps: { id: 'A' },
-  });
+  renderHook(
+    ({ id }) =>
+      useFichaDeLaCompeticion({ id, userId: 'u-1', t: (k) => k, navigate }),
+    {
+      initialProps: { id: 'A' },
+    },
+  );
 
 const llega = async (tipo, id, valor) => {
   await act(async () => pendientes[tipo][id].resolve(valor));
@@ -137,7 +143,7 @@ describe('useFichaDeLaCompeticion: la carga de una ficha que ya no está en pant
 
       await llega('lista', 'B', ['inscrito de B']);
       expect(result.current.enrollments).toEqual(['inscrito de B']);
-    }
+    },
   );
 
   it('F6: sin cambiar de ficha, la carga normal pinta, lista y quita la espera (como siempre)', async () => {
@@ -200,7 +206,9 @@ describe('useFichaDeLaCompeticion: cuándo se pide (T4)', () => {
     });
     await act(async () => pendientes.ficha.A.reject(new Error('')));
 
-    expect(customToast.error).toHaveBeenCalledWith('en:detail.failedToLoadCompetition');
+    expect(customToast.error).toHaveBeenCalledWith(
+      'en:detail.failedToLoadCompetition',
+    );
     expect(navigate).toHaveBeenCalledWith('/competitions');
   });
 
@@ -243,6 +251,8 @@ describe('useFichaDeLaCompeticion: cuándo se pide (T4)', () => {
     rerender({ id: 'A', userId: 'u-1', t: enIngles });
     await act(async () => pendientes.ficha.A.reject(new Error('')));
 
-    expect(customToast.error).toHaveBeenCalledWith('en:detail.failedToLoadCompetition');
+    expect(customToast.error).toHaveBeenCalledWith(
+      'en:detail.failedToLoadCompetition',
+    );
   });
 });

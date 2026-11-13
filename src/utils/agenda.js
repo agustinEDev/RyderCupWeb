@@ -70,7 +70,10 @@ export const agendaPropuesta = (inicio, fin) => {
  * @param {{jugadores?: number, equipoA?: number, equipoB?: number}} plantilla
  * @returns {number}
  */
-export const partidosDeLaSesion = (formato, { jugadores = 0, equipoA, equipoB } = {}) => {
+export const partidosDeLaSesion = (
+  formato,
+  { jugadores = 0, equipoA, equipoB } = {},
+) => {
   const porLado = POR_LADO[formato] || 1;
   const porEquipo =
     equipoA !== undefined && equipoB !== undefined
@@ -87,7 +90,7 @@ export const partidosDeLaSesion = (formato, { jugadores = 0, equipoA, equipoB } 
  */
 export const franjasLibres = (sesiones, dia) => {
   const cogidas = new Set(
-    sesiones.filter((s) => s.roundDate === dia).map((s) => s.sessionType)
+    sesiones.filter((s) => s.roundDate === dia).map((s) => s.sessionType),
   );
   return FRANJAS.filter((franja) => !cogidas.has(franja));
 };

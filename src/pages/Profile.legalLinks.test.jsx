@@ -16,20 +16,25 @@ import { resolve } from 'node:path';
  * standalone, asi que un render no distingue `md:hidden` de visible.
  */
 
-const read = (relativePath) => readFileSync(resolve(process.cwd(), relativePath), 'utf8');
+const read = (relativePath) =>
+  readFileSync(resolve(process.cwd(), relativePath), 'utf8');
 
 describe('Profile legal links', () => {
   it('ties the legal group visibility to standalone rather than hiding it above md', () => {
     const source = read('src/pages/Profile.jsx');
 
     // Visible siempre en movil; en escritorio solo cuando no hay pie
-    expect(source).toContain("<div className={isStandalone ? '' : 'md:hidden'}>");
+    expect(source).toContain(
+      "<div className={isStandalone ? '' : 'md:hidden'}>",
+    );
   });
 
   it('reads the standalone mode from the shared hook', () => {
     const source = read('src/pages/Profile.jsx');
 
-    expect(source).toContain("import { useStandalone } from '../hooks/useStandalone'");
+    expect(source).toContain(
+      "import { useStandalone } from '../hooks/useStandalone'",
+    );
     expect(source).toContain('const isStandalone = useStandalone();');
   });
 
@@ -47,7 +52,10 @@ describe('Profile legal links', () => {
     // La botonera de escritorio si usa botones con navigate(), y eso es correcto
     // alli: son acciones de una barra, no filas de una lista de ajustes.
     const source = read('src/pages/Profile.jsx');
-    const mobileList = source.slice(source.indexOf('<div className="md:hidden">'), source.indexOf('{/* Escritorio'));
+    const mobileList = source.slice(
+      source.indexOf('<div className="md:hidden">'),
+      source.indexOf('{/* Escritorio'),
+    );
 
     for (const route of ['/profile/edit', '/profile/devices', '/admin']) {
       expect(mobileList).toContain(`to="${route}"`);

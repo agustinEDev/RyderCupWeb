@@ -9,12 +9,16 @@ import { describe, it, expect } from 'vitest';
  * hook. Aquí se lee el código de cada llamada y se exige que pase las dos cosas.
  */
 const fuentes = import.meta.glob(
-  ['/src/**/*.{js,jsx}', '!/src/**/*.test.{js,jsx}', '!/src/hooks/useUserRoles.jsx'],
-  { query: '?raw', import: 'default', eager: true }
+  [
+    '/src/**/*.{js,jsx}',
+    '!/src/**/*.test.{js,jsx}',
+    '!/src/hooks/useUserRoles.jsx',
+  ],
+  { query: '?raw', import: 'default', eager: true },
 );
 
 const llamadas = Object.entries(fuentes).flatMap(([fichero, codigo]) =>
-  [...codigo.matchAll(/useUserRoles\(([^)]*)\)/g)].map((m) => [fichero, m[1]])
+  [...codigo.matchAll(/useUserRoles\(([^)]*)\)/g)].map((m) => [fichero, m[1]]),
 );
 
 describe('useUserRoles · quien lo llama pasa competición y usuario', () => {
@@ -23,13 +27,16 @@ describe('useUserRoles · quien lo llama pasa competición y usuario', () => {
     expect(llamadas.length).toBeGreaterThanOrEqual(4);
   });
 
-  it.each(llamadas)('%s pasa la competición y el id del usuario', (_fichero, argumentos) => {
-    const partes = argumentos
-      .split(',')
-      .map((parte) => parte.trim())
-      .filter(Boolean);
-    expect(partes).toHaveLength(2);
-    // `user?.id`, o el mismo valor ya guardado en `userId` (como CompetitionDetail)
-    expect(partes[1]).toMatch(/^(?:user\?\.id|userId)$/);
-  });
+  it.each(llamadas)(
+    '%s pasa la competición y el id del usuario',
+    (_fichero, argumentos) => {
+      const partes = argumentos
+        .split(',')
+        .map((parte) => parte.trim())
+        .filter(Boolean);
+      expect(partes).toHaveLength(2);
+      // `user?.id`, o el mismo valor ya guardado en `userId` (como CompetitionDetail)
+      expect(partes[1]).toMatch(/^(?:user\?\.id|userId)$/);
+    },
+  );
 });

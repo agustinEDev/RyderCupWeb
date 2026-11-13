@@ -12,7 +12,9 @@ class SendInvitationByEmailUseCase {
 
   constructor({ invitationRepository }) {
     if (!invitationRepository) {
-      throw new Error('SendInvitationByEmailUseCase requires invitationRepository');
+      throw new Error(
+        'SendInvitationByEmailUseCase requires invitationRepository',
+      );
     }
     this.#invitationRepository = invitationRepository;
   }
@@ -33,7 +35,7 @@ class SendInvitationByEmailUseCase {
     const invitation = await this.#invitationRepository.sendInvitationByEmail(
       competitionId,
       email.getValue(),
-      personalMessage
+      personalMessage,
     );
 
     return InvitationAssembler.toSimpleDTO(invitation, invitation._apiData);

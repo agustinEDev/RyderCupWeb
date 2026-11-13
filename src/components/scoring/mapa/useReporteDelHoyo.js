@@ -13,8 +13,26 @@ import { salidaGreenFueraDeLimites } from '../../../domain/services/hoyoMarcado'
  */
 export const useReporteDelHoyo = (
   { antesDelReporteRef, primerMotivoRef, botonDeReportarRef },
-  { t, reporte, edicion, linea, tocado, codoSinTocar, desdeMi, onReporte, empezar },
-  { setReporte, setEdicion, setMedido, setGracias, setAvisoDeMarca, setTocado, setCodoSinTocar },
+  {
+    t,
+    reporte,
+    edicion,
+    linea,
+    tocado,
+    codoSinTocar,
+    desdeMi,
+    onReporte,
+    empezar,
+  },
+  {
+    setReporte,
+    setEdicion,
+    setMedido,
+    setGracias,
+    setAvisoDeMarca,
+    setTocado,
+    setCodoSinTocar,
+  },
 ) => {
   const codoAntesDelReporteRef = useRef(null);
   const reportabaRef = useRef(false);
@@ -24,7 +42,8 @@ export const useReporteDelHoyo = (
   const faseDelReporte = reporte?.fase ?? null;
   useEffect(() => {
     if (faseDelReporte === 'motivos') primerMotivoRef.current?.focus();
-    else if (!faseDelReporte && reportabaRef.current) botonDeReportarRef.current?.focus();
+    else if (!faseDelReporte && reportabaRef.current)
+      botonDeReportarRef.current?.focus();
     reportabaRef.current = Boolean(faseDelReporte);
   }, [faseDelReporte, primerMotivoRef, botonDeReportarRef]);
 
@@ -44,7 +63,12 @@ export const useReporteDelHoyo = (
     setAvisoDeMarca(null);
     setTocado(null);
     setCodoSinTocar(false);
-    setEdicion((e) => ({ ...e, linea: null, green: null, version: e.version + 1 }));
+    setEdicion((e) => ({
+      ...e,
+      linea: null,
+      green: null,
+      version: e.version + 1,
+    }));
     setReporte({ fase: 'salida', motivo });
   };
   const acabarElReporte = () => {

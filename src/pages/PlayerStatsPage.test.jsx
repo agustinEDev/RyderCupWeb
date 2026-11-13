@@ -12,11 +12,15 @@ const mockGetScoringBreakdown = vi.fn();
 
 vi.mock('../composition', () => ({
   getPlayerStatsUseCase: { execute: (...args) => mockGetPlayerStats(...args) },
-  getRecentMatchesUseCase: { execute: (...args) => mockGetRecentMatches(...args) },
+  getRecentMatchesUseCase: {
+    execute: (...args) => mockGetRecentMatches(...args),
+  },
   getPlayerStatsByGolfCourseUseCase: {
     execute: (...args) => mockGetPlayerStatsByGolfCourse(...args),
   },
-  getScoringBreakdownUseCase: { execute: (...args) => mockGetScoringBreakdown(...args) },
+  getScoringBreakdownUseCase: {
+    execute: (...args) => mockGetScoringBreakdown(...args),
+  },
   logoutUseCase: { execute: vi.fn() },
 }));
 
@@ -34,15 +38,19 @@ vi.mock('react-i18next', () => ({
     t: (key, options) => {
       // `counted` primero: las claves que lo llevan traen tambien `count`
       // para que i18next pluralice, y si no se mira antes se pierde
-      if (options?.counted !== undefined) return `${key}:${options.counted}/${options.count}`;
-      if (options && typeof options.count === 'number') return `${key}:${options.count}`;
+      if (options?.counted !== undefined)
+        return `${key}:${options.counted}/${options.count}`;
+      if (options && typeof options.count === 'number')
+        return `${key}:${options.count}`;
       return key;
     },
     i18n: { language: 'es' },
   }),
 }));
 
-vi.mock('../hooks/useEntryMotion', () => ({ useEntryMotion: () => ({ animateEntry: false }) }));
+vi.mock('../hooks/useEntryMotion', () => ({
+  useEntryMotion: () => ({ animateEntry: false }),
+}));
 
 const fullStats = PlayerStats.fromPersistence({
   handicap: 18,
@@ -79,7 +87,7 @@ const renderPage = () =>
   render(
     <MemoryRouter>
       <PlayerStatsPage />
-    </MemoryRouter>
+    </MemoryRouter>,
   );
 
 describe('PlayerStatsPage', () => {
@@ -89,7 +97,11 @@ describe('PlayerStatsPage', () => {
     mockGetRecentMatches.mockResolvedValue(matches);
     mockGetScoringBreakdown.mockResolvedValue(null);
     mockGetPlayerStatsByGolfCourse.mockResolvedValue(
-      PlayerStats.fromPersistence({ roundsPlayed: 2, scoringAvg: 8, estimatedIndex: 11.1 })
+      PlayerStats.fromPersistence({
+        roundsPlayed: 2,
+        scoringAvg: 8,
+        estimatedIndex: 11.1,
+      }),
     );
   });
 
@@ -111,9 +123,13 @@ describe('PlayerStatsPage', () => {
     renderPage();
 
     await waitFor(() => {
-      expect(screen.getByTestId('estimated-index-block')).toHaveTextContent('14.2');
+      expect(screen.getByTestId('estimated-index-block')).toHaveTextContent(
+        '14.2',
+      );
     });
-    expect(screen.getByText('playerStats.estimatedIndexExplained')).toBeInTheDocument();
+    expect(
+      screen.getByText('playerStats.estimatedIndexExplained'),
+    ).toBeInTheDocument();
   });
 
   it('asks for the whole history, not just the dashboard slice', async () => {
@@ -128,34 +144,52 @@ describe('PlayerStatsPage', () => {
     it('lists each course the player has played, once', async () => {
       renderPage();
 
-      await waitFor(() => expect(screen.getByTestId('course-filter')).toBeInTheDocument());
+      await waitFor(() =>
+        expect(screen.getByTestId('course-filter')).toBeInTheDocument(),
+      );
       // Dos partidas en St Andrews, pero un solo filtro
       expect(screen.getAllByTestId(/^course-filter-/)).toHaveLength(2);
-      expect(screen.getByTestId('course-filter-course-1')).toHaveTextContent('St Andrews');
+      expect(screen.getByTestId('course-filter-course-1')).toHaveTextContent(
+        'St Andrews',
+      );
     });
 
     it('loads that course figures when picked', async () => {
       renderPage();
 
-      await waitFor(() => expect(screen.getByTestId('course-filter-course-1')).toBeInTheDocument());
+      await waitFor(() =>
+        expect(
+          screen.getByTestId('course-filter-course-1'),
+        ).toBeInTheDocument(),
+      );
       fireEvent.click(screen.getByTestId('course-filter-course-1'));
 
       await waitFor(() => {
         expect(mockGetPlayerStatsByGolfCourse).toHaveBeenCalledWith('course-1');
       });
-      await waitFor(() => expect(screen.getByTestId('stat-rounds')).toHaveTextContent('2'));
+      await waitFor(() =>
+        expect(screen.getByTestId('stat-rounds')).toHaveTextContent('2'),
+      );
     });
 
     it('goes back to the global figures without asking the backend again', async () => {
       renderPage();
 
-      await waitFor(() => expect(screen.getByTestId('course-filter-course-1')).toBeInTheDocument());
+      await waitFor(() =>
+        expect(
+          screen.getByTestId('course-filter-course-1'),
+        ).toBeInTheDocument(),
+      );
       fireEvent.click(screen.getByTestId('course-filter-course-1'));
-      await waitFor(() => expect(screen.getByTestId('stat-rounds')).toHaveTextContent('2'));
+      await waitFor(() =>
+        expect(screen.getByTestId('stat-rounds')).toHaveTextContent('2'),
+      );
 
       fireEvent.click(screen.getByText('playerStats.allCourses'));
 
-      await waitFor(() => expect(screen.getByTestId('stat-rounds')).toHaveTextContent('10'));
+      await waitFor(() =>
+        expect(screen.getByTestId('stat-rounds')).toHaveTextContent('10'),
+      );
       expect(mockGetPlayerStats).toHaveBeenCalledTimes(1);
     });
 
@@ -166,7 +200,9 @@ describe('PlayerStatsPage', () => {
       mockGetRecentMatches.mockResolvedValue([]);
       renderPage();
 
-      await waitFor(() => expect(screen.getByTestId('player-stats-empty')).toBeInTheDocument());
+      await waitFor(() =>
+        expect(screen.getByTestId('player-stats-empty')).toBeInTheDocument(),
+      );
       expect(screen.queryByTestId('course-filter')).not.toBeInTheDocument();
     });
   });
@@ -176,7 +212,7 @@ describe('PlayerStatsPage', () => {
 
     await waitFor(() => {
       expect(screen.getByTestId('rounds-without-tee-note')).toHaveTextContent(
-        'playerStats.roundsWithoutTee:8/10'
+        'playerStats.roundsWithoutTee:8/10',
       );
     });
   });
@@ -187,34 +223,50 @@ describe('PlayerStatsPage', () => {
      * vueltas" ademas de sonar mal, dice que hay un calculo donde no lo hay.
      */
     mockGetPlayerStats.mockResolvedValue(
-      PlayerStats.fromPersistence({ roundsPlayed: 1, roundsWithDifferential: 0, scoringAvg: -3 })
+      PlayerStats.fromPersistence({
+        roundsPlayed: 1,
+        roundsWithDifferential: 0,
+        scoringAvg: -3,
+      }),
     );
     renderPage();
 
     await waitFor(() => {
       expect(screen.getByTestId('rounds-without-tee-note')).toHaveTextContent(
-        'playerStats.noRoundsWithTee'
+        'playerStats.noRoundsWithTee',
       );
     });
     expect(screen.getByTestId('rounds-without-tee-note')).not.toHaveTextContent(
-      'playerStats.roundsWithoutTee'
+      'playerStats.roundsWithoutTee',
     );
   });
 
   it('says nothing about missing rounds when every one counted', async () => {
     mockGetPlayerStats.mockResolvedValue(
-      PlayerStats.fromPersistence({ roundsPlayed: 8, roundsWithDifferential: 8, estimatedIndex: 12 })
+      PlayerStats.fromPersistence({
+        roundsPlayed: 8,
+        roundsWithDifferential: 8,
+        estimatedIndex: 12,
+      }),
     );
     renderPage();
 
-    await waitFor(() => expect(screen.getByTestId('stat-rounds')).toBeInTheDocument());
-    expect(screen.queryByTestId('rounds-without-tee-note')).not.toBeInTheDocument();
+    await waitFor(() =>
+      expect(screen.getByTestId('stat-rounds')).toBeInTheDocument(),
+    );
+    expect(
+      screen.queryByTestId('rounds-without-tee-note'),
+    ).not.toBeInTheDocument();
   });
 
   // Un hándicap plus se guarda negativo y se lee con «+» (FE #797)
   it('shows a plus estimated index with its plus sign', async () => {
     mockGetPlayerStats.mockResolvedValue(
-      PlayerStats.fromPersistence({ roundsPlayed: 8, roundsWithDifferential: 8, estimatedIndex: -1.5 })
+      PlayerStats.fromPersistence({
+        roundsPlayed: 8,
+        roundsWithDifferential: 8,
+        estimatedIndex: -1.5,
+      }),
     );
     renderPage();
 
@@ -241,7 +293,9 @@ describe('PlayerStatsPage', () => {
     mockGetRecentMatches.mockResolvedValue([]);
     renderPage();
 
-    await waitFor(() => expect(screen.getByTestId('player-stats-empty')).toBeInTheDocument());
+    await waitFor(() =>
+      expect(screen.getByTestId('player-stats-empty')).toBeInTheDocument(),
+    );
     expect(screen.queryByTestId('stat-rounds')).not.toBeInTheDocument();
   });
 
@@ -249,15 +303,29 @@ describe('PlayerStatsPage', () => {
     mockGetPlayerStats.mockRejectedValue(new Error('Network error'));
     renderPage();
 
-    await waitFor(() => expect(screen.getByTestId('player-stats-empty')).toBeInTheDocument());
+    await waitFor(() =>
+      expect(screen.getByTestId('player-stats-empty')).toBeInTheDocument(),
+    );
   });
 
   describe('the scoring breakdown', () => {
     const breakdown = {
       holesCounted: 9,
       roundsCounted: 1,
-      grossDistribution: { birdieOrBetter: 0, par: 2, bogey: 4, doubleOrWorse: 3, holes: 9 },
-      netDistribution: { birdieOrBetter: 2, par: 4, bogey: 3, doubleOrWorse: 0, holes: 9 },
+      grossDistribution: {
+        birdieOrBetter: 0,
+        par: 2,
+        bogey: 4,
+        doubleOrWorse: 3,
+        holes: 9,
+      },
+      netDistribution: {
+        birdieOrBetter: 2,
+        par: 4,
+        bogey: 3,
+        doubleOrWorse: 0,
+        holes: 9,
+      },
       byPar: [{ par: 3, holes: 3, averageToPar: 1 }],
       frontNine: { holes: 9, averageToPar: 0.11 },
       backNine: null,
@@ -268,7 +336,9 @@ describe('PlayerStatsPage', () => {
       mockGetScoringBreakdown.mockResolvedValue(breakdown);
       renderPage();
 
-      expect(await screen.findByTestId('scoring-breakdown')).toBeInTheDocument();
+      expect(
+        await screen.findByTestId('scoring-breakdown'),
+      ).toBeInTheDocument();
     });
 
     // El desglose no se pide por campo, así que enseñarlo junto a las cifras de
@@ -280,7 +350,9 @@ describe('PlayerStatsPage', () => {
 
       fireEvent.click(screen.getByTestId('course-filter-course-2'));
 
-      await waitFor(() => expect(screen.queryByTestId('scoring-breakdown')).toBeNull());
+      await waitFor(() =>
+        expect(screen.queryByTestId('scoring-breakdown')).toBeNull(),
+      );
     });
 
     // El endpoint del desglose es más nuevo que el resto: mientras no esté

@@ -1,10 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import {
-  loQueHayQueMandar,
-  normalizaElAlias,
-  queLePasaAlAlias,
-} from './alias';
+import { loQueHayQueMandar, normalizaElAlias, queLePasaAlAlias } from './alias';
 
 describe('normalizaElAlias', () => {
   it('quita los espacios de los bordes', () => {

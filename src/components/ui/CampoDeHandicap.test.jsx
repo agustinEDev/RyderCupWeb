@@ -47,7 +47,9 @@ vi.mock('react-i18next', () => ({
 
 const pintar = (value, props = {}) => {
   const onChange = vi.fn();
-  const resultado = render(<CampoDeHandicap id="hcp" value={value} onChange={onChange} {...props} />);
+  const resultado = render(
+    <CampoDeHandicap id="hcp" value={value} onChange={onChange} {...props} />,
+  );
   return { onChange, ...resultado };
 };
 
@@ -70,12 +72,15 @@ const campo = () => screen.getByRole('textbox');
 const mas = () => screen.getByRole('button', { name: 'handicapField.plus' });
 
 describe('CampoDeHandicap', () => {
-  it.each([['-1.5'], [-1.5]])('C1: con %p se ve sin signo y el «+» pulsado', (valor) => {
-    pintar(valor);
+  it.each([['-1.5'], [-1.5]])(
+    'C1: con %p se ve sin signo y el «+» pulsado',
+    (valor) => {
+      pintar(valor);
 
-    expect(campo()).toHaveValue('1.5');
-    expect(mas()).toHaveAttribute('aria-pressed', 'true');
-  });
+      expect(campo()).toHaveValue('1.5');
+      expect(mas()).toHaveAttribute('aria-pressed', 'true');
+    },
+  );
 
   it('C2: un hándicap normal, sin el «+»', () => {
     pintar(12.3);
@@ -179,22 +184,32 @@ describe('CampoDeHandicap', () => {
     expect(alCambiar).toHaveBeenLastCalledWith('-1.5');
   });
 
-  it.each(['+', '-'])('C8b: escribir solo «%s» enciende el «+» a la espera del número', (signo) => {
-    const alCambiar = vi.fn();
-    const Texto = () => {
-      const [valor, setValor] = useState('');
-      return (
-        <CampoDeHandicap id="hcp" value={valor} onChange={(v) => { setValor(v); alCambiar(v); }} />
-      );
-    };
-    render(<Texto />);
+  it.each(['+', '-'])(
+    'C8b: escribir solo «%s» enciende el «+» a la espera del número',
+    (signo) => {
+      const alCambiar = vi.fn();
+      const Texto = () => {
+        const [valor, setValor] = useState('');
+        return (
+          <CampoDeHandicap
+            id="hcp"
+            value={valor}
+            onChange={(v) => {
+              setValor(v);
+              alCambiar(v);
+            }}
+          />
+        );
+      };
+      render(<Texto />);
 
-    fireEvent.change(campo(), { target: { value: signo } });
-    expect(mas()).toHaveAttribute('aria-pressed', 'true');
-    fireEvent.change(campo(), { target: { value: '1,5' } });
+      fireEvent.change(campo(), { target: { value: signo } });
+      expect(mas()).toHaveAttribute('aria-pressed', 'true');
+      fireEvent.change(campo(), { target: { value: '1,5' } });
 
-    expect(alCambiar).toHaveBeenLastCalledWith('-1.5');
-  });
+      expect(alCambiar).toHaveBeenLastCalledWith('-1.5');
+    },
+  );
 
   it('C9: si el valor cambia desde fuera, el «+» lo sigue', () => {
     const { rerender, onChange } = pintar('-2');
@@ -215,7 +230,9 @@ describe('CampoDeHandicap', () => {
 
     fireEvent.change(campo(), { target: { value: escrito } });
 
-    expect(campo().validationMessage).toBe(fuera ? 'handicapField.outOfRange' : '');
+    expect(campo().validationMessage).toBe(
+      fuera ? 'handicapField.outOfRange' : '',
+    );
     expect(campo()).toHaveAttribute('aria-invalid', String(fuera));
   });
 
@@ -247,15 +264,18 @@ describe('CampoDeHandicap', () => {
     expect(alCambiar).toHaveBeenLastCalledWith(sale);
   });
 
-  it.each(['1a', '1,2,3', '1,55', '1 5', '123', '1-'])('C18: «%s» no se escribe', (escrito) => {
-    const alCambiar = vi.fn();
-    render(<Controlado inicial="2" alCambiar={alCambiar} />);
+  it.each(['1a', '1,2,3', '1,55', '1 5', '123', '1-'])(
+    'C18: «%s» no se escribe',
+    (escrito) => {
+      const alCambiar = vi.fn();
+      render(<Controlado inicial="2" alCambiar={alCambiar} />);
 
-    fireEvent.change(campo(), { target: { value: escrito } });
+      fireEvent.change(campo(), { target: { value: escrito } });
 
-    expect(alCambiar).not.toHaveBeenCalled();
-    expect(campo()).toHaveValue('2');
-  });
+      expect(alCambiar).not.toHaveBeenCalled();
+      expect(campo()).toHaveValue('2');
+    },
+  );
 
   it.each([
     ['12,', '12'],
@@ -291,7 +311,11 @@ describe('CampoDeHandicap', () => {
   });
 
   it('C21: fuera de rango, el formulario no es válido', () => {
-    render(<form><Controlado /></form>);
+    render(
+      <form>
+        <Controlado />
+      </form>,
+    );
 
     fireEvent.change(campo(), { target: { value: '60' } });
 
@@ -302,7 +326,15 @@ describe('CampoDeHandicap', () => {
 
   it('C22: aunque le pasen `ref` o `type`, sigue de texto y con su validez', () => {
     const otraRef = { current: null };
-    render(<CampoDeHandicap id="hcp" value="60" onChange={vi.fn()} type="number" ref={otraRef} />);
+    render(
+      <CampoDeHandicap
+        id="hcp"
+        value="60"
+        onChange={vi.fn()}
+        type="number"
+        ref={otraRef}
+      />,
+    );
 
     expect(campo()).toHaveAttribute('type', 'text');
     expect(campo().validationMessage).toBe('handicapField.outOfRange');
@@ -311,7 +343,9 @@ describe('CampoDeHandicap', () => {
 
   it('C22b: con una `ref` de función, también le llega', () => {
     const otraRef = vi.fn();
-    render(<CampoDeHandicap id="hcp" value="2" onChange={vi.fn()} ref={otraRef} />);
+    render(
+      <CampoDeHandicap id="hcp" value="2" onChange={vi.fn()} ref={otraRef} />,
+    );
 
     expect(otraRef).toHaveBeenCalledWith(campo());
   });
@@ -341,19 +375,26 @@ describe('CampoDeHandicap', () => {
     expect(en.handicapField.plus).toBe('Plus handicap');
   });
 
-  it.each([[null], [undefined]])('C14: sin hándicap (%p), el campo vacío y sin «+»', (valor) => {
-    const { onChange } = pintar(valor);
+  it.each([[null], [undefined]])(
+    'C14: sin hándicap (%p), el campo vacío y sin «+»',
+    (valor) => {
+      const { onChange } = pintar(valor);
 
-    expect(campo()).toHaveValue('');
-    expect(mas()).toHaveAttribute('aria-pressed', 'false');
-    // Y el «+» se queda esperando al número, sin inventarse uno
-    fireEvent.click(mas());
-    expect(onChange).not.toHaveBeenCalled();
-    expect(mas()).toHaveAttribute('aria-pressed', 'true');
-  });
+      expect(campo()).toHaveValue('');
+      expect(mas()).toHaveAttribute('aria-pressed', 'false');
+      // Y el «+» se queda esperando al número, sin inventarse uno
+      fireEvent.click(mas());
+      expect(onChange).not.toHaveBeenCalled();
+      expect(mas()).toHaveAttribute('aria-pressed', 'true');
+    },
+  );
 
   it('C13: lo demás va al campo', () => {
-    pintar('', { placeholder: 'tu hándicap', name: 'handicap', required: true });
+    pintar('', {
+      placeholder: 'tu hándicap',
+      name: 'handicap',
+      required: true,
+    });
 
     expect(campo()).toHaveAttribute('id', 'hcp');
     expect(campo()).toHaveAttribute('placeholder', 'tu hándicap');
@@ -365,7 +406,9 @@ describe('CampoDeHandicap', () => {
   // usa lo vacíe por su cuenta; si no, lo siguiente saldría plus sin pedirlo
   it('C15: si quien lo usa lo vacía, el «+» se suelta', () => {
     const onChange = vi.fn();
-    const { rerender } = render(<CampoDeHandicap id="hcp" value="" onChange={onChange} />);
+    const { rerender } = render(
+      <CampoDeHandicap id="hcp" value="" onChange={onChange} />,
+    );
     fireEvent.click(mas());
     rerender(<CampoDeHandicap id="hcp" value="-2" onChange={onChange} />);
 

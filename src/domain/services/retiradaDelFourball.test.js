@@ -1,5 +1,9 @@
 import { describe, it, expect } from 'vitest';
-import { opcionesDeRetirada, cuentaLaBola, aQuienesMarco } from './retiradaDelFourball';
+import {
+  opcionesDeRetirada,
+  cuentaLaBola,
+  aQuienesMarco,
+} from './retiradaDelFourball';
 
 /**
  * Qué puede hacer cada uno con la retirada de un fourball de torneo (25 oct
@@ -45,14 +49,24 @@ const vista = (extra = {}) => ({
 });
 
 describe('opcionesDeRetirada', () => {
-  it.each(['IN_PROGRESS', 'SCHEDULED'])('F2: en un fourball %s, retirarme y retirar a mi pareja', (estado) => {
-    const o = opcionesDeRetirada(vista({ matchStatus: estado }), A1);
-    expect(o).toMatchObject({ retirarme: true, retirarPareja: true, volver: false, deshacerPareja: false });
-    expect(o.pareja).toEqual({ userId: A2, userName: 'Bea' });
-  });
+  it.each(['IN_PROGRESS', 'SCHEDULED'])(
+    'F2: en un fourball %s, retirarme y retirar a mi pareja',
+    (estado) => {
+      const o = opcionesDeRetirada(vista({ matchStatus: estado }), A1);
+      expect(o).toMatchObject({
+        retirarme: true,
+        retirarPareja: true,
+        volver: false,
+        deshacerPareja: false,
+      });
+      expect(o.pareja).toEqual({ userId: A2, userName: 'Bea' });
+    },
+  );
 
   it.each(['SINGLES', 'FOURSOMES'])('F2c: en %s, nada', (formato) => {
-    expect(opcionesDeRetirada(vista({ matchFormat: formato }), A1)).toMatchObject({
+    expect(
+      opcionesDeRetirada(vista({ matchFormat: formato }), A1),
+    ).toMatchObject({
       retirarme: false,
       retirarPareja: false,
       volver: false,
@@ -62,7 +76,9 @@ describe('opcionesDeRetirada', () => {
 
   it('F2d: con una tarjeta entregada, nada', () => {
     const o = opcionesDeRetirada(vista({ scorecardSubmittedBy: [B1] }), A1);
-    expect(o.retirarme || o.retirarPareja || o.volver || o.deshacerPareja).toBe(false);
+    expect(o.retirarme || o.retirarPareja || o.volver || o.deshacerPareja).toBe(
+      false,
+    );
   });
 
   it.each(['COMPLETED', 'CONCEDED', 'WALKOVER'])('F2e: %s, nada', (estado) => {
@@ -72,17 +88,29 @@ describe('opcionesDeRetirada', () => {
 
   it('F3: retirado, solo volver', () => {
     const o = opcionesDeRetirada(vista({ withdrawnPlayerIds: [A1] }), A1);
-    expect(o).toMatchObject({ yoRetirado: true, volver: true, retirarme: false, retirarPareja: false });
+    expect(o).toMatchObject({
+      yoRetirado: true,
+      volver: true,
+      retirarme: false,
+      retirarPareja: false,
+    });
   });
 
   it('F3b: mi pareja retirada, deshacer la suya y no puedo retirarme (sería el último del bando)', () => {
     const o = opcionesDeRetirada(vista({ withdrawnPlayerIds: [A2] }), A1);
-    expect(o).toMatchObject({ deshacerPareja: true, retirarme: false, retirarPareja: false, yoRetirado: false });
+    expect(o).toMatchObject({
+      deshacerPareja: true,
+      retirarme: false,
+      retirarPareja: false,
+      yoRetirado: false,
+    });
   });
 
   it('F3c: quien no juega no ve nada aquí', () => {
     const o = opcionesDeRetirada(vista(), 'organizador');
-    expect(o.retirarme || o.retirarPareja || o.volver || o.deshacerPareja).toBe(false);
+    expect(o.retirarme || o.retirarPareja || o.volver || o.deshacerPareja).toBe(
+      false,
+    );
     expect(o.pareja).toBeNull();
   });
 
@@ -108,9 +136,17 @@ describe('aQuienesMarco', () => {
 
 describe('cuentaLaBola', () => {
   it('F6: la bola del retirado sin validar no cuenta; validada, o de quien juega, sí', () => {
-    expect(cuentaLaBola({ userId: A1, validationStatus: 'pending' }, [A1])).toBe(false);
-    expect(cuentaLaBola({ userId: A1, validationStatus: 'match' }, [A1])).toBe(true);
-    expect(cuentaLaBola({ userId: A2, validationStatus: 'pending' }, [A1])).toBe(true);
-    expect(cuentaLaBola({ userId: A1, validationStatus: 'pending' }, undefined)).toBe(true);
+    expect(
+      cuentaLaBola({ userId: A1, validationStatus: 'pending' }, [A1]),
+    ).toBe(false);
+    expect(cuentaLaBola({ userId: A1, validationStatus: 'match' }, [A1])).toBe(
+      true,
+    );
+    expect(
+      cuentaLaBola({ userId: A2, validationStatus: 'pending' }, [A1]),
+    ).toBe(true);
+    expect(
+      cuentaLaBola({ userId: A1, validationStatus: 'pending' }, undefined),
+    ).toBe(true);
   });
 });

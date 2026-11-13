@@ -1,5 +1,8 @@
 import { useEffect } from 'react';
-import { sendPendingHoleReportsUseCase, sendPendingHoleSamplesUseCase } from '../composition';
+import {
+  sendPendingHoleReportsUseCase,
+  sendPendingHoleSamplesUseCase,
+} from '../composition';
 
 // Si queda algo en la cola con la aplicación abierta (el wifi de un club tras
 // su portal, un tope de peticiones), se reintenta así, como la cola de golpes,
@@ -35,7 +38,9 @@ export const useEnvioDeMuestras = ({ activo, userId = null }) => {
       globalThis.clearTimeout(reintento);
       reintento = null;
       const sigue = () => vigente;
-      const deReportes = sendPendingHoleReportsUseCase.execute(userId, { sigue }).catch(() => ({ pendientes: 0 }));
+      const deReportes = sendPendingHoleReportsUseCase
+        .execute(userId, { sigue })
+        .catch(() => ({ pendientes: 0 }));
       // Un fallo de las muestras tampoco frena los reportes: sus pendientes
       // arman el reintento igual (revisor, 18 oct)
       sendPendingHoleSamplesUseCase
@@ -43,7 +48,10 @@ export const useEnvioDeMuestras = ({ activo, userId = null }) => {
         .catch(() => ({ enviadas: 0, descartadas: 0, pendientes: 0 }))
         .then(async ({ enviadas, descartadas, pendientes: deMuestras }) => {
           if (!vigente) return;
-          if (enviadas || descartadas) globalThis.dispatchEvent(new globalThis.CustomEvent(MUESTRAS_CAMBIADAS));
+          if (enviadas || descartadas)
+            globalThis.dispatchEvent(
+              new globalThis.CustomEvent(MUESTRAS_CAMBIADAS),
+            );
           const pendientes = deMuestras + (await deReportes).pendientes;
           if (!vigente) return;
           if (!pendientes) {

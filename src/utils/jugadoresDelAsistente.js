@@ -9,7 +9,14 @@ import { idAleatorio } from './idAleatorio';
  * `profileHandicap` es el del perfil: si el hándicap no se cambia, no viaja
  * como override.
  */
-export const jugadorRegistrado = ({ userId, name, handicap = null, team = null, color = null, teeGender = null }) => ({
+export const jugadorRegistrado = ({
+  userId,
+  name,
+  handicap = null,
+  team = null,
+  color = null,
+  teeGender = null,
+}) => ({
   participantId: userId,
   userId,
   name,
@@ -22,7 +29,14 @@ export const jugadorRegistrado = ({ userId, name, handicap = null, team = null, 
 });
 
 /** Sin cuenta: un id solo del borrador, que no viaja. */
-export const jugadorInvitado = ({ firstName, lastName, handicap = null, team = null, color = null, teeGender = null }) => ({
+export const jugadorInvitado = ({
+  firstName,
+  lastName,
+  handicap = null,
+  team = null,
+  color = null,
+  teeGender = null,
+}) => ({
   participantId: `invitado-${idAleatorio()}`,
   userId: null,
   name: `${firstName} ${lastName}`,

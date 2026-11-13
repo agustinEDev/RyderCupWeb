@@ -25,7 +25,9 @@ describe('CreateCompetitionWithGolfCoursesUseCase', () => {
       addGolfCourse: vi.fn(),
     };
 
-    useCase = new CreateCompetitionWithGolfCoursesUseCase({ competitionRepository });
+    useCase = new CreateCompetitionWithGolfCoursesUseCase({
+      competitionRepository,
+    });
   });
 
   it('creates the competition and attaches every golf course when all succeed', async () => {
@@ -38,8 +40,16 @@ describe('CreateCompetitionWithGolfCoursesUseCase', () => {
     const result = await useCase.execute(competitionData, golfCourses);
 
     expect(competitionRepository.save).toHaveBeenCalledWith(competitionData);
-    expect(competitionRepository.addGolfCourse).toHaveBeenNthCalledWith(1, 'comp-123', 'gc-1');
-    expect(competitionRepository.addGolfCourse).toHaveBeenNthCalledWith(2, 'comp-123', 'gc-2');
+    expect(competitionRepository.addGolfCourse).toHaveBeenNthCalledWith(
+      1,
+      'comp-123',
+      'gc-1',
+    );
+    expect(competitionRepository.addGolfCourse).toHaveBeenNthCalledWith(
+      2,
+      'comp-123',
+      'gc-2',
+    );
     expect(result).toEqual({
       competition: { id: 'comp-123', name: 'Ryder Cup Test' },
       successCount: 2,
@@ -78,7 +88,9 @@ describe('CreateCompetitionWithGolfCoursesUseCase', () => {
   });
 
   it('still creates the competition even if every course fails to attach', async () => {
-    competitionRepository.addGolfCourse.mockRejectedValue(new Error('Golf course not approved'));
+    competitionRepository.addGolfCourse.mockRejectedValue(
+      new Error('Golf course not approved'),
+    );
     const golfCourses = [{ id: 'gc-1', name: 'Valderrama' }];
 
     const result = await useCase.execute(competitionData, golfCourses);

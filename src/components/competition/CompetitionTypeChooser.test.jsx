@@ -5,7 +5,8 @@ vi.mock('react-i18next', () => ({
   useTranslation: () => ({ t: (clave) => clave, i18n: { language: 'es' } }),
 }));
 
-const CompetitionTypeChooser = (await import('./CompetitionTypeChooser')).default;
+const CompetitionTypeChooser = (await import('./CompetitionTypeChooser'))
+  .default;
 
 /**
  * LA TABLA de la FE #639 — la competición se elige por tipo antes de rellenar
@@ -39,7 +40,8 @@ describe('CompetitionTypeChooser', () => {
     { id: 'STABLEFORD', icono: () => null, disponible: false },
     { id: 'MEDAL', icono: () => null, disponible: false },
   ];
-  const pintaConProximos = () => render(<CompetitionTypeChooser onSelect={alElegir} tipos={PROXIMO} />);
+  const pintaConProximos = () =>
+    render(<CompetitionTypeChooser onSelect={alElegir} tipos={PROXIMO} />);
 
   it('1: enseña los tres tipos, no solo el que funciona', () => {
     pinta();
@@ -123,7 +125,9 @@ describe('CompetitionTypeChooser', () => {
 
     expect(screen.getByText('create.type.RYDER_CUP.title')).toBeInTheDocument();
     expect(screen.getByText('create.type.RYDER_CUP.blurb')).toBeInTheDocument();
-    expect(screen.getByText('create.type.STABLEFORD.blurb')).toBeInTheDocument();
+    expect(
+      screen.getByText('create.type.STABLEFORD.blurb'),
+    ).toBeInTheDocument();
     expect(screen.getByText('create.type.MEDAL.blurb')).toBeInTheDocument();
   });
 
@@ -140,8 +144,14 @@ describe('CompetitionTypeChooser', () => {
   it('8: el que se puede elegir está en el recorrido del tabulador', () => {
     pinta();
 
-    expect(screen.getByTestId('tipo-RYDER_CUP')).not.toHaveAttribute('tabindex', '-1');
-    expect(screen.getByTestId('tipo-RYDER_CUP')).not.toHaveAttribute('aria-disabled', 'true');
+    expect(screen.getByTestId('tipo-RYDER_CUP')).not.toHaveAttribute(
+      'tabindex',
+      '-1',
+    );
+    expect(screen.getByTestId('tipo-RYDER_CUP')).not.toHaveAttribute(
+      'aria-disabled',
+      'true',
+    );
   });
 });
 

@@ -37,11 +37,18 @@ class AdminUpdateCompetitionUseCase {
     if (fields.name !== undefined && fields.name.trim().length < 3) {
       throw new Error('Competition name must be at least 3 characters');
     }
-    if (fields.start_date && fields.end_date && new Date(fields.end_date) < new Date(fields.start_date)) {
+    if (
+      fields.start_date &&
+      fields.end_date &&
+      new Date(fields.end_date) < new Date(fields.start_date)
+    ) {
       throw new Error('End date must be on or after start date');
     }
 
-    return await this.competitionRepository.updateCompetition(competitionId, fields);
+    return await this.competitionRepository.updateCompetition(
+      competitionId,
+      fields,
+    );
   }
 }
 

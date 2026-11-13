@@ -1,6 +1,18 @@
-import { getActiveSpan, getClient, getCurrentScope, getRootSpan, spanToJSON, wrapCreateBrowserRouterV7 } from '@sentry/react';
+import {
+  getActiveSpan,
+  getClient,
+  getCurrentScope,
+  getRootSpan,
+  spanToJSON,
+  wrapCreateBrowserRouterV7,
+} from '@sentry/react';
 import { matchRoutes } from 'react-router';
-import { alRegistrarElRouter, marcaInstrumentado, routerRegistrado, yaInstrumentado } from './routerParaSentry';
+import {
+  alRegistrarElRouter,
+  marcaInstrumentado,
+  routerRegistrado,
+  yaInstrumentado,
+} from './routerParaSentry';
 
 /**
  * El seguimiento de navegaciones de Sentry sobre el router de datos (FE #647).
@@ -42,7 +54,9 @@ const nombreDeLaRuta = (rutas, pathname) => {
   let nombre = '';
   for (const { route } of matchRoutes(rutas, pathname) ?? []) {
     if (!route.path) continue;
-    nombre = route.path.startsWith('/') ? route.path : `${nombre.replace(/\/$/, '')}/${route.path}`;
+    nombre = route.path.startsWith('/')
+      ? route.path
+      : `${nombre.replace(/\/$/, '')}/${route.path}`;
   }
   return nombre || null;
 };
@@ -54,7 +68,8 @@ const nombrarLaCarga = (router, rutas, { aunqueTengaRuta = false } = {}) => {
   const carga = getRootSpan(activa);
   const datos = spanToJSON(carga);
   const op = datos.op ?? datos.attributes?.['sentry.op'];
-  const origen = datos.data?.[ORIGEN_DEL_NOMBRE] ?? datos.attributes?.[ORIGEN_DEL_NOMBRE];
+  const origen =
+    datos.data?.[ORIGEN_DEL_NOMBRE] ?? datos.attributes?.[ORIGEN_DEL_NOMBRE];
   if (op !== 'pageload' || (origen === 'route' && !aunqueTengaRuta)) return;
   const nombre = nombreDeLaRuta(rutas, router.state.location.pathname);
   if (!nombre) return;
@@ -92,7 +107,10 @@ const intentar = () => {
   sinRomper(() => nombrarLaCarga(router, rutas));
   // Una redirección (replace) con la carga aún abierta: Sentry no la sigue
   router.subscribe((estado) => {
-    if (estado.historyAction === 'REPLACE' && estado.navigation.state === 'idle') {
+    if (
+      estado.historyAction === 'REPLACE' &&
+      estado.navigation.state === 'idle'
+    ) {
       sinRomper(() => nombrarLaCarga(router, rutas, { aunqueTengaRuta: true }));
     }
   });

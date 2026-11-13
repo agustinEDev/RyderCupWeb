@@ -6,7 +6,8 @@ import { nombreDeLaBarra } from './nombreDeLaBarra';
  * escrito en cinco sitios (la etiqueta, los botones de «Tu barra», el panel,
  * la ficha del campo y la tarjeta de la partida).
  */
-const t = (clave, { defaultValue }) => (clave === 'form.teeColors.YELLOW' ? 'Amarillas' : defaultValue);
+const t = (clave, { defaultValue }) =>
+  clave === 'form.teeColors.YELLOW' ? 'Amarillas' : defaultValue;
 
 describe('nombreDeLaBarra', () => {
   it('el color traducido', () => {
@@ -18,7 +19,9 @@ describe('nombreDeLaBarra', () => {
   });
 
   it('el nombre propio de la barra manda sobre el color', () => {
-    expect(nombreDeLaBarra(t, { color: 'YELLOW', identifier: 'Campeonato' })).toBe('Campeonato');
+    expect(
+      nombreDeLaBarra(t, { color: 'YELLOW', identifier: 'Campeonato' }),
+    ).toBe('Campeonato');
   });
 
   it.each([
@@ -31,10 +34,18 @@ describe('nombreDeLaBarra', () => {
   });
 
   it('el nombre propio también lleva su género: «Campeonato (M)» (revisor)', () => {
-    expect(nombreDeLaBarra(t, { color: 'YELLOW', identifier: 'Campeonato', gender: 'MALE' })).toBe('Campeonato (M)');
+    expect(
+      nombreDeLaBarra(t, {
+        color: 'YELLOW',
+        identifier: 'Campeonato',
+        gender: 'MALE',
+      }),
+    ).toBe('Campeonato (M)');
   });
 
   it('un género que no es MALE ni FEMALE no añade nada (revisor)', () => {
-    expect(nombreDeLaBarra(t, { color: 'YELLOW', gender: 'toString' })).toBe('Amarillas');
+    expect(nombreDeLaBarra(t, { color: 'YELLOW', gender: 'toString' })).toBe(
+      'Amarillas',
+    );
   });
 });

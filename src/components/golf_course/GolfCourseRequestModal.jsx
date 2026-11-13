@@ -23,7 +23,7 @@ const GolfCourseRequestModal = ({
   onClose,
   onSuccess,
   countryCode = null,
-  createGolfCourseRequestUseCase
+  createGolfCourseRequestUseCase,
 }) => {
   const { t } = useTranslation('golfCourses');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -38,7 +38,8 @@ const GolfCourseRequestModal = ({
 
     try {
       // Call use case to create golf course request
-      const createdCourse = await createGolfCourseRequestUseCase.execute(formData);
+      const createdCourse =
+        await createGolfCourseRequestUseCase.execute(formData);
 
       // Show success state briefly
       setShowSuccess(true);
@@ -49,10 +50,12 @@ const GolfCourseRequestModal = ({
         onSuccess(createdCourse);
         onClose();
       }, 1500);
-
     } catch (err) {
       console.error('Error creating golf course request:', err);
-      setError(err.message || t('requestModal.errorCreating', 'Error creating golf course request'));
+      setError(
+        err.message ||
+          t('requestModal.errorCreating', 'Error creating golf course request'),
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -85,11 +88,17 @@ const GolfCourseRequestModal = ({
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
           <div>
-            <h2 id="pedir-campo-titulo" className="text-2xl font-bold text-gray-900">
+            <h2
+              id="pedir-campo-titulo"
+              className="text-2xl font-bold text-gray-900"
+            >
               {t('requestModal.title', 'Request New Golf Course')}
             </h2>
             <p className="text-sm text-gray-500 mt-1">
-              {t('requestModal.subtitle', 'Your request will be reviewed by an administrator')}
+              {t(
+                'requestModal.subtitle',
+                'Your request will be reviewed by an administrator',
+              )}
             </p>
           </div>
           {!isSubmitting && !showSuccess && (
@@ -118,7 +127,10 @@ const GolfCourseRequestModal = ({
                   {t('requestModal.successTitle', 'Request Submitted!')}
                 </h3>
                 <p className="text-sm text-green-700">
-                  {t('requestModal.successMessage', 'Your golf course request has been submitted for approval.')}
+                  {t(
+                    'requestModal.successMessage',
+                    'Your golf course request has been submitted for approval.',
+                  )}
                 </p>
               </motion.div>
             </div>
@@ -156,7 +168,10 @@ const GolfCourseRequestModal = ({
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                 <p className="text-sm text-blue-900">
                   <strong>{t('requestModal.infoTitle', 'Important:')}</strong>{' '}
-                  {t('requestModal.infoMessage', 'Your competition will be saved as DRAFT until this golf course is approved. You won\'t be able to activate it until approval.')}
+                  {t(
+                    'requestModal.infoMessage',
+                    "Your competition will be saved as DRAFT until this golf course is approved. You won't be able to activate it until approval.",
+                  )}
                 </p>
               </div>
             </div>

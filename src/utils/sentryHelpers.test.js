@@ -51,7 +51,7 @@ describe('sentryHelpers · el usuario que ve Sentry', () => {
 
   it('U4: la consola no saca el correo ni el nombre (Sentry la recoge como migas)', () => {
     const espias = ['log', 'info', 'warn', 'error', 'debug'].map((m) =>
-      vi.spyOn(console, m).mockImplementation(() => {})
+      vi.spyOn(console, m).mockImplementation(() => {}),
     );
     setUserContext(USUARIO);
     const escrito = JSON.stringify(espias.flatMap((e) => e.mock.calls));

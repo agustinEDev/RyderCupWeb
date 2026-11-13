@@ -1,7 +1,10 @@
 import { useEffect } from 'react';
 import { Navigate, useLocation } from 'react-router';
 import { useAuth } from '../../hooks/useAuth';
-import { anotaLaCuentaDeEstaPestana, estadoParaElLogin } from '../../utils/vueltaTrasEntrar';
+import {
+  anotaLaCuentaDeEstaPestana,
+  estadoParaElLogin,
+} from '../../utils/vueltaTrasEntrar';
 import { debeAceptarLosTerminos } from '../../domain/services/aceptacionDeTerminos';
 import { sePuedeEstarConTerminosPendientes } from '../../utils/rutasPublicas';
 
@@ -32,14 +35,16 @@ const ProtectedRoute = ({ children }) => {
   // Deja de hacer falta cuando la sesion se resuelva una sola vez: FE #489.
   if (loading) {
     return (
-      <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        height: '100vh',
-        fontFamily: 'system-ui, sans-serif',
-        color: '#6b7280'
-      }}>
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          height: '100vh',
+          fontFamily: 'system-ui, sans-serif',
+          color: '#6b7280',
+        }}
+      >
         Loading...
       </div>
     );
@@ -56,7 +61,10 @@ const ProtectedRoute = ({ children }) => {
   // que la pantalla de destino ni se monta. Las rutas donde se puede estar sin
   // aceptar son las de `RUTAS_CON_TERMINOS_PENDIENTES`, la misma lista que usa
   // la redirección tras un 403
-  if (debeAceptarLosTerminos(user) && !sePuedeEstarConTerminosPendientes(location.pathname)) {
+  if (
+    debeAceptarLosTerminos(user) &&
+    !sePuedeEstarConTerminosPendientes(location.pathname)
+  ) {
     return <Navigate to="/accept-terms" state={{ from: location }} replace />;
   }
 

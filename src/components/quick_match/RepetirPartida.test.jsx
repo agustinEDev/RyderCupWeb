@@ -41,14 +41,24 @@ vi.mock('../../composition', () => ({
 }));
 
 const mockToastError = vi.fn();
-vi.mock('../../utils/toast', () => ({ default: { error: (...a) => mockToastError(...a) } }));
+vi.mock('../../utils/toast', () => ({
+  default: { error: (...a) => mockToastError(...a) },
+}));
 
 // El asistente, de mentira: enseña con qué borrador se abrió
 vi.mock('./CreateQuickMatchModal', () => ({
   default: ({ borrador, onStarted, onClose }) => (
-    <div data-testid="asistente" data-paso={borrador.paso} data-avisos={JSON.stringify(borrador.avisos)}>
-      <button type="button" onClick={() => onStarted('qm-nueva')}>empezar</button>
-      <button type="button" onClick={onClose}>cerrar</button>
+    <div
+      data-testid="asistente"
+      data-paso={borrador.paso}
+      data-avisos={JSON.stringify(borrador.avisos)}
+    >
+      <button type="button" onClick={() => onStarted('qm-nueva')}>
+        empezar
+      </button>
+      <button type="button" onClick={onClose}>
+        cerrar
+      </button>
     </div>
   ),
 }));
@@ -63,12 +73,30 @@ const PARTIDA = {
   allowancePercentage: 100,
   playMode: 'HANDICAP',
   participants: [
-    { participantId: 'u-yo', userId: 'u-yo', name: 'Yo', isGuest: false, color: 'YELLOW', teeGender: 'MALE' },
-    { participantId: 'u-ana', userId: 'u-ana', name: 'Ana', isGuest: false, color: 'YELLOW', teeGender: 'MALE' },
+    {
+      participantId: 'u-yo',
+      userId: 'u-yo',
+      name: 'Yo',
+      isGuest: false,
+      color: 'YELLOW',
+      teeGender: 'MALE',
+    },
+    {
+      participantId: 'u-ana',
+      userId: 'u-ana',
+      name: 'Ana',
+      isGuest: false,
+      color: 'YELLOW',
+      teeGender: 'MALE',
+    },
   ],
   scorerIds: ['u-yo'],
 };
-const CAMPO = { id: 'gc-1', tees: [{ color: 'YELLOW', gender: 'MALE' }], isApproved: () => true };
+const CAMPO = {
+  id: 'gc-1',
+  tees: [{ color: 'YELLOW', gender: 'MALE' }],
+  isApproved: () => true,
+};
 const sinRed = () => new TypeError('Failed to fetch');
 
 const pinta = (partida = PARTIDA) =>
@@ -85,17 +113,20 @@ const pinta = (partida = PARTIDA) =>
         />
         <Route path="/quick-matches/:id/scoring" element={<p>anotando</p>} />
       </Routes>
-    </MemoryRouter>
+    </MemoryRouter>,
   );
 
-const boton = () => screen.getByRole('button', { name: 'create.repetir.botonDe' });
+const boton = () =>
+  screen.getByRole('button', { name: 'create.repetir.botonDe' });
 
 describe('RepetirPartida', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockGetGolfCourse.mockResolvedValue(CAMPO);
     mockListFriends.mockResolvedValue({
-      friendships: [{ otherUserId: 'u-ana', otherUserName: 'Ana', otherUserHandicap: 18 }],
+      friendships: [
+        { otherUserId: 'u-ana', otherUserName: 'Ana', otherUserHandicap: 18 },
+      ],
       totalCount: 1,
     });
   });
@@ -110,13 +141,17 @@ describe('RepetirPartida', () => {
   });
 
   it('R8: un campo que ya no se puede leer abre el paso 1 con su aviso', async () => {
-    mockGetGolfCourse.mockRejectedValue(Object.assign(new Error('Not found'), { status: 404 }));
+    mockGetGolfCourse.mockRejectedValue(
+      Object.assign(new Error('Not found'), { status: 404 }),
+    );
     pinta();
     fireEvent.click(boton());
 
     const asistente = await screen.findByTestId('asistente');
     expect(asistente.dataset.paso).toBe('1');
-    expect(JSON.parse(asistente.dataset.avisos)).toEqual([{ tipo: 'campo', paso: 1 }]);
+    expect(JSON.parse(asistente.dataset.avisos)).toEqual([
+      { tipo: 'campo', paso: 1 },
+    ]);
   });
 
   it('R12: al empezar la nueva, se va a anotarla', async () => {
@@ -130,15 +165,20 @@ describe('RepetirPartida', () => {
   it.each([
     ['el campo', () => mockGetGolfCourse.mockRejectedValue(sinRed())],
     ['los amigos', () => mockListFriends.mockRejectedValue(sinRed())],
-  ])('R14: sin red al pedir %s, el aviso de siempre y no se abre nada', async (_, falla) => {
-    falla();
-    pinta();
-    fireEvent.click(boton());
+  ])(
+    'R14: sin red al pedir %s, el aviso de siempre y no se abre nada',
+    async (_, falla) => {
+      falla();
+      pinta();
+      fireEvent.click(boton());
 
-    await waitFor(() => expect(mockToastError).toHaveBeenCalledWith('sinConexion.mensaje'));
-    expect(screen.queryByTestId('asistente')).not.toBeInTheDocument();
-    expect(boton()).not.toBeDisabled();
-  });
+      await waitFor(() =>
+        expect(mockToastError).toHaveBeenCalledWith('sinConexion.mensaje'),
+      );
+      expect(screen.queryByTestId('asistente')).not.toBeInTheDocument();
+      expect(boton()).not.toBeDisabled();
+    },
+  );
 
   it('D1: dos toques seguidos preparan una sola vez', async () => {
     pinta();
@@ -165,7 +205,9 @@ describe('RepetirPartida', () => {
 
   it('D4: sin nombre, solo «Repetir partida»', () => {
     pinta({ ...PARTIDA, name: null });
-    expect(screen.getByRole('button', { name: 'create.repetir.boton' })).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: 'create.repetir.boton' }),
+    ).toBeInTheDocument();
   });
 
   it('D5: con solo el id (desde Inicio), pide la partida antes', async () => {
@@ -187,11 +229,15 @@ describe('RepetirPartida', () => {
   });
 
   it('D6: un 500 al leer el campo es el aviso genérico, sin abrir nada', async () => {
-    mockGetGolfCourse.mockRejectedValue(Object.assign(new Error('boom'), { status: 500 }));
+    mockGetGolfCourse.mockRejectedValue(
+      Object.assign(new Error('boom'), { status: 500 }),
+    );
     pinta();
     fireEvent.click(boton());
 
-    await waitFor(() => expect(mockToastError).toHaveBeenCalledWith('create.errors.generic'));
+    await waitFor(() =>
+      expect(mockToastError).toHaveBeenCalledWith('create.errors.generic'),
+    );
     expect(screen.queryByTestId('asistente')).not.toBeInTheDocument();
   });
 });

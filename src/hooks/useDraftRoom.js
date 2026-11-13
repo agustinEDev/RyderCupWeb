@@ -1,5 +1,15 @@
-import { useState, useEffect, useCallback, useRef, useSyncExternalStore } from 'react';
-import { getDraftUseCase, startDraftUseCase, makeDraftPickUseCase } from '../composition';
+import {
+  useState,
+  useEffect,
+  useCallback,
+  useRef,
+  useSyncExternalStore,
+} from 'react';
+import {
+  getDraftUseCase,
+  startDraftUseCase,
+  makeDraftPickUseCase,
+} from '../composition';
 import { useCargaCancelableEffect } from './useCargaCancelableEffect';
 
 /**
@@ -27,7 +37,10 @@ import { useCargaCancelableEffect } from './useCargaCancelableEffect';
 // del producto van a 10 s, 30 s y 60 s; aquí se baja a 5 porque lo que se
 // espera es la elección del rival, y el contador no depende de esto
 // Los avisos que cuentan lo que pasó: un refresco no los borra
-const AVISOS_QUE_SE_QUEDAN = new Set(['turnoPerdido', 'turnoPerdidoYTerminado']);
+const AVISOS_QUE_SE_QUEDAN = new Set([
+  'turnoPerdido',
+  'turnoPerdidoYTerminado',
+]);
 const INTERVALO_MS = 5000;
 
 /**
@@ -84,7 +97,12 @@ const sinReloj = () => () => {};
  * @returns {Object} sala, cargando, cargandoSala, error, segundosRestantes, esMiTurno y las acciones
  */
 // Lo que se sabe de la sala, siempre con la competición de la que es
-const SIN_LECTURA = { competitionId: null, sala: null, error: null, vista: false };
+const SIN_LECTURA = {
+  competitionId: null,
+  sala: null,
+  error: null,
+  vista: false,
+};
 
 const useDraftRoom = (competitionId, userId) => {
   // La sala, el error y si se pudo ver alguna vez, con su competición: al
@@ -126,21 +144,24 @@ const useDraftRoom = (competitionId, userId) => {
   const escribir = useCallback((id, cambios) => {
     if (id !== activaRef.current) return;
     setLectura((antes) => ({
-      ...(antes.competitionId === id ? antes : { ...SIN_LECTURA, competitionId: id }),
+      ...(antes.competitionId === id
+        ? antes
+        : { ...SIN_LECTURA, competitionId: id }),
       ...cambios,
     }));
   }, []);
 
   const ponerElReloj = useCallback(
     (nueva) => {
-      if (nueva?.serverTime) reloj.fijarDesfase(Date.parse(nueva.serverTime) - Date.now());
+      if (nueva?.serverTime)
+        reloj.fijarDesfase(Date.parse(nueva.serverTime) - Date.now());
       const turno = `${nueva?.status}|${nueva?.turnStartedAt}|${nueva?.secondsPerTurn}`;
       if (turno !== turnoRef.current) {
         turnoRef.current = turno;
         reloj.ponerEnHora();
       }
     },
-    [reloj]
+    [reloj],
   );
 
   // La sala que deja una elección o una apertura: manda sobre cualquier
@@ -154,7 +175,7 @@ const useDraftRoom = (competitionId, userId) => {
       ponerElReloj(nueva);
       escribir(id, { sala: nueva, vista: true, error: null });
     },
-    [ponerElReloj, escribir]
+    [ponerElReloj, escribir],
   );
 
   // La carga de la sala, y cada refresco es un `recargar` silencioso: el que
@@ -179,12 +200,16 @@ const useDraftRoom = (competitionId, userId) => {
         aplicadaRef.current = nueva;
         ponerElReloj(nueva);
         setLectura((antes) => {
-          const errorAntes = antes.competitionId === competitionId ? antes.error : null;
+          const errorAntes =
+            antes.competitionId === competitionId ? antes.error : null;
           return {
             competitionId,
             sala: nueva,
             vista: true,
-            error: !silenciosa || !AVISOS_QUE_SE_QUEDAN.has(errorAntes) ? null : errorAntes,
+            error:
+              !silenciosa || !AVISOS_QUE_SE_QUEDAN.has(errorAntes)
+                ? null
+                : errorAntes,
           };
         });
       },
@@ -197,10 +222,10 @@ const useDraftRoom = (competitionId, userId) => {
         setLectura((antes) =>
           antes.competitionId === competitionId
             ? { ...antes, error: e.message }
-            : { competitionId, sala: null, vista: false, error: e.message }
+            : { competitionId, sala: null, vista: false, error: e.message },
         );
       },
-    }
+    },
   );
   const cargando = !primeraTerminada;
   // Ya se vio una sala, pero la de ESTA competición aún no ha llegado: la
@@ -212,7 +237,8 @@ const useDraftRoom = (competitionId, userId) => {
   // lanzado» con su turno corriendo en el servidor. Si la PRIMERA carga falló,
   // no: una sala que no se puede ver no se pide cada cinco segundos. Un fallo
   // después (un 429, un corte) no para la espera
-  const esperandoElSorteo = !cargando && cargada && lectura.vista && sala === null;
+  const esperandoElSorteo =
+    !cargando && cargada && lectura.vista && sala === null;
   useEffect(() => {
     if (sala?.status !== 'IN_PROGRESS' && !esperandoElSorteo) return undefined;
     const id = setInterval(() => recargar({ silenciosa: true }), INTERVALO_MS);
@@ -223,10 +249,18 @@ const useDraftRoom = (competitionId, userId) => {
   // derivado al pintar de la sala y de la hora del reloj del servidor. Una
   // fecha que no se entiende da NaN, y de ahí salía un «NaN:NaN» en el sitio
   // del minuto: mejor sin contador que con uno imposible
-  const empezo = sala?.turnStartedAt ? Date.parse(sala.turnStartedAt) : Number.NaN;
+  const empezo = sala?.turnStartedAt
+    ? Date.parse(sala.turnStartedAt)
+    : Number.NaN;
   const porTurno = Number(sala?.secondsPerTurn);
-  const hayContador = sala?.status === 'IN_PROGRESS' && !Number.isNaN(empezo) && Number.isFinite(porTurno);
-  const ahora = useSyncExternalStore(hayContador ? reloj.suscribir : sinReloj, reloj.leer);
+  const hayContador =
+    sala?.status === 'IN_PROGRESS' &&
+    !Number.isNaN(empezo) &&
+    Number.isFinite(porTurno);
+  const ahora = useSyncExternalStore(
+    hayContador ? reloj.suscribir : sinReloj,
+    reloj.leer,
+  );
   const segundosRestantes = hayContador
     ? Math.max(0, Math.round(porTurno - (ahora - empezo) / 1000))
     : null;
@@ -275,7 +309,7 @@ const useDraftRoom = (competitionId, userId) => {
         }
       }
     },
-    [competitionId, escribirSala, escribir, recargar]
+    [competitionId, escribirSala, escribir, recargar],
   );
 
   const capitanDeTurno =

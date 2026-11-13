@@ -1,5 +1,12 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, fireEvent, waitFor, within, act } from '@testing-library/react';
+import {
+  render,
+  screen,
+  fireEvent,
+  waitFor,
+  within,
+  act,
+} from '@testing-library/react';
 import { MemoryRouter, Routes, Route, useNavigate } from 'react-router';
 
 /**
@@ -22,7 +29,14 @@ const traduccion = { i18n: { language: 'es' }, t };
 vi.mock('react-i18next', () => ({ useTranslation: () => traduccion }));
 
 vi.mock('framer-motion', () => ({
-  motion: new Proxy({}, { get: () => ({ children, ...props }) => <div {...props}>{children}</div> }),
+  motion: new Proxy(
+    {},
+    {
+      get:
+        () =>
+        ({ children, ...props }) => <div {...props}>{children}</div>,
+    },
+  ),
 }));
 const mockCabecera = vi.fn();
 vi.mock('../components/layout/HeaderAuth', () => ({
@@ -96,7 +110,7 @@ const pintar = () =>
       <Routes>
         <Route path="/competitions/:id/draft" element={<DraftRoomPage />} />
       </Routes>
-    </MemoryRouter>
+    </MemoryRouter>,
   );
 
 describe('DraftRoomPage · la sala en directo (FE #653)', () => {
@@ -142,17 +156,29 @@ describe('DraftRoomPage · la sala en directo (FE #653)', () => {
         sala: {
           ...SALA,
           teamA: ['ana', 'carla'],
-          picks: [{ userId: 'carla', name: 'Carla Cruz', team: 'A', order: 1, automatic: false }],
-          availablePlayers: [{ userId: 'dani', name: 'Dani Díaz', handicap: 20 }],
+          picks: [
+            {
+              userId: 'carla',
+              name: 'Carla Cruz',
+              team: 'A',
+              order: 1,
+              automatic: false,
+            },
+          ],
+          availablePlayers: [
+            { userId: 'dani', name: 'Dani Díaz', handicap: 20 },
+          ],
         },
-      })
+      }),
     );
     pintar();
 
     const equipoA = await screen.findByTestId('equipo-A');
     expect(within(equipoA).getByText('Ana Alba')).toBeInTheDocument();
     expect(within(equipoA).getByText('Carla Cruz')).toBeInTheDocument();
-    expect(within(screen.getByTestId('equipo-B')).getByText('Bea Blanco')).toBeInTheDocument();
+    expect(
+      within(screen.getByTestId('equipo-B')).getByText('Bea Blanco'),
+    ).toBeInTheDocument();
   });
 
   it('D5: lo que eligió la aplicación se dice, no se disimula', async () => {
@@ -162,9 +188,17 @@ describe('DraftRoomPage · la sala en directo (FE #653)', () => {
         sala: {
           ...SALA,
           teamA: ['ana', 'carla'],
-          picks: [{ userId: 'carla', name: 'Carla Cruz', team: 'A', order: 1, automatic: true }],
+          picks: [
+            {
+              userId: 'carla',
+              name: 'Carla Cruz',
+              team: 'A',
+              order: 1,
+              automatic: true,
+            },
+          ],
         },
-      })
+      }),
     );
     pintar();
 
@@ -183,17 +217,26 @@ describe('DraftRoomPage · la sala en directo (FE #653)', () => {
           teamA: ['ana', 'carla'],
           availablePlayers: [],
           picks: [
-            { userId: 'carla', name: 'Carla Cruz', team: 'A', order: 1, automatic: false, lastRemaining: true },
+            {
+              userId: 'carla',
+              name: 'Carla Cruz',
+              team: 'A',
+              order: 1,
+              automatic: false,
+              lastRemaining: true,
+            },
           ],
         },
         segundosRestantes: null,
         esMiTurno: false,
-      })
+      }),
     );
     pintar();
 
     const equipoA = await screen.findByTestId('equipo-A');
-    expect(within(equipoA).queryByTestId('automatica-carla')).not.toBeInTheDocument();
+    expect(
+      within(equipoA).queryByTestId('automatica-carla'),
+    ).not.toBeInTheDocument();
   });
 
   /**
@@ -216,12 +259,19 @@ describe('DraftRoomPage · la sala en directo (FE #653)', () => {
             teamA: ['ana', 'carla'],
             availablePlayers: [],
             picks: [
-              { userId: 'carla', name: 'Carla Cruz', team: 'A', order: 1, automatic: false, lastRemaining: true },
+              {
+                userId: 'carla',
+                name: 'Carla Cruz',
+                team: 'A',
+                order: 1,
+                automatic: false,
+                lastRemaining: true,
+              },
             ],
           },
           segundosRestantes: null,
           esMiTurno: false,
-        })
+        }),
       );
 
     afterEach(() => {
@@ -233,7 +283,7 @@ describe('DraftRoomPage · la sala en directo (FE #653)', () => {
       pintar();
 
       expect(await screen.findByTestId('ultimo-incluido')).toHaveTextContent(
-        'draft.lastIncluded_Carla Cruz'
+        'draft.lastIncluded_Carla Cruz',
       );
       expect(screen.queryByText('draft.lastRemaining')).not.toBeInTheDocument();
     });
@@ -253,7 +303,9 @@ describe('DraftRoomPage · la sala en directo (FE #653)', () => {
   });
 
   it('D6: sin sala, el organizador puede lanzar el sorteo', async () => {
-    mockSala.mockReturnValue(estado({ sala: null, segundosRestantes: null, esMiTurno: false }));
+    mockSala.mockReturnValue(
+      estado({ sala: null, segundosRestantes: null, esMiTurno: false }),
+    );
     pintar();
 
     fireEvent.click(await screen.findByTestId('lanzar-sorteo'));
@@ -263,7 +315,9 @@ describe('DraftRoomPage · la sala en directo (FE #653)', () => {
 
   it('D7: y el resto solo espera: no se le ofrece un botón que el servidor rechaza', async () => {
     mockDetalle.mockResolvedValue({ ...COMPETICION, creatorId: 'otro' });
-    mockSala.mockReturnValue(estado({ sala: null, segundosRestantes: null, esMiTurno: false }));
+    mockSala.mockReturnValue(
+      estado({ sala: null, segundosRestantes: null, esMiTurno: false }),
+    );
     pintar();
 
     expect(await screen.findByTestId('sin-sorteo')).toBeInTheDocument();
@@ -273,10 +327,15 @@ describe('DraftRoomPage · la sala en directo (FE #653)', () => {
   it('D8: terminada, lo dice y ya no ofrece elegir', async () => {
     mockSala.mockReturnValue(
       estado({
-        sala: { ...SALA, status: 'COMPLETED', currentTeam: null, availablePlayers: [] },
+        sala: {
+          ...SALA,
+          status: 'COMPLETED',
+          currentTeam: null,
+          availablePlayers: [],
+        },
         segundosRestantes: null,
         esMiTurno: false,
-      })
+      }),
     );
     pintar();
 
@@ -295,26 +354,40 @@ describe('DraftRoomPage · la sala en directo (FE #653)', () => {
     mockSala.mockReturnValue(
       estado({
         error: 'turnoPerdidoYTerminado',
-        sala: { ...SALA, status: 'COMPLETED', currentTeam: null, availablePlayers: [] },
+        sala: {
+          ...SALA,
+          status: 'COMPLETED',
+          currentTeam: null,
+          availablePlayers: [],
+        },
         segundosRestantes: null,
         esMiTurno: false,
-      })
+      }),
     );
     pintar();
 
-    expect(await screen.findByText('draft.turnLostDraftOver')).toBeInTheDocument();
+    expect(
+      await screen.findByText('draft.turnLostDraftOver'),
+    ).toBeInTheDocument();
     expect(screen.queryByText('draft.turnLost')).not.toBeInTheDocument();
-    expect(screen.queryByText('turnoPerdidoYTerminado')).not.toBeInTheDocument();
+    expect(
+      screen.queryByText('turnoPerdidoYTerminado'),
+    ).not.toBeInTheDocument();
   });
 
   it('D9c: el texto lo decide el hook, no el estado de la sala al pintar', async () => {
     mockSala.mockReturnValue(
       estado({
         error: 'turnoPerdido',
-        sala: { ...SALA, status: 'COMPLETED', currentTeam: null, availablePlayers: [] },
+        sala: {
+          ...SALA,
+          status: 'COMPLETED',
+          currentTeam: null,
+          availablePlayers: [],
+        },
         segundosRestantes: null,
         esMiTurno: false,
-      })
+      }),
     );
     pintar();
 
@@ -338,7 +411,9 @@ describe('DraftRoomPage · la sala en directo (FE #653)', () => {
   it('D12: sin contador no se pinta un turno perdido en rojo', async () => {
     // `null <= 10` es cierto: la sala en marcha sin reloj enseñaba «0:00» en
     // rojo de alarma, dando por vencido un turno del que no se sabe nada
-    mockSala.mockReturnValue(estado({ segundosRestantes: null, esMiTurno: false }));
+    mockSala.mockReturnValue(
+      estado({ segundosRestantes: null, esMiTurno: false }),
+    );
     pintar();
 
     const contador = await screen.findByTestId('contador');
@@ -350,7 +425,9 @@ describe('DraftRoomPage · la sala en directo (FE #653)', () => {
     // sin hidratar, el botón salía para cualquiera y el servidor lo rechazaba
     mockDetalle.mockRejectedValue(new Error('Boom'));
     SESION.user = null;
-    mockSala.mockReturnValue(estado({ sala: null, segundosRestantes: null, esMiTurno: false }));
+    mockSala.mockReturnValue(
+      estado({ sala: null, segundosRestantes: null, esMiTurno: false }),
+    );
     try {
       pintar();
 
@@ -366,7 +443,9 @@ describe('DraftRoomPage · la sala en directo (FE #653)', () => {
     // en Sentry como error no controlado además de pintarse en pantalla
     const fallo = new Error('La sala de draft ya estaba abierta');
     mockAbrir.mockRejectedValue(fallo);
-    mockSala.mockReturnValue(estado({ sala: null, segundosRestantes: null, esMiTurno: false }));
+    mockSala.mockReturnValue(
+      estado({ sala: null, segundosRestantes: null, esMiTurno: false }),
+    );
     const sinCapturar = vi.fn();
     globalThis.addEventListener('unhandledrejection', sinCapturar);
     try {
@@ -424,7 +503,9 @@ describe('DraftRoomPage · lo que se lee (FE #710)', () => {
     pintar();
 
     await screen.findByTestId('sala-de-draft');
-    expect(mockCabecera).toHaveBeenLastCalledWith(expect.objectContaining({ user: SESION.user }));
+    expect(mockCabecera).toHaveBeenLastCalledWith(
+      expect.objectContaining({ user: SESION.user }),
+    );
   });
 
   it('DR2: «Por elegir» va por hándicap, y sin él al final', async () => {
@@ -439,7 +520,7 @@ describe('DraftRoomPage · lo que se lee (FE #710)', () => {
             { userId: 'fer', name: 'Fer Fuentes', handicap: 15.4 },
           ],
         },
-      })
+      }),
     );
     pintar();
 
@@ -455,26 +536,47 @@ describe('DraftRoomPage · lo que se lee (FE #710)', () => {
       estado({
         sala: {
           ...SALA,
-          picks: [{ userId: 'carla', name: 'Carla Cruz', team: 'A', lastRemaining: true }],
+          picks: [
+            {
+              userId: 'carla',
+              name: 'Carla Cruz',
+              team: 'A',
+              lastRemaining: true,
+            },
+          ],
         },
-      })
+      }),
     );
     pintar();
 
     const equipo = await screen.findByTestId('equipo-A');
-    expect(within(equipo).getByText('Ana Alba').className).not.toContain('truncate');
-    expect(within(equipo).getByText('Carla Cruz').className).not.toContain('truncate');
+    expect(within(equipo).getByText('Ana Alba').className).not.toContain(
+      'truncate',
+    );
+    expect(within(equipo).getByText('Carla Cruz').className).not.toContain(
+      'truncate',
+    );
   });
 
   it.each([
-    ['DR4: el organizador lee que lo lanza él', 'ana', 'draft.notStartedYouLaunch'],
-    ['DR4b: los demás, que lo lanzará el organizador', 'bea', 'draft.notStarted'],
+    [
+      'DR4: el organizador lee que lo lanza él',
+      'ana',
+      'draft.notStartedYouLaunch',
+    ],
+    [
+      'DR4b: los demás, que lo lanzará el organizador',
+      'bea',
+      'draft.notStarted',
+    ],
   ])('%s', async (_caso, creador, texto) => {
     mockDetalle.mockResolvedValue({ ...COMPETICION, creatorId: creador });
     mockSala.mockReturnValue(estado({ sala: null }));
     pintar();
 
-    await waitFor(() => expect(screen.getByTestId('sin-sorteo')).toHaveTextContent(texto));
+    await waitFor(() =>
+      expect(screen.getByTestId('sin-sorteo')).toHaveTextContent(texto),
+    );
     expect(screen.getByTestId('sin-sorteo').textContent).toBe(texto);
   });
 
@@ -484,10 +586,20 @@ describe('DraftRoomPage · lo que se lee (FE #710)', () => {
     let devolverC1;
     mockDetalle.mockImplementation((id) =>
       id === 'comp-1'
-        ? new Promise((resolve) => { devolverC1 = () => resolve(COMPETICION); })
-        : Promise.resolve({ ...COMPETICION, id: 'comp-2', creatorId: 'otro', team1Name: 'Norte', team2Name: 'Sur' })
+        ? new Promise((resolve) => {
+            devolverC1 = () => resolve(COMPETICION);
+          })
+        : Promise.resolve({
+            ...COMPETICION,
+            id: 'comp-2',
+            creatorId: 'otro',
+            team1Name: 'Norte',
+            team2Name: 'Sur',
+          }),
     );
-    mockSala.mockReturnValue(estado({ sala: null, segundosRestantes: null, esMiTurno: false }));
+    mockSala.mockReturnValue(
+      estado({ sala: null, segundosRestantes: null, esMiTurno: false }),
+    );
     let irA;
     const Navegador = () => {
       irA = useNavigate();
@@ -499,7 +611,7 @@ describe('DraftRoomPage · lo que se lee (FE #710)', () => {
         <Routes>
           <Route path="/competitions/:id/draft" element={<DraftRoomPage />} />
         </Routes>
-      </MemoryRouter>
+      </MemoryRouter>,
     );
     await waitFor(() => expect(devolverC1).toBeTypeOf('function'));
 
@@ -533,21 +645,32 @@ describe('DraftRoomPage · lo que se lee (FE #710)', () => {
         <Routes>
           <Route path="/competitions/:id/draft" element={<DraftRoomPage />} />
         </Routes>
-      </MemoryRouter>
+      </MemoryRouter>,
     );
-    expect(await within(await screen.findByTestId('equipo-A')).findByText('Europa')).toBeInTheDocument();
+    expect(
+      await within(await screen.findByTestId('equipo-A')).findByText('Europa'),
+    ).toBeInTheDocument();
 
     await act(async () => {
       irA('/competitions/comp-2/draft');
     });
 
-    await waitFor(() => expect(within(screen.getByTestId('equipo-A')).getByText('draft.teamA')).toBeInTheDocument());
+    await waitFor(() =>
+      expect(
+        within(screen.getByTestId('equipo-A')).getByText('draft.teamA'),
+      ).toBeInTheDocument(),
+    );
     expect(screen.queryByText('Europa')).not.toBeInTheDocument();
   });
 
   it('T5-8c: mientras llega la sala de la otra competición, una espera del bloque y nada que elegir ni lanzar', async () => {
     mockSala.mockReturnValue(
-      estado({ sala: null, cargandoSala: true, segundosRestantes: null, esMiTurno: false })
+      estado({
+        sala: null,
+        cargandoSala: true,
+        segundosRestantes: null,
+        esMiTurno: false,
+      }),
     );
     pintar();
 
@@ -560,9 +683,11 @@ describe('DraftRoomPage · lo que se lee (FE #710)', () => {
 
   it('T5-8d: con la ficha de c1 ya pintada, la sala de c2 no enseña sus equipos ni su «Lanzar sorteo» mientras llega la suya', async () => {
     mockDetalle.mockImplementation((id) =>
-      id === 'comp-1' ? Promise.resolve(COMPETICION) : new Promise(() => {})
+      id === 'comp-1' ? Promise.resolve(COMPETICION) : new Promise(() => {}),
     );
-    mockSala.mockReturnValue(estado({ sala: null, segundosRestantes: null, esMiTurno: false }));
+    mockSala.mockReturnValue(
+      estado({ sala: null, segundosRestantes: null, esMiTurno: false }),
+    );
     let irA;
     const Navegador = () => {
       irA = useNavigate();
@@ -574,7 +699,7 @@ describe('DraftRoomPage · lo que se lee (FE #710)', () => {
         <Routes>
           <Route path="/competitions/:id/draft" element={<DraftRoomPage />} />
         </Routes>
-      </MemoryRouter>
+      </MemoryRouter>,
     );
     expect(await screen.findByTestId('lanzar-sorteo')).toBeInTheDocument();
 

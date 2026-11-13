@@ -44,7 +44,9 @@ describe('InvitationBadge', () => {
 
   it('A3b: las dos traducciones existen', async () => {
     for (const idioma of ['es', 'en']) {
-      const textos = (await import(`../../i18n/locales/${idioma}/invitations.json`)).default;
+      const textos = (
+        await import(`../../i18n/locales/${idioma}/invitations.json`)
+      ).default;
       expect(textos.status.NO_ROOM, idioma).toBeTruthy();
       expect(textos.creator.enrollmentClosed, idioma).toBeTruthy();
     }
@@ -61,7 +63,9 @@ describe('InvitationBadge · retirada (FE #724)', () => {
 
   it('las dos traducciones existen', async () => {
     for (const idioma of ['es', 'en']) {
-      const textos = (await import(`../../i18n/locales/${idioma}/invitations.json`)).default;
+      const textos = (
+        await import(`../../i18n/locales/${idioma}/invitations.json`)
+      ).default;
       expect(textos.status.CANCELLED, idioma).toBeTruthy();
       expect(textos.actions.withdraw, idioma).toBeTruthy();
       expect(textos.creator.withdrawDialog.title, idioma).toBeTruthy();
@@ -79,14 +83,18 @@ describe('InvitationBadge · retirada (FE #724)', () => {
   // también cuando lo que pasó es que se llenó. Vale para los dos casos
   it('«sin plaza» no da por hecho que se cerrara la inscripción', async () => {
     for (const idioma of ['es', 'en']) {
-      const textos = (await import(`../../i18n/locales/${idioma}/invitations.json`)).default;
+      const textos = (
+        await import(`../../i18n/locales/${idioma}/invitations.json`)
+      ).default;
       expect(textos.errors.noRoom, idioma).not.toMatch(/cerr|clos/i);
     }
   });
 
   it('el freno por hora tiene sus textos con el número, en los dos idiomas', async () => {
     for (const idioma of ['es', 'en']) {
-      const textos = (await import(`../../i18n/locales/${idioma}/invitations.json`)).default;
+      const textos = (
+        await import(`../../i18n/locales/${idioma}/invitations.json`)
+      ).default;
       expect(textos.errors.rateLimited_one, idioma).toContain('{{count}}');
       expect(textos.errors.rateLimited_other, idioma).toContain('{{count}}');
     }

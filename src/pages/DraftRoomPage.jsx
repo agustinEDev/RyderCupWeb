@@ -25,7 +25,8 @@ import { PANTALLA_MENOS_BARRA_INFERIOR } from '../utils/barraInferior';
  * vuelve de quedarse sin cobertura le tiene que quedar claro por qué tiene a
  * ese jugador y no a otro.
  */
-const mmss = (segundos) => `${Math.floor(segundos / 60)}:${String(segundos % 60).padStart(2, '0')}`;
+const mmss = (segundos) =>
+  `${Math.floor(segundos / 60)}:${String(segundos % 60).padStart(2, '0')}`;
 
 // El turno perdido lo cuenta el hook, que sabe cómo quedó la sala al perderlo
 const TURNO_PERDIDO = {
@@ -45,39 +46,58 @@ const DraftRoomPage = () => {
   const competition = ficha.id === id ? ficha.datos : null;
   const [eligiendo, setEligiendo] = useState(null);
 
-  const { sala, cargando, cargandoSala, error, segundosRestantes, esMiTurno, abrirSala, elegir } = useDraftRoom(
-    id,
-    user?.id
-  );
+  const {
+    sala,
+    cargando,
+    cargandoSala,
+    error,
+    segundosRestantes,
+    esMiTurno,
+    abrirSala,
+    elegir,
+  } = useDraftRoom(id, user?.id);
   // Propias y no heredadas: un mensaje de error como «toString» no es un aviso
-  const avisoDeTurno = Object.hasOwn(TURNO_PERDIDO, error ?? '') ? TURNO_PERDIDO[error] : null;
+  const avisoDeTurno = Object.hasOwn(TURNO_PERDIDO, error ?? '')
+    ? TURNO_PERDIDO[error]
+    : null;
 
   // La ficha, solo para los nombres de los equipos y saber quién organiza. No
   // se espera por ella. Si cambia la competición sin salir, la de la anterior
   // que llega tarde ya no se pinta: traía sus equipos y su «Lanzar sorteo».
   // Sin `t` en las dependencias: cambiar de idioma no la vuelve a pedir
-  useCargaCancelableEffect(() => getCompetitionDetailUseCase.execute(id), [id], {
-    alCargar: (datos) => setFicha({ id, datos }),
-    // La sala se pinta igual sin la ficha: solo se pierden los nombres de
-    // los equipos, que caen a «Equipo A» y «Equipo B»
-    alFallar: () => setFicha({ id, datos: null }),
-  });
+  useCargaCancelableEffect(
+    () => getCompetitionDetailUseCase.execute(id),
+    [id],
+    {
+      alCargar: (datos) => setFicha({ id, datos }),
+      // La sala se pinta igual sin la ficha: solo se pierden los nombres de
+      // los equipos, que caen a «Equipo A» y «Equipo B»
+      alFallar: () => setFicha({ id, datos: null }),
+    },
+  );
 
   // Lo que enseñe la ficha, que es lo que la gente ve en el resto de la app.
   // La letra solo cuando NO hay ficha: si la hay, sus nombres nunca faltan
   // —el mapper de competiciones ya rellena los que vengan vacíos—
   const nombreDe = (equipo) =>
-    competition ? (equipo === 'A' ? competition.team1Name : competition.team2Name) : t(`draft.team${equipo}`);
+    competition
+      ? equipo === 'A'
+        ? competition.team1Name
+        : competition.team2Name
+      : t(`draft.team${equipo}`);
 
   const capitanDe = (equipo) =>
     equipo === 'A' ? sala?.teamACaptainName : sala?.teamBCaptainName;
 
-  const elegidosDe = (equipo) => (sala?.picks || []).filter((pick) => pick.team === equipo);
+  const elegidosDe = (equipo) =>
+    (sala?.picks || []).filter((pick) => pick.team === equipo);
 
   // Por hándicap, de menor a mayor, que es como se elige; sin él, al final
   // (#710). El mapper ya lo deja en número o null
   const hcp = (jugador) => jugador.handicap ?? Infinity;
-  const porElegir = [...(sala?.availablePlayers || [])].sort((a, b) => hcp(a) - hcp(b));
+  const porElegir = [...(sala?.availablePlayers || [])].sort(
+    (a, b) => hcp(a) - hcp(b),
+  );
 
   const organiza = Boolean(user?.id) && competition?.creatorId === user.id;
 
@@ -89,7 +109,7 @@ const DraftRoomPage = () => {
         ? 'B'
         : null;
   const ultimoParaMi = (sala?.picks || []).find(
-    (pick) => pick.lastRemaining && pick.team === capitaneo
+    (pick) => pick.lastRemaining && pick.team === capitaneo,
   );
 
   const alElegir = async (playerId) => {
@@ -108,7 +128,11 @@ const DraftRoomPage = () => {
   if (cargandoSala) {
     return (
       <div className={`${PANTALLA_MENOS_BARRA_INFERIOR} bg-gray-50`}>
-        <HeaderAuth user={user} title={t('draft.title')} backTo={`/competitions/${id}`} />
+        <HeaderAuth
+          user={user}
+          title={t('draft.title')}
+          backTo={`/competitions/${id}`}
+        />
         <div className="mx-auto max-w-3xl px-4 py-6">
           <BlockLoader />
         </div>
@@ -120,7 +144,11 @@ const DraftRoomPage = () => {
     <div className={`${PANTALLA_MENOS_BARRA_INFERIOR} bg-gray-50`}>
       {/* Con la sesión: sin ella la cabecera pintaba «?» y sin la insignia
           de administrador (#710) */}
-      <HeaderAuth user={user} title={t('draft.title')} backTo={`/competitions/${id}`} />
+      <HeaderAuth
+        user={user}
+        title={t('draft.title')}
+        backTo={`/competitions/${id}`}
+      />
       <div className="mx-auto max-w-3xl px-4 py-6">
         <button
           type="button"
@@ -135,11 +163,15 @@ const DraftRoomPage = () => {
             contextual, y un segundo encabezado de nivel 1 rompe la jerarquía
             para un lector de pantalla. `hidden` sí lo saca del árbol de
             accesibilidad, al contrario que una clase de solo-lectores */}
-        <h1 className="hidden md:block mb-1 text-2xl font-bold text-gray-900">{t('draft.title')}</h1>
+        <h1 className="hidden md:block mb-1 text-2xl font-bold text-gray-900">
+          {t('draft.title')}
+        </h1>
         <p className="mb-6 text-sm text-gray-600">{competition?.name}</p>
 
         {error && !avisoDeTurno && (
-          <p className="mb-4 rounded-lg bg-red-50 p-3 text-sm text-red-700">{error}</p>
+          <p className="mb-4 rounded-lg bg-red-50 p-3 text-sm text-red-700">
+            {error}
+          </p>
         )}
         {avisoDeTurno && (
           <p className="mb-4 rounded-lg bg-amber-50 p-3 text-sm text-amber-800">
@@ -163,7 +195,9 @@ const DraftRoomPage = () => {
                 data-testid="lanzar-sorteo"
                 // El error ya se pinta desde el estado del hook; sin capturar
                 // aquí, además subía a Sentry como promesa rechazada
-                onClick={() => { abrirSala().catch(() => {}); }}
+                onClick={() => {
+                  abrirSala().catch(() => {});
+                }}
                 className="w-full rounded-lg bg-green-600 px-4 py-3 font-semibold text-white hover:bg-green-700"
               >
                 {t('draft.start')}
@@ -177,16 +211,24 @@ const DraftRoomPage = () => {
             {sala.status === 'IN_PROGRESS' && (
               <div
                 className={`rounded-xl border p-4 ${
-                  esMiTurno ? 'border-green-600 bg-green-50' : 'border-gray-200 bg-white'
+                  esMiTurno
+                    ? 'border-green-600 bg-green-50'
+                    : 'border-gray-200 bg-white'
                 }`}
               >
                 <div className="flex items-center justify-between gap-3">
                   {esMiTurno ? (
-                    <span data-testid="mi-turno" className="font-semibold text-green-800">
+                    <span
+                      data-testid="mi-turno"
+                      className="font-semibold text-green-800"
+                    >
                       {t('draft.yourTurn')}
                     </span>
                   ) : (
-                    <span data-testid="turno-de" className="text-sm text-gray-700">
+                    <span
+                      data-testid="turno-de"
+                      className="text-sm text-gray-700"
+                    >
                       {t('draft.turnOf', { name: capitanDe(sala.currentTeam) })}
                     </span>
                   )}
@@ -226,7 +268,9 @@ const DraftRoomPage = () => {
                   key={equipo}
                   data-testid={`equipo-${equipo}`}
                   className={`rounded-xl border bg-white p-3 ${
-                    sala.currentTeam === equipo ? 'border-green-600' : 'border-gray-200'
+                    sala.currentTeam === equipo
+                      ? 'border-green-600'
+                      : 'border-gray-200'
                   }`}
                 >
                   {/* `min-w-0` para que el nombre largo pueda cortarse en vez de
@@ -246,8 +290,13 @@ const DraftRoomPage = () => {
                       </span>
                     </li>
                     {elegidosDe(equipo).map((pick) => (
-                      <li key={pick.userId} className="flex min-w-0 items-start gap-1">
-                        <span className="min-w-0 break-words text-gray-800">{pick.name}</span>
+                      <li
+                        key={pick.userId}
+                        className="flex min-w-0 items-start gap-1"
+                      >
+                        <span className="min-w-0 break-words text-gray-800">
+                          {pick.name}
+                        </span>
                         {pick.automatic && (
                           <Bot
                             data-testid={`automatica-${pick.userId}`}
@@ -265,14 +314,19 @@ const DraftRoomPage = () => {
             {/* El último entra solo, y solo lo lee el capitán que lo recibe: al
                 resto no le cuenta nada y la etiqueta cortaba el nombre (#723) */}
             {ultimoParaMi && (
-              <p data-testid="ultimo-incluido" className="text-sm text-gray-600">
+              <p
+                data-testid="ultimo-incluido"
+                className="text-sm text-gray-600"
+              >
                 {t('draft.lastIncluded', { name: ultimoParaMi.name })}
               </p>
             )}
 
             {sala.availablePlayers.length > 0 && (
               <div className="rounded-xl border border-gray-200 bg-white p-3">
-                <h2 className="mb-2 text-sm font-bold text-gray-900">{t('draft.available')}</h2>
+                <h2 className="mb-2 text-sm font-bold text-gray-900">
+                  {t('draft.available')}
+                </h2>
                 <ul className="divide-y divide-gray-100">
                   {porElegir.map((jugador) => (
                     <li
@@ -280,7 +334,9 @@ const DraftRoomPage = () => {
                       data-testid={`disponible-${jugador.userId}`}
                       className="flex items-center justify-between gap-2 py-2"
                     >
-                      <span className="min-w-0 truncate text-sm text-gray-900">{jugador.name}</span>
+                      <span className="min-w-0 truncate text-sm text-gray-900">
+                        {jugador.name}
+                      </span>
                       <span className="flex shrink-0 items-center gap-2">
                         {/* Nombre y hándicap, y nada más: es con lo que se
                             elige, y cualquier otro dato convertiría la

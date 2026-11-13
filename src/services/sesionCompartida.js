@@ -52,7 +52,10 @@ import { olvidaLasNovedades } from './novedadesDeActividad';
 
 // Misma prioridad que el resto: la configuración de ejecución manda sobre la del
 // build, o en un despliegue en contenedor se acaba preguntando a hosts distintos
-const API_URL = globalThis.APP_CONFIG?.API_BASE_URL || import.meta.env.VITE_API_BASE_URL || '';
+const API_URL =
+  globalThis.APP_CONFIG?.API_BASE_URL ||
+  import.meta.env.VITE_API_BASE_URL ||
+  '';
 
 /**
  * Lo mínimo entre dos comprobaciones al volver a la aplicación o a la red
@@ -249,10 +252,13 @@ const esDelBackend = async (respuesta) => {
  * @returns {Promise<Object|typeof DESCARTADA|typeof SIN_SESION>}
  */
 const preguntaAlServidor = async (sigoValiendo) => {
-  const respuesta = await fetchWithTokenRefresh(`${API_URL}/api/v1/auth/current-user`, {
-    credentials: 'include',
-    headers: { 'Content-Type': 'application/json' },
-  });
+  const respuesta = await fetchWithTokenRefresh(
+    `${API_URL}/api/v1/auth/current-user`,
+    {
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+    },
+  );
 
   // Una respuesta de una consulta ya invalidada —porque entre medias se cerró la
   // sesión, o porque alguien forzó otra— no escribe nada
@@ -265,8 +271,10 @@ const preguntaAlServidor = async (sigoValiendo) => {
   // Un 404 solo dice «no hay sesión» si es del backend, con su `error_code`: el de un
   // proxy o una página del borde no es una respuesta sobre la sesión y no puede borrar
   // lo guardado para anotar sin cobertura (revisión de la fase 3)
-  if (respuesta.status === 404 && (await esDelBackend(respuesta))) return SIN_SESION;
-  if (!respuesta.ok) throw new Error(`Failed to fetch user: ${respuesta.status}`);
+  if (respuesta.status === 404 && (await esDelBackend(respuesta)))
+    return SIN_SESION;
+  if (!respuesta.ok)
+    throw new Error(`Failed to fetch user: ${respuesta.status}`);
 
   const usuario = await respuesta.json();
   // Otra vez: en el `await` de arriba cabe un login o un cierre de sesión
@@ -290,7 +298,14 @@ const publicaSinSesion = () => {
     // Lo de arriba ya está hecho; lo que falle aquí no puede dejar la sesión a medias
     console.error('[sesion] cleanup without session failed:', error);
   }
-  anota({ user: null, cargando: false, refrescando: false, error: null, resuelta: true, sinConfirmar: false });
+  anota({
+    user: null,
+    cargando: false,
+    refrescando: false,
+    error: null,
+    resuelta: true,
+    sinConfirmar: false,
+  });
 };
 
 /**
@@ -311,7 +326,14 @@ const publicaConfirmada = (usuario) => {
   reintento = null;
   ultimaComprobacion = Date.now();
   apunta(usuario);
-  anota({ user: usuario, cargando: false, refrescando: false, error: null, resuelta: true, sinConfirmar: false });
+  anota({
+    user: usuario,
+    cargando: false,
+    refrescando: false,
+    error: null,
+    resuelta: true,
+    sinConfirmar: false,
+  });
 };
 
 const pideAlBackend = async (miGeneracion) => {
@@ -443,7 +465,11 @@ export const consultaLaSesion = ({ forzar = false } = {}) => {
   // Con un usuario ya sabido esto es un REFRESCO, y no puede levantar `cargando`:
   // los guardias desmontan a sus hijos mientras eso este en alto, asi que
   // guardar el perfil desmontaria el formulario a media faena
-  anota(instantanea.user ? { refrescando: true, error: null } : { cargando: true, error: null });
+  anota(
+    instantanea.user
+      ? { refrescando: true, error: null }
+      : { cargando: true, error: null },
+  );
 
   const promesa = pideAlBackend(mia).finally(() => {
     // Por identidad: con dos refrescos solapados, el primero en terminar borraba
@@ -486,7 +512,14 @@ export const anotaLaSesion = (usuarioDelBackend) => {
   // Y confirmada: viene del servidor. Si no, tras aceptar desde una sesión
   // arrancada sin red, `RoleGuard` seguía esperando y cada revalidación
   // publicaba un objeto nuevo, borrando lo escrito en el perfil (revisión)
-  anota({ user: usuarioDelBackend, cargando: false, refrescando: false, error: null, resuelta: true, sinConfirmar: false });
+  anota({
+    user: usuarioDelBackend,
+    cargando: false,
+    refrescando: false,
+    error: null,
+    resuelta: true,
+    sinConfirmar: false,
+  });
 };
 
 /**
@@ -546,13 +579,18 @@ export const olvidaLaSesion = () => {
 const canonico = (valor) => {
   if (Array.isArray(valor)) return valor.map(canonico);
   if (valor && typeof valor === 'object') {
-    return Object.fromEntries(Object.keys(valor).sort().map((clave) => [clave, canonico(valor[clave])]));
+    return Object.fromEntries(
+      Object.keys(valor)
+        .sort()
+        .map((clave) => [clave, canonico(valor[clave])]),
+    );
   }
   return valor;
 };
 
 const mismaRespuesta = (usuario) =>
-  JSON.stringify(canonico(usuario)) === JSON.stringify(canonico(instantanea.user)) &&
+  JSON.stringify(canonico(usuario)) ===
+    JSON.stringify(canonico(instantanea.user)) &&
   !instantanea.sinConfirmar &&
   instantanea.error === null;
 
@@ -601,7 +639,14 @@ const revalidaLaSesion = async () => {
  * una ruta pública no se consulta la sesión, y no hay que empezar aquí.
  */
 const alVolverLaRedSinSaberNada = () => {
-  if (seVa || instantanea.resuelta || enVuelo || reintento !== null || fallosSeguidos === 0) return;
+  if (
+    seVa ||
+    instantanea.resuelta ||
+    enVuelo ||
+    reintento !== null ||
+    fallosSeguidos === 0
+  )
+    return;
   consultaLaSesion({ forzar: true });
 };
 
@@ -619,11 +664,17 @@ export const vigilaLaVueltaALaAplicacion = () => {
     alVolverLaRedSinSaberNada();
     revalidaLaSesion();
   };
-  globalThis.document.addEventListener('visibilitychange', alCambiarLaVisibilidad);
+  globalThis.document.addEventListener(
+    'visibilitychange',
+    alCambiarLaVisibilidad,
+  );
   globalThis.addEventListener('online', alVolverLaRed);
 
   return () => {
-    globalThis.document.removeEventListener('visibilitychange', alCambiarLaVisibilidad);
+    globalThis.document.removeEventListener(
+      'visibilitychange',
+      alCambiarLaVisibilidad,
+    );
     globalThis.removeEventListener('online', alVolverLaRed);
   };
 };

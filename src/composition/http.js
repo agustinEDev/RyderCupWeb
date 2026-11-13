@@ -19,7 +19,11 @@ import './limpiezaAlCerrarLaSesion';
 import './interfazDelTransporte';
 
 // El id que va en la ruta de la imagen del avatar, codificado (FE-03)
-export { segmento, valeComoSegmento, urlDeImagenDeLaApi } from '../infrastructure/http/rutaDeLaApi';
+export {
+  segmento,
+  valeComoSegmento,
+  urlDeImagenDeLaApi,
+} from '../infrastructure/http/rutaDeLaApi';
 export { setCsrfTokenGlobal } from '../infrastructure/http/csrfTokenSync';
 export {
   copiaDelUsuarioEnElDispositivo,

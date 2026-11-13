@@ -36,37 +36,51 @@ describe('Location', () => {
 
     it('should throw InvalidLocationError if mainCountry is not a CountryCode instance', () => {
       expect(() => new Location('ES')).toThrow(InvalidLocationError);
-      expect(() => new Location('ES')).toThrow('Main country must be an instance of CountryCode.');
+      expect(() => new Location('ES')).toThrow(
+        'Main country must be an instance of CountryCode.',
+      );
     });
 
     it('should throw InvalidLocationError if adjacentCountry1 is not CountryCode or null', () => {
       expect(() => new Location(es, 'PT')).toThrow(InvalidLocationError);
-      expect(() => new Location(es, 'PT')).toThrow('Adjacent country 1 must be an instance of CountryCode or null.');
+      expect(() => new Location(es, 'PT')).toThrow(
+        'Adjacent country 1 must be an instance of CountryCode or null.',
+      );
     });
 
     it('should throw InvalidLocationError if adjacentCountry2 is not CountryCode or null', () => {
       expect(() => new Location(es, pt, 'FR')).toThrow(InvalidLocationError);
-      expect(() => new Location(es, pt, 'FR')).toThrow('Adjacent country 2 must be an instance of CountryCode or null.');
+      expect(() => new Location(es, pt, 'FR')).toThrow(
+        'Adjacent country 2 must be an instance of CountryCode or null.',
+      );
     });
 
     it('should throw InvalidLocationError if adjacentCountry2 exists without adjacentCountry1', () => {
       expect(() => new Location(es, null, fr)).toThrow(InvalidLocationError);
-      expect(() => new Location(es, null, fr)).toThrow('Cannot have adjacent_country_2 without adjacent_country_1.');
+      expect(() => new Location(es, null, fr)).toThrow(
+        'Cannot have adjacent_country_2 without adjacent_country_1.',
+      );
     });
 
     it('should throw InvalidLocationError if countries are duplicated (main and adj1)', () => {
       expect(() => new Location(es, es)).toThrow(InvalidLocationError);
-      expect(() => new Location(es, es)).toThrow('Countries cannot be repeated.');
+      expect(() => new Location(es, es)).toThrow(
+        'Countries cannot be repeated.',
+      );
     });
 
     it('should throw InvalidLocationError if countries are duplicated (main and adj2)', () => {
       expect(() => new Location(es, pt, es)).toThrow(InvalidLocationError);
-      expect(() => new Location(es, pt, es)).toThrow('Countries cannot be repeated.');
+      expect(() => new Location(es, pt, es)).toThrow(
+        'Countries cannot be repeated.',
+      );
     });
 
     it('should throw InvalidLocationError if countries are duplicated (adj1 and adj2)', () => {
       expect(() => new Location(es, pt, pt)).toThrow(InvalidLocationError);
-      expect(() => new Location(es, pt, pt)).toThrow('Countries cannot be repeated.');
+      expect(() => new Location(es, pt, pt)).toThrow(
+        'Countries cannot be repeated.',
+      );
     });
   });
 
@@ -122,7 +136,11 @@ describe('Location', () => {
   describe('equals', () => {
     it('should return true for two Location instances with the same countries in the same order', () => {
       const loc1 = new Location(es, pt, fr);
-      const loc2 = new Location(new CountryCode('ES'), new CountryCode('PT'), new CountryCode('FR'));
+      const loc2 = new Location(
+        new CountryCode('ES'),
+        new CountryCode('PT'),
+        new CountryCode('FR'),
+      );
       expect(loc1.equals(loc2)).toBe(true);
     });
 

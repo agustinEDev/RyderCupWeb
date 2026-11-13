@@ -2,7 +2,8 @@ import IHoleReportStore from '../../domain/repositories/IHoleReportStore';
 
 const claveDeLaCola = (userId) => `reportesDeHoyosPendientes:v1:${userId}`;
 
-const esPunto = (p) => Boolean(p) && Number.isFinite(p.lat) && Number.isFinite(p.lon);
+const esPunto = (p) =>
+  Boolean(p) && Number.isFinite(p.lat) && Number.isFinite(p.lon);
 // Sin salida o sin green no se puede enviar: no cuenta, para que no atasque la
 // cola entera (/code-review, 18 oct)
 const esEntrada = (e) =>
@@ -29,7 +30,8 @@ class LocalStorageHoleReportStore extends IHoleReportStore {
   }
 
   leer(clave) {
-    if (this.enMemoria.has(clave)) return globalThis.structuredClone(this.enMemoria.get(clave));
+    if (this.enMemoria.has(clave))
+      return globalThis.structuredClone(this.enMemoria.get(clave));
     try {
       return JSON.parse(globalThis.localStorage.getItem(clave));
     } catch {
@@ -56,7 +58,10 @@ class LocalStorageHoleReportStore extends IHoleReportStore {
     if (!userId) return;
     const cola = this.cola(userId);
     const suSitio = cola.findIndex((otra) => otra.id === entrada.id);
-    const nueva = suSitio >= 0 ? cola.map((otra, i) => (i === suSitio ? entrada : otra)) : [...cola, entrada];
+    const nueva =
+      suSitio >= 0
+        ? cola.map((otra, i) => (i === suSitio ? entrada : otra))
+        : [...cola, entrada];
     this.escribir(claveDeLaCola(userId), nueva);
   }
 

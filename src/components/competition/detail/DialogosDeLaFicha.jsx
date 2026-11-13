@@ -28,10 +28,22 @@ const DialogosDeLaFicha = ({
   <>
     <ConfirmModal
       isOpen={Boolean(pregunta)}
-      title={pregunta ? t(`detail.confirmDialogs.${pregunta.accion}.title`, pregunta.datos) : ''}
-      message={pregunta ? t(`detail.confirmDialogs.${pregunta.accion}.body`, pregunta.datos) : ''}
-      confirmText={pregunta ? t(`detail.confirmDialogs.${pregunta.accion}.confirm`) : ''}
-      cancelText={pregunta ? t(`detail.confirmDialogs.${pregunta.accion}.keep`) : ''}
+      title={
+        pregunta
+          ? t(`detail.confirmDialogs.${pregunta.accion}.title`, pregunta.datos)
+          : ''
+      }
+      message={
+        pregunta
+          ? t(`detail.confirmDialogs.${pregunta.accion}.body`, pregunta.datos)
+          : ''
+      }
+      confirmText={
+        pregunta ? t(`detail.confirmDialogs.${pregunta.accion}.confirm`) : ''
+      }
+      cancelText={
+        pregunta ? t(`detail.confirmDialogs.${pregunta.accion}.keep`) : ''
+      }
       onConfirm={() => contestar(true)}
       onCancel={() => contestar(false)}
       isDestructive={pregunta?.destructiva}
@@ -40,7 +52,11 @@ const DialogosDeLaFicha = ({
     <ConfirmModal
       isOpen={confirmandoBorrado}
       title={t('detail.deleteModal.title')}
-      message={textoDelBorrado(t, { inscripcionesSinCargar, estoyInscrito, otrosInscritos })}
+      message={textoDelBorrado(t, {
+        inscripcionesSinCargar,
+        estoyInscrito,
+        otrosInscritos,
+      })}
       confirmText={t('detail.deleteModal.confirm')}
       cancelText={t('detail.deleteModal.keep')}
       onConfirm={confirmarBorrado}
@@ -57,7 +73,9 @@ const DialogosDeLaFicha = ({
         userId: e.userId,
         name: e.userName || t('detail.unknownUser'),
         // El que cuenta aquí: el propio de la competición, si se le puso
-        handicap: e.hasCustomHandicap ? e.customHandicap : (e.userHandicap ?? null),
+        handicap: e.hasCustomHandicap
+          ? e.customHandicap
+          : (e.userHandicap ?? null),
       }))}
       teamNames={{ a: competition.team1Name, b: competition.team2Name }}
       current={competition.captains}

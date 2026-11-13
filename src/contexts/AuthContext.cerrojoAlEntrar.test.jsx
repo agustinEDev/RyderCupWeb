@@ -23,7 +23,12 @@ import User from '../domain/entities/User';
  *   K2 lo mismo pasando por el hook de verdad (login sin usuario guardado)
  *   K3 sin entrar nadie, el cerrojo sigue (lo de los cierres duros no cambia)
  */
-const USUARIO = new User({ id: 'u-1', email: 'ana@example.com', first_name: 'Ana', last_name: 'Prueba' });
+const USUARIO = new User({
+  id: 'u-1',
+  email: 'ana@example.com',
+  first_name: 'Ana',
+  last_name: 'Prueba',
+});
 const lo = (id) => ({ partida: { id }, campo: null });
 
 describe('El cerrojo de lo guardado se levanta al entrar una cuenta (revisión fase 3)', () => {
@@ -33,7 +38,9 @@ describe('El cerrojo de lo guardado se levanta al entrar una cuenta (revisión f
   });
 
   it('K1: limpieza → setUser → recuerda y precarga vuelven a guardar', () => {
-    const { result } = renderHook(() => useAuthContext(), { wrapper: AuthProvider });
+    const { result } = renderHook(() => useAuthContext(), {
+      wrapper: AuthProvider,
+    });
     expect(recuerda('m-1', lo('m-1'))).toBe(true);
 
     olvidaLoGuardadoDeLaCuenta();
@@ -50,8 +57,11 @@ describe('El cerrojo de lo guardado se levanta al entrar una cuenta (revisión f
       </MemoryRouter>
     );
     const { result } = renderHook(
-      () => ({ comprobando: useRedirectIfAuthenticated(), auth: useAuthContext() }),
-      { wrapper: envoltorio }
+      () => ({
+        comprobando: useRedirectIfAuthenticated(),
+        auth: useAuthContext(),
+      }),
+      { wrapper: envoltorio },
     );
 
     act(() => result.current.auth.setUser(USUARIO));

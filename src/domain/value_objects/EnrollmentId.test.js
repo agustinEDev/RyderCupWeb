@@ -11,7 +11,9 @@ describe('EnrollmentId', () => {
 
       expect(id1).toBeInstanceOf(EnrollmentId);
       expect(id1.toString()).toBeTypeOf('string');
-      expect(id1.toString()).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i);
+      expect(id1.toString()).toMatch(
+        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i,
+      );
       expect(id1.equals(id2)).toBe(false); // Should be unique
     });
 
@@ -24,9 +26,15 @@ describe('EnrollmentId', () => {
     });
 
     it('fromString() should throw an error for invalid UUID strings', () => {
-      expect(() => EnrollmentId.fromString('not-a-uuid')).toThrow('Invalid UUID format: not-a-uuid');
-      expect(() => EnrollmentId.fromString('a1b2c3d4-e5f6-7890-1234-567890abcde')).toThrow(); // Too short
-      expect(() => EnrollmentId.fromString('a1b2c3d4-e5f6-7890-1234-567890abcdefg')).toThrow(); // Too long
+      expect(() => EnrollmentId.fromString('not-a-uuid')).toThrow(
+        'Invalid UUID format: not-a-uuid',
+      );
+      expect(() =>
+        EnrollmentId.fromString('a1b2c3d4-e5f6-7890-1234-567890abcde'),
+      ).toThrow(); // Too short
+      expect(() =>
+        EnrollmentId.fromString('a1b2c3d4-e5f6-7890-1234-567890abcdefg'),
+      ).toThrow(); // Too long
       expect(() => EnrollmentId.fromString(null)).toThrow();
       expect(() => EnrollmentId.fromString(undefined)).toThrow();
       expect(() => EnrollmentId.fromString(123)).toThrow();
@@ -43,7 +51,9 @@ describe('EnrollmentId', () => {
     });
 
     it('should throw an error for an invalid UUID string', () => {
-      expect(() => new EnrollmentId('not-a-uuid')).toThrow('Invalid UUID format: not-a-uuid');
+      expect(() => new EnrollmentId('not-a-uuid')).toThrow(
+        'Invalid UUID format: not-a-uuid',
+      );
     });
 
     it('should be case-insensitive', () => {

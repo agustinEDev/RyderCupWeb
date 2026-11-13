@@ -27,6 +27,8 @@ describe('UpdateAdminUserUseCase', () => {
     error.status = 409;
     adminRepository.updateUser.mockRejectedValue(error);
 
-    await expect(useCase.execute('u1', { email: 'taken@test.com' })).rejects.toThrow('Email already in use');
+    await expect(
+      useCase.execute('u1', { email: 'taken@test.com' }),
+    ).rejects.toThrow('Email already in use');
   });
 });

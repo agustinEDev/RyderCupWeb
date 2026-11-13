@@ -26,7 +26,10 @@ class GetCourseLocationUseCase {
   async execute(golfCourseId) {
     if (!golfCourseId) return null;
     const campo = await this.golfCourseRepository.getById(golfCourseId);
-    const ubicacion = { lat: campo?.location?.latitude, lon: campo?.location?.longitude };
+    const ubicacion = {
+      lat: campo?.location?.latitude,
+      lon: campo?.location?.longitude,
+    };
     if (!esPosicionValida(ubicacion)) return null;
     this.courseLocationCache.save(golfCourseId, ubicacion);
     return ubicacion;

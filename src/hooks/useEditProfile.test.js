@@ -10,8 +10,8 @@ import customToast from '../utils/toast';
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
     t: (key) => key,
-    i18n: { language: 'en' }
-  })
+    i18n: { language: 'en' },
+  }),
 }));
 
 // Mockear (simular) las dependencias externas del hook
@@ -24,7 +24,7 @@ vi.mock('../composition', () => ({
 
 // Mock useAuth hook
 vi.mock('./useAuth', () => ({
-  useAuth: vi.fn()
+  useAuth: vi.fn(),
 }));
 
 vi.mock('react-hot-toast', () => ({
@@ -56,7 +56,6 @@ import * as composition from '../composition';
 import { useAuth } from './useAuth';
 
 describe('useEditProfile Hook', () => {
-
   beforeEach(() => {
     // Limpiar todos los mocks antes de cada test
     vi.clearAllMocks();
@@ -68,7 +67,7 @@ describe('useEditProfile Hook', () => {
       user: null,
       loading: false,
       error: null,
-      refetch: vi.fn()
+      refetch: vi.fn(),
     });
 
     // Renderiza el hook en un entorno de test
@@ -104,7 +103,7 @@ describe('useEditProfile Hook', () => {
       handicap: 15.5,
       handicap_updated_at: new Date().toISOString(),
       email_verified: true,
-      country_code: null
+      country_code: null,
     };
 
     // 2. Mock useAuth to return the user
@@ -112,7 +111,7 @@ describe('useEditProfile Hook', () => {
       user: mockUserPlain,
       loading: false,
       error: null,
-      refetch: vi.fn()
+      refetch: vi.fn(),
     });
 
     let result;
@@ -124,7 +123,8 @@ describe('useEditProfile Hook', () => {
     // 4. Verificar que los estados se han actualizado correctamente
     expect(result.current.isLoading).toBe(false); // La carga ha finalizado
     expect(result.current.user).toEqual(mockUserPlain); // El usuario ha sido cargado
-    expect(result.current.formData).toEqual({ // El formulario se ha rellenado con los datos del usuario
+    expect(result.current.formData).toEqual({
+      // El formulario se ha rellenado con los datos del usuario
       firstName: mockUserPlain.first_name,
       lastName: mockUserPlain.last_name,
       alias: '',
@@ -143,8 +143,22 @@ describe('useEditProfile Hook', () => {
     const { default: User } = await vi.importActual('../domain/entities/User');
 
     // 1. Arrange: Preparar el escenario del test
-    const mockUserPlain = { id: '1', first_name: 'John', last_name: 'Doe', email: 'a@a.com', handicap: 10, country_code: null };
-    const updatedUserEntity = new User({ id: '1', first_name: 'Johnny', last_name: 'Doe', email: 'a@a.com', handicap: 10, email_verified: true });
+    const mockUserPlain = {
+      id: '1',
+      first_name: 'John',
+      last_name: 'Doe',
+      email: 'a@a.com',
+      handicap: 10,
+      country_code: null,
+    };
+    const updatedUserEntity = new User({
+      id: '1',
+      first_name: 'Johnny',
+      last_name: 'Doe',
+      email: 'a@a.com',
+      handicap: 10,
+      email_verified: true,
+    });
 
     const mockRefetch = vi.fn();
 
@@ -153,9 +167,11 @@ describe('useEditProfile Hook', () => {
       user: mockUserPlain,
       loading: false,
       error: null,
-      refetch: mockRefetch
+      refetch: mockRefetch,
     });
-    composition.updateUserProfileUseCase.execute.mockResolvedValue(updatedUserEntity);
+    composition.updateUserProfileUseCase.execute.mockResolvedValue(
+      updatedUserEntity,
+    );
 
     // Renderizar el hook
     const { result } = renderHook(() => useEditProfile());
@@ -167,7 +183,9 @@ describe('useEditProfile Hook', () => {
 
     // Cambiar el valor del formulario
     act(() => {
-      result.current.handleInputChange({ target: { name: 'firstName', value: 'Johnny' } });
+      result.current.handleInputChange({
+        target: { name: 'firstName', value: 'Johnny' },
+      });
     });
 
     // Llamar al manejador del submit del formulario
@@ -176,10 +194,12 @@ describe('useEditProfile Hook', () => {
     });
 
     // 3. Assert: Verificar que la prueba ocurrió como se esperaba
-    expect(composition.updateUserProfileUseCase.execute).toHaveBeenCalledTimes(1);
+    expect(composition.updateUserProfileUseCase.execute).toHaveBeenCalledTimes(
+      1,
+    );
     expect(composition.updateUserProfileUseCase.execute).toHaveBeenCalledWith(
       mockUserPlain.id,
-      { firstName: 'Johnny', lastName: 'Doe' }
+      { firstName: 'Johnny', lastName: 'Doe' },
     );
 
     expect(mockRefetch).toHaveBeenCalled();
@@ -189,7 +209,13 @@ describe('useEditProfile Hook', () => {
 
   it('debería llamar a updateUserSecurityUseCase y actualizar el estado (email y password) al llamar a handleUpdateSecurity', async () => {
     // 1. Arrange: Preparar el escenario del test
-    const mockUserPlain = { id: '1', first_name: 'John', last_name: 'Doe', email: 'old@example.com', handicap: 10 };
+    const mockUserPlain = {
+      id: '1',
+      first_name: 'John',
+      last_name: 'Doe',
+      email: 'old@example.com',
+      handicap: 10,
+    };
     const newEmail = 'new@example.com';
     const newPassword = 'NewSecurePassword123!';
     const currentPassword = 'CurrentPassword123';
@@ -202,7 +228,7 @@ describe('useEditProfile Hook', () => {
       last_name: 'Doe',
       email: newEmail, // Email actualizado
       handicap: 10,
-      email_verified: false
+      email_verified: false,
     });
 
     const mockRefetch = vi.fn();
@@ -212,9 +238,11 @@ describe('useEditProfile Hook', () => {
       user: mockUserPlain,
       loading: false,
       error: null,
-      refetch: mockRefetch
+      refetch: mockRefetch,
     });
-    composition.updateUserSecurityUseCase.execute.mockResolvedValue(updatedUserEntity);
+    composition.updateUserSecurityUseCase.execute.mockResolvedValue(
+      updatedUserEntity,
+    );
 
     // Renderizar el hook
     const { result } = renderHook(() => useEditProfile());
@@ -222,10 +250,18 @@ describe('useEditProfile Hook', () => {
 
     // 2. Act: Simular la interacción del usuario
     act(() => {
-      result.current.handleInputChange({ target: { name: 'email', value: newEmail } });
-      result.current.handleInputChange({ target: { name: 'currentPassword', value: currentPassword } });
-      result.current.handleInputChange({ target: { name: 'newPassword', value: newPassword } });
-      result.current.handleInputChange({ target: { name: 'confirmPassword', value: newPassword } });
+      result.current.handleInputChange({
+        target: { name: 'email', value: newEmail },
+      });
+      result.current.handleInputChange({
+        target: { name: 'currentPassword', value: currentPassword },
+      });
+      result.current.handleInputChange({
+        target: { name: 'newPassword', value: newPassword },
+      });
+      result.current.handleInputChange({
+        target: { name: 'confirmPassword', value: newPassword },
+      });
     });
 
     await act(async () => {
@@ -233,7 +269,9 @@ describe('useEditProfile Hook', () => {
     });
 
     // 3. Assert: Verificar que todo ocurrió como se esperaba
-    expect(composition.updateUserSecurityUseCase.execute).toHaveBeenCalledTimes(1);
+    expect(composition.updateUserSecurityUseCase.execute).toHaveBeenCalledTimes(
+      1,
+    );
     expect(composition.updateUserSecurityUseCase.execute).toHaveBeenCalledWith({
       userId: mockUserPlain.id,
       securityData: {
@@ -260,35 +298,62 @@ describe('useEditProfile Hook', () => {
   // devolvía un 500 (hotfix 2.40.1)
   it.each([
     ['sin símbolo', 'SinSimbolo1234', 'auth:validation.passwordNoSymbol'],
-    ['con un espacio al final', 'ConEspacio123! ', 'auth:validation.passwordSpaces'],
+    [
+      'con un espacio al final',
+      'ConEspacio123! ',
+      'auth:validation.passwordSpaces',
+    ],
     ['corta', 'Corta1!', 'auth:validation.passwordTooShort'],
     ['sin mayúscula', 'sinmayuscula123!', 'auth:validation.passwordWeak'],
-  ])('una contraseña nueva %s se avisa y no se envía', async (_caso, newPassword, aviso) => {
-    useAuth.mockReturnValue({
-      user: { id: '1', first_name: 'John', last_name: 'Doe', email: 'old@example.com', handicap: 10 },
-      loading: false,
-      error: null,
-      refetch: vi.fn(),
-    });
-    const { result } = renderHook(() => useEditProfile());
-    await act(async () => {});
+  ])(
+    'una contraseña nueva %s se avisa y no se envía',
+    async (_caso, newPassword, aviso) => {
+      useAuth.mockReturnValue({
+        user: {
+          id: '1',
+          first_name: 'John',
+          last_name: 'Doe',
+          email: 'old@example.com',
+          handicap: 10,
+        },
+        loading: false,
+        error: null,
+        refetch: vi.fn(),
+      });
+      const { result } = renderHook(() => useEditProfile());
+      await act(async () => {});
 
-    act(() => {
-      result.current.handleInputChange({ target: { name: 'currentPassword', value: 'vieja' } });
-      result.current.handleInputChange({ target: { name: 'newPassword', value: newPassword } });
-      result.current.handleInputChange({ target: { name: 'confirmPassword', value: newPassword } });
-    });
-    await act(async () => {
-      await result.current.handleUpdateSecurity({ preventDefault: vi.fn() });
-    });
+      act(() => {
+        result.current.handleInputChange({
+          target: { name: 'currentPassword', value: 'vieja' },
+        });
+        result.current.handleInputChange({
+          target: { name: 'newPassword', value: newPassword },
+        });
+        result.current.handleInputChange({
+          target: { name: 'confirmPassword', value: newPassword },
+        });
+      });
+      await act(async () => {
+        await result.current.handleUpdateSecurity({ preventDefault: vi.fn() });
+      });
 
-    expect(customToast.error).toHaveBeenCalledWith(aviso);
-    expect(composition.updateUserSecurityUseCase.execute).not.toHaveBeenCalled();
-  });
+      expect(customToast.error).toHaveBeenCalledWith(aviso);
+      expect(
+        composition.updateUserSecurityUseCase.execute,
+      ).not.toHaveBeenCalled();
+    },
+  );
 
   it('BE #519: el rechazo de la contraseña del backend se dice con su clave', async () => {
     useAuth.mockReturnValue({
-      user: { id: '1', first_name: 'John', last_name: 'Doe', email: 'old@example.com', handicap: 10 },
+      user: {
+        id: '1',
+        first_name: 'John',
+        last_name: 'Doe',
+        email: 'old@example.com',
+        handicap: 10,
+      },
       loading: false,
       error: null,
       refetch: vi.fn(),
@@ -297,15 +362,21 @@ describe('useEditProfile Hook', () => {
       Object.assign(new Error('Esta contraseña es demasiado común…'), {
         status: 400,
         errorCode: 'PASSWORD_TOO_COMMON',
-      })
+      }),
     );
     const { result } = renderHook(() => useEditProfile());
     await act(async () => {});
 
     act(() => {
-      result.current.handleInputChange({ target: { name: 'currentPassword', value: 'vieja' } });
-      result.current.handleInputChange({ target: { name: 'newPassword', value: 'Valida-Prueba123!' } });
-      result.current.handleInputChange({ target: { name: 'confirmPassword', value: 'Valida-Prueba123!' } });
+      result.current.handleInputChange({
+        target: { name: 'currentPassword', value: 'vieja' },
+      });
+      result.current.handleInputChange({
+        target: { name: 'newPassword', value: 'Valida-Prueba123!' },
+      });
+      result.current.handleInputChange({
+        target: { name: 'confirmPassword', value: 'Valida-Prueba123!' },
+      });
     });
     await act(async () => {
       await result.current.handleUpdateSecurity({ preventDefault: vi.fn() });
@@ -316,7 +387,13 @@ describe('useEditProfile Hook', () => {
 
   it('debería llamar a updateManualHandicapUseCase y actualizar el estado al llamar a handleUpdateHandicapManually', async () => {
     // Arrange
-    const mockUserPlain = { id: '1', first_name: 'John', last_name: 'Doe', email: 'a@a.com', handicap: 10 };
+    const mockUserPlain = {
+      id: '1',
+      first_name: 'John',
+      last_name: 'Doe',
+      email: 'a@a.com',
+      handicap: 10,
+    };
     const newHandicap = 12.5;
 
     // Importar dinámicamente el módulo User REAL
@@ -327,7 +404,7 @@ describe('useEditProfile Hook', () => {
       last_name: 'Doe',
       email: 'a@a.com',
       handicap: newHandicap,
-      email_verified: true
+      email_verified: true,
     });
 
     const mockRefetch = vi.fn();
@@ -336,25 +413,35 @@ describe('useEditProfile Hook', () => {
       user: mockUserPlain,
       loading: false,
       error: null,
-      refetch: mockRefetch
+      refetch: mockRefetch,
     });
-    composition.updateManualHandicapUseCase.execute.mockResolvedValue(updatedUserEntity);
+    composition.updateManualHandicapUseCase.execute.mockResolvedValue(
+      updatedUserEntity,
+    );
 
     const { result } = renderHook(() => useEditProfile());
     await act(async () => {}); // Esperar a que la carga inicial termine
 
     // Act
     act(() => {
-      result.current.handleInputChange({ target: { name: 'handicap', value: newHandicap.toString() } });
+      result.current.handleInputChange({
+        target: { name: 'handicap', value: newHandicap.toString() },
+      });
     });
 
     await act(async () => {
-      await result.current.handleUpdateHandicapManually({ preventDefault: vi.fn() });
+      await result.current.handleUpdateHandicapManually({
+        preventDefault: vi.fn(),
+      });
     });
 
     // Assert
-    expect(composition.updateManualHandicapUseCase.execute).toHaveBeenCalledTimes(1);
-    expect(composition.updateManualHandicapUseCase.execute).toHaveBeenCalledWith({
+    expect(
+      composition.updateManualHandicapUseCase.execute,
+    ).toHaveBeenCalledTimes(1);
+    expect(
+      composition.updateManualHandicapUseCase.execute,
+    ).toHaveBeenCalledWith({
       userId: mockUserPlain.id,
       handicap: newHandicap.toString(),
     });
@@ -367,7 +454,13 @@ describe('useEditProfile Hook', () => {
   // Vacío, `Number('')` daba 0 y se guardaba hándicap 0 (26 oct): no se guarda y avisa
   it('con el hándicap vacío no guarda y avisa del rango', async () => {
     useAuth.mockReturnValue({
-      user: { id: '1', first_name: 'John', last_name: 'Doe', email: 'a@a.com', handicap: 10 },
+      user: {
+        id: '1',
+        first_name: 'John',
+        last_name: 'Doe',
+        email: 'a@a.com',
+        handicap: 10,
+      },
       loading: false,
       error: null,
       refetch: vi.fn(),
@@ -375,21 +468,33 @@ describe('useEditProfile Hook', () => {
     const { result } = renderHook(() => useEditProfile());
     await act(async () => {});
     act(() => {
-      result.current.handleInputChange({ target: { name: 'handicap', value: '' } });
+      result.current.handleInputChange({
+        target: { name: 'handicap', value: '' },
+      });
     });
 
     await act(async () => {
-      await result.current.handleUpdateHandicapManually({ preventDefault: vi.fn() });
+      await result.current.handleUpdateHandicapManually({
+        preventDefault: vi.fn(),
+      });
     });
 
-    expect(composition.updateManualHandicapUseCase.execute).not.toHaveBeenCalled();
+    expect(
+      composition.updateManualHandicapUseCase.execute,
+    ).not.toHaveBeenCalled();
     expect(customToast.error).toHaveBeenCalledWith('edit.handicap.manualHelp');
     expect(result.current.isSaving).toBe(false);
   });
 
   it('debería llamar a updateRfegHandicapUseCase y actualizar el estado (incluyendo formData) al llamar a handleUpdateHandicapRFEG', async () => {
     // Arrange
-    const mockUserPlain = { id: '1', first_name: 'John', last_name: 'Doe', email: 'a@a.com', handicap: 10 };
+    const mockUserPlain = {
+      id: '1',
+      first_name: 'John',
+      last_name: 'Doe',
+      email: 'a@a.com',
+      handicap: 10,
+    };
     const rfegHandicap = 8.2;
     const updatedUserPlain = { ...mockUserPlain, handicap: rfegHandicap };
 
@@ -401,7 +506,7 @@ describe('useEditProfile Hook', () => {
       last_name: 'Doe',
       email: 'a@a.com',
       handicap: rfegHandicap,
-      email_verified: true
+      email_verified: true,
     });
 
     // Mock refetch that updates the authUser
@@ -412,9 +517,11 @@ describe('useEditProfile Hook', () => {
       user: mockUserPlain,
       loading: false,
       error: null,
-      refetch: mockRefetch
+      refetch: mockRefetch,
     });
-    composition.updateRfegHandicapUseCase.execute.mockResolvedValue(updatedUserEntity);
+    composition.updateRfegHandicapUseCase.execute.mockResolvedValue(
+      updatedUserEntity,
+    );
 
     const { result, rerender } = renderHook(() => useEditProfile());
     await act(async () => {}); // Esperar a que la carga inicial termine
@@ -426,20 +533,24 @@ describe('useEditProfile Hook', () => {
         user: updatedUserPlain,
         loading: false,
         error: null,
-        refetch: mockRefetch
+        refetch: mockRefetch,
       });
       await result.current.handleUpdateHandicapRFEG();
       rerender(); // Trigger re-render to update with new authUser
     });
 
     // Assert
-    expect(composition.updateRfegHandicapUseCase.execute).toHaveBeenCalledTimes(1);
+    expect(composition.updateRfegHandicapUseCase.execute).toHaveBeenCalledTimes(
+      1,
+    );
     expect(composition.updateRfegHandicapUseCase.execute).toHaveBeenCalledWith({
       userId: mockUserPlain.id,
     });
 
     expect(mockRefetch).toHaveBeenCalled();
-    expect(customToast.success).toHaveBeenCalledWith('toasts.handicapUpdatedRFEG');
+    expect(customToast.success).toHaveBeenCalledWith(
+      'toasts.handicapUpdatedRFEG',
+    );
     expect(result.current.isUpdatingRFEG).toBe(false); // Asegurarse de que el estado se resetea
     expect(result.current.formData.handicap).toBe(rfegHandicap.toString()); // Verificar que formData se actualizó
   });
@@ -468,7 +579,9 @@ describe('useEditProfile — el alias (FE #435)', () => {
 
   const escribeAlias = async (result, valor) => {
     await act(async () => {
-      result.current.handleInputChange({ target: { name: 'alias', value: valor } });
+      result.current.handleInputChange({
+        target: { name: 'alias', value: valor },
+      });
     });
   };
 
@@ -511,7 +624,9 @@ describe('useEditProfile — el alias (FE #435)', () => {
     const { result } = montaCon();
     await escribeAlias(result, '   ');
     await act(async () => {
-      result.current.handleInputChange({ target: { name: 'firstName', value: 'Agus' } });
+      result.current.handleInputChange({
+        target: { name: 'firstName', value: 'Agus' },
+      });
     });
     await guarda(result);
 
@@ -587,7 +702,12 @@ describe('useEditProfile — quitar el alias desde el botón (FE #435)', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     composition.updateUserProfileUseCase.execute.mockResolvedValue({});
-    useAuth.mockReturnValue({ user: usuario, loading: false, error: null, refetch: vi.fn() });
+    useAuth.mockReturnValue({
+      user: usuario,
+      loading: false,
+      error: null,
+      refetch: vi.fn(),
+    });
   });
 
   it('vaciar el campo deja la petición pidiendo que se borre', async () => {
@@ -595,7 +715,9 @@ describe('useEditProfile — quitar el alias desde el botón (FE #435)', () => {
     const { result } = renderHook(() => useEditProfile());
 
     await act(async () => {
-      result.current.handleInputChange({ target: { name: 'alias', value: '' } });
+      result.current.handleInputChange({
+        target: { name: 'alias', value: '' },
+      });
     });
     await act(async () => {
       await result.current.handleUpdateProfile({ preventDefault: vi.fn() });
@@ -614,7 +736,9 @@ describe('useEditProfile — quitar el alias desde el botón (FE #435)', () => {
     const { result } = renderHook(() => useEditProfile());
 
     await act(async () => {
-      result.current.handleInputChange({ target: { name: 'alias', value: 'Repetido' } });
+      result.current.handleInputChange({
+        target: { name: 'alias', value: 'Repetido' },
+      });
     });
     await act(async () => {
       await result.current.handleUpdateProfile({ preventDefault: vi.fn() });
@@ -622,7 +746,9 @@ describe('useEditProfile — quitar el alias desde el botón (FE #435)', () => {
     expect(result.current.aliasError).toBe('alias.errors.taken');
 
     await act(async () => {
-      result.current.handleInputChange({ target: { name: 'alias', value: '' } });
+      result.current.handleInputChange({
+        target: { name: 'alias', value: '' },
+      });
     });
 
     expect(result.current.aliasError).toBeNull();

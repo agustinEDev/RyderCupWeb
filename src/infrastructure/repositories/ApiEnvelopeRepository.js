@@ -16,10 +16,16 @@ class ApiEnvelopeRepository extends IEnvelopeRepository {
    * que si no se podría entregar el sobre del rival.
    */
   async submitEnvelope(roundId, entries, revealWhenBothReady = false) {
-    const data = await apiRequest(`/api/v1/competitions/rounds/${segmento(roundId)}/envelope`, {
-      method: 'PUT',
-      body: JSON.stringify({ entries, reveal_when_both_ready: revealWhenBothReady }),
-    });
+    const data = await apiRequest(
+      `/api/v1/competitions/rounds/${segmento(roundId)}/envelope`,
+      {
+        method: 'PUT',
+        body: JSON.stringify({
+          entries,
+          reveal_when_both_ready: revealWhenBothReady,
+        }),
+      },
+    );
     return EnvelopeMapper.toEnvelopeDTO(data);
   }
 
@@ -31,7 +37,9 @@ class ApiEnvelopeRepository extends IEnvelopeRepository {
    * con aspecto de normal.
    */
   async getEnvelopes(roundId) {
-    const data = await apiRequest(`/api/v1/competitions/rounds/${segmento(roundId)}/envelopes`);
+    const data = await apiRequest(
+      `/api/v1/competitions/rounds/${segmento(roundId)}/envelopes`,
+    );
     return EnvelopeMapper.toEnvelopesViewDTO(data);
   }
 
@@ -41,7 +49,7 @@ class ApiEnvelopeRepository extends IEnvelopeRepository {
   async revealEnvelopes(roundId) {
     const data = await apiRequest(
       `/api/v1/competitions/rounds/${segmento(roundId)}/envelopes/reveal`,
-      { method: 'POST' }
+      { method: 'POST' },
     );
     return {
       roundId: data.round_id,
@@ -58,7 +66,7 @@ class ApiEnvelopeRepository extends IEnvelopeRepository {
   async resetEnvelopes(roundId) {
     const data = await apiRequest(
       `/api/v1/competitions/rounds/${segmento(roundId)}/envelopes/reset`,
-      { method: 'POST' }
+      { method: 'POST' },
     );
     return {
       roundId: data.round_id,
@@ -84,7 +92,9 @@ class ApiEnvelopeRepository extends IEnvelopeRepository {
    * crear sus partidos. Vacío casi siempre.
    */
   async listMySessionsWithoutMatches() {
-    const data = await apiRequest('/api/v1/competitions/me/sessions-without-matches');
+    const data = await apiRequest(
+      '/api/v1/competitions/me/sessions-without-matches',
+    );
     return EnvelopeMapper.toSessionsWithoutMatches(data);
   }
 }

@@ -27,12 +27,19 @@ vi.mock('react-i18next', () => ({
 }));
 const fallo = { si: false };
 vi.mock('../../infrastructure/http/tokenRefreshInterceptor', () => ({
-  fetchWithTokenRefresh: () => (fallo.si ? Promise.reject(new TypeError('Failed to fetch')) : Promise.resolve({ ok: false, status: 401 })),
+  fetchWithTokenRefresh: () =>
+    fallo.si
+      ? Promise.reject(new TypeError('Failed to fetch'))
+      : Promise.resolve({ ok: false, status: 401 }),
 }));
-vi.mock('../../infrastructure/http/deviceRevocationLogout', () => ({ clearDeviceRevocationFlag: vi.fn() }));
+vi.mock('../../infrastructure/http/deviceRevocationLogout', () => ({
+  clearDeviceRevocationFlag: vi.fn(),
+}));
 
-const { anotaLaSesion, consultaLaSesion, reiniciaLaSesionCompartida } = await import('../../services/sesionCompartida');
-const { default: AvisoTerminosPendientes } = await import('./AvisoTerminosPendientes');
+const { anotaLaSesion, consultaLaSesion, reiniciaLaSesionCompartida } =
+  await import('../../services/sesionCompartida');
+const { default: AvisoTerminosPendientes } =
+  await import('./AvisoTerminosPendientes');
 
 const CLASIFICACION = '/competitions/c-1/leaderboard';
 const PENDIENTES = { id: 'u-1', terms_accepted: false };
@@ -50,7 +57,7 @@ const abrir = (ruta) =>
         <Route path="/accept-terms" element={<PantallaDeAceptar />} />
         <Route path="*" element={<p>pantalla</p>} />
       </Routes>
-    </MemoryRouter>
+    </MemoryRouter>,
   );
 
 const aviso = () => screen.queryByTestId('aviso-terminos-pendientes');
@@ -59,7 +66,11 @@ describe('AvisoTerminosPendientes', () => {
   beforeEach(() => {
     reiniciaLaSesionCompartida();
     fallo.si = false;
-    try { localStorage.removeItem('rydercup-sesion-conocida'); } catch { /* sin almacenamiento */ }
+    try {
+      localStorage.removeItem('rydercup-sesion-conocida');
+    } catch {
+      /* sin almacenamiento */
+    }
   });
 
   afterEach(() => {
@@ -72,7 +83,9 @@ describe('AvisoTerminosPendientes', () => {
     abrir(CLASIFICACION);
 
     expect(aviso()).toHaveTextContent('avisoTerminos.texto');
-    expect(screen.getByRole('link', { name: 'avisoTerminos.aceptar' })).toHaveAttribute('href', '/accept-terms');
+    expect(
+      screen.getByRole('link', { name: 'avisoTerminos.aceptar' }),
+    ).toHaveAttribute('href', '/accept-terms');
     // No bloquea: la pantalla sigue ahí
     expect(screen.getByText('pantalla')).toBeInTheDocument();
   });
@@ -81,9 +94,13 @@ describe('AvisoTerminosPendientes', () => {
     anotaLaSesion(PENDIENTES);
     abrir(CLASIFICACION);
 
-    fireEvent.click(screen.getByRole('link', { name: 'avisoTerminos.aceptar' }));
+    fireEvent.click(
+      screen.getByRole('link', { name: 'avisoTerminos.aceptar' }),
+    );
 
-    expect(screen.getByText(`aceptar desde ${CLASIFICACION}`)).toBeInTheDocument();
+    expect(
+      screen.getByText(`aceptar desde ${CLASIFICACION}`),
+    ).toBeInTheDocument();
   });
 
   it('3: sin sesión no avisa', async () => {
@@ -105,7 +122,10 @@ describe('AvisoTerminosPendientes', () => {
 
   it('6: con la sesión sin confirmar (la copia del dispositivo) no avisa', async () => {
     vi.spyOn(console, 'error').mockImplementation(() => {});
-    localStorage.setItem('rydercup-sesion-conocida', JSON.stringify(PENDIENTES));
+    localStorage.setItem(
+      'rydercup-sesion-conocida',
+      JSON.stringify(PENDIENTES),
+    );
     fallo.si = true;
     await consultaLaSesion();
     abrir(CLASIFICACION);
@@ -113,19 +133,25 @@ describe('AvisoTerminosPendientes', () => {
     expect(aviso()).toBeNull();
   });
 
-  it.each(['/terms', '/privacy', '/cookies', '/legal', '/terms/'])('7: en %s no avisa: se lee sin estorbos', (ruta) => {
-    anotaLaSesion(PENDIENTES);
-    abrir(ruta);
+  it.each(['/terms', '/privacy', '/cookies', '/legal', '/terms/'])(
+    '7: en %s no avisa: se lee sin estorbos',
+    (ruta) => {
+      anotaLaSesion(PENDIENTES);
+      abrir(ruta);
 
-    expect(aviso()).toBeNull();
-  });
+      expect(aviso()).toBeNull();
+    },
+  );
 
-  it.each(['/accept-terms', '/dashboard', '/competitions/c-1'])('8: en %s no avisa: ahí manda el guardia', (ruta) => {
-    anotaLaSesion(PENDIENTES);
-    abrir(ruta);
+  it.each(['/accept-terms', '/dashboard', '/competitions/c-1'])(
+    '8: en %s no avisa: ahí manda el guardia',
+    (ruta) => {
+      anotaLaSesion(PENDIENTES);
+      abrir(ruta);
 
-    expect(aviso()).toBeNull();
-  });
+      expect(aviso()).toBeNull();
+    },
+  );
 
   it('9: al aceptarlos con la página abierta, se va sin recargar', () => {
     anotaLaSesion(PENDIENTES);

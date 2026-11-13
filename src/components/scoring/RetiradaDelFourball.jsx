@@ -28,7 +28,9 @@ const RetiradaDelFourball = ({ opciones, yo, onRetirar, enviando }) => {
     <div data-testid="retirada-del-fourball" className="space-y-2">
       {volver && (
         <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 text-sm space-y-3">
-          <p className="font-medium text-amber-900">{t('withdraw.youAreWithdrawn')}</p>
+          <p className="font-medium text-amber-900">
+            {t('withdraw.youAreWithdrawn')}
+          </p>
           <button
             type="button"
             disabled={enviando}
@@ -77,7 +79,10 @@ const RetiradaDelFourball = ({ opciones, yo, onRetirar, enviando }) => {
         labelledBy="retirada-titulo"
         describedBy="retirada-mensaje"
       >
-        <h2 id="retirada-titulo" className="text-lg font-semibold text-gray-900 mb-2">
+        <h2
+          id="retirada-titulo"
+          className="text-lg font-semibold text-gray-900 mb-2"
+        >
           {t('withdraw.confirmTitle')}
         </h2>
         <p id="retirada-mensaje" className="text-sm text-gray-600 mb-4">

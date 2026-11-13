@@ -48,7 +48,7 @@ const pintarTarjeta = (m, extra = {}) =>
       teamNames={{ teamA: 'A', teamB: 'B' }}
       t={t}
       {...extra}
-    />
+    />,
   );
 
 const pintarDetalle = (m, extra = {}) => {
@@ -65,7 +65,7 @@ const pintarDetalle = (m, extra = {}) => {
         t={t}
         {...extra}
       />
-    </MemoryRouter>
+    </MemoryRouter>,
   );
 };
 
@@ -89,7 +89,12 @@ describe('MatchCard · hándicap plus (FE #797)', () => {
   });
 
   it('H4: el cero va sin signo', () => {
-    pintarTarjeta(partido({ userId: 'ana', playerHandicap: -0, playingHandicap: 0 }, normal));
+    pintarTarjeta(
+      partido(
+        { userId: 'ana', playerHandicap: -0, playingHandicap: 0 },
+        normal,
+      ),
+    );
 
     expect(screen.getByText('HCP 0.0')).toBeInTheDocument();
     expect(screen.getByText('Hcp juego: 0')).toBeInTheDocument();

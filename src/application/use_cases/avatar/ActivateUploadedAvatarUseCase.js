@@ -9,7 +9,9 @@ class ActivateUploadedAvatarUseCase {
 
   constructor({ avatarRepository }) {
     if (!avatarRepository) {
-      throw new Error('ActivateUploadedAvatarUseCase requires avatarRepository');
+      throw new Error(
+        'ActivateUploadedAvatarUseCase requires avatarRepository',
+      );
     }
     this.#avatarRepository = avatarRepository;
   }

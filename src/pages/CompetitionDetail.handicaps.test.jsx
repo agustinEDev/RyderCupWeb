@@ -11,9 +11,18 @@ import { MemoryRouter, Route, Routes, useNavigate } from 'react-router';
  * nueva; por eso la tarjeta no lleva la cuenta de su competición.
  */
 
-vi.mock('react-i18next', () => ({ useTranslation: () => ({ t: (k) => k, i18n: { language: 'es' } }) }));
+vi.mock('react-i18next', () => ({
+  useTranslation: () => ({ t: (k) => k, i18n: { language: 'es' } }),
+}));
 vi.mock('framer-motion', () => ({
-  motion: new Proxy({}, { get: () => ({ children, ...p }) => <div {...p}>{children}</div> }),
+  motion: new Proxy(
+    {},
+    {
+      get:
+        () =>
+        ({ children, ...p }) => <div {...p}>{children}</div>,
+    },
+  ),
 }));
 vi.mock('../components/layout/HeaderAuth', () => ({ default: () => null }));
 vi.mock('../components/ui/FullScreenLoader', () => ({ default: () => null }));
@@ -23,10 +32,23 @@ const TarjetaQueCuenta = ({ competitionId }) => {
   useState(() => montajes.push(competitionId));
   return <p>tarjeta-{competitionId}</p>;
 };
-vi.mock('../components/competition/HandicapsDeLaCompeticion', () => ({ default: TarjetaQueCuenta }));
-vi.mock('../hooks/useAuth', () => ({ useAuth: () => ({ user: { id: 'creator-1' }, loading: false }) }));
-vi.mock('../hooks/useUserRoles', () => ({ useUserRoles: () => ({ isAdmin: false, isCreator: true, isLoading: false }) }));
-vi.mock('../utils/toast', () => ({ default: { success: vi.fn(), error: vi.fn(), warning: vi.fn(), info: vi.fn() } }));
+vi.mock('../components/competition/HandicapsDeLaCompeticion', () => ({
+  default: TarjetaQueCuenta,
+}));
+vi.mock('../hooks/useAuth', () => ({
+  useAuth: () => ({ user: { id: 'creator-1' }, loading: false }),
+}));
+vi.mock('../hooks/useUserRoles', () => ({
+  useUserRoles: () => ({ isAdmin: false, isCreator: true, isLoading: false }),
+}));
+vi.mock('../utils/toast', () => ({
+  default: {
+    success: vi.fn(),
+    error: vi.fn(),
+    warning: vi.fn(),
+    info: vi.fn(),
+  },
+}));
 
 const ficha = (id) => ({
   id,
@@ -38,19 +60,29 @@ const ficha = (id) => ({
   countries: [],
   playMode: 'HANDICAP',
   teamAssignment: 'MANUAL',
-  handicapUpdateWindow: { open: true, closesAt: null, reason: null, scheduledAt: null },
+  handicapUpdateWindow: {
+    open: true,
+    closesAt: null,
+    reason: null,
+    scheduledAt: null,
+  },
   handicapUpdate: null,
 });
 // Lo que la ficha no use aquí responde vacío
-vi.mock('../composition', () =>
-  new Proxy(
-    {
-      getCompetitionDetailUseCase: { execute: async (id) => ficha(id) },
-      listEnrollmentsUseCase: { execute: async () => [] },
-      getCompetitionGolfCoursesUseCase: { execute: async () => [] },
-    },
-    { get: (o, k) => o[k] ?? { execute: vi.fn().mockResolvedValue(null) }, has: () => true }
-  )
+vi.mock(
+  '../composition',
+  () =>
+    new Proxy(
+      {
+        getCompetitionDetailUseCase: { execute: async (id) => ficha(id) },
+        listEnrollmentsUseCase: { execute: async () => [] },
+        getCompetitionGolfCoursesUseCase: { execute: async () => [] },
+      },
+      {
+        get: (o, k) => o[k] ?? { execute: vi.fn().mockResolvedValue(null) },
+        has: () => true,
+      },
+    ),
 );
 
 const CompetitionDetail = (await import('./CompetitionDetail')).default;
@@ -71,7 +103,7 @@ it('R1: al pasar a otra competición, la tarjeta de los hándicaps se monta de n
       <Routes>
         <Route path="/competitions/:id" element={<CompetitionDetail />} />
       </Routes>
-    </MemoryRouter>
+    </MemoryRouter>,
   );
   await screen.findByText('tarjeta-comp-1');
 

@@ -32,17 +32,22 @@ describe('useCentrarEnMiFila · la última fila también se centra (FE #988)', (
     alto = vi.spyOn(document.documentElement, 'scrollHeight', 'get');
   });
   afterEach(() => {
-    document.querySelectorAll('[data-tapa-abajo]').forEach((hueco) => hueco.remove());
+    document
+      .querySelectorAll('[data-tapa-abajo]')
+      .forEach((hueco) => hueco.remove());
     vi.restoreAllMocks();
     window.HTMLElement.prototype.scrollIntoView = original;
   });
 
   // La fila, y lo que tapa por abajo (los huecos de App, con `data-tapa-abajo`)
   const filaEn = (top, tapa = 0) =>
-    vi.spyOn(window.HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(function () {
-      if (this.hasAttribute('data-tapa-abajo')) return { top: 800 - tapa, height: tapa, bottom: 800 };
-      return { top, height: 40, bottom: top + 40 };
-    });
+    vi
+      .spyOn(window.HTMLElement.prototype, 'getBoundingClientRect')
+      .mockImplementation(function () {
+        if (this.hasAttribute('data-tapa-abajo'))
+          return { top: 800 - tapa, height: tapa, bottom: 800 };
+        return { top, height: 40, bottom: top + 40 };
+      });
   const huecoDeLaBarra = () => {
     const hueco = document.createElement('div');
     hueco.setAttribute('data-tapa-abajo', '');

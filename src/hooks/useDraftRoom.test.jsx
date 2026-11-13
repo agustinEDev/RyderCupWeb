@@ -139,7 +139,9 @@ describe('useDraftRoom (FE #653)', () => {
       vi.advanceTimersByTime(6000);
     });
 
-    await waitFor(() => expect(result.current.sala?.status).toBe('IN_PROGRESS'));
+    await waitFor(() =>
+      expect(result.current.sala?.status).toBe('IN_PROGRESS'),
+    );
   });
 
   it('H5e: un fallo mientras se espera el sorteo no para la espera (revisión local)', async () => {
@@ -147,7 +149,9 @@ describe('useDraftRoom (FE #653)', () => {
     // «todavía no se ha lanzado» hasta recargar
     mockGet
       .mockResolvedValueOnce(null)
-      .mockRejectedValueOnce(Object.assign(new Error('Demasiadas peticiones'), { status: 429 }))
+      .mockRejectedValueOnce(
+        Object.assign(new Error('Demasiadas peticiones'), { status: 429 }),
+      )
       .mockResolvedValue(sala());
     const { result } = renderHook(() => useDraftRoom('c1', 'ana'));
     await waitFor(() => expect(result.current.cargando).toBe(false));
@@ -159,13 +163,17 @@ describe('useDraftRoom (FE #653)', () => {
       vi.advanceTimersByTime(6000);
     });
 
-    await waitFor(() => expect(result.current.sala?.status).toBe('IN_PROGRESS'));
+    await waitFor(() =>
+      expect(result.current.sala?.status).toBe('IN_PROGRESS'),
+    );
   });
 
   it('H5f: un error del refresco que se recupera se quita de la pantalla (CodeRabbit)', async () => {
     mockGet
       .mockResolvedValueOnce(null)
-      .mockRejectedValueOnce(Object.assign(new Error('Demasiadas peticiones'), { status: 429 }))
+      .mockRejectedValueOnce(
+        Object.assign(new Error('Demasiadas peticiones'), { status: 429 }),
+      )
       .mockResolvedValue(sala());
     const { result } = renderHook(() => useDraftRoom('c1', 'ana'));
     await waitFor(() => expect(result.current.cargando).toBe(false));
@@ -173,12 +181,16 @@ describe('useDraftRoom (FE #653)', () => {
     await act(async () => {
       vi.advanceTimersByTime(6000);
     });
-    await waitFor(() => expect(result.current.error).toBe('Demasiadas peticiones'));
+    await waitFor(() =>
+      expect(result.current.error).toBe('Demasiadas peticiones'),
+    );
     await act(async () => {
       vi.advanceTimersByTime(6000);
     });
 
-    await waitFor(() => expect(result.current.sala?.status).toBe('IN_PROGRESS'));
+    await waitFor(() =>
+      expect(result.current.sala?.status).toBe('IN_PROGRESS'),
+    );
     expect(result.current.error).toBeNull();
   });
 
@@ -186,16 +198,22 @@ describe('useDraftRoom (FE #653)', () => {
     // Cargada la c1 (sin sorteo aún), la c2 da 403: no se insiste con ella
     mockGet.mockImplementation(async (id) => {
       if (id === 'c1') return null;
-      throw Object.assign(new Error('No eres de esta competición'), { status: 403 });
+      throw Object.assign(new Error('No eres de esta competición'), {
+        status: 403,
+      });
     });
-    const { result, rerender } = renderHook(({ id }) => useDraftRoom(id, 'ana'), {
-      initialProps: { id: 'c1' },
-    });
+    const { result, rerender } = renderHook(
+      ({ id }) => useDraftRoom(id, 'ana'),
+      {
+        initialProps: { id: 'c1' },
+      },
+    );
     await waitFor(() => expect(result.current.cargando).toBe(false));
 
     rerender({ id: 'c2' });
     await waitFor(() => expect(result.current.error).toBeTruthy());
-    const llamadasC2 = () => mockGet.mock.calls.filter(([id]) => id === 'c2').length;
+    const llamadasC2 = () =>
+      mockGet.mock.calls.filter(([id]) => id === 'c2').length;
     const antes = llamadasC2();
     await act(async () => {
       vi.advanceTimersByTime(30000);
@@ -205,7 +223,9 @@ describe('useDraftRoom (FE #653)', () => {
   });
 
   it('H5d: si no se pudo cargar, no se insiste cada cinco segundos', async () => {
-    mockGet.mockRejectedValue(Object.assign(new Error('No eres de esta competición'), { status: 403 }));
+    mockGet.mockRejectedValue(
+      Object.assign(new Error('No eres de esta competición'), { status: 403 }),
+    );
     const { result } = renderHook(() => useDraftRoom('c1', 'ana'));
     await waitFor(() => expect(result.current.error).toBeTruthy());
     mockGet.mockClear();
@@ -218,7 +238,9 @@ describe('useDraftRoom (FE #653)', () => {
   });
 
   it('H6: terminada deja de preguntar: ya no cambia nada', async () => {
-    mockGet.mockResolvedValue(sala({ status: 'COMPLETED', currentTeam: null, turnStartedAt: null }));
+    mockGet.mockResolvedValue(
+      sala({ status: 'COMPLETED', currentTeam: null, turnStartedAt: null }),
+    );
     const { result } = renderHook(() => useDraftRoom('c1', 'ana'));
     await waitFor(() => expect(result.current.sala).not.toBeNull());
     const cargas = mockGet.mock.calls.length;
@@ -267,7 +289,9 @@ describe('useDraftRoom (FE #653)', () => {
   it('H11: si el turno ya no es suyo, lo dice y refresca', async () => {
     // 409: se le acabó el minuto y la aplicación eligió por él. La pantalla
     // tiene que enseñar lo que pasó, no el error a secas
-    mockPick.mockRejectedValue(Object.assign(new Error('No es tu turno'), { status: 409 }));
+    mockPick.mockRejectedValue(
+      Object.assign(new Error('No es tu turno'), { status: 409 }),
+    );
     const { result } = renderHook(() => useDraftRoom('c1', 'ana'));
     await waitFor(() => expect(result.current.sala).not.toBeNull());
     const cargas = mockGet.mock.calls.length;
@@ -283,7 +307,9 @@ describe('useDraftRoom (FE #653)', () => {
   it('H11b: y el aviso no se lo lleva el refresco de tres segundos después', async () => {
     // El refresco trae la sala nueva, que es lo que se quiere; borrar el aviso
     // dejaría al capitán sin saber por qué eligió otro por él
-    mockPick.mockRejectedValue(Object.assign(new Error('No es tu turno'), { status: 409 }));
+    mockPick.mockRejectedValue(
+      Object.assign(new Error('No es tu turno'), { status: 409 }),
+    );
     const { result } = renderHook(() => useDraftRoom('c1', 'ana'));
     await waitFor(() => expect(result.current.sala).not.toBeNull());
     await act(async () => {
@@ -301,10 +327,14 @@ describe('useDraftRoom (FE #653)', () => {
     // La app eligió al penúltimo por él y el último entró solo: ya no le toca
     // a nadie. Se decide con la sala que trae el 409, no al pintar: si no, un
     // turno perdido de antes cambiaba de texto al terminar la sala el rival
-    mockPick.mockRejectedValue(Object.assign(new Error('No es tu turno'), { status: 409 }));
+    mockPick.mockRejectedValue(
+      Object.assign(new Error('No es tu turno'), { status: 409 }),
+    );
     const { result } = renderHook(() => useDraftRoom('c1', 'ana'));
     await waitFor(() => expect(result.current.sala).not.toBeNull());
-    mockGet.mockResolvedValue(sala({ status: 'COMPLETED', currentTeam: null, availablePlayers: [] }));
+    mockGet.mockResolvedValue(
+      sala({ status: 'COMPLETED', currentTeam: null, availablePlayers: [] }),
+    );
 
     await act(async () => {
       await result.current.elegir('dani');
@@ -314,13 +344,17 @@ describe('useDraftRoom (FE #653)', () => {
   });
 
   it('H11e: y un turno perdido de antes no cambia de texto cuando la sala termina', async () => {
-    mockPick.mockRejectedValue(Object.assign(new Error('No es tu turno'), { status: 409 }));
+    mockPick.mockRejectedValue(
+      Object.assign(new Error('No es tu turno'), { status: 409 }),
+    );
     const { result } = renderHook(() => useDraftRoom('c1', 'ana'));
     await waitFor(() => expect(result.current.sala).not.toBeNull());
     await act(async () => {
       await result.current.elegir('dani');
     });
-    mockGet.mockResolvedValue(sala({ status: 'COMPLETED', currentTeam: null, availablePlayers: [] }));
+    mockGet.mockResolvedValue(
+      sala({ status: 'COMPLETED', currentTeam: null, availablePlayers: [] }),
+    );
 
     await act(async () => {
       vi.advanceTimersByTime(6000);
@@ -340,12 +374,17 @@ describe('useDraftRoom (FE #653)', () => {
     await waitFor(() => expect(result.current.sala).not.toBeNull());
 
     mockGet.mockImplementationOnce(
-      () => new Promise((resolve) => { devolverLaVieja = () => resolve(sala()); })
+      () =>
+        new Promise((resolve) => {
+          devolverLaVieja = () => resolve(sala());
+        }),
     );
     await act(async () => {
       vi.advanceTimersByTime(6000);
     });
-    mockPick.mockResolvedValue(sala({ currentTeam: 'B', availablePlayers: [] }));
+    mockPick.mockResolvedValue(
+      sala({ currentTeam: 'B', availablePlayers: [] }),
+    );
     await act(async () => {
       await result.current.elegir('dani');
     });
@@ -367,7 +406,10 @@ describe('useDraftRoom (FE #653)', () => {
     const { result } = renderHook(() => useDraftRoom('c1', 'ana'));
     await waitFor(() => expect(result.current.sala).not.toBeNull());
     mockGet.mockImplementationOnce(
-      () => new Promise((_, reject) => { fallarLaVieja = () => reject(new Error('Boom')); })
+      () =>
+        new Promise((_, reject) => {
+          fallarLaVieja = () => reject(new Error('Boom'));
+        }),
     );
     await act(async () => {
       vi.advanceTimersByTime(6000);
@@ -442,7 +484,9 @@ describe('useDraftRoom (FE #653)', () => {
       }
       expect(mockGet).toHaveBeenCalledTimes(6);
 
-      mockGet.mockResolvedValue(sala({ status: 'COMPLETED', currentTeam: null, turnStartedAt: null }));
+      mockGet.mockResolvedValue(
+        sala({ status: 'COMPLETED', currentTeam: null, turnStartedAt: null }),
+      );
       await act(async () => {
         vi.advanceTimersByTime(5000);
       });
@@ -466,7 +510,9 @@ describe('useDraftRoom (FE #653)', () => {
         await result.current.elegir('dani');
       });
       expect(result.current.sala.currentTeam).toBe('B');
-      mockGet.mockResolvedValue(sala({ status: 'COMPLETED', currentTeam: null, turnStartedAt: null }));
+      mockGet.mockResolvedValue(
+        sala({ status: 'COMPLETED', currentTeam: null, turnStartedAt: null }),
+      );
 
       await act(async () => {
         vi.advanceTimersByTime(5000);
@@ -484,7 +530,10 @@ describe('useDraftRoom (FE #653)', () => {
       await waitFor(() => expect(result.current.cargando).toBe(false));
       let devolverLaVieja;
       mockGet.mockImplementationOnce(
-        () => new Promise((resolve) => { devolverLaVieja = () => resolve(null); })
+        () =>
+          new Promise((resolve) => {
+            devolverLaVieja = () => resolve(null);
+          }),
       );
       await act(async () => {
         vi.advanceTimersByTime(5000);
@@ -509,7 +558,10 @@ describe('useDraftRoom (FE #653)', () => {
       await waitFor(() => expect(result.current.cargando).toBe(false));
       let fallarLaVieja;
       mockGet.mockImplementationOnce(
-        () => new Promise((_, reject) => { fallarLaVieja = () => reject(new Error('Boom')); })
+        () =>
+          new Promise((_, reject) => {
+            fallarLaVieja = () => reject(new Error('Boom'));
+          }),
       );
       await act(async () => {
         vi.advanceTimersByTime(5000);
@@ -528,14 +580,21 @@ describe('useDraftRoom (FE #653)', () => {
     });
 
     it('T5-4: 409 y un sondeo que sustituye la recarga: un aviso, decidido con la sala más nueva', async () => {
-      mockPick.mockRejectedValue(Object.assign(new Error('No es tu turno'), { status: 409 }));
+      mockPick.mockRejectedValue(
+        Object.assign(new Error('No es tu turno'), { status: 409 }),
+      );
       const { result } = renderHook(() => useDraftRoom('c1', 'ana'));
       await waitFor(() => expect(result.current.sala).not.toBeNull());
       let devolverLaRecarga;
       mockGet.mockImplementationOnce(
-        () => new Promise((resolve) => { devolverLaRecarga = () => resolve(sala({ currentTeam: 'B' })); })
+        () =>
+          new Promise((resolve) => {
+            devolverLaRecarga = () => resolve(sala({ currentTeam: 'B' }));
+          }),
       );
-      mockGet.mockResolvedValue(sala({ status: 'COMPLETED', currentTeam: null, availablePlayers: [] }));
+      mockGet.mockResolvedValue(
+        sala({ status: 'COMPLETED', currentTeam: null, availablePlayers: [] }),
+      );
 
       let eleccion;
       await act(async () => {
@@ -557,20 +616,29 @@ describe('useDraftRoom (FE #653)', () => {
     });
 
     it('T5-5: de c1 a c2 sin desmontar, sin volver a la espera y sin pintar lo de c1 que llega tarde', async () => {
-      const { result, rerender } = renderHook(({ id }) => useDraftRoom(id, 'ana'), {
-        initialProps: { id: 'c1' },
-      });
+      const { result, rerender } = renderHook(
+        ({ id }) => useDraftRoom(id, 'ana'),
+        {
+          initialProps: { id: 'c1' },
+        },
+      );
       await waitFor(() => expect(result.current.sala).not.toBeNull());
       let devolverC1;
       mockGet.mockImplementationOnce(
-        () => new Promise((resolve) => { devolverC1 = () => resolve(sala({ id: 'vieja-c1' })); })
+        () =>
+          new Promise((resolve) => {
+            devolverC1 = () => resolve(sala({ id: 'vieja-c1' }));
+          }),
       );
       await act(async () => {
         vi.advanceTimersByTime(5000);
       });
       let devolverC2;
       mockGet.mockImplementationOnce(
-        () => new Promise((resolve) => { devolverC2 = () => resolve(sala({ id: 's2', competitionId: 'c2' })); })
+        () =>
+          new Promise((resolve) => {
+            devolverC2 = () => resolve(sala({ id: 's2', competitionId: 'c2' }));
+          }),
       );
 
       rerender({ id: 'c2' });
@@ -601,7 +669,11 @@ describe('useDraftRoom (FE #653)', () => {
       await waitFor(() => expect(result.current.sala).not.toBeNull());
       // El turno nuevo empezó en el servidor a las 10:00:25, justo ahora
       mockGet.mockResolvedValue(
-        sala({ currentTeam: 'B', turnStartedAt: '2030-06-01T10:00:25', serverTime: '2030-06-01T10:00:25' })
+        sala({
+          currentTeam: 'B',
+          turnStartedAt: '2030-06-01T10:00:25',
+          serverTime: '2030-06-01T10:00:25',
+        }),
       );
 
       await act(async () => {
@@ -609,7 +681,9 @@ describe('useDraftRoom (FE #653)', () => {
       });
       await waitFor(() => expect(result.current.sala.currentTeam).toBe('B'));
 
-      const delTurnoNuevo = pintados.filter(([empezo]) => empezo === '2030-06-01T10:00:25');
+      const delTurnoNuevo = pintados.filter(
+        ([empezo]) => empezo === '2030-06-01T10:00:25',
+      );
       expect(delTurnoNuevo.length).toBeGreaterThan(0);
       expect(delTurnoNuevo[0][1]).toBe(60);
     });
@@ -633,7 +707,11 @@ describe('useDraftRoom (FE #653)', () => {
       expect(result.current.segundosRestantes).toBe(40);
       let devolver;
       mockGet.mockImplementationOnce(
-        () => new Promise((resolve) => { devolver = () => resolve(sala({ serverTime: '2030-06-01T10:00:45' })); })
+        () =>
+          new Promise((resolve) => {
+            devolver = () =>
+              resolve(sala({ serverTime: '2030-06-01T10:00:45' }));
+          }),
       );
       await act(async () => {
         vi.advanceTimersByTime(5000);
@@ -654,11 +732,18 @@ describe('useDraftRoom (FE #653)', () => {
     });
 
     it('T5-18: una elección que falla con 500 enseña el error y lo quita la recarga que va bien', async () => {
-      mockPick.mockRejectedValue(Object.assign(new Error('Boom'), { status: 500 }));
+      mockPick.mockRejectedValue(
+        Object.assign(new Error('Boom'), { status: 500 }),
+      );
       let devolver;
       const { result } = renderHook(() => useDraftRoom('c1', 'ana'));
       await waitFor(() => expect(result.current.sala).not.toBeNull());
-      mockGet.mockImplementationOnce(() => new Promise((resolve) => { devolver = () => resolve(sala()); }));
+      mockGet.mockImplementationOnce(
+        () =>
+          new Promise((resolve) => {
+            devolver = () => resolve(sala());
+          }),
+      );
 
       let eleccion;
       await act(async () => {
@@ -679,15 +764,25 @@ describe('useDraftRoom (FE #653)', () => {
       // elección del mismo capitán ya dejó en pantalla una sala más nueva: esa
       // recarga no se pinta, y no puede decidir el aviso
       mockPick
-        .mockRejectedValueOnce(Object.assign(new Error('No es tu turno'), { status: 409 }))
+        .mockRejectedValueOnce(
+          Object.assign(new Error('No es tu turno'), { status: 409 }),
+        )
         .mockResolvedValueOnce(sala({ currentTeam: 'B' }));
       const { result } = renderHook(() => useDraftRoom('c1', 'ana'));
       await waitFor(() => expect(result.current.sala).not.toBeNull());
       let devolverLaRecarga;
       mockGet.mockImplementationOnce(
-        () => new Promise((resolve) => {
-          devolverLaRecarga = () => resolve(sala({ status: 'COMPLETED', currentTeam: null, availablePlayers: [] }));
-        })
+        () =>
+          new Promise((resolve) => {
+            devolverLaRecarga = () =>
+              resolve(
+                sala({
+                  status: 'COMPLETED',
+                  currentTeam: null,
+                  availablePlayers: [],
+                }),
+              );
+          }),
       );
 
       let primera;
@@ -709,14 +804,20 @@ describe('useDraftRoom (FE #653)', () => {
     });
 
     it('T5-5b: de c1 a c2, mientras llega la de c2 no queda la sala de c1, y sin la espera de pantalla', async () => {
-      const { result, rerender } = renderHook(({ id }) => useDraftRoom(id, 'ana'), {
-        initialProps: { id: 'c1' },
-      });
+      const { result, rerender } = renderHook(
+        ({ id }) => useDraftRoom(id, 'ana'),
+        {
+          initialProps: { id: 'c1' },
+        },
+      );
       await waitFor(() => expect(result.current.sala).not.toBeNull());
       expect(result.current.cargandoSala).toBe(false);
       let devolverC2;
       mockGet.mockImplementationOnce(
-        () => new Promise((resolve) => { devolverC2 = () => resolve(sala({ id: 's2', competitionId: 'c2' })); })
+        () =>
+          new Promise((resolve) => {
+            devolverC2 = () => resolve(sala({ id: 's2', competitionId: 'c2' }));
+          }),
       );
 
       rerender({ id: 'c2' });
@@ -735,9 +836,12 @@ describe('useDraftRoom (FE #653)', () => {
     });
 
     it('T5-5c: si la de c2 falla, se ve su error y nada de la sala de c1', async () => {
-      const { result, rerender } = renderHook(({ id }) => useDraftRoom(id, 'ana'), {
-        initialProps: { id: 'c1' },
-      });
+      const { result, rerender } = renderHook(
+        ({ id }) => useDraftRoom(id, 'ana'),
+        {
+          initialProps: { id: 'c1' },
+        },
+      );
       await waitFor(() => expect(result.current.sala).not.toBeNull());
       mockGet.mockRejectedValueOnce(new Error('Boom'));
 
@@ -749,17 +853,27 @@ describe('useDraftRoom (FE #653)', () => {
     });
 
     it('T5-5d: una elección de c1 que vuelve tras pasar a c2 no pinta su sala en c2 ni frena la carga de c2', async () => {
-      const { result, rerender } = renderHook(({ id }) => useDraftRoom(id, 'ana'), {
-        initialProps: { id: 'c1' },
-      });
+      const { result, rerender } = renderHook(
+        ({ id }) => useDraftRoom(id, 'ana'),
+        {
+          initialProps: { id: 'c1' },
+        },
+      );
       await waitFor(() => expect(result.current.sala).not.toBeNull());
       let devolverLaEleccion;
       mockPick.mockImplementationOnce(
-        () => new Promise((resolve) => { devolverLaEleccion = () => resolve(sala({ id: 'de-c1', currentTeam: 'B' })); })
+        () =>
+          new Promise((resolve) => {
+            devolverLaEleccion = () =>
+              resolve(sala({ id: 'de-c1', currentTeam: 'B' }));
+          }),
       );
       let devolverC2;
       mockGet.mockImplementationOnce(
-        () => new Promise((resolve) => { devolverC2 = () => resolve(sala({ id: 's2', competitionId: 'c2' })); })
+        () =>
+          new Promise((resolve) => {
+            devolverC2 = () => resolve(sala({ id: 's2', competitionId: 'c2' }));
+          }),
       );
       let eleccion;
       await act(async () => {
@@ -782,18 +896,28 @@ describe('useDraftRoom (FE #653)', () => {
     });
 
     it('T5-5e: una elección de c1 que vuelve cuando ya se ve c2 no cambia la sala de c2', async () => {
-      const { result, rerender } = renderHook(({ id }) => useDraftRoom(id, 'ana'), {
-        initialProps: { id: 'c1' },
-      });
+      const { result, rerender } = renderHook(
+        ({ id }) => useDraftRoom(id, 'ana'),
+        {
+          initialProps: { id: 'c1' },
+        },
+      );
       await waitFor(() => expect(result.current.sala).not.toBeNull());
       let devolverLaEleccion;
       mockPick.mockImplementationOnce(
         // Con otra hora del servidor: si la tomara el reloj, el contador de c2
         // iría treinta segundos por delante desde el siguiente latido
-        () => new Promise((resolve) => {
-          devolverLaEleccion = () =>
-            resolve(sala({ id: 'de-c1', currentTeam: 'B', serverTime: '2030-06-01T10:00:50' }));
-        })
+        () =>
+          new Promise((resolve) => {
+            devolverLaEleccion = () =>
+              resolve(
+                sala({
+                  id: 'de-c1',
+                  currentTeam: 'B',
+                  serverTime: '2030-06-01T10:00:50',
+                }),
+              );
+          }),
       );
       mockGet.mockResolvedValue(sala({ id: 's2', competitionId: 'c2' }));
       let eleccion;
@@ -818,13 +942,20 @@ describe('useDraftRoom (FE #653)', () => {
     });
 
     it('T5-5h: una elección de c1 que falla cuando ya se ve c2 no le pone su error ni le quita la sala', async () => {
-      const { result, rerender } = renderHook(({ id }) => useDraftRoom(id, 'ana'), {
-        initialProps: { id: 'c1' },
-      });
+      const { result, rerender } = renderHook(
+        ({ id }) => useDraftRoom(id, 'ana'),
+        {
+          initialProps: { id: 'c1' },
+        },
+      );
       await waitFor(() => expect(result.current.sala).not.toBeNull());
       let fallarLaEleccion;
       mockPick.mockImplementationOnce(
-        () => new Promise((_, reject) => { fallarLaEleccion = () => reject(Object.assign(new Error('Boom'), { status: 500 })); })
+        () =>
+          new Promise((_, reject) => {
+            fallarLaEleccion = () =>
+              reject(Object.assign(new Error('Boom'), { status: 500 }));
+          }),
       );
       mockGet.mockResolvedValue(sala({ id: 's2', competitionId: 'c2' }));
       let eleccion;
@@ -837,7 +968,11 @@ describe('useDraftRoom (FE #653)', () => {
       // en pantalla mientras tanto
       let devolverLaRecarga;
       mockGet.mockImplementationOnce(
-        () => new Promise((resolve) => { devolverLaRecarga = () => resolve(sala({ id: 's2', competitionId: 'c2' })); })
+        () =>
+          new Promise((resolve) => {
+            devolverLaRecarga = () =>
+              resolve(sala({ id: 's2', competitionId: 'c2' }));
+          }),
       );
 
       await act(async () => {
@@ -860,7 +995,10 @@ describe('useDraftRoom (FE #653)', () => {
       // sala ni sondeo, con la espera del bloque para siempre
       let devolverLaCarga;
       mockGet.mockImplementationOnce(
-        () => new Promise((resolve) => { devolverLaCarga = () => resolve(sala()); })
+        () =>
+          new Promise((resolve) => {
+            devolverLaCarga = () => resolve(sala());
+          }),
       );
       const { result } = renderHook(() => useDraftRoom('c1', 'ana'));
       await waitFor(() => expect(devolverLaCarga).toBeTypeOf('function'));
@@ -885,13 +1023,20 @@ describe('useDraftRoom (FE #653)', () => {
     });
 
     it('T5-5g: al volver a c1 con su carga en vuelo, una elección vieja de c1 que vuelve se ve, y no la sala de c2', async () => {
-      const { result, rerender } = renderHook(({ id }) => useDraftRoom(id, 'ana'), {
-        initialProps: { id: 'c1' },
-      });
+      const { result, rerender } = renderHook(
+        ({ id }) => useDraftRoom(id, 'ana'),
+        {
+          initialProps: { id: 'c1' },
+        },
+      );
       await waitFor(() => expect(result.current.sala).not.toBeNull());
       let devolverLaEleccion;
       mockPick.mockImplementationOnce(
-        () => new Promise((resolve) => { devolverLaEleccion = () => resolve(sala({ id: 'de-c1', currentTeam: 'B' })); })
+        () =>
+          new Promise((resolve) => {
+            devolverLaEleccion = () =>
+              resolve(sala({ id: 'de-c1', currentTeam: 'B' }));
+          }),
       );
       let eleccion;
       await act(async () => {
@@ -902,7 +1047,10 @@ describe('useDraftRoom (FE #653)', () => {
       await waitFor(() => expect(result.current.sala?.id).toBe('s2'));
       let devolverC1;
       mockGet.mockImplementationOnce(
-        () => new Promise((resolve) => { devolverC1 = () => resolve(sala({ id: 'vieja-c1' })); })
+        () =>
+          new Promise((resolve) => {
+            devolverC1 = () => resolve(sala({ id: 'vieja-c1' }));
+          }),
       );
 
       rerender({ id: 'c1' });

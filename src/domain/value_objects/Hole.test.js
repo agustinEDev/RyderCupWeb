@@ -9,7 +9,7 @@ describe('Hole', () => {
       const hole = new Hole({
         holeNumber: 1,
         par: 4,
-        strokeIndex: 10
+        strokeIndex: 10,
       });
 
       expect(hole).toBeInstanceOf(Hole);
@@ -22,7 +22,7 @@ describe('Hole', () => {
       const hole = new Hole({
         holeNumber: 1,
         par: 3,
-        strokeIndex: 1
+        strokeIndex: 1,
       });
 
       expect(hole.holeNumber).toBe(1);
@@ -34,7 +34,7 @@ describe('Hole', () => {
       const hole = new Hole({
         holeNumber: 18,
         par: 5,
-        strokeIndex: 18
+        strokeIndex: 18,
       });
 
       expect(hole.holeNumber).toBe(18);
@@ -46,7 +46,7 @@ describe('Hole', () => {
       const hole = new Hole({
         holeNumber: 3,
         par: 3,
-        strokeIndex: 15
+        strokeIndex: 15,
       });
 
       expect(hole.par).toBe(3);
@@ -56,7 +56,7 @@ describe('Hole', () => {
       const hole = new Hole({
         holeNumber: 5,
         par: 4,
-        strokeIndex: 8
+        strokeIndex: 8,
       });
 
       expect(hole.par).toBe(4);
@@ -66,34 +66,43 @@ describe('Hole', () => {
       const hole = new Hole({
         holeNumber: 9,
         par: 5,
-        strokeIndex: 2
+        strokeIndex: 2,
       });
 
       expect(hole.par).toBe(5);
     });
 
     it('should throw error for hole number below 1', () => {
-      expect(() => new Hole({
-        holeNumber: 0,
-        par: 4,
-        strokeIndex: 10
-      })).toThrow('Hole number must be between 1 and 18');
+      expect(
+        () =>
+          new Hole({
+            holeNumber: 0,
+            par: 4,
+            strokeIndex: 10,
+          }),
+      ).toThrow('Hole number must be between 1 and 18');
     });
 
     it('should throw error for hole number above 18', () => {
-      expect(() => new Hole({
-        holeNumber: 19,
-        par: 4,
-        strokeIndex: 10
-      })).toThrow('Hole number must be between 1 and 18');
+      expect(
+        () =>
+          new Hole({
+            holeNumber: 19,
+            par: 4,
+            strokeIndex: 10,
+          }),
+      ).toThrow('Hole number must be between 1 and 18');
     });
 
     it('should throw error for par below 3', () => {
-      expect(() => new Hole({
-        holeNumber: 1,
-        par: 2,
-        strokeIndex: 10
-      })).toThrow('Par must be one of 3, 4, 5, 6');
+      expect(
+        () =>
+          new Hole({
+            holeNumber: 1,
+            par: 2,
+            strokeIndex: 10,
+          }),
+      ).toThrow('Par must be one of 3, 4, 5, 6');
     });
 
     // El hoyo 9 de La Marquesa es par 6 en sus ocho barras. Como la tarjeta del
@@ -107,51 +116,69 @@ describe('Hole', () => {
     });
 
     it('should throw error for par above 6', () => {
-      expect(() => new Hole({
-        holeNumber: 1,
-        par: 7,
-        strokeIndex: 10
-      })).toThrow('Par must be one of 3, 4, 5, 6');
+      expect(
+        () =>
+          new Hole({
+            holeNumber: 1,
+            par: 7,
+            strokeIndex: 10,
+          }),
+      ).toThrow('Par must be one of 3, 4, 5, 6');
     });
 
     it('should throw error for stroke index below 1', () => {
-      expect(() => new Hole({
-        holeNumber: 1,
-        par: 4,
-        strokeIndex: 0
-      })).toThrow('Stroke index must be between 1 and 18');
+      expect(
+        () =>
+          new Hole({
+            holeNumber: 1,
+            par: 4,
+            strokeIndex: 0,
+          }),
+      ).toThrow('Stroke index must be between 1 and 18');
     });
 
     it('should throw error for stroke index above 18', () => {
-      expect(() => new Hole({
-        holeNumber: 1,
-        par: 4,
-        strokeIndex: 19
-      })).toThrow('Stroke index must be between 1 and 18');
+      expect(
+        () =>
+          new Hole({
+            holeNumber: 1,
+            par: 4,
+            strokeIndex: 19,
+          }),
+      ).toThrow('Stroke index must be between 1 and 18');
     });
 
     it('should throw error for null hole number', () => {
-      expect(() => new Hole({
-        holeNumber: null,
-        par: 4,
-        strokeIndex: 10
-      })).toThrow('Hole number is required');
+      expect(
+        () =>
+          new Hole({
+            holeNumber: null,
+            par: 4,
+            strokeIndex: 10,
+          }),
+      ).toThrow('Hole number is required');
     });
 
     it('should throw error for null par', () => {
-      expect(() => new Hole({
-        holeNumber: 1,
-        par: null,
-        strokeIndex: 10
-      })).toThrow('Par is required');
+      expect(
+        () =>
+          new Hole({
+            holeNumber: 1,
+            par: null,
+            strokeIndex: 10,
+          }),
+      ).toThrow('Par is required');
     });
 
     it('should throw error for null stroke index', () => {
-      expect(() => new Hole({
-        holeNumber: 1,
-        par: 4,
-        strokeIndex: null
-      })).toThrow('Stroke index is required');
+      expect(
+        () =>
+          new Hole({
+            holeNumber: 1,
+            par: 4,
+            strokeIndex: null,
+          }),
+      ).toThrow('Stroke index is required');
     });
   });
 
@@ -160,7 +187,7 @@ describe('Hole', () => {
       const hole = new Hole({
         holeNumber: 7,
         par: 4,
-        strokeIndex: 3
+        strokeIndex: 3,
       });
 
       expect(hole.validate()).toBe(true);
@@ -172,7 +199,7 @@ describe('Hole', () => {
       const hole = new Hole({
         holeNumber: 5,
         par: 4,
-        strokeIndex: 12
+        strokeIndex: 12,
       });
 
       const dto = hole.toDTO();
@@ -180,7 +207,7 @@ describe('Hole', () => {
       expect(dto).toEqual({
         hole_number: 5,
         par: 4,
-        stroke_index: 12
+        stroke_index: 12,
       });
     });
   });
@@ -190,7 +217,7 @@ describe('Hole', () => {
       const dto = {
         hole_number: 15,
         par: 3,
-        stroke_index: 18
+        stroke_index: 18,
       };
 
       const hole = Hole.fromDTO(dto);
@@ -206,7 +233,7 @@ describe('Hole', () => {
         const dto = {
           hole_number: i,
           par: 4,
-          stroke_index: i
+          stroke_index: i,
         };
 
         const hole = Hole.fromDTO(dto);
@@ -220,7 +247,7 @@ describe('Hole', () => {
       const hole = new Hole({
         holeNumber: 3,
         par: 3,
-        strokeIndex: 17
+        strokeIndex: 17,
       });
 
       expect(hole.par).toBe(3);
@@ -231,7 +258,7 @@ describe('Hole', () => {
       const hole = new Hole({
         holeNumber: 9,
         par: 5,
-        strokeIndex: 1
+        strokeIndex: 1,
       });
 
       expect(hole.par).toBe(5);
@@ -242,7 +269,7 @@ describe('Hole', () => {
       const hole = new Hole({
         holeNumber: 18,
         par: 4,
-        strokeIndex: 6
+        strokeIndex: 6,
       });
 
       expect(hole.holeNumber).toBe(18);
@@ -252,7 +279,7 @@ describe('Hole', () => {
       const hole = new Hole({
         holeNumber: 1,
         par: 4,
-        strokeIndex: 5
+        strokeIndex: 5,
       });
 
       expect(hole.holeNumber).toBe(1);
@@ -281,7 +308,7 @@ describe('Hole', () => {
         new Hole({ holeNumber: 15, par: 3, strokeIndex: 16 }),
         new Hole({ holeNumber: 16, par: 5, strokeIndex: 4 }),
         new Hole({ holeNumber: 17, par: 4, strokeIndex: 14 }),
-        new Hole({ holeNumber: 18, par: 4, strokeIndex: 6 })
+        new Hole({ holeNumber: 18, par: 4, strokeIndex: 6 }),
       ];
 
       const totalPar = holes.reduce((sum, hole) => sum + hole.par, 0);
@@ -289,7 +316,7 @@ describe('Hole', () => {
       expect(holes.length).toBe(18);
 
       // Verify unique stroke indices
-      const strokeIndices = holes.map(h => h.strokeIndex);
+      const strokeIndices = holes.map((h) => h.strokeIndex);
       const uniqueIndices = new Set(strokeIndices);
       expect(uniqueIndices.size).toBe(18);
     });

@@ -8,13 +8,21 @@ import { MoreHorizontal, Ban, UserMinus } from 'lucide-react';
  * lo es (22 oct). Elegir una opción solo avisa: la confirmación la pide la
  * página, que es quien sabe qué pasa después.
  */
-const PlayerProfileMenu = ({ isFriend, disabled = false, onRemove, onBlock, t }) => {
+const PlayerProfileMenu = ({
+  isFriend,
+  disabled = false,
+  onRemove,
+  onBlock,
+  t,
+}) => {
   const [isOpen, setIsOpen] = useState(false);
   const contenedor = useRef(null);
   const disparador = useRef(null);
   const menu = useRef(null);
 
-  const opciones = () => [...(menu.current?.querySelectorAll('[role="menuitem"]') ?? [])];
+  const opciones = () => [
+    ...(menu.current?.querySelectorAll('[role="menuitem"]') ?? []),
+  ];
 
   // Teclado como un menú de verdad (revisión FE-2): al abrir, el foco va a la
   // primera opción; Escape cierra y lo devuelve al «⋯»
@@ -23,7 +31,8 @@ const PlayerProfileMenu = ({ isFriend, disabled = false, onRemove, onBlock, t })
     opciones()[0]?.focus();
 
     const alPulsarFuera = (event) => {
-      if (contenedor.current && !contenedor.current.contains(event.target)) setIsOpen(false);
+      if (contenedor.current && !contenedor.current.contains(event.target))
+        setIsOpen(false);
     };
     const alPulsarTecla = (event) => {
       if (event.key === 'Escape') {

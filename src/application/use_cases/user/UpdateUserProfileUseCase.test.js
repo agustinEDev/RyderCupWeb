@@ -24,20 +24,23 @@ describe('UpdateUserProfileUseCase', () => {
     const userId = 'user-123';
     const updateData = {
       firstName: 'UpdatedName',
-      lastName: 'UpdatedLastName'
+      lastName: 'UpdatedLastName',
     };
     const mockUpdatedUserEntity = new User({
       id: userId,
       first_name: updateData.firstName,
       last_name: updateData.lastName,
-      email: 'test@example.com'
+      email: 'test@example.com',
     });
 
     // Configurar el mock del repositorio para devolver el usuario actualizado simulado
     userRepository.update.mockResolvedValue(mockUpdatedUserEntity);
 
     // Act
-    const updatedUser = await updateUserProfileUseCase.execute(userId, updateData);
+    const updatedUser = await updateUserProfileUseCase.execute(
+      userId,
+      updateData,
+    );
 
     // Assert
     // 1. Verificar que el método update del repositorio fue llamado con los datos correctos
@@ -48,13 +51,15 @@ describe('UpdateUserProfileUseCase', () => {
   });
 
   it('should throw an error if userId is not provided', async () => {
-    await expect(updateUserProfileUseCase.execute('', { firstName: 'Name' }))
-      .rejects.toThrow('User ID and update data are required');
+    await expect(
+      updateUserProfileUseCase.execute('', { firstName: 'Name' }),
+    ).rejects.toThrow('User ID and update data are required');
   });
 
   it('should throw an error if updateData is not provided', async () => {
-    await expect(updateUserProfileUseCase.execute('user-123', undefined))
-      .rejects.toThrow('User ID and update data are required');
+    await expect(
+      updateUserProfileUseCase.execute('user-123', undefined),
+    ).rejects.toThrow('User ID and update data are required');
   });
 
   it('should propagate errors from the user repository', async () => {
@@ -66,8 +71,9 @@ describe('UpdateUserProfileUseCase', () => {
     userRepository.update.mockRejectedValue(mockError);
 
     // Act & Assert
-    await expect(updateUserProfileUseCase.execute(userId, updateData))
-      .rejects.toThrow('API error during profile update');
+    await expect(
+      updateUserProfileUseCase.execute(userId, updateData),
+    ).rejects.toThrow('API error during profile update');
     expect(userRepository.update).toHaveBeenCalledWith(userId, updateData);
   });
 });

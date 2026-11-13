@@ -13,7 +13,9 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
  *   S5c un 404 sin error_code del backend | no es «sin sesión»: no borra nada
  *   S6 copia completa escrita tras arrancar | se lee reducida igual
  */
-vi.mock('../infrastructure/http/tokenRefreshInterceptor', () => ({ fetchWithTokenRefresh: vi.fn() }));
+vi.mock('../infrastructure/http/tokenRefreshInterceptor', () => ({
+  fetchWithTokenRefresh: vi.fn(),
+}));
 const limpieza = vi.hoisted(() => ({ olvidaLoGuardadoDeLaCuenta: vi.fn() }));
 vi.mock('../infrastructure/http/deviceRevocationLogout', () => ({
   clearDeviceRevocationFlag: vi.fn(),
@@ -36,11 +38,18 @@ const COMPLETO = {
   terms_accepted: true,
   is_admin: false,
 };
-const PROHIBIDOS = ['email', 'pending_email', 'gender', 'handicap', 'country_code'];
+const PROHIBIDOS = [
+  'email',
+  'pending_email',
+  'gender',
+  'handicap',
+  'country_code',
+];
 
 const cargar = async () => {
   vi.resetModules();
-  const { fetchWithTokenRefresh } = await import('../infrastructure/http/tokenRefreshInterceptor');
+  const { fetchWithTokenRefresh } =
+    await import('../infrastructure/http/tokenRefreshInterceptor');
   const sesion = await import('./sesionCompartida');
   return { fetchWithTokenRefresh, ...sesion };
 };
@@ -75,14 +84,24 @@ describe('sesionCompartida · copia reducida del usuario (fase 3)', () => {
   });
 
   it('S1: con sesión, la memoria lleva todo y la copia solo lo permitido', async () => {
-    const { fetchWithTokenRefresh, consultaLaSesion, loQueHaySobreLaSesion } = await cargar();
-    fetchWithTokenRefresh.mockResolvedValueOnce({ ok: true, status: 200, json: async () => COMPLETO });
+    const { fetchWithTokenRefresh, consultaLaSesion, loQueHaySobreLaSesion } =
+      await cargar();
+    fetchWithTokenRefresh.mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      json: async () => COMPLETO,
+    });
 
     await consultaLaSesion();
 
     expect(loQueHaySobreLaSesion().user).toEqual(COMPLETO);
     for (const campo of PROHIBIDOS) expect(copia()).not.toHaveProperty(campo);
-    expect(copia()).toMatchObject({ id: 'u-1', first_name: 'Ana', terms_accepted: true, email_verified: true });
+    expect(copia()).toMatchObject({
+      id: 'u-1',
+      first_name: 'Ana',
+      terms_accepted: true,
+      email_verified: true,
+    });
   });
 
   it('S2: sembrada tras aceptar los Términos, también reducida', async () => {
@@ -96,16 +115,26 @@ describe('sesionCompartida · copia reducida del usuario (fase 3)', () => {
 
   it('S3: sin red, se arranca con la copia: lo justo, sin correo ni género', async () => {
     const primera = await cargar();
-    primera.fetchWithTokenRefresh.mockResolvedValueOnce({ ok: true, status: 200, json: async () => COMPLETO });
+    primera.fetchWithTokenRefresh.mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      json: async () => COMPLETO,
+    });
     await primera.consultaLaSesion();
 
-    const { fetchWithTokenRefresh, consultaLaSesion, loQueHaySobreLaSesion } = await cargar();
+    const { fetchWithTokenRefresh, consultaLaSesion, loQueHaySobreLaSesion } =
+      await cargar();
     fetchWithTokenRefresh.mockRejectedValue(new TypeError('Failed to fetch'));
     await consultaLaSesion();
 
     const { user, sinConfirmar } = loQueHaySobreLaSesion();
     expect(sinConfirmar).toBe(true);
-    expect(user).toMatchObject({ id: 'u-1', first_name: 'Ana', terms_accepted: true, updated_at: COMPLETO.updated_at });
+    expect(user).toMatchObject({
+      id: 'u-1',
+      first_name: 'Ana',
+      terms_accepted: true,
+      updated_at: COMPLETO.updated_at,
+    });
     for (const campo of PROHIBIDOS) expect(user).not.toHaveProperty(campo);
   });
 
@@ -130,23 +159,27 @@ describe('sesionCompartida · copia reducida del usuario (fase 3)', () => {
       await cargar();
 
       expect(almacen.getItem(RECUERDO)).toBeNull();
-    }
+    },
   );
 
-  it.each([[null], ['texto'], [[]]])('S8: una respuesta que no es un usuario (%j) no escribe una copia', async (cuerpo) => {
-    const almacen = almacenDePrueba();
-    vi.stubGlobal('localStorage', almacen);
-    const { anotaLaSesion } = await cargar();
+  it.each([[null], ['texto'], [[]]])(
+    'S8: una respuesta que no es un usuario (%j) no escribe una copia',
+    async (cuerpo) => {
+      const almacen = almacenDePrueba();
+      vi.stubGlobal('localStorage', almacen);
+      const { anotaLaSesion } = await cargar();
 
-    anotaLaSesion(cuerpo);
+      anotaLaSesion(cuerpo);
 
-    expect(almacen.getItem(RECUERDO)).toBeNull();
-  });
+      expect(almacen.getItem(RECUERDO)).toBeNull();
+    },
+  );
 
   it('S6: una copia completa escrita después de arrancar (otra pestaña con la versión de antes) se lee reducida', async () => {
     const almacen = almacenDePrueba();
     vi.stubGlobal('localStorage', almacen);
-    const { fetchWithTokenRefresh, consultaLaSesion, loQueHaySobreLaSesion } = await cargar();
+    const { fetchWithTokenRefresh, consultaLaSesion, loQueHaySobreLaSesion } =
+      await cargar();
     almacen.pon(RECUERDO, JSON.stringify(COMPLETO));
     fetchWithTokenRefresh.mockRejectedValue(new TypeError('Failed to fetch'));
 
@@ -159,33 +192,56 @@ describe('sesionCompartida · copia reducida del usuario (fase 3)', () => {
 
   it.each([
     ['401', { ok: false, status: 401, json: async () => ({}) }],
-    ['404 del backend (con error_code)', { ok: false, status: 404, json: async () => ({ detail: 'x', error_code: 'USER_NOT_FOUND' }) }],
-  ])('S5: sin sesión (%s) hace la misma limpieza que salir', async (_caso, respuesta) => {
-    const { fetchWithTokenRefresh, consultaLaSesion } = await cargar();
-    fetchWithTokenRefresh.mockResolvedValueOnce(respuesta);
+    [
+      '404 del backend (con error_code)',
+      {
+        ok: false,
+        status: 404,
+        json: async () => ({ detail: 'x', error_code: 'USER_NOT_FOUND' }),
+      },
+    ],
+  ])(
+    'S5: sin sesión (%s) hace la misma limpieza que salir',
+    async (_caso, respuesta) => {
+      const { fetchWithTokenRefresh, consultaLaSesion } = await cargar();
+      fetchWithTokenRefresh.mockResolvedValueOnce(respuesta);
 
-    await consultaLaSesion();
+      await consultaLaSesion();
 
-    expect(limpieza.olvidaLoGuardadoDeLaCuenta).toHaveBeenCalledTimes(1);
-  });
+      expect(limpieza.olvidaLoGuardadoDeLaCuenta).toHaveBeenCalledTimes(1);
+    },
+  );
 
   it.each([
-    ['sin cuerpo JSON (página del borde)', async () => { throw new SyntaxError('Unexpected token <'); }],
+    [
+      'sin cuerpo JSON (página del borde)',
+      async () => {
+        throw new SyntaxError('Unexpected token <');
+      },
+    ],
     ['con JSON sin error_code', async () => ({ detail: 'Not Found' })],
-  ])('S5c: un 404 %s no es «sin sesión»: no borra nada y se queda con la copia', async (_caso, json) => {
-    const primera = await cargar();
-    primera.fetchWithTokenRefresh.mockResolvedValueOnce({ ok: true, status: 200, json: async () => COMPLETO });
-    await primera.consultaLaSesion();
+  ])(
+    'S5c: un 404 %s no es «sin sesión»: no borra nada y se queda con la copia',
+    async (_caso, json) => {
+      const primera = await cargar();
+      primera.fetchWithTokenRefresh.mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => COMPLETO,
+      });
+      await primera.consultaLaSesion();
 
-    const { fetchWithTokenRefresh, consultaLaSesion, loQueHaySobreLaSesion } = await cargar();
-    fetchWithTokenRefresh.mockResolvedValue({ ok: false, status: 404, json });
-    vi.spyOn(globalThis.console, 'error').mockImplementation(() => {});
-    await consultaLaSesion();
+      const { fetchWithTokenRefresh, consultaLaSesion, loQueHaySobreLaSesion } =
+        await cargar();
+      fetchWithTokenRefresh.mockResolvedValue({ ok: false, status: 404, json });
+      vi.spyOn(globalThis.console, 'error').mockImplementation(() => {});
+      await consultaLaSesion();
 
-    expect(limpieza.olvidaLoGuardadoDeLaCuenta).not.toHaveBeenCalled();
-    expect(loQueHaySobreLaSesion().user).toMatchObject({ id: 'u-1' });
-    expect(copia()).toMatchObject({ id: 'u-1' });
-  });
+      expect(limpieza.olvidaLoGuardadoDeLaCuenta).not.toHaveBeenCalled();
+      expect(loQueHaySobreLaSesion().user).toMatchObject({ id: 'u-1' });
+      expect(copia()).toMatchObject({ id: 'u-1' });
+    },
+  );
 
   it('S5b: un fallo de red NO limpia nada (anotar sin cobertura)', async () => {
     const { fetchWithTokenRefresh, consultaLaSesion } = await cargar();

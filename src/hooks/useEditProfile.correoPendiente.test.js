@@ -31,8 +31,18 @@ vi.mock('../composition', () => ({
 }));
 vi.mock('./useAuth', () => ({ useAuth: vi.fn() }));
 vi.mock('../utils/toast', () => ({
-  default: { success: vi.fn(), error: vi.fn(), info: vi.fn(), dismiss: vi.fn() },
-  customToast: { success: vi.fn(), error: vi.fn(), info: vi.fn(), dismiss: vi.fn() },
+  default: {
+    success: vi.fn(),
+    error: vi.fn(),
+    info: vi.fn(),
+    dismiss: vi.fn(),
+  },
+  customToast: {
+    success: vi.fn(),
+    error: vi.fn(),
+    info: vi.fn(),
+    dismiss: vi.fn(),
+  },
 }));
 vi.mock('react-router', () => ({ useNavigate: () => vi.fn() }));
 
@@ -40,14 +50,25 @@ import * as composition from '../composition';
 import { useAuth } from './useAuth';
 import toast from '../utils/toast';
 
-const ANA = { id: '1', first_name: 'Ana', last_name: 'Lopez', email: 'ana@gmail.com', handicap: 10 };
+const ANA = {
+  id: '1',
+  first_name: 'Ana',
+  last_name: 'Lopez',
+  email: 'ana@gmail.com',
+  handicap: 10,
+};
 
 describe('useEditProfile · correo pendiente', () => {
   const refetch = vi.fn();
 
   beforeEach(() => {
     vi.clearAllMocks();
-    useAuth.mockReturnValue({ user: ANA, loading: false, error: null, refetch });
+    useAuth.mockReturnValue({
+      user: ANA,
+      loading: false,
+      error: null,
+      refetch,
+    });
     composition.updateUserSecurityUseCase.execute.mockResolvedValue({});
   });
 
@@ -55,7 +76,9 @@ describe('useEditProfile · correo pendiente', () => {
     const { result } = renderHook(() => useEditProfile());
     await act(async () => {});
     act(() => {
-      result.current.handleInputChange({ target: { name: 'currentPassword', value: 'Actual#2026clave' } });
+      result.current.handleInputChange({
+        target: { name: 'currentPassword', value: 'Actual#2026clave' },
+      });
       for (const [name, value] of Object.entries(cambios)) {
         result.current.handleInputChange({ target: { name, value } });
       }
@@ -67,22 +90,29 @@ describe('useEditProfile · correo pendiente', () => {
   };
 
   it('H1: pedir un correo nuevo dice que queda pendiente', async () => {
-    composition.updateUserSecurityUseCase.execute.mockResolvedValue({ pendingEmail: 'ana@trabajo.com' });
+    composition.updateUserSecurityUseCase.execute.mockResolvedValue({
+      pendingEmail: 'ana@trabajo.com',
+    });
     await pide({ email: 'ana@trabajo.com' });
     expect(toast.success).toHaveBeenCalledWith(
       'toasts.emailChangePending:ana@trabajo.com:ana@gmail.com',
-      { duration: 8000 }
+      { duration: 8000 },
     );
   });
 
   it('H1b: el backend de antes (sin pendiente) cambia el correo: el aviso de siempre', async () => {
-    composition.updateUserSecurityUseCase.execute.mockResolvedValue({ pendingEmail: null });
+    composition.updateUserSecurityUseCase.execute.mockResolvedValue({
+      pendingEmail: null,
+    });
     await pide({ email: 'ana@trabajo.com' });
     expect(toast.success).toHaveBeenCalledWith('toasts.securityUpdated');
   });
 
   it('H2: solo la contraseña, el aviso de siempre', async () => {
-    await pide({ newPassword: 'Nueva#2026clave', confirmPassword: 'Nueva#2026clave' });
+    await pide({
+      newPassword: 'Nueva#2026clave',
+      confirmPassword: 'Nueva#2026clave',
+    });
     expect(toast.success).toHaveBeenCalledWith('toasts.securityUpdated');
   });
 
@@ -99,18 +129,26 @@ describe('useEditProfile · correo pendiente', () => {
   });
 
   it('H4: si anular falla, su propio aviso', async () => {
-    composition.cancelEmailChangeUseCase.execute.mockRejectedValue(new Error('sin red'));
+    composition.cancelEmailChangeUseCase.execute.mockRejectedValue(
+      new Error('sin red'),
+    );
     const { result } = renderHook(() => useEditProfile());
     await act(async () => {});
     await act(async () => {
       await result.current.handleCancelEmailChange();
     });
-    expect(toast.error).toHaveBeenCalledWith('toasts.failedToCancelEmailChange');
+    expect(toast.error).toHaveBeenCalledWith(
+      'toasts.failedToCancelEmailChange',
+    );
   });
 
   it('H5: mientras anula, isCancellingEmail; un segundo toque no repite', async () => {
     let termina;
-    composition.cancelEmailChangeUseCase.execute.mockReturnValue(new Promise((r) => { termina = r; }));
+    composition.cancelEmailChangeUseCase.execute.mockReturnValue(
+      new Promise((r) => {
+        termina = r;
+      }),
+    );
     const { result } = renderHook(() => useEditProfile());
     await act(async () => {});
     let primera;
@@ -121,7 +159,9 @@ describe('useEditProfile · correo pendiente', () => {
     await act(async () => {
       await result.current.handleCancelEmailChange();
     });
-    expect(composition.cancelEmailChangeUseCase.execute).toHaveBeenCalledTimes(1);
+    expect(composition.cancelEmailChangeUseCase.execute).toHaveBeenCalledTimes(
+      1,
+    );
     await act(async () => {
       termina({});
       await primera;

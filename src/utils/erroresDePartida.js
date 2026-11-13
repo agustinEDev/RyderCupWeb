@@ -33,8 +33,15 @@ export const CODIGOS_DE_PARTIDA = [
  */
 export const mensajeDeErrorDePartida = (t, error) => {
   const codigo = error?.errorCode;
-  if (codigo === 'SCORECARD_NOT_READY' && Array.isArray(error.data?.holes) && error.data.holes.length > 0) {
-    return t('partida.errors.SCORECARD_NOT_READY_holes', { count: error.data.holes.length, hoyos: error.data.holes.join(', ') });
+  if (
+    codigo === 'SCORECARD_NOT_READY' &&
+    Array.isArray(error.data?.holes) &&
+    error.data.holes.length > 0
+  ) {
+    return t('partida.errors.SCORECARD_NOT_READY_holes', {
+      count: error.data.holes.length,
+      hoyos: error.data.holes.join(', '),
+    });
   }
   if (CODIGOS_DE_PARTIDA.includes(codigo)) return t(`partida.errors.${codigo}`);
   return error?.message || t('partida.errors.generic');

@@ -14,9 +14,15 @@ const retenida = { soltar: null };
 vi.mock('../infrastructure/http/tokenRefreshInterceptor', () => ({
   fetchWithTokenRefresh: (url) => {
     peticiones.push(url);
-    const buena = { ok: true, status: 200, json: async () => ({ id: 'u-1', first_name: 'Agustin' }) };
+    const buena = {
+      ok: true,
+      status: 200,
+      json: async () => ({ id: 'u-1', first_name: 'Agustin' }),
+    };
     if (retenida.soltar === 'siguiente') {
-      return new Promise((resuelve) => { retenida.soltar = () => resuelve(buena); });
+      return new Promise((resuelve) => {
+        retenida.soltar = () => resuelve(buena);
+      });
     }
     return Promise.resolve(buena);
   },
@@ -28,18 +34,27 @@ vi.mock('../infrastructure/http/deviceRevocationLogout', () => ({
   clearDeviceRevocationFlag: vi.fn(),
 }));
 
-const { reiniciaLaSesionCompartida, consultaLaSesion } = await import('../services/sesionCompartida');
+const { reiniciaLaSesionCompartida, consultaLaSesion } =
+  await import('../services/sesionCompartida');
 const { useAuth } = await import('./useAuth');
 
 const Pantalla = ({ nombre }) => {
   const { user, loading } = useAuth();
-  return <div data-testid={nombre}>{loading ? 'cargando' : (user?.first_name ?? 'sin sesion')}</div>;
+  return (
+    <div data-testid={nombre}>
+      {loading ? 'cargando' : (user?.first_name ?? 'sin sesion')}
+    </div>
+  );
 };
 
 /** Lo que mira el guardia de rol: si puede fiarse de lo que se le enseña. */
 const Guardia = () => {
   const { sinConfirmar } = useAuth();
-  return <div data-testid="guardia-rol">{sinConfirmar ? 'sin confirmar' : 'confirmada'}</div>;
+  return (
+    <div data-testid="guardia-rol">
+      {sinConfirmar ? 'sin confirmar' : 'confirmada'}
+    </div>
+  );
 };
 
 describe('useAuth', () => {
@@ -55,10 +70,12 @@ describe('useAuth', () => {
         <Pantalla nombre="guardia" />
         <Pantalla nombre="panel" />
         <Pantalla nombre="barra" />
-      </>
+      </>,
     );
 
-    await waitFor(() => expect(screen.getByTestId('panel')).toHaveTextContent('Agustin'));
+    await waitFor(() =>
+      expect(screen.getByTestId('panel')).toHaveTextContent('Agustin'),
+    );
 
     expect(peticiones).toHaveLength(1);
     expect(screen.getByTestId('guardia')).toHaveTextContent('Agustin');
@@ -70,13 +87,15 @@ describe('useAuth', () => {
     // cargado en el render en que llegaba el usuario, con las peticiones sin
     // salir todavia (FE #485)
     const { rerender } = render(<Pantalla nombre="primera" />);
-    await waitFor(() => expect(screen.getByTestId('primera')).toHaveTextContent('Agustin'));
+    await waitFor(() =>
+      expect(screen.getByTestId('primera')).toHaveTextContent('Agustin'),
+    );
 
     rerender(
       <>
         <Pantalla nombre="primera" />
         <Pantalla nombre="tardia" />
-      </>
+      </>,
     );
 
     expect(screen.getByTestId('tardia')).toHaveTextContent('Agustin');
@@ -93,16 +112,23 @@ describe('useAuth', () => {
     // se levanta refrescando una sesión buena: deducirlo de ahí bloqueaba la
     // pantalla del guardia de rol en cada `refetch` (FE #529)
     render(<Guardia />);
-    await waitFor(() => expect(screen.getByTestId('guardia-rol')).toHaveTextContent('confirmada'));
+    await waitFor(() =>
+      expect(screen.getByTestId('guardia-rol')).toHaveTextContent('confirmada'),
+    );
 
     // A mitad del refresco, que es cuando `refrescando` está arriba
     retenida.soltar = 'siguiente';
     let enCurso;
-    await act(async () => { enCurso = consultaLaSesion({ forzar: true }); });
+    await act(async () => {
+      enCurso = consultaLaSesion({ forzar: true });
+    });
 
     expect(screen.getByTestId('guardia-rol')).toHaveTextContent('confirmada');
 
-    await act(async () => { retenida.soltar(); await enCurso; });
+    await act(async () => {
+      retenida.soltar();
+      await enCurso;
+    });
     retenida.soltar = null;
 
     expect(screen.getByTestId('guardia-rol')).toHaveTextContent('confirmada');

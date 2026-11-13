@@ -43,7 +43,12 @@ describe('GolfCourseForm · rangos de valoracion por tipo de campo', () => {
 
   // Se entra por `initialData` para que la validacion llegue hasta los ratings:
   // se corta en el primer fallo, y antes de las barras exige nombre y pais.
-  const renderWith = (courseType, courseRating, slopeRating, parPorHoyo = null) => {
+  const renderWith = (
+    courseType,
+    courseRating,
+    slopeRating,
+    parPorHoyo = null,
+  ) => {
     const onSubmit = vi.fn();
     render(
       <GolfCourseForm
@@ -67,7 +72,7 @@ describe('GolfCourseForm · rangos de valoracion por tipo de campo', () => {
               }
             : {}),
         }}
-      />
+      />,
     );
     return onSubmit;
   };
@@ -75,7 +80,9 @@ describe('GolfCourseForm · rangos de valoracion por tipo de campo', () => {
   // En jsdom, pulsar el boton no dispara el `onSubmit` del form, y la validacion
   // vive ahi: sin esto los tests pasaban sin validar nada.
   const submitForm = () => {
-    fireEvent.submit(screen.getByRole('button', { name: 'form.update' }).closest('form'));
+    fireEvent.submit(
+      screen.getByRole('button', { name: 'form.update' }).closest('form'),
+    );
   };
 
   const errores = () => customToast.error.mock.calls.map((c) => String(c[0]));
@@ -186,7 +193,9 @@ describe('GolfCourseForm · rangos de valoracion por tipo de campo', () => {
       const antes = screen.getAllByRole('spinbutton')[0];
       expect(antes).toHaveAttribute('min', '50');
 
-      fireEvent.click(screen.getByRole('button', { name: 'form.courseTypes.PITCH_AND_PUTT' }));
+      fireEvent.click(
+        screen.getByRole('button', { name: 'form.courseTypes.PITCH_AND_PUTT' }),
+      );
 
       const [courseRating, slopeRating] = screen.getAllByRole('spinbutton');
       expect(courseRating).toHaveAttribute('min', '45');
@@ -196,7 +205,9 @@ describe('GolfCourseForm · rangos de valoracion por tipo de campo', () => {
     it('y los vuelve a apretar al volver a 18 hoyos', () => {
       renderWith('PITCH_AND_PUTT', 46.8, 47);
 
-      fireEvent.click(screen.getByRole('button', { name: 'form.courseTypes.STANDARD_18' }));
+      fireEvent.click(
+        screen.getByRole('button', { name: 'form.courseTypes.STANDARD_18' }),
+      );
 
       const [courseRating, slopeRating] = screen.getAllByRole('spinbutton');
       expect(courseRating).toHaveAttribute('min', '50');

@@ -40,7 +40,11 @@ import {
 } from '../composition';
 import customToast from '../utils/toast';
 
-const mockUser = { id: 'user-1', avatar_source: 'NONE', avatar_preset_id: null };
+const mockUser = {
+  id: 'user-1',
+  avatar_source: 'NONE',
+  avatar_preset_id: null,
+};
 
 describe('useAvatar', () => {
   beforeEach(() => {
@@ -113,7 +117,9 @@ describe('useAvatar', () => {
       await result.current.handleActivateUpload('upload-1');
     });
 
-    expect(activateUploadedAvatarUseCase.execute).toHaveBeenCalledWith('upload-1');
+    expect(activateUploadedAvatarUseCase.execute).toHaveBeenCalledWith(
+      'upload-1',
+    );
     expect(refetchUser).toHaveBeenCalled();
   });
 
@@ -157,11 +163,16 @@ describe('useAvatar', () => {
     // (simula una respuesta lenta que resolverá más tarde, fuera de orden).
     let resolveMountCall;
     listMyAvatarUploadsUseCase.execute.mockImplementationOnce(
-      () => new Promise((resolve) => { resolveMountCall = resolve; }),
+      () =>
+        new Promise((resolve) => {
+          resolveMountCall = resolve;
+        }),
     );
 
     const { result } = renderHook(() => useAvatar(mockUser, refetchUser));
-    await waitFor(() => expect(listMyAvatarUploadsUseCase.execute).toHaveBeenCalledTimes(1));
+    await waitFor(() =>
+      expect(listMyAvatarUploadsUseCase.execute).toHaveBeenCalledTimes(1),
+    );
 
     // Mientras la del montaje sigue en el aire, un handler dispara una segunda
     // llamada que sí resuelve (con datos más recientes).
@@ -173,7 +184,9 @@ describe('useAvatar', () => {
       await result.current.handleActivateUpload('some-upload-id');
     });
 
-    expect(result.current.uploads).toEqual([{ id: 'newer-upload', is_active: true }]);
+    expect(result.current.uploads).toEqual([
+      { id: 'newer-upload', is_active: true },
+    ]);
 
     // Ahora resuelve la del montaje (más antigua): no debe pisar el estado
     // ya actualizado por la llamada más reciente.
@@ -182,25 +195,41 @@ describe('useAvatar', () => {
       await Promise.resolve();
     });
 
-    expect(result.current.uploads).toEqual([{ id: 'newer-upload', is_active: true }]);
+    expect(result.current.uploads).toEqual([
+      { id: 'newer-upload', is_active: true },
+    ]);
   });
 
   it('discards a stale response from a previous user after switching accounts', async () => {
-    const userA = { id: 'user-a', avatar_source: 'NONE', avatar_preset_id: null };
-    const userB = { id: 'user-b', avatar_source: 'NONE', avatar_preset_id: null };
+    const userA = {
+      id: 'user-a',
+      avatar_source: 'NONE',
+      avatar_preset_id: null,
+    };
+    const userB = {
+      id: 'user-b',
+      avatar_source: 'NONE',
+      avatar_preset_id: null,
+    };
     const refetchUser = vi.fn().mockResolvedValue();
     activateUploadedAvatarUseCase.execute.mockResolvedValue({});
 
-    const { result, rerender } = renderHook(({ user }) => useAvatar(user, refetchUser), {
-      initialProps: { user: userA },
-    });
+    const { result, rerender } = renderHook(
+      ({ user }) => useAvatar(user, refetchUser),
+      {
+        initialProps: { user: userA },
+      },
+    );
     await waitFor(() => expect(result.current.isLoadingOptions).toBe(false));
 
     // Una llamada para el usuario A (p.ej. el refresco tras reactivar una foto
     // del historial) se queda pendiente.
     let resolveStaleCall;
     listMyAvatarUploadsUseCase.execute.mockImplementationOnce(
-      () => new Promise((resolve) => { resolveStaleCall = resolve; }),
+      () =>
+        new Promise((resolve) => {
+          resolveStaleCall = resolve;
+        }),
     );
     let staleAction;
     act(() => {
@@ -214,7 +243,9 @@ describe('useAvatar', () => {
     ]);
     rerender({ user: userB });
     await waitFor(() =>
-      expect(result.current.uploads).toEqual([{ id: 'user-b-photo', is_active: true }]),
+      expect(result.current.uploads).toEqual([
+        { id: 'user-b-photo', is_active: true },
+      ]),
     );
 
     // Ahora resuelve la llamada obsoleta del usuario A: no debe pisar el
@@ -224,7 +255,9 @@ describe('useAvatar', () => {
       await staleAction;
     });
 
-    expect(result.current.uploads).toEqual([{ id: 'user-b-photo', is_active: true }]);
+    expect(result.current.uploads).toEqual([
+      { id: 'user-b-photo', is_active: true },
+    ]);
   });
 
   it('does not update state after unmounting mid-load', async () => {

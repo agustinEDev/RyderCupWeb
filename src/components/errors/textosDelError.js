@@ -21,13 +21,15 @@ const TEXTOS = {
       titulo: 'No se ha podido cargar la aplicación',
       // Nada de «borra los datos del sitio»: se llevaría la cola de golpes sin
       // conexión y la sesión (code-review)
-      texto: 'Suele pasar tras una actualización o sin cobertura. Recarga la página cuando tengas conexión; lo que hayas anotado no se pierde.',
+      texto:
+        'Suele pasar tras una actualización o sin cobertura. Recarga la página cuando tengas conexión; lo que hayas anotado no se pierde.',
       detalles: 'Detalles técnicos',
       boton: 'Recargar',
     },
     fallo: {
       titulo: 'Algo ha fallado',
-      texto: 'Sentimos las molestias: el error ya nos ha llegado. Pulsa Reintentar; si vuelve a pasar, cierra la app y ábrela de nuevo.',
+      texto:
+        'Sentimos las molestias: el error ya nos ha llegado. Pulsa Reintentar; si vuelve a pasar, cierra la app y ábrela de nuevo.',
       detalles: 'Detalles del error (solo en desarrollo)',
       boton: 'Reintentar',
     },
@@ -35,13 +37,15 @@ const TEXTOS = {
   en: {
     sinCargar: {
       titulo: 'Unable to Load Application',
-      texto: 'This usually happens after an update or without coverage. Reload the page when you are back online; nothing you have scored is lost.',
+      texto:
+        'This usually happens after an update or without coverage. Reload the page when you are back online; nothing you have scored is lost.',
       detalles: 'Technical details',
       boton: 'Refresh Page',
     },
     fallo: {
       titulo: 'Oops! Something went wrong',
-      texto: "Sorry for the inconvenience: we've been notified of the error. Tap Try Again; if it happens again, close the app and open it again.",
+      texto:
+        "Sorry for the inconvenience: we've been notified of the error. Tap Try Again; if it happens again, close the app and open it again.",
       detalles: 'Error Details (Development Only)',
       boton: 'Try Again',
     },
@@ -49,18 +53,27 @@ const TEXTOS = {
 };
 
 // La base de la etiqueta («es-ES», «es_ES» → «es»), si hay textos para ella
-const base = (idioma) => String(idioma ?? '').split(/[-_]/)[0].toLowerCase();
-const conTextos = (idioma) => (Object.hasOwn(TEXTOS, base(idioma)) ? base(idioma) : null);
+const base = (idioma) =>
+  String(idioma ?? '')
+    .split(/[-_]/)[0]
+    .toLowerCase();
+const conTextos = (idioma) =>
+  Object.hasOwn(TEXTOS, base(idioma)) ? base(idioma) : null;
 
 /** 'es' o 'en'. Sin almacenamiento (Safari sin cookies lanza al leerlo), el del navegador. */
-export const idiomaDelError = ({ i18n = i18next, almacen, navegador = globalThis.navigator } = {}) => {
+export const idiomaDelError = ({
+  i18n = i18next,
+  almacen,
+  navegador = globalThis.navigator,
+} = {}) => {
   // El elegido antes que el resuelto: si el JSON en español no carga, i18next
   // resuelve «en», y esta pantalla sale justo entonces (code-review)
   const enMemoria = i18n?.language || i18n?.resolvedLanguage;
   if (enMemoria) return conTextos(enMemoria) ?? 'en';
   let guardado = null;
   try {
-    guardado = (almacen ?? globalThis.localStorage)?.getItem(CLAVE_DEL_IDIOMA) ?? null;
+    guardado =
+      (almacen ?? globalThis.localStorage)?.getItem(CLAVE_DEL_IDIOMA) ?? null;
   } catch {
     // Sin almacenamiento: se mira el navegador
   }

@@ -22,7 +22,11 @@ const api = (extra = {}) => ({
   updated_at: '2030-10-01T10:00:00Z',
   ...extra,
 });
-const ficha = (apiData) => CompetitionAssembler.toSimpleDTO(CompetitionMapper.toDomain(apiData), apiData);
+const ficha = (apiData) =>
+  CompetitionAssembler.toSimpleDTO(
+    CompetitionMapper.toDomain(apiData),
+    apiData,
+  );
 
 describe('CompetitionAssembler · actualizaciones de hándicap (FE #824)', () => {
   it('la última actualización, en camelCase', () => {
@@ -35,7 +39,7 @@ describe('CompetitionAssembler · actualizaciones de hándicap (FE #824)', () =>
           finished_at: '2030-10-10T20:09:00Z',
           pending_players: [{ user_id: 'u1', name: 'Ana Alba' }],
         },
-      })
+      }),
     );
 
     expect(d.handicapUpdate).toEqual({
@@ -56,7 +60,7 @@ describe('CompetitionAssembler · actualizaciones de hándicap (FE #824)', () =>
           reason: null,
           scheduled_at: '2030-10-12T01:00:00Z',
         },
-      })
+      }),
     );
 
     expect(d.handicapUpdateWindow).toEqual({

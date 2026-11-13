@@ -16,13 +16,17 @@ class LoginUseCase {
    * @param {string} passwordString - La contraseña del usuario como cadena de texto. // Renombrado
    * @returns {Promise<import('../../../domain/entities/User').default>} El objeto User autenticado.
    */
-  async execute(emailString, passwordString) { // Renombrado 'password' a 'passwordString'
+  async execute(emailString, passwordString) {
+    // Renombrado 'password' a 'passwordString'
     const email = new Email(emailString);
     const password = new Password(passwordString, { validateStrength: false }); // Desactivar validación de fortaleza para el login
 
     // Llamada al repositorio para realizar la autenticación
     // Pasamos la instancia del Email y Password Value Object
-    const { user, csrfToken } = await this.authRepository.login(email, password);
+    const { user, csrfToken } = await this.authRepository.login(
+      email,
+      password,
+    );
 
     // El backend establece automáticamente la cookie httpOnly
     // No necesitamos guardar nada en el frontend

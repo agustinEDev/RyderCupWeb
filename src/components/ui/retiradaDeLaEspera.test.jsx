@@ -32,8 +32,10 @@ describe('el fondo del documento en la app instalada', () => {
     (ruta) => {
       const bloque = bloqueStandalone(lee(ruta));
 
-      expect(bloque).toMatch(/html:has\(#arranque\)[^{]*\{[^}]*background:\s*#3e8642/);
-    }
+      expect(bloque).toMatch(
+        /html:has\(#arranque\)[^{]*\{[^}]*background:\s*#3e8642/,
+      );
+    },
   );
 
   it('el verde de la espera es del ARRANQUE, no de cualquier espera', () => {
@@ -42,8 +44,12 @@ describe('el fondo del documento en la app instalada', () => {
     // lee como si la aplicacion se reiniciara (FE #492)
     const bloque = bloqueStandalone(lee('src/index.css'));
 
-    expect(bloque).toMatch(/\.pantalla-de-espera:not\(\.pantalla-de-espera--transicion\)\s*\{[^}]*background:\s*#3e8642/);
-    expect(bloque).toContain('html:has(.pantalla-de-espera:not(.pantalla-de-espera--transicion))');
+    expect(bloque).toMatch(
+      /\.pantalla-de-espera:not\(\.pantalla-de-espera--transicion\)\s*\{[^}]*background:\s*#3e8642/,
+    );
+    expect(bloque).toContain(
+      'html:has(.pantalla-de-espera:not(.pantalla-de-espera--transicion))',
+    );
     // Y sin una regla suelta que vuelva a pintarlas todas
     expect(bloque).not.toMatch(/(^|\n)\s*\.pantalla-de-espera\s*\{/);
   });
@@ -72,7 +78,9 @@ describe('donde vive la cortina del arranque', () => {
   const lee = (ruta) => readFileSync(resolve(process.cwd(), ruta), 'utf8');
 
   it('App.jsx la engancha a la ruta que hay en pantalla', () => {
-    expect(lee('src/App.jsx')).toContain('useCortinaDeArranque(location.pathname)');
+    expect(lee('src/App.jsx')).toContain(
+      'useCortinaDeArranque(location.pathname)',
+    );
   });
 
   it('main.jsx no la retira: ahi React todavia no ha pintado nada', () => {
@@ -82,10 +90,17 @@ describe('donde vive la cortina del arranque', () => {
   it('solo el modulo de la cortina toca la capa', () => {
     // Un `remove()` suelto por ahi la levantaria antes de tiempo y nadie se
     // enteraria: volveria el pantallazo, y esta vez sin dejar rastro
-    const sospechosos = ['src/App.jsx', 'src/main.jsx', 'src/pages/Dashboard.jsx', 'src/pages/AppStart.jsx'];
+    const sospechosos = [
+      'src/App.jsx',
+      'src/main.jsx',
+      'src/pages/Dashboard.jsx',
+      'src/pages/AppStart.jsx',
+    ];
 
     for (const ruta of sospechosos) {
-      expect(lee(ruta), `${ruta} manipula la capa por su cuenta`).not.toContain("getElementById('arranque')");
+      expect(lee(ruta), `${ruta} manipula la capa por su cuenta`).not.toContain(
+        "getElementById('arranque')",
+      );
     }
   });
 
@@ -105,8 +120,12 @@ describe('donde vive la cortina del arranque', () => {
     // decision es de la ruta y va dentro, asi que cada fallback tiene que
     // levantarla el mismo.
     // La de un fallo de render vive en su componente desde el 25 oct 2026
-    expect(lee('src/components/errors/ErrorFallback.jsx')).toMatch(/const ErrorFallback[\s\S]{0,600}retiraLaCortina\(\)/);
-    expect(lee('src/components/errors/LazyLoadErrorBoundary.jsx')).toContain('retiraLaCortina()');
+    expect(lee('src/components/errors/ErrorFallback.jsx')).toMatch(
+      /const ErrorFallback[\s\S]{0,600}retiraLaCortina\(\)/,
+    );
+    expect(lee('src/components/errors/LazyLoadErrorBoundary.jsx')).toContain(
+      'retiraLaCortina()',
+    );
   });
 });
 
@@ -123,29 +142,39 @@ describe('las dos mitades del arranque pintan lo mismo', () => {
     const fuente = lee('index.html');
 
     expect(fuente).toContain('<span id="arranque-anillo"></span>');
-    expect(fuente).toMatch(/#arranque-anillo\s*\{[^}]*animation:\s*arranque-gira/);
+    expect(fuente).toMatch(
+      /#arranque-anillo\s*\{[^}]*animation:\s*arranque-gira/,
+    );
   });
 
   it('el anillo se detiene si se pide menos movimiento, en las dos', () => {
-    expect(lee('index.html')).toMatch(/prefers-reduced-motion[\s\S]{0,140}#arranque-anillo\s*\{\s*animation:\s*none/);
-    expect(lee('src/components/ui/LoadingMark.jsx')).toContain('motion-reduce:animate-none');
+    expect(lee('index.html')).toMatch(
+      /prefers-reduced-motion[\s\S]{0,140}#arranque-anillo\s*\{\s*animation:\s*none/,
+    );
+    expect(lee('src/components/ui/LoadingMark.jsx')).toContain(
+      'motion-reduce:animate-none',
+    );
   });
 
   it('el anillo lleva el mismo color en las dos', () => {
     // La capa no puede leer el tema —ahi todavia no hay CSS de Tailwind—, asi
     // que el color va escrito a mano y solo un test impide que se separen
-    const primario = lee('src/index.css').match(/--color-primary-600:\s*(#[0-9a-f]{6})/i)?.[1];
+    const primario = lee('src/index.css').match(
+      /--color-primary-600:\s*(#[0-9a-f]{6})/i,
+    )?.[1];
     const html = lee('index.html');
 
     expect(primario?.toLowerCase()).toBe('#2d7b3e');
     expect(html).toContain('#2d7b3e');
-    expect(html).toContain('rgba(45, 123, 62, 0.18)');   // el mismo, al 18%
+    expect(html).toContain('rgba(45, 123, 62, 0.18)'); // el mismo, al 18%
   });
 
   it('el anillo gira a la MISMA velocidad en las dos', () => {
     // `animate-spin` de Tailwind es 1s. Con otra duracion aqui, el relevo
     // cambia el ritmo justo en el fotograma que esta saga viene cuidando
-    expect(lee('index.html')).toMatch(/animation:\s*arranque-gira\s+1s\s+linear/);
+    expect(lee('index.html')).toMatch(
+      /animation:\s*arranque-gira\s+1s\s+linear/,
+    );
   });
 
   it('las medidas del dibujo coinciden en las dos', () => {
@@ -160,7 +189,10 @@ describe('las dos mitades del arranque pintan lo mismo', () => {
     expect(html).toMatch(/<img[^>]*width="76"/);
     expect(jsx).toContain("marco: 'w-[128px] h-[128px]'");
     expect(jsx).toContain("marca: 'w-[76px]'");
-    expect(jsx, 'las medidas en rem no casan con los pixeles de la capa').not.toMatch(/marco: 'size-\d/);
+    expect(
+      jsx,
+      'las medidas en rem no casan con los pixeles de la capa',
+    ).not.toMatch(/marco: 'size-\d/);
   });
 });
 
@@ -212,7 +244,9 @@ describe('el verde del arranque deja leer lo que va encima', () => {
 
   const verdeDeArranque = () => {
     const fuente = readFileSync(resolve(process.cwd(), 'index.html'), 'utf8');
-    const encontrado = fuente.match(/#arranque\s*\{\s*background:\s*(#[0-9a-f]{6})/i);
+    const encontrado = fuente.match(
+      /#arranque\s*\{\s*background:\s*(#[0-9a-f]{6})/i,
+    );
     return encontrado?.[1];
   };
 
@@ -222,8 +256,12 @@ describe('el verde del arranque deja leer lo que va encima', () => {
     const verde = verdeDeArranque();
 
     expect(verde).toBeTruthy();
-    expect(readFileSync(resolve(process.cwd(), 'src/index.css'), 'utf8')).toContain(verde);
-    expect(readFileSync(resolve(process.cwd(), 'vite.config.js'), 'utf8')).toContain(verde);
+    expect(
+      readFileSync(resolve(process.cwd(), 'src/index.css'), 'utf8'),
+    ).toContain(verde);
+    expect(
+      readFileSync(resolve(process.cwd(), 'vite.config.js'), 'utf8'),
+    ).toContain(verde);
   });
 
   it('el reloj y la bateria del sistema se leen encima', () => {
@@ -248,24 +286,24 @@ describe('no quedan esperas con dibujo propio', () => {
   // encargo. Cualquier sitio nuevo que aparezca aqui hay que mirarlo, no
   // añadirlo a la lista sin pensar.
   const PERMITIDOS = new Set([
-    'components/ui/LoadingMark.jsx',                        // la pieza compartida
-    'components/admin/ManageAccountModal.jsx',              // boton de procesar
-    'components/auth/SignInForm.jsx',                       // boton de entrar
-    'components/modals/ConfirmModal.jsx',                   // boton de confirmar
+    'components/ui/LoadingMark.jsx', // la pieza compartida
+    'components/admin/ManageAccountModal.jsx', // boton de procesar
+    'components/auth/SignInForm.jsx', // boton de entrar
+    'components/modals/ConfirmModal.jsx', // boton de confirmar
     'components/competition/CompetitionGolfCoursesSection.jsx', // «añadiendo campo»
-    'components/golf_course/GolfCourseSearchBox.jsx',       // indicador dentro del campo
-    'pages/ForgotPassword.jsx',                             // boton de enviar
-    'pages/Register.jsx',                                   // boton de registrarse
-    'pages/ResetPassword.jsx',                              // boton de guardar
-    'pages/EditProfile.jsx',                                // boton de guardar
-    'pages/admin/AdminPanel.jsx',                           // botones de accion
-    'pages/player/FeedPage.jsx',                            // boton de cargar mas
-    'pages/player/PlayerProfilePage.jsx',                   // boton de cargar mas
-    'components/profile/GamesTogether.jsx',                 // boton de cargar mas (FE-2)
-    'components/admin/AdminEditCompetitionModal.jsx',       // boton de guardar
-    'components/admin/EditUserModal.jsx',                   // boton de guardar
-    'components/friend/AddFriendModal.jsx',                 // indicador dentro del buscador
-    'components/invitation/SendInvitationModal.jsx',        // boton de enviar
+    'components/golf_course/GolfCourseSearchBox.jsx', // indicador dentro del campo
+    'pages/ForgotPassword.jsx', // boton de enviar
+    'pages/Register.jsx', // boton de registrarse
+    'pages/ResetPassword.jsx', // boton de guardar
+    'pages/EditProfile.jsx', // boton de guardar
+    'pages/admin/AdminPanel.jsx', // botones de accion
+    'pages/player/FeedPage.jsx', // boton de cargar mas
+    'pages/player/PlayerProfilePage.jsx', // boton de cargar mas
+    'components/profile/GamesTogether.jsx', // boton de cargar mas (FE-2)
+    'components/admin/AdminEditCompetitionModal.jsx', // boton de guardar
+    'components/admin/EditUserModal.jsx', // boton de guardar
+    'components/friend/AddFriendModal.jsx', // indicador dentro del buscador
+    'components/invitation/SendInvitationModal.jsx', // boton de enviar
   ]);
 
   const ficheros = () => {
@@ -274,7 +312,8 @@ describe('no quedan esperas con dibujo propio', () => {
       for (const entrada of readdirSync(dir, { withFileTypes: true })) {
         const ruta = join(dir, entrada.name);
         if (entrada.isDirectory()) recorre(ruta);
-        else if (/\.jsx?$/.test(entrada.name) && !/\.test\./.test(entrada.name)) salida.push(ruta);
+        else if (/\.jsx?$/.test(entrada.name) && !/\.test\./.test(entrada.name))
+          salida.push(ruta);
       }
     };
     recorre(resolve(process.cwd(), 'src'));
@@ -289,27 +328,45 @@ describe('no quedan esperas con dibujo propio', () => {
       // pondria roja por donde esta el repositorio
       const relativa = relative(resolve(process.cwd(), 'src'), ruta);
       if (PERMITIDOS.has(relativa)) continue;
-      if (readFileSync(ruta, 'utf8').includes('animate-spin')) sueltos.push(relativa);
+      if (readFileSync(ruta, 'utf8').includes('animate-spin'))
+        sueltos.push(relativa);
     }
 
-    expect(sueltos, `esperas con dibujo propio: ${sueltos.join(', ')}`).toEqual([]);
+    expect(sueltos, `esperas con dibujo propio: ${sueltos.join(', ')}`).toEqual(
+      [],
+    );
   });
 
   it('donde hay varias esperas a la vez, solo una se anuncia', () => {
     // El panel monta a la vez la de acciones pendientes, la de proximo partido y
     // la de ultimas partidas: sin callar a las demas, un lector de pantalla oye
     // «Cargando...» tres veces seguidas sin nada que las distinga
-    const panel = readFileSync(resolve(process.cwd(), 'src/pages/Dashboard.jsx'), 'utf8');
-    const banner = readFileSync(resolve(process.cwd(), 'src/components/dashboard/NextMatchBanner.jsx'), 'utf8');
+    const panel = readFileSync(
+      resolve(process.cwd(), 'src/pages/Dashboard.jsx'),
+      'utf8',
+    );
+    const banner = readFileSync(
+      resolve(process.cwd(), 'src/components/dashboard/NextMatchBanner.jsx'),
+      'utf8',
+    );
 
-    const acciones = readFileSync(resolve(process.cwd(), 'src/components/dashboard/PendingActionsCard.jsx'), 'utf8');
+    const acciones = readFileSync(
+      resolve(process.cwd(), 'src/components/dashboard/PendingActionsCard.jsx'),
+      'utf8',
+    );
 
     expect(banner).toContain('<BlockLoader silencioso');
-    expect(acciones, 'acciones pendientes tambien calla').toContain('<BlockLoader silencioso');
-    expect(panel, 'ultimas partidas acompaña, asi que se calla').toMatch(/<RecentMatches[\s\S]{0,200}esperaSilenciosa/);
+    expect(acciones, 'acciones pendientes tambien calla').toContain(
+      '<BlockLoader silencioso',
+    );
+    expect(panel, 'ultimas partidas acompaña, asi que se calla').toMatch(
+      /<RecentMatches[\s\S]{0,200}esperaSilenciosa/,
+    );
     // Y el anuncio lo da el panel: si lo diera una tarjeta, en una vuelta con
     // acciones pendientes recordadas no quedaria ninguna que anunciara nada
-    expect(panel, 'el anuncio va en el panel').toMatch(/role="status"[\s\S]{0,80}sr-only/);
+    expect(panel, 'el anuncio va en el panel').toMatch(
+      /role="status"[\s\S]{0,80}sr-only/,
+    );
   });
 
   it('ni su propio esqueleto', () => {
@@ -325,16 +382,19 @@ describe('no quedan esperas con dibujo propio', () => {
     // delataba—, asi que si algo entra aqui, que sea por no ser una espera, no
     // por no querer migrarlo
     const LATIDOS_QUE_NO_SON_ESPERAS = new Set([
-      'pages/Competitions.jsx',   // el punto naranja de «solicitudes pendientes»
+      'pages/Competitions.jsx', // el punto naranja de «solicitudes pendientes»
     ]);
 
     const sueltos = [];
     for (const ruta of ficheros()) {
       // Con separadores de barra siempre: en Windows `relative` devuelve
       // `pages\\Competitions.jsx` y ninguna entrada de la lista casaria
-      const relativa = relative(resolve(process.cwd(), 'src'), ruta).split(sep).join('/');
+      const relativa = relative(resolve(process.cwd(), 'src'), ruta)
+        .split(sep)
+        .join('/');
       if (LATIDOS_QUE_NO_SON_ESPERAS.has(relativa)) continue;
-      if (readFileSync(ruta, 'utf8').includes('animate-pulse')) sueltos.push(relativa);
+      if (readFileSync(ruta, 'utf8').includes('animate-pulse'))
+        sueltos.push(relativa);
     }
 
     expect(sueltos, `esqueletos propios: ${sueltos.join(', ')}`).toEqual([]);

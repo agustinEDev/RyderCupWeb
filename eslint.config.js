@@ -2,6 +2,7 @@ import js from '@eslint/js';
 import react from 'eslint-plugin-react';
 import reactHooks from 'eslint-plugin-react-hooks';
 import reactRefresh from 'eslint-plugin-react-refresh';
+import prettier from 'eslint-config-prettier';
 
 export default [
   // Ignore patterns (equivalent to ignorePatterns in old config)
@@ -82,7 +83,10 @@ export default [
       ...reactHooks.configs.recommended.rules,
       // Las dependencias de useCargaCancelableEffect se comprueban como las de
       // un useEffect (misma gravedad que trae la recomendada)
-      'react-hooks/exhaustive-deps': ['warn', { additionalHooks: '(useCargaCancelableEffect)' }],
+      'react-hooks/exhaustive-deps': [
+        'warn',
+        { additionalHooks: '(useCargaCancelableEffect)' },
+      ],
 
       // React Refresh rules
       'react-refresh/only-export-components': [
@@ -116,12 +120,24 @@ export default [
     rules: {
       'no-restricted-globals': [
         'error',
-        { name: 'fetch', message: 'Usa apiRequest() de src/infrastructure/http/api.js: lleva el refresco del token.' },
+        {
+          name: 'fetch',
+          message:
+            'Usa apiRequest() de src/infrastructure/http/api.js: lleva el refresco del token.',
+        },
       ],
       'no-restricted-properties': [
         'error',
-        { object: 'window', property: 'fetch', message: 'Usa apiRequest() de src/infrastructure/http/api.js.' },
-        { object: 'globalThis', property: 'fetch', message: 'Usa apiRequest() de src/infrastructure/http/api.js.' },
+        {
+          object: 'window',
+          property: 'fetch',
+          message: 'Usa apiRequest() de src/infrastructure/http/api.js.',
+        },
+        {
+          object: 'globalThis',
+          property: 'fetch',
+          message: 'Usa apiRequest() de src/infrastructure/http/api.js.',
+        },
       ],
     },
   },
@@ -133,7 +149,11 @@ export default [
   // `(await import(…)).apiRequest` o `.then(({ apiRequest }) => …)`). Lo que no ve:
   // guardar el módulo entero en una variable y leer `apiRequest` después
   {
-    files: ['src/{pages,components,hooks,contexts}/**/*.{js,jsx,ts,tsx}', 'src/App.jsx', 'src/main.jsx'],
+    files: [
+      'src/{pages,components,hooks,contexts}/**/*.{js,jsx,ts,tsx}',
+      'src/App.jsx',
+      'src/main.jsx',
+    ],
     ignores: ['src/**/*.test.{js,jsx,ts,tsx}'],
     rules: {
       'no-restricted-imports': [
@@ -141,9 +161,13 @@ export default [
         {
           patterns: [
             {
-              group: ['**/infrastructure/http/api', '**/infrastructure/http/api.js'],
+              group: [
+                '**/infrastructure/http/api',
+                '**/infrastructure/http/api.js',
+              ],
               importNames: ['apiRequest', 'default'],
-              message: 'La interfaz no llama a la API: usa un caso de uso de src/composition.',
+              message:
+                'La interfaz no llama a la API: usa un caso de uso de src/composition.',
             },
           ],
         },
@@ -156,31 +180,39 @@ export default [
         {
           selector:
             "ImportDeclaration[source.value=/composition(.index|.http)?(\\.js)?$/] > ImportSpecifier[imported.name='apiRequest']",
-          message: 'La interfaz no llama a la API: usa un caso de uso de src/composition.',
+          message:
+            'La interfaz no llama a la API: usa un caso de uso de src/composition.',
         },
         {
-          selector: 'ImportExpression[source.value=/infrastructure.http.api(\\.js)?$/]',
-          message: 'La interfaz no carga el cliente de la API: usa un caso de uso de src/composition.',
+          selector:
+            'ImportExpression[source.value=/infrastructure.http.api(\\.js)?$/]',
+          message:
+            'La interfaz no carga el cliente de la API: usa un caso de uso de src/composition.',
         },
         {
           // El mismo, con plantilla: import(`…/infrastructure/http/api`)
-          selector: 'ImportExpression > TemplateLiteral > TemplateElement[value.raw=/infrastructure.http.api/]',
-          message: 'La interfaz no carga el cliente de la API: usa un caso de uso de src/composition.',
+          selector:
+            'ImportExpression > TemplateLiteral > TemplateElement[value.raw=/infrastructure.http.api/]',
+          message:
+            'La interfaz no carga el cliente de la API: usa un caso de uso de src/composition.',
         },
         {
           selector:
             "VariableDeclarator[init.type='AwaitExpression'][init.argument.type='ImportExpression'] > ObjectPattern > Property[key.name='apiRequest']",
-          message: 'La interfaz no llama a la API: usa un caso de uso de src/composition.',
+          message:
+            'La interfaz no llama a la API: usa un caso de uso de src/composition.',
         },
         {
           selector:
             "MemberExpression[property.name='apiRequest'][object.type='AwaitExpression'][object.argument.type='ImportExpression']",
-          message: 'La interfaz no llama a la API: usa un caso de uso de src/composition.',
+          message:
+            'La interfaz no llama a la API: usa un caso de uso de src/composition.',
         },
         {
           selector:
             "CallExpression[callee.property.name='then'][callee.object.type='ImportExpression'] Property[key.name='apiRequest']",
-          message: 'La interfaz no llama a la API: usa un caso de uso de src/composition.',
+          message:
+            'La interfaz no llama a la API: usa un caso de uso de src/composition.',
         },
       ],
     },
@@ -199,6 +231,15 @@ export default [
     ignores: ['src/**/*.test.{js,jsx}'],
     rules: {
       'no-unused-vars': ['error', { args: 'none' }],
+    },
+  },
+  // Prettier manda en el formato: apaga las reglas de estilo que chocarían con él (va la última)
+  prettier,
+  // eslint-config-prettier apaga también esta, que no es de estilo: avisa de las
+  // trampas del punto y coma automático (una línea que empieza por `(` o `[`)
+  {
+    rules: {
+      'no-unexpected-multiline': 'error',
     },
   },
 ];

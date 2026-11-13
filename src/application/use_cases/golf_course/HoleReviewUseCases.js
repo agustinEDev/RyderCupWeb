@@ -47,7 +47,11 @@ export class SaveHoleLineUseCase {
   async execute(golfCourseId, holeNumber, linea) {
     exigir(golfCourseId, 'Golf course ID');
     exigir(linea?.tee && linea?.greenCenter, 'A line with tee and green');
-    return this.golfCourseRepository.saveHoleLine(golfCourseId, holeNumber, linea);
+    return this.golfCourseRepository.saveHoleLine(
+      golfCourseId,
+      holeNumber,
+      linea,
+    );
   }
 }
 

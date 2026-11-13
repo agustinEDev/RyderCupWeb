@@ -43,7 +43,9 @@ const mockAssignTeams = vi.fn();
 const mockCloseEnrollments = vi.fn();
 
 vi.mock('../composition', () => ({
-  getCompetitionDetailUseCase: { execute: (...a) => mockGetCompetitionDetail(...a) },
+  getCompetitionDetailUseCase: {
+    execute: (...a) => mockGetCompetitionDetail(...a),
+  },
   getCompetitionGolfCoursesUseCase: { execute: vi.fn().mockResolvedValue([]) },
   activateCompetitionUseCase: { execute: vi.fn() },
   closeEnrollmentsUseCase: { execute: (...a) => mockCloseEnrollments(...a) },
@@ -66,7 +68,12 @@ vi.mock('../composition', () => ({
 }));
 
 vi.mock('../utils/toast', () => ({
-  default: { success: vi.fn(), error: vi.fn(), warning: vi.fn(), info: vi.fn() },
+  default: {
+    success: vi.fn(),
+    error: vi.fn(),
+    warning: vi.fn(),
+    info: vi.fn(),
+  },
 }));
 
 const inscrito = (userId, userName) => ({
@@ -101,14 +108,13 @@ const competicion = (extra = {}) => ({
   ...extra,
 });
 
-
 const renderPage = () =>
   render(
     <MemoryRouter initialEntries={['/competitions/comp-1']}>
       <Routes>
         <Route path="/competitions/:id" element={<CompetitionDetail />} />
       </Routes>
-    </MemoryRouter>
+    </MemoryRouter>,
   );
 
 describe('CompetitionDetail · el acceso a la sala de draft (FE #653)', () => {
@@ -128,18 +134,24 @@ describe('CompetitionDetail · el acceso a la sala de draft (FE #653)', () => {
   it('S1: a quien organiza, la sala es su siguiente paso', async () => {
     // No se le repite el enlace grande: para él la sala ES lo que toca ahora,
     // y ofrecerla dos veces es lo que venía a arreglar el FE #705
-    mockGetCompetitionDetail.mockResolvedValue(competicion(CERRADA_CON_CAPITANES));
+    mockGetCompetitionDetail.mockResolvedValue(
+      competicion(CERRADA_CON_CAPITANES),
+    );
     renderPage();
 
-    expect(await screen.findByTestId('accion-principal')).toHaveTextContent('draft.open');
-    expect(screen.queryByTestId('ir-a-la-sala-de-draft')).not.toBeInTheDocument();
+    expect(await screen.findByTestId('accion-principal')).toHaveTextContent(
+      'draft.open',
+    );
+    expect(
+      screen.queryByTestId('ir-a-la-sala-de-draft'),
+    ).not.toBeInTheDocument();
   });
 
   it('S1b: y a quien solo mira, el enlace de siempre', async () => {
     // La ceremonia se ve en directo desde el móvil de todo el grupo (FE #653)
     mockRoles = { isAdmin: false, isCreator: false, isLoading: false };
     mockGetCompetitionDetail.mockResolvedValue(
-      competicion({ ...CERRADA_CON_CAPITANES, creatorId: 'otra-persona' })
+      competicion({ ...CERRADA_CON_CAPITANES, creatorId: 'otra-persona' }),
     );
     renderPage();
 
@@ -151,64 +163,79 @@ describe('CompetitionDetail · el acceso a la sala de draft (FE #653)', () => {
     // Es la gracia del draft: el grupo entero pendiente del móvil
     mockRoles = { isAdmin: false, isCreator: false, isLoading: false };
     mockGetCompetitionDetail.mockResolvedValue(
-      competicion({ ...CERRADA_CON_CAPITANES, creatorId: 'otro' })
+      competicion({ ...CERRADA_CON_CAPITANES, creatorId: 'otro' }),
     );
     renderPage();
 
-    expect(await screen.findByTestId('ir-a-la-sala-de-draft')).toBeInTheDocument();
+    expect(
+      await screen.findByTestId('ir-a-la-sala-de-draft'),
+    ).toBeInTheDocument();
   });
 
   it('S3: sin capitanes todavía no hay sala que ofrecer', async () => {
     mockGetCompetitionDetail.mockResolvedValue(
-      competicion({ ...CERRADA_CON_CAPITANES, captains: { teamA: null, teamB: null } })
+      competicion({
+        ...CERRADA_CON_CAPITANES,
+        captains: { teamA: null, teamB: null },
+      }),
     );
     renderPage();
 
     await screen.findByText('Ryder de los amigos');
-    expect(screen.queryByTestId('ir-a-la-sala-de-draft')).not.toBeInTheDocument();
+    expect(
+      screen.queryByTestId('ir-a-la-sala-de-draft'),
+    ).not.toBeInTheDocument();
   });
 
   it('S4: con los equipos ya hechos, la sala terminó y el enlace se retira', async () => {
     mockGetCompetitionDetail.mockResolvedValue(
-      competicion({ ...CERRADA_CON_CAPITANES, teamsAssigned: true })
+      competicion({ ...CERRADA_CON_CAPITANES, teamsAssigned: true }),
     );
     renderPage();
 
     await screen.findByText('Ryder de los amigos');
-    expect(screen.queryByTestId('ir-a-la-sala-de-draft')).not.toBeInTheDocument();
+    expect(
+      screen.queryByTestId('ir-a-la-sala-de-draft'),
+    ).not.toBeInTheDocument();
   });
 
   it('S7: y a quien organiza tampoco se la ofrece el menú', async () => {
     // Revisión de la FE #707: al pasar el enlace al menú se perdió la
     // condición de los equipos, que S4 no ve porque mira el enlace grande
     mockGetCompetitionDetail.mockResolvedValue(
-      competicion({ ...CERRADA_CON_CAPITANES, teamsAssigned: true })
+      competicion({ ...CERRADA_CON_CAPITANES, teamsAssigned: true }),
     );
     renderPage();
 
     fireEvent.click(await screen.findByTestId('menu-acciones'));
 
-    expect(screen.getByTestId('accion-principal')).not.toHaveTextContent('draft.open');
+    expect(screen.getByTestId('accion-principal')).not.toHaveTextContent(
+      'draft.open',
+    );
     expect(screen.queryByTestId('accion-draft')).not.toBeInTheDocument();
   });
 
   it('S5: en modo manual no hay draft, así que tampoco sala', async () => {
     mockGetCompetitionDetail.mockResolvedValue(
-      competicion({ ...CERRADA_CON_CAPITANES, setupMode: 'MANUAL' })
+      competicion({ ...CERRADA_CON_CAPITANES, setupMode: 'MANUAL' }),
     );
     renderPage();
 
     await screen.findByText('Ryder de los amigos');
-    expect(screen.queryByTestId('ir-a-la-sala-de-draft')).not.toBeInTheDocument();
+    expect(
+      screen.queryByTestId('ir-a-la-sala-de-draft'),
+    ).not.toBeInTheDocument();
   });
 
   it('S6: con las inscripciones abiertas tampoco: la plantilla aún puede crecer', async () => {
     mockGetCompetitionDetail.mockResolvedValue(
-      competicion({ ...CERRADA_CON_CAPITANES, status: 'ACTIVE' })
+      competicion({ ...CERRADA_CON_CAPITANES, status: 'ACTIVE' }),
     );
     renderPage();
 
     await screen.findByText('Ryder de los amigos');
-    expect(screen.queryByTestId('ir-a-la-sala-de-draft')).not.toBeInTheDocument();
+    expect(
+      screen.queryByTestId('ir-a-la-sala-de-draft'),
+    ).not.toBeInTheDocument();
   });
 });

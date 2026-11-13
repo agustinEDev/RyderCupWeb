@@ -34,12 +34,18 @@ describe('SubmitScorecardUseCase', () => {
   });
 
   it('should throw if matchId is undefined', async () => {
-    await expect(useCase.execute(undefined)).rejects.toThrow('Match ID is required');
+    await expect(useCase.execute(undefined)).rejects.toThrow(
+      'Match ID is required',
+    );
   });
 
   it('should propagate repository errors', async () => {
-    scoringRepository.submitScorecard.mockRejectedValue(new Error('Not all holes validated'));
-    await expect(useCase.execute('m-1')).rejects.toThrow('Not all holes validated');
+    scoringRepository.submitScorecard.mockRejectedValue(
+      new Error('Not all holes validated'),
+    );
+    await expect(useCase.execute('m-1')).rejects.toThrow(
+      'Not all holes validated',
+    );
   });
 
   it('should not call repository when matchId is missing', async () => {

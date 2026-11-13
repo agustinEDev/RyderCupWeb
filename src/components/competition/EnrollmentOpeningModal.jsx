@@ -28,7 +28,13 @@ import {
  * desplazamiento y el cierre por el fondo que no se dispara al soltar ahí una
  * selección de texto. Hacerlo a mano dejaba fuera las tres cosas.
  */
-const EnrollmentOpeningModal = ({ isOpen, startDate, onConfirm, onClose, isLoading }) => {
+const EnrollmentOpeningModal = ({
+  isOpen,
+  startDate,
+  onConfirm,
+  onClose,
+  isLoading,
+}) => {
   const { t, i18n } = useTranslation('competitions');
   const [programada, setProgramada] = useState(false);
   const [dias, setDias] = useState(MIN_DIAS_DE_APERTURA);
@@ -36,7 +42,7 @@ const EnrollmentOpeningModal = ({ isOpen, startDate, onConfirm, onClose, isLoadi
   const faltan = useMemo(() => diasHastaElTorneo(startDate), [startDate]);
   const abre = useMemo(
     () => (programada ? fechaDeApertura(startDate, dias) : null),
-    [programada, startDate, dias]
+    [programada, startDate, dias],
   );
 
   // Estrictamente antes: pidiendo los días JUSTOS que faltan, la apertura cae
@@ -46,7 +52,10 @@ const EnrollmentOpeningModal = ({ isOpen, startDate, onConfirm, onClose, isLoadi
   const abreHoy = programada && faltan !== null && dias === faltan;
 
   const fechaLegible = abre
-    ? new Intl.DateTimeFormat(i18n.language, { day: 'numeric', month: 'long' }).format(abre)
+    ? new Intl.DateTimeFormat(i18n.language, {
+        day: 'numeric',
+        month: 'long',
+      }).format(abre)
     : null;
 
   return (
@@ -64,7 +73,10 @@ const EnrollmentOpeningModal = ({ isOpen, startDate, onConfirm, onClose, isLoadi
       busy={isLoading}
     >
       <div className="px-6 pt-6 pb-2">
-        <h2 id="apertura-titulo" className="text-xl font-semibold text-gray-900">
+        <h2
+          id="apertura-titulo"
+          className="text-xl font-semibold text-gray-900"
+        >
           {t('apertura.titulo')}
         </h2>
         <p id="apertura-explicacion" className="text-sm text-gray-600 mt-1">
@@ -83,8 +95,12 @@ const EnrollmentOpeningModal = ({ isOpen, startDate, onConfirm, onClose, isLoadi
             className="mt-1"
           />
           <span>
-            <span className="block text-sm font-medium text-gray-900">{t('apertura.ahora')}</span>
-            <span className="block text-xs text-gray-500">{t('apertura.ahoraDetalle')}</span>
+            <span className="block text-sm font-medium text-gray-900">
+              {t('apertura.ahora')}
+            </span>
+            <span className="block text-xs text-gray-500">
+              {t('apertura.ahoraDetalle')}
+            </span>
           </span>
         </label>
 
@@ -101,7 +117,9 @@ const EnrollmentOpeningModal = ({ isOpen, startDate, onConfirm, onClose, isLoadi
             <span className="block text-sm font-medium text-gray-900">
               {t('apertura.programada')}
             </span>
-            <span className="block text-xs text-gray-500">{t('apertura.programadaDetalle')}</span>
+            <span className="block text-xs text-gray-500">
+              {t('apertura.programadaDetalle')}
+            </span>
           </span>
         </label>
 
@@ -122,7 +140,7 @@ const EnrollmentOpeningModal = ({ isOpen, startDate, onConfirm, onClose, isLoadi
             >
               {Array.from(
                 { length: MAX_DIAS_DE_APERTURA - MIN_DIAS_DE_APERTURA + 1 },
-                (_, i) => MIN_DIAS_DE_APERTURA + i
+                (_, i) => MIN_DIAS_DE_APERTURA + i,
               ).map((n) => (
                 <option key={n} value={n}>
                   {t('apertura.dias', { count: n })}
@@ -133,8 +151,13 @@ const EnrollmentOpeningModal = ({ isOpen, startDate, onConfirm, onClose, isLoadi
             {/* La fecha y no solo los días: «7 días antes» obliga a hacer la
                 cuenta, y es la cuenta la que dice si eso cae donde se quería */}
             {fechaLegible && !abriraYa && (
-              <p data-testid="fecha-de-apertura" className="text-xs text-gray-600">
-                {abreHoy ? t('apertura.abreHoy') : t('apertura.abreEl', { fecha: fechaLegible })}
+              <p
+                data-testid="fecha-de-apertura"
+                className="text-xs text-gray-600"
+              >
+                {abreHoy
+                  ? t('apertura.abreHoy')
+                  : t('apertura.abreEl', { fecha: fechaLegible })}
               </p>
             )}
 

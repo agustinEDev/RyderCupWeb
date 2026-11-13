@@ -19,7 +19,11 @@ describe('CompetitionMapper · la hora de creación sin huso es UTC', () => {
       updated_at: '2026-09-24T08:00:00.5',
     });
 
-    expect(competition.createdAt.toISOString()).toBe('2026-09-23T23:55:00.000Z');
-    expect(competition.updatedAt.toISOString()).toBe('2026-09-24T08:00:00.500Z');
+    expect(competition.createdAt.toISOString()).toBe(
+      '2026-09-23T23:55:00.000Z',
+    );
+    expect(competition.updatedAt.toISOString()).toBe(
+      '2026-09-24T08:00:00.500Z',
+    );
   });
 });

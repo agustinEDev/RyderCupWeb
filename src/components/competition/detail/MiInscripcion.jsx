@@ -26,13 +26,13 @@ const MiInscripcion = ({
   savingNamePreference,
   handleToggleNamePreference,
 }) => (
-  <div
-    className="p-4"
-  >
+  <div className="p-4">
     <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
       <div className="flex items-center gap-2">
         <AlertCircle className="w-5 h-5 text-blue-600" />
-        <span className="text-blue-900 font-medium">{t('detail.enrollmentStatus')}</span>
+        <span className="text-blue-900 font-medium">
+          {t('detail.enrollmentStatus')}
+        </span>
         {soloEspero ? (
           <span
             data-testid="estado-en-espera"
@@ -47,11 +47,15 @@ const MiInscripcion = ({
         ) : (
           <span
             className={`px-3 py-1 rounded-full text-xs font-semibold ${getEnrollmentStatusColor(
-              userEnrollment?.status || competition.enrollment_status
+              userEnrollment?.status || competition.enrollment_status,
             )}`}
           >
             {(userEnrollment?.status || competition.enrollment_status) &&
-              etiquetaDeInscripcion(t, userEnrollment?.status || competition.enrollment_status, generoDelUsuario)}
+              etiquetaDeInscripcion(
+                t,
+                userEnrollment?.status || competition.enrollment_status,
+                generoDelUsuario,
+              )}
           </span>
         )}
       </div>
@@ -59,14 +63,20 @@ const MiInscripcion = ({
       {/* No sale por su cuenta: quien quita es el organizador (29 oct 2026) */}
       {!isCreator &&
         competition.teamsAssigned &&
-        (userEnrollment?.status || competition.enrollment_status) === 'APPROVED' && (
-        <p className="mt-2 text-sm text-blue-900">{t('detail.teamsFormed.enrolled')}</p>
-      )}
+        (userEnrollment?.status || competition.enrollment_status) ===
+          'APPROVED' && (
+          <p className="mt-2 text-sm text-blue-900">
+            {t('detail.teamsFormed.enrolled')}
+          </p>
+        )}
 
       {puedeElegirNombre && (
         <div className="mt-3 pt-3 border-t border-blue-200">
           <div className="flex items-center justify-between gap-3">
-            <span id="name-preference-label" className="text-blue-900 font-medium text-sm">
+            <span
+              id="name-preference-label"
+              className="text-blue-900 font-medium text-sm"
+            >
               {t('detail.namePreference.label')}
             </span>
             <button

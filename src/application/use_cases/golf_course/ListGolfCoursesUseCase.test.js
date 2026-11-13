@@ -11,7 +11,7 @@ describe('ListGolfCoursesUseCase', () => {
     vi.clearAllMocks();
 
     golfCourseRepository = {
-      list: vi.fn()
+      list: vi.fn(),
     };
 
     useCase = new ListGolfCoursesUseCase({ golfCourseRepository });
@@ -28,7 +28,7 @@ describe('ListGolfCoursesUseCase', () => {
         approvalStatus: 'APPROVED',
         totalPar: 72,
         tees: [],
-        holes: []
+        holes: [],
       },
       {
         id: 'course-2',
@@ -38,8 +38,8 @@ describe('ListGolfCoursesUseCase', () => {
         approvalStatus: 'APPROVED',
         totalPar: 72,
         tees: [],
-        holes: []
-      }
+        holes: [],
+      },
     ];
 
     golfCourseRepository.list.mockResolvedValue(mockCourses);
@@ -65,8 +65,8 @@ describe('ListGolfCoursesUseCase', () => {
         approvalStatus: 'APPROVED',
         totalPar: 72,
         tees: [],
-        holes: []
-      }
+        holes: [],
+      },
     ];
 
     golfCourseRepository.list.mockResolvedValue(mockCourses);
@@ -92,8 +92,8 @@ describe('ListGolfCoursesUseCase', () => {
         approvalStatus: 'PENDING_APPROVAL',
         totalPar: 72,
         tees: [],
-        holes: []
-      }
+        holes: [],
+      },
     ];
 
     golfCourseRepository.list.mockResolvedValue(mockCourses);
@@ -119,8 +119,8 @@ describe('ListGolfCoursesUseCase', () => {
         approvalStatus: 'APPROVED',
         totalPar: 54,
         tees: [],
-        holes: []
-      }
+        holes: [],
+      },
     ];
 
     golfCourseRepository.list.mockResolvedValue(mockCourses);
@@ -139,7 +139,7 @@ describe('ListGolfCoursesUseCase', () => {
     const filters = {
       countryCode: 'US',
       approvalStatus: 'APPROVED',
-      courseType: 'STANDARD_18'
+      courseType: 'STANDARD_18',
     };
     const mockCourses = [
       {
@@ -150,8 +150,8 @@ describe('ListGolfCoursesUseCase', () => {
         approvalStatus: 'APPROVED',
         totalPar: 72,
         tees: [],
-        holes: []
-      }
+        holes: [],
+      },
     ];
 
     golfCourseRepository.list.mockResolvedValue(mockCourses);
@@ -203,7 +203,7 @@ describe('ListGolfCoursesUseCase', () => {
     const customFilters = {
       countryCode: 'GB',
       approvalStatus: 'APPROVED',
-      customField: 'customValue'
+      customField: 'customValue',
     };
     golfCourseRepository.list.mockResolvedValue([]);
 

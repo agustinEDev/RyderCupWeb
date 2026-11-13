@@ -15,8 +15,14 @@ describe('InvitationMapper', () => {
   it('A2: una invitación sin plaza no tumba la lista entera (#710)', () => {
     // Al cerrar la inscripción el servidor las deja en NO_ROOM. Sin conocer el
     // estado, el mapper lanzaba y «Mis invitaciones» no cargaba ninguna
-    const lista = InvitationMapper.toDomainMany([invitacion('PENDING'), invitacion('NO_ROOM')]);
+    const lista = InvitationMapper.toDomainMany([
+      invitacion('PENDING'),
+      invitacion('NO_ROOM'),
+    ]);
 
-    expect(lista.map((i) => i.status.toString())).toEqual(['PENDING', 'NO_ROOM']);
+    expect(lista.map((i) => i.status.toString())).toEqual([
+      'PENDING',
+      'NO_ROOM',
+    ]);
   });
 });

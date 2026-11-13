@@ -21,12 +21,18 @@ describe('GetScheduleUseCase', () => {
   });
 
   it('should throw if competitionId is missing', async () => {
-    await expect(useCase.execute()).rejects.toThrow('Competition ID is required');
-    await expect(useCase.execute('')).rejects.toThrow('Competition ID is required');
+    await expect(useCase.execute()).rejects.toThrow(
+      'Competition ID is required',
+    );
+    await expect(useCase.execute('')).rejects.toThrow(
+      'Competition ID is required',
+    );
   });
 
   it('should propagate repository errors', async () => {
-    scheduleRepository.getSchedule.mockRejectedValue(new Error('Network error'));
+    scheduleRepository.getSchedule.mockRejectedValue(
+      new Error('Network error'),
+    );
     await expect(useCase.execute('comp-1')).rejects.toThrow('Network error');
   });
 });

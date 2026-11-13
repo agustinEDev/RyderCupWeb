@@ -9,7 +9,10 @@ const originalMatchMedia = window.matchMedia;
 const listeners = new Map();
 
 function mockMatchMedia({ mobile = false, reducedMotion = false } = {}) {
-  const state = { [MOBILE_QUERY]: mobile, [REDUCED_MOTION_QUERY]: reducedMotion };
+  const state = {
+    [MOBILE_QUERY]: mobile,
+    [REDUCED_MOTION_QUERY]: reducedMotion,
+  };
 
   window.matchMedia = vi.fn().mockImplementation((query) => ({
     media: query,
@@ -20,7 +23,8 @@ function mockMatchMedia({ mobile = false, reducedMotion = false } = {}) {
       if (!listeners.has(query)) listeners.set(query, new Set());
       listeners.get(query).add(handler);
     },
-    removeEventListener: (_event, handler) => listeners.get(query)?.delete(handler),
+    removeEventListener: (_event, handler) =>
+      listeners.get(query)?.delete(handler),
   }));
 
   return state;

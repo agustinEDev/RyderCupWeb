@@ -10,20 +10,39 @@ const partida = QuickMatch.fromPersistence({
   matchFormat: null,
   scoringFormat: 'STABLEFORD',
   status: QuickMatchStatus.completed(),
-  participants: [{ participantId: 'p-1', userId: 'user-1', name: null, handicap: 10, team: null, isGuest: false }],
+  participants: [
+    {
+      participantId: 'p-1',
+      userId: 'user-1',
+      name: null,
+      handicap: 10,
+      team: null,
+      isGuest: false,
+    },
+  ],
   scorerIds: ['p-1'],
 });
 
 describe('GetSharedQuickMatchUseCase (K)', () => {
   it('requires the repository and an id', async () => {
-    expect(() => new GetSharedQuickMatchUseCase({})).toThrow('requires quickMatchRepository');
-    const useCase = new GetSharedQuickMatchUseCase({ quickMatchRepository: { getShared: vi.fn() } });
+    expect(() => new GetSharedQuickMatchUseCase({})).toThrow(
+      'requires quickMatchRepository',
+    );
+    const useCase = new GetSharedQuickMatchUseCase({
+      quickMatchRepository: { getShared: vi.fn() },
+    });
     await expect(useCase.execute()).rejects.toThrow('quickMatchId is required');
   });
 
   it('returns the same DTO as the quick match plus readOnly and viewerIsParticipant', async () => {
-    const getShared = vi.fn().mockResolvedValue({ quickMatch: partida, readOnly: true, viewerIsParticipant: false });
-    const useCase = new GetSharedQuickMatchUseCase({ quickMatchRepository: { getShared } });
+    const getShared = vi.fn().mockResolvedValue({
+      quickMatch: partida,
+      readOnly: true,
+      viewerIsParticipant: false,
+    });
+    const useCase = new GetSharedQuickMatchUseCase({
+      quickMatchRepository: { getShared },
+    });
 
     const dto = await useCase.execute('qm-1');
 

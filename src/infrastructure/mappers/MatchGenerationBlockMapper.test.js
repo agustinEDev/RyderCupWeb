@@ -28,7 +28,12 @@ const API = {
   reason: 'PLAYERS_WITHOUT_TEE',
   players: [
     { user_id: 'u1', name: 'Bea Dos', missing: 'GENDER', tee_color: null },
-    { user_id: 'u2', name: 'Carla Tres', missing: 'TEE_COLOR', tee_color: 'WHITE' },
+    {
+      user_id: 'u2',
+      name: 'Carla Tres',
+      missing: 'TEE_COLOR',
+      tee_color: 'WHITE',
+    },
   ],
   at: '2026-06-01T00:00:05',
 };
@@ -37,7 +42,12 @@ const ESPERADO = {
   reason: 'PLAYERS_WITHOUT_TEE',
   players: [
     { userId: 'u1', name: 'Bea Dos', missing: 'GENDER', teeColor: null },
-    { userId: 'u2', name: 'Carla Tres', missing: 'TEE_COLOR', teeColor: 'WHITE' },
+    {
+      userId: 'u2',
+      name: 'Carla Tres',
+      missing: 'TEE_COLOR',
+      teeColor: 'WHITE',
+    },
   ],
 };
 
@@ -112,9 +122,12 @@ describe('El motivo de una sesión sin partidos', () => {
       },
     ]);
 
-    const sesiones = await new ApiEnvelopeRepository().listMySessionsWithoutMatches();
+    const sesiones =
+      await new ApiEnvelopeRepository().listMySessionsWithoutMatches();
 
-    expect(apiRequest).toHaveBeenCalledWith('/api/v1/competitions/me/sessions-without-matches');
+    expect(apiRequest).toHaveBeenCalledWith(
+      '/api/v1/competitions/me/sessions-without-matches',
+    );
     expect(sesiones).toEqual([
       {
         roundId: 'r1',

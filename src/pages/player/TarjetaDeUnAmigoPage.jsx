@@ -13,7 +13,10 @@ import { rutaDeAnotacion } from '../../utils/rutaDeAnotacion';
 import { esDeUnaPrivada } from '../../utils/competicionPrivada';
 import { rutaEnSuFila } from '../../utils/rutasDeUnAmigo';
 import { PANTALLA_MENOS_BARRA_INFERIOR } from '../../utils/barraInferior';
-import { getScoringViewUseCase, getTeeGroupScoringViewUseCase } from '../../composition';
+import {
+  getScoringViewUseCase,
+  getTeeGroupScoringViewUseCase,
+} from '../../composition';
 
 const HTTP_FORBIDDEN = 403;
 const HTTP_NOT_FOUND = 404;
@@ -74,10 +77,12 @@ const TarjetaDeUnAmigoPage = ({ tipo }) => {
   const { cargando, recargar } = useCargaCancelableEffect(
     () => {
       const id = idDeLaVista;
-      const casoDeUso = esPartida ? getTeeGroupScoringViewUseCase : getScoringViewUseCase;
+      const casoDeUso = esPartida
+        ? getTeeGroupScoringViewUseCase
+        : getScoringViewUseCase;
       return casoDeUso.execute(id).then(
         (leida) => ({ id, leida }),
-        (error) => ({ id, error })
+        (error) => ({ id, error }),
       );
     },
     [esPartida, idDeLaVista],
@@ -88,7 +93,7 @@ const TarjetaDeUnAmigoPage = ({ tipo }) => {
         if (error) setFallo(motivoDelFallo(error));
         else setVista(leida);
       },
-    }
+    },
   );
   // Reintentar, o una tarjeta que cambia: con lo ya pintado no hay espera
   const vuelveACargar = () => {
@@ -96,11 +101,16 @@ const TarjetaDeUnAmigoPage = ({ tipo }) => {
     recargar();
   };
 
-  const juego = !!user?.id && (vista?.players ?? []).some((p) => p.userId === user.id);
+  const juego =
+    !!user?.id && (vista?.players ?? []).some((p) => p.userId === user.id);
   if (juego) {
     return (
       <Navigate
-        to={rutaDeAnotacion({ id: idDeLaVista, competitionId, esPartidaDeFranja: esPartida })}
+        to={rutaDeAnotacion({
+          id: idDeLaVista,
+          competitionId,
+          esPartidaDeFranja: esPartida,
+        })}
         replace
       />
     );
@@ -113,7 +123,13 @@ const TarjetaDeUnAmigoPage = ({ tipo }) => {
     return (
       <div className={`${PANTALLA_MENOS_BARRA_INFERIOR} bg-gray-50`}>
         <HeaderAuth user={user} />
-        <BlockLoader texto={t(esPartida ? 'common:screens.friendGroup' : 'common:screens.friendMatch')} />
+        <BlockLoader
+          texto={t(
+            esPartida
+              ? 'common:screens.friendGroup'
+              : 'common:screens.friendMatch',
+          )}
+        />
       </div>
     );
   }
@@ -123,7 +139,12 @@ const TarjetaDeUnAmigoPage = ({ tipo }) => {
       <div className={`${PANTALLA_MENOS_BARRA_INFERIOR} bg-gray-50`}>
         <HeaderAuth user={user} />
         <main className="max-w-2xl mx-auto px-4 py-6 pb-24">
-          <SinTarjeta fallo={fallo} onReintentar={vuelveACargar} onVolver={volver} t={t} />
+          <SinTarjeta
+            fallo={fallo}
+            onReintentar={vuelveACargar}
+            onVolver={volver}
+            t={t}
+          />
         </main>
       </div>
     );
@@ -135,19 +156,34 @@ const TarjetaDeUnAmigoPage = ({ tipo }) => {
     <div className={`${PANTALLA_MENOS_BARRA_INFERIOR} bg-gray-50`}>
       <HeaderAuth user={user} />
       <main className="max-w-4xl mx-auto px-4 py-4 pb-24">
-        <BotonVolver onVolver={volver} t={t} className="hidden md:inline-flex mb-3" />
+        <BotonVolver
+          onVolver={volver}
+          t={t}
+          className="hidden md:inline-flex mb-3"
+        />
         {/* En móvil el título lo pinta la cabecera contextual: un segundo
             encabezado de nivel 1 rompería la jerarquía */}
         <h1 className="hidden md:block text-sm font-medium text-gray-500 mb-1">
-          {t(esPartida ? 'common:screens.friendGroup' : 'common:screens.friendMatch')}
+          {t(
+            esPartida
+              ? 'common:screens.friendGroup'
+              : 'common:screens.friendMatch',
+          )}
         </h1>
         <div className="flex items-start justify-between gap-3 mb-4">
           <h2 className="text-xl font-bold text-gray-900 break-words">
             {vista.matchNumber != null
-              ? t(esPartida ? 'friendCard.groupTitle' : 'friendCard.matchTitle', {
-                  number: vista.matchNumber,
-                })
-              : t(esPartida ? 'common:screens.friendGroup' : 'common:screens.friendMatch')}
+              ? t(
+                  esPartida ? 'friendCard.groupTitle' : 'friendCard.matchTitle',
+                  {
+                    number: vista.matchNumber,
+                  },
+                )
+              : t(
+                  esPartida
+                    ? 'common:screens.friendGroup'
+                    : 'common:screens.friendMatch',
+                )}
           </h2>
           <span
             data-testid="tarjeta-solo-lectura"
@@ -207,13 +243,35 @@ const BotonVolver = ({ onVolver, t, className = '' }) => (
 /** No hay tarjeta que enseñar: no se puede ver, no existe, o falló la carga. */
 const SinTarjeta = ({ fallo, onReintentar, onVolver, t }) => {
   if (fallo === HTTP_FORBIDDEN) {
-    return <Aviso testId="tarjeta-prohibida" Icono={Lock} texto={t('friendCard.forbidden')} onVolver={onVolver} t={t} />;
+    return (
+      <Aviso
+        testId="tarjeta-prohibida"
+        Icono={Lock}
+        texto={t('friendCard.forbidden')}
+        onVolver={onVolver}
+        t={t}
+      />
+    );
   }
   if (fallo === HTTP_NOT_FOUND) {
-    return <Aviso testId="tarjeta-no-existe" Icono={SearchX} texto={t('friendCard.notFound')} onVolver={onVolver} t={t} />;
+    return (
+      <Aviso
+        testId="tarjeta-no-existe"
+        Icono={SearchX}
+        texto={t('friendCard.notFound')}
+        onVolver={onVolver}
+        t={t}
+      />
+    );
   }
   return (
-    <Aviso testId="tarjeta-error" Icono={RefreshCw} texto={t('friendCard.error')} onVolver={onVolver} t={t}>
+    <Aviso
+      testId="tarjeta-error"
+      Icono={RefreshCw}
+      texto={t('friendCard.error')}
+      onVolver={onVolver}
+      t={t}
+    >
       <button
         type="button"
         onClick={onReintentar}
@@ -229,7 +287,10 @@ const SinTarjeta = ({ fallo, onReintentar, onVolver, t }) => {
 
 // Siempre con una salida: en escritorio no hay flecha en la cabecera
 const Aviso = ({ testId, Icono, texto, onVolver, t, children }) => (
-  <div data-testid={testId} className="text-center py-16 px-6 bg-white border border-gray-200 rounded-lg">
+  <div
+    data-testid={testId}
+    className="text-center py-16 px-6 bg-white border border-gray-200 rounded-lg"
+  >
     <Icono className="w-10 h-10 mx-auto text-gray-300" aria-hidden="true" />
     <p className="mt-3 text-base font-semibold text-gray-900">{texto}</p>
     {children}
