@@ -69,7 +69,10 @@ describe('precache de las fuentes', () => {
   it('vite.config.js deja fuera del precache lo que no es latín ni latín extendido', () => {
     const config = leer('vite.config.js');
 
-    expect(config).toContain("globIgnores: ['**/*-{cyrillic,cyrillic-ext,greek,greek-ext,vietnamese,devanagari}-*.woff2']");
+    // Sin depender del formato: el patrón solo, en su lista, con o sin saltos
+    expect(config).toMatch(
+      /globIgnores: \[\s*'\*\*\/\*-\{cyrillic,cyrillic-ext,greek,greek-ext,vietnamese,devanagari\}-\*\.woff2',?\s*\]/,
+    );
   });
 
   it('latín extendido entra en el precache: el patrón no lo nombra', () => {

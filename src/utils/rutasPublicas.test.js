@@ -49,7 +49,8 @@ describe('rutas publicas', () => {
     const interfaz = readFileSync(resolve(process.cwd(), 'src/composition/interfazDelTransporte.js'), 'utf8');
     const app = readFileSync(resolve(process.cwd(), 'src/App.jsx'), 'utf8');
 
-    expect(interceptor).not.toMatch(/\['\/login', '\/register'/);
+    // Con o sin saltos de línea: Prettier parte las listas largas
+    expect(interceptor).not.toMatch(/\[\s*'\/login',\s*'\/register'/);
     expect(interceptor).toMatch(/interfaz\(\)\.sinSesionEnRutaPublica\(/);
     expect(interfaz).toMatch(/import \{ sinSesionEnRutaPublica \} from '\.\.\/utils\/rutasPublicas'/);
 

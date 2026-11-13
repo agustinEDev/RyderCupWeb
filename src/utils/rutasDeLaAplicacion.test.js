@@ -45,19 +45,35 @@ describe('rutas de la aplicación', () => {
     // Dos copias que se separan: una ruta nueva olvidada aquí sería «no existe»
     // para el interceptor, que dejaría de refrescar en ella sin sesión guardada
     const app = readFileSync(resolve(process.cwd(), 'src/App.jsx'), 'utf8');
-    const conRuta = [...app.matchAll(/<Route path="([^"]+)"/g)].map(([, ruta]) => ruta);
+    // Cada etiqueta <Route ...>, se escriba en una línea o en varias, en una sola
+    // pasada: se queda con lo que va fuera de llaves (un `path=` dentro de
+    // `element={...}` no es suyo) y corta en el `>` que la cierra fuera de ellas
+    const etiquetas = [...app.matchAll(/<Route[\s>/]/g)].map(({ index }) => {
+      let llaves = 0;
+      let propia = '';
+      for (let i = index; i < app.length; i += 1) {
+        const c = app[i];
+        if (c === '{') llaves += 1;
+        if (llaves === 0) propia += c;
+        if (c === '}') llaves -= 1;
+        if (c === '>' && llaves === 0) break;
+      }
+      return propia;
+    });
+    const conRuta = etiquetas
+      .map((propia) => propia.match(/\spath="([^"]+)"/)?.[1])
+      .filter(Boolean);
     const enApp = conRuta.filter((ruta) => ruta !== '*');
 
     expect([...RUTAS_DE_LA_APLICACION].sort()).toEqual([...enApp].sort());
-    // Y que no se escape ninguna: una <Route> partida en varias lineas o con
-    // `path={...}` no la ve la expresion de arriba, y faltaria en los dos lados
-    // sin que nada cantara. `<Router>` y `<Routes>` no cuentan, ni las dos sin
-    // `path` que envuelven el árbol del router de datos: la carcasa y la que
-    // devuelve los errores hacia arriba (FE #647)
-    const etiquetas = app.match(/<Route[\s>/]/g) ?? [];
-    // Sin `path` en su etiqueta: una ruta de verdad con `element` delante de
-    // `path` no cuenta como envoltorio (/code-review)
-    const envoltorios = app.match(/<Route (?:element|errorElement)=(?![^\n]*\bpath=)[^\n]*/g) ?? [];
+    // Y que no se escape ninguna: una <Route> con `path={...}` no la ve la
+    // lectura de arriba, y faltaría en los dos lados sin que nada cantara.
+    // `<Router>` y `<Routes>` no cuentan, ni las dos sin `path` que envuelven
+    // el árbol del router de datos: la carcasa y la que devuelve los errores
+    // hacia arriba (FE #647)
+    const envoltorios = etiquetas.filter(
+      (propia) => !/\spath=/.test(propia) && /\s(element|errorElement)=/.test(propia),
+    );
     expect(envoltorios).toHaveLength(2);
     expect(etiquetas.length - envoltorios.length).toBe(conRuta.length);
   });

@@ -165,7 +165,7 @@ describe('cabeceras de seguridad: las copias como producción (FE-04/FE-05)', ()
   });
 
   it('el Vite de desarrollo hereda las de preview (solo cambia la CSP)', () => {
-    expect(VITE).toMatch(/const devHeaders = \{\s*\.\.\.securityHeaders,\s*'Content-Security-Policy': "[^"]+"\s*\}/);
+    expect(VITE).toMatch(/const devHeaders = \{\s*\.\.\.securityHeaders,\s*'Content-Security-Policy':\s*"[^"]+",?\s*\}/);
   });
 
   it('el analizador de las copias ve todas sus cabeceras', () => {

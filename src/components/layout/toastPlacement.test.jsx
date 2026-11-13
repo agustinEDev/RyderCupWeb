@@ -44,7 +44,10 @@ describe('toast placement', () => {
   it('ties the offset to the bottom navigation being visible', () => {
     const app = read('src/App.jsx');
 
-    expect(app).toContain("containerClassName={showBottomNav ? 'toast-container-above-bottom-nav' : undefined}");
+    // Sin depender del formato (Prettier puede partirlo en varias líneas)
+    expect(app).toMatch(
+      /containerClassName=\{\s*showBottomNav\s*\?\s*'toast-container-above-bottom-nav'\s*:\s*undefined\s*\}/,
+    );
   });
 
   it('mounts a single Toaster, inside App', () => {

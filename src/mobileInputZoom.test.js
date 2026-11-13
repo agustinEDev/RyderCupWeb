@@ -87,7 +87,12 @@ describe('campos de formulario en movil (FE #441)', () => {
   it('deja fuera los campos que piden una letra mayor', () => {
     // El panel de anotar golpes usa text-lg y ahi el numero grande es
     // deliberado: la regla no puede encogerlo a 16px.
-    expect(reglaDeCampos().texto).toMatch(/:not\(\.text-lg\)/);
+    // En los tres selectores, y sin depender del formato: Prettier parte
+    // `:not(...)` en varias líneas
+    const texto = reglaDeCampos().texto.replace(/\(\s+/g, '(').replace(/\s+\)/g, ')');
+    for (const campo of ['input', 'select', 'textarea']) {
+      expect(texto).toMatch(new RegExp(`\\b${campo}\\b[^,{]*:not\\(\\.text-lg\\)`));
+    }
   });
 
   it('no la aplica en escritorio con raton', () => {

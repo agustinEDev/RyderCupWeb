@@ -801,7 +801,7 @@ describe('MapaDelHoyo — tras la prueba en el Kind', () => {
     const orden = indexCss.match(/@layer ([a-z, ]+);/)[1].split(/,\s*/);
     expect(orden.indexOf('maplibre')).toBeGreaterThan(-1);
     expect(orden.indexOf('maplibre')).toBeLessThan(orden.indexOf('utilities'));
-    expect(indexCss.indexOf('@layer theme')).toBeLessThan(indexCss.indexOf('@import "tailwindcss"'));
+    expect(indexCss.indexOf('@layer theme')).toBeLessThan(indexCss.search(/@import ['"]tailwindcss['"]/));
     expect(mapaCss).toMatch(/@import 'maplibre-gl\/dist\/maplibre-gl\.css' layer\(maplibre\);/);
     // Y nadie la importa sin capa
     expect(mapaJsx).toContain("import './mapa.css';");
