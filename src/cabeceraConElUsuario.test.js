@@ -22,8 +22,8 @@ const ficheros = (dir) =>
 
 /**
  * Las etiquetas `<HeaderAuth …>` de un texto, enteras: las llaves de los
- * atributos pueden llevar `>` (una flecha) y no cierran la etiqueta. Las
- * comillas y los comentarios no se tratan: un `title="a > b"` o un
+ * atributos pueden llevar `>` (una flecha) y no cierran la etiqueta. Aquí no se
+ * tratan las comillas ni los comentarios: un `title="a > b"` o un
  * `<HeaderAuth />` comentado hacen fallar el guardián de más, nunca de menos.
  */
 const etiquetasDeLaCabecera = (texto) => {
@@ -45,11 +45,16 @@ const etiquetasDeLaCabecera = (texto) => {
 };
 
 const llevaElUsuario = (etiqueta) => {
-  // Solo los atributos de la etiqueta, sin lo que va entre llaves
+  // Solo los nombres de los atributos: sin lo que va entre llaves ni entre
+  // comillas, que un `title="para user=x"` no cuente como la prop
   let fuera = '';
   let llaves = 0;
+  let comilla = null;
   for (const c of etiqueta) {
-    if (c === '{') llaves++;
+    if (comilla) {
+      if (c === comilla) comilla = null;
+    } else if (llaves === 0 && (c === '"' || c === "'")) comilla = c;
+    else if (c === '{') llaves++;
     else if (c === '}') llaves--;
     else if (llaves === 0) fuera += c;
   }
@@ -101,6 +106,9 @@ describe('every session header gets the user (#1129)', () => {
       ['<HeaderAuth user={undefined} />', false],
       ['<HeaderAuth user={ undefined } />', false],
       ['<HeaderAuth {...props} />', false],
+      // Un ` user=` dentro de un texto entre comillas no es la prop
+      ['<HeaderAuth title="para user=x" />', false],
+      ["<HeaderAuth title='para user=x' user={user} />", true],
       ['<HeaderAuth {...props} user={user} />', true],
     ])('%s → %s', (etiqueta, esperado) => {
       const [leida] = etiquetasDeLaCabecera(`x ${etiqueta} y`);
