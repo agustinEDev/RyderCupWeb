@@ -34,6 +34,8 @@ let vigilantes = 0;
 let dejaDeVigilar = null;
 
 export { ponLasNovedadesACero, olvidaLasNovedades };
+// Para quien no pinta el número pero reacciona a sus cambios (Actividad abierta)
+export { leeLasNovedades, suscribeALasNovedades };
 
 /** Vuelve a preguntar por el número. Si falla, se queda el que había. */
 const refrescaLasNovedades = () => {

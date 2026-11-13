@@ -48,6 +48,8 @@ vi.mock('../../hooks/useNovedadesDeActividad', async () => {
     ponLasNovedadesACero: () => aCero(),
     olvidaLasNovedades: () => {},
     useNovedadesDeActividad: () => useSyncExternalStore(mockNovedades.suscribe, mockNovedades.lee),
+    leeLasNovedades: () => mockNovedades.lee(),
+    suscribeALasNovedades: (f) => mockNovedades.suscribe(f),
   };
 });
 

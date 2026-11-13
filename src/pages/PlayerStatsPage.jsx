@@ -7,6 +7,7 @@ import RecentMatches from '../components/dashboard/RecentMatches';
 import ScoringBreakdown from '../components/stats/ScoringBreakdown';
 import { useAuth } from '../hooks/useAuth';
 import { useEntryMotion } from '../hooks/useEntryMotion';
+import { useCargaCancelableEffect } from '../hooks/useCargaCancelableEffect';
 import { slideUp, staggerContainer, getEntryProps } from '../utils/animations';
 import {
   getPlayerStatsUseCase,
@@ -51,6 +52,20 @@ const StatBlock = ({ icon: Icon, label, value, hint, testId }) => (
 // ha podido preguntar.
 const FALLO_DEL_DESGLOSE = Symbol('fallo-del-desglose');
 
+const leeLasEstadisticas = () =>
+  Promise.all([
+    getPlayerStatsUseCase.execute(),
+    getRecentMatchesUseCase.execute(),
+    // El desglose cae solo si falla, y no se lleva por delante el resumen
+    // ni el historial. Su endpoint es más nuevo que ellos: mientras no
+    // esté desplegado responde 404, y un `Promise.all` convertiría eso en
+    // una pantalla de estadísticas vacía para todo el mundo
+    getScoringBreakdownUseCase.execute().catch((error) => {
+      console.error('Failed to load the scoring breakdown:', error);
+      return FALLO_DEL_DESGLOSE;
+    }),
+  ]);
+
 const PlayerStatsPage = () => {
   const { t } = useTranslation('dashboard');
   const { user, loading: isLoadingUser } = useAuth();
@@ -60,65 +75,31 @@ const PlayerStatsPage = () => {
   const [matches, setMatches] = useState([]);
   const [breakdown, setBreakdown] = useState(null);
   const [breakdownFailed, setBreakdownFailed] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
   const [selectedCourseId, setSelectedCourseId] = useState(null);
   const [courseStats, setCourseStats] = useState(null);
   const [isLoadingCourse, setIsLoadingCourse] = useState(false);
 
-  useEffect(() => {
-    let cancelled = false;
-
-    const load = async () => {
-      if (!user) {
-        setIsLoading(false);
-        return;
-      }
-
-      setIsLoading(true);
-      try {
-        const [stats, history, scoringBreakdown] = await Promise.all([
-          getPlayerStatsUseCase.execute(),
-          getRecentMatchesUseCase.execute(),
-          // El desglose cae solo si falla, y no se lleva por delante el resumen
-          // ni el historial. Su endpoint es más nuevo que ellos: mientras no
-          // esté desplegado responde 404, y un `Promise.all` convertiría eso en
-          // una pantalla de estadísticas vacía para todo el mundo
-          getScoringBreakdownUseCase.execute().catch((error) => {
-            console.error('Failed to load the scoring breakdown:', error);
-            return FALLO_DEL_DESGLOSE;
-          }),
-        ]);
-        if (!cancelled) {
-          setGlobalStats(stats);
-          setMatches(history);
-          const fallo = scoringBreakdown === FALLO_DEL_DESGLOSE;
-          setBreakdown(fallo ? null : scoringBreakdown);
-          setBreakdownFailed(fallo);
-        }
-      } catch (error) {
-        console.error('Failed to load player statistics:', error);
-        if (!cancelled) {
-          setGlobalStats(null);
-          setMatches([]);
-          setBreakdown(null);
-          setBreakdownFailed(true);
-        }
-      } finally {
-        if (!cancelled) {
-          setIsLoading(false);
-        }
-      }
-    };
-
-    load();
-    return () => {
-      cancelled = true;
-    };
-    // Se depende del id y no del objeto: un refetch del perfil devuelve un
-    // `user` distinto que es la misma persona, y recargar entonces sería pedir
-    // otra vez lo mismo
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.id]);
+  // Se depende del id y no del objeto: un refetch del perfil devuelve un
+  // `user` distinto que es la misma persona, y recargar entonces sería pedir
+  // otra vez lo mismo. Si cambia de verdad con una en vuelo, la vieja no se pinta
+  const userId = user?.id;
+  const { cargando: isLoading } = useCargaCancelableEffect(leeLasEstadisticas, [userId], {
+    activa: Boolean(userId),
+    alCargar: ([stats, history, scoringBreakdown]) => {
+      setGlobalStats(stats);
+      setMatches(history);
+      const fallo = scoringBreakdown === FALLO_DEL_DESGLOSE;
+      setBreakdown(fallo ? null : scoringBreakdown);
+      setBreakdownFailed(fallo);
+    },
+    alFallar: (error) => {
+      console.error('Failed to load player statistics:', error);
+      setGlobalStats(null);
+      setMatches([]);
+      setBreakdown(null);
+      setBreakdownFailed(true);
+    },
+  });
 
   useEffect(() => {
     let cancelled = false;

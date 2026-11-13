@@ -1,10 +1,11 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useRef, useState } from 'react';
 import { Link } from 'react-router';
 import { ArrowLeft, Users, UserPlus } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import customToast from '../../utils/toast';
 import HeaderAuth from '../../components/layout/HeaderAuth';
 import { useAuth } from '../../hooks/useAuth';
+import { useCargaCancelableEffect } from '../../hooks/useCargaCancelableEffect';
 import FriendCard from '../../components/friend/FriendCard';
 import AddFriendModal from '../../components/friend/AddFriendModal';
 import {
@@ -29,7 +30,6 @@ const FriendsPage = () => {
   const [friends, setFriends] = useState([]);
   const [received, setReceived] = useState([]);
   const [sent, setSent] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [processingKeys, setProcessingKeys] = useState(() => new Set());
   const [showAddModal, setShowAddModal] = useState(false);
 
@@ -45,34 +45,50 @@ const FriendsPage = () => {
     });
   };
 
-  const loadData = useCallback(async ({ silent = false } = {}) => {
-    if (!user) return;
-
-    if (!silent) setIsLoading(true);
-    try {
-      const [friendsResult, receivedResult, sentResult] = await Promise.all([
-        listFriendsUseCase.execute(user.id),
-        listPendingFriendRequestsUseCase.execute(user.id, 'received'),
-        listPendingFriendRequestsUseCase.execute(user.id, 'sent'),
-      ]);
-      setFriends(friendsResult.friendships);
-      setReceived(receivedResult.friendships);
-      setSent(sentResult.friendships);
-    } catch (error) {
-      console.error('Error loading friends:', error);
-      customToast.error(error.message || t('errors.failedToLoad'));
-    } finally {
-      if (!silent) setIsLoading(false);
+  // Del id y no del objeto: la misma persona con un `user` nuevo (la sesión
+  // se vuelve a leer) no recarga la página ni suelta las tarjetas ocupadas
+  const userId = user?.id;
+  // Las tres listas, al entrar y tras cada acción. De dos acciones seguidas,
+  // la recarga de la primera que llegue tarde ya no pisa la de la segunda.
+  // Tras una acción se recarga en silencio: sin la espera de toda la página,
+  // solo la de su tarjeta, que sigue ocupada hasta que llega SU recarga
+  const { cargando, recargar } = useCargaCancelableEffect(
+    () =>
+      Promise.all([
+        listFriendsUseCase.execute(userId),
+        listPendingFriendRequestsUseCase.execute(userId, 'received'),
+        listPendingFriendRequestsUseCase.execute(userId, 'sent'),
+      ]),
+    [userId],
+    {
+      activa: Boolean(userId),
+      alCargar: ([friendsResult, receivedResult, sentResult]) => {
+        setFriends(friendsResult.friendships);
+        setReceived(receivedResult.friendships);
+        setSent(sentResult.friendships);
+      },
+      alFallar: (error) => {
+        console.error('Error loading friends:', error);
+        customToast.error(error.message || t('errors.failedToLoad'));
+      },
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user]);
+  );
+  // Sin usuario no se pide nada y se sigue esperando, como antes
+  const isLoading = cargando || !user;
 
-  useEffect(() => {
-    if (user) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- pre-existing pattern surfaced by eslint-plugin-react-hooks 7.1.1 bump; needs dedicated review (tracked in follow-up)
-      loadData();
+  // La recarga tras una acción, y que la tarjeta siga ocupada hasta que lleguen
+  // unas listas que ya la incluyan. Si otra acción la deja descartada, esas
+  // listas son las de la recarga más reciente: se espera a esa
+  const ultimaRecargaRef = useRef(null);
+  const recargarTrasLaAccion = async () => {
+    let promesa = recargar({ silenciosa: true });
+    ultimaRecargaRef.current = promesa;
+    let resultado = await promesa;
+    while (resultado.estado === 'descartada' && ultimaRecargaRef.current !== promesa) {
+      promesa = ultimaRecargaRef.current;
+      resultado = await promesa;
     }
-  }, [user, loadData]);
+  };
 
   const handleAccept = async (friendshipId) => {
     const key = `friendship:${friendshipId}`;
@@ -80,7 +96,7 @@ const FriendsPage = () => {
     try {
       await respondFriendRequestUseCase.execute(friendshipId, 'ACCEPT');
       customToast.success(t('success.accepted'));
-      await loadData({ silent: true });
+      await recargarTrasLaAccion();
     } catch (error) {
       console.error('Error accepting friend request:', error);
       customToast.error(error.message || t('errors.failedToRespond'));
@@ -95,7 +111,7 @@ const FriendsPage = () => {
     try {
       await respondFriendRequestUseCase.execute(friendshipId, 'DECLINE');
       customToast.success(t('success.declined'));
-      await loadData({ silent: true });
+      await recargarTrasLaAccion();
     } catch (error) {
       console.error('Error declining friend request:', error);
       customToast.error(error.message || t('errors.failedToRespond'));
@@ -110,7 +126,7 @@ const FriendsPage = () => {
     try {
       await removeFriendUseCase.execute(friendshipId);
       customToast.success(t('success.removed'));
-      await loadData({ silent: true });
+      await recargarTrasLaAccion();
     } catch (error) {
       console.error('Error removing friendship:', error);
       customToast.error(error.message || t('errors.failedToRemove'));
@@ -126,7 +142,7 @@ const FriendsPage = () => {
     try {
       await blockUserUseCase.execute(otherUserId);
       customToast.success(t('success.blocked'));
-      await loadData({ silent: true });
+      await recargarTrasLaAccion();
     } catch (error) {
       console.error('Error blocking user:', error);
       customToast.error(error.message || t('errors.failedToBlock'));
