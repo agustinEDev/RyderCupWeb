@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useEffectEvent, useRef, useCallback } from 'react';
 import ModalShell, { CAJA_PROPIA } from '../ui/ModalShell';
 import { nombreRealSiAporta, nombreVisible } from '../../utils/nombreVisible';
 import { Loader, Search, UserPlus, X } from 'lucide-react';
@@ -39,16 +39,15 @@ const SendInvitationModalContent = ({
   const [showDropdown, setShowDropdown] = useState(false);
   const [highlightedIndex, setHighlightedIndex] = useState(-1);
   const dropdownRef = useRef(null);
-  const searchTimerRef = useRef(null);
   const searchRequestIdRef = useRef(0);
-  const onSearchUsersRef = useRef(onSearchUsers);
   const highlightedIndexRef = useRef(highlightedIndex);
   const showDropdownRef = useRef(showDropdown);
   const searchResultsRef = useRef(searchResults);
   // A que busqueda pertenecen los resultados que hay en memoria
   const resultsQueryRef = useRef('');
-  // eslint-disable-next-line react-hooks/refs -- pre-existing pattern surfaced by eslint-plugin-react-hooks 7.1.1 bump; needs dedicated review (tracked in follow-up)
-  onSearchUsersRef.current = onSearchUsers;
+  // La búsqueda con el `onSearchUsers` de ahora, también si cambió mientras
+  // corría el temporizador: no es una dependencia del efecto que la lanza
+  const buscar = useEffectEvent((consulta) => onSearchUsers(consulta));
   // Si ya está dentro o invitado: una sola regla para la pestaña de amigos, la
   // búsqueda y el teclado (/code-review)
   const situacionDe = (id) => {
@@ -59,11 +58,10 @@ const SendInvitationModalContent = ({
     const sinComprobar = cargandoAmigos || falloAlComprobarSituacion;
     return { yaInscrito, yaInvitado, noSePuede: sinComprobar || yaInscrito || yaInvitado };
   };
-  // El `Enter` del teclado lee por ref: que tampoco elija a quien la lista
+  // El teclado, que se escucha desde un efecto montado una sola vez, la lee
+  // con los inscritos e invitados de ahora: que tampoco elija a quien la lista
   // enseña bloqueado (QA, 26 oct)
-  const yaEstaRef = useRef(null);
-  // eslint-disable-next-line react-hooks/refs -- como `onSearchUsersRef`: el listener del teclado se registra una sola vez
-  yaEstaRef.current = (id) => situacionDe(id).noSePuede;
+  const noSePuedeElegir = useEffectEvent((id) => situacionDe(id).noSePuede);
 
   // El resaltado se mueve SIEMPRE por aqui, y la ref se escribe a la vez que
   // el estado. Copiarla en el cuerpo del componente la dejaba al dia solo
@@ -98,6 +96,32 @@ const SendInvitationModalContent = ({
     resultsQueryRef.current = deQuery;
     setSearchResults(next);
   }, []);
+
+  // Todo cambio del texto pasa por aquí: teclear, elegir a alguien (con clic o
+  // con Enter) y quitar al elegido. Lo que estuviera en vuelo deja de valer y,
+  // por debajo de dos letras, la lista se cierra en ese mismo pintado; el
+  // efecto de la búsqueda solo espera los 300 ms. Estable: el teclado la usa
+  // desde un listener que se registra una sola vez
+  const cambiaLaBusqueda = useCallback((texto) => {
+    setSearchQuery(texto);
+    // Invalida lo que este en vuelo: sin esto, una respuesta tardia aterrizaba
+    // sobre el campo ya vacio —la buena reabriendo resultados de una busqueda
+    // que ya no se lee, y la mala plantando el aviso rojo bajo un buscador en
+    // blanco—, o la de un texto anterior sobre la del actual.
+    searchRequestIdRef.current += 1;
+    setSearchFailed(false);
+    if (texto.trim().length < 2) {
+      putResults([]);
+      openDropdown(false);
+      setIsSearching(false);
+      // Como en el camino de error: sin esto el `aria-activedescendant` se
+      // queda apuntando a una opcion que ya no esta en el DOM.
+      highlight(-1);
+      return;
+    }
+    setIsSearching(true);
+    falloPendienteRef.current = '';
+  }, [putResults, openDropdown, highlight]);
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -164,7 +188,7 @@ const SendInvitationModalContent = ({
         let i = highlightedIndexRef.current;
         for (let vueltas = 0; vueltas < len; vueltas++) {
           i = i < 0 && paso < 0 ? len - 1 : (i + paso + len) % len;
-          if (!yaEstaRef.current(lista[i].id)) return i;
+          if (!noSePuedeElegir(lista[i].id)) return i;
         }
         return -1;
       };
@@ -179,9 +203,9 @@ const SendInvitationModalContent = ({
         if (idx >= 0 && idx < searchResultsRef.current.length) {
           e.preventDefault();
           const user = searchResultsRef.current[idx];
-          if (yaEstaRef.current(user.id)) return;
+          if (noSePuedeElegir(user.id)) return;
           setSelectedUser(user);
-          setSearchQuery('');
+          cambiaLaBusqueda('');
           openDropdown(false);
           setError('');
         }
@@ -190,7 +214,7 @@ const SendInvitationModalContent = ({
 
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [highlight, openDropdown]);
+  }, [highlight, openDropdown, cambiaLaBusqueda]);
 
   // Scroll highlighted item into view
   useEffect(() => {
@@ -200,38 +224,16 @@ const SendInvitationModalContent = ({
     }
   }, [highlightedIndex]);
 
-  // Debounced search
+  // Debounced search. Lo que cambia con el texto ya lo hizo `cambiaLaBusqueda`
+  // al teclear: aquí solo se esperan los 300 ms y se pide
   useEffect(() => {
-    if (searchTimerRef.current) {
-      clearTimeout(searchTimerRef.current);
-    }
-
     const trimmed = searchQuery.trim();
-    if (trimmed.length < 2) {
-      // Invalida lo que este en vuelo: sin esto, una respuesta tardia
-      // aterrizaba sobre el campo ya vacio —la buena reabriendo resultados de
-      // una busqueda que ya no se lee, y la mala plantando el aviso rojo bajo
-      // un buscador en blanco—.
-      searchRequestIdRef.current += 1;
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- pre-existing pattern surfaced by eslint-plugin-react-hooks 7.1.1 bump; needs dedicated review (tracked in follow-up)
-      putResults([]);
-      openDropdown(false);
-      setIsSearching(false);
-      setSearchFailed(false);
-      // Como en el camino de error: sin esto el `aria-activedescendant` se
-      // queda apuntando a una opcion que ya no esta en el DOM.
-      highlight(-1);
-      return;
-    }
+    if (trimmed.length < 2) return undefined;
 
-    setIsSearching(true);
-    setSearchFailed(false);
-    falloPendienteRef.current = '';
-    searchRequestIdRef.current += 1;
     const currentRequestId = searchRequestIdRef.current;
-    searchTimerRef.current = setTimeout(async () => {
+    const temporizador = setTimeout(async () => {
       try {
-        const results = await onSearchUsersRef.current(trimmed);
+        const results = await buscar(trimmed);
         if (currentRequestId !== searchRequestIdRef.current) return;
         putResults(results, trimmed);
         // Una busqueda nueva borra el descarte anterior: guardarlo por texto y
@@ -271,11 +273,7 @@ const SendInvitationModalContent = ({
       }
     }, 300);
 
-    return () => {
-      if (searchTimerRef.current) {
-        clearTimeout(searchTimerRef.current);
-      }
-    };
+    return () => clearTimeout(temporizador);
   }, [searchQuery, highlight, openDropdown, putResults]);
 
   // Salen TODOS, y quien no se puede invitar lo dice. Esconderlos era peor: al
@@ -316,15 +314,14 @@ const SendInvitationModalContent = ({
 
   const handleSelectUser = (user) => {
     setSelectedUser(user);
-    setSearchQuery('');
+    cambiaLaBusqueda('');
     openDropdown(false);
     setError('');
   };
 
   const handleClearUser = () => {
     setSelectedUser(null);
-    setSearchQuery('');
-    putResults([]);
+    cambiaLaBusqueda('');
   };
 
   const handleTabChange = (tab) => {
@@ -516,7 +513,7 @@ const SendInvitationModalContent = ({
                     <input
                       type="text"
                       value={searchQuery}
-                      onChange={(e) => { setSearchQuery(e.target.value); setError(''); }}
+                      onChange={(e) => { cambiaLaBusqueda(e.target.value); setError(''); }}
                       placeholder={t('send.searchPlaceholder')}
                       disabled={isProcessing}
                       className="w-full pl-9 pr-8 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:opacity-50"

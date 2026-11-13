@@ -28,7 +28,6 @@ const AddFriendModalContent = ({ onClose, onSearchUsers, t }) => {
   const [highlightedIndex, setHighlightedIndex] = useState(-1);
   const dropdownRef = useRef(null);
   const searchInputRef = useRef(null);
-  const searchTimerRef = useRef(null);
   const searchRequestIdRef = useRef(0);
   const onSearchUsersRef = useRef(onSearchUsers);
   const highlightedIndexRef = useRef(highlightedIndex);
@@ -118,34 +117,35 @@ const AddFriendModalContent = ({ onClose, onSearchUsers, t }) => {
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [highlight, openDropdown]);
 
-  useEffect(() => {
-    if (searchTimerRef.current) {
-      clearTimeout(searchTimerRef.current);
-    }
-
-    const trimmed = searchQuery.trim();
-    if (trimmed.length < 2) {
-      // Invalida lo que este en vuelo: sin esto, una respuesta tardia
-      // aterrizaba sobre el campo ya vacio —la buena reabriendo resultados de
-      // una busqueda que ya no se lee, y la mala plantando el aviso rojo bajo
-      // un buscador en blanco—.
-      searchRequestIdRef.current += 1;
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- pre-existing pattern surfaced by eslint-plugin-react-hooks 7.1.1 bump; needs dedicated review (tracked in follow-up)
+  // Lo que cambia con el texto se hace al teclear, no en un efecto: lo que
+  // estuviera en vuelo deja de valer y, por debajo de dos letras, la lista se
+  // cierra en ese mismo pintado. El efecto de abajo solo espera los 300 ms
+  const cambiaLaBusqueda = (texto) => {
+    setSearchQuery(texto);
+    // Invalida lo que este en vuelo: sin esto, una respuesta tardia aterrizaba
+    // sobre el campo ya vacio —la buena reabriendo resultados de una busqueda
+    // que ya no se lee, y la mala plantando el aviso rojo bajo un buscador en
+    // blanco—, o la de un texto anterior sobre la del actual.
+    searchRequestIdRef.current += 1;
+    setSearchFailed(false);
+    if (texto.trim().length < 2) {
       putResults([]);
       openDropdown(false);
       setIsSearching(false);
-      setSearchFailed(false);
       // Como en el camino de error: sin esto el `aria-activedescendant` se
       // queda apuntando a una opcion que ya no esta en el DOM.
       highlight(-1);
       return;
     }
-
     setIsSearching(true);
-    setSearchFailed(false);
-    searchRequestIdRef.current += 1;
+  };
+
+  useEffect(() => {
+    const trimmed = searchQuery.trim();
+    if (trimmed.length < 2) return undefined;
+
     const currentRequestId = searchRequestIdRef.current;
-    searchTimerRef.current = setTimeout(async () => {
+    const temporizador = setTimeout(async () => {
       try {
         const results = await onSearchUsersRef.current(trimmed);
         if (currentRequestId !== searchRequestIdRef.current) return;
@@ -172,11 +172,7 @@ const AddFriendModalContent = ({ onClose, onSearchUsers, t }) => {
       }
     }, 300);
 
-    return () => {
-      if (searchTimerRef.current) {
-        clearTimeout(searchTimerRef.current);
-      }
-    };
+    return () => clearTimeout(temporizador);
   }, [searchQuery, highlight, openDropdown, putResults]);
 
   const handleOpenProfile = (user) => {
@@ -235,7 +231,7 @@ const AddFriendModalContent = ({ onClose, onSearchUsers, t }) => {
               ref={searchInputRef}
               type="text"
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={(e) => cambiaLaBusqueda(e.target.value)}
               placeholder={t('add.searchPlaceholder')}
               className="w-full pl-9 pr-8 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
               data-testid="user-search-input"

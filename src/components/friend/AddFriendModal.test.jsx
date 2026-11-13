@@ -380,6 +380,49 @@ describe('AddFriendModal', () => {
     await waitFor(() => expect(screen.getByText('add.searchMinChars')).toBeInTheDocument());
     expect(onSearchUsers).not.toHaveBeenCalled();
   });
+
+  it('T3-6: con resultados, borrar hasta dejar una letra cierra la lista, sin espera ni petición', async () => {
+    const { onSearchUsers } = pintar();
+    await buscar('ana');
+    expect(onSearchUsers).toHaveBeenCalledTimes(1);
+
+    fireEvent.change(screen.getByTestId('user-search-input'), { target: { value: 'a' } });
+
+    expect(screen.queryByTestId('search-results-dropdown')).not.toBeInTheDocument();
+    expect(document.querySelector('.animate-spin')).toBeNull();
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 400));
+    });
+    expect(onSearchUsers).toHaveBeenCalledTimes(1);
+    expect(screen.queryByTestId('search-results-dropdown')).not.toBeInTheDocument();
+    expect(document.querySelector('.animate-spin')).toBeNull();
+  });
+
+  it('T3-6: con una búsqueda esperando, borrar hasta una letra quita la espera', async () => {
+    const { onSearchUsers } = pintar();
+    fireEvent.change(screen.getByTestId('user-search-input'), { target: { value: 'ana' } });
+    expect(document.querySelector('.animate-spin')).not.toBeNull();
+
+    fireEvent.change(screen.getByTestId('user-search-input'), { target: { value: 'a' } });
+
+    expect(document.querySelector('.animate-spin')).toBeNull();
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 400));
+    });
+    expect(onSearchUsers).not.toHaveBeenCalled();
+  });
+
+  it('T3-6: mientras se teclea una búsqueda válida sale la espera y la lista anterior sigue', async () => {
+    const { onSearchUsers } = pintar();
+    await buscar('ana');
+
+    fireEvent.change(screen.getByTestId('user-search-input'), { target: { value: 'anab' } });
+
+    expect(document.querySelector('.animate-spin')).not.toBeNull();
+    expect(screen.getByTestId('search-results-dropdown')).toBeInTheDocument();
+    await waitFor(() => expect(onSearchUsers).toHaveBeenCalledWith('anab'));
+    await waitFor(() => expect(document.querySelector('.animate-spin')).toBeNull());
+  });
   // Pasó a `ModalShell` (QA del 21 oct 2026): el bloqueo del desplazamiento y
   // la pila de diálogos vienen con él
   describe('sobre el armazón comun', () => {
