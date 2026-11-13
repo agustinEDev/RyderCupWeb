@@ -1,5 +1,6 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useSyncExternalStore } from 'react';
 import { getDraftUseCase, startDraftUseCase, makeDraftPickUseCase } from '../composition';
+import { useCargaCancelableEffect } from './useCargaCancelableEffect';
 
 /**
  * La sala de draft en directo (FE #653).
@@ -30,71 +31,120 @@ const AVISOS_QUE_SE_QUEDAN = new Set(['turnoPerdido', 'turnoPerdidoYTerminado'])
 const INTERVALO_MS = 5000;
 
 /**
+ * El reloj de la sala, en hora del SERVIDOR: `Date.now()` más el desfase que
+ * dijo la última respuesta. Late cada segundo mientras alguien lo escucha, y
+ * la pantalla lee su hora al pintar (useSyncExternalStore): la hora entra por
+ * el borde, no se lee el reloj del móvil dentro del render.
+ *
+ * Uno por sala montada y no uno del módulo: compartido, arrastraba su hora de
+ * una pantalla (o de un test) a la siguiente.
+ */
+const crearReloj = () => {
+  let desfase = 0;
+  let ahoraEnElServidor = 0;
+  const oyentes = new Set();
+  const ponerEnHora = () => {
+    ahoraEnElServidor = Date.now() + desfase;
+  };
+  const latir = () => {
+    ponerEnHora();
+    oyentes.forEach((avisar) => avisar());
+  };
+  return {
+    // El desfase nuevo se nota en el siguiente latido, no al llegar: dentro del
+    // mismo turno, el contador no salta de golpe con cada refresco
+    fijarDesfase: (ms) => {
+      desfase = ms;
+    },
+    // Sin avisar: lo lee el pintado que trae la sala nueva, que ya va a llegar.
+    // Avisando, salía antes un pintado con la sala vieja y la hora nueva
+    ponerEnHora,
+    suscribir: (avisar) => {
+      oyentes.add(avisar);
+      const id = setInterval(latir, 1000);
+      return () => {
+        clearInterval(id);
+        oyentes.delete(avisar);
+      };
+    },
+    leer: () => ahoraEnElServidor,
+  };
+};
+// Sin turno en marcha no hay nada que contar: nadie escucha el reloj
+const sinReloj = () => () => {};
+
+/**
  * @param {string} competitionId
  * @param {string} userId - Quien mira, para saber si le toca elegir
  * @returns {Object} sala, cargando, error, segundosRestantes, esMiTurno y las acciones
  */
 const useDraftRoom = (competitionId, userId) => {
   const [sala, setSala] = useState(null);
-  const [cargando, setCargando] = useState(true);
   const [error, setError] = useState(null);
   // Qué competición se pudo ver alguna vez: decide si se sigue esperando el sorteo
   const [cargadaPara, setCargadaPara] = useState(null);
-  const [segundosRestantes, setSegundosRestantes] = useState(null);
-  // El desfase entre el reloj del servidor y el del móvil, en milisegundos.
-  // En una `ref` porque el contador lo lee cada segundo y cambiarlo no tiene
-  // que volver a pintar nada por sí mismo
-  const desfaseRef = useRef(0);
-  // Qué respuesta es la última pedida. Sin esto, el refresco que salió ANTES
-  // puede volver DESPUÉS de la elección y devolver la sala al estado anterior:
-  // el jugador recién elegido reaparece en «por elegir», el capitán vuelve a
-  // pulsar y se lleva un 409 que es mentira
-  const generacionRef = useRef(0);
+  // La espera de pantalla completa solo hasta la PRIMERA carga, como siempre:
+  // al pasar de una competición a otra sin salir no vuelve
+  const [primeraTerminada, setPrimeraTerminada] = useState(false);
+  const [reloj] = useState(crearReloj);
+  // El turno que cuenta el reloj: al cambiar se pone en hora ya, para que el
+  // primer pintado del turno nuevo no enseñe el número del anterior
+  const turnoRef = useRef(null);
+  // Una respuesta de antes no puede devolver la sala al estado anterior: el
+  // refresco que salió ANTES de una elección (o de lanzar el sorteo) y vuelve
+  // DESPUÉS resucitaba al jugador ya elegido, o la sala a «todavía no se ha
+  // lanzado». `escrituraRef` sube con cada elección o apertura que deja la
+  // sala en pantalla; `leidaTrasRef`, con cuál salió la lectura vigente
+  const escrituraRef = useRef(0);
+  const leidaTrasRef = useRef(0);
 
-  const guardar = useCallback((nueva, generacion = generacionRef.current) => {
-    // Una respuesta de antes ya no manda: lo que hay en pantalla es más nuevo
-    if (generacion < generacionRef.current) return;
-    setSala(nueva);
-    if (nueva?.serverTime) {
-      desfaseRef.current = Date.parse(nueva.serverTime) - Date.now();
-    }
-  }, []);
+  const guardar = useCallback(
+    (nueva) => {
+      if (nueva?.serverTime) reloj.fijarDesfase(Date.parse(nueva.serverTime) - Date.now());
+      const turno = `${nueva?.status}|${nueva?.turnStartedAt}|${nueva?.secondsPerTurn}`;
+      if (turno !== turnoRef.current) {
+        turnoRef.current = turno;
+        reloj.ponerEnHora();
+      }
+      setSala(nueva);
+    },
+    [reloj]
+  );
 
-  /**
-   * @param {boolean} limpiaElAviso - Falso al refrescar detrás de un aviso que
-   *   la pantalla todavía tiene que enseñar, como el turno perdido: el refresco
-   *   trae la sala nueva, y borrar el aviso dejaría al capitán sin saber por
-   *   qué eligió otro por él
-   */
-  const cargar = useCallback(async (limpiaElAviso = true) => {
-    const generacion = (generacionRef.current += 1);
-    try {
-      const nueva = await getDraftUseCase.execute(competitionId);
-      guardar(nueva, generacion);
-      if (generacion >= generacionRef.current) {
+  // La carga de la sala, y cada refresco es un `recargar` silencioso: el que
+  // llega cuando ya salió otro más nuevo (o tras cambiar de competición, o al
+  // salir) no se aplica ni avisa de su fallo
+  const { recargar } = useCargaCancelableEffect(
+    () => {
+      leidaTrasRef.current = escrituraRef.current;
+      return getDraftUseCase.execute(competitionId);
+    },
+    [competitionId],
+    {
+      activa: Boolean(competitionId),
+      // `silenciosa`: un refresco trae la sala nueva pero no borra un aviso
+      // que la pantalla todavía tiene que enseñar, como el turno perdido, que
+      // dejaría al capitán sin saber por qué eligió otro por él. Sí borra un
+      // error de red que ya se ha superado
+      alCargar: (nueva, { silenciosa }) => {
+        setPrimeraTerminada(true);
+        if (leidaTrasRef.current < escrituraRef.current) return;
+        guardar(nueva);
         // De ESTA competición: si se cambia de una a otra, lo cargado de la
         // anterior no dice nada de la nueva (CodeRabbit en la #720)
         setCargadaPara(competitionId);
-        // El refresco no borra el aviso del turno perdido, pero sí un error de
-        // red que ya se ha superado
-        setError((antes) => (limpiaElAviso || !AVISOS_QUE_SE_QUEDAN.has(antes) ? null : antes));
-      }
-      return nueva;
-    } catch (e) {
-      // También el fallo respeta la generación: el GET que salió antes puede
-      // fallar DESPUÉS de una elección correcta, y dejaría en pantalla un
-      // error que ya no describe nada
-      if (generacion >= generacionRef.current) setError(e.message);
-    } finally {
-      setCargando(false);
+        setError((antes) => (!silenciosa || !AVISOS_QUE_SE_QUEDAN.has(antes) ? null : antes));
+      },
+      // También el fallo: el GET que salió antes puede fallar DESPUÉS de una
+      // elección correcta, y dejaría un error que ya no describe nada
+      alFallar: (e) => {
+        setPrimeraTerminada(true);
+        if (leidaTrasRef.current < escrituraRef.current) return;
+        setError(e.message);
+      },
     }
-  }, [competitionId, guardar]);
-
-  useEffect(() => {
-    if (!competitionId) return;
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- la carga inicial de una pantalla, el mismo patrón que el resto del repo tras el bump del plugin (ver SchedulePage)
-    cargar();
-  }, [competitionId, cargar]);
+  );
+  const cargando = !primeraTerminada;
 
   // El refresco, mientras la sala está en marcha y también mientras se espera el
   // sorteo (#710): el capitán que entraba antes se quedaba en «todavía no se ha
@@ -104,45 +154,28 @@ const useDraftRoom = (competitionId, userId) => {
   const esperandoElSorteo = !cargando && sala === null && cargadaPara === competitionId;
   useEffect(() => {
     if (sala?.status !== 'IN_PROGRESS' && !esperandoElSorteo) return undefined;
-    // `cargar(false)`: el refresco trae la sala nueva, pero no borra un aviso
-    // que la pantalla todavía tiene que enseñar, como el turno perdido. Pasarlo
-    // directo a `setInterval` lo llamaba sin argumentos y el aviso duraba tres
-    // segundos
-    const id = setInterval(() => cargar(false), INTERVALO_MS);
+    const id = setInterval(() => recargar({ silenciosa: true }), INTERVALO_MS);
     return () => clearInterval(id);
-  }, [sala?.status, esperandoElSorteo, cargar]);
+  }, [sala?.status, esperandoElSorteo, recargar]);
 
-  // El contador, segundo a segundo y sin volver a preguntar al servidor. Se
-  // cuenta contra la hora del SERVIDOR: `Date.now()` más el desfase que dijo
-  // la última respuesta. Vive en un estado y no en un valor derivado porque
-  // leer el reloj al pintar es impuro —y el lint lo prohíbe—: la hora tiene
-  // que entrar por el borde, que es este efecto
-  useEffect(() => {
-    if (sala?.status !== 'IN_PROGRESS' || !sala?.turnStartedAt) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- sincronizar con el reloj, que es un sistema externo
-      setSegundosRestantes(null);
-      return undefined;
-    }
-    const empezo = Date.parse(sala.turnStartedAt);
-    // Una fecha que no se entiende da NaN, y de ahí salía un «NaN:NaN» en el
-    // sitio del minuto: mejor sin contador que con uno imposible
-    if (Number.isNaN(empezo) || !Number.isFinite(Number(sala.secondsPerTurn))) {
-      setSegundosRestantes(null);
-      return undefined;
-    }
-    const calcular = () => {
-      const pasados = (Date.now() + desfaseRef.current - empezo) / 1000;
-      setSegundosRestantes(Math.max(0, Math.round(sala.secondsPerTurn - pasados)));
-    };
-    // El primer valor, sin esperar al primer segundo
-    calcular();
-    const id = setInterval(calcular, 1000);
-    return () => clearInterval(id);
-  }, [sala?.status, sala?.turnStartedAt, sala?.secondsPerTurn]);
+  // El contador, segundo a segundo y sin volver a preguntar al servidor,
+  // derivado al pintar de la sala y de la hora del reloj del servidor. Una
+  // fecha que no se entiende da NaN, y de ahí salía un «NaN:NaN» en el sitio
+  // del minuto: mejor sin contador que con uno imposible
+  const empezo = sala?.turnStartedAt ? Date.parse(sala.turnStartedAt) : Number.NaN;
+  const porTurno = Number(sala?.secondsPerTurn);
+  const hayContador = sala?.status === 'IN_PROGRESS' && !Number.isNaN(empezo) && Number.isFinite(porTurno);
+  const ahora = useSyncExternalStore(hayContador ? reloj.suscribir : sinReloj, reloj.leer);
+  const segundosRestantes = hayContador
+    ? Math.max(0, Math.round(porTurno - (ahora - empezo) / 1000))
+    : null;
 
   const abrirSala = useCallback(async () => {
     try {
-      guardar(await startDraftUseCase.execute(competitionId));
+      const nueva = await startDraftUseCase.execute(competitionId);
+      // La sala recién abierta manda sobre el refresco de la espera en vuelo
+      escrituraRef.current += 1;
+      guardar(nueva);
       setError(null);
     } catch (e) {
       setError(e.message);
@@ -156,7 +189,7 @@ const useDraftRoom = (competitionId, userId) => {
         // La elección manda sobre cualquier refresco en vuelo: su respuesta es
         // posterior a todos ellos
         const nueva = await makeDraftPickUseCase.execute(competitionId, playerId);
-        generacionRef.current += 1;
+        escrituraRef.current += 1;
         guardar(nueva);
         setError(null);
       } catch (e) {
@@ -165,19 +198,22 @@ const useDraftRoom = (competitionId, userId) => {
         // enseñarle lo que pasó
         if (e?.status !== 409) {
           setError(e.message);
-          await cargar(false);
+          await recargar({ silenciosa: true });
           return;
         }
-        // Con la sala que trae el 409, y no al pintar: si la app eligió al
+        // Con la sala de la recarga, y no al pintar: si la app eligió al
         // penúltimo por él y el último entró solo, ya no le toca a nadie. Un
         // turno perdido de antes no cambia de texto cuando luego la cierra el
-        // rival
+        // rival. Si un refresco sustituye a la recarga, trae lo de ese
+        // refresco, que es más nuevo
         setError('turnoPerdido');
-        const nueva = await cargar(false);
-        if (nueva?.status === 'COMPLETED') setError('turnoPerdidoYTerminado');
+        const recarga = await recargar({ silenciosa: true });
+        if (recarga.estado === 'cargada' && recarga.datos?.status === 'COMPLETED') {
+          setError('turnoPerdidoYTerminado');
+        }
       }
     },
-    [competitionId, guardar, cargar]
+    [competitionId, guardar, recargar]
   );
 
   const capitanDeTurno =
@@ -193,7 +229,6 @@ const useDraftRoom = (competitionId, userId) => {
     error,
     segundosRestantes,
     esMiTurno: Boolean(userId) && capitanDeTurno === userId,
-    refrescar: cargar,
     abrirSala,
     elegir,
   };

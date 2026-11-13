@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
-import { MemoryRouter, Routes, Route } from 'react-router';
+import { render, screen, fireEvent, waitFor, within, act } from '@testing-library/react';
+import { MemoryRouter, Routes, Route, useNavigate } from 'react-router';
 
 /**
  * La sala de draft (FE #653).
@@ -476,5 +476,72 @@ describe('DraftRoomPage · lo que se lee (FE #710)', () => {
 
     await waitFor(() => expect(screen.getByTestId('sin-sorteo')).toHaveTextContent(texto));
     expect(screen.getByTestId('sin-sorteo').textContent).toBe(texto);
+  });
+
+  it('T5-8: la ficha lenta de otra competición no pone sus equipos ni su «Lanzar sorteo» en esta', async () => {
+    // Se pasa de c1 a c2 sin salir de la sala: la ficha de c1, que llega
+    // tarde, traía sus nombres de equipo y su organizador a la sala de c2
+    let devolverC1;
+    mockDetalle.mockImplementation((id) =>
+      id === 'comp-1'
+        ? new Promise((resolve) => { devolverC1 = () => resolve(COMPETICION); })
+        : Promise.resolve({ ...COMPETICION, id: 'comp-2', creatorId: 'otro', team1Name: 'Norte', team2Name: 'Sur' })
+    );
+    mockSala.mockReturnValue(estado({ sala: null, segundosRestantes: null, esMiTurno: false }));
+    let irA;
+    const Navegador = () => {
+      irA = useNavigate();
+      return null;
+    };
+    render(
+      <MemoryRouter initialEntries={['/competitions/comp-1/draft']}>
+        <Navegador />
+        <Routes>
+          <Route path="/competitions/:id/draft" element={<DraftRoomPage />} />
+        </Routes>
+      </MemoryRouter>
+    );
+    await waitFor(() => expect(devolverC1).toBeTypeOf('function'));
+
+    await act(async () => {
+      irA('/competitions/comp-2/draft');
+    });
+    await waitFor(() => expect(mockDetalle).toHaveBeenCalledWith('comp-2'));
+    await act(async () => {
+      devolverC1();
+      await Promise.resolve();
+    });
+
+    expect(screen.getByTestId('sin-sorteo')).toBeInTheDocument();
+    expect(screen.queryByTestId('lanzar-sorteo')).not.toBeInTheDocument();
+    expect(screen.queryByText('Europa')).not.toBeInTheDocument();
+  });
+
+  it('T5-8b: si la ficha de la competición nueva falla, no se quedan los equipos de la anterior', async () => {
+    mockDetalle.mockImplementation(async (id) => {
+      if (id === 'comp-1') return COMPETICION;
+      throw new Error('Boom');
+    });
+    let irA;
+    const Navegador = () => {
+      irA = useNavigate();
+      return null;
+    };
+    render(
+      <MemoryRouter initialEntries={['/competitions/comp-1/draft']}>
+        <Navegador />
+        <Routes>
+          <Route path="/competitions/:id/draft" element={<DraftRoomPage />} />
+        </Routes>
+      </MemoryRouter>
+    );
+    expect(await within(await screen.findByTestId('equipo-A')).findByText('Europa')).toBeInTheDocument();
+
+    await act(async () => {
+      irA('/competitions/comp-2/draft');
+    });
+
+    await waitFor(() => expect(within(screen.getByTestId('equipo-A')).getByText('draft.teamA')).toBeInTheDocument());
+    expect(screen.queryByText('Europa')).not.toBeInTheDocument();
   });
 });

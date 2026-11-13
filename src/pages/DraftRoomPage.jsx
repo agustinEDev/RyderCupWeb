@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import { ArrowLeft, Bot, Timer, Trophy } from 'lucide-react';
@@ -6,6 +6,7 @@ import HeaderAuth from '../components/layout/HeaderAuth';
 import FullScreenLoader from '../components/ui/FullScreenLoader';
 import { useAuth } from '../hooks/useAuth';
 import useDraftRoom from '../hooks/useDraftRoom';
+import { useCargaCancelableEffect } from '../hooks/useCargaCancelableEffect';
 import { getCompetitionDetailUseCase } from '../composition';
 import { formatoDeIndice } from '../utils/formatoDeHandicap';
 import { PANTALLA_MENOS_BARRA_INFERIOR } from '../utils/barraInferior';
@@ -46,21 +47,16 @@ const DraftRoomPage = () => {
   // Propias y no heredadas: un mensaje de error como «toString» no es un aviso
   const avisoDeTurno = Object.hasOwn(TURNO_PERDIDO, error ?? '') ? TURNO_PERDIDO[error] : null;
 
-  const cargarCompeticion = useCallback(async () => {
-    try {
-      const ficha = await getCompetitionDetailUseCase.execute(id);
-      setCompetition(ficha);
-    } catch {
-      // La sala se pinta igual sin la ficha: solo se pierden los nombres de
-      // los equipos, que caen a «Equipo A» y «Equipo B»
-      setCompetition(null);
-    }
-  }, [id]);
-
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- la carga inicial de una pantalla, el mismo patrón que el resto del repo tras el bump del plugin (ver SchedulePage)
-    cargarCompeticion();
-  }, [cargarCompeticion]);
+  // La ficha, solo para los nombres de los equipos y saber quién organiza. No
+  // se espera por ella. Si cambia la competición sin salir, la de la anterior
+  // que llega tarde ya no se pinta: traía sus equipos y su «Lanzar sorteo».
+  // Sin `t` en las dependencias: cambiar de idioma no la vuelve a pedir
+  useCargaCancelableEffect(() => getCompetitionDetailUseCase.execute(id), [id], {
+    alCargar: setCompetition,
+    // La sala se pinta igual sin la ficha: solo se pierden los nombres de
+    // los equipos, que caen a «Equipo A» y «Equipo B»
+    alFallar: () => setCompetition(null),
+  });
 
   // Lo que enseñe la ficha, que es lo que la gente ve en el resto de la app.
   // La letra solo cuando NO hay ficha: si la hay, sus nombres nunca faltan
