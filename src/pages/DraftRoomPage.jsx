@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { ArrowLeft, Bot, Timer, Trophy } from 'lucide-react';
 import HeaderAuth from '../components/layout/HeaderAuth';
 import FullScreenLoader from '../components/ui/FullScreenLoader';
+import BlockLoader from '../components/ui/BlockLoader';
 import { useAuth } from '../hooks/useAuth';
 import useDraftRoom from '../hooks/useDraftRoom';
 import { useCargaCancelableEffect } from '../hooks/useCargaCancelableEffect';
@@ -37,10 +38,14 @@ const DraftRoomPage = () => {
   const { id } = useParams();
   const { t } = useTranslation('competitions');
   const { user } = useAuth();
-  const [competition, setCompetition] = useState(null);
+  // La ficha con la competición de la que es: al pasar a otra sin salir, la
+  // de la anterior (sus equipos y quién organiza, que enseña «Lanzar sorteo»)
+  // no se queda mientras llega la nueva
+  const [ficha, setFicha] = useState({ id: null, datos: null });
+  const competition = ficha.id === id ? ficha.datos : null;
   const [eligiendo, setEligiendo] = useState(null);
 
-  const { sala, cargando, error, segundosRestantes, esMiTurno, abrirSala, elegir } = useDraftRoom(
+  const { sala, cargando, cargandoSala, error, segundosRestantes, esMiTurno, abrirSala, elegir } = useDraftRoom(
     id,
     user?.id
   );
@@ -52,10 +57,10 @@ const DraftRoomPage = () => {
   // que llega tarde ya no se pinta: traía sus equipos y su «Lanzar sorteo».
   // Sin `t` en las dependencias: cambiar de idioma no la vuelve a pedir
   useCargaCancelableEffect(() => getCompetitionDetailUseCase.execute(id), [id], {
-    alCargar: setCompetition,
+    alCargar: (datos) => setFicha({ id, datos }),
     // La sala se pinta igual sin la ficha: solo se pierden los nombres de
     // los equipos, que caen a «Equipo A» y «Equipo B»
-    alFallar: () => setCompetition(null),
+    alFallar: () => setFicha({ id, datos: null }),
   });
 
   // Lo que enseñe la ficha, que es lo que la gente ve en el resto de la app.
@@ -97,6 +102,19 @@ const DraftRoomPage = () => {
   };
 
   if (cargando) return <FullScreenLoader />;
+
+  // Recién cambiada la competición sin salir, mientras llega su sala: la
+  // espera del bloque, y nada de la anterior que elegir ni lanzar
+  if (cargandoSala) {
+    return (
+      <div className={`${PANTALLA_MENOS_BARRA_INFERIOR} bg-gray-50`}>
+        <HeaderAuth user={user} title={t('draft.title')} backTo={`/competitions/${id}`} />
+        <div className="mx-auto max-w-3xl px-4 py-6">
+          <BlockLoader />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={`${PANTALLA_MENOS_BARRA_INFERIOR} bg-gray-50`}>

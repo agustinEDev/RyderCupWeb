@@ -37,11 +37,13 @@ const INTERVALO_MS = 5000;
  * el borde, no se lee el reloj del móvil dentro del render.
  *
  * Uno por sala montada y no uno del módulo: compartido, arrastraba su hora de
- * una pantalla (o de un test) a la siguiente.
+ * una pantalla (o de un test) a la siguiente. Dentro de él, UN temporizador
+ * para todos los que escuchan: arranca con el primero y se para con el último.
  */
-const crearReloj = () => {
+export const crearReloj = () => {
   let desfase = 0;
   let ahoraEnElServidor = 0;
+  let latido = null;
   const oyentes = new Set();
   const ponerEnHora = () => {
     ahoraEnElServidor = Date.now() + desfase;
@@ -61,10 +63,13 @@ const crearReloj = () => {
     ponerEnHora,
     suscribir: (avisar) => {
       oyentes.add(avisar);
-      const id = setInterval(latir, 1000);
+      if (latido === null) latido = setInterval(latir, 1000);
       return () => {
-        clearInterval(id);
         oyentes.delete(avisar);
+        if (oyentes.size === 0 && latido !== null) {
+          clearInterval(latido);
+          latido = null;
+        }
       };
     },
     leer: () => ahoraEnElServidor,
@@ -76,13 +81,21 @@ const sinReloj = () => () => {};
 /**
  * @param {string} competitionId
  * @param {string} userId - Quien mira, para saber si le toca elegir
- * @returns {Object} sala, cargando, error, segundosRestantes, esMiTurno y las acciones
+ * @returns {Object} sala, cargando, cargandoSala, error, segundosRestantes, esMiTurno y las acciones
  */
+// Lo que se sabe de la sala, siempre con la competición de la que es
+const SIN_LECTURA = { competitionId: null, sala: null, error: null, vista: false };
+
 const useDraftRoom = (competitionId, userId) => {
-  const [sala, setSala] = useState(null);
-  const [error, setError] = useState(null);
-  // Qué competición se pudo ver alguna vez: decide si se sigue esperando el sorteo
-  const [cargadaPara, setCargadaPara] = useState(null);
+  // La sala, el error y si se pudo ver alguna vez, con su competición: al
+  // pasar de una a otra sin salir, lo de la anterior no se enseña mientras
+  // llega lo de la nueva. Antes quedaban sus jugadores, sus capitanes y su
+  // contador bajo la URL de la otra, y una elección mandaba un jugador de la
+  // anterior como si fuera de esta
+  const [lectura, setLectura] = useState(SIN_LECTURA);
+  const cargada = lectura.competitionId === competitionId;
+  const sala = cargada ? lectura.sala : null;
+  const error = cargada ? lectura.error : null;
   // La espera de pantalla completa solo hasta la PRIMERA carga, como siempre:
   // al pasar de una competición a otra sin salir no vuelve
   const [primeraTerminada, setPrimeraTerminada] = useState(false);
@@ -93,12 +106,24 @@ const useDraftRoom = (competitionId, userId) => {
   // Una respuesta de antes no puede devolver la sala al estado anterior: el
   // refresco que salió ANTES de una elección (o de lanzar el sorteo) y vuelve
   // DESPUÉS resucitaba al jugador ya elegido, o la sala a «todavía no se ha
-  // lanzado». `escrituraRef` sube con cada elección o apertura que deja la
-  // sala en pantalla; `leidaTrasRef`, con cuál salió la lectura vigente
-  const escrituraRef = useRef(0);
+  // lanzado». Las escrituras (elecciones y aperturas que dejan la sala en
+  // pantalla) se cuentan por competición: una de la anterior no frena la
+  // carga de la nueva. `leidaTrasRef`, con cuántas salió la lectura vigente
+  const escriturasRef = useRef(new Map());
   const leidaTrasRef = useRef(0);
+  const escrituras = (id) => escriturasRef.current.get(id) ?? 0;
+  // La última sala que de verdad se pintó desde una carga
+  const aplicadaRef = useRef(null);
 
-  const guardar = useCallback(
+  // Cambia lo guardado solo si sigue siendo de esa competición: lo que vuelve
+  // de una acción de la anterior no toca la nueva
+  const escribir = useCallback(
+    (id, cambios) =>
+      setLectura((antes) => (antes.competitionId === id ? { ...antes, ...cambios } : antes)),
+    []
+  );
+
+  const ponerElReloj = useCallback(
     (nueva) => {
       if (nueva?.serverTime) reloj.fijarDesfase(Date.parse(nueva.serverTime) - Date.now());
       const turno = `${nueva?.status}|${nueva?.turnStartedAt}|${nueva?.secondsPerTurn}`;
@@ -106,9 +131,19 @@ const useDraftRoom = (competitionId, userId) => {
         turnoRef.current = turno;
         reloj.ponerEnHora();
       }
-      setSala(nueva);
     },
     [reloj]
+  );
+
+  // La sala que deja una elección o una apertura: manda sobre cualquier
+  // lectura en vuelo de esa competición, que es anterior
+  const escribirSala = useCallback(
+    (id, nueva) => {
+      escriturasRef.current.set(id, (escriturasRef.current.get(id) ?? 0) + 1);
+      ponerElReloj(nueva);
+      escribir(id, { sala: nueva, vista: true, error: null });
+    },
+    [ponerElReloj, escribir]
   );
 
   // La carga de la sala, y cada refresco es un `recargar` silencioso: el que
@@ -116,7 +151,7 @@ const useDraftRoom = (competitionId, userId) => {
   // salir) no se aplica ni avisa de su fallo
   const { recargar } = useCargaCancelableEffect(
     () => {
-      leidaTrasRef.current = escrituraRef.current;
+      leidaTrasRef.current = escrituras(competitionId);
       return getDraftUseCase.execute(competitionId);
     },
     [competitionId],
@@ -128,30 +163,44 @@ const useDraftRoom = (competitionId, userId) => {
       // error de red que ya se ha superado
       alCargar: (nueva, { silenciosa }) => {
         setPrimeraTerminada(true);
-        if (leidaTrasRef.current < escrituraRef.current) return;
-        guardar(nueva);
-        // De ESTA competición: si se cambia de una a otra, lo cargado de la
-        // anterior no dice nada de la nueva (CodeRabbit en la #720)
-        setCargadaPara(competitionId);
-        setError((antes) => (!silenciosa || !AVISOS_QUE_SE_QUEDAN.has(antes) ? null : antes));
+        if (leidaTrasRef.current < escrituras(competitionId)) return;
+        aplicadaRef.current = nueva;
+        ponerElReloj(nueva);
+        setLectura((antes) => {
+          const errorAntes = antes.competitionId === competitionId ? antes.error : null;
+          return {
+            competitionId,
+            sala: nueva,
+            vista: true,
+            error: !silenciosa || !AVISOS_QUE_SE_QUEDAN.has(errorAntes) ? null : errorAntes,
+          };
+        });
       },
       // También el fallo: el GET que salió antes puede fallar DESPUÉS de una
-      // elección correcta, y dejaría un error que ya no describe nada
+      // elección correcta, y dejaría un error que ya no describe nada. Si es
+      // de otra competición, nada de la anterior se queda debajo del error
       alFallar: (e) => {
         setPrimeraTerminada(true);
-        if (leidaTrasRef.current < escrituraRef.current) return;
-        setError(e.message);
+        if (leidaTrasRef.current < escrituras(competitionId)) return;
+        setLectura((antes) =>
+          antes.competitionId === competitionId
+            ? { ...antes, error: e.message }
+            : { competitionId, sala: null, vista: false, error: e.message }
+        );
       },
     }
   );
   const cargando = !primeraTerminada;
+  // Ya se vio una sala, pero la de ESTA competición aún no ha llegado: la
+  // espera del bloque, no la de toda la pantalla, y nada que elegir
+  const cargandoSala = primeraTerminada && !cargada;
 
   // El refresco, mientras la sala está en marcha y también mientras se espera el
   // sorteo (#710): el capitán que entraba antes se quedaba en «todavía no se ha
   // lanzado» con su turno corriendo en el servidor. Si la PRIMERA carga falló,
   // no: una sala que no se puede ver no se pide cada cinco segundos. Un fallo
   // después (un 429, un corte) no para la espera
-  const esperandoElSorteo = !cargando && sala === null && cargadaPara === competitionId;
+  const esperandoElSorteo = !cargando && cargada && lectura.vista && sala === null;
   useEffect(() => {
     if (sala?.status !== 'IN_PROGRESS' && !esperandoElSorteo) return undefined;
     const id = setInterval(() => recargar({ silenciosa: true }), INTERVALO_MS);
@@ -171,33 +220,29 @@ const useDraftRoom = (competitionId, userId) => {
     : null;
 
   const abrirSala = useCallback(async () => {
+    const id = competitionId;
     try {
-      const nueva = await startDraftUseCase.execute(competitionId);
       // La sala recién abierta manda sobre el refresco de la espera en vuelo
-      escrituraRef.current += 1;
-      guardar(nueva);
-      setError(null);
+      escribirSala(id, await startDraftUseCase.execute(id));
     } catch (e) {
-      setError(e.message);
+      escribir(id, { error: e.message });
       throw e;
     }
-  }, [competitionId, guardar]);
+  }, [competitionId, escribirSala, escribir]);
 
   const elegir = useCallback(
     async (playerId) => {
+      const id = competitionId;
       try {
         // La elección manda sobre cualquier refresco en vuelo: su respuesta es
         // posterior a todos ellos
-        const nueva = await makeDraftPickUseCase.execute(competitionId, playerId);
-        escrituraRef.current += 1;
-        guardar(nueva);
-        setError(null);
+        escribirSala(id, await makeDraftPickUseCase.execute(id, playerId));
       } catch (e) {
         // 409: se le acabó el minuto y la aplicación eligió por él. No es un
         // fallo que contar como tal: la sala siguió sin él, y lo que toca es
         // enseñarle lo que pasó
         if (e?.status !== 409) {
-          setError(e.message);
+          escribir(id, { error: e.message });
           await recargar({ silenciosa: true });
           return;
         }
@@ -205,15 +250,20 @@ const useDraftRoom = (competitionId, userId) => {
         // penúltimo por él y el último entró solo, ya no le toca a nadie. Un
         // turno perdido de antes no cambia de texto cuando luego la cierra el
         // rival. Si un refresco sustituye a la recarga, trae lo de ese
-        // refresco, que es más nuevo
-        setError('turnoPerdido');
+        // refresco, que es más nuevo. Solo si esa sala llegó a pintarse: una
+        // que se descartó por una elección posterior no dice cómo está
+        escribir(id, { error: 'turnoPerdido' });
         const recarga = await recargar({ silenciosa: true });
-        if (recarga.estado === 'cargada' && recarga.datos?.status === 'COMPLETED') {
-          setError('turnoPerdidoYTerminado');
+        if (
+          recarga.estado === 'cargada' &&
+          recarga.datos === aplicadaRef.current &&
+          recarga.datos?.status === 'COMPLETED'
+        ) {
+          escribir(id, { error: 'turnoPerdidoYTerminado' });
         }
       }
     },
-    [competitionId, guardar, recargar]
+    [competitionId, escribirSala, escribir, recargar]
   );
 
   const capitanDeTurno =
@@ -226,6 +276,7 @@ const useDraftRoom = (competitionId, userId) => {
   return {
     sala,
     cargando,
+    cargandoSala,
     error,
     segundosRestantes,
     esMiTurno: Boolean(userId) && capitanDeTurno === userId,

@@ -544,4 +544,46 @@ describe('DraftRoomPage · lo que se lee (FE #710)', () => {
     await waitFor(() => expect(within(screen.getByTestId('equipo-A')).getByText('draft.teamA')).toBeInTheDocument());
     expect(screen.queryByText('Europa')).not.toBeInTheDocument();
   });
+
+  it('T5-8c: mientras llega la sala de la otra competición, una espera del bloque y nada que elegir ni lanzar', async () => {
+    mockSala.mockReturnValue(
+      estado({ sala: null, cargandoSala: true, segundosRestantes: null, esMiTurno: false })
+    );
+    pintar();
+
+    expect(await screen.findByRole('status')).toBeInTheDocument();
+    expect(screen.queryByTestId('sala-de-draft')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('sin-sorteo')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('lanzar-sorteo')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('elegir-carla')).not.toBeInTheDocument();
+  });
+
+  it('T5-8d: con la ficha de c1 ya pintada, la sala de c2 no enseña sus equipos ni su «Lanzar sorteo» mientras llega la suya', async () => {
+    mockDetalle.mockImplementation((id) =>
+      id === 'comp-1' ? Promise.resolve(COMPETICION) : new Promise(() => {})
+    );
+    mockSala.mockReturnValue(estado({ sala: null, segundosRestantes: null, esMiTurno: false }));
+    let irA;
+    const Navegador = () => {
+      irA = useNavigate();
+      return null;
+    };
+    render(
+      <MemoryRouter initialEntries={['/competitions/comp-1/draft']}>
+        <Navegador />
+        <Routes>
+          <Route path="/competitions/:id/draft" element={<DraftRoomPage />} />
+        </Routes>
+      </MemoryRouter>
+    );
+    expect(await screen.findByTestId('lanzar-sorteo')).toBeInTheDocument();
+
+    await act(async () => {
+      irA('/competitions/comp-2/draft');
+    });
+    await waitFor(() => expect(mockDetalle).toHaveBeenCalledWith('comp-2'));
+
+    expect(screen.getByTestId('sin-sorteo')).toBeInTheDocument();
+    expect(screen.queryByTestId('lanzar-sorteo')).not.toBeInTheDocument();
+  });
 });
