@@ -1,4 +1,4 @@
-import { useState, useEffect, useEffectEvent } from 'react';
+import { useState, useEffect } from 'react';
 import ModalShell, { CAJA_PROPIA } from '../../components/ui/ModalShell';
 import { motion } from 'framer-motion';
 import { X, Flag, MapPin } from 'lucide-react';
@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next';
 import customToast from '../../utils/toast';
 import HeaderAuth from '../../components/layout/HeaderAuth';
 import { useAuth } from '../../hooks/useAuth';
+import { useCargaCancelableEffect } from '../../hooks/useCargaCancelableEffect';
 import GolfCourseTable from '../../components/golf_course/GolfCourseTable';
 import TeeColorBadge from '../../components/golf_course/TeeColorBadge';
 import { CountryFlag } from '../../components/ui/CountryFlag';
@@ -37,7 +38,6 @@ const PendingGolfCourses = ({ embedded = false, onCambio }) => {
   const { user, loading: isLoadingUser } = useAuth();
 
   const [pendingCourses, setPendingCourses] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('new'); // 'new' or 'updates'
   const [showRejectModal, setShowRejectModal] = useState(false);
   const [rejectReason, setRejectReason] = useState('');
@@ -52,19 +52,21 @@ const PendingGolfCourses = ({ embedded = false, onCambio }) => {
     typeof role === 'string' ? role === 'ADMIN' : role.name === 'ADMIN'
   ) || false;
 
-  // Volver a pedir la lista tras aprobar o rechazar: se sube el contador y la
-  // pide su efecto. La espera, ya en el mismo pintado, como antes
-  const [recarga, setRecarga] = useState(0);
-  const recargarPendientes = () => {
-    setIsLoading(true);
-    setRecarga((n) => n + 1);
-  };
-
-  // El aviso, con el idioma de ahora pero sin ser dependencia: la lista no se
-  // vuelve a pedir por cambiar de idioma
-  const avisarDelFalloAlCargar = useEffectEvent((error) => {
-    customToast.error(error.message || t('pages.pending.errorLoading'));
-  });
+  // Load pending courses, con useCargaCancelableEffect: al salir o al pedirla
+  // otra vez, la respuesta anterior no toca nada. El aviso no es dependencia:
+  // la lista no se vuelve a pedir por cambiar de idioma
+  const { cargando: isLoading, recargar: recargarPendientes } = useCargaCancelableEffect(
+    () => listPendingGolfCoursesUseCase.execute(),
+    [user],
+    {
+      activa: Boolean(user),
+      alCargar: setPendingCourses,
+      alFallar: (error) => {
+        console.error('Error loading pending golf courses:', error);
+        customToast.error(error.message || t('pages.pending.errorLoading'));
+      },
+    }
+  );
 
   // Load countries for details modal
   useEffect(() => {
@@ -78,30 +80,6 @@ const PendingGolfCourses = ({ embedded = false, onCambio }) => {
     };
     fetchCountries();
   }, []);
-
-  // Load pending courses. Dentro del efecto (patrón de la documentación de
-  // React): al salir o al pedirla otra vez, la respuesta anterior no toca nada
-  useEffect(() => {
-    if (!user) return undefined;
-    let vigente = true;
-    const carga = async () => {
-      setIsLoading(true);
-      try {
-        const data = await listPendingGolfCoursesUseCase.execute();
-        if (vigente) setPendingCourses(data);
-      } catch (error) {
-        if (!vigente) return;
-        console.error('Error loading pending golf courses:', error);
-        avisarDelFalloAlCargar(error);
-      } finally {
-        if (vigente) setIsLoading(false);
-      }
-    };
-    carga();
-    return () => {
-      vigente = false;
-    };
-  }, [user, recarga]);
 
   // Separate new requests from update proposals
   const newRequests = pendingCourses.filter(c => c.originalGolfCourseId === null);

@@ -1,10 +1,11 @@
-import { useState, useEffect, useEffectEvent, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Navigate, useNavigate, useParams } from 'react-router';
 import { ArrowLeft, Plus, Mail } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import customToast from '../../utils/toast';
 import HeaderAuth from '../../components/layout/HeaderAuth';
 import { useAuth } from '../../hooks/useAuth';
+import { useCargaCancelableEffect } from '../../hooks/useCargaCancelableEffect';
 import { useUserRoles } from '../../hooks/useUserRoles';
 import InvitationCard from '../../components/invitation/InvitationCard';
 import SendInvitationModal from '../../components/invitation/SendInvitationModal';
@@ -102,10 +103,8 @@ const InvitationsPage = () => {
   } = useUserRoles(id);
 
   const [competition, setCompetition] = useState(null);
-  const cargaEnCurso = useRef(0);
   const [invitations, setInvitations] = useState([]);
   const [totalCount, setTotalCount] = useState(0);
-  const [isLoading, setIsLoading] = useState(true);
   const [isProcessing, setIsProcessing] = useState(false);
   const [statusFilter, setStatusFilter] = useState('');
   const [showSendModal, setShowSendModal] = useState(false);
@@ -131,64 +130,39 @@ const InvitationsPage = () => {
 
   const canManage = isAdmin || hasCreatorRole;
 
-  // El aviso de una carga fallida, con el idioma de ahora pero sin ser
-  // dependencia: la pantalla no se vuelve a pedir por cambiar de idioma
-  const avisarDelFalloAlCargar = useEffectEvent((error) => {
-    customToast.error(error.message || t('errors.failedToLoad'));
-    // Marcar y que decida el render, en vez de irse desde aquí: esta carga y
-    // la de los permisos van por su cuenta, y salir corriendo la primera se
-    // llevaba por delante el aviso de la otra (FE #656)
-    setFalloAlCargar(true);
-  });
-
-  // La carga de la pantalla, dentro de su efecto (patrón de la documentación
-  // de React): al cambiar el filtro o al salir, la anterior ya no toca nada,
-  // ni su espera. Cada carga lleva además su número (`cargaEnCurso`), que
-  // comparte con los refrescos silenciosos: una que vuelve tarde no pisa a otra
-  // posterior (CodeRabbit, #721)
-  useEffect(() => {
-    if (!user) return undefined;
-    let vigente = true;
-    const carga = async () => {
-      const mia = ++cargaEnCurso.current;
-      setIsLoading(true);
-      try {
-        const [compData, invResult] = await pedirLaPantalla(id, statusFilter);
-        if (!vigente || mia !== cargaEnCurso.current) return;
+  // La carga de la pantalla, con useCargaCancelableEffect: al cambiar el filtro,
+  // al volver a pedirla o al salir, la anterior ya no toca nada, ni su espera.
+  // Así, de dos refrescos tras invitar a dos seguidos, el que vuelve tarde no
+  // pisa al de después (CodeRabbit, #721). El aviso no es dependencia: la
+  // pantalla no se vuelve a pedir por cambiar de idioma
+  const { cargando: isLoading, recargar } = useCargaCancelableEffect(
+    () => pedirLaPantalla(id, statusFilter),
+    [user, id, statusFilter],
+    {
+      activa: Boolean(user),
+      alCargar: ([compData, invResult]) => {
         setCompetition(compData);
         setInvitations(invResult.invitations);
         setTotalCount(invResult.totalCount);
-      } catch (error) {
-        if (!vigente || mia !== cargaEnCurso.current) return;
+      },
+      alFallar: (error, { silenciosa }) => {
         console.error('Error loading invitations:', error);
-        avisarDelFalloAlCargar(error);
-      } finally {
-        if (vigente) setIsLoading(false);
-      }
-    };
-    carga();
-    return () => {
-      vigente = false;
-    };
-  }, [user, id, statusFilter]);
+        // En silencio, lo que ya se veía sigue valiendo: echar de la pantalla
+        // con el modal abierto por un refresco fallido no es silencioso
+        // (revisión local)
+        if (silenciosa) return;
+        customToast.error(error.message || t('errors.failedToLoad'));
+        // Marcar y que decida el render, en vez de irse desde aquí: esta carga
+        // y la de los permisos van por su cuenta, y salir corriendo la primera
+        // se llevaba por delante el aviso de la otra (FE #656)
+        setFalloAlCargar(true);
+      },
+    }
+  );
 
   // Tras invitar o retirar, el listado se pone al día en silencio: sin la
   // pantalla de carga, que desmontaba el modal abierto (#710)
-  const recargarEnSilencio = async () => {
-    if (!user) return;
-    const mia = ++cargaEnCurso.current;
-    try {
-      const [compData, invResult] = await pedirLaPantalla(id, statusFilter);
-      if (mia !== cargaEnCurso.current) return;
-      setCompetition(compData);
-      setInvitations(invResult.invitations);
-      setTotalCount(invResult.totalCount);
-    } catch (error) {
-      // En silencio, lo que ya se veía sigue valiendo: echar de la pantalla con
-      // el modal abierto por un refresco fallido no es silencioso (revisión local)
-      console.error('Error loading invitations:', error);
-    }
-  };
+  const recargarEnSilencio = () => recargar({ silenciosa: true });
 
   // Los amigos y la situación de cada uno se piden APARTE, no dentro del
   // `Promise.all` de arriba: colgarlos ahí haría que un fallo suyo tumbara la

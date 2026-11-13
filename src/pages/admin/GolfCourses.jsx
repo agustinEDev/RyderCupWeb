@@ -1,4 +1,4 @@
-import { useState, useEffect, useEffectEvent } from 'react';
+import { useState } from 'react';
 import ModalShell, { CAJA_PROPIA } from '../../components/ui/ModalShell';
 import { motion } from 'framer-motion';
 import { Plus } from 'lucide-react';
@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next';
 import customToast from '../../utils/toast';
 import HeaderAuth from '../../components/layout/HeaderAuth';
 import { useAuth } from '../../hooks/useAuth';
+import { useCargaCancelableEffect } from '../../hooks/useCargaCancelableEffect';
 import GolfCourseTable from '../../components/golf_course/GolfCourseTable';
 import GolfCourseForm from '../../components/golf_course/GolfCourseForm';
 import GolfCourseDetailModal from '../../components/golf_course/GolfCourseDetailModal';
@@ -32,7 +33,6 @@ const GolfCourses = ({ embedded = false }) => {
   const { user, loading: isLoadingUser } = useAuth();
 
   const [courses, setCourses] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [isLoadingCourse, setIsLoadingCourse] = useState(false);
   // Un alta o una edición en vuelo: mientras dura, Escape no cierra su modal.
   // Si fallara, el error lo enseña el formulario, y cerrado no lo vería nadie
@@ -48,43 +48,21 @@ const GolfCourses = ({ embedded = false }) => {
     typeof role === 'string' ? role === 'ADMIN' : role.name === 'ADMIN'
   ) || false;
 
-  // Volver a pedir la lista tras crear o editar: se sube el contador y la pide
-  // su efecto. La espera, ya en el mismo pintado, como antes
-  const [recarga, setRecarga] = useState(0);
-  const recargarCourses = () => {
-    setIsLoading(true);
-    setRecarga((n) => n + 1);
-  };
-
-  // El aviso, con el idioma de ahora pero sin ser dependencia: la lista no se
-  // vuelve a pedir por cambiar de idioma
-  const avisarDelFalloAlCargar = useEffectEvent((error) => {
-    customToast.error(error.message || t('pages.admin.errorLoading'));
-  });
-
-  // Load approved courses. Dentro del efecto (patrón de la documentación de
-  // React): al salir o al pedirla otra vez, la respuesta anterior no toca nada
-  useEffect(() => {
-    if (!user) return undefined;
-    let vigente = true;
-    const carga = async () => {
-      setIsLoading(true);
-      try {
-        const page = await listGolfCoursesUseCase.execute({ approvalStatus: 'APPROVED' });
-        if (vigente) setCourses(page.courses);
-      } catch (error) {
-        if (!vigente) return;
+  // Load approved courses, con useCargaCancelableEffect: al salir o al pedirla
+  // otra vez, la respuesta anterior no toca nada. El aviso no es dependencia:
+  // la lista no se vuelve a pedir por cambiar de idioma
+  const { cargando: isLoading, recargar: recargarCourses } = useCargaCancelableEffect(
+    () => listGolfCoursesUseCase.execute({ approvalStatus: 'APPROVED' }),
+    [user],
+    {
+      activa: Boolean(user),
+      alCargar: (page) => setCourses(page.courses),
+      alFallar: (error) => {
         console.error('Error loading golf courses:', error);
-        avisarDelFalloAlCargar(error);
-      } finally {
-        if (vigente) setIsLoading(false);
-      }
-    };
-    carga();
-    return () => {
-      vigente = false;
-    };
-  }, [user, recarga]);
+        customToast.error(error.message || t('pages.admin.errorLoading'));
+      },
+    }
+  );
 
   // Handle create
   const handleCreate = async (formData) => {

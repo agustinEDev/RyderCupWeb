@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useEffectEvent } from 'react';
+import { useState } from 'react';
 import { NavLink, Navigate, useParams, useSearchParams } from 'react-router';
 import ModalShell, { CAJA_PROPIA } from '../../components/ui/ModalShell';
 import { motion } from 'framer-motion';
@@ -7,6 +7,7 @@ import { useTranslation } from 'react-i18next';
 import customToast from '../../utils/toast';
 import HeaderAuth from '../../components/layout/HeaderAuth';
 import { useAuth } from '../../hooks/useAuth';
+import { useCargaCancelableEffect } from '../../hooks/useCargaCancelableEffect';
 import AdminUsersTable from '../../components/admin/AdminUsersTable';
 import EditUserModal from '../../components/admin/EditUserModal';
 import ManageAccountModal from '../../components/admin/ManageAccountModal';
@@ -102,13 +103,11 @@ const AdminPanel = () => {
 
   // Overview
   const [stats, setStats] = useState(null);
-  const [isLoadingStats, setIsLoadingStats] = useState(true);
 
   // Users
   const [users, setUsers] = useState([]);
   const [totalCount, setTotalCount] = useState(0);
   const [offset, setOffset] = useState(0);
-  const [isLoadingUsers, setIsLoadingUsers] = useState(true);
   const [search, setSearch] = useState('');
   const [searchInput, setSearchInput] = useState('');
   const [roleFilter, setRoleFilter] = useState('');
@@ -122,7 +121,6 @@ const AdminPanel = () => {
   const [competitions, setCompetitions] = useState([]);
   const [hasMoreCompetitions, setHasMoreCompetitions] = useState(false);
   const [competitionOffset, setCompetitionOffset] = useState(0);
-  const [isLoadingCompetitions, setIsLoadingCompetitions] = useState(true);
   const [competitionSearch, setCompetitionSearch] = useState('');
   const [competitionSearchInput, setCompetitionSearchInput] = useState('');
   const [editingCompetition, setEditingCompetition] = useState(null);
@@ -142,114 +140,69 @@ const AdminPanel = () => {
     setCancelingCompetition(null);
   }
 
-  // Volver a pedir algo desde un botón: se sube el contador y lo pide su
-  // efecto, que es quien descarta lo que llegue tarde. La espera, ya en el
-  // mismo pintado, como cuando el botón llamaba a la carga directamente
-  const [recargaStats, setRecargaStats] = useState(0);
-  const recargarStats = useCallback(() => {
-    setIsLoadingStats(true);
-    setRecargaStats((n) => n + 1);
-  }, []);
-  const [recargaCompetitions, setRecargaCompetitions] = useState(0);
-  const recargarCompetitions = () => {
-    setIsLoadingCompetitions(true);
-    setRecargaCompetitions((n) => n + 1);
-  };
-
-  // El aviso del resumen, con el idioma de ahora pero sin ser dependencia: los
-  // números no se vuelven a pedir por cambiar de idioma
-  const avisarDelFalloDeStats = useEffectEvent((error) => {
-    customToast.error(error.message || t('overview.loadError'));
-  });
-
-  // Cada carga vive en su efecto (patrón de la documentación de React): al
-  // cambiar lo que pide o al salir, la respuesta anterior ya no toca nada
-  useEffect(() => {
-    if (!user) return undefined;
-    let vigente = true;
-    const carga = async () => {
-      setIsLoadingStats(true);
-      try {
-        const data = await getAdminStatsUseCase.execute();
-        if (vigente) setStats(data);
-      } catch (error) {
-        if (!vigente) return;
+  // Cada carga, con useCargaCancelableEffect: al cambiar lo que pide, al
+  // cambiar de sección o al salir, la respuesta anterior ya no toca nada. Los
+  // avisos no son dependencia: el resumen no se vuelve a pedir por cambiar de
+  // idioma; usuarios y competiciones sí (llevan `t`), como antes
+  const { cargando: isLoadingStats, recargar: recargarStats } = useCargaCancelableEffect(
+    () => getAdminStatsUseCase.execute(),
+    [user],
+    {
+      activa: Boolean(user),
+      alCargar: setStats,
+      alFallar: (error) => {
         console.error('Error loading admin stats:', error);
-        avisarDelFalloDeStats(error);
-      } finally {
-        if (vigente) setIsLoadingStats(false);
-      }
-    };
-    carga();
-    return () => {
-      vigente = false;
-    };
-  }, [user, recargaStats]);
+        customToast.error(error.message || t('overview.loadError'));
+      },
+    }
+  );
 
-  // Usuarios y competiciones sí se vuelven a pedir al cambiar de idioma (`t`),
-  // como antes
-  useEffect(() => {
-    if (!user || activeTab !== 'users') return undefined;
-    let vigente = true;
-    const carga = async () => {
-      setIsLoadingUsers(true);
-      try {
-        const data = await listAdminUsersUseCase.execute({
-          search: search || undefined,
-          isAdmin: roleFilter === '' ? undefined : roleFilter === 'admin',
-          isActive: statusFilter === '' ? undefined : statusFilter === 'active',
-          emailVerified: verifiedFilter === '' ? undefined : verifiedFilter === 'verified',
-          limit: PAGE_SIZE,
-          offset,
-        });
-        if (vigente) {
-          setUsers(data.users);
-          setTotalCount(data.totalCount);
-        }
-      } catch (error) {
-        if (!vigente) return;
+  const { cargando: isLoadingUsers } = useCargaCancelableEffect(
+    () =>
+      listAdminUsersUseCase.execute({
+        search: search || undefined,
+        isAdmin: roleFilter === '' ? undefined : roleFilter === 'admin',
+        isActive: statusFilter === '' ? undefined : statusFilter === 'active',
+        emailVerified: verifiedFilter === '' ? undefined : verifiedFilter === 'verified',
+        limit: PAGE_SIZE,
+        offset,
+      }),
+    [user, search, roleFilter, statusFilter, verifiedFilter, offset, t],
+    {
+      activa: Boolean(user) && activeTab === 'users',
+      alCargar: (data) => {
+        setUsers(data.users);
+        setTotalCount(data.totalCount);
+      },
+      alFallar: (error) => {
         console.error('Error loading users:', error);
         customToast.error(error.message || t('users.loadError'));
-      } finally {
-        if (vigente) setIsLoadingUsers(false);
-      }
-    };
-    carga();
-    return () => {
-      vigente = false;
-    };
-  }, [user, activeTab, search, roleFilter, statusFilter, verifiedFilter, offset, t]);
+      },
+    }
+  );
 
-  useEffect(() => {
-    if (!user || activeTab !== 'competitions') return undefined;
-    let vigente = true;
-    const carga = async () => {
-      setIsLoadingCompetitions(true);
-      try {
-        // Fetch one extra to know if there's a next page — the backend list
-        // endpoint returns a plain array with no total count to paginate against.
-        const data = await adminListCompetitionsUseCase.execute({
-          searchName: competitionSearch || undefined,
-          limit: PAGE_SIZE + 1,
-          offset: competitionOffset,
-        });
-        if (vigente) {
-          setHasMoreCompetitions(data.length > PAGE_SIZE);
-          setCompetitions(data.slice(0, PAGE_SIZE));
-        }
-      } catch (error) {
-        if (!vigente) return;
+  const { cargando: isLoadingCompetitions, recargar: recargarCompetitions } = useCargaCancelableEffect(
+    // Fetch one extra to know if there's a next page — the backend list
+    // endpoint returns a plain array with no total count to paginate against.
+    () =>
+      adminListCompetitionsUseCase.execute({
+        searchName: competitionSearch || undefined,
+        limit: PAGE_SIZE + 1,
+        offset: competitionOffset,
+      }),
+    [user, competitionSearch, competitionOffset, t],
+    {
+      activa: Boolean(user) && activeTab === 'competitions',
+      alCargar: (data) => {
+        setHasMoreCompetitions(data.length > PAGE_SIZE);
+        setCompetitions(data.slice(0, PAGE_SIZE));
+      },
+      alFallar: (error) => {
         console.error('Error loading competitions:', error);
         customToast.error(error.message || t('competitions.loadError'));
-      } finally {
-        if (vigente) setIsLoadingCompetitions(false);
-      }
-    };
-    carga();
-    return () => {
-      vigente = false;
-    };
-  }, [user, activeTab, competitionSearch, competitionOffset, t, recargaCompetitions]);
+      },
+    }
+  );
 
   const handleSearchSubmit = (e) => {
     e.preventDefault();

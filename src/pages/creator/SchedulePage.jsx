@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import customToast from '../../utils/toast';
 import HeaderAuth from '../../components/layout/HeaderAuth';
 import { useAuth } from '../../hooks/useAuth';
+import { useCargaCancelableEffect } from '../../hooks/useCargaCancelableEffect';
 import { useUserRoles } from '../../hooks/useUserRoles';
 import RoundCard from '../../components/schedule/RoundCard';
 import TeamAssignmentSection from '../../components/schedule/TeamAssignmentSection';
@@ -60,7 +61,6 @@ const SchedulePage = () => {
   const ordenInscritos = useLaMasNueva();
   // Cubrir el puesto de un capitán que se fue tras el reparto (FE #692)
   const [cubriendoCapitan, setCubriendoCapitan] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
   const [isProcessing, setIsProcessing] = useState(false);
 
   // UI state
@@ -99,36 +99,27 @@ const SchedulePage = () => {
     return map;
   }, [enrollments]);
 
-  // Volver a pedirlo todo tras rehacer los sobres: se sube el contador y lo
-  // pide su efecto. La espera, ya en el mismo pintado, como antes
-  const [recarga, setRecarga] = useState(0);
-  const recargarTodo = () => {
-    setIsLoading(true);
-    setRecarga((n) => n + 1);
-  };
-
-  // La carga de la agenda, dentro de su efecto (patrón de la documentación de
-  // React): al cambiar de idioma o al salir, la anterior ya no toca nada, ni
-  // avisa ni se lleva a nadie a la ficha. Con `t` entre las dependencias, como
-  // antes: cambiar de idioma la vuelve a pedir
-  useEffect(() => {
-    if (!user) return undefined;
-    let vigente = true;
-    const carga = async () => {
+  // La carga de la agenda, con useCargaCancelableEffect: al cambiar de idioma,
+  // al volver a pedirla o al salir, la anterior ya no toca nada, ni avisa ni se
+  // lleva a nadie a la ficha. Con `t` entre las dependencias, como antes:
+  // cambiar de idioma la vuelve a pedir
+  const { cargando: isLoading, recargar: recargarTodo } = useCargaCancelableEffect(
+    () => {
       const turno = ordenInscritos.turno();
-      setIsLoading(true);
-      try {
-        const [compData, scheduleData, coursesResult, enrollmentsData] = await Promise.all([
-          getCompetitionDetailUseCase.execute(id),
-          getScheduleUseCase.execute(id).catch(() => null),
-          getCompetitionGolfCoursesUseCase.execute(id).catch(() => []),
-          listEnrollmentsUseCase.execute(id).then(
-            (lista) => ({ ok: true, lista }),
-            () => ({ ok: false, lista: [] })
-          ),
-        ]);
-        if (!vigente) return;
-
+      return Promise.all([
+        getCompetitionDetailUseCase.execute(id),
+        getScheduleUseCase.execute(id).catch(() => null),
+        getCompetitionGolfCoursesUseCase.execute(id).catch(() => []),
+        listEnrollmentsUseCase.execute(id).then(
+          (lista) => ({ ok: true, lista }),
+          () => ({ ok: false, lista: [] })
+        ),
+      ]).then((datos) => ({ turno, datos }));
+    },
+    [id, user, navigate, t, ordenInscritos],
+    {
+      activa: Boolean(user),
+      alCargar: ({ turno, datos: [compData, scheduleData, coursesResult, enrollmentsData] }) => {
         setCompetition(compData);
         setSchedule(scheduleData);
 
@@ -144,20 +135,14 @@ const SchedulePage = () => {
             customToast.error(t('errors.failedToLoadEnrollments'), { id: AVISO_INSCRITOS });
           }
         }
-      } catch (error) {
-        if (!vigente) return;
+      },
+      alFallar: (error) => {
         console.error('Error loading schedule data:', error);
         customToast.error(t('errors.failedToLoadSchedule'));
         navigate(`/competitions/${id}`);
-      } finally {
-        if (vigente) setIsLoading(false);
-      }
-    };
-    carga();
-    return () => {
-      vigente = false;
-    };
-  }, [id, user, navigate, t, ordenInscritos, recarga]);
+      },
+    }
+  );
 
   // El toast de los inscritos es de la agenda: al salir se va con ella (pasada
   // del Kind, 31 oct 2026: seguía ~1 s en la ficha)
