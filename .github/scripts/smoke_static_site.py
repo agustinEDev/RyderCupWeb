@@ -35,6 +35,7 @@ import urllib.error
 import urllib.request
 from functools import partial
 from pathlib import Path
+from urllib.parse import urljoin, urlsplit
 
 _RECURSO = re.compile(r"<(?:script|link)\b[^>]*>", re.IGNORECASE)
 # Con comillas dobles, simples o sin comillas: uno que no se leyera se saltaría
@@ -72,6 +73,21 @@ def _pedir(base: str, ruta: str) -> tuple[int, bytes]:
         # Sin respuesta: 0 se informa como fallo, con el resto de comprobaciones
         print(f"::warning::{ruta}: sin respuesta ({error})")
         return 0, b""
+
+
+def _del_build(ruta: str) -> str | None:
+    """La ruta desde la raíz de un recurso del build, o None si es de fuera.
+
+    `index.html` está en la raíz, así que `assets/x.js` y `./assets/x.js` son `/assets/x.js`:
+    con `base: '/'` Vite no los genera, pero si cambiara, el humo los saltaba enteros,
+    SRI incluido (#1100). Lo de fuera (https:, //cdn, data:) y las anclas no son del build.
+    """
+    if not ruta or ruta.startswith("#"):
+        return None
+    partes = urlsplit(urljoin("http://build.local/", ruta))
+    if partes.netloc != "build.local":
+        return None
+    return partes.path + (f"?{partes.query}" if partes.query else "")
 
 
 def _hash_sri(algoritmo: str, contenido: bytes) -> str:
@@ -126,8 +142,8 @@ def comprobar(dist: Path, esperada: str, cuentas: dict | None = None) -> list[st
         recursos = 0
         for etiqueta in _RECURSO.findall(html):
             atributos = _atributos(etiqueta)
-            ruta = atributos.get("src") or atributos.get("href")
-            if not ruta or not ruta.startswith("/") or ruta.startswith("//"):
+            ruta = _del_build((atributos.get("src") or atributos.get("href") or "").strip())
+            if not ruta:
                 continue  # externos (fuentes, CDN) y anclas no son del build
             recursos += 1
             estado, contenido = _pedir(base, ruta)

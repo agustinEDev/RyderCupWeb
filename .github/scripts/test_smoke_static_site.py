@@ -15,6 +15,9 @@ solo comprobaba los `integrity` que había (probador de la #1098, 11 nov 2026).
 | R5   | iconos y manifiesto sin integrity: no se les pide (no lo admiten)    | 0      |
 | R6   | rel con varios valores («preload stylesheet») sin integrity          | 1      |
 | R7   | <link rel=preload as=script|style> sin integrity                    | 1      |
+| R8   | recursos con dirección relativa (`assets/x.js`, `./assets/x.js`):    | 1 c/u  |
+|      | se miran igual (existe, integrity, hash); antes se saltaban (#1100) |        |
+| R9   | lo de fuera del build (https:, //cdn, data:, #) no se mira           | 0      |
 """
 
 import base64
@@ -103,6 +106,35 @@ class IntegridadObligatoria(unittest.TestCase):
             self.assertIn("/assets/vendor.js", fallos[0])
         # Un preload de otra cosa (una imagen) no lo admite: no se pide
         self.assertEqual(self.fallos(extra='<link rel="preload" as="image" href="/favicon.svg">'), [])
+
+    def test_r8_direcciones_relativas(self):
+        for ruta in ("assets/vendor.js", "./assets/vendor.js"):
+            sin = f'<script type="module" src="{ruta}"></script>'
+            fallos = self.fallos(extra=sin)
+            self.assertEqual(len(fallos), 1, ruta)
+            self.assertIn("sin integrity", fallos[0])
+            mal = f'<script type="module" src="{ruta}" integrity="{_sri(b"otro")}"></script>'
+            fallos = self.fallos(extra=mal)
+            self.assertEqual(len(fallos), 1, ruta)
+            self.assertIn("no cuadra", fallos[0])
+            bien = f'<link rel="modulepreload" href="{ruta}" integrity="{_sri(JS)}">'
+            self.assertEqual(self.fallos(extra=bien), [], ruta)
+            falta = f'<link rel="modulepreload" href="{ruta.replace("vendor", "nada")}" integrity="{_sri(JS)}">'
+            fallos = self.fallos(extra=falta)
+            self.assertEqual(len(fallos), 1, ruta)
+            self.assertIn("404", fallos[0])
+
+    def test_r8_cuenta_los_relativos(self):
+        with tempfile.TemporaryDirectory() as raiz:
+            cuentas = {}
+            extra = f'<link rel="modulepreload" href="./assets/vendor.js" integrity="{_sri(JS)}">'
+            smoke.comprobar(_dist(raiz, extra=extra), "1.0.0", cuentas)
+            self.assertEqual(cuentas["resources"], 6)
+            self.assertEqual(cuentas["integrity"], 4)
+
+    def test_r9_lo_de_fuera_no_se_mira(self):
+        for ruta in ("https://cdn.example/x.js", "//cdn.example/x.js", "data:text/javascript,1", "#x", ""):
+            self.assertEqual(self.fallos(extra=f'<script src="{ruta}"></script>'), [], ruta)
 
 if __name__ == "__main__":
     unittest.main()
