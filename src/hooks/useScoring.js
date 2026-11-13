@@ -18,6 +18,9 @@ import { conHoyosDe, conLaColaEncima, estaSuperada } from '../utils/vistaDeLaAno
 
 const POLL_INTERVAL = 10000; // 10 seconds
 
+// Un id distinto en cada pantalla de anotación, también entre pestañas
+const creaIdDeSesion = () => `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+
 /**
  * Central hook for live scoring.
  * Manages scoring state, polling, auto-save, offline queue, and session lock.
@@ -27,7 +30,7 @@ const POLL_INTERVAL = 10000; // 10 seconds
  * (`useCandadoDeLaSesion`) y las acciones del partido (`useAccionesDelPartido`).
  * Los efectos corren en el orden en que se declaran, también los de las
  * piezas: el nombre de la partida, el partido vigente, la red, el candado, el
- * sondeo y el contador. Cambiar de sitio una llamada cambia ese orden.
+ * sondeo. Cambiar de sitio una llamada cambia ese orden.
  *
  * @param {string} matchId
  * @param {string} currentUserId
@@ -50,8 +53,12 @@ export const useScoring = (matchId, currentUserId, isAdmin = false, origen = ORI
   // toca el vaciado, y solo se quita cuando otro vaciado termina sin ese paro
   const [avisoDelVaciado, setAvisoDelVaciado] = useState(null);
 
-  // eslint-disable-next-line react-hooks/purity -- pre-existing pattern surfaced by eslint-plugin-react-hooks 7.1.1 bump; needs dedicated review (tracked in follow-up)
-  const sessionIdRef = useRef(`${Date.now()}-${Math.random().toString(36).slice(2)}`);
+  // El id de esta pantalla para el candado de la sesión: uno por montaje y el
+  // mismo en cada pintado (el sondeo repinta cada 10 s). Con `useState` se
+  // crea una sola vez; NO `useId()`, que sale igual en dos pestañas y la otra
+  // tomaría el candado de esta por suyo (no la bloquearía)
+  const [sessionId] = useState(creaIdDeSesion);
+  const sessionIdRef = useRef(sessionId);
   const pollIntervalRef = useRef(null);
 
   const {
@@ -178,6 +185,18 @@ export const useScoring = (matchId, currentUserId, isAdmin = false, origen = ORI
     setAvisoDelVaciado,
     setPendingQueueSize,
   });
+
+  // Los golpes pendientes de este partido y esta cuenta, contados al pintar
+  // cuando cambia de quién es la pantalla: el aviso de «N golpes» sale ya en
+  // el primer pintado, también al reabrir sin cobertura. Después lo mantienen
+  // a mano el envío, el vaciado y las acciones. La clave es una cadena y no la
+  // función: `setState(fn)` la ejecutaría como actualizador
+  const deQuien = `${matchId}|${currentUserId}`;
+  const [contadaPara, setContadaPara] = useState(null);
+  if (contadaPara !== deQuien) {
+    setContadaPara(deQuien);
+    setPendingQueueSize(pendientesPropias());
+  }
 
   // El turno de cada anotación (FE #605). Un envío que salió ANTES y acaba —con
   // o sin llegar— no puede retirar el aviso de una corrección posterior del
@@ -427,12 +446,6 @@ export const useScoring = (matchId, currentUserId, isAdmin = false, origen = ORI
       if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
     };
   }, [fetchScoringView, isOffline, pendientesPropias, firmaDeLaCola, processQueue, loQueDejoRef]);
-
-  // --- Update pending queue size on mount ---
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- pre-existing pattern surfaced by eslint-plugin-react-hooks 7.1.1 bump; needs dedicated review (tracked in follow-up)
-    setPendingQueueSize(pendientesPropias());
-  }, [matchId, pendientesPropias]);
 
   return {
     // State

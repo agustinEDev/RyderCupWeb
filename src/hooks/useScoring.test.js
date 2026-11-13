@@ -13,6 +13,7 @@ const almacen = (() => {
   };
 })();
 Object.defineProperty(globalThis, 'localStorage', { value: almacen, writable: true });
+import { useLayoutEffect } from 'react';
 import { renderHook, act, waitFor } from '@testing-library/react';
 import { useScoring } from './useScoring';
 
@@ -4097,3 +4098,141 @@ describe('useScoring · lo de la cola va marcado', () => {
   });
 });
 
+
+// T6: el id de la sesión (candado) y el contador de golpes pendientes, sin
+// efectos que solo existían para eso
+describe('useScoring · el id de la sesión y el contador de pendientes (T6)', () => {
+  let enCola;
+  let intervalos;
+
+  const guardada = (matchId, holeNumber, userId = 'u1') =>
+    ({ matchId, holeNumber, participantId: null, scoreData: { ownScore: 5, markedPlayerId: 'u2', markedScore: 4 }, timestamp: 1, userId });
+  const esperaUnPoco = () => act(async () => { await new Promise((r) => setTimeout(r, 20)); });
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    almacen.clear();
+    olvidaTodo();
+    enCola = [];
+    intervalos = {};
+    const intervaloReal = globalThis.setInterval;
+    // El sondeo (10 s) y el refresco del candado (30 s), a mano
+    vi.spyOn(globalThis, 'setInterval').mockImplementation((fn, ms, ...resto) => {
+      if (ms === 10000 || ms === 30000) { intervalos[ms] = fn; return 0; }
+      return intervaloReal(fn, ms, ...resto);
+    });
+    getScoringViewUseCase.execute.mockResolvedValue(mockScoringView);
+    submitHoleScoreUseCase.execute.mockResolvedValue(mockScoringView);
+    Object.defineProperty(navigator, 'onLine', { value: true, configurable: true });
+    offlineQueue.getByMatch.mockImplementation((matchId, userId) =>
+      enCola.filter((e) => e.matchId === matchId && (userId == null || e.userId === userId)).map((e) => ({ ...e }))
+    );
+    offlineQueue.remove.mockImplementation((matchId, holeNumber, participantId = null, userId = null) => {
+      enCola = enCola.filter((e) => !(e.matchId === matchId && e.holeNumber === holeNumber
+        && (e.participantId ?? null) === (participantId ?? null) && (e.userId ?? null) === (userId ?? null)));
+      return true;
+    });
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+    offlineQueue.getByMatch.mockReset().mockReturnValue([]);
+    offlineQueue.remove.mockReset().mockReturnValue(true);
+    submitHoleScoreUseCase.execute.mockReset();
+    getScoringViewUseCase.execute.mockReset();
+    Object.defineProperty(navigator, 'onLine', { value: true, configurable: true });
+  });
+
+  it('T6-1 · el candado coge, refresca y suelta con el MISMO id aunque el sondeo vuelva a pintar', async () => {
+    const { result, rerender, unmount } = renderHook(() => useScoring('m-1', 'u1'));
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    const id = sessionLock.acquire.mock.calls[0][1];
+    expect(id).toMatch(/^\d+-[a-z0-9]+$/);
+
+    // El sondeo repinta; y otro pintado del padre
+    await act(async () => { await intervalos[10000](); });
+    rerender();
+    act(() => { intervalos[30000](); });
+    unmount();
+
+    expect(sessionLock.refresh).toHaveBeenCalledWith(id, 'u1');
+    expect(sessionLock.release).toHaveBeenCalledWith(id, 'u1');
+    expect(sessionLock.acquire.mock.calls.every((c) => c[1] === id)).toBe(true);
+  });
+
+  it('T6-2 · dos pantallas (dos pestañas) tienen ids distintos: si no, el candado no bloquearía la otra', async () => {
+    const una = renderHook(() => useScoring('m-1', 'u1'));
+    await waitFor(() => expect(una.result.current.isLoading).toBe(false));
+    const otra = renderHook(() => useScoring('m-1', 'u1'));
+    await waitFor(() => expect(otra.result.current.isLoading).toBe(false));
+
+    const ids = sessionLock.acquire.mock.calls.map((c) => c[1]);
+    expect(ids).toHaveLength(2);
+    expect(ids[0]).not.toBe(ids[1]);
+  });
+
+  it('T6-3 · al pasar de m-1 (2 en cola) a m-2 (0) y volver, cuenta 0 y luego 2', async () => {
+    Object.defineProperty(navigator, 'onLine', { value: false, configurable: true });
+    enCola = [guardada('m-1', 3), guardada('m-1', 4)];
+    const { result, rerender } = renderHook(({ id }) => useScoring(id, 'u1'), { initialProps: { id: 'm-1' } });
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    expect(result.current.pendingQueueSize).toBe(2);
+
+    rerender({ id: 'm-2' });
+    await waitFor(() => expect(result.current.pendingQueueSize).toBe(0));
+
+    rerender({ id: 'm-1' });
+    await waitFor(() => expect(result.current.pendingQueueSize).toBe(2));
+  });
+
+  it('T6-4 · al cambiar de cuenta (u1→u2) en el mismo partido, cuenta la cola de u2', async () => {
+    Object.defineProperty(navigator, 'onLine', { value: false, configurable: true });
+    enCola = [guardada('m-1', 3, 'u1')];
+    const { result, rerender } = renderHook(({ quien }) => useScoring('m-1', quien), { initialProps: { quien: 'u1' } });
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    expect(result.current.pendingQueueSize).toBe(1);
+
+    rerender({ quien: 'u2' });
+
+    await waitFor(() => expect(result.current.pendingQueueSize).toBe(0));
+  });
+
+  it('T6-5 · al reabrir sin red con 2 guardados, dice 2 sin enviar nada; al volver la red, 0', async () => {
+    recuerda('m-1', { partida: mockScoringView, campo: null });
+    Object.defineProperty(navigator, 'onLine', { value: false, configurable: true });
+    getScoringViewUseCase.execute.mockRejectedValue(new TypeError('Failed to fetch'));
+    enCola = [guardada('m-1', 3), guardada('m-1', 4)];
+
+    const { result } = renderHook(() => useScoring('m-1', 'u1'));
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    await esperaUnPoco();
+
+    expect(result.current.pendingQueueSize).toBe(2);
+    expect(submitHoleScoreUseCase.execute).not.toHaveBeenCalled();
+
+    getScoringViewUseCase.execute.mockResolvedValue(mockScoringView);
+    Object.defineProperty(navigator, 'onLine', { value: true, configurable: true });
+    act(() => { globalThis.dispatchEvent(new globalThis.Event('online')); });
+
+    await waitFor(() => expect(submitHoleScoreUseCase.execute).toHaveBeenCalledTimes(2));
+    await waitFor(() => expect(result.current.pendingQueueSize).toBe(0));
+  });
+
+  it('T6-6 · con 2 en cola, el PRIMER pintado ya dice 2 (también al reabrir sin red)', async () => {
+    Object.defineProperty(navigator, 'onLine', { value: false, configurable: true });
+    getScoringViewUseCase.execute.mockRejectedValue(new TypeError('Failed to fetch'));
+    enCola = [guardada('m-1', 3), guardada('m-1', 4)];
+    const vistos = [];
+
+    // Lo PINTADO (cada commit, antes de que el navegador lo enseñe), no cada
+    // pasada del render: una pasada que React tira no llega a la pantalla
+    const { result } = renderHook(() => {
+      const r = useScoring('m-1', 'u1');
+      useLayoutEffect(() => { vistos.push(r.pendingQueueSize); });
+      return r;
+    });
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+    expect(vistos[0]).toBe(2);
+  });
+});
