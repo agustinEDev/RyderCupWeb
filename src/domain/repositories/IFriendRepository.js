@@ -6,8 +6,6 @@
  * Implementations:
  * - ApiFriendRepository (REST API)
  */
-/* eslint-disable no-unused-vars */
-
 class IFriendRepository {
   /**
    * Send a friend request to another user.

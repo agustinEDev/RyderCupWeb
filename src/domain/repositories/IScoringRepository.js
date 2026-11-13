@@ -11,8 +11,6 @@
  * - MockScoringRepository: For tests
  */
 
-/* eslint-disable no-unused-vars */
-
 class IScoringRepository {
   /**
    * Gets the unified scoring view for a match (3 tabs: Input, Scorecard, Leaderboard).

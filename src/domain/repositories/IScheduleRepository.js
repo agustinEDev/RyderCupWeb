@@ -14,8 +14,6 @@
  * - MockScheduleRepository: Para tests
  */
 
-/* eslint-disable no-unused-vars */
-
 class IScheduleRepository {
   /**
    * Obtiene el schedule completo de una competicion.

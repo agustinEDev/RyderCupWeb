@@ -1,8 +1,6 @@
-/* eslint-disable no-unused-vars */
 import User from '../../domain/entities/User.js';
 import IUserRepository from '../../domain/repositories/IUserRepository.js';
-import apiRequest from '../http/api.js';
-import { segmento } from '../http/api';
+import apiRequest, { segmento } from '../http/api.js';
 
 class ApiUserRepository extends IUserRepository {
   constructor() {
@@ -13,9 +11,12 @@ class ApiUserRepository extends IUserRepository {
   /**
    * @override
    */
-  async getById(userId) {
-    // Usar current-user en lugar de /users/{userId}
-    // El userId se ignora porque obtenemos el usuario del token JWT
+  async getById() {
+    // OJO: no cumple el contrato de la interfaz (`getById(id)`): devuelve SIEMPRE
+    // el usuario de la sesión (current-user, por la cookie), sea cual sea el id
+    // que se pase. Vale porque su único uso —actualizar el hándicap RFEG desde el
+    // perfil— pasa el id del propio usuario; otro uso necesitaría un endpoint
+    // por id
     const data = await apiRequest('/api/v1/auth/current-user');
 
     const userEntity = new User(data);

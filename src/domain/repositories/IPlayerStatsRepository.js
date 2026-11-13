@@ -17,7 +17,6 @@ class IPlayerStatsRepository {
    * @param {number} [limit]
    * @returns {Promise<import('../entities/RecentMatch').default[]>}
    */
-  // eslint-disable-next-line no-unused-vars
   async getRecentMatches(limit) {
     throw new Error('Method not implemented: getRecentMatches');
   }
@@ -35,7 +34,6 @@ class IPlayerStatsRepository {
    * @param {string} golfCourseId
    * @returns {Promise<import('../entities/PlayerStats').default>}
    */
-  // eslint-disable-next-line no-unused-vars
   async getPlayerStatsByGolfCourse(golfCourseId) {
     throw new Error('Method not implemented: getPlayerStatsByGolfCourse');
   }

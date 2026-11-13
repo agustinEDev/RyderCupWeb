@@ -182,4 +182,20 @@ export default [
       ],
     },
   },
+
+  // Las interfaces del dominio (src/domain/repositories) declaran el contrato:
+  // sus métodos nombran los parámetros para documentarlo y solo lanzan «no
+  // implementado», así que los parámetros sin usar son su forma de ser. Solo
+  // los parámetros: una variable o una importación que sobre sigue siendo un
+  // error, que es lo que el `eslint-disable` de cada fichero dejaba pasar.
+  // Ojo: estas opciones SUSTITUYEN a las de la regla en los bloques de arriba
+  // (no se suman); si algún día se le dan opciones globales, hay que repetirlas
+  // aquí. Los tests de esa carpeta, si los hubiera, no entran en la excepción
+  {
+    files: ['src/domain/repositories/**/*.js'],
+    ignores: ['src/**/*.test.{js,jsx}'],
+    rules: {
+      'no-unused-vars': ['error', { args: 'none' }],
+    },
+  },
 ];

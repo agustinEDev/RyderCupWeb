@@ -1,4 +1,3 @@
-/* eslint-disable no-unused-vars */
 /**
  * Las muestras de hoyo en el móvil (BE #532, marcado por par). Dos cosas:
  *

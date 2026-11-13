@@ -1,5 +1,3 @@
-/* eslint-disable no-unused-vars */
-
 /**
  * Device Repository Interface
  * v1.13.0: Device Fingerprinting feature

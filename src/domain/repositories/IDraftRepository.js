@@ -7,8 +7,6 @@
  * (ApiDraftRepository).
  */
 
-/* eslint-disable no-unused-vars */
-
 class IDraftRepository {
   /**
    * Lanza el sorteo y abre la sala.

@@ -1,5 +1,3 @@
-/* eslint-disable no-unused-vars */
-
 /**
  * Golf Course Repository Interface
  * Defines the contract for golf course data operations

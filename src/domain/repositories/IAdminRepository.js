@@ -1,5 +1,3 @@
-/* eslint-disable no-unused-vars */
-
 /**
  * Admin Repository Interface
  * Defines the contract for admin panel data operations (users + platform stats)

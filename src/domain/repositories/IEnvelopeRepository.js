@@ -4,8 +4,6 @@
  * Interfaz del repositorio de sobres (FE #655).
  */
 
-/* eslint-disable no-unused-vars */
-
 class IEnvelopeRepository {
   /**
    * Entrega —o corrige— el sobre del capitan.
