@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next';
 import customToast from '../../utils/toast';
 import HeaderAuth from '../../components/layout/HeaderAuth';
 import { useAuth } from '../../hooks/useAuth';
+import { useCargaCancelableEffect } from '../../hooks/useCargaCancelableEffect';
 import GolfCourseTable from '../../components/golf_course/GolfCourseTable';
 import TeeColorBadge from '../../components/golf_course/TeeColorBadge';
 import { CountryFlag } from '../../components/ui/CountryFlag';
@@ -37,7 +38,6 @@ const PendingGolfCourses = ({ embedded = false, onCambio }) => {
   const { user, loading: isLoadingUser } = useAuth();
 
   const [pendingCourses, setPendingCourses] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('new'); // 'new' or 'updates'
   const [showRejectModal, setShowRejectModal] = useState(false);
   const [rejectReason, setRejectReason] = useState('');
@@ -52,19 +52,21 @@ const PendingGolfCourses = ({ embedded = false, onCambio }) => {
     typeof role === 'string' ? role === 'ADMIN' : role.name === 'ADMIN'
   ) || false;
 
-  // Load pending courses
-  const loadPendingCourses = async () => {
-    setIsLoading(true);
-    try {
-      const data = await listPendingGolfCoursesUseCase.execute();
-      setPendingCourses(data);
-    } catch (error) {
-      console.error('Error loading pending golf courses:', error);
-      customToast.error(error.message || t('pages.pending.errorLoading'));
-    } finally {
-      setIsLoading(false);
+  // Load pending courses, con useCargaCancelableEffect: al salir o al pedirla
+  // otra vez, la respuesta anterior no toca nada. El aviso no es dependencia:
+  // la lista no se vuelve a pedir por cambiar de idioma
+  const { cargando: isLoading, recargar: recargarPendientes } = useCargaCancelableEffect(
+    () => listPendingGolfCoursesUseCase.execute(),
+    [user],
+    {
+      activa: Boolean(user),
+      alCargar: setPendingCourses,
+      alFallar: (error) => {
+        console.error('Error loading pending golf courses:', error);
+        customToast.error(error.message || t('pages.pending.errorLoading'));
+      },
     }
-  };
+  );
 
   // Load countries for details modal
   useEffect(() => {
@@ -78,14 +80,6 @@ const PendingGolfCourses = ({ embedded = false, onCambio }) => {
     };
     fetchCountries();
   }, []);
-
-  useEffect(() => {
-    if (user) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- pre-existing pattern surfaced by eslint-plugin-react-hooks 7.1.1 bump; needs dedicated review (tracked in follow-up)
-      loadPendingCourses();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user]);
 
   // Separate new requests from update proposals
   const newRequests = pendingCourses.filter(c => c.originalGolfCourseId === null);
@@ -101,7 +95,7 @@ const PendingGolfCourses = ({ embedded = false, onCambio }) => {
       await approveGolfCourseUseCase.execute(course.id);
       customToast.success(t('pages.pending.approveSuccess'));
       onCambio?.();
-      await loadPendingCourses();
+      recargarPendientes();
     } catch (error) {
       console.error('Error approving golf course:', error);
       customToast.error(error.message || t('pages.pending.approveFailed'));
@@ -137,7 +131,7 @@ const PendingGolfCourses = ({ embedded = false, onCambio }) => {
       setShowRejectModal(false);
       setCourseToReject(null);
       setRejectReason('');
-      await loadPendingCourses();
+      recargarPendientes();
     } catch (error) {
       console.error('Error rejecting golf course:', error);
       customToast.error(error.message || t('pages.pending.rejectFailed'));
@@ -154,7 +148,7 @@ const PendingGolfCourses = ({ embedded = false, onCambio }) => {
       await approveGolfCourseUpdateUseCase.execute(clone.id);
       customToast.success(t('pages.pending.approveUpdateSuccess'));
       onCambio?.();
-      await loadPendingCourses();
+      recargarPendientes();
     } catch (error) {
       console.error('Error approving update:', error);
       customToast.error(error.message || t('pages.pending.approveUpdateFailed'));
@@ -171,7 +165,7 @@ const PendingGolfCourses = ({ embedded = false, onCambio }) => {
       await rejectGolfCourseUpdateUseCase.execute(clone.id);
       customToast.success(t('pages.pending.rejectUpdateSuccess'));
       onCambio?.();
-      await loadPendingCourses();
+      recargarPendientes();
     } catch (error) {
       console.error('Error rejecting update:', error);
       customToast.error(error.message || t('pages.pending.rejectUpdateFailed'));

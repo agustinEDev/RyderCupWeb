@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, within, waitFor, fireEvent, act } from '@testing-library/react';
 import { MemoryRouter, Route, Routes, useNavigate } from 'react-router';
 
@@ -12,8 +12,7 @@ vi.mock('react-router', async (importarElDeVerdad) => {
   const { useCallback } = await import('react');
   return {
     ...real,
-    // Memorizado: devolver una función nueva en cada render cambiaría la
-    // identidad de `loadData` y el efecto que la llama se dispararía sin parar
+    // Memorizado, como el de verdad: el router da siempre la misma función
     useNavigate: () => {
       const navegar = real.useNavigate();
       return useCallback(
@@ -39,9 +38,9 @@ vi.mock('react-i18next', () => ({
   }),
 }));
 
-// La sesión, SIEMPRE el mismo objeto: devolver uno nuevo en cada render cambia
-// la identidad de `loadData` y el efecto que la llama se dispara sin parar. En
-// la app no pasa, porque `user` sale de un `useState`
+// La sesión, SIEMPRE el mismo objeto: `user` es dependencia de la carga de la
+// pantalla, y uno nuevo en cada render la volvería a pedir sin parar. En la app
+// no pasa, porque `user` sale de un `useState`
 const sesionDePrueba = {
   user: { id: 'user-1', first_name: 'Test', last_name: 'User' },
   loading: false,
@@ -684,5 +683,173 @@ describe('InvitationsPage', () => {
 
       expect(await screen.findByText('creator.title')).toBeInTheDocument();
     });
+  });
+});
+
+/**
+ * La carga de la pantalla vive en su efecto: lo de siempre, y lo que llega
+ * tarde ya no toca nada.
+ *
+ *   #      caso                                           | qué pasa
+ *   -------|----------------------------------------------|------------------------------
+ *   T1-9   cambiar de idioma con la pantalla cargada     | ni la competición ni la lista se piden otra vez
+ *   T1-10  cambiar el filtro de estado                   | se piden con él, con la espera de pantalla
+ *   T1-13  se vuelve a pedir antes de que llegue la vieja | la vieja no pisa ni quita la espera
+ *   T1-14  se sale con la carga pidiéndose               | su fallo no avisa de nada
+ */
+describe('InvitationsPage · la carga de la pantalla', () => {
+  const USUARIO_DE_SIEMPRE = sesionDePrueba.user;
+  const invitacion = (id, nombre) => ({
+    id,
+    competitionName: 'Summer Cup',
+    inviteeEmail: `${id}@test.com`,
+    inviteeName: nombre,
+    status: 'PENDING',
+    isPending: true,
+    isAccepted: false,
+    isDeclined: false,
+    isExpired: false,
+    personalMessage: null,
+    expiresAt: new Date(Date.now() + 86400000).toISOString(),
+    respondedAt: null,
+  });
+  // Una respuesta que llega cuando la prueba quiere
+  const aMano = () => {
+    let resolver;
+    let rechazar;
+    const promesa = new Promise((res, rej) => {
+      resolver = res;
+      rechazar = rej;
+    });
+    return { promesa, resolver, rechazar };
+  };
+  const arbol = () => (
+    <MemoryRouter initialEntries={['/creator/competitions/comp-1/invitations']}>
+      <Routes>
+        <Route path="/creator/competitions/:id/invitations" element={<InvitationsPage />} />
+      </Routes>
+    </MemoryRouter>
+  );
+  const cargada = async () => {
+    const vista = render(arbol());
+    await screen.findByTestId('status-filter');
+    return vista;
+  };
+  const filtrarPor = (estado) => fireEvent.change(screen.getByTestId('status-filter'), { target: { value: estado } });
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    rolesActuales.valor = { isAdmin: false, isCreator: true, isLoading: false, error: null };
+    mockGetCompetitionDetail.mockReset().mockResolvedValue({ id: 'comp-1', name: 'Summer Cup', status: 'ACTIVE' });
+    mockListCompetitionInvitations.mockReset().mockResolvedValue({ invitations: [], totalCount: 0 });
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+  });
+
+  afterEach(() => {
+    sesionDePrueba.user = USUARIO_DE_SIEMPRE;
+  });
+
+  it('T1-9: cambiar de idioma no vuelve a pedir ni la competición ni la lista', async () => {
+    // Given la pantalla cargada
+    const { rerender } = await cargada();
+    expect(mockGetCompetitionDetail).toHaveBeenCalledTimes(1);
+    expect(mockListCompetitionInvitations).toHaveBeenCalledTimes(1);
+
+    // When cambia el idioma (i18next da un `t` nuevo, como este mock en cada pintado)
+    rerender(arbol());
+    await act(async () => {});
+
+    // Then nada se pide otra vez
+    expect(mockGetCompetitionDetail).toHaveBeenCalledTimes(1);
+    expect(mockListCompetitionInvitations).toHaveBeenCalledTimes(1);
+  });
+
+  it('T1-10: cambiar el filtro pide con ese estado, con la espera de pantalla', async () => {
+    // Given la pantalla cargada
+    await cargada();
+    const llega = aMano();
+    mockListCompetitionInvitations.mockReturnValueOnce(llega.promesa);
+
+    // When se filtra
+    filtrarPor('DECLINED');
+
+    // Then se pide con él y se espera
+    await waitFor(() =>
+      expect(mockListCompetitionInvitations).toHaveBeenLastCalledWith('comp-1', { status: 'DECLINED' })
+    );
+    expect(screen.getByText('loading')).toBeInTheDocument();
+    expect(screen.queryByTestId('status-filter')).toBeNull();
+    await act(async () => llega.resolver({ invitations: [invitacion('inv-d', 'Diego Declina')], totalCount: 1 }));
+    expect(await screen.findByText('Diego Declina')).toBeInTheDocument();
+    expect(screen.queryByText('loading')).toBeNull();
+  });
+
+  // Con la espera de pantalla el filtro no se ve: lo que vuelve a pedir es otro
+  // objeto de usuario de la sesión, que es dependencia de la carga
+  const filtrarYPedirOtraVez = async (rerender, vieja, nueva) => {
+    mockListCompetitionInvitations.mockReturnValueOnce(vieja.promesa).mockReturnValueOnce(nueva.promesa);
+    filtrarPor('PENDING');
+    await waitFor(() => expect(mockListCompetitionInvitations).toHaveBeenCalledTimes(2));
+    sesionDePrueba.user = { ...USUARIO_DE_SIEMPRE };
+    rerender(arbol());
+    await waitFor(() => expect(mockListCompetitionInvitations).toHaveBeenCalledTimes(3));
+  };
+
+  it('T1-13: si la vieja llega antes, la espera sigue hasta la nueva', async () => {
+    // Given una carga con filtro en vuelo
+    const { rerender } = await cargada();
+    const vieja = aMano();
+    const nueva = aMano();
+    // When se vuelve a pedir antes de que llegue, y llega la vieja
+    await filtrarYPedirOtraVez(rerender, vieja, nueva);
+    await act(async () => vieja.resolver({ invitations: [invitacion('inv-v', 'Vieja Lista')], totalCount: 1 }));
+
+    // Then la espera sigue, y lo que se pinta es la nueva
+    expect(screen.getByText('loading')).toBeInTheDocument();
+    await act(async () => nueva.resolver({ invitations: [invitacion('inv-n', 'Nueva Lista')], totalCount: 1 }));
+    expect(await screen.findByText('Nueva Lista')).toBeInTheDocument();
+    expect(screen.queryByText('Vieja Lista')).toBeNull();
+  });
+
+  it('T1-13: si la vieja llega después, no pisa la nueva', async () => {
+    const { rerender } = await cargada();
+    const vieja = aMano();
+    const nueva = aMano();
+    await filtrarYPedirOtraVez(rerender, vieja, nueva);
+
+    await act(async () => nueva.resolver({ invitations: [invitacion('inv-n', 'Nueva Lista')], totalCount: 1 }));
+    await screen.findByText('Nueva Lista');
+    await act(async () => vieja.resolver({ invitations: [invitacion('inv-v', 'Vieja Lista')], totalCount: 1 }));
+
+    expect(screen.getByText('Nueva Lista')).toBeInTheDocument();
+    expect(screen.queryByText('Vieja Lista')).toBeNull();
+  });
+
+  it('T1-13: un fallo de la vieja no avisa ni echa de la pantalla', async () => {
+    const { rerender } = await cargada();
+    const vieja = aMano();
+    const nueva = aMano();
+    await filtrarYPedirOtraVez(rerender, vieja, nueva);
+
+    await act(async () => vieja.rechazar(new Error('vieja')));
+    await act(async () => nueva.resolver({ invitations: [invitacion('inv-n', 'Nueva Lista')], totalCount: 1 }));
+
+    expect(await screen.findByText('Nueva Lista')).toBeInTheDocument();
+    expect(customToast.error).not.toHaveBeenCalled();
+  });
+
+  it('T1-14: si se sale con la carga pidiéndose, su fallo no avisa de nada', async () => {
+    // Given la carga en vuelo
+    const tarde = aMano();
+    mockListCompetitionInvitations.mockReturnValueOnce(tarde.promesa);
+    const { unmount } = render(arbol());
+    await waitFor(() => expect(mockListCompetitionInvitations).toHaveBeenCalledTimes(1));
+
+    // When se sale y luego falla
+    unmount();
+    await act(async () => tarde.rechazar(new Error('tarde')));
+
+    // Then no toca nada
+    expect(customToast.error).not.toHaveBeenCalled();
   });
 });

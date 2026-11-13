@@ -80,6 +80,9 @@ export default [
 
       // React Hooks rules
       ...reactHooks.configs.recommended.rules,
+      // Las dependencias de useCargaCancelableEffect se comprueban como las de
+      // un useEffect (misma gravedad que trae la recomendada)
+      'react-hooks/exhaustive-deps': ['warn', { additionalHooks: '(useCargaCancelableEffect)' }],
 
       // React Refresh rules
       'react-refresh/only-export-components': [

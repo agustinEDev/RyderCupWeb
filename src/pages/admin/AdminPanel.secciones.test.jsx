@@ -9,11 +9,16 @@ import AdminPanel from './AdminPanel';
  * mismo menú en una columna a la izquierda. Casos A1–A11 aprobados en el chat.
  */
 
-vi.mock('react-i18next', () => ({
-  useTranslation: () => ({
+// El mismo `t` en cada pintado, como el de i18next: uno nuevo cada vez es un
+// cambio de idioma, y usuarios y competiciones se vuelven a pedir con él
+const { TRADUCCION } = vi.hoisted(() => ({
+  TRADUCCION: {
     t: (key, params) => (params?.count !== undefined ? `${key}_${params.count}` : key),
     i18n: { language: 'es' },
-  }),
+  },
+}));
+vi.mock('react-i18next', () => ({
+  useTranslation: () => TRADUCCION,
 }));
 
 const { ADMIN } = vi.hoisted(() => ({ ADMIN: { id: 'admin-1', first_name: 'Admin', last_name: 'User', is_admin: true } }));

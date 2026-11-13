@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState } from 'react';
 import { NavLink, Navigate, useParams, useSearchParams } from 'react-router';
 import ModalShell, { CAJA_PROPIA } from '../../components/ui/ModalShell';
 import { motion } from 'framer-motion';
@@ -7,6 +7,7 @@ import { useTranslation } from 'react-i18next';
 import customToast from '../../utils/toast';
 import HeaderAuth from '../../components/layout/HeaderAuth';
 import { useAuth } from '../../hooks/useAuth';
+import { useCargaCancelableEffect } from '../../hooks/useCargaCancelableEffect';
 import AdminUsersTable from '../../components/admin/AdminUsersTable';
 import EditUserModal from '../../components/admin/EditUserModal';
 import ManageAccountModal from '../../components/admin/ManageAccountModal';
@@ -102,13 +103,11 @@ const AdminPanel = () => {
 
   // Overview
   const [stats, setStats] = useState(null);
-  const [isLoadingStats, setIsLoadingStats] = useState(true);
 
   // Users
   const [users, setUsers] = useState([]);
   const [totalCount, setTotalCount] = useState(0);
   const [offset, setOffset] = useState(0);
-  const [isLoadingUsers, setIsLoadingUsers] = useState(true);
   const [search, setSearch] = useState('');
   const [searchInput, setSearchInput] = useState('');
   const [roleFilter, setRoleFilter] = useState('');
@@ -122,7 +121,6 @@ const AdminPanel = () => {
   const [competitions, setCompetitions] = useState([]);
   const [hasMoreCompetitions, setHasMoreCompetitions] = useState(false);
   const [competitionOffset, setCompetitionOffset] = useState(0);
-  const [isLoadingCompetitions, setIsLoadingCompetitions] = useState(true);
   const [competitionSearch, setCompetitionSearch] = useState('');
   const [competitionSearchInput, setCompetitionSearchInput] = useState('');
   const [editingCompetition, setEditingCompetition] = useState(null);
@@ -142,81 +140,69 @@ const AdminPanel = () => {
     setCancelingCompetition(null);
   }
 
-  const loadStats = useCallback(async () => {
-    setIsLoadingStats(true);
-    try {
-      const data = await getAdminStatsUseCase.execute();
-      setStats(data);
-    } catch (error) {
-      console.error('Error loading admin stats:', error);
-      customToast.error(error.message || t('overview.loadError'));
-    } finally {
-      setIsLoadingStats(false);
+  // Cada carga, con useCargaCancelableEffect: al cambiar lo que pide, al
+  // cambiar de sección o al salir, la respuesta anterior ya no toca nada. Los
+  // avisos no son dependencia: el resumen no se vuelve a pedir por cambiar de
+  // idioma; usuarios y competiciones sí (llevan `t`), como antes
+  const { cargando: isLoadingStats, recargar: recargarStats } = useCargaCancelableEffect(
+    () => getAdminStatsUseCase.execute(),
+    [user],
+    {
+      activa: Boolean(user),
+      alCargar: setStats,
+      alFallar: (error) => {
+        console.error('Error loading admin stats:', error);
+        customToast.error(error.message || t('overview.loadError'));
+      },
     }
-  }, [t]);
+  );
 
-  const loadUsers = useCallback(async () => {
-    setIsLoadingUsers(true);
-    try {
-      const data = await listAdminUsersUseCase.execute({
+  const { cargando: isLoadingUsers } = useCargaCancelableEffect(
+    () =>
+      listAdminUsersUseCase.execute({
         search: search || undefined,
         isAdmin: roleFilter === '' ? undefined : roleFilter === 'admin',
         isActive: statusFilter === '' ? undefined : statusFilter === 'active',
         emailVerified: verifiedFilter === '' ? undefined : verifiedFilter === 'verified',
         limit: PAGE_SIZE,
         offset,
-      });
-      setUsers(data.users);
-      setTotalCount(data.totalCount);
-    } catch (error) {
-      console.error('Error loading users:', error);
-      customToast.error(error.message || t('users.loadError'));
-    } finally {
-      setIsLoadingUsers(false);
+      }),
+    [user, search, roleFilter, statusFilter, verifiedFilter, offset, t],
+    {
+      activa: Boolean(user) && activeTab === 'users',
+      alCargar: (data) => {
+        setUsers(data.users);
+        setTotalCount(data.totalCount);
+      },
+      alFallar: (error) => {
+        console.error('Error loading users:', error);
+        customToast.error(error.message || t('users.loadError'));
+      },
     }
-  }, [search, roleFilter, statusFilter, verifiedFilter, offset, t]);
+  );
 
-  const loadCompetitions = useCallback(async () => {
-    setIsLoadingCompetitions(true);
-    try {
-      // Fetch one extra to know if there's a next page — the backend list
-      // endpoint returns a plain array with no total count to paginate against.
-      const data = await adminListCompetitionsUseCase.execute({
+  const { cargando: isLoadingCompetitions, recargar: recargarCompetitions } = useCargaCancelableEffect(
+    // Fetch one extra to know if there's a next page — the backend list
+    // endpoint returns a plain array with no total count to paginate against.
+    () =>
+      adminListCompetitionsUseCase.execute({
         searchName: competitionSearch || undefined,
         limit: PAGE_SIZE + 1,
         offset: competitionOffset,
-      });
-      setHasMoreCompetitions(data.length > PAGE_SIZE);
-      setCompetitions(data.slice(0, PAGE_SIZE));
-    } catch (error) {
-      console.error('Error loading competitions:', error);
-      customToast.error(error.message || t('competitions.loadError'));
-    } finally {
-      setIsLoadingCompetitions(false);
+      }),
+    [user, competitionSearch, competitionOffset, t],
+    {
+      activa: Boolean(user) && activeTab === 'competitions',
+      alCargar: (data) => {
+        setHasMoreCompetitions(data.length > PAGE_SIZE);
+        setCompetitions(data.slice(0, PAGE_SIZE));
+      },
+      alFallar: (error) => {
+        console.error('Error loading competitions:', error);
+        customToast.error(error.message || t('competitions.loadError'));
+      },
     }
-  }, [competitionSearch, competitionOffset, t]);
-
-  useEffect(() => {
-    if (user) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- pre-existing pattern surfaced by eslint-plugin-react-hooks 7.1.1 bump; needs dedicated review (tracked in follow-up)
-      loadStats();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user]);
-
-  useEffect(() => {
-    if (user && activeTab === 'users') {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- pre-existing pattern surfaced by eslint-plugin-react-hooks 7.1.1 bump; needs dedicated review (tracked in follow-up)
-      loadUsers();
-    }
-  }, [user, activeTab, loadUsers]);
-
-  useEffect(() => {
-    if (user && activeTab === 'competitions') {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- pre-existing pattern surfaced by eslint-plugin-react-hooks 7.1.1 bump; needs dedicated review (tracked in follow-up)
-      loadCompetitions();
-    }
-  }, [user, activeTab, loadCompetitions]);
+  );
 
   const handleSearchSubmit = (e) => {
     e.preventDefault();
@@ -256,7 +242,7 @@ const AdminPanel = () => {
     setTotalCount((prev) => Math.max(0, prev - 1));
     customToast.success(t('manageModal.deleteSuccess'));
     setManagingUser(null);
-    loadStats();
+    recargarStats();
   };
 
   const handleCompetitionSearchSubmit = (e) => {
@@ -269,7 +255,7 @@ const AdminPanel = () => {
     await adminUpdateCompetitionUseCase.execute(editingCompetition.id, fields);
     customToast.success(t('competitions.editModal.success'));
     setEditingCompetition(null);
-    loadCompetitions();
+    recargarCompetitions();
   };
 
   const runTransition = async (competition, action) => {
@@ -277,7 +263,7 @@ const AdminPanel = () => {
     try {
       await TRANSITION_USE_CASES[action].execute(competition.id);
       customToast.success(t('competitions.transitionSuccess'));
-      loadCompetitions();
+      recargarCompetitions();
     } catch (error) {
       console.error(`Error running competition transition "${action}":`, error);
       customToast.error(error.message || t('competitions.transitionError'));
@@ -572,7 +558,7 @@ const AdminPanel = () => {
 
                 {activeTab === 'golfCourses' && (
                   <PestanasDeSeccion etiqueta={t(abierta.label)} pestanas={pestanasDe('golfCourses')} actual={pestañaAbierta} onElegir={elegirPestaña}>
-                    {pestañaAbierta === 'approved' ? <GolfCourses embedded /> : <PendingGolfCourses embedded onCambio={loadStats} />}
+                    {pestañaAbierta === 'approved' ? <GolfCourses embedded /> : <PendingGolfCourses embedded onCambio={recargarStats} />}
                   </PestanasDeSeccion>
                 )}
                 {activeTab === 'holes' && (

@@ -1,10 +1,11 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Navigate, useNavigate, useParams } from 'react-router';
 import { ArrowLeft, Plus, Mail } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import customToast from '../../utils/toast';
 import HeaderAuth from '../../components/layout/HeaderAuth';
 import { useAuth } from '../../hooks/useAuth';
+import { useCargaCancelableEffect } from '../../hooks/useCargaCancelableEffect';
 import { useUserRoles } from '../../hooks/useUserRoles';
 import InvitationCard from '../../components/invitation/InvitationCard';
 import SendInvitationModal from '../../components/invitation/SendInvitationModal';
@@ -52,6 +53,14 @@ const todasLasPaginas = async (pideLaPagina, sacaLasFilas) => {
   return filas;
 };
 
+// Lo que pinta la pantalla: la competición y sus invitaciones con el filtro
+// elegido
+const pedirLaPantalla = (competitionId, statusFilter) =>
+  Promise.all([
+    getCompetitionDetailUseCase.execute(competitionId),
+    listCompetitionInvitationsUseCase.execute(competitionId, statusFilter ? { status: statusFilter } : {}),
+  ]);
+
 // Quién está dentro: solo APPROVED. Sin filtro vienen también REQUESTED,
 // REJECTED, CANCELLED e INVITED, y quien se retiró o fue rechazado SÍ se puede
 // volver a invitar. Marcarlos habría bloqueado a quien el backend acepta
@@ -94,10 +103,8 @@ const InvitationsPage = () => {
   } = useUserRoles(id);
 
   const [competition, setCompetition] = useState(null);
-  const cargaEnCurso = useRef(0);
   const [invitations, setInvitations] = useState([]);
   const [totalCount, setTotalCount] = useState(0);
-  const [isLoading, setIsLoading] = useState(true);
   const [isProcessing, setIsProcessing] = useState(false);
   const [statusFilter, setStatusFilter] = useState('');
   const [showSendModal, setShowSendModal] = useState(false);
@@ -123,41 +130,39 @@ const InvitationsPage = () => {
 
   const canManage = isAdmin || hasCreatorRole;
 
-  // `silencioso`: tras invitar, el listado se pone al día sin la pantalla de
-  // carga, que desmontaba el modal abierto (#710)
-  const loadData = useCallback(async ({ silencioso = false } = {}) => {
-    if (!user) return;
-    // Cada carga lleva su número: una que vuelve tarde no pisa a otra
-    // posterior, como dos refrescos tras invitar a dos seguidos (CodeRabbit, #721)
-    const mia = ++cargaEnCurso.current;
-
-    if (!silencioso) setIsLoading(true);
-    try {
-      const [compData, invResult] = await Promise.all([
-        getCompetitionDetailUseCase.execute(id),
-        listCompetitionInvitationsUseCase.execute(id, statusFilter ? { status: statusFilter } : {}),
-      ]);
-
-      if (mia !== cargaEnCurso.current) return;
-      setCompetition(compData);
-      setInvitations(invResult.invitations);
-      setTotalCount(invResult.totalCount);
-    } catch (error) {
-      console.error('Error loading invitations:', error);
-      if (mia !== cargaEnCurso.current) return;
-      // En silencio, lo que ya se veía sigue valiendo: echar de la pantalla con
-      // el modal abierto por un refresco fallido no es silencioso (revisión local)
-      if (silencioso) return;
-      customToast.error(error.message || t('errors.failedToLoad'));
-      // Marcar y que decida el render, en vez de irse desde aquí: esta carga y
-      // la de los permisos van por su cuenta, y salir corriendo la primera se
-      // llevaba por delante el aviso de la otra (FE #656)
-      setFalloAlCargar(true);
-    } finally {
-      if (!silencioso) setIsLoading(false);
+  // La carga de la pantalla, con useCargaCancelableEffect: al cambiar el filtro,
+  // al volver a pedirla o al salir, la anterior ya no toca nada, ni su espera.
+  // Así, de dos refrescos tras invitar a dos seguidos, el que vuelve tarde no
+  // pisa al de después (CodeRabbit, #721). El aviso no es dependencia: la
+  // pantalla no se vuelve a pedir por cambiar de idioma
+  const { cargando: isLoading, recargar } = useCargaCancelableEffect(
+    () => pedirLaPantalla(id, statusFilter),
+    [user, id, statusFilter],
+    {
+      activa: Boolean(user),
+      alCargar: ([compData, invResult]) => {
+        setCompetition(compData);
+        setInvitations(invResult.invitations);
+        setTotalCount(invResult.totalCount);
+      },
+      alFallar: (error, { silenciosa }) => {
+        console.error('Error loading invitations:', error);
+        // En silencio, lo que ya se veía sigue valiendo: echar de la pantalla
+        // con el modal abierto por un refresco fallido no es silencioso
+        // (revisión local)
+        if (silenciosa) return;
+        customToast.error(error.message || t('errors.failedToLoad'));
+        // Marcar y que decida el render, en vez de irse desde aquí: esta carga
+        // y la de los permisos van por su cuenta, y salir corriendo la primera
+        // se llevaba por delante el aviso de la otra (FE #656)
+        setFalloAlCargar(true);
+      },
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [id, user, statusFilter, navigate]);
+  );
+
+  // Tras invitar o retirar, el listado se pone al día en silencio: sin la
+  // pantalla de carga, que desmontaba el modal abierto (#710)
+  const recargarEnSilencio = () => recargar({ silenciosa: true });
 
   // Los amigos y la situación de cada uno se piden APARTE, no dentro del
   // `Promise.all` de arriba: colgarlos ahí haría que un fallo suyo tumbara la
@@ -213,13 +218,6 @@ const InvitationsPage = () => {
     };
   }, [user?.id, id, showSendModal]);
 
-  useEffect(() => {
-    if (user) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- pre-existing pattern surfaced by eslint-plugin-react-hooks 7.1.1 bump; needs dedicated review (tracked in follow-up)
-      loadData();
-    }
-  }, [user, loadData]);
-
   // Quién está dentro y a qué correos ya hay una pendiente, para «Volver a
   // invitar» (release social 2). Se relee con la lista: tras invitar o retirar.
   // Solo si hay alguna que volver a mandar: si no, son dos consultas de más
@@ -252,13 +250,13 @@ const InvitationsPage = () => {
     if (error?.errorCode === 'COMPETITION_FULL') {
       customToast.error(t('errors.competitionFull'));
       setShowSendModal(false);
-      loadData({ silencioso: true });
+      recargarEnSilencio();
     // Con los equipos formados no se invita (29-30 oct 2026): igual, que la
     // pantalla deje de ofrecerlo
     } else if (error?.errorCode === 'TEAMS_FORMED') {
       customToast.error(t('errors.teamsFormedOrganizer'));
       setShowSendModal(false);
-      loadData({ silencioso: true });
+      recargarEnSilencio();
     // El freno por hora de la competición: con cuántas admite, y no el «espera
     // un minuto» del 429 general, que es de otro límite (probado en el Kind)
     } else if (error?.errorCode === 'INVITATION_RATE_LIMIT') {
@@ -281,7 +279,7 @@ const InvitationsPage = () => {
       await sendInvitationByEmailUseCase.execute(id, email, personalMessage);
       customToast.success(t('success.sent'));
       // Abierto, para invitar al siguiente sin volver a abrirlo (#710)
-      loadData({ silencioso: true });
+      recargarEnSilencio();
       return true;
     } catch (error) {
       console.error('Error sending invitation:', error);
@@ -299,7 +297,7 @@ const InvitationsPage = () => {
       customToast.success(t('success.sent'));
       // Abierto, y el invitado ya como tal: el siguiente sin volver a abrirlo (#710)
       setIdsInvitados((antes) => [...antes, userId]);
-      loadData({ silencioso: true });
+      recargarEnSilencio();
       return true;
     } catch (error) {
       console.error('Error sending invitation:', error);
@@ -331,7 +329,7 @@ const InvitationsPage = () => {
     } finally {
       setRetirandoEnCurso(false);
       setRetirando(null);
-      loadData({ silencioso: true });
+      recargarEnSilencio();
     }
   };
 
