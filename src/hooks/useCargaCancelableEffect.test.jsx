@@ -20,6 +20,7 @@ import { useCargaCancelableEffect } from './useCargaCancelableEffect';
  *   H7c  en silencio y a la vez cambian las deps     | es una carga nueva: espera, y su fallo no es silencioso
  *   H6b  en silencio estando inactiva                | al activarse, la carga espera
  *   H8   recargar                                     | es la misma función en cada pintado
+ *   H5b  la vieja falla antes de que React pinte el recargar | no se avisa: ya no es la vigente
  */
 // Una respuesta que llega cuando la prueba quiere
 const aMano = () => {
@@ -308,5 +309,22 @@ describe('useCargaCancelableEffect', () => {
     await act(async () => {});
 
     expect(result.current.recargar).toBe(primera);
+  });
+
+  it('H5b: si la vieja falla después de recargar() pero antes de que React lo pinte, no se avisa', async () => {
+    const vieja = aMano();
+    pedir.mockReturnValueOnce(vieja.promesa);
+    const { result } = usar(props());
+    pedir.mockReturnValue(new Promise(() => {}));
+
+    // Fuera de act: el recargar queda pendiente de pintar, como tras un await
+    result.current.recargar();
+    vieja.rechazar(new Error('vieja'));
+    await Promise.resolve();
+    await Promise.resolve();
+    await act(async () => {});
+
+    expect(alFallar).not.toHaveBeenCalled();
+    expect(alCargar).not.toHaveBeenCalled();
   });
 });

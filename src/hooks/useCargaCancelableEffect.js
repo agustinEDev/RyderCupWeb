@@ -46,6 +46,10 @@ export const useCargaCancelableEffect = (pedir, deps, { activa = true, alCargar,
   // lo ÚNICO nuevo es el `recargar({ silenciosa: true })`. Si a la vez cambió
   // algo más (otro filtro), es una carga nueva y espera como cualquiera
   const depsAnterioresRef = useRef(null);
+  // Sube en cada `recargar()`: la carga en vuelo de antes deja de ser la vigente
+  // ya en ese momento, no cuando React pinte y limpie su efecto. Si no, una que
+  // fallara en ese hueco avisaba como si fuera la actual (CodeRabbit, FE #1111)
+  const generacionRef = useRef(0);
 
   const pedirAhora = useEffectEvent(() => pedir());
   const aplicar = useEffectEvent((datos, carga) => alCargar?.(datos, carga));
@@ -64,15 +68,17 @@ export const useCargaCancelableEffect = (pedir, deps, { activa = true, alCargar,
     // no había lanzado ninguna, y nada más ha cambiado
     const silenciosa = recargaNueva && recarga.silenciosa && mismas;
     const carga = { silenciosa };
+    const generacion = generacionRef.current;
+    const esLaVigente = () => vigente && generacion === generacionRef.current;
     const cargar = async () => {
       if (!silenciosa) setEnCurso(true);
       try {
         const datos = await pedirAhora();
-        if (vigente) aplicar(datos, carga);
+        if (esLaVigente()) aplicar(datos, carga);
       } catch (error) {
-        if (vigente) avisar(error, carga);
+        if (esLaVigente()) avisar(error, carga);
       } finally {
-        if (vigente) setEnCurso(false);
+        if (esLaVigente()) setEnCurso(false);
       }
     };
     cargar();
@@ -86,6 +92,7 @@ export const useCargaCancelableEffect = (pedir, deps, { activa = true, alCargar,
   // llamaba a la carga directamente
   // Estable: se pasa como prop y puede acabar en las dependencias de otro efecto
   const recargar = useCallback(({ silenciosa = false } = {}) => {
+    generacionRef.current += 1;
     if (!silenciosa) setEnCurso(true);
     setRecarga({ silenciosa });
   }, []);
