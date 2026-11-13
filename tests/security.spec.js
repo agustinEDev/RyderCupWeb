@@ -287,16 +287,24 @@ test.describe('Input Validation', () => {
   test('should enforce password complexity', async ({ page }) => {
     await page.goto('/register');
 
-    // El log dice el motivo, nunca la contraseña (CodeQL js/clear-text-logging)
     const weakPasswords = [
-      { password: 'short', motivo: 'too short' },
-      { password: 'password123', motivo: 'no uppercase' },
-      { password: 'PASSWORD123', motivo: 'no lowercase' },
-      { password: 'PasswordABC', motivo: 'no numbers' },
-      { password: '12345678901', motivo: 'only numbers' },
+      'short', // Too short
+      'password123', // No uppercase
+      'PASSWORD123', // No lowercase
+      'PasswordABC', // No numbers
+      '12345678901', // Only numbers
+    ];
+    // El log dice el motivo, nunca la contraseña (CodeQL js/clear-text-logging):
+    // una lista aparte, en el mismo orden
+    const motivos = [
+      'too short',
+      'no uppercase',
+      'no lowercase',
+      'no numbers',
+      'only numbers',
     ];
 
-    for (const { password, motivo } of weakPasswords) {
+    for (const [i, password] of weakPasswords.entries()) {
       await page.getByPlaceholder('Minimum 12 characters').fill(password);
       await page.getByPlaceholder('John').fill('Test');
       await page.getByPlaceholder('Doe').fill('User');
@@ -316,7 +324,7 @@ test.describe('Input Validation', () => {
           pageContent.toLowerCase().includes('require'));
 
       console.log(
-        `  ${motivo}: ${hasPasswordError ? '✅ Rejected' : '⚠️ May be weak'}`,
+        `  ${motivos[i]}: ${hasPasswordError ? '✅ Rejected' : '⚠️ May be weak'}`,
       );
     }
   });
