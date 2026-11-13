@@ -53,6 +53,75 @@ const cspDeVite = [...VITE.matchAll(/'Content-Security-Policy':\s*"([^"]+)"/g)].
 const NGINX = leer('nginx-security-headers.conf');
 const cspDeNginx = NGINX.match(/add_header Content-Security-Policy "([^"$]+)/)[1];
 
+/** Las cabeceras de `securityHeaders` en vite.config.js, con el nombre en minúsculas. */
+const cabecerasDeVite = () => {
+  const bloque = VITE.match(/const securityHeaders = \{\n([\s\S]*?)\n\}/)[1];
+  return new Map(
+    [...bloque.matchAll(/^\s*'([A-Za-z-]+)':\s*(?:'([^']*)'|"([^"]*)")/gm)].map((m) => [m[1].toLowerCase(), m[2] ?? m[3]]),
+  );
+};
+
+/**
+ * Las `add_header` de un fragmento de nginx; `$corp` es el map de nginx.conf (same-origin
+ * salvo /images/). Devuelve las cabeceras y lo que no se deja leer.
+ *
+ * Mira TODA línea con `add_header`, lleve `always` o no (revisión de #1109): la que no se
+ * entiende, la que va sin `always` (nginx no la mandaría en las respuestas de error) y la
+ * repetida van a `raras`, y el test falla, en vez de saltárselas en silencio.
+ */
+const leerNginx = (texto) => {
+  const cabeceras = new Map();
+  const raras = [];
+  for (const linea of texto.split('\n')) {
+    if (!/^\s*add_header\b/.test(linea)) continue;
+    const m = /^\s*add_header ([A-Za-z-]+) (?:"([^"]*)"|\$(\w+))( always)?;\s*(?:#.*)?$/.exec(linea);
+    if (!m) { raras.push(`no se entiende: ${linea.trim()}`); continue; }
+    const nombre = m[1].toLowerCase();
+    if (!m[4]) raras.push(`sin always: ${nombre}`);
+    if (cabeceras.has(nombre)) raras.push(`repetida: ${nombre}`);
+    cabeceras.set(nombre, m[3] === 'corp' ? 'same-origin' : (m[2] ?? `$${m[3]}`).replace('${csp_upgrade}', ''));
+  }
+  return { cabeceras, raras };
+};
+const cabecerasDeNginx = () => leerNginx(NGINX).cabeceras;
+
+// Todas las de seguridad que sirve producción. Si se quita una del JSON, falla aquí
+const CABECERAS = [
+  'x-content-type-options',
+  'x-frame-options',
+  'referrer-policy',
+  'permissions-policy',
+  'strict-transport-security',
+  'cross-origin-opener-policy',
+  'cross-origin-resource-policy',
+  'reporting-endpoints',
+  'content-security-policy',
+];
+// Lo que una copia no lleva, y por qué: HSTS en el Vite de http://localhost fijaría HTTPS
+// para localhost en el navegador; reporting-endpoints solo nombra el Sentry de producción
+const NO_LAS_LLEVA = {
+  'vite.config.js': new Set(['strict-transport-security', 'reporting-endpoints']),
+  'nginx-security-headers.conf': new Set(['reporting-endpoints']),
+};
+// Lo que solo llevan las copias: Trusted Types en aviso (en producción, aplazado a la fase 5)
+const SOLO_EN_LOCAL = new Set(['content-security-policy-report-only']);
+
+/** Lo que falta, sobra o no coincide en una copia frente a producción. */
+const comparaCabeceras = (copia, noLasLleva) => {
+  const diferencias = [];
+  for (const [nombre, valor] of Object.entries(RAIZ_DE_PRO)) {
+    if (nombre.startsWith('_') || noLasLleva.has(nombre)) continue;
+    if (!copia.has(nombre)) { diferencias.push(`falta ${nombre}`); continue; }
+    if (nombre === 'content-security-policy') continue; // directiva a directiva, en sus tests
+    if (copia.get(nombre) !== valor) diferencias.push(`${nombre}: «${copia.get(nombre)}», se espera «${valor}»`);
+  }
+  for (const nombre of copia.keys()) {
+    if (!(nombre in RAIZ_DE_PRO) && !SOLO_EN_LOCAL.has(nombre)) diferencias.push(`sobra ${nombre}`);
+    if (noLasLleva.has(nombre)) diferencias.push(`sobra ${nombre} (no la lleva esta copia)`);
+  }
+  return diferencias;
+};
+
 describe('cabeceras de seguridad: las copias como producción (FE-04/FE-05)', () => {
   it('vite.config.js tiene las dos CSP (preview y desarrollo)', () => {
     expect(cspDeVite).toHaveLength(2);
@@ -76,13 +145,51 @@ describe('cabeceras de seguridad: las copias como producción (FE-04/FE-05)', ()
     }
   });
 
+  it('producción trae todas las cabeceras de seguridad, ni una más (#1100)', () => {
+    expect(Object.keys(RAIZ_DE_PRO).filter((n) => !n.startsWith('_')).sort()).toEqual([...CABECERAS].sort());
+  });
+
+  it('la CSP de producción cierra el marco, los objetos y la base, y no abre los scripts', () => {
+    const pro = directivas(RAIZ_DE_PRO['content-security-policy']);
+    expect([...pro.get('frame-ancestors')]).toEqual(["'none'"]);
+    expect([...pro.get('object-src')]).toEqual(["'none'"]);
+    expect([...pro.get('base-uri')]).toEqual(["'self'"]);
+    expect([...pro.get('script-src')]).toEqual(["'self'"]);
+  });
+
   it.each([
-    ['Cross-Origin-Opener-Policy', 'same-origin'],
-    ['Cross-Origin-Resource-Policy', 'same-origin'],
-  ])('%s: %s en Vite, en el nginx del Kind y en producción (FE-05)', (cabecera, valor) => {
-    expect(RAIZ_DE_PRO[cabecera.toLowerCase()]).toBe(valor);
-    expect(VITE).toContain(`'${cabecera}': '${valor}'`);
-    expect(NGINX).toMatch(new RegExp(`add_header ${cabecera} (?:"${valor}"|\\$corp) always;`));
+    ['vite.config.js', cabecerasDeVite],
+    ['nginx-security-headers.conf', cabecerasDeNginx],
+  ])('%s lleva cada cabecera de producción con el mismo valor, y nada más (#1100)', (fichero, lee) => {
+    expect(comparaCabeceras(lee(), NO_LAS_LLEVA[fichero])).toEqual([]);
+  });
+
+  it('el Vite de desarrollo hereda las de preview (solo cambia la CSP)', () => {
+    expect(VITE).toMatch(/const devHeaders = \{\s*\.\.\.securityHeaders,\s*'Content-Security-Policy': "[^"]+"\s*\}/);
+  });
+
+  it('el analizador de las copias ve todas sus cabeceras', () => {
+    expect([...cabecerasDeVite().keys()]).toHaveLength(8);
+    expect([...cabecerasDeNginx().keys()]).toHaveLength(9);
+    expect(cabecerasDeNginx().get('content-security-policy')).toBe(cspDeNginx);
+    expect(leerNginx(NGINX).raras).toEqual([]);
+  });
+
+  // Revisión de #1109: sin `always` no se veía, y una segunda CSP de aviso pasaba sin más
+  it.each([
+    ['una cabecera sin always', 'add_header X-Nueva "x";'],
+    ['una segunda CSP de aviso, sin always', `add_header Content-Security-Policy-Report-Only "default-src *";`],
+    ['una cabecera repetida', `add_header X-Frame-Options "SAMEORIGIN" always;`],
+    ['un valor sin comillas', 'add_header X-Rara valor always;'],
+    ['un valor partido en dos líneas', 'add_header X-Larga "a;\n  b" always;'],
+  ])('el analizador del nginx no se calla ante %s', (_caso, linea) => {
+    expect(leerNginx(`${NGINX}\n${linea}\n`).raras).not.toEqual([]);
+  });
+
+  it('el analizador del nginx lee también la cabecera sin always, y la sangrada', () => {
+    const { cabeceras } = leerNginx('add_header X-Nueva "x";\n    add_header X-Sangrada "y" always;\n');
+    expect(cabeceras.get('x-nueva')).toBe('x');
+    expect(cabeceras.get('x-sangrada')).toBe('y');
   });
 
   it('en el Kind, /images/ va con CORP cross-origin, como en producción (el logo de los correos)', () => {
