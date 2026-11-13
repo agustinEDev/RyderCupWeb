@@ -81,7 +81,7 @@ export const vaciaLaColaEntera = async ({ saltaPartida = null, userId = null } =
   const mias = userId ? cola.deQuien(userId) : [];
   if (mias.length === 0) return nada(0, null);
 
-  const miTurno = `${AMBITO}-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  const miTurno = `${AMBITO}-${globalThis.crypto.randomUUID()}`;
   if (!cerrojo.acquire(null, miTurno, userId, AMBITO)) {
     // Se dice POR QUÉ no se hizo nada: quien llama tiene un reintento
     // programado, y confundir esto con «ha ido bien» se lo desarmaba. Es real:

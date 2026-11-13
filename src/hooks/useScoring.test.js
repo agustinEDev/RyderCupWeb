@@ -4147,7 +4147,7 @@ describe('useScoring · el id de la sesión y el contador de pendientes (T6)', (
     const { result, rerender, unmount } = renderHook(() => useScoring('m-1', 'u1'));
     await waitFor(() => expect(result.current.isLoading).toBe(false));
     const id = sessionLock.acquire.mock.calls[0][1];
-    expect(id).toMatch(/^\d+-[a-z0-9]+$/);
+    expect(id).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/);
 
     // El sondeo repinta; y otro pintado del padre
     await act(async () => { await intervalos[10000](); });

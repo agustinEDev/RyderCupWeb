@@ -19,7 +19,9 @@ import { conHoyosDe, conLaColaEncima, estaSuperada } from '../utils/vistaDeLaAno
 const POLL_INTERVAL = 10000; // 10 seconds
 
 // Un id distinto en cada pantalla de anotación, también entre pestañas
-const creaIdDeSesion = () => `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+// Aleatorio de verdad (crypto): el candado solo lo compara consigo mismo, pero
+// un id adivinable no tiene sitio en nada que decide quién anota
+const creaIdDeSesion = () => globalThis.crypto.randomUUID();
 
 /**
  * Central hook for live scoring.
