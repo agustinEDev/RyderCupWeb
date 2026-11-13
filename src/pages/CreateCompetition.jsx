@@ -1,8 +1,9 @@
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { useState, useEffect, useEffectEvent, useRef, useMemo } from 'react';
 import { tieneEquipos } from '../domain/value_objects/TournamentType';
 import { useNavigate, useParams } from 'react-router';
 import { Trophy, Settings, Plus, X, ChevronDown, Flag, Trash2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { useCargaCancelableEffect } from '../hooks/useCargaCancelableEffect';
 import { nombresPorDefectoDeLosEquipos } from './nombresPorDefectoDeLosEquipos';
 import { agendaPropuesta } from '../utils/agenda';
 import { aCamposDeLaCompeticion } from '../utils/camposDeLaCompeticion';
@@ -83,6 +84,106 @@ const ERRORES_DE_LAS_OPCIONES = new Set([
   'teamNamesTooLong',
   'handicapLimitRange',
 ]);
+
+// Un país de la API, con lo que usan los selectores; los que no traen código o
+// nombre se descartan
+const aPaises = (data) =>
+  Array.isArray(data)
+    ? data
+        .filter(c => c?.code && (c?.name_en || c?.name_es))
+        .map(c => ({
+          id: c.code,
+          name: c.name_en || c.name_es,
+          code: c.code,
+          name_en: c.name_en,
+          name_es: c.name_es
+        }))
+    : [];
+
+// Los vecinos de un país; sin poder leerlos, ninguno
+const leeVecinos = async (countryId) => {
+  try {
+    return aPaises(await getAdjacentCountriesUseCase.execute(countryId));
+  } catch (error) {
+    console.error('Error fetching adjacent countries:', error);
+    return [];
+  }
+};
+
+// Los que ofrece el tercer país: los del primer adyacente más los vecinos del
+// adyacente, sin repetir y sin el principal ni el propio adyacente
+const vecinosDelSegundoNivel = (vecinosDelPrimero, vecinosDelAdyacente, mainCountryCode, adjacentCountry1Code) => {
+  const existingIds = new Set(vecinosDelPrimero.map(c => c.code));
+  const combined = [...vecinosDelPrimero];
+  for (const country of vecinosDelAdyacente) {
+    if (!existingIds.has(country.code) && country.code !== mainCountryCode && country.code !== adjacentCountry1Code) {
+      combined.push(country);
+    }
+  }
+  return combined;
+};
+
+// Todo lo que hace falta para editar una competición, leído de una vez: la
+// competición, los vecinos de sus países y sus campos. Una cerrada vuelve sin
+// lo demás: no se edita
+const leeLaCompeticionParaEditar = async (competitionId) => {
+  // Fetch competition details
+  const competition = await getCompetitionDetailUseCase.execute(competitionId);
+
+  // Por URL se llegaba al formulario de una cerrada, y solo al guardar
+  // fallaba, con el estado sin traducir (FE #710). La misma regla que
+  // ofrece «Editar» en la ficha
+  if (!new CompetitionStatus(competition.status).allowsModifications()) {
+    return { competition, editable: false };
+  }
+
+  // Extract main country code from location
+  // The mapper returns location as a string or we need to extract from countries array
+  let mainCountryCode = null;
+  if (competition.countries && competition.countries.length > 0) {
+    // First country in array is the main country
+    mainCountryCode = competition.countries[0].code;
+  }
+
+  // Prepare adjacent countries (all countries except the first one)
+  const adjacentCountriesArray = competition.countries?.slice(1) || [];
+  const adjacentCountry1 = adjacentCountriesArray[0]?.code || '';
+  const adjacentCountry2 = adjacentCountriesArray[1]?.code || '';
+
+  // Fetch adjacent countries lists if needed. Sin país principal la lista
+  // del primer nivel no se toca, y sin adyacente tampoco la del segundo
+  const vecinos1 = mainCountryCode ? await leeVecinos(mainCountryCode) : null;
+  const vecinos2 = adjacentCountry1
+    ? vecinosDelSegundoNivel(vecinos1 ?? [], await leeVecinos(adjacentCountry1), mainCountryCode, adjacentCountry1)
+    : null;
+
+  // Fetch golf courses for this competition
+  let golfCoursesData = [];
+  try {
+    const coursesResult = await getCompetitionGolfCoursesUseCase.execute(competitionId);
+
+    // Map the result to the format expected by formData
+    if (Array.isArray(coursesResult)) {
+      golfCoursesData = aCamposDeLaCompeticion(coursesResult).map((campo) => ({
+        countryCode: campo.countryCode || competition.main_country,
+        course: { id: campo.id, name: campo.name, approvalStatus: campo.approvalStatus },
+      }));
+    }
+  } catch (error) {
+    console.error('Error loading golf courses:', error);
+  }
+
+  return {
+    competition,
+    editable: true,
+    mainCountryCode,
+    adjacentCountry1,
+    adjacentCountry2,
+    vecinos1,
+    vecinos2,
+    golfCoursesData,
+  };
+};
 
 const CreateCompetition = () => {
   const navigate = useNavigate();
@@ -267,124 +368,106 @@ const CreateCompetition = () => {
     });
   }, [t, i18n.language, isEditMode]);
 
-  useEffect(() => {
-    // Fetch all countries
-    // eslint-disable-next-line react-hooks/immutability -- pre-existing pattern surfaced by eslint-plugin-react-hooks 7.1.1 bump; needs dedicated review (tracked in follow-up)
-    fetchCountries();
-  }, []);
+  // Todos los países, una vez
+  useCargaCancelableEffect(() => fetchCountriesUseCase.execute(), [], {
+    alCargar: (data) => setAllCountries(aPaises(data)),
+    alFallar: (error) => {
+      console.error('Error fetching countries:', error);
+      setAllCountries([]);
+    },
+  });
+
+  // Cuál es la última petición de vecinos de cada nivel: la que llegue después
+  // de otra más nueva (se cambió de país antes de que respondiera) no pisa la
+  // lista. También cuentan como más nuevas vaciar la lista y la carga de la
+  // edición, que trae las suyas
+  const vecinosPedidos = useRef({ 1: 0, 2: 0 });
+  const olvidaLosVecinosPedidos = (...niveles) => {
+    for (const nivel of niveles) vecinosPedidos.current[nivel] += 1;
+  };
 
   /**
    * Load competition data when in edit mode
+   *
+   * Lo que llega se aplica con los `t`, idioma y países del momento en que
+   * llega (eventos del efecto): cambiar de idioma no la vuelve a pedir.
+   *
+   * No usa `useCargaCancelableEffect`: su espera sale ya puesta en el mismo
+   * pintado en que llegan los países, y aquí sale con el efecto, un pintado
+   * después, como siempre
    */
+  const aplicaLaEdicion = useEffectEvent((datos) => {
+    const { competition } = datos;
+    if (!datos.editable) {
+      customToast.error(t('edit.notEditable'));
+      navigate(`/competitions/${competitionId}`, { replace: true });
+      return;
+    }
+
+    // Find main country object from allCountries
+    const mainCountry = allCountries.find(c => c.code === datos.mainCountryCode);
+
+    // Populate form with competition data
+    // NOTE: The mapper returns camelCase, not snake_case
+    const formDataToSet = {
+      competitionName: competition.name || '',
+      teamOneName: competition.team1Name || nombresPorDefectoDeLosEquipos(t).uno,
+      teamTwoName: competition.team2Name || nombresPorDefectoDeLosEquipos(t).dos,
+      startDate: competition.startDate || '',
+      endDate: competition.endDate || '',
+      country: mainCountry || null,
+      adjacentCountry1: datos.adjacentCountry1,
+      adjacentCountry2: datos.adjacentCountry2,
+      showAdjacentCountry1: !!datos.adjacentCountry1,
+      showAdjacentCountry2: !!datos.adjacentCountry2,
+      golfCourses: datos.golfCoursesData,
+      playMode: competition.playMode || 'HANDICAP',
+      visibility: competition.visibility || 'PRIVATE',
+      numberOfPlayers: competition.maxPlayers || CUPO_POR_DEFECTO,
+      tournamentType: competition.tournamentType || 'RYDER_CUP',
+      // Solo una Ryder tiene modo de montaje: a un Stableford no se le pone
+      setupMode:
+        competition.setupMode || (competition.hasTeams ? 'RYDER_CUP' : null),
+      maxPlayingHandicap: competition.maxPlayingHandicap ?? undefined,
+      // Con el decimal del idioma: «12,0» en español, «12.0» en inglés
+      strokePlay: formularioDeAjustes(competition.strokePlay ?? null, separadorDecimal(i18n.language))
+    };
+
+    // Los vecinos de esta competición: lo que se pidiera antes ya no vale
+    if (datos.vecinos1) {
+      olvidaLosVecinosPedidos(1);
+      setAdjacentCountries1(datos.vecinos1);
+    }
+    if (datos.vecinos2) {
+      olvidaLosVecinosPedidos(2);
+      setAdjacentCountries2(datos.vecinos2);
+    }
+    // Lo que había guardado: vaciar el campo no puede recortarlo
+    cupoCargado.current = formDataToSet.numberOfPlayers;
+    ajustesCargados.current = competition.strokePlay ?? null;
+    diasCargados.current = diasDelTorneo(competition.startDate, competition.endDate);
+    setInscritosDe({ de: competitionId, cuantos: competition.enrolledCount || 0 });
+    setFormData(formDataToSet);
+  });
+  const avisaDelFalloAlEditar = useEffectEvent((error) => {
+    console.error('Error loading competition:', error);
+    customToast.error(t('edit.errorLoading'));
+    navigate('/competitions');
+  });
   useEffect(() => {
     // Pasando de editar una a editar otra el formulario no se desmonta: lo que
     // llegue tarde de la anterior no redirige, ni avisa, ni pisa el formulario
-    // (CodeRabbit en la #722)
+    // ni los vecinos (CodeRabbit en la #722)
     let vigente = true;
     const loadCompetitionData = async () => {
       if (!competitionId || !allCountries.length) return;
 
       setLoadingCompetition(true);
-
       try {
-        // Fetch competition details
-        const competition = await getCompetitionDetailUseCase.execute(competitionId);
-        if (!vigente) return;
-
-        // Por URL se llegaba al formulario de una cerrada, y solo al guardar
-        // fallaba, con el estado sin traducir (FE #710). La misma regla que
-        // ofrece «Editar» en la ficha
-        if (!new CompetitionStatus(competition.status).allowsModifications()) {
-          customToast.error(t('edit.notEditable'));
-          navigate(`/competitions/${competitionId}`, { replace: true });
-          return;
-        }
-
-        // Extract main country code from location
-        // The mapper returns location as a string or we need to extract from countries array
-        let mainCountryCode = null;
-        if (competition.countries && competition.countries.length > 0) {
-          // First country in array is the main country
-          mainCountryCode = competition.countries[0].code;
-        }
-
-        // Find main country object from allCountries
-        const mainCountry = allCountries.find(c => c.code === mainCountryCode);
-
-        // Prepare adjacent countries (all countries except the first one)
-        const adjacentCountriesArray = competition.countries?.slice(1) || [];
-        const adjacentCountry1 = adjacentCountriesArray[0]?.code || '';
-        const adjacentCountry2 = adjacentCountriesArray[1]?.code || '';
-
-        // Fetch adjacent countries lists if needed
-        let level1Countries = [];
-        if (mainCountryCode) {
-          // eslint-disable-next-line react-hooks/immutability -- pre-existing pattern surfaced by eslint-plugin-react-hooks 7.1.1 bump; needs dedicated review (tracked in follow-up)
-          level1Countries = await fetchAdjacentCountries(mainCountryCode, 1);
-        }
-        if (adjacentCountry1) {
-          await fetchAdjacentCountries(adjacentCountry1, 2, {
-            currentAdjacentCountries1: level1Countries,
-            mainCountryCode,
-            adjacentCountry1Code: adjacentCountry1
-          });
-        }
-
-        // Fetch golf courses for this competition
-        let golfCoursesData = [];
-        try {
-          const coursesResult = await getCompetitionGolfCoursesUseCase.execute(competitionId);
-
-          // Map the result to the format expected by formData
-          if (Array.isArray(coursesResult)) {
-            golfCoursesData = aCamposDeLaCompeticion(coursesResult).map((campo) => ({
-              countryCode: campo.countryCode || competition.main_country,
-              course: { id: campo.id, name: campo.name, approvalStatus: campo.approvalStatus },
-            }));
-          }
-        } catch (error) {
-          console.error('Error loading golf courses:', error);
-        }
-
-        // Populate form with competition data
-        // NOTE: The mapper returns camelCase, not snake_case
-        const formDataToSet = {
-          competitionName: competition.name || '',
-          teamOneName: competition.team1Name || nombresPorDefectoDeLosEquipos(t).uno,
-          teamTwoName: competition.team2Name || nombresPorDefectoDeLosEquipos(t).dos,
-          startDate: competition.startDate || '',
-          endDate: competition.endDate || '',
-          country: mainCountry || null,
-          adjacentCountry1: adjacentCountry1,
-          adjacentCountry2: adjacentCountry2,
-          showAdjacentCountry1: !!adjacentCountry1,
-          showAdjacentCountry2: !!adjacentCountry2,
-          golfCourses: golfCoursesData,
-          playMode: competition.playMode || 'HANDICAP',
-          visibility: competition.visibility || 'PRIVATE',
-          numberOfPlayers: competition.maxPlayers || CUPO_POR_DEFECTO,
-          tournamentType: competition.tournamentType || 'RYDER_CUP',
-          // Solo una Ryder tiene modo de montaje: a un Stableford no se le pone
-          setupMode:
-            competition.setupMode || (competition.hasTeams ? 'RYDER_CUP' : null),
-          maxPlayingHandicap: competition.maxPlayingHandicap ?? undefined,
-          // Con el decimal del idioma: «12,0» en español, «12.0» en inglés
-          strokePlay: formularioDeAjustes(competition.strokePlay ?? null, separadorDecimal(i18n.language))
-        };
-
-        if (!vigente) return;
-        // Lo que había guardado: vaciar el campo no puede recortarlo
-        cupoCargado.current = formDataToSet.numberOfPlayers;
-        ajustesCargados.current = competition.strokePlay ?? null;
-        diasCargados.current = diasDelTorneo(competition.startDate, competition.endDate);
-        setInscritosDe({ de: competitionId, cuantos: competition.enrolledCount || 0 });
-        setFormData(formDataToSet);
-
+        const datos = await leeLaCompeticionParaEditar(competitionId);
+        if (vigente) aplicaLaEdicion(datos);
       } catch (error) {
-        if (!vigente) return;
-        console.error('Error loading competition:', error);
-        customToast.error(t('edit.errorLoading'));
-        navigate('/competitions');
+        if (vigente) avisaDelFalloAlEditar(error);
       } finally {
         if (vigente) setLoadingCompetition(false);
       }
@@ -394,7 +477,6 @@ const CreateCompetition = () => {
     return () => {
       vigente = false;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [competitionId, allCountries]);
 
   useEffect(() => {
@@ -409,60 +491,22 @@ const CreateCompetition = () => {
     // y tiene que volver a llevar el foco (revisión local de la FE #731)
   }, [message]);
 
-  const fetchCountries = async () => {
-    try {
-      const data = await fetchCountriesUseCase.execute();
-      const validCountries = Array.isArray(data)
-        ? data
-            .filter(c => c?.code && (c?.name_en || c?.name_es))
-            .map(c => ({
-              id: c.code,
-              name: c.name_en || c.name_es,
-              code: c.code,
-              name_en: c.name_en,
-              name_es: c.name_es
-            }))
-        : [];
-      setAllCountries(validCountries);
-    } catch (error) {
-      console.error('Error fetching countries:', error);
-      setAllCountries([]);
-    }
-  };
-
+  // Los vecinos para los selectores de país adyacente: el nivel 1 son los del
+  // principal y el 2, los del tercer país. Solo se aplica la última petición
+  // de cada nivel
   const fetchAdjacentCountries = async (countryId, level, context = {}) => {
-    try {
-      const data = await getAdjacentCountriesUseCase.execute(countryId);
-      const mappedData = Array.isArray(data)
-        ? data
-            .filter(c => c?.code && (c?.name_en || c?.name_es))
-            .map(c => ({
-              id: c.code,
-              name: c.name_en || c.name_es,
-              code: c.code,
-              name_en: c.name_en,
-              name_es: c.name_es
-            }))
-        : [];
+    olvidaLosVecinosPedidos(level);
+    const peticion = vecinosPedidos.current[level];
+    const mappedData = await leeVecinos(countryId);
+    if (peticion !== vecinosPedidos.current[level]) return;
 
-      if (level === 1) {
-        setAdjacentCountries1(mappedData);
-      } else if (level === 2) {
-        const { currentAdjacentCountries1 = [], mainCountryCode = null, adjacentCountry1Code = null } = context;
-        const existingIds = new Set(currentAdjacentCountries1.map(c => c.code));
-        const combined = [...currentAdjacentCountries1];
-        for (const country of mappedData) {
-          if (!existingIds.has(country.code) && country.code !== mainCountryCode && country.code !== adjacentCountry1Code) {
-            combined.push(country);
-          }
-        }
-        setAdjacentCountries2(combined);
-      }
-
-      return mappedData;
-    } catch (error) {
-      console.error('Error fetching adjacent countries:', error);
-      return [];
+    if (level === 1) {
+      setAdjacentCountries1(mappedData);
+    } else if (level === 2) {
+      const { currentAdjacentCountries1 = [], mainCountryCode = null, adjacentCountry1Code = null } = context;
+      setAdjacentCountries2(
+        vecinosDelSegundoNivel(currentAdjacentCountries1, mappedData, mainCountryCode, adjacentCountry1Code)
+      );
     }
   };
 
@@ -500,6 +544,9 @@ const CreateCompetition = () => {
         golfCourses: newGolfCourses
       };
     });
+    // Los vecinos del tercer país eran del principal anterior: si llegan tarde,
+    // tampoco valen
+    olvidaLosVecinosPedidos(2);
     setAdjacentCountries1([]);
     setAdjacentCountries2([]);
     fetchAdjacentCountries(country.code, 1);
@@ -519,6 +566,10 @@ const CreateCompetition = () => {
       adjacentCountry2: '',
       showAdjacentCountry2: false
     }));
+    // Los vecinos del tercer país eran del adyacente anterior: ni se enseñan
+    // mientras llegan los del nuevo ni, si llegan tarde, valen
+    olvidaLosVecinosPedidos(2);
+    setAdjacentCountries2([]);
     if (countryId) {
       fetchAdjacentCountries(countryId, 2, {
         currentAdjacentCountries1: adjacentCountries1,
@@ -553,6 +604,7 @@ const CreateCompetition = () => {
         golfCourses: newGolfCourses
       };
     });
+    olvidaLosVecinosPedidos(2);
     setAdjacentCountries2([]);
   };
 

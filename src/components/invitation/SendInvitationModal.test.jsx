@@ -863,6 +863,117 @@ describe('SendInvitationModal', () => {
     expect(screen.getByTestId('selected-user-chip')).toHaveTextContent('John Doe');
   });
 
+  describe('T3-7 · elegir o quitar con una búsqueda en vuelo', () => {
+    const JOHN = { id: 'u1', firstName: 'John', lastName: 'Doe', email: 'john@test.com', countryCode: 'ES' };
+    const JOHNNY = { id: 'u9', firstName: 'Johnny', lastName: 'Late', email: 'late@test.com', countryCode: 'ES' };
+    let responderTarde;
+
+    // Con «Jo» ya encontrado, se sigue tecleando: la de «Joh» sale y no vuelve
+    const conBusquedaEnVuelo = async () => {
+      onSearchUsers.mockImplementation((q) =>
+        q === 'Jo' ? Promise.resolve([JOHN]) : new Promise((r) => { responderTarde = r; })
+      );
+      renderModal();
+      fireEvent.change(screen.getByTestId('user-search-input'), { target: { value: 'Jo' } });
+      await act(async () => {
+        vi.advanceTimersByTime(350);
+      });
+      fireEvent.change(screen.getByTestId('user-search-input'), { target: { value: 'Joh' } });
+      await act(async () => {
+        vi.advanceTimersByTime(350);
+      });
+      expect(onSearchUsers).toHaveBeenCalledWith('Joh');
+      expect(document.querySelector('.animate-spin')).not.toBeNull();
+    };
+
+    const llegaLaTardia = async () => {
+      await act(async () => {
+        responderTarde([JOHNNY]);
+        await Promise.resolve();
+        await Promise.resolve();
+      });
+    };
+
+    it.each([
+      ['con un clic', () => fireEvent.click(screen.getByTestId('search-result-u1'))],
+      [
+        'con Enter',
+        () => {
+          fireEvent.keyDown(document, { key: 'ArrowDown' });
+          fireEvent.keyDown(document, { key: 'Enter' });
+        },
+      ],
+    ])('elegir %s y quitarlo: sin lista ni espera, y la respuesta tardía no abre nada', async (_, elegir) => {
+      await conBusquedaEnVuelo();
+
+      elegir();
+      expect(screen.getByTestId('selected-user-chip')).toHaveTextContent('John Doe');
+      fireEvent.click(screen.getByTestId('clear-selected-user'));
+
+      expect(screen.getByTestId('user-search-input')).toHaveValue('');
+      expect(screen.queryByTestId('search-results-dropdown')).not.toBeInTheDocument();
+      expect(document.querySelector('.animate-spin')).toBeNull();
+      await llegaLaTardia();
+      expect(screen.queryByTestId('search-results-dropdown')).not.toBeInTheDocument();
+      expect(screen.queryByTestId('search-result-u9')).not.toBeInTheDocument();
+      expect(document.querySelector('.animate-spin')).toBeNull();
+    });
+
+    it('elegido, la respuesta tardía no cambia al elegido', async () => {
+      await conBusquedaEnVuelo();
+      fireEvent.click(screen.getByTestId('search-result-u1'));
+
+      await llegaLaTardia();
+
+      expect(screen.getByTestId('selected-user-chip')).toHaveTextContent('John Doe');
+    });
+
+    it.each([
+      ['con un clic', () => fireEvent.click(screen.getByTestId('search-result-u1'))],
+      [
+        'con Enter',
+        () => {
+          fireEvent.keyDown(document, { key: 'ArrowDown' });
+          fireEvent.keyDown(document, { key: 'Enter' });
+        },
+      ],
+    ])('elegido %s, la tardía no deja una lista oculta que el teclado elija', async (_, elegir) => {
+      await conBusquedaEnVuelo();
+      elegir();
+
+      await llegaLaTardia();
+      fireEvent.keyDown(document, { key: 'ArrowDown' });
+      fireEvent.keyDown(document, { key: 'Enter' });
+
+      expect(screen.getByTestId('selected-user-chip')).toHaveTextContent('John Doe');
+    });
+  });
+
+  it('T3-8: si onSearchUsers cambia antes de que salte el temporizador, busca con el último', async () => {
+    const viejo = vi.fn().mockResolvedValue([]);
+    const nuevo = vi.fn().mockResolvedValue([]);
+    const { rerender } = renderModal({ onSearchUsers: viejo });
+    fireEvent.change(screen.getByTestId('user-search-input'), { target: { value: 'Jo' } });
+
+    rerender(
+      <SendInvitationModal
+        isOpen={true}
+        onClose={onClose}
+        onSend={onSend}
+        onSendByUserId={onSendByUserId}
+        onSearchUsers={nuevo}
+        isProcessing={false}
+        t={mockT}
+      />
+    );
+    await act(async () => {
+      vi.advanceTimersByTime(350);
+    });
+
+    expect(viejo).not.toHaveBeenCalled();
+    expect(nuevo).toHaveBeenCalledWith('Jo');
+  });
+
   describe('pestaña de amigos (FE #409)', () => {
     // Invitar obligaba a recordar y teclear algo de alguien que ya está en tu
     // lista de amigos: o el nombre, para esperar a una búsqueda, o el correo.

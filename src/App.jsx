@@ -7,6 +7,7 @@ import {
   RouterProvider,
   ScrollRestoration,
   useLocation,
+  useParams,
   useRouteError,
 } from 'react-router';
 import { Toaster } from 'react-hot-toast';
@@ -59,6 +60,13 @@ const DeviceManagement = lazyWithRetry(() => import('./pages/DeviceManagement'))
 const Competitions = lazyWithRetry(() => import('./pages/Competitions'));
 const CreateCompetition = lazyWithRetry(() => import('./pages/CreateCompetition'));
 const CompetitionDetail = lazyWithRetry(() => import('./pages/CompetitionDetail'));
+
+// Editar, con una instancia por competición: de editar una a editar otra el
+// formulario no arrastra nada de la anterior, como las listas de vecinos (T3-18)
+function EditarCompeticion() {
+  const { id } = useParams();
+  return <CreateCompetition key={id} />;
+}
 const BrowseCompetitions = lazyWithRetry(() => import('./pages/BrowseCompetitions'));
 
 // Admin pages (v2.4.0 - Admin Panel)
@@ -395,8 +403,11 @@ export const rutasDeLaApp = createRoutesFromElements(
         handle={{ restauraElScroll: true }}
         element={<ProtectedRoute><Competitions /></ProtectedRoute>}
       />
-      <Route path="/competitions/create" element={<ProtectedRoute><CreateCompetition /></ProtectedRoute>} />
-      <Route path="/competitions/:id/edit" element={<ProtectedRoute><CreateCompetition /></ProtectedRoute>} />
+      {/* Crear y editar son la misma pantalla: cada ruta con su instancia, y editar
+          una por competición, para que al pasar de una a otra no se arrastren la
+          espera ni los datos de la otra (T3-18) */}
+      <Route path="/competitions/create" element={<ProtectedRoute><CreateCompetition key="crear" /></ProtectedRoute>} />
+      <Route path="/competitions/:id/edit" element={<ProtectedRoute><EditarCompeticion /></ProtectedRoute>} />
       <Route path="/competitions/:id" element={<ProtectedRoute><CompetitionDetail /></ProtectedRoute>} />
       {/* La sala de draft la ve el grupo entero, no solo los capitanes (FE #653) */}
       <Route path="/competitions/:id/draft" element={<ProtectedRoute><DraftRoomPage /></ProtectedRoute>} />
