@@ -1,4 +1,3 @@
-/* eslint-disable no-unused-vars */
 /**
  * Copia del mapa de hoyos en el móvil, para tenerlo sin cobertura (BE #532).
  */

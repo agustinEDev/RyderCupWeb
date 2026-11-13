@@ -7,8 +7,6 @@
  * - ApiInvitationRepository (REST API)
  * - MockInvitationRepository (for tests)
  */
-/* eslint-disable no-unused-vars */
-
 class IInvitationRepository {
   /**
    * Send invitation to a user by their user ID

@@ -8,8 +8,6 @@
  * Implementación: ApiTeeGroupScoringRepository.
  */
 
-/* eslint-disable no-unused-vars */
-
 class ITeeGroupScoringRepository {
   async getScoringView(groupId) {
     throw new Error('ITeeGroupScoringRepository.getScoringView must be implemented');

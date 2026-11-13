@@ -18,8 +18,6 @@
  * - ApiEnrollmentRepository (REST API con fetch)
  * - MockEnrollmentRepository (para tests)
  */
-/* eslint-disable no-unused-vars */
-
 class IEnrollmentRepository {
   /**
    * Guardar un nuevo enrollment o actualizar uno existente

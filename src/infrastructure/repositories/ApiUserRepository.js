@@ -1,4 +1,3 @@
-/* eslint-disable no-unused-vars */
 import User from '../../domain/entities/User.js';
 import IUserRepository from '../../domain/repositories/IUserRepository.js';
 import apiRequest from '../http/api.js';
@@ -13,9 +12,9 @@ class ApiUserRepository extends IUserRepository {
   /**
    * @override
    */
-  async getById(userId) {
+  async getById() {
     // Usar current-user en lugar de /users/{userId}
-    // El userId se ignora porque obtenemos el usuario del token JWT
+    // El userId que pasa quien llama se ignora porque obtenemos el usuario del token JWT
     const data = await apiRequest('/api/v1/auth/current-user');
 
     const userEntity = new User(data);

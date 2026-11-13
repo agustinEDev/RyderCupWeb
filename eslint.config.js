@@ -182,4 +182,16 @@ export default [
       ],
     },
   },
+
+  // Las interfaces del dominio (src/domain/repositories) declaran el contrato:
+  // sus métodos nombran los parámetros para documentarlo y solo lanzan «no
+  // implementado», así que los parámetros sin usar son su forma de ser. Solo
+  // los parámetros: una variable o una importación que sobre sigue siendo un
+  // error, que es lo que el `eslint-disable` de cada fichero dejaba pasar
+  {
+    files: ['src/domain/repositories/**/*.js'],
+    rules: {
+      'no-unused-vars': ['error', { args: 'none' }],
+    },
+  },
 ];

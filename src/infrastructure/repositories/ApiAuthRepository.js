@@ -1,8 +1,5 @@
-/* eslint-disable no-unused-vars */
 import IAuthRepository from '../../domain/repositories/IAuthRepository.js';
 import User from '../../domain/entities/User.js';
-import Email from '../../domain/value_objects/Email'; // Importar Email VO para tipado
-import Password from '../../domain/value_objects/Password'; // 1. Importar Password VO
 import apiRequest from '../http/api.js';
 
 class ApiAuthRepository extends IAuthRepository {

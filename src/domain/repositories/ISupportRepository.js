@@ -1,5 +1,3 @@
-/* eslint-disable no-unused-vars */
-
 /**
  * Support Repository Interface
  * Handles contact form submissions

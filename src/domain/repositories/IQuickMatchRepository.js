@@ -6,8 +6,6 @@
  * Implementations:
  * - ApiQuickMatchRepository (REST API)
  */
-/* eslint-disable no-unused-vars */
-
 class IQuickMatchRepository {
   /**
    * Create the quick match with the wizard's whole draft and start it, in one
