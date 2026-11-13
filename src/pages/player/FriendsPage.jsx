@@ -45,6 +45,9 @@ const FriendsPage = () => {
     });
   };
 
+  // Del id y no del objeto: la misma persona con un `user` nuevo (la sesión
+  // se vuelve a leer) no recarga la página ni suelta las tarjetas ocupadas
+  const userId = user?.id;
   // Las tres listas, al entrar y tras cada acción. De dos acciones seguidas,
   // la recarga de la primera que llegue tarde ya no pisa la de la segunda.
   // Tras una acción se recarga en silencio: sin la espera de toda la página,
@@ -52,13 +55,13 @@ const FriendsPage = () => {
   const { cargando, recargar } = useCargaCancelableEffect(
     () =>
       Promise.all([
-        listFriendsUseCase.execute(user.id),
-        listPendingFriendRequestsUseCase.execute(user.id, 'received'),
-        listPendingFriendRequestsUseCase.execute(user.id, 'sent'),
+        listFriendsUseCase.execute(userId),
+        listPendingFriendRequestsUseCase.execute(userId, 'received'),
+        listPendingFriendRequestsUseCase.execute(userId, 'sent'),
       ]),
-    [user],
+    [userId],
     {
-      activa: Boolean(user),
+      activa: Boolean(userId),
       alCargar: ([friendsResult, receivedResult, sentResult]) => {
         setFriends(friendsResult.friendships);
         setReceived(receivedResult.friendships);

@@ -9,6 +9,7 @@ import TarjetaDeUnAmigoPage from './TarjetaDeUnAmigoPage';
  *   #      caso                                                 | qué pasa
  *   -------|------------------------------------------------------|-----------------------------------------
  *   T2-12  cambia la partida                                    | la espera (nunca la de fallo) hasta que llega la nueva
+ *   T2-12b la vista llega vacía                                 | la pantalla sin tarjeta (Reintentar/Volver), no la espera
  *   T2-13  la tarjeta pintada cambia (onCambio)                 | sin espera, la tarjeta al día
  */
 vi.mock('react-i18next', () => ({
@@ -104,6 +105,8 @@ const vigilaLosFallos = () => {
 describe('TarjetaDeUnAmigoPage: la carga descarta lo que llega tarde (T2)', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    // Sin respuestas de un caso que se queden para el siguiente
+    verPartida.mockReset();
   });
 
   it('T2-12: al cambiar de partida, la espera y nunca la pantalla de fallo hasta que llega la nueva', async () => {
@@ -154,6 +157,19 @@ describe('TarjetaDeUnAmigoPage: la carga descarta lo que llega tarde (T2)', () =
     expect(conFallo()).toBeNull();
     await act(async () => nueva.resolver(vista(9)));
     expect(screen.getByTestId('tarjetas-de-la-partida')).toHaveAttribute('data-numero', '9');
+  });
+
+  it('T2-12b: si la vista llega vacía, sale la pantalla sin tarjeta con Reintentar y Volver, no la espera', async () => {
+    verPartida.mockResolvedValueOnce(null).mockResolvedValueOnce(vista(3));
+    pinta();
+    await act(async () => {});
+
+    expect(enEspera()).toBeNull();
+    expect(screen.getByTestId('tarjeta-error')).toBeInTheDocument();
+    expect(screen.getByTestId('tarjeta-volver')).toBeInTheDocument();
+    fireEvent.click(screen.getByTestId('tarjeta-reintentar'));
+    await act(async () => {});
+    expect(screen.getByTestId('tarjetas-de-la-partida')).toHaveAttribute('data-numero', '3');
   });
 
   it('T2-13: si la tarjeta pintada cambia, se relee sin espera y queda al día', async () => {

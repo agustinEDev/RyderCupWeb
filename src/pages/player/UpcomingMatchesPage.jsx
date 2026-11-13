@@ -65,8 +65,10 @@ const UpcomingMatchesPage = () => {
 
   // Si cambia el usuario con una en vuelo, la vieja no se pinta. Sin usuario
   // no se pide nada ni se espera
-  const { cargando: isLoading } = useCargaCancelableEffect(() => leeLoProximo(user.id), [user], {
-    activa: Boolean(user),
+  // Del id y no del objeto: la misma persona con un `user` nuevo no relee
+  const userId = user?.id;
+  const { cargando: isLoading } = useCargaCancelableEffect(() => leeLoProximo(userId), [userId], {
+    activa: Boolean(userId),
     alCargar: ({ leido, partidas }) => {
       const juntos = [...leido.partidos, ...partidas.partidas].sort(porCuandoSeJuega);
       setMatches(juntos);

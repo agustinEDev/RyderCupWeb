@@ -56,6 +56,9 @@ const TarjetaDeUnAmigoPage = ({ tipo }) => {
 
   const [vista, setVista] = useState(null);
   const [fallo, setFallo] = useState(null);
+  // De qué partida llegó ya una respuesta: una vista vacía que llega es «no
+  // hay tarjeta», no algo que esperar
+  const [cargadaDe, setCargadaDe] = useState(null);
 
   // Otra partida sin desmontarse: de cero, sin enseñar la anterior (revisor)
   const [deLaVista, setDeLaVista] = useState(idDeLaVista);
@@ -81,6 +84,7 @@ const TarjetaDeUnAmigoPage = ({ tipo }) => {
     {
       alCargar: ({ id, leida, error }) => {
         if (id !== idDeLaVista) return;
+        setCargadaDe(id);
         if (error) setFallo(motivoDelFallo(error));
         else setVista(leida);
       },
@@ -102,9 +106,10 @@ const TarjetaDeUnAmigoPage = ({ tipo }) => {
     );
   }
 
-  // Sin nada que enseñar ni fallo, se espera: también en el pintado de otra
-  // partida, antes de que su carga salga con el efecto
-  if (!vista && (cargando || fallo === null)) {
+  // Sin nada que enseñar ni fallo, se espera mientras carga y también en el
+  // pintado de otra partida, antes de que su carga salga con el efecto. Si ya
+  // llegó y vino vacía, la pantalla sin tarjeta, con Reintentar y Volver
+  if (!vista && fallo === null && (cargando || cargadaDe !== idDeLaVista)) {
     return (
       <div className={`${PANTALLA_MENOS_BARRA_INFERIOR} bg-gray-50`}>
         <HeaderAuth user={user} />

@@ -11,6 +11,7 @@ import MyInvitationsPage from './MyInvitationsPage';
  *   T2-7  cambia el idioma                                          | no se vuelve a pedir
  *   T2-8  filtro A en vuelo, se elige B y A llega la última         | la lista de B, sin el aviso de A
  *   T2-9  se responde una invitación                                | la lista se relee con la espera
+ *   T2-17c llega un `user` nuevo con el mismo id con la relectura en vuelo | no se vuelve a pedir
  */
 const mockIdioma = vi.hoisted(() => ({ t: (key) => key }));
 vi.mock('react-i18next', () => ({
@@ -66,6 +67,7 @@ describe('MyInvitationsPage: la lista descarta lo que llega tarde (T2)', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockIdioma.t = (key) => key;
+    sesion.user = { id: 'me', email_verified: true };
     listar.mockResolvedValue(invitaciones('i1'));
     responder.mockResolvedValue({});
   });
@@ -92,7 +94,7 @@ describe('MyInvitationsPage: la lista descarta lo que llega tarde (T2)', () => {
 
     fireEvent.change(screen.getByTestId('status-filter'), { target: { value: 'PENDING' } });
     await act(async () => {});
-    sesion.user = { ...sesion.user };
+    sesion.user = { ...sesion.user, id: 'otra' };
     rerender(arbol());
     await act(async () => {});
     expect(listar).toHaveBeenCalledTimes(3);
@@ -113,7 +115,7 @@ describe('MyInvitationsPage: la lista descarta lo que llega tarde (T2)', () => {
 
     fireEvent.change(screen.getByTestId('status-filter'), { target: { value: 'PENDING' } });
     await act(async () => {});
-    sesion.user = { ...sesion.user };
+    sesion.user = { ...sesion.user, id: 'otra' };
     rerender(arbol());
     await screen.findByTestId('inv-nueva');
     await act(async () => deA.rechazar(new Error('tarde')));
@@ -121,6 +123,24 @@ describe('MyInvitationsPage: la lista descarta lo que llega tarde (T2)', () => {
     expect(toastError).not.toHaveBeenCalled();
     expect(screen.queryByTestId('invitaciones-sin-cargar')).not.toBeInTheDocument();
     expect(screen.getByTestId('inv-nueva')).toBeInTheDocument();
+  });
+
+  it('T2-17c: un `user` nuevo con el mismo id, con la relectura en vuelo, no vuelve a pedir', async () => {
+    const { rerender } = render(arbol());
+    await screen.findByTestId('inv-i1');
+    const relectura = aMano();
+    listar.mockReturnValueOnce(relectura.promesa);
+    fireEvent.click(screen.getByText('rechazar-i1'));
+    await act(async () => {});
+    expect(listar).toHaveBeenCalledTimes(2);
+
+    sesion.user = { ...sesion.user };
+    rerender(arbol());
+    await act(async () => {});
+
+    expect(listar).toHaveBeenCalledTimes(2);
+    await act(async () => relectura.resolver(invitaciones('i2')));
+    expect(screen.getByTestId('inv-i2')).toBeInTheDocument();
   });
 
   it('T2-9: tras responder una invitación, la lista se relee con la espera', async () => {

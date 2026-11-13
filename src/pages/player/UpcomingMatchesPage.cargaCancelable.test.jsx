@@ -10,6 +10,7 @@ import UpcomingMatchesPage from './UpcomingMatchesPage';
  *   -------|------------------------------------------|---------------------------------------------
  *   T2-14  sin usuario                              | ni espera ni petición
  *   T2-15  cambia el usuario con la lectura en vuelo | la lista vieja no se pinta
+ *   T2-17d llega un `user` nuevo con el mismo id     | no se vuelve a pedir
  *   T2-16  la lectura falla entera                  | «no se pudo preguntar», no una espera sin fin
  */
 const sesion = vi.hoisted(() => ({ user: { id: 'u-1' }, loading: false }));
@@ -96,6 +97,18 @@ describe('UpcomingMatchesPage: la lectura descarta lo que llega tarde (T2)', () 
     await act(async () => nueva.resolver(partidos('del-segundo')));
     expect(screen.getByTestId('proximo-del-segundo')).toBeInTheDocument();
     expect(screen.queryByTestId('proximo-del-primero')).not.toBeInTheDocument();
+  });
+
+  it('T2-17d: un `user` nuevo con el mismo id no vuelve a pedir', async () => {
+    const { rerender } = render(arbol());
+    await screen.findByTestId('proximo-m-1');
+
+    sesion.user = { id: 'u-1' };
+    rerender(arbol());
+    await act(async () => {});
+
+    expect(leePartidos).toHaveBeenCalledTimes(1);
+    expect(listarCompeticiones).toHaveBeenCalledTimes(1);
   });
 
   it('T2-16: si la lectura falla entera, «no se pudo preguntar» y no una espera sin fin', async () => {

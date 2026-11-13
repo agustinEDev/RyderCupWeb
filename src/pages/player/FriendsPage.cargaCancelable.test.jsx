@@ -13,6 +13,7 @@ import FriendsPage from './FriendsPage';
  *   T2-5b  se acepta A y luego B antes de que llegue la recarga de A    | A sigue ocupada hasta que llegan listas con su acción
  *   T2-6   dos acciones seguidas y la recarga de la primera llega última | se quedan las listas de la segunda
  *   T2-7   cambia el idioma                                            | no se vuelve a pedir
+ *   T2-17b llega un `user` nuevo con el mismo id con una recarga en vuelo | no se vuelve a pedir ni se suelta la tarjeta
  *   U1     cambia el usuario con la carga en vuelo                     | se piden las suyas; las viejas no se pintan
  */
 const mockIdioma = vi.hoisted(() => ({ t: (key) => key }));
@@ -75,8 +76,9 @@ const arbol = () => (
 const espera = () => screen.queryByText('loading');
 
 const abrirRecibidas = async () => {
-  render(arbol());
+  const pintada = render(arbol());
   fireEvent.click(await screen.findByTestId('tab-received'));
+  return pintada;
 };
 
 describe('FriendsPage: las listas descartan lo que llega tarde (T2)', () => {
@@ -182,6 +184,24 @@ describe('FriendsPage: las listas descartan lo que llega tarde (T2)', () => {
     fireEvent.click(screen.getByTestId('tab-friends'));
     expect(screen.getByTestId('card-a')).toBeInTheDocument();
     expect(screen.getByTestId('card-b')).toBeInTheDocument();
+  });
+
+  it('T2-17b: un `user` nuevo con el mismo id no vuelve a pedir ni suelta la tarjeta ocupada', async () => {
+    const { rerender } = await abrirRecibidas();
+    const recarga = aMano();
+    listFriends.mockReturnValueOnce(recarga.promesa);
+    fireEvent.click(screen.getByText('aceptar-a'));
+    await act(async () => {});
+    expect(listFriends).toHaveBeenCalledTimes(2);
+
+    sesion.user = { id: 'me' };
+    rerender(arbol());
+    await act(async () => {});
+    await act(async () => {});
+
+    expect(listFriends).toHaveBeenCalledTimes(2);
+    expect(screen.getByTestId('card-a')).toHaveAttribute('data-ocupada', 'true');
+    expect(espera()).not.toBeInTheDocument();
   });
 
   it('U1: si cambia el usuario con la carga en vuelo, se piden las suyas y las viejas no se pintan', async () => {

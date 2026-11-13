@@ -29,13 +29,17 @@ const MyInvitationsPage = () => {
 
   const pendingCount = invitations.filter((inv) => inv.isPending).length;
 
+  // Del id y no del objeto: la misma persona con un `user` nuevo (la sesión
+  // se vuelve a leer) no relee la lista ni suelta la invitación que se está
+  // respondiendo, que podría mandarse otra vez
+  const userId = user?.id;
   // La lista, con el filtro elegido. Si se cambia de filtro con una en vuelo,
   // la del filtro anterior ni se pinta ni avisa de su fallo
   const { cargando, recargar } = useCargaCancelableEffect(
     () => listMyInvitationsUseCase.execute(statusFilter ? { status: statusFilter } : {}),
-    [user, statusFilter],
+    [userId, statusFilter],
     {
-      activa: Boolean(user),
+      activa: Boolean(userId),
       alCargar: (result) => {
         setInvitations(result.invitations);
         setCargaFallida(null);
