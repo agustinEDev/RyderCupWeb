@@ -1,11 +1,13 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import { ArrowLeft, Bot, Timer, Trophy } from 'lucide-react';
 import HeaderAuth from '../components/layout/HeaderAuth';
 import FullScreenLoader from '../components/ui/FullScreenLoader';
+import BlockLoader from '../components/ui/BlockLoader';
 import { useAuth } from '../hooks/useAuth';
 import useDraftRoom from '../hooks/useDraftRoom';
+import { useCargaCancelableEffect } from '../hooks/useCargaCancelableEffect';
 import { getCompetitionDetailUseCase } from '../composition';
 import { formatoDeIndice } from '../utils/formatoDeHandicap';
 import { PANTALLA_MENOS_BARRA_INFERIOR } from '../utils/barraInferior';
@@ -36,31 +38,30 @@ const DraftRoomPage = () => {
   const { id } = useParams();
   const { t } = useTranslation('competitions');
   const { user } = useAuth();
-  const [competition, setCompetition] = useState(null);
+  // La ficha con la competición de la que es: al pasar a otra sin salir, la
+  // de la anterior (sus equipos y quién organiza, que enseña «Lanzar sorteo»)
+  // no se queda mientras llega la nueva
+  const [ficha, setFicha] = useState({ id: null, datos: null });
+  const competition = ficha.id === id ? ficha.datos : null;
   const [eligiendo, setEligiendo] = useState(null);
 
-  const { sala, cargando, error, segundosRestantes, esMiTurno, abrirSala, elegir } = useDraftRoom(
+  const { sala, cargando, cargandoSala, error, segundosRestantes, esMiTurno, abrirSala, elegir } = useDraftRoom(
     id,
     user?.id
   );
   // Propias y no heredadas: un mensaje de error como «toString» no es un aviso
   const avisoDeTurno = Object.hasOwn(TURNO_PERDIDO, error ?? '') ? TURNO_PERDIDO[error] : null;
 
-  const cargarCompeticion = useCallback(async () => {
-    try {
-      const ficha = await getCompetitionDetailUseCase.execute(id);
-      setCompetition(ficha);
-    } catch {
-      // La sala se pinta igual sin la ficha: solo se pierden los nombres de
-      // los equipos, que caen a «Equipo A» y «Equipo B»
-      setCompetition(null);
-    }
-  }, [id]);
-
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- la carga inicial de una pantalla, el mismo patrón que el resto del repo tras el bump del plugin (ver SchedulePage)
-    cargarCompeticion();
-  }, [cargarCompeticion]);
+  // La ficha, solo para los nombres de los equipos y saber quién organiza. No
+  // se espera por ella. Si cambia la competición sin salir, la de la anterior
+  // que llega tarde ya no se pinta: traía sus equipos y su «Lanzar sorteo».
+  // Sin `t` en las dependencias: cambiar de idioma no la vuelve a pedir
+  useCargaCancelableEffect(() => getCompetitionDetailUseCase.execute(id), [id], {
+    alCargar: (datos) => setFicha({ id, datos }),
+    // La sala se pinta igual sin la ficha: solo se pierden los nombres de
+    // los equipos, que caen a «Equipo A» y «Equipo B»
+    alFallar: () => setFicha({ id, datos: null }),
+  });
 
   // Lo que enseñe la ficha, que es lo que la gente ve en el resto de la app.
   // La letra solo cuando NO hay ficha: si la hay, sus nombres nunca faltan
@@ -101,6 +102,19 @@ const DraftRoomPage = () => {
   };
 
   if (cargando) return <FullScreenLoader />;
+
+  // Recién cambiada la competición sin salir, mientras llega su sala: la
+  // espera del bloque, y nada de la anterior que elegir ni lanzar
+  if (cargandoSala) {
+    return (
+      <div className={`${PANTALLA_MENOS_BARRA_INFERIOR} bg-gray-50`}>
+        <HeaderAuth user={user} title={t('draft.title')} backTo={`/competitions/${id}`} />
+        <div className="mx-auto max-w-3xl px-4 py-6">
+          <BlockLoader />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={`${PANTALLA_MENOS_BARRA_INFERIOR} bg-gray-50`}>
