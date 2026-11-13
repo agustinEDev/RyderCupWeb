@@ -24,6 +24,37 @@ const fuentes = import.meta.glob(
     '/src/pages/player/ScoringPage.jsx',
     '/src/pages/player/GroupScoringPage.jsx',
     '/src/pages/quick_match/QuickMatchScoringPage.jsx',
+    // Las piezas en que se partieron las tres pantallas de anotar (fase 5, 13 nov)
+    '/src/components/quick_match/AvisosDePartidaRapida.jsx',
+    '/src/components/quick_match/DialogosDePartidaRapida.jsx',
+    '/src/components/quick_match/PestanaDeAnotarRapida.jsx',
+    '/src/components/quick_match/PestanaDeClasificacionRapida.jsx',
+    '/src/components/scoring/AvisosDelPartido.jsx',
+    '/src/components/scoring/CabeceraDelPartido.jsx',
+    '/src/components/scoring/EntregaDelPartido.jsx',
+    '/src/components/scoring/ModalesDelPartido.jsx',
+    '/src/components/scoring/PestanaDeAnotar.jsx',
+    '/src/components/scoring/PestanasDelPartido.jsx',
+    '/src/components/scoring/SinNadaQuePintar.jsx',
+    '/src/hooks/useAccionesDelPartido.js',
+    '/src/hooks/useCandadoDeLaSesion.js',
+    '/src/hooks/useCargaDePartidaRapida.js',
+    '/src/hooks/useCierreDePartidaRapida.js',
+    '/src/hooks/useClasificacionAlAbrir.js',
+    '/src/hooks/useColaDelPartido.js',
+    '/src/hooks/useDespertarALaHora.js',
+    '/src/hooks/useFocoDeLosDialogos.js',
+    '/src/hooks/useNoGuardados.js',
+    '/src/hooks/useVaciadoDePartidaRapida.js',
+    '/src/hooks/useVistaDelPartido.js',
+    '/src/utils/casillasDelHoyo.js',
+    '/src/utils/colaDePartidaRapida.js',
+    '/src/utils/estadoDelPartido.js',
+    '/src/utils/fallosDeLaAnotacion.js',
+    '/src/utils/lecturaDelHoyo.js',
+    '/src/utils/lecturaDelPartido.js',
+    '/src/utils/textosDePartidaRapida.js',
+    '/src/utils/vistaDeLaAnotacion.js',
     '/src/utils/vueltaTrasEntrar.js',
     '/src/infrastructure/http/tokenRefreshInterceptor.js',
   ],
@@ -35,7 +66,7 @@ const QUITADOS =
 
 describe('Lo que funciona sin conexión no lee lo que la copia ya no guarda (fase 3)', () => {
   it('están todos los ficheros', () => {
-    expect(Object.keys(fuentes)).toHaveLength(14);
+    expect(Object.keys(fuentes)).toHaveLength(44);
   });
 
   it.each(Object.entries(fuentes))('%s', (_fichero, codigo) => {

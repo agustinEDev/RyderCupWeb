@@ -287,7 +287,7 @@ const ScoringPage = () => {
   //
   // Con la foto del partido (FE #614) esto solo se ve si nunca se abrió aquí
   if (!scoringView) {
-    // El motivo sale de `motivoDe`, la misma regla que usa el recuadro de abajo
+    // El motivo sale de `motivoDe` (utils/lecturaDelPartido), la misma regla que usa el recuadro de abajo
     return (
       <div className="min-h-screen bg-gray-50">
         <HeaderAuth user={user} />

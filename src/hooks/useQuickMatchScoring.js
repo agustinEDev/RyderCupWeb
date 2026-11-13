@@ -18,9 +18,9 @@ import { guardaLaCorreccion } from '../utils/guardaLaCorreccion';
  * Central hook for quick match scoring: fetches the match + course holes,
  * polls for updates, and exposes score submission (own + delegated).
  *
- * Quick match has no dual-validation, session lock or offline queue — a
- * single scorer records each hole directly, so the hook is intentionally
- * simpler than the tournament useScoring().
+ * Quick match has no dual-validation or session lock — a single scorer
+ * records each hole directly — but it does keep unsent scores in a local
+ * queue that is emptied when the connection comes back.
  *
  * Por piezas: la carga y el sondeo (`useCargaDePartidaRapida`), el vaciado de
  * lo guardado (`useVaciadoDePartidaRapida`) y el cierre
@@ -71,8 +71,8 @@ export const useQuickMatchScoring = (quickMatchId, currentUserId) => {
   // Un contador y no la hora: la de la cola y la de aquí no son el mismo reloj
   const anotacionRef = useRef(0);
   const noSeGuardoRef = useRef(null);
-  // El vaciado se declara más abajo y el sondeo está más arriba: la ref evita
-  // reordenarlo todo y el ciclo de dependencias entre los dos
+  // La carga y el sondeo (useCargaDePartidaRapida) se llaman antes que el vaciado
+  // (useVaciadoDePartidaRapida) y lo necesitan: la ref evita el ciclo entre los dos
   const vaciarRef = useRef(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
