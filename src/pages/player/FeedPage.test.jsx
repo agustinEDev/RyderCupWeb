@@ -31,8 +31,11 @@ vi.mock('../../hooks/useAuth', () => {
   return { useAuth: () => ({ user, loading: false }) };
 });
 
+// Anota qué usuario recibe la cabecera: sin él pinta «?» y esconde Admin (#1129)
 vi.mock('../../components/layout/HeaderAuth', () => ({
-  default: () => <header data-testid="header" />,
+  default: ({ user }) => (
+    <header data-testid="header" data-usuario={user?.id ?? 'ninguno'} />
+  ),
 }));
 
 vi.mock('../../components/ui/Avatar', () => ({
@@ -155,6 +158,29 @@ describe('FeedPage', () => {
 
   afterEach(() => {
     vi.useRealTimers();
+  });
+
+  // #1129: sin el usuario, la cabecera pintaba «?» y escondía lo de Admin
+  describe('the header gets the signed-in user', () => {
+    it('C1a: while the feed loads', () => {
+      getFeed.mockReturnValue(new Promise(() => {}));
+      renderFeed();
+
+      expect(screen.getByTestId('header')).toHaveAttribute(
+        'data-usuario',
+        'me',
+      );
+    });
+
+    it('C1b: once the feed is painted', async () => {
+      renderFeed();
+
+      await screen.findByTestId('activity-event-e1');
+      expect(screen.getByTestId('header')).toHaveAttribute(
+        'data-usuario',
+        'me',
+      );
+    });
   });
 
   it('shows the achievements with their author', async () => {

@@ -334,7 +334,7 @@ const FeedPage = () => {
     // compartido.
     return (
       <div className={`${PANTALLA_MENOS_BARRA_INFERIOR} bg-gray-50`}>
-        <HeaderAuth />
+        <HeaderAuth user={user} />
         <BlockLoader texto={t('feed:loading')} />
       </div>
     );
@@ -348,7 +348,7 @@ const FeedPage = () => {
 
   return (
     <div className={`${PANTALLA_MENOS_BARRA_INFERIOR} bg-gray-50`}>
-      <HeaderAuth />
+      <HeaderAuth user={user} />
 
       <main className="max-w-2xl mx-auto px-4 py-6 pb-24">
         <div className="flex items-center justify-between gap-3 mb-4">
