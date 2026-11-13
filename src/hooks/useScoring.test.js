@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { useLayoutEffect } from 'react';
 
 // Este entorno no trae `localStorage`, y el aviso de «no se pudo guardar» vive
 // ahí. Se define arriba del todo: dentro de un `beforeEach` los módulos ya
@@ -13,7 +14,6 @@ const almacen = (() => {
   };
 })();
 Object.defineProperty(globalThis, 'localStorage', { value: almacen, writable: true });
-import { useLayoutEffect } from 'react';
 import { renderHook, act, waitFor } from '@testing-library/react';
 import { useScoring } from './useScoring';
 

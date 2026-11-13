@@ -642,4 +642,53 @@ describe('Clasificacion · lo de otra pregunta no se pinta (T6)', () => {
     await act(async () => segundo.suelta(clasificacion([fila('eva', { category: 1 })])));
     expect(screen.getByTestId('fila-eva')).toBeInTheDocument();
   });
+
+  it('T6-19: al pasar el padre de F1 (pintada) a F2, mientras llega F2 sale «Cargando» y ninguna fila de F1', async () => {
+    const f2 = enVuelo();
+    const pedirF1 = vi.fn().mockResolvedValue(clasificacion([fila('uno')], { me: fila('yo', { position: 31 }) }));
+    const pedirF2 = vi.fn().mockReturnValue(f2.promesa);
+    const { rerender } = render(<Clasificacion pedir={pedirF1} userId="yo" activa />);
+    await screen.findByTestId('fila-uno');
+
+    rerender(<Clasificacion pedir={pedirF2} userId="yo" activa />);
+    await waitFor(() => expect(pedirF2).toHaveBeenCalled());
+
+    expect(screen.getByText('partida.loadingStandings')).toBeInTheDocument();
+    expect(screen.queryByTestId('fila-uno')).toBeNull();
+    expect(screen.queryByTestId('fila-fuera-del-corte')).toBeNull();
+
+    await act(async () => f2.suelta(clasificacion([fila('dos')])));
+    expect(screen.getByTestId('fila-dos')).toBeInTheDocument();
+    expect(screen.queryByText('partida.loadingStandings')).toBeNull();
+  });
+
+  it('T6-20: y si F2 falla, el aviso de error sin ninguna fila de F1', async () => {
+    const f2 = enVuelo();
+    const pedirF1 = vi.fn().mockResolvedValue(clasificacion([fila('uno')]));
+    const pedirF2 = vi.fn().mockReturnValue(f2.promesa);
+    const { rerender } = render(<Clasificacion pedir={pedirF1} userId="x" activa />);
+    await screen.findByTestId('fila-uno');
+
+    rerender(<Clasificacion pedir={pedirF2} userId="x" activa />);
+    await waitFor(() => expect(pedirF2).toHaveBeenCalled());
+    await act(async () => f2.falla(new Error('x')));
+
+    expect(screen.getByRole('alert')).toHaveTextContent('partida.standingsNotLoaded');
+    expect(screen.queryByTestId('fila-uno')).toBeNull();
+  });
+
+  it('T6-21: misma categoría, un sondeo en vuelo y deja de releerse (`cada` → null): esa respuesta se aplica igual', async () => {
+    const sondeo = enVuelo();
+    const ultima = enVuelo();
+    const pedir = vi.fn().mockResolvedValueOnce(todas()).mockReturnValueOnce(sondeo.promesa).mockReturnValueOnce(ultima.promesa);
+    const { rerender } = render(<Clasificacion pedir={pedir} userId="x" activa cada={60000} />);
+    await screen.findByTestId('fila-ana');
+
+    vuelveALaPestana();
+    rerender(<Clasificacion pedir={pedir} userId="x" activa cada={null} />);
+    await waitFor(() => expect(pedir).toHaveBeenCalledTimes(3));
+    await act(async () => sondeo.suelta(clasificacion([fila('dani', { category: 1 })])));
+
+    expect(screen.getByTestId('fila-dani')).toBeInTheDocument();
+  });
 });

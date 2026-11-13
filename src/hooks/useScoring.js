@@ -189,12 +189,12 @@ export const useScoring = (matchId, currentUserId, isAdmin = false, origen = ORI
   // Los golpes pendientes de este partido y esta cuenta, contados al pintar
   // cuando cambia de quién es la pantalla: el aviso de «N golpes» sale ya en
   // el primer pintado, también al reabrir sin cobertura. Después lo mantienen
-  // a mano el envío, el vaciado y las acciones. La clave es una cadena y no la
-  // función: `setState(fn)` la ejecutaría como actualizador
-  const deQuien = `${matchId}|${currentUserId}`;
+  // a mano el envío, el vaciado y las acciones. Se guarda el partido y la
+  // cuenta, comparados cada uno por su lado (no la función: `setState(fn)` la
+  // ejecutaría como actualizador)
   const [contadaPara, setContadaPara] = useState(null);
-  if (contadaPara !== deQuien) {
-    setContadaPara(deQuien);
+  if (contadaPara === null || contadaPara.matchId !== matchId || contadaPara.currentUserId !== currentUserId) {
+    setContadaPara({ matchId, currentUserId });
     setPendingQueueSize(pendientesPropias());
   }
 
