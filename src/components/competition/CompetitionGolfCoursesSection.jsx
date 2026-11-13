@@ -345,20 +345,6 @@ const CompetitionGolfCoursesSection = ({ competition, canManage, onCamposCambiad
     }
   );
 
-  // Tras añadir o quitar, la ficha se avisa cuando ya hay una lista que incluye
-  // el cambio. Si otra acción deja la relectura propia descartada, esa lista es
-  // la de la relectura más reciente: se espera a esa
-  const ultimaRelecturaRef = useRef(null);
-  const recargarTrasElCambio = async () => {
-    let promesa = recargar();
-    ultimaRelecturaRef.current = promesa;
-    let resultado = await promesa;
-    while (resultado.estado === 'descartada' && ultimaRelecturaRef.current !== promesa) {
-      promesa = ultimaRelecturaRef.current;
-      resultado = await promesa;
-    }
-  };
-
   const handleAddCourse = async (course) => {
     // El buscador ya no lo ofrece, pero la guarda se queda: así el aviso lo da la
     // aplicación con sus palabras, en vez de enseñar el error crudo de la API.
@@ -381,7 +367,9 @@ const CompetitionGolfCoursesSection = ({ competition, canManage, onCamposCambiad
       await addGolfCourseToCompetitionUseCase.execute(competition.id, course.id);
       customToast.success(t('detail.golfCourses.courseAdded'));
       setShowAddForm(false);
-      await recargarTrasElCambio();
+      // La ficha se avisa cuando ya hay una lista que incluye el cambio: si otra
+      // acción sustituye esta relectura, la promesa espera a la más reciente
+      await recargar();
       onCamposCambiados?.();
     } catch (error) {
       console.error('Error adding golf course:', error);
@@ -403,7 +391,7 @@ const CompetitionGolfCoursesSection = ({ competition, canManage, onCamposCambiad
     try {
       await removeGolfCourseFromCompetitionUseCase.execute(competition.id, courseId);
       customToast.success(t('detail.golfCourses.courseRemoved'));
-      await recargarTrasElCambio();
+      await recargar();
       onCamposCambiados?.();
     } catch (error) {
       console.error('Error removing golf course:', error);
