@@ -77,6 +77,12 @@ export const useCargaDePartidaRapida = ({
   // de quién es cada respuesta: al ir de una partida a otra, una petición de la
   // anterior que siga en vuelo se aplicaba sobre la nueva
   const idVigenteRef = useRef(quickMatchId);
+  // La última partida que trajo el servidor y se aplicó: es la que se guarda
+  // para abrir sin señal. El campo llega más tarde que la partida, y guardar
+  // la de ANTES de esperarlo atrasaba la copia si entretanto se había aplicado
+  // otra más nueva; y tras un 404 o un 403 aceptados no hay nada que guardar
+  // (CodeRabbit, FE #1108)
+  const partidaAGuardarRef = useRef(null);
   const pollIntervalRef = useRef(null);
 
   const fetchQuickMatch = useCallback(async () => {
@@ -97,6 +103,7 @@ export const useCargaDePartidaRapida = ({
       if (esVieja()) return;
       ultimaAplicadaRef.current = salio;
       seAplico = true;
+      partidaAGuardarRef.current = data;
       setQuickMatch(data);
       hayPartidaRef.current = true;
       setLoadError(null);
@@ -125,11 +132,15 @@ export const useCargaDePartidaRapida = ({
           // La partida Y su campo: sin hoyos no hay par ni índice, y la
           // pantalla no se puede dibujar aunque se sepa quién juega
           campoRef.current = course;
-          recuerda(quickMatchId, { partida: data, campo: course });
+          if (partidaAGuardarRef.current) {
+            recuerda(quickMatchId, { partida: partidaAGuardarRef.current, campo: course });
+          }
         } catch {
           if (quickMatchId !== idVigenteRef.current) return;
           holesLoadedRef.current = false;
-          recuerda(quickMatchId, { partida: data, campo: campoRef.current });
+          if (partidaAGuardarRef.current) {
+            recuerda(quickMatchId, { partida: partidaAGuardarRef.current, campo: campoRef.current });
+          }
         }
       } else {
         // Desde lo que ya se tiene, y NO releyendo lo que se va a sobrescribir:
@@ -152,6 +163,10 @@ export const useCargaDePartidaRapida = ({
       // partida ya no está —o que no es nuestra— pintarla desde el móvil sería
       // enseñar algo que no existe, y dejar anotar encima
       if ((estado === 404 || estado === 403) && esLaUltimaPalabra) {
+        // Y cuenta como lo último aplicado: un sondeo más viejo que llegue
+        // después no puede devolver la partida que el servidor ya negó
+        ultimaAplicadaRef.current = salio;
+        partidaAGuardarRef.current = null;
         olvida(quickMatchId);
       }
 
