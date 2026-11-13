@@ -28,7 +28,10 @@ const MAX_HANDICAP = 54;
  *
  * Returns `null` when the form is valid.
  */
-export const validateCompetitionForm = (formData, { exigirCampos = true, inscritos = 0 } = {}) => {
+export const validateCompetitionForm = (
+  formData,
+  { exigirCampos = true, inscritos = 0 } = {},
+) => {
   // La regla del nombre vive en el dominio, medida como la API (RyderCupAm#540):
   // aquí solo se traduce a la clave de su aviso
   const problema = CompetitionName.problemWith(formData.competitionName);
@@ -40,9 +43,11 @@ export const validateCompetitionForm = (formData, { exigirCampos = true, inscrit
   // mismo: la guarda de vacío usaba `?.trim()` y la de longitud `.trim()`, y esa
   // asimetría convertía un valor no textual en un TypeError (`/code-review`)
   // Solo una Ryder Cup tiene equipos (FE #791): sin ellos no hay qué validar
-  const equipos = (tieneEquipos(formData.tournamentType) ? [formData.teamOneName, formData.teamTwoName] : []).map(
-    (nombre) => (typeof nombre === 'string' ? nombre.trim() : '')
-  );
+  const equipos = (
+    tieneEquipos(formData.tournamentType)
+      ? [formData.teamOneName, formData.teamTwoName]
+      : []
+  ).map((nombre) => (typeof nombre === 'string' ? nombre.trim() : ''));
   if (equipos.some((nombre) => !nombre)) {
     return { key: 'teamNamesRequired' };
   }
@@ -60,7 +65,8 @@ export const validateCompetitionForm = (formData, { exigirCampos = true, inscrit
   // El tope de hándicap vive dentro del plegable, y al plegarse el input se
   // desmonta: con él se va el `min`/`max` del navegador, que era lo único que
   // paraba un 99 camino de un 422 (`/code-review`)
-  const topeEscrito = formData.maxPlayingHandicap !== '' && formData.maxPlayingHandicap != null;
+  const topeEscrito =
+    formData.maxPlayingHandicap !== '' && formData.maxPlayingHandicap != null;
   if (topeEscrito) {
     const tope = numeroEntero(formData.maxPlayingHandicap);
     if (tope === null || tope < MIN_HANDICAP || tope > MAX_HANDICAP) {
@@ -83,7 +89,9 @@ export const validateCompetitionForm = (formData, { exigirCampos = true, inscrit
     const error = errorDeAjustes(formData.strokePlay, dias);
     if (error) {
       // Con `count`: «1 día» o «3 días» (i18next pone el plural)
-      return error === 'matchdaysMoreThanDays' ? { key: error, count: dias } : { key: error };
+      return error === 'matchdaysMoreThanDays'
+        ? { key: error, count: dias }
+        : { key: error };
     }
   }
 
@@ -92,15 +100,19 @@ export const validateCompetitionForm = (formData, { exigirCampos = true, inscrit
   }
 
   const selectedCountryCodes = [formData.country?.code];
-  if (formData.adjacentCountry1) selectedCountryCodes.push(formData.adjacentCountry1);
-  if (formData.adjacentCountry2) selectedCountryCodes.push(formData.adjacentCountry2);
+  if (formData.adjacentCountry1)
+    selectedCountryCodes.push(formData.adjacentCountry1);
+  if (formData.adjacentCountry2)
+    selectedCountryCodes.push(formData.adjacentCountry2);
 
   // Al editar los campos no se piden: se gestionan desde la ficha, en
   // cualquier tipo de torneo. El formulario no los enseña, y exigirlos dejaba
   // sin poder guardar nada a una competición que se quedaba sin campo
   // (Agustín, 3 oct 2026)
   const missingCourseCountryCodes = exigirCampos
-    ? selectedCountryCodes.filter((code) => !formData.golfCourses.some((gc) => gc.countryCode === code))
+    ? selectedCountryCodes.filter(
+        (code) => !formData.golfCourses.some((gc) => gc.countryCode === code),
+      )
     : [];
   if (missingCourseCountryCodes.length > 0) {
     return { key: 'golfCoursesRequired', missingCourseCountryCodes };
@@ -110,7 +122,8 @@ export const validateCompetitionForm = (formData, { exigirCampos = true, inscrit
   // obligatorio y nacía vacío, así que obligaba a decidir un tope de inscritos
   // antes de poder crear nada — y quien monta una Ryder con sus amigos no tiene
   // opinión sobre eso (FE #637)
-  const sinNumero = formData.numberOfPlayers === '' || formData.numberOfPlayers == null;
+  const sinNumero =
+    formData.numberOfPlayers === '' || formData.numberOfPlayers == null;
   if (sinNumero) return null;
 
   const numPlayers = numeroEntero(formData.numberOfPlayers);

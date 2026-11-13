@@ -24,7 +24,9 @@ class BrowseExploreCompetitionsUseCase {
    */
   constructor(competitionRepository) {
     if (!competitionRepository) {
-      throw new Error('BrowseExploreCompetitionsUseCase requires a competitionRepository');
+      throw new Error(
+        'BrowseExploreCompetitionsUseCase requires a competitionRepository',
+      );
     }
     this.competitionRepository = competitionRepository;
   }
@@ -51,15 +53,19 @@ class BrowseExploreCompetitionsUseCase {
       searchName: filters.searchName,
       searchCreator: filters.searchCreator,
       limit: filters.limit || 50,
-      offset: filters.offset || 0
+      offset: filters.offset || 0,
     };
 
     // Call repository to get domain entities
-    const competitions = await this.competitionRepository.findPublic(repositoryFilters);
+    const competitions =
+      await this.competitionRepository.findPublic(repositoryFilters);
 
     // Convert domain entities to simple DTOs for the UI
     const competitionDTOs = competitions.map((competition) => {
-      return CompetitionAssembler.toSimpleDTO(competition, competition._apiData);
+      return CompetitionAssembler.toSimpleDTO(
+        competition,
+        competition._apiData,
+      );
     });
 
     return competitionDTOs;

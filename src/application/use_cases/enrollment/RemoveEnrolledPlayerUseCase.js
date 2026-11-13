@@ -14,7 +14,9 @@ class RemoveEnrolledPlayerUseCase {
    */
   constructor(enrollmentRepository) {
     if (!enrollmentRepository) {
-      throw new Error('RemoveEnrolledPlayerUseCase requires enrollmentRepository');
+      throw new Error(
+        'RemoveEnrolledPlayerUseCase requires enrollmentRepository',
+      );
     }
     this.#enrollmentRepository = enrollmentRepository;
   }

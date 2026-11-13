@@ -34,9 +34,16 @@ const HeadToHead = ({ headToHead, t }) => {
             </p>
             <div className="grid grid-cols-3 gap-2 text-center">
               {CASILLAS.map((casilla) => (
-                <div key={casilla} data-testid={`player-profile-h2h-${clave}-${casilla}`}>
-                  <p className={`text-lg font-bold ${COLOR[casilla]}`}>{headToHead[clave][casilla]}</p>
-                  <p className="text-xs text-gray-500">{t(`playerProfile:headToHead.${casilla}`)}</p>
+                <div
+                  key={casilla}
+                  data-testid={`player-profile-h2h-${clave}-${casilla}`}
+                >
+                  <p className={`text-lg font-bold ${COLOR[casilla]}`}>
+                    {headToHead[clave][casilla]}
+                  </p>
+                  <p className="text-xs text-gray-500">
+                    {t(`playerProfile:headToHead.${casilla}`)}
+                  </p>
                 </div>
               ))}
             </div>

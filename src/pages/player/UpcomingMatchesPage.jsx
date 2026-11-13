@@ -35,12 +35,20 @@ const leeLoProximo = async (userId) => {
   const competiciones = listUserCompetitionsUseCase.execute(userId);
   const [leido, partidas] = await Promise.all([
     leeLosProximosPartidos({
-      lee: async () => getUpcomingMatchesUseCase.executeWithCompleteness(userId, await competiciones),
+      lee: async () =>
+        getUpcomingMatchesUseCase.executeWithCompleteness(
+          userId,
+          await competiciones,
+        ),
       userId,
       pideLaVista: (id) => getScoringViewUseCase.execute(id),
     }),
     leeLasProximasPartidas({
-      lee: async () => getUpcomingTeeGroupsUseCase.executeWithCompleteness(userId, await competiciones),
+      lee: async () =>
+        getUpcomingTeeGroupsUseCase.executeWithCompleteness(
+          userId,
+          await competiciones,
+        ),
       userId,
       pideLaVista: (id) => getTeeGroupScoringViewUseCase.execute(id),
     }),
@@ -57,7 +65,10 @@ const UpcomingMatchesPage = () => {
   // Lo que se enseña puede venir de lo guardado, o no venir de ningún sitio
   // (FE #615). Vacío porque no se pudo preguntar no es «no tienes partidos».
   // De memoria se dice por lista: anotar sin red depende de de dónde vino
-  const [desdeMemoria, setDesdeMemoria] = useState({ partidos: false, partidas: false });
+  const [desdeMemoria, setDesdeMemoria] = useState({
+    partidos: false,
+    partidas: false,
+  });
   const [sinRespuesta, setSinRespuesta] = useState(false);
   // Una de las dos listas no contestó y la otra sí: se enseña lo que llegó,
   // diciendo que puede faltar alguno (revisión de la FE-B, Agustín, 13 oct)
@@ -67,29 +78,41 @@ const UpcomingMatchesPage = () => {
   // no se pide nada ni se espera
   // Del id y no del objeto: la misma persona con un `user` nuevo no relee
   const userId = user?.id;
-  const { cargando: isLoading } = useCargaCancelableEffect(() => leeLoProximo(userId), [userId], {
-    activa: Boolean(userId),
-    alCargar: ({ leido, partidas }) => {
-      const juntos = [...leido.partidos, ...partidas.partidas].sort(porCuandoSeJuega);
-      setMatches(juntos);
-      setDesdeMemoria({ partidos: leido.desdeMemoria, partidas: partidas.desdeMemoria });
-      // Sin nada que enseñar y alguna sin contestar: no se sabe si no hay nada
-      const algunaSinRespuesta = leido.sinRespuesta || partidas.sinRespuesta;
-      setSinRespuesta(juntos.length === 0 && algunaSinRespuesta);
-      // Y si alguna llegó a medias, también puede faltar alguno (`/code-review`)
-      setIncompleta(juntos.length > 0 && (algunaSinRespuesta || leido.incompleta || partidas.incompleta));
+  const { cargando: isLoading } = useCargaCancelableEffect(
+    () => leeLoProximo(userId),
+    [userId],
+    {
+      activa: Boolean(userId),
+      alCargar: ({ leido, partidas }) => {
+        const juntos = [...leido.partidos, ...partidas.partidas].sort(
+          porCuandoSeJuega,
+        );
+        setMatches(juntos);
+        setDesdeMemoria({
+          partidos: leido.desdeMemoria,
+          partidas: partidas.desdeMemoria,
+        });
+        // Sin nada que enseñar y alguna sin contestar: no se sabe si no hay nada
+        const algunaSinRespuesta = leido.sinRespuesta || partidas.sinRespuesta;
+        setSinRespuesta(juntos.length === 0 && algunaSinRespuesta);
+        // Y si alguna llegó a medias, también puede faltar alguno (`/code-review`)
+        setIncompleta(
+          juntos.length > 0 &&
+            (algunaSinRespuesta || leido.incompleta || partidas.incompleta),
+        );
+      },
+      // Si la lectura entera falla, tampoco se pudo preguntar: lo mismo que sin
+      // cobertura y sin nada guardado, en vez de esperar para siempre
+      alFallar: (error) => {
+        // Que quede rastro: antes era un rechazo sin capturar, que Sentry recogía
+        console.error('Error loading upcoming matches:', error);
+        setMatches([]);
+        setDesdeMemoria({ partidos: false, partidas: false });
+        setSinRespuesta(true);
+        setIncompleta(false);
+      },
     },
-    // Si la lectura entera falla, tampoco se pudo preguntar: lo mismo que sin
-    // cobertura y sin nada guardado, en vez de esperar para siempre
-    alFallar: (error) => {
-      // Que quede rastro: antes era un rechazo sin capturar, que Sentry recogía
-      console.error('Error loading upcoming matches:', error);
-      setMatches([]);
-      setDesdeMemoria({ partidos: false, partidas: false });
-      setSinRespuesta(true);
-      setIncompleta(false);
-    },
-  });
+  );
 
   // Y un despertador para la hora en que abre el primero que esté por abrir: la
   // lista se pinta UNA vez, así que quien la abre a las 05:50 esperando las
@@ -127,19 +150,33 @@ const UpcomingMatchesPage = () => {
 
       <div className="max-w-4xl mx-auto px-4 py-6">
         <div className="mb-6">
-          <h1 className="hidden md:block text-2xl font-bold text-gray-900">{t('upcomingMatches.title')}</h1>
-          <p className="text-sm text-gray-500 mt-1">{t('upcomingMatches.subtitle')}</p>
+          <h1 className="hidden md:block text-2xl font-bold text-gray-900">
+            {t('upcomingMatches.title')}
+          </h1>
+          <p className="text-sm text-gray-500 mt-1">
+            {t('upcomingMatches.subtitle')}
+          </p>
         </div>
 
         {userId && (desdeMemoria.partidos || desdeMemoria.partidas) && (
-          <p className="text-sm text-amber-800 mb-4" data-testid="upcoming-matches-desde-memoria">
+          <p
+            className="text-sm text-amber-800 mb-4"
+            data-testid="upcoming-matches-desde-memoria"
+          >
             {/* Solo una de las dos de memoria: «algunos de» los que se vieron */}
-            {t(desdeMemoria.partidos && desdeMemoria.partidas ? 'upcomingMatches.desdeMemoria' : 'upcomingMatches.desdeMemoriaParcial')}
+            {t(
+              desdeMemoria.partidos && desdeMemoria.partidas
+                ? 'upcomingMatches.desdeMemoria'
+                : 'upcomingMatches.desdeMemoriaParcial',
+            )}
           </p>
         )}
 
         {userId && incompleta && (
-          <p className="text-sm text-amber-800 mb-4" data-testid="upcoming-matches-incompleta">
+          <p
+            className="text-sm text-amber-800 mb-4"
+            data-testid="upcoming-matches-incompleta"
+          >
             {t('upcomingMatches.incompleta')}
           </p>
         )}
@@ -147,14 +184,22 @@ const UpcomingMatchesPage = () => {
         {sinPoderPreguntar ? (
           <div className="text-center py-12">
             <Flag className="h-12 w-12 text-gray-300 mx-auto mb-3" />
-            <p className="text-gray-500 font-medium">{t('upcomingMatches.sinRespuesta')}</p>
-            <p className="text-sm text-gray-400 mt-1">{t('upcomingMatches.sinRespuestaDesc')}</p>
+            <p className="text-gray-500 font-medium">
+              {t('upcomingMatches.sinRespuesta')}
+            </p>
+            <p className="text-sm text-gray-400 mt-1">
+              {t('upcomingMatches.sinRespuestaDesc')}
+            </p>
           </div>
         ) : matches.length === 0 ? (
           <div className="text-center py-12">
             <Flag className="h-12 w-12 text-gray-300 mx-auto mb-3" />
-            <p className="text-gray-500 font-medium">{t('upcomingMatches.noMatches')}</p>
-            <p className="text-sm text-gray-400 mt-1">{t('upcomingMatches.noMatchesDesc')}</p>
+            <p className="text-gray-500 font-medium">
+              {t('upcomingMatches.noMatches')}
+            </p>
+            <p className="text-sm text-gray-400 mt-1">
+              {t('upcomingMatches.noMatchesDesc')}
+            </p>
           </div>
         ) : (
           <div className="space-y-2">
@@ -163,7 +208,9 @@ const UpcomingMatchesPage = () => {
                 key={`${partido.esPartidaDeFranja ? 'partida' : 'partido'}-${partido.id}`}
                 partido={partido}
                 puedeAnotar={sePuedeAnotar(partido, {
-                  desdeMemoria: partido.esPartidaDeFranja ? desdeMemoria.partidas : desdeMemoria.partidos,
+                  desdeMemoria: partido.esPartidaDeFranja
+                    ? desdeMemoria.partidas
+                    : desdeMemoria.partidos,
                 })}
               />
             ))}

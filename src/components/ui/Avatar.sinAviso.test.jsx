@@ -15,11 +15,14 @@ vi.mock('../../utils/sentryHelpers', async (original) => ({
 }));
 
 describe('Avatar · id que no vale', () => {
-  it.each(['.', '..', 'a/b', 'a\\b'])('%j: el icono, sin avisar a Sentry', (id) => {
-    const { container, rerender } = render(<Avatar userId={id} />);
-    rerender(<Avatar userId={id} size="lg" />);
+  it.each(['.', '..', 'a/b', 'a\\b'])(
+    '%j: el icono, sin avisar a Sentry',
+    (id) => {
+      const { container, rerender } = render(<Avatar userId={id} />);
+      rerender(<Avatar userId={id} size="lg" />);
 
-    expect(container.querySelector('img')).toBeNull();
-    expect(informado).toEqual([]);
-  });
+      expect(container.querySelector('img')).toBeNull();
+      expect(informado).toEqual([]);
+    },
+  );
 });

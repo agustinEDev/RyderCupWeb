@@ -1,5 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
+import {
+  render,
+  screen,
+  fireEvent,
+  waitFor,
+  within,
+} from '@testing-library/react';
 import { MemoryRouter, Routes, Route, useLocation } from 'react-router';
 import AdminPanel from './AdminPanel';
 
@@ -13,7 +19,8 @@ import AdminPanel from './AdminPanel';
 // cambio de idioma, y usuarios y competiciones se vuelven a pedir con él
 const { TRADUCCION } = vi.hoisted(() => ({
   TRADUCCION: {
-    t: (key, params) => (params?.count !== undefined ? `${key}_${params.count}` : key),
+    t: (key, params) =>
+      params?.count !== undefined ? `${key}_${params.count}` : key,
     i18n: { language: 'es' },
   },
 }));
@@ -21,26 +28,47 @@ vi.mock('react-i18next', () => ({
   useTranslation: () => TRADUCCION,
 }));
 
-const { ADMIN } = vi.hoisted(() => ({ ADMIN: { id: 'admin-1', first_name: 'Admin', last_name: 'User', is_admin: true } }));
+const { ADMIN } = vi.hoisted(() => ({
+  ADMIN: {
+    id: 'admin-1',
+    first_name: 'Admin',
+    last_name: 'User',
+    is_admin: true,
+  },
+}));
 vi.mock('../../hooks/useAuth', () => ({
   useAuth: () => ({ user: ADMIN, loading: false }),
 }));
 
-vi.mock('../../components/layout/HeaderAuth', () => ({ default: () => <div data-testid="header-auth" /> }));
-vi.mock('./GolfCourses', () => ({ default: () => <div data-testid="golf-courses-tab" /> }));
-vi.mock('./PendingGolfCourses', () => ({ default: () => <div data-testid="pending-golf-courses-tab" /> }));
-vi.mock('./HoleReviews', () => ({ default: () => <div data-testid="hole-reviews" /> }));
-vi.mock('../../components/admin/hoyos/TodosLosCampos', () => ({ default: () => <div data-testid="todos-los-campos" /> }));
+vi.mock('../../components/layout/HeaderAuth', () => ({
+  default: () => <div data-testid="header-auth" />,
+}));
+vi.mock('./GolfCourses', () => ({
+  default: () => <div data-testid="golf-courses-tab" />,
+}));
+vi.mock('./PendingGolfCourses', () => ({
+  default: () => <div data-testid="pending-golf-courses-tab" />,
+}));
+vi.mock('./HoleReviews', () => ({
+  default: () => <div data-testid="hole-reviews" />,
+}));
+vi.mock('../../components/admin/hoyos/TodosLosCampos', () => ({
+  default: () => <div data-testid="todos-los-campos" />,
+}));
 
 const mockGetAdminStats = vi.fn();
 const mockListAdminUsers = vi.fn();
 const mockAdminListCompetitions = vi.fn();
-const { noop } = vi.hoisted(() => ({ noop: { execute: () => Promise.resolve() } }));
+const { noop } = vi.hoisted(() => ({
+  noop: { execute: () => Promise.resolve() },
+}));
 
 vi.mock('../../composition', () => ({
   getAdminStatsUseCase: { execute: (...a) => mockGetAdminStats(...a) },
   listAdminUsersUseCase: { execute: (...a) => mockListAdminUsers(...a) },
-  adminListCompetitionsUseCase: { execute: (...a) => mockAdminListCompetitions(...a) },
+  adminListCompetitionsUseCase: {
+    execute: (...a) => mockAdminListCompetitions(...a),
+  },
   updateAdminUserUseCase: noop,
   setAdminUserActiveUseCase: noop,
   deleteAdminUserUseCase: noop,
@@ -75,17 +103,23 @@ const abrir = (ruta) =>
         <Route path="/admin/:seccion?" element={<AdminPanel />} />
       </Routes>
       <DondeEstoy />
-    </MemoryRouter>
+    </MemoryRouter>,
   );
 
 const menu = () => screen.getByRole('navigation', { name: 'menu.label' });
-const fila = (nombre) => within(menu()).getByRole('link', { name: new RegExp(nombre) });
+const fila = (nombre) =>
+  within(menu()).getByRole('link', { name: new RegExp(nombre) });
 
 describe('AdminPanel · secciones', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockGetAdminStats.mockResolvedValue(STATS);
-    mockListAdminUsers.mockResolvedValue({ users: [], totalCount: 0, limit: 20, offset: 0 });
+    mockListAdminUsers.mockResolvedValue({
+      users: [],
+      totalCount: 0,
+      limit: 20,
+      offset: 0,
+    });
     mockAdminListCompetitions.mockResolvedValue([]);
   });
 
@@ -113,9 +147,13 @@ describe('AdminPanel · secciones', () => {
 
   it('A2: los números que ya trae el resumen, sin más llamadas', async () => {
     abrir('/admin');
-    await waitFor(() => expect(fila('screens.adminUsers')).toHaveTextContent('128'));
+    await waitFor(() =>
+      expect(fila('screens.adminUsers')).toHaveTextContent('128'),
+    );
     expect(fila('screens.adminCompetitions')).toHaveTextContent('14');
-    expect(fila('screens.adminGolfCourses')).toHaveTextContent('menu.requests_2');
+    expect(fila('screens.adminGolfCourses')).toHaveTextContent(
+      'menu.requests_2',
+    );
     // El de hoyos llega con su lista nueva (entrega 2)
     expect(fila('screens.adminHoles').textContent).not.toMatch(/\d/);
     expect(mockListAdminUsers).not.toHaveBeenCalled();
@@ -123,10 +161,17 @@ describe('AdminPanel · secciones', () => {
   });
 
   it('A2: sin solicitudes pendientes no se dice nada en campos', async () => {
-    mockGetAdminStats.mockResolvedValue({ ...STATS, totalGolfCoursesPending: 0 });
+    mockGetAdminStats.mockResolvedValue({
+      ...STATS,
+      totalGolfCoursesPending: 0,
+    });
     abrir('/admin');
-    await waitFor(() => expect(fila('screens.adminUsers')).toHaveTextContent('128'));
-    expect(fila('screens.adminGolfCourses')).not.toHaveTextContent('menu.requests');
+    await waitFor(() =>
+      expect(fila('screens.adminUsers')).toHaveTextContent('128'),
+    );
+    expect(fila('screens.adminGolfCourses')).not.toHaveTextContent(
+      'menu.requests',
+    );
   });
 
   it('A3: tocar una sección la abre en su ruta y, en el móvil, sin el menú', async () => {
@@ -143,7 +188,10 @@ describe('AdminPanel · secciones', () => {
   it('A3: la sección abierta queda marcada en el menú', async () => {
     abrir('/admin/competiciones');
     await waitFor(() => expect(mockAdminListCompetitions).toHaveBeenCalled());
-    expect(fila('screens.adminCompetitions')).toHaveAttribute('aria-current', 'page');
+    expect(fila('screens.adminCompetitions')).toHaveAttribute(
+      'aria-current',
+      'page',
+    );
     expect(fila('screens.adminUsers')).not.toHaveAttribute('aria-current');
   });
 
@@ -155,7 +203,9 @@ describe('AdminPanel · secciones', () => {
 
   it('A5: una sección que no existe lleva al menú', async () => {
     abrir('/admin/xyz');
-    await waitFor(() => expect(screen.getByTestId('ruta')).toHaveTextContent(/^\/admin$/));
+    await waitFor(() =>
+      expect(screen.getByTestId('ruta')).toHaveTextContent(/^\/admin$/),
+    );
     expect(menu()).toBeInTheDocument();
   });
 
@@ -163,23 +213,34 @@ describe('AdminPanel · secciones', () => {
     abrir('/admin');
     expect(await screen.findByText('25')).toBeInTheDocument();
     expect(menu()).not.toHaveClass('hidden');
-    expect(screen.getByTestId('seccion-del-panel')).toHaveClass('hidden', 'md:block');
+    expect(screen.getByTestId('seccion-del-panel')).toHaveClass(
+      'hidden',
+      'md:block',
+    );
   });
 
   it('A6: /admin/resumen enseña el resumen también en el móvil', async () => {
     abrir('/admin/resumen');
     expect(await screen.findByText('25')).toBeInTheDocument();
     expect(screen.getByTestId('seccion-del-panel')).not.toHaveClass('hidden');
-    expect(fila('screens.adminOverview')).toHaveAttribute('aria-current', 'page');
+    expect(fila('screens.adminOverview')).toHaveAttribute(
+      'aria-current',
+      'page',
+    );
   });
 
   it('A7: campos de golf, con dos pestañas: aprobados y solicitudes', async () => {
     abrir('/admin/campos');
     const pestañas = await screen.findAllByRole('tab');
-    expect(pestañas.map((p) => p.textContent)).toEqual(['golfTabs.approved', 'golfTabs.requests']);
+    expect(pestañas.map((p) => p.textContent)).toEqual([
+      'golfTabs.approved',
+      'golfTabs.requests',
+    ]);
     expect(pestañas[0]).toHaveAttribute('aria-selected', 'true');
     expect(screen.getByTestId('golf-courses-tab')).toBeInTheDocument();
-    expect(screen.queryByTestId('pending-golf-courses-tab')).not.toBeInTheDocument();
+    expect(
+      screen.queryByTestId('pending-golf-courses-tab'),
+    ).not.toBeInTheDocument();
     fireEvent.click(pestañas[1]);
     expect(screen.getByTestId('pending-golf-courses-tab')).toBeInTheDocument();
     expect(screen.queryByTestId('golf-courses-tab')).not.toBeInTheDocument();
@@ -188,8 +249,12 @@ describe('AdminPanel · secciones', () => {
 
   it('A7: las solicitudes tienen su URL y se abren directas', async () => {
     abrir('/admin/campos?ver=solicitudes');
-    expect(await screen.findByTestId('pending-golf-courses-tab')).toBeInTheDocument();
-    expect(screen.getByRole('tab', { name: 'golfTabs.requests' })).toHaveAttribute('aria-selected', 'true');
+    expect(
+      await screen.findByTestId('pending-golf-courses-tab'),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('tab', { name: 'golfTabs.requests' }),
+    ).toHaveAttribute('aria-selected', 'true');
     fireEvent.click(screen.getByRole('tab', { name: 'golfTabs.approved' }));
     expect(screen.getByTestId('golf-courses-tab')).toBeInTheDocument();
   });
@@ -197,25 +262,34 @@ describe('AdminPanel · secciones', () => {
   it('T1: hoyos, con dos pestañas: pendientes y todos los campos', async () => {
     abrir('/admin/hoyos');
     const pestañas = await screen.findAllByRole('tab');
-    expect(pestañas.map((p) => p.textContent)).toEqual(['holeTabs.pending', 'holeTabs.allCourses']);
+    expect(pestañas.map((p) => p.textContent)).toEqual([
+      'holeTabs.pending',
+      'holeTabs.allCourses',
+    ]);
     expect(pestañas[0]).toHaveAttribute('aria-selected', 'true');
     expect(screen.getByTestId('hole-reviews')).toBeInTheDocument();
 
     fireEvent.click(pestañas[1]);
     expect(screen.getByTestId('todos-los-campos')).toBeInTheDocument();
     expect(screen.queryByTestId('hole-reviews')).not.toBeInTheDocument();
-    expect(screen.getByTestId('ruta')).toHaveTextContent(/^\/admin\/hoyos\?ver=campos$/);
+    expect(screen.getByTestId('ruta')).toHaveTextContent(
+      /^\/admin\/hoyos\?ver=campos$/,
+    );
     fireEvent.click(pestañas[0]);
     expect(screen.getByTestId('ruta')).toHaveTextContent(/^\/admin\/hoyos$/);
     // Las pestañas tienen nombre: el de su sección
-    expect(screen.getByRole('tablist')).toHaveAccessibleName('common:screens.adminHoles');
+    expect(screen.getByRole('tablist')).toHaveAccessibleName(
+      'common:screens.adminHoles',
+    );
   });
 
   it('T6: todos los campos tiene su URL y se abre directo', async () => {
     abrir('/admin/hoyos?ver=campos&campo=gc-1');
 
     expect(await screen.findByTestId('todos-los-campos')).toBeInTheDocument();
-    expect(screen.getByRole('tab', { name: 'holeTabs.allCourses' })).toHaveAttribute('aria-selected', 'true');
+    expect(
+      screen.getByRole('tab', { name: 'holeTabs.allCourses' }),
+    ).toHaveAttribute('aria-selected', 'true');
   });
 
   it('T1: las pestañas de hoyos también van con las flechas', async () => {
@@ -236,14 +310,21 @@ describe('AdminPanel · secciones', () => {
 
   it.each([
     ['/admin/usuarios', 'users.searchPlaceholder', mockListAdminUsers],
-    ['/admin/competiciones', 'competitions.searchPlaceholder', mockAdminListCompetitions],
-  ])('F3: en %s el buscador va a todo el ancho del móvil y lo demás baja de línea', async (ruta, texto, carga) => {
-    abrir(ruta);
-    await waitFor(() => expect(carga).toHaveBeenCalled());
-    const caja = screen.getByPlaceholderText(texto).closest('form > div');
+    [
+      '/admin/competiciones',
+      'competitions.searchPlaceholder',
+      mockAdminListCompetitions,
+    ],
+  ])(
+    'F3: en %s el buscador va a todo el ancho del móvil y lo demás baja de línea',
+    async (ruta, texto, carga) => {
+      abrir(ruta);
+      await waitFor(() => expect(carga).toHaveBeenCalled());
+      const caja = screen.getByPlaceholderText(texto).closest('form > div');
 
-    expect(caja).toHaveClass('basis-full', 'md:basis-auto', 'md:flex-1');
-    expect(caja).not.toHaveClass('min-w-[220px]');
-    expect(caja.parentElement).toHaveClass('flex-wrap');
-  });
+      expect(caja).toHaveClass('basis-full', 'md:basis-auto', 'md:flex-1');
+      expect(caja).not.toHaveClass('min-w-[220px]');
+      expect(caja.parentElement).toHaveClass('flex-wrap');
+    },
+  );
 });

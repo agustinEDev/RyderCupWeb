@@ -19,7 +19,9 @@ export const distanciaExacta = (a, b) => {
   const dLon = radianes(b.lon - a.lon);
   const h =
     Math.sin(dLat / 2) ** 2 +
-    Math.cos(radianes(a.lat)) * Math.cos(radianes(b.lat)) * Math.sin(dLon / 2) ** 2;
+    Math.cos(radianes(a.lat)) *
+      Math.cos(radianes(b.lat)) *
+      Math.sin(dLon / 2) ** 2;
   return 2 * RADIO_TERRESTRE_M * Math.asin(Math.min(1, Math.sqrt(h)));
 };
 

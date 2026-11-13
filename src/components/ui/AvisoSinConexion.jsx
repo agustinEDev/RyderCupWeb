@@ -35,11 +35,15 @@ const AvisoSinConexion = () => {
           texto, no en una aparte (QA 3). El número, fuera de la región que se
           lee entera y en la suya educada (revisor y CodeRabbit) */}
       <p className="min-w-0 text-center">
-        <span role="status">{t(anotando ? 'sinConexion.anotando' : 'sinConexion.aviso')}</span>
+        <span role="status">
+          {t(anotando ? 'sinConexion.anotando' : 'sinConexion.aviso')}
+        </span>
         {anotando?.pendientes > 0 && (
           <>
             {' '}
-            <span aria-live="polite">· {t('sinConexion.pendientes', { count: anotando.pendientes })}</span>
+            <span aria-live="polite">
+              · {t('sinConexion.pendientes', { count: anotando.pendientes })}
+            </span>
           </>
         )}
       </p>

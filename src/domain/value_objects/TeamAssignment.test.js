@@ -16,14 +16,18 @@ describe('TeamAssignment', () => {
     });
 
     it('should throw an error for an invalid TeamAssignment type', () => {
-      expect(() => new TeamAssignment('INVALID_TYPE')).toThrow('Invalid TeamAssignment: INVALID_TYPE');
+      expect(() => new TeamAssignment('INVALID_TYPE')).toThrow(
+        'Invalid TeamAssignment: INVALID_TYPE',
+      );
     });
 
     it('should have predefined static instances', () => {
       expect(TeamAssignment.MANUAL).toBeInstanceOf(TeamAssignment);
       expect(TeamAssignment.MANUAL.value()).toBe(TeamAssignmentEnum.MANUAL);
       expect(TeamAssignment.AUTOMATIC).toBeInstanceOf(TeamAssignment);
-      expect(TeamAssignment.AUTOMATIC.value()).toBe(TeamAssignmentEnum.AUTOMATIC);
+      expect(TeamAssignment.AUTOMATIC.value()).toBe(
+        TeamAssignmentEnum.AUTOMATIC,
+      );
     });
   });
 

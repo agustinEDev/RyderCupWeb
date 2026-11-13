@@ -8,15 +8,22 @@ import { MemoryRouter } from 'react-router';
  * Si la página pusiera otra marca, volvería a guardarla (revisión, 8 nov 2026).
  */
 vi.mock('../utils/cortinaDeArranque', () => ({ laPantallaEstaLista: vi.fn() }));
-vi.mock('../hooks/useTerminosPendientes', () => ({ useTerminosPendientes: () => false }));
+vi.mock('../hooks/useTerminosPendientes', () => ({
+  useTerminosPendientes: () => false,
+}));
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({ t: (k) => k, i18n: { language: 'es' } }),
 }));
 vi.mock('../components/layout/HeaderAuth', () => ({ default: () => null }));
-vi.mock('../hooks/useAuth', () => ({ useAuth: () => ({ user: { id: 'u-1' }, loading: false }) }));
-vi.mock('../hooks/useLogout', () => ({ useLogout: () => ({ logout: vi.fn() }) }));
+vi.mock('../hooks/useAuth', () => ({
+  useAuth: () => ({ user: { id: 'u-1' }, loading: false }),
+}));
+vi.mock('../hooks/useLogout', () => ({
+  useLogout: () => ({ logout: vi.fn() }),
+}));
 vi.mock('../components/modals/ConfirmModal', () => ({
-  default: ({ isOpen, onConfirm }) => (isOpen ? <button onClick={onConfirm}>confirmar</button> : null),
+  default: ({ isOpen, onConfirm }) =>
+    isOpen ? <button onClick={onConfirm}>confirmar</button> : null,
 }));
 
 const ESTE = {
@@ -67,12 +74,14 @@ describe('revocar el propio dispositivo', () => {
     render(
       <MemoryRouter>
         <DeviceManagement />
-      </MemoryRouter>
+      </MemoryRouter>,
     );
 
     fireEvent.click(screen.getByRole('button', { name: /actions.revoke/ }));
     fireEvent.click(screen.getByRole('button', { name: 'confirmar' }));
 
-    await waitFor(() => expect(almacen.device_revocation_handled).toBe('propia'));
+    await waitFor(() =>
+      expect(almacen.device_revocation_handled).toBe('propia'),
+    );
   });
 });

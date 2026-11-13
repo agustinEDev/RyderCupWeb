@@ -28,7 +28,11 @@ import { crearCambiosDeEstado } from '../components/competition/detail/cambiosDe
 import { crearAccionesDeInscripcion } from '../components/competition/detail/inscripcionesDeLaFicha';
 import { crearEdicionDeHandicaps } from '../components/competition/detail/edicionDeHandicaps';
 import { accionesDelOrganizador } from '../components/competition/detail/accionesDelOrganizador';
-import { avisoYClasificacion, derivarLaFicha, vueltaDeLaFicha } from '../utils/fichaDeLaCompeticion';
+import {
+  avisoYClasificacion,
+  derivarLaFicha,
+  vueltaDeLaFicha,
+} from '../utils/fichaDeLaCompeticion';
 import { faltaElHandicap } from '../utils/datosQueFaltanSinConexion';
 import { PANTALLA_MENOS_BARRA_INFERIOR } from '../utils/barraInferior';
 import { hayHistorialPropio } from '../hooks/useGoBack';
@@ -48,7 +52,11 @@ const CompetitionDetail = () => {
   const { user, loading: isLoadingUser, sinConfirmar } = useAuth();
   // El género para apuntarse, solo a quien le falta (#710)
   const generoParaApuntarse = useGeneroParaApuntarse();
-  const { isAdmin, isCreator: hasCreatorRole, isLoading: isLoadingRoles } = useUserRoles(id, user?.id);
+  const {
+    isAdmin,
+    isCreator: hasCreatorRole,
+    isLoading: isLoadingRoles,
+  } = useUserRoles(id, user?.id);
   const [isProcessing, setIsProcessing] = useState(false);
   // Borrar pide confirmación en un modal que dice quién pierde su plaza (FE #667)
   const [confirmandoBorrado, setConfirmandoBorrado] = useState(false);
@@ -75,8 +83,12 @@ const CompetitionDetail = () => {
   // La agenda y la sección de campos cargan cada una los suyos; esto es el aviso
   // de que cambiaron, para que la agenda los vuelva a leer (FE #715)
   const [versionCampos, setVersionCampos] = useState(0);
-  const avisarDeLosCampos = useCallback(() => setVersionCampos((v) => v + 1), []);
-  const { agendaLeida, agendaFallo, recibirAgenda, franjasDeLaAgenda } = useAgendaDeLaFicha();
+  const avisarDeLosCampos = useCallback(
+    () => setVersionCampos((v) => v + 1),
+    [],
+  );
+  const { agendaLeida, agendaFallo, recibirAgenda, franjasDeLaAgenda } =
+    useAgendaDeLaFicha();
   // Para releer las franjas cuando el servidor dice que faltan jugadores (FE #824)
   const [versionFranjas, setVersionFranjas] = useState(0);
   const [irASinFranja, setIrASinFranja] = useState(0);
@@ -95,7 +107,8 @@ const CompetitionDetail = () => {
   // Desde Torneos, volver es volver atrás de verdad, como el atrás del sistema:
   // así Torneos queda donde estaba (FE #647, fase 3; Agustín, 2 nov 2026). Sin
   // nada detrás —se entró por un enlace—, a Torneos como siempre
-  const vuelveAtras = origen === 'my-competitions' && hayHistorialPropio(location);
+  const vuelveAtras =
+    origen === 'my-competitions' && hayHistorialPropio(location);
   const volver = () => (vuelveAtras ? navigate(-1) : navigate(backLink));
 
   const userId = user?.id;
@@ -115,18 +128,19 @@ const CompetitionDetail = () => {
   const isLoading = isLoadingUser || isLoadingCompetition || isLoadingRoles;
 
   const approvedEnrollments = useMemo(
-    () => enrollments.filter(e => e.status === 'APPROVED'),
-    [enrollments]
+    () => enrollments.filter((e) => e.status === 'APPROVED'),
+    [enrollments],
   );
 
-  const { leeSiTerminar, claveDeFranjas, cierre } = useSePuedeTerminarLaCompeticion({
-    competition,
-    hasCreatorRole,
-    isAdmin,
-    userId,
-    agendaLeida,
-    versionDePartidas,
-  });
+  const { leeSiTerminar, claveDeFranjas, cierre } =
+    useSePuedeTerminarLaCompeticion({
+      competition,
+      hasCreatorRole,
+      isAdmin,
+      userId,
+      agendaLeida,
+      versionDePartidas,
+    });
   const releerHandicaps = useReleerHandicaps({
     id,
     competition,
@@ -138,16 +152,18 @@ const CompetitionDetail = () => {
   });
 
   if (isLoading) {
-    return (
-      <FullScreenLoader texto={t('detail.loadingCompetition')} />
-    );
+    return <FullScreenLoader texto={t('detail.loadingCompetition')} />;
   }
 
   if (!user || !competition) {
     return null;
   }
 
-  const { textoDelAvisoDeCategorias, conClasificacion } = avisoYClasificacion(t, competition, approvedEnrollments);
+  const { textoDelAvisoDeCategorias, conClasificacion } = avisoYClasificacion(
+    t,
+    competition,
+    approvedEnrollments,
+  );
   const ficha = derivarLaFicha({
     t,
     idioma: i18n.language,
@@ -161,14 +177,23 @@ const CompetitionDetail = () => {
     agendaLeida,
     franjasDeLaAgenda,
   });
-  const { isCreator, canManage, esStrokePlay, approvedCount, fechaDeAperturaLegible, isFull } = ficha;
+  const {
+    isCreator,
+    canManage,
+    esStrokePlay,
+    approvedCount,
+    fechaDeAperturaLegible,
+    isFull,
+  } = ficha;
 
   // Abre el modal y espera la respuesta: el flujo de cada acción no cambia.
   // Cada acción trae sus palabras —título, consecuencia y dos verbos—: con
   // «Cancelar» y «Confirmar» genéricos, quien quería cancelar la competición
   // pulsaba «Cancelar» y cerraba el modal sin hacer nada (FE #742)
   const preguntar = (accion, { destructiva = false, datos } = {}) =>
-    new Promise((responder) => setPregunta({ accion, datos, destructiva, responder }));
+    new Promise((responder) =>
+      setPregunta({ accion, datos, destructiva, responder }),
+    );
   const contestar = (si) => {
     pregunta?.responder(si);
     setPregunta(null);
@@ -176,17 +201,52 @@ const CompetitionDetail = () => {
 
   // Los manejadores, con lo de este render: como cuando vivían aquí mismo
   const contexto = {
-    id, t, tComun, navigate, competition, setCompetition, enrollments, setEnrollments,
-    approvedEnrollments, esStrokePlay, isFull, agendaLeida, idActual, lecturasDeLaFicha,
-    lecturasDeInscripciones, loadCompetition, generoParaApuntarse, preguntar, handicapInput,
-    setHandicapInput, setIsProcessing, setQuitandoId, setEditingHandicapId, setSinHandicap,
-    setSavingHandicapId, setRevertingHandicapId, setVersionFranjas, setIrASinFranja,
-    setReleyendoTrasCerrar, setGuardandoCapitanes, setNombrandoCapitanes, setBorrando,
-    setConfirmandoBorrado, setErrorAlApuntarse, setShowEnrollModal, setSavingNamePreference,
+    id,
+    t,
+    tComun,
+    navigate,
+    competition,
+    setCompetition,
+    enrollments,
+    setEnrollments,
+    approvedEnrollments,
+    esStrokePlay,
+    isFull,
+    agendaLeida,
+    idActual,
+    lecturasDeLaFicha,
+    lecturasDeInscripciones,
+    loadCompetition,
+    generoParaApuntarse,
+    preguntar,
+    handicapInput,
+    setHandicapInput,
+    setIsProcessing,
+    setQuitandoId,
+    setEditingHandicapId,
+    setSinHandicap,
+    setSavingHandicapId,
+    setRevertingHandicapId,
+    setVersionFranjas,
+    setIrASinFranja,
+    setReleyendoTrasCerrar,
+    setGuardandoCapitanes,
+    setNombrandoCapitanes,
+    setBorrando,
+    setConfirmandoBorrado,
+    setErrorAlApuntarse,
+    setShowEnrollModal,
+    setSavingNamePreference,
   };
   const handicaps = crearEdicionDeHandicaps(contexto);
-  const cambios = crearCambiosDeEstado({ ...contexto, handleStartEditHandicap: handicaps.handleStartEditHandicap });
-  const inscripciones = crearAccionesDeInscripcion({ ...contexto, releerTrasQuitar: cambios.releerTrasQuitar });
+  const cambios = crearCambiosDeEstado({
+    ...contexto,
+    handleStartEditHandicap: handicaps.handleStartEditHandicap,
+  });
+  const inscripciones = crearAccionesDeInscripcion({
+    ...contexto,
+    releerTrasQuitar: cambios.releerTrasQuitar,
+  });
   const { handleStatusChange } = cambios;
 
   // La de la Ryder o, en un Stableford o un Medal, su general: con 200
@@ -197,27 +257,35 @@ const CompetitionDetail = () => {
       state: {
         from: 'detail',
         ...(esStrokePlay && {
-          competicion: { id: competition.id, hasTeams: false, name: competition.name, status: competition.status },
+          competicion: {
+            id: competition.id,
+            hasTeams: false,
+            name: competition.name,
+            status: competition.status,
+          },
         }),
       },
     });
 
-  const { accionPrincipal, accionesDeGestion, accionesDestructivas } = accionesDelOrganizador({
-    ...ficha,
-    t,
-    id,
-    navigate,
-    competition,
-    isProcessing,
-    numeroDeSesiones,
-    handleStatusChange,
-    handleDelete: cambios.handleDelete,
-    abrirCapitanes: () => setNombrandoCapitanes(true),
-    irALaClasificacion,
-  });
+  const { accionPrincipal, accionesDeGestion, accionesDestructivas } =
+    accionesDelOrganizador({
+      ...ficha,
+      t,
+      id,
+      navigate,
+      competition,
+      isProcessing,
+      numeroDeSesiones,
+      handleStatusChange,
+      handleDelete: cambios.handleDelete,
+      abrirCapitanes: () => setNombrandoCapitanes(true),
+      irALaClasificacion,
+    });
 
   return (
-    <div className={`relative flex h-auto ${PANTALLA_MENOS_BARRA_INFERIOR} w-full flex-col bg-white`}>
+    <div
+      className={`relative flex h-auto ${PANTALLA_MENOS_BARRA_INFERIOR} w-full flex-col bg-white`}
+    >
       <div className="layout-container flex h-full grow flex-col">
         {/* El nombre del torneo solo se conoce en ejecucion: sustituye al
             titulo generico del mapa de rutas (FE #310).
@@ -225,7 +293,12 @@ const CompetitionDetail = () => {
             pantalla sabe si se llego desde explorar, y esa vuelta es mejor. Sin
             pasarsela, ocultar el enlace de la pagina en movil perderia
             comportamiento en lugar de quitar ruido (FE #338) */}
-        <HeaderAuth user={user} title={competition.name} backTo={backLink} alVolver={vuelveAtras ? volver : undefined} />
+        <HeaderAuth
+          user={user}
+          title={competition.name}
+          backTo={backLink}
+          alVolver={vuelveAtras ? volver : undefined}
+        />
 
         <DialogosDeLaFicha
           t={t}
@@ -249,9 +322,7 @@ const CompetitionDetail = () => {
         <div className="px-4 md:px-40 flex flex-1 justify-center py-5">
           <div className="layout-content-container flex flex-col max-w-[960px] flex-1">
             {/* Header */}
-            <div
-              className="p-4"
-            >
+            <div className="p-4">
               <button
                 onClick={volver}
                 className="hidden md:flex items-center gap-2 text-gray-600 hover:text-primary transition-colors mb-4"
@@ -274,7 +345,10 @@ const CompetitionDetail = () => {
             {/* Mi invitación pendiente: aceptar o rechazar aquí mismo, sin pasar
                 por «Mis invitaciones». Respondida, la ficha se relee (release
                 social 2) */}
-            <InvitacionEnLaFicha invitacion={competition.myPendingInvitation ?? null} alCambiar={loadCompetition} />
+            <InvitacionEnLaFicha
+              invitacion={competition.myPendingInvitation ?? null}
+              alCambiar={loadCompetition}
+            />
 
             {/* Action Buttons */}
             {canManage && (
@@ -313,12 +387,19 @@ const CompetitionDetail = () => {
                 t={t}
                 i18n={i18n}
                 savingNamePreference={savingNamePreference}
-                handleToggleNamePreference={inscripciones.handleToggleNamePreference}
+                handleToggleNamePreference={
+                  inscripciones.handleToggleNamePreference
+                }
               />
             )}
 
             {/* Competition Details */}
-            <AjustesDeLaCompeticion {...ficha} competition={competition} t={t} conClasificacion={conClasificacion} />
+            <AjustesDeLaCompeticion
+              {...ficha}
+              competition={competition}
+              t={t}
+              conClasificacion={conClasificacion}
+            />
 
             <PanelesDelOrganizador
               competition={competition}

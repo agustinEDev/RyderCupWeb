@@ -4,14 +4,21 @@ import TeamStandingsHeader from './TeamStandingsHeader';
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
-    t: (key, opts) => opts ? `${key} ${JSON.stringify(opts)}` : key,
+    t: (key, opts) => (opts ? `${key} ${JSON.stringify(opts)}` : key),
     i18n: { language: 'en' },
   }),
 }));
 
 describe('TeamStandingsHeader', () => {
   it('should display team names and points', () => {
-    render(<TeamStandingsHeader teamAName="Red" teamBName="Blue" teamAPoints={4.5} teamBPoints={3.5} />);
+    render(
+      <TeamStandingsHeader
+        teamAName="Red"
+        teamBName="Blue"
+        teamAPoints={4.5}
+        teamBPoints={3.5}
+      />,
+    );
     const header = screen.getByTestId('team-standings-header');
     expect(header).toHaveTextContent('Red');
     expect(header).toHaveTextContent('Blue');
@@ -26,12 +33,28 @@ describe('TeamStandingsHeader', () => {
   });
 
   it('should display vs separator', () => {
-    render(<TeamStandingsHeader teamAName="A" teamBName="B" teamAPoints={0} teamBPoints={0} />);
+    render(
+      <TeamStandingsHeader
+        teamAName="A"
+        teamBName="B"
+        teamAPoints={0}
+        teamBPoints={0}
+      />,
+    );
     expect(screen.getByTestId('team-standings-header')).toHaveTextContent('vs');
   });
 
   it('should display translation key for points label', () => {
-    render(<TeamStandingsHeader teamAName="A" teamBName="B" teamAPoints={1} teamBPoints={2} />);
-    expect(screen.getByTestId('team-standings-header')).toHaveTextContent('leaderboard.points');
+    render(
+      <TeamStandingsHeader
+        teamAName="A"
+        teamBName="B"
+        teamAPoints={1}
+        teamBPoints={2}
+      />,
+    );
+    expect(screen.getByTestId('team-standings-header')).toHaveTextContent(
+      'leaderboard.points',
+    );
   });
 });

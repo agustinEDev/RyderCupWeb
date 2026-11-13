@@ -17,16 +17,25 @@ vi.mock('../composition', () => ({
   getPlayerStatsUseCase: { execute: () => Promise.resolve(null) },
   getRecentMatchesUseCase: { execute: () => Promise.resolve([]) },
   getUpcomingMatchesUseCase: {
-    executeWithCompleteness: () => Promise.resolve({ matches: [], complete: true }),
+    executeWithCompleteness: () =>
+      Promise.resolve({ matches: [], complete: true }),
   },
   getScoringViewUseCase: { execute: () => new Promise(() => {}) },
 }));
 
-const sesion = { user: { id: 'u-1', first_name: 'Ana', email: 'a@b.c' }, loading: false, refetch: () => {} };
+const sesion = {
+  user: { id: 'u-1', first_name: 'Ana', email: 'a@b.c' },
+  loading: false,
+  refetch: () => {},
+};
 vi.mock('../hooks/useAuth', () => ({ useAuth: () => sesion }));
 
 vi.mock('react-i18next', () => ({
-  useTranslation: () => ({ t: (clave) => clave, i18n: { language: 'es' }, ready: true }),
+  useTranslation: () => ({
+    t: (clave) => clave,
+    i18n: { language: 'es' },
+    ready: true,
+  }),
 }));
 
 vi.mock('react-router', () => ({
@@ -37,17 +46,32 @@ vi.mock('react-router', () => ({
 
 // Al contrario que en el resto de tests del panel, aquí SÍ se conservan las
 // props: lo que se mira son las clases
-const PROPS_DE_MOVIMIENTO = ['variants', 'initial', 'animate', 'exit', 'transition', 'whileHover', 'whileTap'];
+const PROPS_DE_MOVIMIENTO = [
+  'variants',
+  'initial',
+  'animate',
+  'exit',
+  'transition',
+  'whileHover',
+  'whileTap',
+];
 vi.mock('framer-motion', () => ({
-  motion: new Proxy({}, {
-    get: (_, etiqueta) => ({ children, ...props }) => {
-      for (const prop of PROPS_DE_MOVIMIENTO) delete props[prop];
-      return createElement(etiqueta, props, children);
+  motion: new Proxy(
+    {},
+    {
+      get:
+        (_, etiqueta) =>
+        ({ children, ...props }) => {
+          for (const prop of PROPS_DE_MOVIMIENTO) delete props[prop];
+          return createElement(etiqueta, props, children);
+        },
     },
-  }),
+  ),
 }));
 
-vi.mock('../hooks/useEntryMotion', () => ({ useEntryMotion: () => ({ animateEntry: false }) }));
+vi.mock('../hooks/useEntryMotion', () => ({
+  useEntryMotion: () => ({ animateEntry: false }),
+}));
 for (const ruta of [
   '../components/layout/HeaderAuth',
   '../components/ui/Avatar',
@@ -76,7 +100,8 @@ describe('Dashboard · acciones rápidas entre md y lg (FE #680)', () => {
   it('A1: dos columnas solo desde lg; entre md y lg, una por fila', async () => {
     render(<Dashboard />);
 
-    const rejilla = (await screen.findByTestId('quick-match-card')).parentElement;
+    const rejilla = (await screen.findByTestId('quick-match-card'))
+      .parentElement;
 
     expect(rejilla).toHaveClass('lg:grid-cols-2');
     expect(rejilla).not.toHaveClass('md:grid-cols-2');
@@ -85,7 +110,8 @@ describe('Dashboard · acciones rápidas entre md y lg (FE #680)', () => {
   it('A2: el texto de cada tarjeta respeta su relleno en vez de empujarlo', async () => {
     render(<Dashboard />);
 
-    const rejilla = (await screen.findByTestId('quick-match-card')).parentElement;
+    const rejilla = (await screen.findByTestId('quick-match-card'))
+      .parentElement;
     const titulos = [...rejilla.querySelectorAll('h3')];
 
     expect(titulos).toHaveLength(2);

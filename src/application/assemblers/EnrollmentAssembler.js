@@ -18,7 +18,9 @@ class EnrollmentAssembler {
    */
   static toSimpleDTO(enrollment, apiData = null) {
     if (!(enrollment instanceof Enrollment)) {
-      throw new Error('EnrollmentAssembler.toSimpleDTO: enrollment must be an Enrollment instance');
+      throw new Error(
+        'EnrollmentAssembler.toSimpleDTO: enrollment must be an Enrollment instance',
+      );
     }
 
     const simpleDTO = {
@@ -45,7 +47,8 @@ class EnrollmentAssembler {
 
     // El hándicap fijado y la categoría de un stroke play, desde el cierre
     // (FE #824, RyderCupAM#506). El fijado llega como texto, como todo Decimal
-    simpleDTO.fixedHandicap = apiData?.fixed_handicap != null ? Number(apiData.fixed_handicap) : null;
+    simpleDTO.fixedHandicap =
+      apiData?.fixed_handicap != null ? Number(apiData.fixed_handicap) : null;
     simpleDTO.category = apiData?.category ?? null;
 
     // If API data available, include extra fields (joins)
@@ -86,7 +89,9 @@ class EnrollmentAssembler {
    */
   static toSimpleDTOMany(enrollments, apiDataArray = null) {
     if (!Array.isArray(enrollments)) {
-      throw new Error('EnrollmentAssembler.toSimpleDTOMany: enrollments must be an array');
+      throw new Error(
+        'EnrollmentAssembler.toSimpleDTOMany: enrollments must be an array',
+      );
     }
 
     return enrollments.map((enrollment, index) => {

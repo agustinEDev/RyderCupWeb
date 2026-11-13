@@ -15,12 +15,23 @@ import { resolve } from 'node:path';
  */
 const RAIZ = globalThis.process.cwd();
 const leer = (ruta) => readFileSync(resolve(RAIZ, ruta), 'utf8');
-const PRODUCCION = JSON.parse(leer('.github/scripts/cabeceras_de_produccion.json'));
+const PRODUCCION = JSON.parse(
+  leer('.github/scripts/cabeceras_de_produccion.json'),
+);
 const RAIZ_DE_PRO = PRODUCCION.rutas['/'];
 
-const SOLO_EN_PRODUCCION = new Set(['upgrade-insecure-requests', 'report-uri', 'report-to']);
+const SOLO_EN_PRODUCCION = new Set([
+  'upgrade-insecure-requests',
+  'report-uri',
+  'report-to',
+]);
 const EXTRA_LOCAL = new Set(['http://localhost:8000']);
-const EXTRA_DESARROLLO = new Set([...EXTRA_LOCAL, 'ws://localhost:*', "'unsafe-inline'", "'unsafe-eval'"]);
+const EXTRA_DESARROLLO = new Set([
+  ...EXTRA_LOCAL,
+  'ws://localhost:*',
+  "'unsafe-inline'",
+  "'unsafe-eval'",
+]);
 
 /** Una CSP como mapa directiva → conjunto de fuentes. */
 const directivas = (csp) =>
@@ -39,25 +50,38 @@ const comparaCsp = (copia, extra) => {
   for (const [nombre, fuentes] of pro) {
     if (SOLO_EN_PRODUCCION.has(nombre)) continue;
     const aqui = loc.get(nombre);
-    if (!aqui) { diferencias.push(`falta ${nombre}`); continue; }
-    for (const f of fuentes) if (!aqui.has(f)) diferencias.push(`${nombre}: falta ${f}`);
-    for (const f of aqui) if (!fuentes.has(f) && !extra.has(f)) diferencias.push(`${nombre}: sobra ${f}`);
+    if (!aqui) {
+      diferencias.push(`falta ${nombre}`);
+      continue;
+    }
+    for (const f of fuentes)
+      if (!aqui.has(f)) diferencias.push(`${nombre}: falta ${f}`);
+    for (const f of aqui)
+      if (!fuentes.has(f) && !extra.has(f))
+        diferencias.push(`${nombre}: sobra ${f}`);
   }
-  for (const nombre of loc.keys()) if (!pro.has(nombre)) diferencias.push(`sobra la directiva ${nombre}`);
+  for (const nombre of loc.keys())
+    if (!pro.has(nombre)) diferencias.push(`sobra la directiva ${nombre}`);
   return diferencias;
 };
 
 // Las CSP de vite.config.js: la de preview (securityHeaders) y la de desarrollo (devHeaders)
 const VITE = leer('vite.config.js');
-const cspDeVite = [...VITE.matchAll(/'Content-Security-Policy':\s*"([^"]+)"/g)].map((m) => m[1]);
+const cspDeVite = [
+  ...VITE.matchAll(/'Content-Security-Policy':\s*"([^"]+)"/g),
+].map((m) => m[1]);
 const NGINX = leer('nginx-security-headers.conf');
-const cspDeNginx = NGINX.match(/add_header Content-Security-Policy "([^"$]+)/)[1];
+const cspDeNginx = NGINX.match(
+  /add_header Content-Security-Policy "([^"$]+)/,
+)[1];
 
 /** Las cabeceras de `securityHeaders` en vite.config.js, con el nombre en minúsculas. */
 const cabecerasDeVite = () => {
   const bloque = VITE.match(/const securityHeaders = \{\n([\s\S]*?)\n\}/)[1];
   return new Map(
-    [...bloque.matchAll(/^\s*'([A-Za-z-]+)':\s*(?:'([^']*)'|"([^"]*)")/gm)].map((m) => [m[1].toLowerCase(), m[2] ?? m[3]]),
+    [...bloque.matchAll(/^\s*'([A-Za-z-]+)':\s*(?:'([^']*)'|"([^"]*)")/gm)].map(
+      (m) => [m[1].toLowerCase(), m[2] ?? m[3]],
+    ),
   );
 };
 
@@ -74,12 +98,23 @@ const leerNginx = (texto) => {
   const raras = [];
   for (const linea of texto.split('\n')) {
     if (!/^\s*add_header\b/.test(linea)) continue;
-    const m = /^\s*add_header ([A-Za-z-]+) (?:"([^"]*)"|\$(\w+))( always)?;\s*(?:#.*)?$/.exec(linea);
-    if (!m) { raras.push(`no se entiende: ${linea.trim()}`); continue; }
+    const m =
+      /^\s*add_header ([A-Za-z-]+) (?:"([^"]*)"|\$(\w+))( always)?;\s*(?:#.*)?$/.exec(
+        linea,
+      );
+    if (!m) {
+      raras.push(`no se entiende: ${linea.trim()}`);
+      continue;
+    }
     const nombre = m[1].toLowerCase();
     if (!m[4]) raras.push(`sin always: ${nombre}`);
     if (cabeceras.has(nombre)) raras.push(`repetida: ${nombre}`);
-    cabeceras.set(nombre, m[3] === 'corp' ? 'same-origin' : (m[2] ?? `$${m[3]}`).replace('${csp_upgrade}', ''));
+    cabeceras.set(
+      nombre,
+      m[3] === 'corp'
+        ? 'same-origin'
+        : (m[2] ?? `$${m[3]}`).replace('${csp_upgrade}', ''),
+    );
   }
   return { cabeceras, raras };
 };
@@ -100,7 +135,10 @@ const CABECERAS = [
 // Lo que una copia no lleva, y por qué: HSTS en el Vite de http://localhost fijaría HTTPS
 // para localhost en el navegador; reporting-endpoints solo nombra el Sentry de producción
 const NO_LAS_LLEVA = {
-  'vite.config.js': new Set(['strict-transport-security', 'reporting-endpoints']),
+  'vite.config.js': new Set([
+    'strict-transport-security',
+    'reporting-endpoints',
+  ]),
   'nginx-security-headers.conf': new Set(['reporting-endpoints']),
 };
 // Lo que solo llevan las copias: Trusted Types en aviso (en producción, aplazado a la fase 5)
@@ -111,13 +149,21 @@ const comparaCabeceras = (copia, noLasLleva) => {
   const diferencias = [];
   for (const [nombre, valor] of Object.entries(RAIZ_DE_PRO)) {
     if (nombre.startsWith('_') || noLasLleva.has(nombre)) continue;
-    if (!copia.has(nombre)) { diferencias.push(`falta ${nombre}`); continue; }
+    if (!copia.has(nombre)) {
+      diferencias.push(`falta ${nombre}`);
+      continue;
+    }
     if (nombre === 'content-security-policy') continue; // directiva a directiva, en sus tests
-    if (copia.get(nombre) !== valor) diferencias.push(`${nombre}: «${copia.get(nombre)}», se espera «${valor}»`);
+    if (copia.get(nombre) !== valor)
+      diferencias.push(
+        `${nombre}: «${copia.get(nombre)}», se espera «${valor}»`,
+      );
   }
   for (const nombre of copia.keys()) {
-    if (!(nombre in RAIZ_DE_PRO) && !SOLO_EN_LOCAL.has(nombre)) diferencias.push(`sobra ${nombre}`);
-    if (noLasLleva.has(nombre)) diferencias.push(`sobra ${nombre} (no la lleva esta copia)`);
+    if (!(nombre in RAIZ_DE_PRO) && !SOLO_EN_LOCAL.has(nombre))
+      diferencias.push(`sobra ${nombre}`);
+    if (noLasLleva.has(nombre))
+      diferencias.push(`sobra ${nombre} (no la lleva esta copia)`);
   }
   return diferencias;
 };
@@ -140,13 +186,23 @@ describe('cabeceras de seguridad: las copias como producción (FE-04/FE-05)', ()
   });
 
   it('ninguna CSP abre Sentry con comodín ni Google Fonts (FE-04)', () => {
-    for (const csp of [...cspDeVite, cspDeNginx, RAIZ_DE_PRO['content-security-policy']]) {
-      expect(csp).not.toMatch(/\*\.ingest\.sentry\.io|fonts\.googleapis\.com|fonts\.gstatic\.com/);
+    for (const csp of [
+      ...cspDeVite,
+      cspDeNginx,
+      RAIZ_DE_PRO['content-security-policy'],
+    ]) {
+      expect(csp).not.toMatch(
+        /\*\.ingest\.sentry\.io|fonts\.googleapis\.com|fonts\.gstatic\.com/,
+      );
     }
   });
 
   it('producción trae todas las cabeceras de seguridad, ni una más (#1100)', () => {
-    expect(Object.keys(RAIZ_DE_PRO).filter((n) => !n.startsWith('_')).sort()).toEqual([...CABECERAS].sort());
+    expect(
+      Object.keys(RAIZ_DE_PRO)
+        .filter((n) => !n.startsWith('_'))
+        .sort(),
+    ).toEqual([...CABECERAS].sort());
   });
 
   it('la CSP de producción cierra el marco, los objetos y la base, y no abre los scripts', () => {
@@ -160,12 +216,17 @@ describe('cabeceras de seguridad: las copias como producción (FE-04/FE-05)', ()
   it.each([
     ['vite.config.js', cabecerasDeVite],
     ['nginx-security-headers.conf', cabecerasDeNginx],
-  ])('%s lleva cada cabecera de producción con el mismo valor, y nada más (#1100)', (fichero, lee) => {
-    expect(comparaCabeceras(lee(), NO_LAS_LLEVA[fichero])).toEqual([]);
-  });
+  ])(
+    '%s lleva cada cabecera de producción con el mismo valor, y nada más (#1100)',
+    (fichero, lee) => {
+      expect(comparaCabeceras(lee(), NO_LAS_LLEVA[fichero])).toEqual([]);
+    },
+  );
 
   it('el Vite de desarrollo hereda las de preview (solo cambia la CSP)', () => {
-    expect(VITE).toMatch(/const devHeaders = \{\s*\.\.\.securityHeaders,\s*'Content-Security-Policy':\s*"[^"]+",?\s*\}/);
+    expect(VITE).toMatch(
+      /const devHeaders = \{\s*\.\.\.securityHeaders,\s*'Content-Security-Policy':\s*"[^"]+",?\s*\}/,
+    );
   });
 
   it('el analizador de las copias ve todas sus cabeceras', () => {
@@ -178,8 +239,14 @@ describe('cabeceras de seguridad: las copias como producción (FE-04/FE-05)', ()
   // Revisión de #1109: sin `always` no se veía, y una segunda CSP de aviso pasaba sin más
   it.each([
     ['una cabecera sin always', 'add_header X-Nueva "x";'],
-    ['una segunda CSP de aviso, sin always', `add_header Content-Security-Policy-Report-Only "default-src *";`],
-    ['una cabecera repetida', `add_header X-Frame-Options "SAMEORIGIN" always;`],
+    [
+      'una segunda CSP de aviso, sin always',
+      `add_header Content-Security-Policy-Report-Only "default-src *";`,
+    ],
+    [
+      'una cabecera repetida',
+      `add_header X-Frame-Options "SAMEORIGIN" always;`,
+    ],
     ['un valor sin comillas', 'add_header X-Rara valor always;'],
     ['un valor partido en dos líneas', 'add_header X-Larga "a;\n  b" always;'],
   ])('el analizador del nginx no se calla ante %s', (_caso, linea) => {
@@ -187,24 +254,36 @@ describe('cabeceras de seguridad: las copias como producción (FE-04/FE-05)', ()
   });
 
   it('el analizador del nginx lee también la cabecera sin always, y la sangrada', () => {
-    const { cabeceras } = leerNginx('add_header X-Nueva "x";\n    add_header X-Sangrada "y" always;\n');
+    const { cabeceras } = leerNginx(
+      'add_header X-Nueva "x";\n    add_header X-Sangrada "y" always;\n',
+    );
     expect(cabeceras.get('x-nueva')).toBe('x');
     expect(cabeceras.get('x-sangrada')).toBe('y');
   });
 
   it('en el Kind, /images/ va con CORP cross-origin, como en producción (el logo de los correos)', () => {
     // La de /images/ en el fichero (el logo de los correos), sin nombrar la marca (BrandMark.test)
-    const [, deImagenes] = Object.entries(PRODUCCION.rutas).find(([ruta]) => ruta.startsWith('/images/'));
+    const [, deImagenes] = Object.entries(PRODUCCION.rutas).find(([ruta]) =>
+      ruta.startsWith('/images/'),
+    );
     expect(deImagenes['cross-origin-resource-policy']).toBe('cross-origin');
-    expect(leer('nginx.conf')).toMatch(/map \$uri \$corp \{\s*~\^\/images\/\s+cross-origin;\s*default\s+same-origin;/);
+    expect(leer('nginx.conf')).toMatch(
+      /map \$uri \$corp \{\s*~\^\/images\/\s+cross-origin;\s*default\s+same-origin;/,
+    );
   });
 
   it('Trusted Types solo en aviso y solo en local; en producción, aplazado a la fase 5 (FE-04)', () => {
     // En producción saltaría en cada carga (service worker, workers, MapLibre) y gastaría la
     // cuota de Sentry (decidido el 11 nov 2026)
-    expect(RAIZ_DE_PRO).not.toHaveProperty('content-security-policy-report-only');
-    expect(VITE).toContain(`'Content-Security-Policy-Report-Only': "require-trusted-types-for 'script';"`);
-    expect(NGINX).toContain(`add_header Content-Security-Policy-Report-Only "require-trusted-types-for 'script';" always;`);
+    expect(RAIZ_DE_PRO).not.toHaveProperty(
+      'content-security-policy-report-only',
+    );
+    expect(VITE).toContain(
+      `'Content-Security-Policy-Report-Only': "require-trusted-types-for 'script';"`,
+    );
+    expect(NGINX).toContain(
+      `add_header Content-Security-Policy-Report-Only "require-trusted-types-for 'script';" always;`,
+    );
   });
 
   it('en producción, los avisos de la CSP van al proyecto del front en Sentry', () => {
@@ -212,6 +291,8 @@ describe('cabeceras de seguridad: las copias como producción (FE-04/FE-05)', ()
       /^https:\/\/o4510427294662656\.ingest\.de\.sentry\.io\/api\/4510427296825424\/security\/\?sentry_key=[0-9a-f]{32}&sentry_environment=production$/,
     );
     expect(RAIZ_DE_PRO['reporting-endpoints']).toBe('csp="{sentry_csp}"');
-    expect(RAIZ_DE_PRO['content-security-policy']).toMatch(/report-uri \{sentry_csp\}; report-to csp$/);
+    expect(RAIZ_DE_PRO['content-security-policy']).toMatch(
+      /report-uri \{sentry_csp\}; report-to csp$/,
+    );
   });
 });

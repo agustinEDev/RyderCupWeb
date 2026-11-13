@@ -13,9 +13,9 @@ vi.mock('../../assemblers/CompetitionAssembler', () => ({
       creator: competition.creator,
       enrolledCount: competition.enrolledCount,
       maxPlayers: competition.maxPlayers,
-      countries: competition.countries
-    }))
-  }
+      countries: competition.countries,
+    })),
+  },
 }));
 
 describe('BrowseJoinableCompetitionsUseCase', () => {
@@ -31,7 +31,9 @@ describe('BrowseJoinableCompetitionsUseCase', () => {
     };
 
     // Re-instantiate the use case with the mock
-    browseJoinableCompetitionsUseCase = new BrowseJoinableCompetitionsUseCase(competitionRepository);
+    browseJoinableCompetitionsUseCase = new BrowseJoinableCompetitionsUseCase(
+      competitionRepository,
+    );
   });
 
   it('should successfully list ACTIVE joinable competitions with default filters', async () => {
@@ -49,7 +51,7 @@ describe('BrowseJoinableCompetitionsUseCase', () => {
         creator: { id: 'creator-1', name: 'John Doe' },
         enrolledCount: 10,
         maxPlayers: 24,
-        countries: ['ESP', 'USA']
+        countries: ['ESP', 'USA'],
       },
       {
         id: 'comp-2',
@@ -60,8 +62,8 @@ describe('BrowseJoinableCompetitionsUseCase', () => {
         creator: { id: 'creator-2', name: 'Jane Smith' },
         enrolledCount: 5,
         maxPlayers: 20,
-        countries: ['GBR', 'FRA']
-      }
+        countries: ['GBR', 'FRA'],
+      },
     ];
 
     // Expected simple DTOs (what the UI will receive)
@@ -75,7 +77,7 @@ describe('BrowseJoinableCompetitionsUseCase', () => {
         creator: { id: 'creator-1', name: 'John Doe' },
         enrolledCount: 10,
         maxPlayers: 24,
-        countries: ['ESP', 'USA']
+        countries: ['ESP', 'USA'],
       },
       {
         id: 'comp-2',
@@ -86,8 +88,8 @@ describe('BrowseJoinableCompetitionsUseCase', () => {
         creator: { id: 'creator-2', name: 'Jane Smith' },
         enrolledCount: 5,
         maxPlayers: 20,
-        countries: ['GBR', 'FRA']
-      }
+        countries: ['GBR', 'FRA'],
+      },
     ];
 
     // Configure repository mock to return the competition entities
@@ -104,7 +106,7 @@ describe('BrowseJoinableCompetitionsUseCase', () => {
       searchName: undefined,
       searchCreator: undefined,
       limit: 50,
-      offset: 0
+      offset: 0,
     });
 
     // 2. Verify the use case returns the DTOs (not the entities)
@@ -129,7 +131,7 @@ describe('BrowseJoinableCompetitionsUseCase', () => {
       searchName: 'Championship',
       searchCreator: undefined,
       limit: 50,
-      offset: 0
+      offset: 0,
     });
   });
 
@@ -150,7 +152,7 @@ describe('BrowseJoinableCompetitionsUseCase', () => {
       searchName: undefined,
       searchCreator: 'John',
       limit: 50,
-      offset: 0
+      offset: 0,
     });
   });
 
@@ -171,7 +173,7 @@ describe('BrowseJoinableCompetitionsUseCase', () => {
       searchName: undefined,
       searchCreator: undefined,
       limit: 20,
-      offset: 10
+      offset: 10,
     });
   });
 
@@ -188,8 +190,8 @@ describe('BrowseJoinableCompetitionsUseCase', () => {
     // Assert
     expect(competitionRepository.findPublic).toHaveBeenCalledWith(
       expect.objectContaining({
-        excludeMyCompetitions: true
-      })
+        excludeMyCompetitions: true,
+      }),
     );
   });
 
@@ -206,8 +208,8 @@ describe('BrowseJoinableCompetitionsUseCase', () => {
     // Assert
     expect(competitionRepository.findPublic).toHaveBeenCalledWith(
       expect.objectContaining({
-        status: 'ACTIVE'
-      })
+        status: 'ACTIVE',
+      }),
     );
   });
 
@@ -235,9 +237,9 @@ describe('BrowseJoinableCompetitionsUseCase', () => {
     competitionRepository.findPublic.mockRejectedValue(new Error(errorMessage));
 
     // Act & Assert
-    await expect(browseJoinableCompetitionsUseCase.execute(filters))
-      .rejects
-      .toThrow(errorMessage);
+    await expect(
+      browseJoinableCompetitionsUseCase.execute(filters),
+    ).rejects.toThrow(errorMessage);
   });
 
   it('should pass multiple filters combined to repository', async () => {
@@ -246,7 +248,7 @@ describe('BrowseJoinableCompetitionsUseCase', () => {
       searchName: 'Summer',
       searchCreator: 'Jane',
       limit: 25,
-      offset: 5
+      offset: 5,
     };
 
     // Configure repository mock
@@ -262,7 +264,7 @@ describe('BrowseJoinableCompetitionsUseCase', () => {
       searchName: 'Summer',
       searchCreator: 'Jane',
       limit: 25,
-      offset: 5
+      offset: 5,
     });
   });
 });

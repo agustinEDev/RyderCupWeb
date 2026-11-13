@@ -1,14 +1,16 @@
 import { describe, it, expect, vi } from 'vitest';
 import SetActivitySharingUseCase from './SetActivitySharingUseCase';
 
-const repositorio = (respuesta = { shareActivity: false, removedEvents: 0 }) => ({
+const repositorio = (
+  respuesta = { shareActivity: false, removedEvents: 0 },
+) => ({
   setActivitySharing: vi.fn().mockResolvedValue(respuesta),
 });
 
 describe('SetActivitySharingUseCase', () => {
   it('requires a repository', () => {
     expect(() => new SetActivitySharingUseCase({})).toThrow(
-      'SetActivitySharingUseCase requires socialFeedRepository'
+      'SetActivitySharingUseCase requires socialFeedRepository',
     );
   });
 
@@ -24,7 +26,10 @@ describe('SetActivitySharingUseCase', () => {
   it('reports how many entries were removed', async () => {
     // Apagar borra lo ya publicado. La pantalla necesita el número para poder
     // decir qué ha pasado, no solo que el interruptor cambió de lado.
-    const socialFeedRepository = repositorio({ shareActivity: false, removedEvents: 12 });
+    const socialFeedRepository = repositorio({
+      shareActivity: false,
+      removedEvents: 12,
+    });
     const useCase = new SetActivitySharingUseCase({ socialFeedRepository });
 
     const result = await useCase.execute(false);
@@ -39,7 +44,7 @@ describe('SetActivitySharingUseCase', () => {
     const useCase = new SetActivitySharingUseCase({ socialFeedRepository });
 
     await expect(useCase.execute('false')).rejects.toThrow(
-      'SetActivitySharingUseCase requires a boolean'
+      'SetActivitySharingUseCase requires a boolean',
     );
     expect(socialFeedRepository.setActivitySharing).not.toHaveBeenCalled();
   });

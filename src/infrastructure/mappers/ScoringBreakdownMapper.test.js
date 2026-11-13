@@ -12,13 +12,30 @@ describe('ScoringBreakdownMapper', () => {
   const respuesta = (extra = {}) => ({
     holes_counted: 9,
     rounds_counted: 1,
-    gross_distribution: { birdie_or_better: 0, par: 2, bogey: 4, double_or_worse: 3, holes: 9 },
-    net_distribution: { birdie_or_better: 2, par: 4, bogey: 3, double_or_worse: 0, holes: 9 },
+    gross_distribution: {
+      birdie_or_better: 0,
+      par: 2,
+      bogey: 4,
+      double_or_worse: 3,
+      holes: 9,
+    },
+    net_distribution: {
+      birdie_or_better: 2,
+      par: 4,
+      bogey: 3,
+      double_or_worse: 0,
+      holes: 9,
+    },
     by_par: [{ par: 3, holes: 3, average_to_par: 1 }],
     front_nine: { holes: 9, average_to_par: 0.11 },
     back_nine: null,
     by_course: [
-      { golf_course_id: 'c1', golf_course_name: 'Son Parc', rounds: 1, average_to_par: 2 },
+      {
+        golf_course_id: 'c1',
+        golf_course_name: 'Son Parc',
+        rounds: 1,
+        average_to_par: 2,
+      },
     ],
     ...extra,
   });
@@ -42,7 +59,7 @@ describe('ScoringBreakdownMapper', () => {
 
   it('conserva el cero cuando el cero es la respuesta', () => {
     const desglose = ScoringBreakdownMapper.toDomain(
-      respuesta({ back_nine: { holes: 9, average_to_par: 0 } })
+      respuesta({ back_nine: { holes: 9, average_to_par: 0 } }),
     );
 
     expect(desglose.backNine.averageToPar).toBe(0);
@@ -75,6 +92,8 @@ describe('ScoringBreakdownMapper', () => {
   });
 
   it('protesta si no llega respuesta', () => {
-    expect(() => ScoringBreakdownMapper.toDomain(null)).toThrow('apiData is required');
+    expect(() => ScoringBreakdownMapper.toDomain(null)).toThrow(
+      'apiData is required',
+    );
   });
 });

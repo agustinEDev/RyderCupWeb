@@ -12,14 +12,17 @@ const sesion = vi.hoisted(() => ({ valor: { user: null, loading: false } }));
 
 vi.mock('../../hooks/useAuth', () => ({ useAuth: () => sesion.valor }));
 
-const busca = (bloque, clave) => clave.split('.').reduce((nodo, parte) => nodo?.[parte], bloque);
+const busca = (bloque, clave) =>
+  clave.split('.').reduce((nodo, parte) => nodo?.[parte], bloque);
 
 vi.mock('react-i18next', async () => {
   const textos = (await import('../../i18n/locales/es/common.json')).default;
   return {
     useTranslation: () => ({
       // Como i18next: sin la clave, el texto por defecto que lleve la llamada
-      t: (clave, porDefecto) => busca(textos, clave) ?? (typeof porDefecto === 'string' ? porDefecto : clave),
+      t: (clave, porDefecto) =>
+        busca(textos, clave) ??
+        (typeof porDefecto === 'string' ? porDefecto : clave),
       i18n: { language: 'es' },
     }),
   };
@@ -31,7 +34,7 @@ const abrir = () =>
   render(
     <MemoryRouter initialEntries={['/unauthorized']}>
       <Unauthorized />
-    </MemoryRouter>
+    </MemoryRouter>,
   ).container.firstElementChild;
 
 describe('Unauthorized', () => {
@@ -44,7 +47,10 @@ describe('Unauthorized', () => {
   // App en `--alto-barra-inferior` solo cuando pinta la barra; la página no
   // lee la sesión (antes ignoraba `loading` y no sabía de los Términos)
   // Y el aviso de instalar, que también flota abajo (revisor de las sobras del QA)
-  const ALTO = ['min-h-[calc(100dvh-var(--alto-barra-inferior,0px)-var(--alto-aviso-instalar,0px))]', 'md:min-h-[calc(100dvh-var(--alto-aviso-instalar,0px))]'];
+  const ALTO = [
+    'min-h-[calc(100dvh-var(--alto-barra-inferior,0px)-var(--alto-aviso-instalar,0px))]',
+    'md:min-h-[calc(100dvh-var(--alto-aviso-instalar,0px))]',
+  ];
 
   it('U1: sin sesión, la pantalla menos el hueco que diga App', () => {
     const pagina = abrir();
@@ -59,7 +65,10 @@ describe('Unauthorized', () => {
     const pagina = abrir();
 
     expect(pagina).toHaveClass(...ALTO);
-    expect(pagina).not.toHaveClass('min-h-[calc(100dvh-4rem-env(safe-area-inset-bottom))]', 'min-h-dvh');
+    expect(pagina).not.toHaveClass(
+      'min-h-[calc(100dvh-4rem-env(safe-area-inset-bottom))]',
+      'min-h-dvh',
+    );
     expect(pagina.style.minHeight).toBe('');
   });
 
@@ -73,22 +82,43 @@ describe('Unauthorized', () => {
 
   it('N5: se pinta en español', () => {
     render(
-      <MemoryRouter initialEntries={[{ pathname: '/unauthorized', state: { from: { pathname: '/admin' } } }]}>
+      <MemoryRouter
+        initialEntries={[
+          {
+            pathname: '/unauthorized',
+            state: { from: { pathname: '/admin' } },
+          },
+        ]}
+      >
         <Unauthorized />
-      </MemoryRouter>
+      </MemoryRouter>,
     );
 
-    expect(screen.getByRole('heading', { level: 1, name: es.unauthorized.title })).toBeInTheDocument();
+    expect(
+      screen.getByRole('heading', { level: 1, name: es.unauthorized.title }),
+    ).toBeInTheDocument();
     expect(screen.getByText(es.unauthorized.message)).toBeInTheDocument();
-    expect(screen.getByText(`${es.unauthorized.attempted}: /admin`)).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: es.unauthorized.goToDashboard })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: es.unauthorized.goBack })).toBeInTheDocument();
+    expect(
+      screen.getByText(`${es.unauthorized.attempted}: /admin`),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: es.unauthorized.goToDashboard }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: es.unauthorized.goBack }),
+    ).toBeInTheDocument();
     expect(screen.queryByText('Access Denied')).toBeNull();
   });
 
   it('N5: las cinco claves en los dos idiomas', () => {
     for (const idioma of [es, en]) {
-      for (const clave of ['title', 'message', 'attempted', 'goToDashboard', 'goBack']) {
+      for (const clave of [
+        'title',
+        'message',
+        'attempted',
+        'goToDashboard',
+        'goBack',
+      ]) {
         expect(typeof idioma.unauthorized?.[clave]).toBe('string');
       }
     }

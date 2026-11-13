@@ -6,11 +6,15 @@ class ApiAuthRepository extends IAuthRepository {
   /**
    * @override
    */
-  async login(email, password) { // 'email' y 'password' ahora son Value Objects
+  async login(email, password) {
+    // 'email' y 'password' ahora son Value Objects
     try {
       const data = await apiRequest('/api/v1/auth/login', {
         method: 'POST',
-        body: JSON.stringify({ email: email.getValue(), password: password.getValue() }),
+        body: JSON.stringify({
+          email: email.getValue(),
+          password: password.getValue(),
+        }),
       });
 
       // Los tokens de sesión van solo en cookies httpOnly (fase 3): del cuerpo solo se
@@ -160,7 +164,10 @@ class ApiAuthRepository extends IAuthRepository {
     // Con el verifier de PKCE: sin él, un código robado se podría canjear (fase 3)
     const data = await apiRequest('/api/v1/auth/google', {
       method: 'POST',
-      body: JSON.stringify({ authorization_code: authorizationCode, code_verifier: codeVerifier }),
+      body: JSON.stringify({
+        authorization_code: authorizationCode,
+        code_verifier: codeVerifier,
+      }),
     });
 
     return {
@@ -187,7 +194,10 @@ class ApiAuthRepository extends IAuthRepository {
   async linkGoogleAccount(authorizationCode, codeVerifier) {
     const data = await apiRequest('/api/v1/auth/google/link', {
       method: 'POST',
-      body: JSON.stringify({ authorization_code: authorizationCode, code_verifier: codeVerifier }),
+      body: JSON.stringify({
+        authorization_code: authorizationCode,
+        code_verifier: codeVerifier,
+      }),
     });
 
     return {

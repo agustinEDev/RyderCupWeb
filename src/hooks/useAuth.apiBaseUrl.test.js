@@ -56,7 +56,7 @@ describe('useAuth - resolucion de la URL base de la API', () => {
 
     expect(fetchWithTokenRefresh).toHaveBeenCalledWith(
       'https://api.example.test/api/v1/auth/current-user',
-      expect.objectContaining({ credentials: 'include' })
+      expect.objectContaining({ credentials: 'include' }),
     );
   });
 

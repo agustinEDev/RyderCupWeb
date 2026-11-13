@@ -40,7 +40,8 @@ const CAMPOS_QUE_SE_GUARDAN = [
  * @param {unknown} usuario
  * @returns {Object|null} Solo los campos que se pueden guardar; null si no es un usuario.
  */
-const esObjeto = (valor) => Boolean(valor) && typeof valor === 'object' && !Array.isArray(valor);
+const esObjeto = (valor) =>
+  Boolean(valor) && typeof valor === 'object' && !Array.isArray(valor);
 
 /**
  * @param {unknown} usuario
@@ -48,9 +49,12 @@ const esObjeto = (valor) => Boolean(valor) && typeof valor === 'object' && !Arra
  *   (no es un objeto, es una lista o no tiene `id`).
  */
 export const copiaDelUsuarioEnElDispositivo = (usuario) => {
-  if (!esObjeto(usuario) || usuario.id === undefined || usuario.id === null) return null;
+  if (!esObjeto(usuario) || usuario.id === undefined || usuario.id === null)
+    return null;
   return Object.fromEntries(
-    CAMPOS_QUE_SE_GUARDAN.filter((campo) => Object.hasOwn(usuario, campo)).map((campo) => [campo, usuario[campo]])
+    CAMPOS_QUE_SE_GUARDAN.filter((campo) => Object.hasOwn(usuario, campo)).map(
+      (campo) => [campo, usuario[campo]],
+    ),
   );
 };
 

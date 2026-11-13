@@ -1,6 +1,20 @@
-import { useState, useEffect, useLayoutEffect, useCallback, useRef, useMemo } from 'react';
+import {
+  useState,
+  useEffect,
+  useLayoutEffect,
+  useCallback,
+  useRef,
+  useMemo,
+} from 'react';
 import { Link, useLocation } from 'react-router';
-import { AlertCircle, Loader, RefreshCw, Sparkles, UserPlus, WifiOff } from 'lucide-react';
+import {
+  AlertCircle,
+  Loader,
+  RefreshCw,
+  Sparkles,
+  UserPlus,
+  WifiOff,
+} from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import customToast from '../../utils/toast';
 import { esFalloDeRed } from '../../utils/sinCobertura';
@@ -202,9 +216,11 @@ const FeedPage = () => {
         // cobertura, y las dos cosas acababan en el mismo aviso
         const deRed = esFalloDeRed(err);
         setLoadError(deRed ? 'red' : 'otro');
-        customToast.error(t(deRed ? 'common:sinConexion.mensaje' : 'common:errors.generic'));
+        customToast.error(
+          t(deRed ? 'common:sinConexion.mensaje' : 'common:errors.generic'),
+        );
       },
-    }
+    },
   );
   // Sin usuario no se pide nada y se sigue esperando, como antes
   const isLoading = cargando || !userId;
@@ -255,7 +271,11 @@ const FeedPage = () => {
     } catch (err) {
       if (deQuienRef.current !== deQuien) return;
       customToast.error(
-        t(esFalloDeRed(err) ? 'common:sinConexion.mensaje' : 'common:errors.generic')
+        t(
+          esFalloDeRed(err)
+            ? 'common:sinConexion.mensaje'
+            : 'common:errors.generic',
+        ),
       );
     } finally {
       setIsLoadingMore(false);
@@ -275,7 +295,9 @@ const FeedPage = () => {
       if (action === 'ACCEPT') {
         setRequestStates((prev) => ({ ...prev, [friendshipId]: 'aceptada' }));
       } else {
-        setRequests((prev) => prev.filter((r) => r.friendshipId !== friendshipId));
+        setRequests((prev) =>
+          prev.filter((r) => r.friendshipId !== friendshipId),
+        );
       }
     } catch (err) {
       // La tarjeta se queda como estaba, con sus botones, para volver a probar
@@ -285,7 +307,11 @@ const FeedPage = () => {
         return resto;
       });
       customToast.error(
-        t(esFalloDeRed(err) ? 'common:sinConexion.mensaje' : 'common:errors.generic')
+        t(
+          esFalloDeRed(err)
+            ? 'common:sinConexion.mensaje'
+            : 'common:errors.generic',
+        ),
       );
     }
   };
@@ -299,7 +325,7 @@ const FeedPage = () => {
         novedades: unseenCount,
         ahora: new Date(),
       }),
-    [events, requests, unseenCount]
+    [events, requests, unseenCount],
   );
 
   if (isLoadingUser || isLoading) {
@@ -317,7 +343,8 @@ const FeedPage = () => {
   // Una página puede llegar con menos entradas de las pedidas, o con ninguna
   // que se sepa pintar, y aun así traer cursor: entonces queda más que ver y
   // no se dice «no hay nada», se ofrece «Cargar más»
-  const vacio = linea.dias.length === 0 && linea.solicitudes.length === 0 && !nextCursor;
+  const vacio =
+    linea.dias.length === 0 && linea.solicitudes.length === 0 && !nextCursor;
 
   return (
     <div className={`${PANTALLA_MENOS_BARRA_INFERIOR} bg-gray-50`}>
@@ -326,7 +353,9 @@ const FeedPage = () => {
       <main className="max-w-2xl mx-auto px-4 py-6 pb-24">
         <div className="flex items-center justify-between gap-3 mb-4">
           <div className="min-w-0">
-            <h1 className="hidden md:block text-xl font-bold text-gray-900">{t('feed:title')}</h1>
+            <h1 className="hidden md:block text-xl font-bold text-gray-900">
+              {t('feed:title')}
+            </h1>
             <p className="text-sm text-gray-500">{t('feed:subtitle')}</p>
           </div>
           <Link
@@ -340,7 +369,11 @@ const FeedPage = () => {
         </div>
 
         {loadError ? (
-          <LoadError deRed={loadError === 'red'} onRetry={() => reintentar()} t={t} />
+          <LoadError
+            deRed={loadError === 'red'}
+            onRetry={() => reintentar()}
+            t={t}
+          />
         ) : vacio ? (
           <EmptyFeed t={t} />
         ) : (
@@ -352,9 +385,13 @@ const FeedPage = () => {
                     key={solicitud.friendshipId}
                     solicitud={solicitud}
                     autores={authors}
-                    estado={requestStates[solicitud.friendshipId] || 'pendiente'}
+                    estado={
+                      requestStates[solicitud.friendshipId] || 'pendiente'
+                    }
                     onAceptar={() => respond(solicitud.friendshipId, 'ACCEPT')}
-                    onRechazar={() => respond(solicitud.friendshipId, 'DECLINE')}
+                    onRechazar={() =>
+                      respond(solicitud.friendshipId, 'DECLINE')
+                    }
                     ahora={ahora}
                   />
                 ))}
@@ -414,12 +451,17 @@ const LoadError = ({ deRed, onRetry, t }) => (
     {deRed ? (
       <WifiOff className="w-12 h-12 text-gray-400 mb-3" aria-hidden="true" />
     ) : (
-      <AlertCircle className="w-12 h-12 text-gray-400 mb-3" aria-hidden="true" />
+      <AlertCircle
+        className="w-12 h-12 text-gray-400 mb-3"
+        aria-hidden="true"
+      />
     )}
     <p className="text-gray-900 font-semibold mb-1">
       {deRed ? t('common:sinConexion.aviso') : t('feed:loadError')}
     </p>
-    {deRed && <p className="text-gray-500 text-sm">{t('feed:sinCoberturaDetalle')}</p>}
+    {deRed && (
+      <p className="text-gray-500 text-sm">{t('feed:sinCoberturaDetalle')}</p>
+    )}
     <button
       type="button"
       onClick={onRetry}
@@ -437,10 +479,17 @@ const LoadError = ({ deRed, onRetry, t }) => (
  * lo arregla en vez de dejar la pantalla en blanco.
  */
 const EmptyFeed = ({ t }) => (
-  <div className="text-center py-16 px-6 bg-white border border-gray-200 rounded-lg" data-testid="feed-empty">
+  <div
+    className="text-center py-16 px-6 bg-white border border-gray-200 rounded-lg"
+    data-testid="feed-empty"
+  >
     <Sparkles className="w-10 h-10 mx-auto text-gray-300" aria-hidden="true" />
-    <h2 className="mt-3 text-base font-semibold text-gray-900">{t('feed:empty.noActivity')}</h2>
-    <p className="mt-1 text-sm text-gray-500">{t('feed:empty.noActivityHint')}</p>
+    <h2 className="mt-3 text-base font-semibold text-gray-900">
+      {t('feed:empty.noActivity')}
+    </h2>
+    <p className="mt-1 text-sm text-gray-500">
+      {t('feed:empty.noActivityHint')}
+    </p>
     <Link
       to="/friends"
       className="mt-4 inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-primary rounded-md hover:bg-primary/90"

@@ -43,7 +43,16 @@ const REFRESCO_MS = 10000;
  * cambio de ronda no saque la espera de pantalla completa. Hasta que llega
  * la vista de SU ronda (`cargada`), solo la espera del bloque.
  */
-const SobreDeLaRonda = ({ id, roundId, cargada, vista, fallo, cargar, refrescar, nombresDeLosEquipos }) => {
+const SobreDeLaRonda = ({
+  id,
+  roundId,
+  cargada,
+  vista,
+  fallo,
+  cargar,
+  refrescar,
+  nombresDeLosEquipos,
+}) => {
   const navigate = useNavigate();
   const { t, i18n } = useTranslation('competitions');
   const { user } = useAuth();
@@ -65,7 +74,8 @@ const SobreDeLaRonda = ({ id, roundId, cargada, vista, fallo, cargar, refrescar,
       sigueEnPantallaRef.current = false;
     };
   }, []);
-  const recargarSiSigue = () => (sigueEnPantallaRef.current ? cargar() : undefined);
+  const recargarSiSigue = () =>
+    sigueEnPantallaRef.current ? cargar() : undefined;
 
   const jugadores = useMemo(() => vista?.myPlayers || [], [vista]);
 
@@ -83,7 +93,9 @@ const SobreDeLaRonda = ({ id, roundId, cargada, vista, fallo, cargar, refrescar,
   // «Tu sobre» solo para quien capitanea: el organizador o un jugador que solo
   // mira no tienen sobre. Mientras carga se deja el de siempre, para que el
   // título del capitán no cambie al llegar la vista
-  const titulo = t(vista && !capitanea ? 'envelope.titleOthers' : 'envelope.title');
+  const titulo = t(
+    vista && !capitanea ? 'envelope.titleOthers' : 'envelope.title',
+  );
   const entregado = Boolean(vista?.mine?.submitted) && !reordenando;
 
   // Con el sobre entregado y aún cerrados, se pregunta sola (#710): con los dos
@@ -163,7 +175,11 @@ const SobreDeLaRonda = ({ id, roundId, cargada, vista, fallo, cargar, refrescar,
     if (cambiandoPermiso || !vista?.mine) return;
     setCambiandoPermiso(true);
     try {
-      await submitEnvelopeUseCase.execute(roundId, vista.mine.entries, conPermiso);
+      await submitEnvelopeUseCase.execute(
+        roundId,
+        vista.mine.entries,
+        conPermiso,
+      );
       await recargarSiSigue();
     } catch (error) {
       customToast.error(error.message);
@@ -191,7 +207,9 @@ const SobreDeLaRonda = ({ id, roundId, cargada, vista, fallo, cargar, refrescar,
 
   // Qué sobres rellenó la aplicación, en UN aviso que dice de quién (#710):
   // eran dos avisos iguales, y «ese capitán» no decía cuál
-  const automaticos = ['A', 'B'].filter((equipo) => vista?.[`team${equipo}Automatic`]);
+  const automaticos = ['A', 'B'].filter(
+    (equipo) => vista?.[`team${equipo}Automatic`],
+  );
   let avisoAutomatico = null;
   if (automaticos.length === 2) {
     avisoAutomatico = t('envelope.filledByTheAppBoth');
@@ -199,7 +217,9 @@ const SobreDeLaRonda = ({ id, roundId, cargada, vista, fallo, cargar, refrescar,
     // Solo los de ESTA competición: la página no se desmonta al cambiar de una
     // a otra, y los de la anterior nombrarían a otro equipo (CodeRabbit)
     const equipo =
-      nombresDeLosEquipos?.id === id ? nombresDeLosEquipos[automaticos[0]] : undefined;
+      nombresDeLosEquipos?.id === id
+        ? nombresDeLosEquipos[automaticos[0]]
+        : undefined;
     avisoAutomatico = equipo
       ? t('envelope.filledByTheAppTeam', { equipo })
       : t('envelope.filledByTheApp');
@@ -216,7 +236,11 @@ const SobreDeLaRonda = ({ id, roundId, cargada, vista, fallo, cargar, refrescar,
   if (!cargada) {
     return (
       <div className={`${PANTALLA_MENOS_BARRA_INFERIOR} bg-gray-50`}>
-        <HeaderAuth user={user} title={titulo} backTo={`/competitions/${id}/schedule`} />
+        <HeaderAuth
+          user={user}
+          title={titulo}
+          backTo={`/competitions/${id}/schedule`}
+        />
         <div className="mx-auto max-w-2xl px-4 py-6">
           <BlockLoader />
         </div>
@@ -228,7 +252,11 @@ const SobreDeLaRonda = ({ id, roundId, cargada, vista, fallo, cargar, refrescar,
     <div className={`${PANTALLA_MENOS_BARRA_INFERIOR} bg-gray-50`}>
       {/* Al calendario, que es de donde se entra al sobre: devolver a la
           ficha obliga a volver a entrar para la sesión siguiente */}
-      <HeaderAuth user={user} title={titulo} backTo={`/competitions/${id}/schedule`} />
+      <HeaderAuth
+        user={user}
+        title={titulo}
+        backTo={`/competitions/${id}/schedule`}
+      />
       <div className="mx-auto max-w-2xl px-4 py-6">
         <button
           type="button"
@@ -247,7 +275,9 @@ const SobreDeLaRonda = ({ id, roundId, cargada, vista, fallo, cargar, refrescar,
 
         {vista?.revealed && (
           <div className="mb-4 space-y-2">
-            <h2 className="text-sm font-bold text-gray-900">{t('envelope.matchups')}</h2>
+            <h2 className="text-sm font-bold text-gray-900">
+              {t('envelope.matchups')}
+            </h2>
             {avisoAutomatico && (
               <p
                 data-testid="automatico"
@@ -268,7 +298,9 @@ const SobreDeLaRonda = ({ id, roundId, cargada, vista, fallo, cargar, refrescar,
                       contra quién se jugaba (#710) */}
                   <span className="min-w-0 flex-1 break-words">
                     {enfrentamiento[0].map((jugador) => (
-                      <span key={jugador} className="block">{nombreDe(jugador)}</span>
+                      <span key={jugador} className="block">
+                        {nombreDe(jugador)}
+                      </span>
                     ))}
                   </span>
                   <span className="shrink-0 text-xs font-bold text-gray-500">
@@ -276,7 +308,9 @@ const SobreDeLaRonda = ({ id, roundId, cargada, vista, fallo, cargar, refrescar,
                   </span>
                   <span className="min-w-0 flex-1 break-words text-right">
                     {enfrentamiento[1].map((jugador) => (
-                      <span key={jugador} className="block">{nombreDe(jugador)}</span>
+                      <span key={jugador} className="block">
+                        {nombreDe(jugador)}
+                      </span>
                     ))}
                   </span>
                 </li>
@@ -325,13 +359,23 @@ const SobreDeLaRonda = ({ id, roundId, cargada, vista, fallo, cargar, refrescar,
               <Check className="h-5 w-5 shrink-0" />
               <span className="font-semibold">{t('envelope.yours')}</span>
             </div>
-            <ol data-testid="orden-guardado" className="space-y-1 rounded-xl border border-gray-200 bg-white p-3">
+            <ol
+              data-testid="orden-guardado"
+              className="space-y-1 rounded-xl border border-gray-200 bg-white p-3"
+            >
               {vista.mine.entries.map((fila, i) => (
-                <li key={fila.join('-')} className="flex items-center gap-2 text-sm">
-                  <span className="w-5 shrink-0 text-xs font-bold text-gray-500">{i + 1}</span>
+                <li
+                  key={fila.join('-')}
+                  className="flex items-center gap-2 text-sm"
+                >
+                  <span className="w-5 shrink-0 text-xs font-bold text-gray-500">
+                    {i + 1}
+                  </span>
                   <span className="min-w-0 break-words">
                     {fila.map((jugador) => (
-                      <span key={jugador} className="block">{nombreDe(jugador)}</span>
+                      <span key={jugador} className="block">
+                        {nombreDe(jugador)}
+                      </span>
                     ))}
                   </span>
                 </li>
@@ -348,11 +392,17 @@ const SobreDeLaRonda = ({ id, roundId, cargada, vista, fallo, cargar, refrescar,
               </p>
             )}
             <p
-              data-testid={vista.rivalSubmitted ? 'rival-entregado' : 'rival-pendiente'}
+              data-testid={
+                vista.rivalSubmitted ? 'rival-entregado' : 'rival-pendiente'
+              }
               className="flex items-center gap-2 rounded-lg bg-gray-100 p-2 text-sm text-gray-700"
             >
               <Lock className="h-4 w-4 shrink-0" />
-              {t(vista.rivalSubmitted ? 'envelope.rivalIn' : 'envelope.rivalPending')}
+              {t(
+                vista.rivalSubmitted
+                  ? 'envelope.rivalIn'
+                  : 'envelope.rivalPending',
+              )}
             </p>
             {!vista.mine.revealWhenBothReady && vista.rivalWantsEarly && (
               <p
@@ -420,108 +470,114 @@ const SobreDeLaRonda = ({ id, roundId, cargada, vista, fallo, cargar, refrescar,
             abre ni se rellena nada a su hora. Solo queda el aviso de arriba;
             una lista tocable debajo invitaba a ordenarla para nada (FE #726,
             FE #741) */}
-        {!fallo && capitanea && !vista?.revealed && !entregado && !equipoImpar && (
-          <div className="space-y-3">
-            <p className="text-sm text-gray-600">{t('envelope.tapInOrder')}</p>
-            {plazo && (
-              <p data-testid="plazo" className="text-xs text-gray-500">
-                {t('envelope.deadline', { when: plazo })}
+        {!fallo &&
+          capitanea &&
+          !vista?.revealed &&
+          !entregado &&
+          !equipoImpar && (
+            <div className="space-y-3">
+              <p className="text-sm text-gray-600">
+                {t('envelope.tapInOrder')}
               </p>
-            )}
-            {parejaAMedias && (
-              <p
-                data-testid="pareja-a-medias"
-                className="rounded-lg bg-blue-50 p-2 text-xs text-blue-800"
-              >
-                {t('envelope.pairHalfDone')}
-              </p>
-            )}
-            <ul className="divide-y divide-gray-100 rounded-xl border border-gray-200 bg-white">
-              {jugadoresEnOrden.map((jugador) => {
-                const puesto = puestoDe(jugador.userId);
-                return (
-                  <li key={jugador.userId}>
-                    <button
-                      type="button"
-                      data-testid={`jugador-${jugador.userId}`}
-                      onClick={() => tocar(jugador.userId)}
-                      disabled={puesto >= 0}
-                      className={`flex w-full items-center justify-between gap-2 p-3 text-left ${
-                        puesto >= 0 ? 'bg-green-50' : 'hover:bg-gray-50'
-                      }`}
-                    >
-                      <span className="flex min-w-0 items-center gap-2">
-                        {puesto >= 0 && (
-                          <span
-                            data-testid={`puesto-${jugador.userId}`}
-                            className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-green-600 text-xs font-bold text-white"
-                          >
-                            {filaDe(jugador.userId)}
+              {plazo && (
+                <p data-testid="plazo" className="text-xs text-gray-500">
+                  {t('envelope.deadline', { when: plazo })}
+                </p>
+              )}
+              {parejaAMedias && (
+                <p
+                  data-testid="pareja-a-medias"
+                  className="rounded-lg bg-blue-50 p-2 text-xs text-blue-800"
+                >
+                  {t('envelope.pairHalfDone')}
+                </p>
+              )}
+              <ul className="divide-y divide-gray-100 rounded-xl border border-gray-200 bg-white">
+                {jugadoresEnOrden.map((jugador) => {
+                  const puesto = puestoDe(jugador.userId);
+                  return (
+                    <li key={jugador.userId}>
+                      <button
+                        type="button"
+                        data-testid={`jugador-${jugador.userId}`}
+                        onClick={() => tocar(jugador.userId)}
+                        disabled={puesto >= 0}
+                        className={`flex w-full items-center justify-between gap-2 p-3 text-left ${
+                          puesto >= 0 ? 'bg-green-50' : 'hover:bg-gray-50'
+                        }`}
+                      >
+                        <span className="flex min-w-0 items-center gap-2">
+                          {puesto >= 0 && (
+                            <span
+                              data-testid={`puesto-${jugador.userId}`}
+                              className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-green-600 text-xs font-bold text-white"
+                            >
+                              {filaDe(jugador.userId)}
+                            </span>
+                          )}
+                          <span className="min-w-0 truncate text-sm text-gray-900">
+                            {jugador.name}
                           </span>
-                        )}
-                        <span className="min-w-0 truncate text-sm text-gray-900">
-                          {jugador.name}
                         </span>
-                      </span>
-                      <span className="shrink-0 rounded bg-gray-100 px-2 py-0.5 text-xs font-semibold text-gray-700">
-                        {formatoDeIndice(jugador.handicap)}
-                      </span>
-                    </button>
-                  </li>
-                );
-              })}
-            </ul>
-            {/* La casilla, junto al botón de entregar: es parte de la entrega,
+                        <span className="shrink-0 rounded bg-gray-100 px-2 py-0.5 text-xs font-semibold text-gray-700">
+                          {formatoDeIndice(jugador.handicap)}
+                        </span>
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+              {/* La casilla, junto al botón de entregar: es parte de la entrega,
                 no un ajuste aparte */}
-            <label className="flex items-start gap-2 text-sm text-gray-700">
-              <input
-                type="checkbox"
-                data-testid="sin-esperar"
-                checked={sinEsperar}
-                onChange={(e) => setSinEsperar(e.target.checked)}
-                className="mt-0.5 h-4 w-4 shrink-0 rounded border-gray-300 text-green-600"
-              />
-              <span>{t('envelope.revealWhenBothReady')}</span>
-            </label>
+              <label className="flex items-start gap-2 text-sm text-gray-700">
+                <input
+                  type="checkbox"
+                  data-testid="sin-esperar"
+                  checked={sinEsperar}
+                  onChange={(e) => setSinEsperar(e.target.checked)}
+                  className="mt-0.5 h-4 w-4 shrink-0 rounded border-gray-300 text-green-600"
+                />
+                <span>{t('envelope.revealWhenBothReady')}</span>
+              </label>
 
-            <div className="flex gap-2">
-              {vista?.mine?.submitted && (
+              <div className="flex gap-2">
+                {vista?.mine?.submitted && (
+                  <button
+                    type="button"
+                    data-testid="cancelar-cambio"
+                    onClick={() => {
+                      // Un toque sin querer no puede dejarle sin su sobre
+                      // entregado hasta que recargue
+                      setCambiando(false);
+                      setOrden([]);
+                    }}
+                    className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700"
+                  >
+                    {t('envelope.cancel')}
+                  </button>
+                )}
                 <button
                   type="button"
-                  data-testid="cancelar-cambio"
-                  onClick={() => {
-                    // Un toque sin querer no puede dejarle sin su sobre
-                    // entregado hasta que recargue
-                    setCambiando(false);
-                    setOrden([]);
-                  }}
-                  className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700"
+                  data-testid="deshacer"
+                  onClick={deshacer}
+                  disabled={orden.length === 0}
+                  className="flex items-center gap-2 rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700 disabled:opacity-50"
                 >
-                  {t('envelope.cancel')}
+                  <Undo2 className="h-4 w-4" />
+                  {t('envelope.undo')}
                 </button>
-              )}
-              <button
-                type="button"
-                data-testid="deshacer"
-                onClick={deshacer}
-                disabled={orden.length === 0}
-                className="flex items-center gap-2 rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700 disabled:opacity-50"
-              >
-                <Undo2 className="h-4 w-4" />
-                {t('envelope.undo')}
-              </button>
-              <button
-                type="button"
-                data-testid="entregar-sobre"
-                onClick={entregar}
-                disabled={orden.length !== jugadores.length || enviando}
-                className="flex-1 rounded-lg bg-green-600 px-4 py-2 font-semibold text-white hover:bg-green-700 disabled:opacity-50"
-              >
-                {t('envelope.submit')}
-              </button>
+                <button
+                  type="button"
+                  data-testid="entregar-sobre"
+                  onClick={entregar}
+                  disabled={orden.length !== jugadores.length || enviando}
+                  className="flex-1 rounded-lg bg-green-600 px-4 py-2 font-semibold text-white hover:bg-green-700 disabled:opacity-50"
+                >
+                  {t('envelope.submit')}
+                </button>
+              </div>
             </div>
-          </div>
-        )}
+          )}
 
         {/* Abrir a mano solo lo puede el organizador en una sesión sin plazo
             (RyderCupAM#374), y eso ya lo dice `canReveal`: antes de hora, el
@@ -531,14 +587,19 @@ const SobreDeLaRonda = ({ id, roundId, cargada, vista, fallo, cargar, refrescar,
             Mientras reordena no se ofrece aunque el servidor lo permita: el
             sobre que hay guardado es el ANTERIOR, y un toque ahí lo abriría
             tirando por la borda lo que venía a cambiar */}
-        {!fallo && !reordenando && !equipoImpar && puedeAbrir && faltaAlgunSobre && !vista?.revealScheduledAt && (
-          // Esta sesión no tiene hora a la que abrirse sola —su campo no tiene
-          // zona horaria—, así que quien la abra decide también el sobre que
-          // falta. Sin decirlo, el botón parece el de siempre
-          <p data-testid="sin-plazo" className="mb-2 text-xs text-amber-700">
-            {t('envelope.noDeadline')}
-          </p>
-        )}
+        {!fallo &&
+          !reordenando &&
+          !equipoImpar &&
+          puedeAbrir &&
+          faltaAlgunSobre &&
+          !vista?.revealScheduledAt && (
+            // Esta sesión no tiene hora a la que abrirse sola —su campo no tiene
+            // zona horaria—, así que quien la abra decide también el sobre que
+            // falta. Sin decirlo, el botón parece el de siempre
+            <p data-testid="sin-plazo" className="mb-2 text-xs text-amber-700">
+              {t('envelope.noDeadline')}
+            </p>
+          )}
         {/* Con el equipo impar la sesión está bloqueada: abrirlos a mano tampoco
             lleva a nada, aunque el servidor diga que se puede (CodeRabbit, #747) */}
         {!fallo && !reordenando && !equipoImpar && puedeAbrir && (
@@ -552,7 +613,6 @@ const SobreDeLaRonda = ({ id, roundId, cargada, vista, fallo, cargar, refrescar,
             {t('envelope.reveal')}
           </button>
         )}
-
       </div>
     </div>
   );
@@ -562,7 +622,11 @@ const EnvelopePage = () => {
   const { id, roundId } = useParams();
   // La vista y el fallo, con la ronda de la que son: al pasar a otra sin
   // salir, lo de la anterior ya no vale para esta mientras llega lo suyo
-  const [lectura, setLectura] = useState({ roundId: null, vista: null, fallo: null });
+  const [lectura, setLectura] = useState({
+    roundId: null,
+    vista: null,
+    fallo: null,
+  });
   const cargada = lectura.roundId === roundId;
   const vista = cargada ? lectura.vista : null;
   const fallo = cargada ? lectura.fallo : null;
@@ -607,7 +671,7 @@ const EnvelopePage = () => {
         }));
         customToast.error(error.message);
       },
-    }
+    },
   );
   const recargarSinEspera = useCallback(
     (esElRefresco) => {
@@ -617,12 +681,15 @@ const EnvelopePage = () => {
         enVueloRef.current -= 1;
       });
     },
-    [recargar]
+    [recargar],
   );
   // Tras una acción, sin la espera de toda la pantalla, y se espera a que
   // llegue antes de soltar el botón. Nunca se rechaza: el fallo ya lo avisa
   // `alFallar`, una sola vez
-  const cargar = useCallback(() => recargarSinEspera(false), [recargarSinEspera]);
+  const cargar = useCallback(
+    () => recargarSinEspera(false),
+    [recargarSinEspera],
+  );
   // El refresco mientras se espera al rival: si hay otra recarga en vuelo, este
   // tic no sale
   const refrescar = useCallback(() => {
@@ -635,11 +702,19 @@ const EnvelopePage = () => {
   // sale igual, sin nombre: su fallo no se nota
   const hayAutomatico = Boolean(vista?.teamAAutomatic || vista?.teamBAutomatic);
   const [nombresDeLosEquipos, setNombresDeLosEquipos] = useState(null);
-  useCargaCancelableEffect(() => getCompetitionDetailUseCase.execute(id), [id], {
-    activa: hayAutomatico,
-    alCargar: (competicion) =>
-      setNombresDeLosEquipos({ id, A: competicion.team1Name, B: competicion.team2Name }),
-  });
+  useCargaCancelableEffect(
+    () => getCompetitionDetailUseCase.execute(id),
+    [id],
+    {
+      activa: hayAutomatico,
+      alCargar: (competicion) =>
+        setNombresDeLosEquipos({
+          id,
+          A: competicion.team1Name,
+          B: competicion.team2Name,
+        }),
+    },
+  );
 
   if (!primeraTerminada) return <FullScreenLoader />;
 

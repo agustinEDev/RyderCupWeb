@@ -18,7 +18,7 @@ const renderHeader = () =>
   render(
     <MemoryRouter initialEntries={['/']}>
       <Header />
-    </MemoryRouter>
+    </MemoryRouter>,
   );
 
 /**
@@ -31,14 +31,20 @@ describe('Header', () => {
     // buscarlo; en la cabecera con sesión sí se movió ahí (FE #680)
     renderHeader();
 
-    expect(screen.getAllByTestId('language-switcher').length).toBeGreaterThan(0);
+    expect(screen.getAllByTestId('language-switcher').length).toBeGreaterThan(
+      0,
+    );
   });
 
   it('exposes sign in and register without opening the menu', () => {
     renderHeader();
 
-    const loginLinks = screen.getAllByRole('link').filter((link) => link.getAttribute('href') === '/login');
-    const registerLinks = screen.getAllByRole('link').filter((link) => link.getAttribute('href') === '/register');
+    const loginLinks = screen
+      .getAllByRole('link')
+      .filter((link) => link.getAttribute('href') === '/login');
+    const registerLinks = screen
+      .getAllByRole('link')
+      .filter((link) => link.getAttribute('href') === '/register');
 
     // one in the desktop block, one in the mobile header
     expect(loginLinks).toHaveLength(2);
@@ -51,7 +57,9 @@ describe('Header', () => {
     fireEvent.click(screen.getByLabelText('Toggle menu'));
 
     const menu = screen.getByTestId('mobile-menu');
-    const menuLinks = within(menu).getAllByRole('link').map((link) => link.getAttribute('href'));
+    const menuLinks = within(menu)
+      .getAllByRole('link')
+      .map((link) => link.getAttribute('href'));
 
     expect(menuLinks).toContain('/pricing');
     expect(menuLinks).toContain('/contact');
@@ -62,7 +70,9 @@ describe('Header', () => {
   it('drops the wordmark on the narrowest viewports so both buttons fit', () => {
     renderHeader();
 
-    expect(screen.getByText('RyderCupFriends').className).toContain('hidden sm:block');
+    expect(screen.getByText('RyderCupFriends').className).toContain(
+      'hidden sm:block',
+    );
   });
 
   /**
@@ -76,14 +86,19 @@ describe('Header', () => {
       // quepa se midió con Playwright en los anchos que importan
       renderHeader();
 
-      expect(screen.getByTestId('cabecera-completa')).toHaveClass('hidden', 'lg:flex');
+      expect(screen.getByTestId('cabecera-completa')).toHaveClass(
+        'hidden',
+        'lg:flex',
+      );
     });
 
     it('C2: las dos acciones y el menú compactos, hasta lg', () => {
       renderHeader();
 
       expect(screen.getByTestId('acciones-compactas')).toHaveClass('lg:hidden');
-      expect(screen.getByLabelText('Toggle menu').parentElement).toHaveClass('lg:hidden');
+      expect(screen.getByLabelText('Toggle menu').parentElement).toHaveClass(
+        'lg:hidden',
+      );
     });
   });
 });

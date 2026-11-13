@@ -16,9 +16,11 @@ describe('TeeColor', () => {
 
     it('should throw for the categories that no longer exist', () => {
       // Las categorías se retiraron: ninguna federación las publica
-      ['CHAMPIONSHIP', 'AMATEUR', 'SENIOR', 'FORWARD', 'JUNIOR'].forEach((old) => {
-        expect(() => new TeeColor(old)).toThrow('Invalid TeeColor');
-      });
+      ['CHAMPIONSHIP', 'AMATEUR', 'SENIOR', 'FORWARD', 'JUNIOR'].forEach(
+        (old) => {
+          expect(() => new TeeColor(old)).toThrow('Invalid TeeColor');
+        },
+      );
     });
 
     it('should throw for empty string', () => {
@@ -91,17 +93,23 @@ describe('TeeColor', () => {
     });
 
     it('should fall back to the neutral swatch for anything unknown', () => {
-      expect(TeeColor.swatchFor('PURPLE')).toBe(TeeColor.swatchFor(TeeColor.OTHER));
+      expect(TeeColor.swatchFor('PURPLE')).toBe(
+        TeeColor.swatchFor(TeeColor.OTHER),
+      );
     });
   });
 
   describe('equals', () => {
     it('should be true for the same colour', () => {
-      expect(new TeeColor(TeeColor.RED).equals(new TeeColor(TeeColor.RED))).toBe(true);
+      expect(
+        new TeeColor(TeeColor.RED).equals(new TeeColor(TeeColor.RED)),
+      ).toBe(true);
     });
 
     it('should be false for a different colour', () => {
-      expect(new TeeColor(TeeColor.RED).equals(new TeeColor(TeeColor.BLUE))).toBe(false);
+      expect(
+        new TeeColor(TeeColor.RED).equals(new TeeColor(TeeColor.BLUE)),
+      ).toBe(false);
     });
 
     it('should be false for anything that is not a TeeColor', () => {

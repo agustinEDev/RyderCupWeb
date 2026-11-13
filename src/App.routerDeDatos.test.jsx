@@ -37,7 +37,9 @@ const montajes = vi.hoisted(() => ({ cola: 0 }));
 const fallo = vi.hoisted(() => ({ carcasa: false }));
 const enviado = vi.hoisted(() => ({ extras: {} }));
 
-vi.mock('./hooks/useLogout', () => ({ useLogout: () => ({ logout: vi.fn() }) }));
+vi.mock('./hooks/useLogout', () => ({
+  useLogout: () => ({ logout: vi.fn() }),
+}));
 vi.mock('./hooks/useAuth', () => ({
   getUserData: vi.fn(async () => ({ id: 'u-1' })),
   useAuth: () => ({ user: { id: 'u-1' }, loading: false }),
@@ -59,14 +61,22 @@ vi.mock('./hooks/useVaciadoDeLaCola', async () => {
   };
 });
 vi.mock('./hooks/useEnvioDeMuestras', () => ({ useEnvioDeMuestras: () => {} }));
-vi.mock('./hooks/useDeviceRevocationMonitor', () => ({ useDeviceRevocationMonitor: () => {} }));
+vi.mock('./hooks/useDeviceRevocationMonitor', () => ({
+  useDeviceRevocationMonitor: () => {},
+}));
 vi.mock('./hooks/useProactiveTokenRefresh', () => ({ default: () => {} }));
-vi.mock('./hooks/useCortinaDeArranque', () => ({ useCortinaDeArranque: () => {} }));
+vi.mock('./hooks/useCortinaDeArranque', () => ({
+  useCortinaDeArranque: () => {},
+}));
 vi.mock('./utils/sentryHelpers', () => ({ setUserContext: () => {} }));
 vi.mock('./components/ui/InstallBanner', () => ({ default: () => null }));
 vi.mock('./components/ui/AvisoSinConexion', () => ({ default: () => null }));
-vi.mock('./components/layout/BottomNav', () => ({ default: () => <nav>barra inferior</nav> }));
-vi.mock('./components/auth/ProtectedRoute', () => ({ default: ({ children }) => children }));
+vi.mock('./components/layout/BottomNav', () => ({
+  default: () => <nav>barra inferior</nav>,
+}));
+vi.mock('./components/auth/ProtectedRoute', () => ({
+  default: ({ children }) => children,
+}));
 vi.mock('./pages/Dashboard', async () => {
   const { Link } = await import('react-router');
   return {
@@ -82,7 +92,9 @@ vi.mock('./pages/Dashboard', async () => {
     ),
   };
 });
-vi.mock('./pages/player/FriendsPage', () => ({ default: () => <h1>amigos</h1> }));
+vi.mock('./pages/player/FriendsPage', () => ({
+  default: () => <h1>amigos</h1>,
+}));
 vi.mock('./pages/public/Terms', () => ({ default: () => <h1>términos</h1> }));
 vi.mock('./pages/Profile', () => ({
   default: function PerfilQueFalla() {
@@ -96,10 +108,18 @@ vi.mock('@sentry/react', async (original) => ({
   ...(await original()),
   withProfiler: (c) => c,
   // Lo que LazyLoadErrorBoundary manda a Sentry
-  withScope: (enviar) => enviar({ setTag() {}, setExtra: (clave, valor) => { enviado.extras[clave] = valor; } }),
+  withScope: (enviar) =>
+    enviar({
+      setTag() {},
+      setExtra: (clave, valor) => {
+        enviado.extras[clave] = valor;
+      },
+    }),
   captureException: () => {},
 }));
-vi.mock('./utils/routerParaSentry', () => ({ registrarRouterParaSentry: sentry.registrar }));
+vi.mock('./utils/routerParaSentry', () => ({
+  registrarRouterParaSentry: sentry.registrar,
+}));
 // Qué router queda apuntado para la vuelta tras aceptar los Términos (navegacionEnCurso)
 const apuntado = vi.hoisted(() => ({ router: null }));
 vi.mock('./utils/navegacionEnCurso', async (original) => {
@@ -126,7 +146,11 @@ const abrir = (ruta) => {
 
 describe('App · router de datos (FE #647, fase 1)', () => {
   beforeEach(() => {
-    window.matchMedia = () => ({ matches: false, addEventListener() {}, removeEventListener() {} });
+    window.matchMedia = () => ({
+      matches: false,
+      addEventListener() {},
+      removeEventListener() {},
+    });
     globalThis.scrollTo = vi.fn();
     sentry.registrar.mockClear();
     montajes.cola = 0;
@@ -138,22 +162,30 @@ describe('App · router de datos (FE #647, fase 1)', () => {
     window.history.pushState({}, '', '/');
   });
 
-  it.each(RUTAS_DE_LA_APLICACION)('R1: %s la sirve su pantalla, no la comodín', (ruta) => {
-    // Cada parámetro con un valor, y el opcional sin él
-    const direccion = ruta.replace(/\/:[^/]+\?$/, '').replace(/:[^/]+/g, 'x') || '/';
-    const ultima = matchRoutes(rutasDeLaApp, direccion)?.at(-1)?.route;
+  it.each(RUTAS_DE_LA_APLICACION)(
+    'R1: %s la sirve su pantalla, no la comodín',
+    (ruta) => {
+      // Cada parámetro con un valor, y el opcional sin él
+      const direccion =
+        ruta.replace(/\/:[^/]+\?$/, '').replace(/:[^/]+/g, 'x') || '/';
+      const ultima = matchRoutes(rutasDeLaApp, direccion)?.at(-1)?.route;
 
-    expect(ultima?.path).toBe(ruta);
-  });
+      expect(ultima?.path).toBe(ruta);
+    },
+  );
 
   it('R1: una dirección desconocida la sirve la comodín', () => {
-    expect(matchRoutes(rutasDeLaApp, '/esto-no-existe')?.at(-1)?.route.path).toBe('*');
+    expect(
+      matchRoutes(rutasDeLaApp, '/esto-no-existe')?.at(-1)?.route.path,
+    ).toBe('*');
   });
 
   it('R3: la app registra su router, con sus rutas, para el seguimiento de Sentry', async () => {
     abrir('/dashboard');
 
-    expect(await screen.findByRole('heading', { name: 'panel' })).toBeInTheDocument();
+    expect(
+      await screen.findByRole('heading', { name: 'panel' }),
+    ).toBeInTheDocument();
     expect(sentry.registrar).toHaveBeenCalledTimes(1);
     const [router, rutas] = sentry.registrar.mock.calls[0];
     expect(rutas).toBe(rutasDeLaApp);
@@ -166,7 +198,7 @@ describe('App · router de datos (FE #647, fase 1)', () => {
     render(
       <StrictMode>
         <App />
-      </StrictMode>
+      </StrictMode>,
     );
     await screen.findByRole('heading', { name: 'panel' });
 
@@ -183,7 +215,7 @@ describe('App · router de datos (FE #647, fase 1)', () => {
     const { unmount } = render(
       <StrictMode>
         <App />
-      </StrictMode>
+      </StrictMode>,
     );
     await screen.findByRole('heading', { name: 'panel' });
 
@@ -202,7 +234,9 @@ describe('App · router de datos (FE #647, fase 1)', () => {
     globalThis.scrollTo.mockClear();
 
     fireEvent.click(screen.getByRole('link', { name: 'a amigos' }));
-    expect(await screen.findByRole('heading', { name: 'amigos' })).toBeInTheDocument();
+    expect(
+      await screen.findByRole('heading', { name: 'amigos' }),
+    ).toBeInTheDocument();
     expect(globalThis.scrollTo).toHaveBeenCalledWith(0, 0);
     globalThis.scrollTo.mockClear();
 
@@ -211,7 +245,9 @@ describe('App · router de datos (FE #647, fase 1)', () => {
       await new Promise((r) => setTimeout(r, 50));
     });
 
-    expect(await screen.findByRole('heading', { name: 'panel' })).toBeInTheDocument();
+    expect(
+      await screen.findByRole('heading', { name: 'panel' }),
+    ).toBeInTheDocument();
     expect(globalThis.scrollTo).toHaveBeenCalledWith(0, 0);
   });
 
@@ -244,7 +280,11 @@ describe('App · router de datos (FE #647, fase 1)', () => {
     abrir('/profile');
 
     // En el idioma que elija la pantalla de error, que no depende de las traducciones
-    expect(await screen.findByRole('heading', { name: textosDelError().sinCargar.titulo })).toBeInTheDocument();
+    expect(
+      await screen.findByRole('heading', {
+        name: textosDelError().sinCargar.titulo,
+      }),
+    ).toBeInTheDocument();
     expect(screen.queryByText(/Unexpected Application Error/)).toBeNull();
     consola.mockRestore();
   });
@@ -253,7 +293,9 @@ describe('App · router de datos (FE #647, fase 1)', () => {
     const consola = vi.spyOn(console, 'error').mockImplementation(() => {});
     enviado.extras = {};
     abrir('/profile');
-    await screen.findByRole('heading', { name: textosDelError().sinCargar.titulo });
+    await screen.findByRole('heading', {
+      name: textosDelError().sinCargar.titulo,
+    });
 
     expect(enviado.extras.componentStack).toContain('PerfilQueFalla');
     consola.mockRestore();
@@ -264,7 +306,11 @@ describe('App · router de datos (FE #647, fase 1)', () => {
     fallo.carcasa = true;
     abrir('/dashboard');
 
-    expect(await screen.findByRole('heading', { name: textosDelError().fallo.titulo })).toBeInTheDocument();
+    expect(
+      await screen.findByRole('heading', {
+        name: textosDelError().fallo.titulo,
+      }),
+    ).toBeInTheDocument();
     expect(screen.queryByText(/Unexpected Application Error/)).toBeNull();
     consola.mockRestore();
   });
@@ -288,6 +334,8 @@ describe('App · router de datos (FE #647, fase 1)', () => {
 
     abrir('/terms');
 
-    expect(await screen.findByRole('heading', { name: 'términos' })).toBeInTheDocument();
+    expect(
+      await screen.findByRole('heading', { name: 'términos' }),
+    ).toBeInTheDocument();
   });
 });

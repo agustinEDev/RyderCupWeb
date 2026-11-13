@@ -14,16 +14,29 @@ import en from '../../i18n/locales/en/scoring.json';
  * desapercibida. Un plural vale con `_one` y `_other`.
  */
 const codigo = [pagina, clasificacion, tarjetas, seccion, errores].join('\n');
-const sueltas = [...new Set([...codigo.matchAll(/'(partida\.[a-zA-Z.]+[a-zA-Z])'/g)].map((m) => m[1]))];
-const lista = (nombre) => [...codigo.match(new RegExp(`const ${nombre} = \\[([^\\]]*)\\]`))[1].matchAll(/'([A-Z_]+)'/g)].map((m) => m[1]);
+const sueltas = [
+  ...new Set(
+    [...codigo.matchAll(/'(partida\.[a-zA-Z.]+[a-zA-Z])'/g)].map((m) => m[1]),
+  ),
+];
+const lista = (nombre) =>
+  [
+    ...codigo
+      .match(new RegExp(`const ${nombre} = \\[([^\\]]*)\\]`))[1]
+      .matchAll(/'([A-Z_]+)'/g),
+  ].map((m) => m[1]);
 const armadas = [
   ...['STABLEFORD', 'MEDAL'].map((c) => `partida.type.${c}`),
   ...['input', 'standings', 'cards'].map((c) => `partida.tabs.${c}`),
-  ...['CLASIFICADO', 'SIN_EMPEZAR', 'NR', 'NP'].map((c) => `partida.status.${c}`),
+  ...['CLASIFICADO', 'SIN_EMPEZAR', 'NR', 'NP'].map(
+    (c) => `partida.status.${c}`,
+  ),
   ...['ACCUMULATED', 'BEST_CARD'].map((c) => `partida.rule.${c}`),
   ...['SIN_EMPEZAR', 'NR', 'NP'].map((c) => `partida.statusShort.${c}`),
   ...['overall', 'scratch'].map((c) => `partida.${c}`),
-  ...['JUGANDO', 'ENTREGADA', 'RETIRADO', 'NO_PRESENTADO'].map((c) => `partida.cardStatus.${c}`),
+  ...['JUGANDO', 'ENTREGADA', 'RETIRADO', 'NO_PRESENTADO'].map(
+    (c) => `partida.cardStatus.${c}`,
+  ),
   ...lista('CODIGOS_DE_PARTIDA').map((c) => `partida.errors.${c}`),
   'partida.errors.SCORECARD_NOT_READY_holes',
 ];
@@ -32,7 +45,11 @@ const existe = (textos, ruta) => {
   const partes = ruta.split('.');
   const clave = partes.pop();
   const grupo = partes.reduce((g, p) => g?.[p], textos);
-  return typeof grupo?.[clave] === 'string' || (typeof grupo?.[`${clave}_one`] === 'string' && typeof grupo?.[`${clave}_other`] === 'string');
+  return (
+    typeof grupo?.[clave] === 'string' ||
+    (typeof grupo?.[`${clave}_one`] === 'string' &&
+      typeof grupo?.[`${clave}_other`] === 'string')
+  );
 };
 
 describe('los textos de anotar una partida (FE #824, PR 7)', () => {
@@ -45,6 +62,8 @@ describe('los textos de anotar una partida (FE #824, PR 7)', () => {
     ['español', es],
     ['inglés', en],
   ])('en %s están todas', (_idioma, textos) => {
-    expect([...sueltas, ...armadas].filter((c) => !existe(textos, c))).toEqual([]);
+    expect([...sueltas, ...armadas].filter((c) => !existe(textos, c))).toEqual(
+      [],
+    );
   });
 });

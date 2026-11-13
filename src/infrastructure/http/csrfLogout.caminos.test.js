@@ -15,31 +15,45 @@ import '../../composition/interfazDelTransporte';
  *   y `seEstaCerrandoLaSesion` lo dice para quien pinta un fallo (3c)
  */
 const orden = vi.hoisted(() => []);
-const sentryHelpers = vi.hoisted(() => ({ clearUserContext: vi.fn(() => orden.push('sentry fuera')) }));
+const sentryHelpers = vi.hoisted(() => ({
+  clearUserContext: vi.fn(() => orden.push('sentry fuera')),
+}));
 vi.mock('../../utils/sentryHelpers', () => sentryHelpers);
-const aviso = vi.hoisted(() => ({ avisa: vi.fn((datos) => orden.push(`aviso ${datos.motivo}`)) }));
+const aviso = vi.hoisted(() => ({
+  avisa: vi.fn((datos) => orden.push(`aviso ${datos.motivo}`)),
+}));
 vi.mock('../../utils/avisoDeCierreForzado', async (original) => ({
   ...(await original()),
   avisaDelCierreForzado: aviso.avisa,
 }));
-const cuenta = vi.hoisted(() => ({ olvida: vi.fn(() => orden.push('partidas fuera')) }));
+const cuenta = vi.hoisted(() => ({
+  olvida: vi.fn(() => orden.push('partidas fuera')),
+}));
 vi.mock('../../services/loUltimoConocido', async (original) => ({
   ...(await original()),
   olvidaLoDeEstaCuenta: cuenta.olvida,
 }));
-vi.mock('../../services/novedadesDeActividad', () => ({ olvidaLasNovedades: vi.fn() }));
+vi.mock('../../services/novedadesDeActividad', () => ({
+  olvidaLasNovedades: vi.fn(),
+}));
 vi.mock('i18next', () => ({ default: { t: vi.fn((k) => k) } }));
-const toast = vi.hoisted(() => ({ error: vi.fn(), success: vi.fn(), info: vi.fn(), dismiss: vi.fn() }));
+const toast = vi.hoisted(() => ({
+  error: vi.fn(),
+  success: vi.fn(),
+  info: vi.fn(),
+  dismiss: vi.fn(),
+}));
 vi.mock('../../utils/toast', () => ({ default: toast }));
 
 const { handleCsrfLogout } = await import('./csrfLogout');
 // Lo que se borra de la cuenta lo registra la composition root (main.jsx lo carga el primero)
 await import('../../composition/limpiezaAlCerrarLaSesion');
-const { anotaLaCuentaDeEstaPestana, olvidaLaCuentaDeEstaPestana } = await import('../../utils/vueltaTrasEntrar');
-const {
-  handleDeviceRevocationLogout,
-} = await import('./deviceRevocationLogout');
-const { olvidaElCierreDeEstaCarga, seEstaCerrandoLaSesion } = await import('../../utils/cierreDeEstaCarga');
+const { anotaLaCuentaDeEstaPestana, olvidaLaCuentaDeEstaPestana } =
+  await import('../../utils/vueltaTrasEntrar');
+const { handleDeviceRevocationLogout } =
+  await import('./deviceRevocationLogout');
+const { olvidaElCierreDeEstaCarga, seEstaCerrandoLaSesion } =
+  await import('../../utils/cierreDeEstaCarga');
 
 describe('el cierre por CSRF, con los caminos del cierre forzado', () => {
   let almacen;
@@ -126,11 +140,16 @@ describe('el cierre por CSRF, con los caminos del cierre forzado', () => {
       throw new Error('almacenamiento roto');
     });
 
-    expect(() => handleCsrfLogout({ detail: 'CSRF token missing' })).not.toThrow();
+    expect(() =>
+      handleCsrfLogout({ detail: 'CSRF token missing' }),
+    ).not.toThrow();
     vi.runAllTimers();
 
     expect(idas).toEqual(['/login']);
-    expect(consola).toHaveBeenCalledWith('[CSRF] Logout cleanup failed:', expect.any(Error));
+    expect(consola).toHaveBeenCalledWith(
+      '[CSRF] Logout cleanup failed:',
+      expect.any(Error),
+    );
     consola.mockRestore();
   });
 
@@ -153,7 +172,9 @@ describe('el cierre por CSRF, con los caminos del cierre forzado', () => {
   it('3b: guarda la página con la cuenta que estaba dentro, leída antes de limpiar', () => {
     handleCsrfLogout({ detail: 'CSRF token missing' });
 
-    expect(sessionStorage.getItem('vuelta_tras_entrar')).toBe('/competitions/7');
+    expect(sessionStorage.getItem('vuelta_tras_entrar')).toBe(
+      '/competitions/7',
+    );
     expect(sessionStorage.getItem('vuelta_tras_entrar_cuenta')).toBe('u-7');
   });
 
@@ -165,45 +186,67 @@ describe('el cierre por CSRF, con los caminos del cierre forzado', () => {
 
   it.each([
     ['CSRF', () => handleCsrfLogout({ detail: 'CSRF token missing' })],
-    ['dispositivo revocado', () => handleDeviceRevocationLogout({ detail: 'Dispositivo revocado' })],
-  ])('3b: con dos pestañas, la segunda (%s) guarda con SU cuenta aunque la primera ya limpiara', (_n, cierra) => {
-    anotaLaCuentaDeEstaPestana('u-7');
-    // La otra pestaña ya cerró: el usuario guardado no está
-    delete almacen.user;
-    almacen.device_revocation_handled = 'forzado';
+    [
+      'dispositivo revocado',
+      () => handleDeviceRevocationLogout({ detail: 'Dispositivo revocado' }),
+    ],
+  ])(
+    '3b: con dos pestañas, la segunda (%s) guarda con SU cuenta aunque la primera ya limpiara',
+    (_n, cierra) => {
+      anotaLaCuentaDeEstaPestana('u-7');
+      // La otra pestaña ya cerró: el usuario guardado no está
+      delete almacen.user;
+      almacen.device_revocation_handled = 'forzado';
 
-    cierra();
+      cierra();
 
-    expect(sessionStorage.getItem('vuelta_tras_entrar')).toBe('/competitions/7');
-    expect(sessionStorage.getItem('vuelta_tras_entrar_cuenta')).toBe('u-7');
-  });
-
-  it.each([
-    ['CSRF', () => handleCsrfLogout({ detail: 'CSRF token missing' })],
-    ['dispositivo revocado', () => handleDeviceRevocationLogout({ detail: 'Dispositivo revocado' })],
-  ])('sin regla B: si nunca hubo cuenta en la pestaña (%s), guarda la página para cualquiera', (_n, cierra) => {
-    delete almacen.user;
-    // Lo que hace AuthContext al arrancar sin usuario guardado
-    anotaLaCuentaDeEstaPestana(null);
-
-    cierra();
-
-    expect(sessionStorage.getItem('vuelta_tras_entrar')).toBe('/competitions/7');
-    expect(sessionStorage.getItem('vuelta_tras_entrar_cuenta')).toBeNull();
-  });
+      expect(sessionStorage.getItem('vuelta_tras_entrar')).toBe(
+        '/competitions/7',
+      );
+      expect(sessionStorage.getItem('vuelta_tras_entrar_cuenta')).toBe('u-7');
+    },
+  );
 
   it.each([
     ['CSRF', () => handleCsrfLogout({ detail: 'CSRF token missing' })],
-    ['dispositivo revocado', () => handleDeviceRevocationLogout({ detail: 'Dispositivo revocado' })],
-  ])('sin regla B: tras caerse la sesión en la pestaña (%s), la guarda con la última cuenta', (_n, cierra) => {
-    anotaLaCuentaDeEstaPestana('u-7');
-    anotaLaCuentaDeEstaPestana(null);
-    delete almacen.user;
+    [
+      'dispositivo revocado',
+      () => handleDeviceRevocationLogout({ detail: 'Dispositivo revocado' }),
+    ],
+  ])(
+    'sin regla B: si nunca hubo cuenta en la pestaña (%s), guarda la página para cualquiera',
+    (_n, cierra) => {
+      delete almacen.user;
+      // Lo que hace AuthContext al arrancar sin usuario guardado
+      anotaLaCuentaDeEstaPestana(null);
 
-    cierra();
+      cierra();
 
-    expect(sessionStorage.getItem('vuelta_tras_entrar_cuenta')).toBe('u-7');
-  });
+      expect(sessionStorage.getItem('vuelta_tras_entrar')).toBe(
+        '/competitions/7',
+      );
+      expect(sessionStorage.getItem('vuelta_tras_entrar_cuenta')).toBeNull();
+    },
+  );
+
+  it.each([
+    ['CSRF', () => handleCsrfLogout({ detail: 'CSRF token missing' })],
+    [
+      'dispositivo revocado',
+      () => handleDeviceRevocationLogout({ detail: 'Dispositivo revocado' }),
+    ],
+  ])(
+    'sin regla B: tras caerse la sesión en la pestaña (%s), la guarda con la última cuenta',
+    (_n, cierra) => {
+      anotaLaCuentaDeEstaPestana('u-7');
+      anotaLaCuentaDeEstaPestana(null);
+      delete almacen.user;
+
+      cierra();
+
+      expect(sessionStorage.getItem('vuelta_tras_entrar_cuenta')).toBe('u-7');
+    },
+  );
 
   it('3c: seEstaCerrandoLaSesion, falso al cargar y cierto tras un CSRF', () => {
     expect(seEstaCerrandoLaSesion()).toBe(false);

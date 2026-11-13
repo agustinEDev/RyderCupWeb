@@ -17,12 +17,17 @@ import {
 // Lo que se borra de la cuenta lo registra la composition root (main.jsx lo carga el primero)
 import '../../composition/limpiezaAlCerrarLaSesion';
 import { olvidaElCierreDeEstaCarga } from '../../utils/cierreDeEstaCarga';
-import { anotaLaCuentaDeEstaPestana, olvidaLaCuentaDeEstaPestana } from '../../utils/vueltaTrasEntrar';
+import {
+  anotaLaCuentaDeEstaPestana,
+  olvidaLaCuentaDeEstaPestana,
+} from '../../utils/vueltaTrasEntrar';
 import customToast from '../../utils/toast';
 import { olvidaLasNovedades } from '../../services/novedadesDeActividad';
 
 // El número de Actividad y el del icono son de la cuenta que sale (FE-1)
-vi.mock('../../services/novedadesDeActividad', () => ({ olvidaLasNovedades: vi.fn() }));
+vi.mock('../../services/novedadesDeActividad', () => ({
+  olvidaLasNovedades: vi.fn(),
+}));
 // C4 (25 oct 2026): por sentryHelpers; `window.Sentry` no lo asigna nadie
 const sentryHelpers = vi.hoisted(() => ({ clearUserContext: vi.fn() }));
 vi.mock('../../utils/sentryHelpers', () => sentryHelpers);
@@ -84,7 +89,9 @@ describe('deviceRevocationLogout utilities', () => {
   describe('isDeviceRevoked', () => {
     it('should return true when response is 401 with Spanish device revoked message', () => {
       const response = { status: 401 };
-      const errorData = { detail: 'Dispositivo revocado. Por favor, inicia sesión nuevamente.' };
+      const errorData = {
+        detail: 'Dispositivo revocado. Por favor, inicia sesión nuevamente.',
+      };
 
       expect(isDeviceRevoked(response, errorData)).toBe(true);
     });
@@ -106,14 +113,19 @@ describe('deviceRevocationLogout utilities', () => {
     // v2.0.4: Refresh token errors are now handled by isSessionExpired, NOT isDeviceRevoked
     it('should return false when response has refresh token expired message (handled by isSessionExpired)', () => {
       const response = { status: 401 };
-      const errorData = { detail: 'Refresh token inválido o expirado. Por favor, inicia sesión nuevamente.' };
+      const errorData = {
+        detail:
+          'Refresh token inválido o expirado. Por favor, inicia sesión nuevamente.',
+      };
 
       expect(isDeviceRevoked(response, errorData)).toBe(false);
     });
 
     it('should return false when response has English refresh token expired message (handled by isSessionExpired)', () => {
       const response = { status: 401 };
-      const errorData = { detail: 'Refresh token invalid or expired. Please sign in again.' };
+      const errorData = {
+        detail: 'Refresh token invalid or expired. Please sign in again.',
+      };
 
       expect(isDeviceRevoked(response, errorData)).toBe(false);
     });
@@ -160,14 +172,19 @@ describe('deviceRevocationLogout utilities', () => {
   describe('isSessionExpired', () => {
     it('should return true when response has Spanish refresh token expired message', () => {
       const response = { status: 401 };
-      const errorData = { detail: 'Refresh token inválido o expirado. Por favor, inicia sesión nuevamente.' };
+      const errorData = {
+        detail:
+          'Refresh token inválido o expirado. Por favor, inicia sesión nuevamente.',
+      };
 
       expect(isSessionExpired(response, errorData)).toBe(true);
     });
 
     it('should return true when response has English refresh token expired message', () => {
       const response = { status: 401 };
-      const errorData = { detail: 'Refresh token invalid or expired. Please sign in again.' };
+      const errorData = {
+        detail: 'Refresh token invalid or expired. Please sign in again.',
+      };
 
       expect(isSessionExpired(response, errorData)).toBe(true);
     });
@@ -188,7 +205,9 @@ describe('deviceRevocationLogout utilities', () => {
 
     it('should return false when response has device revoked message (handled by isDeviceRevoked)', () => {
       const response = { status: 401 };
-      const errorData = { detail: 'Dispositivo revocado. Por favor, inicia sesión nuevamente.' };
+      const errorData = {
+        detail: 'Dispositivo revocado. Por favor, inicia sesión nuevamente.',
+      };
 
       expect(isSessionExpired(response, errorData)).toBe(false);
     });
@@ -233,7 +252,9 @@ describe('deviceRevocationLogout utilities', () => {
       // modal con el hándicap de la anterior
       handleDeviceRevocationLogout();
 
-      expect(localStorage.removeItem).toHaveBeenCalledWith('refrescar_handicap');
+      expect(localStorage.removeItem).toHaveBeenCalledWith(
+        'refrescar_handicap',
+      );
       expect(localStorage.removeItem).toHaveBeenCalledWith('pedir_handicap');
     });
 
@@ -254,7 +275,7 @@ describe('deviceRevocationLogout utilities', () => {
 
       expect(customToast.error).toHaveBeenCalledWith(
         'errors.deviceRevoked',
-        expect.objectContaining({ duration: 8000, icon: '🔒' })
+        expect.objectContaining({ duration: 8000, icon: '🔒' }),
       );
     });
 
@@ -274,7 +295,6 @@ describe('deviceRevocationLogout utilities', () => {
       expect(() => handleDeviceRevocationLogout()).not.toThrow();
       expect(localStorage.removeItem).toHaveBeenCalled();
     });
-
   });
 
   // ============================================
@@ -309,7 +329,7 @@ describe('deviceRevocationLogout utilities', () => {
 
       expect(customToast.error).toHaveBeenCalledWith(
         'errors.sessionExpired',
-        expect.objectContaining({ duration: 8000, icon: '⏱️' })
+        expect.objectContaining({ duration: 8000, icon: '⏱️' }),
       );
     });
 
@@ -322,7 +342,6 @@ describe('deviceRevocationLogout utilities', () => {
 
       expect(window.location.href).toBe('/login');
     });
-
   });
 
   // ============================================
@@ -342,7 +361,9 @@ describe('deviceRevocationLogout utilities', () => {
 
       handleDeviceRevocationLogout();
 
-      expect(i18next.t).toHaveBeenCalledWith('errors.deviceRevoked', { ns: 'auth' });
+      expect(i18next.t).toHaveBeenCalledWith('errors.deviceRevoked', {
+        ns: 'auth',
+      });
     });
 
     it('should call i18next.t with correct key and namespace for expiration', async () => {
@@ -350,7 +371,9 @@ describe('deviceRevocationLogout utilities', () => {
 
       handleSessionExpiredLogout();
 
-      expect(i18next.t).toHaveBeenCalledWith('errors.sessionExpired', { ns: 'auth' });
+      expect(i18next.t).toHaveBeenCalledWith('errors.sessionExpired', {
+        ns: 'auth',
+      });
     });
 
     // B1-B2 (8 nov 2026): el refresco no dice por qué se rechaza (BE #733); un rechazo
@@ -359,42 +382,69 @@ describe('deviceRevocationLogout utilities', () => {
       const i18next = (await import('i18next')).default;
 
       handleSessionExpiredLogout({
-        detail: 'Refresh token inválido o expirado. Por favor, inicia sesión nuevamente.',
+        detail:
+          'Refresh token inválido o expirado. Por favor, inicia sesión nuevamente.',
         error_code: 'SESSION_REJECTED',
       });
 
-      expect(i18next.t).toHaveBeenCalledWith('errors.sessionEnded', { ns: 'auth' });
-      expect(i18next.t).not.toHaveBeenCalledWith('errors.sessionExpired', { ns: 'auth' });
+      expect(i18next.t).toHaveBeenCalledWith('errors.sessionEnded', {
+        ns: 'auth',
+      });
+      expect(i18next.t).not.toHaveBeenCalledWith('errors.sessionExpired', {
+        ns: 'auth',
+      });
     });
 
     it('B2: una sesión que acaba sin más (SESSION_ENDED) sigue diciendo que ha expirado', async () => {
       const i18next = (await import('i18next')).default;
 
       handleSessionExpiredLogout({
-        detail: 'Refresh token inválido o expirado. Por favor, inicia sesión nuevamente.',
+        detail:
+          'Refresh token inválido o expirado. Por favor, inicia sesión nuevamente.',
         error_code: 'SESSION_ENDED',
       });
 
-      expect(i18next.t).toHaveBeenCalledWith('errors.sessionExpired', { ns: 'auth' });
+      expect(i18next.t).toHaveBeenCalledWith('errors.sessionExpired', {
+        ns: 'auth',
+      });
     });
 
     it.each([
-      ['un código de rechazo antiguo', { detail: 'Refresh token inválido o expirado', error_code: 'REFRESH_TOKEN_REVOKED' }],
-      ['un 401 con detalle y sin código', { detail: 'Refresh token inválido o expirado' }],
-    ])('B1: %s también dice que la sesión ha terminado (la misma regla que Sentry)', async (_caso, datos) => {
-      const i18next = (await import('i18next')).default;
+      [
+        'un código de rechazo antiguo',
+        {
+          detail: 'Refresh token inválido o expirado',
+          error_code: 'REFRESH_TOKEN_REVOKED',
+        },
+      ],
+      [
+        'un 401 con detalle y sin código',
+        { detail: 'Refresh token inválido o expirado' },
+      ],
+    ])(
+      'B1: %s también dice que la sesión ha terminado (la misma regla que Sentry)',
+      async (_caso, datos) => {
+        const i18next = (await import('i18next')).default;
 
-      handleSessionExpiredLogout(datos);
+        handleSessionExpiredLogout(datos);
 
-      expect(i18next.t).toHaveBeenCalledWith('errors.sessionEnded', { ns: 'auth' });
-    });
+        expect(i18next.t).toHaveBeenCalledWith('errors.sessionEnded', {
+          ns: 'auth',
+        });
+      },
+    );
 
     it('B1: sin datos del servidor y con el motivo de un rechazo, dice que ha terminado (CodeRabbit #1065)', async () => {
       const i18next = (await import('i18next')).default;
 
-      handleSessionExpiredLogout(null, { motivo: 'refresh_rejected', estado: 401 });
+      handleSessionExpiredLogout(null, {
+        motivo: 'refresh_rejected',
+        estado: 401,
+      });
 
-      expect(i18next.t).toHaveBeenCalledWith('errors.sessionEnded', { ns: 'auth' });
+      expect(i18next.t).toHaveBeenCalledWith('errors.sessionEnded', {
+        ns: 'auth',
+      });
     });
 
     it('B1: sin datos del servidor, como siempre: ha expirado', async () => {
@@ -402,14 +452,19 @@ describe('deviceRevocationLogout utilities', () => {
 
       handleSessionExpiredLogout(null);
 
-      expect(i18next.t).toHaveBeenCalledWith('errors.sessionExpired', { ns: 'auth' });
+      expect(i18next.t).toHaveBeenCalledWith('errors.sessionExpired', {
+        ns: 'auth',
+      });
     });
 
     it('sin ninguna cuenta conocida en la pestaña, no avisa «ha expirado»: no había sesión', () => {
       olvidaLaCuentaDeEstaPestana();
       anotaLaCuentaDeEstaPestana(null);
 
-      handleSessionExpiredLogout({ detail: 'Refresh token inválido o expirado', error_code: 'SESSION_ENDED' });
+      handleSessionExpiredLogout({
+        detail: 'Refresh token inválido o expirado',
+        error_code: 'SESSION_ENDED',
+      });
 
       expect(customToast.error).not.toHaveBeenCalled();
       // Sin aviso que leer, a /login al momento (10 nov 2026; antes esperaba 500 ms)
@@ -427,19 +482,30 @@ describe('deviceRevocationLogout utilities', () => {
 
     it('con la cuenta solo en el usuario guardado (nada anotado aún), avisa', () => {
       olvidaLaCuentaDeEstaPestana();
-      localStorage.getItem.mockImplementation((k) => (k === 'user' ? '{"id":"u-5"}' : null));
+      localStorage.getItem.mockImplementation((k) =>
+        k === 'user' ? '{"id":"u-5"}' : null,
+      );
 
-      handleSessionExpiredLogout({ detail: 'Refresh token inválido o expirado', error_code: 'SESSION_ENDED' });
+      handleSessionExpiredLogout({
+        detail: 'Refresh token inválido o expirado',
+        error_code: 'SESSION_ENDED',
+      });
 
       expect(customToast.error).toHaveBeenCalledTimes(1);
     });
 
     it('tras cerrar sesión a propósito, el usuario guardado no cuenta: sin aviso', async () => {
-      const { olvidaLaUltimaCuenta } = await import('../../utils/vueltaTrasEntrar');
+      const { olvidaLaUltimaCuenta } =
+        await import('../../utils/vueltaTrasEntrar');
       olvidaLaUltimaCuenta();
-      localStorage.getItem.mockImplementation((k) => (k === 'user' ? '{"id":"u-5"}' : null));
+      localStorage.getItem.mockImplementation((k) =>
+        k === 'user' ? '{"id":"u-5"}' : null,
+      );
 
-      handleSessionExpiredLogout({ detail: 'Refresh token inválido o expirado', error_code: 'SESSION_ENDED' });
+      handleSessionExpiredLogout({
+        detail: 'Refresh token inválido o expirado',
+        error_code: 'SESSION_ENDED',
+      });
 
       expect(customToast.error).not.toHaveBeenCalled();
     });
@@ -449,7 +515,10 @@ describe('deviceRevocationLogout utilities', () => {
       olvidaLaCuentaDeEstaPestana();
       anotaLaCuentaDeEstaPestana(null);
 
-      handleSessionExpiredLogout({ detail: 'Refresh token inválido o expirado', error_code: 'SESSION_ENDED' });
+      handleSessionExpiredLogout({
+        detail: 'Refresh token inválido o expirado',
+        error_code: 'SESSION_ENDED',
+      });
       vi.runAllTimers();
 
       expect(window.location.href).toBe('/login');
@@ -461,10 +530,9 @@ describe('deviceRevocationLogout utilities', () => {
 
       expect(customToast.error).toHaveBeenCalledWith(
         expect.any(String),
-        expect.objectContaining({ delCierre: true })
+        expect.objectContaining({ delCierre: true }),
       );
     });
-
   });
 
   // ============================================
@@ -474,7 +542,9 @@ describe('deviceRevocationLogout utilities', () => {
     it('should remove the revocation handled flag from localStorage', () => {
       clearDeviceRevocationFlag();
 
-      expect(localStorage.removeItem).toHaveBeenCalledWith('device_revocation_handled');
+      expect(localStorage.removeItem).toHaveBeenCalledWith(
+        'device_revocation_handled',
+      );
     });
   });
 
@@ -490,23 +560,28 @@ describe('deviceRevocationLogout utilities', () => {
       vi.useRealTimers();
     });
 
-    it.each([['true'], ['forzado'], ['propia']])('C2: ya en /login con la marca «%s», nada', (marca) => {
-      localStorage.getItem.mockImplementation((key) => {
-        if (key === 'device_revocation_handled') return marca;
-        return null;
-      });
-      window.location.pathname = '/login';
+    it.each([['true'], ['forzado'], ['propia']])(
+      'C2: ya en /login con la marca «%s», nada',
+      (marca) => {
+        localStorage.getItem.mockImplementation((key) => {
+          if (key === 'device_revocation_handled') return marca;
+          return null;
+        });
+        window.location.pathname = '/login';
 
-      handleDeviceRevocationLogout();
-      vi.advanceTimersByTime(500);
+        handleDeviceRevocationLogout();
+        vi.advanceTimersByTime(500);
 
-      expect(customToast.error).not.toHaveBeenCalled();
-      expect(localStorage.removeItem).not.toHaveBeenCalled();
-      expect(window.location.href).toBe('');
-    });
+        expect(customToast.error).not.toHaveBeenCalled();
+        expect(localStorage.removeItem).not.toHaveBeenCalled();
+        expect(window.location.href).toBe('');
+      },
+    );
 
     it('C3: si limpiar falla tras revocar el propio dispositivo, sale igualmente a /login', () => {
-      localStorage.getItem.mockImplementation((key) => (key === 'device_revocation_handled' ? 'propia' : null));
+      localStorage.getItem.mockImplementation((key) =>
+        key === 'device_revocation_handled' ? 'propia' : null,
+      );
       localStorage.removeItem.mockImplementation(() => {
         throw new Error('SecurityError');
       });
@@ -523,7 +598,9 @@ describe('deviceRevocationLogout utilities', () => {
       });
       window.location.pathname = '/dashboard';
 
-      expect(() => handleDeviceRevocationLogout()).toThrow('QuotaExceededError');
+      expect(() => handleDeviceRevocationLogout()).toThrow(
+        'QuotaExceededError',
+      );
       vi.advanceTimersByTime(500);
 
       expect(window.location.href).toBe('/login');
@@ -532,23 +609,25 @@ describe('deviceRevocationLogout utilities', () => {
       expect(sentryHelpers.clearUserContext).toHaveBeenCalled();
     });
 
-
     // C4 (8 nov 2026): una marca de otra pestaña o de una carga anterior no ahorra el
     // cierre de esta: limpia, avisa y se va, como la primera vez
-    it.each([['forzado'], ['true']])('con la marca «%s» de otra carga, el cierre completo', (marca) => {
-      localStorage.getItem.mockImplementation((key) => {
-        if (key === 'device_revocation_handled') return marca;
-        return null;
-      });
-      window.location.pathname = '/dashboard';
+    it.each([['forzado'], ['true']])(
+      'con la marca «%s» de otra carga, el cierre completo',
+      (marca) => {
+        localStorage.getItem.mockImplementation((key) => {
+          if (key === 'device_revocation_handled') return marca;
+          return null;
+        });
+        window.location.pathname = '/dashboard';
 
-      handleDeviceRevocationLogout();
-      vi.advanceTimersByTime(500);
+        handleDeviceRevocationLogout();
+        vi.advanceTimersByTime(500);
 
-      expect(customToast.error).toHaveBeenCalledTimes(1);
-      expect(localStorage.removeItem).toHaveBeenCalledWith('user');
-      expect(window.location.href).toBe('/login');
-    });
+        expect(customToast.error).toHaveBeenCalledTimes(1);
+        expect(localStorage.removeItem).toHaveBeenCalledWith('user');
+        expect(window.location.href).toBe('/login');
+      },
+    );
   });
 });
 
@@ -567,27 +646,40 @@ describe('la redirección dura guarda la página para volver tras entrar (probad
   it.each([
     ['la primera vez: la guarda', null, '/confirm-email-change?token=abc'],
     // Marca de otra carga, o de una versión anterior: el cierre de esta guarda (C4)
-    ['marca vieja «true»: la guarda', 'true', '/confirm-email-change?token=abc'],
-    ['marca de otra pestaña: la guarda', 'forzado', '/confirm-email-change?token=abc'],
+    [
+      'marca vieja «true»: la guarda',
+      'true',
+      '/confirm-email-change?token=abc',
+    ],
+    [
+      'marca de otra pestaña: la guarda',
+      'forzado',
+      '/confirm-email-change?token=abc',
+    ],
     // Revocó su propio dispositivo: no guarda, y borra una anterior (C3)
     ['revocación propia: no la guarda', 'propia', null],
-  ])('desde el enlace de confirmar, con su token: %s', async (_caso, tratada, esperado) => {
-    desdeElEnlace();
-    sessionStorage.setItem('vuelta_tras_entrar', '/competitions/1');
-    vi.stubGlobal('localStorage', {
-      getItem: vi.fn(() => tratada),
-      setItem: vi.fn(),
-      removeItem: vi.fn(),
-    });
-    const { handleSessionExpiredLogout } = await import('./deviceRevocationLogout');
-    const { olvidaElCierreDeEstaCarga } = await import('../../utils/cierreDeEstaCarga');
-    olvidaElCierreDeEstaCarga();
+  ])(
+    'desde el enlace de confirmar, con su token: %s',
+    async (_caso, tratada, esperado) => {
+      desdeElEnlace();
+      sessionStorage.setItem('vuelta_tras_entrar', '/competitions/1');
+      vi.stubGlobal('localStorage', {
+        getItem: vi.fn(() => tratada),
+        setItem: vi.fn(),
+        removeItem: vi.fn(),
+      });
+      const { handleSessionExpiredLogout } =
+        await import('./deviceRevocationLogout');
+      const { olvidaElCierreDeEstaCarga } =
+        await import('../../utils/cierreDeEstaCarga');
+      olvidaElCierreDeEstaCarga();
 
-    handleSessionExpiredLogout({ detail: 'expired' });
+      handleSessionExpiredLogout({ detail: 'expired' });
 
-    expect(sessionStorage.getItem('vuelta_tras_entrar')).toBe(esperado);
-    vi.unstubAllGlobals();
-  });
+      expect(sessionStorage.getItem('vuelta_tras_entrar')).toBe(esperado);
+      vi.unstubAllGlobals();
+    },
+  );
 
   // Un almacén de verdad: los dos avisos comparten la marca, como en el navegador
   const conAlmacen = (inicial = {}) => {
@@ -630,7 +722,9 @@ describe('la redirección dura guarda la página para volver tras entrar (probad
     vi.advanceTimersByTime(500);
     expect(window.location.href).toBe('/login');
     expect(toast.error).toHaveBeenCalledTimes(1);
-    expect(sessionStorage.getItem('vuelta_tras_entrar')).toBe('/confirm-email-change?token=abc');
+    expect(sessionStorage.getItem('vuelta_tras_entrar')).toBe(
+      '/confirm-email-change?token=abc',
+    );
     expect(datos.device_revocation_handled).toBe('forzado');
     vi.useRealTimers();
     vi.unstubAllGlobals();
@@ -640,7 +734,8 @@ describe('la redirección dura guarda la página para volver tras entrar (probad
     desdeElEnlace();
     sessionStorage.setItem('vuelta_tras_entrar', '/competitions/1');
     const datos = conAlmacen({ user: '{"id":"u-1"}' });
-    const { handleDeviceRevocationLogout, marcaLaRevocacionPropia } = await deUnaCargaNueva();
+    const { handleDeviceRevocationLogout, marcaLaRevocacionPropia } =
+      await deUnaCargaNueva();
     const toast = (await import('../../utils/toast')).default;
     toast.error.mockClear();
 

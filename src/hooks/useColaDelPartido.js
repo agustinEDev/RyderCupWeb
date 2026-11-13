@@ -1,5 +1,9 @@
 import { useCallback, useRef } from 'react';
-import { SE_ARREGLA_ESPERANDO, avisoTrasElVaciado, vaciaAnotaciones } from '../services/vaciaAnotaciones';
+import {
+  SE_ARREGLA_ESPERANDO,
+  avisoTrasElVaciado,
+  vaciaAnotaciones,
+} from '../services/vaciaAnotaciones';
 import { marcadoDe } from '../utils/golpesDelHoyo';
 import * as offlineQueue from '../utils/scoringOfflineQueue';
 import { conHoyosDe, estaSuperada } from '../utils/vistaDeLaAnotacion';
@@ -28,20 +32,25 @@ export const useColaDelPartido = ({
    * en algo distinto de cero para siempre (FE #515).
    */
   const pendientesPropias = useCallback(
-    () => offlineQueue.getByMatch(matchId, currentUserId).filter((e) => e.participantId == null).length,
-    [matchId, currentUserId]
+    () =>
+      offlineQueue
+        .getByMatch(matchId, currentUserId)
+        .filter((e) => e.participantId == null).length,
+    [matchId, currentUserId],
   );
 
   // Qué hay en la cola, en una cadena: cada hoyo con su hora de guardado, que
   // cambia también al corregirlo. Sirve para saber si la cola es la misma que
   // dejó el último vaciado (FE #625)
   const firmaDeLaCola = useCallback(
-    () => offlineQueue.getByMatch(matchId, currentUserId)
-      .filter((e) => e.participantId == null)
-      .map((e) => `${e.holeNumber}:${e.timestamp}`)
-      .sort()
-      .join('|'),
-    [matchId, currentUserId]
+    () =>
+      offlineQueue
+        .getByMatch(matchId, currentUserId)
+        .filter((e) => e.participantId == null)
+        .map((e) => `${e.holeNumber}:${e.timestamp}`)
+        .sort()
+        .join('|'),
+    [matchId, currentUserId],
   );
 
   // --- Un escritor a la vez: el envío o el vaciado (FE #601) ---
@@ -78,7 +87,11 @@ export const useColaDelPartido = ({
         // con los demás, que con mala cobertura son segundos. Y cuenta como lo
         // último aplicado, para que un sondeo de antes no lo deshaga
         manda: async (entrada) => {
-          const vista = await anota.execute(entrada.matchId, entrada.holeNumber, entrada.scoreData);
+          const vista = await anota.execute(
+            entrada.matchId,
+            entrada.holeNumber,
+            entrada.scoreData,
+          );
           if (!vista?.matchId || esDeOtraPartida(entrada.matchId)) return;
           marcaEscritura();
           setScoringView((prev) => conHoyosDe(vista, prev));
@@ -110,7 +123,18 @@ export const useColaDelPartido = ({
     setPendingQueueSize(pendientesPropias());
     await fetchScoringView();
     return resultado;
-  }, [matchId, fetchScoringView, pendientesPropias, currentUserId, marcaEscritura, esDeOtraPartida, anota, setScoringView, setAvisoDelVaciado, setPendingQueueSize]);
+  }, [
+    matchId,
+    fetchScoringView,
+    pendientesPropias,
+    currentUserId,
+    marcaEscritura,
+    esDeOtraPartida,
+    anota,
+    setScoringView,
+    setAvisoDelVaciado,
+    setPendingQueueSize,
+  ]);
 
   // Un solo vaciado a la vez. Hay cuatro disparadores —montar, `online`, el sondeo y
   // volver a la aplicación— y llegan juntos: al entrar desde el aviso del
@@ -133,13 +157,20 @@ export const useColaDelPartido = ({
         // Lo anotado mientras iba esta pasada solo se guardó, y puede ser un
         // hoyo que la pasada no llegó a leer. Otra más, salvo que se parara
         // por la red o por el disco: eso no se arregla insistiendo
-      } while (aplazadoRef.current && paroPor === null && pendientesPropias() > 0);
+      } while (
+        aplazadoRef.current &&
+        paroPor === null &&
+        pendientesPropias() > 0
+      );
       // Un paro de red, servidor o sesión no dice nada de lo que quedó: no
       // llegó a intentarlo todo. Así que no toca lo que se sabía, igual que
       // `avisoTrasElVaciado`; si lo borrara, un corte de cobertura le quitaba
       // el freno al disco que no borra, y el sondeo reenviaba lo ya llegado
       if (!SE_ARREGLA_ESPERANDO.has(paroPor)) {
-        loQueDejoRef.current = { firma: firmaDeLaCola(), esperanASuHora: esperan > 0 };
+        loQueDejoRef.current = {
+          firma: firmaDeLaCola(),
+          esperanASuHora: esperan > 0,
+        };
       }
     } finally {
       ocupadoRef.current = null;
@@ -149,13 +180,17 @@ export const useColaDelPartido = ({
   // Lo guardado de este jugador para ese hoyo y ese marcado: quien marca a dos
   // tiene una por rival. Sin participante: las que lo llevan son de partida rápida
   const loGuardadoDe = useCallback(
-    (holeNumber, marcado = null) => offlineQueue.getByMatch(matchId, currentUserId).find(
-      (e) => e.holeNumber === holeNumber
-        && e.participantId == null
-        && (e.userId ?? null) === (currentUserId ?? null)
-        && marcadoDe(e.scoreData) === marcado
-    ),
-    [matchId, currentUserId]
+    (holeNumber, marcado = null) =>
+      offlineQueue
+        .getByMatch(matchId, currentUserId)
+        .find(
+          (e) =>
+            e.holeNumber === holeNumber &&
+            e.participantId == null &&
+            (e.userId ?? null) === (currentUserId ?? null) &&
+            marcadoDe(e.scoreData) === marcado,
+        ),
+    [matchId, currentUserId],
   );
 
   // Tras llegar un envío sobra lo que quedaba guardado de ese hoyo y ya está
@@ -172,10 +207,16 @@ export const useColaDelPartido = ({
         .filter((e) => marcadoDe(e.scoreData) === marcado)
         .filter((e) => estaSuperada(e, loEnviado));
       for (const guardada of superadas) {
-        offlineQueue.remove(matchId, holeNumber, null, guardada.userId ?? null, marcado);
+        offlineQueue.remove(
+          matchId,
+          holeNumber,
+          null,
+          guardada.userId ?? null,
+          marcado,
+        );
       }
     },
-    [matchId, currentUserId]
+    [matchId, currentUserId],
   );
 
   return {

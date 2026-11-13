@@ -2,15 +2,22 @@ import { describe, it, expect, vi } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import { MemoryRouter, useLocation } from 'react-router';
 
-vi.mock('./useMapaDelCampo', () => ({ useMapaDelCampo: (id) => (id ? { golfCourseId: id, holes: {} } : null) }));
+vi.mock('./useMapaDelCampo', () => ({
+  useMapaDelCampo: (id) => (id ? { golfCourseId: id, holes: {} } : null),
+}));
 
 const { useMapaDelHoyo } = await import('./useMapaDelHoyo');
 
 const montar = (entrada = '/scoring/m-1?x=1') => {
-  const wrapper = ({ children }) => <MemoryRouter initialEntries={[entrada]}>{children}</MemoryRouter>;
+  const wrapper = ({ children }) => (
+    <MemoryRouter initialEntries={[entrada]}>{children}</MemoryRouter>
+  );
   return renderHook(
-    () => ({ mapa: useMapaDelHoyo({ golfCourseId: 'gc-1' }), location: useLocation() }),
-    { wrapper }
+    () => ({
+      mapa: useMapaDelHoyo({ golfCourseId: 'gc-1' }),
+      location: useLocation(),
+    }),
+    { wrapper },
   );
 };
 
@@ -19,7 +26,10 @@ describe('useMapaDelHoyo', () => {
     const { result } = montar();
 
     expect(result.current.mapa.abierto).toBe(false);
-    expect(result.current.mapa.mapaDelCampo).toEqual({ golfCourseId: 'gc-1', holes: {} });
+    expect(result.current.mapa.mapaDelCampo).toEqual({
+      golfCourseId: 'gc-1',
+      holes: {},
+    });
   });
 
   it('abrir lo abre sin cambiar de pantalla (misma ruta y filtros)', () => {
@@ -52,14 +62,18 @@ describe('useMapaDelHoyo', () => {
 
   it('recargando con #mapa, el mapa no llega a abrirse ni un instante', () => {
     const vistos = [];
-    const wrapper = ({ children }) => <MemoryRouter initialEntries={['/scoring/m-1#mapa']}>{children}</MemoryRouter>;
+    const wrapper = ({ children }) => (
+      <MemoryRouter initialEntries={['/scoring/m-1#mapa']}>
+        {children}
+      </MemoryRouter>
+    );
     renderHook(
       () => {
         const mapa = useMapaDelHoyo({ golfCourseId: 'gc-1' });
         vistos.push(mapa.abierto);
         return mapa;
       },
-      { wrapper }
+      { wrapper },
     );
 
     expect(vistos).not.toContain(true);
@@ -78,8 +92,21 @@ describe('useMapaDelHoyo', () => {
   });
 
   it('dos toques en «Cerrar» no sacan de la anotación', () => {
-    const wrapper = ({ children }) => <MemoryRouter initialEntries={['/inicio', '/scoring/m-1']} initialIndex={1}>{children}</MemoryRouter>;
-    const { result } = renderHook(() => ({ mapa: useMapaDelHoyo({ golfCourseId: 'gc-1' }), location: useLocation() }), { wrapper });
+    const wrapper = ({ children }) => (
+      <MemoryRouter
+        initialEntries={['/inicio', '/scoring/m-1']}
+        initialIndex={1}
+      >
+        {children}
+      </MemoryRouter>
+    );
+    const { result } = renderHook(
+      () => ({
+        mapa: useMapaDelHoyo({ golfCourseId: 'gc-1' }),
+        location: useLocation(),
+      }),
+      { wrapper },
+    );
     act(() => result.current.mapa.abrir());
 
     act(() => {
@@ -94,23 +121,33 @@ describe('useMapaDelHoyo', () => {
 
 describe('useMapaDelHoyo — solo hay imagen en España (19 oct)', () => {
   const conPais = (pais) => {
-    const wrapper = ({ children }) => <MemoryRouter initialEntries={['/scoring/m-1']}>{children}</MemoryRouter>;
+    const wrapper = ({ children }) => (
+      <MemoryRouter initialEntries={['/scoring/m-1']}>{children}</MemoryRouter>
+    );
     return renderHook(
-      () => ({ mapa: useMapaDelHoyo({ golfCourseId: 'gc-1', pais }), location: useLocation() }),
-      { wrapper }
+      () => ({
+        mapa: useMapaDelHoyo({ golfCourseId: 'gc-1', pais }),
+        location: useLocation(),
+      }),
+      { wrapper },
     );
   };
 
   it('en un campo de otro país no está disponible: ni se pide su mapa ni se abre', () => {
     const vistos = [];
-    const wrapper = ({ children }) => <MemoryRouter initialEntries={['/scoring/m-1']}>{children}</MemoryRouter>;
+    const wrapper = ({ children }) => (
+      <MemoryRouter initialEntries={['/scoring/m-1']}>{children}</MemoryRouter>
+    );
     const { result } = renderHook(
       () => {
-        const r = { mapa: useMapaDelHoyo({ golfCourseId: 'gc-1', pais: 'PT' }), location: useLocation() };
+        const r = {
+          mapa: useMapaDelHoyo({ golfCourseId: 'gc-1', pais: 'PT' }),
+          location: useLocation(),
+        };
         vistos.push(r.location.hash);
         return r;
       },
-      { wrapper }
+      { wrapper },
     );
 
     act(() => result.current.mapa.abrir());
@@ -125,15 +162,20 @@ describe('useMapaDelHoyo — solo hay imagen en España (19 oct)', () => {
   });
 
   it('abierto sin saber el país, se cierra al saber que es otro', () => {
-    const wrapper = ({ children }) => <MemoryRouter initialEntries={['/scoring/m-1']}>{children}</MemoryRouter>;
+    const wrapper = ({ children }) => (
+      <MemoryRouter initialEntries={['/scoring/m-1']}>{children}</MemoryRouter>
+    );
     const abiertos = [];
     const { result, rerender } = renderHook(
       ({ pais }) => {
-        const r = { mapa: useMapaDelHoyo({ golfCourseId: 'gc-1', pais }), location: useLocation() };
+        const r = {
+          mapa: useMapaDelHoyo({ golfCourseId: 'gc-1', pais }),
+          location: useLocation(),
+        };
         abiertos.push(r.mapa.abierto);
         return r;
       },
-      { wrapper, initialProps: { pais: null } }
+      { wrapper, initialProps: { pais: null } },
     );
     act(() => result.current.mapa.abrir());
     expect(result.current.mapa.abierto).toBe(true);
@@ -154,7 +196,10 @@ describe('useMapaDelHoyo — solo hay imagen en España (19 oct)', () => {
       const { result, unmount } = conPais(pais);
 
       expect(result.current.mapa.disponible).toBe(true);
-      expect(result.current.mapa.mapaDelCampo).toEqual({ golfCourseId: 'gc-1', holes: {} });
+      expect(result.current.mapa.mapaDelCampo).toEqual({
+        golfCourseId: 'gc-1',
+        holes: {},
+      });
       unmount();
     }
   });
@@ -163,21 +208,45 @@ describe('useMapaDelHoyo — solo hay imagen en España (19 oct)', () => {
 describe('useMapaDelHoyo — recargar y sesión tomada', () => {
   it('recargando, el navegador repone el estado del historial: aun así no se abre solo', () => {
     const wrapper = ({ children }) => (
-      <MemoryRouter initialEntries={[{ pathname: '/scoring/m-1', hash: '#mapa', state: { mapaAbiertoAqui: 'de-otra-carga' } }]}>
+      <MemoryRouter
+        initialEntries={[
+          {
+            pathname: '/scoring/m-1',
+            hash: '#mapa',
+            state: { mapaAbiertoAqui: 'de-otra-carga' },
+          },
+        ]}
+      >
         {children}
       </MemoryRouter>
     );
-    const { result } = renderHook(() => ({ mapa: useMapaDelHoyo({ golfCourseId: 'gc-1' }), location: useLocation() }), { wrapper });
+    const { result } = renderHook(
+      () => ({
+        mapa: useMapaDelHoyo({ golfCourseId: 'gc-1' }),
+        location: useLocation(),
+      }),
+      { wrapper },
+    );
 
     expect(result.current.mapa.abierto).toBe(false);
     expect(result.current.location.hash).toBe('');
   });
 
   it('si otro móvil toma la sesión, el mapa se cierra (su «Volver» saldría solo del mapa)', () => {
-    const wrapper = ({ children }) => <MemoryRouter initialEntries={['/inicio', '/scoring/m-1']} initialIndex={1}>{children}</MemoryRouter>;
+    const wrapper = ({ children }) => (
+      <MemoryRouter
+        initialEntries={['/inicio', '/scoring/m-1']}
+        initialIndex={1}
+      >
+        {children}
+      </MemoryRouter>
+    );
     const { result, rerender } = renderHook(
-      ({ bloqueada }) => ({ mapa: useMapaDelHoyo({ golfCourseId: 'gc-1', cerrarSi: bloqueada }), location: useLocation() }),
-      { wrapper, initialProps: { bloqueada: false } }
+      ({ bloqueada }) => ({
+        mapa: useMapaDelHoyo({ golfCourseId: 'gc-1', cerrarSi: bloqueada }),
+        location: useLocation(),
+      }),
+      { wrapper, initialProps: { bloqueada: false } },
     );
     act(() => result.current.mapa.abrir());
 

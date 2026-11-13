@@ -18,14 +18,21 @@ import {
   slideUp,
   staggerContainer,
   getEntryProps,
-  getRevealProps
+  getRevealProps,
 } from '../utils/animations';
 
 const Landing = () => {
   const { t, ready: textosListos } = useTranslation('landing');
   const { t: tCommon, ready: textosComunesListos } = useTranslation('common');
   const navigate = useNavigate();
-  const { canInstall, isIOS, iosInstallRoute, isDesktopSafari, isInstalled, install } = useInstallPrompt();
+  const {
+    canInstall,
+    isIOS,
+    iosInstallRoute,
+    isDesktopSafari,
+    isInstalled,
+    install,
+  } = useInstallPrompt();
   const esAplicacionInstalada = useStandalone();
   // Solo el ARRANQUE, no cualquier visita a `/`: dentro de la aplicación
   // instalada el logo de la cabecera y «Características» apuntan a `/` y a
@@ -141,7 +148,6 @@ const Landing = () => {
 
           <div className="relative px-4 md:px-8 py-16 md:py-24 max-w-7xl mx-auto">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-
               {/* Left Column - Text Content */}
               <motion.div
                 {...heroProps}
@@ -151,7 +157,11 @@ const Landing = () => {
                 {/* Badge */}
                 <motion.div variants={slideUp}>
                   <span className="inline-flex items-center gap-2 px-4 py-2 bg-primary-100 text-primary-700 rounded-full text-sm font-semibold">
-                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                    <svg
+                      className="w-4 h-4"
+                      fill="currentColor"
+                      viewBox="0 0 20 20"
+                    >
                       <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
                     </svg>
                     {t('hero.badge')}
@@ -162,9 +172,7 @@ const Landing = () => {
                 <motion.div variants={slideUp} className="space-y-4">
                   <h1 className="text-4xl md:text-5xl lg:text-6xl font-black leading-tight tracking-tight text-gray-900 font-poppins">
                     {t('hero.title')}{' '}
-                    <span className="text-primary">
-                      {t('hero.brand')}
-                    </span>
+                    <span className="text-primary">{t('hero.brand')}</span>
                   </h1>
                   <div className="flex items-center gap-3">
                     <div className="h-1 w-12 bg-accent rounded-full" />
@@ -200,23 +208,30 @@ const Landing = () => {
                         if (isIOS || isDesktopSafari) {
                           setShowInstallModal(true);
                         } else if (!canInstall) {
-                          setShowInstallHint(h => !h);
+                          setShowInstallHint((h) => !h);
                         } else {
                           install();
                         }
                       }}
                       className="flex items-center justify-center gap-2 px-8 py-4 bg-accent text-white text-base font-bold rounded-lg transition-all duration-300 hover:bg-accent/90 hover:shadow-lg hover:scale-105"
                     >
-                      {isIOS ? <Share className="w-5 h-5" /> : <Download className="w-5 h-5" />}
+                      {isIOS ? (
+                        <Share className="w-5 h-5" />
+                      ) : (
+                        <Download className="w-5 h-5" />
+                      )}
                       {tCommon('installBanner.install')}
                     </button>
-                    {showInstallHint && !isIOS && !isDesktopSafari && !canInstall && (
-                      <p className="text-sm text-gray-600 bg-gray-50 rounded-lg px-4 py-2 border border-gray-200">
-                        {isInstalled
-                          ? tCommon('installBanner.alreadyInstalled')
-                          : tCommon('installBanner.genericHint')}
-                      </p>
-                    )}
+                    {showInstallHint &&
+                      !isIOS &&
+                      !isDesktopSafari &&
+                      !canInstall && (
+                        <p className="text-sm text-gray-600 bg-gray-50 rounded-lg px-4 py-2 border border-gray-200">
+                          {isInstalled
+                            ? tCommon('installBanner.alreadyInstalled')
+                            : tCommon('installBanner.genericHint')}
+                        </p>
+                      )}
                   </div>
                 </motion.div>
 
@@ -226,16 +241,28 @@ const Landing = () => {
                   className="grid grid-cols-3 gap-6 pt-8 border-t border-gray-200"
                 >
                   <div>
-                    <div className="text-2xl font-bold text-primary font-poppins">{t('hero.stats.free')}</div>
-                    <div className="text-sm text-gray-600 mt-1">{t('hero.stats.freeDetail')}</div>
+                    <div className="text-2xl font-bold text-primary font-poppins">
+                      {t('hero.stats.free')}
+                    </div>
+                    <div className="text-sm text-gray-600 mt-1">
+                      {t('hero.stats.freeDetail')}
+                    </div>
                   </div>
                   <div>
-                    <div className="text-2xl font-bold text-primary font-poppins">{t('hero.stats.handicap')}</div>
-                    <div className="text-sm text-gray-600 mt-1">{t('hero.stats.handicapDetail')}</div>
+                    <div className="text-2xl font-bold text-primary font-poppins">
+                      {t('hero.stats.handicap')}
+                    </div>
+                    <div className="text-sm text-gray-600 mt-1">
+                      {t('hero.stats.handicapDetail')}
+                    </div>
                   </div>
                   <div>
-                    <div className="text-2xl font-bold text-primary font-poppins">{t('hero.stats.noAds')}</div>
-                    <div className="text-sm text-gray-600 mt-1">{t('hero.stats.noAdsDetail')}</div>
+                    <div className="text-2xl font-bold text-primary font-poppins">
+                      {t('hero.stats.noAds')}
+                    </div>
+                    <div className="text-sm text-gray-600 mt-1">
+                      {t('hero.stats.noAdsDetail')}
+                    </div>
                   </div>
                 </motion.div>
               </motion.div>
@@ -263,8 +290,12 @@ const Landing = () => {
                       className="absolute bottom-6 left-6 right-6 bg-white/95 backdrop-blur-sm rounded-xl p-4 shadow-lg"
                     >
                       <div>
-                        <div className="text-sm font-semibold text-gray-600">{t('hero.nextTournament')}</div>
-                        <div className="text-lg font-bold text-gray-900">{t('hero.springClassic')}</div>
+                        <div className="text-sm font-semibold text-gray-600">
+                          {t('hero.nextTournament')}
+                        </div>
+                        <div className="text-lg font-bold text-gray-900">
+                          {t('hero.springClassic')}
+                        </div>
                       </div>
                     </motion.div>
                   </div>
@@ -274,33 +305,44 @@ const Landing = () => {
                   <div className="absolute -bottom-4 -left-4 w-32 h-32 bg-primary rounded-full opacity-20 blur-2xl" />
                 </div>
               </motion.div>
-
             </div>
           </div>
 
           {/* Wave Divider */}
           <div className="absolute bottom-0 left-0 right-0 z-0 pointer-events-none">
-            <svg viewBox="0 0 1440 120" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full">
-              <path d="M0 0L60 10C120 20 240 40 360 45C480 50 600 40 720 35C840 30 960 30 1080 35C1200 40 1320 50 1380 55L1440 60V120H1380C1320 120 1200 120 1080 120C960 120 840 120 720 120C600 120 480 120 360 120C240 120 120 120 60 120H0V0Z" fill="white"/>
+            <svg
+              viewBox="0 0 1440 120"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+              className="w-full"
+            >
+              <path
+                d="M0 0L60 10C120 20 240 40 360 45C480 50 600 40 720 35C840 30 960 30 1080 35C1200 40 1320 50 1380 55L1440 60V120H1380C1320 120 1200 120 1080 120C960 120 840 120 720 120C600 120 480 120 360 120C240 120 120 120 60 120H0V0Z"
+                fill="white"
+              />
             </svg>
           </div>
         </section>
 
         {/* Features Section - Redesigned */}
-        <section id="features" className="relative z-10 bg-white px-4 md:px-8 py-16 md:py-24 max-w-7xl mx-auto">
+        <section
+          id="features"
+          className="relative z-10 bg-white px-4 md:px-8 py-16 md:py-24 max-w-7xl mx-auto"
+        >
           <motion.div
             {...revealProps}
             variants={staggerContainer}
             className="space-y-12"
           >
             {/* Section Header */}
-            <motion.div variants={fadeInUp} className="text-center max-w-3xl mx-auto">
+            <motion.div
+              variants={fadeInUp}
+              className="text-center max-w-3xl mx-auto"
+            >
               <h2 className="text-3xl md:text-4xl font-black text-gray-900 mb-4 font-poppins">
                 {t('features.title')}
               </h2>
-              <p className="text-lg text-gray-600">
-                {t('features.subtitle')}
-              </p>
+              <p className="text-lg text-gray-600">{t('features.subtitle')}</p>
             </motion.div>
 
             {/* Features Grid */}
@@ -317,7 +359,9 @@ const Landing = () => {
                 <div className="w-12 h-12 bg-primary-100 rounded-xl flex items-center justify-center mb-4 group-hover:bg-primary group-hover:scale-110 transition-all duration-300">
                   <BarChart3 className="w-6 h-6 text-primary group-hover:text-white transition-colors" />
                 </div>
-                <h3 className="text-xl font-bold text-gray-900 mb-2 font-poppins">{t('features.handicap.title')}</h3>
+                <h3 className="text-xl font-bold text-gray-900 mb-2 font-poppins">
+                  {t('features.handicap.title')}
+                </h3>
                 <p className="text-gray-600 text-sm leading-relaxed">
                   {t('features.handicap.description')}
                 </p>
@@ -332,7 +376,9 @@ const Landing = () => {
                 <div className="w-12 h-12 bg-accent-400/20 rounded-xl flex items-center justify-center mb-4 group-hover:bg-accent group-hover:scale-110 transition-all duration-300">
                   <Trophy className="w-6 h-6 text-accent-600 group-hover:text-white transition-colors" />
                 </div>
-                <h3 className="text-xl font-bold text-gray-900 mb-2 font-poppins">{t('features.format.title')}</h3>
+                <h3 className="text-xl font-bold text-gray-900 mb-2 font-poppins">
+                  {t('features.format.title')}
+                </h3>
                 <p className="text-gray-600 text-sm leading-relaxed">
                   {t('features.format.description')}
                 </p>
@@ -347,7 +393,9 @@ const Landing = () => {
                 <div className="w-12 h-12 bg-navy-800/10 rounded-xl flex items-center justify-center mb-4 group-hover:bg-navy-800 group-hover:scale-110 transition-all duration-300">
                   <Users className="w-6 h-6 text-navy-800 group-hover:text-white transition-colors" />
                 </div>
-                <h3 className="text-xl font-bold text-gray-900 mb-2 font-poppins">{t('features.team.title')}</h3>
+                <h3 className="text-xl font-bold text-gray-900 mb-2 font-poppins">
+                  {t('features.team.title')}
+                </h3>
                 <p className="text-gray-600 text-sm leading-relaxed">
                   {t('features.team.description')}
                 </p>
@@ -362,7 +410,9 @@ const Landing = () => {
                 <div className="w-12 h-12 bg-primary-100 rounded-xl flex items-center justify-center mb-4 group-hover:bg-primary group-hover:scale-110 transition-all duration-300">
                   <Zap className="w-6 h-6 text-primary group-hover:text-white transition-colors" />
                 </div>
-                <h3 className="text-xl font-bold text-gray-900 mb-2 font-poppins">{t('features.scoring.title')}</h3>
+                <h3 className="text-xl font-bold text-gray-900 mb-2 font-poppins">
+                  {t('features.scoring.title')}
+                </h3>
                 <p className="text-gray-600 text-sm leading-relaxed">
                   {t('features.scoring.description')}
                 </p>
@@ -391,13 +441,25 @@ const Landing = () => {
                 <div className="absolute -bottom-6 -right-6 bg-white rounded-xl p-6 shadow-xl max-w-xs hidden md:block">
                   <div className="flex items-center gap-4">
                     <div className="w-12 h-12 bg-primary rounded-full flex items-center justify-center">
-                      <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                      <svg
+                        className="w-6 h-6 text-white"
+                        fill="currentColor"
+                        viewBox="0 0 20 20"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                          clipRule="evenodd"
+                        />
                       </svg>
                     </div>
                     <div>
-                      <div className="font-bold text-gray-900">{t('benefits.easySetup.shortTitle')}</div>
-                      <div className="text-sm text-gray-600">{t('benefits.easySetup.shortDescription')}</div>
+                      <div className="font-bold text-gray-900">
+                        {t('benefits.easySetup.shortTitle')}
+                      </div>
+                      <div className="text-sm text-gray-600">
+                        {t('benefits.easySetup.shortDescription')}
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -416,10 +478,22 @@ const Landing = () => {
 
                 <motion.div variants={fadeInUp} className="space-y-4">
                   {[
-                    { title: t('benefits.simple.title'), desc: t('benefits.simple.description') },
-                    { title: t('benefits.mobile.title'), desc: t('benefits.mobile.description') },
-                    { title: t('benefits.fair.title'), desc: t('benefits.fair.description') },
-                    { title: t('benefits.community.title'), desc: t('benefits.community.description') }
+                    {
+                      title: t('benefits.simple.title'),
+                      desc: t('benefits.simple.description'),
+                    },
+                    {
+                      title: t('benefits.mobile.title'),
+                      desc: t('benefits.mobile.description'),
+                    },
+                    {
+                      title: t('benefits.fair.title'),
+                      desc: t('benefits.fair.description'),
+                    },
+                    {
+                      title: t('benefits.community.title'),
+                      desc: t('benefits.community.description'),
+                    },
                   ].map((benefit) => (
                     <motion.div
                       key={benefit.title}
@@ -427,12 +501,22 @@ const Landing = () => {
                       className="flex gap-4 items-start"
                     >
                       <div className="w-6 h-6 bg-primary rounded-full flex items-center justify-center flex-shrink-0 mt-1">
-                        <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                        <svg
+                          className="w-4 h-4 text-white"
+                          fill="currentColor"
+                          viewBox="0 0 20 20"
+                        >
+                          <path
+                            fillRule="evenodd"
+                            d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                            clipRule="evenodd"
+                          />
                         </svg>
                       </div>
                       <div>
-                        <h4 className="font-bold text-gray-900">{benefit.title}</h4>
+                        <h4 className="font-bold text-gray-900">
+                          {benefit.title}
+                        </h4>
                         <p className="text-gray-600 text-sm">{benefit.desc}</p>
                       </div>
                     </motion.div>
@@ -471,7 +555,7 @@ const Landing = () => {
                   {t('cta.button')}
                 </button>
                 <button
-                  onClick={() => globalThis.location.href = '#features'}
+                  onClick={() => (globalThis.location.href = '#features')}
                   className="px-8 py-4 bg-transparent text-white text-base font-bold rounded-lg border-2 border-white hover:bg-white/10 transition-all duration-300"
                 >
                   {t('cta.learnMore')}

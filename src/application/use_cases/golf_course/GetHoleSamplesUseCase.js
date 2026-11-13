@@ -23,7 +23,11 @@ import { crearRecienEnviadas } from './recienEnviadas';
  * @param {Object} [dependencies.recienEnviadas] - las que llegaron y el resumen aún no trae, compartido
  */
 class GetHoleSamplesUseCase {
-  constructor({ golfCourseRepository, holeSampleStore, recienEnviadas = crearRecienEnviadas() }) {
+  constructor({
+    golfCourseRepository,
+    holeSampleStore,
+    recienEnviadas = crearRecienEnviadas(),
+  }) {
     this.golfCourseRepository = golfCourseRepository;
     this.holeSampleStore = holeSampleStore;
     this.recienEnviadas = recienEnviadas;
@@ -39,7 +43,8 @@ class GetHoleSamplesUseCase {
     // Las que lleguen mientras se pide no pueden venir en este resumen
     const turno = this.recienEnviadas.turno();
     try {
-      const resumen = await this.golfCourseRepository.getHoleSamples(golfCourseId);
+      const resumen =
+        await this.golfCourseRepository.getHoleSamples(golfCourseId);
       this.holeSampleStore.saveResumen(golfCourseId, resumen);
       this.recienEnviadas.olvidar(golfCourseId, turno);
       return resumen;
@@ -53,12 +58,21 @@ class GetHoleSamplesUseCase {
     if (!userId || !golfCourseId || !barra) return {};
     // Mi barra, o la de mi color sin género: como el servidor (`tee_for`) y
     // como `muestrasDeLaBarra`
-    const esMia = (otra) => esLaMismaBarra(otra, barra) || (Boolean(barra.gender) && esLaMismaBarra(otra, { color: barra.color, gender: null }));
+    const esMia = (otra) =>
+      esLaMismaBarra(otra, barra) ||
+      (Boolean(barra.gender) &&
+        esLaMismaBarra(otra, { color: barra.color, gender: null }));
     const deEsteCampo = (entradas) =>
       Object.fromEntries(
         entradas
-          .filter((entrada) => entrada.golfCourseId === golfCourseId && esMia(entrada.barra))
-          .map(({ holeNumber, tee, bends, greenCenter }) => [holeNumber, { tee, bends, greenCenter }]),
+          .filter(
+            (entrada) =>
+              entrada.golfCourseId === golfCourseId && esMia(entrada.barra),
+          )
+          .map(({ holeNumber, tee, bends, greenCenter }) => [
+            holeNumber,
+            { tee, bends, greenCenter },
+          ]),
       );
     // Lo suyo, de más viejo a más nuevo: lo ya enviado, lo recién enviado y lo
     // que espera en la cola

@@ -29,6 +29,6 @@ export const useLaMasNueva = () => {
         aplicada.current = pedidas.current;
       },
     }),
-    []
+    [],
   );
 };

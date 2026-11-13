@@ -131,7 +131,9 @@ describe('useUserRoles', () => {
     const error = new Error('Network error');
     getUserRolesUseCase.execute.mockRejectedValue(error);
 
-    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const consoleErrorSpy = vi
+      .spyOn(console, 'error')
+      .mockImplementation(() => {});
 
     const { result } = renderHook(() => useUserRoles('comp-123', 'u-1'));
 
@@ -206,7 +208,7 @@ describe('useUserRoles', () => {
 
     const { rerender } = renderHook(
       ({ compId }) => useUserRoles(compId, 'u-1'),
-      { initialProps: { compId: 'comp-123' } }
+      { initialProps: { compId: 'comp-123' } },
     );
 
     await waitFor(() => {
@@ -263,9 +265,14 @@ describe('useUserRoles · de quién y de qué competición (T4)', () => {
         pintados.push({ competicion, usuario, ...r });
         return r;
       },
-      { initialProps: inicial }
+      { initialProps: inicial },
     );
-  const sinRolesYEsperando = (p) => p.isLoading && !p.isAdmin && !p.isCreator && !p.isPlayer && p.error === null;
+  const sinRolesYEsperando = (p) =>
+    p.isLoading &&
+    !p.isAdmin &&
+    !p.isCreator &&
+    !p.isPlayer &&
+    p.error === null;
 
   let consola;
   beforeEach(() => {
@@ -279,20 +286,30 @@ describe('useUserRoles · de quién y de qué competición (T4)', () => {
 
   it('T4-16: la respuesta de A que llega después de la de B no pisa los roles de B', async () => {
     const deA = pendiente();
-    getUserRolesUseCase.execute.mockReturnValueOnce(deA.promesa).mockResolvedValueOnce(JUEGA);
+    getUserRolesUseCase.execute
+      .mockReturnValueOnce(deA.promesa)
+      .mockResolvedValueOnce(JUEGA);
     const { result, rerender } = pinta({ competicion: 'A', usuario: 'u1' });
 
     rerender({ competicion: 'B', usuario: 'u1' });
     await waitFor(() => expect(result.current.isPlayer).toBe(true));
     await act(async () => deA.soltar(ADMIN));
 
-    expect(result.current).toMatchObject({ ...JUEGA, isLoading: false, error: null });
-    expect(pintados.filter((p) => p.competicion === 'B' && p.isCreator)).toEqual([]);
+    expect(result.current).toMatchObject({
+      ...JUEGA,
+      isLoading: false,
+      error: null,
+    });
+    expect(
+      pintados.filter((p) => p.competicion === 'B' && p.isCreator),
+    ).toEqual([]);
   });
 
   it('T4-17: al cambiar de A a B, en ese mismo pintado ya espera y no enseña los roles de A', async () => {
     const deB = pendiente();
-    getUserRolesUseCase.execute.mockResolvedValueOnce(ORGANIZA).mockReturnValueOnce(deB.promesa);
+    getUserRolesUseCase.execute
+      .mockResolvedValueOnce(ORGANIZA)
+      .mockReturnValueOnce(deB.promesa);
     const { result, rerender } = pinta({ competicion: 'A', usuario: 'u1' });
     await waitFor(() => expect(result.current.isCreator).toBe(true));
 
@@ -308,7 +325,9 @@ describe('useUserRoles · de quién y de qué competición (T4)', () => {
   it('T4-18: si A falla tarde con B ya pedida, B ni enseña error ni deja de esperar por eso', async () => {
     const deA = pendiente();
     const deB = pendiente();
-    getUserRolesUseCase.execute.mockReturnValueOnce(deA.promesa).mockReturnValueOnce(deB.promesa);
+    getUserRolesUseCase.execute
+      .mockReturnValueOnce(deA.promesa)
+      .mockReturnValueOnce(deB.promesa);
     const { result, rerender } = pinta({ competicion: 'A', usuario: 'u1' });
 
     rerender({ competicion: 'B', usuario: 'u1' });
@@ -317,25 +336,39 @@ describe('useUserRoles · de quién y de qué competición (T4)', () => {
     expect(sinRolesYEsperando(result.current)).toBe(true);
     expect(consola).not.toHaveBeenCalled();
     await act(async () => deB.soltar(ORGANIZA));
-    expect(result.current).toMatchObject({ ...ORGANIZA, isLoading: false, error: null });
+    expect(result.current).toMatchObject({
+      ...ORGANIZA,
+      isLoading: false,
+      error: null,
+    });
   });
 
   it('T4-19: el error de A no se ve en B', async () => {
     const deB = pendiente();
-    getUserRolesUseCase.execute.mockRejectedValueOnce(new Error('de A')).mockReturnValueOnce(deB.promesa);
+    getUserRolesUseCase.execute
+      .mockRejectedValueOnce(new Error('de A'))
+      .mockReturnValueOnce(deB.promesa);
     const { result, rerender } = pinta({ competicion: 'A', usuario: 'u1' });
     await waitFor(() => expect(result.current.error).not.toBe(null));
 
     rerender({ competicion: 'B', usuario: 'u1' });
 
-    expect(pintados.filter((p) => p.competicion === 'B').every(sinRolesYEsperando)).toBe(true);
+    expect(
+      pintados.filter((p) => p.competicion === 'B').every(sinRolesYEsperando),
+    ).toBe(true);
     await act(async () => deB.soltar(JUEGA));
-    expect(result.current).toMatchObject({ ...JUEGA, isLoading: false, error: null });
+    expect(result.current).toMatchObject({
+      ...JUEGA,
+      isLoading: false,
+      error: null,
+    });
   });
 
   it('T4-20: tras un error, refetch() quita el error y espera al momento; luego, los roles nuevos', async () => {
     const otra = pendiente();
-    getUserRolesUseCase.execute.mockRejectedValueOnce(new Error('sin red')).mockReturnValueOnce(otra.promesa);
+    getUserRolesUseCase.execute
+      .mockRejectedValueOnce(new Error('sin red'))
+      .mockReturnValueOnce(otra.promesa);
     const { result } = pinta({ competicion: 'A', usuario: 'u1' });
     await waitFor(() => expect(result.current.error).not.toBe(null));
 
@@ -346,7 +379,11 @@ describe('useUserRoles · de quién y de qué competición (T4)', () => {
     expect(result.current.error).toBe(null);
     expect(result.current.isLoading).toBe(true);
     await act(async () => otra.soltar(ORGANIZA));
-    expect(result.current).toMatchObject({ ...ORGANIZA, isLoading: false, error: null });
+    expect(result.current).toMatchObject({
+      ...ORGANIZA,
+      isLoading: false,
+      error: null,
+    });
   });
 
   it('T4-21: dos refetch() seguidos y el primero llega el último: se quedan los del segundo', async () => {
@@ -361,11 +398,15 @@ describe('useUserRoles · de quién y de qué competición (T4)', () => {
     act(() => {
       result.current.refetch();
     });
-    await waitFor(() => expect(getUserRolesUseCase.execute).toHaveBeenCalledTimes(2));
+    await waitFor(() =>
+      expect(getUserRolesUseCase.execute).toHaveBeenCalledTimes(2),
+    );
     act(() => {
       result.current.refetch();
     });
-    await waitFor(() => expect(result.current).toMatchObject({ ...ORGANIZA, isLoading: false }));
+    await waitFor(() =>
+      expect(result.current).toMatchObject({ ...ORGANIZA, isLoading: false }),
+    );
     await act(async () => primero.soltar(ADMIN));
 
     expect(result.current).toMatchObject({ ...ORGANIZA, isLoading: false });
@@ -375,7 +416,9 @@ describe('useUserRoles · de quién y de qué competición (T4)', () => {
     const enVuelo = pendiente();
     getUserRolesUseCase.execute.mockReturnValueOnce(enVuelo.promesa);
     const { unmount } = pinta({ competicion: 'A', usuario: 'u1' });
-    await waitFor(() => expect(getUserRolesUseCase.execute).toHaveBeenCalledTimes(1));
+    await waitFor(() =>
+      expect(getUserRolesUseCase.execute).toHaveBeenCalledTimes(1),
+    );
 
     unmount();
     await act(async () => enVuelo.fallar(new Error('tarde')));
@@ -397,19 +440,29 @@ describe('useUserRoles · de quién y de qué competición (T4)', () => {
     act(() => {
       result.current.refetch();
     });
-    await waitFor(() => expect(getUserRolesUseCase.execute).toHaveBeenCalledTimes(2));
+    await waitFor(() =>
+      expect(getUserRolesUseCase.execute).toHaveBeenCalledTimes(2),
+    );
     rerender({ competicion: 'A', usuario: 'u2' });
 
     const deU2Pintados = pintados.filter((p) => p.usuario === 'u2');
     expect(deU2Pintados.length).toBeGreaterThan(0);
     expect(deU2Pintados.every(sinRolesYEsperando)).toBe(true);
-    await waitFor(() => expect(getUserRolesUseCase.execute).toHaveBeenCalledTimes(3));
+    await waitFor(() =>
+      expect(getUserRolesUseCase.execute).toHaveBeenCalledTimes(3),
+    );
     await act(async () => deU1.soltar(ADMIN));
     expect(sinRolesYEsperando(result.current)).toBe(true);
 
     await act(async () => deU2.soltar(JUEGA));
-    expect(result.current).toMatchObject({ ...JUEGA, isLoading: false, error: null });
-    expect(pintados.filter((p) => p.usuario === 'u2' && (p.isAdmin || p.isCreator))).toEqual([]);
+    expect(result.current).toMatchObject({
+      ...JUEGA,
+      isLoading: false,
+      error: null,
+    });
+    expect(
+      pintados.filter((p) => p.usuario === 'u2' && (p.isAdmin || p.isCreator)),
+    ).toEqual([]);
   });
 
   // /code-review: la pantalla puede montar antes de saber quién es el usuario.
@@ -418,20 +471,32 @@ describe('useUserRoles · de quién y de qué competición (T4)', () => {
   it('T4-40: sin usuario no se piden; al llegar, una sola petición, y ningún rol antes de su respuesta', async () => {
     const deU1 = pendiente();
     getUserRolesUseCase.execute.mockReturnValueOnce(deU1.promesa);
-    const { result, rerender } = pinta({ competicion: 'A', usuario: undefined });
+    const { result, rerender } = pinta({
+      competicion: 'A',
+      usuario: undefined,
+    });
     await act(async () => {});
 
     expect(getUserRolesUseCase.execute).not.toHaveBeenCalled();
     expect(sinRolesYEsperando(result.current)).toBe(true);
 
     rerender({ competicion: 'A', usuario: 'u1' });
-    await waitFor(() => expect(getUserRolesUseCase.execute).toHaveBeenCalledTimes(1));
+    await waitFor(() =>
+      expect(getUserRolesUseCase.execute).toHaveBeenCalledTimes(1),
+    );
     expect(sinRolesYEsperando(result.current)).toBe(true);
     await act(async () => deU1.soltar(ADMIN));
 
-    expect(result.current).toMatchObject({ ...ADMIN, isLoading: false, error: null });
+    expect(result.current).toMatchObject({
+      ...ADMIN,
+      isLoading: false,
+      error: null,
+    });
     expect(getUserRolesUseCase.execute).toHaveBeenCalledTimes(1);
-    const antesDeLlegar = pintados.slice(0, pintados.findIndex((p) => p.isAdmin));
+    const antesDeLlegar = pintados.slice(
+      0,
+      pintados.findIndex((p) => p.isAdmin),
+    );
     expect(antesDeLlegar.every(sinRolesYEsperando)).toBe(true);
   });
 
@@ -440,6 +505,11 @@ describe('useUserRoles · de quién y de qué competición (T4)', () => {
     await act(async () => {});
 
     expect(getUserRolesUseCase.execute).not.toHaveBeenCalled();
-    expect(result.current).toMatchObject({ isAdmin: false, isCreator: false, isPlayer: false, isLoading: false });
+    expect(result.current).toMatchObject({
+      isAdmin: false,
+      isCreator: false,
+      isPlayer: false,
+      isLoading: false,
+    });
   });
 });

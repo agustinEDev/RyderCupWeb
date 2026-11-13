@@ -24,8 +24,10 @@ vi.mock('maplibre-gl', () => {
   return { Marker };
 });
 
-const { CLASE_DEL_PUNTO, etiqueta, punto, sincronizarCifras } = await import('./marcadoresDelMapa');
-const { distanciaEnMetros } = await import('../../../domain/services/distanciasAlGreen');
+const { CLASE_DEL_PUNTO, etiqueta, punto, sincronizarCifras } =
+  await import('./marcadoresDelMapa');
+const { distanciaEnMetros } =
+  await import('../../../domain/services/distanciasAlGreen');
 
 const A = { lat: 36.28, lon: -5.33 };
 const B = { lat: 36.282, lon: -5.33 };
@@ -61,29 +63,54 @@ describe('marcadoresDelMapa', () => {
       const mapa = {};
       const etiquetas = [];
 
-      sincronizarCifras(mapa, etiquetas, [[A, B], [B, C]], { tipo: 'linea', color: 'text-white', texto });
+      sincronizarCifras(
+        mapa,
+        etiquetas,
+        [
+          [A, B],
+          [B, C],
+        ],
+        { tipo: 'linea', color: 'text-white', texto },
+      );
 
       expect(etiquetas).toHaveLength(2);
       expect(etiquetas.every((m) => m.mapa === mapa)).toBe(true);
       expect(etiquetas[0].p).toEqual([-5.33, 36.281]);
-      expect(etiquetas[0].getElement().textContent).toBe(texto(distanciaEnMetros(A, B)));
+      expect(etiquetas[0].getElement().textContent).toBe(
+        texto(distanciaEnMetros(A, B)),
+      );
       expect(etiquetas[1].getElement().dataset.tramo).toBe('linea');
     });
 
     it('dadas cifras de antes, cuando cambian los tramos, entonces se mueven y reescriben, y sobran las que no tienen tramo', () => {
       creados.length = 0;
       const etiquetas = [];
-      sincronizarCifras({}, etiquetas, [[A, B], [B, C]], { tipo: 'medida', color: 'text-yellow-300', texto });
+      sincronizarCifras(
+        {},
+        etiquetas,
+        [
+          [A, B],
+          [B, C],
+        ],
+        { tipo: 'medida', color: 'text-yellow-300', texto },
+      );
       const [primera, segunda] = etiquetas;
 
-      sincronizarCifras({}, etiquetas, [[A, C]], { tipo: 'medida', color: 'text-yellow-300', texto, donde: (a) => a });
+      sincronizarCifras({}, etiquetas, [[A, C]], {
+        tipo: 'medida',
+        color: 'text-yellow-300',
+        texto,
+        donde: (a) => a,
+      });
 
       expect(creados).toHaveLength(2);
       expect(etiquetas).toEqual([primera]);
       expect(segunda.remove).toHaveBeenCalledTimes(1);
       expect(primera.remove).not.toHaveBeenCalled();
       expect(primera.p).toEqual([A.lon, A.lat]);
-      expect(primera.getElement().textContent).toBe(texto(distanciaEnMetros(A, C)));
+      expect(primera.getElement().textContent).toBe(
+        texto(distanciaEnMetros(A, C)),
+      );
     });
   });
 });

@@ -1,5 +1,11 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, act, waitFor, fireEvent } from '@testing-library/react';
+import {
+  render,
+  screen,
+  act,
+  waitFor,
+  fireEvent,
+} from '@testing-library/react';
 
 /**
  * La tabla de clasificación (FE #824, PR 8 y pasada): columnas estilo
@@ -9,7 +15,8 @@ import { render, screen, act, waitFor, fireEvent } from '@testing-library/react'
  */
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
-    t: (clave, params) => (params ? `${clave} ${JSON.stringify(params)}` : clave),
+    t: (clave, params) =>
+      params ? `${clave} ${JSON.stringify(params)}` : clave,
     i18n: { language: 'es' },
   }),
 }));
@@ -17,19 +24,43 @@ vi.mock('react-i18next', () => ({
 const Clasificacion = (await import('./Clasificacion')).default;
 
 const fila = (userId, extra = {}) => ({
-  position: 1, tied: false, userId, name: userId.toUpperCase(), category: 2, handicap: 10, value: 36, cards: 2, thru: 18, status: 'CLASIFICADO', ...extra,
+  position: 1,
+  tied: false,
+  userId,
+  name: userId.toUpperCase(),
+  category: 2,
+  handicap: 10,
+  value: 36,
+  cards: 2,
+  thru: 18,
+  status: 'CLASIFICADO',
+  ...extra,
 });
-const clasificacion = (rows, extra = {}) => ({ tournamentType: 'STABLEFORD', scale: 'NETA', rule: 'ACCUMULATED', category: null, rows, me: null, ...extra });
+const clasificacion = (rows, extra = {}) => ({
+  tournamentType: 'STABLEFORD',
+  scale: 'NETA',
+  rule: 'ACCUMULATED',
+  category: null,
+  rows,
+  me: null,
+  ...extra,
+});
 
 describe('Clasificacion · general y scratch (FE #824, PR 8)', () => {
   beforeEach(() => vi.clearAllMocks());
 
   it('2 (pasada): columnas como en los circuitos, POS · JUGADOR · PTS · THRU, en una línea; y la regla arriba', async () => {
-    const pedir = vi.fn().mockResolvedValue(clasificacion([fila('ana', { position: 3, tied: true, thru: 14 })], { rule: 'BEST_CARD' }));
+    const pedir = vi.fn().mockResolvedValue(
+      clasificacion([fila('ana', { position: 3, tied: true, thru: 14 })], {
+        rule: 'BEST_CARD',
+      }),
+    );
     render(<Clasificacion pedir={pedir} userId="x" activa conRegla />);
 
     const ana = await screen.findByTestId('fila-ana');
-    expect(screen.getAllByRole('columnheader').map((c) => c.textContent)).toEqual([
+    expect(
+      screen.getAllByRole('columnheader').map((c) => c.textContent),
+    ).toEqual([
       'partida.colPos',
       'partida.colPlayer',
       'partida.colPoints',
@@ -41,7 +72,16 @@ describe('Clasificacion · general y scratch (FE #824, PR 8)', () => {
   });
 
   it('QA 3 (12 oct 2026): sin haber jugado, sin «Tu posición» fijada', async () => {
-    const pedir = vi.fn().mockResolvedValue(clasificacion([fila('ana')], { me: fila('yo', { position: null, value: null, status: 'SIN_EMPEZAR', thru: 0 }) }));
+    const pedir = vi.fn().mockResolvedValue(
+      clasificacion([fila('ana')], {
+        me: fila('yo', {
+          position: null,
+          value: null,
+          status: 'SIN_EMPEZAR',
+          thru: 0,
+        }),
+      }),
+    );
     render(<Clasificacion pedir={pedir} userId="yo" activa />);
 
     await screen.findByTestId('fila-ana');
@@ -50,45 +90,84 @@ describe('Clasificacion · general y scratch (FE #824, PR 8)', () => {
   });
 
   it('Medal: la columna es al par', async () => {
-    const pedir = vi.fn().mockResolvedValue(clasificacion([fila('ana', { value: -4 })], { tournamentType: 'MEDAL' }));
+    const pedir = vi.fn().mockResolvedValue(
+      clasificacion([fila('ana', { value: -4 })], {
+        tournamentType: 'MEDAL',
+      }),
+    );
     render(<Clasificacion pedir={pedir} userId="x" activa />);
 
     await screen.findByTestId('fila-ana');
-    expect(screen.getAllByRole('columnheader')[2]).toHaveTextContent('partida.colToPar');
+    expect(screen.getAllByRole('columnheader')[2]).toHaveTextContent(
+      'partida.colToPar',
+    );
     expect(screen.getByTestId('fila-ana')).toHaveTextContent('-4');
   });
 
   it('accesible (revisor): la tabla tiene nombre, los códigos su nombre entero y los nombres cortados su texto completo', async () => {
-    const pedir = vi.fn().mockResolvedValue(clasificacion([fila('ana', { position: null, value: null, status: 'NR', thru: 9 })], { me: fila('yo', { position: 31 }) }));
+    const pedir = vi
+      .fn()
+      .mockResolvedValue(
+        clasificacion(
+          [fila('ana', { position: null, value: null, status: 'NR', thru: 9 })],
+          { me: fila('yo', { position: 31 }) },
+        ),
+      );
     render(<Clasificacion pedir={pedir} userId="yo" activa />);
 
     await screen.findByTestId('fila-ana');
-    expect(screen.getByRole('table', { name: 'partida.standingsTable' })).toBeInTheDocument();
-    expect(screen.getByRole('table', { name: 'partida.yourPosition' })).toBeInTheDocument();
+    expect(
+      screen.getByRole('table', { name: 'partida.standingsTable' }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('table', { name: 'partida.yourPosition' }),
+    ).toBeInTheDocument();
     const codigo = screen.getByTestId('fila-ana').querySelector('abbr');
     expect(codigo).toHaveAttribute('title', 'partida.status.NR');
     expect(codigo).toHaveTextContent('partida.statusShort.NR');
-    expect(screen.getByTestId('fila-ana').querySelectorAll('td')[1]).toHaveAttribute('title', 'ANA');
+    expect(
+      screen.getByTestId('fila-ana').querySelectorAll('td')[1],
+    ).toHaveAttribute('title', 'ANA');
   });
 
   it('Medal en cero: PAR; un Stableford con 0 puntos, 0', async () => {
-    const medal = vi.fn().mockResolvedValue(clasificacion([fila('ana', { value: 0 })], { tournamentType: 'MEDAL' }));
-    const { unmount } = render(<Clasificacion pedir={medal} userId="x" activa />);
-    expect((await screen.findByTestId('fila-ana')).querySelectorAll('td')[2]).toHaveTextContent('PAR');
+    const medal = vi
+      .fn()
+      .mockResolvedValue(
+        clasificacion([fila('ana', { value: 0 })], { tournamentType: 'MEDAL' }),
+      );
+    const { unmount } = render(
+      <Clasificacion pedir={medal} userId="x" activa />,
+    );
+    expect(
+      (await screen.findByTestId('fila-ana')).querySelectorAll('td')[2],
+    ).toHaveTextContent('PAR');
     unmount();
 
-    const stb = vi.fn().mockResolvedValue(clasificacion([fila('ana', { value: 0, thru: 0 })]));
+    const stb = vi
+      .fn()
+      .mockResolvedValue(clasificacion([fila('ana', { value: 0, thru: 0 })]));
     render(<Clasificacion pedir={stb} userId="x" activa />);
-    const celdas = (await screen.findByTestId('fila-ana')).querySelectorAll('td');
+    const celdas = (await screen.findByTestId('fila-ana')).querySelectorAll(
+      'td',
+    );
     expect(celdas[2]).toHaveTextContent(/^0$/);
     expect(celdas[3]).toHaveTextContent(/^0$/);
   });
 
   it('23 (QA del 11 oct 2026): un retirado en Stableford conserva su puesto y en HOYO va «R»', async () => {
-    const pedir = vi.fn().mockResolvedValue(clasificacion([fila('ana', { position: 4, value: 9, thru: 5, retired: true })]));
+    const pedir = vi
+      .fn()
+      .mockResolvedValue(
+        clasificacion([
+          fila('ana', { position: 4, value: 9, thru: 5, retired: true }),
+        ]),
+      );
     render(<Clasificacion pedir={pedir} userId="x" activa />);
 
-    const celdas = (await screen.findByTestId('fila-ana')).querySelectorAll('td');
+    const celdas = (await screen.findByTestId('fila-ana')).querySelectorAll(
+      'td',
+    );
     expect(celdas[0]).toHaveTextContent('4');
     expect(celdas[2]).toHaveTextContent('9');
     const r = celdas[3].querySelector('abbr');
@@ -100,35 +179,62 @@ describe('Clasificacion · general y scratch (FE #824, PR 8)', () => {
     const pedir = vi.fn().mockResolvedValue(clasificacion([fila('ana')]));
     render(<Clasificacion pedir={pedir} userId="x" activa />);
 
-    const nombre = (await screen.findByTestId('fila-ana')).querySelectorAll('td')[1];
+    const nombre = (await screen.findByTestId('fila-ana')).querySelectorAll(
+      'td',
+    )[1];
     expect(nombre).not.toHaveClass('truncate');
     expect(nombre).toHaveClass('break-words');
   });
 
   it('3 (QA del 11 oct 2026): POS cabe «T22» sin pegarse al nombre', async () => {
-    const pedir = vi.fn().mockResolvedValue(clasificacion([fila('ana', { position: 22, tied: true })]));
+    const pedir = vi
+      .fn()
+      .mockResolvedValue(
+        clasificacion([fila('ana', { position: 22, tied: true })]),
+      );
     render(<Clasificacion pedir={pedir} userId="x" activa />);
 
-    const celda = (await screen.findByTestId('fila-ana')).querySelectorAll('td')[0];
+    const celda = (await screen.findByTestId('fila-ana')).querySelectorAll(
+      'td',
+    )[0];
     expect(celda).toHaveClass('w-12', 'pr-2');
     expect(screen.getAllByRole('columnheader')[0]).toHaveClass('w-12');
   });
 
   it('/code-review: el guion de puesto y valor también pasa por t()', async () => {
-    const pedir = vi.fn().mockResolvedValue(clasificacion([fila('ana', { position: null, value: null, status: 'NP', thru: 0 })]));
+    const pedir = vi
+      .fn()
+      .mockResolvedValue(
+        clasificacion([
+          fila('ana', { position: null, value: null, status: 'NP', thru: 0 }),
+        ]),
+      );
     render(<Clasificacion pedir={pedir} userId="x" activa />);
 
-    const celdas = (await screen.findByTestId('fila-ana')).querySelectorAll('td');
+    const celdas = (await screen.findByTestId('fila-ana')).querySelectorAll(
+      'td',
+    );
     expect(celdas[0]).toHaveTextContent('partida.none');
     expect(celdas[2]).toHaveTextContent('partida.none');
   });
 
   it('sin valor (sin empezar, NR, NP), un guion en su columna', async () => {
-    const pedir = vi.fn().mockResolvedValue(clasificacion([fila('ana', { position: null, value: null, status: 'NP', thru: 0 })]));
+    const pedir = vi
+      .fn()
+      .mockResolvedValue(
+        clasificacion([
+          fila('ana', { position: null, value: null, status: 'NP', thru: 0 }),
+        ]),
+      );
     render(<Clasificacion pedir={pedir} userId="x" activa />);
 
     const ana = await screen.findByTestId('fila-ana');
-    expect([...ana.querySelectorAll('td')].map((c) => c.textContent)).toEqual(['partida.none', 'ANA', 'partida.none', 'partida.statusShort.NP']);
+    expect([...ana.querySelectorAll('td')].map((c) => c.textContent)).toEqual([
+      'partida.none',
+      'ANA',
+      'partida.none',
+      'partida.statusShort.NP',
+    ]);
   });
 
   it('ni la categoría ni las tarjetas debajo del nombre (pasada: estilo leaderboard)', async () => {
@@ -142,7 +248,12 @@ describe('Clasificacion · general y scratch (FE #824, PR 8)', () => {
   });
 
   it('4: quien queda fuera del corte (scratch) tiene su fila fijada debajo, destacada', async () => {
-    const pedir = vi.fn().mockResolvedValue(clasificacion([fila('ana')], { scale: 'SCRATCH', me: fila('yo', { position: 31 }) }));
+    const pedir = vi.fn().mockResolvedValue(
+      clasificacion([fila('ana')], {
+        scale: 'SCRATCH',
+        me: fila('yo', { position: 31 }),
+      }),
+    );
     render(<Clasificacion pedir={pedir} userId="yo" activa />);
 
     const mia = await screen.findByTestId('fila-fuera-del-corte');
@@ -152,7 +263,14 @@ describe('Clasificacion · general y scratch (FE #824, PR 8)', () => {
   });
 
   it('sin filtro (scratch), aunque las filas traigan su categoría (revisor)', async () => {
-    const pedir = vi.fn().mockResolvedValue(clasificacion([fila('ana', { category: 1 }), fila('bea', { category: 2, position: 2 })]));
+    const pedir = vi
+      .fn()
+      .mockResolvedValue(
+        clasificacion([
+          fila('ana', { category: 1 }),
+          fila('bea', { category: 2, position: 2 }),
+        ]),
+      );
     render(<Clasificacion pedir={pedir} userId="x" activa filtrable={false} />);
 
     await screen.findByTestId('fila-ana');
@@ -161,7 +279,9 @@ describe('Clasificacion · general y scratch (FE #824, PR 8)', () => {
 
   it('se relee cuando cambia la versión (se cerró la franja: lo sin acabar pasa a NR/NP; pasada)', async () => {
     const pedir = vi.fn().mockResolvedValue(clasificacion([fila('ana')]));
-    const { rerender } = render(<Clasificacion pedir={pedir} userId="x" activa version={0} />);
+    const { rerender } = render(
+      <Clasificacion pedir={pedir} userId="x" activa version={0} />,
+    );
     await screen.findByTestId('fila-ana');
 
     rerender(<Clasificacion pedir={pedir} userId="x" activa version={1} />);
@@ -171,7 +291,9 @@ describe('Clasificacion · general y scratch (FE #824, PR 8)', () => {
 
   it('al dejar de releerse (acaba la competición), una última lectura (revisor)', async () => {
     const pedir = vi.fn().mockResolvedValue(clasificacion([fila('ana')]));
-    const { rerender } = render(<Clasificacion pedir={pedir} userId="x" activa cada={60000} />);
+    const { rerender } = render(
+      <Clasificacion pedir={pedir} userId="x" activa cada={60000} />,
+    );
     await screen.findByTestId('fila-ana');
 
     rerender(<Clasificacion pedir={pedir} userId="x" activa cada={null} />);
@@ -180,38 +302,68 @@ describe('Clasificacion · general y scratch (FE #824, PR 8)', () => {
   });
 
   it('la fila fijada debajo tiene su rótulo visible (revisor)', async () => {
-    const pedir = vi.fn().mockResolvedValue(clasificacion([fila('ana')], { me: fila('yo', { position: 31 }) }));
+    const pedir = vi
+      .fn()
+      .mockResolvedValue(
+        clasificacion([fila('ana')], { me: fila('yo', { position: 31 }) }),
+      );
     render(<Clasificacion pedir={pedir} userId="yo" activa />);
 
     expect(await screen.findByText('partida.yourPosition')).toBeInTheDocument();
   });
 
   it('7: si una lectura posterior falla, se dice, con lo de antes debajo (/code-review)', async () => {
-    const pedir = vi.fn()
-      .mockResolvedValueOnce(clasificacion([fila('ana', { category: 1 }), fila('bea', { category: 2, position: 2 })]))
+    const pedir = vi
+      .fn()
+      .mockResolvedValueOnce(
+        clasificacion([
+          fila('ana', { category: 1 }),
+          fila('bea', { category: 2, position: 2 }),
+        ]),
+      )
       .mockRejectedValueOnce(new Error('x'));
     render(<Clasificacion pedir={pedir} userId="x" activa />);
     await screen.findByTestId('fila-ana');
 
-    fireEvent.change(screen.getByRole('combobox', { name: 'partida.category' }), { target: { value: '2' } });
+    fireEvent.change(
+      screen.getByRole('combobox', { name: 'partida.category' }),
+      { target: { value: '2' } },
+    );
 
-    expect(await screen.findByRole('alert')).toHaveTextContent('partida.standingsNotLoaded');
-    expect(screen.getByRole('button', { name: 'partida.retry' })).toBeInTheDocument();
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'partida.standingsNotLoaded',
+    );
+    expect(
+      screen.getByRole('button', { name: 'partida.retry' }),
+    ).toBeInTheDocument();
   });
 
   it('3: al cambiar de categoría, no se enseñan las filas de antes mientras llega la nueva (/code-review)', async () => {
     let soltar;
-    const pedir = vi.fn()
-      .mockResolvedValueOnce(clasificacion([fila('ana', { category: 1 }), fila('bea', { category: 2, position: 2 })]))
+    const pedir = vi
+      .fn()
+      .mockResolvedValueOnce(
+        clasificacion([
+          fila('ana', { category: 1 }),
+          fila('bea', { category: 2, position: 2 }),
+        ]),
+      )
       .mockReturnValueOnce(new Promise((r) => (soltar = r)));
     render(<Clasificacion pedir={pedir} userId="x" activa />);
     await screen.findByTestId('fila-ana');
 
-    fireEvent.change(screen.getByRole('combobox', { name: 'partida.category' }), { target: { value: '2' } });
+    fireEvent.change(
+      screen.getByRole('combobox', { name: 'partida.category' }),
+      { target: { value: '2' } },
+    );
 
-    expect(await screen.findByText('partida.loadingStandings')).toBeInTheDocument();
+    expect(
+      await screen.findByText('partida.loadingStandings'),
+    ).toBeInTheDocument();
     expect(screen.queryByTestId('fila-ana')).toBeNull();
-    await act(async () => soltar(clasificacion([fila('bea', { category: 2 })], { category: 2 })));
+    await act(async () =>
+      soltar(clasificacion([fila('bea', { category: 2 })], { category: 2 })),
+    );
     expect(screen.getByTestId('fila-bea')).toBeInTheDocument();
     expect(screen.queryByText('partida.loadingStandings')).toBeNull();
   });
@@ -220,7 +372,9 @@ describe('Clasificacion · general y scratch (FE #824, PR 8)', () => {
     vi.useFakeTimers({ shouldAdvanceTime: true });
     try {
       const pedir = vi.fn().mockResolvedValue(clasificacion([fila('ana')]));
-      const { unmount } = render(<Clasificacion pedir={pedir} userId="x" activa cada={60000} />);
+      const { unmount } = render(
+        <Clasificacion pedir={pedir} userId="x" activa cada={60000} />,
+      );
       await screen.findByTestId('fila-ana');
       await act(async () => {});
       await act(async () => vi.advanceTimersByTime(60000));
@@ -240,7 +394,14 @@ describe('Clasificacion · general y scratch (FE #824, PR 8)', () => {
 
   it('8: sin resultados, el texto que se le dé', async () => {
     const pedir = vi.fn().mockResolvedValue(clasificacion([]));
-    render(<Clasificacion pedir={pedir} userId="x" activa vacia="partida.noResultsYet" />);
+    render(
+      <Clasificacion
+        pedir={pedir}
+        userId="x"
+        activa
+        vacia="partida.noResultsYet"
+      />,
+    );
 
     expect(await screen.findByText('partida.noResultsYet')).toBeInTheDocument();
   });
@@ -251,19 +412,56 @@ describe('Clasificacion · general y scratch (FE #824, PR 8)', () => {
   it('NP y retirada en femenino si la fila lo es; en masculino o sin dato, como siempre', async () => {
     const pedir = vi.fn().mockResolvedValue(
       clasificacion([
-        fila('ana', { position: null, value: null, status: 'NP', thru: 0, teeGender: 'FEMALE' }),
-        fila('bea', { position: 4, value: 9, thru: 5, retired: true, teeGender: 'FEMALE' }),
-        fila('carlos', { position: null, value: null, status: 'NP', thru: 0, teeGender: 'MALE' }),
-        fila('dani', { position: 5, value: 8, thru: 5, retired: true, teeGender: null }),
-      ])
+        fila('ana', {
+          position: null,
+          value: null,
+          status: 'NP',
+          thru: 0,
+          teeGender: 'FEMALE',
+        }),
+        fila('bea', {
+          position: 4,
+          value: 9,
+          thru: 5,
+          retired: true,
+          teeGender: 'FEMALE',
+        }),
+        fila('carlos', {
+          position: null,
+          value: null,
+          status: 'NP',
+          thru: 0,
+          teeGender: 'MALE',
+        }),
+        fila('dani', {
+          position: 5,
+          value: 8,
+          thru: 5,
+          retired: true,
+          teeGender: null,
+        }),
+      ]),
     );
     render(<Clasificacion pedir={pedir} userId="x" activa />);
 
-    const codigo = async (id) => (await screen.findByTestId(`fila-${id}`)).querySelector('abbr');
-    expect(await codigo('ana')).toHaveAttribute('title', 'partida.status.NP {"context":"female"}');
-    expect(await codigo('bea')).toHaveAttribute('title', 'partida.status.RETIRADO {"context":"female"}');
-    expect(await codigo('carlos')).toHaveAttribute('title', 'partida.status.NP');
-    expect(await codigo('dani')).toHaveAttribute('title', 'partida.status.RETIRADO');
+    const codigo = async (id) =>
+      (await screen.findByTestId(`fila-${id}`)).querySelector('abbr');
+    expect(await codigo('ana')).toHaveAttribute(
+      'title',
+      'partida.status.NP {"context":"female"}',
+    );
+    expect(await codigo('bea')).toHaveAttribute(
+      'title',
+      'partida.status.RETIRADO {"context":"female"}',
+    );
+    expect(await codigo('carlos')).toHaveAttribute(
+      'title',
+      'partida.status.NP',
+    );
+    expect(await codigo('dani')).toHaveAttribute(
+      'title',
+      'partida.status.RETIRADO',
+    );
   });
 });
 
@@ -284,7 +482,11 @@ describe('Clasificacion · me lleva a mi fila', () => {
     delete globalThis.Element.prototype.scrollIntoView;
     delete globalThis.matchMedia;
   });
-  const conYo = () => clasificacion([fila('ana', { category: 1 }), fila('yo', { position: 2, category: 2 })]);
+  const conYo = () =>
+    clasificacion([
+      fila('ana', { category: 1 }),
+      fila('yo', { position: 2, category: 2 }),
+    ]);
 
   it('S1: con mi fila, la centra al abrirse', async () => {
     const pedir = vi.fn().mockResolvedValue(conYo());
@@ -292,18 +494,31 @@ describe('Clasificacion · me lleva a mi fila', () => {
 
     await waitFor(() => expect(centra).toHaveBeenCalledTimes(1));
     expect(centra.mock.contexts[0]).toBe(screen.getByTestId('fila-yo'));
-    expect(centra).toHaveBeenCalledWith({ block: 'center', behavior: 'smooth' });
+    expect(centra).toHaveBeenCalledWith({
+      block: 'center',
+      behavior: 'smooth',
+    });
   });
 
   it('S2: ni el refresco ni el filtro de categoría me vuelven a mover', async () => {
     vi.useFakeTimers({ shouldAdvanceTime: true });
     const pedir = vi.fn().mockResolvedValue(conYo());
-    render(<Clasificacion pedir={pedir} userId="yo" activa cada={60000} centraEnMi="una" />);
+    render(
+      <Clasificacion
+        pedir={pedir}
+        userId="yo"
+        activa
+        cada={60000}
+        centraEnMi="una"
+      />,
+    );
     await waitFor(() => expect(centra).toHaveBeenCalledTimes(1));
 
     await act(async () => vi.advanceTimersByTime(60000));
     await waitFor(() => expect(pedir).toHaveBeenCalledTimes(2));
-    fireEvent.change(screen.getByLabelText('partida.category'), { target: { value: '2' } });
+    fireEvent.change(screen.getByLabelText('partida.category'), {
+      target: { value: '2' },
+    });
     await waitFor(() => expect(pedir).toHaveBeenCalledWith(2));
     await screen.findByTestId('fila-yo');
 
@@ -312,27 +527,56 @@ describe('Clasificacion · me lleva a mi fila', () => {
   });
 
   it('S3: fuera del corte (scratch), centra mi fila de debajo', async () => {
-    const pedir = vi.fn().mockResolvedValue(clasificacion([fila('ana')], { scale: 'SCRATCH', me: fila('yo', { position: 31 }) }));
-    render(<Clasificacion pedir={pedir} userId="yo" activa filtrable={false} centraEnMi="una" />);
+    const pedir = vi.fn().mockResolvedValue(
+      clasificacion([fila('ana')], {
+        scale: 'SCRATCH',
+        me: fila('yo', { position: 31 }),
+      }),
+    );
+    render(
+      <Clasificacion
+        pedir={pedir}
+        userId="yo"
+        activa
+        filtrable={false}
+        centraEnMi="una"
+      />,
+    );
 
     await waitFor(() => expect(centra).toHaveBeenCalledTimes(1));
-    expect(centra.mock.contexts[0]).toBe(screen.getByTestId('fila-fuera-del-corte'));
+    expect(centra.mock.contexts[0]).toBe(
+      screen.getByTestId('fila-fuera-del-corte'),
+    );
   });
 
   it('S4: si no participo, no se mueve', async () => {
     const pedir = vi.fn().mockResolvedValue(conYo());
-    render(<Clasificacion pedir={pedir} userId="organizador" activa centraEnMi="una" />);
+    render(
+      <Clasificacion
+        pedir={pedir}
+        userId="organizador"
+        activa
+        centraEnMi="una"
+      />,
+    );
     await screen.findByTestId('fila-yo');
 
     expect(centra).not.toHaveBeenCalled();
   });
 
   it('S5: con «reducir movimiento», el salto es instantáneo', async () => {
-    globalThis.matchMedia = vi.fn((q) => ({ matches: q === '(prefers-reduced-motion: reduce)' }));
+    globalThis.matchMedia = vi.fn((q) => ({
+      matches: q === '(prefers-reduced-motion: reduce)',
+    }));
     const pedir = vi.fn().mockResolvedValue(conYo());
     render(<Clasificacion pedir={pedir} userId="yo" activa centraEnMi="una" />);
 
-    await waitFor(() => expect(centra).toHaveBeenCalledWith({ block: 'center', behavior: 'auto' }));
+    await waitFor(() =>
+      expect(centra).toHaveBeenCalledWith({
+        block: 'center',
+        behavior: 'auto',
+      }),
+    );
   });
 
   it('S6: sin pedirlo, nunca se mueve', async () => {
@@ -345,11 +589,22 @@ describe('Clasificacion · me lleva a mi fila', () => {
 
   it('S7: «una»: cerrar la pestaña y volver a abrirla no me vuelve a mover', async () => {
     const pedir = vi.fn().mockResolvedValue(conYo());
-    const { rerender } = render(<Clasificacion pedir={pedir} userId="yo" activa centraEnMi="una" />);
+    const { rerender } = render(
+      <Clasificacion pedir={pedir} userId="yo" activa centraEnMi="una" />,
+    );
     await waitFor(() => expect(centra).toHaveBeenCalledTimes(1));
 
-    rerender(<Clasificacion pedir={pedir} userId="yo" activa={false} centraEnMi="una" />);
-    rerender(<Clasificacion pedir={pedir} userId="yo" activa centraEnMi="una" />);
+    rerender(
+      <Clasificacion
+        pedir={pedir}
+        userId="yo"
+        activa={false}
+        centraEnMi="una"
+      />,
+    );
+    rerender(
+      <Clasificacion pedir={pedir} userId="yo" activa centraEnMi="una" />,
+    );
     await waitFor(() => expect(pedir).toHaveBeenCalledTimes(2));
 
     expect(centra).toHaveBeenCalledTimes(1);
@@ -357,16 +612,41 @@ describe('Clasificacion · me lleva a mi fila', () => {
 
   it('S8: «alAbrir»: cada vez que se abre la pestaña me lleva, ya leída la clasificación', async () => {
     let suelta;
-    const pedir = vi.fn().mockResolvedValueOnce(conYo()).mockReturnValueOnce(new Promise((r) => { suelta = r; }));
-    const { rerender } = render(<Clasificacion pedir={pedir} userId="yo" activa centraEnMi="alAbrir" />);
+    const pedir = vi
+      .fn()
+      .mockResolvedValueOnce(conYo())
+      .mockReturnValueOnce(
+        new Promise((r) => {
+          suelta = r;
+        }),
+      );
+    const { rerender } = render(
+      <Clasificacion pedir={pedir} userId="yo" activa centraEnMi="alAbrir" />,
+    );
     await waitFor(() => expect(centra).toHaveBeenCalledTimes(1));
 
-    rerender(<Clasificacion pedir={pedir} userId="yo" activa={false} centraEnMi="alAbrir" />);
-    rerender(<Clasificacion pedir={pedir} userId="yo" activa centraEnMi="alAbrir" />);
+    rerender(
+      <Clasificacion
+        pedir={pedir}
+        userId="yo"
+        activa={false}
+        centraEnMi="alAbrir"
+      />,
+    );
+    rerender(
+      <Clasificacion pedir={pedir} userId="yo" activa centraEnMi="alAbrir" />,
+    );
     // S8b (revisor): con la lectura vieja todavía no, que mi puesto puede haber cambiado
     await act(async () => {});
     expect(centra).toHaveBeenCalledTimes(1);
-    await act(async () => suelta(clasificacion([fila('yo', { position: 1 }), fila('ana', { position: 2 })])));
+    await act(async () =>
+      suelta(
+        clasificacion([
+          fila('yo', { position: 1 }),
+          fila('ana', { position: 2 }),
+        ]),
+      ),
+    );
 
     await waitFor(() => expect(centra).toHaveBeenCalledTimes(2));
     expect(centra.mock.contexts[1]).toBe(screen.getByTestId('fila-yo'));
@@ -374,8 +654,19 @@ describe('Clasificacion · me lleva a mi fila', () => {
 
   it('S9: lo primero que se ve cuenta: si ahí no estaba mi fila, el refresco que la trae no me mueve', async () => {
     vi.useFakeTimers({ shouldAdvanceTime: true });
-    const pedir = vi.fn().mockResolvedValueOnce(clasificacion([fila('ana')])).mockResolvedValue(conYo());
-    render(<Clasificacion pedir={pedir} userId="yo" activa cada={60000} centraEnMi="una" />);
+    const pedir = vi
+      .fn()
+      .mockResolvedValueOnce(clasificacion([fila('ana')]))
+      .mockResolvedValue(conYo());
+    render(
+      <Clasificacion
+        pedir={pedir}
+        userId="yo"
+        activa
+        cada={60000}
+        centraEnMi="una"
+      />,
+    );
     await screen.findByTestId('fila-ana');
 
     await act(async () => vi.advanceTimersByTime(60000));
@@ -387,8 +678,19 @@ describe('Clasificacion · me lleva a mi fila', () => {
 
   it('S10 (/code-review): si la lectura al abrir falla, cuenta como vista: la siguiente que trae mi fila no me mueve', async () => {
     vi.useFakeTimers({ shouldAdvanceTime: true });
-    const pedir = vi.fn().mockRejectedValueOnce(new TypeError('sin cobertura')).mockResolvedValue(conYo());
-    render(<Clasificacion pedir={pedir} userId="yo" activa cada={30000} centraEnMi="alAbrir" />);
+    const pedir = vi
+      .fn()
+      .mockRejectedValueOnce(new TypeError('sin cobertura'))
+      .mockResolvedValue(conYo());
+    render(
+      <Clasificacion
+        pedir={pedir}
+        userId="yo"
+        activa
+        cada={30000}
+        centraEnMi="alAbrir"
+      />,
+    );
     await screen.findByText('partida.standingsNotLoaded');
 
     await act(async () => vi.advanceTimersByTime(30000));
@@ -402,15 +704,21 @@ describe('Clasificacion · me lleva a mi fila', () => {
     'S11 (/code-review): si me muevo yo (%s) antes de que llegue la lectura, no me lleva',
     async (gesto) => {
       let suelta;
-      const pedir = vi.fn().mockReturnValueOnce(new Promise((r) => { suelta = r; }));
-      render(<Clasificacion pedir={pedir} userId="yo" activa centraEnMi="una" />);
+      const pedir = vi.fn().mockReturnValueOnce(
+        new Promise((r) => {
+          suelta = r;
+        }),
+      );
+      render(
+        <Clasificacion pedir={pedir} userId="yo" activa centraEnMi="una" />,
+      );
 
       globalThis.dispatchEvent(new globalThis.Event(gesto));
       await act(async () => suelta(conYo()));
       await screen.findByTestId('fila-yo');
 
       expect(centra).not.toHaveBeenCalled();
-    }
+    },
   );
 
   it('S12 (/code-review): al llevarme a mi fila, el foco va con ella (lector de pantalla), sin mover más la vista', async () => {
@@ -427,14 +735,18 @@ describe('Clasificacion · me lleva a mi fila', () => {
 
     const mia = await screen.findByTestId('fila-yo');
     expect(mia.className).not.toMatch(/shadow/);
-    expect(mia.querySelector('td').className).toMatch(/shadow-\[inset_3px_0_0_var\(--color-primary-500\)\]/);
+    expect(mia.querySelector('td').className).toMatch(
+      /shadow-\[inset_3px_0_0_var\(--color-primary-500\)\]/,
+    );
   });
 
   it('D1: la tabla va sin marco propio (la tarjeta que la contiene ya lo tiene)', async () => {
     const pedir = vi.fn().mockResolvedValue(conYo());
     render(<Clasificacion pedir={pedir} userId="yo" activa />);
 
-    const tabla = await screen.findByRole('table', { name: 'partida.standingsTable' });
+    const tabla = await screen.findByRole('table', {
+      name: 'partida.standingsTable',
+    });
     expect(tabla.parentElement).not.toHaveClass('border');
   });
 
@@ -442,35 +754,43 @@ describe('Clasificacion · me lleva a mi fila', () => {
     const pedir = vi.fn().mockResolvedValue(conYo());
     render(<Clasificacion pedir={pedir} userId="yo" activa />);
 
-    const tabla = await screen.findByRole('table', { name: 'partida.standingsTable' });
+    const tabla = await screen.findByRole('table', {
+      name: 'partida.standingsTable',
+    });
     expect(tabla.parentElement).toHaveClass('rounded-lg');
   });
 });
 
-
 describe('Clasificacion · de una privada que no se puede ver (release social 2, F7)', () => {
   const privada = () =>
-    Object.assign(new Error('x'), { status: 403, errorCode: 'PRIVATE_COMPETITION' });
+    Object.assign(new Error('x'), {
+      status: 403,
+      errorCode: 'PRIVATE_COMPETITION',
+    });
 
   it('dice que solo la ven quienes participan, sin reintentar', async () => {
     const pedir = vi.fn().mockRejectedValue(privada());
     render(<Clasificacion pedir={pedir} userId="x" activa />);
 
-    expect(await screen.findByTestId('clasificacion-privada')).toHaveTextContent(
-      'partida.standingsPrivate'
-    );
+    expect(
+      await screen.findByTestId('clasificacion-privada'),
+    ).toHaveTextContent('partida.standingsPrivate');
     expect(screen.queryByText('partida.retry')).not.toBeInTheDocument();
   });
 
   it('ni al volver a su pestaña (/code-review)', async () => {
     const pedir = vi.fn().mockRejectedValue(privada());
-    const { rerender } = render(<Clasificacion pedir={pedir} userId="x" activa />);
+    const { rerender } = render(
+      <Clasificacion pedir={pedir} userId="x" activa />,
+    );
     await screen.findByTestId('clasificacion-privada');
 
     rerender(<Clasificacion pedir={pedir} userId="x" activa={false} />);
     rerender(<Clasificacion pedir={pedir} userId="x" activa />);
 
-    expect(await screen.findByTestId('clasificacion-privada')).toBeInTheDocument();
+    expect(
+      await screen.findByTestId('clasificacion-privada'),
+    ).toBeInTheDocument();
     expect(pedir).toHaveBeenCalledTimes(1);
   });
 
@@ -492,11 +812,17 @@ describe('Clasificacion · de una privada que no se puede ver (release social 2,
   });
 
   it('otro 403 sigue siendo un fallo que se reintenta', async () => {
-    const pedir = vi.fn().mockRejectedValue(Object.assign(new Error('x'), { status: 403 }));
+    const pedir = vi
+      .fn()
+      .mockRejectedValue(Object.assign(new Error('x'), { status: 403 }));
     render(<Clasificacion pedir={pedir} userId="x" activa />);
 
-    expect(await screen.findByText('partida.standingsNotLoaded')).toBeInTheDocument();
-    expect(screen.queryByTestId('clasificacion-privada')).not.toBeInTheDocument();
+    expect(
+      await screen.findByText('partida.standingsNotLoaded'),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByTestId('clasificacion-privada'),
+    ).not.toBeInTheDocument();
   });
 });
 
@@ -504,7 +830,14 @@ describe('Clasificacion · de una privada que no se puede ver (release social 2,
 describe('Clasificacion · sin sesión', () => {
   it('filas sin id: se pintan todas, ninguna es la mía, sin keys repetidas', async () => {
     const error = vi.spyOn(console, 'error').mockImplementation(() => {});
-    const pedir = vi.fn().mockResolvedValue(clasificacion([fila('a', { userId: null, name: 'Ana' }), fila('b', { userId: null, name: 'Bea', position: 2 })]));
+    const pedir = vi
+      .fn()
+      .mockResolvedValue(
+        clasificacion([
+          fila('a', { userId: null, name: 'Ana' }),
+          fila('b', { userId: null, name: 'Bea', position: 2 }),
+        ]),
+      );
 
     render(<Clasificacion pedir={pedir} activa />);
 
@@ -536,37 +869,66 @@ describe('Clasificacion · lo de otra pregunta no se pinta (T6)', () => {
   const enVuelo = () => {
     let suelta;
     let falla;
-    const promesa = new Promise((resolve, reject) => { suelta = resolve; falla = reject; });
+    const promesa = new Promise((resolve, reject) => {
+      suelta = resolve;
+      falla = reject;
+    });
     return { promesa, suelta, falla };
   };
-  const todas = () => clasificacion([fila('ana', { category: 1 }), fila('bea', { category: 2, position: 2 })]);
+  const todas = () =>
+    clasificacion([
+      fila('ana', { category: 1 }),
+      fila('bea', { category: 2, position: 2 }),
+    ]);
   const filtra = (valor) =>
-    fireEvent.change(screen.getByRole('combobox', { name: 'partida.category' }), { target: { value: valor } });
+    fireEvent.change(
+      screen.getByRole('combobox', { name: 'partida.category' }),
+      { target: { value: valor } },
+    );
   // El sondeo, sin esperar al reloj: volver a la pestaña lee en el acto
-  const vuelveALaPestana = () => act(() => { globalThis.document.dispatchEvent(new globalThis.Event('visibilitychange')); });
+  const vuelveALaPestana = () =>
+    act(() => {
+      globalThis.document.dispatchEvent(
+        new globalThis.Event('visibilitychange'),
+      );
+    });
 
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.spyOn(globalThis.document, 'visibilityState', 'get').mockReturnValue('visible');
+    vi.spyOn(globalThis.document, 'visibilityState', 'get').mockReturnValue(
+      'visible',
+    );
   });
   afterEach(() => vi.restoreAllMocks());
 
   it('T6-13: de todas a la 1 y enseguida a la 2; si llega antes la de la 1, sigue «Cargando» sin sus filas', async () => {
     const una = enVuelo();
     const dos = enVuelo();
-    const pedir = vi.fn().mockResolvedValueOnce(todas()).mockReturnValueOnce(una.promesa).mockReturnValueOnce(dos.promesa);
+    const pedir = vi
+      .fn()
+      .mockResolvedValueOnce(todas())
+      .mockReturnValueOnce(una.promesa)
+      .mockReturnValueOnce(dos.promesa);
     render(<Clasificacion pedir={pedir} userId="x" activa />);
     await screen.findByTestId('fila-ana');
 
     filtra('1');
     filtra('2');
     await waitFor(() => expect(pedir).toHaveBeenCalledWith(2));
-    await act(async () => una.suelta(clasificacion([fila('carla', { category: 1 })], { category: 1 })));
+    await act(async () =>
+      una.suelta(
+        clasificacion([fila('carla', { category: 1 })], { category: 1 }),
+      ),
+    );
 
     expect(screen.getByText('partida.loadingStandings')).toBeInTheDocument();
     expect(screen.queryByTestId('fila-carla')).toBeNull();
 
-    await act(async () => dos.suelta(clasificacion([fila('bea', { category: 2 })], { category: 2 })));
+    await act(async () =>
+      dos.suelta(
+        clasificacion([fila('bea', { category: 2 })], { category: 2 }),
+      ),
+    );
     expect(screen.getByTestId('fila-bea')).toBeInTheDocument();
     expect(screen.queryByText('partida.loadingStandings')).toBeNull();
   });
@@ -574,24 +936,38 @@ describe('Clasificacion · lo de otra pregunta no se pinta (T6)', () => {
   it('T6-14: igual, y la de la 2 falla: aviso de error y ninguna fila de la 1', async () => {
     const una = enVuelo();
     const dos = enVuelo();
-    const pedir = vi.fn().mockResolvedValueOnce(todas()).mockReturnValueOnce(una.promesa).mockReturnValueOnce(dos.promesa);
+    const pedir = vi
+      .fn()
+      .mockResolvedValueOnce(todas())
+      .mockReturnValueOnce(una.promesa)
+      .mockReturnValueOnce(dos.promesa);
     render(<Clasificacion pedir={pedir} userId="x" activa />);
     await screen.findByTestId('fila-ana');
 
     filtra('1');
     filtra('2');
     await waitFor(() => expect(pedir).toHaveBeenCalledWith(2));
-    await act(async () => una.suelta(clasificacion([fila('carla', { category: 1 })], { category: 1 })));
+    await act(async () =>
+      una.suelta(
+        clasificacion([fila('carla', { category: 1 })], { category: 1 }),
+      ),
+    );
     await act(async () => dos.falla(new Error('x')));
 
-    expect(screen.getByRole('alert')).toHaveTextContent('partida.standingsNotLoaded');
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      'partida.standingsNotLoaded',
+    );
     expect(screen.queryByTestId('fila-carla')).toBeNull();
   });
 
   it('T6-15: un sondeo de «todas» en vuelo que llega tras pasar a la 2 no se aplica (ni filas ni categorías)', async () => {
     const sondeo = enVuelo();
     const dos = enVuelo();
-    const pedir = vi.fn().mockResolvedValueOnce(todas()).mockReturnValueOnce(sondeo.promesa).mockReturnValueOnce(dos.promesa);
+    const pedir = vi
+      .fn()
+      .mockResolvedValueOnce(todas())
+      .mockReturnValueOnce(sondeo.promesa)
+      .mockReturnValueOnce(dos.promesa);
     render(<Clasificacion pedir={pedir} userId="x" activa cada={60000} />);
     await screen.findByTestId('fila-ana');
 
@@ -600,7 +976,13 @@ describe('Clasificacion · lo de otra pregunta no se pinta (T6)', () => {
     filtra('2');
     await waitFor(() => expect(pedir).toHaveBeenCalledWith(2));
     await act(async () =>
-      sondeo.suelta(clasificacion([fila('ana', { category: 1 }), fila('bea', { category: 2, position: 2 }), fila('carla', { category: 3, position: 3 })]))
+      sondeo.suelta(
+        clasificacion([
+          fila('ana', { category: 1 }),
+          fila('bea', { category: 2, position: 2 }),
+          fila('carla', { category: 3, position: 3 }),
+        ]),
+      ),
     );
 
     expect(screen.getByText('partida.loadingStandings')).toBeInTheDocument();
@@ -613,7 +995,9 @@ describe('Clasificacion · lo de otra pregunta no se pinta (T6)', () => {
     const f2 = enVuelo();
     const pedirF1 = vi.fn().mockReturnValue(f1.promesa);
     const pedirF2 = vi.fn().mockReturnValue(f2.promesa);
-    const { rerender } = render(<Clasificacion pedir={pedirF1} userId="x" activa />);
+    const { rerender } = render(
+      <Clasificacion pedir={pedirF1} userId="x" activa />,
+    );
 
     rerender(<Clasificacion pedir={pedirF2} userId="x" activa />);
     await waitFor(() => expect(pedirF2).toHaveBeenCalled());
@@ -628,26 +1012,40 @@ describe('Clasificacion · lo de otra pregunta no se pinta (T6)', () => {
   it('T6-17: dos sondeos solapados de la MISMA pregunta: si llega antes el primero, se aplica', async () => {
     const primero = enVuelo();
     const segundo = enVuelo();
-    const pedir = vi.fn().mockResolvedValueOnce(todas()).mockReturnValueOnce(primero.promesa).mockReturnValueOnce(segundo.promesa);
+    const pedir = vi
+      .fn()
+      .mockResolvedValueOnce(todas())
+      .mockReturnValueOnce(primero.promesa)
+      .mockReturnValueOnce(segundo.promesa);
     render(<Clasificacion pedir={pedir} userId="x" activa cada={60000} />);
     await screen.findByTestId('fila-ana');
 
     vuelveALaPestana();
     vuelveALaPestana();
     expect(pedir).toHaveBeenCalledTimes(3);
-    await act(async () => primero.suelta(clasificacion([fila('dani', { category: 1 })])));
+    await act(async () =>
+      primero.suelta(clasificacion([fila('dani', { category: 1 })])),
+    );
 
     expect(screen.getByTestId('fila-dani')).toBeInTheDocument();
 
-    await act(async () => segundo.suelta(clasificacion([fila('eva', { category: 1 })])));
+    await act(async () =>
+      segundo.suelta(clasificacion([fila('eva', { category: 1 })])),
+    );
     expect(screen.getByTestId('fila-eva')).toBeInTheDocument();
   });
 
   it('T6-19: al pasar el padre de F1 (pintada) a F2, mientras llega F2 sale «Cargando» y ninguna fila de F1', async () => {
     const f2 = enVuelo();
-    const pedirF1 = vi.fn().mockResolvedValue(clasificacion([fila('uno')], { me: fila('yo', { position: 31 }) }));
+    const pedirF1 = vi
+      .fn()
+      .mockResolvedValue(
+        clasificacion([fila('uno')], { me: fila('yo', { position: 31 }) }),
+      );
     const pedirF2 = vi.fn().mockReturnValue(f2.promesa);
-    const { rerender } = render(<Clasificacion pedir={pedirF1} userId="yo" activa />);
+    const { rerender } = render(
+      <Clasificacion pedir={pedirF1} userId="yo" activa />,
+    );
     await screen.findByTestId('fila-uno');
 
     rerender(<Clasificacion pedir={pedirF2} userId="yo" activa />);
@@ -666,38 +1064,58 @@ describe('Clasificacion · lo de otra pregunta no se pinta (T6)', () => {
     const f2 = enVuelo();
     const pedirF1 = vi.fn().mockResolvedValue(clasificacion([fila('uno')]));
     const pedirF2 = vi.fn().mockReturnValue(f2.promesa);
-    const { rerender } = render(<Clasificacion pedir={pedirF1} userId="x" activa />);
+    const { rerender } = render(
+      <Clasificacion pedir={pedirF1} userId="x" activa />,
+    );
     await screen.findByTestId('fila-uno');
 
     rerender(<Clasificacion pedir={pedirF2} userId="x" activa />);
     await waitFor(() => expect(pedirF2).toHaveBeenCalled());
     await act(async () => f2.falla(new Error('x')));
 
-    expect(screen.getByRole('alert')).toHaveTextContent('partida.standingsNotLoaded');
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      'partida.standingsNotLoaded',
+    );
     expect(screen.queryByTestId('fila-uno')).toBeNull();
   });
 
   it('T6-21: misma categoría, un sondeo en vuelo y deja de releerse (`cada` → null): esa respuesta se aplica igual', async () => {
     const sondeo = enVuelo();
     const ultima = enVuelo();
-    const pedir = vi.fn().mockResolvedValueOnce(todas()).mockReturnValueOnce(sondeo.promesa).mockReturnValueOnce(ultima.promesa);
-    const { rerender } = render(<Clasificacion pedir={pedir} userId="x" activa cada={60000} />);
+    const pedir = vi
+      .fn()
+      .mockResolvedValueOnce(todas())
+      .mockReturnValueOnce(sondeo.promesa)
+      .mockReturnValueOnce(ultima.promesa);
+    const { rerender } = render(
+      <Clasificacion pedir={pedir} userId="x" activa cada={60000} />,
+    );
     await screen.findByTestId('fila-ana');
 
     vuelveALaPestana();
     rerender(<Clasificacion pedir={pedir} userId="x" activa cada={null} />);
     await waitFor(() => expect(pedir).toHaveBeenCalledTimes(3));
-    await act(async () => sondeo.suelta(clasificacion([fila('dani', { category: 1 })])));
+    await act(async () =>
+      sondeo.suelta(clasificacion([fila('dani', { category: 1 })])),
+    );
 
     expect(screen.getByTestId('fila-dani')).toBeInTheDocument();
   });
 
   it('T6-22: con la categoría 1 pintada, la 2 falla: aviso sin filas de la 1 ni su «Tu posición»; al reintentar, las de la 2', async () => {
-    const pedir = vi.fn()
+    const pedir = vi
+      .fn()
       .mockResolvedValueOnce(todas())
-      .mockResolvedValueOnce(clasificacion([fila('carla', { category: 1 })], { category: 1, me: fila('yo', { position: 31, category: 1 }) }))
+      .mockResolvedValueOnce(
+        clasificacion([fila('carla', { category: 1 })], {
+          category: 1,
+          me: fila('yo', { position: 31, category: 1 }),
+        }),
+      )
       .mockRejectedValueOnce(new Error('x'))
-      .mockResolvedValueOnce(clasificacion([fila('bea', { category: 2 })], { category: 2 }));
+      .mockResolvedValueOnce(
+        clasificacion([fila('bea', { category: 2 })], { category: 2 }),
+      );
     render(<Clasificacion pedir={pedir} userId="yo" activa />);
     await screen.findByTestId('fila-ana');
     filtra('1');
@@ -706,7 +1124,9 @@ describe('Clasificacion · lo de otra pregunta no se pinta (T6)', () => {
 
     filtra('2');
 
-    expect(await screen.findByRole('alert')).toHaveTextContent('partida.standingsNotLoaded');
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'partida.standingsNotLoaded',
+    );
     expect(screen.queryByTestId('fila-carla')).toBeNull();
     expect(screen.queryByTestId('fila-fuera-del-corte')).toBeNull();
 

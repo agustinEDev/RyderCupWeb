@@ -70,7 +70,7 @@ class ApiQuickMatchRepository extends IQuickMatchRepository {
                 team: p.team ?? null,
                 tee_color: p.teeColor ?? null,
                 tee_gender: p.teeGender ?? null,
-              }
+              },
         ),
         scorer_user_ids: peticion.scorerUserIds,
       }),
@@ -80,26 +80,35 @@ class ApiQuickMatchRepository extends IQuickMatchRepository {
   }
 
   async complete(quickMatchId) {
-    const apiData = await apiRequest(`/api/v1/quick-matches/${segmento(quickMatchId)}/complete`, {
-      method: 'POST',
-      topeMs: TOPE_DE_ANOTAR_MS,
-    });
+    const apiData = await apiRequest(
+      `/api/v1/quick-matches/${segmento(quickMatchId)}/complete`,
+      {
+        method: 'POST',
+        topeMs: TOPE_DE_ANOTAR_MS,
+      },
+    );
 
     return QuickMatchMapper.toDomain(apiData);
   }
 
   async cancel(quickMatchId) {
-    const apiData = await apiRequest(`/api/v1/quick-matches/${segmento(quickMatchId)}/cancel`, {
-      method: 'POST',
-    });
+    const apiData = await apiRequest(
+      `/api/v1/quick-matches/${segmento(quickMatchId)}/cancel`,
+      {
+        method: 'POST',
+      },
+    );
 
     return QuickMatchMapper.toDomain(apiData);
   }
 
   async hide(quickMatchId) {
-    const apiData = await apiRequest(`/api/v1/quick-matches/${segmento(quickMatchId)}/hide`, {
-      method: 'POST',
-    });
+    const apiData = await apiRequest(
+      `/api/v1/quick-matches/${segmento(quickMatchId)}/hide`,
+      {
+        method: 'POST',
+      },
+    );
 
     return QuickMatchMapper.toDomain(apiData);
   }
@@ -108,49 +117,68 @@ class ApiQuickMatchRepository extends IQuickMatchRepository {
   // sigue en su historial. Es otra marca distinta de `hide`, que sí la quita de
   // la lista y no tiene vuelta atrás desde la aplicación.
   async excludeFromStats(quickMatchId) {
-    const apiData = await apiRequest(`/api/v1/quick-matches/${segmento(quickMatchId)}/stats-exclusion`, {
-      method: 'POST',
-    });
+    const apiData = await apiRequest(
+      `/api/v1/quick-matches/${segmento(quickMatchId)}/stats-exclusion`,
+      {
+        method: 'POST',
+      },
+    );
 
     return QuickMatchMapper.toDomain(apiData);
   }
 
   async includeInStats(quickMatchId) {
-    const apiData = await apiRequest(`/api/v1/quick-matches/${segmento(quickMatchId)}/stats-exclusion`, {
-      method: 'DELETE',
-    });
+    const apiData = await apiRequest(
+      `/api/v1/quick-matches/${segmento(quickMatchId)}/stats-exclusion`,
+      {
+        method: 'DELETE',
+      },
+    );
 
     return QuickMatchMapper.toDomain(apiData);
   }
 
   async submitHoleScore(quickMatchId, holeNumber, score) {
-    return await apiRequest(`/api/v1/quick-matches/${segmento(quickMatchId)}/holes/${segmento(holeNumber)}/score`, {
-      method: 'POST',
-      body: JSON.stringify({ score }),
-      topeMs: TOPE_DE_ANOTAR_MS,
-    });
+    return await apiRequest(
+      `/api/v1/quick-matches/${segmento(quickMatchId)}/holes/${segmento(holeNumber)}/score`,
+      {
+        method: 'POST',
+        body: JSON.stringify({ score }),
+        topeMs: TOPE_DE_ANOTAR_MS,
+      },
+    );
   }
 
-  async submitProxyHoleScore(quickMatchId, targetParticipantId, holeNumber, score) {
+  async submitProxyHoleScore(
+    quickMatchId,
+    targetParticipantId,
+    holeNumber,
+    score,
+  ) {
     return await apiRequest(
       `/api/v1/quick-matches/${segmento(quickMatchId)}/participants/${segmento(targetParticipantId)}/holes/${segmento(holeNumber)}/score`,
       {
         method: 'POST',
         body: JSON.stringify({ score }),
         topeMs: TOPE_DE_ANOTAR_MS,
-      }
+      },
     );
   }
 
   async get(quickMatchId) {
-    const apiData = await apiRequest(`/api/v1/quick-matches/${segmento(quickMatchId)}`, { topeMs: TOPE_DE_ANOTAR_MS });
+    const apiData = await apiRequest(
+      `/api/v1/quick-matches/${segmento(quickMatchId)}`,
+      { topeMs: TOPE_DE_ANOTAR_MS },
+    );
     return QuickMatchMapper.toDomain(apiData);
   }
 
   // La partida terminada de otro, para verla en solo lectura (K). Sin el tope
   // de anotar: aquí no se anota nada
   async getShared(quickMatchId) {
-    const apiData = await apiRequest(`/api/v1/quick-matches/${segmento(quickMatchId)}/shared`);
+    const apiData = await apiRequest(
+      `/api/v1/quick-matches/${segmento(quickMatchId)}/shared`,
+    );
     return {
       quickMatch: QuickMatchMapper.toDomain(apiData),
       readOnly: apiData.read_only ?? true,

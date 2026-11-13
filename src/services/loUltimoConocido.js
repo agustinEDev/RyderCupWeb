@@ -80,7 +80,10 @@ export const recuerda = (id, lo) => {
   // Lo de «ya es la última» no es un detalle: de ahí sale el turno para
   // desalojar, y saltarse la escritura sin más dejaba la partida que se está
   // jugando clavada en su sitio y la convertía en la primera en caer
-  if (donde === todas.length - 1 && JSON.stringify(todas[donde]) === JSON.stringify({ id, ...lo })) {
+  if (
+    donde === todas.length - 1 &&
+    JSON.stringify(todas[donde]) === JSON.stringify({ id, ...lo })
+  ) {
     return true;
   }
 
@@ -125,7 +128,8 @@ export const precarga = (id, lo, { protegidas = new Set() } = {}) => {
     // al pedirla, y por eso cubre justo esa carrera
     if (!todas[donde].precargada) return true;
     const refrescada = { ...todas[donde], ...lo };
-    if (JSON.stringify(refrescada) === JSON.stringify(todas[donde])) return true;
+    if (JSON.stringify(refrescada) === JSON.stringify(todas[donde]))
+      return true;
     todas[donde] = refrescada;
     return escribe(todas);
   }
@@ -137,9 +141,10 @@ export const precarga = (id, lo, { protegidas = new Set() } = {}) => {
   if (precargadas >= CUANTAS_PRECARGADAS || todas.length >= CUANTAS_CABEN) {
     // Con las precargadas al tope se va una de ellas; si no, la más vieja que
     // se pueda ir, sea lo que sea
-    const seVa = precargadas >= CUANTAS_PRECARGADAS
-      ? todas.findIndex((x, i) => x.precargada && sePuedeIr(x, i))
-      : todas.findIndex(sePuedeIr);
+    const seVa =
+      precargadas >= CUANTAS_PRECARGADAS
+        ? todas.findIndex((x, i) => x.precargada && sePuedeIr(x, i))
+        : todas.findIndex(sePuedeIr);
     if (seVa === -1) return false;
     todas.splice(seVa, 1);
   }
@@ -178,7 +183,10 @@ const CUANTAS_EN_LA_LISTA = 20;
 const guardaLista = (clave, lista) => {
   if (cerrado) return false;
   try {
-    localStorage.setItem(clave, JSON.stringify((lista ?? []).slice(0, CUANTAS_EN_LA_LISTA)));
+    localStorage.setItem(
+      clave,
+      JSON.stringify((lista ?? []).slice(0, CUANTAS_EN_LA_LISTA)),
+    );
     return true;
   } catch {
     return false;
@@ -210,7 +218,8 @@ export const laUltimaLista = () => leeLista(CLAVE_LISTA);
  */
 const CLAVE_PARTIDOS = 'rydercup-ultimos-partidos';
 
-export const recuerdaLosPartidos = (partidos) => guardaLista(CLAVE_PARTIDOS, partidos);
+export const recuerdaLosPartidos = (partidos) =>
+  guardaLista(CLAVE_PARTIDOS, partidos);
 
 /** @returns {Array|null} */
 export const losUltimosPartidos = () => leeLista(CLAVE_PARTIDOS);
@@ -222,7 +231,8 @@ export const losUltimosPartidos = () => leeLista(CLAVE_PARTIDOS);
  */
 const CLAVE_PARTIDAS = 'rydercup-ultimas-partidas-de-franja';
 
-export const recuerdaLasPartidas = (partidas) => guardaLista(CLAVE_PARTIDAS, partidas);
+export const recuerdaLasPartidas = (partidas) =>
+  guardaLista(CLAVE_PARTIDAS, partidas);
 
 /** @returns {Array|null} */
 export const lasUltimasPartidas = () => leeLista(CLAVE_PARTIDAS);

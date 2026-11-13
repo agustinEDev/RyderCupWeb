@@ -36,7 +36,8 @@ export const MAX_TEES = 14;
 
 export const isHoleParValid = (par) => VALID_HOLE_PARS.includes(par);
 
-export const isTeeCountValid = (teeCount) => teeCount >= MIN_TEES && teeCount <= MAX_TEES;
+export const isTeeCountValid = (teeCount) =>
+  teeCount >= MIN_TEES && teeCount <= MAX_TEES;
 
 const DEFAULT_COURSE_TYPE = 'STANDARD_18';
 
@@ -66,7 +67,8 @@ export const SLOPE_RANGE_BY_COURSE_TYPE = {
 // pero no para el slope: el techo de un campo estandar es 160 y el de uno corto
 // 155, asi que un slope de 158 sin tipo pasa. Se acepta porque el caso real es
 // un campo largo antiguo sin `courseType`, no un pitch & putt disfrazado.
-const rangeFor = (table) => (courseType) => table[courseType] ?? table[DEFAULT_COURSE_TYPE];
+const rangeFor = (table) => (courseType) =>
+  table[courseType] ?? table[DEFAULT_COURSE_TYPE];
 
 export const parRangeFor = rangeFor(PAR_RANGE_BY_COURSE_TYPE);
 export const ratingRangeFor = rangeFor(RATING_RANGE_BY_COURSE_TYPE);

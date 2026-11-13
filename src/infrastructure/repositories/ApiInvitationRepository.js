@@ -45,7 +45,7 @@ class ApiInvitationRepository extends IInvitationRepository {
       {
         method: 'POST',
         body: JSON.stringify(payload),
-      }
+      },
     );
 
     const invitation = InvitationMapper.toDomain(apiData);
@@ -53,7 +53,11 @@ class ApiInvitationRepository extends IInvitationRepository {
     return invitation;
   }
 
-  async sendInvitationByEmail(competitionId, inviteeEmail, personalMessage = null) {
+  async sendInvitationByEmail(
+    competitionId,
+    inviteeEmail,
+    personalMessage = null,
+  ) {
     const payload = {
       invitee_email: inviteeEmail,
     };
@@ -66,7 +70,7 @@ class ApiInvitationRepository extends IInvitationRepository {
       {
         method: 'POST',
         body: JSON.stringify(payload),
-      }
+      },
     );
 
     const invitation = InvitationMapper.toDomain(apiData);
@@ -100,7 +104,9 @@ class ApiInvitationRepository extends IInvitationRepository {
    * Retira una invitación pendiente (FE #724). El servidor contesta 204.
    */
   async cancelInvitation(invitationId) {
-    await apiRequest(`/api/v1/invitations/${segmento(invitationId)}/cancel`, { method: 'POST' });
+    await apiRequest(`/api/v1/invitations/${segmento(invitationId)}/cancel`, {
+      method: 'POST',
+    });
   }
 
   async respondToInvitation(invitationId, action) {
@@ -109,7 +115,7 @@ class ApiInvitationRepository extends IInvitationRepository {
       {
         method: 'POST',
         body: JSON.stringify({ action }),
-      }
+      },
     );
 
     const invitation = InvitationMapper.toDomain(apiData);
@@ -125,7 +131,7 @@ class ApiInvitationRepository extends IInvitationRepository {
 
     const queryString = this.#buildQueryString(apiFilters);
     const response = await apiRequest(
-      `/api/v1/competitions/${segmento(competitionId)}/invitations${queryString}`
+      `/api/v1/competitions/${segmento(competitionId)}/invitations${queryString}`,
     );
 
     const apiDataArray = response.invitations || [];

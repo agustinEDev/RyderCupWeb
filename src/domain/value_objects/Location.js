@@ -31,36 +31,48 @@ export class Location {
   constructor(mainCountry, adjacentCountry1 = null, adjacentCountry2 = null) {
     // 1. Validate main_country (must be a CountryCode instance)
     if (!(mainCountry instanceof CountryCode)) {
-      throw new InvalidLocationError("Main country must be an instance of CountryCode.");
+      throw new InvalidLocationError(
+        'Main country must be an instance of CountryCode.',
+      );
     }
     this.#mainCountry = mainCountry;
 
     // 2. Validate adjacent_country_1 (must be CountryCode or null)
-    if (adjacentCountry1 !== null && !(adjacentCountry1 instanceof CountryCode)) {
-      throw new InvalidLocationError("Adjacent country 1 must be an instance of CountryCode or null.");
+    if (
+      adjacentCountry1 !== null &&
+      !(adjacentCountry1 instanceof CountryCode)
+    ) {
+      throw new InvalidLocationError(
+        'Adjacent country 1 must be an instance of CountryCode or null.',
+      );
     }
     this.#adjacentCountry1 = adjacentCountry1;
 
     // 3. Validate adjacent_country_2 (must be CountryCode or null)
-    if (adjacentCountry2 !== null && !(adjacentCountry2 instanceof CountryCode)) {
-      throw new InvalidLocationError("Adjacent country 2 must be an instance of CountryCode or null.");
+    if (
+      adjacentCountry2 !== null &&
+      !(adjacentCountry2 instanceof CountryCode)
+    ) {
+      throw new InvalidLocationError(
+        'Adjacent country 2 must be an instance of CountryCode or null.',
+      );
     }
     this.#adjacentCountry2 = adjacentCountry2;
 
     // 4. Validate that adjacent_country_2 does not exist without adjacent_country_1
     if (this.#adjacentCountry2 && !this.#adjacentCountry1) {
       throw new InvalidLocationError(
-        "Cannot have adjacent_country_2 without adjacent_country_1. Order must be: main → adj1 → adj2"
+        'Cannot have adjacent_country_2 without adjacent_country_1. Order must be: main → adj1 → adj2',
       );
     }
 
     // 5. Validate that there are no duplicate countries
     const countries = this.getAllCountries();
-    const uniqueCountryCodes = new Set(countries.map(c => c.value()));
+    const uniqueCountryCodes = new Set(countries.map((c) => c.value()));
     if (countries.length !== uniqueCountryCodes.size) {
-      const countryCodesArray = countries.map(c => c.value());
+      const countryCodesArray = countries.map((c) => c.value());
       throw new InvalidLocationError(
-        `Countries cannot be repeated. Found: ${countryCodesArray.join(', ')}`
+        `Countries cannot be repeated. Found: ${countryCodesArray.join(', ')}`,
       );
     }
 
@@ -128,7 +140,7 @@ export class Location {
    * @returns {boolean} True if the country is included, false otherwise.
    */
   includesCountry(countryCode) {
-    return this.getAllCountries().some(c => c.equals(countryCode));
+    return this.getAllCountries().some((c) => c.equals(countryCode));
   }
 
   /**
@@ -136,7 +148,7 @@ export class Location {
    * @returns {string} e.g., "ES", "ES / PT", "ES / PT / FR".
    */
   toString() {
-    const countryCodes = this.getAllCountries().map(c => c.value());
+    const countryCodes = this.getAllCountries().map((c) => c.value());
     return countryCodes.join(' / ');
   }
 
@@ -154,13 +166,19 @@ export class Location {
     if (!this.#mainCountry.equals(other.#mainCountry)) return false;
 
     // Compare adjacentCountry1
-    const adj1Equal = (this.#adjacentCountry1 === null && other.#adjacentCountry1 === null) ||
-                      (this.#adjacentCountry1 && other.#adjacentCountry1 && this.#adjacentCountry1.equals(other.#adjacentCountry1));
+    const adj1Equal =
+      (this.#adjacentCountry1 === null && other.#adjacentCountry1 === null) ||
+      (this.#adjacentCountry1 &&
+        other.#adjacentCountry1 &&
+        this.#adjacentCountry1.equals(other.#adjacentCountry1));
     if (!adj1Equal) return false;
 
     // Compare adjacentCountry2
-    const adj2Equal = (this.#adjacentCountry2 === null && other.#adjacentCountry2 === null) ||
-                      (this.#adjacentCountry2 && other.#adjacentCountry2 && this.#adjacentCountry2.equals(other.#adjacentCountry2));
+    const adj2Equal =
+      (this.#adjacentCountry2 === null && other.#adjacentCountry2 === null) ||
+      (this.#adjacentCountry2 &&
+        other.#adjacentCountry2 &&
+        this.#adjacentCountry2.equals(other.#adjacentCountry2));
     if (!adj2Equal) return false;
 
     return true;

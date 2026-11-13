@@ -10,7 +10,11 @@ class UpdateMatchStatusUseCase {
     if (!action) {
       throw new Error('Action is required');
     }
-    return await this.scheduleRepository.updateMatchStatus(matchId, action, result);
+    return await this.scheduleRepository.updateMatchStatus(
+      matchId,
+      action,
+      result,
+    );
   }
 }
 

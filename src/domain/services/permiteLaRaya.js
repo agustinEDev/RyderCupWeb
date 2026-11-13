@@ -13,4 +13,5 @@
  * @returns {boolean}
  */
 export const permiteLaRaya = (partida) =>
-  partida != null && (partida.matchFormat != null || partida.scoringFormat === 'STABLEFORD');
+  partida != null &&
+  (partida.matchFormat != null || partida.scoringFormat === 'STABLEFORD');

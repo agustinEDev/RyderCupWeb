@@ -51,13 +51,18 @@ export const crearAccionesDeInscripcion = (contexto) => {
   const handleToggleNamePreference = async (enrollmentId, siguiente) => {
     setSavingNamePreference(true);
     try {
-      const guardado = await setNamePreferenceUseCase.execute(enrollmentId, siguiente);
+      const guardado = await setNamePreferenceUseCase.execute(
+        enrollmentId,
+        siguiente,
+      );
 
       // Lo confirmado por el backend, no lo que se pidió
       setEnrollments((previos) =>
         previos.map((e) =>
-          e.id === enrollmentId ? { ...e, useRealName: guardado.useRealName } : e
-        )
+          e.id === enrollmentId
+            ? { ...e, useRealName: guardado.useRealName }
+            : e,
+        ),
       );
     } catch (error) {
       // El mensaje de la API es técnico y viene en inglés: a la consola
@@ -72,10 +77,15 @@ export const crearAccionesDeInscripcion = (contexto) => {
       // pedir en vez de recomponerlo aquí. Si esto falla, la preferencia ya
       // está guardada: el nombre se verá al siguiente refresco, y decir que no
       // se guardó sería mentir
-      const enrollmentsData = await listEnrollmentsUseCase.execute(competition.id);
+      const enrollmentsData = await listEnrollmentsUseCase.execute(
+        competition.id,
+      );
       setEnrollments(enrollmentsData);
     } catch (error) {
-      console.error('Error reloading enrollments after name preference:', error);
+      console.error(
+        'Error reloading enrollments after name preference:',
+        error,
+      );
     } finally {
       setSavingNamePreference(false);
     }
@@ -102,7 +112,11 @@ export const crearAccionesDeInscripcion = (contexto) => {
       // con cara de éxito
       setShowEnrollModal(false);
       customToast.success(
-        t(hecho?.waiting ? 'detail.success.joinedWaitingList' : 'detail.success.enrolled')
+        t(
+          hecho?.waiting
+            ? 'detail.success.joinedWaitingList'
+            : 'detail.success.enrolled',
+        ),
       );
       setVersionFranjas((n) => n + 1);
       await loadCompetition();
@@ -111,7 +125,8 @@ export const crearAccionesDeInscripcion = (contexto) => {
       const motivo = MOTIVOS_PARA_NO_APUNTARSE[error?.errorCode];
       if (motivo) {
         setErrorAlApuntarse(t(motivo));
-        if (error.errorCode.startsWith('TEE_WINDOW')) setVersionFranjas((n) => n + 1);
+        if (error.errorCode.startsWith('TEE_WINDOW'))
+          setVersionFranjas((n) => n + 1);
         return;
       }
       // Con los equipos formados ya no se entra: se dice y se pone al día
@@ -132,7 +147,7 @@ export const crearAccionesDeInscripcion = (contexto) => {
         mensajeDeError(error, {
           sinConexion: tComun('sinConexion.mensaje'),
           generico: t('detail.failedToEnroll'),
-        })
+        }),
       );
     } finally {
       setIsProcessing(false);
@@ -143,7 +158,9 @@ export const crearAccionesDeInscripcion = (contexto) => {
 
   const handleApproveEnrollment = async (enrollmentId) => {
     if (isFull) {
-      customToast.error(t('detail.competitionFull', { max: competition.maxPlayers }));
+      customToast.error(
+        t('detail.competitionFull', { max: competition.maxPlayers }),
+      );
       return;
     }
     try {
@@ -157,7 +174,9 @@ export const crearAccionesDeInscripcion = (contexto) => {
         return;
       }
       // Reload enrollments to update the list
-      const enrollmentsData = await listEnrollmentsUseCase.execute(competition.id);
+      const enrollmentsData = await listEnrollmentsUseCase.execute(
+        competition.id,
+      );
       setEnrollments(enrollmentsData);
     } catch (error) {
       console.error('Error approving enrollment:', error);
@@ -175,7 +194,12 @@ export const crearAccionesDeInscripcion = (contexto) => {
   const handleRejectEnrollment = async (enrollmentId) => {
     const solicitud = enrollments.find((e) => e.id === enrollmentId);
     const nombre = solicitud?.userName || t('detail.unknownUser');
-    if (!(await preguntar('reject-enrollment', { destructiva: true, datos: { name: nombre } }))) {
+    if (
+      !(await preguntar('reject-enrollment', {
+        destructiva: true,
+        datos: { name: nombre },
+      }))
+    ) {
       return;
     }
     try {
@@ -183,7 +207,9 @@ export const crearAccionesDeInscripcion = (contexto) => {
       await rejectEnrollmentUseCase.execute(competition.id, enrollmentId);
       customToast.success(t('detail.enrollmentRejected'));
       // Reload enrollments to update the list
-      const enrollmentsData = await listEnrollmentsUseCase.execute(competition.id);
+      const enrollmentsData = await listEnrollmentsUseCase.execute(
+        competition.id,
+      );
       setEnrollments(enrollmentsData);
     } catch (error) {
       console.error('Error rejecting enrollment:', error);
@@ -191,5 +217,10 @@ export const crearAccionesDeInscripcion = (contexto) => {
     }
   };
 
-  return { handleToggleNamePreference, handleEnroll, handleApproveEnrollment, handleRejectEnrollment };
+  return {
+    handleToggleNamePreference,
+    handleEnroll,
+    handleApproveEnrollment,
+    handleRejectEnrollment,
+  };
 };

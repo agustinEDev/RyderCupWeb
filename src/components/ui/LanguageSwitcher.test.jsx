@@ -34,7 +34,9 @@ describe('LanguageSwitcher', () => {
       const caja = screen.getByTestId('idioma-compacto');
       expect(caja.querySelector('svg')).not.toBeNull();
       expect(caja).toHaveClass('h-10', 'w-10');
-      const select = screen.getByRole('combobox', { name: 'header.changeLanguage' });
+      const select = screen.getByRole('combobox', {
+        name: 'header.changeLanguage',
+      });
       // El select nativo va encima del globo, invisible: se ve el icono y
       // se abre el selector del sistema, accesible y sin menu propio
       expect(select).toHaveClass('absolute', 'inset-0', 'opacity-0');
@@ -43,7 +45,9 @@ describe('LanguageSwitcher', () => {
     it('I1b: cambiar desde ella cambia el idioma igual que la normal', () => {
       render(<LanguageSwitcher compacto />);
 
-      fireEvent.change(screen.getByRole('combobox'), { target: { value: 'en' } });
+      fireEvent.change(screen.getByRole('combobox'), {
+        target: { value: 'en' },
+      });
 
       expect(changeLanguage).toHaveBeenCalledWith('en');
     });
@@ -51,7 +55,9 @@ describe('LanguageSwitcher', () => {
     it('I1c: con el select invisible, el foco de teclado se ve en el globo', () => {
       render(<LanguageSwitcher compacto />);
 
-      expect(screen.getByTestId('idioma-compacto')).toHaveClass('focus-within:ring-2');
+      expect(screen.getByTestId('idioma-compacto')).toHaveClass(
+        'focus-within:ring-2',
+      );
     });
 
     it('I1d: las opciones dicen el idioma, no solo una bandera', () => {
@@ -65,7 +71,9 @@ describe('LanguageSwitcher', () => {
       render(<LanguageSwitcher />);
 
       expect(screen.queryByTestId('idioma-compacto')).toBeNull();
-      expect(screen.getByRole('combobox', { name: 'Select language' })).not.toHaveClass('opacity-0');
+      expect(
+        screen.getByRole('combobox', { name: 'Select language' }),
+      ).not.toHaveClass('opacity-0');
     });
   });
 });

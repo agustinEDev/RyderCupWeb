@@ -24,7 +24,10 @@ import { MemoryRouter, Routes, Route } from 'react-router';
 
 const TEXTOS = {
   en: { 'create.defaultTeamOne': 'Europe', 'create.defaultTeamTwo': 'USA' },
-  es: { 'create.defaultTeamOne': 'Europa', 'create.defaultTeamTwo': 'Estados Unidos' },
+  es: {
+    'create.defaultTeamOne': 'Europa',
+    'create.defaultTeamTwo': 'Estados Unidos',
+  },
 };
 // Un `t` ESTABLE por idioma, como el de verdad: si cambiara en cada pintada,
 // el efecto que corrige los nombres se volvería a disparar siempre
@@ -32,7 +35,7 @@ const T = Object.fromEntries(
   Object.entries(TEXTOS).map(([idioma, textos]) => [
     idioma,
     (clave, valores) => textos[clave] ?? valores?.defaultValue ?? clave,
-  ])
+  ]),
 );
 let mockIdioma = 'en';
 
@@ -41,9 +44,15 @@ vi.mock('react-i18next', () => ({
 }));
 
 vi.mock('../components/layout/HeaderAuth', () => ({ default: () => null }));
-vi.mock('../hooks/useAuth', () => ({ useAuth: () => ({ user: { id: 'u-1', gender: 'MALE' }, loading: false }) }));
-vi.mock('../components/golf_course/GolfCourseSearchBox', () => ({ default: () => null }));
-vi.mock('../utils/toast', () => ({ default: { error: vi.fn(), success: vi.fn(), info: vi.fn() } }));
+vi.mock('../hooks/useAuth', () => ({
+  useAuth: () => ({ user: { id: 'u-1', gender: 'MALE' }, loading: false }),
+}));
+vi.mock('../components/golf_course/GolfCourseSearchBox', () => ({
+  default: () => null,
+}));
+vi.mock('../utils/toast', () => ({
+  default: { error: vi.fn(), success: vi.fn(), info: vi.fn() },
+}));
 vi.mock('../services/countries', () => ({
   formatCountryName: () => 'España',
   sortCountriesByName: (paises) => paises || [],
@@ -54,14 +63,20 @@ vi.mock('../composition', () => ({
   getCompetitionDetailUseCase: { execute: vi.fn() },
   getCompetitionGolfCoursesUseCase: { execute: vi.fn().mockResolvedValue([]) },
   fetchCountriesUseCase: {
-    execute: vi.fn().mockResolvedValue([{ code: 'ES', name_es: 'España', name_en: 'Spain' }]),
+    execute: vi
+      .fn()
+      .mockResolvedValue([{ code: 'ES', name_es: 'España', name_en: 'Spain' }]),
   },
   getAdjacentCountriesUseCase: { execute: vi.fn().mockResolvedValue([]) },
   createGolfCourseRequestUseCase: { execute: vi.fn() },
 }));
 
-vi.mock('../components/ui/CountryAutocomplete', () => ({ default: () => null }));
-vi.mock('../components/golf_course/GolfCourseRequestModal', () => ({ default: () => null }));
+vi.mock('../components/ui/CountryAutocomplete', () => ({
+  default: () => null,
+}));
+vi.mock('../components/golf_course/GolfCourseRequestModal', () => ({
+  default: () => null,
+}));
 vi.mock('../components/ui/FullScreenLoader', () => ({ default: () => null }));
 vi.mock('../components/ui/CountryFlag', () => ({ CountryFlag: () => null }));
 
@@ -83,7 +98,10 @@ const edicion = () => (
 const despliegaLosEquipos = async () => {
   const mas = screen.queryByTestId('mas-opciones');
   if (mas && !screen.queryByTestId('campo-equipo-1')) fireEvent.click(mas);
-  return [await screen.findByTestId('campo-equipo-1'), screen.getByTestId('campo-equipo-2')];
+  return [
+    await screen.findByTestId('campo-equipo-1'),
+    screen.getByTestId('campo-equipo-2'),
+  ];
 };
 
 // Llega el español: otra pintada, ahora con su `t`
@@ -163,10 +181,17 @@ describe('CreateCompetition · los nombres de los equipos cuando llega el idioma
     // los equipos por abrirla en español sería cambiarle los datos
     const { getCompetitionDetailUseCase } = await import('../composition');
     getCompetitionDetailUseCase.execute.mockResolvedValue({
-      id: 'c-1', name: 'Ryder vieja', maxPlayers: 24, status: 'ACTIVE',
-      team1Name: 'Europe', team2Name: 'USA',
-      startDate: '2026-10-10', endDate: '2026-10-12',
-      playMode: 'HANDICAP', teamAssignment: 'AUTOMATIC', countries: [{ code: 'ES' }],
+      id: 'c-1',
+      name: 'Ryder vieja',
+      maxPlayers: 24,
+      status: 'ACTIVE',
+      team1Name: 'Europe',
+      team2Name: 'USA',
+      startDate: '2026-10-10',
+      endDate: '2026-10-12',
+      playMode: 'HANDICAP',
+      teamAssignment: 'AUTOMATIC',
+      countries: [{ code: 'ES' }],
     });
     const { rerender } = render(edicion());
     const [uno] = await despliegaLosEquipos();

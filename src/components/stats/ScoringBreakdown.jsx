@@ -51,8 +51,12 @@ const ScoringBreakdown = ({ breakdown, failed = false }) => {
         data-testid="breakdown-error"
         className="rounded-xl border border-amber-200 bg-amber-50 p-6 text-center"
       >
-        <p className="text-sm font-medium text-amber-900">{t('breakdown.errorTitle')}</p>
-        <p className="mt-1 text-xs text-amber-800">{t('breakdown.errorDescription')}</p>
+        <p className="text-sm font-medium text-amber-900">
+          {t('breakdown.errorTitle')}
+        </p>
+        <p className="mt-1 text-xs text-amber-800">
+          {t('breakdown.errorDescription')}
+        </p>
       </div>
     );
   }
@@ -63,20 +67,28 @@ const ScoringBreakdown = ({ breakdown, failed = false }) => {
         data-testid="breakdown-empty"
         className="rounded-xl border border-dashed border-gray-300 bg-white p-6 text-center"
       >
-        <PieChart className="mx-auto h-6 w-6 text-gray-300" aria-hidden="true" />
+        <PieChart
+          className="mx-auto h-6 w-6 text-gray-300"
+          aria-hidden="true"
+        />
         <p className="mt-2 text-sm font-medium text-gray-900">
           {t('breakdown.emptyTitle')}
         </p>
         {/* El porqué importa: casi siempre no es que falten partidas, sino que
             las que hay están sin terminar, son foursomes o media tarjeta */}
-        <p className="mt-1 text-xs text-gray-500">{t('breakdown.emptyDescription')}</p>
+        <p className="mt-1 text-xs text-gray-500">
+          {t('breakdown.emptyDescription')}
+        </p>
       </div>
     );
   }
 
-  const distribucion = enNeto ? breakdown.netDistribution : breakdown.grossDistribution;
+  const distribucion = enNeto
+    ? breakdown.netDistribution
+    : breakdown.grossDistribution;
   const totalHoyos = distribucion.holes || 0;
-  const porcentaje = (n) => (totalHoyos ? Math.round((n / totalHoyos) * 100) : 0);
+  const porcentaje = (n) =>
+    totalHoyos ? Math.round((n / totalHoyos) * 100) : 0;
 
   // Solo se señala un par si se pierde de verdad en él: por encima del par y
   // con media conocida. Sin las dos condiciones, un jugador bajo par en todos
@@ -84,11 +96,15 @@ const ScoringBreakdown = ({ breakdown, failed = false }) => {
   // bueno—, y una tarjeta sin medias marcaría la primera casilla por sorteo.
   const peorPar = breakdown.byPar.reduce((peor, actual) => {
     if (actual.averageToPar === null || actual.averageToPar <= 0) return peor;
-    return peor === null || actual.averageToPar > peor.averageToPar ? actual : peor;
+    return peor === null || actual.averageToPar > peor.averageToPar
+      ? actual
+      : peor;
   }, null);
 
   const esElPeor = (entrada) =>
-    peorPar !== null && entrada.par === peorPar.par && breakdown.byPar.length > 1;
+    peorPar !== null &&
+    entrada.par === peorPar.par &&
+    breakdown.byPar.length > 1;
 
   const mitad = (datos, etiqueta, testId) => (
     <div data-testid={testId} className="rounded-lg border border-gray-200 p-3">
@@ -104,7 +120,9 @@ const ScoringBreakdown = ({ breakdown, failed = false }) => {
         </>
       ) : (
         // No jugada, que no es lo mismo que jugada al par
-        <p className="mt-1 text-sm text-gray-400">{t('breakdown.nineNotPlayed')}</p>
+        <p className="mt-1 text-sm text-gray-400">
+          {t('breakdown.nineNotPlayed')}
+        </p>
       )}
     </div>
   );
@@ -114,8 +132,13 @@ const ScoringBreakdown = ({ breakdown, failed = false }) => {
       {/* Distribución */}
       <section>
         <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-          <h3 className="text-sm font-bold text-gray-900">{t('breakdown.distribution')}</h3>
-          <div className="flex rounded-lg border border-gray-200 p-0.5" role="group">
+          <h3 className="text-sm font-bold text-gray-900">
+            {t('breakdown.distribution')}
+          </h3>
+          <div
+            className="flex rounded-lg border border-gray-200 p-0.5"
+            role="group"
+          >
             <button
               type="button"
               onClick={() => setEnNeto(false)}
@@ -153,7 +176,9 @@ const ScoringBreakdown = ({ breakdown, failed = false }) => {
               </div>
               <span className="w-20 shrink-0 text-right text-xs tabular-nums text-gray-700">
                 {porcentaje(distribucion[cesta])}%
-                <span className="ml-1 text-gray-400">({distribucion[cesta]})</span>
+                <span className="ml-1 text-gray-400">
+                  ({distribucion[cesta]})
+                </span>
               </span>
             </div>
           ))}
@@ -175,7 +200,9 @@ const ScoringBreakdown = ({ breakdown, failed = false }) => {
               key={entrada.par}
               data-testid={`par-${entrada.par}`}
               className={`rounded-lg border p-3 ${
-                esElPeor(entrada) ? 'border-rose-200 bg-rose-50' : 'border-gray-200'
+                esElPeor(entrada)
+                  ? 'border-rose-200 bg-rose-50'
+                  : 'border-gray-200'
               }`}
             >
               <p className="text-xs font-medium text-gray-500">
@@ -201,7 +228,9 @@ const ScoringBreakdown = ({ breakdown, failed = false }) => {
 
       {/* Ida y vuelta */}
       <section>
-        <h3 className="mb-2 text-sm font-bold text-gray-900">{t('breakdown.nines')}</h3>
+        <h3 className="mb-2 text-sm font-bold text-gray-900">
+          {t('breakdown.nines')}
+        </h3>
         <div className="grid grid-cols-2 gap-3">
           {mitad(breakdown.frontNine, t('breakdown.frontNine'), 'front-nine')}
           {mitad(breakdown.backNine, t('breakdown.backNine'), 'back-nine')}
@@ -236,7 +265,9 @@ const ScoringBreakdown = ({ breakdown, failed = false }) => {
             ))}
           </div>
           {/* La otra escala: aquí es por vuelta, no por hoyo */}
-          <p className="mt-2 text-xs text-gray-500">{t('breakdown.perRoundHint')}</p>
+          <p className="mt-2 text-xs text-gray-500">
+            {t('breakdown.perRoundHint')}
+          </p>
         </section>
       )}
     </div>

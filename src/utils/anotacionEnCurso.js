@@ -26,13 +26,21 @@ const SEIS_HORAS_MS = 6 * 60 * 60 * 1000;
 
 const UUID = '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}';
 const RUTAS = [
-  { tipo: 'partido', ruta: new RegExp(`^/player/matches/${UUID}/scoring$`, 'i'), busqueda: /^$/ },
+  {
+    tipo: 'partido',
+    ruta: new RegExp(`^/player/matches/${UUID}/scoring$`, 'i'),
+    busqueda: /^$/,
+  },
   {
     tipo: 'grupo',
     ruta: new RegExp(`^/player/groups/${UUID}/scoring$`, 'i'),
     busqueda: new RegExp(`^(\\?competition=${UUID})?$`, 'i'),
   },
-  { tipo: 'rapida', ruta: new RegExp(`^/quick-matches/${UUID}/scoring$`, 'i'), busqueda: /^$/ },
+  {
+    tipo: 'rapida',
+    ruta: new RegExp(`^/quick-matches/${UUID}/scoring$`, 'i'),
+    busqueda: /^$/,
+  },
 ];
 // Las pestañas de las tres anotaciones, las mismas que pintan sus pantallas
 const PESTANAS = TODAS_LAS_PESTANAS_DE_ANOTACION;
@@ -40,11 +48,14 @@ const HOYO_MAXIMO = 36;
 
 /** El tipo de anotación de una ruta y su búsqueda, o `null` si no es una de las tres. */
 const tipoDe = (pathname, search) => {
-  const cual = RUTAS.find((r) => r.ruta.test(pathname ?? '') && r.busqueda.test(search ?? ''));
+  const cual = RUTAS.find(
+    (r) => r.ruta.test(pathname ?? '') && r.busqueda.test(search ?? ''),
+  );
   return cual ? cual.tipo : null;
 };
 
-const hoyoValido = (hoyo) => Number.isInteger(hoyo) && hoyo >= 1 && hoyo <= HOYO_MAXIMO;
+const hoyoValido = (hoyo) =>
+  Number.isInteger(hoyo) && hoyo >= 1 && hoyo <= HOYO_MAXIMO;
 
 /**
  * Separa una ruta guardada en su camino y su búsqueda. Otra dirección (`https://…`,
@@ -53,7 +64,9 @@ const hoyoValido = (hoyo) => Number.isInteger(hoyo) && hoyo >= 1 && hoyo <= HOYO
 const partes = (ruta) => {
   if (typeof ruta !== 'string') return null;
   const corte = ruta.indexOf('?');
-  return corte === -1 ? { pathname: ruta, search: '' } : { pathname: ruta.slice(0, corte), search: ruta.slice(corte) };
+  return corte === -1
+    ? { pathname: ruta, search: '' }
+    : { pathname: ruta.slice(0, corte), search: ruta.slice(corte) };
 };
 
 /** La olvida: al salir de la anotación, al terminarla y en todos los cierres de sesión. */
@@ -82,13 +95,24 @@ export const olvidaEstaAnotacionEnCurso = ({ pathname, search = '' }) => {
  * Apunta dónde se está anotando, con la hora: sustituye a lo anterior. Si no es una de
  * las tres anotaciones, o no hay cuenta, no apunta nada.
  */
-export const guardaLaAnotacionEnCurso = ({ cuenta, pathname, search = '', pestana, hoyo, mapa }, ahora = Date.now()) => {
+export const guardaLaAnotacionEnCurso = (
+  { cuenta, pathname, search = '', pestana, hoyo, mapa },
+  ahora = Date.now(),
+) => {
   if (cuenta == null || !tipoDe(pathname, search)) return;
-  if (!PESTANAS.has(pestana) || !hoyoValido(hoyo) || typeof mapa !== 'boolean') return;
+  if (!PESTANAS.has(pestana) || !hoyoValido(hoyo) || typeof mapa !== 'boolean')
+    return;
   try {
     globalThis.localStorage.setItem(
       CLAVE,
-      JSON.stringify({ cuenta: String(cuenta), ruta: `${pathname}${search}`, pestana, hoyo, mapa, hora: ahora }),
+      JSON.stringify({
+        cuenta: String(cuenta),
+        ruta: `${pathname}${search}`,
+        pestana,
+        hoyo,
+        mapa,
+        hora: ahora,
+      }),
     );
   } catch {
     // Sin almacenamiento (privado, lleno) se arranca en el panel, como siempre
@@ -149,8 +173,15 @@ export const leeLaAnotacionEnCurso = ({ cuenta }, ahora = Date.now()) => {
  * hoyo y el mapa si lo guardado es de ESTA anotación y de esa cuenta; si no, `null`.
  * Lo guardado de otra anotación no se toca: se sustituye al guardar esta.
  */
-export const estadoDeEstaAnotacion = ({ cuenta, pathname, search = '' }, ahora = Date.now()) => {
+export const estadoDeEstaAnotacion = (
+  { cuenta, pathname, search = '' },
+  ahora = Date.now(),
+) => {
   const guardado = valido(cuenta, ahora);
   if (!guardado || guardado.ruta !== `${pathname}${search}`) return null;
-  return { pestana: guardado.pestana, hoyo: guardado.hoyo, mapa: guardado.mapa };
+  return {
+    pestana: guardado.pestana,
+    hoyo: guardado.hoyo,
+    mapa: guardado.mapa,
+  };
 };

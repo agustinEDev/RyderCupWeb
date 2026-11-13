@@ -1,7 +1,10 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { RUTAS_DE_LA_APLICACION, esRutaDesconocida } from './rutasDeLaAplicacion';
+import {
+  RUTAS_DE_LA_APLICACION,
+  esRutaDesconocida,
+} from './rutasDeLaAplicacion';
 import { sinSesionEnRutaPublica } from './rutasPublicas';
 
 /**
@@ -17,12 +20,14 @@ import { sinSesionEnRutaPublica } from './rutasPublicas';
  *   R5   | con usuario guardado sí se refresca, como en la clasificación compartida
  */
 describe('rutas de la aplicación', () => {
-  it.each(['/esto-no-existe', '/dashboard/x', '/admin/a/b', '/competitions/1/otra-cosa'])(
-    'R1: %s no lleva a ninguna pantalla',
-    (ruta) => {
-      expect(esRutaDesconocida(ruta)).toBe(true);
-    }
-  );
+  it.each([
+    '/esto-no-existe',
+    '/dashboard/x',
+    '/admin/a/b',
+    '/competitions/1/otra-cosa',
+  ])('R1: %s no lleva a ninguna pantalla', (ruta) => {
+    expect(esRutaDesconocida(ruta)).toBe(true);
+  });
 
   it.each([
     '/',
@@ -72,7 +77,8 @@ describe('rutas de la aplicación', () => {
     // el árbol del router de datos: la carcasa y la que devuelve los errores
     // hacia arriba (FE #647)
     const envoltorios = etiquetas.filter(
-      (propia) => !/\spath=/.test(propia) && /\s(element|errorElement)=/.test(propia),
+      (propia) =>
+        !/\spath=/.test(propia) && /\s(element|errorElement)=/.test(propia),
     );
     expect(envoltorios).toHaveLength(2);
     expect(etiquetas.length - envoltorios.length).toBe(conRuta.length);

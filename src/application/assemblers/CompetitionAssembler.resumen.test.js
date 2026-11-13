@@ -33,7 +33,11 @@ const api = (extra = {}) => ({
   updated_at: '2030-10-01T10:00:00Z',
   ...extra,
 });
-const tarjeta = (apiData) => CompetitionAssembler.toSimpleDTO(CompetitionMapper.toDomain(apiData), apiData);
+const tarjeta = (apiData) =>
+  CompetitionAssembler.toSimpleDTO(
+    CompetitionMapper.toDomain(apiData),
+    apiData,
+  );
 
 describe('CompetitionAssembler · resumen de la tarjeta (FE #846)', () => {
   it('1 · los campos, en camelCase y en su orden', () => {
@@ -43,7 +47,7 @@ describe('CompetitionAssembler · resumen de la tarjeta (FE #846)', () => {
           { id: 'gc-2', name: 'El Prat', country_code: 'ES' },
           { id: 'gc-1', name: 'Penha Longa', country_code: 'PT' },
         ],
-      })
+      }),
     );
 
     expect(d.golfCourses).toEqual([
@@ -67,17 +71,47 @@ describe('CompetitionAssembler · resumen de la tarjeta (FE #846)', () => {
   });
 
   it('5 · mi próxima salida, con su hora', () => {
-    const d = tarjeta(api({ my_next_session: { date: '2030-10-12', session_type: 'MORNING', tee_time: '08:10' } }));
+    const d = tarjeta(
+      api({
+        my_next_session: {
+          date: '2030-10-12',
+          session_type: 'MORNING',
+          tee_time: '08:10',
+        },
+      }),
+    );
 
-    expect(d.myNextSession).toEqual({ date: '2030-10-12', sessionType: 'MORNING', teeTime: '08:10' });
+    expect(d.myNextSession).toEqual({
+      date: '2030-10-12',
+      sessionType: 'MORNING',
+      teeTime: '08:10',
+    });
   });
 
   it('6 · sin hora todavía', () => {
-    const d = tarjeta(api({ my_next_session: { date: '2030-10-12', session_type: 'AFTERNOON', tee_time: null } }));
+    const d = tarjeta(
+      api({
+        my_next_session: {
+          date: '2030-10-12',
+          session_type: 'AFTERNOON',
+          tee_time: null,
+        },
+      }),
+    );
 
-    expect(d.myNextSession).toEqual({ date: '2030-10-12', sessionType: 'AFTERNOON', teeTime: null });
+    expect(d.myNextSession).toEqual({
+      date: '2030-10-12',
+      sessionType: 'AFTERNOON',
+      teeTime: null,
+    });
     // Sin el campo, también null: nunca undefined
-    expect(tarjeta(api({ my_next_session: { date: '2030-10-12', session_type: 'MORNING' } })).myNextSession.teeTime).toBeNull();
+    expect(
+      tarjeta(
+        api({
+          my_next_session: { date: '2030-10-12', session_type: 'MORNING' },
+        }),
+      ).myNextSession.teeTime,
+    ).toBeNull();
   });
 
   it('7 · sin próxima salida, null', () => {
@@ -87,10 +121,19 @@ describe('CompetitionAssembler · resumen de la tarjeta (FE #846)', () => {
 
   it('8 · el motivo de la ventana, también como código', () => {
     const ventana = (extra) =>
-      tarjeta(api({ handicap_update_window: { open: false, reason: 'Ya no quedan jornadas por jugar.', ...extra } }))
-        .handicapUpdateWindow;
+      tarjeta(
+        api({
+          handicap_update_window: {
+            open: false,
+            reason: 'Ya no quedan jornadas por jugar.',
+            ...extra,
+          },
+        }),
+      ).handicapUpdateWindow;
 
-    expect(ventana({ reason_code: 'NO_DAYS_LEFT' }).reasonCode).toBe('NO_DAYS_LEFT');
+    expect(ventana({ reason_code: 'NO_DAYS_LEFT' }).reasonCode).toBe(
+      'NO_DAYS_LEFT',
+    );
     expect(ventana({}).reasonCode).toBeNull();
   });
 });

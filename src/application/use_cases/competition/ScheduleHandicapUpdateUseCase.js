@@ -12,7 +12,10 @@ class ScheduleHandicapUpdateUseCase {
     if (typeof runAt !== 'string' || !/(Z|[+-]\d{2}:\d{2})$/.test(runAt)) {
       throw new Error('The scheduled time needs its time zone');
     }
-    return this.competitionRepository.scheduleHandicapUpdate(competitionId, runAt);
+    return this.competitionRepository.scheduleHandicapUpdate(
+      competitionId,
+      runAt,
+    );
   }
 }
 

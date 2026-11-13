@@ -3,7 +3,11 @@ import { describe, expect, it } from 'vitest';
 import { estadoDelPartido } from './estadoDelPartido';
 
 const fila = (userId, extra = {}) => ({ userId, ...extra });
-const hoyos = (n, deMi) => Array.from({ length: n }, (_, i) => ({ holeNumber: i + 1, playerScores: [fila('yo', deMi)] }));
+const hoyos = (n, deMi) =>
+  Array.from({ length: n }, (_, i) => ({
+    holeNumber: i + 1,
+    playerScores: [fila('yo', deMi)],
+  }));
 
 describe('estadoDelPartido', () => {
   it('dado que no hay vista, cuando se deriva, entonces nadie juega ni puede anotar ni entregar', () => {
@@ -30,7 +34,11 @@ describe('estadoDelPartido', () => {
   });
 
   it('dado un jugador retirado, cuando se deriva, entonces ya no anota', () => {
-    const e = estadoDelPartido({ players: [fila('yo')], withdrawnPlayerIds: ['yo'] }, 'yo', false);
+    const e = estadoDelPartido(
+      { players: [fila('yo')], withdrawnPlayerIds: ['yo'] },
+      'yo',
+      false,
+    );
     expect(e.isMatchPlayer).toBe(true);
     expect(e.isWithdrawn).toBe(true);
     expect(e.canScore).toBe(false);
@@ -40,7 +48,10 @@ describe('estadoDelPartido', () => {
     const vista = {
       players: [fila('yo'), fila('rival')],
       scorecardSubmittedBy: ['yo', 'rival'],
-      markerAssignments: [{ scorerUserId: 'yo', marksUserId: 'rival' }, { scorerUserId: 'otro', marksUserId: 'yo' }],
+      markerAssignments: [
+        { scorerUserId: 'yo', marksUserId: 'rival' },
+        { scorerUserId: 'otro', marksUserId: 'yo' },
+      ],
     };
     const e = estadoDelPartido(vista, 'yo', false);
     expect(e.hasSubmitted).toBe(true);
@@ -53,7 +64,10 @@ describe('estadoDelPartido', () => {
     const vista = {
       players: [fila('yo')],
       scorecardSubmittedBy: ['otro'],
-      markerAssignments: [{ scorerUserId: 'yo', marksUserId: 'rival' }, { scorerUserId: 'otro', marksUserId: 'yo' }],
+      markerAssignments: [
+        { scorerUserId: 'yo', marksUserId: 'rival' },
+        { scorerUserId: 'otro', marksUserId: 'yo' },
+      ],
     };
     const e = estadoDelPartido(vista, 'yo', false);
     expect(e.isMarkerScoreLocked).toBe(false);
@@ -64,7 +78,10 @@ describe('estadoDelPartido', () => {
     const vista = {
       players: [fila('yo')],
       scorecardSubmittedBy: ['yo'],
-      markerAssignments: [{ scorerUserId: 'yo', marksUserId: 'rival' }, { scorerUserId: 'otro', marksUserId: 'yo' }],
+      markerAssignments: [
+        { scorerUserId: 'yo', marksUserId: 'rival' },
+        { scorerUserId: 'otro', marksUserId: 'yo' },
+      ],
     };
     const e = estadoDelPartido(vista, 'yo', false);
     expect(e.isOwnScoreLocked).toBe(true);
@@ -74,9 +91,12 @@ describe('estadoDelPartido', () => {
 
   it('dados los 18 validados, cuando se deriva, entonces se puede entregar y está acabado', () => {
     const e = estadoDelPartido(
-      { players: [fila('yo')], scores: hoyos(18, { ownSubmitted: true, validationStatus: 'match' }) },
+      {
+        players: [fila('yo')],
+        scores: hoyos(18, { ownSubmitted: true, validationStatus: 'match' }),
+      },
       'yo',
-      false
+      false,
     );
     expect(e.validatedHoles).toBe(18);
     expect(e.canSubmitScorecard).toBe(true);
@@ -86,9 +106,12 @@ describe('estadoDelPartido', () => {
 
   it('dados 17 validados sin decidir, cuando se deriva, entonces no se puede entregar', () => {
     const e = estadoDelPartido(
-      { players: [fila('yo')], scores: hoyos(17, { ownSubmitted: true, validationStatus: 'match' }) },
+      {
+        players: [fila('yo')],
+        scores: hoyos(17, { ownSubmitted: true, validationStatus: 'match' }),
+      },
       'yo',
-      false
+      false,
     );
     expect(e.canSubmitScorecard).toBe(false);
     expect(e.partidoAcabado).toBe(false);
@@ -96,9 +119,13 @@ describe('estadoDelPartido', () => {
 
   it('dado un partido decidido con lo jugado validado, cuando se deriva, entonces se entrega lo jugado', () => {
     const e = estadoDelPartido(
-      { players: [fila('yo')], isDecided: true, scores: hoyos(12, { markerSubmitted: true, validationStatus: 'match' }) },
+      {
+        players: [fila('yo')],
+        isDecided: true,
+        scores: hoyos(12, { markerSubmitted: true, validationStatus: 'match' }),
+      },
       'yo',
-      false
+      false,
     );
     expect(e.canSubmitScorecard).toBe(true);
     expect(e.partidoAcabado).toBe(true);
@@ -107,22 +134,37 @@ describe('estadoDelPartido', () => {
 
   it('dado un partido decidido con un hoyo jugado sin validar, cuando se deriva, entonces no se entrega', () => {
     const scores = hoyos(3, { ownSubmitted: true, validationStatus: 'match' });
-    scores[1].playerScores[0] = fila('yo', { markerSubmitted: true, validationStatus: 'pending' });
-    const e = estadoDelPartido({ players: [fila('yo')], isDecided: true, scores }, 'yo', false);
+    scores[1].playerScores[0] = fila('yo', {
+      markerSubmitted: true,
+      validationStatus: 'pending',
+    });
+    const e = estadoDelPartido(
+      { players: [fila('yo')], isDecided: true, scores },
+      'yo',
+      false,
+    );
     expect(e.canSubmitScorecard).toBe(false);
   });
 
   it('dado un partido decidido sin nada jugado, cuando se deriva, entonces no se entrega', () => {
-    const e = estadoDelPartido({ players: [fila('yo')], isDecided: true, scores: [] }, 'yo', false);
+    const e = estadoDelPartido(
+      { players: [fila('yo')], isDecided: true, scores: [] },
+      'yo',
+      false,
+    );
     expect(e.canSubmitScorecard).toBe(false);
     expect(e.holesToSubmit).toBe(0);
   });
 
   it('dada mi tarjeta ya entregada, cuando se deriva, entonces no se vuelve a entregar', () => {
     const e = estadoDelPartido(
-      { players: [fila('yo')], scorecardSubmittedBy: ['yo'], scores: hoyos(18, { ownSubmitted: true, validationStatus: 'match' }) },
+      {
+        players: [fila('yo')],
+        scorecardSubmittedBy: ['yo'],
+        scores: hoyos(18, { ownSubmitted: true, validationStatus: 'match' }),
+      },
       'yo',
-      false
+      false,
     );
     expect(e.canSubmitScorecard).toBe(false);
   });

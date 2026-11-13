@@ -19,7 +19,8 @@ import { resolve, join } from 'node:path';
  * un render no distingue `hidden md:block` de visible.
  */
 
-const read = (relativePath) => readFileSync(resolve(process.cwd(), relativePath), 'utf8');
+const read = (relativePath) =>
+  readFileSync(resolve(process.cwd(), relativePath), 'utf8');
 
 /** Rutas inmersivas o publicas: la cabecera contextual no aparece en ellas. */
 const SIN_CABECERA_CONTEXTUAL = [
@@ -49,22 +50,28 @@ function listarPaginas(dir, prefijo = '') {
 describe('page titles vs the contextual header', () => {
   const paginas = listarPaginas('src/pages')
     .filter(({ ruta }) => read(ruta).includes('HeaderAuth'))
-    .filter(({ nombre }) => !SIN_CABECERA_CONTEXTUAL.includes(nombre) && !SIN_RUTA.includes(nombre));
+    .filter(
+      ({ nombre }) =>
+        !SIN_CABECERA_CONTEXTUAL.includes(nombre) && !SIN_RUTA.includes(nombre),
+    );
 
   it('finds the authenticated pages to check', () => {
     expect(paginas.length).toBeGreaterThan(5);
   });
 
-  it.each(paginas)('$nombre does not render a second h1 on mobile', ({ ruta }) => {
-    const fuente = read(ruta);
-    const encabezados = fuente.match(/<h1[^>]*>/g) ?? [];
+  it.each(paginas)(
+    '$nombre does not render a second h1 on mobile',
+    ({ ruta }) => {
+      const fuente = read(ruta);
+      const encabezados = fuente.match(/<h1[^>]*>/g) ?? [];
 
-    for (const encabezado of encabezados) {
-      // Si la pagina pinta un h1, debe quedarse fuera del movil: alli el titulo
-      // ya lo pone la cabecera
-      expect(encabezado).toContain('hidden md:block');
-    }
-  });
+      for (const encabezado of encabezados) {
+        // Si la pagina pinta un h1, debe quedarse fuera del movil: alli el titulo
+        // ya lo pone la cabecera
+        expect(encabezado).toContain('hidden md:block');
+      }
+    },
+  );
 
   it('keeps the header as the only h1 on mobile', () => {
     // La cabecera si pinta el suyo sin condicion: es la fuente del titulo

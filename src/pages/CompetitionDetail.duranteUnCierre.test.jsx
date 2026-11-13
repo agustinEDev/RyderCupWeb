@@ -8,31 +8,61 @@ import { MemoryRouter, Route, Routes } from 'react-router';
  * ir a la lista, que fallaba también y avisaba «Error al cargar las competiciones».
  * Sin cierre, como siempre: aviso y a la lista.
  */
-vi.mock('react-i18next', () => ({ useTranslation: () => ({ t: (k) => k, i18n: { language: 'es' } }) }));
+vi.mock('react-i18next', () => ({
+  useTranslation: () => ({ t: (k) => k, i18n: { language: 'es' } }),
+}));
 vi.mock('framer-motion', () => ({
-  motion: new Proxy({}, { get: () => ({ children }) => children }),
+  motion: new Proxy(
+    {},
+    {
+      get:
+        () =>
+        ({ children }) =>
+          children,
+    },
+  ),
   AnimatePresence: ({ children }) => children,
 }));
 vi.mock('../components/layout/HeaderAuth', () => ({ default: () => null }));
-vi.mock('../hooks/useAuth', () => ({ useAuth: () => ({ user: { id: 'creator-1' }, loading: false }) }));
-vi.mock('../hooks/useUserRoles', () => ({ useUserRoles: () => ({ isAdmin: false, isCreator: true, isLoading: false }) }));
-const toast = vi.hoisted(() => ({ success: vi.fn(), error: vi.fn(), warning: vi.fn(), info: vi.fn() }));
+vi.mock('../hooks/useAuth', () => ({
+  useAuth: () => ({ user: { id: 'creator-1' }, loading: false }),
+}));
+vi.mock('../hooks/useUserRoles', () => ({
+  useUserRoles: () => ({ isAdmin: false, isCreator: true, isLoading: false }),
+}));
+const toast = vi.hoisted(() => ({
+  success: vi.fn(),
+  error: vi.fn(),
+  warning: vi.fn(),
+  info: vi.fn(),
+}));
 vi.mock('../utils/toast', () => ({ default: toast }));
 const cierre = vi.hoisted(() => ({ enMarcha: vi.fn(() => false) }));
-vi.mock('../utils/cierreDeEstaCarga', () => ({ seEstaCerrandoLaSesion: cierre.enMarcha }));
+vi.mock('../utils/cierreDeEstaCarga', () => ({
+  seEstaCerrandoLaSesion: cierre.enMarcha,
+}));
 const carga = vi.hoisted(() => ({
   execute: vi.fn(async () => {
-    throw new Error('Refresh token inválido o expirado. Por favor, inicia sesión nuevamente.');
+    throw new Error(
+      'Refresh token inválido o expirado. Por favor, inicia sesión nuevamente.',
+    );
   }),
 }));
-vi.mock('../components/ui/FullScreenLoader', () => ({ default: () => <p>cargando</p> }));
-vi.mock('../composition', () =>
-  new Proxy(
-    {
-      getCompetitionDetailUseCase: carga,
-    },
-    { get: (o, k) => o[k] ?? { execute: vi.fn().mockResolvedValue(null) }, has: () => true }
-  )
+vi.mock('../components/ui/FullScreenLoader', () => ({
+  default: () => <p>cargando</p>,
+}));
+vi.mock(
+  '../composition',
+  () =>
+    new Proxy(
+      {
+        getCompetitionDetailUseCase: carga,
+      },
+      {
+        get: (o, k) => o[k] ?? { execute: vi.fn().mockResolvedValue(null) },
+        has: () => true,
+      },
+    ),
 );
 
 const CompetitionDetail = (await import('./CompetitionDetail')).default;
@@ -44,7 +74,7 @@ const abre = () =>
         <Route path="/competitions/:id" element={<CompetitionDetail />} />
         <Route path="/competitions" element={<p>la-lista</p>} />
       </Routes>
-    </MemoryRouter>
+    </MemoryRouter>,
   );
 
 beforeEach(() => {

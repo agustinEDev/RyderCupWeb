@@ -7,7 +7,8 @@ import { describe, it, expect, vi } from 'vitest';
  */
 const NUEVO = '2.53.0 abc1234 2026-10-24T12:00:00.000Z';
 const VIEJO = '2.52.0 adc31ce 2026-10-23T23:07:34.162Z';
-const html = (marca) => `<!doctype html><head><meta name="app-build" content="${marca}"></head>`;
+const html = (marca) =>
+  `<!doctype html><head><meta name="app-build" content="${marca}"></head>`;
 
 const montar = async ({
   corre = VIEJO,
@@ -21,8 +22,13 @@ const montar = async ({
   const objetivo = new globalThis.EventTarget();
   const documento = new globalThis.EventTarget();
   documento.visibilityState = 'visible';
-  documento.querySelector = () => (corre ? { getAttribute: () => corre } : null);
-  const guardado = new Map(nota ? [['lazy_load_error_reloaded', JSON.stringify({ recargas: nota })]] : []);
+  documento.querySelector = () =>
+    corre ? { getAttribute: () => corre } : null;
+  const guardado = new Map(
+    nota
+      ? [['lazy_load_error_reloaded', JSON.stringify({ recargas: nota })]]
+      : [],
+  );
   const almacen = almacenDado ?? {
     getItem: (k) => guardado.get(k) ?? null,
     setItem: (k, v) => guardado.set(k, v),
@@ -34,7 +40,9 @@ const montar = async ({
     location: { reload: vi.fn(), pathname: '/scoring' },
   };
   const cachesApi = {
-    match: vi.fn(async () => (enCache === null ? undefined : { text: async () => html(enCache) })),
+    match: vi.fn(async () =>
+      enCache === null ? undefined : { text: async () => html(enCache) },
+    ),
   };
   const programado = [];
   await modulo.instalarRecargaPorTrozoViejo({
@@ -45,11 +53,21 @@ const montar = async ({
     programar: (fn) => programado.push(fn),
   });
   const disparar = () => {
-    const evento = new globalThis.Event('vite:preloadError', { cancelable: true });
+    const evento = new globalThis.Event('vite:preloadError', {
+      cancelable: true,
+    });
     objetivo.dispatchEvent(evento);
     return evento;
   };
-  return { modulo, disparar, ventana, guardado, documento, cachesApi, programado };
+  return {
+    modulo,
+    disparar,
+    ventana,
+    guardado,
+    documento,
+    cachesApi,
+    programado,
+  };
 };
 
 // El error que deja el import() cancelado: solo se calla mientras se recarga
@@ -67,7 +85,10 @@ describe('recarga por un trozo viejo', () => {
   });
 
   it('con el build al día, un fallo de red sigue su camino: lazyWithRetry reintenta', async () => {
-    const { disparar, ventana, modulo } = await montar({ corre: NUEVO, enCache: NUEVO });
+    const { disparar, ventana, modulo } = await montar({
+      corre: NUEVO,
+      enCache: NUEVO,
+    });
 
     const evento = disparar();
 
@@ -94,14 +115,21 @@ describe('recarga por un trozo viejo', () => {
   it('busca el index.html del service worker sin mirar su revisión', async () => {
     const { cachesApi } = await montar();
 
-    expect(cachesApi.match).toHaveBeenCalledWith('/index.html', { ignoreSearch: true });
+    expect(cachesApi.match).toHaveBeenCalledWith('/index.html', {
+      ignoreSearch: true,
+    });
   });
 
   it('al volver a primer plano lo mira otra vez: el service worker pudo cambiar en segundo plano', async () => {
-    const { disparar, ventana, documento, cachesApi } = await montar({ corre: VIEJO, enCache: VIEJO });
+    const { disparar, ventana, documento, cachesApi } = await montar({
+      corre: VIEJO,
+      enCache: VIEJO,
+    });
     expect(disparar().defaultPrevented).toBe(false);
 
-    cachesApi.match.mockImplementation(async () => ({ text: async () => html(NUEVO) }));
+    cachesApi.match.mockImplementation(async () => ({
+      text: async () => html(NUEVO),
+    }));
     documento.dispatchEvent(new globalThis.Event('visibilitychange'));
     await new Promise((r) => setTimeout(r, 0));
 
@@ -121,7 +149,9 @@ describe('recarga por un trozo viejo', () => {
 
     disparar();
 
-    expect(JSON.parse(guardado.get('lazy_load_error_reloaded')).recargas).toEqual([[NUEVO, '/scoring']]);
+    expect(
+      JSON.parse(guardado.get('lazy_load_error_reloaded')).recargas,
+    ).toEqual([[NUEVO, '/scoring']]);
   });
 
   it('E2: si ya recargó a esa versión en esta página, no vuelve a recargar: sale el error', async () => {
@@ -162,7 +192,9 @@ describe('recarga por un trozo viejo', () => {
 
     programado.forEach((fn) => fn());
 
-    expect(JSON.parse(guardado.get('lazy_load_error_reloaded')).recargas).toEqual([[NUEVO, '/scoring']]);
+    expect(
+      JSON.parse(guardado.get('lazy_load_error_reloaded')).recargas,
+    ).toEqual([[NUEVO, '/scoring']]);
   });
 
   it('si la recarga no llega, la marca de recargando se apaga sola a los 10 s', async () => {
@@ -182,16 +214,32 @@ describe('el eco de la recarga', () => {
     const { disparar, modulo } = await montar();
     disparar();
 
-    expect(modulo.esElEcoDeLaRecarga(new TypeError("undefined is not an object (evaluating 'e.default')"))).toBe(true);
-    expect(modulo.esElEcoDeLaRecarga(new TypeError('Importing a module script failed.'))).toBe(true);
-    expect(modulo.esElEcoDeLaRecarga(new Error('Failed to fetch dynamically imported module: x.js'))).toBe(true);
+    expect(
+      modulo.esElEcoDeLaRecarga(
+        new TypeError("undefined is not an object (evaluating 'e.default')"),
+      ),
+    ).toBe(true);
+    expect(
+      modulo.esElEcoDeLaRecarga(
+        new TypeError('Importing a module script failed.'),
+      ),
+    ).toBe(true);
+    expect(
+      modulo.esElEcoDeLaRecarga(
+        new Error('Failed to fetch dynamically imported module: x.js'),
+      ),
+    ).toBe(true);
     expect(modulo.esElEcoDeLaRecarga(new Error('La API se cayó'))).toBe(false);
   });
 
   it('sin recarga en curso, nada es eco', async () => {
     const { modulo } = await montar({ corre: NUEVO, enCache: NUEVO });
 
-    expect(modulo.esElEcoDeLaRecarga(new TypeError('Importing a module script failed.'))).toBe(false);
+    expect(
+      modulo.esElEcoDeLaRecarga(
+        new TypeError('Importing a module script failed.'),
+      ),
+    ).toBe(false);
   });
 
   it('la marca se lee del HTML', async () => {
@@ -202,7 +250,10 @@ describe('el eco de la recarga', () => {
   });
 
   it('con el almacenamiento bloqueado (leer sessionStorage ya lanza), se instala sin romper el arranque', async () => {
-    const original = Object.getOwnPropertyDescriptor(globalThis, 'sessionStorage');
+    const original = Object.getOwnPropertyDescriptor(
+      globalThis,
+      'sessionStorage',
+    );
     Object.defineProperty(globalThis, 'sessionStorage', {
       configurable: true,
       get: () => {
@@ -220,10 +271,19 @@ describe('el eco de la recarga', () => {
       };
       const documento = new globalThis.EventTarget();
       documento.querySelector = () => ({ getAttribute: () => VIEJO });
-      const cachesApi = { match: async () => ({ text: async () => html(NUEVO) }) };
+      const cachesApi = {
+        match: async () => ({ text: async () => html(NUEVO) }),
+      };
 
-      await modulo.instalarRecargaPorTrozoViejo({ ventana, documento, cachesApi, programar: () => {} });
-      const evento = new globalThis.Event('vite:preloadError', { cancelable: true });
+      await modulo.instalarRecargaPorTrozoViejo({
+        ventana,
+        documento,
+        cachesApi,
+        programar: () => {},
+      });
+      const evento = new globalThis.Event('vite:preloadError', {
+        cancelable: true,
+      });
       objetivo.dispatchEvent(evento);
 
       // Sin almacenamiento no puede apuntarla: no recarga, y nada lanza

@@ -10,7 +10,9 @@ describe('ActivateCompetitionUseCase', () => {
     mockRepository = {
       activate: vi.fn(),
     };
-    useCase = new ActivateCompetitionUseCase({ competitionRepository: mockRepository });
+    useCase = new ActivateCompetitionUseCase({
+      competitionRepository: mockRepository,
+    });
   });
 
   describe('execute', () => {
@@ -19,7 +21,7 @@ describe('ActivateCompetitionUseCase', () => {
         id: 'comp-123',
         name: 'Test Competition',
         status: 'ACTIVE',
-        updated_at: '2025-11-22T10:00:00Z'
+        updated_at: '2025-11-22T10:00:00Z',
       };
 
       mockRepository.activate.mockResolvedValue(mockResponse);
@@ -31,40 +33,50 @@ describe('ActivateCompetitionUseCase', () => {
         id: 'comp-123',
         name: 'Test Competition',
         status: 'ACTIVE',
-        updatedAt: '2025-11-22T10:00:00Z'
+        updatedAt: '2025-11-22T10:00:00Z',
       });
     });
 
     it('should throw error if competitionId is not provided', async () => {
-      await expect(useCase.execute()).rejects.toThrow('Competition ID is required');
+      await expect(useCase.execute()).rejects.toThrow(
+        'Competition ID is required',
+      );
       expect(mockRepository.activate).not.toHaveBeenCalled();
     });
 
     it('should throw error if competitionId is empty string', async () => {
-      await expect(useCase.execute('')).rejects.toThrow('Competition ID is required');
+      await expect(useCase.execute('')).rejects.toThrow(
+        'Competition ID is required',
+      );
       expect(mockRepository.activate).not.toHaveBeenCalled();
     });
 
     it('should propagate repository errors for invalid state transition', async () => {
-      mockRepository.activate.mockRejectedValue(new Error('Competition must be in DRAFT status to activate'));
+      mockRepository.activate.mockRejectedValue(
+        new Error('Competition must be in DRAFT status to activate'),
+      );
 
       await expect(useCase.execute('comp-123')).rejects.toThrow(
-        'Competition must be in DRAFT status to activate'
+        'Competition must be in DRAFT status to activate',
       );
     });
 
     it('should propagate authorization errors', async () => {
-      mockRepository.activate.mockRejectedValue(new Error('Only the creator can activate this competition'));
+      mockRepository.activate.mockRejectedValue(
+        new Error('Only the creator can activate this competition'),
+      );
 
       await expect(useCase.execute('comp-123')).rejects.toThrow(
-        'Only the creator can activate this competition'
+        'Only the creator can activate this competition',
       );
     });
 
     it('should handle network errors', async () => {
       mockRepository.activate.mockRejectedValue(new Error('Network error'));
 
-      await expect(useCase.execute('comp-123')).rejects.toThrow('Network error');
+      await expect(useCase.execute('comp-123')).rejects.toThrow(
+        'Network error',
+      );
     });
   });
 });

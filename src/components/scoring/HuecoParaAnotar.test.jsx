@@ -1,7 +1,9 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 
-vi.mock('react-i18next', () => ({ useTranslation: () => ({ t: (clave) => clave }) }));
+vi.mock('react-i18next', () => ({
+  useTranslation: () => ({ t: (clave) => clave }),
+}));
 
 import { HuecoParaAnotar } from './HuecoParaAnotar';
 import { clasesDelHueco } from './clasesDelHueco';
@@ -20,7 +22,9 @@ describe('HuecoParaAnotar', () => {
   it('H1: el siguiente, verde lleno con el «+»', () => {
     render(<HuecoParaAnotar siguiente />);
 
-    expect(screen.getByTestId('anotar-siguiente')).toHaveTextContent('input.tapToScore');
+    expect(screen.getByTestId('anotar-siguiente')).toHaveTextContent(
+      'input.tapToScore',
+    );
     expect(screen.getByTestId('anotar-mas')).toBeInTheDocument();
     expect(clasesDelHueco(true)).toContain('bg-primary');
   });

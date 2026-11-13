@@ -7,14 +7,29 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
  * —`terms_accepted: false`—, el guardia manda a aceptar, la cola de anotaciones
  * se queda apagada y aceptar necesita una red que no hay.
  */
-vi.mock('../infrastructure/http/tokenRefreshInterceptor', () => ({ fetchWithTokenRefresh: vi.fn() }));
-vi.mock('../infrastructure/http/deviceRevocationLogout', () => ({ clearDeviceRevocationFlag: vi.fn() }));
+vi.mock('../infrastructure/http/tokenRefreshInterceptor', () => ({
+  fetchWithTokenRefresh: vi.fn(),
+}));
+vi.mock('../infrastructure/http/deviceRevocationLogout', () => ({
+  clearDeviceRevocationFlag: vi.fn(),
+}));
 
-const { fetchWithTokenRefresh } = await import('../infrastructure/http/tokenRefreshInterceptor');
-const { anotaLaSesion, consultaLaSesion, olvidaLaSesion, reiniciaLaSesionCompartida, loQueHaySobreLaSesion } =
-  await import('./sesionCompartida');
+const { fetchWithTokenRefresh } =
+  await import('../infrastructure/http/tokenRefreshInterceptor');
+const {
+  anotaLaSesion,
+  consultaLaSesion,
+  olvidaLaSesion,
+  reiniciaLaSesionCompartida,
+  loQueHaySobreLaSesion,
+} = await import('./sesionCompartida');
 
-const USUARIO = { id: 'u-1', email: 'ana@example.com', first_name: 'Ana', last_name: 'Prueba' };
+const USUARIO = {
+  id: 'u-1',
+  email: 'ana@example.com',
+  first_name: 'Ana',
+  last_name: 'Prueba',
+};
 
 describe('sesionCompartida · la copia del dispositivo tras aceptar los Términos', () => {
   beforeEach(() => {
@@ -31,12 +46,18 @@ describe('sesionCompartida · la copia del dispositivo tras aceptar los Término
   it('sembrar la sesión actualiza también la copia del dispositivo', () => {
     anotaLaSesion({ ...USUARIO, terms_accepted: true });
 
-    expect(JSON.parse(globalThis.localStorage.getItem('rydercup-sesion-conocida'))).toMatchObject({ terms_accepted: true });
+    expect(
+      JSON.parse(globalThis.localStorage.getItem('rydercup-sesion-conocida')),
+    ).toMatchObject({ terms_accepted: true });
   });
 
   it('arranque sin cobertura tras aceptar: se entra con los Términos aceptados', async () => {
     // La sesión de antes, confirmada por el servidor con los Términos pendientes
-    fetchWithTokenRefresh.mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({ ...USUARIO, terms_accepted: false }) });
+    fetchWithTokenRefresh.mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      json: async () => ({ ...USUARIO, terms_accepted: false }),
+    });
     await consultaLaSesion();
     expect(loQueHaySobreLaSesion().user.terms_accepted).toBe(false);
 
@@ -48,6 +69,9 @@ describe('sesionCompartida · la copia del dispositivo tras aceptar los Término
     fetchWithTokenRefresh.mockRejectedValue(new TypeError('Failed to fetch'));
     await consultaLaSesion();
 
-    expect(loQueHaySobreLaSesion().user).toMatchObject({ id: 'u-1', terms_accepted: true });
+    expect(loQueHaySobreLaSesion().user).toMatchObject({
+      id: 'u-1',
+      terms_accepted: true,
+    });
   });
 });

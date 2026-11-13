@@ -19,38 +19,58 @@ describe('Casos de uso de los sobres', () => {
       submitEnvelope: vi.fn().mockResolvedValue({ team: 'A' }),
       getEnvelopes: vi.fn().mockResolvedValue({ roundId: 'r1' }),
       revealEnvelopes: vi.fn().mockResolvedValue({ matchups: [] }),
-      resetEnvelopes: vi.fn().mockResolvedValue({ envelopesRemoved: 2, matchesRemoved: 6 }),
+      resetEnvelopes: vi
+        .fn()
+        .mockResolvedValue({ envelopesRemoved: 2, matchesRemoved: 6 }),
     };
   });
 
   it('U1: entregar manda la sesión y las filas, en ese orden', async () => {
-    await new SubmitEnvelopeUseCase({ envelopeRepository }).execute('r1', [['ana']]);
+    await new SubmitEnvelopeUseCase({ envelopeRepository }).execute('r1', [
+      ['ana'],
+    ]);
 
-    expect(envelopeRepository.submitEnvelope).toHaveBeenCalledWith('r1', [['ana']], false);
+    expect(envelopeRepository.submitEnvelope).toHaveBeenCalledWith(
+      'r1',
+      [['ana']],
+      false,
+    );
   });
 
   it('U1b: y pasa la casilla de abrirlos en cuanto estén los dos', async () => {
-    await new SubmitEnvelopeUseCase({ envelopeRepository }).execute('r1', [['ana']], true);
+    await new SubmitEnvelopeUseCase({ envelopeRepository }).execute(
+      'r1',
+      [['ana']],
+      true,
+    );
 
-    expect(envelopeRepository.submitEnvelope).toHaveBeenCalledWith('r1', [['ana']], true);
+    expect(envelopeRepository.submitEnvelope).toHaveBeenCalledWith(
+      'r1',
+      [['ana']],
+      true,
+    );
   });
 
   it('U2: sin sesión no se llama a nadie', async () => {
     await expect(
-      new SubmitEnvelopeUseCase({ envelopeRepository }).execute(null, [['ana']])
+      new SubmitEnvelopeUseCase({ envelopeRepository }).execute(null, [
+        ['ana'],
+      ]),
     ).rejects.toThrow('Round ID is required');
     expect(envelopeRepository.submitEnvelope).not.toHaveBeenCalled();
   });
 
   it('U3: y con la lista vacía tampoco: el servidor lo rechazaría', async () => {
     await expect(
-      new SubmitEnvelopeUseCase({ envelopeRepository }).execute('r1', [])
+      new SubmitEnvelopeUseCase({ envelopeRepository }).execute('r1', []),
     ).rejects.toThrow('Entries are required');
     expect(envelopeRepository.submitEnvelope).not.toHaveBeenCalled();
   });
 
   it('U4: mirar devuelve la vista', async () => {
-    const vista = await new GetEnvelopesUseCase({ envelopeRepository }).execute('r1');
+    const vista = await new GetEnvelopesUseCase({ envelopeRepository }).execute(
+      'r1',
+    );
 
     expect(envelopeRepository.getEnvelopes).toHaveBeenCalledWith('r1');
     expect(vista.roundId).toBe('r1');
@@ -59,7 +79,9 @@ describe('Casos de uso de los sobres', () => {
   it('U5: y deja pasar el null de «esta sesión no tiene sobres»', async () => {
     envelopeRepository.getEnvelopes.mockResolvedValue(null);
 
-    expect(await new GetEnvelopesUseCase({ envelopeRepository }).execute('r1')).toBeNull();
+    expect(
+      await new GetEnvelopesUseCase({ envelopeRepository }).execute('r1'),
+    ).toBeNull();
   });
 
   it('U6: abrirlos manda la sesión', async () => {
@@ -70,7 +92,7 @@ describe('Casos de uso de los sobres', () => {
 
   it('U7: sin sesión no se abre nada', async () => {
     await expect(
-      new RevealEnvelopesUseCase({ envelopeRepository }).execute()
+      new RevealEnvelopesUseCase({ envelopeRepository }).execute(),
     ).rejects.toThrow('Round ID is required');
     expect(envelopeRepository.revealEnvelopes).not.toHaveBeenCalled();
   });
@@ -83,7 +105,7 @@ describe('Casos de uso de los sobres', () => {
 
   it('U9: sin sesión no se rehace nada', async () => {
     await expect(
-      new ResetEnvelopesUseCase({ envelopeRepository }).execute()
+      new ResetEnvelopesUseCase({ envelopeRepository }).execute(),
     ).rejects.toThrow('Round ID is required');
     expect(envelopeRepository.resetEnvelopes).not.toHaveBeenCalled();
   });

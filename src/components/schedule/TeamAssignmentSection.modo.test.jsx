@@ -21,7 +21,8 @@ const CLAVES = {
 const t = (clave, params) => {
   const abreviatura = abreviaturaDeHandicap(clave, params);
   if (abreviatura) return abreviatura;
-  if (params?.defaultValue !== undefined) return CLAVES[clave] ?? params.defaultValue;
+  if (params?.defaultValue !== undefined)
+    return CLAVES[clave] ?? params.defaultValue;
   return CLAVES[clave] ?? clave;
 };
 
@@ -35,7 +36,12 @@ const pintar = (mode) =>
       onAssignTeams={() => {}}
       onFillCaptain={() => {}}
       canManage
-      playerNameMap={new Map([['ana', 'Ana Alba'], ['bea', 'Bea Blanco']])}
+      playerNameMap={
+        new Map([
+          ['ana', 'Ana Alba'],
+          ['bea', 'Bea Blanco'],
+        ])
+      }
       enrollments={[
         { userId: 'ana', status: 'APPROVED' },
         { userId: 'bea', status: 'APPROVED' },
@@ -45,7 +51,7 @@ const pintar = (mode) =>
       captains={{ teamA: null, teamB: null, viceTeamA: null, viceTeamB: null }}
       status="CLOSED"
       t={t}
-    />
+    />,
   );
 
 describe('TeamAssignmentSection · cómo se repartieron los equipos', () => {
@@ -82,17 +88,27 @@ describe('TeamAssignmentSection · hándicap plus (FE #797)', () => {
         onAssignTeams={() => {}}
         onFillCaptain={() => {}}
         canManage
-        playerNameMap={new Map([['ana', 'Ana Alba'], ['bea', 'Bea Blanco']])}
+        playerNameMap={
+          new Map([
+            ['ana', 'Ana Alba'],
+            ['bea', 'Bea Blanco'],
+          ])
+        }
         enrollments={[
           { userId: 'ana', status: 'APPROVED', userHandicap: -2 },
           { userId: 'bea', status: 'APPROVED', userHandicap: 12.4 },
         ]}
         teamNames={NOMBRES}
         maxPlayingHandicap={null}
-        captains={{ teamA: null, teamB: null, viceTeamA: null, viceTeamB: null }}
+        captains={{
+          teamA: null,
+          teamB: null,
+          viceTeamA: null,
+          viceTeamB: null,
+        }}
         status="CLOSED"
         t={t}
-      />
+      />,
     );
 
     expect(screen.getByText('HCP +2.0')).toBeInTheDocument();
@@ -106,17 +122,27 @@ describe('TeamAssignmentSection · hándicap plus (FE #797)', () => {
         onAssignTeams={() => {}}
         onFillCaptain={() => {}}
         canManage
-        playerNameMap={new Map([['ana', 'Ana Alba'], ['bea', 'Bea Blanco']])}
+        playerNameMap={
+          new Map([
+            ['ana', 'Ana Alba'],
+            ['bea', 'Bea Blanco'],
+          ])
+        }
         enrollments={[
           { userId: 'ana', status: 'APPROVED', userHandicap: 24 },
           { userId: 'bea', status: 'APPROVED', userHandicap: 12.4 },
         ]}
         teamNames={NOMBRES}
         maxPlayingHandicap={18}
-        captains={{ teamA: null, teamB: null, viceTeamA: null, viceTeamB: null }}
+        captains={{
+          teamA: null,
+          teamB: null,
+          viceTeamA: null,
+          viceTeamB: null,
+        }}
         status="CLOSED"
         t={t}
-      />
+      />,
     );
 
     expect(screen.getByText('HCP 24.0')).toBeInTheDocument();

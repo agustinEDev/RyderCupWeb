@@ -28,7 +28,10 @@ vi.mock('../../components/layout/HeaderAuth', () => ({
 // La tarjeta: sus botones solo mientras no está ocupada
 vi.mock('../../components/friend/FriendCard', () => ({
   default: ({ friendship, onAccept, isProcessing }) => (
-    <div data-testid={`card-${friendship.id}`} data-ocupada={String(Boolean(isProcessing))}>
+    <div
+      data-testid={`card-${friendship.id}`}
+      data-ocupada={String(Boolean(isProcessing))}
+    >
       {!isProcessing && (
         <button type="button" onClick={() => onAccept(friendship.id)}>
           {`aceptar-${friendship.id}`}
@@ -46,7 +49,9 @@ const listPending = vi.fn();
 const respond = vi.fn();
 vi.mock('../../composition', () => ({
   listFriendsUseCase: { execute: (...args) => listFriends(...args) },
-  listPendingFriendRequestsUseCase: { execute: (...args) => listPending(...args) },
+  listPendingFriendRequestsUseCase: {
+    execute: (...args) => listPending(...args),
+  },
   respondFriendRequestUseCase: { execute: (...args) => respond(...args) },
   removeFriendUseCase: { execute: vi.fn() },
   blockUserUseCase: { execute: vi.fn() },
@@ -63,7 +68,10 @@ const aMano = () => {
   return { promesa, resolver, rechazar };
 };
 const amistad = (id) => ({ id, otherUserId: `u-${id}` });
-const lista = (...ids) => ({ friendships: ids.map(amistad), totalCount: ids.length });
+const lista = (...ids) => ({
+  friendships: ids.map(amistad),
+  totalCount: ids.length,
+});
 
 // Las recibidas que devuelve el servidor en cada momento: cada recarga se lleva
 // las de cuando se pidió
@@ -89,7 +97,7 @@ describe('FriendsPage: las listas descartan lo que llega tarde (T2)', () => {
     recibidas = ['a', 'b'];
     listFriends.mockResolvedValue(lista());
     listPending.mockImplementation((_id, tipo) =>
-      Promise.resolve(tipo === 'received' ? lista(...recibidas) : lista())
+      Promise.resolve(tipo === 'received' ? lista(...recibidas) : lista()),
     );
     respond.mockResolvedValue({});
   });
@@ -104,7 +112,9 @@ describe('FriendsPage: las listas descartan lo que llega tarde (T2)', () => {
 
     expect(espera()).not.toBeInTheDocument();
     expect(screen.getByTestId('card-f1')).toBeInTheDocument();
-    expect(within(screen.getByTestId('tab-received')).getByText('2')).toBeInTheDocument();
+    expect(
+      within(screen.getByTestId('tab-received')).getByText('2'),
+    ).toBeInTheDocument();
     expect(listPending).toHaveBeenCalledWith('me', 'received');
     expect(listPending).toHaveBeenCalledWith('me', 'sent');
   });
@@ -129,8 +139,14 @@ describe('FriendsPage: las listas descartan lo que llega tarde (T2)', () => {
     await act(async () => {});
 
     expect(listFriends).toHaveBeenCalledTimes(2);
-    expect(screen.getByTestId('card-a')).toHaveAttribute('data-ocupada', 'true');
-    expect(screen.getByTestId('card-b')).toHaveAttribute('data-ocupada', 'false');
+    expect(screen.getByTestId('card-a')).toHaveAttribute(
+      'data-ocupada',
+      'true',
+    );
+    expect(screen.getByTestId('card-b')).toHaveAttribute(
+      'data-ocupada',
+      'false',
+    );
     expect(espera()).not.toBeInTheDocument();
 
     await act(async () => recarga.resolver(lista('a')));
@@ -141,7 +157,9 @@ describe('FriendsPage: las listas descartan lo que llega tarde (T2)', () => {
     await abrirRecibidas();
     const deA = aMano();
     const deB = aMano();
-    listFriends.mockReturnValueOnce(deA.promesa).mockReturnValueOnce(deB.promesa);
+    listFriends
+      .mockReturnValueOnce(deA.promesa)
+      .mockReturnValueOnce(deB.promesa);
 
     // Given la recarga de A en vuelo
     fireEvent.click(screen.getByText('aceptar-a'));
@@ -154,9 +172,15 @@ describe('FriendsPage: las listas descartan lo que llega tarde (T2)', () => {
     expect(listFriends).toHaveBeenCalledTimes(3);
 
     // Then A sigue ocupada, sin botones, mientras no llegan listas
-    expect(screen.getByTestId('card-a')).toHaveAttribute('data-ocupada', 'true');
+    expect(screen.getByTestId('card-a')).toHaveAttribute(
+      'data-ocupada',
+      'true',
+    );
     expect(screen.queryByText('aceptar-a')).not.toBeInTheDocument();
-    expect(screen.getByTestId('card-b')).toHaveAttribute('data-ocupada', 'true');
+    expect(screen.getByTestId('card-b')).toHaveAttribute(
+      'data-ocupada',
+      'true',
+    );
 
     // y deja de estarlo con las de B, que ya la incluyen
     await act(async () => deB.resolver(lista('a', 'b')));
@@ -168,7 +192,9 @@ describe('FriendsPage: las listas descartan lo que llega tarde (T2)', () => {
     await abrirRecibidas();
     const deA = aMano();
     const deB = aMano();
-    listFriends.mockReturnValueOnce(deA.promesa).mockReturnValueOnce(deB.promesa);
+    listFriends
+      .mockReturnValueOnce(deA.promesa)
+      .mockReturnValueOnce(deB.promesa);
 
     fireEvent.click(screen.getByText('aceptar-a'));
     await act(async () => {});
@@ -200,14 +226,19 @@ describe('FriendsPage: las listas descartan lo que llega tarde (T2)', () => {
     await act(async () => {});
 
     expect(listFriends).toHaveBeenCalledTimes(2);
-    expect(screen.getByTestId('card-a')).toHaveAttribute('data-ocupada', 'true');
+    expect(screen.getByTestId('card-a')).toHaveAttribute(
+      'data-ocupada',
+      'true',
+    );
     expect(espera()).not.toBeInTheDocument();
   });
 
   it('U1: si cambia el usuario con la carga en vuelo, se piden las suyas y las viejas no se pintan', async () => {
     const vieja = aMano();
     const nueva = aMano();
-    listFriends.mockReturnValueOnce(vieja.promesa).mockReturnValueOnce(nueva.promesa);
+    listFriends
+      .mockReturnValueOnce(vieja.promesa)
+      .mockReturnValueOnce(nueva.promesa);
     const { rerender } = render(arbol());
 
     sesion.user = { id: 'otro' };

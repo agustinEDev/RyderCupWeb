@@ -32,7 +32,9 @@ class SubmitHoleScoreUseCase {
     // `undefined`, y pasarla por `HoleScore` la convertia en `null`: asi se
     // concedia el hoyo del otro sin que nadie lo concediera, y su hoyo pasaba a
     // desacuerdo si ya habia anotado. Se valida y se manda solo lo que viene
-    const aEnviar = scoreData.markedPlayerId ? { markedPlayerId: scoreData.markedPlayerId } : {};
+    const aEnviar = scoreData.markedPlayerId
+      ? { markedPlayerId: scoreData.markedPlayerId }
+      : {};
     if (scoreData.ownScore !== undefined) {
       aEnviar.ownScore = new HoleScore(scoreData.ownScore).getValue();
     }
@@ -40,7 +42,11 @@ class SubmitHoleScoreUseCase {
       aEnviar.markedScore = new HoleScore(scoreData.markedScore).getValue();
     }
 
-    return await this.scoringRepository.submitHoleScore(matchId, holeNumber, aEnviar);
+    return await this.scoringRepository.submitHoleScore(
+      matchId,
+      holeNumber,
+      aEnviar,
+    );
   }
 }
 

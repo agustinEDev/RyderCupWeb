@@ -57,7 +57,8 @@ const perfil = () => ({
   headToHead: null,
   gamesTogether: null,
 });
-const error = (status) => Object.assign(new Error(`HTTP ${status}`), { status });
+const error = (status) =>
+  Object.assign(new Error(`HTTP ${status}`), { status });
 
 describe('PlayerProfilePage: la recarga tras una acción (T2)', () => {
   beforeEach(() => {
@@ -66,13 +67,15 @@ describe('PlayerProfilePage: la recarga tras una acción (T2)', () => {
   });
 
   it('R1: si la recarga tras la acción responde 404, la ficha pasa a «no existe», sin aviso de recarga fallida', async () => {
-    getProfile.mockResolvedValueOnce(perfil()).mockRejectedValueOnce(error(404));
+    getProfile
+      .mockResolvedValueOnce(perfil())
+      .mockRejectedValueOnce(error(404));
     render(
       <MemoryRouter initialEntries={['/players/u1']}>
         <Routes>
           <Route path="/players/:userId" element={<PlayerProfilePage />} />
         </Routes>
-      </MemoryRouter>
+      </MemoryRouter>,
     );
 
     fireEvent.click(await screen.findByTestId('player-profile-add-friend'));
@@ -80,7 +83,9 @@ describe('PlayerProfilePage: la recarga tras una acción (T2)', () => {
     await act(async () => {});
 
     expect(getProfile).toHaveBeenCalledTimes(2);
-    expect(await screen.findByTestId('player-profile-not-found')).toBeInTheDocument();
+    expect(
+      await screen.findByTestId('player-profile-not-found'),
+    ).toBeInTheDocument();
     expect(customToast.error).not.toHaveBeenCalled();
   });
 });

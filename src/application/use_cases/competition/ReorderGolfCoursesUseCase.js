@@ -45,13 +45,18 @@ class ReorderGolfCoursesUseCase {
     }
 
     // Validate all IDs are strings
-    const allStrings = golfCourseIds.every(id => typeof id === 'string' && id.length > 0);
+    const allStrings = golfCourseIds.every(
+      (id) => typeof id === 'string' && id.length > 0,
+    );
     if (!allStrings) {
       throw new Error('All golf course IDs must be non-empty strings');
     }
 
     // Call repository (backend validates business rules)
-    const result = await this.competitionRepository.reorderGolfCourses(competitionId, golfCourseIds);
+    const result = await this.competitionRepository.reorderGolfCourses(
+      competitionId,
+      golfCourseIds,
+    );
 
     return result;
   }

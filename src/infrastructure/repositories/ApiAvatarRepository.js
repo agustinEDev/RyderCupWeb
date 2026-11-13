@@ -40,9 +40,12 @@ class ApiAvatarRepository extends IAvatarRepository {
   }
 
   async activateUpload(uploadId) {
-    return apiRequest(`/api/v1/users/me/avatar/uploads/${segmento(uploadId)}/activate`, {
-      method: 'POST',
-    });
+    return apiRequest(
+      `/api/v1/users/me/avatar/uploads/${segmento(uploadId)}/activate`,
+      {
+        method: 'POST',
+      },
+    );
   }
 
   async remove() {

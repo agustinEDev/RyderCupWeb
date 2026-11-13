@@ -24,7 +24,9 @@ vi.mock('../services/loUltimoConocido', () => ({
 vi.mock('../services/refrescoDeHandicapApuntes', () => ({
   olvidaElRefrescoDeHandicap: () => llamadas.push('refrescoDeHandicap'),
 }));
-vi.mock('../services/novedadesDeActividad', () => ({ olvidaLasNovedades: () => llamadas.push('novedades') }));
+vi.mock('../services/novedadesDeActividad', () => ({
+  olvidaLasNovedades: () => llamadas.push('novedades'),
+}));
 
 const { AuthProvider } = await import('./AuthContext');
 const { useAuthContext } = await import('../hooks/useAuthContext');
@@ -33,15 +35,25 @@ describe('clearAuth usa el registro de limpiezas', () => {
   beforeEach(() => {
     llamadas.length = 0;
     fallo.activo = false;
-    vi.stubGlobal('localStorage', { getItem: vi.fn(() => null), setItem: vi.fn(), removeItem: vi.fn() });
+    vi.stubGlobal('localStorage', {
+      getItem: vi.fn(() => null),
+      setItem: vi.fn(),
+      removeItem: vi.fn(),
+    });
   });
 
   it('olvida las partidas sin cobertura, el hándicap pendiente y el número de Actividad', () => {
-    const { result } = renderHook(() => useAuthContext(), { wrapper: AuthProvider });
+    const { result } = renderHook(() => useAuthContext(), {
+      wrapper: AuthProvider,
+    });
 
     act(() => result.current.clearAuth());
 
-    expect(llamadas).toEqual(['loUltimoConocido', 'refrescoDeHandicap', 'novedades']);
+    expect(llamadas).toEqual([
+      'loUltimoConocido',
+      'refrescoDeHandicap',
+      'novedades',
+    ]);
     expect(localStorage.removeItem).toHaveBeenCalledWith('user');
     expect(localStorage.removeItem).toHaveBeenCalledWith('access_token');
   });
@@ -49,7 +61,9 @@ describe('clearAuth usa el registro de limpiezas', () => {
   it('si una limpieza falla, borra igual el usuario guardado, hace las demás y no corta el cierre', () => {
     fallo.activo = true;
     const consola = vi.spyOn(console, 'error').mockImplementation(() => {});
-    const { result } = renderHook(() => useAuthContext(), { wrapper: AuthProvider });
+    const { result } = renderHook(() => useAuthContext(), {
+      wrapper: AuthProvider,
+    });
 
     expect(() => act(() => result.current.clearAuth())).not.toThrow();
 

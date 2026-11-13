@@ -75,8 +75,18 @@
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { Profiler, useEffect, useLayoutEffect } from 'react';
-import { act, render, screen, waitFor, fireEvent } from '@testing-library/react';
-import { createMemoryRouter, RouterProvider, useLoaderData } from 'react-router';
+import {
+  act,
+  render,
+  screen,
+  waitFor,
+  fireEvent,
+} from '@testing-library/react';
+import {
+  createMemoryRouter,
+  RouterProvider,
+  useLoaderData,
+} from 'react-router';
 
 const mockList = vi.fn();
 vi.mock('../composition', () => ({
@@ -84,7 +94,11 @@ vi.mock('../composition', () => ({
 }));
 
 // La sesión como en la aplicación: una instantánea que avisa al cambiar
-const sesion = vi.hoisted(() => ({ user: { id: 'u-1' }, oyentes: new Set(), instantanea: null }));
+const sesion = vi.hoisted(() => ({
+  user: { id: 'u-1' },
+  oyentes: new Set(),
+  instantanea: null,
+}));
 const ponLaSesion = (user) => {
   sesion.user = user;
   sesion.instantanea = { user, loading: false };
@@ -116,7 +130,9 @@ const efectosAlDia = () =>
       const { router } = testigo;
       const actual = router.state.matches.at(-1);
       if (actual?.route.path !== '/competitions') {
-        throw new Error(`efectosAlDia solo vale en Torneos, y la ruta es ${router.state.location.pathname}`);
+        throw new Error(
+          `efectosAlDia solo vale en Torneos, y la ruta es ${router.state.location.pathname}`,
+        );
       }
       expect(router.state.navigation.state).toBe('idle');
       // Una recarga en camino no se espera: C6b y C8 actúan a propósito con
@@ -124,7 +140,7 @@ const efectosAlDia = () =>
       expect(testigo.vio).toBe(router.state.loaderData[actual.route.id]);
     },
     // Con holgura: es justo la máquina cargada lo que viene a cubrir
-    { timeout: 5000 }
+    { timeout: 5000 },
   );
 // Con los efectos de la última pintada ya corridos: «vuelve la señal»
 const vuelveLaSenal = async () => {
@@ -137,7 +153,9 @@ const pulsaReintentar = async () => {
   await screen.findByRole('button', { name: 'myCompetitions.reintentar' });
   await efectosAlDia();
   // Buscado otra vez tras esperar: el de antes pudo cambiar en otra pintada
-  fireEvent.click(screen.getByRole('button', { name: 'myCompetitions.reintentar' }));
+  fireEvent.click(
+    screen.getByRole('button', { name: 'myCompetitions.reintentar' }),
+  );
 };
 // Otra cuenta (o la misma, confirmada), tras la última pintada
 const cambiaLaSesion = async (user) => {
@@ -151,7 +169,9 @@ vi.mock('../hooks/useAuth', async () => {
     sesion.oyentes.add(o);
     return () => sesion.oyentes.delete(o);
   };
-  return { useAuth: () => useSyncExternalStore(suscribe, () => sesion.instantanea) };
+  return {
+    useAuth: () => useSyncExternalStore(suscribe, () => sesion.instantanea),
+  };
 });
 vi.mock('../services/sesionCompartida', () => ({
   consultaLaSesion: () => {
@@ -180,8 +200,10 @@ vi.mock('../utils/toast', () => ({
 
 const Competitions = (await import('./Competitions')).default;
 const { loader, shouldRevalidate } = await import('./Competitions.datos');
-const { olvidaTodo, olvidaLoDeEstaCuenta } = await import('../services/loUltimoConocido');
-const { marcaElArranque, olvidaLoQueEstaEnCamino, pideOtraVez } = await import('../services/cargaDeLaPantalla');
+const { olvidaTodo, olvidaLoDeEstaCuenta } =
+  await import('../services/loUltimoConocido');
+const { marcaElArranque, olvidaLoQueEstaEnCamino, pideOtraVez } =
+  await import('../services/cargaDeLaPantalla');
 
 // Lo que hace la carcasa de la aplicación al montarse
 const Carcasa = () => {
@@ -192,15 +214,28 @@ const Carcasa = () => {
 const sonda = { tarjetas: null };
 const Sonda = () => {
   useLayoutEffect(() => {
-    sonda.tarjetas ??= document.querySelectorAll('[data-testid="tarjeta-competicion"]').length;
+    sonda.tarjetas ??= document.querySelectorAll(
+      '[data-testid="tarjeta-competicion"]',
+    ).length;
   });
   return null;
 };
 
-const TORNEO = { id: 'c-1', name: 'Torneo del Club', status: 'IN_PROGRESS', creatorId: 'u-1', participants: [] };
+const TORNEO = {
+  id: 'c-1',
+  name: 'Torneo del Club',
+  status: 'IN_PROGRESS',
+  creatorId: 'u-1',
+  participants: [],
+};
 const sinRed = () => new TypeError('Failed to fetch');
-const delServidor = (status) => Object.assign(new Error('Rate limit exceeded: 30 per 1 minute'), { status });
-const enLinea = (si) => Object.defineProperty(globalThis.navigator, 'onLine', { value: si, configurable: true });
+const delServidor = (status) =>
+  Object.assign(new Error('Rate limit exceeded: 30 per 1 minute'), { status });
+const enLinea = (si) =>
+  Object.defineProperty(globalThis.navigator, 'onLine', {
+    value: si,
+    configurable: true,
+  });
 
 const pintadas = { cuantas: 0 };
 const pinta = ({ state, antes = [] } = {}) => {
@@ -213,7 +248,12 @@ const pinta = ({ state, antes = [] } = {}) => {
         element: (
           <>
             <Carcasa />
-            <Profiler id="torneos" onRender={() => { pintadas.cuantas += 1; }}>
+            <Profiler
+              id="torneos"
+              onRender={() => {
+                pintadas.cuantas += 1;
+              }}
+            >
               <Competitions />
             </Profiler>
             <Sonda />
@@ -223,7 +263,10 @@ const pinta = ({ state, antes = [] } = {}) => {
       },
       { path: '/otra', element: <p>otra pantalla</p> },
     ],
-    { initialEntries: [...antes, { pathname: '/competitions', state }], initialIndex: antes.length }
+    {
+      initialEntries: [...antes, { pathname: '/competitions', state }],
+      initialIndex: antes.length,
+    },
   );
   testigo.router = router;
   testigo.vio = null;
@@ -270,16 +313,24 @@ describe('Torneos con loader', () => {
     mockList.mockResolvedValue([]);
     pinta();
 
-    expect(await screen.findByText('myCompetitions.createYourFirstCompetition')).toBeInTheDocument();
+    expect(
+      await screen.findByText('myCompetitions.createYourFirstCompetition'),
+    ).toBeInTheDocument();
   });
 
   it('T3: sin red y nada en memoria: «sin conexión», no «no tienes»', async () => {
     mockList.mockRejectedValue(sinRed());
     pinta();
 
-    expect(await screen.findByTestId('competiciones-sin-cobertura')).toBeInTheDocument();
-    expect(screen.queryByText('myCompetitions.noCompetitionsYet')).not.toBeInTheDocument();
-    expect(screen.queryByText('myCompetitions.createYourFirstCompetition')).not.toBeInTheDocument();
+    expect(
+      await screen.findByTestId('competiciones-sin-cobertura'),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByText('myCompetitions.noCompetitionsYet'),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByText('myCompetitions.createYourFirstCompetition'),
+    ).not.toBeInTheDocument();
   });
 
   it('T3b: sin red ni lista, la pantalla se queda quieta', async () => {
@@ -298,8 +349,12 @@ describe('Torneos con loader', () => {
     await conLaListaYaCargada(sinRed());
 
     expect(await screen.findByText('Torneo del Club')).toBeInTheDocument();
-    expect(screen.getByTestId('aviso-lista-sin-respuesta')).toHaveTextContent('sinConexion.aviso');
-    expect(screen.queryByText('myCompetitions.createYourFirstCompetition')).not.toBeInTheDocument();
+    expect(screen.getByTestId('aviso-lista-sin-respuesta')).toHaveTextContent(
+      'sinConexion.aviso',
+    );
+    expect(
+      screen.queryByText('myCompetitions.createYourFirstCompetition'),
+    ).not.toBeInTheDocument();
   });
 
   it('T4b: con el móvil sin red, el aviso ya lo da la barra de arriba: no se repite', async () => {
@@ -310,36 +365,56 @@ describe('Torneos con loader', () => {
     });
 
     expect(await screen.findByText('Torneo del Club')).toBeInTheDocument();
-    expect(screen.queryByTestId('aviso-lista-sin-respuesta')).not.toBeInTheDocument();
+    expect(
+      screen.queryByTestId('aviso-lista-sin-respuesta'),
+    ).not.toBeInTheDocument();
   });
 
   it('T6: 429 sin nada en memoria: «No se pudo cargar» + Reintentar, nunca «Aún no hay»', async () => {
     mockList.mockRejectedValue(delServidor(429));
     pinta();
 
-    expect(await screen.findByTestId('competiciones-sin-cargar')).toHaveTextContent('myCompetitions.noSePudoCargar');
-    expect(screen.getByRole('button', { name: 'myCompetitions.reintentar' })).toBeInTheDocument();
-    expect(screen.queryByText('myCompetitions.noCompetitionsYet')).not.toBeInTheDocument();
-    expect(screen.queryByTestId('competiciones-sin-cobertura')).not.toBeInTheDocument();
+    expect(
+      await screen.findByTestId('competiciones-sin-cargar'),
+    ).toHaveTextContent('myCompetitions.noSePudoCargar');
+    expect(
+      screen.getByRole('button', { name: 'myCompetitions.reintentar' }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByText('myCompetitions.noCompetitionsYet'),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByTestId('competiciones-sin-cobertura'),
+    ).not.toBeInTheDocument();
     // Ni «Mostrando 0 de 0»: tampoco se ha comprobado
-    expect(screen.queryByText('myCompetitions.showing')).not.toBeInTheDocument();
+    expect(
+      screen.queryByText('myCompetitions.showing'),
+    ).not.toBeInTheDocument();
   });
 
   it('T7: 500 con la lista ya cargada: la lista + «No se pudo actualizar» + Reintentar', async () => {
     await conLaListaYaCargada(delServidor(500));
 
-    expect(await screen.findByTestId('aviso-lista-sin-actualizar')).toHaveTextContent('myCompetitions.noSePudoActualizar');
+    expect(
+      await screen.findByTestId('aviso-lista-sin-actualizar'),
+    ).toHaveTextContent('myCompetitions.noSePudoActualizar');
     expect(screen.getByText('Torneo del Club')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'myCompetitions.reintentar' })).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: 'myCompetitions.reintentar' }),
+    ).toBeInTheDocument();
   });
 
   it('T8: Reintentar vuelve a pedir y, si sale bien, el aviso se va', async () => {
-    mockList.mockRejectedValueOnce(delServidor(500)).mockResolvedValue([TORNEO]);
+    mockList
+      .mockRejectedValueOnce(delServidor(500))
+      .mockResolvedValue([TORNEO]);
     pinta();
     await pulsaReintentar();
 
     expect(await screen.findByText('Torneo del Club')).toBeInTheDocument();
-    expect(screen.queryByTestId('competiciones-sin-cargar')).not.toBeInTheDocument();
+    expect(
+      screen.queryByTestId('competiciones-sin-cargar'),
+    ).not.toBeInTheDocument();
     expect(mockList).toHaveBeenCalledTimes(2);
   });
 
@@ -351,7 +426,9 @@ describe('Torneos con loader', () => {
     await vuelveLaSenal();
 
     expect(await screen.findByText('Torneo del Club')).toBeInTheDocument();
-    expect(screen.queryByTestId('competiciones-sin-cobertura')).not.toBeInTheDocument();
+    expect(
+      screen.queryByTestId('competiciones-sin-cobertura'),
+    ).not.toBeInTheDocument();
   });
 
   it('T9b: con la lista bien cargada, volver la señal no pide nada', async () => {
@@ -360,7 +437,9 @@ describe('Torneos con loader', () => {
     await screen.findByText('Torneo del Club');
 
     await vuelveLaSenal();
-    await act(async () => { await Promise.resolve(); });
+    await act(async () => {
+      await Promise.resolve();
+    });
 
     expect(mockList).toHaveBeenCalledTimes(1);
   });
@@ -389,7 +468,9 @@ describe('Torneos con loader', () => {
     mockList.mockRejectedValue(delServidor(500));
     pinta();
     await pulsaReintentar();
-    await act(async () => { await Promise.resolve(); });
+    await act(async () => {
+      await Promise.resolve();
+    });
 
     await waitFor(() => expect(toasts).toHaveLength(2));
   });
@@ -407,21 +488,34 @@ describe('Torneos con loader', () => {
     await conLaListaYaCargada(sinRed());
     await screen.findByText('Torneo del Club');
 
-    fireEvent.change(screen.getByPlaceholderText('myCompetitions.searchPlaceholder'), {
-      target: { value: 'no existe nada con este nombre' },
-    });
+    fireEvent.change(
+      screen.getByPlaceholderText('myCompetitions.searchPlaceholder'),
+      {
+        target: { value: 'no existe nada con este nombre' },
+      },
+    );
 
-    expect(await screen.findByText('myCompetitions.noCompetitionsFound')).toBeInTheDocument();
-    expect(screen.queryByTestId('competiciones-sin-cobertura')).not.toBeInTheDocument();
+    expect(
+      await screen.findByText('myCompetitions.noCompetitionsFound'),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByTestId('competiciones-sin-cobertura'),
+    ).not.toBeInTheDocument();
   });
 
   it('T31: en la primera carga, la espera de hoy y luego la lista', async () => {
     marcaElArranque(false);
     let responde;
-    mockList.mockReturnValue(new Promise((r) => { responde = r; }));
+    mockList.mockReturnValue(
+      new Promise((r) => {
+        responde = r;
+      }),
+    );
     pinta();
 
-    expect(await screen.findByText('myCompetitions.loadingCompetitions')).toBeInTheDocument();
+    expect(
+      await screen.findByText('myCompetitions.loadingCompetitions'),
+    ).toBeInTheDocument();
     await act(async () => responde([TORNEO]));
     expect(await screen.findByText('Torneo del Club')).toBeInTheDocument();
     expect(mockList).toHaveBeenCalledTimes(1);
@@ -433,13 +527,17 @@ describe('Torneos con loader', () => {
     pinta();
     // Sin usuario la pantalla no se pinta (en la aplicación, el guardia espera)
     await act(() => new Promise((r) => setTimeout(r, 50)));
-    expect(screen.queryByText('myCompetitions.noCompetitionsYet')).not.toBeInTheDocument();
+    expect(
+      screen.queryByText('myCompetitions.noCompetitionsYet'),
+    ).not.toBeInTheDocument();
     expect(mockList).not.toHaveBeenCalled();
 
     await cambiaLaSesion({ id: 'u-1' });
 
     expect(await screen.findByText('Torneo del Club')).toBeInTheDocument();
-    expect(screen.queryByText('myCompetitions.noCompetitionsYet')).not.toBeInTheDocument();
+    expect(
+      screen.queryByText('myCompetitions.noCompetitionsYet'),
+    ).not.toBeInTheDocument();
   });
 
   it('T32b: si más tarde vuelve a faltar la sesión, se vuelve a pedir', async () => {
@@ -457,15 +555,23 @@ describe('Torneos con loader', () => {
   it('T33: la lista que llega tras el tope aparece sola, sin pedirla otra vez', async () => {
     vi.useFakeTimers({ shouldAdvanceTime: true });
     let responde;
-    mockList.mockReturnValue(new Promise((r) => { responde = r; }));
+    mockList.mockReturnValue(
+      new Promise((r) => {
+        responde = r;
+      }),
+    );
     pinta();
     await act(() => vi.advanceTimersByTimeAsync(4000));
-    expect(await screen.findByTestId('competiciones-sin-cobertura')).toBeInTheDocument();
+    expect(
+      await screen.findByTestId('competiciones-sin-cobertura'),
+    ).toBeInTheDocument();
 
     await act(async () => responde([TORNEO]));
 
     expect(await screen.findByText('Torneo del Club')).toBeInTheDocument();
-    expect(screen.queryByTestId('competiciones-sin-cobertura')).not.toBeInTheDocument();
+    expect(
+      screen.queryByTestId('competiciones-sin-cobertura'),
+    ).not.toBeInTheDocument();
     expect(mockList).toHaveBeenCalledTimes(1);
   });
 
@@ -489,7 +595,9 @@ describe('Torneos con loader', () => {
   });
 
   it('T38: tras T37, Reintentar sigue pidiendo', async () => {
-    mockList.mockRejectedValueOnce(delServidor(500)).mockResolvedValue([TORNEO]);
+    mockList
+      .mockRejectedValueOnce(delServidor(500))
+      .mockResolvedValue([TORNEO]);
     const router = pinta();
     await screen.findByTestId('competiciones-sin-cargar');
     await act(() => router.navigate('/competitions'));
@@ -513,7 +621,9 @@ describe('Torneos con loader', () => {
   });
 
   it('T41: si se navega mientras se vuelve a pedir, luego pulsar Torneos en Torneos no pide', async () => {
-    mockList.mockRejectedValueOnce(delServidor(500)).mockResolvedValue([TORNEO]);
+    mockList
+      .mockRejectedValueOnce(delServidor(500))
+      .mockResolvedValue([TORNEO]);
     const router = pinta();
     await pulsaReintentar();
     await act(() => router.navigate('/otra'));
@@ -527,7 +637,9 @@ describe('Torneos con loader', () => {
   });
 
   const filtraPorActivas = () =>
-    fireEvent.change(screen.getByDisplayValue('myCompetitions.allStatuses'), { target: { value: 'ACTIVE' } });
+    fireEvent.change(screen.getByDisplayValue('myCompetitions.allStatuses'), {
+      target: { value: 'ACTIVE' },
+    });
   const LISTA = [
     { ...TORNEO, id: 'c-1', name: 'Torneo activo', status: 'ACTIVE' },
     { ...TORNEO, id: 'c-2', name: 'Torneo cerrado', status: 'CLOSED' },
@@ -538,7 +650,10 @@ describe('Torneos con loader', () => {
     const router = pinta();
     await screen.findByText('Torneo cerrado');
     filtraPorActivas();
-    fireEvent.change(screen.getByPlaceholderText('myCompetitions.searchPlaceholder'), { target: { value: 'activo' } });
+    fireEvent.change(
+      screen.getByPlaceholderText('myCompetitions.searchPlaceholder'),
+      { target: { value: 'activo' } },
+    );
     await act(async () => {});
 
     await act(() => router.navigate('/otra'));
@@ -546,8 +661,12 @@ describe('Torneos con loader', () => {
 
     expect(await screen.findByText('Torneo activo')).toBeInTheDocument();
     expect(screen.queryByText('Torneo cerrado')).not.toBeInTheDocument();
-    expect(screen.getByPlaceholderText('myCompetitions.searchPlaceholder')).toHaveValue('activo');
-    expect(screen.getByDisplayValue('myCompetitions.active')).toBeInTheDocument();
+    expect(
+      screen.getByPlaceholderText('myCompetitions.searchPlaceholder'),
+    ).toHaveValue('activo');
+    expect(
+      screen.getByDisplayValue('myCompetitions.active'),
+    ).toBeInTheDocument();
   });
 
   it('F5: filtrar no apila entradas: atrás sale de Torneos', async () => {
@@ -608,9 +727,15 @@ describe('Torneos con loader', () => {
     await screen.findByText('myCompetitions.createYourFirstCompetition');
     await act(() => router.navigate('/otra'));
     let responde;
-    mockList.mockReturnValue(new Promise((r) => { responde = r; }));
+    mockList.mockReturnValue(
+      new Promise((r) => {
+        responde = r;
+      }),
+    );
 
-    act(() => { router.navigate('/competitions'); });
+    act(() => {
+      router.navigate('/competitions');
+    });
     await act(() => router.navigate('/otra'));
     await act(async () => responde([TORNEO]));
 
@@ -619,10 +744,16 @@ describe('Torneos con loader', () => {
   });
 
   const busca = (texto) =>
-    fireEvent.change(screen.getByPlaceholderText('myCompetitions.searchPlaceholder'), { target: { value: texto } });
+    fireEvent.change(
+      screen.getByPlaceholderText('myCompetitions.searchPlaceholder'),
+      { target: { value: texto } },
+    );
   const colgada = () => {
     const pendiente = {};
-    pendiente.promesa = new Promise((r, f) => { pendiente.responde = r; pendiente.falla = f; });
+    pendiente.promesa = new Promise((r, f) => {
+      pendiente.responde = r;
+      pendiente.falla = f;
+    });
     return pendiente;
   };
 
@@ -655,12 +786,16 @@ describe('Torneos con loader', () => {
     await act(() => router.navigate(-1));
 
     expect(await screen.findByText('Torneo cerrado')).toBeInTheDocument();
-    expect(screen.getByPlaceholderText('myCompetitions.searchPlaceholder')).toHaveValue('');
+    expect(
+      screen.getByPlaceholderText('myCompetitions.searchPlaceholder'),
+    ).toHaveValue('');
   });
 
   it('C4: filtrar mientras Reintentar está en camino no la corta', async () => {
     const segunda = colgada();
-    mockList.mockRejectedValueOnce(delServidor(500)).mockReturnValueOnce(segunda.promesa);
+    mockList
+      .mockRejectedValueOnce(delServidor(500))
+      .mockReturnValueOnce(segunda.promesa);
     pinta();
     await pulsaReintentar();
     await waitFor(() => expect(mockList).toHaveBeenCalledTimes(2));
@@ -670,12 +805,16 @@ describe('Torneos con loader', () => {
     await act(async () => segunda.responde(LISTA));
 
     expect(await screen.findByText('Torneo activo')).toBeInTheDocument();
-    expect(screen.queryByTestId('competiciones-sin-cargar')).not.toBeInTheDocument();
+    expect(
+      screen.queryByTestId('competiciones-sin-cargar'),
+    ).not.toBeInTheDocument();
   });
 
   it('C4b: filtrar mientras se pide al volver la señal no la corta', async () => {
     const segunda = colgada();
-    mockList.mockRejectedValueOnce(sinRed()).mockReturnValueOnce(segunda.promesa);
+    mockList
+      .mockRejectedValueOnce(sinRed())
+      .mockReturnValueOnce(segunda.promesa);
     pinta();
     await screen.findByTestId('competiciones-sin-cobertura');
     await vuelveLaSenal();
@@ -686,17 +825,23 @@ describe('Torneos con loader', () => {
     await act(async () => segunda.responde(LISTA));
 
     expect(await screen.findByText('Torneo activo')).toBeInTheDocument();
-    expect(screen.queryByTestId('competiciones-sin-cobertura')).not.toBeInTheDocument();
+    expect(
+      screen.queryByTestId('competiciones-sin-cobertura'),
+    ).not.toBeInTheDocument();
   });
 
   it('C5: si pulsar Torneos en Torneos corta la recarga, esa pulsación carga (con la misma petición)', async () => {
     const segunda = colgada();
-    mockList.mockRejectedValueOnce(delServidor(500)).mockReturnValueOnce(segunda.promesa);
+    mockList
+      .mockRejectedValueOnce(delServidor(500))
+      .mockReturnValueOnce(segunda.promesa);
     const router = pinta();
     await pulsaReintentar();
     await waitFor(() => expect(mockList).toHaveBeenCalledTimes(2));
 
-    act(() => { router.navigate('/competitions', { replace: true }); });
+    act(() => {
+      router.navigate('/competitions', { replace: true });
+    });
     // Que la carga del toque llegue a unirse antes de que conteste
     await act(() => new Promise((r) => setTimeout(r, 0)));
     await act(async () => segunda.responde(LISTA));
@@ -738,7 +883,10 @@ describe('Torneos con loader', () => {
 
   it('C6b: la sesión cambia durante un Reintentar: petición nueva, no la que ya iba', async () => {
     const segunda = colgada();
-    mockList.mockRejectedValueOnce(delServidor(500)).mockReturnValueOnce(segunda.promesa).mockResolvedValue(LISTA);
+    mockList
+      .mockRejectedValueOnce(delServidor(500))
+      .mockReturnValueOnce(segunda.promesa)
+      .mockResolvedValue(LISTA);
     pinta();
     await pulsaReintentar();
     await waitFor(() => expect(mockList).toHaveBeenCalledTimes(2));
@@ -758,8 +906,12 @@ describe('Torneos con loader', () => {
     const enCamino = colgada();
     mockList.mockReturnValue(enCamino.promesa);
 
-    act(() => { router.navigate('/competitions'); });
-    await act(() => { router.navigate('/competitions'); });
+    act(() => {
+      router.navigate('/competitions');
+    });
+    await act(() => {
+      router.navigate('/competitions');
+    });
     await act(async () => enCamino.responde(LISTA));
 
     expect(await screen.findByText('Torneo cerrado')).toBeInTheDocument();
@@ -767,13 +919,19 @@ describe('Torneos con loader', () => {
   });
 
   it('C7b: tocar la pestaña mientras Reintentar sigue en camino no pide más', async () => {
-    mockList.mockRejectedValueOnce(delServidor(500)).mockReturnValue(new Promise(() => {}));
+    mockList
+      .mockRejectedValueOnce(delServidor(500))
+      .mockReturnValue(new Promise(() => {}));
     const router = pinta();
     await pulsaReintentar();
     await waitFor(() => expect(mockList).toHaveBeenCalledTimes(2));
 
-    await act(async () => { router.navigate('/competitions', { replace: true }); });
-    await act(async () => { router.navigate('/competitions', { replace: true }); });
+    await act(async () => {
+      router.navigate('/competitions', { replace: true });
+    });
+    await act(async () => {
+      router.navigate('/competitions', { replace: true });
+    });
     await act(() => new Promise((r) => setTimeout(r, 20)));
 
     expect(mockList).toHaveBeenCalledTimes(2);
@@ -794,7 +952,10 @@ describe('Torneos con loader', () => {
   });
 
   it('C8: vuelve la señal otra vez con la petición anterior colgada: sale una nueva', async () => {
-    mockList.mockRejectedValueOnce(sinRed()).mockReturnValueOnce(new Promise(() => {})).mockResolvedValue(LISTA);
+    mockList
+      .mockRejectedValueOnce(sinRed())
+      .mockReturnValueOnce(new Promise(() => {}))
+      .mockResolvedValue(LISTA);
     pinta();
     await screen.findByTestId('competiciones-sin-cobertura');
     await vuelveLaSenal();
@@ -830,7 +991,9 @@ describe('Torneos con loader', () => {
     await cambiaLaSesion({ id: 'u-2' });
 
     expect(screen.queryByText('Torneo del Club')).not.toBeInTheDocument();
-    expect(screen.getByText('myCompetitions.loadingCompetitions')).toBeInTheDocument();
+    expect(
+      screen.getByText('myCompetitions.loadingCompetitions'),
+    ).toBeInTheDocument();
     await act(async () => suya.responde(LISTA));
     expect(await screen.findByText('Torneo activo')).toBeInTheDocument();
     expect(mockList).toHaveBeenLastCalledWith('u-2');
@@ -848,12 +1011,16 @@ describe('Torneos con loader', () => {
     await cambiaLaSesion({ id: 'u-2' });
 
     expect(await screen.findByText('Torneo cerrado')).toBeInTheDocument();
-    expect(screen.getByPlaceholderText('myCompetitions.searchPlaceholder')).toHaveValue('');
+    expect(
+      screen.getByPlaceholderText('myCompetitions.searchPlaceholder'),
+    ).toHaveValue('');
     // Ni guardados para ella: al volver atrás a esta entrada, sin filtros
     await act(() => router.navigate('/otra'));
     await act(() => router.navigate(-1));
     expect(await screen.findByText('Torneo cerrado')).toBeInTheDocument();
-    expect(screen.getByPlaceholderText('myCompetitions.searchPlaceholder')).toHaveValue('');
+    expect(
+      screen.getByPlaceholderText('myCompetitions.searchPlaceholder'),
+    ).toHaveValue('');
   });
 
   it('C11c: otra cuenta sin salir de Torneos no recibe el aviso de la carga fallida de la anterior', async () => {

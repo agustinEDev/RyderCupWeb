@@ -16,7 +16,12 @@ vi.mock('react-i18next', () => ({
   }),
 }));
 
-const mockAuthUser = { id: 'player-1', first_name: 'Test', last_name: 'Player', handicap: 12 };
+const mockAuthUser = {
+  id: 'player-1',
+  first_name: 'Test',
+  last_name: 'Player',
+  handicap: 12,
+};
 
 // Refrescar la sesión crea un `user` nuevo con el mismo id: se simula dando
 // uno nuevo en cada render (CodeRabbit en la #720)
@@ -37,7 +42,11 @@ vi.mock('../hooks/useUserRoles', () => ({
 }));
 
 vi.mock('../components/layout/HeaderAuth', () => ({
-  default: ({ backTo }) => <div data-testid="header-auth" data-back-to={backTo}>Header</div>,
+  default: ({ backTo }) => (
+    <div data-testid="header-auth" data-back-to={backTo}>
+      Header
+    </div>
+  ),
 }));
 
 vi.mock('../components/competition/CompetitionGolfCoursesSection', () => ({
@@ -103,32 +112,44 @@ const mockSetCustomHandicap = vi.fn().mockResolvedValue({});
 const mockRemoveCustomHandicap = vi.fn().mockResolvedValue({});
 
 vi.mock('../composition', () => ({
-  getCompetitionDetailUseCase: { execute: (...args) => mockGetCompetitionDetail(...args) },
+  getCompetitionDetailUseCase: {
+    execute: (...args) => mockGetCompetitionDetail(...args),
+  },
   getCompetitionGolfCoursesUseCase: { execute: vi.fn().mockResolvedValue([]) },
   activateCompetitionUseCase: { execute: vi.fn() },
-  closeEnrollmentsUseCase: { execute: (...args) => mockCloseEnrollments(...args) },
+  closeEnrollmentsUseCase: {
+    execute: (...args) => mockCloseEnrollments(...args),
+  },
   startCompetitionUseCase: { execute: vi.fn() },
   completeCompetitionUseCase: { execute: vi.fn() },
   cancelCompetitionUseCase: { execute: (...args) => mockCancel(...args) },
   deleteCompetitionUseCase: { execute: (...args) => mockDelete(...args) },
   reopenEnrollmentsUseCase: { execute: vi.fn() },
   revertCompetitionStatusUseCase: { execute: vi.fn() },
-  revertCompetitionToInProgressUseCase: { execute: (...args) => mockRevertToInProgress(...args) },
-  listEnrollmentsUseCase: { execute: (...args) => mockListEnrollments(...args) },
+  revertCompetitionToInProgressUseCase: {
+    execute: (...args) => mockRevertToInProgress(...args),
+  },
+  listEnrollmentsUseCase: {
+    execute: (...args) => mockListEnrollments(...args),
+  },
   requestEnrollmentUseCase: { execute: (...args) => mockRequest(...args) },
   approveEnrollmentUseCase: { execute: vi.fn() },
   rejectEnrollmentUseCase: { execute: vi.fn() },
   assignTeamsUseCase: { execute: (...args) => mockAssignTeams(...args) },
-  setCustomHandicapUseCase: { execute: (...args) => mockSetCustomHandicap(...args) },
-  removeCustomHandicapUseCase: { execute: (...args) => mockRemoveCustomHandicap(...args) },
-  setNamePreferenceUseCase: { execute: (...args) => mockSetNamePreference(...args) },
+  setCustomHandicapUseCase: {
+    execute: (...args) => mockSetCustomHandicap(...args),
+  },
+  removeCustomHandicapUseCase: {
+    execute: (...args) => mockRemoveCustomHandicap(...args),
+  },
+  setNamePreferenceUseCase: {
+    execute: (...args) => mockSetNamePreference(...args),
+  },
 }));
 
 vi.mock('../utils/toast', () => ({
   default: { success: vi.fn(), error: vi.fn() },
 }));
-
-
 
 const renderPage = () => {
   return render(
@@ -136,7 +157,7 @@ const renderPage = () => {
       <Routes>
         <Route path="/competitions/:id" element={<CompetitionDetail />} />
       </Routes>
-    </MemoryRouter>
+    </MemoryRouter>,
   );
 };
 
@@ -147,7 +168,13 @@ const FRANJA = {
   id: 'r1',
   roundDate: '2027-03-03',
   sessionType: 'MORNING',
-  teeSheet: { firstTeeTime: '09:00', lastTeeTime: '10:00', capacity: 8, placesTaken: 8, waitingCount: 1 },
+  teeSheet: {
+    firstTeeTime: '09:00',
+    lastTeeTime: '10:00',
+    capacity: 8,
+    placesTaken: 8,
+    waitingCount: 1,
+  },
 };
 
 const ficha = (extra = {}) => ({
@@ -175,7 +202,11 @@ describe('CompetitionDetail · apuntarse a una pública', () => {
 
   it('D1: en una Ryder entra con su barra y se le dice que ya está inscrito', async () => {
     mockGetCompetitionDetail.mockResolvedValue(ficha());
-    mockRequest.mockResolvedValue({ status: 'APPROVED', waiting: false, roundId: null });
+    mockRequest.mockResolvedValue({
+      status: 'APPROVED',
+      waiting: false,
+      roundId: null,
+    });
     renderPage();
 
     await apuntarse();
@@ -186,9 +217,13 @@ describe('CompetitionDetail · apuntarse a una pública', () => {
         color: null,
         roundId: null,
         waitingList: false,
-      })
+      }),
     );
-    await waitFor(() => expect(customToast.success).toHaveBeenCalledWith('detail.success.enrolled'));
+    await waitFor(() =>
+      expect(customToast.success).toHaveBeenCalledWith(
+        'detail.success.enrolled',
+      ),
+    );
   });
 
   it('D6: en un stroke play elige la espera de una franja llena', async () => {
@@ -198,44 +233,60 @@ describe('CompetitionDetail · apuntarse a una pública', () => {
         tournamentType: 'MEDAL',
         hasTeams: false,
         strokePlay: { categoryLimits: [], maxMatchdaysPerPlayer: 1 },
-      })
+      }),
     );
-    mockRequest.mockResolvedValue({ status: 'APPROVED', waiting: true, roundId: 'r1' });
+    mockRequest.mockResolvedValue({
+      status: 'APPROVED',
+      waiting: true,
+      roundId: 'r1',
+    });
     renderPage();
 
     await apuntarse();
     fireEvent.click(await screen.findByTestId('franja-r1'));
-    fireEvent.click(screen.getByText('competitions:enrollment.joinWaitingList'));
+    fireEvent.click(
+      screen.getByText('competitions:enrollment.joinWaitingList'),
+    );
 
     await waitFor(() =>
       expect(mockRequest).toHaveBeenCalledWith('comp-1', null, {
         color: null,
         roundId: 'r1',
         waitingList: true,
-      })
+      }),
     );
     await waitFor(() =>
-      expect(customToast.success).toHaveBeenCalledWith('detail.success.joinedWaitingList')
+      expect(customToast.success).toHaveBeenCalledWith(
+        'detail.success.joinedWaitingList',
+      ),
     );
   });
 
   it('D5: si la franja se llenó entre medias se dice en el diálogo', async () => {
     mockGetCompetitionDetail.mockResolvedValue(ficha());
-    mockRequest.mockRejectedValue(Object.assign(new Error('x'), { status: 409, errorCode: 'TEE_WINDOW_FULL' }));
+    mockRequest.mockRejectedValue(
+      Object.assign(new Error('x'), {
+        status: 409,
+        errorCode: 'TEE_WINDOW_FULL',
+      }),
+    );
     renderPage();
 
     await apuntarse();
     fireEvent.click(screen.getByText('competitions:enrollment.confirm'));
 
     expect(await screen.findByTestId('apuntarse-error')).toHaveTextContent(
-      'detail.errors.teeWindowFull'
+      'detail.errors.teeWindowFull',
     );
   });
 
   it('T6: con la sala de draft abierta se dice en el diálogo', async () => {
     mockGetCompetitionDetail.mockResolvedValue(ficha());
     mockRequest.mockRejectedValue(
-      Object.assign(new Error('x'), { status: 409, errorCode: 'DRAFT_IN_PROGRESS' })
+      Object.assign(new Error('x'), {
+        status: 409,
+        errorCode: 'DRAFT_IN_PROGRESS',
+      }),
     );
     renderPage();
 
@@ -243,7 +294,7 @@ describe('CompetitionDetail · apuntarse a una pública', () => {
     fireEvent.click(screen.getByText('competitions:enrollment.confirm'));
 
     expect(await screen.findByTestId('apuntarse-error')).toHaveTextContent(
-      'detail.errors.draftInProgress'
+      'detail.errors.draftInProgress',
     );
   });
 
@@ -255,14 +306,16 @@ describe('CompetitionDetail · apuntarse a una pública', () => {
         hasTeams: false,
         maxPlayers: 1,
         strokePlay: { categoryLimits: [], maxMatchdaysPerPlayer: 1 },
-      })
+      }),
     );
     mockListEnrollments.mockResolvedValue([
       { id: 'e9', userId: 'otro', status: 'APPROVED', userName: 'Otro' },
     ]);
     renderPage();
 
-    expect(await screen.findByText('detail.actions.request-to-join')).toBeInTheDocument();
+    expect(
+      await screen.findByText('detail.actions.request-to-join'),
+    ).toBeInTheDocument();
   });
 
   it('mientras se lee la agenda se dice que se están cargando, sin error (code-review)', async () => {
@@ -272,7 +325,7 @@ describe('CompetitionDetail · apuntarse a una pública', () => {
         tournamentType: 'MEDAL',
         hasTeams: false,
         strokePlay: { categoryLimits: [], maxMatchdaysPerPlayer: 1 },
-      })
+      }),
     );
     renderPage();
 
@@ -291,7 +344,7 @@ describe('CompetitionDetail · apuntarse a una pública', () => {
         tournamentType: 'MEDAL',
         hasTeams: false,
         strokePlay: { categoryLimits: [], maxMatchdaysPerPlayer: 1 },
-      })
+      }),
     );
     renderPage();
 
@@ -302,16 +355,33 @@ describe('CompetitionDetail · apuntarse a una pública', () => {
   });
 
   it('al elegir otra franja se va el error de antes (revisor)', async () => {
-    agenda = { rounds: [FRANJA, { ...FRANJA, id: 'r2', teeSheet: { ...FRANJA.teeSheet, placesTaken: 0, firstTeeTime: '11:00', lastTeeTime: '11:00' } }] };
+    agenda = {
+      rounds: [
+        FRANJA,
+        {
+          ...FRANJA,
+          id: 'r2',
+          teeSheet: {
+            ...FRANJA.teeSheet,
+            placesTaken: 0,
+            firstTeeTime: '11:00',
+            lastTeeTime: '11:00',
+          },
+        },
+      ],
+    };
     mockGetCompetitionDetail.mockResolvedValue(
       ficha({
         tournamentType: 'MEDAL',
         hasTeams: false,
         strokePlay: { categoryLimits: [], maxMatchdaysPerPlayer: 1 },
-      })
+      }),
     );
     mockRequest.mockRejectedValue(
-      Object.assign(new Error('x'), { status: 409, errorCode: 'TEE_WINDOW_FULL' })
+      Object.assign(new Error('x'), {
+        status: 409,
+        errorCode: 'TEE_WINDOW_FULL',
+      }),
     );
     renderPage();
 
@@ -326,31 +396,10 @@ describe('CompetitionDetail · apuntarse a una pública', () => {
 
   it('quien solo espera lo ve en su estado, no como inscrito (revisor)', async () => {
     agenda = {
-      rounds: [{ ...FRANJA, teeSheet: { ...FRANJA.teeSheet, playerIds: [], myWaitingPosition: 2 } }],
-    };
-    mockGetCompetitionDetail.mockResolvedValue(
-      ficha({
-        tournamentType: 'MEDAL',
-        hasTeams: false,
-        strokePlay: { categoryLimits: [], maxMatchdaysPerPlayer: 1 },
-      })
-    );
-    mockListEnrollments.mockResolvedValue([
-      { id: 'e1', userId: 'player-1', status: 'APPROVED', userName: 'Test Player' },
-    ]);
-    renderPage();
-
-    expect(await screen.findByTestId('estado-en-espera')).toHaveTextContent(
-      'detail.waitingListStatus'
-    );
-  });
-
-  it('sin el puesto del servidor, el de la lista (code-review)', async () => {
-    agenda = {
       rounds: [
         {
           ...FRANJA,
-          teeSheet: { ...FRANJA.teeSheet, playerIds: [], waitingIds: ['x', 'player-1'], myWaitingPosition: null },
+          teeSheet: { ...FRANJA.teeSheet, playerIds: [], myWaitingPosition: 2 },
         },
       ],
     };
@@ -359,10 +408,51 @@ describe('CompetitionDetail · apuntarse a una pública', () => {
         tournamentType: 'MEDAL',
         hasTeams: false,
         strokePlay: { categoryLimits: [], maxMatchdaysPerPlayer: 1 },
-      })
+      }),
     );
     mockListEnrollments.mockResolvedValue([
-      { id: 'e1', userId: 'player-1', status: 'APPROVED', userName: 'Test Player' },
+      {
+        id: 'e1',
+        userId: 'player-1',
+        status: 'APPROVED',
+        userName: 'Test Player',
+      },
+    ]);
+    renderPage();
+
+    expect(await screen.findByTestId('estado-en-espera')).toHaveTextContent(
+      'detail.waitingListStatus',
+    );
+  });
+
+  it('sin el puesto del servidor, el de la lista (code-review)', async () => {
+    agenda = {
+      rounds: [
+        {
+          ...FRANJA,
+          teeSheet: {
+            ...FRANJA.teeSheet,
+            playerIds: [],
+            waitingIds: ['x', 'player-1'],
+            myWaitingPosition: null,
+          },
+        },
+      ],
+    };
+    mockGetCompetitionDetail.mockResolvedValue(
+      ficha({
+        tournamentType: 'MEDAL',
+        hasTeams: false,
+        strokePlay: { categoryLimits: [], maxMatchdaysPerPlayer: 1 },
+      }),
+    );
+    mockListEnrollments.mockResolvedValue([
+      {
+        id: 'e1',
+        userId: 'player-1',
+        status: 'APPROVED',
+        userName: 'Test Player',
+      },
     ]);
     renderPage();
 
@@ -371,15 +461,21 @@ describe('CompetitionDetail · apuntarse a una pública', () => {
 
   it('ya inscrito (409 sin código) cierra y pone la ficha al día, como antes', async () => {
     mockGetCompetitionDetail.mockResolvedValue(ficha());
-    mockRequest.mockRejectedValue(Object.assign(new Error('x'), { status: 409 }));
+    mockRequest.mockRejectedValue(
+      Object.assign(new Error('x'), { status: 409 }),
+    );
     renderPage();
 
     await apuntarse();
     fireEvent.click(screen.getByText('competitions:enrollment.confirm'));
 
     await waitFor(() =>
-      expect(screen.queryByText('competitions:enrollment.confirm')).not.toBeInTheDocument()
+      expect(
+        screen.queryByText('competitions:enrollment.confirm'),
+      ).not.toBeInTheDocument(),
     );
-    await waitFor(() => expect(mockGetCompetitionDetail.mock.calls.length).toBeGreaterThan(1));
+    await waitFor(() =>
+      expect(mockGetCompetitionDetail.mock.calls.length).toBeGreaterThan(1),
+    );
   });
 });

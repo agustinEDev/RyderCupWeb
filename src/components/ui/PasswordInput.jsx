@@ -34,7 +34,10 @@ const PasswordInput = ({
   return (
     <div className="relative">
       {label && (
-        <label htmlFor={name} className="block text-gray-900 text-base font-medium leading-normal pb-2">
+        <label
+          htmlFor={name}
+          className="block text-gray-900 text-base font-medium leading-normal pb-2"
+        >
           {label}
         </label>
       )}

@@ -1,6 +1,13 @@
 import { useState, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { Target, TrendingDown, TrendingUp, Minus, Flag, Award } from 'lucide-react';
+import {
+  Target,
+  TrendingDown,
+  TrendingUp,
+  Minus,
+  Flag,
+  Award,
+} from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import HeaderAuth from '../components/layout/HeaderAuth';
 import RecentMatches from '../components/dashboard/RecentMatches';
@@ -83,23 +90,27 @@ const PlayerStatsPage = () => {
   // `user` distinto que es la misma persona, y recargar entonces sería pedir
   // otra vez lo mismo. Si cambia de verdad con una en vuelo, la vieja no se pinta
   const userId = user?.id;
-  const { cargando: isLoading } = useCargaCancelableEffect(leeLasEstadisticas, [userId], {
-    activa: Boolean(userId),
-    alCargar: ([stats, history, scoringBreakdown]) => {
-      setGlobalStats(stats);
-      setMatches(history);
-      const fallo = scoringBreakdown === FALLO_DEL_DESGLOSE;
-      setBreakdown(fallo ? null : scoringBreakdown);
-      setBreakdownFailed(fallo);
+  const { cargando: isLoading } = useCargaCancelableEffect(
+    leeLasEstadisticas,
+    [userId],
+    {
+      activa: Boolean(userId),
+      alCargar: ([stats, history, scoringBreakdown]) => {
+        setGlobalStats(stats);
+        setMatches(history);
+        const fallo = scoringBreakdown === FALLO_DEL_DESGLOSE;
+        setBreakdown(fallo ? null : scoringBreakdown);
+        setBreakdownFailed(fallo);
+      },
+      alFallar: (error) => {
+        console.error('Failed to load player statistics:', error);
+        setGlobalStats(null);
+        setMatches([]);
+        setBreakdown(null);
+        setBreakdownFailed(true);
+      },
     },
-    alFallar: (error) => {
-      console.error('Failed to load player statistics:', error);
-      setGlobalStats(null);
-      setMatches([]);
-      setBreakdown(null);
-      setBreakdownFailed(true);
-    },
-  });
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -112,7 +123,8 @@ const PlayerStatsPage = () => {
 
       setIsLoadingCourse(true);
       try {
-        const stats = await getPlayerStatsByGolfCourseUseCase.execute(selectedCourseId);
+        const stats =
+          await getPlayerStatsByGolfCourseUseCase.execute(selectedCourseId);
         if (!cancelled) {
           setCourseStats(stats);
         }
@@ -143,7 +155,10 @@ const PlayerStatsPage = () => {
     const byId = new Map();
     matches.forEach((match) => {
       if (match.golfCourseId && !byId.has(match.golfCourseId)) {
-        byId.set(match.golfCourseId, match.golfCourseName || match.golfCourseId);
+        byId.set(
+          match.golfCourseId,
+          match.golfCourseName || match.golfCourseId,
+        );
       }
     });
     return [...byId.entries()].map(([id, name]) => ({ id, name }));
@@ -151,7 +166,9 @@ const PlayerStatsPage = () => {
 
   const shown = selectedCourseId ? courseStats : globalStats;
   const format = (value, suffix = '') =>
-    value === null || value === undefined ? '--' : `${value.toFixed(1)}${suffix}`;
+    value === null || value === undefined
+      ? '--'
+      : `${value.toFixed(1)}${suffix}`;
   const formatToPar = (value) => {
     if (value === null || value === undefined) return '--';
     if (value === 0) return t('playerStats.levelPar');
@@ -159,9 +176,7 @@ const PlayerStatsPage = () => {
   };
 
   if (isLoadingUser && !user) {
-    return (
-      <FullScreenLoader />
-    );
+    return <FullScreenLoader />;
   }
 
   if (!user) {
@@ -174,7 +189,9 @@ const PlayerStatsPage = () => {
   const TrendIcon = isSteady ? Minus : isImproving ? TrendingDown : TrendingUp;
 
   return (
-    <div className={`relative flex ${PANTALLA_MENOS_BARRA_INFERIOR} w-full flex-col bg-white`}>
+    <div
+      className={`relative flex ${PANTALLA_MENOS_BARRA_INFERIOR} w-full flex-col bg-white`}
+    >
       <div className="layout-container flex h-full grow flex-col">
         <HeaderAuth user={user} />
 
@@ -188,13 +205,18 @@ const PlayerStatsPage = () => {
               <h1 className="hidden md:block text-3xl font-bold tracking-tight text-gray-900">
                 {t('playerStats.title')}
               </h1>
-              <p className="mt-1 text-sm text-gray-500">{t('playerStats.subtitle')}</p>
+              <p className="mt-1 text-sm text-gray-500">
+                {t('playerStats.subtitle')}
+              </p>
             </motion.div>
 
             {/* Selector de campo */}
             {playedCourses.length > 0 && (
               <motion.div variants={slideUp} className="px-4 pb-2">
-                <div className="flex flex-wrap gap-2" data-testid="course-filter">
+                <div
+                  className="flex flex-wrap gap-2"
+                  data-testid="course-filter"
+                >
                   <button
                     type="button"
                     onClick={() => setSelectedCourseId(null)}
@@ -257,7 +279,9 @@ const PlayerStatsPage = () => {
                       value={format(shown.playingAvg)}
                       hint={
                         shown.hasPlayingAverage()
-                          ? t('playerStats.overRounds', { count: shown.roundsWithDifferential })
+                          ? t('playerStats.overRounds', {
+                              count: shown.roundsWithDifferential,
+                            })
                           : t('playerStats.needsMoreRounds')
                       }
                     />
@@ -278,7 +302,9 @@ const PlayerStatsPage = () => {
                           que no se pudo calcular, y decirlo de otra forma
                           suena a que el número existe pero sale mal */}
                       {shown.roundsWithDifferential === 0
-                        ? t('playerStats.noRoundsWithTee', { count: shown.roundsPlayed })
+                        ? t('playerStats.noRoundsWithTee', {
+                            count: shown.roundsPlayed,
+                          })
                         : t('playerStats.roundsWithoutTee', {
                             counted: shown.roundsWithDifferential,
                             count: shown.roundsPlayed,
@@ -306,7 +332,9 @@ const PlayerStatsPage = () => {
                         ? t('playerStats.estimatedIndexExplained')
                         : t('playerStats.needsMoreRounds')}
                     </p>
-                    <p className="mt-2 text-xs text-gray-400">{t('playerStats.notOfficial')}</p>
+                    <p className="mt-2 text-xs text-gray-400">
+                      {t('playerStats.notOfficial')}
+                    </p>
                   </div>
                 </>
               ) : (
@@ -342,7 +370,10 @@ const PlayerStatsPage = () => {
                     <BlockLoader />
                   </div>
                 ) : (
-                  <ScoringBreakdown breakdown={breakdown} failed={breakdownFailed} />
+                  <ScoringBreakdown
+                    breakdown={breakdown}
+                    failed={breakdownFailed}
+                  />
                 )}
               </motion.div>
             )}

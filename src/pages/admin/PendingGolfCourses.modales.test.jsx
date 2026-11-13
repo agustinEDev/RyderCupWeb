@@ -1,5 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor, act, within } from '@testing-library/react';
+import {
+  render,
+  screen,
+  fireEvent,
+  waitFor,
+  act,
+  within,
+} from '@testing-library/react';
 
 /**
  * Los dos modales de los campos pendientes (detalle y rechazo) pasaron a
@@ -7,12 +14,18 @@ import { render, screen, fireEvent, waitFor, act, within } from '@testing-librar
  * —antes no— y pulsar fuera sigue sin cerrarlos.
  */
 vi.mock('react-i18next', () => ({
-  useTranslation: () => ({ t: (clave, o) => (o ? `${clave} ${JSON.stringify(o)}` : clave), i18n: { language: 'es' } }),
+  useTranslation: () => ({
+    t: (clave, o) => (o ? `${clave} ${JSON.stringify(o)}` : clave),
+    i18n: { language: 'es' },
+  }),
 }));
 vi.mock('framer-motion', () => ({
   motion: {
     div: ({ children, initial, animate, exit, transition, ...resto }) => {
-      void initial; void animate; void exit; void transition;
+      void initial;
+      void animate;
+      void exit;
+      void transition;
       return <div {...resto}>{children}</div>;
     },
   },
@@ -26,10 +39,16 @@ vi.mock('../../hooks/useAuth', () => {
   return { useAuth: () => ({ user, loading: false }) };
 });
 vi.mock('../../components/layout/HeaderAuth', () => ({ default: () => null }));
-vi.mock('../../utils/toast', () => ({ default: { success: vi.fn(), error: vi.fn() } }));
+vi.mock('../../utils/toast', () => ({
+  default: { success: vi.fn(), error: vi.fn() },
+}));
 vi.mock('../../components/ui/CountryFlag', () => ({ CountryFlag: () => null }));
-vi.mock('../../services/countries', () => ({ formatCountryName: () => 'España' }));
-vi.mock('../../components/golf_course/TeeColorBadge', () => ({ default: () => null }));
+vi.mock('../../services/countries', () => ({
+  formatCountryName: () => 'España',
+}));
+vi.mock('../../components/golf_course/TeeColorBadge', () => ({
+  default: () => null,
+}));
 // La tabla, reducida a los dos botones que abren los modales
 vi.mock('../../components/golf_course/GolfCourseTable', () => ({
   default: ({ courses, onView, onReject, onApprove }) => (
@@ -99,7 +118,9 @@ describe('PendingGolfCourses · sus modales', () => {
     await abrirPagina();
     fireEvent.click(await screen.findByText('ver Campo Pendiente'));
 
-    expect(await screen.findByRole('dialog')).toHaveAccessibleName('Campo Pendiente');
+    expect(await screen.findByRole('dialog')).toHaveAccessibleName(
+      'Campo Pendiente',
+    );
     pulsarFuera();
     expect(screen.getByRole('dialog')).toBeInTheDocument();
 
@@ -113,8 +134,15 @@ describe('PendingGolfCourses · sus modales', () => {
     const filas = screen.getByRole('list', { name: 'form.holes' });
 
     expect(filas).toHaveClass('md:hidden');
-    expect(screen.getByRole('table').parentElement).toHaveClass('hidden', 'md:block');
-    expect(within(filas).getAllByRole('listitem').map((f) => f.textContent)).toEqual([
+    expect(screen.getByRole('table').parentElement).toHaveClass(
+      'hidden',
+      'md:block',
+    );
+    expect(
+      within(filas)
+        .getAllByRole('listitem')
+        .map((f) => f.textContent),
+    ).toEqual([
       'form.holeRow {"hole":1,"par":4,"strokeIndex":7}',
       'form.holeRow {"hole":2,"par":3,"strokeIndex":15}',
     ]);
@@ -127,7 +155,9 @@ describe('PendingGolfCourses · sus modales', () => {
     await abrirPagina();
     fireEvent.click(await screen.findByText('rechazar Campo Pendiente'));
 
-    expect(await screen.findByRole('dialog')).toHaveAccessibleName('pages.pending.rejectModalTitle');
+    expect(await screen.findByRole('dialog')).toHaveAccessibleName(
+      'pages.pending.rejectModalTitle',
+    );
     pulsarFuera();
     expect(screen.getByRole('dialog')).toBeInTheDocument();
 
@@ -144,9 +174,13 @@ describe('PendingGolfCourses · sus modales', () => {
     await waitFor(() => expect(onCambio).toHaveBeenCalledTimes(1));
 
     fireEvent.click(await screen.findByText('rechazar Campo Pendiente'));
-    fireEvent.change(await screen.findByRole('textbox'), { target: { value: 'No es un campo de golf real' } });
+    fireEvent.change(await screen.findByRole('textbox'), {
+      target: { value: 'No es un campo de golf real' },
+    });
     rechazar.mockResolvedValue();
-    fireEvent.click(screen.getByRole('button', { name: 'pages.pending.confirmReject' }));
+    fireEvent.click(
+      screen.getByRole('button', { name: 'pages.pending.confirmReject' }),
+    );
     await waitFor(() => expect(onCambio).toHaveBeenCalledTimes(2));
     vi.unstubAllGlobals();
   });
@@ -158,7 +192,9 @@ describe('PendingGolfCourses · sus modales', () => {
     approveGolfCourseUseCase.execute.mockRejectedValueOnce(new Error('500'));
     await abrirPagina({ onCambio });
     fireEvent.click(await screen.findByText('aprobar Campo Pendiente'));
-    await waitFor(() => expect(approveGolfCourseUseCase.execute).toHaveBeenCalled());
+    await waitFor(() =>
+      expect(approveGolfCourseUseCase.execute).toHaveBeenCalled(),
+    );
     await act(async () => {});
     expect(onCambio).not.toHaveBeenCalled();
     vi.unstubAllGlobals();
@@ -178,12 +214,16 @@ describe('PendingGolfCourses · pestañas (FE #658)', () => {
   it('T1: barra con nombre, la tabla como panel de la abierta y las flechas', async () => {
     await abrirPagina();
 
-    const barra = screen.getByRole('tablist', { name: 'pages.pending.tabsLabel' });
+    const barra = screen.getByRole('tablist', {
+      name: 'pages.pending.tabsLabel',
+    });
     const [nuevas, cambios] = within(barra).getAllByRole('tab');
     expect(nuevas).toHaveAccessibleName('pages.pending.tabNew (1)');
     expect(nuevas).toHaveAttribute('aria-selected', 'true');
     expect(cambios).toHaveAttribute('tabindex', '-1');
-    const panel = screen.getByRole('tabpanel', { name: 'pages.pending.tabNew (1)' });
+    const panel = screen.getByRole('tabpanel', {
+      name: 'pages.pending.tabNew (1)',
+    });
     expect(nuevas).toHaveAttribute('aria-controls', panel.id);
     expect(cambios).toHaveAttribute('aria-controls', panel.id);
     expect(within(panel).getByText('ver Campo Pendiente')).toBeInTheDocument();
@@ -194,7 +234,9 @@ describe('PendingGolfCourses · pestañas (FE #658)', () => {
 
     expect(cambios).toHaveAttribute('aria-selected', 'true');
     expect(cambios).toHaveFocus();
-    expect(screen.getByRole('tabpanel', { name: 'pages.pending.tabUpdates (0)' })).toBe(panel);
+    expect(
+      screen.getByRole('tabpanel', { name: 'pages.pending.tabUpdates (0)' }),
+    ).toBe(panel);
     expect(screen.queryByText('ver Campo Pendiente')).toBeNull();
   });
 });

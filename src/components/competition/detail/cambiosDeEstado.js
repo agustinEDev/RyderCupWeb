@@ -78,7 +78,8 @@ export const crearCambiosDeEstado = (contexto) => {
       ]);
       if (deEsta !== idActual.current) return;
       if (lecturasDeLaFicha.aplicar(turnoDeLaFicha)) setCompetition(ficha);
-      if (lecturasDeInscripciones.aplicar(turnoDeLaLista)) setEnrollments(lista);
+      if (lecturasDeInscripciones.aplicar(turnoDeLaLista))
+        setEnrollments(lista);
     } catch (error) {
       // Lo de antes sigue a la vista; el siguiente refresco lo pondrá al día
       console.error('Error reloading after removing a player:', error);
@@ -90,7 +91,10 @@ export const crearCambiosDeEstado = (contexto) => {
   // El organizador quita a un inscrito (release social 2, 27 oct 2026): se le
   // pregunta, se le avisa en la app y, con equipos formados, se deshacen
   const handleQuitar = async (enrollment) => {
-    const datos = { nombre: enrollment.userName || t('detail.unknownUser'), competicion: competition.name };
+    const datos = {
+      nombre: enrollment.userName || t('detail.unknownUser'),
+      competicion: competition.name,
+    };
     const accion = competition.teamsAssigned ? 'removeWithTeams' : 'remove';
     if (!(await preguntar(accion, { destructiva: true, datos }))) return;
     setQuitandoId(enrollment.id);
@@ -98,14 +102,17 @@ export const crearCambiosDeEstado = (contexto) => {
       await removeEnrolledPlayerUseCase.execute(enrollment.id);
       customToast.success(t('detail.success.playerRemoved', datos));
       // Su hándicap, si se estaba editando, ya no es de nadie (/code-review)
-      setEditingHandicapId((editando) => (editando === enrollment.id ? null : editando));
+      setEditingHandicapId((editando) =>
+        editando === enrollment.id ? null : editando,
+      );
     } catch (error) {
       customToast.error(
         t(
           error?.status === 404
             ? 'detail.errors.removeGone'
-            : (MOTIVOS_PARA_NO_QUITAR[error?.errorCode] ?? 'detail.errors.removeFailed')
-        )
+            : (MOTIVOS_PARA_NO_QUITAR[error?.errorCode] ??
+                'detail.errors.removeFailed'),
+        ),
       );
     }
     // Bien o mal, se relee: la lista (y los equipos, si se deshicieron) ya no
@@ -120,41 +127,49 @@ export const crearCambiosDeEstado = (contexto) => {
   // sin la espera de pantalla completa; si falla, no se ofrece lo que no se sabe
   const refrescarCanDelete = () => {
     const turno = lecturasDeLaFicha.turno();
-    return getCompetitionDetailUseCase
-      .execute(id)
-      // Solo si esa ficha es la del estado de ahora: con dos cambios seguidos, la
-      // del primero puede llegar tarde y decidiría el botón del segundo
-      .then((data) => {
-        setCompetition(prev =>
-          prev.status === data.status
-            // Y los ajustes de stroke play: al cerrar, «categorías iguales»
-            // guarda los límites que repartió (PR 8)
-            ? { ...prev, canDelete: data.canDelete, teamsAssigned: data.teamsAssigned, strokePlay: data.strokePlay }
-            : prev
-        );
-        // Lo de los hándicaps cambia al cerrar (FE #824, PR 5) y vale sea cual
-        // sea el estado, pero no pisa lo de una lectura más nueva de la tarjeta
-        // (/code-review). Aparte: si gasta el turno, se pinta (revisor)
-        if (lecturasDeLaFicha.aplicar(turno)) {
-          setCompetition(prev => ({
-            ...prev,
-            handicapUpdate: data.handicapUpdate,
-            handicapUpdateWindow: data.handicapUpdateWindow,
-          }));
-        }
-        return data;
-      })
-      .catch(() => {
-        setCompetition(prev => ({ ...prev, canDelete: false }));
-        return null;
-      });
+    return (
+      getCompetitionDetailUseCase
+        .execute(id)
+        // Solo si esa ficha es la del estado de ahora: con dos cambios seguidos, la
+        // del primero puede llegar tarde y decidiría el botón del segundo
+        .then((data) => {
+          setCompetition((prev) =>
+            prev.status === data.status
+              ? // Y los ajustes de stroke play: al cerrar, «categorías iguales»
+                // guarda los límites que repartió (PR 8)
+                {
+                  ...prev,
+                  canDelete: data.canDelete,
+                  teamsAssigned: data.teamsAssigned,
+                  strokePlay: data.strokePlay,
+                }
+              : prev,
+          );
+          // Lo de los hándicaps cambia al cerrar (FE #824, PR 5) y vale sea cual
+          // sea el estado, pero no pisa lo de una lectura más nueva de la tarjeta
+          // (/code-review). Aparte: si gasta el turno, se pinta (revisor)
+          if (lecturasDeLaFicha.aplicar(turno)) {
+            setCompetition((prev) => ({
+              ...prev,
+              handicapUpdate: data.handicapUpdate,
+              handicapUpdateWindow: data.handicapUpdateWindow,
+            }));
+          }
+          return data;
+        })
+        .catch(() => {
+          setCompetition((prev) => ({ ...prev, canDelete: false }));
+          return null;
+        })
+    );
   };
 
   const handleStatusChange = async (action) => {
     // Validate golf courses approval status before activation
     if (action === 'activate') {
       try {
-        const golfCoursesResult = await getCompetitionGolfCoursesUseCase.execute(id);
+        const golfCoursesResult =
+          await getCompetitionGolfCoursesUseCase.execute(id);
         const golfCourses = aCamposDeLaCompeticion(golfCoursesResult);
 
         if (golfCourses.length === 0) {
@@ -162,17 +177,27 @@ export const crearCambiosDeEstado = (contexto) => {
           return;
         }
 
-        const pendingCourses = golfCourses.filter(gc => gc.approvalStatus === 'PENDING_APPROVAL');
+        const pendingCourses = golfCourses.filter(
+          (gc) => gc.approvalStatus === 'PENDING_APPROVAL',
+        );
         if (pendingCourses.length > 0) {
-          const courseNames = pendingCourses.map(gc => gc.name).join(', ');
-          customToast.error(t('detail.errors.golfCoursesPendingApproval', { courses: courseNames }));
+          const courseNames = pendingCourses.map((gc) => gc.name).join(', ');
+          customToast.error(
+            t('detail.errors.golfCoursesPendingApproval', {
+              courses: courseNames,
+            }),
+          );
           return;
         }
 
-        const rejectedCourses = golfCourses.filter(gc => gc.approvalStatus === 'REJECTED');
+        const rejectedCourses = golfCourses.filter(
+          (gc) => gc.approvalStatus === 'REJECTED',
+        );
         if (rejectedCourses.length > 0) {
-          const courseNames = rejectedCourses.map(gc => gc.name).join(', ');
-          customToast.error(t('detail.errors.golfCoursesRejected', { courses: courseNames }));
+          const courseNames = rejectedCourses.map((gc) => gc.name).join(', ');
+          customToast.error(
+            t('detail.errors.golfCoursesRejected', { courses: courseNames }),
+          );
           return;
         }
       } catch (error) {
@@ -187,11 +212,14 @@ export const crearCambiosDeEstado = (contexto) => {
     // Sin ninguna franja con hoja, lo decide el servidor
     if (action === 'close-enrollments' && esStrokePlay) {
       const conHoja = (agendaLeida?.rounds ?? []).filter((r) => r.teeSheet);
-      const faltan = conHoja.length > 0 ? sinFranja(conHoja, approvedEnrollments) : [];
+      const faltan =
+        conHoja.length > 0 ? sinFranja(conHoja, approvedEnrollments) : [];
       if (faltan.length > 0) {
         const datos = {
           count: faltan.length,
-          jugadores: faltan.map((e) => e.userName || t('detail.unknownUser')).join(', '),
+          jugadores: faltan
+            .map((e) => e.userName || t('detail.unknownUser'))
+            .join(', '),
         };
         const ir = await preguntar('closeWithoutTeeWindow', { datos });
         // Se releen siempre: lo pintado puede ser viejo (alguien cogió plaza
@@ -219,7 +247,10 @@ export const crearCambiosDeEstado = (contexto) => {
           customToast.success(t('detail.success.enrollmentsClosed'));
           // Formados, quedan así (29 oct 2026): al volver a cerrar una reabierta
           // no se reparten otra vez, que el servidor lo rechaza (revisor)
-          if (competition.teamAssignment === 'AUTOMATIC' && !competition.teamsAssigned) {
+          if (
+            competition.teamAssignment === 'AUTOMATIC' &&
+            !competition.teamsAssigned
+          ) {
             try {
               await assignTeamsUseCase.execute(id, { mode: 'AUTOMATIC' });
               customToast.success(t('detail.success.teamsAutoAssigned'));
@@ -259,10 +290,10 @@ export const crearCambiosDeEstado = (contexto) => {
       }
 
       // Update only the changed fields (status and updatedAt)
-      setCompetition(prev => ({
+      setCompetition((prev) => ({
         ...prev,
         status: result.status,
-        updatedAt: result.updatedAt
+        updatedAt: result.updatedAt,
       }));
       const fichaReleida = refrescarCanDelete();
       // Con otro estado, el personalizado puede dejar de poderse cambiar: el
@@ -278,11 +309,15 @@ export const crearCambiosDeEstado = (contexto) => {
         const listaReleida = listEnrollmentsUseCase
           .execute(id)
           .then((lista) => {
-            if (lecturasDeInscripciones.aplicar(deLaLista)) setEnrollments(lista);
+            if (lecturasDeInscripciones.aplicar(deLaLista))
+              setEnrollments(lista);
             return lista;
           })
           .catch((e) => {
-            console.error('Error reloading enrollments after status change:', e);
+            console.error(
+              'Error reloading enrollments after status change:',
+              e,
+            );
             return null;
           });
         // Al cerrar, si salen menos categorías se le dice al organizador (PR 8):
@@ -300,15 +335,27 @@ export const crearCambiosDeEstado = (contexto) => {
             .then(([ficha, lista]) => {
               if (!ficha?.strokePlay || !lista) return;
               const aprobados = lista.filter((e) => e.status === 'APPROVED');
-              const aviso = categoriasQueSalen(ficha.strokePlay, aprobados.map((e) => e.category ?? null));
-              if (aviso) customToast.warning(t(`detail.fewerCategories.${aviso.motivo}`, { ...aviso, count: aviso.salen }));
+              const aviso = categoriasQueSalen(
+                ficha.strokePlay,
+                aprobados.map((e) => e.category ?? null),
+              );
+              if (aviso)
+                customToast.warning(
+                  t(`detail.fewerCategories.${aviso.motivo}`, {
+                    ...aviso,
+                    count: aviso.salen,
+                  }),
+                );
             })
             .finally(() => setReleyendoTrasCerrar(false));
         }
       }
     } catch (error) {
       console.error(`Error ${action}:`, error);
-      console.error('Error details:', error.stack || error.message || String(error));
+      console.error(
+        'Error details:',
+        error.stack || error.message || String(error),
+      );
       // Un stroke play no se cierra ni se inicia con aprobados sin franja: se
       // dice quiénes y se lleva a «Sin franja», donde se colocan (FE #824)
       // Y sin hándicap tampoco se cierra: se dice quiénes, se marcan en la lista
@@ -317,7 +364,11 @@ export const crearCambiosDeEstado = (contexto) => {
       // con la cuenta y los nombres como en el resto de avisos con jugadores
       if (error?.errorCode === 'PLAYERS_WITHOUT_HANDICAP') {
         const faltan = error.data?.players || [];
-        customToast.error(mensajeConJugadores(t, error, 'detail.errors', ['PLAYERS_WITHOUT_HANDICAP']));
+        customToast.error(
+          mensajeConJugadores(t, error, 'detail.errors', [
+            'PLAYERS_WITHOUT_HANDICAP',
+          ]),
+        );
         setSinHandicap(new Set(faltan.map((p) => p.user_id)));
         // Con la lista releída: el que falta puede no estar en la de aquí
         // (otra pestaña, una aprobación reciente) (/code-review)
@@ -325,7 +376,9 @@ export const crearCambiosDeEstado = (contexto) => {
           const lista = await listEnrollmentsUseCase.execute(id);
           setEnrollments(lista);
           const primero = lista.find(
-            (e) => e.status === 'APPROVED' && faltan.some((p) => p.user_id === e.userId)
+            (e) =>
+              e.status === 'APPROVED' &&
+              faltan.some((p) => p.user_id === e.userId),
           );
           if (primero) {
             handleStartEditHandicap(primero);
@@ -334,12 +387,19 @@ export const crearCambiosDeEstado = (contexto) => {
               ?.scrollIntoView({ behavior: 'smooth', block: 'center' });
           }
         } catch (e) {
-          console.error('Error reloading enrollments after missing handicaps:', e);
+          console.error(
+            'Error reloading enrollments after missing handicaps:',
+            e,
+          );
         }
         return;
       }
       if (error?.errorCode === 'PLAYERS_WITHOUT_TEE_WINDOW') {
-        customToast.error(mensajeConJugadores(t, error, 'detail.errors', ['PLAYERS_WITHOUT_TEE_WINDOW']));
+        customToast.error(
+          mensajeConJugadores(t, error, 'detail.errors', [
+            'PLAYERS_WITHOUT_TEE_WINDOW',
+          ]),
+        );
         // Lo pintado puede estar viejo: se releen las franjas, y con lo releído
         // se lleva a «Sin franja» (allí se espera a que aparezca)
         setVersionFranjas((v) => v + 1);
@@ -357,26 +417,32 @@ export const crearCambiosDeEstado = (contexto) => {
     setGuardandoCapitanes(true);
     try {
       const result = await nameCaptainsUseCase.execute(id, capitanes);
-      setCompetition(prev => ({
+      setCompetition((prev) => ({
         ...prev,
         status: result.status,
         captains: { ...prev.captains, ...result.captains },
       }));
       setNombrandoCapitanes(false);
       customToast.success(
-        t(cerraba ? 'detail.success.captainsNamed' : 'detail.success.captainsChanged')
+        t(
+          cerraba
+            ? 'detail.success.captainsNamed'
+            : 'detail.success.captainsChanged',
+        ),
       );
       if (result.unevenTeams) {
         // Aviso, no bloqueo: los capitanes quedan nombrados. El reparto
         // automático no se intenta, porque con impares el servidor lo rechaza
-        customToast.warning(t('detail.captains.uneven', { count: result.totalPlayers }));
+        customToast.warning(
+          t('detail.captains.uneven', { count: result.totalPlayers }),
+        );
       } else if (cerraba && competition.teamAssignment === 'AUTOMATIC') {
         // Lo mismo que hacía «Cerrar inscripciones»: el reparto automático vive
         // aquí, en el navegador, hasta que lo haga el servidor
         try {
           await assignTeamsUseCase.execute(id, { mode: 'AUTOMATIC' });
           // Con equipos, «Cambiar capitanes» ya no se ofrece: fallaría siempre
-          setCompetition(prev => ({ ...prev, teamsAssigned: true }));
+          setCompetition((prev) => ({ ...prev, teamsAssigned: true }));
           customToast.success(t('detail.success.teamsAutoAssigned'));
         } catch (assignError) {
           console.error('Error auto-assigning teams:', assignError);
@@ -393,7 +459,7 @@ export const crearCambiosDeEstado = (contexto) => {
         mensajeDeError(error, {
           sinConexion: t('common:sinConexion.mensaje'),
           generico: t('detail.captains.failed'),
-        })
+        }),
       );
     } finally {
       setGuardandoCapitanes(false);
@@ -416,7 +482,7 @@ export const crearCambiosDeEstado = (contexto) => {
         mensajeDeError(error, {
           sinConexion: t('common:sinConexion.mensaje'),
           generico: t('detail.failedToDeleteCompetition'),
-        })
+        }),
       );
       setConfirmandoBorrado(false);
     } finally {

@@ -34,7 +34,7 @@ class UpdateRfegHandicapUseCase {
     if (!user.countryCode) {
       console.error('❌ [UpdateRfegHandicapUseCase] User has no countryCode');
       throw new Error(
-        'RFEG handicap updates require Spanish nationality. Please update your nationality in your profile to continue.'
+        'RFEG handicap updates require Spanish nationality. Please update your nationality in your profile to continue.',
       );
     }
 
@@ -42,7 +42,8 @@ class UpdateRfegHandicapUseCase {
 
     if (countryValue !== 'ES') {
       throw new Error(
-        'RFEG handicap updates are only available for Spanish players. Your nationality is set to: ' + countryValue
+        'RFEG handicap updates are only available for Spanish players. Your nationality is set to: ' +
+          countryValue,
       );
     }
 

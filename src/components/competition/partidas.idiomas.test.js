@@ -13,12 +13,14 @@ import en from '../../i18n/locales/en/schedule.json';
 const codigo = `${partidas}\n${mias}`;
 // `'partidas.errors'` es el prefijo que se pasa a `mensajeConJugadores`, un
 // grupo y no un texto: sus claves se comprueban abajo con CON_NOMBRES
-const sueltas = [...new Set([...codigo.matchAll(/'partidas\.([a-zA-Z]+)'/g)].map((m) => m[1]))].filter(
-  (c) => c !== 'errors'
-);
+const sueltas = [
+  ...new Set([...codigo.matchAll(/'partidas\.([a-zA-Z]+)'/g)].map((m) => m[1])),
+].filter((c) => c !== 'errors');
 // Los códigos que se traducen, leídos de sus listas en el componente
 const lista = (nombre) => {
-  const cuerpo = codigo.match(new RegExp(`const ${nombre} = \\[([^\\]]*)\\]`))[1];
+  const cuerpo = codigo.match(
+    new RegExp(`const ${nombre} = \\[([^\\]]*)\\]`),
+  )[1];
   return [...cuerpo.matchAll(/'([A-Z_]+)'/g)].map((m) => m[1]);
 };
 const errores = [...lista('CON_NOMBRES'), ...lista('CON_TEXTO')];
@@ -26,7 +28,8 @@ const deMarcadores = ['MISSING', 'SELF', 'UNMARKED'];
 
 const existe = (grupo, clave) =>
   typeof grupo?.[clave] === 'string' ||
-  (typeof grupo?.[`${clave}_one`] === 'string' && typeof grupo?.[`${clave}_other`] === 'string');
+  (typeof grupo?.[`${clave}_one`] === 'string' &&
+    typeof grupo?.[`${clave}_other`] === 'string');
 
 describe('los textos de las partidas (FE #824, PR 6)', () => {
   it('lee de verdad el código: más de veinte claves y todos los errores del contrato', () => {
@@ -39,13 +42,19 @@ describe('los textos de las partidas (FE #824, PR 6)', () => {
     ['inglés', en],
   ])('en %s están todas', (_idioma, textos) => {
     const faltan = [
-      ...sueltas.filter((c) => !existe(textos.partidas, c)).map((c) => `partidas.${c}`),
-      ...errores.filter((c) => !existe(textos.partidas?.errors, c)).map((c) => `partidas.errors.${c}`),
+      ...sueltas
+        .filter((c) => !existe(textos.partidas, c))
+        .map((c) => `partidas.${c}`),
+      ...errores
+        .filter((c) => !existe(textos.partidas?.errors, c))
+        .map((c) => `partidas.errors.${c}`),
       // Sin los nombres de quién falta, su versión sin hueco
       ...lista('CON_NOMBRES')
         .filter((c) => !existe(textos.partidas?.errors, `${c}_unnamed`))
         .map((c) => `partidas.errors.${c}_unnamed`),
-      ...deMarcadores.filter((c) => !existe(textos.partidas?.markersErrors, c)).map((c) => `partidas.markersErrors.${c}`),
+      ...deMarcadores
+        .filter((c) => !existe(textos.partidas?.markersErrors, c))
+        .map((c) => `partidas.markersErrors.${c}`),
     ];
     expect(faltan).toEqual([]);
   });

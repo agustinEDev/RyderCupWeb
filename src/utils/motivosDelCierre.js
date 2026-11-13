@@ -28,7 +28,8 @@ const FINAL_NORMAL = new Set([
 ]);
 
 /** Si el `error_code` del refresco es el final normal de una sesión. */
-export const esFinalNormalDelRefresco = (errorData) => FINAL_NORMAL.has(errorData?.error_code);
+export const esFinalNormalDelRefresco = (errorData) =>
+  FINAL_NORMAL.has(errorData?.error_code);
 
 /**
  * El motivo de un 401 del refresco según su `error_code`: el final normal de la
@@ -37,7 +38,9 @@ export const esFinalNormalDelRefresco = (errorData) => FINAL_NORMAL.has(errorDat
  * @param {{error_code?: string}|undefined} errorData
  */
 export const motivoDelRefrescoRechazado = (errorData) =>
-  esFinalNormalDelRefresco(errorData) ? MOTIVO_DEL_CIERRE.SESION_CADUCADA : MOTIVO_DEL_CIERRE.REFRESCO_RECHAZADO;
+  esFinalNormalDelRefresco(errorData)
+    ? MOTIVO_DEL_CIERRE.SESION_CADUCADA
+    : MOTIVO_DEL_CIERRE.REFRESCO_RECHAZADO;
 
 // Los 401 de `get_current_user` cuando falla el token de acceso (RyderCupAm
 // src/config/dependencies.py). Otro 401 —una contraseña actual mal escrita— no
@@ -51,4 +54,9 @@ const DE_TOKEN = new Set([
 ]);
 
 /** Si un 401 es porque el token de acceso no llegó o no vale. */
-export const esUn401DeToken = (errorData) => DE_TOKEN.has(String(errorData?.detail ?? '').trim().toLowerCase());
+export const esUn401DeToken = (errorData) =>
+  DE_TOKEN.has(
+    String(errorData?.detail ?? '')
+      .trim()
+      .toLowerCase(),
+  );

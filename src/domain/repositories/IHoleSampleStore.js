@@ -57,4 +57,3 @@ class IHoleSampleStore {
 }
 
 export default IHoleSampleStore;
-

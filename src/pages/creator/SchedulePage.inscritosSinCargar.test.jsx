@@ -44,7 +44,11 @@ vi.mock('react-i18next', () => ({ useTranslation: () => traduccion }));
 vi.mock('framer-motion', () => {
   const DE_ANIMACION = new Set(['initial', 'animate', 'exit', 'transition']);
   const Div = ({ children, ...props }) => (
-    <div {...Object.fromEntries(Object.entries(props).filter(([k]) => !DE_ANIMACION.has(k)))}>
+    <div
+      {...Object.fromEntries(
+        Object.entries(props).filter(([k]) => !DE_ANIMACION.has(k)),
+      )}
+    >
       {children}
     </div>
   );
@@ -59,9 +63,17 @@ const SESION = { user: { id: 'org' }, loading: false };
 const ROLES = { isAdmin: false, isCreator: true, isLoading: false };
 vi.mock('../../hooks/useAuth', () => ({ useAuth: () => SESION }));
 vi.mock('../../hooks/useUserRoles', () => ({ useUserRoles: () => ROLES }));
-vi.mock('../../components/ui/FullScreenLoader', () => ({ default: () => null }));
+vi.mock('../../components/ui/FullScreenLoader', () => ({
+  default: () => null,
+}));
 vi.mock('../../utils/toast', () => ({
-  default: { success: vi.fn(), error: vi.fn(), warning: vi.fn(), info: vi.fn(), dismiss: vi.fn() },
+  default: {
+    success: vi.fn(),
+    error: vi.fn(),
+    warning: vi.fn(),
+    info: vi.fn(),
+    dismiss: vi.fn(),
+  },
 }));
 
 const mockDetalle = vi.fn();
@@ -118,7 +130,10 @@ const RONDA = {
 const AGENDA = {
   days: [{ date: '2026-06-01', rounds: [RONDA] }],
   rounds: [RONDA],
-  teamAssignment: { teamAPlayerIds: ['org', 'carla'], teamBPlayerIds: ['bea', 'eva'] },
+  teamAssignment: {
+    teamAPlayerIds: ['org', 'carla'],
+    teamBPlayerIds: ['bea', 'eva'],
+  },
 };
 
 const INSCRITOS = [
@@ -134,7 +149,7 @@ const pintar = () =>
       <Routes>
         <Route path="/competitions/:id/schedule" element={<SchedulePage />} />
       </Routes>
-    </MemoryRouter>
+    </MemoryRouter>,
   );
 
 // La agenda y la ficha, para salir de una a otra por su enlace
@@ -145,11 +160,14 @@ const pintarConFicha = () =>
         <Route path="/competitions/:id/schedule" element={<SchedulePage />} />
         <Route path="/competitions/:id" element={<p>ficha</p>} />
       </Routes>
-    </MemoryRouter>
+    </MemoryRouter>,
   );
 
 const FALLO = new Error('Network Error');
-const SIN_CAPITAN_A = { ...COMPETICION, captains: { ...COMPETICION.captains, teamA: null } };
+const SIN_CAPITAN_A = {
+  ...COMPETICION,
+  captains: { ...COMPETICION.captains, teamA: null },
+};
 
 describe('SchedulePage · sin poder cargar los inscritos', () => {
   beforeEach(() => {
@@ -165,23 +183,28 @@ describe('SchedulePage · sin poder cargar los inscritos', () => {
 
     await screen.findByTestId('deshacer-equipos');
     expect(customToast.error).toHaveBeenCalledTimes(1);
-    expect(customToast.error).toHaveBeenCalledWith('errors.failedToLoadEnrollments', {
-      id: 'inscritos-sin-cargar',
-    });
+    expect(customToast.error).toHaveBeenCalledWith(
+      'errors.failedToLoadEnrollments',
+      {
+        id: 'inscritos-sin-cargar',
+      },
+    );
   });
 
   it('E2: el reparto se abre con el manual desactivado y el automático disponible', async () => {
     mockAgenda.mockResolvedValue({ ...AGENDA, teamAssignment: null });
     pintar();
 
-    fireEvent.click(await screen.findByRole('button', { name: 'teams.assign' }));
+    fireEvent.click(
+      await screen.findByRole('button', { name: 'teams.assign' }),
+    );
     const dialogo = await screen.findByRole('dialog');
 
     expect(within(dialogo).getByDisplayValue('manual')).toBeDisabled();
     expect(within(dialogo).getByDisplayValue('automatic')).not.toBeDisabled();
-    expect(within(dialogo).getByTestId('reparto-inscritos-sin-cargar')).toHaveTextContent(
-      'teams.enrollmentsNotLoaded'
-    );
+    expect(
+      within(dialogo).getByTestId('reparto-inscritos-sin-cargar'),
+    ).toHaveTextContent('teams.enrollmentsNotLoaded');
   });
 
   it('E3: con los dos capitanes, no se ofrece nombrar a nadie', async () => {
@@ -190,19 +213,25 @@ describe('SchedulePage · sin poder cargar los inscritos', () => {
     await screen.findByTestId('deshacer-equipos');
     expect(screen.queryByTestId('cubrir-capitan-A')).not.toBeInTheDocument();
     expect(screen.queryByTestId('cubrir-capitan-B')).not.toBeInTheDocument();
-    expect(screen.queryByTestId('capitan-inscritos-sin-cargar-A')).not.toBeInTheDocument();
-    expect(screen.queryByTestId('capitan-inscritos-sin-cargar-B')).not.toBeInTheDocument();
+    expect(
+      screen.queryByTestId('capitan-inscritos-sin-cargar-A'),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByTestId('capitan-inscritos-sin-cargar-B'),
+    ).not.toBeInTheDocument();
   });
 
   it('E3b: si falta uno de verdad, el aviso de recargar en vez del botón', async () => {
     mockDetalle.mockResolvedValue(SIN_CAPITAN_A);
     pintar();
 
-    expect(await screen.findByTestId('capitan-inscritos-sin-cargar-A')).toHaveTextContent(
-      'teams.fillCaptainNeedsEnrollments'
-    );
+    expect(
+      await screen.findByTestId('capitan-inscritos-sin-cargar-A'),
+    ).toHaveTextContent('teams.fillCaptainNeedsEnrollments');
     expect(screen.queryByTestId('cubrir-capitan-A')).not.toBeInTheDocument();
-    expect(screen.queryByTestId('capitan-inscritos-sin-cargar-B')).not.toBeInTheDocument();
+    expect(
+      screen.queryByTestId('capitan-inscritos-sin-cargar-B'),
+    ).not.toBeInTheDocument();
   });
 
   it('E4: si cargan, ni toast ni aviso, y el botón de siempre', async () => {
@@ -212,7 +241,9 @@ describe('SchedulePage · sin poder cargar los inscritos', () => {
 
     expect(await screen.findByTestId('cubrir-capitan-A')).toBeInTheDocument();
     expect(customToast.error).not.toHaveBeenCalled();
-    expect(screen.queryByTestId('capitan-inscritos-sin-cargar-A')).not.toBeInTheDocument();
+    expect(
+      screen.queryByTestId('capitan-inscritos-sin-cargar-A'),
+    ).not.toBeInTheDocument();
   });
 
   it('E4b: y el reparto se abre con el manual disponible y sin aviso', async () => {
@@ -220,11 +251,15 @@ describe('SchedulePage · sin poder cargar los inscritos', () => {
     mockInscripciones.mockResolvedValue(INSCRITOS);
     pintar();
 
-    fireEvent.click(await screen.findByRole('button', { name: 'teams.assign' }));
+    fireEvent.click(
+      await screen.findByRole('button', { name: 'teams.assign' }),
+    );
     const dialogo = await screen.findByRole('dialog');
 
     expect(within(dialogo).getByDisplayValue('manual')).not.toBeDisabled();
-    expect(within(dialogo).queryByTestId('reparto-inscritos-sin-cargar')).not.toBeInTheDocument();
+    expect(
+      within(dialogo).queryByTestId('reparto-inscritos-sin-cargar'),
+    ).not.toBeInTheDocument();
   });
 
   it('E5: una recarga que sí los trae lo devuelve todo', async () => {
@@ -239,7 +274,9 @@ describe('SchedulePage · sin poder cargar los inscritos', () => {
     fireEvent.click(await screen.findByTestId('confirmar-rehacer-sobres'));
 
     expect(await screen.findByTestId('cubrir-capitan-A')).toBeInTheDocument();
-    expect(screen.queryByTestId('capitan-inscritos-sin-cargar-A')).not.toBeInTheDocument();
+    expect(
+      screen.queryByTestId('capitan-inscritos-sin-cargar-A'),
+    ).not.toBeInTheDocument();
     // Y el toast de «recarga la página» se va: ya no hace falta
     expect(customToast.dismiss).toHaveBeenCalledWith('inscritos-sin-cargar');
   });
@@ -249,7 +286,9 @@ describe('SchedulePage · sin poder cargar los inscritos', () => {
     mockDetalle.mockResolvedValue({ ...SIN_CAPITAN_A, setupMode: 'MANUAL' });
     mockInscripciones.mockRejectedValueOnce(FALLO).mockResolvedValue(INSCRITOS);
     mockGenerar.mockRejectedValue(
-      Object.assign(new Error('No se pueden generar'), { errorCode: 'MATCH_GENERATION_BLOCKED' })
+      Object.assign(new Error('No se pueden generar'), {
+        errorCode: 'MATCH_GENERATION_BLOCKED',
+      }),
     );
     pintar();
     await screen.findByTestId('capitan-inscritos-sin-cargar-A');
@@ -258,7 +297,9 @@ describe('SchedulePage · sin poder cargar los inscritos', () => {
     fireEvent.click(await screen.findByTestId('generate-submit'));
 
     expect(await screen.findByTestId('cubrir-capitan-A')).toBeInTheDocument();
-    expect(screen.queryByTestId('capitan-inscritos-sin-cargar-A')).not.toBeInTheDocument();
+    expect(
+      screen.queryByTestId('capitan-inscritos-sin-cargar-A'),
+    ).not.toBeInTheDocument();
     // Y el toast de «recarga la página» se va: ya no hace falta
     expect(customToast.dismiss).toHaveBeenCalledWith('inscritos-sin-cargar');
   });
@@ -269,23 +310,33 @@ describe('SchedulePage · sin poder cargar los inscritos', () => {
     let fallarLaPrimera;
     mockDetalle.mockResolvedValue(SIN_CAPITAN_A);
     mockInscripciones
-      .mockImplementationOnce(() => new Promise((_, rechazar) => { fallarLaPrimera = rechazar; }))
+      .mockImplementationOnce(
+        () =>
+          new Promise((_, rechazar) => {
+            fallarLaPrimera = rechazar;
+          }),
+      )
       .mockResolvedValue(INSCRITOS);
     render(
       <StrictMode>
         <MemoryRouter initialEntries={['/competitions/comp-1/schedule']}>
           <Routes>
-            <Route path="/competitions/:id/schedule" element={<SchedulePage />} />
+            <Route
+              path="/competitions/:id/schedule"
+              element={<SchedulePage />}
+            />
           </Routes>
         </MemoryRouter>
-      </StrictMode>
+      </StrictMode>,
     );
     await screen.findByTestId('cubrir-capitan-A');
 
     await act(async () => fallarLaPrimera(FALLO));
 
     expect(screen.getByTestId('cubrir-capitan-A')).toBeInTheDocument();
-    expect(screen.queryByTestId('capitan-inscritos-sin-cargar-A')).not.toBeInTheDocument();
+    expect(
+      screen.queryByTestId('capitan-inscritos-sin-cargar-A'),
+    ).not.toBeInTheDocument();
     expect(customToast.error).not.toHaveBeenCalled();
   });
 
@@ -324,16 +375,26 @@ describe('SchedulePage · sin poder cargar los inscritos', () => {
     expect(customToast.error).toHaveBeenCalledTimes(2);
     // Se quitó al salir, antes de volver a salir (revisor)
     const [primero, segundo] = customToast.error.mock.invocationCallOrder;
-    const quitado = customToast.dismiss.mock.invocationCallOrder.find((n) => n > primero);
+    const quitado = customToast.dismiss.mock.invocationCallOrder.find(
+      (n) => n > primero,
+    );
     expect(quitado).toBeLessThan(segundo);
-    expect(customToast.error).toHaveBeenLastCalledWith('errors.failedToLoadEnrollments', {
-      id: 'inscritos-sin-cargar',
-    });
+    expect(customToast.error).toHaveBeenLastCalledWith(
+      'errors.failedToLoadEnrollments',
+      {
+        id: 'inscritos-sin-cargar',
+      },
+    );
   });
 
   it('S4 (/code-review): si la lista falla cuando ya se salió, el toast no sale en la ficha', async () => {
     let fallar;
-    mockInscripciones.mockImplementation(() => new Promise((_, rechazar) => { fallar = rechazar; }));
+    mockInscripciones.mockImplementation(
+      () =>
+        new Promise((_, rechazar) => {
+          fallar = rechazar;
+        }),
+    );
     const { unmount } = pintar();
     await vi.waitFor(() => expect(fallar).toBeDefined());
 
@@ -349,16 +410,22 @@ describe('SchedulePage · sin poder cargar los inscritos', () => {
       <StrictMode>
         <MemoryRouter initialEntries={['/competitions/comp-1/schedule']}>
           <Routes>
-            <Route path="/competitions/:id/schedule" element={<SchedulePage />} />
+            <Route
+              path="/competitions/:id/schedule"
+              element={<SchedulePage />}
+            />
           </Routes>
         </MemoryRouter>
-      </StrictMode>
+      </StrictMode>,
     );
 
     await screen.findByTestId('deshacer-equipos');
-    expect(customToast.error).toHaveBeenCalledWith('errors.failedToLoadEnrollments', {
-      id: 'inscritos-sin-cargar',
-    });
+    expect(customToast.error).toHaveBeenCalledWith(
+      'errors.failedToLoadEnrollments',
+      {
+        id: 'inscritos-sin-cargar',
+      },
+    );
   });
 
   it('R1: «Reasignar» un partido sin la lista avisa y no deja', async () => {
@@ -378,16 +445,24 @@ describe('SchedulePage · sin poder cargar los inscritos', () => {
     pintar();
     // La ronda se despliega para ver sus partidos
     const cabecera = await vi.waitFor(() => {
-      const el = document.querySelector('[role="button"][aria-expanded="false"]');
+      const el = document.querySelector(
+        '[role="button"][aria-expanded="false"]',
+      );
       expect(el).not.toBeNull();
       return el;
     });
     fireEvent.click(cabecera);
 
-    fireEvent.click(await screen.findByRole('button', { name: 'matches.reassignPlayers' }));
+    fireEvent.click(
+      await screen.findByRole('button', { name: 'matches.reassignPlayers' }),
+    );
     const dialogo = await screen.findByRole('dialog');
 
-    expect(within(dialogo).getByTestId('reasignar-inscritos-sin-cargar')).toBeInTheDocument();
-    expect(within(dialogo).getByRole('button', { name: 'matches.reassignPlayers' })).toBeDisabled();
+    expect(
+      within(dialogo).getByTestId('reasignar-inscritos-sin-cargar'),
+    ).toBeInTheDocument();
+    expect(
+      within(dialogo).getByRole('button', { name: 'matches.reassignPlayers' }),
+    ).toBeDisabled();
   });
 });

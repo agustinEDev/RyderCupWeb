@@ -7,7 +7,12 @@ import { resolveScreen } from './screenTitles';
 describe('resolveScreen', () => {
   it('titles the four bottom-navigation roots without a back arrow', () => {
     // Volver desde una pestana raiz no significa nada
-    for (const path of ['/dashboard', '/competitions', '/friends', '/profile']) {
+    for (const path of [
+      '/dashboard',
+      '/competitions',
+      '/friends',
+      '/profile',
+    ]) {
       expect(resolveScreen(path)).toMatchObject({ backTo: null });
       expect(resolveScreen(path).titleKey).toMatch(/^screens\./);
     }
@@ -88,13 +93,22 @@ describe('resolveScreen', () => {
   it.each([
     ['/competitions/c-1/groups/g-7', 'screens.friendGroup'],
     ['/competitions/c-1/matches/m-9', 'screens.friendMatch'],
-  ])("titles a friend's read-only card %s and goes back the way it came", (path, titleKey) => {
-    // Se llega desde Actividad (release social 2): se vuelve por donde se vino
-    expect(resolveScreen(path)).toEqual({ titleKey, backTo: null, backByHistory: true });
-  });
+  ])(
+    "titles a friend's read-only card %s and goes back the way it came",
+    (path, titleKey) => {
+      // Se llega desde Actividad (release social 2): se vuelve por donde se vino
+      expect(resolveScreen(path)).toEqual({
+        titleKey,
+        backTo: null,
+        backByHistory: true,
+      });
+    },
+  );
 
   it('does not confuse the quick match list with its scoring screen', () => {
-    expect(resolveScreen('/quick-matches')).toMatchObject({ titleKey: 'screens.myQuickMatches' });
+    expect(resolveScreen('/quick-matches')).toMatchObject({
+      titleKey: 'screens.myQuickMatches',
+    });
     expect(resolveScreen('/quick-matches/q-1/scoring')).toBeNull();
   });
   it('gives each admin section its title and sends it back to the admin menu (17 oct)', () => {
@@ -106,9 +120,16 @@ describe('resolveScreen', () => {
       hoyos: 'screens.adminHoles',
     };
     for (const [seccion, titleKey] of Object.entries(secciones)) {
-      expect(resolveScreen(`/admin/${seccion}`)).toEqual({ titleKey, backTo: '/admin', backByHistory: false });
+      expect(resolveScreen(`/admin/${seccion}`)).toEqual({
+        titleKey,
+        backTo: '/admin',
+        backByHistory: false,
+      });
     }
-    expect(resolveScreen('/admin')).toMatchObject({ titleKey: 'screens.admin', backTo: '/profile' });
+    expect(resolveScreen('/admin')).toMatchObject({
+      titleKey: 'screens.admin',
+      backTo: '/profile',
+    });
   });
 
   // QA (FE #865-4): con sesión, la clasificación lleva la cabecera de la

@@ -32,7 +32,12 @@ const FuenteRfeg = ({ variante = 'linea', className = '' }) => {
   return (
     <p className={`text-xs text-gray-500 break-words ${className}`}>
       {t(antes)}{' '}
-      <a href={URL_RFEG} target="_blank" rel="noopener noreferrer" className="underline hover:text-primary">
+      <a
+        href={URL_RFEG}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="underline hover:text-primary"
+      >
         {t(enlace)}
       </a>
     </p>

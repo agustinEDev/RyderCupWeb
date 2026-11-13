@@ -6,7 +6,12 @@
  * fallo lo decide la propia tarea—. Con `sigue` a falso no empieza ninguna
  * más; las que ya estaban en vuelo terminan igual (FE #418).
  */
-export const recorreConTope = async (elementos, tope, tarea, { sigue = () => true } = {}) => {
+export const recorreConTope = async (
+  elementos,
+  tope,
+  tarea,
+  { sigue = () => true } = {},
+) => {
   let siguiente = 0;
   const trabajador = async () => {
     while (siguiente < elementos.length && sigue()) {
@@ -19,5 +24,7 @@ export const recorreConTope = async (elementos, tope, tarea, { sigue = () => tru
       }
     }
   };
-  await Promise.all(Array.from({ length: Math.min(tope, elementos.length) }, trabajador));
+  await Promise.all(
+    Array.from({ length: Math.min(tope, elementos.length) }, trabajador),
+  );
 };

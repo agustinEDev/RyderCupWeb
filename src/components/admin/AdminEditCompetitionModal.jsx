@@ -57,10 +57,21 @@ const AdminEditCompetitionModal = ({ competition, onSubmit, onCancel }) => {
       >
         <div className="flex items-start justify-between p-6 border-b border-gray-200">
           <div>
-            <h2 id="admin-editar-competicion-titulo" className="text-xl font-bold text-gray-900">{t('competitions.editModal.title')}</h2>
-            <p className="text-sm text-gray-500 mt-1">{t('competitions.editModal.subtitle')}</p>
+            <h2
+              id="admin-editar-competicion-titulo"
+              className="text-xl font-bold text-gray-900"
+            >
+              {t('competitions.editModal.title')}
+            </h2>
+            <p className="text-sm text-gray-500 mt-1">
+              {t('competitions.editModal.subtitle')}
+            </p>
           </div>
-          <button onClick={onCancel} className="text-gray-400 hover:text-gray-600" aria-label={t('competitions.editModal.cancel')}>
+          <button
+            onClick={onCancel}
+            className="text-gray-400 hover:text-gray-600"
+            aria-label={t('competitions.editModal.cancel')}
+          >
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -73,7 +84,10 @@ const AdminEditCompetitionModal = ({ competition, onSubmit, onCancel }) => {
           )}
 
           <div>
-            <label htmlFor="edit-competition-name" className="block text-sm font-medium text-gray-700 mb-1">
+            <label
+              htmlFor="edit-competition-name"
+              className="block text-sm font-medium text-gray-700 mb-1"
+            >
               {t('competitions.editModal.name')}
             </label>
             <input
@@ -94,7 +108,10 @@ const AdminEditCompetitionModal = ({ competition, onSubmit, onCancel }) => {
               (FE #648), que es de donde salió esto */}
           <div className="grid grid-cols-1 min-[400px]:grid-cols-2 gap-3">
             <div className="min-w-0">
-              <label htmlFor="edit-competition-start-date" className="block text-sm font-medium text-gray-700 mb-1">
+              <label
+                htmlFor="edit-competition-start-date"
+                className="block text-sm font-medium text-gray-700 mb-1"
+              >
                 {t('competitions.editModal.startDate')}
               </label>
               <input
@@ -107,7 +124,10 @@ const AdminEditCompetitionModal = ({ competition, onSubmit, onCancel }) => {
               />
             </div>
             <div className="min-w-0">
-              <label htmlFor="edit-competition-end-date" className="block text-sm font-medium text-gray-700 mb-1">
+              <label
+                htmlFor="edit-competition-end-date"
+                className="block text-sm font-medium text-gray-700 mb-1"
+              >
                 {t('competitions.editModal.endDate')}
               </label>
               <input
@@ -136,7 +156,9 @@ const AdminEditCompetitionModal = ({ competition, onSubmit, onCancel }) => {
               className="flex items-center gap-2 px-5 py-2 bg-primary text-white text-sm font-medium rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-60"
             >
               {isSaving && <Loader className="w-4 h-4 animate-spin" />}
-              {isSaving ? t('competitions.editModal.saving') : t('competitions.editModal.save')}
+              {isSaving
+                ? t('competitions.editModal.saving')
+                : t('competitions.editModal.save')}
             </button>
           </div>
         </form>

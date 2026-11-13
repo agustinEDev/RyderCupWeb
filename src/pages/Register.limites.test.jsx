@@ -5,7 +5,9 @@ import { MemoryRouter } from 'react-router';
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({ t: (clave) => clave, i18n: { language: 'es' } }),
 }));
-vi.mock('../hooks/useRedirectIfAuthenticated', () => ({ useRedirectIfAuthenticated: () => false }));
+vi.mock('../hooks/useRedirectIfAuthenticated', () => ({
+  useRedirectIfAuthenticated: () => false,
+}));
 vi.mock('../composition', () => ({
   registerUseCase: { execute: vi.fn() },
   fetchCountriesUseCase: { execute: vi.fn().mockResolvedValue([]) },
@@ -21,13 +23,18 @@ const { default: Register } = await import('./Register');
  * como en el login y el reset.
  */
 describe('Register · el campo no corta una contraseña válida', () => {
-  it.each(['password', 'confirmPassword'])('%s no corta lo que se pega', (nombre) => {
-    const { container } = render(
-      <MemoryRouter>
-        <Register />
-      </MemoryRouter>
-    );
+  it.each(['password', 'confirmPassword'])(
+    '%s no corta lo que se pega',
+    (nombre) => {
+      const { container } = render(
+        <MemoryRouter>
+          <Register />
+        </MemoryRouter>,
+      );
 
-    expect(container.querySelector(`[name="${nombre}"]`).hasAttribute('maxlength')).toBe(false);
-  });
+      expect(
+        container.querySelector(`[name="${nombre}"]`).hasAttribute('maxlength'),
+      ).toBe(false);
+    },
+  );
 });

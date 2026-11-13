@@ -13,17 +13,25 @@ const ORDENADOS_EN_INGLES = [
   { code: 'ES', name_en: 'Spain', name_es: 'España' },
 ];
 
-const codes = (countries) => countries.map(c => c.code);
+const codes = (countries) => countries.map((c) => c.code);
 
 describe('sortCountriesByName', () => {
   it('ordena por el nombre del idioma pedido, no por el inglés', () => {
-    expect(codes(sortCountriesByName(ORDENADOS_EN_INGLES, 'es')))
-      .toEqual(['KR', 'ES', 'ZA', 'SS']);
+    expect(codes(sortCountriesByName(ORDENADOS_EN_INGLES, 'es'))).toEqual([
+      'KR',
+      'ES',
+      'ZA',
+      'SS',
+    ]);
   });
 
   it('deja el orden inglés cuando el idioma es el inglés', () => {
-    expect(codes(sortCountriesByName(ORDENADOS_EN_INGLES, 'en')))
-      .toEqual(['ZA', 'KR', 'SS', 'ES']);
+    expect(codes(sortCountriesByName(ORDENADOS_EN_INGLES, 'en'))).toEqual([
+      'ZA',
+      'KR',
+      'SS',
+      'ES',
+    ]);
   });
 
   it('trata la tilde como la vocal que es', () => {
@@ -39,8 +47,12 @@ describe('sortCountriesByName', () => {
 
   it('entiende las variantes regionales del idioma', () => {
     // El detector de i18next devuelve "es-ES", no "es"
-    expect(codes(sortCountriesByName(ORDENADOS_EN_INGLES, 'es-ES')))
-      .toEqual(['KR', 'ES', 'ZA', 'SS']);
+    expect(codes(sortCountriesByName(ORDENADOS_EN_INGLES, 'es-ES'))).toEqual([
+      'KR',
+      'ES',
+      'ZA',
+      'SS',
+    ]);
   });
 
   it('no se rompe con una etiqueta de idioma que Intl no acepta', () => {
@@ -49,9 +61,20 @@ describe('sortCountriesByName', () => {
     // "es_ES" con guion bajo o una cadena vacía. Intl los rechaza con
     // RangeError, y esto se ejecuta dentro de un useMemo en pleno render, así
     // que reventaría toda pantalla con selector de país en vez de degradarse
-    for (const language of ['es_ES', '', '  ', 'no-es-un-idioma', null, undefined]) {
-      expect(() => sortCountriesByName(ORDENADOS_EN_INGLES, language)).not.toThrow();
-      expect(sortCountriesByName(ORDENADOS_EN_INGLES, language)).toHaveLength(4);
+    for (const language of [
+      'es_ES',
+      '',
+      '  ',
+      'no-es-un-idioma',
+      null,
+      undefined,
+    ]) {
+      expect(() =>
+        sortCountriesByName(ORDENADOS_EN_INGLES, language),
+      ).not.toThrow();
+      expect(sortCountriesByName(ORDENADOS_EN_INGLES, language)).toHaveLength(
+        4,
+      );
     }
   });
 
@@ -60,9 +83,12 @@ describe('sortCountriesByName', () => {
     // salía en inglés (se partía solo por el guion) y la comparación se hacía
     // con reglas del español. Eso es ordenar una lista por algo que no es lo
     // que se ve, que es justo el desorden que arregla esta issue
-    expect(codes(sortCountriesByName(ORDENADOS_EN_INGLES, 'es_ES')))
-      .toEqual(codes(sortCountriesByName(ORDENADOS_EN_INGLES, 'es')));
-    expect(formatCountryName(ORDENADOS_EN_INGLES[0], 'es_ES')).toBe('Sudáfrica');
+    expect(codes(sortCountriesByName(ORDENADOS_EN_INGLES, 'es_ES'))).toEqual(
+      codes(sortCountriesByName(ORDENADOS_EN_INGLES, 'es')),
+    );
+    expect(formatCountryName(ORDENADOS_EN_INGLES[0], 'es_ES')).toBe(
+      'Sudáfrica',
+    );
   });
 
   it('ordena con la intercalación del idioma que de verdad se pinta', () => {
@@ -74,7 +100,11 @@ describe('sortCountriesByName', () => {
       { code: 'PT', name_en: 'Portugal', name_es: 'Portugal' },
     ];
 
-    expect(codes(sortCountriesByName(conEnie, 'es_ES'))).toEqual(['NO', 'XX', 'PT']);
+    expect(codes(sortCountriesByName(conEnie, 'es_ES'))).toEqual([
+      'NO',
+      'XX',
+      'PT',
+    ]);
   });
 
   it('no toca la lista que recibe', () => {
@@ -98,7 +128,12 @@ describe('formatCountryName con la forma que arma CompetitionAssembler (FE #513)
   // El assembler expone `nameEs`/`nameEn` y rellena `name` con el inglés fijo,
   // así que un país que llegara así caía al `name` de reserva y en español se
   // leía «Spain» dentro de una aplicación en español
-  const comoElAssembler = { code: 'ES', name: 'Spain', nameEn: 'Spain', nameEs: 'España' };
+  const comoElAssembler = {
+    code: 'ES',
+    name: 'Spain',
+    nameEn: 'Spain',
+    nameEs: 'España',
+  };
 
   it('usa el español cuando la aplicación está en español', () => {
     expect(formatCountryName(comoElAssembler, 'es')).toBe('España');
@@ -113,11 +148,18 @@ describe('formatCountryName con la forma que arma CompetitionAssembler (FE #513)
   });
 
   it('sigue entendiendo la forma del backend', () => {
-    expect(formatCountryName({ code: 'PT', name_es: 'Portugal', name_en: 'Portugal' }, 'es')).toBe('Portugal');
+    expect(
+      formatCountryName(
+        { code: 'PT', name_es: 'Portugal', name_en: 'Portugal' },
+        'es',
+      ),
+    ).toBe('Portugal');
   });
 
   it('cae al nombre suelto solo si no hay ninguno de los dos', () => {
-    expect(formatCountryName({ code: 'FR', name: 'France' }, 'es')).toBe('France');
+    expect(formatCountryName({ code: 'FR', name: 'France' }, 'es')).toBe(
+      'France',
+    );
   });
   it('con solo el código devuelve cadena vacía, no el código', () => {
     // Por esto la ficha del campo dentro de una competición enseñaba una

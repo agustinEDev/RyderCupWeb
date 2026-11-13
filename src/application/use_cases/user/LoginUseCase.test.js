@@ -34,14 +34,14 @@ describe('LoginUseCase', () => {
       email: email,
       first_name: 'Test',
       last_name: 'User',
-      email_verified: true
+      email_verified: true,
     });
 
     // Configurar el mock del repositorio para devolver el usuario, token y csrfToken
     authRepository.login.mockResolvedValue({
       user: mockUserEntity,
       token: mockToken,
-      csrfToken: mockCsrfToken // v1.13.0: CSRF Protection
+      csrfToken: mockCsrfToken, // v1.13.0: CSRF Protection
     });
 
     // Act
@@ -51,24 +51,28 @@ describe('LoginUseCase', () => {
     // 1. Verificar que el método login del repositorio fue llamado con un Email VO y la contraseña
     expect(authRepository.login).toHaveBeenCalledWith(
       expect.objectContaining({ _value: email }),
-      expect.objectContaining({ _value: password })
+      expect.objectContaining({ _value: password }),
     );
 
     // 2. v1.13.0: Verificar que el caso de uso devuelve { user, csrfToken }
     expect(result).toEqual({
       user: mockUserEntity,
-      csrfToken: mockCsrfToken
+      csrfToken: mockCsrfToken,
     });
   });
 
   it('should throw an error if email is not provided', async () => {
     // Act & Assert
-    await expect(loginUseCase.execute('', 'password123')).rejects.toThrow('Invalid email address.');
+    await expect(loginUseCase.execute('', 'password123')).rejects.toThrow(
+      'Invalid email address.',
+    );
   });
 
   it('should throw an error if password is not provided', async () => {
     // Act & Assert
-    await expect(loginUseCase.execute('test@example.com', '')).rejects.toThrow('Password cannot be empty.');
+    await expect(loginUseCase.execute('test@example.com', '')).rejects.toThrow(
+      'Password cannot be empty.',
+    );
   });
 
   it('should propagate errors from the auth repository', async () => {
@@ -80,11 +84,13 @@ describe('LoginUseCase', () => {
     authRepository.login.mockRejectedValue(mockError);
 
     // Act & Assert
-    await expect(loginUseCase.execute(email, password)).rejects.toThrow('Invalid credentials from API');
+    await expect(loginUseCase.execute(email, password)).rejects.toThrow(
+      'Invalid credentials from API',
+    );
 
     expect(authRepository.login).toHaveBeenCalledWith(
       expect.objectContaining({ _value: email }),
-      expect.objectContaining({ _value: password })
+      expect.objectContaining({ _value: password }),
     );
 
     // Note: Token/user storage is now handled by httpOnly cookies (no manual storage needed)

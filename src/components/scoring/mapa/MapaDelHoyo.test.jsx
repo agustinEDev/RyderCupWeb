@@ -3,11 +3,18 @@ import { StrictMode } from 'react';
 import { render, screen, fireEvent, act } from '@testing-library/react';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { encuadreGirado, orientacionDelHoyo, limitesDelHoyo, rumbo } from '../../../domain/services/geometriaDelHoyo';
+import {
+  encuadreGirado,
+  orientacionDelHoyo,
+  limitesDelHoyo,
+  rumbo,
+} from '../../../domain/services/geometriaDelHoyo';
 import { circuloAlrededor } from '../../../domain/services/hoyoMarcado';
 
 vi.mock('react-i18next', () => ({
-  useTranslation: () => ({ t: (k, o) => (o ? `${k} ${JSON.stringify(o)}` : k) }),
+  useTranslation: () => ({
+    t: (k, o) => (o ? `${k} ${JSON.stringify(o)}` : k),
+  }),
 }));
 
 // MapLibre de mentira: guarda lo que se le pide para poder comprobarlo
@@ -23,7 +30,8 @@ vi.mock('maplibre-gl', () => {
       this.lista ??= {};
       this.oyentes ??= {};
       (this.lista[evento] ??= []).push(fn);
-      this.oyentes[evento] = (...args) => this.lista[evento].forEach((f) => f(...args));
+      this.oyentes[evento] = (...args) =>
+        this.lista[evento].forEach((f) => f(...args));
       return {
         unsubscribe: () => {
           this.lista[evento] = this.lista[evento].filter((f) => f !== fn);
@@ -67,7 +75,13 @@ vi.mock('maplibre-gl', () => {
       return { layers: this.opciones.style.layers };
     }
     getSource(id) {
-      return this.fuentes[id] ? { setData: (d) => { this.fuentes[id].data = d; } } : undefined;
+      return this.fuentes[id]
+        ? {
+            setData: (d) => {
+              this.fuentes[id].data = d;
+            },
+          }
+        : undefined;
     }
   }
   class Marker extends Evented {
@@ -132,13 +146,31 @@ const GREEN = {
   center: { lat: 36.29, lon: -5.332 },
   back: { lat: 36.2902, lon: -5.332 },
 };
-const HOYO = { playLine: [{ lat: 36.28, lon: -5.33 }, { lat: 36.285, lon: -5.331 }, GREEN.center], green: GREEN };
+const HOYO = {
+  playLine: [
+    { lat: 36.28, lon: -5.33 },
+    { lat: 36.285, lon: -5.331 },
+    GREEN.center,
+  ],
+  green: GREEN,
+};
 // Par 4 con codo: de la salida al primer codo (O1)
 const RUMBO_DEL_HOYO = rumbo(HOYO.playLine[0], HOYO.playLine[1]);
-const SIN_GREEN = { playLine: [{ lat: 36.28, lon: -5.33 }, { lat: 36.285, lon: -5.331 }], green: null };
+const SIN_GREEN = {
+  playLine: [
+    { lat: 36.28, lon: -5.33 },
+    { lat: 36.285, lon: -5.331 },
+  ],
+  green: null,
+};
 
 const gpsFalso = () => {
-  const gps = { watchPosition: vi.fn(), clearWatch: vi.fn(), exito: null, error: null };
+  const gps = {
+    watchPosition: vi.fn(),
+    clearWatch: vi.fn(),
+    exito: null,
+    error: null,
+  };
   gps.watchPosition.mockImplementation((exito, error) => {
     gps.exito = exito;
     gps.error = error;
@@ -146,11 +178,21 @@ const gpsFalso = () => {
   });
   return gps;
 };
-const lectura = (lat, lon, accuracy = 5) => ({ coords: { latitude: lat, longitude: lon, accuracy } });
+const lectura = (lat, lon, accuracy = 5) => ({
+  coords: { latitude: lat, longitude: lon, accuracy },
+});
 
 const abrir = (props = {}) =>
   render(
-    <MapaDelHoyo golfCourseId="gc-1" numeroDeHoyo={1} par={4} hoyo={HOYO} atribucion={null} onCerrar={() => {}} {...props} />
+    <MapaDelHoyo
+      golfCourseId="gc-1"
+      numeroDeHoyo={1}
+      par={4}
+      hoyo={HOYO}
+      atribucion={null}
+      onCerrar={() => {}}
+      {...props}
+    />,
   );
 const mapa = () => mapas.at(-1);
 const pulsar = (evento) => act(() => mapa().oyentes.click(evento));
@@ -169,7 +211,9 @@ describe('MapaDelHoyo', () => {
     vi.stubGlobal('navigator', { ...globalThis.navigator, geolocation: gps });
     // Un segundo entre toque y toque: así no cuentan como doble toque
     let ahora = 0;
-    reloj = vi.spyOn(globalThis.performance, 'now').mockImplementation(() => (ahora += 1000));
+    reloj = vi
+      .spyOn(globalThis.performance, 'now')
+      .mockImplementation(() => (ahora += 1000));
   });
 
   afterEach(() => {
@@ -180,7 +224,9 @@ describe('MapaDelHoyo', () => {
   it('M3 (19 oct): la caja del mapa, en negro', () => {
     abrir();
 
-    expect(screen.getByRole('dialog').firstElementChild).toHaveClass('bg-black');
+    expect(screen.getByRole('dialog').firstElementChild).toHaveClass(
+      'bg-black',
+    );
   });
 
   describe('abrir y cerrar', () => {
@@ -190,7 +236,9 @@ describe('MapaDelHoyo', () => {
       const dialogo = screen.getByRole('dialog');
       expect(dialogo).toHaveClass('fixed', 'inset-0');
       expect(dialogo).toHaveAttribute('aria-modal', 'true');
-      expect(screen.getByText('mapa.titulo {"numero":1,"par":4}')).toBeInTheDocument();
+      expect(
+        screen.getByText('mapa.titulo {"numero":1,"par":4}'),
+      ).toBeInTheDocument();
     });
 
     it('A2/A3: el GPS se pide al abrir y se apaga al cerrar', () => {
@@ -206,11 +254,19 @@ describe('MapaDelHoyo', () => {
     it('V1 (pasada del Kind, 1 nov 2026): «Ver hoyo» y «Céntrame» no se parten en dos líneas', () => {
       abrir();
 
-      expect(screen.getByRole('button', { name: 'mapa.verHoyo' })).toHaveClass('whitespace-nowrap');
-      expect(screen.getByRole('button', { name: 'mapa.centrame' })).toHaveClass('whitespace-nowrap');
+      expect(screen.getByRole('button', { name: 'mapa.verHoyo' })).toHaveClass(
+        'whitespace-nowrap',
+      );
+      expect(screen.getByRole('button', { name: 'mapa.centrame' })).toHaveClass(
+        'whitespace-nowrap',
+      );
       // Juntos: si no caben, bajan los dos y no uno solo (medido en inglés a 360 px)
-      const grupo = screen.getByRole('button', { name: 'mapa.verHoyo' }).parentElement;
-      expect(screen.getByRole('button', { name: 'mapa.centrame' }).parentElement).toBe(grupo);
+      const grupo = screen.getByRole('button', {
+        name: 'mapa.verHoyo',
+      }).parentElement;
+      expect(
+        screen.getByRole('button', { name: 'mapa.centrame' }).parentElement,
+      ).toBe(grupo);
       expect(grupo).toHaveClass('flex', 'shrink-0');
     });
 
@@ -220,14 +276,20 @@ describe('MapaDelHoyo', () => {
       const atribucion = screen.getByText('mapa.atribucionPnoa').parentElement;
       // Hasta 64 px se queda al lado y parte; con menos, la fila se parte y baja
       // a la suya (/code-review: a 320 px quedaba una columna de 12 líneas)
-      expect(atribucion).toHaveClass('min-w-16', 'flex-1', '[overflow-wrap:anywhere]');
+      expect(atribucion).toHaveClass(
+        'min-w-16',
+        'flex-1',
+        '[overflow-wrap:anywhere]',
+      );
       expect(atribucion.parentElement).toHaveClass('flex-wrap', 'justify-end');
     });
 
     it('V1: «Norte» tampoco', () => {
       abrir({ hoyo: null, porMarcar: null });
 
-      expect(screen.getByRole('button', { name: 'mapa.norte' })).toHaveClass('whitespace-nowrap');
+      expect(screen.getByRole('button', { name: 'mapa.norte' })).toHaveClass(
+        'whitespace-nowrap',
+      );
     });
 
     it('«Cerrar» y la tecla Escape cierran', () => {
@@ -252,8 +314,16 @@ describe('MapaDelHoyo', () => {
       expect(mapa().touchZoomRotate.disableRotation).toHaveBeenCalled();
       // Con el hoyo girado (no su caja norte-sur): centro, zoom y rumbo, y SIN
       // padding (MapLibre lo guardaría y lo sumaría a todo lo de después)
-      const { center, zoom } = encuadreGirado(HOYO, bearing, { ancho: 360, alto: 640, padding: { top: 90, bottom: 288, left: 40, right: 40 } });
-      expect(mapa().jumpTo).toHaveBeenLastCalledWith({ center: [center.lon, center.lat], zoom, bearing });
+      const { center, zoom } = encuadreGirado(HOYO, bearing, {
+        ancho: 360,
+        alto: 640,
+        padding: { top: 90, bottom: 288, left: 40, right: 40 },
+      });
+      expect(mapa().jumpTo).toHaveBeenLastCalledWith({
+        center: [center.lon, center.lat],
+        zoom,
+        bearing,
+      });
     });
 
     it('dibuja la línea de juego y el green', () => {
@@ -261,8 +331,12 @@ describe('MapaDelHoyo', () => {
       act(() => mapa().oyentes.load());
 
       // El green, del hoyo; la línea, aparte, porque se puede mover (16 oct)
-      expect(mapa().fuentes.hoyo.data.features.map((f) => f.geometry.type)).toEqual(['Point']);
-      expect(mapa().fuentes.marcado.data.features[0].geometry.coordinates[0]).toEqual([-5.33, 36.28]);
+      expect(
+        mapa().fuentes.hoyo.data.features.map((f) => f.geometry.type),
+      ).toEqual(['Point']);
+      expect(
+        mapa().fuentes.marcado.data.features[0].geometry.coordinates[0],
+      ).toEqual([-5.33, 36.28]);
     });
 
     // Agustín, 16 oct: sin posición, el recuadro va con los metros oficiales desde
@@ -283,7 +357,9 @@ describe('MapaDelHoyo', () => {
       const antes = screen.getByTestId('distancia-centro').textContent;
       act(() => gps.exito(lectura(36.2893, -5.332)));
 
-      expect(screen.getByTestId('distancia-centro').textContent).not.toBe(antes);
+      expect(screen.getByTestId('distancia-centro').textContent).not.toBe(
+        antes,
+      );
       expect(screen.getByText('mapa.desdeTuPosicion')).toBeInTheDocument();
     });
 
@@ -305,7 +381,11 @@ describe('MapaDelHoyo', () => {
     it('R10: el lector de pantalla lee las distancias como una frase', () => {
       abrir({ metros: 342 });
 
-      expect(screen.getByText('mapa.etiqueta {"front":320,"center":342,"back":364,"origen":"mapa.desdeTuBarra"}')).toHaveClass('sr-only');
+      expect(
+        screen.getByText(
+          'mapa.etiqueta {"front":320,"center":342,"back":364,"origen":"mapa.desdeTuBarra"}',
+        ),
+      ).toHaveClass('sr-only');
     });
 
     it('H4: «Ver hoyo» vuelve a encuadrar el hoyo entero', () => {
@@ -313,18 +393,27 @@ describe('MapaDelHoyo', () => {
 
       fireEvent.click(screen.getByRole('button', { name: 'mapa.verHoyo' }));
 
-      expect(mapa().easeTo).toHaveBeenCalledWith(expect.objectContaining({ bearing: RUMBO_DEL_HOYO, zoom: expect.any(Number) }));
+      expect(mapa().easeTo).toHaveBeenCalledWith(
+        expect.objectContaining({
+          bearing: RUMBO_DEL_HOYO,
+          zoom: expect.any(Number),
+        }),
+      );
       expect(screen.queryByRole('button', { name: 'mapa.norte' })).toBeNull();
     });
 
     it('H5: «Céntrame» lleva el mapa a mi posición; sin posición, desactivado', () => {
       abrir();
-      expect(screen.getByRole('button', { name: 'mapa.centrame' })).toBeDisabled();
+      expect(
+        screen.getByRole('button', { name: 'mapa.centrame' }),
+      ).toBeDisabled();
 
       act(() => gps.exito(lectura(36.2888, -5.332)));
       fireEvent.click(screen.getByRole('button', { name: 'mapa.centrame' }));
 
-      expect(mapa().easeTo).toHaveBeenCalledWith(expect.objectContaining({ center: [-5.332, 36.2888] }));
+      expect(mapa().easeTo).toHaveBeenCalledWith(
+        expect.objectContaining({ center: [-5.332, 36.2888] }),
+      );
     });
 
     it('H6: un hoyo sin green dibuja su línea pero sin recuadro de distancias', () => {
@@ -332,7 +421,9 @@ describe('MapaDelHoyo', () => {
       act(() => mapa().oyentes.load());
       act(() => gps.exito(lectura(36.2888, -5.332)));
 
-      expect(mapa().fuentes.hoyo.data.features.map((f) => f.geometry.type)).toEqual(['LineString']);
+      expect(
+        mapa().fuentes.hoyo.data.features.map((f) => f.geometry.type),
+      ).toEqual(['LineString']);
       expect(screen.queryByTestId('distancia-centro')).toBeNull();
     });
 
@@ -340,11 +431,16 @@ describe('MapaDelHoyo', () => {
       abrir({ hoyo: { playLine: [GREEN.center], green: GREEN } });
       act(() => mapa().oyentes.load());
 
-      expect(mapa().fuentes.hoyo.data.features.map((f) => f.geometry.type)).toEqual(['Point']);
+      expect(
+        mapa().fuentes.hoyo.data.features.map((f) => f.geometry.type),
+      ).toEqual(['Point']);
     });
 
     it('un green sin línea de juego: con la tarjeta, recuadro (norte arriba); sin ella, no', () => {
-      const { unmount } = abrir({ hoyo: { playLine: [], green: GREEN }, metros: 342 });
+      const { unmount } = abrir({
+        hoyo: { playLine: [], green: GREEN },
+        metros: 342,
+      });
       expect(mapa().opciones.bearing).toBe(0);
       expect(screen.getByTestId('distancia-centro')).toHaveTextContent('342');
       unmount();
@@ -381,7 +477,9 @@ describe('MapaDelHoyo', () => {
       act(() => gps.exito(lectura(36.2889, -5.332)));
 
       expect(mapa().jumpTo).toHaveBeenCalledTimes(1);
-      expect(mapa().jumpTo).toHaveBeenCalledWith(expect.objectContaining({ center: [-5.332, 36.2888] }));
+      expect(mapa().jumpTo).toHaveBeenCalledWith(
+        expect.objectContaining({ center: [-5.332, 36.2888] }),
+      );
     });
 
     it('S3: sin GPS todavía, se abre en el campo (o la última posición)', () => {
@@ -410,7 +508,9 @@ describe('MapaDelHoyo', () => {
 
       tocar(36.2893, -5.332);
 
-      expect(screen.getByText('mapa.hastaAhi {"metros":56}')).toBeInTheDocument();
+      expect(
+        screen.getByText('mapa.hastaAhi {"metros":56}'),
+      ).toBeInTheDocument();
       expect(screen.queryByText(/mapa\.deAhiAlGreen/)).toBeNull();
     });
 
@@ -421,12 +521,26 @@ describe('MapaDelHoyo', () => {
 
       tocar(36.2893, -5.332);
 
-      const lineas = mapa().fuentes.medida.data.features.map((f) => f.geometry.coordinates);
+      const lineas = mapa().fuentes.medida.data.features.map(
+        (f) => f.geometry.coordinates,
+      );
       // Solo la de ti al punto: la de ti al green se va (M1, Agustín, 24 oct;
       // deshace la T3 del 19 oct, que la dejaba)
-      expect(lineas).toEqual([[[-5.332, 36.2888], [-5.332, 36.2893]]]);
-      const etiquetas = mapas.marcas.filter((m) => !m.quitada && m.opciones.element?.dataset?.tramo === 'medida' && /mapa\.tramo/.test(m.opciones.element?.textContent ?? ''));
-      expect(etiquetas.map((m) => m.opciones.element.textContent)).toEqual(['mapa.tramo {"metros":56}']);
+      expect(lineas).toEqual([
+        [
+          [-5.332, 36.2888],
+          [-5.332, 36.2893],
+        ],
+      ]);
+      const etiquetas = mapas.marcas.filter(
+        (m) =>
+          !m.quitada &&
+          m.opciones.element?.dataset?.tramo === 'medida' &&
+          /mapa\.tramo/.test(m.opciones.element?.textContent ?? ''),
+      );
+      expect(etiquetas.map((m) => m.opciones.element.textContent)).toEqual([
+        'mapa.tramo {"metros":56}',
+      ]);
       // Cada etiqueta, en mitad de su tramo
       expect(etiquetas[0].p[1]).toBeCloseTo((36.2888 + 36.2893) / 2, 9);
       // Ya no hay cuadro: los metros, para lectores de pantalla
@@ -443,8 +557,16 @@ describe('MapaDelHoyo', () => {
       act(() => gps.exito(lectura(36.2885, -5.332)));
 
       expect(mapas.marcas.length).toBe(antes);
-      expect(mapa().fuentes.medida.data.features[0].geometry.coordinates[0]).toEqual([-5.332, 36.2885]);
-      expect(mapas.marcas.some((m) => !m.quitada && m.opciones.element?.textContent === 'mapa.tramo {"metros":89}')).toBe(true);
+      expect(
+        mapa().fuentes.medida.data.features[0].geometry.coordinates[0],
+      ).toEqual([-5.332, 36.2885]);
+      expect(
+        mapas.marcas.some(
+          (m) =>
+            !m.quitada &&
+            m.opciones.element?.textContent === 'mapa.tramo {"metros":89}',
+        ),
+      ).toBe(true);
     });
 
     it('M3 (16 oct): al tocar, el mapa gira hacia el punto y os encuadra, contigo abajo', () => {
@@ -460,8 +582,14 @@ describe('MapaDelHoyo', () => {
         [-5.332, 36.2888],
         [-5.3315, 36.2893],
       ]);
-      expect(opciones.bearing).toBeCloseTo(rumbo({ lat: 36.2888, lon: -5.332 }, { lat: 36.2893, lon: -5.3315 }), 6);
-      expect(opciones.padding).toMatchObject({ top: expect.any(Number), bottom: expect.any(Number) });
+      expect(opciones.bearing).toBeCloseTo(
+        rumbo({ lat: 36.2888, lon: -5.332 }, { lat: 36.2893, lon: -5.3315 }),
+        6,
+      );
+      expect(opciones.padding).toMatchObject({
+        top: expect.any(Number),
+        bottom: expect.any(Number),
+      });
     });
 
     it('M3: también en un hoyo con mapa (que no se gira con los dedos)', () => {
@@ -494,7 +622,14 @@ describe('MapaDelHoyo', () => {
       fireEvent.click(screen.getByRole('button', { name: 'mapa.quitarPunto' }));
 
       expect(mapa().fuentes.medida.data.features).toEqual([]);
-      expect(mapas.marcas.filter((m) => !m.quitada && m.opciones.element?.dataset?.tramo === 'medida' && /mapa\.tramo/.test(m.opciones.element?.textContent ?? ''))).toEqual([]);
+      expect(
+        mapas.marcas.filter(
+          (m) =>
+            !m.quitada &&
+            m.opciones.element?.dataset?.tramo === 'medida' &&
+            /mapa\.tramo/.test(m.opciones.element?.textContent ?? ''),
+        ),
+      ).toEqual([]);
     });
 
     it('M2: sin green, solo hasta ahí', () => {
@@ -503,7 +638,9 @@ describe('MapaDelHoyo', () => {
 
       tocar(36.2893, -5.332);
 
-      expect(screen.getByText('mapa.hastaAhi {"metros":56}')).toBeInTheDocument();
+      expect(
+        screen.getByText('mapa.hastaAhi {"metros":56}'),
+      ).toBeInTheDocument();
       expect(screen.queryByText(/mapa.deAhiAlGreen/)).toBeNull();
     });
 
@@ -524,7 +661,9 @@ describe('MapaDelHoyo', () => {
 
       tocar(36.2893, -5.332);
 
-      expect(screen.getByText('mapa.hastaAhi {"metros":56}')).toBeInTheDocument();
+      expect(
+        screen.getByText('mapa.hastaAhi {"metros":56}'),
+      ).toBeInTheDocument();
       expect(screen.queryByText(/mapa.deAhiAlGreen/)).toBeNull();
     });
 
@@ -534,7 +673,9 @@ describe('MapaDelHoyo', () => {
       tocar(36.2893, -5.332);
 
       tocar(36.2898, -5.332);
-      expect(screen.getByText('mapa.hastaAhi {"metros":111}')).toBeInTheDocument();
+      expect(
+        screen.getByText('mapa.hastaAhi {"metros":111}'),
+      ).toBeInTheDocument();
 
       fireEvent.click(screen.getByRole('button', { name: 'mapa.quitarPunto' }));
       expect(screen.queryByText(/mapa.hastaAhi/)).toBeNull();
@@ -553,26 +694,39 @@ describe('MapaDelHoyo', () => {
     });
 
     it('G3: sin GPS en el navegador, el aviso', () => {
-      vi.stubGlobal('navigator', { ...globalThis.navigator, geolocation: undefined });
+      vi.stubGlobal('navigator', {
+        ...globalThis.navigator,
+        geolocation: undefined,
+      });
 
       abrir();
 
       expect(screen.getByText('mapa.noDisponible')).toBeInTheDocument();
     });
-
   });
 
   describe('la ortofoto de la comunidad (19 oct)', () => {
     // La salida del hoyo, en El Prat (Cataluña)
-    const EN_CATALUNYA = { playLine: [{ lat: 41.5735, lon: 2.0539 }, { lat: 41.5765, lon: 2.0545 }], green: null };
+    const EN_CATALUNYA = {
+      playLine: [
+        { lat: 41.5735, lon: 2.0539 },
+        { lat: 41.5765, lon: 2.0545 },
+      ],
+      green: null,
+    };
 
     it('O1/O6: un hoyo en Cataluña lleva la del ICGC encima de la PNOA, y su firma', () => {
       abrir({ hoyo: EN_CATALUNYA });
       act(() => mapa().oyentes.load());
 
       expect(mapa().fuentes.ortofoto.tiles).toEqual(ORTOFOTOS['ES-CT'].tiles);
-      expect(mapa().addLayer).toHaveBeenCalledWith({ id: 'ortofoto', type: 'raster', source: 'ortofoto' }, undefined);
-      expect(screen.getByText('mapa.ortofoto.ES-CT', { exact: false })).toBeInTheDocument();
+      expect(mapa().addLayer).toHaveBeenCalledWith(
+        { id: 'ortofoto', type: 'raster', source: 'ortofoto' },
+        undefined,
+      );
+      expect(
+        screen.getByText('mapa.ortofoto.ES-CT', { exact: false }),
+      ).toBeInTheDocument();
     });
 
     it('O5: en el resto de España, solo la PNOA', () => {
@@ -590,7 +744,16 @@ describe('MapaDelHoyo', () => {
 
       // La ubicación del campo (Ulzama, Navarra)
       centro.valor = { lat: 42.9617, lon: -1.667 };
-      rerender(<MapaDelHoyo golfCourseId="gc-1" numeroDeHoyo={1} par={4} hoyo={null} atribucion={null} onCerrar={() => {}} />);
+      rerender(
+        <MapaDelHoyo
+          golfCourseId="gc-1"
+          numeroDeHoyo={1}
+          par={4}
+          hoyo={null}
+          atribucion={null}
+          onCerrar={() => {}}
+        />,
+      );
 
       expect(mapa().fuentes.ortofoto.tiles).toEqual(ORTOFOTOS['ES-NC'].tiles);
     });
@@ -598,7 +761,16 @@ describe('MapaDelHoyo', () => {
     it('O6: si llega antes de que cargue el mapa, se pone al cargar', () => {
       const { rerender } = abrir({ hoyo: null });
       centro.valor = { lat: 42.9617, lon: -1.667 };
-      rerender(<MapaDelHoyo golfCourseId="gc-1" numeroDeHoyo={1} par={4} hoyo={null} atribucion={null} onCerrar={() => {}} />);
+      rerender(
+        <MapaDelHoyo
+          golfCourseId="gc-1"
+          numeroDeHoyo={1}
+          par={4}
+          hoyo={null}
+          atribucion={null}
+          onCerrar={() => {}}
+        />,
+      );
       expect(mapa().fuentes.ortofoto).toBeUndefined();
 
       act(() => mapa().oyentes.load());
@@ -619,7 +791,10 @@ describe('MapaDelHoyo', () => {
 
       expect(screen.getByText('mapa.atribucionPnoa')).toBeInTheDocument();
       const osm = screen.getByRole('link', { name: 'mapa.atribucionOsm' });
-      expect(osm).toHaveAttribute('href', 'https://www.openstreetmap.org/copyright');
+      expect(osm).toHaveAttribute(
+        'href',
+        'https://www.openstreetmap.org/copyright',
+      );
       expect(osm).toHaveAttribute('target', '_blank');
       expect(osm).toHaveAttribute('rel', expect.stringContaining('noopener'));
     });
@@ -627,14 +802,18 @@ describe('MapaDelHoyo', () => {
     it('L2: sin OSM, sin su enlace', () => {
       abrir({ hoyo: null, atribucion: null });
 
-      expect(screen.queryByRole('link', { name: 'mapa.atribucionOsm' })).toBeNull();
+      expect(
+        screen.queryByRole('link', { name: 'mapa.atribucionOsm' }),
+      ).toBeNull();
     });
 
     it('L4: los botones miden al menos 44 px', () => {
       abrir();
 
       for (const nombre of ['mapa.cerrar', 'mapa.centrame', 'mapa.verHoyo']) {
-        expect(screen.getByRole('button', { name: nombre })).toHaveClass('min-h-11');
+        expect(screen.getByRole('button', { name: nombre })).toHaveClass(
+          'min-h-11',
+        );
       }
     });
   });
@@ -661,19 +840,38 @@ describe('MapaDelHoyo — tras la revisión', () => {
     expect(mapa().jumpTo).not.toHaveBeenCalled();
 
     centro.valor = { lat: 36.29, lon: -5.33 };
-    rerender(<MapaDelHoyo golfCourseId="gc-1" numeroDeHoyo={1} par={4} hoyo={null} atribucion={null} onCerrar={() => {}} />);
+    rerender(
+      <MapaDelHoyo
+        golfCourseId="gc-1"
+        numeroDeHoyo={1}
+        par={4}
+        hoyo={null}
+        atribucion={null}
+        onCerrar={() => {}}
+      />,
+    );
 
     expect(mapa().jumpTo).toHaveBeenCalledTimes(1);
-    expect(mapa().jumpTo).toHaveBeenCalledWith(expect.objectContaining({ center: [-5.33, 36.29] }));
+    expect(mapa().jumpTo).toHaveBeenCalledWith(
+      expect.objectContaining({ center: [-5.33, 36.29] }),
+    );
   });
-
 
   it('S3: si el jugador ya movió el mapa, no se lo cambia', () => {
     const { rerender } = abrir({ hoyo: null });
     act(() => mapa().oyentes.movestart({ originalEvent: {} }));
 
     centro.valor = { lat: 36.29, lon: -5.33 };
-    rerender(<MapaDelHoyo golfCourseId="gc-1" numeroDeHoyo={1} par={4} hoyo={null} atribucion={null} onCerrar={() => {}} />);
+    rerender(
+      <MapaDelHoyo
+        golfCourseId="gc-1"
+        numeroDeHoyo={1}
+        par={4}
+        hoyo={null}
+        atribucion={null}
+        onCerrar={() => {}}
+      />,
+    );
 
     expect(mapa().jumpTo).not.toHaveBeenCalled();
   });
@@ -684,7 +882,16 @@ describe('MapaDelHoyo — tras la revisión', () => {
     mapa().jumpTo.mockClear();
 
     centro.valor = { lat: 36.29, lon: -5.33 };
-    rerender(<MapaDelHoyo golfCourseId="gc-1" numeroDeHoyo={1} par={4} hoyo={null} atribucion={null} onCerrar={() => {}} />);
+    rerender(
+      <MapaDelHoyo
+        golfCourseId="gc-1"
+        numeroDeHoyo={1}
+        par={4}
+        hoyo={null}
+        atribucion={null}
+        onCerrar={() => {}}
+      />,
+    );
 
     expect(mapa().jumpTo).not.toHaveBeenCalled();
   });
@@ -698,39 +905,61 @@ describe('MapaDelHoyo — tras la revisión', () => {
   it('respeta las zonas seguras del iPhone (muesca y barra de inicio)', () => {
     abrir();
 
-    expect(screen.getByTestId('mapa-arriba').className).toContain('env(safe-area-inset-top)');
-    expect(screen.getByTestId('mapa-abajo').className).toContain('env(safe-area-inset-bottom)');
+    expect(screen.getByTestId('mapa-arriba').className).toContain(
+      'env(safe-area-inset-top)',
+    );
+    expect(screen.getByTestId('mapa-abajo').className).toContain(
+      'env(safe-area-inset-bottom)',
+    );
   });
 
   it('en un móvil normal (780 px) se reserva abajo el sitio de los paneles: la salida no queda tapada', () => {
-    const alto = vi.spyOn(globalThis.HTMLElement.prototype, 'clientHeight', 'get').mockReturnValue(780);
+    const alto = vi
+      .spyOn(globalThis.HTMLElement.prototype, 'clientHeight', 'get')
+      .mockReturnValue(780);
     try {
       abrir();
     } finally {
       alto.mockRestore();
     }
 
-    const { zoom } = encuadreGirado(HOYO, RUMBO_DEL_HOYO, { ancho: 360, alto: 780, padding: { top: 90, bottom: 320, left: 40, right: 40 } });
-    expect(mapa().jumpTo).toHaveBeenLastCalledWith(expect.objectContaining({ zoom }));
+    const { zoom } = encuadreGirado(HOYO, RUMBO_DEL_HOYO, {
+      ancho: 360,
+      alto: 780,
+      padding: { top: 90, bottom: 320, left: 40, right: 40 },
+    });
+    expect(mapa().jumpTo).toHaveBeenLastCalledWith(
+      expect.objectContaining({ zoom }),
+    );
   });
 
   it('el margen del encuadre sale del alto de la pantalla (apaisado)', () => {
-    const alto = vi.spyOn(globalThis.HTMLElement.prototype, 'clientHeight', 'get').mockReturnValue(360);
+    const alto = vi
+      .spyOn(globalThis.HTMLElement.prototype, 'clientHeight', 'get')
+      .mockReturnValue(360);
     try {
       abrir();
     } finally {
       alto.mockRestore();
     }
 
-    const { zoom } = encuadreGirado(HOYO, RUMBO_DEL_HOYO, { ancho: 360, alto: 360, padding: { top: 54, bottom: 162, left: 40, right: 40 } });
-    expect(mapa().jumpTo).toHaveBeenLastCalledWith(expect.objectContaining({ zoom }));
+    const { zoom } = encuadreGirado(HOYO, RUMBO_DEL_HOYO, {
+      ancho: 360,
+      alto: 360,
+      padding: { top: 54, bottom: 162, left: 40, right: 40 },
+    });
+    expect(mapa().jumpTo).toHaveBeenLastCalledWith(
+      expect.objectContaining({ zoom }),
+    );
   });
 
   it('sin señal buena, el punto azul se quita', () => {
     abrir();
     act(() => gps.exito(lectura(36.2888, -5.332)));
     // El punto azul (antes van las cifras de la línea del hoyo)
-    const yo = mapas.marcas.find((m) => m.opciones.element?.className.includes('bg-blue-500'));
+    const yo = mapas.marcas.find((m) =>
+      m.opciones.element?.className.includes('bg-blue-500'),
+    );
 
     act(() => gps.exito(lectura(36.2888, -5.332, 60)));
 
@@ -744,14 +973,20 @@ describe('MapaDelHoyo — tras la revisión', () => {
     abrir();
     act(() => gps.exito(lectura(36.2888, -5.332)));
 
-    const yo = mapas.marcas.find((m) => m.opciones.element?.className.includes('bg-blue-500'));
-    const cifras = mapas.marcas.filter((m) => m.opciones.element?.dataset?.tramo);
+    const yo = mapas.marcas.find((m) =>
+      m.opciones.element?.className.includes('bg-blue-500'),
+    );
+    const cifras = mapas.marcas.filter(
+      (m) => m.opciones.element?.dataset?.tramo,
+    );
 
     expect(cifras.length).toBeGreaterThan(0);
-    expect(yo.getElement().className.split(' ')).toEqual(expect.arrayContaining(['z-[1]', 'pointer-events-none']));
-    for (const cifra of cifras) expect(cifra.getElement().className).not.toMatch(/\bz-/);
+    expect(yo.getElement().className.split(' ')).toEqual(
+      expect.arrayContaining(['z-[1]', 'pointer-events-none']),
+    );
+    for (const cifra of cifras)
+      expect(cifra.getElement().className).not.toMatch(/\bz-/);
   });
-
 });
 
 describe('MapaDelHoyo — tras /code-review', () => {
@@ -770,8 +1005,6 @@ describe('MapaDelHoyo — tras /code-review', () => {
     mapas.sinWebgl = false;
   });
 
-
-
   it('un móvil sin WebGL: sin mapa, pero con el recuadro de la tarjeta', () => {
     mapas.sinWebgl = true;
 
@@ -782,7 +1015,9 @@ describe('MapaDelHoyo — tras /code-review', () => {
     expect(screen.queryByRole('button', { name: 'mapa.verHoyo' })).toBeNull();
     expect(screen.queryByRole('button', { name: 'mapa.centrame' })).toBeNull();
     expect(screen.queryByText('mapa.ayudaMedir')).toBeNull();
-    expect(screen.getByRole('button', { name: 'mapa.cerrar' })).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: 'mapa.cerrar' }),
+    ).toBeInTheDocument();
   });
 });
 
@@ -801,8 +1036,12 @@ describe('MapaDelHoyo — tras la prueba en el Kind', () => {
     const orden = indexCss.match(/@layer ([a-z, ]+);/)[1].split(/,\s*/);
     expect(orden.indexOf('maplibre')).toBeGreaterThan(-1);
     expect(orden.indexOf('maplibre')).toBeLessThan(orden.indexOf('utilities'));
-    expect(indexCss.indexOf('@layer theme')).toBeLessThan(indexCss.search(/@import ['"]tailwindcss['"]/));
-    expect(mapaCss).toMatch(/@import 'maplibre-gl\/dist\/maplibre-gl\.css' layer\(maplibre\);/);
+    expect(indexCss.indexOf('@layer theme')).toBeLessThan(
+      indexCss.search(/@import ['"]tailwindcss['"]/),
+    );
+    expect(mapaCss).toMatch(
+      /@import 'maplibre-gl\/dist\/maplibre-gl\.css' layer\(maplibre\);/,
+    );
     // Y nadie la importa sin capa
     expect(mapaJsx).toContain("import './mapa.css';");
     expect(mapaJsx).not.toContain('maplibre-gl.css');
@@ -841,12 +1080,27 @@ describe('MapaDelHoyo — lejos del campo (16 oct)', () => {
   it('si el GPS (lejos) llegó antes que la ubicación del campo, al llegar esta vuelve al campo', () => {
     const { rerender } = abrir({ hoyo: null });
     act(() => gps.exito(lectura(EN_CASA.lat, EN_CASA.lon)));
-    expect(mapa().jumpTo).toHaveBeenLastCalledWith({ center: [EN_CASA.lon, EN_CASA.lat], zoom: 17 });
+    expect(mapa().jumpTo).toHaveBeenLastCalledWith({
+      center: [EN_CASA.lon, EN_CASA.lat],
+      zoom: 17,
+    });
 
     centro.valor = CAMPO;
-    rerender(<MapaDelHoyo golfCourseId="gc-1" numeroDeHoyo={1} par={4} hoyo={null} atribucion={null} onCerrar={() => {}} />);
+    rerender(
+      <MapaDelHoyo
+        golfCourseId="gc-1"
+        numeroDeHoyo={1}
+        par={4}
+        hoyo={null}
+        atribucion={null}
+        onCerrar={() => {}}
+      />,
+    );
 
-    expect(mapa().jumpTo).toHaveBeenLastCalledWith({ center: [CAMPO.lon, CAMPO.lat], zoom: 17 });
+    expect(mapa().jumpTo).toHaveBeenLastCalledWith({
+      center: [CAMPO.lon, CAMPO.lat],
+      zoom: 17,
+    });
   });
 
   it('cerca del campo (menos de 3 km), el mapa va a ti como siempre', () => {
@@ -855,7 +1109,10 @@ describe('MapaDelHoyo — lejos del campo (16 oct)', () => {
 
     act(() => gps.exito(lectura(CERCA.lat, CERCA.lon)));
 
-    expect(mapa().jumpTo).toHaveBeenLastCalledWith({ center: [CERCA.lon, CERCA.lat], zoom: 17 });
+    expect(mapa().jumpTo).toHaveBeenLastCalledWith({
+      center: [CERCA.lon, CERCA.lat],
+      zoom: 17,
+    });
   });
 
   it('lejos, medir tocando (19 oct: T4, T6): sin giro, desde la salida del hoyo', () => {
@@ -867,8 +1124,13 @@ describe('MapaDelHoyo — lejos del campo (16 oct)', () => {
     tocar(36.2893, -5.332);
 
     expect(mapa().fitBounds).not.toHaveBeenCalled();
-    expect(mapa().fuentes.medida.data.features.map((f) => f.geometry.coordinates)).toEqual([
-      [[-5.33, 36.28], [-5.332, 36.2893]],
+    expect(
+      mapa().fuentes.medida.data.features.map((f) => f.geometry.coordinates),
+    ).toEqual([
+      [
+        [-5.33, 36.28],
+        [-5.332, 36.2893],
+      ],
     ]);
     expect(screen.getByText(/mapa\.hastaAhi/)).toBeInTheDocument();
     expect(screen.queryByText(/mapa\.deAhiAlGreen/)).toBeNull();
@@ -883,7 +1145,14 @@ describe('MapaDelHoyo — lejos del campo (16 oct)', () => {
 
     tocar(36.2893, -5.332);
 
-    expect(mapa().fuentes.medida.data.features.map((f) => f.geometry.coordinates)).toEqual([[[-5.33, 36.2801], [-5.332, 36.2893]]]);
+    expect(
+      mapa().fuentes.medida.data.features.map((f) => f.geometry.coordinates),
+    ).toEqual([
+      [
+        [-5.33, 36.2801],
+        [-5.332, 36.2893],
+      ],
+    ]);
     expect(mapa().fitBounds).toHaveBeenCalledTimes(1);
     expect(screen.getByText(/mapa\.hastaAhi/)).toBeInTheDocument();
   });
@@ -925,7 +1194,8 @@ describe('MapaDelHoyo — lejos del campo (16 oct)', () => {
     act(() => mapa().oyentes.load());
     act(() => gps.exito(lectura(EN_CASA.lat, EN_CASA.lon)));
     tocar(36.2893, -5.332);
-    const desde = () => mapa().fuentes.medida.data.features[0].geometry.coordinates[0];
+    const desde = () =>
+      mapa().fuentes.medida.data.features[0].geometry.coordinates[0];
     // Lejos, desde la salida del hoyo (T4)
     expect(desde()).toEqual([-5.33, 36.28]);
 
@@ -944,7 +1214,16 @@ describe('MapaDelHoyo — lejos del campo (16 oct)', () => {
     const { rerender } = abrir({ hoyo: null });
     act(() => gps.exito(lectura(CERCA.lat, CERCA.lon)));
     centro.valor = CAMPO;
-    rerender(<MapaDelHoyo golfCourseId="gc-1" numeroDeHoyo={1} par={4} hoyo={null} atribucion={null} onCerrar={() => {}} />);
+    rerender(
+      <MapaDelHoyo
+        golfCourseId="gc-1"
+        numeroDeHoyo={1}
+        par={4}
+        hoyo={null}
+        atribucion={null}
+        onCerrar={() => {}}
+      />,
+    );
     mapa().jumpTo.mockClear();
 
     act(() => gps.exito(lectura(EN_CASA.lat, EN_CASA.lon)));
@@ -956,12 +1235,24 @@ describe('MapaDelHoyo — lejos del campo (16 oct)', () => {
     const { rerender } = abrir({ hoyo: null });
     act(() => gps.exito(lectura(EN_CASA.lat, EN_CASA.lon)));
     centro.valor = CAMPO;
-    rerender(<MapaDelHoyo golfCourseId="gc-1" numeroDeHoyo={1} par={4} hoyo={null} atribucion={null} onCerrar={() => {}} />);
+    rerender(
+      <MapaDelHoyo
+        golfCourseId="gc-1"
+        numeroDeHoyo={1}
+        par={4}
+        hoyo={null}
+        atribucion={null}
+        onCerrar={() => {}}
+      />,
+    );
     mapa().jumpTo.mockClear();
 
     act(() => gps.exito(lectura(CERCA.lat, CERCA.lon)));
 
-    expect(mapa().jumpTo).toHaveBeenLastCalledWith({ center: [CERCA.lon, CERCA.lat], zoom: 17 });
+    expect(mapa().jumpTo).toHaveBeenLastCalledWith({
+      center: [CERCA.lon, CERCA.lat],
+      zoom: 17,
+    });
   });
 
   it('lejos, «Céntrame» sin poder pulsarse y el recuadro con la tarjeta; cerca, desde mí', () => {
@@ -969,11 +1260,15 @@ describe('MapaDelHoyo — lejos del campo (16 oct)', () => {
     act(() => gps.exito(lectura(EN_CASA.lat, EN_CASA.lon)));
 
     expect(screen.getByTestId('distancia-centro')).toHaveTextContent('342');
-    expect(screen.getByRole('button', { name: 'mapa.centrame' })).toBeDisabled();
+    expect(
+      screen.getByRole('button', { name: 'mapa.centrame' }),
+    ).toBeDisabled();
 
     act(() => gps.exito(lectura(36.2888, -5.332)));
     expect(screen.getByTestId('distancia-centro')).not.toHaveTextContent('342');
-    expect(screen.getByRole('button', { name: 'mapa.centrame' })).not.toBeDisabled();
+    expect(
+      screen.getByRole('button', { name: 'mapa.centrame' }),
+    ).not.toBeDisabled();
   });
 
   it('si moviste el mapa a mano estando lejos, al llegar al campo el GPS no te lo quita', () => {
@@ -995,7 +1290,16 @@ describe('MapaDelHoyo — lejos del campo (16 oct)', () => {
     mapa().jumpTo.mockClear();
 
     centro.valor = CAMPO;
-    rerender(<MapaDelHoyo golfCourseId="gc-1" numeroDeHoyo={1} par={4} hoyo={null} atribucion={null} onCerrar={() => {}} />);
+    rerender(
+      <MapaDelHoyo
+        golfCourseId="gc-1"
+        numeroDeHoyo={1}
+        par={4}
+        hoyo={null}
+        atribucion={null}
+        onCerrar={() => {}}
+      />,
+    );
 
     expect(mapa().jumpTo).not.toHaveBeenCalled();
   });
@@ -1018,8 +1322,14 @@ describe('MapaDelHoyo — lejos del campo (16 oct)', () => {
 describe('MapaDelHoyo — marcar, mover y la muestra al cerrar', () => {
   const M_POR_GRADO = (6371008.8 * Math.PI) / 180;
   const T = { lat: 36.28, lon: -5.33 };
-  const alNorte = (m, de = T) => ({ lat: de.lat + m / M_POR_GRADO, lon: de.lon });
-  const alEste = (m, de = T) => ({ lat: de.lat, lon: de.lon + m / (M_POR_GRADO * Math.cos((de.lat * Math.PI) / 180)) });
+  const alNorte = (m, de = T) => ({
+    lat: de.lat + m / M_POR_GRADO,
+    lon: de.lon,
+  });
+  const alEste = (m, de = T) => ({
+    lat: de.lat,
+    lon: de.lon + m / (M_POR_GRADO * Math.cos((de.lat * Math.PI) / 180)),
+  });
   const G = alNorte(300);
   const GREEN_G = { front: alNorte(290), center: G, back: alNorte(310) };
   const tocar = (p) => pulsar({ lngLat: { lat: p.lat, lng: p.lon } });
@@ -1035,12 +1345,22 @@ describe('MapaDelHoyo — marcar, mover y la muestra al cerrar', () => {
       marca.setLngLat([p.lon, p.lat]);
       marca.oyentes.drag({ target: marca });
     });
-  const deLaLinea = () => vivas().filter((m) => m.opciones.element?.dataset?.tramo === 'linea');
+  const deLaLinea = () =>
+    vivas().filter((m) => m.opciones.element?.dataset?.tramo === 'linea');
   const textos = () => deLaLinea().map((m) => m.opciones.element.textContent);
-  const lineaDibujada = () => mapa().fuentes.marcado.data.features.find((f) => f.properties.tipo === 'linea')?.geometry.coordinates;
+  const lineaDibujada = () =>
+    mapa().fuentes.marcado.data.features.find(
+      (f) => f.properties.tipo === 'linea',
+    )?.geometry.coordinates;
   const marcar = (props = {}) => {
     const onMuestra = props.onMuestra ?? vi.fn();
-    const r = abrir({ hoyo: null, porMarcar: 'salida', recoge: true, onMuestra, ...props });
+    const r = abrir({
+      hoyo: null,
+      porMarcar: 'salida',
+      recoge: true,
+      onMuestra,
+      ...props,
+    });
     act(() => mapa().oyentes.load());
     // Sin permiso de ubicación: se marca tocando la salida y el green (L1, el
     // marcado de siempre). El de la pregunta «¿Estás en la salida?», aparte (M1-M6)
@@ -1060,7 +1380,9 @@ describe('MapaDelHoyo — marcar, mover y la muestra al cerrar', () => {
     vi.stubGlobal('navigator', { ...globalThis.navigator, geolocation: gps });
     // Un segundo entre toque y toque: así no cuentan como doble toque
     let ahora = 0;
-    reloj = vi.spyOn(globalThis.performance, 'now').mockImplementation(() => (ahora += 1000));
+    reloj = vi
+      .spyOn(globalThis.performance, 'now')
+      .mockImplementation(() => (ahora += 1000));
   });
   afterEach(() => {
     reloj.mockRestore();
@@ -1072,9 +1394,15 @@ describe('MapaDelHoyo — marcar, mover y la muestra al cerrar', () => {
       marcar();
 
       expect(screen.getByText('mapa.pideSalida')).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: 'mapa.ahoraNo' })).toBeInTheDocument();
-      expect(screen.queryByRole('button', { name: 'mapa.guardarMarca' })).toBeNull();
-      expect(screen.queryByRole('button', { name: 'mapa.volverAMarcar' })).toBeNull();
+      expect(
+        screen.getByRole('button', { name: 'mapa.ahoraNo' }),
+      ).toBeInTheDocument();
+      expect(
+        screen.queryByRole('button', { name: 'mapa.guardarMarca' }),
+      ).toBeNull();
+      expect(
+        screen.queryByRole('button', { name: 'mapa.volverAMarcar' }),
+      ).toBeNull();
     });
 
     it('P2: al tocar la salida, su punto, sin anillo ni cifra; el mapa se aleja la mitad de la tarjeta, sin girar', () => {
@@ -1085,10 +1413,22 @@ describe('MapaDelHoyo — marcar, mover y la muestra al cerrar', () => {
 
       expect(screen.getByText('mapa.pideGreen')).toBeInTheDocument();
       expect(mapa().fuentes.marcado.data.features).toEqual([]);
-      expect(vivas().some((m) => /mapa\.arco/.test(m.opciones.element?.textContent ?? ''))).toBe(false);
-      expect(vivas().some((m) => m.opciones.element?.className.includes('bg-white') && m.p[1] === T.lat)).toBe(true);
+      expect(
+        vivas().some((m) =>
+          /mapa\.arco/.test(m.opciones.element?.textContent ?? ''),
+        ),
+      ).toBe(false);
+      expect(
+        vivas().some(
+          (m) =>
+            m.opciones.element?.className.includes('bg-white') &&
+            m.p[1] === T.lat,
+        ),
+      ).toBe(true);
       const [limites, opciones] = mapa().fitBounds.mock.calls[0];
-      expect(limites).toEqual(limitesDelHoyo({ playLine: circuloAlrededor(T, 150) }));
+      expect(limites).toEqual(
+        limitesDelHoyo({ playLine: circuloAlrededor(T, 150) }),
+      );
       expect(opciones.bearing).toBe(0);
     });
 
@@ -1106,17 +1446,20 @@ describe('MapaDelHoyo — marcar, mover y la muestra al cerrar', () => {
       [4, 1],
       [5, 2],
       [null, 1],
-    ])('P3: al tocar el green de un par %s, la línea con %i codos ya puestos, todo arrastrable', (par, codos) => {
-      marcar({ metros: 300, par });
-      tocar(T);
+    ])(
+      'P3: al tocar el green de un par %s, la línea con %i codos ya puestos, todo arrastrable',
+      (par, codos) => {
+        marcar({ metros: 300, par });
+        tocar(T);
 
-      tocar(G);
+        tocar(G);
 
-      expect(lineaDibujada()).toHaveLength(codos + 2);
-      expect(arrastrables()).toHaveLength(codos + 2);
-      expect(textos()).toHaveLength(codos + 1);
-      expect(screen.queryByText('mapa.pideGreen')).toBeNull();
-    });
+        expect(lineaDibujada()).toHaveLength(codos + 2);
+        expect(arrastrables()).toHaveLength(codos + 2);
+        expect(textos()).toHaveLength(codos + 1);
+        expect(screen.queryByText('mapa.pideGreen')).toBeNull();
+      },
+    );
 
     it('P3: los codos van sobre la recta (la longitud no cambia)', () => {
       marcar({ metros: 300, par: 5 });
@@ -1124,7 +1467,11 @@ describe('MapaDelHoyo — marcar, mover y la muestra al cerrar', () => {
 
       tocar(G);
 
-      expect(textos()).toEqual(['mapa.tramo {"metros":100}', 'mapa.tramo {"metros":100}', 'mapa.tramo {"metros":100}']);
+      expect(textos()).toEqual([
+        'mapa.tramo {"metros":100}',
+        'mapa.tramo {"metros":100}',
+        'mapa.tramo {"metros":100}',
+      ]);
     });
 
     it('P4: un green a menos de 40 m (o más de 750) no vale: lo dice y sigue pidiéndolo', () => {
@@ -1133,7 +1480,9 @@ describe('MapaDelHoyo — marcar, mover y la muestra al cerrar', () => {
 
       tocar(alNorte(30));
 
-      expect(screen.getByRole('alert')).toHaveTextContent('mapa.fueraDeLimites');
+      expect(screen.getByRole('alert')).toHaveTextContent(
+        'mapa.fueraDeLimites',
+      );
       expect(screen.getByText('mapa.pideGreen')).toBeInTheDocument();
       tocar(alNorte(800));
       expect(screen.getByText('mapa.pideGreen')).toBeInTheDocument();
@@ -1159,17 +1508,38 @@ describe('MapaDelHoyo — marcar, mover y la muestra al cerrar', () => {
 
     it('P6: solo el green, sobre la línea aprobada: su final (donde acaba en OSM) pasa a ser el green tocado', () => {
       const codo = alNorte(150);
-      marcar({ hoyo: { playLine: [T, codo, alNorte(280)], green: null }, porMarcar: 'green', metros: 300, par: 4 });
+      marcar({
+        hoyo: { playLine: [T, codo, alNorte(280)], green: null },
+        porMarcar: 'green',
+        metros: 300,
+        par: 4,
+      });
 
       tocar(G);
 
       // Ya tiene el codo de su par: no se añade otro, ni uno falso junto al green
-      expect(lineaDibujada()).toEqual([[T.lon, T.lat], [codo.lon, codo.lat], [G.lon, G.lat]]);
+      expect(lineaDibujada()).toEqual([
+        [T.lon, T.lat],
+        [codo.lon, codo.lat],
+        [G.lon, G.lat],
+      ]);
     });
 
     it('QA P2 (16 oct): solo el green sobre una línea de OSM con muchos puntos: queda con los codos de su par, y se envía', () => {
-      const osm = [T, alNorte(50), alNorte(100), alNorte(160), alNorte(210), alNorte(280)];
-      const { unmount, onMuestra } = marcar({ hoyo: { playLine: osm, green: null }, porMarcar: 'green', metros: 300, par: 4 });
+      const osm = [
+        T,
+        alNorte(50),
+        alNorte(100),
+        alNorte(160),
+        alNorte(210),
+        alNorte(280),
+      ];
+      const { unmount, onMuestra } = marcar({
+        hoyo: { playLine: osm, green: null },
+        porMarcar: 'green',
+        metros: 300,
+        par: 4,
+      });
 
       tocar(G);
 
@@ -1182,7 +1552,12 @@ describe('MapaDelHoyo — marcar, mover y la muestra al cerrar', () => {
     });
 
     it('P6: solo el green con la salida sola (un punto): la salida y el green, con los codos del par', () => {
-      marcar({ hoyo: { playLine: [T], green: null }, porMarcar: 'green', metros: 300, par: 5 });
+      marcar({
+        hoyo: { playLine: [T], green: null },
+        porMarcar: 'green',
+        metros: 300,
+        par: 5,
+      });
 
       tocar(G);
 
@@ -1191,9 +1566,20 @@ describe('MapaDelHoyo — marcar, mover y la muestra al cerrar', () => {
     });
 
     it('P6 (16 oct): pidiendo solo el green, la salida aprobada se ve y el mapa se aleja la mitad de la tarjeta', () => {
-      marcar({ hoyo: { playLine: [T], green: null }, porMarcar: 'green', metros: 300, par: 4 });
+      marcar({
+        hoyo: { playLine: [T], green: null },
+        porMarcar: 'green',
+        metros: 300,
+        par: 4,
+      });
 
-      expect(vivas().some((m) => m.opciones.element?.className.includes('bg-white') && m.p[1] === T.lat)).toBe(true);
+      expect(
+        vivas().some(
+          (m) =>
+            m.opciones.element?.className.includes('bg-white') &&
+            m.p[1] === T.lat,
+        ),
+      ).toBe(true);
       expect(mapa().fitBounds).toHaveBeenCalledWith(
         limitesDelHoyo({ playLine: circuloAlrededor(T, 150) }),
         expect.objectContaining({ bearing: 0 }),
@@ -1201,7 +1587,15 @@ describe('MapaDelHoyo — marcar, mover y la muestra al cerrar', () => {
     });
 
     it('/code-review: sobre una línea de OSM reducida a la que le falta un codo del par, la ayuda sí sale', () => {
-      marcar({ hoyo: { playLine: [T, alNorte(100), alNorte(100), alNorte(100), alNorte(280)], green: null }, porMarcar: 'green', metros: 300, par: 5 });
+      marcar({
+        hoyo: {
+          playLine: [T, alNorte(100), alNorte(100), alNorte(100), alNorte(280)],
+          green: null,
+        },
+        porMarcar: 'green',
+        metros: 300,
+        par: 5,
+      });
 
       tocar(G);
 
@@ -1209,7 +1603,12 @@ describe('MapaDelHoyo — marcar, mover y la muestra al cerrar', () => {
     });
 
     it('P5: la ayuda de los codos solo si se añadieron (sobre una línea aprobada con su codo, no)', () => {
-      marcar({ hoyo: { playLine: [T, alNorte(150), alNorte(280)], green: null }, porMarcar: 'green', metros: 300, par: 4 });
+      marcar({
+        hoyo: { playLine: [T, alNorte(150), alNorte(280)], green: null },
+        porMarcar: 'green',
+        metros: 300,
+        par: 4,
+      });
 
       tocar(G);
 
@@ -1255,7 +1654,9 @@ describe('MapaDelHoyo — marcar, mover y la muestra al cerrar', () => {
       tocar(T);
 
       expect(mapa().fitBounds).toHaveBeenCalledTimes(2);
-      expect(mapa().fitBounds.mock.calls[1][0]).toEqual(limitesDelHoyo({ playLine: circuloAlrededor(T, 150) }));
+      expect(mapa().fitBounds.mock.calls[1][0]).toEqual(
+        limitesDelHoyo({ playLine: circuloAlrededor(T, 150) }),
+      );
     });
 
     it('QA P3: tras un green fuera de límites, un doble toque no reencuadra a la salida', () => {
@@ -1270,7 +1671,9 @@ describe('MapaDelHoyo — marcar, mover y la muestra al cerrar', () => {
       a(3090);
       tocar(alNorte(20));
 
-      expect(screen.getByRole('alert')).toHaveTextContent('mapa.fueraDeLimites');
+      expect(screen.getByRole('alert')).toHaveTextContent(
+        'mapa.fueraDeLimites',
+      );
       expect(mapa().fitBounds).not.toHaveBeenCalled();
     });
 
@@ -1299,7 +1702,9 @@ describe('MapaDelHoyo — marcar, mover y la muestra al cerrar', () => {
       act(() => vi.advanceTimersByTime(1000));
 
       expect(lineaDibujada()).toBeDefined();
-      expect(vivas().filter((m) => m.opciones.element?.dataset?.punto === 'medido')).toEqual([]);
+      expect(
+        vivas().filter((m) => m.opciones.element?.dataset?.punto === 'medido'),
+      ).toEqual([]);
     });
 
     it('M8 (revisor, 2 nov): a 500 ms justos del toque que marcó, ya mide', () => {
@@ -1313,7 +1718,9 @@ describe('MapaDelHoyo — marcar, mover y la muestra al cerrar', () => {
 
       pulsarA(3500, G);
 
-      expect(vivas().filter((m) => m.opciones.element?.dataset?.punto === 'medido')).toHaveLength(1);
+      expect(
+        vivas().filter((m) => m.opciones.element?.dataset?.punto === 'medido'),
+      ).toHaveLength(1);
     });
 
     it('Z2 (2 nov): pedido y marcado el hoyo, el doble toque no vuelve a acercar', () => {
@@ -1345,7 +1752,9 @@ describe('MapaDelHoyo — marcar, mover y la muestra al cerrar', () => {
 
       tocar(alNorte(150));
 
-      expect(screen.getByRole('button', { name: 'mapa.quitarPunto' })).toBeInTheDocument();
+      expect(
+        screen.getByRole('button', { name: 'mapa.quitarPunto' }),
+      ).toBeInTheDocument();
       // Midiendo, la marcada no se ve (T2, 19 oct); con «Quitar» vuelve tal cual
       expect(lineaDibujada()).toBeUndefined();
       fireEvent.click(screen.getByRole('button', { name: 'mapa.quitarPunto' }));
@@ -1360,11 +1769,20 @@ describe('MapaDelHoyo — marcar, mover y la muestra al cerrar', () => {
       tocar(G);
 
       arrastrar(arrastrables()[1], alNorte(100));
-      expect(textos()).toEqual(['mapa.tramo {"metros":100}', 'mapa.tramo {"metros":200}']);
+      expect(textos()).toEqual([
+        'mapa.tramo {"metros":100}',
+        'mapa.tramo {"metros":200}',
+      ]);
       expect(lineaDibujada()[1]).toEqual([T.lon, alNorte(100).lat]);
       arrastrar(arrastrables()[1], alNorte(140));
-      expect(textos()).toEqual(['mapa.tramo {"metros":140}', 'mapa.tramo {"metros":160}']);
-      expect(deLaLinea()[0].p[1]).toBeCloseTo((T.lat + alNorte(140).lat) / 2, 9);
+      expect(textos()).toEqual([
+        'mapa.tramo {"metros":140}',
+        'mapa.tramo {"metros":160}',
+      ]);
+      expect(deLaLinea()[0].p[1]).toBeCloseTo(
+        (T.lat + alNorte(140).lat) / 2,
+        9,
+      );
     });
 
     it('M1: al soltar, queda movida', () => {
@@ -1374,7 +1792,10 @@ describe('MapaDelHoyo — marcar, mover y la muestra al cerrar', () => {
 
       soltar(arrastrables()[1], alNorte(120));
 
-      expect(textos()).toEqual(['mapa.tramo {"metros":120}', 'mapa.tramo {"metros":180}']);
+      expect(textos()).toEqual([
+        'mapa.tramo {"metros":120}',
+        'mapa.tramo {"metros":180}',
+      ]);
       expect(lineaDibujada()[1]).toEqual([T.lon, alNorte(120).lat]);
     });
 
@@ -1394,7 +1815,10 @@ describe('MapaDelHoyo — marcar, mover y la muestra al cerrar', () => {
       act(() => mapa().oyentes.load());
 
       expect(arrastrables()).toHaveLength(3);
-      expect(textos()).toEqual(['mapa.tramo {"metros":150}', 'mapa.tramo {"metros":150}']);
+      expect(textos()).toEqual([
+        'mapa.tramo {"metros":150}',
+        'mapa.tramo {"metros":150}',
+      ]);
     });
 
     // Agustín, 16 oct (Torre de Hércules, todo pares 3 con un vértice de OSM en
@@ -1403,19 +1827,35 @@ describe('MapaDelHoyo — marcar, mover y la muestra al cerrar', () => {
       [3, 2],
       [4, 3],
       [5, 4],
-    ])('M3: una línea de OSM con muchos puntos, en un par %i, se enseña con %i puntos (los codos del par)', (par, puntos) => {
-      abrir({ hoyo: hoyoCon([T, alNorte(50), alNorte(100), alNorte(150), alNorte(200), G]), par });
-      act(() => mapa().oyentes.load());
+    ])(
+      'M3: una línea de OSM con muchos puntos, en un par %i, se enseña con %i puntos (los codos del par)',
+      (par, puntos) => {
+        abrir({
+          hoyo: hoyoCon([
+            T,
+            alNorte(50),
+            alNorte(100),
+            alNorte(150),
+            alNorte(200),
+            G,
+          ]),
+          par,
+        });
+        act(() => mapa().oyentes.load());
 
-      expect(lineaDibujada()).toHaveLength(puntos);
-      expect(arrastrables()).toHaveLength(puntos);
-    });
+        expect(lineaDibujada()).toHaveLength(puntos);
+        expect(arrastrables()).toHaveLength(puntos);
+      },
+    );
 
     it('M3: un par 3 de OSM con un vértice en medio: recta, sin codo', () => {
       abrir({ hoyo: hoyoCon([T, alEste(5, alNorte(60)), G]), par: 3 });
       act(() => mapa().oyentes.load());
 
-      expect(lineaDibujada()).toEqual([[T.lon, T.lat], [G.lon, G.lat]]);
+      expect(lineaDibujada()).toEqual([
+        [T.lon, T.lat],
+        [G.lon, G.lat],
+      ]);
       expect(textos()).toEqual(['mapa.tramo {"metros":300}']);
     });
 
@@ -1433,7 +1873,11 @@ describe('MapaDelHoyo — marcar, mover y la muestra al cerrar', () => {
         globalThis.HTMLElement.prototype.getBoundingClientRect = original;
       }
 
-      expect(mapa().jumpTo).toHaveBeenCalledWith(expect.objectContaining({ bearing: orientacionDelHoyo(hoyoCon([T, G])) }));
+      expect(mapa().jumpTo).toHaveBeenCalledWith(
+        expect.objectContaining({
+          bearing: orientacionDelHoyo(hoyoCon([T, G])),
+        }),
+      );
       expect(medidos).toContain('mapa-abajo');
     });
 
@@ -1448,45 +1892,95 @@ describe('MapaDelHoyo — marcar, mover y la muestra al cerrar', () => {
 
     it('Z2: el margen es lo que tapan de verdad la cabecera y el panel de abajo, con 12 px de aire', () => {
       abrir({ hoyo: hoyoCon([T, G]), par: 3 });
-      const caja = (top, bottom) => () => ({ top, bottom, left: 0, right: 390, width: 390, height: bottom - top, x: 0, y: top });
+      const caja = (top, bottom) => () => ({
+        top,
+        bottom,
+        left: 0,
+        right: 390,
+        width: 390,
+        height: bottom - top,
+        x: 0,
+        y: top,
+      });
       screen.getByTestId('mapa-arriba').getBoundingClientRect = caja(0, 70);
       screen.getByTestId('mapa-abajo').getBoundingClientRect = caja(560, 844);
       const contenedor = mapa().opciones.container;
       contenedor.getBoundingClientRect = caja(0, 844);
-      Object.defineProperty(contenedor, 'clientHeight', { value: 844, configurable: true });
+      Object.defineProperty(contenedor, 'clientHeight', {
+        value: 844,
+        configurable: true,
+      });
       mapa().easeTo.mockClear();
       mapa().jumpTo.mockClear();
 
       fireEvent.click(screen.getByRole('button', { name: 'mapa.verHoyo' }));
 
-      const esperado = encuadreGirado(hoyoCon([T, G]), orientacionDelHoyo(hoyoCon([T, G])), { ancho: 360, alto: 844, padding: { top: 82, bottom: 296, left: 40, right: 40 } });
-      expect(mapa().easeTo.mock.calls[0][0]).toEqual({ center: [esperado.center.lon, esperado.center.lat], zoom: esperado.zoom, bearing: orientacionDelHoyo(hoyoCon([T, G])) });
+      const esperado = encuadreGirado(
+        hoyoCon([T, G]),
+        orientacionDelHoyo(hoyoCon([T, G])),
+        {
+          ancho: 360,
+          alto: 844,
+          padding: { top: 82, bottom: 296, left: 40, right: 40 },
+        },
+      );
+      expect(mapa().easeTo.mock.calls[0][0]).toEqual({
+        center: [esperado.center.lon, esperado.center.lat],
+        zoom: esperado.zoom,
+        bearing: orientacionDelHoyo(hoyoCon([T, G])),
+      });
     });
 
     it('Z3: si con lo medido no cabría nada (apaisado), los márgenes de siempre', () => {
       abrir({ hoyo: hoyoCon([T, G]), par: 3 });
-      const caja = (top, bottom) => () => ({ top, bottom, left: 0, right: 700, width: 700, height: bottom - top, x: 0, y: top });
+      const caja = (top, bottom) => () => ({
+        top,
+        bottom,
+        left: 0,
+        right: 700,
+        width: 700,
+        height: bottom - top,
+        x: 0,
+        y: top,
+      });
       screen.getByTestId('mapa-arriba').getBoundingClientRect = caja(0, 70);
       screen.getByTestId('mapa-abajo').getBoundingClientRect = caja(120, 360);
       const contenedor = mapa().opciones.container;
       contenedor.getBoundingClientRect = caja(0, 360);
-      Object.defineProperty(contenedor, 'clientHeight', { value: 360, configurable: true });
+      Object.defineProperty(contenedor, 'clientHeight', {
+        value: 360,
+        configurable: true,
+      });
       mapa().easeTo.mockClear();
       mapa().jumpTo.mockClear();
 
       fireEvent.click(screen.getByRole('button', { name: 'mapa.verHoyo' }));
 
-      const esperado = encuadreGirado(hoyoCon([T, G]), orientacionDelHoyo(hoyoCon([T, G])), { ancho: 360, alto: 360, padding: { top: 54, bottom: 162, left: 40, right: 40 } });
+      const esperado = encuadreGirado(
+        hoyoCon([T, G]),
+        orientacionDelHoyo(hoyoCon([T, G])),
+        {
+          ancho: 360,
+          alto: 360,
+          padding: { top: 54, bottom: 162, left: 40, right: 40 },
+        },
+      );
       expect(mapa().easeTo.mock.calls[0][0].zoom).toBeCloseTo(esperado.zoom, 9);
     });
 
     it('Z5: si el panel de abajo crece después (el recuadro, avisos), se vuelve a encuadrar', () => {
       const observados = [];
-      vi.stubGlobal('ResizeObserver', class {
-        constructor(fn) { this.fn = fn; observados.push(this); }
-        observe() {}
-        disconnect() {}
-      });
+      vi.stubGlobal(
+        'ResizeObserver',
+        class {
+          constructor(fn) {
+            this.fn = fn;
+            observados.push(this);
+          }
+          observe() {}
+          disconnect() {}
+        },
+      );
       abrir({ hoyo: hoyoCon([T, G]), par: 3 });
       mapa().easeTo.mockClear();
       mapa().jumpTo.mockClear();
@@ -1498,11 +1992,17 @@ describe('MapaDelHoyo — marcar, mover y la muestra al cerrar', () => {
 
     it('Z5: pero no si el jugador ya movió el mapa o tocó para medir', () => {
       const observados = [];
-      vi.stubGlobal('ResizeObserver', class {
-        constructor(fn) { this.fn = fn; observados.push(this); }
-        observe() {}
-        disconnect() {}
-      });
+      vi.stubGlobal(
+        'ResizeObserver',
+        class {
+          constructor(fn) {
+            this.fn = fn;
+            observados.push(this);
+          }
+          observe() {}
+          disconnect() {}
+        },
+      );
       abrir({ hoyo: hoyoCon([T, G]), par: 3 });
       pulsar({ lngLat: { lat: alNorte(150).lat, lng: T.lon } });
       mapa().easeTo.mockClear();
@@ -1519,7 +2019,11 @@ describe('MapaDelHoyo — marcar, mover y la muestra al cerrar', () => {
       abrir({ hoyo: hoyoCon([T, G]), par: 3 });
       fireEvent.click(screen.getByRole('button', { name: 'mapa.verHoyo' }));
 
-      for (const [camara] of [...mapa().jumpTo.mock.calls, ...mapa().easeTo.mock.calls]) expect(camara).not.toHaveProperty('padding');
+      for (const [camara] of [
+        ...mapa().jumpTo.mock.calls,
+        ...mapa().easeTo.mock.calls,
+      ])
+        expect(camara).not.toHaveProperty('padding');
     });
 
     it('Z4: si no se puede medir (jsdom, sin pintar), los márgenes de siempre', () => {
@@ -1529,7 +2033,15 @@ describe('MapaDelHoyo — marcar, mover y la muestra al cerrar', () => {
 
       fireEvent.click(screen.getByRole('button', { name: 'mapa.verHoyo' }));
 
-      const esperado = encuadreGirado(hoyoCon([T, G]), orientacionDelHoyo(hoyoCon([T, G])), { ancho: 360, alto: 640, padding: { top: 90, bottom: 288, left: 40, right: 40 } });
+      const esperado = encuadreGirado(
+        hoyoCon([T, G]),
+        orientacionDelHoyo(hoyoCon([T, G])),
+        {
+          ancho: 360,
+          alto: 640,
+          padding: { top: 90, bottom: 288, left: 40, right: 40 },
+        },
+      );
       expect(mapa().easeTo.mock.calls[0][0].zoom).toBeCloseTo(esperado.zoom, 9);
     });
 
@@ -1537,8 +2049,13 @@ describe('MapaDelHoyo — marcar, mover y la muestra al cerrar', () => {
       abrir({ hoyo: hoyoCon([T, G]), par: 3 });
       act(() => mapa().oyentes.load());
 
-      expect(mapa().fuentes.hoyo.data.features.map((f) => f.properties.tipo)).toEqual(['green']);
-      expect(lineaDibujada()).toEqual([[T.lon, T.lat], [G.lon, G.lat]]);
+      expect(
+        mapa().fuentes.hoyo.data.features.map((f) => f.properties.tipo),
+      ).toEqual(['green']);
+      expect(lineaDibujada()).toEqual([
+        [T.lon, T.lat],
+        [G.lon, G.lat],
+      ]);
     });
 
     it('M5: sin metros en la tarjeta, el recuadro mide la línea como está ahora', () => {
@@ -1548,17 +2065,43 @@ describe('MapaDelHoyo — marcar, mover y la muestra al cerrar', () => {
 
       soltar(arrastrables()[1], alEste(100, alNorte(150)));
 
-      expect(Number(screen.getByTestId('distancia-centro').textContent)).toBeGreaterThan(300);
+      expect(
+        Number(screen.getByTestId('distancia-centro').textContent),
+      ).toBeGreaterThan(300);
     });
 
     it('M5: sin metros, un dogleg de OSM (con vértices) mide por su esquina, no atajando', () => {
       const esquina = alNorte(240);
       const verde = alEste(160, esquina);
-      const osm = [T, alNorte(40), alNorte(80), alNorte(120), alNorte(160), alNorte(200), esquina, alEste(40, esquina), alEste(80, esquina), alEste(120, esquina), verde];
-      abrir({ hoyo: hoyoCon(osm, { front: alEste(150, esquina), center: verde, back: alEste(170, esquina) }), par: 4, metros: null });
+      const osm = [
+        T,
+        alNorte(40),
+        alNorte(80),
+        alNorte(120),
+        alNorte(160),
+        alNorte(200),
+        esquina,
+        alEste(40, esquina),
+        alEste(80, esquina),
+        alEste(120, esquina),
+        verde,
+      ];
+      abrir({
+        hoyo: hoyoCon(osm, {
+          front: alEste(150, esquina),
+          center: verde,
+          back: alEste(170, esquina),
+        }),
+        par: 4,
+        metros: null,
+      });
       act(() => mapa().oyentes.load());
 
-      expect(lineaDibujada()).toEqual([[T.lon, T.lat], [esquina.lon, esquina.lat], [verde.lon, verde.lat]]);
+      expect(lineaDibujada()).toEqual([
+        [T.lon, T.lat],
+        [esquina.lon, esquina.lat],
+        [verde.lon, verde.lat],
+      ]);
       expect(screen.getByTestId('distancia-centro')).toHaveTextContent('400');
     });
 
@@ -1572,7 +2115,15 @@ describe('MapaDelHoyo — marcar, mover y la muestra al cerrar', () => {
     });
 
     it('M6: mover el green de un hoyo aprobado: el recuadro pasa a ±10 m, sin su contorno', () => {
-      abrir({ hoyo: hoyoCon([T, G], { front: alNorte(280), center: G, back: alNorte(320) }), par: 3, metros: 342 });
+      abrir({
+        hoyo: hoyoCon([T, G], {
+          front: alNorte(280),
+          center: G,
+          back: alNorte(320),
+        }),
+        par: 3,
+        metros: 342,
+      });
       act(() => mapa().oyentes.load());
       expect(screen.getByTestId('distancia-delante')).toHaveTextContent('322');
 
@@ -1607,12 +2158,22 @@ describe('MapaDelHoyo — marcar, mover y la muestra al cerrar', () => {
 
       unmount();
 
-      expect(onMuestra).toHaveBeenCalledWith({ id: expect.any(String), tee: T, bends: [], greenCenter: G });
+      expect(onMuestra).toHaveBeenCalledWith({
+        id: expect.any(String),
+        tee: T,
+        bends: [],
+        greenCenter: G,
+      });
     });
 
     it('S2: abrir y cerrar sin mover nada no envía nada', () => {
       const onMuestra = vi.fn();
-      const { unmount } = abrir({ hoyo: hoyoCon([T, G]), par: 4, recoge: true, onMuestra });
+      const { unmount } = abrir({
+        hoyo: hoyoCon([T, G]),
+        par: 4,
+        recoge: true,
+        onMuestra,
+      });
       act(() => mapa().oyentes.load());
 
       unmount();
@@ -1622,7 +2183,12 @@ describe('MapaDelHoyo — marcar, mover y la muestra al cerrar', () => {
 
     it('S3: mover un hoyo que aún recoge y cerrar envía la línea movida', () => {
       const onMuestra = vi.fn();
-      const { unmount } = abrir({ hoyo: hoyoCon([T, G]), par: 4, recoge: true, onMuestra });
+      const { unmount } = abrir({
+        hoyo: hoyoCon([T, G]),
+        par: 4,
+        recoge: true,
+        onMuestra,
+      });
       act(() => mapa().oyentes.load());
       soltar(arrastrables()[1], alEste(50, alNorte(150)));
 
@@ -1634,7 +2200,12 @@ describe('MapaDelHoyo — marcar, mover y la muestra al cerrar', () => {
 
     it('S4: un hoyo que ya no recoge: se mueve para medir, pero no se envía', () => {
       const onMuestra = vi.fn();
-      const { unmount } = abrir({ hoyo: hoyoCon([T, G]), par: 4, recoge: false, onMuestra });
+      const { unmount } = abrir({
+        hoyo: hoyoCon([T, G]),
+        par: 4,
+        recoge: false,
+        onMuestra,
+      });
       act(() => mapa().oyentes.load());
       soltar(arrastrables()[1], alEste(50, alNorte(150)));
 
@@ -1656,7 +2227,12 @@ describe('MapaDelHoyo — marcar, mover y la muestra al cerrar', () => {
 
     it('S5: la de un mapa con muchos puntos, ya con los codos de su par, sí se envía al moverla', () => {
       const onMuestra = vi.fn();
-      const { unmount } = abrir({ hoyo: hoyoCon([T, alNorte(50), alNorte(100), alNorte(150), G]), par: 4, recoge: true, onMuestra });
+      const { unmount } = abrir({
+        hoyo: hoyoCon([T, alNorte(50), alNorte(100), alNorte(150), G]),
+        par: 4,
+        recoge: true,
+        onMuestra,
+      });
       act(() => mapa().oyentes.load());
       soltar(arrastrables()[1], alEste(20, alNorte(150)));
 
@@ -1688,8 +2264,13 @@ describe('MapaDelHoyo — marcar, mover y la muestra al cerrar', () => {
       tocar(T);
       tocar(G);
       act(() => {
-        Object.defineProperty(globalThis.document, 'visibilityState', { value: 'hidden', configurable: true });
-        globalThis.document.dispatchEvent(new globalThis.Event('visibilitychange'));
+        Object.defineProperty(globalThis.document, 'visibilityState', {
+          value: 'hidden',
+          configurable: true,
+        });
+        globalThis.document.dispatchEvent(
+          new globalThis.Event('visibilitychange'),
+        );
       });
       expect(onMuestra).toHaveBeenCalledTimes(1);
       const { id } = onMuestra.mock.calls[0][0];
@@ -1699,7 +2280,10 @@ describe('MapaDelHoyo — marcar, mover y la muestra al cerrar', () => {
 
       // Sin cambios desde que se ocultó: no sale otra
       expect(onMuestra).toHaveBeenCalledTimes(1);
-      Object.defineProperty(globalThis.document, 'visibilityState', { value: 'visible', configurable: true });
+      Object.defineProperty(globalThis.document, 'visibilityState', {
+        value: 'visible',
+        configurable: true,
+      });
     });
 
     it('S9: al ocultarse la app se guarda lo hecho; si luego se mueve más, al cerrar sale otra vez', () => {
@@ -1707,10 +2291,18 @@ describe('MapaDelHoyo — marcar, mover y la muestra al cerrar', () => {
       tocar(T);
       tocar(G);
       act(() => {
-        Object.defineProperty(globalThis.document, 'visibilityState', { value: 'hidden', configurable: true });
-        globalThis.document.dispatchEvent(new globalThis.Event('visibilitychange'));
+        Object.defineProperty(globalThis.document, 'visibilityState', {
+          value: 'hidden',
+          configurable: true,
+        });
+        globalThis.document.dispatchEvent(
+          new globalThis.Event('visibilitychange'),
+        );
       });
-      Object.defineProperty(globalThis.document, 'visibilityState', { value: 'visible', configurable: true });
+      Object.defineProperty(globalThis.document, 'visibilityState', {
+        value: 'visible',
+        configurable: true,
+      });
       soltar(arrastrables()[1], alEste(30, alNorte(150)));
 
       unmount();
@@ -1722,10 +2314,18 @@ describe('MapaDelHoyo — marcar, mover y la muestra al cerrar', () => {
       const onMuestra = vi.fn();
       abrir({ hoyo: hoyoCon([T, G]), par: 4, recoge: true, onMuestra });
       act(() => {
-        Object.defineProperty(globalThis.document, 'visibilityState', { value: 'hidden', configurable: true });
-        globalThis.document.dispatchEvent(new globalThis.Event('visibilitychange'));
+        Object.defineProperty(globalThis.document, 'visibilityState', {
+          value: 'hidden',
+          configurable: true,
+        });
+        globalThis.document.dispatchEvent(
+          new globalThis.Event('visibilitychange'),
+        );
       });
-      Object.defineProperty(globalThis.document, 'visibilityState', { value: 'visible', configurable: true });
+      Object.defineProperty(globalThis.document, 'visibilityState', {
+        value: 'visible',
+        configurable: true,
+      });
 
       expect(onMuestra).not.toHaveBeenCalled();
     });
@@ -1763,7 +2363,11 @@ describe('MapaDelHoyo — marcar, mover y la muestra al cerrar', () => {
     });
 
     it('CR1: un hoyo aprobado cuya línea no acaba en el centro del green (OSM): se mide al green de verdad', () => {
-      const verde = { front: alNorte(305), center: alNorte(320), back: alNorte(335) };
+      const verde = {
+        front: alNorte(305),
+        center: alNorte(320),
+        back: alNorte(335),
+      };
       abrir({ hoyo: hoyoCon([T, G], verde), par: 3, metros: 342 });
       act(() => mapa().oyentes.load());
 
@@ -1779,10 +2383,18 @@ describe('MapaDelHoyo — marcar, mover y la muestra al cerrar', () => {
       tocar(T);
       tocar(G);
       act(() => {
-        Object.defineProperty(globalThis.document, 'visibilityState', { value: 'hidden', configurable: true });
-        globalThis.document.dispatchEvent(new globalThis.Event('visibilitychange'));
+        Object.defineProperty(globalThis.document, 'visibilityState', {
+          value: 'hidden',
+          configurable: true,
+        });
+        globalThis.document.dispatchEvent(
+          new globalThis.Event('visibilitychange'),
+        );
       });
-      Object.defineProperty(globalThis.document, 'visibilityState', { value: 'visible', configurable: true });
+      Object.defineProperty(globalThis.document, 'visibilityState', {
+        value: 'visible',
+        configurable: true,
+      });
       soltar(arrastrables()[1], alEste(30, alNorte(150)));
 
       unmount();
@@ -1806,7 +2418,12 @@ describe('MapaDelHoyo — marcar, mover y la muestra al cerrar', () => {
 
     it('CR6 (CodeRabbit): en un hoyo aprobado (sin la ubicación del campo), los 3 km se miden desde su salida', () => {
       const onMuestra = vi.fn();
-      const { unmount } = abrir({ hoyo: hoyoCon([T, G]), par: 3, recoge: true, onMuestra });
+      const { unmount } = abrir({
+        hoyo: hoyoCon([T, G]),
+        par: 3,
+        recoge: true,
+        onMuestra,
+      });
       act(() => mapa().oyentes.load());
       soltar(arrastrables()[0], alNorte(-3500));
       soltar(arrastrables().at(-1), alNorte(-3200));
@@ -1819,13 +2436,18 @@ describe('MapaDelHoyo — marcar, mover y la muestra al cerrar', () => {
     it('QA P3 (16 oct): si poner los puntos falla a medias, no queda ningún punto suelto en el mapa', () => {
       abrir({ hoyo: hoyoCon([T, G]), par: 4 });
       act(() => mapa().oyentes.load());
-      const original = globalThis.document.createElement.bind(globalThis.document);
+      const original = globalThis.document.createElement.bind(
+        globalThis.document,
+      );
       let divs = 0;
-      const espia = vi.spyOn(globalThis.document, 'createElement').mockImplementation((tag) => {
-        // El primer punto se crea; el segundo revienta
-        if (tag === 'div' && (divs += 1) === 2) throw new Error('API cambiada');
-        return original(tag);
-      });
+      const espia = vi
+        .spyOn(globalThis.document, 'createElement')
+        .mockImplementation((tag) => {
+          // El primer punto se crea; el segundo revienta
+          if (tag === 'div' && (divs += 1) === 2)
+            throw new Error('API cambiada');
+          return original(tag);
+        });
       try {
         soltar(arrastrables().at(-1), alNorte(280));
       } finally {
@@ -1836,13 +2458,17 @@ describe('MapaDelHoyo — marcar, mover y la muestra al cerrar', () => {
     });
 
     it('QA (16 oct): si poner los puntos falla (la librería cambia), el mapa sigue y el fallo se apunta', () => {
-      const original = globalThis.document.createElement.bind(globalThis.document);
+      const original = globalThis.document.createElement.bind(
+        globalThis.document,
+      );
       abrir({ hoyo: hoyoCon([T, G]), par: 3 });
       act(() => mapa().oyentes.load());
-      const espia = vi.spyOn(globalThis.document, 'createElement').mockImplementation((tag) => {
-        if (tag === 'div') throw new Error('API cambiada');
-        return original(tag);
-      });
+      const espia = vi
+        .spyOn(globalThis.document, 'createElement')
+        .mockImplementation((tag) => {
+          if (tag === 'div') throw new Error('API cambiada');
+          return original(tag);
+        });
       try {
         soltar(arrastrables().at(-1), alNorte(280));
       } finally {
@@ -1850,11 +2476,16 @@ describe('MapaDelHoyo — marcar, mover y la muestra al cerrar', () => {
       }
 
       expect(screen.getByRole('dialog')).toBeInTheDocument();
-      expect(apuntado.captureError).toHaveBeenCalledWith(expect.any(Error), { tags: { modulo: 'mapa-de-hoyos' } });
+      expect(apuntado.captureError).toHaveBeenCalledWith(expect.any(Error), {
+        tags: { modulo: 'mapa-de-hoyos' },
+      });
     });
 
     it('CR10: una línea de OSM larga, ya con los codos de su par: se arrastran la salida, su codo y el green', () => {
-      abrir({ hoyo: hoyoCon([T, alNorte(50), alNorte(100), alNorte(150), G]), par: 4 });
+      abrir({
+        hoyo: hoyoCon([T, alNorte(50), alNorte(100), alNorte(150), G]),
+        par: 4,
+      });
       act(() => mapa().oyentes.load());
 
       expect(arrastrables()).toHaveLength(3);
@@ -1866,7 +2497,9 @@ describe('MapaDelHoyo — marcar, mover y la muestra al cerrar', () => {
       tocar(T);
       tocar(G);
 
-      fireEvent.click(screen.getAllByRole('button', { name: 'mapa.cerrar' })[0]);
+      fireEvent.click(
+        screen.getAllByRole('button', { name: 'mapa.cerrar' })[0],
+      );
       expect(onCerrar).toHaveBeenCalled();
       unmount();
 
@@ -1879,7 +2512,10 @@ describe('MapaDelHoyo — marcar, mover y la muestra al cerrar', () => {
       abrir({ hoyo: hoyoCon([T, alNorte(120), G]), par: 4 });
       act(() => mapa().oyentes.load());
 
-      expect(textos()).toEqual(['mapa.tramo {"metros":120}', 'mapa.tramo {"metros":180}']);
+      expect(textos()).toEqual([
+        'mapa.tramo {"metros":120}',
+        'mapa.tramo {"metros":180}',
+      ]);
     });
 
     it('T2: lejos del campo, igual', () => {
@@ -1908,7 +2544,9 @@ describe('MapaDelHoyo — marcar, mover y la muestra al cerrar', () => {
 
       // Con el punto, la línea del hoyo sin sus metros, para que no se pisen (19 oct: T2)
       expect(textos()).toEqual([]);
-      const medida = vivas().filter((m) => m.opciones.element?.dataset?.tramo === 'medida').map((m) => m.opciones.element.textContent);
+      const medida = vivas()
+        .filter((m) => m.opciones.element?.dataset?.tramo === 'medida')
+        .map((m) => m.opciones.element.textContent);
       expect(medida).toEqual(['mapa.tramo {"metros":120}']);
     });
 
@@ -1922,9 +2560,15 @@ describe('MapaDelHoyo — marcar, mover y la muestra al cerrar', () => {
     it('T5: el lector de pantalla no lee las cifras sueltas, sino una frase con los tramos', () => {
       abrir({ hoyo: hoyoCon([T, alNorte(120), G]), par: 4 });
 
-      expect(deLaLinea().every((m) => m.opciones.element.getAttribute('aria-hidden') === 'true')).toBe(true);
+      expect(
+        deLaLinea().every(
+          (m) => m.opciones.element.getAttribute('aria-hidden') === 'true',
+        ),
+      ).toBe(true);
       expect(screen.getByTestId('tramos-de-la-linea')).toHaveClass('sr-only');
-      expect(screen.getByTestId('tramos-de-la-linea')).toHaveTextContent('mapa.lineaDosTramos {"a":120,"b":180}');
+      expect(screen.getByTestId('tramos-de-la-linea')).toHaveTextContent(
+        'mapa.lineaDosTramos {"a":120,"b":180}',
+      );
     });
 
     it.each([
@@ -1937,9 +2581,16 @@ describe('MapaDelHoyo — marcar, mover y la muestra al cerrar', () => {
     });
 
     it('T5: una línea de más de tres tramos (la de OSM de un hoyo aprobado sin green), la lista', () => {
-      abrir({ hoyo: { playLine: [T, alNorte(50), alNorte(100), alNorte(150), G], green: null } });
+      abrir({
+        hoyo: {
+          playLine: [T, alNorte(50), alNorte(100), alNorte(150), G],
+          green: null,
+        },
+      });
 
-      expect(screen.getByTestId('tramos-de-la-linea')).toHaveTextContent('mapa.lineaVariosTramos {"lista":"50 · 50 · 50 · 150"}');
+      expect(screen.getByTestId('tramos-de-la-linea')).toHaveTextContent(
+        'mapa.lineaVariosTramos {"lista":"50 · 50 · 50 · 150"}',
+      );
     });
 
     it('T5: sin línea, sin frase', () => {
@@ -1953,18 +2604,36 @@ describe('MapaDelHoyo — marcar, mover y la muestra al cerrar', () => {
       const nuevo = { playLine: [T, alNorte(280)], green: null };
       const { rerender } = abrir({ hoyo: viejo });
 
-      rerender(<MapaDelHoyo golfCourseId="gc-1" numeroDeHoyo={1} par={4} hoyo={nuevo} atribucion={null} onCerrar={() => {}} />);
+      rerender(
+        <MapaDelHoyo
+          golfCourseId="gc-1"
+          numeroDeHoyo={1}
+          par={4}
+          hoyo={nuevo}
+          atribucion={null}
+          onCerrar={() => {}}
+        />,
+      );
       act(() => mapa().oyentes.load());
 
-      const linea = mapa().fuentes.hoyo.data.features.find((f) => f.properties.tipo === 'linea').geometry.coordinates;
+      const linea = mapa().fuentes.hoyo.data.features.find(
+        (f) => f.properties.tipo === 'linea',
+      ).geometry.coordinates;
       expect(linea.at(-1)).toEqual([T.lon, alNorte(280).lat]);
     });
 
     it('T7: con React en modo estricto (dos montajes), cifras y puntos cuelgan del mapa que queda', () => {
       render(
         <StrictMode>
-          <MapaDelHoyo golfCourseId="gc-1" numeroDeHoyo={1} par={3} hoyo={hoyoCon([T, G])} atribucion={null} onCerrar={() => {}} />
-        </StrictMode>
+          <MapaDelHoyo
+            golfCourseId="gc-1"
+            numeroDeHoyo={1}
+            par={3}
+            hoyo={hoyoCon([T, G])}
+            atribucion={null}
+            onCerrar={() => {}}
+          />
+        </StrictMode>,
       );
 
       expect(deLaLinea()).toHaveLength(1);
@@ -1976,15 +2645,23 @@ describe('MapaDelHoyo — marcar, mover y la muestra al cerrar', () => {
       const onMuestra = vi.fn();
       render(
         <StrictMode>
-          <MapaDelHoyo golfCourseId="gc-1" numeroDeHoyo={1} par={3} hoyo={hoyoCon([T, G])} atribucion={null} onCerrar={() => {}} recoge onMuestra={onMuestra} />
-        </StrictMode>
+          <MapaDelHoyo
+            golfCourseId="gc-1"
+            numeroDeHoyo={1}
+            par={3}
+            hoyo={hoyoCon([T, G])}
+            atribucion={null}
+            onCerrar={() => {}}
+            recoge
+            onMuestra={onMuestra}
+          />
+        </StrictMode>,
       );
 
       expect(onMuestra).not.toHaveBeenCalled();
     });
   });
 });
-
 
 // Agustín, 17 oct (BE #575): al abrir un hoyo sin línea, «¿Estás en la salida?»;
 // y el recuadro, desde donde estás si el GPS es bueno y estás en el hoyo
@@ -2003,21 +2680,44 @@ describe('MapaDelHoyo — marcar, mover y la muestra al cerrar', () => {
 describe('MapaDelHoyo — marcar con el GPS y el recuadro desde ti (17 oct)', () => {
   const M_POR_GRADO = (6371008.8 * Math.PI) / 180;
   const T = { lat: 36.28, lon: -5.33 };
-  const alNorte = (m, de = T) => ({ lat: de.lat + m / M_POR_GRADO, lon: de.lon });
+  const alNorte = (m, de = T) => ({
+    lat: de.lat + m / M_POR_GRADO,
+    lon: de.lon,
+  });
   const tocar = (p) => pulsar({ lngLat: { lat: p.lat, lng: p.lon } });
-  const lineaDibujada = () => mapa().fuentes.marcado.data.features.find((f) => f.properties.tipo === 'linea')?.geometry.coordinates;
-  const si = () => fireEvent.click(screen.getByRole('button', { name: 'mapa.si' }));
-  const no = () => fireEvent.click(screen.getByRole('button', { name: 'mapa.no' }));
-  const hoyoEntero = () => fireEvent.click(screen.getByRole('button', { name: 'mapa.marcarEntero' }));
-  const enLaSalida = (precision = 5) => act(() => gps.exito(lectura(T.lat, T.lon, precision)));
+  const lineaDibujada = () =>
+    mapa().fuentes.marcado.data.features.find(
+      (f) => f.properties.tipo === 'linea',
+    )?.geometry.coordinates;
+  const si = () =>
+    fireEvent.click(screen.getByRole('button', { name: 'mapa.si' }));
+  const no = () =>
+    fireEvent.click(screen.getByRole('button', { name: 'mapa.no' }));
+  const hoyoEntero = () =>
+    fireEvent.click(screen.getByRole('button', { name: 'mapa.marcarEntero' }));
+  const enLaSalida = (precision = 5) =>
+    act(() => gps.exito(lectura(T.lat, T.lon, precision)));
   const abrirSinLinea = (props = {}) => {
     const onMuestra = props.onMuestra ?? vi.fn();
-    const r = abrir({ hoyo: null, porMarcar: 'salida', recoge: true, onMuestra, par: 4, metros: 300, ...props });
+    const r = abrir({
+      hoyo: null,
+      porMarcar: 'salida',
+      recoge: true,
+      onMuestra,
+      par: 4,
+      metros: 300,
+      ...props,
+    });
     act(() => mapa().oyentes.load());
     return { ...r, onMuestra };
   };
   // Un hoyo con solo el green de una muestra (sin salida)
-  const conGreenSuelto = (props = {}) => abrirSinLinea({ hoyo: { playLine: [], green: { center: alNorte(300) } }, porMarcar: 'salidaAlGreen', ...props });
+  const conGreenSuelto = (props = {}) =>
+    abrirSinLinea({
+      hoyo: { playLine: [], green: { center: alNorte(300) } },
+      porMarcar: 'salidaAlGreen',
+      ...props,
+    });
 
   let gps;
   let reloj;
@@ -2029,7 +2729,9 @@ describe('MapaDelHoyo — marcar con el GPS y el recuadro desde ti (17 oct)', ()
     gps = gpsFalso();
     vi.stubGlobal('navigator', { ...globalThis.navigator, geolocation: gps });
     let ahora = 0;
-    reloj = vi.spyOn(globalThis.performance, 'now').mockImplementation(() => (ahora += 1000));
+    reloj = vi
+      .spyOn(globalThis.performance, 'now')
+      .mockImplementation(() => (ahora += 1000));
   });
   afterEach(() => {
     reloj.mockRestore();
@@ -2050,16 +2752,37 @@ describe('MapaDelHoyo — marcar con el GPS y el recuadro desde ti (17 oct)', ()
   // | O8   | solo el green sin GPS bueno                   | norte arriba                                             |
   // | O9   | proponiendo un reporte                        | no gira                                                  |
   describe('O: orientar el hoyo', () => {
-    const alEste = (m, de = T) => ({ lat: de.lat, lon: de.lon + m / (M_POR_GRADO * Math.cos((de.lat * Math.PI) / 180)) });
-    const giros = () => [...mapa().easeTo.mock.calls, ...mapa().jumpTo.mock.calls].map(([c]) => c.bearing).filter((b) => b !== undefined);
+    const alEste = (m, de = T) => ({
+      lat: de.lat,
+      lon: de.lon + m / (M_POR_GRADO * Math.cos((de.lat * Math.PI) / 180)),
+    });
+    const giros = () =>
+      [...mapa().easeTo.mock.calls, ...mapa().jumpTo.mock.calls]
+        .map(([c]) => c.bearing)
+        .filter((b) => b !== undefined);
     const ultimoGiro = () => mapa().easeTo.mock.calls.at(-1)?.[0].bearing;
-    const desde = (p, precision = 5) => act(() => gps.exito(lectura(p.lat, p.lon, precision)));
+    const desde = (p, precision = 5) =>
+      act(() => gps.exito(lectura(p.lat, p.lon, precision)));
     // Salida al sur, codo 200 m al norte y green 250 m al este del codo
     const CODO = alNorte(200);
     const VERDE = alEste(250, CODO);
-    const conCodo = { playLine: [T, CODO, VERDE], green: { front: alEste(240, CODO), center: VERDE, back: alEste(260, CODO) } };
+    const conCodo = {
+      playLine: [T, CODO, VERDE],
+      green: {
+        front: alEste(240, CODO),
+        center: VERDE,
+        back: alEste(260, CODO),
+      },
+    };
     const abrirCon = (props = {}) => {
-      const r = abrir({ hoyo: conCodo, par: 4, porMarcar: null, recoge: true, onMuestra: vi.fn(), ...props });
+      const r = abrir({
+        hoyo: conCodo,
+        par: 4,
+        porMarcar: null,
+        recoge: true,
+        onMuestra: vi.fn(),
+        ...props,
+      });
       act(() => mapa().oyentes.load());
       return r;
     };
@@ -2133,11 +2856,17 @@ describe('MapaDelHoyo — marcar con el GPS y el recuadro desde ti (17 oct)', ()
 
     it('O2: orientado desde ti, que crezca el panel vuelve a encuadrar desde ti, no el hoyo', () => {
       const observados = [];
-      vi.stubGlobal('ResizeObserver', class {
-        constructor(fn) { this.fn = fn; observados.push(this); }
-        observe() {}
-        disconnect() {}
-      });
+      vi.stubGlobal(
+        'ResizeObserver',
+        class {
+          constructor(fn) {
+            this.fn = fn;
+            observados.push(this);
+          }
+          observe() {}
+          disconnect() {}
+        },
+      );
       abrirCon();
       // A menos de 200 m del green: sin codo (que ya contaría como tocar)
       const aqui = alEste(100, CODO);
@@ -2147,16 +2876,25 @@ describe('MapaDelHoyo — marcar con el GPS y el recuadro desde ti (17 oct)', ()
       act(() => observados.at(-1).fn());
 
       expect(mapa().jumpTo).toHaveBeenCalledTimes(1);
-      expect(mapa().jumpTo.mock.calls[0][0].bearing).toBeCloseTo(rumbo(aqui, VERDE), 6);
+      expect(mapa().jumpTo.mock.calls[0][0].bearing).toBeCloseTo(
+        rumbo(aqui, VERDE),
+        6,
+      );
     });
 
     it('C2: con el codo sin tocar a la vista, que crezca el panel no vuelve a encuadrar (cuenta como tocado)', () => {
       const observados = [];
-      vi.stubGlobal('ResizeObserver', class {
-        constructor(fn) { this.fn = fn; observados.push(this); }
-        observe() {}
-        disconnect() {}
-      });
+      vi.stubGlobal(
+        'ResizeObserver',
+        class {
+          constructor(fn) {
+            this.fn = fn;
+            observados.push(this);
+          }
+          observe() {}
+          disconnect() {}
+        },
+      );
       abrirCon();
       // A más de 200 m del green: con codo
       desde(alNorte(100));
@@ -2171,16 +2909,32 @@ describe('MapaDelHoyo — marcar con el GPS y el recuadro desde ti (17 oct)', ()
       // Un codo más allá del green (en lo que se mira): fuera de la caja de ti al green
       const lejano = alNorte(300);
       const verde = alEste(150, alNorte(220));
-      abrirCon({ hoyo: { playLine: [T, lejano, verde], green: { front: verde, center: verde, back: verde } } });
+      abrirCon({
+        hoyo: {
+          playLine: [T, lejano, verde],
+          green: { front: verde, center: verde, back: verde },
+        },
+      });
       const aqui = alNorte(100);
 
       desde(aqui);
 
       const padding = { top: 90, bottom: 288, left: 40, right: 40 };
-      const conCodo = encuadreGirado({ playLine: [aqui, lejano, verde], green: null }, rumbo(aqui, lejano), { ancho: 360, alto: 640, padding });
-      const sinCodo = encuadreGirado({ playLine: [aqui, verde], green: null }, rumbo(aqui, lejano), { ancho: 360, alto: 640, padding });
+      const conCodo = encuadreGirado(
+        { playLine: [aqui, lejano, verde], green: null },
+        rumbo(aqui, lejano),
+        { ancho: 360, alto: 640, padding },
+      );
+      const sinCodo = encuadreGirado(
+        { playLine: [aqui, verde], green: null },
+        rumbo(aqui, lejano),
+        { ancho: 360, alto: 640, padding },
+      );
       expect(conCodo.zoom).not.toBeCloseTo(sinCodo.zoom, 3);
-      expect(mapa().easeTo.mock.calls.at(-1)[0].zoom).toBeCloseTo(conCodo.zoom, 6);
+      expect(mapa().easeTo.mock.calls.at(-1)[0].zoom).toBeCloseTo(
+        conCodo.zoom,
+        6,
+      );
     });
 
     it('O2: si el jugador ya movió el mapa, el primer GPS bueno no se lo quita', () => {
@@ -2212,10 +2966,17 @@ describe('MapaDelHoyo — marcar con el GPS y el recuadro desde ti (17 oct)', ()
       tocar(alEste(300));
 
       const codo = lineaDibujada()[1];
-      expect(ultimoGiro()).toBeCloseTo(rumbo(T, { lat: codo[1], lon: codo[0] }), 6);
-      expect(mapa().easeTo.mock.calls.at(-1)[0].zoom).toEqual(expect.any(Number));
+      expect(ultimoGiro()).toBeCloseTo(
+        rumbo(T, { lat: codo[1], lon: codo[0] }),
+        6,
+      );
+      expect(mapa().easeTo.mock.calls.at(-1)[0].zoom).toEqual(
+        expect.any(Number),
+      );
       expect(mapa().dragRotate.disable).toHaveBeenCalled();
-      expect(screen.getByRole('button', { name: /mapa\.verHoyo/ })).toBeInTheDocument();
+      expect(
+        screen.getByRole('button', { name: /mapa\.verHoyo/ }),
+      ).toBeInTheDocument();
       expect(screen.queryByRole('button', { name: /mapa\.norte/ })).toBeNull();
     });
 
@@ -2226,9 +2987,13 @@ describe('MapaDelHoyo — marcar con el GPS y el recuadro desde ti (17 oct)', ()
 
       desde(T);
 
-      const giro = mapa().easeTo.mock.calls.findIndex(([c]) => c.bearing !== undefined);
+      const giro = mapa().easeTo.mock.calls.findIndex(
+        ([c]) => c.bearing !== undefined,
+      );
       expect(giro).toBeGreaterThanOrEqual(0);
-      const despues = mapa().jumpTo.mock.invocationCallOrder.filter((n) => n > mapa().easeTo.mock.invocationCallOrder[giro]);
+      const despues = mapa().jumpTo.mock.invocationCallOrder.filter(
+        (n) => n > mapa().easeTo.mock.invocationCallOrder[giro],
+      );
       expect(despues).toEqual([]);
     });
 
@@ -2263,7 +3028,9 @@ describe('MapaDelHoyo — marcar con el GPS y el recuadro desde ti (17 oct)', ()
       abrirCon({ onReporte: vi.fn() });
       desde(alEste(40, alNorte(100)));
       fireEvent.click(screen.getByRole('button', { name: 'mapa.reportar' }));
-      fireEvent.click(screen.getByRole('button', { name: 'mapa.motivos.WRONG_LINE' }));
+      fireEvent.click(
+        screen.getByRole('button', { name: 'mapa.motivos.WRONG_LINE' }),
+      );
       tocar(alEste(60));
       tocar(VERDE);
       const giradas = mapa().easeTo.mock.calls.length;
@@ -2279,7 +3046,9 @@ describe('MapaDelHoyo — marcar con el GPS y el recuadro desde ti (17 oct)', ()
       abrirCon({ onReporte: vi.fn() });
       desde(alNorte(10));
       fireEvent.click(screen.getByRole('button', { name: 'mapa.reportar' }));
-      fireEvent.click(screen.getByRole('button', { name: 'mapa.motivos.WRONG_LINE' }));
+      fireEvent.click(
+        screen.getByRole('button', { name: 'mapa.motivos.WRONG_LINE' }),
+      );
       tocar(alEste(60));
       tocar(VERDE);
 
@@ -2301,7 +3070,10 @@ describe('MapaDelHoyo — marcar con el GPS y el recuadro desde ti (17 oct)', ()
     });
 
     it('CodeRabbit: con el green conocido, marcar la salida también orienta tras mover el mapa', () => {
-      conGreenSuelto({ par: 3, hoyo: { playLine: [], green: { center: alEste(300) } } });
+      conGreenSuelto({
+        par: 3,
+        hoyo: { playLine: [], green: { center: alEste(300) } },
+      });
       enLaSalida();
       act(() => mapa().oyentes.movestart({ originalEvent: {} }));
 
@@ -2312,11 +3084,17 @@ describe('MapaDelHoyo — marcar con el GPS y el recuadro desde ti (17 oct)', ()
 
     it('CodeRabbit: tras «Ver hoyo», que crezca el panel encuadra el hoyo, no «desde ti»', () => {
       const observados = [];
-      vi.stubGlobal('ResizeObserver', class {
-        constructor(fn) { this.fn = fn; observados.push(this); }
-        observe() {}
-        disconnect() {}
-      });
+      vi.stubGlobal(
+        'ResizeObserver',
+        class {
+          constructor(fn) {
+            this.fn = fn;
+            observados.push(this);
+          }
+          observe() {}
+          disconnect() {}
+        },
+      );
       abrirCon();
       desde(alEste(100, CODO));
       fireEvent.click(screen.getByRole('button', { name: /mapa\.verHoyo/ }));
@@ -2324,7 +3102,10 @@ describe('MapaDelHoyo — marcar con el GPS y el recuadro desde ti (17 oct)', ()
 
       act(() => observados.at(-1).fn());
 
-      expect(mapa().jumpTo.mock.calls.at(-1)[0].bearing).toBeCloseTo(rumbo(T, CODO), 6);
+      expect(mapa().jumpTo.mock.calls.at(-1)[0].bearing).toBeCloseTo(
+        rumbo(T, CODO),
+        6,
+      );
     });
 
     it('O5: par 3 marcado, de la salida al green', () => {
@@ -2338,7 +3119,10 @@ describe('MapaDelHoyo — marcar con el GPS y el recuadro desde ti (17 oct)', ()
     });
 
     it('O5: con el green conocido, la salida basta y gira igual', () => {
-      conGreenSuelto({ par: 3, hoyo: { playLine: [], green: { center: alEste(300) } } });
+      conGreenSuelto({
+        par: 3,
+        hoyo: { playLine: [], green: { center: alEste(300) } },
+      });
       enLaSalida();
 
       si();
@@ -2352,7 +3136,9 @@ describe('MapaDelHoyo — marcar con el GPS y el recuadro desde ti (17 oct)', ()
       si();
       tocar(alEste(300));
       const giradas = mapa().easeTo.mock.calls.length;
-      const salida = mapas.marcas.find((m) => !m.quitada && m.opciones.draggable && m.p[1] === T.lat);
+      const salida = mapas.marcas.find(
+        (m) => !m.quitada && m.opciones.draggable && m.p[1] === T.lat,
+      );
       const nueva = alNorte(-50);
       act(() => {
         salida.setLngLat([nueva.lon, nueva.lat]);
@@ -2381,7 +3167,9 @@ describe('MapaDelHoyo — marcar con el GPS y el recuadro desde ti (17 oct)', ()
       const giradas = mapa().easeTo.mock.calls.length;
 
       fireEvent.click(screen.getByRole('button', { name: 'mapa.reportar' }));
-      fireEvent.click(screen.getByRole('button', { name: 'mapa.motivos.WRONG_LINE' }));
+      fireEvent.click(
+        screen.getByRole('button', { name: 'mapa.motivos.WRONG_LINE' }),
+      );
       tocar(alNorte(5));
       tocar(VERDE);
 
@@ -2407,7 +3195,9 @@ describe('MapaDelHoyo — marcar con el GPS y el recuadro desde ti (17 oct)', ()
 
     expect(lineaDibujada()).toBeUndefined();
     expect(mapa().fuentes.medida.data.features).toEqual([]);
-    expect(screen.queryByRole('button', { name: 'mapa.quitarPunto' })).toBeNull();
+    expect(
+      screen.queryByRole('button', { name: 'mapa.quitarPunto' }),
+    ).toBeNull();
   });
 
   it('M2: Sí con buen GPS: mi posición es la salida, se pide el green y sale la línea con el codo del par', () => {
@@ -2432,28 +3222,38 @@ describe('MapaDelHoyo — marcar con el GPS y el recuadro desde ti (17 oct)', ()
 
     si();
 
-    expect(lineaDibujada()).toEqual([[T.lon, T.lat], [T.lon, alNorte(300).lat]]);
+    expect(lineaDibujada()).toEqual([
+      [T.lon, T.lat],
+      [T.lon, alNorte(300).lat],
+    ]);
     expect(screen.queryByText('mapa.pideGreen')).toBeNull();
     unmount();
-    expect(onMuestra.mock.calls[0][0]).toMatchObject({ tee: T, bends: [], greenCenter: alNorte(300) });
+    expect(onMuestra.mock.calls[0][0]).toMatchObject({
+      tee: T,
+      bends: [],
+      greenCenter: alNorte(300),
+    });
   });
 
   it.each([
     ['con 25 m de error', () => enLaSalida(25)],
     ['sin posición todavía', () => {}],
-  ])('M4: Sí %s: se pide tocar la salida, y luego el green', (_caso, gpsAhora) => {
-    const { unmount, onMuestra } = abrirSinLinea();
-    gpsAhora();
+  ])(
+    'M4: Sí %s: se pide tocar la salida, y luego el green',
+    (_caso, gpsAhora) => {
+      const { unmount, onMuestra } = abrirSinLinea();
+      gpsAhora();
 
-    si();
-    expect(screen.getByText('mapa.malGps')).toBeInTheDocument();
-    tocar(alNorte(10));
-    expect(screen.getByText('mapa.pideGreen')).toBeInTheDocument();
-    tocar(alNorte(300));
+      si();
+      expect(screen.getByText('mapa.malGps')).toBeInTheDocument();
+      tocar(alNorte(10));
+      expect(screen.getByText('mapa.pideGreen')).toBeInTheDocument();
+      tocar(alNorte(300));
 
-    unmount();
-    expect(onMuestra.mock.calls[0][0].tee).toEqual(alNorte(10));
-  });
+      unmount();
+      expect(onMuestra.mock.calls[0][0].tee).toEqual(alNorte(10));
+    },
+  );
 
   it('M4: con un green ya puesto, tocar la salida basta', () => {
     const { unmount, onMuestra } = conGreenSuelto({ par: 3 });
@@ -2463,7 +3263,10 @@ describe('MapaDelHoyo — marcar con el GPS y el recuadro desde ti (17 oct)', ()
     tocar(alNorte(10));
 
     unmount();
-    expect(onMuestra.mock.calls[0][0]).toMatchObject({ tee: alNorte(10), greenCenter: alNorte(300) });
+    expect(onMuestra.mock.calls[0][0]).toMatchObject({
+      tee: alNorte(10),
+      greenCenter: alNorte(300),
+    });
   });
 
   it('M5: No: se pide el green, se mide desde mí y al cerrar sale solo el green', () => {
@@ -2478,7 +3281,11 @@ describe('MapaDelHoyo — marcar con el GPS y el recuadro desde ti (17 oct)', ()
     expect(screen.getByText('mapa.desdeTuPosicion')).toBeInTheDocument();
     unmount();
     expect(onMuestra).toHaveBeenCalledTimes(1);
-    expect(onMuestra.mock.calls[0][0]).toMatchObject({ tee: null, bends: [], greenCenter: alNorte(300) });
+    expect(onMuestra.mock.calls[0][0]).toMatchObject({
+      tee: null,
+      bends: [],
+      greenCenter: alNorte(300),
+    });
   });
 
   it('M5: No y no se marca nada: no se envía nada', () => {
@@ -2506,18 +3313,21 @@ describe('MapaDelHoyo — marcar con el GPS y el recuadro desde ti (17 oct)', ()
   it.each([
     ['lejos del campo', () => act(() => gps.exito(lectura(40.4, -3.7)))],
     ['sin permiso de ubicación', () => act(() => gps.error({ code: 1 }))],
-  ])('L1: %s, sin pregunta: toca la salida y el green, y se envía', (_caso, gpsAhora) => {
-    const { unmount, onMuestra } = abrirSinLinea();
-    gpsAhora();
+  ])(
+    'L1: %s, sin pregunta: toca la salida y el green, y se envía',
+    (_caso, gpsAhora) => {
+      const { unmount, onMuestra } = abrirSinLinea();
+      gpsAhora();
 
-    expect(screen.queryByText('mapa.preguntaSalida')).toBeNull();
-    expect(screen.getByText('mapa.pideSalida')).toBeInTheDocument();
-    tocar(alNorte(10));
-    tocar(alNorte(300));
+      expect(screen.queryByText('mapa.preguntaSalida')).toBeNull();
+      expect(screen.getByText('mapa.pideSalida')).toBeInTheDocument();
+      tocar(alNorte(10));
+      tocar(alNorte(300));
 
-    unmount();
-    expect(onMuestra.mock.calls[0][0].tee).toEqual(alNorte(10));
-  });
+      unmount();
+      expect(onMuestra.mock.calls[0][0].tee).toEqual(alNorte(10));
+    },
+  );
 
   it('L1: si te pregunta y resulta que estás lejos, la pregunta se va y se marca tocando', () => {
     abrirSinLinea();
@@ -2530,7 +3340,19 @@ describe('MapaDelHoyo — marcar con el GPS y el recuadro desde ti (17 oct)', ()
   });
 
   it('un hoyo con línea no pregunta nada', () => {
-    abrir({ hoyo: { playLine: [T, alNorte(300)], green: { front: alNorte(290), center: alNorte(300), back: alNorte(310) } }, porMarcar: null, recoge: true, onMuestra: vi.fn() });
+    abrir({
+      hoyo: {
+        playLine: [T, alNorte(300)],
+        green: {
+          front: alNorte(290),
+          center: alNorte(300),
+          back: alNorte(310),
+        },
+      },
+      porMarcar: null,
+      recoge: true,
+      onMuestra: vi.fn(),
+    });
     enLaSalida();
 
     expect(screen.queryByText('mapa.preguntaSalida')).toBeNull();
@@ -2558,7 +3380,9 @@ describe('MapaDelHoyo — marcar con el GPS y el recuadro desde ti (17 oct)', ()
   });
 
   it('R: «Sí» con el green conocido fuera de 40-750 m: se avisa y se pide tocar la salida', () => {
-    const { unmount, onMuestra } = conGreenSuelto({ hoyo: { playLine: [], green: { center: alNorte(900) } } });
+    const { unmount, onMuestra } = conGreenSuelto({
+      hoyo: { playLine: [], green: { center: alNorte(900) } },
+    });
     enLaSalida();
 
     si();
@@ -2599,7 +3423,9 @@ describe('MapaDelHoyo — marcar con el GPS y el recuadro desde ti (17 oct)', ()
     no();
     tocar(alNorte(300));
 
-    const green = mapas.marcas.filter((m) => !m.quitada && m.opciones.draggable);
+    const green = mapas.marcas.filter(
+      (m) => !m.quitada && m.opciones.draggable,
+    );
     expect(green).toHaveLength(1);
     act(() => {
       green[0].setLngLat([T.lon, alNorte(320).lat]);
@@ -2607,7 +3433,10 @@ describe('MapaDelHoyo — marcar con el GPS y el recuadro desde ti (17 oct)', ()
     });
 
     unmount();
-    expect(onMuestra.mock.calls.at(-1)[0].greenCenter).toEqual({ lat: alNorte(320).lat, lon: T.lon });
+    expect(onMuestra.mock.calls.at(-1)[0].greenCenter).toEqual({
+      lat: alNorte(320).lat,
+      lon: T.lon,
+    });
   });
 
   // Agustín, 18 oct: el «No» a «¿Estás en la salida?» enseña ya la distancia
@@ -2625,10 +3454,18 @@ describe('MapaDelHoyo — marcar con el GPS y el recuadro desde ti (17 oct)', ()
   // | D8   | «Marcar el hoyo entero»                       | con green, solo la salida; sin green, la salida y el green      |
   // | D9   | lejos o sin ubicación                         | sin pregunta (L1)                                               |
   // | D10  | a 200 m justos                                | sin codo                                                        |
-  const medida = () => mapa().fuentes.medida.data.features.map((f) => f.geometry.coordinates);
-  const elCodo = () => mapas.marcas.filter((m) => !m.quitada && m.opciones.element?.className.startsWith('h-3.5 ') && m.opciones.element.className.includes('bg-yellow-400'));
+  const medida = () =>
+    mapa().fuentes.medida.data.features.map((f) => f.geometry.coordinates);
+  const elCodo = () =>
+    mapas.marcas.filter(
+      (m) =>
+        !m.quitada &&
+        m.opciones.element?.className.startsWith('h-3.5 ') &&
+        m.opciones.element.className.includes('bg-yellow-400'),
+    );
   const en = (p) => [p.lon, p.lat];
-  const desde = (m, precision = 5) => act(() => gps.exito(lectura(alNorte(m).lat, T.lon, precision)));
+  const desde = (m, precision = 5) =>
+    act(() => gps.exito(lectura(alNorte(m).lat, T.lon, precision)));
   const G300 = alNorte(300);
 
   it('D1: con el green conocido y a ≤ 200 m, «No» pinta la línea de mí al green, sin botones', () => {
@@ -2639,11 +3476,15 @@ describe('MapaDelHoyo — marcar con el GPS y el recuadro desde ti (17 oct)', ()
 
     expect(screen.queryByText('mapa.preguntaSalida')).toBeNull();
     expect(screen.queryByText('mapa.pideGreen')).toBeNull();
-    expect(screen.queryByRole('button', { name: 'mapa.soloDistancia' })).toBeNull();
+    expect(
+      screen.queryByRole('button', { name: 'mapa.soloDistancia' }),
+    ).toBeNull();
     expect(medida()).toEqual([[en(alNorte(150)), en(G300)]]);
     expect(elCodo()).toHaveLength(0);
     expect(screen.getByTestId('distancia-centro')).toHaveTextContent('150');
-    expect(screen.getByRole('button', { name: 'mapa.marcarEntero' })).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: 'mapa.marcarEntero' }),
+    ).toBeInTheDocument();
   });
 
   it('D1: el foco pasa al enlace «Marcar el hoyo entero», una vez', () => {
@@ -2668,12 +3509,17 @@ describe('MapaDelHoyo — marcar con el GPS y el recuadro desde ti (17 oct)', ()
     no();
 
     const vivas = mapas.marcas.filter((m) => !m.quitada);
-    const yo = vivas.find((m) => m.opciones.element?.className.includes('bg-blue-500'));
+    const yo = vivas.find((m) =>
+      m.opciones.element?.className.includes('bg-blue-500'),
+    );
     expect(yo.getElement().className.split(' ')).toContain('z-[1]');
     expect(elCodo()[0].getElement().className.split(' ')).toContain('z-[2]');
-    const otras = vivas.filter((m) => m !== yo && !m.opciones.element?.dataset?.tramo);
+    const otras = vivas.filter(
+      (m) => m !== yo && !m.opciones.element?.dataset?.tramo,
+    );
     expect(otras.length).toBeGreaterThan(0);
-    for (const otra of otras) expect(otra.getElement().className.split(' ')).toContain('z-[2]');
+    for (const otra of otras)
+      expect(otra.getElement().className.split(' ')).toContain('z-[2]');
   });
 
   it('D2: a más de 200 m, la línea sale con un codo en medio, sin tocar: un tramo (C2, 20 oct)', () => {
@@ -2686,7 +3532,9 @@ describe('MapaDelHoyo — marcar con el GPS y el recuadro desde ti (17 oct)', ()
     expect(elCodo()[0].p[1]).toBeCloseTo(alNorte(150).lat, 9);
     expect(medida()).toEqual([[en(T), en(G300)]]);
     // Sin tocar no hay «Quitar» (C9)
-    expect(screen.queryByRole('button', { name: 'mapa.quitarPunto' })).toBeNull();
+    expect(
+      screen.queryByRole('button', { name: 'mapa.quitarPunto' }),
+    ).toBeNull();
   });
 
   it('D10: a 200 m justos, sin codo', () => {
@@ -2783,8 +3631,15 @@ describe('MapaDelHoyo — marcar con el GPS y el recuadro desde ti (17 oct)', ()
   // | C8   | lector de pantalla                     | sin tocar, solo la distancia al green (el recuadro); movido, los dos tramos |
   // | C9   | «Quitar»                               | solo con el codo movido, y lo devuelve a sin tocar (C2)          |
   // | C10  | la cifra de ti al green, una línea     | siempre a 3/4, haya codo o no: no salta al aparecer o irse        |
-  const cifrasDeMedida = () => mapas.marcas.filter((m) => !m.quitada && m.opciones.element?.dataset?.tramo === 'medida' && /mapa\.tramo/.test(m.opciones.element?.textContent ?? ''));
-  const textosDeMedida = () => cifrasDeMedida().map((m) => m.opciones.element.textContent);
+  const cifrasDeMedida = () =>
+    mapas.marcas.filter(
+      (m) =>
+        !m.quitada &&
+        m.opciones.element?.dataset?.tramo === 'medida' &&
+        /mapa\.tramo/.test(m.opciones.element?.textContent ?? ''),
+    );
+  const textosDeMedida = () =>
+    cifrasDeMedida().map((m) => m.opciones.element.textContent);
   const arrastrarElCodo = (m) => {
     const [codo] = elCodo();
     act(() => {
@@ -2847,15 +3702,18 @@ describe('MapaDelHoyo — marcar con el GPS y el recuadro desde ti (17 oct)', ()
   it.each([
     [100, 'a 200 m justos'],
     [110, 'a 190 m justos'],
-  ])('C3: a la vista, el codo sigue %s m al norte (%s): el margen de 10 m', (m) => {
-    conGreenSuelto();
-    desde(0);
-    no();
+  ])(
+    'C3: a la vista, el codo sigue %s m al norte (%s): el margen de 10 m',
+    (m) => {
+      conGreenSuelto();
+      desde(0);
+      no();
 
-    desde(m);
+      desde(m);
 
-    expect(elCodo()).toHaveLength(1);
-  });
+      expect(elCodo()).toHaveLength(1);
+    },
+  );
 
   it('C3: oculto, no vuelve entre 190 y 200 m; sí al pasar de 200 m', () => {
     conGreenSuelto();
@@ -2918,8 +3776,14 @@ describe('MapaDelHoyo — marcar con el GPS y el recuadro desde ti (17 oct)', ()
 
     arrastrarElCodo(250);
 
-    expect(medida()).toEqual([[en(T), [T.lon, alNorte(250).lat]], [[T.lon, alNorte(250).lat], en(G300)]]);
-    expect(textosDeMedida()).toEqual(['mapa.tramo {"metros":250}', 'mapa.tramo {"metros":50}']);
+    expect(medida()).toEqual([
+      [en(T), [T.lon, alNorte(250).lat]],
+      [[T.lon, alNorte(250).lat], en(G300)],
+    ]);
+    expect(textosDeMedida()).toEqual([
+      'mapa.tramo {"metros":250}',
+      'mapa.tramo {"metros":50}',
+    ]);
     expect(cifrasDeMedida()[0].p[1]).toBeCloseTo(alNorte(125).lat, 9);
     expect(cifrasDeMedida()[1].p[1]).toBeCloseTo(alNorte(275).lat, 9);
   });
@@ -2935,7 +3799,10 @@ describe('MapaDelHoyo — marcar con el GPS y el recuadro desde ti (17 oct)', ()
       codo.oyentes.drag({ target: codo });
     });
 
-    expect(textosDeMedida()).toEqual(['mapa.tramo {"metros":100}', 'mapa.tramo {"metros":200}']);
+    expect(textosDeMedida()).toEqual([
+      'mapa.tramo {"metros":100}',
+      'mapa.tramo {"metros":200}',
+    ]);
   });
 
   it('C4: un codo dejado justo en medio cuenta como movido: dos tramos', () => {
@@ -2946,7 +3813,10 @@ describe('MapaDelHoyo — marcar con el GPS y el recuadro desde ti (17 oct)', ()
     arrastrarElCodo(150);
 
     expect(medida()).toHaveLength(2);
-    expect(textosDeMedida()).toEqual(['mapa.tramo {"metros":150}', 'mapa.tramo {"metros":150}']);
+    expect(textosDeMedida()).toEqual([
+      'mapa.tramo {"metros":150}',
+      'mapa.tramo {"metros":150}',
+    ]);
   });
 
   it('C5: andando tras moverlo, el codo se queda; cambia la cifra hasta él, no la del codo al green', () => {
@@ -2958,8 +3828,14 @@ describe('MapaDelHoyo — marcar con el GPS y el recuadro desde ti (17 oct)', ()
     desde(50);
 
     expect(elCodo()[0].p[1]).toBeCloseTo(alNorte(250).lat, 9);
-    expect(medida()).toEqual([[en(alNorte(50)), [T.lon, alNorte(250).lat]], [[T.lon, alNorte(250).lat], en(G300)]]);
-    expect(textosDeMedida()).toEqual(['mapa.tramo {"metros":200}', 'mapa.tramo {"metros":50}']);
+    expect(medida()).toEqual([
+      [en(alNorte(50)), [T.lon, alNorte(250).lat]],
+      [[T.lon, alNorte(250).lat], en(G300)],
+    ]);
+    expect(textosDeMedida()).toEqual([
+      'mapa.tramo {"metros":200}',
+      'mapa.tramo {"metros":50}',
+    ]);
   });
 
   it('C5: movido, sigue aunque bajes de 200 m al green', () => {
@@ -3053,8 +3929,12 @@ describe('MapaDelHoyo — marcar con el GPS y el recuadro desde ti (17 oct)', ()
 
     arrastrarElCodo(250);
 
-    expect(screen.getByRole('status')).toHaveTextContent('mapa.hastaAhi {"metros":250}');
-    expect(screen.getByRole('status')).toHaveTextContent('mapa.deAhiAlGreen {"metros":50}');
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'mapa.hastaAhi {"metros":250}',
+    );
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'mapa.deAhiAlGreen {"metros":50}',
+    );
   });
 
   it('C9: con el codo sin tocar no hay «Quitar»', () => {
@@ -3064,7 +3944,9 @@ describe('MapaDelHoyo — marcar con el GPS y el recuadro desde ti (17 oct)', ()
     no();
 
     expect(elCodo()).toHaveLength(1);
-    expect(screen.queryByRole('button', { name: 'mapa.quitarPunto' })).toBeNull();
+    expect(
+      screen.queryByRole('button', { name: 'mapa.quitarPunto' }),
+    ).toBeNull();
   });
 
   it('C9: con el codo movido, «Quitar» lo devuelve a sin tocar: una distancia y el codo en medio, siguiéndote', () => {
@@ -3078,7 +3960,9 @@ describe('MapaDelHoyo — marcar con el GPS y el recuadro desde ti (17 oct)', ()
     expect(medida()).toEqual([[en(T), en(G300)]]);
     expect(textosDeMedida()).toEqual(['mapa.tramo {"metros":300}']);
     expect(elCodo()[0].p[1]).toBeCloseTo(alNorte(150).lat, 9);
-    expect(screen.queryByRole('button', { name: 'mapa.quitarPunto' })).toBeNull();
+    expect(
+      screen.queryByRole('button', { name: 'mapa.quitarPunto' }),
+    ).toBeNull();
     desde(50);
     expect(elCodo()[0].p[1]).toBeCloseTo(alNorte(175).lat, 9);
   });
@@ -3151,7 +4035,9 @@ describe('MapaDelHoyo — marcar con el GPS y el recuadro desde ti (17 oct)', ()
     desde(0, 25);
 
     expect(screen.getByText('mapa.buscando')).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'mapa.quitarPunto' })).toBeNull();
+    expect(
+      screen.queryByRole('button', { name: 'mapa.quitarPunto' }),
+    ).toBeNull();
     expect(screen.queryByText(/mapa\.hastaAhi/)).toBeNull();
   });
 
@@ -3161,14 +4047,20 @@ describe('MapaDelHoyo — marcar con el GPS y el recuadro desde ti (17 oct)', ()
 
     no();
     expect(screen.getByText('mapa.pideGreen')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'mapa.marcarEntero' })).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: 'mapa.marcarEntero' }),
+    ).toBeInTheDocument();
     tocar(G300);
 
     expect(medida()).toHaveLength(1);
     expect(medida()[0][0]).toEqual(en(T));
     unmount();
     expect(onMuestra).toHaveBeenCalledTimes(1);
-    expect(onMuestra.mock.calls[0][0]).toMatchObject({ tee: null, bends: [], greenCenter: G300 });
+    expect(onMuestra.mock.calls[0][0]).toMatchObject({
+      tee: null,
+      bends: [],
+      greenCenter: G300,
+    });
   });
 
   it('D6: a ≤ 200 m del green tocado, la línea va directa', () => {
@@ -3203,10 +4095,17 @@ describe('MapaDelHoyo — marcar con el GPS y el recuadro desde ti (17 oct)', ()
     expect(elCodo()).toHaveLength(0);
     tocar(alNorte(10));
 
-    expect(lineaDibujada()).toEqual([[T.lon, alNorte(10).lat], [T.lon, G300.lat]]);
+    expect(lineaDibujada()).toEqual([
+      [T.lon, alNorte(10).lat],
+      [T.lon, G300.lat],
+    ]);
     expect(medida()).toEqual([]);
     unmount();
-    expect(onMuestra.mock.calls[0][0]).toMatchObject({ tee: alNorte(10), bends: [], greenCenter: G300 });
+    expect(onMuestra.mock.calls[0][0]).toMatchObject({
+      tee: alNorte(10),
+      bends: [],
+      greenCenter: G300,
+    });
   });
 
   it('D8: una salida a menos de 40 m de ese green no vale: se avisa y se sigue pidiendo la salida', () => {
@@ -3240,7 +4139,10 @@ describe('MapaDelHoyo — marcar con el GPS y el recuadro desde ti (17 oct)', ()
     expect(lineaDibujada()[0]).toEqual([T.lon, alNorte(10).lat]);
     unmount();
     expect(onMuestra).toHaveBeenCalledTimes(1);
-    expect(onMuestra.mock.calls[0][0]).toMatchObject({ tee: alNorte(10), greenCenter: G300 });
+    expect(onMuestra.mock.calls[0][0]).toMatchObject({
+      tee: alNorte(10),
+      greenCenter: G300,
+    });
     expect(onMuestra.mock.calls[0][0].bends).toHaveLength(1);
   });
 
@@ -3279,7 +4181,9 @@ describe('MapaDelHoyo — marcar con el GPS y el recuadro desde ti (17 oct)', ()
 
     fireEvent.click(screen.getByRole('button', { name: 'mapa.ahoraNo' }));
     tocar(alNorte(200));
-    expect(screen.getByRole('button', { name: 'mapa.quitarPunto' })).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: 'mapa.quitarPunto' }),
+    ).toBeInTheDocument();
     expect(lineaDibujada()).toBeUndefined();
     fireEvent.click(screen.getByRole('button', { name: /mapa\.marcarHoyo/ }));
 
@@ -3319,7 +4223,10 @@ describe('MapaDelHoyo — marcar con el GPS y el recuadro desde ti (17 oct)', ()
     expect(lineaDibujada()).toHaveLength(3);
     unmount();
     expect(onMuestra).toHaveBeenCalledTimes(1);
-    expect(onMuestra.mock.calls[0][0]).toMatchObject({ tee: alNorte(10), greenCenter: G300 });
+    expect(onMuestra.mock.calls[0][0]).toMatchObject({
+      tee: alNorte(10),
+      greenCenter: G300,
+    });
     expect(onMuestra.mock.calls[0][0].bends).toHaveLength(1);
   });
 
@@ -3328,7 +4235,11 @@ describe('MapaDelHoyo — marcar con el GPS y el recuadro desde ti (17 oct)', ()
     tocar(alNorte(10));
 
     unmount();
-    expect(onMuestra.mock.calls[0][0]).toMatchObject({ tee: alNorte(10), bends: [], greenCenter: G300 });
+    expect(onMuestra.mock.calls[0][0]).toMatchObject({
+      tee: alNorte(10),
+      bends: [],
+      greenCenter: G300,
+    });
   });
 
   it('D8d: una salida a menos de 40 m de ese green no vale: se avisa y se sigue pidiendo', () => {
@@ -3347,7 +4258,11 @@ describe('MapaDelHoyo — marcar con el GPS y el recuadro desde ti (17 oct)', ()
 
     unmount();
     expect(onMuestra).toHaveBeenCalledTimes(1);
-    expect(onMuestra.mock.calls[0][0]).toMatchObject({ tee: null, bends: [], greenCenter: G300 });
+    expect(onMuestra.mock.calls[0][0]).toMatchObject({
+      tee: null,
+      bends: [],
+      greenCenter: G300,
+    });
   });
 
   it('D3b/D3c: arrastrando el codo, la línea y los metros siguen al dedo; nada se envía', () => {
@@ -3363,7 +4278,13 @@ describe('MapaDelHoyo — marcar con el GPS y el recuadro desde ti (17 oct)', ()
 
     expect(medida()[0][1]).toEqual([T.lon, alNorte(250).lat]);
     expect(medida()[1][0]).toEqual([T.lon, alNorte(250).lat]);
-    expect(mapas.marcas.filter((m) => !m.quitada && m.opciones.element?.dataset?.tramo === 'medida').map((m) => m.opciones.element.textContent)).toEqual(['mapa.tramo {"metros":250}', 'mapa.tramo {"metros":50}']);
+    expect(
+      mapas.marcas
+        .filter(
+          (m) => !m.quitada && m.opciones.element?.dataset?.tramo === 'medida',
+        )
+        .map((m) => m.opciones.element.textContent),
+    ).toEqual(['mapa.tramo {"metros":250}', 'mapa.tramo {"metros":50}']);
     act(() => codo.oyentes.dragend({ target: codo }));
     expect(elCodo()[0].p[1]).toBeCloseTo(alNorte(250).lat, 9);
     unmount();
@@ -3385,17 +4306,27 @@ describe('MapaDelHoyo — marcar con el GPS y el recuadro desde ti (17 oct)', ()
   });
 
   it('D: midiendo como siempre (hoyo con línea), el punto tocado no se arrastra', () => {
-    abrir({ hoyo: { playLine: [T, G300], green: { front: alNorte(290), center: G300, back: alNorte(310) } }, porMarcar: null });
+    abrir({
+      hoyo: {
+        playLine: [T, G300],
+        green: { front: alNorte(290), center: G300, back: alNorte(310) },
+      },
+      porMarcar: null,
+    });
     act(() => mapa().oyentes.load());
     desde(0);
 
     tocar(alNorte(200));
 
-    const elPunto = mapas.marcas.filter((m) => !m.quitada && m.opciones.element?.dataset?.punto === 'medido');
+    const elPunto = mapas.marcas.filter(
+      (m) => !m.quitada && m.opciones.element?.dataset?.punto === 'medido',
+    );
     expect(elPunto).toHaveLength(1);
     expect(elPunto[0].opciones.draggable).toBeFalsy();
     expect(elCodo()).toEqual([]);
-    expect(screen.queryByRole('button', { name: 'mapa.marcarEntero' })).toBeNull();
+    expect(
+      screen.queryByRole('button', { name: 'mapa.marcarEntero' }),
+    ).toBeNull();
   });
 
   // Agustín, 18 oct: en un hoyo con línea, abierto a mitad de hoyo, solo la
@@ -3414,9 +4345,19 @@ describe('MapaDelHoyo — marcar con el GPS y el recuadro desde ti (17 oct)', ()
   // | H10  | la línea desde ti                             | no se envía                                                     |
   // | H11  | a mitad de hoyo                               | sin enlace «Marcar el hoyo entero»                              |
   describe('H: a mitad de un hoyo con línea', () => {
-    const CON_LINEA = { playLine: [T, G300], green: { front: alNorte(290), center: G300, back: alNorte(310) } };
+    const CON_LINEA = {
+      playLine: [T, G300],
+      green: { front: alNorte(290), center: G300, back: alNorte(310) },
+    };
     const abrirConLinea = (props = {}) => {
-      const r = abrir({ hoyo: CON_LINEA, par: 3, porMarcar: null, recoge: true, onMuestra: vi.fn(), ...props });
+      const r = abrir({
+        hoyo: CON_LINEA,
+        par: 3,
+        porMarcar: null,
+        recoge: true,
+        onMuestra: vi.fn(),
+        ...props,
+      });
       act(() => mapa().oyentes.load());
       return r;
     };
@@ -3435,7 +4376,11 @@ describe('MapaDelHoyo — marcar con el GPS y el recuadro desde ti (17 oct)', ()
       desde(150);
 
       expect(lineaDibujada()).toBeUndefined();
-      expect(mapas.marcas.filter((m) => !m.quitada && m.opciones.draggable && !elCodo().includes(m))).toEqual([]);
+      expect(
+        mapas.marcas.filter(
+          (m) => !m.quitada && m.opciones.draggable && !elCodo().includes(m),
+        ),
+      ).toEqual([]);
       expect(medida()).toEqual([[en(alNorte(150)), en(G300)]]);
       expect(screen.queryByText('mapa.preguntaSalida')).toBeNull();
       expect(screen.getByTestId('distancia-centro')).toHaveTextContent('150');
@@ -3445,7 +4390,9 @@ describe('MapaDelHoyo — marcar con el GPS y el recuadro desde ti (17 oct)', ()
       abrirConLinea();
       desde(150);
 
-      const deLaLineaVivas = mapas.marcas.filter((m) => !m.quitada && m.opciones.element?.dataset?.tramo === 'linea');
+      const deLaLineaVivas = mapas.marcas.filter(
+        (m) => !m.quitada && m.opciones.element?.dataset?.tramo === 'linea',
+      );
       expect(deLaLineaVivas).toEqual([]);
       expect(screen.queryByTestId('tramos-de-la-linea')).toBeNull();
     });
@@ -3540,7 +4487,9 @@ describe('MapaDelHoyo — marcar con el GPS y el recuadro desde ti (17 oct)', ()
       abrirConLinea({ onReporte: vi.fn() });
       desde(50);
       fireEvent.click(screen.getByRole('button', { name: 'mapa.reportar' }));
-      fireEvent.click(screen.getByRole('button', { name: 'mapa.motivos.WRONG_LINE' }));
+      fireEvent.click(
+        screen.getByRole('button', { name: 'mapa.motivos.WRONG_LINE' }),
+      );
 
       desde(10);
       fireEvent.click(screen.getByRole('button', { name: 'mapa.cancelar' }));
@@ -3553,7 +4502,9 @@ describe('MapaDelHoyo — marcar con el GPS y el recuadro desde ti (17 oct)', ()
     it('H13: con la línea ya movida, el primer GPS bueno lejos de la salida no la oculta', () => {
       abrirConLinea();
       desde(150, 25);
-      const [salida] = mapas.marcas.filter((m) => !m.quitada && m.opciones.draggable);
+      const [salida] = mapas.marcas.filter(
+        (m) => !m.quitada && m.opciones.draggable,
+      );
       act(() => {
         salida.setLngLat([T.lon, alNorte(5).lat]);
         salida.oyentes.dragend({ target: salida });
@@ -3593,7 +4544,9 @@ describe('MapaDelHoyo — marcar con el GPS y el recuadro desde ti (17 oct)', ()
 
       pulsar({ lngLat: { lat: alNorte(100).lat, lng: T.lon + 0.0005 } });
 
-      expect(medida()).toEqual([[en(alNorte(50)), [T.lon + 0.0005, alNorte(100).lat]]]);
+      expect(medida()).toEqual([
+        [en(alNorte(50)), [T.lon + 0.0005, alNorte(100).lat]],
+      ]);
       expect(mapa().fitBounds).not.toHaveBeenCalled();
       fireEvent.click(screen.getByRole('button', { name: 'mapa.quitarPunto' }));
       expect(elCodo()[0].p).toEqual(codo);
@@ -3622,7 +4575,10 @@ describe('MapaDelHoyo — marcar con el GPS y el recuadro desde ti (17 oct)', ()
     });
 
     it('H8: un hoyo con salida y sin green sigue pidiendo el green', () => {
-      abrirConLinea({ hoyo: { playLine: [T, alNorte(150)], green: null }, porMarcar: 'green' });
+      abrirConLinea({
+        hoyo: { playLine: [T, alNorte(150)], green: null },
+        porMarcar: 'green',
+      });
       desde(100);
 
       expect(screen.getByText('mapa.pideGreen')).toBeInTheDocument();
@@ -3646,7 +4602,9 @@ describe('MapaDelHoyo — marcar con el GPS y el recuadro desde ti (17 oct)', ()
       desde(50);
 
       fireEvent.click(screen.getByRole('button', { name: 'mapa.reportar' }));
-      fireEvent.click(screen.getByRole('button', { name: 'mapa.motivos.WRONG_LINE' }));
+      fireEvent.click(
+        screen.getByRole('button', { name: 'mapa.motivos.WRONG_LINE' }),
+      );
       expect(medida()).toEqual([]);
       tocar(alNorte(5));
       tocar(alNorte(290));
@@ -3661,7 +4619,9 @@ describe('MapaDelHoyo — marcar con el GPS y el recuadro desde ti (17 oct)', ()
       expect(elCodo()).toHaveLength(1);
 
       fireEvent.click(screen.getByRole('button', { name: 'mapa.reportar' }));
-      fireEvent.click(screen.getByRole('button', { name: 'mapa.motivos.WRONG_LINE' }));
+      fireEvent.click(
+        screen.getByRole('button', { name: 'mapa.motivos.WRONG_LINE' }),
+      );
 
       expect(elCodo()).toEqual([]);
     });
@@ -3676,7 +4636,9 @@ describe('MapaDelHoyo — marcar con el GPS y el recuadro desde ti (17 oct)', ()
       });
 
       fireEvent.click(screen.getByRole('button', { name: 'mapa.reportar' }));
-      fireEvent.click(screen.getByRole('button', { name: 'mapa.motivos.WRONG_LINE' }));
+      fireEvent.click(
+        screen.getByRole('button', { name: 'mapa.motivos.WRONG_LINE' }),
+      );
       fireEvent.click(screen.getByRole('button', { name: 'mapa.cancelar' }));
 
       expect(elCodo()[0].p[1]).toBeCloseTo(alNorte(200).lat, 9);
@@ -3688,7 +4650,9 @@ describe('MapaDelHoyo — marcar con el GPS y el recuadro desde ti (17 oct)', ()
       desde(50);
 
       fireEvent.click(screen.getByRole('button', { name: 'mapa.reportar' }));
-      fireEvent.click(screen.getByRole('button', { name: 'mapa.motivos.WRONG_LINE' }));
+      fireEvent.click(
+        screen.getByRole('button', { name: 'mapa.motivos.WRONG_LINE' }),
+      );
       fireEvent.click(screen.getByRole('button', { name: 'mapa.cancelar' }));
 
       expect(lineaDibujada()).toBeUndefined();
@@ -3701,7 +4665,9 @@ describe('MapaDelHoyo — marcar con el GPS y el recuadro desde ti (17 oct)', ()
       desde(50, 25);
 
       fireEvent.click(screen.getByRole('button', { name: 'mapa.reportar' }));
-      fireEvent.click(screen.getByRole('button', { name: 'mapa.motivos.WRONG_LINE' }));
+      fireEvent.click(
+        screen.getByRole('button', { name: 'mapa.motivos.WRONG_LINE' }),
+      );
       desde(50);
       expect(medida()).toEqual([]);
       expect(elCodo()).toEqual([]);
@@ -3754,7 +4720,9 @@ describe('MapaDelHoyo — marcar con el GPS y el recuadro desde ti (17 oct)', ()
       arrastrarCodo(alNorte(100));
 
       fireEvent.click(screen.getByRole('button', { name: 'mapa.reportar' }));
-      fireEvent.click(screen.getByRole('button', { name: 'mapa.motivos.WRONG_LINE' }));
+      fireEvent.click(
+        screen.getByRole('button', { name: 'mapa.motivos.WRONG_LINE' }),
+      );
       fireEvent.click(screen.getByRole('button', { name: 'mapa.cancelar' }));
 
       expect(elCodo()[0].p[1]).toBeCloseTo(alNorte(100).lat, 9);
@@ -3793,11 +4761,17 @@ describe('MapaDelHoyo — marcar con el GPS y el recuadro desde ti (17 oct)', ()
 
     it('/code-review: con el codo sin tocar a la vista y el GPS que se vuelve flojo, que crezca el panel no reencuadra', () => {
       const observados = [];
-      vi.stubGlobal('ResizeObserver', class {
-        constructor(fn) { this.fn = fn; observados.push(this); }
-        observe() {}
-        disconnect() {}
-      });
+      vi.stubGlobal(
+        'ResizeObserver',
+        class {
+          constructor(fn) {
+            this.fn = fn;
+            observados.push(this);
+          }
+          observe() {}
+          disconnect() {}
+        },
+      );
       abrirConLinea();
       desde(50);
       desde(50, 25);
@@ -3833,40 +4807,85 @@ describe('MapaDelHoyo — marcar con el GPS y el recuadro desde ti (17 oct)', ()
       abrirConLinea();
       desde(150);
 
-      expect(screen.queryByRole('button', { name: 'mapa.marcarEntero' })).toBeNull();
+      expect(
+        screen.queryByRole('button', { name: 'mapa.marcarEntero' }),
+      ).toBeNull();
     });
   });
 
   // V2 (17 oct): una referencia por hoyo, vista desde mi barra
   it('V2: la salida de la línea se lleva a mis metros, sobre el primer tramo', () => {
-    abrir({ hoyo: { playLine: [T, alNorte(300)], green: { front: alNorte(290), center: alNorte(300), back: alNorte(310) } }, metros: 270, par: 3 });
+    abrir({
+      hoyo: {
+        playLine: [T, alNorte(300)],
+        green: {
+          front: alNorte(290),
+          center: alNorte(300),
+          back: alNorte(310),
+        },
+      },
+      metros: 270,
+      par: 3,
+    });
     act(() => mapa().oyentes.load());
 
     expect(lineaDibujada()[0][1]).toBeCloseTo(alNorte(30).lat, 9);
-    expect(screen.getByTestId('tramos-de-la-linea')).toHaveTextContent('{"a":270}');
+    expect(screen.getByTestId('tramos-de-la-linea')).toHaveTextContent(
+      '{"a":270}',
+    );
   });
 
   it('V2: sin metros en la tarjeta, la salida de la línea tal cual', () => {
-    abrir({ hoyo: { playLine: [T, alNorte(300)], green: { front: alNorte(290), center: alNorte(300), back: alNorte(310) } }, metros: null, par: 3 });
+    abrir({
+      hoyo: {
+        playLine: [T, alNorte(300)],
+        green: {
+          front: alNorte(290),
+          center: alNorte(300),
+          back: alNorte(310),
+        },
+      },
+      metros: null,
+      par: 3,
+    });
     act(() => mapa().oyentes.load());
 
     expect(lineaDibujada()[0]).toEqual([T.lon, T.lat]);
   });
 
   it('V2: el hoyo se encuadra con mi salida (la atrasada, también)', () => {
-    const hoyo = { playLine: [T, alNorte(300)], green: { front: alNorte(290), center: alNorte(300), back: alNorte(310) } };
+    const hoyo = {
+      playLine: [T, alNorte(300)],
+      green: { front: alNorte(290), center: alNorte(300), back: alNorte(310) },
+    };
     abrir({ hoyo, metros: 340, par: 3 });
 
     const conMiSalida = { ...hoyo, playLine: [alNorte(-40), alNorte(300)] };
     const bearing = orientacionDelHoyo(conMiSalida);
-    const { center, zoom } = encuadreGirado(conMiSalida, bearing, { ancho: 360, alto: 640, padding: { top: 90, bottom: 288, left: 40, right: 40 } });
+    const { center, zoom } = encuadreGirado(conMiSalida, bearing, {
+      ancho: 360,
+      alto: 640,
+      padding: { top: 90, bottom: 288, left: 40, right: 40 },
+    });
     const [ultima] = mapa().jumpTo.mock.calls.at(-1);
     expect(ultima.center[1]).toBeCloseTo(center.lat, 6);
     expect(ultima.zoom).toBeCloseTo(zoom, 6);
   });
 
   it('V2: mi propia línea (colocarSalida apagado) no se mueve', () => {
-    abrir({ hoyo: { playLine: [T, alNorte(300)], green: { front: alNorte(290), center: alNorte(300), back: alNorte(310) } }, metros: 270, par: 3, colocarSalida: false });
+    abrir({
+      hoyo: {
+        playLine: [T, alNorte(300)],
+        green: {
+          front: alNorte(290),
+          center: alNorte(300),
+          back: alNorte(310),
+        },
+      },
+      metros: 270,
+      par: 3,
+      colocarSalida: false,
+    });
     act(() => mapa().oyentes.load());
 
     expect(lineaDibujada()[0]).toEqual([T.lon, T.lat]);
@@ -3874,7 +4893,20 @@ describe('MapaDelHoyo — marcar con el GPS y el recuadro desde ti (17 oct)', ()
 
   it('V2: abrirla con mis metros no envía nada (no la he movido)', () => {
     const onMuestra = vi.fn();
-    const { unmount } = abrir({ hoyo: { playLine: [T, alNorte(300)], green: { front: alNorte(290), center: alNorte(300), back: alNorte(310) } }, metros: 270, par: 3, recoge: true, onMuestra });
+    const { unmount } = abrir({
+      hoyo: {
+        playLine: [T, alNorte(300)],
+        green: {
+          front: alNorte(290),
+          center: alNorte(300),
+          back: alNorte(310),
+        },
+      },
+      metros: 270,
+      par: 3,
+      recoge: true,
+      onMuestra,
+    });
     act(() => mapa().oyentes.load());
 
     unmount();
@@ -3883,7 +4915,10 @@ describe('MapaDelHoyo — marcar con el GPS y el recuadro desde ti (17 oct)', ()
   });
 
   describe('el recuadro', () => {
-    const HOYO_T = { playLine: [T, alNorte(300)], green: { front: alNorte(290), center: alNorte(300), back: alNorte(312) } };
+    const HOYO_T = {
+      playLine: [T, alNorte(300)],
+      green: { front: alNorte(290), center: alNorte(300), back: alNorte(312) },
+    };
 
     it('B1: con buen GPS y en el hoyo, desde mi posición, y sigue al moverme', () => {
       abrir({ hoyo: HOYO_T, metros: 342 });
@@ -3903,14 +4938,27 @@ describe('MapaDelHoyo — marcar con el GPS y el recuadro desde ti (17 oct)', ()
 
       act(() => gps.exito(lectura(alNorte(100).lat, T.lon, 10)));
 
-      expect(screen.getByText('mapa.etiqueta {"front":190,"center":200,"back":212,"origen":"mapa.desdeTuPosicion"}')).toHaveClass('sr-only');
-      expect(screen.getByText('mapa.desdeTuPosicion')).toHaveAttribute('aria-hidden', 'true');
+      expect(
+        screen.getByText(
+          'mapa.etiqueta {"front":190,"center":200,"back":212,"origen":"mapa.desdeTuPosicion"}',
+        ),
+      ).toHaveClass('sr-only');
+      expect(screen.getByText('mapa.desdeTuPosicion')).toHaveAttribute(
+        'aria-hidden',
+        'true',
+      );
     });
 
     it.each([
-      ['GPS con 25 m de error', () => act(() => gps.exito(lectura(alNorte(100).lat, T.lon, 25)))],
+      [
+        'GPS con 25 m de error',
+        () => act(() => gps.exito(lectura(alNorte(100).lat, T.lon, 25))),
+      ],
       ['sin GPS', () => act(() => gps.error({ code: 1 }))],
-      ['a más de 750 m del green', () => act(() => gps.exito(lectura(alNorte(-500).lat, T.lon, 5)))],
+      [
+        'a más de 750 m del green',
+        () => act(() => gps.exito(lectura(alNorte(-500).lat, T.lon, 5))),
+      ],
     ])('B2: %s, la tarjeta de mi barra', (_caso, gpsAhora) => {
       abrir({ hoyo: HOYO_T, metros: 342 });
 
@@ -3935,7 +4983,6 @@ describe('MapaDelHoyo — marcar con el GPS y el recuadro desde ti (17 oct)', ()
   });
 });
 
-
 // Agustín, 18 oct (entrega 7): reportar un hoyo con línea. El motivo y la línea
 // que propone el jugador; los jugadores siguen viendo la de siempre
 //
@@ -3955,16 +5002,37 @@ describe('MapaDelHoyo — marcar con el GPS y el recuadro desde ti (17 oct)', ()
 describe('MapaDelHoyo — reportar un hoyo (entrega 7)', () => {
   const M_POR_GRADO = (6371008.8 * Math.PI) / 180;
   const T = { lat: 36.28, lon: -5.33 };
-  const alNorte = (m, de = T) => ({ lat: de.lat + m / M_POR_GRADO, lon: de.lon });
+  const alNorte = (m, de = T) => ({
+    lat: de.lat + m / M_POR_GRADO,
+    lon: de.lon,
+  });
   const tocar = (p) => pulsar({ lngLat: { lat: p.lat, lng: p.lon } });
-  const lineaDibujada = () => mapa().fuentes.marcado?.data.features.find((f) => f.properties.tipo === 'linea')?.geometry.coordinates;
-  const LINEA = { playLine: [T, alNorte(300)], green: { front: alNorte(290), center: alNorte(300), back: alNorte(310) } };
-  const menu = () => fireEvent.click(screen.getByRole('button', { name: 'mapa.reportar' }));
-  const motivo = (clave) => fireEvent.click(screen.getByRole('button', { name: `mapa.motivos.${clave}` }));
+  const lineaDibujada = () =>
+    mapa().fuentes.marcado?.data.features.find(
+      (f) => f.properties.tipo === 'linea',
+    )?.geometry.coordinates;
+  const LINEA = {
+    playLine: [T, alNorte(300)],
+    green: { front: alNorte(290), center: alNorte(300), back: alNorte(310) },
+  };
+  const menu = () =>
+    fireEvent.click(screen.getByRole('button', { name: 'mapa.reportar' }));
+  const motivo = (clave) =>
+    fireEvent.click(
+      screen.getByRole('button', { name: `mapa.motivos.${clave}` }),
+    );
   const abrirConLinea = (props = {}) => {
     const onReporte = props.onReporte ?? vi.fn();
     const onMuestra = props.onMuestra ?? vi.fn();
-    const r = abrir({ hoyo: LINEA, par: 4, metros: null, recoge: true, onReporte, onMuestra, ...props });
+    const r = abrir({
+      hoyo: LINEA,
+      par: 4,
+      metros: null,
+      recoge: true,
+      onReporte,
+      onMuestra,
+      ...props,
+    });
     act(() => mapa().oyentes.load());
     return { ...r, onReporte, onMuestra };
   };
@@ -3986,7 +5054,9 @@ describe('MapaDelHoyo — reportar un hoyo (entrega 7)', () => {
     gps = gpsFalso();
     vi.stubGlobal('navigator', { ...globalThis.navigator, geolocation: gps });
     let ahora = 0;
-    reloj = vi.spyOn(globalThis.performance, 'now').mockImplementation(() => (ahora += 1000));
+    reloj = vi
+      .spyOn(globalThis.performance, 'now')
+      .mockImplementation(() => (ahora += 1000));
   });
   afterEach(() => {
     reloj.mockRestore();
@@ -3997,12 +5067,27 @@ describe('MapaDelHoyo — reportar un hoyo (entrega 7)', () => {
     abrirConLinea();
 
     const boton = screen.getByRole('button', { name: 'mapa.reportar' });
-    expect(boton.parentElement).toBe(screen.getByRole('button', { name: /mapa\.cerrar/ }).parentElement);
+    expect(boton.parentElement).toBe(
+      screen.getByRole('button', { name: /mapa\.cerrar/ }).parentElement,
+    );
   });
 
   it.each([
     ['sin línea', { hoyo: null, porMarcar: 'salida' }],
-    ['solo con el green, sin nada que marcar', { hoyo: { playLine: [], green: { front: alNorte(290), center: alNorte(300), back: alNorte(310) } }, porMarcar: null }],
+    [
+      'solo con el green, sin nada que marcar',
+      {
+        hoyo: {
+          playLine: [],
+          green: {
+            front: alNorte(290),
+            center: alNorte(300),
+            back: alNorte(310),
+          },
+        },
+        porMarcar: null,
+      },
+    ],
     ['sin quien reciba el reporte', { onReporte: null }],
   ])('P2: %s, sin «⋮»', (_caso, props) => {
     abrirConLinea(props);
@@ -4017,10 +5102,14 @@ describe('MapaDelHoyo — reportar un hoyo (entrega 7)', () => {
     menu();
     expect(screen.getByText('mapa.reporteTitulo')).toBeInTheDocument();
     for (const clave of ['WRONG_HOLE', 'WRONG_LINE', 'HOLE_CHANGED']) {
-      expect(screen.getByRole('button', { name: `mapa.motivos.${clave}` })).toBeInTheDocument();
+      expect(
+        screen.getByRole('button', { name: `mapa.motivos.${clave}` }),
+      ).toBeInTheDocument();
     }
     tocar(alNorte(150));
-    expect(screen.queryByRole('button', { name: 'mapa.quitarPunto' })).toBeNull();
+    expect(
+      screen.queryByRole('button', { name: 'mapa.quitarPunto' }),
+    ).toBeNull();
     fireEvent.click(screen.getByRole('button', { name: 'mapa.cancelar' }));
 
     expect(screen.queryByText('mapa.reporteTitulo')).toBeNull();
@@ -4043,7 +5132,9 @@ describe('MapaDelHoyo — reportar un hoyo (entrega 7)', () => {
 
     expect(lineaDibujada()).toHaveLength(3);
     expect(lineaDibujada()[0]).toEqual([T.lon, alNorte(20).lat]);
-    expect(screen.getByRole('button', { name: 'mapa.enviarReporte' })).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: 'mapa.enviarReporte' }),
+    ).toBeInTheDocument();
   });
 
   it('P5: un green a más de 750 m de la salida no vale: se avisa y se sigue pidiendo', () => {
@@ -4068,7 +5159,11 @@ describe('MapaDelHoyo — reportar un hoyo (entrega 7)', () => {
 
     expect(onReporte).toHaveBeenCalledTimes(1);
     const enviado = onReporte.mock.calls[0][0];
-    expect(enviado).toMatchObject({ reason: 'HOLE_CHANGED', tee: alNorte(20), greenCenter: alNorte(280) });
+    expect(enviado).toMatchObject({
+      reason: 'HOLE_CHANGED',
+      tee: alNorte(20),
+      greenCenter: alNorte(280),
+    });
     expect(enviado.bends).toHaveLength(1);
     expect(typeof enviado.id).toBe('string');
     expect(screen.getByText('mapa.reporteGracias')).toBeInTheDocument();
@@ -4088,7 +5183,9 @@ describe('MapaDelHoyo — reportar un hoyo (entrega 7)', () => {
 
     expect(onReporte).not.toHaveBeenCalled();
     expect(lineaDibujada()).toEqual(deSiempre);
-    expect(screen.getByRole('button', { name: 'mapa.reportar' })).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: 'mapa.reportar' }),
+    ).toBeInTheDocument();
   });
 
   it('P8: cerrar el mapa a mitad no manda el reporte ni la propuesta como muestra', () => {
@@ -4103,7 +5200,9 @@ describe('MapaDelHoyo — reportar un hoyo (entrega 7)', () => {
 
   it('P9: si antes movió la línea, al cerrar a mitad del reporte sale lo que movió', () => {
     const { onMuestra, unmount } = abrirConLinea();
-    const salida = mapas.marcas.filter((m) => !m.quitada && m.opciones.draggable)[0];
+    const salida = mapas.marcas.filter(
+      (m) => !m.quitada && m.opciones.draggable,
+    )[0];
     act(() => {
       salida.setLngLat([T.lon, alNorte(10).lat]);
       salida.oyentes.dragend({ target: salida });
@@ -4113,13 +5212,18 @@ describe('MapaDelHoyo — reportar un hoyo (entrega 7)', () => {
     unmount();
 
     expect(onMuestra).toHaveBeenCalledTimes(1);
-    expect(onMuestra.mock.calls[0][0].tee).toEqual({ lat: alNorte(10).lat, lon: T.lon });
+    expect(onMuestra.mock.calls[0][0].tee).toEqual({
+      lat: alNorte(10).lat,
+      lon: T.lon,
+    });
   });
 
   it('P10: arrastrar un codo de la propuesta lo mueve en el reporte', () => {
     const { onReporte } = abrirConLinea();
     proponer();
-    const codo = mapas.marcas.filter((m) => !m.quitada && m.opciones.draggable)[1];
+    const codo = mapas.marcas.filter(
+      (m) => !m.quitada && m.opciones.draggable,
+    )[1];
     act(() => {
       codo.setLngLat([-5.331, alNorte(150).lat]);
       codo.oyentes.dragend({ target: codo });
@@ -4127,12 +5231,16 @@ describe('MapaDelHoyo — reportar un hoyo (entrega 7)', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'mapa.enviarReporte' }));
 
-    expect(onReporte.mock.calls[0][0].bends).toEqual([{ lat: alNorte(150).lat, lon: -5.331 }]);
+    expect(onReporte.mock.calls[0][0].bends).toEqual([
+      { lat: alNorte(150).lat, lon: -5.331 },
+    ]);
   });
 
   // Revisor, 18 oct
   const moverLaSalida = () => {
-    const salida = mapas.marcas.filter((m) => !m.quitada && m.opciones.draggable)[0];
+    const salida = mapas.marcas.filter(
+      (m) => !m.quitada && m.opciones.draggable,
+    )[0];
     act(() => {
       salida.setLngLat([T.lon, alNorte(10).lat]);
       salida.oyentes.dragend({ target: salida });
@@ -4140,8 +5248,13 @@ describe('MapaDelHoyo — reportar un hoyo (entrega 7)', () => {
   };
   const ocultar = () =>
     act(() => {
-      Object.defineProperty(globalThis.document, 'visibilityState', { value: 'hidden', configurable: true });
-      globalThis.document.dispatchEvent(new globalThis.Event('visibilitychange'));
+      Object.defineProperty(globalThis.document, 'visibilityState', {
+        value: 'hidden',
+        configurable: true,
+      });
+      globalThis.document.dispatchEvent(
+        new globalThis.Event('visibilitychange'),
+      );
     });
 
   it('R-1: con el menú abierto, cerrar el mapa manda lo que se movió, sin romper nada', () => {
@@ -4151,7 +5264,10 @@ describe('MapaDelHoyo — reportar un hoyo (entrega 7)', () => {
 
     expect(() => unmount()).not.toThrow();
     expect(onMuestra).toHaveBeenCalledTimes(1);
-    expect(onMuestra.mock.calls[0][0].tee).toEqual({ lat: alNorte(10).lat, lon: T.lon });
+    expect(onMuestra.mock.calls[0][0].tee).toEqual({
+      lat: alNorte(10).lat,
+      lon: T.lon,
+    });
   });
 
   it('R-1: con el menú abierto, ocultar la app manda lo que se movió', () => {
@@ -4195,15 +5311,21 @@ describe('MapaDelHoyo — reportar un hoyo (entrega 7)', () => {
     proponer();
 
     const enviar = screen.getByRole('button', { name: 'mapa.enviarReporte' });
-    expect(enviar.closest('[data-testid="barra-del-reporte"]')).toHaveClass('flex-col');
+    expect(enviar.closest('[data-testid="barra-del-reporte"]')).toHaveClass(
+      'flex-col',
+    );
   });
 
   it('R-6: el foco va al primer motivo, y al acabar vuelve a «⋮»', () => {
     abrirConLinea();
 
     menu();
-    expect(screen.getByRole('button', { name: 'mapa.motivos.WRONG_HOLE' })).toHaveFocus();
-    expect(screen.getByRole('group', { name: 'mapa.reporteTitulo' })).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: 'mapa.motivos.WRONG_HOLE' }),
+    ).toHaveFocus();
+    expect(
+      screen.getByRole('group', { name: 'mapa.reporteTitulo' }),
+    ).toBeInTheDocument();
     motivo('WRONG_HOLE');
     fireEvent.click(screen.getByRole('button', { name: 'mapa.cancelar' }));
 
@@ -4227,7 +5349,9 @@ describe('MapaDelHoyo — reportar un hoyo (entrega 7)', () => {
     fireEvent.keyDown(document, { key: 'Escape' });
 
     expect(onCerrar).not.toHaveBeenCalled();
-    expect(screen.queryByRole('group', { name: 'mapa.reporteTitulo' })).toBeNull();
+    expect(
+      screen.queryByRole('group', { name: 'mapa.reporteTitulo' }),
+    ).toBeNull();
     expect(screen.getByRole('button', { name: 'mapa.reportar' })).toHaveFocus();
   });
 
@@ -4250,12 +5374,16 @@ describe('MapaDelHoyo — reportar un hoyo (entrega 7)', () => {
     abrirConLinea({ onCerrar });
     const deSiempre = lineaDibujada();
     proponer();
-    expect(screen.getByRole('button', { name: 'mapa.enviarReporte' })).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: 'mapa.enviarReporte' }),
+    ).toBeInTheDocument();
 
     fireEvent.keyDown(document, { key: 'Escape' });
 
     expect(onCerrar).not.toHaveBeenCalled();
-    expect(screen.queryByRole('button', { name: 'mapa.enviarReporte' })).toBeNull();
+    expect(
+      screen.queryByRole('button', { name: 'mapa.enviarReporte' }),
+    ).toBeNull();
     expect(lineaDibujada()).toEqual(deSiempre);
   });
 
@@ -4296,17 +5424,28 @@ describe('MapaDelHoyo — reportar un hoyo (entrega 7)', () => {
     pulsarA(1e9 + 100, alNorte(100));
 
     expect(screen.queryByText('mapa.reporteGracias')).toBeNull();
-    expect(mapas.marcas.filter((m) => !m.quitada && m.opciones.element?.dataset?.punto === 'medido')).toHaveLength(1);
+    expect(
+      mapas.marcas.filter(
+        (m) => !m.quitada && m.opciones.element?.dataset?.punto === 'medido',
+      ),
+    ).toHaveLength(1);
   });
 
   it('R-8: reportando, «Marcar hoyo» no está', () => {
-    abrirConLinea({ hoyo: { playLine: [T, alNorte(200)], green: null }, porMarcar: 'green' });
+    abrirConLinea({
+      hoyo: { playLine: [T, alNorte(200)], green: null },
+      porMarcar: 'green',
+    });
     fireEvent.click(screen.getByRole('button', { name: 'mapa.ahoraNo' }));
-    expect(screen.getByRole('button', { name: /mapa\.marcarHoyo/ })).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: /mapa\.marcarHoyo/ }),
+    ).toBeInTheDocument();
 
     menu();
 
-    expect(screen.queryByRole('button', { name: /mapa\.marcarHoyo/ })).toBeNull();
+    expect(
+      screen.queryByRole('button', { name: /mapa\.marcarHoyo/ }),
+    ).toBeNull();
   });
 
   it('R-10: lo que ya salió al ocultarse no se vuelve a mandar tras un reporte', () => {
@@ -4327,7 +5466,9 @@ describe('MapaDelHoyo — reportar un hoyo (entrega 7)', () => {
   it('C2: si arrastrando la propuesta se sale de 40-750 m, no se envía: se avisa', () => {
     const { onReporte } = abrirConLinea();
     proponer();
-    const green = mapas.marcas.filter((m) => !m.quitada && m.opciones.draggable).at(-1);
+    const green = mapas.marcas
+      .filter((m) => !m.quitada && m.opciones.draggable)
+      .at(-1);
     act(() => {
       green.setLngLat([T.lon, alNorte(30).lat]);
       green.oyentes.dragend({ target: green });
@@ -4337,7 +5478,9 @@ describe('MapaDelHoyo — reportar un hoyo (entrega 7)', () => {
 
     expect(onReporte).not.toHaveBeenCalled();
     expect(screen.getByText('mapa.fueraDeLimites')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'mapa.enviarReporte' })).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: 'mapa.enviarReporte' }),
+    ).toBeInTheDocument();
   });
 
   it('C3: un doble toque al marcar la salida no pone también el green', () => {
@@ -4365,12 +5508,17 @@ describe('MapaDelHoyo — reportar un hoyo (entrega 7)', () => {
   });
 
   it('P11: mientras se marca el green de un hoyo con salida, sin «⋮»; con «Ahora no», vuelve', () => {
-    abrirConLinea({ hoyo: { playLine: [T, alNorte(200)], green: null }, porMarcar: 'green' });
+    abrirConLinea({
+      hoyo: { playLine: [T, alNorte(200)], green: null },
+      porMarcar: 'green',
+    });
 
     expect(screen.getByText('mapa.pideGreen')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'mapa.reportar' })).toBeNull();
     fireEvent.click(screen.getByRole('button', { name: 'mapa.ahoraNo' }));
-    expect(screen.getByRole('button', { name: 'mapa.reportar' })).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: 'mapa.reportar' }),
+    ).toBeInTheDocument();
   });
 });
 
@@ -4390,24 +5538,49 @@ describe('MapaDelHoyo — reportar un hoyo (entrega 7)', () => {
 describe('MapaDelHoyo — medir tocando, de ti al punto (19 oct)', () => {
   const M_POR_GRADO = (6371008.8 * Math.PI) / 180;
   const T = { lat: 36.28, lon: -5.33 };
-  const alNorte = (m, de = T) => ({ lat: de.lat + m / M_POR_GRADO, lon: de.lon });
-  const alEste = (m, de = T) => ({ lat: de.lat, lon: de.lon + m / (M_POR_GRADO * Math.cos((de.lat * Math.PI) / 180)) });
+  const alNorte = (m, de = T) => ({
+    lat: de.lat + m / M_POR_GRADO,
+    lon: de.lon,
+  });
+  const alEste = (m, de = T) => ({
+    lat: de.lat,
+    lon: de.lon + m / (M_POR_GRADO * Math.cos((de.lat * Math.PI) / 180)),
+  });
   const tocar = (p) => pulsar({ lngLat: { lat: p.lat, lng: p.lon } });
   const en = (p) => [p.lon, p.lat];
-  const medida = () => mapa().fuentes.medida.data.features.map((f) => f.geometry.coordinates);
+  const medida = () =>
+    mapa().fuentes.medida.data.features.map((f) => f.geometry.coordinates);
   const vivas = () => mapas.marcas.filter((m) => !m.quitada);
-  const elCodo = () => vivas().filter((m) => m.opciones.element?.className.startsWith('h-3.5 ') && m.opciones.element.className.includes('bg-yellow-400'));
-  const elPunto = () => vivas().filter((m) => m.opciones.element?.dataset?.punto === 'medido');
-  const cifras = (tipo) => vivas().filter((m) => m.opciones.element?.dataset?.tramo === tipo && /mapa\.tramo/.test(m.opciones.element?.textContent ?? '')).map((m) => m.opciones.element.textContent);
-  const quitar = () => fireEvent.click(screen.getByRole('button', { name: 'mapa.quitarPunto' }));
+  const elCodo = () =>
+    vivas().filter(
+      (m) =>
+        m.opciones.element?.className.startsWith('h-3.5 ') &&
+        m.opciones.element.className.includes('bg-yellow-400'),
+    );
+  const elPunto = () =>
+    vivas().filter((m) => m.opciones.element?.dataset?.punto === 'medido');
+  const cifras = (tipo) =>
+    vivas()
+      .filter(
+        (m) =>
+          m.opciones.element?.dataset?.tramo === tipo &&
+          /mapa\.tramo/.test(m.opciones.element?.textContent ?? ''),
+      )
+      .map((m) => m.opciones.element.textContent);
+  const quitar = () =>
+    fireEvent.click(screen.getByRole('button', { name: 'mapa.quitarPunto' }));
   const G300 = alNorte(300);
-  const CON_LINEA = { playLine: [T, G300], green: { front: alNorte(290), center: G300, back: alNorte(310) } };
+  const CON_LINEA = {
+    playLine: [T, G300],
+    green: { front: alNorte(290), center: G300, back: alNorte(310) },
+  };
   const abrirConLinea = (props = {}) => {
     const r = abrir({ hoyo: CON_LINEA, par: 3, porMarcar: null, ...props });
     act(() => mapa().oyentes.load());
     return r;
   };
-  const desde = (m, precision = 5) => act(() => gps.exito(lectura(alNorte(m).lat, T.lon, precision)));
+  const desde = (m, precision = 5) =>
+    act(() => gps.exito(lectura(alNorte(m).lat, T.lon, precision)));
   const P = alEste(30, alNorte(150));
 
   let gps;
@@ -4420,7 +5593,9 @@ describe('MapaDelHoyo — medir tocando, de ti al punto (19 oct)', () => {
     gps = gpsFalso();
     vi.stubGlobal('navigator', { ...globalThis.navigator, geolocation: gps });
     let ahora = 0;
-    reloj = vi.spyOn(globalThis.performance, 'now').mockImplementation(() => (ahora += 1000));
+    reloj = vi
+      .spyOn(globalThis.performance, 'now')
+      .mockImplementation(() => (ahora += 1000));
   });
   afterEach(() => {
     reloj.mockRestore();
@@ -4444,7 +5619,10 @@ describe('MapaDelHoyo — medir tocando, de ti al punto (19 oct)', () => {
   it('T2 (19 oct, en el móvil): con el punto, la línea del hoyo se va entera (con sus metros y sus puntos), el green se queda; con «Quitar», vuelve', () => {
     abrirConLinea();
     desde(0);
-    const lineaDelHoyo = () => mapa().fuentes.marcado.data.features.find((f) => f.properties.tipo === 'linea');
+    const lineaDelHoyo = () =>
+      mapa().fuentes.marcado.data.features.find(
+        (f) => f.properties.tipo === 'linea',
+      );
     const puntosParaMover = () => vivas().filter((m) => m.opciones.draggable);
     expect(lineaDelHoyo()).toBeDefined();
     expect(puntosParaMover().length).toBeGreaterThan(0);
@@ -4453,7 +5631,11 @@ describe('MapaDelHoyo — medir tocando, de ti al punto (19 oct)', () => {
     tocar(P);
     expect(lineaDelHoyo()).toBeUndefined();
     expect(puntosParaMover()).toEqual([]);
-    expect(mapa().fuentes.hoyo.data.features.some((f) => f.properties.tipo === 'green')).toBe(true);
+    expect(
+      mapa().fuentes.hoyo.data.features.some(
+        (f) => f.properties.tipo === 'green',
+      ),
+    ).toBe(true);
     expect(cifras('linea')).toEqual([]);
     // Ni su resumen para lectores de pantalla (/code-review)
     expect(screen.queryByTestId('tramos-de-la-linea')).toBeNull();
@@ -4471,7 +5653,10 @@ describe('MapaDelHoyo — medir tocando, de ti al punto (19 oct)', () => {
     abrir({ hoyo: { playLine: [T, G300], green: null }, porMarcar: null });
     act(() => mapa().oyentes.load());
     desde(0);
-    const lineaDelHoyo = () => mapa().fuentes.hoyo.data.features.find((f) => f.properties.tipo === 'linea');
+    const lineaDelHoyo = () =>
+      mapa().fuentes.hoyo.data.features.find(
+        (f) => f.properties.tipo === 'linea',
+      );
     expect(lineaDelHoyo()).toBeDefined();
 
     tocar(P);
@@ -4508,13 +5693,16 @@ describe('MapaDelHoyo — medir tocando, de ti al punto (19 oct)', () => {
 
     expect(medida()).toEqual([[en(T), en(P)]]);
     // Se dice desde dónde, para quien no ve el mapa (/code-review)
-    expect(screen.getByRole('status')).toHaveTextContent(/mapa\.hastaAhiDesdeLaSalida/);
+    expect(screen.getByRole('status')).toHaveTextContent(
+      /mapa\.hastaAhiDesdeLaSalida/,
+    );
   });
 
   it('T4 (19 oct, en el móvil): sin buena posición, la salida queda marcada como origen; con «Quitar», se va', () => {
     abrirConLinea();
     act(() => gps.exito(lectura(40.4, -3.7)));
-    const origen = () => vivas().filter((m) => m.opciones.element?.dataset?.punto === 'origen');
+    const origen = () =>
+      vivas().filter((m) => m.opciones.element?.dataset?.punto === 'origen');
 
     tocar(P);
 
@@ -4531,7 +5719,9 @@ describe('MapaDelHoyo — medir tocando, de ti al punto (19 oct)', () => {
 
     tocar(P);
 
-    expect(vivas().filter((m) => m.opciones.element?.dataset?.punto === 'origen')).toEqual([]);
+    expect(
+      vivas().filter((m) => m.opciones.element?.dataset?.punto === 'origen'),
+    ).toEqual([]);
   });
 
   it('T4/T8: sin posición ni salida, del punto al green', () => {
@@ -4564,7 +5754,9 @@ describe('MapaDelHoyo — medir tocando, de ti al punto (19 oct)', () => {
     quitar();
     expect(elCodo()[0].p[1]).toBeCloseTo(alNorte(175).lat, 9);
     expect(medida()).toEqual([[en(alNorte(50)), en(G300)]]);
-    expect(screen.queryByRole('button', { name: 'mapa.quitarPunto' })).toBeNull();
+    expect(
+      screen.queryByRole('button', { name: 'mapa.quitarPunto' }),
+    ).toBeNull();
   });
 
   it('T6: en la salida con posición, gira hacia el punto', () => {
@@ -4575,7 +5767,10 @@ describe('MapaDelHoyo — medir tocando, de ti al punto (19 oct)', () => {
     tocar(P);
 
     expect(mapa().fitBounds).toHaveBeenCalledTimes(1);
-    expect(mapa().fitBounds.mock.calls[0][1].bearing).toBeCloseTo(rumbo(T, P), 6);
+    expect(mapa().fitBounds.mock.calls[0][1].bearing).toBeCloseTo(
+      rumbo(T, P),
+      6,
+    );
   });
 
   it('T6: a mitad de hoyo (decidido con el primer GPS bueno), no gira', () => {
@@ -4638,12 +5833,20 @@ describe('MapaDelHoyo — medir tocando, de ti al punto (19 oct)', () => {
     tocar(P);
 
     fireEvent.click(screen.getByRole('button', { name: 'mapa.reportar' }));
-    fireEvent.click(screen.getByRole('button', { name: 'mapa.motivos.WRONG_LINE' }));
+    fireEvent.click(
+      screen.getByRole('button', { name: 'mapa.motivos.WRONG_LINE' }),
+    );
     tocar(alNorte(20));
     tocar(alNorte(280));
     fireEvent.click(screen.getByRole('button', { name: 'mapa.enviarReporte' }));
 
-    expect(onReporte).toHaveBeenCalledWith(expect.objectContaining({ tee: alNorte(20), bends: [], greenCenter: alNorte(280) }));
+    expect(onReporte).toHaveBeenCalledWith(
+      expect.objectContaining({
+        tee: alNorte(20),
+        bends: [],
+        greenCenter: alNorte(280),
+      }),
+    );
   });
 
   it('revisor: al cerrar el mapa, el punto se va con él', () => {
@@ -4669,7 +5872,14 @@ describe('MapaDelHoyo — medir tocando, de ti al punto (19 oct)', () => {
   });
 
   it('T6: tras el «No» en un hoyo sin salida (línea desde ti), no gira', () => {
-    abrir({ hoyo: { playLine: [], green: { center: G300 } }, porMarcar: 'salidaAlGreen', recoge: true, onMuestra: vi.fn(), par: 4, metros: 300 });
+    abrir({
+      hoyo: { playLine: [], green: { center: G300 } },
+      porMarcar: 'salidaAlGreen',
+      recoge: true,
+      onMuestra: vi.fn(),
+      par: 4,
+      metros: 300,
+    });
     act(() => mapa().oyentes.load());
     desde(0);
     fireEvent.click(screen.getByRole('button', { name: 'mapa.no' }));
@@ -4702,7 +5912,14 @@ describe('MapaDelHoyo — medir tocando, de ti al punto (19 oct)', () => {
   });
 
   it('T7: al pasar a «Marcar el hoyo entero», el punto se quita', () => {
-    abrir({ hoyo: { playLine: [], green: { center: G300 } }, porMarcar: 'salidaAlGreen', recoge: true, onMuestra: vi.fn(), par: 4, metros: 300 });
+    abrir({
+      hoyo: { playLine: [], green: { center: G300 } },
+      porMarcar: 'salidaAlGreen',
+      recoge: true,
+      onMuestra: vi.fn(),
+      par: 4,
+      metros: 300,
+    });
     act(() => mapa().oyentes.load());
     desde(0);
     fireEvent.click(screen.getByRole('button', { name: 'mapa.no' }));
@@ -4715,7 +5932,13 @@ describe('MapaDelHoyo — medir tocando, de ti al punto (19 oct)', () => {
   });
 
   it('T7: al volver a «Marcar hoyo», el punto se quita', () => {
-    abrir({ hoyo: { playLine: [T], green: null }, porMarcar: 'green', recoge: true, onMuestra: vi.fn(), par: 4 });
+    abrir({
+      hoyo: { playLine: [T], green: null },
+      porMarcar: 'green',
+      recoge: true,
+      onMuestra: vi.fn(),
+      par: 4,
+    });
     act(() => mapa().oyentes.load());
     desde(0);
     fireEvent.click(screen.getByRole('button', { name: 'mapa.ahoraNo' }));
@@ -4760,9 +5983,23 @@ describe('MapaDelHoyo — medir tocando, de ti al punto (19 oct)', () => {
       pulsar({ lngLat: { lat: p.lat, lng: p.lon }, point: { x: 180, y: 300 } });
     };
     // Todo lo que el mapa escuche al moverse, como si lo moviera el jugador
-    const MOVERSE = ['movestart', 'move', 'moveend', 'zoomstart', 'zoom', 'zoomend', 'rotatestart', 'rotate', 'rotateend'];
+    const MOVERSE = [
+      'movestart',
+      'move',
+      'moveend',
+      'zoomstart',
+      'zoom',
+      'zoomend',
+      'rotatestart',
+      'rotate',
+      'rotateend',
+    ];
     const acercaElJugador = (tipo) =>
-      act(() => MOVERSE.forEach((evento) => mapa().oyentes[evento]?.({ originalEvent: { type: tipo } })));
+      act(() =>
+        MOVERSE.forEach((evento) =>
+          mapa().oyentes[evento]?.({ originalEvent: { type: tipo } }),
+        ),
+      );
     const conP = () => {
       abrirConLinea();
       desde(0);
@@ -4816,23 +6053,29 @@ describe('MapaDelHoyo — medir tocando, de ti al punto (19 oct)', () => {
       expect(elPunto()).toHaveLength(1);
     });
 
-    it.each(['touchmove', 'touchend', 'wheel'])('I4: acercar justo después (%s) no quita la medida', (tipo) => {
-      conP();
+    it.each(['touchmove', 'touchend', 'wheel'])(
+      'I4: acercar justo después (%s) no quita la medida',
+      (tipo) => {
+        conP();
 
-      acercaElJugador(tipo);
-      act(() => vi.advanceTimersByTime(1000));
+        acercaElJugador(tipo);
+        act(() => vi.advanceTimersByTime(1000));
 
-      expect(medida()).toEqual([[en(T), en(P)]]);
-    });
+        expect(medida()).toEqual([[en(T), en(P)]]);
+      },
+    );
 
-    it.each(['mapa.verHoyo', 'mapa.centrame'])('I5: «%s» justo después no quita la medida', (boton) => {
-      conP();
+    it.each(['mapa.verHoyo', 'mapa.centrame'])(
+      'I5: «%s» justo después no quita la medida',
+      (boton) => {
+        conP();
 
-      fireEvent.click(screen.getByRole('button', { name: boton }));
-      act(() => vi.advanceTimersByTime(1000));
+        fireEvent.click(screen.getByRole('button', { name: boton }));
+        act(() => vi.advanceTimersByTime(1000));
 
-      expect(elPunto()).toHaveLength(1);
-    });
+        expect(elPunto()).toHaveLength(1);
+      },
+    );
 
     it('I5: «Norte» (hoyo sin mapa) justo después no quita la medida', () => {
       abrir({ hoyo: null, porMarcar: null });

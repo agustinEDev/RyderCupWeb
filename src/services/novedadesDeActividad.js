@@ -22,9 +22,12 @@ const ponEnElIcono = (n) => {
   try {
     const resultado =
       n > 0
-        ? typeof navegador?.setAppBadge === 'function' && navegador.setAppBadge(n)
-        : typeof navegador?.clearAppBadge === 'function' && navegador.clearAppBadge();
-    if (resultado && typeof resultado.catch === 'function') resultado.catch(() => {});
+        ? typeof navegador?.setAppBadge === 'function' &&
+          navegador.setAppBadge(n)
+        : typeof navegador?.clearAppBadge === 'function' &&
+          navegador.clearAppBadge();
+    if (resultado && typeof resultado.catch === 'function')
+      resultado.catch(() => {});
   } catch {
     // Sin icono: el número del botón sigue valiendo
   }

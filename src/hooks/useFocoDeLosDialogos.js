@@ -43,11 +43,14 @@ export const useFocoDeLosDialogos = ({
       if (!habiaAvisoRef.current) {
         habiaAvisoRef.current = true;
         const activo = document.activeElement;
-        focoPrevioRef.current = activo && activo !== document.body ? activo : null;
+        focoPrevioRef.current =
+          activo && activo !== document.body ? activo : null;
       }
-      const cual = showCancelConfirm ? cancelDialogRef
-        : showFinishConfirm ? finishDialogRef
-        : discrepanciaDialogRef;
+      const cual = showCancelConfirm
+        ? cancelDialogRef
+        : showFinishConfirm
+          ? finishDialogRef
+          : discrepanciaDialogRef;
       cual.current?.focus();
       return;
     }
@@ -68,7 +71,9 @@ export const useFocoDeLosDialogos = ({
       previo.focus?.();
       return;
     }
-    tabsRef.current?.querySelector('[role="tab"][aria-selected="true"]')?.focus();
+    tabsRef.current
+      ?.querySelector('[role="tab"][aria-selected="true"]')
+      ?.focus();
   }, [showFinishConfirm, showCancelConfirm, hayDiscrepancia]);
 
   useEffect(() => {
@@ -85,7 +90,15 @@ export const useFocoDeLosDialogos = ({
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
     // Los `set` son de la página y no cambian nunca
-  }, [showFinishConfirm, showCancelConfirm, isSubmitting, setFinishFailedKey, setCancelFailedKey, setShowFinishConfirm, setShowCancelConfirm]);
+  }, [
+    showFinishConfirm,
+    showCancelConfirm,
+    isSubmitting,
+    setFinishFailedKey,
+    setCancelFailedKey,
+    setShowFinishConfirm,
+    setShowCancelConfirm,
+  ]);
 
   return { cancelDialogRef, finishDialogRef, discrepanciaDialogRef, tabsRef };
 };

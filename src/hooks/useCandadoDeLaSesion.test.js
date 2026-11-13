@@ -43,7 +43,12 @@ const { useCandadoDeLaSesion } = await import('./useCandadoDeLaSesion');
 
 const MIA = 's-mia';
 const sessionIdRef = { current: MIA };
-const JUGADOR = { matchId: 'A', currentUserId: 'u1', isMatchPlayer: true, isWithdrawn: false };
+const JUGADOR = {
+  matchId: 'A',
+  currentUserId: 'u1',
+  isMatchPlayer: true,
+  isWithdrawn: false,
+};
 
 // Cada pintado, con sus props y lo que devolvió
 const pintados = [];
@@ -54,10 +59,15 @@ const monta = (props = {}) =>
       pintados.push({ ...p, ...r });
       return r;
     },
-    { initialProps: { ...JUGADOR, ...props } }
+    { initialProps: { ...JUGADOR, ...props } },
   );
 const avisa = (evento) => act(() => lock.oyente(evento));
-const otraCogeA = { type: 'LOCK_ACQUIRED', userId: 'u1', sessionId: 's-otra', matchId: 'A' };
+const otraCogeA = {
+  type: 'LOCK_ACQUIRED',
+  userId: 'u1',
+  sessionId: 's-otra',
+  matchId: 'A',
+};
 const bloqueado = () => {
   lock.getSession.mockReturnValue({ sessionId: 's-otra', matchId: 'A' });
   const montado = monta();
@@ -98,13 +108,37 @@ describe('useCandadoDeLaSesion (T4)', () => {
   });
 
   it.each([
-    ['localStorage sigue con la mía', { sessionId: MIA, matchId: 'A' }, otraCogeA],
-    ['localStorage es de otro partido', { sessionId: 's-otra', matchId: 'B' }, otraCogeA],
+    [
+      'localStorage sigue con la mía',
+      { sessionId: MIA, matchId: 'A' },
+      otraCogeA,
+    ],
+    [
+      'localStorage es de otro partido',
+      { sessionId: 's-otra', matchId: 'B' },
+      otraCogeA,
+    ],
     ['sin nada en localStorage', null, otraCogeA],
-    ['el aviso es de otro usuario', { sessionId: 's-otra', matchId: 'A' }, { ...otraCogeA, userId: 'u2' }],
-    ['el aviso es de otro partido', { sessionId: 's-otra', matchId: 'A' }, { ...otraCogeA, matchId: 'B' }],
-    ['el aviso lleva scope (la cola de fondo)', { sessionId: 's-otra', matchId: 'A' }, { ...otraCogeA, scope: 'drain' }],
-    ['el aviso es de mi propia sesión', { sessionId: 's-otra', matchId: 'A' }, { ...otraCogeA, sessionId: MIA }],
+    [
+      'el aviso es de otro usuario',
+      { sessionId: 's-otra', matchId: 'A' },
+      { ...otraCogeA, userId: 'u2' },
+    ],
+    [
+      'el aviso es de otro partido',
+      { sessionId: 's-otra', matchId: 'A' },
+      { ...otraCogeA, matchId: 'B' },
+    ],
+    [
+      'el aviso lleva scope (la cola de fondo)',
+      { sessionId: 's-otra', matchId: 'A' },
+      { ...otraCogeA, scope: 'drain' },
+    ],
+    [
+      'el aviso es de mi propia sesión',
+      { sessionId: 's-otra', matchId: 'A' },
+      { ...otraCogeA, sessionId: MIA },
+    ],
   ])('T4-32: no se bloquea si %s', (_caso, enLocalStorage, evento) => {
     lock.getSession.mockReturnValue(enLocalStorage);
     const { result } = monta();
@@ -188,27 +222,34 @@ describe('useCandadoDeLaSesion (T4)', () => {
   // en pantalla: es lo que hace un aviso que llega en ese hueco
   it.each([
     ['otra sesión coge A', otraCogeA, false],
-    ['se suelta el candado (y lo cojo para A)', { type: 'LOCK_RELEASED', userId: 'u1' }, true],
-  ])('T4-39: un aviso tardío para el oyente de A (%s) no toca el bloqueo de B', (_caso, evento, bloqueadaEnB) => {
-    const oyentes = [];
-    lock.onLockEvent.mockImplementation((oyente) => {
-      oyentes.push(oyente);
-      lock.oyente = oyente;
-      return () => {};
-    });
-    lock.getSession.mockReturnValue({ sessionId: 's-otra', matchId: 'B' });
-    const { result, rerender } = monta();
-    const oyenteDeA = oyentes[0];
-    rerender({ ...JUGADOR, matchId: 'B' });
-    // B, bloqueado o no según el caso, por su propio oyente
-    if (bloqueadaEnB) avisa({ ...otraCogeA, matchId: 'B' });
-    expect(result.current.isSessionBlocked).toBe(bloqueadaEnB);
-    lock.getSession.mockReturnValue({ sessionId: 's-otra', matchId: 'A' });
+    [
+      'se suelta el candado (y lo cojo para A)',
+      { type: 'LOCK_RELEASED', userId: 'u1' },
+      true,
+    ],
+  ])(
+    'T4-39: un aviso tardío para el oyente de A (%s) no toca el bloqueo de B',
+    (_caso, evento, bloqueadaEnB) => {
+      const oyentes = [];
+      lock.onLockEvent.mockImplementation((oyente) => {
+        oyentes.push(oyente);
+        lock.oyente = oyente;
+        return () => {};
+      });
+      lock.getSession.mockReturnValue({ sessionId: 's-otra', matchId: 'B' });
+      const { result, rerender } = monta();
+      const oyenteDeA = oyentes[0];
+      rerender({ ...JUGADOR, matchId: 'B' });
+      // B, bloqueado o no según el caso, por su propio oyente
+      if (bloqueadaEnB) avisa({ ...otraCogeA, matchId: 'B' });
+      expect(result.current.isSessionBlocked).toBe(bloqueadaEnB);
+      lock.getSession.mockReturnValue({ sessionId: 's-otra', matchId: 'A' });
 
-    act(() => oyenteDeA(evento));
+      act(() => oyenteDeA(evento));
 
-    expect(result.current.isSessionBlocked).toBe(bloqueadaEnB);
-  });
+      expect(result.current.isSessionBlocked).toBe(bloqueadaEnB);
+    },
+  );
 
   // CodeRabbit (FE #1117): el bloqueo que conserva el retirado (P2) es del
   // partido y del usuario en los que se retiró, no de cualquiera que tampoco
@@ -217,15 +258,25 @@ describe('useCandadoDeLaSesion (T4)', () => {
     ['otro partido en el que tampoco anota', { matchId: 'B' }, false],
     ['otro usuario que tampoco anota', { currentUserId: 'u2' }, false],
     ['el mismo partido A (P2)', {}, true],
-  ])('T4-42: bloqueado y retirado en A, al pasar a %s', (_caso, cambio, sigueBloqueado) => {
-    const { result, rerender } = bloqueado();
-    rerender({ ...JUGADOR, isWithdrawn: true });
-    expect(result.current.isSessionBlocked).toBe(true);
+  ])(
+    'T4-42: bloqueado y retirado en A, al pasar a %s',
+    (_caso, cambio, sigueBloqueado) => {
+      const { result, rerender } = bloqueado();
+      rerender({ ...JUGADOR, isWithdrawn: true });
+      expect(result.current.isSessionBlocked).toBe(true);
 
-    rerender({ ...JUGADOR, isWithdrawn: true, ...cambio });
+      rerender({ ...JUGADOR, isWithdrawn: true, ...cambio });
 
-    expect(result.current.isSessionBlocked).toBe(sigueBloqueado);
-    const conElCambio = pintados.filter((p) => p.matchId === (cambio.matchId ?? 'A') && p.currentUserId === (cambio.currentUserId ?? 'u1'));
-    if (!sigueBloqueado) expect(conElCambio.every((p) => p.isSessionBlocked === false)).toBe(true);
-  });
+      expect(result.current.isSessionBlocked).toBe(sigueBloqueado);
+      const conElCambio = pintados.filter(
+        (p) =>
+          p.matchId === (cambio.matchId ?? 'A') &&
+          p.currentUserId === (cambio.currentUserId ?? 'u1'),
+      );
+      if (!sigueBloqueado)
+        expect(conElCambio.every((p) => p.isSessionBlocked === false)).toBe(
+          true,
+        );
+    },
+  );
 });

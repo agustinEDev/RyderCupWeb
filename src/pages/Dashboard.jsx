@@ -21,7 +21,10 @@ import { useEntryMotion } from '../hooks/useEntryMotion';
 import { slideUp, staggerContainer, getEntryProps } from '../utils/animations';
 import FullScreenLoader from '../components/ui/FullScreenLoader';
 import { laPantallaEstaLista } from '../utils/cortinaDeArranque';
-import { leeLasProximasPartidas, leeLosProximosPartidos } from '../services/partidosSinCobertura';
+import {
+  leeLasProximasPartidas,
+  leeLosProximosPartidos,
+} from '../services/partidosSinCobertura';
 import { elMasCercano } from '../utils/elMasCercano';
 import {
   elPanelYaSePinto,
@@ -54,9 +57,15 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { t, ready: textosListos } = useTranslation('dashboard');
-  const { t: tQuickMatch, ready: textosDeRapidaListos } = useTranslation('quickMatch');
+  const { t: tQuickMatch, ready: textosDeRapidaListos } =
+    useTranslation('quickMatch');
   const { t: tProfile } = useTranslation('profile');
-  const { user, loading: isLoadingUser, refetch: refetchUser, sinConfirmar } = useAuth();
+  const {
+    user,
+    loading: isLoadingUser,
+    refetch: refetchUser,
+    sinConfirmar,
+  } = useAuth();
   const [mostrarAlias, setMostrarAlias] = useState(false);
   const { animateEntry } = useEntryMotion();
   const [competitions, setCompetitions] = useState([]);
@@ -71,7 +80,10 @@ const Dashboard = () => {
   const [upcomingMatches, setUpcomingMatches] = useState([]);
   // Las próximas partidas de stroke play (FE #824, PR 7): el banner enseña la
   // más cercana entre estas y los partidos de la Ryder
-  const [proximasPartidas, setProximasPartidas] = useState({ partidas: [], desdeMemoria: false });
+  const [proximasPartidas, setProximasPartidas] = useState({
+    partidas: [],
+    desdeMemoria: false,
+  });
   const [upcomingSinRespuesta, setUpcomingSinRespuesta] = useState(false);
   const [upcomingDesdeMemoria, setUpcomingDesdeMemoria] = useState(false);
   const [isLoadingUpcoming, setIsLoadingUpcoming] = useState(true);
@@ -87,14 +99,18 @@ const Dashboard = () => {
       // Con red, la sesión aún no ha contestado (tarda o dio un 5xx): «sin conexión»
       // sería falso
       const conRed = globalThis.navigator?.onLine !== false;
-      customToast.error(t(conRed ? 'common:cargandoTuCuenta' : 'common:sinConexion.mensaje'));
+      customToast.error(
+        t(conRed ? 'common:cargandoTuCuenta' : 'common:sinConexion.mensaje'),
+      );
       return;
     }
     abrir();
   };
   const abrePartidaRapida = abreSiHayRed(() => setShowQuickMatchModal(true));
   const [handicapPending, setHandicapPending] = useState(
-    () => typeof localStorage !== 'undefined' && localStorage.getItem('handicap_pending') === 'true'
+    () =>
+      typeof localStorage !== 'undefined' &&
+      localStorage.getItem('handicap_pending') === 'true',
   );
 
   // El refresco del hándicap al entrar lo lanza el login, sin esperarlo
@@ -128,7 +144,10 @@ const Dashboard = () => {
       lanzaElRefrescoDeHandicap({ handicapDeAntes: user.handicap ?? null });
     }
     return () => {
-      window.removeEventListener(EVENTO_HANDICAP_POR_PEDIR, abreSiHayQuePedirlo);
+      window.removeEventListener(
+        EVENTO_HANDICAP_POR_PEDIR,
+        abreSiHayQuePedirlo,
+      );
       window.removeEventListener(EVENTO_HANDICAP_AL_DIA, retiraElRecordatorio);
     };
   }, [user, sinConfirmar]);
@@ -146,10 +165,13 @@ const Dashboard = () => {
     localStorage.setItem('handicap_pending', 'true');
   }, []);
 
-  const handleQuickMatchStarted = useCallback((quickMatchId) => {
-    setShowQuickMatchModal(false);
-    navigate(`/quick-matches/${quickMatchId}/scoring`);
-  }, [navigate]);
+  const handleQuickMatchStarted = useCallback(
+    (quickMatchId) => {
+      setShowQuickMatchModal(false);
+      navigate(`/quick-matches/${quickMatchId}/scoring`);
+    },
+    [navigate],
+  );
 
   useEffect(() => {
     // El mismo guardia que sus tres hermanos, que era el unico que no lo tenia:
@@ -182,17 +204,19 @@ const Dashboard = () => {
 
       setIsLoadingCompetitions(true);
       try {
-
         // Fetch competitions using the same use case as My Competitions page
         // This ensures the count matches (user's competitions: created OR enrolled)
-        const competitionsData = await listUserCompetitionsUseCase.execute(user.id);
+        const competitionsData = await listUserCompetitionsUseCase.execute(
+          user.id,
+        );
         if (!cancelled) {
-          setCompetitions(Array.isArray(competitionsData) ? competitionsData : []);
+          setCompetitions(
+            Array.isArray(competitionsData) ? competitionsData : [],
+          );
           setCompetitionsError(null);
         }
-
       } catch (error) {
-        console.error("Failed to load dashboard data:", error);
+        console.error('Failed to load dashboard data:', error);
         if (!cancelled) {
           setCompetitions([]);
           setCompetitionsError(error);
@@ -295,7 +319,8 @@ const Dashboard = () => {
 
       setIsLoadingRecent(true);
       try {
-        const matches = await getRecentMatchesUseCase.execute(RECENT_MATCHES_SHOWN);
+        const matches =
+          await getRecentMatchesUseCase.execute(RECENT_MATCHES_SHOWN);
         if (!cancelled) {
           setRecentMatches(matches);
         }
@@ -369,9 +394,13 @@ const Dashboard = () => {
       // el servicio, que comparte con «Mis próximos partidos» (FE #845)
       const leeLasPartidas = () =>
         leeLasProximasPartidas({
-          lee: () => (competitionsError
-            ? Promise.reject(competitionsError)
-            : getUpcomingTeeGroupsUseCase.executeWithCompleteness(user.id, competitions)),
+          lee: () =>
+            competitionsError
+              ? Promise.reject(competitionsError)
+              : getUpcomingTeeGroupsUseCase.executeWithCompleteness(
+                  user.id,
+                  competitions,
+                ),
           userId: user.id,
           pideLaVista: (id) => getTeeGroupScoringViewUseCase.execute(id),
         });
@@ -380,9 +409,13 @@ const Dashboard = () => {
       // pulsarlo (/code-review). Sin cobertura la de las partidas falla deprisa
       const [leido, partidas] = await Promise.all([
         leeLosProximosPartidos({
-          lee: () => (competitionsError
-            ? Promise.reject(competitionsError)
-            : getUpcomingMatchesUseCase.executeWithCompleteness(user.id, competitions)),
+          lee: () =>
+            competitionsError
+              ? Promise.reject(competitionsError)
+              : getUpcomingMatchesUseCase.executeWithCompleteness(
+                  user.id,
+                  competitions,
+                ),
           userId: user.id,
           pideLaVista: (id) => getScoringViewUseCase.execute(id),
         }),
@@ -402,8 +435,13 @@ const Dashboard = () => {
     return () => {
       cancelled = true;
     };
-  }, [user, isLoadingUser, competitions, competitionsError, isLoadingCompetitions]);
-
+  }, [
+    user,
+    isLoadingUser,
+    competitions,
+    competitionsError,
+    isLoadingCompetitions,
+  ]);
 
   // El aviso a la cortina del arranque (FE #485): esta pantalla pide CUATRO
   // cosas y hasta ahora se daba por cargada con dos —las de `isLoading`—. Las
@@ -419,7 +457,10 @@ const Dashboard = () => {
   // levantar la cortina sin ellos enseña las claves en crudo y un cambio de
   // texto a continuacion, que es el mismo parpadeo con otra cara.
   // El próximo del banner: el más cercano entre el partido y la partida (PR 7)
-  const proximo = elMasCercano(upcomingMatches[0] ?? null, proximasPartidas.partidas[0] ?? null);
+  const proximo = elMasCercano(
+    upcomingMatches[0] ?? null,
+    proximasPartidas.partidas[0] ?? null,
+  );
 
   const noQuedaNadaCargando =
     textosListos &&
@@ -527,7 +568,9 @@ const Dashboard = () => {
   const firstName = user.alias || user.first_name || 'User';
 
   return (
-    <div className={`relative flex h-auto ${PANTALLA_MENOS_BARRA_INFERIOR} w-full flex-col bg-white`}>
+    <div
+      className={`relative flex h-auto ${PANTALLA_MENOS_BARRA_INFERIOR} w-full flex-col bg-white`}
+    >
       {mostrarAlias && (
         <AliasSheet
           aliasActual={user.alias || ''}
@@ -542,7 +585,10 @@ const Dashboard = () => {
             try {
               await refetchUser();
             } catch (err) {
-              console.error('No se pudo refrescar el usuario tras el alias:', err);
+              console.error(
+                'No se pudo refrescar el usuario tras el alias:',
+                err,
+              );
             }
           }}
         />
@@ -574,7 +620,10 @@ const Dashboard = () => {
             {/* Bienvenida y perfil en una sola pieza: la tarjeta que había
                 debajo repetía el nombre y el hándicap, y de nuevo solo aportaba
                 el correo y el acceso a cambiar la foto */}
-            <motion.div variants={slideUp} className="flex items-center gap-3 p-4">
+            <motion.div
+              variants={slideUp}
+              className="flex items-center gap-3 p-4"
+            >
               <button
                 type="button"
                 onClick={() => navigate('/profile/edit')}
@@ -617,7 +666,12 @@ const Dashboard = () => {
                     data-testid="editar-alias"
                     className="mt-1 flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full text-gray-400 hover:text-gray-600 active:bg-gray-100"
                   >
-                    <svg className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                    <svg
+                      className="h-5 w-5"
+                      viewBox="0 0 20 20"
+                      fill="currentColor"
+                      aria-hidden="true"
+                    >
                       <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
                     </svg>
                   </button>
@@ -640,7 +694,10 @@ const Dashboard = () => {
                 servidor es más urgente que una invitación por contestar.
                 `key` con la cuenta: al cambiar de usuario sin recargar, el
                 aviso se rehace en vez de seguir enseñando lo del anterior */}
-            <GolpesSinEnviar key={user?.id ?? 'sin-sesion'} userId={user?.id ?? null} />
+            <GolpesSinEnviar
+              key={user?.id ?? 'sin-sesion'}
+              userId={user?.id ?? null}
+            />
 
             <PendingActionsCard
               user={user}
@@ -654,7 +711,9 @@ const Dashboard = () => {
               })}
               // Los de la Ryder y las partidas de stroke play: quien solo
               // juega stroke play no veía la tarjeta (QA de la release)
-              upcomingMatches={upcomingMatches.length + proximasPartidas.partidas.length}
+              upcomingMatches={
+                upcomingMatches.length + proximasPartidas.partidas.length
+              }
             />
 
             {/* Statistics Cards */}
@@ -663,7 +722,9 @@ const Dashboard = () => {
                 stats={playerStats}
                 isLoading={isLoadingStats}
                 fallbackHandicap={user.handicap ?? null}
-                fallbackTournaments={Array.isArray(competitions) ? competitions.length : 0}
+                fallbackTournaments={
+                  Array.isArray(competitions) ? competitions.length : 0
+                }
               />
             </motion.div>
 
@@ -685,7 +746,11 @@ const Dashboard = () => {
                 match={proximo}
                 sinRespuesta={upcomingSinRespuesta}
                 // De memoria, según de dónde salga el que se enseña
-                desdeMemoria={proximo?.esPartidaDeFranja ? proximasPartidas.desdeMemoria : upcomingDesdeMemoria}
+                desdeMemoria={
+                  proximo?.esPartidaDeFranja
+                    ? proximasPartidas.desdeMemoria
+                    : upcomingDesdeMemoria
+                }
                 isLoading={isLoadingUpcoming}
                 onCreateQuickMatch={abrePartidaRapida}
               />
@@ -711,11 +776,10 @@ const Dashboard = () => {
             </motion.div>
 
             {/* Quick Actions */}
-            <motion.div
-              variants={slideUp}
-              className="p-4 mt-4"
-            >
-              <h2 className="text-gray-900 text-xl font-bold mb-4">{t('quickActions.title')}</h2>
+            <motion.div variants={slideUp} className="p-4 mt-4">
+              <h2 className="text-gray-900 text-xl font-bold mb-4">
+                {t('quickActions.title')}
+              </h2>
               {/* Dos, no seis: Mis Torneos, Explorar, Amigos y Perfil ya viven
                   en la navegacion, y repetirlos aqui convertia el panel en un
                   menu con otro aspecto */}
@@ -738,7 +802,9 @@ const Dashboard = () => {
                     <h3 className="text-gray-900 font-bold text-lg group-hover:text-primary-600 transition-colors">
                       {t('quickActions.quickMatch')}
                     </h3>
-                    <p className="text-gray-500 text-sm">{t('quickActions.quickMatchDesc')}</p>
+                    <p className="text-gray-500 text-sm">
+                      {t('quickActions.quickMatchDesc')}
+                    </p>
                   </div>
                 </motion.button>
 
@@ -756,7 +822,9 @@ const Dashboard = () => {
                     <h3 className="text-gray-900 font-bold text-lg group-hover:text-primary-600 transition-colors">
                       {t('quickActions.createTournament')}
                     </h3>
-                    <p className="text-gray-500 text-sm">{t('quickActions.createTournamentDesc')}</p>
+                    <p className="text-gray-500 text-sm">
+                      {t('quickActions.createTournamentDesc')}
+                    </p>
                   </div>
                 </motion.button>
               </div>

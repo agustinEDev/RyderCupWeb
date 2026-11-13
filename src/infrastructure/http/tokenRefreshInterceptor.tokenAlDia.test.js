@@ -23,11 +23,20 @@ let fetchWithTokenRefresh;
 let refrescoCompartido;
 let setCsrfTokenGlobal;
 
-const r401 = () => ({ ok: false, status: 401, clone: () => ({ json: async () => ({ detail: 'expired' }) }) });
-const r200 = (cuerpo = {}) => ({ ok: true, status: 200, json: async () => cuerpo });
+const r401 = () => ({
+  ok: false,
+  status: 401,
+  clone: () => ({ json: async () => ({ detail: 'expired' }) }),
+});
+const r200 = (cuerpo = {}) => ({
+  ok: true,
+  status: 200,
+  json: async () => cuerpo,
+});
 
 const esRefresco = (url) => String(url).includes('/auth/refresh-token');
-const peticiones = () => globalThis.fetch.mock.calls.filter(([url]) => !esRefresco(url));
+const peticiones = () =>
+  globalThis.fetch.mock.calls.filter(([url]) => !esRefresco(url));
 const cabeceraDe = (opciones) =>
   opciones.headers instanceof globalThis.Headers
     ? opciones.headers.get('X-CSRF-Token')
@@ -37,7 +46,8 @@ describe('reintento tras 401 con el token al día', () => {
   beforeEach(async () => {
     vi.resetModules();
     await import('../../composition/interfazDelTransporte');
-    ({ fetchWithTokenRefresh, refrescoCompartido } = await import('./tokenRefreshInterceptor'));
+    ({ fetchWithTokenRefresh, refrescoCompartido } =
+      await import('./tokenRefreshInterceptor'));
     ({ setCsrfTokenGlobal } = await import('./csrfTokenSync'));
     // Sin cookie legible: el token sale de la copia que deja el refresco
     vi.spyOn(document, 'cookie', 'get').mockReturnValue('');
@@ -59,12 +69,18 @@ describe('reintento tras 401 con el token al día', () => {
         if (esRefresco(url)) return r200({ csrf_token: 'NUEVO' });
         llamadas += 1;
         return llamadas === 1 ? primera() : r200({ ok: true });
-      })
+      }),
     );
   };
 
-  const post = (headers = { 'Content-Type': 'application/json', 'X-CSRF-Token': 'VIEJO' }) =>
-    fetchWithTokenRefresh('/api/v1/quick-matches/start', { method: 'POST', body: '{}', headers });
+  const post = (
+    headers = { 'Content-Type': 'application/json', 'X-CSRF-Token': 'VIEJO' },
+  ) =>
+    fetchWithTokenRefresh('/api/v1/quick-matches/start', {
+      method: 'POST',
+      body: '{}',
+      headers,
+    });
 
   it('28: refresca él y el reintento lleva el token nuevo', async () => {
     conRefresco(r401);
@@ -92,11 +108,15 @@ describe('reintento tras 401 con el token al día', () => {
     vi.stubGlobal(
       'fetch',
       vi.fn((url) => {
-        if (esRefresco(url)) return Promise.resolve(r200({ csrf_token: 'NUEVO' }));
+        if (esRefresco(url))
+          return Promise.resolve(r200({ csrf_token: 'NUEVO' }));
         llamadas += 1;
-        if (llamadas === 1) return new Promise((resuelve) => (suelta401 = () => resuelve(r401())));
+        if (llamadas === 1)
+          return new Promise(
+            (resuelve) => (suelta401 = () => resuelve(r401())),
+          );
         return Promise.resolve(r200());
-      })
+      }),
     );
 
     const peticion = post();
@@ -104,14 +124,18 @@ describe('reintento tras 401 con el token al día', () => {
     suelta401();
     await peticion;
 
-    expect(globalThis.fetch.mock.calls.filter(([url]) => esRefresco(url))).toHaveLength(1);
+    expect(
+      globalThis.fetch.mock.calls.filter(([url]) => esRefresco(url)),
+    ).toHaveLength(1);
     expect(cabeceraDe(peticiones().at(-1)[1])).toBe('NUEVO');
   });
 
   it('31: una petición sin cabecera CSRF sigue sin ella', async () => {
     conRefresco(r401);
 
-    await fetchWithTokenRefresh('/api/v1/quick-matches/me', { headers: { 'Content-Type': 'application/json' } });
+    await fetchWithTokenRefresh('/api/v1/quick-matches/me', {
+      headers: { 'Content-Type': 'application/json' },
+    });
 
     expect(cabeceraDe(peticiones().at(-1)[1])).toBeUndefined();
   });
@@ -130,7 +154,9 @@ describe('reintento tras 401 con el token al día', () => {
     await post({ 'x-csrf-token': 'VIEJO' });
 
     const cabeceras = peticiones().at(-1)[1].headers;
-    const csrf = Object.keys(cabeceras).filter((k) => k.toLowerCase() === 'x-csrf-token');
+    const csrf = Object.keys(cabeceras).filter(
+      (k) => k.toLowerCase() === 'x-csrf-token',
+    );
     expect(csrf).toHaveLength(1);
     expect(cabeceras[csrf[0]]).toBe('NUEVO');
   });

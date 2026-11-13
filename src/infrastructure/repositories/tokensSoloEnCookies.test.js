@@ -14,9 +14,16 @@ import * as api from '../http/api.js';
  *      respuesta (solo se permiten los que los BORRAN: limpiezas y el filtro de Sentry)
  */
 vi.mock('../http/api.js', async () => ({
-  segmento: (await vi.importActual('../http/rutaDeLaApi')).segmento, default: vi.fn() }));
+  segmento: (await vi.importActual('../http/rutaDeLaApi')).segmento,
+  default: vi.fn(),
+}));
 
-const usuario = { id: 'u1', email: 'ana@example.com', first_name: 'Ana', last_name: 'Pérez' };
+const usuario = {
+  id: 'u1',
+  email: 'ana@example.com',
+  first_name: 'Ana',
+  last_name: 'Pérez',
+};
 const email = new Email('ana@example.com');
 const password = new Password('Password123', { validateStrength: false });
 const VERIFIER = 'a'.repeat(43);
@@ -26,11 +33,20 @@ describe('Tokens solo en cookies (fase 3)', () => {
 
   it('T1: con un cuerpo sin tokens, se entra igual y el csrf_token se lee', async () => {
     const repo = new ApiAuthRepository();
-    api.default.mockResolvedValue({ user: usuario, csrf_token: 'csrf-1', is_new_user: false, email_verified: true });
+    api.default.mockResolvedValue({
+      user: usuario,
+      csrf_token: 'csrf-1',
+      is_new_user: false,
+      email_verified: true,
+    });
 
     expect((await repo.login(email, password)).csrfToken).toBe('csrf-1');
-    expect((await repo.googleLogin('codigo', VERIFIER)).csrfToken).toBe('csrf-1');
-    await expect(repo.verifyEmail('tok')).resolves.toEqual({ emailVerified: true });
+    expect((await repo.googleLogin('codigo', VERIFIER)).csrfToken).toBe(
+      'csrf-1',
+    );
+    await expect(repo.verifyEmail('tok')).resolves.toEqual({
+      emailVerified: true,
+    });
   });
 
   it('T2: si el cuerpo aún los trae, no pasan al resultado', async () => {
@@ -56,18 +72,28 @@ describe('Tokens solo en cookies (fase 3)', () => {
   });
 
   it('T3: nadie lee access_token ni refresh_token de una respuesta', () => {
-    const fuentes = import.meta.glob(['/src/**/*.{js,jsx,ts,tsx}', '!/src/**/*.test.{js,jsx,ts,tsx}'], {
-      query: '?raw',
-      import: 'default',
-      eager: true,
-    });
+    const fuentes = import.meta.glob(
+      ['/src/**/*.{js,jsx,ts,tsx}', '!/src/**/*.test.{js,jsx,ts,tsx}'],
+      {
+        query: '?raw',
+        import: 'default',
+        eager: true,
+      },
+    );
     // Leer: `x.access_token`, `x?.refresh_token`, `x['access_token']` o desestructurarlo.
     // Borrarlo (`delete x.access_token`) o nombrarlo en una lista de campos a ocultar no es leer
     const lectura =
       /(?<!delete\s+[\w.?]+)(?:\??\.(?:access|refresh)_token\b|\[\s*['"](?:access|refresh)_token['"]\s*\]|\{[^}]*\b(?:access|refresh)_token\b[^}]*\}\s*=)/;
     const culpables = Object.entries(fuentes)
       .filter(([, codigo]) =>
-        codigo.split('\n').some((linea) => !linea.trim().startsWith('//') && !linea.trim().startsWith('*') && lectura.test(linea))
+        codigo
+          .split('\n')
+          .some(
+            (linea) =>
+              !linea.trim().startsWith('//') &&
+              !linea.trim().startsWith('*') &&
+              lectura.test(linea),
+          ),
       )
       .map(([fichero]) => fichero);
 

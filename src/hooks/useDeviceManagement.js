@@ -3,10 +3,7 @@ import { useTranslation } from 'react-i18next';
 import customToast from '../utils/toast';
 import { useCargaCancelableEffect } from './useCargaCancelableEffect';
 
-import {
-  getActiveDevicesUseCase,
-  revokeDeviceUseCase,
-} from '../composition';
+import { getActiveDevicesUseCase, revokeDeviceUseCase } from '../composition';
 
 /**
  * Custom hook for Device Management
@@ -30,16 +27,21 @@ export const useDeviceManagement = () => {
     {
       alCargar: (result) => setDevices(result.devices || []),
       alFallar: (error) => {
-        console.error('❌ [useDeviceManagement] Error fetching devices:', error);
+        console.error(
+          '❌ [useDeviceManagement] Error fetching devices:',
+          error,
+        );
 
         // Translate error code or use fallback
         const errorMessage = error.code
-          ? t(`errors.${error.code}`, { defaultValue: t('errors.FAILED_TO_LOAD_DEVICES') })
+          ? t(`errors.${error.code}`, {
+              defaultValue: t('errors.FAILED_TO_LOAD_DEVICES'),
+            })
           : error.message || t('errors.FAILED_TO_LOAD_DEVICES');
 
         customToast.error(errorMessage);
       },
-    }
+    },
   );
   // La misma API de antes: vuelve a pedir con la espera, sin pasar un evento
   const fetchDevices = useCallback(() => recargar(), [recargar]);
@@ -57,19 +59,19 @@ export const useDeviceManagement = () => {
 
     try {
       // Clear any previous error for this device
-      setDeviceErrors(prev => {
+      setDeviceErrors((prev) => {
         const newMap = new Map(prev);
         newMap.delete(deviceId);
         return newMap;
       });
 
       // Add device ID to revoking set
-      setRevokingDeviceIds(prev => new Set(prev).add(deviceId));
+      setRevokingDeviceIds((prev) => new Set(prev).add(deviceId));
 
       await revokeDeviceUseCase.execute(deviceId);
 
       // Remove device from local state
-      setDevices(prevDevices => prevDevices.filter(d => d.id !== deviceId));
+      setDevices((prevDevices) => prevDevices.filter((d) => d.id !== deviceId));
 
       customToast.success(t('success.deviceRevoked'));
       return true;
@@ -78,14 +80,16 @@ export const useDeviceManagement = () => {
 
       // Translate domain error code (Repository returns error codes, not messages)
       const errorMessage = error.code
-        ? t(`errors.${error.code}`, { defaultValue: t('errors.FAILED_TO_REVOKE_DEVICE') })
+        ? t(`errors.${error.code}`, {
+            defaultValue: t('errors.FAILED_TO_REVOKE_DEVICE'),
+          })
         : error.message || t('errors.FAILED_TO_REVOKE_DEVICE');
 
       // Show toast AND save error for inline display
       customToast.error(errorMessage);
 
       // Save error for this specific device (v1.14.0: Inline error display)
-      setDeviceErrors(prev => {
+      setDeviceErrors((prev) => {
         const newMap = new Map(prev);
         newMap.set(deviceId, errorMessage);
         return newMap;
@@ -94,7 +98,7 @@ export const useDeviceManagement = () => {
       return false;
     } finally {
       // Remove device ID from revoking set
-      setRevokingDeviceIds(prev => {
+      setRevokingDeviceIds((prev) => {
         const newSet = new Set(prev);
         newSet.delete(deviceId);
         return newSet;
@@ -107,7 +111,7 @@ export const useDeviceManagement = () => {
    * @param {string} deviceId - The device ID to clear error for
    */
   const clearDeviceError = useCallback((deviceId) => {
-    setDeviceErrors(prev => {
+    setDeviceErrors((prev) => {
       const newMap = new Map(prev);
       newMap.delete(deviceId);
       return newMap;

@@ -11,7 +11,7 @@ describe('CreateGolfCourseRequestUseCase', () => {
     vi.clearAllMocks();
 
     golfCourseRepository = {
-      create: vi.fn()
+      create: vi.fn(),
     };
 
     useCase = new CreateGolfCourseRequestUseCase({ golfCourseRepository });
@@ -22,7 +22,7 @@ describe('CreateGolfCourseRequestUseCase', () => {
     identifier: `Barra ${index + 1}`,
     courseRating: 70.0,
     slopeRating: 120,
-    gender: 'MALE'
+    gender: 'MALE',
   });
 
   const createValidCourseData = (overrides = {}) => ({
@@ -33,9 +33,9 @@ describe('CreateGolfCourseRequestUseCase', () => {
     holes: Array.from({ length: 18 }, (_, i) => ({
       holeNumber: i + 1,
       par: 4,
-      strokeIndex: i + 1
+      strokeIndex: i + 1,
     })),
-    ...overrides
+    ...overrides,
   });
 
   describe('par per hole', () => {
@@ -47,10 +47,13 @@ describe('CreateGolfCourseRequestUseCase', () => {
       const holes = Array.from({ length: 18 }, (_, i) => ({
         holeNumber: i + 1,
         par: i === 0 ? 6 : i === 1 ? 3 : 4,
-        strokeIndex: i + 1
+        strokeIndex: i + 1,
       }));
       const courseData = createValidCourseData({ holes });
-      golfCourseRepository.create.mockResolvedValue({ id: 'course-1', ...courseData });
+      golfCourseRepository.create.mockResolvedValue({
+        id: 'course-1',
+        ...courseData,
+      });
 
       // Act
       const result = await useCase.execute(courseData);
@@ -65,13 +68,13 @@ describe('CreateGolfCourseRequestUseCase', () => {
       const holes = Array.from({ length: 18 }, (_, i) => ({
         holeNumber: i + 1,
         par: i === 0 ? 7 : 4,
-        strokeIndex: i + 1
+        strokeIndex: i + 1,
       }));
 
       // Act & Assert
-      await expect(useCase.execute(createValidCourseData({ holes }))).rejects.toThrow(
-        'Hole 1 par must be one of 3, 4, 5, 6 (current: 7)'
-      );
+      await expect(
+        useCase.execute(createValidCourseData({ holes })),
+      ).rejects.toThrow('Hole 1 par must be one of 3, 4, 5, 6 (current: 7)');
       expect(golfCourseRepository.create).not.toHaveBeenCalled();
     });
 
@@ -80,13 +83,13 @@ describe('CreateGolfCourseRequestUseCase', () => {
       const holes = Array.from({ length: 18 }, (_, i) => ({
         holeNumber: i + 1,
         par: i === 0 ? 2 : 4,
-        strokeIndex: i + 1
+        strokeIndex: i + 1,
       }));
 
       // Act & Assert
-      await expect(useCase.execute(createValidCourseData({ holes }))).rejects.toThrow(
-        'Hole 1 par must be one of 3, 4, 5, 6 (current: 2)'
-      );
+      await expect(
+        useCase.execute(createValidCourseData({ holes })),
+      ).rejects.toThrow('Hole 1 par must be one of 3, 4, 5, 6 (current: 2)');
     });
   });
 
@@ -94,7 +97,10 @@ describe('CreateGolfCourseRequestUseCase', () => {
     it('accepts a single tee', async () => {
       // Arrange
       const courseData = createValidCourseData({ tees: [teeAt(0)] });
-      golfCourseRepository.create.mockResolvedValue({ id: 'course-2', ...courseData });
+      golfCourseRepository.create.mockResolvedValue({
+        id: 'course-2',
+        ...courseData,
+      });
 
       // Act
       const result = await useCase.execute(courseData);
@@ -106,9 +112,12 @@ describe('CreateGolfCourseRequestUseCase', () => {
     it('accepts the 14 tees the backend stores', async () => {
       // Arrange
       const courseData = createValidCourseData({
-        tees: Array.from({ length: 14 }, (_, i) => teeAt(i))
+        tees: Array.from({ length: 14 }, (_, i) => teeAt(i)),
       });
-      golfCourseRepository.create.mockResolvedValue({ id: 'course-3', ...courseData });
+      golfCourseRepository.create.mockResolvedValue({
+        id: 'course-3',
+        ...courseData,
+      });
 
       // Act
       const result = await useCase.execute(courseData);
@@ -121,21 +130,21 @@ describe('CreateGolfCourseRequestUseCase', () => {
     it('rejects 15 tees, one past what the backend stores', async () => {
       // Arrange
       const courseData = createValidCourseData({
-        tees: Array.from({ length: 15 }, (_, i) => teeAt(i))
+        tees: Array.from({ length: 15 }, (_, i) => teeAt(i)),
       });
 
       // Act & Assert
       await expect(useCase.execute(courseData)).rejects.toThrow(
-        'Golf course must have between 1 and 14 tees'
+        'Golf course must have between 1 and 14 tees',
       );
       expect(golfCourseRepository.create).not.toHaveBeenCalled();
     });
 
     it('rejects a course with no tees', async () => {
       // Act & Assert
-      await expect(useCase.execute(createValidCourseData({ tees: [] }))).rejects.toThrow(
-        'Golf course must have between 1 and 14 tees'
-      );
+      await expect(
+        useCase.execute(createValidCourseData({ tees: [] })),
+      ).rejects.toThrow('Golf course must have between 1 and 14 tees');
     });
   });
 });

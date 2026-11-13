@@ -26,11 +26,16 @@ vi.mock('../hooks/useAuth', () => ({
 vi.mock('../components/layout/HeaderAuth', () => ({ default: () => <div /> }));
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
-    t: (key, options) => (options && typeof options.count === 'number' ? `${key}:${options.count}` : key),
+    t: (key, options) =>
+      options && typeof options.count === 'number'
+        ? `${key}:${options.count}`
+        : key,
     i18n: { language: 'es' },
   }),
 }));
-vi.mock('../hooks/useEntryMotion', () => ({ useEntryMotion: () => ({ animateEntry: false }) }));
+vi.mock('../hooks/useEntryMotion', () => ({
+  useEntryMotion: () => ({ animateEntry: false }),
+}));
 
 const aMano = () => {
   let resolver;
@@ -40,7 +45,12 @@ const aMano = () => {
   return { promesa, resolver };
 };
 const cifras = (roundsPlayed) =>
-  PlayerStats.fromPersistence({ handicap: 18, scoringAvg: 12.5, roundsPlayed, estimatedIndex: 14.2 });
+  PlayerStats.fromPersistence({
+    handicap: 18,
+    scoringAvg: 12.5,
+    roundsPlayed,
+    estimatedIndex: 14.2,
+  });
 const arbol = () => (
   <MemoryRouter>
     <PlayerStatsPage />
@@ -69,7 +79,9 @@ describe('PlayerStatsPage: la carga descarta lo que llega tarde (T2)', () => {
   it('T2-18: si cambia el usuario con la carga en vuelo, las viejas no se pintan', async () => {
     const vieja = aMano();
     const nueva = aMano();
-    mockGetPlayerStats.mockReturnValueOnce(vieja.promesa).mockReturnValueOnce(nueva.promesa);
+    mockGetPlayerStats
+      .mockReturnValueOnce(vieja.promesa)
+      .mockReturnValueOnce(nueva.promesa);
     const { rerender } = render(arbol());
 
     sesion.user = { id: 'user-2' };

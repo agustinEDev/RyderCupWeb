@@ -35,9 +35,13 @@ const ConfirmEmailChange = () => {
   const { pathname, hash } = useLocation();
   // Tras quitarlo de la barra, una recarga lo recupera del historial
   const token = searchParams.get('token') || readStrippedSecret('token');
-  const [estado, setEstado] = useState(token ? { clave: 'confirmEmailChange.confirming' } : {
-    clave: 'confirmEmailChange.invalid',
-  });
+  const [estado, setEstado] = useState(
+    token
+      ? { clave: 'confirmEmailChange.confirming' }
+      : {
+          clave: 'confirmEmailChange.invalid',
+        },
+  );
   // Una vez por intento: el token se gasta al confirmarlo, pero un fallo de red no
   const [intento, setIntento] = useState(0);
   const enviado = useRef(-1);
@@ -65,7 +69,11 @@ const ConfirmEmailChange = () => {
       .execute(token)
       .then((confirmado) => {
         olvidaElToken();
-        setEstado({ clave: 'confirmEmailChange.done', email: confirmado?.email, bien: true });
+        setEstado({
+          clave: 'confirmEmailChange.done',
+          email: confirmado?.email,
+          bien: true,
+        });
         // La sesión, con el correo nuevo; si falla, el cambio ya está hecho
         Promise.resolve(refetch?.()).catch(() => {});
       })
@@ -93,10 +101,16 @@ const ConfirmEmailChange = () => {
       <HeaderAuth user={user} />
       <main className="max-w-md mx-auto px-4 py-10 text-center">
         {/* En el móvil el título va en la cabecera (screenTitles) */}
-        <h1 className="hidden md:block text-xl font-semibold text-gray-900 mb-4">{t('confirmEmailChange.title')}</h1>
+        <h1 className="hidden md:block text-xl font-semibold text-gray-900 mb-4">
+          {t('confirmEmailChange.title')}
+        </h1>
         <p
           className="text-gray-700 wrap-anywhere"
-          role={estado.bien || estado.clave === 'confirmEmailChange.confirming' ? 'status' : 'alert'}
+          role={
+            estado.bien || estado.clave === 'confirmEmailChange.confirming'
+              ? 'status'
+              : 'alert'
+          }
         >
           {t(estado.clave, { email: estado.email })}
         </p>

@@ -60,7 +60,9 @@ export const staggerContainer = {
  * @returns {object} Props to spread on a motion component.
  */
 export const getEntryProps = (shouldAnimate) =>
-  shouldAnimate ? { initial: 'initial', animate: 'animate' } : { initial: false, animate: 'animate' };
+  shouldAnimate
+    ? { initial: 'initial', animate: 'animate' }
+    : { initial: false, animate: 'animate' };
 
 /**
  * Props for an element that reveals when scrolled into view.

@@ -49,57 +49,106 @@ export const useAccionesDelPartido = ({
     } finally {
       setIsSubmitting(false);
     }
-  }, [matchId, canSubmitScorecard, fetchScoringView, marcaEscritura, esDeOtraPartida, entrega, setFallo, setIsSubmitting]);
+  }, [
+    matchId,
+    canSubmitScorecard,
+    fetchScoringView,
+    marcaEscritura,
+    esDeOtraPartida,
+    entrega,
+    setFallo,
+    setIsSubmitting,
+  ]);
 
   // --- Concede match ---
-  const concedeMatch = useCallback(async (concedingTeam, reason) => {
-    // En stroke play no se concede: su origen no lo trae
-    if (!matchId || !concede) return;
+  const concedeMatch = useCallback(
+    async (concedingTeam, reason) => {
+      // En stroke play no se concede: su origen no lo trae
+      if (!matchId || !concede) return;
 
-    setIsSubmitting(true);
-    try {
-      await concede.execute(matchId, concedingTeam, reason);
-      if (!esDeOtraPartida(matchId)) marcaEscritura();
-      await fetchScoringView();
-      if (!esDeOtraPartida(matchId)) setFallo(null);
-    } catch (err) {
-      if (!esDeOtraPartida(matchId)) setFallo(deLaConcesion(err, matchId));
-    } finally {
-      setIsSubmitting(false);
-    }
-  }, [matchId, fetchScoringView, marcaEscritura, esDeOtraPartida, concede, setFallo, setIsSubmitting]);
+      setIsSubmitting(true);
+      try {
+        await concede.execute(matchId, concedingTeam, reason);
+        if (!esDeOtraPartida(matchId)) marcaEscritura();
+        await fetchScoringView();
+        if (!esDeOtraPartida(matchId)) setFallo(null);
+      } catch (err) {
+        if (!esDeOtraPartida(matchId)) setFallo(deLaConcesion(err, matchId));
+      } finally {
+        setIsSubmitting(false);
+      }
+    },
+    [
+      matchId,
+      fetchScoringView,
+      marcaEscritura,
+      esDeOtraPartida,
+      concede,
+      setFallo,
+      setIsSubmitting,
+    ],
+  );
 
   // --- Retirar a un jugador del fourball, o deshacerlo (RyderCupAM#665) ---
-  const retirarJugador = useCallback(async (playerId, { deshacer = false } = {}) => {
-    // Solo la Ryder: en stroke play se retira por su propio camino
-    if (!matchId || !retira) return;
-    // No va a la cola: retirar cambia quién marca a quién y lo que cuenta, y
-    // aplicarlo tarde y a ciegas sería peor que decir que hace falta red (F8)
-    if (!navigator.onLine) {
-      setFallo(deLaRetirada({ i18nKey: 'withdraw.needsConnection' }, matchId));
-      return;
-    }
-    setRetirando(true);
-    try {
-      // Retirado, el servidor rechaza para siempre sus golpes (PLAYER_WITHDRAWN):
-      // los suyos tienen que salir antes, y si no salen no se le retira
-      if (!deshacer && playerId === currentUserId && pendientesPropias() > 0) {
-        await processQueue();
-        if (pendientesPropias() > 0) {
-          if (!esDeOtraPartida(matchId)) setFallo(deLaRetirada({ i18nKey: 'withdraw.pendingScores' }, matchId));
-          return;
-        }
+  const retirarJugador = useCallback(
+    async (playerId, { deshacer = false } = {}) => {
+      // Solo la Ryder: en stroke play se retira por su propio camino
+      if (!matchId || !retira) return;
+      // No va a la cola: retirar cambia quién marca a quién y lo que cuenta, y
+      // aplicarlo tarde y a ciegas sería peor que decir que hace falta red (F8)
+      if (!navigator.onLine) {
+        setFallo(
+          deLaRetirada({ i18nKey: 'withdraw.needsConnection' }, matchId),
+        );
+        return;
       }
-      await retira.execute(matchId, playerId, { deshacer });
-      if (!esDeOtraPartida(matchId)) marcaEscritura();
-      await fetchScoringView();
-      if (!esDeOtraPartida(matchId)) setFallo(null);
-    } catch (err) {
-      if (!esDeOtraPartida(matchId)) setFallo(deLaRetirada(conClaveDeRetirada(err), matchId));
-    } finally {
-      setRetirando(false);
-    }
-  }, [matchId, currentUserId, pendientesPropias, processQueue, fetchScoringView, marcaEscritura, esDeOtraPartida, retira, setFallo]);
+      setRetirando(true);
+      try {
+        // Retirado, el servidor rechaza para siempre sus golpes (PLAYER_WITHDRAWN):
+        // los suyos tienen que salir antes, y si no salen no se le retira
+        if (
+          !deshacer &&
+          playerId === currentUserId &&
+          pendientesPropias() > 0
+        ) {
+          await processQueue();
+          if (pendientesPropias() > 0) {
+            if (!esDeOtraPartida(matchId))
+              setFallo(
+                deLaRetirada({ i18nKey: 'withdraw.pendingScores' }, matchId),
+              );
+            return;
+          }
+        }
+        await retira.execute(matchId, playerId, { deshacer });
+        if (!esDeOtraPartida(matchId)) marcaEscritura();
+        await fetchScoringView();
+        if (!esDeOtraPartida(matchId)) setFallo(null);
+      } catch (err) {
+        if (!esDeOtraPartida(matchId))
+          setFallo(deLaRetirada(conClaveDeRetirada(err), matchId));
+      } finally {
+        setRetirando(false);
+      }
+    },
+    [
+      matchId,
+      currentUserId,
+      pendientesPropias,
+      processQueue,
+      fetchScoringView,
+      marcaEscritura,
+      esDeOtraPartida,
+      retira,
+      setFallo,
+    ],
+  );
 
-  return { matchSummary, retirando, submitScorecard, concedeMatch, retirarJugador };
+  return {
+    matchSummary,
+    retirando,
+    submitScorecard,
+    concedeMatch,
+    retirarJugador,
+  };
 };

@@ -14,7 +14,10 @@ describe('TeeColorBadge', () => {
   it.each([
     [{ color: 'YELLOW' }, 'form.teeColors.YELLOW'],
     [{ color: 'YELLOW', gender: 'MALE' }, 'form.teeColors.YELLOW (M)'],
-    [{ color: 'RED', gender: 'FEMALE', identifier: 'Campeonato' }, 'Campeonato (F)'],
+    [
+      { color: 'RED', gender: 'FEMALE', identifier: 'Campeonato' },
+      'Campeonato (F)',
+    ],
   ])('%o → %s', (props, texto) => {
     const { container } = render(<TeeColorBadge {...props} />);
     expect(container.textContent).toBe(texto);

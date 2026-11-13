@@ -67,7 +67,8 @@ let arranqueTerminado = false;
 export const rutaQueAvisa = (pathname) => RUTAS_QUE_AVISAN.includes(pathname);
 
 /** Si la capa sigue tapando la pantalla. */
-export const laCortinaSiguePuesta = () => Boolean(document.getElementById(ID_DE_LA_CAPA));
+export const laCortinaSiguePuesta = () =>
+  Boolean(document.getElementById(ID_DE_LA_CAPA));
 
 /**
  * Levanta la cortina. Idempotente: da igual quien llegue primero.

@@ -1,5 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
+import {
+  render,
+  screen,
+  fireEvent,
+  waitFor,
+  within,
+} from '@testing-library/react';
 import { MemoryRouter, Routes, Route } from 'react-router';
 
 /**
@@ -23,7 +29,14 @@ const traduccion = { i18n: { language: 'es' }, t };
 vi.mock('react-i18next', () => ({ useTranslation: () => traduccion }));
 
 vi.mock('framer-motion', () => ({
-  motion: new Proxy({}, { get: () => ({ children, ...props }) => <div {...props}>{children}</div> }),
+  motion: new Proxy(
+    {},
+    {
+      get:
+        () =>
+        ({ children, ...props }) => <div {...props}>{children}</div>,
+    },
+  ),
 }));
 
 vi.mock('../../components/layout/HeaderAuth', () => ({ default: () => null }));
@@ -34,9 +47,17 @@ const SESION = { user: { id: 'org' }, loading: false };
 const ROLES = { isAdmin: false, isCreator: true, isLoading: false };
 vi.mock('../../hooks/useAuth', () => ({ useAuth: () => SESION }));
 vi.mock('../../hooks/useUserRoles', () => ({ useUserRoles: () => ROLES }));
-vi.mock('../../components/ui/FullScreenLoader', () => ({ default: () => null }));
+vi.mock('../../components/ui/FullScreenLoader', () => ({
+  default: () => null,
+}));
 vi.mock('../../utils/toast', () => ({
-  default: { success: vi.fn(), error: vi.fn(), warning: vi.fn(), info: vi.fn(), dismiss: vi.fn() },
+  default: {
+    success: vi.fn(),
+    error: vi.fn(),
+    warning: vi.fn(),
+    info: vi.fn(),
+    dismiss: vi.fn(),
+  },
 }));
 
 const mockDetalle = vi.fn();
@@ -98,7 +119,9 @@ const INSCRITOS = [
  */
 const abrirCubrir = async (equipo = 'A') => {
   await screen.findByTestId(`cubrir-capitan-${equipo}`);
-  await waitFor(() => expect(screen.getByTestId(`cubrir-capitan-${equipo}`)).toBeInTheDocument());
+  await waitFor(() =>
+    expect(screen.getByTestId(`cubrir-capitan-${equipo}`)).toBeInTheDocument(),
+  );
   fireEvent.click(screen.getByTestId(`cubrir-capitan-${equipo}`));
   return screen.findByRole('dialog');
 };
@@ -110,17 +133,24 @@ const abrirCubrir = async (equipo = 'A') => {
  * el clic no llega a ninguna parte.
  */
 const elegirYConfirmar = async (jugador) => {
-  fireEvent.change(await screen.findByRole('combobox'), { target: { value: jugador } });
-  fireEvent.click(await screen.findByRole('button', { name: 'teams.fillCaptainConfirm' }));
+  fireEvent.change(await screen.findByRole('combobox'), {
+    target: { value: jugador },
+  });
+  fireEvent.click(
+    await screen.findByRole('button', { name: 'teams.fillCaptainConfirm' }),
+  );
 };
 
 const pintar = () =>
   render(
     <MemoryRouter initialEntries={['/creator/competitions/comp-1/schedule']}>
       <Routes>
-        <Route path="/creator/competitions/:id/schedule" element={<SchedulePage />} />
+        <Route
+          path="/creator/competitions/:id/schedule"
+          element={<SchedulePage />}
+        />
       </Routes>
-    </MemoryRouter>
+    </MemoryRouter>,
   );
 
 describe('SchedulePage · un torneo sin equipos (FE #791)', () => {
@@ -156,7 +186,12 @@ describe('SchedulePage · cubrir el puesto de un capitán (FE #692)', () => {
     mockInscripciones.mockResolvedValue(INSCRITOS);
     mockCubrir.mockResolvedValue({
       id: 'comp-1',
-      captains: { teamA: 'carla', teamB: 'bea', viceTeamA: null, viceTeamB: null },
+      captains: {
+        teamA: 'carla',
+        teamB: 'bea',
+        viceTeamA: null,
+        viceTeamB: null,
+      },
     });
   });
 
@@ -177,7 +212,9 @@ describe('SchedulePage · cubrir el puesto de un capitán (FE #692)', () => {
 
     await elegirYConfirmar('carla');
 
-    await waitFor(() => expect(mockCubrir).toHaveBeenCalledWith('comp-1', 'A', 'carla'));
+    await waitFor(() =>
+      expect(mockCubrir).toHaveBeenCalledWith('comp-1', 'A', 'carla'),
+    );
     expect(customToast.success).toHaveBeenCalledWith('success.captainFilled');
   });
 
@@ -187,7 +224,9 @@ describe('SchedulePage · cubrir el puesto de un capitán (FE #692)', () => {
 
     await elegirYConfirmar('carla');
 
-    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    await waitFor(() =>
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
+    );
     expect(screen.queryByTestId('cubrir-capitan-A')).not.toBeInTheDocument();
     expect(screen.getAllByText('teams.captainTag').length).toBe(2);
   });
@@ -200,7 +239,9 @@ describe('SchedulePage · cubrir el puesto de un capitán (FE #692)', () => {
     await elegirYConfirmar('carla');
 
     await waitFor(() =>
-      expect(customToast.error).toHaveBeenCalledWith('Ese equipo ya tiene capitán')
+      expect(customToast.error).toHaveBeenCalledWith(
+        'Ese equipo ya tiene capitán',
+      ),
     );
     expect(await screen.findByTestId('cubrir-capitan-A')).toBeInTheDocument();
   });
@@ -208,7 +249,9 @@ describe('SchedulePage · cubrir el puesto de un capitán (FE #692)', () => {
   // Pasada del Kind (31 oct 2026): sin nombre salía su UUID
   it('C1: a quien le falta el nombre se le ofrece como «Jugador»', async () => {
     mockInscripciones.mockResolvedValue(
-      INSCRITOS.map((e) => (e.userId === 'carla' ? { userId: 'carla', status: 'APPROVED' } : e))
+      INSCRITOS.map((e) =>
+        e.userId === 'carla' ? { userId: 'carla', status: 'APPROVED' } : e,
+      ),
     );
     pintar();
 
@@ -223,7 +266,12 @@ describe('SchedulePage · cubrir el puesto de un capitán (FE #692)', () => {
   it('P5: y para el otro equipo se ofrecen los suyos, no los del primero', async () => {
     mockDetalle.mockResolvedValue({
       ...COMPETICION,
-      captains: { teamA: 'carla', teamB: null, viceTeamA: null, viceTeamB: null },
+      captains: {
+        teamA: 'carla',
+        teamB: null,
+        viceTeamA: null,
+        viceTeamB: null,
+      },
     });
     pintar();
 
@@ -232,6 +280,10 @@ describe('SchedulePage · cubrir el puesto de un capitán (FE #692)', () => {
     const opciones = within(within(modal).getByRole('combobox'))
       .getAllByRole('option')
       .map((o) => o.textContent);
-    expect(opciones).toEqual(['teams.fillCaptainChoose', 'Bea Blanco', 'Eva Esteban']);
+    expect(opciones).toEqual([
+      'teams.fillCaptainChoose',
+      'Bea Blanco',
+      'Eva Esteban',
+    ]);
   });
 });

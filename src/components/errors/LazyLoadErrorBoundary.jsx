@@ -21,14 +21,24 @@ import {
 class LazyLoadErrorBoundary extends Component {
   constructor(props) {
     super(props);
-    this.state = { hasError: false, isReloading: false, errorMessage: null, errorName: null };
+    this.state = {
+      hasError: false,
+      isReloading: false,
+      errorMessage: null,
+      errorName: null,
+    };
   }
 
   static getDerivedStateFromError(error) {
     // La página ya se recarga por un trozo viejo: lo de ahora es el eco de ese
     // fallo, en blanco hasta que llegue la recarga
     if (esElEcoDeLaRecarga(error)) {
-      return { hasError: false, isReloading: true, errorMessage: null, errorName: null };
+      return {
+        hasError: false,
+        isReloading: true,
+        errorMessage: null,
+        errorName: null,
+      };
     }
     // React may invoke getDerivedStateFromError more than once for the same
     // error (it's a render-phase, side-effect-free method by contract), so it
@@ -42,13 +52,14 @@ class LazyLoadErrorBoundary extends Component {
 
     // Una vez por versión y página; sin almacenamiento (`null`), o sin red ni
     // service worker, ninguna: el aviso
-    const willAutoReload = isChunkLoadError && puedeRecargar() === true && recargarTraeLaPagina();
+    const willAutoReload =
+      isChunkLoadError && puedeRecargar() === true && recargarTraeLaPagina();
 
     return {
       hasError: !willAutoReload,
       isReloading: willAutoReload,
       errorMessage: error?.message || 'Unknown error',
-      errorName: error?.name || 'Error'
+      errorName: error?.name || 'Error',
     };
   }
 
@@ -121,38 +132,63 @@ class LazyLoadErrorBoundary extends Component {
       // sin las traducciones: justo ahora pueden no cargar (25 oct 2026)
       const { sinCargar: textos, idioma } = textosDelError();
       return (
-        <div lang={idioma} style={{
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          height: '100vh',
-          padding: '2rem',
-          textAlign: 'center',
-          fontFamily: 'system-ui, sans-serif'
-        }}>
-          <h1 style={{ fontSize: '2rem', marginBottom: '1rem', color: '#ef4444' }}>
+        <div
+          lang={idioma}
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            height: '100vh',
+            padding: '2rem',
+            textAlign: 'center',
+            fontFamily: 'system-ui, sans-serif',
+          }}
+        >
+          <h1
+            style={{ fontSize: '2rem', marginBottom: '1rem', color: '#ef4444' }}
+          >
             {textos.titulo}
           </h1>
-          <p style={{ color: '#6b7280', marginBottom: '1rem', maxWidth: '600px' }}>
+          <p
+            style={{
+              color: '#6b7280',
+              marginBottom: '1rem',
+              maxWidth: '600px',
+            }}
+          >
             {textos.texto}
           </p>
           {/* v2.0.4: Show error details for debugging */}
           {this.state.errorMessage && (
-            <details style={{ marginBottom: '2rem', maxWidth: '600px', textAlign: 'left' }}>
-              <summary style={{ cursor: 'pointer', color: '#6b7280', fontSize: '0.875rem' }}>
+            <details
+              style={{
+                marginBottom: '2rem',
+                maxWidth: '600px',
+                textAlign: 'left',
+              }}
+            >
+              <summary
+                style={{
+                  cursor: 'pointer',
+                  color: '#6b7280',
+                  fontSize: '0.875rem',
+                }}
+              >
                 {textos.detalles}
               </summary>
-              <pre style={{
-                marginTop: '0.5rem',
-                padding: '1rem',
-                backgroundColor: '#f3f4f6',
-                borderRadius: '0.5rem',
-                fontSize: '0.75rem',
-                overflow: 'auto',
-                whiteSpace: 'pre-wrap',
-                wordBreak: 'break-word'
-              }}>
+              <pre
+                style={{
+                  marginTop: '0.5rem',
+                  padding: '1rem',
+                  backgroundColor: '#f3f4f6',
+                  borderRadius: '0.5rem',
+                  fontSize: '0.75rem',
+                  overflow: 'auto',
+                  whiteSpace: 'pre-wrap',
+                  wordBreak: 'break-word',
+                }}
+              >
                 {this.state.errorName}: {this.state.errorMessage}
               </pre>
             </details>
@@ -170,12 +206,12 @@ class LazyLoadErrorBoundary extends Component {
               borderRadius: '0.5rem',
               fontSize: '1rem',
               cursor: 'pointer',
-              transition: 'background-color 0.2s'
+              transition: 'background-color 0.2s',
             }}
-            onMouseOver={(e) => e.target.style.backgroundColor = '#235a2e'}
-            onFocus={(e) => e.target.style.backgroundColor = '#235a2e'}
-            onMouseOut={(e) => e.target.style.backgroundColor = '#2d7b3e'}
-            onBlur={(e) => e.target.style.backgroundColor = '#2d7b3e'}
+            onMouseOver={(e) => (e.target.style.backgroundColor = '#235a2e')}
+            onFocus={(e) => (e.target.style.backgroundColor = '#235a2e')}
+            onMouseOut={(e) => (e.target.style.backgroundColor = '#2d7b3e')}
+            onBlur={(e) => (e.target.style.backgroundColor = '#2d7b3e')}
           >
             {textos.boton}
           </button>

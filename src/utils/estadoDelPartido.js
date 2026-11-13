@@ -11,20 +11,23 @@ const TOTAL_HOLES = 18;
  */
 export const estadoDelPartido = (scoringView, currentUserId, isAdmin) => {
   // Determine if user is a player in this match
-  const isMatchPlayer = scoringView?.players?.some(p => p.userId === currentUserId) ?? false;
+  const isMatchPlayer =
+    scoringView?.players?.some((p) => p.userId === currentUserId) ?? false;
 
   // Fourball: el retirado ni anota ni entrega hasta que se deshaga (RyderCupAM#665)
-  const isWithdrawn = scoringView?.withdrawnPlayerIds?.includes(currentUserId) ?? false;
+  const isWithdrawn =
+    scoringView?.withdrawnPlayerIds?.includes(currentUserId) ?? false;
 
   // Admins can score any match even if not enrolled as a player
   const canScore = (isMatchPlayer && !isWithdrawn) || isAdmin;
 
   // Determine if scorecard already submitted by current user
-  const hasSubmitted = scoringView?.scorecardSubmittedBy?.includes(currentUserId) ?? false;
+  const hasSubmitted =
+    scoringView?.scorecardSubmittedBy?.includes(currentUserId) ?? false;
 
   // Find the current user's marker assignment
   const myAssignment = scoringView?.markerAssignments?.find(
-    ma => ma.scorerUserId === currentUserId
+    (ma) => ma.scorerUserId === currentUserId,
   );
 
   // Who do I mark (to check if the person I mark has submitted)
@@ -48,12 +51,15 @@ export const estadoDelPartido = (scoringView, currentUserId, isAdmin) => {
   const isFullyLocked = isOwnScoreLocked && isMarkerScoreLocked;
 
   // My line on every hole, in hole order
-  const myHoleScores = scoringView?.scores?.map(
-    s => s.playerScores?.find(ps => ps.userId === currentUserId)
-  ) ?? [];
+  const myHoleScores =
+    scoringView?.scores?.map((s) =>
+      s.playerScores?.find((ps) => ps.userId === currentUserId),
+    ) ?? [];
 
   // Count validated holes
-  const validatedHoles = myHoleScores.filter(ps => ps?.validationStatus === 'match').length;
+  const validatedHoles = myHoleScores.filter(
+    (ps) => ps?.validationStatus === 'match',
+  ).length;
 
   // A hole counts as played when EITHER side has put a score on my line: a
   // decided match leaves the rest unplayed on purpose, but a hole my marker
@@ -62,9 +68,12 @@ export const estadoDelPartido = (scoringView, currentUserId, isAdmin) => {
   // the input read-only and the API drops a late own score without an error
   // (`submit_hole_score_use_case.py`, `if not own_score_locked`), so the hole
   // would be lost for good and fall out of the match result.
-  const playedHoles = myHoleScores.filter(ps => ps?.ownSubmitted || ps?.markerSubmitted);
+  const playedHoles = myHoleScores.filter(
+    (ps) => ps?.ownSubmitted || ps?.markerSubmitted,
+  );
   const everyPlayedHoleValidated =
-    playedHoles.length > 0 && playedHoles.every(ps => ps.validationStatus === 'match');
+    playedHoles.length > 0 &&
+    playedHoles.every((ps) => ps.validationStatus === 'match');
 
   const totalHoles = TOTAL_HOLES;
 
@@ -77,16 +86,21 @@ export const estadoDelPartido = (scoringView, currentUserId, isAdmin) => {
   const canSubmitScorecard =
     canScore &&
     !hasSubmitted &&
-    (scoringView?.isDecided ? everyPlayedHoleValidated : validatedHoles >= totalHoles);
+    (scoringView?.isDecided
+      ? everyPlayedHoleValidated
+      : validatedHoles >= totalHoles);
 
   // Acabado: decidido, o con los 18 jugados aunque no se decidiera antes. Es
   // cuando toca entregar la tarjeta y la pantalla lo pide (FE #745); si queda
   // algún hoyo sin validar, `canSubmitScorecard` sigue en false y se dice cuál
-  const partidoAcabado = Boolean(scoringView?.isDecided) || playedHoles.length >= totalHoles;
+  const partidoAcabado =
+    Boolean(scoringView?.isDecided) || playedHoles.length >= totalHoles;
 
   // What the confirmation dialog counts against: in a decided match the card is
   // complete at the hole it ended on, so "12/18" would read as unfinished
-  const holesToSubmit = scoringView?.isDecided ? playedHoles.length : totalHoles;
+  const holesToSubmit = scoringView?.isDecided
+    ? playedHoles.length
+    : totalHoles;
 
   return {
     isMatchPlayer,

@@ -60,30 +60,43 @@ describe('el interceptor no repite un 401 por contraseña mal escrita', () => {
       vi.fn(async (url) => {
         if (esRefresco(url)) return respuesta(200, { csrf_token: 'N' });
         llamadas += 1;
-        return llamadas === 1 ? respuesta(401, primera) : respuesta(200, { ok: true });
-      })
+        return llamadas === 1
+          ? respuesta(401, primera)
+          : respuesta(200, { ok: true });
+      }),
     );
   };
-  const refrescos = () => globalThis.fetch.mock.calls.filter(([u]) => esRefresco(u)).length;
-  const peticiones = () => globalThis.fetch.mock.calls.filter(([u]) => !esRefresco(u)).length;
+  const refrescos = () =>
+    globalThis.fetch.mock.calls.filter(([u]) => esRefresco(u)).length;
+  const peticiones = () =>
+    globalThis.fetch.mock.calls.filter(([u]) => !esRefresco(u)).length;
 
   it.each([
     ['W1', '/api/v1/users/security', 'PATCH'],
     ['W2', '/api/v1/auth/reauthenticate', 'POST'],
-  ])('%s: %s con la contraseña mal se devuelve tal cual', async (_caso, ruta, metodo) => {
-    con(CONTRASENA_MAL);
+  ])(
+    '%s: %s con la contraseña mal se devuelve tal cual',
+    async (_caso, ruta, metodo) => {
+      con(CONTRASENA_MAL);
 
-    const r = await fetchWithTokenRefresh(ruta, { method: metodo, headers: {} });
+      const r = await fetchWithTokenRefresh(ruta, {
+        method: metodo,
+        headers: {},
+      });
 
-    expect(r.status).toBe(401);
-    expect(refrescos()).toBe(0);
-    expect(peticiones()).toBe(1);
-  });
+      expect(r.status).toBe(401);
+      expect(refrescos()).toBe(0);
+      expect(peticiones()).toBe(1);
+    },
+  );
 
   it('W3: con el token caducado, Seguridad sí se refresca y se repite', async () => {
     con(TOKEN_CADUCADO);
 
-    const r = await fetchWithTokenRefresh('/api/v1/users/security', { method: 'PATCH', headers: {} });
+    const r = await fetchWithTokenRefresh('/api/v1/users/security', {
+      method: 'PATCH',
+      headers: {},
+    });
 
     expect(r.status).toBe(200);
     expect(refrescos()).toBe(1);
@@ -93,7 +106,10 @@ describe('el interceptor no repite un 401 por contraseña mal escrita', () => {
   it('W5: «falta el dispositivo» es de token: se refresca (BE #737, el refresco trae did)', async () => {
     con({ detail: 'Token inválido: falta el dispositivo' });
 
-    const r = await fetchWithTokenRefresh('/api/v1/auth/reauthenticate', { method: 'POST', headers: {} });
+    const r = await fetchWithTokenRefresh('/api/v1/auth/reauthenticate', {
+      method: 'POST',
+      headers: {},
+    });
 
     expect(r.status).toBe(200);
     expect(refrescos()).toBe(1);
@@ -102,7 +118,10 @@ describe('el interceptor no repite un 401 por contraseña mal escrita', () => {
   it('W4: otra ruta se refresca como siempre', async () => {
     con(CONTRASENA_MAL);
 
-    const r = await fetchWithTokenRefresh('/api/v1/users/me', { method: 'GET', headers: {} });
+    const r = await fetchWithTokenRefresh('/api/v1/users/me', {
+      method: 'GET',
+      headers: {},
+    });
 
     expect(r.status).toBe(200);
     expect(refrescos()).toBe(1);

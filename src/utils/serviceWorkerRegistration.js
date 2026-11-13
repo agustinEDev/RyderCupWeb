@@ -32,7 +32,8 @@ let registro = null;
 let enCurso = false;
 
 export function registerServiceWorker() {
-  if (typeof navigator === 'undefined' || !('serviceWorker' in navigator)) return;
+  if (typeof navigator === 'undefined' || !('serviceWorker' in navigator))
+    return;
   if (oyentesInstalados) return;
   oyentesInstalados = true;
 
@@ -65,7 +66,9 @@ export function registerServiceWorker() {
       if (registro) {
         await registro.update();
       } else {
-        registro = await navigator.serviceWorker.register('/sw.js', { scope: '/' });
+        registro = await navigator.serviceWorker.register('/sw.js', {
+          scope: '/',
+        });
       }
     } catch {
       // Sin conexión no hay nada que comprobar, y un registro fallido no debe

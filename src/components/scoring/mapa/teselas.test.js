@@ -5,9 +5,12 @@ import en from '../../../i18n/locales/en/scoring.json';
 const sentry = vi.hoisted(() => ({ captureError: vi.fn() }));
 vi.mock('../../../utils/sentryHelpers', () => sentry);
 
-const { ORTOFOTOS, atribucionDeLaOrtofoto, ponerOrtofoto } = await import('./teselas');
-const { limitesDeLaComunidad } = await import('../../../domain/services/comunidadDelCampo');
-const { CONTORNOS } = await import('../../../domain/services/contornosDeComunidades');
+const { ORTOFOTOS, atribucionDeLaOrtofoto, ponerOrtofoto } =
+  await import('./teselas');
+const { limitesDeLaComunidad } =
+  await import('../../../domain/services/comunidadDelCampo');
+const { CONTORNOS } =
+  await import('../../../domain/services/contornosDeComunidades');
 
 // Un mapa con las capas que tiene ya cargado: fondo, PNOA y lo de encima
 const mapaFalso = (capas = ['fondo', 'pnoa', 'linea']) => {
@@ -19,13 +22,22 @@ const mapaFalso = (capas = ['fondo', 'pnoa', 'linea']) => {
     getStyle: () => ({ layers: lista }),
     getSource: (id) => fuentes[id],
     getLayer: (id) => lista.find((c) => c.id === id),
-    addSource: vi.fn((id, f) => { fuentes[id] = f; }),
-    removeSource: vi.fn((id) => { delete fuentes[id]; }),
+    addSource: vi.fn((id, f) => {
+      fuentes[id] = f;
+    }),
+    removeSource: vi.fn((id) => {
+      delete fuentes[id];
+    }),
     addLayer: vi.fn((capa, antes) => {
       const i = antes ? lista.findIndex((c) => c.id === antes) : lista.length;
       lista.splice(i, 0, capa);
     }),
-    removeLayer: vi.fn((id) => { lista.splice(lista.findIndex((c) => c.id === id), 1); }),
+    removeLayer: vi.fn((id) => {
+      lista.splice(
+        lista.findIndex((c) => c.id === id),
+        1,
+      );
+    }),
   };
 };
 
@@ -34,15 +46,20 @@ describe('ORTOFOTOS (19 oct)', () => {
     ['ES-CT', 'geoserveis.icgc.cat', 'ICGC'],
     ['ES-PV', 'www.geo.euskadi.eus', 'Gobierno Vasco'],
     ['ES-NC', 'idena.navarra.es', 'Gobierno de Navarra'],
-  ])('%s: sus teselas y quién la firma, en español y en inglés (/code-review: por t())', (codigo, servidor, firma) => {
-    const ortofoto = ORTOFOTOS[codigo];
+  ])(
+    '%s: sus teselas y quién la firma, en español y en inglés (/code-review: por t())',
+    (codigo, servidor, firma) => {
+      const ortofoto = ORTOFOTOS[codigo];
 
-    expect(new globalThis.URL(ortofoto.tiles[0].replace(/[{}]/g, '')).host).toBe(servidor);
-    const clave = atribucionDeLaOrtofoto(codigo);
-    expect(clave).toBe(`mapa.ortofoto.${codigo}`);
-    expect(es.mapa.ortofoto[codigo]).toContain(firma);
-    expect(en.mapa.ortofoto[codigo]).toBeTruthy();
-  });
+      expect(
+        new globalThis.URL(ortofoto.tiles[0].replace(/[{}]/g, '')).host,
+      ).toBe(servidor);
+      const clave = atribucionDeLaOrtofoto(codigo);
+      expect(clave).toBe(`mapa.ortofoto.${codigo}`);
+      expect(es.mapa.ortofoto[codigo]).toContain(firma);
+      expect(en.mapa.ortofoto[codigo]).toBeTruthy();
+    },
+  );
 
   it('Madrid, con la PNOA: su 2025 se ve peor que la PNOA (19 oct)', () => {
     expect(ORTOFOTOS['ES-MD']).toBeUndefined();
@@ -51,9 +68,15 @@ describe('ORTOFOTOS (19 oct)', () => {
   });
 
   it('/code-review: las comunidades con contorno son las de ortofoto (ni contorno que no pinte nada, ni ortofoto sin contorno)', () => {
-    expect(Object.keys(CONTORNOS).sort()).toEqual(Object.keys(ORTOFOTOS).sort());
-    expect(Object.keys(es.mapa.ortofoto).sort()).toEqual(Object.keys(ORTOFOTOS).sort());
-    expect(Object.keys(en.mapa.ortofoto).sort()).toEqual(Object.keys(ORTOFOTOS).sort());
+    expect(Object.keys(CONTORNOS).sort()).toEqual(
+      Object.keys(ORTOFOTOS).sort(),
+    );
+    expect(Object.keys(es.mapa.ortofoto).sort()).toEqual(
+      Object.keys(ORTOFOTOS).sort(),
+    );
+    expect(Object.keys(en.mapa.ortofoto).sort()).toEqual(
+      Object.keys(ORTOFOTOS).sort(),
+    );
   });
 
   it('sin ortofoto de comunidad, sin atribución', () => {
@@ -66,7 +89,9 @@ describe('ORTOFOTOS (19 oct)', () => {
     expect(ORTOFOTOS['ES-NC'].tiles[0]).toContain('FORMAT=image/vnd.jpeg-png');
     expect(ORTOFOTOS['ES-NC'].tiles[0]).toContain('TRANSPARENT=TRUE');
     // Cataluña, igual (CodeRabbit): su XYZ en JPEG rellenaba fuera con otra imagen
-    expect(ORTOFOTOS['ES-CT'].tiles[0]).toContain('LAYERS=ortofoto_color_vigent');
+    expect(ORTOFOTOS['ES-CT'].tiles[0]).toContain(
+      'LAYERS=ortofoto_color_vigent',
+    );
     expect(ORTOFOTOS['ES-CT'].tiles[0]).toContain('FORMAT=image/vnd.jpeg-png');
   });
 
@@ -89,7 +114,12 @@ describe('ponerOrtofoto', () => {
       maxzoom: 19,
       bounds: limitesDeLaComunidad('ES-CT'),
     });
-    expect(mapa.lista.map((c) => c.id)).toEqual(['fondo', 'pnoa', 'ortofoto', 'linea']);
+    expect(mapa.lista.map((c) => c.id)).toEqual([
+      'fondo',
+      'pnoa',
+      'ortofoto',
+      'linea',
+    ]);
   });
 
   it('con el mapa aún sin nada encima de la PNOA, va justo detrás', () => {
@@ -117,10 +147,14 @@ describe('ponerOrtofoto', () => {
 
   it('/code-review: si MapLibre falla al ponerla, no rompe el mapa (se apunta y sigue)', () => {
     const mapa = mapaFalso();
-    mapa.addSource = vi.fn(() => { throw new Error('bounds'); });
+    mapa.addSource = vi.fn(() => {
+      throw new Error('bounds');
+    });
 
     expect(() => ponerOrtofoto(mapa, 'ES-CT')).not.toThrow();
-    expect(sentry.captureError).toHaveBeenCalledWith(expect.any(Error), { tags: { modulo: 'mapa-de-hoyos' } });
+    expect(sentry.captureError).toHaveBeenCalledWith(expect.any(Error), {
+      tags: { modulo: 'mapa-de-hoyos' },
+    });
   });
 
   it('/code-review: la misma recién puesta no se rehace aunque MapLibre aún no diga sus teselas', () => {
@@ -154,9 +188,14 @@ describe('atribuciones del mapa (F6, F7)', () => {
   it.each([
     ['es', es],
     ['en', en],
-  ])('%s: OpenStreetMap con su nombre, la PNOA con su licencia y Navarra con IDENA', (_idioma, textos) => {
-    expect(textos.mapa.atribucionOsm).toBe('© OpenStreetMap');
-    expect(textos.mapa.atribucionPnoa).toBe('PNOA CC BY 4.0 scne.es');
-    expect(textos.mapa.ortofoto['ES-NC']).toBe('© Gobierno de Navarra – IDENA (CC BY 4.0)');
-  });
+  ])(
+    '%s: OpenStreetMap con su nombre, la PNOA con su licencia y Navarra con IDENA',
+    (_idioma, textos) => {
+      expect(textos.mapa.atribucionOsm).toBe('© OpenStreetMap');
+      expect(textos.mapa.atribucionPnoa).toBe('PNOA CC BY 4.0 scne.es');
+      expect(textos.mapa.ortofoto['ES-NC']).toBe(
+        '© Gobierno de Navarra – IDENA (CC BY 4.0)',
+      );
+    },
+  );
 });

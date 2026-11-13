@@ -37,24 +37,46 @@ const HOJAS = [
     cruz: 'create.teePanel.close',
     caja: 'bg-white rounded-t-2xl w-full max-w-md p-4 pb-[calc(2rem+env(safe-area-inset-bottom))] shadow-xl max-h-[80vh] overflow-y-auto',
     pinta: (onClose) => (
-      <TeeSelectPanel courseTees={TEES} playerName="Ana" onSelect={vi.fn()} onClose={onClose} />
+      <TeeSelectPanel
+        courseTees={TEES}
+        playerName="Ana"
+        onSelect={vi.fn()}
+        onClose={onClose}
+      />
     ),
   },
   {
     nombre: 'HandicapInputPanel',
     cruz: 'create.handicapPanel.close',
     caja: 'bg-white rounded-t-2xl w-full max-w-md p-4 pb-[calc(2rem+env(safe-area-inset-bottom))] shadow-xl',
-    pinta: (onClose) => <HandicapInputPanel value={null} label="Ana" onConfirm={vi.fn()} onClose={onClose} />,
+    pinta: (onClose) => (
+      <HandicapInputPanel
+        value={null}
+        label="Ana"
+        onConfirm={vi.fn()}
+        onClose={onClose}
+      />
+    ),
   },
   {
     nombre: 'ScoreInputPanel',
     cruz: 'input.close',
     caja: 'bg-white rounded-t-2xl w-full max-w-md p-4 pb-[calc(2rem+env(safe-area-inset-bottom))] shadow-xl',
-    pinta: (onClose) => <ScoreInputPanel value={undefined} onSelect={vi.fn()} onClose={onClose} label="Ana" par={4} />,
+    pinta: (onClose) => (
+      <ScoreInputPanel
+        value={undefined}
+        onSelect={vi.fn()}
+        onClose={onClose}
+        label="Ana"
+        par={4}
+      />
+    ),
   },
 ];
 
-const enfocables = (hoja) => [...hoja.querySelectorAll('button:not([disabled]), input:not([disabled])')];
+const enfocables = (hoja) => [
+  ...hoja.querySelectorAll('button:not([disabled]), input:not([disabled])'),
+];
 
 /** Un disparador que abre la hoja, como en la aplicación. */
 const ConDisparador = ({ hoja, alCerrar = () => {} }) => {
@@ -144,7 +166,11 @@ describe.each(HOJAS)('$nombre · foco de hoja modal (#389)', (hoja) => {
     render(<SobreUnModal cerrarModal={cerrarModal} cerrarHoja={cerrarHoja} />);
     fireEvent.click(screen.getByRole('button', { name: 'abrir hoja' }));
     // La de la hoja es la de dentro: la última en la página
-    return { cerrarModal, cerrarHoja, dialogo: screen.getAllByRole('dialog').at(-1) };
+    return {
+      cerrarModal,
+      cerrarHoja,
+      dialogo: screen.getAllByRole('dialog').at(-1),
+    };
   };
 
   it('B4: sobre otro diálogo, Escape cierra la hoja y no el de debajo', () => {
@@ -199,8 +225,18 @@ describe.each(HOJAS)('$nombre · foco de hoja modal (#389)', (hoja) => {
     const onClose = vi.fn();
     render(hoja.pinta(onClose));
     const dialogo = screen.getByRole('dialog');
-    expect(dialogo.className.split(/\s+/)).toEqual(expect.arrayContaining(hoja.caja.split(' ')));
-    expect(dialogo.parentElement).toHaveClass('fixed', 'inset-0', 'z-50', 'flex', 'items-end', 'justify-center', 'bg-black/40');
+    expect(dialogo.className.split(/\s+/)).toEqual(
+      expect.arrayContaining(hoja.caja.split(' ')),
+    );
+    expect(dialogo.parentElement).toHaveClass(
+      'fixed',
+      'inset-0',
+      'z-50',
+      'flex',
+      'items-end',
+      'justify-center',
+      'bg-black/40',
+    );
 
     fireEvent.click(dialogo);
     expect(onClose).not.toHaveBeenCalled();

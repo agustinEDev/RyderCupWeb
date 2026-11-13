@@ -13,11 +13,15 @@ const llamarAlBackend = vi.fn();
 vi.mock('./tokenRefreshInterceptor', () => ({
   fetchWithTokenRefresh: (...args) => llamarAlBackend(...args),
 }));
-vi.mock('./csrfTokenSync', () => ({ getCsrfCookie: () => null, getCsrfToken: () => 'csrf' }));
+vi.mock('./csrfTokenSync', () => ({
+  getCsrfCookie: () => null,
+  getCsrfToken: () => 'csrf',
+}));
 vi.mock('i18next', () => ({ default: { t: (clave) => `t(${clave})` } }));
 
 const { apiRequest } = await import('./api');
-const { esFalloDeRed, esFalloDeRedDeLaApi, mensajeDeError } = await import('../../utils/sinCobertura');
+const { esFalloDeRed, esFalloDeRedDeLaApi, mensajeDeError } =
+  await import('../../utils/sinCobertura');
 
 describe('apiRequest · sin conexión (FE #685)', () => {
   beforeEach(() => {
@@ -30,15 +34,19 @@ describe('apiRequest · sin conexión (FE #685)', () => {
     vi.restoreAllMocks();
   });
 
-  it.each(['Failed to fetch', 'Load failed', 'NetworkError when attempting to fetch resource.'])(
+  it.each([
+    'Failed to fetch',
+    'Load failed',
+    'NetworkError when attempting to fetch resource.',
+  ])(
     'C1: el aviso del navegador («%s») se cambia por el texto traducido',
     async (delNavegador) => {
       llamarAlBackend.mockRejectedValue(new TypeError(delNavegador));
 
       await expect(apiRequest('/api/v1/invitations/me')).rejects.toThrow(
-        't(common:sinConexion.mensaje)'
+        't(common:sinConexion.mensaje)',
       );
-    }
+    },
   );
 
   it('C2: sigue siendo un TypeError, así que se sigue reconociendo como falta de red', async () => {
@@ -53,7 +61,9 @@ describe('apiRequest · sin conexión (FE #685)', () => {
     // La marca explícita: es lo que mira la versión estricta
     expect(error.sinConexion).toBe(true);
     expect(esFalloDeRedDeLaApi(error)).toBe(true);
-    expect(mensajeDeError(error, { sinConexion: 'sin red', generico: 'otro' })).toBe('sin red');
+    expect(
+      mensajeDeError(error, { sinConexion: 'sin red', generico: 'otro' }),
+    ).toBe('sin red');
   });
 
   it('C3: una respuesta con error del servidor no se toca', async () => {
@@ -110,7 +120,9 @@ describe('apiRequest · sin conexión (FE #685)', () => {
 
   it('C5: un error de la llamada que no es de red pasa sin tocar', async () => {
     // El interceptor lanza sus propios errores, por ejemplo al caducar la sesión
-    const deSesion = Object.assign(new Error('Session expired'), { status: 401 });
+    const deSesion = Object.assign(new Error('Session expired'), {
+      status: 401,
+    });
     llamarAlBackend.mockRejectedValue(deSesion);
 
     const error = await apiRequest('/api/v1/invitations/me').catch((e) => e);

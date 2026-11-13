@@ -4,7 +4,7 @@ import GolfFigure from './GolfFigure';
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
-    t: (key, opts) => opts ? `${key} ${JSON.stringify(opts)}` : key,
+    t: (key, opts) => (opts ? `${key} ${JSON.stringify(opts)}` : key),
     i18n: { language: 'en' },
   }),
 }));
@@ -81,7 +81,9 @@ describe('GolfFigure', () => {
       unmount();
 
       render(<GolfFigure score={null} par={4} />);
-      expect(screen.getByTestId('golf-figure')).not.toHaveAttribute('data-picked-up');
+      expect(screen.getByTestId('golf-figure')).not.toHaveAttribute(
+        'data-picked-up',
+      );
     });
 
     it('manda sobre el numero si llegan los dos', () => {

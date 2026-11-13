@@ -14,7 +14,8 @@ import TarjetaDeUnAmigoPage from './TarjetaDeUnAmigoPage';
  */
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
-    t: (key, opts) => (opts?.number !== undefined ? `${key} ${opts.number}` : key),
+    t: (key, opts) =>
+      opts?.number !== undefined ? `${key} ${opts.number}` : key,
     i18n: { language: 'es' },
   }),
 }));
@@ -27,7 +28,10 @@ vi.mock('../../components/layout/HeaderAuth', () => ({
 }));
 vi.mock('../../components/scoring/TarjetasDeLaPartida', () => ({
   default: ({ scoringView, onCambio }) => (
-    <div data-testid="tarjetas-de-la-partida" data-numero={scoringView.matchNumber}>
+    <div
+      data-testid="tarjetas-de-la-partida"
+      data-numero={scoringView.matchNumber}
+    >
       <button type="button" data-testid="cambia" onClick={onCambio} />
     </div>
   ),
@@ -59,16 +63,25 @@ const fallo = (status) => Object.assign(new Error('x'), { status });
 
 const Saltar = () => {
   const navegar = useNavigate();
-  return <button type="button" data-testid="saltar" onClick={() => navegar('/competitions/c-1/groups/g-9')} />;
+  return (
+    <button
+      type="button"
+      data-testid="saltar"
+      onClick={() => navegar('/competitions/c-1/groups/g-9')}
+    />
+  );
 };
 const pinta = () =>
   render(
     <MemoryRouter initialEntries={['/competitions/c-1/groups/g-7']}>
       <Saltar />
       <Routes>
-        <Route path="/competitions/:id/groups/:groupId" element={<TarjetaDeUnAmigoPage tipo="partida" />} />
+        <Route
+          path="/competitions/:id/groups/:groupId"
+          element={<TarjetaDeUnAmigoPage tipo="partida" />}
+        />
       </Routes>
-    </MemoryRouter>
+    </MemoryRouter>,
   );
 const enEspera = () => screen.queryByRole('status');
 const conFallo = () =>
@@ -86,7 +99,8 @@ const vigilaLosFallos = () => {
       for (const nodo of cambio.addedNodes) {
         if (nodo.nodeType !== 1) continue;
         for (const el of [nodo, ...nodo.querySelectorAll('[data-testid]')]) {
-          if (FALLOS.includes(el.dataset?.testid)) vistos.push(el.dataset.testid);
+          if (FALLOS.includes(el.dataset?.testid))
+            vistos.push(el.dataset.testid);
         }
       }
     }
@@ -111,7 +125,9 @@ describe('TarjetaDeUnAmigoPage: la carga descarta lo que llega tarde (T2)', () =
 
   it('T2-12: al cambiar de partida, la espera y nunca la pantalla de fallo hasta que llega la nueva', async () => {
     const nueva = aMano();
-    verPartida.mockResolvedValueOnce(vista(3)).mockReturnValueOnce(nueva.promesa);
+    verPartida
+      .mockResolvedValueOnce(vista(3))
+      .mockReturnValueOnce(nueva.promesa);
     pinta();
     await screen.findByTestId('tarjetas-de-la-partida');
     const fallos = vigilaLosFallos();
@@ -127,12 +143,17 @@ describe('TarjetaDeUnAmigoPage: la carga descarta lo que llega tarde (T2)', () =
     fallos.deja();
 
     await act(async () => nueva.resolver(vista(9)));
-    expect(screen.getByTestId('tarjetas-de-la-partida')).toHaveAttribute('data-numero', '9');
+    expect(screen.getByTestId('tarjetas-de-la-partida')).toHaveAttribute(
+      'data-numero',
+      '9',
+    );
   });
 
   it('T2-12: desde una que falló, al cambiar de partida se espera, sin el fallo de la anterior', async () => {
     const nueva = aMano();
-    verPartida.mockRejectedValueOnce(fallo(500)).mockReturnValueOnce(nueva.promesa);
+    verPartida
+      .mockRejectedValueOnce(fallo(500))
+      .mockReturnValueOnce(nueva.promesa);
     pinta();
     await screen.findByTestId('tarjeta-error');
 
@@ -141,13 +162,18 @@ describe('TarjetaDeUnAmigoPage: la carga descarta lo que llega tarde (T2)', () =
     expect(enEspera()).toBeInTheDocument();
     expect(conFallo()).toBeNull();
     await act(async () => nueva.resolver(vista(9)));
-    expect(screen.getByTestId('tarjetas-de-la-partida')).toHaveAttribute('data-numero', '9');
+    expect(screen.getByTestId('tarjetas-de-la-partida')).toHaveAttribute(
+      'data-numero',
+      '9',
+    );
   });
 
   it('T2-12: el fallo tardío de la anterior no saca la pantalla de fallo en la nueva', async () => {
     const vieja = aMano();
     const nueva = aMano();
-    verPartida.mockReturnValueOnce(vieja.promesa).mockReturnValueOnce(nueva.promesa);
+    verPartida
+      .mockReturnValueOnce(vieja.promesa)
+      .mockReturnValueOnce(nueva.promesa);
     pinta();
 
     fireEvent.click(screen.getByTestId('saltar'));
@@ -156,7 +182,10 @@ describe('TarjetaDeUnAmigoPage: la carga descarta lo que llega tarde (T2)', () =
     expect(enEspera()).toBeInTheDocument();
     expect(conFallo()).toBeNull();
     await act(async () => nueva.resolver(vista(9)));
-    expect(screen.getByTestId('tarjetas-de-la-partida')).toHaveAttribute('data-numero', '9');
+    expect(screen.getByTestId('tarjetas-de-la-partida')).toHaveAttribute(
+      'data-numero',
+      '9',
+    );
   });
 
   it('T2-12b: si la vista llega vacía, sale la pantalla sin tarjeta con Reintentar y Volver, no la espera', async () => {
@@ -169,12 +198,17 @@ describe('TarjetaDeUnAmigoPage: la carga descarta lo que llega tarde (T2)', () =
     expect(screen.getByTestId('tarjeta-volver')).toBeInTheDocument();
     fireEvent.click(screen.getByTestId('tarjeta-reintentar'));
     await act(async () => {});
-    expect(screen.getByTestId('tarjetas-de-la-partida')).toHaveAttribute('data-numero', '3');
+    expect(screen.getByTestId('tarjetas-de-la-partida')).toHaveAttribute(
+      'data-numero',
+      '3',
+    );
   });
 
   it('T2-13: si la tarjeta pintada cambia, se relee sin espera y queda al día', async () => {
     const relectura = aMano();
-    verPartida.mockResolvedValueOnce(vista(3)).mockReturnValueOnce(relectura.promesa);
+    verPartida
+      .mockResolvedValueOnce(vista(3))
+      .mockReturnValueOnce(relectura.promesa);
     pinta();
     await screen.findByTestId('tarjetas-de-la-partida');
 
@@ -182,8 +216,14 @@ describe('TarjetaDeUnAmigoPage: la carga descarta lo que llega tarde (T2)', () =
 
     expect(verPartida).toHaveBeenCalledTimes(2);
     expect(enEspera()).toBeNull();
-    expect(screen.getByTestId('tarjetas-de-la-partida')).toHaveAttribute('data-numero', '3');
+    expect(screen.getByTestId('tarjetas-de-la-partida')).toHaveAttribute(
+      'data-numero',
+      '3',
+    );
     await act(async () => relectura.resolver(vista(4)));
-    expect(screen.getByTestId('tarjetas-de-la-partida')).toHaveAttribute('data-numero', '4');
+    expect(screen.getByTestId('tarjetas-de-la-partida')).toHaveAttribute(
+      'data-numero',
+      '4',
+    );
   });
 });

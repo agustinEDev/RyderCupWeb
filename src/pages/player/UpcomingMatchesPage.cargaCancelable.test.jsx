@@ -39,7 +39,12 @@ vi.mock('../../services/partidosSinCobertura', async () => ({
   ...(await vi.importActual('../../services/partidosSinCobertura')),
   leeLosProximosPartidos: (...a) => leePartidos(...a),
   leeLasProximasPartidas: () =>
-    Promise.resolve({ partidas: [], desdeMemoria: false, sinRespuesta: false, incompleta: false }),
+    Promise.resolve({
+      partidas: [],
+      desdeMemoria: false,
+      sinRespuesta: false,
+      incompleta: false,
+    }),
 }));
 
 const aMano = () => {
@@ -52,7 +57,13 @@ const aMano = () => {
   return { promesa, resolver, rechazar };
 };
 const partidos = (...ids) => ({
-  partidos: ids.map((id) => ({ id, roundDate: '2099-01-01', status: 'SCHEDULED', teamAPlayerNames: [], teamBPlayerNames: [] })),
+  partidos: ids.map((id) => ({
+    id,
+    roundDate: '2099-01-01',
+    status: 'SCHEDULED',
+    teamAPlayerNames: [],
+    teamBPlayerNames: [],
+  })),
   desdeMemoria: false,
   sinRespuesta: false,
   incompleta: false,
@@ -80,31 +91,51 @@ describe('UpcomingMatchesPage: la lectura descarta lo que llega tarde (T2)', () 
     expect(espera()).not.toBeInTheDocument();
     expect(leePartidos).not.toHaveBeenCalled();
     expect(listarCompeticiones).not.toHaveBeenCalled();
-    expect(screen.getByText('upcomingMatches.sinRespuesta')).toBeInTheDocument();
-    expect(screen.queryByText('upcomingMatches.noMatches')).not.toBeInTheDocument();
+    expect(
+      screen.getByText('upcomingMatches.sinRespuesta'),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByText('upcomingMatches.noMatches'),
+    ).not.toBeInTheDocument();
   });
 
   it('T2-14b: si se va el usuario, ni los avisos ni la lista de antes: «no se pudo preguntar»', async () => {
-    leePartidos.mockResolvedValueOnce({ ...partidos('m-1'), desdeMemoria: true, incompleta: true });
+    leePartidos.mockResolvedValueOnce({
+      ...partidos('m-1'),
+      desdeMemoria: true,
+      incompleta: true,
+    });
     const { rerender } = render(arbol());
     await screen.findByTestId('proximo-m-1');
-    expect(screen.getByTestId('upcoming-matches-desde-memoria')).toBeInTheDocument();
-    expect(screen.getByTestId('upcoming-matches-incompleta')).toBeInTheDocument();
+    expect(
+      screen.getByTestId('upcoming-matches-desde-memoria'),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByTestId('upcoming-matches-incompleta'),
+    ).toBeInTheDocument();
 
     sesion.user = null;
     rerender(arbol());
     await act(async () => {});
 
-    expect(screen.queryByTestId('upcoming-matches-desde-memoria')).not.toBeInTheDocument();
-    expect(screen.queryByTestId('upcoming-matches-incompleta')).not.toBeInTheDocument();
+    expect(
+      screen.queryByTestId('upcoming-matches-desde-memoria'),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByTestId('upcoming-matches-incompleta'),
+    ).not.toBeInTheDocument();
     expect(screen.queryByTestId('proximo-m-1')).not.toBeInTheDocument();
-    expect(screen.getByText('upcomingMatches.sinRespuesta')).toBeInTheDocument();
+    expect(
+      screen.getByText('upcomingMatches.sinRespuesta'),
+    ).toBeInTheDocument();
   });
 
   it('T2-15: si cambia el usuario con la lectura en vuelo, la lista vieja no se pinta', async () => {
     const vieja = aMano();
     const nueva = aMano();
-    leePartidos.mockReturnValueOnce(vieja.promesa).mockReturnValueOnce(nueva.promesa);
+    leePartidos
+      .mockReturnValueOnce(vieja.promesa)
+      .mockReturnValueOnce(nueva.promesa);
     const { rerender } = render(arbol());
 
     sesion.user = { id: 'u-2' };
@@ -141,12 +172,18 @@ describe('UpcomingMatchesPage: la lectura descarta lo que llega tarde (T2)', () 
     await act(async () => falla.rechazar(new Error('inesperado')));
 
     expect(espera()).not.toBeInTheDocument();
-    expect(screen.getByText('upcomingMatches.sinRespuesta')).toBeInTheDocument();
-    expect(screen.queryByText('upcomingMatches.noMatches')).not.toBeInTheDocument();
+    expect(
+      screen.getByText('upcomingMatches.sinRespuesta'),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByText('upcomingMatches.noMatches'),
+    ).not.toBeInTheDocument();
   });
 
   it('T2-16b: el fallo de la lectura queda registrado (antes llegaba a Sentry como rechazo sin capturar)', async () => {
-    const registro = vi.spyOn(globalThis.console, 'error').mockImplementation(() => {});
+    const registro = vi
+      .spyOn(globalThis.console, 'error')
+      .mockImplementation(() => {});
     const falla = aMano();
     leePartidos.mockReturnValueOnce(falla.promesa);
     render(arbol());

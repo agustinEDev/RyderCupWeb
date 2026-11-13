@@ -1,5 +1,9 @@
 import { describe, it, expect } from 'vitest';
-import { nombreDelDispositivo, paisDelDispositivo, iconoDelDispositivo } from './descripcionDelDispositivo';
+import {
+  nombreDelDispositivo,
+  paisDelDispositivo,
+  iconoDelDispositivo,
+} from './descripcionDelDispositivo';
 
 /**
  * El nombre, el icono y el país de cada dispositivo, en el idioma de la app (FE #1046).
@@ -37,35 +41,84 @@ const t = (clave) =>
     'device.unknown': 'Dispositivo desconocido',
   })[clave] ?? clave;
 
-const dispositivo = (extra) => ({ deviceType: 'phone', platform: 'iphone', browser: 'safari', installedApp: false, ...extra });
+const dispositivo = (extra) => ({
+  deviceType: 'phone',
+  platform: 'iphone',
+  browser: 'safari',
+  installedApp: false,
+  ...extra,
+});
 
 describe('el nombre y el icono de un dispositivo', () => {
   it.each([
     ['D1', dispositivo(), 'iPhone · Safari', 'phone'],
     ['D2', dispositivo({ browser: 'chrome' }), 'iPhone · Chrome', 'phone'],
-    ['D3', dispositivo({ installedApp: true }), 'iPhone · app instalada', 'phone'],
-    ['D4', dispositivo({ deviceType: 'tablet', platform: 'ipad' }), 'iPad · Safari', 'tablet'],
-    ['D5', dispositivo({ platform: 'android', browser: 'samsung' }), 'Android · Samsung Internet', 'phone'],
-    ['D6', dispositivo({ deviceType: 'computer', platform: 'mac' }), 'Mac · Safari', 'computer'],
-    ['D6b', dispositivo({ deviceType: 'computer', platform: 'chromebook', browser: 'chrome' }), 'Chromebook · Chrome', 'computer'],
-    ['D7', dispositivo({ browser: 'instagram' }), 'iPhone · navegador de Instagram', 'phone'],
+    [
+      'D3',
+      dispositivo({ installedApp: true }),
+      'iPhone · app instalada',
+      'phone',
+    ],
+    [
+      'D4',
+      dispositivo({ deviceType: 'tablet', platform: 'ipad' }),
+      'iPad · Safari',
+      'tablet',
+    ],
+    [
+      'D5',
+      dispositivo({ platform: 'android', browser: 'samsung' }),
+      'Android · Samsung Internet',
+      'phone',
+    ],
+    [
+      'D6',
+      dispositivo({ deviceType: 'computer', platform: 'mac' }),
+      'Mac · Safari',
+      'computer',
+    ],
+    [
+      'D6b',
+      dispositivo({
+        deviceType: 'computer',
+        platform: 'chromebook',
+        browser: 'chrome',
+      }),
+      'Chromebook · Chrome',
+      'computer',
+    ],
+    [
+      'D7',
+      dispositivo({ browser: 'instagram' }),
+      'iPhone · navegador de Instagram',
+      'phone',
+    ],
   ])('%s', (_, d, nombre, icono) => {
     expect(nombreDelDispositivo(d, t)).toBe(nombre);
     expect(iconoDelDispositivo(d)).toBe(icono);
   });
 
   it('D8: plataforma desconocida: el nombre del backend, y si no, «Dispositivo desconocido»', () => {
-    const raro = { deviceType: 'unknown', platform: 'unknown', browser: 'unknown', deviceName: 'curl' };
+    const raro = {
+      deviceType: 'unknown',
+      platform: 'unknown',
+      browser: 'unknown',
+      deviceName: 'curl',
+    };
 
     expect(nombreDelDispositivo(raro, t)).toBe('curl');
-    expect(nombreDelDispositivo({ ...raro, deviceName: '' }, t)).toBe('Dispositivo desconocido');
+    expect(nombreDelDispositivo({ ...raro, deviceName: '' }, t)).toBe(
+      'Dispositivo desconocido',
+    );
     expect(iconoDelDispositivo(raro)).toBe('unknown');
     expect(iconoDelDispositivo({})).toBe('unknown');
     expect(iconoDelDispositivo({ deviceType: 'nevera' })).toBe('unknown');
   });
 
   it('D8b: un navegador desconocido en una plataforma conocida: solo la plataforma', () => {
-    expect(nombreDelDispositivo(dispositivo({ browser: 'unknown' }), t)).toBe('iPhone');
+    expect(nombreDelDispositivo(dispositivo({ browser: 'unknown' }), t)).toBe(
+      'iPhone',
+    );
   });
 });
 
@@ -75,9 +128,12 @@ describe('el país de un dispositivo', () => {
     expect(paisDelDispositivo('ES', 'en')).toBe('Spain');
   });
 
-  it.each([null, undefined, '', 'X', 'ESP', '12', '419'])('D10: con %j, null', (codigo) => {
-    expect(paisDelDispositivo(codigo, 'es')).toBeNull();
-  });
+  it.each([null, undefined, '', 'X', 'ESP', '12', '419'])(
+    'D10: con %j, null',
+    (codigo) => {
+      expect(paisDelDispositivo(codigo, 'es')).toBeNull();
+    },
+  );
 
   it('D10b: un idioma que Intl no entiende no lanza, y da el nombre en el del navegador', () => {
     expect(() => paisDelDispositivo('ES', 'no-es-un-idioma-$$')).not.toThrow();

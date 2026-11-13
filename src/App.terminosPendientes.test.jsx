@@ -16,30 +16,68 @@ import { render, screen, cleanup } from '@testing-library/react';
  * La barra publica su hueco en `--alto-barra-inferior` (en <html>) para que las
  * páginas de pantalla completa lo descuenten: solo cuando se pinta, 0px si no.
  */
-const llamadas = vi.hoisted(() => ({ cola: [], muestras: [], dispositivos: [], refresco: [], revalidacion: [] }));
+const llamadas = vi.hoisted(() => ({
+  cola: [],
+  muestras: [],
+  dispositivos: [],
+  refresco: [],
+  revalidacion: [],
+}));
 const pendientes = vi.hoisted(() => ({ valor: false }));
 
-vi.mock('./hooks/useLogout', () => ({ useLogout: () => ({ logout: vi.fn() }) }));
+vi.mock('./hooks/useLogout', () => ({
+  useLogout: () => ({ logout: vi.fn() }),
+}));
 vi.mock('./hooks/useAuth', () => ({
-  getUserData: vi.fn().mockResolvedValue({ id: 'u-1', email: 'ana@example.com' }),
+  getUserData: vi
+    .fn()
+    .mockResolvedValue({ id: 'u-1', email: 'ana@example.com' }),
   useAuth: () => ({ user: { id: 'u-1' }, loading: false }),
 }));
-vi.mock('./hooks/useTerminosPendientes', () => ({ useTerminosPendientes: () => pendientes.valor }));
-vi.mock('./hooks/useVaciadoDeLaCola', () => ({ useVaciadoDeLaCola: (o) => { llamadas.cola.push(o.activo); } }));
-vi.mock('./hooks/useEnvioDeMuestras', () => ({ useEnvioDeMuestras: (o) => { llamadas.muestras.push(o.activo); } }));
-vi.mock('./hooks/useDeviceRevocationMonitor', () => ({
-  useDeviceRevocationMonitor: (o) => { llamadas.dispositivos.push(o.enabled); },
+vi.mock('./hooks/useTerminosPendientes', () => ({
+  useTerminosPendientes: () => pendientes.valor,
 }));
-vi.mock('./hooks/useProactiveTokenRefresh', () => ({ default: (o) => { llamadas.refresco.push(o.enabled); } }));
-vi.mock('./hooks/useRevalidacionDeLaSesion', () => ({ useRevalidacionDeLaSesion: () => { llamadas.revalidacion.push(true); } }));
-vi.mock('./hooks/useCortinaDeArranque', () => ({ useCortinaDeArranque: () => {} }));
+vi.mock('./hooks/useVaciadoDeLaCola', () => ({
+  useVaciadoDeLaCola: (o) => {
+    llamadas.cola.push(o.activo);
+  },
+}));
+vi.mock('./hooks/useEnvioDeMuestras', () => ({
+  useEnvioDeMuestras: (o) => {
+    llamadas.muestras.push(o.activo);
+  },
+}));
+vi.mock('./hooks/useDeviceRevocationMonitor', () => ({
+  useDeviceRevocationMonitor: (o) => {
+    llamadas.dispositivos.push(o.enabled);
+  },
+}));
+vi.mock('./hooks/useProactiveTokenRefresh', () => ({
+  default: (o) => {
+    llamadas.refresco.push(o.enabled);
+  },
+}));
+vi.mock('./hooks/useRevalidacionDeLaSesion', () => ({
+  useRevalidacionDeLaSesion: () => {
+    llamadas.revalidacion.push(true);
+  },
+}));
+vi.mock('./hooks/useCortinaDeArranque', () => ({
+  useCortinaDeArranque: () => {},
+}));
 vi.mock('./hooks/useVolverArriba', () => ({ useVolverArriba: () => {} }));
 vi.mock('./utils/sentryHelpers', () => ({ setUserContext: () => {} }));
 vi.mock('./components/ui/InstallBanner', () => ({ default: () => null }));
 vi.mock('./components/ui/AvisoSinConexion', () => ({ default: () => null }));
-vi.mock('./components/ui/AvisoTerminosPendientes', () => ({ default: () => <p>aviso de Términos</p> }));
-vi.mock('./components/layout/BottomNav', () => ({ default: () => <nav>barra inferior</nav> }));
-vi.mock('./components/auth/ProtectedRoute', () => ({ default: ({ children }) => children }));
+vi.mock('./components/ui/AvisoTerminosPendientes', () => ({
+  default: () => <p>aviso de Términos</p>,
+}));
+vi.mock('./components/layout/BottomNav', () => ({
+  default: () => <nav>barra inferior</nav>,
+}));
+vi.mock('./components/auth/ProtectedRoute', () => ({
+  default: ({ children }) => children,
+}));
 vi.mock('./pages/Dashboard', () => ({ default: () => <p>panel</p> }));
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({ t: (k) => k, i18n: { language: 'es' } }),
@@ -52,12 +90,17 @@ vi.mock('@sentry/react', async (original) => ({
 const App = (await import('./App')).default;
 
 const ultimo = (lista) => lista.at(-1);
-const hueco = () => document.documentElement.style.getPropertyValue('--alto-barra-inferior');
+const hueco = () =>
+  document.documentElement.style.getPropertyValue('--alto-barra-inferior');
 
 describe('App · nada que llame a la API con los Términos pendientes', () => {
   beforeEach(() => {
     for (const lista of Object.values(llamadas)) lista.length = 0;
-    window.matchMedia = () => ({ matches: false, addEventListener() {}, removeEventListener() {} });
+    window.matchMedia = () => ({
+      matches: false,
+      addEventListener() {},
+      removeEventListener() {},
+    });
     window.history.pushState({}, '', '/dashboard');
   });
 

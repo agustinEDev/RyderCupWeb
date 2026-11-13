@@ -30,7 +30,11 @@ const MOTIVOS_PARA_NO_ENTRAR = {
  * }} opciones - qué hacer al aceptar, cómo releer lo de la pantalla y con qué
  *   texto decir que ya no estaba pendiente
  */
-export const useResponderInvitacion = ({ alAceptar, alCambiar, textoYaNoPendiente = 'errors.notPendingAnymore' }) => {
+export const useResponderInvitacion = ({
+  alAceptar,
+  alCambiar,
+  textoYaNoPendiente = 'errors.notPendingAnymore',
+}) => {
   const { t } = useTranslation('invitations');
   const generoParaApuntarse = useGeneroParaApuntarse();
   // Las que se están respondiendo, y con qué: cada tarjeta, desactivada (y con
@@ -93,7 +97,10 @@ export const useResponderInvitacion = ({ alAceptar, alCambiar, textoYaNoPendient
     try {
       let result;
       try {
-        result = await respondToInvitationUseCase.execute(invitationId, 'ACCEPT');
+        result = await respondToInvitationUseCase.execute(
+          invitationId,
+          'ACCEPT',
+        );
       } catch (error) {
         console.error('Error accepting invitation:', error);
         avisarDelFallo(error);
@@ -139,7 +146,10 @@ export const useResponderInvitacion = ({ alAceptar, alCambiar, textoYaNoPendient
       } catch (error) {
         // Rechazar una que se quedó sin plaza, o que ya no estaba pendiente, no
         // es un fallo: no iba a jugarla y ya no la juega. Sin aviso (FE #737, 5 oct)
-        if (error?.errorCode === 'INVITATION_NO_ROOM' || (error?.status === 409 && !error?.errorCode)) {
+        if (
+          error?.errorCode === 'INVITATION_NO_ROOM' ||
+          (error?.status === 409 && !error?.errorCode)
+        ) {
           await releer(alCambiar);
           return;
         }
@@ -155,8 +165,10 @@ export const useResponderInvitacion = ({ alAceptar, alCambiar, textoYaNoPendient
   };
 
   return {
-    seEstaRespondiendo: (invitationId) => enProceso.some((p) => p.id === invitationId),
-    accionEnCurso: (invitationId) => enProceso.find((p) => p.id === invitationId)?.accion ?? null,
+    seEstaRespondiendo: (invitationId) =>
+      enProceso.some((p) => p.id === invitationId),
+    accionEnCurso: (invitationId) =>
+      enProceso.find((p) => p.id === invitationId)?.accion ?? null,
     aceptar,
     rechazar,
     preguntaDelGenero: {

@@ -9,7 +9,10 @@ const clave = (golfCourseId) => `ubicacionDelCampo:v1:${golfCourseId}`;
 class LocalStorageCourseLocationCache extends ICourseLocationCache {
   save(golfCourseId, ubicacion) {
     try {
-      globalThis.localStorage.setItem(clave(golfCourseId), JSON.stringify(ubicacion));
+      globalThis.localStorage.setItem(
+        clave(golfCourseId),
+        JSON.stringify(ubicacion),
+      );
     } catch {
       // Sin sitio: se pedirá la próxima vez
     }

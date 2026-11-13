@@ -4,7 +4,10 @@
  * partirla en piezas (fase 5 del plan de calidad); el comportamiento es el de
  * antes, línea a línea.
  */
-import { categoriasQueSalen, salenDeLosInscritos } from '../domain/services/CategoriasQueSalen';
+import {
+  categoriasQueSalen,
+  salenDeLosInscritos,
+} from '../domain/services/CategoriasQueSalen';
 import { fechaDeApertura } from '../domain/services/aperturaDeInscripciones';
 import { CompetitionStatus } from '../domain/value_objects/CompetitionStatus';
 import { siguientePasoDeLaCompeticion } from './siguientePasoDeLaCompeticion';
@@ -15,7 +18,10 @@ const VUELTAS = {
   browse: { to: '/browse-competitions', clave: 'detail.backToBrowse' },
   invitations: { to: '/player/invitations', clave: 'detail.backToInvitations' },
 };
-const VUELTA_POR_DEFECTO = { to: '/competitions', clave: 'detail.backToCompetitions' };
+const VUELTA_POR_DEFECTO = {
+  to: '/competitions',
+  clave: 'detail.backToCompetitions',
+};
 
 export const vueltaDeLaFicha = (origen) =>
   Object.hasOwn(VUELTAS, origen ?? '') ? VUELTAS[origen] : VUELTA_POR_DEFECTO;
@@ -31,7 +37,11 @@ export const diaCortoDeLaFicha = (fecha, idioma) => {
   const d = new Date(`${fecha}T12:00:00`);
   return Number.isNaN(d.getTime())
     ? ''
-    : d.toLocaleDateString(idioma, { weekday: 'short', day: 'numeric', month: 'short' });
+    : d.toLocaleDateString(idioma, {
+        weekday: 'short',
+        day: 'numeric',
+        month: 'short',
+      });
 };
 
 // Por qué no se pudo apuntar, por su código (release social 3, 28 oct 2026): las
@@ -53,12 +63,15 @@ const MOTIVOS_PARA_NO_FORMAR = {
 // Si ya los había, la ficha lo apunta: con equipos no se ofrece cambiar
 // capitanes ni pedir plaza (code-review)
 export const yaLosHabia = (error, setCompetition) => {
-  if (error?.errorCode === 'TEAMS_FORMED') setCompetition((prev) => ({ ...prev, teamsAssigned: true }));
+  if (error?.errorCode === 'TEAMS_FORMED')
+    setCompetition((prev) => ({ ...prev, teamsAssigned: true }));
 };
 
 export const porQueNoSeFormaron = (t, error) => {
   const motivo = MOTIVOS_PARA_NO_FORMAR[error?.errorCode];
-  return motivo ? t(motivo) : error?.message || t('detail.errors.teamAssignmentFailed');
+  return motivo
+    ? t(motivo)
+    : error?.message || t('detail.errors.teamAssignmentFailed');
 };
 
 // Por qué no se pudo quitar, por el código del servidor
@@ -70,7 +83,8 @@ export const MOTIVOS_PARA_NO_QUITAR = {
 };
 
 // Con el hándicap ya fijado (stroke play cerrado), es ese el que se enseña
-export const conFijado = (esStrokePlay, e) => esStrokePlay && e.fixedHandicap != null;
+export const conFijado = (esStrokePlay, e) =>
+  esStrokePlay && e.fixedHandicap != null;
 
 /**
  * Los aprobados en el orden de la lista. Un stroke play cerrado: por hándicap
@@ -94,15 +108,18 @@ export const ordenarAprobados = (aprobados, esStrokePlay) =>
   });
 
 // El texto del modal de borrar: dice quién pierde su plaza (FE #667)
-export const textoDelBorrado = (t, { inscripcionesSinCargar, estoyInscrito, otrosInscritos }) =>
+export const textoDelBorrado = (
+  t,
+  { inscripcionesSinCargar, estoyInscrito, otrosInscritos },
+) =>
   inscripcionesSinCargar
     ? t('detail.deleteModal.unknownOthers')
     : estoyInscrito
       ? otrosInscritos === 0
         ? t('detail.deleteModal.nobodyElse')
         : t('detail.deleteModal.othersLosePlace', { count: otrosInscritos })
-      // Quien borra no está dentro (un admin): «más» no encaja (FE #728)
-      : otrosInscritos === 0
+      : // Quien borra no está dentro (un admin): «más» no encaja (FE #728)
+        otrosInscritos === 0
         ? t('detail.deleteModal.nobodyEnrolled')
         : t('detail.deleteModal.playersLosePlace', { count: otrosInscritos });
 
@@ -116,30 +133,45 @@ export const equipoDe = (reparto, competition, userId) => {
 // Capitanes y subcapitanes: su insignia ya dice el equipo
 export const esCapitan = (captains, userId) =>
   Boolean(userId) &&
-  ['teamA', 'teamB', 'viceTeamA', 'viceTeamB'].some((papel) => captains?.[papel] === userId);
+  ['teamA', 'teamB', 'viceTeamA', 'viceTeamB'].some(
+    (papel) => captains?.[papel] === userId,
+  );
 
 /**
  * Qué se dice de las categorías en los ajustes. Lo que se pidió frente a lo
  * que salió al cerrar (QA del 11 oct 2026): «3 categorías iguales, repartidas:
  * 14,0» eran 2, y con una sola el jugador seguía viendo los límites pedidos.
  */
-export const textoDeCategorias = (t, ajustes, { menosDeLasPedidas, salieron, unDecimal }) => {
-  const limitesEnTexto = () => ajustes.categoryLimits.map(unDecimal).join(' · ');
+export const textoDeCategorias = (
+  t,
+  ajustes,
+  { menosDeLasPedidas, salieron, unDecimal },
+) => {
+  const limitesEnTexto = () =>
+    ajustes.categoryLimits.map(unDecimal).join(' · ');
   if (menosDeLasPedidas && menosDeLasPedidas.salen > 1) {
     // Los de «iguales» son los repartidos; los escritos a mano no dicen cuáles quedaron
-    const conLimites = ajustes.categoryCount != null && ajustes.categoryLimits.length > 0;
-    return t(conLimites ? 'detail.settings.categoriesCameOutWithLimits' : 'detail.settings.categoriesCameOut', {
-      count: menosDeLasPedidas.pedidas,
-      salen: menosDeLasPedidas.salen,
-      limites: limitesEnTexto(),
-    });
+    const conLimites =
+      ajustes.categoryCount != null && ajustes.categoryLimits.length > 0;
+    return t(
+      conLimites
+        ? 'detail.settings.categoriesCameOutWithLimits'
+        : 'detail.settings.categoriesCameOut',
+      {
+        count: menosDeLasPedidas.pedidas,
+        salen: menosDeLasPedidas.salen,
+        limites: limitesEnTexto(),
+      },
+    );
   }
   if (salieron === 1) return t('detail.settings.noCategories');
   if (ajustes.categoryCount != null) {
     return t(
       // Ya repartidas (desde el cierre), no «se reparten al cerrar» (revisor)
-      ajustes.categoryLimits.length > 0 ? 'detail.settings.equalCategoriesSplit' : 'detail.settings.equalCategories',
-      { count: ajustes.categoryCount, limites: limitesEnTexto() }
+      ajustes.categoryLimits.length > 0
+        ? 'detail.settings.equalCategoriesSplit'
+        : 'detail.settings.equalCategories',
+      { count: ajustes.categoryCount, limites: limitesEnTexto() },
     );
   }
   return ajustes.categoryLimits.length > 0
@@ -157,13 +189,20 @@ export const textoDeCategorias = (t, ajustes, { menosDeLasPedidas, salieron, unD
 export const avisoYClasificacion = (t, competition, approvedEnrollments) => {
   const avisoDeCategorias =
     competition?.strokePlay && competition.hasTeams === false
-      ? categoriasQueSalen(competition.strokePlay, approvedEnrollments.map((e) => e.category ?? null))
+      ? categoriasQueSalen(
+          competition.strokePlay,
+          approvedEnrollments.map((e) => e.category ?? null),
+        )
       : null;
   const textoDelAvisoDeCategorias = avisoDeCategorias
-    ? t(`detail.fewerCategories.${avisoDeCategorias.motivo}`, { ...avisoDeCategorias, count: avisoDeCategorias.salen })
+    ? t(`detail.fewerCategories.${avisoDeCategorias.motivo}`, {
+        ...avisoDeCategorias,
+        count: avisoDeCategorias.salen,
+      })
     : null;
   const conClasificacion =
-    competition?.hasTeams === false && ['IN_PROGRESS', 'COMPLETED'].includes(competition?.status);
+    competition?.hasTeams === false &&
+    ['IN_PROGRESS', 'COMPLETED'].includes(competition?.status);
   return { textoDelAvisoDeCategorias, conClasificacion };
 };
 
@@ -198,17 +237,23 @@ export const derivarLaFicha = ({
   const esStrokePlay = competition.hasTeams === false;
   const repartoAMostrar =
     competition.actualTeamAssignment ??
-    (competition.setupMode === 'RYDER_CUP' ? 'PENDING' : competition.teamAssignment);
+    (competition.setupMode === 'RYDER_CUP'
+      ? 'PENDING'
+      : competition.teamAssignment);
   // La configuración se corrige mientras haya inscripciones abiertas (BE #323):
   // quien invita antes de poner el campo de golf tiene que poder ponerlo después
-  const canEdit = canManage && new CompetitionStatus(competition.status).allowsModifications();
+  const canEdit =
+    canManage &&
+    new CompetitionStatus(competition.status).allowsModifications();
   // Quién puede y cuándo lo decide el backend con la misma regla que el borrado
   // (RyderCupAM#347): estado, calendario y rol. Copiar aquí la lista de estados
   // ofrecería el botón en una cancelada ya jugada, donde siempre falla (FE #667)
   const canDelete = competition.canDelete === true;
   // Los que perderían su plaza, sin contar a quien borra: el creador está
   // inscrito desde que la crea, y contarlo inflaría el aviso
-  const otrosInscritos = approvedEnrollments.filter((e) => e.userId !== user.id).length;
+  const otrosInscritos = approvedEnrollments.filter(
+    (e) => e.userId !== user.id,
+  ).length;
   const estoyInscrito = approvedEnrollments.some((e) => e.userId === user.id);
   // Las acciones de la ficha: UNA principal —la que toca ahora— y el resto en
   // un menú. Antes eran hasta siete botones del mismo peso en seis colores y
@@ -223,47 +268,66 @@ export const derivarLaFicha = ({
   // (el servidor lo rechaza después). En una Ryder, hasta iniciar
   const canEditHandicap =
     canManage &&
-    (esStrokePlay ? ['DRAFT', 'ACTIVE'] : ['DRAFT', 'ACTIVE', 'CLOSED']).includes(competition.status);
+    (esStrokePlay
+      ? ['DRAFT', 'ACTIVE']
+      : ['DRAFT', 'ACTIVE', 'CLOSED']
+    ).includes(competition.status);
   // Un hándicap con un decimal en el idioma de quien mira: «12,3» / «12.3»
-  const unDecimal = (n) => n.toLocaleString(idioma, { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+  const unDecimal = (n) =>
+    n.toLocaleString(idioma, {
+      minimumFractionDigits: 1,
+      maximumFractionDigits: 1,
+    });
   // Check if competition has reached max players
   // Quien gestiona tiene la lista entera. Un jugador, desde la release social 2,
   // solo a sus amigos hasta que se publica: cuenta lo que dice el servidor
   // Un solo total para todo (cabecera, completa, agenda): nunca menos de las
   // filas que ve, por si el número aún no está al día (/code-review)
-  const approvedCount = canManage && enrollments.length > 0
-    ? approvedEnrollments.length
-    : Math.max(competition.enrolledCount || 0, approvedEnrollments.length);
+  const approvedCount =
+    canManage && enrollments.length > 0
+      ? approvedEnrollments.length
+      : Math.max(competition.enrolledCount || 0, approvedEnrollments.length);
   // Qué ve de los inscritos lo dice el servidor, no se adivina comparando
   // la lista con el número (/code-review): sus amigos, o nadie (una privada
   // en la que no está)
-  const soloVeASusAmigos = !canManage && competition.enrolledVisibility === 'FRIENDS';
+  const soloVeASusAmigos =
+    !canManage && competition.enrolledVisibility === 'FRIENDS';
   const noVeANadie = !canManage && competition.enrolledVisibility === 'NONE';
   const listaAMedias = soloVeASusAmigos || noVeANadie;
   // Con la lista a medias no se sabe qué categorías salieron: se cuentan solo
   // con la entera, y si no, se dice lo pedido (revisor de la release social 2)
-  const categoriasVistas = listaAMedias ? [] : approvedEnrollments.map((e) => e.category ?? null);
+  const categoriasVistas = listaAMedias
+    ? []
+    : approvedEnrollments.map((e) => e.category ?? null);
   // Con una sola categoría no se nombra: «1.ª» en todos no dice nada (pasada, FE #824)
   const hayVariasCategorias = salenDeLosInscritos(categoriasVistas) > 1;
   const categoriasAsignadas = categoriasVistas;
   const salieron = salenDeLosInscritos(categoriasAsignadas);
-  const menosDeLasPedidas = esStrokePlay && competition.strokePlay ? categoriasQueSalen(competition.strokePlay, categoriasAsignadas) : null;
-  const textoDeCategoriasDe = (ajustes) => textoDeCategorias(t, ajustes, { menosDeLasPedidas, salieron, unDecimal });
+  const menosDeLasPedidas =
+    esStrokePlay && competition.strokePlay
+      ? categoriasQueSalen(competition.strokePlay, categoriasAsignadas)
+      : null;
+  const textoDeCategoriasDe = (ajustes) =>
+    textoDeCategorias(t, ajustes, { menosDeLasPedidas, salieron, unDecimal });
 
   // Una programada es un borrador con días de antelación (RyderCupAM#332). En
   // cuanto abre deja de ser borrador, así que la fecha solo se enseña mientras
   // espera: una vez abierta ya no dice nada (FE #678)
   const aperturaProgramada =
     competition.status === 'DRAFT'
-      ? fechaDeApertura(competition.startDate, competition.enrollmentOpensDaysBefore)
+      ? fechaDeApertura(
+          competition.startDate,
+          competition.enrollmentOpensDaysBefore,
+        )
       : null;
   const fechaDeAperturaLegible = aperturaProgramada
     ? new Intl.DateTimeFormat(idioma, { day: 'numeric', month: 'long' }).format(
-        aperturaProgramada
+        aperturaProgramada,
       )
     : null;
 
-  const isFull = competition.maxPlayers && approvedCount >= competition.maxPlayers;
+  const isFull =
+    competition.maxPlayers && approvedCount >= competition.maxPlayers;
 
   // Check for user enrollment from two sources:
   // 1. From enrollments list (when loaded from detail page)
@@ -275,20 +339,25 @@ export const derivarLaFicha = ({
   const rondasLeidas = agendaLeida?.rounds ?? [];
   const conFranjas = esStrokePlay && rondasLeidas.some((r) => r.teeSheet);
   // Sin la agenda aún, en un stroke play no se sabe si hay franjas: no se quita
-  const bloqueaElMaximo = isFull && !(esStrokePlay && (agendaLeida == null || conFranjas));
+  const bloqueaElMaximo =
+    isFull && !(esStrokePlay && (agendaLeida == null || conFranjas));
   // Quien solo espera: sin plaza en ninguna franja y con su puesto en una espera
   // Su puesto como en las franjas: el del servidor o, si no viene, el de la lista
   const miEspera =
     esStrokePlay && userEnrollment?.status === 'APPROVED'
       ? rondasLeidas.find(
-          (r) => r.teeSheet?.myWaitingPosition || r.teeSheet?.waitingIds?.includes(user.id)
+          (r) =>
+            r.teeSheet?.myWaitingPosition ||
+            r.teeSheet?.waitingIds?.includes(user.id),
         )
       : null;
   const puestoEnEspera = miEspera
-    ? (miEspera.teeSheet.myWaitingPosition ?? miEspera.teeSheet.waitingIds.indexOf(user.id) + 1)
+    ? (miEspera.teeSheet.myWaitingPosition ??
+      miEspera.teeSheet.waitingIds.indexOf(user.id) + 1)
     : null;
   const soloEspero =
-    miEspera != null && !rondasLeidas.some((r) => r.teeSheet?.playerIds?.includes(user.id));
+    miEspera != null &&
+    !rondasLeidas.some((r) => r.teeSheet?.playerIds?.includes(user.id));
   const franjasParaApuntarse = esStrokePlay ? franjasDeLaAgenda : SIN_FRANJAS;
 
   // Elegir entre alias y nombre legal solo tiene sentido si (FE #571):
@@ -302,7 +371,9 @@ export const derivarLaFicha = ({
     Boolean(user.alias) &&
     Boolean(userEnrollment?.id) &&
     NOMBRE_A_LA_VISTA.includes(userEnrollment.status);
-  const nombreLegal = [user.first_name, user.last_name].filter(Boolean).join(' ');
+  const nombreLegal = [user.first_name, user.last_name]
+    .filter(Boolean)
+    .join(' ');
 
   // El interruptor es el del ALIAS, no el del nombre real: una competición
   // muestra el nombre legal salvo que su dueño pida lo contrario, así que de

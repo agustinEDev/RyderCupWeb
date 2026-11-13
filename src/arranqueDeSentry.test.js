@@ -19,16 +19,23 @@ import { resolve } from 'node:path';
  * Router de Sentry; y el trozo `sentry` cogía todo @sentry/react. Entre los dos,
  * el seguimiento de navegaciones entero entraba en el arranque (9 nov 2026).
  */
-const fuente = (ruta) => readFileSync(resolve(globalThis.process.cwd(), ruta), 'utf8');
+const fuente = (ruta) =>
+  readFileSync(resolve(globalThis.process.cwd(), ruta), 'utf8');
 
 describe('Sentry en el arranque', () => {
   it('main.jsx inicia Sentry al cargar, con el saneado de URLs y sus procesadores', () => {
     const main = fuente('src/main.jsx');
 
     expect(main).toMatch(/^import \* as Sentry from '@sentry\/react';$/m);
-    expect(main).toMatch(/Sentry\.init\(\{[\s\S]*beforeBreadcrumb: sentryScrubbing\.beforeBreadcrumb,[\s\S]*beforeSendSpan: sentryScrubbing\.beforeSendSpan,/);
-    expect(main).toMatch(/Sentry\.addEventProcessor\(sentryScrubbing\.eventProcessor\);/);
-    expect(main).toMatch(/Sentry\.addEventProcessor\(\(evento\) =>[\s\S]*esElEcoDeLaRecarga/);
+    expect(main).toMatch(
+      /Sentry\.init\(\{[\s\S]*beforeBreadcrumb: sentryScrubbing\.beforeBreadcrumb,[\s\S]*beforeSendSpan: sentryScrubbing\.beforeSendSpan,/,
+    );
+    expect(main).toMatch(
+      /Sentry\.addEventProcessor\(sentryScrubbing\.eventProcessor\);/,
+    );
+    expect(main).toMatch(
+      /Sentry\.addEventProcessor\(\(evento\) =>[\s\S]*esElEcoDeLaRecarga/,
+    );
   });
 
   it('src/sentry.ts (Replay, navegaciones) se carga después, nunca en el arranque', () => {
@@ -42,7 +49,9 @@ describe('Sentry en el arranque', () => {
     const app = fuente('src/App.jsx');
     const registro = fuente('src/utils/routerParaSentry.js');
 
-    expect(app).toMatch(/import \{ registrarRouterParaSentry \} from '\.\/utils\/routerParaSentry';/);
+    expect(app).toMatch(
+      /import \{ registrarRouterParaSentry \} from '\.\/utils\/routerParaSentry';/,
+    );
     expect(app).not.toMatch(/from '\.\/utils\/navegacionesEnSentry'/);
     expect(registro).not.toMatch(/@sentry\//);
     expect(registro).not.toMatch(/^import /m);
@@ -51,6 +60,8 @@ describe('Sentry en el arranque', () => {
   it('el trozo sentry deja fuera los envoltorios de routers (el profiler, no: lo usa App.jsx)', () => {
     const config = fuente('vite.config.js');
 
-    expect(config).toMatch(/!\/\\\/react-\?router\|tanstackrouter\/\.test\(id\)/);
+    expect(config).toMatch(
+      /!\/\\\/react-\?router\|tanstackrouter\/\.test\(id\)/,
+    );
   });
 });

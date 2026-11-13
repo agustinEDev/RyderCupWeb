@@ -31,7 +31,10 @@ describe('SetNamePreferenceUseCase', () => {
 
     const dto = await useCase.execute('enroll-1', true);
 
-    expect(repositorio.setNamePreference).toHaveBeenCalledWith('enroll-1', true);
+    expect(repositorio.setNamePreference).toHaveBeenCalledWith(
+      'enroll-1',
+      true,
+    );
     expect(dto.useRealName).toBe(true);
   });
 
@@ -40,7 +43,10 @@ describe('SetNamePreferenceUseCase', () => {
 
     const dto = await useCase.execute('enroll-1', false);
 
-    expect(repositorio.setNamePreference).toHaveBeenCalledWith('enroll-1', false);
+    expect(repositorio.setNamePreference).toHaveBeenCalledWith(
+      'enroll-1',
+      false,
+    );
     expect(dto.useRealName).toBe(false);
   });
 
@@ -51,8 +57,12 @@ describe('SetNamePreferenceUseCase', () => {
 
   it('rechaza una preferencia que no sea booleana sin llamar a la API', async () => {
     // Un `undefined` llegaría a la API como campo ausente y volvería un 422
-    await expect(useCase.execute('enroll-1', undefined)).rejects.toThrow('useRealName');
-    await expect(useCase.execute('enroll-1', 'true')).rejects.toThrow('useRealName');
+    await expect(useCase.execute('enroll-1', undefined)).rejects.toThrow(
+      'useRealName',
+    );
+    await expect(useCase.execute('enroll-1', 'true')).rejects.toThrow(
+      'useRealName',
+    );
     expect(repositorio.setNamePreference).not.toHaveBeenCalled();
   });
 

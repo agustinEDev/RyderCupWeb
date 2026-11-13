@@ -27,7 +27,9 @@ describe('ubicacionDe', () => {
   });
 
   it('sin países se queda con lo que mandó el backend, antes que dejar el hueco', () => {
-    expect(ubicacionDe({ location: 'Spain', countries: [] }, 'es')).toBe('Spain');
+    expect(ubicacionDe({ location: 'Spain', countries: [] }, 'es')).toBe(
+      'Spain',
+    );
   });
 
   it('sin nada, cadena vacía y la línea no se pinta', () => {

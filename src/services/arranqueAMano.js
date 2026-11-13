@@ -24,6 +24,5 @@
  * costal y se vería en el calendario, que es donde viven las rondas; aquí solo
  * hay campos. Por eso se mira `timezone` y no el `scoringOpensAt` de una ronda.
  */
-export const hayQueArrancarloAMano = (campo) => (
-  Boolean(campo) && 'timezone' in campo && campo.timezone === null
-);
+export const hayQueArrancarloAMano = (campo) =>
+  Boolean(campo) && 'timezone' in campo && campo.timezone === null;

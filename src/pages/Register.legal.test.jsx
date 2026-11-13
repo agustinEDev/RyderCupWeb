@@ -18,8 +18,12 @@ const urlDeGoogle = vi.fn(() => '#google');
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({ t: (clave) => clave, i18n: { language: 'es' } }),
 }));
-vi.mock('../utils/toast', () => ({ default: { error: vi.fn(), success: vi.fn(), info: vi.fn() } }));
-vi.mock('../hooks/useRedirectIfAuthenticated', () => ({ useRedirectIfAuthenticated: () => false }));
+vi.mock('../utils/toast', () => ({
+  default: { error: vi.fn(), success: vi.fn(), info: vi.fn() },
+}));
+vi.mock('../hooks/useRedirectIfAuthenticated', () => ({
+  useRedirectIfAuthenticated: () => false,
+}));
 vi.mock('../utils/googleOAuth', () => ({
   buildGoogleOAuthUrl: (...a) => urlDeGoogle(...a),
   guardaLaVueltaDeGoogle: () => {},
@@ -35,20 +39,31 @@ const abrir = () =>
   render(
     <MemoryRouter>
       <Register />
-    </MemoryRouter>
+    </MemoryRouter>,
   );
 
 const rellenar = (container) => {
   const campo = (nombre) => container.querySelector(`[name="${nombre}"]`);
-  fireEvent.change(campo('firstName'), { target: { name: 'firstName', value: 'Ana' } });
-  fireEvent.change(campo('lastName'), { target: { name: 'lastName', value: 'Prueba' } });
-  fireEvent.change(campo('email'), { target: { name: 'email', value: 'ana@example.com' } });
-  fireEvent.change(campo('password'), { target: { name: 'password', value: 'Valida-Prueba123!' } });
-  fireEvent.change(campo('confirmPassword'), { target: { name: 'confirmPassword', value: 'Valida-Prueba123!' } });
+  fireEvent.change(campo('firstName'), {
+    target: { name: 'firstName', value: 'Ana' },
+  });
+  fireEvent.change(campo('lastName'), {
+    target: { name: 'lastName', value: 'Prueba' },
+  });
+  fireEvent.change(campo('email'), {
+    target: { name: 'email', value: 'ana@example.com' },
+  });
+  fireEvent.change(campo('password'), {
+    target: { name: 'password', value: 'Valida-Prueba123!' },
+  });
+  fireEvent.change(campo('confirmPassword'), {
+    target: { name: 'confirmPassword', value: 'Valida-Prueba123!' },
+  });
   return () => fireEvent.submit(campo('password').closest('form'));
 };
 
-const casilla = () => screen.getByRole('checkbox', { name: /register\.acceptTerms/ });
+const casilla = () =>
+  screen.getByRole('checkbox', { name: /register\.acceptTerms/ });
 
 describe('Register · Términos, edad y privacidad', () => {
   beforeEach(() => {
@@ -59,21 +74,32 @@ describe('Register · Términos, edad y privacidad', () => {
   it.each([
     ['register.termsLink', '/terms'],
     ['register.privacyLink', '/privacy'],
-  ])('R1: %s lleva a %s en una pestaña nueva, sin perder el formulario', (texto, ruta) => {
-    abrir();
+  ])(
+    'R1: %s lleva a %s en una pestaña nueva, sin perder el formulario',
+    (texto, ruta) => {
+      abrir();
 
-    const enlace = screen.getByRole('link', { name: texto });
-    expect(enlace).toHaveAttribute('href', ruta);
-    expect(enlace).toHaveAttribute('target', '_blank');
-    expect(enlace).toHaveAttribute('rel', expect.stringContaining('noopener'));
-    expect(enlace).toHaveAttribute('rel', expect.stringContaining('noreferrer'));
-  });
+      const enlace = screen.getByRole('link', { name: texto });
+      expect(enlace).toHaveAttribute('href', ruta);
+      expect(enlace).toHaveAttribute('target', '_blank');
+      expect(enlace).toHaveAttribute(
+        'rel',
+        expect.stringContaining('noopener'),
+      );
+      expect(enlace).toHaveAttribute(
+        'rel',
+        expect.stringContaining('noreferrer'),
+      );
+    },
+  );
 
   it('R2: la casilla empieza sin marcar y dice qué se acepta', () => {
     abrir();
 
     expect(casilla()).not.toBeChecked();
-    expect(casilla()).toHaveAccessibleName(/register\.acceptTermsPrefix.*register\.termsLink.*register\.acceptTermsSuffix/);
+    expect(casilla()).toHaveAccessibleName(
+      /register\.acceptTermsPrefix.*register\.termsLink.*register\.acceptTermsSuffix/,
+    );
   });
 
   it('R2: sin marcarla no se envía y sale un error asociado a la casilla', async () => {
@@ -82,10 +108,14 @@ describe('Register · Términos, edad y privacidad', () => {
 
     enviar();
 
-    expect(await screen.findByText('register.acceptTermsRequired')).toBeInTheDocument();
+    expect(
+      await screen.findByText('register.acceptTermsRequired'),
+    ).toBeInTheDocument();
     expect(registrar).not.toHaveBeenCalled();
     expect(casilla()).toHaveAttribute('aria-invalid', 'true');
-    expect(casilla()).toHaveAccessibleDescription('register.acceptTermsRequired');
+    expect(casilla()).toHaveAccessibleDescription(
+      'register.acceptTermsRequired',
+    );
   });
 
   it('R2: marcada, se envía y el error desaparece', async () => {
@@ -107,10 +137,14 @@ describe('Register · Términos, edad y privacidad', () => {
   it('R3: la privacidad se informa fuera de la casilla, no se acepta', () => {
     abrir();
 
-    const privacidad = screen.getByRole('link', { name: 'register.privacyLink' });
+    const privacidad = screen.getByRole('link', {
+      name: 'register.privacyLink',
+    });
     expect(casilla()).not.toHaveAccessibleName(/privacy/i);
     expect(privacidad.closest('label')).toBeNull();
-    expect(privacidad.parentElement).toHaveTextContent('register.privacyNoticePrefix');
+    expect(privacidad.parentElement).toHaveTextContent(
+      'register.privacyNoticePrefix',
+    );
   });
 
   // R4 (revisión): el botón de Google de esta página también ENTRA con una
@@ -119,7 +153,9 @@ describe('Register · Términos, edad y privacidad', () => {
   it('R4: Google no depende de la casilla', () => {
     abrir();
 
-    fireEvent.click(screen.getByRole('button', { name: 'google.signUpWithGoogle' }));
+    fireEvent.click(
+      screen.getByRole('button', { name: 'google.signUpWithGoogle' }),
+    );
 
     expect(urlDeGoogle).toHaveBeenCalledWith('login');
     expect(screen.queryByText('register.acceptTermsRequired')).toBeNull();

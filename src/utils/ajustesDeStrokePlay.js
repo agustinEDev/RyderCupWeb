@@ -33,8 +33,14 @@ export const formularioDeAjustes = (ajustes, separador = ',') => {
     modo: iguales ? IGUALES : LIMITES,
     // En categorías iguales los límites son los del último cierre, que el
     // organizador no escribió: no se enseñan como suyos
-    limites: iguales ? [] : (ajustes?.categoryLimits ?? []).map((l) => l.toFixed(1).replace('.', separador)),
-    categoriasIguales: iguales ? String(ajustes.categoryCount) : CATEGORIAS_IGUALES_POR_DEFECTO,
+    limites: iguales
+      ? []
+      : (ajustes?.categoryLimits ?? []).map((l) =>
+          l.toFixed(1).replace('.', separador),
+        ),
+    categoriasIguales: iguales
+      ? String(ajustes.categoryCount)
+      : CATEGORIAS_IGUALES_POR_DEFECTO,
     jornadas: String(ajustes?.maxMatchdaysPerPlayer ?? 1),
     general: ajustes?.overallStanding ?? ACUMULADO,
   };
@@ -67,7 +73,8 @@ export const separadorDecimal = (idioma) => {
 };
 
 /** «12,0» o «12.0», con un decimal, según el idioma. */
-export const formatoUnDecimal = (numero, idioma) => numero.toFixed(1).replace('.', separadorDecimal(idioma));
+export const formatoUnDecimal = (numero, idioma) =>
+  numero.toFixed(1).replace('.', separadorDecimal(idioma));
 
 // Un número escrito como tal: signo, cifras y, si acaso, decimales con coma o
 // punto. `Number` sola admitiría «1e1», «0x10» o «12.» (revisor)
@@ -116,7 +123,8 @@ export const ajustesParaCrear = (formulario) => ({
   overall_standing: formulario.general,
 });
 
-const mismosLimites = (a, b) => a.length === b.length && a.every((v, i) => v === b[i]);
+const mismosLimites = (a, b) =>
+  a.length === b.length && a.every((v, i) => v === b[i]);
 
 /**
  * Lo que cambia respecto a lo guardado, para el PATCH; null si nada.
@@ -129,13 +137,18 @@ export const cambiosDeAjustes = (original, formulario) => {
   } else {
     const limites = limitesDe(formulario);
     // Venir de categorías iguales ya es un cambio, aunque no haya límites
-    if (original.categoryCount != null || !mismosLimites(limites, original.categoryLimits)) {
+    if (
+      original.categoryCount != null ||
+      !mismosLimites(limites, original.categoryLimits)
+    ) {
       cambios.categoryLimits = limites;
     }
   }
   const jornadas = numeroEntero(formulario.jornadas);
-  if (jornadas !== original.maxMatchdaysPerPlayer) cambios.maxMatchdaysPerPlayer = jornadas;
-  if (formulario.general !== original.overallStanding) cambios.overallStanding = formulario.general;
+  if (jornadas !== original.maxMatchdaysPerPlayer)
+    cambios.maxMatchdaysPerPlayer = jornadas;
+  if (formulario.general !== original.overallStanding)
+    cambios.overallStanding = formulario.general;
   return Object.keys(cambios).length > 0 ? cambios : null;
 };
 
@@ -147,4 +160,5 @@ export const cambiosDeAjustes = (original, formulario) => {
  * debajo de las jornadas).
  */
 export const primeroLosAjustes = (cambios, diasGuardados) =>
-  cambios.maxMatchdaysPerPlayer === undefined || cambios.maxMatchdaysPerPlayer <= diasGuardados;
+  cambios.maxMatchdaysPerPlayer === undefined ||
+  cambios.maxMatchdaysPerPlayer <= diasGuardados;

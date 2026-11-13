@@ -19,11 +19,19 @@ import { getCountryFlag } from '../../utils/countryUtils';
  *   <CountryFlag countryCode="ES" className="w-6 h-6" />
  *   <CountryFlag countryCode="FR" style={{ width: '24px', height: 'auto' }} />
  */
-export const CountryFlag = ({ countryCode, className = '', style = {}, title = '' }) => {
+export const CountryFlag = ({
+  countryCode,
+  className = '',
+  style = {},
+  title = '',
+}) => {
   const [fallbackCode, setFallbackCode] = useState(null);
   const useFallback = fallbackCode === countryCode;
 
-  const isValid = countryCode && typeof countryCode === 'string' && /^[A-Z]{2}$/.test(countryCode.trim().toUpperCase());
+  const isValid =
+    countryCode &&
+    typeof countryCode === 'string' &&
+    /^[A-Z]{2}$/.test(countryCode.trim().toUpperCase());
 
   if (!isValid) {
     return null;

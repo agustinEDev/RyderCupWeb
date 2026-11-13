@@ -20,7 +20,9 @@ class RemoveCustomHandicapUseCase {
    */
   constructor(enrollmentRepository) {
     if (!enrollmentRepository) {
-      throw new Error('RemoveCustomHandicapUseCase requires enrollmentRepository');
+      throw new Error(
+        'RemoveCustomHandicapUseCase requires enrollmentRepository',
+      );
     }
     this.#enrollmentRepository = enrollmentRepository;
   }
@@ -44,7 +46,7 @@ class RemoveCustomHandicapUseCase {
 
     const enrollment = await this.#enrollmentRepository.removeCustomHandicap(
       competitionId,
-      enrollmentId
+      enrollmentId,
     );
 
     return EnrollmentAssembler.toSimpleDTO(enrollment);

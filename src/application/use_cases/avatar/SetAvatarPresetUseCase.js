@@ -22,7 +22,9 @@ class SetAvatarPresetUseCase {
       presetId < 1 ||
       presetId > AVATAR_PRESET_COUNT
     ) {
-      throw new Error(`presetId must be an integer between 1 and ${AVATAR_PRESET_COUNT}`);
+      throw new Error(
+        `presetId must be an integer between 1 and ${AVATAR_PRESET_COUNT}`,
+      );
     }
 
     return this.#avatarRepository.setPreset(presetId);

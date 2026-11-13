@@ -1,4 +1,8 @@
-import { esFalloDeTodaLaSesion, esRechazoDefinitivo, noLlegoAlServidor } from '../../../utils/politicaDeLaCola';
+import {
+  esFalloDeTodaLaSesion,
+  esRechazoDefinitivo,
+  noLlegoAlServidor,
+} from '../../../utils/politicaDeLaCola';
 import { claveDelEnvio } from './enviarMuestraDeHoyo';
 
 /**
@@ -12,14 +16,30 @@ import { claveDelEnvio } from './enviarMuestraDeHoyo';
  *
  * @returns {Promise<{estado: 'enviado'|'pendiente'|'descartado'|'enVuelo'|'sustituido', paraLaTanda?: boolean, errorCode?: string|null}>}
  */
-export const enviarReporteDeHoyo = async ({ golfCourseRepository, holeReportStore, reportarFallo, enVuelo }, userId, entrada) => {
+export const enviarReporteDeHoyo = async (
+  { golfCourseRepository, holeReportStore, reportarFallo, enVuelo },
+  userId,
+  entrada,
+) => {
   const clave = `reporte|${claveDelEnvio(userId, entrada)}`;
   if (enVuelo.has(clave)) return { estado: 'enVuelo' };
-  if (!holeReportStore.cola(userId).some((otra) => otra.id === entrada.id && otra.enCola === entrada.enCola)) return { estado: 'sustituido' };
+  if (
+    !holeReportStore
+      .cola(userId)
+      .some((otra) => otra.id === entrada.id && otra.enCola === entrada.enCola)
+  )
+    return { estado: 'sustituido' };
   enVuelo.add(clave);
-  const { id, reason, golfCourseId, holeNumber, tee, bends, greenCenter } = entrada;
+  const { id, reason, golfCourseId, holeNumber, tee, bends, greenCenter } =
+    entrada;
   try {
-    await golfCourseRepository.sendHoleReport(golfCourseId, holeNumber, { id, reason, tee, bends, greenCenter });
+    await golfCourseRepository.sendHoleReport(golfCourseId, holeNumber, {
+      id,
+      reason,
+      tee,
+      bends,
+      greenCenter,
+    });
     holeReportStore.quitarDeLaCola(userId, entrada);
     return { estado: 'enviado' };
   } catch (error) {
@@ -27,10 +47,16 @@ export const enviarReporteDeHoyo = async ({ golfCourseRepository, holeReportStor
       holeReportStore.quitarDeLaCola(userId, entrada);
       const status = error?.status ?? error?.response?.status;
       const errorCode = error?.errorCode ?? null;
-      reportarFallo(new Error(`Reporte de hoyo rechazado: ${status} ${errorCode ?? ''}`.trim()), { golfCourseId, holeNumber, status, errorCode });
+      reportarFallo(
+        new Error(
+          `Reporte de hoyo rechazado: ${status} ${errorCode ?? ''}`.trim(),
+        ),
+        { golfCourseId, holeNumber, status, errorCode },
+      );
       return { estado: 'descartado', errorCode };
     }
-    const paraLaTanda = esFalloDeTodaLaSesion(error) || noLlegoAlServidor(error);
+    const paraLaTanda =
+      esFalloDeTodaLaSesion(error) || noLlegoAlServidor(error);
     if (!paraLaTanda) reportarFallo(error, { golfCourseId, holeNumber });
     return { estado: 'pendiente', paraLaTanda };
   } finally {

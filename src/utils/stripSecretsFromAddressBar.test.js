@@ -30,7 +30,8 @@ import {
  *   (CodeRabbit, #772: comparar la URL reconstruida daba secretos donde no los había)
  */
 const ir = (url, estado = null) => window.history.replaceState(estado, '', url);
-const barra = () => `${window.location.pathname}${window.location.search}${window.location.hash}`;
+const barra = () =>
+  `${window.location.pathname}${window.location.search}${window.location.hash}`;
 
 describe('stripSecretsFromAddressBar', () => {
   afterEach(() => {
@@ -164,4 +165,3 @@ describe('forgetStrippedSecret', () => {
     expect(readStrippedSecret('token')).toBeNull();
   });
 });
-

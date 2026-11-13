@@ -120,7 +120,9 @@ export class ICompetitionRepository {
    * @throws {Error} If the method is not implemented.
    */
   async removeGolfCourse(competitionId, golfCourseId) {
-    throw new Error('ICompetitionRepository.removeGolfCourse must be implemented');
+    throw new Error(
+      'ICompetitionRepository.removeGolfCourse must be implemented',
+    );
   }
 
   /**
@@ -133,7 +135,9 @@ export class ICompetitionRepository {
    * @throws {Error} If the method is not implemented.
    */
   async reorderGolfCourses(competitionId, golfCourseIds) {
-    throw new Error('ICompetitionRepository.reorderGolfCourses must be implemented');
+    throw new Error(
+      'ICompetitionRepository.reorderGolfCourses must be implemented',
+    );
   }
 
   /**
@@ -144,7 +148,9 @@ export class ICompetitionRepository {
    * @throws {Error} If the method is not implemented.
    */
   async getCompetitionGolfCourses(competitionId) {
-    throw new Error('ICompetitionRepository.getCompetitionGolfCourses must be implemented');
+    throw new Error(
+      'ICompetitionRepository.getCompetitionGolfCourses must be implemented',
+    );
   }
 
   /**
@@ -157,7 +163,9 @@ export class ICompetitionRepository {
    * @throws {Error} If the method is not implemented.
    */
   async updateCompetition(competitionId, competitionData) {
-    throw new Error('ICompetitionRepository.updateCompetition must be implemented');
+    throw new Error(
+      'ICompetitionRepository.updateCompetition must be implemented',
+    );
   }
 
   /**
@@ -168,21 +176,29 @@ export class ICompetitionRepository {
    */
   /** Lanza la actualización de hándicaps con la RFEG (FE #824). */
   async launchHandicapUpdate(competitionId) {
-    throw new Error('ICompetitionRepository.launchHandicapUpdate must be implemented');
+    throw new Error(
+      'ICompetitionRepository.launchHandicapUpdate must be implemented',
+    );
   }
 
   /** Programa la actualización de hándicaps; `runAt` con su huso. */
   async scheduleHandicapUpdate(competitionId, runAt) {
-    throw new Error('ICompetitionRepository.scheduleHandicapUpdate must be implemented');
+    throw new Error(
+      'ICompetitionRepository.scheduleHandicapUpdate must be implemented',
+    );
   }
 
   /** Anula la actualización programada. */
   async cancelScheduledHandicapUpdate(competitionId) {
-    throw new Error('ICompetitionRepository.cancelScheduledHandicapUpdate must be implemented');
+    throw new Error(
+      'ICompetitionRepository.cancelScheduledHandicapUpdate must be implemented',
+    );
   }
 
   async updateStrokePlay(competitionId, cambios) {
-    throw new Error('ICompetitionRepository.updateStrokePlay must be implemented');
+    throw new Error(
+      'ICompetitionRepository.updateStrokePlay must be implemented',
+    );
   }
 
   /**
@@ -200,7 +216,9 @@ export class ICompetitionRepository {
    * @returns {Promise<Object>} Updated competition data
    */
   async closeEnrollments(competitionId) {
-    throw new Error('ICompetitionRepository.closeEnrollments must be implemented');
+    throw new Error(
+      'ICompetitionRepository.closeEnrollments must be implemented',
+    );
   }
 
   /**
@@ -221,7 +239,9 @@ export class ICompetitionRepository {
    * @returns {Promise<Object>}
    */
   async fillTeamCaptain(competitionId, team, jugador) {
-    throw new Error('ICompetitionRepository.fillTeamCaptain must be implemented');
+    throw new Error(
+      'ICompetitionRepository.fillTeamCaptain must be implemented',
+    );
   }
 
   /**
@@ -257,7 +277,9 @@ export class ICompetitionRepository {
    * @returns {Promise<Object>} Updated competition data
    */
   async reopenEnrollments(competitionId) {
-    throw new Error('ICompetitionRepository.reopenEnrollments must be implemented');
+    throw new Error(
+      'ICompetitionRepository.reopenEnrollments must be implemented',
+    );
   }
 
   /**
@@ -276,6 +298,8 @@ export class ICompetitionRepository {
    * @returns {Promise<Object>} Updated competition data
    */
   async revertToInProgress(competitionId) {
-    throw new Error('ICompetitionRepository.revertToInProgress must be implemented');
+    throw new Error(
+      'ICompetitionRepository.revertToInProgress must be implemented',
+    );
   }
 }

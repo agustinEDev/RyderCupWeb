@@ -38,7 +38,11 @@ vi.mock('../hooks/useUserRoles', () => ({
 }));
 
 vi.mock('../components/layout/HeaderAuth', () => ({
-  default: ({ backTo }) => <div data-testid="header-auth" data-back-to={backTo}>Header</div>,
+  default: ({ backTo }) => (
+    <div data-testid="header-auth" data-back-to={backTo}>
+      Header
+    </div>
+  ),
 }));
 
 const mockVersionDeFranjas = vi.fn();
@@ -98,26 +102,40 @@ const mockSetCustomHandicap = vi.fn().mockResolvedValue({});
 const mockRemoveCustomHandicap = vi.fn().mockResolvedValue({});
 
 vi.mock('../composition', () => ({
-  getCompetitionDetailUseCase: { execute: (...args) => mockGetCompetitionDetail(...args) },
+  getCompetitionDetailUseCase: {
+    execute: (...args) => mockGetCompetitionDetail(...args),
+  },
   getCompetitionGolfCoursesUseCase: { execute: vi.fn().mockResolvedValue([]) },
   activateCompetitionUseCase: { execute: vi.fn() },
-  closeEnrollmentsUseCase: { execute: (...args) => mockCloseEnrollments(...args) },
+  closeEnrollmentsUseCase: {
+    execute: (...args) => mockCloseEnrollments(...args),
+  },
   startCompetitionUseCase: { execute: vi.fn() },
   completeCompetitionUseCase: { execute: vi.fn() },
   cancelCompetitionUseCase: { execute: (...args) => mockCancel(...args) },
   deleteCompetitionUseCase: { execute: (...args) => mockDelete(...args) },
   reopenEnrollmentsUseCase: { execute: vi.fn() },
   revertCompetitionStatusUseCase: { execute: vi.fn() },
-  revertCompetitionToInProgressUseCase: { execute: (...args) => mockRevertToInProgress(...args) },
-  listEnrollmentsUseCase: { execute: (...args) => mockListEnrollments(...args) },
+  revertCompetitionToInProgressUseCase: {
+    execute: (...args) => mockRevertToInProgress(...args),
+  },
+  listEnrollmentsUseCase: {
+    execute: (...args) => mockListEnrollments(...args),
+  },
   requestEnrollmentUseCase: { execute: (...args) => mockRequest(...args) },
   approveEnrollmentUseCase: { execute: (...args) => mockAprobar(...args) },
   rejectEnrollmentUseCase: { execute: vi.fn() },
   removeEnrolledPlayerUseCase: { execute: (...args) => mockQuitar(...args) },
   assignTeamsUseCase: { execute: (...args) => mockAssignTeams(...args) },
-  setCustomHandicapUseCase: { execute: (...args) => mockSetCustomHandicap(...args) },
-  removeCustomHandicapUseCase: { execute: (...args) => mockRemoveCustomHandicap(...args) },
-  setNamePreferenceUseCase: { execute: (...args) => mockSetNamePreference(...args) },
+  setCustomHandicapUseCase: {
+    execute: (...args) => mockSetCustomHandicap(...args),
+  },
+  removeCustomHandicapUseCase: {
+    execute: (...args) => mockRemoveCustomHandicap(...args),
+  },
+  setNamePreferenceUseCase: {
+    execute: (...args) => mockSetNamePreference(...args),
+  },
 }));
 
 const mockToast = vi.hoisted(() => ({ success: vi.fn(), error: vi.fn() }));
@@ -125,15 +143,13 @@ vi.mock('../utils/toast', () => ({ default: mockToast }));
 const mockQuitar = vi.fn();
 const mockAprobar = vi.fn();
 
-
-
 const renderPage = () =>
   render(
     <MemoryRouter initialEntries={['/competitions/comp-1']}>
       <Routes>
         <Route path="/competitions/:id" element={<CompetitionDetail />} />
       </Routes>
-    </MemoryRouter>
+    </MemoryRouter>,
   );
 
 /**
@@ -158,7 +174,11 @@ const FICHA = {
   teamsAssigned: true,
 };
 
-const pinta = async ({ ficha = {}, usuario = 'u-pedro', inscritos = [] } = {}) => {
+const pinta = async ({
+  ficha = {},
+  usuario = 'u-pedro',
+  inscritos = [],
+} = {}) => {
   Object.assign(mockAuthUser, { id: usuario });
   mockGetCompetitionDetail.mockResolvedValue({ ...FICHA, ...ficha });
   mockListEnrollments.mockResolvedValue(inscritos);
@@ -166,7 +186,8 @@ const pinta = async ({ ficha = {}, usuario = 'u-pedro', inscritos = [] } = {}) =
   await screen.findByText('Copa X');
 };
 
-const fallo = (errorCode) => Object.assign(new Error('x'), { status: 409, errorCode });
+const fallo = (errorCode) =>
+  Object.assign(new Error('x'), { status: 409, errorCode });
 
 describe('CompetitionDetail · equipos formados', () => {
   beforeEach(() => {
@@ -178,7 +199,9 @@ describe('CompetitionDetail · equipos formados', () => {
     it('ve que avise al organizador si no puede jugar', async () => {
       await pinta({ ficha: { enrollment_status: 'APPROVED' } });
 
-      expect(screen.getByText('detail.teamsFormed.enrolled')).toBeInTheDocument();
+      expect(
+        screen.getByText('detail.teamsFormed.enrolled'),
+      ).toBeInTheDocument();
     });
 
     it.each(['REQUESTED', 'REJECTED', 'WITHDRAWN', 'CANCELLED'])(
@@ -186,20 +209,31 @@ describe('CompetitionDetail · equipos formados', () => {
       async (estado) => {
         await pinta({ ficha: { enrollment_status: estado } });
 
-        expect(screen.queryByText('detail.teamsFormed.enrolled')).not.toBeInTheDocument();
-      }
+        expect(
+          screen.queryByText('detail.teamsFormed.enrolled'),
+        ).not.toBeInTheDocument();
+      },
     );
 
     it('sin equipos formados, no', async () => {
-      await pinta({ ficha: { enrollment_status: 'APPROVED', teamsAssigned: false } });
+      await pinta({
+        ficha: { enrollment_status: 'APPROVED', teamsAssigned: false },
+      });
 
-      expect(screen.queryByText('detail.teamsFormed.enrolled')).not.toBeInTheDocument();
+      expect(
+        screen.queryByText('detail.teamsFormed.enrolled'),
+      ).not.toBeInTheDocument();
     });
 
     it('el organizador inscrito, tampoco: él es quien quita', async () => {
-      await pinta({ usuario: 'org-1', ficha: { enrollment_status: 'APPROVED' } });
+      await pinta({
+        usuario: 'org-1',
+        ficha: { enrollment_status: 'APPROVED' },
+      });
 
-      expect(screen.queryByText('detail.teamsFormed.enrolled')).not.toBeInTheDocument();
+      expect(
+        screen.queryByText('detail.teamsFormed.enrolled'),
+      ).not.toBeInTheDocument();
     });
   });
 
@@ -207,15 +241,21 @@ describe('CompetitionDetail · equipos formados', () => {
     it('no puede pedir plaza: se le dice que ya están formados', async () => {
       await pinta();
 
-      expect(screen.queryByText('detail.actions.request-to-join')).not.toBeInTheDocument();
+      expect(
+        screen.queryByText('detail.actions.request-to-join'),
+      ).not.toBeInTheDocument();
       expect(screen.getByText('detail.teamsFormed.closed')).toBeInTheDocument();
     });
 
     it('sin equipos formados, pide plaza como siempre', async () => {
       await pinta({ ficha: { teamsAssigned: false } });
 
-      expect(screen.getByText('detail.actions.request-to-join')).toBeInTheDocument();
-      expect(screen.queryByText('detail.teamsFormed.closed')).not.toBeInTheDocument();
+      expect(
+        screen.getByText('detail.actions.request-to-join'),
+      ).toBeInTheDocument();
+      expect(
+        screen.queryByText('detail.teamsFormed.closed'),
+      ).not.toBeInTheDocument();
     });
   });
 
@@ -225,16 +265,22 @@ describe('CompetitionDetail · equipos formados', () => {
       // La ficha estaba vieja: se veía sin equipos
       await pinta({ ficha: { teamsAssigned: false } });
       fireEvent.click(screen.getByText('detail.actions.request-to-join'));
-      const confirmar = await screen.findByText('competitions:enrollment.confirm');
+      const confirmar = await screen.findByText(
+        'competitions:enrollment.confirm',
+      );
       const lecturas = mockGetCompetitionDetail.mock.calls.length;
 
       fireEvent.click(confirmar);
 
       await waitFor(() =>
-        expect(mockToast.error).toHaveBeenCalledWith('detail.errors.teamsFormed')
+        expect(mockToast.error).toHaveBeenCalledWith(
+          'detail.errors.teamsFormed',
+        ),
       );
       await waitFor(() =>
-        expect(mockGetCompetitionDetail.mock.calls.length).toBeGreaterThan(lecturas)
+        expect(mockGetCompetitionDetail.mock.calls.length).toBeGreaterThan(
+          lecturas,
+        ),
       );
     });
 
@@ -243,7 +289,13 @@ describe('CompetitionDetail · equipos formados', () => {
       await pinta({
         usuario: 'org-1',
         inscritos: [
-          { id: 'enr-ana', userId: 'u-ana', status: 'REQUESTED', userName: 'Ana Ruiz', team: null },
+          {
+            id: 'enr-ana',
+            userId: 'u-ana',
+            status: 'REQUESTED',
+            userName: 'Ana Ruiz',
+            team: null,
+          },
         ],
       });
       const aprobar = await screen.findByTitle('detail.approve');
@@ -254,10 +306,14 @@ describe('CompetitionDetail · equipos formados', () => {
       // Con equipos y sin partidos el servidor reinicia y entra: solo falla con
       // partidos, y entonces ya no se pueden deshacer (30 oct 2026)
       await waitFor(() =>
-        expect(mockToast.error).toHaveBeenCalledWith('detail.errors.teamsFormedWithMatches')
+        expect(mockToast.error).toHaveBeenCalledWith(
+          'detail.errors.teamsFormedWithMatches',
+        ),
       );
       await waitFor(() =>
-        expect(mockGetCompetitionDetail.mock.calls.length).toBeGreaterThan(lecturas)
+        expect(mockGetCompetitionDetail.mock.calls.length).toBeGreaterThan(
+          lecturas,
+        ),
       );
     });
   });
@@ -267,7 +323,13 @@ describe('CompetitionDetail · equipos formados', () => {
     await pinta({
       usuario: 'org-1',
       inscritos: [
-        { id: 'enr-ana', userId: 'u-ana', status: 'REQUESTED', userName: 'Ana Ruiz', team: null },
+        {
+          id: 'enr-ana',
+          userId: 'u-ana',
+          status: 'REQUESTED',
+          userName: 'Ana Ruiz',
+          team: null,
+        },
       ],
     });
     const aprobar = await screen.findByTitle('detail.approve');
@@ -276,20 +338,24 @@ describe('CompetitionDetail · equipos formados', () => {
     fireEvent.click(aprobar);
 
     await waitFor(() =>
-      expect(mockGetCompetitionDetail.mock.calls.length).toBeGreaterThan(lecturas)
+      expect(mockGetCompetitionDetail.mock.calls.length).toBeGreaterThan(
+        lecturas,
+      ),
     );
   });
 
   it('F6: quitar con equipos avisa de que se borran equipos, draft y sobres', () => {
     expect(es.detail.confirmDialogs.removeWithTeams.body).toContain(
-      'Se borrarán los equipos, el draft y los sobres; habrá que repetir el draft.'
+      'Se borrarán los equipos, el draft y los sobres; habrá que repetir el draft.',
     );
-    expect(en.detail.confirmDialogs.removeWithTeams.body).toContain('the draft and the envelopes');
+    expect(en.detail.confirmDialogs.removeWithTeams.body).toContain(
+      'the draft and the envelopes',
+    );
   });
 
   it('con partidos, al aprobar no se manda a deshacer lo que ya no se deshace (30 oct 2026)', () => {
     expect(es.detail.errors.teamsFormedWithMatches).toBe(
-      'Ya hay partidos generados: no puede entrar nadie.'
+      'Ya hay partidos generados: no puede entrar nadie.',
     );
     expect(en.detail.errors.teamsFormedWithMatches).toBeTruthy();
   });

@@ -15,7 +15,9 @@ class InvitationAssembler {
    */
   static toSimpleDTO(invitation, apiData = null) {
     if (!(invitation instanceof Invitation)) {
-      throw new Error('InvitationAssembler.toSimpleDTO: invitation must be an Invitation instance');
+      throw new Error(
+        'InvitationAssembler.toSimpleDTO: invitation must be an Invitation instance',
+      );
     }
 
     const simpleDTO = {
@@ -65,7 +67,9 @@ class InvitationAssembler {
    */
   static toSimpleDTOMany(invitations, apiDataArray = null) {
     if (!Array.isArray(invitations)) {
-      throw new Error('InvitationAssembler.toSimpleDTOMany: invitations must be an array');
+      throw new Error(
+        'InvitationAssembler.toSimpleDTOMany: invitations must be an array',
+      );
     }
 
     return invitations.map((invitation, index) => {

@@ -7,20 +7,26 @@ import { idAleatorio } from './idAleatorio';
  * http con la IP de la red local, o en un iPhone viejo, no está, y sin id no
  * se podía añadir un invitado ni empezar la partida (`/code-review`).
  */
-const V4 = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
+const V4 =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
 
 describe('idAleatorio', () => {
   afterEach(() => vi.unstubAllGlobals());
 
   it('usa randomUUID cuando existe', () => {
-    vi.stubGlobal('crypto', { randomUUID: () => 'de-randomUUID', getRandomValues: vi.fn() });
+    vi.stubGlobal('crypto', {
+      randomUUID: () => 'de-randomUUID',
+      getRandomValues: vi.fn(),
+    });
 
     expect(idAleatorio()).toBe('de-randomUUID');
   });
 
   it('sin randomUUID, un v4 hecho con getRandomValues', () => {
     const real = globalThis.crypto;
-    vi.stubGlobal('crypto', { getRandomValues: (a) => real.getRandomValues(a) });
+    vi.stubGlobal('crypto', {
+      getRandomValues: (a) => real.getRandomValues(a),
+    });
 
     const id = idAleatorio();
 

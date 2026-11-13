@@ -15,7 +15,7 @@ export const SIN_HOYOS = Object.freeze({});
 // vez, porque la pintan el envío directo y el vaciado
 export const conHoyosDe = (vista, antes) => ({
   ...vista,
-  holes: vista.holes?.length > 0 ? vista.holes : (antes?.holes || []),
+  holes: vista.holes?.length > 0 ? vista.holes : antes?.holes || [],
 });
 
 // Si una anotación guardada queda superada por lo que se acaba de enviar: es
@@ -28,7 +28,10 @@ export const conHoyosDe = (vista, antes) => ({
 export const estaSuperada = (guardada, loEnviado) => {
   const cuando = guardada.timestamp ?? 0;
   if (cuando < loEnviado.cuando) return true;
-  return cuando === loEnviado.cuando && mismoGolpe(guardada.scoreData, loEnviado.scoreData);
+  return (
+    cuando === loEnviado.cuando &&
+    mismoGolpe(guardada.scoreData, loEnviado.scoreData)
+  );
 };
 
 /**
@@ -46,10 +49,26 @@ export const conLaColaEncima = (delServidor, guardadas, currentUserId) => {
     const { ownScore, markedPlayerId, markedScore } = entrada.scoreData ?? {};
     return [
       ...(ownScore !== undefined && currentUserId
-        ? [{ hoyo: entrada.holeNumber, jugador: currentUserId, campo: 'ownScore', valor: ownScore, marca: 'ownSubmitted' }]
+        ? [
+            {
+              hoyo: entrada.holeNumber,
+              jugador: currentUserId,
+              campo: 'ownScore',
+              valor: ownScore,
+              marca: 'ownSubmitted',
+            },
+          ]
         : []),
       ...(markedScore !== undefined && markedPlayerId
-        ? [{ hoyo: entrada.holeNumber, jugador: markedPlayerId, campo: 'markerScore', valor: markedScore, marca: 'markerSubmitted' }]
+        ? [
+            {
+              hoyo: entrada.holeNumber,
+              jugador: markedPlayerId,
+              campo: 'markerScore',
+              valor: markedScore,
+              marca: 'markerSubmitted',
+            },
+          ]
         : []),
     ];
   });
@@ -58,36 +77,53 @@ export const conLaColaEncima = (delServidor, guardadas, currentUserId) => {
   // Si la cola dice lo mismo que ya tiene el servidor, su validación sigue
   // valiendo. Y si no, ya no: la coincidencia entre anotadores era con otro
   // golpe. El neto propio, por lo mismo, es del golpe de antes
-  const conEncima = (fila, encima) => (
+  const conEncima = (fila, encima) =>
     fila[encima.marca] && fila[encima.campo] === encima.valor
       ? fila
       : {
-        ...fila,
-        [encima.campo]: encima.valor,
-        [encima.marca]: true,
-        validationStatus: 'pending',
-        // Para que el selector no lo dé por cerrado aunque el servidor ya
-        // tenga resultado del hoyo: este golpe aún no ha llegado
-        enCola: true,
-        ...(encima.campo === 'ownScore' ? { netScore: null } : {}),
-        // Lo de la cola es de quien anota aquí: ya no es del marcador de antes
-        ...(encima.campo === 'markerScore' ? { markerBy: null, markerByName: null } : {}),
-      }
-  );
+          ...fila,
+          [encima.campo]: encima.valor,
+          [encima.marca]: true,
+          validationStatus: 'pending',
+          // Para que el selector no lo dé por cerrado aunque el servidor ya
+          // tenga resultado del hoyo: este golpe aún no ha llegado
+          enCola: true,
+          ...(encima.campo === 'ownScore' ? { netScore: null } : {}),
+          // Lo de la cola es de quien anota aquí: ya no es del marcador de antes
+          ...(encima.campo === 'markerScore'
+            ? { markerBy: null, markerByName: null }
+            : {}),
+        };
 
-  const hoyos = [...new Set([...delServidor.map((s) => s.holeNumber), ...encimas.map((e) => e.hoyo)])];
+  const hoyos = [
+    ...new Set([
+      ...delServidor.map((s) => s.holeNumber),
+      ...encimas.map((e) => e.hoyo),
+    ]),
+  ];
   return hoyos.map((holeNumber) => {
-    const delHoyo = delServidor.find((s) => s.holeNumber === holeNumber) ?? { holeNumber, playerScores: [] };
+    const delHoyo = delServidor.find((s) => s.holeNumber === holeNumber) ?? {
+      holeNumber,
+      playerScores: [],
+    };
     const suyas = encimas.filter((e) => e.hoyo === holeNumber);
     if (suyas.length === 0) return delHoyo;
     const filas = delHoyo.playerScores ?? [];
-    const jugadores = [...new Set([...filas.map((p) => p.userId), ...suyas.map((e) => e.jugador)])];
+    const jugadores = [
+      ...new Set([
+        ...filas.map((p) => p.userId),
+        ...suyas.map((e) => e.jugador),
+      ]),
+    ];
     return {
       ...delHoyo,
       playerScores: jugadores.map((userId) =>
         suyas
           .filter((e) => e.jugador === userId)
-          .reduce(conEncima, filas.find((p) => p.userId === userId) ?? { userId })
+          .reduce(
+            conEncima,
+            filas.find((p) => p.userId === userId) ?? { userId },
+          ),
       ),
     };
   });
@@ -98,13 +134,18 @@ export const conLaColaEncima = (delServidor, guardadas, currentUserId) => {
 // para saber si todavía se pueden anotar (FE #622)
 export const turnosDeLosNoGuardados = (hoyos) => {
   if (!hoyos) return SIN_HOYOS;
-  return Object.fromEntries(Object.entries(hoyos).map(([hoyo, { turno, golpes }]) => [
-    hoyo,
-    // En el orden de siempre; las marcas de quien marca a dos, por rival
-    {
-      turno,
-      golpes: Object.keys(golpes).sort((a, b) =>
-        GOLPES_DEL_HOYO.indexOf(golpeBase(a)) - GOLPES_DEL_HOYO.indexOf(golpeBase(b)) || a.localeCompare(b)),
-    },
-  ]));
+  return Object.fromEntries(
+    Object.entries(hoyos).map(([hoyo, { turno, golpes }]) => [
+      hoyo,
+      // En el orden de siempre; las marcas de quien marca a dos, por rival
+      {
+        turno,
+        golpes: Object.keys(golpes).sort(
+          (a, b) =>
+            GOLPES_DEL_HOYO.indexOf(golpeBase(a)) -
+              GOLPES_DEL_HOYO.indexOf(golpeBase(b)) || a.localeCompare(b),
+        ),
+      },
+    ]),
+  );
 };

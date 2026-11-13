@@ -45,8 +45,12 @@ const aMano = () => {
 const usar = (inicial) =>
   renderHook(
     ({ filtro, activa = true, pedir, alCargar, alFallar }) =>
-      useCargaCancelableEffect(() => pedir(filtro), [filtro, pedir], { activa, alCargar, alFallar }),
-    { initialProps: inicial }
+      useCargaCancelableEffect(() => pedir(filtro), [filtro, pedir], {
+        activa,
+        alCargar,
+        alFallar,
+      }),
+    { initialProps: inicial },
   );
 
 describe('useCargaCancelableEffect', () => {
@@ -58,7 +62,13 @@ describe('useCargaCancelableEffect', () => {
     alCargar = vi.fn();
     alFallar = vi.fn();
   });
-  const props = (resto) => ({ filtro: 'a', pedir, alCargar, alFallar, ...resto });
+  const props = (resto) => ({
+    filtro: 'a',
+    pedir,
+    alCargar,
+    alFallar,
+    ...resto,
+  });
 
   it('H1: cuando llega, se aplica y se quita la espera', async () => {
     // Given una carga en vuelo
@@ -154,7 +164,9 @@ describe('useCargaCancelableEffect', () => {
 
   it('H4: el fallo de una vieja no se avisa ni quita la espera', async () => {
     const vieja = aMano();
-    pedir.mockReturnValueOnce(vieja.promesa).mockReturnValueOnce(new Promise(() => {}));
+    pedir
+      .mockReturnValueOnce(vieja.promesa)
+      .mockReturnValueOnce(new Promise(() => {}));
     const { result, rerender } = usar(props());
     rerender(props({ filtro: 'b' }));
 
@@ -189,7 +201,9 @@ describe('useCargaCancelableEffect', () => {
     await act(async () => {});
     const penultima = aMano();
     const ultima = aMano();
-    pedir.mockReturnValueOnce(penultima.promesa).mockReturnValueOnce(ultima.promesa);
+    pedir
+      .mockReturnValueOnce(penultima.promesa)
+      .mockReturnValueOnce(ultima.promesa);
 
     act(() => {
       result.current.recargar();
@@ -207,7 +221,9 @@ describe('useCargaCancelableEffect', () => {
   });
 
   it('H5: la espera sale ya en el pintado del recargar, sin esperar al efecto', async () => {
-    pedir.mockResolvedValueOnce('primera').mockReturnValue(new Promise(() => {}));
+    pedir
+      .mockResolvedValueOnce('primera')
+      .mockReturnValue(new Promise(() => {}));
     const pintados = [];
     const { result } = renderHook(() => {
       const carga = useCargaCancelableEffect(() => pedir(), [], { alCargar });
@@ -412,7 +428,9 @@ describe('useCargaCancelableEffect', () => {
     await act(async () => {});
     const penultima = aMano();
     const ultima = aMano();
-    pedir.mockReturnValueOnce(penultima.promesa).mockReturnValueOnce(ultima.promesa);
+    pedir
+      .mockReturnValueOnce(penultima.promesa)
+      .mockReturnValueOnce(ultima.promesa);
 
     let primera;
     let segunda;
@@ -445,8 +463,14 @@ describe('useCargaCancelableEffect', () => {
       segunda = result.current.recargar({ silenciosa: true });
     });
 
-    await expect(primera).resolves.toEqual({ estado: 'cargada', datos: 'segunda' });
-    await expect(segunda).resolves.toEqual({ estado: 'cargada', datos: 'segunda' });
+    await expect(primera).resolves.toEqual({
+      estado: 'cargada',
+      datos: 'segunda',
+    });
+    await expect(segunda).resolves.toEqual({
+      estado: 'cargada',
+      datos: 'segunda',
+    });
   });
 
   it('H10: si cambian las dependencias con su carga en vuelo, se cumple como descartada y no aplica nada', async () => {
@@ -454,7 +478,9 @@ describe('useCargaCancelableEffect', () => {
     const { result, rerender } = usar(props());
     await act(async () => {});
     const vieja = aMano();
-    pedir.mockReturnValueOnce(vieja.promesa).mockReturnValueOnce(new Promise(() => {}));
+    pedir
+      .mockReturnValueOnce(vieja.promesa)
+      .mockReturnValueOnce(new Promise(() => {}));
 
     let promesa;
     act(() => {
@@ -581,7 +607,9 @@ describe('useCargaCancelableEffect', () => {
     const vistas = [];
     for (let i = 0; i < cuantas; i += 1) {
       act(() => {
-        vistas.push(estadoDe(utiles.result.current.recargar({ silenciosa: i % 2 === 1 })));
+        vistas.push(
+          estadoDe(utiles.result.current.recargar({ silenciosa: i % 2 === 1 })),
+        );
       });
     }
     return { ...utiles, cargas, vistas };
@@ -650,7 +678,9 @@ describe('useCargaCancelableEffect', () => {
 
     await act(async () => cargas[2].rechazar(error));
 
-    vistas.forEach((vista) => expect(vista.valor).toEqual({ estado: 'fallida', error }));
+    vistas.forEach((vista) =>
+      expect(vista.valor).toEqual({ estado: 'fallida', error }),
+    );
   });
 
   it('H10d: si cambian las dependencias antes de que termine la que la sustituyó, las dos se cumplen como descartadas', async () => {

@@ -54,7 +54,8 @@ vi.mock('../../hooks/useNovedadesDeActividad', async () => {
   const { useSyncExternalStore } = await import('react');
   return {
     ponLasNovedadesACero: () => {},
-    useNovedadesDeActividad: () => useSyncExternalStore(mockNovedades.suscribe, mockNovedades.lee),
+    useNovedadesDeActividad: () =>
+      useSyncExternalStore(mockNovedades.suscribe, mockNovedades.lee),
     leeLasNovedades: () => mockNovedades.lee(),
     suscribeALasNovedades: (f) => mockNovedades.suscribe(f),
   };
@@ -79,7 +80,10 @@ beforeAll(async () => {
     fallbackLng: 'es',
     ns: ['feed', 'common'],
     defaultNS: 'feed',
-    resources: { es: { feed: feedEs, common: commonEs }, en: { feed: feedEn, common: commonEn } },
+    resources: {
+      es: { feed: feedEs, common: commonEs },
+      en: { feed: feedEn, common: commonEn },
+    },
     interpolation: { escapeValue: false },
   });
 });
@@ -134,7 +138,9 @@ describe('FeedPage: la primera carga descarta lo que llega tarde (T2)', () => {
   it('T2-1: falla, «Reintentar» → una sola espera, el feed y ningún aviso más', async () => {
     // Given la primera carga falla
     const reintento = aMano();
-    getFeed.mockRejectedValueOnce(new Error('500')).mockReturnValueOnce(reintento.promesa);
+    getFeed
+      .mockRejectedValueOnce(new Error('500'))
+      .mockReturnValueOnce(reintento.promesa);
     render(arbol());
     const boton = await screen.findByRole('button', { name: 'Reintentar' });
     expect(toastError).toHaveBeenCalledTimes(1);
@@ -146,7 +152,9 @@ describe('FeedPage: la primera carga descarta lo que llega tarde (T2)', () => {
     expect(screen.getAllByRole('status')).toHaveLength(1);
     await act(async () => reintento.resolver(pagina('e1')));
     expect(await screen.findByTestId('activity-event-e1')).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Reintentar' })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: 'Reintentar' }),
+    ).not.toBeInTheDocument();
     expect(toastError).toHaveBeenCalledTimes(1);
     expect(getFeed).toHaveBeenCalledTimes(2);
   });
@@ -155,7 +163,9 @@ describe('FeedPage: la primera carga descarta lo que llega tarde (T2)', () => {
     // Given la carga del primer usuario en vuelo
     const vieja = aMano();
     const nueva = aMano();
-    getFeed.mockReturnValueOnce(vieja.promesa).mockReturnValueOnce(nueva.promesa);
+    getFeed
+      .mockReturnValueOnce(vieja.promesa)
+      .mockReturnValueOnce(nueva.promesa);
     const { rerender } = render(arbol());
 
     // When cambia el usuario y la vieja llega (y otra vez, fallando) después
@@ -165,15 +175,23 @@ describe('FeedPage: la primera carga descarta lo que llega tarde (T2)', () => {
     await act(async () => vieja.resolver(pagina('del-primero')));
 
     // Then no se pinta; se sigue esperando a la del nuevo
-    expect(screen.queryByTestId('activity-event-del-primero')).not.toBeInTheDocument();
+    expect(
+      screen.queryByTestId('activity-event-del-primero'),
+    ).not.toBeInTheDocument();
     await act(async () => nueva.resolver(pagina('del-segundo')));
-    expect(await screen.findByTestId('activity-event-del-segundo')).toBeInTheDocument();
-    expect(screen.queryByTestId('activity-event-del-primero')).not.toBeInTheDocument();
+    expect(
+      await screen.findByTestId('activity-event-del-segundo'),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByTestId('activity-event-del-primero'),
+    ).not.toBeInTheDocument();
   });
 
   it('T2-2: el fallo de la carga de otro usuario no avisa', async () => {
     const vieja = aMano();
-    getFeed.mockReturnValueOnce(vieja.promesa).mockResolvedValueOnce(pagina('del-segundo'));
+    getFeed
+      .mockReturnValueOnce(vieja.promesa)
+      .mockResolvedValueOnce(pagina('del-segundo'));
     const { rerender } = render(arbol());
 
     mockSesion.user = { id: 'otro' };
@@ -182,7 +200,9 @@ describe('FeedPage: la primera carga descarta lo que llega tarde (T2)', () => {
     await act(async () => vieja.rechazar(new Error('tarde')));
 
     expect(toastError).not.toHaveBeenCalled();
-    expect(screen.queryByRole('button', { name: 'Reintentar' })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: 'Reintentar' }),
+    ).not.toBeInTheDocument();
   });
 
   it('T2-20: con «Cargar más» en vuelo cambia el usuario: su página no se mezcla en el feed del nuevo', async () => {
@@ -203,8 +223,12 @@ describe('FeedPage: la primera carga descarta lo que llega tarde (T2)', () => {
     await act(async () => mas.resolver(pagina('mas-del-primero')));
 
     // Then en el feed del nuevo no entra nada del anterior
-    expect(screen.queryByTestId('activity-event-mas-del-primero')).not.toBeInTheDocument();
-    expect(screen.getByTestId('activity-event-del-segundo')).toBeInTheDocument();
+    expect(
+      screen.queryByTestId('activity-event-mas-del-primero'),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByTestId('activity-event-del-segundo'),
+    ).toBeInTheDocument();
   });
 
   it('T2-20: el fallo de ese «Cargar más» tampoco avisa en el feed del nuevo', async () => {
@@ -247,7 +271,9 @@ describe('FeedPage: la primera carga descarta lo que llega tarde (T2)', () => {
 
     // Then ni entra en el feed del nuevo ni se marca como visto por ella: las
     // dos marcas son las de la primera página de cada cuenta (T2-23)
-    expect(screen.queryByTestId('activity-event-recarga-del-primero')).not.toBeInTheDocument();
+    expect(
+      screen.queryByTestId('activity-event-recarga-del-primero'),
+    ).not.toBeInTheDocument();
     expect(markSeen).toHaveBeenCalledTimes(2);
   });
 
@@ -272,16 +298,30 @@ describe('FeedPage: la primera carga descarta lo que llega tarde (T2)', () => {
     // Then no hay recarga sobre el feed del anterior: lo del primero no se
     // queda debajo de lo del nuevo
     expect(getFeed).toHaveBeenCalledTimes(2);
-    await act(async () => delSegundo.resolver(pagina('del-segundo', 'c-segundo')));
-    expect(await screen.findByTestId('activity-event-del-segundo')).toBeInTheDocument();
-    expect(screen.queryByTestId('activity-event-del-primero')).not.toBeInTheDocument();
-    expect(screen.queryByTestId('activity-event-recarga-del-segundo')).not.toBeInTheDocument();
+    await act(async () =>
+      delSegundo.resolver(pagina('del-segundo', 'c-segundo')),
+    );
+    expect(
+      await screen.findByTestId('activity-event-del-segundo'),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByTestId('activity-event-del-primero'),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByTestId('activity-event-recarga-del-segundo'),
+    ).not.toBeInTheDocument();
 
     // Y con su feed ya puesto, la siguiente subida sí recarga, sobre lo suyo
     act(() => mockNovedades.fija(3));
-    expect(await screen.findByTestId('activity-event-recarga-del-segundo')).toBeInTheDocument();
-    expect(screen.getByTestId('activity-event-del-segundo')).toBeInTheDocument();
-    expect(screen.queryByTestId('activity-event-del-primero')).not.toBeInTheDocument();
+    expect(
+      await screen.findByTestId('activity-event-recarga-del-segundo'),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByTestId('activity-event-del-segundo'),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByTestId('activity-event-del-primero'),
+    ).not.toBeInTheDocument();
   });
 
   it('T2-23: cambiar de cuenta con Actividad abierta es otra visita: su primera página se da por vista', async () => {

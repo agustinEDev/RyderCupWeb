@@ -35,10 +35,12 @@ const holeScoresDe = (scores) =>
       participantId,
       holeNumber: Number(hoyo),
       score,
-    }))
+    })),
   );
 
-const comparables = fixtures.scenarios.filter((s) => !(s.name in SIN_NADA_QUE_COMPARAR));
+const comparables = fixtures.scenarios.filter(
+  (s) => !(s.name in SIN_NADA_QUE_COMPARAR),
+);
 
 describe('StablefordCalculator - paridad de la clasificación con el backend (H)', () => {
   it('only the scenarios with no position at all are left out, and they exist', () => {
@@ -46,14 +48,16 @@ describe('StablefordCalculator - paridad de la clasificación con el backend (H)
     for (const excluido of Object.keys(SIN_NADA_QUE_COMPARAR)) {
       expect(nombres).toContain(excluido);
       const escenario = fixtures.scenarios.find((s) => s.name === excluido);
-      expect(Object.values(escenario.expected).every((e) => e.position === null)).toBe(true);
+      expect(
+        Object.values(escenario.expected).every((e) => e.position === null),
+      ).toBe(true);
     }
     expect(comparables).toHaveLength(fixtures.scenarios.length - 2);
   });
 
   it.each(comparables.map((s) => [s.name, s]))('%s', (_name, scenario) => {
     const cuentan = scenario.participants.filter(
-      (p) => !scenario.expected[p.participantId].unfinished
+      (p) => !scenario.expected[p.participantId].unfinished,
     );
     const holeScores = holeScoresDe(scenario.scores);
 
@@ -70,7 +74,13 @@ describe('StablefordCalculator - paridad de la clasificación con el backend (H)
       scenario.scoringFormat === 'MEDAL'
         ? StablefordCalculator.rankParticipantsByMedal
         : StablefordCalculator.rankParticipants;
-    const ranking = rank(cuentan, scenario.holes, holeScores, allocation, scenario.tees);
+    const ranking = rank(
+      cuentan,
+      scenario.holes,
+      holeScores,
+      allocation,
+      scenario.tees,
+    );
 
     // El orden: por puesto del backend; a igual puesto (empate) cualquier
     // orden vale, así que se compara como conjunto por puesto
@@ -85,12 +95,14 @@ describe('StablefordCalculator - paridad de la clasificación con el backend (H)
       tied: scenario.expected[p.participantId].tied,
     }));
     const porPuesto = (filas) =>
-      [...filas].sort((a, b) => a.position - b.position || a.id.localeCompare(b.id));
+      [...filas].sort(
+        (a, b) => a.position - b.position || a.id.localeCompare(b.id),
+      );
 
     expect(porPuesto(delCliente)).toEqual(porPuesto(delBackend));
     // Y el orden de la tabla respeta los puestos
     expect(ranking.map((r) => r.position)).toEqual(
-      [...ranking.map((r) => r.position)].sort((a, b) => a - b)
+      [...ranking.map((r) => r.position)].sort((a, b) => a - b),
     );
 
     // Lo que el backend publica de cada uno, con las mismas cuentas

@@ -95,14 +95,16 @@ class Enrollment {
     // Validar color si está presente
     if (color !== null && !(color instanceof TeeColor)) {
       throw new TypeError(
-        `color must be a TeeColor instance or null, got: ${typeof color}`
+        `color must be a TeeColor instance or null, got: ${typeof color}`,
       );
     }
 
     // La preferencia de nombre es un sí o un no: un `undefined` que se colara
     // aquí se leería como «alias» sin que nadie lo hubiera decidido
     if (typeof useRealName !== 'boolean') {
-      throw new TypeError(`useRealName must be a boolean, got: ${typeof useRealName}`);
+      throw new TypeError(
+        `useRealName must be a boolean, got: ${typeof useRealName}`,
+      );
     }
 
     // Asignar campos privados
@@ -177,7 +179,12 @@ class Enrollment {
    * @param {number|null} props.customHandicap - Handicap personalizado (opcional)
    * @returns {Enrollment}
    */
-  static directEnroll({ enrollmentId, competitionId, userId, customHandicap = null }) {
+  static directEnroll({
+    enrollmentId,
+    competitionId,
+    userId,
+    customHandicap = null,
+  }) {
     return new Enrollment({
       enrollmentId,
       competitionId,
@@ -426,7 +433,7 @@ class Enrollment {
   assignToTeam(teamId) {
     if (!this.isApproved()) {
       throw new EnrollmentStateError(
-        `Solo se pueden asignar equipos a enrollments aprobados. Estado actual: ${this.#status.toString()}`
+        `Solo se pueden asignar equipos a enrollments aprobados. Estado actual: ${this.#status.toString()}`,
       );
     }
 
@@ -478,7 +485,9 @@ class Enrollment {
    */
   setNamePreference(useRealName) {
     if (typeof useRealName !== 'boolean') {
-      throw new TypeError(`useRealName must be a boolean, got: ${typeof useRealName}`);
+      throw new TypeError(
+        `useRealName must be a boolean, got: ${typeof useRealName}`,
+      );
     }
 
     return this.#copiaCon({ useRealName });
@@ -506,7 +515,7 @@ class Enrollment {
     if (handicap < MIN_HANDICAP || handicap > MAX_HANDICAP) {
       throw new Error(
         `El hándicap personalizado debe estar entre ${MIN_HANDICAP} y ${MAX_HANDICAP}. ` +
-          `Se recibió: ${handicap}`
+          `Se recibió: ${handicap}`,
       );
     }
   }

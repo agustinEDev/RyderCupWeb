@@ -1,5 +1,8 @@
 import { describe, it, expect } from 'vitest';
-import { debeAceptarLosTerminos, TERMINOS_NO_ACEPTADOS } from './aceptacionDeTerminos';
+import {
+  debeAceptarLosTerminos,
+  TERMINOS_NO_ACEPTADOS,
+} from './aceptacionDeTerminos';
 
 /**
  * Si el usuario tiene que aceptar los Términos antes de seguir (F3).

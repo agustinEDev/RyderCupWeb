@@ -12,6 +12,8 @@ describe('formatDateRange', () => {
   });
 
   it('un idioma que Intl no entiende no rompe la pantalla', () => {
-    expect(() => formatDateRange('2026-10-03', '2026-10-04', 'no_es_un_idioma!')).not.toThrow();
+    expect(() =>
+      formatDateRange('2026-10-03', '2026-10-04', 'no_es_un_idioma!'),
+    ).not.toThrow();
   });
 });

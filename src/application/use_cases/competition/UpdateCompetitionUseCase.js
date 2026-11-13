@@ -78,7 +78,10 @@ class UpdateCompetitionUseCase {
     }
 
     // Call repository (backend validates business rules like ownership and status)
-    const competition = await this.competitionRepository.updateCompetition(competitionId, competitionData);
+    const competition = await this.competitionRepository.updateCompetition(
+      competitionId,
+      competitionData,
+    );
 
     return competition;
   }

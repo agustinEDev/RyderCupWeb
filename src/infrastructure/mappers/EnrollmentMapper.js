@@ -48,9 +48,14 @@ class EnrollmentMapper {
     }
 
     // Validar campos requeridos
-    if (!apiData.id || !apiData.competition_id || !apiData.user_id || !apiData.status) {
+    if (
+      !apiData.id ||
+      !apiData.competition_id ||
+      !apiData.user_id ||
+      !apiData.status
+    ) {
       throw new Error(
-        'EnrollmentMapper.toDomain: Missing required fields (id, competition_id, user_id, status)'
+        'EnrollmentMapper.toDomain: Missing required fields (id, competition_id, user_id, status)',
       );
     }
 
@@ -61,7 +66,8 @@ class EnrollmentMapper {
       status: EnrollmentStatus.fromString(apiData.status),
       teamId: apiData.team_id || null,
       customHandicap:
-        apiData.custom_handicap !== null && apiData.custom_handicap !== undefined
+        apiData.custom_handicap !== null &&
+        apiData.custom_handicap !== undefined
           ? Number(apiData.custom_handicap)
           : null,
       color: apiData.color == null ? null : TeeColor.fromString(apiData.color),
@@ -83,7 +89,9 @@ class EnrollmentMapper {
    */
   static toDomainMany(apiDataArray) {
     if (!Array.isArray(apiDataArray)) {
-      throw new Error('EnrollmentMapper.toDomainMany: apiDataArray must be an array');
+      throw new Error(
+        'EnrollmentMapper.toDomainMany: apiDataArray must be an array',
+      );
     }
 
     return apiDataArray.map((apiData) => EnrollmentMapper.toDomain(apiData));
@@ -104,7 +112,9 @@ class EnrollmentMapper {
    */
   static toDTO(enrollment) {
     if (!(enrollment instanceof Enrollment)) {
-      throw new Error('EnrollmentMapper.toDTO: enrollment must be an Enrollment instance');
+      throw new Error(
+        'EnrollmentMapper.toDTO: enrollment must be an Enrollment instance',
+      );
     }
 
     return {
@@ -131,7 +141,9 @@ class EnrollmentMapper {
    */
   static toSimpleDTO(enrollment, apiData = null) {
     if (!(enrollment instanceof Enrollment)) {
-      throw new Error('EnrollmentMapper.toSimpleDTO: enrollment must be an Enrollment instance');
+      throw new Error(
+        'EnrollmentMapper.toSimpleDTO: enrollment must be an Enrollment instance',
+      );
     }
 
     const simpleDTO = {
@@ -195,7 +207,9 @@ class EnrollmentMapper {
    */
   static toSimpleDTOMany(enrollments, apiDataArray = null) {
     if (!Array.isArray(enrollments)) {
-      throw new Error('EnrollmentMapper.toSimpleDTOMany: enrollments must be an array');
+      throw new Error(
+        'EnrollmentMapper.toSimpleDTOMany: enrollments must be an array',
+      );
     }
 
     return enrollments.map((enrollment, index) => {

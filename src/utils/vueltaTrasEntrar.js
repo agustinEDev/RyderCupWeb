@@ -44,8 +44,11 @@ const lugarActual = () => {
   // historial: sin él, la página guardada no valía al volver (T1-T2, 8 nov 2026). Solo
   // en esa página y solo el token (el code y el state de Google son de un solo uso), y
   // añadido sin reescribir el resto de la barra (`%20`, `?flag`)
-  const token = esLaPaginaDeConfirmar(pathname) ? readStrippedSecret('token') : null;
-  if (!token || new URLSearchParams(search).has('token')) return `${pathname}${search}${hash}`;
+  const token = esLaPaginaDeConfirmar(pathname)
+    ? readStrippedSecret('token')
+    : null;
+  if (!token || new URLSearchParams(search).has('token'))
+    return `${pathname}${search}${hash}`;
   const separador = search && search !== '?' ? '&' : '?';
   const base = search === '?' ? '' : search;
   return `${pathname}${base}${separador}token=${encodeURIComponent(token)}${hash}`;
@@ -155,7 +158,11 @@ export const guardaLaVueltaTrasEntrar = ({ cuenta = null } = {}) => {
  * La redirección dura al login, la única: guarda la página (o la olvida, si se sale a
  * propósito) y se va, al momento o tras `retraso` ms (para que se lea un aviso).
  */
-export const redirigeAlLogin = ({ guardar = true, retraso = 0, cuenta = null } = {}) => {
+export const redirigeAlLogin = ({
+  guardar = true,
+  retraso = 0,
+  cuenta = null,
+} = {}) => {
   if (guardar) guardaLaVueltaTrasEntrar({ cuenta });
   else olvidaLaVueltaTrasEntrar();
   const vete = () => {
@@ -201,17 +208,24 @@ const cuentaDeLaVuelta = () => {
  * app anotando y al abrirla arranca de cero. `arranque`: es el arranque de la aplicación
  * instalada, y esa vuelta se avisa a Sentry para medir cuántas veces pasa.
  */
-export const vueltaTrasEntrar = (from, { cuenta = null, arranque = false } = {}) => {
+export const vueltaTrasEntrar = (
+  from,
+  { cuenta = null, arranque = false } = {},
+) => {
   // La de la que venía, si apunta la cuenta que estaba dentro, solo para esa cuenta (FE
   // #1064, R4-R6): otra, a su panel. Sin cuenta apuntada, para cualquiera, como siempre
   const fromDeOtra =
-    from?.cuenta != null && (aIdDeCuenta(cuenta) === null || aIdDeCuenta(from.cuenta) !== aIdDeCuenta(cuenta));
+    from?.cuenta != null &&
+    (aIdDeCuenta(cuenta) === null ||
+      aIdDeCuenta(from.cuenta) !== aIdDeCuenta(cuenta));
   if (fromDeOtra) {
     olvidaLaVueltaTrasEntrar();
     return '/dashboard';
   }
   const deQuien = cuentaDeLaVuelta();
-  const esSuya = deQuien === null || (aIdDeCuenta(cuenta) !== null && deQuien === aIdDeCuenta(cuenta));
+  const esSuya =
+    deQuien === null ||
+    (aIdDeCuenta(cuenta) !== null && deQuien === aIdDeCuenta(cuenta));
   const guardada = esSuya ? leeLaVueltaTrasEntrar() : null;
   olvidaLaVueltaTrasEntrar();
   if (from == null && guardada === null) {

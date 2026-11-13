@@ -15,7 +15,10 @@ import { render, act } from '@testing-library/react';
 const enEspera = () => {
   let resolver;
   let rechazar;
-  const promesa = new Promise((cumple, falla) => { resolver = cumple; rechazar = falla; });
+  const promesa = new Promise((cumple, falla) => {
+    resolver = cumple;
+    rechazar = falla;
+  });
   // Sin esto, la promesa que se rechaza cuenta como rechazo no atendido hasta
   // que el efecto del panel llega a mirarla
   promesa.catch(() => {});
@@ -25,7 +28,12 @@ const enEspera = () => {
 const peticiones = {};
 
 const reiniciaLasPeticiones = () => {
-  for (const nombre of ['competiciones', 'estadisticas', 'recientes', 'proximos']) {
+  for (const nombre of [
+    'competiciones',
+    'estadisticas',
+    'recientes',
+    'proximos',
+  ]) {
     peticiones[nombre] = enEspera();
   }
 };
@@ -44,7 +52,8 @@ vi.mock('../composition', () => ({
   getPlayerStatsUseCase: { execute: () => pide('estadisticas') },
   getRecentMatchesUseCase: { execute: () => pide('recientes') },
   getUpcomingMatchesUseCase: {
-    executeWithCompleteness: () => pide('proximos').then((matches) => ({ matches, complete: true })),
+    executeWithCompleteness: () =>
+      pide('proximos').then((matches) => ({ matches, complete: true })),
   },
   getScoringViewUseCase: { execute: () => new Promise(() => {}) },
 }));
@@ -67,7 +76,11 @@ vi.mock('../hooks/useAuth', () => ({ useAuth: () => sesion }));
 const textos = { listos: true };
 
 vi.mock('react-i18next', () => ({
-  useTranslation: () => ({ t: (clave) => clave, i18n: { language: 'es' }, ready: textos.listos }),
+  useTranslation: () => ({
+    t: (clave) => clave,
+    i18n: { language: 'es' },
+    ready: textos.listos,
+  }),
 }));
 
 vi.mock('react-router', () => ({
@@ -80,12 +93,19 @@ vi.mock('react-router', () => ({
 // Descarta las props a proposito: aqui solo se mira si la capa del arranque
 // sigue puesta, no lo que pinta el panel
 vi.mock('framer-motion', () => ({
-  motion: new Proxy({}, {
-    get: () => ({ children }) => <div>{children}</div>,
-  }),
+  motion: new Proxy(
+    {},
+    {
+      get:
+        () =>
+        ({ children }) => <div>{children}</div>,
+    },
+  ),
 }));
 
-vi.mock('../hooks/useEntryMotion', () => ({ useEntryMotion: () => ({ animateEntry: false }) }));
+vi.mock('../hooks/useEntryMotion', () => ({
+  useEntryMotion: () => ({ animateEntry: false }),
+}));
 
 for (const ruta of [
   '../components/layout/HeaderAuth',
@@ -106,8 +126,10 @@ vi.doMock('../components/ui/FullScreenLoader', () => ({
   default: () => <div data-testid="espera" />,
 }));
 
-const { esperaElAviso, reiniciaLaCortina } = await import('../utils/cortinaDeArranque');
-const { ESPERA_MAXIMA_MS, olvidaQueElPanelSePinto } = await import('../utils/primeraCargaDelPanel');
+const { esperaElAviso, reiniciaLaCortina } =
+  await import('../utils/cortinaDeArranque');
+const { ESPERA_MAXIMA_MS, olvidaQueElPanelSePinto } =
+  await import('../utils/primeraCargaDelPanel');
 const Dashboard = (await import('./Dashboard')).default;
 
 const sigueLaCortina = () => Boolean(document.getElementById('arranque'));
@@ -117,17 +139,27 @@ const almacenLimpio = () => {
   const guardado = {};
   vi.stubGlobal('localStorage', {
     getItem: (clave) => guardado[clave] ?? null,
-    setItem: (clave, valor) => { guardado[clave] = String(valor); },
-    removeItem: (clave) => { delete guardado[clave]; },
-    clear: () => { for (const clave of Object.keys(guardado)) delete guardado[clave]; },
+    setItem: (clave, valor) => {
+      guardado[clave] = String(valor);
+    },
+    removeItem: (clave) => {
+      delete guardado[clave];
+    },
+    clear: () => {
+      for (const clave of Object.keys(guardado)) delete guardado[clave];
+    },
   });
 };
 
-const estaEsperando = () => Boolean(document.querySelector('[data-testid="espera"]'));
+const estaEsperando = () =>
+  Boolean(document.querySelector('[data-testid="espera"]'));
 
 // Deja que las promesas ya resueltas terminen de propagarse por los efectos
 const asienta = async () => {
-  await act(async () => { await Promise.resolve(); await Promise.resolve(); });
+  await act(async () => {
+    await Promise.resolve();
+    await Promise.resolve();
+  });
 };
 
 /**
@@ -141,7 +173,11 @@ const asienta = async () => {
  */
 describe('el aviso de carga del panel', () => {
   beforeEach(() => {
-    window.matchMedia = () => ({ matches: false, addEventListener: () => {}, removeEventListener: () => {} });
+    window.matchMedia = () => ({
+      matches: false,
+      addEventListener: () => {},
+      removeEventListener: () => {},
+    });
     almacenLimpio();
     olvidaQueElPanelSePinto();
     textos.listos = true;
@@ -166,7 +202,9 @@ describe('el aviso de carga del panel', () => {
     await asienta();
 
     // Con `proximos` todavia en vuelo, el panel esta pintado y sigue cargando
-    const anuncios = container.querySelectorAll('[role="status"][aria-live="polite"]');
+    const anuncios = container.querySelectorAll(
+      '[role="status"][aria-live="polite"]',
+    );
 
     expect(anuncios.length).toBeLessThanOrEqual(1);
   });
@@ -174,7 +212,11 @@ describe('el aviso de carga del panel', () => {
 
 describe('el panel no se pinta a medias', () => {
   beforeEach(() => {
-    window.matchMedia = () => ({ matches: false, addEventListener: () => {}, removeEventListener: () => {} });
+    window.matchMedia = () => ({
+      matches: false,
+      addEventListener: () => {},
+      removeEventListener: () => {},
+    });
     textos.listos = true;
     sesion.user = usuario;
     sesion.loading = false;
@@ -188,7 +230,9 @@ describe('el panel no se pinta a medias', () => {
   it('con las DOS que antes bastaban, sigue esperando', async () => {
     render(<Dashboard />);
 
-    await act(async () => { peticiones.competiciones.resolver([]); });
+    await act(async () => {
+      peticiones.competiciones.resolver([]);
+    });
     await asienta();
 
     expect(estaEsperando()).toBe(true);
@@ -203,7 +247,9 @@ describe('el panel no se pinta a medias', () => {
       peticiones.recientes.resolver([]);
     });
     await asienta();
-    await act(async () => { peticiones.proximos.resolver([]); });
+    await act(async () => {
+      peticiones.proximos.resolver([]);
+    });
     await asienta();
 
     expect(estaEsperando()).toBe(false);
@@ -221,7 +267,9 @@ describe('el panel no se pinta a medias', () => {
       peticiones.recientes.resolver([]);
     });
     await asienta();
-    await act(async () => { peticiones.proximos.resolver([]); });
+    await act(async () => {
+      peticiones.proximos.resolver([]);
+    });
     await asienta();
     primera.unmount();
 
@@ -242,7 +290,9 @@ describe('el panel no se pinta a medias', () => {
       peticiones.recientes.resolver([]);
     });
     await asienta();
-    await act(async () => { peticiones.proximos.resolver([]); });
+    await act(async () => {
+      peticiones.proximos.resolver([]);
+    });
     await asienta();
 
     reiniciaLasPeticiones();
@@ -260,7 +310,11 @@ describe('el panel no se pinta a medias', () => {
  */
 describe('los bordes de la espera del panel', () => {
   beforeEach(() => {
-    window.matchMedia = () => ({ matches: false, addEventListener: () => {}, removeEventListener: () => {} });
+    window.matchMedia = () => ({
+      matches: false,
+      addEventListener: () => {},
+      removeEventListener: () => {},
+    });
     almacenLimpio();
     olvidaQueElPanelSePinto();
     textos.listos = true;
@@ -285,7 +339,9 @@ describe('los bordes de la espera del panel', () => {
     sesion.loading = true;
 
     render(<Dashboard />);
-    act(() => { vi.advanceTimersByTime(ESPERA_MAXIMA_MS + 100); });
+    act(() => {
+      vi.advanceTimersByTime(ESPERA_MAXIMA_MS + 100);
+    });
 
     expect(estaEsperando()).toBe(true);
   });
@@ -313,7 +369,9 @@ describe('los bordes de la espera del panel', () => {
     });
     await asienta();
 
-    await act(async () => { primeraTanda.resolver([{ id: 'vieja' }]); });
+    await act(async () => {
+      primeraTanda.resolver([{ id: 'vieja' }]);
+    });
     await asienta();
 
     expect(estaEsperando()).toBe(true);
@@ -330,7 +388,9 @@ describe('los bordes de la espera del panel', () => {
       peticiones.recientes.resolver([]);
     });
     await asienta();
-    await act(async () => { peticiones.proximos.resolver([]); });
+    await act(async () => {
+      peticiones.proximos.resolver([]);
+    });
     await asienta();
     const pedidasAlPrincipio = veces.estadisticas;
 
@@ -349,7 +409,11 @@ describe('el panel avisa a la cortina cuando NO le queda nada cargando', () => {
     // son 3s reales y estos tests terminan en milisegundos; `reiniciaLaCortina`
     // cancela el temporizador antes de cada uno
     // La cortina solo se sostiene en la aplicacion instalada
-    window.matchMedia = () => ({ matches: true, addEventListener: () => {}, removeEventListener: () => {} });
+    window.matchMedia = () => ({
+      matches: true,
+      addEventListener: () => {},
+      removeEventListener: () => {},
+    });
     textos.listos = true;
     sesion.user = usuario;
     sesion.loading = false;
@@ -374,7 +438,9 @@ describe('el panel avisa a la cortina cuando NO le queda nada cargando', () => {
 
     // Usuario y competiciones: justo el criterio viejo (`isLoading`), el que
     // dejaba pasar los dos parpadeos
-    await act(async () => { peticiones.competiciones.resolver([]); });
+    await act(async () => {
+      peticiones.competiciones.resolver([]);
+    });
     await asienta();
 
     expect(sigueLaCortina()).toBe(true);
@@ -401,7 +467,9 @@ describe('el panel avisa a la cortina cuando NO le queda nada cargando', () => {
       peticiones.recientes.resolver([]);
     });
     await asienta();
-    await act(async () => { peticiones.proximos.resolver([]); });
+    await act(async () => {
+      peticiones.proximos.resolver([]);
+    });
     await asienta();
 
     expect(sigueLaCortina()).toBe(false);
@@ -436,7 +504,11 @@ describe('el panel avisa a la cortina cuando NO le queda nada cargando', () => {
 
     render(<Dashboard />);
 
-    expect(document.querySelector('[data-testid="redirigido"]')?.getAttribute('data-a')).toBe('/login');
+    expect(
+      document
+        .querySelector('[data-testid="redirigido"]')
+        ?.getAttribute('data-a'),
+    ).toBe('/login');
   });
 
   it('sin usuario NO avisa: destaparia una pagina en blanco', () => {
@@ -464,7 +536,9 @@ describe('el panel avisa a la cortina cuando NO le queda nada cargando', () => {
       peticiones.recientes.resolver([]);
     });
     await asienta();
-    await act(async () => { peticiones.proximos.resolver([]); });
+    await act(async () => {
+      peticiones.proximos.resolver([]);
+    });
     await asienta();
 
     expect(sigueLaCortina()).toBe(false);

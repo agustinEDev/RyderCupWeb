@@ -1,5 +1,10 @@
 import { describe, it, expect } from 'vitest';
-import { segmento, valeComoSegmento, RutaDeLaApiNoValida, esRutaDeLaApiSegura } from './rutaDeLaApi';
+import {
+  segmento,
+  valeComoSegmento,
+  RutaDeLaApiNoValida,
+  esRutaDeLaApiSegura,
+} from './rutaDeLaApi';
 
 /**
  * Los ids que acaban en la ruta de la API (FE-03, fase 4 del plan a 9). Muchos salen de
@@ -30,7 +35,15 @@ describe('segmento (C1, C2)', () => {
     expect(segmento(valor)).toBe(esperado);
   });
 
-  it.each([['a/b'], ['a\\b'], ['/'], ['//'], ['../admin'], ['x/../../admin'], ['G/players/U/no-show?']])(
+  it.each([
+    ['a/b'],
+    ['a\\b'],
+    ['/'],
+    ['//'],
+    ['../admin'],
+    ['x/../../admin'],
+    ['G/players/U/no-show?'],
+  ])(
     'C4 %j no vale: la barra, aunque vaya codificada, el servidor la toma como separador',
     (valor) => {
       expect(() => segmento(valor)).toThrow(RutaDeLaApiNoValida);
@@ -38,7 +51,12 @@ describe('segmento (C1, C2)', () => {
     },
   );
 
-  it.each([['?', '%3F'], ['#', '%23'], ['%2F', '%252F'], ['%5C', '%255C']])('C4 %j sí vale: %j', (valor, esperado) => {
+  it.each([
+    ['?', '%3F'],
+    ['#', '%23'],
+    ['%2F', '%252F'],
+    ['%5C', '%255C'],
+  ])('C4 %j sí vale: %j', (valor, esperado) => {
     expect(segmento(valor)).toBe(esperado);
   });
 
@@ -47,7 +65,11 @@ describe('segmento (C1, C2)', () => {
     expect(valeComoSegmento(valor)).toBe(false);
   });
 
-  it.each([['', ''], [null, 'null'], [undefined, 'undefined']])('C2 %j sale como antes: %j', (valor, esperado) => {
+  it.each([
+    ['', ''],
+    [null, 'null'],
+    [undefined, 'undefined'],
+  ])('C2 %j sale como antes: %j', (valor, esperado) => {
     expect(segmento(valor)).toBe(esperado);
     expect(valeComoSegmento(valor)).toBe(true);
   });

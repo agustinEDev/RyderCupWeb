@@ -16,7 +16,9 @@ class FriendshipAssembler {
    */
   static toSimpleDTO(friendship, apiData = null, currentUserId = null) {
     if (!(friendship instanceof Friendship)) {
-      throw new Error('FriendshipAssembler.toSimpleDTO: friendship must be a Friendship instance');
+      throw new Error(
+        'FriendshipAssembler.toSimpleDTO: friendship must be a Friendship instance',
+      );
     }
 
     const simpleDTO = {
@@ -36,18 +38,24 @@ class FriendshipAssembler {
     };
 
     if (apiData) {
-      if (apiData.requester_name) simpleDTO.requesterName = apiData.requester_name;
-      if (apiData.addressee_name) simpleDTO.addresseeName = apiData.addressee_name;
+      if (apiData.requester_name)
+        simpleDTO.requesterName = apiData.requester_name;
+      if (apiData.addressee_name)
+        simpleDTO.addresseeName = apiData.addressee_name;
     }
 
     if (currentUserId) {
       const isRequester = friendship.requesterId === currentUserId;
       simpleDTO.otherUserId = friendship.otherUserId(currentUserId);
-      simpleDTO.otherUserName = isRequester ? simpleDTO.addresseeName : simpleDTO.requesterName;
+      simpleDTO.otherUserName = isRequester
+        ? simpleDTO.addresseeName
+        : simpleDTO.requesterName;
       // El del otro lado, para el resumen de la partida rápida antes de crear
       // nada (FE #848). Solo lo trae la lista de amigos; si no, null
       simpleDTO.otherUserHandicap =
-        (isRequester ? apiData?.addressee_handicap : apiData?.requester_handicap) ?? null;
+        (isRequester
+          ? apiData?.addressee_handicap
+          : apiData?.requester_handicap) ?? null;
       simpleDTO.isSentByMe = isRequester;
     }
 
@@ -62,14 +70,24 @@ class FriendshipAssembler {
    * @param {string|null} currentUserId
    * @returns {Array<Object>} Array of simple DTOs for UI
    */
-  static toSimpleDTOMany(friendships, apiDataArray = null, currentUserId = null) {
+  static toSimpleDTOMany(
+    friendships,
+    apiDataArray = null,
+    currentUserId = null,
+  ) {
     if (!Array.isArray(friendships)) {
-      throw new Error('FriendshipAssembler.toSimpleDTOMany: friendships must be an array');
+      throw new Error(
+        'FriendshipAssembler.toSimpleDTOMany: friendships must be an array',
+      );
     }
 
     return friendships.map((friendship, index) => {
       const apiData = apiDataArray ? apiDataArray[index] : null;
-      return FriendshipAssembler.toSimpleDTO(friendship, apiData, currentUserId);
+      return FriendshipAssembler.toSimpleDTO(
+        friendship,
+        apiData,
+        currentUserId,
+      );
     });
   }
 }

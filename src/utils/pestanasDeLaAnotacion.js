@@ -8,7 +8,11 @@
 export const PESTANAS_DEL_PARTIDO = ['input', 'scorecard', 'leaderboard'];
 
 /** Partida de stroke play (`GroupScoringPage`): quien juega y quien solo mira. */
-export const PESTANAS_DE_LA_PARTIDA_DEL_JUGADOR = ['input', 'standings', 'cards'];
+export const PESTANAS_DE_LA_PARTIDA_DEL_JUGADOR = [
+  'input',
+  'standings',
+  'cards',
+];
 export const PESTANAS_DE_LA_PARTIDA_DE_QUIEN_MIRA = ['cards', 'standings'];
 
 /** Partida rápida (`QuickMatchScoringPage`). */

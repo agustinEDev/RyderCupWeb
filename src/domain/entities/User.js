@@ -31,13 +31,17 @@ class User {
   }) {
     // Validaciones básicas de la entidad
     if (!id || !email || !first_name || !last_name) {
-      throw new Error('User entity requires id, email, first_name, and last_name');
+      throw new Error(
+        'User entity requires id, email, first_name, and last_name',
+      );
     }
 
     // Validate gender if provided
     const validGenders = ['MALE', 'FEMALE'];
     if (gender !== null && !validGenders.includes(gender)) {
-      throw new Error(`Invalid gender: ${gender}. Must be 'MALE', 'FEMALE', or null`);
+      throw new Error(
+        `Invalid gender: ${gender}. Must be 'MALE', 'FEMALE', or null`,
+      );
     }
 
     this.id = id;
@@ -50,7 +54,8 @@ class User {
     // Lo manda resuelto el backend. El `||` de aqui NO es el fallback de
     // negocio —ese vive en el servidor—, es para los objetos que se construyen
     // en el cliente o vienen de una respuesta anterior a BE #239
-    this.displayName = display_name || alias || `${first_name} ${last_name}`.trim();
+    this.displayName =
+      display_name || alias || `${first_name} ${last_name}`.trim();
     this.handicap = handicap;
     this.handicapUpdatedAt = handicap_updated_at; // Mantener como string de fecha o null
     this.createdAt = created_at; // Mantener como string de fecha o null
@@ -60,7 +65,9 @@ class User {
     this.verificationToken = verification_token;
     // Country code es opcional: puede ser null, string o CountryCode VO
     this.countryCode = country_code
-      ? (country_code instanceof CountryCode ? country_code : new CountryCode(country_code))
+      ? country_code instanceof CountryCode
+        ? country_code
+        : new CountryCode(country_code)
       : null;
     this.gender = gender;
     this.authProviders = auth_providers;
@@ -100,7 +107,10 @@ class User {
       id: this.id,
       email: this.email.getValue(),
       // 3. Obtener el valor del Password VO si es uno, o pasar la cadena directamente
-      password: this.password instanceof Password ? this.password.getValue() : this.password,
+      password:
+        this.password instanceof Password
+          ? this.password.getValue()
+          : this.password,
       first_name: this.firstName,
       last_name: this.lastName,
       alias: this.alias,

@@ -25,11 +25,17 @@ const localStorageMock = (() => {
 Object.defineProperty(window, 'localStorage', { value: localStorageMock });
 
 function setUserAgent(ua) {
-  Object.defineProperty(navigator, 'userAgent', { value: ua, configurable: true });
+  Object.defineProperty(navigator, 'userAgent', {
+    value: ua,
+    configurable: true,
+  });
 }
 
 function setStandalone(value) {
-  Object.defineProperty(window.navigator, 'standalone', { value, configurable: true });
+  Object.defineProperty(window.navigator, 'standalone', {
+    value,
+    configurable: true,
+  });
 }
 
 describe('useInstallPrompt', () => {
@@ -66,8 +72,12 @@ describe('useInstallPrompt', () => {
   });
 
   it('reports isInstalled via display-mode media query on non-iOS browsers', () => {
-    setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36');
-    window.matchMedia = (query) => ({ matches: query === '(display-mode: standalone)' });
+    setUserAgent(
+      'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36',
+    );
+    window.matchMedia = (query) => ({
+      matches: query === '(display-mode: standalone)',
+    });
 
     const { result } = renderHook(() => useInstallPrompt());
 
@@ -75,7 +85,9 @@ describe('useInstallPrompt', () => {
   });
 
   it('sets isInstalled when the appinstalled event fires in the current tab', () => {
-    setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36');
+    setUserAgent(
+      'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36',
+    );
     window.matchMedia = () => ({ matches: false });
 
     const { result } = renderHook(() => useInstallPrompt());
@@ -117,13 +129,17 @@ describe('useInstallPrompt iOS install route', () => {
   it('points to the bottom bar in Safari on iPhone', () => {
     setUserAgent(SAFARI_IPHONE);
 
-    expect(renderHook(() => useInstallPrompt()).result.current.iosInstallRoute).toBe('safari-iphone');
+    expect(
+      renderHook(() => useInstallPrompt()).result.current.iosInstallRoute,
+    ).toBe('safari-iphone');
   });
 
   it('points to the top bar in Safari on iPad', () => {
     setUserAgent(SAFARI_IPAD);
 
-    expect(renderHook(() => useInstallPrompt()).result.current.iosInstallRoute).toBe('safari-ipad');
+    expect(
+      renderHook(() => useInstallPrompt()).result.current.iosInstallRoute,
+    ).toBe('safari-ipad');
   });
 
   const DUCKDUCKGO_IOS =
@@ -144,7 +160,9 @@ describe('useInstallPrompt iOS install route', () => {
     // propio token es lo unico que los distingue
     setUserAgent(ua);
 
-    expect(renderHook(() => useInstallPrompt()).result.current.iosInstallRoute).toBe('other-browser');
+    expect(
+      renderHook(() => useInstallPrompt()).result.current.iosInstallRoute,
+    ).toBe('other-browser');
   });
 
   it('still treats every iOS browser as installable', () => {
@@ -160,9 +178,17 @@ describe('useInstallPrompt iOS install route', () => {
     // imponia sobre un UA que decia iPhone, y mandaba al usuario a buscar el
     // boton en la barra de arriba, donde no esta
     setUserAgent(SAFARI_IPHONE);
-    Object.defineProperty(navigator, 'platform', { value: 'MacIntel', configurable: true });
-    Object.defineProperty(navigator, 'maxTouchPoints', { value: 5, configurable: true });
+    Object.defineProperty(navigator, 'platform', {
+      value: 'MacIntel',
+      configurable: true,
+    });
+    Object.defineProperty(navigator, 'maxTouchPoints', {
+      value: 5,
+      configurable: true,
+    });
 
-    expect(renderHook(() => useInstallPrompt()).result.current.iosInstallRoute).toBe('safari-iphone');
+    expect(
+      renderHook(() => useInstallPrompt()).result.current.iosInstallRoute,
+    ).toBe('safari-iphone');
   });
 });

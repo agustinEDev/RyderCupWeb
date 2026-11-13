@@ -22,7 +22,11 @@ import { formaDeAnotar } from './createQuickMatchModalConstants';
  */
 export const anotadoresAlVolver = ({ antes, ahora, anotadores, yo }) => {
   if (!antes) return null;
-  if (formaDeAnotar(antes.modo, antes.formato) !== formaDeAnotar(ahora.modo, ahora.formato)) return null;
+  if (
+    formaDeAnotar(antes.modo, antes.formato) !==
+    formaDeAnotar(ahora.modo, ahora.formato)
+  )
+    return null;
   // Los anotadores son siempre registrados: basta con ver quién sigue jugando
   const siguen = new Set(ahora.jugadores.map((p) => p.participantId));
   return [yo, ...anotadores.filter((id) => id !== yo && siguen.has(id))];

@@ -10,14 +10,18 @@ class GetPlayerStatsByGolfCourseUseCase {
 
   constructor({ playerStatsRepository }) {
     if (!playerStatsRepository) {
-      throw new Error('GetPlayerStatsByGolfCourseUseCase requires playerStatsRepository');
+      throw new Error(
+        'GetPlayerStatsByGolfCourseUseCase requires playerStatsRepository',
+      );
     }
     this.#playerStatsRepository = playerStatsRepository;
   }
 
   async execute(golfCourseId) {
     if (!golfCourseId) {
-      throw new Error('GetPlayerStatsByGolfCourseUseCase requires a golfCourseId');
+      throw new Error(
+        'GetPlayerStatsByGolfCourseUseCase requires a golfCourseId',
+      );
     }
     return this.#playerStatsRepository.getPlayerStatsByGolfCourse(golfCourseId);
   }

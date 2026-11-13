@@ -1,12 +1,25 @@
 import { afterEach, vi, describe, it, expect } from 'vitest';
-import { avisoDeLaFranja, errorDeHoja, errorDeLaFranja, numeroDeSalidas, cupoDeLaHoja, hojaPropuesta } from './HojaDeSalidas';
+import {
+  avisoDeLaFranja,
+  errorDeHoja,
+  errorDeLaFranja,
+  numeroDeSalidas,
+  cupoDeLaHoja,
+  hojaPropuesta,
+} from './HojaDeSalidas';
 
 /**
  * La hoja de salidas de una franja (FE #824, RyderCupAm#251): las mismas reglas
  * que el backend, para avisar antes de enviar. La hora final ES la última
  * salida: 15:00-18:00 cada 10 min son 19 salidas.
  */
-const hoja = (extra = {}) => ({ primera: '08:00', ultima: '11:50', intervalo: 10, tamano: 4, ...extra });
+const hoja = (extra = {}) => ({
+  primera: '08:00',
+  ultima: '11:50',
+  intervalo: 10,
+  tamano: 4,
+  ...extra,
+});
 
 describe('HojaDeSalidas (FE #824)', () => {
   describe('D3: las reglas', () => {
@@ -60,9 +73,17 @@ describe('HojaDeSalidas (FE #824)', () => {
       ['MORNING', '08:00', '11:50'],
       ['AFTERNOON', '12:00', '17:50'],
       ['EVENING', '18:00', '23:50'],
-    ])('%s: de %s a %s, cada 10 min, partidas de 4', (franja, primera, ultima) => {
-      expect(hojaPropuesta(franja)).toEqual({ primera, ultima, intervalo: 10, tamano: 4 });
-    });
+    ])(
+      '%s: de %s a %s, cada 10 min, partidas de 4',
+      (franja, primera, ultima) => {
+        expect(hojaPropuesta(franja)).toEqual({
+          primera,
+          ultima,
+          intervalo: 10,
+          tamano: 4,
+        });
+      },
+    );
   });
 });
 
@@ -84,15 +105,30 @@ describe('errorDeLaFranja: su primera salida ya pasó (QA del 11 oct 2026)', () 
   });
 
   it('cambiar otra cosa de una ya empezada vale: su primera salida no cambia', () => {
-    expect(errorDeLaFranja({ dia: '2030-10-12', hoja, primeraAntes: '09:00' }, a('15:00'))).toBeNull();
+    expect(
+      errorDeLaFranja(
+        { dia: '2030-10-12', hoja, primeraAntes: '09:00' },
+        a('15:00'),
+      ),
+    ).toBeNull();
   });
 
   it('cambiarla a otra hora ya pasada, no', () => {
-    expect(errorDeLaFranja({ dia: '2030-10-12', hoja, primeraAntes: '16:00' }, a('15:00'))).toBe('firstTeePassed');
+    expect(
+      errorDeLaFranja(
+        { dia: '2030-10-12', hoja, primeraAntes: '16:00' },
+        a('15:00'),
+      ),
+    ).toBe('firstTeePassed');
   });
 
   it('un error de la hoja va antes', () => {
-    expect(errorDeLaFranja({ dia: '2030-10-12', hoja: { ...hoja, intervalo: 3 } }, a('15:00'))).toBe('intervalRange');
+    expect(
+      errorDeLaFranja(
+        { dia: '2030-10-12', hoja: { ...hoja, intervalo: 3 } },
+        a('15:00'),
+      ),
+    ).toBe('intervalRange');
   });
 
   it('sin día, solo la hoja', () => {
@@ -116,7 +152,12 @@ describe('errorDeLaFranja: su primera salida ya pasó (QA del 11 oct 2026)', () 
  *   en una zona sin cambio     | nada
  */
 describe('avisoDeLaFranja: salidas que no existen por el cambio de hora (aviso, no bloquea)', () => {
-  const hoja = (primera, ultima) => ({ primera, ultima, intervalo: 10, tamano: 4 });
+  const hoja = (primera, ultima) => ({
+    primera,
+    ultima,
+    intervalo: 10,
+    tamano: 4,
+  });
   const ANTES = new Date(Date.UTC(2027, 0, 1));
   afterEach(() => vi.unstubAllEnvs());
 
@@ -129,33 +170,53 @@ describe('avisoDeLaFranja: salidas que no existen por el cambio de hora (aviso, 
   ])('en Madrid, de %s a %s: %s', (primera, ultima, error) => {
     vi.stubEnv('TZ', 'Europe/Madrid');
 
-    expect(avisoDeLaFranja({ dia: '2027-03-28', hoja: hoja(primera, ultima) })).toBe(error);
+    expect(
+      avisoDeLaFranja({ dia: '2027-03-28', hoja: hoja(primera, ultima) }),
+    ).toBe(error);
     // Con la zona del móvil, que puede no ser la del campo: no bloquea (CodeRabbit en la #843)
-    expect(errorDeLaFranja({ dia: '2027-03-28', hoja: hoja(primera, ultima) }, ANTES)).toBeNull();
+    expect(
+      errorDeLaFranja(
+        { dia: '2027-03-28', hoja: hoja(primera, ultima) },
+        ANTES,
+      ),
+    ).toBeNull();
   });
 
   it('otro día, nada', () => {
     vi.stubEnv('TZ', 'Europe/Madrid');
 
-    expect(avisoDeLaFranja({ dia: '2027-03-27', hoja: hoja('01:50', '04:00') })).toBeNull();
+    expect(
+      avisoDeLaFranja({ dia: '2027-03-27', hoja: hoja('01:50', '04:00') }),
+    ).toBeNull();
   });
 
   it('en una zona sin cambio de hora, nada', () => {
     vi.stubEnv('TZ', 'UTC');
 
-    expect(avisoDeLaFranja({ dia: '2027-03-28', hoja: hoja('01:50', '04:00') })).toBeNull();
+    expect(
+      avisoDeLaFranja({ dia: '2027-03-28', hoja: hoja('01:50', '04:00') }),
+    ).toBeNull();
   });
 
   it('una hoja que no vale no avisa de nada: va antes su error', () => {
     vi.stubEnv('TZ', 'Europe/Madrid');
 
-    expect(avisoDeLaFranja({ dia: '2027-03-28', hoja: { ...hoja('01:50', '04:00'), intervalo: 3 } })).toBeNull();
-    expect(avisoDeLaFranja({ dia: null, hoja: hoja('01:50', '04:00') })).toBeNull();
+    expect(
+      avisoDeLaFranja({
+        dia: '2027-03-28',
+        hoja: { ...hoja('01:50', '04:00'), intervalo: 3 },
+      }),
+    ).toBeNull();
+    expect(
+      avisoDeLaFranja({ dia: null, hoja: hoja('01:50', '04:00') }),
+    ).toBeNull();
   });
 
   it('también al cambiar una sin tocar su primera salida', () => {
     vi.stubEnv('TZ', 'Europe/Madrid');
 
-    expect(avisoDeLaFranja({ dia: '2027-03-28', hoja: hoja('01:50', '04:00') })).toBe('teeTimeSkipped');
+    expect(
+      avisoDeLaFranja({ dia: '2027-03-28', hoja: hoja('01:50', '04:00') }),
+    ).toBe('teeTimeSkipped');
   });
 });

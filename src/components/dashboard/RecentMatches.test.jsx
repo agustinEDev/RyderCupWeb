@@ -14,7 +14,8 @@ vi.mock('react-router', async () => {
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
     t: (key, options) => {
-      if (options && typeof options.count === 'number') return `${key}:${options.count}`;
+      if (options && typeof options.count === 'number')
+        return `${key}:${options.count}`;
       if (options && options.opponents) return `${key}:${options.opponents}`;
       // Los formatos se traducen de verdad: con la clave cruda, una partida
       // llamada como su formato nunca chocaría con él y el test no probaría
@@ -31,15 +32,27 @@ vi.mock('react-i18next', () => ({
 
 // Repetir tiene sus propias pruebas: aquí solo importa en qué filas sale y
 // dónde vive el asistente
-const mockRepetir = vi.hoisted(() => ({ borrador: null, preparando: false, repetir: vi.fn(), cierra: vi.fn() }));
-vi.mock('../quick_match/useRepetirPartida', () => ({ useRepetirPartida: () => mockRepetir }));
+const mockRepetir = vi.hoisted(() => ({
+  borrador: null,
+  preparando: false,
+  repetir: vi.fn(),
+  cierra: vi.fn(),
+}));
+vi.mock('../quick_match/useRepetirPartida', () => ({
+  useRepetirPartida: () => mockRepetir,
+}));
 vi.mock('../quick_match/RepetirPartida', () => ({
   IconoRepetir: ({ partida, onRepetir }) => (
-    <button type="button" data-testid={`repetir-${partida.id}`} onClick={() => onRepetir(partida)}>
+    <button
+      type="button"
+      data-testid={`repetir-${partida.id}`}
+      onClick={() => onRepetir(partida)}
+    >
       repetir
     </button>
   ),
-  AsistenteDeRepetir: ({ borrador }) => (borrador ? <div data-testid="asistente-de-repetir" /> : null),
+  AsistenteDeRepetir: ({ borrador }) =>
+    borrador ? <div data-testid="asistente-de-repetir" /> : null,
 }));
 
 const tournamentWin = RecentMatch.fromPersistence({
@@ -74,22 +87,30 @@ const renderList = (props = {}) =>
   render(
     <MemoryRouter>
       <RecentMatches {...props} />
-    </MemoryRouter>
+    </MemoryRouter>,
   );
 
 describe('RecentMatches', () => {
   beforeEach(() => vi.clearAllMocks());
 
   it('FE #1021: «Repetir» al lado de las partidas rápidas, no en las de torneo ni sin usuario', () => {
-    const { unmount } = renderList({ matches: [tournamentWin, stablefordRound], usuario: { id: 'u-1' } });
+    const { unmount } = renderList({
+      matches: [tournamentWin, stablefordRound],
+      usuario: { id: 'u-1' },
+    });
 
     expect(screen.queryByTestId('repetir-match-1')).not.toBeInTheDocument();
     const repetir = screen.getByTestId('repetir-qm-1');
     // Al lado de la fila, no dentro de su botón
-    expect(screen.getByTestId('recent-match-qm-1').contains(repetir)).toBe(false);
+    expect(screen.getByTestId('recent-match-qm-1').contains(repetir)).toBe(
+      false,
+    );
 
     fireEvent.click(repetir);
-    expect(mockRepetir.repetir).toHaveBeenCalledWith({ id: 'qm-1', name: null });
+    expect(mockRepetir.repetir).toHaveBeenCalledWith({
+      id: 'qm-1',
+      name: null,
+    });
 
     unmount();
     renderList({ matches: [stablefordRound] });
@@ -99,13 +120,20 @@ describe('RecentMatches', () => {
   it('FE #1021: el asistente abierto sigue mientras la lista se recarga (vive en la lista, no en la fila)', () => {
     mockRepetir.borrador = { paso: 4, avisos: [], inicial: {} };
     try {
-      const { rerender } = renderList({ matches: [stablefordRound], usuario: { id: 'u-1' } });
+      const { rerender } = renderList({
+        matches: [stablefordRound],
+        usuario: { id: 'u-1' },
+      });
       expect(screen.getByTestId('asistente-de-repetir')).toBeInTheDocument();
 
       rerender(
         <MemoryRouter>
-          <RecentMatches matches={[stablefordRound]} usuario={{ id: 'u-1' }} isLoading />
-        </MemoryRouter>
+          <RecentMatches
+            matches={[stablefordRound]}
+            usuario={{ id: 'u-1' }}
+            isLoading
+          />
+        </MemoryRouter>,
       );
 
       expect(screen.queryByTestId('repetir-qm-1')).not.toBeInTheDocument();
@@ -118,8 +146,12 @@ describe('RecentMatches', () => {
   it('shows a row per match with its course', () => {
     renderList({ matches: [tournamentWin, stablefordRound] });
 
-    expect(screen.getByTestId('recent-match-match-1')).toHaveTextContent('St Andrews');
-    expect(screen.getByTestId('recent-match-qm-1')).toHaveTextContent('Valderrama');
+    expect(screen.getByTestId('recent-match-match-1')).toHaveTextContent(
+      'St Andrews',
+    );
+    expect(screen.getByTestId('recent-match-qm-1')).toHaveTextContent(
+      'Valderrama',
+    );
   });
 
   it('names the format, which is what tells two similar rows apart', () => {
@@ -130,8 +162,12 @@ describe('RecentMatches', () => {
      */
     renderList({ matches: [tournamentWin, stablefordRound] });
 
-    expect(screen.getByTestId('recent-match-match-1')).toHaveTextContent('Singles');
-    expect(screen.getByTestId('recent-match-qm-1')).toHaveTextContent('Stableford');
+    expect(screen.getByTestId('recent-match-match-1')).toHaveTextContent(
+      'Singles',
+    );
+    expect(screen.getByTestId('recent-match-qm-1')).toHaveTextContent(
+      'Stableford',
+    );
   });
 
   it('does not repeat the format when it is already the headline', () => {
@@ -246,7 +282,9 @@ describe('RecentMatches', () => {
       // y donde estrangulaban al nombre. Los spans de esa columna no llevan
       // `block`, así que mirar solo la izquierda dejaba la regresión abierta
       const columnaDerecha = fila.lastElementChild;
-      expect(columnaDerecha).not.toHaveTextContent('recentMatches.strokesOverHoles');
+      expect(columnaDerecha).not.toHaveTextContent(
+        'recentMatches.strokesOverHoles',
+      );
     });
 
     it('no dice cuántos hoyos si el backend no lo manda', () => {
@@ -279,14 +317,18 @@ describe('RecentMatches', () => {
 
       renderList({ matches: [ambos] });
 
-      expect(screen.getByTestId('recent-match-qm-both')).toHaveTextContent('Meis Fourball');
+      expect(screen.getByTestId('recent-match-qm-both')).toHaveTextContent(
+        'Meis Fourball',
+      );
     });
   });
 
   it('badges a match play result and spells it out for screen readers', () => {
     renderList({ matches: [tournamentWin] });
 
-    expect(screen.getByTestId('result-badge')).toHaveTextContent('recentMatches.resultShort.WON');
+    expect(screen.getByTestId('result-badge')).toHaveTextContent(
+      'recentMatches.resultShort.WON',
+    );
     expect(screen.getByText('recentMatches.result.WON')).toBeInTheDocument();
   });
 
@@ -305,7 +347,10 @@ describe('RecentMatches', () => {
   });
 
   it('shows zero stableford points rather than hiding the score', () => {
-    const blank = RecentMatch.fromPersistence({ id: 'qm-2', stablefordPoints: 0 });
+    const blank = RecentMatch.fromPersistence({
+      id: 'qm-2',
+      stablefordPoints: 0,
+    });
     renderList({ matches: [blank] });
 
     expect(screen.getByText('recentMatches.points:0')).toBeInTheDocument();
@@ -315,7 +360,9 @@ describe('RecentMatches', () => {
     renderList({ matches: [tournamentWin, stablefordRound] });
 
     fireEvent.click(screen.getByTestId('recent-match-match-1'));
-    expect(mockNavigate).toHaveBeenCalledWith('/player/matches/match-1/scoring');
+    expect(mockNavigate).toHaveBeenCalledWith(
+      '/player/matches/match-1/scoring',
+    );
 
     fireEvent.click(screen.getByTestId('recent-match-qm-1'));
     expect(mockNavigate).toHaveBeenCalledWith('/quick-matches/qm-1/scoring');
@@ -341,8 +388,13 @@ describe('RecentMatches', () => {
   it('shows placeholders while loading, not the empty state', () => {
     renderList({ matches: [], isLoading: true });
 
-    expect(screen.getByTestId('recent-matches')).toHaveAttribute('aria-busy', 'true');
-    expect(screen.queryByTestId('recent-matches-empty')).not.toBeInTheDocument();
+    expect(screen.getByTestId('recent-matches')).toHaveAttribute(
+      'aria-busy',
+      'true',
+    );
+    expect(
+      screen.queryByTestId('recent-matches-empty'),
+    ).not.toBeInTheDocument();
   });
 });
 
@@ -356,7 +408,9 @@ describe('RecentMatches', () => {
 describe('la marca de partida que no cuenta', () => {
   it('se pinta en las partidas excluidas', () => {
     renderList({ matches: [excludedRound] });
-    expect(screen.getByTestId('recent-match-excluded-qm-2')).toBeInTheDocument();
+    expect(
+      screen.getByTestId('recent-match-excluded-qm-2'),
+    ).toBeInTheDocument();
   });
 
   it('pide exactamente la clave que existe en los locales', () => {
@@ -369,7 +423,9 @@ describe('la marca de partida que no cuenta', () => {
 
   it('no se pinta en las que si cuentan', () => {
     renderList({ matches: [stablefordRound] });
-    expect(screen.queryByTestId('recent-match-excluded-qm-1')).not.toBeInTheDocument();
+    expect(
+      screen.queryByTestId('recent-match-excluded-qm-1'),
+    ).not.toBeInTheDocument();
   });
 
   it('su texto existe en los dos idiomas, no es la clave en crudo', async () => {
@@ -414,7 +470,9 @@ describe('la partida sin terminar', () => {
 
     const insignia = screen.getByTestId('result-badge');
     expect(insignia).toHaveTextContent('recentMatches.resultShort.UNFINISHED');
-    expect(screen.getByText('recentMatches.result.UNFINISHED')).toBeInTheDocument();
+    expect(
+      screen.getByText('recentMatches.result.UNFINISHED'),
+    ).toBeInTheDocument();
     // Gris más apagado que el empate: no es un resultado
     expect(insignia).toHaveClass('bg-gray-100', 'text-gray-500');
   });
@@ -430,7 +488,12 @@ describe('la partida sin terminar', () => {
   });
 
   it('F3: si llegara con tanteo, no se pinta: un 6UP sin terminar no es un resultado', () => {
-    renderList({ matches: [sinTerminar({ score: '6UP' }), sinTerminar({ id: 'qm-st2', score: '6UP', stablefordPoints: 20 })] });
+    renderList({
+      matches: [
+        sinTerminar({ score: '6UP' }),
+        sinTerminar({ id: 'qm-st2', score: '6UP', stablefordPoints: 20 }),
+      ],
+    });
 
     expect(screen.queryByText('6UP')).not.toBeInTheDocument();
     expect(screen.queryByText(/6UP/)).not.toBeInTheDocument();
@@ -439,8 +502,12 @@ describe('la partida sin terminar', () => {
   it('convive con la marca de excluida de estadísticas', () => {
     renderList({ matches: [sinTerminar({ excludedFromStats: true })] });
 
-    expect(screen.getByTestId('result-badge')).toHaveTextContent('recentMatches.resultShort.UNFINISHED');
-    expect(screen.getByTestId('recent-match-excluded-qm-st')).toBeInTheDocument();
+    expect(screen.getByTestId('result-badge')).toHaveTextContent(
+      'recentMatches.resultShort.UNFINISHED',
+    );
+    expect(
+      screen.getByTestId('recent-match-excluded-qm-st'),
+    ).toBeInTheDocument();
   });
 });
 
@@ -458,7 +525,10 @@ describe('RecentMatches · la fecha de la partida rápida', () => {
 
     renderList({ matches: [rapida] });
 
-    const esperado = new Date('2026-08-05T12:00:00Z').toLocaleDateString('es', { day: 'numeric', month: 'short' });
+    const esperado = new Date('2026-08-05T12:00:00Z').toLocaleDateString('es', {
+      day: 'numeric',
+      month: 'short',
+    });
     expect(screen.getByText(esperado)).toBeInTheDocument();
   });
 });

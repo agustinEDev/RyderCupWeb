@@ -42,7 +42,7 @@ export const getCountryFlag = (countryCode) => {
   // Formula: charCode('A') = 65, offset = 127397, so 65 + 127397 = 127462 = U+1F1E6
   const flag = code
     .split('')
-    .map(char => String.fromCodePoint(char.charCodeAt(0) + 127397))
+    .map((char) => String.fromCodePoint(char.charCodeAt(0) + 127397))
     .join('');
 
   return flag;

@@ -44,7 +44,8 @@ const refrescaLasNovedades = () => {
   const promesa = getFeedUnseenCountUseCase
     .execute()
     .then((n) => {
-      if (deEstaGeneracion === generacionDeLasNovedades() && Number.isFinite(n)) fijaLasNovedades(n);
+      if (deEstaGeneracion === generacionDeLasNovedades() && Number.isFinite(n))
+        fijaLasNovedades(n);
     })
     .catch(() => {})
     .finally(() => {
@@ -59,15 +60,22 @@ const refrescaLasNovedades = () => {
 
 const empiezaAVigilar = () => {
   const alCambiarLaVisibilidad = () => {
-    if (globalThis.document.visibilityState === 'visible') refrescaLasNovedades();
+    if (globalThis.document.visibilityState === 'visible')
+      refrescaLasNovedades();
   };
   const alVolverLaRed = () => {
     refrescaLasNovedades();
   };
-  globalThis.document.addEventListener('visibilitychange', alCambiarLaVisibilidad);
+  globalThis.document.addEventListener(
+    'visibilitychange',
+    alCambiarLaVisibilidad,
+  );
   globalThis.addEventListener('online', alVolverLaRed);
   return () => {
-    globalThis.document.removeEventListener('visibilitychange', alCambiarLaVisibilidad);
+    globalThis.document.removeEventListener(
+      'visibilitychange',
+      alCambiarLaVisibilidad,
+    );
     globalThis.removeEventListener('online', alVolverLaRed);
   };
 };

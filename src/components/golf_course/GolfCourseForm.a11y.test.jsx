@@ -30,7 +30,7 @@ vi.mock('../../utils/toast', () => ({
   default: { error: vi.fn(), success: vi.fn() },
 }));
 
-const openPickerForHole = holeNumber => {
+const openPickerForHole = (holeNumber) => {
   const trigger = screen.getByRole('button', {
     name: new RegExp(`strokeIndexForHole.*"hole":${holeNumber}\\b`),
   });
@@ -63,7 +63,9 @@ describe('GolfCourseForm - accesibilidad del stroke index picker', () => {
       const trigger = openPickerForHole(3);
 
       fireEvent.click(
-        within(getPicker()).getByRole('button', { name: 'form.closeStrokeIndexPicker' })
+        within(getPicker()).getByRole('button', {
+          name: 'form.closeStrokeIndexPicker',
+        }),
       );
 
       expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
@@ -78,7 +80,7 @@ describe('GolfCourseForm - accesibilidad del stroke index picker', () => {
       fireEvent.click(
         within(getPicker()).getByRole('button', {
           name: /strokeIndexUsedByHole.*"value":7,/,
-        })
+        }),
       );
 
       expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
@@ -118,7 +120,9 @@ describe('GolfCourseForm - accesibilidad del stroke index picker', () => {
       fireEvent.keyDown(document, { key: 'Escape' });
 
       // Un segundo Escape con el panel ya cerrado no debe romper nada.
-      expect(() => fireEvent.keyDown(document, { key: 'Escape' })).not.toThrow();
+      expect(() =>
+        fireEvent.keyDown(document, { key: 'Escape' }),
+      ).not.toThrow();
       expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     });
   });
@@ -131,7 +135,7 @@ describe('GolfCourseForm - accesibilidad del stroke index picker', () => {
       const picker = getPicker();
       const pressed = within(picker)
         .getAllByRole('button')
-        .filter(b => b.getAttribute('aria-pressed') === 'true');
+        .filter((b) => b.getAttribute('aria-pressed') === 'true');
 
       // El hoyo 4 arranca con stroke index 4.
       expect(pressed).toHaveLength(1);

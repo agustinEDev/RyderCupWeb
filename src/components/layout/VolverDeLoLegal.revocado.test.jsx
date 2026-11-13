@@ -18,18 +18,27 @@ vi.mock('../../infrastructure/http/tokenRefreshInterceptor', () => ({
   fetchWithTokenRefresh: vi.fn(),
 }));
 
-vi.mock('../../services/loUltimoConocido', () => ({ olvidaLoDeEstaCuenta: vi.fn() }));
-vi.mock('../../services/refrescoDeHandicapApuntes', () => ({ olvidaElRefrescoDeHandicap: vi.fn() }));
+vi.mock('../../services/loUltimoConocido', () => ({
+  olvidaLoDeEstaCuenta: vi.fn(),
+}));
+vi.mock('../../services/refrescoDeHandicapApuntes', () => ({
+  olvidaElRefrescoDeHandicap: vi.fn(),
+}));
 vi.mock('../../utils/sentryHelpers', () => ({ clearUserContext: vi.fn() }));
 
-const { olvidaLoDeEstaCuenta } = await import('../../services/loUltimoConocido');
-const { olvidaElRefrescoDeHandicap } = await import('../../services/refrescoDeHandicapApuntes');
+const { olvidaLoDeEstaCuenta } =
+  await import('../../services/loUltimoConocido');
+const { olvidaElRefrescoDeHandicap } =
+  await import('../../services/refrescoDeHandicapApuntes');
 const { clearUserContext } = await import('../../utils/sentryHelpers');
 const { AuthProvider } = await import('../../contexts/AuthContext');
 const { default: VolverDeLoLegal } = await import('./VolverDeLoLegal');
-const { ESTADO_DE_LA_SESION, estadoDeLaSesion } = await import('../../services/sesionEnPaginaPublica');
+const { ESTADO_DE_LA_SESION, estadoDeLaSesion } =
+  await import('../../services/sesionEnPaginaPublica');
 
-const REVOCADO = { detail: 'Dispositivo revocado. Por favor, inicia sesión nuevamente.' };
+const REVOCADO = {
+  detail: 'Dispositivo revocado. Por favor, inicia sesión nuevamente.',
+};
 const respuesta = (status, cuerpo = {}) => ({
   ok: status >= 200 && status < 300,
   status,
@@ -81,7 +90,7 @@ describe('L4 · dispositivo revocado', () => {
             <Route path="/terms" element={<VolverDeLoLegal />} />
           </Routes>
         </MemoryRouter>
-      </AuthProvider>
+      </AuthProvider>,
     );
 
     await act(async () => {

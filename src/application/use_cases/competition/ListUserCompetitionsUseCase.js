@@ -22,11 +22,16 @@ class ListUserCompetitionsUseCase {
     }
 
     // Fetch competitions from repository (returns domain entities)
-    const competitions = await this.competitionRepository.findByCreator(userId, filters);
+    const competitions = await this.competitionRepository.findByCreator(
+      userId,
+      filters,
+    );
 
     // Convert domain entities to simple DTOs for UI
     // Pass original API data for location names parsing
-    return competitions.map(competition => CompetitionAssembler.toSimpleDTO(competition, competition._apiData));
+    return competitions.map((competition) =>
+      CompetitionAssembler.toSimpleDTO(competition, competition._apiData),
+    );
   }
 }
 

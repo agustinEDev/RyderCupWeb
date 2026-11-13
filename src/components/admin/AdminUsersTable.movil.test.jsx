@@ -28,15 +28,32 @@ const ANA = {
   createdAt: '2026-07-27T00:00:00Z',
   lastLoginAt: '2026-07-30T10:00:00Z',
 };
-const LUIS = { ...ANA, id: 'u2', firstName: 'Luis', lastName: 'Gil', alias: null, email: 'luis@test.com', isAdmin: true, isActive: false, emailVerified: true, handicap: null, lastLoginAt: null };
+const LUIS = {
+  ...ANA,
+  id: 'u2',
+  firstName: 'Luis',
+  lastName: 'Gil',
+  alias: null,
+  email: 'luis@test.com',
+  isAdmin: true,
+  isActive: false,
+  emailVerified: true,
+  handicap: null,
+  lastLoginAt: null,
+};
 
 const pintar = (props = {}) => {
-  const manos = { onEdit: vi.fn(), onToggleActive: vi.fn(), onManageDelete: vi.fn() };
+  const manos = {
+    onEdit: vi.fn(),
+    onToggleActive: vi.fn(),
+    onManageDelete: vi.fn(),
+  };
   render(<AdminUsersTable users={[ANA, LUIS]} {...manos} {...props} />);
   return manos;
 };
 const lista = () => screen.getByRole('list', { name: 'users.listLabel' });
-const fila = (nombre) => within(lista()).getByRole('button', { name: new RegExp(nombre) });
+const fila = (nombre) =>
+  within(lista()).getByRole('button', { name: new RegExp(nombre) });
 const ficha = () => screen.getByRole('dialog');
 
 describe('AdminUsersTable · móvil', () => {
@@ -44,9 +61,13 @@ describe('AdminUsersTable · móvil', () => {
     pintar();
 
     expect(lista()).toHaveClass('md:hidden');
-    expect(screen.getByRole('table').parentElement).toHaveClass('hidden', 'md:block');
+    expect(screen.getByRole('table').parentElement).toHaveClass(
+      'hidden',
+      'md:block',
+    );
     expect(within(lista()).getAllByRole('button')).toHaveLength(2);
-    for (const boton of within(lista()).getAllByRole('button')) expect(boton).toHaveClass('w-full');
+    for (const boton of within(lista()).getAllByRole('button'))
+      expect(boton).toHaveClass('w-full');
   });
 
   it('F1: la fila dice el nombre con su alias y el correo debajo', () => {
@@ -78,9 +99,15 @@ describe('AdminUsersTable · móvil', () => {
     expect(dato('users.columnHandicap')).toHaveTextContent('17.7');
     expect(dato('users.columnRole')).toHaveTextContent('users.rolePlayer');
     expect(dato('users.columnStatus')).toHaveTextContent('users.statusActive');
-    expect(dato('users.filterVerified')).toHaveTextContent('users.filterVerifiedNo');
-    expect(dato('users.columnJoined')).toHaveTextContent(new Date(ANA.createdAt).toLocaleDateString('en'));
-    expect(dato('users.columnLastLogin')).toHaveTextContent(new Date(ANA.lastLoginAt).toLocaleDateString('en'));
+    expect(dato('users.filterVerified')).toHaveTextContent(
+      'users.filterVerifiedNo',
+    );
+    expect(dato('users.columnJoined')).toHaveTextContent(
+      new Date(ANA.createdAt).toLocaleDateString('en'),
+    );
+    expect(dato('users.columnLastLogin')).toHaveTextContent(
+      new Date(ANA.lastLoginAt).toLocaleDateString('en'),
+    );
   });
 
   it('F2: lo que falta, con su guion o «nunca»', () => {
@@ -91,15 +118,23 @@ describe('AdminUsersTable · móvil', () => {
     const dato = (clave) => within(ficha()).getByText(clave).nextElementSibling;
     expect(dato('users.columnHandicap')).toHaveTextContent('—');
     expect(dato('users.columnRole')).toHaveTextContent('users.roleAdmin');
-    expect(dato('users.columnStatus')).toHaveTextContent('users.statusInactive');
-    expect(dato('users.filterVerified')).toHaveTextContent('users.filterVerifiedYes');
-    expect(dato('users.columnLastLogin')).toHaveTextContent('users.lastLoginNever');
+    expect(dato('users.columnStatus')).toHaveTextContent(
+      'users.statusInactive',
+    );
+    expect(dato('users.filterVerified')).toHaveTextContent(
+      'users.filterVerifiedYes',
+    );
+    expect(dato('users.columnLastLogin')).toHaveTextContent(
+      'users.lastLoginNever',
+    );
   });
 
   // Un hándicap plus se guarda negativo y se lee con «+» (FE #797)
   it('H1: el plus, con «+» en la ficha y en la tabla', () => {
     pintar({ users: [{ ...ANA, handicap: -2 }, LUIS] });
-    expect(within(screen.getByRole('table')).getByText('+2.0')).toBeInTheDocument();
+    expect(
+      within(screen.getByRole('table')).getByText('+2.0'),
+    ).toBeInTheDocument();
     fireEvent.click(fila('Ana Ruiz'));
 
     const dato = (clave) => within(ficha()).getByText(clave).nextElementSibling;
@@ -123,21 +158,31 @@ describe('AdminUsersTable · móvil', () => {
     const manos = pintar();
     fireEvent.click(fila('Luis Gil'));
 
-    expect(within(ficha()).queryByRole('button', { name: 'users.deactivateTooltip' })).toBeNull();
-    fireEvent.click(within(ficha()).getByRole('button', { name: 'users.reactivateTooltip' }));
+    expect(
+      within(ficha()).queryByRole('button', {
+        name: 'users.deactivateTooltip',
+      }),
+    ).toBeNull();
+    fireEvent.click(
+      within(ficha()).getByRole('button', { name: 'users.reactivateTooltip' }),
+    );
     expect(manos.onToggleActive).toHaveBeenCalledWith(LUIS);
   });
 
   it('F2: de la ficha se sale con «Cerrar» y con Escape, sin hacer nada', () => {
     const manos = pintar();
     fireEvent.click(fila('Ana Ruiz'));
-    fireEvent.click(within(ficha()).getByRole('button', { name: 'common:close' }));
+    fireEvent.click(
+      within(ficha()).getByRole('button', { name: 'common:close' }),
+    );
     expect(screen.queryByRole('dialog')).toBeNull();
 
     fireEvent.click(fila('Ana Ruiz'));
     fireEvent.keyDown(document, { key: 'Escape' });
     expect(screen.queryByRole('dialog')).toBeNull();
-    expect(Object.values(manos).every((m) => m.mock.calls.length === 0)).toBe(true);
+    expect(Object.values(manos).every((m) => m.mock.calls.length === 0)).toBe(
+      true,
+    );
   });
 
   it('F2: la ficha sube desde abajo', () => {
@@ -152,24 +197,42 @@ describe('AdminUsersTable · móvil', () => {
     fireEvent.click(fila('Ana Ruiz'));
     const caja = ficha().firstElementChild;
 
-    expect(caja).toHaveClass('pb-[calc(1.25rem+env(safe-area-inset-bottom))]', 'max-h-[85dvh]');
+    expect(caja).toHaveClass(
+      'pb-[calc(1.25rem+env(safe-area-inset-bottom))]',
+      'max-h-[85dvh]',
+    );
   });
 
   it('/code-review: las marcas de la fila no se encogen', () => {
     pintar();
 
-    for (const marca of within(fila('Luis Gil')).getAllByText(/users\.(roleAdmin|statusInactive)/)) {
+    for (const marca of within(fila('Luis Gil')).getAllByText(
+      /users\.(roleAdmin|statusInactive)/,
+    )) {
       expect(marca).toHaveClass('flex-shrink-0');
     }
   });
 
   it('/code-review: con la ficha abierta, si la lista cambia, la ficha enseña lo de ahora; si el usuario ya no está, se cierra', () => {
-    const manos = { onEdit: vi.fn(), onToggleActive: vi.fn(), onManageDelete: vi.fn() };
-    const { rerender } = render(<AdminUsersTable users={[ANA, LUIS]} {...manos} />);
+    const manos = {
+      onEdit: vi.fn(),
+      onToggleActive: vi.fn(),
+      onManageDelete: vi.fn(),
+    };
+    const { rerender } = render(
+      <AdminUsersTable users={[ANA, LUIS]} {...manos} />,
+    );
     fireEvent.click(fila('Ana Ruiz'));
-    rerender(<AdminUsersTable users={[{ ...ANA, isActive: false }, LUIS]} {...manos} />);
+    rerender(
+      <AdminUsersTable
+        users={[{ ...ANA, isActive: false }, LUIS]}
+        {...manos}
+      />,
+    );
 
-    expect(within(ficha()).getByText('users.columnStatus').nextElementSibling).toHaveTextContent('users.statusInactive');
+    expect(
+      within(ficha()).getByText('users.columnStatus').nextElementSibling,
+    ).toHaveTextContent('users.statusInactive');
     rerender(<AdminUsersTable users={[LUIS]} {...manos} />);
     expect(screen.queryByRole('dialog')).toBeNull();
   });

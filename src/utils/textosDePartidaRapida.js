@@ -46,7 +46,9 @@ export const loadErrorKeyFor = (error) =>
 // móvil no tienen estado HTTP, y por estado caían en el genérico «inténtalo de
 // nuevo», que es lo contrario de lo que hay que hacer con el móvil lleno
 export const saveErrorKeyFor = (error) =>
-  error?.i18nKey ?? SAVE_ERROR_KEY_BY_STATUS[error?.status] ?? 'scoring.errors.saveFailed';
+  error?.i18nKey ??
+  SAVE_ERROR_KEY_BY_STATUS[error?.status] ??
+  'scoring.errors.saveFailed';
 
 // Tres explicaciones, porque son tres cosas distintas: un 409 es que la
 // partida ya esta cerrada —otro dispositivo se adelanto—; sin `status` no ha

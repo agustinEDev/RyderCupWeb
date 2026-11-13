@@ -12,7 +12,9 @@ class IncludeQuickMatchInStatsUseCase {
 
   constructor({ quickMatchRepository }) {
     if (!quickMatchRepository) {
-      throw new Error('IncludeQuickMatchInStatsUseCase requires quickMatchRepository');
+      throw new Error(
+        'IncludeQuickMatchInStatsUseCase requires quickMatchRepository',
+      );
     }
     this.#quickMatchRepository = quickMatchRepository;
   }
@@ -22,7 +24,8 @@ class IncludeQuickMatchInStatsUseCase {
       throw new Error('quickMatchId is required');
     }
 
-    const quickMatch = await this.#quickMatchRepository.includeInStats(quickMatchId);
+    const quickMatch =
+      await this.#quickMatchRepository.includeInStats(quickMatchId);
     return QuickMatchAssembler.toSimpleDTO(quickMatch);
   }
 }

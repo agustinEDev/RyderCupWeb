@@ -2,7 +2,11 @@ import { useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { useFocoRetenido } from '../../hooks/useFocoRetenido';
-import { ALIAS_MAX_LENGTH, loQueHayQueMandar, queLePasaAlAlias } from '../../utils/alias';
+import {
+  ALIAS_MAX_LENGTH,
+  loQueHayQueMandar,
+  queLePasaAlAlias,
+} from '../../utils/alias';
 
 const CONFLICTO = 409;
 
@@ -64,7 +68,11 @@ const AliasSheet = ({ aliasActual, onGuardar, onClose }) => {
     } catch (err) {
       // El conflicto se queda DENTRO de la hoja, con lo tecleado intacto: si
       // se cerrara para enseñar un aviso fuera, habría que escribirlo otra vez
-      setError(err?.status === CONFLICTO ? 'alias.errors.taken' : 'alias.errors.saveFailed');
+      setError(
+        err?.status === CONFLICTO
+          ? 'alias.errors.taken'
+          : 'alias.errors.saveFailed',
+      );
     } finally {
       setGuardando(false);
     }
@@ -121,12 +129,18 @@ const AliasSheet = ({ aliasActual, onGuardar, onClose }) => {
           aria-invalid={error ? 'true' : undefined}
           data-testid="alias-sheet-input"
           className={`w-full rounded-lg border px-3 py-3 text-base focus:outline-none focus:ring-2 ${
-            error ? 'border-red-400 focus:ring-red-400' : 'border-gray-300 focus:ring-primary'
+            error
+              ? 'border-red-400 focus:ring-red-400'
+              : 'border-gray-300 focus:ring-primary'
           }`}
         />
 
         {error ? (
-          <p id="alias-sheet-error" role="alert" className="mt-2 text-sm text-red-600">
+          <p
+            id="alias-sheet-error"
+            role="alert"
+            className="mt-2 text-sm text-red-600"
+          >
             {t(error)}
           </p>
         ) : (

@@ -1,5 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
+import {
+  render,
+  screen,
+  fireEvent,
+  waitFor,
+  act,
+} from '@testing-library/react';
 
 /**
  * La sección de campos avisa a la ficha cuando el servidor confirma un cambio,
@@ -22,7 +28,9 @@ const mockReordenar = vi.fn();
 vi.mock('../../composition', () => ({
   getCompetitionGolfCoursesUseCase: { execute: (...a) => mockCampos(...a) },
   addGolfCourseToCompetitionUseCase: { execute: (...a) => mockAnadir(...a) },
-  removeGolfCourseFromCompetitionUseCase: { execute: (...a) => mockQuitar(...a) },
+  removeGolfCourseFromCompetitionUseCase: {
+    execute: (...a) => mockQuitar(...a),
+  },
   reorderGolfCoursesUseCase: { execute: (...a) => mockReordenar(...a) },
 }));
 
@@ -33,10 +41,14 @@ vi.mock('react-i18next', () => ({
 // El buscador, reducido a un botón que elige un campo
 vi.mock('../golf_course/GolfCourseSearchBox', () => ({
   default: ({ onCourseSelect }) => (
-    <button onClick={() => onCourseSelect({ id: 'g-nuevo', name: 'Meis' })}>elegir-meis</button>
+    <button onClick={() => onCourseSelect({ id: 'g-nuevo', name: 'Meis' })}>
+      elegir-meis
+    </button>
   ),
 }));
-vi.mock('../../services/countries', () => ({ formatCountryName: () => 'España' }));
+vi.mock('../../services/countries', () => ({
+  formatCountryName: () => 'España',
+}));
 vi.mock('../ui/CountryFlag', () => ({ CountryFlag: () => null }));
 vi.mock('../../utils/toast', () => ({
   default: { error: vi.fn(), success: vi.fn(), info: vi.fn() },
@@ -53,9 +65,15 @@ vi.mock('@dnd-kit/core', async (original) => ({
   },
 }));
 
-const CompetitionGolfCoursesSection = (await import('./CompetitionGolfCoursesSection')).default;
+const CompetitionGolfCoursesSection = (
+  await import('./CompetitionGolfCoursesSection')
+).default;
 
-const competicion = { id: 'c-1', status: 'ACTIVE', countries: [{ code: 'ES' }] };
+const competicion = {
+  id: 'c-1',
+  status: 'ACTIVE',
+  countries: [{ code: 'ES' }],
+};
 const fila = (id, name, orden) => ({
   golf_course_id: id,
   display_order: orden,
@@ -68,13 +86,16 @@ const pintar = (onCamposCambiados) =>
       competition={competicion}
       canManage={true}
       onCamposCambiados={onCamposCambiados}
-    />
+    />,
   );
 
 describe('CompetitionGolfCoursesSection · avisa a la ficha (FE #715)', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockCampos.mockResolvedValue([fila('g-1', 'Altea', 1), fila('g-2', 'Villaitana', 2)]);
+    mockCampos.mockResolvedValue([
+      fila('g-1', 'Altea', 1),
+      fila('g-2', 'Villaitana', 2),
+    ]);
     mockAnadir.mockResolvedValue({});
     mockQuitar.mockResolvedValue({});
     mockReordenar.mockResolvedValue({});
@@ -111,7 +132,9 @@ describe('CompetitionGolfCoursesSection · avisa a la ficha (FE #715)', () => {
     const aviso = vi.fn();
     pintar(aviso);
 
-    fireEvent.click((await screen.findAllByTitle('detail.golfCourses.remove'))[0]);
+    fireEvent.click(
+      (await screen.findAllByTitle('detail.golfCourses.remove'))[0],
+    );
     // Se confirma en el modal de la app, no en el diálogo nativo (FE #730)
     fireEvent.click(await screen.findByTestId('confirm-modal-confirm'));
 
@@ -123,17 +146,31 @@ describe('CompetitionGolfCoursesSection · avisa a la ficha (FE #715)', () => {
     const nativo = vi.spyOn(window, 'confirm');
     pintar(vi.fn());
 
-    fireEvent.click((await screen.findAllByTitle('detail.golfCourses.remove'))[0]);
+    fireEvent.click(
+      (await screen.findAllByTitle('detail.golfCourses.remove'))[0],
+    );
     // FE #742 · con sus propias palabras, no «Confirmar» / «Cancelar»
-    expect(await screen.findByText('detail.golfCourses.removeDialog.title')).toBeInTheDocument();
-    expect(screen.getByText('detail.golfCourses.removeDialog.body')).toBeInTheDocument();
     expect(
-      screen.getByRole('button', { name: 'detail.golfCourses.removeDialog.confirm' })
+      await screen.findByText('detail.golfCourses.removeDialog.title'),
     ).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: 'detail.golfCourses.removeDialog.keep' }));
+    expect(
+      screen.getByText('detail.golfCourses.removeDialog.body'),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', {
+        name: 'detail.golfCourses.removeDialog.confirm',
+      }),
+    ).toBeInTheDocument();
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: 'detail.golfCourses.removeDialog.keep',
+      }),
+    );
 
     await waitFor(() =>
-      expect(screen.queryByText('detail.golfCourses.removeDialog.title')).not.toBeInTheDocument()
+      expect(
+        screen.queryByText('detail.golfCourses.removeDialog.title'),
+      ).not.toBeInTheDocument(),
     );
     expect(mockQuitar).not.toHaveBeenCalled();
     expect(nativo).not.toHaveBeenCalled();
@@ -145,7 +182,9 @@ describe('CompetitionGolfCoursesSection · avisa a la ficha (FE #715)', () => {
     pintar(aviso);
     await screen.findAllByText('Villaitana');
 
-    await act(async () => soltar({ active: { id: 'g-2' }, over: { id: 'g-1' } }));
+    await act(async () =>
+      soltar({ active: { id: 'g-2' }, over: { id: 'g-1' } }),
+    );
 
     expect(mockReordenar).toHaveBeenCalledWith('c-1', ['g-2', 'g-1']);
     expect(aviso).toHaveBeenCalledTimes(1);
@@ -157,7 +196,9 @@ describe('CompetitionGolfCoursesSection · avisa a la ficha (FE #715)', () => {
     pintar(aviso);
     await screen.findAllByText('Villaitana');
 
-    await act(async () => soltar({ active: { id: 'g-2' }, over: { id: 'g-1' } }));
+    await act(async () =>
+      soltar({ active: { id: 'g-2' }, over: { id: 'g-1' } }),
+    );
 
     expect(aviso).not.toHaveBeenCalled();
   });
@@ -166,10 +207,13 @@ describe('CompetitionGolfCoursesSection · avisa a la ficha (FE #715)', () => {
     mockReordenar.mockRejectedValue(new Error('no'));
     pintar(vi.fn());
     await screen.findAllByText('Villaitana');
-    const nombres = () => screen.getAllByText(/^(Altea|Villaitana)$/).map((n) => n.textContent);
+    const nombres = () =>
+      screen.getAllByText(/^(Altea|Villaitana)$/).map((n) => n.textContent);
     const orden = nombres();
 
-    await act(async () => soltar({ active: { id: 'g-2' }, over: { id: 'g-1' } }));
+    await act(async () =>
+      soltar({ active: { id: 'g-2' }, over: { id: 'g-1' } }),
+    );
 
     await waitFor(() => expect(mockCampos).toHaveBeenCalledTimes(2));
     await waitFor(() => expect(nombres()).toEqual(orden));
@@ -177,7 +221,9 @@ describe('CompetitionGolfCoursesSection · avisa a la ficha (FE #715)', () => {
 
   it('T3-17: con otra competición, lee sus campos', async () => {
     mockCampos.mockImplementation((id) =>
-      Promise.resolve(id === 'c-1' ? [fila('g-1', 'Altea', 1)] : [fila('g-9', 'Meis', 1)])
+      Promise.resolve(
+        id === 'c-1' ? [fila('g-1', 'Altea', 1)] : [fila('g-9', 'Meis', 1)],
+      ),
     );
     const { rerender } = pintar(vi.fn());
     await screen.findAllByText('Altea');
@@ -187,7 +233,7 @@ describe('CompetitionGolfCoursesSection · avisa a la ficha (FE #715)', () => {
         competition={{ ...competicion, id: 'c-2' }}
         canManage={true}
         onCamposCambiados={vi.fn()}
-      />
+      />,
     );
 
     expect(await screen.findAllByText('Meis')).not.toHaveLength(0);
@@ -200,10 +246,13 @@ describe('CompetitionGolfCoursesSection · avisa a la ficha (FE #715)', () => {
     mockCampos
       .mockResolvedValueOnce([fila('g-1', 'Altea', 1)])
       .mockImplementationOnce(() =>
-        Promise.resolve([fila('g-1', 'Altea', 1), fila('g-nuevo', 'Meis', 2)]).then((lista) => {
+        Promise.resolve([
+          fila('g-1', 'Altea', 1),
+          fila('g-nuevo', 'Meis', 2),
+        ]).then((lista) => {
           releida = true;
           return lista;
-        })
+        }),
       );
     const alAvisar = [];
     const aviso = vi.fn(() => alAvisar.push(releida));
@@ -219,18 +268,23 @@ describe('CompetitionGolfCoursesSection · avisa a la ficha (FE #715)', () => {
   it('T3-17: al quitar, avisa una vez y ya con la lista vuelta a leer', async () => {
     let releida = false;
     mockCampos
-      .mockResolvedValueOnce([fila('g-1', 'Altea', 1), fila('g-2', 'Villaitana', 2)])
+      .mockResolvedValueOnce([
+        fila('g-1', 'Altea', 1),
+        fila('g-2', 'Villaitana', 2),
+      ])
       .mockImplementationOnce(() =>
         Promise.resolve([fila('g-2', 'Villaitana', 1)]).then((lista) => {
           releida = true;
           return lista;
-        })
+        }),
       );
     const alAvisar = [];
     const aviso = vi.fn(() => alAvisar.push(releida));
     pintar(aviso);
 
-    fireEvent.click((await screen.findAllByTitle('detail.golfCourses.remove'))[0]);
+    fireEvent.click(
+      (await screen.findAllByTitle('detail.golfCourses.remove'))[0],
+    );
     fireEvent.click(await screen.findByTestId('confirm-modal-confirm'));
 
     await waitFor(() => expect(aviso).toHaveBeenCalledTimes(1));
@@ -240,16 +294,25 @@ describe('CompetitionGolfCoursesSection · avisa a la ficha (FE #715)', () => {
 
   it('T3-16: añadir y quitar seguidos; si la primera relectura llega la última, se queda la segunda', async () => {
     let anadido;
-    mockAnadir.mockReturnValue(new Promise((r) => { anadido = r; }));
+    mockAnadir.mockReturnValue(
+      new Promise((r) => {
+        anadido = r;
+      }),
+    );
     const relecturas = [];
     mockCampos
-      .mockResolvedValueOnce([fila('g-1', 'Altea', 1), fila('g-2', 'Villaitana', 2)])
+      .mockResolvedValueOnce([
+        fila('g-1', 'Altea', 1),
+        fila('g-2', 'Villaitana', 2),
+      ])
       .mockImplementation(() => new Promise((r) => relecturas.push(r)));
     pintar(vi.fn());
 
     // El alta viaja; mientras, se quita Altea
     await anadirMeis();
-    fireEvent.click((await screen.findAllByTitle('detail.golfCourses.remove'))[0]);
+    fireEvent.click(
+      (await screen.findAllByTitle('detail.golfCourses.remove'))[0],
+    );
     fireEvent.click(await screen.findByTestId('confirm-modal-confirm'));
     await waitFor(() => expect(relecturas).toHaveLength(1));
     // Vuelve el alta: la segunda relectura

@@ -56,7 +56,12 @@ export const clearUserContext = () => {
  * });
  */
 export const captureError = (error, context = {}) => {
-  const { level = 'error', tags = {}, extra = {}, fingerprint = null } = context;
+  const {
+    level = 'error',
+    tags = {},
+    extra = {},
+    fingerprint = null,
+  } = context;
 
   Sentry.withScope((scope) => {
     scope.setLevel(level);

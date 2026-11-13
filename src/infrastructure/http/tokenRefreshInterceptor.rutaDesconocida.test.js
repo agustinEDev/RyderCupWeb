@@ -36,7 +36,10 @@ describe('interceptor · dirección que no existe', () => {
       setItem: () => {},
       removeItem: () => {},
     });
-    vi.stubGlobal('fetch', vi.fn(async () => noAutorizado()));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => noAutorizado()),
+    );
     window.history.pushState({}, '', '/esto-no-existe');
   });
 
@@ -46,19 +49,28 @@ describe('interceptor · dirección que no existe', () => {
   });
 
   it('N2: sin usuario guardado, el 401 vuelve tal cual, sin refresco ni salida', async () => {
-    const respuesta = await fetchWithTokenRefresh('/api/v1/auth/current-user', {});
+    const respuesta = await fetchWithTokenRefresh(
+      '/api/v1/auth/current-user',
+      {},
+    );
 
     expect(respuesta.status).toBe(401);
     expect(fetch).toHaveBeenCalledTimes(1);
-    expect(fetch.mock.calls.some(([url]) => url.includes('refresh-token'))).toBe(false);
+    expect(
+      fetch.mock.calls.some(([url]) => url.includes('refresh-token')),
+    ).toBe(false);
     expect(salidas.expirada).not.toHaveBeenCalled();
   });
 
   it('con usuario guardado sí intenta refrescar: puede tener la sesión viva', async () => {
     guardado = JSON.stringify({ id: 'u-1' });
 
-    await fetchWithTokenRefresh('/api/v1/auth/current-user', {}).catch(() => {});
+    await fetchWithTokenRefresh('/api/v1/auth/current-user', {}).catch(
+      () => {},
+    );
 
-    expect(fetch.mock.calls.some(([url]) => url.includes('refresh-token'))).toBe(true);
+    expect(
+      fetch.mock.calls.some(([url]) => url.includes('refresh-token')),
+    ).toBe(true);
   });
 });

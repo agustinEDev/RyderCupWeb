@@ -28,7 +28,10 @@ class NameCaptainsUseCase {
     return {
       id: data.id,
       status: data.status,
-      captains: { teamA: data.team_a_captain_id, teamB: data.team_b_captain_id },
+      captains: {
+        teamA: data.team_a_captain_id,
+        teamB: data.team_b_captain_id,
+      },
       totalPlayers: data.total_players,
       unevenTeams: data.uneven_teams === true,
     };

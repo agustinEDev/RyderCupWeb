@@ -34,7 +34,10 @@ import { BrowserRouter, Routes, Route } from 'react-router';
  *   R5b Reintentar y ahora un 429      | el aviso del 429
  *   R5c Reintentar y ahora valid:false | «enlace no válido» y pedir otro
  */
-const repositorio = vi.hoisted(() => ({ validateResetToken: vi.fn(), resetPassword: vi.fn() }));
+const repositorio = vi.hoisted(() => ({
+  validateResetToken: vi.fn(),
+  resetPassword: vi.fn(),
+}));
 
 // `t` estable, como la de verdad: una nueva en cada render volvía a lanzar la
 // validación del token (depende de `t`) y descuadraba las llamadas
@@ -42,13 +45,16 @@ const { tEstable } = vi.hoisted(() => ({ tEstable: (clave) => clave }));
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({ t: tEstable, i18n: { language: 'es' } }),
 }));
-vi.mock('../utils/toast', () => ({ default: { error: vi.fn(), success: vi.fn(), info: vi.fn() } }));
+vi.mock('../utils/toast', () => ({
+  default: { error: vi.fn(), success: vi.fn(), info: vi.fn() },
+}));
 vi.mock('../composition', async () => {
-  const { default: ValidateResetTokenUseCase } = await import(
-    '../application/use_cases/user/ValidateResetTokenUseCase'
-  );
+  const { default: ValidateResetTokenUseCase } =
+    await import('../application/use_cases/user/ValidateResetTokenUseCase');
   return {
-    validateResetTokenUseCase: new ValidateResetTokenUseCase({ authRepository: repositorio }),
+    validateResetTokenUseCase: new ValidateResetTokenUseCase({
+      authRepository: repositorio,
+    }),
     resetPasswordUseCase: { execute: vi.fn() },
   };
 });
@@ -63,29 +69,36 @@ const abrir = (token) => {
       <Routes>
         <Route path="/reset-password/:token" element={<ResetPassword />} />
       </Routes>
-    </BrowserRouter>
+    </BrowserRouter>,
   );
 };
 
 // La recarga: la barra ya limpia y el token solo en el estado del historial
 const abrirSoloConElHistorial = (token) => {
-  window.history.replaceState({ secretosDeLaUrl: { token } }, '', '/reset-password');
+  window.history.replaceState(
+    { secretosDeLaUrl: { token } },
+    '',
+    '/reset-password',
+  );
   render(
     <BrowserRouter>
       <Routes>
         <Route path="/reset-password" element={<ResetPassword />} />
       </Routes>
-    </BrowserRouter>
+    </BrowserRouter>,
   );
 };
 
 // Como lo marca api.js: el TypeError de fetch, envuelto, con la marca explícita
 const sinConexion = () =>
   Object.assign(
-    new TypeError('common:sinConexion.mensaje', { cause: new TypeError('Failed to fetch') }),
-    { sinConexion: true }
+    new TypeError('common:sinConexion.mensaje', {
+      cause: new TypeError('Failed to fetch'),
+    }),
+    { sinConexion: true },
   );
-const conEstado = (status, mensaje) => Object.assign(new Error(mensaje), { status });
+const conEstado = (status, mensaje) =>
+  Object.assign(new Error(mensaje), { status });
 
 const noDiceQueElEnlaceEsteMal = () => {
   expect(screen.queryByText('resetPassword.invalidTokenTitle')).toBeNull();
@@ -107,25 +120,39 @@ describe('ResetPassword · enlace caducado o inválido (FE #775)', () => {
   it('L1: valid:false enseña el aviso y no el formulario', async () => {
     repositorio.validateResetToken.mockResolvedValue({
       valid: false,
-      message: 'Token de reseteo inválido o expirado. Solicita un nuevo enlace.',
+      message:
+        'Token de reseteo inválido o expirado. Solicita un nuevo enlace.',
     });
     abrir('a'.repeat(48));
 
-    expect(await screen.findByText('resetPassword.invalidTokenTitle')).toBeInTheDocument();
-    // El texto propio y traducido, no el del backend (que viene en español)
-    expect(screen.getByText('resetPassword.tokenInvalidMessage')).toBeInTheDocument();
     expect(
-      screen.queryByText('Token de reseteo inválido o expirado. Solicita un nuevo enlace.')
+      await screen.findByText('resetPassword.invalidTokenTitle'),
+    ).toBeInTheDocument();
+    // El texto propio y traducido, no el del backend (que viene en español)
+    expect(
+      screen.getByText('resetPassword.tokenInvalidMessage'),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByText(
+        'Token de reseteo inválido o expirado. Solicita un nuevo enlace.',
+      ),
     ).toBeNull();
-    expect(screen.getByText('resetPassword.requestNewLink')).toBeInTheDocument();
+    expect(
+      screen.getByText('resetPassword.requestNewLink'),
+    ).toBeInTheDocument();
     expect(document.querySelector('input[type="password"]')).toBeNull();
   });
 
   it('L2: valid:true enseña el formulario', async () => {
-    repositorio.validateResetToken.mockResolvedValue({ valid: true, message: 'ok' });
+    repositorio.validateResetToken.mockResolvedValue({
+      valid: true,
+      message: 'ok',
+    });
     abrir('b'.repeat(48));
 
-    await vi.waitFor(() => expect(document.querySelector('input[type="password"]')).not.toBeNull());
+    await vi.waitFor(() =>
+      expect(document.querySelector('input[type="password"]')).not.toBeNull(),
+    );
     expect(screen.queryByText('resetPassword.invalidTokenTitle')).toBeNull();
   });
 });
@@ -144,8 +171,12 @@ describe('ResetPassword · no se ha podido comprobar el enlace (FE #785)', () =>
     repositorio.validateResetToken.mockResolvedValue({ valid: false });
     abrir('a'.repeat(48));
 
-    expect(await screen.findByText('resetPassword.invalidTokenTitle')).toBeInTheDocument();
-    expect(screen.getByText('resetPassword.requestNewLink')).toBeInTheDocument();
+    expect(
+      await screen.findByText('resetPassword.invalidTokenTitle'),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText('resetPassword.requestNewLink'),
+    ).toBeInTheDocument();
     expect(screen.queryByText('resetPassword.retry')).toBeNull();
     expect(screen.queryByText('resetPassword.checkFailedTitle')).toBeNull();
   });
@@ -154,19 +185,31 @@ describe('ResetPassword · no se ha podido comprobar el enlace (FE #785)', () =>
     repositorio.validateResetToken.mockRejectedValue(sinConexion());
     abrir('a'.repeat(48));
 
-    expect(await screen.findByText('resetPassword.checkFailedTitle')).toBeInTheDocument();
-    expect(screen.getByText('resetPassword.checkNoConnection')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'resetPassword.retry' })).toBeInTheDocument();
+    expect(
+      await screen.findByText('resetPassword.checkFailedTitle'),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText('resetPassword.checkNoConnection'),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: 'resetPassword.retry' }),
+    ).toBeInTheDocument();
     expect(screen.queryByText('resetPassword.checkServerError')).toBeNull();
     noDiceQueElEnlaceEsteMal();
   });
 
   it('R3: un 429 pide esperar un poco y reintentar, sin pedir otro correo', async () => {
-    repositorio.validateResetToken.mockRejectedValue(conEstado(429, 'common:demasiadasPeticiones'));
+    repositorio.validateResetToken.mockRejectedValue(
+      conEstado(429, 'common:demasiadasPeticiones'),
+    );
     abrir('a'.repeat(48));
 
-    expect(await screen.findByText('resetPassword.checkTooManyRequests')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'resetPassword.retry' })).toBeInTheDocument();
+    expect(
+      await screen.findByText('resetPassword.checkTooManyRequests'),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: 'resetPassword.retry' }),
+    ).toBeInTheDocument();
     // El aviso de los 60 minutos es el del envío, no el de la comprobación
     expect(screen.queryByText('resetPassword.rateLimitError')).toBeNull();
     expect(screen.queryByText('resetPassword.checkServerError')).toBeNull();
@@ -174,28 +217,48 @@ describe('ResetPassword · no se ha podido comprobar el enlace (FE #785)', () =>
   });
 
   it('R4: un 5xx dice que no se ha podido comprobar y ofrece reintentar', async () => {
-    repositorio.validateResetToken.mockRejectedValue(conEstado(500, 'Internal Server Error'));
+    repositorio.validateResetToken.mockRejectedValue(
+      conEstado(500, 'Internal Server Error'),
+    );
     abrir('a'.repeat(48));
 
-    expect(await screen.findByText('resetPassword.checkServerError')).toBeInTheDocument();
-    expect(screen.getByText('resetPassword.checkFailedTitle')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'resetPassword.retry' })).toBeInTheDocument();
+    expect(
+      await screen.findByText('resetPassword.checkServerError'),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText('resetPassword.checkFailedTitle'),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: 'resetPassword.retry' }),
+    ).toBeInTheDocument();
     expect(screen.queryByText('Internal Server Error')).toBeNull();
     noDiceQueElEnlaceEsteMal();
   });
 
   const esEnlaceMalo = async () => {
-    expect(await screen.findByText('resetPassword.invalidTokenTitle')).toBeInTheDocument();
-    expect(screen.getByText('resetPassword.tokenInvalidMessage')).toBeInTheDocument();
-    expect(screen.getByText('resetPassword.requestNewLink')).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'resetPassword.retry' })).toBeNull();
+    expect(
+      await screen.findByText('resetPassword.invalidTokenTitle'),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText('resetPassword.tokenInvalidMessage'),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText('resetPassword.requestNewLink'),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: 'resetPassword.retry' }),
+    ).toBeNull();
     expect(screen.queryByText('resetPassword.checkFailedTitle')).toBeNull();
   };
 
   const noSePudoComprobar = async (motivo) => {
-    expect(await screen.findByText('resetPassword.checkFailedTitle')).toBeInTheDocument();
+    expect(
+      await screen.findByText('resetPassword.checkFailedTitle'),
+    ).toBeInTheDocument();
     expect(screen.getByText(motivo)).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'resetPassword.retry' })).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: 'resetPassword.retry' }),
+    ).toBeInTheDocument();
     noDiceQueElEnlaceEsteMal();
   };
 
@@ -211,18 +274,21 @@ describe('ResetPassword · no se ha podido comprobar el enlace (FE #785)', () =>
   it.each([
     ['en blanco', '%20%20'],
     ['con tabulador', '%20%09%20'],
-  ])('R4c: un token %s es «enlace no válido» sin llamar al caso de uso', async (_, token) => {
-    const execute = vi.spyOn(validateResetTokenUseCase, 'execute');
-    try {
-      abrir(token);
+  ])(
+    'R4c: un token %s es «enlace no válido» sin llamar al caso de uso',
+    async (_, token) => {
+      const execute = vi.spyOn(validateResetTokenUseCase, 'execute');
+      try {
+        abrir(token);
 
-      await esEnlaceMalo();
-      expect(execute).not.toHaveBeenCalled();
-      expect(repositorio.validateResetToken).not.toHaveBeenCalled();
-    } finally {
-      execute.mockRestore();
-    }
-  });
+        await esEnlaceMalo();
+        expect(execute).not.toHaveBeenCalled();
+        expect(repositorio.validateResetToken).not.toHaveBeenCalled();
+      } finally {
+        execute.mockRestore();
+      }
+    },
+  );
 
   it('R4c: sin token en la ruta ni en el historial es «enlace no válido»', async () => {
     const execute = vi.spyOn(validateResetTokenUseCase, 'execute');
@@ -233,7 +299,7 @@ describe('ResetPassword · no se ha podido comprobar el enlace (FE #785)', () =>
           <Routes>
             <Route path="/reset-password" element={<ResetPassword />} />
           </Routes>
-        </BrowserRouter>
+        </BrowserRouter>,
       );
 
       await esEnlaceMalo();
@@ -244,7 +310,9 @@ describe('ResetPassword · no se ha podido comprobar el enlace (FE #785)', () =>
   });
 
   it('R4d: un 200 que no es JSON (SyntaxError, portal cautivo) es «no se ha podido comprobar»', async () => {
-    repositorio.validateResetToken.mockRejectedValue(new SyntaxError('Unexpected token <'));
+    repositorio.validateResetToken.mockRejectedValue(
+      new SyntaxError('Unexpected token <'),
+    );
     abrir('a'.repeat(48));
 
     await noSePudoComprobar('resetPassword.checkServerError');
@@ -252,7 +320,7 @@ describe('ResetPassword · no se ha podido comprobar el enlace (FE #785)', () =>
 
   it('R4e: un TypeError sin cause, con red, es «no se ha podido comprobar» y no «sin conexión»', async () => {
     repositorio.validateResetToken.mockRejectedValue(
-      new TypeError("Cannot read properties of null (reading 'valid')")
+      new TypeError("Cannot read properties of null (reading 'valid')"),
     );
     abrir('a'.repeat(48));
 
@@ -262,7 +330,7 @@ describe('ResetPassword · no se ha podido comprobar el enlace (FE #785)', () =>
 
   it('R4f: un TypeError con cause pero SIN la marca de api.js no es «sin conexión»', async () => {
     repositorio.validateResetToken.mockRejectedValue(
-      new TypeError('x', { cause: new TypeError('Failed to fetch') })
+      new TypeError('x', { cause: new TypeError('Failed to fetch') }),
     );
     abrir('a'.repeat(48));
 
@@ -277,27 +345,48 @@ describe('ResetPassword · no se ha podido comprobar el enlace (FE #785)', () =>
     [422, 'Unprocessable Entity'],
     [400, 'Bad Request'],
     [403, 'Forbidden'],
-  ])('R6: un %i es «enlace no válido» y pide otro, sin Reintentar', async (status, mensaje) => {
-    repositorio.validateResetToken.mockRejectedValue(conEstado(status, mensaje));
-    abrir('a'.repeat(48));
+  ])(
+    'R6: un %i es «enlace no válido» y pide otro, sin Reintentar',
+    async (status, mensaje) => {
+      repositorio.validateResetToken.mockRejectedValue(
+        conEstado(status, mensaje),
+      );
+      abrir('a'.repeat(48));
 
-    expect(await screen.findByText('resetPassword.invalidTokenTitle')).toBeInTheDocument();
-    expect(screen.getByText('resetPassword.tokenInvalidMessage')).toBeInTheDocument();
-    expect(screen.getByText('resetPassword.requestNewLink')).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'resetPassword.retry' })).toBeNull();
-    expect(screen.queryByText('resetPassword.checkFailedTitle')).toBeNull();
-    expect(screen.queryByText(mensaje)).toBeNull();
-  });
+      expect(
+        await screen.findByText('resetPassword.invalidTokenTitle'),
+      ).toBeInTheDocument();
+      expect(
+        screen.getByText('resetPassword.tokenInvalidMessage'),
+      ).toBeInTheDocument();
+      expect(
+        screen.getByText('resetPassword.requestNewLink'),
+      ).toBeInTheDocument();
+      expect(
+        screen.queryByRole('button', { name: 'resetPassword.retry' }),
+      ).toBeNull();
+      expect(screen.queryByText('resetPassword.checkFailedTitle')).toBeNull();
+      expect(screen.queryByText(mensaje)).toBeNull();
+    },
+  );
 
   it('R6c: sin conexión manda aunque el error traiga un 4xx', async () => {
     // Lo que contesta la caché o el service worker sin red no es la API
-    const onLine = vi.spyOn(globalThis.navigator, 'onLine', 'get').mockReturnValue(false);
+    const onLine = vi
+      .spyOn(globalThis.navigator, 'onLine', 'get')
+      .mockReturnValue(false);
     try {
-      repositorio.validateResetToken.mockRejectedValue(conEstado(404, 'Not Found'));
+      repositorio.validateResetToken.mockRejectedValue(
+        conEstado(404, 'Not Found'),
+      );
       abrir('a'.repeat(48));
 
-      expect(await screen.findByText('resetPassword.checkNoConnection')).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: 'resetPassword.retry' })).toBeInTheDocument();
+      expect(
+        await screen.findByText('resetPassword.checkNoConnection'),
+      ).toBeInTheDocument();
+      expect(
+        screen.getByRole('button', { name: 'resetPassword.retry' }),
+      ).toBeInTheDocument();
       noDiceQueElEnlaceEsteMal();
     } finally {
       onLine.mockRestore();
@@ -305,21 +394,33 @@ describe('ResetPassword · no se ha podido comprobar el enlace (FE #785)', () =>
   });
 
   it('R6b: un 503 sigue siendo «no se ha podido comprobar»', async () => {
-    repositorio.validateResetToken.mockRejectedValue(conEstado(503, 'Service Unavailable'));
+    repositorio.validateResetToken.mockRejectedValue(
+      conEstado(503, 'Service Unavailable'),
+    );
     abrir('a'.repeat(48));
 
-    expect(await screen.findByText('resetPassword.checkServerError')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'resetPassword.retry' })).toBeInTheDocument();
+    expect(
+      await screen.findByText('resetPassword.checkServerError'),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: 'resetPassword.retry' }),
+    ).toBeInTheDocument();
     noDiceQueElEnlaceEsteMal();
   });
 
   // Revisión del 21 oct: un 408 es que no dio tiempo a contestar, no un enlace malo
   it('R6d: un 408 es «no se ha podido comprobar» y ofrece reintentar', async () => {
-    repositorio.validateResetToken.mockRejectedValue(conEstado(408, 'Request Timeout'));
+    repositorio.validateResetToken.mockRejectedValue(
+      conEstado(408, 'Request Timeout'),
+    );
     abrir('a'.repeat(48));
 
-    expect(await screen.findByText('resetPassword.checkServerError')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'resetPassword.retry' })).toBeInTheDocument();
+    expect(
+      await screen.findByText('resetPassword.checkServerError'),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: 'resetPassword.retry' }),
+    ).toBeInTheDocument();
     expect(screen.queryByText('Request Timeout')).toBeNull();
     noDiceQueElEnlaceEsteMal();
   });
@@ -333,20 +434,28 @@ describe('ResetPassword · no se ha podido comprobar el enlace (FE #785)', () =>
         () =>
           new Promise((resolve) => {
             responder = resolve;
-          })
+          }),
       );
     abrirSoloConElHistorial(token);
 
-    fireEvent.click(await screen.findByRole('button', { name: 'resetPassword.retry' }));
+    fireEvent.click(
+      await screen.findByRole('button', { name: 'resetPassword.retry' }),
+    );
 
     // Mientras comprueba, la espera de siempre
-    expect(await screen.findByText('resetPassword.validatingToken')).toBeInTheDocument();
-    await vi.waitFor(() => expect(repositorio.validateResetToken).toHaveBeenCalledTimes(2));
+    expect(
+      await screen.findByText('resetPassword.validatingToken'),
+    ).toBeInTheDocument();
+    await vi.waitFor(() =>
+      expect(repositorio.validateResetToken).toHaveBeenCalledTimes(2),
+    );
     expect(repositorio.validateResetToken).toHaveBeenNthCalledWith(1, token);
     expect(repositorio.validateResetToken).toHaveBeenNthCalledWith(2, token);
 
     responder({ valid: true, message: 'ok' });
-    await vi.waitFor(() => expect(document.querySelector('input[type="password"]')).not.toBeNull());
+    await vi.waitFor(() =>
+      expect(document.querySelector('input[type="password"]')).not.toBeNull(),
+    );
     expect(screen.queryByText('resetPassword.checkFailedTitle')).toBeNull();
   });
 
@@ -356,12 +465,18 @@ describe('ResetPassword · no se ha podido comprobar el enlace (FE #785)', () =>
       .mockRejectedValueOnce(conEstado(429, 'common:demasiadasPeticiones'));
     abrir('e'.repeat(48));
 
-    fireEvent.click(await screen.findByRole('button', { name: 'resetPassword.retry' }));
+    fireEvent.click(
+      await screen.findByRole('button', { name: 'resetPassword.retry' }),
+    );
 
-    expect(await screen.findByText('resetPassword.checkTooManyRequests')).toBeInTheDocument();
+    expect(
+      await screen.findByText('resetPassword.checkTooManyRequests'),
+    ).toBeInTheDocument();
     expect(screen.queryByText('resetPassword.checkServerError')).toBeNull();
     expect(repositorio.validateResetToken).toHaveBeenCalledTimes(2);
-    expect(repositorio.validateResetToken).toHaveBeenLastCalledWith('e'.repeat(48));
+    expect(repositorio.validateResetToken).toHaveBeenLastCalledWith(
+      'e'.repeat(48),
+    );
   });
 
   it('R5c: si al reintentar la API dice valid:false, es «enlace no válido»', async () => {
@@ -370,10 +485,16 @@ describe('ResetPassword · no se ha podido comprobar el enlace (FE #785)', () =>
       .mockResolvedValueOnce({ valid: false });
     abrir('f'.repeat(48));
 
-    fireEvent.click(await screen.findByRole('button', { name: 'resetPassword.retry' }));
+    fireEvent.click(
+      await screen.findByRole('button', { name: 'resetPassword.retry' }),
+    );
 
-    expect(await screen.findByText('resetPassword.invalidTokenTitle')).toBeInTheDocument();
-    expect(screen.getByText('resetPassword.requestNewLink')).toBeInTheDocument();
+    expect(
+      await screen.findByText('resetPassword.invalidTokenTitle'),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText('resetPassword.requestNewLink'),
+    ).toBeInTheDocument();
     expect(screen.queryByText('resetPassword.checkFailedTitle')).toBeNull();
   });
 });

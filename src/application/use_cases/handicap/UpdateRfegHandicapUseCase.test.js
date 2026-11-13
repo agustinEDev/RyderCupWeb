@@ -24,7 +24,7 @@ describe('UpdateRfegHandicapUseCase', () => {
     // Instanciar UpdateRfegHandicapUseCase con los mocks
     updateRfegHandicapUseCase = new UpdateRfegHandicapUseCase({
       handicapRepository,
-      userRepository
+      userRepository,
     });
   });
 
@@ -37,7 +37,7 @@ describe('UpdateRfegHandicapUseCase', () => {
       last_name: 'User',
       email: 'test@example.com',
       country_code: 'ES',
-      handicap: 15.0
+      handicap: 15.0,
     });
 
     const mockUpdatedUserEntity = new User({
@@ -47,7 +47,7 @@ describe('UpdateRfegHandicapUseCase', () => {
       email: 'test@example.com',
       country_code: 'ES',
       handicap: 18.0,
-      handicap_updated_at: new Date().toISOString()
+      handicap_updated_at: new Date().toISOString(),
     });
 
     // Mock: userRepository.getById devuelve un usuario español
@@ -71,8 +71,9 @@ describe('UpdateRfegHandicapUseCase', () => {
   });
 
   it('should throw an error if userId is not provided', async () => {
-    await expect(updateRfegHandicapUseCase.execute({ userId: '' }))
-      .rejects.toThrow('User ID is required');
+    await expect(
+      updateRfegHandicapUseCase.execute({ userId: '' }),
+    ).rejects.toThrow('User ID is required');
   });
 
   it('should propagate errors from the handicap repository', async () => {
@@ -83,7 +84,7 @@ describe('UpdateRfegHandicapUseCase', () => {
       first_name: 'Test',
       last_name: 'User',
       email: 'test@example.com',
-      country_code: 'ES'
+      country_code: 'ES',
     });
     const mockError = new Error('API error during RFEG handicap update');
 
@@ -91,8 +92,9 @@ describe('UpdateRfegHandicapUseCase', () => {
     handicapRepository.updateFromRfeg.mockRejectedValue(mockError);
 
     // Act & Assert
-    await expect(updateRfegHandicapUseCase.execute({ userId }))
-      .rejects.toThrow('API error during RFEG handicap update');
+    await expect(updateRfegHandicapUseCase.execute({ userId })).rejects.toThrow(
+      'API error during RFEG handicap update',
+    );
     expect(userRepository.getById).toHaveBeenCalledWith(userId);
     expect(handicapRepository.updateFromRfeg).toHaveBeenCalledWith(userId);
   });
@@ -105,8 +107,9 @@ describe('UpdateRfegHandicapUseCase', () => {
     userRepository.getById.mockResolvedValue(null);
 
     // Act & Assert
-    await expect(updateRfegHandicapUseCase.execute({ userId }))
-      .rejects.toThrow('User not found');
+    await expect(updateRfegHandicapUseCase.execute({ userId })).rejects.toThrow(
+      'User not found',
+    );
     expect(userRepository.getById).toHaveBeenCalledWith(userId);
     expect(handicapRepository.updateFromRfeg).not.toHaveBeenCalled();
   });
@@ -119,14 +122,15 @@ describe('UpdateRfegHandicapUseCase', () => {
       first_name: 'Test',
       last_name: 'User',
       email: 'test@example.com',
-      country_code: null // Sin nacionalidad
+      country_code: null, // Sin nacionalidad
     });
 
     userRepository.getById.mockResolvedValue(mockUserEntity);
 
     // Act & Assert
-    await expect(updateRfegHandicapUseCase.execute({ userId }))
-      .rejects.toThrow('RFEG handicap updates require Spanish nationality');
+    await expect(updateRfegHandicapUseCase.execute({ userId })).rejects.toThrow(
+      'RFEG handicap updates require Spanish nationality',
+    );
     expect(userRepository.getById).toHaveBeenCalledWith(userId);
     expect(handicapRepository.updateFromRfeg).not.toHaveBeenCalled();
   });
@@ -139,14 +143,15 @@ describe('UpdateRfegHandicapUseCase', () => {
       first_name: 'Test',
       last_name: 'User',
       email: 'test@example.com',
-      country_code: 'FR' // Usuario francés
+      country_code: 'FR', // Usuario francés
     });
 
     userRepository.getById.mockResolvedValue(mockUserEntity);
 
     // Act & Assert
-    await expect(updateRfegHandicapUseCase.execute({ userId }))
-      .rejects.toThrow('RFEG handicap updates are only available for Spanish players');
+    await expect(updateRfegHandicapUseCase.execute({ userId })).rejects.toThrow(
+      'RFEG handicap updates are only available for Spanish players',
+    );
     expect(userRepository.getById).toHaveBeenCalledWith(userId);
     expect(handicapRepository.updateFromRfeg).not.toHaveBeenCalled();
   });
@@ -154,16 +159,30 @@ describe('UpdateRfegHandicapUseCase', () => {
   // C2 (25 oct 2026): gemelo de canUseRFEG. Sentry recogía la consola como
   // migas, y el país del usuario salía en ella
   it('C2: un usuario no español no deja su país en la consola', async () => {
-    const espias = ['log', 'info', 'warn', 'error', 'debug'].map((m) => vi.spyOn(console, m).mockImplementation(() => {}));
+    const espias = ['log', 'info', 'warn', 'error', 'debug'].map((m) =>
+      vi.spyOn(console, m).mockImplementation(() => {}),
+    );
     userRepository.getById.mockResolvedValue(
-      new User({ id: 'user-123', first_name: 'Test', last_name: 'User', email: 'test@example.com', country_code: 'FR' })
+      new User({
+        id: 'user-123',
+        first_name: 'Test',
+        last_name: 'User',
+        email: 'test@example.com',
+        country_code: 'FR',
+      }),
     );
 
-    await expect(updateRfegHandicapUseCase.execute({ userId: 'user-123' })).rejects.toThrow();
+    await expect(
+      updateRfegHandicapUseCase.execute({ userId: 'user-123' }),
+    ).rejects.toThrow();
 
     // Con el mensaje del Error: JSON.stringify lo deja fuera (CodeRabbit)
-    const escrito = JSON.stringify(espias.flatMap((e) => e.mock.calls), (_, valor) =>
-      valor instanceof Error ? { name: valor.name, message: valor.message } : valor
+    const escrito = JSON.stringify(
+      espias.flatMap((e) => e.mock.calls),
+      (_, valor) =>
+        valor instanceof Error
+          ? { name: valor.name, message: valor.message }
+          : valor,
     );
     expect(escrito).not.toContain('FR');
     espias.forEach((e) => e.mockRestore());
@@ -177,7 +196,7 @@ describe('UpdateRfegHandicapUseCase', () => {
       first_name: 'Test',
       last_name: 'User',
       email: 'test@example.com',
-      country_code: 'es' // Usuario español (lowercase to test case-insensitivity)
+      country_code: 'es', // Usuario español (lowercase to test case-insensitivity)
     });
 
     const mockUpdatedUserEntity = new User({
@@ -187,7 +206,7 @@ describe('UpdateRfegHandicapUseCase', () => {
       email: 'test@example.com',
       country_code: 'ES',
       handicap: 20.5,
-      handicap_updated_at: new Date().toISOString()
+      handicap_updated_at: new Date().toISOString(),
     });
 
     userRepository.getById.mockResolvedValue(mockUserEntity);

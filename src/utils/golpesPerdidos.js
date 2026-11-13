@@ -58,10 +58,10 @@ const esVisiblePara = (aviso, userId) =>
  * golpes perdidos y un solo aviso.
  */
 const esDelMismo = (aviso, matchId, holeNumber, userId, participantId) =>
-  aviso.matchId === matchId
-  && aviso.holeNumber === holeNumber
-  && (aviso.participantId ?? null) === (participantId ?? null)
-  && (aviso.userId ?? null) === (userId ?? null);
+  aviso.matchId === matchId &&
+  aviso.holeNumber === holeNumber &&
+  (aviso.participantId ?? null) === (participantId ?? null) &&
+  (aviso.userId ?? null) === (userId ?? null);
 
 /**
  * Apunta que una anotación no se pudo guardar.
@@ -78,15 +78,22 @@ export const apunta = (aviso) => {
   // se tragaba el de otra sobre el mismo hoyo de la misma partida, y a la
   // segunda se le decía que había quedado registrado cuando no
   const elQueHabia = avisos.find((a) =>
-    esDelMismo(a, aviso.matchId, aviso.holeNumber, aviso.userId, aviso.participantId)
+    esDelMismo(
+      a,
+      aviso.matchId,
+      aviso.holeNumber,
+      aviso.userId,
+      aviso.participantId,
+    ),
   );
   if (!elQueHabia) return guarda([...avisos, { ...aviso, cuando: Date.now() }]);
 
   // Del mismo hoyo: se suman los golpes perdidos (FE #813). Si alguno de los
   // dos no dice cuáles, no se sabe, y el aviso pasa a ser del hoyo entero
-  const golpes = elQueHabia.golpes && aviso.golpes
-    ? [...new Set([...elQueHabia.golpes, ...aviso.golpes])]
-    : undefined;
+  const golpes =
+    elQueHabia.golpes && aviso.golpes
+      ? [...new Set([...elQueHabia.golpes, ...aviso.golpes])]
+      : undefined;
   if (JSON.stringify(golpes) === JSON.stringify(elQueHabia.golpes)) return true;
   const actualizado = { ...elQueHabia, golpes };
   if (!golpes) delete actualizado.golpes;
@@ -116,13 +123,21 @@ export const pendientes = (userId = null) => {
  * hacer con ellos.
  */
 export const olvidaLosDe = (matchId, userId = null) =>
-  guarda(leeTodo().filter((a) => a.matchId !== matchId || !esVisiblePara(a, userId)));
+  guarda(
+    leeTodo().filter((a) => a.matchId !== matchId || !esVisiblePara(a, userId)),
+  );
 
 /**
  * Retira el aviso de UN hoyo: su dueño acaba de volver a anotarlo, así que ya
  * no hay nada perdido que contarle.
  */
-export const olvidaEl = (matchId, holeNumber, userId = null, participantId = undefined, golpes = undefined) => {
+export const olvidaEl = (
+  matchId,
+  holeNumber,
+  userId = null,
+  participantId = undefined,
+  golpes = undefined,
+) => {
   const delHoyo = (a) => {
     if (a.matchId !== matchId || a.holeNumber !== holeNumber) return false;
     if (!esVisiblePara(a, userId)) return false;
@@ -138,9 +153,11 @@ export const olvidaEl = (matchId, holeNumber, userId = null, participantId = und
     leeTodo().flatMap((a) => {
       if (!delHoyo(a)) return [a];
       if (!golpes || !a.golpes) return [];
-      const quedan = a.golpes.filter((g) => !golpes.some((anotado) => esElMismoGolpe(g, anotado)));
+      const quedan = a.golpes.filter(
+        (g) => !golpes.some((anotado) => esElMismoGolpe(g, anotado)),
+      );
       return quedan.length > 0 ? [{ ...a, golpes: quedan }] : [];
-    })
+    }),
   );
 };
 
@@ -158,7 +175,10 @@ export const olvidaEl = (matchId, holeNumber, userId = null, participantId = und
  *
  * @returns {boolean} Si hizo falta escribir y se pudo
  */
-export const ponleNombre = (matchId, { matchName = null, matchNumber = null } = {}) => {
+export const ponleNombre = (
+  matchId,
+  { matchName = null, matchNumber = null } = {},
+) => {
   const leFalta = (valor) => valor == null || valor === '';
   if (leFalta(matchName) && matchNumber == null) return true;
   let hayQueEscribir = false;

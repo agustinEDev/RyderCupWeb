@@ -53,14 +53,20 @@ describe('PlayerStatsMapper', () => {
   });
 
   it('keeps a zero index, which is a scratch player and not a missing value', () => {
-    const stats = PlayerStatsMapper.toDomain({ estimated_index: 0, scoring_avg: 0 });
+    const stats = PlayerStatsMapper.toDomain({
+      estimated_index: 0,
+      scoring_avg: 0,
+    });
 
     expect(stats.estimatedIndex).toBe(0);
     expect(stats.scoringAvg).toBe(0);
   });
 
   it('keeps negative values, which are a plus player', () => {
-    const stats = PlayerStatsMapper.toDomain({ estimated_index: -1.4, best_differential: -2.1 });
+    const stats = PlayerStatsMapper.toDomain({
+      estimated_index: -1.4,
+      best_differential: -2.1,
+    });
 
     expect(stats.estimatedIndex).toBe(-1.4);
     expect(stats.bestDifferential).toBe(-2.1);
@@ -81,6 +87,8 @@ describe('PlayerStatsMapper', () => {
   });
 
   it('refuses to map nothing at all', () => {
-    expect(() => PlayerStatsMapper.toDomain(null)).toThrow('apiData is required');
+    expect(() => PlayerStatsMapper.toDomain(null)).toThrow(
+      'apiData is required',
+    );
   });
 });

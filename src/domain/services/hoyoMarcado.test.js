@@ -25,7 +25,10 @@ import { rumbo } from './geometriaDelHoyo';
 // Metros por grado de latitud con el radio que usa distanciaEnMetros
 const M_POR_GRADO = (6371008.8 * Math.PI) / 180;
 const SALIDA = { lat: 36.28, lon: -5.33 };
-const alNorte = (metros, de = SALIDA) => ({ lat: de.lat + metros / M_POR_GRADO, lon: de.lon });
+const alNorte = (metros, de = SALIDA) => ({
+  lat: de.lat + metros / M_POR_GRADO,
+  lon: de.lon,
+});
 const GREEN = alNorte(300);
 const CODO = { lat: 36.2815, lon: -5.331 };
 
@@ -56,15 +59,23 @@ describe('puntoDesde', () => {
 
 describe('hoyoDeUnaMarca', () => {
   it('la línea es salida, codos y green; delante y fondo a 10 m sobre el último tramo', () => {
-    const hoyo = hoyoDeUnaMarca({ tee: SALIDA, bends: [CODO], greenCenter: GREEN });
+    const hoyo = hoyoDeUnaMarca({
+      tee: SALIDA,
+      bends: [CODO],
+      greenCenter: GREEN,
+    });
 
     expect(hoyo.playLine).toEqual([SALIDA, CODO, GREEN]);
     expect(hoyo.green.center).toEqual(GREEN);
     expect(distanciaEnMetros(hoyo.green.front, GREEN)).toBe(10);
     expect(distanciaEnMetros(hoyo.green.back, GREEN)).toBe(10);
     // Delante, del lado del codo; fondo, del otro
-    expect(distanciaEnMetros(CODO, hoyo.green.front)).toBe(distanciaEnMetros(CODO, GREEN) - 10);
-    expect(distanciaEnMetros(CODO, hoyo.green.back)).toBe(distanciaEnMetros(CODO, GREEN) + 10);
+    expect(distanciaEnMetros(CODO, hoyo.green.front)).toBe(
+      distanciaEnMetros(CODO, GREEN) - 10,
+    );
+    expect(distanciaEnMetros(CODO, hoyo.green.back)).toBe(
+      distanciaEnMetros(CODO, GREEN) + 10,
+    );
   });
 
   it('sin codos, la recta de la salida al green', () => {
@@ -77,7 +88,9 @@ describe('hoyoDeUnaMarca', () => {
 
   it('sin marca, o sin salida, no hay hoyo', () => {
     expect(hoyoDeUnaMarca(null)).toBeNull();
-    expect(hoyoDeUnaMarca({ tee: null, bends: [], greenCenter: GREEN })).toBeNull();
+    expect(
+      hoyoDeUnaMarca({ tee: null, bends: [], greenCenter: GREEN }),
+    ).toBeNull();
   });
 });
 
@@ -146,7 +159,9 @@ describe('conCodosDelPar', () => {
     const linea = conCodosDelPar([SALIDA, GREEN], 5);
 
     expect(linea).toHaveLength(4);
-    expect(linea.slice(1, 3).map((p) => distanciaEnMetros(SALIDA, p))).toEqual([100, 200]);
+    expect(linea.slice(1, 3).map((p) => distanciaEnMetros(SALIDA, p))).toEqual([
+      100, 200,
+    ]);
   });
 
   it('la longitud no cambia: los codos van sobre la recta', () => {
@@ -180,13 +195,26 @@ describe('conCodosDelPar', () => {
 // QA del 16 oct (P2): una línea de OSM con muchos puntos no cabía en la muestra.
 // Agustín, 16 oct: los codos, donde de verdad gira el hoyo (no a partes iguales)
 describe('aCodosDelPar', () => {
-  const alEste = (m, de) => ({ lat: de.lat, lon: de.lon + m / (M_POR_GRADO * Math.cos((de.lat * Math.PI) / 180)) });
+  const alEste = (m, de) => ({
+    lat: de.lat,
+    lon: de.lon + m / (M_POR_GRADO * Math.cos((de.lat * Math.PI) / 180)),
+  });
 
   it('un par 4 en dogleg conserva su esquina, aunque no esté en la mitad del recorrido', () => {
     // 300 m al norte y 100 m al este: con vértices cada 50 m, la esquina es la de los 300
     const esquina = alNorte(300);
     const green = alEste(100, esquina);
-    const linea = [SALIDA, alNorte(50), alNorte(100), alNorte(150), alNorte(200), alNorte(250), esquina, alEste(50, esquina), green];
+    const linea = [
+      SALIDA,
+      alNorte(50),
+      alNorte(100),
+      alNorte(150),
+      alNorte(200),
+      alNorte(250),
+      esquina,
+      alEste(50, esquina),
+      green,
+    ];
 
     expect(aCodosDelPar(linea, 4)).toEqual([SALIDA, esquina, green]);
   });
@@ -195,7 +223,15 @@ describe('aCodosDelPar', () => {
     const e1 = alNorte(200);
     const e2 = alEste(150, e1);
     const green = { lat: e2.lat + 150 / M_POR_GRADO, lon: e2.lon };
-    const linea = [SALIDA, alNorte(100), e1, alEste(75, e1), e2, { lat: e2.lat + 75 / M_POR_GRADO, lon: e2.lon }, green];
+    const linea = [
+      SALIDA,
+      alNorte(100),
+      e1,
+      alEste(75, e1),
+      e2,
+      { lat: e2.lat + 75 / M_POR_GRADO, lon: e2.lon },
+      green,
+    ];
 
     expect(aCodosDelPar(linea, 5)).toEqual([SALIDA, e1, e2, green]);
   });
@@ -203,26 +239,39 @@ describe('aCodosDelPar', () => {
   it('los vértices casi en línea (menos de 15 m) no son codos: la recta', () => {
     const casi = alEste(5, alNorte(150));
 
-    expect(aCodosDelPar([SALIDA, alNorte(50), casi, alNorte(250), GREEN], 4)).toEqual([SALIDA, GREEN]);
+    expect(
+      aCodosDelPar([SALIDA, alNorte(50), casi, alNorte(250), GREEN], 4),
+    ).toEqual([SALIDA, GREEN]);
   });
 
   it('un par 3 va siempre recto, aunque OSM tenga un giro', () => {
     const giro = alEste(60, alNorte(120));
 
-    expect(aCodosDelPar([SALIDA, giro, alNorte(200)], 3)).toEqual([SALIDA, alNorte(200)]);
+    expect(aCodosDelPar([SALIDA, giro, alNorte(200)], 3)).toEqual([
+      SALIDA,
+      alNorte(200),
+    ]);
   });
 
   it('un par 4 con un giro de verdad y otro menor se queda con el mayor', () => {
     const grande = alEste(80, alNorte(150));
     const pequeño = alEste(20, alNorte(250));
 
-    expect(aCodosDelPar([SALIDA, grande, pequeño, GREEN], 4)).toEqual([SALIDA, grande, GREEN]);
+    expect(aCodosDelPar([SALIDA, grande, pequeño, GREEN], 4)).toEqual([
+      SALIDA,
+      grande,
+      GREEN,
+    ]);
   });
 
   it('sin par: como un par 4 (un codo)', () => {
     const esquina = alEste(80, alNorte(150));
 
-    expect(aCodosDelPar([SALIDA, alNorte(50), esquina, GREEN], null)).toEqual([SALIDA, esquina, GREEN]);
+    expect(aCodosDelPar([SALIDA, alNorte(50), esquina, GREEN], null)).toEqual([
+      SALIDA,
+      esquina,
+      GREEN,
+    ]);
   });
 
   it('una línea que ya cabe en su par no cambia', () => {
@@ -234,7 +283,9 @@ describe('aCodosDelPar', () => {
   });
 
   it('un nodo repetido seguido (OSM) se quita, también en una línea que ya cabe', () => {
-    expect(aCodosDelPar([SALIDA, alNorte(100), alNorte(100), GREEN], 5)).toEqual([SALIDA, alNorte(100), GREEN]);
+    expect(
+      aCodosDelPar([SALIDA, alNorte(100), alNorte(100), GREEN], 5),
+    ).toEqual([SALIDA, alNorte(100), GREEN]);
   });
 });
 
@@ -314,7 +365,9 @@ describe('salidaPorMetros', () => {
     const larga = [SALIDA, alNorte(400), alNorte(720)];
 
     expect(salidaPorMetros(larga, 770)).toBe(larga);
-    expect(distanciaEnMetros(salidaPorMetros(larga, 740)[0], alNorte(720))).toBe(740);
+    expect(
+      distanciaEnMetros(salidaPorMetros(larga, 740)[0], alNorte(720)),
+    ).toBe(740);
   });
 
   it('una línea con un punto roto no se mueve', () => {
@@ -331,9 +384,20 @@ describe('salidaPorMetros', () => {
 
 describe('lineaDePuntos (17 oct)', () => {
   it('es la inversa de puntosDeLaLinea', () => {
-    const linea = { tee: { lat: 1, lon: 1 }, bends: [{ lat: 2, lon: 2 }, { lat: 3, lon: 3 }], greenCenter: { lat: 4, lon: 4 } };
+    const linea = {
+      tee: { lat: 1, lon: 1 },
+      bends: [
+        { lat: 2, lon: 2 },
+        { lat: 3, lon: 3 },
+      ],
+      greenCenter: { lat: 4, lon: 4 },
+    };
     expect(lineaDePuntos(puntosDeLaLinea(linea))).toEqual(linea);
-    expect(lineaDePuntos([linea.tee, linea.greenCenter])).toEqual({ tee: linea.tee, bends: [], greenCenter: linea.greenCenter });
+    expect(lineaDePuntos([linea.tee, linea.greenCenter])).toEqual({
+      tee: linea.tee,
+      bends: [],
+      greenCenter: linea.greenCenter,
+    });
   });
 });
 

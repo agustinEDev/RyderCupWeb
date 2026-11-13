@@ -20,12 +20,17 @@ describe('UndoTeamsUseCase', () => {
   });
 
   it('sin competición no llama', async () => {
-    await expect(useCase.execute('')).rejects.toThrow('Competition ID is required');
+    await expect(useCase.execute('')).rejects.toThrow(
+      'Competition ID is required',
+    );
     expect(scheduleRepository.undoTeams).not.toHaveBeenCalled();
   });
 
   it('el error del servidor sale tal cual, con su código', async () => {
-    const fallo = Object.assign(new Error('x'), { status: 409, errorCode: 'TEAMS_LOCKED' });
+    const fallo = Object.assign(new Error('x'), {
+      status: 409,
+      errorCode: 'TEAMS_LOCKED',
+    });
     scheduleRepository.undoTeams.mockRejectedValue(fallo);
 
     await expect(useCase.execute('comp-1')).rejects.toBe(fallo);

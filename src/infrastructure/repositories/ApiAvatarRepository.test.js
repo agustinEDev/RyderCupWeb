@@ -33,10 +33,13 @@ describe('ApiAvatarRepository', () => {
 
     const result = await repository.setPreset(5);
 
-    expect(apiRequestMock).toHaveBeenCalledWith('/api/v1/users/me/avatar/preset', {
-      method: 'POST',
-      body: JSON.stringify({ preset_id: 5 }),
-    });
+    expect(apiRequestMock).toHaveBeenCalledWith(
+      '/api/v1/users/me/avatar/preset',
+      {
+        method: 'POST',
+        body: JSON.stringify({ preset_id: 5 }),
+      },
+    );
     expect(result).toBe(updatedUser);
   });
 
@@ -63,7 +66,9 @@ describe('ApiAvatarRepository', () => {
 
     const result = await repository.listMyUploads();
 
-    expect(apiRequestMock).toHaveBeenCalledWith('/api/v1/users/me/avatar/uploads');
+    expect(apiRequestMock).toHaveBeenCalledWith(
+      '/api/v1/users/me/avatar/uploads',
+    );
     expect(result).toBe(uploads);
   });
 
@@ -86,7 +91,9 @@ describe('ApiAvatarRepository', () => {
 
     const result = await repository.remove();
 
-    expect(apiRequestMock).toHaveBeenCalledWith('/api/v1/users/me/avatar', { method: 'DELETE' });
+    expect(apiRequestMock).toHaveBeenCalledWith('/api/v1/users/me/avatar', {
+      method: 'DELETE',
+    });
     expect(result).toBe(updatedUser);
   });
 });

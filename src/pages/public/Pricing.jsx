@@ -5,11 +5,39 @@ import { Check } from 'lucide-react';
 import Header from '../../components/layout/Header';
 import Footer from '../../components/layout/Footer';
 import { useEntryMotion } from '../../hooks/useEntryMotion';
-import { fadeInUp, slideUp, staggerContainer, getEntryProps, getRevealProps } from '../../utils/animations';
+import {
+  fadeInUp,
+  slideUp,
+  staggerContainer,
+  getEntryProps,
+  getRevealProps,
+} from '../../utils/animations';
 
-const FREE_FEATURES = ['competitions', 'players', 'scheduling', 'scoring', 'teams', 'courses', 'bilingual'];
-const PRO_FEATURES = ['everything', 'players', 'statistics', 'export', 'branding', 'priority'];
-const ENTERPRISE_FEATURES = ['everything', 'unlimited', 'multi', 'api', 'sso', 'dedicated'];
+const FREE_FEATURES = [
+  'competitions',
+  'players',
+  'scheduling',
+  'scoring',
+  'teams',
+  'courses',
+  'bilingual',
+];
+const PRO_FEATURES = [
+  'everything',
+  'players',
+  'statistics',
+  'export',
+  'branding',
+  'priority',
+];
+const ENTERPRISE_FEATURES = [
+  'everything',
+  'unlimited',
+  'multi',
+  'api',
+  'sso',
+  'dedicated',
+];
 
 const Pricing = () => {
   const { t } = useTranslation('pricing');
@@ -56,10 +84,16 @@ const Pricing = () => {
                 variants={slideUp}
                 className="border-2 border-primary rounded-2xl p-8 relative"
               >
-                <h3 className="text-xl font-bold text-gray-900 mb-2">{t('free.name')}</h3>
-                <p className="text-gray-600 text-sm mb-4">{t('free.description')}</p>
+                <h3 className="text-xl font-bold text-gray-900 mb-2">
+                  {t('free.name')}
+                </h3>
+                <p className="text-gray-600 text-sm mb-4">
+                  {t('free.description')}
+                </p>
                 <div className="mb-6">
-                  <span className="text-4xl font-bold text-gray-900">{t('free.price')}</span>
+                  <span className="text-4xl font-bold text-gray-900">
+                    {t('free.price')}
+                  </span>
                   <span className="text-gray-500 ml-2">{t('free.period')}</span>
                 </div>
                 <button
@@ -72,7 +106,9 @@ const Pricing = () => {
                   {FREE_FEATURES.map((feature) => (
                     <li key={feature} className="flex items-start gap-3">
                       <Check className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
-                      <span className="text-sm text-gray-700">{t(`free.features.${feature}`)}</span>
+                      <span className="text-sm text-gray-700">
+                        {t(`free.features.${feature}`)}
+                      </span>
                     </li>
                   ))}
                 </ul>
@@ -88,10 +124,16 @@ const Pricing = () => {
                     {t('pro.badge')}
                   </span>
                 </div>
-                <h3 className="text-xl font-bold text-gray-900 mb-2">{t('pro.name')}</h3>
-                <p className="text-gray-600 text-sm mb-4">{t('pro.description')}</p>
+                <h3 className="text-xl font-bold text-gray-900 mb-2">
+                  {t('pro.name')}
+                </h3>
+                <p className="text-gray-600 text-sm mb-4">
+                  {t('pro.description')}
+                </p>
                 <div className="mb-6">
-                  <span className="text-4xl font-bold text-gray-900">{t('pro.price')}</span>
+                  <span className="text-4xl font-bold text-gray-900">
+                    {t('pro.price')}
+                  </span>
                   <span className="text-gray-500 ml-2">{t('pro.period')}</span>
                 </div>
                 <button
@@ -104,7 +146,9 @@ const Pricing = () => {
                   {PRO_FEATURES.map((feature) => (
                     <li key={feature} className="flex items-start gap-3">
                       <Check className="w-5 h-5 text-gray-400 flex-shrink-0 mt-0.5" />
-                      <span className="text-sm text-gray-500">{t(`pro.features.${feature}`)}</span>
+                      <span className="text-sm text-gray-500">
+                        {t(`pro.features.${feature}`)}
+                      </span>
                     </li>
                   ))}
                 </ul>
@@ -120,11 +164,19 @@ const Pricing = () => {
                     {t('enterprise.badge')}
                   </span>
                 </div>
-                <h3 className="text-xl font-bold text-gray-900 mb-2">{t('enterprise.name')}</h3>
-                <p className="text-gray-600 text-sm mb-4">{t('enterprise.description')}</p>
+                <h3 className="text-xl font-bold text-gray-900 mb-2">
+                  {t('enterprise.name')}
+                </h3>
+                <p className="text-gray-600 text-sm mb-4">
+                  {t('enterprise.description')}
+                </p>
                 <div className="mb-6">
-                  <span className="text-4xl font-bold text-gray-900">{t('enterprise.price')}</span>
-                  <span className="text-gray-500 ml-2">{t('enterprise.period')}</span>
+                  <span className="text-4xl font-bold text-gray-900">
+                    {t('enterprise.price')}
+                  </span>
+                  <span className="text-gray-500 ml-2">
+                    {t('enterprise.period')}
+                  </span>
                 </div>
                 <button
                   disabled
@@ -136,7 +188,9 @@ const Pricing = () => {
                   {ENTERPRISE_FEATURES.map((feature) => (
                     <li key={feature} className="flex items-start gap-3">
                       <Check className="w-5 h-5 text-gray-400 flex-shrink-0 mt-0.5" />
-                      <span className="text-sm text-gray-500">{t(`enterprise.features.${feature}`)}</span>
+                      <span className="text-sm text-gray-500">
+                        {t(`enterprise.features.${feature}`)}
+                      </span>
                     </li>
                   ))}
                 </ul>

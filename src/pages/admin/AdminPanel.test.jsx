@@ -1,5 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor, within, act } from '@testing-library/react';
+import {
+  render,
+  screen,
+  fireEvent,
+  waitFor,
+  within,
+  act,
+} from '@testing-library/react';
 import { MemoryRouter, Routes, Route } from 'react-router';
 import AdminPanel from './AdminPanel';
 import customToast from '../../utils/toast';
@@ -19,32 +26,55 @@ const renderPanel = () => render(arbolDelPanel());
 // `loadCompetitions` y la lista se recargaba sin parar, desmontando lo abierto
 const { TRADUCCION } = vi.hoisted(() => ({
   TRADUCCION: {
-    t: (key, params) => (params?.count !== undefined ? `${key}_${params.count}` : key),
+    t: (key, params) =>
+      params?.count !== undefined ? `${key}_${params.count}` : key,
     i18n: { language: 'en' },
   },
 }));
 vi.mock('../../utils/toast', () => ({
-  default: { success: vi.fn(), error: vi.fn(), info: vi.fn(), dismiss: vi.fn() },
-  customToast: { success: vi.fn(), error: vi.fn(), info: vi.fn(), dismiss: vi.fn() },
+  default: {
+    success: vi.fn(),
+    error: vi.fn(),
+    info: vi.fn(),
+    dismiss: vi.fn(),
+  },
+  customToast: {
+    success: vi.fn(),
+    error: vi.fn(),
+    info: vi.fn(),
+    dismiss: vi.fn(),
+  },
 }));
 
 // Lo que devuelven ahora `useTranslation` y `useAuth`: el mismo objeto salvo
 // cuando una prueba cambia de idioma o trae un usuario nuevo
-const { ACTUAL } = vi.hoisted(() => ({ ACTUAL: { traduccion: null, user: null } }));
+const { ACTUAL } = vi.hoisted(() => ({
+  ACTUAL: { traduccion: null, user: null },
+}));
 vi.mock('react-i18next', () => ({
   useTranslation: () => ACTUAL.traduccion ?? TRADUCCION,
 }));
 
 // El mismo `user` en cada pintado, como el de verdad: uno nuevo cada vez
 // repetiría los efectos que dependen de él
-const { ADMIN } = vi.hoisted(() => ({ ADMIN: { id: 'admin-1', first_name: 'Admin', last_name: 'User', is_admin: true } }));
+const { ADMIN } = vi.hoisted(() => ({
+  ADMIN: {
+    id: 'admin-1',
+    first_name: 'Admin',
+    last_name: 'User',
+    is_admin: true,
+  },
+}));
 vi.mock('../../hooks/useAuth', () => ({
   useAuth: () => ({ user: ACTUAL.user ?? ADMIN, loading: false }),
 }));
 
 // Cambiar de idioma: i18next da un `t` nuevo
 const cambiarDeIdioma = (rerender) => {
-  ACTUAL.traduccion = { t: (...args) => TRADUCCION.t(...args), i18n: { language: 'es' } };
+  ACTUAL.traduccion = {
+    t: (...args) => TRADUCCION.t(...args),
+    i18n: { language: 'es' },
+  };
   rerender(arbolDelPanel());
 };
 // La sesión trae otro objeto de usuario (el mismo admin, otra referencia)
@@ -62,10 +92,20 @@ const aMano = () => {
   });
   return { promesa, resolver, rechazar };
 };
-const usuario = (id, nombre) => ({ ...usersResponse.users[0], id, firstName: nombre, lastName: 'Prueba' });
-const competicion = (id, nombre) => ({ ...competitionsResponse[0], id, name: nombre });
+const usuario = (id, nombre) => ({
+  ...usersResponse.users[0],
+  id,
+  firstName: nombre,
+  lastName: 'Prueba',
+});
+const competicion = (id, nombre) => ({
+  ...competitionsResponse[0],
+  id,
+  name: nombre,
+});
 const seccionDelPanel = () => screen.getByTestId('seccion-del-panel');
-const cargandoEnLaSeccion = () => within(seccionDelPanel()).queryByRole('status');
+const cargandoEnLaSeccion = () =>
+  within(seccionDelPanel()).queryByRole('status');
 
 vi.mock('../../components/layout/HeaderAuth', () => ({
   default: () => <div data-testid="header-auth">Header</div>,
@@ -79,7 +119,9 @@ vi.mock('./PendingGolfCourses', () => ({
   default: ({ onCambio }) => (
     <div data-testid="pending-golf-courses-tab">
       Pending
-      <button type="button" onClick={onCambio}>aprobar-una</button>
+      <button type="button" onClick={onCambio}>
+        aprobar-una
+      </button>
     </div>
   ),
 }));
@@ -103,19 +145,45 @@ const mockRevertCompetitionToInProgress = vi.fn();
 vi.mock('../../composition', () => ({
   getAdminStatsUseCase: { execute: (...args) => mockGetAdminStats(...args) },
   listAdminUsersUseCase: { execute: (...args) => mockListAdminUsers(...args) },
-  updateAdminUserUseCase: { execute: (...args) => mockUpdateAdminUser(...args) },
-  setAdminUserActiveUseCase: { execute: (...args) => mockSetAdminUserActive(...args) },
-  deleteAdminUserUseCase: { execute: (...args) => mockDeleteAdminUser(...args) },
-  adminListCompetitionsUseCase: { execute: (...args) => mockAdminListCompetitions(...args) },
-  adminUpdateCompetitionUseCase: { execute: (...args) => mockAdminUpdateCompetition(...args) },
-  activateCompetitionUseCase: { execute: (...args) => mockActivateCompetition(...args) },
-  closeEnrollmentsUseCase: { execute: (...args) => mockCloseEnrollments(...args) },
-  startCompetitionUseCase: { execute: (...args) => mockStartCompetition(...args) },
-  completeCompetitionUseCase: { execute: (...args) => mockCompleteCompetition(...args) },
-  cancelCompetitionUseCase: { execute: (...args) => mockCancelCompetition(...args) },
-  reopenEnrollmentsUseCase: { execute: (...args) => mockReopenEnrollments(...args) },
-  revertCompetitionStatusUseCase: { execute: (...args) => mockRevertCompetitionStatus(...args) },
-  revertCompetitionToInProgressUseCase: { execute: (...args) => mockRevertCompetitionToInProgress(...args) },
+  updateAdminUserUseCase: {
+    execute: (...args) => mockUpdateAdminUser(...args),
+  },
+  setAdminUserActiveUseCase: {
+    execute: (...args) => mockSetAdminUserActive(...args),
+  },
+  deleteAdminUserUseCase: {
+    execute: (...args) => mockDeleteAdminUser(...args),
+  },
+  adminListCompetitionsUseCase: {
+    execute: (...args) => mockAdminListCompetitions(...args),
+  },
+  adminUpdateCompetitionUseCase: {
+    execute: (...args) => mockAdminUpdateCompetition(...args),
+  },
+  activateCompetitionUseCase: {
+    execute: (...args) => mockActivateCompetition(...args),
+  },
+  closeEnrollmentsUseCase: {
+    execute: (...args) => mockCloseEnrollments(...args),
+  },
+  startCompetitionUseCase: {
+    execute: (...args) => mockStartCompetition(...args),
+  },
+  completeCompetitionUseCase: {
+    execute: (...args) => mockCompleteCompetition(...args),
+  },
+  cancelCompetitionUseCase: {
+    execute: (...args) => mockCancelCompetition(...args),
+  },
+  reopenEnrollmentsUseCase: {
+    execute: (...args) => mockReopenEnrollments(...args),
+  },
+  revertCompetitionStatusUseCase: {
+    execute: (...args) => mockRevertCompetitionStatus(...args),
+  },
+  revertCompetitionToInProgressUseCase: {
+    execute: (...args) => mockRevertCompetitionToInProgress(...args),
+  },
 }));
 
 const stats = {
@@ -165,7 +233,8 @@ const competitionsResponse = [
 ];
 
 // En la tabla del ordenador: en el móvil el mismo nombre sale también en su fila
-const enLaTabla = async (texto) => within(await screen.findByRole('table')).findByText(texto);
+const enLaTabla = async (texto) =>
+  within(await screen.findByRole('table')).findByText(texto);
 
 describe('AdminPanel', () => {
   beforeEach(() => {
@@ -183,7 +252,9 @@ describe('AdminPanel', () => {
     await waitFor(() => expect(mockGetAdminStats).toHaveBeenCalled());
     // El 9 sale también en el menú, junto a Usuarios: se mira en la sección
     const seccion = await screen.findByTestId('seccion-del-panel');
-    await waitFor(() => expect(within(seccion).getByText('9')).toBeInTheDocument());
+    await waitFor(() =>
+      expect(within(seccion).getByText('9')).toBeInTheDocument(),
+    );
     expect(within(seccion).getByText('25')).toBeInTheDocument();
   });
 
@@ -201,7 +272,9 @@ describe('AdminPanel', () => {
     renderPanel();
     await waitFor(() => expect(mockGetAdminStats).toHaveBeenCalled());
 
-    fireEvent.click(screen.getByRole('link', { name: /screens.adminGolfCourses/ }));
+    fireEvent.click(
+      screen.getByRole('link', { name: /screens.adminGolfCourses/ }),
+    );
 
     expect(await screen.findByTestId('golf-courses-tab')).toBeInTheDocument();
   });
@@ -210,14 +283,21 @@ describe('AdminPanel', () => {
     renderPanel();
     await waitFor(() => expect(mockGetAdminStats).toHaveBeenCalled());
 
-    fireEvent.click(screen.getByRole('link', { name: /screens.adminGolfCourses/ }));
+    fireEvent.click(
+      screen.getByRole('link', { name: /screens.adminGolfCourses/ }),
+    );
     fireEvent.click(screen.getByRole('tab', { name: 'golfTabs.requests' }));
 
-    expect(await screen.findByTestId('pending-golf-courses-tab')).toBeInTheDocument();
+    expect(
+      await screen.findByTestId('pending-golf-courses-tab'),
+    ).toBeInTheDocument();
   });
 
   it('opens the edit modal and calls updateAdminUserUseCase on save', async () => {
-    mockUpdateAdminUser.mockResolvedValue({ ...usersResponse.users[0], firstName: 'Renamed' });
+    mockUpdateAdminUser.mockResolvedValue({
+      ...usersResponse.users[0],
+      firstName: 'Renamed',
+    });
     renderPanel();
     await waitFor(() => expect(mockGetAdminStats).toHaveBeenCalled());
     fireEvent.click(screen.getByRole('link', { name: /screens.adminUsers/ }));
@@ -226,25 +306,42 @@ describe('AdminPanel', () => {
     fireEvent.click(screen.getByRole('button', { name: 'users.editTooltip' }));
     fireEvent.click(screen.getByRole('button', { name: 'editModal.save' }));
 
-    await waitFor(() => expect(mockUpdateAdminUser).toHaveBeenCalledWith('u1', expect.any(Object)));
+    await waitFor(() =>
+      expect(mockUpdateAdminUser).toHaveBeenCalledWith(
+        'u1',
+        expect.any(Object),
+      ),
+    );
   });
 
   it('si el correo queda pendiente, el aviso lo dice (RyderCupAm #753)', async () => {
-    mockUpdateAdminUser.mockResolvedValue({ ...usersResponse.users[0], pendingEmail: 'nuevo@test.com' });
+    mockUpdateAdminUser.mockResolvedValue({
+      ...usersResponse.users[0],
+      pendingEmail: 'nuevo@test.com',
+    });
     renderPanel();
     await waitFor(() => expect(mockGetAdminStats).toHaveBeenCalled());
     fireEvent.click(screen.getByRole('link', { name: /screens.adminUsers/ }));
     await enLaTabla('Agus Estevez');
 
     fireEvent.click(screen.getByRole('button', { name: 'users.editTooltip' }));
-    fireEvent.change(screen.getByLabelText('editModal.email'), { target: { value: 'nuevo@test.com' } });
+    fireEvent.change(screen.getByLabelText('editModal.email'), {
+      target: { value: 'nuevo@test.com' },
+    });
     fireEvent.click(screen.getByRole('button', { name: 'editModal.save' }));
 
-    await waitFor(() => expect(customToast.success).toHaveBeenCalledWith('editModal.emailPending'));
+    await waitFor(() =>
+      expect(customToast.success).toHaveBeenCalledWith(
+        'editModal.emailPending',
+      ),
+    );
   });
 
   it('si el admin no tocó el correo, un pendiente del propio usuario no cambia el aviso', async () => {
-    mockUpdateAdminUser.mockResolvedValue({ ...usersResponse.users[0], pendingEmail: 'suyo@test.com' });
+    mockUpdateAdminUser.mockResolvedValue({
+      ...usersResponse.users[0],
+      pendingEmail: 'suyo@test.com',
+    });
     renderPanel();
     await waitFor(() => expect(mockGetAdminStats).toHaveBeenCalled());
     fireEvent.click(screen.getByRole('link', { name: /screens.adminUsers/ }));
@@ -253,7 +350,9 @@ describe('AdminPanel', () => {
     fireEvent.click(screen.getByRole('button', { name: 'users.editTooltip' }));
     fireEvent.click(screen.getByRole('button', { name: 'editModal.save' }));
 
-    await waitFor(() => expect(customToast.success).toHaveBeenCalledWith('editModal.success'));
+    await waitFor(() =>
+      expect(customToast.success).toHaveBeenCalledWith('editModal.success'),
+    );
   });
 
   it('opens the manage modal and calls setAdminUserActiveUseCase on confirm', async () => {
@@ -263,10 +362,16 @@ describe('AdminPanel', () => {
     fireEvent.click(screen.getByRole('link', { name: /screens.adminUsers/ }));
     await enLaTabla('Agus Estevez');
 
-    fireEvent.click(screen.getByRole('button', { name: 'users.deactivateTooltip' }));
-    fireEvent.click(screen.getByRole('button', { name: 'manageModal.confirmDeactivate' }));
+    fireEvent.click(
+      screen.getByRole('button', { name: 'users.deactivateTooltip' }),
+    );
+    fireEvent.click(
+      screen.getByRole('button', { name: 'manageModal.confirmDeactivate' }),
+    );
 
-    await waitFor(() => expect(mockSetAdminUserActive).toHaveBeenCalledWith('u1', false));
+    await waitFor(() =>
+      expect(mockSetAdminUserActive).toHaveBeenCalledWith('u1', false),
+    );
   });
 
   it('permanently deletes a user once the confirmation word is typed', async () => {
@@ -276,16 +381,27 @@ describe('AdminPanel', () => {
     fireEvent.click(screen.getByRole('link', { name: /screens.adminUsers/ }));
     await enLaTabla('Agus Estevez');
 
-    fireEvent.click(screen.getByRole('button', { name: 'users.deleteTooltip' }));
-    fireEvent.click(screen.getByRole('radio', { name: /manageModal.deleteOption/ }));
-    fireEvent.change(screen.getByPlaceholderText('manageModal.confirmDeletePlaceholder'), {
-      target: { value: 'manageModal.confirmDeleteWord' },
-    });
-    fireEvent.click(screen.getByRole('button', { name: 'manageModal.confirmDelete' }));
+    fireEvent.click(
+      screen.getByRole('button', { name: 'users.deleteTooltip' }),
+    );
+    fireEvent.click(
+      screen.getByRole('radio', { name: /manageModal.deleteOption/ }),
+    );
+    fireEvent.change(
+      screen.getByPlaceholderText('manageModal.confirmDeletePlaceholder'),
+      {
+        target: { value: 'manageModal.confirmDeleteWord' },
+      },
+    );
+    fireEvent.click(
+      screen.getByRole('button', { name: 'manageModal.confirmDelete' }),
+    );
 
     await waitFor(() => expect(mockDeleteAdminUser).toHaveBeenCalledWith('u1'));
     // Refreshes the overview stats after a successful delete
-    await waitFor(() => expect(mockGetAdminStats.mock.calls.length).toBeGreaterThan(1));
+    await waitFor(() =>
+      expect(mockGetAdminStats.mock.calls.length).toBeGreaterThan(1),
+    );
   });
 
   it('shows the blocked message when delete is rejected with a 409', async () => {
@@ -297,55 +413,89 @@ describe('AdminPanel', () => {
     fireEvent.click(screen.getByRole('link', { name: /screens.adminUsers/ }));
     await enLaTabla('Agus Estevez');
 
-    fireEvent.click(screen.getByRole('button', { name: 'users.deleteTooltip' }));
-    fireEvent.click(screen.getByRole('radio', { name: /manageModal.deleteOption/ }));
-    fireEvent.change(screen.getByPlaceholderText('manageModal.confirmDeletePlaceholder'), {
-      target: { value: 'manageModal.confirmDeleteWord' },
-    });
-    fireEvent.click(screen.getByRole('button', { name: 'manageModal.confirmDelete' }));
+    fireEvent.click(
+      screen.getByRole('button', { name: 'users.deleteTooltip' }),
+    );
+    fireEvent.click(
+      screen.getByRole('radio', { name: /manageModal.deleteOption/ }),
+    );
+    fireEvent.change(
+      screen.getByPlaceholderText('manageModal.confirmDeletePlaceholder'),
+      {
+        target: { value: 'manageModal.confirmDeleteWord' },
+      },
+    );
+    fireEvent.click(
+      screen.getByRole('button', { name: 'manageModal.confirmDelete' }),
+    );
 
-    expect(await screen.findByText('manageModal.deleteBlockedTitle')).toBeInTheDocument();
+    expect(
+      await screen.findByText('manageModal.deleteBlockedTitle'),
+    ).toBeInTheDocument();
     // The user is still present in the table — nothing was deleted
-    expect(within(screen.getByRole('table')).getByText('Agus Estevez')).toBeInTheDocument();
+    expect(
+      within(screen.getByRole('table')).getByText('Agus Estevez'),
+    ).toBeInTheDocument();
   });
 
   it('loads and renders the competitions table when switching to the Competitions tab', async () => {
     renderPanel();
     await waitFor(() => expect(mockGetAdminStats).toHaveBeenCalled());
 
-    fireEvent.click(screen.getByRole('link', { name: /screens.adminCompetitions/ }));
+    fireEvent.click(
+      screen.getByRole('link', { name: /screens.adminCompetitions/ }),
+    );
 
     await waitFor(() => expect(mockAdminListCompetitions).toHaveBeenCalled());
     expect(await enLaTabla('Ryder Cup Local')).toBeInTheDocument();
-    expect(within(screen.getByRole('table')).getByText('Stuck Tournament')).toBeInTheDocument();
+    expect(
+      within(screen.getByRole('table')).getByText('Stuck Tournament'),
+    ).toBeInTheDocument();
   });
 
   it('only allows editing DRAFT competitions and saves via adminUpdateCompetitionUseCase', async () => {
     mockAdminUpdateCompetition.mockResolvedValue({ id: 'c1', name: 'Renamed' });
     renderPanel();
     await waitFor(() => expect(mockGetAdminStats).toHaveBeenCalled());
-    fireEvent.click(screen.getByRole('link', { name: /screens.adminCompetitions/ }));
+    fireEvent.click(
+      screen.getByRole('link', { name: /screens.adminCompetitions/ }),
+    );
     await enLaTabla('Ryder Cup Local');
 
-    const editButtons = screen.getAllByRole('button', { name: 'competitions.editTooltip' });
+    const editButtons = screen.getAllByRole('button', {
+      name: 'competitions.editTooltip',
+    });
     expect(editButtons).toHaveLength(1); // only the DRAFT competition has an enabled edit button
 
     fireEvent.click(editButtons[0]);
-    fireEvent.click(screen.getByRole('button', { name: 'competitions.editModal.save' }));
+    fireEvent.click(
+      screen.getByRole('button', { name: 'competitions.editModal.save' }),
+    );
 
-    await waitFor(() => expect(mockAdminUpdateCompetition).toHaveBeenCalledWith('c1', expect.any(Object)));
+    await waitFor(() =>
+      expect(mockAdminUpdateCompetition).toHaveBeenCalledWith(
+        'c1',
+        expect.any(Object),
+      ),
+    );
   });
 
   it('runs a non-destructive transition immediately', async () => {
     mockActivateCompetition.mockResolvedValue({ id: 'c1', status: 'ACTIVE' });
     renderPanel();
     await waitFor(() => expect(mockGetAdminStats).toHaveBeenCalled());
-    fireEvent.click(screen.getByRole('link', { name: /screens.adminCompetitions/ }));
+    fireEvent.click(
+      screen.getByRole('link', { name: /screens.adminCompetitions/ }),
+    );
     await enLaTabla('Ryder Cup Local');
 
-    fireEvent.click(screen.getByRole('button', { name: 'competitions.actions.activate' }));
+    fireEvent.click(
+      screen.getByRole('button', { name: 'competitions.actions.activate' }),
+    );
 
-    await waitFor(() => expect(mockActivateCompetition).toHaveBeenCalledWith('c1'));
+    await waitFor(() =>
+      expect(mockActivateCompetition).toHaveBeenCalledWith('c1'),
+    );
   });
 
   it('paginates competitions using the extra-item hasMore trick (no backend total count)', async () => {
@@ -360,15 +510,23 @@ describe('AdminPanel', () => {
     mockAdminListCompetitions.mockResolvedValue(fullPage);
     renderPanel();
     await waitFor(() => expect(mockGetAdminStats).toHaveBeenCalled());
-    fireEvent.click(screen.getByRole('link', { name: /screens.adminCompetitions/ }));
+    fireEvent.click(
+      screen.getByRole('link', { name: /screens.adminCompetitions/ }),
+    );
     await waitFor(() => expect(mockAdminListCompetitions).toHaveBeenCalled());
 
     // 21 fetched (limit 20 + 1) means there's a next page; only 20 are shown.
-    expect(within(screen.getByRole('table')).getByText('Competition 19')).toBeInTheDocument();
+    expect(
+      within(screen.getByRole('table')).getByText('Competition 19'),
+    ).toBeInTheDocument();
     expect(screen.queryByText('Competition 20')).not.toBeInTheDocument();
 
-    const nextButton = screen.getByRole('button', { name: 'competitions.next' });
-    expect(screen.getByRole('button', { name: 'competitions.previous' })).toBeDisabled();
+    const nextButton = screen.getByRole('button', {
+      name: 'competitions.next',
+    });
+    expect(
+      screen.getByRole('button', { name: 'competitions.previous' }),
+    ).toBeDisabled();
     expect(nextButton).not.toBeDisabled();
 
     mockAdminListCompetitions.mockResolvedValue([]);
@@ -376,8 +534,8 @@ describe('AdminPanel', () => {
 
     await waitFor(() =>
       expect(mockAdminListCompetitions).toHaveBeenLastCalledWith(
-        expect.objectContaining({ offset: 20, limit: 21 })
-      )
+        expect.objectContaining({ offset: 20, limit: 21 }),
+      ),
     );
   });
 
@@ -385,31 +543,53 @@ describe('AdminPanel', () => {
     mockCancelCompetition.mockResolvedValue({ id: 'c1', status: 'CANCELLED' });
     renderPanel();
     await waitFor(() => expect(mockGetAdminStats).toHaveBeenCalled());
-    fireEvent.click(screen.getByRole('link', { name: /screens.adminCompetitions/ }));
+    fireEvent.click(
+      screen.getByRole('link', { name: /screens.adminCompetitions/ }),
+    );
     await enLaTabla('Ryder Cup Local');
 
-    fireEvent.click(screen.getAllByRole('button', { name: 'competitions.actions.cancel' })[0]);
+    fireEvent.click(
+      screen.getAllByRole('button', { name: 'competitions.actions.cancel' })[0],
+    );
     expect(mockCancelCompetition).not.toHaveBeenCalled();
 
-    fireEvent.click(screen.getByRole('button', { name: 'competitions.confirmCancel' }));
+    fireEvent.click(
+      screen.getByRole('button', { name: 'competitions.confirmCancel' }),
+    );
 
-    await waitFor(() => expect(mockCancelCompetition).toHaveBeenCalledWith('c1'));
+    await waitFor(() =>
+      expect(mockCancelCompetition).toHaveBeenCalledWith('c1'),
+    );
   });
 
   it('F6: en el móvil, cancelar desde la ficha también pide la confirmación', async () => {
     mockCancelCompetition.mockResolvedValue({ id: 'c1', status: 'CANCELLED' });
     renderPanel();
     await waitFor(() => expect(mockGetAdminStats).toHaveBeenCalled());
-    fireEvent.click(screen.getByRole('link', { name: /screens.adminCompetitions/ }));
+    fireEvent.click(
+      screen.getByRole('link', { name: /screens.adminCompetitions/ }),
+    );
     await enLaTabla('Ryder Cup Local');
-    const filas = within(screen.getByRole('list', { name: 'competitions.listLabel' }));
+    const filas = within(
+      screen.getByRole('list', { name: 'competitions.listLabel' }),
+    );
     fireEvent.click(filas.getByRole('button', { name: /Ryder Cup Local/ }));
-    fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'competitions.actions.cancel' }));
+    fireEvent.click(
+      within(screen.getByRole('dialog')).getByRole('button', {
+        name: 'competitions.actions.cancel',
+      }),
+    );
 
-    expect(screen.getByRole('dialog')).toHaveAccessibleName('competitions.confirmCancelTitle');
+    expect(screen.getByRole('dialog')).toHaveAccessibleName(
+      'competitions.confirmCancelTitle',
+    );
     expect(mockCancelCompetition).not.toHaveBeenCalled();
-    fireEvent.click(screen.getByRole('button', { name: 'competitions.confirmCancel' }));
-    await waitFor(() => expect(mockCancelCompetition).toHaveBeenCalledWith('c1'));
+    fireEvent.click(
+      screen.getByRole('button', { name: 'competitions.confirmCancel' }),
+    );
+    await waitFor(() =>
+      expect(mockCancelCompetition).toHaveBeenCalledWith('c1'),
+    );
   });
 
   it('F2: en el móvil, editar desde la ficha abre el editor de siempre', async () => {
@@ -419,10 +599,16 @@ describe('AdminPanel', () => {
     await enLaTabla('Agus Estevez');
     const filas = within(screen.getByRole('list', { name: 'users.listLabel' }));
     fireEvent.click(filas.getByRole('button', { name: /Agus Estevez/ }));
-    fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'users.editTooltip' }));
+    fireEvent.click(
+      within(screen.getByRole('dialog')).getByRole('button', {
+        name: 'users.editTooltip',
+      }),
+    );
 
     expect(screen.getAllByRole('dialog')).toHaveLength(1);
-    expect(screen.getByRole('button', { name: 'editModal.save' })).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: 'editModal.save' }),
+    ).toBeInTheDocument();
   });
 
   // Pasó a ModalShell el 4 oct 2026: se anuncia con su título, y Escape la
@@ -430,10 +616,14 @@ describe('AdminPanel', () => {
   it('la confirmación de cancelar se anuncia y se descarta con Escape', async () => {
     renderPanel();
     await waitFor(() => expect(mockGetAdminStats).toHaveBeenCalled());
-    fireEvent.click(screen.getByRole('link', { name: /screens.adminCompetitions/ }));
+    fireEvent.click(
+      screen.getByRole('link', { name: /screens.adminCompetitions/ }),
+    );
     await enLaTabla('Ryder Cup Local');
 
-    fireEvent.click(screen.getAllByRole('button', { name: 'competitions.actions.cancel' })[0]);
+    fireEvent.click(
+      screen.getAllByRole('button', { name: 'competitions.actions.cancel' })[0],
+    );
 
     const dialogo = await screen.findByRole('dialog');
     expect(dialogo).toHaveAccessibleName('competitions.confirmCancelTitle');
@@ -453,28 +643,44 @@ describe('AdminPanel', () => {
     await waitFor(() => expect(mockGetAdminStats).toHaveBeenCalled());
     fireEvent.click(screen.getByRole('link', { name: /screens.adminUsers/ }));
     await enLaTabla('Agus Estevez');
-    fireEvent.click(screen.getByRole('button', { name: 'users.deactivateTooltip' }));
-    expect(screen.getByRole('button', { name: 'manageModal.confirmDeactivate' })).toBeInTheDocument();
+    fireEvent.click(
+      screen.getByRole('button', { name: 'users.deactivateTooltip' }),
+    );
+    expect(
+      screen.getByRole('button', { name: 'manageModal.confirmDeactivate' }),
+    ).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole('link', { name: /screens.adminCompetitions/ }));
-    expect(screen.queryByRole('button', { name: 'manageModal.confirmDeactivate' })).not.toBeInTheDocument();
+    fireEvent.click(
+      screen.getByRole('link', { name: /screens.adminCompetitions/ }),
+    );
+    expect(
+      screen.queryByRole('button', { name: 'manageModal.confirmDeactivate' }),
+    ).not.toBeInTheDocument();
   });
 
   it('volver a campos de golf abre otra vez los aprobados', async () => {
     renderPanel();
     await waitFor(() => expect(mockGetAdminStats).toHaveBeenCalled());
-    fireEvent.click(screen.getByRole('link', { name: /screens.adminGolfCourses/ }));
+    fireEvent.click(
+      screen.getByRole('link', { name: /screens.adminGolfCourses/ }),
+    );
     fireEvent.click(screen.getByRole('tab', { name: 'golfTabs.requests' }));
     fireEvent.click(screen.getByRole('link', { name: /screens.adminUsers/ }));
-    fireEvent.click(screen.getByRole('link', { name: /screens.adminGolfCourses/ }));
-    expect(screen.getByRole('tab', { name: 'golfTabs.approved' })).toHaveAttribute('aria-selected', 'true');
+    fireEvent.click(
+      screen.getByRole('link', { name: /screens.adminGolfCourses/ }),
+    );
+    expect(
+      screen.getByRole('tab', { name: 'golfTabs.approved' }),
+    ).toHaveAttribute('aria-selected', 'true');
   });
 
   it('los números del menú no se piden otra vez solo por cambiar de sección', async () => {
     renderPanel();
     await waitFor(() => expect(mockGetAdminStats).toHaveBeenCalledTimes(1));
     fireEvent.click(screen.getByRole('link', { name: /screens.adminUsers/ }));
-    fireEvent.click(screen.getByRole('link', { name: /screens.adminCompetitions/ }));
+    fireEvent.click(
+      screen.getByRole('link', { name: /screens.adminCompetitions/ }),
+    );
     await waitFor(() => expect(mockAdminListCompetitions).toHaveBeenCalled());
     expect(mockGetAdminStats).toHaveBeenCalledTimes(1);
   });
@@ -482,7 +688,9 @@ describe('AdminPanel', () => {
   it('aprobar o rechazar una solicitud vuelve a pedir los números del menú', async () => {
     renderPanel();
     await waitFor(() => expect(mockGetAdminStats).toHaveBeenCalledTimes(1));
-    fireEvent.click(screen.getByRole('link', { name: /screens.adminGolfCourses/ }));
+    fireEvent.click(
+      screen.getByRole('link', { name: /screens.adminGolfCourses/ }),
+    );
     fireEvent.click(screen.getByRole('tab', { name: 'golfTabs.requests' }));
     fireEvent.click(screen.getByRole('button', { name: 'aprobar-una' }));
     await waitFor(() => expect(mockGetAdminStats).toHaveBeenCalledTimes(2));
@@ -491,7 +699,9 @@ describe('AdminPanel', () => {
   it('las pestañas de campos se mueven con las flechas, con una sola en el orden del tabulador', async () => {
     renderPanel();
     await waitFor(() => expect(mockGetAdminStats).toHaveBeenCalled());
-    fireEvent.click(screen.getByRole('link', { name: /screens.adminGolfCourses/ }));
+    fireEvent.click(
+      screen.getByRole('link', { name: /screens.adminGolfCourses/ }),
+    );
     const [aprobados, solicitudes] = screen.getAllByRole('tab');
     expect(aprobados).toHaveAttribute('tabindex', '0');
     expect(solicitudes).toHaveAttribute('tabindex', '-1');
@@ -508,13 +718,20 @@ describe('AdminPanel', () => {
   it('las pestañas de campos van a la primera y a la última con Inicio y Fin (FE #658)', async () => {
     renderPanel();
     await waitFor(() => expect(mockGetAdminStats).toHaveBeenCalled());
-    fireEvent.click(screen.getByRole('link', { name: /screens.adminGolfCourses/ }));
-    const barra = screen.getByRole('tablist', { name: 'common:screens.adminGolfCourses' });
+    fireEvent.click(
+      screen.getByRole('link', { name: /screens.adminGolfCourses/ }),
+    );
+    const barra = screen.getByRole('tablist', {
+      name: 'common:screens.adminGolfCourses',
+    });
     const [aprobados, solicitudes] = within(barra).getAllByRole('tab');
     fireEvent.keyDown(aprobados, { key: 'End' });
     expect(solicitudes).toHaveAttribute('aria-selected', 'true');
     expect(solicitudes).toHaveFocus();
-    expect(screen.getByRole('tabpanel')).toHaveAttribute('aria-labelledby', solicitudes.id);
+    expect(screen.getByRole('tabpanel')).toHaveAttribute(
+      'aria-labelledby',
+      solicitudes.id,
+    );
     fireEvent.keyDown(solicitudes, { key: 'Home' });
     expect(aprobados).toHaveAttribute('aria-selected', 'true');
     expect(aprobados).toHaveFocus();
@@ -523,8 +740,15 @@ describe('AdminPanel', () => {
   it('en el ordenador, la sección lleva su título y su panel de pestañas', async () => {
     renderPanel();
     await waitFor(() => expect(mockGetAdminStats).toHaveBeenCalled());
-    fireEvent.click(screen.getByRole('link', { name: /screens.adminGolfCourses/ }));
-    expect(screen.getByRole('heading', { level: 2, name: 'common:screens.adminGolfCourses' })).toHaveClass('hidden', 'md:block');
+    fireEvent.click(
+      screen.getByRole('link', { name: /screens.adminGolfCourses/ }),
+    );
+    expect(
+      screen.getByRole('heading', {
+        level: 2,
+        name: 'common:screens.adminGolfCourses',
+      }),
+    ).toHaveClass('hidden', 'md:block');
     const pestaña = screen.getByRole('tab', { name: 'golfTabs.approved' });
     const panel = screen.getByRole('tabpanel');
     expect(pestaña).toHaveAttribute('aria-controls', panel.id);
@@ -537,10 +761,10 @@ describe('AdminPanel', () => {
     const nav = screen.getByRole('navigation');
     const filas = within(nav).getAllByRole('link');
     expect(filas[0]).toHaveClass('md:bg-primary-50');
-    for (const fila of filas.slice(1)) expect(fila).not.toHaveClass('md:bg-primary-50');
+    for (const fila of filas.slice(1))
+      expect(fila).not.toHaveClass('md:bg-primary-50');
   });
 });
-
 
 /**
  * Las cargas del panel viven dentro de sus efectos (FE, refactor de efectos):
@@ -569,7 +793,9 @@ describe('AdminPanel · las cargas de sus listas', () => {
 
   const resumenCargado = async () => {
     const vista = renderPanel();
-    await waitFor(() => expect(within(seccionDelPanel()).getByText('25')).toBeInTheDocument());
+    await waitFor(() =>
+      expect(within(seccionDelPanel()).getByText('25')).toBeInTheDocument(),
+    );
     return vista;
   };
 
@@ -582,14 +808,21 @@ describe('AdminPanel · las cargas de sus listas', () => {
 
   const abrirCompeticiones = async () => {
     const vista = await resumenCargado();
-    fireEvent.click(screen.getByRole('link', { name: /screens.adminCompetitions/ }));
+    fireEvent.click(
+      screen.getByRole('link', { name: /screens.adminCompetitions/ }),
+    );
     await enLaTabla('Ryder Cup Local');
     return vista;
   };
 
   const buscarCompeticion = (texto) => {
-    fireEvent.change(screen.getByPlaceholderText('competitions.searchPlaceholder'), { target: { value: texto } });
-    fireEvent.click(screen.getByRole('button', { name: 'competitions.searchButton' }));
+    fireEvent.change(
+      screen.getByPlaceholderText('competitions.searchPlaceholder'),
+      { target: { value: texto } },
+    );
+    fireEvent.click(
+      screen.getByRole('button', { name: 'competitions.searchButton' }),
+    );
   };
 
   it('T1-1: cambiar de idioma no vuelve a pedir los números del resumen', async () => {
@@ -617,8 +850,12 @@ describe('AdminPanel · las cargas de sus listas', () => {
     // Then se piden otra vez, y se espera hasta que lleguen
     await waitFor(() => expect(mockGetAdminStats).toHaveBeenCalledTimes(2));
     expect(cargandoEnLaSeccion()).toBeInTheDocument();
-    await act(async () => segunda.resolver({ ...stats, totalQuickMatches: 31 }));
-    expect(await within(seccionDelPanel()).findByText('31')).toBeInTheDocument();
+    await act(async () =>
+      segunda.resolver({ ...stats, totalQuickMatches: 31 }),
+    );
+    expect(
+      await within(seccionDelPanel()).findByText('31'),
+    ).toBeInTheDocument();
     expect(cargandoEnLaSeccion()).toBeNull();
   });
 
@@ -629,15 +866,21 @@ describe('AdminPanel · las cargas de sus listas', () => {
     mockListAdminUsers.mockReturnValueOnce(llega.promesa);
 
     // When se busca
-    fireEvent.change(screen.getByPlaceholderText('users.searchPlaceholder'), { target: { value: '  ana ' } });
+    fireEvent.change(screen.getByPlaceholderText('users.searchPlaceholder'), {
+      target: { value: '  ana ' },
+    });
     fireEvent.click(screen.getByRole('button', { name: 'users.searchButton' }));
 
     // Then se piden con eso, y la espera hasta que llegan
     await waitFor(() =>
-      expect(mockListAdminUsers).toHaveBeenLastCalledWith(expect.objectContaining({ search: 'ana', offset: 0, limit: 20 }))
+      expect(mockListAdminUsers).toHaveBeenLastCalledWith(
+        expect.objectContaining({ search: 'ana', offset: 0, limit: 20 }),
+      ),
     );
     expect(cargandoEnLaSeccion()).toBeInTheDocument();
-    await act(async () => llega.resolver({ users: [usuario('u2', 'Ana')], totalCount: 1 }));
+    await act(async () =>
+      llega.resolver({ users: [usuario('u2', 'Ana')], totalCount: 1 }),
+    );
     expect(await enLaTabla('Ana Prueba')).toBeInTheDocument();
     expect(cargandoEnLaSeccion()).toBeNull();
   });
@@ -647,13 +890,19 @@ describe('AdminPanel · las cargas de sus listas', () => {
     const llega = aMano();
     mockListAdminUsers.mockReturnValueOnce(llega.promesa);
 
-    fireEvent.change(screen.getByDisplayValue('users.filterVerifiedAll'), { target: { value: 'unverified' } });
+    fireEvent.change(screen.getByDisplayValue('users.filterVerifiedAll'), {
+      target: { value: 'unverified' },
+    });
 
     await waitFor(() =>
-      expect(mockListAdminUsers).toHaveBeenLastCalledWith(expect.objectContaining({ emailVerified: false, offset: 0 }))
+      expect(mockListAdminUsers).toHaveBeenLastCalledWith(
+        expect.objectContaining({ emailVerified: false, offset: 0 }),
+      ),
     );
     expect(cargandoEnLaSeccion()).toBeInTheDocument();
-    await act(async () => llega.resolver({ users: [usuario('u3', 'Vera')], totalCount: 1 }));
+    await act(async () =>
+      llega.resolver({ users: [usuario('u3', 'Vera')], totalCount: 1 }),
+    );
     expect(await enLaTabla('Vera Prueba')).toBeInTheDocument();
     expect(cargandoEnLaSeccion()).toBeNull();
   });
@@ -666,9 +915,15 @@ describe('AdminPanel · las cargas de sus listas', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'users.next' }));
 
-    await waitFor(() => expect(mockListAdminUsers).toHaveBeenLastCalledWith(expect.objectContaining({ offset: 20 })));
+    await waitFor(() =>
+      expect(mockListAdminUsers).toHaveBeenLastCalledWith(
+        expect.objectContaining({ offset: 20 }),
+      ),
+    );
     expect(cargandoEnLaSeccion()).toBeInTheDocument();
-    await act(async () => llega.resolver({ users: [usuario('u21', 'Pagina')], totalCount: 45 }));
+    await act(async () =>
+      llega.resolver({ users: [usuario('u21', 'Pagina')], totalCount: 45 }),
+    );
     expect(await enLaTabla('Pagina Prueba')).toBeInTheDocument();
   });
 
@@ -681,7 +936,9 @@ describe('AdminPanel · las cargas de sus listas', () => {
     cambiarDeIdioma(rerender);
 
     // Then se piden otra vez
-    await waitFor(() => expect(mockListAdminUsers).toHaveBeenCalledTimes(antes + 1));
+    await waitFor(() =>
+      expect(mockListAdminUsers).toHaveBeenCalledTimes(antes + 1),
+    );
   });
 
   it('T1-4: cambiar de idioma en competiciones las vuelve a pedir (como hoy)', async () => {
@@ -690,18 +947,28 @@ describe('AdminPanel · las cargas de sus listas', () => {
 
     cambiarDeIdioma(rerender);
 
-    await waitFor(() => expect(mockAdminListCompetitions).toHaveBeenCalledTimes(antes + 1));
+    await waitFor(() =>
+      expect(mockAdminListCompetitions).toHaveBeenCalledTimes(antes + 1),
+    );
   });
 
   it('T1-5: buscar competiciones vuelve a la primera página, con la espera', async () => {
     // Given la segunda página de competiciones
-    const llenas = Array.from({ length: 21 }, (_, i) => competicion(`c${i}`, `Competition ${i}`));
+    const llenas = Array.from({ length: 21 }, (_, i) =>
+      competicion(`c${i}`, `Competition ${i}`),
+    );
     mockAdminListCompetitions.mockResolvedValue(llenas);
     await resumenCargado();
-    fireEvent.click(screen.getByRole('link', { name: /screens.adminCompetitions/ }));
+    fireEvent.click(
+      screen.getByRole('link', { name: /screens.adminCompetitions/ }),
+    );
     await enLaTabla('Competition 0');
     fireEvent.click(screen.getByRole('button', { name: 'competitions.next' }));
-    await waitFor(() => expect(mockAdminListCompetitions).toHaveBeenLastCalledWith(expect.objectContaining({ offset: 20 })));
+    await waitFor(() =>
+      expect(mockAdminListCompetitions).toHaveBeenLastCalledWith(
+        expect.objectContaining({ offset: 20 }),
+      ),
+    );
     await enLaTabla('Competition 0');
     const llega = aMano();
     mockAdminListCompetitions.mockReturnValueOnce(llega.promesa);
@@ -711,10 +978,16 @@ describe('AdminPanel · las cargas de sus listas', () => {
 
     // Then se pide desde el principio y se espera
     await waitFor(() =>
-      expect(mockAdminListCompetitions).toHaveBeenLastCalledWith({ searchName: 'ryder', limit: 21, offset: 0 })
+      expect(mockAdminListCompetitions).toHaveBeenLastCalledWith({
+        searchName: 'ryder',
+        limit: 21,
+        offset: 0,
+      }),
     );
     expect(cargandoEnLaSeccion()).toBeInTheDocument();
-    await act(async () => llega.resolver([competicion('c-r', 'Ryder Buscada')]));
+    await act(async () =>
+      llega.resolver([competicion('c-r', 'Ryder Buscada')]),
+    );
     expect(await enLaTabla('Ryder Buscada')).toBeInTheDocument();
     expect(cargandoEnLaSeccion()).toBeNull();
   });
@@ -726,11 +999,17 @@ describe('AdminPanel · las cargas de sus listas', () => {
     const llega = aMano();
     mockAdminListCompetitions.mockReturnValueOnce(llega.promesa);
 
-    fireEvent.click(screen.getByRole('button', { name: 'competitions.actions.activate' }));
+    fireEvent.click(
+      screen.getByRole('button', { name: 'competitions.actions.activate' }),
+    );
 
-    await waitFor(() => expect(mockAdminListCompetitions).toHaveBeenCalledTimes(antes + 1));
+    await waitFor(() =>
+      expect(mockAdminListCompetitions).toHaveBeenCalledTimes(antes + 1),
+    );
     expect(cargandoEnLaSeccion()).toBeInTheDocument();
-    await act(async () => llega.resolver([competicion('c1', 'Ryder Activada')]));
+    await act(async () =>
+      llega.resolver([competicion('c1', 'Ryder Activada')]),
+    );
     expect(await enLaTabla('Ryder Activada')).toBeInTheDocument();
   });
 
@@ -739,19 +1018,39 @@ describe('AdminPanel · las cargas de sus listas', () => {
     await abrirCompeticiones();
     const antes = mockAdminListCompetitions.mock.calls.length;
 
-    fireEvent.click(screen.getAllByRole('button', { name: 'competitions.editTooltip' })[0]);
-    fireEvent.click(screen.getByRole('button', { name: 'competitions.editModal.save' }));
+    fireEvent.click(
+      screen.getAllByRole('button', { name: 'competitions.editTooltip' })[0],
+    );
+    fireEvent.click(
+      screen.getByRole('button', { name: 'competitions.editModal.save' }),
+    );
 
-    await waitFor(() => expect(mockAdminListCompetitions).toHaveBeenCalledTimes(antes + 1));
+    await waitFor(() =>
+      expect(mockAdminListCompetitions).toHaveBeenCalledTimes(antes + 1),
+    );
   });
 
   describe('T1-13: una respuesta vieja no pisa la nueva', () => {
     const cambiarDosFiltros = async (vieja, nueva) => {
-      mockListAdminUsers.mockReturnValueOnce(vieja.promesa).mockReturnValueOnce(nueva.promesa);
-      fireEvent.change(screen.getByDisplayValue('users.filterRoleAll'), { target: { value: 'admin' } });
-      await waitFor(() => expect(mockListAdminUsers).toHaveBeenLastCalledWith(expect.objectContaining({ isAdmin: true })));
-      fireEvent.change(screen.getByDisplayValue('users.filterStatusAll'), { target: { value: 'active' } });
-      await waitFor(() => expect(mockListAdminUsers).toHaveBeenLastCalledWith(expect.objectContaining({ isActive: true })));
+      mockListAdminUsers
+        .mockReturnValueOnce(vieja.promesa)
+        .mockReturnValueOnce(nueva.promesa);
+      fireEvent.change(screen.getByDisplayValue('users.filterRoleAll'), {
+        target: { value: 'admin' },
+      });
+      await waitFor(() =>
+        expect(mockListAdminUsers).toHaveBeenLastCalledWith(
+          expect.objectContaining({ isAdmin: true }),
+        ),
+      );
+      fireEvent.change(screen.getByDisplayValue('users.filterStatusAll'), {
+        target: { value: 'active' },
+      });
+      await waitFor(() =>
+        expect(mockListAdminUsers).toHaveBeenLastCalledWith(
+          expect.objectContaining({ isActive: true }),
+        ),
+      );
     };
 
     it('usuarios: si la vieja llega antes, la espera sigue hasta la nueva', async () => {
@@ -761,11 +1060,15 @@ describe('AdminPanel · las cargas de sus listas', () => {
       const nueva = aMano();
       // When el filtro cambia antes de que llegue
       await cambiarDosFiltros(vieja, nueva);
-      await act(async () => vieja.resolver({ users: [usuario('u-v', 'Vieja')], totalCount: 1 }));
+      await act(async () =>
+        vieja.resolver({ users: [usuario('u-v', 'Vieja')], totalCount: 1 }),
+      );
 
       // Then la vieja no quita la espera de la nueva
       expect(cargandoEnLaSeccion()).toBeInTheDocument();
-      await act(async () => nueva.resolver({ users: [usuario('u-n', 'Nueva')], totalCount: 1 }));
+      await act(async () =>
+        nueva.resolver({ users: [usuario('u-n', 'Nueva')], totalCount: 1 }),
+      );
       expect(await enLaTabla('Nueva Prueba')).toBeInTheDocument();
       expect(screen.queryByText('Vieja Prueba')).toBeNull();
     });
@@ -776,11 +1079,17 @@ describe('AdminPanel · las cargas de sus listas', () => {
       const nueva = aMano();
       await cambiarDosFiltros(vieja, nueva);
 
-      await act(async () => nueva.resolver({ users: [usuario('u-n', 'Nueva')], totalCount: 1 }));
+      await act(async () =>
+        nueva.resolver({ users: [usuario('u-n', 'Nueva')], totalCount: 1 }),
+      );
       await enLaTabla('Nueva Prueba');
-      await act(async () => vieja.resolver({ users: [usuario('u-v', 'Vieja')], totalCount: 7 }));
+      await act(async () =>
+        vieja.resolver({ users: [usuario('u-v', 'Vieja')], totalCount: 7 }),
+      );
 
-      expect(within(screen.getByRole('table')).getByText('Nueva Prueba')).toBeInTheDocument();
+      expect(
+        within(screen.getByRole('table')).getByText('Nueva Prueba'),
+      ).toBeInTheDocument();
       expect(screen.queryByText('Vieja Prueba')).toBeNull();
       expect(screen.getByText('users.totalCount_1')).toBeInTheDocument();
     });
@@ -798,11 +1107,21 @@ describe('AdminPanel · las cargas de sus listas', () => {
     });
 
     const buscarDosVeces = async (vieja, nueva) => {
-      mockAdminListCompetitions.mockReturnValueOnce(vieja.promesa).mockReturnValueOnce(nueva.promesa);
+      mockAdminListCompetitions
+        .mockReturnValueOnce(vieja.promesa)
+        .mockReturnValueOnce(nueva.promesa);
       buscarCompeticion('vieja');
-      await waitFor(() => expect(mockAdminListCompetitions).toHaveBeenLastCalledWith(expect.objectContaining({ searchName: 'vieja' })));
+      await waitFor(() =>
+        expect(mockAdminListCompetitions).toHaveBeenLastCalledWith(
+          expect.objectContaining({ searchName: 'vieja' }),
+        ),
+      );
       buscarCompeticion('nueva');
-      await waitFor(() => expect(mockAdminListCompetitions).toHaveBeenLastCalledWith(expect.objectContaining({ searchName: 'nueva' })));
+      await waitFor(() =>
+        expect(mockAdminListCompetitions).toHaveBeenLastCalledWith(
+          expect.objectContaining({ searchName: 'nueva' }),
+        ),
+      );
     };
 
     it('competiciones: si la vieja llega antes, la espera sigue hasta la nueva', async () => {
@@ -829,7 +1148,9 @@ describe('AdminPanel · las cargas de sus listas', () => {
       await enLaTabla('Copa Nueva');
       await act(async () => vieja.resolver([competicion('c-v', 'Copa Vieja')]));
 
-      expect(within(screen.getByRole('table')).getByText('Copa Nueva')).toBeInTheDocument();
+      expect(
+        within(screen.getByRole('table')).getByText('Copa Nueva'),
+      ).toBeInTheDocument();
       expect(screen.queryByText('Copa Vieja')).toBeNull();
     });
   });
@@ -839,7 +1160,9 @@ describe('AdminPanel · las cargas de sus listas', () => {
     const { rerender } = await resumenCargado();
     const vieja = aMano();
     const nueva = aMano();
-    mockGetAdminStats.mockReturnValueOnce(vieja.promesa).mockReturnValueOnce(nueva.promesa);
+    mockGetAdminStats
+      .mockReturnValueOnce(vieja.promesa)
+      .mockReturnValueOnce(nueva.promesa);
     traerOtroUsuario(rerender);
     await waitFor(() => expect(mockGetAdminStats).toHaveBeenCalledTimes(2));
     traerOtroUsuario(rerender);

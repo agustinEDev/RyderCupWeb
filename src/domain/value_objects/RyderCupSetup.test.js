@@ -41,6 +41,8 @@ describe('RyderCupSetup (FE #791)', () => {
   });
 
   it('R4: cambiar también valida', () => {
-    expect(() => pieza().with({ team1Name: 'USA' })).toThrow('Team names must be different.');
+    expect(() => pieza().with({ team1Name: 'USA' })).toThrow(
+      'Team names must be different.',
+    );
   });
 });

@@ -12,9 +12,7 @@ const GestionDeLaFicha = ({
   fechaDeAperturaLegible,
   t,
 }) => (
-  <div
-    className="p-4"
-  >
+  <div className="p-4">
     <AccionesDeLaFicha
       principal={accionPrincipal}
       acciones={accionesDeGestion}
@@ -30,7 +28,9 @@ const GestionDeLaFicha = ({
         data-testid="invitar-abre-inscripciones"
       >
         {fechaDeAperturaLegible
-          ? t('detail.invitingOpensScheduled', { fecha: fechaDeAperturaLegible })
+          ? t('detail.invitingOpensScheduled', {
+              fecha: fechaDeAperturaLegible,
+            })
           : t('detail.invitingOpensEnrollment')}
       </p>
     )}

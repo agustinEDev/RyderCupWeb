@@ -31,7 +31,10 @@
 import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router';
 import { useAuthContext } from './useAuthContext';
-import { handleDeviceRevocationLogout, olvidaLoGuardadoDeLaCuenta } from '../composition/http';
+import {
+  handleDeviceRevocationLogout,
+  olvidaLoGuardadoDeLaCuenta,
+} from '../composition/http';
 // El mismo guard que usa el login manual. Compartirlo es lo que importa: dos
 // copias de una comprobación de seguridad acaban divergiendo
 import { vueltaTrasEntrar } from '../utils/vueltaTrasEntrar';
@@ -119,7 +122,13 @@ export const useRedirectIfAuthenticated = ({
         // rápido, se queda colgada hasta agotar el plazo. Tratarlo distinto del
         // rechazo de red dejaba el arreglo cubriendo solo el caso raro.
         settled = true;
-        navigate(vueltaTrasEntrar(location.state?.from, { cuenta: cuentaGuardada, arranque: entrarSinRed }), { replace: true });
+        navigate(
+          vueltaTrasEntrar(location.state?.from, {
+            cuenta: cuentaGuardada,
+            arranque: entrarSinRed,
+          }),
+          { replace: true },
+        );
         return;
       }
 
@@ -138,7 +147,13 @@ export const useRedirectIfAuthenticated = ({
         // sin conexión es el caso de uso, no un extra. La sesión no se ha
         // rechazado —solo no se ha podido preguntar—, así que se entra con la
         // que hay guardada.
-        navigate(vueltaTrasEntrar(location.state?.from, { cuenta: cuentaGuardada, arranque: entrarSinRed }), { replace: true });
+        navigate(
+          vueltaTrasEntrar(location.state?.from, {
+            cuenta: cuentaGuardada,
+            arranque: entrarSinRed,
+          }),
+          { replace: true },
+        );
         return;
       }
 
@@ -202,9 +217,15 @@ export const useRedirectIfAuthenticated = ({
       // Sesión confirmada: acaba el silencio de un cierre anterior (C5). La entrada sin
       // red de arriba no: no se ha confirmado nada
       vuelvenLosAvisosDeCierre();
-      navigate(vueltaTrasEntrar(location.state?.from, { cuenta: currentUser.id, arranque: entrarSinRed }), {
-        replace: true,
-      });
+      navigate(
+        vueltaTrasEntrar(location.state?.from, {
+          cuenta: currentUser.id,
+          arranque: entrarSinRed,
+        }),
+        {
+          replace: true,
+        },
+      );
       // `isChecking` se queda arriba a propósito: la página se está yendo y
       // bajarlo pintaría el formulario un instante
     };
@@ -228,7 +249,15 @@ export const useRedirectIfAuthenticated = ({
       clearTimeout(deadline);
       controller.abort();
     };
-  }, [hadStoredUser, cuentaGuardada, navigate, location.state, setUser, clearAuth, entrarSinRed]);
+  }, [
+    hadStoredUser,
+    cuentaGuardada,
+    navigate,
+    location.state,
+    setUser,
+    clearAuth,
+    entrarSinRed,
+  ]);
 
   return isChecking;
 };

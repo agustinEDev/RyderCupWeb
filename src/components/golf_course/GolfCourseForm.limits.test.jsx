@@ -61,7 +61,7 @@ describe('GolfCourseForm · limites alineados con el backend', () => {
           tees: Array.from({ length: tees }, (_, i) => teeAt(i)),
           ...(holes ? { holes } : {}),
         }}
-      />
+      />,
     );
     return onSubmit;
   };
@@ -69,7 +69,9 @@ describe('GolfCourseForm · limites alineados con el backend', () => {
   // En jsdom pulsar el boton no dispara el `onSubmit` del form, y la validacion
   // vive ahi.
   const submitForm = () => {
-    fireEvent.submit(screen.getByRole('button', { name: 'form.update' }).closest('form'));
+    fireEvent.submit(
+      screen.getByRole('button', { name: 'form.update' }).closest('form'),
+    );
   };
 
   const errores = () => customToast.error.mock.calls.map((c) => String(c[0]));
@@ -86,7 +88,9 @@ describe('GolfCourseForm · limites alineados con el backend', () => {
 
       fireEvent.click(screen.getAllByRole('button', { name: '6' })[0]);
 
-      expect(screen.getAllByRole('button', { name: '6' })[0]).toHaveClass('bg-primary');
+      expect(screen.getAllByRole('button', { name: '6' })[0]).toHaveClass(
+        'bg-primary',
+      );
     });
 
     it('no ofrece el par 7', () => {
@@ -124,13 +128,17 @@ describe('GolfCourseForm · limites alineados con el backend', () => {
     it('desactiva el boton de anadir al llegar a 14', () => {
       renderWith({ tees: 14 });
 
-      expect(screen.getByRole('button', { name: /form\.addTee/ })).toBeDisabled();
+      expect(
+        screen.getByRole('button', { name: /form\.addTee/ }),
+      ).toBeDisabled();
     });
 
     it('sigue dejando anadir con 10 barras, que antes era el techo', () => {
       renderWith({ tees: 10 });
 
-      expect(screen.getByRole('button', { name: /form\.addTee/ })).not.toBeDisabled();
+      expect(
+        screen.getByRole('button', { name: /form\.addTee/ }),
+      ).not.toBeDisabled();
     });
 
     it('deja bajar hasta una sola barra', () => {
@@ -138,7 +146,9 @@ describe('GolfCourseForm · limites alineados con el backend', () => {
 
       // Con dos barras el boton de borrar ya existe: antes solo aparecia a
       // partir de tres, asi que no habia forma de llegar a una
-      const borrar = screen.getAllByRole('button').filter((b) => b.className.includes('text-red-600'));
+      const borrar = screen
+        .getAllByRole('button')
+        .filter((b) => b.className.includes('text-red-600'));
       expect(borrar).toHaveLength(2);
 
       fireEvent.click(borrar[0]);

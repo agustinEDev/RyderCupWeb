@@ -13,7 +13,8 @@ export function detectStandalone() {
   // iPadOS 13+ se declara MacIntel, de ahi lo del touch
   const esIOS =
     /iphone|ipad|ipod/i.test(ua) ||
-    ((/macintosh/i.test(ua) || navigator.platform === 'MacIntel') && navigator.maxTouchPoints > 1);
+    ((/macintosh/i.test(ua) || navigator.platform === 'MacIntel') &&
+      navigator.maxTouchPoints > 1);
 
   // En iOS SOLO vale `navigator.standalone`: los navegadores basados en WebView
   // —Chrome en iOS— dicen que si a `display-mode: standalone` estando en una
@@ -28,8 +29,12 @@ export function detectStandalone() {
   // esto, quien abriera el enlace desde ahi teniendo sesion no llegaria a ver la
   // portada nunca. `; wv` es la marca del WebView de Android; los demas anaden
   // su propia etiqueta al userAgent.
-  const enOtraAplicacion = /;\s?wv\)|FBAN|FBAV|Instagram|Line\/|MicroMessenger|Twitter/i.test(ua);
+  const enOtraAplicacion =
+    /;\s?wv\)|FBAN|FBAV|Instagram|Line\/|MicroMessenger|Twitter/i.test(ua);
   if (enOtraAplicacion) return false;
 
-  return typeof window.matchMedia === 'function' && window.matchMedia('(display-mode: standalone)').matches;
+  return (
+    typeof window.matchMedia === 'function' &&
+    window.matchMedia('(display-mode: standalone)').matches
+  );
 }

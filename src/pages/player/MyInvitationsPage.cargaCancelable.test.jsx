@@ -17,18 +17,28 @@ const mockIdioma = vi.hoisted(() => ({ t: (key) => key }));
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({ t: mockIdioma.t, i18n: { language: 'es' } }),
 }));
-const sesion = vi.hoisted(() => ({ user: { id: 'me', email_verified: true }, loading: false }));
+const sesion = vi.hoisted(() => ({
+  user: { id: 'me', email_verified: true },
+  loading: false,
+}));
 vi.mock('../../hooks/useAuth', () => ({ useAuth: () => sesion }));
 vi.mock('../../components/layout/HeaderAuth', () => ({
   default: () => <header data-testid="header" />,
 }));
 vi.mock('../../hooks/useGeneroParaApuntarse', () => ({
-  useGeneroParaApuntarse: () => ({ falta: false, guardar: vi.fn(), refrescar: vi.fn() }),
+  useGeneroParaApuntarse: () => ({
+    falta: false,
+    guardar: vi.fn(),
+    refrescar: vi.fn(),
+  }),
 }));
 vi.mock('../../components/invitation/InvitationCard', () => ({
   default: ({ invitation, onDecline }) => (
     <div data-testid={`inv-${invitation.id}`}>
-      <button type="button" onClick={() => onDecline(invitation.id)}>{`rechazar-${invitation.id}`}</button>
+      <button
+        type="button"
+        onClick={() => onDecline(invitation.id)}
+      >{`rechazar-${invitation.id}`}</button>
     </div>
   ),
 }));
@@ -92,7 +102,9 @@ describe('MyInvitationsPage: la lista descarta lo que llega tarde (T2)', () => {
     const nueva = aMano();
     listar.mockReturnValueOnce(deA.promesa).mockReturnValueOnce(nueva.promesa);
 
-    fireEvent.change(screen.getByTestId('status-filter'), { target: { value: 'PENDING' } });
+    fireEvent.change(screen.getByTestId('status-filter'), {
+      target: { value: 'PENDING' },
+    });
     await act(async () => {});
     sesion.user = { ...sesion.user, id: 'otra' };
     rerender(arbol());
@@ -111,9 +123,13 @@ describe('MyInvitationsPage: la lista descarta lo que llega tarde (T2)', () => {
     const { rerender } = render(arbol());
     await screen.findByTestId('inv-i1');
     const deA = aMano();
-    listar.mockReturnValueOnce(deA.promesa).mockResolvedValueOnce(invitaciones('nueva'));
+    listar
+      .mockReturnValueOnce(deA.promesa)
+      .mockResolvedValueOnce(invitaciones('nueva'));
 
-    fireEvent.change(screen.getByTestId('status-filter'), { target: { value: 'PENDING' } });
+    fireEvent.change(screen.getByTestId('status-filter'), {
+      target: { value: 'PENDING' },
+    });
     await act(async () => {});
     sesion.user = { ...sesion.user, id: 'otra' };
     rerender(arbol());
@@ -121,7 +137,9 @@ describe('MyInvitationsPage: la lista descarta lo que llega tarde (T2)', () => {
     await act(async () => deA.rechazar(new Error('tarde')));
 
     expect(toastError).not.toHaveBeenCalled();
-    expect(screen.queryByTestId('invitaciones-sin-cargar')).not.toBeInTheDocument();
+    expect(
+      screen.queryByTestId('invitaciones-sin-cargar'),
+    ).not.toBeInTheDocument();
     expect(screen.getByTestId('inv-nueva')).toBeInTheDocument();
   });
 

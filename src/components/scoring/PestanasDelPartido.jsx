@@ -1,6 +1,10 @@
 import LeaderboardView from './LeaderboardView';
 import ScorecardTable from './ScorecardTable';
-import { GrupoDePestanas, ListaDePestanas, PanelDePestana } from '../ui/Pestanas';
+import {
+  GrupoDePestanas,
+  ListaDePestanas,
+  PanelDePestana,
+} from '../ui/Pestanas';
 
 /**
  * Las tres pestañas de la anotación de competición (`ScoringPage`): «Anotar»
@@ -24,7 +28,11 @@ const PestanasDelPartido = ({
       etiqueta={t('tabsLabel')}
       className="flex border-b border-gray-200 mb-4"
       data-testid="scoring-tabs"
-      pestanas={tabs.map((tab) => ({ id: tab, contenido: t(`tabs.${tab}`), testId: `tab-${tab}` }))}
+      pestanas={tabs.map((tab) => ({
+        id: tab,
+        contenido: t(`tabs.${tab}`),
+        testId: `tab-${tab}`,
+      }))}
       claseDePestana={(abierta) =>
         `flex-1 py-2 text-sm font-medium text-center border-b-2 transition-colors ${
           abierta

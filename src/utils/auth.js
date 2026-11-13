@@ -22,7 +22,11 @@ const AUTH_ROUTES = ['/login', '/register'];
  * @returns {string} A safe internal path
  */
 const resolvePostAuthTarget = (requestedPath) => {
-  if (!requestedPath || !requestedPath.startsWith('/') || requestedPath.startsWith('//')) {
+  if (
+    !requestedPath ||
+    !requestedPath.startsWith('/') ||
+    requestedPath.startsWith('//')
+  ) {
     return '/dashboard';
   }
 
@@ -44,8 +48,13 @@ export const safeLog = (level, message, data = null) => {
   if (data && typeof data === 'object') {
     sanitizedData = { ...data };
     // Remove sensitive fields
-    const sensitiveFields = ['password', 'token', 'access_token', 'refresh_token'];
-    sensitiveFields.forEach(field => {
+    const sensitiveFields = [
+      'password',
+      'token',
+      'access_token',
+      'refresh_token',
+    ];
+    sensitiveFields.forEach((field) => {
       if (field in sanitizedData) {
         sanitizedData[field] = '[REDACTED]';
       }
@@ -71,7 +80,12 @@ const RAROS = /[\\\u0000-\u001f\u007f]/;
  * navegador. La usan la vuelta tras entrar y la de aceptar los Términos.
  */
 export const rutaPropia = (candidato) => {
-  if (!candidato || !candidato.startsWith('/') || candidato.startsWith('//') || RAROS.test(candidato)) {
+  if (
+    !candidato ||
+    !candidato.startsWith('/') ||
+    candidato.startsWith('//') ||
+    RAROS.test(candidato)
+  ) {
     return null;
   }
   const origen = globalThis.location.origin;
@@ -81,7 +95,9 @@ export const rutaPropia = (candidato) => {
   } catch {
     return null;
   }
-  return url.origin === origen ? `${url.pathname}${url.search}${url.hash}` : null;
+  return url.origin === origen
+    ? `${url.pathname}${url.search}${url.hash}`
+    : null;
 };
 
 /**
@@ -92,7 +108,9 @@ export const rutaPropia = (candidato) => {
  */
 export const rutaDeVuelta = (from) => {
   const propia = rutaPropia(
-    from?.pathname ? `${from.pathname}${from.search || ''}${from.hash || ''}` : undefined
+    from?.pathname
+      ? `${from.pathname}${from.search || ''}${from.hash || ''}`
+      : undefined,
   );
   // La de confirmar el correo sin su token (ya usado) no lleva a nada: al volver diría
   // «Este enlace no vale» con el correo ya cambiado. Al panel, venga por donde venga: la

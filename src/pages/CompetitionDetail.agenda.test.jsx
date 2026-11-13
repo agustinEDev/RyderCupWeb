@@ -61,7 +61,9 @@ const mockAssignTeams = vi.fn();
 const mockCloseEnrollments = vi.fn();
 
 vi.mock('../composition', () => ({
-  getCompetitionDetailUseCase: { execute: (...a) => mockGetCompetitionDetail(...a) },
+  getCompetitionDetailUseCase: {
+    execute: (...a) => mockGetCompetitionDetail(...a),
+  },
   getCompetitionGolfCoursesUseCase: { execute: vi.fn().mockResolvedValue([]) },
   activateCompetitionUseCase: { execute: vi.fn() },
   closeEnrollmentsUseCase: { execute: (...a) => mockCloseEnrollments(...a) },
@@ -84,7 +86,12 @@ vi.mock('../composition', () => ({
 }));
 
 vi.mock('../utils/toast', () => ({
-  default: { success: vi.fn(), error: vi.fn(), warning: vi.fn(), info: vi.fn() },
+  default: {
+    success: vi.fn(),
+    error: vi.fn(),
+    warning: vi.fn(),
+    info: vi.fn(),
+  },
 }));
 
 const inscrito = (userId, userName) => ({
@@ -119,14 +126,13 @@ const competicion = (extra = {}) => ({
   ...extra,
 });
 
-
 const renderPage = () =>
   render(
     <MemoryRouter initialEntries={['/competitions/comp-1']}>
       <Routes>
         <Route path="/competitions/:id" element={<CompetitionDetail />} />
       </Routes>
-    </MemoryRouter>
+    </MemoryRouter>,
   );
 
 describe('CompetitionDetail · la agenda (FE #654)', () => {
@@ -135,11 +141,12 @@ describe('CompetitionDetail · la agenda (FE #654)', () => {
     mockRoles = { isAdmin: false, isCreator: true, isLoading: false };
     mockListEnrollments.mockResolvedValue(INSCRITOS);
     mockGetCompetitionDetail.mockResolvedValue(
-      competicion({ startDate: '2026-10-03', endDate: '2026-10-04' })
+      competicion({ startDate: '2026-10-03', endDate: '2026-10-04' }),
     );
   });
 
-  const ultimasProps = () => mockAgenda.mock.calls[mockAgenda.mock.calls.length - 1][0];
+  const ultimasProps = () =>
+    mockAgenda.mock.calls[mockAgenda.mock.calls.length - 1][0];
 
   it('FA1: el organizador la ve y la puede cambiar', async () => {
     renderPage();
@@ -156,7 +163,11 @@ describe('CompetitionDetail · la agenda (FE #654)', () => {
   it('FA2: quien solo mira la ve sin poder cambiarla', async () => {
     mockRoles = { isAdmin: false, isCreator: false, isLoading: false };
     mockGetCompetitionDetail.mockResolvedValue(
-      competicion({ creatorId: 'otra', startDate: '2026-10-03', endDate: '2026-10-04' })
+      competicion({
+        creatorId: 'otra',
+        startDate: '2026-10-03',
+        endDate: '2026-10-04',
+      }),
     );
     renderPage();
 
@@ -173,8 +184,13 @@ describe('CompetitionDetail · la agenda (FE #654)', () => {
 
   it('FA3b: un jugador que solo ve a sus amigos cuenta con todos los inscritos', async () => {
     mockRoles = { isAdmin: false, isCreator: false, isLoading: false };
-    mockGetCompetitionDetail.mockResolvedValue(competicion({ creatorId: 'otra', enrolledCount: 12 }));
-    mockListEnrollments.mockResolvedValue([inscrito('org', 'Olga Organiza'), inscrito('ana', 'Ana Alba')]);
+    mockGetCompetitionDetail.mockResolvedValue(
+      competicion({ creatorId: 'otra', enrolledCount: 12 }),
+    );
+    mockListEnrollments.mockResolvedValue([
+      inscrito('org', 'Olga Organiza'),
+      inscrito('ana', 'Ana Alba'),
+    ]);
     renderPage();
 
     await screen.findByTestId('agenda');
@@ -183,7 +199,11 @@ describe('CompetitionDetail · la agenda (FE #654)', () => {
 
   it('FA4: cancelada o terminada no se cambia', async () => {
     mockGetCompetitionDetail.mockResolvedValue(
-      competicion({ status: 'CANCELLED', startDate: '2026-10-03', endDate: '2026-10-04' })
+      competicion({
+        status: 'CANCELLED',
+        startDate: '2026-10-03',
+        endDate: '2026-10-04',
+      }),
     );
     renderPage();
 
@@ -193,7 +213,11 @@ describe('CompetitionDetail · la agenda (FE #654)', () => {
 
   it('FA5: se vuelve a leer cuando la competición cambia', async () => {
     mockGetCompetitionDetail.mockResolvedValue(
-      competicion({ startDate: '2026-10-03', endDate: '2026-10-04', updatedAt: '2026-09-24T07:00:00' })
+      competicion({
+        startDate: '2026-10-03',
+        endDate: '2026-10-04',
+        updatedAt: '2026-09-24T07:00:00',
+      }),
     );
     renderPage();
 
@@ -209,12 +233,13 @@ describe('CompetitionDetail · la agenda (FE #654)', () => {
           teamsAssigned: true,
           startDate: '2026-10-03',
           endDate: '2026-10-04',
-        })
+        }),
       );
     const abrirMenu = async () => {
       await screen.findByTestId('agenda');
       for (const boton of await screen.findAllByTestId('menu-acciones')) {
-        if (boton.getAttribute('aria-expanded') === 'false') fireEvent.click(boton);
+        if (boton.getAttribute('aria-expanded') === 'false')
+          fireEvent.click(boton);
       }
     };
 
@@ -226,10 +251,17 @@ describe('CompetitionDetail · la agenda (FE #654)', () => {
       renderPage();
       await screen.findByTestId('agenda');
 
-      act(() => ultimasProps().onAgenda({ teamAssignment: null, rounds: Array(sesiones).fill({}) }));
+      act(() =>
+        ultimasProps().onAgenda({
+          teamAssignment: null,
+          rounds: Array(sesiones).fill({}),
+        }),
+      );
       await abrirMenu();
 
-      expect(!!screen.queryByText('detail.actions.start-competition')).toBe(seOfrece);
+      expect(!!screen.queryByText('detail.actions.start-competition')).toBe(
+        seOfrece,
+      );
     });
 
     it('FA9: mientras la agenda no ha dicho cuántas hay, no', async () => {
@@ -238,7 +270,9 @@ describe('CompetitionDetail · la agenda (FE #654)', () => {
 
       await abrirMenu();
 
-      expect(screen.queryByText('detail.actions.start-competition')).not.toBeInTheDocument();
+      expect(
+        screen.queryByText('detail.actions.start-competition'),
+      ).not.toBeInTheDocument();
     });
   });
 
@@ -248,10 +282,15 @@ describe('CompetitionDetail · la agenda (FE #654)', () => {
         competicion({
           status: 'CLOSED',
           teamsAssigned: true,
-          captains: { teamA: 'org', teamB: 'bea', viceTeamA: null, viceTeamB: null },
+          captains: {
+            teamA: 'org',
+            teamB: 'bea',
+            viceTeamA: null,
+            viceTeamB: null,
+          },
           startDate: '2026-10-03',
           endDate: '2026-10-04',
-        })
+        }),
       );
       renderPage();
       await screen.findByTestId('agenda');
@@ -259,14 +298,25 @@ describe('CompetitionDetail · la agenda (FE #654)', () => {
       act(() =>
         ultimasProps().onAgenda({
           rounds: [],
-          teamAssignment: { teamAPlayerIds: ['org', 'ana'], teamBPlayerIds: ['bea', 'carla'] },
-        })
+          teamAssignment: {
+            teamAPlayerIds: ['org', 'ana'],
+            teamBPlayerIds: ['bea', 'carla'],
+          },
+        }),
       );
 
-      expect(await within(screen.getByTestId('aprobado-ana')).findByText('Europa')).toBeInTheDocument();
-      expect(within(screen.getByTestId('aprobado-carla')).getByText('América')).toBeInTheDocument();
+      expect(
+        await within(screen.getByTestId('aprobado-ana')).findByText('Europa'),
+      ).toBeInTheDocument();
+      expect(
+        within(screen.getByTestId('aprobado-carla')).getByText('América'),
+      ).toBeInTheDocument();
       // El capitán ya lo dice con su insignia: no dos veces
-      expect(within(screen.getByTestId('aprobado-bea')).queryByTestId('equipo-del-aprobado')).toBeNull();
+      expect(
+        within(screen.getByTestId('aprobado-bea')).queryByTestId(
+          'equipo-del-aprobado',
+        ),
+      ).toBeNull();
     });
 
     it('FA11: sin reparto, nadie dice equipo', async () => {
@@ -284,8 +334,9 @@ describe('CompetitionDetail · la agenda (FE #654)', () => {
     renderPage();
     await screen.findByTestId('agenda');
     const antes = ultimasProps().versionCampos;
-    const aviso = mockSeccionCampos.mock.calls[mockSeccionCampos.mock.calls.length - 1][0]
-      .onCamposCambiados;
+    const aviso =
+      mockSeccionCampos.mock.calls[mockSeccionCampos.mock.calls.length - 1][0]
+        .onCamposCambiados;
 
     act(() => aviso());
 

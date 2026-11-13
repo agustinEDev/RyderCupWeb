@@ -1,6 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { useState } from 'react';
-import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
+import {
+  render,
+  screen,
+  fireEvent,
+  waitFor,
+  act,
+} from '@testing-library/react';
 import { MemoryRouter, Routes, Route } from 'react-router';
 import AddFriendModal from './AddFriendModal';
 
@@ -45,16 +51,22 @@ const pintar = (props = {}) => {
         t={(k) => k}
         {...props}
       />
-    </MemoryRouter>
+    </MemoryRouter>,
   );
   return { onClose, onSearchUsers };
 };
 
 const buscar = async (texto = 'ana') => {
-  fireEvent.change(screen.getByTestId('user-search-input'), { target: { value: texto } });
-  await waitFor(() => expect(screen.getByTestId('search-results-dropdown')).toBeInTheDocument(), {
-    timeout: 2000,
+  fireEvent.change(screen.getByTestId('user-search-input'), {
+    target: { value: texto },
   });
+  await waitFor(
+    () =>
+      expect(screen.getByTestId('search-results-dropdown')).toBeInTheDocument(),
+    {
+      timeout: 2000,
+    },
+  );
 };
 
 // Como en Amigos: el boton que lo abre y el modal, con su estado
@@ -62,7 +74,9 @@ const ConDisparadorSinRouter = () => {
   const [abierto, setAbierto] = useState(false);
   return (
     <>
-      <button type="button" onClick={() => setAbierto(true)}>Añadir amigo</button>
+      <button type="button" onClick={() => setAbierto(true)}>
+        Añadir amigo
+      </button>
       <AddFriendModal
         isOpen={abierto}
         onClose={() => setAbierto(false)}
@@ -120,15 +134,25 @@ describe('AddFriendModal', () => {
       pintar();
       await buscar();
 
-      expect(screen.getByTestId('search-results-dropdown')).toHaveClass('max-h-48', 'overflow-y-auto');
+      expect(screen.getByTestId('search-results-dropdown')).toHaveClass(
+        'max-h-48',
+        'overflow-y-auto',
+      );
     });
 
     it('A1c: la caja nunca pasa del alto de la pantalla: se desplaza por dentro', () => {
       pintar();
 
       // El diálogo es el fondo del armazón; la caja, lo que lleva el título
-      const caja = screen.getByRole('heading', { name: 'add.title' }).closest('[tabindex="-1"]');
-      expect(caja).toHaveClass('bg-white', 'max-w-md', 'max-h-[calc(100dvh-2rem)]', 'overflow-y-auto');
+      const caja = screen
+        .getByRole('heading', { name: 'add.title' })
+        .closest('[tabindex="-1"]');
+      expect(caja).toHaveClass(
+        'bg-white',
+        'max-w-md',
+        'max-h-[calc(100dvh-2rem)]',
+        'overflow-y-auto',
+      );
     });
   });
 
@@ -154,7 +178,9 @@ describe('AddFriendModal', () => {
 
       fireEvent.click(screen.getByText('add.opensProfileHint'));
 
-      expect(screen.queryByTestId('search-results-dropdown')).not.toBeInTheDocument();
+      expect(
+        screen.queryByTestId('search-results-dropdown'),
+      ).not.toBeInTheDocument();
       expect(onClose).not.toHaveBeenCalled();
     });
   });
@@ -165,7 +191,9 @@ describe('AddFriendModal', () => {
 
     fireEvent.click(screen.getByTestId('search-result-u-2'));
 
-    expect(navigate).toHaveBeenCalledWith('/players/u-2', { state: { from: 'friends' } });
+    expect(navigate).toHaveBeenCalledWith('/players/u-2', {
+      state: { from: 'friends' },
+    });
     expect(onClose).toHaveBeenCalled();
   });
 
@@ -178,7 +206,9 @@ describe('AddFriendModal', () => {
     fireEvent.keyDown(document, { key: 'ArrowDown' });
     fireEvent.keyDown(document, { key: 'Enter' });
 
-    expect(navigate).toHaveBeenCalledWith('/players/u-1', { state: { from: 'friends' } });
+    expect(navigate).toHaveBeenCalledWith('/players/u-1', {
+      state: { from: 'friends' },
+    });
   });
 
   it('opens the highlighted result even if Enter arrives before React re-renders', async () => {
@@ -196,7 +226,9 @@ describe('AddFriendModal', () => {
       fireEvent.keyDown(document, { key: 'Enter' });
     });
 
-    expect(navigate).toHaveBeenCalledWith('/players/u-1', { state: { from: 'friends' } });
+    expect(navigate).toHaveBeenCalledWith('/players/u-1', {
+      state: { from: 'friends' },
+    });
   });
 
   it('closes the modal on the second Escape, without needing a third', async () => {
@@ -220,21 +252,36 @@ describe('AddFriendModal', () => {
     // es que no se ha podido preguntar.
     // Hace falta una busqueda buena antes: si la que falla es la primera, el
     // desplegable no llego a abrirse nunca y no se distingue un caso del otro.
-    const onSearchUsers = vi.fn()
+    const onSearchUsers = vi
+      .fn()
       .mockResolvedValueOnce(RESULTADOS)
       .mockRejectedValueOnce(new Error('API caida'));
     pintar({ onSearchUsers });
 
-    fireEvent.change(screen.getByTestId('user-search-input'), { target: { value: 'ana' } });
-    await waitFor(() => expect(screen.getByTestId('search-results-dropdown')).toBeInTheDocument(), {
+    fireEvent.change(screen.getByTestId('user-search-input'), {
+      target: { value: 'ana' },
+    });
+    await waitFor(
+      () =>
+        expect(
+          screen.getByTestId('search-results-dropdown'),
+        ).toBeInTheDocument(),
+      {
+        timeout: 2000,
+      },
+    );
+
+    fireEvent.change(screen.getByTestId('user-search-input'), {
+      target: { value: 'anas' },
+    });
+    await waitFor(() => expect(onSearchUsers).toHaveBeenCalledTimes(2), {
       timeout: 2000,
     });
 
-    fireEvent.change(screen.getByTestId('user-search-input'), { target: { value: 'anas' } });
-    await waitFor(() => expect(onSearchUsers).toHaveBeenCalledTimes(2), { timeout: 2000 });
-
     await waitFor(() => {
-      expect(screen.queryByTestId('search-results-dropdown')).not.toBeInTheDocument();
+      expect(
+        screen.queryByTestId('search-results-dropdown'),
+      ).not.toBeInTheDocument();
     });
     expect(screen.queryByTestId('no-users-found')).not.toBeInTheDocument();
     // Y lo dice: sin mensaje, la pantalla se queda igual que si no hubieras
@@ -244,22 +291,32 @@ describe('AddFriendModal', () => {
 
   it('clears the failure notice when a new search starts', async () => {
     // Si se queda pegado, el usuario ve un error viejo sobre resultados buenos.
-    const onSearchUsers = vi.fn()
+    const onSearchUsers = vi
+      .fn()
       .mockRejectedValueOnce(new Error('API caida'))
       .mockResolvedValueOnce(RESULTADOS);
     pintar({ onSearchUsers });
 
-    fireEvent.change(screen.getByTestId('user-search-input'), { target: { value: 'ana' } });
-    await waitFor(() => expect(screen.getByTestId('search-error')).toBeInTheDocument(), {
-      timeout: 2000,
+    fireEvent.change(screen.getByTestId('user-search-input'), {
+      target: { value: 'ana' },
     });
+    await waitFor(
+      () => expect(screen.getByTestId('search-error')).toBeInTheDocument(),
+      {
+        timeout: 2000,
+      },
+    );
 
-    fireEvent.change(screen.getByTestId('user-search-input'), { target: { value: 'anas' } });
+    fireEvent.change(screen.getByTestId('user-search-input'), {
+      target: { value: 'anas' },
+    });
 
     await waitFor(() => {
       expect(screen.queryByTestId('search-error')).not.toBeInTheDocument();
     });
-    expect(await screen.findByTestId('search-results-dropdown')).toBeInTheDocument();
+    expect(
+      await screen.findByTestId('search-results-dropdown'),
+    ).toBeInTheDocument();
   });
 
   it('drops the failure notice when the field is emptied', async () => {
@@ -268,12 +325,19 @@ describe('AddFriendModal', () => {
     const onSearchUsers = vi.fn().mockRejectedValue(new Error('API caida'));
     pintar({ onSearchUsers });
 
-    fireEvent.change(screen.getByTestId('user-search-input'), { target: { value: 'ana' } });
-    await waitFor(() => expect(screen.getByTestId('search-error')).toBeInTheDocument(), {
-      timeout: 2000,
+    fireEvent.change(screen.getByTestId('user-search-input'), {
+      target: { value: 'ana' },
     });
+    await waitFor(
+      () => expect(screen.getByTestId('search-error')).toBeInTheDocument(),
+      {
+        timeout: 2000,
+      },
+    );
 
-    fireEvent.change(screen.getByTestId('user-search-input'), { target: { value: '' } });
+    fireEvent.change(screen.getByTestId('user-search-input'), {
+      target: { value: '' },
+    });
 
     await waitFor(() => {
       expect(screen.queryByTestId('search-error')).not.toBeInTheDocument();
@@ -285,13 +349,24 @@ describe('AddFriendModal', () => {
     // asi que el rechazo llegaba despues y plantaba el aviso rojo debajo de un
     // buscador vacio.
     let rechazar;
-    const onSearchUsers = vi.fn(() => new Promise((_, reject) => { rechazar = reject; }));
+    const onSearchUsers = vi.fn(
+      () =>
+        new Promise((_, reject) => {
+          rechazar = reject;
+        }),
+    );
     pintar({ onSearchUsers });
 
-    fireEvent.change(screen.getByTestId('user-search-input'), { target: { value: 'ana' } });
-    await waitFor(() => expect(onSearchUsers).toHaveBeenCalled(), { timeout: 2000 });
+    fireEvent.change(screen.getByTestId('user-search-input'), {
+      target: { value: 'ana' },
+    });
+    await waitFor(() => expect(onSearchUsers).toHaveBeenCalled(), {
+      timeout: 2000,
+    });
 
-    fireEvent.change(screen.getByTestId('user-search-input'), { target: { value: '' } });
+    fireEvent.change(screen.getByTestId('user-search-input'), {
+      target: { value: '' },
+    });
 
     // El rechazo se deja correr del todo ANTES de comprobar: una asercion
     // negativa dentro de `waitFor` se cumple en la primera pasada —antes de que
@@ -333,7 +408,9 @@ describe('AddFriendModal', () => {
     fireEvent.keyDown(document, { key: 'Escape' });
 
     expect(onClose).not.toHaveBeenCalled();
-    expect(screen.queryByTestId('search-results-dropdown')).not.toBeInTheDocument();
+    expect(
+      screen.queryByTestId('search-results-dropdown'),
+    ).not.toBeInTheDocument();
   });
 
   it('no longer offers a way to send from here', async () => {
@@ -375,9 +452,13 @@ describe('AddFriendModal', () => {
   it('does not search until there are two characters', async () => {
     const { onSearchUsers } = pintar();
 
-    fireEvent.change(screen.getByTestId('user-search-input'), { target: { value: 'a' } });
+    fireEvent.change(screen.getByTestId('user-search-input'), {
+      target: { value: 'a' },
+    });
 
-    await waitFor(() => expect(screen.getByText('add.searchMinChars')).toBeInTheDocument());
+    await waitFor(() =>
+      expect(screen.getByText('add.searchMinChars')).toBeInTheDocument(),
+    );
     expect(onSearchUsers).not.toHaveBeenCalled();
   });
 
@@ -386,24 +467,34 @@ describe('AddFriendModal', () => {
     await buscar('ana');
     expect(onSearchUsers).toHaveBeenCalledTimes(1);
 
-    fireEvent.change(screen.getByTestId('user-search-input'), { target: { value: 'a' } });
+    fireEvent.change(screen.getByTestId('user-search-input'), {
+      target: { value: 'a' },
+    });
 
-    expect(screen.queryByTestId('search-results-dropdown')).not.toBeInTheDocument();
+    expect(
+      screen.queryByTestId('search-results-dropdown'),
+    ).not.toBeInTheDocument();
     expect(document.querySelector('.animate-spin')).toBeNull();
     await act(async () => {
       await new Promise((r) => setTimeout(r, 400));
     });
     expect(onSearchUsers).toHaveBeenCalledTimes(1);
-    expect(screen.queryByTestId('search-results-dropdown')).not.toBeInTheDocument();
+    expect(
+      screen.queryByTestId('search-results-dropdown'),
+    ).not.toBeInTheDocument();
     expect(document.querySelector('.animate-spin')).toBeNull();
   });
 
   it('T3-6: con una búsqueda esperando, borrar hasta una letra quita la espera', async () => {
     const { onSearchUsers } = pintar();
-    fireEvent.change(screen.getByTestId('user-search-input'), { target: { value: 'ana' } });
+    fireEvent.change(screen.getByTestId('user-search-input'), {
+      target: { value: 'ana' },
+    });
     expect(document.querySelector('.animate-spin')).not.toBeNull();
 
-    fireEvent.change(screen.getByTestId('user-search-input'), { target: { value: 'a' } });
+    fireEvent.change(screen.getByTestId('user-search-input'), {
+      target: { value: 'a' },
+    });
 
     expect(document.querySelector('.animate-spin')).toBeNull();
     await act(async () => {
@@ -416,12 +507,16 @@ describe('AddFriendModal', () => {
     const { onSearchUsers } = pintar();
     await buscar('ana');
 
-    fireEvent.change(screen.getByTestId('user-search-input'), { target: { value: 'anab' } });
+    fireEvent.change(screen.getByTestId('user-search-input'), {
+      target: { value: 'anab' },
+    });
 
     expect(document.querySelector('.animate-spin')).not.toBeNull();
     expect(screen.getByTestId('search-results-dropdown')).toBeInTheDocument();
     await waitFor(() => expect(onSearchUsers).toHaveBeenCalledWith('anab'));
-    await waitFor(() => expect(document.querySelector('.animate-spin')).toBeNull());
+    await waitFor(() =>
+      expect(document.querySelector('.animate-spin')).toBeNull(),
+    );
   });
   // Pasó a `ModalShell` (QA del 21 oct 2026): el bloqueo del desplazamiento y
   // la pila de diálogos vienen con él
@@ -507,7 +602,7 @@ describe('AddFriendModal', () => {
             <Route path="/friends" element={<ConDisparadorSinRouter />} />
             <Route path="/players/:id" element={<h1>Perfil</h1>} />
           </Routes>
-        </MemoryRouter>
+        </MemoryRouter>,
       );
       const disparador = screen.getByRole('button', { name: 'Añadir amigo' });
       disparador.focus();
@@ -516,7 +611,9 @@ describe('AddFriendModal', () => {
 
       fireEvent.click(screen.getByTestId('search-result-u-1'));
 
-      expect(await screen.findByRole('heading', { name: 'Perfil' })).toBeInTheDocument();
+      expect(
+        await screen.findByRole('heading', { name: 'Perfil' }),
+      ).toBeInTheDocument();
       expect(screen.queryByRole('dialog')).toBeNull();
       expect(disparador).not.toBeInTheDocument();
       expect(document.activeElement).toBe(document.body);

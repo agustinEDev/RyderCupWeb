@@ -7,7 +7,10 @@ import { render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router';
 
 vi.mock('react-i18next', () => ({
-  useTranslation: () => ({ t: (clave, p) => (p ? `${clave} ${JSON.stringify(p)}` : clave), i18n: { language: 'es-ES' } }),
+  useTranslation: () => ({
+    t: (clave, p) => (p ? `${clave} ${JSON.stringify(p)}` : clave),
+    i18n: { language: 'es-ES' },
+  }),
 }));
 
 const TarjetaDeLoProximo = (await import('./TarjetaDeLoProximo')).default;
@@ -31,26 +34,39 @@ const pintar = (extra) =>
         }}
         puedeAnotar
       />
-    </MemoryRouter>
+    </MemoryRouter>,
   );
 
 describe('TarjetaDeLoProximo · el campo', () => {
   it('con nombre, sale bajo la fecha', () => {
     pintar({ golfCourseName: 'Golf de Meis - Par 72' });
 
-    expect(screen.getByTestId('campo')).toHaveTextContent('Golf de Meis - Par 72');
+    expect(screen.getByTestId('campo')).toHaveTextContent(
+      'Golf de Meis - Par 72',
+    );
     // Bajo la fecha: el siguiente a «cuándo»
-    expect(screen.getByTestId('cuando').nextElementSibling).toBe(screen.getByTestId('campo'));
+    expect(screen.getByTestId('cuando').nextElementSibling).toBe(
+      screen.getByTestId('campo'),
+    );
   });
 
-  it.each([null, undefined, ''])('sin nombre (%s), ni la línea', (golfCourseName) => {
-    pintar({ golfCourseName });
+  it.each([null, undefined, ''])(
+    'sin nombre (%s), ni la línea',
+    (golfCourseName) => {
+      pintar({ golfCourseName });
 
-    expect(screen.queryByTestId('campo')).toBeNull();
-  });
+      expect(screen.queryByTestId('campo')).toBeNull();
+    },
+  );
 
   it('también en una partida de stroke play', () => {
-    pintar({ esPartidaDeFranja: true, tournamentType: 'MEDAL', teeTime: '08:10', matchNumber: 1, golfCourseName: 'Golf de Meis' });
+    pintar({
+      esPartidaDeFranja: true,
+      tournamentType: 'MEDAL',
+      teeTime: '08:10',
+      matchNumber: 1,
+      golfCourseName: 'Golf de Meis',
+    });
 
     expect(screen.getByTestId('campo')).toHaveTextContent('Golf de Meis');
   });

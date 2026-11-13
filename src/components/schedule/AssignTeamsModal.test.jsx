@@ -19,7 +19,11 @@ import { abreviaturaDeHandicap } from './__fixtures__/abreviaturaDeHandicap';
 vi.mock('framer-motion', () => {
   const DE_ANIMACION = new Set(['initial', 'animate', 'exit', 'transition']);
   const Div = ({ children, ...props }) => (
-    <div {...Object.fromEntries(Object.entries(props).filter(([k]) => !DE_ANIMACION.has(k)))}>
+    <div
+      {...Object.fromEntries(
+        Object.entries(props).filter(([k]) => !DE_ANIMACION.has(k)),
+      )}
+    >
       {children}
     </div>
   );
@@ -32,9 +36,24 @@ const t = (clave, params) =>
 
 const INSCRITOS = [
   { userId: 'ana', userName: 'Ana Alba', status: 'APPROVED', userHandicap: 8 },
-  { userId: 'bea', userName: 'Bea Blanco', status: 'APPROVED', userHandicap: 12 },
-  { userId: 'carla', userName: 'Carla Cruz', status: 'APPROVED', userHandicap: 15 },
-  { userId: 'dani', userName: 'Dani Díaz', status: 'APPROVED', userHandicap: 20 },
+  {
+    userId: 'bea',
+    userName: 'Bea Blanco',
+    status: 'APPROVED',
+    userHandicap: 12,
+  },
+  {
+    userId: 'carla',
+    userName: 'Carla Cruz',
+    status: 'APPROVED',
+    userHandicap: 15,
+  },
+  {
+    userId: 'dani',
+    userName: 'Dani Díaz',
+    status: 'APPROVED',
+    userHandicap: 20,
+  },
 ];
 
 const pintar = (props = {}) =>
@@ -49,7 +68,7 @@ const pintar = (props = {}) =>
       captains={{ teamA: 'ana', teamB: 'bea' }}
       t={t}
       {...props}
-    />
+    />,
   );
 
 describe('AssignTeamsModal · al abrirse', () => {
@@ -76,7 +95,7 @@ describe('AssignTeamsModal · al abrirse', () => {
 
     expect(screen.getByDisplayValue('manual')).toBeDisabled();
     expect(screen.getByDisplayValue('manual')).toHaveAccessibleDescription(
-      'teams.enrollmentsNotLoaded'
+      'teams.enrollmentsNotLoaded',
     );
     fireEvent.submit(screen.getByDisplayValue('automatic').closest('form'));
     expect(onConfirm).toHaveBeenCalledWith({ mode: 'automatic' });
@@ -86,7 +105,12 @@ describe('AssignTeamsModal · al abrirse', () => {
 // Un hándicap plus se guarda negativo y se lee con «+» (FE #797)
 describe('AssignTeamsModal · hándicap plus (FE #797)', () => {
   it('C4: en el reparto manual, el plus con «+» y el positivo sin signo', () => {
-    pintar({ enrollments: [{ ...INSCRITOS[0], userHandicap: -2 }, ...INSCRITOS.slice(1)] });
+    pintar({
+      enrollments: [
+        { ...INSCRITOS[0], userHandicap: -2 },
+        ...INSCRITOS.slice(1),
+      ],
+    });
     fireEvent.click(screen.getByDisplayValue('manual'));
 
     expect(screen.getByText('HCP: +2.0')).toBeInTheDocument();

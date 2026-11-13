@@ -1,5 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, within, waitFor } from '@testing-library/react';
+import {
+  render,
+  screen,
+  fireEvent,
+  within,
+  waitFor,
+} from '@testing-library/react';
 
 /**
  * Elegir franja, esperar y colocar jugadores (FE #824, PR 4). La tabla
@@ -24,7 +30,8 @@ import { render, screen, fireEvent, within, waitFor } from '@testing-library/rea
  */
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
-    t: (clave, params) => (params ? `${clave} ${JSON.stringify(params)}` : clave),
+    t: (clave, params) =>
+      params ? `${clave} ${JSON.stringify(params)}` : clave,
     i18n: { language: 'es' },
   }),
 }));
@@ -41,7 +48,14 @@ vi.mock('../../composition', () => ({
   getScheduleUseCase: { execute: (...a) => mockLeer(...a) },
   getCompetitionGolfCoursesUseCase: {
     execute: vi.fn().mockResolvedValue([
-      { golf_course: { id: 'g-1', name: 'La Resina', country_code: 'ES', approval_status: 'APPROVED' } },
+      {
+        golf_course: {
+          id: 'g-1',
+          name: 'La Resina',
+          country_code: 'ES',
+          approval_status: 'APPROVED',
+        },
+      },
     ]),
   },
   createRoundUseCase: { execute: vi.fn() },
@@ -53,7 +67,8 @@ vi.mock('../../composition', () => ({
   leaveWaitingListUseCase: { execute: (...a) => mockDejarDeEsperar(...a) },
 }));
 
-const FranjasDeLaCompeticion = (await import('./FranjasDeLaCompeticion')).default;
+const FranjasDeLaCompeticion = (await import('./FranjasDeLaCompeticion'))
+  .default;
 
 const YO = 'yo';
 const hoja = (extra = {}) => ({
@@ -99,7 +114,7 @@ const pinta = (props = {}) =>
       maxMatchdaysPerPlayer={1}
       inscritos={INSCRITOS}
       {...props}
-    />
+    />,
   );
 
 const en = async (id) => within(await screen.findByTestId(`franja-${id}`));
@@ -115,17 +130,30 @@ describe('FranjasDeLaCompeticion · plazas y esperas (FE #824, PR 4)', () => {
 
   describe('el jugador', () => {
     it('1: dice cuántas jornadas juega de las que puede', async () => {
-      mockLeer.mockResolvedValue({ rounds: [franja('m', '2030-10-12', 'MORNING', { playerIds: [YO], placesTaken: 1 })] });
+      mockLeer.mockResolvedValue({
+        rounds: [
+          franja('m', '2030-10-12', 'MORNING', {
+            playerIds: [YO],
+            placesTaken: 1,
+          }),
+        ],
+      });
       pinta({ maxMatchdaysPerPlayer: 2 });
 
-      expect(await screen.findByTestId('franjas-mis-jornadas')).toHaveTextContent('franjas.myDays {"count":2,"juega":1}');
+      expect(
+        await screen.findByTestId('franjas-mis-jornadas'),
+      ).toHaveTextContent('franjas.myDays {"count":2,"juega":1}');
     });
 
     it('2: con sitio coge plaza', async () => {
-      mockLeer.mockResolvedValue({ rounds: [franja('m', '2030-10-12', 'MORNING')] });
+      mockLeer.mockResolvedValue({
+        rounds: [franja('m', '2030-10-12', 'MORNING')],
+      });
       pinta();
 
-      fireEvent.click((await en('m')).getByRole('button', { name: 'franjas.take' }));
+      fireEvent.click(
+        (await en('m')).getByRole('button', { name: 'franjas.take' }),
+      );
 
       await waitFor(() => expect(mockCoger).toHaveBeenCalledWith('m', {}));
       expect(mockToast.success).toHaveBeenCalledWith('franjas.took');
@@ -134,48 +162,74 @@ describe('FranjasDeLaCompeticion · plazas y esperas (FE #824, PR 4)', () => {
     it('3: ya jugando ese día, se cambia directamente', async () => {
       mockLeer.mockResolvedValue({
         rounds: [
-          franja('m', '2030-10-12', 'MORNING', { playerIds: [YO], placesTaken: 1 }),
+          franja('m', '2030-10-12', 'MORNING', {
+            playerIds: [YO],
+            placesTaken: 1,
+          }),
           franja('t', '2030-10-12', 'AFTERNOON'),
         ],
       });
       pinta();
 
-      fireEvent.click((await en('t')).getByRole('button', { name: 'franjas.switchHere' }));
+      fireEvent.click(
+        (await en('t')).getByRole('button', { name: 'franjas.switchHere' }),
+      );
 
-      await waitFor(() => expect(mockCoger).toHaveBeenCalledWith('t', { insteadOfRoundId: 'm' }));
+      await waitFor(() =>
+        expect(mockCoger).toHaveBeenCalledWith('t', { insteadOfRoundId: 'm' }),
+      );
     });
 
     it('4: con las jornadas llenas y otro día, cambiar por esta', async () => {
       mockLeer.mockResolvedValue({
         rounds: [
-          franja('m', '2030-10-12', 'MORNING', { playerIds: [YO], placesTaken: 1 }),
+          franja('m', '2030-10-12', 'MORNING', {
+            playerIds: [YO],
+            placesTaken: 1,
+          }),
           franja('d', '2030-10-13', 'MORNING'),
         ],
       });
       pinta();
 
-      fireEvent.click((await en('d')).getByRole('button', { name: 'franjas.switchFor' }));
+      fireEvent.click(
+        (await en('d')).getByRole('button', { name: 'franjas.switchFor' }),
+      );
 
-      await waitFor(() => expect(mockCoger).toHaveBeenCalledWith('d', { insteadOfRoundId: 'm' }));
+      await waitFor(() =>
+        expect(mockCoger).toHaveBeenCalledWith('d', { insteadOfRoundId: 'm' }),
+      );
     });
 
     it('4b: con varias suyas, pregunta cuál deja', async () => {
       mockLeer.mockResolvedValue({
         rounds: [
-          franja('a', '2030-10-12', 'MORNING', { playerIds: [YO], placesTaken: 1 }),
-          franja('b', '2030-10-13', 'MORNING', { playerIds: [YO], placesTaken: 1 }),
+          franja('a', '2030-10-12', 'MORNING', {
+            playerIds: [YO],
+            placesTaken: 1,
+          }),
+          franja('b', '2030-10-13', 'MORNING', {
+            playerIds: [YO],
+            placesTaken: 1,
+          }),
           franja('c', '2030-10-14', 'MORNING'),
         ],
       });
       pinta({ endDate: '2030-10-14', maxMatchdaysPerPlayer: 2 });
 
-      fireEvent.click((await en('c')).getByRole('button', { name: 'franjas.switchFor' }));
+      fireEvent.click(
+        (await en('c')).getByRole('button', { name: 'franjas.switchFor' }),
+      );
       expect(mockCoger).not.toHaveBeenCalled();
       fireEvent.click(
-        (await en('c')).getByRole('button', { name: /^franjas\.leaveThis.*"franja":"sessions\.MORNING".*13/ })
+        (await en('c')).getByRole('button', {
+          name: /^franjas\.leaveThis.*"franja":"sessions\.MORNING".*13/,
+        }),
       );
 
-      await waitFor(() => expect(mockCoger).toHaveBeenCalledWith('c', { insteadOfRoundId: 'b' }));
+      await waitFor(() =>
+        expect(mockCoger).toHaveBeenCalledWith('c', { insteadOfRoundId: 'b' }),
+      );
     });
 
     it('4c: pulsar «Cambiar por esta» nada más pintarse no se pierde (falló en el CI, 21 oct)', async () => {
@@ -184,12 +238,18 @@ describe('FranjasDeLaCompeticion · plazas y esperas (FE #824, PR 4)', () => {
       // y cerraba la elección recién abierta. Aquí se pulsa en ese hueco: justo
       // al aparecer el botón, antes de que corran los efectos
       let entrega;
-      mockLeer.mockReturnValue(new Promise((r) => { entrega = r; }));
+      mockLeer.mockReturnValue(
+        new Promise((r) => {
+          entrega = r;
+        }),
+      );
       pinta({ endDate: '2030-10-14', maxMatchdaysPerPlayer: 2 });
 
       const pulsado = new Promise((listo) => {
         const vigia = new globalThis.MutationObserver(() => {
-          const boton = screen.queryByRole('button', { name: 'franjas.switchFor' });
+          const boton = screen.queryByRole('button', {
+            name: 'franjas.switchFor',
+          });
           if (!boton) return;
           vigia.disconnect();
           fireEvent.click(boton);
@@ -199,20 +259,35 @@ describe('FranjasDeLaCompeticion · plazas y esperas (FE #824, PR 4)', () => {
       });
       entrega({
         rounds: [
-          franja('a', '2030-10-12', 'MORNING', { playerIds: [YO], placesTaken: 1 }),
-          franja('b', '2030-10-13', 'MORNING', { playerIds: [YO], placesTaken: 1 }),
+          franja('a', '2030-10-12', 'MORNING', {
+            playerIds: [YO],
+            placesTaken: 1,
+          }),
+          franja('b', '2030-10-13', 'MORNING', {
+            playerIds: [YO],
+            placesTaken: 1,
+          }),
           franja('c', '2030-10-14', 'MORNING'),
         ],
       });
       await pulsado;
 
       expect(
-        await screen.findByRole('button', { name: /^franjas\.leaveThis.*"franja":"sessions\.MORNING".*13/ })
+        await screen.findByRole('button', {
+          name: /^franjas\.leaveThis.*"franja":"sessions\.MORNING".*13/,
+        }),
       ).toBeInTheDocument();
     });
 
     it('5: la suya dice que tiene plaza y deja soltarla (con confirmación)', async () => {
-      mockLeer.mockResolvedValue({ rounds: [franja('m', '2030-10-12', 'MORNING', { playerIds: [YO], placesTaken: 1 })] });
+      mockLeer.mockResolvedValue({
+        rounds: [
+          franja('m', '2030-10-12', 'MORNING', {
+            playerIds: [YO],
+            placesTaken: 1,
+          }),
+        ],
+      });
       pinta();
 
       const fila = await en('m');
@@ -226,11 +301,19 @@ describe('FranjasDeLaCompeticion · plazas y esperas (FE #824, PR 4)', () => {
 
     it('6: llena, se apunta a la espera', async () => {
       mockLeer.mockResolvedValue({
-        rounds: [franja('m', '2030-10-12', 'MORNING', { capacity: 2, placesTaken: 2, playerIds: ['ana', 'bea'] })],
+        rounds: [
+          franja('m', '2030-10-12', 'MORNING', {
+            capacity: 2,
+            placesTaken: 2,
+            playerIds: ['ana', 'bea'],
+          }),
+        ],
       });
       pinta();
 
-      fireEvent.click((await en('m')).getByRole('button', { name: 'franjas.wait' }));
+      fireEvent.click(
+        (await en('m')).getByRole('button', { name: 'franjas.wait' }),
+      );
 
       await waitFor(() => expect(mockEsperar).toHaveBeenCalledWith('m'));
     });
@@ -249,36 +332,62 @@ describe('FranjasDeLaCompeticion · plazas y esperas (FE #824, PR 4)', () => {
       pinta();
 
       const fila = await en('m');
-      expect(fila.getByText('franjas.waitingPosition {"count":3}')).toBeInTheDocument();
-      fireEvent.click(fila.getByRole('button', { name: 'franjas.leaveWaiting' }));
+      expect(
+        fila.getByText('franjas.waitingPosition {"count":3}'),
+      ).toBeInTheDocument();
+      fireEvent.click(
+        fila.getByRole('button', { name: 'franjas.leaveWaiting' }),
+      );
 
-      await waitFor(() => expect(mockDejarDeEsperar).toHaveBeenCalledWith('m', YO));
+      await waitFor(() =>
+        expect(mockDejarDeEsperar).toHaveBeenCalledWith('m', YO),
+      );
     });
 
     it('8 (QA del 11 oct 2026): a una jugadora, «la 1.ª en espera»', async () => {
       mockLeer.mockResolvedValue({
-        rounds: [franja('m', '2030-10-12', 'MORNING', { capacity: 2, placesTaken: 2, playerIds: ['ana', 'bea'], waitingIds: [YO] })],
+        rounds: [
+          franja('m', '2030-10-12', 'MORNING', {
+            capacity: 2,
+            placesTaken: 2,
+            playerIds: ['ana', 'bea'],
+            waitingIds: [YO],
+          }),
+        ],
       });
       pinta({ genero: 'FEMALE' });
 
-      expect((await en('m')).getByText('franjas.waitingPosition {"count":1,"context":"female"}')).toBeInTheDocument();
+      expect(
+        (await en('m')).getByText(
+          'franjas.waitingPosition {"count":1,"context":"female"}',
+        ),
+      ).toBeInTheDocument();
     });
 
     it('8: con las inscripciones cerradas ve su franja, sin botones', async () => {
       mockLeer.mockResolvedValue({
         rounds: [
-          franja('m', '2030-10-12', 'MORNING', { playerIds: [YO], placesTaken: 1 }),
+          franja('m', '2030-10-12', 'MORNING', {
+            playerIds: [YO],
+            placesTaken: 1,
+          }),
           franja('t', '2030-10-12', 'AFTERNOON'),
         ],
       });
       pinta({ puedeElegir: false });
 
       expect((await en('m')).getByText('franjas.mine')).toBeInTheDocument();
-      expect(screen.queryByRole('button', { name: /^franjas\.(take|release|switchHere|wait)/ })).toBeNull();
+      expect(
+        screen.queryByRole('button', {
+          name: /^franjas\.(take|release|switchHere|wait)/,
+        }),
+      ).toBeNull();
     });
 
     it('9: quien no está inscrito no tiene botones ni cuenta de jornadas', async () => {
-      mockLeer.mockResolvedValue({ rounds: [franja('m', '2030-10-12', 'MORNING')] });
+      mockLeer.mockResolvedValue({
+        rounds: [franja('m', '2030-10-12', 'MORNING')],
+      });
       pinta({ estoyInscrito: false });
 
       await en('m');
@@ -287,25 +396,35 @@ describe('FranjasDeLaCompeticion · plazas y esperas (FE #824, PR 4)', () => {
     });
 
     it('10b: si tras una acción no se puede releer, no se enseña su situación vieja (/code-review)', async () => {
-      mockLeer.mockResolvedValue({ rounds: [franja('m', '2030-10-12', 'MORNING')] });
+      mockLeer.mockResolvedValue({
+        rounds: [franja('m', '2030-10-12', 'MORNING')],
+      });
       pinta();
       const fila = await en('m');
       mockLeer.mockRejectedValue(new Error('429'));
 
       fireEvent.click(fila.getByRole('button', { name: 'franjas.take' }));
 
-      expect(await screen.findByRole('button', { name: 'franjas.retry' })).toBeInTheDocument();
+      expect(
+        await screen.findByRole('button', { name: 'franjas.retry' }),
+      ).toBeInTheDocument();
       expect(screen.queryByTestId('franjas-mis-jornadas')).toBeNull();
     });
 
     it('10: si el servidor lo rechaza, su motivo', async () => {
       mockCoger.mockRejectedValue(new Error('La franja está llena.'));
-      mockLeer.mockResolvedValue({ rounds: [franja('m', '2030-10-12', 'MORNING')] });
+      mockLeer.mockResolvedValue({
+        rounds: [franja('m', '2030-10-12', 'MORNING')],
+      });
       pinta();
 
-      fireEvent.click((await en('m')).getByRole('button', { name: 'franjas.take' }));
+      fireEvent.click(
+        (await en('m')).getByRole('button', { name: 'franjas.take' }),
+      );
 
-      await waitFor(() => expect(mockToast.error).toHaveBeenCalledWith('La franja está llena.'));
+      await waitFor(() =>
+        expect(mockToast.error).toHaveBeenCalledWith('La franja está llena.'),
+      );
     });
   });
 
@@ -326,12 +445,20 @@ describe('FranjasDeLaCompeticion · plazas y esperas (FE #824, PR 4)', () => {
       pinta({ soloAmigos: true });
 
       const fila = await en('m');
-      expect(fila.queryByRole('button', { name: /^franjas\.showPlayers/ })).not.toBeInTheDocument();
+      expect(
+        fila.queryByRole('button', { name: /^franjas\.showPlayers/ }),
+      ).not.toBeInTheDocument();
       // Él no cuenta como amigo suyo, ni sale en la lista
-      fireEvent.click(fila.getByRole('button', { name: 'franjas.showFriends {"count":2}' }));
+      fireEvent.click(
+        fila.getByRole('button', { name: 'franjas.showFriends {"count":2}' }),
+      );
 
-      expect(within(fila.getByTestId('jugadores-m')).getByText('Ana Alba')).toBeInTheDocument();
-      expect(within(fila.getByTestId('jugadores-m')).queryByText('Yo Mismo')).not.toBeInTheDocument();
+      expect(
+        within(fila.getByTestId('jugadores-m')).getByText('Ana Alba'),
+      ).toBeInTheDocument();
+      expect(
+        within(fila.getByTestId('jugadores-m')).queryByText('Yo Mismo'),
+      ).not.toBeInTheDocument();
       const espera = fila.getByTestId('espera-m');
       expect(within(espera).getByText('Sin Franja')).toBeInTheDocument();
       expect(espera.tagName).toBe('UL');
@@ -339,32 +466,56 @@ describe('FranjasDeLaCompeticion · plazas y esperas (FE #824, PR 4)', () => {
 
     it('11b: sin amigos en la franja, no hay nada que desplegar', async () => {
       mockLeer.mockResolvedValue({
-        rounds: [franja('m', '2030-10-12', 'MORNING', { capacity: 4, placesTaken: 3, playerIds: [YO] })],
+        rounds: [
+          franja('m', '2030-10-12', 'MORNING', {
+            capacity: 4,
+            placesTaken: 3,
+            playerIds: [YO],
+          }),
+        ],
       });
       pinta({ soloAmigos: true });
 
       const fila = await en('m');
-      expect(fila.queryByRole('button', { name: /^franjas\.show/ })).not.toBeInTheDocument();
+      expect(
+        fila.queryByRole('button', { name: /^franjas\.show/ }),
+      ).not.toBeInTheDocument();
     });
 
     it('11f: en espera, cuántos esperan de verdad, aunque no los vea', async () => {
       mockLeer.mockResolvedValue({
-        rounds: [franja('m', '2030-10-12', 'MORNING', { capacity: 2, placesTaken: 2, waitingCount: 5 })],
+        rounds: [
+          franja('m', '2030-10-12', 'MORNING', {
+            capacity: 2,
+            placesTaken: 2,
+            waitingCount: 5,
+          }),
+        ],
       });
       pinta({ soloAmigos: true });
 
       const fila = await en('m');
-      expect(fila.getByText(/franjas\.taken/).textContent).toContain('"espera":5');
+      expect(fila.getByText(/franjas\.taken/).textContent).toContain(
+        '"espera":5',
+      );
     });
 
     it('11e: si ve a todos (ya publicada, o una privada en la que está), «Ver jugadores»', async () => {
       mockLeer.mockResolvedValue({
-        rounds: [franja('m', '2030-10-12', 'MORNING', { capacity: 2, placesTaken: 2, playerIds: ['ana', 'bea'] })],
+        rounds: [
+          franja('m', '2030-10-12', 'MORNING', {
+            capacity: 2,
+            placesTaken: 2,
+            playerIds: ['ana', 'bea'],
+          }),
+        ],
       });
       pinta({ soloAmigos: false });
 
       const fila = await en('m');
-      expect(fila.getByRole('button', { name: /^franjas\.showPlayers/ })).toBeInTheDocument();
+      expect(
+        fila.getByRole('button', { name: /^franjas\.showPlayers/ }),
+      ).toBeInTheDocument();
     });
 
     it('11d: «Tus amigos aquí», en los dos idiomas', async () => {
@@ -374,7 +525,9 @@ describe('FranjasDeLaCompeticion · plazas y esperas (FE #824, PR 4)', () => {
       expect(es.franjas.showFriends_one).toBe('Tu amigo aquí ({{count}})');
       expect(es.franjas.showFriends_other).toBe('Tus amigos aquí ({{count}})');
       expect(en.franjas.showFriends_one).toBe('Your friend here ({{count}})');
-      expect(en.franjas.showFriends_other).toBe('Your friends here ({{count}})');
+      expect(en.franjas.showFriends_other).toBe(
+        'Your friends here ({{count}})',
+      );
     });
 
     it('11c: el organizador, todos y la espera en orden', async () => {
@@ -391,26 +544,43 @@ describe('FranjasDeLaCompeticion · plazas y esperas (FE #824, PR 4)', () => {
       pinta({ canManage: true, estoyInscrito: false });
 
       const fila = await en('m');
-      fireEvent.click(fila.getByRole('button', { name: /^franjas\.showPlayers/ }));
+      fireEvent.click(
+        fila.getByRole('button', { name: /^franjas\.showPlayers/ }),
+      );
       expect(fila.getByTestId('espera-m').tagName).toBe('OL');
 
       const jugadores = fila.getByTestId('jugadores-m');
       expect(within(jugadores).getByText('Ana Alba')).toBeInTheDocument();
       expect(within(jugadores).getByText('Bea Blanco')).toBeInTheDocument();
-      expect(within(fila.getByTestId('espera-m')).getByText('Sin Franja')).toBeInTheDocument();
+      expect(
+        within(fila.getByTestId('espera-m')).getByText('Sin Franja'),
+      ).toBeInTheDocument();
     });
   });
 
   describe('el organizador', () => {
     const organizador = (extra = {}) =>
-      pinta({ canManage: true, puedeColocar: true, puedeQuitar: true, estoyInscrito: false, ...extra });
+      pinta({
+        canManage: true,
+        puedeColocar: true,
+        puedeQuitar: true,
+        estoyInscrito: false,
+        ...extra,
+      });
 
     beforeEach(() => {
       mockLeer.mockResolvedValue({
         rounds: [
-          franja('m', '2030-10-12', 'MORNING', { playerIds: ['ana'], placesTaken: 1 }),
+          franja('m', '2030-10-12', 'MORNING', {
+            playerIds: ['ana'],
+            placesTaken: 1,
+          }),
           franja('t', '2030-10-12', 'AFTERNOON'),
-          franja('x', '2030-10-13', 'MORNING', { capacity: 1, placesTaken: 1, playerIds: ['bea'] }),
+          franja('x', '2030-10-13', 'MORNING', {
+            capacity: 1,
+            placesTaken: 1,
+            playerIds: ['bea'],
+          }),
         ],
       });
     });
@@ -418,23 +588,42 @@ describe('FranjasDeLaCompeticion · plazas y esperas (FE #824, PR 4)', () => {
     it('12: mueve a un jugador a otra franja con sitio, en un paso', async () => {
       organizador();
       const fila = await en('m');
-      fireEvent.click(fila.getByRole('button', { name: /^franjas\.showPlayers/ }));
+      fireEvent.click(
+        fila.getByRole('button', { name: /^franjas\.showPlayers/ }),
+      );
 
-      const mover = fila.getByLabelText('franjas.moveTo {"jugador":"Ana Alba"}');
+      const mover = fila.getByLabelText(
+        'franjas.moveTo {"jugador":"Ana Alba"}',
+      );
       // Solo las que tienen sitio: la «x» está llena
-      expect([...mover.options].map((o) => o.value).filter(Boolean)).toEqual(['t']);
+      expect([...mover.options].map((o) => o.value).filter(Boolean)).toEqual([
+        't',
+      ]);
       fireEvent.change(mover, { target: { value: 't' } });
 
-      await waitFor(() => expect(mockCoger).toHaveBeenCalledWith('t', { userId: 'ana', insteadOfRoundId: 'm' }));
+      await waitFor(() =>
+        expect(mockCoger).toHaveBeenCalledWith('t', {
+          userId: 'ana',
+          insteadOfRoundId: 'm',
+        }),
+      );
     });
 
     it('13: quita a un jugador con las inscripciones abiertas', async () => {
       organizador();
       const fila = await en('m');
-      fireEvent.click(fila.getByRole('button', { name: /^franjas\.showPlayers/ }));
+      fireEvent.click(
+        fila.getByRole('button', { name: /^franjas\.showPlayers/ }),
+      );
 
-      fireEvent.click(fila.getByRole('button', { name: 'franjas.removePlayer {"jugador":"Ana Alba"}' }));
-      fireEvent.click(fila.getByRole('button', { name: 'franjas.removePlayerYes' }));
+      fireEvent.click(
+        fila.getByRole('button', {
+          name: 'franjas.removePlayer {"jugador":"Ana Alba"}',
+        }),
+      );
+      fireEvent.click(
+        fila.getByRole('button', { name: 'franjas.removePlayerYes' }),
+      );
 
       await waitFor(() => expect(mockSoltar).toHaveBeenCalledWith('m', 'ana'));
     });
@@ -442,11 +631,19 @@ describe('FranjasDeLaCompeticion · plazas y esperas (FE #824, PR 4)', () => {
     it('13c: quitar pide confirmación: la plaza la coge al momento el primero de la espera (/code-review)', async () => {
       organizador();
       const fila = await en('m');
-      fireEvent.click(fila.getByRole('button', { name: /^franjas\.showPlayers/ }));
+      fireEvent.click(
+        fila.getByRole('button', { name: /^franjas\.showPlayers/ }),
+      );
 
-      fireEvent.click(fila.getByRole('button', { name: 'franjas.removePlayer {"jugador":"Ana Alba"}' }));
+      fireEvent.click(
+        fila.getByRole('button', {
+          name: 'franjas.removePlayer {"jugador":"Ana Alba"}',
+        }),
+      );
       expect(mockSoltar).not.toHaveBeenCalled();
-      fireEvent.click(fila.getByRole('button', { name: 'franjas.removePlayerYes' }));
+      fireEvent.click(
+        fila.getByRole('button', { name: 'franjas.removePlayerYes' }),
+      );
 
       await waitFor(() => expect(mockSoltar).toHaveBeenCalledWith('m', 'ana'));
     });
@@ -454,10 +651,16 @@ describe('FranjasDeLaCompeticion · plazas y esperas (FE #824, PR 4)', () => {
     it('13b: cerradas, ya no se quita (se mueve)', async () => {
       organizador({ puedeQuitar: false });
       const fila = await en('m');
-      fireEvent.click(fila.getByRole('button', { name: /^franjas\.showPlayers/ }));
+      fireEvent.click(
+        fila.getByRole('button', { name: /^franjas\.showPlayers/ }),
+      );
 
-      expect(fila.queryByRole('button', { name: /^franjas\.removePlayer/ })).toBeNull();
-      expect(fila.getByLabelText('franjas.moveTo {"jugador":"Ana Alba"}')).toBeInTheDocument();
+      expect(
+        fila.queryByRole('button', { name: /^franjas\.removePlayer/ }),
+      ).toBeNull();
+      expect(
+        fila.getByLabelText('franjas.moveTo {"jugador":"Ana Alba"}'),
+      ).toBeInTheDocument();
     });
 
     it('14: «Sin franja» lista a los aprobados sin ninguna y los coloca', async () => {
@@ -467,17 +670,26 @@ describe('FranjasDeLaCompeticion · plazas y esperas (FE #824, PR 4)', () => {
       expect(within(bloque).getByText('Sin Franja')).toBeInTheDocument();
       expect(within(bloque).getByText('Yo Mismo')).toBeInTheDocument();
       expect(within(bloque).queryByText('Ana Alba')).toBeNull();
-      fireEvent.change(within(bloque).getByLabelText('franjas.placeIn {"jugador":"Sin Franja"}'), {
-        target: { value: 't' },
-      });
+      fireEvent.change(
+        within(bloque).getByLabelText(
+          'franjas.placeIn {"jugador":"Sin Franja"}',
+        ),
+        {
+          target: { value: 't' },
+        },
+      );
 
-      await waitFor(() => expect(mockCoger).toHaveBeenCalledWith('t', { userId: 'sin' }));
+      await waitFor(() =>
+        expect(mockCoger).toHaveBeenCalledWith('t', { userId: 'sin' }),
+      );
     });
 
     it('QA 2 (12 oct 2026): el nombre entero en su línea, no «O…» al lado del selector', async () => {
       organizador();
 
-      const nombre = within(await screen.findByTestId('sin-franja')).getByText('Sin Franja');
+      const nombre = within(await screen.findByTestId('sin-franja')).getByText(
+        'Sin Franja',
+      );
       expect(nombre).not.toHaveClass('truncate');
       expect(nombre).toHaveClass('basis-full', 'break-words');
     });
@@ -485,19 +697,31 @@ describe('FranjasDeLaCompeticion · plazas y esperas (FE #824, PR 4)', () => {
     it('12b: «Mover a…» no ofrece franjas de un día en que el jugador ya juega en otra', async () => {
       mockLeer.mockResolvedValue({
         rounds: [
-          franja('m', '2030-10-12', 'MORNING', { playerIds: ['ana'], placesTaken: 1 }),
+          franja('m', '2030-10-12', 'MORNING', {
+            playerIds: ['ana'],
+            placesTaken: 1,
+          }),
           franja('t', '2030-10-12', 'AFTERNOON'),
-          franja('d', '2030-10-13', 'MORNING', { playerIds: ['ana'], placesTaken: 1 }),
+          franja('d', '2030-10-13', 'MORNING', {
+            playerIds: ['ana'],
+            placesTaken: 1,
+          }),
           franja('e', '2030-10-13', 'AFTERNOON'),
         ],
       });
       organizador({ maxMatchdaysPerPlayer: 2 });
       const fila = await en('m');
-      fireEvent.click(fila.getByRole('button', { name: /^franjas\.showPlayers/ }));
+      fireEvent.click(
+        fila.getByRole('button', { name: /^franjas\.showPlayers/ }),
+      );
 
-      const mover = fila.getByLabelText('franjas.moveTo {"jugador":"Ana Alba"}');
+      const mover = fila.getByLabelText(
+        'franjas.moveTo {"jugador":"Ana Alba"}',
+      );
       // Del mismo día sí (es cambiarse); del 13, donde ya juega, no
-      expect([...mover.options].map((o) => o.value).filter(Boolean)).toEqual(['t']);
+      expect([...mover.options].map((o) => o.value).filter(Boolean)).toEqual([
+        't',
+      ]);
     });
 
     it('si tras una acción no se puede releer, no quedan acciones sobre datos viejos', async () => {
@@ -505,14 +729,25 @@ describe('FranjasDeLaCompeticion · plazas y esperas (FE #824, PR 4)', () => {
       await en('m');
       mockLeer.mockRejectedValue(new Error('429'));
 
-      fireEvent.change(within(await screen.findByTestId('sin-franja')).getByLabelText('franjas.placeIn {"jugador":"Sin Franja"}'), {
-        target: { value: 't' },
-      });
+      fireEvent.change(
+        within(await screen.findByTestId('sin-franja')).getByLabelText(
+          'franjas.placeIn {"jugador":"Sin Franja"}',
+        ),
+        {
+          target: { value: 't' },
+        },
+      );
 
-      expect(await screen.findByRole('button', { name: 'franjas.retry' })).toBeInTheDocument();
+      expect(
+        await screen.findByRole('button', { name: 'franjas.retry' }),
+      ).toBeInTheDocument();
       expect(screen.queryByTestId('sin-franja')).toBeNull();
       expect(screen.getByTestId('franja-m')).toBeInTheDocument();
-      fireEvent.click(within(screen.getByTestId('franja-m')).getByRole('button', { name: /^franjas\.showPlayers/ }));
+      fireEvent.click(
+        within(screen.getByTestId('franja-m')).getByRole('button', {
+          name: /^franjas\.showPlayers/,
+        }),
+      );
       expect(screen.queryByLabelText(/^franjas\.moveTo/)).toBeNull();
     });
 
@@ -526,12 +761,26 @@ describe('FranjasDeLaCompeticion · plazas y esperas (FE #824, PR 4)', () => {
       expect(screen.queryByTestId('sin-franja')).toBeNull();
       // El servidor dice que falta Ana: al releer, ya no tiene franja
       mockLeer.mockResolvedValue({
-        rounds: [franja('m', '2030-10-12', 'MORNING'), franja('t', '2030-10-12', 'AFTERNOON')],
+        rounds: [
+          franja('m', '2030-10-12', 'MORNING'),
+          franja('t', '2030-10-12', 'AFTERNOON'),
+        ],
       });
 
       rerender(
-        <FranjasDeLaCompeticion competitionId="c-1" startDate="2030-10-12" endDate="2030-10-13" canManage
-          maxPlayers={100} userId="yo" puedeColocar puedeQuitar inscritos={todos} version="2" irASinFranja={1} />
+        <FranjasDeLaCompeticion
+          competitionId="c-1"
+          startDate="2030-10-12"
+          endDate="2030-10-13"
+          canManage
+          maxPlayers={100}
+          userId="yo"
+          puedeColocar
+          puedeQuitar
+          inscritos={todos}
+          version="2"
+          irASinFranja={1}
+        />,
       );
 
       await screen.findByTestId('sin-franja');
@@ -539,7 +788,9 @@ describe('FranjasDeLaCompeticion · plazas y esperas (FE #824, PR 4)', () => {
     });
 
     it('14b: con todos colocados, no hay bloque', async () => {
-      organizador({ inscritos: INSCRITOS.filter((i) => ['ana', 'bea'].includes(i.userId)) });
+      organizador({
+        inscritos: INSCRITOS.filter((i) => ['ana', 'bea'].includes(i.userId)),
+      });
 
       await en('m');
       expect(screen.queryByTestId('sin-franja')).toBeNull();
@@ -548,7 +799,9 @@ describe('FranjasDeLaCompeticion · plazas y esperas (FE #824, PR 4)', () => {
     it('sin poder colocar (en juego), ni mover ni el bloque', async () => {
       organizador({ puedeColocar: false, puedeQuitar: false });
       const fila = await en('m');
-      fireEvent.click(fila.getByRole('button', { name: /^franjas\.showPlayers/ }));
+      fireEvent.click(
+        fila.getByRole('button', { name: /^franjas\.showPlayers/ }),
+      );
 
       expect(fila.queryByLabelText(/^franjas\.moveTo/)).toBeNull();
       expect(screen.queryByTestId('sin-franja')).toBeNull();

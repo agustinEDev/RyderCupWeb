@@ -11,7 +11,9 @@ describe('conLaMiaPrimero', () => {
       { id: 'yo', team: 'A', mia: true },
     ];
 
-    expect(conLaMiaPrimero(filas, { esMia, equipoDe }).map((f) => f.id)).toEqual(['yo', 'rival']);
+    expect(
+      conLaMiaPrimero(filas, { esMia, equipoDe }).map((f) => f.id),
+    ).toEqual(['yo', 'rival']);
   });
 
   it('pone al compañero justo detrás y deja al resto en su orden', () => {
@@ -22,12 +24,9 @@ describe('conLaMiaPrimero', () => {
       { id: 'yo', team: 'A', mia: true },
     ];
 
-    expect(conLaMiaPrimero(filas, { esMia, equipoDe }).map((f) => f.id)).toEqual([
-      'yo',
-      'companero',
-      'rival-1',
-      'rival-2',
-    ]);
+    expect(
+      conLaMiaPrimero(filas, { esMia, equipoDe }).map((f) => f.id),
+    ).toEqual(['yo', 'companero', 'rival-1', 'rival-2']);
   });
 
   /**
@@ -70,11 +69,9 @@ describe('conLaMiaPrimero', () => {
       { id: 'tercero', team: '' },
     ];
 
-    expect(conLaMiaPrimero(filas, { esMia, equipoDe }).map((f) => f.id)).toEqual([
-      'yo',
-      'otro',
-      'tercero',
-    ]);
+    expect(
+      conLaMiaPrimero(filas, { esMia, equipoDe }).map((f) => f.id),
+    ).toEqual(['yo', 'otro', 'tercero']);
   });
 
   it('no muta la lista que recibe', () => {
@@ -102,13 +99,19 @@ describe('conMiNombrePrimero', () => {
   it('pone al que mira delante de su compañero', () => {
     const miembros = [{ id: 'companero' }, { id: 'yo' }];
 
-    expect(conMiNombrePrimero(miembros, esMio).map((m) => m.id)).toEqual(['yo', 'companero']);
+    expect(conMiNombrePrimero(miembros, esMio).map((m) => m.id)).toEqual([
+      'yo',
+      'companero',
+    ]);
   });
 
   it('deja los miembros en su orden cuando quien mira no es del bando', () => {
     const miembros = [{ id: 'uno' }, { id: 'dos' }];
 
-    expect(conMiNombrePrimero(miembros, esMio).map((m) => m.id)).toEqual(['uno', 'dos']);
+    expect(conMiNombrePrimero(miembros, esMio).map((m) => m.id)).toEqual([
+      'uno',
+      'dos',
+    ]);
   });
 
   /**

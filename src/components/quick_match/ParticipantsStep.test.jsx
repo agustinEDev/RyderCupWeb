@@ -73,32 +73,47 @@ describe('ParticipantsStep · hándicap del invitado', () => {
 });
 
 describe('ParticipantsStep · el color sigue al texto (revisión del 21 oct)', () => {
-  it.each(['-', '2a', '  '])('H5: con %j, que no es un índice, el texto y el color de ayuda', (guardado) => {
-    pinta(guardado);
+  it.each(['-', '2a', '  '])(
+    'H5: con %j, que no es un índice, el texto y el color de ayuda',
+    (guardado) => {
+      pinta(guardado);
 
-    expect(boton()).toHaveTextContent('create.participants.guestHandicap');
-    expect(boton()).toHaveClass('text-gray-400');
-    expect(boton()).not.toHaveClass('text-gray-900');
-  });
+      expect(boton()).toHaveTextContent('create.participants.guestHandicap');
+      expect(boton()).toHaveClass('text-gray-400');
+      expect(boton()).not.toHaveClass('text-gray-900');
+    },
+  );
 });
 
 describe('ParticipantsStep · amigos o invitado son pestañas (FE #658)', () => {
   const ConEstado = () => {
     const [pestana, setPestana] = useState('friends');
-    return <Paso handicap="" participantTab={pestana} onParticipantTabChange={setPestana} />;
+    return (
+      <Paso
+        handicap=""
+        participantTab={pestana}
+        onParticipantTabChange={setPestana}
+      />
+    );
   };
 
   it('T1: barra con nombre, panel nombrado por su pestaña y las flechas', () => {
     render(<ConEstado />);
 
-    const barra = screen.getByRole('tablist', { name: 'create.participants.tabsLabel' });
+    const barra = screen.getByRole('tablist', {
+      name: 'create.participants.tabsLabel',
+    });
     const [amigos, invitado] = within(barra).getAllByRole('tab');
     expect(amigos).toBe(screen.getByTestId('quick-match-tab-friends'));
     expect(amigos).toHaveAttribute('aria-selected', 'true');
     expect(invitado).toHaveAttribute('tabindex', '-1');
-    const panel = screen.getByRole('tabpanel', { name: 'create.participants.tabFriends' });
+    const panel = screen.getByRole('tabpanel', {
+      name: 'create.participants.tabFriends',
+    });
     expect(amigos).toHaveAttribute('aria-controls', panel.id);
-    expect(within(panel).getByText('create.participants.noFriends')).toBeInTheDocument();
+    expect(
+      within(panel).getByText('create.participants.noFriends'),
+    ).toBeInTheDocument();
     // La lista se desplaza: el panel entra en el tabulador para poder hacerlo
     expect(panel).toHaveAttribute('tabindex', '0');
 
@@ -106,18 +121,25 @@ describe('ParticipantsStep · amigos o invitado son pestañas (FE #658)', () => 
 
     expect(invitado).toHaveAttribute('aria-selected', 'true');
     expect(invitado).toHaveFocus();
-    const formulario = screen.getByRole('tabpanel', { name: 'create.participants.tabGuest' });
+    const formulario = screen.getByRole('tabpanel', {
+      name: 'create.participants.tabGuest',
+    });
     expect(formulario.tagName).toBe('FORM');
     // Un formulario: sus campos ya son paradas, el panel no
     expect(formulario).not.toHaveAttribute('tabindex');
-    expect(within(formulario).getByTestId('quick-match-guest-first-name')).toBeInTheDocument();
+    expect(
+      within(formulario).getByTestId('quick-match-guest-first-name'),
+    ).toBeInTheDocument();
   });
 });
 
 describe('ParticipantsStep · anillo de foco (22 oct)', () => {
   it('F2: el botón del hándicap enseña el anillo con el teclado y no al pulsar', () => {
     pinta('');
-    expect(boton()).toHaveClass('focus-visible:ring-2', 'focus-visible:ring-primary');
+    expect(boton()).toHaveClass(
+      'focus-visible:ring-2',
+      'focus-visible:ring-primary',
+    );
     expect(boton().className).not.toMatch(/(^|\s)focus:ring/);
   });
 });

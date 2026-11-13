@@ -10,7 +10,18 @@ import { lngLat } from './geometriaDelMapa';
  * Devuelve `encuadrarHoyo` y `aplicarVista`, y en `ultimaVistaRef` lo último que
  * se orientó (lo que se vuelve a encuadrar si el panel de abajo crece).
  */
-export const useEncuadreDelHoyo = ({ mapaRef, contenedorRef, delEncuadreRef, inicioRef, movidoPorElJugadorRef, conVistaRef }, margen, vista) => {
+export const useEncuadreDelHoyo = (
+  {
+    mapaRef,
+    contenedorRef,
+    delEncuadreRef,
+    inicioRef,
+    movidoPorElJugadorRef,
+    conVistaRef,
+  },
+  margen,
+  vista,
+) => {
   // Unos puntos, girados a `orientacion` y lo más grandes que quepan: el centro
   // y el zoom se calculan con ellos girados (`fitBounds` encuadra su caja
   // norte-sur, que girada ocupa mucho más, y el hoyo salía pequeño; 16 oct)
@@ -36,7 +47,8 @@ export const useEncuadreDelHoyo = ({ mapaRef, contenedorRef, delEncuadreRef, ini
   // El hoyo entero: la línea de ahora (la marcada o movida, O7); al montar, la de al abrir
   const encuadrarHoyo = useCallback(
     (animar) => {
-      const { hoyo: h, rumbo: orientacion } = delEncuadreRef.current ?? inicioRef.current;
+      const { hoyo: h, rumbo: orientacion } =
+        delEncuadreRef.current ?? inicioRef.current;
       encuadrar(h, orientacion, animar);
     },
     [encuadrar, delEncuadreRef, inicioRef],
@@ -47,7 +59,12 @@ export const useEncuadreDelHoyo = ({ mapaRef, contenedorRef, delEncuadreRef, ini
   const aplicarVista = useCallback(
     (v, animar) => {
       if (v.tipo === 'hoyo') encuadrarHoyo(animar);
-      else encuadrar({ playLine: [v.desde, v.hacia, v.green], green: null }, rumbo(v.desde, v.hacia), animar);
+      else
+        encuadrar(
+          { playLine: [v.desde, v.hacia, v.green], green: null },
+          rumbo(v.desde, v.hacia),
+          animar,
+        );
     },
     [encuadrar, encuadrarHoyo],
   );
@@ -56,7 +73,12 @@ export const useEncuadreDelHoyo = ({ mapaRef, contenedorRef, delEncuadreRef, ini
   // se lo quita (/code-review); lo que pide él, marcar, sí (CodeRabbit)
   useEffect(() => {
     const mapa = mapaRef.current;
-    if (!vista || !mapa || (movidoPorElJugadorRef.current && !vista.porElJugador)) return;
+    if (
+      !vista ||
+      !mapa ||
+      (movidoPorElJugadorRef.current && !vista.porElJugador)
+    )
+      return;
     conVistaRef.current = true;
     ultimaVistaRef.current = vista;
     mapa.dragRotate?.disable();

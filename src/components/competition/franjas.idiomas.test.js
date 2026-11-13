@@ -10,11 +10,18 @@ import en from '../../i18n/locales/en/schedule.json';
  * una clave que falta pasa desapercibida: la PR 4 llegó a la revisión sin
  * ninguna de sus 28 claves nuevas (revisor). Un plural vale con `_one` y `_other`.
  */
-const claves = [...new Set([...`${plazas}\n${franjas}`.matchAll(/'franjas\.([a-zA-Z]+)'/g)].map((m) => m[1]))];
+const claves = [
+  ...new Set(
+    [...`${plazas}\n${franjas}`.matchAll(/'franjas\.([a-zA-Z]+)'/g)].map(
+      (m) => m[1],
+    ),
+  ),
+];
 
 const existe = (textos, clave) =>
   typeof textos.franjas?.[clave] === 'string' ||
-  (typeof textos.franjas?.[`${clave}_one`] === 'string' && typeof textos.franjas?.[`${clave}_other`] === 'string');
+  (typeof textos.franjas?.[`${clave}_one`] === 'string' &&
+    typeof textos.franjas?.[`${clave}_other`] === 'string');
 
 describe('los textos de las franjas (FE #824)', () => {
   it('se usa más de una docena de claves (el test lee de verdad el código)', () => {

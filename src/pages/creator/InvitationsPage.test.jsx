@@ -1,5 +1,12 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, within, waitFor, fireEvent, act } from '@testing-library/react';
+import {
+  render,
+  screen,
+  within,
+  waitFor,
+  fireEvent,
+  act,
+} from '@testing-library/react';
 import { MemoryRouter, Route, Routes, useNavigate } from 'react-router';
 
 // Envuelve el `navigate` de verdad para poder afirmar que NO se llama en pleno
@@ -20,7 +27,7 @@ vi.mock('react-router', async (importarElDeVerdad) => {
           navegacionesAMano.push(args);
           return navegar(...args);
         },
-        [navegar]
+        [navegar],
       );
     },
   };
@@ -75,20 +82,30 @@ const mockListCompetitionInvitations = vi.fn().mockResolvedValue({
   totalCount: 0,
 });
 
-const mockListFriends = vi.fn().mockResolvedValue({ friendships: [], totalCount: 0 });
+const mockListFriends = vi
+  .fn()
+  .mockResolvedValue({ friendships: [], totalCount: 0 });
 const mockListEnrollments = vi.fn().mockResolvedValue([]);
 const mockSendInvitationByEmail = vi.fn();
 const mockSendInvitation = vi.fn();
 const mockSearchUsers = vi.fn().mockResolvedValue([]);
 
 vi.mock('../../composition', () => ({
-  getCompetitionDetailUseCase: { execute: (...args) => mockGetCompetitionDetail(...args) },
-  listCompetitionInvitationsUseCase: { execute: (...args) => mockListCompetitionInvitations(...args) },
-  sendInvitationByEmailUseCase: { execute: (...args) => mockSendInvitationByEmail(...args) },
+  getCompetitionDetailUseCase: {
+    execute: (...args) => mockGetCompetitionDetail(...args),
+  },
+  listCompetitionInvitationsUseCase: {
+    execute: (...args) => mockListCompetitionInvitations(...args),
+  },
+  sendInvitationByEmailUseCase: {
+    execute: (...args) => mockSendInvitationByEmail(...args),
+  },
   sendInvitationUseCase: { execute: (...args) => mockSendInvitation(...args) },
   searchUsersUseCase: { execute: (...args) => mockSearchUsers(...args) },
   listFriendsUseCase: { execute: (...args) => mockListFriends(...args) },
-  listEnrollmentsUseCase: { execute: (...args) => mockListEnrollments(...args) },
+  listEnrollmentsUseCase: {
+    execute: (...args) => mockListEnrollments(...args),
+  },
 }));
 
 vi.mock('../../utils/toast', () => ({
@@ -110,9 +127,12 @@ const renderPage = () => {
   return render(
     <MemoryRouter initialEntries={['/creator/competitions/comp-1/invitations']}>
       <Routes>
-        <Route path="/creator/competitions/:id/invitations" element={<InvitationsPage />} />
+        <Route
+          path="/creator/competitions/:id/invitations"
+          element={<InvitationsPage />}
+        />
       </Routes>
-    </MemoryRouter>
+    </MemoryRouter>,
   );
 };
 
@@ -174,19 +194,31 @@ describe('InvitationsPage', () => {
   it('A4: se puede filtrar por las que se quedaron sin plaza', async () => {
     renderPage();
     const filtro = await screen.findByTestId('status-filter');
-    expect(within(filtro).getByRole('option', { name: 'status.NO_ROOM' })).toBeInTheDocument();
+    expect(
+      within(filtro).getByRole('option', { name: 'status.NO_ROOM' }),
+    ).toBeInTheDocument();
   });
 
   it('A6: si se cierra con el modal abierto, el modal se cierra (CodeRabbit)', async () => {
     mockGetCompetitionDetail
-      .mockResolvedValueOnce({ id: 'comp-1', name: 'Summer Cup', status: 'ACTIVE' })
-      .mockResolvedValueOnce({ id: 'comp-1', name: 'Summer Cup', status: 'CLOSED' });
+      .mockResolvedValueOnce({
+        id: 'comp-1',
+        name: 'Summer Cup',
+        status: 'ACTIVE',
+      })
+      .mockResolvedValueOnce({
+        id: 'comp-1',
+        name: 'Summer Cup',
+        status: 'CLOSED',
+      });
     renderPage();
     fireEvent.click(await screen.findByText('creator.sendNew'));
     expect(await screen.findByText('send.title')).toBeInTheDocument();
 
     // Cualquier recarga trae el estado nuevo: aquí, cambiar el filtro
-    fireEvent.change(screen.getByTestId('status-filter'), { target: { value: 'PENDING' } });
+    fireEvent.change(screen.getByTestId('status-filter'), {
+      target: { value: 'PENDING' },
+    });
 
     // Con la página de vuelta: durante la carga el modal también desaparece
     expect(await screen.findByTestId('invitar-cerrada')).toBeInTheDocument();
@@ -196,14 +228,20 @@ describe('InvitationsPage', () => {
   it.each(['CLOSED', 'IN_PROGRESS', 'COMPLETED'])(
     'A5: con la inscripción cerrada (%s) no se ofrece invitar y se dice por qué',
     async (estado) => {
-      mockGetCompetitionDetail.mockResolvedValueOnce({ id: 'comp-1', name: 'Summer Cup', status: estado });
+      mockGetCompetitionDetail.mockResolvedValueOnce({
+        id: 'comp-1',
+        name: 'Summer Cup',
+        status: estado,
+      });
       renderPage();
 
-      expect(await screen.findByTestId('invitar-cerrada')).toHaveTextContent('creator.enrollmentClosed');
+      expect(await screen.findByTestId('invitar-cerrada')).toHaveTextContent(
+        'creator.enrollmentClosed',
+      );
       expect(screen.queryByText('creator.sendNew')).not.toBeInTheDocument();
       // La lista sigue: quién se quedó sin plaza es lo que el organizador quiere ver
       expect(screen.getByTestId('status-filter')).toBeInTheDocument();
-    }
+    },
   );
 
   // #710: invitar cerraba el modal tras cada invitación, e invitar a un grupo
@@ -218,7 +256,9 @@ describe('InvitationsPage', () => {
         totalCount: 2,
       });
       mockListEnrollments.mockReset().mockResolvedValue([]);
-      mockListCompetitionInvitations.mockReset().mockResolvedValue({ invitations: [], totalCount: 0 });
+      mockListCompetitionInvitations
+        .mockReset()
+        .mockResolvedValue({ invitations: [], totalCount: 0 });
       mockSendInvitation.mockReset().mockResolvedValue({});
     });
 
@@ -228,37 +268,57 @@ describe('InvitationsPage', () => {
       fireEvent.click(await screen.findByTestId('invite-friend-u-1'));
 
       await waitFor(() => expect(mockSendInvitation).toHaveBeenCalled());
-      await waitFor(() => expect(screen.getByTestId('invite-friend-u-1')).toBeDisabled());
-      expect(screen.getByTestId('invite-friend-u-1')).toHaveTextContent('send.alreadyInvited');
+      await waitFor(() =>
+        expect(screen.getByTestId('invite-friend-u-1')).toBeDisabled(),
+      );
+      expect(screen.getByTestId('invite-friend-u-1')).toHaveTextContent(
+        'send.alreadyInvited',
+      );
       // Y el siguiente, sin volver a abrirlo
       expect(screen.getByTestId('invite-friend-u-2')).not.toBeDisabled();
       expect(screen.getByText('send.title')).toBeInTheDocument();
     });
 
     it('V2: si falla, el invitado no se marca como invitado', async () => {
-      mockSendInvitation.mockRejectedValue(Object.assign(new Error('Boom'), { status: 400 }));
+      mockSendInvitation.mockRejectedValue(
+        Object.assign(new Error('Boom'), { status: 400 }),
+      );
       renderPage();
       fireEvent.click(await screen.findByText('creator.sendNew'));
       fireEvent.click(await screen.findByTestId('invite-friend-u-1'));
 
       await waitFor(() => expect(mockSendInvitation).toHaveBeenCalled());
-      await waitFor(() => expect(screen.getByTestId('invite-friend-u-1')).not.toBeDisabled());
-      expect(screen.getByTestId('invite-friend-u-1')).not.toHaveTextContent('send.alreadyInvited');
+      await waitFor(() =>
+        expect(screen.getByTestId('invite-friend-u-1')).not.toBeDisabled(),
+      );
+      expect(screen.getByTestId('invite-friend-u-1')).not.toHaveTextContent(
+        'send.alreadyInvited',
+      );
     });
 
     it('V4: buscando a alguien, tras invitarle se puede buscar al siguiente', async () => {
-      mockSearchUsers.mockResolvedValue([{ id: 'u-9', firstName: 'Nacho', lastName: 'Noche' }]);
+      mockSearchUsers.mockResolvedValue([
+        { id: 'u-9', firstName: 'Nacho', lastName: 'Noche' },
+      ]);
       renderPage();
       fireEvent.click(await screen.findByText('creator.sendNew'));
       fireEvent.click(await screen.findByTestId('tab-search-user'));
-      fireEvent.change(screen.getByTestId('user-search-input'), { target: { value: 'Nac' } });
+      fireEvent.change(screen.getByTestId('user-search-input'), {
+        target: { value: 'Nac' },
+      });
       fireEvent.click(await screen.findByTestId('search-result-u-9'));
       expect(screen.getByTestId('selected-user-chip')).toBeInTheDocument();
 
       fireEvent.click(screen.getByTestId('send-invitation-button'));
 
-      await waitFor(() => expect(mockSendInvitation).toHaveBeenCalledWith('comp-1', 'u-9', null));
-      await waitFor(() => expect(screen.queryByTestId('selected-user-chip')).not.toBeInTheDocument());
+      await waitFor(() =>
+        expect(mockSendInvitation).toHaveBeenCalledWith('comp-1', 'u-9', null),
+      );
+      await waitFor(() =>
+        expect(
+          screen.queryByTestId('selected-user-chip'),
+        ).not.toBeInTheDocument(),
+      );
       expect(screen.getByTestId('user-search-input')).toBeInTheDocument();
     });
 
@@ -275,19 +335,25 @@ describe('InvitationsPage', () => {
 
       await waitFor(() => expect(mockSendInvitationByEmail).toHaveBeenCalled());
       await new Promise((r) => setTimeout(r, 50));
-      expect(screen.getByTestId('invitation-email-input')).toHaveValue('luna@test.com');
+      expect(screen.getByTestId('invitation-email-input')).toHaveValue(
+        'luna@test.com',
+      );
     });
 
     it('V6: una invitación repetida (409) lo dice con su texto (revisión local)', async () => {
       mockSendInvitation.mockRejectedValue(
-        Object.assign(new Error('An invitation is already pending for x.'), { status: 409 })
+        Object.assign(new Error('An invitation is already pending for x.'), {
+          status: 409,
+        }),
       );
       renderPage();
       fireEvent.click(await screen.findByText('creator.sendNew'));
       fireEvent.click(await screen.findByTestId('invite-friend-u-1'));
 
       await waitFor(() =>
-        expect(customToast.error).toHaveBeenCalledWith('errors.duplicateInvitation')
+        expect(customToast.error).toHaveBeenCalledWith(
+          'errors.duplicateInvitation',
+        ),
       );
     });
 
@@ -303,7 +369,9 @@ describe('InvitationsPage', () => {
 
       await waitFor(() => expect(mockSendInvitation).toHaveBeenCalled());
       // Que el refresco silencioso llegó a hacerse, y falló
-      await waitFor(() => expect(mockListCompetitionInvitations).toHaveBeenCalledTimes(3));
+      await waitFor(() =>
+        expect(mockListCompetitionInvitations).toHaveBeenCalledTimes(3),
+      );
       await act(async () => {});
       expect(screen.getByText('send.title')).toBeInTheDocument();
       expect(screen.queryByText('LA COMPETICION')).not.toBeInTheDocument();
@@ -329,17 +397,30 @@ describe('InvitationsPage', () => {
         .mockReset()
         .mockResolvedValueOnce({ invitations: [], totalCount: 0 })
         .mockResolvedValueOnce({ invitations: [], totalCount: 0 })
-        .mockImplementationOnce(() => new Promise((listo) => { devuelveElViejo = listo; }))
+        .mockImplementationOnce(
+          () =>
+            new Promise((listo) => {
+              devuelveElViejo = listo;
+            }),
+        )
         .mockResolvedValue({ invitations: [INVITACION], totalCount: 1 });
       renderPage();
       fireEvent.click(await screen.findByText('creator.sendNew'));
       fireEvent.click(await screen.findByTestId('invite-friend-u-1'));
-      await waitFor(() => expect(mockListCompetitionInvitations).toHaveBeenCalledTimes(3));
+      await waitFor(() =>
+        expect(mockListCompetitionInvitations).toHaveBeenCalledTimes(3),
+      );
       fireEvent.click(screen.getByTestId('invite-friend-u-2'));
-      await waitFor(() => expect(mockListCompetitionInvitations).toHaveBeenCalledTimes(4));
-      await waitFor(() => expect(screen.getAllByTestId('invitation-card')).toHaveLength(1));
+      await waitFor(() =>
+        expect(mockListCompetitionInvitations).toHaveBeenCalledTimes(4),
+      );
+      await waitFor(() =>
+        expect(screen.getAllByTestId('invitation-card')).toHaveLength(1),
+      );
 
-      await act(async () => { devuelveElViejo({ invitations: [], totalCount: 0 }); });
+      await act(async () => {
+        devuelveElViejo({ invitations: [], totalCount: 0 });
+      });
 
       expect(screen.getAllByTestId('invitation-card')).toHaveLength(1);
     });
@@ -354,7 +435,9 @@ describe('InvitationsPage', () => {
       fireEvent.submit(campo.closest('form'));
 
       await waitFor(() => expect(mockSendInvitationByEmail).toHaveBeenCalled());
-      await waitFor(() => expect(screen.getByTestId('invitation-email-input')).toHaveValue(''));
+      await waitFor(() =>
+        expect(screen.getByTestId('invitation-email-input')).toHaveValue(''),
+      );
       expect(screen.getByText('send.title')).toBeInTheDocument();
     });
   });
@@ -364,9 +447,13 @@ describe('InvitationsPage', () => {
     // `mockImplementation` de un test se cuela en el siguiente y lo hace fallar
     // por un motivo que no es el suyo
     beforeEach(() => {
-      mockListFriends.mockReset().mockResolvedValue({ friendships: [], totalCount: 0 });
+      mockListFriends
+        .mockReset()
+        .mockResolvedValue({ friendships: [], totalCount: 0 });
       mockListEnrollments.mockReset().mockResolvedValue([]);
-      mockListCompetitionInvitations.mockReset().mockResolvedValue({ invitations: [], totalCount: 0 });
+      mockListCompetitionInvitations
+        .mockReset()
+        .mockResolvedValue({ invitations: [], totalCount: 0 });
     });
 
     /** Abre el modal de invitar: es lo que dispara la carga de amigos. */
@@ -392,7 +479,7 @@ describe('InvitationsPage', () => {
 
       expect(mockListEnrollments).toHaveBeenCalledWith(
         expect.anything(),
-        expect.objectContaining({ status: 'APPROVED' })
+        expect.objectContaining({ status: 'APPROVED' }),
       );
     });
 
@@ -402,11 +489,13 @@ describe('InvitationsPage', () => {
       // ninguna pendiente y se ofrecería invitar a quien ya está invitado
       await abreElModal();
 
-      await waitFor(() => expect(mockListCompetitionInvitations).toHaveBeenCalled());
+      await waitFor(() =>
+        expect(mockListCompetitionInvitations).toHaveBeenCalled(),
+      );
 
       const llamadas = mockListCompetitionInvitations.mock.calls;
       const pidePendientes = llamadas.some(
-        ([, filtros]) => filtros && filtros.status === 'PENDING'
+        ([, filtros]) => filtros && filtros.status === 'PENDING',
       );
       expect(pidePendientes).toBe(true);
     });
@@ -420,7 +509,7 @@ describe('InvitationsPage', () => {
 
       expect(mockListFriends).toHaveBeenCalledWith(
         expect.anything(),
-        expect.objectContaining({ limit: expect.any(Number) })
+        expect.objectContaining({ limit: expect.any(Number) }),
       );
     });
     it('5: los amigos que no caben en una página también llegan', async () => {
@@ -441,9 +530,11 @@ describe('InvitationsPage', () => {
       await waitFor(() => expect(mockListFriends).toHaveBeenCalledTimes(2));
       expect(mockListFriends).toHaveBeenLastCalledWith(
         expect.anything(),
-        expect.objectContaining({ page: 2 })
+        expect.objectContaining({ page: 2 }),
       );
-      expect(await screen.findByTestId('invite-friend-u-149')).toBeInTheDocument();
+      expect(
+        await screen.findByTestId('invite-friend-u-149'),
+      ).toBeInTheDocument();
     });
 
     it('6: las invitaciones pendientes que no caben en una página también cuentan', async () => {
@@ -454,11 +545,15 @@ describe('InvitationsPage', () => {
         totalCount: 1,
       });
       mockListCompetitionInvitations.mockImplementation((_id, filtros = {}) => {
-        if (filtros.status !== 'PENDING') return Promise.resolve({ invitations: [], totalCount: 0 });
+        if (filtros.status !== 'PENDING')
+          return Promise.resolve({ invitations: [], totalCount: 0 });
         const pagina = filtros.page ?? 1;
-        const invitados = pagina === 1
-          ? Array.from({ length: 100 }, (_, i) => ({ inviteeUserId: `u-${i}` }))
-          : [{ inviteeUserId: 'u-120' }];
+        const invitados =
+          pagina === 1
+            ? Array.from({ length: 100 }, (_, i) => ({
+                inviteeUserId: `u-${i}`,
+              }))
+            : [{ inviteeUserId: 'u-120' }];
         return Promise.resolve({ invitations: invitados, totalCount: 101 });
       });
 
@@ -506,7 +601,9 @@ describe('InvitationsPage', () => {
 
       await abreElModal();
 
-      expect(await screen.findByTestId('friends-eligibility-error')).toBeInTheDocument();
+      expect(
+        await screen.findByTestId('friends-eligibility-error'),
+      ).toBeInTheDocument();
       expect(screen.queryByTestId('invite-friend-u-1')).not.toBeInTheDocument();
     });
 
@@ -518,12 +615,14 @@ describe('InvitationsPage', () => {
       mockListCompetitionInvitations.mockImplementation((_id, filtros = {}) =>
         filtros.status === 'PENDING'
           ? Promise.reject(new Error('la red'))
-          : Promise.resolve({ invitations: [], totalCount: 0 })
+          : Promise.resolve({ invitations: [], totalCount: 0 }),
       );
 
       await abreElModal();
 
-      expect(await screen.findByTestId('friends-eligibility-error')).toBeInTheDocument();
+      expect(
+        await screen.findByTestId('friends-eligibility-error'),
+      ).toBeInTheDocument();
       expect(screen.queryByTestId('invite-friend-u-1')).not.toBeInTheDocument();
     });
 
@@ -533,7 +632,9 @@ describe('InvitationsPage', () => {
       await abreElModal();
 
       expect(await screen.findByTestId('friends-error')).toBeInTheDocument();
-      expect(screen.queryByTestId('friends-eligibility-error')).not.toBeInTheDocument();
+      expect(
+        screen.queryByTestId('friends-eligibility-error'),
+      ).not.toBeInTheDocument();
     });
   });
 
@@ -542,15 +643,21 @@ describe('InvitationsPage', () => {
     const renderConHistorial = () =>
       render(
         <MemoryRouter
-          initialEntries={['/competitions', '/creator/competitions/comp-1/invitations']}
+          initialEntries={[
+            '/competitions',
+            '/creator/competitions/comp-1/invitations',
+          ]}
           initialIndex={1}
         >
           <Routes>
             <Route path="/competitions" element={<div>DE DONDE VENGO</div>} />
-            <Route path="/creator/competitions/:id/invitations" element={<InvitationsPage />} />
+            <Route
+              path="/creator/competitions/:id/invitations"
+              element={<InvitationsPage />}
+            />
             <Route path="/competitions/:id" element={<Destino />} />
           </Routes>
-        </MemoryRouter>
+        </MemoryRouter>,
       );
 
     beforeEach(() => {
@@ -563,11 +670,21 @@ describe('InvitationsPage', () => {
         name: 'Summer Cup',
         status: 'ACTIVE',
       });
-      rolesActuales.valor = { isAdmin: false, isCreator: false, isLoading: false, error: null };
+      rolesActuales.valor = {
+        isAdmin: false,
+        isCreator: false,
+        isLoading: false,
+        error: null,
+      };
     });
 
     afterEach(() => {
-      rolesActuales.valor = { isAdmin: false, isCreator: true, isLoading: false, error: null };
+      rolesActuales.valor = {
+        isAdmin: false,
+        isCreator: true,
+        isLoading: false,
+        error: null,
+      };
     });
 
     it('acaba en la competición, no en la pantalla de invitaciones', async () => {
@@ -585,7 +702,6 @@ describe('InvitationsPage', () => {
       expect(await screen.findByText('DE DONDE VENGO')).toBeInTheDocument();
     });
 
-
     it('sin navegar a mano en pleno render', async () => {
       renderConHistorial();
       await screen.findByText('LA COMPETICION');
@@ -600,7 +716,10 @@ describe('InvitationsPage', () => {
       // un 500 se parece a «no tienes permiso». Echar por eso, y encima sin
       // dejar volver atrás, es afirmar lo que no se ha podido preguntar
       rolesActuales.valor = {
-        isAdmin: false, isCreator: false, isLoading: false, error: new Error('500'),
+        isAdmin: false,
+        isCreator: false,
+        isLoading: false,
+        error: new Error('500'),
       };
 
       renderConHistorial();
@@ -611,7 +730,10 @@ describe('InvitationsPage', () => {
 
     it('y se puede volver a preguntar', async () => {
       rolesActuales.valor = {
-        isAdmin: false, isCreator: false, isLoading: false, error: new Error('500'),
+        isAdmin: false,
+        isCreator: false,
+        isLoading: false,
+        error: new Error('500'),
       };
 
       renderConHistorial();
@@ -623,7 +745,12 @@ describe('InvitationsPage', () => {
     it('cuando la pantalla no carga, se sale, y tampoco se apila', async () => {
       // El gemelo del mismo fichero: el `catch` de la carga empujaba al detalle
       // apilando, así que atrás volvía aquí, fallaba otra vez y vuelta a empezar
-      rolesActuales.valor = { isAdmin: false, isCreator: true, isLoading: false, error: null };
+      rolesActuales.valor = {
+        isAdmin: false,
+        isCreator: true,
+        isLoading: false,
+        error: null,
+      };
       mockGetCompetitionDetail.mockRejectedValueOnce(new Error('no se pudo'));
 
       renderConHistorial();
@@ -640,7 +767,10 @@ describe('InvitationsPage', () => {
       // sin esperar a los permisos, así que el aviso con su «Reintentar» no
       // llegaba a verse nunca. Con la API caída fallan las dos
       rolesActuales.valor = {
-        isAdmin: false, isCreator: false, isLoading: false, error: new Error('500'),
+        isAdmin: false,
+        isCreator: false,
+        isLoading: false,
+        error: new Error('500'),
       };
       mockGetCompetitionDetail.mockRejectedValueOnce(new Error('no se pudo'));
 
@@ -655,7 +785,10 @@ describe('InvitationsPage', () => {
       // el cargador delante del aviso dejaba la pantalla girando sin salida,
       // cuando ya se sabía que no se iba a poder enseñar nada
       rolesActuales.valor = {
-        isAdmin: false, isCreator: false, isLoading: false, error: new Error('500'),
+        isAdmin: false,
+        isCreator: false,
+        isLoading: false,
+        error: new Error('500'),
       };
       mockGetCompetitionDetail.mockReturnValue(new Promise(() => {}));
 
@@ -666,7 +799,12 @@ describe('InvitationsPage', () => {
 
     it('y mientras los permisos no contesten, no se echa a nadie', async () => {
       // Salir a mitad de la pregunta es decidir sin la respuesta
-      rolesActuales.valor = { isAdmin: false, isCreator: false, isLoading: true, error: null };
+      rolesActuales.valor = {
+        isAdmin: false,
+        isCreator: false,
+        isLoading: true,
+        error: null,
+      };
       mockGetCompetitionDetail.mockRejectedValueOnce(new Error('no se pudo'));
 
       renderConHistorial();
@@ -677,7 +815,11 @@ describe('InvitationsPage', () => {
     });
 
     it('a quien sí puede no se le mueve de sitio', async () => {
-      rolesActuales.valor = { isAdmin: false, isCreator: true, isLoading: false };
+      rolesActuales.valor = {
+        isAdmin: false,
+        isCreator: true,
+        isLoading: false,
+      };
 
       renderConHistorial();
 
@@ -726,7 +868,10 @@ describe('InvitationsPage · la carga de la pantalla', () => {
   const arbol = () => (
     <MemoryRouter initialEntries={['/creator/competitions/comp-1/invitations']}>
       <Routes>
-        <Route path="/creator/competitions/:id/invitations" element={<InvitationsPage />} />
+        <Route
+          path="/creator/competitions/:id/invitations"
+          element={<InvitationsPage />}
+        />
       </Routes>
     </MemoryRouter>
   );
@@ -735,13 +880,27 @@ describe('InvitationsPage · la carga de la pantalla', () => {
     await screen.findByTestId('status-filter');
     return vista;
   };
-  const filtrarPor = (estado) => fireEvent.change(screen.getByTestId('status-filter'), { target: { value: estado } });
+  const filtrarPor = (estado) =>
+    fireEvent.change(screen.getByTestId('status-filter'), {
+      target: { value: estado },
+    });
 
   beforeEach(() => {
     vi.clearAllMocks();
-    rolesActuales.valor = { isAdmin: false, isCreator: true, isLoading: false, error: null };
-    mockGetCompetitionDetail.mockReset().mockResolvedValue({ id: 'comp-1', name: 'Summer Cup', status: 'ACTIVE' });
-    mockListCompetitionInvitations.mockReset().mockResolvedValue({ invitations: [], totalCount: 0 });
+    rolesActuales.valor = {
+      isAdmin: false,
+      isCreator: true,
+      isLoading: false,
+      error: null,
+    };
+    mockGetCompetitionDetail.mockReset().mockResolvedValue({
+      id: 'comp-1',
+      name: 'Summer Cup',
+      status: 'ACTIVE',
+    });
+    mockListCompetitionInvitations
+      .mockReset()
+      .mockResolvedValue({ invitations: [], totalCount: 0 });
     vi.spyOn(console, 'error').mockImplementation(() => {});
   });
 
@@ -775,11 +934,19 @@ describe('InvitationsPage · la carga de la pantalla', () => {
 
     // Then se pide con él y se espera
     await waitFor(() =>
-      expect(mockListCompetitionInvitations).toHaveBeenLastCalledWith('comp-1', { status: 'DECLINED' })
+      expect(mockListCompetitionInvitations).toHaveBeenLastCalledWith(
+        'comp-1',
+        { status: 'DECLINED' },
+      ),
     );
     expect(screen.getByText('loading')).toBeInTheDocument();
     expect(screen.queryByTestId('status-filter')).toBeNull();
-    await act(async () => llega.resolver({ invitations: [invitacion('inv-d', 'Diego Declina')], totalCount: 1 }));
+    await act(async () =>
+      llega.resolver({
+        invitations: [invitacion('inv-d', 'Diego Declina')],
+        totalCount: 1,
+      }),
+    );
     expect(await screen.findByText('Diego Declina')).toBeInTheDocument();
     expect(screen.queryByText('loading')).toBeNull();
   });
@@ -787,12 +954,18 @@ describe('InvitationsPage · la carga de la pantalla', () => {
   // Con la espera de pantalla el filtro no se ve: lo que vuelve a pedir es otro
   // objeto de usuario de la sesión, que es dependencia de la carga
   const filtrarYPedirOtraVez = async (rerender, vieja, nueva) => {
-    mockListCompetitionInvitations.mockReturnValueOnce(vieja.promesa).mockReturnValueOnce(nueva.promesa);
+    mockListCompetitionInvitations
+      .mockReturnValueOnce(vieja.promesa)
+      .mockReturnValueOnce(nueva.promesa);
     filtrarPor('PENDING');
-    await waitFor(() => expect(mockListCompetitionInvitations).toHaveBeenCalledTimes(2));
+    await waitFor(() =>
+      expect(mockListCompetitionInvitations).toHaveBeenCalledTimes(2),
+    );
     sesionDePrueba.user = { ...USUARIO_DE_SIEMPRE };
     rerender(arbol());
-    await waitFor(() => expect(mockListCompetitionInvitations).toHaveBeenCalledTimes(3));
+    await waitFor(() =>
+      expect(mockListCompetitionInvitations).toHaveBeenCalledTimes(3),
+    );
   };
 
   it('T1-13: si la vieja llega antes, la espera sigue hasta la nueva', async () => {
@@ -802,11 +975,21 @@ describe('InvitationsPage · la carga de la pantalla', () => {
     const nueva = aMano();
     // When se vuelve a pedir antes de que llegue, y llega la vieja
     await filtrarYPedirOtraVez(rerender, vieja, nueva);
-    await act(async () => vieja.resolver({ invitations: [invitacion('inv-v', 'Vieja Lista')], totalCount: 1 }));
+    await act(async () =>
+      vieja.resolver({
+        invitations: [invitacion('inv-v', 'Vieja Lista')],
+        totalCount: 1,
+      }),
+    );
 
     // Then la espera sigue, y lo que se pinta es la nueva
     expect(screen.getByText('loading')).toBeInTheDocument();
-    await act(async () => nueva.resolver({ invitations: [invitacion('inv-n', 'Nueva Lista')], totalCount: 1 }));
+    await act(async () =>
+      nueva.resolver({
+        invitations: [invitacion('inv-n', 'Nueva Lista')],
+        totalCount: 1,
+      }),
+    );
     expect(await screen.findByText('Nueva Lista')).toBeInTheDocument();
     expect(screen.queryByText('Vieja Lista')).toBeNull();
   });
@@ -817,9 +1000,19 @@ describe('InvitationsPage · la carga de la pantalla', () => {
     const nueva = aMano();
     await filtrarYPedirOtraVez(rerender, vieja, nueva);
 
-    await act(async () => nueva.resolver({ invitations: [invitacion('inv-n', 'Nueva Lista')], totalCount: 1 }));
+    await act(async () =>
+      nueva.resolver({
+        invitations: [invitacion('inv-n', 'Nueva Lista')],
+        totalCount: 1,
+      }),
+    );
     await screen.findByText('Nueva Lista');
-    await act(async () => vieja.resolver({ invitations: [invitacion('inv-v', 'Vieja Lista')], totalCount: 1 }));
+    await act(async () =>
+      vieja.resolver({
+        invitations: [invitacion('inv-v', 'Vieja Lista')],
+        totalCount: 1,
+      }),
+    );
 
     expect(screen.getByText('Nueva Lista')).toBeInTheDocument();
     expect(screen.queryByText('Vieja Lista')).toBeNull();
@@ -832,7 +1025,12 @@ describe('InvitationsPage · la carga de la pantalla', () => {
     await filtrarYPedirOtraVez(rerender, vieja, nueva);
 
     await act(async () => vieja.rechazar(new Error('vieja')));
-    await act(async () => nueva.resolver({ invitations: [invitacion('inv-n', 'Nueva Lista')], totalCount: 1 }));
+    await act(async () =>
+      nueva.resolver({
+        invitations: [invitacion('inv-n', 'Nueva Lista')],
+        totalCount: 1,
+      }),
+    );
 
     expect(await screen.findByText('Nueva Lista')).toBeInTheDocument();
     expect(customToast.error).not.toHaveBeenCalled();
@@ -843,7 +1041,9 @@ describe('InvitationsPage · la carga de la pantalla', () => {
     const tarde = aMano();
     mockListCompetitionInvitations.mockReturnValueOnce(tarde.promesa);
     const { unmount } = render(arbol());
-    await waitFor(() => expect(mockListCompetitionInvitations).toHaveBeenCalledTimes(1));
+    await waitFor(() =>
+      expect(mockListCompetitionInvitations).toHaveBeenCalledTimes(1),
+    );
 
     // When se sale y luego falla
     unmount();

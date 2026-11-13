@@ -10,7 +10,10 @@ class ConfigureScheduleUseCase {
     if (!config || typeof config !== 'object') {
       throw new Error('Schedule configuration is required');
     }
-    return await this.scheduleRepository.configureSchedule(competitionId, config);
+    return await this.scheduleRepository.configureSchedule(
+      competitionId,
+      config,
+    );
   }
 }
 

@@ -6,7 +6,9 @@ vi.mock('react-i18next', () => ({
   useTranslation: () => ({ t: (clave) => clave, i18n: { language: 'es' } }),
 }));
 vi.mock('../composition', () => ({
-  validateResetTokenUseCase: { execute: vi.fn().mockResolvedValue({ valid: true }) },
+  validateResetTokenUseCase: {
+    execute: vi.fn().mockResolvedValue({ valid: true }),
+  },
   resetPasswordUseCase: { execute: vi.fn() },
 }));
 
@@ -20,7 +22,7 @@ describe('ResetPassword · requisitos', () => {
         <Routes>
           <Route path="/reset-password/:token" element={<ResetPassword />} />
         </Routes>
-      </BrowserRouter>
+      </BrowserRouter>,
     );
 
     expect(await screen.findByText('resetPassword.requirement4')).toBeTruthy();

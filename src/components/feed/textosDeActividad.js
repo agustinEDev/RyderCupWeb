@@ -40,7 +40,10 @@ export const personaDe = (id, autores, t) => {
 };
 
 /** Un invitado de partida rápida: no tiene cuenta, va por su nombre o «un invitado». */
-export const invitadoDe = (nombre, t) => ({ nombre: nombre || t('feed:guest'), enlace: null });
+export const invitadoDe = (nombre, t) => ({
+  nombre: nombre || t('feed:guest'),
+  enlace: null,
+});
 
 /** Varias personas unidas como en el idioma: «Pedro y Xavi». */
 const listaDe = (personas, idioma) => {
@@ -48,11 +51,19 @@ const listaDe = (personas, idioma) => {
   let partes;
   try {
     partes = conIdioma(idioma, (l) =>
-      new Intl.ListFormat(l, { style: 'long', type: 'conjunction' }).formatToParts(nombres)
+      new Intl.ListFormat(l, {
+        style: 'long',
+        type: 'conjunction',
+      }).formatToParts(nombres),
     );
   } catch {
     partes = nombres.flatMap((n, i) =>
-      i === 0 ? [{ type: 'element', value: n }] : [{ type: 'literal', value: ', ' }, { type: 'element', value: n }]
+      i === 0
+        ? [{ type: 'element', value: n }]
+        : [
+            { type: 'literal', value: ', ' },
+            { type: 'element', value: n },
+          ],
     );
   }
   let i = 0;
@@ -72,7 +83,12 @@ const listaDe = (personas, idioma) => {
  *
  * @returns {{ trozos: Array<{tipo: 'texto', valor: string}|{tipo: 'persona', persona: Object}>, texto: string }}
  */
-export const fraseCon = (t, clave, valores, { persona, rivales, companeros, idioma } = {}) => {
+export const fraseCon = (
+  t,
+  clave,
+  valores,
+  { persona, rivales, companeros, idioma } = {},
+) => {
   const lista = rivales ? listaDe(rivales, idioma) : null;
   const deCompaneros = companeros ? listaDe(companeros, idioma) : null;
   const texto = espacios(
@@ -81,7 +97,7 @@ export const fraseCon = (t, clave, valores, { persona, rivales, companeros, idio
       name: persona?.nombre,
       rivals: lista?.texto,
       partners: deCompaneros?.texto,
-    })
+    }),
   );
   const conMarcas = espacios(
     t(clave, {
@@ -89,7 +105,7 @@ export const fraseCon = (t, clave, valores, { persona, rivales, companeros, idio
       name: persona ? HUECO_NOMBRE : undefined,
       rivals: lista ? HUECO_RIVALES : undefined,
       partners: deCompaneros ? HUECO_COMPANEROS : undefined,
-    })
+    }),
   );
   const trozos = conMarcas
     .split(new RegExp(`(${HUECO_NOMBRE}|${HUECO_RIVALES}|${HUECO_COMPANEROS})`))
@@ -110,13 +126,20 @@ export const unaTrasOtra = (...frases) => ({
 });
 
 /** Una frase sin huecos, ya escrita. */
-export const fraseDeTexto = (texto) => ({ trozos: [{ tipo: 'texto', valor: texto }], texto });
+export const fraseDeTexto = (texto) => ({
+  trozos: [{ tipo: 'texto', valor: texto }],
+  texto,
+});
 
 /** «18:30»: la hora de una tarjeta que no es de hoy. */
 const horaDelReloj = (fecha, idioma) =>
   conIdioma(idioma, (l) =>
     // 24 h en los dos idiomas: «18:30», no «06:30 PM»
-    new Intl.DateTimeFormat(l, { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(fecha)
+    new Intl.DateTimeFormat(l, {
+      hour: '2-digit',
+      minute: '2-digit',
+      hourCycle: 'h23',
+    }).format(fecha),
   );
 
 /** «hace 5 min», «hace 2 h» si es de hoy; «18:30» si no. */
@@ -124,8 +147,10 @@ export const horaDeLaTarjeta = (fecha, ahora, t, idioma) => {
   if (!(fecha instanceof Date) || Number.isNaN(fecha.getTime())) return '';
   const hace = haceCuanto(fecha, ahora);
   if (hace.unidad === 'ahora') return t('feed:time.now');
-  if (hace.unidad === 'minutos') return t('feed:time.minutes', { count: hace.valor });
-  if (hace.unidad === 'horas') return t('feed:time.hours', { count: hace.valor });
+  if (hace.unidad === 'minutos')
+    return t('feed:time.minutes', { count: hace.valor });
+  if (hace.unidad === 'horas')
+    return t('feed:time.hours', { count: hace.valor });
   return horaDelReloj(fecha, idioma);
 };
 
@@ -141,7 +166,7 @@ export const etiquetaDelDia = (fecha, ahora, t, idioma) => {
   if (dia === 'hoy') return t('feed:days.today');
   if (dia === 'ayer') return t('feed:days.yesterday');
   const texto = conIdioma(idioma, (l) =>
-    new Intl.DateTimeFormat(l, OPCIONES_DEL_DIA[dia]).format(fecha)
+    new Intl.DateTimeFormat(l, OPCIONES_DEL_DIA[dia]).format(fecha),
   );
   // «mié, 15 oct» se lee mejor sin la coma en español; el inglés la lleva
   return String(idioma || '').startsWith('es') ? texto.replace(',', '') : texto;
@@ -163,7 +188,8 @@ export const fechasDelTorneo = (inicio, fin, ahora, idioma) => {
   const finLeido = diaLocal(fin);
   const hasta = finLeido && finLeido >= desde ? finLeido : desde;
   const opciones =
-    desde.getFullYear() === ahora.getFullYear() && hasta.getFullYear() === ahora.getFullYear()
+    desde.getFullYear() === ahora.getFullYear() &&
+    hasta.getFullYear() === ahora.getFullYear()
       ? OPCIONES_DEL_DIA.esteAno
       : OPCIONES_DEL_DIA.otroAno;
   return conIdioma(idioma, (l) => {
@@ -185,7 +211,9 @@ export const diaDeLaVuelta = (dia, ahora, idioma) => {
     fecha.getFullYear() === ahora.getFullYear()
       ? OPCIONES_DEL_DIA.semana
       : { ...OPCIONES_DEL_DIA.semana, year: 'numeric' };
-  const texto = conIdioma(idioma, (l) => new Intl.DateTimeFormat(l, opciones).format(fecha));
+  const texto = conIdioma(idioma, (l) =>
+    new Intl.DateTimeFormat(l, opciones).format(fecha),
+  );
   // Como en el separador: «sáb 24 oct» en español, «Sat, Oct 24» en inglés
   return String(idioma || '').startsWith('es') ? texto.replace(',', '') : texto;
 };

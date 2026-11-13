@@ -45,10 +45,16 @@ export const PARO = Object.freeze({
  * arregla con tiempo: reintentar ahí reenvía a cada rato un golpe que el
  * servidor ya tiene, que es justo lo que el corte del bucle venía a impedir.
  */
-export const SE_ARREGLA_ESPERANDO = new Set([PARO.NO_ES_DE_ESTA, PARO.YA_HAY_OTRO]);
+export const SE_ARREGLA_ESPERANDO = new Set([
+  PARO.NO_ES_DE_ESTA,
+  PARO.YA_HAY_OTRO,
+]);
 
 /** Los paros que son del almacenamiento del móvil, y hay que enseñar. */
-const ES_DEL_ALMACENAMIENTO = new Set([PARO.NO_SE_PUDO_BORRAR, PARO.NO_SE_PUDO_ESCRIBIR]);
+const ES_DEL_ALMACENAMIENTO = new Set([
+  PARO.NO_SE_PUDO_BORRAR,
+  PARO.NO_SE_PUDO_ESCRIBIR,
+]);
 
 /**
  * Qué aviso de almacenamiento queda en pantalla después de una pasada.
@@ -89,20 +95,18 @@ const laMismaEnLaCola = (entrada) => {
   // sustituyen en sus tests, y cambiarla dejaba la mitad de este bucle sin
   // ejercitar. Sale más caro —dos lecturas del almacenamiento por entrada—,
   // y se acepta a sabiendas: leer de más aquí no pierde golpes
-  const ahora = cola
-    .getByMatch(entrada.matchId, entrada.userId)
-    .find(
-      (e) =>
-        e.holeNumber === entrada.holeNumber
-        && (e.participantId ?? null) === (entrada.participantId ?? null)
-        && (e.userId ?? null) === (entrada.userId ?? null)
-        // Quien marca a dos tiene una por rival en el mismo hoyo
-        && marcadoDe(e.scoreData) === marcadoDe(entrada.scoreData)
-    );
+  const ahora = cola.getByMatch(entrada.matchId, entrada.userId).find(
+    (e) =>
+      e.holeNumber === entrada.holeNumber &&
+      (e.participantId ?? null) === (entrada.participantId ?? null) &&
+      (e.userId ?? null) === (entrada.userId ?? null) &&
+      // Quien marca a dos tiene una por rival en el mismo hoyo
+      marcadoDe(e.scoreData) === marcadoDe(entrada.scoreData),
+  );
   const esLaMisma = Boolean(
-    ahora
-      && ahora.timestamp === entrada.timestamp
-      && JSON.stringify(ahora.scoreData) === JSON.stringify(entrada.scoreData)
+    ahora &&
+    ahora.timestamp === entrada.timestamp &&
+    JSON.stringify(ahora.scoreData) === JSON.stringify(entrada.scoreData),
   );
   // Se devuelve la copia de la cola y no la que se leyó al empezar: la de la
   // cola puede haber recibido el nombre de la partida mientras el bucle iba
@@ -129,7 +133,9 @@ const golpesPerdidosDe = (entrada) => {
   // antes: sus tocados, o los golpes que trae, la nombran sin él
   const marcado = marcadoDe(entrada.scoreData);
   const trae = conSuRival(golpesQueTrae(entrada.scoreData), marcado);
-  const golpes = entrada.tocados ? conSuRival(entrada.tocados, marcado).filter((g) => trae.includes(g)) : trae;
+  const golpes = entrada.tocados
+    ? conSuRival(entrada.tocados, marcado).filter((g) => trae.includes(g))
+    : trae;
   return golpes.length > 0 ? { golpes } : {};
 };
 
@@ -165,7 +171,7 @@ export const apartaLaRechazada = (entrada, dueñoSiNoLoTiene = null) => {
     entrada.holeNumber,
     entrada.participantId,
     entrada.userId ?? null,
-    marcadoDe(entrada.scoreData)
+    marcadoDe(entrada.scoreData),
   );
 };
 
@@ -245,7 +251,9 @@ export const vaciaAnotaciones = async ({
     // más de dos minutos dejaba que otra pestaña tomara el relevo y la
     // reenviara. Si en ese rato contesta que ya no mando, no se puede hacer
     // nada con una petición en camino; se mira a la vuelta siguiente
-    const latido = globalThis.setInterval(() => { sigoVivo(); }, LATIDO_EN_VUELO_MS);
+    const latido = globalThis.setInterval(() => {
+      sigoVivo();
+    }, LATIDO_EN_VUELO_MS);
     try {
       await manda(entrada);
     } catch (err) {
@@ -309,7 +317,7 @@ export const vaciaAnotaciones = async ({
       entrada.holeNumber,
       entrada.participantId,
       entrada.userId ?? null,
-      marcadoDe(entrada.scoreData)
+      marcadoDe(entrada.scoreData),
     );
     if (!borrada) {
       // El golpe llegó pero no se pudo sacar de la cola: sin espacio, o en una

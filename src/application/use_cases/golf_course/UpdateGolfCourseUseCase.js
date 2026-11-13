@@ -60,7 +60,9 @@ class UpdateGolfCourseUseCase {
     // aqui, un campo federado de 12 barras se abria en el formulario y moria al
     // guardar: se podia dar de alta y no se podia editar.
     if (!data.tees || !isTeeCountValid(data.tees.length)) {
-      throw new Error(`Golf course must have between ${MIN_TEES} and ${MAX_TEES} tees`);
+      throw new Error(
+        `Golf course must have between ${MIN_TEES} and ${MAX_TEES} tees`,
+      );
     }
 
     if (!data.holes || data.holes.length !== 18) {
@@ -73,13 +75,15 @@ class UpdateGolfCourseUseCase {
     data.holes.forEach((hole, index) => {
       if (!isHoleParValid(hole.par)) {
         throw new Error(
-          `Hole ${index + 1} par must be one of ${VALID_HOLE_PARS.join(', ')} (current: ${hole.par})`
+          `Hole ${index + 1} par must be one of ${VALID_HOLE_PARS.join(', ')} (current: ${hole.par})`,
         );
       }
     });
 
     // Validate unique stroke indices
-    const strokeIndices = data.holes.map(h => h.strokeIndex || h.stroke_index);
+    const strokeIndices = data.holes.map(
+      (h) => h.strokeIndex || h.stroke_index,
+    );
     const uniqueIndices = new Set(strokeIndices);
     if (uniqueIndices.size !== 18) {
       throw new Error('Each hole must have a unique stroke index (1-18)');
@@ -90,7 +94,9 @@ class UpdateGolfCourseUseCase {
     const totalPar = data.holes.reduce((sum, h) => sum + h.par, 0);
     const [minPar, maxPar] = parRangeFor(data.courseType || data.course_type);
     if (totalPar < minPar || totalPar > maxPar) {
-      throw new Error(`Total par must be between ${minPar} and ${maxPar}. Got: ${totalPar}`);
+      throw new Error(
+        `Total par must be between ${minPar} and ${maxPar}. Got: ${totalPar}`,
+      );
     }
   }
 }

@@ -33,11 +33,15 @@ class ResetPasswordUseCase {
     const password = new Password(newPassword);
 
     // Llamada al backend para cambiar la contraseña
-    const result = await this.authRepository.resetPassword(token, password.getValue());
+    const result = await this.authRepository.resetPassword(
+      token,
+      password.getValue(),
+    );
 
     return {
       success: true,
-      message: result.message || 'Password changed successfully. Please log in again.'
+      message:
+        result.message || 'Password changed successfully. Please log in again.',
     };
   }
 }

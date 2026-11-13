@@ -1,19 +1,25 @@
 /* global URL */
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { buildGoogleOAuthUrl, verifyOAuthState, recogeElVerificadorDeGoogle } from './googleOAuth';
+import {
+  buildGoogleOAuthUrl,
+  verifyOAuthState,
+  recogeElVerificadorDeGoogle,
+} from './googleOAuth';
 
 describe('buildGoogleOAuthUrl', () => {
   const originalEnv = { ...import.meta.env };
 
   beforeEach(() => {
-    import.meta.env.VITE_GOOGLE_CLIENT_ID = 'test-client-id.apps.googleusercontent.com';
-    import.meta.env.VITE_GOOGLE_REDIRECT_URI = 'http://localhost:5173/auth/google/callback';
+    import.meta.env.VITE_GOOGLE_CLIENT_ID =
+      'test-client-id.apps.googleusercontent.com';
+    import.meta.env.VITE_GOOGLE_REDIRECT_URI =
+      'http://localhost:5173/auth/google/callback';
     sessionStorage.clear();
   });
 
   afterEach(() => {
     // Restore original env
-    Object.keys(import.meta.env).forEach(key => {
+    Object.keys(import.meta.env).forEach((key) => {
       if (key.startsWith('VITE_GOOGLE_')) {
         if (originalEnv[key] !== undefined) {
           import.meta.env[key] = originalEnv[key];
@@ -31,8 +37,12 @@ describe('buildGoogleOAuthUrl', () => {
 
     expect(parsed.origin).toBe('https://accounts.google.com');
     expect(parsed.pathname).toBe('/o/oauth2/v2/auth');
-    expect(parsed.searchParams.get('client_id')).toBe('test-client-id.apps.googleusercontent.com');
-    expect(parsed.searchParams.get('redirect_uri')).toBe('http://localhost:5173/auth/google/callback');
+    expect(parsed.searchParams.get('client_id')).toBe(
+      'test-client-id.apps.googleusercontent.com',
+    );
+    expect(parsed.searchParams.get('redirect_uri')).toBe(
+      'http://localhost:5173/auth/google/callback',
+    );
     expect(parsed.searchParams.get('response_type')).toBe('code');
     expect(parsed.searchParams.get('scope')).toBe('openid email profile');
     // Sin refresh token de Google (no se usa) y sin forzar el consentimiento cada vez
@@ -78,13 +88,17 @@ describe('buildGoogleOAuthUrl', () => {
   it('should throw if VITE_GOOGLE_CLIENT_ID is not set', async () => {
     delete import.meta.env.VITE_GOOGLE_CLIENT_ID;
 
-    await expect(buildGoogleOAuthUrl()).rejects.toThrow('VITE_GOOGLE_CLIENT_ID environment variable is not configured');
+    await expect(buildGoogleOAuthUrl()).rejects.toThrow(
+      'VITE_GOOGLE_CLIENT_ID environment variable is not configured',
+    );
   });
 
   it('should throw if VITE_GOOGLE_REDIRECT_URI is not set', async () => {
     delete import.meta.env.VITE_GOOGLE_REDIRECT_URI;
 
-    await expect(buildGoogleOAuthUrl()).rejects.toThrow('VITE_GOOGLE_REDIRECT_URI environment variable is not configured');
+    await expect(buildGoogleOAuthUrl()).rejects.toThrow(
+      'VITE_GOOGLE_REDIRECT_URI environment variable is not configured',
+    );
   });
 });
 
@@ -156,9 +170,13 @@ describe('la vuelta tras Google (RyderCupAm #753)', () => {
   });
 
   it('V1: guarda la página de confirmar el correo, con su token, y la devuelve una vez', async () => {
-    const { guardaLaVueltaDeGoogle, recogeLaVueltaDeGoogle } = await import('./googleOAuth');
+    const { guardaLaVueltaDeGoogle, recogeLaVueltaDeGoogle } =
+      await import('./googleOAuth');
 
-    guardaLaVueltaDeGoogle({ pathname: '/confirm-email-change', search: '?token=abc' });
+    guardaLaVueltaDeGoogle({
+      pathname: '/confirm-email-change',
+      search: '?token=abc',
+    });
 
     expect(recogeLaVueltaDeGoogle()).toBe('/confirm-email-change?token=abc');
     expect(recogeLaVueltaDeGoogle()).toBeNull();
@@ -169,7 +187,8 @@ describe('la vuelta tras Google (RyderCupAm #753)', () => {
     ['un prefijo engañoso', { pathname: '/confirm-email-changes' }],
     ['sin ruta', undefined],
   ])('V2: %s no se guarda', async (_caso, from) => {
-    const { guardaLaVueltaDeGoogle, recogeLaVueltaDeGoogle } = await import('./googleOAuth');
+    const { guardaLaVueltaDeGoogle, recogeLaVueltaDeGoogle } =
+      await import('./googleOAuth');
 
     guardaLaVueltaDeGoogle(from);
 
@@ -190,9 +209,14 @@ describe('la vuelta de Google con su cuenta (FE #1064, R7)', () => {
   beforeEach(() => sessionStorage.clear());
 
   it('guarda y devuelve la cuenta de la página de la que venía, una vez', async () => {
-    const { guardaLaVueltaDeGoogle, recogeLaVueltaDeGoogleConSuCuenta } = await import('./googleOAuth');
+    const { guardaLaVueltaDeGoogle, recogeLaVueltaDeGoogleConSuCuenta } =
+      await import('./googleOAuth');
 
-    guardaLaVueltaDeGoogle({ pathname: '/confirm-email-change', search: '?token=abc', cuenta: 'u-1' });
+    guardaLaVueltaDeGoogle({
+      pathname: '/confirm-email-change',
+      search: '?token=abc',
+      cuenta: 'u-1',
+    });
 
     expect(recogeLaVueltaDeGoogleConSuCuenta()).toEqual({
       ruta: '/confirm-email-change?token=abc',
@@ -202,9 +226,13 @@ describe('la vuelta de Google con su cuenta (FE #1064, R7)', () => {
   });
 
   it('sin cuenta apuntada, la vuelta sin cuenta (vale para cualquiera)', async () => {
-    const { guardaLaVueltaDeGoogle, recogeLaVueltaDeGoogleConSuCuenta } = await import('./googleOAuth');
+    const { guardaLaVueltaDeGoogle, recogeLaVueltaDeGoogleConSuCuenta } =
+      await import('./googleOAuth');
 
-    guardaLaVueltaDeGoogle({ pathname: '/confirm-email-change', search: '?token=abc' });
+    guardaLaVueltaDeGoogle({
+      pathname: '/confirm-email-change',
+      search: '?token=abc',
+    });
 
     expect(recogeLaVueltaDeGoogleConSuCuenta()).toEqual({
       ruta: '/confirm-email-change?token=abc',
@@ -213,10 +241,18 @@ describe('la vuelta de Google con su cuenta (FE #1064, R7)', () => {
   });
 
   it('guardar otra vuelta sin cuenta no deja la cuenta de antes', async () => {
-    const { guardaLaVueltaDeGoogle, recogeLaVueltaDeGoogleConSuCuenta } = await import('./googleOAuth');
+    const { guardaLaVueltaDeGoogle, recogeLaVueltaDeGoogleConSuCuenta } =
+      await import('./googleOAuth');
 
-    guardaLaVueltaDeGoogle({ pathname: '/confirm-email-change', search: '?token=a', cuenta: 'u-1' });
-    guardaLaVueltaDeGoogle({ pathname: '/confirm-email-change', search: '?token=b' });
+    guardaLaVueltaDeGoogle({
+      pathname: '/confirm-email-change',
+      search: '?token=a',
+      cuenta: 'u-1',
+    });
+    guardaLaVueltaDeGoogle({
+      pathname: '/confirm-email-change',
+      search: '?token=b',
+    });
 
     expect(recogeLaVueltaDeGoogleConSuCuenta()).toEqual({
       ruta: '/confirm-email-change?token=b',
@@ -225,7 +261,8 @@ describe('la vuelta de Google con su cuenta (FE #1064, R7)', () => {
   });
 
   it('una página no permitida no guarda nada, tampoco la cuenta', async () => {
-    const { guardaLaVueltaDeGoogle, recogeLaVueltaDeGoogleConSuCuenta } = await import('./googleOAuth');
+    const { guardaLaVueltaDeGoogle, recogeLaVueltaDeGoogleConSuCuenta } =
+      await import('./googleOAuth');
 
     guardaLaVueltaDeGoogle({ pathname: '/competitions/7', cuenta: 'u-1' });
 
@@ -244,22 +281,31 @@ describe('la vuelta de Google ante un almacenamiento que falla (revisión, FE #1
       getItem: (k) => guardado[k] ?? null,
       removeItem: (k) => delete guardado[k],
       setItem: (k, v) => {
-        if (k === 'google_oauth_vuelta_cuenta') throw new Error('QuotaExceededError');
+        if (k === 'google_oauth_vuelta_cuenta')
+          throw new Error('QuotaExceededError');
         guardado[k] = v;
       },
     });
     const { guardaLaVueltaDeGoogle } = await import('./googleOAuth');
 
-    guardaLaVueltaDeGoogle({ pathname: '/confirm-email-change', search: '?token=a', cuenta: 'u-1' });
+    guardaLaVueltaDeGoogle({
+      pathname: '/confirm-email-change',
+      search: '?token=a',
+      cuenta: 'u-1',
+    });
 
     expect(guardado.google_oauth_vuelta).toBeUndefined();
   });
 
   it('si no puede leer la cuenta, descarta la vuelta en vez de dejarla para cualquiera', async () => {
-    const guardado = { google_oauth_vuelta: '/confirm-email-change?token=a', google_oauth_vuelta_cuenta: 'u-1' };
+    const guardado = {
+      google_oauth_vuelta: '/confirm-email-change?token=a',
+      google_oauth_vuelta_cuenta: 'u-1',
+    };
     vi.stubGlobal('sessionStorage', {
       getItem: (k) => {
-        if (k === 'google_oauth_vuelta_cuenta') throw new Error('SecurityError');
+        if (k === 'google_oauth_vuelta_cuenta')
+          throw new Error('SecurityError');
         return guardado[k] ?? null;
       },
       removeItem: (k) => delete guardado[k],
@@ -270,8 +316,6 @@ describe('la vuelta de Google ante un almacenamiento que falla (revisión, FE #1
     expect(recogeLaVueltaDeGoogleConSuCuenta()).toBeNull();
   });
 });
-
-
 
 /**
  * PKCE (RFC 7636, fase 3): el código de Google solo lo puede canjear quien empezó la ida.
@@ -291,16 +335,22 @@ describe('buildGoogleOAuthUrl · PKCE', () => {
   const FORMA = /^[A-Za-z0-9\-._~]{43,128}$/;
 
   beforeEach(() => {
-    import.meta.env.VITE_GOOGLE_CLIENT_ID = 'test-client-id.apps.googleusercontent.com';
-    import.meta.env.VITE_GOOGLE_REDIRECT_URI = 'http://localhost:5173/auth/google/callback';
+    import.meta.env.VITE_GOOGLE_CLIENT_ID =
+      'test-client-id.apps.googleusercontent.com';
+    import.meta.env.VITE_GOOGLE_REDIRECT_URI =
+      'http://localhost:5173/auth/google/callback';
     sessionStorage.clear();
   });
 
   afterEach(() => sessionStorage.clear());
 
   const sha256Base64Url = async (texto) => {
-    const hash = await globalThis.crypto.subtle.digest('SHA-256', new globalThis.TextEncoder().encode(texto));
-    return globalThis.btoa(String.fromCodePoint(...new Uint8Array(hash)))
+    const hash = await globalThis.crypto.subtle.digest(
+      'SHA-256',
+      new globalThis.TextEncoder().encode(texto),
+    );
+    return globalThis
+      .btoa(String.fromCodePoint(...new Uint8Array(hash)))
       .replaceAll('+', '-')
       .replaceAll('/', '_')
       .replace(/=+$/, '');
@@ -317,16 +367,18 @@ describe('buildGoogleOAuthUrl · PKCE', () => {
     const verifier = sessionStorage.getItem(VERIFIER_KEY);
 
     expect(url.searchParams.get('code_challenge_method')).toBe('S256');
-    expect(url.searchParams.get('code_challenge')).toBe(await sha256Base64Url(verifier));
+    expect(url.searchParams.get('code_challenge')).toBe(
+      await sha256Base64Url(verifier),
+    );
     // Nunca el verifier en la URL
     expect(url.toString()).not.toContain(verifier);
   });
 
   it('P2b: el reto de un verifier conocido es el del RFC 7636 (apéndice B)', async () => {
     // El ejemplo del propio RFC: así se comprueba la codificación sin depender del código
-    expect(await sha256Base64Url('dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk')).toBe(
-      'E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM'
-    );
+    expect(
+      await sha256Base64Url('dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk'),
+    ).toBe('E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM');
   });
 
   it('P3: cada ida tiene su verifier', async () => {

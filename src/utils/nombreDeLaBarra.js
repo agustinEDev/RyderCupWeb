@@ -9,7 +9,8 @@
  * @returns {string}
  */
 export const nombreDeLaBarra = (t, { color, identifier, gender }) =>
-  (identifier || t(`form.teeColors.${color}`, { defaultValue: color })) + sufijo(gender);
+  (identifier || t(`form.teeColors.${color}`, { defaultValue: color })) +
+  sufijo(gender);
 
 const sufijo = (gender) => {
   if (gender === 'MALE') return ' (M)';

@@ -9,7 +9,7 @@ describe('countryUtils', () => {
         email: 'test@example.com',
         first_name: 'Test',
         last_name: 'User',
-        country_code: 'ES'
+        country_code: 'ES',
       };
 
       expect(canUseRFEG(user)).toBe(true);
@@ -21,7 +21,7 @@ describe('countryUtils', () => {
         email: 'test@example.com',
         first_name: 'Test',
         last_name: 'User',
-        country_code: 'es'
+        country_code: 'es',
       };
 
       expect(canUseRFEG(user)).toBe(true);
@@ -33,7 +33,7 @@ describe('countryUtils', () => {
         email: 'test@example.com',
         first_name: 'Test',
         last_name: 'User',
-        country_code: 'FR'
+        country_code: 'FR',
       };
 
       expect(canUseRFEG(user)).toBe(false);
@@ -45,7 +45,7 @@ describe('countryUtils', () => {
         email: 'test@example.com',
         first_name: 'Test',
         last_name: 'User',
-        country_code: null
+        country_code: null,
       };
 
       expect(canUseRFEG(user)).toBe(false);
@@ -56,7 +56,7 @@ describe('countryUtils', () => {
         id: 'user-123',
         email: 'test@example.com',
         first_name: 'Test',
-        last_name: 'User'
+        last_name: 'User',
         // country_code is undefined
       };
 
@@ -69,7 +69,7 @@ describe('countryUtils', () => {
         email: 'test@example.com',
         first_name: 'Test',
         last_name: 'User',
-        country_code: ''
+        country_code: '',
       };
 
       expect(canUseRFEG(user)).toBe(false);
@@ -148,7 +148,9 @@ describe('countryUtils', () => {
 // salía en cada error de la pantalla de perfil
 describe('canUseRFEG · sin consola', () => {
   it('U6: no escribe el país del usuario en la consola', () => {
-    const espias = ['log', 'info', 'warn', 'error', 'debug'].map((m) => vi.spyOn(console, m).mockImplementation(() => {}));
+    const espias = ['log', 'info', 'warn', 'error', 'debug'].map((m) =>
+      vi.spyOn(console, m).mockImplementation(() => {}),
+    );
     canUseRFEG({ country_code: 'FR' });
     canUseRFEG({ country_code: 'ES' });
     canUseRFEG(null);

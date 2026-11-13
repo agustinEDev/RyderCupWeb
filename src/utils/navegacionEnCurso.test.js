@@ -15,13 +15,18 @@ const ficheros = (carpeta) =>
   readdirSync(carpeta, { withFileTypes: true }).flatMap((entrada) => {
     const ruta = join(carpeta, entrada.name);
     if (entrada.isDirectory()) return ficheros(ruta);
-    return /\.(js|jsx|ts|tsx)$/.test(entrada.name) && !/\.test\.(js|jsx|ts|tsx)$/.test(entrada.name) ? [ruta] : [];
+    return /\.(js|jsx|ts|tsx)$/.test(entrada.name) &&
+      !/\.test\.(js|jsx|ts|tsx)$/.test(entrada.name)
+      ? [ruta]
+      : [];
   });
 
 describe('navegacionEnCurso', () => {
   it('solo App.jsx apunta el router de la aplicación (en su efecto, con limpieza)', () => {
     const quienes = ficheros(RAIZ)
-      .filter((ruta) => /apuntaElRouterDeLaAplicacion\s*\(/.test(readFileSync(ruta, 'utf8')))
+      .filter((ruta) =>
+        /apuntaElRouterDeLaAplicacion\s*\(/.test(readFileSync(ruta, 'utf8')),
+      )
       .map((ruta) => relative(RAIZ, ruta))
       .filter((ruta) => ruta !== 'utils/navegacionEnCurso.js');
 

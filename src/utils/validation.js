@@ -33,8 +33,14 @@ export {
 const PASSWORD_ERROR_KEYS = {
   PASSWORD_EMPTY: { key: 'validation.passwordRequired' },
   PASSWORD_EDGE_SPACES: { key: 'validation.passwordSpaces' },
-  PASSWORD_TOO_SHORT: { key: 'validation.passwordTooShort', options: { min: PASSWORD_MIN_LENGTH } },
-  PASSWORD_TOO_LONG: { key: 'validation.passwordTooLong', options: { max: PASSWORD_MAX_LENGTH } },
+  PASSWORD_TOO_SHORT: {
+    key: 'validation.passwordTooShort',
+    options: { min: PASSWORD_MIN_LENGTH },
+  },
+  PASSWORD_TOO_LONG: {
+    key: 'validation.passwordTooLong',
+    options: { max: PASSWORD_MAX_LENGTH },
+  },
   PASSWORD_NO_UPPERCASE: { key: 'validation.passwordWeak' },
   PASSWORD_NO_LOWERCASE: { key: 'validation.passwordWeak' },
   PASSWORD_NO_DIGIT: { key: 'validation.passwordWeak' },
@@ -49,7 +55,9 @@ const PASSWORD_ERROR_KEYS = {
  */
 export const passwordErrorTranslation = (errorCode) =>
   // `hasOwn`: un código como «constructor» no puede traer lo que hereda el objeto
-  Object.hasOwn(PASSWORD_ERROR_KEYS, errorCode ?? '') ? PASSWORD_ERROR_KEYS[errorCode] : null;
+  Object.hasOwn(PASSWORD_ERROR_KEYS, errorCode ?? '')
+    ? PASSWORD_ERROR_KEYS[errorCode]
+    : null;
 
 /** Los códigos que se traducen, para que los tests los recorran todos. */
 export const PASSWORD_ERROR_CODES = Object.keys(PASSWORD_ERROR_KEYS);
@@ -66,7 +74,9 @@ export const PASSWORD_ERROR_CODES = Object.keys(PASSWORD_ERROR_KEYS);
  */
 export const passwordErrorMessage = (error, t) => {
   const traduccion = passwordErrorTranslation(error?.errorCode);
-  return traduccion ? t(traduccion.key, { ns: 'auth', ...traduccion.options }) : null;
+  return traduccion
+    ? t(traduccion.key, { ns: 'auth', ...traduccion.options })
+    : null;
 };
 
 /**
@@ -137,7 +147,7 @@ export const validateEmail = (email) => {
       // ingles porque de el dependen los tests de esta utilidad; ningun sitio de
       // la aplicacion lo enseña ya
       messageKey: 'validation.emailRequired',
-      message: 'Email is required'
+      message: 'Email is required',
     };
   }
 
@@ -149,7 +159,7 @@ export const validateEmail = (email) => {
       isValid: false,
       messageKey: 'validation.emailTooLong',
       messageOptions: { max: maxLength },
-      message: `Email must not exceed ${maxLength} characters`
+      message: `Email must not exceed ${maxLength} characters`,
     };
   }
 
@@ -160,13 +170,13 @@ export const validateEmail = (email) => {
     return {
       isValid: false,
       messageKey: 'validation.emailInvalid',
-      message: 'Please enter a valid email address'
+      message: 'Please enter a valid email address',
     };
   }
 
   return {
     isValid: true,
-    message: ''
+    message: '',
   };
 };
 
@@ -187,7 +197,7 @@ export const validateName = (name, fieldName = 'Name') => {
     .map((parte, i) =>
       i === 0
         ? parte.toLowerCase()
-        : parte.charAt(0).toUpperCase() + parte.slice(1).toLowerCase()
+        : parte.charAt(0).toUpperCase() + parte.slice(1).toLowerCase(),
     )
     .join('');
 
@@ -197,7 +207,7 @@ export const validateName = (name, fieldName = 'Name') => {
     return {
       isValid: false,
       messageKey: `validation.${campoClave}Required`,
-      message: `${fieldName} is required`
+      message: `${fieldName} is required`,
     };
   }
 
@@ -209,7 +219,7 @@ export const validateName = (name, fieldName = 'Name') => {
       isValid: false,
       messageKey: `validation.${campoClave}TooShort`,
       messageOptions: { min: minLength },
-      message: `${fieldName} must be at least ${minLength} characters`
+      message: `${fieldName} must be at least ${minLength} characters`,
     };
   }
 
@@ -218,7 +228,7 @@ export const validateName = (name, fieldName = 'Name') => {
       isValid: false,
       messageKey: `validation.${campoClave}TooLong`,
       messageOptions: { max: maxLength },
-      message: `${fieldName} must not exceed ${maxLength} characters`
+      message: `${fieldName} must not exceed ${maxLength} characters`,
     };
   }
 
@@ -228,13 +238,13 @@ export const validateName = (name, fieldName = 'Name') => {
     return {
       isValid: false,
       messageKey: `validation.${campoClave}Invalid`,
-      message: `${fieldName} contains invalid characters`
+      message: `${fieldName} contains invalid characters`,
     };
   }
 
   return {
     isValid: true,
-    message: ''
+    message: '',
   };
 };
 
@@ -261,7 +271,7 @@ export const checkRateLimit = (key, maxAttempts = 5, windowMs = 60000) => {
   if (!rateLimitData) {
     rateLimitData = {
       attempts: 0,
-      resetTime: now + windowMs
+      resetTime: now + windowMs,
     };
   }
 
@@ -269,7 +279,7 @@ export const checkRateLimit = (key, maxAttempts = 5, windowMs = 60000) => {
   if (now >= rateLimitData.resetTime) {
     rateLimitData = {
       attempts: 0,
-      resetTime: now + windowMs
+      resetTime: now + windowMs,
     };
   }
 
@@ -277,7 +287,7 @@ export const checkRateLimit = (key, maxAttempts = 5, windowMs = 60000) => {
   if (rateLimitData.attempts >= maxAttempts) {
     return {
       allowed: false,
-      remainingTime: Math.ceil((rateLimitData.resetTime - now) / 1000)
+      remainingTime: Math.ceil((rateLimitData.resetTime - now) / 1000),
     };
   }
 
@@ -287,7 +297,7 @@ export const checkRateLimit = (key, maxAttempts = 5, windowMs = 60000) => {
 
   return {
     allowed: true,
-    remainingTime: 0
+    remainingTime: 0,
   };
 };
 

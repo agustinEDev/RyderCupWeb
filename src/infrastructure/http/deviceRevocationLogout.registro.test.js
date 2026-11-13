@@ -18,10 +18,18 @@ import '../../composition/interfazDelTransporte';
  */
 
 vi.mock('i18next', () => ({ default: { t: vi.fn((clave) => clave) } }));
-vi.mock('../../utils/toast', () => ({ default: { error: vi.fn(), success: vi.fn(), info: vi.fn(), dismiss: vi.fn() } }));
+vi.mock('../../utils/toast', () => ({
+  default: {
+    error: vi.fn(),
+    success: vi.fn(),
+    info: vi.fn(),
+    dismiss: vi.fn(),
+  },
+}));
 vi.mock('../../utils/sentryHelpers', () => ({ clearUserContext: vi.fn() }));
 
-const SIN_REGISTRO = /no hay limpiezas registradas: falta importar composition\/limpiezaAlCerrarLaSesion/i;
+const SIN_REGISTRO =
+  /no hay limpiezas registradas: falta importar composition\/limpiezaAlCerrarLaSesion/i;
 
 /** Una carga de página nueva: el registro del módulo empieza vacío. */
 const cargaDeNuevo = async () => {
@@ -29,7 +37,8 @@ const cargaDeNuevo = async () => {
   await import('../../composition/interfazDelTransporte');
   const registro = await import('./deviceRevocationLogout');
   const { handleCsrfLogout } = await import('./csrfLogout');
-  const { anotaLaCuentaDeEstaPestana } = await import('../../utils/vueltaTrasEntrar');
+  const { anotaLaCuentaDeEstaPestana } =
+    await import('../../utils/vueltaTrasEntrar');
   anotaLaCuentaDeEstaPestana('u-1');
   return { ...registro, handleCsrfLogout };
 };
@@ -37,9 +46,18 @@ const cargaDeNuevo = async () => {
 describe('el registro de limpiezas de la cuenta', () => {
   beforeEach(() => {
     vi.useFakeTimers();
-    vi.stubGlobal('localStorage', { getItem: vi.fn(() => null), setItem: vi.fn(), removeItem: vi.fn() });
+    vi.stubGlobal('localStorage', {
+      getItem: vi.fn(() => null),
+      setItem: vi.fn(),
+      removeItem: vi.fn(),
+    });
     delete globalThis.window.location;
-    globalThis.window.location = { href: '', pathname: '/dashboard', search: '', hash: '' };
+    globalThis.window.location = {
+      href: '',
+      pathname: '/dashboard',
+      search: '',
+      hash: '',
+    };
   });
 
   afterEach(() => {
@@ -69,12 +87,17 @@ describe('el registro de limpiezas de la cuenta', () => {
   });
 
   it('con el registro vacío, el cierre por CSRF lo anota y sale igual a /login', async () => {
-    const consola = vi.spyOn(globalThis.console, 'error').mockImplementation(() => {});
+    const consola = vi
+      .spyOn(globalThis.console, 'error')
+      .mockImplementation(() => {});
     const { handleCsrfLogout } = await cargaDeNuevo();
 
     expect(() => handleCsrfLogout()).not.toThrow();
 
-    expect(consola).toHaveBeenCalledWith('[CSRF] Logout cleanup failed:', expect.objectContaining({ message: expect.stringMatching(SIN_REGISTRO) }));
+    expect(consola).toHaveBeenCalledWith(
+      '[CSRF] Logout cleanup failed:',
+      expect.objectContaining({ message: expect.stringMatching(SIN_REGISTRO) }),
+    );
     expect(globalThis.window.location.href).toBe('/login');
     consola.mockRestore();
   });

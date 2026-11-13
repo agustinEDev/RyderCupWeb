@@ -44,15 +44,35 @@ const memoria = () => {
 const PESTANAS = ['input', 'classification', 'scorecard'];
 const guardado = () => JSON.parse(localStorage.getItem(CLAVE));
 const guarda = (extra = {}) =>
-  guardaLaAnotacionEnCurso({ cuenta: 'u-anota', pathname: RUTA, search: '', pestana: 'input', hoyo: 12, mapa: false, ...extra });
+  guardaLaAnotacionEnCurso({
+    cuenta: 'u-anota',
+    pathname: RUTA,
+    search: '',
+    pestana: 'input',
+    hoyo: 12,
+    mapa: false,
+    ...extra,
+  });
 
 /** Una pantalla de anotación de mentira: su pestaña, su hoyo y su mapa, como las de verdad. */
-const usePantalla = ({ cargada = true, terminada = false, totalHoyos = 18, disponible = true, hoyoFijo = false, pestanaFija = false, mapaNoAbre = false } = {}) => {
+const usePantalla = ({
+  cargada = true,
+  terminada = false,
+  totalHoyos = 18,
+  disponible = true,
+  hoyoFijo = false,
+  pestanaFija = false,
+  mapaNoAbre = false,
+} = {}) => {
   const [pestana, setPestana] = useState('input');
   const [hoyo, setHoyo] = useState(1);
   const [abierto, setAbierto] = useState(false);
   const navigate = useNavigate();
-  const mapa = { abierto, disponible, abrir: mapaNoAbre ? () => {} : () => setAbierto(true) };
+  const mapa = {
+    abierto,
+    disponible,
+    abrir: mapaNoAbre ? () => {} : () => setAbierto(true),
+  };
   useAnotacionEnCurso({
     cargada,
     terminada,
@@ -71,7 +91,9 @@ const usePantalla = ({ cargada = true, terminada = false, totalHoyos = 18, dispo
 const monta = (props = {}, ruta = RUTA) =>
   renderHook((p) => usePantalla(p), {
     initialProps: props,
-    wrapper: ({ children }) => <MemoryRouter initialEntries={[ruta]}>{children}</MemoryRouter>,
+    wrapper: ({ children }) => (
+      <MemoryRouter initialEntries={[ruta]}>{children}</MemoryRouter>
+    ),
   });
 
 describe('useAnotacionEnCurso', () => {
@@ -94,7 +116,13 @@ describe('useAnotacionEnCurso', () => {
       result.current.setAbierto(true);
     });
 
-    expect(guardado()).toMatchObject({ cuenta: 'u-anota', ruta: RUTA, pestana: 'scorecard', hoyo: 4, mapa: true });
+    expect(guardado()).toMatchObject({
+      cuenta: 'u-anota',
+      ruta: RUTA,
+      pestana: 'scorecard',
+      hoyo: 4,
+      mapa: true,
+    });
   });
 
   it('H2: antes de cargar no guarda, y el guardado sigue con su hoyo', () => {
@@ -122,7 +150,9 @@ describe('useAnotacionEnCurso', () => {
     monta();
 
     const escritos = escrito.mock.calls.map(([, v]) => JSON.parse(v));
-    expect(escritos.every((e) => e.hoyo === 12 && e.pestana === 'classification')).toBe(true);
+    expect(
+      escritos.every((e) => e.hoyo === 12 && e.pestana === 'classification'),
+    ).toBe(true);
     expect(escritos.every((e) => e.mapa === true)).toBe(true);
   });
 
@@ -166,12 +196,23 @@ describe('useAnotacionEnCurso', () => {
     const OTRA = '/quick-matches/1c6b7d2f-3e4a-4b6c-9d8e-0f1a2b3c4d5e/scoring';
     const { result } = monta();
     act(() => result.current.setHoyo(4));
-    guardaLaAnotacionEnCurso({ cuenta: 'u-anota', pathname: OTRA, search: '', pestana: 'scorecard', hoyo: 15, mapa: false });
+    guardaLaAnotacionEnCurso({
+      cuenta: 'u-anota',
+      pathname: OTRA,
+      search: '',
+      pestana: 'scorecard',
+      hoyo: 15,
+      mapa: false,
+    });
 
     act(() => result.current.navigate(OTRA));
 
     expect(result.current).toMatchObject({ hoyo: 15, pestana: 'scorecard' });
-    expect(guardado()).toMatchObject({ ruta: OTRA, hoyo: 15, pestana: 'scorecard' });
+    expect(guardado()).toMatchObject({
+      ruta: OTRA,
+      hoyo: 15,
+      pestana: 'scorecard',
+    });
   });
 
   it('H2i: con el mapa sin datos todavía, lo guardado sigue con el mapa y se abre al llegar', () => {
@@ -218,7 +259,11 @@ describe('useAnotacionEnCurso', () => {
 
     const { result } = monta();
 
-    expect(result.current).toMatchObject({ hoyo: 1, pestana: 'classification', abierto: true });
+    expect(result.current).toMatchObject({
+      hoyo: 1,
+      pestana: 'classification',
+      abierto: true,
+    });
   });
 
   it('H3: un cambio de pestaña, hoyo o mapa se guarda', () => {
@@ -268,8 +313,16 @@ describe('useAnotacionEnCurso', () => {
 
     const { result } = monta();
 
-    expect(result.current).toMatchObject({ pestana: 'classification', hoyo: 12, abierto: true });
-    expect(guardado()).toMatchObject({ pestana: 'classification', hoyo: 12, mapa: true });
+    expect(result.current).toMatchObject({
+      pestana: 'classification',
+      hoyo: 12,
+      abierto: true,
+    });
+    expect(guardado()).toMatchObject({
+      pestana: 'classification',
+      hoyo: 12,
+      mapa: true,
+    });
   });
 
   it('H7: si aún no ha cargado, repone cuando carga', () => {
@@ -326,7 +379,11 @@ describe('useAnotacionEnCurso', () => {
 
     const { result } = monta();
 
-    expect(result.current).toMatchObject({ pestana: 'input', hoyo: 1, abierto: false });
+    expect(result.current).toMatchObject({
+      pestana: 'input',
+      hoyo: 1,
+      abierto: false,
+    });
   });
 
   it('H10: sin cuenta no guarda nada', () => {

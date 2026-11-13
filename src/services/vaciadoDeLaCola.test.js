@@ -12,19 +12,32 @@ const almacen = (() => {
   let datos = {};
   return {
     getItem: (clave) => datos[clave] ?? null,
-    setItem: (clave, valor) => { datos[clave] = String(valor); },
-    removeItem: (clave) => { delete datos[clave]; },
-    clear: () => { datos = {}; },
+    setItem: (clave, valor) => {
+      datos[clave] = String(valor);
+    },
+    removeItem: (clave) => {
+      delete datos[clave];
+    },
+    clear: () => {
+      datos = {};
+    },
   };
 })();
-Object.defineProperty(globalThis, 'localStorage', { value: almacen, writable: true });
+Object.defineProperty(globalThis, 'localStorage', {
+  value: almacen,
+  writable: true,
+});
 
-import { submitHoleScoreUseCase, submitTeeGroupHoleScoreUseCase } from '../composition';
+import {
+  submitHoleScoreUseCase,
+  submitTeeGroupHoleScoreUseCase,
+} from '../composition';
 import * as golpesPerdidos from '../utils/golpesPerdidos';
 import * as cola from '../utils/scoringOfflineQueue';
 import { vaciaLaColaEntera } from './vaciadoDeLaCola';
 
-const errorCon = (status) => Object.assign(new Error(`HTTP ${status}`), { status });
+const errorCon = (status) =>
+  Object.assign(new Error(`HTTP ${status}`), { status });
 const sinRed = () => new TypeError('Failed to fetch');
 
 const YO = 'usuario-A';
@@ -45,7 +58,11 @@ describe('vaciaLaColaEntera (FE #521)', () => {
 
     const resultado = await vaciaLaColaEntera({ userId: YO });
 
-    expect(submitHoleScoreUseCase.execute).toHaveBeenCalledWith('partida-vieja', 3, { ownScore: 4 });
+    expect(submitHoleScoreUseCase.execute).toHaveBeenCalledWith(
+      'partida-vieja',
+      3,
+      { ownScore: 4 },
+    );
     expect(resultado.enviadas).toBe(1);
     expect(cola.deQuien(YO)).toHaveLength(0);
   });
@@ -112,9 +129,12 @@ describe('vaciaLaColaEntera (FE #521)', () => {
       // golpes en la cola salían doce peticiones condenadas y doce cierres de
       // sesión antes de que la navegación llegara a ocurrir
       tresGolpesMios();
-      const csrf = Object.assign(new Error('CSRF validation failed. Please log in again.'), {
-        errorCode: 'CSRF_VALIDATION_FAILED',
-      });
+      const csrf = Object.assign(
+        new Error('CSRF validation failed. Please log in again.'),
+        {
+          errorCode: 'CSRF_VALIDATION_FAILED',
+        },
+      );
       submitHoleScoreUseCase.execute.mockRejectedValue(csrf);
 
       const resultado = await vaciaLaColaEntera({ userId: YO });
@@ -136,7 +156,7 @@ describe('vaciaLaColaEntera (FE #521)', () => {
 
         expect(submitHoleScoreUseCase.execute).toHaveBeenCalledTimes(1);
         expect(cola.deQuien(YO)).toHaveLength(3);
-      }
+      },
     );
 
     it('pero un error de la propia anotación no para a las demás', async () => {
@@ -222,7 +242,9 @@ describe('vaciaLaColaEntera (FE #521)', () => {
     /** Un envío que se queda en vuelo hasta que se le dice que termine. */
     const enVuelo = () => {
       let suelta;
-      const promesa = new Promise((r) => { suelta = r; });
+      const promesa = new Promise((r) => {
+        suelta = r;
+      });
       return { promesa, suelta: () => suelta({}) };
     };
 
@@ -233,14 +255,16 @@ describe('vaciaLaColaEntera (FE #521)', () => {
     it('se toma en el almacenamiento compartido y se suelta al acabar', async () => {
       cola.enqueue('m-1', 1, { ownScore: 4 }, null, YO);
       const envio = enVuelo();
-      submitHoleScoreUseCase.execute.mockImplementationOnce(() => envio.promesa);
+      submitHoleScoreUseCase.execute.mockImplementationOnce(
+        () => envio.promesa,
+      );
 
       const vaciado = vaciaLaColaEntera({ userId: YO });
       await Promise.resolve();
 
       // Mientras va, cualquier otra pestaña de esta cuenta lo ve
       expect(JSON.parse(almacen.getItem(CLAVE))).toEqual(
-        expect.objectContaining({ userId: YO, scope: 'vaciado' })
+        expect.objectContaining({ userId: YO, scope: 'vaciado' }),
       );
       const otraPestana = await vaciaLaColaEntera({ userId: YO });
       expect(otraPestana.paroPor).toBe('ya-hay-otro');
@@ -313,7 +337,9 @@ describe('vaciaLaColaEntera (FE #521)', () => {
       colgado.suelta();
       const resultadoDelViejo = await primero;
       expect(resultadoDelViejo.paroPor).toBe('ya-hay-otro');
-      const hoyosPedidos = submitHoleScoreUseCase.execute.mock.calls.map((c) => c[1]);
+      const hoyosPedidos = submitHoleScoreUseCase.execute.mock.calls.map(
+        (c) => c[1],
+      );
       expect(hoyosPedidos.filter((h) => h === 2)).toHaveLength(0);
 
       // Y el cerrojo sigue siendo del relevo: nadie más entra
@@ -333,7 +359,9 @@ describe('vaciaLaColaEntera (FE #521)', () => {
       cola.enqueue('m-1', 1, { ownScore: 4 }, null, YO);
       cola.enqueue('m-2', 2, { ownScore: 5 }, null, YO);
       const colgado = enVuelo();
-      submitHoleScoreUseCase.execute.mockImplementationOnce(() => colgado.promesa);
+      submitHoleScoreUseCase.execute.mockImplementationOnce(
+        () => colgado.promesa,
+      );
 
       const primero = vaciaLaColaEntera({ userId: YO });
       await Promise.resolve();
@@ -344,7 +372,7 @@ describe('vaciaLaColaEntera (FE #521)', () => {
       // El relevo entra, se le cae la red en el primer envío y termina
       // soltando el cerrojo, con el hoyo 2 todavía en la cola
       submitHoleScoreUseCase.execute.mockRejectedValueOnce(
-        Object.assign(new Error('HTTP 503'), { status: 503 })
+        Object.assign(new Error('HTTP 503'), { status: 503 }),
       );
       const relevo = await vaciaLaColaEntera({ userId: YO });
       expect(relevo.paroPor).toBe('no-es-de-esta');
@@ -356,7 +384,9 @@ describe('vaciaLaColaEntera (FE #521)', () => {
       // Su hoyo llegó y se borra, pero de ahí no pasa: el 2 se queda para el
       // reintento de quien tenga el cerrojo entonces, no para una copia vieja
       expect(viejo.paroPor).toBe('ya-hay-otro');
-      const hoyosPedidos = submitHoleScoreUseCase.execute.mock.calls.map((c) => c[1]);
+      const hoyosPedidos = submitHoleScoreUseCase.execute.mock.calls.map(
+        (c) => c[1],
+      );
       expect(hoyosPedidos).toEqual([1, 1]);
       expect(cola.deQuien(YO).map((e) => e.matchId)).toEqual(['m-2']);
     });
@@ -367,7 +397,8 @@ describe('vaciaLaColaEntera (FE #521)', () => {
       // El cerrojo no llega a escribirse; la cola sí
       const escribeDeVerdad = almacen.setItem;
       vi.spyOn(almacen, 'setItem').mockImplementation((clave, valor) => {
-        if (clave.startsWith('rydercup-scoring-session')) throw new Error('QuotaExceededError');
+        if (clave.startsWith('rydercup-scoring-session'))
+          throw new Error('QuotaExceededError');
         escribeDeVerdad(clave, valor);
       });
 
@@ -408,7 +439,9 @@ describe('vaciaLaColaEntera · sin crypto.randomUUID (T6)', () => {
     vi.clearAllMocks();
     submitHoleScoreUseCase.execute.mockResolvedValue({});
     const real = globalThis.crypto;
-    vi.stubGlobal('crypto', { getRandomValues: (a) => real.getRandomValues(a) });
+    vi.stubGlobal('crypto', {
+      getRandomValues: (a) => real.getRandomValues(a),
+    });
   });
   afterEach(() => {
     vi.unstubAllGlobals();
@@ -419,7 +452,9 @@ describe('vaciaLaColaEntera · sin crypto.randomUUID (T6)', () => {
 
     const resultado = await vaciaLaColaEntera({ userId: YO });
 
-    expect(submitHoleScoreUseCase.execute).toHaveBeenCalledWith('partida', 3, { ownScore: 4 });
+    expect(submitHoleScoreUseCase.execute).toHaveBeenCalledWith('partida', 3, {
+      ownScore: 4,
+    });
     expect(resultado.enviadas).toBe(1);
     expect(cola.deQuien(YO)).toHaveLength(0);
   });
@@ -454,7 +489,8 @@ describe('vaciaLaColaEntera · cuando algo va mal (FE #521)', () => {
     submitHoleScoreUseCase.execute.mockRejectedValue(errorCon(409));
     cola.enqueue('terminada', 7, { ownScore: 5 }, null, YO);
     vi.spyOn(almacen, 'setItem').mockImplementation((clave) => {
-      if (clave === 'rydercup-golpes-perdidos') throw new Error('QuotaExceededError');
+      if (clave === 'rydercup-golpes-perdidos')
+        throw new Error('QuotaExceededError');
     });
 
     const resultado = await vaciaLaColaEntera({ userId: YO });
@@ -463,16 +499,19 @@ describe('vaciaLaColaEntera · cuando algo va mal (FE #521)', () => {
     expect(cola.deQuien(YO)).toHaveLength(1);
   });
 
-  it.each([401, 408, 429])('un %s no borra nada: no es culpa del golpe', async (codigo) => {
-    submitHoleScoreUseCase.execute.mockRejectedValue(errorCon(codigo));
-    cola.enqueue('partida', 1, { ownScore: 4 }, null, YO);
+  it.each([401, 408, 429])(
+    'un %s no borra nada: no es culpa del golpe',
+    async (codigo) => {
+      submitHoleScoreUseCase.execute.mockRejectedValue(errorCon(codigo));
+      cola.enqueue('partida', 1, { ownScore: 4 }, null, YO);
 
-    const resultado = await vaciaLaColaEntera({ userId: YO });
+      const resultado = await vaciaLaColaEntera({ userId: YO });
 
-    expect(resultado.descartadas).toBe(0);
-    expect(cola.deQuien(YO)).toHaveLength(1);
-    expect(golpesPerdidos.pendientes(YO)).toEqual([]);
-  });
+      expect(resultado.descartadas).toBe(0);
+      expect(cola.deQuien(YO)).toHaveLength(1);
+      expect(golpesPerdidos.pendientes(YO)).toEqual([]);
+    },
+  );
 
   it('si se cae la red, para y deja el resto para la próxima', async () => {
     // Seguir intentando con la red caída es gastar batería para nada
@@ -555,20 +594,20 @@ describe('vaciaLaColaEntera · qué cuenta como caída de red (FE #521)', () => 
     expect(submitHoleScoreUseCase.execute).toHaveBeenCalledTimes(1);
   });
 
-  it.each([
-    'Marked player ID is required',
-    'Score must be between 1 and 15',
-  ])('«%s» NO es la red: se salta y sigue', async (mensaje) => {
-    // «requi-RED» contiene «red». Un patrón laxo convertía un error de
-    // validación en una caída de red y bloqueaba la cola entera
-    submitHoleScoreUseCase.execute.mockRejectedValue(new Error(mensaje));
-    cola.enqueue('una', 1, { ownScore: 4 }, null, YO);
-    cola.enqueue('otra', 2, { ownScore: 5 }, null, YO);
+  it.each(['Marked player ID is required', 'Score must be between 1 and 15'])(
+    '«%s» NO es la red: se salta y sigue',
+    async (mensaje) => {
+      // «requi-RED» contiene «red». Un patrón laxo convertía un error de
+      // validación en una caída de red y bloqueaba la cola entera
+      submitHoleScoreUseCase.execute.mockRejectedValue(new Error(mensaje));
+      cola.enqueue('una', 1, { ownScore: 4 }, null, YO);
+      cola.enqueue('otra', 2, { ownScore: 5 }, null, YO);
 
-    await vaciaLaColaEntera({ userId: YO });
+      await vaciaLaColaEntera({ userId: YO });
 
-    expect(submitHoleScoreUseCase.execute).toHaveBeenCalledTimes(2);
-  });
+      expect(submitHoleScoreUseCase.execute).toHaveBeenCalledTimes(2);
+    },
+  );
 });
 
 describe('vaciaLaColaEntera · partidas de stroke play (FE #824, PR 7)', () => {
@@ -580,11 +619,17 @@ describe('vaciaLaColaEntera · partidas de stroke play (FE #824, PR 7)', () => {
   });
 
   it('un golpe de partida va a SU endpoint, nunca al de la Ryder', async () => {
-    cola.enqueue('g-1', 3, { ownScore: 4, markedPlayerId: 'b' }, null, YO, { tipo: cola.TIPO_PARTIDA_DE_FRANJA });
+    cola.enqueue('g-1', 3, { ownScore: 4, markedPlayerId: 'b' }, null, YO, {
+      tipo: cola.TIPO_PARTIDA_DE_FRANJA,
+    });
 
     const resultado = await vaciaLaColaEntera({ userId: YO });
 
-    expect(submitTeeGroupHoleScoreUseCase.execute).toHaveBeenCalledWith('g-1', 3, { ownScore: 4, markedPlayerId: 'b' });
+    expect(submitTeeGroupHoleScoreUseCase.execute).toHaveBeenCalledWith(
+      'g-1',
+      3,
+      { ownScore: 4, markedPlayerId: 'b' },
+    );
     expect(submitHoleScoreUseCase.execute).not.toHaveBeenCalled();
     expect(resultado.enviadas).toBe(1);
   });
@@ -594,15 +639,22 @@ describe('vaciaLaColaEntera · partidas de stroke play (FE #824, PR 7)', () => {
 
     await vaciaLaColaEntera({ userId: YO });
 
-    expect(submitHoleScoreUseCase.execute).toHaveBeenCalledWith('m-1', 3, { ownScore: 4 });
+    expect(submitHoleScoreUseCase.execute).toHaveBeenCalledWith('m-1', 3, {
+      ownScore: 4,
+    });
     expect(submitTeeGroupHoleScoreUseCase.execute).not.toHaveBeenCalled();
   });
 
   it('con la misma política: «aún no abre» se queda en la cola', async () => {
     submitTeeGroupHoleScoreUseCase.execute.mockRejectedValue(
-      Object.assign(new Error('x'), { status: 409, errorCode: 'SCORING_NOT_OPEN_YET' })
+      Object.assign(new Error('x'), {
+        status: 409,
+        errorCode: 'SCORING_NOT_OPEN_YET',
+      }),
     );
-    cola.enqueue('g-1', 3, { ownScore: 4, markedPlayerId: 'b' }, null, YO, { tipo: cola.TIPO_PARTIDA_DE_FRANJA });
+    cola.enqueue('g-1', 3, { ownScore: 4, markedPlayerId: 'b' }, null, YO, {
+      tipo: cola.TIPO_PARTIDA_DE_FRANJA,
+    });
 
     await vaciaLaColaEntera({ userId: YO });
 
@@ -611,13 +663,23 @@ describe('vaciaLaColaEntera · partidas de stroke play (FE #824, PR 7)', () => {
 
   it('un rechazo definitivo se aparta como perdido, con su tipo (el aviso lleva a su pantalla)', async () => {
     submitTeeGroupHoleScoreUseCase.execute.mockRejectedValue(
-      Object.assign(new Error('x'), { status: 403, errorCode: 'NOT_YOUR_MARKED_PLAYER' })
+      Object.assign(new Error('x'), {
+        status: 403,
+        errorCode: 'NOT_YOUR_MARKED_PLAYER',
+      }),
     );
-    cola.enqueue('g-1', 3, { ownScore: 4, markedPlayerId: 'b' }, null, YO, { tipo: cola.TIPO_PARTIDA_DE_FRANJA });
+    cola.enqueue('g-1', 3, { ownScore: 4, markedPlayerId: 'b' }, null, YO, {
+      tipo: cola.TIPO_PARTIDA_DE_FRANJA,
+    });
 
     await vaciaLaColaEntera({ userId: YO });
 
     expect(cola.deQuien(YO)).toHaveLength(0);
-    expect(golpesPerdidos.pendientes(YO)).toEqual([expect.objectContaining({ matchId: 'g-1', tipo: cola.TIPO_PARTIDA_DE_FRANJA })]);
+    expect(golpesPerdidos.pendientes(YO)).toEqual([
+      expect.objectContaining({
+        matchId: 'g-1',
+        tipo: cola.TIPO_PARTIDA_DE_FRANJA,
+      }),
+    ]);
   });
 });

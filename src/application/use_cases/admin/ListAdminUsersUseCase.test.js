@@ -13,7 +13,12 @@ describe('ListAdminUsersUseCase', () => {
 
   it('should list users with the given filters', async () => {
     const filters = { search: 'agus', isAdmin: true, limit: 20, offset: 0 };
-    const response = { users: [{ id: 'u1' }], totalCount: 1, limit: 20, offset: 0 };
+    const response = {
+      users: [{ id: 'u1' }],
+      totalCount: 1,
+      limit: 20,
+      offset: 0,
+    };
     adminRepository.listUsers.mockResolvedValue(response);
 
     const result = await useCase.execute(filters);
@@ -23,7 +28,12 @@ describe('ListAdminUsersUseCase', () => {
   });
 
   it('should default to an empty filters object', async () => {
-    adminRepository.listUsers.mockResolvedValue({ users: [], totalCount: 0, limit: 20, offset: 0 });
+    adminRepository.listUsers.mockResolvedValue({
+      users: [],
+      totalCount: 0,
+      limit: 20,
+      offset: 0,
+    });
 
     await useCase.execute();
 

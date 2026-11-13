@@ -18,7 +18,12 @@ export const tarjetaDelHoyo = (barras) => {
   const conParYMetros = conPar.filter((b) => Number.isFinite(b.metros));
   // A igualdad de metros, la de par mayor
   const masLarga = conParYMetros.reduce(
-    (larga, b) => (larga === null || b.metros > larga.metros || (b.metros === larga.metros && b.par > larga.par) ? b : larga),
+    (larga, b) =>
+      larga === null ||
+      b.metros > larga.metros ||
+      (b.metros === larga.metros && b.par > larga.par)
+        ? b
+        : larga,
     null,
   );
   return {

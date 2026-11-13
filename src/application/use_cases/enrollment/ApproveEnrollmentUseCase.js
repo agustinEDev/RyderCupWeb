@@ -59,7 +59,7 @@ class ApproveEnrollmentUseCase {
     const enrollment = await this.#enrollmentRepository.approve(
       competitionId,
       enrollmentId,
-      teamId
+      teamId,
     );
 
     // Convertir a DTO simple para la UI

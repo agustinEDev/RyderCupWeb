@@ -23,10 +23,12 @@ describe('registerServiceWorker', () => {
   const puestos = [];
   const interceptarOyentes = (objetivo) => {
     const original = objetivo.addEventListener.bind(objetivo);
-    vi.spyOn(objetivo, 'addEventListener').mockImplementation((tipo, fn, opciones) => {
-      puestos.push([objetivo, tipo, fn]);
-      return original(tipo, fn, opciones);
-    });
+    vi.spyOn(objetivo, 'addEventListener').mockImplementation(
+      (tipo, fn, opciones) => {
+        puestos.push([objetivo, tipo, fn]);
+        return original(tipo, fn, opciones);
+      },
+    );
   };
 
   const prepararNavegador = ({ conControlador }) => {
@@ -111,7 +113,9 @@ describe('registerServiceWorker', () => {
     const registerServiceWorker = await cargarModulo();
 
     registerServiceWorker();
-    await vi.waitFor(() => expect(navigator.serviceWorker.register).toHaveBeenCalled());
+    await vi.waitFor(() =>
+      expect(navigator.serviceWorker.register).toHaveBeenCalled(),
+    );
 
     Object.defineProperty(document, 'visibilityState', {
       configurable: true,
@@ -127,7 +131,9 @@ describe('registerServiceWorker', () => {
     const registerServiceWorker = await cargarModulo();
 
     registerServiceWorker();
-    await vi.waitFor(() => expect(navigator.serviceWorker.register).toHaveBeenCalled());
+    await vi.waitFor(() =>
+      expect(navigator.serviceWorker.register).toHaveBeenCalled(),
+    );
 
     Object.defineProperty(document, 'visibilityState', {
       configurable: true,
@@ -141,7 +147,9 @@ describe('registerServiceWorker', () => {
   it('starts the application even if registering fails', async () => {
     // Quedarse sin funcionar sin conexion es malo; no arrancar es peor
     prepararNavegador({ conControlador: true });
-    navigator.serviceWorker.register = vi.fn().mockRejectedValue(new Error('sin https'));
+    navigator.serviceWorker.register = vi
+      .fn()
+      .mockRejectedValue(new Error('sin https'));
     const registerServiceWorker = await cargarModulo();
 
     await expect(async () => registerServiceWorker()).not.toThrow();
@@ -162,11 +170,15 @@ describe('registerServiceWorker', () => {
 
     const registerServiceWorker = await cargarModulo();
     registerServiceWorker();
-    await vi.waitFor(() => expect(navigator.serviceWorker.register).toHaveBeenCalledTimes(1));
+    await vi.waitFor(() =>
+      expect(navigator.serviceWorker.register).toHaveBeenCalledTimes(1),
+    );
 
     // Recuperar la red es justo cuando el registro que fallo puede salir adelante
     window.dispatchEvent(new window.Event('online'));
-    await vi.waitFor(() => expect(navigator.serviceWorker.register).toHaveBeenCalledTimes(2));
+    await vi.waitFor(() =>
+      expect(navigator.serviceWorker.register).toHaveBeenCalledTimes(2),
+    );
 
     // Y con el registro ya conseguido, volver a la aplicacion pregunta por una
     // version nueva. Se reintenta el aviso dentro del `waitFor` porque el

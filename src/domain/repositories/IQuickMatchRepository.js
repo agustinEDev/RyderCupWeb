@@ -109,7 +109,12 @@ class IQuickMatchRepository {
    * @returns {Promise<Object>} Hole score result
    * @throws {Error} If operation fails
    */
-  async submitProxyHoleScore(quickMatchId, targetParticipantId, holeNumber, score) {
+  async submitProxyHoleScore(
+    quickMatchId,
+    targetParticipantId,
+    holeNumber,
+    score,
+  ) {
     throw new Error('Method submitProxyHoleScore() must be implemented');
   }
 

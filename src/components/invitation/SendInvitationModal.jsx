@@ -1,9 +1,19 @@
-import { useState, useEffect, useEffectEvent, useRef, useCallback } from 'react';
+import {
+  useState,
+  useEffect,
+  useEffectEvent,
+  useRef,
+  useCallback,
+} from 'react';
 import ModalShell, { CAJA_PROPIA } from '../ui/ModalShell';
 import { nombreRealSiAporta, nombreVisible } from '../../utils/nombreVisible';
 import { Loader, Search, UserPlus, X } from 'lucide-react';
 import Avatar from '../ui/Avatar';
-import { GrupoDePestanas, ListaDePestanas, PanelDePestana } from '../ui/Pestanas';
+import {
+  GrupoDePestanas,
+  ListaDePestanas,
+  PanelDePestana,
+} from '../ui/Pestanas';
 
 const SendInvitationModalContent = ({
   onClose,
@@ -56,7 +66,11 @@ const SendInvitationModalContent = ({
     // Sin saber todavía quién está dentro, o sin haberlo podido saber, nadie:
     // el servidor rechazaría justo a esos (CodeRabbit)
     const sinComprobar = cargandoAmigos || falloAlComprobarSituacion;
-    return { yaInscrito, yaInvitado, noSePuede: sinComprobar || yaInscrito || yaInvitado };
+    return {
+      yaInscrito,
+      yaInvitado,
+      noSePuede: sinComprobar || yaInscrito || yaInvitado,
+    };
   };
   // El teclado, que se escucha desde un efecto montado una sola vez, la lee
   // con los inscritos e invitados de ahora: que tampoco elija a quien la lista
@@ -102,26 +116,29 @@ const SendInvitationModalContent = ({
   // por debajo de dos letras, la lista se cierra en ese mismo pintado; el
   // efecto de la búsqueda solo espera los 300 ms. Estable: el teclado la usa
   // desde un listener que se registra una sola vez
-  const cambiaLaBusqueda = useCallback((texto) => {
-    setSearchQuery(texto);
-    // Invalida lo que este en vuelo: sin esto, una respuesta tardia aterrizaba
-    // sobre el campo ya vacio —la buena reabriendo resultados de una busqueda
-    // que ya no se lee, y la mala plantando el aviso rojo bajo un buscador en
-    // blanco—, o la de un texto anterior sobre la del actual.
-    searchRequestIdRef.current += 1;
-    setSearchFailed(false);
-    if (texto.trim().length < 2) {
-      putResults([]);
-      openDropdown(false);
-      setIsSearching(false);
-      // Como en el camino de error: sin esto el `aria-activedescendant` se
-      // queda apuntando a una opcion que ya no esta en el DOM.
-      highlight(-1);
-      return;
-    }
-    setIsSearching(true);
-    falloPendienteRef.current = '';
-  }, [putResults, openDropdown, highlight]);
+  const cambiaLaBusqueda = useCallback(
+    (texto) => {
+      setSearchQuery(texto);
+      // Invalida lo que este en vuelo: sin esto, una respuesta tardia aterrizaba
+      // sobre el campo ya vacio —la buena reabriendo resultados de una busqueda
+      // que ya no se lee, y la mala plantando el aviso rojo bajo un buscador en
+      // blanco—, o la de un texto anterior sobre la del actual.
+      searchRequestIdRef.current += 1;
+      setSearchFailed(false);
+      if (texto.trim().length < 2) {
+        putResults([]);
+        openDropdown(false);
+        setIsSearching(false);
+        // Como en el camino de error: sin esto el `aria-activedescendant` se
+        // queda apuntando a una opcion que ya no esta en el DOM.
+        highlight(-1);
+        return;
+      }
+      setIsSearching(true);
+      falloPendienteRef.current = '';
+    },
+    [putResults, openDropdown, highlight],
+  );
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -135,7 +152,10 @@ const SendInvitationModalContent = ({
         // seguir usandolo: cierra el desplegable, pero no cuenta como que el
         // usuario lo haya descartado, o la restauracion al volver de la otra
         // pestana no llegaba a ocurrir nunca en el camino mas normal.
-        if (showDropdownRef.current && !modalRef.current?.contains(event.target)) {
+        if (
+          showDropdownRef.current &&
+          !modalRef.current?.contains(event.target)
+        ) {
           descartadaRef.current = resultsQueryRef.current;
         }
         openDropdown(false);
@@ -146,7 +166,8 @@ const SendInvitationModalContent = ({
     // clic caia en otro boton. En captura, para seguir cerrando antes que el
     // manejador del destino: una pestana que restaura la lista lo hace despues
     document.addEventListener('click', handleClickOutside, true);
-    return () => document.removeEventListener('click', handleClickOutside, true);
+    return () =>
+      document.removeEventListener('click', handleClickOutside, true);
   }, [openDropdown]);
 
   // Keyboard navigation for dropdown (document-level to avoid focus issues)
@@ -178,7 +199,8 @@ const SendInvitationModalContent = ({
           enfocado.isContentEditable);
       if (escribiendoEnOtroSitio) return;
 
-      if (!showDropdownRef.current || searchResultsRef.current.length === 0) return;
+      if (!showDropdownRef.current || searchResultsRef.current.length === 0)
+        return;
 
       // Las flechas se saltan a quien no se puede elegir; si no hay nadie, no
       // resaltan nada (CodeRabbit)
@@ -295,7 +317,8 @@ const SendInvitationModalContent = ({
     }
 
     // Enviada, el campo queda listo para el siguiente (#710)
-    if (await onSend(trimmedEmail, personalMessage.trim() || null)) setEmail('');
+    if (await onSend(trimmedEmail, personalMessage.trim() || null))
+      setEmail('');
   };
 
   const handleUserSubmit = async (e) => {
@@ -360,7 +383,7 @@ const SendInvitationModalContent = ({
     openDropdown(
       consulta.length >= 2 &&
         resultsQueryRef.current === consulta &&
-        descartadaRef.current !== consulta
+        descartadaRef.current !== consulta,
     );
   };
 
@@ -384,7 +407,12 @@ const SendInvitationModalContent = ({
         className="bg-white rounded-lg shadow-xl w-full max-w-md max-h-[calc(100dvh-2rem)] overflow-y-auto"
       >
         <div className="flex items-center justify-between p-4 border-b border-gray-200">
-          <h2 id="enviar-invitacion-titulo" className="text-lg font-semibold text-gray-900">{t('send.title')}</h2>
+          <h2
+            id="enviar-invitacion-titulo"
+            className="text-lg font-semibold text-gray-900"
+          >
+            {t('send.title')}
+          </h2>
           <button
             onClick={onClose}
             aria-label={t('common:close')}
@@ -402,9 +430,21 @@ const SendInvitationModalContent = ({
             className="flex border-b border-gray-200"
             data-testid="invitation-tabs"
             pestanas={[
-              { id: 'friends', contenido: t('send.tabFriends'), testId: 'tab-friends' },
-              { id: 'search', contenido: t('send.tabSearchUser'), testId: 'tab-search-user' },
-              { id: 'email', contenido: t('send.tabByEmail'), testId: 'tab-by-email' },
+              {
+                id: 'friends',
+                contenido: t('send.tabFriends'),
+                testId: 'tab-friends',
+              },
+              {
+                id: 'search',
+                contenido: t('send.tabSearchUser'),
+                testId: 'tab-search-user',
+              },
+              {
+                id: 'email',
+                contenido: t('send.tabByEmail'),
+                testId: 'tab-by-email',
+              },
             ]}
             claseDePestana={(abierta) =>
               `flex-1 px-4 py-2.5 text-sm font-medium transition-colors ${
@@ -419,24 +459,35 @@ const SendInvitationModalContent = ({
           <PanelDePestana id="friends" className="p-4">
             {cargandoAmigos ? (
               <div className="py-8 text-center" data-testid="friends-loading">
-                <p className="text-sm text-gray-500">{t('send.loadingFriends')}</p>
+                <p className="text-sm text-gray-500">
+                  {t('send.loadingFriends')}
+                </p>
               </div>
             ) : falloAlComprobarSituacion ? (
               // Distinto de no poder cargar los amigos: los amigos están, lo que
               // no se sabe es quién de ellos ya está invitado o dentro. Ofrecerlos
               // igualmente sería ofrecer lo que el servidor va a rechazar
-              <div className="py-8 text-center" data-testid="friends-eligibility-error">
-                <p className="text-sm text-gray-600">{t('send.eligibilityLoadFailed')}</p>
+              <div
+                className="py-8 text-center"
+                data-testid="friends-eligibility-error"
+              >
+                <p className="text-sm text-gray-600">
+                  {t('send.eligibilityLoadFailed')}
+                </p>
               </div>
             ) : falloAlCargarAmigos ? (
               // No es lo mismo que no tener amigos: decirlo sería afirmar lo que
               // no se ha podido preguntar
               <div className="py-8 text-center" data-testid="friends-error">
-                <p className="text-sm text-gray-600">{t('send.friendsLoadFailed')}</p>
+                <p className="text-sm text-gray-600">
+                  {t('send.friendsLoadFailed')}
+                </p>
               </div>
             ) : amigosConSuSituacion.length === 0 ? (
               <div className="py-8 text-center" data-testid="friends-empty">
-                <p className="text-sm text-gray-600 mb-2">{t('send.noFriends')}</p>
+                <p className="text-sm text-gray-600 mb-2">
+                  {t('send.noFriends')}
+                </p>
                 <button
                   type="button"
                   onClick={() => handleTabChange('search')}
@@ -485,10 +536,18 @@ const SendInvitationModalContent = ({
           </PanelDePestana>
 
           {/* Search User Tab */}
-          <PanelDePestana id="search" como="form" onSubmit={handleUserSubmit} className="p-4 space-y-4">
+          <PanelDePestana
+            id="search"
+            como="form"
+            onSubmit={handleUserSubmit}
+            className="p-4 space-y-4"
+          >
             <div>
               {selectedUser ? (
-                <div className="flex items-center gap-2 px-3 py-2 bg-primary/5 border border-primary/20 rounded-md" data-testid="selected-user-chip">
+                <div
+                  className="flex items-center gap-2 px-3 py-2 bg-primary/5 border border-primary/20 rounded-md"
+                  data-testid="selected-user-chip"
+                >
                   <Avatar userId={selectedUser.id} size="sm" />
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-gray-900 truncate">
@@ -498,7 +557,9 @@ const SendInvitationModalContent = ({
                   <button
                     type="button"
                     onClick={handleClearUser}
-                    aria-label={t('common:removeSelected', { name: nombreVisible(selectedUser) })}
+                    aria-label={t('common:removeSelected', {
+                      name: nombreVisible(selectedUser),
+                    })}
                     disabled={isProcessing}
                     className="text-gray-400 hover:text-gray-600 flex-shrink-0"
                     data-testid="clear-selected-user"
@@ -513,17 +574,24 @@ const SendInvitationModalContent = ({
                     <input
                       type="text"
                       value={searchQuery}
-                      onChange={(e) => { cambiaLaBusqueda(e.target.value); setError(''); }}
+                      onChange={(e) => {
+                        cambiaLaBusqueda(e.target.value);
+                        setError('');
+                      }}
                       placeholder={t('send.searchPlaceholder')}
                       disabled={isProcessing}
                       className="w-full pl-9 pr-8 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:opacity-50"
-                                    ref={searchInputRef}
+                      ref={searchInputRef}
                       data-testid="user-search-input"
                       role="combobox"
                       aria-expanded={showDropdown && searchResults.length > 0}
                       aria-haspopup="listbox"
                       aria-controls="user-search-listbox"
-                      aria-activedescendant={highlightedIndex >= 0 ? `search-option-${highlightedIndex}` : undefined}
+                      aria-activedescendant={
+                        highlightedIndex >= 0
+                          ? `search-option-${highlightedIndex}`
+                          : undefined
+                      }
                     />
                     {isSearching && (
                       <Loader className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 animate-spin" />
@@ -531,18 +599,27 @@ const SendInvitationModalContent = ({
                   </div>
 
                   {/* Search hint */}
-                  {searchQuery.trim().length > 0 && searchQuery.trim().length < 2 && (
-                    <p className="text-xs text-gray-400 mt-1">{t('send.searchMinChars')}</p>
-                  )}
+                  {searchQuery.trim().length > 0 &&
+                    searchQuery.trim().length < 2 && (
+                      <p className="text-xs text-gray-400 mt-1">
+                        {t('send.searchMinChars')}
+                      </p>
+                    )}
 
                   {/* Resultados en el flujo y no `absolute`: flotando no ocupaban
                       sitio y asomaban por debajo de la caja (QA, 20 oct) */}
                   {showDropdown && searchResults.length > 0 && (
-                    <div id="user-search-listbox" className="w-full mt-1 bg-white border border-gray-200 rounded-md max-h-48 overflow-y-auto" data-testid="search-results-dropdown" role="listbox">
+                    <div
+                      id="user-search-listbox"
+                      className="w-full mt-1 bg-white border border-gray-200 rounded-md max-h-48 overflow-y-auto"
+                      data-testid="search-results-dropdown"
+                      role="listbox"
+                    >
                       {searchResults.map((user, index) => {
                         // Como en la pestaña de amigos: sale, pero marcado y sin
                         // poder elegirlo, que el servidor lo rechazaría (QA, 26 oct)
-                        const { yaInscrito, yaInvitado, noSePuede } = situacionDe(user.id);
+                        const { yaInscrito, yaInvitado, noSePuede } =
+                          situacionDe(user.id);
                         return (
                           <button
                             key={user.id}
@@ -552,7 +629,9 @@ const SendInvitationModalContent = ({
                             onMouseEnter={() => highlight(index)}
                             disabled={noSePuede}
                             className={`w-full px-3 py-2 text-left transition-colors border-b border-gray-100 last:border-b-0 disabled:cursor-default ${
-                              index === highlightedIndex ? 'bg-blue-100' : 'hover:bg-gray-50'
+                              index === highlightedIndex
+                                ? 'bg-blue-100'
+                                : 'hover:bg-gray-50'
                             }`}
                             role="option"
                             aria-selected={index === highlightedIndex}
@@ -572,7 +651,9 @@ const SendInvitationModalContent = ({
                               <div className="min-w-0 flex-1">
                                 <p
                                   className={`text-sm font-medium truncate ${
-                                    noSePuede ? 'text-gray-400' : 'text-gray-900'
+                                    noSePuede
+                                      ? 'text-gray-400'
+                                      : 'text-gray-900'
                                   }`}
                                 >
                                   {nombreVisible(user)}
@@ -584,9 +665,13 @@ const SendInvitationModalContent = ({
                                 )}
                               </div>
                               {yaInscrito ? (
-                                <span className="shrink-0 text-xs text-gray-500">{t('send.alreadyEnrolled')}</span>
+                                <span className="shrink-0 text-xs text-gray-500">
+                                  {t('send.alreadyEnrolled')}
+                                </span>
                               ) : yaInvitado ? (
-                                <span className="shrink-0 text-xs text-gray-500">{t('send.alreadyInvited')}</span>
+                                <span className="shrink-0 text-xs text-gray-500">
+                                  {t('send.alreadyInvited')}
+                                </span>
                               ) : null}
                             </div>
                           </button>
@@ -596,23 +681,38 @@ const SendInvitationModalContent = ({
                   )}
 
                   {/* No results */}
-                  {showDropdown && searchResults.length === 0 && searchQuery.trim().length >= 2 && !isSearching && (
-                    <p className="text-xs text-gray-500 mt-1" data-testid="no-users-found">{t('send.noUsersFound')}</p>
-                  )}
+                  {showDropdown &&
+                    searchResults.length === 0 &&
+                    searchQuery.trim().length >= 2 &&
+                    !isSearching && (
+                      <p
+                        className="text-xs text-gray-500 mt-1"
+                        data-testid="no-users-found"
+                      >
+                        {t('send.noUsersFound')}
+                      </p>
+                    )}
                 </div>
               )}
 
               {searchFailed && (
-                <p role="alert" className="text-sm text-red-600 mt-1" data-testid="search-error">{t('send.searchFailed')}</p>
+                <p
+                  role="alert"
+                  className="text-sm text-red-600 mt-1"
+                  data-testid="search-error"
+                >
+                  {t('send.searchFailed')}
+                </p>
               )}
 
-              {error && (
-                <p className="text-sm text-red-600 mt-1">{error}</p>
-              )}
+              {error && <p className="text-sm text-red-600 mt-1">{error}</p>}
             </div>
 
             <div>
-              <label htmlFor="invitation-message-search" className="block text-sm font-medium text-gray-700 mb-1">
+              <label
+                htmlFor="invitation-message-search"
+                className="block text-sm font-medium text-gray-700 mb-1"
+              >
                 {t('send.personalMessage')}
               </label>
               <textarea
@@ -652,9 +752,17 @@ const SendInvitationModalContent = ({
           </PanelDePestana>
 
           {/* By Email Tab */}
-          <PanelDePestana id="email" como="form" onSubmit={handleEmailSubmit} className="p-4 space-y-4">
+          <PanelDePestana
+            id="email"
+            como="form"
+            onSubmit={handleEmailSubmit}
+            className="p-4 space-y-4"
+          >
             <div>
-              <label htmlFor="invitation-email" className="block text-sm font-medium text-gray-700 mb-1">
+              <label
+                htmlFor="invitation-email"
+                className="block text-sm font-medium text-gray-700 mb-1"
+              >
                 {t('send.emailLabel')}
               </label>
               <input
@@ -662,19 +770,23 @@ const SendInvitationModalContent = ({
                 type="email"
                 required
                 value={email}
-                onChange={(e) => { setEmail(e.target.value); setError(''); }}
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                  setError('');
+                }}
                 placeholder={t('send.emailPlaceholder')}
                 disabled={isProcessing}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:opacity-50"
                 data-testid="invitation-email-input"
               />
-              {error && (
-                <p className="text-sm text-red-600 mt-1">{error}</p>
-              )}
+              {error && <p className="text-sm text-red-600 mt-1">{error}</p>}
             </div>
 
             <div>
-              <label htmlFor="invitation-message-email" className="block text-sm font-medium text-gray-700 mb-1">
+              <label
+                htmlFor="invitation-message-email"
+                className="block text-sm font-medium text-gray-700 mb-1"
+              >
                 {t('send.personalMessage')}
               </label>
               <textarea

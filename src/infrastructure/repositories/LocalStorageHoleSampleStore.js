@@ -13,12 +13,26 @@ const MAX_MIAS = 500;
 
 // Lo que dejaron versiones anteriores y ya nadie lee: las marcas por jugador
 // (que no llegaron a salir), las muestras sin barra y el resumen por barra
-const PREFIJOS_VIEJOS = ['marcasDeHoyos:v1:', 'muestrasDeHoyos:v1:', 'muestrasPendientes:v1:', 'muestrasDeHoyos:v2:'];
+const PREFIJOS_VIEJOS = [
+  'marcasDeHoyos:v1:',
+  'muestrasDeHoyos:v1:',
+  'muestrasPendientes:v1:',
+  'muestrasDeHoyos:v2:',
+];
 
-const esObjeto = (valor) => Boolean(valor) && typeof valor === 'object' && !Array.isArray(valor);
+const esObjeto = (valor) =>
+  Boolean(valor) && typeof valor === 'object' && !Array.isArray(valor);
 const esEntrada = (e) =>
-  esObjeto(e) && Boolean(e.id) && Boolean(e.golfCourseId) && Number.isInteger(e.holeNumber) && Boolean(e.barra?.color) && Boolean(e.enCola);
-const delMismoSitio = (a, b) => a.golfCourseId === b.golfCourseId && a.holeNumber === b.holeNumber && esLaMismaBarra(a.barra, b.barra);
+  esObjeto(e) &&
+  Boolean(e.id) &&
+  Boolean(e.golfCourseId) &&
+  Number.isInteger(e.holeNumber) &&
+  Boolean(e.barra?.color) &&
+  Boolean(e.enCola);
+const delMismoSitio = (a, b) =>
+  a.golfCourseId === b.golfCourseId &&
+  a.holeNumber === b.holeNumber &&
+  esLaMismaBarra(a.barra, b.barra);
 // La misma versión de la misma muestra: si se cambió (mismo id, otra hora), es otra
 const misma = (a, b) => a.id === b.id && a.enCola === b.enCola;
 
@@ -36,7 +50,8 @@ const olvidarLoViejo = () => {
     const viejas = [];
     for (let i = 0; i < almacen.length; i += 1) {
       const clave = almacen.key(i);
-      if (PREFIJOS_VIEJOS.some((prefijo) => clave?.startsWith(prefijo))) viejas.push(clave);
+      if (PREFIJOS_VIEJOS.some((prefijo) => clave?.startsWith(prefijo)))
+        viejas.push(clave);
     }
     for (const clave of viejas) almacen.removeItem(clave);
   } catch {
@@ -57,7 +72,8 @@ class LocalStorageHoleSampleStore extends IHoleSampleStore {
   }
 
   leer(clave) {
-    if (this.enMemoria.has(clave)) return globalThis.structuredClone(this.enMemoria.get(clave));
+    if (this.enMemoria.has(clave))
+      return globalThis.structuredClone(this.enMemoria.get(clave));
     return leer(clave);
   }
 
@@ -95,7 +111,9 @@ class LocalStorageHoleSampleStore extends IHoleSampleStore {
     // se cambia donde estaba. Otra del mismo hoyo y barra: solo vale la última
     const nueva =
       suSitio >= 0
-        ? cola.map((otra, i) => (i === suSitio ? entrada : otra)).filter((otra, i) => i === suSitio || !delMismoSitio(otra, entrada))
+        ? cola
+            .map((otra, i) => (i === suSitio ? entrada : otra))
+            .filter((otra, i) => i === suSitio || !delMismoSitio(otra, entrada))
         : [...cola.filter((otra) => !delMismoSitio(otra, entrada)), entrada];
     this.escribir(claveDeLaCola(userId), nueva);
   }
@@ -111,8 +129,18 @@ class LocalStorageHoleSampleStore extends IHoleSampleStore {
     const mias = this.mias(userId);
     // Si dos versiones salieron a la vez, la más vieja no pisa a la nueva
     // (como instantes: dos ISO con distinto desfase no se ordenan como texto)
-    if (mias.some((otra) => delMismoSitio(otra, entrada) && Date.parse(otra.enCola) > Date.parse(entrada.enCola))) return;
-    const nuevas = [...mias.filter((otra) => !delMismoSitio(otra, entrada)), entrada];
+    if (
+      mias.some(
+        (otra) =>
+          delMismoSitio(otra, entrada) &&
+          Date.parse(otra.enCola) > Date.parse(entrada.enCola),
+      )
+    )
+      return;
+    const nuevas = [
+      ...mias.filter((otra) => !delMismoSitio(otra, entrada)),
+      entrada,
+    ];
     this.escribir(claveDeLasMias(userId), nuevas.slice(-MAX_MIAS));
   }
 

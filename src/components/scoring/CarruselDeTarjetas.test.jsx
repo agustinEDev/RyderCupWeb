@@ -9,27 +9,51 @@ import CarruselDeTarjetas from './CarruselDeTarjetas';
  * que dicen en cuál estás.
  */
 const TARJETAS = [
-  { clave: 'nacho', nombre: 'Nacho', equipo: 'A', contenido: <p>tarjeta de Nacho</p> },
-  { clave: 'luna', nombre: 'Luna', equipo: 'B', contenido: <p>tarjeta de Luna</p> },
-  { clave: 'oscar', nombre: 'Óscar', equipo: 'B', contenido: <p>tarjeta de Óscar</p> },
+  {
+    clave: 'nacho',
+    nombre: 'Nacho',
+    equipo: 'A',
+    contenido: <p>tarjeta de Nacho</p>,
+  },
+  {
+    clave: 'luna',
+    nombre: 'Luna',
+    equipo: 'B',
+    contenido: <p>tarjeta de Luna</p>,
+  },
+  {
+    clave: 'oscar',
+    nombre: 'Óscar',
+    equipo: 'B',
+    contenido: <p>tarjeta de Óscar</p>,
+  },
 ];
 
 // jsdom no maqueta: el ancho de cada tarjeta se fija a mano
 const conAncho = (ancho = 320) => {
   const carril = screen.getByTestId('carril-de-tarjetas');
-  Object.defineProperty(carril, 'clientWidth', { configurable: true, value: ancho });
+  Object.defineProperty(carril, 'clientWidth', {
+    configurable: true,
+    value: ancho,
+  });
   carril.scrollTo = vi.fn();
   return carril;
 };
 
 const marcado = () =>
-  screen.getAllByRole('tab').findIndex((b) => b.getAttribute('aria-selected') === 'true');
+  screen
+    .getAllByRole('tab')
+    .findIndex((b) => b.getAttribute('aria-selected') === 'true');
 
 describe('CarruselDeTarjetas', () => {
   it('K1: un nombre y una tarjeta por participante, la primera marcada', () => {
     render(<CarruselDeTarjetas tarjetas={TARJETAS} />);
 
-    expect(screen.getAllByRole('tab').map((b) => b.textContent)).toEqual(['Nacho', 'Luna', 'Óscar']);
+    expect(screen.getAllByRole('tab').map((b) => b.textContent)).toEqual([
+      'Nacho',
+      'Luna',
+      'Óscar',
+    ]);
     expect(screen.getAllByRole('tabpanel')).toHaveLength(3);
     expect(screen.getByText('tarjeta de Luna')).toBeInTheDocument();
     expect(marcado()).toBe(0);
@@ -42,7 +66,9 @@ describe('CarruselDeTarjetas', () => {
     fireEvent.click(screen.getByRole('tab', { name: 'Óscar' }));
 
     expect(marcado()).toBe(2);
-    expect(carril.scrollTo).toHaveBeenCalledWith(expect.objectContaining({ left: 640 }));
+    expect(carril.scrollTo).toHaveBeenCalledWith(
+      expect.objectContaining({ left: 640 }),
+    );
   });
 
   it('K3: deslizar con el dedo marca la tarjeta a la que se llega, con su punto', () => {
@@ -54,7 +80,11 @@ describe('CarruselDeTarjetas', () => {
 
     expect(marcado()).toBe(1);
     const puntos = screen.getAllByTestId(/^punto-/);
-    expect(puntos.map((p) => p.dataset.activo)).toEqual(['false', 'true', 'false']);
+    expect(puntos.map((p) => p.dataset.activo)).toEqual([
+      'false',
+      'true',
+      'false',
+    ]);
   });
 
   it('K4: con las flechas del teclado se pasa a la siguiente y a la anterior', () => {
@@ -111,7 +141,7 @@ describe('CarruselDeTarjetas', () => {
       <>
         <CarruselDeTarjetas tarjetas={TARJETAS} />
         <CarruselDeTarjetas tarjetas={TARJETAS} />
-      </>
+      </>,
     );
 
     const ids = screen.getAllByRole('tab').map((b) => b.id);
@@ -121,13 +151,17 @@ describe('CarruselDeTarjetas', () => {
   it('K10 (FE #658): con una sola tarjeta, sin nombres arriba, sigue nombrada', () => {
     render(<CarruselDeTarjetas tarjetas={[TARJETAS[0]]} />);
 
-    expect(screen.getByRole('tabpanel', { name: 'Nacho' })).not.toHaveAttribute('aria-labelledby');
+    expect(screen.getByRole('tabpanel', { name: 'Nacho' })).not.toHaveAttribute(
+      'aria-labelledby',
+    );
   });
 
   describe('dónde arranca, y que el sondeo no lo mueva (T6)', () => {
     // El ancho, ANTES de montar: el arranque se coloca en el montaje
     const anchoAntesDeMontar = (ancho = 320) =>
-      vi.spyOn(globalThis.Element.prototype, 'clientWidth', 'get').mockReturnValue(ancho);
+      vi
+        .spyOn(globalThis.Element.prototype, 'clientWidth', 'get')
+        .mockReturnValue(ancho);
     const carril = () => screen.getByTestId('carril-de-tarjetas');
 
     afterEach(() => {
@@ -145,7 +179,9 @@ describe('CarruselDeTarjetas', () => {
 
     it('T6-11: deslizado a otra tarjeta, el sondeo (tarjetas nuevas u otra inicial) no lo recoloca', () => {
       anchoAntesDeMontar(320);
-      const { rerender } = render(<CarruselDeTarjetas tarjetas={TARJETAS} inicial="luna" />);
+      const { rerender } = render(
+        <CarruselDeTarjetas tarjetas={TARJETAS} inicial="luna" />,
+      );
       carril().scrollTo = vi.fn();
 
       // A Nacho, con el dedo
@@ -155,7 +191,12 @@ describe('CarruselDeTarjetas', () => {
 
       const deNuevo = TARJETAS.map((t) => ({ ...t }));
       rerender(<CarruselDeTarjetas tarjetas={deNuevo} inicial="luna" />);
-      rerender(<CarruselDeTarjetas tarjetas={deNuevo.map((t) => ({ ...t }))} inicial="oscar" />);
+      rerender(
+        <CarruselDeTarjetas
+          tarjetas={deNuevo.map((t) => ({ ...t }))}
+          inicial="oscar"
+        />,
+      );
 
       expect(carril().scrollLeft).toBe(0);
       expect(carril().scrollTo).not.toHaveBeenCalled();

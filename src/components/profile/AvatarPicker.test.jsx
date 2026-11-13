@@ -9,7 +9,12 @@ vi.mock('react-i18next', () => ({
 }));
 
 const baseProps = {
-  user: { id: 'user-1', avatar_source: 'NONE', avatar_preset_id: null, updated_at: '2026-07-29' },
+  user: {
+    id: 'user-1',
+    avatar_source: 'NONE',
+    avatar_preset_id: null,
+    updated_at: '2026-07-29',
+  },
   presets: [
     { id: 1, image_url: '/api/v1/avatar-presets/1/image' },
     { id: 2, image_url: '/api/v1/avatar-presets/2/image' },
@@ -28,14 +33,18 @@ const baseProps = {
 describe('AvatarPicker', () => {
   it('shows a loading state while options are loading', () => {
     render(<AvatarPicker {...baseProps} isLoadingOptions={true} />);
-    expect(screen.queryByRole('button', { name: /uploadButton/i })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: /uploadButton/i }),
+    ).not.toBeInTheDocument();
   });
 
   it('renders all presets and lets the user pick one', () => {
     const onSelectPreset = vi.fn();
     render(<AvatarPicker {...baseProps} onSelectPreset={onSelectPreset} />);
 
-    const presetButtons = screen.getAllByRole('button').filter((b) => b.querySelector('img'));
+    const presetButtons = screen
+      .getAllByRole('button')
+      .filter((b) => b.querySelector('img'));
     expect(presetButtons).toHaveLength(2);
 
     fireEvent.click(presetButtons[1]);
@@ -51,7 +60,11 @@ describe('AvatarPicker', () => {
     render(
       <AvatarPicker
         {...baseProps}
-        user={{ ...baseProps.user, avatar_source: 'PRESET', avatar_preset_id: 1 }}
+        user={{
+          ...baseProps.user,
+          avatar_source: 'PRESET',
+          avatar_preset_id: 1,
+        }}
       />,
     );
     expect(screen.getByText('edit.avatar.remove')).toBeInTheDocument();
@@ -62,7 +75,11 @@ describe('AvatarPicker', () => {
     render(
       <AvatarPicker
         {...baseProps}
-        user={{ ...baseProps.user, avatar_source: 'PRESET', avatar_preset_id: 1 }}
+        user={{
+          ...baseProps.user,
+          avatar_source: 'PRESET',
+          avatar_preset_id: 1,
+        }}
         onRemove={onRemove}
       />,
     );
@@ -74,12 +91,25 @@ describe('AvatarPicker', () => {
   it('renders the upload history and lets the user reactivate a photo', () => {
     const onActivateUpload = vi.fn();
     const uploads = [
-      { id: 'upload-1', created_at: '2026-07-01', is_active: false, image_url: '/api/v1/users/me/avatar/uploads/upload-1/image' },
+      {
+        id: 'upload-1',
+        created_at: '2026-07-01',
+        is_active: false,
+        image_url: '/api/v1/users/me/avatar/uploads/upload-1/image',
+      },
     ];
-    render(<AvatarPicker {...baseProps} uploads={uploads} onActivateUpload={onActivateUpload} />);
+    render(
+      <AvatarPicker
+        {...baseProps}
+        uploads={uploads}
+        onActivateUpload={onActivateUpload}
+      />,
+    );
 
     expect(screen.getByText('edit.avatar.historyLabel')).toBeInTheDocument();
-    const historyButton = screen.getAllByRole('button').find((b) => b.querySelector('img[src*="upload-1"]'));
+    const historyButton = screen
+      .getAllByRole('button')
+      .find((b) => b.querySelector('img[src*="upload-1"]'));
     fireEvent.click(historyButton);
     expect(onActivateUpload).toHaveBeenCalledWith('upload-1');
   });
@@ -117,17 +147,31 @@ describe('AvatarPicker', () => {
           { id: 2, image_url: '/api/v1/avatar-presets/2/image' },
         ]}
         uploads={[
-          { id: 'u-1', created_at: '2026-07-01', is_active: false, image_url: '//evil.example/api/v1/x' },
-          { id: 'u-2', created_at: '2026-07-02', is_active: false, image_url: '/api/v1/users/me/avatar/uploads/u-2/image' },
+          {
+            id: 'u-1',
+            created_at: '2026-07-01',
+            is_active: false,
+            image_url: '//evil.example/api/v1/x',
+          },
+          {
+            id: 'u-2',
+            created_at: '2026-07-02',
+            is_active: false,
+            image_url: '/api/v1/users/me/avatar/uploads/u-2/image',
+          },
         ]}
       />,
     );
 
-    const fuentes = [...document.querySelectorAll('img')].map((img) => img.getAttribute('src'));
+    const fuentes = [...document.querySelectorAll('img')].map((img) =>
+      img.getAttribute('src'),
+    );
     expect(fuentes.some((f) => /evil/.test(f ?? ''))).toBe(false);
     expect(fuentes).toContain('/api/v1/avatar-presets/2/image');
     expect(fuentes).toContain('/api/v1/users/me/avatar/uploads/u-2/image');
     // Los dos sin imagen siguen ahí para elegirlos
-    expect(screen.getAllByRole('button').filter((b) => b.querySelector('img'))).toHaveLength(2);
+    expect(
+      screen.getAllByRole('button').filter((b) => b.querySelector('img')),
+    ).toHaveLength(2);
   });
 });

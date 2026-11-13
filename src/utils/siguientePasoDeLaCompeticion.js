@@ -19,11 +19,12 @@
  */
 export const siguientePasoDeLaCompeticion = (
   competition,
-  { puedeGestionar = true, inscritos } = {}
+  { puedeGestionar = true, inscritos } = {},
 ) => {
   if (!competition) return null;
 
-  const { status, setupMode, teamsAssigned, captains, maxPlayers, hasTeams } = competition;
+  const { status, setupMode, teamsAssigned, captains, maxPlayers, hasTeams } =
+    competition;
   // Capitanes, draft y equipos son de la Ryder: a un torneo sin su pieza no se
   // le ofrecen (FE #791)
   const conEquipos = hasTeams;

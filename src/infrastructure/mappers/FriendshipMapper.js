@@ -20,9 +20,14 @@ class FriendshipMapper {
       throw new Error('FriendshipMapper.toDomain: apiData is required');
     }
 
-    if (!apiData.id || !apiData.requester_id || !apiData.addressee_id || !apiData.status) {
+    if (
+      !apiData.id ||
+      !apiData.requester_id ||
+      !apiData.addressee_id ||
+      !apiData.status
+    ) {
       throw new Error(
-        'FriendshipMapper.toDomain: Missing required fields (id, requester_id, addressee_id, status)'
+        'FriendshipMapper.toDomain: Missing required fields (id, requester_id, addressee_id, status)',
       );
     }
 
@@ -31,7 +36,9 @@ class FriendshipMapper {
       requesterId: apiData.requester_id,
       addresseeId: apiData.addressee_id,
       status: FriendshipStatus.fromString(apiData.status),
-      respondedAt: apiData.responded_at ? instanteDeLaApi(apiData.responded_at) : null,
+      respondedAt: apiData.responded_at
+        ? instanteDeLaApi(apiData.responded_at)
+        : null,
       createdAt: apiData.created_at && instanteDeLaApi(apiData.created_at),
       updatedAt: apiData.updated_at && instanteDeLaApi(apiData.updated_at),
     });
@@ -45,7 +52,9 @@ class FriendshipMapper {
    */
   static toDomainMany(apiDataArray) {
     if (!Array.isArray(apiDataArray)) {
-      throw new Error('FriendshipMapper.toDomainMany: apiDataArray must be an array');
+      throw new Error(
+        'FriendshipMapper.toDomainMany: apiDataArray must be an array',
+      );
     }
 
     return apiDataArray.map((apiData) => FriendshipMapper.toDomain(apiData));

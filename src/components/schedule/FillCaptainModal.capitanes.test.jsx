@@ -9,7 +9,8 @@ import FillCaptainModal from './FillCaptainModal';
  * en la lista del reparto, pero ya no puede capitanear nada.
  */
 vi.mock('../ui/ModalShell', () => ({
-  default: ({ children, isOpen }) => (isOpen ? <div role="dialog">{children}</div> : null),
+  default: ({ children, isOpen }) =>
+    isOpen ? <div role="dialog">{children}</div> : null,
 }));
 
 const t = (clave, params) => (params?.team ? `${clave}_${params.team}` : clave);
@@ -31,7 +32,7 @@ const pintar = (props = {}) =>
       isLoading={false}
       t={t}
       {...props}
-    />
+    />,
   );
 
 const dialogo = () => screen.getByRole('dialog');
@@ -40,19 +41,27 @@ describe('FillCaptainModal (FE #692)', () => {
   it('C1: ofrece a los del equipo y dice de qué equipo se trata', () => {
     pintar();
 
-    expect(within(dialogo()).getByText('teams.fillCaptainTitle_Europa')).toBeInTheDocument();
+    expect(
+      within(dialogo()).getByText('teams.fillCaptainTitle_Europa'),
+    ).toBeInTheDocument();
     const opciones = within(within(dialogo()).getByRole('combobox'))
       .getAllByRole('option')
       .map((o) => o.textContent);
-    expect(opciones).toEqual(expect.arrayContaining(['Carla Cruz', 'Dani Díaz']));
+    expect(opciones).toEqual(
+      expect.arrayContaining(['Carla Cruz', 'Dani Díaz']),
+    );
   });
 
   it('C2: no se confirma hasta elegir a alguien', () => {
     pintar();
-    const boton = within(dialogo()).getByRole('button', { name: 'teams.fillCaptainConfirm' });
+    const boton = within(dialogo()).getByRole('button', {
+      name: 'teams.fillCaptainConfirm',
+    });
 
     expect(boton).toBeDisabled();
-    fireEvent.change(within(dialogo()).getByRole('combobox'), { target: { value: 'dani' } });
+    fireEvent.change(within(dialogo()).getByRole('combobox'), {
+      target: { value: 'dani' },
+    });
     expect(boton).toBeEnabled();
   });
 
@@ -60,8 +69,14 @@ describe('FillCaptainModal (FE #692)', () => {
     const onConfirm = vi.fn();
     pintar({ onConfirm });
 
-    fireEvent.change(within(dialogo()).getByRole('combobox'), { target: { value: 'carla' } });
-    fireEvent.click(within(dialogo()).getByRole('button', { name: 'teams.fillCaptainConfirm' }));
+    fireEvent.change(within(dialogo()).getByRole('combobox'), {
+      target: { value: 'carla' },
+    });
+    fireEvent.click(
+      within(dialogo()).getByRole('button', {
+        name: 'teams.fillCaptainConfirm',
+      }),
+    );
 
     expect(onConfirm).toHaveBeenCalledWith('carla');
   });
@@ -70,7 +85,13 @@ describe('FillCaptainModal (FE #692)', () => {
     // Todo el equipo se retiró: elegir «nadie» mandaría un capitán inventado
     pintar({ players: [] });
 
-    expect(within(dialogo()).getByText('teams.fillCaptainNobody')).toBeInTheDocument();
-    expect(within(dialogo()).getByRole('button', { name: 'teams.fillCaptainConfirm' })).toBeDisabled();
+    expect(
+      within(dialogo()).getByText('teams.fillCaptainNobody'),
+    ).toBeInTheDocument();
+    expect(
+      within(dialogo()).getByRole('button', {
+        name: 'teams.fillCaptainConfirm',
+      }),
+    ).toBeDisabled();
   });
 });

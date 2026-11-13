@@ -6,12 +6,19 @@ import ModalShell, { CAJA_PROPIA } from './ModalShell';
 
 const abrir = (props = {}) =>
   render(
-    <ModalShell isOpen onClose={props.onClose ?? vi.fn()} testId="modal" labelledBy="t" describedBy="d" {...props}>
+    <ModalShell
+      isOpen
+      onClose={props.onClose ?? vi.fn()}
+      testId="modal"
+      labelledBy="t"
+      describedBy="d"
+      {...props}
+    >
       <h2 id="t">Título</h2>
       <p id="d">Explicación</p>
       <button>Primero</button>
       <button>Último</button>
-    </ModalShell>
+    </ModalShell>,
   );
 
 // Cerrar por el fondo es un gesto completo: pulsar y soltar ahí. `fireEvent.click`
@@ -27,7 +34,7 @@ describe('ModalShell', () => {
     render(
       <ModalShell isOpen={false} onClose={vi.fn()} testId="modal">
         <button>Dentro</button>
-      </ModalShell>
+      </ModalShell>,
     );
 
     expect(screen.queryByTestId('modal')).not.toBeInTheDocument();
@@ -190,11 +197,18 @@ describe('ModalShell', () => {
     document.body.appendChild(fuera);
 
     render(
-      <ModalShell isOpen onClose={vi.fn()} testId="ocupado" closeOnEscape={false} closeOnBackdrop={false} busy>
+      <ModalShell
+        isOpen
+        onClose={vi.fn()}
+        testId="ocupado"
+        closeOnEscape={false}
+        closeOnBackdrop={false}
+        busy
+      >
         <p>Enviando</p>
         <button disabled>Cancelar</button>
         <button disabled>Enviar</button>
-      </ModalShell>
+      </ModalShell>,
     );
 
     const caja = screen.getByTestId('ocupado').firstChild;
@@ -220,10 +234,14 @@ describe('ModalShell', () => {
    */
   it('devuelve el desplazamiento aunque dos diálogos se solapen', () => {
     const primero = render(
-      <ModalShell isOpen onClose={vi.fn()} testId="uno"><button>A</button></ModalShell>
+      <ModalShell isOpen onClose={vi.fn()} testId="uno">
+        <button>A</button>
+      </ModalShell>,
     );
     const segundo = render(
-      <ModalShell isOpen onClose={vi.fn()} testId="dos"><button>B</button></ModalShell>
+      <ModalShell isOpen onClose={vi.fn()} testId="dos">
+        <button>B</button>
+      </ModalShell>,
     );
     expect(document.body.style.overflow).toBe('hidden');
 
@@ -244,10 +262,14 @@ describe('ModalShell', () => {
     disparador.focus();
 
     const abajo = render(
-      <ModalShell isOpen onClose={vi.fn()} testId="abajo"><button>Abajo</button></ModalShell>
+      <ModalShell isOpen onClose={vi.fn()} testId="abajo">
+        <button>Abajo</button>
+      </ModalShell>,
     );
     render(
-      <ModalShell isOpen onClose={vi.fn()} testId="arriba"><button>Arriba</button></ModalShell>
+      <ModalShell isOpen onClose={vi.fn()} testId="arriba">
+        <button>Arriba</button>
+      </ModalShell>,
     );
     expect(document.activeElement).toBe(screen.getByText('Arriba'));
 
@@ -264,7 +286,13 @@ describe('ModalShell', () => {
     abrir();
 
     const caja = screen.getByText('Título').parentElement;
-    expect(caja).toHaveClass('bg-white', 'rounded-lg', 'shadow-xl', 'max-w-md', 'p-6');
+    expect(caja).toHaveClass(
+      'bg-white',
+      'rounded-lg',
+      'shadow-xl',
+      'max-w-md',
+      'p-6',
+    );
   });
 
   it('M2: con `boxClassName`, esa caja y no la de siempre', () => {
@@ -291,7 +319,6 @@ describe('ModalShell', () => {
   });
 });
 
-
 // Con carga, los tests de los modales de admin fallaban de vez en cuando: la
 // página se volvía a pintar, la escucha del teclado se soltaba y se volvía a
 // poner —`onClose` es una función nueva en cada render— y un Escape que caía
@@ -311,8 +338,12 @@ describe('ModalShell · la escucha del teclado no se suelta al volver a pintar',
 
     rerender(caja(() => {}));
 
-    expect(quita.mock.calls.filter(([tipo]) => tipo === 'keydown')).toHaveLength(0);
-    expect(pone.mock.calls.filter(([tipo]) => tipo === 'keydown')).toHaveLength(0);
+    expect(
+      quita.mock.calls.filter(([tipo]) => tipo === 'keydown'),
+    ).toHaveLength(0);
+    expect(pone.mock.calls.filter(([tipo]) => tipo === 'keydown')).toHaveLength(
+      0,
+    );
     quita.mockRestore();
     pone.mockRestore();
   });
@@ -369,7 +400,9 @@ describe('ModalShell · la escucha del teclado no se suelta al volver a pintar',
         const vigia = new globalThis.MutationObserver(() => {
           if (!sitio.querySelector('[role="dialog"]')) return;
           vigia.disconnect();
-          document.dispatchEvent(new globalThis.KeyboardEvent('keydown', { key: 'Escape' }));
+          document.dispatchEvent(
+            new globalThis.KeyboardEvent('keydown', { key: 'Escape' }),
+          );
           resolve();
         });
         vigia.observe(sitio, { childList: true, subtree: true });
@@ -387,7 +420,10 @@ describe('ModalShell · la escucha del teclado no se suelta al volver a pintar',
   it('F2 · como hoja inferior, en el móvil va pegada abajo y en el ordenador al centro', () => {
     abrir({ hojaInferior: true });
 
-    expect(screen.getByTestId('modal')).toHaveClass('items-end', 'md:items-center');
+    expect(screen.getByTestId('modal')).toHaveClass(
+      'items-end',
+      'md:items-center',
+    );
     expect(screen.getByTestId('modal')).not.toHaveClass('items-center');
   });
 });
@@ -399,10 +435,15 @@ describe('ModalShell · dos diálogos, uno encima del otro', () => {
     const cerrarAbajo = vi.fn();
     const cerrarArriba = vi.fn();
     render(
-      <ModalShell isOpen onClose={cerrarAbajo} testId="abajo"><button>Abajo</button></ModalShell>
+      <ModalShell isOpen onClose={cerrarAbajo} testId="abajo">
+        <button>Abajo</button>
+      </ModalShell>,
     );
     render(
-      <ModalShell isOpen onClose={cerrarArriba} testId="arriba"><button>Arriba 1</button><button>Arriba 2</button></ModalShell>
+      <ModalShell isOpen onClose={cerrarArriba} testId="arriba">
+        <button>Arriba 1</button>
+        <button>Arriba 2</button>
+      </ModalShell>,
     );
     return { cerrarAbajo, cerrarArriba };
   };
@@ -427,10 +468,14 @@ describe('ModalShell · dos diálogos, uno encima del otro', () => {
   it('P3 · al cerrarse el de encima, vuelve a mandar el de debajo', () => {
     const cerrarAbajo = vi.fn();
     render(
-      <ModalShell isOpen onClose={cerrarAbajo} testId="abajo"><button>Abajo</button></ModalShell>
+      <ModalShell isOpen onClose={cerrarAbajo} testId="abajo">
+        <button>Abajo</button>
+      </ModalShell>,
     );
     const arriba = render(
-      <ModalShell isOpen onClose={vi.fn()} testId="arriba"><button>Arriba</button></ModalShell>
+      <ModalShell isOpen onClose={vi.fn()} testId="arriba">
+        <button>Arriba</button>
+      </ModalShell>,
     );
     arriba.unmount();
 

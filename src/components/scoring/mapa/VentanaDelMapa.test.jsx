@@ -4,16 +4,24 @@ import { render, screen, fireEvent, act } from '@testing-library/react';
 vi.mock('react-i18next', () => ({ useTranslation: () => ({ t: (k) => k }) }));
 vi.mock('../../../utils/sentryHelpers', () => ({ captureError: vi.fn() }));
 const recarga = vi.hoisted(() => ({ enCurso: false }));
-vi.mock('../../../utils/recargaPorTrozoViejo', () => ({ esElEcoDeLaRecarga: () => recarga.enCurso }));
+vi.mock('../../../utils/recargaPorTrozoViejo', () => ({
+  esElEcoDeLaRecarga: () => recarga.enCurso,
+}));
 const toastFalso = vi.hoisted(() => ({ error: vi.fn(), success: vi.fn() }));
 vi.mock('react-hot-toast', () => ({ default: toastFalso }));
 
-const carga = vi.hoisted(() => ({ falla: false, suspende: false, props: null, montajes: 0 }));
+const carga = vi.hoisted(() => ({
+  falla: false,
+  suspende: false,
+  props: null,
+  montajes: 0,
+}));
 vi.mock('./MapaDelHoyo', async () => {
   const { useState } = await vi.importActual('react');
   const MapaFalso = (props) => {
     if (carga.suspende) throw new Promise(() => {});
-    if (carga.falla) throw new Error('Failed to fetch dynamically imported module');
+    if (carga.falla)
+      throw new Error('Failed to fetch dynamically imported module');
     useState(() => {
       carga.montajes += 1;
     });
@@ -23,11 +31,20 @@ vi.mock('./MapaDelHoyo', async () => {
   return { default: MapaFalso };
 });
 
-const lasMuestras = vi.hoisted(() => ({ muestras: {}, pendientes: {}, enviar: null, args: null }));
+const lasMuestras = vi.hoisted(() => ({
+  muestras: {},
+  pendientes: {},
+  enviar: null,
+  args: null,
+}));
 vi.mock('../../../hooks/useMuestrasDelCampo', () => ({
   useMuestrasDelCampo: (args) => {
     lasMuestras.args = args;
-    return { muestras: lasMuestras.muestras, pendientes: lasMuestras.pendientes, enviar: lasMuestras.enviar };
+    return {
+      muestras: lasMuestras.muestras,
+      pendientes: lasMuestras.pendientes,
+      enviar: lasMuestras.enviar,
+    };
   },
 }));
 
@@ -48,7 +65,10 @@ const GREEN = { front: {}, center: {}, back: {} };
 const estado = (extra = {}) => ({
   abierto: true,
   cerrar: vi.fn(),
-  mapaDelCampo: { attribution: '© OpenStreetMap contributors (ODbL)', holes: { 3: { playLine: [], green: GREEN } } },
+  mapaDelCampo: {
+    attribution: '© OpenStreetMap contributors (ODbL)',
+    holes: { 3: { playLine: [], green: GREEN } },
+  },
   ...extra,
 });
 
@@ -61,7 +81,14 @@ describe('VentanaDelMapa', () => {
   });
 
   it('cerrado, nada', () => {
-    const { container } = render(<VentanaDelMapa mapaDelHoyo={estado({ abierto: false })} golfCourseId="gc-1" numeroDeHoyo={3} par={4} />);
+    const { container } = render(
+      <VentanaDelMapa
+        mapaDelHoyo={estado({ abierto: false })}
+        golfCourseId="gc-1"
+        numeroDeHoyo={3}
+        par={4}
+      />,
+    );
 
     expect(container).toBeEmptyDOMElement();
   });
@@ -69,7 +96,14 @@ describe('VentanaDelMapa', () => {
   it('A4: abierto, carga el mapa con los datos de ESE hoyo', async () => {
     const mapaDelHoyo = estado();
 
-    render(<VentanaDelMapa mapaDelHoyo={mapaDelHoyo} golfCourseId="gc-1" numeroDeHoyo={3} par={4} />);
+    render(
+      <VentanaDelMapa
+        mapaDelHoyo={mapaDelHoyo}
+        golfCourseId="gc-1"
+        numeroDeHoyo={3}
+        par={4}
+      />,
+    );
 
     expect(await screen.findByTestId('mapa-del-hoyo')).toBeInTheDocument();
     expect(carga.props).toMatchObject({
@@ -83,7 +117,14 @@ describe('VentanaDelMapa', () => {
   });
 
   it('sin mapa del campo, el hoyo va como sin mapa', async () => {
-    render(<VentanaDelMapa mapaDelHoyo={estado({ mapaDelCampo: null })} golfCourseId="gc-1" numeroDeHoyo={3} par={4} />);
+    render(
+      <VentanaDelMapa
+        mapaDelHoyo={estado({ mapaDelCampo: null })}
+        golfCourseId="gc-1"
+        numeroDeHoyo={3}
+        par={4}
+      />,
+    );
 
     await screen.findByTestId('mapa-del-hoyo');
     expect(carga.props).toMatchObject({ hoyo: null, atribucion: null });
@@ -94,7 +135,14 @@ describe('VentanaDelMapa', () => {
     vi.spyOn(console, 'error').mockImplementation(() => {});
     const mapaDelHoyo = estado();
 
-    render(<VentanaDelMapa mapaDelHoyo={mapaDelHoyo} golfCourseId="gc-1" numeroDeHoyo={3} par={4} />);
+    render(
+      <VentanaDelMapa
+        mapaDelHoyo={mapaDelHoyo}
+        golfCourseId="gc-1"
+        numeroDeHoyo={3}
+        par={4}
+      />,
+    );
 
     expect(await screen.findByText('mapa.noCarga')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'mapa.cerrar' }));
@@ -110,7 +158,14 @@ describe('VentanaDelMapa', () => {
     vi.spyOn(console, 'error').mockImplementation(() => {});
     const mapaDelHoyo = estado();
 
-    render(<VentanaDelMapa mapaDelHoyo={mapaDelHoyo} golfCourseId="gc-1" numeroDeHoyo={3} par={4} />);
+    render(
+      <VentanaDelMapa
+        mapaDelHoyo={mapaDelHoyo}
+        golfCourseId="gc-1"
+        numeroDeHoyo={3}
+        par={4}
+      />,
+    );
 
     expect(await screen.findByText('mapa.actualizando')).toBeInTheDocument();
     expect(screen.queryByText('mapa.noCarga')).toBeNull();
@@ -128,18 +183,40 @@ describe('VentanaDelMapa', () => {
     meta.name = 'theme-color';
     meta.content = '#15803d';
     document.head.appendChild(meta);
-    const { rerender, unmount } = render(<VentanaDelMapa mapaDelHoyo={estado()} golfCourseId="gc-1" numeroDeHoyo={3} par={4} />);
+    const { rerender, unmount } = render(
+      <VentanaDelMapa
+        mapaDelHoyo={estado()}
+        golfCourseId="gc-1"
+        numeroDeHoyo={3}
+        par={4}
+      />,
+    );
     // Cargando: la caja de la espera, negra como el mapa
     expect(document.body.style.backgroundColor).toBe('rgb(0, 0, 0)');
     expect(document.documentElement.style.backgroundColor).toBe('rgb(0, 0, 0)');
     expect(meta.content).toBe('#000000');
-    expect(screen.getByRole('dialog').firstElementChild).toHaveClass('bg-black', 'espera-sobre-oscuro');
+    expect(screen.getByRole('dialog').firstElementChild).toHaveClass(
+      'bg-black',
+      'espera-sobre-oscuro',
+    );
     // La espera, en blanco: la verde no se ve sobre el negro (/code-review)
-    expect(screen.getByRole('status').querySelector('img').getAttribute('src')).toContain('monogram-white');
+    expect(
+      screen.getByRole('status').querySelector('img').getAttribute('src'),
+    ).toContain('monogram-white');
     // «Cerrar», que se vea sobre el negro
-    expect(screen.getByRole('button', { name: 'mapa.cerrar' })).toHaveClass('bg-white', 'text-gray-900');
+    expect(screen.getByRole('button', { name: 'mapa.cerrar' })).toHaveClass(
+      'bg-white',
+      'text-gray-900',
+    );
 
-    rerender(<VentanaDelMapa mapaDelHoyo={estado({ abierto: false })} golfCourseId="gc-1" numeroDeHoyo={3} par={4} />);
+    rerender(
+      <VentanaDelMapa
+        mapaDelHoyo={estado({ abierto: false })}
+        golfCourseId="gc-1"
+        numeroDeHoyo={3}
+        par={4}
+      />,
+    );
     expect(document.body.style.backgroundColor).toBe('');
     expect(document.documentElement.style.backgroundColor).toBe('');
     expect(meta.content).toBe('#15803d');
@@ -148,17 +225,28 @@ describe('VentanaDelMapa', () => {
   });
 
   it('/code-review: sobre el negro, el anillo de la espera en claro', () => {
-    expect(indexCss.replace(/\s+/g, ' ')).toContain('.espera-sobre-oscuro .espera-anillo { border-color: rgba(255, 255, 255, 0.28); border-top-color: #ffffff; }');
+    expect(indexCss.replace(/\s+/g, ' ')).toContain(
+      '.espera-sobre-oscuro .espera-anillo { border-color: rgba(255, 255, 255, 0.28); border-top-color: #ffffff; }',
+    );
   });
 
   it('M1: si no carga, su aviso también en negro', async () => {
     carga.falla = true;
     vi.spyOn(console, 'error').mockImplementation(() => {});
 
-    render(<VentanaDelMapa mapaDelHoyo={estado()} golfCourseId="gc-1" numeroDeHoyo={3} par={4} />);
+    render(
+      <VentanaDelMapa
+        mapaDelHoyo={estado()}
+        golfCourseId="gc-1"
+        numeroDeHoyo={3}
+        par={4}
+      />,
+    );
 
     await screen.findByText('mapa.noCarga');
-    expect(screen.getByRole('dialog').firstElementChild).toHaveClass('bg-black');
+    expect(screen.getByRole('dialog').firstElementChild).toHaveClass(
+      'bg-black',
+    );
     expect(document.body.style.backgroundColor).toBe('rgb(0, 0, 0)');
     globalThis.console.error.mockRestore();
   });
@@ -184,7 +272,14 @@ describe('VentanaDelMapa — tras la revisión', () => {
     carga.montajes = 0;
   });
 
-  const ventana = (mapaDelHoyo) => <VentanaDelMapa mapaDelHoyo={mapaDelHoyo} golfCourseId="gc-1" numeroDeHoyo={3} par={4} />;
+  const ventana = (mapaDelHoyo) => (
+    <VentanaDelMapa
+      mapaDelHoyo={mapaDelHoyo}
+      golfCourseId="gc-1"
+      numeroDeHoyo={3}
+      par={4}
+    />
+  );
 
   it('si los datos del campo llegan con el mapa abierto, el mapa se rehace con ellos', async () => {
     const { rerender } = render(ventana(estado({ mapaDelCampo: null })));
@@ -198,10 +293,28 @@ describe('VentanaDelMapa — tras la revisión', () => {
   });
 
   it('una versión nueva del mapa también lo rehace', async () => {
-    const { rerender } = render(ventana(estado({ mapaDelCampo: { version: 'v1', holes: { 3: { playLine: [], green: GREEN } } } })));
+    const { rerender } = render(
+      ventana(
+        estado({
+          mapaDelCampo: {
+            version: 'v1',
+            holes: { 3: { playLine: [], green: GREEN } },
+          },
+        }),
+      ),
+    );
     await screen.findByTestId('mapa-del-hoyo');
 
-    rerender(ventana(estado({ mapaDelCampo: { version: 'v2', holes: { 3: { playLine: [], green: GREEN } } } })));
+    rerender(
+      ventana(
+        estado({
+          mapaDelCampo: {
+            version: 'v2',
+            holes: { 3: { playLine: [], green: GREEN } },
+          },
+        }),
+      ),
+    );
 
     await screen.findByTestId('mapa-del-hoyo');
     expect(carga.montajes).toBe(2);
@@ -242,7 +355,6 @@ describe('VentanaDelMapa — tras la revisión', () => {
   });
 });
 
-
 // Agustín, 16 oct: muestras anónimas. Lo que se ve, por orden: el hoyo
 // aprobado, la primera muestra, la pendiente del jugador; al cerrar, la muestra
 // se envía sin decirle nada
@@ -253,7 +365,18 @@ describe('VentanaDelMapa — muestras del hoyo', () => {
   const PRIMERA = { tee: T, bends: [C], greenCenter: G };
   const BARRA = { color: 'YELLOW', gender: 'MALE' };
   const abrirEn = (mapaDelCampo, props = {}) =>
-    render(<VentanaDelMapa mapaDelHoyo={estado({ mapaDelCampo })} golfCourseId="gc-1" numeroDeHoyo={3} par={4} metros={300} userId="u-1" barra={BARRA} {...props} />);
+    render(
+      <VentanaDelMapa
+        mapaDelHoyo={estado({ mapaDelCampo })}
+        golfCourseId="gc-1"
+        numeroDeHoyo={3}
+        par={4}
+        metros={300}
+        userId="u-1"
+        barra={BARRA}
+        {...props}
+      />,
+    );
 
   beforeEach(() => {
     carga.falla = false;
@@ -271,14 +394,24 @@ describe('VentanaDelMapa — muestras del hoyo', () => {
     abrirEn(null);
     await screen.findByTestId('mapa-del-hoyo');
 
-    expect(lasMuestras.args).toEqual({ golfCourseId: 'gc-1', userId: 'u-1', barra: BARRA });
+    expect(lasMuestras.args).toEqual({
+      golfCourseId: 'gc-1',
+      userId: 'u-1',
+      barra: BARRA,
+    });
   });
 
   it('V1: sin nada del hoyo, se piden salida y green, recogiendo, con los metros de la tarjeta', async () => {
     abrirEn({ holes: {} });
     await screen.findByTestId('mapa-del-hoyo');
 
-    expect(carga.props).toMatchObject({ hoyo: null, porMarcar: 'salida', recoge: true, metros: 300, atribucion: null });
+    expect(carga.props).toMatchObject({
+      hoyo: null,
+      porMarcar: 'salida',
+      recoge: true,
+      metros: 300,
+      atribucion: null,
+    });
   });
 
   it('V1: con la salida aprobada y sin green, se ve y se pide el green', async () => {
@@ -286,7 +419,11 @@ describe('VentanaDelMapa — muestras del hoyo', () => {
     abrirEn({ attribution: 'osm', holes: { 3: conSalida } });
     await screen.findByTestId('mapa-del-hoyo');
 
-    expect(carga.props).toMatchObject({ hoyo: conSalida, porMarcar: 'green', atribucion: 'osm' });
+    expect(carga.props).toMatchObject({
+      hoyo: conSalida,
+      porMarcar: 'green',
+      atribucion: 'osm',
+    });
   });
 
   it('V2: con la primera muestra, se ve ella (sin atribución) y no se pide nada', async () => {
@@ -297,7 +434,11 @@ describe('VentanaDelMapa — muestras del hoyo', () => {
 
     expect(carga.props.hoyo.playLine).toEqual([T, C, G]);
     expect(carga.props.hoyo.green.center).toEqual(G);
-    expect(carga.props).toMatchObject({ porMarcar: null, recoge: true, atribucion: null });
+    expect(carga.props).toMatchObject({
+      porMarcar: null,
+      recoge: true,
+      atribucion: null,
+    });
   });
 
   it('V2: la primera muestra va antes que lo que el jugador dejó pendiente', async () => {
@@ -326,7 +467,11 @@ describe('VentanaDelMapa — muestras del hoyo', () => {
     abrirEn(estado().mapaDelCampo);
     await screen.findByTestId('mapa-del-hoyo');
 
-    expect(carga.props).toMatchObject({ hoyo: { playLine: [], green: GREEN }, porMarcar: null, atribucion: '© OpenStreetMap contributors (ODbL)' });
+    expect(carga.props).toMatchObject({
+      hoyo: { playLine: [], green: GREEN },
+      porMarcar: null,
+      atribucion: '© OpenStreetMap contributors (ODbL)',
+    });
   });
 
   it('V5: si el hoyo ya no recoge, el mapa lo sabe (se mueve para medir, sin enviar)', async () => {
@@ -382,7 +527,13 @@ describe('VentanaDelMapa — muestras del hoyo', () => {
   });
 
   it('V10: la primera completa va antes que el green suelto', async () => {
-    lasMuestras.muestras = { 3: { primera: { tee: T, bends: [], greenCenter: C }, green: G, recoge: true } };
+    lasMuestras.muestras = {
+      3: {
+        primera: { tee: T, bends: [], greenCenter: C },
+        green: G,
+        recoge: true,
+      },
+    };
 
     abrirEn({ holes: {} });
     await screen.findByTestId('mapa-del-hoyo');
@@ -413,9 +564,20 @@ describe('VentanaDelMapa — muestras del hoyo', () => {
 
   // V1 (17 oct): la línea que guardó el admin, antes que nada
   it('V1: la línea guardada por el admin va antes que el hoyo aprobado y que las muestras', async () => {
-    lasMuestras.muestras = { 3: { guardada: { tee: T, bends: [], greenCenter: C }, primera: PRIMERA, green: G, recoge: false } };
+    lasMuestras.muestras = {
+      3: {
+        guardada: { tee: T, bends: [], greenCenter: C },
+        primera: PRIMERA,
+        green: G,
+        recoge: false,
+      },
+    };
 
-    abrirEn({ holes: { 3: { playLine: [T, G], green: { front: G, center: G, back: G } } } });
+    abrirEn({
+      holes: {
+        3: { playLine: [T, G], green: { front: G, center: G, back: G } },
+      },
+    });
     await screen.findByTestId('mapa-del-hoyo');
 
     expect(carga.props.hoyo.green.center).toEqual(C);
@@ -424,7 +586,14 @@ describe('VentanaDelMapa — muestras del hoyo', () => {
   });
 
   it('V1: con la línea del admin no se envía nada, aunque el resumen diga que recoge', async () => {
-    lasMuestras.muestras = { 3: { guardada: { tee: T, bends: [], greenCenter: C }, primera: null, green: null, recoge: true } };
+    lasMuestras.muestras = {
+      3: {
+        guardada: { tee: T, bends: [], greenCenter: C },
+        primera: null,
+        green: null,
+        recoge: true,
+      },
+    };
 
     abrirEn({ holes: {} });
     await screen.findByTestId('mapa-del-hoyo');
@@ -443,12 +612,24 @@ describe('VentanaDelMapa — muestras del hoyo', () => {
   });
 
   it('V2: si cambian los metros con el mapa abierto (sin empezar), se rehace con ellos', async () => {
-    lasMuestras.muestras = { 3: { primera: PRIMERA, green: null, recoge: true } };
+    lasMuestras.muestras = {
+      3: { primera: PRIMERA, green: null, recoge: true },
+    };
     const { rerender } = abrirEn({ holes: {} });
     await screen.findByTestId('mapa-del-hoyo');
     const antes = carga.montajes;
 
-    rerender(<VentanaDelMapa mapaDelHoyo={estado({ mapaDelCampo: { holes: {} } })} golfCourseId="gc-1" numeroDeHoyo={3} par={4} metros={320} userId="u-1" barra={BARRA} />);
+    rerender(
+      <VentanaDelMapa
+        mapaDelHoyo={estado({ mapaDelCampo: { holes: {} } })}
+        golfCourseId="gc-1"
+        numeroDeHoyo={3}
+        par={4}
+        metros={320}
+        userId="u-1"
+        barra={BARRA}
+      />,
+    );
 
     expect(carga.montajes).toBe(antes + 1);
   });
@@ -481,8 +662,24 @@ describe('VentanaDelMapa — muestras del hoyo', () => {
     await screen.findByTestId('mapa-del-hoyo');
     const antes = carga.montajes;
 
-    lasMuestras.muestras = { 3: { primera: { tee: T, bends: [], greenCenter: C }, green: G, recoge: true } };
-    rerender(<VentanaDelMapa mapaDelHoyo={estado({ mapaDelCampo: { holes: {} } })} golfCourseId="gc-1" numeroDeHoyo={3} par={4} metros={300} userId="u-1" barra={BARRA} />);
+    lasMuestras.muestras = {
+      3: {
+        primera: { tee: T, bends: [], greenCenter: C },
+        green: G,
+        recoge: true,
+      },
+    };
+    rerender(
+      <VentanaDelMapa
+        mapaDelHoyo={estado({ mapaDelCampo: { holes: {} } })}
+        golfCourseId="gc-1"
+        numeroDeHoyo={3}
+        par={4}
+        metros={300}
+        userId="u-1"
+        barra={BARRA}
+      />,
+    );
 
     expect(carga.montajes).toBe(antes + 1);
     expect(carga.props.hoyo.green.center).toEqual(C);
@@ -494,8 +691,20 @@ describe('VentanaDelMapa — muestras del hoyo', () => {
     act(() => carga.props.onEmpezar());
     const antes = carga.montajes;
 
-    lasMuestras.muestras = { 3: { primera: PRIMERA, green: null, recoge: true } };
-    rerender(<VentanaDelMapa mapaDelHoyo={estado({ mapaDelCampo: { holes: {} } })} golfCourseId="gc-1" numeroDeHoyo={3} par={4} metros={300} userId="u-1" barra={BARRA} />);
+    lasMuestras.muestras = {
+      3: { primera: PRIMERA, green: null, recoge: true },
+    };
+    rerender(
+      <VentanaDelMapa
+        mapaDelHoyo={estado({ mapaDelCampo: { holes: {} } })}
+        golfCourseId="gc-1"
+        numeroDeHoyo={3}
+        par={4}
+        metros={300}
+        userId="u-1"
+        barra={BARRA}
+      />,
+    );
 
     expect(carga.montajes).toBe(antes);
     expect(carga.props).toMatchObject({ hoyo: null, porMarcar: 'salida' });
@@ -506,8 +715,20 @@ describe('VentanaDelMapa — muestras del hoyo', () => {
     await screen.findByTestId('mapa-del-hoyo');
     act(() => carga.props.onEmpezar());
 
-    lasMuestras.muestras = { 3: { primera: PRIMERA, green: null, recoge: false } };
-    rerender(<VentanaDelMapa mapaDelHoyo={estado({ mapaDelCampo: { holes: {} } })} golfCourseId="gc-1" numeroDeHoyo={3} par={4} metros={300} userId="u-1" barra={BARRA} />);
+    lasMuestras.muestras = {
+      3: { primera: PRIMERA, green: null, recoge: false },
+    };
+    rerender(
+      <VentanaDelMapa
+        mapaDelHoyo={estado({ mapaDelCampo: { holes: {} } })}
+        golfCourseId="gc-1"
+        numeroDeHoyo={3}
+        par={4}
+        metros={300}
+        userId="u-1"
+        barra={BARRA}
+      />,
+    );
 
     expect(carga.props.recoge).toBe(false);
   });
@@ -518,7 +739,17 @@ describe('VentanaDelMapa — muestras del hoyo', () => {
     const antes = carga.montajes;
 
     lasMuestras.muestras = { 3: { primera: PRIMERA, recoge: true } };
-    rerender(<VentanaDelMapa mapaDelHoyo={estado({ mapaDelCampo: { holes: {} } })} golfCourseId="gc-1" numeroDeHoyo={3} par={4} metros={300} userId="u-1" barra={BARRA} />);
+    rerender(
+      <VentanaDelMapa
+        mapaDelHoyo={estado({ mapaDelCampo: { holes: {} } })}
+        golfCourseId="gc-1"
+        numeroDeHoyo={3}
+        par={4}
+        metros={300}
+        userId="u-1"
+        barra={BARRA}
+      />,
+    );
 
     expect(carga.montajes).toBe(antes + 1);
     expect(carga.props.hoyo.green.center).toEqual(G);
@@ -530,12 +761,21 @@ describe('VentanaDelMapa — muestras del hoyo', () => {
     await screen.findByTestId('mapa-del-hoyo');
     const antes = carga.montajes;
 
-    rerender(<VentanaDelMapa mapaDelHoyo={estado({ mapaDelCampo: { holes: {} } })} golfCourseId="gc-1" numeroDeHoyo={3} par={4} metros={300} userId="u-1" barra={BARRA} />);
+    rerender(
+      <VentanaDelMapa
+        mapaDelHoyo={estado({ mapaDelCampo: { holes: {} } })}
+        golfCourseId="gc-1"
+        numeroDeHoyo={3}
+        par={4}
+        metros={300}
+        userId="u-1"
+        barra={BARRA}
+      />,
+    );
 
     expect(carga.montajes).toBe(antes);
   });
 });
-
 
 // Entrega 7 (18 oct): el reporte de un hoyo sale con el jugador, el campo y el hoyo
 describe('VentanaDelMapa — reportar un hoyo', () => {
@@ -547,17 +787,35 @@ describe('VentanaDelMapa — reportar un hoyo', () => {
   });
 
   it('con sesión, el mapa puede reportar y el reporte lleva el número de hoyo', async () => {
-    render(<VentanaDelMapa mapaDelHoyo={estado()} golfCourseId="gc-1" numeroDeHoyo={3} par={4} userId="yo" />);
+    render(
+      <VentanaDelMapa
+        mapaDelHoyo={estado()}
+        golfCourseId="gc-1"
+        numeroDeHoyo={3}
+        par={4}
+        userId="yo"
+      />,
+    );
     await screen.findByTestId('mapa-del-hoyo');
 
     carga.props.onReporte({ id: 'r-1', reason: 'WRONG_LINE' });
 
     expect(elReporte.args).toEqual({ golfCourseId: 'gc-1', userId: 'yo' });
-    expect(elReporte.reportar).toHaveBeenCalledWith(3, { id: 'r-1', reason: 'WRONG_LINE' });
+    expect(elReporte.reportar).toHaveBeenCalledWith(3, {
+      id: 'r-1',
+      reason: 'WRONG_LINE',
+    });
   });
 
   it('sin sesión, el mapa no ofrece reportar', async () => {
-    render(<VentanaDelMapa mapaDelHoyo={estado()} golfCourseId="gc-1" numeroDeHoyo={3} par={4} />);
+    render(
+      <VentanaDelMapa
+        mapaDelHoyo={estado()}
+        golfCourseId="gc-1"
+        numeroDeHoyo={3}
+        par={4}
+      />,
+    );
     await screen.findByTestId('mapa-del-hoyo');
 
     expect(carga.props.onReporte).toBeNull();

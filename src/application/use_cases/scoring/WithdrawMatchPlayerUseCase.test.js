@@ -3,7 +3,10 @@ import WithdrawMatchPlayerUseCase from './WithdrawMatchPlayerUseCase';
 
 /** Retirar o devolver a un jugador de un fourball (25 oct 2026). */
 describe('WithdrawMatchPlayerUseCase', () => {
-  const repo = () => ({ withdrawPlayer: vi.fn().mockResolvedValue('r'), reinstatePlayer: vi.fn().mockResolvedValue('v') });
+  const repo = () => ({
+    withdrawPlayer: vi.fn().mockResolvedValue('r'),
+    reinstatePlayer: vi.fn().mockResolvedValue('v'),
+  });
 
   it('retira, o devuelve con deshacer', async () => {
     const scoringRepository = repo();
@@ -12,7 +15,10 @@ describe('WithdrawMatchPlayerUseCase', () => {
     expect(await caso.execute('m-1', 'u-1')).toBe('r');
     expect(scoringRepository.withdrawPlayer).toHaveBeenCalledWith('m-1', 'u-1');
     expect(await caso.execute('m-1', 'u-1', { deshacer: true })).toBe('v');
-    expect(scoringRepository.reinstatePlayer).toHaveBeenCalledWith('m-1', 'u-1');
+    expect(scoringRepository.reinstatePlayer).toHaveBeenCalledWith(
+      'm-1',
+      'u-1',
+    );
   });
 
   it('sin partido o sin jugador, no llama', async () => {

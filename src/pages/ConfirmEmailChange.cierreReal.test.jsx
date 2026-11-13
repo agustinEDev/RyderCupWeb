@@ -14,7 +14,9 @@ vi.mock('react-i18next', () => ({
 }));
 vi.mock('../hooks/useAuth', () => ({ useAuth: () => ({ refetch: vi.fn() }) }));
 vi.mock('../components/layout/HeaderAuth', () => ({ default: () => null }));
-vi.mock('../composition', () => ({ confirmEmailChangeUseCase: { execute: vi.fn() } }));
+vi.mock('../composition', () => ({
+  confirmEmailChangeUseCase: { execute: vi.fn() },
+}));
 vi.mock('../utils/stripSecretsFromAddressBar', () => ({
   stripSecretsFromAddressBar: vi.fn(),
   readStrippedSecret: () => null,
@@ -27,7 +29,8 @@ vi.mock('../utils/avisoDeCierreForzado', async (original) => ({
 
 const { confirmEmailChangeUseCase } = await import('../composition');
 const { handleCsrfLogout } = await import('../infrastructure/http/csrfLogout');
-const { olvidaElCierreDeEstaCarga } = await import('../utils/cierreDeEstaCarga');
+const { olvidaElCierreDeEstaCarga } =
+  await import('../utils/cierreDeEstaCarga');
 const { default: ConfirmEmailChange } = await import('./ConfirmEmailChange');
 
 describe('ConfirmEmailChange con el cierre por CSRF de verdad', () => {
@@ -64,15 +67,20 @@ describe('ConfirmEmailChange con el cierre por CSRF de verdad', () => {
     render(
       <MemoryRouter initialEntries={['/confirm-email-change?token=tok-1']}>
         <Routes>
-          <Route path="/confirm-email-change" element={<ConfirmEmailChange />} />
+          <Route
+            path="/confirm-email-change"
+            element={<ConfirmEmailChange />}
+          />
         </Routes>
-      </MemoryRouter>
+      </MemoryRouter>,
     );
 
     await vi.waitFor(() => expect(idas).toEqual(['/login']));
     await new Promise((r) => setTimeout(r, 0));
 
-    expect(screen.getByText('confirmEmailChange.confirming')).toBeInTheDocument();
+    expect(
+      screen.getByText('confirmEmailChange.confirming'),
+    ).toBeInTheDocument();
     expect(screen.queryByText('confirmEmailChange.failed')).toBeNull();
   });
 });

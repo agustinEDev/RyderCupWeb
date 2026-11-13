@@ -21,7 +21,8 @@ describe('ResetPasswordUseCase', () => {
       const token = 'valid_256_bit_token';
       const newPassword = 'NewSecurePass123!';
       const mockResponse = {
-        message: 'Password has been successfully reset. All sessions have been invalidated.',
+        message:
+          'Password has been successfully reset. All sessions have been invalidated.',
       };
 
       authRepository.resetPassword.mockResolvedValue(mockResponse);
@@ -30,7 +31,10 @@ describe('ResetPasswordUseCase', () => {
       const result = await resetPasswordUseCase.execute(token, newPassword);
 
       // Assert
-      expect(authRepository.resetPassword).toHaveBeenCalledWith(token, newPassword);
+      expect(authRepository.resetPassword).toHaveBeenCalledWith(
+        token,
+        newPassword,
+      );
       expect(authRepository.resetPassword).toHaveBeenCalledTimes(1);
       expect(result).toEqual({
         success: true,
@@ -52,7 +56,7 @@ describe('ResetPasswordUseCase', () => {
       // Assert
       expect(result.success).toBe(true);
       expect(result.message).toBe(
-        'Password changed successfully. Please log in again.'
+        'Password changed successfully. Please log in again.',
       );
     });
   });
@@ -60,33 +64,33 @@ describe('ResetPasswordUseCase', () => {
   describe('Token validation', () => {
     it('should throw error if token is empty', async () => {
       // Act & Assert
-      await expect(resetPasswordUseCase.execute('', 'ValidPassword123!')).rejects.toThrow(
-        'Reset token is required'
-      );
+      await expect(
+        resetPasswordUseCase.execute('', 'ValidPassword123!'),
+      ).rejects.toThrow('Reset token is required');
       expect(authRepository.resetPassword).not.toHaveBeenCalled();
     });
 
     it('should throw error if token is null', async () => {
       // Act & Assert
-      await expect(resetPasswordUseCase.execute(null, 'ValidPassword123!')).rejects.toThrow(
-        'Reset token is required'
-      );
+      await expect(
+        resetPasswordUseCase.execute(null, 'ValidPassword123!'),
+      ).rejects.toThrow('Reset token is required');
       expect(authRepository.resetPassword).not.toHaveBeenCalled();
     });
 
     it('should throw error if token is undefined', async () => {
       // Act & Assert
-      await expect(resetPasswordUseCase.execute(undefined, 'ValidPassword123!')).rejects.toThrow(
-        'Reset token is required'
-      );
+      await expect(
+        resetPasswordUseCase.execute(undefined, 'ValidPassword123!'),
+      ).rejects.toThrow('Reset token is required');
       expect(authRepository.resetPassword).not.toHaveBeenCalled();
     });
 
     it('should throw error if token is only whitespace', async () => {
       // Act & Assert
-      await expect(resetPasswordUseCase.execute('   ', 'ValidPassword123!')).rejects.toThrow(
-        'Reset token is required'
-      );
+      await expect(
+        resetPasswordUseCase.execute('   ', 'ValidPassword123!'),
+      ).rejects.toThrow('Reset token is required');
       expect(authRepository.resetPassword).not.toHaveBeenCalled();
     });
   });
@@ -94,17 +98,17 @@ describe('ResetPasswordUseCase', () => {
   describe('Password validation (OWASP ASVS V2.1)', () => {
     it('should throw error if password is empty', async () => {
       // Act & Assert
-      await expect(resetPasswordUseCase.execute('valid_token', '')).rejects.toThrow(
-        'Password cannot be empty.'
-      );
+      await expect(
+        resetPasswordUseCase.execute('valid_token', ''),
+      ).rejects.toThrow('Password cannot be empty.');
       expect(authRepository.resetPassword).not.toHaveBeenCalled();
     });
 
     it('should throw error if password is too short (<12 chars)', async () => {
       // Act & Assert
-      await expect(resetPasswordUseCase.execute('valid_token', 'Short1')).rejects.toThrow(
-        'Password must be at least 12 characters long.'
-      );
+      await expect(
+        resetPasswordUseCase.execute('valid_token', 'Short1'),
+      ).rejects.toThrow('Password must be at least 12 characters long.');
       expect(authRepository.resetPassword).not.toHaveBeenCalled();
     });
 
@@ -113,16 +117,16 @@ describe('ResetPasswordUseCase', () => {
       const longPassword = 'A'.repeat(127) + '1a';
 
       // Act & Assert
-      await expect(resetPasswordUseCase.execute('valid_token', longPassword)).rejects.toThrow(
-        'Password must not exceed 128 characters.'
-      );
+      await expect(
+        resetPasswordUseCase.execute('valid_token', longPassword),
+      ).rejects.toThrow('Password must not exceed 128 characters.');
       expect(authRepository.resetPassword).not.toHaveBeenCalled();
     });
 
     it('should throw error if password lacks uppercase letters', async () => {
       // Act & Assert
       await expect(
-        resetPasswordUseCase.execute('valid_token', 'lowercase123')
+        resetPasswordUseCase.execute('valid_token', 'lowercase123'),
       ).rejects.toThrow('uppercase');
       expect(authRepository.resetPassword).not.toHaveBeenCalled();
     });
@@ -130,7 +134,7 @@ describe('ResetPasswordUseCase', () => {
     it('should throw error if password lacks lowercase letters', async () => {
       // Act & Assert
       await expect(
-        resetPasswordUseCase.execute('valid_token', 'UPPERCASE123')
+        resetPasswordUseCase.execute('valid_token', 'UPPERCASE123'),
       ).rejects.toThrow('lowercase');
       expect(authRepository.resetPassword).not.toHaveBeenCalled();
     });
@@ -138,7 +142,7 @@ describe('ResetPasswordUseCase', () => {
     it('should throw error if password lacks numbers', async () => {
       // Act & Assert
       await expect(
-        resetPasswordUseCase.execute('valid_token', 'NoNumbersHere')
+        resetPasswordUseCase.execute('valid_token', 'NoNumbersHere'),
       ).rejects.toThrow('number');
       expect(authRepository.resetPassword).not.toHaveBeenCalled();
     });
@@ -156,7 +160,10 @@ describe('ResetPasswordUseCase', () => {
 
       // Assert
       expect(result.success).toBe(true);
-      expect(authRepository.resetPassword).toHaveBeenCalledWith(token, newPassword);
+      expect(authRepository.resetPassword).toHaveBeenCalledWith(
+        token,
+        newPassword,
+      );
     });
 
     it('should accept password with exactly 128 characters (maximum)', async () => {
@@ -172,7 +179,10 @@ describe('ResetPasswordUseCase', () => {
 
       // Assert
       expect(result.success).toBe(true);
-      expect(authRepository.resetPassword).toHaveBeenCalledWith(token, newPassword);
+      expect(authRepository.resetPassword).toHaveBeenCalledWith(
+        token,
+        newPassword,
+      );
     });
 
     it('should accept password with special characters', async () => {
@@ -188,7 +198,10 @@ describe('ResetPasswordUseCase', () => {
 
       // Assert
       expect(result.success).toBe(true);
-      expect(authRepository.resetPassword).toHaveBeenCalledWith(token, newPassword);
+      expect(authRepository.resetPassword).toHaveBeenCalledWith(
+        token,
+        newPassword,
+      );
     });
   });
 
@@ -202,10 +215,13 @@ describe('ResetPasswordUseCase', () => {
       authRepository.resetPassword.mockRejectedValue(mockError);
 
       // Act & Assert
-      await expect(resetPasswordUseCase.execute(token, newPassword)).rejects.toThrow(
-        'Invalid reset token'
+      await expect(
+        resetPasswordUseCase.execute(token, newPassword),
+      ).rejects.toThrow('Invalid reset token');
+      expect(authRepository.resetPassword).toHaveBeenCalledWith(
+        token,
+        newPassword,
       );
-      expect(authRepository.resetPassword).toHaveBeenCalledWith(token, newPassword);
     });
 
     it('should propagate error when token is expired', async () => {
@@ -217,10 +233,13 @@ describe('ResetPasswordUseCase', () => {
       authRepository.resetPassword.mockRejectedValue(mockError);
 
       // Act & Assert
-      await expect(resetPasswordUseCase.execute(token, newPassword)).rejects.toThrow(
-        'expired'
+      await expect(
+        resetPasswordUseCase.execute(token, newPassword),
+      ).rejects.toThrow('expired');
+      expect(authRepository.resetPassword).toHaveBeenCalledWith(
+        token,
+        newPassword,
       );
-      expect(authRepository.resetPassword).toHaveBeenCalledWith(token, newPassword);
     });
 
     it('should propagate error when token has already been used', async () => {
@@ -232,23 +251,25 @@ describe('ResetPasswordUseCase', () => {
       authRepository.resetPassword.mockRejectedValue(mockError);
 
       // Act & Assert
-      await expect(resetPasswordUseCase.execute(token, newPassword)).rejects.toThrow(
-        'already been used'
-      );
+      await expect(
+        resetPasswordUseCase.execute(token, newPassword),
+      ).rejects.toThrow('already been used');
     });
 
     it('should propagate rate limiting errors (429)', async () => {
       // Arrange
       const token = 'valid_token';
       const newPassword = 'ValidPassword123!';
-      const mockError = new Error('Rate limit exceeded. Please wait 60 minutes.');
+      const mockError = new Error(
+        'Rate limit exceeded. Please wait 60 minutes.',
+      );
 
       authRepository.resetPassword.mockRejectedValue(mockError);
 
       // Act & Assert
-      await expect(resetPasswordUseCase.execute(token, newPassword)).rejects.toThrow(
-        'Rate limit exceeded'
-      );
+      await expect(
+        resetPasswordUseCase.execute(token, newPassword),
+      ).rejects.toThrow('Rate limit exceeded');
     });
 
     it('should propagate network errors', async () => {
@@ -260,9 +281,9 @@ describe('ResetPasswordUseCase', () => {
       authRepository.resetPassword.mockRejectedValue(mockError);
 
       // Act & Assert
-      await expect(resetPasswordUseCase.execute(token, newPassword)).rejects.toThrow(
-        'Network request failed'
-      );
+      await expect(
+        resetPasswordUseCase.execute(token, newPassword),
+      ).rejects.toThrow('Network request failed');
     });
 
     it('should propagate server errors (500)', async () => {
@@ -274,9 +295,9 @@ describe('ResetPasswordUseCase', () => {
       authRepository.resetPassword.mockRejectedValue(mockError);
 
       // Act & Assert
-      await expect(resetPasswordUseCase.execute(token, newPassword)).rejects.toThrow(
-        'Internal server error'
-      );
+      await expect(
+        resetPasswordUseCase.execute(token, newPassword),
+      ).rejects.toThrow('Internal server error');
     });
   });
 
@@ -287,7 +308,9 @@ describe('ResetPasswordUseCase', () => {
       const weakPassword = 'weak';
 
       // Act & Assert
-      await expect(resetPasswordUseCase.execute(token, weakPassword)).rejects.toThrow();
+      await expect(
+        resetPasswordUseCase.execute(token, weakPassword),
+      ).rejects.toThrow();
 
       // Repository NO debe ser llamado si la validación falla
       expect(authRepository.resetPassword).not.toHaveBeenCalled();
@@ -307,7 +330,10 @@ describe('ResetPasswordUseCase', () => {
       // Assert
       // Repository SOLO debe ser llamado si la validación pasa
       expect(authRepository.resetPassword).toHaveBeenCalledTimes(1);
-      expect(authRepository.resetPassword).toHaveBeenCalledWith(token, strongPassword);
+      expect(authRepository.resetPassword).toHaveBeenCalledWith(
+        token,
+        strongPassword,
+      );
     });
 
     it('should not leak whether token is valid before validating password', async () => {
@@ -318,9 +344,9 @@ describe('ResetPasswordUseCase', () => {
       // Act & Assert
       // La validación de contraseña debe ocurrir ANTES de llamar al repositorio
       // Esto previene timing attacks (no revelar si el token es válido)
-      await expect(resetPasswordUseCase.execute(token, weakPassword)).rejects.toThrow(
-        'Password'
-      );
+      await expect(
+        resetPasswordUseCase.execute(token, weakPassword),
+      ).rejects.toThrow('Password');
 
       expect(authRepository.resetPassword).not.toHaveBeenCalled();
     });
@@ -340,7 +366,10 @@ describe('ResetPasswordUseCase', () => {
 
       // Assert
       expect(result.success).toBe(true);
-      expect(authRepository.resetPassword).toHaveBeenCalledWith(token, newPassword);
+      expect(authRepository.resetPassword).toHaveBeenCalledWith(
+        token,
+        newPassword,
+      );
     });
 
     it('should handle password with accents and special chars', async () => {
@@ -356,7 +385,10 @@ describe('ResetPasswordUseCase', () => {
 
       // Assert
       expect(result.success).toBe(true);
-      expect(authRepository.resetPassword).toHaveBeenCalledWith(token, newPassword);
+      expect(authRepository.resetPassword).toHaveBeenCalledWith(
+        token,
+        newPassword,
+      );
     });
   });
 });

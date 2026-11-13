@@ -19,7 +19,11 @@ class SubmitEnvelopeUseCase {
       // El servidor lo rechaza, y el capitán vería un error sin entender por qué
       throw new Error('Entries are required');
     }
-    return await this.envelopeRepository.submitEnvelope(roundId, entries, revealWhenBothReady);
+    return await this.envelopeRepository.submitEnvelope(
+      roundId,
+      entries,
+      revealWhenBothReady,
+    );
   }
 }
 

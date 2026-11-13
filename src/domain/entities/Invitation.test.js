@@ -30,23 +30,33 @@ describe('Invitation', () => {
     });
 
     it('should throw for missing id', () => {
-      expect(() => new Invitation({ ...validProps, id: '' })).toThrow(TypeError);
+      expect(() => new Invitation({ ...validProps, id: '' })).toThrow(
+        TypeError,
+      );
     });
 
     it('should throw for missing competitionId', () => {
-      expect(() => new Invitation({ ...validProps, competitionId: '' })).toThrow(TypeError);
+      expect(
+        () => new Invitation({ ...validProps, competitionId: '' }),
+      ).toThrow(TypeError);
     });
 
     it('should throw for missing inviterId', () => {
-      expect(() => new Invitation({ ...validProps, inviterId: '' })).toThrow(TypeError);
+      expect(() => new Invitation({ ...validProps, inviterId: '' })).toThrow(
+        TypeError,
+      );
     });
 
     it('should throw for missing inviteeEmail', () => {
-      expect(() => new Invitation({ ...validProps, inviteeEmail: '' })).toThrow(TypeError);
+      expect(() => new Invitation({ ...validProps, inviteeEmail: '' })).toThrow(
+        TypeError,
+      );
     });
 
     it('should throw for invalid status', () => {
-      expect(() => new Invitation({ ...validProps, status: 'PENDING' })).toThrow(TypeError);
+      expect(
+        () => new Invitation({ ...validProps, status: 'PENDING' }),
+      ).toThrow(TypeError);
     });
   });
 
@@ -79,14 +89,23 @@ describe('Invitation', () => {
       expect(pending.isPending()).toBe(true);
       expect(pending.isTerminal()).toBe(false);
 
-      const accepted = Invitation.fromPersistence({ ...validProps, status: InvitationStatus.accepted() });
+      const accepted = Invitation.fromPersistence({
+        ...validProps,
+        status: InvitationStatus.accepted(),
+      });
       expect(accepted.isAccepted()).toBe(true);
       expect(accepted.isTerminal()).toBe(true);
 
-      const declined = Invitation.fromPersistence({ ...validProps, status: InvitationStatus.declined() });
+      const declined = Invitation.fromPersistence({
+        ...validProps,
+        status: InvitationStatus.declined(),
+      });
       expect(declined.isDeclined()).toBe(true);
 
-      const expired = Invitation.fromPersistence({ ...validProps, status: InvitationStatus.expired() });
+      const expired = Invitation.fromPersistence({
+        ...validProps,
+        status: InvitationStatus.expired(),
+      });
       expect(expired.isExpired()).toBe(true);
     });
 
@@ -94,7 +113,10 @@ describe('Invitation', () => {
       const withUser = new Invitation(validProps);
       expect(withUser.hasInviteeUser()).toBe(true);
 
-      const withoutUser = new Invitation({ ...validProps, inviteeUserId: null });
+      const withoutUser = new Invitation({
+        ...validProps,
+        inviteeUserId: null,
+      });
       expect(withoutUser.hasInviteeUser()).toBe(false);
     });
   });
@@ -119,12 +141,18 @@ describe('Invitation', () => {
     });
 
     it('accept should throw from terminal state', () => {
-      const accepted = Invitation.fromPersistence({ ...validProps, status: InvitationStatus.accepted() });
+      const accepted = Invitation.fromPersistence({
+        ...validProps,
+        status: InvitationStatus.accepted(),
+      });
       expect(() => accepted.accept()).toThrow('Invalid transition');
     });
 
     it('decline should throw from terminal state', () => {
-      const expired = Invitation.fromPersistence({ ...validProps, status: InvitationStatus.expired() });
+      const expired = Invitation.fromPersistence({
+        ...validProps,
+        status: InvitationStatus.expired(),
+      });
       expect(() => expired.decline()).toThrow('Invalid transition');
     });
   });

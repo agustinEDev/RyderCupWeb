@@ -22,7 +22,9 @@ vi.mock('./avisoDeCierreForzado', async (original) => ({
   ...(await original()),
   avisaDelCierreForzado: aviso.avisaDelCierreForzado,
 }));
-const revocacion = vi.hoisted(() => ({ handleDeviceRevocationLogout: vi.fn() }));
+const revocacion = vi.hoisted(() => ({
+  handleDeviceRevocationLogout: vi.fn(),
+}));
 vi.mock('../infrastructure/http/deviceRevocationLogout', async (original) => ({
   isDeviceRevoked: (await original()).isDeviceRevoked,
   isSessionExpired: vi.fn(() => false),
@@ -42,25 +44,37 @@ const respuesta = (status, cuerpo = {}) => ({
   },
 });
 
-const { fetchWithTokenRefresh } = await import('../infrastructure/http/tokenRefreshInterceptor');
-const { preguntaLaSesionSinInterceptor } = await import('../services/sondaDeSesion');
+const { fetchWithTokenRefresh } =
+  await import('../infrastructure/http/tokenRefreshInterceptor');
+const { preguntaLaSesionSinInterceptor } =
+  await import('../services/sondaDeSesion');
 const { MOTIVO_DEL_CIERRE } = await import('./avisoDeCierreForzado');
 
 describe('avisos que salen de la red', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.stubGlobal('localStorage', { getItem: () => null, setItem: () => {}, removeItem: () => {} });
+    vi.stubGlobal('localStorage', {
+      getItem: () => null,
+      setItem: () => {},
+      removeItem: () => {},
+    });
     globalThis.location = { pathname: '/dashboard', href: '' };
   });
 
   it('R1: si tras refrescar bien la petición vuelve a dar 401, avisa de sesión perdida', async () => {
     globalThis.fetch = vi
       .fn()
-      .mockResolvedValueOnce(respuesta(401, { detail: 'Token inválido o expirado' }))
+      .mockResolvedValueOnce(
+        respuesta(401, { detail: 'Token inválido o expirado' }),
+      )
       .mockResolvedValueOnce(respuesta(200, { csrf_token: 't' }))
-      .mockResolvedValueOnce(respuesta(401, { detail: 'Token inválido o expirado' }));
+      .mockResolvedValueOnce(
+        respuesta(401, { detail: 'Token inválido o expirado' }),
+      );
 
-    const final = await fetchWithTokenRefresh('/api/v1/quick-matches/me', { method: 'GET' });
+    const final = await fetchWithTokenRefresh('/api/v1/quick-matches/me', {
+      method: 'GET',
+    });
 
     expect(final.status).toBe(401);
     expect(aviso.avisaDelCierreForzado).toHaveBeenCalledWith({
@@ -87,7 +101,12 @@ describe('avisos que salen de la red', () => {
     globalThis.fetch = vi
       .fn()
       .mockResolvedValueOnce(respuesta(401, { detail: 'Not authenticated' }))
-      .mockResolvedValueOnce(respuesta(401, { detail: 'inválido o expirado', error_code: 'REFRESH_TOKEN_REVOKED' }));
+      .mockResolvedValueOnce(
+        respuesta(401, {
+          detail: 'inválido o expirado',
+          error_code: 'REFRESH_TOKEN_REVOKED',
+        }),
+      );
 
     const resultado = await preguntaLaSesionSinInterceptor();
 
@@ -97,7 +116,7 @@ describe('avisos que salen de la red', () => {
         motivo: MOTIVO_DEL_CIERRE.REFRESCO_RECHAZADO,
         codigo: 'REFRESH_TOKEN_REVOKED',
         estado: 401,
-      })
+      }),
     );
   });
 
@@ -107,43 +126,60 @@ describe('avisos que salen de la red', () => {
       globalThis.fetch = vi
         .fn()
         .mockResolvedValueOnce(respuesta(401, { detail: 'Not authenticated' }))
-        .mockResolvedValueOnce(respuesta(401, { detail: 'x', error_code: codigo }));
+        .mockResolvedValueOnce(
+          respuesta(401, { detail: 'x', error_code: codigo }),
+        );
 
       await preguntaLaSesionSinInterceptor();
 
       expect(aviso.avisaDelCierreForzado).not.toHaveBeenCalled();
-    }
+    },
   );
 
   it('R3: si la repetida da un 401 que no es de token, no avisa', async () => {
     globalThis.fetch = vi
       .fn()
-      .mockResolvedValueOnce(respuesta(401, { detail: 'Token inválido o expirado' }))
+      .mockResolvedValueOnce(
+        respuesta(401, { detail: 'Token inválido o expirado' }),
+      )
       .mockResolvedValueOnce(respuesta(200, { csrf_token: 't' }))
-      .mockResolvedValueOnce(respuesta(401, { detail: 'La contraseña actual no es correcta' }));
+      .mockResolvedValueOnce(
+        respuesta(401, { detail: 'La contraseña actual no es correcta' }),
+      );
 
-    await fetchWithTokenRefresh('/api/v1/users/me/security', { method: 'PATCH' });
+    await fetchWithTokenRefresh('/api/v1/users/me/security', {
+      method: 'PATCH',
+    });
 
     expect(aviso.avisaDelCierreForzado).not.toHaveBeenCalled();
   });
 
   it('R4: si la repetida dice «dispositivo revocado», se trata como revocación', async () => {
-    const revocado = { detail: 'Dispositivo revocado. Por favor, inicia sesión nuevamente.' };
+    const revocado = {
+      detail: 'Dispositivo revocado. Por favor, inicia sesión nuevamente.',
+    };
     globalThis.fetch = vi
       .fn()
-      .mockResolvedValueOnce(respuesta(401, { detail: 'Token inválido o expirado' }))
+      .mockResolvedValueOnce(
+        respuesta(401, { detail: 'Token inválido o expirado' }),
+      )
       .mockResolvedValueOnce(respuesta(200, { csrf_token: 't' }))
       .mockResolvedValueOnce(respuesta(401, revocado));
 
-    await fetchWithTokenRefresh('/api/v1/quick-matches/me', { method: 'GET' }).catch(() => {});
+    await fetchWithTokenRefresh('/api/v1/quick-matches/me', {
+      method: 'GET',
+    }).catch(() => {});
 
-    expect(revocacion.handleDeviceRevocationLogout).toHaveBeenCalledWith(revocado, {
-      metodo: 'GET',
-      endpoint: '/api/v1/quick-matches/me',
-      estado: 401,
-    });
+    expect(revocacion.handleDeviceRevocationLogout).toHaveBeenCalledWith(
+      revocado,
+      {
+        metodo: 'GET',
+        endpoint: '/api/v1/quick-matches/me',
+        estado: 401,
+      },
+    );
     expect(aviso.avisaDelCierreForzado).not.toHaveBeenCalledWith(
-      expect.objectContaining({ motivo: MOTIVO_DEL_CIERRE.SESION_PERDIDA })
+      expect.objectContaining({ motivo: MOTIVO_DEL_CIERRE.SESION_PERDIDA }),
     );
   });
 
@@ -152,10 +188,13 @@ describe('avisos que salen de la red', () => {
     globalThis.fetch = vi.fn((url) => {
       if (String(url).includes('/auth/refresh-token')) {
         return new Promise((resolver) => {
-          soltarElRefresco = () => resolver(respuesta(200, { csrf_token: 't' }));
+          soltarElRefresco = () =>
+            resolver(respuesta(200, { csrf_token: 't' }));
         });
       }
-      return Promise.resolve(respuesta(401, { detail: 'Token inválido o expirado' }));
+      return Promise.resolve(
+        respuesta(401, { detail: 'Token inválido o expirado' }),
+      );
     });
 
     const una = fetchWithTokenRefresh('/api/v1/a', { method: 'GET' });
@@ -165,36 +204,53 @@ describe('avisos que salen de la red', () => {
     await Promise.all([una, otra]);
 
     const perdidas = aviso.avisaDelCierreForzado.mock.calls.filter(
-      ([a]) => a.motivo === MOTIVO_DEL_CIERRE.SESION_PERDIDA
+      ([a]) => a.motivo === MOTIVO_DEL_CIERRE.SESION_PERDIDA,
     );
-    expect(perdidas.map(([a]) => a.endpoint).sort()).toEqual(['/api/v1/a', '/api/v1/b']);
+    expect(perdidas.map(([a]) => a.endpoint).sort()).toEqual([
+      '/api/v1/a',
+      '/api/v1/b',
+    ]);
   });
 
   it('S3: la sonda avisa si tras refrescar bien current-user vuelve con 401 de token', async () => {
     globalThis.fetch = vi
       .fn()
-      .mockResolvedValueOnce(respuesta(401, { detail: 'Token inválido o expirado' }))
+      .mockResolvedValueOnce(
+        respuesta(401, { detail: 'Token inválido o expirado' }),
+      )
       .mockResolvedValueOnce(respuesta(200, { csrf_token: 't' }))
-      .mockResolvedValueOnce(respuesta(401, { detail: 'Credenciales de autenticación no proporcionadas' }));
+      .mockResolvedValueOnce(
+        respuesta(401, {
+          detail: 'Credenciales de autenticación no proporcionadas',
+        }),
+      );
 
     const resultado = await preguntaLaSesionSinInterceptor();
 
     expect(resultado.estado).toBe('rechazada');
     expect(aviso.avisaDelCierreForzado).toHaveBeenCalledWith(
-      expect.objectContaining({ motivo: MOTIVO_DEL_CIERRE.SESION_PERDIDA, estado: 401 })
+      expect.objectContaining({
+        motivo: MOTIVO_DEL_CIERRE.SESION_PERDIDA,
+        estado: 401,
+      }),
     );
   });
 
   it('S4: la sonda avisa si current-user dice «dispositivo revocado»', async () => {
-    globalThis.fetch = vi
-      .fn()
-      .mockResolvedValueOnce(respuesta(401, { detail: 'Dispositivo revocado. Por favor, inicia sesión nuevamente.' }));
+    globalThis.fetch = vi.fn().mockResolvedValueOnce(
+      respuesta(401, {
+        detail: 'Dispositivo revocado. Por favor, inicia sesión nuevamente.',
+      }),
+    );
 
     const resultado = await preguntaLaSesionSinInterceptor();
 
     expect(resultado.estado).toBe('revocada');
     expect(aviso.avisaDelCierreForzado).toHaveBeenCalledWith(
-      expect.objectContaining({ motivo: MOTIVO_DEL_CIERRE.DISPOSITIVO_REVOCADO, estado: 401 })
+      expect.objectContaining({
+        motivo: MOTIVO_DEL_CIERRE.DISPOSITIVO_REVOCADO,
+        estado: 401,
+      }),
     );
   });
 });

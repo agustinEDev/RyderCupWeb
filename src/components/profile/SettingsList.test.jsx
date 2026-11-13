@@ -14,7 +14,7 @@ describe('SettingsList', () => {
     renderInRouter(
       <SettingsGroup title="Cuenta">
         <SettingsRow label="Editar perfil" onClick={vi.fn()} />
-      </SettingsGroup>
+      </SettingsGroup>,
     );
 
     expect(screen.getByRole('heading', { name: 'Cuenta' })).toBeInTheDocument();
@@ -25,7 +25,10 @@ describe('SettingsList', () => {
     // como enlace
     renderInRouter(<SettingsRow label="Términos" to="/terms" />);
 
-    expect(screen.getByRole('link', { name: /Términos/ })).toHaveAttribute('href', '/terms');
+    expect(screen.getByRole('link', { name: /Términos/ })).toHaveAttribute(
+      'href',
+      '/terms',
+    );
   });
 
   it('renders an action row as a button and fires it', () => {
@@ -38,13 +41,19 @@ describe('SettingsList', () => {
   });
 
   it('keeps rows at the minimum touch target', () => {
-    renderInRouter(<SettingsRow label="Editar perfil" icon={Shield} onClick={vi.fn()} />);
+    renderInRouter(
+      <SettingsRow label="Editar perfil" icon={Shield} onClick={vi.fn()} />,
+    );
 
-    expect(screen.getByRole('button', { name: /Editar perfil/ }).className).toContain('min-h-[44px]');
+    expect(
+      screen.getByRole('button', { name: /Editar perfil/ }).className,
+    ).toContain('min-h-[44px]');
   });
 
   it('marks a destructive row without turning it into a solid red block', () => {
-    renderInRouter(<SettingsRow label="Cerrar sesión" onClick={vi.fn()} tone="danger" />);
+    renderInRouter(
+      <SettingsRow label="Cerrar sesión" onClick={vi.fn()} tone="danger" />,
+    );
 
     const row = screen.getByRole('button', { name: /Cerrar sesión/ });
     expect(row.className).toContain('text-red-600');
@@ -54,8 +63,12 @@ describe('SettingsList', () => {
 
   it('drops the chevron on a destructive row', () => {
     // El chevron promete navegacion; cerrar sesion no lleva a otra pantalla
-    const { container: navigating } = renderInRouter(<SettingsRow label="Editar perfil" onClick={vi.fn()} />);
-    const { container: destructive } = renderInRouter(<SettingsRow label="Cerrar sesión" onClick={vi.fn()} tone="danger" />);
+    const { container: navigating } = renderInRouter(
+      <SettingsRow label="Editar perfil" onClick={vi.fn()} />,
+    );
+    const { container: destructive } = renderInRouter(
+      <SettingsRow label="Cerrar sesión" onClick={vi.fn()} tone="danger" />,
+    );
 
     expect(navigating.querySelectorAll('svg')).toHaveLength(1);
     expect(destructive.querySelectorAll('svg')).toHaveLength(0);
@@ -65,7 +78,7 @@ describe('SettingsList', () => {
     renderInRouter(
       <SettingsControlRow label="Idioma">
         <button type="button">ES</button>
-      </SettingsControlRow>
+      </SettingsControlRow>,
     );
 
     expect(screen.getByRole('button', { name: 'ES' })).toBeInTheDocument();

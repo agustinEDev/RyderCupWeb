@@ -58,7 +58,11 @@ export function useAnotacionEnCurso({
   const mapaPorAbrir = useRef(null);
   const ultimo = useRef(null);
   const aqui = useRef({ pathname, search });
-  const { abierto: mapaAbierto, disponible: mapaDisponible, abrir: abrirElMapa } = mapa;
+  const {
+    abierto: mapaAbierto,
+    disponible: mapaDisponible,
+    abrir: abrirElMapa,
+  } = mapa;
 
   // Una vez por anotación: también si la pantalla pasa de un partido a otro sin
   // desmontarse. Lo guardado se lee aquí, cuando la pantalla tiene sus datos
@@ -66,14 +70,39 @@ export function useAnotacionEnCurso({
     if (!cargada || repuestaPara.current === ruta) return;
     repuestaPara.current = ruta;
     pendiente.current = null;
-    const guardado = cuenta && !terminada ? estadoDeEstaAnotacion({ cuenta, pathname, search }) : null;
+    const guardado =
+      cuenta && !terminada
+        ? estadoDeEstaAnotacion({ cuenta, pathname, search })
+        : null;
     if (!guardado) return;
-    const pestanaRepuesta = pestanas.includes(guardado.pestana) ? guardado.pestana : null;
+    const pestanaRepuesta = pestanas.includes(guardado.pestana)
+      ? guardado.pestana
+      : null;
     if (pestanaRepuesta) alCambiarDePestana(pestanaRepuesta);
-    const enElHoyo = Math.min(guardado.hoyo, Math.max(1, totalHoyos || guardado.hoyo));
+    const enElHoyo = Math.min(
+      guardado.hoyo,
+      Math.max(1, totalHoyos || guardado.hoyo),
+    );
     alCambiarDeHoyo(enElHoyo);
-    pendiente.current = { hoyo: enElHoyo, hoyoDeAntes: hoyo, pestana: pestanaRepuesta, mapa: guardado.mapa };
-  }, [cargada, ruta, cuenta, terminada, pathname, search, pestanas, alCambiarDePestana, totalHoyos, alCambiarDeHoyo, hoyo]);
+    pendiente.current = {
+      hoyo: enElHoyo,
+      hoyoDeAntes: hoyo,
+      pestana: pestanaRepuesta,
+      mapa: guardado.mapa,
+    };
+  }, [
+    cargada,
+    ruta,
+    cuenta,
+    terminada,
+    pathname,
+    search,
+    pestanas,
+    alCambiarDePestana,
+    totalHoyos,
+    alCambiarDeHoyo,
+    hoyo,
+  ]);
 
   useEffect(() => {
     const p = pendiente.current;
@@ -85,7 +114,8 @@ export function useAnotacionEnCurso({
     // El jugador se movió (a otro hoyo u otra pestaña, también de vuelta a la de
     // antes) antes de que se repusiera todo: manda lo suyo
     const seMovio =
-      (!enElHoyo && (p.hoyoVisto || hoyo !== p.hoyoDeAntes)) || (!enLaPestana && p.pestanaVista);
+      (!enElHoyo && (p.hoyoVisto || hoyo !== p.hoyoDeAntes)) ||
+      (!enLaPestana && p.pestanaVista);
     if (seMovio) {
       pendiente.current = null;
       return;
@@ -115,11 +145,26 @@ export function useAnotacionEnCurso({
       olvidaLaAnotacionEnCurso();
       return;
     }
-    const listo = repuestaPara.current === ruta && pendiente.current === null && cuenta !== null;
+    const listo =
+      repuestaPara.current === ruta &&
+      pendiente.current === null &&
+      cuenta !== null;
     const conMapa = Boolean(mapaAbierto) || mapaPorAbrir.current === hoyo;
-    ultimo.current = listo ? { cuenta, pathname, search, pestana, hoyo, mapa: conMapa } : null;
+    ultimo.current = listo
+      ? { cuenta, pathname, search, pestana, hoyo, mapa: conMapa }
+      : null;
     if (ultimo.current) guardaLaAnotacionEnCurso(ultimo.current);
-  }, [cargada, terminada, cuenta, ruta, pathname, search, pestana, hoyo, mapaAbierto]);
+  }, [
+    cargada,
+    terminada,
+    cuenta,
+    ruta,
+    pathname,
+    search,
+    pestana,
+    hoyo,
+    mapaAbierto,
+  ]);
 
   // Al pasar a segundo plano y al volver, la hora de nuevo: las 6 horas cuentan desde la
   // última vez en la anotación, también si la app sigue viva horas en segundo plano
@@ -128,7 +173,8 @@ export function useAnotacionEnCurso({
       if (ultimo.current) guardaLaAnotacionEnCurso(ultimo.current);
     };
     document.addEventListener('visibilitychange', alCambiarDeVisibilidad);
-    return () => document.removeEventListener('visibilitychange', alCambiarDeVisibilidad);
+    return () =>
+      document.removeEventListener('visibilitychange', alCambiarDeVisibilidad);
   }, []);
 
   // Salir de la anotación la olvida, si lo guardado es de ella (no lo de otra pestaña)

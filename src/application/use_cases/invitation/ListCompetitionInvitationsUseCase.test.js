@@ -13,7 +13,11 @@ const mockInvitation = Invitation.fromPersistence({
   createdAt: '2026-02-18T10:00:00Z',
   updatedAt: '2026-02-18T10:00:00Z',
 });
-mockInvitation._apiData = { competition_name: 'Summer Cup', inviter_name: 'Creator', invitee_name: 'Player' };
+mockInvitation._apiData = {
+  competition_name: 'Summer Cup',
+  inviter_name: 'Creator',
+  invitee_name: 'Player',
+};
 
 describe('ListCompetitionInvitationsUseCase', () => {
   let useCase;
@@ -26,21 +30,29 @@ describe('ListCompetitionInvitationsUseCase', () => {
         totalCount: 1,
       }),
     };
-    useCase = new ListCompetitionInvitationsUseCase({ invitationRepository: mockRepo });
+    useCase = new ListCompetitionInvitationsUseCase({
+      invitationRepository: mockRepo,
+    });
   });
 
   it('should throw if invitationRepository is missing', () => {
-    expect(() => new ListCompetitionInvitationsUseCase({})).toThrow('requires invitationRepository');
+    expect(() => new ListCompetitionInvitationsUseCase({})).toThrow(
+      'requires invitationRepository',
+    );
   });
 
   it('should throw for invalid competitionId', async () => {
-    await expect(useCase.execute('')).rejects.toThrow('competitionId is required');
+    await expect(useCase.execute('')).rejects.toThrow(
+      'competitionId is required',
+    );
   });
 
   it('should list competition invitations and return DTOs', async () => {
     const result = await useCase.execute('comp-1', { status: 'PENDING' });
 
-    expect(mockRepo.getCompetitionInvitations).toHaveBeenCalledWith('comp-1', { status: 'PENDING' });
+    expect(mockRepo.getCompetitionInvitations).toHaveBeenCalledWith('comp-1', {
+      status: 'PENDING',
+    });
     expect(result.invitations).toHaveLength(1);
     expect(result.invitations[0].inviteeName).toBe('Player');
     expect(result.totalCount).toBe(1);

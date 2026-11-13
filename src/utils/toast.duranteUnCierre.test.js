@@ -10,7 +10,8 @@ const custom = vi.hoisted(() => vi.fn(() => 'id'));
 vi.mock('react-hot-toast', () => ({ default: { custom, dismiss: vi.fn() } }));
 
 const { customToast } = await import('./toast');
-const { empiezaElCierreDeEstaCarga, olvidaElCierreDeEstaCarga } = await import('./cierreDeEstaCarga');
+const { empiezaElCierreDeEstaCarga, olvidaElCierreDeEstaCarga } =
+  await import('./cierreDeEstaCarga');
 
 describe('los avisos de error durante un cierre forzado', () => {
   beforeEach(() => {
@@ -27,14 +28,19 @@ describe('los avisos de error durante un cierre forzado', () => {
   it('A1: con un cierre en marcha, el aviso de error de una pantalla no sale', () => {
     empiezaElCierreDeEstaCarga();
 
-    expect(customToast.error('Error al cargar las competiciones')).toBeUndefined();
+    expect(
+      customToast.error('Error al cargar las competiciones'),
+    ).toBeUndefined();
     expect(custom).not.toHaveBeenCalled();
   });
 
   it('A1: el aviso del propio cierre sí sale, sin pasar su marca a la librería', () => {
     empiezaElCierreDeEstaCarga();
 
-    customToast.error('Tu sesión ha terminado.', { delCierre: true, duration: 8000 });
+    customToast.error('Tu sesión ha terminado.', {
+      delCierre: true,
+      duration: 8000,
+    });
 
     expect(custom).toHaveBeenCalledTimes(1);
     expect(custom.mock.calls[0][1]).toEqual({ duration: 8000 });

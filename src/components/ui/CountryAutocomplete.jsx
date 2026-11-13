@@ -2,7 +2,10 @@ import { useState, useRef, useEffect, useMemo, useId } from 'react';
 import { ChevronDown, Search, X } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { CountryFlag } from './CountryFlag';
-import { formatCountryName, sortCountriesByName } from '../../services/countries';
+import {
+  formatCountryName,
+  sortCountriesByName,
+} from '../../services/countries';
 
 /**
  * CountryAutocomplete Component
@@ -45,7 +48,7 @@ const CountryAutocomplete = ({
   // del componente no cambie el aspecto de la pantalla que lo monta.
   labelClassName = 'block text-sm font-medium text-gray-700 mb-1',
   required = false,
-  emptyMessage
+  emptyMessage,
 }) => {
   const { t, i18n } = useTranslation('common');
   const [isOpen, setIsOpen] = useState(false);
@@ -63,13 +66,13 @@ const CountryAutocomplete = ({
   const listboxId = `${controlId}-listbox`;
   const optionId = (index) => `${controlId}-option-${index}`;
 
-  const selectedCountry = countries.find(c => c.code === value);
+  const selectedCountry = countries.find((c) => c.code === value);
 
   // Ordenar aquí, y no en el servidor, es lo que hace que el cambio de idioma
   // reordene la lista sin volver a pedirla
   const sortedCountries = useMemo(
     () => sortCountriesByName(countries, i18n.language),
-    [countries, i18n.language]
+    [countries, i18n.language],
   );
 
   // Cambiar de idioma con la lista abierta la reordena bajo el resaltado: el
@@ -80,7 +83,8 @@ const CountryAutocomplete = ({
   const setActiveIndex = (siguiente) =>
     setResaltado((antes) => {
       const actual = antes.de === sortedCountries ? antes.indice : -1;
-      const indice = typeof siguiente === 'function' ? siguiente(actual) : siguiente;
+      const indice =
+        typeof siguiente === 'function' ? siguiente(actual) : siguiente;
       return { indice, de: sortedCountries };
     });
 
@@ -91,10 +95,11 @@ const CountryAutocomplete = ({
     const query = searchQuery.trim().toLowerCase();
     if (!query) return sortedCountries;
 
-    return sortedCountries.filter(country =>
-      (country.name_en || '').toLowerCase().includes(query) ||
-      (country.name_es || '').toLowerCase().includes(query) ||
-      (country.code || '').toLowerCase().includes(query)
+    return sortedCountries.filter(
+      (country) =>
+        (country.name_en || '').toLowerCase().includes(query) ||
+        (country.name_es || '').toLowerCase().includes(query) ||
+        (country.code || '').toLowerCase().includes(query),
     );
   }, [searchQuery, sortedCountries]);
 
@@ -104,20 +109,29 @@ const CountryAutocomplete = ({
   // Afganistán. Se pegan los bordes para que la ventana vaya siempre llena.
   const selectedIndex = searchQuery.trim()
     ? -1
-    : matchingCountries.findIndex(c => c.code === value);
-  const windowStart = selectedIndex < 0
-    ? 0
-    : Math.max(0, Math.min(
-      selectedIndex - Math.floor(MAX_VISIBLE_OPTIONS / 2),
-      matchingCountries.length - MAX_VISIBLE_OPTIONS
-    ));
-  const visibleCountries = matchingCountries.slice(windowStart, windowStart + MAX_VISIBLE_OPTIONS);
+    : matchingCountries.findIndex((c) => c.code === value);
+  const windowStart =
+    selectedIndex < 0
+      ? 0
+      : Math.max(
+          0,
+          Math.min(
+            selectedIndex - Math.floor(MAX_VISIBLE_OPTIONS / 2),
+            matchingCountries.length - MAX_VISIBLE_OPTIONS,
+          ),
+        );
+  const visibleCountries = matchingCountries.slice(
+    windowStart,
+    windowStart + MAX_VISIBLE_OPTIONS,
+  );
   // Posición del elegido dentro de lo pintado: de ahí parten las flechas
-  const selectedVisibleIndex = selectedIndex < 0 ? -1 : selectedIndex - windowStart;
+  const selectedVisibleIndex =
+    selectedIndex < 0 ? -1 : selectedIndex - windowStart;
   // Centrada en el elegido, la ventana deja países por encima a los que no se
   // llega desplazando: se avisa arriba de esos y abajo solo de los de después
   const hiddenBeforeCount = windowStart;
-  const hiddenCount = matchingCountries.length - windowStart - visibleCountries.length;
+  const hiddenCount =
+    matchingCountries.length - windowStart - visibleCountries.length;
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -150,7 +164,9 @@ const CountryAutocomplete = ({
     if (activeIndex < 0) return;
     // Los botones son los hijos directos del listbox, así que el índice basta
     // y no hace falta buscar por id ni escapar el selector
-    listRef.current?.children[activeIndex]?.scrollIntoView?.({ block: 'nearest' });
+    listRef.current?.children[activeIndex]?.scrollIntoView?.({
+      block: 'nearest',
+    });
   }, [activeIndex]);
 
   const close = ({ returnFocus = false } = {}) => {
@@ -232,7 +248,8 @@ const CountryAutocomplete = ({
     }
     if (e.key === 'End') {
       e.preventDefault();
-      if (visibleCountries.length > 0) setActiveIndex(visibleCountries.length - 1);
+      if (visibleCountries.length > 0)
+        setActiveIndex(visibleCountries.length - 1);
       return;
     }
     if (e.key === 'Enter') {
@@ -245,7 +262,8 @@ const CountryAutocomplete = ({
       // Sin nada resaltado, Enter sobre una búsqueda escrita elige el primer
       // resultado, que es lo que el gesto pretendía. Sin búsqueda no elige
       // nada: quedarse con el primero de los 200 sería elegir por el usuario.
-      const choice = active || (searchQuery.trim() ? visibleCountries[0] : null);
+      const choice =
+        active || (searchQuery.trim() ? visibleCountries[0] : null);
       if (choice) handleSelect(choice);
     }
   };
@@ -284,14 +302,20 @@ const CountryAutocomplete = ({
           } ${disabled ? 'bg-gray-100 cursor-not-allowed' : 'bg-white'} focus:outline-none`}
         >
           {selectedCountry && (
-            <CountryFlag countryCode={selectedCountry.code} style={{ width: '24px', height: 'auto' }} />
+            <CountryFlag
+              countryCode={selectedCountry.code}
+              style={{ width: '24px', height: 'auto' }}
+            />
           )}
           {/* min-w-0 en el hijo flexible: sin él, truncate no recorta nada
               porque el ancho mínimo de la caja es el del texto entero */}
-          <span className={`min-w-0 truncate ${selectedCountry ? 'text-gray-900' : 'text-gray-400'}`}>
+          <span
+            className={`min-w-0 truncate ${selectedCountry ? 'text-gray-900' : 'text-gray-400'}`}
+          >
             {selectedCountry
               ? formatCountryName(selectedCountry, i18n.language)
-              : placeholder || t('countrySelect.placeholder', 'Select a country...')}
+              : placeholder ||
+                t('countrySelect.placeholder', 'Select a country...')}
           </span>
         </button>
 
@@ -324,7 +348,10 @@ const CountryAutocomplete = ({
         <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg overflow-hidden">
           <div className="p-2 border-b border-gray-200">
             <div className="relative">
-              <Search aria-hidden="true" className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <Search
+                aria-hidden="true"
+                className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400"
+              />
               <input
                 ref={inputRef}
                 type="text"
@@ -334,15 +361,23 @@ const CountryAutocomplete = ({
                 aria-autocomplete="list"
                 // Lo que se anuncia al moverse con las flechas: sin esto el
                 // lector de pantalla no dice nada al cambiar el resaltado
-                aria-activedescendant={activeIndex >= 0 ? optionId(activeIndex) : undefined}
+                aria-activedescendant={
+                  activeIndex >= 0 ? optionId(activeIndex) : undefined
+                }
                 value={searchQuery}
                 onChange={(e) => {
                   setSearchQuery(e.target.value);
                   setActiveIndex(-1);
                 }}
                 onKeyDown={handleSearchKeyDown}
-                placeholder={t('countrySelect.searchPlaceholder', 'Search countries...')}
-                aria-label={t('countrySelect.searchPlaceholder', 'Search countries...')}
+                placeholder={t(
+                  'countrySelect.searchPlaceholder',
+                  'Search countries...',
+                )}
+                aria-label={t(
+                  'countrySelect.searchPlaceholder',
+                  'Search countries...',
+                )}
                 data-testid="country-autocomplete-search"
                 className="w-full pl-9 pr-3 py-2 border border-gray-200 rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none text-sm"
               />
@@ -374,15 +409,20 @@ const CountryAutocomplete = ({
             aria-label={
               typeof label === 'string'
                 ? label
-                : placeholder || t('countrySelect.placeholder', 'Select a country...')
+                : placeholder ||
+                  t('countrySelect.placeholder', 'Select a country...')
             }
             className="overflow-y-auto max-h-60 py-1"
           >
             {visibleCountries.length === 0 ? (
               <p className="px-4 py-3 text-center text-gray-500 text-sm">
                 {searchQuery
-                  ? t('countrySelect.noMatches', 'No countries match your search')
-                  : emptyMessage || t('countrySelect.empty', 'No countries available')}
+                  ? t(
+                      'countrySelect.noMatches',
+                      'No countries match your search',
+                    )
+                  : emptyMessage ||
+                    t('countrySelect.empty', 'No countries available')}
               </p>
             ) : (
               visibleCountries.map((country, index) => (
@@ -402,13 +442,18 @@ const CountryAutocomplete = ({
                         : 'text-gray-900'
                   }`}
                 >
-                  <CountryFlag countryCode={country.code} style={{ width: '24px', height: 'auto' }} />
+                  <CountryFlag
+                    countryCode={country.code}
+                    style={{ width: '24px', height: 'auto' }}
+                  />
                   {/* El nombre va en el idioma activo, no siempre en inglés:
                       el resto de la aplicación ya usa formatCountryName */}
                   <span className="truncate text-sm">
                     {formatCountryName(country, i18n.language)}
                   </span>
-                  <span className="ml-auto text-xs text-gray-400 flex-shrink-0">{country.code}</span>
+                  <span className="ml-auto text-xs text-gray-400 flex-shrink-0">
+                    {country.code}
+                  </span>
                 </button>
               ))
             )}

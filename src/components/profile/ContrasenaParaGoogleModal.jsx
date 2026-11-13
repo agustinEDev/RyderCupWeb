@@ -20,7 +20,12 @@ import ModalShell from '../ui/ModalShell';
  *   a Google y la ventana se queda; para desvincular, la página se queda y la ventana se
  *   cierra (también tras un fallo general avisado con un toast)
  */
-const ContrasenaParaGoogleModal = ({ isOpen, onClose, alConfirmar, para = 'vincular' }) => {
+const ContrasenaParaGoogleModal = ({
+  isOpen,
+  onClose,
+  alConfirmar,
+  para = 'vincular',
+}) => {
   const desvincular = para === 'desvincular';
   const { t } = useTranslation('profile');
   const [password, setPassword] = useState('');
@@ -81,9 +86,16 @@ const ContrasenaParaGoogleModal = ({ isOpen, onClose, alConfirmar, para = 'vincu
           {t('edit.linkedAccounts.passwordTitle')}
         </h2>
         <p id={explicacion} className="text-sm text-gray-600 mb-4">
-          {t(desvincular ? 'edit.linkedAccounts.unlinkPasswordExplanation' : 'edit.linkedAccounts.passwordExplanation')}
+          {t(
+            desvincular
+              ? 'edit.linkedAccounts.unlinkPasswordExplanation'
+              : 'edit.linkedAccounts.passwordExplanation',
+          )}
         </p>
-        <label htmlFor={campo} className="block text-sm font-medium text-gray-700 mb-1">
+        <label
+          htmlFor={campo}
+          className="block text-sm font-medium text-gray-700 mb-1"
+        >
           {t('edit.linkedAccounts.currentPassword')}
         </label>
         <input
@@ -120,7 +132,11 @@ const ContrasenaParaGoogleModal = ({ isOpen, onClose, alConfirmar, para = 'vincu
           >
             {comprobando
               ? t('edit.linkedAccounts.checking')
-              : t(desvincular ? 'edit.linkedAccounts.unlink' : 'edit.linkedAccounts.continue')}
+              : t(
+                  desvincular
+                    ? 'edit.linkedAccounts.unlink'
+                    : 'edit.linkedAccounts.continue',
+                )}
           </button>
         </div>
       </form>

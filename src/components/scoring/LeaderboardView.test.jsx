@@ -6,7 +6,7 @@ import scheduleEn from '../../i18n/locales/en/schedule.json';
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
-    t: (key, opts) => opts ? `${key} ${JSON.stringify(opts)}` : key,
+    t: (key, opts) => (opts ? `${key} ${JSON.stringify(opts)}` : key),
     i18n: { language: 'en' },
   }),
 }));
@@ -48,8 +48,13 @@ describe('LeaderboardView — los partidos de un jugador (release social 2, /cod
   it('con ?jugador=, se destacan los suyos, en cualquiera de los dos equipos', () => {
     render(<LeaderboardView leaderboard={mockLeaderboard} jugador="u4" />);
 
-    expect(screen.getByTestId('leaderboard-match-m-2')).toHaveAttribute('data-destacado', 'true');
-    expect(screen.getByTestId('leaderboard-match-m-1')).not.toHaveAttribute('data-destacado');
+    expect(screen.getByTestId('leaderboard-match-m-2')).toHaveAttribute(
+      'data-destacado',
+      'true',
+    );
+    expect(screen.getByTestId('leaderboard-match-m-1')).not.toHaveAttribute(
+      'data-destacado',
+    );
   });
 
   it('el primero de los suyos se centra en pantalla', () => {
@@ -59,7 +64,9 @@ describe('LeaderboardView — los partidos de un jugador (release social 2, /cod
     render(<LeaderboardView leaderboard={mockLeaderboard} jugador="u1" />);
 
     expect(centrar).toHaveBeenCalledTimes(1);
-    expect(centrar.mock.contexts[0]).toBe(screen.getByTestId('leaderboard-match-m-1'));
+    expect(centrar.mock.contexts[0]).toBe(
+      screen.getByTestId('leaderboard-match-m-1'),
+    );
   });
 
   it('con uno acabado y otro en juego, se centra el de en juego, que se pinta primero', () => {
@@ -68,14 +75,22 @@ describe('LeaderboardView — los partidos de un jugador (release social 2, /cod
     const conLosDos = {
       ...mockLeaderboard,
       matches: [
-        { ...mockLeaderboard.matches[1], teamAPlayers: [{ userId: 'u9', userName: 'Nueve' }] },
-        { ...mockLeaderboard.matches[0], teamBPlayers: [{ userId: 'u9', userName: 'Nueve' }] },
+        {
+          ...mockLeaderboard.matches[1],
+          teamAPlayers: [{ userId: 'u9', userName: 'Nueve' }],
+        },
+        {
+          ...mockLeaderboard.matches[0],
+          teamBPlayers: [{ userId: 'u9', userName: 'Nueve' }],
+        },
       ],
     };
 
     render(<LeaderboardView leaderboard={conLosDos} jugador="u9" />);
 
-    expect(centrar.mock.contexts[0]).toBe(screen.getByTestId('leaderboard-match-m-1'));
+    expect(centrar.mock.contexts[0]).toBe(
+      screen.getByTestId('leaderboard-match-m-1'),
+    );
   });
 
   it('sin jugador, ninguno', () => {
@@ -87,17 +102,32 @@ describe('LeaderboardView — los partidos de un jugador (release social 2, /cod
 
 describe('LeaderboardView', () => {
   it.each([
-    ['es', scheduleEs, { SINGLES: 'Individuales', FOURBALL: 'Fourball', FOURSOMES: 'Foursomes' }],
-    ['en', scheduleEn, { SINGLES: 'Singles', FOURBALL: 'Fourball', FOURSOMES: 'Foursomes' }],
-  ])('los formatos que pinta tienen texto en %s (no solo la clave; CodeRabbit)', (_, schedule, esperados) => {
-    expect(schedule.formats).toMatchObject(esperados);
-  });
+    [
+      'es',
+      scheduleEs,
+      { SINGLES: 'Individuales', FOURBALL: 'Fourball', FOURSOMES: 'Foursomes' },
+    ],
+    [
+      'en',
+      scheduleEn,
+      { SINGLES: 'Singles', FOURBALL: 'Fourball', FOURSOMES: 'Foursomes' },
+    ],
+  ])(
+    'los formatos que pinta tienen texto en %s (no solo la clave; CodeRabbit)',
+    (_, schedule, esperados) => {
+      expect(schedule.formats).toMatchObject(esperados);
+    },
+  );
 
   it('el formato de cada partido sale traducido, como en el resto de la competición', () => {
     render(<LeaderboardView leaderboard={mockLeaderboard} />);
 
-    expect(screen.getAllByText(/formats\.SINGLES \{"ns":"schedule"/).length).toBeGreaterThan(0);
-    expect(screen.getAllByText(/formats\.FOURBALL \{"ns":"schedule"/).length).toBeGreaterThan(0);
+    expect(
+      screen.getAllByText(/formats\.SINGLES \{"ns":"schedule"/).length,
+    ).toBeGreaterThan(0);
+    expect(
+      screen.getAllByText(/formats\.FOURBALL \{"ns":"schedule"/).length,
+    ).toBeGreaterThan(0);
     expect(screen.queryByText(/- FOURBALL$/)).not.toBeInTheDocument();
   });
 
@@ -118,12 +148,16 @@ describe('LeaderboardView', () => {
 
   it('should show in progress section', () => {
     render(<LeaderboardView leaderboard={mockLeaderboard} />);
-    expect(screen.getByTestId('leaderboard-view')).toHaveTextContent('leaderboard.inProgress');
+    expect(screen.getByTestId('leaderboard-view')).toHaveTextContent(
+      'leaderboard.inProgress',
+    );
   });
 
   it('should show completed section', () => {
     render(<LeaderboardView leaderboard={mockLeaderboard} />);
-    expect(screen.getByTestId('leaderboard-view')).toHaveTextContent('leaderboard.completed');
+    expect(screen.getByTestId('leaderboard-view')).toHaveTextContent(
+      'leaderboard.completed',
+    );
   });
 
   it('should display match details', () => {
@@ -134,8 +168,12 @@ describe('LeaderboardView', () => {
 
   it('should show player names', () => {
     render(<LeaderboardView leaderboard={mockLeaderboard} />);
-    expect(screen.getByTestId('leaderboard-view')).toHaveTextContent('Player A');
-    expect(screen.getByTestId('leaderboard-view')).toHaveTextContent('Player B');
+    expect(screen.getByTestId('leaderboard-view')).toHaveTextContent(
+      'Player A',
+    );
+    expect(screen.getByTestId('leaderboard-view')).toHaveTextContent(
+      'Player B',
+    );
   });
 
   it('should show match standing without team name', () => {
@@ -167,7 +205,7 @@ describe('LeaderboardView', () => {
     const matchCard = screen.getByTestId('leaderboard-match-m-2');
     // Team B won — Player D should be bold
     const boldElements = matchCard.querySelectorAll('.font-bold.text-gray-900');
-    const boldTexts = Array.from(boldElements).map(el => el.textContent);
+    const boldTexts = Array.from(boldElements).map((el) => el.textContent);
     expect(boldTexts).toContain('Player D');
   });
 
@@ -283,7 +321,9 @@ describe('LeaderboardView', () => {
   it('should show no matches message when empty', () => {
     const empty = { ...mockLeaderboard, matches: [] };
     render(<LeaderboardView leaderboard={empty} />);
-    expect(screen.getByTestId('leaderboard-view')).toHaveTextContent('leaderboard.noMatches');
+    expect(screen.getByTestId('leaderboard-view')).toHaveTextContent(
+      'leaderboard.noMatches',
+    );
   });
 
   // FE #738 · con varias sesiones salían dos «#2 - SINGLES» seguidos (sábado
@@ -309,11 +349,17 @@ describe('LeaderboardView', () => {
           leaderboard={{
             ...mockLeaderboard,
             matches: [
-              partido('viernes', { roundDate: '2026-09-25', sessionType: 'MORNING' }),
-              partido('sabado', { roundDate: '2026-09-26', sessionType: 'AFTERNOON' }),
+              partido('viernes', {
+                roundDate: '2026-09-25',
+                sessionType: 'MORNING',
+              }),
+              partido('sabado', {
+                roundDate: '2026-09-26',
+                sessionType: 'AFTERNOON',
+              }),
             ],
           }}
-        />
+        />,
       );
 
       const viernes = screen.getByTestId('sesion-viernes');
@@ -327,24 +373,45 @@ describe('LeaderboardView', () => {
     it('L4: sin sesión, como antes: ni «undefined» ni separadores sueltos', () => {
       render(
         <LeaderboardView
-          leaderboard={{ ...mockLeaderboard, matches: [partido('viejo', { roundDate: null, sessionType: null })] }}
-        />
+          leaderboard={{
+            ...mockLeaderboard,
+            matches: [partido('viejo', { roundDate: null, sessionType: null })],
+          }}
+        />,
       );
 
       expect(screen.queryByTestId('sesion-viejo')).not.toBeInTheDocument();
       const tarjeta = screen.getByTestId('leaderboard-match-viejo');
-      expect(tarjeta).toHaveTextContent('#2 - formats.SINGLES {"ns":"schedule","defaultValue":"SINGLES"}');
+      expect(tarjeta).toHaveTextContent(
+        '#2 - formats.SINGLES {"ns":"schedule","defaultValue":"SINGLES"}',
+      );
       expect(tarjeta).not.toHaveTextContent('undefined');
     });
 
     it('L6: un formato sin traducción sale tal cual, no «formats.X» (`/code-review`)', () => {
-      render(<LeaderboardView leaderboard={{ ...mockLeaderboard, matches: [partido('raro', { matchFormat: 'GREENSOME' })] }} />);
+      render(
+        <LeaderboardView
+          leaderboard={{
+            ...mockLeaderboard,
+            matches: [partido('raro', { matchFormat: 'GREENSOME' })],
+          }}
+        />,
+      );
 
-      expect(screen.getByTestId('leaderboard-match-raro')).toHaveTextContent('"defaultValue":"GREENSOME"');
+      expect(screen.getByTestId('leaderboard-match-raro')).toHaveTextContent(
+        '"defaultValue":"GREENSOME"',
+      );
     });
 
     it('L5: un partido sin formato no pinta «formats.undefined» (revisor)', () => {
-      render(<LeaderboardView leaderboard={{ ...mockLeaderboard, matches: [partido('sin', { matchFormat: null })] }} />);
+      render(
+        <LeaderboardView
+          leaderboard={{
+            ...mockLeaderboard,
+            matches: [partido('sin', { matchFormat: null })],
+          }}
+        />,
+      );
 
       const tarjeta = screen.getByTestId('leaderboard-match-sin');
       expect(tarjeta).not.toHaveTextContent('formats.');

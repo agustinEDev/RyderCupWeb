@@ -4,7 +4,12 @@ import { usePosicionGps } from './usePosicionGps';
 
 /** Un GPS falso: guarda los callbacks para disparar posiciones y errores. */
 const gpsFalso = () => {
-  const gps = { watchPosition: vi.fn(), clearWatch: vi.fn(), exito: null, error: null };
+  const gps = {
+    watchPosition: vi.fn(),
+    clearWatch: vi.fn(),
+    exito: null,
+    error: null,
+  };
   gps.watchPosition.mockImplementation((exito, error) => {
     gps.exito = exito;
     gps.error = error;
@@ -12,7 +17,9 @@ const gpsFalso = () => {
   });
   return gps;
 };
-const posicion = (lat, lon, accuracy) => ({ coords: { latitude: lat, longitude: lon, accuracy } });
+const posicion = (lat, lon, accuracy) => ({
+  coords: { latitude: lat, longitude: lon, accuracy },
+});
 
 describe('usePosicionGps', () => {
   let gps;
@@ -35,7 +42,9 @@ describe('usePosicionGps', () => {
     const { result } = renderHook(() => usePosicionGps({ activo: true }));
 
     expect(gps.watchPosition).toHaveBeenCalledTimes(1);
-    expect(gps.watchPosition.mock.calls[0][2]).toMatchObject({ enableHighAccuracy: true });
+    expect(gps.watchPosition.mock.calls[0][2]).toMatchObject({
+      enableHighAccuracy: true,
+    });
     expect(result.current.estado).toBe('buscando');
 
     act(() => gps.exito(posicion(36.28, -5.33, 8)));
@@ -95,16 +104,23 @@ describe('usePosicionGps', () => {
   });
 
   it('al volver a activarse, no enseña la posición de antes', () => {
-    const { result, rerender } = renderHook(({ activo }) => usePosicionGps({ activo }), {
-      initialProps: { activo: true },
-    });
+    const { result, rerender } = renderHook(
+      ({ activo }) => usePosicionGps({ activo }),
+      {
+        initialProps: { activo: true },
+      },
+    );
     act(() => gps.exito(posicion(36.28, -5.33, 8)));
     expect(result.current.estado).toBe('listo');
 
     rerender({ activo: false });
     rerender({ activo: true });
 
-    expect(result.current).toEqual({ estado: 'buscando', posicion: null, precision: null });
+    expect(result.current).toEqual({
+      estado: 'buscando',
+      posicion: null,
+      precision: null,
+    });
   });
 
   it('G4: una lectura con coordenadas rotas (NaN) se descarta', () => {
@@ -112,7 +128,11 @@ describe('usePosicionGps', () => {
 
     act(() => gps.exito(posicion(Number.NaN, -5.33, 5)));
 
-    expect(result.current).toEqual({ estado: 'buscando', posicion: null, precision: null });
+    expect(result.current).toEqual({
+      estado: 'buscando',
+      posicion: null,
+      precision: null,
+    });
   });
 
   it('G5: un permiso denegado al instante (dentro de la propia llamada) no rompe la pantalla', () => {
@@ -129,7 +149,10 @@ describe('usePosicionGps', () => {
   });
 
   it('un navegador sin geolocalización → «no disponible»', () => {
-    vi.stubGlobal('navigator', { ...globalThis.navigator, geolocation: undefined });
+    vi.stubGlobal('navigator', {
+      ...globalThis.navigator,
+      geolocation: undefined,
+    });
 
     const { result } = renderHook(() => usePosicionGps({ activo: true }));
 
@@ -138,10 +161,16 @@ describe('usePosicionGps', () => {
   // Revisión del admin (17 oct): para centrar su mapa vale una posición de
   // ordenador, que por Wi-Fi suele ir de 40 a 150 m
   it('con otra precisión máxima, acepta las que caben en ella', () => {
-    const { result } = renderHook(() => usePosicionGps({ activo: true, precisionMaxima: Infinity }));
+    const { result } = renderHook(() =>
+      usePosicionGps({ activo: true, precisionMaxima: Infinity }),
+    );
 
     act(() => gps.exito(posicion(36.28, -5.33, 120)));
 
-    expect(result.current).toEqual({ estado: 'listo', posicion: { lat: 36.28, lon: -5.33 }, precision: 120 });
+    expect(result.current).toEqual({
+      estado: 'listo',
+      posicion: { lat: 36.28, lon: -5.33 },
+      precision: 120,
+    });
   });
 });

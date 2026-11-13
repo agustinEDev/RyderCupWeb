@@ -14,7 +14,14 @@ const PESTANAS = [
   { id: 'tres', contenido: 'Tres', testId: 'p-tres' },
 ];
 
-const Prueba = ({ inicial = 'uno', onElegir, montadoSiempre = false, etiqueta = 'Vistas', listaProps = {}, enfocable }) => {
+const Prueba = ({
+  inicial = 'uno',
+  onElegir,
+  montadoSiempre = false,
+  etiqueta = 'Vistas',
+  listaProps = {},
+  enfocable,
+}) => {
   const [actual, setActual] = useState(inicial);
   const elegir = (id) => {
     onElegir?.(id);
@@ -29,7 +36,12 @@ const Prueba = ({ inicial = 'uno', onElegir, montadoSiempre = false, etiqueta = 
         {...listaProps}
       />
       {PESTANAS.map((p) => (
-        <PanelDePestana key={p.id} id={p.id} montadoSiempre={montadoSiempre} enfocable={enfocable}>
+        <PanelDePestana
+          key={p.id}
+          id={p.id}
+          montadoSiempre={montadoSiempre}
+          enfocable={enfocable}
+        >
           <p>contenido {p.id}</p>
         </PanelDePestana>
       ))}
@@ -37,7 +49,8 @@ const Prueba = ({ inicial = 'uno', onElegir, montadoSiempre = false, etiqueta = 
   );
 };
 
-const pestana = (nombre, dentro = screen) => dentro.getByRole('tab', { name: nombre });
+const pestana = (nombre, dentro = screen) =>
+  dentro.getByRole('tab', { name: nombre });
 
 describe('Pestanas', () => {
   it('P1: la barra es un tablist con su nombre y cada pestaña un tab con su estado', () => {
@@ -47,7 +60,11 @@ describe('Pestanas', () => {
     const tabs = within(barra).getAllByRole('tab');
     expect(tabs).toHaveLength(3);
     tabs.forEach((tab) => expect(tab).toHaveAttribute('type', 'button'));
-    expect(tabs.map((tab) => tab.getAttribute('aria-selected'))).toEqual(['true', 'false', 'false']);
+    expect(tabs.map((tab) => tab.getAttribute('aria-selected'))).toEqual([
+      'true',
+      'false',
+      'false',
+    ]);
   });
 
   it('P1: una sola pestaña en el orden del tabulador, la abierta', () => {
@@ -90,7 +107,11 @@ describe('Pestanas', () => {
     expect(pestana('Uno')).toHaveAttribute('tabindex', '0');
     expect(pestana('Dos')).toHaveAttribute('tabindex', '-1');
     expect(pestana('Tres')).toHaveAttribute('tabindex', '-1');
-    expect(screen.getAllByRole('tab').every((tab) => tab.getAttribute('aria-selected') === 'false')).toBe(true);
+    expect(
+      screen
+        .getAllByRole('tab')
+        .every((tab) => tab.getAttribute('aria-selected') === 'false'),
+    ).toBe(true);
   });
 
   it('P1: sin montadoSiempre, solo existe el panel abierto', () => {
@@ -103,11 +124,15 @@ describe('Pestanas', () => {
   it('P1: con montadoSiempre, los cerrados siguen montados pero ocultos', () => {
     render(<Prueba montadoSiempre />);
 
-    const cerrado = screen.getByText('contenido dos').closest('[role="tabpanel"]');
+    const cerrado = screen
+      .getByText('contenido dos')
+      .closest('[role="tabpanel"]');
     expect(cerrado).toHaveAttribute('hidden');
     expect(pestana('Dos')).toHaveAttribute('aria-controls', cerrado.id);
     expect(cerrado).toHaveAttribute('aria-labelledby', pestana('Dos').id);
-    expect(screen.getByText('contenido uno').closest('[role="tabpanel"]')).not.toHaveAttribute('hidden');
+    expect(
+      screen.getByText('contenido uno').closest('[role="tabpanel"]'),
+    ).not.toHaveAttribute('hidden');
   });
 
   it('pulsar una pestaña la abre', () => {
@@ -116,7 +141,9 @@ describe('Pestanas', () => {
     fireEvent.click(pestana('Tres'));
 
     expect(pestana('Tres')).toHaveAttribute('aria-selected', 'true');
-    expect(screen.getByRole('tabpanel', { name: 'Tres' })).toHaveTextContent('contenido tres');
+    expect(screen.getByRole('tabpanel', { name: 'Tres' })).toHaveTextContent(
+      'contenido tres',
+    );
   });
 
   it('P2: la flecha derecha abre la siguiente y le lleva el foco; de la última vuelve a la primera', () => {
@@ -162,7 +189,11 @@ describe('Pestanas', () => {
     render(<Prueba onElegir={onElegir} />);
 
     for (const key of ['ArrowDown', 'ArrowUp', 'Enter', 'a']) {
-      const evento = new globalThis.KeyboardEvent('keydown', { key, bubbles: true, cancelable: true });
+      const evento = new globalThis.KeyboardEvent('keydown', {
+        key,
+        bubbles: true,
+        cancelable: true,
+      });
       pestana('Uno').dispatchEvent(evento);
       expect(evento.defaultPrevented).toBe(false);
     }
@@ -178,7 +209,12 @@ describe('Pestanas', () => {
 
     for (const modificador of ['altKey', 'metaKey', 'ctrlKey']) {
       for (const key of ['ArrowRight', 'ArrowLeft', 'Home', 'End']) {
-        const evento = new globalThis.KeyboardEvent('keydown', { key, [modificador]: true, bubbles: true, cancelable: true });
+        const evento = new globalThis.KeyboardEvent('keydown', {
+          key,
+          [modificador]: true,
+          bubbles: true,
+          cancelable: true,
+        });
         pestana('Uno').dispatchEvent(evento);
         expect(evento.defaultPrevented).toBe(false);
       }
@@ -198,7 +234,11 @@ describe('Pestanas', () => {
   it('P2: las flechas no desplazan la página (se quedan con la tecla)', () => {
     render(<Prueba />);
 
-    const evento = new globalThis.KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true, cancelable: true });
+    const evento = new globalThis.KeyboardEvent('keydown', {
+      key: 'ArrowRight',
+      bubbles: true,
+      cancelable: true,
+    });
     pestana('Uno').dispatchEvent(evento);
 
     expect(evento.defaultPrevented).toBe(true);
@@ -209,21 +249,32 @@ describe('Pestanas', () => {
       <>
         <Prueba etiqueta="Primera" />
         <Prueba etiqueta="Segunda" />
-      </>
+      </>,
     );
 
     const ids = screen.getAllByRole('tab').map((tab) => tab.id);
     const paneles = screen.getAllByRole('tabpanel').map((panel) => panel.id);
-    expect(new Set([...ids, ...paneles]).size).toBe(ids.length + paneles.length);
+    expect(new Set([...ids, ...paneles]).size).toBe(
+      ids.length + paneles.length,
+    );
     const segunda = screen.getByRole('tablist', { name: 'Segunda' });
-    fireEvent.keyDown(within(segunda).getByRole('tab', { name: 'Uno' }), { key: 'ArrowRight' });
+    fireEvent.keyDown(within(segunda).getByRole('tab', { name: 'Uno' }), {
+      key: 'ArrowRight',
+    });
     expect(within(segunda).getByRole('tab', { name: 'Dos' })).toHaveFocus();
     const primera = screen.getByRole('tablist', { name: 'Primera' });
-    expect(within(primera).getByRole('tab', { name: 'Uno' })).toHaveAttribute('aria-selected', 'true');
+    expect(within(primera).getByRole('tab', { name: 'Uno' })).toHaveAttribute(
+      'aria-selected',
+      'true',
+    );
   });
 
   it('P3: cada pestaña lleva su data-testid y la clase según esté abierta; la barra, lo que se le pase', () => {
-    render(<Prueba listaProps={{ className: 'flex barra', 'data-testid': 'mi-barra' }} />);
+    render(
+      <Prueba
+        listaProps={{ className: 'flex barra', 'data-testid': 'mi-barra' }}
+      />,
+    );
 
     expect(screen.getByTestId('p-uno')).toHaveClass('activa');
     expect(screen.getByTestId('p-dos')).toHaveClass('inactiva');
@@ -236,13 +287,26 @@ describe('Pestanas', () => {
       <GrupoDePestanas actual="a" onElegir={() => {}}>
         <ListaDePestanas
           etiqueta="Listas"
-          pestanas={[{ id: 'a', contenido: <>Amigos <span data-testid="contador">3</span></> }]}
+          pestanas={[
+            {
+              id: 'a',
+              contenido: (
+                <>
+                  Amigos <span data-testid="contador">3</span>
+                </>
+              ),
+            },
+          ]}
           claseDePestana={() => ''}
         />
-      </GrupoDePestanas>
+      </GrupoDePestanas>,
     );
 
-    expect(within(screen.getByRole('tab', { name: 'Amigos 3' })).getByTestId('contador')).toBeInTheDocument();
+    expect(
+      within(screen.getByRole('tab', { name: 'Amigos 3' })).getByTestId(
+        'contador',
+      ),
+    ).toBeInTheDocument();
   });
 
   it('P5: la barra acepta una ref y un tabIndex, para devolverle el foco', () => {
@@ -250,8 +314,16 @@ describe('Pestanas', () => {
       const ref = useRef(null);
       return (
         <GrupoDePestanas actual="a" onElegir={() => {}}>
-          <ListaDePestanas ref={ref} tabIndex={-1} etiqueta="Vistas" pestanas={[{ id: 'a', contenido: 'A' }]} claseDePestana={() => ''} />
-          <button type="button" onClick={() => ref.current.focus()}>volver</button>
+          <ListaDePestanas
+            ref={ref}
+            tabIndex={-1}
+            etiqueta="Vistas"
+            pestanas={[{ id: 'a', contenido: 'A' }]}
+            claseDePestana={() => ''}
+          />
+          <button type="button" onClick={() => ref.current.focus()}>
+            volver
+          </button>
         </GrupoDePestanas>
       );
     };
@@ -267,7 +339,11 @@ describe('Pestanas', () => {
       const [actual, setActual] = useState('uno');
       return (
         <GrupoDePestanas actual={actual} onElegir={setActual} panelUnico>
-          <ListaDePestanas etiqueta="Vistas" pestanas={PESTANAS} claseDePestana={() => ''} />
+          <ListaDePestanas
+            etiqueta="Vistas"
+            pestanas={PESTANAS}
+            claseDePestana={() => ''}
+          />
           <PanelDePestana>
             <p>lista de {actual}</p>
           </PanelDePestana>
@@ -277,7 +353,9 @@ describe('Pestanas', () => {
     render(<Unico />);
 
     const panel = screen.getByRole('tabpanel', { name: 'Uno' });
-    screen.getAllByRole('tab').forEach((tab) => expect(tab).toHaveAttribute('aria-controls', panel.id));
+    screen
+      .getAllByRole('tab')
+      .forEach((tab) => expect(tab).toHaveAttribute('aria-controls', panel.id));
 
     fireEvent.keyDown(pestana('Uno'), { key: 'End' });
 
@@ -289,11 +367,21 @@ describe('Pestanas', () => {
     const onSubmit = vi.fn((e) => e.preventDefault());
     render(
       <GrupoDePestanas actual="a" onElegir={() => {}}>
-        <ListaDePestanas etiqueta="Vistas" pestanas={[{ id: 'a', contenido: 'A' }]} claseDePestana={() => ''} />
-        <PanelDePestana id="a" como="form" className="p-4" onSubmit={onSubmit} data-testid="panel-form">
+        <ListaDePestanas
+          etiqueta="Vistas"
+          pestanas={[{ id: 'a', contenido: 'A' }]}
+          claseDePestana={() => ''}
+        />
+        <PanelDePestana
+          id="a"
+          como="form"
+          className="p-4"
+          onSubmit={onSubmit}
+          data-testid="panel-form"
+        >
           <button type="submit">enviar</button>
         </PanelDePestana>
-      </GrupoDePestanas>
+      </GrupoDePestanas>,
     );
 
     const panel = screen.getByTestId('panel-form');
@@ -313,7 +401,7 @@ describe('Pestanas', () => {
         <PanelDePestana id="manual" data-testid="manual">
           <p>manual</p>
         </PanelDePestana>
-      </GrupoDePestanas>
+      </GrupoDePestanas>,
     );
 
     expect(screen.queryByText('rfeg')).toBeNull();

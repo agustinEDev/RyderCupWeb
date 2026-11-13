@@ -1,5 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
+import {
+  render,
+  screen,
+  fireEvent,
+  waitFor,
+  act,
+} from '@testing-library/react';
 import { MemoryRouter } from 'react-router';
 import CreateQuickMatchModal from './CreateQuickMatchModal';
 
@@ -20,25 +26,49 @@ vi.mock('react-i18next', () => ({
 vi.mock('../golf_course/GolfCourseSearchBox', () => ({
   default: ({ onCourseSelect }) => (
     <>
-      <button type="button" onClick={() => onCourseSelect({ id: 'gc-a', name: 'Campo A' })}>elegir A</button>
-      <button type="button" onClick={() => onCourseSelect({ id: 'gc-b', name: 'Campo B' })}>elegir B</button>
-      <button type="button" onClick={() => onCourseSelect(null)}>quitar campo</button>
+      <button
+        type="button"
+        onClick={() => onCourseSelect({ id: 'gc-a', name: 'Campo A' })}
+      >
+        elegir A
+      </button>
+      <button
+        type="button"
+        onClick={() => onCourseSelect({ id: 'gc-b', name: 'Campo B' })}
+      >
+        elegir B
+      </button>
+      <button type="button" onClick={() => onCourseSelect(null)}>
+        quitar campo
+      </button>
     </>
   ),
 }));
 
 const mockGetGolfCourse = vi.fn();
-vi.mock('../../utils/toast', () => ({ default: { info: vi.fn(), error: vi.fn(), success: vi.fn() } }));
+vi.mock('../../utils/toast', () => ({
+  default: { info: vi.fn(), error: vi.fn(), success: vi.fn() },
+}));
 vi.mock('../../composition', () => ({
   createAndStartQuickMatchUseCase: { execute: vi.fn() },
-  listFriendsUseCase: { execute: vi.fn().mockResolvedValue({ friendships: [], totalCount: 0 }) },
+  listFriendsUseCase: {
+    execute: vi.fn().mockResolvedValue({ friendships: [], totalCount: 0 }),
+  },
   getGolfCourseUseCase: { execute: (...a) => mockGetGolfCourse(...a) },
-  listMyQuickMatchesUseCase: { execute: vi.fn().mockResolvedValue({ quickMatches: [] }) },
+  listMyQuickMatchesUseCase: {
+    execute: vi.fn().mockResolvedValue({ quickMatches: [] }),
+  },
 }));
 
 const tee = (color, gender) => ({ color, gender });
-const DE_A = { tees: [tee('YELLOW', 'MALE'), tee('RED', 'FEMALE')], isFromRfeg: () => true };
-const DE_B = { tees: [tee('BLUE', 'MALE'), tee('ORANGE', 'FEMALE')], isFromRfeg: () => false };
+const DE_A = {
+  tees: [tee('YELLOW', 'MALE'), tee('RED', 'FEMALE')],
+  isFromRfeg: () => true,
+};
+const DE_B = {
+  tees: [tee('BLUE', 'MALE'), tee('ORANGE', 'FEMALE')],
+  isFromRfeg: () => false,
+};
 
 const abre = () =>
   render(
@@ -46,19 +76,32 @@ const abre = () =>
       <CreateQuickMatchModal
         onClose={vi.fn()}
         onStarted={vi.fn()}
-        currentUser={{ id: 'yo', display_name: 'Yo', handicap: 12, gender: 'MALE' }}
+        currentUser={{
+          id: 'yo',
+          display_name: 'Yo',
+          handicap: 12,
+          gender: 'MALE',
+        }}
       />
-    </MemoryRouter>
+    </MemoryRouter>,
   );
 
 const barras = () =>
-  screen.queryAllByTestId(/^quick-match-creator-tee-option-/).map((b) => b.dataset.testid.replace('quick-match-creator-tee-option-', ''));
+  screen
+    .queryAllByTestId(/^quick-match-creator-tee-option-/)
+    .map((b) =>
+      b.dataset.testid.replace('quick-match-creator-tee-option-', ''),
+    );
 
 const eligeA = async () => {
   fireEvent.click(screen.getByText('elegir A'));
   await waitFor(() => expect(barras()).toEqual(['YELLOW|MALE']));
   expect(screen.getByText('source.federatedData')).toBeInTheDocument();
-  await waitFor(() => expect(screen.getByTestId('quick-match-creator-tee-option-YELLOW|MALE')).toHaveAttribute('aria-pressed', 'true'));
+  await waitFor(() =>
+    expect(
+      screen.getByTestId('quick-match-creator-tee-option-YELLOW|MALE'),
+    ).toHaveAttribute('aria-pressed', 'true'),
+  );
 };
 
 describe('CreateQuickMatchModal · barras al cambiar de campo', () => {
@@ -67,7 +110,9 @@ describe('CreateQuickMatchModal · barras al cambiar de campo', () => {
   });
 
   it('T3-12: quitar el campo quita sus barras y la cita de la RFEG', async () => {
-    mockGetGolfCourse.mockImplementation((id) => Promise.resolve(id === 'gc-a' ? DE_A : DE_B));
+    mockGetGolfCourse.mockImplementation((id) =>
+      Promise.resolve(id === 'gc-a' ? DE_A : DE_B),
+    );
     abre();
     await eligeA();
 
@@ -81,7 +126,11 @@ describe('CreateQuickMatchModal · barras al cambiar de campo', () => {
   it('T3-12b: con las de B en camino se ven las de A, sin cita ni barra elegida; luego las de B', async () => {
     let responderB;
     mockGetGolfCourse.mockImplementation((id) =>
-      id === 'gc-a' ? Promise.resolve(DE_A) : new Promise((r) => { responderB = r; })
+      id === 'gc-a'
+        ? Promise.resolve(DE_A)
+        : new Promise((r) => {
+            responderB = r;
+          }),
     );
     abre();
     await eligeA();
@@ -90,7 +139,9 @@ describe('CreateQuickMatchModal · barras al cambiar de campo', () => {
     await act(async () => {});
 
     expect(barras()).toEqual(['YELLOW|MALE']);
-    expect(screen.getByTestId('quick-match-creator-tee-option-YELLOW|MALE')).toHaveAttribute('aria-pressed', 'false');
+    expect(
+      screen.getByTestId('quick-match-creator-tee-option-YELLOW|MALE'),
+    ).toHaveAttribute('aria-pressed', 'false');
     expect(screen.queryByText('source.federatedData')).toBeNull();
 
     await act(async () => {
@@ -102,7 +153,11 @@ describe('CreateQuickMatchModal · barras al cambiar de campo', () => {
   it('T3-12c: de A a B, si la de A llega después se quedan las de B', async () => {
     let responderA;
     mockGetGolfCourse.mockImplementation((id) =>
-      id === 'gc-a' ? new Promise((r) => { responderA = r; }) : Promise.resolve(DE_B)
+      id === 'gc-a'
+        ? new Promise((r) => {
+            responderA = r;
+          })
+        : Promise.resolve(DE_B),
     );
     abre();
     fireEvent.click(screen.getByText('elegir A'));

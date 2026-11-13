@@ -15,7 +15,8 @@ vi.mock('react-i18next', () => ({
   }),
 }));
 
-const { terminaElArranque, reiniciaLaCortina } = await import('../../utils/cortinaDeArranque');
+const { terminaElArranque, reiniciaLaCortina } =
+  await import('../../utils/cortinaDeArranque');
 const FullScreenLoader = (await import('./FullScreenLoader')).default;
 
 describe('FullScreenLoader', () => {
@@ -84,7 +85,9 @@ describe('las dos caras de la espera', () => {
   it('durante el arranque va sin marcar: el CSS la pinta de verde', () => {
     render(<FullScreenLoader />);
 
-    expect(screen.getByRole('status')).not.toHaveClass('pantalla-de-espera--transicion');
+    expect(screen.getByRole('status')).not.toHaveClass(
+      'pantalla-de-espera--transicion',
+    );
     expect(screen.getByRole('status')).toHaveClass('pantalla-de-espera');
   });
 
@@ -108,7 +111,9 @@ describe('las dos caras de la espera', () => {
 
     render(<FullScreenLoader />);
 
-    expect(screen.getByRole('status')).toHaveClass('pantalla-de-espera--transicion');
+    expect(screen.getByRole('status')).toHaveClass(
+      'pantalla-de-espera--transicion',
+    );
   });
 
   it('en la transicion el monograma va VERDE a la fuerza', () => {
@@ -150,7 +155,9 @@ describe('la cara no cambia a media espera', () => {
 
     // El MISMO nodo, y con la misma cara
     expect(screen.getByRole('status')).toBe(antes);
-    expect(screen.getByRole('status')).not.toHaveClass('pantalla-de-espera--transicion');
+    expect(screen.getByRole('status')).not.toHaveClass(
+      'pantalla-de-espera--transicion',
+    );
   });
 });
 
@@ -171,13 +178,16 @@ describe('la fase del anillo', () => {
     // Aproximar con `performance.now()` deja fuera lo que el navegador tarda en
     // analizar la pagina: son las decenas de milisegundos que separan el
     // arranque del documento del nacimiento de la capa
-    document.body.innerHTML = '<div id="arranque"><span id="arranque-anillo"></span></div>';
+    document.body.innerHTML =
+      '<div id="arranque"><span id="arranque-anillo"></span></div>';
     const capa = document.getElementById('arranque-anillo');
     capa.getAnimations = () => [{ currentTime: 250 }];
 
     render(<FullScreenLoader />);
 
-    expect(document.querySelector('.espera-anillo').style.animationDelay).toBe('-250ms');
+    expect(document.querySelector('.espera-anillo').style.animationDelay).toBe(
+      '-250ms',
+    );
     document.body.innerHTML = '';
   });
 
@@ -187,7 +197,9 @@ describe('la fase del anillo', () => {
     const anillo = document.querySelector('.espera-anillo');
     expect(anillo).not.toBeNull();
     const retraso = anillo.style.animationDelay;
-    expect(retraso, 'sin retraso negativo, el arco salta en el relevo').toMatch(/^-\d+(\.\d+)?ms$/);
+    expect(retraso, 'sin retraso negativo, el arco salta en el relevo').toMatch(
+      /^-\d+(\.\d+)?ms$/,
+    );
     // Dentro de la vuelta: un desfase mayor que el ciclo no significa nada
     expect(Math.abs(parseFloat(retraso))).toBeLessThan(1000);
   });

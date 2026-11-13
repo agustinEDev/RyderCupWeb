@@ -9,8 +9,22 @@ const baseProps = () => ({
   matchFormat: 'SINGLES',
   status: QuickMatchStatus.pending(),
   participants: [
-    { participantId: 'p-1', userId: 'user-1', name: 'Creator', handicap: 10, team: null, isGuest: false },
-    { participantId: 'p-2', userId: null, name: 'Guest Player', handicap: 20, team: null, isGuest: true },
+    {
+      participantId: 'p-1',
+      userId: 'user-1',
+      name: 'Creator',
+      handicap: 10,
+      team: null,
+      isGuest: false,
+    },
+    {
+      participantId: 'p-2',
+      userId: null,
+      name: 'Guest Player',
+      handicap: 20,
+      team: null,
+      isGuest: true,
+    },
   ],
   scorerIds: ['p-1'],
 });
@@ -24,17 +38,24 @@ describe('QuickMatch', () => {
     });
 
     it('should throw if id is missing', () => {
-      expect(() => new QuickMatch({ ...baseProps(), id: '' })).toThrow(TypeError);
+      expect(() => new QuickMatch({ ...baseProps(), id: '' })).toThrow(
+        TypeError,
+      );
     });
 
     it('should throw if status is not a QuickMatchStatus instance', () => {
-      expect(() => new QuickMatch({ ...baseProps(), status: 'PENDING' })).toThrow(TypeError);
+      expect(
+        () => new QuickMatch({ ...baseProps(), status: 'PENDING' }),
+      ).toThrow(TypeError);
     });
 
     it('should create a free-play QuickMatch with scoringFormat instead of matchFormat', () => {
       const props = baseProps();
       props.matchFormat = null;
-      const quickMatch = new QuickMatch({ ...props, scoringFormat: 'STABLEFORD' });
+      const quickMatch = new QuickMatch({
+        ...props,
+        scoringFormat: 'STABLEFORD',
+      });
       expect(quickMatch.matchFormat).toBeNull();
       expect(quickMatch.scoringFormat).toBe('STABLEFORD');
     });
@@ -46,13 +67,17 @@ describe('QuickMatch', () => {
     });
 
     it('should throw if both matchFormat and scoringFormat are provided', () => {
-      expect(() => new QuickMatch({ ...baseProps(), scoringFormat: 'MEDAL' })).toThrow(TypeError);
+      expect(
+        () => new QuickMatch({ ...baseProps(), scoringFormat: 'MEDAL' }),
+      ).toThrow(TypeError);
     });
 
     it('should throw on an invalid scoringFormat', () => {
       const props = baseProps();
       props.matchFormat = null;
-      expect(() => new QuickMatch({ ...props, scoringFormat: 'BOGEY' })).toThrow(TypeError);
+      expect(
+        () => new QuickMatch({ ...props, scoringFormat: 'BOGEY' }),
+      ).toThrow(TypeError);
     });
   });
 
@@ -72,7 +97,10 @@ describe('QuickMatch', () => {
     });
 
     it('should carry over a provided name', () => {
-      const quickMatch = QuickMatch.fromPersistence({ ...baseProps(), name: 'Viernes con Rafa' });
+      const quickMatch = QuickMatch.fromPersistence({
+        ...baseProps(),
+        name: 'Viernes con Rafa',
+      });
       expect(quickMatch.name).toBe('Viernes con Rafa');
     });
   });
@@ -99,7 +127,9 @@ describe('QuickMatch', () => {
     it('should find a participant by participantId or userId', () => {
       const quickMatch = QuickMatch.fromPersistence(baseProps());
       expect(quickMatch.findParticipant('p-2').name).toBe('Guest Player');
-      expect(quickMatch.findParticipantByUserId('user-1').participantId).toBe('p-1');
+      expect(quickMatch.findParticipantByUserId('user-1').participantId).toBe(
+        'p-1',
+      );
       expect(quickMatch.findParticipant('missing')).toBeNull();
     });
   });
@@ -107,7 +137,10 @@ describe('QuickMatch', () => {
   describe('equals', () => {
     it('should compare by id', () => {
       const a = QuickMatch.fromPersistence(baseProps());
-      const b = QuickMatch.fromPersistence({ ...baseProps(), matchFormat: 'FOURBALL' });
+      const b = QuickMatch.fromPersistence({
+        ...baseProps(),
+        matchFormat: 'FOURBALL',
+      });
       expect(a.equals(b)).toBe(true);
       expect(a.equals('not-a-quick-match')).toBe(false);
     });
@@ -116,7 +149,10 @@ describe('QuickMatch', () => {
 
 describe('QuickMatch · playedAt en la persistencia', () => {
   it('H5: toPersistence lo guarda en ISO (nulo si no hay)', () => {
-    const conFecha = new QuickMatch({ ...baseProps(), playedAt: '2026-10-21T22:30:00.000Z' });
+    const conFecha = new QuickMatch({
+      ...baseProps(),
+      playedAt: '2026-10-21T22:30:00.000Z',
+    });
     expect(conFecha.toPersistence().playedAt).toBe('2026-10-21T22:30:00.000Z');
     expect(new QuickMatch(baseProps()).toPersistence().playedAt).toBeNull();
   });

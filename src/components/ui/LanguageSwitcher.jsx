@@ -25,7 +25,8 @@ const LanguageSwitcher = ({ compacto = false }) => {
 
   // Normalizar idioma: extraer solo los primeros 2 caracteres (ej. "es-ES" → "es")
   // Defensive fallback: si i18n.language es null/undefined, usar fallback seguro
-  const safeLanguage = i18n.language || i18n.options?.fallbackLng?.[0] || languages[0].code;
+  const safeLanguage =
+    i18n.language || i18n.options?.fallbackLng?.[0] || languages[0].code;
   const currentLanguage = safeLanguage.split('-')[0];
 
   // El select nativo, invisible, cubre el globo: se ve el icono y al pulsar se
@@ -70,8 +71,18 @@ const LanguageSwitcher = ({ compacto = false }) => {
       </select>
       {/* Icono de dropdown personalizado */}
       <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
-        <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+        <svg
+          className="w-4 h-4 text-gray-400"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M19 9l-7 7-7-7"
+          />
         </svg>
       </div>
     </div>

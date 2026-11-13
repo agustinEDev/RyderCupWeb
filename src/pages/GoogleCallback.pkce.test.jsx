@@ -16,13 +16,23 @@ import { BrowserRouter, Routes, Route } from 'react-router';
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({ t: (clave) => clave, i18n: { language: 'es' } }),
 }));
-vi.mock('../utils/toast', () => ({ default: { error: vi.fn(), success: vi.fn(), info: vi.fn() } }));
-vi.mock('../hooks/useAuthContext', () => ({ useAuthContext: () => ({ setUser: vi.fn(), updateCsrfToken: vi.fn() }) }));
+vi.mock('../utils/toast', () => ({
+  default: { error: vi.fn(), success: vi.fn(), info: vi.fn() },
+}));
+vi.mock('../hooks/useAuthContext', () => ({
+  useAuthContext: () => ({ setUser: vi.fn(), updateCsrfToken: vi.fn() }),
+}));
 vi.mock('../composition', () => ({
   googleLoginUseCase: { execute: vi.fn() },
   linkGoogleAccountUseCase: { execute: vi.fn() },
 }));
-const estado = vi.hoisted(() => ({ valid: true, flow: 'login', verifier: null, recogidos: 0, vueltas: 0 }));
+const estado = vi.hoisted(() => ({
+  valid: true,
+  flow: 'login',
+  verifier: null,
+  recogidos: 0,
+  vueltas: 0,
+}));
 vi.mock('../utils/googleOAuth', () => ({
   verifyOAuthState: () => ({ flow: estado.flow, valid: estado.valid }),
   recogeLaVueltaDeGoogle: () => null,
@@ -36,7 +46,8 @@ vi.mock('../utils/googleOAuth', () => ({
   },
 }));
 
-const { googleLoginUseCase, linkGoogleAccountUseCase } = await import('../composition');
+const { googleLoginUseCase, linkGoogleAccountUseCase } =
+  await import('../composition');
 const { default: GoogleCallback } = await import('./GoogleCallback');
 
 const VERIFIER = 'v'.repeat(43);
@@ -48,14 +59,20 @@ const abrir = (query) => {
       <Routes>
         <Route path="/auth/google/callback" element={<GoogleCallback />} />
       </Routes>
-    </BrowserRouter>
+    </BrowserRouter>,
   );
 };
 
 describe('GoogleCallback · PKCE (fase 3)', () => {
   afterEach(() => {
     vi.clearAllMocks();
-    Object.assign(estado, { valid: true, flow: 'login', verifier: null, recogidos: 0, vueltas: 0 });
+    Object.assign(estado, {
+      valid: true,
+      flow: 'login',
+      verifier: null,
+      recogidos: 0,
+      vueltas: 0,
+    });
     window.history.replaceState(null, '', '/');
   });
 
@@ -65,7 +82,9 @@ describe('GoogleCallback · PKCE (fase 3)', () => {
 
     abrir('?code=abc&state=ok');
 
-    await waitFor(() => expect(googleLoginUseCase.execute).toHaveBeenCalledWith('abc', VERIFIER));
+    await waitFor(() =>
+      expect(googleLoginUseCase.execute).toHaveBeenCalledWith('abc', VERIFIER),
+    );
   });
 
   it('K2: al vincular manda el verifier', async () => {
@@ -75,13 +94,20 @@ describe('GoogleCallback · PKCE (fase 3)', () => {
 
     abrir('?code=abc&state=ok');
 
-    await waitFor(() => expect(linkGoogleAccountUseCase.execute).toHaveBeenCalledWith('abc', VERIFIER));
+    await waitFor(() =>
+      expect(linkGoogleAccountUseCase.execute).toHaveBeenCalledWith(
+        'abc',
+        VERIFIER,
+      ),
+    );
   });
 
   it('K3: sin verifier dice que se vuelva a intentar y no llama al backend', async () => {
     abrir('?code=abc&state=ok');
 
-    expect(await screen.findByText('google.missingVerifier')).toBeInTheDocument();
+    expect(
+      await screen.findByText('google.missingVerifier'),
+    ).toBeInTheDocument();
     expect(screen.getByText('google.errorTitle')).toBeInTheDocument();
     expect(googleLoginUseCase.execute).not.toHaveBeenCalled();
     expect(linkGoogleAccountUseCase.execute).not.toHaveBeenCalled();
@@ -92,7 +118,9 @@ describe('GoogleCallback · PKCE (fase 3)', () => {
     abrir('?code=abc&state=ok');
 
     // Vinculando no se «entra»: texto propio (revisión de la fase 3)
-    expect(await screen.findByText('google.missingVerifierLink')).toBeInTheDocument();
+    expect(
+      await screen.findByText('google.missingVerifierLink'),
+    ).toBeInTheDocument();
     expect(screen.getByText('google.linkErrorTitle')).toBeInTheDocument();
     expect(linkGoogleAccountUseCase.execute).not.toHaveBeenCalled();
   });
@@ -101,16 +129,19 @@ describe('GoogleCallback · PKCE (fase 3)', () => {
     ['el state no cuadra', '?code=abc&state=otro', false],
     ['Google devuelve un error', '?error=access_denied&state=ok', true],
     ['falta el código', '?state=ok', true],
-  ])('K5: %s: el verifier se recoge (y se borra) igual', async (_caso, query, valido) => {
-    estado.valid = valido;
-    estado.verifier = VERIFIER;
+  ])(
+    'K5: %s: el verifier se recoge (y se borra) igual',
+    async (_caso, query, valido) => {
+      estado.valid = valido;
+      estado.verifier = VERIFIER;
 
-    abrir(query);
+      abrir(query);
 
-    expect(await screen.findByText('google.errorTitle')).toBeInTheDocument();
-    expect(estado.recogidos).toBe(1);
-    expect(googleLoginUseCase.execute).not.toHaveBeenCalled();
-  });
+      expect(await screen.findByText('google.errorTitle')).toBeInTheDocument();
+      expect(estado.recogidos).toBe(1);
+      expect(googleLoginUseCase.execute).not.toHaveBeenCalled();
+    },
+  );
 
   // La página de vuelta guardada lleva el token del enlace de cambio de correo: se
   // recoge (y borra) también cuando se sale antes de canjear (/code-review)
@@ -119,13 +150,16 @@ describe('GoogleCallback · PKCE (fase 3)', () => {
     ['con el state que no cuadra', '?code=abc&state=otro', false, VERIFIER],
     ['con un error de Google', '?error=access_denied&state=ok', true, VERIFIER],
     ['sin código', '?state=ok', true, VERIFIER],
-  ])('K6: %s, la vuelta guardada se recoge igual', async (_caso, query, valido, verifier) => {
-    estado.valid = valido;
-    estado.verifier = verifier;
+  ])(
+    'K6: %s, la vuelta guardada se recoge igual',
+    async (_caso, query, valido, verifier) => {
+      estado.valid = valido;
+      estado.verifier = verifier;
 
-    abrir(query);
+      abrir(query);
 
-    expect(await screen.findByText('google.errorTitle')).toBeInTheDocument();
-    expect(estado.vueltas).toBe(1);
-  });
+      expect(await screen.findByText('google.errorTitle')).toBeInTheDocument();
+      expect(estado.vueltas).toBe(1);
+    },
+  );
 });

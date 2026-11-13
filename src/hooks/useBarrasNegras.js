@@ -12,7 +12,11 @@ export function useBarrasNegras() {
     const html = document.documentElement;
     const { body } = document;
     const tema = document.head.querySelector('meta[name="theme-color"]');
-    const antes = { html: html.style.backgroundColor, body: body.style.backgroundColor, tema: tema?.getAttribute('content') };
+    const antes = {
+      html: html.style.backgroundColor,
+      body: body.style.backgroundColor,
+      tema: tema?.getAttribute('content'),
+    };
     html.style.backgroundColor = '#000000';
     body.style.backgroundColor = '#000000';
     tema?.setAttribute('content', '#000000');

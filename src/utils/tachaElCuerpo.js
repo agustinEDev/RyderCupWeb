@@ -6,16 +6,27 @@
  *
  * Sin dependencias: va en el primer chunk.
  */
-const CAMPOS_SECRETOS = ['password', 'access_token', 'refresh_token', 'token', 'code_verifier', 'authorization_code'];
+const CAMPOS_SECRETOS = [
+  'password',
+  'access_token',
+  'refresh_token',
+  'token',
+  'code_verifier',
+  'authorization_code',
+];
 const TACHADO = '[Filtered]';
 const PATRONES_SECRETOS = CAMPOS_SECRETOS.flatMap((campo) => [
   // JSON (también roto o cortado): "campo": "valor"
-  [new RegExp(`("${campo}"\\s*:\\s*)"(?:[^"\\\\]|\\\\.)*"`, 'g'), `$1"${TACHADO}"`],
+  [
+    new RegExp(`("${campo}"\\s*:\\s*)"(?:[^"\\\\]|\\\\.)*"`, 'g'),
+    `$1"${TACHADO}"`,
+  ],
   // Formulario: campo=valor
   [new RegExp(`(^|[&?\\s])(${campo}=)[^&\\s]*`, 'g'), `$1$2${TACHADO}`],
 ]);
 
-const esObjeto = (valor) => Boolean(valor) && typeof valor === 'object' && !Array.isArray(valor);
+const esObjeto = (valor) =>
+  Boolean(valor) && typeof valor === 'object' && !Array.isArray(valor);
 
 const sinCamposSecretos = (datos) => {
   const limpio = { ...datos };
@@ -36,5 +47,8 @@ export const tachaElCuerpo = (datos) => {
   } catch {
     // No es JSON: por patrón
   }
-  return PATRONES_SECRETOS.reduce((texto, [patron, cambio]) => texto.replace(patron, cambio), datos);
+  return PATRONES_SECRETOS.reduce(
+    (texto, [patron, cambio]) => texto.replace(patron, cambio),
+    datos,
+  );
 };

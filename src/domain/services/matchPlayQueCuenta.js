@@ -8,7 +8,11 @@
 export const MIN_HOYOS_QUE_CUENTAN = 9;
 
 const hoyosDe = (holeScores, participantId) =>
-  new Set(holeScores.filter((h) => h.participantId === participantId).map((h) => h.holeNumber));
+  new Set(
+    holeScores
+      .filter((h) => h.participantId === participantId)
+      .map((h) => h.holeNumber),
+  );
 
 /**
  * Los hoyos que entregó un bando: los que anotaron todos sus jugadores, porque
@@ -20,14 +24,26 @@ const hoyosDelBando = (holeScores, bando, matchFormat) => {
   const porJugador = bando.map((p) => hoyosDe(holeScores, p.participantId));
   if (porJugador.length === 0) return new Set();
   if (matchFormat !== 'FOURSOMES') {
-    return new Set([...porJugador[0]].filter((hoyo) => porJugador.every((h) => h.has(hoyo))));
+    return new Set(
+      [...porJugador[0]].filter((hoyo) => porJugador.every((h) => h.has(hoyo))),
+    );
   }
   return new Set(porJugador.flatMap((h) => [...h]));
 };
 
-export const cuentaElMatchPlay = ({ holeScores, teamA, teamB, matchFormat, decididaAntes }) => {
+export const cuentaElMatchPlay = ({
+  holeScores,
+  teamA,
+  teamB,
+  matchFormat,
+  decididaAntes,
+}) => {
   if (decididaAntes) return true;
   const a = hoyosDelBando(holeScores, teamA, matchFormat);
   const b = hoyosDelBando(holeScores, teamB, matchFormat);
-  return a.size >= MIN_HOYOS_QUE_CUENTAN && a.size === b.size && [...a].every((hoyo) => b.has(hoyo));
+  return (
+    a.size >= MIN_HOYOS_QUE_CUENTAN &&
+    a.size === b.size &&
+    [...a].every((hoyo) => b.has(hoyo))
+  );
 };

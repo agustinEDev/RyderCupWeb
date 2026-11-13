@@ -16,12 +16,19 @@ import QuickMatchScorecardTable from '../../components/quick_match/QuickMatchSco
 import PersonalRoundCalculator from '../../domain/services/PersonalRoundCalculator';
 import BlockLoader from '../../components/ui/BlockLoader';
 import AnotarSinConexion from '../../components/scoring/AnotarSinConexion';
-import { GrupoDePestanas, ListaDePestanas, PanelDePestana } from '../../components/ui/Pestanas';
+import {
+  GrupoDePestanas,
+  ListaDePestanas,
+  PanelDePestana,
+} from '../../components/ui/Pestanas';
 import { useSinConexion } from '../../hooks/useSinConexion';
 import { useAnotacionEnCurso } from '../../hooks/useAnotacionEnCurso';
 import { useFocoDeLosDialogos } from '../../hooks/useFocoDeLosDialogos';
 import { casillasDelHoyo } from '../../utils/casillasDelHoyo';
-import { claveDeFallo, loadErrorKeyFor } from '../../utils/textosDePartidaRapida';
+import {
+  claveDeFallo,
+  loadErrorKeyFor,
+} from '../../utils/textosDePartidaRapida';
 import { PESTANAS_DE_LA_RAPIDA } from '../../utils/pestanasDeLaAnotacion';
 
 const TABS = PESTANAS_DE_LA_RAPIDA;
@@ -103,7 +110,7 @@ const QuickMatchScoringPage = () => {
       matchFormat,
       effectiveAllowance,
       playMode,
-    ]
+    ],
   );
   // El mapa del hoyo (BE #532): «Mapa» en la tarjeta lo abre a pantalla completa
   // El mapa, cuando ya llegó el campo (sus hoyos) y con él su país: antes,
@@ -123,22 +130,31 @@ const QuickMatchScoringPage = () => {
   // invitados— no falta nada de nadie: la clasificación está completa, así que
   // ni se avisa ni se le quita el puesto a nadie
   // Mi barra (color y sexo): las muestras del mapa de hoyos van por barra (16 oct)
-  const yoEnLaPartida = (quickMatch?.participants ?? []).find((p) => p.userId && p.userId === user?.id);
+  const yoEnLaPartida = (quickMatch?.participants ?? []).find(
+    (p) => p.userId && p.userId === user?.id,
+  );
   const miBarra = barraDe(yoEnLaPartida);
   const hayQuienNoAnoto = (quickMatch?.participants ?? []).some(
-    (p) => !coveredParticipantIds.includes(p.participantId)
+    (p) => !coveredParticipantIds.includes(p.participantId),
   );
-  const esJuegoLibre = quickMatch?.scoringFormat === 'MEDAL' || quickMatch?.scoringFormat === 'STABLEFORD';
+  const esJuegoLibre =
+    quickMatch?.scoringFormat === 'MEDAL' ||
+    quickMatch?.scoringFormat === 'STABLEFORD';
   const faltanDatosDeOtros = pendientes > 0 && hayQuienNoAnoto;
 
-  const hayDiscrepancia = discrepancia != null && !showCancelConfirm && !showFinishConfirm;
+  const hayDiscrepancia =
+    discrepancia != null && !showCancelConfirm && !showFinishConfirm;
   const jugadorEnDisputa = discrepancia
-    ? quickMatch?.participants?.find((p) => p.participantId === discrepancia.participantId)
+    ? quickMatch?.participants?.find(
+        (p) => p.participantId === discrepancia.participantId,
+      )
     : null;
   // Una bola recogida llega sin número y significa lo contrario que no tener
   // anotación: sin esto los botones leían «Poner el mío ()»
   const comoSeLee = (valor) =>
-    valor === null || valor === undefined ? t('scoring.offline.pickedUp') : valor;
+    valor === null || valor === undefined
+      ? t('scoring.offline.pickedUp')
+      : valor;
 
   // Quedarse sin cobertura no es un error: el sondeo falla cada diez segundos
   // y la pantalla ya lo cuenta en ámbar. El rojo, además, quedaba justo debajo
@@ -150,42 +166,51 @@ const QuickMatchScoringPage = () => {
   // móvil bajo un recuadro rojo, sin decir que era una foto de antes
   const sinConexion = useSinConexion();
   const sondeoSinRespuesta =
-    (!!loadError && (loadError.status ?? loadError.response?.status) === undefined)
-    || !!pintadoDeMemoria;
+    (!!loadError &&
+      (loadError.status ?? loadError.response?.status) === undefined) ||
+    !!pintadoDeMemoria;
   const errorDeVerdad = saveError || (loadError && !sondeoSinRespuesta);
 
-  const hoyosPerdidos = [...new Set((perdidos ?? []).map((x) => x.holeNumber))].sort((a, b) => a - b);
+  const hoyosPerdidos = [
+    ...new Set((perdidos ?? []).map((x) => x.holeNumber)),
+  ].sort((a, b) => a - b);
 
   // Sin red (lo dice el navegador), las pendientes van en el aviso de arriba,
   // uno solo, como en la Ryder y las partidas (regresión del 12 oct 2026). Con
   // red pero sin salir (dos barras), el recuadro de siempre
-  const avisoDePendientes = sinConexion && (isScorer || pendientes > 0) ? (
-    <AnotarSinConexion pendingCount={pendientes} />
-  ) : pendientes > 0 && (
-    <div className="max-w-4xl mx-auto px-4 pt-4">
-      <p
-        data-testid="quick-match-pendientes"
-        className="bg-amber-50 border border-amber-200 text-amber-800 rounded-lg p-3 text-sm"
-      >
-        {t('scoring.offline.pending', { count: pendientes })}
-      </p>
-    </div>
-  );
+  const avisoDePendientes =
+    sinConexion && (isScorer || pendientes > 0) ? (
+      <AnotarSinConexion pendingCount={pendientes} />
+    ) : (
+      pendientes > 0 && (
+        <div className="max-w-4xl mx-auto px-4 pt-4">
+          <p
+            data-testid="quick-match-pendientes"
+            className="bg-amber-50 border border-amber-200 text-amber-800 rounded-lg p-3 text-sm"
+          >
+            {t('scoring.offline.pending', { count: pendientes })}
+          </p>
+        </div>
+      )
+    );
   const nombreDelAnotador = discrepancia
-    ? quickMatch?.participants?.find((p) => p.participantId === discrepancia.anotadoPor)?.name
+    ? quickMatch?.participants?.find(
+        (p) => p.participantId === discrepancia.anotadoPor,
+      )?.name
     : null;
 
   // El foco de los avisos y su tecla Escape
-  const { cancelDialogRef, finishDialogRef, discrepanciaDialogRef, tabsRef } = useFocoDeLosDialogos({
-    showFinishConfirm,
-    showCancelConfirm,
-    hayDiscrepancia,
-    isSubmitting,
-    setFinishFailedKey,
-    setCancelFailedKey,
-    setShowFinishConfirm,
-    setShowCancelConfirm,
-  });
+  const { cancelDialogRef, finishDialogRef, discrepanciaDialogRef, tabsRef } =
+    useFocoDeLosDialogos({
+      showFinishConfirm,
+      showCancelConfirm,
+      hayDiscrepancia,
+      isSubmitting,
+      setFinishFailedKey,
+      setCancelFailedKey,
+      setShowFinishConfirm,
+      setShowCancelConfirm,
+    });
 
   // Si iOS cierra la app, al abrirla se vuelve aquí, a esta pestaña, este hoyo y el mapa
   // (11 nov 2026). Terminada o anulada ya no hay a qué volver
@@ -225,9 +250,14 @@ const QuickMatchScoringPage = () => {
             className={sondeoSinRespuesta ? 'text-amber-800' : 'text-red-600'}
             data-testid="quick-match-scoring-error"
           >
-            {sondeoSinRespuesta ? t('scoring.offline.noSeActualiza') : t(loadErrorKeyFor(loadError))}
+            {sondeoSinRespuesta
+              ? t('scoring.offline.noSeActualiza')
+              : t(loadErrorKeyFor(loadError))}
           </p>
-          <button onClick={refetch} className="mt-4 px-4 py-2 bg-primary text-white rounded-lg">
+          <button
+            onClick={refetch}
+            className="mt-4 px-4 py-2 bg-primary text-white rounded-lg"
+          >
             {t('scoring.retry')}
           </button>
         </div>
@@ -265,7 +295,8 @@ const QuickMatchScoringPage = () => {
   // Bloquear ya no protege de nada: el golpe se guarda antes de enviarse
   // (FE #561) y el hook serializa los envíos, así que una anotación que llega
   // con otra en vuelo se guarda y sale en el vaciado siguiente
-  const isReadOnly = !isScorer || quickMatch?.isCompleted || quickMatch?.isCancelled;
+  const isReadOnly =
+    !isScorer || quickMatch?.isCompleted || quickMatch?.isCancelled;
 
   const handleScoreChange = (participantId, score) => {
     submitScore(currentHole, participantId, score);
@@ -362,7 +393,10 @@ const QuickMatchScoringPage = () => {
             <p className="text-sm text-gray-500">
               {quickMatch?.name ? `${t('scoring.matchHeader')} · ` : ''}
               {(quickMatch?.matchFormat ?? quickMatch?.scoringFormat) &&
-                t(`history.format.${quickMatch.matchFormat ?? quickMatch.scoringFormat}`, quickMatch.matchFormat ?? quickMatch.scoringFormat)}
+                t(
+                  `history.format.${quickMatch.matchFormat ?? quickMatch.scoringFormat}`,
+                  quickMatch.matchFormat ?? quickMatch.scoringFormat,
+                )}
             </p>
             <CampoDeLaPartida nombre={courseName} />
           </div>
@@ -391,10 +425,16 @@ const QuickMatchScoringPage = () => {
             etiqueta={t('scoring.tabsLabel')}
             className="flex border-b border-gray-200 mb-4"
             data-testid="quick-match-scoring-tabs"
-            pestanas={TABS.map((tab) => ({ id: tab, contenido: t(`scoring.tabs.${tab}`), testId: `quick-match-tab-${tab}` }))}
+            pestanas={TABS.map((tab) => ({
+              id: tab,
+              contenido: t(`scoring.tabs.${tab}`),
+              testId: `quick-match-tab-${tab}`,
+            }))}
             claseDePestana={(abierta) =>
               `flex-1 py-2 text-sm font-medium text-center border-b-2 transition-colors ${
-                abierta ? 'border-primary text-primary' : 'border-transparent text-gray-500 hover:text-gray-700'
+                abierta
+                  ? 'border-primary text-primary'
+                  : 'border-transparent text-gray-500 hover:text-gray-700'
               }`
             }
           />
@@ -471,9 +511,15 @@ const QuickMatchScoringPage = () => {
         isSubmitting={isSubmitting}
         finishFailedKey={finishFailedKey}
         cancelFailedKey={cancelFailedKey}
-        onCerrarTerminar={() => { setFinishFailedKey(null); setShowFinishConfirm(false); }}
+        onCerrarTerminar={() => {
+          setFinishFailedKey(null);
+          setShowFinishConfirm(false);
+        }}
         onTerminar={handleFinishConfirm}
-        onCerrarCancelar={() => { setCancelFailedKey(null); setShowCancelConfirm(false); }}
+        onCerrarCancelar={() => {
+          setCancelFailedKey(null);
+          setShowCancelConfirm(false);
+        }}
         onCancelar={handleCancelConfirm}
         resuelveDiscrepancia={resuelveDiscrepancia}
         myParticipant={myParticipant}

@@ -55,7 +55,8 @@ const GEOLOCATION_ERROR_STATUS = {
 
 // Ante un error sin código reconocible, "no hay posición" es lo único que se
 // puede afirmar: mandar a los ajustes a quien no ha denegado nada es peor.
-const geoStatusFromError = (error) => GEOLOCATION_ERROR_STATUS[error?.code] ?? 'unavailable';
+const geoStatusFromError = (error) =>
+  GEOLOCATION_ERROR_STATUS[error?.code] ?? 'unavailable';
 
 // El permiso denegado es el único de los tres con arreglo, y hay que decir
 // dónde: en iOS la ubicación de Safari se concede en los ajustes del sistema,
@@ -88,7 +89,7 @@ const GolfCourseSearchBox = ({
   onCourseSelect,
   onRequestNewCourse,
   allowOtherCountries = false,
-  idsYaElegidos = []
+  idsYaElegidos = [],
 }) => {
   const { t, i18n } = useTranslation('golfCourses');
   const { t: tComun } = useTranslation('common');
@@ -102,7 +103,12 @@ const GolfCourseSearchBox = ({
   // Los resultados guardan de qué país son. Así, al cambiar de país, no se
   // pintan un instante los del anterior mientras llega la respuesta nueva, y
   // no hace falta vaciarlos desde el cuerpo del efecto.
-  const [result, setResult] = useState({ countryCode: null, courses: [], total: 0, widened: false });
+  const [result, setResult] = useState({
+    countryCode: null,
+    courses: [],
+    total: 0,
+    widened: false,
+  });
   const [isLoading, setIsLoading] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
   const [error, setError] = useState(null);
@@ -157,7 +163,9 @@ const GolfCourseSearchBox = ({
         // por país dejaba "el más cercano" buscando solo en el país de uno
         // En una competición, dentro de su país: solo admite campos de sus
         // países (12 oct 2026). En la partida rápida, en cualquiera
-        const page = await buscar(searchingNearby && allowOtherCountries ? undefined : countryCode);
+        const page = await buscar(
+          searchingNearby && allowOtherCountries ? undefined : countryCode,
+        );
         if (cancelled) return;
 
         // Un campo de fuera existía y la búsqueda por nombre lo escondía, así
@@ -169,7 +177,10 @@ const GolfCourseSearchBox = ({
         // nombre, y el de uno extranjero no casa en tu país, así que elegirlo
         // costaba dos peticiones más sin que nadie estuviera buscando
         const puedeAmpliar =
-          allowOtherCountries && countryCode && !searchingNearby && !selectedCourse;
+          allowOtherCountries &&
+          countryCode &&
+          !searchingNearby &&
+          !selectedCourse;
         if (courses.length === 0 && puedeAmpliar && searchQuery.trim()) {
           const worldwide = await buscar(undefined);
           if (cancelled) return;
@@ -191,13 +202,14 @@ const GolfCourseSearchBox = ({
           mensajeDeError(err, {
             sinConexion: tComun('sinConexion.mensaje'),
             generico: t('searchBox.errorLoading', 'Error loading golf courses'),
-          })
+          }),
         );
         // Sin red NO se vacían los resultados: hacerlo pintaba «no se han
         // encontrado campos» y ofrecía dar de alta uno nuevo —que también
         // necesita red— sobre una pregunta que nunca tuvo respuesta. Y se
         // llevaba por delante lo que ya estaba en pantalla
-        if (!esFalloDeRed(err)) setResult({ countryCode, courses: [], total: 0, widened: false });
+        if (!esFalloDeRed(err))
+          setResult({ countryCode, courses: [], total: 0, widened: false });
       } finally {
         if (!cancelled) setIsLoading(false);
       }
@@ -207,13 +219,25 @@ const GolfCourseSearchBox = ({
       cancelled = true;
       clearTimeout(timer);
     };
-  }, [countryCode, searchQuery, t, tComun, nearbyLat, nearbyLon, searchingNearby, allowOtherCountries, selectedCourse]);
+  }, [
+    countryCode,
+    searchQuery,
+    t,
+    tComun,
+    nearbyLat,
+    nearbyLon,
+    searchingNearby,
+    allowOtherCountries,
+    selectedCourse,
+  ]);
 
   // Solo valen los resultados del país que se está mirando ahora, y sin los que
   // ya están en la lista de quien nos usa: ofrecerlos solo servía para añadir el
   // mismo campo dos veces (FE #644)
   const encontrados = result.countryCode === countryCode ? result.courses : [];
-  const courses = encontrados.filter((course) => !idsYaElegidos.includes(course.id));
+  const courses = encontrados.filter(
+    (course) => !idsYaElegidos.includes(course.id),
+  );
   // Cuántos se han quitado por estar ya en la lista. Hace falta para no decir
   // dos mentiras: que no hay campos cuando los hay pero ya son tuyos, y que
   // faltan resultados por ver cuando lo que falta ya lo tienes
@@ -321,7 +345,7 @@ const GolfCourseSearchBox = ({
       // Denegado, sin posición o agotado el tiempo piden cosas distintas a
       // quien busca, así que no pueden acabar los tres en el mismo mensaje.
       (error) => setGeoStatus(geoStatusFromError(error)),
-      GEOLOCATION_OPTIONS
+      GEOLOCATION_OPTIONS,
     );
   };
 
@@ -356,11 +380,12 @@ const GolfCourseSearchBox = ({
             abierto no vale: al afinar una busqueda con resultados en pantalla,
             el desplegable enseña la lista vieja —no la espera— y entonces este
             es el unico aviso de que algo esta pasando. */}
-        {isLoading && !(showDropdown && countryCode && courses.length === 0) && (
-          <div className="absolute right-3 top-1/2 -translate-y-1/2">
-            <div className="animate-spin rounded-full h-4 w-4 border-2 border-primary border-t-transparent"></div>
-          </div>
-        )}
+        {isLoading &&
+          !(showDropdown && countryCode && courses.length === 0) && (
+            <div className="absolute right-3 top-1/2 -translate-y-1/2">
+              <div className="animate-spin rounded-full h-4 w-4 border-2 border-primary border-t-transparent"></div>
+            </div>
+          )}
       </div>
 
       {/* Error Message */}
@@ -395,8 +420,12 @@ const GolfCourseSearchBox = ({
               >
                 <Navigation className="w-4 h-4 flex-shrink-0" />
                 {geoStatus === 'requesting'
-                  ? t('searchBox.locating', { defaultValue: 'Getting your location...' })
-                  : t('searchBox.nearbyCourses', { defaultValue: 'Courses near me' })}
+                  ? t('searchBox.locating', {
+                      defaultValue: 'Getting your location...',
+                    })
+                  : t('searchBox.nearbyCourses', {
+                      defaultValue: 'Courses near me',
+                    })}
               </button>
             )}
 
@@ -431,7 +460,8 @@ const GolfCourseSearchBox = ({
           >
             {widened && courses.length > 0
               ? t('searchBox.widenedToOtherCountries', {
-                  defaultValue: 'No courses in your country match. Showing courses abroad.',
+                  defaultValue:
+                    'No courses in your country match. Showing courses abroad.',
                 })
               : ''}
           </p>
@@ -456,22 +486,35 @@ const GolfCourseSearchBox = ({
                             distingue dos campos que se llaman igual a un lado y
                             otro de la frontera */}
                         {normalizeCountry(course.countryCode) &&
-                          normalizeCountry(course.countryCode) !== ownCountry && (
-                            <span data-testid={`golf-course-country-${course.id}`}>
+                          normalizeCountry(course.countryCode) !==
+                            ownCountry && (
+                            <span
+                              data-testid={`golf-course-country-${course.id}`}
+                            >
                               <span aria-hidden="true">
-                                {getCountryFlag(normalizeCountry(course.countryCode))}{' '}
+                                {getCountryFlag(
+                                  normalizeCountry(course.countryCode),
+                                )}{' '}
                               </span>
                               {normalizeCountry(course.countryCode)} •{' '}
                             </span>
                           )}
-                        {t(`courseTypes.${course.courseType}`, course.courseType)} • {course.tees.length} {t('searchBox.tees', 'tees')}
+                        {t(
+                          `courseTypes.${course.courseType}`,
+                          course.courseType,
+                        )}{' '}
+                        • {course.tees.length} {t('searchBox.tees', 'tees')}
                         {/* Comparado con null y no por verdadero: un campo a
                             menos de 50 m devuelve 0, que es una distancia real */}
                         {course.distanceKm != null && (
-                          <> • {t('searchBox.distanceAway', {
-                            defaultValue: '{{distance}} km away',
-                            distance: formatDistance(course.distanceKm),
-                          })}</>
+                          <>
+                            {' '}
+                            •{' '}
+                            {t('searchBox.distanceAway', {
+                              defaultValue: '{{distance}} km away',
+                              distance: formatDistance(course.distanceKm),
+                            })}
+                          </>
                         )}
                       </p>
                     </div>
@@ -496,7 +539,8 @@ const GolfCourseSearchBox = ({
               {yaAnadidos > 0 && seHanVistoTodos ? (
                 <p className="text-sm text-gray-600">
                   {t('searchBox.allAlreadyAdded', {
-                    defaultValue: 'You have already added every course that matches',
+                    defaultValue:
+                      'You have already added every course that matches',
                     count: yaAnadidos,
                   })}
                 </p>
@@ -507,8 +551,14 @@ const GolfCourseSearchBox = ({
                   </p>
                   <p className="text-xs text-gray-500 mb-4">
                     {searchQuery || yaAnadidos > 0
-                      ? t('searchBox.tryDifferentSearch', 'Try a different search term or request a new course')
-                      : t('searchBox.noCoursesInCountry', 'No approved courses in this country yet')}
+                      ? t(
+                          'searchBox.tryDifferentSearch',
+                          'Try a different search term or request a new course',
+                        )
+                      : t(
+                          'searchBox.noCoursesInCountry',
+                          'No approved courses in this country yet',
+                        )}
                   </p>
                   <button
                     type="button"
@@ -531,7 +581,8 @@ const GolfCourseSearchBox = ({
               {total > courses.length && (
                 <p className="px-4 py-1.5 text-xs text-gray-500">
                   {t('searchBox.showingSome', {
-                    defaultValue: 'Showing {{shown}} of {{total}}. Keep typing to narrow it down.',
+                    defaultValue:
+                      'Showing {{shown}} of {{total}}. Keep typing to narrow it down.',
                     shown: courses.length,
                     total,
                   })}

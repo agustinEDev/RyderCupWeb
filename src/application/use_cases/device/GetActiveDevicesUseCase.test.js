@@ -24,7 +24,7 @@ describe('GetActiveDevicesUseCase', () => {
   describe('Constructor', () => {
     it('should throw error if deviceRepository is not provided', () => {
       expect(() => new GetActiveDevicesUseCase({})).toThrow(
-        'deviceRepository is required'
+        'deviceRepository is required',
       );
     });
 
@@ -83,7 +83,7 @@ describe('GetActiveDevicesUseCase', () => {
       mockDeviceRepository.getActiveDevices.mockResolvedValue(null);
 
       await expect(useCase.execute()).rejects.toThrow(
-        'Invalid response from device repository'
+        'Invalid response from device repository',
       );
     });
 
@@ -94,7 +94,7 @@ describe('GetActiveDevicesUseCase', () => {
       });
 
       await expect(useCase.execute()).rejects.toThrow(
-        'Invalid response from device repository'
+        'Invalid response from device repository',
       );
     });
 
@@ -103,7 +103,7 @@ describe('GetActiveDevicesUseCase', () => {
       mockDeviceRepository.getActiveDevices.mockRejectedValue(error);
 
       await expect(useCase.execute()).rejects.toThrow(
-        'Database connection failed'
+        'Database connection failed',
       );
     });
   });

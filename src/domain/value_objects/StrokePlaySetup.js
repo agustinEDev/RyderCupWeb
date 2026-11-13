@@ -31,7 +31,8 @@ export const MIN_JUGADORES_POR_CATEGORIA = 6;
 
 // En décimas y con enteros: 12,3 × 10 da 123,00000000000001 en coma flotante
 const enDecimas = (valor) => Math.round(valor * 10);
-const tieneUnDecimalComoMucho = (valor) => Math.abs(valor * 10 - enDecimas(valor)) < 1e-9;
+const tieneUnDecimalComoMucho = (valor) =>
+  Math.abs(valor * 10 - enDecimas(valor)) < 1e-9;
 
 /**
  * El primer problema de unos límites, como clave de `create.errors`, o null.
@@ -40,7 +41,11 @@ const tieneUnDecimalComoMucho = (valor) => Math.abs(valor * 10 - enDecimas(valor
 export const errorDeLimites = (limites) => {
   if (limites.length > MAX_LIMITES) return 'categoryLimitsTooMany';
   for (const limite of limites) {
-    if (!Number.isFinite(limite) || limite < MIN_LIMITE || limite > MAX_LIMITE) {
+    if (
+      !Number.isFinite(limite) ||
+      limite < MIN_LIMITE ||
+      limite > MAX_LIMITE
+    ) {
       return 'categoryLimitRange';
     }
     if (!tieneUnDecimalComoMucho(limite)) return 'categoryLimitOneDecimal';
@@ -53,7 +58,9 @@ export const errorDeLimites = (limites) => {
 
 /** Cuántas categorías iguales: entre 2 y 5. */
 export const errorDeCategoriasIguales = (cuantas) =>
-  Number.isInteger(cuantas) && cuantas >= MIN_CATEGORIAS_IGUALES && cuantas <= MAX_CATEGORIAS_IGUALES
+  Number.isInteger(cuantas) &&
+  cuantas >= MIN_CATEGORIAS_IGUALES &&
+  cuantas <= MAX_CATEGORIAS_IGUALES
     ? null
     : 'categoryCountRange';
 
@@ -106,7 +113,9 @@ export class StrokePlaySetup {
     overallStanding = ACUMULADO,
   }) {
     if (!GENERALES.has(overallStanding)) {
-      throw new Error(`overallStanding must be ${ACUMULADO} or ${MEJOR_TARJETA}.`);
+      throw new Error(
+        `overallStanding must be ${ACUMULADO} or ${MEJOR_TARJETA}.`,
+      );
     }
     this.#categoryLimits = Object.freeze([...categoryLimits]);
     this.#categoryCount = categoryCount;

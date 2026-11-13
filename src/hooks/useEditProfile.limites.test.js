@@ -16,8 +16,8 @@ import * as useAuthHook from './useAuth';
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
     t: (key) => key,
-    i18n: { language: 'en' }
-  })
+    i18n: { language: 'en' },
+  }),
 }));
 
 // Mock dependencies
@@ -65,7 +65,9 @@ describe('useEditProfile · los límites de Seguridad', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     useAuthHook.useAuth.mockReturnValue({ user: mockUser, refetch: vi.fn() });
-    composition.fetchCountriesUseCase.execute.mockResolvedValue([{ code: 'ES', name: 'Spain' }]);
+    composition.fetchCountriesUseCase.execute.mockResolvedValue([
+      { code: 'ES', name: 'Spain' },
+    ]);
   });
 
   it.each([
@@ -74,21 +76,31 @@ describe('useEditProfile · los límites de Seguridad', () => {
     // Salían en inglés, con el texto del backend (probador de la release)
     ['L3', 'CURRENT_PASSWORD_INCORRECT', 'edit.linkedAccounts.wrongPassword'],
     ['L4', 'EMAIL_ALREADY_IN_USE', 'toasts.emailAlreadyInUse'],
-  ])('%s: %s dice su motivo en el idioma de la app', async (_caso, codigo, clave) => {
-    const { result } = renderHook(() => useEditProfile());
-    await waitFor(() => expect(result.current.isLoading).toBe(false));
-    composition.updateUserSecurityUseCase.execute.mockRejectedValue(
-      Object.assign(new Error('Too many'), { status: 429, errorCode: codigo })
-    );
-    act(() => {
-      result.current.handleInputChange({ target: { name: 'currentPassword', value: 'Actual123!' } });
-      result.current.handleInputChange({ target: { name: 'email', value: 'nuevo@example.com' } });
-    });
+  ])(
+    '%s: %s dice su motivo en el idioma de la app',
+    async (_caso, codigo, clave) => {
+      const { result } = renderHook(() => useEditProfile());
+      await waitFor(() => expect(result.current.isLoading).toBe(false));
+      composition.updateUserSecurityUseCase.execute.mockRejectedValue(
+        Object.assign(new Error('Too many'), {
+          status: 429,
+          errorCode: codigo,
+        }),
+      );
+      act(() => {
+        result.current.handleInputChange({
+          target: { name: 'currentPassword', value: 'Actual123!' },
+        });
+        result.current.handleInputChange({
+          target: { name: 'email', value: 'nuevo@example.com' },
+        });
+      });
 
-    await act(async () => {
-      await result.current.handleUpdateSecurity({ preventDefault: vi.fn() });
-    });
+      await act(async () => {
+        await result.current.handleUpdateSecurity({ preventDefault: vi.fn() });
+      });
 
-    expect(customToast.error).toHaveBeenCalledWith(clave);
-  });
+      expect(customToast.error).toHaveBeenCalledWith(clave);
+    },
+  );
 });

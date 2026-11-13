@@ -25,16 +25,19 @@ const PANTALLAS_CON_SALIDA = [
 
 describe('salir va por un solo sitio (FE #531)', () => {
   it.each(PANTALLAS_CON_SALIDA)('%s sale por `useLogout`', (_, ruta) => {
-    expect(lee(ruta)).toContain("import { useLogout } from");
+    expect(lee(ruta)).toContain('import { useLogout } from');
   });
 
-  it.each(PANTALLAS_CON_SALIDA)('%s no se fabrica su propia salida', (_, ruta) => {
-    const fuente = lee(ruta);
+  it.each(PANTALLAS_CON_SALIDA)(
+    '%s no se fabrica su propia salida',
+    (_, ruta) => {
+      const fuente = lee(ruta);
 
-    // Los tres trozos de la copia: sin ellos no hay salida paralela que pueda
-    // olvidarse de limpiar
-    expect(fuente).not.toContain('logoutUseCase');
-    expect(fuente).not.toContain('broadcastLogout');
-    expect(fuente).not.toContain("window.location.href = '/'");
-  });
+      // Los tres trozos de la copia: sin ellos no hay salida paralela que pueda
+      // olvidarse de limpiar
+      expect(fuente).not.toContain('logoutUseCase');
+      expect(fuente).not.toContain('broadcastLogout');
+      expect(fuente).not.toContain("window.location.href = '/'");
+    },
+  );
 });

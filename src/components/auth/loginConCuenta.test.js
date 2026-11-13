@@ -14,11 +14,16 @@ const ficheros = (dir) =>
   readdirSync(dir).flatMap((nombre) => {
     const ruta = join(dir, nombre);
     if (statSync(ruta).isDirectory()) return ficheros(ruta);
-    return /\.(jsx?|tsx?)$/.test(nombre) && !/\.test\./.test(nombre) ? [ruta] : [];
+    return /\.(jsx?|tsx?)$/.test(nombre) && !/\.test\./.test(nombre)
+      ? [ruta]
+      : [];
   });
 
 // `<Navigate to="/login" state={{ from: … }}` o `navigate('/login', { state: { from: … } })`
-const A_MANO = [/to="\/login"\s+state=\{\{\s*from/, /navigate\(\s*['"]\/login['"]\s*,\s*\{\s*state:\s*\{\s*from/];
+const A_MANO = [
+  /to="\/login"\s+state=\{\{\s*from/,
+  /navigate\(\s*['"]\/login['"]\s*,\s*\{\s*state:\s*\{\s*from/,
+];
 
 describe('ir al login con la página de la que se venía', () => {
   it('nadie construye el estado a mano: siempre `estadoParaElLogin`', () => {

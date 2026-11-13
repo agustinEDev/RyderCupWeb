@@ -46,14 +46,16 @@ const RoleGuard = ({
   // tres segundos despues ya no lo devuelve donde estaba (FE #529)
   if (loading || sinConfirmar) {
     return (
-      <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        height: '100vh',
-        fontFamily: 'system-ui, sans-serif',
-        color: '#6b7280'
-      }}>
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          height: '100vh',
+          fontFamily: 'system-ui, sans-serif',
+          color: '#6b7280',
+        }}
+      >
         Loading...
       </div>
     );
@@ -66,7 +68,9 @@ const RoleGuard = ({
   }
 
   // Normalize allowedRoles to array
-  const rolesArray = Array.isArray(allowedRoles) ? allowedRoles : [allowedRoles];
+  const rolesArray = Array.isArray(allowedRoles)
+    ? allowedRoles
+    : [allowedRoles];
 
   // Validate that allowedRoles is not empty
   if (rolesArray.length === 0) {
@@ -87,29 +91,36 @@ const RoleGuard = ({
 
   // Check for roles array (future implementation)
   if (user.roles && Array.isArray(user.roles)) {
-    const rolesFromArray = user.roles.map(role =>
-      typeof role === 'string' ? role : role.name
+    const rolesFromArray = user.roles.map((role) =>
+      typeof role === 'string' ? role : role.name,
     );
     userRoleNames = [...new Set([...userRoleNames, ...rolesFromArray])];
   }
 
   // Check if user has required role(s)
   const hasAccess = requireAll
-    ? rolesArray.every(role => userRoleNames.includes(role))
-    : rolesArray.some(role => userRoleNames.includes(role));
+    ? rolesArray.every((role) => userRoleNames.includes(role))
+    : rolesArray.some((role) => userRoleNames.includes(role));
 
   // Special case: ADMIN has access to everything
   const isAdmin = userRoleNames.includes('ADMIN');
 
   // CREATOR can access PLAYER routes (ADR-009: Admin > Creator > Player)
   const isCreator = userRoleNames.includes('CREATOR');
-  const playerAccessGranted = rolesArray.includes('PLAYER') && (isCreator || isAdmin);
+  const playerAccessGranted =
+    rolesArray.includes('PLAYER') && (isCreator || isAdmin);
 
   if (!hasAccess && !isAdmin && !playerAccessGranted) {
     console.warn(
-      `[RoleGuard] Access denied. Required: ${rolesArray.join(', ')}, User has: ${userRoleNames.join(', ')}`
+      `[RoleGuard] Access denied. Required: ${rolesArray.join(', ')}, User has: ${userRoleNames.join(', ')}`,
     );
-    return <Navigate to={redirectTo} state={{ from: location, reason: 'insufficient_permissions' }} replace />;
+    return (
+      <Navigate
+        to={redirectTo}
+        state={{ from: location, reason: 'insufficient_permissions' }}
+        replace
+      />
+    );
   }
 
   return children;

@@ -68,7 +68,7 @@ class TeeColor {
   constructor(value) {
     if (!TeeColor.isValid(value)) {
       throw new Error(
-        `Invalid TeeColor: "${value}". Valid values: ${TeeColor.getAllValues().join(', ')}`
+        `Invalid TeeColor: "${value}". Valid values: ${TeeColor.getAllValues().join(', ')}`,
       );
     }
     this.#value = value;

@@ -10,7 +10,9 @@ class ListPendingFriendRequestsUseCase {
 
   constructor({ friendRepository }) {
     if (!friendRepository) {
-      throw new Error('ListPendingFriendRequestsUseCase requires friendRepository');
+      throw new Error(
+        'ListPendingFriendRequestsUseCase requires friendRepository',
+      );
     }
     this.#friendRepository = friendRepository;
   }
@@ -20,10 +22,17 @@ class ListPendingFriendRequestsUseCase {
       throw new Error("direction must be 'received' or 'sent'");
     }
 
-    const result = await this.#friendRepository.getPendingRequests(direction, filters);
+    const result = await this.#friendRepository.getPendingRequests(
+      direction,
+      filters,
+    );
 
     const dtos = result.friendships.map((friendship) =>
-      FriendshipAssembler.toSimpleDTO(friendship, friendship._apiData, currentUserId)
+      FriendshipAssembler.toSimpleDTO(
+        friendship,
+        friendship._apiData,
+        currentUserId,
+      ),
     );
 
     return {

@@ -14,7 +14,12 @@ import { ChevronDown } from 'lucide-react';
  * @param {boolean} props.abiertoAlPrincipio - Si sale abierta al pintarse
  * @param {import('react').ReactNode} props.children
  */
-const Plegable = ({ titulo, claseDelTitulo = 'text-lg', abiertoAlPrincipio, children }) => {
+const Plegable = ({
+  titulo,
+  claseDelTitulo = 'text-lg',
+  abiertoAlPrincipio,
+  children,
+}) => {
   const [abierto, setAbierto] = useState(abiertoAlPrincipio);
 
   return (
@@ -24,8 +29,15 @@ const Plegable = ({ titulo, claseDelTitulo = 'text-lg', abiertoAlPrincipio, chil
       className="group bg-white border border-gray-200 rounded-xl p-6 shadow-sm"
     >
       <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-2 group-open:mb-4 [&::-webkit-details-marker]:hidden">
-        <h3 className={`flex min-w-0 flex-1 items-center gap-2 font-bold text-gray-900 ${claseDelTitulo}`}>{titulo}</h3>
-        <ChevronDown aria-hidden="true" className="h-5 w-5 flex-none text-gray-400 transition-transform group-open:rotate-180" />
+        <h3
+          className={`flex min-w-0 flex-1 items-center gap-2 font-bold text-gray-900 ${claseDelTitulo}`}
+        >
+          {titulo}
+        </h3>
+        <ChevronDown
+          aria-hidden="true"
+          className="h-5 w-5 flex-none text-gray-400 transition-transform group-open:rotate-180"
+        />
       </summary>
       {children}
     </details>

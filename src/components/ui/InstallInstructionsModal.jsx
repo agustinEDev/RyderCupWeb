@@ -21,26 +21,68 @@ const PhoneDiagram = ({ barPosition }) => {
       aria-hidden="true"
       focusable="false"
     >
-      <rect x="4" y="4" width="88" height="144" rx="12" className="fill-white stroke-gray-300" strokeWidth="2" />
-      <rect x="10" y="34" width="76" height="76" rx="4" className="fill-gray-50" />
+      <rect
+        x="4"
+        y="4"
+        width="88"
+        height="144"
+        rx="12"
+        className="fill-white stroke-gray-300"
+        strokeWidth="2"
+      />
+      <rect
+        x="10"
+        y="34"
+        width="76"
+        height="76"
+        rx="4"
+        className="fill-gray-50"
+      />
 
       {/* Barra del navegador */}
-      <rect x="10" y={barY} width="76" height="20" rx="6" className="fill-gray-100 stroke-gray-200" strokeWidth="1" />
+      <rect
+        x="10"
+        y={barY}
+        width="76"
+        height="20"
+        rx="6"
+        className="fill-gray-100 stroke-gray-200"
+        strokeWidth="1"
+      />
 
       {/* Lo que se resalta esta a la derecha de la barra en ambos casos: en el
           iPhone es el boton ···, que abre el menu donde vive Compartir; en el
           iPad, el propio boton de compartir */}
       <circle cx="72" cy={barY + 10} r="11" className="fill-primary-100" />
-      <circle cx="72" cy={barY + 10} r="11" className="fill-none stroke-primary-500" strokeWidth="1.5" />
+      <circle
+        cx="72"
+        cy={barY + 10}
+        r="11"
+        className="fill-none stroke-primary-500"
+        strokeWidth="1.5"
+      />
 
       {barPosition === 'bottom' ? (
         // Tres puntos: el boton de mas opciones
         [66, 72, 78].map((cx) => (
-          <circle key={cx} cx={cx} cy={barY + 10} r="1.6" className="fill-primary-500" />
+          <circle
+            key={cx}
+            cx={cx}
+            cy={barY + 10}
+            r="1.6"
+            className="fill-primary-500"
+          />
         ))
       ) : (
         // Icono de compartir, el mismo trazo que en la banda
-        <g transform={`translate(66, ${barY + 4})`} className="stroke-primary-500" fill="none" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
+        <g
+          transform={`translate(66, ${barY + 4})`}
+          className="stroke-primary-500"
+          fill="none"
+          strokeWidth="1.4"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
           <path d="M2 6v5a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V6" />
           <polyline points="8 3 6 1 4 3" />
           <line x1="6" y1="1" x2="6" y2="8" />
@@ -48,7 +90,14 @@ const PhoneDiagram = ({ barPosition }) => {
       )}
 
       {/* Direccion, a la izquierda de la barra */}
-      <rect x="18" y={barY + 7} width="34" height="6" rx="3" className="fill-gray-300" />
+      <rect
+        x="18"
+        y={barY + 7}
+        width="34"
+        height="6"
+        rx="3"
+        className="fill-gray-300"
+      />
     </svg>
   );
 };
@@ -126,7 +175,9 @@ const InstallInstructionsModal = ({ isOpen, route, onClose }) => {
 
       if (event.key !== 'Tab') return;
 
-      const focusables = dialogRef.current?.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
+      const focusables = dialogRef.current?.querySelectorAll(
+        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
+      );
       if (!focusables || focusables.length === 0) return;
 
       const first = focusables[0];
@@ -150,7 +201,12 @@ const InstallInstructionsModal = ({ isOpen, route, onClose }) => {
   const steps = STEPS[route] ?? STEPS['other-browser'];
   // Solo se dibuja el telefono cuando se puede senalar un sitio concreto: en un
   // navegador ajeno, dibujar la barra de Safari mandaria a buscar donde no esta
-  const barPosition = route === 'safari-iphone' ? 'bottom' : route === 'safari-ipad' ? 'top' : null;
+  const barPosition =
+    route === 'safari-iphone'
+      ? 'bottom'
+      : route === 'safari-ipad'
+        ? 'top'
+        : null;
 
   return (
     <div
@@ -171,7 +227,10 @@ const InstallInstructionsModal = ({ isOpen, route, onClose }) => {
         onClick={(event) => event.stopPropagation()}
       >
         <div className="flex items-start justify-between gap-3 px-5 pt-5">
-          <h2 id="install-modal-title" className="text-lg font-bold text-gray-900 font-poppins">
+          <h2
+            id="install-modal-title"
+            className="text-lg font-bold text-gray-900 font-poppins"
+          >
             {t('installModal.title')}
           </h2>
           <button

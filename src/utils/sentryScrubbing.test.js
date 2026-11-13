@@ -52,7 +52,9 @@ describe('scrubDeep', () => {
     const datos = { url: RESET };
     datos.yo = datos;
     scrubDeep(datos);
-    expect(datos.url).toBe('https://www.rydercupfriends.com/reset-password/[REDACTED]');
+    expect(datos.url).toBe(
+      'https://www.rydercupfriends.com/reset-password/[REDACTED]',
+    );
   });
 
   it('devuelve tapado un texto suelto y deja pasar lo vacío', () => {
@@ -64,19 +66,31 @@ describe('scrubDeep', () => {
 
 describe('sentryScrubbing', () => {
   it('H1: la miga de navegación, con su from y su to', () => {
-    const miga = { category: 'navigation', data: { from: `/verify-email?token=${TOKEN}`, to: RESET } };
+    const miga = {
+      category: 'navigation',
+      data: { from: `/verify-email?token=${TOKEN}`, to: RESET },
+    };
     expect(sentryScrubbing.beforeBreadcrumb(miga)).toBe(miga);
     sinToken(miga);
   });
 
   it('H2: el error, con su URL y el Referer', () => {
-    const evento = { request: { url: RESET, headers: { Referer: `https://www.rydercupfriends.com${GOOGLE}` } } };
+    const evento = {
+      request: {
+        url: RESET,
+        headers: { Referer: `https://www.rydercupfriends.com${GOOGLE}` },
+      },
+    };
     expect(sentryScrubbing.beforeSend(evento)).toBe(evento);
     sinToken(evento);
   });
 
   it('H3: el evento de Replay, que no pasa por beforeSend, con su lista de URLs', () => {
-    const evento = { type: 'replay_event', urls: [RESET, GOOGLE], request: { headers: { Referer: RESET } } };
+    const evento = {
+      type: 'replay_event',
+      urls: [RESET, GOOGLE],
+      request: { headers: { Referer: RESET } },
+    };
     expect(sentryScrubbing.eventProcessor(evento)).toBe(evento);
     sinToken(evento);
   });
@@ -86,7 +100,9 @@ describe('sentryScrubbing', () => {
       name: `pageload ${RESET}`,
       attributes: {
         'url.path': `/reset-password/${TOKEN}`,
-        'http.request.header.referer': [`https://www.rydercupfriends.com${GOOGLE}`],
+        'http.request.header.referer': [
+          `https://www.rydercupfriends.com${GOOGLE}`,
+        ],
       },
     };
     expect(sentryScrubbing.beforeSendSpan(span)).toBe(span);
@@ -96,8 +112,14 @@ describe('sentryScrubbing', () => {
   it('H5: la grabación de Replay: sus migas y navegaciones', () => {
     // El meta (tipo 4, el href) nunca llega a este gancho: Replay solo le pasa
     // los «custom». Ese lo cubre stripSecretsFromAddressBar
-    const miga = { type: 5, data: { tag: 'breadcrumb', payload: { data: { url: GOOGLE } } } };
-    const navegacion = { type: 5, data: { tag: 'performanceSpan', payload: { description: RESET } } };
+    const miga = {
+      type: 5,
+      data: { tag: 'breadcrumb', payload: { data: { url: GOOGLE } } },
+    };
+    const navegacion = {
+      type: 5,
+      data: { tag: 'performanceSpan', payload: { description: RESET } },
+    };
     for (const evento of [miga, navegacion]) {
       expect(sentryScrubbing.beforeAddRecordingEvent(evento)).toBe(evento);
       sinToken(evento);
@@ -118,7 +140,10 @@ describe('sentryScrubbing', () => {
   });
 
   it('D5: no entra en el estado interno del SDK', () => {
-    const evento = { request: { url: RESET }, sdkProcessingMetadata: { cosa: { url: RESET } } };
+    const evento = {
+      request: { url: RESET },
+      sdkProcessingMetadata: { cosa: { url: RESET } },
+    };
     scrubDeep(evento);
     expect(evento.request.url).not.toContain(TOKEN);
     expect(evento.sdkProcessingMetadata.cosa.url).toBe(RESET);
@@ -139,7 +164,9 @@ describe('sentryScrubbing', () => {
       },
     });
     expect(() => scrubDeep(datos)).not.toThrow();
-    expect(datos.url).toBe('https://www.rydercupfriends.com/reset-password/[REDACTED]');
+    expect(datos.url).toBe(
+      'https://www.rydercupfriends.com/reset-password/[REDACTED]',
+    );
   });
 
   it('H6: la foto del DOM de la grabación ni se recorre', () => {
@@ -153,20 +180,35 @@ describe('sentryScrubbing', () => {
   // datos personales y mensajes de la API, y el filtro de `sentry.ts` que la
   // quitaba en producción nunca se registraba (la inicialización es la de
   // `main.jsx`). Lo que la app quiera mandar, con `captureError`
-  it.each(['log', 'warn', 'error'])('C1: la miga de console.%s se descarta', (nivel) => {
-    const deLaApp = { correo: 'ana@example.com' };
-    const miga = { category: 'console', level: nivel, message: 'ana@example.com', data: { arguments: ['x', deLaApp] } };
+  it.each(['log', 'warn', 'error'])(
+    'C1: la miga de console.%s se descarta',
+    (nivel) => {
+      const deLaApp = { correo: 'ana@example.com' };
+      const miga = {
+        category: 'console',
+        level: nivel,
+        message: 'ana@example.com',
+        data: { arguments: ['x', deLaApp] },
+      };
 
-    expect(sentryScrubbing.beforeBreadcrumb(miga)).toBeNull();
-    expect(deLaApp.correo).toBe('ana@example.com');
-  });
+      expect(sentryScrubbing.beforeBreadcrumb(miga)).toBeNull();
+      expect(deLaApp.correo).toBe('ana@example.com');
+    },
+  );
 
   it('H7: la transacción, con su URL y la de sus spans', () => {
     const transaccion = {
       request: { url: RESET },
-      spans: [{ description: `GET /api/v1/auth/verify?token=${TOKEN}`, data: { url: GOOGLE } }],
+      spans: [
+        {
+          description: `GET /api/v1/auth/verify?token=${TOKEN}`,
+          data: { url: GOOGLE },
+        },
+      ],
     };
-    expect(sentryScrubbing.beforeSendTransaction(transaccion)).toBe(transaccion);
+    expect(sentryScrubbing.beforeSendTransaction(transaccion)).toBe(
+      transaccion,
+    );
     sinToken(transaccion);
   });
 });
@@ -187,20 +229,26 @@ describe('sentryScrubbing.eventProcessor · el cuerpo de la petición (fase 3)',
   };
 
   it('como objeto: se quitan los campos secretos', () => {
-    const evento = sentryScrubbing.eventProcessor({ request: { data: { ...SECRETOS, otro: 'queda' } } });
+    const evento = sentryScrubbing.eventProcessor({
+      request: { data: { ...SECRETOS, otro: 'queda' } },
+    });
 
     expect(evento.request.data).toEqual({ otro: 'queda' });
   });
 
   it('como texto JSON: se tacha y se vuelve a serializar', () => {
-    const evento = sentryScrubbing.eventProcessor({ request: { data: JSON.stringify({ ...SECRETOS, otro: 1 }) } });
+    const evento = sentryScrubbing.eventProcessor({
+      request: { data: JSON.stringify({ ...SECRETOS, otro: 1 }) },
+    });
 
     expect(JSON.parse(evento.request.data)).toEqual({ otro: 1 });
   });
 
   it('como texto que no es JSON: por patrón', () => {
     const evento = sentryScrubbing.eventProcessor({
-      request: { data: 'token=t1&code_verifier=v1&authorization_code=c1&otro=2' },
+      request: {
+        data: 'token=t1&code_verifier=v1&authorization_code=c1&otro=2',
+      },
     });
 
     expect(evento.request.data).not.toMatch(/t1|v1|c1/);

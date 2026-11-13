@@ -1,8 +1,15 @@
 import { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { getCompetitionStandingsUseCase, getScratchStandingsUseCase } from '../../composition';
+import {
+  getCompetitionStandingsUseCase,
+  getScratchStandingsUseCase,
+} from '../../composition';
 import Clasificacion from './Clasificacion';
-import { GrupoDePestanas, ListaDePestanas, PanelDePestana } from '../ui/Pestanas';
+import {
+  GrupoDePestanas,
+  ListaDePestanas,
+  PanelDePestana,
+} from '../ui/Pestanas';
 
 // Con la competición en juego, cada cuánto se relee la pestaña abierta
 const CADA = 60000;
@@ -25,10 +32,14 @@ const ClasificacionesDeLaCompeticion = ({ competitionId, userId, enJuego }) => {
   const { t } = useTranslation('scoring');
   const [pestana, setPestana] = useState('overall');
   const pedirGeneral = useCallback(
-    (categoria) => getCompetitionStandingsUseCase.execute(competitionId, categoria),
-    [competitionId]
+    (categoria) =>
+      getCompetitionStandingsUseCase.execute(competitionId, categoria),
+    [competitionId],
   );
-  const pedirScratch = useCallback(() => getScratchStandingsUseCase.execute(competitionId), [competitionId]);
+  const pedirScratch = useCallback(
+    () => getScratchStandingsUseCase.execute(competitionId),
+    [competitionId],
+  );
   const cada = enJuego ? CADA : null;
 
   return (
@@ -40,10 +51,15 @@ const ClasificacionesDeLaCompeticion = ({ competitionId, userId, enJuego }) => {
         <ListaDePestanas
           etiqueta={t('partida.standingsTitle')}
           className="flex border-b border-gray-200"
-          pestanas={PESTANAS.map((p) => ({ id: p, contenido: t(`partida.${p}`) }))}
+          pestanas={PESTANAS.map((p) => ({
+            id: p,
+            contenido: t(`partida.${p}`),
+          }))}
           claseDePestana={(abierta) =>
             `min-h-11 flex-1 border-b-2 text-sm font-medium ${
-              abierta ? 'border-primary text-primary' : 'border-transparent text-gray-500'
+              abierta
+                ? 'border-primary text-primary'
+                : 'border-transparent text-gray-500'
             }`
           }
         />

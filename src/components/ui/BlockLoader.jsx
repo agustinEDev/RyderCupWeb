@@ -20,24 +20,31 @@ import { respaldoDeCarga } from './textoDeEspera';
  * nunca sobre el verde del arranque. `tinta="blanco"` para un fondo oscuro, como
  * la espera del mapa del hoyo (19 oct), con su anillo en `.espera-sobre-oscuro`.
  */
-const BlockLoader = ({ texto, sinRelleno = false, silencioso = false, tinta = 'verde' }) => {
+const BlockLoader = ({
+  texto,
+  sinRelleno = false,
+  silencioso = false,
+  tinta = 'verde',
+}) => {
   const { t, i18n } = useTranslation('common');
 
   return (
-  <div
-    {...(silencioso ? {} : { role: 'status', 'aria-live': 'polite' })}
-    className={`flex flex-col items-center justify-center gap-3 ${sinRelleno ? '' : 'py-12'}`}
-  >
-    <LoadingMark tamano="pequeno" tinta={tinta} />
-    {/* Sin texto visible, la region seguiria anunciandose VACIA: el anillo va
+    <div
+      {...(silencioso ? {} : { role: 'status', 'aria-live': 'polite' })}
+      className={`flex flex-col items-center justify-center gap-3 ${sinRelleno ? '' : 'py-12'}`}
+    >
+      <LoadingMark tamano="pequeno" tinta={tinta} />
+      {/* Sin texto visible, la region seguiria anunciandose VACIA: el anillo va
         `aria-hidden` y el monograma es decorativo. Un lector de pantalla se
         encontraba con que algo cambia y nada que leer. */}
-    {texto ? (
-      <p className="text-gray-600">{texto}</p>
-    ) : (
-      <span className="sr-only">{t('loading', { defaultValue: respaldoDeCarga(i18n) })}</span>
-    )}
-  </div>
+      {texto ? (
+        <p className="text-gray-600">{texto}</p>
+      ) : (
+        <span className="sr-only">
+          {t('loading', { defaultValue: respaldoDeCarga(i18n) })}
+        </span>
+      )}
+    </div>
   );
 };
 

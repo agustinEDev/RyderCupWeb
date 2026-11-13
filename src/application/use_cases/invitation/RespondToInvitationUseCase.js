@@ -10,7 +10,9 @@ class RespondToInvitationUseCase {
 
   constructor({ invitationRepository }) {
     if (!invitationRepository) {
-      throw new Error('RespondToInvitationUseCase requires invitationRepository');
+      throw new Error(
+        'RespondToInvitationUseCase requires invitationRepository',
+      );
     }
     this.#invitationRepository = invitationRepository;
   }
@@ -27,7 +29,7 @@ class RespondToInvitationUseCase {
 
     const invitation = await this.#invitationRepository.respondToInvitation(
       invitationId,
-      action
+      action,
     );
 
     return InvitationAssembler.toSimpleDTO(invitation, invitation._apiData);

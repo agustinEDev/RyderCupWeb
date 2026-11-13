@@ -1,7 +1,16 @@
-import { useState, useEffect, useEffectEvent, useCallback, useRef } from 'react';
+import {
+  useState,
+  useEffect,
+  useEffectEvent,
+  useCallback,
+  useRef,
+} from 'react';
 import customToast from '../utils/toast';
 import { seEstaCerrandoLaSesion } from '../utils/cierreDeEstaCarga';
-import { getCompetitionDetailUseCase, listEnrollmentsUseCase } from '../composition';
+import {
+  getCompetitionDetailUseCase,
+  listEnrollmentsUseCase,
+} from '../composition';
 import { useLaMasNueva } from './useLaMasNueva';
 
 /**
@@ -55,12 +64,18 @@ export const useFichaDeLaCompeticion = ({ id, userId, t, navigate }) => {
       // Load enrollments for all authenticated users (approved players visible to everyone)
       try {
         const enrollmentsData = await listEnrollmentsUseCase.execute(deEsta);
-        if (sigueEnPantalla() && lecturasDeInscripciones.aplicar(turnoDeLaLista)) {
+        if (
+          sigueEnPantalla() &&
+          lecturasDeInscripciones.aplicar(turnoDeLaLista)
+        ) {
           setEnrollments(enrollmentsData);
           setInscripcionesSinCargar(false);
         }
       } catch {
-        if (sigueEnPantalla() && lecturasDeInscripciones.aplicar(turnoDeLaLista)) {
+        if (
+          sigueEnPantalla() &&
+          lecturasDeInscripciones.aplicar(turnoDeLaLista)
+        ) {
           setEnrollments([]);
           setInscripcionesSinCargar(true);
         }
@@ -71,7 +86,9 @@ export const useFichaDeLaCompeticion = ({ id, userId, t, navigate }) => {
       // Falló porque se está cerrando la sesión: la redirección al login llega ya; ir a la
       // lista solo enseñaba otro fallo (A2, 8 nov 2026)
       if (seEstaCerrandoLaSesion()) return;
-      customToast.error(error.message || traductor.current('detail.failedToLoadCompetition'));
+      customToast.error(
+        error.message || traductor.current('detail.failedToLoadCompetition'),
+      );
       navigate('/competitions');
     } finally {
       if (sigueEnPantalla()) setIsLoadingCompetition(false);

@@ -1,5 +1,11 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { guardaEnMemoria, guardaLosFiltros, loGuardadoEnMemoria, losFiltrosGuardados, MAXIMO_DE_FILTROS } from './memoriaDeLasListas';
+import {
+  guardaEnMemoria,
+  guardaLosFiltros,
+  loGuardadoEnMemoria,
+  losFiltrosGuardados,
+  MAXIMO_DE_FILTROS,
+} from './memoriaDeLasListas';
 import { olvidaLoDeEstaCuenta, olvidaTodo } from './loUltimoConocido';
 
 /**
@@ -31,7 +37,9 @@ describe('memoria de las listas', () => {
   it('M1: se lee lo guardado con la misma cuenta', () => {
     guardaEnMemoria('competiciones', 'u-1', [{ id: 'c-1' }]);
 
-    expect(loGuardadoEnMemoria('competiciones', 'u-1')).toEqual([{ id: 'c-1' }]);
+    expect(loGuardadoEnMemoria('competiciones', 'u-1')).toEqual([
+      { id: 'c-1' },
+    ]);
   });
 
   it('M2: sin nada guardado, null', () => {
@@ -95,10 +103,13 @@ describe('memoria de las listas', () => {
   });
 
   it('MF6: con muchas entradas se quedan las últimas', () => {
-    for (let i = 0; i <= MAXIMO_DE_FILTROS; i += 1) guardaLosFiltros('competiciones', 'u-1', `k-${i}`, ACTIVAS);
+    for (let i = 0; i <= MAXIMO_DE_FILTROS; i += 1)
+      guardaLosFiltros('competiciones', 'u-1', `k-${i}`, ACTIVAS);
 
     expect(losFiltrosGuardados('competiciones', 'u-1', 'k-0')).toBeNull();
     expect(losFiltrosGuardados('competiciones', 'u-1', 'k-1')).toEqual(ACTIVAS);
-    expect(losFiltrosGuardados('competiciones', 'u-1', `k-${MAXIMO_DE_FILTROS}`)).toEqual(ACTIVAS);
+    expect(
+      losFiltrosGuardados('competiciones', 'u-1', `k-${MAXIMO_DE_FILTROS}`),
+    ).toEqual(ACTIVAS);
   });
 });

@@ -251,7 +251,6 @@ import ListMyQuickMatchesUseCase from '../application/use_cases/quick_match/List
 import SubmitQuickMatchHoleScoreUseCase from '../application/use_cases/quick_match/SubmitQuickMatchHoleScoreUseCase';
 import SubmitQuickMatchProxyHoleScoreUseCase from '../application/use_cases/quick_match/SubmitQuickMatchProxyHoleScoreUseCase';
 
-
 // --- Repositorios (implementaciones concretas) ---
 // Con httpOnly cookies ya no necesitamos authTokenProvider
 const apiUserRepository = new ApiUserRepository();
@@ -273,176 +272,452 @@ const apiTeeGroupScoringRepository = new ApiTeeGroupScoringRepository();
 const apiQuickMatchRepository = new ApiQuickMatchRepository();
 
 // --- Casos de Uso ---
-const updateUserProfileUseCase = new UpdateUserProfileUseCase({ userRepository: apiUserRepository });
-const acceptTermsUseCase = new AcceptTermsUseCase({ userRepository: apiUserRepository });
-const confirmEmailChangeUseCase = new ConfirmEmailChangeUseCase({ userRepository: apiUserRepository });
-const cancelEmailChangeUseCase = new CancelEmailChangeUseCase({ userRepository: apiUserRepository });
-const updateUserSecurityUseCase = new UpdateUserSecurityUseCase({ userRepository: apiUserRepository });
-const getUserRolesUseCase = new GetUserRolesUseCase({ userRepository: apiUserRepository });
-const searchUsersUseCase = new SearchUsersUseCase({ userRepository: apiUserRepository });
-const updateManualHandicapUseCase = new UpdateManualHandicapUseCase({ handicapRepository: apiHandicapRepository });
+const updateUserProfileUseCase = new UpdateUserProfileUseCase({
+  userRepository: apiUserRepository,
+});
+const acceptTermsUseCase = new AcceptTermsUseCase({
+  userRepository: apiUserRepository,
+});
+const confirmEmailChangeUseCase = new ConfirmEmailChangeUseCase({
+  userRepository: apiUserRepository,
+});
+const cancelEmailChangeUseCase = new CancelEmailChangeUseCase({
+  userRepository: apiUserRepository,
+});
+const updateUserSecurityUseCase = new UpdateUserSecurityUseCase({
+  userRepository: apiUserRepository,
+});
+const getUserRolesUseCase = new GetUserRolesUseCase({
+  userRepository: apiUserRepository,
+});
+const searchUsersUseCase = new SearchUsersUseCase({
+  userRepository: apiUserRepository,
+});
+const updateManualHandicapUseCase = new UpdateManualHandicapUseCase({
+  handicapRepository: apiHandicapRepository,
+});
 const updateRfegHandicapUseCase = new UpdateRfegHandicapUseCase({
   handicapRepository: apiHandicapRepository,
-  userRepository: apiUserRepository
+  userRepository: apiUserRepository,
 });
-const refreshOwnHandicapUseCase = new RefreshOwnHandicapUseCase({ handicapRepository: apiHandicapRepository });
+const refreshOwnHandicapUseCase = new RefreshOwnHandicapUseCase({
+  handicapRepository: apiHandicapRepository,
+});
 const loginUseCase = new LoginUseCase({ authRepository: apiAuthRepository });
-const registerUseCase = new RegisterUseCase({ authRepository: apiAuthRepository });
-const verifyEmailUseCase = new VerifyEmailUseCase({ authRepository: apiAuthRepository });
-const requestPasswordResetUseCase = new RequestPasswordResetUseCase({ authRepository: apiAuthRepository });
-const validateResetTokenUseCase = new ValidateResetTokenUseCase({ authRepository: apiAuthRepository });
-const resetPasswordUseCase = new ResetPasswordUseCase({ authRepository: apiAuthRepository });
-const googleLoginUseCase = new GoogleLoginUseCase({ authRepository: apiAuthRepository });
-const linkGoogleAccountUseCase = new LinkGoogleAccountUseCase({ authRepository: apiAuthRepository });
-const unlinkGoogleAccountUseCase = new UnlinkGoogleAccountUseCase({ authRepository: apiAuthRepository });
-const reauthenticateUseCase = new ReauthenticateUseCase({ authRepository: apiAuthRepository });
+const registerUseCase = new RegisterUseCase({
+  authRepository: apiAuthRepository,
+});
+const verifyEmailUseCase = new VerifyEmailUseCase({
+  authRepository: apiAuthRepository,
+});
+const requestPasswordResetUseCase = new RequestPasswordResetUseCase({
+  authRepository: apiAuthRepository,
+});
+const validateResetTokenUseCase = new ValidateResetTokenUseCase({
+  authRepository: apiAuthRepository,
+});
+const resetPasswordUseCase = new ResetPasswordUseCase({
+  authRepository: apiAuthRepository,
+});
+const googleLoginUseCase = new GoogleLoginUseCase({
+  authRepository: apiAuthRepository,
+});
+const linkGoogleAccountUseCase = new LinkGoogleAccountUseCase({
+  authRepository: apiAuthRepository,
+});
+const unlinkGoogleAccountUseCase = new UnlinkGoogleAccountUseCase({
+  authRepository: apiAuthRepository,
+});
+const reauthenticateUseCase = new ReauthenticateUseCase({
+  authRepository: apiAuthRepository,
+});
 const logoutUseCase = new LogoutUseCase({ authRepository: apiAuthRepository });
-const resendVerificationEmailUseCase = new ResendVerificationEmailUseCase({ authRepository: apiAuthRepository });
-const resendVerificationLinkUseCase = new ResendVerificationLinkUseCase({ authRepository: apiAuthRepository });
-const createCompetitionWithGolfCoursesUseCase = new CreateCompetitionWithGolfCoursesUseCase({ competitionRepository: apiCompetitionRepository });
-const updateCompetitionUseCase = new UpdateCompetitionUseCase({ competitionRepository: apiCompetitionRepository });
-const updateStrokePlaySettingsUseCase = new UpdateStrokePlaySettingsUseCase({ competitionRepository: apiCompetitionRepository });
-const launchHandicapUpdateUseCase = new LaunchHandicapUpdateUseCase({ competitionRepository: apiCompetitionRepository });
-const scheduleHandicapUpdateUseCase = new ScheduleHandicapUpdateUseCase({ competitionRepository: apiCompetitionRepository });
-const cancelScheduledHandicapUpdateUseCase = new CancelScheduledHandicapUpdateUseCase({ competitionRepository: apiCompetitionRepository });
-const listUserCompetitionsUseCase = new ListUserCompetitionsUseCase({ competitionRepository: apiCompetitionRepository });
-const getCompetitionDetailUseCase = new GetCompetitionDetailUseCase({ competitionRepository: apiCompetitionRepository });
-const getCompetitionSummaryUseCase = new GetCompetitionSummaryUseCase({ competitionRepository: apiCompetitionRepository });
-const activateCompetitionUseCase = new ActivateCompetitionUseCase({ competitionRepository: apiCompetitionRepository });
-const closeEnrollmentsUseCase = new CloseEnrollmentsUseCase({ competitionRepository: apiCompetitionRepository });
-const nameCaptainsUseCase = new NameCaptainsUseCase({ competitionRepository: apiCompetitionRepository });
-const fillCaptainUseCase = new FillCaptainUseCase({ competitionRepository: apiCompetitionRepository });
-const startCompetitionUseCase = new StartCompetitionUseCase({ competitionRepository: apiCompetitionRepository });
-const completeCompetitionUseCase = new CompleteCompetitionUseCase({ competitionRepository: apiCompetitionRepository });
-const cancelCompetitionUseCase = new CancelCompetitionUseCase({ competitionRepository: apiCompetitionRepository });
-const deleteCompetitionUseCase = new DeleteCompetitionUseCase({ competitionRepository: apiCompetitionRepository });
-const reopenEnrollmentsUseCase = new ReopenEnrollmentsUseCase({ competitionRepository: apiCompetitionRepository });
-const revertCompetitionStatusUseCase = new RevertCompetitionStatusUseCase({ competitionRepository: apiCompetitionRepository });
-const revertCompetitionToInProgressUseCase = new RevertCompetitionToInProgressUseCase({ competitionRepository: apiCompetitionRepository });
-const browseJoinableCompetitionsUseCase = new BrowseJoinableCompetitionsUseCase(apiCompetitionRepository);
-const browseExploreCompetitionsUseCase = new BrowseExploreCompetitionsUseCase(apiCompetitionRepository);
-const adminListCompetitionsUseCase = new AdminListCompetitionsUseCase(apiCompetitionRepository);
-const adminUpdateCompetitionUseCase = new AdminUpdateCompetitionUseCase({ competitionRepository: apiCompetitionRepository });
-const addGolfCourseToCompetitionUseCase = new AddGolfCourseToCompetitionUseCase({ competitionRepository: apiCompetitionRepository });
-const removeGolfCourseFromCompetitionUseCase = new RemoveGolfCourseFromCompetitionUseCase({ competitionRepository: apiCompetitionRepository });
-const reorderGolfCoursesUseCase = new ReorderGolfCoursesUseCase({ competitionRepository: apiCompetitionRepository });
-const getCompetitionGolfCoursesUseCase = new GetCompetitionGolfCoursesUseCase({ competitionRepository: apiCompetitionRepository });
-const fetchCountriesUseCase = new FetchCountriesUseCase({ countryRepository: apiCountryRepository });
-const getAdjacentCountriesUseCase = new GetAdjacentCountriesUseCase({ countryRepository: apiCountryRepository });
+const resendVerificationEmailUseCase = new ResendVerificationEmailUseCase({
+  authRepository: apiAuthRepository,
+});
+const resendVerificationLinkUseCase = new ResendVerificationLinkUseCase({
+  authRepository: apiAuthRepository,
+});
+const createCompetitionWithGolfCoursesUseCase =
+  new CreateCompetitionWithGolfCoursesUseCase({
+    competitionRepository: apiCompetitionRepository,
+  });
+const updateCompetitionUseCase = new UpdateCompetitionUseCase({
+  competitionRepository: apiCompetitionRepository,
+});
+const updateStrokePlaySettingsUseCase = new UpdateStrokePlaySettingsUseCase({
+  competitionRepository: apiCompetitionRepository,
+});
+const launchHandicapUpdateUseCase = new LaunchHandicapUpdateUseCase({
+  competitionRepository: apiCompetitionRepository,
+});
+const scheduleHandicapUpdateUseCase = new ScheduleHandicapUpdateUseCase({
+  competitionRepository: apiCompetitionRepository,
+});
+const cancelScheduledHandicapUpdateUseCase =
+  new CancelScheduledHandicapUpdateUseCase({
+    competitionRepository: apiCompetitionRepository,
+  });
+const listUserCompetitionsUseCase = new ListUserCompetitionsUseCase({
+  competitionRepository: apiCompetitionRepository,
+});
+const getCompetitionDetailUseCase = new GetCompetitionDetailUseCase({
+  competitionRepository: apiCompetitionRepository,
+});
+const getCompetitionSummaryUseCase = new GetCompetitionSummaryUseCase({
+  competitionRepository: apiCompetitionRepository,
+});
+const activateCompetitionUseCase = new ActivateCompetitionUseCase({
+  competitionRepository: apiCompetitionRepository,
+});
+const closeEnrollmentsUseCase = new CloseEnrollmentsUseCase({
+  competitionRepository: apiCompetitionRepository,
+});
+const nameCaptainsUseCase = new NameCaptainsUseCase({
+  competitionRepository: apiCompetitionRepository,
+});
+const fillCaptainUseCase = new FillCaptainUseCase({
+  competitionRepository: apiCompetitionRepository,
+});
+const startCompetitionUseCase = new StartCompetitionUseCase({
+  competitionRepository: apiCompetitionRepository,
+});
+const completeCompetitionUseCase = new CompleteCompetitionUseCase({
+  competitionRepository: apiCompetitionRepository,
+});
+const cancelCompetitionUseCase = new CancelCompetitionUseCase({
+  competitionRepository: apiCompetitionRepository,
+});
+const deleteCompetitionUseCase = new DeleteCompetitionUseCase({
+  competitionRepository: apiCompetitionRepository,
+});
+const reopenEnrollmentsUseCase = new ReopenEnrollmentsUseCase({
+  competitionRepository: apiCompetitionRepository,
+});
+const revertCompetitionStatusUseCase = new RevertCompetitionStatusUseCase({
+  competitionRepository: apiCompetitionRepository,
+});
+const revertCompetitionToInProgressUseCase =
+  new RevertCompetitionToInProgressUseCase({
+    competitionRepository: apiCompetitionRepository,
+  });
+const browseJoinableCompetitionsUseCase = new BrowseJoinableCompetitionsUseCase(
+  apiCompetitionRepository,
+);
+const browseExploreCompetitionsUseCase = new BrowseExploreCompetitionsUseCase(
+  apiCompetitionRepository,
+);
+const adminListCompetitionsUseCase = new AdminListCompetitionsUseCase(
+  apiCompetitionRepository,
+);
+const adminUpdateCompetitionUseCase = new AdminUpdateCompetitionUseCase({
+  competitionRepository: apiCompetitionRepository,
+});
+const addGolfCourseToCompetitionUseCase = new AddGolfCourseToCompetitionUseCase(
+  { competitionRepository: apiCompetitionRepository },
+);
+const removeGolfCourseFromCompetitionUseCase =
+  new RemoveGolfCourseFromCompetitionUseCase({
+    competitionRepository: apiCompetitionRepository,
+  });
+const reorderGolfCoursesUseCase = new ReorderGolfCoursesUseCase({
+  competitionRepository: apiCompetitionRepository,
+});
+const getCompetitionGolfCoursesUseCase = new GetCompetitionGolfCoursesUseCase({
+  competitionRepository: apiCompetitionRepository,
+});
+const fetchCountriesUseCase = new FetchCountriesUseCase({
+  countryRepository: apiCountryRepository,
+});
+const getAdjacentCountriesUseCase = new GetAdjacentCountriesUseCase({
+  countryRepository: apiCountryRepository,
+});
 
 // Schedule Use Cases (v2.1.0 - Sprint 2)
-const getScheduleUseCase = new GetScheduleUseCase({ scheduleRepository: apiScheduleRepository });
-const configureScheduleUseCase = new ConfigureScheduleUseCase({ scheduleRepository: apiScheduleRepository });
-const assignTeamsUseCase = new AssignTeamsUseCase({ scheduleRepository: apiScheduleRepository });
-const undoTeamsUseCase = new UndoTeamsUseCase({ scheduleRepository: apiScheduleRepository });
-const createRoundUseCase = new CreateRoundUseCase({ scheduleRepository: apiScheduleRepository });
-const takeTeeWindowPlaceUseCase = new TakeTeeWindowPlaceUseCase({ scheduleRepository: apiScheduleRepository });
-const releaseTeeWindowPlaceUseCase = new ReleaseTeeWindowPlaceUseCase({ scheduleRepository: apiScheduleRepository });
-const joinWaitingListUseCase = new JoinWaitingListUseCase({ scheduleRepository: apiScheduleRepository });
-const leaveWaitingListUseCase = new LeaveWaitingListUseCase({ scheduleRepository: apiScheduleRepository });
-const listMyAssignedPlacesUseCase = new ListMyAssignedPlacesUseCase({ scheduleRepository: apiScheduleRepository });
-const acknowledgeAssignedPlaceUseCase = new AcknowledgeAssignedPlaceUseCase({ scheduleRepository: apiScheduleRepository });
-const getTeeGroupsUseCase = new GetTeeGroupsUseCase({ scheduleRepository: apiScheduleRepository });
-const getMyTeeGroupsUseCase = new GetMyTeeGroupsUseCase({ scheduleRepository: apiScheduleRepository });
-const generateTeeGroupsUseCase = new GenerateTeeGroupsUseCase({ scheduleRepository: apiScheduleRepository });
-const moveTeeGroupPlayerUseCase = new MoveTeeGroupPlayerUseCase({ scheduleRepository: apiScheduleRepository });
-const reorderTeeGroupsUseCase = new ReorderTeeGroupsUseCase({ scheduleRepository: apiScheduleRepository });
-const setTeeGroupMarkersUseCase = new SetTeeGroupMarkersUseCase({ scheduleRepository: apiScheduleRepository });
-const deleteTeeGroupsUseCase = new DeleteTeeGroupsUseCase({ scheduleRepository: apiScheduleRepository });
-const updateRoundUseCase = new UpdateRoundUseCase({ scheduleRepository: apiScheduleRepository });
-const deleteRoundUseCase = new DeleteRoundUseCase({ scheduleRepository: apiScheduleRepository });
-const generateMatchesUseCase = new GenerateMatchesUseCase({ scheduleRepository: apiScheduleRepository });
-const getMatchDetailUseCase = new GetMatchDetailUseCase({ scheduleRepository: apiScheduleRepository });
-const updateMatchStatusUseCase = new UpdateMatchStatusUseCase({ scheduleRepository: apiScheduleRepository });
-const declareWalkoverUseCase = new DeclareWalkoverUseCase({ scheduleRepository: apiScheduleRepository });
-const reassignPlayersUseCase = new ReassignPlayersUseCase({ scheduleRepository: apiScheduleRepository });
+const getScheduleUseCase = new GetScheduleUseCase({
+  scheduleRepository: apiScheduleRepository,
+});
+const configureScheduleUseCase = new ConfigureScheduleUseCase({
+  scheduleRepository: apiScheduleRepository,
+});
+const assignTeamsUseCase = new AssignTeamsUseCase({
+  scheduleRepository: apiScheduleRepository,
+});
+const undoTeamsUseCase = new UndoTeamsUseCase({
+  scheduleRepository: apiScheduleRepository,
+});
+const createRoundUseCase = new CreateRoundUseCase({
+  scheduleRepository: apiScheduleRepository,
+});
+const takeTeeWindowPlaceUseCase = new TakeTeeWindowPlaceUseCase({
+  scheduleRepository: apiScheduleRepository,
+});
+const releaseTeeWindowPlaceUseCase = new ReleaseTeeWindowPlaceUseCase({
+  scheduleRepository: apiScheduleRepository,
+});
+const joinWaitingListUseCase = new JoinWaitingListUseCase({
+  scheduleRepository: apiScheduleRepository,
+});
+const leaveWaitingListUseCase = new LeaveWaitingListUseCase({
+  scheduleRepository: apiScheduleRepository,
+});
+const listMyAssignedPlacesUseCase = new ListMyAssignedPlacesUseCase({
+  scheduleRepository: apiScheduleRepository,
+});
+const acknowledgeAssignedPlaceUseCase = new AcknowledgeAssignedPlaceUseCase({
+  scheduleRepository: apiScheduleRepository,
+});
+const getTeeGroupsUseCase = new GetTeeGroupsUseCase({
+  scheduleRepository: apiScheduleRepository,
+});
+const getMyTeeGroupsUseCase = new GetMyTeeGroupsUseCase({
+  scheduleRepository: apiScheduleRepository,
+});
+const generateTeeGroupsUseCase = new GenerateTeeGroupsUseCase({
+  scheduleRepository: apiScheduleRepository,
+});
+const moveTeeGroupPlayerUseCase = new MoveTeeGroupPlayerUseCase({
+  scheduleRepository: apiScheduleRepository,
+});
+const reorderTeeGroupsUseCase = new ReorderTeeGroupsUseCase({
+  scheduleRepository: apiScheduleRepository,
+});
+const setTeeGroupMarkersUseCase = new SetTeeGroupMarkersUseCase({
+  scheduleRepository: apiScheduleRepository,
+});
+const deleteTeeGroupsUseCase = new DeleteTeeGroupsUseCase({
+  scheduleRepository: apiScheduleRepository,
+});
+const updateRoundUseCase = new UpdateRoundUseCase({
+  scheduleRepository: apiScheduleRepository,
+});
+const deleteRoundUseCase = new DeleteRoundUseCase({
+  scheduleRepository: apiScheduleRepository,
+});
+const generateMatchesUseCase = new GenerateMatchesUseCase({
+  scheduleRepository: apiScheduleRepository,
+});
+const getMatchDetailUseCase = new GetMatchDetailUseCase({
+  scheduleRepository: apiScheduleRepository,
+});
+const updateMatchStatusUseCase = new UpdateMatchStatusUseCase({
+  scheduleRepository: apiScheduleRepository,
+});
+const declareWalkoverUseCase = new DeclareWalkoverUseCase({
+  scheduleRepository: apiScheduleRepository,
+});
+const reassignPlayersUseCase = new ReassignPlayersUseCase({
+  scheduleRepository: apiScheduleRepository,
+});
 
 // Sala de draft (FE #653)
-const startDraftUseCase = new StartDraftUseCase({ draftRepository: apiDraftRepository });
-const getDraftUseCase = new GetDraftUseCase({ draftRepository: apiDraftRepository });
-const makeDraftPickUseCase = new MakeDraftPickUseCase({ draftRepository: apiDraftRepository });
+const startDraftUseCase = new StartDraftUseCase({
+  draftRepository: apiDraftRepository,
+});
+const getDraftUseCase = new GetDraftUseCase({
+  draftRepository: apiDraftRepository,
+});
+const makeDraftPickUseCase = new MakeDraftPickUseCase({
+  draftRepository: apiDraftRepository,
+});
 // Los sobres de los capitanes (FE #655)
-const submitEnvelopeUseCase = new SubmitEnvelopeUseCase({ envelopeRepository: apiEnvelopeRepository });
-const getEnvelopesUseCase = new GetEnvelopesUseCase({ envelopeRepository: apiEnvelopeRepository });
-const revealEnvelopesUseCase = new RevealEnvelopesUseCase({ envelopeRepository: apiEnvelopeRepository });
-const resetEnvelopesUseCase = new ResetEnvelopesUseCase({ envelopeRepository: apiEnvelopeRepository });
-const listMyPendingEnvelopesUseCase = new ListMyPendingEnvelopesUseCase({ envelopeRepository: apiEnvelopeRepository });
-const listMySessionsWithoutMatchesUseCase = new ListMySessionsWithoutMatchesUseCase({ envelopeRepository: apiEnvelopeRepository });
+const submitEnvelopeUseCase = new SubmitEnvelopeUseCase({
+  envelopeRepository: apiEnvelopeRepository,
+});
+const getEnvelopesUseCase = new GetEnvelopesUseCase({
+  envelopeRepository: apiEnvelopeRepository,
+});
+const revealEnvelopesUseCase = new RevealEnvelopesUseCase({
+  envelopeRepository: apiEnvelopeRepository,
+});
+const resetEnvelopesUseCase = new ResetEnvelopesUseCase({
+  envelopeRepository: apiEnvelopeRepository,
+});
+const listMyPendingEnvelopesUseCase = new ListMyPendingEnvelopesUseCase({
+  envelopeRepository: apiEnvelopeRepository,
+});
+const listMySessionsWithoutMatchesUseCase =
+  new ListMySessionsWithoutMatchesUseCase({
+    envelopeRepository: apiEnvelopeRepository,
+  });
 
 // Support Use Cases
-const submitContactFormUseCase = new SubmitContactFormUseCase({ supportRepository: apiSupportRepository });
+const submitContactFormUseCase = new SubmitContactFormUseCase({
+  supportRepository: apiSupportRepository,
+});
 
 // Invitation Use Cases (Sprint 3)
-const sendInvitationUseCase = new SendInvitationUseCase({ invitationRepository: apiInvitationRepository });
-const sendInvitationByEmailUseCase = new SendInvitationByEmailUseCase({ invitationRepository: apiInvitationRepository });
-const listMyInvitationsUseCase = new ListMyInvitationsUseCase({ invitationRepository: apiInvitationRepository });
-const respondToInvitationUseCase = new RespondToInvitationUseCase({ invitationRepository: apiInvitationRepository });
-const cancelInvitationUseCase = new CancelInvitationUseCase({ invitationRepository: apiInvitationRepository });
-const listCompetitionInvitationsUseCase = new ListCompetitionInvitationsUseCase({ invitationRepository: apiInvitationRepository });
+const sendInvitationUseCase = new SendInvitationUseCase({
+  invitationRepository: apiInvitationRepository,
+});
+const sendInvitationByEmailUseCase = new SendInvitationByEmailUseCase({
+  invitationRepository: apiInvitationRepository,
+});
+const listMyInvitationsUseCase = new ListMyInvitationsUseCase({
+  invitationRepository: apiInvitationRepository,
+});
+const respondToInvitationUseCase = new RespondToInvitationUseCase({
+  invitationRepository: apiInvitationRepository,
+});
+const cancelInvitationUseCase = new CancelInvitationUseCase({
+  invitationRepository: apiInvitationRepository,
+});
+const listCompetitionInvitationsUseCase = new ListCompetitionInvitationsUseCase(
+  { invitationRepository: apiInvitationRepository },
+);
 
 // Avatar Use Cases
 const apiAvatarRepository = new ApiAvatarRepository();
-const listAvatarPresetsUseCase = new ListAvatarPresetsUseCase({ avatarRepository: apiAvatarRepository });
-const setAvatarPresetUseCase = new SetAvatarPresetUseCase({ avatarRepository: apiAvatarRepository });
-const uploadAvatarUseCase = new UploadAvatarUseCase({ avatarRepository: apiAvatarRepository });
-const listMyAvatarUploadsUseCase = new ListMyAvatarUploadsUseCase({ avatarRepository: apiAvatarRepository });
-const activateUploadedAvatarUseCase = new ActivateUploadedAvatarUseCase({ avatarRepository: apiAvatarRepository });
-const removeAvatarUseCase = new RemoveAvatarUseCase({ avatarRepository: apiAvatarRepository });
+const listAvatarPresetsUseCase = new ListAvatarPresetsUseCase({
+  avatarRepository: apiAvatarRepository,
+});
+const setAvatarPresetUseCase = new SetAvatarPresetUseCase({
+  avatarRepository: apiAvatarRepository,
+});
+const uploadAvatarUseCase = new UploadAvatarUseCase({
+  avatarRepository: apiAvatarRepository,
+});
+const listMyAvatarUploadsUseCase = new ListMyAvatarUploadsUseCase({
+  avatarRepository: apiAvatarRepository,
+});
+const activateUploadedAvatarUseCase = new ActivateUploadedAvatarUseCase({
+  avatarRepository: apiAvatarRepository,
+});
+const removeAvatarUseCase = new RemoveAvatarUseCase({
+  avatarRepository: apiAvatarRepository,
+});
 
 // Friend Use Cases
 const apiFriendRepository = new ApiFriendRepository();
 const apiSocialFeedRepository = new ApiSocialFeedRepository();
-export const getFriendsFeedUseCase = new GetFriendsFeedUseCase({ socialFeedRepository: apiSocialFeedRepository });
-export const markFeedAsSeenUseCase = new MarkFeedAsSeenUseCase({ socialFeedRepository: apiSocialFeedRepository });
-export const getFeedUnseenCountUseCase = new GetFeedUnseenCountUseCase({ socialFeedRepository: apiSocialFeedRepository });
-export const getPlayerProfileUseCase = new GetPlayerProfileUseCase({ socialFeedRepository: apiSocialFeedRepository });
-export const getPlayerActivityUseCase = new GetPlayerActivityUseCase({ socialFeedRepository: apiSocialFeedRepository });
-export const getGamesTogetherUseCase = new GetGamesTogetherUseCase({ socialFeedRepository: apiSocialFeedRepository });
-export const setActivitySharingUseCase = new SetActivitySharingUseCase({ socialFeedRepository: apiSocialFeedRepository });
-const sendFriendRequestUseCase = new SendFriendRequestUseCase({ friendRepository: apiFriendRepository });
-const respondFriendRequestUseCase = new RespondFriendRequestUseCase({ friendRepository: apiFriendRepository });
-const removeFriendUseCase = new RemoveFriendUseCase({ friendRepository: apiFriendRepository });
-const blockUserUseCase = new BlockUserUseCase({ friendRepository: apiFriendRepository });
-const listFriendsUseCase = new ListFriendsUseCase({ friendRepository: apiFriendRepository });
-const listPendingFriendRequestsUseCase = new ListPendingFriendRequestsUseCase({ friendRepository: apiFriendRepository });
+export const getFriendsFeedUseCase = new GetFriendsFeedUseCase({
+  socialFeedRepository: apiSocialFeedRepository,
+});
+export const markFeedAsSeenUseCase = new MarkFeedAsSeenUseCase({
+  socialFeedRepository: apiSocialFeedRepository,
+});
+export const getFeedUnseenCountUseCase = new GetFeedUnseenCountUseCase({
+  socialFeedRepository: apiSocialFeedRepository,
+});
+export const getPlayerProfileUseCase = new GetPlayerProfileUseCase({
+  socialFeedRepository: apiSocialFeedRepository,
+});
+export const getPlayerActivityUseCase = new GetPlayerActivityUseCase({
+  socialFeedRepository: apiSocialFeedRepository,
+});
+export const getGamesTogetherUseCase = new GetGamesTogetherUseCase({
+  socialFeedRepository: apiSocialFeedRepository,
+});
+export const setActivitySharingUseCase = new SetActivitySharingUseCase({
+  socialFeedRepository: apiSocialFeedRepository,
+});
+const sendFriendRequestUseCase = new SendFriendRequestUseCase({
+  friendRepository: apiFriendRepository,
+});
+const respondFriendRequestUseCase = new RespondFriendRequestUseCase({
+  friendRepository: apiFriendRepository,
+});
+const removeFriendUseCase = new RemoveFriendUseCase({
+  friendRepository: apiFriendRepository,
+});
+const blockUserUseCase = new BlockUserUseCase({
+  friendRepository: apiFriendRepository,
+});
+const listFriendsUseCase = new ListFriendsUseCase({
+  friendRepository: apiFriendRepository,
+});
+const listPendingFriendRequestsUseCase = new ListPendingFriendRequestsUseCase({
+  friendRepository: apiFriendRepository,
+});
 
 // Player Stats Use Cases (FE #306)
 const apiPlayerStatsRepository = new ApiPlayerStatsRepository();
-const getPlayerStatsUseCase = new GetPlayerStatsUseCase({ playerStatsRepository: apiPlayerStatsRepository });
-const getRecentMatchesUseCase = new GetRecentMatchesUseCase({ playerStatsRepository: apiPlayerStatsRepository });
-const getPlayerStatsByGolfCourseUseCase = new GetPlayerStatsByGolfCourseUseCase({ playerStatsRepository: apiPlayerStatsRepository });
-const getScoringBreakdownUseCase = new GetScoringBreakdownUseCase({ playerStatsRepository: apiPlayerStatsRepository });
+const getPlayerStatsUseCase = new GetPlayerStatsUseCase({
+  playerStatsRepository: apiPlayerStatsRepository,
+});
+const getRecentMatchesUseCase = new GetRecentMatchesUseCase({
+  playerStatsRepository: apiPlayerStatsRepository,
+});
+const getPlayerStatsByGolfCourseUseCase = new GetPlayerStatsByGolfCourseUseCase(
+  { playerStatsRepository: apiPlayerStatsRepository },
+);
+const getScoringBreakdownUseCase = new GetScoringBreakdownUseCase({
+  playerStatsRepository: apiPlayerStatsRepository,
+});
 
 // Scoring Use Cases (Sprint 4)
-const getScoringViewUseCase = new GetScoringViewUseCase({ scoringRepository: apiScoringRepository });
-const submitHoleScoreUseCase = new SubmitHoleScoreUseCase({ scoringRepository: apiScoringRepository });
-const submitScorecardUseCase = new SubmitScorecardUseCase({ scoringRepository: apiScoringRepository });
-const getLeaderboardUseCase = new GetLeaderboardUseCase({ scoringRepository: apiScoringRepository });
-const concedeMatchUseCase = new ConcedeMatchUseCase({ scoringRepository: apiScoringRepository });
-const withdrawMatchPlayerUseCase = new WithdrawMatchPlayerUseCase({ scoringRepository: apiScoringRepository });
+const getScoringViewUseCase = new GetScoringViewUseCase({
+  scoringRepository: apiScoringRepository,
+});
+const submitHoleScoreUseCase = new SubmitHoleScoreUseCase({
+  scoringRepository: apiScoringRepository,
+});
+const submitScorecardUseCase = new SubmitScorecardUseCase({
+  scoringRepository: apiScoringRepository,
+});
+const getLeaderboardUseCase = new GetLeaderboardUseCase({
+  scoringRepository: apiScoringRepository,
+});
+const concedeMatchUseCase = new ConcedeMatchUseCase({
+  scoringRepository: apiScoringRepository,
+});
+const withdrawMatchPlayerUseCase = new WithdrawMatchPlayerUseCase({
+  scoringRepository: apiScoringRepository,
+});
 // Las partidas de stroke play se anotan con los MISMOS casos de uso que el
 // partido de la Ryder, sobre su repositorio: misma validación de lo que se manda
 // (omitir no es raya) y mismo `useScoring` con su cola (FE #824, PR 7)
-const getTeeGroupScoringViewUseCase = new GetScoringViewUseCase({ scoringRepository: apiTeeGroupScoringRepository });
-const submitTeeGroupHoleScoreUseCase = new SubmitHoleScoreUseCase({ scoringRepository: apiTeeGroupScoringRepository });
-const submitTeeGroupScorecardUseCase = new SubmitScorecardUseCase({ scoringRepository: apiTeeGroupScoringRepository });
-const retireFromTeeGroupUseCase = new RetireFromTeeGroupUseCase({ teeGroupScoringRepository: apiTeeGroupScoringRepository });
-const correctTeeGroupHoleUseCase = new CorrectTeeGroupHoleUseCase({ teeGroupScoringRepository: apiTeeGroupScoringRepository });
-const reopenTeeGroupCardUseCase = new ReopenTeeGroupCardUseCase({ teeGroupScoringRepository: apiTeeGroupScoringRepository });
-const markTeeGroupNoShowUseCase = new MarkTeeGroupNoShowUseCase({ teeGroupScoringRepository: apiTeeGroupScoringRepository });
-const retireTeeGroupPlayerUseCase = new RetireTeeGroupPlayerUseCase({ teeGroupScoringRepository: apiTeeGroupScoringRepository });
-const deleteTeeGroupHoleUseCase = new DeleteTeeGroupHoleUseCase({ teeGroupScoringRepository: apiTeeGroupScoringRepository });
-const validateTeeGroupScoredHolesUseCase = new ValidateTeeGroupScoredHolesUseCase({
+const getTeeGroupScoringViewUseCase = new GetScoringViewUseCase({
+  scoringRepository: apiTeeGroupScoringRepository,
+});
+const submitTeeGroupHoleScoreUseCase = new SubmitHoleScoreUseCase({
+  scoringRepository: apiTeeGroupScoringRepository,
+});
+const submitTeeGroupScorecardUseCase = new SubmitScorecardUseCase({
+  scoringRepository: apiTeeGroupScoringRepository,
+});
+const retireFromTeeGroupUseCase = new RetireFromTeeGroupUseCase({
   teeGroupScoringRepository: apiTeeGroupScoringRepository,
 });
-const closeTeeWindowUseCase = new CloseTeeWindowUseCase({ teeGroupScoringRepository: apiTeeGroupScoringRepository });
-const getTeeWindowStandingsUseCase = new GetTeeWindowStandingsUseCase({ teeGroupScoringRepository: apiTeeGroupScoringRepository });
-const getCompetitionStandingsUseCase = new GetCompetitionStandingsUseCase({ teeGroupScoringRepository: apiTeeGroupScoringRepository });
-const getScratchStandingsUseCase = new GetScratchStandingsUseCase({ teeGroupScoringRepository: apiTeeGroupScoringRepository });
+const correctTeeGroupHoleUseCase = new CorrectTeeGroupHoleUseCase({
+  teeGroupScoringRepository: apiTeeGroupScoringRepository,
+});
+const reopenTeeGroupCardUseCase = new ReopenTeeGroupCardUseCase({
+  teeGroupScoringRepository: apiTeeGroupScoringRepository,
+});
+const markTeeGroupNoShowUseCase = new MarkTeeGroupNoShowUseCase({
+  teeGroupScoringRepository: apiTeeGroupScoringRepository,
+});
+const retireTeeGroupPlayerUseCase = new RetireTeeGroupPlayerUseCase({
+  teeGroupScoringRepository: apiTeeGroupScoringRepository,
+});
+const deleteTeeGroupHoleUseCase = new DeleteTeeGroupHoleUseCase({
+  teeGroupScoringRepository: apiTeeGroupScoringRepository,
+});
+const validateTeeGroupScoredHolesUseCase =
+  new ValidateTeeGroupScoredHolesUseCase({
+    teeGroupScoringRepository: apiTeeGroupScoringRepository,
+  });
+const closeTeeWindowUseCase = new CloseTeeWindowUseCase({
+  teeGroupScoringRepository: apiTeeGroupScoringRepository,
+});
+const getTeeWindowStandingsUseCase = new GetTeeWindowStandingsUseCase({
+  teeGroupScoringRepository: apiTeeGroupScoringRepository,
+});
+const getCompetitionStandingsUseCase = new GetCompetitionStandingsUseCase({
+  teeGroupScoringRepository: apiTeeGroupScoringRepository,
+});
+const getScratchStandingsUseCase = new GetScratchStandingsUseCase({
+  teeGroupScoringRepository: apiTeeGroupScoringRepository,
+});
 
 // Enrollment Use Cases
-const requestEnrollmentUseCase = new RequestEnrollmentUseCase(apiEnrollmentRepository);
-const listEnrollmentsUseCase = new ListEnrollmentsUseCase(apiEnrollmentRepository);
+const requestEnrollmentUseCase = new RequestEnrollmentUseCase(
+  apiEnrollmentRepository,
+);
+const listEnrollmentsUseCase = new ListEnrollmentsUseCase(
+  apiEnrollmentRepository,
+);
 
 // Próximos partidos del jugador (FE #306): compone competiciones + calendario +
 // inscripciones, porque no hay un endpoint que lo responda de una vez
@@ -453,36 +728,84 @@ const getUpcomingMatchesUseCase = new GetUpcomingMatchesUseCase({
 });
 // Y las partidas de stroke play, aparte: el banner del panel enseña la más
 // cercana de las dos (FE #824, PR 7)
-const getUpcomingTeeGroupsUseCase = new GetUpcomingTeeGroupsUseCase({ listUserCompetitionsUseCase, getMyTeeGroupsUseCase });
-const approveEnrollmentUseCase = new ApproveEnrollmentUseCase(apiEnrollmentRepository);
-const rejectEnrollmentUseCase = new RejectEnrollmentUseCase(apiEnrollmentRepository);
-const removeEnrolledPlayerUseCase = new RemoveEnrolledPlayerUseCase(apiEnrollmentRepository);
-const setCustomHandicapUseCase = new SetCustomHandicapUseCase(apiEnrollmentRepository);
-const removeCustomHandicapUseCase = new RemoveCustomHandicapUseCase(apiEnrollmentRepository);
-const setNamePreferenceUseCase = new SetNamePreferenceUseCase(apiEnrollmentRepository);
+const getUpcomingTeeGroupsUseCase = new GetUpcomingTeeGroupsUseCase({
+  listUserCompetitionsUseCase,
+  getMyTeeGroupsUseCase,
+});
+const approveEnrollmentUseCase = new ApproveEnrollmentUseCase(
+  apiEnrollmentRepository,
+);
+const rejectEnrollmentUseCase = new RejectEnrollmentUseCase(
+  apiEnrollmentRepository,
+);
+const removeEnrolledPlayerUseCase = new RemoveEnrolledPlayerUseCase(
+  apiEnrollmentRepository,
+);
+const setCustomHandicapUseCase = new SetCustomHandicapUseCase(
+  apiEnrollmentRepository,
+);
+const removeCustomHandicapUseCase = new RemoveCustomHandicapUseCase(
+  apiEnrollmentRepository,
+);
+const setNamePreferenceUseCase = new SetNamePreferenceUseCase(
+  apiEnrollmentRepository,
+);
 const directEnrollUseCase = new DirectEnrollUseCase(apiEnrollmentRepository);
 
 // Quick Match Use Cases (FE #236)
-const createAndStartQuickMatchUseCase = new CreateAndStartQuickMatchUseCase({ quickMatchRepository: apiQuickMatchRepository });
-const completeQuickMatchUseCase = new CompleteQuickMatchUseCase({ quickMatchRepository: apiQuickMatchRepository });
-const cancelQuickMatchUseCase = new CancelQuickMatchUseCase({ quickMatchRepository: apiQuickMatchRepository });
-const hideQuickMatchUseCase = new HideQuickMatchUseCase({ quickMatchRepository: apiQuickMatchRepository });
-const excludeQuickMatchFromStatsUseCase = new ExcludeQuickMatchFromStatsUseCase({ quickMatchRepository: apiQuickMatchRepository });
-const includeQuickMatchInStatsUseCase = new IncludeQuickMatchInStatsUseCase({ quickMatchRepository: apiQuickMatchRepository });
-const getQuickMatchUseCase = new GetQuickMatchUseCase({ quickMatchRepository: apiQuickMatchRepository });
-const getSharedQuickMatchUseCase = new GetSharedQuickMatchUseCase({ quickMatchRepository: apiQuickMatchRepository });
-const listMyQuickMatchesUseCase = new ListMyQuickMatchesUseCase({ quickMatchRepository: apiQuickMatchRepository });
-const submitQuickMatchHoleScoreUseCase = new SubmitQuickMatchHoleScoreUseCase({ quickMatchRepository: apiQuickMatchRepository });
-const submitQuickMatchProxyHoleScoreUseCase = new SubmitQuickMatchProxyHoleScoreUseCase({ quickMatchRepository: apiQuickMatchRepository });
+const createAndStartQuickMatchUseCase = new CreateAndStartQuickMatchUseCase({
+  quickMatchRepository: apiQuickMatchRepository,
+});
+const completeQuickMatchUseCase = new CompleteQuickMatchUseCase({
+  quickMatchRepository: apiQuickMatchRepository,
+});
+const cancelQuickMatchUseCase = new CancelQuickMatchUseCase({
+  quickMatchRepository: apiQuickMatchRepository,
+});
+const hideQuickMatchUseCase = new HideQuickMatchUseCase({
+  quickMatchRepository: apiQuickMatchRepository,
+});
+const excludeQuickMatchFromStatsUseCase = new ExcludeQuickMatchFromStatsUseCase(
+  { quickMatchRepository: apiQuickMatchRepository },
+);
+const includeQuickMatchInStatsUseCase = new IncludeQuickMatchInStatsUseCase({
+  quickMatchRepository: apiQuickMatchRepository,
+});
+const getQuickMatchUseCase = new GetQuickMatchUseCase({
+  quickMatchRepository: apiQuickMatchRepository,
+});
+const getSharedQuickMatchUseCase = new GetSharedQuickMatchUseCase({
+  quickMatchRepository: apiQuickMatchRepository,
+});
+const listMyQuickMatchesUseCase = new ListMyQuickMatchesUseCase({
+  quickMatchRepository: apiQuickMatchRepository,
+});
+const submitQuickMatchHoleScoreUseCase = new SubmitQuickMatchHoleScoreUseCase({
+  quickMatchRepository: apiQuickMatchRepository,
+});
+const submitQuickMatchProxyHoleScoreUseCase =
+  new SubmitQuickMatchProxyHoleScoreUseCase({
+    quickMatchRepository: apiQuickMatchRepository,
+  });
 
 // Device Management Use Cases (v1.13.0)
-const getActiveDevicesUseCase = new GetActiveDevicesUseCase({ deviceRepository: apiDeviceRepository });
-const revokeDeviceUseCase = new RevokeDeviceUseCase({ deviceRepository: apiDeviceRepository });
-const checkDeviceStatusUseCase = new CheckDeviceStatusUseCase({ deviceRepository: apiDeviceRepository });
+const getActiveDevicesUseCase = new GetActiveDevicesUseCase({
+  deviceRepository: apiDeviceRepository,
+});
+const revokeDeviceUseCase = new RevokeDeviceUseCase({
+  deviceRepository: apiDeviceRepository,
+});
+const checkDeviceStatusUseCase = new CheckDeviceStatusUseCase({
+  deviceRepository: apiDeviceRepository,
+});
 
 // Golf Course Use Cases (v2.1.0 - Sprint 1)
-const listGolfCoursesUseCase = new ListGolfCoursesUseCase({ golfCourseRepository: apiGolfCourseRepository });
-const getGolfCourseUseCase = new GetGolfCourseUseCase({ golfCourseRepository: apiGolfCourseRepository });
+const listGolfCoursesUseCase = new ListGolfCoursesUseCase({
+  golfCourseRepository: apiGolfCourseRepository,
+});
+const getGolfCourseUseCase = new GetGolfCourseUseCase({
+  golfCourseRepository: apiGolfCourseRepository,
+});
 // Dónde está cada campo, con su copia en el móvil para el mapa sin cobertura (BE #532)
 const getCourseLocationUseCase = new GetCourseLocationUseCase({
   golfCourseRepository: apiGolfCourseRepository,
@@ -490,23 +813,40 @@ const getCourseLocationUseCase = new GetCourseLocationUseCase({
 });
 // El mapa de hoyos para la anotación, con su copia para jugar sin cobertura (BE #532)
 // Revisar los hoyos (admin, BE #575)
-const listHoleReviewsUseCase = new ListHoleReviewsUseCase({ golfCourseRepository: apiGolfCourseRepository });
-const getHoleReviewUseCase = new GetHoleReviewUseCase({ golfCourseRepository: apiGolfCourseRepository });
-const saveHoleLineUseCase = new SaveHoleLineUseCase({ golfCourseRepository: apiGolfCourseRepository });
-const reopenHoleUseCase = new ReopenHoleUseCase({ golfCourseRepository: apiGolfCourseRepository });
-const deleteHoleSampleUseCase = new DeleteHoleSampleUseCase({ golfCourseRepository: apiGolfCourseRepository });
-const discardHoleReportUseCase = new DiscardHoleReportUseCase({ golfCourseRepository: apiGolfCourseRepository });
+const listHoleReviewsUseCase = new ListHoleReviewsUseCase({
+  golfCourseRepository: apiGolfCourseRepository,
+});
+const getHoleReviewUseCase = new GetHoleReviewUseCase({
+  golfCourseRepository: apiGolfCourseRepository,
+});
+const saveHoleLineUseCase = new SaveHoleLineUseCase({
+  golfCourseRepository: apiGolfCourseRepository,
+});
+const reopenHoleUseCase = new ReopenHoleUseCase({
+  golfCourseRepository: apiGolfCourseRepository,
+});
+const deleteHoleSampleUseCase = new DeleteHoleSampleUseCase({
+  golfCourseRepository: apiGolfCourseRepository,
+});
+const discardHoleReportUseCase = new DiscardHoleReportUseCase({
+  golfCourseRepository: apiGolfCourseRepository,
+});
 
 const getHoleMapUseCase = new GetHoleMapUseCase({
   golfCourseRepository: apiGolfCourseRepository,
   holeMapCache: new LocalStorageHoleMapCache(),
-  reportarFallo: (error, contexto) => captureError(error, { tags: { modulo: 'mapa-de-hoyos' }, extra: contexto }),
+  reportarFallo: (error, contexto) =>
+    captureError(error, { tags: { modulo: 'mapa-de-hoyos' }, extra: contexto }),
 });
 // Las muestras de hoyo, anónimas (BE #532, marcado por par): a la cola del
 // móvil antes de nada y se envían cuando haya cobertura, sin decir nada al
 // jugador. Lo que el servidor no quiere es un fallo nuestro: a Sentry
 const holeSampleStore = new LocalStorageHoleSampleStore();
-const reportarFalloDeMuestra = (error, contexto) => captureError(error, { tags: { modulo: 'muestras-de-hoyos' }, extra: contexto });
+const reportarFalloDeMuestra = (error, contexto) =>
+  captureError(error, {
+    tags: { modulo: 'muestras-de-hoyos' },
+    extra: contexto,
+  });
 // Las que van de camino, compartidas: la cola de fondo no manda otra vez la que está saliendo
 const muestrasEnVuelo = new Set();
 // Las que llegaron y el resumen aún no trae: se siguen viendo en el mapa
@@ -527,7 +867,11 @@ const sendPendingHoleSamplesUseCase = new SendPendingHoleSamplesUseCase({
 });
 // Los reportes de hoyo (entrega 7): la misma cola en el móvil, aparte de las muestras
 const holeReportStore = new LocalStorageHoleReportStore();
-const reportarFalloDeReporte = (error, contexto) => captureError(error, { tags: { modulo: 'reportes-de-hoyos' }, extra: contexto });
+const reportarFalloDeReporte = (error, contexto) =>
+  captureError(error, {
+    tags: { modulo: 'reportes-de-hoyos' },
+    extra: contexto,
+  });
 const reportesEnVuelo = new Set();
 const sendHoleReportUseCase = new SendHoleReportUseCase({
   golfCourseRepository: apiGolfCourseRepository,
@@ -546,21 +890,47 @@ const getHoleSamplesUseCase = new GetHoleSamplesUseCase({
   holeSampleStore,
   recienEnviadas: muestrasRecienEnviadas,
 });
-const createGolfCourseAdminUseCase = new CreateGolfCourseAdminUseCase({ golfCourseRepository: apiGolfCourseRepository });
-const createGolfCourseRequestUseCase = new CreateGolfCourseRequestUseCase({ golfCourseRepository: apiGolfCourseRepository });
-const updateGolfCourseUseCase = new UpdateGolfCourseUseCase({ golfCourseRepository: apiGolfCourseRepository });
-const approveGolfCourseUseCase = new ApproveGolfCourseUseCase({ golfCourseRepository: apiGolfCourseRepository });
-const rejectGolfCourseUseCase = new RejectGolfCourseUseCase({ golfCourseRepository: apiGolfCourseRepository });
-const approveGolfCourseUpdateUseCase = new ApproveGolfCourseUpdateUseCase({ golfCourseRepository: apiGolfCourseRepository });
-const rejectGolfCourseUpdateUseCase = new RejectGolfCourseUpdateUseCase({ golfCourseRepository: apiGolfCourseRepository });
-const listPendingGolfCoursesUseCase = new ListPendingGolfCoursesUseCase({ golfCourseRepository: apiGolfCourseRepository });
+const createGolfCourseAdminUseCase = new CreateGolfCourseAdminUseCase({
+  golfCourseRepository: apiGolfCourseRepository,
+});
+const createGolfCourseRequestUseCase = new CreateGolfCourseRequestUseCase({
+  golfCourseRepository: apiGolfCourseRepository,
+});
+const updateGolfCourseUseCase = new UpdateGolfCourseUseCase({
+  golfCourseRepository: apiGolfCourseRepository,
+});
+const approveGolfCourseUseCase = new ApproveGolfCourseUseCase({
+  golfCourseRepository: apiGolfCourseRepository,
+});
+const rejectGolfCourseUseCase = new RejectGolfCourseUseCase({
+  golfCourseRepository: apiGolfCourseRepository,
+});
+const approveGolfCourseUpdateUseCase = new ApproveGolfCourseUpdateUseCase({
+  golfCourseRepository: apiGolfCourseRepository,
+});
+const rejectGolfCourseUpdateUseCase = new RejectGolfCourseUpdateUseCase({
+  golfCourseRepository: apiGolfCourseRepository,
+});
+const listPendingGolfCoursesUseCase = new ListPendingGolfCoursesUseCase({
+  golfCourseRepository: apiGolfCourseRepository,
+});
 
 // Admin Panel Use Cases (v2.4.0)
-const getAdminStatsUseCase = new GetAdminStatsUseCase({ adminRepository: apiAdminRepository });
-const listAdminUsersUseCase = new ListAdminUsersUseCase({ adminRepository: apiAdminRepository });
-const updateAdminUserUseCase = new UpdateAdminUserUseCase({ adminRepository: apiAdminRepository });
-const setAdminUserActiveUseCase = new SetAdminUserActiveUseCase({ adminRepository: apiAdminRepository });
-const deleteAdminUserUseCase = new DeleteAdminUserUseCase({ adminRepository: apiAdminRepository });
+const getAdminStatsUseCase = new GetAdminStatsUseCase({
+  adminRepository: apiAdminRepository,
+});
+const listAdminUsersUseCase = new ListAdminUsersUseCase({
+  adminRepository: apiAdminRepository,
+});
+const updateAdminUserUseCase = new UpdateAdminUserUseCase({
+  adminRepository: apiAdminRepository,
+});
+const setAdminUserActiveUseCase = new SetAdminUserActiveUseCase({
+  adminRepository: apiAdminRepository,
+});
+const deleteAdminUserUseCase = new DeleteAdminUserUseCase({
+  adminRepository: apiAdminRepository,
+});
 
 // Exportar los casos de uso y otros servicios que la capa de presentación necesite
 export {

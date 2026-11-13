@@ -9,14 +9,19 @@ import { MemoryRouter, Routes, Route } from 'react-router';
  */
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
-    t: (clave, valores) => (valores ? `${clave} ${Object.values(valores).join(' ')}` : clave),
+    t: (clave, valores) =>
+      valores ? `${clave} ${Object.values(valores).join(' ')}` : clave,
     i18n: { language: 'es' },
   }),
 }));
 
 vi.mock('../components/layout/HeaderAuth', () => ({ default: () => null }));
-vi.mock('../hooks/useAuth', () => ({ useAuth: () => ({ user: { id: 'u-1', gender: 'MALE' }, loading: false }) }));
-vi.mock('../utils/toast', () => ({ default: { error: vi.fn(), success: vi.fn(), info: vi.fn() } }));
+vi.mock('../hooks/useAuth', () => ({
+  useAuth: () => ({ user: { id: 'u-1', gender: 'MALE' }, loading: false }),
+}));
+vi.mock('../utils/toast', () => ({
+  default: { error: vi.fn(), success: vi.fn(), info: vi.fn() },
+}));
 vi.mock('../services/countries', () => ({
   formatCountryName: (pais) => pais?.name_es || pais?.code || '',
   sortCountriesByName: (paises) => paises || [],
@@ -26,7 +31,11 @@ vi.mock('../composition', () => ({
   updateCompetitionUseCase: { execute: vi.fn() },
   getCompetitionDetailUseCase: { execute: vi.fn() },
   getCompetitionGolfCoursesUseCase: { execute: vi.fn().mockResolvedValue([]) },
-  fetchCountriesUseCase: { execute: vi.fn().mockResolvedValue([{ code: 'ES', name_es: 'España', name_en: 'Spain' }]) },
+  fetchCountriesUseCase: {
+    execute: vi
+      .fn()
+      .mockResolvedValue([{ code: 'ES', name_es: 'España', name_en: 'Spain' }]),
+  },
   // Para cualquier país, Portugal y Francia: lo justo para poder añadir dos adyacentes
   getAdjacentCountriesUseCase: {
     execute: vi.fn().mockResolvedValue([
@@ -39,17 +48,26 @@ vi.mock('../composition', () => ({
 // Elegir país y campo con un botón: lo que se mira es el botón de quitarlo
 vi.mock('../components/ui/CountryAutocomplete', () => ({
   default: ({ onChange }) => (
-    <button type="button" onClick={() => onChange('ES')}>elegir España</button>
+    <button type="button" onClick={() => onChange('ES')}>
+      elegir España
+    </button>
   ),
 }));
 vi.mock('../components/golf_course/GolfCourseSearchBox', () => ({
   default: ({ countryCode, onCourseSelect }) => (
-    <button type="button" onClick={() => onCourseSelect({ id: `g-${countryCode}`, name: `Campo ${countryCode}` })}>
+    <button
+      type="button"
+      onClick={() =>
+        onCourseSelect({ id: `g-${countryCode}`, name: `Campo ${countryCode}` })
+      }
+    >
       {`elegir campo ${countryCode}`}
     </button>
   ),
 }));
-vi.mock('../components/golf_course/GolfCourseRequestModal', () => ({ default: () => null }));
+vi.mock('../components/golf_course/GolfCourseRequestModal', () => ({
+  default: () => null,
+}));
 vi.mock('../components/ui/FullScreenLoader', () => ({ default: () => null }));
 vi.mock('../components/ui/CountryFlag', () => ({ CountryFlag: () => null }));
 
@@ -63,7 +81,9 @@ const { getCompetitionDetailUseCase } = await import('../composition');
 const sinNombre = () =>
   screen
     .getAllByRole('button')
-    .filter((boton) => !boton.textContent.trim() && !boton.getAttribute('aria-label'));
+    .filter(
+      (boton) => !boton.textContent.trim() && !boton.getAttribute('aria-label'),
+    );
 
 describe('CreateCompetition · los botones de icono se nombran', () => {
   beforeEach(() => {
@@ -88,39 +108,62 @@ describe('CreateCompetition · los botones de icono se nombran', () => {
     render(
       <MemoryRouter initialEntries={['/competitions/c-1/edit']}>
         <Routes>
-          <Route path="/competitions/:id/edit" element={<CreateCompetition />} />
+          <Route
+            path="/competitions/:id/edit"
+            element={<CreateCompetition />}
+          />
         </Routes>
-      </MemoryRouter>
+      </MemoryRouter>,
     );
     await screen.findByDisplayValue('Medal de tres países');
 
     expect(
-      screen.getByRole('button', { name: 'create.removeCountryField create.adjacentCountry' })
+      screen.getByRole('button', {
+        name: 'create.removeCountryField create.adjacentCountry',
+      }),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole('button', { name: 'create.removeCountryField create.thirdCountry' })
+      screen.getByRole('button', {
+        name: 'create.removeCountryField create.thirdCountry',
+      }),
     ).toBeInTheDocument();
     expect(sinNombre()).toEqual([]);
   });
 
   it('B2: al crear, la papelera de un campo dice cuál quita', async () => {
-    render(<MemoryRouter><CreateCompetition /></MemoryRouter>);
+    render(
+      <MemoryRouter>
+        <CreateCompetition />
+      </MemoryRouter>,
+    );
     fireEvent.click(await screen.findByTestId('tipo-RYDER_CUP'));
     fireEvent.click(await screen.findByTestId('modo-MANUAL'));
-    fireEvent.click(await screen.findByRole('button', { name: 'elegir España' }));
-    fireEvent.click(await screen.findByRole('button', { name: 'elegir campo ES' }));
+    fireEvent.click(
+      await screen.findByRole('button', { name: 'elegir España' }),
+    );
+    fireEvent.click(
+      await screen.findByRole('button', { name: 'elegir campo ES' }),
+    );
 
     expect(
-      await screen.findByRole('button', { name: 'detail.golfCourses.remove Campo ES' })
+      await screen.findByRole('button', {
+        name: 'detail.golfCourses.remove Campo ES',
+      }),
     ).toBeInTheDocument();
     expect(sinNombre()).toEqual([]);
   });
 
   it('B3: también la de los campos de cada país adyacente', async () => {
-    render(<MemoryRouter><CreateCompetition /></MemoryRouter>);
+    render(
+      <MemoryRouter>
+        <CreateCompetition />
+      </MemoryRouter>,
+    );
     fireEvent.click(await screen.findByTestId('tipo-RYDER_CUP'));
     fireEvent.click(await screen.findByTestId('modo-MANUAL'));
-    fireEvent.click(await screen.findByRole('button', { name: 'elegir España' }));
+    fireEvent.click(
+      await screen.findByRole('button', { name: 'elegir España' }),
+    );
     fireEvent.click(await screen.findByText('create.addAdjacentCountry'));
     fireEvent.change(await screen.findByLabelText('create.adjacentCountry'), {
       target: { name: 'adjacentCountry1', value: 'PT' },
@@ -130,12 +173,16 @@ describe('CreateCompetition · los botones de icono se nombran', () => {
       target: { name: 'adjacentCountry2', value: 'FR' },
     });
     for (const pais of ['ES', 'PT', 'FR']) {
-      fireEvent.click(await screen.findByRole('button', { name: `elegir campo ${pais}` }));
+      fireEvent.click(
+        await screen.findByRole('button', { name: `elegir campo ${pais}` }),
+      );
     }
 
     for (const pais of ['ES', 'PT', 'FR']) {
       expect(
-        await screen.findByRole('button', { name: `detail.golfCourses.remove Campo ${pais}` })
+        await screen.findByRole('button', {
+          name: `detail.golfCourses.remove Campo ${pais}`,
+        }),
       ).toBeInTheDocument();
     }
     expect(sinNombre()).toEqual([]);
@@ -146,19 +193,41 @@ describe('CreateCompetition · los botones de icono se nombran', () => {
   // «(1 campos seleccionados)»: el número iba suelto delante del texto y el
   // plural no se elegía. Visto en la prueba en bloque del 4 oct 2026
   it('P1: el número de campos de cada país elige singular o plural', async () => {
-    render(<MemoryRouter><CreateCompetition /></MemoryRouter>);
+    render(
+      <MemoryRouter>
+        <CreateCompetition />
+      </MemoryRouter>,
+    );
     fireEvent.click(await screen.findByTestId('tipo-RYDER_CUP'));
     fireEvent.click(await screen.findByTestId('modo-MANUAL'));
-    fireEvent.click(await screen.findByRole('button', { name: 'elegir España' }));
+    fireEvent.click(
+      await screen.findByRole('button', { name: 'elegir España' }),
+    );
 
-    expect(await screen.findByText('(create.coursesSelected 0)')).toBeInTheDocument();
-    fireEvent.click(await screen.findByRole('button', { name: 'elegir campo ES' }));
-    expect(await screen.findByText('(create.coursesSelected 1)')).toBeInTheDocument();
+    expect(
+      await screen.findByText('(create.coursesSelected 0)'),
+    ).toBeInTheDocument();
+    fireEvent.click(
+      await screen.findByRole('button', { name: 'elegir campo ES' }),
+    );
+    expect(
+      await screen.findByText('(create.coursesSelected 1)'),
+    ).toBeInTheDocument();
   });
 
   it.each([
-    ['es', competicionesEs, '{{count}} campo seleccionado', '{{count}} campos seleccionados'],
-    ['en', competicionesEn, '{{count}} course selected', '{{count}} courses selected'],
+    [
+      'es',
+      competicionesEs,
+      '{{count}} campo seleccionado',
+      '{{count}} campos seleccionados',
+    ],
+    [
+      'en',
+      competicionesEn,
+      '{{count}} course selected',
+      '{{count}} courses selected',
+    ],
   ])('P2: en %s hay singular y plural', (_, textos, uno, varios) => {
     expect(textos.create.coursesSelected_one).toBe(uno);
     expect(textos.create.coursesSelected_other).toBe(varios);

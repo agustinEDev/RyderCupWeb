@@ -32,7 +32,9 @@ class PlayerStatsMapper {
       playingAvg: apiData.playing_avg ?? null,
       bestDifferential: apiData.best_differential ?? null,
       roundsWithDifferential: apiData.rounds_with_differential ?? 0,
-      differentials: Array.isArray(apiData.differentials) ? apiData.differentials : [],
+      differentials: Array.isArray(apiData.differentials)
+        ? apiData.differentials
+        : [],
     });
   }
 }

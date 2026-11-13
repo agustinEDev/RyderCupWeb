@@ -1,4 +1,10 @@
-import { render, screen, waitFor, fireEvent, within } from '@testing-library/react';
+import {
+  render,
+  screen,
+  waitFor,
+  fireEvent,
+  within,
+} from '@testing-library/react';
 import { MemoryRouter, Routes, Route, useNavigate } from 'react-router';
 import { vi, describe, it, expect, beforeEach } from 'vitest';
 import PlayerProfilePage from './PlayerProfilePage';
@@ -42,7 +48,9 @@ vi.mock('../../composition', () => ({
   getPlayerProfileUseCase: { execute: (...args) => getProfile(...args) },
   getPlayerActivityUseCase: { execute: (...args) => getActivity(...args) },
   sendFriendRequestUseCase: { execute: (...args) => sendRequest(...args) },
-  respondFriendRequestUseCase: { execute: (...args) => respondRequest(...args) },
+  respondFriendRequestUseCase: {
+    execute: (...args) => respondRequest(...args),
+  },
   removeFriendUseCase: { execute: (...args) => removeFriend(...args) },
   blockUserUseCase: { execute: (...args) => blockUser(...args) },
   getGamesTogetherUseCase: { execute: (...args) => getGamesTogether(...args) },
@@ -124,7 +132,8 @@ const juego = (overrides = {}) => ({
   ...overrides,
 });
 
-const error = (status) => Object.assign(new Error(`HTTP ${status}`), { status });
+const error = (status) =>
+  Object.assign(new Error(`HTTP ${status}`), { status });
 
 const renderProfile = (userId = 'u1') =>
   render(
@@ -133,7 +142,7 @@ const renderProfile = (userId = 'u1') =>
         <Route path="/players/:userId" element={<PlayerProfilePage />} />
         <Route path="/profile" element={<div data-testid="own-profile" />} />
       </Routes>
-    </MemoryRouter>
+    </MemoryRouter>,
   );
 
 describe('PlayerProfilePage', () => {
@@ -152,10 +161,14 @@ describe('PlayerProfilePage', () => {
     it('shows name, photo and friend count to someone who is not a friend', async () => {
       renderProfile();
 
-      expect(await screen.findByTestId('player-profile-card')).toBeInTheDocument();
+      expect(
+        await screen.findByTestId('player-profile-card'),
+      ).toBeInTheDocument();
       expect(screen.getByText('Ana García')).toBeInTheDocument();
       expect(screen.getByTestId('avatar-u1')).toBeInTheDocument();
-      expect(screen.getByText('playerProfile:friendsCount')).toBeInTheDocument();
+      expect(
+        screen.getByText('playerProfile:friendsCount'),
+      ).toBeInTheDocument();
     });
 
     it('offers a way back to the feed, which the desktop header does not give', async () => {
@@ -163,7 +176,9 @@ describe('PlayerProfilePage', () => {
       // entra al perfil y no hay forma de salir salvo el boton del navegador
       renderProfile();
 
-      const volver = await screen.findByRole('link', { name: 'playerProfile:backToFeed' });
+      const volver = await screen.findByRole('link', {
+        name: 'playerProfile:backToFeed',
+      });
       expect(volver).toHaveAttribute('href', '/feed');
     });
 
@@ -171,14 +186,20 @@ describe('PlayerProfilePage', () => {
       // Revisando solicitudes se entra y se sale del perfil una vez por cada
       // una: devolver siempre al feed obliga a rehacer el camino cada vez
       render(
-        <MemoryRouter initialEntries={[{ pathname: '/players/u1', state: { from: 'friends' } }]}>
+        <MemoryRouter
+          initialEntries={[
+            { pathname: '/players/u1', state: { from: 'friends' } },
+          ]}
+        >
           <Routes>
             <Route path="/players/:userId" element={<PlayerProfilePage />} />
           </Routes>
-        </MemoryRouter>
+        </MemoryRouter>,
       );
 
-      const volver = await screen.findByRole('link', { name: 'playerProfile:backToFriends' });
+      const volver = await screen.findByRole('link', {
+        name: 'playerProfile:backToFriends',
+      });
       expect(volver).toHaveAttribute('href', '/friends');
     });
 
@@ -187,9 +208,15 @@ describe('PlayerProfilePage', () => {
       // pueden ver, no dar a entender que no tiene datos.
       renderProfile();
 
-      expect(await screen.findByTestId('player-profile-private')).toBeInTheDocument();
-      expect(screen.queryByTestId('player-profile-stats')).not.toBeInTheDocument();
-      expect(screen.queryByTestId('player-profile-contact')).not.toBeInTheDocument();
+      expect(
+        await screen.findByTestId('player-profile-private'),
+      ).toBeInTheDocument();
+      expect(
+        screen.queryByTestId('player-profile-stats'),
+      ).not.toBeInTheDocument();
+      expect(
+        screen.queryByTestId('player-profile-contact'),
+      ).not.toBeInTheDocument();
     });
 
     it('never asks for the activity of someone who is not a friend', async () => {
@@ -205,7 +232,9 @@ describe('PlayerProfilePage', () => {
       getProfile.mockResolvedValue(amigo());
       renderProfile();
 
-      expect(await screen.findByTestId('player-profile-stats')).toBeInTheDocument();
+      expect(
+        await screen.findByTestId('player-profile-stats'),
+      ).toBeInTheDocument();
       expect(screen.getByTestId('activity-event-e1')).toBeInTheDocument();
     });
 
@@ -216,7 +245,9 @@ describe('PlayerProfilePage', () => {
       const { container } = renderProfile();
 
       await screen.findByTestId('player-profile-stats');
-      expect(screen.queryByTestId('player-profile-contact')).not.toBeInTheDocument();
+      expect(
+        screen.queryByTestId('player-profile-contact'),
+      ).not.toBeInTheDocument();
       expect(screen.queryByText(/ana@example\.com/)).not.toBeInTheDocument();
       expect(container.querySelector('a[href^="mailto:"]')).toBeNull();
       expect(document.body.innerHTML).not.toContain('ana@example.com');
@@ -227,18 +258,24 @@ describe('PlayerProfilePage', () => {
       getProfile.mockResolvedValue(amigo());
       renderProfile();
 
-      expect(await screen.findByTestId('player-profile-stat-estimatedIndex')).toHaveTextContent(
-        'playerProfile:stats.estimatedIndexHint'
-      );
+      expect(
+        await screen.findByTestId('player-profile-stat-estimatedIndex'),
+      ).toHaveTextContent('playerProfile:stats.estimatedIndexHint');
     });
 
     // Un hándicap plus se guarda negativo y se lee con «+» (FE #797)
     it('shows a plus handicap and a plus estimated index with their plus sign', async () => {
-      getProfile.mockResolvedValue(amigo({ handicap: -2, stats: estadisticas({ estimatedIndex: -0.4 }) }));
+      getProfile.mockResolvedValue(
+        amigo({ handicap: -2, stats: estadisticas({ estimatedIndex: -0.4 }) }),
+      );
       renderProfile();
 
-      expect(await screen.findByTestId('player-profile-stat-handicap')).toHaveTextContent('+2.0');
-      expect(screen.getByTestId('player-profile-stat-estimatedIndex')).toHaveTextContent('+0.4');
+      expect(
+        await screen.findByTestId('player-profile-stat-handicap'),
+      ).toHaveTextContent('+2.0');
+      expect(
+        screen.getByTestId('player-profile-stat-estimatedIndex'),
+      ).toHaveTextContent('+0.4');
     });
 
     it('says they publish nothing when the activity comes back forbidden', async () => {
@@ -248,9 +285,9 @@ describe('PlayerProfilePage', () => {
       getActivity.mockRejectedValue(error(403));
       renderProfile();
 
-      expect(await screen.findByTestId('player-profile-activity')).toHaveTextContent(
-        'playerProfile:activity.hidden'
-      );
+      expect(
+        await screen.findByTestId('player-profile-activity'),
+      ).toHaveTextContent('playerProfile:activity.hidden');
       expect(screen.getByTestId('player-profile-stats')).toBeInTheDocument();
     });
 
@@ -271,14 +308,16 @@ describe('PlayerProfilePage', () => {
               },
             ],
             nextCursor: null,
-          })
+          }),
         );
       renderProfile();
 
       await screen.findByTestId('activity-event-e1');
       fireEvent.click(screen.getByTestId('player-profile-load-more'));
 
-      expect(await screen.findByTestId('activity-event-e2')).toBeInTheDocument();
+      expect(
+        await screen.findByTestId('activity-event-e2'),
+      ).toBeInTheDocument();
       expect(screen.getByTestId('activity-event-e1')).toBeInTheDocument();
     });
 
@@ -287,39 +326,70 @@ describe('PlayerProfilePage', () => {
       getActivity
         .mockResolvedValueOnce(
           paginaActividad({
-            events: [{ id: 'e1', userId: 'u1', type: 'BIRDIE', occurredAt: new Date('2026-08-10T12:00:00'), payload: { count: 1, golf_course_id: 'c1' }, sourceMatchId: 'm1' }],
+            events: [
+              {
+                id: 'e1',
+                userId: 'u1',
+                type: 'BIRDIE',
+                occurredAt: new Date('2026-08-10T12:00:00'),
+                payload: { count: 1, golf_course_id: 'c1' },
+                sourceMatchId: 'm1',
+              },
+            ],
             courses: { c1: 'Campo Uno' },
             nextCursor: 'cursor-1',
-          })
+          }),
         )
         .mockResolvedValueOnce(
           paginaActividad({
-            events: [{ id: 'e2', userId: 'u1', type: 'BIRDIE', occurredAt: new Date('2026-08-09T12:00:00'), payload: { count: 1, golf_course_id: 'c2' }, sourceMatchId: 'm2' }],
+            events: [
+              {
+                id: 'e2',
+                userId: 'u1',
+                type: 'BIRDIE',
+                occurredAt: new Date('2026-08-09T12:00:00'),
+                payload: { count: 1, golf_course_id: 'c2' },
+                sourceMatchId: 'm2',
+              },
+            ],
             courses: { c2: 'Campo Dos' },
             nextCursor: null,
-          })
+          }),
         );
       renderProfile();
 
       await screen.findByTestId('activity-event-e1');
       fireEvent.click(screen.getByTestId('player-profile-load-more'));
 
-      expect(await screen.findByTestId('activity-event-e2')).toHaveTextContent('Campo Dos');
-      expect(screen.getByTestId('activity-event-e1')).toHaveTextContent('Campo Uno');
+      expect(await screen.findByTestId('activity-event-e2')).toHaveTextContent(
+        'Campo Dos',
+      );
+      expect(screen.getByTestId('activity-event-e1')).toHaveTextContent(
+        'Campo Uno',
+      );
     });
 
-    it("activity cards do not link back to the profile already open (CodeRabbit #944)", async () => {
+    it('activity cards do not link back to the profile already open (CodeRabbit #944)', async () => {
       getProfile.mockResolvedValue(amigo());
       // Un logro de torneo de los de antes (sin torneo ni tipo): sin haberlo
       // jugado lleva a su perfil, que es el que ya está abierto
       const [birdie] = paginaActividad().events;
       getActivity.mockResolvedValue(
-        paginaActividad({ events: [{ ...birdie, payload: { ...birdie.payload, from_tournament: true } }] })
+        paginaActividad({
+          events: [
+            {
+              ...birdie,
+              payload: { ...birdie.payload, from_tournament: true },
+            },
+          ],
+        }),
       );
       renderProfile();
 
       const tarjeta = await screen.findByTestId('activity-event-e1');
-      expect(tarjeta.querySelector('[data-testid="enlace-tarjeta"]')).toBeNull();
+      expect(
+        tarjeta.querySelector('[data-testid="enlace-tarjeta"]'),
+      ).toBeNull();
     });
 
     it("a friend's quick match achievement links to its read-only view (K)", async () => {
@@ -328,18 +398,23 @@ describe('PlayerProfilePage', () => {
       renderProfile();
 
       const tarjeta = await screen.findByTestId('activity-event-e1');
-      expect(tarjeta.querySelector('[data-testid="enlace-tarjeta"]')).toHaveAttribute(
-        'href',
-        '/quick-matches/m1/shared'
-      );
+      expect(
+        tarjeta.querySelector('[data-testid="enlace-tarjeta"]'),
+      ).toHaveAttribute('href', '/quick-matches/m1/shared');
     });
 
     it('does not show a stats grid for a friend who has not played yet', async () => {
-      getProfile.mockResolvedValue(amigo({ stats: estadisticas({ roundsPlayed: 0 }) }));
+      getProfile.mockResolvedValue(
+        amigo({ stats: estadisticas({ roundsPlayed: 0 }) }),
+      );
       renderProfile();
 
-      expect(await screen.findByTestId('player-profile-stats-empty')).toBeInTheDocument();
-      expect(screen.queryByTestId('player-profile-stats')).not.toBeInTheDocument();
+      expect(
+        await screen.findByTestId('player-profile-stats-empty'),
+      ).toBeInTheDocument();
+      expect(
+        screen.queryByTestId('player-profile-stats'),
+      ).not.toBeInTheDocument();
     });
   });
 
@@ -355,24 +430,32 @@ describe('PlayerProfilePage', () => {
     it('distinguishes a request you sent from one you received', async () => {
       // No llevan al mismo sitio: una espera respuesta del otro, la otra la tuya.
       getProfile.mockResolvedValue(
-        perfil({ friendship: { status: 'PENDING_SENT', friendshipId: 'f1' } })
+        perfil({ friendship: { status: 'PENDING_SENT', friendshipId: 'f1' } }),
       );
       renderProfile();
 
-      expect(await screen.findByTestId('player-profile-friendship-sent')).toBeInTheDocument();
-      expect(screen.queryByTestId('player-profile-add-friend')).not.toBeInTheDocument();
+      expect(
+        await screen.findByTestId('player-profile-friendship-sent'),
+      ).toBeInTheDocument();
+      expect(
+        screen.queryByTestId('player-profile-add-friend'),
+      ).not.toBeInTheDocument();
     });
 
     it('lets you accept a request received, with the friendship id', async () => {
       getProfile.mockResolvedValue(
-        perfil({ friendship: { status: 'PENDING_RECEIVED', friendshipId: 'f1' } })
+        perfil({
+          friendship: { status: 'PENDING_RECEIVED', friendshipId: 'f1' },
+        }),
       );
       renderProfile();
 
       await screen.findByTestId('player-profile-friendship-received');
       fireEvent.click(screen.getByText('playerProfile:friendship.accept'));
 
-      await waitFor(() => expect(respondRequest).toHaveBeenCalledWith('f1', 'ACCEPT'));
+      await waitFor(() =>
+        expect(respondRequest).toHaveBeenCalledWith('f1', 'ACCEPT'),
+      );
     });
 
     it('reloads the whole profile after accepting, not just the button', async () => {
@@ -380,7 +463,9 @@ describe('PlayerProfilePage', () => {
       // momento llegaban en null.
       getProfile
         .mockResolvedValueOnce(
-          perfil({ friendship: { status: 'PENDING_RECEIVED', friendshipId: 'f1' } })
+          perfil({
+            friendship: { status: 'PENDING_RECEIVED', friendshipId: 'f1' },
+          }),
         )
         .mockResolvedValueOnce(amigo());
       renderProfile();
@@ -388,7 +473,9 @@ describe('PlayerProfilePage', () => {
       await screen.findByTestId('player-profile-friendship-received');
       fireEvent.click(screen.getByText('playerProfile:friendship.accept'));
 
-      expect(await screen.findByTestId('player-profile-stats')).toBeInTheDocument();
+      expect(
+        await screen.findByTestId('player-profile-stats'),
+      ).toBeInTheDocument();
     });
   });
 
@@ -406,16 +493,22 @@ describe('PlayerProfilePage', () => {
       getProfile.mockRejectedValue(error(404));
       renderProfile();
 
-      expect(await screen.findByTestId('player-profile-not-found')).toBeInTheDocument();
+      expect(
+        await screen.findByTestId('player-profile-not-found'),
+      ).toBeInTheDocument();
     });
 
     // Quien te ha bloqueado responde 404 (fase 3, BE-3): «No encontramos a este
     // jugador», sin un aviso de error que diga otra cosa
     it('someone who blocked you looks like a player that does not exist, without an error toast', async () => {
-      getProfile.mockRejectedValue(Object.assign(error(404), { message: 'User not found' }));
+      getProfile.mockRejectedValue(
+        Object.assign(error(404), { message: 'User not found' }),
+      );
       renderProfile();
 
-      expect(await screen.findByText('playerProfile:notFound.title')).toBeInTheDocument();
+      expect(
+        await screen.findByText('playerProfile:notFound.title'),
+      ).toBeInTheDocument();
       expect(customToast.error).not.toHaveBeenCalled();
     });
   });
@@ -426,54 +519,86 @@ describe('PlayerProfilePage', () => {
     it('offers «Añadir amigo» when there is no relationship', async () => {
       renderProfile();
 
-      expect(await screen.findByTestId('player-profile-add-friend')).toHaveTextContent(
-        'playerProfile:friendship.add'
-      );
-      expect(screen.queryByTestId('player-profile-friendship-accepted')).not.toBeInTheDocument();
+      expect(
+        await screen.findByTestId('player-profile-add-friend'),
+      ).toHaveTextContent('playerProfile:friendship.add');
+      expect(
+        screen.queryByTestId('player-profile-friendship-accepted'),
+      ).not.toBeInTheDocument();
     });
 
     it('treats a declined request like no relationship', async () => {
-      getProfile.mockResolvedValue(perfil({ friendship: { status: 'DECLINED', friendshipId: 'f1' } }));
+      getProfile.mockResolvedValue(
+        perfil({ friendship: { status: 'DECLINED', friendshipId: 'f1' } }),
+      );
       renderProfile();
 
-      expect(await screen.findByTestId('player-profile-add-friend')).toBeInTheDocument();
+      expect(
+        await screen.findByTestId('player-profile-add-friend'),
+      ).toBeInTheDocument();
     });
 
     it('says the request was sent and lets you cancel it', async () => {
       getProfile
-        .mockResolvedValueOnce(perfil({ friendship: { status: 'PENDING_SENT', friendshipId: 'f1' } }))
+        .mockResolvedValueOnce(
+          perfil({
+            friendship: { status: 'PENDING_SENT', friendshipId: 'f1' },
+          }),
+        )
         .mockResolvedValueOnce(perfil());
       renderProfile();
 
-      const enviada = await screen.findByTestId('player-profile-friendship-sent');
+      const enviada = await screen.findByTestId(
+        'player-profile-friendship-sent',
+      );
       expect(enviada).toHaveTextContent('playerProfile:friendship.sent');
-      fireEvent.click(within(enviada).getByTestId('player-profile-cancel-request'));
+      fireEvent.click(
+        within(enviada).getByTestId('player-profile-cancel-request'),
+      );
 
       await waitFor(() => expect(removeFriend).toHaveBeenCalledWith('f1'));
-      expect(await screen.findByTestId('player-profile-add-friend')).toBeInTheDocument();
-      expect(customToast.success).toHaveBeenCalledWith('playerProfile:friendship.cancelled');
+      expect(
+        await screen.findByTestId('player-profile-add-friend'),
+      ).toBeInTheDocument();
+      expect(customToast.success).toHaveBeenCalledWith(
+        'playerProfile:friendship.cancelled',
+      );
     });
 
     it('offers «Aceptar» for a request you received', async () => {
       getProfile.mockResolvedValue(
-        perfil({ friendship: { status: 'PENDING_RECEIVED', friendshipId: 'f1' } })
+        perfil({
+          friendship: { status: 'PENDING_RECEIVED', friendshipId: 'f1' },
+        }),
       );
       renderProfile();
 
-      const recibida = await screen.findByTestId('player-profile-friendship-received');
-      expect(within(recibida).getByRole('button', { name: 'playerProfile:friendship.accept' })).toBeEnabled();
-      expect(screen.queryByTestId('player-profile-add-friend')).not.toBeInTheDocument();
+      const recibida = await screen.findByTestId(
+        'player-profile-friendship-received',
+      );
+      expect(
+        within(recibida).getByRole('button', {
+          name: 'playerProfile:friendship.accept',
+        }),
+      ).toBeEnabled();
+      expect(
+        screen.queryByTestId('player-profile-add-friend'),
+      ).not.toBeInTheDocument();
     });
 
     it('says «Amigos» once you are friends, with no button to add', async () => {
       getProfile.mockResolvedValue(amigo());
       renderProfile();
 
-      expect(await screen.findByTestId('player-profile-friendship-accepted')).toHaveTextContent(
-        'playerProfile:friendship.friends'
-      );
-      expect(screen.queryByTestId('player-profile-add-friend')).not.toBeInTheDocument();
-      expect(screen.queryByTestId('player-profile-cancel-request')).not.toBeInTheDocument();
+      expect(
+        await screen.findByTestId('player-profile-friendship-accepted'),
+      ).toHaveTextContent('playerProfile:friendship.friends');
+      expect(
+        screen.queryByTestId('player-profile-add-friend'),
+      ).not.toBeInTheDocument();
+      expect(
+        screen.queryByTestId('player-profile-cancel-request'),
+      ).not.toBeInTheDocument();
     });
   });
 
@@ -488,29 +613,39 @@ describe('PlayerProfilePage', () => {
       renderProfile();
 
       const menu = await abreElMenu();
-      expect(within(menu).getByTestId('player-profile-menu-remove')).toHaveTextContent(
-        'playerProfile:menu.remove'
-      );
-      expect(within(menu).getByTestId('player-profile-menu-block')).toHaveTextContent(
-        'playerProfile:menu.block'
-      );
+      expect(
+        within(menu).getByTestId('player-profile-menu-remove'),
+      ).toHaveTextContent('playerProfile:menu.remove');
+      expect(
+        within(menu).getByTestId('player-profile-menu-block'),
+      ).toHaveTextContent('playerProfile:menu.block');
     });
 
     it('offers to block someone who is not a friend, but not to remove them', async () => {
       renderProfile();
 
       const menu = await abreElMenu();
-      expect(within(menu).getByTestId('player-profile-menu-block')).toBeInTheDocument();
-      expect(within(menu).queryByTestId('player-profile-menu-remove')).not.toBeInTheDocument();
+      expect(
+        within(menu).getByTestId('player-profile-menu-block'),
+      ).toBeInTheDocument();
+      expect(
+        within(menu).queryByTestId('player-profile-menu-remove'),
+      ).not.toBeInTheDocument();
     });
 
     it('offers to block with a request pending, and still not to remove', async () => {
-      getProfile.mockResolvedValue(perfil({ friendship: { status: 'PENDING_SENT', friendshipId: 'f1' } }));
+      getProfile.mockResolvedValue(
+        perfil({ friendship: { status: 'PENDING_SENT', friendshipId: 'f1' } }),
+      );
       renderProfile();
 
       const menu = await abreElMenu();
-      expect(within(menu).getByTestId('player-profile-menu-block')).toBeInTheDocument();
-      expect(within(menu).queryByTestId('player-profile-menu-remove')).not.toBeInTheDocument();
+      expect(
+        within(menu).getByTestId('player-profile-menu-block'),
+      ).toBeInTheDocument();
+      expect(
+        within(menu).queryByTestId('player-profile-menu-remove'),
+      ).not.toBeInTheDocument();
     });
 
     it('closes the menu with Escape without doing anything', async () => {
@@ -520,7 +655,9 @@ describe('PlayerProfilePage', () => {
       await abreElMenu();
       fireEvent.keyDown(document, { key: 'Escape' });
 
-      await waitFor(() => expect(screen.queryByRole('menu')).not.toBeInTheDocument());
+      await waitFor(() =>
+        expect(screen.queryByRole('menu')).not.toBeInTheDocument(),
+      );
       expect(removeFriend).not.toHaveBeenCalled();
       expect(blockUser).not.toHaveBeenCalled();
     });
@@ -540,14 +677,20 @@ describe('PlayerProfilePage', () => {
 
       await waitFor(() => expect(removeFriend).toHaveBeenCalledWith('f1'));
       expect(blockUser).not.toHaveBeenCalled();
-      expect(await screen.findByTestId('player-profile-add-friend')).toBeInTheDocument();
-      expect(customToast.success).toHaveBeenCalledWith('playerProfile:friendship.removed');
+      expect(
+        await screen.findByTestId('player-profile-add-friend'),
+      ).toBeInTheDocument();
+      expect(customToast.success).toHaveBeenCalledWith(
+        'playerProfile:friendship.removed',
+      );
     });
 
     it('asks before blocking, and blocks the player once confirmed', async () => {
       getProfile
         .mockResolvedValueOnce(amigo())
-        .mockResolvedValueOnce(perfil({ friendship: { status: 'BLOCKED', friendshipId: 'f1' } }));
+        .mockResolvedValueOnce(
+          perfil({ friendship: { status: 'BLOCKED', friendshipId: 'f1' } }),
+        );
       renderProfile();
 
       const menu = await abreElMenu();
@@ -561,8 +704,12 @@ describe('PlayerProfilePage', () => {
 
       await waitFor(() => expect(blockUser).toHaveBeenCalledWith('u1'));
       expect(removeFriend).not.toHaveBeenCalled();
-      expect(await screen.findByTestId('player-profile-friendship-blocked')).toBeInTheDocument();
-      expect(customToast.success).toHaveBeenCalledWith('playerProfile:friendship.blockedNow');
+      expect(
+        await screen.findByTestId('player-profile-friendship-blocked'),
+      ).toBeInTheDocument();
+      expect(customToast.success).toHaveBeenCalledWith(
+        'playerProfile:friendship.blockedNow',
+      );
     });
 
     it('changes nothing when the removal is cancelled', async () => {
@@ -572,12 +719,18 @@ describe('PlayerProfilePage', () => {
       const menu = await abreElMenu();
       fireEvent.click(within(menu).getByTestId('player-profile-menu-remove'));
       const dialogo = await screen.findByRole('dialog');
-      fireEvent.click(within(dialogo).getByRole('button', { name: 'modal.cancel' }));
+      fireEvent.click(
+        within(dialogo).getByRole('button', { name: 'modal.cancel' }),
+      );
 
-      await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+      await waitFor(() =>
+        expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
+      );
       expect(removeFriend).not.toHaveBeenCalled();
       expect(getProfile).toHaveBeenCalledTimes(1);
-      expect(screen.getByTestId('player-profile-friendship-accepted')).toBeInTheDocument();
+      expect(
+        screen.getByTestId('player-profile-friendship-accepted'),
+      ).toBeInTheDocument();
     });
 
     it('changes nothing when the block is dismissed with Escape', async () => {
@@ -588,9 +741,13 @@ describe('PlayerProfilePage', () => {
       await screen.findByRole('dialog');
       fireEvent.keyDown(document, { key: 'Escape' });
 
-      await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+      await waitFor(() =>
+        expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
+      );
       expect(blockUser).not.toHaveBeenCalled();
-      expect(screen.getByTestId('player-profile-add-friend')).toBeInTheDocument();
+      expect(
+        screen.getByTestId('player-profile-add-friend'),
+      ).toBeInTheDocument();
     });
 
     it('closes the confirmation at once, even while the block is still in flight', async () => {
@@ -600,45 +757,72 @@ describe('PlayerProfilePage', () => {
 
       const menu = await abreElMenu();
       fireEvent.click(within(menu).getByTestId('player-profile-menu-block'));
-      fireEvent.click(within(await screen.findByRole('dialog')).getByTestId('confirm-modal-confirm'));
+      fireEvent.click(
+        within(await screen.findByRole('dialog')).getByTestId(
+          'confirm-modal-confirm',
+        ),
+      );
 
-      await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+      await waitFor(() =>
+        expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
+      );
       expect(blockUser).toHaveBeenCalledWith('u1');
     });
   });
 
   describe('case 3 - a blocked profile', () => {
     const bloqueado = () =>
-      perfil({ friendship: { status: 'BLOCKED', friendshipId: 'f1' }, friendsCount: 0 });
+      perfil({
+        friendship: { status: 'BLOCKED', friendshipId: 'f1' },
+        friendsCount: 0,
+      });
 
     it('says «Bloqueado», offers «Desbloquear» and hides everything else', async () => {
       getProfile.mockResolvedValue(bloqueado());
       renderProfile();
 
-      expect(await screen.findByTestId('player-profile-friendship-blocked')).toHaveTextContent(
-        'playerProfile:friendship.blocked'
-      );
+      expect(
+        await screen.findByTestId('player-profile-friendship-blocked'),
+      ).toHaveTextContent('playerProfile:friendship.blocked');
       expect(screen.getByTestId('player-profile-unblock')).toHaveTextContent(
-        'playerProfile:friendship.unblock'
+        'playerProfile:friendship.unblock',
       );
       expect(screen.getByText('Ana García')).toBeInTheDocument();
-      expect(screen.queryByText('playerProfile:friendsCount')).not.toBeInTheDocument();
-      expect(screen.queryByTestId('player-profile-handicap')).not.toBeInTheDocument();
-      expect(screen.queryByTestId('player-profile-private')).not.toBeInTheDocument();
-      expect(screen.queryByTestId('player-profile-menu')).not.toBeInTheDocument();
-      expect(screen.queryByTestId('player-profile-add-friend')).not.toBeInTheDocument();
+      expect(
+        screen.queryByText('playerProfile:friendsCount'),
+      ).not.toBeInTheDocument();
+      expect(
+        screen.queryByTestId('player-profile-handicap'),
+      ).not.toBeInTheDocument();
+      expect(
+        screen.queryByTestId('player-profile-private'),
+      ).not.toBeInTheDocument();
+      expect(
+        screen.queryByTestId('player-profile-menu'),
+      ).not.toBeInTheDocument();
+      expect(
+        screen.queryByTestId('player-profile-add-friend'),
+      ).not.toBeInTheDocument();
     });
 
     it('goes back to no relationship after unblocking', async () => {
-      getProfile.mockResolvedValueOnce(bloqueado()).mockResolvedValueOnce(perfil());
+      getProfile
+        .mockResolvedValueOnce(bloqueado())
+        .mockResolvedValueOnce(perfil());
       renderProfile();
 
       fireEvent.click(await screen.findByTestId('player-profile-unblock'));
 
       await waitFor(() => expect(removeFriend).toHaveBeenCalledWith('f1'));
-      expect(await screen.findByTestId('player-profile-add-friend')).toBeInTheDocument();
-      expect(screen.queryByTestId('player-profile-friendship-blocked')).not.toBeInTheDocument();
-      expect(customToast.success).toHaveBeenCalledWith('playerProfile:friendship.unblocked');
+      expect(
+        await screen.findByTestId('player-profile-add-friend'),
+      ).toBeInTheDocument();
+      expect(
+        screen.queryByTestId('player-profile-friendship-blocked'),
+      ).not.toBeInTheDocument();
+      expect(customToast.success).toHaveBeenCalledWith(
+        'playerProfile:friendship.unblocked',
+      );
     });
   });
 
@@ -650,30 +834,42 @@ describe('PlayerProfilePage', () => {
       const ficha = await screen.findByTestId('player-profile-card');
       expect(within(ficha).getByText('Ana García')).toBeInTheDocument();
       expect(within(ficha).getByTestId('avatar-u1')).toBeInTheDocument();
-      expect(within(ficha).getByText('playerProfile:friendsCount')).toBeInTheDocument();
-      expect(within(ficha).getByTestId('player-profile-handicap')).toHaveTextContent('12.4');
-      expect(screen.getByTestId('player-profile-private')).toHaveTextContent('playerProfile:private.hint');
+      expect(
+        within(ficha).getByText('playerProfile:friendsCount'),
+      ).toBeInTheDocument();
+      expect(
+        within(ficha).getByTestId('player-profile-handicap'),
+      ).toHaveTextContent('12.4');
+      expect(screen.getByTestId('player-profile-private')).toHaveTextContent(
+        'playerProfile:private.hint',
+      );
     });
 
     it('shows a plus handicap with its sign and a missing one as a dash', async () => {
       getProfile.mockResolvedValueOnce(perfil({ handicap: -2 }));
       const { unmount } = renderProfile();
-      expect(await screen.findByTestId('player-profile-handicap')).toHaveTextContent('+2.0');
+      expect(
+        await screen.findByTestId('player-profile-handicap'),
+      ).toHaveTextContent('+2.0');
       unmount();
 
       getProfile.mockResolvedValueOnce(perfil({ handicap: null }));
       renderProfile();
-      expect(await screen.findByTestId('player-profile-handicap')).toHaveTextContent(
-        'playerProfile:stats.noValue'
-      );
+      expect(
+        await screen.findByTestId('player-profile-handicap'),
+      ).toHaveTextContent('playerProfile:stats.noValue');
     });
 
     it('shows no head to head and no games together, and never asks for them', async () => {
       renderProfile();
 
       await screen.findByTestId('player-profile-private');
-      expect(screen.queryByTestId('player-profile-h2h')).not.toBeInTheDocument();
-      expect(screen.queryByTestId('player-profile-games')).not.toBeInTheDocument();
+      expect(
+        screen.queryByTestId('player-profile-h2h'),
+      ).not.toBeInTheDocument();
+      expect(
+        screen.queryByTestId('player-profile-games'),
+      ).not.toBeInTheDocument();
       expect(getGamesTogether).not.toHaveBeenCalled();
     });
   });
@@ -682,25 +878,34 @@ describe('PlayerProfilePage', () => {
     it('shows handicap, stats, activity, head to head and games together', async () => {
       getProfile.mockResolvedValue(
         amigo({
-          headToHead: { against: { won: 1, halved: 0, lost: 0 }, alongside: null },
+          headToHead: {
+            against: { won: 1, halved: 0, lost: 0 },
+            alongside: null,
+          },
           gamesTogether: { games: [juego()], nextCursor: null },
-        })
+        }),
       );
       renderProfile();
 
-      expect(await screen.findByTestId('player-profile-stat-handicap')).toHaveTextContent('12.4');
+      expect(
+        await screen.findByTestId('player-profile-stat-handicap'),
+      ).toHaveTextContent('12.4');
       expect(screen.getByTestId('player-profile-stats')).toBeInTheDocument();
       expect(screen.getByTestId('activity-event-e1')).toBeInTheDocument();
       expect(screen.getByTestId('player-profile-h2h')).toBeInTheDocument();
       expect(screen.getByTestId('player-profile-games')).toBeInTheDocument();
-      expect(screen.queryByTestId('player-profile-private')).not.toBeInTheDocument();
+      expect(
+        screen.queryByTestId('player-profile-private'),
+      ).not.toBeInTheDocument();
     });
 
     it('asks the API for 20 events a time, also when loading more', async () => {
       getProfile.mockResolvedValue(amigo());
       getActivity
         .mockResolvedValueOnce(paginaActividad({ nextCursor: 'cursor-1' }))
-        .mockResolvedValueOnce(paginaActividad({ events: [], nextCursor: null }));
+        .mockResolvedValueOnce(
+          paginaActividad({ events: [], nextCursor: null }),
+        );
       renderProfile();
 
       await screen.findByTestId('activity-event-e1');
@@ -708,7 +913,10 @@ describe('PlayerProfilePage', () => {
 
       fireEvent.click(screen.getByTestId('player-profile-load-more'));
       await waitFor(() =>
-        expect(getActivity).toHaveBeenLastCalledWith('u1', { limit: 20, cursor: 'cursor-1' })
+        expect(getActivity).toHaveBeenLastCalledWith('u1', {
+          limit: 20,
+          cursor: 'cursor-1',
+        }),
       );
     });
 
@@ -730,7 +938,9 @@ describe('PlayerProfilePage', () => {
 
     it('shows 5 cards and reveals 5 more without asking the API while it has them', async () => {
       getProfile.mockResolvedValue(amigo());
-      getActivity.mockResolvedValueOnce(paginaActividad({ events: eventos(12), nextCursor: 'cur-a' }));
+      getActivity.mockResolvedValueOnce(
+        paginaActividad({ events: eventos(12), nextCursor: 'cur-a' }),
+      );
       renderProfile();
 
       await screen.findByTestId('activity-event-e1');
@@ -746,8 +956,12 @@ describe('PlayerProfilePage', () => {
     it('asks the next page only once the loaded cards run out', async () => {
       getProfile.mockResolvedValue(amigo());
       getActivity
-        .mockResolvedValueOnce(paginaActividad({ events: eventos(5), nextCursor: 'cur-a' }))
-        .mockResolvedValueOnce(paginaActividad({ events: eventos(7, 6), nextCursor: null }));
+        .mockResolvedValueOnce(
+          paginaActividad({ events: eventos(5), nextCursor: 'cur-a' }),
+        )
+        .mockResolvedValueOnce(
+          paginaActividad({ events: eventos(7, 6), nextCursor: null }),
+        );
       renderProfile();
 
       await screen.findByTestId('activity-event-e1');
@@ -755,20 +969,31 @@ describe('PlayerProfilePage', () => {
 
       fireEvent.click(screen.getByTestId('player-profile-load-more'));
       await waitFor(() => expect(tarjetasPintadas()).toHaveLength(10));
-      expect(getActivity).toHaveBeenLastCalledWith('u1', { limit: 20, cursor: 'cur-a' });
+      expect(getActivity).toHaveBeenLastCalledWith('u1', {
+        limit: 20,
+        cursor: 'cur-a',
+      });
 
       fireEvent.click(screen.getByTestId('player-profile-load-more'));
       await waitFor(() => expect(tarjetasPintadas()).toHaveLength(12));
       expect(getActivity).toHaveBeenCalledTimes(2);
-      expect(screen.queryByTestId('player-profile-load-more')).not.toBeInTheDocument();
+      expect(
+        screen.queryByTestId('player-profile-load-more'),
+      ).not.toBeInTheDocument();
     });
 
     it('keeps revealing 5 at a time when a page brings fewer than 5 cards (CodeRabbit FE-2)', async () => {
       getProfile.mockResolvedValue(amigo());
       getActivity
-        .mockResolvedValueOnce(paginaActividad({ events: eventos(4), nextCursor: 'cur-a' }))
-        .mockResolvedValueOnce(paginaActividad({ events: eventos(3, 5), nextCursor: 'cur-b' }))
-        .mockResolvedValueOnce(paginaActividad({ events: eventos(8, 8), nextCursor: null }));
+        .mockResolvedValueOnce(
+          paginaActividad({ events: eventos(4), nextCursor: 'cur-a' }),
+        )
+        .mockResolvedValueOnce(
+          paginaActividad({ events: eventos(3, 5), nextCursor: 'cur-b' }),
+        )
+        .mockResolvedValueOnce(
+          paginaActividad({ events: eventos(8, 8), nextCursor: null }),
+        );
       renderProfile();
 
       await screen.findByTestId('activity-event-e1');
@@ -785,10 +1010,16 @@ describe('PlayerProfilePage', () => {
     });
 
     it('counts a round with several achievements as one card', async () => {
-      const deLaMismaVuelta = eventos(6).map((e) => ({ ...e, groupKey: 'vuelta-1' }));
+      const deLaMismaVuelta = eventos(6).map((e) => ({
+        ...e,
+        groupKey: 'vuelta-1',
+      }));
       getProfile.mockResolvedValue(amigo());
       getActivity.mockResolvedValueOnce(
-        paginaActividad({ events: [...deLaMismaVuelta, ...eventos(5, 7)], nextCursor: null })
+        paginaActividad({
+          events: [...deLaMismaVuelta, ...eventos(5, 7)],
+          nextCursor: null,
+        }),
       );
       renderProfile();
 
@@ -804,7 +1035,12 @@ describe('PlayerProfilePage', () => {
       const delDia = (n, desde, dia) =>
         eventos(n, desde).map((e, i) => ({
           ...e,
-          occurredAt: new Date(dia.getFullYear(), dia.getMonth(), dia.getDate(), 20 - i),
+          occurredAt: new Date(
+            dia.getFullYear(),
+            dia.getMonth(),
+            dia.getDate(),
+            20 - i,
+          ),
         }));
       const separadores = () =>
         within(screen.getByTestId('player-profile-activity'))
@@ -819,16 +1055,25 @@ describe('PlayerProfilePage', () => {
           .map((el) => el.getAttribute('data-testid'));
       };
       const hoy = new Date();
-      const ayer = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate() - 1, 12);
+      const ayer = new Date(
+        hoy.getFullYear(),
+        hoy.getMonth(),
+        hoy.getDate() - 1,
+        12,
+      );
       const haceMucho = new Date(2026, 6, 15, 12);
 
       it('heads each day with the same separator as the feed', async () => {
         getProfile.mockResolvedValue(amigo());
         getActivity.mockResolvedValueOnce(
           paginaActividad({
-            events: [...delDia(1, 1, hoy), ...delDia(1, 2, ayer), ...delDia(1, 3, haceMucho)],
+            events: [
+              ...delDia(1, 1, hoy),
+              ...delDia(1, 2, ayer),
+              ...delDia(1, 3, haceMucho),
+            ],
             nextCursor: null,
-          })
+          }),
         );
         renderProfile();
 
@@ -838,46 +1083,60 @@ describe('PlayerProfilePage', () => {
           'feed:days.yesterday',
           expect.stringMatching(/15/),
         ]);
-        expect(tarjetasDelDia('feed:days.today')).toEqual(['activity-event-e1']);
-        expect(tarjetasDelDia('feed:days.yesterday')).toEqual(['activity-event-e2']);
+        expect(tarjetasDelDia('feed:days.today')).toEqual([
+          'activity-event-e1',
+        ]);
+        expect(tarjetasDelDia('feed:days.yesterday')).toEqual([
+          'activity-event-e2',
+        ]);
       });
 
       it('nests the day headings under «Su actividad» (h4, not h2)', async () => {
         getProfile.mockResolvedValue(amigo());
         getActivity.mockResolvedValueOnce(
-          paginaActividad({ events: delDia(1, 1, hoy), nextCursor: null })
+          paginaActividad({ events: delDia(1, 1, hoy), nextCursor: null }),
         );
         renderProfile();
 
         await screen.findByTestId('activity-event-e1');
-        const separador = within(screen.getByTestId('player-profile-activity')).getByTestId(
-          'separador-dia'
-        );
+        const separador = within(
+          screen.getByTestId('player-profile-activity'),
+        ).getByTestId('separador-dia');
         expect(separador.tagName).toBe('H4');
       });
 
       it('keeps one separator for a day that arrives split across two server pages', async () => {
         getProfile.mockResolvedValue(amigo());
         getActivity
-          .mockResolvedValueOnce(paginaActividad({ events: delDia(5, 1, hoy), nextCursor: 'cur-a' }))
+          .mockResolvedValueOnce(
+            paginaActividad({ events: delDia(5, 1, hoy), nextCursor: 'cur-a' }),
+          )
           .mockResolvedValueOnce(
             paginaActividad({
               events: [
                 ...delDia(2, 6, hoy).map((e, i) => ({
                   ...e,
-                  occurredAt: new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate(), 10 - i),
+                  occurredAt: new Date(
+                    hoy.getFullYear(),
+                    hoy.getMonth(),
+                    hoy.getDate(),
+                    10 - i,
+                  ),
                 })),
                 ...delDia(1, 8, ayer),
               ],
               nextCursor: null,
-            })
+            }),
           );
         renderProfile();
 
         await screen.findByTestId('activity-event-e1');
         fireEvent.click(screen.getByTestId('player-profile-load-more'));
         await waitFor(() => expect(tarjetasPintadas()).toHaveLength(8));
-        expect(separadores()).toEqual(['feed:days.today', 'feed:days.yesterday']);
+        expect(separadores()).toEqual([
+          'feed:days.today',
+          'feed:days.yesterday',
+        ]);
         expect(tarjetasDelDia('feed:days.today')).toHaveLength(7);
       });
 
@@ -887,12 +1146,15 @@ describe('PlayerProfilePage', () => {
           paginaActividad({
             events: [...delDia(3, 1, hoy), ...delDia(4, 4, ayer)],
             nextCursor: null,
-          })
+          }),
         );
         renderProfile();
 
         await screen.findByTestId('activity-event-e1');
-        expect(separadores()).toEqual(['feed:days.today', 'feed:days.yesterday']);
+        expect(separadores()).toEqual([
+          'feed:days.today',
+          'feed:days.yesterday',
+        ]);
         expect(tarjetasDelDia('feed:days.yesterday')).toEqual([
           'activity-event-e4',
           'activity-event-e5',
@@ -900,7 +1162,10 @@ describe('PlayerProfilePage', () => {
 
         fireEvent.click(screen.getByTestId('player-profile-load-more'));
         await waitFor(() => expect(tarjetasPintadas()).toHaveLength(7));
-        expect(separadores()).toEqual(['feed:days.today', 'feed:days.yesterday']);
+        expect(separadores()).toEqual([
+          'feed:days.today',
+          'feed:days.yesterday',
+        ]);
         expect(tarjetasDelDia('feed:days.yesterday')).toEqual([
           'activity-event-e4',
           'activity-event-e5',
@@ -915,7 +1180,7 @@ describe('PlayerProfilePage', () => {
           paginaActividad({
             events: [...delDia(5, 1, hoy), ...delDia(2, 6, ayer)],
             nextCursor: null,
-          })
+          }),
         );
         renderProfile();
 
@@ -924,7 +1189,12 @@ describe('PlayerProfilePage', () => {
         expect(tarjetasPintadas()).toHaveLength(5);
 
         fireEvent.click(screen.getByTestId('player-profile-load-more'));
-        await waitFor(() => expect(separadores()).toEqual(['feed:days.today', 'feed:days.yesterday']));
+        await waitFor(() =>
+          expect(separadores()).toEqual([
+            'feed:days.today',
+            'feed:days.yesterday',
+          ]),
+        );
         expect(tarjetasDelDia('feed:days.yesterday')).toEqual([
           'activity-event-e6',
           'activity-event-e7',
@@ -938,14 +1208,16 @@ describe('PlayerProfilePage', () => {
         paginaActividad({
           events: [{ ...eventos(1)[0], type: 'TIPO_QUE_NO_EXISTE' }],
           nextCursor: null,
-        })
+        }),
       );
       renderProfile();
 
-      expect(await screen.findByTestId('player-profile-activity')).toHaveTextContent(
-        'playerProfile:activity.empty'
-      );
-      expect(screen.queryByTestId('player-profile-load-more')).not.toBeInTheDocument();
+      expect(
+        await screen.findByTestId('player-profile-activity'),
+      ).toHaveTextContent('playerProfile:activity.empty');
+      expect(
+        screen.queryByTestId('player-profile-load-more'),
+      ).not.toBeInTheDocument();
     });
 
     // Cambia lo de 6d4ba6b («never a lone Ver más»): el backend puede mandar
@@ -957,29 +1229,39 @@ describe('PlayerProfilePage', () => {
         paginaActividad({
           events: [{ ...eventos(1)[0], type: 'TIPO_QUE_NO_EXISTE' }],
           nextCursor: 'cur-a',
-        })
+        }),
       );
       renderProfile();
 
-      expect(await screen.findByTestId('player-profile-load-more')).toBeInTheDocument();
-      expect(screen.getByTestId('player-profile-activity')).not.toHaveTextContent(
-        'playerProfile:activity.empty'
-      );
+      expect(
+        await screen.findByTestId('player-profile-load-more'),
+      ).toBeInTheDocument();
+      expect(
+        screen.getByTestId('player-profile-activity'),
+      ).not.toHaveTextContent('playerProfile:activity.empty');
     });
 
     it('keeps the handicap in the stats grid and not under the name', async () => {
       getProfile.mockResolvedValue(amigo());
       renderProfile();
 
-      expect(await screen.findByTestId('player-profile-stat-handicap')).toHaveTextContent('12.4');
-      expect(screen.queryByTestId('player-profile-handicap')).not.toBeInTheDocument();
+      expect(
+        await screen.findByTestId('player-profile-stat-handicap'),
+      ).toHaveTextContent('12.4');
+      expect(
+        screen.queryByTestId('player-profile-handicap'),
+      ).not.toBeInTheDocument();
     });
 
     it('shows the handicap under the name when a friend has no stats grid', async () => {
-      getProfile.mockResolvedValue(amigo({ stats: estadisticas({ roundsPlayed: 0 }) }));
+      getProfile.mockResolvedValue(
+        amigo({ stats: estadisticas({ roundsPlayed: 0 }) }),
+      );
       renderProfile();
 
-      expect(await screen.findByTestId('player-profile-handicap')).toHaveTextContent('12.4');
+      expect(
+        await screen.findByTestId('player-profile-handicap'),
+      ).toHaveTextContent('12.4');
     });
   });
 
@@ -991,44 +1273,80 @@ describe('PlayerProfilePage', () => {
             against: { won: 3, halved: 1, lost: 2 },
             alongside: { won: 4, halved: 0, lost: 5 },
           },
-        })
+        }),
       );
       renderProfile();
 
       const contra = await screen.findByTestId('player-profile-h2h-against');
       expect(contra).toHaveTextContent('playerProfile:headToHead.against');
-      expect(within(contra).getByTestId('player-profile-h2h-against-won')).toHaveTextContent('3');
-      expect(within(contra).getByTestId('player-profile-h2h-against-won')).toHaveTextContent('playerProfile:headToHead.won');
-      expect(within(contra).getByTestId('player-profile-h2h-against-halved')).toHaveTextContent('1');
-      expect(within(contra).getByTestId('player-profile-h2h-against-halved')).toHaveTextContent('playerProfile:headToHead.halved');
-      expect(within(contra).getByTestId('player-profile-h2h-against-lost')).toHaveTextContent('2');
-      expect(within(contra).getByTestId('player-profile-h2h-against-lost')).toHaveTextContent('playerProfile:headToHead.lost');
+      expect(
+        within(contra).getByTestId('player-profile-h2h-against-won'),
+      ).toHaveTextContent('3');
+      expect(
+        within(contra).getByTestId('player-profile-h2h-against-won'),
+      ).toHaveTextContent('playerProfile:headToHead.won');
+      expect(
+        within(contra).getByTestId('player-profile-h2h-against-halved'),
+      ).toHaveTextContent('1');
+      expect(
+        within(contra).getByTestId('player-profile-h2h-against-halved'),
+      ).toHaveTextContent('playerProfile:headToHead.halved');
+      expect(
+        within(contra).getByTestId('player-profile-h2h-against-lost'),
+      ).toHaveTextContent('2');
+      expect(
+        within(contra).getByTestId('player-profile-h2h-against-lost'),
+      ).toHaveTextContent('playerProfile:headToHead.lost');
 
       const con = screen.getByTestId('player-profile-h2h-alongside');
       expect(con).toHaveTextContent('playerProfile:headToHead.alongside');
-      expect(within(con).getByTestId('player-profile-h2h-alongside-won')).toHaveTextContent('4');
-      expect(within(con).getByTestId('player-profile-h2h-alongside-halved')).toHaveTextContent('0');
-      expect(within(con).getByTestId('player-profile-h2h-alongside-lost')).toHaveTextContent('5');
+      expect(
+        within(con).getByTestId('player-profile-h2h-alongside-won'),
+      ).toHaveTextContent('4');
+      expect(
+        within(con).getByTestId('player-profile-h2h-alongside-halved'),
+      ).toHaveTextContent('0');
+      expect(
+        within(con).getByTestId('player-profile-h2h-alongside-lost'),
+      ).toHaveTextContent('5');
     });
 
     it('hides «Con él» when you never played on the same side', async () => {
       getProfile.mockResolvedValue(
-        amigo({ headToHead: { against: { won: 1, halved: 0, lost: 0 }, alongside: null } })
+        amigo({
+          headToHead: {
+            against: { won: 1, halved: 0, lost: 0 },
+            alongside: null,
+          },
+        }),
       );
       renderProfile();
 
-      expect(await screen.findByTestId('player-profile-h2h-against')).toBeInTheDocument();
-      expect(screen.queryByTestId('player-profile-h2h-alongside')).not.toBeInTheDocument();
+      expect(
+        await screen.findByTestId('player-profile-h2h-against'),
+      ).toBeInTheDocument();
+      expect(
+        screen.queryByTestId('player-profile-h2h-alongside'),
+      ).not.toBeInTheDocument();
     });
 
     it('hides «Contra él» when you never played against each other', async () => {
       getProfile.mockResolvedValue(
-        amigo({ headToHead: { against: null, alongside: { won: 0, halved: 1, lost: 0 } } })
+        amigo({
+          headToHead: {
+            against: null,
+            alongside: { won: 0, halved: 1, lost: 0 },
+          },
+        }),
       );
       renderProfile();
 
-      expect(await screen.findByTestId('player-profile-h2h-alongside')).toBeInTheDocument();
-      expect(screen.queryByTestId('player-profile-h2h-against')).not.toBeInTheDocument();
+      expect(
+        await screen.findByTestId('player-profile-h2h-alongside'),
+      ).toBeInTheDocument();
+      expect(
+        screen.queryByTestId('player-profile-h2h-against'),
+      ).not.toBeInTheDocument();
     });
 
     it('hides the whole block when there is no head to head', async () => {
@@ -1036,15 +1354,21 @@ describe('PlayerProfilePage', () => {
       renderProfile();
 
       await screen.findByTestId('player-profile-stats');
-      expect(screen.queryByTestId('player-profile-h2h')).not.toBeInTheDocument();
+      expect(
+        screen.queryByTestId('player-profile-h2h'),
+      ).not.toBeInTheDocument();
     });
 
     it('hides the whole block when both sections are empty', async () => {
-      getProfile.mockResolvedValue(amigo({ headToHead: { against: null, alongside: null } }));
+      getProfile.mockResolvedValue(
+        amigo({ headToHead: { against: null, alongside: null } }),
+      );
       renderProfile();
 
       await screen.findByTestId('player-profile-stats');
-      expect(screen.queryByTestId('player-profile-h2h')).not.toBeInTheDocument();
+      expect(
+        screen.queryByTestId('player-profile-h2h'),
+      ).not.toBeInTheDocument();
     });
   });
 
@@ -1079,7 +1403,9 @@ describe('PlayerProfilePage', () => {
     ];
 
     it('lists them in the order they come, newest first, each linking to its game', async () => {
-      getProfile.mockResolvedValue(amigo({ gamesTogether: { games: tresJuegos(), nextCursor: null } }));
+      getProfile.mockResolvedValue(
+        amigo({ gamesTogether: { games: tresJuegos(), nextCursor: null } }),
+      );
       renderProfile();
 
       const lista = await screen.findByTestId('player-profile-games');
@@ -1091,28 +1417,43 @@ describe('PlayerProfilePage', () => {
       ]);
       expect(enlaces[0]).toHaveAttribute('href', '/quick-matches/g1/scoring');
       expect(enlaces[1]).toHaveAttribute('href', '/player/matches/m1/scoring');
-      expect(enlaces[2]).toHaveAttribute('href', '/player/groups/gr1/scoring?competition=comp2');
+      expect(enlaces[2]).toHaveAttribute(
+        'href',
+        '/player/groups/gr1/scoring?competition=comp2',
+      );
     });
 
     it('shows date, course, format and result of each game', async () => {
-      getProfile.mockResolvedValue(amigo({ gamesTogether: { games: tresJuegos(), nextCursor: null } }));
+      getProfile.mockResolvedValue(
+        amigo({ gamesTogether: { games: tresJuegos(), nextCursor: null } }),
+      );
       renderProfile();
 
       const primera = await screen.findByTestId('player-profile-game-g1');
       expect(primera).toHaveTextContent('15 oct 2026');
       expect(primera).toHaveTextContent('El Saler');
-      expect(primera).toHaveTextContent('playerProfile:gamesTogether.format.STABLEFORD');
-      expect(primera).toHaveTextContent('playerProfile:gamesTogether.result.WON');
+      expect(primera).toHaveTextContent(
+        'playerProfile:gamesTogether.format.STABLEFORD',
+      );
+      expect(primera).toHaveTextContent(
+        'playerProfile:gamesTogether.result.WON',
+      );
 
       const segunda = screen.getByTestId('player-profile-game-m1');
       expect(segunda).toHaveTextContent('10 oct 2026');
       expect(segunda).toHaveTextContent('La Moraleja');
-      expect(segunda).toHaveTextContent('playerProfile:gamesTogether.format.FOURBALL');
-      expect(segunda).toHaveTextContent('playerProfile:gamesTogether.result.LOST');
-      expect(segunda).toHaveTextContent('playerProfile:gamesTogether.relation.WITH');
+      expect(segunda).toHaveTextContent(
+        'playerProfile:gamesTogether.format.FOURBALL',
+      );
+      expect(segunda).toHaveTextContent(
+        'playerProfile:gamesTogether.result.LOST',
+      );
+      expect(segunda).toHaveTextContent(
+        'playerProfile:gamesTogether.relation.WITH',
+      );
 
       expect(screen.getByTestId('player-profile-game-gr1')).toHaveTextContent(
-        'playerProfile:gamesTogether.result.none'
+        'playerProfile:gamesTogether.result.none',
       );
     });
 
@@ -1122,23 +1463,35 @@ describe('PlayerProfilePage', () => {
         amigo({
           gamesTogether: {
             games: [
-              juego({ kind: 'TOURNAMENT_GROUP', id: 'gr9', quickMatchId: null, competitionId: null, matchId: 'gr9' }),
+              juego({
+                kind: 'TOURNAMENT_GROUP',
+                id: 'gr9',
+                quickMatchId: null,
+                competitionId: null,
+                matchId: 'gr9',
+              }),
               juego({ id: 'g8', quickMatchId: null }),
             ],
             nextCursor: null,
           },
-        })
+        }),
       );
       renderProfile();
 
       const sinTorneo = await screen.findByTestId('player-profile-game-gr9');
       expect(sinTorneo.tagName).not.toBe('A');
-      expect(screen.getByTestId('player-profile-game-g8').tagName).not.toBe('A');
+      expect(screen.getByTestId('player-profile-game-g8').tagName).not.toBe(
+        'A',
+      );
     });
 
     it('loads 5 more with «Ver más» and appends them after the first ones', async () => {
-      const cinco = ['g1', 'g2', 'g3', 'g4', 'g5'].map((id) => juego({ id, quickMatchId: id }));
-      getProfile.mockResolvedValue(amigo({ gamesTogether: { games: cinco, nextCursor: 'cur-5' } }));
+      const cinco = ['g1', 'g2', 'g3', 'g4', 'g5'].map((id) =>
+        juego({ id, quickMatchId: id }),
+      );
+      getProfile.mockResolvedValue(
+        amigo({ gamesTogether: { games: cinco, nextCursor: 'cur-5' } }),
+      );
       getGamesTogether.mockResolvedValue({
         games: [juego({ id: 'g6', quickMatchId: 'g6' })],
         nextCursor: null,
@@ -1149,38 +1502,60 @@ describe('PlayerProfilePage', () => {
       expect(mas).toHaveTextContent('playerProfile:gamesTogether.loadMore');
       fireEvent.click(mas);
 
-      await waitFor(() => expect(getGamesTogether).toHaveBeenCalledWith('u1', { cursor: 'cur-5' }));
-      expect(await screen.findByTestId('player-profile-game-g6')).toBeInTheDocument();
+      await waitFor(() =>
+        expect(getGamesTogether).toHaveBeenCalledWith('u1', {
+          cursor: 'cur-5',
+        }),
+      );
+      expect(
+        await screen.findByTestId('player-profile-game-g6'),
+      ).toBeInTheDocument();
       const ids = within(screen.getByTestId('player-profile-games'))
         .getAllByRole('link')
         .map((a) => a.getAttribute('data-testid'));
-      expect(ids).toEqual(['g1', 'g2', 'g3', 'g4', 'g5', 'g6'].map((id) => `player-profile-game-${id}`));
-      expect(screen.queryByTestId('player-profile-games-more')).not.toBeInTheDocument();
+      expect(ids).toEqual(
+        ['g1', 'g2', 'g3', 'g4', 'g5', 'g6'].map(
+          (id) => `player-profile-game-${id}`,
+        ),
+      );
+      expect(
+        screen.queryByTestId('player-profile-games-more'),
+      ).not.toBeInTheDocument();
     });
 
     it('keeps what it had and says so when loading more fails', async () => {
-      getProfile.mockResolvedValue(amigo({ gamesTogether: { games: [juego()], nextCursor: 'cur-1' } }));
+      getProfile.mockResolvedValue(
+        amigo({ gamesTogether: { games: [juego()], nextCursor: 'cur-1' } }),
+      );
       getGamesTogether.mockRejectedValue(error(500));
       renderProfile();
 
       fireEvent.click(await screen.findByTestId('player-profile-games-more'));
 
-      await waitFor(() => expect(customToast.error).toHaveBeenCalledWith('common:errors.generic'));
+      await waitFor(() =>
+        expect(customToast.error).toHaveBeenCalledWith('common:errors.generic'),
+      );
       expect(screen.getByTestId('player-profile-game-g1')).toBeInTheDocument();
       expect(screen.getByTestId('player-profile-games-more')).toBeEnabled();
     });
 
     it('hides the section when you have not played together', async () => {
-      getProfile.mockResolvedValueOnce(amigo({ gamesTogether: { games: [], nextCursor: null } }));
+      getProfile.mockResolvedValueOnce(
+        amigo({ gamesTogether: { games: [], nextCursor: null } }),
+      );
       const { unmount } = renderProfile();
       await screen.findByTestId('player-profile-stats');
-      expect(screen.queryByTestId('player-profile-games')).not.toBeInTheDocument();
+      expect(
+        screen.queryByTestId('player-profile-games'),
+      ).not.toBeInTheDocument();
       unmount();
 
       getProfile.mockResolvedValueOnce(amigo({ gamesTogether: null }));
       renderProfile();
       await screen.findByTestId('player-profile-stats');
-      expect(screen.queryByTestId('player-profile-games')).not.toBeInTheDocument();
+      expect(
+        screen.queryByTestId('player-profile-games'),
+      ).not.toBeInTheDocument();
     });
   });
 
@@ -1189,9 +1564,15 @@ describe('PlayerProfilePage', () => {
       renderProfile('me');
 
       expect(await screen.findByTestId('own-profile')).toBeInTheDocument();
-      expect(screen.queryByTestId('player-profile-menu')).not.toBeInTheDocument();
-      expect(screen.queryByTestId('player-profile-h2h')).not.toBeInTheDocument();
-      expect(screen.queryByTestId('player-profile-games')).not.toBeInTheDocument();
+      expect(
+        screen.queryByTestId('player-profile-menu'),
+      ).not.toBeInTheDocument();
+      expect(
+        screen.queryByTestId('player-profile-h2h'),
+      ).not.toBeInTheDocument();
+      expect(
+        screen.queryByTestId('player-profile-games'),
+      ).not.toBeInTheDocument();
       expect(getGamesTogether).not.toHaveBeenCalled();
     });
   });
@@ -1204,10 +1585,18 @@ describe('PlayerProfilePage', () => {
 
       fireEvent.click(await screen.findByTestId('player-profile-menu'));
       fireEvent.click(await screen.findByTestId('player-profile-menu-block'));
-      fireEvent.click(within(await screen.findByRole('dialog')).getByTestId('confirm-modal-confirm'));
+      fireEvent.click(
+        within(await screen.findByRole('dialog')).getByTestId(
+          'confirm-modal-confirm',
+        ),
+      );
 
-      await waitFor(() => expect(customToast.error).toHaveBeenCalledWith('common:errors.generic'));
-      expect(screen.getByTestId('player-profile-friendship-accepted')).toBeInTheDocument();
+      await waitFor(() =>
+        expect(customToast.error).toHaveBeenCalledWith('common:errors.generic'),
+      );
+      expect(
+        screen.getByTestId('player-profile-friendship-accepted'),
+      ).toBeInTheDocument();
       expect(screen.getByTestId('player-profile-menu')).toBeEnabled();
       expect(getProfile).toHaveBeenCalledTimes(1);
     });
@@ -1219,10 +1608,18 @@ describe('PlayerProfilePage', () => {
 
       fireEvent.click(await screen.findByTestId('player-profile-menu'));
       fireEvent.click(await screen.findByTestId('player-profile-menu-remove'));
-      fireEvent.click(within(await screen.findByRole('dialog')).getByTestId('confirm-modal-confirm'));
+      fireEvent.click(
+        within(await screen.findByRole('dialog')).getByTestId(
+          'confirm-modal-confirm',
+        ),
+      );
 
-      await waitFor(() => expect(customToast.error).toHaveBeenCalledWith('common:errors.generic'));
-      expect(screen.getByTestId('player-profile-friendship-accepted')).toBeInTheDocument();
+      await waitFor(() =>
+        expect(customToast.error).toHaveBeenCalledWith('common:errors.generic'),
+      );
+      expect(
+        screen.getByTestId('player-profile-friendship-accepted'),
+      ).toBeInTheDocument();
     });
 
     it('gives the add button back, enabled, when sending fails', async () => {
@@ -1231,7 +1628,9 @@ describe('PlayerProfilePage', () => {
 
       fireEvent.click(await screen.findByTestId('player-profile-add-friend'));
 
-      await waitFor(() => expect(customToast.error).toHaveBeenCalledWith('common:errors.generic'));
+      await waitFor(() =>
+        expect(customToast.error).toHaveBeenCalledWith('common:errors.generic'),
+      );
       expect(screen.getByTestId('player-profile-add-friend')).toBeEnabled();
       expect(customToast.success).not.toHaveBeenCalled();
     });
@@ -1239,36 +1638,54 @@ describe('PlayerProfilePage', () => {
     // Quien te ha bloqueado responde 404 «User not found» (fase 3, BE-3): no se dice que
     // no existe, solo que no se pudo enviar
     it('says the request could not be sent when the player answers 404', async () => {
-      sendRequest.mockRejectedValue(Object.assign(error(404), { message: 'User not found' }));
+      sendRequest.mockRejectedValue(
+        Object.assign(error(404), { message: 'User not found' }),
+      );
       renderProfile();
 
       fireEvent.click(await screen.findByTestId('player-profile-add-friend'));
 
-      await waitFor(() => expect(customToast.error).toHaveBeenCalledWith('playerProfile:errors.requestNotSent'));
+      await waitFor(() =>
+        expect(customToast.error).toHaveBeenCalledWith(
+          'playerProfile:errors.requestNotSent',
+        ),
+      );
       expect(customToast.error).not.toHaveBeenCalledWith('User not found');
       expect(screen.getByTestId('player-profile-add-friend')).toBeEnabled();
     });
 
     it('keeps the request pending when cancelling it fails', async () => {
-      getProfile.mockResolvedValue(perfil({ friendship: { status: 'PENDING_SENT', friendshipId: 'f1' } }));
+      getProfile.mockResolvedValue(
+        perfil({ friendship: { status: 'PENDING_SENT', friendshipId: 'f1' } }),
+      );
       removeFriend.mockRejectedValue(error(500));
       renderProfile();
 
-      fireEvent.click(await screen.findByTestId('player-profile-cancel-request'));
+      fireEvent.click(
+        await screen.findByTestId('player-profile-cancel-request'),
+      );
 
-      await waitFor(() => expect(customToast.error).toHaveBeenCalledWith('common:errors.generic'));
+      await waitFor(() =>
+        expect(customToast.error).toHaveBeenCalledWith('common:errors.generic'),
+      );
       expect(screen.getByTestId('player-profile-cancel-request')).toBeEnabled();
     });
 
     it('stays blocked when unblocking fails', async () => {
-      getProfile.mockResolvedValue(perfil({ friendship: { status: 'BLOCKED', friendshipId: 'f1' } }));
+      getProfile.mockResolvedValue(
+        perfil({ friendship: { status: 'BLOCKED', friendshipId: 'f1' } }),
+      );
       removeFriend.mockRejectedValue(error(500));
       renderProfile();
 
       fireEvent.click(await screen.findByTestId('player-profile-unblock'));
 
-      await waitFor(() => expect(customToast.error).toHaveBeenCalledWith('common:errors.generic'));
-      expect(screen.getByTestId('player-profile-friendship-blocked')).toBeInTheDocument();
+      await waitFor(() =>
+        expect(customToast.error).toHaveBeenCalledWith('common:errors.generic'),
+      );
+      expect(
+        screen.getByTestId('player-profile-friendship-blocked'),
+      ).toBeInTheDocument();
       expect(screen.getByTestId('player-profile-unblock')).toBeEnabled();
     });
 
@@ -1288,7 +1705,9 @@ describe('PlayerProfilePage', () => {
   describe('case 9 - es + en texts', () => {
     const claves = (obj, prefijo = '') =>
       Object.entries(obj).flatMap(([k, v]) =>
-        v && typeof v === 'object' ? claves(v, `${prefijo}${k}.`) : [`${prefijo}${k}`]
+        v && typeof v === 'object'
+          ? claves(v, `${prefijo}${k}.`)
+          : [`${prefijo}${k}`],
       );
 
     it('has the same keys in Spanish and English', () => {
@@ -1304,7 +1723,9 @@ describe('PlayerProfilePage', () => {
       expect(es.friendship.unblock).toBe('Desbloquear');
       expect(es.menu.remove).toBe('Eliminar amigo');
       expect(es.menu.block).toBe('Bloquear');
-      expect(es.private.hint).toBe('Hazte su amigo para ver sus estadísticas y actividad');
+      expect(es.private.hint).toBe(
+        'Hazte su amigo para ver sus estadísticas y actividad',
+      );
       expect(es.headToHead.against).toBe('Contra él');
       expect(es.headToHead.alongside).toBe('Con él');
       expect(es.headToHead.won).toBe('Ganadas');
@@ -1315,7 +1736,13 @@ describe('PlayerProfilePage', () => {
 
     it('names every game format and result the backend can send', () => {
       for (const idioma of [es, en]) {
-        for (const f of ['SINGLES', 'FOURBALL', 'FOURSOMES', 'STABLEFORD', 'MEDAL']) {
+        for (const f of [
+          'SINGLES',
+          'FOURBALL',
+          'FOURSOMES',
+          'STABLEFORD',
+          'MEDAL',
+        ]) {
           expect(idioma.gamesTogether.format[f]).toBeTruthy();
         }
         for (const r of ['WON', 'HALVED', 'LOST', 'none']) {
@@ -1355,14 +1782,16 @@ describe('PlayerProfilePage', () => {
           <Routes>
             <Route path="/players/:userId" element={<PlayerProfilePage />} />
           </Routes>
-        </MemoryRouter>
+        </MemoryRouter>,
       );
 
     const bea = perfil({ id: 'u2', firstName: 'Bea', lastName: 'Ruiz' });
 
     it('keeps the new profile when the old one answers late', async () => {
       const deU1 = aplazada();
-      getProfile.mockImplementation((id) => (id === 'u1' ? deU1.promesa : Promise.resolve(bea)));
+      getProfile.mockImplementation((id) =>
+        id === 'u1' ? deU1.promesa : Promise.resolve(bea),
+      );
       renderConSalto();
 
       fireEvent.click(screen.getByText('saltar'));
@@ -1372,7 +1801,9 @@ describe('PlayerProfilePage', () => {
       await new Promise((r) => setTimeout(r, 20));
       expect(screen.getByText('Bea Ruiz')).toBeInTheDocument();
       expect(screen.queryByText('Ana García')).not.toBeInTheDocument();
-      expect(screen.queryByTestId('player-profile-stats')).not.toBeInTheDocument();
+      expect(
+        screen.queryByTestId('player-profile-stats'),
+      ).not.toBeInTheDocument();
     });
 
     // Bea también es amiga, con sus partidas: lo tardío de Ana no se le pega
@@ -1381,15 +1812,22 @@ describe('PlayerProfilePage', () => {
         id: 'u2',
         firstName: 'Bea',
         lastName: 'Ruiz',
-        gamesTogether: { games: [juego({ id: 'b1', quickMatchId: 'b1' })], nextCursor: null },
+        gamesTogether: {
+          games: [juego({ id: 'b1', quickMatchId: 'b1' })],
+          nextCursor: null,
+        },
       });
 
     it('drops a late page of games together from the previous profile', async () => {
       const masJuegos = aplazada();
       getProfile.mockImplementation((id) =>
         Promise.resolve(
-          id === 'u1' ? amigo({ gamesTogether: { games: [juego()], nextCursor: 'cur-1' } }) : beaAmiga()
-        )
+          id === 'u1'
+            ? amigo({
+                gamesTogether: { games: [juego()], nextCursor: 'cur-1' },
+              })
+            : beaAmiga(),
+        ),
       );
       getGamesTogether.mockReturnValue(masJuegos.promesa);
       renderConSalto();
@@ -1398,21 +1836,34 @@ describe('PlayerProfilePage', () => {
       fireEvent.click(screen.getByText('saltar'));
       expect(await screen.findByText('Bea Ruiz')).toBeInTheDocument();
 
-      expect(await screen.findByTestId('player-profile-game-b1')).toBeInTheDocument();
-      masJuegos.resolver({ games: [juego({ id: 'g9', quickMatchId: 'g9' })], nextCursor: null });
+      expect(
+        await screen.findByTestId('player-profile-game-b1'),
+      ).toBeInTheDocument();
+      masJuegos.resolver({
+        games: [juego({ id: 'g9', quickMatchId: 'g9' })],
+        nextCursor: null,
+      });
       await new Promise((r) => setTimeout(r, 20));
-      expect(screen.queryByTestId('player-profile-game-g9')).not.toBeInTheDocument();
+      expect(
+        screen.queryByTestId('player-profile-game-g9'),
+      ).not.toBeInTheDocument();
       expect(screen.getByTestId('player-profile-game-b1')).toBeInTheDocument();
     });
 
     it('drops a late page of activity from the previous profile', async () => {
       const masActividad = aplazada();
-      getProfile.mockImplementation((id) => Promise.resolve(id === 'u1' ? amigo() : beaAmiga()));
+      getProfile.mockImplementation((id) =>
+        Promise.resolve(id === 'u1' ? amigo() : beaAmiga()),
+      );
       getActivity
         .mockResolvedValueOnce(paginaActividad({ nextCursor: 'cursor-1' }))
         .mockReturnValueOnce(masActividad.promesa)
         .mockResolvedValueOnce(
-          paginaActividad({ events: [{ ...paginaActividad().events[0], id: 'b-e1', userId: 'u2' }] })
+          paginaActividad({
+            events: [
+              { ...paginaActividad().events[0], id: 'b-e1', userId: 'u2' },
+            ],
+          }),
         );
       renderConSalto();
 
@@ -1421,21 +1872,31 @@ describe('PlayerProfilePage', () => {
       fireEvent.click(screen.getByText('saltar'));
       expect(await screen.findByText('Bea Ruiz')).toBeInTheDocument();
 
-      expect(await screen.findByTestId('activity-event-b-e1')).toBeInTheDocument();
-      masActividad.resolver(paginaActividad({ events: [{ ...paginaActividad().events[0], id: 'e7' }] }));
+      expect(
+        await screen.findByTestId('activity-event-b-e1'),
+      ).toBeInTheDocument();
+      masActividad.resolver(
+        paginaActividad({
+          events: [{ ...paginaActividad().events[0], id: 'e7' }],
+        }),
+      );
       await new Promise((r) => setTimeout(r, 20));
       expect(screen.queryByTestId('activity-event-e7')).not.toBeInTheDocument();
       expect(screen.getByTestId('activity-event-b-e1')).toBeInTheDocument();
     });
 
     it('disables the «⋯» menu while more games are on their way', async () => {
-      getProfile.mockResolvedValue(amigo({ gamesTogether: { games: [juego()], nextCursor: 'cur-1' } }));
+      getProfile.mockResolvedValue(
+        amigo({ gamesTogether: { games: [juego()], nextCursor: 'cur-1' } }),
+      );
       getGamesTogether.mockReturnValue(new Promise(() => {}));
       renderProfile();
 
       fireEvent.click(await screen.findByTestId('player-profile-games-more'));
 
-      await waitFor(() => expect(screen.getByTestId('player-profile-menu')).toBeDisabled());
+      await waitFor(() =>
+        expect(screen.getByTestId('player-profile-menu')).toBeDisabled(),
+      );
     });
 
     it('disables the «⋯» menu while more activity is on its way', async () => {
@@ -1448,88 +1909,153 @@ describe('PlayerProfilePage', () => {
       await screen.findByTestId('activity-event-e1');
       fireEvent.click(screen.getByTestId('player-profile-load-more'));
 
-      await waitFor(() => expect(screen.getByTestId('player-profile-menu')).toBeDisabled());
+      await waitFor(() =>
+        expect(screen.getByTestId('player-profile-menu')).toBeDisabled(),
+      );
     });
   });
 
   describe('review 3 - unblocking from the blocked side', () => {
     it('says only the one who blocked can unblock when the backend answers 403', async () => {
-      getProfile.mockResolvedValue(perfil({ friendship: { status: 'BLOCKED', friendshipId: 'f1' } }));
+      getProfile.mockResolvedValue(
+        perfil({ friendship: { status: 'BLOCKED', friendshipId: 'f1' } }),
+      );
       removeFriend.mockRejectedValue(error(403));
       renderProfile();
 
       fireEvent.click(await screen.findByTestId('player-profile-unblock'));
 
       await waitFor(() =>
-        expect(customToast.error).toHaveBeenCalledWith('playerProfile:friendship.onlyBlockerCanUnblock')
+        expect(customToast.error).toHaveBeenCalledWith(
+          'playerProfile:friendship.onlyBlockerCanUnblock',
+        ),
       );
-      expect(customToast.error).not.toHaveBeenCalledWith('common:errors.generic');
-      expect(screen.getByTestId('player-profile-friendship-blocked')).toBeInTheDocument();
+      expect(customToast.error).not.toHaveBeenCalledWith(
+        'common:errors.generic',
+      );
+      expect(
+        screen.getByTestId('player-profile-friendship-blocked'),
+      ).toBeInTheDocument();
     });
 
     it('keeps the generic error for a 403 on any other action', async () => {
-      getProfile.mockResolvedValue(perfil({ friendship: { status: 'PENDING_SENT', friendshipId: 'f1' } }));
+      getProfile.mockResolvedValue(
+        perfil({ friendship: { status: 'PENDING_SENT', friendshipId: 'f1' } }),
+      );
       removeFriend.mockRejectedValue(error(403));
       renderProfile();
 
-      fireEvent.click(await screen.findByTestId('player-profile-cancel-request'));
+      fireEvent.click(
+        await screen.findByTestId('player-profile-cancel-request'),
+      );
 
-      await waitFor(() => expect(customToast.error).toHaveBeenCalledWith('common:errors.generic'));
-      expect(customToast.error).not.toHaveBeenCalledWith('playerProfile:friendship.onlyBlockerCanUnblock');
+      await waitFor(() =>
+        expect(customToast.error).toHaveBeenCalledWith('common:errors.generic'),
+      );
+      expect(customToast.error).not.toHaveBeenCalledWith(
+        'playerProfile:friendship.onlyBlockerCanUnblock',
+      );
     });
   });
 
   describe('review 4 - the action worked but the reload did not', () => {
     const tumbaLaRecarga = (primero) =>
-      getProfile.mockResolvedValueOnce(primero).mockRejectedValueOnce(error(500));
+      getProfile
+        .mockResolvedValueOnce(primero)
+        .mockRejectedValueOnce(error(500));
 
     const esperaElAvisoDeRecarga = () =>
-      waitFor(() => expect(customToast.error).toHaveBeenCalledWith('playerProfile:errors.reloadFailed'));
+      waitFor(() =>
+        expect(customToast.error).toHaveBeenCalledWith(
+          'playerProfile:errors.reloadFailed',
+        ),
+      );
 
     it('shows the profile blocked, without friend data, after blocking', async () => {
       tumbaLaRecarga(
         amigo({
-          headToHead: { against: { won: 1, halved: 0, lost: 0 }, alongside: null },
+          headToHead: {
+            against: { won: 1, halved: 0, lost: 0 },
+            alongside: null,
+          },
           gamesTogether: { games: [juego()], nextCursor: null },
-        })
+        }),
       );
       renderProfile();
 
       fireEvent.click(await screen.findByTestId('player-profile-menu'));
       fireEvent.click(await screen.findByTestId('player-profile-menu-block'));
-      fireEvent.click(within(await screen.findByRole('dialog')).getByTestId('confirm-modal-confirm'));
+      fireEvent.click(
+        within(await screen.findByRole('dialog')).getByTestId(
+          'confirm-modal-confirm',
+        ),
+      );
 
       await esperaElAvisoDeRecarga();
-      expect(customToast.success).toHaveBeenCalledWith('playerProfile:friendship.blockedNow');
-      expect(customToast.error).not.toHaveBeenCalledWith('common:errors.generic');
-      expect(await screen.findByTestId('player-profile-friendship-blocked')).toBeInTheDocument();
+      expect(customToast.success).toHaveBeenCalledWith(
+        'playerProfile:friendship.blockedNow',
+      );
+      expect(customToast.error).not.toHaveBeenCalledWith(
+        'common:errors.generic',
+      );
+      expect(
+        await screen.findByTestId('player-profile-friendship-blocked'),
+      ).toBeInTheDocument();
       expect(screen.getByTestId('player-profile-unblock')).toBeInTheDocument();
-      expect(screen.queryByTestId('player-profile-menu')).not.toBeInTheDocument();
-      expect(screen.queryByTestId('player-profile-stats')).not.toBeInTheDocument();
-      expect(screen.queryByTestId('player-profile-activity')).not.toBeInTheDocument();
-      expect(screen.queryByTestId('player-profile-h2h')).not.toBeInTheDocument();
-      expect(screen.queryByTestId('player-profile-games')).not.toBeInTheDocument();
-      expect(screen.queryByTestId('player-profile-handicap')).not.toBeInTheDocument();
-      expect(screen.queryByText('playerProfile:friendsCount')).not.toBeInTheDocument();
+      expect(
+        screen.queryByTestId('player-profile-menu'),
+      ).not.toBeInTheDocument();
+      expect(
+        screen.queryByTestId('player-profile-stats'),
+      ).not.toBeInTheDocument();
+      expect(
+        screen.queryByTestId('player-profile-activity'),
+      ).not.toBeInTheDocument();
+      expect(
+        screen.queryByTestId('player-profile-h2h'),
+      ).not.toBeInTheDocument();
+      expect(
+        screen.queryByTestId('player-profile-games'),
+      ).not.toBeInTheDocument();
+      expect(
+        screen.queryByTestId('player-profile-handicap'),
+      ).not.toBeInTheDocument();
+      expect(
+        screen.queryByText('playerProfile:friendsCount'),
+      ).not.toBeInTheDocument();
     });
 
     it('shows no relationship and no friend data after removing the friend', async () => {
-      tumbaLaRecarga(amigo({ gamesTogether: { games: [juego()], nextCursor: null } }));
+      tumbaLaRecarga(
+        amigo({ gamesTogether: { games: [juego()], nextCursor: null } }),
+      );
       renderProfile();
 
       fireEvent.click(await screen.findByTestId('player-profile-menu'));
       fireEvent.click(await screen.findByTestId('player-profile-menu-remove'));
-      fireEvent.click(within(await screen.findByRole('dialog')).getByTestId('confirm-modal-confirm'));
+      fireEvent.click(
+        within(await screen.findByRole('dialog')).getByTestId(
+          'confirm-modal-confirm',
+        ),
+      );
 
       await esperaElAvisoDeRecarga();
-      expect(await screen.findByTestId('player-profile-add-friend')).toBeInTheDocument();
-      expect(screen.queryByTestId('player-profile-stats')).not.toBeInTheDocument();
-      expect(screen.queryByTestId('player-profile-games')).not.toBeInTheDocument();
+      expect(
+        await screen.findByTestId('player-profile-add-friend'),
+      ).toBeInTheDocument();
+      expect(
+        screen.queryByTestId('player-profile-stats'),
+      ).not.toBeInTheDocument();
+      expect(
+        screen.queryByTestId('player-profile-games'),
+      ).not.toBeInTheDocument();
       expect(screen.getByTestId('player-profile-private')).toBeInTheDocument();
 
       fireEvent.click(screen.getByTestId('player-profile-menu'));
       const menu = await screen.findByRole('menu');
-      expect(within(menu).queryByTestId('player-profile-menu-remove')).not.toBeInTheDocument();
+      expect(
+        within(menu).queryByTestId('player-profile-menu-remove'),
+      ).not.toBeInTheDocument();
     });
 
     it('shows the request as sent after sending it', async () => {
@@ -1539,63 +2065,101 @@ describe('PlayerProfilePage', () => {
       fireEvent.click(await screen.findByTestId('player-profile-add-friend'));
 
       await esperaElAvisoDeRecarga();
-      expect(await screen.findByTestId('player-profile-friendship-sent')).toBeInTheDocument();
-      expect(customToast.error).not.toHaveBeenCalledWith('common:errors.generic');
+      expect(
+        await screen.findByTestId('player-profile-friendship-sent'),
+      ).toBeInTheDocument();
+      expect(customToast.error).not.toHaveBeenCalledWith(
+        'common:errors.generic',
+      );
     });
 
     it('shows no relationship after cancelling the request', async () => {
-      tumbaLaRecarga(perfil({ friendship: { status: 'PENDING_SENT', friendshipId: 'f1' } }));
+      tumbaLaRecarga(
+        perfil({ friendship: { status: 'PENDING_SENT', friendshipId: 'f1' } }),
+      );
       renderProfile();
 
-      fireEvent.click(await screen.findByTestId('player-profile-cancel-request'));
+      fireEvent.click(
+        await screen.findByTestId('player-profile-cancel-request'),
+      );
 
       await esperaElAvisoDeRecarga();
-      expect(await screen.findByTestId('player-profile-add-friend')).toBeInTheDocument();
+      expect(
+        await screen.findByTestId('player-profile-add-friend'),
+      ).toBeInTheDocument();
     });
 
     it('shows no relationship after unblocking', async () => {
-      tumbaLaRecarga(perfil({ friendship: { status: 'BLOCKED', friendshipId: 'f1' } }));
+      tumbaLaRecarga(
+        perfil({ friendship: { status: 'BLOCKED', friendshipId: 'f1' } }),
+      );
       renderProfile();
 
       fireEvent.click(await screen.findByTestId('player-profile-unblock'));
 
       await esperaElAvisoDeRecarga();
-      expect(await screen.findByTestId('player-profile-add-friend')).toBeInTheDocument();
-      expect(screen.queryByTestId('player-profile-friendship-blocked')).not.toBeInTheDocument();
+      expect(
+        await screen.findByTestId('player-profile-add-friend'),
+      ).toBeInTheDocument();
+      expect(
+        screen.queryByTestId('player-profile-friendship-blocked'),
+      ).not.toBeInTheDocument();
     });
 
     it('shows «Amigos», and offers to remove, after accepting', async () => {
-      tumbaLaRecarga(perfil({ friendship: { status: 'PENDING_RECEIVED', friendshipId: 'f1' } }));
+      tumbaLaRecarga(
+        perfil({
+          friendship: { status: 'PENDING_RECEIVED', friendshipId: 'f1' },
+        }),
+      );
       renderProfile();
 
       await screen.findByTestId('player-profile-friendship-received');
       fireEvent.click(screen.getByText('playerProfile:friendship.accept'));
 
       await esperaElAvisoDeRecarga();
-      expect(await screen.findByTestId('player-profile-friendship-accepted')).toBeInTheDocument();
+      expect(
+        await screen.findByTestId('player-profile-friendship-accepted'),
+      ).toBeInTheDocument();
       // Sin los datos de amigo todavía: ni la pista de «hazte su amigo»
-      expect(screen.queryByTestId('player-profile-private')).not.toBeInTheDocument();
+      expect(
+        screen.queryByTestId('player-profile-private'),
+      ).not.toBeInTheDocument();
 
       fireEvent.click(screen.getByTestId('player-profile-menu'));
-      expect(within(await screen.findByRole('menu')).getByTestId('player-profile-menu-remove')).toBeInTheDocument();
+      expect(
+        within(await screen.findByRole('menu')).getByTestId(
+          'player-profile-menu-remove',
+        ),
+      ).toBeInTheDocument();
     });
 
     it('shows no relationship after declining', async () => {
-      tumbaLaRecarga(perfil({ friendship: { status: 'PENDING_RECEIVED', friendshipId: 'f1' } }));
+      tumbaLaRecarga(
+        perfil({
+          friendship: { status: 'PENDING_RECEIVED', friendshipId: 'f1' },
+        }),
+      );
       renderProfile();
 
       await screen.findByTestId('player-profile-friendship-received');
       fireEvent.click(screen.getByText('playerProfile:friendship.decline'));
 
       await esperaElAvisoDeRecarga();
-      expect(await screen.findByTestId('player-profile-add-friend')).toBeInTheDocument();
+      expect(
+        await screen.findByTestId('player-profile-add-friend'),
+      ).toBeInTheDocument();
     });
   });
 
   describe('review texts', () => {
     it('words the new messages in Spanish', () => {
-      expect(es.friendship.onlyBlockerCanUnblock).toBe('Solo quien ha bloqueado puede desbloquear');
-      expect(en.friendship.onlyBlockerCanUnblock).toBe('Only the person who blocked can unblock');
+      expect(es.friendship.onlyBlockerCanUnblock).toBe(
+        'Solo quien ha bloqueado puede desbloquear',
+      );
+      expect(en.friendship.onlyBlockerCanUnblock).toBe(
+        'Only the person who blocked can unblock',
+      );
       expect(es.errors.reloadFailed).toBeTruthy();
       expect(en.errors.reloadFailed).toBeTruthy();
     });
@@ -1605,7 +2169,11 @@ describe('PlayerProfilePage', () => {
     const IrABea = () => {
       const navigate = useNavigate();
       return (
-        <button type="button" data-testid="go-u2" onClick={() => navigate('/players/u2')}>
+        <button
+          type="button"
+          data-testid="go-u2"
+          onClick={() => navigate('/players/u2')}
+        >
           go
         </button>
       );
@@ -1618,20 +2186,31 @@ describe('PlayerProfilePage', () => {
           <Routes>
             <Route path="/players/:userId" element={<PlayerProfilePage />} />
           </Routes>
-        </MemoryRouter>
+        </MemoryRouter>,
       );
 
     it('neither reloads the old profile over the new one nor leaves it busy', async () => {
       getProfile.mockImplementation(async (id) =>
-        id === 'u1' ? amigo() : perfil({ id: 'u2', firstName: 'Bea', lastName: 'Ruiz' })
+        id === 'u1'
+          ? amigo()
+          : perfil({ id: 'u2', firstName: 'Bea', lastName: 'Ruiz' }),
       );
       let terminaElBloqueo;
-      blockUser.mockImplementation(() => new Promise((r) => { terminaElBloqueo = r; }));
+      blockUser.mockImplementation(
+        () =>
+          new Promise((r) => {
+            terminaElBloqueo = r;
+          }),
+      );
       renderConNavegacion();
 
       fireEvent.click(await screen.findByTestId('player-profile-menu'));
       fireEvent.click(screen.getByTestId('player-profile-menu-block'));
-      fireEvent.click(within(await screen.findByRole('dialog')).getByTestId('confirm-modal-confirm'));
+      fireEvent.click(
+        within(await screen.findByRole('dialog')).getByTestId(
+          'confirm-modal-confirm',
+        ),
+      );
       fireEvent.click(screen.getByTestId('go-u2'));
 
       expect(await screen.findByText('Bea Ruiz')).toBeInTheDocument();
@@ -1644,42 +2223,65 @@ describe('PlayerProfilePage', () => {
 
       expect(getProfile.mock.calls.map(([id]) => id)).toEqual(['u1', 'u2']);
       expect(screen.getByText('Bea Ruiz')).toBeInTheDocument();
-      expect(screen.queryByTestId('player-profile-friendship-blocked')).not.toBeInTheDocument();
+      expect(
+        screen.queryByTestId('player-profile-friendship-blocked'),
+      ).not.toBeInTheDocument();
     });
 
     it('does not apply the old profile fallback to the new one', async () => {
       let llamadasU1 = 0;
       getProfile.mockImplementation(async (id) => {
-        if (id === 'u2') return perfil({ id: 'u2', firstName: 'Bea', lastName: 'Ruiz' });
+        if (id === 'u2')
+          return perfil({ id: 'u2', firstName: 'Bea', lastName: 'Ruiz' });
         llamadasU1 += 1;
         if (llamadasU1 > 1) throw error(500);
         return amigo();
       });
       let terminaElBloqueo;
-      blockUser.mockImplementation(() => new Promise((r) => { terminaElBloqueo = r; }));
+      blockUser.mockImplementation(
+        () =>
+          new Promise((r) => {
+            terminaElBloqueo = r;
+          }),
+      );
       renderConNavegacion();
 
       fireEvent.click(await screen.findByTestId('player-profile-menu'));
       fireEvent.click(screen.getByTestId('player-profile-menu-block'));
-      fireEvent.click(within(await screen.findByRole('dialog')).getByTestId('confirm-modal-confirm'));
+      fireEvent.click(
+        within(await screen.findByRole('dialog')).getByTestId(
+          'confirm-modal-confirm',
+        ),
+      );
       fireEvent.click(screen.getByTestId('go-u2'));
       expect(await screen.findByText('Bea Ruiz')).toBeInTheDocument();
 
       terminaElBloqueo({ id: 'f1' });
       await new Promise((r) => setTimeout(r, 30));
 
-      expect(screen.getByTestId('player-profile-add-friend')).toBeInTheDocument();
-      expect(screen.queryByTestId('player-profile-friendship-blocked')).not.toBeInTheDocument();
-      expect(customToast.error).not.toHaveBeenCalledWith('playerProfile:errors.reloadFailed');
+      expect(
+        screen.getByTestId('player-profile-add-friend'),
+      ).toBeInTheDocument();
+      expect(
+        screen.queryByTestId('player-profile-friendship-blocked'),
+      ).not.toBeInTheDocument();
+      expect(customToast.error).not.toHaveBeenCalledWith(
+        'playerProfile:errors.reloadFailed',
+      );
     });
     it('says nothing about the old profile reload once you have left it', async () => {
       let rechazaLaRecarga;
       let llamadasU1 = 0;
       getProfile.mockImplementation((id) => {
-        if (id === 'u2') return Promise.resolve(perfil({ id: 'u2', firstName: 'Bea', lastName: 'Ruiz' }));
+        if (id === 'u2')
+          return Promise.resolve(
+            perfil({ id: 'u2', firstName: 'Bea', lastName: 'Ruiz' }),
+          );
         llamadasU1 += 1;
         if (llamadasU1 === 1) return Promise.resolve(perfil());
-        return new Promise((_, rechaza) => { rechazaLaRecarga = rechaza; });
+        return new Promise((_, rechaza) => {
+          rechazaLaRecarga = rechaza;
+        });
       });
       renderConNavegacion();
 
@@ -1691,31 +2293,43 @@ describe('PlayerProfilePage', () => {
       rechazaLaRecarga(error(500));
       await new Promise((r) => setTimeout(r, 30));
 
-      expect(customToast.error).not.toHaveBeenCalledWith('playerProfile:errors.reloadFailed');
+      expect(customToast.error).not.toHaveBeenCalledWith(
+        'playerProfile:errors.reloadFailed',
+      );
       expect(screen.getByTestId('player-profile-add-friend')).toBeEnabled();
     });
   });
 
   describe('final review - the local fallback keeps the new friendship id', () => {
     it('cancels the request just sent with the id the backend gave', async () => {
-      getProfile.mockResolvedValueOnce(perfil()).mockRejectedValueOnce(error(500));
+      getProfile
+        .mockResolvedValueOnce(perfil())
+        .mockRejectedValueOnce(error(500));
       sendRequest.mockResolvedValue({ id: 'f9', status: 'PENDING' });
       renderProfile();
 
       fireEvent.click(await screen.findByTestId('player-profile-add-friend'));
-      fireEvent.click(await screen.findByTestId('player-profile-cancel-request'));
+      fireEvent.click(
+        await screen.findByTestId('player-profile-cancel-request'),
+      );
 
       await waitFor(() => expect(removeFriend).toHaveBeenCalledWith('f9'));
     });
 
     it('unblocks a player just blocked with the id the backend gave', async () => {
-      getProfile.mockResolvedValueOnce(perfil()).mockRejectedValueOnce(error(500));
+      getProfile
+        .mockResolvedValueOnce(perfil())
+        .mockRejectedValueOnce(error(500));
       blockUser.mockResolvedValue({ id: 'f8', status: 'BLOCKED' });
       renderProfile();
 
       fireEvent.click(await screen.findByTestId('player-profile-menu'));
       fireEvent.click(await screen.findByTestId('player-profile-menu-block'));
-      fireEvent.click(within(await screen.findByRole('dialog')).getByTestId('confirm-modal-confirm'));
+      fireEvent.click(
+        within(await screen.findByRole('dialog')).getByTestId(
+          'confirm-modal-confirm',
+        ),
+      );
       fireEvent.click(await screen.findByTestId('player-profile-unblock'));
 
       await waitFor(() => expect(removeFriend).toHaveBeenCalledWith('f8'));
@@ -1723,7 +2337,11 @@ describe('PlayerProfilePage', () => {
 
     it('keeps the id it had when the action returns none', async () => {
       getProfile
-        .mockResolvedValueOnce(perfil({ friendship: { status: 'PENDING_RECEIVED', friendshipId: 'f1' } }))
+        .mockResolvedValueOnce(
+          perfil({
+            friendship: { status: 'PENDING_RECEIVED', friendshipId: 'f1' },
+          }),
+        )
         .mockRejectedValueOnce(error(500));
       respondRequest.mockResolvedValue(undefined);
       renderProfile();
@@ -1733,7 +2351,11 @@ describe('PlayerProfilePage', () => {
       await screen.findByTestId('player-profile-friendship-accepted');
       fireEvent.click(screen.getByTestId('player-profile-menu'));
       fireEvent.click(await screen.findByTestId('player-profile-menu-remove'));
-      fireEvent.click(within(await screen.findByRole('dialog')).getByTestId('confirm-modal-confirm'));
+      fireEvent.click(
+        within(await screen.findByRole('dialog')).getByTestId(
+          'confirm-modal-confirm',
+        ),
+      );
 
       await waitFor(() => expect(removeFriend).toHaveBeenCalledWith('f1'));
     });
@@ -1742,28 +2364,44 @@ describe('PlayerProfilePage', () => {
   describe('social decisions, case 6 - who put the block', () => {
     it('blocked by me: «Desbloquear» and no «⋯» menu', async () => {
       getProfile.mockResolvedValue(
-        perfil({ friendship: { status: 'BLOCKED', friendshipId: 'f1' }, blockedByMe: true, friendsCount: 0 })
+        perfil({
+          friendship: { status: 'BLOCKED', friendshipId: 'f1' },
+          blockedByMe: true,
+          friendsCount: 0,
+        }),
       );
       renderProfile();
 
-      expect(await screen.findByTestId('player-profile-unblock')).toHaveTextContent(
-        'playerProfile:friendship.unblock'
-      );
-      expect(screen.queryByTestId('player-profile-menu')).not.toBeInTheDocument();
+      expect(
+        await screen.findByTestId('player-profile-unblock'),
+      ).toHaveTextContent('playerProfile:friendship.unblock');
+      expect(
+        screen.queryByTestId('player-profile-menu'),
+      ).not.toBeInTheDocument();
     });
 
     it('blocked by the other: no action and no «⋯» menu, the rest as before', async () => {
       getProfile.mockResolvedValue(
-        perfil({ friendship: { status: 'BLOCKED', friendshipId: 'f1' }, blockedByMe: false, friendsCount: 0 })
+        perfil({
+          friendship: { status: 'BLOCKED', friendshipId: 'f1' },
+          blockedByMe: false,
+          friendsCount: 0,
+        }),
       );
       renderProfile();
 
-      expect(await screen.findByTestId('player-profile-friendship-blocked')).toHaveTextContent(
-        'playerProfile:friendship.blocked'
-      );
-      expect(screen.queryByTestId('player-profile-unblock')).not.toBeInTheDocument();
-      expect(screen.queryByTestId('player-profile-menu')).not.toBeInTheDocument();
-      expect(screen.queryByTestId('player-profile-add-friend')).not.toBeInTheDocument();
+      expect(
+        await screen.findByTestId('player-profile-friendship-blocked'),
+      ).toHaveTextContent('playerProfile:friendship.blocked');
+      expect(
+        screen.queryByTestId('player-profile-unblock'),
+      ).not.toBeInTheDocument();
+      expect(
+        screen.queryByTestId('player-profile-menu'),
+      ).not.toBeInTheDocument();
+      expect(
+        screen.queryByTestId('player-profile-add-friend'),
+      ).not.toBeInTheDocument();
       expect(screen.queryAllByRole('button')).toHaveLength(0);
       expect(screen.getByText('Ana García')).toBeInTheDocument();
     });
@@ -1777,33 +2415,46 @@ describe('PlayerProfilePage', () => {
 
       fireEvent.click(await screen.findByTestId('player-profile-menu'));
       fireEvent.click(await screen.findByTestId('player-profile-menu-block'));
-      fireEvent.click(await screen.findByText('playerProfile:confirm.block.confirm'));
+      fireEvent.click(
+        await screen.findByText('playerProfile:confirm.block.confirm'),
+      );
 
-      expect(await screen.findByTestId('player-profile-unblock')).toBeInTheDocument();
+      expect(
+        await screen.findByTestId('player-profile-unblock'),
+      ).toBeInTheDocument();
     });
   });
 
   describe('social decisions, case 4 - an unfinished game together', () => {
     it('reads «Sin terminar» / «Unfinished»', async () => {
       getProfile.mockResolvedValue(
-        amigo({ gamesTogether: { games: [juego({ result: 'UNFINISHED' })], nextCursor: null } })
+        amigo({
+          gamesTogether: {
+            games: [juego({ result: 'UNFINISHED' })],
+            nextCursor: null,
+          },
+        }),
       );
       renderProfile();
 
-      expect(await screen.findByTestId('player-profile-game-g1')).toHaveTextContent(
-        'playerProfile:gamesTogether.result.UNFINISHED'
-      );
+      expect(
+        await screen.findByTestId('player-profile-game-g1'),
+      ).toHaveTextContent('playerProfile:gamesTogether.result.UNFINISHED');
       expect(es.gamesTogether.result.UNFINISHED).toBe('Sin terminar');
       expect(en.gamesTogether.result.UNFINISHED).toBe('Unfinished');
     });
 
     it('a game with no result still reads «Sin resultado»', async () => {
-      getProfile.mockResolvedValue(amigo({ gamesTogether: { games: [juego({ result: null })], nextCursor: null } }));
+      getProfile.mockResolvedValue(
+        amigo({
+          gamesTogether: { games: [juego({ result: null })], nextCursor: null },
+        }),
+      );
       renderProfile();
 
-      expect(await screen.findByTestId('player-profile-game-g1')).toHaveTextContent(
-        'playerProfile:gamesTogether.result.none'
-      );
+      expect(
+        await screen.findByTestId('player-profile-game-g1'),
+      ).toHaveTextContent('playerProfile:gamesTogether.result.none');
     });
   });
 
@@ -1815,69 +2466,105 @@ describe('PlayerProfilePage', () => {
     it('a first page with no entries but a cursor offers «Ver más», not «no activity»', async () => {
       getProfile.mockResolvedValue(amigo());
       getActivity
-        .mockResolvedValueOnce(paginaActividad({ events: [], nextCursor: 'c1' }))
+        .mockResolvedValueOnce(
+          paginaActividad({ events: [], nextCursor: 'c1' }),
+        )
         .mockResolvedValueOnce(paginaActividad({ nextCursor: null }));
       renderProfile();
 
       const boton = await screen.findByTestId('player-profile-load-more');
-      expect(screen.queryByText('playerProfile:activity.empty')).not.toBeInTheDocument();
+      expect(
+        screen.queryByText('playerProfile:activity.empty'),
+      ).not.toBeInTheDocument();
 
       fireEvent.click(boton);
 
-      expect(await screen.findByTestId('activity-event-e1')).toBeInTheDocument();
-      expect(getActivity).toHaveBeenLastCalledWith('u1', { limit: 20, cursor: 'c1' });
-      expect(screen.queryByTestId('player-profile-load-more')).not.toBeInTheDocument();
+      expect(
+        await screen.findByTestId('activity-event-e1'),
+      ).toBeInTheDocument();
+      expect(getActivity).toHaveBeenLastCalledWith('u1', {
+        limit: 20,
+        cursor: 'c1',
+      });
+      expect(
+        screen.queryByTestId('player-profile-load-more'),
+      ).not.toBeInTheDocument();
     });
 
     it('«Ver más» that adds nothing but has a cursor keeps the button, without asking again by itself', async () => {
       getProfile.mockResolvedValue(amigo());
       getActivity
         .mockResolvedValueOnce(paginaActividad({ nextCursor: 'c1' }))
-        .mockResolvedValueOnce(paginaActividad({ events: [], nextCursor: 'c2' }));
+        .mockResolvedValueOnce(
+          paginaActividad({ events: [], nextCursor: 'c2' }),
+        );
       renderProfile();
 
       await screen.findByTestId('activity-event-e1');
       fireEvent.click(screen.getByTestId('player-profile-load-more'));
       await waitFor(() => expect(getActivity).toHaveBeenCalledTimes(2));
-      await waitFor(() => expect(screen.getByTestId('player-profile-load-more')).toBeEnabled());
+      await waitFor(() =>
+        expect(screen.getByTestId('player-profile-load-more')).toBeEnabled(),
+      );
       expect(getActivity).toHaveBeenCalledTimes(2);
     });
 
     it('two empty pages in a row end in «no activity», with no button', async () => {
       getProfile.mockResolvedValue(amigo());
       getActivity
-        .mockResolvedValueOnce(paginaActividad({ events: [], nextCursor: 'c1' }))
-        .mockResolvedValueOnce(paginaActividad({ events: [], nextCursor: null }));
+        .mockResolvedValueOnce(
+          paginaActividad({ events: [], nextCursor: 'c1' }),
+        )
+        .mockResolvedValueOnce(
+          paginaActividad({ events: [], nextCursor: null }),
+        );
       renderProfile();
 
       fireEvent.click(await screen.findByTestId('player-profile-load-more'));
 
-      expect(await screen.findByText('playerProfile:activity.empty')).toBeInTheDocument();
-      expect(screen.queryByTestId('player-profile-load-more')).not.toBeInTheDocument();
+      expect(
+        await screen.findByText('playerProfile:activity.empty'),
+      ).toBeInTheDocument();
+      expect(
+        screen.queryByTestId('player-profile-load-more'),
+      ).not.toBeInTheDocument();
     });
   });
 
   describe('review of the social decisions - games together with an empty page and a cursor', () => {
     it('shows «Ver más» and loads the next page', async () => {
-      getProfile.mockResolvedValue(amigo({ gamesTogether: { games: [], nextCursor: 'g-cur' } }));
-      getGamesTogether.mockResolvedValueOnce({ games: [juego()], nextCursor: null });
+      getProfile.mockResolvedValue(
+        amigo({ gamesTogether: { games: [], nextCursor: 'g-cur' } }),
+      );
+      getGamesTogether.mockResolvedValueOnce({
+        games: [juego()],
+        nextCursor: null,
+      });
       renderProfile();
 
       const boton = await screen.findByTestId('player-profile-games-more');
       expect(boton).toHaveTextContent('playerProfile:gamesTogether.loadMore');
       fireEvent.click(boton);
 
-      expect(await screen.findByTestId('player-profile-game-g1')).toBeInTheDocument();
+      expect(
+        await screen.findByTestId('player-profile-game-g1'),
+      ).toBeInTheDocument();
       expect(getGamesTogether).toHaveBeenCalledWith('u1', { cursor: 'g-cur' });
-      expect(screen.queryByTestId('player-profile-games-more')).not.toBeInTheDocument();
+      expect(
+        screen.queryByTestId('player-profile-games-more'),
+      ).not.toBeInTheDocument();
     });
 
     it('with no games and no cursor, nothing is painted', async () => {
-      getProfile.mockResolvedValue(amigo({ gamesTogether: { games: [], nextCursor: null } }));
+      getProfile.mockResolvedValue(
+        amigo({ gamesTogether: { games: [], nextCursor: null } }),
+      );
       renderProfile();
 
       await screen.findByTestId('player-profile-stats');
-      expect(screen.queryByTestId('player-profile-games')).not.toBeInTheDocument();
+      expect(
+        screen.queryByTestId('player-profile-games'),
+      ).not.toBeInTheDocument();
     });
   });
 });

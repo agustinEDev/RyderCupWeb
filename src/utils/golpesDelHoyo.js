@@ -10,7 +10,8 @@ export const GOLPES_DEL_HOYO = ['ownScore', 'markedScore'];
  * raya (`null`) sí es un golpe. La misma regla que la cola usa para decidir qué
  * queda sustituido (#609).
  */
-export const golpesQueTrae = (scoreData) => GOLPES_DEL_HOYO.filter((g) => scoreData?.[g] !== undefined);
+export const golpesQueTrae = (scoreData) =>
+  GOLPES_DEL_HOYO.filter((g) => scoreData?.[g] !== undefined);
 
 /**
  * Quien marca a dos (fourball con un retirado, 26 oct 2026) tiene dos marcas
@@ -21,7 +22,9 @@ export const golpesQueTrae = (scoreData) => GOLPES_DEL_HOYO.filter((g) => scoreD
  * dependiera de eso, al deshacerse la retirada el aviso no se podía retirar.
  */
 export const conSuRival = (golpes, marcado) =>
-  golpes.map((g) => (g === 'markedScore' && marcado ? `markedScore@${marcado}` : g));
+  golpes.map((g) =>
+    g === 'markedScore' && marcado ? `markedScore@${marcado}` : g,
+  );
 
 /** El golpe sin su rival: `markedScore@u4` es un `markedScore`. */
 export const golpeBase = (golpe) => golpe.split('@')[0];
@@ -45,5 +48,5 @@ export const marcadoDe = (scoreData) => scoreData?.markedPlayerId ?? null;
  * retira cualquier marca de ese hoyo.
  */
 export const esElMismoGolpe = (apuntado, anotado) =>
-  apuntado === anotado
-  || (rivalDe(apuntado) === null && golpeBase(apuntado) === golpeBase(anotado));
+  apuntado === anotado ||
+  (rivalDe(apuntado) === null && golpeBase(apuntado) === golpeBase(anotado));

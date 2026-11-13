@@ -27,7 +27,7 @@ class TeeGroupScoringMapper {
   static toScoringViewDTO(api) {
     const jugadores = api.players || [];
     const nombre = new Map(jugadores.map((p) => [p.user_id, p.name]));
-    const nombreDe = (id) => (id ? nombre.get(id) ?? null : null);
+    const nombreDe = (id) => (id ? (nombre.get(id) ?? null) : null);
     const hoyoDe = (p, n) => (p.holes || []).find((h) => h.hole === n);
     const numeros = Array.from({ length: HOYOS }, (_, i) => i + 1);
 
@@ -70,11 +70,22 @@ class TeeGroupScoringMapper {
         // Con el color, la barra: las muestras del mapa van por barra (16 oct)
         teeGender: p.tee_gender ?? null,
         playingHandicap: p.playing_handicap,
-        strokesReceived: numeros.map((n) => hoyoDe(p, n)?.strokes_received ?? 0),
+        strokesReceived: numeros.map(
+          (n) => hoyoDe(p, n)?.strokes_received ?? 0,
+        ),
         // El par y los metros de SU barra (los metros, BE #574); la vista no trae índice
-        holeCard: numeros.map((n) => ({ holeNumber: n, par: hoyoDe(p, n)?.par ?? null, strokeIndex: null, meters: hoyoDe(p, n)?.meters ?? null })),
+        holeCard: numeros.map((n) => ({
+          holeNumber: n,
+          par: hoyoDe(p, n)?.par ?? null,
+          strokeIndex: null,
+          meters: hoyoDe(p, n)?.meters ?? null,
+        })),
       })),
-      holes: numeros.map((n) => ({ holeNumber: n, par: jugadores[0] ? hoyoDe(jugadores[0], n)?.par ?? null : null, strokeIndex: null })),
+      holes: numeros.map((n) => ({
+        holeNumber: n,
+        par: jugadores[0] ? (hoyoDe(jugadores[0], n)?.par ?? null) : null,
+        strokeIndex: null,
+      })),
       scores: numeros.map((n) => ({
         holeNumber: n,
         playerScores: jugadores.map((p) => {
@@ -96,11 +107,16 @@ class TeeGroupScoringMapper {
         holeResult: null,
       })),
       matchStanding: null,
-      scorecardSubmittedBy: jugadores.filter((p) => p.card_status === 'ENTREGADA').map((p) => p.user_id),
+      scorecardSubmittedBy: jugadores
+        .filter((p) => p.card_status === 'ENTREGADA')
+        .map((p) => p.user_id),
       strokePlay: {
         roundId: api.round_id,
         // HH:MM, como en ScheduleMapper
-        teeTime: typeof api.tee_time === 'string' ? api.tee_time.slice(0, 5) : api.tee_time,
+        teeTime:
+          typeof api.tee_time === 'string'
+            ? api.tee_time.slice(0, 5)
+            : api.tee_time,
         tournamentType: api.tournament_type,
         // Solo un sí expreso: una vista vieja sin el dato no ofrece la raya (23 oct 2026)
         pickedUpAllowed: api.picked_up_allowed === true,

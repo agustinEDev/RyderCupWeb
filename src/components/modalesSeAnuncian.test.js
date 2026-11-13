@@ -11,11 +11,18 @@ import { describe, it, expect } from 'vitest';
  * `ModalShell`, o declara su `role="dialog"` en sus primeros elementos (las
  * hojas inferiores lo ponen en la hoja, con el fondo de `presentation`).
  */
-const fuentes = import.meta.glob(['/src/**/*.jsx', '!/src/**/*.test.jsx', '!/src/components/ui/ModalShell.jsx'], {
-  query: '?raw',
-  import: 'default',
-  eager: true,
-});
+const fuentes = import.meta.glob(
+  [
+    '/src/**/*.jsx',
+    '!/src/**/*.test.jsx',
+    '!/src/components/ui/ModalShell.jsx',
+  ],
+  {
+    query: '?raw',
+    import: 'default',
+    eager: true,
+  },
+);
 
 const capasSinDialogo = (codigo) => {
   const sin = [];
@@ -33,10 +40,20 @@ const capasSinDialogo = (codigo) => {
 
 describe('Modales', () => {
   it('el detector encuentra una capa sin diálogo y deja pasar las que lo tienen', () => {
-    expect(capasSinDialogo('<div className="fixed inset-0 bg-black/50"><div>Hola</div></div>')).toEqual([1]);
-    expect(capasSinDialogo('<div className="fixed inset-0" role="dialog">Hola</div>')).toEqual([]);
     expect(
-      capasSinDialogo('<div className="fixed inset-0" role="presentation">\n  <div role="dialog">Hoja</div>\n</div>')
+      capasSinDialogo(
+        '<div className="fixed inset-0 bg-black/50"><div>Hola</div></div>',
+      ),
+    ).toEqual([1]);
+    expect(
+      capasSinDialogo(
+        '<div className="fixed inset-0" role="dialog">Hola</div>',
+      ),
+    ).toEqual([]);
+    expect(
+      capasSinDialogo(
+        '<div className="fixed inset-0" role="presentation">\n  <div role="dialog">Hoja</div>\n</div>',
+      ),
     ).toEqual([]);
   });
 

@@ -9,9 +9,16 @@ import BlockLoader from '../../components/ui/BlockLoader';
 import CampoDeLaPartida from '../../components/scoring/CampoDeLaPartida';
 import QuickMatchClassificationTable from '../../components/quick_match/QuickMatchClassificationTable';
 import QuickMatchScorecardTable from '../../components/quick_match/QuickMatchScorecardTable';
-import { GrupoDePestanas, ListaDePestanas, PanelDePestana } from '../../components/ui/Pestanas';
+import {
+  GrupoDePestanas,
+  ListaDePestanas,
+  PanelDePestana,
+} from '../../components/ui/Pestanas';
 import customToast from '../../utils/toast';
-import { getGolfCourseUseCase, getSharedQuickMatchUseCase } from '../../composition';
+import {
+  getGolfCourseUseCase,
+  getSharedQuickMatchUseCase,
+} from '../../composition';
 import { PANTALLA_MENOS_BARRA_INFERIOR } from '../../utils/barraInferior';
 
 const TABS = ['classification', 'scorecard'];
@@ -46,7 +53,11 @@ const QuickMatchSharedPage = () => {
   // salir, la anterior nunca se pinta bajo la URL de la nueva. Mientras llega,
   // la espera de siempre. El campo y su fallo se limpian al pedir el de la
   // nueva, en el mismo pintado en que llega
-  const [lectura, setLectura] = useState({ quickMatchId: null, partida: null, fallo: null });
+  const [lectura, setLectura] = useState({
+    quickMatchId: null,
+    partida: null,
+    fallo: null,
+  });
   const cargada = lectura.quickMatchId === quickMatchId;
   const partida = cargada ? lectura.partida : null;
   const fallo = cargada ? lectura.fallo : null;
@@ -115,7 +126,7 @@ const QuickMatchSharedPage = () => {
           fallo: error?.status ?? 'otro',
         }));
       },
-    }
+    },
   );
   // Reintentar: se quita el fallo y vuelve la espera, como siempre
   const reintentar = () => {
@@ -129,7 +140,7 @@ const QuickMatchSharedPage = () => {
         ...p,
         name: p.name || t(p.isGuest ? 'shared.guest' : 'shared.player'),
       })),
-    [partida, t]
+    [partida, t],
   );
 
   if (partida?.viewerIsParticipant) {
@@ -150,15 +161,24 @@ const QuickMatchSharedPage = () => {
       <div className={`${PANTALLA_MENOS_BARRA_INFERIOR} bg-gray-50`}>
         <HeaderAuth />
         <main className="max-w-2xl mx-auto px-4 py-6 pb-24">
-          <SinPartida fallo={fallo} onReintentar={reintentar} onVolver={volver} t={t} />
+          <SinPartida
+            fallo={fallo}
+            onReintentar={reintentar}
+            onVolver={volver}
+            t={t}
+          />
         </main>
       </div>
     );
   }
 
-  const esJuegoLibre = partida.scoringFormat === 'MEDAL' || partida.scoringFormat === 'STABLEFORD';
+  const esJuegoLibre =
+    partida.scoringFormat === 'MEDAL' || partida.scoringFormat === 'STABLEFORD';
   const errorDelCampo = (
-    <ErrorDelCampo onReintentar={() => cargaElCampo(partida.golfCourseId)} t={t} />
+    <ErrorDelCampo
+      onReintentar={() => cargaElCampo(partida.golfCourseId)}
+      t={t}
+    />
   );
   // Sin los hoyos no hay puntos ni golpes que contar; mientras llegan, nada
   const sinHoyos = !campo;
@@ -172,7 +192,11 @@ const QuickMatchSharedPage = () => {
 
       <main className="max-w-4xl mx-auto px-4 py-4 pb-24">
         {/* En móvil la vuelta la da la cabecera contextual (por historial) */}
-        <BotonVolver onVolver={volver} t={t} className="hidden md:inline-flex mb-3" />
+        <BotonVolver
+          onVolver={volver}
+          t={t}
+          className="hidden md:inline-flex mb-3"
+        />
 
         {/* La cabecera contextual ya pinta el título en móvil: un segundo
             encabezado de nivel 1 rompería la jerarquía para los lectores de
@@ -189,7 +213,10 @@ const QuickMatchSharedPage = () => {
             <p className="text-sm text-gray-500">
               {partida.name ? `${t('scoring.matchHeader')} · ` : ''}
               {(partida.matchFormat ?? partida.scoringFormat) &&
-                t(`history.format.${partida.matchFormat ?? partida.scoringFormat}`, partida.matchFormat ?? partida.scoringFormat)}
+                t(
+                  `history.format.${partida.matchFormat ?? partida.scoringFormat}`,
+                  partida.matchFormat ?? partida.scoringFormat,
+                )}
             </p>
             <CampoDeLaPartida nombre={campo?.name ?? null} />
           </div>
@@ -213,45 +240,55 @@ const QuickMatchSharedPage = () => {
             }))}
             claseDePestana={(abierta) =>
               `flex-1 py-2 text-sm font-medium text-center border-b-2 transition-colors ${
-                abierta ? 'border-primary text-primary' : 'border-transparent text-gray-500 hover:text-gray-700'
+                abierta
+                  ? 'border-primary text-primary'
+                  : 'border-transparent text-gray-500 hover:text-gray-700'
               }`
             }
           />
 
           <PanelDePestana id="classification" enfocable>
-            {esJuegoLibre && sinHoyos ? (falloDelCampo ? errorDelCampo : null) : (
-            <QuickMatchClassificationTable
-              holes={holes}
-              holeScores={partida.holeScores ?? []}
-              participants={participantes}
-              scoringFormat={partida.scoringFormat}
-              standing={partida.standing}
-              tees={tees}
-              allowancePercentage={partida.effectiveAllowance}
-              playMode={partida.playMode}
-              participantStrokes={partida.participantStrokes ?? []}
-              matchFormat={partida.matchFormat}
-              showFinalBadge={cerrada}
-              isCancelled={!!partida.isCancelled}
-            />
-            )}
-          </PanelDePestana>
-
-          <PanelDePestana id="scorecard" enfocable>
-            {sinHoyos ? (falloDelCampo ? errorDelCampo : null) : (
-            <div data-testid="quick-match-shared-scorecard">
-              <QuickMatchScorecardTable
+            {esJuegoLibre && sinHoyos ? (
+              falloDelCampo ? (
+                errorDelCampo
+              ) : null
+            ) : (
+              <QuickMatchClassificationTable
                 holes={holes}
                 holeScores={partida.holeScores ?? []}
                 participants={participantes}
                 scoringFormat={partida.scoringFormat}
-                matchFormat={partida.matchFormat}
-                playMode={partida.playMode}
-                participantStrokes={partida.participantStrokes ?? []}
+                standing={partida.standing}
                 tees={tees}
                 allowancePercentage={partida.effectiveAllowance}
+                playMode={partida.playMode}
+                participantStrokes={partida.participantStrokes ?? []}
+                matchFormat={partida.matchFormat}
+                showFinalBadge={cerrada}
+                isCancelled={!!partida.isCancelled}
               />
-            </div>
+            )}
+          </PanelDePestana>
+
+          <PanelDePestana id="scorecard" enfocable>
+            {sinHoyos ? (
+              falloDelCampo ? (
+                errorDelCampo
+              ) : null
+            ) : (
+              <div data-testid="quick-match-shared-scorecard">
+                <QuickMatchScorecardTable
+                  holes={holes}
+                  holeScores={partida.holeScores ?? []}
+                  participants={participantes}
+                  scoringFormat={partida.scoringFormat}
+                  matchFormat={partida.matchFormat}
+                  playMode={partida.playMode}
+                  participantStrokes={partida.participantStrokes ?? []}
+                  tees={tees}
+                  allowancePercentage={partida.effectiveAllowance}
+                />
+              </div>
             )}
           </PanelDePestana>
         </GrupoDePestanas>
@@ -296,7 +333,13 @@ const ErrorDelCampo = ({ onReintentar, t }) => (
 const SinPartida = ({ fallo, onReintentar, onVolver, t }) => {
   if (fallo === HTTP_FORBIDDEN) {
     return (
-      <Aviso testId="quick-match-shared-forbidden" Icono={Lock} texto={t('shared.forbidden')} onVolver={onVolver} t={t} />
+      <Aviso
+        testId="quick-match-shared-forbidden"
+        Icono={Lock}
+        texto={t('shared.forbidden')}
+        onVolver={onVolver}
+        t={t}
+      />
     );
   }
   if (fallo === HTTP_NOT_FOUND) {
@@ -311,7 +354,13 @@ const SinPartida = ({ fallo, onReintentar, onVolver, t }) => {
     );
   }
   return (
-    <Aviso testId="quick-match-shared-error" Icono={RefreshCw} texto={t('scoring.errors.generic')} onVolver={onVolver} t={t}>
+    <Aviso
+      testId="quick-match-shared-error"
+      Icono={RefreshCw}
+      texto={t('scoring.errors.generic')}
+      onVolver={onVolver}
+      t={t}
+    >
       <button
         type="button"
         onClick={onReintentar}

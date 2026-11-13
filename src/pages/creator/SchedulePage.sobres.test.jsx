@@ -1,5 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor, fireEvent, within } from '@testing-library/react';
+import {
+  render,
+  screen,
+  waitFor,
+  fireEvent,
+  within,
+} from '@testing-library/react';
 import { MemoryRouter, Routes, Route } from 'react-router';
 
 /**
@@ -28,7 +34,11 @@ vi.mock('react-i18next', () => ({ useTranslation: () => traduccion }));
 vi.mock('framer-motion', () => {
   const DE_ANIMACION = new Set(['initial', 'animate', 'exit', 'transition']);
   const Div = ({ children, ...props }) => (
-    <div {...Object.fromEntries(Object.entries(props).filter(([k]) => !DE_ANIMACION.has(k)))}>
+    <div
+      {...Object.fromEntries(
+        Object.entries(props).filter(([k]) => !DE_ANIMACION.has(k)),
+      )}
+    >
       {children}
     </div>
   );
@@ -43,9 +53,17 @@ const SESION = { user: { id: 'org' }, loading: false };
 const ROLES = { isAdmin: false, isCreator: true, isLoading: false };
 vi.mock('../../hooks/useAuth', () => ({ useAuth: () => SESION }));
 vi.mock('../../hooks/useUserRoles', () => ({ useUserRoles: () => ROLES }));
-vi.mock('../../components/ui/FullScreenLoader', () => ({ default: () => null }));
+vi.mock('../../components/ui/FullScreenLoader', () => ({
+  default: () => null,
+}));
 vi.mock('../../utils/toast', () => ({
-  default: { success: vi.fn(), error: vi.fn(), warning: vi.fn(), info: vi.fn(), dismiss: vi.fn() },
+  default: {
+    success: vi.fn(),
+    error: vi.fn(),
+    warning: vi.fn(),
+    info: vi.fn(),
+    dismiss: vi.fn(),
+  },
 }));
 
 const mockDetalle = vi.fn();
@@ -102,7 +120,10 @@ const RONDA = {
 const AGENDA = {
   days: [{ date: '2026-06-01', rounds: [RONDA] }],
   rounds: [RONDA],
-  teamAssignment: { teamAPlayerIds: ['org', 'carla'], teamBPlayerIds: ['bea', 'eva'] },
+  teamAssignment: {
+    teamAPlayerIds: ['org', 'carla'],
+    teamBPlayerIds: ['bea', 'eva'],
+  },
 };
 
 const INSCRITOS = [
@@ -118,7 +139,7 @@ const pintar = () =>
       <Routes>
         <Route path="/competitions/:id/schedule" element={<SchedulePage />} />
       </Routes>
-    </MemoryRouter>
+    </MemoryRouter>,
   );
 
 describe('SchedulePage · el acceso al sobre (FE #655)', () => {
@@ -134,32 +155,49 @@ describe('SchedulePage · el acceso al sobre (FE #655)', () => {
     pintar();
 
     const enlace = await screen.findByTestId('ir-al-sobre-ronda-1');
-    expect(enlace).toHaveAttribute('href', '/competitions/comp-1/rounds/ronda-1/envelope');
+    expect(enlace).toHaveAttribute(
+      'href',
+      '/competitions/comp-1/rounds/ronda-1/envelope',
+    );
   });
 
   it('O2: quien ni capitanea ni organiza no tiene sobre que entregar', async () => {
     mockDetalle.mockResolvedValue({
       ...COMPETICION,
       creatorId: 'otro',
-      captains: { teamA: 'carla', teamB: 'bea', viceTeamA: null, viceTeamB: null },
+      captains: {
+        teamA: 'carla',
+        teamB: 'bea',
+        viceTeamA: null,
+        viceTeamB: null,
+      },
     });
     pintar();
 
     await screen.findByText('Ryder de los amigos');
     await waitFor(() =>
-      expect(screen.queryByTestId('ir-al-sobre-ronda-1')).not.toBeInTheDocument()
+      expect(
+        screen.queryByTestId('ir-al-sobre-ronda-1'),
+      ).not.toBeInTheDocument(),
     );
   });
 
   it('O2b: el organizador también entra: es quien los abre si un capitán no aparece', async () => {
     mockDetalle.mockResolvedValue({
       ...COMPETICION,
-      captains: { teamA: 'carla', teamB: 'bea', viceTeamA: null, viceTeamB: null },
+      captains: {
+        teamA: 'carla',
+        teamB: 'bea',
+        viceTeamA: null,
+        viceTeamB: null,
+      },
       creatorId: 'org',
     });
     pintar();
 
-    expect(await screen.findByTestId('ir-al-sobre-ronda-1')).toBeInTheDocument();
+    expect(
+      await screen.findByTestId('ir-al-sobre-ronda-1'),
+    ).toBeInTheDocument();
   });
 
   it('O2c: y también en una sesión de parejas, donde se forman las parejas', async () => {
@@ -167,12 +205,16 @@ describe('SchedulePage · el acceso al sobre (FE #655)', () => {
     // de un jugador. Desde el 23 sep la pantalla agrupa de dos en dos
     mockAgenda.mockResolvedValue({
       ...AGENDA,
-      days: [{ date: '2026-06-01', rounds: [{ ...RONDA, matchFormat: 'FOURBALL' }] }],
+      days: [
+        { date: '2026-06-01', rounds: [{ ...RONDA, matchFormat: 'FOURBALL' }] },
+      ],
       rounds: [{ ...RONDA, matchFormat: 'FOURBALL' }],
     });
     pintar();
 
-    expect(await screen.findByTestId('ir-al-sobre-ronda-1')).toBeInTheDocument();
+    expect(
+      await screen.findByTestId('ir-al-sobre-ronda-1'),
+    ).toBeInTheDocument();
   });
 
   it('O3: en modo manual no hay sobres', async () => {
@@ -181,7 +223,9 @@ describe('SchedulePage · el acceso al sobre (FE #655)', () => {
 
     await screen.findByText('Ryder de los amigos');
     await waitFor(() =>
-      expect(screen.queryByTestId('ir-al-sobre-ronda-1')).not.toBeInTheDocument()
+      expect(
+        screen.queryByTestId('ir-al-sobre-ronda-1'),
+      ).not.toBeInTheDocument(),
     );
   });
 
@@ -191,7 +235,9 @@ describe('SchedulePage · el acceso al sobre (FE #655)', () => {
 
     await screen.findByText('Ryder de los amigos');
     await waitFor(() =>
-      expect(screen.queryByTestId('ir-al-sobre-ronda-1')).not.toBeInTheDocument()
+      expect(
+        screen.queryByTestId('ir-al-sobre-ronda-1'),
+      ).not.toBeInTheDocument(),
     );
   });
 
@@ -224,7 +270,9 @@ describe('SchedulePage · el acceso al sobre (FE #655)', () => {
     pintar();
 
     await screen.findByTestId('ir-al-sobre-ronda-1');
-    expect(screen.queryByTestId('rehacer-sobres-ronda-1')).not.toBeInTheDocument();
+    expect(
+      screen.queryByTestId('rehacer-sobres-ronda-1'),
+    ).not.toBeInTheDocument();
     ROLES.isCreator = true;
   });
 
@@ -261,18 +309,23 @@ describe('SchedulePage · el acceso al sobre (FE #655)', () => {
   it('G7: si no se pudieron generar, el modal sigue abierto y enseña el motivo recién apuntado', async () => {
     // Abierto: en modo manual, cerrarlo tiraba los emparejamientos hechos a mano
     mockGenerar.mockRejectedValue(bloqueado());
-    const conMotivo = { ...RONDA, matchGenerationBlock: { reason: 'NOT_ENOUGH_PLAYERS', players: [] } };
-    mockAgenda
-      .mockResolvedValueOnce(AGENDA)
-      .mockResolvedValue({ ...AGENDA, rounds: [conMotivo], days: [{ date: '2026-06-01', rounds: [conMotivo] }] });
+    const conMotivo = {
+      ...RONDA,
+      matchGenerationBlock: { reason: 'NOT_ENOUGH_PLAYERS', players: [] },
+    };
+    mockAgenda.mockResolvedValueOnce(AGENDA).mockResolvedValue({
+      ...AGENDA,
+      rounds: [conMotivo],
+      days: [{ date: '2026-06-01', rounds: [conMotivo] }],
+    });
     await generarEnManual();
 
     await waitFor(() =>
       expect(
-        within(screen.getByTestId('generate-matches-modal')).getByTestId('bloqueo-de-partidos')
-      ).toHaveTextContent(
-        'generationBlock.reason.NOT_ENOUGH_PLAYERS'
-      )
+        within(screen.getByTestId('generate-matches-modal')).getByTestId(
+          'bloqueo-de-partidos',
+        ),
+      ).toHaveTextContent('generationBlock.reason.NOT_ENOUGH_PLAYERS'),
     );
     expect(screen.getByTestId('generate-submit')).toBeInTheDocument();
     expect(customToast.error).not.toHaveBeenCalled();
@@ -291,9 +344,13 @@ describe('SchedulePage · el acceso al sobre (FE #655)', () => {
 
     fireEvent.click(screen.getByTestId('generate-submit'));
     await waitFor(() => expect(mockGenerar).toHaveBeenCalled());
-    await waitFor(() => expect(mockAgenda.mock.calls.length).toBeGreaterThan(1));
+    await waitFor(() =>
+      expect(mockAgenda.mock.calls.length).toBeGreaterThan(1),
+    );
 
-    const [a2, b2] = within(screen.getByTestId('generate-matches-modal')).getAllByRole('combobox');
+    const [a2, b2] = within(
+      screen.getByTestId('generate-matches-modal'),
+    ).getAllByRole('combobox');
     expect([a2.value, b2.value]).toEqual(['carla', 'eva']);
   });
 
@@ -302,7 +359,9 @@ describe('SchedulePage · el acceso al sobre (FE #655)', () => {
     mockInscripciones
       .mockResolvedValueOnce(INSCRITOS)
       .mockResolvedValue(
-        INSCRITOS.map((i) => (i.userId === 'carla' ? { ...i, status: 'WITHDRAWN' } : i))
+        INSCRITOS.map((i) =>
+          i.userId === 'carla' ? { ...i, status: 'WITHDRAWN' } : i,
+        ),
       );
     await generarEnManual();
     await waitFor(() => expect(mockInscripciones).toHaveBeenCalledTimes(2));
@@ -311,17 +370,25 @@ describe('SchedulePage · el acceso al sobre (FE #655)', () => {
     fireEvent.click(within(modal).getByDisplayValue('manual'));
 
     // Primero que hay opciones: si no, «no está Carla» pasaría en vacío
-    await waitFor(() => expect(within(modal).getAllByRole('option').length).toBeGreaterThan(1));
-    expect(within(modal).queryByRole('option', { name: 'Carla Cruz' })).not.toBeInTheDocument();
+    await waitFor(() =>
+      expect(within(modal).getAllByRole('option').length).toBeGreaterThan(1),
+    );
+    expect(
+      within(modal).queryByRole('option', { name: 'Carla Cruz' }),
+    ).not.toBeInTheDocument();
   });
 
   it('G7d: si la recarga falla, dice lo que dijo el servidor, que nombra a quién', async () => {
     mockGenerar.mockRejectedValue(bloqueado());
-    mockAgenda.mockResolvedValueOnce(AGENDA).mockRejectedValue(new Error('sin red'));
+    mockAgenda
+      .mockResolvedValueOnce(AGENDA)
+      .mockRejectedValue(new Error('sin red'));
     await generarEnManual();
 
     await waitFor(() =>
-      expect(customToast.error).toHaveBeenCalledWith('No se pueden generar los partidos: Eva')
+      expect(customToast.error).toHaveBeenCalledWith(
+        'No se pueden generar los partidos: Eva',
+      ),
     );
   });
 
@@ -331,16 +398,24 @@ describe('SchedulePage · el acceso al sobre (FE #655)', () => {
     mockGenerar.mockRejectedValue(bloqueado());
     mockDetalle
       .mockResolvedValueOnce({ ...COMPETICION, setupMode: 'MANUAL' })
-      .mockResolvedValue({ ...COMPETICION, setupMode: 'MANUAL', status: 'ACTIVE' });
+      .mockResolvedValue({
+        ...COMPETICION,
+        setupMode: 'MANUAL',
+        status: 'ACTIVE',
+      });
     pintar();
     fireEvent.click(await screen.findByTitle('matches.generate'));
     fireEvent.click(await screen.findByTestId('generate-submit'));
 
-    await waitFor(() => expect(screen.queryByTitle('matches.generate')).not.toBeInTheDocument());
+    await waitFor(() =>
+      expect(screen.queryByTitle('matches.generate')).not.toBeInTheDocument(),
+    );
   });
 
   it('G7b: cualquier otro fallo se cuenta como antes', async () => {
-    mockGenerar.mockRejectedValue(Object.assign(new Error('Boom'), { status: 400 }));
+    mockGenerar.mockRejectedValue(
+      Object.assign(new Error('Boom'), { status: 400 }),
+    );
     await generarEnManual();
 
     await waitFor(() => expect(customToast.error).toHaveBeenCalledWith('Boom'));
@@ -350,10 +425,13 @@ describe('SchedulePage · el acceso al sobre (FE #655)', () => {
   // los equipos quedan así y solo se deshacen (29-30 oct 2026)
 
   it('G6: con las inscripciones reabiertas, la página no ofrece «Generar»', async () => {
-    mockDetalle.mockResolvedValue({ ...COMPETICION, status: 'ACTIVE', setupMode: 'MANUAL' });
+    mockDetalle.mockResolvedValue({
+      ...COMPETICION,
+      status: 'ACTIVE',
+      setupMode: 'MANUAL',
+    });
     pintar();
     await waitFor(() => expect(mockAgenda).toHaveBeenCalled());
     expect(screen.queryByTitle('matches.generate')).not.toBeInTheDocument();
   });
 });
-

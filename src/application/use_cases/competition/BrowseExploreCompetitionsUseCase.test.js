@@ -13,9 +13,9 @@ vi.mock('../../assemblers/CompetitionAssembler', () => ({
       creator: competition.creator,
       enrolledCount: competition.enrolledCount,
       maxPlayers: competition.maxPlayers,
-      countries: competition.countries
-    }))
-  }
+      countries: competition.countries,
+    })),
+  },
 }));
 
 describe('BrowseExploreCompetitionsUseCase', () => {
@@ -31,7 +31,9 @@ describe('BrowseExploreCompetitionsUseCase', () => {
     };
 
     // Re-instantiate the use case with the mock
-    browseExploreCompetitionsUseCase = new BrowseExploreCompetitionsUseCase(competitionRepository);
+    browseExploreCompetitionsUseCase = new BrowseExploreCompetitionsUseCase(
+      competitionRepository,
+    );
   });
 
   it('should successfully list CLOSED, IN_PROGRESS, and COMPLETED competitions with default filters', async () => {
@@ -49,7 +51,7 @@ describe('BrowseExploreCompetitionsUseCase', () => {
         creator: { id: 'creator-1', name: 'John Doe' },
         enrolledCount: 24,
         maxPlayers: 24,
-        countries: ['ESP', 'USA']
+        countries: ['ESP', 'USA'],
       },
       {
         id: 'comp-2',
@@ -60,7 +62,7 @@ describe('BrowseExploreCompetitionsUseCase', () => {
         creator: { id: 'creator-2', name: 'Jane Smith' },
         enrolledCount: 20,
         maxPlayers: 20,
-        countries: ['GBR', 'FRA']
+        countries: ['GBR', 'FRA'],
       },
       {
         id: 'comp-3',
@@ -71,8 +73,8 @@ describe('BrowseExploreCompetitionsUseCase', () => {
         creator: { id: 'creator-3', name: 'Bob Johnson' },
         enrolledCount: 18,
         maxPlayers: 20,
-        countries: ['ITA', 'GER']
-      }
+        countries: ['ITA', 'GER'],
+      },
     ];
 
     // Expected simple DTOs (what the UI will receive)
@@ -86,7 +88,7 @@ describe('BrowseExploreCompetitionsUseCase', () => {
         creator: { id: 'creator-1', name: 'John Doe' },
         enrolledCount: 24,
         maxPlayers: 24,
-        countries: ['ESP', 'USA']
+        countries: ['ESP', 'USA'],
       },
       {
         id: 'comp-2',
@@ -97,7 +99,7 @@ describe('BrowseExploreCompetitionsUseCase', () => {
         creator: { id: 'creator-2', name: 'Jane Smith' },
         enrolledCount: 20,
         maxPlayers: 20,
-        countries: ['GBR', 'FRA']
+        countries: ['GBR', 'FRA'],
       },
       {
         id: 'comp-3',
@@ -108,8 +110,8 @@ describe('BrowseExploreCompetitionsUseCase', () => {
         creator: { id: 'creator-3', name: 'Bob Johnson' },
         enrolledCount: 18,
         maxPlayers: 20,
-        countries: ['ITA', 'GER']
-      }
+        countries: ['ITA', 'GER'],
+      },
     ];
 
     // Configure repository mock to return the competition entities
@@ -126,7 +128,7 @@ describe('BrowseExploreCompetitionsUseCase', () => {
       searchName: undefined,
       searchCreator: undefined,
       limit: 50,
-      offset: 0
+      offset: 0,
     });
 
     // 2. Verify the use case returns the DTOs (not the entities)
@@ -151,7 +153,7 @@ describe('BrowseExploreCompetitionsUseCase', () => {
       searchName: 'Tournament',
       searchCreator: undefined,
       limit: 50,
-      offset: 0
+      offset: 0,
     });
   });
 
@@ -172,7 +174,7 @@ describe('BrowseExploreCompetitionsUseCase', () => {
       searchName: undefined,
       searchCreator: 'Jane',
       limit: 50,
-      offset: 0
+      offset: 0,
     });
   });
 
@@ -193,7 +195,7 @@ describe('BrowseExploreCompetitionsUseCase', () => {
       searchName: undefined,
       searchCreator: undefined,
       limit: 30,
-      offset: 15
+      offset: 15,
     });
   });
 
@@ -210,8 +212,8 @@ describe('BrowseExploreCompetitionsUseCase', () => {
     // Assert
     expect(competitionRepository.findPublic).toHaveBeenCalledWith(
       expect.objectContaining({
-        excludeMyCompetitions: false
-      })
+        excludeMyCompetitions: false,
+      }),
     );
   });
 
@@ -228,8 +230,8 @@ describe('BrowseExploreCompetitionsUseCase', () => {
     // Assert
     expect(competitionRepository.findPublic).toHaveBeenCalledWith(
       expect.objectContaining({
-        status: ['CLOSED', 'IN_PROGRESS', 'COMPLETED']
-      })
+        status: ['CLOSED', 'IN_PROGRESS', 'COMPLETED'],
+      }),
     );
   });
 
@@ -257,9 +259,9 @@ describe('BrowseExploreCompetitionsUseCase', () => {
     competitionRepository.findPublic.mockRejectedValue(new Error(errorMessage));
 
     // Act & Assert
-    await expect(browseExploreCompetitionsUseCase.execute(filters))
-      .rejects
-      .toThrow(errorMessage);
+    await expect(
+      browseExploreCompetitionsUseCase.execute(filters),
+    ).rejects.toThrow(errorMessage);
   });
 
   it('should pass multiple filters combined to repository', async () => {
@@ -268,7 +270,7 @@ describe('BrowseExploreCompetitionsUseCase', () => {
       searchName: 'Championship',
       searchCreator: 'John',
       limit: 40,
-      offset: 20
+      offset: 20,
     };
 
     // Configure repository mock
@@ -284,7 +286,7 @@ describe('BrowseExploreCompetitionsUseCase', () => {
       searchName: 'Championship',
       searchCreator: 'John',
       limit: 40,
-      offset: 20
+      offset: 20,
     });
   });
 
@@ -303,7 +305,7 @@ describe('BrowseExploreCompetitionsUseCase', () => {
         creator: { id: 'current-user', name: 'Current User' },
         enrolledCount: 20,
         maxPlayers: 20,
-        countries: ['ESP', 'FRA']
+        countries: ['ESP', 'FRA'],
       },
       {
         id: 'comp-2',
@@ -314,8 +316,8 @@ describe('BrowseExploreCompetitionsUseCase', () => {
         creator: { id: 'other-user', name: 'Other User' },
         enrolledCount: 18,
         maxPlayers: 20,
-        countries: ['GBR', 'USA']
-      }
+        countries: ['GBR', 'USA'],
+      },
     ];
 
     // Configure repository mock

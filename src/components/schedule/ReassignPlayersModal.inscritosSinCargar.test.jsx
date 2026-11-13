@@ -4,7 +4,11 @@ import { render, screen, fireEvent } from '@testing-library/react';
 vi.mock('framer-motion', () => {
   const DE_ANIMACION = new Set(['initial', 'animate', 'exit', 'transition']);
   const Div = ({ children, ...props }) => (
-    <div {...Object.fromEntries(Object.entries(props).filter(([k]) => !DE_ANIMACION.has(k)))}>
+    <div
+      {...Object.fromEntries(
+        Object.entries(props).filter(([k]) => !DE_ANIMACION.has(k)),
+      )}
+    >
       {children}
     </div>
   );
@@ -44,9 +48,10 @@ const pintar = (props) =>
       teamNames={{ teamA: 'A', teamB: 'B' }}
       t={t}
       {...props}
-    />
+    />,
   );
-const reasignar = () => screen.getByRole('button', { name: 'matches.reassignPlayers' });
+const reasignar = () =>
+  screen.getByRole('button', { name: 'matches.reassignPlayers' });
 
 describe('ReassignPlayersModal · sin la lista de inscritos', () => {
   it('R1: avisa de recargar y no deja reasignar', () => {
@@ -65,7 +70,9 @@ describe('ReassignPlayersModal · sin la lista de inscritos', () => {
   it('R2: con la lista, como siempre', () => {
     pintar({ enrollments: inscritos });
 
-    expect(screen.queryByTestId('reasignar-inscritos-sin-cargar')).not.toBeInTheDocument();
+    expect(
+      screen.queryByTestId('reasignar-inscritos-sin-cargar'),
+    ).not.toBeInTheDocument();
     expect(reasignar()).not.toBeDisabled();
     expect(reasignar()).not.toHaveAttribute('aria-describedby');
   });

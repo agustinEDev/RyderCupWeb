@@ -10,7 +10,10 @@ import * as Sentry from '@sentry/react';
 import App from './App.jsx';
 import { startCapturingInstallPrompt } from './utils/installPromptCapture';
 import { registerServiceWorker } from './utils/serviceWorkerRegistration';
-import { instalarRecargaPorTrozoViejo, esElEcoDeLaRecarga } from './utils/recargaPorTrozoViejo';
+import {
+  instalarRecargaPorTrozoViejo,
+  esElEcoDeLaRecarga,
+} from './utils/recargaPorTrozoViejo';
 import { sentryScrubbing } from './utils/sentryScrubbing';
 import { sentrySampleRates } from './utils/sentrySampleRates';
 import { whenAddressBarIsClean } from './utils/stripSecretsFromAddressBar';
@@ -83,7 +86,11 @@ if (sentryDsn) {
   // El eco del import cancelado mientras la página se recarga por un trozo
   // viejo: ya resuelto, no se manda. Lo demás, sí
   Sentry.addEventProcessor((evento) =>
-    evento.exception?.values?.some((e) => esElEcoDeLaRecarga({ message: e.value })) ? null : evento
+    evento.exception?.values?.some((e) =>
+      esElEcoDeLaRecarga({ message: e.value }),
+    )
+      ? null
+      : evento,
   );
 }
 
@@ -112,7 +119,9 @@ setTimeout(loadSentryIntegrations, 2000);
 
 // Also load immediately if there's an error
 window.addEventListener('error', loadSentryIntegrations, { once: true });
-window.addEventListener('unhandledrejection', loadSentryIntegrations, { once: true });
+window.addEventListener('unhandledrejection', loadSentryIntegrations, {
+  once: true,
+});
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>

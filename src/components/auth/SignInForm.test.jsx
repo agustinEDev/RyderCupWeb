@@ -35,7 +35,11 @@ const ejecutarLogin = vi.fn();
 const ponerUsuario = vi.fn();
 const errorToast = vi.fn();
 
-import { noAvisesDeCierres, seCierraLaSesionAPeticion, vuelvenLosAvisosDeCierre } from '../../utils/avisoDeCierreForzado';
+import {
+  noAvisesDeCierres,
+  seCierraLaSesionAPeticion,
+  vuelvenLosAvisosDeCierre,
+} from '../../utils/avisoDeCierreForzado';
 vi.mock('react-router', async () => {
   const real = await vi.importActual('react-router');
   return { ...real, useNavigate: () => navegar };
@@ -54,10 +58,16 @@ vi.mock('../../hooks/useAuthContext', () => ({
 }));
 
 vi.mock('../../utils/toast', () => ({
-  default: { error: (...a) => errorToast(...a), success: vi.fn(), info: vi.fn() },
+  default: {
+    error: (...a) => errorToast(...a),
+    success: vi.fn(),
+    info: vi.fn(),
+  },
 }));
 
-vi.mock('../ui/GoogleSignInButton', () => ({ default: () => <div>google</div> }));
+vi.mock('../ui/GoogleSignInButton', () => ({
+  default: () => <div>google</div>,
+}));
 
 const lanzarRefresco = vi.fn();
 vi.mock('../../services/refrescoDeHandicap', () => ({
@@ -67,16 +77,25 @@ vi.mock('../../services/refrescoDeHandicap', () => ({
 
 const SignInForm = (await import('./SignInForm')).default;
 
-const pintar = () => render(<MemoryRouter><SignInForm /></MemoryRouter>);
+const pintar = () =>
+  render(
+    <MemoryRouter>
+      <SignInForm />
+    </MemoryRouter>,
+  );
 const campoCorreo = () => screen.getByLabelText('login.emailLabel');
-const campoContrasena = () => screen.getByPlaceholderText('login.passwordPlaceholder');
-const escribir = (campo, valor) => fireEvent.change(campo, { target: { value: valor } });
+const campoContrasena = () =>
+  screen.getByPlaceholderText('login.passwordPlaceholder');
+const escribir = (campo, valor) =>
+  fireEvent.change(campo, { target: { value: valor } });
 // Se envia el formulario directamente y no con un clic en el boton: con un
 // `<input type="email">`, la validacion nativa de jsdom aborta el envio antes de
 // que React reciba el `submit`, y entonces la prueba mide jsdom, no el
 // componente —comprobado: borrando `validateEmail` del componente seguia verde—
 const enviar = () =>
-  fireEvent.submit(screen.getByRole('button', { name: 'login.signInButton' }).closest('form'));
+  fireEvent.submit(
+    screen.getByRole('button', { name: 'login.signInButton' }).closest('form'),
+  );
 
 describe('SignInForm', () => {
   beforeEach(() => {
@@ -96,7 +115,9 @@ describe('SignInForm', () => {
 
     // El mock de i18n devuelve la clave, que es justo lo que se quiere comprobar:
     // el mensaje ya no es un literal en ingles sino una cadena traducible
-    await waitFor(() => expect(screen.getByText('validation.emailInvalid')).toBeInTheDocument());
+    await waitFor(() =>
+      expect(screen.getByText('validation.emailInvalid')).toBeInTheDocument(),
+    );
     expect(ejecutarLogin).not.toHaveBeenCalled();
   });
 
@@ -106,7 +127,11 @@ describe('SignInForm', () => {
     escribir(campoCorreo(), 'alguien@ejemplo.com');
     enviar();
 
-    await waitFor(() => expect(screen.getByText('validation.passwordRequired')).toBeInTheDocument());
+    await waitFor(() =>
+      expect(
+        screen.getByText('validation.passwordRequired'),
+      ).toBeInTheDocument(),
+    );
     expect(ejecutarLogin).not.toHaveBeenCalled();
   });
 
@@ -144,7 +169,8 @@ describe('SignInForm', () => {
   });
 
   it('entrar con éxito olvida el aviso de un cierre forzado que quedara guardado', async () => {
-    const { guardaElAvisoDelCierre, tomaElAvisoDelCierre } = await import('../../utils/avisoTrasElCierre');
+    const { guardaElAvisoDelCierre, tomaElAvisoDelCierre } =
+      await import('../../utils/avisoTrasElCierre');
     guardaElAvisoDelCierre('revocation');
     ejecutarLogin.mockResolvedValue({
       user: { firstName: 'Agustin', emailVerified: true },
@@ -162,9 +188,12 @@ describe('SignInForm', () => {
   });
 
   it('un acceso fallido no olvida el aviso guardado', async () => {
-    const { guardaElAvisoDelCierre, tomaElAvisoDelCierre } = await import('../../utils/avisoTrasElCierre');
+    const { guardaElAvisoDelCierre, tomaElAvisoDelCierre } =
+      await import('../../utils/avisoTrasElCierre');
     guardaElAvisoDelCierre('revocation');
-    ejecutarLogin.mockRejectedValue(Object.assign(new Error('Credenciales'), { status: 401 }));
+    ejecutarLogin.mockRejectedValue(
+      Object.assign(new Error('Credenciales'), { status: 401 }),
+    );
     pintar();
 
     escribir(campoCorreo(), 'alguien@ejemplo.com');
@@ -177,7 +206,9 @@ describe('SignInForm', () => {
 
   it('C5: un acceso fallido no acaba el silencio', async () => {
     noAvisesDeCierres();
-    ejecutarLogin.mockRejectedValue(Object.assign(new Error('Credenciales'), { status: 401 }));
+    ejecutarLogin.mockRejectedValue(
+      Object.assign(new Error('Credenciales'), { status: 401 }),
+    );
     pintar();
 
     escribir(campoCorreo(), 'alguien@ejemplo.com');
@@ -190,7 +221,10 @@ describe('SignInForm', () => {
   });
 
   it('tras una redirección dura, vuelve a la página guardada (probador de la release)', async () => {
-    sessionStorage.setItem('vuelta_tras_entrar', '/confirm-email-change?token=abc');
+    sessionStorage.setItem(
+      'vuelta_tras_entrar',
+      '/confirm-email-change?token=abc',
+    );
     ejecutarLogin.mockResolvedValue({
       user: { firstName: 'Agustin', emailVerified: true },
       csrfToken: 'tok',
@@ -203,32 +237,37 @@ describe('SignInForm', () => {
     enviar();
 
     await waitFor(() => expect(ponerUsuario).toHaveBeenCalled());
-    expect(navegar).toHaveBeenCalledWith('/confirm-email-change?token=abc', { replace: true });
+    expect(navegar).toHaveBeenCalledWith('/confirm-email-change?token=abc', {
+      replace: true,
+    });
     expect(sessionStorage.getItem('vuelta_tras_entrar')).toBeNull();
   });
 
   it.each([
     ['la misma cuenta vuelve a la página', 'u-1', '/competitions/7'],
     ['otra cuenta va al panel', 'u-2', '/dashboard'],
-  ])('3b: la página guardada por la cuenta u-1: %s', async (_caso, quien, destino) => {
-    sessionStorage.setItem('vuelta_tras_entrar', '/competitions/7');
-    sessionStorage.setItem('vuelta_tras_entrar_cuenta', 'u-1');
-    ejecutarLogin.mockResolvedValue({
-      user: { id: quien, firstName: 'Agustin', emailVerified: true },
-      csrfToken: 'tok',
-      needsHandicap: false,
-    });
-    pintar();
+  ])(
+    '3b: la página guardada por la cuenta u-1: %s',
+    async (_caso, quien, destino) => {
+      sessionStorage.setItem('vuelta_tras_entrar', '/competitions/7');
+      sessionStorage.setItem('vuelta_tras_entrar_cuenta', 'u-1');
+      ejecutarLogin.mockResolvedValue({
+        user: { id: quien, firstName: 'Agustin', emailVerified: true },
+        csrfToken: 'tok',
+        needsHandicap: false,
+      });
+      pintar();
 
-    escribir(campoCorreo(), 'alguien@ejemplo.com');
-    escribir(campoContrasena(), 'secreta');
-    enviar();
+      escribir(campoCorreo(), 'alguien@ejemplo.com');
+      escribir(campoContrasena(), 'secreta');
+      enviar();
 
-    await waitFor(() => expect(ponerUsuario).toHaveBeenCalled());
-    expect(navegar).toHaveBeenCalledWith(destino, { replace: true });
-    expect(sessionStorage.getItem('vuelta_tras_entrar_cuenta')).toBeNull();
-    vuelvenLosAvisosDeCierre();
-  });
+      await waitFor(() => expect(ponerUsuario).toHaveBeenCalled());
+      expect(navegar).toHaveBeenCalledWith(destino, { replace: true });
+      expect(sessionStorage.getItem('vuelta_tras_entrar_cuenta')).toBeNull();
+      vuelvenLosAvisosDeCierre();
+    },
+  );
 
   it('deja el boton utilizable tras entrar, sin depender de que la pantalla se desmonte', async () => {
     // El camino de exito no puede dar por hecho que `navigate` desmonte el
@@ -247,7 +286,9 @@ describe('SignInForm', () => {
 
     await waitFor(() => expect(navegar).toHaveBeenCalled());
     await waitFor(() =>
-      expect(screen.getByRole('button', { name: 'login.signInButton' })).toBeEnabled()
+      expect(
+        screen.getByRole('button', { name: 'login.signInButton' }),
+      ).toBeEnabled(),
     );
   });
 
@@ -277,14 +318,14 @@ describe('SignInForm', () => {
     await waitFor(() => expect(errorToast).toHaveBeenCalled());
     expect(errorToast).toHaveBeenCalledWith(
       'login.lockedFromThisNetwork',
-      expect.objectContaining({ duration: 10000 })
+      expect.objectContaining({ duration: 10000 }),
     );
   });
 
   it('B2: una cuenta desactivada lo dice traducido, como Google (RyderCupAm #750)', async () => {
     const desactivada = Object.assign(
       new Error('This account has been deactivated. Contact an administrator.'),
-      { status: 403, errorCode: 'ACCOUNT_DEACTIVATED' }
+      { status: 403, errorCode: 'ACCOUNT_DEACTIVATED' },
     );
     ejecutarLogin.mockRejectedValue(desactivada);
     pintar();
@@ -294,13 +335,16 @@ describe('SignInForm', () => {
     enviar();
 
     await waitFor(() => expect(errorToast).toHaveBeenCalled());
-    expect(errorToast).toHaveBeenCalledWith('google.accountDeactivated', expect.any(Object));
+    expect(errorToast).toHaveBeenCalledWith(
+      'google.accountDeactivated',
+      expect.any(Object),
+    );
   });
 
   it('corta al sexto intento sin llamar al backend', async () => {
     window.localStorage.setItem(
       'ratelimit_login',
-      JSON.stringify({ attempts: 5, resetTime: Date.now() + 300000 })
+      JSON.stringify({ attempts: 5, resetTime: Date.now() + 300000 }),
     );
     pintar();
 
@@ -341,18 +385,31 @@ describe('SignInForm', () => {
   describe('relleno sin avisar a React', () => {
     // Pone el valor en el campo sin el evento que escucha React
     const rellenaSinAvisar = (campo, valor) =>
-      Object.getOwnPropertyDescriptor(globalThis.HTMLInputElement.prototype, 'value').set.call(campo, valor);
+      Object.getOwnPropertyDescriptor(
+        globalThis.HTMLInputElement.prototype,
+        'value',
+      ).set.call(campo, valor);
 
     it('R1: entra con lo que hay en el formulario', async () => {
-      ejecutarLogin.mockResolvedValue({ user: { firstName: 'Ana', emailVerified: true }, csrfToken: 't' });
+      ejecutarLogin.mockResolvedValue({
+        user: { firstName: 'Ana', emailVerified: true },
+        csrfToken: 't',
+      });
       pintar();
 
       rellenaSinAvisar(campoCorreo(), 'ana@example.com');
       rellenaSinAvisar(campoContrasena(), 'secreta');
       enviar();
 
-      await waitFor(() => expect(ejecutarLogin).toHaveBeenCalledWith('ana@example.com', 'secreta'));
-      expect(screen.queryByText('validation.passwordRequired')).not.toBeInTheDocument();
+      await waitFor(() =>
+        expect(ejecutarLogin).toHaveBeenCalledWith(
+          'ana@example.com',
+          'secreta',
+        ),
+      );
+      expect(
+        screen.queryByText('validation.passwordRequired'),
+      ).not.toBeInTheDocument();
     });
 
     it('R2: y valida eso mismo: un correo que no vale no se manda', async () => {
@@ -362,7 +419,9 @@ describe('SignInForm', () => {
       rellenaSinAvisar(campoContrasena(), 'secreta');
       enviar();
 
-      await waitFor(() => expect(screen.getByText('validation.emailInvalid')).toBeInTheDocument());
+      await waitFor(() =>
+        expect(screen.getByText('validation.emailInvalid')).toBeInTheDocument(),
+      );
       expect(ejecutarLogin).not.toHaveBeenCalled();
     });
 
@@ -406,7 +465,11 @@ describe('SignInForm · contraseña mala, traducida', () => {
   };
 
   it('401: dice «credenciales inválidas» con la clave traducida, no un texto en inglés', async () => {
-    await fallaCon(Object.assign(new Error('Incorrect email or password'), { code: 'INVALID_CREDENTIALS' }));
+    await fallaCon(
+      Object.assign(new Error('Incorrect email or password'), {
+        code: 'INVALID_CREDENTIALS',
+      }),
+    );
 
     expect(errorToast).toHaveBeenCalledWith('login.error', { duration: 5000 });
   });
@@ -415,12 +478,16 @@ describe('SignInForm · contraseña mala, traducida', () => {
     const es = (await import('../../i18n/locales/es/auth.json')).default;
     const en = (await import('../../i18n/locales/en/auth.json')).default;
 
-    expect(es.login.error).toBe('Credenciales inválidas. Por favor, inténtalo de nuevo.');
+    expect(es.login.error).toBe(
+      'Credenciales inválidas. Por favor, inténtalo de nuevo.',
+    );
     expect(en.login.error).toBe('Invalid credentials. Please try again.');
   });
 
   it('sin conexión sigue con su propio mensaje', async () => {
-    await fallaCon(Object.assign(new TypeError('Sin conexión'), { sinConexion: true }));
+    await fallaCon(
+      Object.assign(new TypeError('Sin conexión'), { sinConexion: true }),
+    );
 
     expect(errorToast).toHaveBeenCalledWith('Sin conexión', { duration: 5000 });
   });

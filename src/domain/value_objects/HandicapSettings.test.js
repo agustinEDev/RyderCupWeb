@@ -1,7 +1,11 @@
 // src/domain/value_objects/HandicapSettings.test.js
 
 import { describe, it, expect } from 'vitest';
-import { HandicapSettings, PlayModeType, InvalidHandicapSettingsError } from './HandicapSettings';
+import {
+  HandicapSettings,
+  PlayModeType,
+  InvalidHandicapSettingsError,
+} from './HandicapSettings';
 
 describe('HandicapSettings', () => {
   describe('Constructor and Validation', () => {
@@ -18,12 +22,18 @@ describe('HandicapSettings', () => {
     });
 
     it('should throw InvalidHandicapSettingsError for an invalid PlayModeType', () => {
-      expect(() => new HandicapSettings('INVALID_TYPE')).toThrow(InvalidHandicapSettingsError);
-      expect(() => new HandicapSettings('INVALID_TYPE')).toThrow('Invalid PlayModeType: INVALID_TYPE');
+      expect(() => new HandicapSettings('INVALID_TYPE')).toThrow(
+        InvalidHandicapSettingsError,
+      );
+      expect(() => new HandicapSettings('INVALID_TYPE')).toThrow(
+        'Invalid PlayModeType: INVALID_TYPE',
+      );
     });
 
     it('should throw InvalidHandicapSettingsError for old PERCENTAGE type', () => {
-      expect(() => new HandicapSettings('PERCENTAGE')).toThrow(InvalidHandicapSettingsError);
+      expect(() => new HandicapSettings('PERCENTAGE')).toThrow(
+        InvalidHandicapSettingsError,
+      );
     });
 
     it('should be frozen after construction', () => {

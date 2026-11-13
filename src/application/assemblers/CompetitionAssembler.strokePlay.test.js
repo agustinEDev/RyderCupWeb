@@ -24,7 +24,10 @@ const respuestaDeLaApi = (extra = {}) => ({
 });
 
 const loQueLlegaALaPantalla = (apiData) =>
-  CompetitionAssembler.toSimpleDTO(CompetitionMapper.toDomain(apiData), apiData);
+  CompetitionAssembler.toSimpleDTO(
+    CompetitionMapper.toDomain(apiData),
+    apiData,
+  );
 
 describe('CompetitionAssembler · los ajustes del stroke play (FE #824)', () => {
   it('M1: los límites llegan como números (la API los manda como texto)', () => {
@@ -36,7 +39,7 @@ describe('CompetitionAssembler · los ajustes del stroke play (FE #824)', () => 
           overall_standing: 'BEST_CARD',
           category_count: null,
         },
-      })
+      }),
     );
 
     expect(dto.strokePlay).toEqual({
@@ -56,7 +59,7 @@ describe('CompetitionAssembler · los ajustes del stroke play (FE #824)', () => 
           overall_standing: 'ACCUMULATED',
           category_count: 3,
         },
-      })
+      }),
     );
 
     expect(dto.strokePlay.categoryCount).toBe(3);
@@ -65,8 +68,12 @@ describe('CompetitionAssembler · los ajustes del stroke play (FE #824)', () => 
   it('M3: una respuesta de antes del contador es de límites a mano', () => {
     const dto = loQueLlegaALaPantalla(
       respuestaDeLaApi({
-        stroke_play: { category_limits: [], max_matchdays_per_player: 1, overall_standing: 'ACCUMULATED' },
-      })
+        stroke_play: {
+          category_limits: [],
+          max_matchdays_per_player: 1,
+          overall_standing: 'ACCUMULATED',
+        },
+      }),
     );
 
     expect(dto.strokePlay.categoryCount).toBeNull();
@@ -85,7 +92,12 @@ describe('CompetitionAssembler · los ajustes del stroke play (FE #824)', () => 
 
   it('M5: una Ryder no los trae', () => {
     const dto = loQueLlegaALaPantalla(
-      respuestaDeLaApi({ tournament_type: 'RYDER_CUP', modality: 'MATCH_PLAY', team_1_name: 'A', team_2_name: 'B' })
+      respuestaDeLaApi({
+        tournament_type: 'RYDER_CUP',
+        modality: 'MATCH_PLAY',
+        team_1_name: 'A',
+        team_2_name: 'B',
+      }),
     );
 
     expect(dto.strokePlay).toBeNull();

@@ -8,7 +8,10 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { renderHook, act, waitFor } from '@testing-library/react';
 import { AuthProvider } from './AuthContext';
 import { useAuthContext } from '../hooks/useAuthContext';
-import { getCsrfToken, setCsrfTokenGlobal } from '../infrastructure/http/csrfTokenSync';
+import {
+  getCsrfToken,
+  setCsrfTokenGlobal,
+} from '../infrastructure/http/csrfTokenSync';
 import {
   olvidaLaCuentaDeEstaPestana,
   ultimaCuentaDeEstaPestana,
@@ -44,7 +47,9 @@ describe('AuthContext', () => {
   describe('useAuthContext', () => {
     it('should throw error when used outside AuthProvider', () => {
       // Suppress console.error for this test
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      const consoleSpy = vi
+        .spyOn(console, 'error')
+        .mockImplementation(() => {});
 
       expect(() => {
         renderHook(() => useAuthContext());
@@ -85,14 +90,20 @@ describe('AuthContext', () => {
       });
 
       // La copia del dispositivo va sin correo (fase 3, FE-06): se reescribe reducida
-      expect(result.current.user).toEqual({ id: '123', firstName: 'John', lastName: 'Doe' });
+      expect(result.current.user).toEqual({
+        id: '123',
+        firstName: 'John',
+        lastName: 'Doe',
+      });
       expect(localStorage.getItem('user')).not.toContain('test@example.com');
     });
 
     it('should handle corrupted localStorage data gracefully', () => {
       localStorage.setItem('user', 'invalid-json{');
 
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      const consoleSpy = vi
+        .spyOn(console, 'error')
+        .mockImplementation(() => {});
 
       const { result } = renderHook(() => useAuthContext(), {
         wrapper: AuthProvider,
@@ -124,18 +135,25 @@ describe('AuthContext', () => {
 
       // En memoria completo; en el dispositivo, sin correo (fase 3, FE-06)
       expect(result.current.user).toEqual(mockUser);
-      expect(JSON.parse(localStorage.getItem('user'))).toEqual({ id: '456', firstName: 'Jane', lastName: 'Smith' });
+      expect(JSON.parse(localStorage.getItem('user'))).toEqual({
+        id: '456',
+        firstName: 'Jane',
+        lastName: 'Smith',
+      });
     });
 
     it('entrar olvida los avisos del panel de quien estuviera antes (BE #361)', async () => {
       // Salir ya los olvidaba; entrar con otra cuenta sin haber salido —sin
       // recargar— pintaba un instante los de la anterior, y desde la BE #361
       // eso incluye sesiones de competiciones que organiza otra persona
-      const { recuerdaLasAccionesPendientes, loQueSeEnseñoAntes } = await import(
-        '../services/accionesPendientes'
-      );
-      recuerdaLasAccionesPendientes({ sesionesSinPartidos: [{ roundId: 'r1' }] });
-      const { result } = renderHook(() => useAuthContext(), { wrapper: AuthProvider });
+      const { recuerdaLasAccionesPendientes, loQueSeEnseñoAntes } =
+        await import('../services/accionesPendientes');
+      recuerdaLasAccionesPendientes({
+        sesionesSinPartidos: [{ roundId: 'r1' }],
+      });
+      const { result } = renderHook(() => useAuthContext(), {
+        wrapper: AuthProvider,
+      });
 
       act(() => {
         result.current.setUser({ id: 'otra', email: 'otra@example.com' });
@@ -226,7 +244,9 @@ describe('AuthContext', () => {
       // hándicap de la anterior, y aceptarlo lo guardaría en su perfil
       localStorage.setItem('refrescar_handicap', 'true');
       localStorage.setItem('pedir_handicap', JSON.stringify({ handicap: 18 }));
-      const { result } = renderHook(() => useAuthContext(), { wrapper: AuthProvider });
+      const { result } = renderHook(() => useAuthContext(), {
+        wrapper: AuthProvider,
+      });
 
       act(() => {
         result.current.clearAuth();
@@ -242,10 +262,22 @@ describe('AuthContext', () => {
       // vaciado, porque un 403 de CSRF cierra la sesión desde `api.js` en
       // mitad del bucle. La privacidad se resuelve al LEER, no al borrar
       const golpesPerdidos = await import('../utils/golpesPerdidos');
-      golpesPerdidos.apunta({ matchId: 'm-1', matchName: 'Meis', holeNumber: 3, userId: 'yo' });
-      golpesPerdidos.apunta({ matchId: 'm-2', matchName: 'Meis', holeNumber: 4, userId: 'la-otra' });
+      golpesPerdidos.apunta({
+        matchId: 'm-1',
+        matchName: 'Meis',
+        holeNumber: 3,
+        userId: 'yo',
+      });
+      golpesPerdidos.apunta({
+        matchId: 'm-2',
+        matchName: 'Meis',
+        holeNumber: 4,
+        userId: 'la-otra',
+      });
 
-      const { result } = renderHook(() => useAuthContext(), { wrapper: AuthProvider });
+      const { result } = renderHook(() => useAuthContext(), {
+        wrapper: AuthProvider,
+      });
       act(() => {
         result.current.clearAuth();
       });
@@ -259,7 +291,9 @@ describe('AuthContext', () => {
         expect.objectContaining({ matchId: 'm-2' }),
       ]);
       // Y la siguiente persona que entre en ese móvil no ve ninguno de los dos
-      expect(golpesPerdidos.pendientes('otra-cuenta-cualquiera')).toHaveLength(0);
+      expect(golpesPerdidos.pendientes('otra-cuenta-cualquiera')).toHaveLength(
+        0,
+      );
     });
 
     it('should clear legacy access_token from localStorage', () => {
@@ -367,7 +401,10 @@ describe('AuthContext · la cuenta de esta pestaña', () => {
   });
 
   it('al arrancar con un usuario guardado, lo anota aunque luego otra pestaña lo borre', () => {
-    localStorage.setItem('user', JSON.stringify({ id: 'u-1', firstName: 'Ana' }));
+    localStorage.setItem(
+      'user',
+      JSON.stringify({ id: 'u-1', firstName: 'Ana' }),
+    );
     renderHook(() => useAuthContext(), { wrapper: AuthProvider });
 
     localStorage.removeItem('user');
@@ -376,7 +413,9 @@ describe('AuthContext · la cuenta de esta pestaña', () => {
   });
 
   it('al entrar, anota la cuenta que entra', () => {
-    const { result } = renderHook(() => useAuthContext(), { wrapper: AuthProvider });
+    const { result } = renderHook(() => useAuthContext(), {
+      wrapper: AuthProvider,
+    });
 
     act(() => result.current.setUser({ id: 'u-2', firstName: 'Eva' }));
     localStorage.setItem('user', JSON.stringify({ id: 'u-9' }));
@@ -385,7 +424,9 @@ describe('AuthContext · la cuenta de esta pestaña', () => {
   });
 
   it('R2 (FE #1064): tras salir (clearAuth), la última cuenta de la pestaña sigue', () => {
-    const { result } = renderHook(() => useAuthContext(), { wrapper: AuthProvider });
+    const { result } = renderHook(() => useAuthContext(), {
+      wrapper: AuthProvider,
+    });
     act(() => result.current.setUser({ id: 'u-2' }));
 
     act(() => result.current.clearAuth());
@@ -394,4 +435,3 @@ describe('AuthContext · la cuenta de esta pestaña', () => {
     expect(ultimaCuentaDeEstaPestana()).toBe('u-2');
   });
 });
-

@@ -45,14 +45,21 @@ import { borradorParaRepetir } from './borradorParaRepetir';
  */
 
 const tee = (color, gender = 'MALE') => ({ color, gender });
-const campo = (tees = [tee('YELLOW'), tee('RED', 'FEMALE'), tee('WHITE')], aprobado = true) => ({
+const campo = (
+  tees = [tee('YELLOW'), tee('RED', 'FEMALE'), tee('WHITE')],
+  aprobado = true,
+) => ({
   id: 'gc-1',
   name: 'El Prat',
   tees,
   isApproved: () => aprobado,
 });
 const yo = { id: 'u-yo', display_name: 'Yo Mismo', handicap: 12.4 };
-const amigo = (id, nombre, handicap) => ({ otherUserId: id, otherUserName: nombre, otherUserHandicap: handicap });
+const amigo = (id, nombre, handicap) => ({
+  otherUserId: id,
+  otherUserName: nombre,
+  otherUserHandicap: handicap,
+});
 const AMIGOS = [amigo('u-ana', 'Ana', 18), amigo('u-luis', 'Luis', 9.1)];
 
 const jugador = (userId, extra = {}) => ({
@@ -89,12 +96,23 @@ const partida = (extra = {}) => ({
   scoringFormat: 'STABLEFORD',
   allowancePercentage: 80,
   playMode: 'HANDICAP',
-  participants: [jugador('u-yo'), jugador('u-ana', { color: 'RED', teeGender: 'FEMALE' }), invitado()],
+  participants: [
+    jugador('u-yo'),
+    jugador('u-ana', { color: 'RED', teeGender: 'FEMALE' }),
+    invitado(),
+  ],
   scorerIds: ['u-yo', 'u-ana'],
   ...extra,
 });
 
-const repite = (extra = {}) => borradorParaRepetir({ partida: partida(), yo, amigos: AMIGOS, campo: campo(), ...extra });
+const repite = (extra = {}) =>
+  borradorParaRepetir({
+    partida: partida(),
+    yo,
+    amigos: AMIGOS,
+    campo: campo(),
+    ...extra,
+  });
 const nombres = (b) => b.inicial.participants.map((p) => p.name);
 
 describe('borradorParaRepetir', () => {
@@ -112,7 +130,9 @@ describe('borradorParaRepetir', () => {
       creatorTeeKey: 'YELLOW|MALE',
     });
     expect(b.inicial.selectedCourse.id).toBe('gc-1');
-    expect(b.inicial.participants.map((p) => [p.name, p.color, p.teeGender])).toEqual([
+    expect(
+      b.inicial.participants.map((p) => [p.name, p.color, p.teeGender]),
+    ).toEqual([
       ['Yo Mismo', 'YELLOW', 'MALE'],
       ['Ana', 'RED', 'FEMALE'],
       ['Pepe Pérez', 'WHITE', 'MALE'],
@@ -134,14 +154,24 @@ describe('borradorParaRepetir', () => {
     });
 
     expect(b.paso).toBe(4);
-    expect(b.inicial).toMatchObject({ mode: 'MATCH_PLAY', matchFormat: 'FOURBALL' });
-    expect(b.inicial.participants.map((p) => p.team)).toEqual(['A', 'A', 'B', 'B']);
+    expect(b.inicial).toMatchObject({
+      mode: 'MATCH_PLAY',
+      matchFormat: 'FOURBALL',
+    });
+    expect(b.inicial.participants.map((p) => p.team)).toEqual([
+      'A',
+      'A',
+      'B',
+      'B',
+    ]);
   });
 
   it('R5: registrados con el hándicap de hoy; el invitado, con el de aquella partida', () => {
     const b = repite();
 
-    expect(b.inicial.participants.map((p) => [p.handicap, p.profileHandicap])).toEqual([
+    expect(
+      b.inicial.participants.map((p) => [p.handicap, p.profileHandicap]),
+    ).toEqual([
       [12.4, 12.4],
       [18, 18],
       [22, undefined],
@@ -150,12 +180,18 @@ describe('borradorParaRepetir', () => {
 
   it('R6: si la creó otro, quien repite va primero y el creador entra como un amigo más', () => {
     const b = repite({
-      partida: partida({ participants: [jugador('u-luis'), jugador('u-yo', { color: 'WHITE' })] }),
+      partida: partida({
+        participants: [jugador('u-luis'), jugador('u-yo', { color: 'WHITE' })],
+      }),
     });
 
     expect(nombres(b)).toEqual(['Yo Mismo', 'Luis']);
     expect(b.inicial.creatorTeeKey).toBe('WHITE|MALE');
-    expect(b.inicial.participants[1]).toMatchObject({ userId: 'u-luis', handicap: 9.1, isGuest: false });
+    expect(b.inicial.participants[1]).toMatchObject({
+      userId: 'u-luis',
+      handicap: 9.1,
+      isGuest: false,
+    });
   });
 
   it('R7: quien ya no es amigo se queda fuera, con aviso, en Jugadores', () => {
@@ -185,7 +221,9 @@ describe('borradorParaRepetir', () => {
 
     expect(b.paso).toBe(1);
     expect(b.inicial.creatorTeeKey).toBe('');
-    expect(b.avisos).toEqual([{ tipo: 'barra', propia: true, color: 'YELLOW', genero: 'MALE', paso: 1 }]);
+    expect(b.avisos).toEqual([
+      { tipo: 'barra', propia: true, color: 'YELLOW', genero: 'MALE', paso: 1 },
+    ]);
   });
 
   it('R9b: la barra de otro ya no existe, fuera y aviso, en Jugadores', () => {
@@ -193,7 +231,16 @@ describe('borradorParaRepetir', () => {
 
     expect(nombres(b)).toEqual(['Yo Mismo', 'Pepe Pérez']);
     expect(b.paso).toBe(2);
-    expect(b.avisos).toEqual([{ tipo: 'barra', propia: false, nombre: 'Ana', color: 'RED', genero: 'FEMALE', paso: 2 }]);
+    expect(b.avisos).toEqual([
+      {
+        tipo: 'barra',
+        propia: false,
+        nombre: 'Ana',
+        color: 'RED',
+        genero: 'FEMALE',
+        paso: 2,
+      },
+    ]);
   });
 
   it('R9/V2: un campo sin barras no quita a nadie, y nadie lleva la de antes', () => {
@@ -231,7 +278,9 @@ describe('borradorParaRepetir', () => {
   it('R11: anotadores que siguen, y siempre quien repite', () => {
     expect(repite().inicial.scorerIds).toEqual(['u-yo', 'u-ana']);
     expect(repite({ amigos: [] }).inicial.scorerIds).toEqual(['u-yo']);
-    expect(repite({ partida: partida({ scorerIds: ['u-ana'] }) }).inicial.scorerIds).toEqual(['u-yo', 'u-ana']);
+    expect(
+      repite({ partida: partida({ scorerIds: ['u-ana'] }) }).inicial.scorerIds,
+    ).toEqual(['u-yo', 'u-ana']);
   });
 
   describe('R11b: en foursomes se copia la elección de parejas (revisor, 4 nov)', () => {
@@ -241,33 +290,62 @@ describe('borradorParaRepetir', () => {
         scoringFormat: null,
         creatorId: 'u-yo',
         scorerIds,
-        participants: [jugador('u-yo', { team: 'A' }), jugador('u-ana', { team: 'A' }), rival, invitado({ team: 'B' })],
+        participants: [
+          jugador('u-yo', { team: 'A' }),
+          jugador('u-ana', { team: 'A' }),
+          rival,
+          invitado({ team: 'B' }),
+        ],
       });
 
     it('anotaba alguien de enfrente: «las dos parejas», aunque ya no sea amigo', () => {
-      expect(repite({ partida: foursomes(['u-yo', 'u-luis']) }).inicial.parejasDeAnotadores).toBe('BOTH');
-      expect(repite({ partida: foursomes(['u-yo', 'u-luis']), amigos: [] }).inicial.parejasDeAnotadores).toBe('BOTH');
+      expect(
+        repite({ partida: foursomes(['u-yo', 'u-luis']) }).inicial
+          .parejasDeAnotadores,
+      ).toBe('BOTH');
+      expect(
+        repite({ partida: foursomes(['u-yo', 'u-luis']), amigos: [] }).inicial
+          .parejasDeAnotadores,
+      ).toBe('BOTH');
     });
 
     it('enfrente había registrado y no anotaba: «solo la mía»', () => {
-      expect(repite({ partida: foursomes(['u-yo', 'u-ana']) }).inicial.parejasDeAnotadores).toBe('MINE');
+      expect(
+        repite({ partida: foursomes(['u-yo', 'u-ana']) }).inicial
+          .parejasDeAnotadores,
+      ).toBe('MINE');
     });
 
     it('enfrente no había registrados (no se eligió nada), u otro formato: sin elección', () => {
-      const soloInvitados = foursomes(['u-yo'], invitado({ team: 'B', participantId: 'p-otro' }));
-      expect(repite({ partida: soloInvitados }).inicial.parejasDeAnotadores).toBeNull();
+      const soloInvitados = foursomes(
+        ['u-yo'],
+        invitado({ team: 'B', participantId: 'p-otro' }),
+      );
+      expect(
+        repite({ partida: soloInvitados }).inicial.parejasDeAnotadores,
+      ).toBeNull();
       expect(repite().inicial.parejasDeAnotadores).toBeNull();
-      const fourball = { ...foursomes(['u-yo', 'u-luis']), matchFormat: 'FOURBALL' };
-      expect(repite({ partida: fourball }).inicial.parejasDeAnotadores).toBeNull();
+      const fourball = {
+        ...foursomes(['u-yo', 'u-luis']),
+        matchFormat: 'FOURBALL',
+      };
+      expect(
+        repite({ partida: fourball }).inicial.parejasDeAnotadores,
+      ).toBeNull();
     });
 
     it('si la repite quien no la creó: sin elección (no la hizo él; `/code-review`)', () => {
       const deOtro = { ...foursomes(['u-yo', 'u-luis']), creatorId: 'u-luis' };
-      expect(repite({ partida: deOtro }).inicial.parejasDeAnotadores).toBeNull();
+      expect(
+        repite({ partida: deOtro }).inicial.parejasDeAnotadores,
+      ).toBeNull();
     });
 
     it('también si el campo ya no vale (se empieza por el paso 1)', () => {
-      const b = repite({ partida: foursomes(['u-yo', 'u-luis']), campo: campo(undefined, false) });
+      const b = repite({
+        partida: foursomes(['u-yo', 'u-luis']),
+        campo: campo(undefined, false),
+      });
       expect(b.paso).toBe(1);
       expect(b.inicial.parejasDeAnotadores).toBe('BOTH');
     });
@@ -278,35 +356,75 @@ describe('borradorParaRepetir', () => {
 
     expect(pepe.participantId).not.toBe('p-pepe');
     expect(pepe.participantId).toMatch(/^invitado-/);
-    expect(pepe).toMatchObject({ userId: null, isGuest: true, firstName: 'Pepe', lastName: 'Pérez' });
+    expect(pepe).toMatchObject({
+      userId: null,
+      isGuest: true,
+      firstName: 'Pepe',
+      lastName: 'Pérez',
+    });
   });
 
   it.each([
-    ['juego libre al 95 (el suyo)', { scoringFormat: 'STABLEFORD', allowancePercentage: 95 }, null],
-    ['juego libre al 80', { scoringFormat: 'STABLEFORD', allowancePercentage: 80 }, 80],
-    ['fourball al 90 (el suyo)', { scoringFormat: null, matchFormat: 'FOURBALL', allowancePercentage: 90 }, null],
-    ['individual al 90', { scoringFormat: null, matchFormat: 'SINGLES', allowancePercentage: 90 }, 90],
+    [
+      'juego libre al 95 (el suyo)',
+      { scoringFormat: 'STABLEFORD', allowancePercentage: 95 },
+      null,
+    ],
+    [
+      'juego libre al 80',
+      { scoringFormat: 'STABLEFORD', allowancePercentage: 80 },
+      80,
+    ],
+    [
+      'fourball al 90 (el suyo)',
+      { scoringFormat: null, matchFormat: 'FOURBALL', allowancePercentage: 90 },
+      null,
+    ],
+    [
+      'individual al 90',
+      { scoringFormat: null, matchFormat: 'SINGLES', allowancePercentage: 90 },
+      90,
+    ],
   ])('V1: %s', (_, extra, esperado) => {
-    expect(repite({ partida: partida(extra) }).inicial.allowanceOverride).toBe(esperado);
+    expect(repite({ partida: partida(extra) }).inicial.allowanceOverride).toBe(
+      esperado,
+    );
   });
 
   it.each([
     ['nulos', { firstName: null, lastName: null }],
     ['sin los campos', { firstName: undefined, lastName: undefined }],
     ['solo el nombre', { lastName: null }],
-  ])('V3: sin nombre y apellidos aparte (%s), fuera y aviso, sin adivinar', (_, extra) => {
-    const b = repite({
-      partida: partida({ participants: [jugador('u-yo'), invitado({ ...extra, name: 'Juan Carlos Pérez' })] }),
-    });
+  ])(
+    'V3: sin nombre y apellidos aparte (%s), fuera y aviso, sin adivinar',
+    (_, extra) => {
+      const b = repite({
+        partida: partida({
+          participants: [
+            jugador('u-yo'),
+            invitado({ ...extra, name: 'Juan Carlos Pérez' }),
+          ],
+        }),
+      });
 
-    expect(nombres(b)).toEqual(['Yo Mismo']);
-    expect(b.paso).toBe(2);
-    expect(b.avisos).toEqual([{ tipo: 'invitado', nombre: 'Juan Carlos Pérez', paso: 2 }]);
-  });
+      expect(nombres(b)).toEqual(['Yo Mismo']);
+      expect(b.paso).toBe(2);
+      expect(b.avisos).toEqual([
+        { tipo: 'invitado', nombre: 'Juan Carlos Pérez', paso: 2 },
+      ]);
+    },
+  );
 
   it('C1: match play con jugadores de menos (cancelada a medias), a Jugadores con aviso', () => {
     const b = repite({
-      partida: partida({ matchFormat: 'FOURBALL', scoringFormat: null, participants: [jugador('u-yo', { team: 'A' }), jugador('u-ana', { team: 'B' })] }),
+      partida: partida({
+        matchFormat: 'FOURBALL',
+        scoringFormat: null,
+        participants: [
+          jugador('u-yo', { team: 'A' }),
+          jugador('u-ana', { team: 'B' }),
+        ],
+      }),
     });
 
     expect(b.paso).toBe(2);
@@ -322,13 +440,25 @@ describe('borradorParaRepetir', () => {
 
   it('C2: quien no llevaba barra, en un campo que ahora tiene, no la «ha perdido»', () => {
     const b = repite({
-      partida: partida({ participants: [jugador('u-yo', { color: null, teeGender: null }), jugador('u-ana', { color: null, teeGender: null })] }),
+      partida: partida({
+        participants: [
+          jugador('u-yo', { color: null, teeGender: null }),
+          jugador('u-ana', { color: null, teeGender: null }),
+        ],
+      }),
     });
 
     expect(b.paso).toBe(1);
     expect(b.avisos).toEqual([
       { tipo: 'sinBarra', propia: true, color: null, genero: null, paso: 1 },
-      { tipo: 'sinBarra', propia: false, nombre: 'Ana', color: null, genero: null, paso: 2 },
+      {
+        tipo: 'sinBarra',
+        propia: false,
+        nombre: 'Ana',
+        color: null,
+        genero: null,
+        paso: 2,
+      },
     ]);
   });
 });

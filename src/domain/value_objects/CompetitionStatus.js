@@ -14,10 +14,22 @@ export const CompetitionStatusEnum = Object.freeze({
 });
 
 const validTransitions = {
-  [CompetitionStatusEnum.DRAFT]: [CompetitionStatusEnum.ACTIVE, CompetitionStatusEnum.CANCELLED],
-  [CompetitionStatusEnum.ACTIVE]: [CompetitionStatusEnum.CLOSED, CompetitionStatusEnum.CANCELLED],
-  [CompetitionStatusEnum.CLOSED]: [CompetitionStatusEnum.IN_PROGRESS, CompetitionStatusEnum.CANCELLED],
-  [CompetitionStatusEnum.IN_PROGRESS]: [CompetitionStatusEnum.COMPLETED, CompetitionStatusEnum.CANCELLED],
+  [CompetitionStatusEnum.DRAFT]: [
+    CompetitionStatusEnum.ACTIVE,
+    CompetitionStatusEnum.CANCELLED,
+  ],
+  [CompetitionStatusEnum.ACTIVE]: [
+    CompetitionStatusEnum.CLOSED,
+    CompetitionStatusEnum.CANCELLED,
+  ],
+  [CompetitionStatusEnum.CLOSED]: [
+    CompetitionStatusEnum.IN_PROGRESS,
+    CompetitionStatusEnum.CANCELLED,
+  ],
+  [CompetitionStatusEnum.IN_PROGRESS]: [
+    CompetitionStatusEnum.COMPLETED,
+    CompetitionStatusEnum.CANCELLED,
+  ],
   [CompetitionStatusEnum.COMPLETED]: [],
   [CompetitionStatusEnum.CANCELLED]: [],
 };
@@ -47,7 +59,10 @@ export class CompetitionStatus {
    * @returns {boolean}
    */
   isFinal() {
-    return this.value === CompetitionStatusEnum.COMPLETED || this.value === CompetitionStatusEnum.CANCELLED;
+    return (
+      this.value === CompetitionStatusEnum.COMPLETED ||
+      this.value === CompetitionStatusEnum.CANCELLED
+    );
   }
 
   /**
@@ -66,7 +81,10 @@ export class CompetitionStatus {
    * @returns {boolean}
    */
   allowsModifications() {
-    return this.value === CompetitionStatusEnum.DRAFT || this.value === CompetitionStatusEnum.ACTIVE;
+    return (
+      this.value === CompetitionStatusEnum.DRAFT ||
+      this.value === CompetitionStatusEnum.ACTIVE
+    );
   }
 
   /**
@@ -89,8 +107,14 @@ export class CompetitionStatus {
 CompetitionStatus.DRAFT = new CompetitionStatus(CompetitionStatusEnum.DRAFT);
 CompetitionStatus.ACTIVE = new CompetitionStatus(CompetitionStatusEnum.ACTIVE);
 CompetitionStatus.CLOSED = new CompetitionStatus(CompetitionStatusEnum.CLOSED);
-CompetitionStatus.IN_PROGRESS = new CompetitionStatus(CompetitionStatusEnum.IN_PROGRESS);
-CompetitionStatus.COMPLETED = new CompetitionStatus(CompetitionStatusEnum.COMPLETED);
-CompetitionStatus.CANCELLED = new CompetitionStatus(CompetitionStatusEnum.CANCELLED);
+CompetitionStatus.IN_PROGRESS = new CompetitionStatus(
+  CompetitionStatusEnum.IN_PROGRESS,
+);
+CompetitionStatus.COMPLETED = new CompetitionStatus(
+  CompetitionStatusEnum.COMPLETED,
+);
+CompetitionStatus.CANCELLED = new CompetitionStatus(
+  CompetitionStatusEnum.CANCELLED,
+);
 
 Object.freeze(CompetitionStatus);

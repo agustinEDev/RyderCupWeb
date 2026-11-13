@@ -31,7 +31,7 @@ export const crearEdicionDeHandicaps = (contexto) => {
     setHandicapInput(
       enrollment.hasCustomHandicap
         ? String(enrollment.customHandicap)
-        : (enrollment.userHandicap ?? '')
+        : (enrollment.userHandicap ?? ''),
     );
   };
 
@@ -48,7 +48,11 @@ export const crearEdicionDeHandicaps = (contexto) => {
     }
     setSavingHandicapId(enrollmentId);
     try {
-      await setCustomHandicapUseCase.execute(competition.id, enrollmentId, value);
+      await setCustomHandicapUseCase.execute(
+        competition.id,
+        enrollmentId,
+        value,
+      );
       customToast.success(t('detail.handicapUpdated'));
       // Con su personalizado ya no le falta: deja de estar marcado (revisor)
       const suyo = enrollments.find((e) => e.id === enrollmentId)?.userId;
@@ -57,7 +61,9 @@ export const crearEdicionDeHandicaps = (contexto) => {
         sin.delete(suyo);
         return sin;
       });
-      const enrollmentsData = await listEnrollmentsUseCase.execute(competition.id);
+      const enrollmentsData = await listEnrollmentsUseCase.execute(
+        competition.id,
+      );
       setEnrollments(enrollmentsData);
       setEditingHandicapId(null);
     } catch (error) {
@@ -73,7 +79,9 @@ export const crearEdicionDeHandicaps = (contexto) => {
     try {
       await removeCustomHandicapUseCase.execute(competition.id, enrollmentId);
       customToast.success(t('detail.handicapReverted'));
-      const enrollmentsData = await listEnrollmentsUseCase.execute(competition.id);
+      const enrollmentsData = await listEnrollmentsUseCase.execute(
+        competition.id,
+      );
       setEnrollments(enrollmentsData);
       setEditingHandicapId(null);
     } catch (error) {
@@ -84,5 +92,10 @@ export const crearEdicionDeHandicaps = (contexto) => {
     }
   };
 
-  return { handleStartEditHandicap, handleCancelEditHandicap, handleSaveHandicap, handleRevertToRfegHandicap };
+  return {
+    handleStartEditHandicap,
+    handleCancelEditHandicap,
+    handleSaveHandicap,
+    handleRevertToRfegHandicap,
+  };
 };

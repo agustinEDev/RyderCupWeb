@@ -87,14 +87,16 @@ describe('ApiDeviceRepository', () => {
       const error = new Error('Network error');
       apiRequestMock.mockRejectedValue(error);
 
-      await expect(repository.getActiveDevices()).rejects.toThrow('Network error');
+      await expect(repository.getActiveDevices()).rejects.toThrow(
+        'Network error',
+      );
     });
 
     it('should throw error if API returns null', async () => {
       apiRequestMock.mockResolvedValue(null);
 
       await expect(repository.getActiveDevices()).rejects.toThrow(
-        'Invalid API response: expected object'
+        'Invalid API response: expected object',
       );
     });
 
@@ -102,7 +104,7 @@ describe('ApiDeviceRepository', () => {
       apiRequestMock.mockResolvedValue('not an object');
 
       await expect(repository.getActiveDevices()).rejects.toThrow(
-        'Invalid API response: expected object'
+        'Invalid API response: expected object',
       );
     });
 
@@ -115,7 +117,7 @@ describe('ApiDeviceRepository', () => {
       apiRequestMock.mockResolvedValue(mockApiResponse);
 
       await expect(repository.getActiveDevices()).rejects.toThrow(
-        'Invalid API response: devices must be an array'
+        'Invalid API response: devices must be an array',
       );
     });
 
@@ -128,7 +130,7 @@ describe('ApiDeviceRepository', () => {
       apiRequestMock.mockResolvedValue(mockApiResponse);
 
       await expect(repository.getActiveDevices()).rejects.toThrow(
-        'Invalid API response: devices must be an array'
+        'Invalid API response: devices must be an array',
       );
     });
 
@@ -141,7 +143,7 @@ describe('ApiDeviceRepository', () => {
       apiRequestMock.mockResolvedValue(mockApiResponse);
 
       await expect(repository.getActiveDevices()).rejects.toThrow(
-        'Invalid API response: total_count must be a number'
+        'Invalid API response: total_count must be a number',
       );
     });
 
@@ -154,7 +156,7 @@ describe('ApiDeviceRepository', () => {
       apiRequestMock.mockResolvedValue(mockApiResponse);
 
       await expect(repository.getActiveDevices()).rejects.toThrow(
-        'Invalid API response: total_count must be a number'
+        'Invalid API response: total_count must be a number',
       );
     });
   });
@@ -196,7 +198,7 @@ describe('ApiDeviceRepository', () => {
         `/api/v1/users/me/devices/${deviceId}`,
         {
           method: 'DELETE',
-        }
+        },
       );
 
       expect(result).toEqual({
@@ -234,13 +236,13 @@ describe('ApiDeviceRepository', () => {
 
     it('should throw error if deviceId is missing', async () => {
       await expect(repository.revokeDevice(null)).rejects.toThrow(
-        'Device ID is required'
+        'Device ID is required',
       );
       await expect(repository.revokeDevice(undefined)).rejects.toThrow(
-        'Device ID is required'
+        'Device ID is required',
       );
       await expect(repository.revokeDevice('')).rejects.toThrow(
-        'Device ID is required'
+        'Device ID is required',
       );
 
       expect(apiRequestMock).not.toHaveBeenCalled();
@@ -252,7 +254,7 @@ describe('ApiDeviceRepository', () => {
       apiRequestMock.mockRejectedValue(error);
 
       await expect(repository.revokeDevice(deviceId)).rejects.toThrow(
-        'CSRF validation failed'
+        'CSRF validation failed',
       );
     });
 
@@ -262,7 +264,7 @@ describe('ApiDeviceRepository', () => {
       apiRequestMock.mockRejectedValue(error);
 
       await expect(repository.revokeDevice(deviceId)).rejects.toThrow(
-        'Device not found'
+        'Device not found',
       );
     });
 
@@ -272,7 +274,7 @@ describe('ApiDeviceRepository', () => {
       apiRequestMock.mockRejectedValue(error);
 
       await expect(repository.revokeDevice(deviceId)).rejects.toThrow(
-        'Device already revoked'
+        'Device already revoked',
       );
     });
   });
@@ -284,10 +286,16 @@ describe('ApiDeviceRepository', () => {
       ['TERMS_NOT_ACCEPTED', 'TERMS_NOT_ACCEPTED'],
       [undefined, 'FORBIDDEN'],
     ])('un 403 con error_code %s es el error %s', async (codigo, esperado) => {
-      const httpError = Object.assign(new Error('Forbidden'), { status: 403, statusCode: 403, errorCode: codigo });
+      const httpError = Object.assign(new Error('Forbidden'), {
+        status: 403,
+        statusCode: 403,
+        errorCode: codigo,
+      });
       apiRequestMock.mockRejectedValue(httpError);
 
-      await expect(repository.revokeDevice('device-123')).rejects.toMatchObject({ message: esperado, code: esperado });
+      await expect(repository.revokeDevice('device-123')).rejects.toMatchObject(
+        { message: esperado, code: esperado },
+      );
     });
 
     it('should transform HTTP 403 with the CSRF code to CSRF_VALIDATION_FAILED', async () => {
@@ -342,7 +350,9 @@ describe('ApiDeviceRepository', () => {
       apiRequestMock.mockRejectedValue(authError);
 
       // Should propagate original error for token refresh interceptor
-      await expect(repository.revokeDevice(deviceId)).rejects.toThrow('Unauthorized');
+      await expect(repository.revokeDevice(deviceId)).rejects.toThrow(
+        'Unauthorized',
+      );
       await expect(repository.revokeDevice(deviceId)).rejects.toMatchObject({
         status: 401,
       });

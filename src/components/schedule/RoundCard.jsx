@@ -47,13 +47,20 @@ const RoundCard = ({
   // Todos cuentan: sin su nombre (inscripciones sin cargar) se dice «un
   // jugador», que un id suelto no le dice nada a nadie (CodeRabbit en la #720)
   const descansan = (round.restingPlayerIds || []).map(
-    (id) => playerNameMap?.get?.(id) || t('rounds.unknownPlayer')
+    (id) => playerNameMap?.get?.(id) || t('rounds.unknownPlayer'),
   );
 
-  const golfCourseName = golfCourses.find(gc => gc.id === round.golfCourseId)?.name || round.golfCourseId;
+  const golfCourseName =
+    golfCourses.find((gc) => gc.id === round.golfCourseId)?.name ||
+    round.golfCourseId;
 
   const formattedDate = round.roundDate
-    ? new Date(round.roundDate + 'T00:00:00').toLocaleDateString(undefined, { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' })
+    ? new Date(round.roundDate + 'T00:00:00').toLocaleDateString(undefined, {
+        weekday: 'short',
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+      })
     : '';
 
   return (
@@ -65,17 +72,26 @@ const RoundCard = ({
         aria-expanded={isExpanded}
         className="flex items-start sm:items-center justify-between gap-3 p-4 cursor-pointer hover:bg-gray-50 transition-colors"
         onClick={onToggleExpand}
-        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onToggleExpand(); } }}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            onToggleExpand();
+          }
+        }}
       >
         <div className="flex-1 min-w-0">
           <div className="flex flex-wrap items-center gap-2 mb-1">
             <span className="font-bold text-gray-900">{formattedDate}</span>
-            <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${STATUS_COLORS[status] || 'bg-gray-100 text-gray-700'}`}>
+            <span
+              className={`px-2 py-0.5 rounded-full text-xs font-semibold ${STATUS_COLORS[status] || 'bg-gray-100 text-gray-700'}`}
+            >
               {t(`status.${status}`)}
             </span>
           </div>
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-gray-600">
-            <span className="truncate max-w-[200px] sm:max-w-none">{golfCourseName}</span>
+            <span className="truncate max-w-[200px] sm:max-w-none">
+              {golfCourseName}
+            </span>
             <span className="text-gray-300 hidden sm:inline">|</span>
             <span>{t(`sessions.${round.sessionType}`)}</span>
             {/* Sin formato no se pinta «formats.null» (RyderCupAm#541) */}
@@ -94,9 +110,13 @@ const RoundCard = ({
           </div>
           {round.handicapMode && (
             <div className="text-xs text-gray-500 mt-1">
-              {t('rounds.handicapMode')}: {t(`handicapModes.${round.handicapMode}`)}
+              {t('rounds.handicapMode')}:{' '}
+              {t(`handicapModes.${round.handicapMode}`)}
               {round.allowancePercentage != null && (
-                <span className="ml-2">{t('rounds.allowancePercentage')}: {round.allowancePercentage}%</span>
+                <span className="ml-2">
+                  {t('rounds.allowancePercentage')}: {round.allowancePercentage}
+                  %
+                </span>
               )}
             </div>
           )}
@@ -106,7 +126,10 @@ const RoundCard = ({
           {/* Action buttons (stop propagation to prevent toggle) */}
           {canGenerate && (
             <button
-              onClick={(e) => { e.stopPropagation(); onGenerateMatches(); }}
+              onClick={(e) => {
+                e.stopPropagation();
+                onGenerateMatches();
+              }}
               className="flex items-center gap-1 px-3 py-1.5 bg-primary text-white rounded-lg text-xs font-medium hover:bg-primary/90 transition-colors"
               title={t('matches.generate')}
             >
@@ -126,7 +149,10 @@ const RoundCard = ({
           sin desplegar, que es lo primero que el organizador tiene que ver */}
       {round.matchGenerationBlock && (
         <div className="px-4 pb-4">
-          <BloqueoDePartidos bloqueo={round.matchGenerationBlock} puedeReintentar={canGenerate} />
+          <BloqueoDePartidos
+            bloqueo={round.matchGenerationBlock}
+            puedeReintentar={canGenerate}
+          />
         </div>
       )}
 
@@ -134,7 +160,10 @@ const RoundCard = ({
           sin partido y nadie lo decía. Sin desplegar, como el motivo */}
       {descansan.length > 0 && (
         <p data-testid="descansan" className="px-4 pb-3 text-sm text-gray-600">
-          {t('rounds.resting', { count: descansan.length, names: descansan.join(', ') })}
+          {t('rounds.resting', {
+            count: descansan.length,
+            names: descansan.join(', '),
+          })}
         </p>
       )}
 
@@ -142,7 +171,9 @@ const RoundCard = ({
       {isExpanded && (
         <div className="border-t border-gray-200 p-4 bg-gray-50">
           {matches.length === 0 ? (
-            <p className="text-center text-gray-500 text-sm py-4">{t('matches.noMatches')}</p>
+            <p className="text-center text-gray-500 text-sm py-4">
+              {t('matches.noMatches')}
+            </p>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               {matches.map((match) => (

@@ -26,7 +26,8 @@ vi.mock('../infrastructure/http/tokenRefreshInterceptor', () => ({
   fetchWithTokenRefresh: vi.fn(),
 }));
 
-const { refrescoCompartido, fetchWithTokenRefresh } = await import('../infrastructure/http/tokenRefreshInterceptor');
+const { refrescoCompartido, fetchWithTokenRefresh } =
+  await import('../infrastructure/http/tokenRefreshInterceptor');
 const { preguntaLaSesionSinInterceptor } = await import('./sondaDeSesion');
 
 const USUARIO = { id: 'u1', email: 'a@b.es', first_name: 'Ana' };
@@ -67,14 +68,21 @@ describe('preguntaLaSesionSinInterceptor', () => {
 
     expect(resultado).toEqual({ estado: 'ok', usuario: USUARIO });
     expect(fetchFalso).toHaveBeenCalledTimes(1);
-    expect(fetchFalso.mock.calls[0][0]).toMatch(/\/api\/v1\/auth\/current-user$/);
-    expect(fetchFalso.mock.calls[0][1]).toMatchObject({ credentials: 'include', signal: corte.signal });
+    expect(fetchFalso.mock.calls[0][0]).toMatch(
+      /\/api\/v1\/auth\/current-user$/,
+    );
+    expect(fetchFalso.mock.calls[0][1]).toMatchObject({
+      credentials: 'include',
+      signal: corte.signal,
+    });
     expect(refrescoCompartido).not.toHaveBeenCalled();
     expect(fetchWithTokenRefresh).not.toHaveBeenCalled();
   });
 
   it('S2: con el access caducado refresca a mano y repregunta con la misma senal', async () => {
-    fetchFalso.mockResolvedValueOnce(respuesta(401)).mockResolvedValueOnce(respuesta(200, USUARIO));
+    fetchFalso
+      .mockResolvedValueOnce(respuesta(401))
+      .mockResolvedValueOnce(respuesta(200, USUARIO));
     refrescoCompartido.mockResolvedValueOnce({});
     const corte = new AbortController();
 
@@ -87,7 +95,9 @@ describe('preguntaLaSesionSinInterceptor', () => {
   });
 
   it('S3: un dispositivo revocado se dice como tal, con su detalle y sin refrescar', async () => {
-    const detalle = { detail: 'Dispositivo revocado. Por favor, inicia sesión nuevamente.' };
+    const detalle = {
+      detail: 'Dispositivo revocado. Por favor, inicia sesión nuevamente.',
+    };
     fetchFalso.mockResolvedValueOnce(respuesta(401, detalle));
 
     const resultado = await preguntaLaSesionSinInterceptor();
@@ -101,44 +111,68 @@ describe('preguntaLaSesionSinInterceptor', () => {
     fetchFalso.mockResolvedValue(respuesta(401));
     refrescoCompartido.mockResolvedValueOnce({});
 
-    expect(await preguntaLaSesionSinInterceptor()).toEqual({ estado: 'rechazada' });
+    expect(await preguntaLaSesionSinInterceptor()).toEqual({
+      estado: 'rechazada',
+    });
   });
 
   it('S5: si el refresco contesta 401, la sesion esta rechazada', async () => {
     fetchFalso.mockResolvedValueOnce(respuesta(401));
-    refrescoCompartido.mockRejectedValueOnce(Object.assign(new Error('caducada'), { response: { status: 401 } }));
+    refrescoCompartido.mockRejectedValueOnce(
+      Object.assign(new Error('caducada'), { response: { status: 401 } }),
+    );
 
-    expect(await preguntaLaSesionSinInterceptor()).toEqual({ estado: 'rechazada' });
+    expect(await preguntaLaSesionSinInterceptor()).toEqual({
+      estado: 'rechazada',
+    });
     expect(fetchFalso).toHaveBeenCalledTimes(1);
   });
 
   // Revisión del 21 oct: el 401 llano de /current-user no dice nada, pero el
   // del refresco sí puede decir que se revocó el dispositivo
   it('S5b: si el refresco contesta 401 «dispositivo revocado», es revocada', async () => {
-    const detalle = { detail: 'Dispositivo revocado. Por favor, inicia sesión nuevamente.' };
+    const detalle = {
+      detail: 'Dispositivo revocado. Por favor, inicia sesión nuevamente.',
+    };
     fetchFalso.mockResolvedValueOnce(respuesta(401));
     refrescoCompartido.mockRejectedValueOnce(
-      Object.assign(new Error('revocado'), { response: { status: 401 }, errorData: detalle })
+      Object.assign(new Error('revocado'), {
+        response: { status: 401 },
+        errorData: detalle,
+      }),
     );
 
-    expect(await preguntaLaSesionSinInterceptor()).toEqual({ estado: 'revocada', detalle });
+    expect(await preguntaLaSesionSinInterceptor()).toEqual({
+      estado: 'revocada',
+      detalle,
+    });
   });
 
   it('S5c: un 401 del refresco sin cuerpo sigue siendo rechazada', async () => {
     fetchFalso.mockResolvedValueOnce(respuesta(401));
     refrescoCompartido.mockRejectedValueOnce(
-      Object.assign(new Error('caducada'), { response: { status: 401 }, errorData: { detail: 'Refresh token expired' } })
+      Object.assign(new Error('caducada'), {
+        response: { status: 401 },
+        errorData: { detail: 'Refresh token expired' },
+      }),
     );
 
-    expect(await preguntaLaSesionSinInterceptor()).toEqual({ estado: 'rechazada' });
+    expect(await preguntaLaSesionSinInterceptor()).toEqual({
+      estado: 'rechazada',
+    });
   });
 
   it('S4b: si tras refrescar el 401 dice «dispositivo revocado», es revocada', async () => {
     const detalle = { detail: 'Device revoked. Please sign in again.' };
-    fetchFalso.mockResolvedValueOnce(respuesta(401)).mockResolvedValueOnce(respuesta(401, detalle));
+    fetchFalso
+      .mockResolvedValueOnce(respuesta(401))
+      .mockResolvedValueOnce(respuesta(401, detalle));
     refrescoCompartido.mockResolvedValueOnce({});
 
-    expect(await preguntaLaSesionSinInterceptor()).toEqual({ estado: 'revocada', detalle });
+    expect(await preguntaLaSesionSinInterceptor()).toEqual({
+      estado: 'revocada',
+      detalle,
+    });
   });
 
   it('S6: si el refresco falla por otra cosa, no se sabe: fallo', async () => {
@@ -146,7 +180,10 @@ describe('preguntaLaSesionSinInterceptor', () => {
     fetchFalso.mockResolvedValueOnce(respuesta(401));
     refrescoCompartido.mockRejectedValueOnce(error);
 
-    expect(await preguntaLaSesionSinInterceptor()).toEqual({ estado: 'fallo', error });
+    expect(await preguntaLaSesionSinInterceptor()).toEqual({
+      estado: 'fallo',
+      error,
+    });
   });
 
   it('S7: un error del servidor es un fallo, no un rechazo', async () => {
@@ -163,14 +200,22 @@ describe('preguntaLaSesionSinInterceptor', () => {
     const error = new TypeError('Failed to fetch');
     fetchFalso.mockRejectedValueOnce(error);
 
-    expect(await preguntaLaSesionSinInterceptor()).toEqual({ estado: 'fallo', error });
+    expect(await preguntaLaSesionSinInterceptor()).toEqual({
+      estado: 'fallo',
+      error,
+    });
   });
 
   it('S9: un 401 con un cuerpo que no es JSON se refresca igual', async () => {
-    fetchFalso.mockResolvedValueOnce(sinJson(401)).mockResolvedValueOnce(respuesta(200, USUARIO));
+    fetchFalso
+      .mockResolvedValueOnce(sinJson(401))
+      .mockResolvedValueOnce(respuesta(200, USUARIO));
     refrescoCompartido.mockResolvedValueOnce({});
 
-    expect(await preguntaLaSesionSinInterceptor()).toEqual({ estado: 'ok', usuario: USUARIO });
+    expect(await preguntaLaSesionSinInterceptor()).toEqual({
+      estado: 'ok',
+      usuario: USUARIO,
+    });
   });
 
   it('S10: un 200 con un cuerpo que no es JSON es un fallo', async () => {

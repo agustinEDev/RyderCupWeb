@@ -25,16 +25,25 @@ class GetActiveDevicesUseCase {
 
     // Validate response structure
     if (!result || typeof result !== 'object') {
-      throw new Error('Invalid response from device repository: expected object');
+      throw new Error(
+        'Invalid response from device repository: expected object',
+      );
     }
 
     if (!Array.isArray(result.devices)) {
-      throw new Error('Invalid response from device repository: devices must be an array');
+      throw new Error(
+        'Invalid response from device repository: devices must be an array',
+      );
     }
 
     // Strict number validation: must be a number AND finite (excludes null, undefined, NaN, Infinity)
-    if (typeof result.total_count !== 'number' || !Number.isFinite(result.total_count)) {
-      throw new Error('Invalid response from device repository: total_count must be a finite number');
+    if (
+      typeof result.total_count !== 'number' ||
+      !Number.isFinite(result.total_count)
+    ) {
+      throw new Error(
+        'Invalid response from device repository: total_count must be a finite number',
+      );
     }
 
     return result;

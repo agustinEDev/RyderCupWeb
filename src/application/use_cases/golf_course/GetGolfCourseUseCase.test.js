@@ -11,7 +11,7 @@ describe('GetGolfCourseUseCase', () => {
     vi.clearAllMocks();
 
     golfCourseRepository = {
-      getById: vi.fn()
+      getById: vi.fn(),
     };
 
     useCase = new GetGolfCourseUseCase({ golfCourseRepository });
@@ -33,14 +33,14 @@ describe('GetGolfCourseUseCase', () => {
           identifier: 'Black',
           courseRating: 75.5,
           slopeRating: 140,
-          gender: 'MALE'
-        }
+          gender: 'MALE',
+        },
       ],
       holes: Array.from({ length: 18 }, (_, i) => ({
         holeNumber: i + 1,
         par: 4,
-        strokeIndex: i + 1
-      }))
+        strokeIndex: i + 1,
+      })),
     };
 
     golfCourseRepository.getById.mockResolvedValue(mockCourse);
@@ -56,9 +56,15 @@ describe('GetGolfCourseUseCase', () => {
 
   it('should throw error when course id is not provided', async () => {
     // Act & Assert
-    await expect(useCase.execute(null)).rejects.toThrow('Golf course ID is required');
-    await expect(useCase.execute(undefined)).rejects.toThrow('Golf course ID is required');
-    await expect(useCase.execute('')).rejects.toThrow('Golf course ID is required');
+    await expect(useCase.execute(null)).rejects.toThrow(
+      'Golf course ID is required',
+    );
+    await expect(useCase.execute(undefined)).rejects.toThrow(
+      'Golf course ID is required',
+    );
+    await expect(useCase.execute('')).rejects.toThrow(
+      'Golf course ID is required',
+    );
 
     expect(golfCourseRepository.getById).not.toHaveBeenCalled();
   });
@@ -66,10 +72,14 @@ describe('GetGolfCourseUseCase', () => {
   it('should throw error when course not found', async () => {
     // Arrange
     const courseId = 'non-existent-course';
-    golfCourseRepository.getById.mockRejectedValue(new Error('Golf course not found'));
+    golfCourseRepository.getById.mockRejectedValue(
+      new Error('Golf course not found'),
+    );
 
     // Act & Assert
-    await expect(useCase.execute(courseId)).rejects.toThrow('Golf course not found');
+    await expect(useCase.execute(courseId)).rejects.toThrow(
+      'Golf course not found',
+    );
   });
 
   it('should handle repository errors', async () => {
@@ -98,21 +108,21 @@ describe('GetGolfCourseUseCase', () => {
           identifier: 'Black',
           courseRating: 75.0,
           slopeRating: 135,
-          gender: 'MALE'
+          gender: 'MALE',
         },
         {
           color: 'YELLOW',
           identifier: 'Blue',
           courseRating: 72.0,
           slopeRating: 125,
-          gender: 'MALE'
-        }
+          gender: 'MALE',
+        },
       ],
       holes: Array.from({ length: 18 }, (_, i) => ({
         holeNumber: i + 1,
         par: i % 3 === 0 ? 5 : 4,
-        strokeIndex: i + 1
-      }))
+        strokeIndex: i + 1,
+      })),
     };
 
     golfCourseRepository.getById.mockResolvedValue(mockCourse);
@@ -136,7 +146,7 @@ describe('GetGolfCourseUseCase', () => {
       approvalStatus: 'PENDING_APPROVAL',
       totalPar: 72,
       tees: [],
-      holes: []
+      holes: [],
     };
 
     golfCourseRepository.getById.mockResolvedValue(mockCourse);
@@ -161,7 +171,7 @@ describe('GetGolfCourseUseCase', () => {
       isPendingUpdate: false,
       totalPar: 72,
       tees: [],
-      holes: []
+      holes: [],
     };
 
     golfCourseRepository.getById.mockResolvedValue(mockCourse);

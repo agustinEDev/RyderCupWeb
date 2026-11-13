@@ -58,30 +58,56 @@ describe('ScheduleMapper · las franjas (FE #824)', () => {
   });
 
   it('D1b: una sesión de la Ryder no tiene hoja', () => {
-    expect(ScheduleMapper.toRoundDTO(franja({ tee_sheet: null })).teeSheet).toBeNull();
+    expect(
+      ScheduleMapper.toRoundDTO(franja({ tee_sheet: null })).teeSheet,
+    ).toBeNull();
     const antigua = franja();
     delete antigua.tee_sheet;
     expect(ScheduleMapper.toRoundDTO(antigua).teeSheet).toBeNull();
   });
 
   it('D1c: el cupo total de las franjas, o null en una Ryder', () => {
-    expect(ScheduleMapper.toScheduleDTO({ days: [], tee_sheet_capacity: 172 }).teeSheetCapacity).toBe(172);
-    expect(ScheduleMapper.toScheduleDTO({ days: [] }).teeSheetCapacity).toBeNull();
+    expect(
+      ScheduleMapper.toScheduleDTO({ days: [], tee_sheet_capacity: 172 })
+        .teeSheetCapacity,
+    ).toBe(172);
+    expect(
+      ScheduleMapper.toScheduleDTO({ days: [] }).teeSheetCapacity,
+    ).toBeNull();
   });
 });
 
 describe('ScheduleMapper · el estado de la tarjeta en las partidas (QA 2, 12 oct 2026)', () => {
-  const grupo = (players) => ({ id: 'g', number: 1, tee_time: '08:00:00', status: 'SCHEDULED', incomplete: false, players });
-  const jugador = (extra = {}) => ({ user_id: 'u', name: 'U', handicap: '1.0', playing_handicap: 1, tee_color: 'YELLOW', strokes_by_hole: [], ...extra });
+  const grupo = (players) => ({
+    id: 'g',
+    number: 1,
+    tee_time: '08:00:00',
+    status: 'SCHEDULED',
+    incomplete: false,
+    players,
+  });
+  const jugador = (extra = {}) => ({
+    user_id: 'u',
+    name: 'U',
+    handicap: '1.0',
+    playing_handicap: 1,
+    tee_color: 'YELLOW',
+    strokes_by_hole: [],
+    ...extra,
+  });
 
   it('lleva el de cada jugador', () => {
-    const dto = ScheduleMapper.toTeeGroupDTO(grupo([jugador({ card_status: 'NO_PRESENTADO' })]));
+    const dto = ScheduleMapper.toTeeGroupDTO(
+      grupo([jugador({ card_status: 'NO_PRESENTADO' })]),
+    );
 
     expect(dto.players[0].cardStatus).toBe('NO_PRESENTADO');
   });
 
   it('un backend de antes, que no lo trae: juega', () => {
-    expect(ScheduleMapper.toTeeGroupDTO(grupo([jugador()])).players[0].cardStatus).toBe('JUGANDO');
+    expect(
+      ScheduleMapper.toTeeGroupDTO(grupo([jugador()])).players[0].cardStatus,
+    ).toBe('JUGANDO');
   });
 
   it('#544: cada partida dice si se puede tocar, y la franja si cabe una nueva', () => {
@@ -91,8 +117,24 @@ describe('ScheduleMapper · el estado de la tarjeta en las partidas (QA 2, 12 oc
       can_add_group: true,
       unassigned_players: [],
       groups: [
-        { id: 'p-1', number: 1, tee_time: '09:00', status: 'IN_PROGRESS', incomplete: false, can_change: false, players: [] },
-        { id: 'p-2', number: 2, tee_time: '09:10', status: 'SCHEDULED', incomplete: false, can_change: true, players: [] },
+        {
+          id: 'p-1',
+          number: 1,
+          tee_time: '09:00',
+          status: 'IN_PROGRESS',
+          incomplete: false,
+          can_change: false,
+          players: [],
+        },
+        {
+          id: 'p-2',
+          number: 2,
+          tee_time: '09:10',
+          status: 'SCHEDULED',
+          incomplete: false,
+          can_change: true,
+          players: [],
+        },
       ],
     });
 
@@ -105,7 +147,16 @@ describe('ScheduleMapper · el estado de la tarjeta en las partidas (QA 2, 12 oc
       round_id: 'r-1',
       editable: true,
       unassigned_players: [],
-      groups: [{ id: 'p-1', number: 1, tee_time: '09:00', status: 'SCHEDULED', incomplete: false, players: [] }],
+      groups: [
+        {
+          id: 'p-1',
+          number: 1,
+          tee_time: '09:00',
+          status: 'SCHEDULED',
+          incomplete: false,
+          players: [],
+        },
+      ],
     });
 
     expect(vista.canAddGroup).toBe(true);

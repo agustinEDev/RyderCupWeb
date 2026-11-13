@@ -56,7 +56,9 @@ export const getCsrfToken = () => getCsrfCookie() ?? currentCsrfToken ?? null;
 export const setCsrfTokenGlobal = (token) => {
   // Enforce the documented contract: token must be a string or null
   if (token !== null && typeof token !== 'string') {
-    throw new Error('[CSRF] Failed to set global CSRF token: expected string or null');
+    throw new Error(
+      '[CSRF] Failed to set global CSRF token: expected string or null',
+    );
   }
 
   currentCsrfToken = token;

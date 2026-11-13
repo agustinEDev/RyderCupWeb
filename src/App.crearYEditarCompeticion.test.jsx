@@ -9,23 +9,35 @@ import { act, render, screen } from '@testing-library/react';
  */
 const sesion = vi.hoisted(() => ({ usuario: { id: 'u-1' } }));
 
-vi.mock('./hooks/useLogout', () => ({ useLogout: () => ({ logout: vi.fn() }) }));
+vi.mock('./hooks/useLogout', () => ({
+  useLogout: () => ({ logout: vi.fn() }),
+}));
 vi.mock('./hooks/useAuth', () => ({
   getUserData: vi.fn(async () => sesion.usuario),
   useAuth: () => ({ user: sesion.usuario, loading: false }),
 }));
-vi.mock('./hooks/useTerminosPendientes', () => ({ useTerminosPendientes: () => false }));
+vi.mock('./hooks/useTerminosPendientes', () => ({
+  useTerminosPendientes: () => false,
+}));
 vi.mock('./hooks/useVaciadoDeLaCola', () => ({ useVaciadoDeLaCola: () => {} }));
 vi.mock('./hooks/useEnvioDeMuestras', () => ({ useEnvioDeMuestras: () => {} }));
-vi.mock('./hooks/useDeviceRevocationMonitor', () => ({ useDeviceRevocationMonitor: () => {} }));
+vi.mock('./hooks/useDeviceRevocationMonitor', () => ({
+  useDeviceRevocationMonitor: () => {},
+}));
 vi.mock('./hooks/useProactiveTokenRefresh', () => ({ default: () => {} }));
-vi.mock('./hooks/useCortinaDeArranque', () => ({ useCortinaDeArranque: () => {} }));
+vi.mock('./hooks/useCortinaDeArranque', () => ({
+  useCortinaDeArranque: () => {},
+}));
 vi.mock('./hooks/useVolverArriba', () => ({ useVolverArriba: () => {} }));
 vi.mock('./utils/sentryHelpers', () => ({ setUserContext: () => {} }));
 vi.mock('./components/ui/InstallBanner', () => ({ default: () => null }));
 vi.mock('./components/ui/AvisoSinConexion', () => ({ default: () => null }));
-vi.mock('./components/layout/BottomNav', () => ({ default: () => <nav>barra inferior</nav> }));
-vi.mock('./components/auth/ProtectedRoute', () => ({ default: ({ children }) => children }));
+vi.mock('./components/layout/BottomNav', () => ({
+  default: () => <nav>barra inferior</nav>,
+}));
+vi.mock('./components/auth/ProtectedRoute', () => ({
+  default: ({ children }) => children,
+}));
 vi.mock('./pages/Dashboard', () => ({ default: () => <p>panel</p> }));
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({ t: (k) => k, i18n: { language: 'es' } }),
@@ -57,7 +69,11 @@ const ve = async (ruta) => {
 
 describe('App · crear y editar competición, cada una con su instancia', () => {
   beforeEach(() => {
-    window.matchMedia = () => ({ matches: false, addEventListener() {}, removeEventListener() {} });
+    window.matchMedia = () => ({
+      matches: false,
+      addEventListener() {},
+      removeEventListener() {},
+    });
     instancias.n = 0;
     sesion.usuario = { id: 'u-1' };
   });
@@ -70,30 +86,42 @@ describe('App · crear y editar competición, cada una con su instancia', () => 
   it('T3-18: de editar a crear se monta una pantalla nueva, sin la espera ni los datos de la edición', async () => {
     window.history.pushState({}, '', '/competitions/c-1/edit');
     render(<App />);
-    expect(await screen.findByTestId('pantalla-de-competicion')).toHaveTextContent('instancia 1');
+    expect(
+      await screen.findByTestId('pantalla-de-competicion'),
+    ).toHaveTextContent('instancia 1');
 
     await ve('/competitions/create');
 
-    expect(await screen.findByTestId('pantalla-de-competicion')).toHaveTextContent('instancia 2');
+    expect(
+      await screen.findByTestId('pantalla-de-competicion'),
+    ).toHaveTextContent('instancia 2');
   });
 
   it('T3-18b: de editar una a editar otra se monta una pantalla nueva', async () => {
     window.history.pushState({}, '', '/competitions/c-1/edit');
     render(<App />);
-    expect(await screen.findByTestId('pantalla-de-competicion')).toHaveTextContent('instancia 1');
+    expect(
+      await screen.findByTestId('pantalla-de-competicion'),
+    ).toHaveTextContent('instancia 1');
 
     await ve('/competitions/c-2/edit');
 
-    expect(await screen.findByTestId('pantalla-de-competicion')).toHaveTextContent('instancia 2');
+    expect(
+      await screen.findByTestId('pantalla-de-competicion'),
+    ).toHaveTextContent('instancia 2');
   });
 
   it('T3-18: y de crear a editar, también', async () => {
     window.history.pushState({}, '', '/competitions/create');
     render(<App />);
-    expect(await screen.findByTestId('pantalla-de-competicion')).toHaveTextContent('instancia 1');
+    expect(
+      await screen.findByTestId('pantalla-de-competicion'),
+    ).toHaveTextContent('instancia 1');
 
     await ve('/competitions/c-1/edit');
 
-    expect(await screen.findByTestId('pantalla-de-competicion')).toHaveTextContent('instancia 2');
+    expect(
+      await screen.findByTestId('pantalla-de-competicion'),
+    ).toHaveTextContent('instancia 2');
   });
 });

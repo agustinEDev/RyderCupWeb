@@ -13,7 +13,16 @@ const enJuego = QuickMatch.fromPersistence({
   golfCourseId: 'course-1',
   matchFormat: 'SINGLES',
   status: QuickMatchStatus.inProgress(),
-  participants: [{ participantId: 'user-1', userId: 'user-1', name: 'Yo', handicap: 10, team: null, isGuest: false }],
+  participants: [
+    {
+      participantId: 'user-1',
+      userId: 'user-1',
+      name: 'Yo',
+      handicap: 10,
+      team: null,
+      isGuest: false,
+    },
+  ],
   scorerIds: ['user-1'],
 });
 
@@ -33,11 +42,15 @@ describe('CreateAndStartQuickMatchUseCase', () => {
 
   beforeEach(() => {
     repo = { createAndStart: vi.fn().mockResolvedValue(enJuego) };
-    useCase = new CreateAndStartQuickMatchUseCase({ quickMatchRepository: repo });
+    useCase = new CreateAndStartQuickMatchUseCase({
+      quickMatchRepository: repo,
+    });
   });
 
   it('pide su repositorio', () => {
-    expect(() => new CreateAndStartQuickMatchUseCase({})).toThrow('requires quickMatchRepository');
+    expect(() => new CreateAndStartQuickMatchUseCase({})).toThrow(
+      'requires quickMatchRepository',
+    );
   });
 
   it('manda el borrador y devuelve la partida en juego', async () => {
@@ -51,10 +64,26 @@ describe('CreateAndStartQuickMatchUseCase', () => {
   it.each([
     ['sin id', { quickMatchId: '' }, 'quickMatchId is required'],
     ['sin campo', { golfCourseId: null }, 'golfCourseId is required'],
-    ['sin anotadores', { scorerUserIds: [] }, 'scorerUserIds must contain 1 to 4 user ids'],
-    ['cinco anotadores', { scorerUserIds: ['a', 'b', 'c', 'd', 'e'] }, 'scorerUserIds must contain 1 to 4 user ids'],
-    ['los dos formatos', { matchFormat: 'SINGLES', scoringFormat: 'MEDAL' }, 'exactly one of matchFormat or scoringFormat'],
-    ['ningún formato', { matchFormat: null, scoringFormat: null }, 'exactly one of matchFormat or scoringFormat'],
+    [
+      'sin anotadores',
+      { scorerUserIds: [] },
+      'scorerUserIds must contain 1 to 4 user ids',
+    ],
+    [
+      'cinco anotadores',
+      { scorerUserIds: ['a', 'b', 'c', 'd', 'e'] },
+      'scorerUserIds must contain 1 to 4 user ids',
+    ],
+    [
+      'los dos formatos',
+      { matchFormat: 'SINGLES', scoringFormat: 'MEDAL' },
+      'exactly one of matchFormat or scoringFormat',
+    ],
+    [
+      'ningún formato',
+      { matchFormat: null, scoringFormat: null },
+      'exactly one of matchFormat or scoringFormat',
+    ],
   ])('%s: no llama al servidor', async (_caso, extra, mensaje) => {
     await expect(useCase.execute(peticion(extra))).rejects.toThrow(mensaje);
     expect(repo.createAndStart).not.toHaveBeenCalled();

@@ -30,7 +30,9 @@ describe('ApiScheduleRepository', () => {
       });
 
       const result = await repo.getSchedule('comp-1');
-      expect(apiRequest).toHaveBeenCalledWith('/api/v1/competitions/comp-1/schedule');
+      expect(apiRequest).toHaveBeenCalledWith(
+        '/api/v1/competitions/comp-1/schedule',
+      );
       expect(result.competitionId).toBe('comp-1');
     });
   });
@@ -43,7 +45,7 @@ describe('ApiScheduleRepository', () => {
       await repo.configureSchedule('comp-1', config);
       expect(apiRequest).toHaveBeenCalledWith(
         '/api/v1/competitions/comp-1/schedule/configure',
-        { method: 'POST', body: JSON.stringify(config) }
+        { method: 'POST', body: JSON.stringify(config) },
       );
     });
   });
@@ -62,7 +64,7 @@ describe('ApiScheduleRepository', () => {
       const result = await repo.assignTeams('comp-1', { mode: 'MANUAL' });
       expect(apiRequest).toHaveBeenCalledWith(
         '/api/v1/competitions/comp-1/teams',
-        expect.objectContaining({ method: 'POST' })
+        expect.objectContaining({ method: 'POST' }),
       );
       expect(result.mode).toBe('MANUAL');
     });
@@ -74,9 +76,12 @@ describe('ApiScheduleRepository', () => {
 
       await repo.undoTeams('comp-1');
 
-      expect(apiRequest).toHaveBeenCalledWith('/api/v1/competitions/comp-1/teams', {
-        method: 'DELETE',
-      });
+      expect(apiRequest).toHaveBeenCalledWith(
+        '/api/v1/competitions/comp-1/teams',
+        {
+          method: 'DELETE',
+        },
+      );
     });
   });
 
@@ -98,7 +103,7 @@ describe('ApiScheduleRepository', () => {
       const result = await repo.createRound('comp-1', roundData);
       expect(apiRequest).toHaveBeenCalledWith(
         '/api/v1/competitions/comp-1/rounds',
-        { method: 'POST', body: JSON.stringify(roundData) }
+        { method: 'POST', body: JSON.stringify(roundData) },
       );
       expect(result.id).toBe('r-1');
     });
@@ -118,7 +123,7 @@ describe('ApiScheduleRepository', () => {
       const result = await repo.updateRound('r-1', { date: '2025-06-16' });
       expect(apiRequest).toHaveBeenCalledWith(
         '/api/v1/competitions/rounds/r-1',
-        expect.objectContaining({ method: 'PUT' })
+        expect.objectContaining({ method: 'PUT' }),
       );
       expect(result.roundDate).toBe('2025-06-16');
     });
@@ -128,7 +133,10 @@ describe('ApiScheduleRepository', () => {
     it('should call DELETE', async () => {
       apiRequest.mockResolvedValue(null);
       await repo.deleteRound('r-1');
-      expect(apiRequest).toHaveBeenCalledWith('/api/v1/competitions/rounds/r-1', { method: 'DELETE' });
+      expect(apiRequest).toHaveBeenCalledWith(
+        '/api/v1/competitions/rounds/r-1',
+        { method: 'DELETE' },
+      );
     });
   });
 
@@ -139,7 +147,7 @@ describe('ApiScheduleRepository', () => {
       const result = await repo.generateMatches('r-1', {});
       expect(apiRequest).toHaveBeenCalledWith(
         '/api/v1/competitions/rounds/r-1/matches/generate',
-        { method: 'POST', body: '{}' }
+        { method: 'POST', body: '{}' },
       );
       expect(result.matches_created).toBe(6);
     });
@@ -149,7 +157,7 @@ describe('ApiScheduleRepository', () => {
       await repo.generateMatches('r-1');
       expect(apiRequest).toHaveBeenCalledWith(
         '/api/v1/competitions/rounds/r-1/matches/generate',
-        { method: 'POST', body: '{}' }
+        { method: 'POST', body: '{}' },
       );
     });
 
@@ -170,11 +178,14 @@ describe('ApiScheduleRepository', () => {
           method: 'POST',
           body: JSON.stringify({
             manual_pairings: [
-              { team_a_player_ids: ['u1', 'u2'], team_b_player_ids: ['u3', 'u4'] },
+              {
+                team_a_player_ids: ['u1', 'u2'],
+                team_b_player_ids: ['u3', 'u4'],
+              },
               { team_a_player_ids: ['u5'], team_b_player_ids: ['u6'] },
             ],
           }),
-        }
+        },
       );
     });
   });
@@ -189,7 +200,9 @@ describe('ApiScheduleRepository', () => {
       });
 
       const result = await repo.getMatchDetail('m-1');
-      expect(apiRequest).toHaveBeenCalledWith('/api/v1/competitions/matches/m-1');
+      expect(apiRequest).toHaveBeenCalledWith(
+        '/api/v1/competitions/matches/m-1',
+      );
       expect(result.id).toBe('m-1');
       expect(result.matchNumber).toBe(1);
     });
@@ -202,7 +215,7 @@ describe('ApiScheduleRepository', () => {
       await repo.updateMatchStatus('m-1', 'start');
       expect(apiRequest).toHaveBeenCalledWith(
         '/api/v1/competitions/matches/m-1/status',
-        { method: 'PUT', body: JSON.stringify({ action: 'start' }) }
+        { method: 'PUT', body: JSON.stringify({ action: 'start' }) },
       );
     });
 
@@ -212,7 +225,13 @@ describe('ApiScheduleRepository', () => {
       await repo.updateMatchStatus('m-1', 'complete', { score: '3&2' });
       expect(apiRequest).toHaveBeenCalledWith(
         '/api/v1/competitions/matches/m-1/status',
-        { method: 'PUT', body: JSON.stringify({ action: 'complete', result: { score: '3&2' } }) }
+        {
+          method: 'PUT',
+          body: JSON.stringify({
+            action: 'complete',
+            result: { score: '3&2' },
+          }),
+        },
       );
     });
   });
@@ -224,7 +243,10 @@ describe('ApiScheduleRepository', () => {
       await repo.declareWalkover('m-1', 'A', 'Player injured');
       expect(apiRequest).toHaveBeenCalledWith(
         '/api/v1/competitions/matches/m-1/walkover',
-        { method: 'POST', body: JSON.stringify({ winning_team: 'A', reason: 'Player injured' }) }
+        {
+          method: 'POST',
+          body: JSON.stringify({ winning_team: 'A', reason: 'Player injured' }),
+        },
       );
     });
   });
@@ -236,7 +258,13 @@ describe('ApiScheduleRepository', () => {
       await repo.reassignPlayers('m-1', ['u1', 'u2'], ['u3', 'u4']);
       expect(apiRequest).toHaveBeenCalledWith(
         '/api/v1/competitions/matches/m-1/players',
-        { method: 'PUT', body: JSON.stringify({ team_a_player_ids: ['u1', 'u2'], team_b_player_ids: ['u3', 'u4'] }) }
+        {
+          method: 'PUT',
+          body: JSON.stringify({
+            team_a_player_ids: ['u1', 'u2'],
+            team_b_player_ids: ['u3', 'u4'],
+          }),
+        },
       );
     });
   });

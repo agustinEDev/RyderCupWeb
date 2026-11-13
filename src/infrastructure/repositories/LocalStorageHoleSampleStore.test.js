@@ -18,9 +18,29 @@ import LocalStorageHoleSampleStore from './LocalStorageHoleSampleStore';
  * | S17  | al arrancar, claves viejas (marcas, muestras v1)         | se borran una vez; lo demás no se toca; sin reventar     |
  */
 
-const RESUMEN = { 3: [{ color: 'YELLOW', gender: 'MALE', primera: { tee: { lat: 1, lon: 2 }, bends: [], greenCenter: { lat: 3, lon: 4 } }, recoge: false }] };
+const RESUMEN = {
+  3: [
+    {
+      color: 'YELLOW',
+      gender: 'MALE',
+      primera: {
+        tee: { lat: 1, lon: 2 },
+        bends: [],
+        greenCenter: { lat: 3, lon: 4 },
+      },
+      recoge: false,
+    },
+  ],
+};
 const AMARILLA = { color: 'YELLOW', gender: 'MALE' };
-const entrada = ({ id = 'm-1', holeNumber = 3, enCola = '2026-10-16T08:00:00.000Z', golfCourseId = 'gc-1', barra = AMARILLA, lat = 36.28 } = {}) => ({
+const entrada = ({
+  id = 'm-1',
+  holeNumber = 3,
+  enCola = '2026-10-16T08:00:00.000Z',
+  golfCourseId = 'gc-1',
+  barra = AMARILLA,
+  lat = 36.28,
+} = {}) => ({
   id,
   golfCourseId,
   holeNumber,
@@ -106,22 +126,42 @@ describe('LocalStorageHoleSampleStore', () => {
       store.ponerEnCola('u1', entrada());
       store.ponerEnCola('u1', entrada({ id: 'm-4', holeNumber: 4 }));
       store.ponerEnCola('u1', entrada({ id: 'm-5', golfCourseId: 'gc-2' }));
-      store.ponerEnCola('u1', entrada({ id: 'm-6', enCola: '2026-10-16T08:30:00.000Z' }));
+      store.ponerEnCola(
+        'u1',
+        entrada({ id: 'm-6', enCola: '2026-10-16T08:30:00.000Z' }),
+      );
 
       expect(store.cola('u1').map((e) => e.id)).toEqual(['m-4', 'm-5', 'm-6']);
     });
 
     it('del mismo hoyo con otra barra (otro color, u otro género) se quedan todas', () => {
       store.ponerEnCola('u1', entrada());
-      store.ponerEnCola('u1', entrada({ id: 'm-2', barra: { color: 'RED', gender: 'MALE' } }));
-      store.ponerEnCola('u1', entrada({ id: 'm-3', barra: { color: 'YELLOW', gender: 'FEMALE' } }));
-      store.ponerEnCola('u1', entrada({ id: 'm-4', barra: { color: 'YELLOW', gender: null } }));
+      store.ponerEnCola(
+        'u1',
+        entrada({ id: 'm-2', barra: { color: 'RED', gender: 'MALE' } }),
+      );
+      store.ponerEnCola(
+        'u1',
+        entrada({ id: 'm-3', barra: { color: 'YELLOW', gender: 'FEMALE' } }),
+      );
+      store.ponerEnCola(
+        'u1',
+        entrada({ id: 'm-4', barra: { color: 'YELLOW', gender: null } }),
+      );
 
-      expect(store.cola('u1').map((e) => e.id)).toEqual(['m-1', 'm-2', 'm-3', 'm-4']);
+      expect(store.cola('u1').map((e) => e.id)).toEqual([
+        'm-1',
+        'm-2',
+        'm-3',
+        'm-4',
+      ]);
     });
 
     it('sin género cuenta igual que null', () => {
-      store.ponerEnCola('u1', entrada({ barra: { color: 'RED', gender: null } }));
+      store.ponerEnCola(
+        'u1',
+        entrada({ barra: { color: 'RED', gender: null } }),
+      );
       store.ponerEnCola('u1', entrada({ id: 'm-2', barra: { color: 'RED' } }));
 
       expect(store.cola('u1').map((e) => e.id)).toEqual(['m-2']);
@@ -131,9 +171,15 @@ describe('LocalStorageHoleSampleStore', () => {
       store.ponerEnCola('u1', entrada());
       store.ponerEnCola('u1', entrada({ id: 'm-4', holeNumber: 4 }));
 
-      store.ponerEnCola('u1', entrada({ enCola: '2026-10-16T08:10:00.000Z', lat: 36.29 }));
+      store.ponerEnCola(
+        'u1',
+        entrada({ enCola: '2026-10-16T08:10:00.000Z', lat: 36.29 }),
+      );
 
-      expect(store.cola('u1')).toEqual([entrada({ enCola: '2026-10-16T08:10:00.000Z', lat: 36.29 }), entrada({ id: 'm-4', holeNumber: 4 })]);
+      expect(store.cola('u1')).toEqual([
+        entrada({ enCola: '2026-10-16T08:10:00.000Z', lat: 36.29 }),
+        entrada({ id: 'm-4', holeNumber: 4 }),
+      ]);
     });
 
     it('quitar la enviada la saca', () => {
@@ -151,7 +197,9 @@ describe('LocalStorageHoleSampleStore', () => {
 
       store.quitarDeLaCola('u1', entrada());
 
-      expect(store.cola('u1')).toEqual([entrada({ enCola: '2026-10-16T08:30:00.000Z' })]);
+      expect(store.cola('u1')).toEqual([
+        entrada({ enCola: '2026-10-16T08:30:00.000Z' }),
+      ]);
     });
 
     it('quitar una que ya sustituyó otra (otro id) no quita la nueva', () => {
@@ -175,8 +223,22 @@ describe('LocalStorageHoleSampleStore', () => {
       guardado.set('muestrasPendientes:v2:u1', '{roto');
       expect(store.cola('u1')).toEqual([]);
 
-      const sin = (clave) => Object.fromEntries(Object.entries(entrada()).filter(([k]) => k !== clave));
-      guardado.set('muestrasPendientes:v2:u1', JSON.stringify([entrada(), null, { holeNumber: 4 }, 'x', sin('id'), sin('barra'), sin('enCola')]));
+      const sin = (clave) =>
+        Object.fromEntries(
+          Object.entries(entrada()).filter(([k]) => k !== clave),
+        );
+      guardado.set(
+        'muestrasPendientes:v2:u1',
+        JSON.stringify([
+          entrada(),
+          null,
+          { holeNumber: 4 },
+          'x',
+          sin('id'),
+          sin('barra'),
+          sin('enCola'),
+        ]),
+      );
       expect(store.cola('u1')).toEqual([entrada()]);
     });
 
@@ -236,7 +298,10 @@ describe('LocalStorageHoleSampleStore', () => {
       store.ponerEnCola('u1', entrada({ id: 'm-4', holeNumber: 4 }));
       store.saveResumen('gc-1', {});
 
-      expect(JSON.parse(guardado.get('muestrasPendientes:v2:u1'))).toEqual([entrada(), entrada({ id: 'm-4', holeNumber: 4 })]);
+      expect(JSON.parse(guardado.get('muestrasPendientes:v2:u1'))).toEqual([
+        entrada(),
+        entrada({ id: 'm-4', holeNumber: 4 }),
+      ]);
       expect(store.loadResumen('gc-1')).toEqual({});
     });
 
@@ -275,7 +340,11 @@ describe('LocalStorageHoleSampleStore', () => {
 
       new LocalStorageHoleSampleStore();
 
-      expect([...guardado.keys()].sort()).toEqual(['mapaDeHoyos:v1:gc-1', 'muestrasDeHoyos:v3:gc-1', 'otraCosa']);
+      expect([...guardado.keys()].sort()).toEqual([
+        'mapaDeHoyos:v1:gc-1',
+        'muestrasDeHoyos:v3:gc-1',
+        'otraCosa',
+      ]);
     });
 
     it('si localStorage no deja recorrerlo o borrar, no revienta', () => {
@@ -316,18 +385,34 @@ describe('LocalStorageHoleSampleStore', () => {
     });
 
     it('/code-review: una versión más vieja de la misma muestra no pisa a la nueva', () => {
-      store.apuntarMia('u1', entrada({ id: 'x', enCola: '2026-10-16T08:05:00.000Z', lat: 2 }));
-      store.apuntarMia('u1', entrada({ id: 'x', enCola: '2026-10-16T08:00:00.000Z', lat: 1 }));
+      store.apuntarMia(
+        'u1',
+        entrada({ id: 'x', enCola: '2026-10-16T08:05:00.000Z', lat: 2 }),
+      );
+      store.apuntarMia(
+        'u1',
+        entrada({ id: 'x', enCola: '2026-10-16T08:00:00.000Z', lat: 1 }),
+      );
 
-      expect(store.mias('u1').map((e) => e.enCola)).toEqual(['2026-10-16T08:05:00.000Z']);
+      expect(store.mias('u1').map((e) => e.enCola)).toEqual([
+        '2026-10-16T08:05:00.000Z',
+      ]);
     });
 
     it('CodeRabbit: las horas se comparan como instantes, no como texto', () => {
       // 10:00+02:00 son las 08:00Z: más vieja que 08:30Z aunque como texto sea mayor
-      store.apuntarMia('u1', entrada({ id: 'x', enCola: '2026-10-16T08:30:00.000Z', lat: 2 }));
-      store.apuntarMia('u1', entrada({ id: 'x', enCola: '2026-10-16T10:00:00.000+02:00', lat: 1 }));
+      store.apuntarMia(
+        'u1',
+        entrada({ id: 'x', enCola: '2026-10-16T08:30:00.000Z', lat: 2 }),
+      );
+      store.apuntarMia(
+        'u1',
+        entrada({ id: 'x', enCola: '2026-10-16T10:00:00.000+02:00', lat: 1 }),
+      );
 
-      expect(store.mias('u1').map((e) => e.enCola)).toEqual(['2026-10-16T08:30:00.000Z']);
+      expect(store.mias('u1').map((e) => e.enCola)).toEqual([
+        '2026-10-16T08:30:00.000Z',
+      ]);
     });
 
     it('sin jugador, nada', () => {
@@ -338,7 +423,15 @@ describe('LocalStorageHoleSampleStore', () => {
     });
 
     it(`como mucho ${500}: más, se olvidan las más viejas`, () => {
-      for (let i = 1; i <= 505; i += 1) store.apuntarMia('u1', entrada({ id: `m${i}`, holeNumber: (i % 18) + 1, golfCourseId: `gc-${i}` }));
+      for (let i = 1; i <= 505; i += 1)
+        store.apuntarMia(
+          'u1',
+          entrada({
+            id: `m${i}`,
+            holeNumber: (i % 18) + 1,
+            golfCourseId: `gc-${i}`,
+          }),
+        );
 
       const mias = store.mias('u1');
       expect(mias).toHaveLength(500);

@@ -5,7 +5,13 @@
  * @see docs/FRONTEND_INTEGRATION_v1.13.0.md - CSRF Protection section
  */
 
-import { createContext, useContext, useState, useCallback, useEffect } from 'react';
+import {
+  createContext,
+  useContext,
+  useState,
+  useCallback,
+  useEffect,
+} from 'react';
 import {
   setCsrfTokenGlobal,
   olvidaLoGuardadoDeLaCuenta,
@@ -110,7 +116,10 @@ export const AuthProvider = ({ children }) => {
       // Solo lo permitido (fase 3, FE-06): ni correo, ni el pendiente, ni género. En
       // memoria sigue completo
       try {
-        localStorage.setItem('user', JSON.stringify(copiaDelUsuarioEnElDispositivo(userData)));
+        localStorage.setItem(
+          'user',
+          JSON.stringify(copiaDelUsuarioEnElDispositivo(userData)),
+        );
       } catch (error) {
         // Sin espacio (o sin almacenamiento): se entra igual, con el usuario en memoria,
         // como en el arranque. Solo se pierde poder recordarlo al recargar

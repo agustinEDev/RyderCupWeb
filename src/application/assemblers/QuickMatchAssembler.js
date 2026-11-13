@@ -14,7 +14,9 @@ class QuickMatchAssembler {
    */
   static toSimpleDTO(quickMatch) {
     if (!(quickMatch instanceof QuickMatch)) {
-      throw new Error('QuickMatchAssembler.toSimpleDTO: quickMatch must be a QuickMatch instance');
+      throw new Error(
+        'QuickMatchAssembler.toSimpleDTO: quickMatch must be a QuickMatch instance',
+      );
     }
 
     return {
@@ -56,10 +58,14 @@ class QuickMatchAssembler {
    */
   static toSimpleDTOMany(quickMatches) {
     if (!Array.isArray(quickMatches)) {
-      throw new Error('QuickMatchAssembler.toSimpleDTOMany: quickMatches must be an array');
+      throw new Error(
+        'QuickMatchAssembler.toSimpleDTOMany: quickMatches must be an array',
+      );
     }
 
-    return quickMatches.map((quickMatch) => QuickMatchAssembler.toSimpleDTO(quickMatch));
+    return quickMatches.map((quickMatch) =>
+      QuickMatchAssembler.toSimpleDTO(quickMatch),
+    );
   }
 }
 

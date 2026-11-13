@@ -16,20 +16,29 @@ describe('ConfigureScheduleUseCase', () => {
     scheduleRepository.configureSchedule.mockResolvedValue({ success: true });
 
     const result = await useCase.execute('comp-1', config);
-    expect(scheduleRepository.configureSchedule).toHaveBeenCalledWith('comp-1', config);
+    expect(scheduleRepository.configureSchedule).toHaveBeenCalledWith(
+      'comp-1',
+      config,
+    );
     expect(result.success).toBe(true);
   });
 
   it('should throw if competitionId is missing', async () => {
-    await expect(useCase.execute('', {})).rejects.toThrow('Competition ID is required');
+    await expect(useCase.execute('', {})).rejects.toThrow(
+      'Competition ID is required',
+    );
   });
 
   it('should throw if config is missing', async () => {
-    await expect(useCase.execute('comp-1', null)).rejects.toThrow('Schedule configuration is required');
+    await expect(useCase.execute('comp-1', null)).rejects.toThrow(
+      'Schedule configuration is required',
+    );
   });
 
   it('should propagate repository errors', async () => {
-    scheduleRepository.configureSchedule.mockRejectedValue(new Error('Server error'));
+    scheduleRepository.configureSchedule.mockRejectedValue(
+      new Error('Server error'),
+    );
     await expect(useCase.execute('comp-1', {})).rejects.toThrow('Server error');
   });
 });

@@ -54,7 +54,10 @@ function detectIOSInstallRoute() {
   // lista de tokens ajenos (CriOS, FxiOS...) dejaria a cualquier navegador que
   // no este en la lista —Brave, DuckDuckGo, Opera, el que salga manana— con las
   // instrucciones de Safari, que no le sirven. Ante la duda, el menu propio.
-  const isSafari = /version\/[\d.]+/i.test(ua) && /safari\//i.test(ua) && !/crios|fxios|edgios|opt\/|duckduckgo/i.test(ua);
+  const isSafari =
+    /version\/[\d.]+/i.test(ua) &&
+    /safari\//i.test(ua) &&
+    !/crios|fxios|edgios|opt\/|duckduckgo/i.test(ua);
   if (!isSafari) return 'other-browser';
 
   // Un UA que se identifica como iPhone o iPod manda, y corta aqui: la regla de
@@ -63,7 +66,10 @@ function detectIOSInstallRoute() {
   if (/iphone|ipod/i.test(ua)) return 'safari-iphone';
 
   // iPadOS 13+ se presenta como MacIntel, de ahi el maxTouchPoints
-  const isIPad = /ipad/i.test(ua) || ((/macintosh/i.test(ua) || navigator.platform === 'MacIntel') && navigator.maxTouchPoints > 1);
+  const isIPad =
+    /ipad/i.test(ua) ||
+    ((/macintosh/i.test(ua) || navigator.platform === 'MacIntel') &&
+      navigator.maxTouchPoints > 1);
 
   return isIPad ? 'safari-ipad' : 'safari-iphone';
 }
@@ -77,13 +83,21 @@ function detectDesktopSafari() {
 
 export function useInstallPrompt() {
   // El evento pudo llegar antes de montar: se recoge ya capturado (FE #334)
-  const [deferredPrompt, setDeferredPrompt] = useState(() => getCapturedInstallPrompt());
+  const [deferredPrompt, setDeferredPrompt] = useState(() =>
+    getCapturedInstallPrompt(),
+  );
   const [isIOS] = useState(() => detectIOS());
   const [iosInstallRoute] = useState(() => detectIOSInstallRoute());
-  const [isDesktopSafari] = useState(() => !detectIOS() && detectDesktopSafari());
+  const [isDesktopSafari] = useState(
+    () => !detectIOS() && detectDesktopSafari(),
+  );
   const [isInstalled, setIsInstalled] = useState(() => detectStandalone());
   const [canInstall, setCanInstall] = useState(
-    () => !isDismissed() && (detectIOS() || detectDesktopSafari() || getCapturedInstallPrompt() !== null)
+    () =>
+      !isDismissed() &&
+      (detectIOS() ||
+        detectDesktopSafari() ||
+        getCapturedInstallPrompt() !== null),
   );
 
   useEffect(() => {
@@ -119,5 +133,13 @@ export function useInstallPrompt() {
     setCanInstall(false);
   };
 
-  return { canInstall, isIOS, iosInstallRoute, isDesktopSafari, isInstalled, install, dismiss };
+  return {
+    canInstall,
+    isIOS,
+    iosInstallRoute,
+    isDesktopSafari,
+    isInstalled,
+    install,
+    dismiss,
+  };
 }

@@ -50,25 +50,43 @@ describe('ScorecardTable · en el móvil, una tarjeta vertical por participante 
   });
 
   it('T1: individual, dos tarjetas de 18 hoyos y ninguna tabla horizontal', () => {
-    render(<ScorecardTable holes={holes} players={singles} currentUserId="u1" matchFormat="SINGLES" />);
+    render(
+      <ScorecardTable
+        holes={holes}
+        players={singles}
+        currentUserId="u1"
+        matchFormat="SINGLES"
+      />,
+    );
 
     expect(screen.getByTestId('carrusel-de-tarjetas')).toBeInTheDocument();
     expect(screen.getAllByRole('tabpanel')).toHaveLength(2);
     for (const tarjeta of ['u1', 'u2']) {
-      for (let h = 1; h <= 18; h += 1) expect(fila(tarjeta, h)).toBeInTheDocument();
+      for (let h = 1; h <= 18; h += 1)
+        expect(fila(tarjeta, h)).toBeInTheDocument();
     }
     expect(screen.queryAllByTestId('vuelta-horizontal')).toHaveLength(0);
   });
 
   it('T2: cada fila dice el par, el HCP y los golpes de esa tarjeta', () => {
     const scores = [golpes(2, { u1: [2], u2: [4] }, { winner: 'A' })];
-    render(<ScorecardTable holes={holes} players={singles} scores={scores} currentUserId="u1" matchFormat="SINGLES" />);
+    render(
+      <ScorecardTable
+        holes={holes}
+        players={singles}
+        scores={scores}
+        currentUserId="u1"
+        matchFormat="SINGLES"
+      />,
+    );
 
     const deNacho = fila('u1', 2);
     expect(within(deNacho).getByTestId('par')).toHaveTextContent('3');
     expect(within(deNacho).getByTestId('hcp')).toHaveTextContent('17');
     expect(within(deNacho).getByTestId('golf-figure')).toHaveTextContent('2');
-    expect(within(fila('u2', 2)).getByTestId('golf-figure')).toHaveTextContent('4');
+    expect(within(fila('u2', 2)).getByTestId('golf-figure')).toHaveTextContent(
+      '4',
+    );
   });
 
   it('T3: el resultado del hoyo, visto desde cada tarjeta', () => {
@@ -76,13 +94,29 @@ describe('ScorecardTable · en el móvil, una tarjeta vertical por participante 
       golpes(1, { u1: [3], u2: [4] }, { winner: 'A' }),
       golpes(2, { u1: [3], u2: [3] }, { winner: 'HALVED' }),
     ];
-    render(<ScorecardTable holes={holes} players={singles} scores={scores} currentUserId="u1" matchFormat="SINGLES" />);
+    render(
+      <ScorecardTable
+        holes={holes}
+        players={singles}
+        scores={scores}
+        currentUserId="u1"
+        matchFormat="SINGLES"
+      />,
+    );
 
-    expect(within(fila('u1', 1)).getByTestId('resultado')).toHaveTextContent('scorecard.holeWon');
-    expect(within(fila('u2', 1)).getByTestId('resultado')).toHaveTextContent('scorecard.holeLost');
-    expect(within(fila('u1', 2)).getByTestId('resultado')).toHaveTextContent('scorecard.halved');
+    expect(within(fila('u1', 1)).getByTestId('resultado')).toHaveTextContent(
+      'scorecard.holeWon',
+    );
+    expect(within(fila('u2', 1)).getByTestId('resultado')).toHaveTextContent(
+      'scorecard.holeLost',
+    );
+    expect(within(fila('u1', 2)).getByTestId('resultado')).toHaveTextContent(
+      'scorecard.halved',
+    );
     // Un hoyo sin jugar no dice nada
-    expect(within(fila('u1', 3)).getByTestId('resultado')).toHaveTextContent('');
+    expect(within(fila('u1', 3)).getByTestId('resultado')).toHaveTextContent(
+      '',
+    );
   });
 
   it('T4: fourball, cuatro tarjetas y marcado el hoyo donde contó su bola', () => {
@@ -93,9 +127,21 @@ describe('ScorecardTable · en el móvil, una tarjeta vertical por participante 
       { userId: 'b2', userName: 'Óscar', team: 'B' },
     ];
     const scores = [
-      golpes(1, { a1: [3], a2: [5], b1: [4], b2: [4] }, { winner: 'A', bestBallPlayerA: ['a1'], bestBallPlayerB: ['b1'] }),
+      golpes(
+        1,
+        { a1: [3], a2: [5], b1: [4], b2: [4] },
+        { winner: 'A', bestBallPlayerA: ['a1'], bestBallPlayerB: ['b1'] },
+      ),
     ];
-    render(<ScorecardTable holes={holes} players={fourball} scores={scores} currentUserId="a1" matchFormat="FOURBALL" />);
+    render(
+      <ScorecardTable
+        holes={holes}
+        players={fourball}
+        scores={scores}
+        currentUserId="a1"
+        matchFormat="FOURBALL"
+      />,
+    );
 
     expect(screen.getAllByRole('tabpanel')).toHaveLength(4);
     expect(fila('a1', 1).dataset.mejorBola).toBe('true');
@@ -109,10 +155,19 @@ describe('ScorecardTable · en el móvil, una tarjeta vertical por participante 
       { userId: 'b1', userName: 'Luna', team: 'B' },
       { userId: 'b2', userName: 'Óscar', team: 'B' },
     ];
-    render(<ScorecardTable holes={holes} players={foursomes} currentUserId="a1" matchFormat="FOURSOMES" />);
+    render(
+      <ScorecardTable
+        holes={holes}
+        players={foursomes}
+        currentUserId="a1"
+        matchFormat="FOURSOMES"
+      />,
+    );
 
     expect(screen.getAllByRole('tabpanel')).toHaveLength(2);
-    expect(screen.getByRole('tab', { name: 'Nacho / Agustín' })).toBeInTheDocument();
+    expect(
+      screen.getByRole('tab', { name: 'Nacho / Agustín' }),
+    ).toBeInTheDocument();
   });
 
   it('T6: Ida, Vuelta y Total de cada tarjeta', () => {
@@ -120,7 +175,15 @@ describe('ScorecardTable · en el móvil, una tarjeta vertical por participante 
       golpes(1, { u1: [5], u2: [4] }, { winner: 'B' }),
       golpes(10, { u1: [3], u2: [4] }, { winner: 'A' }),
     ];
-    render(<ScorecardTable holes={holes} players={singles} scores={scores} currentUserId="u1" matchFormat="SINGLES" />);
+    render(
+      <ScorecardTable
+        holes={holes}
+        players={singles}
+        scores={scores}
+        currentUserId="u1"
+        matchFormat="SINGLES"
+      />,
+    );
 
     const tarjeta = screen.getByTestId('tarjeta-vertical-u1');
     expect(within(tarjeta).getByTestId('suma-ida')).toHaveTextContent('5');
@@ -129,20 +192,44 @@ describe('ScorecardTable · en el móvil, una tarjeta vertical por participante 
   });
 
   it('T7: el interruptor bruto/neto también cambia los golpes en el móvil', () => {
-    const conGolpes = singles.map((p) => ({ ...p, strokesReceived: p.userId === 'u1' ? [1] : [] }));
+    const conGolpes = singles.map((p) => ({
+      ...p,
+      strokesReceived: p.userId === 'u1' ? [1] : [],
+    }));
     const scores = [golpes(1, { u1: [5, 4], u2: [4] }, { winner: 'HALVED' })];
-    render(<ScorecardTable holes={holes} players={conGolpes} scores={scores} currentUserId="u1" matchFormat="SINGLES" />);
+    render(
+      <ScorecardTable
+        holes={holes}
+        players={conGolpes}
+        scores={scores}
+        currentUserId="u1"
+        matchFormat="SINGLES"
+      />,
+    );
 
-    expect(within(fila('u1', 1)).getByTestId('golf-figure')).toHaveTextContent('5');
+    expect(within(fila('u1', 1)).getByTestId('golf-figure')).toHaveTextContent(
+      '5',
+    );
     fireEvent.click(screen.getByRole('switch'));
-    expect(within(fila('u1', 1)).getByTestId('golf-figure')).toHaveTextContent('4');
+    expect(within(fila('u1', 1)).getByTestId('golf-figure')).toHaveTextContent(
+      '4',
+    );
   });
 
   it('T8: en tablet y ordenador, la tarjeta horizontal de siempre', () => {
     pantalla.movil = false;
-    render(<ScorecardTable holes={holes} players={singles} currentUserId="u1" matchFormat="SINGLES" />);
+    render(
+      <ScorecardTable
+        holes={holes}
+        players={singles}
+        currentUserId="u1"
+        matchFormat="SINGLES"
+      />,
+    );
 
-    expect(screen.queryByTestId('carrusel-de-tarjetas')).not.toBeInTheDocument();
+    expect(
+      screen.queryByTestId('carrusel-de-tarjetas'),
+    ).not.toBeInTheDocument();
     expect(screen.getAllByTestId('vuelta-horizontal')).toHaveLength(2);
   });
 });
@@ -158,14 +245,33 @@ describe('ScorecardTable · el hándicap de juego en el móvil (#414)', () => {
   });
 
   // «HCP 12»: con «Hcp de juego 12» la pareja de foursomes no cabía en una línea
-  const hcp = (valor) => `scorecard.playingHandicapShort ${JSON.stringify({ value: valor })}`;
+  const hcp = (valor) =>
+    `scorecard.playingHandicapShort ${JSON.stringify({ value: valor })}`;
 
   it('T1: la cabecera de cada tarjeta dice su hándicap de juego', () => {
-    const conHandicap = singles.map((p, i) => ({ ...p, playingHandicap: i === 0 ? -2 : 14 }));
-    render(<ScorecardTable holes={holes} players={conHandicap} currentUserId="u1" matchFormat="SINGLES" />);
+    const conHandicap = singles.map((p, i) => ({
+      ...p,
+      playingHandicap: i === 0 ? -2 : 14,
+    }));
+    render(
+      <ScorecardTable
+        holes={holes}
+        players={conHandicap}
+        currentUserId="u1"
+        matchFormat="SINGLES"
+      />,
+    );
 
-    expect(within(screen.getByTestId('tarjeta-vertical-u1')).getByTestId('hcp-de-juego-u1')).toHaveTextContent(hcp('+2'));
-    expect(within(screen.getByTestId('tarjeta-vertical-u2')).getByTestId('hcp-de-juego-u2')).toHaveTextContent(hcp('14'));
+    expect(
+      within(screen.getByTestId('tarjeta-vertical-u1')).getByTestId(
+        'hcp-de-juego-u1',
+      ),
+    ).toHaveTextContent(hcp('+2'));
+    expect(
+      within(screen.getByTestId('tarjeta-vertical-u2')).getByTestId(
+        'hcp-de-juego-u2',
+      ),
+    ).toHaveTextContent(hcp('14'));
   });
 
   it('T2: foursomes, los dos de la pareja en su tarjeta, cada uno junto a su nombre', () => {
@@ -175,23 +281,52 @@ describe('ScorecardTable · el hándicap de juego en el móvil (#414)', () => {
       { userId: 'b1', userName: 'Luna', team: 'B', playingHandicap: 20 },
       { userId: 'b2', userName: 'Óscar', team: 'B', playingHandicap: 3 },
     ];
-    render(<ScorecardTable holes={holes} players={foursomes} currentUserId="a1" matchFormat="FOURSOMES" />);
+    render(
+      <ScorecardTable
+        holes={holes}
+        players={foursomes}
+        currentUserId="a1"
+        matchFormat="FOURSOMES"
+      />,
+    );
 
     const tarjeta = within(screen.getByTestId('tarjeta-vertical-team-a'));
-    expect(tarjeta.getByTestId('jugador-a1')).toHaveTextContent(`Nacho${hcp('8')}`);
-    expect(tarjeta.getByTestId('jugador-a2')).toHaveTextContent(`Agustín${hcp('+1')}`);
+    expect(tarjeta.getByTestId('jugador-a1')).toHaveTextContent(
+      `Nacho${hcp('8')}`,
+    );
+    expect(tarjeta.getByTestId('jugador-a2')).toHaveTextContent(
+      `Agustín${hcp('+1')}`,
+    );
     // La pestaña sigue diciendo solo los nombres
-    expect(screen.getByRole('tab', { name: 'Nacho / Agustín' })).toBeInTheDocument();
+    expect(
+      screen.getByRole('tab', { name: 'Nacho / Agustín' }),
+    ).toBeInTheDocument();
   });
 
   it('T3: en la línea del nombre; si no cabe, se corta el nombre', () => {
-    const largo = [{ userId: 'u1', userName: 'Maximiliano Fernández de la Vega', team: 'A', playingHandicap: 12 }];
-    render(<ScorecardTable holes={holes} players={largo} currentUserId="u1" matchFormat="SINGLES" />);
+    const largo = [
+      {
+        userId: 'u1',
+        userName: 'Maximiliano Fernández de la Vega',
+        team: 'A',
+        playingHandicap: 12,
+      },
+    ];
+    render(
+      <ScorecardTable
+        holes={holes}
+        players={largo}
+        currentUserId="u1"
+        matchFormat="SINGLES"
+      />,
+    );
 
     const tarjeta = within(screen.getByTestId('tarjeta-vertical-u1'));
     const jugador = tarjeta.getByTestId('jugador-u1');
     const valor = tarjeta.getByTestId('hcp-de-juego-u1');
-    const nombre = within(jugador).getByText('Maximiliano Fernández de la Vega');
+    const nombre = within(jugador).getByText(
+      'Maximiliano Fernández de la Vega',
+    );
     // Nombre y valor, hermanos en la misma fila flexible
     expect(valor.parentElement).toBe(jugador);
     expect(nombre.parentElement).toBe(jugador);
@@ -206,12 +341,29 @@ describe('ScorecardTable · el hándicap de juego en el móvil (#414)', () => {
 
   it('T5: foursomes, la pareja en UNA línea que no se parte: se cortan los nombres', () => {
     const foursomes = [
-      { userId: 'a1', userName: 'Maximiliano Fernández de la Vega', team: 'A', playingHandicap: 8 },
-      { userId: 'a2', userName: 'Bartolomé Rodríguez-Villanueva', team: 'A', playingHandicap: -1 },
+      {
+        userId: 'a1',
+        userName: 'Maximiliano Fernández de la Vega',
+        team: 'A',
+        playingHandicap: 8,
+      },
+      {
+        userId: 'a2',
+        userName: 'Bartolomé Rodríguez-Villanueva',
+        team: 'A',
+        playingHandicap: -1,
+      },
       { userId: 'b1', userName: 'Luna', team: 'B', playingHandicap: 20 },
       { userId: 'b2', userName: 'Óscar', team: 'B', playingHandicap: 3 },
     ];
-    render(<ScorecardTable holes={holes} players={foursomes} currentUserId="a1" matchFormat="FOURSOMES" />);
+    render(
+      <ScorecardTable
+        holes={holes}
+        players={foursomes}
+        currentUserId="a1"
+        matchFormat="FOURSOMES"
+      />,
+    );
 
     const tarjeta = within(screen.getByTestId('tarjeta-vertical-team-a'));
     const a1 = tarjeta.getByTestId('jugador-a1');
@@ -225,10 +377,19 @@ describe('ScorecardTable · el hándicap de juego en el móvil (#414)', () => {
     expect(linea.className).toContain('min-w-0');
     expect(linea.className).not.toMatch(/flex-wrap(\s|$)|break-words|flex-col/);
     // Cada miembro encoge cortando su nombre; su HCP no encoge
-    for (const [jugador, id] of [[a1, 'a1'], [a2, 'a2']]) {
+    for (const [jugador, id] of [
+      [a1, 'a1'],
+      [a2, 'a2'],
+    ]) {
       expect(jugador.className).toContain('min-w-0');
-      expect(within(jugador).getByText(foursomes.find(p => p.userId === id).userName).className).toMatch(/\btruncate\b/);
-      expect(tarjeta.getByTestId(`hcp-de-juego-${id}`).className).toContain('shrink-0');
+      expect(
+        within(jugador).getByText(
+          foursomes.find((p) => p.userId === id).userName,
+        ).className,
+      ).toMatch(/\btruncate\b/);
+      expect(tarjeta.getByTestId(`hcp-de-juego-${id}`).className).toContain(
+        'shrink-0',
+      );
     }
     // La barra entre los dos tampoco encoge ni se pierde
     const barra = a1.nextElementSibling;
@@ -239,10 +400,19 @@ describe('ScorecardTable · el hándicap de juego en el móvil (#414)', () => {
   });
 
   it('T4: sin hándicap de juego, la cabecera solo dice el nombre', () => {
-    render(<ScorecardTable holes={holes} players={singles} currentUserId="u1" matchFormat="SINGLES" />);
+    render(
+      <ScorecardTable
+        holes={holes}
+        players={singles}
+        currentUserId="u1"
+        matchFormat="SINGLES"
+      />,
+    );
 
     expect(screen.queryAllByTestId(/^hcp-de-juego-/)).toHaveLength(0);
     expect(screen.getByTestId('jugador-u1').textContent).toBe('Nacho Noche');
-    expect(screen.getByTestId('tarjeta-vertical-u1')).not.toHaveTextContent('undefined');
+    expect(screen.getByTestId('tarjeta-vertical-u1')).not.toHaveTextContent(
+      'undefined',
+    );
   });
 });

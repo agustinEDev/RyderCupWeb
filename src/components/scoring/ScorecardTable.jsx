@@ -8,7 +8,10 @@ import TarjetaVertical from './TarjetaVertical';
 import ColumnasDeLaVuelta, { CLASE_DE_LA_TABLA } from './ColumnasDeLaVuelta';
 import NombreQueCabe from './NombreQueCabe';
 import { useEsMovil } from '../../hooks/useEsMovil';
-import { conLaMiaPrimero, conMiNombrePrimero } from '../../utils/ordenDeLasTarjetas';
+import {
+  conLaMiaPrimero,
+  conMiNombrePrimero,
+} from '../../utils/ordenDeLasTarjetas';
 
 /**
  * La coincidencia entre los dos anotadores no se marca aquí. Es un dato de la
@@ -18,7 +21,16 @@ import { conLaMiaPrimero, conMiNombrePrimero } from '../../utils/ordenDeLasTarje
  * rejilla de iconos y competía con el propio resultado, que es lo que se viene
  * a leer aquí.
  */
-const ScorecardTable = ({ holes = [], scores = [], players = [], currentUserId, teamAName, teamBName, matchFormat, retirados = [] }) => {
+const ScorecardTable = ({
+  holes = [],
+  scores = [],
+  players = [],
+  currentUserId,
+  teamAName,
+  teamBName,
+  matchFormat,
+  retirados = [],
+}) => {
   const { t } = useTranslation('scoring');
   const [showNet, setShowNet] = useState(false);
   const esMovil = useEsMovil();
@@ -31,7 +43,8 @@ const ScorecardTable = ({ holes = [], scores = [], players = [], currentUserId, 
   // nada compartido que decidir, y era donde un jugador de otra barra veía su
   // 4 pintado como birdie contra un par que no era el suyo. Ver
   // RyderCupWeb#417.
-  const cardOf = (userId) => players.find(p => p.userId === userId)?.holeCard ?? [];
+  const cardOf = (userId) =>
+    players.find((p) => p.userId === userId)?.holeCard ?? [];
 
   // Se resuelve por FILA, no por jugador: en foursomes la fila es el bando
   // entero, y leer el par del primero le pinta al otro un par que no juega.
@@ -39,26 +52,29 @@ const ScorecardTable = ({ holes = [], scores = [], players = [], currentUserId, 
   // se usa la del campo: no es la de ninguno de los dos, que es justo lo que la
   // hace preferible a la de uno.
   const parFor = (playerIds, holeNumber, fallbackPar) => {
-    const pars = playerIds.map(id => cardOf(id).find(h => h.holeNumber === holeNumber)?.par);
+    const pars = playerIds.map(
+      (id) => cardOf(id).find((h) => h.holeNumber === holeNumber)?.par,
+    );
     const [first] = pars;
     if (first == null) return fallbackPar;
-    return pars.every(par => par === first) ? first : fallbackPar;
+    return pars.every((par) => par === first) ? first : fallbackPar;
   };
 
-  const outHoles = holes.filter(h => h.holeNumber <= 9);
-  const inHoles = holes.filter(h => h.holeNumber > 9);
+  const outHoles = holes.filter((h) => h.holeNumber <= 9);
+  const inHoles = holes.filter((h) => h.holeNumber > 9);
 
-  const isTeamFormat = matchFormat === 'FOURBALL' || matchFormat === 'FOURSOMES';
+  const isTeamFormat =
+    matchFormat === 'FOURBALL' || matchFormat === 'FOURSOMES';
 
   // El bando de foursomes ocupa UNA fila, así que subirla no basta para que
   // quien mira se lea a sí mismo primero: el nombre propio va delante dentro de
   // la etiqueta. Se ordenan los nombres, no `teamA` / `teamB`: de esos arrays
   // salen los `playerIds` con los que se busca el golpe del bando.
   const enOrdenDeLectura = (miembros) =>
-    conMiNombrePrimero(miembros, p => p.userId === currentUserId);
+    conMiNombrePrimero(miembros, (p) => p.userId === currentUserId);
   const nombreDelBando = (miembros) =>
     enOrdenDeLectura(miembros)
-      .map(p => p.userName)
+      .map((p) => p.userName)
       .join(' / ');
 
   // FE #414 · cada jugador con su hándicap de juego, como en la partida rápida.
@@ -72,7 +88,11 @@ const ScorecardTable = ({ holes = [], scores = [], players = [], currentUserId, 
         userId={p.userId}
         nombre={p.userName}
         playingHandicap={p.playingHandicap}
-        className={cortaElNombre ? 'inline-flex min-w-0 max-w-full items-baseline align-bottom' : undefined}
+        className={
+          cortaElNombre
+            ? 'inline-flex min-w-0 max-w-full items-baseline align-bottom'
+            : undefined
+        }
         nombreClassName={cortaElNombre ? 'min-w-0 truncate' : undefined}
       >
         {/* Fourball: retirado (RyderCupAM#665, F4) */}
@@ -91,7 +111,8 @@ const ScorecardTable = ({ holes = [], scores = [], players = [], currentUserId, 
   const nombresConHandicap = (row, cortaElNombre = false) =>
     row.miembros.map((p, i) => (
       <Fragment key={p.userId}>
-        {i > 0 && (cortaElNombre ? <span className="mx-1 shrink-0">/</span> : ' / ')}
+        {i > 0 &&
+          (cortaElNombre ? <span className="mx-1 shrink-0">/</span> : ' / ')}
         {jugadorConHandicap(p, cortaElNombre)}
       </Fragment>
     ));
@@ -99,8 +120,8 @@ const ScorecardTable = ({ holes = [], scores = [], players = [], currentUserId, 
   // Build display rows based on match format
   const displayRows = (() => {
     if (matchFormat === 'FOURSOMES') {
-      const teamA = players.filter(p => p.team === 'A');
-      const teamB = players.filter(p => p.team === 'B');
+      const teamA = players.filter((p) => p.team === 'A');
+      const teamB = players.filter((p) => p.team === 'B');
       const rows = [];
       if (teamA.length > 0) {
         rows.push({
@@ -108,8 +129,8 @@ const ScorecardTable = ({ holes = [], scores = [], players = [], currentUserId, 
           label: nombreDelBando(teamA),
           miembros: enOrdenDeLectura(teamA),
           team: 'A',
-          playerIds: teamA.map(p => p.userId),
-          isCurrentUser: teamA.some(p => p.userId === currentUserId),
+          playerIds: teamA.map((p) => p.userId),
+          isCurrentUser: teamA.some((p) => p.userId === currentUserId),
         });
       }
       if (teamB.length > 0) {
@@ -118,13 +139,13 @@ const ScorecardTable = ({ holes = [], scores = [], players = [], currentUserId, 
           label: nombreDelBando(teamB),
           miembros: enOrdenDeLectura(teamB),
           team: 'B',
-          playerIds: teamB.map(p => p.userId),
-          isCurrentUser: teamB.some(p => p.userId === currentUserId),
+          playerIds: teamB.map((p) => p.userId),
+          isCurrentUser: teamB.some((p) => p.userId === currentUserId),
         });
       }
       return rows;
     }
-    return players.map(p => ({
+    return players.map((p) => ({
       id: p.userId,
       label: p.userName,
       miembros: [p],
@@ -140,14 +161,14 @@ const ScorecardTable = ({ holes = [], scores = [], players = [], currentUserId, 
   // así que viaja con su fila, y el reparto de golpes sigue leyendo el array
   // original. Mirando una partida que no se juega, esto no cambia nada.
   const filasOrdenadas = conLaMiaPrimero(displayRows, {
-    esMia: row => row.isCurrentUser,
-    equipoDe: row => row.team,
+    esMia: (row) => row.isCurrentUser,
+    equipoDe: (row) => row.team,
   });
 
   const getPlayerScore = (holeNumber, userId) => {
-    const holeData = scores.find(s => s.holeNumber === holeNumber);
+    const holeData = scores.find((s) => s.holeNumber === holeNumber);
     if (!holeData) return null;
-    return holeData.playerScores?.find(ps => ps.userId === userId) || null;
+    return holeData.playerScores?.find((ps) => ps.userId === userId) || null;
   };
 
   // Lo anotado en un hoyo de la fila: primero lo enviado (con número, y si no
@@ -155,7 +176,9 @@ const ScorecardTable = ({ holes = [], scores = [], players = [], currentUserId, 
   // solo se reescribe la fila de quien anota, y la del compañero sin enviar
   // tapaba su raya
   const getRowScore = (holeNumber, row) => {
-    const anotados = row.playerIds.map((userId) => getPlayerScore(holeNumber, userId));
+    const anotados = row.playerIds.map((userId) =>
+      getPlayerScore(holeNumber, userId),
+    );
     return (
       anotados.find((ps) => ps?.ownSubmitted && ps.ownScore != null) ??
       anotados.find((ps) => ps?.ownSubmitted) ??
@@ -166,7 +189,7 @@ const ScorecardTable = ({ holes = [], scores = [], players = [], currentUserId, 
   };
 
   const getHoleResult = (holeNumber) => {
-    const holeData = scores.find(s => s.holeNumber === holeNumber);
+    const holeData = scores.find((s) => s.holeNumber === holeNumber);
     return holeData?.holeResult || null;
   };
 
@@ -178,7 +201,10 @@ const ScorecardTable = ({ holes = [], scores = [], players = [], currentUserId, 
     const ps = getRowScore(h.holeNumber, row);
     if (ps?.ownSubmitted && ps.ownScore == null) {
       const par = parFor(row.playerIds, h.holeNumber, h.par);
-      return StablefordCalculator.netDoubleBogey(par, showNet ? 0 : (ps.strokesReceivedThisHole ?? 0));
+      return StablefordCalculator.netDoubleBogey(
+        par,
+        showNet ? 0 : (ps.strokesReceivedThisHole ?? 0),
+      );
     }
     return showNet ? (ps?.netScore ?? ps?.ownScore) : ps?.ownScore;
   };
@@ -190,11 +216,13 @@ const ScorecardTable = ({ holes = [], scores = [], players = [], currentUserId, 
     }, 0);
   };
 
-  const hasAnyStrokes = players.some(p => p.strokesReceived?.length > 0);
+  const hasAnyStrokes = players.some((p) => p.strokesReceived?.length > 0);
 
   const getTeamBorderClass = (team) => {
     if (!isTeamFormat) return '';
-    return team === 'A' ? 'border-l-4 border-l-blue-500' : 'border-l-4 border-l-red-500';
+    return team === 'A'
+      ? 'border-l-4 border-l-blue-500'
+      : 'border-l-4 border-l-red-500';
   };
 
   // En fourball, si la bola de esta fila fue la que contó en el hoyo. En
@@ -203,8 +231,9 @@ const ScorecardTable = ({ holes = [], scores = [], players = [], currentUserId, 
     if (matchFormat === 'FOURSOMES') return false;
     const result = getHoleResult(holeNumber);
     return Boolean(
-      (row.team === 'A' && result?.bestBallPlayerA?.includes(row.playerIds[0])) ||
-      (row.team === 'B' && result?.bestBallPlayerB?.includes(row.playerIds[0]))
+      (row.team === 'A' &&
+        result?.bestBallPlayerA?.includes(row.playerIds[0])) ||
+      (row.team === 'B' && result?.bestBallPlayerB?.includes(row.playerIds[0])),
     );
   };
 
@@ -218,7 +247,9 @@ const ScorecardTable = ({ holes = [], scores = [], players = [], currentUserId, 
       // significa lo contrario.
       return <span className="inline-flex w-7 h-7" />;
     }
-    const displayScore = showNet ? (ps?.netScore ?? ps?.ownScore) : ps?.ownScore;
+    const displayScore = showNet
+      ? (ps?.netScore ?? ps?.ownScore)
+      : ps?.ownScore;
     // La raya: hoyo anotado (`ownSubmitted`) y sin número porque el jugador
     // recogió. No es lo mismo que un hoyo pendiente, aunque los dos lleguen
     // aquí sin golpes, y con el mismo guion gris para ambos no había forma de
@@ -230,7 +261,10 @@ const ScorecardTable = ({ holes = [], scores = [], players = [], currentUserId, 
         {showNet && strokeCount > 0 && (
           <div className="flex gap-px justify-center">
             {Array.from({ length: strokeCount }).map((_, i) => (
-              <span key={i} className="block w-1.5 h-1.5 bg-blue-500 rounded-full" />
+              <span
+                key={i}
+                className="block w-1.5 h-1.5 bg-blue-500 rounded-full"
+              />
             ))}
           </div>
         )}
@@ -247,7 +281,8 @@ const ScorecardTable = ({ holes = [], scores = [], players = [], currentUserId, 
   const resultadoPara = (holeNumber, row) => {
     const result = getHoleResult(holeNumber);
     if (!result) return { texto: '', clase: '' };
-    if (result.winner === 'HALVED') return { texto: t('scorecard.halved'), clase: 'text-gray-500' };
+    if (result.winner === 'HALVED')
+      return { texto: t('scorecard.halved'), clase: 'text-gray-500' };
     return result.winner === row.team
       ? { texto: t('scorecard.holeWon'), clase: 'bg-green-100 text-green-800' }
       : { texto: t('scorecard.holeLost'), clase: 'bg-red-100 text-red-700' };
@@ -256,7 +291,8 @@ const ScorecardTable = ({ holes = [], scores = [], players = [], currentUserId, 
   // FE #739 · en el móvil, una tarjeta por participante con los hoyos de arriba
   // abajo: la horizontal no cabía a 360 px y se desplazaba de lado
   const tarjetaVertical = (row) => {
-    const nombreDelEquipo = row.team === 'A' ? teamAName : row.team === 'B' ? teamBName : null;
+    const nombreDelEquipo =
+      row.team === 'A' ? teamAName : row.team === 'B' ? teamBName : null;
     return (
       <TarjetaVertical
         clave={row.id}
@@ -270,7 +306,9 @@ const ScorecardTable = ({ holes = [], scores = [], players = [], currentUserId, 
             <p className="flex min-w-0 flex-nowrap items-baseline whitespace-nowrap text-sm font-bold text-gray-900">
               {nombresConHandicap(row, true)}
             </p>
-            {nombreDelEquipo && <p className="text-[11px] text-gray-500">{nombreDelEquipo}</p>}
+            {nombreDelEquipo && (
+              <p className="text-[11px] text-gray-500">{nombreDelEquipo}</p>
+            )}
           </>
         }
         hoyos={holes.map((h) => ({
@@ -295,47 +333,101 @@ const ScorecardTable = ({ holes = [], scores = [], players = [], currentUserId, 
   const renderSection = (sectionHoles, label, conTotal) => (
     <div data-testid="vuelta-horizontal" className="overflow-x-auto">
       <table className={CLASE_DE_LA_TABLA}>
-        <ColumnasDeLaVuelta hoyos={sectionHoles} anchoPrimera={matchFormat === 'FOURSOMES' ? 'w-[120px]' : 'w-24'} />
+        <ColumnasDeLaVuelta
+          hoyos={sectionHoles}
+          anchoPrimera={matchFormat === 'FOURSOMES' ? 'w-[120px]' : 'w-24'}
+        />
         <thead>
           <tr className="bg-gray-50">
-            <th className="px-2 py-1 text-left font-medium text-gray-500">{t('scorecard.hole')}</th>
-            {sectionHoles.map(h => (
-              <th key={h.holeNumber} className="px-2 py-1 text-center font-medium text-gray-500">{h.holeNumber}</th>
+            <th className="px-2 py-1 text-left font-medium text-gray-500">
+              {t('scorecard.hole')}
+            </th>
+            {sectionHoles.map((h) => (
+              <th
+                key={h.holeNumber}
+                className="px-2 py-1 text-center font-medium text-gray-500"
+              >
+                {h.holeNumber}
+              </th>
             ))}
-            <th className="px-2 py-1 text-center font-bold text-gray-700">{label}</th>
-            {conTotal ? <th className="px-2 py-1 text-center font-bold text-gray-700">{t('scorecard.total')}</th> : <td />}
+            <th className="px-2 py-1 text-center font-bold text-gray-700">
+              {label}
+            </th>
+            {conTotal ? (
+              <th className="px-2 py-1 text-center font-bold text-gray-700">
+                {t('scorecard.total')}
+              </th>
+            ) : (
+              <td />
+            )}
           </tr>
           <tr className="bg-gray-50">
-            <th scope="row" className="px-2 py-1 text-left text-gray-400 font-normal">{t('scorecard.par')}</th>
-            {sectionHoles.map(h => (
-              <th key={h.holeNumber} scope="col" className="px-2 py-1 text-center text-gray-400 font-normal">{h.par}</th>
+            <th
+              scope="row"
+              className="px-2 py-1 text-left text-gray-400 font-normal"
+            >
+              {t('scorecard.par')}
+            </th>
+            {sectionHoles.map((h) => (
+              <th
+                key={h.holeNumber}
+                scope="col"
+                className="px-2 py-1 text-center text-gray-400 font-normal"
+              >
+                {h.par}
+              </th>
             ))}
-            <th scope="col" className="px-2 py-1 text-center font-medium text-gray-500">
+            <th
+              scope="col"
+              className="px-2 py-1 text-center font-medium text-gray-500"
+            >
               {sectionHoles.reduce((s, h) => s + h.par, 0)}
             </th>
             {conTotal ? (
-              <th scope="col" data-testid="scorecard-total-par" className="px-2 py-1 text-center font-medium text-gray-500">
+              <th
+                scope="col"
+                data-testid="scorecard-total-par"
+                className="px-2 py-1 text-center font-medium text-gray-500"
+              >
                 {holes.reduce((s, h) => s + h.par, 0)}
               </th>
-            ) : <td />}
+            ) : (
+              <td />
+            )}
           </tr>
           <tr className="bg-gray-50">
-            <th scope="row" className="px-2 py-1 text-left text-gray-400 font-normal">{t('scorecard.si')}</th>
-            {sectionHoles.map(h => (
-              <th key={h.holeNumber} scope="col" className="px-2 py-1 text-center text-gray-400 font-normal">{h.strokeIndex}</th>
+            <th
+              scope="row"
+              className="px-2 py-1 text-left text-gray-400 font-normal"
+            >
+              {t('scorecard.si')}
+            </th>
+            {sectionHoles.map((h) => (
+              <th
+                key={h.holeNumber}
+                scope="col"
+                className="px-2 py-1 text-center text-gray-400 font-normal"
+              >
+                {h.strokeIndex}
+              </th>
             ))}
             <th scope="col" className="px-2 py-1"></th>
             <td />
           </tr>
         </thead>
         <tbody>
-          {filasOrdenadas.map(row => {
+          {filasOrdenadas.map((row) => {
             const borderClass = getTeamBorderClass(row.team);
             return (
-              <tr key={row.id} className={row.isCurrentUser ? 'bg-blue-50' : ''}>
+              <tr
+                key={row.id}
+                className={row.isCurrentUser ? 'bg-blue-50' : ''}
+              >
                 {/* El nombre se parte en líneas y no se corta: con « / » la
                     pareja se leía «Nacho Noche / …», sin saber con quién (#727) */}
-                <td className={`px-2 py-1.5 text-left font-medium text-gray-700 whitespace-normal break-words leading-tight ${borderClass}`}>
+                <td
+                  className={`px-2 py-1.5 text-left font-medium text-gray-700 whitespace-normal break-words leading-tight ${borderClass}`}
+                >
                   {isTeamFormat && (
                     <span className="block text-[10px] text-gray-400 leading-tight">
                       {row.team === 'A' ? teamAName : teamBName}
@@ -343,8 +435,11 @@ const ScorecardTable = ({ holes = [], scores = [], players = [], currentUserId, 
                   )}
                   {nombresConHandicap(row)}
                 </td>
-                {sectionHoles.map(h => (
-                  <td key={h.holeNumber} className={`px-1 py-1 text-center ${esMejorBola(h.holeNumber, row) ? 'bg-yellow-50' : ''}`}>
+                {sectionHoles.map((h) => (
+                  <td
+                    key={h.holeNumber}
+                    className={`px-1 py-1 text-center ${esMejorBola(h.holeNumber, row) ? 'bg-yellow-50' : ''}`}
+                  >
                     {casillaDeGolpes(h, row)}
                   </td>
                 ))}
@@ -352,47 +447,81 @@ const ScorecardTable = ({ holes = [], scores = [], players = [], currentUserId, 
                   {sumRowScores(sectionHoles, row) || '-'}
                 </td>
                 {conTotal ? (
-                  <td data-testid={`scorecard-total-${row.id}`} className="px-2 py-1 text-center font-bold">
+                  <td
+                    data-testid={`scorecard-total-${row.id}`}
+                    className="px-2 py-1 text-center font-bold"
+                  >
                     {sumRowScores(holes, row) || '-'}
                   </td>
-                ) : <td />}
+                ) : (
+                  <td />
+                )}
               </tr>
             );
           })}
           <tr className="border-t">
-            <td className="px-2 py-1 text-left text-gray-500">{t('scorecard.result')}</td>
-            {sectionHoles.map(h => {
+            <td className="px-2 py-1 text-left text-gray-500">
+              {t('scorecard.result')}
+            </td>
+            {sectionHoles.map((h) => {
               const result = getHoleResult(h.holeNumber);
-              const bestBallIds = result?.winner === 'A'
-                ? result.bestBallPlayerA
-                : result?.winner === 'B'
-                  ? result.bestBallPlayerB
-                  : [];
-              const bestNames = (bestBallIds ?? []).map(id => {
-                const parts = players.find(p => p.userId === id)?.userName?.split(' ') ?? [];
-                const name = parts[0] ? (parts[1] ? `${parts[0]} ${parts[1][0]}.` : parts[0]) : null;
-                return name ? { id, name } : null;
-              }).filter(Boolean);
-              const fallbackLabel = result?.winner === 'A' ? (teamAName || 'A') : result?.winner === 'B' ? (teamBName || 'B') : null;
-              const winnerColor = result?.winner === 'A' ? 'bg-blue-100 text-blue-700 font-bold' : result?.winner === 'B' ? 'bg-red-100 text-red-700 font-bold' : '';
-              const winnerContent = !result
-                ? ''
-                : result.winner === 'HALVED'
-                  ? t('scorecard.halved')
-                  : bestNames.length > 0
-                    ? (
-                      <span className="flex flex-col leading-tight">
-                        {bestNames.map((entry, i) => (
-                          <span key={entry.id} className="block">
-                            {i > 0 && <span className="block text-gray-400 font-normal">{t('scorecard.and')}</span>}
-                            <NombreQueCabe nombre={entry.name} />
-                          </span>
-                        ))}
-                      </span>
-                    )
-                    : fallbackLabel;
+              const bestBallIds =
+                result?.winner === 'A'
+                  ? result.bestBallPlayerA
+                  : result?.winner === 'B'
+                    ? result.bestBallPlayerB
+                    : [];
+              const bestNames = (bestBallIds ?? [])
+                .map((id) => {
+                  const parts =
+                    players
+                      .find((p) => p.userId === id)
+                      ?.userName?.split(' ') ?? [];
+                  const name = parts[0]
+                    ? parts[1]
+                      ? `${parts[0]} ${parts[1][0]}.`
+                      : parts[0]
+                    : null;
+                  return name ? { id, name } : null;
+                })
+                .filter(Boolean);
+              const fallbackLabel =
+                result?.winner === 'A'
+                  ? teamAName || 'A'
+                  : result?.winner === 'B'
+                    ? teamBName || 'B'
+                    : null;
+              const winnerColor =
+                result?.winner === 'A'
+                  ? 'bg-blue-100 text-blue-700 font-bold'
+                  : result?.winner === 'B'
+                    ? 'bg-red-100 text-red-700 font-bold'
+                    : '';
+              const winnerContent = !result ? (
+                ''
+              ) : result.winner === 'HALVED' ? (
+                t('scorecard.halved')
+              ) : bestNames.length > 0 ? (
+                <span className="flex flex-col leading-tight">
+                  {bestNames.map((entry, i) => (
+                    <span key={entry.id} className="block">
+                      {i > 0 && (
+                        <span className="block text-gray-400 font-normal">
+                          {t('scorecard.and')}
+                        </span>
+                      )}
+                      <NombreQueCabe nombre={entry.name} />
+                    </span>
+                  ))}
+                </span>
+              ) : (
+                fallbackLabel
+              );
               return (
-                <td key={h.holeNumber} className={`px-1 py-1 text-center text-xs ${winnerColor}`}>
+                <td
+                  key={h.holeNumber}
+                  className={`px-1 py-1 text-center text-xs ${winnerColor}`}
+                >
                   {winnerContent}
                 </td>
               );
@@ -418,7 +547,9 @@ const ScorecardTable = ({ holes = [], scores = [], players = [], currentUserId, 
             onClick={() => setShowNet(!showNet)}
             className={`relative w-10 h-5 rounded-full transition-colors ${showNet ? 'bg-primary' : 'bg-gray-300'}`}
           >
-            <span className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full transition-transform ${showNet ? 'translate-x-5' : ''}`} />
+            <span
+              className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full transition-transform ${showNet ? 'translate-x-5' : ''}`}
+            />
           </button>
           <span className="text-xs text-gray-500">{t('scorecard.net')}</span>
         </div>
@@ -435,7 +566,8 @@ const ScorecardTable = ({ holes = [], scores = [], players = [], currentUserId, 
       ) : (
         <>
           {renderSection(outHoles, t('scorecard.out'), inHoles.length === 0)}
-          {inHoles.length > 0 && renderSection(inHoles, t('scorecard.in'), true)}
+          {inHoles.length > 0 &&
+            renderSection(inHoles, t('scorecard.in'), true)}
         </>
       )}
     </div>

@@ -4,6 +4,8 @@
  * España pierda el mapa por un dato que falte (una anotación guardada antes).
  */
 export const hayMapaEnElPais = (pais) => {
-  const codigo = String(pais ?? '').trim().toUpperCase();
+  const codigo = String(pais ?? '')
+    .trim()
+    .toUpperCase();
   return !codigo || codigo === 'ES';
 };

@@ -23,7 +23,9 @@ const aDistribucion = (dto) => ({
 
 // null cuando esa mitad no se jugó: la pantalla lo dice, no lo pinta como cero
 const aMitad = (dto) =>
-  dto ? { holes: dto.holes ?? 0, averageToPar: dto.average_to_par ?? null } : null;
+  dto
+    ? { holes: dto.holes ?? 0, averageToPar: dto.average_to_par ?? null }
+    : null;
 
 class ScoringBreakdownMapper {
   /**

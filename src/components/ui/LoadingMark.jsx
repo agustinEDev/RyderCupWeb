@@ -24,8 +24,16 @@ import BrandMark from './BrandMark';
    la otra 160. El monograma daria un salto justo en el relevo, que es el
    fotograma del que va toda esta historia. */
 const MEDIDAS = {
-  grande: { marco: 'w-[128px] h-[128px]', anillo: 'border-[3px]', marca: 'w-[76px]' },
-  pequeno: { marco: 'w-[64px] h-[64px]', anillo: 'border-2', marca: 'w-[38px]' },
+  grande: {
+    marco: 'w-[128px] h-[128px]',
+    anillo: 'border-[3px]',
+    marca: 'w-[76px]',
+  },
+  pequeno: {
+    marco: 'w-[64px] h-[64px]',
+    anillo: 'border-2',
+    marca: 'w-[38px]',
+  },
 };
 
 const LoadingMark = ({ tamano = 'grande', tinta = 'auto' }) => {
@@ -50,7 +58,9 @@ const LoadingMark = ({ tamano = 'grande', tinta = 'auto' }) => {
     const anillo = document.getElementById('arranque-anillo');
     const fase = anillo?.getAnimations?.()[0]?.currentTime;
 
-    return -((typeof fase === 'number' ? fase : globalThis.performance.now()) % 1000);
+    return -(
+      (typeof fase === 'number' ? fase : globalThis.performance.now()) % 1000
+    );
   });
 
   return (

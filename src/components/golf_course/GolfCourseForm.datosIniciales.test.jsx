@@ -66,36 +66,59 @@ describe('GolfCourseForm · lo que toma de initialData', () => {
         onSuccess={vi.fn()}
         countryCode="ES"
         createGolfCourseRequestUseCase={crear}
-      />
+      />,
     );
 
     fireEvent.change(nombre(), { target: { value: 'Golf de Meis' } });
-    fireEvent.click(screen.getByRole('button', { name: 'form.courseTypes.EXECUTIVE' }));
+    fireEvent.click(
+      screen.getByRole('button', { name: 'form.courseTypes.EXECUTIVE' }),
+    );
     // Un ejecutivo pide par 61-65: siete hoyos de par 3 y el resto de par 4
-    screen.getAllByRole('button', { name: '3' }).slice(0, 7).forEach((boton) => fireEvent.click(boton));
+    screen
+      .getAllByRole('button', { name: '3' })
+      .slice(0, 7)
+      .forEach((boton) => fireEvent.click(boton));
     container.querySelectorAll('input[step="0.1"]').forEach((input) => {
       fireEvent.change(input, { target: { value: '60' } });
     });
-    container.querySelectorAll('input[type="number"]:not([step])').forEach((input) => {
-      fireEvent.change(input, { target: { value: '100' } });
-    });
+    container
+      .querySelectorAll('input[type="number"]:not([step])')
+      .forEach((input) => {
+        fireEvent.change(input, { target: { value: '100' } });
+      });
     fireEvent.submit(nombre().closest('form'));
 
-    await waitFor(() => expect(screen.getByText('sin red')).toBeInTheDocument());
+    await waitFor(() =>
+      expect(screen.getByText('sin red')).toBeInTheDocument(),
+    );
     expect(nombre()).toHaveValue('Golf de Meis');
-    expect(screen.getByRole('button', { name: 'form.courseTypes.EXECUTIVE' })).toHaveAttribute('aria-pressed', 'true');
+    expect(
+      screen.getByRole('button', { name: 'form.courseTypes.EXECUTIVE' }),
+    ).toHaveAttribute('aria-pressed', 'true');
   });
 
   it('T3-11: editar X, cerrar y editar Y enseña los datos de Y', () => {
     const { unmount } = render(
-      <GolfCourseForm initialData={campo('Campo X', 'STANDARD_18')} onSubmit={vi.fn()} onCancel={vi.fn()} />
+      <GolfCourseForm
+        initialData={campo('Campo X', 'STANDARD_18')}
+        onSubmit={vi.fn()}
+        onCancel={vi.fn()}
+      />,
     );
     expect(nombre()).toHaveValue('Campo X');
     unmount();
 
-    render(<GolfCourseForm initialData={campo('Campo Y', 'PITCH_AND_PUTT')} onSubmit={vi.fn()} onCancel={vi.fn()} />);
+    render(
+      <GolfCourseForm
+        initialData={campo('Campo Y', 'PITCH_AND_PUTT')}
+        onSubmit={vi.fn()}
+        onCancel={vi.fn()}
+      />,
+    );
 
     expect(nombre()).toHaveValue('Campo Y');
-    expect(screen.getByRole('button', { name: 'form.courseTypes.PITCH_AND_PUTT' })).toHaveAttribute('aria-pressed', 'true');
+    expect(
+      screen.getByRole('button', { name: 'form.courseTypes.PITCH_AND_PUTT' }),
+    ).toHaveAttribute('aria-pressed', 'true');
   });
 });

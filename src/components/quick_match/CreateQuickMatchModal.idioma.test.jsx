@@ -21,15 +21,34 @@ vi.mock('../golf_course/GolfCourseSearchBox', () => ({ default: () => null }));
 const mockIniciar = vi.fn();
 vi.mock('../../composition', () => ({
   createAndStartQuickMatchUseCase: { execute: (...a) => mockIniciar(...a) },
-  listFriendsUseCase: { execute: () => Promise.resolve({ friendships: [], totalCount: 0 }) },
-  getGolfCourseUseCase: { execute: () => Promise.resolve({ tees: [{ color: 'YELLOW', gender: 'MALE' }], isFromRfeg: () => false }) },
-  listMyQuickMatchesUseCase: { execute: () => Promise.resolve({ quickMatches: [] }) },
+  listFriendsUseCase: {
+    execute: () => Promise.resolve({ friendships: [], totalCount: 0 }),
+  },
+  getGolfCourseUseCase: {
+    execute: () =>
+      Promise.resolve({
+        tees: [{ color: 'YELLOW', gender: 'MALE' }],
+        isFromRfeg: () => false,
+      }),
+  },
+  listMyQuickMatchesUseCase: {
+    execute: () => Promise.resolve({ quickMatches: [] }),
+  },
   cancelQuickMatchUseCase: { execute: vi.fn() },
 }));
 
-const yo = { id: 'user-1', country_code: 'ES', display_name: 'Yo', handicap: 12.4 };
+const yo = {
+  id: 'user-1',
+  country_code: 'ES',
+  display_name: 'Yo',
+  handicap: 12.4,
+};
 
-const CAMPO = { id: 'course-1', name: 'St Andrews', tees: [{ color: 'YELLOW', gender: 'MALE' }] };
+const CAMPO = {
+  id: 'course-1',
+  name: 'St Andrews',
+  tees: [{ color: 'YELLOW', gender: 'MALE' }],
+};
 // Repetir abre en el Resumen, con todo listo para confirmar
 const BORRADOR = {
   paso: 4,
@@ -44,7 +63,17 @@ const BORRADOR = {
     selectedCourse: CAMPO,
     creatorTeeKey: 'YELLOW|MALE',
     participants: [
-      { participantId: 'user-1', userId: 'user-1', name: 'Yo', handicap: 12.4, profileHandicap: 12.4, team: null, isGuest: false, color: 'YELLOW', teeGender: 'MALE' },
+      {
+        participantId: 'user-1',
+        userId: 'user-1',
+        name: 'Yo',
+        handicap: 12.4,
+        profileHandicap: 12.4,
+        team: null,
+        isGuest: false,
+        color: 'YELLOW',
+        teeGender: 'MALE',
+      },
     ],
     scorerIds: ['user-1'],
   },
@@ -52,7 +81,12 @@ const BORRADOR = {
 
 const pinta = (props = {}) => (
   <MemoryRouter>
-    <CreateQuickMatchModal onClose={vi.fn()} onStarted={vi.fn()} currentUser={yo} {...props} />
+    <CreateQuickMatchModal
+      onClose={vi.fn()}
+      onStarted={vi.fn()}
+      currentUser={yo}
+      {...props}
+    />
   </MemoryRouter>
 );
 
@@ -65,12 +99,16 @@ describe('CreateQuickMatchModal · el aviso, por su clave', () => {
   it('cambiar de idioma con un aviso a la vista lo traduce', () => {
     const { rerender } = render(pinta());
     fireEvent.click(screen.getByTestId('quick-match-course-next'));
-    expect(screen.getByTestId('quick-match-modal-error')).toHaveTextContent('es:create.course.errorCourseRequired');
+    expect(screen.getByTestId('quick-match-modal-error')).toHaveTextContent(
+      'es:create.course.errorCourseRequired',
+    );
 
     idioma = 'en';
     rerender(pinta());
 
-    expect(screen.getByTestId('quick-match-modal-error')).toHaveTextContent('en:create.course.errorCourseRequired');
+    expect(screen.getByTestId('quick-match-modal-error')).toHaveTextContent(
+      'en:create.course.errorCourseRequired',
+    );
   });
 
   it('elegir la barra del invitado no quita otro aviso (el del nombre)', async () => {
@@ -79,15 +117,25 @@ describe('CreateQuickMatchModal · el aviso, por su clave', () => {
     fireEvent.click(await screen.findByTestId('quick-match-scorers-back'));
     fireEvent.click(await screen.findByTestId('quick-match-tab-guest'));
     // Solo espacios: pasan el `required` del navegador, y se avisa
-    fireEvent.change(screen.getByTestId('quick-match-guest-first-name'), { target: { value: '  ' } });
-    fireEvent.change(screen.getByTestId('quick-match-guest-last-name'), { target: { value: '  ' } });
+    fireEvent.change(screen.getByTestId('quick-match-guest-first-name'), {
+      target: { value: '  ' },
+    });
+    fireEvent.change(screen.getByTestId('quick-match-guest-last-name'), {
+      target: { value: '  ' },
+    });
     fireEvent.click(screen.getByTestId('quick-match-add-guest'));
-    expect(screen.getByTestId('quick-match-modal-error')).toHaveTextContent('es:create.participants.errorGuestName');
+    expect(screen.getByTestId('quick-match-modal-error')).toHaveTextContent(
+      'es:create.participants.errorGuestName',
+    );
 
     fireEvent.click(screen.getByTestId('quick-match-guest-tee'));
-    fireEvent.click(await screen.findByTestId('quick-match-tee-panel-option-YELLOW|MALE'));
+    fireEvent.click(
+      await screen.findByTestId('quick-match-tee-panel-option-YELLOW|MALE'),
+    );
 
-    expect(screen.getByTestId('quick-match-modal-error')).toHaveTextContent('es:create.participants.errorGuestName');
+    expect(screen.getByTestId('quick-match-modal-error')).toHaveTextContent(
+      'es:create.participants.errorGuestName',
+    );
   });
 
   it('el rechazo del servidor sale con su motivo traducido', async () => {
@@ -96,28 +144,39 @@ describe('CreateQuickMatchModal · el aviso, por su clave', () => {
 
     fireEvent.click(await screen.findByTestId('quick-match-start'));
 
-    expect(await screen.findByTestId('quick-match-modal-error')).toHaveTextContent('es:create.errors.notFriends');
+    expect(
+      await screen.findByTestId('quick-match-modal-error'),
+    ).toHaveTextContent('es:create.errors.notFriends');
   });
 
   it('«sin conexión» también cambia de idioma (es nuestro, no del servidor; revisor)', async () => {
     mockIniciar.mockRejectedValue(new TypeError('Failed to fetch'));
     const { rerender } = render(pinta({ borrador: BORRADOR }));
     fireEvent.click(await screen.findByTestId('quick-match-start'));
-    expect(await screen.findByTestId('quick-match-modal-error')).toHaveTextContent('es:sinConexion.mensaje');
+    expect(
+      await screen.findByTestId('quick-match-modal-error'),
+    ).toHaveTextContent('es:sinConexion.mensaje');
 
     idioma = 'en';
     rerender(pinta({ borrador: BORRADOR }));
 
-    expect(screen.getByTestId('quick-match-modal-error')).toHaveTextContent('en:sinConexion.mensaje');
+    expect(screen.getByTestId('quick-match-modal-error')).toHaveTextContent(
+      'en:sinConexion.mensaje',
+    );
   });
 
   it('el motivo que manda el servidor sale tal cual', async () => {
-    mockIniciar.mockRejectedValue({ status: 400, message: 'Motivo del servidor' });
+    mockIniciar.mockRejectedValue({
+      status: 400,
+      message: 'Motivo del servidor',
+    });
     render(pinta({ borrador: BORRADOR }));
 
     fireEvent.click(await screen.findByTestId('quick-match-start'));
 
-    expect(await screen.findByTestId('quick-match-modal-error')).toHaveTextContent(/^Motivo del servidor$/);
+    expect(
+      await screen.findByTestId('quick-match-modal-error'),
+    ).toHaveTextContent(/^Motivo del servidor$/);
   });
 
   it('repetir el mismo aviso lo vuelve a traer a la vista (en el móvil queda arriba, fuera de ella)', () => {

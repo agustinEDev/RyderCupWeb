@@ -12,7 +12,11 @@ import AccionesDeLaFicha from './AccionesDeLaFicha';
 
 const t = (clave) => clave;
 
-const PRINCIPAL = { id: 'draft', label: 'Ir a la sala de draft', onClick: vi.fn() };
+const PRINCIPAL = {
+  id: 'draft',
+  label: 'Ir a la sala de draft',
+  onClick: vi.fn(),
+};
 const GESTION = [
   { id: 'edit', label: 'Editar', onClick: vi.fn() },
   { id: 'manageSchedule', label: 'Gestionar calendario', onClick: vi.fn() },
@@ -30,7 +34,7 @@ const pintar = (props = {}) =>
       destructivas={DESTRUCTIVAS}
       t={t}
       {...props}
-    />
+    />,
   );
 
 describe('AccionesDeLaFicha · una acción y un menú (FE #705)', () => {
@@ -39,7 +43,9 @@ describe('AccionesDeLaFicha · una acción y un menú (FE #705)', () => {
   it('A1: se ofrece la acción del momento, y solo esa', () => {
     pintar();
 
-    expect(screen.getByTestId('accion-principal')).toHaveTextContent('Ir a la sala de draft');
+    expect(screen.getByTestId('accion-principal')).toHaveTextContent(
+      'Ir a la sala de draft',
+    );
     expect(screen.queryByText('Editar')).not.toBeInTheDocument();
     expect(screen.queryByText('Cancelar competición')).not.toBeInTheDocument();
   });
@@ -101,7 +107,11 @@ describe('AccionesDeLaFicha · una acción y un menú (FE #705)', () => {
   it.each([
     // FE #729: sin principal el «···» está en el borde izquierdo, y abrirse
     // hacia la izquierda lo sacaba de la pantalla
-    ['A7b: sin principal, se abre hacia la derecha', { principal: null }, 'left-0'],
+    [
+      'A7b: sin principal, se abre hacia la derecha',
+      { principal: null },
+      'left-0',
+    ],
     ['A7c: con principal, hacia la izquierda en el móvil', {}, 'right-0'],
     // Desde `sm` la principal ya no ocupa todo el ancho y el «···» queda cerca
     // del borde izquierdo: ahí se abre hacia la derecha (revisión local)

@@ -9,7 +9,7 @@ const OAUTH_STATE_KEY = 'google_oauth_state_token';
 function generateNonce() {
   const array = new Uint8Array(16);
   crypto.getRandomValues(array);
-  return Array.from(array, b => b.toString(16).padStart(2, '0')).join('');
+  return Array.from(array, (b) => b.toString(16).padStart(2, '0')).join('');
 }
 
 // La página a la que volver tras entrar con Google (RyderCupAm #753): sin esto, el
@@ -23,7 +23,9 @@ const VUELTAS_PERMITIDAS = ['/confirm-email-change'];
 
 const esVueltaPermitida = (ruta) =>
   typeof ruta === 'string' &&
-  VUELTAS_PERMITIDAS.some((base) => ruta === base || ruta.startsWith(`${base}?`));
+  VUELTAS_PERMITIDAS.some(
+    (base) => ruta === base || ruta.startsWith(`${base}?`),
+  );
 
 /**
  * Guarda a dónde volver tras Google, si es una página permitida. Va en sessionStorage:
@@ -42,7 +44,8 @@ export function guardaLaVueltaDeGoogle(from) {
     sessionStorage.removeItem(VUELTA_KEY);
     // La cuenta antes que la ruta: si escribirla falla, no queda una ruta sin su cuenta
     // que valdría para cualquiera (revisión, FE #1064)
-    if (from?.cuenta != null) sessionStorage.setItem(VUELTA_CUENTA_KEY, String(from.cuenta));
+    if (from?.cuenta != null)
+      sessionStorage.setItem(VUELTA_CUENTA_KEY, String(from.cuenta));
     sessionStorage.setItem(VUELTA_KEY, ruta);
   } catch {
     // Sin almacenamiento, se vuelve al panel como siempre
@@ -113,7 +116,10 @@ function generaElVerificador() {
  * @returns {Promise<string>}
  */
 async function retoDelVerificador(verifier) {
-  const hash = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(verifier));
+  const hash = await crypto.subtle.digest(
+    'SHA-256',
+    new TextEncoder().encode(verifier),
+  );
   return enBase64Url(new Uint8Array(hash));
 }
 
@@ -131,7 +137,9 @@ export function recogeElVerificadorDeGoogle() {
   } catch {
     return null;
   }
-  return typeof verifier === 'string' && FORMA_DEL_VERIFIER.test(verifier) ? verifier : null;
+  return typeof verifier === 'string' && FORMA_DEL_VERIFIER.test(verifier)
+    ? verifier
+    : null;
 }
 
 /**
@@ -144,10 +152,14 @@ export async function buildGoogleOAuthUrl(flow = 'login') {
   const redirectUri = import.meta.env.VITE_GOOGLE_REDIRECT_URI;
 
   if (!clientId) {
-    throw new Error('VITE_GOOGLE_CLIENT_ID environment variable is not configured');
+    throw new Error(
+      'VITE_GOOGLE_CLIENT_ID environment variable is not configured',
+    );
   }
   if (!redirectUri) {
-    throw new Error('VITE_GOOGLE_REDIRECT_URI environment variable is not configured');
+    throw new Error(
+      'VITE_GOOGLE_REDIRECT_URI environment variable is not configured',
+    );
   }
 
   const verifier = generaElVerificador();

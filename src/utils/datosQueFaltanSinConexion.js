@@ -9,11 +9,14 @@
  * @param {Object|null} usuario El de `useAuth`
  * @param {boolean} sinConfirmar Si sale de la copia del dispositivo
  */
-export const faltaElGenero = (usuario, sinConfirmar) => Boolean(usuario) && !sinConfirmar && !usuario.gender;
+export const faltaElGenero = (usuario, sinConfirmar) =>
+  Boolean(usuario) && !sinConfirmar && !usuario.gender;
 
 /**
  * @param {Object|null} usuario El de `useAuth`
  * @param {boolean} sinConfirmar Si sale de la copia del dispositivo
  */
 export const faltaElHandicap = (usuario, sinConfirmar) =>
-  Boolean(usuario) && !sinConfirmar && (usuario.handicap === null || usuario.handicap === undefined);
+  Boolean(usuario) &&
+  !sinConfirmar &&
+  (usuario.handicap === null || usuario.handicap === undefined);

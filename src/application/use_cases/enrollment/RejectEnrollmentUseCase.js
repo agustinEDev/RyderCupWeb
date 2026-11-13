@@ -53,7 +53,10 @@ class RejectEnrollmentUseCase {
     }
 
     // Rechazar enrollment (el backend valida permisos y transición)
-    const enrollment = await this.#enrollmentRepository.reject(competitionId, enrollmentId);
+    const enrollment = await this.#enrollmentRepository.reject(
+      competitionId,
+      enrollmentId,
+    );
 
     // Convertir a DTO simple para la UI
     return EnrollmentAssembler.toSimpleDTO(enrollment);

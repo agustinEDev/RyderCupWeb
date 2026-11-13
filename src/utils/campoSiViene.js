@@ -14,6 +14,5 @@
  * @param {string} [nombre] - Cómo se llama de este lado, si cambia
  * @returns {object} El campo listo para esparcir, o nada
  */
-export const siViene = (origen, clave, nombre = clave) => (
-  origen && clave in origen ? { [nombre]: origen[clave] } : {}
-);
+export const siViene = (origen, clave, nombre = clave) =>
+  origen && clave in origen ? { [nombre]: origen[clave] } : {};

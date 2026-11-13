@@ -19,9 +19,15 @@ class InvitationMapper {
       throw new Error('InvitationMapper.toDomain: apiData is required');
     }
 
-    if (!apiData.id || !apiData.competition_id || !apiData.inviter_id || !apiData.invitee_email || !apiData.status) {
+    if (
+      !apiData.id ||
+      !apiData.competition_id ||
+      !apiData.inviter_id ||
+      !apiData.invitee_email ||
+      !apiData.status
+    ) {
       throw new Error(
-        'InvitationMapper.toDomain: Missing required fields (id, competition_id, inviter_id, invitee_email, status)'
+        'InvitationMapper.toDomain: Missing required fields (id, competition_id, inviter_id, invitee_email, status)',
       );
     }
 
@@ -48,7 +54,9 @@ class InvitationMapper {
    */
   static toDomainMany(apiDataArray) {
     if (!Array.isArray(apiDataArray)) {
-      throw new Error('InvitationMapper.toDomainMany: apiDataArray must be an array');
+      throw new Error(
+        'InvitationMapper.toDomainMany: apiDataArray must be an array',
+      );
     }
 
     return apiDataArray.map((apiData) => InvitationMapper.toDomain(apiData));

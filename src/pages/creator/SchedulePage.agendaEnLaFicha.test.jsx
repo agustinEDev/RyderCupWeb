@@ -29,7 +29,14 @@ const traduccion = { i18n: { language: 'es' }, t };
 vi.mock('react-i18next', () => ({ useTranslation: () => traduccion }));
 
 vi.mock('framer-motion', () => ({
-  motion: new Proxy({}, { get: () => ({ children, ...props }) => <div {...props}>{children}</div> }),
+  motion: new Proxy(
+    {},
+    {
+      get:
+        () =>
+        ({ children, ...props }) => <div {...props}>{children}</div>,
+    },
+  ),
 }));
 
 vi.mock('../../components/layout/HeaderAuth', () => ({ default: () => null }));
@@ -40,9 +47,17 @@ const SESION = { user: { id: 'org' }, loading: false };
 const ROLES = { isAdmin: false, isCreator: true, isLoading: false };
 vi.mock('../../hooks/useAuth', () => ({ useAuth: () => SESION }));
 vi.mock('../../hooks/useUserRoles', () => ({ useUserRoles: () => ROLES }));
-vi.mock('../../components/ui/FullScreenLoader', () => ({ default: () => null }));
+vi.mock('../../components/ui/FullScreenLoader', () => ({
+  default: () => null,
+}));
 vi.mock('../../utils/toast', () => ({
-  default: { success: vi.fn(), error: vi.fn(), warning: vi.fn(), info: vi.fn(), dismiss: vi.fn() },
+  default: {
+    success: vi.fn(),
+    error: vi.fn(),
+    warning: vi.fn(),
+    info: vi.fn(),
+    dismiss: vi.fn(),
+  },
 }));
 
 const mockDetalle = vi.fn();
@@ -96,7 +111,10 @@ const RONDA = {
 const AGENDA = {
   days: [{ date: '2026-06-01', rounds: [RONDA] }],
   rounds: [RONDA],
-  teamAssignment: { teamAPlayerIds: ['org', 'carla'], teamBPlayerIds: ['bea', 'eva'] },
+  teamAssignment: {
+    teamAPlayerIds: ['org', 'carla'],
+    teamBPlayerIds: ['bea', 'eva'],
+  },
 };
 
 const INSCRITOS = [
@@ -112,7 +130,7 @@ const pintar = () =>
       <Routes>
         <Route path="/competitions/:id/schedule" element={<SchedulePage />} />
       </Routes>
-    </MemoryRouter>
+    </MemoryRouter>,
   );
 
 describe('SchedulePage · la agenda vive en la ficha (FE #654)', () => {
@@ -135,7 +153,7 @@ describe('SchedulePage · la agenda vive en la ficha (FE #654)', () => {
 
     expect(await screen.findByTestId('agenda-en-la-ficha')).toHaveAttribute(
       'href',
-      '/competitions/comp-1'
+      '/competitions/comp-1',
     );
   });
 
@@ -151,15 +169,19 @@ describe('SchedulePage · la agenda vive en la ficha (FE #654)', () => {
     // Capitanes y jugadores entran aquí por la ruta pública, y en la ficha no
     // tienen nada que cambiar: el enlace les prometía algo que no pueden hacer
     ROLES.isCreator = false;
-    mockDetalle.mockResolvedValue({ ...COMPETICION, creatorId: 'otra-persona' });
+    mockDetalle.mockResolvedValue({
+      ...COMPETICION,
+      creatorId: 'otra-persona',
+    });
     try {
       pintar();
 
       await screen.findByText('Ryder de los amigos');
-      expect(screen.queryByTestId('agenda-en-la-ficha')).not.toBeInTheDocument();
+      expect(
+        screen.queryByTestId('agenda-en-la-ficha'),
+      ).not.toBeInTheDocument();
     } finally {
       ROLES.isCreator = true;
     }
   });
 });
-

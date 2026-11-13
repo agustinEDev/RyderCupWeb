@@ -26,7 +26,8 @@ const bloqueDesde = (desde) => {
   let profundidad = 0;
   for (let i = css.indexOf('{', desde); i < css.length; i++) {
     if (css[i] === '{') profundidad++;
-    else if (css[i] === '}' && --profundidad === 0) return css.slice(desde, i + 1);
+    else if (css[i] === '}' && --profundidad === 0)
+      return css.slice(desde, i + 1);
   }
   return null;
 };
@@ -37,7 +38,11 @@ const reglaDeCampos = () => {
     const texto = bloqueDesde(m.index);
     if (!texto) continue;
     if (/font-size:\s*16px/.test(texto) && /\binput\b/.test(texto)) {
-      return { inicio: m.index, texto, condicion: texto.slice(0, texto.indexOf('{')) };
+      return {
+        inicio: m.index,
+        texto,
+        condicion: texto.slice(0, texto.indexOf('{')),
+      };
     }
   }
   return null;
@@ -89,9 +94,13 @@ describe('campos de formulario en movil (FE #441)', () => {
     // deliberado: la regla no puede encogerlo a 16px.
     // En los tres selectores, y sin depender del formato: Prettier parte
     // `:not(...)` en varias líneas
-    const texto = reglaDeCampos().texto.replace(/\(\s+/g, '(').replace(/\s+\)/g, ')');
+    const texto = reglaDeCampos()
+      .texto.replace(/\(\s+/g, '(')
+      .replace(/\s+\)/g, ')');
     for (const campo of ['input', 'select', 'textarea']) {
-      expect(texto).toMatch(new RegExp(`\\b${campo}\\b[^,{]*:not\\(\\.text-lg\\)`));
+      expect(texto).toMatch(
+        new RegExp(`\\b${campo}\\b[^,{]*:not\\(\\.text-lg\\)`),
+      );
     }
   });
 
@@ -101,13 +110,17 @@ describe('campos de formulario en movil (FE #441)', () => {
     const regla = reglaDeCampos();
     expect(regla).not.toBeNull();
     const fuera = css.replace(regla.texto, '');
-    expect(fuera).not.toMatch(/^\s*(input|select|textarea)[^{]*\{[^}]*font-size/m);
+    expect(fuera).not.toMatch(
+      /^\s*(input|select|textarea)[^{]*\{[^}]*font-size/m,
+    );
   });
 
   it('quita el doble-toque-para-ampliar de los elementos pulsables', () => {
     // Un doble toque rapido en un boton lo interpreta el movil como «amplia
     // aqui». manipulation solo se lleva eso; el pinch para acercar sigue.
-    const regla = css.match(/(?:^|\n)\s*button[^{]*\{[^}]*touch-action:\s*manipulation[^}]*\}/);
+    const regla = css.match(
+      /(?:^|\n)\s*button[^{]*\{[^}]*touch-action:\s*manipulation[^}]*\}/,
+    );
     expect(regla).not.toBeNull();
     expect(regla[0]).toMatch(/\[role='button'\]/);
     expect(regla[0]).toMatch(/(?:^|,)\s*a\s*[,{]/m);

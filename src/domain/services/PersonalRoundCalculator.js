@@ -1,6 +1,10 @@
 import StablefordCalculator from './StablefordCalculator';
 import MatchPlayStrokeAllocator from './MatchPlayStrokeAllocator';
-import { entryAtOf, groupParticipantsBySide, sideCardHolder } from './FoursomesSides';
+import {
+  entryAtOf,
+  groupParticipantsBySide,
+  sideCardHolder,
+} from './FoursomesSides';
 import { defaultAllowanceFor } from './defaultAllowance';
 
 // La lectura personal de `compute` (la de la clasificación de la partida) se
@@ -51,7 +55,9 @@ const PARAMETROS_POR_DEFECTO = Object.freeze({
 
 const conDefectos = (params = {}) => ({
   ...PARAMETROS_POR_DEFECTO,
-  ...Object.fromEntries(Object.entries(params).filter(([, valor]) => valor !== undefined)),
+  ...Object.fromEntries(
+    Object.entries(params).filter(([, valor]) => valor !== undefined),
+  ),
 });
 
 // Sin allowance conocido, el WHS por defecto del formato —95% en partido libre,
@@ -71,11 +77,17 @@ const repartoDelPartido = (p) =>
     playMode: p.playMode,
   });
 
-const sideTotals = (me, participants, holes, holeScores, tees = [], allocation = {}) => {
-  const members =
-    groupParticipantsBySide(participants).find((side) =>
-      side.some((p) => p.participantId === me.participantId)
-    ) ?? [me];
+const sideTotals = (
+  me,
+  participants,
+  holes,
+  holeScores,
+  tees = [],
+  allocation = {},
+) => {
+  const members = groupParticipantsBySide(participants).find((side) =>
+    side.some((p) => p.participantId === me.participantId),
+  ) ?? [me];
 
   const entryAt = entryAtOf(holeScores);
   // El par de la raya sale de la tarjeta del PRIMERO del bando —a cuyo nombre se
@@ -83,7 +95,11 @@ const sideTotals = (me, participants, holes, holeScores, tees = [], allocation =
   // 25 de los 800 campos federados el par cambia entre barras, y ahí el bruto de
   // aquí y el del historial se separaban por un golpe. `_side_pars` en el
   // backend resuelve la misma barra.
-  const sideCard = MatchPlayStrokeAllocator.holeCardFor(members[0], holes, tees);
+  const sideCard = MatchPlayStrokeAllocator.holeCardFor(
+    members[0],
+    holes,
+    tees,
+  );
   const parAt = (holeNumber) =>
     sideCard.find((h) => h.holeNumber === holeNumber)?.par ??
     holes.find((h) => h.holeNumber === holeNumber)?.par ??
@@ -105,7 +121,9 @@ const sideTotals = (me, participants, holes, holeScores, tees = [], allocation =
     // resultado. Ojo, no es la regla de la tarjeta —allí manda el primero del
     // bando, para que todas las pantallas pinten la misma bola—; aquí lo que se
     // persigue es cuadrar con el resultado.
-    const numbers = entries.map((entry) => entry.score).filter((score) => score != null);
+    const numbers = entries
+      .map((entry) => entry.score)
+      .filter((score) => score != null);
     if (numbers.length > 0) {
       totalStrokes += Math.min(...numbers);
       holesPlayed += 1;
@@ -121,7 +139,11 @@ const sideTotals = (me, participants, holes, holeScores, tees = [], allocation =
     if (par == null) continue;
     totalStrokes += StablefordCalculator.netDoubleBogey(
       par,
-      StablefordCalculator.strokesOnHole(allocation, sideCardHolder(members).participantId, hole.holeNumber)
+      StablefordCalculator.strokesOnHole(
+        allocation,
+        sideCardHolder(members).participantId,
+        hole.holeNumber,
+      ),
     );
     holesPlayed += 1;
   }
@@ -178,7 +200,8 @@ class PersonalRoundCalculator {
    */
   static compute(params) {
     const p = conDefectos(params);
-    const { me, participants, holes, holeScores, tees, matchFormat, playMode } = p;
+    const { me, participants, holes, holeScores, tees, matchFormat, playMode } =
+      p;
     if (!me) return null;
 
     // En foursomes se juega a golpes alternos con una sola bola: lo anotado es
@@ -193,7 +216,14 @@ class PersonalRoundCalculator {
     if (matchFormat === 'FOURSOMES') {
       // Las salidas y el reparto del partido hacen falta para la raya: su par
       // es el de la barra del bando y vale su doble bogey neto
-      const teamTotals = sideTotals(me, participants, holes, holeScores, tees, repartoDelPartido(p));
+      const teamTotals = sideTotals(
+        me,
+        participants,
+        holes,
+        holeScores,
+        tees,
+        repartoDelPartido(p),
+      );
       if (!teamTotals.holesPlayed) return null;
       return {
         personalToPar: null,
@@ -226,7 +256,7 @@ class PersonalRoundCalculator {
         allowancePercentage: PERSONAL_ROUND_ALLOWANCE,
         playMode,
       }),
-      tees
+      tees,
     );
     if (!personalTotals.holesPlayed) return null;
 
@@ -235,14 +265,14 @@ class PersonalRoundCalculator {
       holes,
       holeScores,
       repartoDelPartido(p),
-      tees
+      tees,
     );
 
     const personalToPar = StablefordCalculator.formatToPar(
-      personalTotals.netStrokes - personalTotals.parPlayed
+      personalTotals.netStrokes - personalTotals.parPlayed,
     );
     const matchToPar = StablefordCalculator.formatToPar(
-      matchTotals.netStrokes - matchTotals.parPlayed
+      matchTotals.netStrokes - matchTotals.parPlayed,
     );
 
     return {
@@ -278,10 +308,13 @@ class PersonalRoundCalculator {
     const totals = totalesDeLaPartida(params);
     if (!totals) return null;
 
-    const toPar = totals.holesPlayed ? totals.netStrokes - totals.parPlayed : null;
+    const toPar = totals.holesPlayed
+      ? totals.netStrokes - totals.parPlayed
+      : null;
     return {
       toPar,
-      toParLabel: toPar === null ? null : StablefordCalculator.formatToPar(toPar),
+      toParLabel:
+        toPar === null ? null : StablefordCalculator.formatToPar(toPar),
       holesPlayed: totals.holesPlayed,
     };
   }
@@ -296,11 +329,14 @@ class PersonalRoundCalculator {
    * @returns {?{personalToPar: ?string, matchToPar: null, totalStrokes: number}}
    */
   static vueltaDelHistorial(params) {
-    if (params?.matchFormat === 'FOURSOMES') return PersonalRoundCalculator.compute(params);
+    if (params?.matchFormat === 'FOURSOMES')
+      return PersonalRoundCalculator.compute(params);
     const totals = totalesDeLaPartida(params);
     if (!totals?.holesPlayed) return null;
     return {
-      personalToPar: StablefordCalculator.formatToPar(totals.netStrokes - totals.parPlayed),
+      personalToPar: StablefordCalculator.formatToPar(
+        totals.netStrokes - totals.parPlayed,
+      ),
       matchToPar: null,
       totalStrokes: totals.totalStrokes,
     };
@@ -322,16 +358,26 @@ function totalesDeLaPartida(params) {
     playMode === 'SCRATCH'
       ? 0
       : (repartoDelPartido(p)[me.participantId]?.playingHandicap ??
-        MatchPlayStrokeAllocator.playingHandicap(me, holes, tees, allowanceDelPartido(p)));
+        MatchPlayStrokeAllocator.playingHandicap(
+          me,
+          holes,
+          tees,
+          allowanceDelPartido(p),
+        ));
 
   return StablefordCalculator.computeParticipantTotals(
     me,
     holes,
     holeScores,
     {
-      [me.participantId]: MatchPlayStrokeAllocator.ownStrokes(me, holes, tees, playingHandicap),
+      [me.participantId]: MatchPlayStrokeAllocator.ownStrokes(
+        me,
+        holes,
+        tees,
+        playingHandicap,
+      ),
     },
-    tees
+    tees,
   );
 }
 

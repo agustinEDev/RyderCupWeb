@@ -24,8 +24,12 @@ describe('CompetitionId', () => {
 
     it('isValid() should return false for invalid UUID strings', () => {
       expect(CompetitionId.isValid('not-a-uuid')).toBe(false);
-      expect(CompetitionId.isValid('a1b2c3d4-e5f6-7890-1234-567890abcde')).toBe(false); // Too short
-      expect(CompetitionId.isValid('a1b2c3d4-e5f6-7890-1234-567890abcdefg')).toBe(false); // Too long
+      expect(CompetitionId.isValid('a1b2c3d4-e5f6-7890-1234-567890abcde')).toBe(
+        false,
+      ); // Too short
+      expect(
+        CompetitionId.isValid('a1b2c3d4-e5f6-7890-1234-567890abcdefg'),
+      ).toBe(false); // Too long
       expect(CompetitionId.isValid(null)).toBe(false);
       expect(CompetitionId.isValid(undefined)).toBe(false);
       expect(CompetitionId.isValid(123)).toBe(false);
@@ -41,7 +45,9 @@ describe('CompetitionId', () => {
     });
 
     it('should throw an error for an invalid UUID string', () => {
-      expect(() => new CompetitionId('not-a-uuid')).toThrow('Invalid CompetitionId: not-a-uuid');
+      expect(() => new CompetitionId('not-a-uuid')).toThrow(
+        'Invalid CompetitionId: not-a-uuid',
+      );
     });
   });
 

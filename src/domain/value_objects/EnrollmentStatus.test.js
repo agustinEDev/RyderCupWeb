@@ -13,7 +13,9 @@ describe('EnrollmentStatus', () => {
     });
 
     it('should throw an error for an invalid state string', () => {
-      expect(() => new EnrollmentStatus('INVALID_STATE')).toThrow('Invalid EnrollmentStatus: INVALID_STATE');
+      expect(() => new EnrollmentStatus('INVALID_STATE')).toThrow(
+        'Invalid EnrollmentStatus: INVALID_STATE',
+      );
     });
 
     it('should have predefined static factory methods', () => {
@@ -37,7 +39,14 @@ describe('EnrollmentStatus', () => {
     });
 
     it('should have all 6 valid states', () => {
-      const validStates = ['REQUESTED', 'INVITED', 'APPROVED', 'REJECTED', 'CANCELLED', 'WITHDRAWN'];
+      const validStates = [
+        'REQUESTED',
+        'INVITED',
+        'APPROVED',
+        'REJECTED',
+        'CANCELLED',
+        'WITHDRAWN',
+      ];
 
       validStates.forEach((state) => {
         expect(() => new EnrollmentStatus(state)).not.toThrow();
@@ -54,7 +63,9 @@ describe('EnrollmentStatus', () => {
     });
 
     it('should throw an error for an invalid string', () => {
-      expect(() => EnrollmentStatus.fromString('INVALID')).toThrow('Invalid EnrollmentStatus: INVALID');
+      expect(() => EnrollmentStatus.fromString('INVALID')).toThrow(
+        'Invalid EnrollmentStatus: INVALID',
+      );
     });
   });
 
@@ -74,7 +85,9 @@ describe('EnrollmentStatus', () => {
     it('should allow REQUESTED → CANCELLED', () => {
       const requested = EnrollmentStatus.requested();
 
-      expect(requested.canTransitionTo(EnrollmentStatus.cancelled())).toBe(true);
+      expect(requested.canTransitionTo(EnrollmentStatus.cancelled())).toBe(
+        true,
+      );
     });
 
     it('should allow INVITED → APPROVED', () => {
@@ -104,37 +117,57 @@ describe('EnrollmentStatus', () => {
     it('should NOT allow APPROVED → CANCELLED', () => {
       const approved = EnrollmentStatus.approved();
 
-      expect(approved.canTransitionTo(EnrollmentStatus.cancelled())).toBe(false);
+      expect(approved.canTransitionTo(EnrollmentStatus.cancelled())).toBe(
+        false,
+      );
     });
 
     it('should NOT allow REQUESTED → WITHDRAWN', () => {
       const requested = EnrollmentStatus.requested();
 
-      expect(requested.canTransitionTo(EnrollmentStatus.withdrawn())).toBe(false);
+      expect(requested.canTransitionTo(EnrollmentStatus.withdrawn())).toBe(
+        false,
+      );
     });
 
     it('should NOT allow transitions from REJECTED (final state)', () => {
       const rejected = EnrollmentStatus.rejected();
 
       expect(rejected.canTransitionTo(EnrollmentStatus.approved())).toBe(false);
-      expect(rejected.canTransitionTo(EnrollmentStatus.requested())).toBe(false);
-      expect(rejected.canTransitionTo(EnrollmentStatus.withdrawn())).toBe(false);
+      expect(rejected.canTransitionTo(EnrollmentStatus.requested())).toBe(
+        false,
+      );
+      expect(rejected.canTransitionTo(EnrollmentStatus.withdrawn())).toBe(
+        false,
+      );
     });
 
     it('should NOT allow transitions from CANCELLED (final state)', () => {
       const cancelled = EnrollmentStatus.cancelled();
 
-      expect(cancelled.canTransitionTo(EnrollmentStatus.approved())).toBe(false);
-      expect(cancelled.canTransitionTo(EnrollmentStatus.requested())).toBe(false);
-      expect(cancelled.canTransitionTo(EnrollmentStatus.withdrawn())).toBe(false);
+      expect(cancelled.canTransitionTo(EnrollmentStatus.approved())).toBe(
+        false,
+      );
+      expect(cancelled.canTransitionTo(EnrollmentStatus.requested())).toBe(
+        false,
+      );
+      expect(cancelled.canTransitionTo(EnrollmentStatus.withdrawn())).toBe(
+        false,
+      );
     });
 
     it('should NOT allow transitions from WITHDRAWN (final state)', () => {
       const withdrawn = EnrollmentStatus.withdrawn();
 
-      expect(withdrawn.canTransitionTo(EnrollmentStatus.approved())).toBe(false);
-      expect(withdrawn.canTransitionTo(EnrollmentStatus.requested())).toBe(false);
-      expect(withdrawn.canTransitionTo(EnrollmentStatus.cancelled())).toBe(false);
+      expect(withdrawn.canTransitionTo(EnrollmentStatus.approved())).toBe(
+        false,
+      );
+      expect(withdrawn.canTransitionTo(EnrollmentStatus.requested())).toBe(
+        false,
+      );
+      expect(withdrawn.canTransitionTo(EnrollmentStatus.cancelled())).toBe(
+        false,
+      );
     });
   });
 
@@ -142,25 +175,31 @@ describe('EnrollmentStatus', () => {
     it('should not throw for valid transitions', () => {
       const requested = EnrollmentStatus.requested();
 
-      expect(() => requested.validateTransition(EnrollmentStatus.approved())).not.toThrow();
-      expect(() => requested.validateTransition(EnrollmentStatus.rejected())).not.toThrow();
-      expect(() => requested.validateTransition(EnrollmentStatus.cancelled())).not.toThrow();
+      expect(() =>
+        requested.validateTransition(EnrollmentStatus.approved()),
+      ).not.toThrow();
+      expect(() =>
+        requested.validateTransition(EnrollmentStatus.rejected()),
+      ).not.toThrow();
+      expect(() =>
+        requested.validateTransition(EnrollmentStatus.cancelled()),
+      ).not.toThrow();
     });
 
     it('should throw for invalid transitions', () => {
       const approved = EnrollmentStatus.approved();
 
-      expect(() => approved.validateTransition(EnrollmentStatus.cancelled())).toThrow(
-        'Invalid transition: APPROVED → CANCELLED'
-      );
+      expect(() =>
+        approved.validateTransition(EnrollmentStatus.cancelled()),
+      ).toThrow('Invalid transition: APPROVED → CANCELLED');
     });
 
     it('should throw for transitions from final states', () => {
       const rejected = EnrollmentStatus.rejected();
 
-      expect(() => rejected.validateTransition(EnrollmentStatus.approved())).toThrow(
-        'Invalid transition: REJECTED → APPROVED'
-      );
+      expect(() =>
+        rejected.validateTransition(EnrollmentStatus.approved()),
+      ).toThrow('Invalid transition: REJECTED → APPROVED');
     });
   });
 

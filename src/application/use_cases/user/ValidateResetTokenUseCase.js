@@ -38,13 +38,15 @@ class ValidateResetTokenUseCase {
     if (result?.valid !== true) {
       return {
         valid: false,
-        message: result?.message || 'The token is invalid or has expired'
+        message: result?.message || 'The token is invalid or has expired',
       };
     }
 
     return {
       valid: true,
-      message: result.message || 'Token is valid. You can proceed to change your password.'
+      message:
+        result.message ||
+        'Token is valid. You can proceed to change your password.',
     };
   }
 }

@@ -18,7 +18,11 @@
 export function sentrySampleRates(env = import.meta.env) {
   return {
     tracesSampleRate: parseFloat(env.VITE_SENTRY_TRACES_SAMPLE_RATE || '1.0'),
-    replaysSessionSampleRate: parseFloat(env.VITE_SENTRY_REPLAYS_SESSION_SAMPLE_RATE || '0'),
-    replaysOnErrorSampleRate: parseFloat(env.VITE_SENTRY_REPLAYS_ON_ERROR_SAMPLE_RATE || '1.0'),
+    replaysSessionSampleRate: parseFloat(
+      env.VITE_SENTRY_REPLAYS_SESSION_SAMPLE_RATE || '0',
+    ),
+    replaysOnErrorSampleRate: parseFloat(
+      env.VITE_SENTRY_REPLAYS_ON_ERROR_SAMPLE_RATE || '1.0',
+    ),
   };
 }

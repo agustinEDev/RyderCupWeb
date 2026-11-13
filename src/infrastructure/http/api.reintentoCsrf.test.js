@@ -61,8 +61,12 @@ vi.mock('./csrfTokenSync', () => ({
   getCsrfCookie: () => getCsrfCookie(),
   setCsrfTokenGlobal: () => {},
 }));
-vi.mock('./csrfLogout', () => ({ handleCsrfLogout: (...args) => handleCsrfLogout(...args) }));
-vi.mock('../../utils/sentryHelpers', () => ({ captureError: (...args) => captureError(...args) }));
+vi.mock('./csrfLogout', () => ({
+  handleCsrfLogout: (...args) => handleCsrfLogout(...args),
+}));
+vi.mock('../../utils/sentryHelpers', () => ({
+  captureError: (...args) => captureError(...args),
+}));
 vi.mock('i18next', () => ({ default: { t: (clave) => `t(${clave})` } }));
 
 const { apiRequest } = await import('./api');
@@ -72,13 +76,22 @@ const csrf403 = () => ({
   ok: false,
   status: 403,
   statusText: 'Forbidden',
-  json: async () => ({ detail: 'CSRF token missing or invalid', error_code: 'CSRF_VALIDATION_FAILED' }),
+  json: async () => ({
+    detail: 'CSRF token missing or invalid',
+    error_code: 'CSRF_VALIDATION_FAILED',
+  }),
 });
-const ok = (cuerpo = { id: 'qm1' }) => ({ ok: true, status: 200, json: async () => cuerpo });
+const ok = (cuerpo = { id: 'qm1' }) => ({
+  ok: true,
+  status: 200,
+  json: async () => cuerpo,
+});
 
-const tokenEnviado = (llamada) => llamarAlBackend.mock.calls[llamada][1].headers['X-CSRF-Token'];
+const tokenEnviado = (llamada) =>
+  llamarAlBackend.mock.calls[llamada][1].headers['X-CSRF-Token'];
 
-const crea = () => apiRequest('/api/v1/quick-matches/start', { method: 'POST', body: '{}' });
+const crea = () =>
+  apiRequest('/api/v1/quick-matches/start', { method: 'POST', body: '{}' });
 
 describe('apiRequest · 403 CSRF con un reintento', () => {
   beforeEach(() => {
@@ -101,7 +114,9 @@ describe('apiRequest · 403 CSRF con un reintento', () => {
   });
 
   it('11: refresca, repite con el token nuevo y devuelve la respuesta sin cerrar sesión', async () => {
-    llamarAlBackend.mockResolvedValueOnce(csrf403()).mockResolvedValueOnce(ok());
+    llamarAlBackend
+      .mockResolvedValueOnce(csrf403())
+      .mockResolvedValueOnce(ok());
 
     await expect(crea()).resolves.toEqual({ id: 'qm1' });
 
@@ -113,7 +128,9 @@ describe('apiRequest · 403 CSRF con un reintento', () => {
   });
 
   it('11b: el reintento es la MISMA petición: mismo método, ruta y cuerpo', async () => {
-    llamarAlBackend.mockResolvedValueOnce(csrf403()).mockResolvedValueOnce(ok());
+    llamarAlBackend
+      .mockResolvedValueOnce(csrf403())
+      .mockResolvedValueOnce(ok());
 
     await crea();
 
@@ -150,7 +167,10 @@ describe('apiRequest · 403 CSRF con un reintento', () => {
 
   it('13: si el refresco da 401, lo trata el interceptor y el error sale marcado', async () => {
     llamarAlBackend.mockResolvedValueOnce(csrf403());
-    const rechazo = Object.assign(new Error('expired'), { response: { status: 401 }, errorData: { detail: 'x' } });
+    const rechazo = Object.assign(new Error('expired'), {
+      response: { status: 401 },
+      errorData: { detail: 'x' },
+    });
     refrescoCompartido.mockRejectedValue(rechazo);
 
     const error = await crea().catch((e) => e);
@@ -165,17 +185,23 @@ describe('apiRequest · 403 CSRF con un reintento', () => {
 
   it.each([
     ['la red', new TypeError('Load failed')],
-    ['el tope propio del refresco', Object.assign(new Error('aborted'), { name: 'AbortError' })],
-  ])('14: si el refresco falla por %s, «sin conexión» y SIN cerrar sesión', async (_, fallo) => {
-    llamarAlBackend.mockResolvedValueOnce(csrf403());
-    refrescoCompartido.mockRejectedValue(fallo);
+    [
+      'el tope propio del refresco',
+      Object.assign(new Error('aborted'), { name: 'AbortError' }),
+    ],
+  ])(
+    '14: si el refresco falla por %s, «sin conexión» y SIN cerrar sesión',
+    async (_, fallo) => {
+      llamarAlBackend.mockResolvedValueOnce(csrf403());
+      refrescoCompartido.mockRejectedValue(fallo);
 
-    const error = await crea().catch((e) => e);
+      const error = await crea().catch((e) => e);
 
-    expect(esFalloDeRedDeLaApi(error)).toBe(true);
-    expect(handleCsrfLogout).not.toHaveBeenCalled();
-    expect(llamarAlBackend).toHaveBeenCalledTimes(1);
-  });
+      expect(esFalloDeRedDeLaApi(error)).toBe(true);
+      expect(handleCsrfLogout).not.toHaveBeenCalled();
+      expect(llamarAlBackend).toHaveBeenCalledTimes(1);
+    },
+  );
 
   it('15: si el reintento da otro error, sube ese tal cual', async () => {
     llamarAlBackend.mockResolvedValueOnce(csrf403()).mockResolvedValueOnce({
@@ -209,7 +235,7 @@ describe('apiRequest · 403 CSRF con un reintento', () => {
       return enVuelo;
     });
     llamarAlBackend.mockImplementation(async (_url, config) =>
-      config.headers['X-CSRF-Token'] === 'NUEVO' ? ok() : csrf403()
+      config.headers['X-CSRF-Token'] === 'NUEVO' ? ok() : csrf403(),
     );
 
     const resultados = await Promise.all([crea(), crea(), crea()]);
@@ -226,7 +252,11 @@ describe('apiRequest · 403 CSRF con un reintento', () => {
     llamarAlBackend.mockResolvedValueOnce(csrf403());
     refrescoCompartido.mockImplementation(() => new Promise(() => {}));
 
-    const promesa = apiRequest('/api/v1/x', { method: 'POST', body: '{}', topeMs: 5000 }).catch((e) => e);
+    const promesa = apiRequest('/api/v1/x', {
+      method: 'POST',
+      body: '{}',
+      topeMs: 5000,
+    }).catch((e) => e);
     await vi.advanceTimersByTimeAsync(5000);
     const error = await promesa;
 
@@ -255,19 +285,29 @@ describe('apiRequest · 403 CSRF con un reintento', () => {
 
     await apiRequest('/api/v1/quick-matches/me');
 
-    expect(llamarAlBackend.mock.calls[0][1].headers['X-CSRF-Token']).toBeUndefined();
+    expect(
+      llamarAlBackend.mock.calls[0][1].headers['X-CSRF-Token'],
+    ).toBeUndefined();
     expect(refrescoCompartido).not.toHaveBeenCalled();
   });
 
   it('23: cada reintento deja un aviso en Sentry con método y ruta, nunca el token', async () => {
-    llamarAlBackend.mockResolvedValueOnce(csrf403()).mockResolvedValueOnce(ok());
+    llamarAlBackend
+      .mockResolvedValueOnce(csrf403())
+      .mockResolvedValueOnce(ok());
 
-    await apiRequest('/api/v1/quick-matches/start?x=1', { method: 'POST', body: '{}' });
+    await apiRequest('/api/v1/quick-matches/start?x=1', {
+      method: 'POST',
+      body: '{}',
+    });
 
     expect(captureError).toHaveBeenCalledTimes(1);
     const [mensaje, contexto] = captureError.mock.calls[0];
     expect(contexto.level).toBe('warning');
-    expect(contexto.extra).toMatchObject({ method: 'POST', ruta: '/api/v1/quick-matches/start' });
+    expect(contexto.extra).toMatchObject({
+      method: 'POST',
+      ruta: '/api/v1/quick-matches/start',
+    });
     expect(JSON.stringify([mensaje, contexto])).not.toMatch(/VIEJO|NUEVO/);
   });
 
@@ -281,30 +321,35 @@ describe('apiRequest · 403 CSRF con un reintento', () => {
   it.each([
     [429, 't(common:demasiadasPeticiones)'],
     [503, 'HTTP 503: Service Unavailable'],
-  ])('34: si el refresco da %s, sale ese estado y SIN cerrar sesión', async (estado, mensaje) => {
-    llamarAlBackend.mockResolvedValueOnce(csrf403());
-    refrescoCompartido.mockRejectedValue(
-      Object.assign(new Error('Failed to refresh token'), {
-        response: { status: estado, statusText: 'Service Unavailable' },
-        errorData: {},
-      })
-    );
+  ])(
+    '34: si el refresco da %s, sale ese estado y SIN cerrar sesión',
+    async (estado, mensaje) => {
+      llamarAlBackend.mockResolvedValueOnce(csrf403());
+      refrescoCompartido.mockRejectedValue(
+        Object.assign(new Error('Failed to refresh token'), {
+          response: { status: estado, statusText: 'Service Unavailable' },
+          errorData: {},
+        }),
+      );
 
-    const error = await crea().catch((e) => e);
+      const error = await crea().catch((e) => e);
 
-    expect(error.status).toBe(estado);
-    expect(error.message).toBe(mensaje);
-    expect(esFalloDeRedDeLaApi(error)).toBe(false);
-    expect(handleCsrfLogout).not.toHaveBeenCalled();
-    expect(trataElFalloDelRefresco).not.toHaveBeenCalled();
-  });
+      expect(error.status).toBe(estado);
+      expect(error.message).toBe(mensaje);
+      expect(esFalloDeRedDeLaApi(error)).toBe(false);
+      expect(handleCsrfLogout).not.toHaveBeenCalled();
+      expect(trataElFalloDelRefresco).not.toHaveBeenCalled();
+    },
+  );
 
   it('24b: sin cookie, que la memoria sea otra no dice nada: refresca', async () => {
     getCsrfCookie.mockReturnValue(null);
-    llamarAlBackend.mockImplementationOnce(async () => {
-      getCsrfToken.mockReturnValue('MEMORIA_VIEJA');
-      return csrf403();
-    }).mockResolvedValueOnce(ok());
+    llamarAlBackend
+      .mockImplementationOnce(async () => {
+        getCsrfToken.mockReturnValue('MEMORIA_VIEJA');
+        return csrf403();
+      })
+      .mockResolvedValueOnce(ok());
 
     await crea();
 
@@ -314,7 +359,9 @@ describe('apiRequest · 403 CSRF con un reintento', () => {
 
   it('23c: sin cookie al salir (caducó a los 15 min), ningún aviso: es lo normal', async () => {
     getCsrfCookie.mockReturnValue(null);
-    llamarAlBackend.mockResolvedValueOnce(csrf403()).mockResolvedValueOnce(ok());
+    llamarAlBackend
+      .mockResolvedValueOnce(csrf403())
+      .mockResolvedValueOnce(ok());
 
     await crea();
 
@@ -333,10 +380,12 @@ describe('apiRequest · 403 CSRF con un reintento', () => {
   });
 
   it('24: si la cookie ya cambió (otra pestaña refrescó), repite sin refrescar', async () => {
-    llamarAlBackend.mockImplementationOnce(async () => {
-      getCsrfToken.mockReturnValue('DE_LA_OTRA');
-      return csrf403();
-    }).mockResolvedValueOnce(ok());
+    llamarAlBackend
+      .mockImplementationOnce(async () => {
+        getCsrfToken.mockReturnValue('DE_LA_OTRA');
+        return csrf403();
+      })
+      .mockResolvedValueOnce(ok());
 
     await expect(crea()).resolves.toEqual({ id: 'qm1' });
 
@@ -361,9 +410,15 @@ describe('apiRequest · 403 CSRF con un reintento', () => {
 
   it('27: si vence el tope durante el reintento, «sin conexión»', async () => {
     vi.useFakeTimers();
-    llamarAlBackend.mockResolvedValueOnce(csrf403()).mockImplementationOnce(() => new Promise(() => {}));
+    llamarAlBackend
+      .mockResolvedValueOnce(csrf403())
+      .mockImplementationOnce(() => new Promise(() => {}));
 
-    const promesa = apiRequest('/api/v1/x', { method: 'POST', body: '{}', topeMs: 5000 }).catch((e) => e);
+    const promesa = apiRequest('/api/v1/x', {
+      method: 'POST',
+      body: '{}',
+      topeMs: 5000,
+    }).catch((e) => e);
     await vi.advanceTimersByTimeAsync(5000);
     const error = await promesa;
 

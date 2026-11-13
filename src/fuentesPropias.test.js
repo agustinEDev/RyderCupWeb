@@ -27,17 +27,23 @@ describe('fuentes servidas desde la propia aplicación', () => {
     for (const peso of [400, 500, 600, 700, 800]) {
       expect(main).toContain(`import '@fontsource/poppins/${peso}.css';`);
     }
-    expect(main.indexOf('@fontsource-variable/inter')).toBeLessThan(main.indexOf("import './index.css'"));
+    expect(main.indexOf('@fontsource-variable/inter')).toBeLessThan(
+      main.indexOf("import './index.css'"),
+    );
     expect(leer('src/index.css')).not.toMatch(/@import ['"]@fontsource/);
   });
 
   it('los ficheros que piden esas hojas existen', () => {
     const hojas = [
       'node_modules/@fontsource-variable/inter/index.css',
-      ...[400, 500, 600, 700, 800].map((p) => `node_modules/@fontsource/poppins/${p}.css`),
+      ...[400, 500, 600, 700, 800].map(
+        (p) => `node_modules/@fontsource/poppins/${p}.css`,
+      ),
     ];
     for (const hoja of hojas) {
-      const urls = [...leer(hoja).matchAll(/url\((\.\/files\/[^)]+)\)/g)].map((m) => m[1]);
+      const urls = [...leer(hoja).matchAll(/url\((\.\/files\/[^)]+)\)/g)].map(
+        (m) => m[1],
+      );
       expect(urls.length).toBeGreaterThan(0);
       for (const url of urls) {
         expect(() => leer(resolve(hoja, '..', url))).not.toThrow();
@@ -85,6 +91,8 @@ describe('precache de las fuentes', () => {
     // Una regla que ya no servía: si las fuentes volvieran de Google, se servirían un año
     // desde la caché sin comprobar su integridad
     // En cualquier forma: como dirección, como expresión regular o como nombre de caché
-    expect(leer('vite.config.js')).not.toMatch(/googleapis|gstatic|google-fonts/);
+    expect(leer('vite.config.js')).not.toMatch(
+      /googleapis|gstatic|google-fonts/,
+    );
   });
 });

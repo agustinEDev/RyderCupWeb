@@ -21,7 +21,10 @@ const ESPERAS_MS = [30_000, 120_000, 300_000];
  */
 const partidaQueSeEstaAnotando = (pathname) => {
   // También la de una partida de stroke play (FE #824, PR 7)
-  const encaje = /\/(?:player\/matches|player\/groups|quick-matches)\/([^/]+)\/scoring$/.exec(pathname);
+  const encaje =
+    /\/(?:player\/matches|player\/groups|quick-matches)\/([^/]+)\/scoring$/.exec(
+      pathname,
+    );
   return encaje ? encaje[1] : null;
 };
 
@@ -108,34 +111,41 @@ export const useVaciadoDeLaCola = ({ activo, userId = null }) => {
       // cuenta —una anotando, otra en el panel— las dos leían la misma entrada
       // y la enviaban dos veces
       saltaPartida: () =>
-        partidaQueSeEstaAnotando(rutaActual.current) ?? cerrojo.partidaConSesionViva(userId),
+        partidaQueSeEstaAnotando(rutaActual.current) ??
+        cerrojo.partidaConSesionViva(userId),
       userId,
-    }).then((resultado) => {
-      if (!resultado) return;
-      // La escalera se reinicia con PROGRESO —algo llegó, algo se descartó, o
-      // ya no queda nada—, no con «terminó sin parar»: un bucle que se saltó
-      // todo porque el jugador está dentro de la única partida con cola
-      // termina limpio sin haber enviado nada, y contarlo como éxito dejaba el
-      // reintento clavado en el primer peldaño mientras el servidor seguía
-      // caído. Y con progreso se cancela el que hubiera armado: ya no hace
-      // falta esa vuelta, y sin cancelarlo cada contención dejaba un despertar
-      // de más
-      const huboProgreso = resultado.enviadas > 0
-        || resultado.descartadas > 0
-        || resultado.pendientes === 0;
-      if (huboProgreso) {
-        cuantosFallosRef.current = 0;
-        cancelaReintento();
-      }
-      if (SE_ARREGLA_ESPERANDO.has(resultado.paroPor) && resultado.pendientes > 0) {
+    })
+      .then((resultado) => {
+        if (!resultado) return;
+        // La escalera se reinicia con PROGRESO —algo llegó, algo se descartó, o
+        // ya no queda nada—, no con «terminó sin parar»: un bucle que se saltó
+        // todo porque el jugador está dentro de la única partida con cola
+        // termina limpio sin haber enviado nada, y contarlo como éxito dejaba el
+        // reintento clavado en el primer peldaño mientras el servidor seguía
+        // caído. Y con progreso se cancela el que hubiera armado: ya no hace
+        // falta esa vuelta, y sin cancelarlo cada contención dejaba un despertar
+        // de más
+        const huboProgreso =
+          resultado.enviadas > 0 ||
+          resultado.descartadas > 0 ||
+          resultado.pendientes === 0;
+        if (huboProgreso) {
+          cuantosFallosRef.current = 0;
+          cancelaReintento();
+        }
+        if (
+          SE_ARREGLA_ESPERANDO.has(resultado.paroPor) &&
+          resultado.pendientes > 0
+        ) {
+          programaReintento();
+        }
+      })
+      .catch((err) => {
+        // Nunca hacia arriba: esto corre de fondo y un fallo aquí no puede
+        // tumbar la pantalla que el usuario esté mirando
+        console.error('[VaciadoDeLaCola] No se pudo vaciar la cola:', err);
         programaReintento();
-      }
-    }).catch((err) => {
-      // Nunca hacia arriba: esto corre de fondo y un fallo aquí no puede
-      // tumbar la pantalla que el usuario esté mirando
-      console.error('[VaciadoDeLaCola] No se pudo vaciar la cola:', err);
-      programaReintento();
-    });
+      });
   }, [activo, userId, programaReintento, cancelaReintento]);
 
   useEffect(() => {

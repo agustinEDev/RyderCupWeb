@@ -14,5 +14,8 @@
  */
 export const etiquetaDeInscripcion = (t, estado, genero) => {
   if (!estado) return '';
-  return t(`enrollmentStatus.${estado}`, genero === 'FEMALE' ? { context: 'female' } : undefined);
+  return t(
+    `enrollmentStatus.${estado}`,
+    genero === 'FEMALE' ? { context: 'female' } : undefined,
+  );
 };

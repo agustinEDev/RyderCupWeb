@@ -37,7 +37,7 @@ class ApiPlayerStatsRepository extends IPlayerStatsRepository {
 
   async getPlayerStatsByGolfCourse(golfCourseId) {
     const apiData = await apiRequest(
-      `/api/v1/users/me/stats/golf-courses/${segmento(golfCourseId)}`
+      `/api/v1/users/me/stats/golf-courses/${segmento(golfCourseId)}`,
     );
     return PlayerStatsMapper.toDomain(apiData);
   }

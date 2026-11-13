@@ -7,7 +7,9 @@ import { abreviaturaDeHandicap } from './__fixtures__/abreviaturaDeHandicap';
 vi.mock('framer-motion', () => ({
   motion: {
     div: ({ children, initial, animate, transition, ...rest }) => {
-      void initial; void animate; void transition;
+      void initial;
+      void animate;
+      void transition;
       return <div {...rest}>{children}</div>;
     },
   },
@@ -31,11 +33,36 @@ const baseProps = {
   onConfirm: vi.fn(),
   round: { id: 'r-1', matchFormat: 'SINGLES' },
   enrollments: [
-    { userId: 'p1', userName: 'Player 1', userHandicap: 10.2, status: 'APPROVED' },
-    { userId: 'p2', userName: 'Player 2', userHandicap: 15.0, status: 'APPROVED' },
-    { userId: 'p3', userName: 'Player 3', userHandicap: 8.5, status: 'APPROVED' },
-    { userId: 'p4', userName: 'Player 4', userHandicap: 20.1, status: 'APPROVED' },
-    { userId: 'p5', userName: 'Player 5', userHandicap: 12.0, status: 'PENDING' },
+    {
+      userId: 'p1',
+      userName: 'Player 1',
+      userHandicap: 10.2,
+      status: 'APPROVED',
+    },
+    {
+      userId: 'p2',
+      userName: 'Player 2',
+      userHandicap: 15.0,
+      status: 'APPROVED',
+    },
+    {
+      userId: 'p3',
+      userName: 'Player 3',
+      userHandicap: 8.5,
+      status: 'APPROVED',
+    },
+    {
+      userId: 'p4',
+      userName: 'Player 4',
+      userHandicap: 20.1,
+      status: 'APPROVED',
+    },
+    {
+      userId: 'p5',
+      userName: 'Player 5',
+      userHandicap: 12.0,
+      status: 'PENDING',
+    },
   ],
   teamAssignment: {
     teamAPlayerIds: ['p1', 'p2'],
@@ -60,7 +87,9 @@ describe('GenerateMatchesModal', () => {
 
   it('should not render when isOpen is false', () => {
     render(<GenerateMatchesModal isOpen={false} {...baseProps} />);
-    expect(screen.queryByText('matches.pairings.title')).not.toBeInTheDocument();
+    expect(
+      screen.queryByText('matches.pairings.title'),
+    ).not.toBeInTheDocument();
   });
 
   it('should render when isOpen is true', () => {
@@ -76,8 +105,12 @@ describe('GenerateMatchesModal', () => {
 
   it('should not show manual matches UI in automatic mode', () => {
     render(<GenerateMatchesModal isOpen={true} {...baseProps} />);
-    expect(screen.queryByText('matches.pairings.matchN')).not.toBeInTheDocument();
-    expect(screen.queryByText('matches.pairings.addMatch')).not.toBeInTheDocument();
+    expect(
+      screen.queryByText('matches.pairings.matchN'),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByText('matches.pairings.addMatch'),
+    ).not.toBeInTheDocument();
   });
 
   it('should switch to manual mode and show matches UI', () => {
@@ -123,7 +156,9 @@ describe('GenerateMatchesModal', () => {
     render(<GenerateMatchesModal isOpen={true} {...baseProps} />);
     fireEvent.click(screen.getByDisplayValue('manual'));
 
-    expect(screen.queryByTitle('matches.pairings.removeMatch')).not.toBeInTheDocument();
+    expect(
+      screen.queryByTitle('matches.pairings.removeMatch'),
+    ).not.toBeInTheDocument();
   });
 
   it('should show validation error when submitting empty manual match', () => {
@@ -131,7 +166,9 @@ describe('GenerateMatchesModal', () => {
     fireEvent.click(screen.getByDisplayValue('manual'));
     fireEvent.click(screen.getByText('matches.pairings.generate'));
 
-    expect(screen.getByText('matches.pairings.validation.incompleteMatch')).toBeInTheDocument();
+    expect(
+      screen.getByText('matches.pairings.validation.incompleteMatch'),
+    ).toBeInTheDocument();
     expect(baseProps.onConfirm).not.toHaveBeenCalled();
   });
 
@@ -145,7 +182,10 @@ describe('GenerateMatchesModal', () => {
   });
 
   it('should show 2 player dropdowns per team for FOURBALL', () => {
-    const fourballProps = { ...baseProps, round: { id: 'r-1', matchFormat: 'FOURBALL' } };
+    const fourballProps = {
+      ...baseProps,
+      round: { id: 'r-1', matchFormat: 'FOURBALL' },
+    };
     render(<GenerateMatchesModal isOpen={true} {...fourballProps} />);
     fireEvent.click(screen.getByDisplayValue('manual'));
 
@@ -155,7 +195,10 @@ describe('GenerateMatchesModal', () => {
   });
 
   it('should show 2 player dropdowns per team for FOURSOMES', () => {
-    const foursomesProps = { ...baseProps, round: { id: 'r-1', matchFormat: 'FOURSOMES' } };
+    const foursomesProps = {
+      ...baseProps,
+      round: { id: 'r-1', matchFormat: 'FOURSOMES' },
+    };
     render(<GenerateMatchesModal isOpen={true} {...foursomesProps} />);
     fireEvent.click(screen.getByDisplayValue('manual'));
 
@@ -209,7 +252,9 @@ describe('GenerateMatchesModal', () => {
   });
 
   it('should disable submit button when isProcessing is true', () => {
-    render(<GenerateMatchesModal isOpen={true} {...baseProps} isProcessing={true} />);
+    render(
+      <GenerateMatchesModal isOpen={true} {...baseProps} isProcessing={true} />,
+    );
     const submitBtn = screen.getByTestId('generate-submit');
     expect(submitBtn).toBeDisabled();
   });
@@ -226,8 +271,11 @@ describe('GenerateMatchesModal', () => {
 
     // p5 is PENDING and not in teamAssignment, so shouldn't appear anywhere
     const selects = screen.getAllByRole('combobox');
-    const allOptions = [...selects[0].querySelectorAll('option'), ...selects[1].querySelectorAll('option')];
-    const p5Option = allOptions.find(o => o.value === 'p5');
+    const allOptions = [
+      ...selects[0].querySelectorAll('option'),
+      ...selects[1].querySelectorAll('option'),
+    ];
+    const p5Option = allOptions.find((o) => o.value === 'p5');
     expect(p5Option).toBeUndefined();
   });
 
@@ -248,11 +296,15 @@ describe('GenerateMatchesModal', () => {
 
     // Trigger validation error
     fireEvent.click(screen.getByText('matches.pairings.generate'));
-    expect(screen.getByText('matches.pairings.validation.incompleteMatch')).toBeInTheDocument();
+    expect(
+      screen.getByText('matches.pairings.validation.incompleteMatch'),
+    ).toBeInTheDocument();
 
     // Switch to automatic
     fireEvent.click(screen.getByDisplayValue('automatic'));
-    expect(screen.queryByText('matches.pairings.validation.incompleteMatch')).not.toBeInTheDocument();
+    expect(
+      screen.queryByText('matches.pairings.validation.incompleteMatch'),
+    ).not.toBeInTheDocument();
   });
 
   it('should show duplicate player validation error when same player used in two matches', () => {
@@ -272,7 +324,9 @@ describe('GenerateMatchesModal', () => {
 
     fireEvent.click(screen.getByText('matches.pairings.generate'));
 
-    expect(screen.getByText('matches.pairings.validation.duplicatePlayer')).toBeInTheDocument();
+    expect(
+      screen.getByText('matches.pairings.validation.duplicatePlayer'),
+    ).toBeInTheDocument();
     expect(baseProps.onConfirm).not.toHaveBeenCalled();
   });
 
@@ -280,26 +334,49 @@ describe('GenerateMatchesModal', () => {
   // servidor rechaza los que se manden a mano. Ofrecerlos era dejar colocar a
   // todo el mundo para recibir un error al final
   it('G1: en modo Ryder no se ofrece emparejar a mano', () => {
-    render(<GenerateMatchesModal isOpen={true} {...baseProps} setupMode="RYDER_CUP" />);
+    render(
+      <GenerateMatchesModal
+        isOpen={true}
+        {...baseProps}
+        setupMode="RYDER_CUP"
+      />,
+    );
 
     expect(screen.queryByDisplayValue('manual')).not.toBeInTheDocument();
     expect(screen.getByTestId('emparejan-los-sobres')).toBeInTheDocument();
   });
 
   it('G2: en modo manual se sigue ofreciendo', () => {
-    render(<GenerateMatchesModal isOpen={true} {...baseProps} setupMode="MANUAL" />);
+    render(
+      <GenerateMatchesModal isOpen={true} {...baseProps} setupMode="MANUAL" />,
+    );
 
     expect(screen.getByDisplayValue('manual')).toBeInTheDocument();
-    expect(screen.queryByTestId('emparejan-los-sobres')).not.toBeInTheDocument();
+    expect(
+      screen.queryByTestId('emparejan-los-sobres'),
+    ).not.toBeInTheDocument();
   });
 
   // Un hándicap plus se guarda negativo y se lee con «+» (FE #797)
   it('H1: en las opciones, el plus con «+» y el positivo sin signo', () => {
-    const enrollments = [{ ...baseProps.enrollments[0], userHandicap: -2 }, ...baseProps.enrollments.slice(1)];
-    render(<GenerateMatchesModal isOpen={true} {...baseProps} enrollments={enrollments} />);
+    const enrollments = [
+      { ...baseProps.enrollments[0], userHandicap: -2 },
+      ...baseProps.enrollments.slice(1),
+    ];
+    render(
+      <GenerateMatchesModal
+        isOpen={true}
+        {...baseProps}
+        enrollments={enrollments}
+      />,
+    );
     fireEvent.click(screen.getByDisplayValue('manual'));
 
-    expect(screen.getAllByRole('option', { name: 'Player 1 (HCP: +2.0)' }).length).toBeGreaterThan(0);
-    expect(screen.getAllByRole('option', { name: 'Player 3 (HCP: 8.5)' }).length).toBeGreaterThan(0);
+    expect(
+      screen.getAllByRole('option', { name: 'Player 1 (HCP: +2.0)' }).length,
+    ).toBeGreaterThan(0);
+    expect(
+      screen.getAllByRole('option', { name: 'Player 3 (HCP: 8.5)' }).length,
+    ).toBeGreaterThan(0);
   });
 });

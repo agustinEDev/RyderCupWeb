@@ -20,17 +20,23 @@ describe('BrandMark', () => {
 
   it('es la tinta verde por defecto', () => {
     const { container } = render(<BrandMark />);
-    expect(container.querySelector('img').getAttribute('src')).toContain('green');
+    expect(container.querySelector('img').getAttribute('src')).toContain(
+      'green',
+    );
   });
 
   it('pinta la tinta blanca cuando se la piden', () => {
     const { container } = render(<BrandMark tinta="blanco" />);
-    expect(container.querySelector('img').getAttribute('src')).toContain('white');
+    expect(container.querySelector('img').getAttribute('src')).toContain(
+      'white',
+    );
   });
 
   it('cae en la tinta verde ante una tinta que no existe', () => {
     const { container } = render(<BrandMark tinta="turquesa" />);
-    expect(container.querySelector('img').getAttribute('src')).toContain('green');
+    expect(container.querySelector('img').getAttribute('src')).toContain(
+      'green',
+    );
   });
 });
 
@@ -45,7 +51,10 @@ describe('BrandMark', () => {
  * pegada en una pantalla que este test no renderiza no la ve ningun render.
  */
 describe('la marca no vuelve a duplicarse', () => {
-  const PERMITIDOS = ['src/components/ui/BrandMark.jsx', 'src/components/ui/BrandMark.test.jsx'];
+  const PERMITIDOS = [
+    'src/components/ui/BrandMark.jsx',
+    'src/components/ui/BrandMark.test.jsx',
+  ];
 
   /** `index.html`, `public/` y `vite.config.js` llevan marcado escrito a mano
    *  —la pantalla sin conexion, el manifiesto, el service worker— donde cabe un
@@ -90,7 +99,10 @@ describe('la marca no vuelve a duplicarse', () => {
  * referencias que necesita el `<picture>`.
  */
 describe('la marca en index.html', () => {
-  const ESPERADAS = ['/images/rcf-monogram-white.png', '/images/rcf-monogram-green.png'];
+  const ESPERADAS = [
+    '/images/rcf-monogram-white.png',
+    '/images/rcf-monogram-green.png',
+  ];
 
   it('solo estan las dos referencias de la espera del arranque', () => {
     const html = readFileSync(resolve(process.cwd(), 'index.html'), 'utf8');

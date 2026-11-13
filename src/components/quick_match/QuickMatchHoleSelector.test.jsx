@@ -18,7 +18,9 @@ describe('QuickMatchHoleSelector', () => {
 
   it('should highlight the current hole', () => {
     render(<QuickMatchHoleSelector currentHole={5} onSelect={mockOnSelect} />);
-    expect(screen.getByTestId('quick-match-hole-btn-5').className).toContain('ring-2');
+    expect(screen.getByTestId('quick-match-hole-btn-5').className).toContain(
+      'ring-2',
+    );
   });
 
   it('should call onSelect when a hole is clicked', () => {
@@ -38,12 +40,18 @@ describe('QuickMatchHoleSelector', () => {
           { holeNumber: 3, participantId: 'p-2', score: 5 },
           { holeNumber: 4, participantId: 'p-1', score: 4 },
         ]}
-      />
+      />,
     );
 
-    expect(screen.getByTestId('quick-match-hole-btn-3').className).toContain('bg-green-100');
-    expect(screen.getByTestId('quick-match-hole-btn-4').className).toContain('bg-yellow-100');
-    expect(screen.getByTestId('quick-match-hole-btn-5').className).toContain('bg-gray-100');
+    expect(screen.getByTestId('quick-match-hole-btn-3').className).toContain(
+      'bg-green-100',
+    );
+    expect(screen.getByTestId('quick-match-hole-btn-4').className).toContain(
+      'bg-yellow-100',
+    );
+    expect(screen.getByTestId('quick-match-hole-btn-5').className).toContain(
+      'bg-gray-100',
+    );
   });
 
   /**
@@ -65,12 +73,16 @@ describe('QuickMatchHoleSelector', () => {
           { holeNumber: 3, participantId: 'p-4', score: 5 },
           { holeNumber: 4, participantId: 'p-1', score: 4 },
         ]}
-      />
+      />,
     );
 
-    expect(screen.getByTestId('quick-match-hole-btn-3').className).toContain('bg-green-100');
+    expect(screen.getByTestId('quick-match-hole-btn-3').className).toContain(
+      'bg-green-100',
+    );
     // Falta la bola del otro bando, no los golpes de los otros tres jugadores.
-    expect(screen.getByTestId('quick-match-hole-btn-4').className).toContain('bg-yellow-100');
+    expect(screen.getByTestId('quick-match-hole-btn-4').className).toContain(
+      'bg-yellow-100',
+    );
   });
 
   it('should count a picked-up hole as scored', () => {
@@ -86,9 +98,11 @@ describe('QuickMatchHoleSelector', () => {
           { holeNumber: 3, participantId: 'p-1', score: null },
           { holeNumber: 3, participantId: 'p-2', score: 5 },
         ]}
-      />
+      />,
     );
 
-    expect(screen.getByTestId('quick-match-hole-btn-3').className).toContain('bg-green-100');
+    expect(screen.getByTestId('quick-match-hole-btn-3').className).toContain(
+      'bg-green-100',
+    );
   });
 });

@@ -20,9 +20,7 @@ const InscritosAprobados = ({
   esStrokePlay,
   ...fila
 }) => (
-  <div
-    className="p-4"
-  >
+  <div className="p-4">
     <Plegable
       abiertoAlPrincipio={!conClasificacion}
       claseDelTitulo="text-base sm:text-lg"
@@ -36,10 +34,13 @@ const InscritosAprobados = ({
         </>
       }
     >
-
       {listaAMedias && (
         <p className="mb-3 text-sm text-gray-600">
-          {t(noVeANadie ? 'detail.onlyParticipantsSee' : 'detail.onlyFriendsVisible')}
+          {t(
+            noVeANadie
+              ? 'detail.onlyParticipantsSee'
+              : 'detail.onlyFriendsVisible',
+          )}
         </p>
       )}
       {approvedEnrollments.length === 0 ? (
@@ -51,16 +52,18 @@ const InscritosAprobados = ({
         )
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          {ordenarAprobados(approvedEnrollments, esStrokePlay).map((enrollment) => (
-            <FilaDeAprobado
-              key={enrollment.id}
-              enrollment={enrollment}
-              t={t}
-              canManage={canManage}
-              esStrokePlay={esStrokePlay}
-              {...fila}
-            />
-          ))}
+          {ordenarAprobados(approvedEnrollments, esStrokePlay).map(
+            (enrollment) => (
+              <FilaDeAprobado
+                key={enrollment.id}
+                enrollment={enrollment}
+                t={t}
+                canManage={canManage}
+                esStrokePlay={esStrokePlay}
+                {...fila}
+              />
+            ),
+          )}
         </div>
       )}
     </Plegable>

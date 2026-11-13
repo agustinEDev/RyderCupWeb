@@ -6,19 +6,29 @@ const elDisco = (() => {
   let datos = {};
   return {
     getItem: (clave) => datos[clave] ?? null,
-    setItem: (clave, valor) => { datos[clave] = String(valor); },
-    removeItem: (clave) => { delete datos[clave]; },
-    clear: () => { datos = {}; },
+    setItem: (clave, valor) => {
+      datos[clave] = String(valor);
+    },
+    removeItem: (clave) => {
+      delete datos[clave];
+    },
+    clear: () => {
+      datos = {};
+    },
   };
 })();
-Object.defineProperty(globalThis, 'localStorage', { value: elDisco, writable: true });
+Object.defineProperty(globalThis, 'localStorage', {
+  value: elDisco,
+  writable: true,
+});
 
 import * as golpesPerdidos from '../utils/golpesPerdidos';
 import * as cola from '../utils/scoringOfflineQueue';
 import { PARO, avisoTrasElVaciado, vaciaAnotaciones } from './vaciaAnotaciones';
 
 const YO = 'usuario-A';
-const errorCon = (status) => Object.assign(new Error(`HTTP ${status}`), { status });
+const errorCon = (status) =>
+  Object.assign(new Error(`HTTP ${status}`), { status });
 
 /**
  * Con la cola de VERDAD, no con un doble. Es lo que faltaba: con `remove`
@@ -27,7 +37,9 @@ const errorCon = (status) => Object.assign(new Error(`HTTP ${status}`), { status
  */
 const guarda = (matchId, holeNumber, score) => {
   cola.enqueue(matchId, holeNumber, { ownScore: score }, null, YO);
-  return cola.deQuien(YO).find((e) => e.matchId === matchId && e.holeNumber === holeNumber);
+  return cola
+    .deQuien(YO)
+    .find((e) => e.matchId === matchId && e.holeNumber === holeNumber);
 };
 
 describe('vaciaAnotaciones · la política, en un solo sitio (FE #551)', () => {
@@ -45,7 +57,14 @@ describe('vaciaAnotaciones · la política, en un solo sitio (FE #551)', () => {
 
     const r = await vaciaAnotaciones({ entradas, manda: vi.fn() });
 
-    expect(r).toEqual({ enviadas: 2, llegaron: 2, descartadas: 0, cambiadas: 0, esperan: 0, paroPor: null });
+    expect(r).toEqual({
+      enviadas: 2,
+      llegaron: 2,
+      descartadas: 0,
+      cambiadas: 0,
+      esperan: 0,
+      paroPor: null,
+    });
     expect(cola.deQuien(YO)).toHaveLength(0);
   });
 
@@ -97,14 +116,22 @@ describe('vaciaAnotaciones · la política, en un solo sitio (FE #551)', () => {
       // Si parara, una entrada mala a la cabeza dejaría sin enviar los golpes
       // de todas las demás partidas, en cada reconexión, para siempre
       const entradas = [guarda('m-1', 1, 4), guarda('m-2', 2, 5)];
-      const manda = vi.fn()
+      const manda = vi
+        .fn()
         .mockRejectedValueOnce(new Error('Marked player ID is required'))
         .mockResolvedValue();
 
       const r = await vaciaAnotaciones({ entradas, manda });
 
       expect(manda).toHaveBeenCalledTimes(2);
-      expect(r).toEqual({ enviadas: 1, llegaron: 1, descartadas: 0, cambiadas: 0, esperan: 0, paroPor: null });
+      expect(r).toEqual({
+        enviadas: 1,
+        llegaron: 1,
+        descartadas: 0,
+        cambiadas: 0,
+        esperan: 0,
+        paroPor: null,
+      });
       // La mala se queda: no se pierde
       expect(cola.deQuien(YO).map((e) => e.matchId)).toEqual(['m-1']);
     });
@@ -114,13 +141,23 @@ describe('vaciaAnotaciones · la política, en un solo sitio (FE #551)', () => {
     // vacía en el sondeo necesita saberlo para no darla por imposible (FE #625)
     it('la que aún no abre se queda, sigue con las demás y se cuenta como que espera', async () => {
       const entradas = [guarda('m-1', 1, 4), guarda('m-2', 2, 5)];
-      const noAbre = Object.assign(new Error('HTTP 409'), { status: 409, errorCode: 'SCORING_NOT_OPEN_YET' });
+      const noAbre = Object.assign(new Error('HTTP 409'), {
+        status: 409,
+        errorCode: 'SCORING_NOT_OPEN_YET',
+      });
       const manda = vi.fn().mockRejectedValueOnce(noAbre).mockResolvedValue();
 
       const r = await vaciaAnotaciones({ entradas, manda });
 
       expect(manda).toHaveBeenCalledTimes(2);
-      expect(r).toEqual({ enviadas: 1, llegaron: 1, descartadas: 0, cambiadas: 0, esperan: 1, paroPor: null });
+      expect(r).toEqual({
+        enviadas: 1,
+        llegaron: 1,
+        descartadas: 0,
+        cambiadas: 0,
+        esperan: 1,
+        paroPor: null,
+      });
       expect(cola.deQuien(YO).map((e) => e.matchId)).toEqual(['m-1']);
     });
   });
@@ -130,7 +167,8 @@ describe('vaciaAnotaciones · la política, en un solo sitio (FE #551)', () => {
       const entradas = [guarda('m-1', 1, 4), guarda('m-2', 7, 6)];
       const manda = vi.fn().mockImplementation(async (entrada) => {
         // Al ir a por la primera, el jugador corrige la segunda
-        if (entrada.matchId === 'm-1') cola.enqueue('m-2', 7, { ownScore: 4 }, null, YO);
+        if (entrada.matchId === 'm-1')
+          cola.enqueue('m-2', 7, { ownScore: 4 }, null, YO);
       });
 
       const r = await vaciaAnotaciones({ entradas, manda });
@@ -200,7 +238,9 @@ describe('vaciaAnotaciones · la política, en un solo sitio (FE #551)', () => {
 
     await vaciaAnotaciones({ entradas, manda, alDescartar });
 
-    expect(alDescartar).toHaveBeenCalledWith(expect.objectContaining({ holeNumber: 7 }));
+    expect(alDescartar).toHaveBeenCalledWith(
+      expect.objectContaining({ holeNumber: 7 }),
+    );
   });
 
   it('se consulta a quién saltar EN CADA VUELTA, no una vez', async () => {
@@ -208,9 +248,15 @@ describe('vaciaAnotaciones · la política, en un solo sitio (FE #551)', () => {
     // partidas que se están enviando: su pantalla la vacía ella
     const entradas = [guarda('m-1', 1, 4), guarda('m-2', 2, 5)];
     let abierta = null;
-    const manda = vi.fn().mockImplementation(async () => { abierta = 'm-2'; });
+    const manda = vi.fn().mockImplementation(async () => {
+      abierta = 'm-2';
+    });
 
-    await vaciaAnotaciones({ entradas, manda, seSalta: (e) => e.matchId === abierta });
+    await vaciaAnotaciones({
+      entradas,
+      manda,
+      seSalta: (e) => e.matchId === abierta,
+    });
 
     expect(manda).toHaveBeenCalledTimes(1);
   });
@@ -231,7 +277,10 @@ describe('vaciaAnotaciones · la política, en un solo sitio (FE #551)', () => {
     // enviando los mismos hoyos, que es justo lo que el cerrojo evita
     const entradas = [guarda('m-1', 1, 4), guarda('m-2', 2, 5)];
     const manda = vi.fn();
-    const sigoVivo = vi.fn().mockReturnValueOnce(true).mockReturnValueOnce(false);
+    const sigoVivo = vi
+      .fn()
+      .mockReturnValueOnce(true)
+      .mockReturnValueOnce(false);
 
     const r = await vaciaAnotaciones({ entradas, manda, sigoVivo });
 
@@ -262,7 +311,12 @@ describe('vaciaAnotaciones · la política, en un solo sitio (FE #551)', () => {
     const entradas = [guarda('m-1', 1, 4)];
     const sigoVivo = vi.fn(() => true);
     let termina;
-    const manda = vi.fn(() => new Promise((r) => { termina = r; }));
+    const manda = vi.fn(
+      () =>
+        new Promise((r) => {
+          termina = r;
+        }),
+    );
 
     const vaciado = vaciaAnotaciones({ entradas, manda, sigoVivo });
     await Promise.resolve();
@@ -294,9 +348,15 @@ describe('vaciaAnotaciones · la política, en un solo sitio (FE #551)', () => {
     await vaciaAnotaciones({ entradas, manda, alDescartar });
 
     expect(golpesPerdidos.pendientes(YO)).toEqual([
-      expect.objectContaining({ holeNumber: 7, matchName: 'Meis', matchNumber: 3 }),
+      expect.objectContaining({
+        holeNumber: 7,
+        matchName: 'Meis',
+        matchNumber: 3,
+      }),
     ]);
-    expect(alDescartar).toHaveBeenCalledWith(expect.objectContaining({ matchName: 'Meis' }));
+    expect(alDescartar).toHaveBeenCalledWith(
+      expect.objectContaining({ matchName: 'Meis' }),
+    );
   });
 
   it('el aviso de una anotación huérfana lleva dueño', async () => {
@@ -331,7 +391,10 @@ describe('vaciaAnotaciones · qué golpe se apunta como perdido (FE #813)', () =
   };
 
   it('A1 · el golpe que tocó el jugador', async () => {
-    const entrada = conTocados({ ownScore: 4, markedPlayerId: 'u2', markedScore: 5 }, ['markedScore']);
+    const entrada = conTocados(
+      { ownScore: 4, markedPlayerId: 'u2', markedScore: 5 },
+      ['markedScore'],
+    );
 
     await vaciaAnotaciones({ entradas: [entrada], manda: rechaza() });
 
@@ -350,7 +413,10 @@ describe('vaciaAnotaciones · qué golpe se apunta como perdido (FE #813)', () =
   it('A3 · solo los tocados que siguen en la anotación', async () => {
     // Al no caber una corrección, se reescribe la anterior sin lo sustituido,
     // y conserva sus tocados aunque alguno ya no esté
-    const entrada = conTocados({ markedPlayerId: 'u2', markedScore: 5 }, ['ownScore', 'markedScore']);
+    const entrada = conTocados({ markedPlayerId: 'u2', markedScore: 5 }, [
+      'ownScore',
+      'markedScore',
+    ]);
 
     await vaciaAnotaciones({ entradas: [entrada], manda: rechaza() });
 
@@ -368,13 +434,21 @@ describe('vaciaAnotaciones · qué golpe se apunta como perdido (FE #813)', () =
 
 describe('avisoTrasElVaciado (FE #551)', () => {
   it('un paro del almacenamiento lo pone, aunque hubiera otro', () => {
-    expect(avisoTrasElVaciado(null, PARO.NO_SE_PUDO_BORRAR)).toBe(PARO.NO_SE_PUDO_BORRAR);
-    expect(avisoTrasElVaciado(PARO.NO_SE_PUDO_BORRAR, PARO.NO_SE_PUDO_ESCRIBIR)).toBe(PARO.NO_SE_PUDO_ESCRIBIR);
+    expect(avisoTrasElVaciado(null, PARO.NO_SE_PUDO_BORRAR)).toBe(
+      PARO.NO_SE_PUDO_BORRAR,
+    );
+    expect(
+      avisoTrasElVaciado(PARO.NO_SE_PUDO_BORRAR, PARO.NO_SE_PUDO_ESCRIBIR),
+    ).toBe(PARO.NO_SE_PUDO_ESCRIBIR);
   });
 
   it('un paro que se arregla esperando deja el que había: no ha tocado el disco', () => {
-    expect(avisoTrasElVaciado(PARO.NO_SE_PUDO_BORRAR, PARO.NO_ES_DE_ESTA)).toBe(PARO.NO_SE_PUDO_BORRAR);
-    expect(avisoTrasElVaciado(PARO.NO_SE_PUDO_BORRAR, PARO.YA_HAY_OTRO)).toBe(PARO.NO_SE_PUDO_BORRAR);
+    expect(avisoTrasElVaciado(PARO.NO_SE_PUDO_BORRAR, PARO.NO_ES_DE_ESTA)).toBe(
+      PARO.NO_SE_PUDO_BORRAR,
+    );
+    expect(avisoTrasElVaciado(PARO.NO_SE_PUDO_BORRAR, PARO.YA_HAY_OTRO)).toBe(
+      PARO.NO_SE_PUDO_BORRAR,
+    );
     expect(avisoTrasElVaciado(null, PARO.YA_HAY_OTRO)).toBeNull();
   });
 
@@ -393,15 +467,34 @@ describe('vaciaAnotaciones · un hueco por marcado', () => {
 
   const deDani = (e) => e.scoreData.markedPlayerId === 'D';
   const losDos = () => {
-    cola.enqueue('m-1', 3, { ownScore: 5, markedPlayerId: 'C', markedScore: 6 }, null, YO, {}, ['ownScore', 'markedScore@C']);
-    cola.enqueue('m-1', 3, { markedPlayerId: 'D', markedScore: 4 }, null, YO, {}, ['markedScore@D']);
+    cola.enqueue(
+      'm-1',
+      3,
+      { ownScore: 5, markedPlayerId: 'C', markedScore: 6 },
+      null,
+      YO,
+      {},
+      ['ownScore', 'markedScore@C'],
+    );
+    cola.enqueue(
+      'm-1',
+      3,
+      { markedPlayerId: 'D', markedScore: 4 },
+      null,
+      YO,
+      {},
+      ['markedScore@D'],
+    );
     return cola.deQuien(YO);
   };
 
   it('una rechazada de antes, sin golpes tocados, nombra la marca con su rival', async () => {
     cola.enqueue('m-1', 3, { markedPlayerId: 'D', markedScore: 4 }, null, YO);
 
-    await vaciaAnotaciones({ entradas: cola.deQuien(YO), manda: vi.fn().mockRejectedValue(errorCon(409)) });
+    await vaciaAnotaciones({
+      entradas: cola.deQuien(YO),
+      manda: vi.fn().mockRejectedValue(errorCon(409)),
+    });
 
     expect(golpesPerdidos.pendientes(YO)[0].golpes).toEqual(['markedScore@D']);
   });
@@ -417,7 +510,9 @@ describe('vaciaAnotaciones · un hueco por marcado', () => {
   });
 
   it('el rechazo de Dani (ya no le marca: se deshizo la retirada) aparta solo lo suyo, con su nombre', async () => {
-    const manda = vi.fn(async (e) => { if (deDani(e)) throw errorCon(403); });
+    const manda = vi.fn(async (e) => {
+      if (deDani(e)) throw errorCon(403);
+    });
 
     const r = await vaciaAnotaciones({ entradas: losDos(), manda });
 
@@ -431,27 +526,43 @@ describe('vaciaAnotaciones · un hueco por marcado', () => {
 
     await vaciaAnotaciones({ entradas: losDos(), manda });
 
-    expect(golpesPerdidos.pendientes(YO)[0].golpes).toEqual(['ownScore', 'markedScore@C', 'markedScore@D']);
+    expect(golpesPerdidos.pendientes(YO)[0].golpes).toEqual([
+      'ownScore',
+      'markedScore@C',
+      'markedScore@D',
+    ]);
   });
 
   it('con el hueco de Dani delante en la cola, lo de Carlos se reconoce y sale', async () => {
     cola.enqueue('m-1', 3, { markedPlayerId: 'D', markedScore: 4 }, null, YO);
-    cola.enqueue('m-1', 3, { ownScore: 5, markedPlayerId: 'C', markedScore: 6 }, null, YO);
+    cola.enqueue(
+      'm-1',
+      3,
+      { ownScore: 5, markedPlayerId: 'C', markedScore: 6 },
+      null,
+      YO,
+    );
     const deCarlos = cola.deQuien(YO).find((e) => !deDani(e));
     const manda = vi.fn();
 
     const r = await vaciaAnotaciones({ entradas: [deCarlos], manda });
 
     expect(r).toMatchObject({ enviadas: 1, cambiadas: 0 });
-    expect(cola.deQuien(YO).map((e) => e.scoreData.markedPlayerId)).toEqual(['D']);
+    expect(cola.deQuien(YO).map((e) => e.scoreData.markedPlayerId)).toEqual([
+      'D',
+    ]);
   });
 
   it('el rechazo de lo de Carlos no se lleva el hueco de Dani', async () => {
-    const manda = vi.fn(async (e) => { if (!deDani(e)) throw errorCon(409); });
+    const manda = vi.fn(async (e) => {
+      if (!deDani(e)) throw errorCon(409);
+    });
     const entradas = losDos();
 
     await vaciaAnotaciones({ entradas: [entradas[0]], manda });
 
-    expect(cola.deQuien(YO).map((e) => e.scoreData.markedPlayerId)).toEqual(['D']);
+    expect(cola.deQuien(YO).map((e) => e.scoreData.markedPlayerId)).toEqual([
+      'D',
+    ]);
   });
 });

@@ -8,7 +8,9 @@ describe('useSondeoMientras (FE #824)', () => {
   it('con la pestaña del navegador oculta no pide, como los demás sondeos (revisor, PR 8)', () => {
     vi.useFakeTimers();
     const pedir = vi.fn();
-    const visible = vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('hidden');
+    const visible = vi
+      .spyOn(document, 'visibilityState', 'get')
+      .mockReturnValue('hidden');
     renderHook(() => useSondeoMientras(true, pedir, 1000));
 
     vi.advanceTimersByTime(2500);
@@ -22,7 +24,9 @@ describe('useSondeoMientras (FE #824)', () => {
 
   it('al volver a la pestaña, pide en el momento (/code-review)', () => {
     const pedir = vi.fn();
-    const visible = vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('visible');
+    const visible = vi
+      .spyOn(document, 'visibilityState', 'get')
+      .mockReturnValue('visible');
     const { unmount } = renderHook(() => useSondeoMientras(true, pedir, 60000));
 
     document.dispatchEvent(new globalThis.Event('visibilitychange'));
@@ -51,9 +55,12 @@ describe('useSondeoMientras (FE #824)', () => {
   it('pide cada vez mientras está activo, y para al dejar de estarlo y al desmontar', () => {
     vi.useFakeTimers();
     const pedir = vi.fn();
-    const { rerender, unmount } = renderHook(({ activo }) => useSondeoMientras(activo, pedir, 1000), {
-      initialProps: { activo: true },
-    });
+    const { rerender, unmount } = renderHook(
+      ({ activo }) => useSondeoMientras(activo, pedir, 1000),
+      {
+        initialProps: { activo: true },
+      },
+    );
 
     vi.advanceTimersByTime(2500);
     expect(pedir).toHaveBeenCalledTimes(2);

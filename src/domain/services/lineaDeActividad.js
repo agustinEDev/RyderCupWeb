@@ -54,21 +54,28 @@ export const textoDeLaInsignia = (n) => {
   return n > TOPE_DE_LA_INSIGNIA ? `${TOPE_DE_LA_INSIGNIA}+` : String(n);
 };
 
-const valida = (fecha) => fecha instanceof Date && !Number.isNaN(fecha.getTime());
+const valida = (fecha) =>
+  fecha instanceof Date && !Number.isNaN(fecha.getTime());
 
 // Cuándo llegó al feed; si un backend viejo no lo manda, cuándo se jugó
-const instanteDe = (evento) => (valida(evento.publishedAt) ? evento.publishedAt : evento.occurredAt);
+const instanteDe = (evento) =>
+  valida(evento.publishedAt) ? evento.publishedAt : evento.occurredAt;
 
 const msDe = (fecha) => (valida(fecha) ? fecha.getTime() : 0);
 
-const inicioDelDia = (fecha) => new Date(fecha.getFullYear(), fecha.getMonth(), fecha.getDate());
+const inicioDelDia = (fecha) =>
+  new Date(fecha.getFullYear(), fecha.getMonth(), fecha.getDate());
 
-const claveDelDia = (fecha) => `${fecha.getFullYear()}-${fecha.getMonth()}-${fecha.getDate()}`;
+const claveDelDia = (fecha) =>
+  `${fecha.getFullYear()}-${fecha.getMonth()}-${fecha.getDate()}`;
 
 // Días naturales entre dos fechas, contando por calendario y no por 24 h: el
 // cambio de hora no puede hacer de ayer «hoy»
 const diasEntre = (antes, despues) =>
-  Math.round((inicioDelDia(despues).getTime() - inicioDelDia(antes).getTime()) / (24 * HORA));
+  Math.round(
+    (inicioDelDia(despues).getTime() - inicioDelDia(antes).getTime()) /
+      (24 * HORA),
+  );
 
 // La semana empieza el lunes, como se lee en España
 const diasDesdeElLunes = (fecha) => (fecha.getDay() + 6) % 7;
@@ -113,7 +120,8 @@ const agrupa = (eventos) => {
     const tarjeta = porClave.get(clave);
     if (tarjeta) {
       tarjeta.eventos.push(evento);
-      if (msDe(instanteDe(evento)) > msDe(tarjeta.instante)) tarjeta.instante = instanteDe(evento);
+      if (msDe(instanteDe(evento)) > msDe(tarjeta.instante))
+        tarjeta.instante = instanteDe(evento);
     } else {
       porClave.set(clave, {
         clave,
@@ -126,7 +134,9 @@ const agrupa = (eventos) => {
     }
   }
   // `sort` es estable: a igual instante se respeta el orden del backend
-  return [...porClave.values()].sort((a, b) => msDe(b.instante) - msDe(a.instante));
+  return [...porClave.values()].sort(
+    (a, b) => msDe(b.instante) - msDe(a.instante),
+  );
 };
 
 /**
@@ -141,7 +151,12 @@ const agrupa = (eventos) => {
  * @param {{ eventos?: Array, solicitudes?: Array, novedades?: number, ahora: Date }} entrada
  * @returns {{ solicitudes: Array, dias: Array<{ clave: string, fecha: Date, tarjetas: Array }> }}
  */
-export const armaLaLineaDeActividad = ({ eventos = [], solicitudes = [], novedades = 0, ahora }) => {
+export const armaLaLineaDeActividad = ({
+  eventos = [],
+  solicitudes = [],
+  novedades = 0,
+  ahora,
+}) => {
   const tarjetas = agrupa(eventos);
   const pendientes = [...solicitudes]
     .sort((a, b) => msDe(b.createdAt) - msDe(a.createdAt))
@@ -158,7 +173,9 @@ export const armaLaLineaDeActividad = ({ eventos = [], solicitudes = [], novedad
 
   const dias = [];
   for (const tarjeta of tarjetas) {
-    const fecha = valida(tarjeta.instante) ? inicioDelDia(tarjeta.instante) : inicioDelDia(ahora);
+    const fecha = valida(tarjeta.instante)
+      ? inicioDelDia(tarjeta.instante)
+      : inicioDelDia(ahora);
     const clave = claveDelDia(fecha);
     const ultimo = dias.at(-1);
     if (ultimo?.clave === clave) {

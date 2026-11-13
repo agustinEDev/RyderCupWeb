@@ -3,9 +3,13 @@ import CancelInvitationUseCase from './CancelInvitationUseCase';
 
 describe('CancelInvitationUseCase (FE #724)', () => {
   it('pide al repositorio que la retire', async () => {
-    const invitationRepository = { cancelInvitation: vi.fn().mockResolvedValue(undefined) };
+    const invitationRepository = {
+      cancelInvitation: vi.fn().mockResolvedValue(undefined),
+    };
 
-    await new CancelInvitationUseCase({ invitationRepository }).execute('inv-1');
+    await new CancelInvitationUseCase({ invitationRepository }).execute(
+      'inv-1',
+    );
 
     expect(invitationRepository.cancelInvitation).toHaveBeenCalledWith('inv-1');
   });
@@ -13,7 +17,9 @@ describe('CancelInvitationUseCase (FE #724)', () => {
   it('sin id no llama a nadie', async () => {
     const invitationRepository = { cancelInvitation: vi.fn() };
 
-    await expect(new CancelInvitationUseCase({ invitationRepository }).execute('')).rejects.toThrow();
+    await expect(
+      new CancelInvitationUseCase({ invitationRepository }).execute(''),
+    ).rejects.toThrow();
     expect(invitationRepository.cancelInvitation).not.toHaveBeenCalled();
   });
 

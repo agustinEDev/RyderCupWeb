@@ -32,7 +32,9 @@ const EntregaDelPartido = ({
       // Todo anotado y sin validar, sin decidir: no «Partido terminado»
       soloAnotado={estado === 'faltaValidar' && !scoringView?.isDecided}
       // Decidido no es acabado: se puede seguir jugando hasta el 18
-      sePuedeSeguir={Boolean(scoringView?.isDecided) && holesToSubmit < totalHoles}
+      sePuedeSeguir={
+        Boolean(scoringView?.isDecided) && holesToSubmit < totalHoles
+      }
     />
   </>
 );

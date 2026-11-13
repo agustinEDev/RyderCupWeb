@@ -6,7 +6,14 @@ import CampoDeLaPartida from './CampoDeLaPartida';
  * calendario, el partido, su formato, su campo y el marcador. Sin estado ni
  * efectos. `t` es la del espacio `scoring` y `tSchedule` la de `schedule`.
  */
-const CabeceraDelPartido = ({ t, tSchedule, scoringView, marcador, resultadoDecidido, cerradoSinJugar }) => (
+const CabeceraDelPartido = ({
+  t,
+  tSchedule,
+  scoringView,
+  marcador,
+  resultadoDecidido,
+  cerradoSinJugar,
+}) => (
   <>
     {/* Back to schedule */}
     {scoringView?.competitionId && (
@@ -26,7 +33,10 @@ const CabeceraDelPartido = ({ t, tSchedule, scoringView, marcador, resultadoDeci
           {t('matchHeader', { number: scoringView?.matchNumber })}
         </h1>
         {/* El formato, traducido («Foursomes», no «FOURSOMES») */}
-        <p className="text-sm text-gray-500">{scoringView?.matchFormat && tSchedule(`formats.${scoringView.matchFormat}`)}</p>
+        <p className="text-sm text-gray-500">
+          {scoringView?.matchFormat &&
+            tSchedule(`formats.${scoringView.matchFormat}`)}
+        </p>
         <CampoDeLaPartida nombre={scoringView?.roundInfo?.golfCourseName} />
       </div>
       {(resultadoDecidido || cerradoSinJugar || scoringView?.matchStanding) && (
@@ -34,7 +44,9 @@ const CabeceraDelPartido = ({ t, tSchedule, scoringView, marcador, resultadoDeci
           <p className="text-lg font-bold text-primary">{marcador}</p>
           {scoringView?.matchStanding && (
             <p className="text-xs text-gray-500">
-              {t('holesPlayed', { count: scoringView.matchStanding.holesPlayed })}
+              {t('holesPlayed', {
+                count: scoringView.matchStanding.holesPlayed,
+              })}
             </p>
           )}
         </div>

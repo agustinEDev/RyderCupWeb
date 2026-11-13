@@ -1,5 +1,11 @@
 import { describe, it, expect, vi } from 'vitest';
-import { ESPAÑA, ESTILO, ZOOM_SIN_MAPA, opcionesDelMapa, ponerCapasDelHoyo } from './estiloDelMapa';
+import {
+  ESPAÑA,
+  ESTILO,
+  ZOOM_SIN_MAPA,
+  opcionesDelMapa,
+  ponerCapasDelHoyo,
+} from './estiloDelMapa';
 import { geojsonDelHoyo } from './geometriaDelMapa';
 
 const NODO = { soy: 'el contenedor' };
@@ -8,7 +14,9 @@ const CENTRO = { lat: 36.28, lon: -5.33 };
 describe('estiloDelMapa', () => {
   describe('opcionesDelMapa', () => {
     it('dado un hoyo con mapa, cuando se crea, entonces con su rumbo y sin girar, acercado a su centro', () => {
-      expect(opcionesDelMapa(NODO, { orientado: true, rumbo: 37, centro: CENTRO })).toEqual({
+      expect(
+        opcionesDelMapa(NODO, { orientado: true, rumbo: 37, centro: CENTRO }),
+      ).toEqual({
         container: NODO,
         style: ESTILO,
         attributionControl: false,
@@ -23,14 +31,22 @@ describe('estiloDelMapa', () => {
     });
 
     it('dado un hoyo sin mapa, cuando se crea, entonces el norte arriba y se puede girar', () => {
-      const opciones = opcionesDelMapa(NODO, { orientado: false, rumbo: 37, centro: CENTRO });
+      const opciones = opcionesDelMapa(NODO, {
+        orientado: false,
+        rumbo: 37,
+        centro: CENTRO,
+      });
 
       expect(opciones.bearing).toBe(0);
       expect(opciones.dragRotate).toBe(true);
     });
 
     it('dado que no se sabe dónde está el hoyo, cuando se crea, entonces España entera', () => {
-      const opciones = opcionesDelMapa(NODO, { orientado: false, rumbo: null, centro: null });
+      const opciones = opcionesDelMapa(NODO, {
+        orientado: false,
+        rumbo: null,
+        centro: null,
+      });
 
       expect(opciones.center).toEqual(ESPAÑA.center);
       expect(opciones.zoom).toBe(ESPAÑA.zoom);
@@ -46,10 +62,17 @@ describe('estiloDelMapa', () => {
     it('dado el estilo cargado, cuando se ponen las capas, entonces las fuentes y capas del hoyo en su orden', () => {
       const llamadas = [];
       const mapa = {
-        addSource: vi.fn((id, fuente) => llamadas.push(['fuente', id, fuente.data])),
-        addLayer: vi.fn((capa) => llamadas.push(['capa', capa.id, capa.source])),
+        addSource: vi.fn((id, fuente) =>
+          llamadas.push(['fuente', id, fuente.data]),
+        ),
+        addLayer: vi.fn((capa) =>
+          llamadas.push(['capa', capa.id, capa.source]),
+        ),
       };
-      const hoyo = { playLine: [CENTRO, { lat: 36.283, lon: -5.33 }], green: null };
+      const hoyo = {
+        playLine: [CENTRO, { lat: 36.283, lon: -5.33 }],
+        green: null,
+      };
       const medida = { type: 'FeatureCollection', features: ['medida'] };
       const linea = { type: 'FeatureCollection', features: ['linea'] };
 
@@ -64,8 +87,16 @@ describe('estiloDelMapa', () => {
         ['capa', 'marcado-linea', 'marcado'],
         ['capa', 'green', 'hoyo'],
       ]);
-      expect(mapa.addLayer.mock.calls[0][0].filter).toEqual(['==', ['get', 'tipo'], 'linea']);
-      expect(mapa.addLayer.mock.calls[3][0].filter).toEqual(['==', ['get', 'tipo'], 'green']);
+      expect(mapa.addLayer.mock.calls[0][0].filter).toEqual([
+        '==',
+        ['get', 'tipo'],
+        'linea',
+      ]);
+      expect(mapa.addLayer.mock.calls[3][0].filter).toEqual([
+        '==',
+        ['get', 'tipo'],
+        'green',
+      ]);
     });
   });
 });

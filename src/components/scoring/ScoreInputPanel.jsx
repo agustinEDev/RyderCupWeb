@@ -15,7 +15,14 @@ const MAX_SCORE = 15;
  * en match play sí: recoger es parte del juego. Por defecto NO sale: se ofrece
  * solo donde se permite expresamente (Agustín, 23 oct 2026).
  */
-const ScoreInputPanel = ({ value, onSelect, onClose, label, par, allowPickedUp = false }) => {
+const ScoreInputPanel = ({
+  value,
+  onSelect,
+  onClose,
+  label,
+  par,
+  allowPickedUp = false,
+}) => {
   const { t } = useTranslation('scoring');
   const [customMode, setCustomMode] = useState(false);
   const [customInput, setCustomInput] = useState('');
@@ -92,7 +99,9 @@ const ScoreInputPanel = ({ value, onSelect, onClose, label, par, allowPickedUp =
                   >
                     <span className="text-xl font-bold">{n}</span>
                     {label && (
-                      <span className="text-[10px] font-medium opacity-70 leading-none">{label}</span>
+                      <span className="text-[10px] font-medium opacity-70 leading-none">
+                        {label}
+                      </span>
                     )}
                   </button>
                 );
@@ -110,7 +119,9 @@ const ScoreInputPanel = ({ value, onSelect, onClose, label, par, allowPickedUp =
                   }`}
                 >
                   <span className="text-xl font-bold">-</span>
-                  <span className="text-xs font-medium opacity-75">{t('input.pickedUpLabel')}</span>
+                  <span className="text-xs font-medium opacity-75">
+                    {t('input.pickedUpLabel')}
+                  </span>
                 </button>
               )}
               <button
@@ -124,7 +135,9 @@ const ScoreInputPanel = ({ value, onSelect, onClose, label, par, allowPickedUp =
         ) : (
           // Un formulario: Intro confirma (#855)
           <form className="flex flex-col gap-3" onSubmit={handleCustomConfirm}>
-            <p className="text-sm text-gray-500">{t('input.enterCustomScore')}</p>
+            <p className="text-sm text-gray-500">
+              {t('input.enterCustomScore')}
+            </p>
             <div className="flex gap-2">
               <input
                 type="text"
@@ -150,7 +163,10 @@ const ScoreInputPanel = ({ value, onSelect, onClose, label, par, allowPickedUp =
               </button>
               <button
                 type="button"
-                onClick={() => { setCustomMode(false); setCustomInput(''); }}
+                onClick={() => {
+                  setCustomMode(false);
+                  setCustomInput('');
+                }}
                 aria-label={t('input.back')}
                 className="shrink-0 px-4 py-2 bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200"
               >
@@ -159,7 +175,11 @@ const ScoreInputPanel = ({ value, onSelect, onClose, label, par, allowPickedUp =
             </div>
             {fueraDeRango && (
               // Sin `role="alert"`: interrumpía al lector de pantalla a cada tecla (/code-review)
-              <p id="fuera-de-rango" data-testid="fuera-de-rango" className="text-sm text-red-600">
+              <p
+                id="fuera-de-rango"
+                data-testid="fuera-de-rango"
+                className="text-sm text-red-600"
+              >
                 {t('input.customScoreRange', { max: MAX_SCORE })}
               </p>
             )}

@@ -26,13 +26,17 @@ const respuestaDeLaApi = (extra = {}) => ({
 
 describe('CompetitionMapper · de quién es el torneo (FE #664)', () => {
   it('trae la visibilidad que dice el servidor', () => {
-    const competition = CompetitionMapper.toDomain(respuestaDeLaApi({ visibility: 'PUBLIC' }));
+    const competition = CompetitionMapper.toDomain(
+      respuestaDeLaApi({ visibility: 'PUBLIC' }),
+    );
 
     expect(competition.visibility).toBe('PUBLIC');
   });
 
   it('y la privada, igual', () => {
-    const competition = CompetitionMapper.toDomain(respuestaDeLaApi({ visibility: 'PRIVATE' }));
+    const competition = CompetitionMapper.toDomain(
+      respuestaDeLaApi({ visibility: 'PRIVATE' }),
+    );
 
     expect(competition.visibility).toBe('PRIVATE');
   });

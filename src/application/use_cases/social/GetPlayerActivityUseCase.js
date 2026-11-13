@@ -21,7 +21,10 @@ class GetPlayerActivityUseCase {
     if (!userId) {
       throw new Error('GetPlayerActivityUseCase requires a userId');
     }
-    return this.#socialFeedRepository.getPlayerActivity(userId, { limit, cursor });
+    return this.#socialFeedRepository.getPlayerActivity(userId, {
+      limit,
+      cursor,
+    });
   }
 }
 

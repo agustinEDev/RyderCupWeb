@@ -27,9 +27,13 @@ class FillCaptainUseCase {
     if (!EQUIPOS.includes(team)) throw new Error('Team must be A or B');
     if (!playerId) throw new Error('Player ID is required');
 
-    const data = await this.competitionRepository.fillTeamCaptain(competitionId, team, {
-      player_id: playerId,
-    });
+    const data = await this.competitionRepository.fillTeamCaptain(
+      competitionId,
+      team,
+      {
+        player_id: playerId,
+      },
+    );
 
     return {
       id: data.id,

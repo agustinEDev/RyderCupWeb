@@ -45,7 +45,8 @@ export const useMapaDeMapLibre = (
   const estiloCargadoRef = useRef(false);
   useEffect(() => {
     comunidadAhoraRef.current = comunidad;
-    if (estiloCargadoRef.current && mapaRef.current) ponerOrtofoto(mapaRef.current, comunidad);
+    if (estiloCargadoRef.current && mapaRef.current)
+      ponerOrtofoto(mapaRef.current, comunidad);
   }, [comunidad, mapaRef]);
 
   // El mapa se crea en la ref del contenedor, que corre antes que los efectos de
@@ -54,12 +55,22 @@ export const useMapaDeMapLibre = (
     (nodo) => {
       if (!nodo) return undefined;
       contenedorRef.current = nodo;
-      const { hoyo: h, conMapa: orientado, centroSinMapa: delCampo } = inicioRef.current;
+      const {
+        hoyo: h,
+        conMapa: orientado,
+        centroSinMapa: delCampo,
+      } = inicioRef.current;
       // Sin la ubicación del campo, la salida del hoyo si la tiene (no España entera)
       const centro = delCampo ?? h?.playLine?.[0] ?? h?.green?.center ?? null;
       let mapa;
       try {
-        mapa = new MapaDeMapLibre(opcionesDelMapa(nodo, { orientado, rumbo: inicioRef.current.rumbo, centro }));
+        mapa = new MapaDeMapLibre(
+          opcionesDelMapa(nodo, {
+            orientado,
+            rumbo: inicioRef.current.rumbo,
+            centro,
+          }),
+        );
       } catch (error) {
         captureError(error, { tags: { modulo: 'mapa-de-hoyos' } });
         setSinMapa(true);
@@ -77,14 +88,20 @@ export const useMapaDeMapLibre = (
         ponerOrtofoto(mapa, comunidadAhoraRef.current);
         estiloCargadoRef.current = true;
         // El hoyo de ahora, no el de al abrir: pudo cambiar antes de que cargara
-        ponerCapasDelHoyo(mapa, { hoyo: hoyoActualRef.current, medida: ultimaMedidaRef.current, linea: ultimaLineaRef.current });
+        ponerCapasDelHoyo(mapa, {
+          hoyo: hoyoActualRef.current,
+          medida: ultimaMedidaRef.current,
+          linea: ultimaLineaRef.current,
+        });
       });
       // Con `originalEvent`, lo movió el jugador (no un `jumpTo` nuestro)
       mapa.on('movestart', (e) => {
         if (e.originalEvent) movidoPorElJugadorRef.current = true;
       });
       // Un toque sin arrastrar mide; arrastrar y pellizcar mueven el mapa
-      mapa.on('click', (e) => alTocarRef.current({ lat: e.lngLat.lat, lon: e.lngLat.lng }));
+      mapa.on('click', (e) =>
+        alTocarRef.current({ lat: e.lngLat.lat, lon: e.lngLat.lng }),
+      );
       return () => {
         // Sus marcadores se van con él: el mapa nuevo (React lo monta dos veces
         // en desarrollo) pone los suyos, no mueve los de este
@@ -142,14 +159,24 @@ export const useMapaDeMapLibre = (
     const mapa = mapaRef.current;
     if (!mapa) return;
     mapa.resize?.();
-    const { hoyo: h, conMapa: orientado, soloGreen, metros: deLaTarjeta } = inicioRef.current;
+    const {
+      hoyo: h,
+      conMapa: orientado,
+      soloGreen,
+      metros: deLaTarjeta,
+    } = inicioRef.current;
     if (orientado) encuadrarHoyo(false);
     else if (soloGreen && deLaTarjeta && h?.playLine?.[0]) {
-      mapa.fitBounds(limitesDelHoyo({ playLine: circuloAlrededor(h.playLine[0], deLaTarjeta / 2) }), {
-        bearing: 0,
-        padding: margen(),
-        animate: false,
-      });
+      mapa.fitBounds(
+        limitesDelHoyo({
+          playLine: circuloAlrededor(h.playLine[0], deLaTarjeta / 2),
+        }),
+        {
+          bearing: 0,
+          padding: margen(),
+          animate: false,
+        },
+      );
     }
   }, [encuadrarHoyo, margen, mapaRef, inicioRef]);
   // El panel de abajo crece después (el recuadro, los avisos del GPS): si el
@@ -160,14 +187,28 @@ export const useMapaDeMapLibre = (
     const Observador = globalThis.ResizeObserver;
     if (!panel || !Observador || !inicioRef.current.conMapa) return undefined;
     const observador = new Observador(() => {
-      if (movidoPorElJugadorRef.current || yaEmpezoRef.current || tocadoAhoraRef.current) return;
+      if (
+        movidoPorElJugadorRef.current ||
+        yaEmpezoRef.current ||
+        tocadoAhoraRef.current
+      )
+        return;
       // Orientado después de abrir, lo de entonces; si no, el hoyo (/code-review)
       if (ultimaVistaRef.current) aplicarVista(ultimaVistaRef.current, false);
       else encuadrarHoyo(false);
     });
     observador.observe(panel);
     return () => observador.disconnect();
-  }, [encuadrarHoyo, aplicarVista, abajoRef, inicioRef, movidoPorElJugadorRef, yaEmpezoRef, tocadoAhoraRef, ultimaVistaRef]);
+  }, [
+    encuadrarHoyo,
+    aplicarVista,
+    abajoRef,
+    inicioRef,
+    movidoPorElJugadorRef,
+    yaEmpezoRef,
+    tocadoAhoraRef,
+    ultimaVistaRef,
+  ]);
 
   return montarMapa;
 };

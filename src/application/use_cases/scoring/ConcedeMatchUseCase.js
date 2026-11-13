@@ -10,7 +10,11 @@ class ConcedeMatchUseCase {
     if (!concedingTeam || !['A', 'B'].includes(concedingTeam)) {
       throw new Error('Conceding team must be A or B');
     }
-    return await this.scoringRepository.concedeMatch(matchId, concedingTeam, reason || null);
+    return await this.scoringRepository.concedeMatch(
+      matchId,
+      concedingTeam,
+      reason || null,
+    );
   }
 }
 

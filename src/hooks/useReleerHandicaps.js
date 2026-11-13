@@ -1,5 +1,8 @@
 import { useEffect, useCallback, useRef } from 'react';
-import { getCompetitionDetailUseCase, listEnrollmentsUseCase } from '../composition';
+import {
+  getCompetitionDetailUseCase,
+  listEnrollmentsUseCase,
+} from '../composition';
 
 /**
  * Lo de los hándicaps y las inscripciones en la ficha de una competición, sin
@@ -29,7 +32,8 @@ export const useReleerHandicaps = ({
     getCompetitionDetailUseCase
       .execute(deEsta)
       .then((data) => {
-        if (deEsta !== idActual.current || !lecturasDeLaFicha.aplicar(turno)) return;
+        if (deEsta !== idActual.current || !lecturasDeLaFicha.aplicar(turno))
+          return;
         const estaba = estadoDeLaActualizacion.current;
         estadoDeLaActualizacion.current = data.handicapUpdate?.status ?? null;
         setCompetition((prev) => ({
@@ -37,19 +41,31 @@ export const useReleerHandicaps = ({
           handicapUpdate: data.handicapUpdate,
           handicapUpdateWindow: data.handicapUpdateWindow,
         }));
-        if (estadoDeLaActualizacion.current !== 'IN_PROGRESS' || estaba !== 'IN_PROGRESS') {
+        if (
+          estadoDeLaActualizacion.current !== 'IN_PROGRESS' ||
+          estaba !== 'IN_PROGRESS'
+        ) {
           const deLaLista = lecturasDeInscripciones.turno();
           return listEnrollmentsUseCase
             .execute(deEsta)
             .then(
               (lista) =>
-                deEsta === idActual.current && lecturasDeInscripciones.aplicar(deLaLista) && setEnrollments(lista)
+                deEsta === idActual.current &&
+                lecturasDeInscripciones.aplicar(deLaLista) &&
+                setEnrollments(lista),
             );
         }
         return undefined;
       })
       .catch((e) => console.error('Error reloading handicap updates:', e));
-  }, [id, lecturasDeLaFicha, lecturasDeInscripciones, idActual, setCompetition, setEnrollments]);
+  }, [
+    id,
+    lecturasDeLaFicha,
+    lecturasDeInscripciones,
+    idActual,
+    setCompetition,
+    setEnrollments,
+  ]);
 
   // Lo último que se sabe de la actualización, para notar cuándo acaba
   const estadoCargado = competition?.handicapUpdate?.status ?? null;

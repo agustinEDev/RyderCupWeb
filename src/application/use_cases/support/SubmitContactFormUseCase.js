@@ -34,7 +34,11 @@ class SubmitContactFormUseCase {
       throw new Error('Name must be at least 2 characters');
     }
 
-    if (!email || typeof email !== 'string' || !EMAIL_REGEX.test(email.trim())) {
+    if (
+      !email ||
+      typeof email !== 'string' ||
+      !EMAIL_REGEX.test(email.trim())
+    ) {
       throw new Error('A valid email address is required');
     }
 

@@ -27,7 +27,8 @@ class GetCompetitionGolfCoursesUseCase {
     }
 
     // Call repository
-    const result = await this.competitionRepository.getCompetitionGolfCourses(competitionId);
+    const result =
+      await this.competitionRepository.getCompetitionGolfCourses(competitionId);
 
     return result;
   }

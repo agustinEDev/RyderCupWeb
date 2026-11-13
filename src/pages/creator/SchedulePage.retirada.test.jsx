@@ -25,7 +25,11 @@ vi.mock('react-i18next', () => ({ useTranslation: () => traduccion }));
 vi.mock('framer-motion', () => {
   const DE_ANIMACION = new Set(['initial', 'animate', 'exit', 'transition']);
   const Div = ({ children, ...props }) => (
-    <div {...Object.fromEntries(Object.entries(props).filter(([k]) => !DE_ANIMACION.has(k)))}>
+    <div
+      {...Object.fromEntries(
+        Object.entries(props).filter(([k]) => !DE_ANIMACION.has(k)),
+      )}
+    >
       {children}
     </div>
   );
@@ -40,14 +44,24 @@ const SESION = { user: { id: 'org' }, loading: false };
 const ROLES = { isAdmin: false, isCreator: true, isLoading: false };
 vi.mock('../../hooks/useAuth', () => ({ useAuth: () => SESION }));
 vi.mock('../../hooks/useUserRoles', () => ({ useUserRoles: () => ROLES }));
-vi.mock('../../components/ui/FullScreenLoader', () => ({ default: () => null }));
+vi.mock('../../components/ui/FullScreenLoader', () => ({
+  default: () => null,
+}));
 vi.mock('../../utils/toast', () => ({
-  default: { success: vi.fn(), error: vi.fn(), warning: vi.fn(), info: vi.fn(), dismiss: vi.fn() },
+  default: {
+    success: vi.fn(),
+    error: vi.fn(),
+    warning: vi.fn(),
+    info: vi.fn(),
+    dismiss: vi.fn(),
+  },
 }));
 
 // El detalle, reducido a lo que importa aquí: con qué formato se abre
 vi.mock('../../components/schedule/MatchDetailModal', () => ({
-  default: ({ matchId, matchFormat }) => <div data-testid="detalle">{`${matchId}:${matchFormat}`}</div>,
+  default: ({ matchId, matchFormat }) => (
+    <div data-testid="detalle">{`${matchId}:${matchFormat}`}</div>
+  ),
 }));
 
 const mockDetalle = vi.fn();
@@ -112,7 +126,10 @@ const ronda = (id, matchFormat, partidos) => ({
   matches: partidos,
 });
 
-const RONDAS = [ronda('r-1', 'FOURSOMES', [partido('m-1', 1)]), ronda('r-2', 'FOURBALL', [partido('m-2', 1)])];
+const RONDAS = [
+  ronda('r-1', 'FOURSOMES', [partido('m-1', 1)]),
+  ronda('r-2', 'FOURBALL', [partido('m-2', 1)]),
+];
 
 describe('SchedulePage · el detalle sabe el formato de su ronda', () => {
   beforeEach(() => {
@@ -122,7 +139,10 @@ describe('SchedulePage · el detalle sabe el formato de su ronda', () => {
     mockAgenda.mockResolvedValue({
       days: [{ date: '2026-06-01', rounds: RONDAS }],
       rounds: RONDAS,
-      teamAssignment: { teamAPlayerIds: ['org', 'carla'], teamBPlayerIds: ['bea', 'eva'] },
+      teamAssignment: {
+        teamAPlayerIds: ['org', 'carla'],
+        teamBPlayerIds: ['bea', 'eva'],
+      },
     });
     mockInscripciones.mockResolvedValue([]);
   });
@@ -133,15 +153,19 @@ describe('SchedulePage · el detalle sabe el formato de su ronda', () => {
         <Routes>
           <Route path="/competitions/:id/schedule" element={<SchedulePage />} />
         </Routes>
-      </MemoryRouter>
+      </MemoryRouter>,
     );
 
     // Las rondas salen plegadas: se despliegan las dos
     await screen.findByText('Ryder de los amigos');
     const rondas = await screen.findAllByRole('button', { expanded: false });
     for (const r of rondas) fireEvent.click(r);
-    const botones = await screen.findAllByRole('button', { name: 'matches.viewDetail' });
+    const botones = await screen.findAllByRole('button', {
+      name: 'matches.viewDetail',
+    });
     fireEvent.click(botones[1]);
-    expect(await screen.findByTestId('detalle')).toHaveTextContent('m-2:FOURBALL');
+    expect(await screen.findByTestId('detalle')).toHaveTextContent(
+      'm-2:FOURBALL',
+    );
   });
 });

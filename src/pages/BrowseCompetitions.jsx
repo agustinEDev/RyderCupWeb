@@ -67,7 +67,7 @@ const BrowseCompetitions = () => {
         // SAFETY FILTER: Filter out competitions where user already has enrollment
         // This compensates for backend bug where my_competitions=false still returns
         // competitions with existing enrollments
-        const safeCompetitions = competitions.filter(comp => {
+        const safeCompetitions = competitions.filter((comp) => {
           // Exclude if user has any enrollment status
           return !comp.enrollment_status;
         });
@@ -120,7 +120,10 @@ const BrowseCompetitions = () => {
     if (joinableSearchType === 'name') {
       return comp.name.toLowerCase().includes(searchLower);
     } else if (joinableSearchType === 'creator') {
-      const creatorName = `${comp.creator?.firstName || ''} ${comp.creator?.lastName || ''}`.trim().toLowerCase();
+      const creatorName =
+        `${comp.creator?.firstName || ''} ${comp.creator?.lastName || ''}`
+          .trim()
+          .toLowerCase();
       return creatorName.includes(searchLower);
     }
 
@@ -136,7 +139,10 @@ const BrowseCompetitions = () => {
     if (exploreSearchType === 'name') {
       return comp.name.toLowerCase().includes(searchLower);
     } else if (exploreSearchType === 'creator') {
-      const creatorName = `${comp.creator?.firstName || ''} ${comp.creator?.lastName || ''}`.trim().toLowerCase();
+      const creatorName =
+        `${comp.creator?.firstName || ''} ${comp.creator?.lastName || ''}`
+          .trim()
+          .toLowerCase();
       return creatorName.includes(searchLower);
     }
 
@@ -147,7 +153,7 @@ const BrowseCompetitions = () => {
   const openEnrollModal = (competitionId) => {
     // En un stroke play la franja se elige en la ficha (release social 3)
     const competicion = [...exploreCompetitions, ...joinableCompetitions].find(
-      (c) => c.id === competitionId
+      (c) => c.id === competitionId,
     );
     if (competicion?.hasTeams === false) {
       navigate(`/competitions/${competitionId}`, { state: { from: 'browse' } });
@@ -160,7 +166,11 @@ const BrowseCompetitions = () => {
   };
 
   // Handle request enrollment
-  const handleRequestEnrollment = async (competitionId, color = null, genero = null) => {
+  const handleRequestEnrollment = async (
+    competitionId,
+    color = null,
+    genero = null,
+  ) => {
     // El resultado es de ESTA competición: si mientras tanto se cerró su modal
     // y se abrió el de otra, no se toca el de la otra (CodeRabbit en la #721)
     const esSuModal = () => modalAbiertoPara.current === competitionId;
@@ -176,31 +186,46 @@ const BrowseCompetitions = () => {
       }
 
       // Call RequestEnrollmentUseCase
-      const hecho = await requestEnrollmentUseCase.execute(competitionId, null, { color });
+      const hecho = await requestEnrollmentUseCase.execute(
+        competitionId,
+        null,
+        { color },
+      );
 
       // Se cierra solo si ha ido bien (#710): cerrarlo antes dejaba un fallo
       // con cara de éxito. Y solo si sigue siendo el suyo (CodeRabbit, #721)
       if (esSuModal()) setEnrollModalOpen(false);
       customToast.success(
-        t(hecho?.waiting ? 'detail.success.joinedWaitingList' : 'browse.success.enrolled')
+        t(
+          hecho?.waiting
+            ? 'detail.success.joinedWaitingList'
+            : 'browse.success.enrolled',
+        ),
       );
 
       // Remove competition from UI immediately (optimistic update)
-      setJoinableCompetitions((prev) => prev.filter((comp) => comp.id !== competitionId));
+      setJoinableCompetitions((prev) =>
+        prev.filter((comp) => comp.id !== competitionId),
+      );
 
       // Reload in background to sync with backend
       setTimeout(async () => {
         try {
-          const updatedJoinableCompetitions = await browseJoinableCompetitionsUseCase.execute();
+          const updatedJoinableCompetitions =
+            await browseJoinableCompetitionsUseCase.execute();
 
           // Apply same safety filter as initial load
-          const safeCompetitions = updatedJoinableCompetitions.filter(comp => {
-            if (comp.enrollment_status) {
-              console.warn(`⚠️ [Reload] Filtering out competition ${comp.id} - enrollment status: ${comp.enrollment_status}`);
-              return false;
-            }
-            return true;
-          });
+          const safeCompetitions = updatedJoinableCompetitions.filter(
+            (comp) => {
+              if (comp.enrollment_status) {
+                console.warn(
+                  `⚠️ [Reload] Filtering out competition ${comp.id} - enrollment status: ${comp.enrollment_status}`,
+                );
+                return false;
+              }
+              return true;
+            },
+          );
 
           setJoinableCompetitions(safeCompetitions);
         } catch (err) {
@@ -213,7 +238,8 @@ const BrowseCompetitions = () => {
       // Con la sala de draft abierta no entra nadie: se dice en el diálogo, que
       // sigue abierto, y la tarjeta se queda (release social 3, revisor)
       if (error?.errorCode === 'DRAFT_IN_PROGRESS') {
-        if (esSuModal()) setErrorAlApuntarse(t('detail.errors.draftInProgress'));
+        if (esSuModal())
+          setErrorAlApuntarse(t('detail.errors.draftInProgress'));
         return;
       }
       // Check if it's a duplicate enrollment error (409 Conflict)
@@ -223,10 +249,16 @@ const BrowseCompetitions = () => {
       if (error?.status === 409) {
         if (esSuModal()) setEnrollModalOpen(false);
         customToast.error(
-          t(error?.errorCode === 'TEAMS_FORMED' ? 'detail.errors.teamsFormed' : 'browse.errors.alreadyEnrolled')
+          t(
+            error?.errorCode === 'TEAMS_FORMED'
+              ? 'detail.errors.teamsFormed'
+              : 'browse.errors.alreadyEnrolled',
+          ),
         );
         // Remove from list since user already has enrollment
-        setJoinableCompetitions((prev) => prev.filter((comp) => comp.id !== competitionId));
+        setJoinableCompetitions((prev) =>
+          prev.filter((comp) => comp.id !== competitionId),
+        );
       } else {
         // En el modal, que sigue abierto: el motivo del servidor, o «sin
         // conexión», y no el error crudo del navegador (#710)
@@ -235,7 +267,7 @@ const BrowseCompetitions = () => {
             mensajeDeError(error, {
               sinConexion: tComun('sinConexion.mensaje'),
               generico: t('browse.errors.failedToEnroll'),
-            })
+            }),
           );
         }
       }
@@ -257,7 +289,9 @@ const BrowseCompetitions = () => {
     // migradas que trae `bg-*` propio, y sin esto la pantalla pasaba de blanco
     // a gris en el instante en que llegan los datos
     return (
-      <div className={`${PANTALLA_MENOS_BARRA_INFERIOR} bg-gray-50 flex items-center justify-center`}>
+      <div
+        className={`${PANTALLA_MENOS_BARRA_INFERIOR} bg-gray-50 flex items-center justify-center`}
+      >
         <BlockLoader texto={t('common:loading')} />
       </div>
     );
@@ -270,15 +304,15 @@ const BrowseCompetitions = () => {
   // Prepare content for joinable competitions
   let joinableContent;
   if (isLoadingJoinable) {
-    joinableContent = (
-      <BlockLoader texto={t('common:loading')} />
-    );
+    joinableContent = <BlockLoader texto={t('common:loading')} />;
   } else if (filteredJoinableCompetitions.length === 0) {
     joinableContent = (
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-12 text-center">
         <Target className="w-16 h-16 text-gray-300 mx-auto mb-4" />
         <h3 className="text-xl font-semibold text-gray-900 mb-2">
-          {joinableSearch ? t('browse.joinCompetition.noCompetitionsFound') : t('browse.joinCompetition.noCompetitionsAvailable')}
+          {joinableSearch
+            ? t('browse.joinCompetition.noCompetitionsFound')
+            : t('browse.joinCompetition.noCompetitionsAvailable')}
         </h3>
         <p className="text-gray-600">
           {joinableSearch
@@ -309,15 +343,15 @@ const BrowseCompetitions = () => {
   if (isLoadingExplore) {
     // Silenciosa: las dos secciones cargan a la vez y se anunciaban dos
     // «Cargando...» seguidos, sin nada que los distinguiera
-    exploreContent = (
-      <BlockLoader silencioso texto={t('common:loading')} />
-    );
+    exploreContent = <BlockLoader silencioso texto={t('common:loading')} />;
   } else if (filteredExploreCompetitions.length === 0) {
     exploreContent = (
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-12 text-center">
         <TrendingUp className="w-16 h-16 text-gray-300 mx-auto mb-4" />
         <h3 className="text-xl font-semibold text-gray-900 mb-2">
-          {exploreSearch ? t('browse.joinCompetition.noCompetitionsFound') : t('browse.exploreCompetitions.noCompetitionsToExplore')}
+          {exploreSearch
+            ? t('browse.joinCompetition.noCompetitionsFound')
+            : t('browse.exploreCompetitions.noCompetitionsToExplore')}
         </h3>
         <p className="text-gray-600">
           {exploreSearch
@@ -348,17 +382,19 @@ const BrowseCompetitions = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Page Header */}
         <div className="mb-8">
-          <h1 className="hidden md:block text-3xl font-bold text-gray-900 mb-2">{t('browse.title')}</h1>
-          <p className="text-gray-600">
-            {t('browse.subtitle')}
-          </p>
+          <h1 className="hidden md:block text-3xl font-bold text-gray-900 mb-2">
+            {t('browse.title')}
+          </h1>
+          <p className="text-gray-600">{t('browse.subtitle')}</p>
         </div>
 
         {/* Section 1: Join a Competition */}
         <div className="mb-12">
           <div className="flex items-center gap-3 mb-6">
             <Target className="w-6 h-6 text-primary" />
-            <h2 className="text-2xl font-bold text-gray-900">{t('browse.joinCompetition.title')}</h2>
+            <h2 className="text-2xl font-bold text-gray-900">
+              {t('browse.joinCompetition.title')}
+            </h2>
           </div>
 
           <p className="text-gray-600 mb-4">
@@ -373,7 +409,10 @@ const BrowseCompetitions = () => {
                 <input
                   type="text"
                   placeholder={t('browse.joinCompetition.searchPlaceholder', {
-                    type: joinableSearchType === 'name' ? t('browse.joinCompetition.searchByName') : t('browse.joinCompetition.searchByCreator')
+                    type:
+                      joinableSearchType === 'name'
+                        ? t('browse.joinCompetition.searchByName')
+                        : t('browse.joinCompetition.searchByCreator'),
                   })}
                   value={joinableSearch}
                   onChange={(e) => setJoinableSearch(e.target.value)}
@@ -416,7 +455,9 @@ const BrowseCompetitions = () => {
         <div>
           <div className="flex items-center gap-3 mb-6">
             <TrendingUp className="w-6 h-6 text-primary" />
-            <h2 className="text-2xl font-bold text-gray-900">{t('browse.exploreCompetitions.title')}</h2>
+            <h2 className="text-2xl font-bold text-gray-900">
+              {t('browse.exploreCompetitions.title')}
+            </h2>
           </div>
 
           <p className="text-gray-600 mb-4">
@@ -431,7 +472,10 @@ const BrowseCompetitions = () => {
                 <input
                   type="text"
                   placeholder={t('browse.joinCompetition.searchPlaceholder', {
-                    type: exploreSearchType === 'name' ? t('browse.joinCompetition.searchByName') : t('browse.joinCompetition.searchByCreator')
+                    type:
+                      exploreSearchType === 'name'
+                        ? t('browse.joinCompetition.searchByName')
+                        : t('browse.joinCompetition.searchByCreator'),
                   })}
                   value={exploreSearch}
                   onChange={(e) => setExploreSearch(e.target.value)}
@@ -474,7 +518,9 @@ const BrowseCompetitions = () => {
           modalAbiertoPara.current = null;
           setEnrollModalOpen(false);
         }}
-        onConfirm={(tee, genero) => handleRequestEnrollment(enrollTargetId, tee, genero)}
+        onConfirm={(tee, genero) =>
+          handleRequestEnrollment(enrollTargetId, tee, genero)
+        }
         isProcessing={!!requestingEnrollment[enrollTargetId]}
         pideGenero={generoParaApuntarse.falta}
         // Un stroke play no abre este diálogo: se apunta en su ficha, que pide el
@@ -486,9 +532,26 @@ const BrowseCompetitions = () => {
 };
 
 // Competition Card Component
-const CompetitionCard = ({ competition, mode, onRequestEnrollment, onViewDetails, isRequesting }) => {
+const CompetitionCard = ({
+  competition,
+  mode,
+  onRequestEnrollment,
+  onViewDetails,
+  isRequesting,
+}) => {
   const { t, i18n } = useTranslation('competitions');
-  const { id, name, startDate, endDate, status, creator, enrolledCount, maxPlayers, countries, visibility } = competition;
+  const {
+    id,
+    name,
+    startDate,
+    endDate,
+    status,
+    creator,
+    enrolledCount,
+    maxPlayers,
+    countries,
+    visibility,
+  } = competition;
   // En un stroke play el cupo es de sus franjas, que se ven en la ficha (release social 3)
   const llena = competition.hasTeams !== false && enrolledCount >= maxPlayers;
   // Solo en una pública se pide plaza: un admin ve también las privadas en esta
@@ -507,7 +570,9 @@ const CompetitionCard = ({ competition, mode, onRequestEnrollment, onViewDetails
     };
 
     return (
-      <span className={`inline-block px-2 py-1 rounded-full text-xs font-semibold ${badges[status] || 'bg-gray-100 text-gray-800'}`}>
+      <span
+        className={`inline-block px-2 py-1 rounded-full text-xs font-semibold ${badges[status] || 'bg-gray-100 text-gray-800'}`}
+      >
         {status && t(`status.${status}`)}
       </span>
     );
@@ -545,16 +610,17 @@ const CompetitionCard = ({ competition, mode, onRequestEnrollment, onViewDetails
         {/* Dates */}
         <div className="flex items-center text-sm text-gray-600">
           <Calendar className="w-4 h-4 mr-2 text-gray-400" />
-          <span>
-            {formatDateRange(startDate, endDate, i18n.language)}
-          </span>
+          <span>{formatDateRange(startDate, endDate, i18n.language)}</span>
         </div>
 
         {/* Creator */}
         <div className="flex items-center text-sm text-gray-600">
           <Users className="w-4 h-4 mr-2 text-gray-400" />
           <span>
-            {t('browse.card.created-by')} <span className="font-medium text-gray-900">{creator?.firstName} {creator?.lastName}</span>
+            {t('browse.card.created-by')}{' '}
+            <span className="font-medium text-gray-900">
+              {creator?.firstName} {creator?.lastName}
+            </span>
           </span>
         </div>
 
@@ -565,9 +631,15 @@ const CompetitionCard = ({ competition, mode, onRequestEnrollment, onViewDetails
             {t('browse.card.players')}{' '}
             <span className="font-medium text-gray-900">
               {/* En un stroke play el cupo es de sus franjas (release social 3) */}
-              {competition.hasTeams === false ? enrolledCount : `${enrolledCount} / ${maxPlayers}`}
+              {competition.hasTeams === false
+                ? enrolledCount
+                : `${enrolledCount} / ${maxPlayers}`}
             </span>
-            {llena && <span className="ml-2 text-red-600 font-semibold">{t('browse.card.full')}</span>}
+            {llena && (
+              <span className="ml-2 text-red-600 font-semibold">
+                {t('browse.card.full')}
+              </span>
+            )}
           </span>
         </div>
       </button>
@@ -587,13 +659,13 @@ const CompetitionCard = ({ competition, mode, onRequestEnrollment, onViewDetails
                 : 'bg-primary text-white hover:bg-primary/90'
             }`}
           >
-        {/* Get button text */}
-        {(() => {
-          if (isRequesting) return t('browse.card.requesting');
-          if (llena) return t('browse.card.full');
-          return t('browse.card.request-to-join');
-        })()}
-      </button>
+            {/* Get button text */}
+            {(() => {
+              if (isRequesting) return t('browse.card.requesting');
+              if (llena) return t('browse.card.full');
+              return t('browse.card.request-to-join');
+            })()}
+          </button>
         ) : (
           <button
             onClick={(e) => {

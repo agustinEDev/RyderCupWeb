@@ -27,9 +27,17 @@ describe('useReportarHoyo', () => {
   afterEach(() => globalThis.removeEventListener(MUESTRA_PENDIENTE, aviso));
 
   it('H1: sale con el jugador, el campo y el número de hoyo', async () => {
-    const { result } = renderHook(() => useReportarHoyo({ golfCourseId: 'gc-1', userId: 'yo' }));
+    const { result } = renderHook(() =>
+      useReportarHoyo({ golfCourseId: 'gc-1', userId: 'yo' }),
+    );
 
-    await result.current(3, { id: 'r-1', reason: 'WRONG_HOLE', tee: { lat: 1, lon: 2 }, bends: [], greenCenter: { lat: 3, lon: 4 } });
+    await result.current(3, {
+      id: 'r-1',
+      reason: 'WRONG_HOLE',
+      tee: { lat: 1, lon: 2 },
+      bends: [],
+      greenCenter: { lat: 3, lon: 4 },
+    });
 
     expect(envio.execute).toHaveBeenCalledWith({
       userId: 'yo',
@@ -55,7 +63,9 @@ describe('useReportarHoyo', () => {
 
   it('H3: si se queda en la cola, avisa para que se reintente', async () => {
     envio.execute.mockResolvedValue({ estado: 'pendiente', paraLaTanda: true });
-    const { result } = renderHook(() => useReportarHoyo({ golfCourseId: 'gc-1', userId: 'yo' }));
+    const { result } = renderHook(() =>
+      useReportarHoyo({ golfCourseId: 'gc-1', userId: 'yo' }),
+    );
 
     await result.current(3, { id: 'r-1', reason: 'WRONG_HOLE' });
 
@@ -64,9 +74,13 @@ describe('useReportarHoyo', () => {
 
   it('H4: si el caso de uso falla, no rompe nada ni avisa', async () => {
     envio.execute.mockRejectedValue(new Error('roto'));
-    const { result } = renderHook(() => useReportarHoyo({ golfCourseId: 'gc-1', userId: 'yo' }));
+    const { result } = renderHook(() =>
+      useReportarHoyo({ golfCourseId: 'gc-1', userId: 'yo' }),
+    );
 
-    await expect(result.current(3, { id: 'r-1', reason: 'WRONG_HOLE' })).resolves.toBeUndefined();
+    await expect(
+      result.current(3, { id: 'r-1', reason: 'WRONG_HOLE' }),
+    ).resolves.toBeUndefined();
     expect(aviso).not.toHaveBeenCalled();
   });
 });

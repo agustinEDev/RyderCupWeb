@@ -33,8 +33,12 @@ const SetupModeChooser = ({ value, onSelect }) => {
   return (
     <div className="space-y-3">
       <div>
-        <h2 className="text-lg font-bold text-gray-900">{t('create.setupMode.title')}</h2>
-        <p className="text-sm text-gray-600">{t('create.setupMode.subtitle')}</p>
+        <h2 className="text-lg font-bold text-gray-900">
+          {t('create.setupMode.title')}
+        </h2>
+        <p className="text-sm text-gray-600">
+          {t('create.setupMode.subtitle')}
+        </p>
       </div>
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
@@ -55,11 +59,11 @@ const SetupModeChooser = ({ value, onSelect }) => {
               // «próximamente», más alta, desalineaba los iconos (#710)
               className={`flex w-full flex-col items-start justify-start rounded-xl border p-4 text-left transition-colors ${
                 !disponible
-                  // Fondo apagado y NO `opacity`: atenuar la tarjeta entera se
-                  // lleva por delante el texto, que es lo que viene a decir. Y
-                  // si es el modo que ya tiene la competición, conserva el
-                  // marco verde: verla gris y sin marcar sería esconderlo
-                  ? `pointer-events-none cursor-default bg-gray-50 ${
+                  ? // Fondo apagado y NO `opacity`: atenuar la tarjeta entera se
+                    // lleva por delante el texto, que es lo que viene a decir. Y
+                    // si es el modo que ya tiene la competición, conserva el
+                    // marco verde: verla gris y sin marcar sería esconderlo
+                    `pointer-events-none cursor-default bg-gray-50 ${
                       elegido ? 'border-green-600' : 'border-gray-200'
                     }`
                   : elegido
@@ -67,8 +71,12 @@ const SetupModeChooser = ({ value, onSelect }) => {
                     : 'border-gray-200 bg-white hover:border-green-500 hover:bg-green-50'
               }`}
             >
-              <Icono className={`mb-2 h-6 w-6 ${disponible ? 'text-green-600' : 'text-gray-500'}`} />
-              <span className={`block font-semibold ${disponible ? 'text-gray-900' : 'text-gray-700'}`}>
+              <Icono
+                className={`mb-2 h-6 w-6 ${disponible ? 'text-green-600' : 'text-gray-500'}`}
+              />
+              <span
+                className={`block font-semibold ${disponible ? 'text-gray-900' : 'text-gray-700'}`}
+              >
                 {t(`create.setupMode.${id}.title`)}
               </span>
               <span className="mt-1 block text-sm text-gray-600">

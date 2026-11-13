@@ -26,9 +26,15 @@ vi.mock('react-i18next', () => ({
 }));
 
 vi.mock('../components/layout/HeaderAuth', () => ({ default: () => null }));
-vi.mock('../hooks/useAuth', () => ({ useAuth: () => ({ user: { id: 'u-1', gender: 'MALE' }, loading: false }) }));
-vi.mock('../components/golf_course/GolfCourseSearchBox', () => ({ default: () => null }));
-vi.mock('../utils/toast', () => ({ default: { error: vi.fn(), success: vi.fn(), info: vi.fn() } }));
+vi.mock('../hooks/useAuth', () => ({
+  useAuth: () => ({ user: { id: 'u-1', gender: 'MALE' }, loading: false }),
+}));
+vi.mock('../components/golf_course/GolfCourseSearchBox', () => ({
+  default: () => null,
+}));
+vi.mock('../utils/toast', () => ({
+  default: { error: vi.fn(), success: vi.fn(), info: vi.fn() },
+}));
 vi.mock('../services/countries', () => ({
   formatCountryName: () => 'España',
   sortCountriesByName: (paises) => paises || [],
@@ -45,11 +51,17 @@ const mockCrear = vi.fn().mockResolvedValue({
 const mockActualizar = vi.fn().mockResolvedValue({ id: 'c-1' });
 const mockDetalle = vi.fn();
 vi.mock('../composition', () => ({
-  createCompetitionWithGolfCoursesUseCase: { execute: (...args) => mockCrear(...args) },
+  createCompetitionWithGolfCoursesUseCase: {
+    execute: (...args) => mockCrear(...args),
+  },
   updateCompetitionUseCase: { execute: (...args) => mockActualizar(...args) },
   getCompetitionDetailUseCase: { execute: (...args) => mockDetalle(...args) },
   getCompetitionGolfCoursesUseCase: { execute: vi.fn().mockResolvedValue([]) },
-  fetchCountriesUseCase: { execute: vi.fn().mockResolvedValue([{ code: 'ES', name_es: 'España', name_en: 'Spain' }]) },
+  fetchCountriesUseCase: {
+    execute: vi
+      .fn()
+      .mockResolvedValue([{ code: 'ES', name_es: 'España', name_en: 'Spain' }]),
+  },
   getAdjacentCountriesUseCase: { execute: vi.fn().mockResolvedValue([]) },
   createGolfCourseRequestUseCase: { execute: vi.fn() },
 }));
@@ -61,8 +73,12 @@ vi.mock('../utils/competitionFormValidation', () => ({
   validateCompetitionForm: () => null,
 }));
 
-vi.mock('../components/ui/CountryAutocomplete', () => ({ default: () => null }));
-vi.mock('../components/golf_course/GolfCourseRequestModal', () => ({ default: () => null }));
+vi.mock('../components/ui/CountryAutocomplete', () => ({
+  default: () => null,
+}));
+vi.mock('../components/golf_course/GolfCourseRequestModal', () => ({
+  default: () => null,
+}));
 vi.mock('../components/ui/FullScreenLoader', () => ({ default: () => null }));
 vi.mock('../components/ui/CountryFlag', () => ({ CountryFlag: () => null }));
 
@@ -70,7 +86,11 @@ const CreateCompetition = (await import('./CreateCompetition')).default;
 
 /** Entra al formulario: el tipo se elige antes (FE #639). */
 const abreElFormulario = async () => {
-  render(<MemoryRouter><CreateCompetition /></MemoryRouter>);
+  render(
+    <MemoryRouter>
+      <CreateCompetition />
+    </MemoryRouter>,
+  );
   fireEvent.click(await screen.findByTestId('tipo-RYDER_CUP'));
   // Y el modo de configuración, que es el paso siguiente (FE #695). Estilo
   // RyderCup es lo que estas pantallas daban por hecho
@@ -103,9 +123,12 @@ describe('CreateCompetition · de los amigos o de cualquiera (FE #664)', () => {
 
     expect(await screen.findByTestId('visibilidad-PRIVATE')).toHaveAttribute(
       'aria-pressed',
-      'true'
+      'true',
     );
-    expect(screen.getByTestId('visibilidad-PUBLIC')).toHaveAttribute('aria-pressed', 'false');
+    expect(screen.getByTestId('visibilidad-PUBLIC')).toHaveAttribute(
+      'aria-pressed',
+      'false',
+    );
   });
 
   it('2: sin tocar nada, se crea privada', async () => {
@@ -145,18 +168,24 @@ describe('CreateCompetition · de los amigos o de cualquiera (FE #664)', () => {
   it('5: dice lo que significa, porque «privada» solo no lo dice', async () => {
     await abreElFormulario();
 
-    expect(await screen.findByTestId('visibilidad-explicacion')).toBeInTheDocument();
+    expect(
+      await screen.findByTestId('visibilidad-explicacion'),
+    ).toBeInTheDocument();
   });
 });
 
 describe('CreateCompetition · editar no cierra un torneo abierto (FE #664)', () => {
-  const pintaEdicion = () => render(
-    <MemoryRouter initialEntries={['/competitions/c-1/edit']}>
-      <Routes>
-        <Route path="/competitions/:id/edit" element={<CreateCompetition />} />
-      </Routes>
-    </MemoryRouter>
-  );
+  const pintaEdicion = () =>
+    render(
+      <MemoryRouter initialEntries={['/competitions/c-1/edit']}>
+        <Routes>
+          <Route
+            path="/competitions/:id/edit"
+            element={<CreateCompetition />}
+          />
+        </Routes>
+      </MemoryRouter>,
+    );
 
   beforeEach(() => {
     vi.spyOn(console, 'error').mockImplementation(() => {});
@@ -179,7 +208,10 @@ describe('CreateCompetition · editar no cierra un torneo abierto (FE #664)', ()
     pintaEdicion();
 
     await waitFor(() =>
-      expect(screen.getByTestId('visibilidad-PUBLIC')).toHaveAttribute('aria-pressed', 'true')
+      expect(screen.getByTestId('visibilidad-PUBLIC')).toHaveAttribute(
+        'aria-pressed',
+        'true',
+      ),
     );
   });
 
@@ -188,12 +220,17 @@ describe('CreateCompetition · editar no cierra un torneo abierto (FE #664)', ()
     // volvia privado sin avisar, y desaparecia de explorar
     pintaEdicion();
     await waitFor(() =>
-      expect(screen.getByTestId('visibilidad-PUBLIC')).toHaveAttribute('aria-pressed', 'true')
+      expect(screen.getByTestId('visibilidad-PUBLIC')).toHaveAttribute(
+        'aria-pressed',
+        'true',
+      ),
     );
 
     fireEvent.click(screen.getByText('edit.updateCompetition'));
 
     await waitFor(() => expect(mockActualizar).toHaveBeenCalled());
-    expect(mockActualizar.mock.calls[0][1]).toMatchObject({ visibility: 'PUBLIC' });
+    expect(mockActualizar.mock.calls[0][1]).toMatchObject({
+      visibility: 'PUBLIC',
+    });
   });
 });

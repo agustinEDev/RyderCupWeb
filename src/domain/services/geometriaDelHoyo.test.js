@@ -1,5 +1,15 @@
 import { describe, it, expect } from 'vitest';
-import { rumbo, orientacionDelHoyo, limitesDelHoyo, esPosicionValida, encuadreGirado, rumboDeLaLinea, siguientePuntoDeLaLinea, proyeccionEnElTramo, camaraGirada } from './geometriaDelHoyo';
+import {
+  rumbo,
+  orientacionDelHoyo,
+  limitesDelHoyo,
+  esPosicionValida,
+  encuadreGirado,
+  rumboDeLaLinea,
+  siguientePuntoDeLaLinea,
+  proyeccionEnElTramo,
+  camaraGirada,
+} from './geometriaDelHoyo';
 
 const SALIDA = { lat: 36.28, lon: -5.33 };
 const GREEN = {
@@ -19,21 +29,32 @@ describe('rumbo', () => {
   });
 
   it('lejos del ecuador, el rumbo de la esfera (no el del plano)', () => {
-    expect(rumbo({ lat: 50, lon: 0 }, { lat: 51, lon: 1 })).toBeCloseTo(32.0747, 3);
+    expect(rumbo({ lat: 50, lon: 0 }, { lat: 51, lon: 1 })).toBeCloseTo(
+      32.0747,
+      3,
+    );
   });
 });
 
 describe('orientacionDelHoyo (H1: salida abajo, green arriba)', () => {
   it('de la salida al centro del green', () => {
-    const hoyo = { playLine: [SALIDA, { lat: 36.285, lon: -5.331 }], green: GREEN };
+    const hoyo = {
+      playLine: [SALIDA, { lat: 36.285, lon: -5.331 }],
+      green: GREEN,
+    };
 
-    expect(orientacionDelHoyo(hoyo)).toBeCloseTo(rumbo(SALIDA, GREEN.center), 6);
+    expect(orientacionDelHoyo(hoyo)).toBeCloseTo(
+      rumbo(SALIDA, GREEN.center),
+      6,
+    );
   });
 
   it('sin green, de la salida al final de la línea de juego', () => {
     const fin = { lat: 36.285, lon: -5.331 };
 
-    expect(orientacionDelHoyo({ playLine: [SALIDA, fin], green: null })).toBeCloseTo(rumbo(SALIDA, fin), 6);
+    expect(
+      orientacionDelHoyo({ playLine: [SALIDA, fin], green: null }),
+    ).toBeCloseTo(rumbo(SALIDA, fin), 6);
   });
 
   it('S1: sin hoyo, o con un solo punto, sin orientación (norte arriba)', () => {
@@ -45,7 +66,10 @@ describe('orientacionDelHoyo (H1: salida abajo, green arriba)', () => {
 
 describe('limitesDelHoyo (H1/H4: el hoyo entero)', () => {
   it('abarca la línea de juego y el green', () => {
-    const hoyo = { playLine: [SALIDA, { lat: 36.285, lon: -5.335 }], green: GREEN };
+    const hoyo = {
+      playLine: [SALIDA, { lat: 36.285, lon: -5.335 }],
+      green: GREEN,
+    };
 
     expect(limitesDelHoyo(hoyo)).toEqual([
       [-5.335, 36.28],
@@ -85,27 +109,50 @@ describe('encuadreGirado', () => {
   const M_POR_GRADO = 111319.49;
   const S = { lat: 42.46, lon: -8.72 };
   const norte = (m) => ({ lat: S.lat + m / M_POR_GRADO, lon: S.lon });
-  const noreste = (m) => ({ lat: S.lat + m / M_POR_GRADO / Math.SQRT2, lon: S.lon + m / (M_POR_GRADO * Math.cos((S.lat * Math.PI) / 180)) / Math.SQRT2 });
-  const pantalla = { ancho: 400, alto: 900, padding: { top: 50, bottom: 250, left: 40, right: 40 } };
+  const noreste = (m) => ({
+    lat: S.lat + m / M_POR_GRADO / Math.SQRT2,
+    lon:
+      S.lon +
+      m / (M_POR_GRADO * Math.cos((S.lat * Math.PI) / 180)) / Math.SQRT2,
+  });
+  const pantalla = {
+    ancho: 400,
+    alto: 900,
+    padding: { top: 50, bottom: 250, left: 40, right: 40 },
+  };
 
   it('un hoyo recto hacia su rumbo llena el alto libre: 500 m en 600 px', () => {
     const hoyo = { playLine: [S, norte(500)], green: null };
 
     const { zoom } = encuadreGirado(hoyo, 0, pantalla);
 
-    const mPorPx = (2 * Math.PI * 6378137 * Math.cos((S.lat * Math.PI) / 180)) / (512 * 2 ** zoom);
+    const mPorPx =
+      (2 * Math.PI * 6378137 * Math.cos((S.lat * Math.PI) / 180)) /
+      (512 * 2 ** zoom);
     expect(500 / mPorPx).toBeCloseTo(600, 0);
   });
 
   it('en diagonal y girado a su rumbo, el mismo zoom que recto (no el de su caja norte-sur)', () => {
-    const recto = encuadreGirado({ playLine: [S, norte(500)], green: null }, 0, pantalla);
-    const diagonal = encuadreGirado({ playLine: [S, noreste(500)], green: null }, 45, pantalla);
+    const recto = encuadreGirado(
+      { playLine: [S, norte(500)], green: null },
+      0,
+      pantalla,
+    );
+    const diagonal = encuadreGirado(
+      { playLine: [S, noreste(500)], green: null },
+      45,
+      pantalla,
+    );
 
     expect(diagonal.zoom).toBeCloseTo(recto.zoom, 3);
   });
 
   it('sin márgenes, el centro es la mitad del hoyo girado', () => {
-    const { center } = encuadreGirado({ playLine: [S, noreste(500)], green: null }, 45, { ...pantalla, padding: { top: 0, bottom: 0, left: 0, right: 0 } });
+    const { center } = encuadreGirado(
+      { playLine: [S, noreste(500)], green: null },
+      45,
+      { ...pantalla, padding: { top: 0, bottom: 0, left: 0, right: 0 } },
+    );
 
     expect(center.lat).toBeCloseTo(noreste(250).lat, 6);
     expect(center.lon).toBeCloseTo(noreste(250).lon, 6);
@@ -116,27 +163,45 @@ describe('encuadreGirado', () => {
     const hoyo = { playLine: [S, norte(500)], green: null };
     const { center, zoom } = encuadreGirado(hoyo, 0, pantalla);
 
-    const mPorPx = (2 * Math.PI * 6378137 * Math.cos((S.lat * Math.PI) / 180)) / (512 * 2 ** zoom);
+    const mPorPx =
+      (2 * Math.PI * 6378137 * Math.cos((S.lat * Math.PI) / 180)) /
+      (512 * 2 ** zoom);
     const metrosDelCentro = (center.lat - S.lat) * M_POR_GRADO;
     expect(metrosDelCentro).toBeCloseTo(250 - 100 * mPorPx, 0);
     expect(center.lon).toBeCloseTo(S.lon, 9);
   });
 
   it('si lo que manda es lo ancho, se encuadra por el ancho', () => {
-    const ancho = { playLine: [S, { lat: S.lat, lon: S.lon + 600 / (M_POR_GRADO * Math.cos((S.lat * Math.PI) / 180)) }], green: null };
+    const ancho = {
+      playLine: [
+        S,
+        {
+          lat: S.lat,
+          lon: S.lon + 600 / (M_POR_GRADO * Math.cos((S.lat * Math.PI) / 180)),
+        },
+      ],
+      green: null,
+    };
 
     const { zoom } = encuadreGirado(ancho, 0, pantalla);
 
-    const mPorPx = (2 * Math.PI * 6378137 * Math.cos((S.lat * Math.PI) / 180)) / (512 * 2 ** zoom);
+    const mPorPx =
+      (2 * Math.PI * 6378137 * Math.cos((S.lat * Math.PI) / 180)) /
+      (512 * 2 ** zoom);
     expect(600 / mPorPx).toBeCloseTo(320, 0);
   });
 
   it('incluye el green (delante y fondo)', () => {
-    const conGreen = { playLine: [S, norte(500)], green: { front: norte(490), center: norte(500), back: norte(520) } };
+    const conGreen = {
+      playLine: [S, norte(500)],
+      green: { front: norte(490), center: norte(500), back: norte(520) },
+    };
 
     const { zoom } = encuadreGirado(conGreen, 0, pantalla);
 
-    const mPorPx = (2 * Math.PI * 6378137 * Math.cos((S.lat * Math.PI) / 180)) / (512 * 2 ** zoom);
+    const mPorPx =
+      (2 * Math.PI * 6378137 * Math.cos((S.lat * Math.PI) / 180)) /
+      (512 * 2 ** zoom);
     expect(520 / mPorPx).toBeCloseTo(600, 0);
   });
 
@@ -148,29 +213,57 @@ describe('encuadreGirado', () => {
   });
 
   it('un hoyo con un codo hacia la derecha: el centro se va de lado, hacia el codo', () => {
-    const codo = { lat: norte(250).lat, lon: S.lon + 100 / (M_POR_GRADO * Math.cos((S.lat * Math.PI) / 180)) };
-    const { center } = encuadreGirado({ playLine: [S, codo, norte(500)], green: null }, 0, { ...pantalla, padding: { top: 0, bottom: 0, left: 0, right: 0 } });
+    const codo = {
+      lat: norte(250).lat,
+      lon: S.lon + 100 / (M_POR_GRADO * Math.cos((S.lat * Math.PI) / 180)),
+    };
+    const { center } = encuadreGirado(
+      { playLine: [S, codo, norte(500)], green: null },
+      0,
+      { ...pantalla, padding: { top: 0, bottom: 0, left: 0, right: 0 } },
+    );
 
-    const metrosAlEste = (center.lon - S.lon) * M_POR_GRADO * Math.cos((S.lat * Math.PI) / 180);
+    const metrosAlEste =
+      (center.lon - S.lon) * M_POR_GRADO * Math.cos((S.lat * Math.PI) / 180);
     expect(metrosAlEste).toBeCloseTo(50, 0);
   });
 
   it('un punto imposible (NaN) se descarta; si no queda ninguno, null', () => {
-    expect(encuadreGirado({ playLine: [S, { lat: Number.NaN, lon: 1 }, norte(500)], green: null }, 0, pantalla).center.lat).not.toBeNaN();
-    expect(encuadreGirado({ playLine: [{ lat: Number.NaN, lon: Number.NaN }], green: null }, 0, pantalla)).toBeNull();
+    expect(
+      encuadreGirado(
+        { playLine: [S, { lat: Number.NaN, lon: 1 }, norte(500)], green: null },
+        0,
+        pantalla,
+      ).center.lat,
+    ).not.toBeNaN();
+    expect(
+      encuadreGirado(
+        { playLine: [{ lat: Number.NaN, lon: Number.NaN }], green: null },
+        0,
+        pantalla,
+      ),
+    ).toBeNull();
   });
 
   it('un solo punto: zoom 19; sin hoyo, null', () => {
-    expect(encuadreGirado({ playLine: [S], green: null }, 0, pantalla).zoom).toBe(19);
+    expect(
+      encuadreGirado({ playLine: [S], green: null }, 0, pantalla).zoom,
+    ).toBe(19);
     expect(encuadreGirado(null, 0, pantalla)).toBeNull();
   });
 
   it('sin hueco libre, la pantalla entera (no el zoom máximo)', () => {
     const hoyo = { playLine: [S, norte(500)], green: null };
 
-    const { zoom } = encuadreGirado(hoyo, 0, { ancho: 80, alto: 300, padding: pantalla.padding });
+    const { zoom } = encuadreGirado(hoyo, 0, {
+      ancho: 80,
+      alto: 300,
+      padding: pantalla.padding,
+    });
 
-    const mPorPx = (2 * Math.PI * 6378137 * Math.cos((S.lat * Math.PI) / 180)) / (512 * 2 ** zoom);
+    const mPorPx =
+      (2 * Math.PI * 6378137 * Math.cos((S.lat * Math.PI) / 180)) /
+      (512 * 2 ** zoom);
     expect(500 / mPorPx).toBeCloseTo(300, 0);
   });
 });
@@ -194,7 +287,9 @@ describe('rumboDeLaLinea (O1)', () => {
 
   it('par 4 y 5: de la salida al primer codo', () => {
     expect(rumboDeLaLinea(CON_CODO, 4)).toBeCloseTo(rumbo(SALIDA, CODO), 6);
-    expect(rumboDeLaLinea([SALIDA, CODO, { lat: 36.288, lon: -5.33 }, FIN], 5)).toBeCloseTo(rumbo(SALIDA, CODO), 6);
+    expect(
+      rumboDeLaLinea([SALIDA, CODO, { lat: 36.288, lon: -5.33 }, FIN], 5),
+    ).toBeCloseTo(rumbo(SALIDA, CODO), 6);
   });
 
   it('sin codos o sin par: al green', () => {
@@ -216,11 +311,15 @@ describe('siguientePuntoDeLaLinea (O2)', () => {
   const L = [S, C, G];
 
   it('antes del codo, el codo', () => {
-    expect(siguientePuntoDeLaLinea({ lat: 36.281, lon: -5.3301 }, L)).toEqual(C);
+    expect(siguientePuntoDeLaLinea({ lat: 36.281, lon: -5.3301 }, L)).toEqual(
+      C,
+    );
   });
 
   it('pasado el codo, el green', () => {
-    expect(siguientePuntoDeLaLinea({ lat: 36.2831, lon: -5.328 }, L)).toEqual(G);
+    expect(siguientePuntoDeLaLinea({ lat: 36.2831, lon: -5.328 }, L)).toEqual(
+      G,
+    );
   });
 
   it('detrás de la salida, el primer punto tras ella', () => {
@@ -229,27 +328,41 @@ describe('siguientePuntoDeLaLinea (O2)', () => {
 
   it('lo más cerca de un tramo es entre sus dos puntos, no en su prolongación', () => {
     // Al oeste de la calle hacia el codo, casi en la prolongación del tramo al green
-    expect(siguientePuntoDeLaLinea({ lat: 36.2825, lon: -5.335 }, L)).toEqual(C);
+    expect(siguientePuntoDeLaLinea({ lat: 36.2825, lon: -5.335 }, L)).toEqual(
+      C,
+    );
   });
 
   it('pasado el codo por fuera de la esquina (empate en el codo), el green', () => {
-    expect(siguientePuntoDeLaLinea({ lat: 36.2835, lon: -5.3305 }, L)).toEqual(G);
+    expect(siguientePuntoDeLaLinea({ lat: 36.2835, lon: -5.3305 }, L)).toEqual(
+      G,
+    );
   });
 
   it('a menos de 20 m del codo (lo que yerra el GPS), el green', () => {
-    expect(siguientePuntoDeLaLinea({ lat: 36.2829, lon: -5.3301 }, L)).toEqual(G);
+    expect(siguientePuntoDeLaLinea({ lat: 36.2829, lon: -5.3301 }, L)).toEqual(
+      G,
+    );
   });
 
   it('lejos del ecuador, la longitud cuenta menos (en metros)', () => {
-    const linea = [{ lat: 60, lon: 0 }, { lat: 60.02, lon: 0 }, { lat: 60.02, lon: 0.03 }];
+    const linea = [
+      { lat: 60, lon: 0 },
+      { lat: 60.02, lon: 0 },
+      { lat: 60.02, lon: 0.03 },
+    ];
 
     // 0,01° de longitud a 60° son 0,005° de latitud: más cerca del primer tramo
-    expect(siguientePuntoDeLaLinea({ lat: 60.013, lon: 0.01 }, linea)).toEqual(linea[1]);
+    expect(siguientePuntoDeLaLinea({ lat: 60.013, lon: 0.01 }, linea)).toEqual(
+      linea[1],
+    );
   });
 
   it('a 21 m del codo, contando lo que mide la longitud, aún el codo', () => {
     // 18 m al oeste y 11 m al sur del codo
-    expect(siguientePuntoDeLaLinea({ lat: 36.2829, lon: -5.3302 }, L)).toEqual(C);
+    expect(siguientePuntoDeLaLinea({ lat: 36.2829, lon: -5.3302 }, L)).toEqual(
+      C,
+    );
   });
 
   it('pasados dos codos seguidos a menos de 20 m, el green', () => {
@@ -262,7 +375,9 @@ describe('siguientePuntoDeLaLinea (O2)', () => {
   });
 
   it('en el green o pasado él, el green', () => {
-    expect(siguientePuntoDeLaLinea({ lat: 36.2831, lon: -5.3261 }, L)).toEqual(G);
+    expect(siguientePuntoDeLaLinea({ lat: 36.2831, lon: -5.3261 }, L)).toEqual(
+      G,
+    );
     expect(siguientePuntoDeLaLinea({ lat: 36.283, lon: -5.32 }, L)).toEqual(G);
   });
 
@@ -278,7 +393,10 @@ describe('proyeccionEnElTramo', () => {
   const B = { lat: 36.28 + 100 / M, lon: -5.33 };
 
   it('a mitad del tramo: t y los metros de lado', () => {
-    const p = { lat: 36.28 + 50 / M, lon: -5.33 + 30 / (M * Math.cos((36.28 * Math.PI) / 180)) };
+    const p = {
+      lat: 36.28 + 50 / M,
+      lon: -5.33 + 30 / (M * Math.cos((36.28 * Math.PI) / 180)),
+    };
     const { t, metros } = proyeccionEnElTramo(p, A, B);
 
     expect(t).toBeCloseTo(0.5, 3);
@@ -288,27 +406,43 @@ describe('proyeccionEnElTramo', () => {
   it('fuera del tramo, hasta su punto más cercano (t entre 0 y 1)', () => {
     const p = { lat: 36.28 + 130 / M, lon: -5.33 };
 
-    expect(proyeccionEnElTramo(p, A, B)).toEqual({ t: 1, metros: expect.closeTo(30, 0) });
+    expect(proyeccionEnElTramo(p, A, B)).toEqual({
+      t: 1,
+      metros: expect.closeTo(30, 0),
+    });
   });
 
   it('un tramo de largo cero es su punto', () => {
-    expect(proyeccionEnElTramo(B, A, A)).toEqual({ t: 0, metros: expect.closeTo(100, 0) });
+    expect(proyeccionEnElTramo(B, A, A)).toEqual({
+      t: 0,
+      metros: expect.closeTo(100, 0),
+    });
   });
 });
 
 describe('camaraGirada', () => {
-  const pantalla = { ancho: 360, alto: 640, padding: { top: 40, bottom: 40, left: 40, right: 40 } };
+  const pantalla = {
+    ancho: 360,
+    alto: 640,
+    padding: { top: 40, bottom: 40, left: 40, right: 40 },
+  };
   const hoyo = { playLine: [SALIDA, GREEN.center], green: null };
 
   it('el centro, el zoom y el rumbo del encuadre girado', () => {
     const r = rumbo(SALIDA, GREEN.center);
     const { center, zoom } = encuadreGirado(hoyo, r, pantalla);
 
-    expect(camaraGirada(hoyo, r, pantalla)).toEqual({ center, zoom, bearing: r });
+    expect(camaraGirada(hoyo, r, pantalla)).toEqual({
+      center,
+      zoom,
+      bearing: r,
+    });
   });
 
   it('sin rumbo o sin puntos, ninguna', () => {
     expect(camaraGirada(hoyo, null, pantalla)).toBeNull();
-    expect(camaraGirada({ playLine: [], green: null }, 10, pantalla)).toBeNull();
+    expect(
+      camaraGirada({ playLine: [], green: null }, 10, pantalla),
+    ).toBeNull();
   });
 });

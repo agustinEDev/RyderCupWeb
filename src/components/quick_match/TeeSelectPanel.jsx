@@ -38,7 +38,14 @@ const GENDER_LABEL_KEY = {
 // de otro jugador: la tuya se titulaba «Salida de tus barras» («your tee's
 // tee» en inglés) al meterle «tus barras» como nombre (pasada del Kind, 4 nov
 // 2026)
-const TeeSelectPanel = ({ courseTees, onSelect, onClose, playerName, title, selectedKey = null }) => {
+const TeeSelectPanel = ({
+  courseTees,
+  onSelect,
+  onClose,
+  playerName,
+  title,
+  selectedKey = null,
+}) => {
   const { t } = useTranslation('quickMatch');
   const { t: tCourses } = useTranslation('golfCourses');
   const titulo = title ?? t('create.teePanel.title', { name: playerName });
@@ -49,13 +56,11 @@ const TeeSelectPanel = ({ courseTees, onSelect, onClose, playerName, title, sele
   const hojaRef = useRef(null);
   useFocoRetenido(hojaRef, { alEscape: onClose, escapeExclusivo: true });
 
-  const groups = GENDER_ORDER
-    .map((gender) => ({
-      gender,
-      // El género nulo llega como undefined o null según de dónde venga el tee
-      tees: courseTees.filter((tee) => (tee.gender ?? null) === gender),
-    }))
-    .filter((group) => group.tees.length > 0);
+  const groups = GENDER_ORDER.map((gender) => ({
+    gender,
+    // El género nulo llega como undefined o null según de dónde venga el tee
+    tees: courseTees.filter((tee) => (tee.gender ?? null) === gender),
+  })).filter((group) => group.tees.length > 0);
 
   return (
     <div
@@ -101,7 +106,10 @@ const TeeSelectPanel = ({ courseTees, onSelect, onClose, playerName, title, sele
                   // Dentro de un grupo el sufijo (M)/(F) sobra: el encabezado ya
                   // distingue las dos "Rojas", que es justo para lo que se
                   // añadió el sufijo en las listas donde van mezcladas
-                  const name = nombreDeLaBarra(tCourses, { color: tee.color, identifier: tee.identifier });
+                  const name = nombreDeLaBarra(tCourses, {
+                    color: tee.color,
+                    identifier: tee.identifier,
+                  });
 
                   const isSelected = key === selectedKey;
 
@@ -117,7 +125,9 @@ const TeeSelectPanel = ({ courseTees, onSelect, onClose, playerName, title, sele
                       } ${isSelected ? 'ring-2 ring-primary ring-offset-1' : ''} hover:opacity-80`}
                     >
                       {color && (
-                        <span className={`w-3 h-3 rounded-full flex-shrink-0 ${color.dot}`} />
+                        <span
+                          className={`w-3 h-3 rounded-full flex-shrink-0 ${color.dot}`}
+                        />
                       )}
                       <span className="min-w-0 truncate">{name}</span>
                     </button>

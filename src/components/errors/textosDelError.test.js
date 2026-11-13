@@ -26,24 +26,58 @@ describe('idiomaDelError', () => {
   afterEach(() => vi.unstubAllGlobals());
 
   it.each(['es', 'es-ES'])('E1: guardado «%s» → español', (guardado) => {
-    expect(idiomaDelError({ ...sinI18n, almacen: almacen(guardado), navegador: navegador('en-US') })).toBe('es');
+    expect(
+      idiomaDelError({
+        ...sinI18n,
+        almacen: almacen(guardado),
+        navegador: navegador('en-US'),
+      }),
+    ).toBe('es');
   });
 
   it('E1b: guardado «en» → inglés, aunque el navegador diga español', () => {
-    expect(idiomaDelError({ ...sinI18n, almacen: almacen('en'), navegador: navegador('es-ES') })).toBe('en');
+    expect(
+      idiomaDelError({
+        ...sinI18n,
+        almacen: almacen('en'),
+        navegador: navegador('es-ES'),
+      }),
+    ).toBe('en');
   });
 
   it('E1c: sin guardar, el del navegador', () => {
-    expect(idiomaDelError({ ...sinI18n, almacen: almacen(null), navegador: navegador('es-ES') })).toBe('es');
+    expect(
+      idiomaDelError({
+        ...sinI18n,
+        almacen: almacen(null),
+        navegador: navegador('es-ES'),
+      }),
+    ).toBe('es');
   });
 
   it('E1d: otro idioma → inglés, el de por defecto de la app', () => {
-    expect(idiomaDelError({ ...sinI18n, almacen: almacen(null), navegador: navegador('fr-FR') })).toBe('en');
+    expect(
+      idiomaDelError({
+        ...sinI18n,
+        almacen: almacen(null),
+        navegador: navegador('fr-FR'),
+      }),
+    ).toBe('en');
   });
 
   it('E2: si leer el almacenamiento lanza, el del navegador', () => {
-    const roto = { getItem: () => { throw new Error('SecurityError'); } };
-    expect(idiomaDelError({ ...sinI18n, almacen: roto, navegador: navegador('es-ES') })).toBe('es');
+    const roto = {
+      getItem: () => {
+        throw new Error('SecurityError');
+      },
+    };
+    expect(
+      idiomaDelError({
+        ...sinI18n,
+        almacen: roto,
+        navegador: navegador('es-ES'),
+      }),
+    ).toBe('es');
   });
 
   it('E2b: con lo de verdad (localStorage del navegador)', () => {
@@ -52,17 +86,45 @@ describe('idiomaDelError', () => {
   });
 
   it('E5: el idioma que i18next tiene en memoria manda', () => {
-    const roto = { getItem: () => { throw new Error('SecurityError'); } };
-    expect(idiomaDelError({ i18n: { resolvedLanguage: 'es' }, almacen: roto, navegador: navegador('en-US') })).toBe('es');
-    expect(idiomaDelError({ i18n: { language: 'en' }, almacen: almacen('es'), navegador: navegador('es-ES') })).toBe('en');
+    const roto = {
+      getItem: () => {
+        throw new Error('SecurityError');
+      },
+    };
+    expect(
+      idiomaDelError({
+        i18n: { resolvedLanguage: 'es' },
+        almacen: roto,
+        navegador: navegador('en-US'),
+      }),
+    ).toBe('es');
+    expect(
+      idiomaDelError({
+        i18n: { language: 'en' },
+        almacen: almacen('es'),
+        navegador: navegador('es-ES'),
+      }),
+    ).toBe('en');
   });
 
   it('E5b: manda el idioma elegido, no el resuelto (si el JSON en español no carga, i18next resuelve «en»)', () => {
-    expect(idiomaDelError({ i18n: { language: 'es', resolvedLanguage: 'en' }, almacen: almacen(null), navegador: navegador('en-US') })).toBe('es');
+    expect(
+      idiomaDelError({
+        i18n: { language: 'es', resolvedLanguage: 'en' },
+        almacen: almacen(null),
+        navegador: navegador('en-US'),
+      }),
+    ).toBe('es');
   });
 
   it('E6: del navegador, el primero de su lista, como i18next', () => {
-    expect(idiomaDelError({ ...sinI18n, almacen: almacen(null), navegador: navegador('en-US', ['es-ES', 'en-US']) })).toBe('es');
+    expect(
+      idiomaDelError({
+        ...sinI18n,
+        almacen: almacen(null),
+        navegador: navegador('en-US', ['es-ES', 'en-US']),
+      }),
+    ).toBe('es');
   });
 });
 
@@ -71,11 +133,17 @@ describe('textosDelError', () => {
     const { idioma: idiomaEs, ...es } = textosDelError('es');
     const { idioma: idiomaEn, ...en } = textosDelError('en');
     expect([idiomaEs, idiomaEn]).toEqual(['es', 'en']);
-    const campos = (textos) => Object.entries(textos).flatMap(([pantalla, t]) => Object.keys(t).map((k) => `${pantalla}.${k}`)).sort();
+    const campos = (textos) =>
+      Object.entries(textos)
+        .flatMap(([pantalla, t]) =>
+          Object.keys(t).map((k) => `${pantalla}.${k}`),
+        )
+        .sort();
     expect(campos(es)).toEqual(campos(en));
     for (const textos of [es, en]) {
       for (const pantalla of Object.values(textos)) {
-        for (const valor of Object.values(pantalla)) expect(valor).toMatch(/\S/);
+        for (const valor of Object.values(pantalla))
+          expect(valor).toMatch(/\S/);
       }
     }
     expect(es.sinCargar.titulo).toBe('No se ha podido cargar la aplicación');
@@ -85,13 +153,18 @@ describe('textosDelError', () => {
   it('E7: no invitan a borrar datos (la cola sin conexión vive en el navegador) y casan con su botón', () => {
     for (const idioma of ['es', 'en']) {
       const { sinCargar, fallo } = textosDelError(idioma);
-      expect(`${sinCargar.texto} ${fallo.texto}`).not.toMatch(/borra|datos del sitio|clear|cache|caché/i);
+      expect(`${sinCargar.texto} ${fallo.texto}`).not.toMatch(
+        /borra|datos del sitio|clear|cache|caché/i,
+      );
       expect(fallo.texto).toContain(fallo.boton);
     }
   });
 
   it('E8: cada idioma de la app tiene sus textos (uno nuevo no se queda en inglés sin avisar)', () => {
-    const idiomas = readdirSync('src/i18n/locales', { withFileTypes: true }).filter((d) => d.isDirectory()).map((d) => d.name);
-    for (const idioma of idiomas) expect(textosDelError(idioma).idioma).toBe(idioma);
+    const idiomas = readdirSync('src/i18n/locales', { withFileTypes: true })
+      .filter((d) => d.isDirectory())
+      .map((d) => d.name);
+    for (const idioma of idiomas)
+      expect(textosDelError(idioma).idioma).toBe(idioma);
   });
 });

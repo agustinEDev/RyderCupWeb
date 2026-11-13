@@ -16,7 +16,8 @@ import { render, screen, within } from '@testing-library/react';
  */
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
-    t: (clave, params) => (params ? `${clave} ${JSON.stringify(params)}` : clave),
+    t: (clave, params) =>
+      params ? `${clave} ${JSON.stringify(params)}` : clave,
     i18n: { language: 'es' },
   }),
 }));
@@ -24,7 +25,15 @@ vi.mock('react-i18next', () => ({
 const { default: NombreConHandicap } = await import('./NombreConHandicap');
 
 const pintar = (props = {}) =>
-  render(<NombreConHandicap userId="ana" nombre="Ana" playingHandicap={10} testId="caja" {...props} />);
+  render(
+    <NombreConHandicap
+      userId="ana"
+      nombre="Ana"
+      playingHandicap={10}
+      testId="caja"
+      {...props}
+    />,
+  );
 
 describe('NombreConHandicap', () => {
   it('C1: el nombre y «HCP 10» a la vista; el largo, solo para el lector', () => {
@@ -33,21 +42,36 @@ describe('NombreConHandicap', () => {
     const hcp = screen.getByTestId('hcp-de-juego-ana');
     expect(screen.getByTestId('caja')).toContainElement(hcp);
     expect(screen.getByText('Ana')).toBeInTheDocument();
-    expect(hcp).toHaveClass('ml-1', 'shrink-0', 'whitespace-nowrap', 'text-[10px]', 'font-normal', 'text-gray-500');
-    expect(within(hcp).getByText('scorecard.playingHandicapShort {"value":"10"}')).toHaveAttribute('aria-hidden', 'true');
-    expect(within(hcp).getByText('scorecard.playingHandicap {"value":"10"}')).toHaveClass('sr-only');
+    expect(hcp).toHaveClass(
+      'ml-1',
+      'shrink-0',
+      'whitespace-nowrap',
+      'text-[10px]',
+      'font-normal',
+      'text-gray-500',
+    );
+    expect(
+      within(hcp).getByText('scorecard.playingHandicapShort {"value":"10"}'),
+    ).toHaveAttribute('aria-hidden', 'true');
+    expect(
+      within(hcp).getByText('scorecard.playingHandicap {"value":"10"}'),
+    ).toHaveClass('sr-only');
   });
 
   it('C2: un plus se escribe con «+»', () => {
     pintar({ playingHandicap: -2 });
 
-    expect(screen.getByTestId('hcp-de-juego-ana')).toHaveTextContent('scorecard.playingHandicapShort {"value":"+2"}');
+    expect(screen.getByTestId('hcp-de-juego-ana')).toHaveTextContent(
+      'scorecard.playingHandicapShort {"value":"+2"}',
+    );
   });
 
   it('C3: el cero también, sin signo', () => {
     pintar({ playingHandicap: 0 });
 
-    expect(screen.getByTestId('hcp-de-juego-ana')).toHaveTextContent('scorecard.playingHandicapShort {"value":"0"}');
+    expect(screen.getByTestId('hcp-de-juego-ana')).toHaveTextContent(
+      'scorecard.playingHandicapShort {"value":"0"}',
+    );
   });
 
   it('C4: sin hándicap, solo el nombre', () => {
@@ -62,6 +86,8 @@ describe('NombreConHandicap', () => {
 
     expect(screen.getByTestId('caja')).toHaveClass('flex', 'min-w-0');
     expect(screen.getByText('Ana')).toHaveClass('min-w-0', 'truncate');
-    expect(screen.getByText('Ana').parentElement).toBe(screen.getByTestId('caja'));
+    expect(screen.getByText('Ana').parentElement).toBe(
+      screen.getByTestId('caja'),
+    );
   });
 });

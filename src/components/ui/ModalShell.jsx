@@ -132,14 +132,19 @@ const ModalShell = ({
   const alSoltarFondo = (e) => {
     const empezoEnElFondo = fondoPulsadoRef.current;
     fondoPulsadoRef.current = false;
-    if (closeOnBackdrop && empezoEnElFondo && e.target === e.currentTarget) onClose?.();
+    if (closeOnBackdrop && empezoEnElFondo && e.target === e.currentTarget)
+      onClose?.();
   };
 
   return (
     <div
       data-testid={testId}
       className={`fixed inset-0 z-50 flex justify-center bg-black/50 ${
-        scrollableBackdrop ? 'items-start overflow-y-auto py-8' : hojaInferior ? 'items-end md:items-center' : 'items-center'
+        scrollableBackdrop
+          ? 'items-start overflow-y-auto py-8'
+          : hojaInferior
+            ? 'items-end md:items-center'
+            : 'items-center'
       }`}
       role="dialog"
       aria-modal="true"
@@ -152,7 +157,10 @@ const ModalShell = ({
       <div
         ref={cajaRef}
         tabIndex={-1}
-        className={boxClassName ?? `bg-white rounded-lg shadow-xl ${maxWidthClass} w-full mx-4 p-6`}
+        className={
+          boxClassName ??
+          `bg-white rounded-lg shadow-xl ${maxWidthClass} w-full mx-4 p-6`
+        }
       >
         {children}
       </div>

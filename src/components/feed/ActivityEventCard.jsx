@@ -120,13 +120,19 @@ const fraseDeLaEspera = (tipo, payload, t, { ahora, idioma } = {}) => {
   const competition = nombreDelTorneo(payload, t);
   const hora = horaDeSalida(payload.tee_time);
   // Con el día, si viene: para saber cuál de las de esa hora (code-review)
-  const dia = hora && payload.round_date ? diaDeLaVuelta(payload.round_date, ahora ?? new Date(), idioma) : '';
+  const dia =
+    hora && payload.round_date
+      ? diaDeLaVuelta(payload.round_date, ahora ?? new Date(), idioma)
+      : '';
   const time = dia ? `${hora} (${dia})` : hora;
   if (tipo === 'PLAYER_JOINED') {
     // `player` y no `name`: fraseCon reserva `name` para las personas con enlace
     const player = payload.player_name || t('feed:cards.aPlayer');
     let clave = 'feed:cards.playerJoinedNoWindow';
-    if (time) clave = payload.waiting ? 'feed:cards.playerJoinedWaiting' : 'feed:cards.playerJoined';
+    if (time)
+      clave = payload.waiting
+        ? 'feed:cards.playerJoinedWaiting'
+        : 'feed:cards.playerJoined';
     return fraseCon(t, clave, { competition, player, time });
   }
   // Sin la hora de la franja, la frase sin ella (revisor)
@@ -152,7 +158,8 @@ const puesto = (payload, t) => {
 };
 
 const esMedal = (payload) =>
-  payload.scoring_format === 'MEDAL' || (payload.points == null && payload.net_strokes != null);
+  payload.scoring_format === 'MEDAL' ||
+  (payload.points == null && payload.net_strokes != null);
 
 // «34 puntos» o «72 netos»; con los golpes brutos detrás si se piden y vienen
 const resultado = (payload, t, conBruto) => {
@@ -164,11 +171,13 @@ const resultado = (payload, t, conBruto) => {
     : base;
 };
 
-const nombreDelTorneo = (payload, t) => payload.competition_name || t('feed:cards.aTournament');
+const nombreDelTorneo = (payload, t) =>
+  payload.competition_name || t('feed:cards.aTournament');
 
 // Una partida rápida que se cerró sin acabar: no se gana, no se empata ni
 // tiene puesto. Vale cualquiera de las dos señales del backend
-const sinTerminar = (payload) => payload.unfinished === true || payload.outcome === 'UNFINISHED';
+const sinTerminar = (payload) =>
+  payload.unfinished === true || payload.outcome === 'UNFINISHED';
 
 // Hay número que decir: los netos en Medal, los puntos en Stableford. Una
 // partida sin terminar puede llegar sin él, y «· netos» a secas no se dice
@@ -178,8 +187,12 @@ const tieneResultado = (payload) =>
 // « · 9 hoyos» detrás de una vuelta que cuenta y no llegó a 18
 const conHoyos = (frase, payload, t) => {
   const hoyos = payload.holes_played;
-  if (!Number.isInteger(hoyos) || hoyos <= 0 || hoyos >= FULL_ROUND_HOLES) return frase;
-  return unaTrasOtra(frase, fraseDeTexto(` · ${t('feed:result.holes', { count: hoyos })}`));
+  if (!Number.isInteger(hoyos) || hoyos <= 0 || hoyos >= FULL_ROUND_HOLES)
+    return frase;
+  return unaTrasOtra(
+    frase,
+    fraseDeTexto(` · ${t('feed:result.holes', { count: hoyos })}`),
+  );
 };
 
 // Quien mira jugó esa partida rápida: es el autor, o sale entre sus rivales o
@@ -189,7 +202,9 @@ const jugoLaPartida = (tarjeta, yoId) => {
   if (tarjeta.autorId === yoId) return true;
   const payload = tarjeta.eventos[0].payload || {};
   return ['opponents', 'partners'].some(
-    (clave) => Array.isArray(payload[clave]) && payload[clave].some((p) => p?.user_id === yoId)
+    (clave) =>
+      Array.isArray(payload[clave]) &&
+      payload[clave].some((p) => p?.user_id === yoId),
   );
 };
 
@@ -201,10 +216,16 @@ const jugoLaPartida = (tarjeta, yoId) => {
  * partida, a su perfil, como antes.
  */
 const destinoDePartidaRapida = (quickMatchId, jugo, tarjeta, autores) => {
-  if (jugo) return { ruta: quickMatchId ? `/quick-matches/${quickMatchId}/scoring` : null };
+  if (jugo)
+    return {
+      ruta: quickMatchId ? `/quick-matches/${quickMatchId}/scoring` : null,
+    };
   const perfil = personaDe(tarjeta.autorId, autores, () => '').enlace;
   if (!perfil || !quickMatchId) return { ruta: perfil };
-  return { ruta: `/quick-matches/${quickMatchId}/shared`, estado: { perfilDe: tarjeta.autorId } };
+  return {
+    ruta: `/quick-matches/${quickMatchId}/shared`,
+    estado: { perfilDe: tarjeta.autorId },
+  };
 };
 
 /**
@@ -223,14 +244,23 @@ const jugoElLogroDeTorneo = (evento, tarjeta, yoId, jugoSegunLoDeAntes) => {
 // La tarjeta de solo lectura de la partida (o el partido) de un amigo; sin
 // saber cuál, la clasificación en su fila (F4)
 const deUnAmigo = (competitionId, kind, groupId, matchId, autorId) => {
-  if (kind === 'TEE_GROUP' && groupId) return conJugador(`/competitions/${competitionId}/groups/${groupId}`, autorId);
-  if (kind === 'MATCH' && matchId) return conJugador(`/competitions/${competitionId}/matches/${matchId}`, autorId);
+  if (kind === 'TEE_GROUP' && groupId)
+    return conJugador(
+      `/competitions/${competitionId}/groups/${groupId}`,
+      autorId,
+    );
+  if (kind === 'MATCH' && matchId)
+    return conJugador(
+      `/competitions/${competitionId}/matches/${matchId}`,
+      autorId,
+    );
   return rutaEnSuFila(competitionId, autorId);
 };
 
 // La clave de un texto en tercera persona, si es de un amigo: «finalStanding»
 // → «friendFinalStanding» (release social 2)
-const claveDeQuien = (mia, clave) => (mia ? clave : `friend${clave[0].toUpperCase()}${clave.slice(1)}`);
+const claveDeQuien = (mia, clave) =>
+  mia ? clave : `friend${clave[0].toUpperCase()}${clave.slice(1)}`;
 
 /**
  * Un logro de torneo que dice dónde fue (L): `competition_id` y `kind`, y
@@ -239,13 +269,32 @@ const claveDeQuien = (mia, clave) => (mia ? clave : `friend${clave[0].toUpperCas
  * sin saber cuál, a la clasificación en su fila.
  */
 const destinoDeLogroDeTorneo = (evento, jugo, autorId) => {
-  const { competition_id: competitionId, kind, group_id: groupId } = evento.payload;
+  const {
+    competition_id: competitionId,
+    kind,
+    group_id: groupId,
+  } = evento.payload;
   const ficha = `/competitions/${competitionId}`;
   // De un amigo, sin haberla jugado: su tarjeta, en solo lectura; sin saber
   // cuál, la clasificación en su fila (release social 2, F4)
-  if (!jugo) return { ruta: deUnAmigo(competitionId, kind, groupId, evento.sourceMatchId, autorId) };
+  if (!jugo)
+    return {
+      ruta: deUnAmigo(
+        competitionId,
+        kind,
+        groupId,
+        evento.sourceMatchId,
+        autorId,
+      ),
+    };
   if (kind === 'TEE_GROUP' && groupId) {
-    return { ruta: rutaDeAnotacion({ id: groupId, competitionId, esPartidaDeFranja: true }) };
+    return {
+      ruta: rutaDeAnotacion({
+        id: groupId,
+        competitionId,
+        esPartidaDeFranja: true,
+      }),
+    };
   }
   if (kind === 'MATCH' && evento.sourceMatchId) {
     return { ruta: rutaDeAnotacion({ id: evento.sourceMatchId }) };
@@ -266,70 +315,117 @@ const destinoDe = (tarjeta, yoId, autores) => {
   const jugo = jugoLaPartida(tarjeta, yoId);
   if (LOGROS.has(tarjeta.tipo)) {
     const deTorneo = tarjeta.eventos.some((e) => e.payload?.from_tournament);
-    if (!deTorneo) return destinoDePartidaRapida(primero.sourceMatchId, jugo, tarjeta, autores);
+    if (!deTorneo)
+      return destinoDePartidaRapida(
+        primero.sourceMatchId,
+        jugo,
+        tarjeta,
+        autores,
+      );
     const conSitio = tarjeta.eventos.find(
-      (e) => e.payload?.from_tournament && e.payload?.competition_id && e.payload?.kind
+      (e) =>
+        e.payload?.from_tournament &&
+        e.payload?.competition_id &&
+        e.payload?.kind,
     );
     if (conSitio) {
       return destinoDeLogroDeTorneo(
         conSitio,
         jugoElLogroDeTorneo(conSitio, tarjeta, yoId, jugo),
-        tarjeta.autorId
+        tarjeta.autorId,
       );
     }
     // Los de antes, sin torneo ni tipo: como siempre. Sin haberlo jugado, al
     // perfil del amigo (sin él en los autores no hay perfil al que ir)
-    if (!jugo) return { ruta: personaDe(tarjeta.autorId, autores, () => '').enlace };
-    return { ruta: primero.sourceMatchId ? `/player/matches/${primero.sourceMatchId}/scoring` : null };
+    if (!jugo)
+      return { ruta: personaDe(tarjeta.autorId, autores, () => '').enlace };
+    return {
+      ruta: primero.sourceMatchId
+        ? `/player/matches/${primero.sourceMatchId}/scoring`
+        : null,
+    };
   }
   if (tarjeta.tipo === 'QUICK_MATCH_FINISHED') {
-    return destinoDePartidaRapida(primero.sourceMatchId, jugo, tarjeta, autores);
+    return destinoDePartidaRapida(
+      primero.sourceMatchId,
+      jugo,
+      tarjeta,
+      autores,
+    );
   }
   // Solo llega a uno mismo (SELF): siempre lo jugó
   if (tarjeta.tipo === 'TOURNAMENT_MATCH_RESULT') {
-    return { ruta: primero.sourceMatchId ? `/player/matches/${primero.sourceMatchId}/scoring` : null };
+    return {
+      ruta: primero.sourceMatchId
+        ? `/player/matches/${primero.sourceMatchId}/scoring`
+        : null,
+    };
   }
   // La posición final de un amigo: la clasificación, en su fila (F5)
-  if (tarjeta.tipo === 'TOURNAMENT_FINAL_STANDING' && tarjeta.autorId !== yoId && payload.competition_id) {
+  if (
+    tarjeta.tipo === 'TOURNAMENT_FINAL_STANDING' &&
+    tarjeta.autorId !== yoId &&
+    payload.competition_id
+  ) {
     return { ruta: rutaEnSuFila(payload.competition_id, tarjeta.autorId) };
   }
-  return { ruta: payload.competition_id ? `/competitions/${payload.competition_id}` : null };
+  return {
+    ruta: payload.competition_id
+      ? `/competitions/${payload.competition_id}`
+      : null,
+  };
 };
 
 /** Los rivales de una partida rápida: con cuenta por su id; invitados, por su nombre. */
 const rivalesDePartidaRapida = (payload, autores, t) =>
   (Array.isArray(payload.opponents) ? payload.opponents : []).map((rival) =>
-    rival?.user_id ? personaDe(rival.user_id, autores, t) : invitadoDe(rival?.name, t)
+    rival?.user_id
+      ? personaDe(rival.user_id, autores, t)
+      : invitadoDe(rival?.name, t),
   );
 
 const rivalesDeTorneo = (payload, autores, t) =>
   (Array.isArray(payload.opponent_ids) ? payload.opponent_ids : []).map((id) =>
-    personaDe(id, autores, t)
+    personaDe(id, autores, t),
   );
 
 const SIN_RIVALES = (t) => [{ nombre: t('feed:someone'), enlace: null }];
 
 /** Lo que dice una partida de match play, tuya o de un amigo. */
-const fraseDeMatchPlay = (payload, { t, idioma, mia, autor, rivales, rapida = false }) => {
+const fraseDeMatchPlay = (
+  payload,
+  { t, idioma, mia, autor, rivales, rapida = false },
+) => {
   const score = tanteo(payload.score, t);
   // Solo una partida rápida se queda sin terminar: un partido de torneo nunca
   // se lee como tal, traiga lo que traiga
   if (rapida && sinTerminar(payload)) {
     return mia
-      ? fraseCon(t, 'feed:cards.unfinishedMatch', {}, {
-          rivales: rivales.length > 0 ? rivales : SIN_RIVALES(t),
-          idioma,
-        })
+      ? fraseCon(
+          t,
+          'feed:cards.unfinishedMatch',
+          {},
+          {
+            rivales: rivales.length > 0 ? rivales : SIN_RIVALES(t),
+            idioma,
+          },
+        )
       : fraseCon(t, 'feed:cards.friendUnfinishedMatch', {}, { persona: autor });
   }
   if (mia) {
     const clave = { WON: 'won', LOST: 'lost' }[payload.outcome] || 'halved';
-    return fraseCon(t, `feed:cards.${clave}`, { score }, {
-      rivales: rivales.length > 0 ? rivales : SIN_RIVALES(t),
-      idioma,
-    });
+    return fraseCon(
+      t,
+      `feed:cards.${clave}`,
+      { score },
+      {
+        rivales: rivales.length > 0 ? rivales : SIN_RIVALES(t),
+        idioma,
+      },
+    );
   }
-  const clave = { WON: 'friendWon', LOST: 'friendLost' }[payload.outcome] || 'friendHalved';
+  const clave =
+    { WON: 'friendWon', LOST: 'friendLost' }[payload.outcome] || 'friendHalved';
   return fraseCon(t, `feed:cards.${clave}`, { score }, { persona: autor });
 };
 
@@ -351,57 +447,89 @@ const fraseSinTerminar = (payload, { t, mia, autor, campo }) => {
     if (mia) {
       return fraseCon(
         t,
-        campo ? 'feed:cards.unfinishedStrokeNoResult' : 'feed:cards.unfinishedStrokeNoCourseNoResult',
-        { course: campo }
+        campo
+          ? 'feed:cards.unfinishedStrokeNoResult'
+          : 'feed:cards.unfinishedStrokeNoCourseNoResult',
+        { course: campo },
       );
     }
-    return fraseCon(t, 'feed:cards.friendUnfinishedMatch', {}, { persona: autor });
+    return fraseCon(
+      t,
+      'feed:cards.friendUnfinishedMatch',
+      {},
+      { persona: autor },
+    );
   }
   const result = resultado(payload, t, false);
   if (mia) {
-    return fraseCon(t, campo ? 'feed:cards.unfinishedStroke' : 'feed:cards.unfinishedStrokeNoCourse', {
-      course: campo,
-      result,
-    });
+    return fraseCon(
+      t,
+      campo
+        ? 'feed:cards.unfinishedStroke'
+        : 'feed:cards.unfinishedStrokeNoCourse',
+      {
+        course: campo,
+        result,
+      },
+    );
   }
-  return fraseCon(t, 'feed:cards.friendUnfinishedStroke', { result }, { persona: autor });
+  return fraseCon(
+    t,
+    'feed:cards.friendUnfinishedStroke',
+    { result },
+    { persona: autor },
+  );
 };
 
 /** Lo que dice una partida rápida de Stableford o Medal. */
 const fraseDeStrokePlay = (payload, contexto) => {
   if (sinTerminar(payload)) return fraseSinTerminar(payload, contexto);
-  return conHoyos(fraseDeStrokePlayAcabada(payload, contexto), payload, contexto.t);
+  return conHoyos(
+    fraseDeStrokePlayAcabada(payload, contexto),
+    payload,
+    contexto.t,
+  );
 };
 
 const fraseDeStrokePlayAcabada = (payload, { t, mia, autor, campo }) => {
   const conPuesto = payload.position != null;
   if (mia) {
     if (conPuesto) {
-      return fraseCon(t, campo ? 'feed:cards.quickMatchRanked' : 'feed:cards.quickMatchRankedNoCourse', {
-        position: puesto(payload, t),
-        total: payload.total_players,
-        course: campo,
-        result: resultado(payload, t, true),
-      });
+      return fraseCon(
+        t,
+        campo
+          ? 'feed:cards.quickMatchRanked'
+          : 'feed:cards.quickMatchRankedNoCourse',
+        {
+          position: puesto(payload, t),
+          total: payload.total_players,
+          course: campo,
+          result: resultado(payload, t, true),
+        },
+      );
     }
-    return fraseCon(t, campo ? 'feed:cards.quickMatchSolo' : 'feed:cards.quickMatchSoloNoCourse', {
-      course: campo,
-      result: resultado(payload, t, false),
-    });
+    return fraseCon(
+      t,
+      campo ? 'feed:cards.quickMatchSolo' : 'feed:cards.quickMatchSoloNoCourse',
+      {
+        course: campo,
+        result: resultado(payload, t, false),
+      },
+    );
   }
   if (conPuesto) {
     return fraseCon(
       t,
       'feed:cards.friendQuickMatchRanked',
       { position: puesto(payload, t), result: resultado(payload, t, false) },
-      { persona: autor }
+      { persona: autor },
     );
   }
   return fraseCon(
     t,
     'feed:cards.friendQuickMatchSolo',
     { result: resultado(payload, t, false) },
-    { persona: autor }
+    { persona: autor },
   );
 };
 
@@ -412,7 +540,11 @@ const puntosDeRyder = (n) => {
   return enteros === 0 ? '½' : `${enteros}½`;
 };
 
-const RESULTADOS_DE_RYDER = { WON: 'ryderWon', LOST: 'ryderLost', HALVED: 'ryderHalved' };
+const RESULTADOS_DE_RYDER = {
+  WON: 'ryderWon',
+  LOST: 'ryderLost',
+  HALVED: 'ryderHalved',
+};
 
 /**
  * El final de una Ryder (I): «Clasificación final de X: tu equipo (Europa)
@@ -430,15 +562,24 @@ const fraseDeLaRyder = (payload, t, { mia = true, autor } = {}) => {
   const deQuien = (c) => claveDeQuien(mia, c);
   const persona = mia ? {} : { persona: autor };
   if (!clave || !Number.isFinite(deA) || !Number.isFinite(deB)) {
-    return fraseCon(t, `feed:cards.${deQuien('ryderFinalBare')}`, { competition }, persona);
+    return fraseCon(
+      t,
+      `feed:cards.${deQuien('ryderFinalBare')}`,
+      { competition },
+      persona,
+    );
   }
   const [mios, suyos] = esA ? [deA, deB] : [deB, deA];
   const equipo = esA ? payload.team_a_name : payload.team_b_name;
   return fraseCon(
     t,
     `feed:cards.${deQuien(clave)}${equipo ? '' : 'NoName'}`,
-    { competition, team: equipo, score: `${puntosDeRyder(mios)}–${puntosDeRyder(suyos)}` },
-    persona
+    {
+      competition,
+      team: equipo,
+      score: `${puntosDeRyder(mios)}–${puntosDeRyder(suyos)}`,
+    },
+    persona,
   );
 };
 
@@ -457,7 +598,9 @@ const personasDe = (ids, autores, t) =>
 const fraseDeSalida = (payload, { t, idioma, autores, ahora }) => {
   const esPartido = payload.kind === 'MATCH';
   const hora = horaDeSalida(payload.tee_time);
-  const sesion = t(`feed:teeTime.session.${payload.session_type}`, { defaultValue: '' });
+  const sesion = t(`feed:teeTime.session.${payload.session_type}`, {
+    defaultValue: '',
+  });
   const dia = diaDeLaVuelta(payload.round_date, ahora, idioma);
   const cuando = [
     [dia, esPartido || !hora ? sesion : ''].filter(Boolean).join(', '),
@@ -475,16 +618,22 @@ const fraseDeSalida = (payload, { t, idioma, autores, ahora }) => {
   const companeros = personasDe(payload.partner_ids, autores, t);
   const rivales = personasDe(payload.opponent_ids, autores, t);
   let clave = null;
-  if (companeros.length > 0) clave = rivales.length > 0 ? 'withAgainst' : 'with';
+  if (companeros.length > 0)
+    clave = rivales.length > 0 ? 'withAgainst' : 'with';
   else if (rivales.length > 0) clave = 'against';
   if (!clave) return cabeza;
   return unaTrasOtra(
     cabeza,
-    fraseCon(t, `feed:teeTime.${clave}`, {}, {
-      companeros: companeros.length > 0 ? companeros : undefined,
-      rivales: rivales.length > 0 ? rivales : undefined,
-      idioma,
-    })
+    fraseCon(
+      t,
+      `feed:teeTime.${clave}`,
+      {},
+      {
+        companeros: companeros.length > 0 ? companeros : undefined,
+        rivales: rivales.length > 0 ? rivales : undefined,
+        idioma,
+      },
+    ),
   );
 };
 
@@ -501,14 +650,24 @@ const contenidoDe = (tarjeta, { t, idioma, autores, campos, yoId, ahora }) => {
 
   if (LOGROS.has(tarjeta.tipo)) {
     const titulos = tarjeta.eventos.map((e) =>
-      t(`feed:events.${e.type}`, { count: e.payload?.count ?? 1, defaultValue: e.type })
+      t(`feed:events.${e.type}`, {
+        count: e.payload?.count ?? 1,
+        defaultValue: e.type,
+      }),
     );
     const detalles = [];
-    const conHoyos = tarjeta.eventos.filter((e) => (e.payload?.holes ?? []).length > 0);
+    const conHoyos = tarjeta.eventos.filter(
+      (e) => (e.payload?.holes ?? []).length > 0,
+    );
     // Los hoyos solo si no hay duda de a qué logro van
     if (conHoyos.length === 1) {
       const hoyos = conHoyos[0].payload.holes;
-      detalles.push(t('feed:detail.holes', { count: hoyos.length, holes: hoyos.join(', ') }));
+      detalles.push(
+        t('feed:detail.holes', {
+          count: hoyos.length,
+          holes: hoyos.join(', '),
+        }),
+      );
     }
     for (const e of tarjeta.eventos) {
       if (e.payload?.differential && e.payload?.previous_best) {
@@ -516,11 +675,13 @@ const contenidoDe = (tarjeta, { t, idioma, autores, campos, yoId, ahora }) => {
           t('feed:detail.differential', {
             differential: e.payload.differential,
             previous: e.payload.previous_best,
-          })
+          }),
         );
       }
     }
-    if (tarjeta.eventos.some((e) => e.payload?.holes_played === HALF_ROUND_HOLES)) {
+    if (
+      tarjeta.eventos.some((e) => e.payload?.holes_played === HALF_ROUND_HOLES)
+    ) {
       detalles.push(t('feed:detail.halfRound'));
     }
     if (tarjeta.eventos.some((e) => e.payload?.from_tournament)) {
@@ -552,7 +713,11 @@ const contenidoDe = (tarjeta, { t, idioma, autores, campos, yoId, ahora }) => {
     return {
       frase,
       etiqueta: payload.best_gross_in_group
-        ? t(payload.best_gross_tied ? 'feed:cards.bestGrossTied' : 'feed:cards.bestGross')
+        ? t(
+            payload.best_gross_tied
+              ? 'feed:cards.bestGrossTied'
+              : 'feed:cards.bestGross',
+          )
         : null,
       detalles,
     };
@@ -571,7 +736,10 @@ const contenidoDe = (tarjeta, { t, idioma, autores, campos, yoId, ahora }) => {
     };
   }
 
-  if (tarjeta.tipo === 'TOURNAMENT_FINAL_STANDING' && payload.tournament_type === 'RYDER_CUP') {
+  if (
+    tarjeta.tipo === 'TOURNAMENT_FINAL_STANDING' &&
+    payload.tournament_type === 'RYDER_CUP'
+  ) {
     return { frase: fraseDeLaRyder(payload, t, { mia, autor }), detalles: [] };
   }
 
@@ -585,19 +753,34 @@ const contenidoDe = (tarjeta, { t, idioma, autores, campos, yoId, ahora }) => {
         ? fraseCon(
             t,
             clave('finalStanding'),
-            { competition, position: puesto(payload, t), total: payload.total_players },
-            persona
+            {
+              competition,
+              position: puesto(payload, t),
+              total: payload.total_players,
+            },
+            persona,
           )
-        : fraseCon(t, clave('finalStandingNoPosition'), { competition }, persona);
+        : fraseCon(
+            t,
+            clave('finalStandingNoPosition'),
+            { competition },
+            persona,
+          );
     return { frase, detalles: [] };
   }
 
   if (tarjeta.tipo === 'TEE_TIME_ASSIGNED') {
-    return { frase: fraseDeSalida(payload, { t, idioma, autores, ahora }), detalles: [] };
+    return {
+      frase: fraseDeSalida(payload, { t, idioma, autores, ahora }),
+      detalles: [],
+    };
   }
 
   if (AVISOS_DE_LA_ESPERA.has(tarjeta.tipo)) {
-    return { frase: fraseDeLaEspera(tarjeta.tipo, payload, t, { ahora, idioma }), detalles: [] };
+    return {
+      frase: fraseDeLaEspera(tarjeta.tipo, payload, t, { ahora, idioma }),
+      detalles: [],
+    };
   }
 
   if (AVISOS_DE_INSCRIPCION.has(tarjeta.tipo)) {
@@ -610,13 +793,18 @@ const contenidoDe = (tarjeta, { t, idioma, autores, campos, yoId, ahora }) => {
   }
 
   // ENROLLED_IN_TOURNAMENT: un amigo se ha apuntado a un torneo público
-  const dates = fechasDelTorneo(payload.start_date, payload.end_date, ahora, idioma);
+  const dates = fechasDelTorneo(
+    payload.start_date,
+    payload.end_date,
+    ahora,
+    idioma,
+  );
   return {
     frase: fraseCon(
       t,
       dates ? 'feed:cards.friendEnrolled' : 'feed:cards.friendEnrolledNoDates',
       { competition: nombreDelTorneo(payload, t), dates },
-      { persona: autor }
+      { persona: autor },
     ),
     detalles: [],
   };
@@ -646,17 +834,32 @@ const ActivityEventCard = ({
   const { t, i18n } = useTranslation(['feed', 'common']);
   const idioma = i18n.language;
 
-  const contenido = contenidoDe(tarjeta, { t, idioma, autores, campos, yoId, ahora });
+  const contenido = contenidoDe(tarjeta, {
+    t,
+    idioma,
+    autores,
+    campos,
+    yoId,
+    ahora,
+  });
   // En el perfil de alguien, llevar a ese mismo perfil no lleva a ningún sitio:
   // repetiría la entrada del historial y un enlace vacío para los lectores
   const posible = destinoDe(tarjeta, yoId, autores);
   const mismoPerfil =
-    !posible.ruta || (perfilActualId && posible.ruta === `/players/${perfilActualId}`) ? null : posible;
+    !posible.ruta ||
+    (perfilActualId && posible.ruta === `/players/${perfilActualId}`)
+      ? null
+      : posible;
   // Desde el perfil de ese mismo amigo, la vista de solo lectura sabe que si
   // no se puede ver tiene que volver atrás, no apilar su perfil otra vez
   const destino =
-    mismoPerfil?.estado && perfilActualId && mismoPerfil.estado.perfilDe === perfilActualId
-      ? { ...mismoPerfil, estado: { ...mismoPerfil.estado, desdeSuPerfil: true } }
+    mismoPerfil?.estado &&
+    perfilActualId &&
+    mismoPerfil.estado.perfilDe === perfilActualId
+      ? {
+          ...mismoPerfil,
+          estado: { ...mismoPerfil.estado, desdeSuPerfil: true },
+        }
       : mismoPerfil;
   const mia = !!yoId && tarjeta.autorId === yoId;
   const autor = personaDe(tarjeta.autorId, autores, t);
@@ -710,7 +913,10 @@ const ActivityEventCard = ({
             <NombreDePersona persona={contenido.cabecera} />
           </p>
         )}
-        <p data-testid="frase-tarjeta" className="text-sm text-gray-800 break-words">
+        <p
+          data-testid="frase-tarjeta"
+          className="text-sm text-gray-800 break-words"
+        >
           <FraseDeActividad frase={contenido.frase} />
         </p>
 
@@ -721,7 +927,9 @@ const ActivityEventCard = ({
         )}
 
         {contenido.detalles.length > 0 && (
-          <p className="mt-1 text-xs text-gray-500 break-words">{contenido.detalles.join(' · ')}</p>
+          <p className="mt-1 text-xs text-gray-500 break-words">
+            {contenido.detalles.join(' · ')}
+          </p>
         )}
 
         <p className="mt-1 flex items-center gap-2 text-xs text-gray-400">

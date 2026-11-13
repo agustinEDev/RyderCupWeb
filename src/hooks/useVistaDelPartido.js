@@ -43,7 +43,10 @@ export const useVistaDelPartido = ({
   useEffect(() => {
     partidaVigenteRef.current = matchId;
   }, [matchId]);
-  const esDeOtraPartida = useCallback((id) => id !== partidaVigenteRef.current, []);
+  const esDeOtraPartida = useCallback(
+    (id) => id !== partidaVigenteRef.current,
+    [],
+  );
 
   // Si lo que hay en pantalla salió de la foto del móvil y no del servidor. La
   // pantalla lo dice en ámbar: sin esto se pintaba la vista entera —resultado,
@@ -79,7 +82,8 @@ export const useVistaDelPartido = ({
   const fetchScoringView = useCallback(async () => {
     if (!matchId) return null;
     const salio = ++relojRef.current;
-    const esVieja = () => esDeOtraPartida(matchId) || salio < ultimaAplicadaRef.current;
+    const esVieja = () =>
+      esDeOtraPartida(matchId) || salio < ultimaAplicadaRef.current;
     try {
       const data = await leeLaVista.execute(matchId);
       if (esVieja()) return null;
@@ -143,7 +147,16 @@ export const useVistaDelPartido = ({
     // al cambiar de cuenta, que es lo que se quiere: la cola es por dueño desde
     // la FE #521, y la foto también. Los `set` son del hook que la usa y no
     // cambian nunca
-  }, [matchId, isOffline, esDeOtraPartida, currentUserId, leeLaVista, setScoringView, setFallo, setIsLoading]);
+  }, [
+    matchId,
+    isOffline,
+    esDeOtraPartida,
+    currentUserId,
+    leeLaVista,
+    setScoringView,
+    setFallo,
+    setIsLoading,
+  ]);
 
   return { fetchScoringView, marcaEscritura, esDeOtraPartida, memoriaDe };
 };

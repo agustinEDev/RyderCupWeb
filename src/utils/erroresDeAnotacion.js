@@ -25,4 +25,5 @@ export const errorDeGuardado = (holeNumber) => {
 };
 
 /** El texto del aviso de un vaciado que se paró por el almacenamiento. */
-export const claveDelAvisoDelVaciado = (paroPor) => `scoring:errors.vaciado.${paroPor}`;
+export const claveDelAvisoDelVaciado = (paroPor) =>
+  `scoring:errors.vaciado.${paroPor}`;

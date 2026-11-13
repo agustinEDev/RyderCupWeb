@@ -80,14 +80,16 @@ describe('useFocoRetenido', () => {
       <Dialogo>
         <button type="button">primero</button>
         <button type="button">ultimo</button>
-        <button type="button" tabIndex={-1}>boton fuera</button>
+        <button type="button" tabIndex={-1}>
+          boton fuera
+        </button>
         <a href="#x" tabIndex={-1}>
           enlace fuera
         </a>
         <input aria-label="campo fuera" tabIndex={-1} />
         <select aria-label="lista fuera" tabIndex={-1} />
         <textarea aria-label="texto fuera" tabIndex={-1} />
-      </Dialogo>
+      </Dialogo>,
     );
     const primero = screen.getByText('primero');
     const ultimo = screen.getByText('ultimo');
@@ -112,7 +114,7 @@ describe('useFocoRetenido', () => {
         <div hidden>
           <button type="button">oculto al final</button>
         </div>
-      </Dialogo>
+      </Dialogo>,
     );
     const primero = screen.getByText('primero');
     const ultimo = screen.getByText('ultimo');
@@ -149,7 +151,7 @@ describe('useFocoRetenido', () => {
     const { unmount } = render(
       <Dialogo inicial>
         <button type="button">primero</button>
-      </Dialogo>
+      </Dialogo>,
     );
     expect(screen.getByLabelText('campo')).toHaveFocus();
 
@@ -167,7 +169,7 @@ describe('useFocoRetenido', () => {
         <Dialogo alEscape={escapeDentro}>
           <button type="button">del de dentro</button>
         </Dialogo>
-      </Dialogo>
+      </Dialogo>,
     );
 
     expect(screen.getByText('del de dentro')).toHaveFocus();

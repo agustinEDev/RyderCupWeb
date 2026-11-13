@@ -27,7 +27,9 @@ vi.mock('react-i18next', () => ({
 }));
 
 vi.mock('../components/layout/HeaderAuth', () => ({ default: () => null }));
-vi.mock('../hooks/useAuth', () => ({ useAuth: () => ({ user: { id: 'u-1', gender: 'MALE' }, loading: false }) }));
+vi.mock('../hooks/useAuth', () => ({
+  useAuth: () => ({ user: { id: 'u-1', gender: 'MALE' }, loading: false }),
+}));
 let faltaGenero = true;
 const mockGuardarGenero = vi.fn(async () => orden.push('genero'));
 const mockRefrescarSesion = vi.fn(async () => orden.push('sesion'));
@@ -38,8 +40,12 @@ vi.mock('../hooks/useGeneroParaApuntarse', () => ({
     refrescar: mockRefrescarSesion,
   }),
 }));
-vi.mock('../components/golf_course/GolfCourseSearchBox', () => ({ default: () => null }));
-vi.mock('../utils/toast', () => ({ default: { error: vi.fn(), success: vi.fn(), info: vi.fn() } }));
+vi.mock('../components/golf_course/GolfCourseSearchBox', () => ({
+  default: () => null,
+}));
+vi.mock('../utils/toast', () => ({
+  default: { error: vi.fn(), success: vi.fn(), info: vi.fn() },
+}));
 vi.mock('../services/countries', () => ({
   formatCountryName: () => 'España',
   sortCountriesByName: (paises) => paises || [],
@@ -57,11 +63,17 @@ const mockCrear = vi.fn().mockResolvedValue({
 const mockActualizar = vi.fn().mockResolvedValue({ id: 'c-1' });
 const mockDetalle = vi.fn();
 vi.mock('../composition', () => ({
-  createCompetitionWithGolfCoursesUseCase: { execute: (...args) => mockCrear(...args) },
+  createCompetitionWithGolfCoursesUseCase: {
+    execute: (...args) => mockCrear(...args),
+  },
   updateCompetitionUseCase: { execute: (...args) => mockActualizar(...args) },
   getCompetitionDetailUseCase: { execute: (...args) => mockDetalle(...args) },
   getCompetitionGolfCoursesUseCase: { execute: vi.fn().mockResolvedValue([]) },
-  fetchCountriesUseCase: { execute: vi.fn().mockResolvedValue([{ code: 'ES', name_es: 'España', name_en: 'Spain' }]) },
+  fetchCountriesUseCase: {
+    execute: vi
+      .fn()
+      .mockResolvedValue([{ code: 'ES', name_es: 'España', name_en: 'Spain' }]),
+  },
   getAdjacentCountriesUseCase: { execute: vi.fn().mockResolvedValue([]) },
   createGolfCourseRequestUseCase: { execute: vi.fn() },
 }));
@@ -73,8 +85,12 @@ vi.mock('../utils/competitionFormValidation', () => ({
   validateCompetitionForm: () => null,
 }));
 
-vi.mock('../components/ui/CountryAutocomplete', () => ({ default: () => null }));
-vi.mock('../components/golf_course/GolfCourseRequestModal', () => ({ default: () => null }));
+vi.mock('../components/ui/CountryAutocomplete', () => ({
+  default: () => null,
+}));
+vi.mock('../components/golf_course/GolfCourseRequestModal', () => ({
+  default: () => null,
+}));
 vi.mock('../components/ui/FullScreenLoader', () => ({ default: () => null }));
 vi.mock('../components/ui/CountryFlag', () => ({ CountryFlag: () => null }));
 
@@ -82,7 +98,11 @@ const CreateCompetition = (await import('./CreateCompetition')).default;
 
 /** Entra al formulario: el tipo se elige antes (FE #639). */
 const abreElFormulario = async () => {
-  render(<MemoryRouter><CreateCompetition /></MemoryRouter>);
+  render(
+    <MemoryRouter>
+      <CreateCompetition />
+    </MemoryRouter>,
+  );
   fireEvent.click(await screen.findByTestId('tipo-RYDER_CUP'));
   // Y el modo de configuración, que es el paso siguiente (FE #695). Estilo
   // RyderCup es lo que estas pantallas daban por hecho
@@ -109,9 +129,15 @@ describe('CreateCompetition · el género del organizador', () => {
     faltaGenero = true;
     mockCrear.mockClear();
     mockGuardarGenero.mockClear();
-    render(<MemoryRouter><CreateCompetition /></MemoryRouter>);
+    render(
+      <MemoryRouter>
+        <CreateCompetition />
+      </MemoryRouter>,
+    );
     fireEvent.click(await screen.findByTestId('tipo-MEDAL'));
-    const juega = await screen.findByRole('checkbox', { name: 'create.organizerPlays' });
+    const juega = await screen.findByRole('checkbox', {
+      name: 'create.organizerPlays',
+    });
     expect(screen.getByTestId('selector-de-genero')).toBeInTheDocument();
 
     fireEvent.click(juega);
@@ -129,22 +155,34 @@ describe('CreateCompetition · el género del organizador', () => {
   it('C7: si guardar el género da un 409, no se culpa al nombre', async () => {
     faltaGenero = true;
     mockCrear.mockClear();
-    mockGuardarGenero.mockRejectedValueOnce(Object.assign(new Error('conflicto en el perfil'), { status: 409 }));
+    mockGuardarGenero.mockRejectedValueOnce(
+      Object.assign(new Error('conflicto en el perfil'), { status: 409 }),
+    );
     await abreElFormulario();
 
-    fireEvent.change(screen.getByTestId('selector-de-genero'), { target: { value: 'FEMALE' } });
+    fireEvent.change(screen.getByTestId('selector-de-genero'), {
+      target: { value: 'FEMALE' },
+    });
     await rellenaYCrea();
 
-    expect(await screen.findByText('conflicto en el perfil')).toBeInTheDocument();
+    expect(
+      await screen.findByText('conflicto en el perfil'),
+    ).toBeInTheDocument();
     expect(screen.queryByTestId('error-del-nombre')).not.toBeInTheDocument();
     expect(mockCrear).not.toHaveBeenCalled();
   });
 
   it('C6: la desmarca en un Medal y cambia a una Ryder: se pregunta, que ahí juega', async () => {
     faltaGenero = true;
-    render(<MemoryRouter><CreateCompetition /></MemoryRouter>);
+    render(
+      <MemoryRouter>
+        <CreateCompetition />
+      </MemoryRouter>,
+    );
     fireEvent.click(await screen.findByTestId('tipo-MEDAL'));
-    fireEvent.click(await screen.findByRole('checkbox', { name: 'create.organizerPlays' }));
+    fireEvent.click(
+      await screen.findByRole('checkbox', { name: 'create.organizerPlays' }),
+    );
     expect(screen.queryByTestId('selector-de-genero')).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByTestId('volver-al-tipo'));
@@ -161,7 +199,11 @@ describe('CreateCompetition · el género del organizador', () => {
     orden.length = 0;
     mockCrear.mockImplementation(async () => {
       orden.push('crea');
-      return { competition: { id: 'c-nueva' }, successCount: 1, failedCourses: [] };
+      return {
+        competition: { id: 'c-nueva' },
+        successCount: 1,
+        failedCourses: [],
+      };
     });
   });
 
@@ -169,7 +211,9 @@ describe('CreateCompetition · el género del organizador', () => {
     faltaGenero = true;
     await abreElFormulario();
 
-    fireEvent.change(screen.getByTestId('selector-de-genero'), { target: { value: 'FEMALE' } });
+    fireEvent.change(screen.getByTestId('selector-de-genero'), {
+      target: { value: 'FEMALE' },
+    });
     await rellenaYCrea();
 
     await waitFor(() => expect(mockCrear).toHaveBeenCalled());
@@ -183,7 +227,9 @@ describe('CreateCompetition · el género del organizador', () => {
 
     await rellenaYCrea();
 
-    expect(screen.getByTestId('selector-de-genero').validity.valueMissing).toBe(true);
+    expect(screen.getByTestId('selector-de-genero').validity.valueMissing).toBe(
+      true,
+    );
     await new Promise((r) => setTimeout(r, 50));
     expect(mockCrear).not.toHaveBeenCalled();
     expect(mockGuardarGenero).not.toHaveBeenCalled();
@@ -216,9 +262,12 @@ describe('CreateCompetition · el género del organizador', () => {
     render(
       <MemoryRouter initialEntries={['/competitions/c-1/edit']}>
         <Routes>
-          <Route path="/competitions/:id/edit" element={<CreateCompetition />} />
+          <Route
+            path="/competitions/:id/edit"
+            element={<CreateCompetition />}
+          />
         </Routes>
-      </MemoryRouter>
+      </MemoryRouter>,
     );
 
     await waitFor(() => expect(mockDetalle).toHaveBeenCalled());

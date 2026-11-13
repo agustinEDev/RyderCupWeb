@@ -18,7 +18,10 @@ const traductor = async (lng) => {
   const i = i18next.createInstance();
   await i.init({
     lng,
-    resources: { es: { competitions: competicionesEs }, en: { competitions: competicionesEn } },
+    resources: {
+      es: { competitions: competicionesEs },
+      en: { competitions: competicionesEn },
+    },
     defaultNS: 'competitions',
     interpolation: { escapeValue: false },
   });
@@ -44,17 +47,20 @@ describe('etiquetaDeInscripcion', () => {
     expect(etiquetaDeInscripcion(t, estado, genero)).toBe(texto);
   });
 
-  it.each(['es', 'en'])('en %s, ningún estado del dominio sale como clave', async (lng) => {
-    const t = await traductor(lng);
+  it.each(['es', 'en'])(
+    'en %s, ningún estado del dominio sale como clave',
+    async (lng) => {
+      const t = await traductor(lng);
 
-    for (const estado of EnrollmentStatus.getAllValues()) {
-      for (const genero of ['MALE', 'FEMALE', null]) {
-        const texto = etiquetaDeInscripcion(t, estado, genero);
-        expect(texto, `${estado}/${genero}`).not.toMatch(/enrollmentStatus/);
-        expect(texto.trim(), `${estado}/${genero}`).not.toBe('');
+      for (const estado of EnrollmentStatus.getAllValues()) {
+        for (const genero of ['MALE', 'FEMALE', null]) {
+          const texto = etiquetaDeInscripcion(t, estado, genero);
+          expect(texto, `${estado}/${genero}`).not.toMatch(/enrollmentStatus/);
+          expect(texto.trim(), `${estado}/${genero}`).not.toBe('');
+        }
       }
-    }
-  });
+    },
+  );
 
   it('sin estado no pinta nada', async () => {
     const t = await traductor('es');

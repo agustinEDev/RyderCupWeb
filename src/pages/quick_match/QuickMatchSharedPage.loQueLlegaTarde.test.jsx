@@ -1,6 +1,18 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { act, render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { MemoryRouter, Route, Routes, useLocation, useNavigate } from 'react-router';
+import {
+  act,
+  render,
+  screen,
+  fireEvent,
+  waitFor,
+} from '@testing-library/react';
+import {
+  MemoryRouter,
+  Route,
+  Routes,
+  useLocation,
+  useNavigate,
+} from 'react-router';
 
 /**
  * La partida compartida, cuando lo que se pidió llega tarde (T5): al salir o
@@ -27,7 +39,12 @@ vi.mock('../../components/layout/HeaderAuth', () => ({
 
 const toastInfo = vi.fn();
 vi.mock('../../utils/toast', () => ({
-  default: { info: (...a) => toastInfo(...a), error: vi.fn(), success: vi.fn(), warning: vi.fn() },
+  default: {
+    info: (...a) => toastInfo(...a),
+    error: vi.fn(),
+    success: vi.fn(),
+    warning: vi.fn(),
+  },
 }));
 
 const getShared = vi.fn();
@@ -37,7 +54,8 @@ vi.mock('../../composition', () => ({
   getGolfCourseUseCase: { execute: (...a) => getCourse(...a) },
 }));
 
-const { default: QuickMatchSharedPage } = await import('./QuickMatchSharedPage');
+const { default: QuickMatchSharedPage } =
+  await import('./QuickMatchSharedPage');
 
 const hoyos = [
   { holeNumber: 1, par: 4, strokeIndex: 1 },
@@ -56,9 +74,27 @@ const compartida = (overrides = {}) => ({
   isCompleted: true,
   isCancelled: false,
   participants: [
-    { participantId: 'p-1', userId: 'u2', name: 'Pedro', handicap: 10, isGuest: false },
-    { participantId: 'p-2', userId: null, name: null, handicap: null, isGuest: true },
-    { participantId: 'p-3', userId: 'u9', name: null, handicap: 3, isGuest: false },
+    {
+      participantId: 'p-1',
+      userId: 'u2',
+      name: 'Pedro',
+      handicap: 10,
+      isGuest: false,
+    },
+    {
+      participantId: 'p-2',
+      userId: null,
+      name: null,
+      handicap: null,
+      isGuest: true,
+    },
+    {
+      participantId: 'p-3',
+      userId: 'u9',
+      name: null,
+      handicap: 3,
+      isGuest: false,
+    },
   ],
   holeScores: [
     { holeNumber: 1, participantId: 'p-1', score: 4 },
@@ -67,7 +103,13 @@ const compartida = (overrides = {}) => ({
   ],
   participantStrokes: [],
   standing: null,
-  scoringAssignments: [{ scorerParticipantId: 'p-1', scorerName: null, coveredParticipantIds: ['p-1'] }],
+  scoringAssignments: [
+    {
+      scorerParticipantId: 'p-1',
+      scorerName: null,
+      coveredParticipantIds: ['p-1'],
+    },
+  ],
   readOnly: true,
   viewerIsParticipant: false,
   ...overrides,
@@ -87,16 +129,22 @@ const Navegador = () => {
 
 const pinta = (state) =>
   render(
-    <MemoryRouter initialEntries={[{ pathname: '/quick-matches/qm-1/shared', state }]}>
+    <MemoryRouter
+      initialEntries={[{ pathname: '/quick-matches/qm-1/shared', state }]}
+    >
       <Navegador />
       <Routes>
-        <Route path="/quick-matches/:quickMatchId/shared" element={<QuickMatchSharedPage />} />
+        <Route
+          path="/quick-matches/:quickMatchId/shared"
+          element={<QuickMatchSharedPage />}
+        />
         <Route path="*" element={<Donde />} />
       </Routes>
-    </MemoryRouter>
+    </MemoryRouter>,
   );
 
-const error = (status) => Object.assign(new Error(`HTTP ${status}`), { status });
+const error = (status) =>
+  Object.assign(new Error(`HTTP ${status}`), { status });
 
 describe('QuickMatchSharedPage · lo que llega tarde (T5)', () => {
   beforeEach(() => {
@@ -108,34 +156,48 @@ describe('QuickMatchSharedPage · lo que llega tarde (T5)', () => {
 
   it.each([
     ['T5-13: desde una tarjeta de Actividad', { perfilDe: 'u2' }],
-    ['T5-13b: desde el perfil del amigo', { perfilDe: 'u2', desdeSuPerfil: true }],
-  ])('%s, el 403 que llega tras salir ni avisa ni lleva al perfil', async (_caso, state) => {
-    let fallar;
-    getShared.mockImplementation(() => new Promise((_, reject) => { fallar = () => reject(error(403)); }));
-    pinta(state);
-    await waitFor(() => expect(fallar).toBeTypeOf('function'));
+    [
+      'T5-13b: desde el perfil del amigo',
+      { perfilDe: 'u2', desdeSuPerfil: true },
+    ],
+  ])(
+    '%s, el 403 que llega tras salir ni avisa ni lleva al perfil',
+    async (_caso, state) => {
+      let fallar;
+      getShared.mockImplementation(
+        () =>
+          new Promise((_, reject) => {
+            fallar = () => reject(error(403));
+          }),
+      );
+      pinta(state);
+      await waitFor(() => expect(fallar).toBeTypeOf('function'));
 
-    await act(async () => {
-      irA('/feed');
-    });
-    await act(async () => {
-      fallar();
-      await Promise.resolve();
-    });
+      await act(async () => {
+        irA('/feed');
+      });
+      await act(async () => {
+        fallar();
+        await Promise.resolve();
+      });
 
-    expect(toastInfo).not.toHaveBeenCalled();
-    expect(screen.getByTestId('donde')).toHaveTextContent('/feed');
-  });
+      expect(toastInfo).not.toHaveBeenCalled();
+      expect(screen.getByTestId('donde')).toHaveTextContent('/feed');
+    },
+  );
 
   it('T5-14: el campo de la partida anterior que llega tarde no se pinta en la nueva', async () => {
     getShared.mockImplementation(async (id) =>
-      compartida({ id, golfCourseId: id === 'qm-1' ? 'course-1' : 'course-2' })
+      compartida({ id, golfCourseId: id === 'qm-1' ? 'course-1' : 'course-2' }),
     );
     let darElViejo;
     getCourse.mockImplementation((id) =>
       id === 'course-1'
-        ? new Promise((resolve) => { darElViejo = () => resolve({ name: 'Campo viejo', holes: hoyos, tees: [] }); })
-        : Promise.resolve({ name: 'Campo nuevo', holes: hoyos, tees: [] })
+        ? new Promise((resolve) => {
+            darElViejo = () =>
+              resolve({ name: 'Campo viejo', holes: hoyos, tees: [] });
+          })
+        : Promise.resolve({ name: 'Campo nuevo', holes: hoyos, tees: [] }),
     );
     pinta();
     await waitFor(() => expect(getCourse).toHaveBeenCalledWith('course-1'));
@@ -155,14 +217,19 @@ describe('QuickMatchSharedPage · lo que llega tarde (T5)', () => {
 
   it('T5-14b: y si ese campo anterior falla mientras llega el nuevo, la nueva no enseña el error del campo', async () => {
     getShared.mockImplementation(async (id) =>
-      compartida({ id, golfCourseId: id === 'qm-1' ? 'course-1' : 'course-2' })
+      compartida({ id, golfCourseId: id === 'qm-1' ? 'course-1' : 'course-2' }),
     );
     let fallarElViejo;
     let darElNuevo;
     getCourse.mockImplementation((id) =>
       id === 'course-1'
-        ? new Promise((_, reject) => { fallarElViejo = () => reject(error(500)); })
-        : new Promise((resolve) => { darElNuevo = () => resolve({ name: 'Campo nuevo', holes: hoyos, tees: [] }); })
+        ? new Promise((_, reject) => {
+            fallarElViejo = () => reject(error(500));
+          })
+        : new Promise((resolve) => {
+            darElNuevo = () =>
+              resolve({ name: 'Campo nuevo', holes: hoyos, tees: [] });
+          }),
     );
     pinta();
     await waitFor(() => expect(getCourse).toHaveBeenCalledWith('course-1'));
@@ -176,30 +243,43 @@ describe('QuickMatchSharedPage · lo que llega tarde (T5)', () => {
       await Promise.resolve();
     });
 
-    expect(screen.queryByTestId('quick-match-shared-course-error')).not.toBeInTheDocument();
+    expect(
+      screen.queryByTestId('quick-match-shared-course-error'),
+    ).not.toBeInTheDocument();
     await act(async () => {
       darElNuevo();
       await Promise.resolve();
     });
     expect(await screen.findByText('Campo nuevo')).toBeInTheDocument();
-    expect(screen.getByTestId('quick-match-classification-table')).toBeInTheDocument();
+    expect(
+      screen.getByTestId('quick-match-classification-table'),
+    ).toBeInTheDocument();
   });
 
   it('T5-14c: con el campo de A ya pintado, la partida B no enseña el campo de A mientras llega el suyo', async () => {
     // Pintaba B con el nombre, los hoyos y las barras de A, y contaba los
     // puntos con el campo que no era
     getShared.mockImplementation(async (id) =>
-      compartida({ id, name: id === 'qm-1' ? 'Viernes' : 'Sábado', golfCourseId: id === 'qm-1' ? 'course-1' : 'course-2' })
+      compartida({
+        id,
+        name: id === 'qm-1' ? 'Viernes' : 'Sábado',
+        golfCourseId: id === 'qm-1' ? 'course-1' : 'course-2',
+      }),
     );
     let darElDeB;
     getCourse.mockImplementation((id) =>
       id === 'course-1'
         ? Promise.resolve({ name: 'Campo de A', holes: hoyos, tees: [] })
-        : new Promise((resolve) => { darElDeB = () => resolve({ name: 'Campo de B', holes: hoyos, tees: [] }); })
+        : new Promise((resolve) => {
+            darElDeB = () =>
+              resolve({ name: 'Campo de B', holes: hoyos, tees: [] });
+          }),
     );
     pinta();
     expect(await screen.findByText('Campo de A')).toBeInTheDocument();
-    expect(screen.getByTestId('quick-match-classification-table')).toBeInTheDocument();
+    expect(
+      screen.getByTestId('quick-match-classification-table'),
+    ).toBeInTheDocument();
 
     await act(async () => {
       irA('/quick-matches/qm-2/shared');
@@ -209,14 +289,18 @@ describe('QuickMatchSharedPage · lo que llega tarde (T5)', () => {
 
     expect(screen.queryByText('Campo de A')).not.toBeInTheDocument();
     // Sin hoyos no hay clasificación que contar: nada hasta que llegue el suyo
-    expect(screen.queryByTestId('quick-match-classification-table')).not.toBeInTheDocument();
+    expect(
+      screen.queryByTestId('quick-match-classification-table'),
+    ).not.toBeInTheDocument();
     await act(async () => {
       darElDeB();
       await Promise.resolve();
     });
 
     expect(await screen.findByText('Campo de B')).toBeInTheDocument();
-    expect(screen.getByTestId('quick-match-classification-table')).toBeInTheDocument();
+    expect(
+      screen.getByTestId('quick-match-classification-table'),
+    ).toBeInTheDocument();
   });
 
   it('T5-14d: de la partida A a la B, mientras llega B no se ve nada de A, solo la espera', async () => {
@@ -224,7 +308,9 @@ describe('QuickMatchSharedPage · lo que llega tarde (T5)', () => {
     getShared.mockImplementation((id) =>
       id === 'qm-1'
         ? Promise.resolve(compartida())
-        : new Promise((resolve) => { darB = () => resolve(compartida({ id, name: 'Sábado' })); })
+        : new Promise((resolve) => {
+            darB = () => resolve(compartida({ id, name: 'Sábado' }));
+          }),
     );
     pinta();
     expect(await screen.findByText('Viernes')).toBeInTheDocument();
@@ -235,7 +321,9 @@ describe('QuickMatchSharedPage · lo que llega tarde (T5)', () => {
     await waitFor(() => expect(darB).toBeTypeOf('function'));
 
     expect(screen.queryByText('Viernes')).not.toBeInTheDocument();
-    expect(screen.queryByTestId('quick-match-shared-read-only')).not.toBeInTheDocument();
+    expect(
+      screen.queryByTestId('quick-match-shared-read-only'),
+    ).not.toBeInTheDocument();
     expect(screen.getByRole('status')).toBeInTheDocument();
     await act(async () => {
       darB();
@@ -256,7 +344,9 @@ describe('QuickMatchSharedPage · lo que llega tarde (T5)', () => {
       irA('/quick-matches/qm-2/shared');
     });
 
-    expect(await screen.findByTestId('quick-match-shared-retry')).toBeInTheDocument();
+    expect(
+      await screen.findByTestId('quick-match-shared-retry'),
+    ).toBeInTheDocument();
     expect(screen.queryByText('Viernes')).not.toBeInTheDocument();
   });
 
@@ -273,7 +363,10 @@ describe('QuickMatchSharedPage · lo que llega tarde (T5)', () => {
     });
     const reintentar = await screen.findByTestId('quick-match-shared-retry');
     getShared.mockImplementation(
-      (id) => new Promise((resolve) => { darB = () => resolve(compartida({ id, name: 'Sábado' })); })
+      (id) =>
+        new Promise((resolve) => {
+          darB = () => resolve(compartida({ id, name: 'Sábado' }));
+        }),
     );
 
     fireEvent.click(reintentar);
@@ -291,7 +384,9 @@ describe('QuickMatchSharedPage · lo que llega tarde (T5)', () => {
     getShared.mockResolvedValue(compartida({ viewerIsParticipant: true }));
     pinta();
 
-    expect(await screen.findByTestId('donde')).toHaveTextContent('/quick-matches/qm-1/scoring');
+    expect(await screen.findByTestId('donde')).toHaveTextContent(
+      '/quick-matches/qm-1/scoring',
+    );
     expect(getCourse).not.toHaveBeenCalled();
   });
 
@@ -300,37 +395,55 @@ describe('QuickMatchSharedPage · lo que llega tarde (T5)', () => {
     let devolver;
     pinta();
     const reintentar = await screen.findByTestId('quick-match-shared-retry');
-    getShared.mockImplementationOnce(() => new Promise((resolve) => { devolver = () => resolve(compartida()); }));
+    getShared.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          devolver = () => resolve(compartida());
+        }),
+    );
 
     fireEvent.click(reintentar);
     expect(screen.getByRole('status')).toBeInTheDocument();
-    expect(screen.queryByTestId('quick-match-shared-retry')).not.toBeInTheDocument();
+    expect(
+      screen.queryByTestId('quick-match-shared-retry'),
+    ).not.toBeInTheDocument();
     await act(async () => {
       devolver();
       await Promise.resolve();
     });
 
-    expect(await screen.findByTestId('quick-match-classification-table')).toBeInTheDocument();
+    expect(
+      await screen.findByTestId('quick-match-classification-table'),
+    ).toBeInTheDocument();
     expect(getShared).toHaveBeenCalledTimes(2);
   });
 
   it('T5-16: cambiar de idioma cambia los textos y no la vuelve a pedir', async () => {
     const { rerender } = pinta();
     expect(await screen.findByText('Viernes')).toBeInTheDocument();
-    expect(screen.getByText('es:scoring.matchHeader', { exact: false })).toBeInTheDocument();
+    expect(
+      screen.getByText('es:scoring.matchHeader', { exact: false }),
+    ).toBeInTheDocument();
 
     idioma.actual = 'en';
     rerender(
-      <MemoryRouter initialEntries={[{ pathname: '/quick-matches/qm-1/shared' }]}>
+      <MemoryRouter
+        initialEntries={[{ pathname: '/quick-matches/qm-1/shared' }]}
+      >
         <Navegador />
         <Routes>
-          <Route path="/quick-matches/:quickMatchId/shared" element={<QuickMatchSharedPage />} />
+          <Route
+            path="/quick-matches/:quickMatchId/shared"
+            element={<QuickMatchSharedPage />}
+          />
           <Route path="*" element={<Donde />} />
         </Routes>
-      </MemoryRouter>
+      </MemoryRouter>,
     );
 
-    expect(await screen.findByText('en:scoring.matchHeader', { exact: false })).toBeInTheDocument();
+    expect(
+      await screen.findByText('en:scoring.matchHeader', { exact: false }),
+    ).toBeInTheDocument();
     expect(getShared).toHaveBeenCalledTimes(1);
     expect(getCourse).toHaveBeenCalledTimes(1);
   });
@@ -340,7 +453,9 @@ describe('QuickMatchSharedPage · lo que llega tarde (T5)', () => {
     expect(await screen.findByText('Viernes')).toBeInTheDocument();
 
     await act(async () => {
-      irA('/quick-matches/qm-1/shared', { state: { perfilDe: 'u9', desdeSuPerfil: true } });
+      irA('/quick-matches/qm-1/shared', {
+        state: { perfilDe: 'u9', desdeSuPerfil: true },
+      });
     });
 
     expect(screen.getByText('Viernes')).toBeInTheDocument();

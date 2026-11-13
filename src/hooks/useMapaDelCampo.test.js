@@ -4,12 +4,20 @@ import { renderHook, waitFor } from '@testing-library/react';
 const execute = vi.fn();
 const copia = vi.fn();
 vi.mock('../composition', () => ({
-  getHoleMapUseCase: { execute: (...a) => execute(...a), guardado: (...a) => copia(...a) },
+  getHoleMapUseCase: {
+    execute: (...a) => execute(...a),
+    guardado: (...a) => copia(...a),
+  },
 }));
 
 const { useMapaDelCampo } = await import('./useMapaDelCampo');
 
-const MAPA = { golfCourseId: 'gc-1', version: 'v1', attribution: null, holes: { 1: { green: null, playLine: [] } } };
+const MAPA = {
+  golfCourseId: 'gc-1',
+  version: 'v1',
+  attribution: null,
+  holes: { 1: { green: null, playLine: [] } },
+};
 
 describe('useMapaDelCampo', () => {
   beforeEach(() => {
@@ -67,8 +75,12 @@ describe('useMapaDelCampo', () => {
   });
 
   it('al cambiar de campo, mientras llega su mapa, no se usa el del anterior', async () => {
-    execute.mockResolvedValueOnce(MAPA).mockReturnValueOnce(new Promise(() => {}));
-    const { result, rerender } = renderHook(({ id }) => useMapaDelCampo(id), { initialProps: { id: 'gc-1' } });
+    execute
+      .mockResolvedValueOnce(MAPA)
+      .mockReturnValueOnce(new Promise(() => {}));
+    const { result, rerender } = renderHook(({ id }) => useMapaDelCampo(id), {
+      initialProps: { id: 'gc-1' },
+    });
     await waitFor(() => expect(result.current).toEqual(MAPA));
 
     rerender({ id: 'gc-2' });

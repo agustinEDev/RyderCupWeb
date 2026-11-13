@@ -1,5 +1,11 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
+import {
+  render,
+  screen,
+  fireEvent,
+  waitFor,
+  act,
+} from '@testing-library/react';
 
 /**
  * La lista de pendientes se pide dentro de su efecto: lo de siempre, y lo que
@@ -27,7 +33,10 @@ vi.mock('react-i18next', () => ({
 vi.mock('framer-motion', () => ({
   motion: {
     div: ({ children, initial, animate, exit, transition, ...resto }) => {
-      void initial; void animate; void exit; void transition;
+      void initial;
+      void animate;
+      void exit;
+      void transition;
       return <div {...resto}>{children}</div>;
     },
   },
@@ -36,10 +45,16 @@ vi.mock('../../hooks/useAuth', () => ({
   useAuth: () => ({ user: ACTUAL.user ?? ADMIN, loading: false }),
 }));
 vi.mock('../../components/layout/HeaderAuth', () => ({ default: () => null }));
-vi.mock('../../utils/toast', () => ({ default: { success: vi.fn(), error: vi.fn() } }));
+vi.mock('../../utils/toast', () => ({
+  default: { success: vi.fn(), error: vi.fn() },
+}));
 vi.mock('../../components/ui/CountryFlag', () => ({ CountryFlag: () => null }));
-vi.mock('../../services/countries', () => ({ formatCountryName: () => 'España' }));
-vi.mock('../../components/golf_course/TeeColorBadge', () => ({ default: () => null }));
+vi.mock('../../services/countries', () => ({
+  formatCountryName: () => 'España',
+}));
+vi.mock('../../components/golf_course/TeeColorBadge', () => ({
+  default: () => null,
+}));
 // La tabla, reducida a sus botones
 vi.mock('../../components/golf_course/GolfCourseTable', () => ({
   default: ({ courses, onReject, onApprove }) => (
@@ -62,7 +77,9 @@ vi.mock('../../composition', () => ({
   listPendingGolfCoursesUseCase: { execute: (...a) => mockListar(...a) },
   approveGolfCourseUseCase: { execute: (...a) => mockAprobar(...a) },
   rejectGolfCourseUseCase: { execute: (...a) => mockRechazar(...a) },
-  approveGolfCourseUpdateUseCase: { execute: (...a) => mockAprobarCambio(...a) },
+  approveGolfCourseUpdateUseCase: {
+    execute: (...a) => mockAprobarCambio(...a),
+  },
   rejectGolfCourseUpdateUseCase: { execute: vi.fn() },
   fetchCountriesUseCase: { execute: vi.fn().mockResolvedValue([]) },
 }));
@@ -70,9 +87,27 @@ vi.mock('../../composition', () => ({
 const { default: PendingGolfCourses } = await import('./PendingGolfCourses');
 const { default: customToast } = await import('../../utils/toast');
 
-const NUEVO = { id: 'g-1', name: 'Campo Pendiente', originalGolfCourseId: null, tees: [], holes: [] };
-const CAMBIO = { id: 'g-2', name: 'Campo Cambiado', originalGolfCourseId: 'g-0', tees: [], holes: [] };
-const OTRO = { id: 'g-3', name: 'Campo Otro', originalGolfCourseId: null, tees: [], holes: [] };
+const NUEVO = {
+  id: 'g-1',
+  name: 'Campo Pendiente',
+  originalGolfCourseId: null,
+  tees: [],
+  holes: [],
+};
+const CAMBIO = {
+  id: 'g-2',
+  name: 'Campo Cambiado',
+  originalGolfCourseId: 'g-0',
+  tees: [],
+  holes: [],
+};
+const OTRO = {
+  id: 'g-3',
+  name: 'Campo Otro',
+  originalGolfCourseId: null,
+  tees: [],
+  holes: [],
+};
 
 // Una respuesta que llega cuando la prueba quiere
 const aMano = () => {
@@ -141,7 +176,9 @@ describe('PendingGolfCourses · la carga de la lista', () => {
     render(<PendingGolfCourses embedded />);
 
     // Then el aviso, y sin la espera
-    await waitFor(() => expect(customToast.error).toHaveBeenCalledWith('sin red'));
+    await waitFor(() =>
+      expect(customToast.error).toHaveBeenCalledWith('sin red'),
+    );
     await waitFor(() => expect(screen.queryByRole('status')).toBeNull());
     expect(screen.getByRole('tablist')).toBeInTheDocument();
   });
@@ -151,7 +188,11 @@ describe('PendingGolfCourses · la carga de la lista', () => {
 
     render(<PendingGolfCourses embedded />);
 
-    await waitFor(() => expect(customToast.error).toHaveBeenCalledWith('pages.pending.errorLoading'));
+    await waitFor(() =>
+      expect(customToast.error).toHaveBeenCalledWith(
+        'pages.pending.errorLoading',
+      ),
+    );
   });
 
   it('T1-7: tras rechazar, la lista se pide otra vez con la espera', async () => {
@@ -161,10 +202,14 @@ describe('PendingGolfCourses · la carga de la lista', () => {
     const segunda = aMano();
     mockListar.mockReturnValueOnce(segunda.promesa);
     fireEvent.click(screen.getByText('rechazar Campo Pendiente'));
-    fireEvent.change(await screen.findByRole('textbox'), { target: { value: 'No es un campo de golf real' } });
+    fireEvent.change(await screen.findByRole('textbox'), {
+      target: { value: 'No es un campo de golf real' },
+    });
 
     // When se confirma
-    fireEvent.click(screen.getByRole('button', { name: 'pages.pending.confirmReject' }));
+    fireEvent.click(
+      screen.getByRole('button', { name: 'pages.pending.confirmReject' }),
+    );
 
     // Then se pide otra vez y se espera
     await waitFor(() => expect(mockListar).toHaveBeenCalledTimes(2));
@@ -191,13 +236,17 @@ describe('PendingGolfCourses · la carga de la lista', () => {
     expect(screen.getByRole('status')).toBeInTheDocument();
     await act(async () => segunda.resolver([CAMBIO]));
     await waitFor(() => expect(screen.queryByRole('status')).toBeNull());
-    expect(customToast.success).toHaveBeenCalledWith('pages.pending.approveSuccess');
+    expect(customToast.success).toHaveBeenCalledWith(
+      'pages.pending.approveSuccess',
+    );
   });
 
   it('T1-8: tras aprobar una actualización, la lista se pide otra vez', async () => {
     mockAprobarCambio.mockResolvedValue();
     await abrirCargada();
-    fireEvent.click(screen.getByRole('tab', { name: /pages.pending.tabUpdates/ }));
+    fireEvent.click(
+      screen.getByRole('tab', { name: /pages.pending.tabUpdates/ }),
+    );
 
     fireEvent.click(await screen.findByText('aprobar Campo Cambiado'));
 
@@ -209,7 +258,9 @@ describe('PendingGolfCourses · la carga de la lista', () => {
     const { rerender } = await abrirCargada();
     const vieja = aMano();
     const nueva = aMano();
-    mockListar.mockReturnValueOnce(vieja.promesa).mockReturnValueOnce(nueva.promesa);
+    mockListar
+      .mockReturnValueOnce(vieja.promesa)
+      .mockReturnValueOnce(nueva.promesa);
     ACTUAL.user = { ...ADMIN };
     rerender(<PendingGolfCourses embedded />);
     await waitFor(() => expect(mockListar).toHaveBeenCalledTimes(2));
@@ -217,7 +268,9 @@ describe('PendingGolfCourses · la carga de la lista', () => {
     rerender(<PendingGolfCourses embedded />);
     await waitFor(() => expect(mockListar).toHaveBeenCalledTimes(3));
 
-    await act(async () => vieja.resolver([{ ...NUEVO, id: 'g-v', name: 'Campo Viejo' }]));
+    await act(async () =>
+      vieja.resolver([{ ...NUEVO, id: 'g-v', name: 'Campo Viejo' }]),
+    );
     expect(screen.getByRole('status')).toBeInTheDocument();
     await act(async () => nueva.resolver([OTRO]));
     expect(await screen.findByText('aprobar Campo Otro')).toBeInTheDocument();
@@ -228,7 +281,9 @@ describe('PendingGolfCourses · la carga de la lista', () => {
     const { rerender } = await abrirCargada();
     const vieja = aMano();
     const nueva = aMano();
-    mockListar.mockReturnValueOnce(vieja.promesa).mockReturnValueOnce(nueva.promesa);
+    mockListar
+      .mockReturnValueOnce(vieja.promesa)
+      .mockReturnValueOnce(nueva.promesa);
     ACTUAL.user = { ...ADMIN };
     rerender(<PendingGolfCourses embedded />);
     await waitFor(() => expect(mockListar).toHaveBeenCalledTimes(2));
@@ -238,7 +293,9 @@ describe('PendingGolfCourses · la carga de la lista', () => {
 
     await act(async () => nueva.resolver([OTRO]));
     await screen.findByText('aprobar Campo Otro');
-    await act(async () => vieja.resolver([{ ...NUEVO, id: 'g-v', name: 'Campo Viejo' }]));
+    await act(async () =>
+      vieja.resolver([{ ...NUEVO, id: 'g-v', name: 'Campo Viejo' }]),
+    );
 
     expect(screen.getByText('aprobar Campo Otro')).toBeInTheDocument();
     expect(screen.queryByText('aprobar Campo Viejo')).toBeNull();

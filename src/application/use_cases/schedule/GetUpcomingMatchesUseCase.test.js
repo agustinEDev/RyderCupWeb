@@ -5,12 +5,20 @@ const USER = 'user-1';
 const RIVAL = 'user-2';
 const PARTNER = 'user-3';
 
-const buildUseCase = ({ competitions = [], schedules = {}, enrollments = [] } = {}) => {
-  const listUserCompetitionsUseCase = { execute: vi.fn().mockResolvedValue(competitions) };
+const buildUseCase = ({
+  competitions = [],
+  schedules = {},
+  enrollments = [],
+} = {}) => {
+  const listUserCompetitionsUseCase = {
+    execute: vi.fn().mockResolvedValue(competitions),
+  };
   const getScheduleUseCase = {
     execute: vi.fn((id) => Promise.resolve(schedules[id] ?? { rounds: [] })),
   };
-  const listEnrollmentsUseCase = { execute: vi.fn().mockResolvedValue(enrollments) };
+  const listEnrollmentsUseCase = {
+    execute: vi.fn().mockResolvedValue(enrollments),
+  };
 
   return {
     useCase: new GetUpcomingMatchesUseCase({
@@ -64,7 +72,14 @@ describe('GetUpcomingMatchesUseCase', () => {
       schedules: {
         c1: {
           rounds: [
-            round([{ id: 'mine', status: 'SCHEDULED', teamAPlayers: [{ userId: USER }], teamBPlayers: [{ userId: RIVAL }] }]),
+            round([
+              {
+                id: 'mine',
+                status: 'SCHEDULED',
+                teamAPlayers: [{ userId: USER }],
+                teamBPlayers: [{ userId: RIVAL }],
+              },
+            ]),
           ],
         },
       },
@@ -75,13 +90,27 @@ describe('GetUpcomingMatchesUseCase', () => {
     expect(result.map((m) => m.id)).toEqual(['mine']);
   });
 
-  it('carries the competition\'s tournament type, for the card badge (FE #845)', async () => {
+  it("carries the competition's tournament type, for the card badge (FE #845)", async () => {
     const { useCase } = buildUseCase({
-      competitions: [{ id: 'c1', name: 'Cup', status: 'CLOSED', tournamentType: 'RYDER_CUP' }],
+      competitions: [
+        {
+          id: 'c1',
+          name: 'Cup',
+          status: 'CLOSED',
+          tournamentType: 'RYDER_CUP',
+        },
+      ],
       schedules: {
         c1: {
           rounds: [
-            round([{ id: 'mine', status: 'SCHEDULED', teamAPlayers: [{ userId: USER }], teamBPlayers: [{ userId: RIVAL }] }]),
+            round([
+              {
+                id: 'mine',
+                status: 'SCHEDULED',
+                teamAPlayers: [{ userId: USER }],
+                teamBPlayers: [{ userId: RIVAL }],
+              },
+            ]),
           ],
         },
       },
@@ -92,7 +121,7 @@ describe('GetUpcomingMatchesUseCase', () => {
     expect(partido.tournamentType).toBe('RYDER_CUP');
   });
 
-  it('carries the round\'s opening hour onto each match', async () => {
+  it("carries the round's opening hour onto each match", async () => {
     // El servidor la manda en la RONDA (BE #305) y quien decide si se ofrece
     // anotar mira el PARTIDO, así que tiene que viajar con él
     const { useCase } = buildUseCase({
@@ -101,8 +130,15 @@ describe('GetUpcomingMatchesUseCase', () => {
         c1: {
           rounds: [
             round(
-              [{ id: 'mine', status: 'SCHEDULED', teamAPlayers: [{ userId: USER }], teamBPlayers: [{ userId: RIVAL }] }],
-              { scoringOpensAt: '2026-08-10T06:00:00+02:00' }
+              [
+                {
+                  id: 'mine',
+                  status: 'SCHEDULED',
+                  teamAPlayers: [{ userId: USER }],
+                  teamBPlayers: [{ userId: RIVAL }],
+                },
+              ],
+              { scoringOpensAt: '2026-08-10T06:00:00+02:00' },
             ),
           ],
         },
@@ -122,7 +158,14 @@ describe('GetUpcomingMatchesUseCase', () => {
       schedules: {
         c1: {
           rounds: [
-            round([{ id: 'mine', status: 'SCHEDULED', teamAPlayers: [{ userId: USER }], teamBPlayers: [{ userId: RIVAL }] }]),
+            round([
+              {
+                id: 'mine',
+                status: 'SCHEDULED',
+                teamAPlayers: [{ userId: USER }],
+                teamBPlayers: [{ userId: RIVAL }],
+              },
+            ]),
           ],
         },
       },
@@ -140,8 +183,18 @@ describe('GetUpcomingMatchesUseCase', () => {
         c1: {
           rounds: [
             round([
-              { id: 'mine', status: 'SCHEDULED', teamAPlayers: [{ userId: USER }], teamBPlayers: [{ userId: RIVAL }] },
-              { id: 'theirs', status: 'SCHEDULED', teamAPlayers: [{ userId: RIVAL }], teamBPlayers: [] },
+              {
+                id: 'mine',
+                status: 'SCHEDULED',
+                teamAPlayers: [{ userId: USER }],
+                teamBPlayers: [{ userId: RIVAL }],
+              },
+              {
+                id: 'theirs',
+                status: 'SCHEDULED',
+                teamAPlayers: [{ userId: RIVAL }],
+                teamBPlayers: [],
+              },
             ]),
           ],
         },
@@ -160,9 +213,24 @@ describe('GetUpcomingMatchesUseCase', () => {
         c1: {
           rounds: [
             round([
-              { id: 'played', status: 'COMPLETED', teamAPlayers: [{ userId: USER }], teamBPlayers: [] },
-              { id: 'walked', status: 'WALKOVER', teamAPlayers: [{ userId: USER }], teamBPlayers: [] },
-              { id: 'todo', status: 'IN_PROGRESS', teamAPlayers: [{ userId: USER }], teamBPlayers: [] },
+              {
+                id: 'played',
+                status: 'COMPLETED',
+                teamAPlayers: [{ userId: USER }],
+                teamBPlayers: [],
+              },
+              {
+                id: 'walked',
+                status: 'WALKOVER',
+                teamAPlayers: [{ userId: USER }],
+                teamBPlayers: [],
+              },
+              {
+                id: 'todo',
+                status: 'IN_PROGRESS',
+                teamAPlayers: [{ userId: USER }],
+                teamBPlayers: [],
+              },
             ]),
           ],
         },
@@ -241,7 +309,12 @@ describe('GetUpcomingMatchesUseCase', () => {
         c1: {
           rounds: [
             round([
-              { id: 'm1', status: 'SCHEDULED', teamAPlayers: [{ userId: USER }], teamBPlayers: [{ userId: RIVAL }] },
+              {
+                id: 'm1',
+                status: 'SCHEDULED',
+                teamAPlayers: [{ userId: USER }],
+                teamBPlayers: [{ userId: RIVAL }],
+              },
             ]),
           ],
         },
@@ -266,9 +339,18 @@ describe('GetUpcomingMatchesUseCase', () => {
       schedules: {
         c1: {
           rounds: [
-            round([mine('later-day')], { roundDate: '2026-08-12', sessionType: 'MORNING' }),
-            round([mine('afternoon')], { roundDate: '2026-08-10', sessionType: 'AFTERNOON' }),
-            round([mine('morning')], { roundDate: '2026-08-10', sessionType: 'MORNING' }),
+            round([mine('later-day')], {
+              roundDate: '2026-08-12',
+              sessionType: 'MORNING',
+            }),
+            round([mine('afternoon')], {
+              roundDate: '2026-08-10',
+              sessionType: 'AFTERNOON',
+            }),
+            round([mine('morning')], {
+              roundDate: '2026-08-10',
+              sessionType: 'MORNING',
+            }),
           ],
         },
       },
@@ -276,7 +358,11 @@ describe('GetUpcomingMatchesUseCase', () => {
 
     const result = await useCase.execute(USER);
 
-    expect(result.map((m) => m.id)).toEqual(['morning', 'afternoon', 'later-day']);
+    expect(result.map((m) => m.id)).toEqual([
+      'morning',
+      'afternoon',
+      'later-day',
+    ]);
   });
 
   it('returns what it could read when one competition fails', async () => {
@@ -293,10 +379,15 @@ describe('GetUpcomingMatchesUseCase', () => {
           : Promise.resolve({
               rounds: [
                 round([
-                  { id: 'm1', status: 'SCHEDULED', teamAPlayers: [{ userId: USER }], teamBPlayers: [] },
+                  {
+                    id: 'm1',
+                    status: 'SCHEDULED',
+                    teamAPlayers: [{ userId: USER }],
+                    teamBPlayers: [],
+                  },
                 ]),
               ],
-            })
+            }),
       ),
     };
     const useCase = new GetUpcomingMatchesUseCase({
@@ -314,7 +405,9 @@ describe('GetUpcomingMatchesUseCase', () => {
   it('reuses competitions it is handed instead of asking again', async () => {
     const { useCase, listUserCompetitionsUseCase } = buildUseCase();
 
-    await useCase.execute(USER, [{ id: 'c1', name: 'Cup', status: 'IN_PROGRESS' }]);
+    await useCase.execute(USER, [
+      { id: 'c1', name: 'Cup', status: 'IN_PROGRESS' },
+    ]);
 
     expect(listUserCompetitionsUseCase.execute).not.toHaveBeenCalled();
   });
@@ -328,7 +421,18 @@ describe('GetUpcomingMatchesUseCase', () => {
       const { useCase } = buildUseCase({
         competitions: [{ id: 'c1', name: 'Cup', status: 'IN_PROGRESS' }],
         schedules: {
-          c1: { rounds: [round([{ id: 'm1', status: 'SCHEDULED', teamAPlayers: [{ userId: USER }], teamBPlayers: [] }])] },
+          c1: {
+            rounds: [
+              round([
+                {
+                  id: 'm1',
+                  status: 'SCHEDULED',
+                  teamAPlayers: [{ userId: USER }],
+                  teamBPlayers: [],
+                },
+              ]),
+            ],
+          },
         },
       });
 
@@ -346,7 +450,9 @@ describe('GetUpcomingMatchesUseCase', () => {
         ],
       });
       getScheduleUseCase.execute.mockImplementation((id) =>
-        id === 'broken' ? Promise.reject(new TypeError('Failed to fetch')) : Promise.resolve({ rounds: [] })
+        id === 'broken'
+          ? Promise.reject(new TypeError('Failed to fetch'))
+          : Promise.resolve({ rounds: [] }),
       );
 
       const result = await useCase.executeWithCompleteness(USER);
@@ -357,7 +463,10 @@ describe('GetUpcomingMatchesUseCase', () => {
     it('with no competition being played, the empty list is complete', async () => {
       const { useCase } = buildUseCase({ competitions: [] });
 
-      expect(await useCase.executeWithCompleteness(USER)).toEqual({ matches: [], complete: true });
+      expect(await useCase.executeWithCompleteness(USER)).toEqual({
+        matches: [],
+        complete: true,
+      });
     });
   });
 });
