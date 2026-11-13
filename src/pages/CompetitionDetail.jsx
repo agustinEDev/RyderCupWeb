@@ -1,131 +1,44 @@
-import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { useNavigate, useParams, useLocation, Link } from 'react-router';
-import { Users, Calendar, CalendarClock, MapPin, Settings, ArrowLeft, Edit, Trash2, Play, CheckCircle, XCircle, AlertCircle, UserPlus, Shield, Mail, BarChart3, Undo2, Crown, Pause, Swords, UserX, UserMinus, ChevronRight } from 'lucide-react';
-import customToast from '../utils/toast';
-import { seEstaCerrandoLaSesion } from '../utils/cierreDeEstaCarga';
-import Plegable from '../components/ui/Plegable';
-import TituloConNumero from '../components/ui/TituloConNumero';
-import AccionesDeLaFicha from '../components/competition/AccionesDeLaFicha';
-import { siguientePasoDeLaCompeticion } from '../utils/siguientePasoDeLaCompeticion';
-import ConfirmModal from '../components/modals/ConfirmModal';
-import NameCaptainsModal from '../components/competition/NameCaptainsModal';
-import CaptainBadge from '../components/competition/CaptainBadge';
-import { mensajeDeError } from '../utils/sinCobertura';
+import { useState, useCallback, useMemo } from 'react';
+import { useNavigate, useParams, useLocation } from 'react-router';
+import { ArrowLeft } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import HeaderAuth from '../components/layout/HeaderAuth';
-import { etiquetaDeInscripcion } from '../utils/etiquetaDeInscripcion';
 import { useAuth } from '../hooks/useAuth';
 import { useUserRoles } from '../hooks/useUserRoles';
-import { useLaMasNueva } from '../hooks/useLaMasNueva';
-import { CountryFlag } from '../components/ui/CountryFlag';
-import CompetitionGolfCoursesSection from '../components/competition/CompetitionGolfCoursesSection';
-import AgendaDeLaCompeticion from '../components/competition/AgendaDeLaCompeticion';
-import FranjasDeLaCompeticion from '../components/competition/FranjasDeLaCompeticion';
-import HandicapsDeLaCompeticion from '../components/competition/HandicapsDeLaCompeticion';
-import { categoriasQueSalen, salenDeLosInscritos } from '../domain/services/CategoriasQueSalen';
-import { sinFranja } from '../domain/services/PlazasEnFranjas';
-import { todasLasFranjasCerradas } from '../domain/services/PartidasDeLaFranja';
-import { aCamposDeLaCompeticion } from '../utils/camposDeLaCompeticion';
 import { useGeneroParaApuntarse } from '../hooks/useGeneroParaApuntarse';
-import { faltaElHandicap } from '../utils/datosQueFaltanSinConexion';
+import { useFichaDeLaCompeticion } from '../hooks/useFichaDeLaCompeticion';
+import { useAgendaDeLaFicha } from '../hooks/useAgendaDeLaFicha';
+import { useSePuedeTerminarLaCompeticion } from '../hooks/useSePuedeTerminarLaCompeticion';
+import { useReleerHandicaps } from '../hooks/useReleerHandicaps';
+import CompetitionGolfCoursesSection from '../components/competition/CompetitionGolfCoursesSection';
 import EnrollmentRequestModal from '../components/enrollment/EnrollmentRequestModal';
 import InvitacionEnLaFicha from '../components/invitation/InvitacionEnLaFicha';
-import {
-  getCompetitionDetailUseCase,
-  getCompetitionGolfCoursesUseCase,
-  activateCompetitionUseCase,
-  closeEnrollmentsUseCase,
-  nameCaptainsUseCase,
-  startCompetitionUseCase,
-  completeCompetitionUseCase,
-  getTeeGroupsUseCase,
-  cancelCompetitionUseCase,
-  deleteCompetitionUseCase,
-  reopenEnrollmentsUseCase,
-  revertCompetitionStatusUseCase,
-  revertCompetitionToInProgressUseCase,
-  listEnrollmentsUseCase,
-  requestEnrollmentUseCase,
-  approveEnrollmentUseCase,
-  rejectEnrollmentUseCase,
-  removeEnrolledPlayerUseCase,
-  assignTeamsUseCase,
-  setCustomHandicapUseCase,
-  removeCustomHandicapUseCase,
-  setNamePreferenceUseCase,
-} from '../composition';
-import {
-  getStatusColor,
-  getEnrollmentStatusColor,
-  formatDateRange,
-} from '../services/competitions';
 import FullScreenLoader from '../components/ui/FullScreenLoader';
-import { formatCountryName } from '../services/countries';
-import { fechaDeApertura } from '../domain/services/aperturaDeInscripciones';
-import { CompetitionStatus } from '../domain/value_objects/CompetitionStatus';
-import { formatoDeIndice } from '../utils/formatoDeHandicap';
-import CampoDeHandicap from '../components/ui/CampoDeHandicap';
-import { mensajeConJugadores } from '../utils/erroresConJugadores';
+import DialogosDeLaFicha from '../components/competition/detail/DialogosDeLaFicha';
+import ResumenDeLaCompeticion from '../components/competition/detail/ResumenDeLaCompeticion';
+import GestionDeLaFicha from '../components/competition/detail/GestionDeLaFicha';
+import AccesosDelJugador from '../components/competition/detail/AccesosDelJugador';
+import MiInscripcion from '../components/competition/detail/MiInscripcion';
+import AjustesDeLaCompeticion from '../components/competition/detail/AjustesDeLaCompeticion';
+import PanelesDelOrganizador from '../components/competition/detail/PanelesDelOrganizador';
+import AgendaDeLaFicha from '../components/competition/detail/AgendaDeLaFicha';
+import InscritosAprobados from '../components/competition/detail/InscritosAprobados';
+import SolicitudesDeInscripcion from '../components/competition/detail/SolicitudesDeInscripcion';
+import { crearCambiosDeEstado } from '../components/competition/detail/cambiosDeEstado';
+import { crearAccionesDeInscripcion } from '../components/competition/detail/inscripcionesDeLaFicha';
+import { crearEdicionDeHandicaps } from '../components/competition/detail/edicionDeHandicaps';
+import { accionesDelOrganizador } from '../components/competition/detail/accionesDelOrganizador';
+import { avisoYClasificacion, derivarLaFicha, vueltaDeLaFicha } from '../utils/fichaDeLaCompeticion';
+import { faltaElHandicap } from '../utils/datosQueFaltanSinConexion';
 import { PANTALLA_MENOS_BARRA_INFERIOR } from '../utils/barraInferior';
 import { hayHistorialPropio } from '../hooks/useGoBack';
 
-// «Volver» lleva a donde se vino: explorar, las invitaciones (FE #682) o, por
-// defecto, las competiciones propias
-const VUELTAS = {
-  browse: { to: '/browse-competitions', clave: 'detail.backToBrowse' },
-  invitations: { to: '/player/invitations', clave: 'detail.backToInvitations' },
-};
-const VUELTA_POR_DEFECTO = { to: '/competitions', clave: 'detail.backToCompetitions' };
-
-// Antes de empezar se puede quitar a un inscrito (release social 2)
-const SE_PUEDE_QUITAR = new Set(['DRAFT', 'ACTIVE', 'CLOSED']);
-
-// Por qué no se pudo apuntar, por su código (release social 3, 28 oct 2026): las
-// de la franja releen la agenda, que estaba vieja
-// Sin franjas: el mismo array siempre
-const SIN_FRANJAS = [];
-
-// «sáb 3 mar»: el día de una franja, para saber cuál de las de esa hora
-const diaCorto = (fecha, idioma) => {
-  const d = new Date(`${fecha}T12:00:00`);
-  return Number.isNaN(d.getTime())
-    ? ''
-    : d.toLocaleDateString(idioma, { weekday: 'short', day: 'numeric', month: 'short' });
-};
-
-const MOTIVOS_PARA_NO_APUNTARSE = {
-  TEE_WINDOW_FULL: 'detail.errors.teeWindowFull',
-  TEE_WINDOW_HAS_ROOM: 'detail.errors.teeWindowHasRoom',
-  TEE_WINDOW_REQUIRED: 'detail.errors.teeWindowRequired',
-  TEE_WINDOW_NOT_FOUND: 'detail.errors.teeWindowNotFound',
-  DRAFT_IN_PROGRESS: 'detail.errors.draftInProgress',
-};
-
-// Por qué no se formaron los equipos al cerrar (29 oct 2026)
-const MOTIVOS_PARA_NO_FORMAR = {
-  TEAMS_FORMED: 'detail.errors.teamsFormedOrganizer',
-  DRAFT_IN_PROGRESS: 'detail.errors.waitForDraft',
-};
-
-// Si ya los había, la ficha lo apunta: con equipos no se ofrece cambiar
-// capitanes ni pedir plaza (code-review)
-const yaLosHabia = (error, setCompetition) => {
-  if (error?.errorCode === 'TEAMS_FORMED') setCompetition((prev) => ({ ...prev, teamsAssigned: true }));
-};
-
-const porQueNoSeFormaron = (t, error) => {
-  const motivo = MOTIVOS_PARA_NO_FORMAR[error?.errorCode];
-  return motivo ? t(motivo) : error?.message || t('detail.errors.teamAssignmentFailed');
-};
-
-// Por qué no se pudo quitar, por el código del servidor
-const MOTIVOS_PARA_NO_QUITAR = {
-  PLAYER_HAS_MATCHES: 'detail.errors.removePlayerHasMatches',
-  DRAFT_IN_PROGRESS: 'detail.errors.removeDraftInProgress',
-  REMOVAL_NOT_ALLOWED: 'detail.errors.removeNotAllowed',
-  CANNOT_REMOVE_ORGANIZER: 'detail.errors.removeOrganizer',
-};
-
+/**
+ * La ficha de una competición. Esta página orquesta: lee la ficha y sus
+ * listas (hooks), deriva lo que se enseña (`utils/fichaDeLaCompeticion`), crea
+ * los manejadores con lo de cada render (`components/competition/detail`) y
+ * pinta las secciones, que viven en esa misma carpeta.
+ */
 const CompetitionDetail = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -136,9 +49,6 @@ const CompetitionDetail = () => {
   // El género para apuntarse, solo a quien le falta (#710)
   const generoParaApuntarse = useGeneroParaApuntarse();
   const { isAdmin, isCreator: hasCreatorRole, isLoading: isLoadingRoles } = useUserRoles(id);
-  const [competition, setCompetition] = useState(null);
-  const [enrollments, setEnrollments] = useState([]);
-  const [isLoadingCompetition, setIsLoadingCompetition] = useState(true);
   const [isProcessing, setIsProcessing] = useState(false);
   // Borrar pide confirmación en un modal que dice quién pierde su plaza (FE #667)
   const [confirmandoBorrado, setConfirmandoBorrado] = useState(false);
@@ -149,9 +59,6 @@ const CompetitionDetail = () => {
   const [quitandoId, setQuitandoId] = useState(null);
   // Mientras borra, el modal desactiva sus botones: eso ya impide un segundo DELETE
   const [borrando, setBorrando] = useState(false);
-  // Si la lista de inscripciones no llegó, el modal no puede decir cuántos pierden
-  // su plaza: «no hay nadie más» sería afirmar lo que no se ha comprobado
-  const [inscripcionesSinCargar, setInscripcionesSinCargar] = useState(false);
   // Nombrar a los capitanes es lo que cierra las inscripciones (FE #692)
   const [nombrandoCapitanes, setNombrandoCapitanes] = useState(false);
   const [guardandoCapitanes, setGuardandoCapitanes] = useState(false);
@@ -169,48 +76,20 @@ const CompetitionDetail = () => {
   // de que cambiaron, para que la agenda los vuelva a leer (FE #715)
   const [versionCampos, setVersionCampos] = useState(0);
   const avisarDeLosCampos = useCallback(() => setVersionCampos((v) => v + 1), []);
-  // La agenda que leyó su sección: sesiones y reparto. null mientras no se sabe
-  const [agendaLeida, setAgendaLeida] = useState(null);
-  // Si la última lectura de la agenda falló: con una buena ya leída, se sigue
-  // con ella; sin ninguna, el diálogo de apuntarse lo dice (code-review)
-  const [agendaFallo, setAgendaFallo] = useState(false);
-  const recibirAgenda = useCallback((leida, fallo = false) => {
-    if (leida) {
-      setAgendaLeida(leida);
-      setAgendaFallo(false);
-    } else if (fallo) {
-      setAgendaFallo(true);
-    }
-  }, []);
-  // Las franjas de la agenda, una vez por lectura: el diálogo las ordena
-  const franjasDeLaAgenda = useMemo(
-    () => (agendaLeida?.rounds ?? []).filter((r) => r.teeSheet),
-    [agendaLeida]
-  );
+  const { agendaLeida, agendaFallo, recibirAgenda, franjasDeLaAgenda } = useAgendaDeLaFicha();
   // Para releer las franjas cuando el servidor dice que faltan jugadores (FE #824)
   const [versionFranjas, setVersionFranjas] = useState(0);
   const [irASinFranja, setIrASinFranja] = useState(0);
-  // Para releer los hándicaps sin pisar otra competición, y saber cuándo acaba
-  // una actualización (FE #824, PR 5)
-  const idActual = useRef(id);
-  const estadoDeLaActualizacion = useRef(null);
   // Mientras se releen la ficha y las inscripciones tras cerrar (PR 8)
   const [releyendoTrasCerrar, setReleyendoTrasCerrar] = useState(false);
   // Sube con cada cambio en las partidas: se vuelve a mirar si se puede
   // terminar el torneo (todas las franjas cerradas)
   const [versionDePartidas, setVersionDePartidas] = useState(0);
-  // Lecturas que pueden cruzarse (el sondeo, los botones de la tarjeta y la
-  // ficha tras un cambio de estado): una vieja no pisa a otra más nueva
-  const lecturasDeLaFicha = useLaMasNueva();
-  const lecturasDeInscripciones = useLaMasNueva();
-  useEffect(() => {
-    idActual.current = id;
-  }, [id]);
   const numeroDeSesiones = agendaLeida?.rounds?.length ?? null;
 
   // Determine where user came from (browse or my competitions)
   const origen = location.state?.from;
-  const vuelta = Object.hasOwn(VUELTAS, origen ?? '') ? VUELTAS[origen] : VUELTA_POR_DEFECTO;
+  const vuelta = vueltaDeLaFicha(origen);
   const backLink = vuelta.to;
   const backText = t(vuelta.clave);
   // Desde Torneos, volver es volver atrás de verdad, como el atrás del sistema:
@@ -219,92 +98,19 @@ const CompetitionDetail = () => {
   const vuelveAtras = origen === 'my-competitions' && hayHistorialPropio(location);
   const volver = () => (vuelveAtras ? navigate(-1) : navigate(backLink));
 
-  // Por el id y no por el objeto: refrescar la sesión crea un `user` nuevo con el
-  // mismo id, y la ficha se recargaba entera tras apuntarse (CodeRabbit, #720)
   const userId = user?.id;
-  const loadCompetition = useCallback(async () => {
-    if (!userId) return;
-
-    setIsLoadingCompetition(true);
-    try {
-      // Use GetCompetitionDetailUseCase instead of direct service call
-      const data = await getCompetitionDetailUseCase.execute(id);
-
-      setCompetition(data);
-
-      // Load enrollments for all authenticated users (approved players visible to everyone)
-      try {
-        const enrollmentsData = await listEnrollmentsUseCase.execute(id);
-        setEnrollments(enrollmentsData);
-        setInscripcionesSinCargar(false);
-      } catch {
-        setEnrollments([]);
-        setInscripcionesSinCargar(true);
-      }
-    } catch (error) {
-      console.error('Error loading competition:', error);
-      // Falló porque se está cerrando la sesión: la redirección al login llega ya; ir a la
-      // lista solo enseñaba otro fallo (A2, 8 nov 2026)
-      if (seEstaCerrandoLaSesion()) return;
-      customToast.error(error.message || t('detail.failedToLoadCompetition'));
-      navigate('/competitions');
-    } finally {
-      setIsLoadingCompetition(false);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [id, userId, navigate]);
-
-  useEffect(() => {
-    if (userId) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- pre-existing pattern surfaced by eslint-plugin-react-hooks 7.1.1 bump; needs dedicated review (tracked in follow-up)
-      loadCompetition();
-    }
-  }, [id, userId, loadCompetition]);
-
-  /**
-   * Elegir alias o nombre legal para ESTA competición (FE #571).
-   *
-   * El interruptor se pinta desde el estado, y el estado solo cambia con lo que
-   * el backend confirma: si el guardado falla, el interruptor no se ha movido y
-   * basta con decir que no se guardó.
-   *
-   * Guardar y recargar la lista van en dos `try` distintos a propósito. Con los
-   * dos juntos, una recarga fallida detrás de un guardado bueno decía «no se
-   * pudo guardar» sobre algo que sí se había guardado, y el reintento natural
-   * lo dejaba como estaba al principio.
-   */
-  const handleToggleNamePreference = async (enrollmentId, siguiente) => {
-    setSavingNamePreference(true);
-    try {
-      const guardado = await setNamePreferenceUseCase.execute(enrollmentId, siguiente);
-
-      // Lo confirmado por el backend, no lo que se pidió
-      setEnrollments((previos) =>
-        previos.map((e) =>
-          e.id === enrollmentId ? { ...e, useRealName: guardado.useRealName } : e
-        )
-      );
-    } catch (error) {
-      // El mensaje de la API es técnico y viene en inglés: a la consola
-      console.error('Error updating name preference:', error);
-      customToast.error(t('detail.namePreference.failed'));
-      setSavingNamePreference(false);
-      return;
-    }
-
-    try {
-      // El nombre de la lista lo resuelve el servidor, así que se vuelve a
-      // pedir en vez de recomponerlo aquí. Si esto falla, la preferencia ya
-      // está guardada: el nombre se verá al siguiente refresco, y decir que no
-      // se guardó sería mentir
-      const enrollmentsData = await listEnrollmentsUseCase.execute(competition.id);
-      setEnrollments(enrollmentsData);
-    } catch (error) {
-      console.error('Error reloading enrollments after name preference:', error);
-    } finally {
-      setSavingNamePreference(false);
-    }
-  };
+  const {
+    competition,
+    setCompetition,
+    enrollments,
+    setEnrollments,
+    isLoadingCompetition,
+    inscripcionesSinCargar,
+    loadCompetition,
+    idActual,
+    lecturasDeLaFicha,
+    lecturasDeInscripciones,
+  } = useFichaDeLaCompeticion({ id, userId, t, navigate });
 
   const isLoading = isLoadingUser || isLoadingCompetition || isLoadingRoles;
 
@@ -312,6 +118,50 @@ const CompetitionDetail = () => {
     () => enrollments.filter(e => e.status === 'APPROVED'),
     [enrollments]
   );
+
+  const { leeSiTerminar, claveDeFranjas, cierre } = useSePuedeTerminarLaCompeticion({
+    competition,
+    hasCreatorRole,
+    isAdmin,
+    userId,
+    agendaLeida,
+    versionDePartidas,
+  });
+  const releerHandicaps = useReleerHandicaps({
+    id,
+    competition,
+    setCompetition,
+    setEnrollments,
+    idActual,
+    lecturasDeLaFicha,
+    lecturasDeInscripciones,
+  });
+
+  if (isLoading) {
+    return (
+      <FullScreenLoader texto={t('detail.loadingCompetition')} />
+    );
+  }
+
+  if (!user || !competition) {
+    return null;
+  }
+
+  const { textoDelAvisoDeCategorias, conClasificacion } = avisoYClasificacion(t, competition, approvedEnrollments);
+  const ficha = derivarLaFicha({
+    t,
+    idioma: i18n.language,
+    competition,
+    user,
+    enrollments,
+    approvedEnrollments,
+    hasCreatorRole,
+    isAdmin,
+    inscripcionesSinCargar,
+    agendaLeida,
+    franjasDeLaAgenda,
+  });
+  const { isCreator, canManage, esStrokePlay, approvedCount, fechaDeAperturaLegible, isFull } = ficha;
 
   // Abre el modal y espera la respuesta: el flujo de cada acción no cambia.
   // Cada acción trae sus palabras —título, consecuencia y dos verbos—: con
@@ -324,635 +174,21 @@ const CompetitionDetail = () => {
     setPregunta(null);
   };
 
-  // El organizador quita a un inscrito (release social 2, 27 oct 2026): se le
-  // pregunta, se le avisa en la app y, con equipos formados, se deshacen
-  const handleQuitar = async (enrollment) => {
-    const datos = { nombre: enrollment.userName || t('detail.unknownUser'), competicion: competition.name };
-    const accion = competition.teamsAssigned ? 'removeWithTeams' : 'remove';
-    if (!(await preguntar(accion, { destructiva: true, datos }))) return;
-    setQuitandoId(enrollment.id);
-    try {
-      await removeEnrolledPlayerUseCase.execute(enrollment.id);
-      customToast.success(t('detail.success.playerRemoved', datos));
-      // Su hándicap, si se estaba editando, ya no es de nadie (/code-review)
-      setEditingHandicapId((editando) => (editando === enrollment.id ? null : editando));
-    } catch (error) {
-      customToast.error(
-        t(
-          error?.status === 404
-            ? 'detail.errors.removeGone'
-            : (MOTIVOS_PARA_NO_QUITAR[error?.errorCode] ?? 'detail.errors.removeFailed')
-        )
-      );
-    }
-    // Bien o mal, se relee: la lista (y los equipos, si se deshicieron) ya no
-    // es la de antes. En silencio, sin la espera de pantalla completa: quitar a
-    // varios seguidos hacía parpadear la ficha y la subía arriba (revisor)
-    await releerTrasQuitar();
-    setQuitandoId(null);
+  // Los manejadores, con lo de este render: como cuando vivían aquí mismo
+  const contexto = {
+    id, t, tComun, navigate, competition, setCompetition, enrollments, setEnrollments,
+    approvedEnrollments, esStrokePlay, isFull, agendaLeida, idActual, lecturasDeLaFicha,
+    lecturasDeInscripciones, loadCompetition, generoParaApuntarse, preguntar, handicapInput,
+    setHandicapInput, setIsProcessing, setQuitandoId, setEditingHandicapId, setSinHandicap,
+    setSavingHandicapId, setRevertingHandicapId, setVersionFranjas, setIrASinFranja,
+    setReleyendoTrasCerrar, setGuardandoCapitanes, setNombrandoCapitanes, setBorrando,
+    setConfirmandoBorrado, setErrorAlApuntarse, setShowEnrollModal, setSavingNamePreference,
   };
+  const handicaps = crearEdicionDeHandicaps(contexto);
+  const cambios = crearCambiosDeEstado({ ...contexto, handleStartEditHandicap: handicaps.handleStartEditHandicap });
+  const inscripciones = crearAccionesDeInscripcion({ ...contexto, releerTrasQuitar: cambios.releerTrasQuitar });
+  const { handleStatusChange } = cambios;
 
-  const releerTrasQuitar = async () => {
-    // Con los mismos guardas que las demás relecturas: una respuesta vieja no
-    // pisa otra más nueva, ni la de otra competición (/code-review)
-    const deEsta = id;
-    const turnoDeLaFicha = lecturasDeLaFicha.turno();
-    const turnoDeLaLista = lecturasDeInscripciones.turno();
-    try {
-      const [ficha, lista] = await Promise.all([
-        getCompetitionDetailUseCase.execute(deEsta),
-        listEnrollmentsUseCase.execute(deEsta),
-      ]);
-      if (deEsta !== idActual.current) return;
-      if (lecturasDeLaFicha.aplicar(turnoDeLaFicha)) setCompetition(ficha);
-      if (lecturasDeInscripciones.aplicar(turnoDeLaLista)) setEnrollments(lista);
-    } catch (error) {
-      // Lo de antes sigue a la vista; el siguiente refresco lo pondrá al día
-      console.error('Error reloading after removing a player:', error);
-    }
-    // Y sus franjas: quitarle no mueve la fecha de la ficha (/code-review)
-    if (deEsta === idActual.current) setVersionFranjas((v) => v + 1);
-  };
-
-  const handleStatusChange = async (action) => {
-    // Validate golf courses approval status before activation
-    if (action === 'activate') {
-      try {
-        const golfCoursesResult = await getCompetitionGolfCoursesUseCase.execute(id);
-        const golfCourses = aCamposDeLaCompeticion(golfCoursesResult);
-
-        if (golfCourses.length === 0) {
-          customToast.error(t('detail.errors.noGolfCourses'));
-          return;
-        }
-
-        const pendingCourses = golfCourses.filter(gc => gc.approvalStatus === 'PENDING_APPROVAL');
-        if (pendingCourses.length > 0) {
-          const courseNames = pendingCourses.map(gc => gc.name).join(', ');
-          customToast.error(t('detail.errors.golfCoursesPendingApproval', { courses: courseNames }));
-          return;
-        }
-
-        const rejectedCourses = golfCourses.filter(gc => gc.approvalStatus === 'REJECTED');
-        if (rejectedCourses.length > 0) {
-          const courseNames = rejectedCourses.map(gc => gc.name).join(', ');
-          customToast.error(t('detail.errors.golfCoursesRejected', { courses: courseNames }));
-          return;
-        }
-      } catch (error) {
-        console.error('Error validating golf courses for activation:', error);
-        customToast.error(t('detail.errors.golfCoursesFetchFailed'));
-        return;
-      }
-    }
-
-    // Con franjas y alguien sin plaza, el servidor no deja cerrar: se dice
-    // antes, con sus nombres, y se lleva a colocarlos (QA del 11 oct 2026).
-    // Sin ninguna franja con hoja, lo decide el servidor
-    if (action === 'close-enrollments' && esStrokePlay) {
-      const conHoja = (agendaLeida?.rounds ?? []).filter((r) => r.teeSheet);
-      const faltan = conHoja.length > 0 ? sinFranja(conHoja, approvedEnrollments) : [];
-      if (faltan.length > 0) {
-        const datos = {
-          count: faltan.length,
-          jugadores: faltan.map((e) => e.userName || t('detail.unknownUser')).join(', '),
-        };
-        const ir = await preguntar('closeWithoutTeeWindow', { datos });
-        // Se releen siempre: lo pintado puede ser viejo (alguien cogió plaza
-        // en su móvil) y el siguiente intento lo miraría con lo de antes (revisor)
-        setVersionFranjas((v) => v + 1);
-        if (ir) setIrASinFranja((v) => v + 1);
-        return;
-      }
-    }
-
-    if (!(await preguntar(action, { destructiva: action === 'cancel' }))) {
-      return;
-    }
-
-    setIsProcessing(true);
-    try {
-      let result;
-      switch (action) {
-        case 'activate':
-          result = await activateCompetitionUseCase.execute(id);
-          customToast.success(t('detail.success.activated'));
-          break;
-        case 'close-enrollments':
-          result = await closeEnrollmentsUseCase.execute(id);
-          customToast.success(t('detail.success.enrollmentsClosed'));
-          // Formados, quedan así (29 oct 2026): al volver a cerrar una reabierta
-          // no se reparten otra vez, que el servidor lo rechaza (revisor)
-          if (competition.teamAssignment === 'AUTOMATIC' && !competition.teamsAssigned) {
-            try {
-              await assignTeamsUseCase.execute(id, { mode: 'AUTOMATIC' });
-              customToast.success(t('detail.success.teamsAutoAssigned'));
-            } catch (assignError) {
-              console.error('Error auto-assigning teams:', assignError);
-              customToast.error(porQueNoSeFormaron(t, assignError));
-              yaLosHabia(assignError, setCompetition);
-            }
-          }
-          break;
-        case 'start':
-          result = await startCompetitionUseCase.execute(id);
-          customToast.success(t('detail.success.started'));
-          break;
-        case 'complete':
-          result = await completeCompetitionUseCase.execute(id);
-          customToast.success(t('detail.success.completed'));
-          break;
-        case 'cancel':
-          result = await cancelCompetitionUseCase.execute(id);
-          customToast.success(t('detail.success.cancelled'));
-          break;
-        case 'reopen-enrollments':
-          result = await reopenEnrollmentsUseCase.execute(id);
-          customToast.success(t('detail.success.enrollmentsReopened'));
-          break;
-        case 'revert-status':
-          result = await revertCompetitionStatusUseCase.execute(id);
-          customToast.success(t('detail.success.statusReverted'));
-          break;
-        case 'revert-to-in-progress':
-          result = await revertCompetitionToInProgressUseCase.execute(id);
-          customToast.success(t('detail.success.revertedToInProgress'));
-          break;
-        default:
-          throw new Error('Invalid action');
-      }
-
-      // Update only the changed fields (status and updatedAt)
-      setCompetition(prev => ({
-        ...prev,
-        status: result.status,
-        updatedAt: result.updatedAt
-      }));
-      const fichaReleida = refrescarCanDelete();
-      // Con otro estado, el personalizado puede dejar de poderse cambiar: el
-      // editor abierto se cierra (/code-review)
-      setEditingHandicapId(null);
-      setSinHandicap(new Set());
-      // Al cerrar (o reabrir) un stroke play se fija (o se suelta) el hándicap
-      // de cada uno y su categoría: la lista de antes no lo trae (FE #824,
-      // PR 5). Solo en stroke play: en una Ryder nada de eso cambia
-      // Con su turno: una lectura vieja de la tarjeta no la pisa (revisor)
-      if (esStrokePlay) {
-        const deLaLista = lecturasDeInscripciones.turno();
-        const listaReleida = listEnrollmentsUseCase
-          .execute(id)
-          .then((lista) => {
-            if (lecturasDeInscripciones.aplicar(deLaLista)) setEnrollments(lista);
-            return lista;
-          })
-          .catch((e) => {
-            console.error('Error reloading enrollments after status change:', e);
-            return null;
-          });
-        // Al cerrar, si salen menos categorías se le dice al organizador (PR 8):
-        // con las DOS lecturas ya hechas —los límites que se guardaron y la
-        // categoría de cada uno—. Con lo que fuera llegando, el orden decidía
-        // el motivo (revisor)
-        if (action === 'close-enrollments') {
-          // Y el aviso de la ficha espera también: con una lectura sí y la
-          // otra no, saldría con los límites de antes (/code-review)
-          setReleyendoTrasCerrar(true);
-          // Esperadas: hasta que llegan, los botones siguen desactivados; si no,
-          // «Iniciar» deprisa sacaba el toast con la competición ya en juego
-          // (CodeRabbit)
-          await Promise.all([fichaReleida, listaReleida])
-            .then(([ficha, lista]) => {
-              if (!ficha?.strokePlay || !lista) return;
-              const aprobados = lista.filter((e) => e.status === 'APPROVED');
-              const aviso = categoriasQueSalen(ficha.strokePlay, aprobados.map((e) => e.category ?? null));
-              if (aviso) customToast.warning(t(`detail.fewerCategories.${aviso.motivo}`, { ...aviso, count: aviso.salen }));
-            })
-            .finally(() => setReleyendoTrasCerrar(false));
-        }
-      }
-    } catch (error) {
-      console.error(`Error ${action}:`, error);
-      console.error('Error details:', error.stack || error.message || String(error));
-      // Un stroke play no se cierra ni se inicia con aprobados sin franja: se
-      // dice quiénes y se lleva a «Sin franja», donde se colocan (FE #824)
-      // Y sin hándicap tampoco se cierra: se dice quiénes, se marcan en la lista
-      // y se abre el personalizado del primero (Agustín, 11 oct 2026)
-      // Los textos, los de aquí (dicen qué hacer en esta pantalla), montados
-      // con la cuenta y los nombres como en el resto de avisos con jugadores
-      if (error?.errorCode === 'PLAYERS_WITHOUT_HANDICAP') {
-        const faltan = error.data?.players || [];
-        customToast.error(mensajeConJugadores(t, error, 'detail.errors', ['PLAYERS_WITHOUT_HANDICAP']));
-        setSinHandicap(new Set(faltan.map((p) => p.user_id)));
-        // Con la lista releída: el que falta puede no estar en la de aquí
-        // (otra pestaña, una aprobación reciente) (/code-review)
-        try {
-          const lista = await listEnrollmentsUseCase.execute(id);
-          setEnrollments(lista);
-          const primero = lista.find(
-            (e) => e.status === 'APPROVED' && faltan.some((p) => p.user_id === e.userId)
-          );
-          if (primero) {
-            handleStartEditHandicap(primero);
-            document
-              .querySelector(`[data-testid="aprobado-${primero.userId}"]`)
-              ?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-          }
-        } catch (e) {
-          console.error('Error reloading enrollments after missing handicaps:', e);
-        }
-        return;
-      }
-      if (error?.errorCode === 'PLAYERS_WITHOUT_TEE_WINDOW') {
-        customToast.error(mensajeConJugadores(t, error, 'detail.errors', ['PLAYERS_WITHOUT_TEE_WINDOW']));
-        // Lo pintado puede estar viejo: se releen las franjas, y con lo releído
-        // se lleva a «Sin franja» (allí se espera a que aparezca)
-        setVersionFranjas((v) => v + 1);
-        setIrASinFranja((v) => v + 1);
-        return;
-      }
-      customToast.error(error.message || t('detail.failedToUpdateCompetition'));
-    } finally {
-      setIsProcessing(false);
-    }
-  };
-
-  // Si ahora se puede borrar: la respuesta de un cambio de estado no lo trae, y
-  // el de antes ya no vale —cancelar la vuelve borrable— (FE #667). En silencio,
-  // sin la espera de pantalla completa; si falla, no se ofrece lo que no se sabe
-  const refrescarCanDelete = () => {
-    const turno = lecturasDeLaFicha.turno();
-    return getCompetitionDetailUseCase
-      .execute(id)
-      // Solo si esa ficha es la del estado de ahora: con dos cambios seguidos, la
-      // del primero puede llegar tarde y decidiría el botón del segundo
-      .then((data) => {
-        setCompetition(prev =>
-          prev.status === data.status
-            // Y los ajustes de stroke play: al cerrar, «categorías iguales»
-            // guarda los límites que repartió (PR 8)
-            ? { ...prev, canDelete: data.canDelete, teamsAssigned: data.teamsAssigned, strokePlay: data.strokePlay }
-            : prev
-        );
-        // Lo de los hándicaps cambia al cerrar (FE #824, PR 5) y vale sea cual
-        // sea el estado, pero no pisa lo de una lectura más nueva de la tarjeta
-        // (/code-review). Aparte: si gasta el turno, se pinta (revisor)
-        if (lecturasDeLaFicha.aplicar(turno)) {
-          setCompetition(prev => ({
-            ...prev,
-            handicapUpdate: data.handicapUpdate,
-            handicapUpdateWindow: data.handicapUpdateWindow,
-          }));
-        }
-        return data;
-      })
-      .catch(() => {
-        setCompetition(prev => ({ ...prev, canDelete: false }));
-        return null;
-      });
-  };
-
-  // Lo de los hándicaps y las inscripciones, sin la espera de pantalla
-  // completa: la tarjeta lo pide al lanzar o programar, y cada 15 s mientras
-  // hay una en marcha (FE #824, PR 5)
-  // Las inscripciones (hándicap fijado y categoría) solo cambian al acabar una
-  // actualización: releerlas cada 15 s mientras dura eran peticiones de más
-  // (revisor). Y una respuesta de otra competición (se cambió de ruta) no pisa,
-  // ni una vieja a otra más nueva si se cruzan (el sondeo y un botón; CodeRabbit)
-  const releerHandicaps = useCallback(() => {
-    const deEsta = id;
-    const turno = lecturasDeLaFicha.turno();
-    getCompetitionDetailUseCase
-      .execute(deEsta)
-      .then((data) => {
-        if (deEsta !== idActual.current || !lecturasDeLaFicha.aplicar(turno)) return;
-        const estaba = estadoDeLaActualizacion.current;
-        estadoDeLaActualizacion.current = data.handicapUpdate?.status ?? null;
-        setCompetition((prev) => ({
-          ...prev,
-          handicapUpdate: data.handicapUpdate,
-          handicapUpdateWindow: data.handicapUpdateWindow,
-        }));
-        if (estadoDeLaActualizacion.current !== 'IN_PROGRESS' || estaba !== 'IN_PROGRESS') {
-          const deLaLista = lecturasDeInscripciones.turno();
-          return listEnrollmentsUseCase
-            .execute(deEsta)
-            .then(
-              (lista) =>
-                deEsta === idActual.current && lecturasDeInscripciones.aplicar(deLaLista) && setEnrollments(lista)
-            );
-        }
-        return undefined;
-      })
-      .catch((e) => console.error('Error reloading handicap updates:', e));
-  }, [id, lecturasDeLaFicha, lecturasDeInscripciones]);
-
-  // Con todas las franjas jugadas y cerradas, «Terminar competición» a la
-  // vista del organizador: en el menú no se encontraba (QA del 11 oct 2026).
-  // Una franja no cambia de estado al cerrarse: se miran sus partidas
-  // Con las franjas a las que se refiere: un «sí» de otras no vale (/code-review)
-  const [cierre, setCierre] = useState({ clave: null, cerradas: false });
-  const leeSiTerminar =
-    competition?.hasTeams === false &&
-    competition?.status === 'IN_PROGRESS' &&
-    (hasCreatorRole || isAdmin || competition?.creatorId === user?.id);
-  // Solo las que tienen a alguien: una franja vacía no se juega (revisor). Se
-  // mira con cada lectura de la agenda: también acaban partidas al entregar
-  const franjasJugadas = (agendaLeida?.rounds ?? []).filter((r) => r.teeSheet?.placesTaken > 0).map((r) => r.id);
-  const claveDeFranjas = franjasJugadas.join('|');
-  useEffect(() => {
-    if (!leeSiTerminar || !claveDeFranjas) return undefined;
-    let vigente = true;
-    Promise.all(claveDeFranjas.split('|').map((roundId) => getTeeGroupsUseCase.execute(roundId)))
-      .then((vistas) => vigente && setCierre({ clave: claveDeFranjas, cerradas: todasLasFranjasCerradas(vistas) }))
-      .catch(() => vigente && setCierre({ clave: claveDeFranjas, cerradas: false }));
-    return () => {
-      vigente = false;
-    };
-  }, [leeSiTerminar, claveDeFranjas, versionDePartidas, agendaLeida]);
-
-  // Lo último que se sabe de la actualización, para notar cuándo acaba
-  const estadoCargado = competition?.handicapUpdate?.status ?? null;
-  useEffect(() => {
-    estadoDeLaActualizacion.current = estadoCargado;
-  }, [estadoCargado]);
-
-  const confirmarCapitanes = async (capitanes) => {
-    const cerraba = competition.status === 'ACTIVE';
-    setGuardandoCapitanes(true);
-    try {
-      const result = await nameCaptainsUseCase.execute(id, capitanes);
-      setCompetition(prev => ({
-        ...prev,
-        status: result.status,
-        captains: { ...prev.captains, ...result.captains },
-      }));
-      setNombrandoCapitanes(false);
-      customToast.success(
-        t(cerraba ? 'detail.success.captainsNamed' : 'detail.success.captainsChanged')
-      );
-      if (result.unevenTeams) {
-        // Aviso, no bloqueo: los capitanes quedan nombrados. El reparto
-        // automático no se intenta, porque con impares el servidor lo rechaza
-        customToast.warning(t('detail.captains.uneven', { count: result.totalPlayers }));
-      } else if (cerraba && competition.teamAssignment === 'AUTOMATIC') {
-        // Lo mismo que hacía «Cerrar inscripciones»: el reparto automático vive
-        // aquí, en el navegador, hasta que lo haga el servidor
-        try {
-          await assignTeamsUseCase.execute(id, { mode: 'AUTOMATIC' });
-          // Con equipos, «Cambiar capitanes» ya no se ofrece: fallaría siempre
-          setCompetition(prev => ({ ...prev, teamsAssigned: true }));
-          customToast.success(t('detail.success.teamsAutoAssigned'));
-        } catch (assignError) {
-          console.error('Error auto-assigning teams:', assignError);
-          customToast.error(porQueNoSeFormaron(t, assignError));
-          yaLosHabia(assignError, setCompetition);
-        }
-      }
-      refrescarCanDelete();
-    } catch (error) {
-      console.error('Error naming captains:', error);
-      // El motivo del servidor tal cual («ya hay equipos»...): dice qué hacer.
-      // El modal sigue abierto para corregir la elección
-      customToast.error(
-        mensajeDeError(error, {
-          sinConexion: t('common:sinConexion.mensaje'),
-          generico: t('detail.captains.failed'),
-        })
-      );
-    } finally {
-      setGuardandoCapitanes(false);
-    }
-  };
-
-  const handleDelete = () => setConfirmandoBorrado(true);
-
-  const confirmarBorrado = async () => {
-    setBorrando(true);
-    try {
-      await deleteCompetitionUseCase.execute(id);
-      customToast.success(t('detail.success.deleted'));
-      navigate('/competitions');
-    } catch (error) {
-      console.error('Error deleting competition:', error);
-      // El motivo del servidor se enseña tal cual («ya tiene calendario»...):
-      // es lo que dice qué hacer. Sin red o sin respuesta, el texto de la app
-      customToast.error(
-        mensajeDeError(error, {
-          sinConexion: t('common:sinConexion.mensaje'),
-          generico: t('detail.failedToDeleteCompetition'),
-        })
-      );
-      setConfirmandoBorrado(false);
-    } finally {
-      setBorrando(false);
-    }
-  };
-
-  const handleEnroll = async (color = null, genero = null, eleccion = null) => {
-    setErrorAlApuntarse(null);
-    setIsProcessing(true);
-    let generoGuardado = false;
-    try {
-      // Antes que la plaza: sin género el servidor la rechaza (#710)
-      if (genero) {
-        await generoParaApuntarse.guardar(genero);
-        generoGuardado = true;
-      }
-      // En una pública se entra directamente, con la franja o su espera
-      // (release social 3, 28 oct 2026)
-      const hecho = await requestEnrollmentUseCase.execute(id, null, {
-        color,
-        roundId: eleccion?.roundId ?? null,
-        waitingList: eleccion?.waiting ?? false,
-      });
-      // Se cierra solo si ha ido bien (#710): cerrarlo antes dejaba un fallo
-      // con cara de éxito
-      setShowEnrollModal(false);
-      customToast.success(
-        t(hecho?.waiting ? 'detail.success.joinedWaitingList' : 'detail.success.enrolled')
-      );
-      setVersionFranjas((n) => n + 1);
-      await loadCompetition();
-    } catch (error) {
-      console.error('Error enrolling:', error);
-      const motivo = MOTIVOS_PARA_NO_APUNTARSE[error?.errorCode];
-      if (motivo) {
-        setErrorAlApuntarse(t(motivo));
-        if (error.errorCode.startsWith('TEE_WINDOW')) setVersionFranjas((n) => n + 1);
-        return;
-      }
-      // Con los equipos formados ya no se entra: se dice y se pone al día
-      if (error?.errorCode === 'TEAMS_FORMED') {
-        setShowEnrollModal(false);
-        customToast.error(t('detail.errors.teamsFormed'));
-        await loadCompetition();
-        return;
-      }
-      // Ya inscrito: no es un error que corregir, la ficha estaba vieja. Se
-      // cierra y se pone al día (CodeRabbit en la #721)
-      if (error?.status === 409) {
-        setShowEnrollModal(false);
-        await loadCompetition();
-        return;
-      }
-      setErrorAlApuntarse(
-        mensajeDeError(error, {
-          sinConexion: tComun('sinConexion.mensaje'),
-          generico: t('detail.failedToEnroll'),
-        })
-      );
-    } finally {
-      setIsProcessing(false);
-      // Al final, aunque la plaza falle: el género ya quedó guardado
-      if (generoGuardado) generoParaApuntarse.refrescar();
-    }
-  };
-
-  const handleApproveEnrollment = async (enrollmentId) => {
-    if (isFull) {
-      customToast.error(t('detail.competitionFull', { max: competition.maxPlayers }));
-      return;
-    }
-    try {
-      // ApproveEnrollmentUseCase expects (competitionId, enrollmentId, teamId?)
-      await approveEnrollmentUseCase.execute(competition.id, enrollmentId);
-      customToast.success(t('detail.enrollmentApproved'));
-      // Con equipos formados, el servidor los ha reiniciado para que entre
-      // (30 oct 2026): la ficha también, no solo la lista (code-review)
-      if (competition.teamsAssigned) {
-        await releerTrasQuitar();
-        return;
-      }
-      // Reload enrollments to update the list
-      const enrollmentsData = await listEnrollmentsUseCase.execute(competition.id);
-      setEnrollments(enrollmentsData);
-    } catch (error) {
-      console.error('Error approving enrollment:', error);
-      // Solo falla así con partidos, que ya no se deshacen (30 oct 2026): se
-      // dice y la ficha, al día
-      if (error?.errorCode === 'TEAMS_FORMED') {
-        customToast.error(t('detail.errors.teamsFormedWithMatches'));
-        await releerTrasQuitar();
-        return;
-      }
-      customToast.error(error.message || t('detail.failedToApprove'));
-    }
-  };
-
-  const handleRejectEnrollment = async (enrollmentId) => {
-    const solicitud = enrollments.find((e) => e.id === enrollmentId);
-    const nombre = solicitud?.userName || t('detail.unknownUser');
-    if (!(await preguntar('reject-enrollment', { destructiva: true, datos: { name: nombre } }))) {
-      return;
-    }
-    try {
-      // RejectEnrollmentUseCase expects (competitionId, enrollmentId)
-      await rejectEnrollmentUseCase.execute(competition.id, enrollmentId);
-      customToast.success(t('detail.enrollmentRejected'));
-      // Reload enrollments to update the list
-      const enrollmentsData = await listEnrollmentsUseCase.execute(competition.id);
-      setEnrollments(enrollmentsData);
-    } catch (error) {
-      console.error('Error rejecting enrollment:', error);
-      customToast.error(error.message || t('detail.failedToReject'));
-    }
-  };
-
-  const handleStartEditHandicap = (enrollment) => {
-    setEditingHandicapId(enrollment.id);
-    setHandicapInput(
-      enrollment.hasCustomHandicap
-        ? String(enrollment.customHandicap)
-        : (enrollment.userHandicap ?? '')
-    );
-  };
-
-  const handleCancelEditHandicap = () => {
-    setEditingHandicapId(null);
-    setHandicapInput('');
-  };
-
-  const handleSaveHandicap = async (enrollmentId) => {
-    const value = parseFloat(String(handicapInput).replace(',', '.'));
-    if (isNaN(value) || value < -10.0 || value > 54.0) {
-      customToast.error(t('detail.invalidHandicap'));
-      return;
-    }
-    setSavingHandicapId(enrollmentId);
-    try {
-      await setCustomHandicapUseCase.execute(competition.id, enrollmentId, value);
-      customToast.success(t('detail.handicapUpdated'));
-      // Con su personalizado ya no le falta: deja de estar marcado (revisor)
-      const suyo = enrollments.find((e) => e.id === enrollmentId)?.userId;
-      setSinHandicap((s) => {
-        const sin = new Set(s);
-        sin.delete(suyo);
-        return sin;
-      });
-      const enrollmentsData = await listEnrollmentsUseCase.execute(competition.id);
-      setEnrollments(enrollmentsData);
-      setEditingHandicapId(null);
-    } catch (error) {
-      console.error('Error setting custom handicap:', error);
-      customToast.error(error.message || t('detail.failedToUpdateHandicap'));
-    } finally {
-      setSavingHandicapId(null);
-    }
-  };
-
-  const handleRevertToRfegHandicap = async (enrollmentId) => {
-    setRevertingHandicapId(enrollmentId);
-    try {
-      await removeCustomHandicapUseCase.execute(competition.id, enrollmentId);
-      customToast.success(t('detail.handicapReverted'));
-      const enrollmentsData = await listEnrollmentsUseCase.execute(competition.id);
-      setEnrollments(enrollmentsData);
-      setEditingHandicapId(null);
-    } catch (error) {
-      console.error('Error reverting custom handicap:', error);
-      customToast.error(error.message || t('detail.failedToRevertHandicap'));
-    } finally {
-      setRevertingHandicapId(null);
-    }
-  };
-
-  // Salieron menos categorías de las pedidas (FE #824, PR 8, caso 9): solo lo
-  // lee el organizador, en la ficha mientras no empiece y en un aviso al cerrar
-  const avisoDeCategorias =
-    competition?.strokePlay && competition.hasTeams === false
-      ? categoriasQueSalen(competition.strokePlay, approvedEnrollments.map((e) => e.category ?? null))
-      : null;
-  const textoDelAvisoDeCategorias = avisoDeCategorias
-    ? t(`detail.fewerCategories.${avisoDeCategorias.motivo}`, { ...avisoDeCategorias, count: avisoDeCategorias.salen })
-    : null;
-
-  // Un Stableford o un Medal en juego o acabado: tiene su general, en su
-  // página, y la ficha pliega lo que ya no se mira (14 oct 2026)
-  const conClasificacion =
-    competition?.hasTeams === false && ['IN_PROGRESS', 'COMPLETED'].includes(competition?.status);
-
-  if (isLoading) {
-    return (
-      <FullScreenLoader texto={t('detail.loadingCompetition')} />
-    );
-  }
-
-  if (!user || !competition) {
-    return null;
-  }
-
-  // User is considered creator if they created the competition OR have CREATOR/ADMIN role
-  const isCreator = competition.creatorId === user.id;
-  const canManage = isCreator || hasCreatorRole || isAdmin;
-  // Cómo se repartieron los equipos DE VERDAD; sin reparto, el configurado
-  // En estilo Ryder el configurado no dice nada —será draft o a mano, al
-  // nombrar capitanes—, y salía «Manual» (#710): hasta que se hace, pendiente
-  // Solo una Ryder tiene equipos y reparto, en su pieza: a un Stableford no se
-  // le enseñan filas de lo que no tiene (FE #791)
-  const conEquipos = competition.hasTeams;
-  // Un Stableford o un Medal (FE #824). Sin el dato, una Ryder: es lo que eran
-  // todas, igual que una competición sin tipo
-  const esStrokePlay = competition.hasTeams === false;
   // La de la Ryder o, en un Stableford o un Medal, su general: con 200
   // participantes no cabe en la ficha (14 oct 2026). Con lo que ya se sabe de
   // ella: la página no tiene que preguntarlo otra vez (/code-review)
@@ -965,307 +201,20 @@ const CompetitionDetail = () => {
         }),
       },
     });
-  const repartoAMostrar =
-    competition.actualTeamAssignment ??
-    (competition.setupMode === 'RYDER_CUP' ? 'PENDING' : competition.teamAssignment);
-  // La configuración se corrige mientras haya inscripciones abiertas (BE #323):
-  // quien invita antes de poner el campo de golf tiene que poder ponerlo después
-  const canEdit = canManage && new CompetitionStatus(competition.status).allowsModifications();
-  // El equipo de cada uno sale del reparto que leyó la agenda (#710)
-  const equipoDe = (userId) => {
-    const reparto = agendaLeida?.teamAssignment;
-    if (reparto?.teamAPlayerIds?.includes(userId)) return competition.team1Name;
-    if (reparto?.teamBPlayerIds?.includes(userId)) return competition.team2Name;
-    return null;
-  };
-  // Capitanes y subcapitanes: su insignia ya dice el equipo
-  const esCapitan = (userId) =>
-    Boolean(userId) &&
-    ['teamA', 'teamB', 'viceTeamA', 'viceTeamB'].some((papel) => competition.captains?.[papel] === userId);
-  // Quién puede y cuándo lo decide el backend con la misma regla que el borrado
-  // (RyderCupAM#347): estado, calendario y rol. Copiar aquí la lista de estados
-  // ofrecería el botón en una cancelada ya jugada, donde siempre falla (FE #667)
-  const canDelete = competition.canDelete === true;
-  // Los que perderían su plaza, sin contar a quien borra: el creador está
-  // inscrito desde que la crea, y contarlo inflaría el aviso
-  const otrosInscritos = approvedEnrollments.filter((e) => e.userId !== user.id).length;
-  const estoyInscrito = approvedEnrollments.some((e) => e.userId === user.id);
-  // Las acciones de la ficha: UNA principal —la que toca ahora— y el resto en
-  // un menú. Antes eran hasta siete botones del mismo peso en seis colores y
-  // el que de verdad tocaba se perdía entre los demás (FE #705)
-  const paso = siguientePasoDeLaCompeticion(competition, {
-    puedeGestionar: canManage,
-    // Sin la lista no se sabe cuántos hay: se sugiere como antes
-    inscritos: inscripcionesSinCargar ? undefined : approvedEnrollments.length,
+
+  const { accionPrincipal, accionesDeGestion, accionesDestructivas } = accionesDelOrganizador({
+    ...ficha,
+    t,
+    id,
+    navigate,
+    competition,
+    isProcessing,
+    numeroDeSesiones,
+    handleStatusChange,
+    handleDelete: cambios.handleDelete,
+    abrirCapitanes: () => setNombrandoCapitanes(true),
+    irALaClasificacion,
   });
-
-  const accionesPosibles = {
-    activate: {
-      id: 'activate',
-      label: t('detail.actions.activate'),
-      icon: Play,
-      onClick: () => handleStatusChange('activate'),
-      disabled: isProcessing,
-      cuando: competition.status === 'DRAFT',
-    },
-    nameCaptains: {
-      id: 'nameCaptains',
-      // Lo decide si LOS HAY, no el estado: en una cerrada sin capitanes
-      // salía «Cambiar capitanes», que es justo lo que no se puede hacer
-      label: t(
-        competition.captains?.teamA && competition.captains?.teamB
-          ? 'detail.actions.changeCaptains'
-          : 'detail.actions.nameCaptains'
-      ),
-      icon: Crown,
-      onClick: () => setNombrandoCapitanes(true),
-      disabled: isProcessing,
-      // Nombrarlos es lo que cierra las inscripciones. Con equipos ya no se
-      // tocan: el servidor lo rechaza, así que no se ofrece
-      cuando:
-        conEquipos &&
-        ['ACTIVE', 'CLOSED'].includes(competition.status) &&
-        !competition.teamsAssigned,
-    },
-    'close-enrollments': {
-      id: 'close-enrollments',
-      label: t('detail.actions.close-enrollments'),
-      icon: Pause,
-      onClick: () => handleStatusChange('close-enrollments'),
-      disabled: isProcessing,
-      // Una Ryder abierta se cierra nombrando a los capitanes, y este botón
-      // solo vuelve con los equipos ya hechos (una reabierta). Un Stableford o
-      // un Medal no tiene capitanes: se cierra aquí (FE #824)
-      cuando: competition.status === 'ACTIVE' && (competition.teamsAssigned || esStrokePlay),
-    },
-    draft: {
-      id: 'draft',
-      label: t('draft.open'),
-      icon: Swords,
-      onClick: () => navigate(`/competitions/${id}/draft`),
-      // Sin los dos capitanes la sala no tiene quién elija, y con los equipos
-      // ya hechos la sala terminó: se ven en la agenda
-      cuando:
-        competition.status === 'CLOSED' &&
-        competition.setupMode === 'RYDER_CUP' &&
-        !competition.teamsAssigned &&
-        Boolean(competition.captains?.teamA && competition.captains?.teamB),
-    },
-    'start-competition': {
-      id: 'start-competition',
-      label: t('detail.actions.start-competition'),
-      icon: Play,
-      onClick: () => handleStatusChange('start'),
-      disabled: isProcessing,
-      // Sin sesiones el servidor lo rechaza (FE #710); lo sabe la agenda, y
-      // mientras no lo ha dicho no se ofrece
-      cuando: competition.status === 'CLOSED' && numeroDeSesiones > 0,
-    },
-    'reopen-enrollments': {
-      id: 'reopen-enrollments',
-      label: t('detail.actions.reopen-enrollments'),
-      icon: Undo2,
-      onClick: () => handleStatusChange('reopen-enrollments'),
-      disabled: isProcessing,
-      cuando: competition.status === 'CLOSED',
-    },
-    complete: {
-      id: 'complete',
-      label: t('detail.actions.complete'),
-      icon: CheckCircle,
-      onClick: () => handleStatusChange('complete'),
-      disabled: isProcessing,
-      cuando: competition.status === 'IN_PROGRESS',
-    },
-    'revert-status': {
-      id: 'revert-status',
-      label: t('detail.actions.revert-status'),
-      icon: Undo2,
-      onClick: () => handleStatusChange('revert-status'),
-      disabled: isProcessing,
-      cuando: competition.status === 'IN_PROGRESS',
-    },
-    'revert-to-in-progress': {
-      id: 'revert-to-in-progress',
-      label: t('detail.actions.revert-to-in-progress'),
-      icon: Undo2,
-      onClick: () => handleStatusChange('revert-to-in-progress'),
-      disabled: isProcessing,
-      cuando: competition.status === 'COMPLETED',
-    },
-    manageSchedule: {
-      id: 'manageSchedule',
-      label: t('detail.actions.manageSchedule'),
-      icon: Calendar,
-      onClick: () => navigate(`/creator/competitions/${id}/schedule`),
-      // Esa pantalla es de la Ryder (formatos, partidos): un stroke play tiene
-      // sus franjas en la ficha, y sus partidas llegan con la PR 6 (FE #824)
-      cuando: !esStrokePlay && competition.status !== 'DRAFT' && competition.status !== 'CANCELLED',
-    },
-    manageInvitations: {
-      id: 'manageInvitations',
-      label: t('detail.actions.manageInvitations'),
-      icon: Mail,
-      onClick: () => navigate(`/creator/competitions/${id}/invitations`),
-      cuando: competition.status !== 'CANCELLED',
-    },
-    edit: {
-      id: 'edit',
-      label: t('detail.actions.edit'),
-      icon: Edit,
-      onClick: () => navigate(`/competitions/${id}/edit`),
-      cuando: canEdit,
-    },
-    leaderboard: {
-      id: 'leaderboard',
-      label: t('detail.actions.leaderboard'),
-      icon: BarChart3,
-      onClick: irALaClasificacion,
-      cuando: competition.status === 'IN_PROGRESS' || competition.status === 'COMPLETED',
-    },
-  };
-
-  const disponibles = Object.values(accionesPosibles).filter((accion) => accion.cuando);
-  const accionPrincipal = disponibles.find((accion) => accion.id === paso) || null;
-  const accionesDeGestion = disponibles.filter((accion) => accion.id !== paso);
-  const accionesDestructivas = [
-    {
-      id: 'cancel',
-      label: t('detail.actions.cancel'),
-      icon: XCircle,
-      onClick: () => handleStatusChange('cancel'),
-      disabled: isProcessing,
-      cuando: !['CANCELLED', 'COMPLETED'].includes(competition.status),
-    },
-    {
-      id: 'delete',
-      label: t('detail.actions.delete'),
-      icon: Trash2,
-      onClick: handleDelete,
-      disabled: isProcessing,
-      // Lo decide el backend con la misma regla que el borrado de verdad: si
-      // se copia aquí la lista de estados, el botón sale en una cancelada ya
-      // jugada, donde siempre falla (FE #667)
-      cuando: canDelete,
-    },
-  ].filter((accion) => accion.cuando);
-
-  // En un stroke play el personalizado se cambia hasta cerrar: al cerrar se fija
-  // (el servidor lo rechaza después). En una Ryder, hasta iniciar
-  const canEditHandicap =
-    canManage &&
-    (esStrokePlay ? ['DRAFT', 'ACTIVE'] : ['DRAFT', 'ACTIVE', 'CLOSED']).includes(competition.status);
-  // Con el hándicap ya fijado (stroke play cerrado), es ese el que se enseña
-  const conFijado = (e) => esStrokePlay && e.fixedHandicap != null;
-  // Un hándicap con un decimal en el idioma de quien mira: «12,3» / «12.3»
-  const unDecimal = (n) => n.toLocaleString(i18n.language, { minimumFractionDigits: 1, maximumFractionDigits: 1 });
-  // Check if competition has reached max players
-  // Quien gestiona tiene la lista entera. Un jugador, desde la release social 2,
-  // solo a sus amigos hasta que se publica: cuenta lo que dice el servidor
-  // Un solo total para todo (cabecera, completa, agenda): nunca menos de las
-  // filas que ve, por si el número aún no está al día (/code-review)
-  const approvedCount = canManage && enrollments.length > 0
-    ? approvedEnrollments.length
-    : Math.max(competition.enrolledCount || 0, approvedEnrollments.length);
-  // Qué ve de los inscritos lo dice el servidor, no se adivina comparando
-  // la lista con el número (/code-review): sus amigos, o nadie (una privada
-  // en la que no está)
-  const soloVeASusAmigos = !canManage && competition.enrolledVisibility === 'FRIENDS';
-  const noVeANadie = !canManage && competition.enrolledVisibility === 'NONE';
-  const listaAMedias = soloVeASusAmigos || noVeANadie;
-  // Con la lista a medias no se sabe qué categorías salieron: se cuentan solo
-  // con la entera, y si no, se dice lo pedido (revisor de la release social 2)
-  const categoriasVistas = listaAMedias ? [] : approvedEnrollments.map((e) => e.category ?? null);
-  // Con una sola categoría no se nombra: «1.ª» en todos no dice nada (pasada, FE #824)
-  const hayVariasCategorias = salenDeLosInscritos(categoriasVistas) > 1;
-  const limitesEnTexto = (ajustes) => ajustes.categoryLimits.map(unDecimal).join(' · ');
-  // Lo que se pidió frente a lo que salió al cerrar (QA del 11 oct 2026): «3
-  // categorías iguales, repartidas: 14,0» eran 2, y con una sola el jugador
-  // seguía viendo los límites pedidos
-  const categoriasAsignadas = categoriasVistas;
-  const salieron = salenDeLosInscritos(categoriasAsignadas);
-  const menosDeLasPedidas = esStrokePlay && competition.strokePlay ? categoriasQueSalen(competition.strokePlay, categoriasAsignadas) : null;
-  const textoDeCategorias = (ajustes) => {
-    if (menosDeLasPedidas && menosDeLasPedidas.salen > 1) {
-      // Los de «iguales» son los repartidos; los escritos a mano no dicen cuáles quedaron
-      const conLimites = ajustes.categoryCount != null && ajustes.categoryLimits.length > 0;
-      return t(conLimites ? 'detail.settings.categoriesCameOutWithLimits' : 'detail.settings.categoriesCameOut', {
-        count: menosDeLasPedidas.pedidas,
-        salen: menosDeLasPedidas.salen,
-        limites: limitesEnTexto(ajustes),
-      });
-    }
-    if (salieron === 1) return t('detail.settings.noCategories');
-    if (ajustes.categoryCount != null) {
-      return t(
-        // Ya repartidas (desde el cierre), no «se reparten al cerrar» (revisor)
-        ajustes.categoryLimits.length > 0 ? 'detail.settings.equalCategoriesSplit' : 'detail.settings.equalCategories',
-        { count: ajustes.categoryCount, limites: limitesEnTexto(ajustes) }
-      );
-    }
-    return ajustes.categoryLimits.length > 0
-      ? t('detail.settings.categoryLimits', { limites: limitesEnTexto(ajustes) })
-      : t('detail.settings.noCategories');
-  };
-
-  // Una programada es un borrador con días de antelación (RyderCupAM#332). En
-  // cuanto abre deja de ser borrador, así que la fecha solo se enseña mientras
-  // espera: una vez abierta ya no dice nada (FE #678)
-  const aperturaProgramada =
-    competition.status === 'DRAFT'
-      ? fechaDeApertura(competition.startDate, competition.enrollmentOpensDaysBefore)
-      : null;
-  const fechaDeAperturaLegible = aperturaProgramada
-    ? new Intl.DateTimeFormat(i18n.language, { day: 'numeric', month: 'long' }).format(
-        aperturaProgramada
-      )
-    : null;
-
-  const isFull = competition.maxPlayers && approvedCount >= competition.maxPlayers;
-
-  // Check for user enrollment from two sources:
-  // 1. From enrollments list (when loaded from detail page)
-  // 2. From competition.enrollment_status (mapped from backend's user_enrollment_status)
-  const userEnrollment = enrollments.find((e) => e.userId === user.id);
-  const hasEnrollment = userEnrollment || competition.enrollment_status;
-  // Con franjas el cupo es de sus plazas: el máximo no quita el botón
-  // (release social 3, revisor)
-  const rondasLeidas = agendaLeida?.rounds ?? [];
-  const conFranjas = esStrokePlay && rondasLeidas.some((r) => r.teeSheet);
-  // Sin la agenda aún, en un stroke play no se sabe si hay franjas: no se quita
-  const bloqueaElMaximo = isFull && !(esStrokePlay && (agendaLeida == null || conFranjas));
-  // Quien solo espera: sin plaza en ninguna franja y con su puesto en una espera
-  // Su puesto como en las franjas: el del servidor o, si no viene, el de la lista
-  const miEspera =
-    esStrokePlay && userEnrollment?.status === 'APPROVED'
-      ? rondasLeidas.find(
-          (r) => r.teeSheet?.myWaitingPosition || r.teeSheet?.waitingIds?.includes(user.id)
-        )
-      : null;
-  const puestoEnEspera = miEspera
-    ? (miEspera.teeSheet.myWaitingPosition ?? miEspera.teeSheet.waitingIds.indexOf(user.id) + 1)
-    : null;
-  const soloEspero =
-    miEspera != null && !rondasLeidas.some((r) => r.teeSheet?.playerIds?.includes(user.id));
-  const franjasParaApuntarse = esStrokePlay ? franjasDeLaAgenda : SIN_FRANJAS;
-
-  // Elegir entre alias y nombre legal solo tiene sentido si (FE #571):
-  // - hay alias: sin él las dos opciones pintan lo mismo,
-  // - la inscripción es la propia y llega de la lista, porque
-  //   `competition.enrollment_status` viene sin `id` y sin él no hay PUT,
-  // - y el nombre se ve en algún sitio: una inscripción rechazada, cancelada o
-  //   retirada no aparece en ninguna pantalla.
-  const NOMBRE_A_LA_VISTA = ['APPROVED', 'REQUESTED', 'INVITED'];
-  const puedeElegirNombre =
-    Boolean(user.alias) &&
-    Boolean(userEnrollment?.id) &&
-    NOMBRE_A_LA_VISTA.includes(userEnrollment.status);
-  const nombreLegal = [user.first_name, user.last_name].filter(Boolean).join(' ');
-
-  // El interruptor es el del ALIAS, no el del nombre real: una competición
-  // muestra el nombre legal salvo que su dueño pida lo contrario, así que de
-  // fábrica sale apagado
-  const usaSuAlias = userEnrollment ? !userEnrollment.useRealName : false;
 
   return (
     <div className={`relative flex h-auto ${PANTALLA_MENOS_BARRA_INFERIOR} w-full flex-col bg-white`}>
@@ -1278,57 +227,23 @@ const CompetitionDetail = () => {
             comportamiento en lugar de quitar ruido (FE #338) */}
         <HeaderAuth user={user} title={competition.name} backTo={backLink} alVolver={vuelveAtras ? volver : undefined} />
 
-        <ConfirmModal
-          isOpen={Boolean(pregunta)}
-          title={pregunta ? t(`detail.confirmDialogs.${pregunta.accion}.title`, pregunta.datos) : ''}
-          message={pregunta ? t(`detail.confirmDialogs.${pregunta.accion}.body`, pregunta.datos) : ''}
-          confirmText={pregunta ? t(`detail.confirmDialogs.${pregunta.accion}.confirm`) : ''}
-          cancelText={pregunta ? t(`detail.confirmDialogs.${pregunta.accion}.keep`) : ''}
-          onConfirm={() => contestar(true)}
-          onCancel={() => contestar(false)}
-          isDestructive={pregunta?.destructiva}
-        />
-
-        <ConfirmModal
-          isOpen={confirmandoBorrado}
-          title={t('detail.deleteModal.title')}
-          message={
-            inscripcionesSinCargar
-              ? t('detail.deleteModal.unknownOthers')
-              : estoyInscrito
-                ? otrosInscritos === 0
-                  ? t('detail.deleteModal.nobodyElse')
-                  : t('detail.deleteModal.othersLosePlace', { count: otrosInscritos })
-                // Quien borra no está dentro (un admin): «más» no encaja (FE #728)
-                : otrosInscritos === 0
-                  ? t('detail.deleteModal.nobodyEnrolled')
-                  : t('detail.deleteModal.playersLosePlace', { count: otrosInscritos })
-          }
-          confirmText={t('detail.deleteModal.confirm')}
-          cancelText={t('detail.deleteModal.keep')}
-          onConfirm={confirmarBorrado}
-          onCancel={() => setConfirmandoBorrado(false)}
-          isDestructive
-          isLoading={borrando}
-        />
-
-        <NameCaptainsModal
-          // Montado de nuevo al abrir: arranca con los capitanes de ahora
-          key={nombrandoCapitanes ? 'capitanes-abierto' : 'capitanes-cerrado'}
-          isOpen={nombrandoCapitanes}
-          players={approvedEnrollments.map((e) => ({
-            userId: e.userId,
-            name: e.userName || t('detail.unknownUser'),
-            // El que cuenta aquí: el propio de la competición, si se le puso
-            handicap: e.hasCustomHandicap ? e.customHandicap : (e.userHandicap ?? null),
-          }))}
-          teamNames={{ a: competition.team1Name, b: competition.team2Name }}
-          current={competition.captains}
-          closesEnrollment={competition.status === 'ACTIVE'}
-          playersUnavailable={inscripcionesSinCargar}
-          onConfirm={confirmarCapitanes}
-          onClose={() => setNombrandoCapitanes(false)}
-          isLoading={guardandoCapitanes}
+        <DialogosDeLaFicha
+          t={t}
+          pregunta={pregunta}
+          contestar={contestar}
+          confirmandoBorrado={confirmandoBorrado}
+          inscripcionesSinCargar={inscripcionesSinCargar}
+          estoyInscrito={ficha.estoyInscrito}
+          otrosInscritos={ficha.otrosInscritos}
+          confirmarBorrado={cambios.confirmarBorrado}
+          alCancelarBorrado={() => setConfirmandoBorrado(false)}
+          borrando={borrando}
+          nombrandoCapitanes={nombrandoCapitanes}
+          approvedEnrollments={approvedEnrollments}
+          competition={competition}
+          confirmarCapitanes={cambios.confirmarCapitanes}
+          alCerrarCapitanes={() => setNombrandoCapitanes(false)}
+          guardandoCapitanes={guardandoCapitanes}
         />
 
         <div className="px-4 md:px-40 flex flex-1 justify-center py-5">
@@ -1345,136 +260,15 @@ const CompetitionDetail = () => {
                 <span className="text-sm font-medium">{backText}</span>
               </button>
 
-              <div className="bg-primary-50 rounded-xl border border-primary-200 p-6 shadow-md">
-                <div className="flex flex-wrap justify-between items-start gap-4 mb-4">
-                  <div className="flex-1">
-                    <h1 className="hidden md:block text-gray-900 text-3xl md:text-4xl font-bold mb-2">
-                      {competition.name}
-                    </h1>
-                    <div className="flex flex-wrap items-center gap-3">
-                      <span
-                        className={`px-3 py-1 rounded-full text-xs font-semibold ${getStatusColor(
-                          competition.status
-                        )}`}
-                      >
-                        {competition.status && t(`status.${competition.status}`)}
-                      </span>
-                      {/* Junto al estado: quien la mira tiene que saber si le
-                          pueden encontrar o si entra solo quien es invitado (FE #664) */}
-                      <span
-                        data-testid="visibilidad-competicion"
-                        className="px-3 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-700"
-                      >
-                        {t(
-                          competition.visibility === 'PUBLIC'
-                            ? 'detail.visibilityPublic'
-                            : 'detail.visibilityPrivate'
-                        )}
-                      </span>
-                      {isCreator && (
-                        <div className="flex items-center gap-1.5 text-accent text-sm font-medium">
-                          <Shield className="w-4 h-4" />
-                          <span>{t('detail.creator')}</span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-
-                {/* La sala de draft, para TODO el grupo y no solo para los dos
-                    capitanes: la gracia es que la ceremonia se vea en directo
-                    desde el móvil de cada uno (FE #653). Se ofrece cuando ya hay
-                    a quién elegir y todavía no hay equipos: después la sala ya
-                    terminó, y los equipos se ven en la agenda.
-
-                    A quien organiza no se le repite aquí: para él la sala es el
-                    siguiente paso y ya la ofrece el botón de arriba (FE #705) */}
-                {!canManage &&
-                  competition.setupMode === 'RYDER_CUP' &&
-                  competition.status === 'CLOSED' &&
-                  !competition.teamsAssigned &&
-                  competition.captains?.teamA &&
-                  competition.captains?.teamB && (
-                  <Link
-                    to={`/competitions/${competition.id}/draft`}
-                    data-testid="ir-a-la-sala-de-draft"
-                    className="mb-4 flex items-center justify-center gap-2 rounded-lg bg-green-600 px-4 py-3 font-semibold text-white shadow-md transition-colors hover:bg-green-700"
-                  >
-                    <Swords className="w-4 h-4" />
-                    <span>{t('draft.open')}</span>
-                  </Link>
-                )}
-
-                {/* Quick Stats */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="flex items-center gap-2 text-gray-700">
-                    <Calendar className="w-5 h-5" />
-                    <div>
-                      <p className="text-xs text-gray-500">{t('detail.dates')}</p>
-                      <p className="text-sm font-medium">
-                        {formatDateRange(competition.startDate, competition.endDate, i18n.language)}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2 text-gray-700">
-                    <Users className="w-5 h-5" />
-                    <div>
-                      <p className="text-xs text-gray-500">{t('detail.players')}</p>
-                      <p className="text-sm font-medium">
-                        {approvedCount} /{' '}
-                        {competition.maxPlayers || '∞'}
-                      </p>
-                    </div>
-                  </div>
-                  {/* Para todos, no solo el creador: quien la encuentra al explorar
-                      ve «Borrador» sin botón y tiene que saber cuándo podrá entrar */}
-                  {fechaDeAperturaLegible && (
-                    <div className="flex items-center gap-2 text-gray-700">
-                      <CalendarClock className="w-5 h-5" />
-                      <div>
-                        <p className="text-xs text-gray-500">{t('detail.enrollment')}</p>
-                        <p className="text-sm font-medium" data-testid="apertura-programada">
-                          {t('detail.enrollmentOpensOn', { fecha: fechaDeAperturaLegible })}
-                        </p>
-                      </div>
-                    </div>
-                  )}
-                  {competition.creator && (
-                    <div className="flex items-center gap-2 text-gray-700">
-                      <Shield className="w-5 h-5" />
-                      <div>
-                        <p className="text-xs text-gray-500">{t('detail.organizedBy')}</p>
-                        <p className="text-sm font-medium">
-                          {competition.creator.firstName} {competition.creator.lastName}
-                        </p>
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                {/* Countries Badges */}
-                {competition.countries && competition.countries.length > 0 && (
-                  <div className="mt-4 pt-4 border-t border-primary-200">
-                    <div className="flex items-start gap-2">
-                      <MapPin className="w-5 h-5 text-gray-700 mt-0.5" />
-                      <div className="flex-1">
-                        <p className="text-xs text-gray-500 mb-2">{t('detail.countries')}</p>
-                        <div className="flex flex-wrap gap-2">
-                          {competition.countries.map((country, index) => (
-                            <span
-                              key={index}
-                              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-primary/10 text-primary rounded-full text-sm font-medium border border-primary/20"
-                            >
-                              <CountryFlag countryCode={country.code} className="w-5 h-5" />
-                              <span>{formatCountryName(country, i18n.language)}</span>
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
+              <ResumenDeLaCompeticion
+                competition={competition}
+                t={t}
+                i18n={i18n}
+                isCreator={isCreator}
+                canManage={canManage}
+                approvedCount={approvedCount}
+                fechaDeAperturaLegible={fechaDeAperturaLegible}
+              />
             </div>
 
             {/* Mi invitación pendiente: aceptar o rechazar aquí mismo, sin pasar
@@ -1484,417 +278,75 @@ const CompetitionDetail = () => {
 
             {/* Action Buttons */}
             {canManage && (
-              <div
-                className="p-4"
-              >
-                <AccionesDeLaFicha
-                  principal={accionPrincipal}
-                  acciones={accionesDeGestion}
-                  destructivas={accionesDestructivas}
-                  t={t}
-                />
-
-                {competition.status === 'DRAFT' && (
-                  // Invitar abre el torneo, y eso no se adivina mirando el botón.
-                  // También una programada: la política solo mira el estado
-                  <p
-                    className="mt-3 w-full text-sm text-gray-600"
-                    data-testid="invitar-abre-inscripciones"
-                  >
-                    {fechaDeAperturaLegible
-                      ? t('detail.invitingOpensScheduled', { fecha: fechaDeAperturaLegible })
-                      : t('detail.invitingOpensEnrollment')}
-                  </p>
-                )}
-              </div>
+              <GestionDeLaFicha
+                accionPrincipal={accionPrincipal}
+                accionesDeGestion={accionesDeGestion}
+                accionesDestructivas={accionesDestructivas}
+                competition={competition}
+                fechaDeAperturaLegible={fechaDeAperturaLegible}
+                t={t}
+              />
             )}
 
-            {/* La clasificación, para todo el mundo. A quien organiza NO se le
-                repite: en un torneo en juego es su acción principal, y
-                ofrecerla dos veces es lo que venía a arreglar el FE #705 */}
-            {!canManage &&
-              (competition.status === 'IN_PROGRESS' || competition.status === 'COMPLETED') && (
-              <div
-                className="p-4"
-              >
-                <button
-                  onClick={irALaClasificacion}
-                  className="flex items-center justify-center gap-2 w-full px-6 py-3 bg-teal-600 text-white rounded-lg font-medium hover:bg-teal-700 transition-colors shadow-md"
-                >
-                  <BarChart3 className="w-5 h-5" />
-                  <span>{t('detail.actions.leaderboard')}</span>
-                </button>
-              </div>
-            )}
-
-            {/* View Schedule Button - For enrolled players (not creators/admins) */}
-            {!canManage && !esStrokePlay && competition.status !== 'DRAFT' && competition.status !== 'CANCELLED' &&
-              (userEnrollment?.status === 'APPROVED' || competition.enrollment_status === 'APPROVED') && (
-              <div
-                className="p-4"
-              >
-                <button
-                  onClick={() => navigate(`/competitions/${id}/schedule`)}
-                  className="flex items-center justify-center gap-2 w-full px-6 py-3 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 transition-colors shadow-md"
-                >
-                  <Calendar className="w-5 h-5" />
-                  <span>{t('detail.actions.viewSchedule')}</span>
-                </button>
-              </div>
-            )}
-
-            {/* Pedir plaza: abierta, pública, sin estar ya dentro ni ser quien la
-                creó, sin invitación pendiente, y con sitio. En una privada se entra por invitación, y el
-                servidor lo rechaza (FE #734) */}
-            {!isCreator &&
-              competition.status === 'ACTIVE' &&
-              competition.visibility === 'PUBLIC' &&
-              !hasEnrollment &&
-              // Con invitación pendiente, el cuadro: aceptarla ya inscribe
-              // (decidido el 27 oct)
-              !competition.myPendingInvitation &&
-              // Con los equipos formados no entra nadie por su cuenta (29 oct 2026)
-              !competition.teamsAssigned &&
-              !bloqueaElMaximo && (
-              <div
-                className="p-4"
-              >
-                <button
-                  onClick={() => {
-                    setErrorAlApuntarse(null);
-                    setShowEnrollModal(true);
-                  }}
-                  disabled={isProcessing}
-                  className="flex items-center justify-center gap-2 w-full px-6 py-3 bg-primary text-white rounded-lg font-medium hover:bg-primary/90 transition-colors shadow-md disabled:opacity-50"
-                >
-                  <UserPlus className="w-5 h-5" />
-                  <span>{t('detail.actions.request-to-join')}</span>
-                </button>
-              </div>
-            )}
-
-            {!isCreator &&
-              competition.status === 'ACTIVE' &&
-              competition.visibility === 'PUBLIC' &&
-              !hasEnrollment &&
-              !competition.myPendingInvitation &&
-              competition.teamsAssigned && (
-              <p className="px-4 pt-4 text-sm text-gray-600">{t('detail.teamsFormed.closed')}</p>
-            )}
+            <AccesosDelJugador
+              {...ficha}
+              competition={competition}
+              t={t}
+              isProcessing={isProcessing}
+              irALaClasificacion={irALaClasificacion}
+              alVerCalendario={() => navigate(`/competitions/${id}/schedule`)}
+              alPedirPlaza={() => {
+                setErrorAlApuntarse(null);
+                setShowEnrollModal(true);
+              }}
+            />
 
             {/* User Enrollment Status */}
-            {hasEnrollment && (
-              <div
-                className="p-4"
-              >
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                  <div className="flex items-center gap-2">
-                    <AlertCircle className="w-5 h-5 text-blue-600" />
-                    <span className="text-blue-900 font-medium">{t('detail.enrollmentStatus')}</span>
-                    {soloEspero ? (
-                      <span
-                        data-testid="estado-en-espera"
-                        className="px-3 py-1 rounded-full text-xs font-semibold bg-amber-100 text-amber-800"
-                      >
-                        {t('detail.waitingListStatus', {
-                          position: puestoEnEspera,
-                          time: miEspera.teeSheet.firstTeeTime,
-                          day: diaCorto(miEspera.roundDate, i18n?.language),
-                        })}
-                      </span>
-                    ) : (
-                      <span
-                        className={`px-3 py-1 rounded-full text-xs font-semibold ${getEnrollmentStatusColor(
-                          userEnrollment?.status || competition.enrollment_status
-                        )}`}
-                      >
-                        {(userEnrollment?.status || competition.enrollment_status) &&
-                          etiquetaDeInscripcion(t, userEnrollment?.status || competition.enrollment_status, user?.gender)}
-                      </span>
-                    )}
-                  </div>
-
-                  {/* No sale por su cuenta: quien quita es el organizador (29 oct 2026) */}
-                  {!isCreator &&
-                    competition.teamsAssigned &&
-                    (userEnrollment?.status || competition.enrollment_status) === 'APPROVED' && (
-                    <p className="mt-2 text-sm text-blue-900">{t('detail.teamsFormed.enrolled')}</p>
-                  )}
-
-                  {puedeElegirNombre && (
-                    <div className="mt-3 pt-3 border-t border-blue-200">
-                      <div className="flex items-center justify-between gap-3">
-                        <span id="name-preference-label" className="text-blue-900 font-medium text-sm">
-                          {t('detail.namePreference.label')}
-                        </span>
-                        <button
-                          type="button"
-                          role="switch"
-                          aria-checked={usaSuAlias}
-                          aria-labelledby="name-preference-label"
-                          aria-describedby="name-preference-help"
-                          disabled={savingNamePreference}
-                          onClick={() =>
-                            handleToggleNamePreference(userEnrollment.id, usaSuAlias)
-                          }
-                          className={`relative w-11 h-6 shrink-0 rounded-full transition-colors disabled:opacity-50 ${
-                            usaSuAlias ? 'bg-primary' : 'bg-gray-300'
-                          }`}
-                        >
-                          <span
-                            className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform ${
-                              usaSuAlias ? 'translate-x-5' : ''
-                            }`}
-                          />
-                        </button>
-                      </div>
-                      <p id="name-preference-help" className="text-blue-800 text-sm mt-2">
-                        {usaSuAlias
-                          ? t('detail.namePreference.helpUsingAlias', {
-                              realName: nombreLegal,
-                              alias: user.alias,
-                            })
-                          : t('detail.namePreference.helpUsingRealName', {
-                              realName: nombreLegal,
-                              alias: user.alias,
-                            })}
-                      </p>
-                      <p className="text-blue-700 text-sm mt-1">
-                        {t('detail.namePreference.visibility')}
-                      </p>
-                    </div>
-                  )}
-                </div>
-              </div>
+            {ficha.hasEnrollment && (
+              <MiInscripcion
+                {...ficha}
+                competition={competition}
+                user={user}
+                // El género, de la sesión: sin red la copia no lo guarda y la
+                // etiqueta sale neutra (fase 3)
+                generoDelUsuario={user?.gender}
+                t={t}
+                i18n={i18n}
+                savingNamePreference={savingNamePreference}
+                handleToggleNamePreference={inscripciones.handleToggleNamePreference}
+              />
             )}
 
             {/* Competition Details */}
-            <div
-              className="p-4"
-            >
-              {/* En juego o acabado, plegada: lo que se mira es la clasificación y las partidas */}
-              {/* Algo menor en el móvil: a 360 px partía en dos líneas (QA, FE #865-5) */}
-              <Plegable
-                abiertoAlPrincipio={!conClasificacion}
-                claseDelTitulo="text-base sm:text-lg"
-                titulo={
-                  <>
-                    <Settings className="w-5 h-5 text-primary" />
-                    {t('detail.settings.title')}
-                  </>
-                }
-              >
+            <AjustesDeLaCompeticion {...ficha} competition={competition} t={t} conClasificacion={conClasificacion} />
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {conEquipos && (
-                    <>
-                      <div>
-                        <span className="text-gray-500 text-sm">{t('detail.settings.teamOne')}</span>
-                        <p className="text-gray-900 font-medium">{competition.team1Name}</p>
-                      </div>
-                      <div>
-                        <span className="text-gray-500 text-sm">{t('detail.settings.teamTwo')}</span>
-                        <p className="text-gray-900 font-medium">{competition.team2Name}</p>
-                      </div>
-                    </>
-                  )}
-                  <div>
-                    <span className="text-gray-500 text-sm">{t('detail.settings.playMode')}</span>
-                    {/* Salía «HANDICAP»: el valor del backend tal cual, en
-                        mayúsculas y en inglés, en una pantalla en español */}
-                    <p className="text-gray-900 font-medium">
-                      {competition.playMode
-                        ? t(`create.${String(competition.playMode).toLowerCase()}`, {
-                            defaultValue: competition.playMode,
-                          })
-                        : ''}
-                    </p>
-                  </div>
-                  {/* Qué torneo es y su modalidad (FE #791). Con respaldo: un
-                      tipo que el backend añada mañana sale con su nombre */}
-                  {competition.tournamentType && (
-                    <div>
-                      <span className="text-gray-500 text-sm">{t('detail.settings.tournamentType')}</span>
-                      <p className="text-gray-900 font-medium">
-                        {t(`create.type.${competition.tournamentType}.title`, {
-                          defaultValue: competition.tournamentType,
-                        })}
-                        {competition.modality &&
-                          ` · ${t(`create.modality.${competition.modality}`, {
-                            defaultValue: competition.modality,
-                          })}`}
-                      </p>
-                    </div>
-                  )}
-                  {/* Los ajustes de un Stableford o un Medal: solo se veían al
-                      editarla (FE #824, PR 5) */}
-                  {esStrokePlay && competition.strokePlay && (
-                    <div data-testid="ajustes-del-torneo" className="contents">
-                      <div data-testid="ajuste-categorias">
-                        <span className="text-gray-500 text-sm">{t('detail.settings.categories')}</span>
-                        <p className="text-gray-900 font-medium">{textoDeCategorias(competition.strokePlay)}</p>
-                      </div>
-                      <div data-testid="ajuste-jornadas">
-                        <span className="text-gray-500 text-sm">{t('detail.settings.matchdaysLabel')}</span>
-                        <p className="text-gray-900 font-medium">
-                          {t('detail.settings.matchdays', { count: competition.strokePlay.maxMatchdaysPerPlayer })}
-                        </p>
-                      </div>
-                      <div data-testid="ajuste-general">
-                        <span className="text-gray-500 text-sm">{t('detail.settings.overallLabel')}</span>
-                        <p className="text-gray-900 font-medium">
-                          {t(`detail.settings.overall.${competition.strokePlay.overallStanding}`)}
-                        </p>
-                      </div>
-                    </div>
-                  )}
-                  {/* El modo elegido al crearla no salía en ningún sitio (#710) */}
-                  {competition.setupMode && (
-                    <div>
-                      <span className="text-gray-500 text-sm">{t('detail.settings.setupMode')}</span>
-                      <p className="text-gray-900 font-medium">
-                        {t(`create.setupMode.${competition.setupMode}.title`, {
-                          defaultValue: competition.setupMode,
-                        })}
-                      </p>
-                    </div>
-                  )}
-                  {conEquipos && (
-                    <div>
-                      <span className="text-gray-500 text-sm">{t('detail.settings.teamAssignment')}</span>
-                      {/* Idem, y con respaldo: un modo que el backend añada
-                          mañana sale con su nombre, no con la clave */}
-                      <p className="text-gray-900 font-medium">
-                        {repartoAMostrar
-                          ? t(`detail.settings.assignment.${repartoAMostrar}`, {
-                              defaultValue: repartoAMostrar,
-                            })
-                          : ''}
-                      </p>
-                    </div>
-                  )}
-                  <div>
-                    <span className="text-gray-500 text-sm">{t('detail.settings.maxPlayingHandicap')}</span>
-                    {competition.maxPlayingHandicap != null ? (
-                      <p className="text-gray-900 font-medium">{competition.maxPlayingHandicap}</p>
-                    ) : (
-                      <p className="text-gray-500 font-medium italic">{t('detail.settings.maxPlayingHandicapNone')}</p>
-                    )}
-                  </div>
-                  <div>
-                    <span className="text-gray-500 text-sm">{t('detail.settings.created')}</span>
-                    <p className="text-gray-900 font-medium">
-                      {new Date(competition.createdAt).toLocaleDateString()}
-                    </p>
-                  </div>
-                </div>
-              </Plegable>
-            </div>
+            <PanelesDelOrganizador
+              competition={competition}
+              t={t}
+              canManage={canManage}
+              isProcessing={isProcessing}
+              releerHandicaps={releerHandicaps}
+              releyendoTrasCerrar={releyendoTrasCerrar}
+              textoDelAvisoDeCategorias={textoDelAvisoDeCategorias}
+              leeSiTerminar={leeSiTerminar}
+              claveDeFranjas={claveDeFranjas}
+              cierre={cierre}
+              handleStatusChange={handleStatusChange}
+            />
 
-            {/* Los hándicaps del organizador, desde el cierre (FE #824, PR 5):
-                cómo fue la última actualización con la RFEG, el botón y la
-                programada. La ventana solo le llega al organizador */}
-            {canManage &&
-              competition.handicapUpdateWindow &&
-              ['CLOSED', 'IN_PROGRESS'].includes(competition.status) && (
-                <div className="p-4">
-                  <HandicapsDeLaCompeticion
-                    competitionId={competition.id}
-                    handicapUpdate={competition.handicapUpdate}
-                    handicapUpdateWindow={competition.handicapUpdateWindow}
-                    onReleer={releerHandicaps}
-                  />
-                </div>
-              )}
-
-            {/* Salieron menos categorías: al organizador, hasta que empiece (PR 8) */}
-            {canManage && competition.status === 'CLOSED' && !releyendoTrasCerrar && textoDelAvisoDeCategorias && (
-              <div className="px-4 pt-4">
-                <p data-testid="aviso-categorias" role="status" className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
-                  {textoDelAvisoDeCategorias}
-                </p>
-              </div>
-            )}
-
-            {leeSiTerminar && claveDeFranjas && cierre.clave === claveDeFranjas && cierre.cerradas && (
-              <div className="px-4 pt-4">
-                <div data-testid="terminar-competicion" role="status" className="flex flex-wrap items-center gap-2 rounded-lg border border-green-200 bg-green-50 p-3 text-sm text-green-900">
-                  <span className="w-full">{t('detail.allWindowsClosed')}</span>
-                  <button
-                    type="button"
-                    disabled={isProcessing}
-                    onClick={() => handleStatusChange('complete')}
-                    className="min-h-11 rounded-lg bg-primary px-4 font-semibold text-white disabled:opacity-50"
-                  >
-                    {t('detail.actions.complete')}
-                  </button>
-                </div>
-              </div>
-            )}
-
-
-            {/* La agenda: el torneo ES su agenda, a la vista de todos, y el
-                organizador la cambia aquí mismo (FE #654) */}
-            <div className="p-4" data-testid="seccion-agenda">
-              {/* Un Stableford o un Medal tiene franjas con su hoja de salidas, no
-                  sesiones con formato (FE #824). Se tocan hasta iniciar: después
-                  el servidor lo rechaza */}
-              {esStrokePlay ? (
-                <FranjasDeLaCompeticion
-                  soloAmigos={listaAMedias}
-                  competitionId={competition.id}
-                  startDate={competition.startDate}
-                  endDate={competition.endDate}
-                  canManage={canManage && ['DRAFT', 'ACTIVE', 'CLOSED'].includes(competition.status)}
-                  maxPlayers={competition.maxPlayers}
-                  // «Caben N de los M», solo mientras se apunta gente (FE #856)
-                  inscripcionesAbiertas={['DRAFT', 'ACTIVE'].includes(competition.status)}
-                  // Las plazas (PR 4): el jugador elige con las inscripciones
-                  // abiertas; el organizador coloca y mueve hasta iniciar, y
-                  // quita solo con ellas abiertas
-                  userId={user.id}
-                  genero={user.gender}
-                  // Con una sola categoría no se nombra (QA del 11 oct 2026)
-                  miCategoria={salieron > 1 ? (approvedEnrollments.find((e) => e.userId === user.id)?.category ?? null) : null}
-                  estoyInscrito={estoyInscrito}
-                  puedeElegir={competition.status === 'ACTIVE'}
-                  maxMatchdaysPerPlayer={competition.strokePlay?.maxMatchdaysPerPlayer}
-                  inscritos={approvedEnrollments.map((e) => ({
-                    userId: e.userId,
-                    userName: e.userName || t('detail.unknownUser'),
-                  }))}
-                  puedeColocar={canManage && ['DRAFT', 'ACTIVE', 'CLOSED'].includes(competition.status)}
-                  puedeQuitar={canManage && competition.status === 'ACTIVE'}
-                  version={`${competition.updatedAt}|${competition.status}|${versionFranjas}`}
-                  versionCampos={versionCampos}
-                  onAgenda={recibirAgenda}
-                  irASinFranja={irASinFranja}
-                  // Las partidas (PR 6): existen desde el cierre y se siguen
-                  // viendo acabada, sin nada que cambiar (Agustín, 11 oct);
-                  // hasta cuándo se cambian lo dice el servidor (la 1.ª salida)
-                  verPartidas={['CLOSED', 'IN_PROGRESS', 'COMPLETED'].includes(competition.status)}
-                  // Verlas y cambiarlas son dos cosas: acabada, quien organiza
-                  // y no juega las sigue viendo (CodeRabbit)
-                  puedeVerPartidas={canManage}
-                  organizaPartidas={canManage && competition.status !== 'COMPLETED'}
-                  onCambioEnPartidas={() => setVersionDePartidas((n) => n + 1)}
-                />
-              ) : (
-              <AgendaDeLaCompeticion
-                competitionId={competition.id}
-                startDate={competition.startDate}
-                endDate={competition.endDate}
-                // Terminada o cancelada ya no se toca: el servidor lo rechaza
-                canManage={canManage && !['COMPLETED', 'CANCELLED'].includes(competition.status)}
-                jugadores={canManage ? approvedEnrollments.length : approvedCount}
-                // Cuando cambia la competición —estado, equipos— se vuelve a leer
-                version={`${competition.updatedAt}|${competition.status}|${competition.teamsAssigned}`}
-                // Y sus campos, cuando cambian en la sección de abajo (FE #715)
-                versionCampos={versionCampos}
-                onAgenda={recibirAgenda}
-              />
-              )}
-            </div>
+            <AgendaDeLaFicha
+              {...ficha}
+              competition={competition}
+              user={user}
+              genero={user.gender}
+              t={t}
+              approvedEnrollments={approvedEnrollments}
+              versionFranjas={versionFranjas}
+              versionCampos={versionCampos}
+              recibirAgenda={recibirAgenda}
+              irASinFranja={irASinFranja}
+              setVersionDePartidas={setVersionDePartidas}
+            />
 
             {/* Golf Courses Section */}
             <div>
@@ -1906,308 +358,42 @@ const CompetitionDetail = () => {
             </div>
 
             {/* Approved Players Section - Visible to all authenticated users */}
-            <div
-              className="p-4"
-            >
-              <Plegable
-                abiertoAlPrincipio={!conClasificacion}
-                claseDelTitulo="text-base sm:text-lg"
-                titulo={
-                  <>
-                    <Users className="w-5 h-5 flex-none text-green-600" />
-                    <TituloConNumero
-                      texto={t('detail.approvedPlayers')}
-                      numero={canManage ? approvedEnrollments.length : approvedCount}
-                    />
-                  </>
-                }
-              >
-
-                {listaAMedias && (
-                  <p className="mb-3 text-sm text-gray-600">
-                    {t(noVeANadie ? 'detail.onlyParticipantsSee' : 'detail.onlyFriendsVisible')}
-                  </p>
-                )}
-                {approvedEnrollments.length === 0 ? (
-                  !listaAMedias && (
-                    <div className="text-center py-8 text-gray-500">
-                      <Users className="w-12 h-12 mx-auto mb-2 opacity-50" />
-                      <p>{t('detail.noApprovedPlayers')}</p>
-                    </div>
-                  )
-                ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    {[...approvedEnrollments]
-                      .sort((a, b) => {
-                        // Un stroke play cerrado: por hándicap fijado, que es también
-                        // el orden de las categorías (salen de él) (FE #824, PR 5).
-                        // Los que no lo tienen, detrás: una sola regla, para que el
-                        // orden no dependa de con quién se compara (/code-review)
-                        if (conFijado(a) || conFijado(b)) {
-                          if (!conFijado(b)) return -1;
-                          if (!conFijado(a)) return 1;
-                          return a.fixedHandicap - b.fixedHandicap;
-                        }
-                        // Sort by team first, then by handicap
-                        if (a.team && b.team && a.team !== b.team) {
-                          return a.team.localeCompare(b.team);
-                        }
-                        return (a.userHandicap || 999) - (b.userHandicap || 999);
-                      })
-                      .map((enrollment) => (
-                        <div
-                          key={enrollment.id}
-                          data-testid={`aprobado-${enrollment.userId}`}
-                          data-sin-handicap={sinHandicap.has(enrollment.userId) || undefined}
-                          className="flex items-center justify-between p-4 border border-gray-200 rounded-lg bg-green-50 hover:bg-green-100 transition-colors"
-                        >
-                          {/* `min-w-0`: sin él, la etiqueta de capitán con el nombre
-                              largo de un equipo estiraba la tarjeta y la ficha
-                              entera se salía por la derecha a 360 px (FE #692) */}
-                          <div className="flex-1 min-w-0">
-                            <p className="text-gray-900 font-semibold">
-                              {enrollment.userName || t('detail.unknownUser')}
-                            </p>
-                            <CaptainBadge
-                              userId={enrollment.userId}
-                              captains={competition.captains}
-                              teamNames={{ a: competition.team1Name, b: competition.team2Name }}
-                            />
-                            {/* Con el reparto hecho, el equipo de cada uno: sin esto
-                                solo los capitanes lo decían (#710). El capitán ya
-                                lo dice con su insignia */}
-                            {equipoDe(enrollment.userId) && !esCapitan(enrollment.userId) && (
-                              <span
-                                data-testid="equipo-del-aprobado"
-                                className="inline-flex mt-1 px-2 py-0.5 rounded-full bg-gray-100 text-gray-700 text-xs font-medium max-w-full"
-                              >
-                                <span className="truncate min-w-0">{equipoDe(enrollment.userId)}</span>
-                              </span>
-                            )}
-                            {/* Que se vea a quién le falta, no solo en un atributo (revisor) */}
-                            {sinHandicap.has(enrollment.userId) && (
-                              <span className="inline-flex mt-1 px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 text-xs font-semibold">
-                                {t('detail.missingHandicapBadge')}
-                              </span>
-                            )}
-                            <div className="flex items-center gap-2 mt-1">
-                              {editingHandicapId === enrollment.id ? (
-                                <div className="flex flex-wrap items-center gap-1.5">
-                                  <CampoDeHandicap
-                                    aria-label={t('detail.editHandicap')}
-                                    value={handicapInput}
-                                    onChange={setHandicapInput}
-                                    autoFocus
-                                    className="w-20 px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-                                  />
-                                  <button
-                                    type="button"
-                                    onClick={() => handleSaveHandicap(enrollment.id)}
-                                    disabled={savingHandicapId === enrollment.id}
-                                    className="text-green-600 hover:text-green-800 disabled:opacity-50"
-                                    title={t('detail.saveHandicap')}
-                                  >
-                                    <CheckCircle className="w-4 h-4" />
-                                  </button>
-                                  <button
-                                    type="button"
-                                    onClick={handleCancelEditHandicap}
-                                    disabled={savingHandicapId === enrollment.id || revertingHandicapId === enrollment.id}
-                                    className="text-gray-400 hover:text-gray-600 disabled:opacity-50"
-                                    title={t('detail.cancelHandicap')}
-                                  >
-                                    <XCircle className="w-4 h-4" />
-                                  </button>
-                                  {enrollment.hasCustomHandicap && enrollment.userCountryCode === 'ES' && (
-                                    <button
-                                      type="button"
-                                      onClick={() => handleRevertToRfegHandicap(enrollment.id)}
-                                      disabled={savingHandicapId === enrollment.id || revertingHandicapId === enrollment.id}
-                                      className="text-blue-600 hover:text-blue-800 disabled:opacity-50"
-                                      title={t('detail.revertToRfegHandicap')}
-                                    >
-                                      <Undo2 className="w-4 h-4" />
-                                    </button>
-                                  )}
-                                </div>
-                              ) : (
-                                <>
-                                  {conFijado(enrollment) ? (
-                                    <span data-testid={`fijado-${enrollment.userId}`} className="text-green-700 text-sm font-medium">
-                                      {t(enrollment.category != null && hayVariasCategorias ? 'detail.fixedHandicap' : 'detail.fixedHandicapNoCategory', {
-                                        handicap: formatoDeIndice(enrollment.fixedHandicap, i18n.language),
-                                        categoria: enrollment.category,
-                                      })}
-                                    </span>
-                                  ) : enrollment.hasCustomHandicap ? (
-                                    <span className="text-amber-700 text-sm font-medium">
-                                      {t('detail.handicapLabel', { handicap: formatoDeIndice(enrollment.customHandicap, i18n.language) })}
-                                      {' '}
-                                      <span className="px-1.5 py-0.5 bg-amber-100 text-amber-800 rounded text-xs font-semibold">
-                                        {t('detail.customHandicapBadge')}
-                                      </span>
-                                    </span>
-                                  ) : enrollment.userHandicap !== null && enrollment.userHandicap !== undefined ? (
-                                    <span className="text-green-700 text-sm font-medium">
-                                      {t('detail.handicapLabel', { handicap: formatoDeIndice(enrollment.userHandicap, i18n.language) })}
-                                    </span>
-                                  ) : (
-                                    <span className="text-gray-500 text-sm">{t('detail.noHandicap')}</span>
-                                  )}
-                                  {canEditHandicap && (
-                                    <button
-                                      type="button"
-                                      onClick={() => handleStartEditHandicap(enrollment)}
-                                      className="text-gray-400 hover:text-primary"
-                                      title={t('detail.editHandicap')}
-                                    >
-                                      <Edit className="w-3.5 h-3.5" />
-                                    </button>
-                                  )}
-                                </>
-                              )}
-                            </div>
-                          </div>
-                          {enrollment.team && (
-                            <span className="px-3 py-1.5 bg-primary text-white rounded-lg text-sm font-semibold">
-                              {enrollment.team}
-                            </span>
-                          )}
-                          {/* Quitarle (release social 2): quien organiza, antes de
-                              empezar, a cualquiera menos a sí mismo */}
-                          {canManage &&
-                            SE_PUEDE_QUITAR.has(competition.status) &&
-                            enrollment.userId !== competition.creatorId && (
-                              <button
-                                type="button"
-                                data-testid={`quitar-${enrollment.userId}`}
-                                onClick={() => handleQuitar(enrollment)}
-                                disabled={quitandoId !== null}
-                                aria-label={t('detail.removePlayerAria', {
-                                  nombre: enrollment.userName || t('detail.unknownUser'),
-                                })}
-                                className="ml-2 flex min-h-11 min-w-11 items-center justify-center rounded-lg text-gray-500 hover:bg-red-50 hover:text-red-600 disabled:opacity-50"
-                              >
-                                <UserMinus className="h-5 w-5" aria-hidden="true" />
-                              </button>
-                            )}
-                        </div>
-                      ))}
-                  </div>
-                )}
-              </Plegable>
-            </div>
+            <InscritosAprobados
+              t={t}
+              i18n={i18n}
+              canManage={canManage}
+              conClasificacion={conClasificacion}
+              approvedEnrollments={approvedEnrollments}
+              approvedCount={approvedCount}
+              listaAMedias={ficha.listaAMedias}
+              noVeANadie={ficha.noVeANadie}
+              esStrokePlay={esStrokePlay}
+              competition={competition}
+              reparto={agendaLeida?.teamAssignment}
+              sinHandicap={sinHandicap}
+              hayVariasCategorias={ficha.hayVariasCategorias}
+              canEditHandicap={ficha.canEditHandicap}
+              editingHandicapId={editingHandicapId}
+              handicapInput={handicapInput}
+              setHandicapInput={setHandicapInput}
+              savingHandicapId={savingHandicapId}
+              revertingHandicapId={revertingHandicapId}
+              {...handicaps}
+              quitandoId={quitandoId}
+              handleQuitar={cambios.handleQuitar}
+            />
 
             {/* Pending & Rejected Enrollments - Only visible to creator/admin */}
             {canManage && (
-              <div
-                className="px-4 space-y-4"
-              >
-                {/* Pending Requests Section */}
-                {enrollments.filter(e => e.status === 'REQUESTED').length > 0 && (
-                  <div className="bg-white border border-orange-200 rounded-xl p-6 shadow-sm">
-                    <h3 className="text-gray-900 font-bold text-base sm:text-lg mb-4 flex items-center gap-2">
-                      <AlertCircle className="w-5 h-5 flex-none text-orange-600" />
-                      <TituloConNumero
-                        texto={t('detail.pendingRequests')}
-                        numero={enrollments.filter(e => e.status === 'REQUESTED').length}
-                      />
-                    </h3>
-
-                    <div className="space-y-3">
-                      {enrollments
-                        .filter(e => e.status === 'REQUESTED')
-                        .map((enrollment) => (
-                          <div
-                            key={enrollment.id}
-                            data-testid={`pendiente-${enrollment.userId}`}
-                            className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-4 border border-orange-200 rounded-lg bg-orange-50 hover:bg-orange-100 transition-colors"
-                          >
-                            {/* `min-w-0` y el correo partible: uno largo se salía
-                                de la tarjeta (FE #744, gemelo de las rechazadas) */}
-                            <div className="flex-1 min-w-0">
-                              <p className="text-gray-900 font-semibold break-words">
-                                {enrollment.userName || t('detail.unknownUser')}
-                              </p>
-                              <p className="text-gray-600 text-sm wrap-anywhere">
-                                {enrollment.userEmail || t('detail.noEmail')}
-                              </p>
-                              {enrollment.userHandicap !== null && enrollment.userHandicap !== undefined && (
-                                <p className="text-gray-500 text-sm mt-1">
-                                  {t('detail.handicapLabel', { handicap: formatoDeIndice(enrollment.userHandicap, i18n.language) })}
-                                </p>
-                              )}
-                            </div>
-                            <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
-                              <button
-                                onClick={() => handleApproveEnrollment(enrollment.id)}
-                                disabled={isFull}
-                                className={`px-4 py-2 text-white rounded-lg text-sm font-medium transition-colors shadow-sm ${
-                                  isFull
-                                    ? 'bg-gray-400 cursor-not-allowed'
-                                    : 'bg-green-600 hover:bg-green-700'
-                                }`}
-                                title={isFull ? t('detail.competitionFull', { max: competition.maxPlayers }) : t('detail.approve')}
-                              >
-                                ✓ {t('detail.approve')}
-                              </button>
-                              <button
-                                onClick={() => handleRejectEnrollment(enrollment.id)}
-                                className="px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700 transition-colors shadow-sm"
-                                title={t('detail.reject')}
-                              >
-                                ✗ {t('detail.reject')}
-                              </button>
-                            </div>
-                          </div>
-                        ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Solicitudes rechazadas, plegadas (FE #744). En gris: un rechazo
-                    no es un error. Flecha propia en vez del triángulo del
-                    navegador, que iba suelto en su línea, y filas que no se
-                    salen de su tarjeta aunque el correo sea largo */}
-                {enrollments.some(e => e.status === 'REJECTED') && (
-                  <details data-testid="solicitudes-rechazadas" className="group bg-white border border-gray-200 rounded-xl shadow-sm">
-                    <summary className="flex items-center gap-3 p-4 cursor-pointer list-none rounded-xl hover:bg-gray-50 [&::-webkit-details-marker]:hidden focus:outline-none focus-visible:ring-2 focus-visible:ring-primary">
-                      <span className="grid h-8 w-8 flex-none place-items-center rounded-lg bg-gray-100 text-gray-500">
-                        <UserX className="h-4 w-4" aria-hidden="true" />
-                      </span>
-                      <TituloConNumero
-                        texto={t('detail.rejectedRequests')}
-                        numero={enrollments.filter(e => e.status === 'REJECTED').length}
-                        claseDelTexto="font-semibold text-gray-700"
-                      />
-                      <ChevronRight className="h-4 w-4 flex-none text-gray-400 transition-transform group-open:rotate-90 motion-reduce:transition-none" aria-hidden="true" />
-                    </summary>
-                    <div className="space-y-2 border-t border-gray-100 px-4 pb-4 pt-3">
-                      {enrollments
-                        .filter(e => e.status === 'REJECTED')
-                        .map((enrollment) => (
-                          <div
-                            key={enrollment.id}
-                            data-testid={`rechazada-${enrollment.userId}`}
-                            className="flex items-start gap-3 rounded-lg border border-gray-100 bg-gray-50 p-3"
-                          >
-                            <div className="min-w-0 flex-1">
-                              <p className="font-medium text-gray-700 break-words">
-                                {enrollment.userName || t('detail.unknownUser')}
-                              </p>
-                              <p className="text-xs text-gray-500 wrap-anywhere">
-                                {enrollment.userEmail || t('detail.noEmail')}
-                              </p>
-                            </div>
-                            <span className="flex-none rounded-full bg-gray-200 px-2 py-0.5 text-[10.5px] font-bold tracking-wide text-gray-600">
-                              {t('detail.rejected')}
-                            </span>
-                          </div>
-                        ))}
-                    </div>
-                  </details>
-                )}
-              </div>
+              <SolicitudesDeInscripcion
+                competition={competition}
+                enrollments={enrollments}
+                t={t}
+                i18n={i18n}
+                isFull={isFull}
+                handleApproveEnrollment={inscripciones.handleApproveEnrollment}
+                handleRejectEnrollment={inscripciones.handleRejectEnrollment}
+              />
             )}
 
             {/* Footer */}
@@ -2224,14 +410,14 @@ const CompetitionDetail = () => {
         isOpen={showEnrollModal}
         onClose={() => setShowEnrollModal(false)}
         error={errorAlApuntarse}
-        onConfirm={handleEnroll}
+        onConfirm={inscripciones.handleEnroll}
         isProcessing={isProcessing}
         pideGenero={generoParaApuntarse.falta}
         // Sin hándicap no se entra en un Stableford o un Medal (FE #824, PR 5). Sin red
         // no se sabe (la copia del dispositivo no lo guarda): no se avisa (fase 3)
         faltaHandicap={esStrokePlay && faltaElHandicap(user, sinConfirmar)}
         // Las franjas, para elegir en el mismo paso (release social 3)
-        franjas={franjasParaApuntarse}
+        franjas={ficha.franjasParaApuntarse}
         // Sin la agenda leída no hay franjas que elegir: no se deja enviar;
         // leyéndose, se dice; si falló, se puede volver a leer (code-review)
         franjasCargando={esStrokePlay && agendaLeida == null && !agendaFallo}
