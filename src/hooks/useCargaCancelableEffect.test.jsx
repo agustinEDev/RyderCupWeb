@@ -17,6 +17,9 @@ import { useCargaCancelableEffect } from './useCargaCancelableEffect';
  *   H6   inactiva                                    | no pide y no espera
  *   H7   recargar({ silenciosa: true })              | sin espera, y el fallo lo sabe
  *   H7b  y después cambian las dependencias          | esa carga ya no es silenciosa: espera
+ *   H7c  en silencio y a la vez cambian las deps     | es una carga nueva: espera, y su fallo no es silencioso
+ *   H6b  en silencio estando inactiva                | al activarse, la carga espera
+ *   H8   recargar                                     | es la misma función en cada pintado
  */
 // Una respuesta que llega cuando la prueba quiere
 const aMano = () => {
@@ -211,7 +214,7 @@ describe('useCargaCancelableEffect', () => {
     expect(result.current.cargando).toBe(false);
   });
 
-  it('H6: al activarse pide con la espera ya en ese pintado', async () => {
+  it('H6: al activarse por primera vez pide con la espera ya puesta', async () => {
     const llega = aMano();
     pedir.mockReturnValueOnce(llega.promesa);
     const { result, rerender } = usar(props({ activa: false }));
@@ -263,5 +266,47 @@ describe('useCargaCancelableEffect', () => {
     rerender(props({ filtro: 'b' }));
 
     expect(result.current.cargando).toBe(true);
+  });
+
+  it('H7c: si a la vez que se recarga en silencio cambian las dependencias, la carga espera y su fallo no es silencioso', async () => {
+    pedir.mockResolvedValueOnce('primera');
+    const { result, rerender } = usar(props());
+    await act(async () => {});
+    const falla = aMano();
+    pedir.mockReturnValue(falla.promesa);
+
+    await act(async () => {
+      result.current.recargar({ silenciosa: true });
+      rerender(props({ filtro: 'b' }));
+    });
+
+    expect(result.current.cargando).toBe(true);
+    const error = new Error('otro filtro');
+    await act(async () => falla.rechazar(error));
+    expect(alFallar).toHaveBeenCalledWith(error, { silenciosa: false });
+  });
+
+  it('H6b: un recargar en silencio estando inactiva no deja silenciosa la carga al activarse', async () => {
+    const { result, rerender } = usar(props({ activa: false }));
+    await act(async () => {});
+    pedir.mockResolvedValueOnce('datos');
+
+    act(() => result.current.recargar({ silenciosa: true }));
+    await act(async () => {
+      rerender(props({ activa: true }));
+    });
+
+    expect(alCargar).toHaveBeenCalledWith('datos', { silenciosa: false });
+  });
+
+  it('H8: recargar es la misma función en cada pintado (se pasa como prop)', async () => {
+    pedir.mockResolvedValue('datos');
+    const { result, rerender } = usar(props());
+    const primera = result.current.recargar;
+    await act(async () => {});
+    rerender(props({ filtro: 'b' }));
+    await act(async () => {});
+
+    expect(result.current.recargar).toBe(primera);
   });
 });

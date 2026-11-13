@@ -1,4 +1,7 @@
-import { useEffect, useEffectEvent, useRef, useState } from 'react';
+import { useCallback, useEffect, useEffectEvent, useRef, useState } from 'react';
+
+const mismasDependencias = (antes, ahora) =>
+  antes !== null && antes.length === ahora.length && antes.every((valor, i) => Object.is(valor, ahora[i]));
 
 /**
  * Una carga que vive en su efecto (patrón de la documentación de React) y
@@ -17,42 +20,49 @@ import { useEffect, useEffectEvent, useRef, useState } from 'react';
  * ese momento, y no son dependencias: un aviso que usa `t` no vuelve a pedir
  * nada al cambiar de idioma.
  *
+ * La espera sale ya puesta en la primera carga y en el pintado de `recargar()`.
+ * Al cambiar las dependencias o al volver a activarse sale con el efecto, un
+ * pintado después, igual que antes de este hook.
+ *
  * @param {() => Promise<*>} pedir - Lo que se pide; se llama dentro del efecto.
  * @param {Array} deps - Cuándo se vuelve a pedir.
  * @param {Object} [opciones]
  * @param {boolean} [opciones.activa=true] - Inactiva no pide y no espera.
  * @param {(datos: *, carga: { silenciosa: boolean }) => void} [opciones.alCargar]
  * @param {(error: Error, carga: { silenciosa: boolean }) => void} [opciones.alFallar]
- * Límite conocido: un `recargar({ silenciosa: true })` que se lanza con la carga
- * inactiva, o en el mismo pintado en que cambian las dependencias, sale sin la
- * espera. Hoy nadie lo hace; si hiciera falta, comparar también las
- * dependencias para decidir si es silenciosa.
- *
  * @returns {{ cargando: boolean, recargar: (opciones?: { silenciosa?: boolean }) => void }}
  *   `recargar()` vuelve a pedir con la espera; `recargar({ silenciosa: true })`,
  *   sin ella.
  */
 export const useCargaCancelableEffect = (pedir, deps, { activa = true, alCargar, alFallar } = {}) => {
-  // Hasta que no termine una carga se espera: también antes de la primera, que
-  // al activarse la espera ya está puesta
+  // Hasta que no termine una carga se espera: también antes de la primera
   const [enCurso, setEnCurso] = useState(true);
   // Cada `recargar()` es un objeto nuevo: es lo que vuelve a lanzar el efecto
   const [recarga, setRecarga] = useState({ silenciosa: false });
   // El último `recargar()` que ya lanzó su carga: si el efecto vuelve a correr
   // por otra cosa (cambian las dependencias), esa carga ya no es silenciosa
   const recargaConsumidaRef = useRef(null);
+  // Con qué dependencias corrió la última vez: una carga solo es silenciosa si
+  // lo ÚNICO nuevo es el `recargar({ silenciosa: true })`. Si a la vez cambió
+  // algo más (otro filtro), es una carga nueva y espera como cualquiera
+  const depsAnterioresRef = useRef(null);
 
   const pedirAhora = useEffectEvent(() => pedir());
   const aplicar = useEffectEvent((datos, carga) => alCargar?.(datos, carga));
   const avisar = useEffectEvent((error, carga) => alFallar?.(error, carga));
 
   useEffect(() => {
+    const recargaNueva = recarga !== recargaConsumidaRef.current;
+    const mismas = mismasDependencias(depsAnterioresRef.current, deps);
+    // Inactiva olvida con qué corrió: al activarse, la carga es nueva y espera,
+    // aunque entretanto se pidiera un `recargar({ silenciosa: true })`
+    depsAnterioresRef.current = activa ? deps : null;
     if (!activa) return undefined;
+    recargaConsumidaRef.current = recarga;
     let vigente = true;
     // Silenciosa solo si la lanza un `recargar({ silenciosa: true })` que aún
-    // no había lanzado ninguna
-    const silenciosa = recarga !== recargaConsumidaRef.current && recarga.silenciosa;
-    recargaConsumidaRef.current = recarga;
+    // no había lanzado ninguna, y nada más ha cambiado
+    const silenciosa = recargaNueva && recarga.silenciosa && mismas;
     const carga = { silenciosa };
     const cargar = async () => {
       if (!silenciosa) setEnCurso(true);
@@ -74,10 +84,11 @@ export const useCargaCancelableEffect = (pedir, deps, { activa = true, alCargar,
 
   // La espera, ya en el pintado del botón que recarga, como cuando el botón
   // llamaba a la carga directamente
-  const recargar = ({ silenciosa = false } = {}) => {
+  // Estable: se pasa como prop y puede acabar en las dependencias de otro efecto
+  const recargar = useCallback(({ silenciosa = false } = {}) => {
     if (!silenciosa) setEnCurso(true);
     setRecarga({ silenciosa });
-  };
+  }, []);
 
   return { cargando: activa && enCurso, recargar };
 };

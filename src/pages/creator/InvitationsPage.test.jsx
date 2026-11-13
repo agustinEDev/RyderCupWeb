@@ -12,8 +12,7 @@ vi.mock('react-router', async (importarElDeVerdad) => {
   const { useCallback } = await import('react');
   return {
     ...real,
-    // Memorizado: devolver una función nueva en cada render cambiaría la
-    // identidad de `loadData` y el efecto que la llama se dispararía sin parar
+    // Memorizado, como el de verdad: el router da siempre la misma función
     useNavigate: () => {
       const navegar = real.useNavigate();
       return useCallback(
@@ -39,9 +38,9 @@ vi.mock('react-i18next', () => ({
   }),
 }));
 
-// La sesión, SIEMPRE el mismo objeto: devolver uno nuevo en cada render cambia
-// la identidad de `loadData` y el efecto que la llama se dispara sin parar. En
-// la app no pasa, porque `user` sale de un `useState`
+// La sesión, SIEMPRE el mismo objeto: `user` es dependencia de la carga de la
+// pantalla, y uno nuevo en cada render la volvería a pedir sin parar. En la app
+// no pasa, porque `user` sale de un `useState`
 const sesionDePrueba = {
   user: { id: 'user-1', first_name: 'Test', last_name: 'User' },
   loading: false,
