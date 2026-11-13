@@ -185,6 +185,40 @@ describe('QuickMatchSharedPage · lo que llega tarde (T5)', () => {
     expect(screen.getByTestId('quick-match-classification-table')).toBeInTheDocument();
   });
 
+  it('T5-14c: con el campo de A ya pintado, la partida B no enseña el campo de A mientras llega el suyo', async () => {
+    // Pintaba B con el nombre, los hoyos y las barras de A, y contaba los
+    // puntos con el campo que no era
+    getShared.mockImplementation(async (id) =>
+      compartida({ id, name: id === 'qm-1' ? 'Viernes' : 'Sábado', golfCourseId: id === 'qm-1' ? 'course-1' : 'course-2' })
+    );
+    let darElDeB;
+    getCourse.mockImplementation((id) =>
+      id === 'course-1'
+        ? Promise.resolve({ name: 'Campo de A', holes: hoyos, tees: [] })
+        : new Promise((resolve) => { darElDeB = () => resolve({ name: 'Campo de B', holes: hoyos, tees: [] }); })
+    );
+    pinta();
+    expect(await screen.findByText('Campo de A')).toBeInTheDocument();
+    expect(screen.getByTestId('quick-match-classification-table')).toBeInTheDocument();
+
+    await act(async () => {
+      irA('/quick-matches/qm-2/shared');
+    });
+    expect(await screen.findByText('Sábado')).toBeInTheDocument();
+    await waitFor(() => expect(getCourse).toHaveBeenCalledWith('course-2'));
+
+    expect(screen.queryByText('Campo de A')).not.toBeInTheDocument();
+    // Sin hoyos no hay clasificación que contar: nada hasta que llegue el suyo
+    expect(screen.queryByTestId('quick-match-classification-table')).not.toBeInTheDocument();
+    await act(async () => {
+      darElDeB();
+      await Promise.resolve();
+    });
+
+    expect(await screen.findByText('Campo de B')).toBeInTheDocument();
+    expect(screen.getByTestId('quick-match-classification-table')).toBeInTheDocument();
+  });
+
   it('a quien la jugó se le lleva a su anotación sin pedir el campo', async () => {
     getShared.mockResolvedValue(compartida({ viewerIsParticipant: true }));
     pinta();

@@ -6,6 +6,7 @@ import { ArrowLeft, Bot, Check, Lock, Undo2 } from 'lucide-react';
 import HeaderAuth from '../components/layout/HeaderAuth';
 import { useAuth } from '../hooks/useAuth';
 import FullScreenLoader from '../components/ui/FullScreenLoader';
+import BlockLoader from '../components/ui/BlockLoader';
 import customToast from '../utils/toast';
 import { fechaYHoraDelCampo } from '../services/partidosSinCobertura';
 import {
@@ -39,9 +40,10 @@ const REFRESCO_MS = 10000;
  * está cambiando el entregado y los botones en curso. Va con `key` de la
  * ronda: al pasar a otra sin salir de la pantalla, la nueva empieza limpia.
  * La carga, la vista y el refresco son de la página (más abajo), para que el
- * cambio de ronda no saque la espera de pantalla completa.
+ * cambio de ronda no saque la espera de pantalla completa. Hasta que llega
+ * la vista de SU ronda (`cargada`), solo la espera del bloque.
  */
-const SobreDeLaRonda = ({ id, roundId, vista, fallo, cargar, refrescar, nombresDeLosEquipos }) => {
+const SobreDeLaRonda = ({ id, roundId, cargada, vista, fallo, cargar, refrescar, nombresDeLosEquipos }) => {
   const navigate = useNavigate();
   const { t, i18n } = useTranslation('competitions');
   const { user } = useAuth();
@@ -196,6 +198,20 @@ const SobreDeLaRonda = ({ id, roundId, vista, fallo, cargar, refrescar, nombresD
   // el plazo cae de madrugada, así que un dispositivo en otro huso enseñaba
   // incluso otro día. Es el mismo caso que ya resolvió la anotación
   const plazo = fechaYHoraDelCampo(vista?.revealScheduledAt, i18n.language);
+
+  // Recién cambiada la ronda sin salir, mientras llega la suya: nada del sobre
+  // de la anterior. Con su vista, «dar permiso» reenviaba el orden de la otra
+  // ronda como si fuera el de esta, y el servidor lo aceptaba
+  if (!cargada) {
+    return (
+      <div className={`${PANTALLA_MENOS_BARRA_INFERIOR} bg-gray-50`}>
+        <HeaderAuth user={user} title={titulo} backTo={`/competitions/${id}/schedule`} />
+        <div className="mx-auto max-w-2xl px-4 py-6">
+          <BlockLoader />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={`${PANTALLA_MENOS_BARRA_INFERIOR} bg-gray-50`}>
@@ -533,8 +549,12 @@ const SobreDeLaRonda = ({ id, roundId, vista, fallo, cargar, refrescar, nombresD
 
 const EnvelopePage = () => {
   const { id, roundId } = useParams();
-  const [vista, setVista] = useState(null);
-  const [fallo, setFallo] = useState(null);
+  // La vista y el fallo, con la ronda de la que son: al pasar a otra sin
+  // salir, lo de la anterior ya no vale para esta mientras llega lo suyo
+  const [lectura, setLectura] = useState({ roundId: null, vista: null, fallo: null });
+  const cargada = lectura.roundId === roundId;
+  const vista = cargada ? lectura.vista : null;
+  const fallo = cargada ? lectura.fallo : null;
   // La espera de pantalla completa solo hasta la PRIMERA carga, como siempre:
   // al pasar de una ronda a otra sin salir no vuelve
   const [primeraTerminada, setPrimeraTerminada] = useState(false);
@@ -558,15 +578,19 @@ const EnvelopePage = () => {
       alCargar: (datos) => {
         setPrimeraTerminada(true);
         if (leidaRef.current !== generacion.current) return;
-        setVista(datos);
-        setFallo(null);
+        setLectura({ roundId, vista: datos, fallo: null });
       },
       alFallar: (error) => {
         setPrimeraTerminada(true);
         if (leidaRef.current !== generacion.current) return;
         // Y se guarda: sin esto la pantalla caía en «aquí verás los
         // enfrentamientos en cuanto se abran», que es tranquilizador y falso
-        setFallo(error.message);
+        // La vista de antes de esta misma ronda se queda, como siempre
+        setLectura((antes) => ({
+          roundId,
+          vista: antes.roundId === roundId ? antes.vista : null,
+          fallo: error.message,
+        }));
         customToast.error(error.message);
       },
     }
@@ -586,8 +610,7 @@ const EnvelopePage = () => {
     try {
       const datos = await getEnvelopesUseCase.execute(roundId);
       if (mia !== generacion.current) return;
-      setVista(datos);
-      setFallo(null);
+      setLectura({ roundId, vista: datos, fallo: null });
     } catch {
       // Lo que ya había sigue valiendo: se vuelve a preguntar en el siguiente
     } finally {
@@ -622,6 +645,7 @@ const EnvelopePage = () => {
       key={roundId}
       id={id}
       roundId={roundId}
+      cargada={cargada}
       vista={vista}
       fallo={fallo}
       cargar={cargar}

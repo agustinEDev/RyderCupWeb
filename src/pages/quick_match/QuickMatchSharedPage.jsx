@@ -64,6 +64,9 @@ const QuickMatchSharedPage = () => {
   // antes, y no en un efecto un pintado después
   const cargaElCampo = useCallback(async (golfCourseId) => {
     const mio = ++campoPedidoRef.current;
+    // Fuera el de antes: el de otra partida pintaba sus hoyos y sus barras en
+    // esta, y los puntos se contaban con el campo que no era
+    setCampo(null);
     setFalloDelCampo(false);
     try {
       const datos = await getGolfCourseUseCase.execute(golfCourseId);
