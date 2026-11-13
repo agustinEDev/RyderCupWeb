@@ -48,7 +48,7 @@ const CompetitionDetail = () => {
   const { user, loading: isLoadingUser, sinConfirmar } = useAuth();
   // El género para apuntarse, solo a quien le falta (#710)
   const generoParaApuntarse = useGeneroParaApuntarse();
-  const { isAdmin, isCreator: hasCreatorRole, isLoading: isLoadingRoles } = useUserRoles(id);
+  const { isAdmin, isCreator: hasCreatorRole, isLoading: isLoadingRoles } = useUserRoles(id, user?.id);
   const [isProcessing, setIsProcessing] = useState(false);
   // Borrar pide confirmación en un modal que dice quién pierde su plaza (FE #667)
   const [confirmandoBorrado, setConfirmandoBorrado] = useState(false);

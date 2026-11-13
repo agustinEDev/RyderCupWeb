@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { AlertTriangle, CalendarDays, Pencil, Plus, Trash2 } from 'lucide-react';
 import {
@@ -17,6 +17,7 @@ import { AccionDelJugador, JugadoresDeLaFranja, SinFranja } from './PlazasDeLaFr
 import PartidasEnLaFranja from './PartidasEnLaFranja';
 import MisPartidas from './MisPartidas';
 import customToast from '../../utils/toast';
+import { useCargaCancelableEffect } from '../../hooks/useCargaCancelableEffect';
 import { mensajeConJugadores } from '../../utils/erroresConJugadores';
 import { FRANJAS, diasDelTorneo, franjasLibres } from '../../utils/agenda';
 import { aCamposDeLaCompeticion } from '../../utils/camposDeLaCompeticion';
@@ -47,6 +48,24 @@ const conHorasDe = (franja, nueva) => {
   if (nueva.tocada) return nueva;
   const { primera, ultima } = hojaPropuesta(franja);
   return { ...nueva, hoja: { ...nueva.hoja, primera, ultima } };
+};
+
+/**
+ * La franja nueva que se está añadiendo, corregida tras releer: si el día o la
+ * franja elegidos ya no están libres (otro organizador, o un cambio de la
+ * competición), lo siguiente libre en vez de enviar algo que el selector ya no
+ * enseña (revisor); sin hueco en ningún día, null. Si sigue valiendo, la misma
+ * (el mismo objeto: así se sabe que no hay nada que corregir).
+ */
+const corregirNueva = (nueva, diasConHueco, franjas) => {
+  const dia = diasConHueco.includes(nueva.dia) ? nueva.dia : diasConHueco[0];
+  const libres = dia ? franjasLibres(franjas, dia) : [];
+  const franja = libres.includes(nueva.franja) ? nueva.franja : libres[0];
+  // El campo no se corrige aquí: lo resuelve `campoVigente` al pintar y al
+  // guardar (corregirlo en un efecto dejaba un hueco; CI de la #838)
+  if (dia === nueva.dia && franja === nueva.franja) return nueva;
+  if (!dia) return null;
+  return conHorasDe(franja, { ...nueva, dia, franja });
 };
 
 /** La hoja guardada de una franja, como la usa el formulario. */
@@ -240,22 +259,21 @@ const FranjasDeLaCompeticion = ({
   const [editando, setEditando] = useState(null);
   const [borrando, setBorrando] = useState(null);
 
-  // Solo se pinta la última lectura pedida (como en la agenda de la Ryder)
-  const ultimaLectura = useRef(0);
-
-  const cargarAgenda = useCallback(async () => {
-    const esta = ++ultimaLectura.current;
-    try {
-      const leida = await (async () => getScheduleUseCase.execute(competitionId))();
-      if (esta !== ultimaLectura.current) return;
-      setAgenda(leida);
-      setSinCargar(false);
-      setLecturas((n) => n + 1);
-    } catch {
-      if (esta !== ultimaLectura.current) return;
-      setSinCargar(true);
+  // Solo se pinta la última lectura pedida (como en la agenda de la Ryder): se
+  // vuelve a leer al cambiar la competición (`version`), y lo que llega tarde
+  // o tras desmontar no se aplica
+  const { recargar } = useCargaCancelableEffect(
+    () => getScheduleUseCase.execute(competitionId),
+    [competitionId, version],
+    {
+      alCargar: (leida) => {
+        setAgenda(leida);
+        setSinCargar(false);
+        setLecturas((n) => n + 1);
+      },
+      alFallar: () => setSinCargar(true),
     }
-  }, [competitionId]);
+  );
 
   useEffect(() => {
     let vigente = true;
@@ -272,15 +290,6 @@ const FranjasDeLaCompeticion = ({
   }, [competitionId, versionCampos]);
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- pedir la agenda al servidor es el objetivo, y se repite cuando cambia la competición (`version`)
-    cargarAgenda();
-    const lecturas = ultimaLectura;
-    return () => {
-      lecturas.current += 1;
-    };
-  }, [cargarAgenda, version]);
-
-  useEffect(() => {
     // El segundo dato dice si falló: con null y sin fallo, aún se está leyendo
     onAgenda?.(agenda && !sinCargar ? agenda : null, sinCargar);
   }, [agenda, sinCargar, onAgenda]);
@@ -292,24 +301,11 @@ const FranjasDeLaCompeticion = ({
     [dias, franjas]
   );
 
-  // Si al releer el día o la franja elegidos ya no están libres (otro
-  // organizador, o un cambio de la competición), se propone lo siguiente libre
-  // en vez de enviar algo que el selector ya no enseña (revisor)
-  useEffect(() => {
-    if (!nueva) return;
-    const dia = diasConHueco.includes(nueva.dia) ? nueva.dia : diasConHueco[0];
-    const libres = dia ? franjasLibres(franjas, dia) : [];
-    const franja = libres.includes(nueva.franja) ? nueva.franja : libres[0];
-    // El campo no se corrige aquí: lo resuelve `campoVigente` al pintar y al
-    // guardar (corregirlo en un efecto dejaba un hueco; CI de la #838)
-    if (dia === nueva.dia && franja === nueva.franja) return;
-    if (!dia) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- sin hueco ya no hay franja que añadir
-      setNueva(null);
-      return;
-    }
-    setNueva((n) => conHorasDe(franja, { ...n, dia, franja }));
-  }, [diasConHueco, franjas, nueva]);
+  // Al releer, el formulario de «Añadir» se corrige en el mismo pintado
+  // (`corregirNueva`): sin pasar por un pintado con lo que ya no vale. Se
+  // guarda lo corregido, no se deriva: elegir día, franja u horas parte de ello
+  const corregida = nueva && corregirNueva(nueva, diasConHueco, franjas);
+  if (nueva && corregida !== nueva) setNueva(corregida);
 
 
   const porDia = useMemo(() => {
@@ -400,7 +396,8 @@ const FranjasDeLaCompeticion = ({
       // Con la lista de afectados, sus nombres; si no, el motivo del servidor
       customToast.error(mensajeConJugadores(t, error, 'agenda.errors') || error.message || t('agenda.error'));
     } finally {
-      await cargarAgenda();
+      // Sin espera: lo de ahora se queda a la vista hasta que llega lo releído
+      await recargar({ silenciosa: true });
       setOcupado(false);
     }
   };
@@ -540,7 +537,7 @@ const FranjasDeLaCompeticion = ({
         <p className="flex flex-wrap items-center gap-2 text-sm text-gray-500">
           {t('agenda.notLoaded')}
           {/* Sin otra forma de verlas en stroke play, se puede reintentar (/code-review) */}
-          <button type="button" onClick={cargarAgenda} className="font-medium text-primary">
+          <button type="button" onClick={() => recargar()} className="font-medium text-primary">
             {t('franjas.retry')}
           </button>
         </p>

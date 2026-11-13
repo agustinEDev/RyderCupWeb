@@ -50,6 +50,11 @@ const pila = [];
  *   foco al abrir, si no es en lo primero (el campo de una hoja para escribir)
  */
 export const useFocoRetenido = (cajaRef, { activo = true, alEscape, escapeExclusivo = false, inicialRef } = {}) => {
+  // Dónde entra el foco, leído al abrir y no como dependencia: si quien llama
+  // pasa otra ref (o la quita) con el diálogo abierto, el efecto de abajo
+  // volvería a correr, el foco saltaría y la limpieza lo devolvería atrás
+  const focoInicial = useEffectEvent(() => inicialRef?.current);
+
   // El foco entra en la caja al abrir y vuelve a donde estaba al cerrar. Sin lo
   // segundo, cerrar el diálogo dejaba el foco en el `body` y el siguiente
   // tabulador empezaba desde la cabecera de la página.
@@ -62,7 +67,7 @@ export const useFocoRetenido = (cajaRef, { activo = true, alEscape, escapeExclus
     // vez que este, cuyo efecto corre antes (los hijos van primero), y
     // quitárselo dejaría sin foco al de encima
     const yaDentro = caja?.contains(anterior) && anterior !== caja;
-    if (!yaDentro) (inicialRef?.current ?? enfocablesVisibles(caja)[0] ?? caja)?.focus(SIN_DESPLAZAR);
+    if (!yaDentro) (focoInicial() ?? enfocablesVisibles(caja)[0] ?? caja)?.focus(SIN_DESPLAZAR);
 
     return () => {
       // Solo si el foco sigue siendo mío. Con dos diálogos encima, al cerrarse
@@ -73,8 +78,6 @@ export const useFocoRetenido = (cajaRef, { activo = true, alEscape, escapeExclus
         anterior.focus(SIN_DESPLAZAR);
       }
     };
-    // `inicialRef` es una ref: no cambia, y se lee al abrir
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activo, cajaRef]);
 
   // Lo que hace Escape, leído en el momento de pulsar. Por `useEffectEvent` y no

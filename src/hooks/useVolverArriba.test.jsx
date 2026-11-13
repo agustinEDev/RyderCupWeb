@@ -109,3 +109,40 @@ describe('useVolverArriba', () => {
     expect(window.scrollTo).toHaveBeenCalledWith(0, 0);
   });
 });
+
+/**
+ * Solo el cambio de pantalla mueve el scroll (T4):
+ *
+ *   #      caso                                                   | que tiene que pasar
+ *   -------|-----------------------------------------------------|--------------------
+ *   T4-27  misma pantalla, cambia el tipo de navegacion o el handle | NO se toca
+ *   T4-28  PUSH a la misma ruta con otro query                     | NO se toca
+ */
+describe('useVolverArriba · solo al cambiar de pantalla (T4)', () => {
+  beforeEach(() => {
+    location.pathname = '/profile';
+    location.search = '';
+    router.tipo = 'PUSH';
+    router.handle = undefined;
+    window.scrollTo = vi.fn();
+  });
+
+  it('T4-27: si en la misma pantalla cambian el tipo de navegacion y el handle, no se toca el scroll', () => {
+    const { rerender } = renderHook(() => useVolverArriba());
+
+    navegaA(rerender, '/profile', 'POP', { restauraElScroll: true });
+    navegaA(rerender, '/profile', 'REPLACE', undefined);
+
+    expect(window.scrollTo).not.toHaveBeenCalled();
+  });
+
+  it('T4-28: un PUSH a la misma ruta con otro query no sube', () => {
+    const { rerender } = renderHook(() => useVolverArriba());
+    window.scrollTo.mockClear();
+
+    location.search = '?pagina=2';
+    navegaA(rerender, '/profile', 'PUSH');
+
+    expect(window.scrollTo).not.toHaveBeenCalled();
+  });
+});

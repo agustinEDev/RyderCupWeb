@@ -493,3 +493,78 @@ describe('AgendaDeLaCompeticion · avisos con nombres', () => {
     await waitFor(() => expect(mockToastError).toHaveBeenCalledWith('Hay jugadores afectados'));
   });
 });
+
+/**
+ * Las lecturas que llegan tarde (T4): solo se pinta la última pedida.
+ *
+ *   #     caso                                                     | qué pasa
+ *   ------|--------------------------------------------------------|----------------------------------
+ *   T4-1  se desmonta con la lectura en vuelo                      | no avisa a la ficha de lo leído
+ *   T4-2  cambia la competición mientras se relee tras un cambio   | se pinta la nueva; los botones vuelven
+ *   T4-3  la lectura vieja falla después de pintarse la nueva      | no dice «no se pudo leer»
+ */
+describe('AgendaDeLaCompeticion · lecturas que llegan tarde (T4)', () => {
+  const conVersion = (version) => (
+    <AgendaDeLaCompeticion
+      competitionId="c1"
+      startDate="2026-10-03"
+      endDate="2026-10-04"
+      canManage
+      jugadores={12}
+      version={version}
+    />
+  );
+
+  it('T4-1: desmontada con la lectura en vuelo, lo que llega no se le pasa a la ficha', async () => {
+    let soltar;
+    mockVerAgenda.mockImplementationOnce(() => new Promise((r) => { soltar = r; }));
+    const onAgenda = vi.fn();
+    const { unmount } = pintar({ onAgenda });
+    await waitFor(() => expect(mockVerAgenda).toHaveBeenCalledTimes(1));
+
+    unmount();
+    soltar(AGENDA);
+    await new Promise((r) => setTimeout(r, 20));
+
+    expect(onAgenda).not.toHaveBeenCalledWith(AGENDA);
+  });
+
+  it('T4-2: si la competición cambia mientras se relee tras un cambio, se pinta la nueva y los botones vuelven', async () => {
+    const { rerender } = render(conVersion('v1'));
+    await screen.findByTestId('agenda-sesion-r1');
+    let soltarLaDelCambio;
+    mockVerAgenda
+      .mockImplementationOnce(() => new Promise((r) => { soltarLaDelCambio = r; }))
+      .mockResolvedValueOnce({ ...AGENDA, rounds: [sesion({ id: 'nueva', matchFormat: 'SINGLES' })] });
+
+    fireEvent.click(screen.getByTestId('agenda-formato-r1-SINGLES'));
+    await waitFor(() => expect(mockVerAgenda).toHaveBeenCalledTimes(2));
+    rerender(conVersion('v2'));
+    await screen.findByTestId('agenda-sesion-nueva');
+
+    // La relectura del cambio contesta ahora, tarde
+    soltarLaDelCambio({ ...AGENDA, rounds: [sesion({ id: 'vieja' })] });
+    await new Promise((r) => setTimeout(r, 20));
+
+    expect(screen.queryByTestId('agenda-sesion-vieja')).not.toBeInTheDocument();
+    expect(screen.getByTestId('agenda-sesion-nueva')).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByTestId('agenda-formato-nueva-FOURBALL')).not.toBeDisabled());
+  });
+
+  it('T4-3: la lectura vieja que falla después de pintarse la nueva no dice «no se pudo leer»', async () => {
+    let fallarLaVieja;
+    mockVerAgenda
+      .mockImplementationOnce(() => new Promise((_, rechazar) => { fallarLaVieja = rechazar; }))
+      .mockResolvedValueOnce({ ...AGENDA, rounds: [sesion({ id: 'nueva' })] });
+    const { rerender } = render(conVersion('v1'));
+    await waitFor(() => expect(mockVerAgenda).toHaveBeenCalledTimes(1));
+
+    rerender(conVersion('v2'));
+    await screen.findByTestId('agenda-sesion-nueva');
+    fallarLaVieja(new TypeError('Sin conexión'));
+    await new Promise((r) => setTimeout(r, 20));
+
+    expect(screen.queryByTestId('agenda-sin-cargar')).not.toBeInTheDocument();
+    expect(screen.getByTestId('agenda-sesion-nueva')).toBeInTheDocument();
+  });
+});

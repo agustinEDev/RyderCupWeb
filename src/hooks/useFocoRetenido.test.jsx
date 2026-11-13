@@ -176,3 +176,40 @@ describe('useFocoRetenido', () => {
     expect(escapeFuera).not.toHaveBeenCalled();
   });
 });
+
+/**
+ * T4-29: `inicialRef` se lee al abrir y nada más. Si el diálogo abierto se
+ * vuelve a pintar con otra ref (o sin ella), el foco ni salta ni se devuelve.
+ */
+describe('useFocoRetenido · inicialRef solo al abrir (T4)', () => {
+  const ConDosCampos = ({ inicial }) => {
+    const caja = useRef(null);
+    const a = useRef(null);
+    const b = useRef(null);
+    const refs = { a, b };
+    useFocoRetenido(caja, { inicialRef: inicial ? refs[inicial] : undefined });
+    return (
+      <div ref={caja} role="dialog" aria-modal="true" tabIndex={-1}>
+        <input ref={a} aria-label="a" />
+        <input ref={b} aria-label="b" />
+      </div>
+    );
+  };
+
+  it('T4-29: con el diálogo abierto, cambiar inicialRef o quitarla no mueve el foco', () => {
+    const fuera = document.createElement('button');
+    document.body.appendChild(fuera);
+    fuera.focus();
+    const { rerender, unmount } = render(<ConDosCampos inicial="a" />);
+    expect(screen.getByLabelText('a')).toHaveFocus();
+
+    rerender(<ConDosCampos inicial="b" />);
+    expect(screen.getByLabelText('a')).toHaveFocus();
+    rerender(<ConDosCampos inicial={null} />);
+    expect(screen.getByLabelText('a')).toHaveFocus();
+
+    unmount();
+    expect(fuera).toHaveFocus();
+    fuera.remove();
+  });
+});

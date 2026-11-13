@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useEffectEvent, useCallback, useRef } from 'react';
 import customToast from '../utils/toast';
 import { seEstaCerrandoLaSesion } from '../utils/cierreDeEstaCarga';
 import { getCompetitionDetailUseCase, listEnrollmentsUseCase } from '../composition';
@@ -25,6 +25,13 @@ export const useFichaDeLaCompeticion = ({ id, userId, t, navigate }) => {
   useEffect(() => {
     idActual.current = id;
   }, [id]);
+  // El traductor de ahora: una carga que empezó en un idioma y falla ya en
+  // otro avisa en el de ahora (CodeRabbit, FE #1117). Por ref y no como
+  // dependencia: cambiar de idioma no vuelve a pedir la ficha
+  const traductor = useRef(t);
+  useEffect(() => {
+    traductor.current = t;
+  }, [t]);
 
   // Por el id y no por el objeto: refrescar la sesión crea un `user` nuevo con el
   // mismo id, y la ficha se recargaba entera tras apuntarse (CodeRabbit, #720)
@@ -64,20 +71,23 @@ export const useFichaDeLaCompeticion = ({ id, userId, t, navigate }) => {
       // Falló porque se está cerrando la sesión: la redirección al login llega ya; ir a la
       // lista solo enseñaba otro fallo (A2, 8 nov 2026)
       if (seEstaCerrandoLaSesion()) return;
-      customToast.error(error.message || t('detail.failedToLoadCompetition'));
+      customToast.error(error.message || traductor.current('detail.failedToLoadCompetition'));
       navigate('/competitions');
     } finally {
       if (sigueEnPantalla()) setIsLoadingCompetition(false);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [id, userId, navigate]);
+  }, [id, userId, navigate, lecturasDeLaFicha, lecturasDeInscripciones]);
 
+  // Se pide al entrar y al cambiar de ficha o de usuario, no al cambiar de
+  // idioma (el aviso de fallo lee el traductor de ahora por su ref)
+  const cargarAlEntrar = useEffectEvent(() => {
+    loadCompetition();
+  });
   useEffect(() => {
-    if (userId) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- pre-existing pattern surfaced by eslint-plugin-react-hooks 7.1.1 bump; needs dedicated review (tracked in follow-up)
-      loadCompetition();
-    }
-  }, [id, userId, loadCompetition]);
+    if (!userId) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- la carga enseña la espera de pantalla completa en cuanto empieza (también la llaman las acciones, que la necesitan al momento) y se relee al cambiar de ficha o de usuario; sacarla del efecto es reescribir la ficha (P4, tanda T4)
+    cargarAlEntrar();
+  }, [id, userId]);
 
   return {
     competition,

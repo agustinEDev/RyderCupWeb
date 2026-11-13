@@ -967,4 +967,37 @@ describe('PartidasEnLaFranja (FE #824, PR 6)', () => {
     await act(async () => soltarLaVieja(vista()));
     expect(screen.getByTestId('partida-g2')).toHaveTextContent('partidas.number {"numero":1,"hora":"08:00"}');
   });
+
+  // T4-10: un fallo síncrono al pedir es uno más: aviso, sin llevarse la ficha
+  it('T4-10: si pedirlas falla al momento (síncrono), «no se pudieron leer» y se puede reintentar', async () => {
+    mockLeer.mockImplementationOnce(() => {
+      throw new Error('roto');
+    });
+    pintar({ organiza: true });
+    await desplegar();
+
+    expect(await screen.findByText('partidas.notLoaded')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'partidas.retry' }));
+    expect(await screen.findByTestId('partida-g1')).toBeInTheDocument();
+  });
+
+  // T4-11: dos cambios de plazas seguidos; la lectura del primero llega la última
+  it('T4-11: si las plazas cambian dos veces y la primera lectura llega la última, se ve la segunda', async () => {
+    const { rerender } = pintar();
+    await desplegar();
+    await screen.findByTestId('partida-g1');
+    let soltarLaPrimera;
+    mockLeer
+      .mockImplementationOnce(() => new Promise((r) => { soltarLaPrimera = r; }))
+      .mockResolvedValueOnce(vista({ groups: [G3] }));
+
+    rerender(<PartidasEnLaFranja salidas={4} franja={FRANJA} userId={YO} organiza={false} version={1} />);
+    await waitFor(() => expect(soltarLaPrimera).toBeDefined());
+    rerender(<PartidasEnLaFranja salidas={4} franja={FRANJA} userId={YO} organiza={false} version={2} />);
+    await waitFor(() => expect(screen.queryByTestId('partida-g1')).toBeNull());
+
+    await act(async () => soltarLaPrimera(vista({ groups: [G1, G2] })));
+    expect(screen.queryByTestId('partida-g1')).toBeNull();
+    expect(screen.getByTestId('partida-g3')).toBeInTheDocument();
+  });
 });

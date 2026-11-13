@@ -126,24 +126,49 @@ const PartidasEnLaFranja = ({ competitionId, franja, nombre, salidas, userId, or
   // Lecturas y escrituras se cruzan: una vieja no pisa a otra más nueva
   const lecturas = useLaMasNueva();
 
-  const leer = useCallback(async () => {
-    const turno = lecturas.turno();
-    try {
-      const leida = await getTeeGroupsUseCase.execute(franja.id);
+  // Lo que llega de una lectura, si no la ha adelantado otra más nueva
+  const aplicarLeida = useCallback(
+    (turno, leida) => {
       if (!lecturas.aplicar(turno)) return;
       setVista(leida);
       setSinCargar(false);
-    } catch {
+    },
+    [lecturas]
+  );
+  const aplicarFallo = useCallback(
+    (turno) => {
       if (lecturas.aplicar(turno)) setSinCargar(true);
-    }
-  }, [franja.id, lecturas]);
+    },
+    [lecturas]
+  );
 
-  // Se piden al desplegar, y otra vez si cambian las plazas de la franja
+  // Dentro de su función async: un fallo, aunque sea síncrono, es un rechazo
+  // más y no se lleva la ficha entera
+  const pedirPartidas = useCallback(
+    () => (async () => getTeeGroupsUseCase.execute(franja.id))(),
+    [franja.id]
+  );
+
+  // Para releer tras un cambio y para «Reintentar»
+  const leer = useCallback(async () => {
+    const turno = lecturas.turno();
+    try {
+      aplicarLeida(turno, await pedirPartidas());
+    } catch {
+      aplicarFallo(turno);
+    }
+  }, [lecturas, pedirPartidas, aplicarLeida, aplicarFallo]);
+
+  // Se piden al desplegar, y otra vez si cambian las plazas de la franja. El
+  // orden lo guarda `lecturas`, compartido con las escrituras de `cambiar`
   useEffect(() => {
     if (!abierta) return;
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- pedir las partidas al servidor es el objetivo
-    leer();
-  }, [abierta, version, leer]);
+    const turno = lecturas.turno();
+    pedirPartidas().then(
+      (leida) => aplicarLeida(turno, leida),
+      () => aplicarFallo(turno)
+    );
+  }, [abierta, version, lecturas, pedirPartidas, aplicarLeida, aplicarFallo]);
 
   const tamano = franja.teeSheet?.groupSize ?? 4;
   const grupos = useMemo(() => vista?.groups ?? [], [vista]);

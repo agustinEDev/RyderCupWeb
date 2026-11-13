@@ -62,7 +62,7 @@ const GroupScoringPage = () => {
   const competitionId = busqueda.get('competition');
   const { t, i18n } = useTranslation('scoring');
   const { user, loading: isLoadingUser } = useAuth();
-  const { isAdmin, isCreator } = useUserRoles(competitionId);
+  const { isAdmin, isCreator } = useUserRoles(competitionId, user?.id);
   const [pestana, setPestana] = useState(null);
   const [verEntrega, setVerEntrega] = useState(false);
   const [retirandose, setRetirandose] = useState(false);

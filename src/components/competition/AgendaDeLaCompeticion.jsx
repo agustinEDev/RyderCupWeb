@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { AlertTriangle, CalendarDays, MapPin, Plus, Trash2 } from 'lucide-react';
 import {
@@ -9,6 +9,7 @@ import {
   deleteRoundUseCase,
 } from '../../composition';
 import customToast from '../../utils/toast';
+import { useCargaCancelableEffect } from '../../hooks/useCargaCancelableEffect';
 import { mensajeConJugadores } from '../../utils/erroresConJugadores';
 import { FRANJAS, diasDelTorneo, franjasLibres, partidosDeLaSesion } from '../../utils/agenda';
 import { aCamposDeLaCompeticion } from '../../utils/camposDeLaCompeticion';
@@ -65,28 +66,24 @@ const AgendaDeLaCompeticion = ({
   // Lo que espera un «sí»: cambiar el formato con sobres posibles, o quitar
   const [confirmando, setConfirmando] = useState(null);
 
-  // Cuál es la última lectura pedida. Solo esa se pinta: si la competición
-  // cambia mientras se recarga tras un cambio, hay dos en vuelo, y la vieja
-  // podía llegar la última y pisar la buena (CodeRabbit en la #709). Al
-  // desmontar también se invalida lo que quede por llegar
-  const ultimaLectura = useRef(0);
-
-  const cargarAgenda = useCallback(async () => {
-    const esta = ++ultimaLectura.current;
-    // Dentro de su función async: un fallo, aunque sea síncrono, es un
-    // rechazo más y no se lleva la ficha entera
-    try {
-      const leida = await (async () => getScheduleUseCase.execute(competitionId))();
-      if (esta !== ultimaLectura.current) return;
-      setAgenda(leida);
-      setSinCargar(false);
-    } catch {
-      if (esta !== ultimaLectura.current) return;
+  // La agenda vive en su efecto: se vuelve a leer al cambiar la competición
+  // (`version`) y solo se pinta la última pedida. Si la competición cambia
+  // mientras se relee tras un cambio, hay dos en vuelo, y la vieja podía
+  // llegar la última y pisar la buena (CodeRabbit en la #709). Al desmontar
+  // tampoco se aplica lo que quede por llegar
+  const { recargar } = useCargaCancelableEffect(
+    () => getScheduleUseCase.execute(competitionId),
+    [competitionId, version],
+    {
+      alCargar: (leida) => {
+        setAgenda(leida);
+        setSinCargar(false);
+      },
       // No se pudo preguntar: decir «no hay sesiones» sería afirmar algo que
       // no se sabe, y el organizador se pondría a crear las que ya tiene
-      setSinCargar(true);
+      alFallar: () => setSinCargar(true),
     }
-  }, [competitionId]);
+  );
 
   // Los campos: los cambios de la agenda no los tocan, pero los de la sección de
   // campos sí, y la ficha avisa con `versionCampos` (FE #715). Sin ellos la
@@ -100,15 +97,6 @@ const AgendaDeLaCompeticion = ({
       vigente = false;
     };
   }, [competitionId, versionCampos]);
-
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- pedir la agenda al servidor es justamente el objetivo, y se repite cuando cambia la competición (`version`)
-    cargarAgenda();
-    const lecturas = ultimaLectura;
-    return () => {
-      lecturas.current += 1;
-    };
-  }, [cargarAgenda, version]);
 
   const sesiones = useMemo(() => agenda?.rounds || [], [agenda]);
 
@@ -164,7 +152,8 @@ const AgendaDeLaCompeticion = ({
       // Con la lista de afectados, sus nombres; si no, el motivo del servidor
       customToast.error(mensajeConJugadores(t, error, 'agenda.errors') || error.message || t('agenda.error'));
     } finally {
-      await cargarAgenda();
+      // Sin espera: la agenda de ahora se queda a la vista hasta que llega la nueva
+      await recargar({ silenciosa: true });
       setOcupado(false);
     }
   };

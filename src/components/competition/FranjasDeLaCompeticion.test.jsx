@@ -661,3 +661,121 @@ describe('FranjasDeLaCompeticion · avisos con nombres', () => {
     await waitFor(() => expect(mockToast.error).toHaveBeenCalledWith('Hay jugadores afectados'));
   });
 });
+
+/**
+ * Las lecturas que llegan tarde y el formulario de «Añadir» al releer (T4).
+ *
+ *   #     caso                                                     | qué pasa
+ *   ------|--------------------------------------------------------|----------------------------------
+ *   T4-4  la lectura de la versión 1 llega después que la de la 2  | se ve la 2
+ *   T4-5  se desmonta con la lectura en vuelo                      | no se aplica nada
+ *   T4-6  «Reintentar» dos veces y la primera llega la última      | se ve la segunda
+ *   T4-7  formulario abierto y al releer no queda hueco            | se cierra
+ *   T4-8  cerrado así, otra relectura vuelve a dar hueco           | sigue cerrado
+ *   T4-9  formulario abierto en un día que al releer se llena      | el siguiente día, y su franja libre con sus horas
+ */
+describe('FranjasDeLaCompeticion · lecturas que llegan tarde y el formulario al releer (T4)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockLeer.mockResolvedValue({ rounds: [franja()], teeSheetCapacity: 96 });
+    mockCampos.mockResolvedValue(CAMPOS);
+  });
+
+  const conVersion = (version) => (
+    <FranjasDeLaCompeticion competitionId="c-1" startDate="2030-10-12" endDate="2030-10-13" canManage maxPlayers={100} version={version} />
+  );
+  const llenas = (dias) => ({
+    rounds: dias.flatMap((dia) =>
+      ['MORNING', 'AFTERNOON', 'EVENING'].map((s) => franja({ id: `${dia}-${s}`, roundDate: dia, sessionType: s }))
+    ),
+    teeSheetCapacity: 96 * 3 * dias.length,
+  });
+
+  it('T4-4: la lectura de la versión 1 que llega la última no pisa la de la 2', async () => {
+    let soltarLaVieja;
+    mockLeer
+      .mockImplementationOnce(() => new Promise((r) => { soltarLaVieja = r; }))
+      .mockResolvedValueOnce({ rounds: [franja({ id: 'r-nueva' })], teeSheetCapacity: 96 });
+    const { rerender } = render(conVersion('1'));
+    await waitFor(() => expect(mockLeer).toHaveBeenCalledTimes(1));
+
+    rerender(conVersion('2'));
+    await screen.findByTestId('franja-r-nueva');
+    soltarLaVieja({ rounds: [franja({ id: 'r-vieja' })], teeSheetCapacity: 96 });
+    await new Promise((r) => setTimeout(r, 20));
+
+    expect(screen.queryByTestId('franja-r-vieja')).toBeNull();
+    expect(screen.getByTestId('franja-r-nueva')).toBeInTheDocument();
+  });
+
+  it('T4-5: desmontada con la lectura en vuelo, lo que llega no se le pasa a la ficha', async () => {
+    let soltar;
+    mockLeer.mockImplementationOnce(() => new Promise((r) => { soltar = r; }));
+    const onAgenda = vi.fn();
+    const { unmount } = pinta({ onAgenda });
+    await waitFor(() => expect(mockLeer).toHaveBeenCalledTimes(1));
+
+    unmount();
+    soltar({ rounds: [franja()], teeSheetCapacity: 96 });
+    await new Promise((r) => setTimeout(r, 20));
+
+    expect(onAgenda).not.toHaveBeenCalledWith(expect.objectContaining({ rounds: expect.anything() }), false);
+  });
+
+  it('T4-6: «Reintentar» dos veces y la primera llega la última: se ve la segunda', async () => {
+    let soltarLaPrimera;
+    mockLeer
+      .mockRejectedValueOnce(new Error('sin red'))
+      .mockImplementationOnce(() => new Promise((r) => { soltarLaPrimera = r; }))
+      .mockResolvedValueOnce({ rounds: [franja({ id: 'r-segunda' })], teeSheetCapacity: 96 });
+    pinta();
+
+    fireEvent.click(await screen.findByRole('button', { name: 'franjas.retry' }));
+    await waitFor(() => expect(mockLeer).toHaveBeenCalledTimes(2));
+    fireEvent.click(screen.getByRole('button', { name: 'franjas.retry' }));
+    await screen.findByTestId('franja-r-segunda');
+    soltarLaPrimera({ rounds: [franja({ id: 'r-primera' })], teeSheetCapacity: 96 });
+    await new Promise((r) => setTimeout(r, 20));
+
+    expect(screen.queryByTestId('franja-r-primera')).toBeNull();
+    expect(screen.getByTestId('franja-r-segunda')).toBeInTheDocument();
+  });
+
+  it('T4-7 y T4-8: sin hueco al releer, el formulario se cierra, y no vuelve aunque luego haya hueco', async () => {
+    const { rerender } = render(conVersion('1'));
+    fireEvent.click(await screen.findByRole('button', { name: 'franjas.add' }));
+    expect(screen.getByLabelText('franjas.day')).toBeInTheDocument();
+
+    mockLeer.mockResolvedValue(llenas(['2030-10-12', '2030-10-13']));
+    rerender(conVersion('2'));
+    await screen.findByText('franjas.allFull');
+    await waitFor(() => expect(screen.queryByLabelText('franjas.day')).toBeNull());
+
+    mockLeer.mockResolvedValue({ rounds: [franja()], teeSheetCapacity: 96 });
+    rerender(conVersion('3'));
+    await waitFor(() => expect(mockLeer).toHaveBeenCalledTimes(3));
+    await waitFor(() => expect(screen.queryByText('franjas.allFull')).toBeNull());
+    expect(screen.queryByLabelText('franjas.day')).toBeNull();
+  });
+
+  it('T4-9: si al releer el día elegido se llena, propone el siguiente día; sin su franja libre, la primera, con sus horas', async () => {
+    const { rerender } = render(conVersion('1'));
+    fireEvent.click(await screen.findByRole('button', { name: 'franjas.add' }));
+    expect(screen.getByLabelText('franjas.day')).toHaveValue('2030-10-12');
+    expect(screen.getByLabelText('franjas.slot')).toHaveValue('AFTERNOON');
+
+    // El 12 se llena y el 13 ya tiene la tarde: queda su mañana
+    const releida = llenas(['2030-10-12']);
+    mockLeer.mockResolvedValue({
+      ...releida,
+      rounds: [...releida.rounds, franja({ id: 'r-13-tarde', roundDate: '2030-10-13', sessionType: 'AFTERNOON' })],
+    });
+    rerender(conVersion('2'));
+
+    // Las horas son del estado: el selector ya enseña el 13 antes de corregirlo
+    await waitFor(() => expect(screen.getByLabelText('franjas.firstTee')).toHaveValue('08:00'));
+    expect(screen.getByLabelText('franjas.day')).toHaveValue('2030-10-13');
+    expect(screen.getByLabelText('franjas.slot')).toHaveValue('MORNING');
+    expect(screen.getByLabelText('franjas.lastTee')).toHaveValue('11:50');
+  });
+});
