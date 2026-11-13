@@ -384,6 +384,53 @@ describe('CountryAutocomplete', () => {
     expect(onChange).not.toHaveBeenCalled();
   });
 
+  it('T3-13: llega otra lista con la misma abierta: también suelta el resaltado', () => {
+    const onChange = vi.fn();
+    const { rerender } = render(
+      <CountryAutocomplete countries={ORDENADOS_EN_INGLES} value="" onChange={onChange} />
+    );
+    open();
+    fireEvent.keyDown(screen.getByTestId('country-autocomplete-search'), { key: 'ArrowDown' });
+
+    rerender(<CountryAutocomplete countries={[...ORDENADOS_EN_INGLES]} value="" onChange={onChange} />);
+    fireEvent.keyDown(screen.getByTestId('country-autocomplete-search'), { key: 'Enter' });
+
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it('T3-13: soltado por otra lista, la flecha empieza otra vez por el principio', () => {
+    const onChange = vi.fn();
+    const { rerender } = render(
+      <CountryAutocomplete countries={ORDENADOS_EN_INGLES} value="" onChange={onChange} />
+    );
+    open();
+    const search = () => screen.getByTestId('country-autocomplete-search');
+    fireEvent.keyDown(search(), { key: 'ArrowDown' });
+    fireEvent.keyDown(search(), { key: 'ArrowDown' });
+
+    rerender(<CountryAutocomplete countries={[...ORDENADOS_EN_INGLES]} value="" onChange={onChange} />);
+    fireEvent.keyDown(search(), { key: 'ArrowDown' });
+    fireEvent.keyDown(search(), { key: 'Enter' });
+
+    // La primera en español, no la tercera que saldría siguiendo el índice viejo
+    expect(onChange).toHaveBeenCalledWith('KR');
+  });
+
+  it('T3-13: otra pintada sin cambiar la lista conserva el resaltado', () => {
+    const onChange = vi.fn();
+    const { rerender } = render(
+      <CountryAutocomplete countries={ORDENADOS_EN_INGLES} value="" onChange={onChange} />
+    );
+    open();
+    fireEvent.keyDown(screen.getByTestId('country-autocomplete-search'), { key: 'ArrowDown' });
+
+    rerender(<CountryAutocomplete countries={ORDENADOS_EN_INGLES} value="" onChange={onChange} error />);
+    fireEvent.keyDown(screen.getByTestId('country-autocomplete-search'), { key: 'Enter' });
+
+    // En español la primera es Corea del Sur
+    expect(onChange).toHaveBeenCalledWith('KR');
+  });
+
   it('vuelve al final de la lista al subir desde el principio', () => {
     const onChange = vi.fn();
     renderSelect({ onChange });

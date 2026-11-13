@@ -300,6 +300,7 @@ const GolfCourses = ({ embedded = false }) => {
             </div>
             <div className="p-6">
               <GolfCourseForm
+                key={selectedCourse.id}
                 initialData={selectedCourse}
                 onSubmit={handleEdit}
                 onCancel={() => {

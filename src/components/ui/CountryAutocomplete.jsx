@@ -50,9 +50,10 @@ const CountryAutocomplete = ({
   const { t, i18n } = useTranslation('common');
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  // Opción resaltada por teclado. -1 es "ninguna": al abrir no se presume nada,
-  // igual que el <select>, que tampoco preselecciona al desplegar.
-  const [activeIndex, setActiveIndex] = useState(-1);
+  // Opción resaltada por teclado, con la lista sobre la que se resaltó. -1 es
+  // "ninguna": al abrir no se presume nada, igual que el <select>, que tampoco
+  // preselecciona al desplegar.
+  const [resaltado, setResaltado] = useState({ indice: -1, de: null });
   const wrapperRef = useRef(null);
   const inputRef = useRef(null);
   const listRef = useRef(null);
@@ -73,11 +74,15 @@ const CountryAutocomplete = ({
 
   // Cambiar de idioma con la lista abierta la reordena bajo el resaltado: el
   // índice seguiría siendo válido, pero apuntando a otro país. Se suelta, que
-  // es lo único que no elige por nadie.
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- reaccionar al reorden es justamente el objetivo
-    setActiveIndex(-1);
-  }, [sortedCountries]);
+  // es lo único que no elige por nadie: el resaltado solo vale sobre la lista
+  // en la que se hizo, y con otra (otro idioma u otros países) no hay ninguno
+  const activeIndex = resaltado.de === sortedCountries ? resaltado.indice : -1;
+  const setActiveIndex = (siguiente) =>
+    setResaltado((antes) => {
+      const actual = antes.de === sortedCountries ? antes.indice : -1;
+      const indice = typeof siguiente === 'function' ? siguiente(actual) : siguiente;
+      return { indice, de: sortedCountries };
+    });
 
   // Se busca contra los dos idiomas y el código a la vez, no contra lo que se
   // esté mostrando: quien tiene la aplicación en español puede teclear "Spain",
@@ -119,7 +124,7 @@ const CountryAutocomplete = ({
       if (wrapperRef.current && !wrapperRef.current.contains(event.target)) {
         setIsOpen(false);
         setSearchQuery('');
-        setActiveIndex(-1);
+        setResaltado({ indice: -1, de: null });
       }
     };
 

@@ -35,27 +35,52 @@ const TEE_GENDERS = [null, 'MALE', 'FEMALE'];
 const GolfCourseForm = ({ initialData = null, onSubmit, onCancel }) => {
   const { t } = useTranslation('golfCourses');
 
+  // Lo que trae `initialData` se toma al montar, una sola vez: copiarlo en un
+  // efecto en cada cambio de identidad borraba lo escrito cada vez que quien lo
+  // monta volvía a pintar (al pedir un campo, el `{ countryCode }` nuevo de
+  // cada render vaciaba nombre y tipo al enviar). Para editar otro campo sin
+  // desmontar, quien lo monta le da otra `key`
   // Basic fields
-  const [name, setName] = useState('');
-  const [countryCode, setCountryCode] = useState('');
-  const [courseType, setCourseType] = useState('STANDARD_18');
+  const [name, setName] = useState(() => initialData?.name || '');
+  const [countryCode, setCountryCode] = useState(
+    () => initialData?.countryCode || initialData?.country_code || ''
+  );
+  const [courseType, setCourseType] = useState(
+    () => initialData?.courseType || initialData?.course_type || 'STANDARD_18'
+  );
 
   // Countries data
   const [allCountries, setAllCountries] = useState([]);
 
   // Tees (1 a 14: MIN_TEES/MAX_TEES en `courseTypeRanges`)
-  const [tees, setTees] = useState([
-    { color: 'WHITE', teeGender: null, identifier: '', courseRating: '', slopeRating: '' },
-    { color: 'YELLOW', teeGender: null, identifier: '', courseRating: '', slopeRating: '' },
-  ]);
+  const [tees, setTees] = useState(() =>
+    initialData?.tees?.length > 0
+      ? initialData.tees.map(tee => ({
+          color: tee.color,
+          teeGender: tee.teeGender ?? tee.tee_gender ?? tee.gender ?? null,
+          identifier: tee.identifier || '',
+          courseRating: tee.courseRating || tee.course_rating || '',
+          slopeRating: tee.slopeRating || tee.slope_rating || '',
+        }))
+      : [
+          { color: 'WHITE', teeGender: null, identifier: '', courseRating: '', slopeRating: '' },
+          { color: 'YELLOW', teeGender: null, identifier: '', courseRating: '', slopeRating: '' },
+        ]
+  );
 
   // Holes (18 fixed)
-  const [holes, setHoles] = useState(
-    Array.from({ length: 18 }, (_, i) => ({
-      holeNumber: i + 1,
-      par: 4,
-      strokeIndex: i + 1,
-    }))
+  const [holes, setHoles] = useState(() =>
+    initialData?.holes?.length === 18
+      ? initialData.holes.map(hole => ({
+          holeNumber: hole.holeNumber || hole.hole_number,
+          par: hole.par,
+          strokeIndex: hole.strokeIndex || hole.stroke_index,
+        }))
+      : Array.from({ length: 18 }, (_, i) => ({
+          holeNumber: i + 1,
+          par: 4,
+          strokeIndex: i + 1,
+        }))
   );
 
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -98,34 +123,6 @@ const GolfCourseForm = ({ initialData = null, onSubmit, onCancel }) => {
     };
     fetchCountries();
   }, []);
-
-  // Load initial data if editing
-  useEffect(() => {
-    if (initialData) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- pre-existing pattern surfaced by eslint-plugin-react-hooks 7.1.1 bump; needs dedicated review (tracked in follow-up)
-      setName(initialData.name || '');
-      setCountryCode(initialData.countryCode || initialData.country_code || '');
-      setCourseType(initialData.courseType || initialData.course_type || 'STANDARD_18');
-
-      if (initialData.tees && initialData.tees.length > 0) {
-        setTees(initialData.tees.map(tee => ({
-          color: tee.color,
-          teeGender: tee.teeGender ?? tee.tee_gender ?? tee.gender ?? null,
-          identifier: tee.identifier || '',
-          courseRating: tee.courseRating || tee.course_rating || '',
-          slopeRating: tee.slopeRating || tee.slope_rating || '',
-        })));
-      }
-
-      if (initialData.holes && initialData.holes.length === 18) {
-        setHoles(initialData.holes.map(hole => ({
-          holeNumber: hole.holeNumber || hole.hole_number,
-          par: hole.par,
-          strokeIndex: hole.strokeIndex || hole.stroke_index,
-        })));
-      }
-    }
-  }, [initialData]);
 
   // Add tee
   //
