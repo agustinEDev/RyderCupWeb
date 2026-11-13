@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { useCargaCancelableEffect } from '../hooks/useCargaCancelableEffect';
 import { useNavigate, useParams } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import { ArrowLeft, Bot, Check, Lock, Undo2 } from 'lucide-react';
@@ -33,14 +34,17 @@ import { PANTALLA_MENOS_BARRA_INFERIOR } from '../utils/barraInferior';
 // Cada cuánto se pregunta si ya se abrieron, mientras se espera (#710)
 const REFRESCO_MS = 10000;
 
-const EnvelopePage = () => {
+/**
+ * Lo que el capitán toca en el sobre de UNA ronda: el orden, el permiso, si
+ * está cambiando el entregado y los botones en curso. Va con `key` de la
+ * ronda: al pasar a otra sin salir de la pantalla, la nueva empieza limpia.
+ * La carga, la vista y el refresco son de la página (más abajo), para que el
+ * cambio de ronda no saque la espera de pantalla completa.
+ */
+const SobreDeLaRonda = ({ id, roundId, vista, fallo, cargar, refrescar, nombresDeLosEquipos }) => {
   const navigate = useNavigate();
-  const { id, roundId } = useParams();
   const { t, i18n } = useTranslation('competitions');
   const { user } = useAuth();
-  const [vista, setVista] = useState(null);
-  const [cargando, setCargando] = useState(true);
-  const [fallo, setFallo] = useState(null);
   const [orden, setOrden] = useState([]);
   const [cambiando, setCambiando] = useState(false);
   // Pedir que se abran en cuanto estén los dos, sin esperar a la hora. Hacen
@@ -50,55 +54,8 @@ const EnvelopePage = () => {
   const [abriendo, setAbriendo] = useState(false);
   const [cambiandoPermiso, setCambiandoPermiso] = useState(false);
 
-  // Cada lectura lleva su número: la que vuelve tarde no pisa a una posterior,
-  // como un refresco que sale antes de dar el permiso y llega después
-  const generacion = useRef(0);
-  const refrescoEnVuelo = useRef(false);
-
-  const cargar = useCallback(async () => {
-    const mia = ++generacion.current;
-    try {
-      const datos = await getEnvelopesUseCase.execute(roundId);
-      if (mia !== generacion.current) return;
-      setVista(datos);
-      setFallo(null);
-    } catch (error) {
-      if (mia !== generacion.current) return;
-      // Y se guarda: sin esto la pantalla caía en «aquí verás los
-      // enfrentamientos en cuanto se abran», que es tranquilizador y falso
-      setFallo(error.message);
-      customToast.error(error.message);
-    } finally {
-      setCargando(false);
-    }
-  }, [roundId]);
-
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- la carga inicial de una pantalla, el mismo patrón que el resto del repo
-    cargar();
-  }, [cargar]);
-
   const jugadores = useMemo(() => vista?.myPlayers || [], [vista]);
 
-  // Los nombres de los equipos, solo para decir de quién es el sobre que
-  // rellenó la aplicación: la vista del sobre no los trae. Sin ellos el aviso
-  // sale igual, sin nombre
-  const hayAutomatico = Boolean(vista?.teamAAutomatic || vista?.teamBAutomatic);
-  const [nombresDeLosEquipos, setNombresDeLosEquipos] = useState(null);
-  useEffect(() => {
-    if (!hayAutomatico) return undefined;
-    let vigente = true;
-    (async () => getCompetitionDetailUseCase.execute(id))()
-      .then(
-        (competicion) =>
-          vigente &&
-          setNombresDeLosEquipos({ id, A: competicion.team1Name, B: competicion.team2Name })
-      )
-      .catch(() => {});
-    return () => {
-      vigente = false;
-    };
-  }, [hayAutomatico, id]);
   const capitanea = jugadores.length > 0;
   // Lo dice el servidor mirando los DOS equipos, porque quien puede
   // arreglarlo —el organizador, cambiando el formato o rehaciendo los
@@ -122,26 +79,13 @@ const EnvelopePage = () => {
   // puede gastar el cupo de peticiones que comparten todos. Y en silencio: un
   // fallo del refresco no es algo que el capitán haya hecho
   const esperandoAlRival = !vista?.revealed && entregado;
+  // El temporizador vive aquí porque depende de si está reordenando, que es
+  // de esta ronda; la petición (una a la vez, en silencio) la hace la página
   useEffect(() => {
     if (!esperandoAlRival) return undefined;
-    const id = setInterval(async () => {
-      // Con una red lenta no se amontonan: uno a la vez (CodeRabbit en la #720)
-      if (refrescoEnVuelo.current) return;
-      refrescoEnVuelo.current = true;
-      const mia = ++generacion.current;
-      try {
-        const datos = await getEnvelopesUseCase.execute(roundId);
-        if (mia !== generacion.current) return;
-        setVista(datos);
-        setFallo(null);
-      } catch {
-        // Lo que ya había sigue valiendo: se vuelve a preguntar en el siguiente
-      } finally {
-        refrescoEnVuelo.current = false;
-      }
-    }, REFRESCO_MS);
+    const id = setInterval(refrescar, REFRESCO_MS);
     return () => clearInterval(id);
-  }, [esperandoAlRival, roundId]);
+  }, [esperandoAlRival, refrescar]);
   // Lo decide el servidor: hacen falta los dos sobres dentro, sea quien sea.
   // Repetir esa regla aquí es donde se desincronizan
   const puedeAbrir = Boolean(vista?.canReveal);
@@ -252,8 +196,6 @@ const EnvelopePage = () => {
   // el plazo cae de madrugada, así que un dispositivo en otro huso enseñaba
   // incluso otro día. Es el mismo caso que ya resolvió la anotación
   const plazo = fechaYHoraDelCampo(vista?.revealScheduledAt, i18n.language);
-
-  if (cargando) return <FullScreenLoader />;
 
   return (
     <div className={`${PANTALLA_MENOS_BARRA_INFERIOR} bg-gray-50`}>
@@ -586,6 +528,106 @@ const EnvelopePage = () => {
 
       </div>
     </div>
+  );
+};
+
+const EnvelopePage = () => {
+  const { id, roundId } = useParams();
+  const [vista, setVista] = useState(null);
+  const [fallo, setFallo] = useState(null);
+  // La espera de pantalla completa solo hasta la PRIMERA carga, como siempre:
+  // al pasar de una ronda a otra sin salir no vuelve
+  const [primeraTerminada, setPrimeraTerminada] = useState(false);
+
+  // Cada lectura lleva su número: la que vuelve tarde no pisa a una posterior,
+  // como un refresco que sale antes de dar el permiso y llega después
+  const generacion = useRef(0);
+  const leidaRef = useRef(0);
+  const refrescoEnVuelo = useRef(false);
+
+  // La carga de la pantalla y la de después de cada acción. Al cambiar de
+  // ronda o al salir, la que llega tarde ya no pinta ni avisa: un fallo
+  // avisaba en la pantalla a la que se había ido
+  const { recargar } = useCargaCancelableEffect(
+    () => {
+      leidaRef.current = ++generacion.current;
+      return getEnvelopesUseCase.execute(roundId);
+    },
+    [roundId],
+    {
+      alCargar: (datos) => {
+        setPrimeraTerminada(true);
+        if (leidaRef.current !== generacion.current) return;
+        setVista(datos);
+        setFallo(null);
+      },
+      alFallar: (error) => {
+        setPrimeraTerminada(true);
+        if (leidaRef.current !== generacion.current) return;
+        // Y se guarda: sin esto la pantalla caía en «aquí verás los
+        // enfrentamientos en cuanto se abran», que es tranquilizador y falso
+        setFallo(error.message);
+        customToast.error(error.message);
+      },
+    }
+  );
+  // Tras una acción, sin la espera de toda la pantalla, y se espera a que
+  // llegue antes de soltar el botón. Nunca se rechaza: el fallo ya lo avisa
+  // `alFallar`, una sola vez
+  const cargar = useCallback(() => recargar({ silenciosa: true }), [recargar]);
+
+  // El refresco mientras se espera al rival. Con una red lenta no se
+  // amontonan: uno a la vez (CodeRabbit en la #720). Y en silencio: un fallo
+  // del refresco no es algo que el capitán haya hecho
+  const refrescar = useCallback(async () => {
+    if (refrescoEnVuelo.current) return;
+    refrescoEnVuelo.current = true;
+    const mia = ++generacion.current;
+    try {
+      const datos = await getEnvelopesUseCase.execute(roundId);
+      if (mia !== generacion.current) return;
+      setVista(datos);
+      setFallo(null);
+    } catch {
+      // Lo que ya había sigue valiendo: se vuelve a preguntar en el siguiente
+    } finally {
+      refrescoEnVuelo.current = false;
+    }
+  }, [roundId]);
+
+  // Los nombres de los equipos, solo para decir de quién es el sobre que
+  // rellenó la aplicación: la vista del sobre no los trae. Sin ellos el aviso
+  // sale igual, sin nombre
+  const hayAutomatico = Boolean(vista?.teamAAutomatic || vista?.teamBAutomatic);
+  const [nombresDeLosEquipos, setNombresDeLosEquipos] = useState(null);
+  useEffect(() => {
+    if (!hayAutomatico) return undefined;
+    let vigente = true;
+    (async () => getCompetitionDetailUseCase.execute(id))()
+      .then(
+        (competicion) =>
+          vigente &&
+          setNombresDeLosEquipos({ id, A: competicion.team1Name, B: competicion.team2Name })
+      )
+      .catch(() => {});
+    return () => {
+      vigente = false;
+    };
+  }, [hayAutomatico, id]);
+
+  if (!primeraTerminada) return <FullScreenLoader />;
+
+  return (
+    <SobreDeLaRonda
+      key={roundId}
+      id={id}
+      roundId={roundId}
+      vista={vista}
+      fallo={fallo}
+      cargar={cargar}
+      refrescar={refrescar}
+      nombresDeLosEquipos={nombresDeLosEquipos}
+    />
   );
 };
 
