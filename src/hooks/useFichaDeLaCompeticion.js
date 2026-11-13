@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useEffectEvent, useCallback, useRef } from 'react';
 import customToast from '../utils/toast';
 import { seEstaCerrandoLaSesion } from '../utils/cierreDeEstaCarga';
 import { getCompetitionDetailUseCase, listEnrollmentsUseCase } from '../composition';
@@ -69,15 +69,19 @@ export const useFichaDeLaCompeticion = ({ id, userId, t, navigate }) => {
     } finally {
       if (sigueEnPantalla()) setIsLoadingCompetition(false);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [id, userId, navigate]);
+  }, [id, userId, navigate, t, lecturasDeLaFicha, lecturasDeInscripciones]);
 
+  // Se pide al entrar y al cambiar de ficha o de usuario, no al cambiar de
+  // idioma: por eso la carga se lanza como evento del efecto y `t` (que sí
+  // usa, para el aviso de fallo) no la vuelve a lanzar
+  const cargarAlEntrar = useEffectEvent(() => {
+    loadCompetition();
+  });
   useEffect(() => {
-    if (userId) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- pre-existing pattern surfaced by eslint-plugin-react-hooks 7.1.1 bump; needs dedicated review (tracked in follow-up)
-      loadCompetition();
-    }
-  }, [id, userId, loadCompetition]);
+    if (!userId) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- la carga enseña la espera de pantalla completa en cuanto empieza (también la llaman las acciones, que la necesitan al momento) y se relee al cambiar de ficha o de usuario; sacarla del efecto es reescribir la ficha (P4, tanda T4)
+    cargarAlEntrar();
+  }, [id, userId]);
 
   return {
     competition,

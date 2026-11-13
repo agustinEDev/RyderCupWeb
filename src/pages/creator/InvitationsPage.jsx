@@ -100,7 +100,7 @@ const InvitationsPage = () => {
     isLoading: isLoadingRoles,
     error: falloAlPedirLosPermisos,
     refetch: volverAPedirLosPermisos,
-  } = useUserRoles(id);
+  } = useUserRoles(id, user?.id);
 
   const [competition, setCompetition] = useState(null);
   const [invitations, setInvitations] = useState([]);

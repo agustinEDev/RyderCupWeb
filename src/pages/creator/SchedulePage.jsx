@@ -46,7 +46,7 @@ const SchedulePage = () => {
   const { t } = useTranslation('schedule');
   const { t: tComp } = useTranslation('competitions');
   const { user, loading: isLoadingUser } = useAuth();
-  const { isAdmin, isCreator: hasCreatorRole, isLoading: isLoadingRoles } = useUserRoles(id);
+  const { isAdmin, isCreator: hasCreatorRole, isLoading: isLoadingRoles } = useUserRoles(id, user?.id);
 
   // Data state
   const [competition, setCompetition] = useState(null);
