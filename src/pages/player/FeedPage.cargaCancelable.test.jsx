@@ -19,6 +19,7 @@ import FeedPage from './FeedPage';
  *   T2-3  cambia el idioma con el feed ya cargado                | no se vuelve a pedir
  *   T2-20 «Cargar más» en vuelo y cambia el usuario           | lo del anterior no se mezcla en el feed nuevo
  *   T2-21 recarga de fondo en vuelo y cambia el usuario        | ni se mezcla ni se da por visto en su cuenta
+ *   T2-22 cambia el usuario y sube el número antes de su feed  | no se recarga sobre lo del anterior; luego, lo suyo
  *   N1    el número de novedades se vuelve a fijar igual           | no se recarga (solo al cambiar)
  */
 const mockSesion = vi.hoisted(() => ({ user: { id: 'me' } }));
@@ -246,6 +247,39 @@ describe('FeedPage: la primera carga descarta lo que llega tarde (T2)', () => {
     // Then ni entra en el feed del nuevo ni se marca como visto por ella
     expect(screen.queryByTestId('activity-event-recarga-del-primero')).not.toBeInTheDocument();
     expect(markSeen).toHaveBeenCalledTimes(1);
+  });
+
+  it('T2-22: cambia el usuario y sube el número antes de llegar su feed: nada del anterior se mezcla con lo suyo', async () => {
+    // Given el feed del primero cargado
+    const delSegundo = aMano();
+    getFeed
+      .mockResolvedValueOnce(pagina('del-primero', 'c-primero'))
+      .mockReturnValueOnce(delSegundo.promesa)
+      .mockResolvedValue(pagina('recarga-del-segundo', 'c-recarga'));
+    const { rerender } = render(arbol());
+    await screen.findByTestId('activity-event-del-primero');
+    await act(async () => {});
+
+    // When cambia el usuario y, antes de que llegue su primera página, sube el número
+    mockSesion.user = { id: 'otro' };
+    rerender(arbol());
+    expect(getFeed).toHaveBeenCalledTimes(2);
+    act(() => mockNovedades.fija(2));
+    await act(async () => {});
+
+    // Then no hay recarga sobre el feed del anterior: lo del primero no se
+    // queda debajo de lo del nuevo
+    expect(getFeed).toHaveBeenCalledTimes(2);
+    await act(async () => delSegundo.resolver(pagina('del-segundo', 'c-segundo')));
+    expect(await screen.findByTestId('activity-event-del-segundo')).toBeInTheDocument();
+    expect(screen.queryByTestId('activity-event-del-primero')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('activity-event-recarga-del-segundo')).not.toBeInTheDocument();
+
+    // Y con su feed ya puesto, la siguiente subida sí recarga, sobre lo suyo
+    act(() => mockNovedades.fija(3));
+    expect(await screen.findByTestId('activity-event-recarga-del-segundo')).toBeInTheDocument();
+    expect(screen.getByTestId('activity-event-del-segundo')).toBeInTheDocument();
+    expect(screen.queryByTestId('activity-event-del-primero')).not.toBeInTheDocument();
   });
 
   it('N1: volver a fijar el mismo número de novedades no recarga; cambiarlo sí', async () => {

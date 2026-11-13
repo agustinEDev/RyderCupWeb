@@ -848,6 +848,30 @@ describe('FeedPage', () => {
       expect(getFeed).toHaveBeenLastCalledWith({ limit: 20, cursor: 'cursor-1' });
     });
 
+    it('a reload that starts before the first page is painted and shares an event with it keeps its cursor', async () => {
+      // Como la anterior, pero la página fresca no viene vacía: enlaza porque
+      // comparte una entrada con la primera, que la recarga ya tiene que ver
+      markSeen.mockImplementationOnce(() => {
+        mockNovedades.fija(1);
+        return Promise.resolve();
+      });
+      getFeed
+        .mockResolvedValueOnce(pagina({ nextCursor: 'cursor-1' }))
+        .mockResolvedValueOnce(pagina({ events: [nuevo('n1', 59), evento()], nextCursor: 'fresco' }))
+        .mockResolvedValueOnce(pagina({ events: [nuevo('viejo', 1)], nextCursor: null }));
+      renderFeed();
+
+      await waitFor(() => expect(aCero).toHaveBeenCalledTimes(2));
+      expect(getFeed).toHaveBeenCalledTimes(2);
+      expect(screen.getByTestId('activity-event-n1')).toBeInTheDocument();
+
+      fireEvent.click(screen.getByTestId('feed-load-more'));
+      expect(await screen.findByTestId('activity-event-viejo')).toBeInTheDocument();
+      expect(getFeed).toHaveBeenLastCalledWith({ limit: 20, cursor: 'cursor-1' });
+    });
+
+    // Guarda de regresión: ya pasaba antes del arreglo de la recarga temprana;
+    // es la que mata que la recarga no apunte lo que mezcla en `cargados`
     it('«Cargar más» after a reload keeps what the reload brought on top', async () => {
       getFeed
         .mockResolvedValueOnce(pagina({ nextCursor: 'cursor-1' }))

@@ -87,8 +87,13 @@ const FeedPage = () => {
   // escribe a la vez que `events`, en el mismo sitio, y no en un efecto al
   // pintar: una recarga que salta justo al llegar la primera página, antes de
   // que React la pinte, veía aún el feed vacío de antes, no enlazaba y cambiaba
-  // el cursor de lo cargado por el suyo
+  // el cursor de lo cargado por el suyo. Por eso solo se cambian con
+  // `ponEventos`, que escribe los dos
   const cargados = useRef([]);
+  const ponEventos = useCallback((siguientes) => {
+    cargados.current = siguientes;
+    setEvents(siguientes);
+  }, []);
 
   // Se marca como visto una sola vez por visita. Sin esto, cada paginación
   // volvería a marcarlo, y el aviso se apagaría por refrescar en vez de por
@@ -105,8 +110,13 @@ const FeedPage = () => {
   // otra, lo suyo no se mezcla en el feed nuevo ni se da por visto en ella.
   // Se pone al confirmar el cambio, antes de que conteste nada
   const deQuienRef = useRef(userId);
+  // Con otra cuenta, lo cargado era de la anterior: hasta que llegue la
+  // primera página de esta no hay sobre qué recargar —una recarga mezclaría lo
+  // suyo con lo de la otra cuenta—. Solo la ref: `cargados` y el estado los
+  // pone `alCargar` al llegar, antes de que nada los pueda leer
   useLayoutEffect(() => {
     deQuienRef.current = userId;
+    cargado.current = false;
   }, [userId]);
 
   /**
@@ -134,8 +144,7 @@ const FeedPage = () => {
       const page = await getFriendsFeedUseCase.execute({ limit: PAGE_SIZE });
       if (deQuienRef.current !== deQuien) return;
       const antes = cargados.current;
-      cargados.current = mezclaArriba(antes, page.events);
-      setEvents(cargados.current);
+      ponEventos(mezclaArriba(antes, page.events));
       setAuthors((prev) => ({ ...prev, ...page.authors }));
       setCourses((prev) => ({ ...prev, ...page.courses }));
       setRequests(page.pendingFriendRequests || []);
@@ -160,7 +169,7 @@ const FeedPage = () => {
     } finally {
       recargando.current = false;
     }
-  }, []);
+  }, [ponEventos]);
 
   // La primera página, al entrar o con «Reintentar». Si cambia el usuario con
   // una en vuelo, la vieja ni se pinta ni avisa. `t` solo se usa en el aviso,
@@ -171,8 +180,7 @@ const FeedPage = () => {
     {
       activa: Boolean(userId),
       alCargar: (page) => {
-        cargados.current = page.events;
-        setEvents(page.events);
+        ponEventos(page.events);
         setAuthors(page.authors);
         setCourses(page.courses);
         setRequests(page.pendingFriendRequests || []);
@@ -237,8 +245,7 @@ const FeedPage = () => {
       // Es de la cuenta anterior: no se mezcla en el feed de esta
       if (deQuienRef.current !== deQuien) return;
       // Sin repetir lo que una recarga ya hubiera traído
-      cargados.current = mezclaAbajo(cargados.current, page.events);
-      setEvents(cargados.current);
+      ponEventos(mezclaAbajo(cargados.current, page.events));
       setAuthors((prev) => ({ ...prev, ...page.authors }));
       setCourses((prev) => ({ ...prev, ...page.courses }));
       setNextCursor(page.nextCursor);
