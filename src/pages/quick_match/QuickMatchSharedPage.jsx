@@ -1,6 +1,7 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import { Navigate, useLocation, useNavigate, useParams } from 'react-router';
 import { useGoBack } from '../../hooks/useGoBack';
+import { useCargaCancelableEffect } from '../../hooks/useCargaCancelableEffect';
 import { useTranslation } from 'react-i18next';
 import { ArrowLeft, Eye, Lock, RefreshCw, SearchX } from 'lucide-react';
 import HeaderAuth from '../../components/layout/HeaderAuth';
@@ -48,7 +49,6 @@ const QuickMatchSharedPage = () => {
   // lo dice con un error genérico y su reintento
   const [falloDelCampo, setFalloDelCampo] = useState(false);
   const [fallo, setFallo] = useState(null);
-  const [cargando, setCargando] = useState(true);
   const [pestana, setPestana] = useState('classification');
 
   // De quién era la tarjeta que trajo aquí: a su perfil si no se puede ver
@@ -57,48 +57,58 @@ const QuickMatchSharedPage = () => {
   // apilarlo otra vez; sin pantalla detrás, a su perfil
   const desdeSuPerfil = !!state?.desdeSuPerfil;
   const volverAlPerfil = useGoBack(perfilDe ? `/players/${perfilDe}` : '/feed');
-  const tRef = useRef(t);
-  useEffect(() => {
-    tRef.current = t;
-  }, [t]);
-
+  // Qué petición del campo es la última: el de la partida anterior que llega
+  // tarde no se pinta en esta
+  const campoPedidoRef = useRef(0);
+  // El campo se pide en cuanto llega la partida, en el mismo momento que
+  // antes, y no en un efecto un pintado después
   const cargaElCampo = useCallback(async (golfCourseId) => {
+    const mio = ++campoPedidoRef.current;
     setFalloDelCampo(false);
     try {
-      setCampo(await getGolfCourseUseCase.execute(golfCourseId));
+      const datos = await getGolfCourseUseCase.execute(golfCourseId);
+      if (mio === campoPedidoRef.current) setCampo(datos);
     } catch {
-      setFalloDelCampo(true);
+      if (mio === campoPedidoRef.current) setFalloDelCampo(true);
     }
   }, []);
 
-  const carga = useCallback(async () => {
-    setCargando(true);
-    setFallo(null);
-    try {
-      const datos = await getSharedQuickMatchUseCase.execute(quickMatchId);
-      setPartida(datos);
-      if (!datos.viewerIsParticipant) cargaElCampo(datos.golfCourseId);
-    } catch (error) {
-      if (error?.status === HTTP_FORBIDDEN && perfilDe && desdeSuPerfil) {
-        customToast.info(tRef.current('shared.forbiddenBack'));
-        volverAlPerfil();
-        return;
-      }
-      if (error?.status === HTTP_FORBIDDEN && perfilDe) {
-        customToast.info(tRef.current('shared.forbiddenToast'));
-        navigate(`/players/${perfilDe}`, { replace: true });
-        return;
-      }
-      setFallo(error?.status ?? 'otro');
-    } finally {
-      setCargando(false);
+  // La partida se pide al entrar y al pasar a otra. Si se sale (o se pasa a
+  // otra) antes de que llegue, lo que llega tarde ya no se aplica: un 403
+  // tardío avisaba y se llevaba al usuario al perfil del amigo desde la
+  // pantalla a la que se había ido. Lo que se hace al llegar lee `t` y el
+  // estado de la navegación de ese momento: cambiar de idioma no la vuelve a
+  // pedir, y tampoco un cambio del estado de la navegación en la misma URL
+  const { cargando, recargar } = useCargaCancelableEffect(
+    () => getSharedQuickMatchUseCase.execute(quickMatchId),
+    [quickMatchId],
+    {
+      alCargar: (datos) => {
+        setFallo(null);
+        setPartida(datos);
+        // Quien la jugó va a su anotación: no hace falta el campo
+        if (!datos.viewerIsParticipant) cargaElCampo(datos.golfCourseId);
+      },
+      alFallar: (error) => {
+        if (error?.status === HTTP_FORBIDDEN && perfilDe && desdeSuPerfil) {
+          customToast.info(t('shared.forbiddenBack'));
+          volverAlPerfil();
+          return;
+        }
+        if (error?.status === HTTP_FORBIDDEN && perfilDe) {
+          customToast.info(t('shared.forbiddenToast'));
+          navigate(`/players/${perfilDe}`, { replace: true });
+          return;
+        }
+        setFallo(error?.status ?? 'otro');
+      },
     }
-  }, [quickMatchId, perfilDe, desdeSuPerfil, volverAlPerfil, navigate, cargaElCampo]);
-
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- the load sets state only after awaiting the API
-    carga();
-  }, [carga]);
+  );
+  // Reintentar: se quita el fallo y vuelve la espera, como siempre
+  const reintentar = () => {
+    setFallo(null);
+    recargar();
+  };
 
   const participantes = useMemo(
     () =>
@@ -127,7 +137,7 @@ const QuickMatchSharedPage = () => {
       <div className={`${PANTALLA_MENOS_BARRA_INFERIOR} bg-gray-50`}>
         <HeaderAuth />
         <main className="max-w-2xl mx-auto px-4 py-6 pb-24">
-          <SinPartida fallo={fallo} onReintentar={carga} onVolver={volver} t={t} />
+          <SinPartida fallo={fallo} onReintentar={reintentar} onVolver={volver} t={t} />
         </main>
       </div>
     );
