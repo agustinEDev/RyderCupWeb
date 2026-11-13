@@ -8,7 +8,9 @@ import UpcomingMatchesPage from './UpcomingMatchesPage';
  *
  *   #      caso                                     | qué pasa
  *   -------|------------------------------------------|---------------------------------------------
- *   T2-14  sin usuario                              | ni espera ni petición
+ *   T2-14  sin usuario                              | ni espera ni petición: «no se pudo preguntar»,
+ *          |                                          | no «no tienes partidos»
+ *   T2-14b se va el usuario con avisos a la vista   | «no se pudo preguntar», sin los avisos ni la lista de antes
  *   T2-15  cambia el usuario con la lectura en vuelo | la lista vieja no se pinta
  *   T2-17d llega un `user` nuevo con el mismo id     | no se vuelve a pedir
  *   T2-16  la lectura falla entera                  | «no se pudo preguntar», no una espera sin fin
@@ -70,7 +72,7 @@ describe('UpcomingMatchesPage: la lectura descarta lo que llega tarde (T2)', () 
     leePartidos.mockResolvedValue(partidos('m-1'));
   });
 
-  it('T2-14: sin usuario, ni espera ni petición', async () => {
+  it('T2-14: sin usuario, ni espera ni petición, y «no se pudo preguntar» en vez de «no tienes»', async () => {
     sesion.user = null;
     render(arbol());
     await act(async () => {});
@@ -78,6 +80,25 @@ describe('UpcomingMatchesPage: la lectura descarta lo que llega tarde (T2)', () 
     expect(espera()).not.toBeInTheDocument();
     expect(leePartidos).not.toHaveBeenCalled();
     expect(listarCompeticiones).not.toHaveBeenCalled();
+    expect(screen.getByText('upcomingMatches.sinRespuesta')).toBeInTheDocument();
+    expect(screen.queryByText('upcomingMatches.noMatches')).not.toBeInTheDocument();
+  });
+
+  it('T2-14b: si se va el usuario, ni los avisos ni la lista de antes: «no se pudo preguntar»', async () => {
+    leePartidos.mockResolvedValueOnce({ ...partidos('m-1'), desdeMemoria: true, incompleta: true });
+    const { rerender } = render(arbol());
+    await screen.findByTestId('proximo-m-1');
+    expect(screen.getByTestId('upcoming-matches-desde-memoria')).toBeInTheDocument();
+    expect(screen.getByTestId('upcoming-matches-incompleta')).toBeInTheDocument();
+
+    sesion.user = null;
+    rerender(arbol());
+    await act(async () => {});
+
+    expect(screen.queryByTestId('upcoming-matches-desde-memoria')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('upcoming-matches-incompleta')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('proximo-m-1')).not.toBeInTheDocument();
+    expect(screen.getByText('upcomingMatches.sinRespuesta')).toBeInTheDocument();
   });
 
   it('T2-15: si cambia el usuario con la lectura en vuelo, la lista vieja no se pinta', async () => {

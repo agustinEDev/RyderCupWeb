@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { useState, useEffect, useLayoutEffect, useCallback, useRef, useMemo } from 'react';
 import { Link, useLocation } from 'react-router';
 import { AlertCircle, Loader, RefreshCw, Sparkles, UserPlus, WifiOff } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
@@ -96,6 +96,15 @@ const FeedPage = () => {
   // su identidad vuelve a pedir el feed sin parar.
   const userId = user?.id;
 
+  // De quién es el feed que se ve. La recarga de fondo y «Cargar más» van por
+  // su cuenta, fuera de la carga de la página: si al contestar la cuenta ya es
+  // otra, lo suyo no se mezcla en el feed nuevo ni se da por visto en ella.
+  // Se pone al confirmar el cambio, antes de que conteste nada
+  const deQuienRef = useRef(userId);
+  useLayoutEffect(() => {
+    deQuienRef.current = userId;
+  }, [userId]);
+
   /**
    * Hay novedades estando ya en Actividad —el número subió al volver a la
    * aplicación o a la red, o se ha vuelto a pulsar Actividad—: se pide otra
@@ -116,8 +125,10 @@ const FeedPage = () => {
       return;
     }
     recargando.current = true;
+    const deQuien = deQuienRef.current;
     try {
       const page = await getFriendsFeedUseCase.execute({ limit: PAGE_SIZE });
+      if (deQuienRef.current !== deQuien) return;
       setEvents((prev) => mezclaArriba(prev, page.events));
       setAuthors((prev) => ({ ...prev, ...page.authors }));
       setCourses((prev) => ({ ...prev, ...page.courses }));
@@ -210,17 +221,21 @@ const FeedPage = () => {
 
     setIsLoadingMore(true);
     cargandoMas.current = true;
+    const deQuien = deQuienRef.current;
     try {
       const page = await getFriendsFeedUseCase.execute({
         limit: PAGE_SIZE,
         cursor: nextCursor,
       });
+      // Es de la cuenta anterior: no se mezcla en el feed de esta
+      if (deQuienRef.current !== deQuien) return;
       // Sin repetir lo que una recarga ya hubiera traído
       setEvents((prev) => mezclaAbajo(prev, page.events));
       setAuthors((prev) => ({ ...prev, ...page.authors }));
       setCourses((prev) => ({ ...prev, ...page.courses }));
       setNextCursor(page.nextCursor);
     } catch (err) {
+      if (deQuienRef.current !== deQuien) return;
       customToast.error(
         t(esFalloDeRed(err) ? 'common:sinConexion.mensaje' : 'common:errors.generic')
       );

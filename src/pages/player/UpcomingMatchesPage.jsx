@@ -106,6 +106,9 @@ const UpcomingMatchesPage = () => {
   }, [proximaApertura]);
 
   const isPageLoading = isLoadingUser || isLoading;
+  // Sin usuario no se ha preguntado nada: no se puede decir que no tenga
+  // partidos, ni enseñar lo de otra cuenta
+  const sinPoderPreguntar = sinRespuesta || !userId;
 
   if (isPageLoading) {
     // La cabecera se queda puesta durante la espera: aparecer de golpe al
@@ -128,20 +131,20 @@ const UpcomingMatchesPage = () => {
           <p className="text-sm text-gray-500 mt-1">{t('upcomingMatches.subtitle')}</p>
         </div>
 
-        {(desdeMemoria.partidos || desdeMemoria.partidas) && (
+        {userId && (desdeMemoria.partidos || desdeMemoria.partidas) && (
           <p className="text-sm text-amber-800 mb-4" data-testid="upcoming-matches-desde-memoria">
             {/* Solo una de las dos de memoria: «algunos de» los que se vieron */}
             {t(desdeMemoria.partidos && desdeMemoria.partidas ? 'upcomingMatches.desdeMemoria' : 'upcomingMatches.desdeMemoriaParcial')}
           </p>
         )}
 
-        {incompleta && (
+        {userId && incompleta && (
           <p className="text-sm text-amber-800 mb-4" data-testid="upcoming-matches-incompleta">
             {t('upcomingMatches.incompleta')}
           </p>
         )}
 
-        {sinRespuesta ? (
+        {sinPoderPreguntar ? (
           <div className="text-center py-12">
             <Flag className="h-12 w-12 text-gray-300 mx-auto mb-3" />
             <p className="text-gray-500 font-medium">{t('upcomingMatches.sinRespuesta')}</p>

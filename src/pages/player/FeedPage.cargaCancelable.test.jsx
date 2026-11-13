@@ -17,6 +17,8 @@ import FeedPage from './FeedPage';
  *   T2-1  la primera falla y se pulsa «Reintentar»               | una espera, el feed, sin un segundo aviso
  *   T2-2  cambia el usuario con la primera en vuelo              | la vieja ni se pinta ni avisa
  *   T2-3  cambia el idioma con el feed ya cargado                | no se vuelve a pedir
+ *   T2-20 «Cargar más» en vuelo y cambia el usuario           | lo del anterior no se mezcla en el feed nuevo
+ *   T2-21 recarga de fondo en vuelo y cambia el usuario        | ni se mezcla ni se da por visto en su cuenta
  *   N1    el número de novedades se vuelve a fijar igual           | no se recarga (solo al cambiar)
  */
 const mockSesion = vi.hoisted(() => ({ user: { id: 'me' } }));
@@ -60,9 +62,10 @@ vi.mock('../../utils/toast', () => ({
   default: { error: (...a) => toastError(...a), success: vi.fn() },
 }));
 const getFeed = vi.fn();
+const markSeen = vi.fn(() => Promise.resolve());
 vi.mock('../../composition', () => ({
   getFriendsFeedUseCase: { execute: (...args) => getFeed(...args) },
-  markFeedAsSeenUseCase: { execute: () => Promise.resolve() },
+  markFeedAsSeenUseCase: { execute: () => markSeen() },
   respondFriendRequestUseCase: { execute: () => Promise.resolve({}) },
 }));
 
@@ -89,7 +92,7 @@ const aMano = () => {
   return { promesa, resolver, rechazar };
 };
 
-const pagina = (id) => ({
+const pagina = (id, nextCursor = null) => ({
   events: [
     {
       id,
@@ -104,7 +107,7 @@ const pagina = (id) => ({
   ],
   authors: { u1: { id: 'u1', firstName: 'Ana', lastName: 'García' } },
   courses: {},
-  nextCursor: null,
+  nextCursor,
   unseenCount: 0,
   pendingFriendRequests: [],
 });
@@ -122,6 +125,7 @@ describe('FeedPage: la primera carga descarta lo que llega tarde (T2)', () => {
     vi.clearAllMocks();
     mockSesion.user = { id: 'me' };
     mockNovedades.fija(0);
+    markSeen.mockImplementation(() => Promise.resolve());
     await i18n.changeLanguage('es');
   });
 
@@ -177,6 +181,71 @@ describe('FeedPage: la primera carga descarta lo que llega tarde (T2)', () => {
 
     expect(toastError).not.toHaveBeenCalled();
     expect(screen.queryByRole('button', { name: 'Reintentar' })).not.toBeInTheDocument();
+  });
+
+  it('T2-20: con «Cargar más» en vuelo cambia el usuario: su página no se mezcla en el feed del nuevo', async () => {
+    // Given el feed del primero, con «Cargar más» pedido
+    const mas = aMano();
+    getFeed
+      .mockResolvedValueOnce(pagina('del-primero', 'c1'))
+      .mockReturnValueOnce(mas.promesa)
+      .mockResolvedValueOnce(pagina('del-segundo'));
+    const { rerender } = render(arbol());
+    fireEvent.click(await screen.findByRole('button', { name: 'Cargar más' }));
+    expect(getFeed).toHaveBeenLastCalledWith({ limit: 20, cursor: 'c1' });
+
+    // When cambia el usuario, llega su feed y después la página del anterior
+    mockSesion.user = { id: 'otro' };
+    rerender(arbol());
+    await screen.findByTestId('activity-event-del-segundo');
+    await act(async () => mas.resolver(pagina('mas-del-primero')));
+
+    // Then en el feed del nuevo no entra nada del anterior
+    expect(screen.queryByTestId('activity-event-mas-del-primero')).not.toBeInTheDocument();
+    expect(screen.getByTestId('activity-event-del-segundo')).toBeInTheDocument();
+  });
+
+  it('T2-20: el fallo de ese «Cargar más» tampoco avisa en el feed del nuevo', async () => {
+    const mas = aMano();
+    getFeed
+      .mockResolvedValueOnce(pagina('del-primero', 'c1'))
+      .mockReturnValueOnce(mas.promesa)
+      .mockResolvedValueOnce(pagina('del-segundo'));
+    const { rerender } = render(arbol());
+    fireEvent.click(await screen.findByRole('button', { name: 'Cargar más' }));
+
+    mockSesion.user = { id: 'otro' };
+    rerender(arbol());
+    await screen.findByTestId('activity-event-del-segundo');
+    await act(async () => mas.rechazar(new Error('500')));
+
+    expect(toastError).not.toHaveBeenCalled();
+  });
+
+  it('T2-21: con la recarga de fondo en vuelo cambia el usuario: ni se mezcla ni se da por visto', async () => {
+    // Given el feed del primero ya visto, y una recarga de fondo pedida
+    const recarga = aMano();
+    getFeed
+      .mockResolvedValueOnce(pagina('del-primero'))
+      .mockReturnValueOnce(recarga.promesa)
+      .mockResolvedValueOnce(pagina('del-segundo'));
+    const { rerender } = render(arbol());
+    await screen.findByTestId('activity-event-del-primero');
+    await act(async () => {});
+    expect(markSeen).toHaveBeenCalledTimes(1);
+    act(() => mockNovedades.fija(2));
+    expect(getFeed).toHaveBeenCalledTimes(2);
+
+    // When cambia el usuario, llega su feed y después la recarga del anterior
+    mockSesion.user = { id: 'otro' };
+    rerender(arbol());
+    await screen.findByTestId('activity-event-del-segundo');
+    await act(async () => recarga.resolver(pagina('recarga-del-primero')));
+    await act(async () => {});
+
+    // Then ni entra en el feed del nuevo ni se marca como visto por ella
+    expect(screen.queryByTestId('activity-event-recarga-del-primero')).not.toBeInTheDocument();
+    expect(markSeen).toHaveBeenCalledTimes(1);
   });
 
   it('N1: volver a fijar el mismo número de novedades no recarga; cambiarlo sí', async () => {
