@@ -28,6 +28,8 @@ import { useCargaCancelableEffect } from './useCargaCancelableEffect';
  *        y esa termina                           | ('cargada' con sus datos o 'fallida' con su error)
  *   H10c y a esa la sustituye otra               | se sigue la cadena: todas se cumplen con la última
  *   H10d y la que la sustituyó se descarta       | (cambian las deps, se desactiva o se desmonta) todas, descartadas
+ *   H10e recargar() con la carga inactiva        | (ya lo estaba, o se desactiva en el mismo pintado) se cumple
+ *                                                | como descartada en ese momento, con las que la siguen
  */
 // Una respuesta que llega cuando la prueba quiere
 const aMano = () => {
@@ -503,18 +505,51 @@ describe('useCargaCancelableEffect', () => {
     await expect(promesa).resolves.toEqual({ estado: 'descartada' });
   });
 
-  it('H10: un recargar estando inactiva que nunca llega a pedir se cumple como descartada al desmontar', async () => {
-    const { result, unmount } = usar(props({ activa: false }));
+  it('H10: un recargar estando inactiva no llega a pedir y se cumple como descartada ya, sin esperar a desmontar', async () => {
+    const { result } = usar(props({ activa: false }));
     await act(async () => {});
 
     let promesa;
     act(() => {
       promesa = result.current.recargar();
     });
-    unmount();
+    const visto = estadoDe(promesa);
+    await act(async () => {});
 
-    await expect(promesa).resolves.toEqual({ estado: 'descartada' });
+    expect(visto.valor).toEqual({ estado: 'descartada' });
     expect(pedir).not.toHaveBeenCalled();
+  });
+
+  it('H10e: recargar y desactivarse en el mismo pintado: se cumple como descartada', async () => {
+    pedir.mockResolvedValueOnce('primera');
+    const { result, rerender } = usar(props());
+    await act(async () => {});
+    pedir.mockReturnValue(new Promise(() => {}));
+
+    let promesa;
+    act(() => {
+      promesa = result.current.recargar();
+      rerender(props({ activa: false }));
+    });
+    const visto = estadoDe(promesa);
+    await act(async () => {});
+
+    expect(visto.valor).toEqual({ estado: 'descartada' });
+    expect(pedir).toHaveBeenCalledTimes(1);
+  });
+
+  it('H10e: con una recarga en vuelo, otro recargar y desactivarse en el mismo pintado: las dos, descartadas', async () => {
+    const { vistas, result, rerender } = await recargasSeguidas(1);
+
+    act(() => {
+      vistas.push(estadoDe(result.current.recargar()));
+      rerender(props({ activa: false }));
+    });
+    await act(async () => {});
+
+    expect(vistas[0].valor).toEqual({ estado: 'descartada' });
+    expect(vistas[1].valor).toEqual({ estado: 'descartada' });
+    expect(pedir).toHaveBeenCalledTimes(2);
   });
 
   it('H10: si la vieja falla antes de que React pinte el recargar, la promesa nueva no se cumple con ese fallo', async () => {
@@ -656,8 +691,8 @@ describe('useCargaCancelableEffect', () => {
     expect(vistas[1].valor).toEqual({ estado: 'descartada' });
   });
 
-  it('H10d: con la sustituta de un recargar estando inactiva, al desmontar se cumplen las dos como descartadas', async () => {
-    const { result, unmount } = usar(props({ activa: false }));
+  it('H10d: un recargar estando inactiva y el que lo sustituye se cumplen como descartados ya, sin esperar a desmontar', async () => {
+    const { result } = usar(props({ activa: false }));
     await act(async () => {});
     const vistas = [];
     act(() => {
@@ -667,7 +702,6 @@ describe('useCargaCancelableEffect', () => {
       vistas.push(estadoDe(result.current.recargar()));
     });
 
-    unmount();
     await act(async () => {});
 
     expect(vistas[0].valor).toEqual({ estado: 'descartada' });

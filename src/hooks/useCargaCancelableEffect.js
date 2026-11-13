@@ -43,7 +43,9 @@ const mismasDependencias = (antes, ahora) =>
  *   esa otra carga, no los de la petición de quien llamó. Por eso el aviso de un
  *   fallo va en `alFallar`, que sale una sola vez, y no en quien espera la promesa.
  *   Si se descarta por otra cosa (cambian las
- *   dependencias, se desactiva o se desmonta), `{ estado: 'descartada' }`.
+ *   dependencias, se desactiva o se desmonta), `{ estado: 'descartada' }`. Con
+ *   la carga inactiva (ya lo estaba al llamar, o se desactiva en el mismo
+ *   pintado) no se pide nada y se cumple como descartada en ese momento.
  *   Nunca se rechaza: se puede esperar sin try/catch.
  */
 export const useCargaCancelableEffect = (pedir, deps, { activa = true, alCargar, alFallar } = {}) => {
@@ -63,7 +65,8 @@ export const useCargaCancelableEffect = (pedir, deps, { activa = true, alCargar,
   // fallara en ese hueco avisaba como si fuera la actual (CodeRabbit, FE #1111)
   const generacionRef = useRef(0);
   // Quién cumple la promesa del último `recargar()`: el siguiente la ata a la
-  // suya y el desmontaje la da por descartada, si su carga no llegó a cumplirla
+  // suya, y el efecto inactivo o el desmontaje la dan por descartada, si su
+  // carga no llegó a cumplirla
   const pendienteRef = useRef(null);
 
   const pedirAhora = useEffectEvent(() => pedir());
@@ -76,7 +79,13 @@ export const useCargaCancelableEffect = (pedir, deps, { activa = true, alCargar,
     // Inactiva olvida con qué corrió: al activarse, la carga es nueva y espera,
     // aunque entretanto se pidiera un `recargar({ silenciosa: true })`
     depsAnterioresRef.current = activa ? deps : null;
-    if (!activa) return undefined;
+    if (!activa) {
+      // Inactiva no pide: el `recargar()` pendiente (y los que lo siguen) se
+      // da por descartado ya, aunque se pidiera en el mismo pintado en que se
+      // desactivó. Si no, se quedaba esperando hasta reactivarse o desmontar
+      pendienteRef.current?.(DESCARTADA);
+      return undefined;
+    }
     recargaConsumidaRef.current = recarga;
     let vigente = true;
     // Silenciosa solo si la lanza un `recargar({ silenciosa: true })` que aún
@@ -134,7 +143,8 @@ export const useCargaCancelableEffect = (pedir, deps, { activa = true, alCargar,
     return promesa;
   }, []);
 
-  // Un `recargar()` estando inactiva no llega a pedir: al desmontar, descartado
+  // Al desmontar, el `recargar()` cuya carga no llegó a cumplirlo, descartado.
+  // Uno pedido estando inactiva ya se cumplió al correr su efecto inactivo
   useEffect(() => () => pendienteRef.current?.(DESCARTADA), []);
 
   return { cargando: activa && enCurso, recargar };
