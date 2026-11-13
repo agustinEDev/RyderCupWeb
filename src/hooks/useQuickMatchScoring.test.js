@@ -2779,3 +2779,93 @@ describe('useQuickMatchScoring · lo que llega tarde no atrasa la copia sin cone
     expect(offlineQueue.marcaDesaparecida).not.toHaveBeenLastCalledWith('qm-1', 'user-1', false);
   });
 });
+
+// T6: lo que el reinicio al cambiar de partida y la carga con sondeo hacen hoy
+// (sus disables se quedan con motivo): que la siguiente tanda no lo rompa
+describe('useQuickMatchScoring · cambiar de partida y cada cuánto se pregunta (T6)', () => {
+  const enVuelo = () => {
+    let suelta;
+    let falla;
+    const promesa = new Promise((res, rej) => { suelta = res; falla = rej; });
+    return { promesa, suelta: (v) => suelta(v), falla: (e) => falla(e) };
+  };
+  const esperaUnPoco = () => act(async () => { await new Promise((r) => setTimeout(r, 20)); });
+  const campo = (name, n) => ({ id: `c-${name}`, name, holes: Array.from({ length: n }, (_, i) => ({ holeNumber: i + 1, par: 4 })), tees: [] });
+
+  beforeEach(() => {
+    const guardado = new Map();
+    vi.stubGlobal('localStorage', {
+      getItem: (k) => (guardado.has(k) ? guardado.get(k) : null),
+      setItem: (k, v) => guardado.set(k, String(v)),
+      removeItem: (k) => guardado.delete(k),
+    });
+    vi.clearAllMocks();
+    olvidaTodo();
+    offlineQueue.getByMatch.mockReturnValue([]);
+    offlineQueue.size.mockImplementation((id) => (id === 'qm-2' ? 3 : 0));
+    getGolfCourseUseCase.execute.mockResolvedValue(campo('Campo Uno', 9));
+    getQuickMatchUseCase.execute.mockResolvedValue(mockQuickMatch);
+  });
+
+  it('T6-7 · de qm-1 a qm-2 sin red, con copia de qm-2: se pinta la de qm-2 en ámbar y nada de qm-1', async () => {
+    const app = renderHook(({ id }) => useQuickMatchScoring(id, 'user-1'), { initialProps: { id: 'qm-1' } });
+    await waitFor(() => expect(app.result.current.courseName).toBe('Campo Uno'));
+    expect(app.result.current.pendientes).toBe(0);
+
+    recuerda('qm-2', { partida: { ...mockQuickMatch, id: 'qm-2' }, campo: campo('Campo Dos', 2) });
+    getQuickMatchUseCase.execute.mockRejectedValue(new TypeError('Failed to fetch'));
+    app.rerender({ id: 'qm-2' });
+    await waitFor(() => expect(app.result.current.isLoading).toBe(false));
+
+    expect(app.result.current.quickMatch.id).toBe('qm-2');
+    expect(app.result.current.pintadoDeMemoria).toBe(true);
+    expect(app.result.current.courseName).toBe('Campo Dos');
+    expect(app.result.current.holes).toHaveLength(2);
+    expect(app.result.current.perdidos).toEqual([]);
+    expect(app.result.current.pendientes).toBe(3);
+  });
+
+  it('T6-8 · lo de qm-1 que llega tarde, tras pasar a qm-2 y fallar esta sin copia, no se pinta', async () => {
+    const vieja = enVuelo();
+    getQuickMatchUseCase.execute.mockImplementation((id) =>
+      (id === 'qm-1' ? vieja.promesa : Promise.reject(new TypeError('Failed to fetch')))
+    );
+    const app = renderHook(({ id }) => useQuickMatchScoring(id, 'user-1'), { initialProps: { id: 'qm-1' } });
+
+    app.rerender({ id: 'qm-2' });
+    await waitFor(() => expect(app.result.current.isLoading).toBe(false));
+    await act(async () => { vieja.suelta(mockQuickMatch); });
+    await esperaUnPoco();
+
+    expect(app.result.current.quickMatch).toBeNull();
+    expect(app.result.current.holes).toEqual([]);
+    expect(app.result.current.courseName).toBeNull();
+    expect(app.result.current.isLoading).toBe(false);
+    expect(app.result.current.loadError).toBeTruthy();
+  });
+
+  it('T6-9 · cargada, a los 59 s no pregunta y a los 60 s sí, una vez; la red y volver a la app, en el acto', async () => {
+    vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval'] });
+    try {
+      // Sin `waitFor`: sondea con un setInterval, que aquí es de mentira
+      const app = renderHook(() => useQuickMatchScoring('qm-1', 'user-1'));
+      await esperaUnPoco();
+      await esperaUnPoco();
+      expect(app.result.current.isLoading).toBe(false);
+      getQuickMatchUseCase.execute.mockClear();
+
+      await act(async () => { vi.advanceTimersByTime(59000); });
+      expect(getQuickMatchUseCase.execute).not.toHaveBeenCalled();
+      await act(async () => { vi.advanceTimersByTime(1000); });
+      expect(getQuickMatchUseCase.execute).toHaveBeenCalledTimes(1);
+
+      await act(async () => { globalThis.dispatchEvent(new globalThis.Event('online')); });
+      expect(getQuickMatchUseCase.execute).toHaveBeenCalledTimes(2);
+      Object.defineProperty(globalThis.document, 'visibilityState', { value: 'visible', configurable: true });
+      await act(async () => { globalThis.document.dispatchEvent(new globalThis.Event('visibilitychange')); });
+      expect(getQuickMatchUseCase.execute).toHaveBeenCalledTimes(3);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+});

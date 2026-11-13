@@ -255,7 +255,7 @@ export const useCargaDePartidaRapida = ({
     // Y lo que se está viendo: si la nueva no llega a cargar —y no hay nada
     // guardado de ella— se quedaba en pantalla la partida ANTERIOR, con sus
     // hoyos y su campo, lista para anotar encima
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- reset on match change, same pattern as the fetch effect below
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- el vaciado va con las refs que deciden qué respuesta vale y si se pinta la copia sin conexión (idVigenteRef, hayPartidaRef); separarlos deja pintarse la partida anterior en la nueva
     setQuickMatch(null);
     setHoles([]);
     setTees([]);
@@ -297,7 +297,7 @@ export const useCargaDePartidaRapida = ({
 
   useEffect(() => {
     holesLoadedRef.current = false;
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- initial fetch + polling, same pattern as useScoring.js
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- carga inicial y sondeo de 60 s: fetchQuickMatch solo cambia estado tras el await y descarta lo viejo con su reloj (FE #607), compartido con envíos, red y vuelta a la app; useCargaCancelableEffect («gana la última») no encaja
     fetchQuickMatch();
     pollIntervalRef.current = setInterval(fetchQuickMatch, POLL_INTERVAL);
     return () => {
