@@ -1175,6 +1175,49 @@ describe('QuickMatchScoringPage · cancelar una partida en curso', () => {
     expect(document.activeElement).toBe(screen.getByTestId('quick-match-tab-input'));
   });
 
+  it('returns the focus to the open tab when nothing was focused before the dialog (Safari)', async () => {
+    // En Safari tocar un botón no lo enfoca: al abrir el aviso el foco está en
+    // body, que no se guarda. Al cerrarlo tiene que ir a la pestaña abierta, no
+    // quedarse en ninguna parte (CodeRabbit, FE #1108)
+    comoCreador();
+    renderPage();
+
+    const boton = await screen.findByTestId('quick-match-cancel-button');
+    expect(document.activeElement).toBe(document.body);
+    fireEvent.click(boton);
+    await screen.findByTestId('quick-match-cancel-confirm');
+
+    await act(async () => {
+      fireEvent.keyDown(document, { key: 'Escape' });
+    });
+
+    expect(document.activeElement).toBe(screen.getByRole('tab', { selected: true }));
+  });
+
+  it('a second dialog opened from a focused button gives the focus back to that button', async () => {
+    // Cerrar el primer aviso tiene que dejarlo todo como antes de abrirlo: si
+    // no, el segundo no guarda el botón que lo abrió y el foco acaba en las
+    // pestañas (CodeRabbit, FE #1108)
+    comoCreador();
+    renderPage();
+
+    const boton = await screen.findByTestId('quick-match-cancel-button');
+    fireEvent.click(boton);
+    await screen.findByTestId('quick-match-cancel-confirm');
+    await act(async () => {
+      fireEvent.keyDown(document, { key: 'Escape' });
+    });
+
+    boton.focus();
+    fireEvent.click(boton);
+    await screen.findByTestId('quick-match-cancel-confirm');
+    await act(async () => {
+      fireEvent.keyDown(document, { key: 'Escape' });
+    });
+
+    expect(document.activeElement).toBe(boton);
+  });
+
   it('does not touch the focus when the page just loads', async () => {
     // El efecto corre tambien al montar, con los dos avisos cerrados: si toca
     // el foco ahi, se lo lleva a las pestanas en cada carga de la pantalla.

@@ -22,6 +22,10 @@ export const useFocoDeLosDialogos = ({
   const finishDialogRef = useRef(null);
   const discrepanciaDialogRef = useRef(null);
   const focoPrevioRef = useRef(null);
+  // Si hay un aviso abierto, aparte de qué foco se guardó: en Safari tocar un
+  // botón no lo enfoca, no se guarda nada, y al cerrar hay que ir igualmente
+  // a las pestañas (CodeRabbit, FE #1108)
+  const habiaAvisoRef = useRef(false);
   const tabsRef = useRef(null);
 
   useEffect(() => {
@@ -36,7 +40,8 @@ export const useFocoDeLosDialogos = ({
       // Solo al abrirse el primero: si se reescribiera al abrirse otro, lo
       // guardado seria el contenedor del aviso anterior, que al cerrarse ya no
       // esta en la pagina, y el foco caeria en las pestanas
-      if (!focoPrevioRef.current) {
+      if (!habiaAvisoRef.current) {
+        habiaAvisoRef.current = true;
         const activo = document.activeElement;
         focoPrevioRef.current = activo && activo !== document.body ? activo : null;
       }
@@ -52,13 +57,14 @@ export const useFocoDeLosDialogos = ({
     // —al cancelar de verdad, desaparece— el foco va a la pestana abierta,
     // que sigue ahi (a ella y no a la barra: la barra no es enfocable en el
     // patron de pestanas, y desde ella las flechas no hacian nada).
-    // Sin foco guardado no ha habido ningun aviso abierto —esto corre tambien
-    // al montar la pagina— y aqui no hay nada que devolver: tocarlo movia el
-    // foco a las pestanas en cada carga.
+    // Si no ha habido ningun aviso abierto —esto corre tambien al montar la
+    // pagina— aqui no hay nada que devolver: tocarlo movia el foco a las
+    // pestanas en cada carga.
+    if (!habiaAvisoRef.current) return;
+    habiaAvisoRef.current = false;
     const previo = focoPrevioRef.current;
-    if (!previo) return;
     focoPrevioRef.current = null;
-    if (previo.isConnected) {
+    if (previo?.isConnected) {
       previo.focus?.();
       return;
     }
