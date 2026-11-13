@@ -22,7 +22,9 @@ const ficheros = (dir) =>
 
 /**
  * Las etiquetas `<HeaderAuth …>` de un texto, enteras: las llaves de los
- * atributos pueden llevar `>` (una flecha) y no cierran la etiqueta.
+ * atributos pueden llevar `>` (una flecha) y no cierran la etiqueta. Las
+ * comillas y los comentarios no se tratan: un `title="a > b"` o un
+ * `<HeaderAuth />` comentado hacen fallar el guardián de más, nunca de menos.
  */
 const etiquetasDeLaCabecera = (texto) => {
   const etiquetas = [];
@@ -51,7 +53,11 @@ const llevaElUsuario = (etiqueta) => {
     else if (c === '}') llaves--;
     else if (llaves === 0) fuera += c;
   }
-  return /\suser\s*=/.test(fuera) || /\{\s*\.\.\./.test(etiqueta);
+  // `user={undefined}` vuelve a pintar «?»; un `{...props}` no dice si lo trae
+  return (
+    /\suser\s*=/.test(fuera) &&
+    !/\suser\s*=\s*\{\s*undefined\s*\}/.test(etiqueta)
+  );
 };
 
 describe('every session header gets the user (#1129)', () => {
@@ -62,8 +68,15 @@ describe('every session header gets the user (#1129)', () => {
     })),
   );
 
-  it('finds the headers it guards', () => {
-    expect(todas.length).toBeGreaterThan(30);
+  it('finds the headers it guards, the three screens of #1129 among them', () => {
+    const conCabecera = new Set(todas.map(({ fichero }) => fichero));
+    expect([...conCabecera]).toEqual(
+      expect.arrayContaining([
+        join('pages', 'player', 'FeedPage.jsx'),
+        join('pages', 'player', 'PlayerProfilePage.jsx'),
+        join('pages', 'quick_match', 'QuickMatchSharedPage.jsx'),
+      ]),
+    );
   });
 
   it('C6: no <HeaderAuth> without a user prop', () => {
@@ -85,7 +98,10 @@ describe('every session header gets the user (#1129)', () => {
       ['<HeaderAuth user={user} />', true],
       ['<HeaderAuth\n  user={user}\n  alVolver={() => a > b}\n/>', true],
       ['<HeaderAuth user={null} />', true],
-      ['<HeaderAuth {...props} />', true],
+      ['<HeaderAuth user={undefined} />', false],
+      ['<HeaderAuth user={ undefined } />', false],
+      ['<HeaderAuth {...props} />', false],
+      ['<HeaderAuth {...props} user={user} />', true],
     ])('%s → %s', (etiqueta, esperado) => {
       const [leida] = etiquetasDeLaCabecera(`x ${etiqueta} y`);
       expect(leida).toBe(etiqueta);
