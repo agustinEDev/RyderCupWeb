@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import CarruselDeTarjetas from './CarruselDeTarjetas';
 
@@ -122,5 +122,56 @@ describe('CarruselDeTarjetas', () => {
     render(<CarruselDeTarjetas tarjetas={[TARJETAS[0]]} />);
 
     expect(screen.getByRole('tabpanel', { name: 'Nacho' })).not.toHaveAttribute('aria-labelledby');
+  });
+
+  describe('dónde arranca, y que el sondeo no lo mueva (T6)', () => {
+    // El ancho, ANTES de montar: el arranque se coloca en el montaje
+    const anchoAntesDeMontar = (ancho = 320) =>
+      vi.spyOn(globalThis.Element.prototype, 'clientWidth', 'get').mockReturnValue(ancho);
+    const carril = () => screen.getByTestId('carril-de-tarjetas');
+
+    afterEach(() => {
+      vi.restoreAllMocks();
+    });
+
+    it('T6-10: con inicial=luna arranca con el carril en la suya (320) y Luna marcada', () => {
+      anchoAntesDeMontar(320);
+
+      render(<CarruselDeTarjetas tarjetas={TARJETAS} inicial="luna" />);
+
+      expect(carril().scrollLeft).toBe(320);
+      expect(marcado()).toBe(1);
+    });
+
+    it('T6-11: deslizado a otra tarjeta, el sondeo (tarjetas nuevas u otra inicial) no lo recoloca', () => {
+      anchoAntesDeMontar(320);
+      const { rerender } = render(<CarruselDeTarjetas tarjetas={TARJETAS} inicial="luna" />);
+      carril().scrollTo = vi.fn();
+
+      // A Nacho, con el dedo
+      carril().scrollLeft = 0;
+      fireEvent.scroll(carril());
+      expect(marcado()).toBe(0);
+
+      const deNuevo = TARJETAS.map((t) => ({ ...t }));
+      rerender(<CarruselDeTarjetas tarjetas={deNuevo} inicial="luna" />);
+      rerender(<CarruselDeTarjetas tarjetas={deNuevo.map((t) => ({ ...t }))} inicial="oscar" />);
+
+      expect(carril().scrollLeft).toBe(0);
+      expect(carril().scrollTo).not.toHaveBeenCalled();
+      expect(marcado()).toBe(0);
+    });
+
+    it.each([
+      ['una inicial que no está', 'nadie'],
+      ['la primera', 'nacho'],
+    ])('T6-12: con %s no se toca el carril (0)', (_caso, inicial) => {
+      anchoAntesDeMontar(320);
+
+      render(<CarruselDeTarjetas tarjetas={TARJETAS} inicial={inicial} />);
+
+      expect(carril().scrollLeft).toBe(0);
+      expect(marcado()).toBe(0);
+    });
   });
 });

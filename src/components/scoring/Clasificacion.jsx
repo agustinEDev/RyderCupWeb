@@ -42,6 +42,10 @@ const Clasificacion = ({
 }) => {
   const { t } = useTranslation('scoring');
   const [clasificacion, setClasificacion] = useState(null);
+  // Con qué pregunta (`pedir` y categoría) se leyó lo pintado: lo de otra
+  // franja no se enseña mientras llega lo suyo, y lo de otra franja o
+  // categoría tampoco con el aviso si la lectura nueva falla
+  const [leidaPara, setLeidaPara] = useState(null);
   const [sinCargar, setSinCargar] = useState(false);
   // De una privada en la que no está, sin llave: reintentar no lo arregla
   const [privada, setPrivada] = useState(false);
@@ -62,6 +66,7 @@ const Clasificacion = ({
       const leida = await pedir(categoria ?? undefined);
       if (!lecturas.aplicar(turno)) return;
       setClasificacion(leida);
+      setLeidaPara({ pedir, categoria });
       setRespuestas((n) => n + 1);
       setSinCargar(false);
       setCambiandoDeFiltro(false);
@@ -84,9 +89,15 @@ const Clasificacion = ({
   // De una privada sin llave, tampoco al volver a su pestaña (/code-review)
   useEffect(() => {
     if (!activa || privada) return;
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- pedir la clasificación al servidor es el objetivo
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- leer al abrir y al cambiar de filtro, versión o cadencia: leer solo cambia estado tras el await y useLaMasNueva descarta lo viejo; useCargaCancelableEffect («gana la última») revertiría eaf6599f
     leer();
   }, [activa, leer, cada, version, privada]);
+  // Solo al cambiar de PREGUNTA (otra franja u otra categoría), lo que estaba
+  // en vuelo con la de antes no se pinta nunca: llegaba antes que lo nuevo y
+  // dejaba las filas de otra categoría bajo el selector (T6). Con la misma
+  // pregunta (cambia la cadencia, la versión, se abre o se cierra) sigue
+  // «nunca retroceder» sin congelarse: una respuesta reciente vale
+  useEffect(() => () => lecturas.corta(), [pedir, categoria, lecturas]);
   // De una privada sin llave, ni se repite: otro 403 no arregla nada (revisor)
   useSondeoMientras(activa && cada != null && !privada, leer, cada ?? 0);
   const bloqueRef = useCentrarEnMiFila({ modo: centraEnMi, activa, respuestas });
@@ -112,6 +123,9 @@ const Clasificacion = ({
     );
   }
   if (!clasificacion) return null;
+  const deOtraFranja = leidaPara?.pedir !== pedir;
+  // Lo pintado no responde a la pregunta de ahora: sus filas no se enseñan
+  const ajena = deOtraFranja || leidaPara?.categoria !== categoria;
 
   const esMedal = clasificacion.tournamentType === 'MEDAL';
   const SIN = t('partida.none');
@@ -225,9 +239,9 @@ const Clasificacion = ({
         </div>
       )}
 
-      {cambiandoDeFiltro && !sinCargar ? (
+      {(cambiandoDeFiltro || deOtraFranja) && !sinCargar ? (
         <p aria-busy="true" className="text-sm text-gray-500">{t('partida.loadingStandings')}</p>
-      ) : clasificacion.rows.length === 0 ? (
+      ) : ajena ? null : clasificacion.rows.length === 0 ? (
         <p className="text-sm text-gray-500">{t(vacia)}</p>
       ) : (
         // Redondeada: sobre el fondo gris (su página, la anotación) no queda un
@@ -243,7 +257,7 @@ const Clasificacion = ({
       )}
       {/* La scratch corta en el 25.º: quien queda fuera ve su fila debajo */}
       {/* Sin haber jugado no tiene posición (QA 3) */}
-      {clasificacion.me && clasificacion.me.status !== 'SIN_EMPEZAR' && (
+      {!ajena && clasificacion.me && clasificacion.me.status !== 'SIN_EMPEZAR' && (
         <div>
           <p className="mb-1 text-xs font-semibold text-gray-600">{t('partida.yourPosition')}</p>
           <div className="overflow-hidden rounded-lg border border-dashed border-gray-300 bg-white">

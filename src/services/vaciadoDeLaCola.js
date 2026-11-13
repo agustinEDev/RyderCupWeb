@@ -25,6 +25,7 @@
  */
 
 import { submitHoleScoreUseCase, submitTeeGroupHoleScoreUseCase } from '../composition';
+import { idAleatorio } from '../utils/idAleatorio';
 import * as cola from '../utils/scoringOfflineQueue';
 import * as cerrojo from '../utils/scoringSessionLock';
 import { PARO, vaciaAnotaciones } from './vaciaAnotaciones';
@@ -81,7 +82,7 @@ export const vaciaLaColaEntera = async ({ saltaPartida = null, userId = null } =
   const mias = userId ? cola.deQuien(userId) : [];
   if (mias.length === 0) return nada(0, null);
 
-  const miTurno = `${AMBITO}-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  const miTurno = `${AMBITO}-${idAleatorio()}`;
   if (!cerrojo.acquire(null, miTurno, userId, AMBITO)) {
     // Se dice POR QUÉ no se hizo nada: quien llama tiene un reintento
     // programado, y confundir esto con «ha ido bien» se lo desarmaba. Es real:

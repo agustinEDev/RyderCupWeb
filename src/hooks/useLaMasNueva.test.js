@@ -57,4 +57,21 @@ describe('useLaMasNueva (FE #824)', () => {
 
     expect(result.current).toBe(antes);
   });
+
+  it('tras cortar (cambió la pregunta), lo pedido antes no se aplica aunque llegue primero (T6)', () => {
+    const { result } = renderHook(() => useLaMasNueva());
+    const vieja = result.current.turno();
+    result.current.corta();
+    const nueva = result.current.turno();
+
+    expect(result.current.aplicar(vieja)).toBe(false);
+    expect(result.current.aplicar(nueva)).toBe(true);
+  });
+
+  it('cortar sin nada en vuelo no impide aplicar lo siguiente (T6)', () => {
+    const { result } = renderHook(() => useLaMasNueva());
+    result.current.corta();
+
+    expect(result.current.aplicar(result.current.turno())).toBe(true);
+  });
 });
