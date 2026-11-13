@@ -112,11 +112,14 @@ const FeedPage = () => {
   const deQuienRef = useRef(userId);
   // Con otra cuenta, lo cargado era de la anterior: hasta que llegue la
   // primera página de esta no hay sobre qué recargar —una recarga mezclaría lo
-  // suyo con lo de la otra cuenta—. Solo la ref: `cargados` y el estado los
-  // pone `alCargar` al llegar, antes de que nada los pueda leer
+  // suyo con lo de la otra cuenta—. Y cambiar de cuenta con Actividad abierta
+  // es otra visita: su primera página se da por vista, una vez por cuenta.
+  // Solo refs: `cargados` y el estado los pone `alCargar` al llegar, antes de
+  // que nada los pueda leer
   useLayoutEffect(() => {
     deQuienRef.current = userId;
     cargado.current = false;
+    yaMarcado.current = false;
   }, [userId]);
 
   /**
