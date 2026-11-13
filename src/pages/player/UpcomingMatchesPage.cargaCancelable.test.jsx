@@ -110,4 +110,17 @@ describe('UpcomingMatchesPage: la lectura descarta lo que llega tarde (T2)', () 
     expect(screen.getByText('upcomingMatches.sinRespuesta')).toBeInTheDocument();
     expect(screen.queryByText('upcomingMatches.noMatches')).not.toBeInTheDocument();
   });
+
+  it('T2-16b: el fallo de la lectura queda registrado (antes llegaba a Sentry como rechazo sin capturar)', async () => {
+    const registro = vi.spyOn(globalThis.console, 'error').mockImplementation(() => {});
+    const falla = aMano();
+    leePartidos.mockReturnValueOnce(falla.promesa);
+    render(arbol());
+    const error = new Error('inesperado');
+
+    await act(async () => falla.rechazar(error));
+
+    expect(registro).toHaveBeenCalledWith(expect.any(String), error);
+    registro.mockRestore();
+  });
 });

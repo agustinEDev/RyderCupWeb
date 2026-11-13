@@ -79,7 +79,9 @@ const UpcomingMatchesPage = () => {
     },
     // Si la lectura entera falla, tampoco se pudo preguntar: lo mismo que sin
     // cobertura y sin nada guardado, en vez de esperar para siempre
-    alFallar: () => {
+    alFallar: (error) => {
+      // Que quede rastro: antes era un rechazo sin capturar, que Sentry recogía
+      console.error('Error loading upcoming matches:', error);
       setMatches([]);
       setDesdeMemoria({ partidos: false, partidas: false });
       setSinRespuesta(true);
