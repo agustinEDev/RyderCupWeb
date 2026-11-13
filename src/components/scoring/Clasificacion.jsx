@@ -42,9 +42,10 @@ const Clasificacion = ({
 }) => {
   const { t } = useTranslation('scoring');
   const [clasificacion, setClasificacion] = useState(null);
-  // Con qué `pedir` se leyó lo pintado: si el padre pasa a otra franja, lo de
-  // la anterior no se enseña mientras llega lo suyo, ni con el aviso si falla
-  const [leidaCon, setLeidaCon] = useState(null);
+  // Con qué pregunta (`pedir` y categoría) se leyó lo pintado: lo de otra
+  // franja no se enseña mientras llega lo suyo, y lo de otra franja o
+  // categoría tampoco con el aviso si la lectura nueva falla
+  const [leidaPara, setLeidaPara] = useState(null);
   const [sinCargar, setSinCargar] = useState(false);
   // De una privada en la que no está, sin llave: reintentar no lo arregla
   const [privada, setPrivada] = useState(false);
@@ -65,8 +66,7 @@ const Clasificacion = ({
       const leida = await pedir(categoria ?? undefined);
       if (!lecturas.aplicar(turno)) return;
       setClasificacion(leida);
-      // En una función: `pedir` también lo es, y `set` la tomaría por actualizador
-      setLeidaCon(() => pedir);
+      setLeidaPara({ pedir, categoria });
       setRespuestas((n) => n + 1);
       setSinCargar(false);
       setCambiandoDeFiltro(false);
@@ -123,7 +123,9 @@ const Clasificacion = ({
     );
   }
   if (!clasificacion) return null;
-  const deOtraFranja = leidaCon !== pedir;
+  const deOtraFranja = leidaPara?.pedir !== pedir;
+  // Lo pintado no responde a la pregunta de ahora: sus filas no se enseñan
+  const ajena = deOtraFranja || leidaPara?.categoria !== categoria;
 
   const esMedal = clasificacion.tournamentType === 'MEDAL';
   const SIN = t('partida.none');
@@ -239,7 +241,7 @@ const Clasificacion = ({
 
       {(cambiandoDeFiltro || deOtraFranja) && !sinCargar ? (
         <p aria-busy="true" className="text-sm text-gray-500">{t('partida.loadingStandings')}</p>
-      ) : deOtraFranja ? null : clasificacion.rows.length === 0 ? (
+      ) : ajena ? null : clasificacion.rows.length === 0 ? (
         <p className="text-sm text-gray-500">{t(vacia)}</p>
       ) : (
         // Redondeada: sobre el fondo gris (su página, la anotación) no queda un
@@ -255,7 +257,7 @@ const Clasificacion = ({
       )}
       {/* La scratch corta en el 25.º: quien queda fuera ve su fila debajo */}
       {/* Sin haber jugado no tiene posición (QA 3) */}
-      {!deOtraFranja && clasificacion.me && clasificacion.me.status !== 'SIN_EMPEZAR' && (
+      {!ajena && clasificacion.me && clasificacion.me.status !== 'SIN_EMPEZAR' && (
         <div>
           <p className="mb-1 text-xs font-semibold text-gray-600">{t('partida.yourPosition')}</p>
           <div className="overflow-hidden rounded-lg border border-dashed border-gray-300 bg-white">

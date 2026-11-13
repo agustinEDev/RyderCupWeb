@@ -13,6 +13,7 @@ import { estadoDelPartido } from '../utils/estadoDelPartido';
 import { guardaLaCorreccion } from '../utils/guardaLaCorreccion';
 import { conSuRival, golpesQueTrae, marcadoDe } from '../utils/golpesDelHoyo';
 import * as golpesPerdidos from '../utils/golpesPerdidos';
+import { idAleatorio } from '../utils/idAleatorio';
 import * as offlineQueue from '../utils/scoringOfflineQueue';
 import { conHoyosDe, conLaColaEncima, estaSuperada } from '../utils/vistaDeLaAnotacion';
 
@@ -20,8 +21,10 @@ const POLL_INTERVAL = 10000; // 10 seconds
 
 // Un id distinto en cada pantalla de anotación, también entre pestañas
 // Aleatorio de verdad (crypto): el candado solo lo compara consigo mismo, pero
-// un id adivinable no tiene sitio en nada que decide quién anota
-const creaIdDeSesion = () => globalThis.crypto.randomUUID();
+// un id adivinable no tiene sitio en nada que decide quién anota. Con
+// `idAleatorio`: `crypto.randomUUID` no existe por http en la red local ni en
+// Safari viejo, y sin él la pantalla rompía al montar
+const creaIdDeSesion = () => idAleatorio();
 
 /**
  * Central hook for live scoring.

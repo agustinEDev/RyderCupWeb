@@ -400,6 +400,31 @@ describe('vaciaLaColaEntera (FE #521)', () => {
   });
 });
 
+// Por http con la IP de la red local, o en un Safari viejo, no hay
+// `crypto.randomUUID` (FE #848): el vaciado de fondo tiene que seguir mandando
+describe('vaciaLaColaEntera · sin crypto.randomUUID (T6)', () => {
+  beforeEach(() => {
+    almacen.clear();
+    vi.clearAllMocks();
+    submitHoleScoreUseCase.execute.mockResolvedValue({});
+    const real = globalThis.crypto;
+    vi.stubGlobal('crypto', { getRandomValues: (a) => real.getRandomValues(a) });
+  });
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('vacía y envía igual', async () => {
+    cola.enqueue('partida', 3, { ownScore: 4 }, null, YO);
+
+    const resultado = await vaciaLaColaEntera({ userId: YO });
+
+    expect(submitHoleScoreUseCase.execute).toHaveBeenCalledWith('partida', 3, { ownScore: 4 });
+    expect(resultado.enviadas).toBe(1);
+    expect(cola.deQuien(YO)).toHaveLength(0);
+  });
+});
+
 describe('vaciaLaColaEntera · cuando algo va mal (FE #521)', () => {
   beforeEach(() => {
     almacen.clear();

@@ -4160,6 +4160,25 @@ describe('useScoring · el id de la sesión y el contador de pendientes (T6)', (
     expect(sessionLock.acquire.mock.calls.every((c) => c[1] === id)).toBe(true);
   });
 
+  it('T6-1b · sin crypto.randomUUID (http en la red local, Safari viejo) monta y coge el candado; dos pantallas, ids distintos', async () => {
+    const real = globalThis.crypto;
+    vi.stubGlobal('crypto', { getRandomValues: (a) => real.getRandomValues(a) });
+    try {
+      const una = renderHook(() => useScoring('m-1', 'u1'));
+      await waitFor(() => expect(una.result.current.isLoading).toBe(false));
+      const otra = renderHook(() => useScoring('m-1', 'u1'));
+      await waitFor(() => expect(otra.result.current.isLoading).toBe(false));
+
+      const ids = sessionLock.acquire.mock.calls.map((c) => c[1]);
+      expect(ids).toHaveLength(2);
+      expect(ids[0]).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/);
+      expect(ids[1]).toBeTruthy();
+      expect(ids[0]).not.toBe(ids[1]);
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
   it('T6-2 · dos pantallas (dos pestañas) tienen ids distintos: si no, el candado no bloquearía la otra', async () => {
     const una = renderHook(() => useScoring('m-1', 'u1'));
     await waitFor(() => expect(una.result.current.isLoading).toBe(false));

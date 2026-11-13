@@ -691,4 +691,29 @@ describe('Clasificacion · lo de otra pregunta no se pinta (T6)', () => {
 
     expect(screen.getByTestId('fila-dani')).toBeInTheDocument();
   });
+
+  it('T6-22: con la categoría 1 pintada, la 2 falla: aviso sin filas de la 1 ni su «Tu posición»; al reintentar, las de la 2', async () => {
+    const pedir = vi.fn()
+      .mockResolvedValueOnce(todas())
+      .mockResolvedValueOnce(clasificacion([fila('carla', { category: 1 })], { category: 1, me: fila('yo', { position: 31, category: 1 }) }))
+      .mockRejectedValueOnce(new Error('x'))
+      .mockResolvedValueOnce(clasificacion([fila('bea', { category: 2 })], { category: 2 }));
+    render(<Clasificacion pedir={pedir} userId="yo" activa />);
+    await screen.findByTestId('fila-ana');
+    filtra('1');
+    await screen.findByTestId('fila-carla');
+    expect(screen.getByTestId('fila-fuera-del-corte')).toBeInTheDocument();
+
+    filtra('2');
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('partida.standingsNotLoaded');
+    expect(screen.queryByTestId('fila-carla')).toBeNull();
+    expect(screen.queryByTestId('fila-fuera-del-corte')).toBeNull();
+
+    fireEvent.click(screen.getByRole('button', { name: 'partida.retry' }));
+
+    expect(await screen.findByTestId('fila-bea')).toBeInTheDocument();
+    expect(screen.queryByRole('alert')).toBeNull();
+    expect(screen.queryByTestId('fila-carla')).toBeNull();
+  });
 });
