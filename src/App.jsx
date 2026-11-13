@@ -395,8 +395,10 @@ export const rutasDeLaApp = createRoutesFromElements(
         handle={{ restauraElScroll: true }}
         element={<ProtectedRoute><Competitions /></ProtectedRoute>}
       />
-      <Route path="/competitions/create" element={<ProtectedRoute><CreateCompetition /></ProtectedRoute>} />
-      <Route path="/competitions/:id/edit" element={<ProtectedRoute><CreateCompetition /></ProtectedRoute>} />
+      {/* Crear y editar son la misma pantalla: cada ruta con su instancia, para que al
+          pasar de una a otra no se arrastren la espera ni los datos de la otra (T3-18) */}
+      <Route path="/competitions/create" element={<ProtectedRoute><CreateCompetition key="crear" /></ProtectedRoute>} />
+      <Route path="/competitions/:id/edit" element={<ProtectedRoute><CreateCompetition key="editar" /></ProtectedRoute>} />
       <Route path="/competitions/:id" element={<ProtectedRoute><CompetitionDetail /></ProtectedRoute>} />
       {/* La sala de draft la ve el grupo entero, no solo los capitanes (FE #653) */}
       <Route path="/competitions/:id/draft" element={<ProtectedRoute><DraftRoomPage /></ProtectedRoute>} />
