@@ -31,23 +31,35 @@ export const useFichaDeLaCompeticion = ({ id, userId, t, navigate }) => {
   const loadCompetition = useCallback(async () => {
     if (!userId) return;
 
+    // Con atrás y adelante entre dos fichas la página no se desmonta: la carga de
+    // la anterior puede llegar después. Si ya no es la de la pantalla, ni pinta, ni
+    // quita la espera de la nueva, ni manda a la lista (CodeRabbit, FE #1106)
+    const deEsta = id;
+    const sigueEnPantalla = () => deEsta === idActual.current;
+    const turnoDeLaFicha = lecturasDeLaFicha.turno();
+    const turnoDeLaLista = lecturasDeInscripciones.turno();
+
     setIsLoadingCompetition(true);
     try {
-      // Use GetCompetitionDetailUseCase instead of direct service call
-      const data = await getCompetitionDetailUseCase.execute(id);
-
-      setCompetition(data);
+      const data = await getCompetitionDetailUseCase.execute(deEsta);
+      if (!sigueEnPantalla()) return;
+      if (lecturasDeLaFicha.aplicar(turnoDeLaFicha)) setCompetition(data);
 
       // Load enrollments for all authenticated users (approved players visible to everyone)
       try {
-        const enrollmentsData = await listEnrollmentsUseCase.execute(id);
-        setEnrollments(enrollmentsData);
-        setInscripcionesSinCargar(false);
+        const enrollmentsData = await listEnrollmentsUseCase.execute(deEsta);
+        if (sigueEnPantalla() && lecturasDeInscripciones.aplicar(turnoDeLaLista)) {
+          setEnrollments(enrollmentsData);
+          setInscripcionesSinCargar(false);
+        }
       } catch {
-        setEnrollments([]);
-        setInscripcionesSinCargar(true);
+        if (sigueEnPantalla() && lecturasDeInscripciones.aplicar(turnoDeLaLista)) {
+          setEnrollments([]);
+          setInscripcionesSinCargar(true);
+        }
       }
     } catch (error) {
+      if (!sigueEnPantalla()) return;
       console.error('Error loading competition:', error);
       // Falló porque se está cerrando la sesión: la redirección al login llega ya; ir a la
       // lista solo enseñaba otro fallo (A2, 8 nov 2026)
@@ -55,7 +67,7 @@ export const useFichaDeLaCompeticion = ({ id, userId, t, navigate }) => {
       customToast.error(error.message || t('detail.failedToLoadCompetition'));
       navigate('/competitions');
     } finally {
-      setIsLoadingCompetition(false);
+      if (sigueEnPantalla()) setIsLoadingCompetition(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id, userId, navigate]);
