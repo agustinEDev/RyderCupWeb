@@ -77,6 +77,16 @@ describe('App · crear y editar competición, cada una con su instancia', () => 
     expect(await screen.findByTestId('pantalla-de-competicion')).toHaveTextContent('instancia 2');
   });
 
+  it('T3-18b: de editar una a editar otra se monta una pantalla nueva', async () => {
+    window.history.pushState({}, '', '/competitions/c-1/edit');
+    render(<App />);
+    expect(await screen.findByTestId('pantalla-de-competicion')).toHaveTextContent('instancia 1');
+
+    await ve('/competitions/c-2/edit');
+
+    expect(await screen.findByTestId('pantalla-de-competicion')).toHaveTextContent('instancia 2');
+  });
+
   it('T3-18: y de crear a editar, también', async () => {
     window.history.pushState({}, '', '/competitions/create');
     render(<App />);

@@ -275,6 +275,49 @@ describe('CreateCompetition · países y vecinos', () => {
     expect(screen.queryByText('el listado')).not.toBeInTheDocument();
   });
 
+  it('T3-3e: elegido el primer adyacente y luego ninguno, sus vecinos tardíos no ofrecen tercer país', async () => {
+    await abreElAlta();
+    mockVecinos.mockResolvedValueOnce([pais('FR'), pais('PT')]);
+    fireEvent.click(screen.getByText('elegir ES'));
+    fireEvent.click(await screen.findByText('create.addAdjacentCountry'));
+    const pendientes = conVecinosEnEspera();
+    const adyacente = () => document.querySelector('#adjacentCountry1');
+
+    fireEvent.change(adyacente(), { target: { value: 'FR' } });
+    fireEvent.change(adyacente(), { target: { value: '' } });
+    await act(async () => {
+      pendientes.FR[0]([pais('DE'), pais('BE')]);
+    });
+    fireEvent.change(adyacente(), { target: { value: 'PT' } });
+
+    // Los de Portugal aún no han llegado: no hay tercer país que ofrecer
+    expect(screen.queryByText('create.addThirdCountry')).not.toBeInTheDocument();
+  });
+
+  it('T3-3f: de Francia a Portugal, la lista del tercer país de Francia no se ve mientras llegan los de Portugal', async () => {
+    await abreElAlta();
+    mockVecinos.mockResolvedValueOnce([pais('FR'), pais('PT')]);
+    fireEvent.click(screen.getByText('elegir ES'));
+    fireEvent.click(await screen.findByText('create.addAdjacentCountry'));
+    const pendientes = conVecinosEnEspera();
+    const adyacente = () => document.querySelector('#adjacentCountry1');
+
+    fireEvent.change(adyacente(), { target: { value: 'FR' } });
+    await act(async () => {
+      pendientes.FR[0]([pais('DE'), pais('BE')]);
+    });
+    expect(screen.getByText('create.addThirdCountry')).toBeInTheDocument();
+
+    fireEvent.change(adyacente(), { target: { value: 'PT' } });
+
+    expect(screen.queryByText('create.addThirdCountry')).not.toBeInTheDocument();
+    await act(async () => {
+      pendientes.PT[0]([pais('IT')]);
+    });
+    fireEvent.click(screen.getByText('create.addThirdCountry'));
+    expect(opciones('adjacentCountry2')).toEqual(['FR', 'IT']);
+  });
+
   it('T3-2: editando A y pasando a B, los vecinos de A que llegan tarde no pisan los de B', async () => {
     mockDetalle.mockImplementation((id) =>
       Promise.resolve(id === 'c-1' ? competicion('c-1', ['FR', 'BE'], 'La de A') : competicion('c-2', ['ES', 'PT', 'AD'], 'La de B'))

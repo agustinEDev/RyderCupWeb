@@ -566,6 +566,10 @@ const CreateCompetition = () => {
       adjacentCountry2: '',
       showAdjacentCountry2: false
     }));
+    // Los vecinos del tercer país eran del adyacente anterior: ni se enseñan
+    // mientras llegan los del nuevo ni, si llegan tarde, valen
+    olvidaLosVecinosPedidos(2);
+    setAdjacentCountries2([]);
     if (countryId) {
       fetchAdjacentCountries(countryId, 2, {
         currentAdjacentCountries1: adjacentCountries1,
