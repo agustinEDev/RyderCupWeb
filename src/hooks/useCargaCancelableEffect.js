@@ -39,7 +39,10 @@ const mismasDependencias = (antes, ahora) =>
  *   después de `alCargar`/`alFallar`: `{ estado: 'cargada', datos }` o
  *   `{ estado: 'fallida', error }`. Si otro `recargar()` más nuevo la sustituye,
  *   se cumple con lo que acabe el que la sustituyó (y así hasta el último), que
- *   es la carga que trae lo de ahora. Si se descarta por otra cosa (cambian las
+ *   es la carga que trae lo de ahora: su `datos` o su `error` son entonces los de
+ *   esa otra carga, no los de la petición de quien llamó. Por eso el aviso de un
+ *   fallo va en `alFallar`, que sale una sola vez, y no en quien espera la promesa.
+ *   Si se descarta por otra cosa (cambian las
  *   dependencias, se desactiva o se desmonta), `{ estado: 'descartada' }`.
  *   Nunca se rechaza: se puede esperar sin try/catch.
  */

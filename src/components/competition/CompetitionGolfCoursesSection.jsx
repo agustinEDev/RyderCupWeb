@@ -391,6 +391,7 @@ const CompetitionGolfCoursesSection = ({ competition, canManage, onCamposCambiad
     try {
       await removeGolfCourseFromCompetitionUseCase.execute(competition.id, courseId);
       customToast.success(t('detail.golfCourses.courseRemoved'));
+      // Como al añadir: la ficha se avisa con una lista que ya incluye el cambio
       await recargar();
       onCamposCambiados?.();
     } catch (error) {

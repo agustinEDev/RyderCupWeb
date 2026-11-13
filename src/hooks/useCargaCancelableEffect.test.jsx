@@ -27,7 +27,7 @@ import { useCargaCancelableEffect } from './useCargaCancelableEffect';
  *   H10b otro recargar() más nuevo la sustituye  | su promesa se cumple con lo que acabe la que la sustituyó
  *        y esa termina                           | ('cargada' con sus datos o 'fallida' con su error)
  *   H10c y a esa la sustituye otra               | se sigue la cadena: todas se cumplen con la última
- *   H10d y la que la sustituyó se descarta       | (cambian las deps o se desmonta) todas, descartadas
+ *   H10d y la que la sustituyó se descarta       | (cambian las deps, se desactiva o se desmonta) todas, descartadas
  */
 // Una respuesta que llega cuando la prueba quiere
 const aMano = () => {
