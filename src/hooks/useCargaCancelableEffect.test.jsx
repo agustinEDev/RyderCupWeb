@@ -16,6 +16,7 @@ import { useCargaCancelableEffect } from './useCargaCancelableEffect';
  *   H5   recargar()                                  | se pide otra vez con la espera; de dos seguidas, solo la última
  *   H6   inactiva                                    | no pide y no espera
  *   H7   recargar({ silenciosa: true })              | sin espera, y el fallo lo sabe
+ *   H7b  y después cambian las dependencias          | esa carga ya no es silenciosa: espera
  */
 // Una respuesta que llega cuando la prueba quiere
 const aMano = () => {
@@ -252,7 +253,7 @@ describe('useCargaCancelableEffect', () => {
     expect(alFallar).toHaveBeenCalledWith(error, { silenciosa: true });
   });
 
-  it('H7: si tras recargar en silencio cambian las dependencias, esa carga sí espera', async () => {
+  it('H7b: si tras recargar en silencio cambian las dependencias, esa carga sí espera', async () => {
     pedir.mockResolvedValueOnce('primera');
     const { result, rerender } = usar(props());
     await act(async () => {});

@@ -1,8 +1,5 @@
 import { useEffect, useEffectEvent, useRef, useState } from 'react';
 
-const mismasDependencias = (antes, ahora) =>
-  antes.length === ahora.length && antes.every((valor, i) => Object.is(valor, ahora[i]));
-
 /**
  * Una carga que vive en su efecto (patrón de la documentación de React) y
  * descarta lo que llega tarde: al cambiar sus dependencias, al volver a pedirla,
@@ -34,56 +31,41 @@ export const useCargaCancelableEffect = (pedir, deps, { activa = true, alCargar,
   // Hasta que no termine una carga se espera: también antes de la primera, que
   // al activarse la espera ya está puesta
   const [enCurso, setEnCurso] = useState(true);
-  // Cada `recargar()` es un objeto nuevo: es lo que la distingue de la anterior
+  // Cada `recargar()` es un objeto nuevo: es lo que vuelve a lanzar el efecto
   const [recarga, setRecarga] = useState({ silenciosa: false });
-  // El número de la carga vigente: una que no lo tenga ya no toca nada
-  const vigenteRef = useRef(0);
-  // Con qué se pidió la última: para saber, tras cada pintado, si toca otra
-  const anteriorRef = useRef(null);
+  // El último `recargar()` que ya lanzó su carga: si el efecto vuelve a correr
+  // por otra cosa (cambian las dependencias), esa carga ya no es silenciosa
+  const recargaConsumidaRef = useRef(null);
 
   const pedirAhora = useEffectEvent(() => pedir());
   const aplicar = useEffectEvent((datos, carga) => alCargar?.(datos, carga));
   const avisar = useEffectEvent((error, carga) => alFallar?.(error, carga));
 
-  // Al desmontar (también en el desmontaje de prueba de StrictMode) nada en
-  // vuelo vale ya, y al volver a montar se pide otra vez
   useEffect(() => {
-    const vigente = vigenteRef;
-    const anterior = anteriorRef;
-    return () => {
-      vigente.current += 1;
-      anterior.current = null;
-    };
-  }, []);
-
-  // Sin lista de dependencias a propósito: corre tras cada pintado y compara él
-  // las `deps` del que llama, que el linter comprueba en su llamada. Una que
-  // cambie en cada pintado vuelve a pedir, como lo haría un useEffect, pero sin
-  // relanzarse antes de que termine la anterior
-  useEffect(() => {
-    const antes = anteriorRef.current;
-    anteriorRef.current = { deps, activa, recarga };
-    const mismaVuelta = antes !== null && antes.activa === activa && (!activa || mismasDependencias(antes.deps, deps));
-    if (mismaVuelta && antes.recarga === recarga) return;
-
-    const mia = ++vigenteRef.current;
-    if (!activa) return;
-    // Silenciosa solo si lo único que cambió es que se pidió así
-    const carga = { silenciosa: mismaVuelta && recarga.silenciosa };
-    const esLaVigente = () => mia === vigenteRef.current;
+    if (!activa) return undefined;
+    let vigente = true;
+    // Silenciosa solo si la lanza un `recargar({ silenciosa: true })` que aún
+    // no había lanzado ninguna
+    const silenciosa = recarga !== recargaConsumidaRef.current && recarga.silenciosa;
+    recargaConsumidaRef.current = recarga;
+    const carga = { silenciosa };
     const cargar = async () => {
-      if (!carga.silenciosa) setEnCurso(true);
+      if (!silenciosa) setEnCurso(true);
       try {
         const datos = await pedirAhora();
-        if (esLaVigente()) aplicar(datos, carga);
+        if (vigente) aplicar(datos, carga);
       } catch (error) {
-        if (esLaVigente()) avisar(error, carga);
+        if (vigente) avisar(error, carga);
       } finally {
-        if (esLaVigente()) setEnCurso(false);
+        if (vigente) setEnCurso(false);
       }
     };
     cargar();
-  });
+    return () => {
+      vigente = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- las dependencias son las de quien llama: el linter las comprueba en cada llamada (additionalHooks en eslint.config.js) y aquí solo se pasan a React, en vez de volver a comparar a mano lo que ya compara useEffect
+  }, [activa, recarga, ...deps]);
 
   // La espera, ya en el pintado del botón que recarga, como cuando el botón
   // llamaba a la carga directamente
