@@ -42,13 +42,19 @@ const QuickMatchSharedPage = () => {
   const volver = useGoBack('/feed');
   const { t } = useTranslation(['quickMatch', 'common']);
 
-  const [partida, setPartida] = useState(null);
+  // La partida y su fallo, con la partida de la que son: al pasar a otra sin
+  // salir, la anterior nunca se pinta bajo la URL de la nueva. Mientras llega,
+  // la espera de siempre. El campo y su fallo se limpian al pedir el de la
+  // nueva, en el mismo pintado en que llega
+  const [lectura, setLectura] = useState({ quickMatchId: null, partida: null, fallo: null });
+  const cargada = lectura.quickMatchId === quickMatchId;
+  const partida = cargada ? lectura.partida : null;
+  const fallo = cargada ? lectura.fallo : null;
   const [campo, setCampo] = useState(null);
   // El campo va aparte: que falle (pendiente, rechazado, sin red) no es que
   // falle la partida. La partida se pinta igual y lo que necesita los hoyos
   // lo dice con un error genérico y su reintento
   const [falloDelCampo, setFalloDelCampo] = useState(false);
-  const [fallo, setFallo] = useState(null);
   const [pestana, setPestana] = useState('classification');
 
   // De quién era la tarjeta que trajo aquí: a su perfil si no se puede ver
@@ -87,8 +93,7 @@ const QuickMatchSharedPage = () => {
     [quickMatchId],
     {
       alCargar: (datos) => {
-        setFallo(null);
-        setPartida(datos);
+        setLectura({ quickMatchId, partida: datos, fallo: null });
         // Quien la jugó va a su anotación: no hace falta el campo
         if (!datos.viewerIsParticipant) cargaElCampo(datos.golfCourseId);
       },
@@ -103,13 +108,18 @@ const QuickMatchSharedPage = () => {
           navigate(`/players/${perfilDe}`, { replace: true });
           return;
         }
-        setFallo(error?.status ?? 'otro');
+        // Lo que hubiera de esta misma partida se queda, como siempre; de otra, nada
+        setLectura((antes) => ({
+          quickMatchId,
+          partida: antes.quickMatchId === quickMatchId ? antes.partida : null,
+          fallo: error?.status ?? 'otro',
+        }));
       },
     }
   );
   // Reintentar: se quita el fallo y vuelve la espera, como siempre
   const reintentar = () => {
-    setFallo(null);
+    setLectura((antes) => ({ ...antes, fallo: null }));
     recargar();
   };
 
@@ -126,7 +136,7 @@ const QuickMatchSharedPage = () => {
     return <Navigate to={`/quick-matches/${quickMatchId}/scoring`} replace />;
   }
 
-  if (cargando && !partida) {
+  if (!cargada || (cargando && !partida)) {
     return (
       <div className={`${PANTALLA_MENOS_BARRA_INFERIOR} bg-gray-50`}>
         <HeaderAuth />

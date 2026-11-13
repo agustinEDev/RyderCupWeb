@@ -559,32 +559,35 @@ const EnvelopePage = () => {
   // al pasar de una ronda a otra sin salir no vuelve
   const [primeraTerminada, setPrimeraTerminada] = useState(false);
 
-  // Cada lectura lleva su número: la que vuelve tarde no pisa a una posterior,
-  // como un refresco que sale antes de dar el permiso y llega después
-  const generacion = useRef(0);
-  const leidaRef = useRef(0);
-  const refrescoEnVuelo = useRef(false);
+  // Cuántas recargas (tras una acción o del refresco) hay en vuelo: el
+  // refresco no sale mientras haya alguna. Uno a la vez con una red lenta
+  // (CodeRabbit en la #720), y sin sustituir a la recarga de una acción: si
+  // la sustituía y fallaba, lo que dejó la acción no llegaba a la pantalla
+  const enVueloRef = useRef(0);
+  // Si la última recarga pedida es la del refresco: su fallo va en silencio,
+  // que no es algo que el capitán haya hecho
+  const esElRefrescoRef = useRef(false);
 
-  // La carga de la pantalla y la de después de cada acción. Al cambiar de
-  // ronda o al salir, la que llega tarde ya no pinta ni avisa: un fallo
-  // avisaba en la pantalla a la que se había ido
+  // La carga de la pantalla, la de después de cada acción y la del refresco.
+  // Al cambiar de ronda o al salir, la que llega tarde ya no pinta ni avisa: un
+  // fallo avisaba en la pantalla a la que se había ido. Y una más nueva deja
+  // vieja a la anterior: un refresco que salió antes de dar el permiso no lo
+  // pisa al volver
   const { recargar } = useCargaCancelableEffect(
-    () => {
-      leidaRef.current = ++generacion.current;
-      return getEnvelopesUseCase.execute(roundId);
-    },
+    () => getEnvelopesUseCase.execute(roundId),
     [roundId],
     {
       alCargar: (datos) => {
         setPrimeraTerminada(true);
-        if (leidaRef.current !== generacion.current) return;
         setLectura({ roundId, vista: datos, fallo: null });
       },
-      alFallar: (error) => {
+      alFallar: (error, { silenciosa }) => {
         setPrimeraTerminada(true);
-        if (leidaRef.current !== generacion.current) return;
+        // El del refresco: lo que ya había sigue valiendo, y se vuelve a
+        // preguntar en el siguiente
+        if (silenciosa && esElRefrescoRef.current) return;
         // Y se guarda: sin esto la pantalla caía en «aquí verás los
-        // enfrentamientos en cuanto se abran», que es tranquilizador y falso
+        // enfrentamientos en cuanto se abran», que es tranquilizador y falso.
         // La vista de antes de esta misma ronda se queda, como siempre
         setLectura((antes) => ({
           roundId,
@@ -595,48 +598,37 @@ const EnvelopePage = () => {
       },
     }
   );
+  const recargarSinEspera = useCallback(
+    (esElRefresco) => {
+      esElRefrescoRef.current = esElRefresco;
+      enVueloRef.current += 1;
+      return recargar({ silenciosa: true }).finally(() => {
+        enVueloRef.current -= 1;
+      });
+    },
+    [recargar]
+  );
   // Tras una acción, sin la espera de toda la pantalla, y se espera a que
   // llegue antes de soltar el botón. Nunca se rechaza: el fallo ya lo avisa
   // `alFallar`, una sola vez
-  const cargar = useCallback(() => recargar({ silenciosa: true }), [recargar]);
-
-  // El refresco mientras se espera al rival. Con una red lenta no se
-  // amontonan: uno a la vez (CodeRabbit en la #720). Y en silencio: un fallo
-  // del refresco no es algo que el capitán haya hecho
-  const refrescar = useCallback(async () => {
-    if (refrescoEnVuelo.current) return;
-    refrescoEnVuelo.current = true;
-    const mia = ++generacion.current;
-    try {
-      const datos = await getEnvelopesUseCase.execute(roundId);
-      if (mia !== generacion.current) return;
-      setLectura({ roundId, vista: datos, fallo: null });
-    } catch {
-      // Lo que ya había sigue valiendo: se vuelve a preguntar en el siguiente
-    } finally {
-      refrescoEnVuelo.current = false;
-    }
-  }, [roundId]);
+  const cargar = useCallback(() => recargarSinEspera(false), [recargarSinEspera]);
+  // El refresco mientras se espera al rival: si hay otra recarga en vuelo, este
+  // tic no sale
+  const refrescar = useCallback(() => {
+    if (enVueloRef.current > 0) return;
+    recargarSinEspera(true);
+  }, [recargarSinEspera]);
 
   // Los nombres de los equipos, solo para decir de quién es el sobre que
   // rellenó la aplicación: la vista del sobre no los trae. Sin ellos el aviso
-  // sale igual, sin nombre
+  // sale igual, sin nombre: su fallo no se nota
   const hayAutomatico = Boolean(vista?.teamAAutomatic || vista?.teamBAutomatic);
   const [nombresDeLosEquipos, setNombresDeLosEquipos] = useState(null);
-  useEffect(() => {
-    if (!hayAutomatico) return undefined;
-    let vigente = true;
-    (async () => getCompetitionDetailUseCase.execute(id))()
-      .then(
-        (competicion) =>
-          vigente &&
-          setNombresDeLosEquipos({ id, A: competicion.team1Name, B: competicion.team2Name })
-      )
-      .catch(() => {});
-    return () => {
-      vigente = false;
-    };
-  }, [hayAutomatico, id]);
+  useCargaCancelableEffect(() => getCompetitionDetailUseCase.execute(id), [id], {
+    activa: hayAutomatico,
+    alCargar: (competicion) =>
+      setNombresDeLosEquipos({ id, A: competicion.team1Name, B: competicion.team2Name }),
+  });
 
   if (!primeraTerminada) return <FullScreenLoader />;
 

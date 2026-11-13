@@ -219,6 +219,74 @@ describe('QuickMatchSharedPage · lo que llega tarde (T5)', () => {
     expect(screen.getByTestId('quick-match-classification-table')).toBeInTheDocument();
   });
 
+  it('T5-14d: de la partida A a la B, mientras llega B no se ve nada de A, solo la espera', async () => {
+    let darB;
+    getShared.mockImplementation((id) =>
+      id === 'qm-1'
+        ? Promise.resolve(compartida())
+        : new Promise((resolve) => { darB = () => resolve(compartida({ id, name: 'Sábado' })); })
+    );
+    pinta();
+    expect(await screen.findByText('Viernes')).toBeInTheDocument();
+
+    await act(async () => {
+      irA('/quick-matches/qm-2/shared');
+    });
+    await waitFor(() => expect(darB).toBeTypeOf('function'));
+
+    expect(screen.queryByText('Viernes')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('quick-match-shared-read-only')).not.toBeInTheDocument();
+    expect(screen.getByRole('status')).toBeInTheDocument();
+    await act(async () => {
+      darB();
+      await Promise.resolve();
+    });
+    expect(await screen.findByText('Sábado')).toBeInTheDocument();
+  });
+
+  it('T5-14e: y si B falla, su error con «Reintentar» y nada de A', async () => {
+    getShared.mockImplementation(async (id) => {
+      if (id === 'qm-1') return compartida();
+      throw error(500);
+    });
+    pinta();
+    expect(await screen.findByText('Viernes')).toBeInTheDocument();
+
+    await act(async () => {
+      irA('/quick-matches/qm-2/shared');
+    });
+
+    expect(await screen.findByTestId('quick-match-shared-retry')).toBeInTheDocument();
+    expect(screen.queryByText('Viernes')).not.toBeInTheDocument();
+  });
+
+  it('T5-14f: si B falla y se reintenta, mientras vuelve no aparece A', async () => {
+    let darB;
+    getShared.mockImplementation(async (id) => {
+      if (id === 'qm-1') return compartida();
+      throw error(500);
+    });
+    pinta();
+    expect(await screen.findByText('Viernes')).toBeInTheDocument();
+    await act(async () => {
+      irA('/quick-matches/qm-2/shared');
+    });
+    const reintentar = await screen.findByTestId('quick-match-shared-retry');
+    getShared.mockImplementation(
+      (id) => new Promise((resolve) => { darB = () => resolve(compartida({ id, name: 'Sábado' })); })
+    );
+
+    fireEvent.click(reintentar);
+
+    expect(screen.queryByText('Viernes')).not.toBeInTheDocument();
+    expect(screen.getByRole('status')).toBeInTheDocument();
+    await act(async () => {
+      darB();
+      await Promise.resolve();
+    });
+    expect(await screen.findByText('Sábado')).toBeInTheDocument();
+  });
+
   it('a quien la jugó se le lleva a su anotación sin pedir el campo', async () => {
     getShared.mockResolvedValue(compartida({ viewerIsParticipant: true }));
     pinta();

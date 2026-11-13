@@ -223,13 +223,19 @@ describe('EnvelopePage · lo que llega tarde y el cambio de ronda (T5)', () => {
     expect(screen.queryByTestId('espera-de-pantalla')).not.toBeInTheDocument();
   });
 
-  // La recarga tras una acción y el refresco comparten el número de lectura:
-  // la que salió antes y vuelve después no pisa a la otra
-  describe('la recarga tras dar el permiso, más lenta que un refresco posterior', () => {
+  // Uno a la vez: mientras la recarga de una acción está en vuelo, el tic
+  // del refresco no sale. Si saliera, sustituiría a la recarga, y con un fallo
+  // del refresco el estado que dejó la acción no llegaría a la pantalla
+  describe('la recarga tras dar el permiso, lenta, con el tic del refresco en medio', () => {
     const entregadoYEsperando = () =>
       vista({
         teamASubmitted: true,
         mine: { team: 'A', entries: [['ana'], ['bea']], submitted: true, automatic: false },
+      });
+    const conElPermiso = () =>
+      vista({
+        teamASubmitted: true,
+        mine: { team: 'A', entries: [['ana'], ['bea']], submitted: true, automatic: false, revealWhenBothReady: true },
       });
     const abiertos = () =>
       vista({
@@ -248,40 +254,107 @@ describe('EnvelopePage · lo que llega tarde y el cambio de ronda (T5)', () => {
       vi.useRealTimers();
     });
 
-    const darElPermisoConLaRecargaLenta = async (recargaLenta) => {
+    // `despues`: lo que contestaría el refresco si saliera
+    const darElPermisoConLaRecargaLenta = async (recargaLenta, despues) => {
       let terminarLaRecarga;
       mockVer
         .mockResolvedValueOnce(entregadoYEsperando())
         .mockImplementationOnce(() => new Promise((resolve, reject) => {
           terminarLaRecarga = () => recargaLenta(resolve, reject);
         }))
-        .mockResolvedValue(abiertos());
+        .mockImplementation(despues);
       pintar();
       fireEvent.click(await screen.findByTestId('dar-permiso'));
       await waitFor(() => expect(terminarLaRecarga).toBeTypeOf('function'));
-      // El refresco sale después y vuelve antes, con los sobres ya abiertos
+      // El tic del refresco llega con la recarga aún en vuelo: no sale
       await act(async () => {
         await vi.advanceTimersByTimeAsync(11000);
       });
-      expect(await screen.findByTestId('enfrentamiento-0')).toBeInTheDocument();
+      expect(mockVer).toHaveBeenCalledTimes(2);
       await act(async () => {
         terminarLaRecarga();
         await Promise.resolve();
       });
     };
 
-    it('T5-10b: si vuelve bien, no devuelve los sobres a cerrados', async () => {
-      await darElPermisoConLaRecargaLenta((resolve) => resolve(entregadoYEsperando()));
+    it('T5-10b: el tic no sale y lo que trae la recarga llega a la pantalla', async () => {
+      await darElPermisoConLaRecargaLenta((resolve) => resolve(conElPermiso()), async () => abiertos());
 
-      expect(screen.getByTestId('enfrentamiento-0')).toBeInTheDocument();
+      expect(await screen.findByTestId('retirar-permiso')).toBeInTheDocument();
+      expect(screen.queryByTestId('enfrentamiento-0')).not.toBeInTheDocument();
     });
 
-    it('T5-10c: si falla, ni avisa ni deja un error sobre lo que ya se ve', async () => {
-      await darElPermisoConLaRecargaLenta((_, reject) => reject(new Error('Boom')));
+    it('T5-10c: si la recarga falla, avisa una vez y el refresco siguiente lo arregla', async () => {
+      await darElPermisoConLaRecargaLenta((_, reject) => reject(new Error('Boom')), async () => abiertos());
 
-      expect(screen.getByTestId('enfrentamiento-0')).toBeInTheDocument();
+      expect(await screen.findByTestId('sobre-no-disponible')).toHaveTextContent('Boom');
+      expect(customToast.error).toHaveBeenCalledTimes(1);
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(10000);
+      });
+      expect(await screen.findByTestId('enfrentamiento-0')).toBeInTheDocument();
+      expect(screen.queryByTestId('sobre-no-disponible')).not.toBeInTheDocument();
+      expect(customToast.error).toHaveBeenCalledTimes(1);
+    });
+
+    it('T5-10d: con un refresco que fallaría, el estado tras dar el permiso llega igual, sin avisos', async () => {
+      await darElPermisoConLaRecargaLenta(
+        (resolve) => resolve(conElPermiso()),
+        async () => { throw new Error('Refresco caído'); }
+      );
+
+      expect(await screen.findByTestId('retirar-permiso')).toBeInTheDocument();
       expect(screen.queryByTestId('sobre-no-disponible')).not.toBeInTheDocument();
       expect(customToast.error).not.toHaveBeenCalled();
     });
+  });
+
+  it('T5-19e: tras un refresco, si la carga de la ronda nueva falla, avisa igual', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    try {
+      const entregado = vista({
+        teamASubmitted: true,
+        mine: { team: 'A', entries: [['ana'], ['bea']], submitted: true, automatic: false },
+      });
+      mockVer.mockImplementation(async (roundId) => {
+        if (roundId === 'ronda-2') throw new Error('Boom');
+        return entregado;
+      });
+      pintar();
+      await screen.findByTestId('sobre-entregado');
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(11000);
+      });
+      expect(mockVer).toHaveBeenCalledTimes(2);
+
+      await act(async () => {
+        irA('/competitions/comp-1/rounds/ronda-2/envelope');
+      });
+
+      expect(await screen.findByTestId('sobre-no-disponible')).toHaveTextContent('Boom');
+      expect(customToast.error).toHaveBeenCalledWith('Boom');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('T5-21: los nombres de los equipos, solo con un sobre automático, y su fallo no se nota', async () => {
+    mockCompeticion.mockRejectedValue(new Error('Boom'));
+    mockVer.mockResolvedValue(
+      vista({ revealed: true, teamAAutomatic: true, matchups: [[['ana'], ['carla']]] })
+    );
+    pintar();
+
+    expect(await screen.findByTestId('automatico')).toHaveTextContent('envelope.filledByTheApp');
+    await waitFor(() => expect(mockCompeticion).toHaveBeenCalledWith('comp-1'));
+    expect(customToast.error).not.toHaveBeenCalled();
+    expect(screen.queryByTestId('sobre-no-disponible')).not.toBeInTheDocument();
+  });
+
+  it('T5-21b: sin sobre automático no se piden', async () => {
+    pintar();
+    await screen.findByTestId('jugador-ana');
+
+    expect(mockCompeticion).not.toHaveBeenCalled();
   });
 });
