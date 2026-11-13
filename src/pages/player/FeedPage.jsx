@@ -83,8 +83,17 @@ const FeedPage = () => {
   const recargando = useRef(false);
   const cargandoMas = useRef(false);
   const recargaPendiente = useRef(false);
-  // Lo cargado, para que la recarga sepa si su página enlaza con ello
+  // Lo cargado, para que la recarga sepa si su página enlaza con ello. Se
+  // escribe a la vez que `events`, en el mismo sitio, y no en un efecto al
+  // pintar: una recarga que salta justo al llegar la primera página, antes de
+  // que React la pinte, veía aún el feed vacío de antes, no enlazaba y cambiaba
+  // el cursor de lo cargado por el suyo. Por eso solo se cambian con
+  // `ponEventos`, que escribe los dos
   const cargados = useRef([]);
+  const ponEventos = useCallback((siguientes) => {
+    cargados.current = siguientes;
+    setEvents(siguientes);
+  }, []);
 
   // Se marca como visto una sola vez por visita. Sin esto, cada paginación
   // volvería a marcarlo, y el aviso se apagaría por refrescar en vez de por
@@ -101,8 +110,16 @@ const FeedPage = () => {
   // otra, lo suyo no se mezcla en el feed nuevo ni se da por visto en ella.
   // Se pone al confirmar el cambio, antes de que conteste nada
   const deQuienRef = useRef(userId);
+  // Con otra cuenta, lo cargado era de la anterior: hasta que llegue la
+  // primera página de esta no hay sobre qué recargar —una recarga mezclaría lo
+  // suyo con lo de la otra cuenta—. Y cambiar de cuenta con Actividad abierta
+  // es otra visita: su primera página se da por vista, una vez por cuenta.
+  // Solo refs: `cargados` y el estado los pone `alCargar` al llegar, antes de
+  // que nada los pueda leer
   useLayoutEffect(() => {
     deQuienRef.current = userId;
+    cargado.current = false;
+    yaMarcado.current = false;
   }, [userId]);
 
   /**
@@ -129,7 +146,8 @@ const FeedPage = () => {
     try {
       const page = await getFriendsFeedUseCase.execute({ limit: PAGE_SIZE });
       if (deQuienRef.current !== deQuien) return;
-      setEvents((prev) => mezclaArriba(prev, page.events));
+      const antes = cargados.current;
+      ponEventos(mezclaArriba(antes, page.events));
       setAuthors((prev) => ({ ...prev, ...page.authors }));
       setCourses((prev) => ({ ...prev, ...page.courses }));
       setRequests(page.pendingFriendRequests || []);
@@ -140,12 +158,12 @@ const FeedPage = () => {
       // Si no enlaza —no había nada, o han llegado más entradas de las que
       // caben en una página—, queda un hueco por debajo y manda el suyo: lo ya
       // pintado se queda y lo repetido no se duplica al seguir bajando
-      const conocidos = new Set(cargados.current.map((e) => e.id));
+      const conocidos = new Set(antes.map((e) => e.id));
       // Una página fresca vacía solo «enlaza» si hay algo cargado: con el feed
       // vacío no hay cursor que llegue a su página siguiente (CodeRabbit FE #947)
       const enlaza =
         page.events.length === 0
-          ? cargados.current.length > 0
+          ? antes.length > 0
           : page.events.some((e) => conocidos.has(e.id));
       if (!enlaza) setNextCursor(page.nextCursor ?? null);
       marcaComoVisto();
@@ -154,7 +172,7 @@ const FeedPage = () => {
     } finally {
       recargando.current = false;
     }
-  }, []);
+  }, [ponEventos]);
 
   // La primera página, al entrar o con «Reintentar». Si cambia el usuario con
   // una en vuelo, la vieja ni se pinta ni avisa. `t` solo se usa en el aviso,
@@ -165,7 +183,7 @@ const FeedPage = () => {
     {
       activa: Boolean(userId),
       alCargar: (page) => {
-        setEvents(page.events);
+        ponEventos(page.events);
         setAuthors(page.authors);
         setCourses(page.courses);
         setRequests(page.pendingFriendRequests || []);
@@ -230,7 +248,7 @@ const FeedPage = () => {
       // Es de la cuenta anterior: no se mezcla en el feed de esta
       if (deQuienRef.current !== deQuien) return;
       // Sin repetir lo que una recarga ya hubiera traído
-      setEvents((prev) => mezclaAbajo(prev, page.events));
+      ponEventos(mezclaAbajo(cargados.current, page.events));
       setAuthors((prev) => ({ ...prev, ...page.authors }));
       setCourses((prev) => ({ ...prev, ...page.courses }));
       setNextCursor(page.nextCursor);
@@ -271,10 +289,6 @@ const FeedPage = () => {
       );
     }
   };
-
-  useEffect(() => {
-    cargados.current = events;
-  }, [events]);
 
   const ahora = new Date();
   const linea = useMemo(
