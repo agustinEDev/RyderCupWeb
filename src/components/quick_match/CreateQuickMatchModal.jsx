@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { useNavigate } from 'react-router';
+import { useCargaCancelableEffect } from '../../hooks/useCargaCancelableEffect';
 import { useTranslation } from 'react-i18next';
 import { esFalloDeRed, motivoDelError } from '../../utils/sinCobertura';
 import { idAleatorio } from '../../utils/idAleatorio';
@@ -114,7 +115,6 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser, borrador = nul
   const [courseTees, setCourseTees] = useState([]);
   // Lo dice la ficha completa del campo, que es la que trae su procedencia
   const [courseFromRfeg, setCourseFromRfeg] = useState(false);
-  const [teesLoading, setTeesLoading] = useState(false);
   // null while following the WHS default for the current format; a number once the user overrides it
   const [allowanceOverride, setAllowanceOverride] = useState(copia?.allowanceOverride ?? null);
   // El % de la partida repetida, con su modalidad: el paso 1 lo ofrece como un
@@ -131,10 +131,34 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser, borrador = nul
   // Cada uno, solo en el paso donde se arregla: fuera de él ya no dice nada
   // útil, y seguía a la vista con lo descrito ya arreglado (`/code-review`)
   const avisosAlRepetir = avisosDelBorrador.filter((aviso) => aviso.paso === step);
-  // De qué campo es la barra elegida: solo al cambiar de campo se borra. Con
-  // un «solo la primera vez» se perdía la copiada en desarrollo, donde React
-  // monta los efectos dos veces (revisor)
-  const campoDeLaBarra = useRef(copia?.selectedCourse?.id ?? null);
+  // De qué campo son la barra elegida, las barras y la cita de la RFEG. Al
+  // cambiar de campo (también a ninguno) se ajusta durante el render, no en un
+  // efecto: la barra elegida ya no vale y la cita no es de este campo. Las
+  // barras del anterior siguen a la vista mientras llegan las del nuevo; sin
+  // campo, ninguna. La copiada al repetir es del campo con el que se abre, así
+  // que no se borra
+  const campoActual = selectedCourse?.id ?? null;
+  const [campoDeLaBarra, setCampoDeLaBarra] = useState(campoActual);
+  if (campoActual !== campoDeLaBarra) {
+    setCampoDeLaBarra(campoActual);
+    setCreatorTeeKey(NO_TEE_KEY);
+    setCourseFromRfeg(false);
+    if (!campoActual) setCourseTees([]);
+  }
+  // Las barras del campo, con su procedencia. Lo de un campo anterior que
+  // llegue tarde no se aplica
+  const { cargando: teesLoading } = useCargaCancelableEffect(
+    () => getGolfCourseUseCase.execute(campoActual),
+    [campoActual],
+    {
+      activa: Boolean(campoActual),
+      alCargar: (course) => {
+        setCourseTees(course.tees || []);
+        setCourseFromRfeg(course.isFromRfeg?.() === true);
+      },
+      alFallar: () => setCourseTees([]),
+    }
+  );
   // Con qué campo y formato se hizo la plantilla: volver al paso 1 sin
   // cambiarlos la conserva (Agustín, 3 nov 2026); cambiarlos la vacía
   const plantillaDe = useRef(
@@ -271,39 +295,6 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser, borrador = nul
     const ultima = ultimas.get(userId);
     return ultima && courseTees.some((t) => teeKey(t.color, t.gender) === ultima) ? ultima : NO_TEE_KEY;
   };
-
-  useEffect(() => {
-    // Otro campo (también ninguno): la barra elegida ya no vale
-    const campo = selectedCourse?.id ?? null;
-    if (campo !== campoDeLaBarra.current) {
-      campoDeLaBarra.current = campo;
-      setCreatorTeeKey(NO_TEE_KEY);
-    }
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- reset tee/tees state on every course change (including to none), mirrors useQuickMatchScoring's course-fetch pattern
-    setCourseFromRfeg(false);
-    if (!selectedCourse?.id) {
-      setCourseTees([]);
-      return;
-    }
-    let cancelled = false;
-    setTeesLoading(true);
-    getGolfCourseUseCase
-      .execute(selectedCourse.id)
-      .then((course) => {
-        if (cancelled) return;
-        setCourseTees(course.tees || []);
-        setCourseFromRfeg(course.isFromRfeg?.() === true);
-      })
-      .catch(() => {
-        if (!cancelled) setCourseTees([]);
-      })
-      .finally(() => {
-        if (!cancelled) setTeesLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [selectedCourse?.id]);
 
   const isFreePlay = mode === 'FREE_PLAY';
   const defaultAllowance = isFreePlay

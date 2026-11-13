@@ -162,6 +162,113 @@ describe('CompetitionGolfCoursesSection · avisa a la ficha (FE #715)', () => {
     expect(aviso).not.toHaveBeenCalled();
   });
 
+  it('T3-17: si el servidor rechaza el orden, vuelve a leer la lista y deja la buena', async () => {
+    mockReordenar.mockRejectedValue(new Error('no'));
+    pintar(vi.fn());
+    await screen.findAllByText('Villaitana');
+    const nombres = () => screen.getAllByText(/^(Altea|Villaitana)$/).map((n) => n.textContent);
+    const orden = nombres();
+
+    await act(async () => soltar({ active: { id: 'g-2' }, over: { id: 'g-1' } }));
+
+    await waitFor(() => expect(mockCampos).toHaveBeenCalledTimes(2));
+    await waitFor(() => expect(nombres()).toEqual(orden));
+  });
+
+  it('T3-17: con otra competición, lee sus campos', async () => {
+    mockCampos.mockImplementation((id) =>
+      Promise.resolve(id === 'c-1' ? [fila('g-1', 'Altea', 1)] : [fila('g-9', 'Meis', 1)])
+    );
+    const { rerender } = pintar(vi.fn());
+    await screen.findAllByText('Altea');
+
+    rerender(
+      <CompetitionGolfCoursesSection
+        competition={{ ...competicion, id: 'c-2' }}
+        canManage={true}
+        onCamposCambiados={vi.fn()}
+      />
+    );
+
+    expect(await screen.findAllByText('Meis')).not.toHaveLength(0);
+    expect(mockCampos).toHaveBeenCalledWith('c-2');
+    expect(screen.queryAllByText('Altea')).toHaveLength(0);
+  });
+
+  it('T3-17: al añadir, avisa una vez y ya con la lista vuelta a leer', async () => {
+    let releida = false;
+    mockCampos
+      .mockResolvedValueOnce([fila('g-1', 'Altea', 1)])
+      .mockImplementationOnce(() =>
+        Promise.resolve([fila('g-1', 'Altea', 1), fila('g-nuevo', 'Meis', 2)]).then((lista) => {
+          releida = true;
+          return lista;
+        })
+      );
+    const alAvisar = [];
+    const aviso = vi.fn(() => alAvisar.push(releida));
+    pintar(aviso);
+
+    await anadirMeis();
+
+    await waitFor(() => expect(aviso).toHaveBeenCalledTimes(1));
+    expect(alAvisar).toEqual([true]);
+    expect(await screen.findAllByText('Meis')).not.toHaveLength(0);
+  });
+
+  it('T3-17: al quitar, avisa una vez y ya con la lista vuelta a leer', async () => {
+    let releida = false;
+    mockCampos
+      .mockResolvedValueOnce([fila('g-1', 'Altea', 1), fila('g-2', 'Villaitana', 2)])
+      .mockImplementationOnce(() =>
+        Promise.resolve([fila('g-2', 'Villaitana', 1)]).then((lista) => {
+          releida = true;
+          return lista;
+        })
+      );
+    const alAvisar = [];
+    const aviso = vi.fn(() => alAvisar.push(releida));
+    pintar(aviso);
+
+    fireEvent.click((await screen.findAllByTitle('detail.golfCourses.remove'))[0]);
+    fireEvent.click(await screen.findByTestId('confirm-modal-confirm'));
+
+    await waitFor(() => expect(aviso).toHaveBeenCalledTimes(1));
+    expect(alAvisar).toEqual([true]);
+    await waitFor(() => expect(screen.queryAllByText('Altea')).toHaveLength(0));
+  });
+
+  it('T3-16: añadir y quitar seguidos; si la primera relectura llega la última, se queda la segunda', async () => {
+    let anadido;
+    mockAnadir.mockReturnValue(new Promise((r) => { anadido = r; }));
+    const relecturas = [];
+    mockCampos
+      .mockResolvedValueOnce([fila('g-1', 'Altea', 1), fila('g-2', 'Villaitana', 2)])
+      .mockImplementation(() => new Promise((r) => relecturas.push(r)));
+    pintar(vi.fn());
+
+    // El alta viaja; mientras, se quita Altea
+    await anadirMeis();
+    fireEvent.click((await screen.findAllByTitle('detail.golfCourses.remove'))[0]);
+    fireEvent.click(await screen.findByTestId('confirm-modal-confirm'));
+    await waitFor(() => expect(relecturas).toHaveLength(1));
+    // Vuelve el alta: la segunda relectura
+    await act(async () => {
+      anadido({});
+    });
+    await waitFor(() => expect(relecturas).toHaveLength(2));
+
+    await act(async () => {
+      relecturas[1]([fila('g-2', 'Villaitana', 1), fila('g-nuevo', 'Meis', 2)]);
+    });
+    await act(async () => {
+      relecturas[0]([fila('g-2', 'Villaitana', 1)]);
+    });
+
+    expect(await screen.findAllByText('Meis')).not.toHaveLength(0);
+    expect(screen.queryAllByText('Altea')).toHaveLength(0);
+  });
+
   it('SC5: sin nadie a quien avisar, añadir funciona igual', async () => {
     pintar(undefined);
 

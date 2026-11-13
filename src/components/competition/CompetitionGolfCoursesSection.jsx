@@ -1,6 +1,7 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useRef } from 'react';
 import { Flag, Plus, Trash2, GripVertical, MapPin, Loader } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { useCargaCancelableEffect } from '../../hooks/useCargaCancelableEffect';
 import TituloConNumero from '../ui/TituloConNumero';
 import {
   DndContext,
@@ -273,7 +274,6 @@ const SortableGolfCourseItem = ({ course, onRemove, canEdit, i18n, t, paises }) 
 const CompetitionGolfCoursesSection = ({ competition, canManage, onCamposCambiados }) => {
   const { t, i18n } = useTranslation('competitions');
   const [golfCourses, setGolfCourses] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [isAdding, setIsAdding] = useState(false);
   // Los campos cuya alta está viajando. Va en un ref y no en el estado porque se
   // consulta y se apunta en el mismo suspiro, antes de que React vuelva a pintar
@@ -318,43 +318,39 @@ const CompetitionGolfCoursesSection = ({ competition, canManage, onCamposCambiad
     ? paisElegido
     : compatibleCountries[0] || null;
 
-  // Load golf courses
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/immutability -- pre-existing pattern surfaced by eslint-plugin-react-hooks 7.1.1 bump; needs dedicated review (tracked in follow-up)
-    loadGolfCourses();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [competition.id]);
+  // Los campos de la competición. Vuelve a pedirlos `recargar()` tras añadir,
+  // quitar o un orden rechazado: si se piden dos veces seguidas, la respuesta
+  // de la primera que llegue tarde no pisa la de la segunda
+  const { cargando: isLoading, recargar } = useCargaCancelableEffect(
+    () => getCompetitionGolfCoursesUseCase.execute(competition.id),
+    [competition.id],
+    {
+      alCargar: (result) => {
+        // Backend returns array with structure: { golf_course_id, display_order, created_at, golf_course: {...} }
+        // Flatten the structure for easier access in the UI
+        const courses = Array.isArray(result) ? result : (result.golf_courses || []);
+        const mappedCourses = courses.map(item => ({
+          ...item.golf_course, // Spread golf course data (id, name, country_code, etc.)
+          display_order: item.display_order,
+          created_at: item.created_at,
+          golf_course_id: item.golf_course_id, // Keep reference ID
+        }));
 
-  const loadGolfCourses = async () => {
-    setIsLoading(true);
-    try {
-      const result = await getCompetitionGolfCoursesUseCase.execute(competition.id);
-
-      // Backend returns array with structure: { golf_course_id, display_order, created_at, golf_course: {...} }
-      // Flatten the structure for easier access in the UI
-      const courses = Array.isArray(result) ? result : (result.golf_courses || []);
-      const mappedCourses = courses.map(item => ({
-        ...item.golf_course, // Spread golf course data (id, name, country_code, etc.)
-        display_order: item.display_order,
-        created_at: item.created_at,
-        golf_course_id: item.golf_course_id, // Keep reference ID
-      }));
-
-      setGolfCourses(mappedCourses);
-    } catch (error) {
-      console.error('Error loading golf courses:', error);
-      customToast.error(t('detail.golfCourses.errorLoading') + ': ' + error.message);
-    } finally {
-      setIsLoading(false);
+        setGolfCourses(mappedCourses);
+      },
+      alFallar: (error) => {
+        console.error('Error loading golf courses:', error);
+        customToast.error(t('detail.golfCourses.errorLoading') + ': ' + error.message);
+      },
     }
-  };
+  );
 
   const handleAddCourse = async (course) => {
     // El buscador ya no lo ofrece, pero la guarda se queda: así el aviso lo da la
     // aplicación con sus palabras, en vez de enseñar el error crudo de la API.
     //
     // Cuenta también los que están EN VUELO: el desplegable se puede volver a
-    // abrir mientras la petición viaja, y hasta que no vuelve `loadGolfCourses`
+    // abrir mientras la petición viaja, y hasta que no vuelve la relectura
     // la lista no sabe nada del que se acaba de elegir, así que el mismo campo
     // pasaba la guarda dos veces y se mandaba dos veces
     const yaEsta =
@@ -371,7 +367,7 @@ const CompetitionGolfCoursesSection = ({ competition, canManage, onCamposCambiad
       await addGolfCourseToCompetitionUseCase.execute(competition.id, course.id);
       customToast.success(t('detail.golfCourses.courseAdded'));
       setShowAddForm(false);
-      await loadGolfCourses();
+      await recargar();
       onCamposCambiados?.();
     } catch (error) {
       console.error('Error adding golf course:', error);
@@ -393,7 +389,7 @@ const CompetitionGolfCoursesSection = ({ competition, canManage, onCamposCambiad
     try {
       await removeGolfCourseFromCompetitionUseCase.execute(competition.id, courseId);
       customToast.success(t('detail.golfCourses.courseRemoved'));
-      await loadGolfCourses();
+      await recargar();
       onCamposCambiados?.();
     } catch (error) {
       console.error('Error removing golf course:', error);
@@ -424,8 +420,8 @@ const CompetitionGolfCoursesSection = ({ competition, canManage, onCamposCambiad
     } catch (error) {
       console.error('Error reordering golf courses:', error);
       customToast.error(t('detail.golfCourses.errorReordering'));
-      // Revert on error
-      await loadGolfCourses();
+      // Revert on error. Sin esperarla: detrás no hay nada que dependa de ella
+      recargar();
     }
   };
 
