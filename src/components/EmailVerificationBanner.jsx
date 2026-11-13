@@ -2,6 +2,11 @@ import { useState } from 'react';
 import { Trans, useTranslation } from 'react-i18next';
 import { useReenvioDeVerificacion } from '../hooks/useReenvioDeVerificacion';
 
+// El correo se pinta aquí, como texto, y no con lo que <Trans> pone dentro de <correo>:
+// <Trans> vuelve a interpolar ese texto ya interpolado, y un correo como
+// `{{email}}@e.com` salía `{{email}}@e.com@e.com` (#1100)
+const CorreoLiteral = ({ email }) => <strong className="wrap-anywhere">{email}</strong>;
+
 const EmailVerificationBanner = ({ userEmail }) => {
   // `ready` porque este banner usa el namespace `auth`, que su pantalla —el
   // panel— no carga: si ese chunk tarda o falla, sin esto se quedaria pintando
@@ -40,7 +45,7 @@ const EmailVerificationBanner = ({ userEmail }) => {
                 t={t}
                 i18nKey="emailVerification.description"
                 values={{ email: userEmail }}
-                components={{ correo: <strong className="wrap-anywhere" /> }}
+                components={{ correo: <CorreoLiteral email={userEmail} /> }}
               />
             </p>
           </div>

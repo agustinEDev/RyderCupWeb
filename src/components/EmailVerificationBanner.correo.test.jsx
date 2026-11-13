@@ -60,4 +60,17 @@ describe('EmailVerificationBanner · el correo es texto (FE-08)', () => {
     expect(container.querySelectorAll('strong')).toHaveLength(1);
     expect(container.querySelector('img')).toBeNull();
   });
+
+  // #1100: i18next volvía a interpolar el valor; `{{email}}@e.com` salía `{{email}}@e.com@e.com`
+  it.each([
+    ['es', '{{email}}@e.com'],
+    ['en', '{{email}}@e.com'],
+    ['es', '{{ email }}@e.com'],
+    ['es', '$t(emailVerification.title)@e.com'],
+  ])('[%s] un correo con marcadores de i18next sale literal: %s', (lng, correo) => {
+    const { container } = pinta(correo, lng);
+
+    expect(screen.getByText(correo).tagName).toBe('STRONG');
+    expect(container.querySelectorAll('strong')).toHaveLength(1);
+  });
 });
