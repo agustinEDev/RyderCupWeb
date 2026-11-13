@@ -36,9 +36,11 @@ const mismasDependencias = (antes, ahora) =>
  * @returns {{ cargando: boolean, recargar: (opciones?: { silenciosa?: boolean }) => Promise<Object> }}
  *   `recargar()` vuelve a pedir con la espera; `recargar({ silenciosa: true })`,
  *   sin ella. Devuelve una promesa que se cumple cuando SU carga termina, ya
- *   después de `alCargar`/`alFallar`: `{ estado: 'cargada', datos }`,
- *   `{ estado: 'fallida', error }` o, si se descartó (otra más nueva, cambian
- *   las dependencias, se desactiva o se desmonta), `{ estado: 'descartada' }`.
+ *   después de `alCargar`/`alFallar`: `{ estado: 'cargada', datos }` o
+ *   `{ estado: 'fallida', error }`. Si otro `recargar()` más nuevo la sustituye,
+ *   se cumple con lo que acabe el que la sustituyó (y así hasta el último), que
+ *   es la carga que trae lo de ahora. Si se descarta por otra cosa (cambian las
+ *   dependencias, se desactiva o se desmonta), `{ estado: 'descartada' }`.
  *   Nunca se rechaza: se puede esperar sin try/catch.
  */
 export const useCargaCancelableEffect = (pedir, deps, { activa = true, alCargar, alFallar } = {}) => {
@@ -57,8 +59,8 @@ export const useCargaCancelableEffect = (pedir, deps, { activa = true, alCargar,
   // ya en ese momento, no cuando React pinte y limpie su efecto. Si no, una que
   // fallara en ese hueco avisaba como si fuera la actual (CodeRabbit, FE #1111)
   const generacionRef = useRef(0);
-  // Quién cumple la promesa del último `recargar()`: el siguiente o el
-  // desmontaje la dan por descartada si su carga no llegó a cumplirla
+  // Quién cumple la promesa del último `recargar()`: el siguiente la ata a la
+  // suya y el desmontaje la da por descartada, si su carga no llegó a cumplirla
   const pendienteRef = useRef(null);
 
   const pedirAhora = useEffectEvent(() => pedir());
@@ -115,12 +117,14 @@ export const useCargaCancelableEffect = (pedir, deps, { activa = true, alCargar,
   // Estable: se pasa como prop y puede acabar en las dependencias de otro efecto
   const recargar = useCallback(({ silenciosa = false } = {}) => {
     generacionRef.current += 1;
-    // La del `recargar()` anterior ya no se aplicará: si no terminó, descartada
-    pendienteRef.current?.(DESCARTADA);
     let cumplir;
     const promesa = new Promise((resolver) => {
       cumplir = resolver;
     });
+    // La carga del `recargar()` anterior ya no se aplicará: si no terminó, su
+    // promesa sigue a esta, que traerá lo de ahora. Cumplirla con una promesa la
+    // ata ya: lo que después le llegue de su carga o de su limpieza no cuenta
+    pendienteRef.current?.(promesa);
     pendienteRef.current = cumplir;
     if (!silenciosa) setEnCurso(true);
     setRecarga({ silenciosa, cumplir });
