@@ -826,6 +826,47 @@ describe('FeedPage', () => {
       expect(getFeed).toHaveBeenLastCalledWith({ limit: 20, cursor: 'cursor-1' });
     });
 
+    it('a reload that starts before the first page is painted still sees that page and keeps its cursor', async () => {
+      // El número sube justo al llegar la primera página, antes de que React la
+      // pinte: la recarga tiene que ver ya lo cargado, no el feed vacío de antes
+      markSeen.mockImplementationOnce(() => {
+        mockNovedades.fija(1);
+        return Promise.resolve();
+      });
+      getFeed
+        .mockResolvedValueOnce(pagina({ nextCursor: 'cursor-1' }))
+        .mockResolvedValueOnce(pagina({ events: [], authors: {}, nextCursor: 'fresco' }))
+        .mockResolvedValueOnce(pagina({ events: [nuevo('viejo', 1)], nextCursor: null }));
+      renderFeed();
+
+      // La recarga ha terminado: también ha dado por visto lo suyo
+      await waitFor(() => expect(aCero).toHaveBeenCalledTimes(2));
+      expect(getFeed).toHaveBeenCalledTimes(2);
+
+      fireEvent.click(screen.getByTestId('feed-load-more'));
+      expect(await screen.findByTestId('activity-event-viejo')).toBeInTheDocument();
+      expect(getFeed).toHaveBeenLastCalledWith({ limit: 20, cursor: 'cursor-1' });
+    });
+
+    it('«Cargar más» after a reload keeps what the reload brought on top', async () => {
+      getFeed
+        .mockResolvedValueOnce(pagina({ nextCursor: 'cursor-1' }))
+        .mockResolvedValueOnce(pagina({ events: [nuevo('n1', 59), evento()], nextCursor: 'fresco' }))
+        .mockResolvedValueOnce(pagina({ events: [nuevo('viejo', 1)], nextCursor: null }));
+      renderFeed();
+      await screen.findByTestId('activity-event-e1');
+
+      act(() => mockNovedades.fija(1));
+      expect(await screen.findByTestId('activity-event-n1')).toBeInTheDocument();
+
+      fireEvent.click(screen.getByTestId('feed-load-more'));
+
+      expect(await screen.findByTestId('activity-event-viejo')).toBeInTheDocument();
+      expect(getFeed).toHaveBeenLastCalledWith({ limit: 20, cursor: 'cursor-1' });
+      expect(screen.getByTestId('activity-event-n1')).toBeInTheDocument();
+      expect(screen.getByTestId('activity-event-e1')).toBeInTheDocument();
+    });
+
     it('after «Cargar más», a reload that does not join what is loaded (a gap) brings its cursor', async () => {
       getFeed
         .mockResolvedValueOnce(pagina({ nextCursor: 'cursor-1' }))
