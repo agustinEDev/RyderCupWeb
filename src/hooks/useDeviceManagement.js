@@ -1,6 +1,7 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import customToast from '../utils/toast';
+import { useCargaCancelableEffect } from './useCargaCancelableEffect';
 
 import {
   getActiveDevicesUseCase,
@@ -15,37 +16,33 @@ import {
 export const useDeviceManagement = () => {
   const { t } = useTranslation('devices');
   const [devices, setDevices] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [revokingDeviceIds, setRevokingDeviceIds] = useState(new Set());
   const [deviceErrors, setDeviceErrors] = useState(new Map()); // v1.14.0: Track errors per device
 
   /**
-   * Fetches all active devices for the current user
+   * Los dispositivos activos del usuario: al entrar y otra vez al cambiar de
+   * idioma (`t`). Solo se aplica la última lectura pedida, y una que falla
+   * tras salir de la pantalla no avisa en otra.
    */
-  const fetchDevices = useCallback(async () => {
-    try {
-      setIsLoading(true);
-      const result = await getActiveDevicesUseCase.execute();
-      setDevices(result.devices || []);
-    } catch (error) {
-      console.error('❌ [useDeviceManagement] Error fetching devices:', error);
+  const { cargando: isLoading, recargar } = useCargaCancelableEffect(
+    () => getActiveDevicesUseCase.execute(),
+    [t],
+    {
+      alCargar: (result) => setDevices(result.devices || []),
+      alFallar: (error) => {
+        console.error('❌ [useDeviceManagement] Error fetching devices:', error);
 
-      // Translate error code or use fallback
-      const errorMessage = error.code
-        ? t(`errors.${error.code}`, { defaultValue: t('errors.FAILED_TO_LOAD_DEVICES') })
-        : error.message || t('errors.FAILED_TO_LOAD_DEVICES');
+        // Translate error code or use fallback
+        const errorMessage = error.code
+          ? t(`errors.${error.code}`, { defaultValue: t('errors.FAILED_TO_LOAD_DEVICES') })
+          : error.message || t('errors.FAILED_TO_LOAD_DEVICES');
 
-      customToast.error(errorMessage);
-    } finally {
-      setIsLoading(false);
+        customToast.error(errorMessage);
+      },
     }
-  }, [t]); // Added 't' dependency for i18n translations
-
-  // Fetch devices on mount
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- pre-existing pattern surfaced by eslint-plugin-react-hooks 7.1.1 bump; needs dedicated review (tracked in follow-up)
-    fetchDevices();
-  }, [fetchDevices]);
+  );
+  // La misma API de antes: vuelve a pedir con la espera, sin pasar un evento
+  const fetchDevices = useCallback(() => recargar(), [recargar]);
 
   /**
    * Revokes a specific device
