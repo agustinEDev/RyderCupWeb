@@ -6,7 +6,12 @@ import customToast from '../../utils/toast';
 import { esFalloDeRed } from '../../utils/sinCobertura';
 import HeaderAuth from '../../components/layout/HeaderAuth';
 import { useAuth } from '../../hooks/useAuth';
-import { ponLasNovedadesACero, useNovedadesDeActividad } from '../../hooks/useNovedadesDeActividad';
+import {
+  leeLasNovedades,
+  ponLasNovedadesACero,
+  suscribeALasNovedades,
+} from '../../hooks/useNovedadesDeActividad';
+import { useCargaCancelableEffect } from '../../hooks/useCargaCancelableEffect';
 import ActivityEventCard from '../../components/feed/ActivityEventCard';
 import FriendRequestCard from '../../components/feed/FriendRequestCard';
 import DiasDeActividad from '../../components/feed/DiasDeActividad';
@@ -66,7 +71,6 @@ const FeedPage = () => {
   const [requests, setRequests] = useState([]);
   const [unseenCount, setUnseenCount] = useState(0);
   const [nextCursor, setNextCursor] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   // null, 'red' (sin cobertura) u 'otro': con fallo no se dice «no hay nada»
   const [loadError, setLoadError] = useState(null);
@@ -86,16 +90,6 @@ const FeedPage = () => {
   // volvería a marcarlo, y el aviso se apagaría por refrescar en vez de por
   // haber mirado.
   const yaMarcado = useRef(false);
-
-  // `t` solo hace falta para el mensaje de error, pero ponerlo en las
-  // dependencias ata la carga del feed a la identidad de esa función: si el
-  // proveedor de traducción devuelve una `t` nueva por render, el efecto vuelve
-  // a dispararse y el feed se pide en bucle. Con la ref, `loadFeed` depende solo
-  // del usuario, que es de lo que de verdad depende.
-  const tRef = useRef(t);
-  useEffect(() => {
-    tRef.current = t;
-  }, [t]);
 
   // Depende del id y no del objeto `user`: si el proveedor de sesión devuelve
   // un objeto nuevo por render —aunque represente al mismo usuario—, atarse a
@@ -151,51 +145,55 @@ const FeedPage = () => {
     }
   }, []);
 
-  const loadFeed = useCallback(async () => {
-    if (!userId) return;
+  // La primera página, al entrar o con «Reintentar». Si cambia el usuario con
+  // una en vuelo, la vieja ni se pinta ni avisa. `t` solo se usa en el aviso,
+  // que se lee al llegar el fallo: cambiar de idioma no vuelve a pedir el feed
+  const { cargando, recargar: reintentar } = useCargaCancelableEffect(
+    () => getFriendsFeedUseCase.execute({ limit: PAGE_SIZE }),
+    [userId],
+    {
+      activa: Boolean(userId),
+      alCargar: (page) => {
+        setEvents(page.events);
+        setAuthors(page.authors);
+        setCourses(page.courses);
+        setRequests(page.pendingFriendRequests || []);
+        setUnseenCount(page.unseenCount || 0);
+        setNextCursor(page.nextCursor);
+        setLoadError(null);
+        cargado.current = true;
 
-    setIsLoading(true);
-    try {
-      const page = await getFriendsFeedUseCase.execute({ limit: PAGE_SIZE });
-      setEvents(page.events);
-      setAuthors(page.authors);
-      setCourses(page.courses);
-      setRequests(page.pendingFriendRequests || []);
-      setUnseenCount(page.unseenCount || 0);
-      setNextCursor(page.nextCursor);
-      setLoadError(null);
-      cargado.current = true;
-
-      if (!yaMarcado.current) {
-        yaMarcado.current = true;
-        marcaComoVisto();
-      }
-    } catch (err) {
-      // `catch` sin el error no dejaba distinguir un backend roto de no tener
-      // cobertura, y las dos cosas acababan en el mismo aviso
-      const deRed = esFalloDeRed(err);
-      setLoadError(deRed ? 'red' : 'otro');
-      customToast.error(
-        tRef.current(deRed ? 'common:sinConexion.mensaje' : 'common:errors.generic')
-      );
-    } finally {
-      setIsLoading(false);
+        if (!yaMarcado.current) {
+          yaMarcado.current = true;
+          marcaComoVisto();
+        }
+      },
+      alFallar: (err) => {
+        // `catch` sin el error no dejaba distinguir un backend roto de no tener
+        // cobertura, y las dos cosas acababan en el mismo aviso
+        const deRed = esFalloDeRed(err);
+        setLoadError(deRed ? 'red' : 'otro');
+        customToast.error(t(deRed ? 'common:sinConexion.mensaje' : 'common:errors.generic'));
+      },
     }
-  }, [userId]);
+  );
+  // Sin usuario no se pide nada y se sigue esperando, como antes
+  const isLoading = cargando || !userId;
 
+  // El número sube mientras se mira Actividad: se recarga. Se escucha la
+  // pieza que lo guarda, sin pasar por un estado: solo cuando CAMBIA y queda
+  // por encima de cero —no por el que ya hubiera al entrar, que lo atiende la
+  // primera carga, ni porque se vuelva a fijar el mismo—, y si marcar falla el
+  // número no cambia, así que no vuelve a dispararse
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- pre-existing pattern surfaced by eslint-plugin-react-hooks 7.1.1 bump; needs dedicated review (tracked in follow-up)
-    loadFeed();
-  }, [loadFeed]);
-
-  // El número sube mientras se mira Actividad: se recarga. Solo cuando sube
-  // —no por el que ya hubiera al entrar, que lo atiende la primera carga— y
-  // si marcar falla el número no cambia, así que no vuelve a dispararse
-  const novedades = useNovedadesDeActividad();
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- recarga sets state only after awaiting the API, never synchronously
-    if (novedades > 0) recarga();
-  }, [novedades, recarga]);
+    let visto = leeLasNovedades();
+    return suscribeALasNovedades(() => {
+      const ahora = leeLasNovedades();
+      if (ahora === visto) return;
+      visto = ahora;
+      if (ahora > 0) recarga();
+    });
+  }, [recarga]);
 
   // Pulsar Actividad estando en Actividad no vuelve a montar la página, pero
   // sí cambia la entrada del historial
@@ -313,7 +311,7 @@ const FeedPage = () => {
         </div>
 
         {loadError ? (
-          <LoadError deRed={loadError === 'red'} onRetry={loadFeed} t={t} />
+          <LoadError deRed={loadError === 'red'} onRetry={() => reintentar()} t={t} />
         ) : vacio ? (
           <EmptyFeed t={t} />
         ) : (

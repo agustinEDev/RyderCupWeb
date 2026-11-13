@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef } from 'react';
+import { useState, useEffect, useEffectEvent, useMemo, useRef } from 'react';
 import { useLoaderData, useLocation, useNavigate, useRevalidator } from 'react-router';
 import { motion } from 'framer-motion';
 import { Users, Calendar, Clock, MapPin, Plus, Filter, Search, AlertCircle, WifiOff, RotateCw } from 'lucide-react';
@@ -116,12 +116,15 @@ const Competitions = () => {
 
   // El aviso de siempre, uno por carga fallida: cada carga trae un resultado
   // nuevo, también al reintentar (Agustín, 2 nov 2026: como hasta ahora)
-  // (de su cuenta: la de otra que entra sin salir de aquí no es suya)
-  useEffect(() => {
+  // (de su cuenta: la de otra que entra sin salir de aquí no es suya). Los
+  // textos se leen al avisar: cambiar de idioma no repite el aviso
+  const avisaDelFallo = useEffectEvent((deLaCarga) => {
     if (deOtraCuenta) return;
-    if (resultado.estado === 'sinRed') customToast.error(tComun('sinConexion.mensaje'));
-    if (resultado.estado === 'error') customToast.error(t('detail.failedToLoadCompetitions'));
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- solo al llegar otra carga, no si cambia el idioma
+    if (deLaCarga.estado === 'sinRed') customToast.error(tComun('sinConexion.mensaje'));
+    if (deLaCarga.estado === 'error') customToast.error(t('detail.failedToLoadCompetitions'));
+  });
+  useEffect(() => {
+    avisaDelFallo(resultado);
   }, [resultado]);
 
   // Sin datos todavía: la primera carga de la aplicación (`pendiente`) o una

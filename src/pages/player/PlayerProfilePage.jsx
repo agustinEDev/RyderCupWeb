@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { nombreVisible } from '../../utils/nombreVisible';
 import { Link, Navigate, useLocation, useParams } from 'react-router';
 import { useTranslation } from 'react-i18next';
@@ -17,6 +17,7 @@ import {
   primerasTarjetasPorDia,
 } from '../../domain/services/lineaDeActividad';
 import { useAuth } from '../../hooks/useAuth';
+import { useCargaCancelableEffect } from '../../hooks/useCargaCancelableEffect';
 import {
   getPlayerProfileUseCase,
   getPlayerActivityUseCase,
@@ -38,6 +39,23 @@ const ACTIVITY_PAGE_SIZE = 20;
 const CARDS_STEP = 5;
 const HTTP_NOT_FOUND = 404;
 const HTTP_FORBIDDEN = 403;
+
+// La ficha y, entre amigos, la primera página de su actividad: la pantalla
+// espera a las dos. Un 403 en la actividad no es un fallo: no la publica,
+// aunque seáis amigos, y el resto del perfil sigue valiendo. Otro fallo de la
+// actividad tampoco tira la ficha: se avisa y se enseña sin ella
+const leeElPerfil = async (userId) => {
+  const data = await getPlayerProfileUseCase.execute(userId);
+  const sinActividad = { data, actividad: null, actividadOculta: false, actividadFallida: false };
+  if (!data.isFriend) return sinActividad;
+  try {
+    const actividad = await getPlayerActivityUseCase.execute(userId, { limit: ACTIVITY_PAGE_SIZE });
+    return { ...sinActividad, actividad };
+  } catch (error) {
+    const oculta = error?.status === HTTP_FORBIDDEN;
+    return { ...sinActividad, actividadOculta: oculta, actividadFallida: !oculta };
+  }
+};
 
 /**
  * PlayerProfilePage - El perfil de otro jugador.
@@ -72,7 +90,6 @@ const PlayerProfilePage = () => {
 
   const [profile, setProfile] = useState(null);
   const [isNotFound, setIsNotFound] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
   const [activity, setActivity] = useState(null);
   const [isActivityHidden, setIsActivityHidden] = useState(false);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
@@ -82,9 +99,9 @@ const PlayerProfilePage = () => {
   // 'remove' | 'block' | null: lo que espera confirmación
   const [pendingConfirm, setPendingConfirm] = useState(null);
   const [visibleCards, setVisibleCards] = useState(CARDS_STEP);
-  // Cada carga del perfil abre una generación nueva. Lo que conteste tarde
-  // —una carga anterior, un «Ver más» de otro perfil— se descarta: si no, un
-  // perfil viejo pisaba al nuevo (revisión FE-2)
+  // Cada recarga del perfil abre una generación nueva: un «Ver más» que
+  // conteste después ya no se pega a la ficha recargada (revisión FE-2). Lo
+  // tardío de la carga misma lo descarta useCargaCancelableEffect
   const generacion = useRef(0);
   // Una acción que termina cuando ya se ha salido de este perfil no recarga
   // ni toca nada: el perfil que se ve ya es otro (revisión final FE-2)
@@ -96,81 +113,45 @@ const PlayerProfilePage = () => {
     };
   }, []);
 
-  // `t` solo hace falta para los mensajes de error, pero ponerla en las
-  // dependencias ata la carga a la identidad de esa función: un proveedor que
-  // devuelva una `t` nueva por render dispararía el efecto sin parar. Es el
-  // mismo motivo por el que se depende del id y no del objeto `user`.
-  const tRef = useRef(t);
-  useEffect(() => {
-    tRef.current = t;
-  }, [t]);
-
   const myId = user?.id;
   const isSelf = Boolean(myId) && myId === userId;
 
   /**
-   * Carga el perfil. Devuelve `false` solo si la ficha no se pudo leer (y no
-   * por un 404, que ya es una respuesta): quien acaba de cambiar la relación
-   * lo necesita para no dejar la pantalla contradiciendo a su aviso de éxito.
+   * Carga el perfil, al entrar y tras cambiar la relación. `t` solo se usa en
+   * los avisos, que se leen al llegar la respuesta: cambiar de idioma no lo
+   * vuelve a pedir. Se depende del id y no del objeto `user`.
    */
-  const loadProfile = useCallback(async ({ avisar = true } = {}) => {
-    if (!userId || isSelf) return true;
-
-    const gen = ++generacion.current;
-    const vigente = () => gen === generacion.current;
-
-    setIsLoading(true);
-    try {
-      const data = await getPlayerProfileUseCase.execute(userId);
-      if (!vigente()) return true;
-      setProfile(data);
-      setGames(data.gamesTogether ?? null);
-      setIsNotFound(false);
-      setActivity(null);
-      setIsActivityHidden(false);
-      setVisibleCards(CARDS_STEP);
-
-      if (data.isFriend) {
-        try {
-          const page = await getPlayerActivityUseCase.execute(userId, { limit: ACTIVITY_PAGE_SIZE });
-          if (!vigente()) return true;
-          setActivity(page);
-          setIsActivityHidden(false);
-        } catch (error) {
-          if (!vigente()) return true;
-          // Un 403 aquí no es un fallo: significa que no publica su actividad,
-          // aunque seáis amigos. El resto del perfil sigue siendo válido, así
-          // que no se tira toda la pantalla por esto.
-          if (error?.status === HTTP_FORBIDDEN) {
-            setActivity(null);
-            setIsActivityHidden(true);
-          } else {
-            customToast.error(tRef.current('common:errors.generic'));
-          }
+  const { cargando, recargar } = useCargaCancelableEffect(
+    () => leeElPerfil(userId),
+    [userId, isSelf],
+    {
+      activa: Boolean(userId) && !isSelf,
+      alCargar: ({ data, actividad, actividadOculta, actividadFallida }) => {
+        setProfile(data);
+        setGames(data.gamesTogether ?? null);
+        setIsNotFound(false);
+        setActivity(actividad);
+        setIsActivityHidden(actividadOculta);
+        setVisibleCards(CARDS_STEP);
+        if (actividadFallida) customToast.error(t('common:errors.generic'));
+      },
+      alFallar: (error) => {
+        // El backend responde 404 tanto si el jugador no existe como si no se
+        // puede ver, a propósito: un 403 confirmaría que la cuenta existe y
+        // probar identificadores serviría para averiguar quién está registrado.
+        if (error?.status === HTTP_NOT_FOUND) {
+          setIsNotFound(true);
+          setProfile(null);
+          return;
         }
-      }
-      return true;
-    } catch (error) {
-      if (!vigente()) return true;
-      // El backend responde 404 tanto si el jugador no existe como si no se
-      // puede ver, a propósito: un 403 confirmaría que la cuenta existe y
-      // probar identificadores serviría para averiguar quién está registrado.
-      if (error?.status === HTTP_NOT_FOUND) {
-        setIsNotFound(true);
-        setProfile(null);
-        return true;
-      }
-      if (avisar) customToast.error(tRef.current('common:errors.generic'));
-      return false;
-    } finally {
-      if (vigente()) setIsLoading(false);
+        // Tras una acción no: la acción ya dice que la recarga falló, con su
+        // propio aviso (revisión FE-2)
+        if (!isActing) customToast.error(t('common:errors.generic'));
+      },
     }
-  }, [userId, isSelf]);
-
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- pre-existing pattern surfaced by eslint-plugin-react-hooks 7.1.1 bump; needs dedicated review (tracked in follow-up)
-    loadProfile();
-  }, [loadProfile]);
+  );
+  // Sin id no se pide nada y se sigue esperando, como antes
+  const isLoading = cargando || !userId;
 
   // Las tarjetas que salen de lo cargado: las mismas que Actividad (FE-1), con
   // los logros de una vuelta juntos y los tipos que no se conocen, fuera. Van
@@ -297,9 +278,12 @@ const PlayerProfilePage = () => {
       }
       if (!montado.current) return;
       customToast.success(t(successKey));
-      const reloaded = await loadProfile({ avisar: false });
+      generacion.current += 1;
+      const recarga = await recargar();
       if (!montado.current) return;
-      if (!reloaded) {
+      // Un 404 ya es una respuesta: la ficha pasa a «no existe»
+      const recargaFallida = recarga.estado === 'fallida' && recarga.error?.status !== HTTP_NOT_FOUND;
+      if (recargaFallida) {
         applyRelationshipLocally(statusAfter, result?.id ?? null);
         customToast.error(t('playerProfile:errors.reloadFailed'));
       }

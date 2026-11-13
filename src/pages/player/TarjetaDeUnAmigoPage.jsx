@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useState } from 'react';
 import { Link, Navigate, useParams, useSearchParams } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import { ArrowLeft, Eye, Lock, RefreshCw, SearchX, Trophy } from 'lucide-react';
@@ -8,6 +8,7 @@ import TarjetasDeLaPartida from '../../components/scoring/TarjetasDeLaPartida';
 import ScorecardTable from '../../components/scoring/ScorecardTable';
 import { useAuth } from '../../hooks/useAuth';
 import { useGoBack } from '../../hooks/useGoBack';
+import { useCargaCancelableEffect } from '../../hooks/useCargaCancelableEffect';
 import { rutaDeAnotacion } from '../../utils/rutaDeAnotacion';
 import { esDeUnaPrivada } from '../../utils/competicionPrivada';
 import { rutaEnSuFila } from '../../utils/rutasDeUnAmigo';
@@ -55,7 +56,6 @@ const TarjetaDeUnAmigoPage = ({ tipo }) => {
 
   const [vista, setVista] = useState(null);
   const [fallo, setFallo] = useState(null);
-  const [cargando, setCargando] = useState(true);
 
   // Otra partida sin desmontarse: de cero, sin enseñar la anterior (revisor)
   const [deLaVista, setDeLaVista] = useState(idDeLaVista);
@@ -63,37 +63,34 @@ const TarjetaDeUnAmigoPage = ({ tipo }) => {
     setDeLaVista(idDeLaVista);
     setVista(null);
     setFallo(null);
-    setCargando(true);
   }
-  // La carga vigente: una respuesta de otra partida ya no pinta nada
-  const vigenteRef = useRef(idDeLaVista);
-  // Al confirmar el cambio, antes de que llegue nada: con solo la carga
-  // (efecto pasivo) quedaba un hueco para la respuesta vieja (CodeRabbit)
-  useLayoutEffect(() => {
-    vigenteRef.current = idDeLaVista;
-  }, [idDeLaVista]);
 
-  const carga = useCallback(async () => {
-    vigenteRef.current = idDeLaVista;
-    setCargando(true);
-    setFallo(null);
-    const vigente = () => vigenteRef.current === idDeLaVista;
-    try {
+  // La vista, una vez por partida. Cada respuesta dice de qué partida es, y
+  // con su fallo: una de otra partida que llegue en el hueco entre que se pinta
+  // la nueva y se descarta la vieja ya no pinta nada (CodeRabbit)
+  const { cargando, recargar } = useCargaCancelableEffect(
+    () => {
+      const id = idDeLaVista;
       const casoDeUso = esPartida ? getTeeGroupScoringViewUseCase : getScoringViewUseCase;
-      const leida = await casoDeUso.execute(idDeLaVista);
-      if (vigente()) setVista(leida);
-    } catch (error) {
-      if (!vigente()) return;
-      setFallo(motivoDelFallo(error));
-    } finally {
-      if (vigente()) setCargando(false);
+      return casoDeUso.execute(id).then(
+        (leida) => ({ id, leida }),
+        (error) => ({ id, error })
+      );
+    },
+    [esPartida, idDeLaVista],
+    {
+      alCargar: ({ id, leida, error }) => {
+        if (id !== idDeLaVista) return;
+        if (error) setFallo(motivoDelFallo(error));
+        else setVista(leida);
+      },
     }
-  }, [esPartida, idDeLaVista]);
-
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- the load sets state only after awaiting the API
-    carga();
-  }, [carga]);
+  );
+  // Reintentar, o una tarjeta que cambia: con lo ya pintado no hay espera
+  const vuelveACargar = () => {
+    setFallo(null);
+    recargar();
+  };
 
   const juego = !!user?.id && (vista?.players ?? []).some((p) => p.userId === user.id);
   if (juego) {
@@ -105,7 +102,9 @@ const TarjetaDeUnAmigoPage = ({ tipo }) => {
     );
   }
 
-  if (cargando && !vista) {
+  // Sin nada que enseñar ni fallo, se espera: también en el pintado de otra
+  // partida, antes de que su carga salga con el efecto
+  if (!vista && (cargando || fallo === null)) {
     return (
       <div className={`${PANTALLA_MENOS_BARRA_INFERIOR} bg-gray-50`}>
         <HeaderAuth user={user} />
@@ -119,7 +118,7 @@ const TarjetaDeUnAmigoPage = ({ tipo }) => {
       <div className={`${PANTALLA_MENOS_BARRA_INFERIOR} bg-gray-50`}>
         <HeaderAuth user={user} />
         <main className="max-w-2xl mx-auto px-4 py-6 pb-24">
-          <SinTarjeta fallo={fallo} onReintentar={carga} onVolver={volver} t={t} />
+          <SinTarjeta fallo={fallo} onReintentar={vuelveACargar} onVolver={volver} t={t} />
         </main>
       </div>
     );
@@ -159,7 +158,7 @@ const TarjetaDeUnAmigoPage = ({ tipo }) => {
             scoringView={vista}
             userId={jugador ?? undefined}
             organiza={false}
-            onCambio={carga}
+            onCambio={vuelveACargar}
           />
         ) : (
           <ScorecardTable

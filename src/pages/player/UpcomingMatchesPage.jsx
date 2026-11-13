@@ -1,8 +1,9 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { Flag } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import HeaderAuth from '../../components/layout/HeaderAuth';
 import { useAuth } from '../../hooks/useAuth';
+import { useCargaCancelableEffect } from '../../hooks/useCargaCancelableEffect';
 import {
   getScoringViewUseCase,
   getTeeGroupScoringViewUseCase,
@@ -25,13 +26,34 @@ import { PANTALLA_MENOS_BARRA_INFERIOR } from '../../utils/barraInferior';
 // en bucle. Una ronda a más de 24 días vista no necesita despertar a nadie
 const MAXIMO_TEMPORIZADOR_MS = 2 ** 31 - 1;
 
+// Mismo cálculo que usa el panel para su banner de próximo partido: si cada
+// pantalla lo hiciera por su cuenta, acabarían discrepando sobre qué cuenta
+// como "próximo". Y la misma lectura sin cobertura, por lo mismo
+const leeLoProximo = async (userId) => {
+  // Las competiciones, una vez para las dos listas: cada petición sale del
+  // mismo cubo de límites que comparte todo el campo (ADR-038)
+  const competiciones = listUserCompetitionsUseCase.execute(userId);
+  const [leido, partidas] = await Promise.all([
+    leeLosProximosPartidos({
+      lee: async () => getUpcomingMatchesUseCase.executeWithCompleteness(userId, await competiciones),
+      userId,
+      pideLaVista: (id) => getScoringViewUseCase.execute(id),
+    }),
+    leeLasProximasPartidas({
+      lee: async () => getUpcomingTeeGroupsUseCase.executeWithCompleteness(userId, await competiciones),
+      userId,
+      pideLaVista: (id) => getTeeGroupScoringViewUseCase.execute(id),
+    }),
+  ]);
+  return { leido, partidas };
+};
+
 const UpcomingMatchesPage = () => {
   const { t } = useTranslation('dashboard');
   const { user, loading: isLoadingUser } = useAuth();
 
   // Los partidos de la Ryder y las partidas de stroke play, juntos (FE #845)
   const [matches, setMatches] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
   // Lo que se enseña puede venir de lo guardado, o no venir de ningún sitio
   // (FE #615). Vacío porque no se pudo preguntar no es «no tienes partidos».
   // De memoria se dice por lista: anotar sin red depende de de dónde vino
@@ -41,48 +63,29 @@ const UpcomingMatchesPage = () => {
   // diciendo que puede faltar alguno (revisión de la FE-B, Agustín, 13 oct)
   const [incompleta, setIncompleta] = useState(false);
 
-  const loadMatches = useCallback(async () => {
-    if (!user) {
-      setIsLoading(false);
-      return;
-    }
-
-    setIsLoading(true);
-    // Mismo cálculo que usa el panel para su banner de próximo partido: si
-    // cada pantalla lo hiciera por su cuenta, acabarían discrepando sobre
-    // qué cuenta como "próximo". Y la misma lectura sin cobertura, por lo mismo
-    // Las competiciones, una vez para las dos listas: cada petición sale del
-    // mismo cubo de límites que comparte todo el campo (ADR-038)
-    const competiciones = listUserCompetitionsUseCase.execute(user.id);
-    const [leido, partidas] = await Promise.all([
-      leeLosProximosPartidos({
-        lee: async () => getUpcomingMatchesUseCase.executeWithCompleteness(user.id, await competiciones),
-        userId: user.id,
-        pideLaVista: (id) => getScoringViewUseCase.execute(id),
-      }),
-      leeLasProximasPartidas({
-        lee: async () => getUpcomingTeeGroupsUseCase.executeWithCompleteness(user.id, await competiciones),
-        userId: user.id,
-        pideLaVista: (id) => getTeeGroupScoringViewUseCase.execute(id),
-      }),
-    ]);
-    const juntos = [...leido.partidos, ...partidas.partidas].sort(porCuandoSeJuega);
-    setMatches(juntos);
-    setDesdeMemoria({ partidos: leido.desdeMemoria, partidas: partidas.desdeMemoria });
-    // Sin nada que enseñar y alguna sin contestar: no se sabe si no hay nada
-    const algunaSinRespuesta = leido.sinRespuesta || partidas.sinRespuesta;
-    setSinRespuesta(juntos.length === 0 && algunaSinRespuesta);
-    // Y si alguna llegó a medias, también puede faltar alguno (`/code-review`)
-    setIncompleta(juntos.length > 0 && (algunaSinRespuesta || leido.incompleta || partidas.incompleta));
-    setIsLoading(false);
-  }, [user]);
-
-  useEffect(() => {
-    if (user) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- pre-existing pattern surfaced by eslint-plugin-react-hooks 7.1.1 bump; needs dedicated review (tracked in follow-up)
-      loadMatches();
-    }
-  }, [user, loadMatches]);
+  // Si cambia el usuario con una en vuelo, la vieja no se pinta. Sin usuario
+  // no se pide nada ni se espera
+  const { cargando: isLoading } = useCargaCancelableEffect(() => leeLoProximo(user.id), [user], {
+    activa: Boolean(user),
+    alCargar: ({ leido, partidas }) => {
+      const juntos = [...leido.partidos, ...partidas.partidas].sort(porCuandoSeJuega);
+      setMatches(juntos);
+      setDesdeMemoria({ partidos: leido.desdeMemoria, partidas: partidas.desdeMemoria });
+      // Sin nada que enseñar y alguna sin contestar: no se sabe si no hay nada
+      const algunaSinRespuesta = leido.sinRespuesta || partidas.sinRespuesta;
+      setSinRespuesta(juntos.length === 0 && algunaSinRespuesta);
+      // Y si alguna llegó a medias, también puede faltar alguno (`/code-review`)
+      setIncompleta(juntos.length > 0 && (algunaSinRespuesta || leido.incompleta || partidas.incompleta));
+    },
+    // Si la lectura entera falla, tampoco se pudo preguntar: lo mismo que sin
+    // cobertura y sin nada guardado, en vez de esperar para siempre
+    alFallar: () => {
+      setMatches([]);
+      setDesdeMemoria({ partidos: false, partidas: false });
+      setSinRespuesta(true);
+      setIncompleta(false);
+    },
+  });
 
   // Y un despertador para la hora en que abre el primero que esté por abrir: la
   // lista se pinta UNA vez, así que quien la abre a las 05:50 esperando las
