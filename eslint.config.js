@@ -2,6 +2,7 @@ import js from '@eslint/js';
 import react from 'eslint-plugin-react';
 import reactHooks from 'eslint-plugin-react-hooks';
 import reactRefresh from 'eslint-plugin-react-refresh';
+import prettier from 'eslint-config-prettier';
 
 export default [
   // Ignore patterns (equivalent to ignorePatterns in old config)
@@ -199,6 +200,15 @@ export default [
     ignores: ['src/**/*.test.{js,jsx}'],
     rules: {
       'no-unused-vars': ['error', { args: 'none' }],
+    },
+  },
+  // Prettier manda en el formato: apaga las reglas de estilo que chocarían con él (va la última)
+  prettier,
+  // eslint-config-prettier apaga también esta, que no es de estilo: avisa de las
+  // trampas del punto y coma automático (una línea que empieza por `(` o `[`)
+  {
+    rules: {
+      'no-unexpected-multiline': 'error',
     },
   },
 ];

@@ -1,0 +1,18 @@
+# Generado o de terceros
+/dist/
+/coverage/
+/playwright-report/
+node_modules/
+package-lock.json
+# Los genera el backend (scripts/generate_parity_fixtures.py) con su propio formato
+src/domain/services/__fixtures__/*Parity.json
+
+# Servido tal cual (HTML con contenido en línea y la página sin conexión)
+/index.html
+/public/
+
+# Documentación y configuración del CI: fuera del formateo del código
+*.md
+/docs/
+/brand/
+/.github/
