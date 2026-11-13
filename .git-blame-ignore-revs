@@ -1,0 +1,3 @@
+# Commits mecánicos que git blame se salta (git config blame.ignoreRevsFile .git-blame-ignore-revs)
+# Prettier sobre todo el código (fase 5)
+ecf4d6cfcfbe4edf7df2bc2808fcd6c61b3645b6
