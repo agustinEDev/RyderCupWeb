@@ -22,8 +22,14 @@ import { useCargaCancelableEffect } from './useCargaCancelableEffect';
  *   H8   recargar                                     | es la misma función en cada pintado
  *   H5b  la vieja falla antes de que React pinte el recargar | no se avisa: ya no es la vigente
  *   H9   recargar() y su carga termina           | su promesa se cumple con el resultado, después de alCargar/alFallar
- *   H10  recargar() y su carga se descarta       | (otra más nueva, cambian las deps, se desactiva o se desmonta)
+ *   H10  recargar() y su carga se descarta       | (cambian las deps, se desactiva o se desmonta)
  *                                                | su promesa se cumple como descartada y no se aplica nada
+ *   H10b otro recargar() más nuevo la sustituye  | su promesa se cumple con lo que acabe la que la sustituyó
+ *        y esa termina                           | ('cargada' con sus datos o 'fallida' con su error)
+ *   H10c y a esa la sustituye otra               | se sigue la cadena: todas se cumplen con la última
+ *   H10d y la que la sustituyó se descarta       | (cambian las deps, se desactiva o se desmonta) todas, descartadas
+ *   H10e recargar() con la carga inactiva        | (ya lo estaba, o se desactiva en el mismo pintado) se cumple
+ *                                                | como descartada en ese momento, con las que la siguen
  */
 // Una respuesta que llega cuando la prueba quiere
 const aMano = () => {
@@ -400,7 +406,7 @@ describe('useCargaCancelableEffect', () => {
     expect(alFallar).toHaveBeenCalledWith(error, { silenciosa: true });
   });
 
-  it('H10: de dos recargar seguidos, la del primero se cumple como descartada aunque su carga llegue después', async () => {
+  it('H10b: de dos recargar seguidos, la del primero se cumple con la carga del segundo aunque la suya llegue después', async () => {
     pedir.mockResolvedValueOnce('primera');
     const { result } = usar(props());
     await act(async () => {});
@@ -421,12 +427,12 @@ describe('useCargaCancelableEffect', () => {
     await act(async () => ultima.resolver('ultima'));
     await act(async () => penultima.resolver('penultima'));
 
-    expect(vistaPrimera.valor).toEqual({ estado: 'descartada' });
+    expect(vistaPrimera.valor).toEqual({ estado: 'cargada', datos: 'ultima' });
     expect(vistaSegunda.valor).toEqual({ estado: 'cargada', datos: 'ultima' });
     expect(alCargar.mock.calls.map(([d]) => d)).toEqual(['primera', 'ultima']);
   });
 
-  it('H10: dos recargar en el mismo pintado: la del primero se cumple como descartada', async () => {
+  it('H10b: dos recargar en el mismo pintado: la del primero se cumple con la carga del segundo', async () => {
     pedir.mockResolvedValueOnce('primera');
     const { result } = usar(props());
     await act(async () => {});
@@ -439,7 +445,7 @@ describe('useCargaCancelableEffect', () => {
       segunda = result.current.recargar({ silenciosa: true });
     });
 
-    await expect(primera).resolves.toEqual({ estado: 'descartada' });
+    await expect(primera).resolves.toEqual({ estado: 'cargada', datos: 'segunda' });
     await expect(segunda).resolves.toEqual({ estado: 'cargada', datos: 'segunda' });
   });
 
@@ -499,18 +505,51 @@ describe('useCargaCancelableEffect', () => {
     await expect(promesa).resolves.toEqual({ estado: 'descartada' });
   });
 
-  it('H10: un recargar estando inactiva que nunca llega a pedir se cumple como descartada al desmontar', async () => {
-    const { result, unmount } = usar(props({ activa: false }));
+  it('H10: un recargar estando inactiva no llega a pedir y se cumple como descartada ya, sin esperar a desmontar', async () => {
+    const { result } = usar(props({ activa: false }));
     await act(async () => {});
 
     let promesa;
     act(() => {
       promesa = result.current.recargar();
     });
-    unmount();
+    const visto = estadoDe(promesa);
+    await act(async () => {});
 
-    await expect(promesa).resolves.toEqual({ estado: 'descartada' });
+    expect(visto.valor).toEqual({ estado: 'descartada' });
     expect(pedir).not.toHaveBeenCalled();
+  });
+
+  it('H10e: recargar y desactivarse en el mismo pintado: se cumple como descartada', async () => {
+    pedir.mockResolvedValueOnce('primera');
+    const { result, rerender } = usar(props());
+    await act(async () => {});
+    pedir.mockReturnValue(new Promise(() => {}));
+
+    let promesa;
+    act(() => {
+      promesa = result.current.recargar();
+      rerender(props({ activa: false }));
+    });
+    const visto = estadoDe(promesa);
+    await act(async () => {});
+
+    expect(visto.valor).toEqual({ estado: 'descartada' });
+    expect(pedir).toHaveBeenCalledTimes(1);
+  });
+
+  it('H10e: con una recarga en vuelo, otro recargar y desactivarse en el mismo pintado: las dos, descartadas', async () => {
+    const { vistas, result, rerender } = await recargasSeguidas(1);
+
+    act(() => {
+      vistas.push(estadoDe(result.current.recargar()));
+      rerender(props({ activa: false }));
+    });
+    await act(async () => {});
+
+    expect(vistas[0].valor).toEqual({ estado: 'descartada' });
+    expect(vistas[1].valor).toEqual({ estado: 'descartada' });
+    expect(pedir).toHaveBeenCalledTimes(2);
   });
 
   it('H10: si la vieja falla antes de que React pinte el recargar, la promesa nueva no se cumple con ese fallo', async () => {
@@ -530,5 +569,143 @@ describe('useCargaCancelableEffect', () => {
 
     await act(async () => nueva.resolver('nueva'));
     expect(visto.valor).toEqual({ estado: 'cargada', datos: 'nueva' });
+  });
+
+  // Dos o tres `recargar()` seguidos, cada uno en su pintado, con sus cargas a mano
+  const recargasSeguidas = async (cuantas) => {
+    pedir.mockResolvedValueOnce('primera');
+    const utiles = usar(props());
+    await act(async () => {});
+    const cargas = Array.from({ length: cuantas }, aMano);
+    cargas.forEach((carga) => pedir.mockReturnValueOnce(carga.promesa));
+    const vistas = [];
+    for (let i = 0; i < cuantas; i += 1) {
+      act(() => {
+        vistas.push(estadoDe(utiles.result.current.recargar({ silenciosa: i % 2 === 1 })));
+      });
+    }
+    return { ...utiles, cargas, vistas };
+  };
+
+  it('H10b: la sustituida no se cumple hasta que termina la que la sustituyó, y se cumple con sus datos', async () => {
+    // Given recargar() A sustituido por recargar() B
+    const { cargas, vistas } = await recargasSeguidas(2);
+    const [cargaA, cargaB] = cargas;
+    const [vistaA, vistaB] = vistas;
+
+    // When la de A llega antes: ya no se aplica, y A sigue esperando
+    await act(async () => cargaA.resolver('de A'));
+    expect(vistaA.valor).toBe('pendiente');
+    expect(alCargar.mock.calls.map(([d]) => d)).toEqual(['primera']);
+
+    // When termina la de B
+    await act(async () => cargaB.resolver('de B'));
+
+    // Then A se cumple con lo de B
+    expect(vistaA.valor).toEqual({ estado: 'cargada', datos: 'de B' });
+    expect(vistaB.valor).toEqual({ estado: 'cargada', datos: 'de B' });
+    expect(alCargar.mock.calls.map(([d]) => d)).toEqual(['primera', 'de B']);
+  });
+
+  it('H10b: si la que la sustituyó falla, la sustituida se cumple (no se rechaza) con ese error', async () => {
+    const { cargas, vistas } = await recargasSeguidas(2);
+    const [cargaA, cargaB] = cargas;
+    const [vistaA, vistaB] = vistas;
+
+    const error = new Error('sin red');
+    await act(async () => cargaB.rechazar(error));
+    await act(async () => cargaA.rechazar(new Error('tarde')));
+
+    expect(vistaA.valor).toEqual({ estado: 'fallida', error });
+    expect(vistaB.valor).toEqual({ estado: 'fallida', error });
+    expect(alFallar).toHaveBeenCalledTimes(1);
+    expect(alFallar).toHaveBeenCalledWith(error, { silenciosa: true });
+  });
+
+  it('H10c: si a la que la sustituyó la sustituye otra, se sigue la cadena hasta la última', async () => {
+    // Given A sustituido por B, y B por C
+    const { cargas, vistas } = await recargasSeguidas(3);
+    const [cargaA, cargaB, cargaC] = cargas;
+    const [vistaA, vistaB, vistaC] = vistas;
+
+    // When llegan las de A y B, ya sustituidas
+    await act(async () => cargaB.resolver('de B'));
+    await act(async () => cargaA.resolver('de A'));
+    expect(vistaA.valor).toBe('pendiente');
+    expect(vistaB.valor).toBe('pendiente');
+
+    // When termina la de C
+    await act(async () => cargaC.resolver('de C'));
+
+    // Then A, B y C se cumplen con lo de C
+    expect(vistaA.valor).toEqual({ estado: 'cargada', datos: 'de C' });
+    expect(vistaB.valor).toEqual({ estado: 'cargada', datos: 'de C' });
+    expect(vistaC.valor).toEqual({ estado: 'cargada', datos: 'de C' });
+    expect(alCargar.mock.calls.map(([d]) => d)).toEqual(['primera', 'de C']);
+  });
+
+  it('H10c: con la última fallida, toda la cadena se cumple con su error', async () => {
+    const { cargas, vistas } = await recargasSeguidas(3);
+    const error = new Error('caída');
+
+    await act(async () => cargas[2].rechazar(error));
+
+    vistas.forEach((vista) => expect(vista.valor).toEqual({ estado: 'fallida', error }));
+  });
+
+  it('H10d: si cambian las dependencias antes de que termine la que la sustituyó, las dos se cumplen como descartadas', async () => {
+    // Given A sustituido por B, con la de B en vuelo
+    const { cargas, vistas, rerender } = await recargasSeguidas(2);
+    pedir.mockReturnValueOnce(new Promise(() => {}));
+
+    // When cambian las dependencias
+    rerender(props({ filtro: 'b' }));
+    await act(async () => {});
+
+    // Then A y B, descartadas ya, y lo de B que llega tarde no cambia nada
+    expect(vistas[0].valor).toEqual({ estado: 'descartada' });
+    expect(vistas[1].valor).toEqual({ estado: 'descartada' });
+    await act(async () => cargas[1].resolver('de B'));
+    expect(vistas[0].valor).toEqual({ estado: 'descartada' });
+    expect(alCargar.mock.calls.map(([d]) => d)).toEqual(['primera']);
+  });
+
+  it('H10d: si se desmonta antes de que termine la que la sustituyó, las dos se cumplen como descartadas', async () => {
+    const { cargas, vistas, unmount } = await recargasSeguidas(2);
+
+    unmount();
+    await act(async () => cargas[1].rechazar(new Error('tarde')));
+
+    expect(vistas[0].valor).toEqual({ estado: 'descartada' });
+    expect(vistas[1].valor).toEqual({ estado: 'descartada' });
+    expect(alFallar).not.toHaveBeenCalled();
+  });
+
+  it('H10d: si se desactiva antes de que termine la que la sustituyó, las dos se cumplen como descartadas', async () => {
+    const { vistas, rerender } = await recargasSeguidas(2);
+
+    rerender(props({ activa: false }));
+    await act(async () => {});
+
+    expect(vistas[0].valor).toEqual({ estado: 'descartada' });
+    expect(vistas[1].valor).toEqual({ estado: 'descartada' });
+  });
+
+  it('H10d: un recargar estando inactiva y el que lo sustituye se cumplen como descartados ya, sin esperar a desmontar', async () => {
+    const { result } = usar(props({ activa: false }));
+    await act(async () => {});
+    const vistas = [];
+    act(() => {
+      vistas.push(estadoDe(result.current.recargar()));
+    });
+    act(() => {
+      vistas.push(estadoDe(result.current.recargar()));
+    });
+
+    await act(async () => {});
+
+    expect(vistas[0].valor).toEqual({ estado: 'descartada' });
+    expect(vistas[1].valor).toEqual({ estado: 'descartada' });
+    expect(pedir).not.toHaveBeenCalled();
   });
 });

@@ -36,9 +36,16 @@ const mismasDependencias = (antes, ahora) =>
  * @returns {{ cargando: boolean, recargar: (opciones?: { silenciosa?: boolean }) => Promise<Object> }}
  *   `recargar()` vuelve a pedir con la espera; `recargar({ silenciosa: true })`,
  *   sin ella. Devuelve una promesa que se cumple cuando SU carga termina, ya
- *   después de `alCargar`/`alFallar`: `{ estado: 'cargada', datos }`,
- *   `{ estado: 'fallida', error }` o, si se descartó (otra más nueva, cambian
- *   las dependencias, se desactiva o se desmonta), `{ estado: 'descartada' }`.
+ *   después de `alCargar`/`alFallar`: `{ estado: 'cargada', datos }` o
+ *   `{ estado: 'fallida', error }`. Si otro `recargar()` más nuevo la sustituye,
+ *   se cumple con lo que acabe el que la sustituyó (y así hasta el último), que
+ *   es la carga que trae lo de ahora: su `datos` o su `error` son entonces los de
+ *   esa otra carga, no los de la petición de quien llamó. Por eso el aviso de un
+ *   fallo va en `alFallar`, que sale una sola vez, y no en quien espera la promesa.
+ *   Si se descarta por otra cosa (cambian las
+ *   dependencias, se desactiva o se desmonta), `{ estado: 'descartada' }`. Con
+ *   la carga inactiva (ya lo estaba al llamar, o se desactiva en el mismo
+ *   pintado) no se pide nada y se cumple como descartada en ese momento.
  *   Nunca se rechaza: se puede esperar sin try/catch.
  */
 export const useCargaCancelableEffect = (pedir, deps, { activa = true, alCargar, alFallar } = {}) => {
@@ -57,8 +64,9 @@ export const useCargaCancelableEffect = (pedir, deps, { activa = true, alCargar,
   // ya en ese momento, no cuando React pinte y limpie su efecto. Si no, una que
   // fallara en ese hueco avisaba como si fuera la actual (CodeRabbit, FE #1111)
   const generacionRef = useRef(0);
-  // Quién cumple la promesa del último `recargar()`: el siguiente o el
-  // desmontaje la dan por descartada si su carga no llegó a cumplirla
+  // Quién cumple la promesa del último `recargar()`: el siguiente la ata a la
+  // suya, y el efecto inactivo o el desmontaje la dan por descartada, si su
+  // carga no llegó a cumplirla
   const pendienteRef = useRef(null);
 
   const pedirAhora = useEffectEvent(() => pedir());
@@ -71,7 +79,13 @@ export const useCargaCancelableEffect = (pedir, deps, { activa = true, alCargar,
     // Inactiva olvida con qué corrió: al activarse, la carga es nueva y espera,
     // aunque entretanto se pidiera un `recargar({ silenciosa: true })`
     depsAnterioresRef.current = activa ? deps : null;
-    if (!activa) return undefined;
+    if (!activa) {
+      // Inactiva no pide: el `recargar()` pendiente (y los que lo siguen) se
+      // da por descartado ya, aunque se pidiera en el mismo pintado en que se
+      // desactivó. Si no, se quedaba esperando hasta reactivarse o desmontar
+      pendienteRef.current?.(DESCARTADA);
+      return undefined;
+    }
     recargaConsumidaRef.current = recarga;
     let vigente = true;
     // Silenciosa solo si la lanza un `recargar({ silenciosa: true })` que aún
@@ -115,19 +129,22 @@ export const useCargaCancelableEffect = (pedir, deps, { activa = true, alCargar,
   // Estable: se pasa como prop y puede acabar en las dependencias de otro efecto
   const recargar = useCallback(({ silenciosa = false } = {}) => {
     generacionRef.current += 1;
-    // La del `recargar()` anterior ya no se aplicará: si no terminó, descartada
-    pendienteRef.current?.(DESCARTADA);
     let cumplir;
     const promesa = new Promise((resolver) => {
       cumplir = resolver;
     });
+    // La carga del `recargar()` anterior ya no se aplicará: si no terminó, su
+    // promesa sigue a esta, que traerá lo de ahora. Cumplirla con una promesa la
+    // ata ya: lo que después le llegue de su carga o de su limpieza no cuenta
+    pendienteRef.current?.(promesa);
     pendienteRef.current = cumplir;
     if (!silenciosa) setEnCurso(true);
     setRecarga({ silenciosa, cumplir });
     return promesa;
   }, []);
 
-  // Un `recargar()` estando inactiva no llega a pedir: al desmontar, descartado
+  // Al desmontar, el `recargar()` cuya carga no llegó a cumplirlo, descartado.
+  // Uno pedido estando inactiva ya se cumplió al correr su efecto inactivo
   useEffect(() => () => pendienteRef.current?.(DESCARTADA), []);
 
   return { cargando: activa && enCurso, recargar };

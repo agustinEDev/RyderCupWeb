@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useState } from 'react';
 import { Link } from 'react-router';
 import { ArrowLeft, Users, UserPlus } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
@@ -77,18 +77,9 @@ const FriendsPage = () => {
   const isLoading = cargando || !user;
 
   // La recarga tras una acción, y que la tarjeta siga ocupada hasta que lleguen
-  // unas listas que ya la incluyan. Si otra acción la deja descartada, esas
-  // listas son las de la recarga más reciente: se espera a esa
-  const ultimaRecargaRef = useRef(null);
-  const recargarTrasLaAccion = async () => {
-    let promesa = recargar({ silenciosa: true });
-    ultimaRecargaRef.current = promesa;
-    let resultado = await promesa;
-    while (resultado.estado === 'descartada' && ultimaRecargaRef.current !== promesa) {
-      promesa = ultimaRecargaRef.current;
-      resultado = await promesa;
-    }
-  };
+  // unas listas que ya la incluyan: si otra acción la sustituye, su promesa
+  // espera a la recarga más reciente (lo hace el hook)
+  const recargarTrasLaAccion = () => recargar({ silenciosa: true });
 
   const handleAccept = async (friendshipId) => {
     const key = `friendship:${friendshipId}`;
