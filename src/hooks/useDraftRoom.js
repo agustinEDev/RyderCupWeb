@@ -114,14 +114,22 @@ const useDraftRoom = (competitionId, userId) => {
   const escrituras = (id) => escriturasRef.current.get(id) ?? 0;
   // La última sala que de verdad se pintó desde una carga
   const aplicadaRef = useRef(null);
+  // La competición cuya carga está activa (la de la URL). Lo que vuelve de una
+  // acción de otra no toca nada; lo de esta se guarda siempre, aunque su
+  // primera carga siga en vuelo. Comparando con lo guardado, una elección que
+  // volvía antes que esa carga se perdía, la carga se descartaba por ser
+  // anterior a ella y la espera del bloque no se iba nunca
+  const activaRef = useRef(null);
 
-  // Cambia lo guardado solo si sigue siendo de esa competición: lo que vuelve
-  // de una acción de la anterior no toca la nueva
-  const escribir = useCallback(
-    (id, cambios) =>
-      setLectura((antes) => (antes.competitionId === id ? { ...antes, ...cambios } : antes)),
-    []
-  );
+  // Lo que dejan las acciones de la competición activa: si aún no había nada
+  // suyo guardado, empieza de cero con esto
+  const escribir = useCallback((id, cambios) => {
+    if (id !== activaRef.current) return;
+    setLectura((antes) => ({
+      ...(antes.competitionId === id ? antes : { ...SIN_LECTURA, competitionId: id }),
+      ...cambios,
+    }));
+  }, []);
 
   const ponerElReloj = useCallback(
     (nueva) => {
@@ -136,9 +144,12 @@ const useDraftRoom = (competitionId, userId) => {
   );
 
   // La sala que deja una elección o una apertura: manda sobre cualquier
-  // lectura en vuelo de esa competición, que es anterior
+  // lectura en vuelo de esa competición, que es anterior. La de otra
+  // competición no cuenta ni pone en hora el reloj: su hora del servidor
+  // movía el contador de la que se está viendo
   const escribirSala = useCallback(
     (id, nueva) => {
+      if (id !== activaRef.current) return;
       escriturasRef.current.set(id, (escriturasRef.current.get(id) ?? 0) + 1);
       ponerElReloj(nueva);
       escribir(id, { sala: nueva, vista: true, error: null });
@@ -151,6 +162,7 @@ const useDraftRoom = (competitionId, userId) => {
   // salir) no se aplica ni avisa de su fallo
   const { recargar } = useCargaCancelableEffect(
     () => {
+      activaRef.current = competitionId;
       leidaTrasRef.current = escrituras(competitionId);
       return getDraftUseCase.execute(competitionId);
     },

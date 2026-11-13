@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
+import { StrictMode } from 'react';
 import { MemoryRouter, Routes, Route, useNavigate } from 'react-router';
 
 /**
@@ -336,6 +337,87 @@ describe('EnvelopePage · lo que llega tarde y el cambio de ronda (T5)', () => {
     } finally {
       vi.useRealTimers();
     }
+  });
+
+  describe('T5-22: una entrega de la ronda 1 que vuelve ya en la ronda 2', () => {
+    // Al volver, la entrega recargaba con la carga de la página, que ya es la
+    // de la ronda 2: dejaba vieja su carga, y si esa recarga fallaba, la
+    // ronda 2 enseñaba un error que no era suyo
+    const entregarYPasarALaRonda2 = async (rondaDos) => {
+      let terminarLaEntrega;
+      mockEntregar.mockImplementation(
+        () => new Promise((resolve) => { terminarLaEntrega = () => resolve({ team: 'A', entries: [['ana'], ['bea']] }); })
+      );
+      mockVer.mockImplementation((roundId) => (roundId === 'ronda-2' ? rondaDos() : Promise.resolve(vista())));
+      pintar();
+      fireEvent.click(await screen.findByTestId('jugador-ana'));
+      fireEvent.click(screen.getByTestId('jugador-bea'));
+      fireEvent.click(screen.getByTestId('entregar-sobre'));
+      await waitFor(() => expect(terminarLaEntrega).toBeTypeOf('function'));
+      await act(async () => {
+        irA('/competitions/comp-1/rounds/ronda-2/envelope');
+      });
+      await waitFor(() => expect(mockVer).toHaveBeenCalledWith('ronda-2'));
+      return terminarLaEntrega;
+    };
+    it('en modo estricto (montar, desmontar y volver a montar), entregar sin cambiar de ronda sí recarga', async () => {
+      mockEntregar.mockResolvedValue({ team: 'A', entries: [['ana'], ['bea']] });
+      render(
+        <StrictMode>
+          <MemoryRouter initialEntries={['/competitions/comp-1/rounds/ronda-1/envelope']}>
+            <Routes>
+              <Route path="/competitions/:id/rounds/:roundId/envelope" element={<EnvelopePage />} />
+            </Routes>
+          </MemoryRouter>
+        </StrictMode>
+      );
+      fireEvent.click(await screen.findByTestId('jugador-ana'));
+      fireEvent.click(screen.getByTestId('jugador-bea'));
+      const antes = mockVer.mock.calls.length;
+
+      fireEvent.click(screen.getByTestId('entregar-sobre'));
+
+      await waitFor(() => expect(mockVer.mock.calls.length).toBe(antes + 1));
+    });
+
+    const llamadasDeLaRonda2 = () => mockVer.mock.calls.filter(([roundId]) => roundId === 'ronda-2').length;
+
+    it('con la carga de la ronda 2 en vuelo, no la deja vieja: llega la suya', async () => {
+      let darLaRonda2;
+      const terminarLaEntrega = await entregarYPasarALaRonda2(
+        () => new Promise((resolve) => { darLaRonda2 = () => resolve(vista({ roundId: 'ronda-2', myPlayers: [{ userId: 'carla', name: 'Carla Cruz', handicap: 20 }] })); })
+      );
+
+      await act(async () => {
+        terminarLaEntrega();
+        await Promise.resolve();
+      });
+      await act(async () => {
+        darLaRonda2();
+        await Promise.resolve();
+      });
+
+      expect(await screen.findByTestId('jugador-carla')).toBeInTheDocument();
+      expect(llamadasDeLaRonda2()).toBe(1);
+    });
+
+    it('con la ronda 2 ya cargada, no la recarga ni le pone un error que no es suyo', async () => {
+      let veces = 0;
+      const terminarLaEntrega = await entregarYPasarALaRonda2(() => {
+        veces += 1;
+        return veces === 1 ? Promise.resolve(vista({ roundId: 'ronda-2' })) : Promise.reject(new Error('Boom'));
+      });
+      expect(await screen.findByTestId('jugador-ana')).toBeInTheDocument();
+
+      await act(async () => {
+        terminarLaEntrega();
+        await Promise.resolve();
+      });
+
+      expect(llamadasDeLaRonda2()).toBe(1);
+      expect(screen.queryByTestId('sobre-no-disponible')).not.toBeInTheDocument();
+      expect(customToast.error).not.toHaveBeenCalled();
+    });
   });
 
   it('T5-21: los nombres de los equipos, solo con un sobre automático, y su fallo no se nota', async () => {

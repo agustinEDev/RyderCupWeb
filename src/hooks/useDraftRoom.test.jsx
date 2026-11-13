@@ -788,7 +788,12 @@ describe('useDraftRoom (FE #653)', () => {
       await waitFor(() => expect(result.current.sala).not.toBeNull());
       let devolverLaEleccion;
       mockPick.mockImplementationOnce(
-        () => new Promise((resolve) => { devolverLaEleccion = () => resolve(sala({ id: 'de-c1', currentTeam: 'B' })); })
+        // Con otra hora del servidor: si la tomara el reloj, el contador de c2
+        // iría treinta segundos por delante desde el siguiente latido
+        () => new Promise((resolve) => {
+          devolverLaEleccion = () =>
+            resolve(sala({ id: 'de-c1', currentTeam: 'B', serverTime: '2030-06-01T10:00:50' }));
+        })
       );
       mockGet.mockResolvedValue(sala({ id: 's2', competitionId: 'c2' }));
       let eleccion;
@@ -798,6 +803,7 @@ describe('useDraftRoom (FE #653)', () => {
 
       rerender({ id: 'c2' });
       await waitFor(() => expect(result.current.sala?.id).toBe('s2'));
+      expect(result.current.segundosRestantes).toBe(40);
       await act(async () => {
         devolverLaEleccion();
         await eleccion;
@@ -805,6 +811,113 @@ describe('useDraftRoom (FE #653)', () => {
 
       expect(result.current.sala.id).toBe('s2');
       expect(result.current.sala.currentTeam).toBe('A');
+      await act(async () => {
+        vi.advanceTimersByTime(1000);
+      });
+      expect(result.current.segundosRestantes).toBe(39);
+    });
+
+    it('T5-5h: una elección de c1 que falla cuando ya se ve c2 no le pone su error ni le quita la sala', async () => {
+      const { result, rerender } = renderHook(({ id }) => useDraftRoom(id, 'ana'), {
+        initialProps: { id: 'c1' },
+      });
+      await waitFor(() => expect(result.current.sala).not.toBeNull());
+      let fallarLaEleccion;
+      mockPick.mockImplementationOnce(
+        () => new Promise((_, reject) => { fallarLaEleccion = () => reject(Object.assign(new Error('Boom'), { status: 500 })); })
+      );
+      mockGet.mockResolvedValue(sala({ id: 's2', competitionId: 'c2' }));
+      let eleccion;
+      await act(async () => {
+        eleccion = result.current.elegir('dani');
+      });
+      rerender({ id: 'c2' });
+      await waitFor(() => expect(result.current.sala?.id).toBe('s2'));
+      // La recarga que sigue al fallo tarda: lo que se mira es lo que queda
+      // en pantalla mientras tanto
+      let devolverLaRecarga;
+      mockGet.mockImplementationOnce(
+        () => new Promise((resolve) => { devolverLaRecarga = () => resolve(sala({ id: 's2', competitionId: 'c2' })); })
+      );
+
+      await act(async () => {
+        fallarLaEleccion();
+        await Promise.resolve();
+      });
+
+      expect(result.current.sala?.id).toBe('s2');
+      expect(result.current.error).toBeNull();
+      expect(result.current.cargandoSala).toBe(false);
+      await act(async () => {
+        devolverLaRecarga?.();
+        await eleccion;
+      });
+    });
+
+    it('T5-5f: una elección que vuelve con la primera carga de esa competición en vuelo no deja la espera para siempre', async () => {
+      // La escritura contaba, pero no se guardaba porque aún no había nada de
+      // c1; y la carga, al volver, se descartaba por ser anterior a ella: ni
+      // sala ni sondeo, con la espera del bloque para siempre
+      let devolverLaCarga;
+      mockGet.mockImplementationOnce(
+        () => new Promise((resolve) => { devolverLaCarga = () => resolve(sala()); })
+      );
+      const { result } = renderHook(() => useDraftRoom('c1', 'ana'));
+      await waitFor(() => expect(devolverLaCarga).toBeTypeOf('function'));
+
+      await act(async () => {
+        await result.current.elegir('dani');
+      });
+      await act(async () => {
+        devolverLaCarga();
+        await Promise.resolve();
+      });
+
+      await waitFor(() => expect(result.current.cargando).toBe(false));
+      expect(result.current.cargandoSala).toBe(false);
+      expect(result.current.sala.currentTeam).toBe('B');
+      // Y el sondeo sigue: la sala está en marcha
+      mockGet.mockClear();
+      await act(async () => {
+        vi.advanceTimersByTime(5000);
+      });
+      expect(mockGet).toHaveBeenCalledTimes(1);
+    });
+
+    it('T5-5g: al volver a c1 con su carga en vuelo, una elección vieja de c1 que vuelve se ve, y no la sala de c2', async () => {
+      const { result, rerender } = renderHook(({ id }) => useDraftRoom(id, 'ana'), {
+        initialProps: { id: 'c1' },
+      });
+      await waitFor(() => expect(result.current.sala).not.toBeNull());
+      let devolverLaEleccion;
+      mockPick.mockImplementationOnce(
+        () => new Promise((resolve) => { devolverLaEleccion = () => resolve(sala({ id: 'de-c1', currentTeam: 'B' })); })
+      );
+      let eleccion;
+      await act(async () => {
+        eleccion = result.current.elegir('dani');
+      });
+      mockGet.mockResolvedValueOnce(sala({ id: 's2', competitionId: 'c2' }));
+      rerender({ id: 'c2' });
+      await waitFor(() => expect(result.current.sala?.id).toBe('s2'));
+      let devolverC1;
+      mockGet.mockImplementationOnce(
+        () => new Promise((resolve) => { devolverC1 = () => resolve(sala({ id: 'vieja-c1' })); })
+      );
+
+      rerender({ id: 'c1' });
+      await waitFor(() => expect(devolverC1).toBeTypeOf('function'));
+      await act(async () => {
+        devolverLaEleccion();
+        await eleccion;
+      });
+      await act(async () => {
+        devolverC1();
+        await Promise.resolve();
+      });
+
+      expect(result.current.cargandoSala).toBe(false);
+      expect(result.current.sala.id).toBe('de-c1');
     });
 
     it('T5-20: el reloj late con UN solo temporizador, escuche quien escuche', () => {

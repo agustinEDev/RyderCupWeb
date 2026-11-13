@@ -55,6 +55,17 @@ const SobreDeLaRonda = ({ id, roundId, cargada, vista, fallo, cargar, refrescar,
   const [enviando, setEnviando] = useState(false);
   const [abriendo, setAbriendo] = useState(false);
   const [cambiandoPermiso, setCambiandoPermiso] = useState(false);
+  // Si esta ronda sigue en pantalla: una acción que vuelve cuando ya se pasó a
+  // otra no recarga, porque la carga de la página ya es la de la otra ronda.
+  // La dejaba vieja y, si fallaba, le ponía un error que no era suyo
+  const sigueEnPantallaRef = useRef(true);
+  useEffect(() => {
+    sigueEnPantallaRef.current = true;
+    return () => {
+      sigueEnPantallaRef.current = false;
+    };
+  }, []);
+  const recargarSiSigue = () => (sigueEnPantallaRef.current ? cargar() : undefined);
 
   const jugadores = useMemo(() => vista?.myPlayers || [], [vista]);
 
@@ -135,7 +146,7 @@ const SobreDeLaRonda = ({ id, roundId, cargada, vista, fallo, cargar, refrescar,
       customToast.success(t('envelope.submitted'));
       setCambiando(false);
       setOrden([]);
-      await cargar();
+      await recargarSiSigue();
     } catch (error) {
       // El orden NO se pierde: rehacerlo entero por un fallo del servidor es
       // lo más irritante que puede pasarle aquí a un capitán
@@ -153,7 +164,7 @@ const SobreDeLaRonda = ({ id, roundId, cargada, vista, fallo, cargar, refrescar,
     setCambiandoPermiso(true);
     try {
       await submitEnvelopeUseCase.execute(roundId, vista.mine.entries, conPermiso);
-      await cargar();
+      await recargarSiSigue();
     } catch (error) {
       customToast.error(error.message);
     } finally {
@@ -168,7 +179,7 @@ const SobreDeLaRonda = ({ id, roundId, cargada, vista, fallo, cargar, refrescar,
     setAbriendo(true);
     try {
       await revealEnvelopesUseCase.execute(roundId);
-      await cargar();
+      await recargarSiSigue();
     } catch (error) {
       customToast.error(error.message);
     } finally {
