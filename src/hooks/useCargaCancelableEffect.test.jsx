@@ -86,7 +86,7 @@ describe('useCargaCancelableEffect', () => {
     expect(result.current.cargando).toBe(false);
   });
 
-  it('H2: la espera sale ya en el pintado en que cambian las dependencias', async () => {
+  it('H2: al cambiar las dependencias la espera sale con el efecto, antes de que llegue la nueva', async () => {
     pedir.mockResolvedValue('datos');
     const { result, rerender } = usar(props());
     await act(async () => {});

@@ -23,6 +23,11 @@ import { useEffect, useEffectEvent, useRef, useState } from 'react';
  * @param {boolean} [opciones.activa=true] - Inactiva no pide y no espera.
  * @param {(datos: *, carga: { silenciosa: boolean }) => void} [opciones.alCargar]
  * @param {(error: Error, carga: { silenciosa: boolean }) => void} [opciones.alFallar]
+ * Límite conocido: un `recargar({ silenciosa: true })` que se lanza con la carga
+ * inactiva, o en el mismo pintado en que cambian las dependencias, sale sin la
+ * espera. Hoy nadie lo hace; si hiciera falta, comparar también las
+ * dependencias para decidir si es silenciosa.
+ *
  * @returns {{ cargando: boolean, recargar: (opciones?: { silenciosa?: boolean }) => void }}
  *   `recargar()` vuelve a pedir con la espera; `recargar({ silenciosa: true })`,
  *   sin ella.
