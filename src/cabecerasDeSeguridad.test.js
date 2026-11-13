@@ -61,14 +61,29 @@ const cabecerasDeVite = () => {
   );
 };
 
-/** Las `add_header` del fragmento del Kind; `$corp` es el map de nginx.conf (same-origin salvo /images/). */
-const cabecerasDeNginx = () =>
-  new Map(
-    [...NGINX.matchAll(/^add_header ([A-Za-z-]+) (?:"([^"]*)"|\$(\w+)) always;/gm)].map((m) => [
-      m[1].toLowerCase(),
-      m[3] === 'corp' ? 'same-origin' : (m[2] ?? `$${m[3]}`).replace('${csp_upgrade}', ''),
-    ]),
-  );
+/**
+ * Las `add_header` de un fragmento de nginx; `$corp` es el map de nginx.conf (same-origin
+ * salvo /images/). Devuelve las cabeceras y lo que no se deja leer.
+ *
+ * Mira TODA línea con `add_header`, lleve `always` o no (revisión de #1109): la que no se
+ * entiende, la que va sin `always` (nginx no la mandaría en las respuestas de error) y la
+ * repetida van a `raras`, y el test falla, en vez de saltárselas en silencio.
+ */
+const leerNginx = (texto) => {
+  const cabeceras = new Map();
+  const raras = [];
+  for (const linea of texto.split('\n')) {
+    if (!/^\s*add_header\b/.test(linea)) continue;
+    const m = /^\s*add_header ([A-Za-z-]+) (?:"([^"]*)"|\$(\w+))( always)?;\s*(?:#.*)?$/.exec(linea);
+    if (!m) { raras.push(`no se entiende: ${linea.trim()}`); continue; }
+    const nombre = m[1].toLowerCase();
+    if (!m[4]) raras.push(`sin always: ${nombre}`);
+    if (cabeceras.has(nombre)) raras.push(`repetida: ${nombre}`);
+    cabeceras.set(nombre, m[3] === 'corp' ? 'same-origin' : (m[2] ?? `$${m[3]}`).replace('${csp_upgrade}', ''));
+  }
+  return { cabeceras, raras };
+};
+const cabecerasDeNginx = () => leerNginx(NGINX).cabeceras;
 
 // Todas las de seguridad que sirve producción. Si se quita una del JSON, falla aquí
 const CABECERAS = [
@@ -157,6 +172,24 @@ describe('cabeceras de seguridad: las copias como producción (FE-04/FE-05)', ()
     expect([...cabecerasDeVite().keys()]).toHaveLength(8);
     expect([...cabecerasDeNginx().keys()]).toHaveLength(9);
     expect(cabecerasDeNginx().get('content-security-policy')).toBe(cspDeNginx);
+    expect(leerNginx(NGINX).raras).toEqual([]);
+  });
+
+  // Revisión de #1109: sin `always` no se veía, y una segunda CSP de aviso pasaba sin más
+  it.each([
+    ['una cabecera sin always', 'add_header X-Nueva "x";'],
+    ['una segunda CSP de aviso, sin always', `add_header Content-Security-Policy-Report-Only "default-src *";`],
+    ['una cabecera repetida', `add_header X-Frame-Options "SAMEORIGIN" always;`],
+    ['un valor sin comillas', 'add_header X-Rara valor always;'],
+    ['un valor partido en dos líneas', 'add_header X-Larga "a;\n  b" always;'],
+  ])('el analizador del nginx no se calla ante %s', (_caso, linea) => {
+    expect(leerNginx(`${NGINX}\n${linea}\n`).raras).not.toEqual([]);
+  });
+
+  it('el analizador del nginx lee también la cabecera sin always, y la sangrada', () => {
+    const { cabeceras } = leerNginx('add_header X-Nueva "x";\n    add_header X-Sangrada "y" always;\n');
+    expect(cabeceras.get('x-nueva')).toBe('x');
+    expect(cabeceras.get('x-sangrada')).toBe('y');
   });
 
   it('en el Kind, /images/ va con CORP cross-origin, como en producción (el logo de los correos)', () => {
