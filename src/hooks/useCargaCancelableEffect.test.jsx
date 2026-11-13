@@ -21,6 +21,9 @@ import { useCargaCancelableEffect } from './useCargaCancelableEffect';
  *   H6b  en silencio estando inactiva                | al activarse, la carga espera
  *   H8   recargar                                     | es la misma función en cada pintado
  *   H5b  la vieja falla antes de que React pinte el recargar | no se avisa: ya no es la vigente
+ *   H9   recargar() y su carga termina           | su promesa se cumple con el resultado, después de alCargar/alFallar
+ *   H10  recargar() y su carga se descarta       | (otra más nueva, cambian las deps, se desactiva o se desmonta)
+ *                                                | su promesa se cumple como descartada y no se aplica nada
  */
 // Una respuesta que llega cuando la prueba quiere
 const aMano = () => {
@@ -163,7 +166,9 @@ describe('useCargaCancelableEffect', () => {
     const otra = aMano();
     pedir.mockReturnValueOnce(otra.promesa);
 
-    act(() => result.current.recargar());
+    act(() => {
+      result.current.recargar();
+    });
 
     expect(pedir).toHaveBeenCalledTimes(2);
     expect(result.current.cargando).toBe(true);
@@ -180,8 +185,12 @@ describe('useCargaCancelableEffect', () => {
     const ultima = aMano();
     pedir.mockReturnValueOnce(penultima.promesa).mockReturnValueOnce(ultima.promesa);
 
-    act(() => result.current.recargar());
-    act(() => result.current.recargar());
+    act(() => {
+      result.current.recargar();
+    });
+    act(() => {
+      result.current.recargar();
+    });
     expect(pedir).toHaveBeenCalledTimes(3);
     await act(async () => penultima.resolver('penultima'));
     expect(result.current.cargando).toBe(true);
@@ -202,7 +211,9 @@ describe('useCargaCancelableEffect', () => {
     await act(async () => {});
     pintados.length = 0;
 
-    act(() => result.current.recargar());
+    act(() => {
+      result.current.recargar();
+    });
 
     expect(pintados[0]).toBe(true);
   });
@@ -248,7 +259,9 @@ describe('useCargaCancelableEffect', () => {
     const falla = aMano();
     pedir.mockReturnValueOnce(falla.promesa);
 
-    act(() => result.current.recargar({ silenciosa: true }));
+    act(() => {
+      result.current.recargar({ silenciosa: true });
+    });
 
     expect(pedir).toHaveBeenCalledTimes(2);
     expect(result.current.cargando).toBe(false);
@@ -263,7 +276,9 @@ describe('useCargaCancelableEffect', () => {
     await act(async () => {});
     pedir.mockReturnValue(new Promise(() => {}));
 
-    act(() => result.current.recargar({ silenciosa: true }));
+    act(() => {
+      result.current.recargar({ silenciosa: true });
+    });
     rerender(props({ filtro: 'b' }));
 
     expect(result.current.cargando).toBe(true);
@@ -292,7 +307,9 @@ describe('useCargaCancelableEffect', () => {
     await act(async () => {});
     pedir.mockResolvedValueOnce('datos');
 
-    act(() => result.current.recargar({ silenciosa: true }));
+    act(() => {
+      result.current.recargar({ silenciosa: true });
+    });
     await act(async () => {
       rerender(props({ activa: true }));
     });
@@ -326,5 +343,192 @@ describe('useCargaCancelableEffect', () => {
 
     expect(alFallar).not.toHaveBeenCalled();
     expect(alCargar).not.toHaveBeenCalled();
+  });
+
+  // Cómo quedó una promesa sin esperarla: 'pendiente' o su valor
+  const estadoDe = (promesa) => {
+    const visto = { valor: 'pendiente' };
+    promesa.then((valor) => {
+      visto.valor = valor;
+    });
+    return visto;
+  };
+
+  it('H9: la promesa de recargar se cumple con los datos de SU carga, después de alCargar', async () => {
+    // Given una carga ya hecha
+    pedir.mockResolvedValueOnce('primera');
+    const { result } = usar(props());
+    await act(async () => {});
+    const otra = aMano();
+    pedir.mockReturnValueOnce(otra.promesa);
+
+    // When se recarga y su carga llega
+    let promesa;
+    act(() => {
+      promesa = result.current.recargar();
+    });
+    const visto = estadoDe(promesa);
+    await act(async () => {});
+    expect(visto.valor).toBe('pendiente');
+    let aplicadaAntes = false;
+    alCargar.mockImplementation(() => {
+      aplicadaAntes = visto.valor === 'pendiente';
+    });
+    await act(async () => otra.resolver('segunda'));
+
+    // Then se cumple con lo que llegó, y alCargar corrió antes
+    expect(visto.valor).toEqual({ estado: 'cargada', datos: 'segunda' });
+    expect(aplicadaAntes).toBe(true);
+  });
+
+  it('H9: si su carga falla, la promesa se cumple (no se rechaza) con el error, después de alFallar', async () => {
+    pedir.mockResolvedValueOnce('primera');
+    const { result } = usar(props());
+    await act(async () => {});
+    const falla = aMano();
+    pedir.mockReturnValueOnce(falla.promesa);
+
+    let promesa;
+    act(() => {
+      promesa = result.current.recargar({ silenciosa: true });
+    });
+    const visto = estadoDe(promesa);
+    const error = new Error('sin red');
+    await act(async () => falla.rechazar(error));
+
+    expect(visto.valor).toEqual({ estado: 'fallida', error });
+    expect(alFallar).toHaveBeenCalledWith(error, { silenciosa: true });
+  });
+
+  it('H10: de dos recargar seguidos, la del primero se cumple como descartada aunque su carga llegue después', async () => {
+    pedir.mockResolvedValueOnce('primera');
+    const { result } = usar(props());
+    await act(async () => {});
+    const penultima = aMano();
+    const ultima = aMano();
+    pedir.mockReturnValueOnce(penultima.promesa).mockReturnValueOnce(ultima.promesa);
+
+    let primera;
+    let segunda;
+    act(() => {
+      primera = result.current.recargar();
+    });
+    act(() => {
+      segunda = result.current.recargar();
+    });
+    const vistaPrimera = estadoDe(primera);
+    const vistaSegunda = estadoDe(segunda);
+    await act(async () => ultima.resolver('ultima'));
+    await act(async () => penultima.resolver('penultima'));
+
+    expect(vistaPrimera.valor).toEqual({ estado: 'descartada' });
+    expect(vistaSegunda.valor).toEqual({ estado: 'cargada', datos: 'ultima' });
+    expect(alCargar.mock.calls.map(([d]) => d)).toEqual(['primera', 'ultima']);
+  });
+
+  it('H10: dos recargar en el mismo pintado: la del primero se cumple como descartada', async () => {
+    pedir.mockResolvedValueOnce('primera');
+    const { result } = usar(props());
+    await act(async () => {});
+    pedir.mockResolvedValueOnce('segunda');
+
+    let primera;
+    let segunda;
+    await act(async () => {
+      primera = result.current.recargar();
+      segunda = result.current.recargar({ silenciosa: true });
+    });
+
+    await expect(primera).resolves.toEqual({ estado: 'descartada' });
+    await expect(segunda).resolves.toEqual({ estado: 'cargada', datos: 'segunda' });
+  });
+
+  it('H10: si cambian las dependencias con su carga en vuelo, se cumple como descartada y no aplica nada', async () => {
+    pedir.mockResolvedValueOnce('primera');
+    const { result, rerender } = usar(props());
+    await act(async () => {});
+    const vieja = aMano();
+    pedir.mockReturnValueOnce(vieja.promesa).mockReturnValueOnce(new Promise(() => {}));
+
+    let promesa;
+    act(() => {
+      promesa = result.current.recargar({ silenciosa: true });
+    });
+    const visto = estadoDe(promesa);
+    rerender(props({ filtro: 'b' }));
+    await act(async () => {});
+
+    // Se cumple ya al descartarse, sin esperar a que llegue la vieja
+    expect(visto.valor).toEqual({ estado: 'descartada' });
+    await act(async () => vieja.resolver('vieja'));
+    expect(visto.valor).toEqual({ estado: 'descartada' });
+    expect(alCargar.mock.calls.map(([d]) => d)).toEqual(['primera']);
+  });
+
+  it('H10: si se desmonta con su carga en vuelo, se cumple como descartada y su fallo no se avisa', async () => {
+    pedir.mockResolvedValueOnce('primera');
+    const { result, unmount } = usar(props());
+    await act(async () => {});
+    const falla = aMano();
+    pedir.mockReturnValueOnce(falla.promesa);
+
+    let promesa;
+    act(() => {
+      promesa = result.current.recargar();
+    });
+    const visto = estadoDe(promesa);
+    unmount();
+    await act(async () => falla.rechazar(new Error('tarde')));
+
+    expect(visto.valor).toEqual({ estado: 'descartada' });
+    expect(alFallar).not.toHaveBeenCalled();
+  });
+
+  it('H10: si se desactiva con su carga en vuelo, se cumple como descartada', async () => {
+    pedir.mockResolvedValueOnce('primera');
+    const { result, rerender } = usar(props());
+    await act(async () => {});
+    pedir.mockReturnValueOnce(new Promise(() => {}));
+
+    let promesa;
+    act(() => {
+      promesa = result.current.recargar();
+    });
+    rerender(props({ activa: false }));
+
+    await expect(promesa).resolves.toEqual({ estado: 'descartada' });
+  });
+
+  it('H10: un recargar estando inactiva que nunca llega a pedir se cumple como descartada al desmontar', async () => {
+    const { result, unmount } = usar(props({ activa: false }));
+    await act(async () => {});
+
+    let promesa;
+    act(() => {
+      promesa = result.current.recargar();
+    });
+    unmount();
+
+    await expect(promesa).resolves.toEqual({ estado: 'descartada' });
+    expect(pedir).not.toHaveBeenCalled();
+  });
+
+  it('H10: si la vieja falla antes de que React pinte el recargar, la promesa nueva no se cumple con ese fallo', async () => {
+    const vieja = aMano();
+    pedir.mockReturnValueOnce(vieja.promesa);
+    const { result } = usar(props());
+    const nueva = aMano();
+    pedir.mockReturnValue(nueva.promesa);
+
+    const promesa = result.current.recargar();
+    const visto = estadoDe(promesa);
+    vieja.rechazar(new Error('vieja'));
+    await Promise.resolve();
+    await Promise.resolve();
+    await act(async () => {});
+    expect(visto.valor).toBe('pendiente');
+
+    await act(async () => nueva.resolver('nueva'));
+    expect(visto.valor).toEqual({ estado: 'cargada', datos: 'nueva' });
   });
 });

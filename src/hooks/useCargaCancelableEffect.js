@@ -1,5 +1,8 @@
 import { useCallback, useEffect, useEffectEvent, useRef, useState } from 'react';
 
+// Cómo acaba la promesa de un `recargar()` cuya carga no llegó a aplicarse
+const DESCARTADA = Object.freeze({ estado: 'descartada' });
+
 const mismasDependencias = (antes, ahora) =>
   antes !== null && antes.length === ahora.length && antes.every((valor, i) => Object.is(valor, ahora[i]));
 
@@ -30,9 +33,13 @@ const mismasDependencias = (antes, ahora) =>
  * @param {boolean} [opciones.activa=true] - Inactiva no pide y no espera.
  * @param {(datos: *, carga: { silenciosa: boolean }) => void} [opciones.alCargar]
  * @param {(error: Error, carga: { silenciosa: boolean }) => void} [opciones.alFallar]
- * @returns {{ cargando: boolean, recargar: (opciones?: { silenciosa?: boolean }) => void }}
+ * @returns {{ cargando: boolean, recargar: (opciones?: { silenciosa?: boolean }) => Promise<Object> }}
  *   `recargar()` vuelve a pedir con la espera; `recargar({ silenciosa: true })`,
- *   sin ella.
+ *   sin ella. Devuelve una promesa que se cumple cuando SU carga termina, ya
+ *   después de `alCargar`/`alFallar`: `{ estado: 'cargada', datos }`,
+ *   `{ estado: 'fallida', error }` o, si se descartó (otra más nueva, cambian
+ *   las dependencias, se desactiva o se desmonta), `{ estado: 'descartada' }`.
+ *   Nunca se rechaza: se puede esperar sin try/catch.
  */
 export const useCargaCancelableEffect = (pedir, deps, { activa = true, alCargar, alFallar } = {}) => {
   // Hasta que no termine una carga se espera: también antes de la primera
@@ -50,6 +57,9 @@ export const useCargaCancelableEffect = (pedir, deps, { activa = true, alCargar,
   // ya en ese momento, no cuando React pinte y limpie su efecto. Si no, una que
   // fallara en ese hueco avisaba como si fuera la actual (CodeRabbit, FE #1111)
   const generacionRef = useRef(0);
+  // Quién cumple la promesa del último `recargar()`: el siguiente o el
+  // desmontaje la dan por descartada si su carga no llegó a cumplirla
+  const pendienteRef = useRef(null);
 
   const pedirAhora = useEffectEvent(() => pedir());
   const aplicar = useEffectEvent((datos, carga) => alCargar?.(datos, carga));
@@ -70,20 +80,32 @@ export const useCargaCancelableEffect = (pedir, deps, { activa = true, alCargar,
     const carga = { silenciosa };
     const generacion = generacionRef.current;
     const esLaVigente = () => vigente && generacion === generacionRef.current;
+    // Esta carga es la del `recargar()` solo si es la primera que lanza
+    const cumplir = recargaNueva ? recarga.cumplir : undefined;
     const cargar = async () => {
       if (!silenciosa) setEnCurso(true);
+      let resultado = DESCARTADA;
       try {
         const datos = await pedirAhora();
-        if (esLaVigente()) aplicar(datos, carga);
+        if (esLaVigente()) {
+          aplicar(datos, carga);
+          resultado = { estado: 'cargada', datos };
+        }
       } catch (error) {
-        if (esLaVigente()) avisar(error, carga);
+        if (esLaVigente()) {
+          avisar(error, carga);
+          resultado = { estado: 'fallida', error };
+        }
       } finally {
         if (esLaVigente()) setEnCurso(false);
+        cumplir?.(resultado);
       }
     };
     cargar();
     return () => {
       vigente = false;
+      // Descartada ya al limpiar, sin esperar a que llegue; si ya terminó, no cambia
+      cumplir?.(DESCARTADA);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps -- las dependencias son las de quien llama: el linter las comprueba en cada llamada (additionalHooks en eslint.config.js) y aquí solo se pasan a React, en vez de volver a comparar a mano lo que ya compara useEffect
   }, [activa, recarga, ...deps]);
@@ -93,9 +115,20 @@ export const useCargaCancelableEffect = (pedir, deps, { activa = true, alCargar,
   // Estable: se pasa como prop y puede acabar en las dependencias de otro efecto
   const recargar = useCallback(({ silenciosa = false } = {}) => {
     generacionRef.current += 1;
+    // La del `recargar()` anterior ya no se aplicará: si no terminó, descartada
+    pendienteRef.current?.(DESCARTADA);
+    let cumplir;
+    const promesa = new Promise((resolver) => {
+      cumplir = resolver;
+    });
+    pendienteRef.current = cumplir;
     if (!silenciosa) setEnCurso(true);
-    setRecarga({ silenciosa });
+    setRecarga({ silenciosa, cumplir });
+    return promesa;
   }, []);
+
+  // Un `recargar()` estando inactiva no llega a pedir: al desmontar, descartado
+  useEffect(() => () => pendienteRef.current?.(DESCARTADA), []);
 
   return { cargando: activa && enCurso, recargar };
 };
