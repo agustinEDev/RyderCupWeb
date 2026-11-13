@@ -29,6 +29,7 @@ describe('useUserRoles · quien lo llama pasa competición y usuario', () => {
       .map((parte) => parte.trim())
       .filter(Boolean);
     expect(partes).toHaveLength(2);
-    expect(partes[1]).toMatch(/\buser\?\.id$/);
+    // `user?.id`, o el mismo valor ya guardado en `userId` (como CompetitionDetail)
+    expect(partes[1]).toMatch(/^(?:user\?\.id|userId)$/);
   });
 });

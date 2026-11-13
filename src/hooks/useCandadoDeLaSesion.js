@@ -3,6 +3,9 @@ import * as sessionLock from '../utils/scoringSessionLock';
 
 const SESSION_REFRESH_INTERVAL = 30000; // 30 seconds
 
+// La clave del candado: un partido y un usuario
+const claveDe = (matchId, userId) => JSON.stringify([matchId, userId]);
+
 /**
  * El candado de la sesión de anotación de competición, de `useScoring`: una
  * sola pantalla anotando por cuenta. El identificador de la sesión es del hook
@@ -13,7 +16,7 @@ const SESSION_REFRESH_INTERVAL = 30000; // 30 seconds
 export const useCandadoDeLaSesion = ({ matchId, currentUserId, isMatchPlayer, isWithdrawn, sessionIdRef }) => {
   // A qué partido y usuario se aplica el candado; null si no se aplica (no
   // juega, se retiró o falta el usuario: no coge el candado)
-  const clave = matchId && isMatchPlayer && !isWithdrawn && currentUserId ? JSON.stringify([matchId, currentUserId]) : null;
+  const clave = matchId && isMatchPlayer && !isWithdrawn && currentUserId ? claveDe(matchId, currentUserId) : null;
   // «Sesión tomada», con la clave a la que se refiere
   const [bloqueo, setBloqueo] = useState({ clave, bloqueada: false });
   // Al pasar a otro partido o usuario (o volver a contar tras retirarse), el
@@ -52,7 +55,13 @@ export const useCandadoDeLaSesion = ({ matchId, currentUserId, isMatchPlayer, is
     // the LOCK_ACQUIRED event via BroadcastChannel and gets blocked.
     sessionLock.forceRelease(currentUserId);
     sessionLock.acquire(matchId, sessionIdRef.current, currentUserId);
-    // El bloqueo de otro partido o usuario ya se quitó al pintar (`clave`)
+    // El bloqueo de otro partido o usuario ya se quitó al pintar (`clave`).
+    // Lo que avise este oyente solo vale mientras la clave siga siendo la
+    // suya: tras cambiar de partido sigue suscrito hasta la limpieza, y un
+    // aviso del partido anterior en ese hueco bloqueaba (o desbloqueaba) el nuevo
+    const claveDelEfecto = claveDe(matchId, currentUserId);
+    const bloquearSiSigue = (bloqueada) =>
+      setBloqueo((antes) => (antes.clave === claveDelEfecto ? { ...antes, bloqueada } : antes));
 
     // Refresh lock periodically
     sessionRefreshRef.current = setInterval(() => {
@@ -72,13 +81,13 @@ export const useCandadoDeLaSesion = ({ matchId, currentUserId, isMatchPlayer, is
           // Verify against localStorage before blocking (don't trust broadcast alone)
           const existing = sessionLock.getSession(currentUserId);
           if (existing && existing.sessionId !== sessionIdRef.current && existing.matchId === matchId) {
-            bloquear(true);
+            bloquearSiSigue(true);
           }
         }
       }
       if (event.type === 'LOCK_RELEASED') {
         const acquired = sessionLock.acquire(matchId, sessionIdRef.current, currentUserId);
-        if (acquired) bloquear(false);
+        if (acquired) bloquearSiSigue(false);
       }
     });
 

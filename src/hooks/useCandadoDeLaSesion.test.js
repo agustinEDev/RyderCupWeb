@@ -16,6 +16,7 @@ import { renderHook, act } from '@testing-library/react';
  *   T4-36  bloqueado; cambia el usuario                                 | no bloqueado
  *   T4-37  bloqueado en A; se retira                                    | sigue bloqueado (como hoy, P2)
  *   T4-38  retirado tras estar bloqueado; vuelve a contar               | no bloqueado y vuelve a coger el candado
+ *   T4-39  un aviso tardío al oyente de A con B ya en pantalla          | el bloqueo de B no cambia
  */
 
 const lock = vi.hoisted(() => ({
@@ -177,5 +178,33 @@ describe('useCandadoDeLaSesion (T4)', () => {
 
     expect(lock.acquire).toHaveBeenCalledWith('A', MIA, 'u1');
     expect(result.current.isSessionBlocked).toBe(false);
+  });
+
+  // /code-review: el oyente del partido A sigue suscrito hasta la limpieza del
+  // efecto, que llega después del pintado de B. Con `act` el pintado y la
+  // limpieza van juntos, así que se guarda el oyente de A y se le llama ya con B
+  // en pantalla: es lo que hace un aviso que llega en ese hueco
+  it.each([
+    ['otra sesión coge A', otraCogeA, false],
+    ['se suelta el candado (y lo cojo para A)', { type: 'LOCK_RELEASED', userId: 'u1' }, true],
+  ])('T4-39: un aviso tardío para el oyente de A (%s) no toca el bloqueo de B', (_caso, evento, bloqueadaEnB) => {
+    const oyentes = [];
+    lock.onLockEvent.mockImplementation((oyente) => {
+      oyentes.push(oyente);
+      lock.oyente = oyente;
+      return () => {};
+    });
+    lock.getSession.mockReturnValue({ sessionId: 's-otra', matchId: 'B' });
+    const { result, rerender } = monta();
+    const oyenteDeA = oyentes[0];
+    rerender({ ...JUGADOR, matchId: 'B' });
+    // B, bloqueado o no según el caso, por su propio oyente
+    if (bloqueadaEnB) avisa({ ...otraCogeA, matchId: 'B' });
+    expect(result.current.isSessionBlocked).toBe(bloqueadaEnB);
+    lock.getSession.mockReturnValue({ sessionId: 's-otra', matchId: 'A' });
+
+    act(() => oyenteDeA(evento));
+
+    expect(result.current.isSessionBlocked).toBe(bloqueadaEnB);
   });
 });

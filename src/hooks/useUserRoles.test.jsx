@@ -21,6 +21,8 @@ vi.mock('../composition', () => ({
 describe('useUserRoles', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    // Lo que un test deja en cola (`mock…Once`) no se cuela en el siguiente
+    getUserRolesUseCase.execute.mockReset();
   });
 
   it('should return default roles (all false) and loading state initially', () => {
@@ -46,7 +48,7 @@ describe('useUserRoles', () => {
       isPlayer: false,
     });
 
-    const { result } = renderHook(() => useUserRoles('comp-123'));
+    const { result } = renderHook(() => useUserRoles('comp-123', 'u-1'));
 
     await waitFor(() => {
       expect(result.current.isLoading).toBe(false);
@@ -65,7 +67,7 @@ describe('useUserRoles', () => {
       isPlayer: false,
     });
 
-    const { result } = renderHook(() => useUserRoles('comp-123'));
+    const { result } = renderHook(() => useUserRoles('comp-123', 'u-1'));
 
     await waitFor(() => {
       expect(result.current.isLoading).toBe(false);
@@ -83,7 +85,7 @@ describe('useUserRoles', () => {
       isPlayer: true,
     });
 
-    const { result } = renderHook(() => useUserRoles('comp-123'));
+    const { result } = renderHook(() => useUserRoles('comp-123', 'u-1'));
 
     await waitFor(() => {
       expect(result.current.isLoading).toBe(false);
@@ -101,7 +103,7 @@ describe('useUserRoles', () => {
       isPlayer: true,
     });
 
-    const { result } = renderHook(() => useUserRoles('comp-123'));
+    const { result } = renderHook(() => useUserRoles('comp-123', 'u-1'));
 
     await waitFor(() => {
       expect(result.current.isLoading).toBe(false);
@@ -131,7 +133,7 @@ describe('useUserRoles', () => {
 
     const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
-    const { result } = renderHook(() => useUserRoles('comp-123'));
+    const { result } = renderHook(() => useUserRoles('comp-123', 'u-1'));
 
     await waitFor(() => {
       expect(result.current.isLoading).toBe(false);
@@ -158,7 +160,7 @@ describe('useUserRoles', () => {
         isPlayer: false,
       });
 
-    const { result } = renderHook(() => useUserRoles('comp-123'));
+    const { result } = renderHook(() => useUserRoles('comp-123', 'u-1'));
 
     await waitFor(() => {
       expect(result.current.isLoading).toBe(false);
@@ -188,7 +190,7 @@ describe('useUserRoles', () => {
       isPlayer: true,
     });
 
-    renderHook(() => useUserRoles('comp-456'));
+    renderHook(() => useUserRoles('comp-456', 'u-1'));
 
     await waitFor(() => {
       expect(getUserRolesUseCase.execute).toHaveBeenCalledWith('comp-456');
@@ -203,7 +205,7 @@ describe('useUserRoles', () => {
     });
 
     const { rerender } = renderHook(
-      ({ compId }) => useUserRoles(compId),
+      ({ compId }) => useUserRoles(compId, 'u-1'),
       { initialProps: { compId: 'comp-123' } }
     );
 
@@ -236,6 +238,8 @@ describe('useUserRoles', () => {
  *   T4-21  dos refetch() y el primero llega el último                 | los del segundo
  *   T4-22  se desmonta con la petición en vuelo                       | sin console.error
  *   P6     roles de U1 en A; cambia el usuario a U2 en A              | en ese mismo pintado, espera y todo false; lo de U1 no se aplica
+ *   T4-40  sin usuario todavía; llega el usuario                      | no se pide antes; una sola petición; ningún rol antes
+ *   T4-41  sin competición ni usuario                                 | ni se pide ni se espera (P5)
  */
 describe('useUserRoles · de quién y de qué competición (T4)', () => {
   const ORGANIZA = { isAdmin: false, isCreator: true, isPlayer: false };
@@ -266,6 +270,8 @@ describe('useUserRoles · de quién y de qué competición (T4)', () => {
   let consola;
   beforeEach(() => {
     vi.clearAllMocks();
+    // Lo que un test deja en cola (`mock…Once`) no se cuela en el siguiente
+    getUserRolesUseCase.execute.mockReset();
     pintados.length = 0;
     consola = vi.spyOn(console, 'error').mockImplementation(() => {});
   });
@@ -404,5 +410,36 @@ describe('useUserRoles · de quién y de qué competición (T4)', () => {
     await act(async () => deU2.soltar(JUEGA));
     expect(result.current).toMatchObject({ ...JUEGA, isLoading: false, error: null });
     expect(pintados.filter((p) => p.usuario === 'u2' && (p.isAdmin || p.isCreator))).toEqual([]);
+  });
+
+  // /code-review: la pantalla puede montar antes de saber quién es el usuario.
+  // Pedir entonces y otra vez al llegar hacía parpadear los controles de
+  // organizador (se veían, se iban y volvían)
+  it('T4-40: sin usuario no se piden; al llegar, una sola petición, y ningún rol antes de su respuesta', async () => {
+    const deU1 = pendiente();
+    getUserRolesUseCase.execute.mockReturnValueOnce(deU1.promesa);
+    const { result, rerender } = pinta({ competicion: 'A', usuario: undefined });
+    await act(async () => {});
+
+    expect(getUserRolesUseCase.execute).not.toHaveBeenCalled();
+    expect(sinRolesYEsperando(result.current)).toBe(true);
+
+    rerender({ competicion: 'A', usuario: 'u1' });
+    await waitFor(() => expect(getUserRolesUseCase.execute).toHaveBeenCalledTimes(1));
+    expect(sinRolesYEsperando(result.current)).toBe(true);
+    await act(async () => deU1.soltar(ADMIN));
+
+    expect(result.current).toMatchObject({ ...ADMIN, isLoading: false, error: null });
+    expect(getUserRolesUseCase.execute).toHaveBeenCalledTimes(1);
+    const antesDeLlegar = pintados.slice(0, pintados.findIndex((p) => p.isAdmin));
+    expect(antesDeLlegar.every(sinRolesYEsperando)).toBe(true);
+  });
+
+  it('T4-41: sin competición no se espera aunque falte el usuario (P5)', async () => {
+    const { result } = pinta({ competicion: null, usuario: undefined });
+    await act(async () => {});
+
+    expect(getUserRolesUseCase.execute).not.toHaveBeenCalled();
+    expect(result.current).toMatchObject({ isAdmin: false, isCreator: false, isPlayer: false, isLoading: false });
   });
 });

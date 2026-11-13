@@ -16,7 +16,8 @@ const SIN_ROLES = Object.freeze({ isAdmin: false, isCreator: false, isPlayer: fa
  * respuesta de la anterior podía pintar sus roles en la nueva: A01).
  *
  * @param {string} competitionId - ID de la competición
- * @param {string} [userId] - Quién mira: al cambiar, se vuelve a pedir
+ * @param {string} [userId] - Quién mira: al cambiar, se vuelve a pedir; sin
+ *   él no se pide (los tres a false y esperando)
  * @returns {{
  *   isAdmin: boolean,
  *   isCreator: boolean,
@@ -58,7 +59,9 @@ export const useUserRoles = (competitionId, userId) => {
     },
     [competitionId, userId],
     {
-      activa: Boolean(competitionId),
+      // Sin usuario aún no se pide: pedir y volver a pedir al llegar hacía
+      // parpadear los controles de organizador
+      activa: Boolean(competitionId && userId),
       alCargar: (deLaPeticion) => {
         if (deLaPeticion.error) console.error('Error fetching user roles:', deLaPeticion.error);
         setLeido(deLaPeticion);
@@ -81,6 +84,9 @@ export const useUserRoles = (competitionId, userId) => {
 
   return {
     ...roles,
+    // Sin usuario (la sesión aún se está leyendo) se espera, como las
+    // pantallas, que enseñan la espera mientras tanto: no se ha leído nada para
+    // él, así que no hay nada vigente. Sin competición, no se espera (P5)
     isLoading: Boolean(competitionId) && (cargando || !vigente),
     error: vigente ? leido.error : null,
     refetch,
