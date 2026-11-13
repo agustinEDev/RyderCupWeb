@@ -82,11 +82,15 @@ const Clasificacion = ({
   // Al abrirla, y otra vez si deja de releerse (la competición acaba: lo sin
   // terminar pasa a NR/NP y lo pintado era de hasta un minuto antes; revisor)
   // De una privada sin llave, tampoco al volver a su pestaña (/code-review)
+  // Al cambiar de pregunta (filtro, franja, versión, cadencia) o cerrarla, lo
+  // que estaba en vuelo con la de antes no se pinta: llegaba antes que lo
+  // nuevo y dejaba las filas de otra categoría bajo el selector (T6)
   useEffect(() => {
-    if (!activa || privada) return;
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- pedir la clasificación al servidor es el objetivo
+    if (!activa || privada) return undefined;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- leer al abrir y al cambiar de filtro, versión o cadencia: leer solo cambia estado tras el await y useLaMasNueva descarta lo viejo; useCargaCancelableEffect («gana la última») revertiría eaf6599f
     leer();
-  }, [activa, leer, cada, version, privada]);
+    return () => lecturas.corta();
+  }, [activa, leer, cada, version, privada, lecturas]);
   // De una privada sin llave, ni se repite: otro 403 no arregla nada (revisor)
   useSondeoMientras(activa && cada != null && !privada, leer, cada ?? 0);
   const bloqueRef = useCentrarEnMiFila({ modo: centraEnMi, activa, respuestas });
