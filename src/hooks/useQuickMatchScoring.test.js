@@ -2695,3 +2695,87 @@ describe('useQuickMatchScoring · una respuesta lenta no se tira por salir otra 
     expect(app.result.current.quickMatch).toEqual(expect.objectContaining({ id: 'qm-2', status: 'IN_PROGRESS' }));
   });
 });
+
+describe('useQuickMatchScoring · lo que llega tarde no atrasa la copia sin conexión (CodeRabbit, FE #1108)', () => {
+  const conGolpeEnEl1 = { ...mockQuickMatch, holeScores: [{ holeNumber: 1, participantId: 'user-1', strokes: 4 }] };
+  const campo = { holes: [{ holeNumber: 1, par: 4 }], tees: [], name: 'El campo' };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    olvidaTodo();
+    getQuickMatchUseCase.execute.mockReset();
+    getGolfCourseUseCase.execute.mockReset();
+  });
+
+  it.each([
+    ['llega', (r) => r.llega(campo)],
+    ['falla', (r) => r.falla(new TypeError('Failed to fetch'))],
+  ])(
+    'Q1: el campo %s después de una partida más nueva y la copia guarda la más nueva',
+    async (_como, suelta) => {
+      const campoEnVuelo = {};
+      getGolfCourseUseCase.execute.mockImplementation(
+        () => new Promise((llega, falla) => Object.assign(campoEnVuelo, { llega, falla }))
+      );
+      getQuickMatchUseCase.execute.mockResolvedValue(mockQuickMatch);
+
+      const { result } = renderHook(() => useQuickMatchScoring('qm-1', 'user-1'));
+      await waitFor(() => expect(getGolfCourseUseCase.execute).toHaveBeenCalled());
+
+      // Mientras el campo sigue en camino, un sondeo trae la partida con un golpe más
+      getQuickMatchUseCase.execute.mockResolvedValue(conGolpeEnEl1);
+      await act(async () => { await result.current.refetch(); });
+      expect(result.current.quickMatch.holeScores).toHaveLength(1);
+
+      await act(async () => { suelta(campoEnVuelo); });
+
+      expect(loQueSeSupo('qm-1')?.partida?.holeScores).toHaveLength(1);
+    }
+  );
+
+  it('Q3: el campo que llega después de un 404 aceptado no vuelve a guardar la partida', async () => {
+    const campoEnVuelo = {};
+    getGolfCourseUseCase.execute.mockImplementation(
+      () => new Promise((llega) => Object.assign(campoEnVuelo, { llega }))
+    );
+    getQuickMatchUseCase.execute.mockResolvedValue(mockQuickMatch);
+
+    const { result } = renderHook(() => useQuickMatchScoring('qm-1', 'user-1'));
+    await waitFor(() => expect(getGolfCourseUseCase.execute).toHaveBeenCalled());
+
+    getQuickMatchUseCase.execute.mockRejectedValueOnce(rechazoF(404));
+    await act(async () => { await result.current.refetch(); });
+    expect(loQueSeSupo('qm-1')).toBeNull();
+
+    await act(async () => { campoEnVuelo.llega(campo); });
+
+    expect(loQueSeSupo('qm-1')).toBeNull();
+  });
+
+  it('Q2: un sondeo viejo que llega después de un 404 aceptado no resucita la partida', async () => {
+    let sueltaElViejo;
+    getGolfCourseUseCase.execute.mockResolvedValue(campo);
+    getQuickMatchUseCase.execute.mockResolvedValue(mockQuickMatch);
+
+    const { result } = renderHook(() => useQuickMatchScoring('qm-1', 'user-1'));
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    await waitFor(() => expect(loQueSeSupo('qm-1')).not.toBeNull());
+
+    // Sale un sondeo que se queda en vuelo; sale otro y el servidor dice 404
+    getQuickMatchUseCase.execute.mockImplementationOnce(
+      () => new Promise((llega) => { sueltaElViejo = () => llega(mockQuickMatch); })
+    );
+    await act(async () => { result.current.refetch(); });
+    getQuickMatchUseCase.execute.mockRejectedValueOnce(rechazoF(404));
+    await act(async () => { await result.current.refetch(); });
+    expect(result.current.loadError?.status).toBe(404);
+    expect(loQueSeSupo('qm-1')).toBeNull();
+
+    // Y ahora contesta el viejo, con la partida de antes del 404
+    await act(async () => { sueltaElViejo(); });
+
+    expect(result.current.loadError?.status).toBe(404);
+    expect(loQueSeSupo('qm-1')).toBeNull();
+    expect(offlineQueue.marcaDesaparecida).not.toHaveBeenLastCalledWith('qm-1', 'user-1', false);
+  });
+});
