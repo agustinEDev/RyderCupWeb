@@ -17,6 +17,8 @@ import { renderHook, act } from '@testing-library/react';
  *   T4-37  bloqueado en A; se retira                                    | sigue bloqueado (como hoy, P2)
  *   T4-38  retirado tras estar bloqueado; vuelve a contar               | no bloqueado y vuelve a coger el candado
  *   T4-39  un aviso tardío al oyente de A con B ya en pantalla          | el bloqueo de B no cambia
+ *   T4-42  retirado y bloqueado en A; pasa a otro partido o usuario     | no bloqueado (en el mismo A, sigue: P2)
+ *          que tampoco anota                                          |
  */
 
 const lock = vi.hoisted(() => ({
@@ -206,5 +208,24 @@ describe('useCandadoDeLaSesion (T4)', () => {
     act(() => oyenteDeA(evento));
 
     expect(result.current.isSessionBlocked).toBe(bloqueadaEnB);
+  });
+
+  // CodeRabbit (FE #1117): el bloqueo que conserva el retirado (P2) es del
+  // partido y del usuario en los que se retiró, no de cualquiera que tampoco
+  // pueda anotar
+  it.each([
+    ['otro partido en el que tampoco anota', { matchId: 'B' }, false],
+    ['otro usuario que tampoco anota', { currentUserId: 'u2' }, false],
+    ['el mismo partido A (P2)', {}, true],
+  ])('T4-42: bloqueado y retirado en A, al pasar a %s', (_caso, cambio, sigueBloqueado) => {
+    const { result, rerender } = bloqueado();
+    rerender({ ...JUGADOR, isWithdrawn: true });
+    expect(result.current.isSessionBlocked).toBe(true);
+
+    rerender({ ...JUGADOR, isWithdrawn: true, ...cambio });
+
+    expect(result.current.isSessionBlocked).toBe(sigueBloqueado);
+    const conElCambio = pintados.filter((p) => p.matchId === (cambio.matchId ?? 'A') && p.currentUserId === (cambio.currentUserId ?? 'u1'));
+    if (!sigueBloqueado) expect(conElCambio.every((p) => p.isSessionBlocked === false)).toBe(true);
   });
 });

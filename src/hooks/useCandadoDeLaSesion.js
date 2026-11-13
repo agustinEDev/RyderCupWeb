@@ -14,16 +14,21 @@ const claveDe = (matchId, userId) => JSON.stringify([matchId, userId]);
  * Tiene un efecto: quien lo llama decide en qué punto de sus efectos corre.
  */
 export const useCandadoDeLaSesion = ({ matchId, currentUserId, isMatchPlayer, isWithdrawn, sessionIdRef }) => {
+  // De qué partido y usuario es la pantalla, anote o no
+  const identidad = claveDe(matchId, currentUserId);
   // A qué partido y usuario se aplica el candado; null si no se aplica (no
   // juega, se retiró o falta el usuario: no coge el candado)
-  const clave = matchId && isMatchPlayer && !isWithdrawn && currentUserId ? claveDe(matchId, currentUserId) : null;
-  // «Sesión tomada», con la clave a la que se refiere
-  const [bloqueo, setBloqueo] = useState({ clave, bloqueada: false });
+  const clave = matchId && isMatchPlayer && !isWithdrawn && currentUserId ? identidad : null;
+  // «Sesión tomada», con la identidad y la clave a las que se refiere
+  const [bloqueo, setBloqueo] = useState({ identidad, clave, bloqueada: false });
   // Al pasar a otro partido o usuario (o volver a contar tras retirarse), el
   // bloqueo de antes no vale: se quita ya en este pintado, sin enseñar ni uno
-  // con el de antes. Si el candado deja de aplicarse, se queda como estaba
-  // (P2: el retirado que ya veía «sesión tomada» la sigue viendo)
-  const alDia = bloqueo.clave === clave ? bloqueo : { clave, bloqueada: clave === null ? bloqueo.bloqueada : false };
+  // con el de antes, aunque en el nuevo tampoco se anote. Solo si el candado
+  // deja de aplicarse en el MISMO partido y usuario se queda como estaba (P2:
+  // el retirado que ya veía «sesión tomada» la sigue viendo; CodeRabbit, FE #1117)
+  const cambia = bloqueo.identidad !== identidad || bloqueo.clave !== clave;
+  const conservaElBloqueo = bloqueo.identidad === identidad && clave === null;
+  const alDia = cambia ? { identidad, clave, bloqueada: conservaElBloqueo && bloqueo.bloqueada } : bloqueo;
   if (alDia !== bloqueo) setBloqueo(alDia);
   const isSessionBlocked = alDia.bloqueada;
   const bloquear = (bloqueada) => setBloqueo((antes) => ({ ...antes, bloqueada }));

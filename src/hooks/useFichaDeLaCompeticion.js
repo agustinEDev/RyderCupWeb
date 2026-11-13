@@ -25,6 +25,13 @@ export const useFichaDeLaCompeticion = ({ id, userId, t, navigate }) => {
   useEffect(() => {
     idActual.current = id;
   }, [id]);
+  // El traductor de ahora: una carga que empezó en un idioma y falla ya en
+  // otro avisa en el de ahora (CodeRabbit, FE #1117). Por ref y no como
+  // dependencia: cambiar de idioma no vuelve a pedir la ficha
+  const traductor = useRef(t);
+  useEffect(() => {
+    traductor.current = t;
+  }, [t]);
 
   // Por el id y no por el objeto: refrescar la sesión crea un `user` nuevo con el
   // mismo id, y la ficha se recargaba entera tras apuntarse (CodeRabbit, #720)
@@ -64,16 +71,15 @@ export const useFichaDeLaCompeticion = ({ id, userId, t, navigate }) => {
       // Falló porque se está cerrando la sesión: la redirección al login llega ya; ir a la
       // lista solo enseñaba otro fallo (A2, 8 nov 2026)
       if (seEstaCerrandoLaSesion()) return;
-      customToast.error(error.message || t('detail.failedToLoadCompetition'));
+      customToast.error(error.message || traductor.current('detail.failedToLoadCompetition'));
       navigate('/competitions');
     } finally {
       if (sigueEnPantalla()) setIsLoadingCompetition(false);
     }
-  }, [id, userId, navigate, t, lecturasDeLaFicha, lecturasDeInscripciones]);
+  }, [id, userId, navigate, lecturasDeLaFicha, lecturasDeInscripciones]);
 
   // Se pide al entrar y al cambiar de ficha o de usuario, no al cambiar de
-  // idioma: por eso la carga se lanza como evento del efecto y `t` (que sí
-  // usa, para el aviso de fallo) no la vuelve a lanzar
+  // idioma (el aviso de fallo lee el traductor de ahora por su ref)
   const cargarAlEntrar = useEffectEvent(() => {
     loadCompetition();
   });

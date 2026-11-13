@@ -161,6 +161,7 @@ describe('useFichaDeLaCompeticion: la carga de una ficha que ya no está en pant
  *          sin mensaje                                           |
  *   T4-14  sin usuario; llega el usuario                          | se pide una sola vez
  *   T4-15  ficha cargada; una acción llama a `loadCompetition`    | espera de pantalla completa y relee las dos
+ *   T4-43  la carga empieza en un idioma y falla ya en otro       | el aviso sale en el idioma de ahora
  */
 describe('useFichaDeLaCompeticion: cuándo se pide (T4)', () => {
   const enEspanol = (k) => `es:${k}`;
@@ -230,5 +231,18 @@ describe('useFichaDeLaCompeticion: cuándo se pide (T4)', () => {
     expect(result.current.competition).toEqual({ id: 'A', nueva: true });
     expect(result.current.enrollments).toEqual(['de nuevo']);
     expect(result.current.isLoadingCompetition).toBe(false);
+  });
+
+  // CodeRabbit (FE #1117): la carga empezó en un idioma y falla ya en otro
+  it('T4-43: si la carga empezó antes de cambiar de idioma y falla después sin mensaje, el aviso sale en el idioma de ahora', async () => {
+    const { result, rerender } = await cargada();
+    act(() => {
+      result.current.loadCompetition();
+    });
+
+    rerender({ id: 'A', userId: 'u-1', t: enIngles });
+    await act(async () => pendientes.ficha.A.reject(new Error('')));
+
+    expect(customToast.error).toHaveBeenCalledWith('en:detail.failedToLoadCompetition');
   });
 });
