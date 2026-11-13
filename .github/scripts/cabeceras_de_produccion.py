@@ -53,6 +53,10 @@ ASSET_JS = "/assets/*.js"
 _JS_DEL_INDEX = re.compile(r"""<script\b[^>]*\bsrc=["']?(/assets/[\w.-]+\.js)["'\s>]""", re.IGNORECASE)
 
 
+class SinScriptEnElIndex(Exception):
+    """El index.html no enlaza ningún JS del build: no hay ruta de assets que comprobar."""
+
+
 class Redirige(Exception):
     """La ruta contesta con una redirección: es un fallo, y no se reintenta."""
 
@@ -124,7 +128,7 @@ def _js_del_build(origen, pide_pagina, espera):
     """La ruta de un JS del build: el primer <script src="/assets/….js"> del index.html."""
     encontrado = _JS_DEL_INDEX.search(_pide_con_reintentos(pide_pagina, origen + "/", espera))
     if not encontrado:
-        raise LookupError("el index.html de «/» no trae ningún <script src=\"/assets/….js\">")
+        raise SinScriptEnElIndex("el index.html de «/» no trae ningún <script src=\"/assets/….js\">")
     return encontrado.group(1)
 
 
@@ -146,7 +150,7 @@ def compara(esperado, origen, pide_cabeceras=pide, espera=time.sleep, pide_pagin
         except Redirige as error:
             fallos.append(f"{pedida}: {error}; las cabeceras se miran sin seguir redirecciones")
             continue
-        except LookupError as error:
+        except SinScriptEnElIndex as error:
             fallos.append(f"{ruta}: {error}")
             continue
         except Exception as error:  # noqa: BLE001 - cualquier fallo de red es un fallo de la comprobación

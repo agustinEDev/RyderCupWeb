@@ -41,7 +41,19 @@ const LLAMADA_A_CONSTRUCTOR = /^this\.#(\w+)\(.*\)$/s;
 const CUERPO_DE_CONSTRUCTOR =
   /^[^]*const params = new URLSearchParams\(\);[^]*const queryString = params\.toString\(\);\s*return queryString \? `\?\$\{queryString\}` : '';\s*$/;
 // Lo que puede ir en la parte de la búsqueda
-const EN_LA_BUSQUEDA = [/^encodeURIComponent\(/, /^queryString$/, /^params\.toString\(\)$/];
+/**
+ * Tras el «?»: un valor codificado, o lo que sale de un URLSearchParams (`p.toString()`, o una
+ * variable declarada así). Por lo que es, no por el nombre (/code-review de #1100).
+ */
+const valeEnLaBusqueda = (expresion, fuente, desde) => {
+  if (expresion.startsWith('encodeURIComponent(')) return true;
+  const deUnToString = (texto) => /^(\w+)\.toString\(\)$/.exec(texto ?? '');
+  const directo = deUnToString(expresion);
+  if (directo) return esUrlSearchParams(fuente, directo[1], desde);
+  if (!/^\w+$/.test(expresion)) return false;
+  const declarada = deUnToString(declaracion(fuente, expresion, desde));
+  return declarada !== null && esUrlSearchParams(fuente, declarada[1], desde);
+};
 
 /** Todas las plantillas `…` con su texto y sus interpolaciones de primer nivel. */
 const plantillas = (fuente) => {
@@ -164,7 +176,7 @@ const malasEnFuente = (fuente, fichero = 'x.js') => {
       if (n === 0 && antes === '' && CONSTANTE_INICIAL.test(expresion)) return;
       const enLaBusqueda = plantilla.texto.startsWith('?') || antes.includes('?');
       const vale = enLaBusqueda
-        ? EN_LA_BUSQUEDA.some((r) => r.test(expresion))
+        ? valeEnLaBusqueda(expresion, fuente, plantilla.desde)
         : expresion.startsWith('segmento(') || (alFinal && esSufijoDeBusqueda(expresion, fuente, plantilla.desde));
       if (!vale) malas.push(`${fichero}:${linea} \${${expresion}}`);
     });
@@ -227,6 +239,8 @@ describe('rutas de la API con segmento (FE-03, C4)', () => {
     ['un «?» + un toString() que no es URLSearchParams', "const a = id;\napiRequest(`/api/v1/x${a.toString() ? '?' + a : ''}`);"],
     ['un sufijo en línea sin codificar', "apiRequest(`/api/v1/x${c ? `?c=${c}` : ''}`);"],
     ['un sufijo en línea que no empieza por ?', "apiRequest(`/api/v1/x${c ? `/${encodeURIComponent(c)}` : ''}`);"],
+    ['un «queryString» tras el ? que no viene de URLSearchParams', 'const queryString = id;\napiRequest(`/api/v1/x?${queryString}`);'],
+    ['un «params.toString()» tras el ? que no es URLSearchParams', 'const params = id;\napiRequest(`/api/v1/x?${params.toString()}`);'],
     ['una constante de ruta con / al final, pegada al valor', "const BASE = '/api/v1/users/';\napiRequest(`${BASE}${id}`);"],
     ['getApiBaseUrl() pegado al valor', 'f(`${getApiBaseUrl()}${id}`);'],
     ['queryString de algo que no es URLSearchParams', "const queryString = id.toString();\napiRequest(`/api/v1/x${queryString ? `?${queryString}` : ''}`);"],
@@ -237,6 +251,8 @@ describe('rutas de la API con segmento (FE-03, C4)', () => {
   it.each([
     ['una constante de ruta', "const BASE = '/api/v1/x';\napiRequest(`${BASE}/${segmento(id)}`);"],
     ['getApiBaseUrl()', 'f(`${getApiBaseUrl()}/api/v1/users/${segmento(id)}`);'],
+    ['URLSearchParams tras el ?', 'const params = new URLSearchParams(f);\napiRequest(`/api/v1/x?${params.toString()}`);'],
+    ['su queryString tras el ?', 'const params = new URLSearchParams(f);\nconst queryString = params.toString();\napiRequest(`/api/v1/x?${queryString}`);'],
     ['una clave que no es ruta, con una constante delante', "const PREFIJO = 'rcf:hoyo:';\nlocalStorage.getItem(`${PREFIJO}${golfCourseId}`);"],
     ['un sufijo codificado', "const query = cursor ? `?cursor=${encodeURIComponent(cursor)}` : '';\napiRequest(`/api/v1/x${query}`);"],
     ['un sufijo codificado con condición', "const filtro = c != null ? `?c=${encodeURIComponent(c)}` : '';\napiRequest(`/api/v1/x${filtro}`);"],
