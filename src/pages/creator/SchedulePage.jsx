@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useParams, Link } from 'react-router';
 import { ArrowLeft, Calendar, Mail, RotateCcw } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
@@ -58,8 +58,6 @@ const SchedulePage = () => {
   // Las lecturas de inscritos pueden cruzarse (StrictMode, cambio de idioma, la
   // recarga tras «Generar»): un fallo viejo no pisa una lista nueva (CodeRabbit)
   const ordenInscritos = useLaMasNueva();
-  // Si ya se salió, una lista que falla tarde no saca su toast fuera (/code-review)
-  const enLaAgenda = useRef(true);
   // Cubrir el puesto de un capitán que se fue tras el reparto (FE #692)
   const [cubriendoCapitan, setCubriendoCapitan] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -101,59 +99,70 @@ const SchedulePage = () => {
     return map;
   }, [enrollments]);
 
-  const loadData = useCallback(async () => {
-    if (!user) return;
-
-    const turno = ordenInscritos.turno();
+  // Volver a pedirlo todo tras rehacer los sobres: se sube el contador y lo
+  // pide su efecto. La espera, ya en el mismo pintado, como antes
+  const [recarga, setRecarga] = useState(0);
+  const recargarTodo = () => {
     setIsLoading(true);
-    try {
-      const [compData, scheduleData, coursesResult, enrollmentsData] = await Promise.all([
-        getCompetitionDetailUseCase.execute(id),
-        getScheduleUseCase.execute(id).catch(() => null),
-        getCompetitionGolfCoursesUseCase.execute(id).catch(() => []),
-        listEnrollmentsUseCase.execute(id).then(
-          (lista) => ({ ok: true, lista }),
-          () => ({ ok: false, lista: [] })
-        ),
-      ]);
+    setRecarga((n) => n + 1);
+  };
 
-      setCompetition(compData);
-      setSchedule(scheduleData);
-
-      setGolfCourses(aCamposDeLaCompeticion(coursesResult));
-
-      if (ordenInscritos.aplicar(turno)) {
-        setEnrollments(enrollmentsData.lista);
-        setInscritosSinCargar(!enrollmentsData.ok);
-        // Con id: si la carga se repite (StrictMode, cambio de idioma), un solo aviso
-        if (enrollmentsData.ok) {
-          customToast.dismiss(AVISO_INSCRITOS);
-        } else if (enLaAgenda.current) {
-          customToast.error(t('errors.failedToLoadEnrollments'), { id: AVISO_INSCRITOS });
-        }
-      }
-    } catch (error) {
-      console.error('Error loading schedule data:', error);
-      customToast.error(t('errors.failedToLoadSchedule'));
-      navigate(`/competitions/${id}`);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [id, user, navigate, t, ordenInscritos]);
-
+  // La carga de la agenda, dentro de su efecto (patrón de la documentación de
+  // React): al cambiar de idioma o al salir, la anterior ya no toca nada, ni
+  // avisa ni se lleva a nadie a la ficha. Con `t` entre las dependencias, como
+  // antes: cambiar de idioma la vuelve a pedir
   useEffect(() => {
-    if (user) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- pre-existing pattern surfaced by eslint-plugin-react-hooks 7.1.1 bump; needs dedicated review (tracked in follow-up)
-      loadData();
-    }
-  }, [user, loadData]);
+    if (!user) return undefined;
+    let vigente = true;
+    const carga = async () => {
+      const turno = ordenInscritos.turno();
+      setIsLoading(true);
+      try {
+        const [compData, scheduleData, coursesResult, enrollmentsData] = await Promise.all([
+          getCompetitionDetailUseCase.execute(id),
+          getScheduleUseCase.execute(id).catch(() => null),
+          getCompetitionGolfCoursesUseCase.execute(id).catch(() => []),
+          listEnrollmentsUseCase.execute(id).then(
+            (lista) => ({ ok: true, lista }),
+            () => ({ ok: false, lista: [] })
+          ),
+        ]);
+        if (!vigente) return;
+
+        setCompetition(compData);
+        setSchedule(scheduleData);
+
+        setGolfCourses(aCamposDeLaCompeticion(coursesResult));
+
+        if (ordenInscritos.aplicar(turno)) {
+          setEnrollments(enrollmentsData.lista);
+          setInscritosSinCargar(!enrollmentsData.ok);
+          // Con id: si la carga se repite (StrictMode, cambio de idioma), un solo aviso
+          if (enrollmentsData.ok) {
+            customToast.dismiss(AVISO_INSCRITOS);
+          } else {
+            customToast.error(t('errors.failedToLoadEnrollments'), { id: AVISO_INSCRITOS });
+          }
+        }
+      } catch (error) {
+        if (!vigente) return;
+        console.error('Error loading schedule data:', error);
+        customToast.error(t('errors.failedToLoadSchedule'));
+        navigate(`/competitions/${id}`);
+      } finally {
+        if (vigente) setIsLoading(false);
+      }
+    };
+    carga();
+    return () => {
+      vigente = false;
+    };
+  }, [id, user, navigate, t, ordenInscritos, recarga]);
 
   // El toast de los inscritos es de la agenda: al salir se va con ella (pasada
   // del Kind, 31 oct 2026: seguía ~1 s en la ficha)
   useEffect(() => {
-    enLaAgenda.current = true;
     return () => {
-      enLaAgenda.current = false;
       customToast.dismiss(AVISO_INSCRITOS);
     };
   }, []);
@@ -192,7 +201,7 @@ const SchedulePage = () => {
       await resetEnvelopesUseCase.execute(rehaciendoSobres);
       setRehaciendoSobres(null);
       customToast.success(tComp('envelope.resetDone'));
-      await loadData();
+      recargarTodo();
     } catch (error) {
       // El servidor es quien sabe si esa sesión ya se jugó o si no había nada
       // que rehacer: aquí se enseña lo que diga

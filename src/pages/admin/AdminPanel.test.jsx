@@ -1,19 +1,19 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, within, act } from '@testing-library/react';
 import { MemoryRouter, Routes, Route } from 'react-router';
 import AdminPanel from './AdminPanel';
 import customToast from '../../utils/toast';
 
 // El panel va por rutas desde el 17 oct: se abre en /admin y cada sección se
 // toca en el menú
-const renderPanel = () =>
-  render(
-    <MemoryRouter initialEntries={['/admin']}>
-      <Routes>
-        <Route path="/admin/:seccion?" element={<AdminPanel />} />
-      </Routes>
-    </MemoryRouter>
-  );
+const arbolDelPanel = () => (
+  <MemoryRouter initialEntries={['/admin']}>
+    <Routes>
+      <Route path="/admin/:seccion?" element={<AdminPanel />} />
+    </Routes>
+  </MemoryRouter>
+);
+const renderPanel = () => render(arbolDelPanel());
 
 // El mismo `t` en cada pintado, como el de i18next: uno nuevo cada vez cambia
 // `loadCompetitions` y la lista se recargaba sin parar, desmontando lo abierto
@@ -28,16 +28,44 @@ vi.mock('../../utils/toast', () => ({
   customToast: { success: vi.fn(), error: vi.fn(), info: vi.fn(), dismiss: vi.fn() },
 }));
 
+// Lo que devuelven ahora `useTranslation` y `useAuth`: el mismo objeto salvo
+// cuando una prueba cambia de idioma o trae un usuario nuevo
+const { ACTUAL } = vi.hoisted(() => ({ ACTUAL: { traduccion: null, user: null } }));
 vi.mock('react-i18next', () => ({
-  useTranslation: () => TRADUCCION,
+  useTranslation: () => ACTUAL.traduccion ?? TRADUCCION,
 }));
 
 // El mismo `user` en cada pintado, como el de verdad: uno nuevo cada vez
 // repetiría los efectos que dependen de él
 const { ADMIN } = vi.hoisted(() => ({ ADMIN: { id: 'admin-1', first_name: 'Admin', last_name: 'User', is_admin: true } }));
 vi.mock('../../hooks/useAuth', () => ({
-  useAuth: () => ({ user: ADMIN, loading: false }),
+  useAuth: () => ({ user: ACTUAL.user ?? ADMIN, loading: false }),
 }));
+
+// Cambiar de idioma: i18next da un `t` nuevo
+const cambiarDeIdioma = (rerender) => {
+  ACTUAL.traduccion = { t: (...args) => TRADUCCION.t(...args), i18n: { language: 'es' } };
+  rerender(arbolDelPanel());
+};
+// La sesión trae otro objeto de usuario (el mismo admin, otra referencia)
+const traerOtroUsuario = (rerender) => {
+  ACTUAL.user = { ...ADMIN };
+  rerender(arbolDelPanel());
+};
+// Una respuesta que llega cuando la prueba quiere
+const aMano = () => {
+  let resolver;
+  let rechazar;
+  const promesa = new Promise((res, rej) => {
+    resolver = res;
+    rechazar = rej;
+  });
+  return { promesa, resolver, rechazar };
+};
+const usuario = (id, nombre) => ({ ...usersResponse.users[0], id, firstName: nombre, lastName: 'Prueba' });
+const competicion = (id, nombre) => ({ ...competitionsResponse[0], id, name: nombre });
+const seccionDelPanel = () => screen.getByTestId('seccion-del-panel');
+const cargandoEnLaSeccion = () => within(seccionDelPanel()).queryByRole('status');
 
 vi.mock('../../components/layout/HeaderAuth', () => ({
   default: () => <div data-testid="header-auth">Header</div>,
@@ -142,6 +170,8 @@ const enLaTabla = async (texto) => within(await screen.findByRole('table')).find
 describe('AdminPanel', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    ACTUAL.traduccion = null;
+    ACTUAL.user = null;
     mockGetAdminStats.mockResolvedValue(stats);
     mockListAdminUsers.mockResolvedValue(usersResponse);
     mockAdminListCompetitions.mockResolvedValue(competitionsResponse);
@@ -511,3 +541,332 @@ describe('AdminPanel', () => {
   });
 });
 
+
+/**
+ * Las cargas del panel viven dentro de sus efectos (FE, refactor de efectos):
+ * lo que ya hacían se queda igual, y una respuesta vieja ya no pisa nada.
+ *
+ *   #      caso                                          | qué pasa
+ *   -------|---------------------------------------------|-------------------------------
+ *   T1-1   cambiar de idioma con el resumen cargado     | los números NO se piden otra vez
+ *   T1-2   la sesión trae otro objeto de usuario        | se piden otra vez, con la espera
+ *   T1-3   buscar, filtrar o pasar de página (usuarios) | se piden con eso, con la espera
+ *   T1-4   cambiar de idioma en usuarios                | se piden otra vez (como hoy)
+ *   T1-5   buscar en competiciones                      | desde la primera página, con espera
+ *   T1-13  la lista cambia antes de que llegue la vieja | la vieja no pisa ni quita la espera
+ *   T1-14  se sale con el resumen pidiéndose            | su respuesta no toca nada
+ */
+describe('AdminPanel · las cargas de sus listas', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    ACTUAL.traduccion = null;
+    ACTUAL.user = null;
+    mockGetAdminStats.mockResolvedValue(stats);
+    mockListAdminUsers.mockResolvedValue(usersResponse);
+    mockAdminListCompetitions.mockResolvedValue(competitionsResponse);
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+  });
+
+  const resumenCargado = async () => {
+    const vista = renderPanel();
+    await waitFor(() => expect(within(seccionDelPanel()).getByText('25')).toBeInTheDocument());
+    return vista;
+  };
+
+  const abrirUsuarios = async () => {
+    const vista = await resumenCargado();
+    fireEvent.click(screen.getByRole('link', { name: /screens.adminUsers/ }));
+    await enLaTabla('Agus Estevez');
+    return vista;
+  };
+
+  const abrirCompeticiones = async () => {
+    const vista = await resumenCargado();
+    fireEvent.click(screen.getByRole('link', { name: /screens.adminCompetitions/ }));
+    await enLaTabla('Ryder Cup Local');
+    return vista;
+  };
+
+  const buscarCompeticion = (texto) => {
+    fireEvent.change(screen.getByPlaceholderText('competitions.searchPlaceholder'), { target: { value: texto } });
+    fireEvent.click(screen.getByRole('button', { name: 'competitions.searchButton' }));
+  };
+
+  it('T1-1: cambiar de idioma no vuelve a pedir los números del resumen', async () => {
+    // Given el resumen cargado
+    const { rerender } = await resumenCargado();
+    expect(mockGetAdminStats).toHaveBeenCalledTimes(1);
+
+    // When cambia el idioma
+    cambiarDeIdioma(rerender);
+    await act(async () => {});
+
+    // Then no se piden otra vez
+    expect(mockGetAdminStats).toHaveBeenCalledTimes(1);
+  });
+
+  it('T1-2: con otro objeto de usuario el resumen se pide otra vez, con la espera mientras', async () => {
+    // Given el resumen cargado
+    const { rerender } = await resumenCargado();
+    const segunda = aMano();
+    mockGetAdminStats.mockReturnValueOnce(segunda.promesa);
+
+    // When la sesión trae otro objeto de usuario
+    traerOtroUsuario(rerender);
+
+    // Then se piden otra vez, y se espera hasta que lleguen
+    await waitFor(() => expect(mockGetAdminStats).toHaveBeenCalledTimes(2));
+    expect(cargandoEnLaSeccion()).toBeInTheDocument();
+    await act(async () => segunda.resolver({ ...stats, totalQuickMatches: 31 }));
+    expect(await within(seccionDelPanel()).findByText('31')).toBeInTheDocument();
+    expect(cargandoEnLaSeccion()).toBeNull();
+  });
+
+  it('T1-3: buscar pide los usuarios con lo buscado, desde el principio y con la espera', async () => {
+    // Given la sección de usuarios
+    await abrirUsuarios();
+    const llega = aMano();
+    mockListAdminUsers.mockReturnValueOnce(llega.promesa);
+
+    // When se busca
+    fireEvent.change(screen.getByPlaceholderText('users.searchPlaceholder'), { target: { value: '  ana ' } });
+    fireEvent.click(screen.getByRole('button', { name: 'users.searchButton' }));
+
+    // Then se piden con eso, y la espera hasta que llegan
+    await waitFor(() =>
+      expect(mockListAdminUsers).toHaveBeenLastCalledWith(expect.objectContaining({ search: 'ana', offset: 0, limit: 20 }))
+    );
+    expect(cargandoEnLaSeccion()).toBeInTheDocument();
+    await act(async () => llega.resolver({ users: [usuario('u2', 'Ana')], totalCount: 1 }));
+    expect(await enLaTabla('Ana Prueba')).toBeInTheDocument();
+    expect(cargandoEnLaSeccion()).toBeNull();
+  });
+
+  it('T1-3: cambiar un filtro pide los usuarios con él, con la espera', async () => {
+    await abrirUsuarios();
+    const llega = aMano();
+    mockListAdminUsers.mockReturnValueOnce(llega.promesa);
+
+    fireEvent.change(screen.getByDisplayValue('users.filterVerifiedAll'), { target: { value: 'unverified' } });
+
+    await waitFor(() =>
+      expect(mockListAdminUsers).toHaveBeenLastCalledWith(expect.objectContaining({ emailVerified: false, offset: 0 }))
+    );
+    expect(cargandoEnLaSeccion()).toBeInTheDocument();
+    await act(async () => llega.resolver({ users: [usuario('u3', 'Vera')], totalCount: 1 }));
+    expect(await enLaTabla('Vera Prueba')).toBeInTheDocument();
+    expect(cargandoEnLaSeccion()).toBeNull();
+  });
+
+  it('T1-3: pasar de página pide la siguiente, con la espera', async () => {
+    mockListAdminUsers.mockResolvedValue({ ...usersResponse, totalCount: 45 });
+    await abrirUsuarios();
+    const llega = aMano();
+    mockListAdminUsers.mockReturnValueOnce(llega.promesa);
+
+    fireEvent.click(screen.getByRole('button', { name: 'users.next' }));
+
+    await waitFor(() => expect(mockListAdminUsers).toHaveBeenLastCalledWith(expect.objectContaining({ offset: 20 })));
+    expect(cargandoEnLaSeccion()).toBeInTheDocument();
+    await act(async () => llega.resolver({ users: [usuario('u21', 'Pagina')], totalCount: 45 }));
+    expect(await enLaTabla('Pagina Prueba')).toBeInTheDocument();
+  });
+
+  it('T1-4: cambiar de idioma en usuarios los vuelve a pedir (como hoy)', async () => {
+    // Given la sección de usuarios cargada
+    const { rerender } = await abrirUsuarios();
+    const antes = mockListAdminUsers.mock.calls.length;
+
+    // When cambia el idioma
+    cambiarDeIdioma(rerender);
+
+    // Then se piden otra vez
+    await waitFor(() => expect(mockListAdminUsers).toHaveBeenCalledTimes(antes + 1));
+  });
+
+  it('T1-4: cambiar de idioma en competiciones las vuelve a pedir (como hoy)', async () => {
+    const { rerender } = await abrirCompeticiones();
+    const antes = mockAdminListCompetitions.mock.calls.length;
+
+    cambiarDeIdioma(rerender);
+
+    await waitFor(() => expect(mockAdminListCompetitions).toHaveBeenCalledTimes(antes + 1));
+  });
+
+  it('T1-5: buscar competiciones vuelve a la primera página, con la espera', async () => {
+    // Given la segunda página de competiciones
+    const llenas = Array.from({ length: 21 }, (_, i) => competicion(`c${i}`, `Competition ${i}`));
+    mockAdminListCompetitions.mockResolvedValue(llenas);
+    await resumenCargado();
+    fireEvent.click(screen.getByRole('link', { name: /screens.adminCompetitions/ }));
+    await enLaTabla('Competition 0');
+    fireEvent.click(screen.getByRole('button', { name: 'competitions.next' }));
+    await waitFor(() => expect(mockAdminListCompetitions).toHaveBeenLastCalledWith(expect.objectContaining({ offset: 20 })));
+    await enLaTabla('Competition 0');
+    const llega = aMano();
+    mockAdminListCompetitions.mockReturnValueOnce(llega.promesa);
+
+    // When se busca
+    buscarCompeticion(' ryder ');
+
+    // Then se pide desde el principio y se espera
+    await waitFor(() =>
+      expect(mockAdminListCompetitions).toHaveBeenLastCalledWith({ searchName: 'ryder', limit: 21, offset: 0 })
+    );
+    expect(cargandoEnLaSeccion()).toBeInTheDocument();
+    await act(async () => llega.resolver([competicion('c-r', 'Ryder Buscada')]));
+    expect(await enLaTabla('Ryder Buscada')).toBeInTheDocument();
+    expect(cargandoEnLaSeccion()).toBeNull();
+  });
+
+  it('tras una transición, las competiciones se piden otra vez, con la espera', async () => {
+    mockActivateCompetition.mockResolvedValue({ id: 'c1', status: 'ACTIVE' });
+    await abrirCompeticiones();
+    const antes = mockAdminListCompetitions.mock.calls.length;
+    const llega = aMano();
+    mockAdminListCompetitions.mockReturnValueOnce(llega.promesa);
+
+    fireEvent.click(screen.getByRole('button', { name: 'competitions.actions.activate' }));
+
+    await waitFor(() => expect(mockAdminListCompetitions).toHaveBeenCalledTimes(antes + 1));
+    expect(cargandoEnLaSeccion()).toBeInTheDocument();
+    await act(async () => llega.resolver([competicion('c1', 'Ryder Activada')]));
+    expect(await enLaTabla('Ryder Activada')).toBeInTheDocument();
+  });
+
+  it('tras editar una competición, la lista se pide otra vez', async () => {
+    mockAdminUpdateCompetition.mockResolvedValue({ id: 'c1', name: 'Renamed' });
+    await abrirCompeticiones();
+    const antes = mockAdminListCompetitions.mock.calls.length;
+
+    fireEvent.click(screen.getAllByRole('button', { name: 'competitions.editTooltip' })[0]);
+    fireEvent.click(screen.getByRole('button', { name: 'competitions.editModal.save' }));
+
+    await waitFor(() => expect(mockAdminListCompetitions).toHaveBeenCalledTimes(antes + 1));
+  });
+
+  describe('T1-13: una respuesta vieja no pisa la nueva', () => {
+    const cambiarDosFiltros = async (vieja, nueva) => {
+      mockListAdminUsers.mockReturnValueOnce(vieja.promesa).mockReturnValueOnce(nueva.promesa);
+      fireEvent.change(screen.getByDisplayValue('users.filterRoleAll'), { target: { value: 'admin' } });
+      await waitFor(() => expect(mockListAdminUsers).toHaveBeenLastCalledWith(expect.objectContaining({ isAdmin: true })));
+      fireEvent.change(screen.getByDisplayValue('users.filterStatusAll'), { target: { value: 'active' } });
+      await waitFor(() => expect(mockListAdminUsers).toHaveBeenLastCalledWith(expect.objectContaining({ isActive: true })));
+    };
+
+    it('usuarios: si la vieja llega antes, la espera sigue hasta la nueva', async () => {
+      // Given usuarios pidiéndose con un filtro
+      await abrirUsuarios();
+      const vieja = aMano();
+      const nueva = aMano();
+      // When el filtro cambia antes de que llegue
+      await cambiarDosFiltros(vieja, nueva);
+      await act(async () => vieja.resolver({ users: [usuario('u-v', 'Vieja')], totalCount: 1 }));
+
+      // Then la vieja no quita la espera de la nueva
+      expect(cargandoEnLaSeccion()).toBeInTheDocument();
+      await act(async () => nueva.resolver({ users: [usuario('u-n', 'Nueva')], totalCount: 1 }));
+      expect(await enLaTabla('Nueva Prueba')).toBeInTheDocument();
+      expect(screen.queryByText('Vieja Prueba')).toBeNull();
+    });
+
+    it('usuarios: si la vieja llega después, no pisa la nueva', async () => {
+      await abrirUsuarios();
+      const vieja = aMano();
+      const nueva = aMano();
+      await cambiarDosFiltros(vieja, nueva);
+
+      await act(async () => nueva.resolver({ users: [usuario('u-n', 'Nueva')], totalCount: 1 }));
+      await enLaTabla('Nueva Prueba');
+      await act(async () => vieja.resolver({ users: [usuario('u-v', 'Vieja')], totalCount: 7 }));
+
+      expect(within(screen.getByRole('table')).getByText('Nueva Prueba')).toBeInTheDocument();
+      expect(screen.queryByText('Vieja Prueba')).toBeNull();
+      expect(screen.getByText('users.totalCount_1')).toBeInTheDocument();
+    });
+
+    it('usuarios: un fallo de la vieja no avisa de nada', async () => {
+      await abrirUsuarios();
+      const vieja = aMano();
+      const nueva = aMano();
+      await cambiarDosFiltros(vieja, nueva);
+
+      await act(async () => vieja.rechazar(new Error('vieja')));
+
+      expect(customToast.error).not.toHaveBeenCalled();
+      expect(cargandoEnLaSeccion()).toBeInTheDocument();
+    });
+
+    const buscarDosVeces = async (vieja, nueva) => {
+      mockAdminListCompetitions.mockReturnValueOnce(vieja.promesa).mockReturnValueOnce(nueva.promesa);
+      buscarCompeticion('vieja');
+      await waitFor(() => expect(mockAdminListCompetitions).toHaveBeenLastCalledWith(expect.objectContaining({ searchName: 'vieja' })));
+      buscarCompeticion('nueva');
+      await waitFor(() => expect(mockAdminListCompetitions).toHaveBeenLastCalledWith(expect.objectContaining({ searchName: 'nueva' })));
+    };
+
+    it('competiciones: si la vieja llega antes, la espera sigue hasta la nueva', async () => {
+      await abrirCompeticiones();
+      const vieja = aMano();
+      const nueva = aMano();
+      await buscarDosVeces(vieja, nueva);
+
+      await act(async () => vieja.resolver([competicion('c-v', 'Copa Vieja')]));
+
+      expect(cargandoEnLaSeccion()).toBeInTheDocument();
+      await act(async () => nueva.resolver([competicion('c-n', 'Copa Nueva')]));
+      expect(await enLaTabla('Copa Nueva')).toBeInTheDocument();
+      expect(screen.queryByText('Copa Vieja')).toBeNull();
+    });
+
+    it('competiciones: si la vieja llega después, no pisa la nueva', async () => {
+      await abrirCompeticiones();
+      const vieja = aMano();
+      const nueva = aMano();
+      await buscarDosVeces(vieja, nueva);
+
+      await act(async () => nueva.resolver([competicion('c-n', 'Copa Nueva')]));
+      await enLaTabla('Copa Nueva');
+      await act(async () => vieja.resolver([competicion('c-v', 'Copa Vieja')]));
+
+      expect(within(screen.getByRole('table')).getByText('Copa Nueva')).toBeInTheDocument();
+      expect(screen.queryByText('Copa Vieja')).toBeNull();
+    });
+  });
+
+  it('T1-13: resumen: con dos usuarios nuevos seguidos, el viejo que llega tarde no pisa', async () => {
+    // Given el resumen pidiéndose dos veces seguidas
+    const { rerender } = await resumenCargado();
+    const vieja = aMano();
+    const nueva = aMano();
+    mockGetAdminStats.mockReturnValueOnce(vieja.promesa).mockReturnValueOnce(nueva.promesa);
+    traerOtroUsuario(rerender);
+    await waitFor(() => expect(mockGetAdminStats).toHaveBeenCalledTimes(2));
+    traerOtroUsuario(rerender);
+    await waitFor(() => expect(mockGetAdminStats).toHaveBeenCalledTimes(3));
+
+    // When la nueva llega antes que la vieja
+    await act(async () => nueva.resolver({ ...stats, totalQuickMatches: 41 }));
+    await within(seccionDelPanel()).findByText('41');
+    await act(async () => vieja.resolver({ ...stats, totalQuickMatches: 37 }));
+
+    // Then se queda la nueva
+    expect(within(seccionDelPanel()).getByText('41')).toBeInTheDocument();
+    expect(within(seccionDelPanel()).queryByText('37')).toBeNull();
+  });
+
+  it('T1-14: si se sale con el resumen pidiéndose, su fallo no avisa de nada', async () => {
+    // Given el resumen pidiéndose
+    const tarde = aMano();
+    mockGetAdminStats.mockReturnValueOnce(tarde.promesa);
+    const { unmount } = renderPanel();
+    await waitFor(() => expect(mockGetAdminStats).toHaveBeenCalledTimes(1));
+
+    // When se sale del panel y luego falla
+    unmount();
+    await act(async () => tarde.rechazar(new Error('tarde')));
+
+    // Then no toca nada
+    expect(customToast.error).not.toHaveBeenCalled();
+  });
+});

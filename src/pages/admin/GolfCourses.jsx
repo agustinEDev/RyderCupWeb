@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useEffectEvent } from 'react';
 import ModalShell, { CAJA_PROPIA } from '../../components/ui/ModalShell';
 import { motion } from 'framer-motion';
 import { Plus } from 'lucide-react';
@@ -48,27 +48,43 @@ const GolfCourses = ({ embedded = false }) => {
     typeof role === 'string' ? role === 'ADMIN' : role.name === 'ADMIN'
   ) || false;
 
-  // Load approved courses
-  const loadCourses = async () => {
+  // Volver a pedir la lista tras crear o editar: se sube el contador y la pide
+  // su efecto. La espera, ya en el mismo pintado, como antes
+  const [recarga, setRecarga] = useState(0);
+  const recargarCourses = () => {
     setIsLoading(true);
-    try {
-      const page = await listGolfCoursesUseCase.execute({ approvalStatus: 'APPROVED' });
-      setCourses(page.courses);
-    } catch (error) {
-      console.error('Error loading golf courses:', error);
-      customToast.error(error.message || t('pages.admin.errorLoading'));
-    } finally {
-      setIsLoading(false);
-    }
+    setRecarga((n) => n + 1);
   };
 
+  // El aviso, con el idioma de ahora pero sin ser dependencia: la lista no se
+  // vuelve a pedir por cambiar de idioma
+  const avisarDelFalloAlCargar = useEffectEvent((error) => {
+    customToast.error(error.message || t('pages.admin.errorLoading'));
+  });
+
+  // Load approved courses. Dentro del efecto (patrón de la documentación de
+  // React): al salir o al pedirla otra vez, la respuesta anterior no toca nada
   useEffect(() => {
-    if (user) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- pre-existing pattern surfaced by eslint-plugin-react-hooks 7.1.1 bump; needs dedicated review (tracked in follow-up)
-      loadCourses();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user]);
+    if (!user) return undefined;
+    let vigente = true;
+    const carga = async () => {
+      setIsLoading(true);
+      try {
+        const page = await listGolfCoursesUseCase.execute({ approvalStatus: 'APPROVED' });
+        if (vigente) setCourses(page.courses);
+      } catch (error) {
+        if (!vigente) return;
+        console.error('Error loading golf courses:', error);
+        avisarDelFalloAlCargar(error);
+      } finally {
+        if (vigente) setIsLoading(false);
+      }
+    };
+    carga();
+    return () => {
+      vigente = false;
+    };
+  }, [user, recarga]);
 
   // Handle create
   const handleCreate = async (formData) => {
@@ -77,7 +93,7 @@ const GolfCourses = ({ embedded = false }) => {
       await createGolfCourseAdminUseCase.execute(formData);
       customToast.success(t('pages.admin.createSuccess'));
       setShowCreateModal(false);
-      await loadCourses();
+      recargarCourses();
     } catch (error) {
       console.error('Error creating golf course:', error);
       throw error; // Let form handle the error
@@ -98,7 +114,7 @@ const GolfCourses = ({ embedded = false }) => {
       customToast.success(t('pages.admin.updateSuccess'));
       setShowEditModal(false);
       setSelectedCourse(null);
-      await loadCourses();
+      recargarCourses();
     } catch (error) {
       console.error('Error updating golf course:', error);
       throw error; // Let form handle the error
