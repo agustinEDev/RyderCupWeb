@@ -45,6 +45,11 @@ const CLAVE_DE_LA_FECHA = {
   NO_ROOM: 'card.noRoomSince',
 };
 
+/** El nombre (por id o tras responder), el correo tecleado (por correo) o, si no
+ *  hay ninguno, un texto: la tarjeta nunca queda en blanco (B-01/B-03) */
+const quienEsElInvitado = (invitation, t) =>
+  invitation.inviteeName || invitation.inviteeEmail || t('card.invitedPlayer');
+
 const InvitationCard = ({
   invitation,
   mode,
@@ -113,7 +118,7 @@ const InvitationCard = ({
                   desbordaba la tarjeta a 360 (FE #826) */}
               <Mail className="h-3.5 w-3.5 flex-shrink-0" />
               <span className="min-w-0 wrap-anywhere">
-                {invitation.inviteeName || invitation.inviteeEmail}
+                {quienEsElInvitado(invitation, t)}
               </span>
             </div>
           )}
@@ -202,7 +207,7 @@ const InvitationCard = ({
             onClick={() => onReinvite(invitation)}
             disabled={isProcessing}
             aria-label={t('actions.reinviteAria', {
-              name: invitation.inviteeName || invitation.inviteeEmail,
+              name: quienEsElInvitado(invitation, t),
             })}
             className="flex-shrink-0 min-h-11 px-3 py-1.5 text-xs font-medium text-primary bg-primary/10 rounded-md hover:bg-primary/20 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >

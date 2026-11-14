@@ -53,8 +53,18 @@ class Invitation {
     if (!inviterId || typeof inviterId !== 'string') {
       throw new TypeError('inviterId must be a non-empty string');
     }
-    if (!inviteeEmail || typeof inviteeEmail !== 'string') {
-      throw new TypeError('inviteeEmail must be a non-empty string');
+    // Por id llega sin correo (no se enseña el de otro usuario) y por correo, sin el
+    // invitado hasta que responda (no se delata si el correo tiene cuenta): hace
+    // falta uno de los dos (auditoría de la fase 6, B-01/B-03)
+    if (
+      inviteeEmail !== null &&
+      inviteeEmail !== undefined &&
+      (typeof inviteeEmail !== 'string' || !inviteeEmail)
+    ) {
+      throw new TypeError('inviteeEmail must be a non-empty string or null');
+    }
+    if (!inviteeEmail && !inviteeUserId) {
+      throw new TypeError('inviteeEmail or inviteeUserId is required');
     }
     if (!(status instanceof InvitationStatus)) {
       throw new TypeError('status must be an InvitationStatus instance');
@@ -63,7 +73,7 @@ class Invitation {
     this.#id = id;
     this.#competitionId = competitionId;
     this.#inviterId = inviterId;
-    this.#inviteeEmail = inviteeEmail;
+    this.#inviteeEmail = inviteeEmail || null;
     this.#inviteeUserId = inviteeUserId;
     this.#status = status;
     this.#personalMessage = personalMessage;

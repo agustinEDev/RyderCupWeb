@@ -23,11 +23,11 @@ class InvitationMapper {
       !apiData.id ||
       !apiData.competition_id ||
       !apiData.inviter_id ||
-      !apiData.invitee_email ||
+      !(apiData.invitee_email || apiData.invitee_user_id) ||
       !apiData.status
     ) {
       throw new Error(
-        'InvitationMapper.toDomain: Missing required fields (id, competition_id, inviter_id, invitee_email, status)',
+        'InvitationMapper.toDomain: Missing required fields (id, competition_id, inviter_id, invitee_email or invitee_user_id, status)',
       );
     }
 
@@ -35,7 +35,7 @@ class InvitationMapper {
       id: apiData.id,
       competitionId: apiData.competition_id,
       inviterId: apiData.inviter_id,
-      inviteeEmail: apiData.invitee_email,
+      inviteeEmail: apiData.invitee_email || null,
       inviteeUserId: apiData.invitee_user_id || null,
       status: InvitationStatus.fromString(apiData.status),
       personalMessage: apiData.personal_message || null,

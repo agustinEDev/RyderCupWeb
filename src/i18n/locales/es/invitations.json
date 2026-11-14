@@ -58,7 +58,8 @@
     "message": "Mensaje",
     "withdrawnAt": "Retirada el {{date}}",
     "noRoomSince": "Sin plaza desde el {{date}}",
-    "viewCompetition": "Ver la competición"
+    "viewCompetition": "Ver la competición",
+    "invitedPlayer": "Jugador invitado"
   },
   "success": {
     "sent": "Invitación enviada correctamente",
@@ -80,6 +81,8 @@
     "failedToWithdraw": "No se pudo retirar la invitación.",
     "rateLimited_one": "Ya has enviado {{count}} invitación en la última hora en esta competición. Podrás enviar más en un rato.",
     "rateLimited_other": "Ya has enviado {{count}} invitaciones en la última hora en esta competición. Podrás enviar más en un rato.",
+    "userRateLimited_one": "Ya has enviado {{count}} invitación en la última hora. Podrás enviar más en un rato.",
+    "userRateLimited_other": "Ya has enviado {{count}} invitaciones en la última hora. Podrás enviar más en un rato.",
     "teamsFormed": "Los equipos ya están formados: habla con el organizador.",
     "teamsFormedOrganizer": "Con los equipos formados no se invita. Si aún no hay partidos, puedes deshacerlos en la agenda."
   },
