@@ -17,7 +17,9 @@ import { join } from 'node:path';
  *   A2 una acción local (`./...`)                        | vale: es del propio repo
  *   A3 una imagen `docker://` por digest                 | vale
  *   A4 toda línea con `uses:` la reconoce el escáner      | si no, se le escaparía
- *   A5 el escáner                                        | distingue etiqueta, rama y huella
+ *   A5 el escáner                                        | distingue etiqueta, rama y huella,
+ *                                                        | y la forma compacta `{uses: ...}`
+ *   A7 dos ficheros con el mismo nombre                  | se revisan los dos (por su ruta)
  *   A6 trufflehog: la versión de su imagen               | la de la acción y por digest
  *
  * A6: la acción de trufflehog ejecuta una imagen de Docker (`version`, por defecto
@@ -27,7 +29,10 @@ import { join } from 'node:path';
 
 // Desde la raíz del proyecto, como los demás vigilantes de src (Vitest arranca en ella)
 const GITHUB = join(globalThis.process.cwd(), '.github');
-const USES = /^\s*-?\s*uses:\s*(?<accion>[^\s#]+)(?<resto>.*)$/;
+// `uses` en cualquier sitio de la línea: también en la forma compacta de un paso
+// (`- {name: x, uses: y}`) o con la clave entre comillas (CodeRabbit en BE #849)
+const USES =
+  /(?:^|[\s{,])['"]?uses['"]?\s*:\s*['"]?(?<accion>[^\s,}'"#]+)['"]?(?<resto>.*)$/;
 const FIJADA = /^[\w.-]+\/[\w./-]+@[0-9a-f]{40}$/;
 const DOCKER_FIJADA = /^docker:\/\/[^\s@]+@sha256:[0-9a-f]{64}$/;
 const VERSION = /#\s*v\d+(\.\d+)*/;
@@ -51,37 +56,50 @@ const ficheros = () => {
 const malFijadas = (texto) =>
   texto
     .split('\n')
+    .filter((linea) => !/^\s*#/.test(linea))
     .map((linea) => linea.match(USES))
     .filter(Boolean)
-    .map(({ groups }) => ({
-      accion: groups.accion.replace(/^['"]|['"]$/g, ''),
-      resto: groups.resto,
-    }))
+    .map(({ groups }) => ({ accion: groups.accion, resto: groups.resto }))
     .filter(
       ({ accion }) => !accion.startsWith('./') && !DOCKER_FIJADA.test(accion),
     )
     .filter(({ accion, resto }) => !FIJADA.test(accion) || !VERSION.test(resto))
     .map(({ accion }) => accion);
 
+/** Las mal fijadas de cada fichero, por su ruta: dos con el mismo nombre no se pisan. */
+const revisa = (pares) =>
+  Object.fromEntries(
+    pares
+      .map(([ruta, texto]) => [ruta, malFijadas(texto)])
+      .filter(([, m]) => m.length > 0),
+  );
+
 describe('acciones de GitHub fijadas por huella (INF-03)', () => {
   it('A1: cada acción va por huella y con su versión al lado', () => {
     const todos = ficheros();
     expect(todos.length).toBeGreaterThan(0);
 
-    const malas = Object.fromEntries(
-      todos
-        .map(([ruta, texto]) => [ruta, malFijadas(texto)])
-        .filter(([, m]) => m.length > 0),
-    );
+    expect(revisa(todos)).toEqual({});
+  });
 
-    expect(malas).toEqual({});
+  it('A7: dos ficheros con el mismo nombre se revisan los dos', () => {
+    const mala = 'runs:\n  steps:\n    - uses: actions/checkout@v7\n';
+    const buena = 'runs:\n  steps:\n    - uses: ./.github/actions/otra\n';
+
+    expect(
+      revisa([
+        ['actions/a/action.yml', mala],
+        ['actions/b/action.yml', buena],
+      ]),
+    ).toEqual({ 'actions/a/action.yml': ['actions/checkout@v7'] });
   });
 
   it('A4: el escáner reconoce toda línea que usa una acción', () => {
     const lineas = ficheros().flatMap(([, texto]) => texto.split('\n'));
     const usos = lineas.filter((l) => USES.test(l));
     const sinReconocer = lineas.filter(
-      (l) => /^\s*-?\s*uses:/.test(l) && !USES.test(l),
+      (l) =>
+        /['"]?\buses['"]?\s*:/.test(l) && !/^\s*#/.test(l) && !USES.test(l),
     );
 
     expect(usos.length).toBeGreaterThan(0);
@@ -121,6 +139,13 @@ describe('acciones de GitHub fijadas por huella (INF-03)', () => {
     ).toEqual([]);
     expect(malFijadas('      - uses: docker://ghcr.io/x/y:latest')).toEqual([
       'docker://ghcr.io/x/y:latest',
+    ]);
+    // La forma compacta y la clave entre comillas (CodeRabbit en BE #849)
+    expect(
+      malFijadas('      - {name: Checkout, uses: actions/checkout@v7}'),
+    ).toEqual(['actions/checkout@v7']);
+    expect(malFijadas("      - 'uses': actions/checkout@v7")).toEqual([
+      'actions/checkout@v7',
     ]);
   });
 });
