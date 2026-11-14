@@ -307,9 +307,45 @@ const esUnObjeto = (x) =>
 
 const conId = (x) => esUnObjeto(x) && typeof x.id === 'string' && x.id !== '';
 
+/**
+ * Lo que se pinta tiene que ser de su tipo: un nombre que no es texto (un
+ * objeto, por ejemplo) revienta al pintarlo, y como se pinta antes de que llegue
+ * lo nuevo, tumbaría el panel en cada apertura hasta cerrar sesión (CodeRabbit).
+ */
+const nada = (x) => x === null || x === undefined;
+const textoONada = (x) => nada(x) || typeof x === 'string';
+const numeroONada = (x) => nada(x) || Number.isFinite(x);
+const textos = (x) =>
+  x === undefined ||
+  (Array.isArray(x) && x.every((t) => typeof t === 'string'));
+
+const TIPOS_DE_LA_PARTIDA = {
+  date: textoONada,
+  playedAt: textoONada,
+  matchFormat: textoONada,
+  scoringFormat: textoONada,
+  golfCourseId: textoONada,
+  golfCourseName: textoONada,
+  matchName: textoONada,
+  tournamentName: textoONada,
+  result: textoONada,
+  score: (x) => textoONada(x) || Number.isFinite(x),
+  stablefordPoints: numeroONada,
+  totalStrokes: numeroONada,
+  holesPlayed: numeroONada,
+  partners: textos,
+  opponents: textos,
+  excludedFromStats: (x) => x === undefined || typeof x === 'boolean',
+};
+
+const TIPOS_DE_LA_COMPETICION = { name: textoONada, status: textoONada };
+
+const deSuTipo = (tipos) => (x) =>
+  conId(x) && Object.entries(tipos).every(([campo, vale]) => vale(x[campo]));
+
 /** Una lista guardada, sin los elementos que no se pueden pintar. */
-const listaValida = (lista) =>
-  Array.isArray(lista) ? lista.filter(conId) : null;
+const listaValida = (lista, esValido) =>
+  Array.isArray(lista) ? lista.filter(esValido) : null;
 
 /** Las cifras guardadas, solo las que son números (o nada). */
 const cifrasValidas = (cifras) =>
@@ -332,8 +368,14 @@ const leeElPanel = () => {
     if (typeof panel.usuarioId !== 'string' || !panel.usuarioId) return null;
     return {
       usuarioId: panel.usuarioId,
-      competiciones: listaValida(panel.competiciones),
-      ultimasPartidas: listaValida(panel.ultimasPartidas),
+      competiciones: listaValida(
+        panel.competiciones,
+        deSuTipo(TIPOS_DE_LA_COMPETICION),
+      ),
+      ultimasPartidas: listaValida(
+        panel.ultimasPartidas,
+        deSuTipo(TIPOS_DE_LA_PARTIDA),
+      ),
       estadisticas: cifrasValidas(panel.estadisticas),
     };
   } catch {

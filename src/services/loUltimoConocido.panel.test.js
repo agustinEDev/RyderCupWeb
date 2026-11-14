@@ -30,6 +30,8 @@ import RecentMatch from '../domain/entities/RecentMatch';
  *   G14 una cifra que no vino             | no vuelve como null (la entidad pone la suya)
  *   G15 una partida con una fecha imposible | no revienta ni guarda nada a medias
  *   G16 una parte en null                 | se borra esa parte
+ *   G17 una partida con un campo de otro tipo | se descarta (pintarla tumbaría el panel)
+ *   G18 una competición con un campo de otro tipo | se descarta
  *   G5 se cierra la sesión                | se borra y no se reescribe
  *   G6 el móvil no tiene sitio            | no se guarda y no revienta
  *   G7 lo guardado está roto              | nada
@@ -229,7 +231,7 @@ describe('loUltimoConocido, el panel', () => {
       golfCourseName: 'El Saler',
       tournamentName: 'Liga',
       stablefordPoints: 34,
-      partners: [{ name: 'Ana' }],
+      partners: ['Ana'],
     });
 
     recuerdaElPanel('u-1', { ultimasPartidas: [real] });
@@ -240,7 +242,7 @@ describe('loUltimoConocido, el panel', () => {
       golfCourseName: 'El Saler',
       tournamentName: 'Liga',
       stablefordPoints: 34,
-      partners: [{ name: 'Ana' }],
+      partners: ['Ana'],
     });
     const rehecha = RecentMatch.fromPersistence(leida);
     expect(rehecha.isFromTournament()).toBe(real.isFromTournament());
@@ -327,6 +329,69 @@ describe('loUltimoConocido, el panel', () => {
       ultimasPartidas: null,
       estadisticas: null,
     });
+  });
+
+  it.each([
+    ['un nombre que no es texto', { matchName: { a: 1 } }],
+    ['un torneo que no es texto', { tournamentName: 5 }],
+    ['un campo que no es texto', { golfCourseName: ['x'] }],
+    ['rivales que no son textos', { opponents: [{ name: 'Ana' }] }],
+    ['compañeros que no son lista', { partners: 'Ana' }],
+    ['hoyos que no son número', { holesPlayed: '9' }],
+    ['puntos que no son número', { stablefordPoints: {} }],
+    ['un resultado que no es texto', { result: 1 }],
+    ['una marca que no es sí o no', { excludedFromStats: 'no' }],
+  ])('G17: una partida con %s se descarta', (_, malo) => {
+    guardado.set(
+      'rydercup-ultimo-panel',
+      JSON.stringify({
+        v: 1,
+        usuarioId: 'u-1',
+        ultimasPartidas: [{ id: 'p-mala', ...malo }, partida(1)],
+      }),
+    );
+
+    expect(elUltimoPanel('u-1').ultimasPartidas).toEqual([partida(1)]);
+  });
+
+  it('G17b: una partida con todos sus campos bien se queda', () => {
+    const buena = {
+      id: 'p-2',
+      date: '2026-11-10T09:00:00.000Z',
+      matchName: 'Viernes',
+      tournamentName: null,
+      golfCourseName: 'El Saler',
+      result: 'WON',
+      score: '2&1',
+      stablefordPoints: 34,
+      totalStrokes: 80,
+      holesPlayed: 18,
+      partners: ['Ana'],
+      opponents: ['Luis', 'Pedro'],
+      excludedFromStats: false,
+    };
+    guardado.set(
+      'rydercup-ultimo-panel',
+      JSON.stringify({ v: 1, usuarioId: 'u-1', ultimasPartidas: [buena] }),
+    );
+
+    expect(elUltimoPanel('u-1').ultimasPartidas).toEqual([buena]);
+  });
+
+  it.each([
+    ['un nombre que no es texto', { name: { a: 1 } }],
+    ['un estado que no es texto', { status: 3 }],
+  ])('G18: una competición con %s se descarta', (_, malo) => {
+    guardado.set(
+      'rydercup-ultimo-panel',
+      JSON.stringify({
+        v: 1,
+        usuarioId: 'u-1',
+        competiciones: [{ id: 'c-mala', ...malo }, competicion(1)],
+      }),
+    );
+
+    expect(elUltimoPanel('u-1').competiciones).toEqual([competicion(1)]);
   });
 
   it('G8: sin cuenta no se guarda nada', () => {

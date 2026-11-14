@@ -477,6 +477,11 @@ describe('PendingActionsCard al volver al panel', () => {
   // El panel pinta primero la lista guardada y luego la que llega (Agustín, 14 nov
   // 2026): sin esto, la tarjeta pedía todo dos veces por la misma lista
   describe('a new list object with the same competitions', () => {
+    // Cuentan llamadas: los contadores, a cero aquí y no por el orden (CodeRabbit)
+    beforeEach(() => {
+      vi.clearAllMocks();
+    });
+
     const lista = () => [
       { id: 'c-1', name: 'Liga', status: 'ACTIVE' },
       { id: 'c-2', name: 'Copa', status: 'COMPLETED' },
