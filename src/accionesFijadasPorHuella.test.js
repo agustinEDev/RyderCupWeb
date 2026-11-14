@@ -1,6 +1,15 @@
 import { describe, it, expect } from 'vitest';
-import { readFileSync, readdirSync, existsSync } from 'node:fs';
+import {
+  readFileSync,
+  readdirSync,
+  existsSync,
+  mkdtempSync,
+  mkdirSync,
+  writeFileSync,
+  rmSync,
+} from 'node:fs';
 import { join } from 'node:path';
+import { tmpdir } from 'node:os';
 
 /**
  * Toda acción de GitHub va fijada por la huella de su commit (auditoría de la fase 6,
@@ -20,6 +29,8 @@ import { join } from 'node:path';
  *   A5 el escáner                                        | distingue etiqueta, rama y huella,
  *                                                        | y la forma compacta `{uses: ...}`
  *   A7 dos ficheros con el mismo nombre                  | se revisan los dos (por su ruta)
+ *   A8 varias acciones en una línea (forma compacta)     | se revisan todas
+ *   A9 una acción local fuera de `.github/actions`       | se lee y se revisa también
  *   A6 trufflehog: la versión de su imagen               | la de la acción y por digest
  *
  * A6: la acción de trufflehog ejecuta una imagen de Docker (`version`, por defecto
@@ -32,10 +43,37 @@ const GITHUB = join(globalThis.process.cwd(), '.github');
 // `uses` en cualquier sitio de la línea: también en la forma compacta de un paso
 // (`- {name: x, uses: y}`) o con la clave entre comillas (CodeRabbit en BE #849)
 const USES =
-  /(?:^|[\s{,])['"]?uses['"]?\s*:\s*['"]?(?<accion>[^\s,}'"#]+)['"]?(?<resto>.*)$/;
+  /(?:^|[\s{,[])['"]?uses['"]?\s*:\s*['"]?(?<accion>[^\s,}\]'"#]+)['"]?/g;
+// Cada clave `uses` de la línea, la reconozca o no USES: A4 compara las dos cuentas
+const CLAVE_USES = /['"]?\buses['"]?\s*:/g;
 const FIJADA = /^[\w.-]+\/[\w./-]+@[0-9a-f]{40}$/;
 const DOCKER_FIJADA = /^docker:\/\/[^\s@]+@sha256:[0-9a-f]{64}$/;
 const VERSION = /#\s*v\d+(\.\d+)*/;
+
+/** Las acciones de una línea, todas (la forma compacta puede llevar varias). */
+const usosDe = (linea) =>
+  /^\s*#/.test(linea)
+    ? []
+    : [...linea.matchAll(USES)].map(({ groups }) => groups.accion);
+
+/** Los `action.yml` de las acciones locales (`./...`) que se usan, estén donde estén. */
+const accionesLocales = (pares, vistas = new Set()) => {
+  const raiz = globalThis.process.cwd();
+  const nuevas = pares
+    .flatMap(([, texto]) => texto.split('\n').flatMap(usosDe))
+    .filter((accion) => accion.startsWith('./'))
+    .flatMap((accion) =>
+      ['action.yml', 'action.yaml'].map((f) => join(raiz, accion, f)),
+    )
+    .filter((ruta) => existsSync(ruta) && !vistas.has(ruta));
+  if (nuevas.length === 0) return [];
+  nuevas.forEach((ruta) => vistas.add(ruta));
+  const leidas = [...new Set(nuevas)].map((ruta) => [
+    ruta,
+    readFileSync(ruta, 'utf8'),
+  ]);
+  return [...leidas, ...accionesLocales(leidas, vistas)];
+};
 
 /** Los workflows y las acciones compuestas del repo, con su texto. */
 const ficheros = () => {
@@ -47,24 +85,36 @@ const ficheros = () => {
         .filter((f) => /(^|\/)action\.ya?ml$/.test(f))
         .map((f) => join(GITHUB, 'actions', f))
     : [];
-  return [...workflows, ...acciones].map((ruta) => [
+  const pares = [...workflows, ...acciones].map((ruta) => [
     ruta,
     readFileSync(ruta, 'utf8'),
   ]);
+  const yaLeidas = new Set(pares.map(([ruta]) => ruta));
+  return [...pares, ...accionesLocales(pares, yaLeidas)];
 };
 
 const malFijadas = (texto) =>
   texto
     .split('\n')
-    .filter((linea) => !/^\s*#/.test(linea))
-    .map((linea) => linea.match(USES))
-    .filter(Boolean)
-    .map(({ groups }) => ({ accion: groups.accion, resto: groups.resto }))
+    .flatMap((linea) =>
+      usosDe(linea).map((accion) => ({
+        accion,
+        conVersion: VERSION.test(linea),
+      })),
+    )
     .filter(
       ({ accion }) => !accion.startsWith('./') && !DOCKER_FIJADA.test(accion),
     )
-    .filter(({ accion, resto }) => !FIJADA.test(accion) || !VERSION.test(resto))
+    .filter(({ accion, conVersion }) => !FIJADA.test(accion) || !conVersion)
     .map(({ accion }) => accion);
+
+/** Las líneas con alguna clave `uses` que el escáner no reconoce. */
+const sinReconocer = (lineas) =>
+  lineas.filter(
+    (l) =>
+      !/^\s*#/.test(l) &&
+      (l.match(CLAVE_USES) ?? []).length !== usosDe(l).length,
+  );
 
 /** Las mal fijadas de cada fichero, por su ruta: dos con el mismo nombre no se pisan. */
 const revisa = (pares) =>
@@ -96,14 +146,11 @@ describe('acciones de GitHub fijadas por huella (INF-03)', () => {
 
   it('A4: el escáner reconoce toda línea que usa una acción', () => {
     const lineas = ficheros().flatMap(([, texto]) => texto.split('\n'));
-    const usos = lineas.filter((l) => USES.test(l));
-    const sinReconocer = lineas.filter(
-      (l) =>
-        /['"]?\buses['"]?\s*:/.test(l) && !/^\s*#/.test(l) && !USES.test(l),
-    );
+    const usos = lineas.filter((l) => usosDe(l).length > 0);
+    const noVistas = sinReconocer(lineas);
 
     expect(usos.length).toBeGreaterThan(0);
-    expect(sinReconocer).toEqual([]);
+    expect(noVistas).toEqual([]);
   });
 
   it('A6: trufflehog corre la imagen de su versión, por digest', () => {
@@ -147,5 +194,48 @@ describe('acciones de GitHub fijadas por huella (INF-03)', () => {
     expect(malFijadas("      - 'uses': actions/checkout@v7")).toEqual([
       'actions/checkout@v7',
     ]);
+  });
+
+  it('A4: una línea con un `uses` sin reconocer no pasa, aunque tenga otro', () => {
+    const huella = '3d3c42e5aac5ba805825da76410c181273ba90b1';
+    expect(
+      sinReconocer([`    steps: [{uses: a/b@${huella}}, {uses: }]`]),
+    ).toHaveLength(1);
+  });
+
+  it('A8: con varias acciones en una línea se revisan todas (CodeRabbit)', () => {
+    expect(
+      malFijadas(
+        '    steps: [{uses: ./.github/actions/propia}, {uses: actions/checkout@v7}]',
+      ),
+    ).toEqual(['actions/checkout@v7']);
+  });
+
+  it('A9: una acción local fuera de .github/actions se revisa (CodeRabbit)', () => {
+    const raiz = mkdtempSync(join(tmpdir(), 'acciones-'));
+    const cwd = globalThis.process.cwd;
+    try {
+      mkdirSync(join(raiz, 'acciones', 'propia'), { recursive: true });
+      writeFileSync(
+        join(raiz, 'acciones', 'propia', 'action.yml'),
+        'runs:\n  steps:\n    - uses: actions/checkout@v7\n',
+      );
+      globalThis.process.cwd = () => raiz;
+      const workflow = [['ci.yml', 'steps:\n  - uses: ./acciones/propia\n']];
+
+      const leidas = accionesLocales(workflow);
+
+      expect(leidas.map(([ruta]) => ruta)).toEqual([
+        join(raiz, 'acciones', 'propia', 'action.yml'),
+      ]);
+      expect(revisa(leidas)).toEqual({
+        [join(raiz, 'acciones', 'propia', 'action.yml')]: [
+          'actions/checkout@v7',
+        ],
+      });
+    } finally {
+      globalThis.process.cwd = cwd;
+      rmSync(raiz, { recursive: true, force: true });
+    }
   });
 });
