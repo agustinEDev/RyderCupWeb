@@ -25,6 +25,11 @@ export {
   urlDeImagenDeLaApi,
 } from '../infrastructure/http/rutaDeLaApi';
 export { setCsrfTokenGlobal } from '../infrastructure/http/csrfTokenSync';
+// El cierre de sesión que no llegó al servidor: se apunta al salir (F-01)
+export {
+  apuntaElCierrePendiente,
+  olvidaElCierrePendiente,
+} from '../infrastructure/http/cierrePendiente';
 export {
   copiaDelUsuarioEnElDispositivo,
   esLaCopiaReducida,

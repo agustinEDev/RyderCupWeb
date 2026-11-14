@@ -228,6 +228,8 @@ class ApiAuthRepository extends IAuthRepository {
     await apiRequest('/api/v1/auth/logout', {
       method: 'POST',
       body: JSON.stringify({}),
+      // Es el cierre: no espera a un cierre pendiente (F-01)
+      sinEsperarAlCierre: true,
     });
     return { success: true };
   }

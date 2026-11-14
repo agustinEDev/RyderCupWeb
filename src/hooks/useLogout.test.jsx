@@ -472,3 +472,83 @@ describe('useLogout · al salir recargando no se vuelve a preguntar por la sesi�
     expect(mockPreguntas).toHaveLength(1);
   });
 });
+
+/**
+ * Cerrar la sesión sin cobertura (F-01): la marca del cierre pendiente.
+ *
+ *   caso                                    | qué pasa
+ *   ----------------------------------------|--------------------------------
+ *   E7 el servidor confirma                 | sin marca
+ *   E1 sin red                              | sale igual y queda la marca
+ *   el servidor no contesta en 5 s          | sale igual y queda la marca
+ *   la marca se apunta ANTES de llamar      | la recarga no la pierde
+ *   dispositivo ya revocado (sin backend)   | sin marca: no hay sesión que cerrar
+ *   el aviso de otra pestaña                | sin marca: la cierra la otra
+ */
+describe('useLogout · el cierre pendiente (F-01)', () => {
+  const CLAVE = 'rydercup-cierre-pendiente';
+  const sal = async (opciones) => {
+    const { result } = renderHook(() => useLogout(), { wrapper: envoltorio });
+    await act(async () => {
+      await result.current.logout(opciones);
+    });
+  };
+
+  beforeEach(() => {
+    localStorage.clear();
+    logoutUseCase.execute.mockReset();
+    vi.stubGlobal('location', { href: '' });
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.useRealTimers();
+  });
+
+  it('E7: con red y el servidor confirmando, no queda marca', async () => {
+    logoutUseCase.execute.mockResolvedValue(undefined);
+    await sal({ recargarEn: '/' });
+    expect(localStorage.getItem(CLAVE)).toBeNull();
+  });
+
+  it('E1: sin red sale igual y queda la marca', async () => {
+    logoutUseCase.execute.mockRejectedValue(new TypeError('Failed to fetch'));
+    await sal({ recargarEn: '/' });
+    expect(globalThis.location.href).toBe('/');
+    expect(localStorage.getItem(CLAVE)).not.toBeNull();
+  });
+
+  it('si el servidor no contesta en 5 s, sale igual y queda la marca', async () => {
+    vi.useFakeTimers();
+    logoutUseCase.execute.mockImplementation(() => new Promise(() => {}));
+    const { result } = renderHook(() => useLogout(), { wrapper: envoltorio });
+    let salida;
+    act(() => {
+      salida = result.current.logout({ recargarEn: '/' });
+    });
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(5_000);
+      await salida;
+    });
+    expect(localStorage.getItem(CLAVE)).not.toBeNull();
+  });
+
+  it('la marca se apunta antes de llamar al servidor', async () => {
+    let habiaMarca = null;
+    logoutUseCase.execute.mockImplementation(async () => {
+      habiaMarca = localStorage.getItem(CLAVE);
+    });
+    await sal({ recargarEn: '/' });
+    expect(habiaMarca).not.toBeNull();
+  });
+
+  it('con el dispositivo ya revocado (sin llamar al servidor) no hay marca', async () => {
+    await sal({ skipBackendCall: true });
+    expect(localStorage.getItem(CLAVE)).toBeNull();
+  });
+
+  it('el aviso de otra pestaña no apunta marca', async () => {
+    await sal({ desdeOtraPestana: true });
+    expect(localStorage.getItem(CLAVE)).toBeNull();
+  });
+});

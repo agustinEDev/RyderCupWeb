@@ -34,6 +34,7 @@ import {
 
 import { RUTA_DEL_REFRESCO } from '../../utils/rutasDeLaSesion';
 import { cabeceraDelModoDeLaApp } from '../../utils/modoDeLaApp';
+import { esperaAlCierrePendiente } from './cierrePendiente';
 import { usuarioDeLaPestana } from '../../utils/usuarioDeLaPestana';
 
 /**
@@ -449,7 +450,15 @@ const vigilaLaRepetida = async (url, opciones, repetida) => {
  * @param {RequestInit} options - Fetch options
  * @returns {Promise<Response>} - Fetch response
  */
-export const fetchWithTokenRefresh = async (url, options = {}) => {
+export const fetchWithTokenRefresh = async (
+  url,
+  { sinEsperarAlCierre = false, ...options } = {},
+) => {
+  // Un cierre de sesión que no llegó al servidor va antes que nada: sin red, la
+  // petición falla como «sin conexión» y no sale con las cookies de quien salió
+  // (F-01). El propio cierre no se espera a sí mismo
+  if (!sinEsperarAlCierre) await esperaAlCierrePendiente();
+
   // Ensure credentials are always included for httpOnly cookies
   const fetchOptions = {
     ...options,

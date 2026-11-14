@@ -266,3 +266,18 @@ describe('ApiAuthRepository · register con la aceptación de los Términos', ()
     });
   });
 });
+
+describe('ApiAuthRepository - cerrar sesión (F-01)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('el cierre no espera a un cierre pendiente: es él mismo', async () => {
+    api.default.mockResolvedValue({});
+    await new ApiAuthRepository().logout();
+    expect(api.default).toHaveBeenCalledWith(
+      '/api/v1/auth/logout',
+      expect.objectContaining({ method: 'POST', sinEsperarAlCierre: true }),
+    );
+  });
+});
