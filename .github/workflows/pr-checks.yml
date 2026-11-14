@@ -21,14 +21,14 @@ jobs:
     steps:
       # Solo los scripts: la tarjeta del resumen (.github/scripts/summary_card.py)
       - name: Checkout the summary scripts
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         with:
           sparse-checkout: .github/scripts
 
       # Wait for auto-fix to complete for Dependabot PRs
       - name: Wait for auto-fix workflow
         if: github.actor == 'dependabot[bot]' || github.actor == 'dependabot-preview[bot]'
-        uses: actions/github-script@v9
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3  # v9.0.0
         with:
           script: |
             console.log('⏳ Waiting for auto-fix workflow to complete...');
@@ -37,7 +37,7 @@ jobs:
 
       - name: Check PR title
         id: title
-        uses: amannn/action-semantic-pull-request@v6.1.2
+        uses: amannn/action-semantic-pull-request@2252a14e810aa9b85c2d560bd7070c802206ecf6  # v6.1.2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
