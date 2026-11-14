@@ -21,7 +21,8 @@ const NombreQueCabe = ({ nombre }) => {
   useLayoutEffect(() => {
     const Observador = globalThis.ResizeObserver;
     if (!Observador || !caja.current) return undefined;
-    const medir = () => setCabe(copia.current.scrollWidth <= caja.current.clientWidth);
+    const medir = () =>
+      setCabe(copia.current.scrollWidth <= caja.current.clientWidth);
     medir();
     const observador = new Observador(medir);
     observador.observe(caja.current);
@@ -39,8 +40,17 @@ const NombreQueCabe = ({ nombre }) => {
   }, [nombre]);
 
   return (
-    <span ref={caja} data-medida="caja" className="relative block w-full overflow-hidden">
-      <span ref={copia} data-medida="nombre" aria-hidden="true" className="invisible absolute whitespace-nowrap">
+    <span
+      ref={caja}
+      data-medida="caja"
+      className="relative block w-full overflow-hidden"
+    >
+      <span
+        ref={copia}
+        data-medida="nombre"
+        aria-hidden="true"
+        className="invisible absolute whitespace-nowrap"
+      >
         {nombre}
       </span>
       <span data-testid="nombre-que-cabe" className="whitespace-nowrap">

@@ -94,9 +94,20 @@ describe('ScoringMapper', () => {
     };
 
     it('el país del campo: el mapa solo tiene imagen en España (19 oct); sin él, null', () => {
-      const conPais = { ...fullApiResponse, round_info: { ...fullApiResponse.round_info, golf_course_country_code: 'PT' } };
-      expect(ScoringMapper.toScoringViewDTO(conPais).roundInfo.golfCourseCountryCode).toBe('PT');
-      expect(ScoringMapper.toScoringViewDTO(fullApiResponse).roundInfo.golfCourseCountryCode).toBeNull();
+      const conPais = {
+        ...fullApiResponse,
+        round_info: {
+          ...fullApiResponse.round_info,
+          golf_course_country_code: 'PT',
+        },
+      };
+      expect(
+        ScoringMapper.toScoringViewDTO(conPais).roundInfo.golfCourseCountryCode,
+      ).toBe('PT');
+      expect(
+        ScoringMapper.toScoringViewDTO(fullApiResponse).roundInfo
+          .golfCourseCountryCode,
+      ).toBeNull();
     });
 
     it('should map full scoring view response to camelCase DTO', () => {
@@ -145,7 +156,9 @@ describe('ScoringMapper', () => {
       expect(dto.players[0].team).toBe('A');
       expect(dto.players[0].color).toBe('YELLOW');
       expect(dto.players[0].playingHandicap).toBe(12);
-      expect(dto.players[0].strokesReceived).toEqual([1, 3, 5, 7, 9, 11, 13, 15, 17]);
+      expect(dto.players[0].strokesReceived).toEqual([
+        1, 3, 5, 7, 9, 11, 13, 15, 17,
+      ]);
     });
 
     it('should map holes', () => {
@@ -229,18 +242,22 @@ describe('ScoringMapper', () => {
     it('should handle null validation_status as pending', () => {
       const data = {
         ...fullApiResponse,
-        scores: [{
-          hole_number: 1,
-          player_scores: [{
-            user_id: 'u1',
-            own_score: 5,
-            marker_score: null,
-            validation_status: null,
-            net_score: null,
-            strokes_received_this_hole: null,
-          }],
-          hole_result: null,
-        }],
+        scores: [
+          {
+            hole_number: 1,
+            player_scores: [
+              {
+                user_id: 'u1',
+                own_score: 5,
+                marker_score: null,
+                validation_status: null,
+                net_score: null,
+                strokes_received_this_hole: null,
+              },
+            ],
+            hole_result: null,
+          },
+        ],
       };
       const dto = ScoringMapper.toScoringViewDTO(data);
 
@@ -256,7 +273,15 @@ describe('ScoringMapper', () => {
     it('should handle missing strokes_received on players', () => {
       const data = {
         ...fullApiResponse,
-        players: [{ user_id: 'u1', user_name: 'Test', team: 'A', color: 'YELLOW', playing_handicap: 0 }],
+        players: [
+          {
+            user_id: 'u1',
+            user_name: 'Test',
+            team: 'A',
+            color: 'YELLOW',
+            playing_handicap: 0,
+          },
+        ],
       };
       const dto = ScoringMapper.toScoringViewDTO(data);
       expect(dto.players[0].strokesReceived).toEqual([]);
@@ -310,7 +335,11 @@ describe('ScoringMapper', () => {
       const conSesion = {
         ...fullLeaderboard,
         matches: [
-          { ...fullLeaderboard.matches[0], round_date: '2026-09-25', session_type: 'MORNING' },
+          {
+            ...fullLeaderboard.matches[0],
+            round_date: '2026-09-25',
+            session_type: 'MORNING',
+          },
           fullLeaderboard.matches[1],
         ],
       };
@@ -378,12 +407,14 @@ describe('ScoringMapper', () => {
     it('should handle match with missing players', () => {
       const data = {
         ...fullLeaderboard,
-        matches: [{
-          match_id: 'm-1',
-          match_number: 1,
-          match_format: 'SINGLES',
-          status: 'SCHEDULED',
-        }],
+        matches: [
+          {
+            match_id: 'm-1',
+            match_number: 1,
+            match_format: 'SINGLES',
+            status: 'SCHEDULED',
+          },
+        ],
       };
       const dto = ScoringMapper.toLeaderboardDTO(data);
 
@@ -485,7 +516,9 @@ describe('ScoringMapper', () => {
       [null, null],
       [undefined, null],
     ])('tee_gender %s → teeGender %s', (deLaApi, esperado) => {
-      const [jugador] = vista([{ user_id: 'u1', tee_color: 'YELLOW', tee_gender: deLaApi }]).players;
+      const [jugador] = vista([
+        { user_id: 'u1', tee_color: 'YELLOW', tee_gender: deLaApi },
+      ]).players;
 
       expect(jugador.teeGender).toBe(esperado);
     });
@@ -526,7 +559,9 @@ describe('ScoringMapper', () => {
 
     it('deja la tarjeta vacía cuando el backend no la manda', () => {
       const dto = ScoringMapper.toScoringViewDTO({
-        players: [{ user_id: 'u1', user_name: 'A', team: 'A', playing_handicap: 0 }],
+        players: [
+          { user_id: 'u1', user_name: 'A', team: 'A', playing_handicap: 0 },
+        ],
       });
 
       expect(dto.players[0].holeCard).toEqual([]);
@@ -540,7 +575,9 @@ describe('ScoringMapper', () => {
   });
 
   it('F1: los retirados del fourball llegan como withdrawnPlayerIds', () => {
-    const dto = ScoringMapper.toScoringViewDTO({ withdrawn_player_ids: ['u-1'] });
+    const dto = ScoringMapper.toScoringViewDTO({
+      withdrawn_player_ids: ['u-1'],
+    });
     expect(dto.withdrawnPlayerIds).toEqual(['u-1']);
   });
 });

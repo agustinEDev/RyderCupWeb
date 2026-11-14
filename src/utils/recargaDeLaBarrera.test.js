@@ -1,5 +1,10 @@
 import { describe, it, expect } from 'vitest';
-import { apuntarLaRecarga, buildDeLaPagina, olvidarLaRecarga, puedeRecargar } from './recargaDeLaBarrera';
+import {
+  apuntarLaRecarga,
+  buildDeLaPagina,
+  olvidarLaRecarga,
+  puedeRecargar,
+} from './recargaDeLaBarrera';
 
 /**
  * La nota de «ya recargué» (25 oct 2026): los pares versión y página donde se
@@ -36,19 +41,39 @@ const nota = (...recargas) => JSON.stringify({ recargas });
 
 describe('la nota de la recarga', () => {
   it('B1: sin nota, puede recargar', () => {
-    expect(puedeRecargar({ build: 'A', ruta: '/x', almacen: almacenCon() })).toBe(true);
+    expect(
+      puedeRecargar({ build: 'A', ruta: '/x', almacen: almacenCon() }),
+    ).toBe(true);
   });
 
   it('B2: con la misma versión en la misma página, no', () => {
-    expect(puedeRecargar({ build: 'A', ruta: '/x', almacen: almacenCon(nota(['A', '/x'])) })).toBe(false);
+    expect(
+      puedeRecargar({
+        build: 'A',
+        ruta: '/x',
+        almacen: almacenCon(nota(['A', '/x'])),
+      }),
+    ).toBe(false);
   });
 
   it('B3: con otra versión, sí', () => {
-    expect(puedeRecargar({ build: 'B', ruta: '/x', almacen: almacenCon(nota(['A', '/x'])) })).toBe(true);
+    expect(
+      puedeRecargar({
+        build: 'B',
+        ruta: '/x',
+        almacen: almacenCon(nota(['A', '/x'])),
+      }),
+    ).toBe(true);
   });
 
   it('B4: con la misma versión en otra página, sí', () => {
-    expect(puedeRecargar({ build: 'A', ruta: '/y', almacen: almacenCon(nota(['A', '/x'])) })).toBe(true);
+    expect(
+      puedeRecargar({
+        build: 'A',
+        ruta: '/y',
+        almacen: almacenCon(nota(['A', '/x'])),
+      }),
+    ).toBe(true);
   });
 
   it('B5: apuntar suma el par, sin repetirlo ni pisar los de otra versión', () => {
@@ -66,12 +91,19 @@ describe('la nota de la recarga', () => {
     expect(puedeRecargar({ build: 'A', ruta: '/x', almacen })).toBe(false);
   });
 
-  it.each([['true'], ['abc'], ['{"recargas":1}'], ['{"build":"A","rutas":["/x"]}'], ['null'], ['{"recargas":[["A"]]}'], ['{"recargas":[1]}']])(
-    'B6: la nota %s no cuenta',
-    (valor) => {
-      expect(puedeRecargar({ build: 'A', ruta: '/x', almacen: almacenCon(valor) })).toBe(true);
-    }
-  );
+  it.each([
+    ['true'],
+    ['abc'],
+    ['{"recargas":1}'],
+    ['{"build":"A","rutas":["/x"]}'],
+    ['null'],
+    ['{"recargas":[["A"]]}'],
+    ['{"recargas":[1]}'],
+  ])('B6: la nota %s no cuenta', (valor) => {
+    expect(
+      puedeRecargar({ build: 'A', ruta: '/x', almacen: almacenCon(valor) }),
+    ).toBe(true);
+  });
 
   it('B7: sin almacenamiento no se sabe, y no se puede apuntar', () => {
     const roto = {
@@ -84,7 +116,9 @@ describe('la nota de la recarga', () => {
     };
 
     expect(puedeRecargar({ build: 'A', ruta: '/x', almacen: roto })).toBeNull();
-    expect(apuntarLaRecarga({ build: 'A', ruta: '/x', almacen: roto })).toBe(false);
+    expect(apuntarLaRecarga({ build: 'A', ruta: '/x', almacen: roto })).toBe(
+      false,
+    );
   });
 
   it('B8: la versión de la página es su app-build; sin ella, vacía', () => {
@@ -118,7 +152,8 @@ describe('la nota de la recarga', () => {
 
   it('B10: guarda los 20 últimos pares', () => {
     const almacen = almacenCon();
-    for (let i = 0; i < 25; i += 1) apuntarLaRecarga({ build: 'A', ruta: `/p${i}`, almacen });
+    for (let i = 0; i < 25; i += 1)
+      apuntarLaRecarga({ build: 'A', ruta: `/p${i}`, almacen });
 
     const { recargas } = JSON.parse(almacen.datos.get(CLAVE));
     expect(recargas).toHaveLength(20);
@@ -129,11 +164,16 @@ describe('la nota de la recarga', () => {
   it('B11: si el almacén acepta la nota pero no la guarda, apuntar falla: sin ella podría no acabar', () => {
     const olvidadizo = { getItem: () => null, setItem: () => {} };
 
-    expect(apuntarLaRecarga({ build: 'A', ruta: '/x', almacen: olvidadizo })).toBe(false);
+    expect(
+      apuntarLaRecarga({ build: 'A', ruta: '/x', almacen: olvidadizo }),
+    ).toBe(false);
   });
 
   it('B12: si leer sessionStorage ya lanza, null, false y sin lanzar (CodeRabbit)', () => {
-    const original = Object.getOwnPropertyDescriptor(globalThis, 'sessionStorage');
+    const original = Object.getOwnPropertyDescriptor(
+      globalThis,
+      'sessionStorage',
+    );
     Object.defineProperty(globalThis, 'sessionStorage', {
       configurable: true,
       get: () => {

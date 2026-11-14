@@ -12,33 +12,67 @@ vi.mock('../composition', () => ({
   listUserCompetitionsUseCase: { execute: () => Promise.resolve([]) },
   getPlayerStatsUseCase: { execute: () => Promise.resolve(null) },
   getRecentMatchesUseCase: { execute: () => Promise.resolve([]) },
-  getUpcomingMatchesUseCase: { executeWithCompleteness: () => Promise.resolve({ matches: [], complete: true }) },
-  getUpcomingTeeGroupsUseCase: { executeWithCompleteness: () => Promise.resolve({ matches: [], complete: true }) },
+  getUpcomingMatchesUseCase: {
+    executeWithCompleteness: () =>
+      Promise.resolve({ matches: [], complete: true }),
+  },
+  getUpcomingTeeGroupsUseCase: {
+    executeWithCompleteness: () =>
+      Promise.resolve({ matches: [], complete: true }),
+  },
   getScoringViewUseCase: { execute: () => new Promise(() => {}) },
   getTeeGroupScoringViewUseCase: { execute: () => new Promise(() => {}) },
 }));
 
-const sesion = { user: { id: 'u-1', first_name: 'Ana' }, loading: false, refetch: () => {}, sinConfirmar: true };
+const sesion = {
+  user: { id: 'u-1', first_name: 'Ana' },
+  loading: false,
+  refetch: () => {},
+  sinConfirmar: true,
+};
 vi.mock('../hooks/useAuth', () => ({ useAuth: () => sesion }));
 vi.mock('react-i18next', () => ({
-  useTranslation: () => ({ t: (clave) => clave, i18n: { language: 'es' }, ready: true }),
+  useTranslation: () => ({
+    t: (clave) => clave,
+    i18n: { language: 'es' },
+    ready: true,
+  }),
 }));
 vi.mock('react-router', () => ({
   useNavigate: () => () => {},
   useLocation: () => ({ pathname: '/dashboard' }),
   Navigate: () => null,
 }));
-const PROPS_DE_MOVIMIENTO = ['variants', 'initial', 'animate', 'exit', 'transition', 'whileHover', 'whileTap'];
+const PROPS_DE_MOVIMIENTO = [
+  'variants',
+  'initial',
+  'animate',
+  'exit',
+  'transition',
+  'whileHover',
+  'whileTap',
+];
 vi.mock('framer-motion', () => ({
-  motion: new Proxy({}, {
-    get: (_, etiqueta) => ({ children, ...props }) => {
-      for (const prop of PROPS_DE_MOVIMIENTO) delete props[prop];
-      return createElement(etiqueta, props, children);
+  motion: new Proxy(
+    {},
+    {
+      get:
+        (_, etiqueta) =>
+        ({ children, ...props }) => {
+          for (const prop of PROPS_DE_MOVIMIENTO) delete props[prop];
+          return createElement(etiqueta, props, children);
+        },
     },
-  }),
+  ),
 }));
-vi.mock('../hooks/useEntryMotion', () => ({ useEntryMotion: () => ({ animateEntry: false }) }));
-const toast = vi.hoisted(() => ({ error: vi.fn(), success: vi.fn(), info: vi.fn() }));
+vi.mock('../hooks/useEntryMotion', () => ({
+  useEntryMotion: () => ({ animateEntry: false }),
+}));
+const toast = vi.hoisted(() => ({
+  error: vi.fn(),
+  success: vi.fn(),
+  info: vi.fn(),
+}));
 vi.mock('../utils/toast', () => ({ default: toast }));
 for (const ruta of [
   '../components/layout/HeaderAuth',
@@ -52,22 +86,32 @@ for (const ruta of [
   vi.doMock(ruta, () => ({ default: () => null }));
 }
 vi.doMock('../components/dashboard/PendingActionsCard', () => ({
-  default: ({ onHandicapAction }) => <button data-testid="recordatorio-handicap" onClick={onHandicapAction} />,
+  default: ({ onHandicapAction }) => (
+    <button data-testid="recordatorio-handicap" onClick={onHandicapAction} />
+  ),
 }));
 vi.doMock('../components/profile/HandicapRequestModal', () => ({
-  default: ({ isOpen }) => (isOpen ? <div data-testid="modal-handicap" /> : null),
+  default: ({ isOpen }) =>
+    isOpen ? <div data-testid="modal-handicap" /> : null,
 }));
 vi.doMock('../components/quick_match/CreateQuickMatchModal', () => ({
   default: () => <div data-testid="crear-partida-rapida" />,
 }));
-vi.stubGlobal('localStorage', { getItem: () => null, setItem: () => {}, removeItem: () => {}, clear: () => {} });
+vi.stubGlobal('localStorage', {
+  getItem: () => null,
+  setItem: () => {},
+  removeItem: () => {},
+  clear: () => {},
+});
 
 const Dashboard = (await import('./Dashboard')).default;
-const { olvidaQueElPanelSePinto } = await import('../utils/primeraCargaDelPanel');
+const { olvidaQueElPanelSePinto } =
+  await import('../utils/primeraCargaDelPanel');
 const { reiniciaLaCortina } = await import('../utils/cortinaDeArranque');
 
 describe('Dashboard · lo que necesita los datos completos espera a la red (fase 3)', () => {
-  const conRed = (hay) => vi.spyOn(globalThis.navigator, 'onLine', 'get').mockReturnValue(hay);
+  const conRed = (hay) =>
+    vi.spyOn(globalThis.navigator, 'onLine', 'get').mockReturnValue(hay);
 
   afterEach(() => {
     vi.restoreAllMocks();
@@ -85,7 +129,9 @@ describe('Dashboard · lo que necesita los datos completos espera a la red (fase
     fireEvent.click(await screen.findByTestId('quick-match-card'));
 
     expect(toast.error).toHaveBeenCalledWith('common:sinConexion.mensaje');
-    expect(screen.queryByTestId('crear-partida-rapida')).not.toBeInTheDocument();
+    expect(
+      screen.queryByTestId('crear-partida-rapida'),
+    ).not.toBeInTheDocument();
   });
 
   it('sin red, el recordatorio del hándicap tampoco abre el modal', async () => {
@@ -108,7 +154,9 @@ describe('Dashboard · lo que necesita los datos completos espera a la red (fase
 
     expect(toast.error).toHaveBeenCalledWith('common:cargandoTuCuenta');
     expect(toast.error).not.toHaveBeenCalledWith('common:sinConexion.mensaje');
-    expect(screen.queryByTestId('crear-partida-rapida')).not.toBeInTheDocument();
+    expect(
+      screen.queryByTestId('crear-partida-rapida'),
+    ).not.toBeInTheDocument();
   });
 
   it('con red, los dos se abren como siempre', async () => {
@@ -118,7 +166,9 @@ describe('Dashboard · lo que necesita los datos completos espera a la red (fase
     fireEvent.click(await screen.findByTestId('quick-match-card'));
     fireEvent.click(screen.getByTestId('recordatorio-handicap'));
 
-    expect(await screen.findByTestId('crear-partida-rapida')).toBeInTheDocument();
+    expect(
+      await screen.findByTestId('crear-partida-rapida'),
+    ).toBeInTheDocument();
     expect(await screen.findByTestId('modal-handicap')).toBeInTheDocument();
     expect(toast.error).not.toHaveBeenCalled();
   });

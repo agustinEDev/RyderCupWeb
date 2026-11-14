@@ -26,7 +26,10 @@ const mapaDeNombres = new Map([
   ['carla', 'Carla Cruz'],
   ['dani', 'Dani Díaz'],
 ]);
-const REPARTO = { teamAPlayerIds: ['ana', 'carla'], teamBPlayerIds: ['bea', 'dani'] };
+const REPARTO = {
+  teamAPlayerIds: ['ana', 'carla'],
+  teamBPlayerIds: ['bea', 'dani'],
+};
 
 const INSCRITOS = ['ana', 'bea', 'carla', 'dani'].map((userId) => ({
   userId,
@@ -48,7 +51,7 @@ const pintar = (captains, extra = {}) =>
       status="CLOSED"
       t={t}
       {...extra}
-    />
+    />,
   );
 
 const filaDe = (nombre) => screen.getByText(nombre).closest('li');
@@ -58,16 +61,26 @@ describe('TeamAssignmentSection · los capitanes se ven en el reparto (FE #692)'
     pintar({ teamA: 'ana', teamB: 'bea', viceTeamA: null, viceTeamB: null });
 
     // Dentro de la tarjeta de su equipo: el nombre del equipo ya está en el título
-    expect(within(filaDe('Ana Alba')).getByText('teams.captainTag')).toBeInTheDocument();
-    expect(within(filaDe('Bea Blanco')).getByText('teams.captainTag')).toBeInTheDocument();
-    expect(within(filaDe('Carla Cruz')).queryByText(/captainTag/)).not.toBeInTheDocument();
+    expect(
+      within(filaDe('Ana Alba')).getByText('teams.captainTag'),
+    ).toBeInTheDocument();
+    expect(
+      within(filaDe('Bea Blanco')).getByText('teams.captainTag'),
+    ).toBeInTheDocument();
+    expect(
+      within(filaDe('Carla Cruz')).queryByText(/captainTag/),
+    ).not.toBeInTheDocument();
   });
 
   it('T2: y el subcapitán también, que es quien asciende si el capitán se va', () => {
     pintar({ teamA: 'ana', teamB: 'bea', viceTeamA: 'carla', viceTeamB: null });
 
-    expect(within(filaDe('Carla Cruz')).getByText('teams.viceCaptainTag')).toBeInTheDocument();
-    expect(within(filaDe('Dani Díaz')).queryByText(/aptainTag/)).not.toBeInTheDocument();
+    expect(
+      within(filaDe('Carla Cruz')).getByText('teams.viceCaptainTag'),
+    ).toBeInTheDocument();
+    expect(
+      within(filaDe('Dani Díaz')).queryByText(/aptainTag/),
+    ).not.toBeInTheDocument();
   });
 
   it('T3: sin capitanes no se marca a nadie', () => {
@@ -81,8 +94,12 @@ describe('TeamAssignmentSection · los capitanes se ven en el reparto (FE #692)'
     // los subcapitanes—, la etiqueta no puede mentir en el equipo contrario
     pintar({ teamA: 'ana', teamB: 'bea', viceTeamA: 'dani', viceTeamB: null });
 
-    expect(within(filaDe('Dani Díaz')).queryByText('teams.viceCaptainTag')).not.toBeInTheDocument();
-    expect(within(filaDe('Ana Alba')).getByText('teams.captainTag')).toBeInTheDocument();
+    expect(
+      within(filaDe('Dani Díaz')).queryByText('teams.viceCaptainTag'),
+    ).not.toBeInTheDocument();
+    expect(
+      within(filaDe('Ana Alba')).getByText('teams.captainTag'),
+    ).toBeInTheDocument();
   });
 
   it('T5: un equipo sin capitán ofrece cubrir el puesto, y el otro no', () => {
@@ -95,14 +112,20 @@ describe('TeamAssignmentSection · los capitanes se ven en el reparto (FE #692)'
   });
 
   it('T6: quien no organiza no lo ve', () => {
-    pintar({ teamA: null, teamB: 'bea', viceTeamA: null, viceTeamB: null }, { canManage: false });
+    pintar(
+      { teamA: null, teamB: 'bea', viceTeamA: null, viceTeamB: null },
+      { canManage: false },
+    );
 
     expect(screen.queryByTestId('cubrir-capitan-A')).not.toBeInTheDocument();
   });
 
   it('T7: al pulsarlo dice qué equipo hay que cubrir', () => {
     const cubrir = vi.fn();
-    pintar({ teamA: null, teamB: 'bea', viceTeamA: null, viceTeamB: null }, { onFillCaptain: cubrir });
+    pintar(
+      { teamA: null, teamB: 'bea', viceTeamA: null, viceTeamB: null },
+      { onFillCaptain: cubrir },
+    );
 
     fireEvent.click(screen.getByTestId('cubrir-capitan-A'));
 
@@ -112,19 +135,28 @@ describe('TeamAssignmentSection · los capitanes se ven en el reparto (FE #692)'
   it('T8: también cuando el capitán sigue puesto pero ya no está inscrito', () => {
     // Se retiró con el torneo en marcha, donde las bajas no tocan a los
     // capitanes, y luego se volvió a CERRADA (RyderCupAm#320)
-    pintar({ teamA: 'ana', teamB: 'bea', viceTeamA: null, viceTeamB: null }, {
-      enrollments: INSCRITOS.filter((e) => e.userId !== 'ana'),
-    });
+    pintar(
+      { teamA: 'ana', teamB: 'bea', viceTeamA: null, viceTeamB: null },
+      {
+        enrollments: INSCRITOS.filter((e) => e.userId !== 'ana'),
+      },
+    );
 
     expect(screen.getByTestId('cubrir-capitan-A')).toBeInTheDocument();
     expect(screen.queryByTestId('cubrir-capitan-B')).not.toBeInTheDocument();
   });
 
-  it.each(['IN_PROGRESS', 'COMPLETED'])('T9: con el torneo %s no se ofrece: el servidor lo rechaza', (estado) => {
-    pintar({ teamA: null, teamB: 'bea', viceTeamA: null, viceTeamB: null }, { status: estado });
+  it.each(['IN_PROGRESS', 'COMPLETED'])(
+    'T9: con el torneo %s no se ofrece: el servidor lo rechaza',
+    (estado) => {
+      pintar(
+        { teamA: null, teamB: 'bea', viceTeamA: null, viceTeamB: null },
+        { status: estado },
+      );
 
-    expect(screen.queryByTestId('cubrir-capitan-A')).not.toBeInTheDocument();
-  });
+      expect(screen.queryByTestId('cubrir-capitan-A')).not.toBeInTheDocument();
+    },
+  );
 });
 
 describe('TeamAssignmentSection · el hándicap no se parte (FE #710)', () => {

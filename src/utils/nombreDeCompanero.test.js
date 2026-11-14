@@ -11,16 +11,26 @@ const CLAVE = 'upcomingMatches.withdrawnPartner';
 
 describe('nombreDeCompanero', () => {
   it('quien juega, su nombre', () => {
-    expect(nombreDeCompanero(t, CLAVE, { name: 'Cris', withdrawn: false })).toBe('Cris');
+    expect(
+      nombreDeCompanero(t, CLAVE, { name: 'Cris', withdrawn: false }),
+    ).toBe('Cris');
   });
 
   it('quien se retiró, marcado; en femenino si su barra lo es', () => {
-    expect(nombreDeCompanero(t, CLAVE, { name: 'Bea', withdrawn: true, teeGender: 'FEMALE' })).toBe(
-      `${CLAVE} {"nombre":"Bea","context":"female"}`
-    );
-    expect(nombreDeCompanero(t, CLAVE, { name: 'Nacho', withdrawn: true, teeGender: 'MALE' })).toBe(
-      `${CLAVE} {"nombre":"Nacho"}`
-    );
+    expect(
+      nombreDeCompanero(t, CLAVE, {
+        name: 'Bea',
+        withdrawn: true,
+        teeGender: 'FEMALE',
+      }),
+    ).toBe(`${CLAVE} {"nombre":"Bea","context":"female"}`);
+    expect(
+      nombreDeCompanero(t, CLAVE, {
+        name: 'Nacho',
+        withdrawn: true,
+        teeGender: 'MALE',
+      }),
+    ).toBe(`${CLAVE} {"nombre":"Nacho"}`);
   });
 });
 
@@ -34,11 +44,16 @@ describe('nombresDeCompaneros', () => {
       ],
     };
 
-    expect(nombresDeCompaneros(t, CLAVE, partido)).toEqual([`${CLAVE} {"nombre":"Bea","context":"female"}`, 'Cris']);
+    expect(nombresDeCompaneros(t, CLAVE, partido)).toEqual([
+      `${CLAVE} {"nombre":"Bea","context":"female"}`,
+      'Cris',
+    ]);
   });
 
   it('lo guardado antes de `partners`: los nombres; sin nada, vacío', () => {
-    expect(nombresDeCompaneros(t, CLAVE, { partnerNames: ['Bea'] })).toEqual(['Bea']);
+    expect(nombresDeCompaneros(t, CLAVE, { partnerNames: ['Bea'] })).toEqual([
+      'Bea',
+    ]);
     expect(nombresDeCompaneros(t, CLAVE, {})).toEqual([]);
   });
 });

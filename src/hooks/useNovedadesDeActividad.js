@@ -34,6 +34,8 @@ let vigilantes = 0;
 let dejaDeVigilar = null;
 
 export { ponLasNovedadesACero, olvidaLasNovedades };
+// Para quien no pinta el número pero reacciona a sus cambios (Actividad abierta)
+export { leeLasNovedades, suscribeALasNovedades };
 
 /** Vuelve a preguntar por el número. Si falla, se queda el que había. */
 const refrescaLasNovedades = () => {
@@ -42,7 +44,8 @@ const refrescaLasNovedades = () => {
   const promesa = getFeedUnseenCountUseCase
     .execute()
     .then((n) => {
-      if (deEstaGeneracion === generacionDeLasNovedades() && Number.isFinite(n)) fijaLasNovedades(n);
+      if (deEstaGeneracion === generacionDeLasNovedades() && Number.isFinite(n))
+        fijaLasNovedades(n);
     })
     .catch(() => {})
     .finally(() => {
@@ -57,15 +60,22 @@ const refrescaLasNovedades = () => {
 
 const empiezaAVigilar = () => {
   const alCambiarLaVisibilidad = () => {
-    if (globalThis.document.visibilityState === 'visible') refrescaLasNovedades();
+    if (globalThis.document.visibilityState === 'visible')
+      refrescaLasNovedades();
   };
   const alVolverLaRed = () => {
     refrescaLasNovedades();
   };
-  globalThis.document.addEventListener('visibilitychange', alCambiarLaVisibilidad);
+  globalThis.document.addEventListener(
+    'visibilitychange',
+    alCambiarLaVisibilidad,
+  );
   globalThis.addEventListener('online', alVolverLaRed);
   return () => {
-    globalThis.document.removeEventListener('visibilitychange', alCambiarLaVisibilidad);
+    globalThis.document.removeEventListener(
+      'visibilitychange',
+      alCambiarLaVisibilidad,
+    );
     globalThis.removeEventListener('online', alVolverLaRed);
   };
 };

@@ -20,15 +20,13 @@ describe('GetCompetitionDetailUseCase', () => {
       name: { toString: () => 'Test Competition' },
       status: { value: 'DRAFT' },
       _apiData: {
-        countries: [
-          { code: 'ES', name_en: 'Spain', name_es: 'España' }
-        ]
-      }
+        countries: [{ code: 'ES', name_en: 'Spain', name_es: 'España' }],
+      },
     };
 
     // Mock repository
     mockRepository = {
-      findById: vi.fn().mockResolvedValue(mockCompetition)
+      findById: vi.fn().mockResolvedValue(mockCompetition),
     };
 
     // Mock CompetitionAssembler.toSimpleDTO
@@ -36,13 +34,13 @@ describe('GetCompetitionDetailUseCase', () => {
       id: 'comp-123',
       name: 'Test Competition',
       status: 'DRAFT',
-      countries: [
-        { code: 'ES', name: 'Spain', flag: '🇪🇸', isMain: true }
-      ]
+      countries: [{ code: 'ES', name: 'Spain', flag: '🇪🇸', isMain: true }],
     });
 
     // Create use case instance
-    useCase = new GetCompetitionDetailUseCase({ competitionRepository: mockRepository });
+    useCase = new GetCompetitionDetailUseCase({
+      competitionRepository: mockRepository,
+    });
   });
 
   describe('execute', () => {
@@ -52,39 +50,47 @@ describe('GetCompetitionDetailUseCase', () => {
       expect(mockRepository.findById).toHaveBeenCalledWith('comp-123');
       expect(CompetitionAssembler.toSimpleDTO).toHaveBeenCalledWith(
         mockCompetition,
-        mockCompetition._apiData
+        mockCompetition._apiData,
       );
       expect(result).toEqual({
         id: 'comp-123',
         name: 'Test Competition',
         status: 'DRAFT',
-        countries: [
-          { code: 'ES', name: 'Spain', flag: '🇪🇸', isMain: true }
-        ]
+        countries: [{ code: 'ES', name: 'Spain', flag: '🇪🇸', isMain: true }],
       });
     });
 
     it('should throw error if competitionId is not provided', async () => {
-      await expect(useCase.execute()).rejects.toThrow('Competition ID is required');
+      await expect(useCase.execute()).rejects.toThrow(
+        'Competition ID is required',
+      );
       expect(mockRepository.findById).not.toHaveBeenCalled();
     });
 
     it('should throw error if competitionId is empty string', async () => {
-      await expect(useCase.execute('')).rejects.toThrow('Competition ID is required');
+      await expect(useCase.execute('')).rejects.toThrow(
+        'Competition ID is required',
+      );
       expect(mockRepository.findById).not.toHaveBeenCalled();
     });
 
     it('should propagate repository errors', async () => {
-      mockRepository.findById.mockRejectedValue(new Error('Competition not found'));
+      mockRepository.findById.mockRejectedValue(
+        new Error('Competition not found'),
+      );
 
-      await expect(useCase.execute('comp-123')).rejects.toThrow('Competition not found');
+      await expect(useCase.execute('comp-123')).rejects.toThrow(
+        'Competition not found',
+      );
       expect(mockRepository.findById).toHaveBeenCalledWith('comp-123');
     });
 
     it('should throw "Competition not found" error if repository returns null', async () => {
       mockRepository.findById.mockResolvedValue(null);
 
-      await expect(useCase.execute('comp-123')).rejects.toThrow('Competition not found');
+      await expect(useCase.execute('comp-123')).rejects.toThrow(
+        'Competition not found',
+      );
       expect(mockRepository.findById).toHaveBeenCalledWith('comp-123');
       expect(CompetitionAssembler.toSimpleDTO).not.toHaveBeenCalled();
     });
@@ -94,7 +100,9 @@ describe('GetCompetitionDetailUseCase', () => {
         throw new Error('Mapping error');
       });
 
-      await expect(useCase.execute('comp-123')).rejects.toThrow('Mapping error');
+      await expect(useCase.execute('comp-123')).rejects.toThrow(
+        'Mapping error',
+      );
       expect(mockRepository.findById).toHaveBeenCalledWith('comp-123');
     });
 
@@ -105,9 +113,9 @@ describe('GetCompetitionDetailUseCase', () => {
           countries: [
             { code: 'ES', name_en: 'Spain', name_es: 'España' },
             { code: 'FR', name_en: 'France', name_es: 'Francia' },
-            { code: 'PT', name_en: 'Portugal', name_es: 'Portugal' }
-          ]
-        }
+            { code: 'PT', name_en: 'Portugal', name_es: 'Portugal' },
+          ],
+        },
       };
 
       mockRepository.findById.mockResolvedValue(multiCountryCompetition);
@@ -118,8 +126,8 @@ describe('GetCompetitionDetailUseCase', () => {
         countries: [
           { code: 'ES', name: 'Spain', flag: '🇪🇸', isMain: true },
           { code: 'FR', name: 'France', flag: '🇫🇷', isMain: false },
-          { code: 'PT', name: 'Portugal', flag: '🇵🇹', isMain: false }
-        ]
+          { code: 'PT', name: 'Portugal', flag: '🇵🇹', isMain: false },
+        ],
       });
 
       const result = await useCase.execute('comp-123');

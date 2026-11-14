@@ -30,29 +30,34 @@ const AssignTeamsModalContent = ({
   const faltaUnCapitan = Boolean(captains?.teamA) !== Boolean(captains?.teamB);
   // Solo se abre sin equipos: con ellos formados, se deshacen antes (29-30 oct)
   const [mode, setMode] = useState('automatic');
-  const [manualTeamA, setManualTeamA] = useState(() => (hayCapitanes ? [captains.teamA] : []));
-  const [manualTeamB, setManualTeamB] = useState(() => (hayCapitanes ? [captains.teamB] : []));
+  const [manualTeamA, setManualTeamA] = useState(() =>
+    hayCapitanes ? [captains.teamA] : [],
+  );
+  const [manualTeamB, setManualTeamB] = useState(() =>
+    hayCapitanes ? [captains.teamB] : [],
+  );
 
-  const approvedPlayers = enrollments.filter(e => e.status === 'APPROVED');
+  const approvedPlayers = enrollments.filter((e) => e.status === 'APPROVED');
   const esCapitan = (playerId) =>
-    hayCapitanes && (playerId === captains.teamA || playerId === captains.teamB);
+    hayCapitanes &&
+    (playerId === captains.teamA || playerId === captains.teamB);
 
   // Los capitanes no se mueven: sus botones van desactivados, y eso ya impide
   // que llegue aquí un clic suyo
   const togglePlayer = (playerId, team) => {
     if (team === 'A') {
-      setManualTeamB(prev => prev.filter(id => id !== playerId));
-      setManualTeamA(prev =>
+      setManualTeamB((prev) => prev.filter((id) => id !== playerId));
+      setManualTeamA((prev) =>
         prev.includes(playerId)
-          ? prev.filter(id => id !== playerId)
-          : [...prev, playerId]
+          ? prev.filter((id) => id !== playerId)
+          : [...prev, playerId],
       );
     } else {
-      setManualTeamA(prev => prev.filter(id => id !== playerId));
-      setManualTeamB(prev =>
+      setManualTeamA((prev) => prev.filter((id) => id !== playerId));
+      setManualTeamB((prev) =>
         prev.includes(playerId)
-          ? prev.filter(id => id !== playerId)
-          : [...prev, playerId]
+          ? prev.filter((id) => id !== playerId)
+          : [...prev, playerId],
       );
     }
   };
@@ -66,7 +71,7 @@ const AssignTeamsModalContent = ({
   // En una Ryder juegan todos: un reparto incompleto borra el anterior y deja
   // gente sin equipo, y el servidor no lo impide
   const sinEquipo = approvedPlayers.filter(
-    (p) => !manualTeamA.includes(p.userId) && !manualTeamB.includes(p.userId)
+    (p) => !manualTeamA.includes(p.userId) && !manualTeamB.includes(p.userId),
   ).length;
 
   const handleSubmit = (e) => {
@@ -102,7 +107,10 @@ const AssignTeamsModalContent = ({
         <div className="flex justify-between items-center p-6 border-b border-gray-200">
           <div className="flex items-center gap-2">
             <Users className="w-5 h-5 text-primary" />
-            <h2 id="repartir-equipos-titulo" className="text-xl font-bold text-gray-900">
+            <h2
+              id="repartir-equipos-titulo"
+              className="text-xl font-bold text-gray-900"
+            >
               {t('teams.assign')}
             </h2>
           </div>
@@ -126,7 +134,9 @@ const AssignTeamsModalContent = ({
             </p>
           )}
           {faltaUnCapitan && (
-            <p className="text-sm text-amber-700">{t('teams.captainMissing')}</p>
+            <p className="text-sm text-amber-700">
+              {t('teams.captainMissing')}
+            </p>
           )}
           {/* Mode selection */}
           <div>
@@ -143,11 +153,15 @@ const AssignTeamsModalContent = ({
                   onChange={() => setMode('automatic')}
                   className="text-primary focus:ring-primary"
                 />
-                <span className="text-sm font-medium">{t('teams.automatic')}</span>
+                <span className="text-sm font-medium">
+                  {t('teams.automatic')}
+                </span>
               </label>
               <label
                 className={`flex items-center gap-2 ${
-                  inscritosSinCargar ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'
+                  inscritosSinCargar
+                    ? 'cursor-not-allowed opacity-50'
+                    : 'cursor-pointer'
                 }`}
               >
                 <input
@@ -159,7 +173,11 @@ const AssignTeamsModalContent = ({
                   // Sin la lista, el manual mandaría solo a los capitanes; el
                   // automático lo reparte el servidor con la suya
                   disabled={inscritosSinCargar}
-                  aria-describedby={inscritosSinCargar ? 'reparto-inscritos-sin-cargar' : undefined}
+                  aria-describedby={
+                    inscritosSinCargar
+                      ? 'reparto-inscritos-sin-cargar'
+                      : undefined
+                  }
                   className="text-primary focus:ring-primary"
                 />
                 <span className="text-sm font-medium">{t('teams.manual')}</span>
@@ -171,7 +189,9 @@ const AssignTeamsModalContent = ({
           {mode === 'manual' && (
             <>
               {hayCapitanes && (
-                <p className="text-sm text-gray-600">{t('teams.captainsFixed')}</p>
+                <p className="text-sm text-gray-600">
+                  {t('teams.captainsFixed')}
+                </p>
               )}
               {sinEquipo > 0 && (
                 <p className="text-sm text-amber-700">
@@ -185,9 +205,11 @@ const AssignTeamsModalContent = ({
                     <div
                       key={player.userId}
                       className={`flex items-center justify-between p-3 rounded-lg border ${
-                        team === 'A' ? 'border-blue-300 bg-blue-50' :
-                        team === 'B' ? 'border-red-300 bg-red-50' :
-                        'border-gray-200 bg-white'
+                        team === 'A'
+                          ? 'border-blue-300 bg-blue-50'
+                          : team === 'B'
+                            ? 'border-red-300 bg-red-50'
+                            : 'border-gray-200 bg-white'
                       }`}
                     >
                       <div className="min-w-0">
@@ -196,7 +218,9 @@ const AssignTeamsModalContent = ({
                         </span>
                         {player.userHandicap != null && (
                           <span className="text-xs text-gray-500 ml-2">
-                            {t('handicapLabels.indexWithColon', { value: formatoDeIndice(player.userHandicap) })}
+                            {t('handicapLabels.indexWithColon', {
+                              value: formatoDeIndice(player.userHandicap),
+                            })}
                           </span>
                         )}
                         {esCapitan(player.userId) && (

@@ -20,8 +20,12 @@ import { BrowserRouter, Routes, Route } from 'react-router';
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({ t: (clave) => clave, i18n: { language: 'es' } }),
 }));
-vi.mock('../utils/toast', () => ({ default: { error: vi.fn(), success: vi.fn(), info: vi.fn() } }));
-vi.mock('../hooks/useAuthContext', () => ({ useAuthContext: () => ({ login: vi.fn() }) }));
+vi.mock('../utils/toast', () => ({
+  default: { error: vi.fn(), success: vi.fn(), info: vi.fn() },
+}));
+vi.mock('../hooks/useAuthContext', () => ({
+  useAuthContext: () => ({ login: vi.fn() }),
+}));
 vi.mock('../utils/googleOAuth', () => ({
   verifyOAuthState: () => ({ flow: 'login', valid: true }),
   recogeLaVueltaDeGoogle: () => null,
@@ -38,9 +42,8 @@ vi.mock('../composition', () => ({
   linkGoogleAccountUseCase: { execute: vi.fn(() => pendiente()) },
 }));
 
-const { validateResetTokenUseCase, verifyEmailUseCase, googleLoginUseCase } = await import(
-  '../composition'
-);
+const { validateResetTokenUseCase, verifyEmailUseCase, googleLoginUseCase } =
+  await import('../composition');
 const { default: ResetPassword } = await import('./ResetPassword');
 const { default: VerifyEmail } = await import('./VerifyEmail');
 const { default: GoogleCallback } = await import('./GoogleCallback');
@@ -52,7 +55,7 @@ const abrir = (url, ruta, Pagina, estado = null) => {
       <Routes>
         <Route path={ruta} element={<Pagina />} />
       </Routes>
-    </BrowserRouter>
+    </BrowserRouter>,
   );
 };
 
@@ -64,43 +67,64 @@ describe('los secretos salen de la barra', () => {
 
   it('P1: restablecer contraseña', async () => {
     abrir('/reset-password/abc123', '/reset-password/:token', ResetPassword);
-    await waitFor(() => expect(validateResetTokenUseCase.execute).toHaveBeenCalledWith('abc123'));
+    await waitFor(() =>
+      expect(validateResetTokenUseCase.execute).toHaveBeenCalledWith('abc123'),
+    );
     expect(window.location.href).not.toContain('abc123');
   });
 
   it('P2: verificar el correo', async () => {
     abrir('/verify-email?token=abc123', '/verify-email', VerifyEmail);
-    await waitFor(() => expect(verifyEmailUseCase.execute).toHaveBeenCalledWith('abc123'));
+    await waitFor(() =>
+      expect(verifyEmailUseCase.execute).toHaveBeenCalledWith('abc123'),
+    );
     expect(window.location.href).not.toContain('abc123');
   });
 
   it('P3: la vuelta de Google', async () => {
-    abrir('/auth/google/callback?code=abc123&state=nonce456', '/auth/google/callback', GoogleCallback);
-    await waitFor(() => expect(googleLoginUseCase.execute).toHaveBeenCalledWith('abc123', 'v'.repeat(43)));
+    abrir(
+      '/auth/google/callback?code=abc123&state=nonce456',
+      '/auth/google/callback',
+      GoogleCallback,
+    );
+    await waitFor(() =>
+      expect(googleLoginUseCase.execute).toHaveBeenCalledWith(
+        'abc123',
+        'v'.repeat(43),
+      ),
+    );
     expect(window.location.href).not.toContain('abc123');
     expect(window.location.href).not.toContain('nonce456');
   });
 
   it('P4: al recargar restablecer contraseña, recupera el token del historial', async () => {
     abrir('/reset-password/abc123', '/reset-password/:token', ResetPassword);
-    await waitFor(() => expect(validateResetTokenUseCase.execute).toHaveBeenCalledWith('abc123'));
+    await waitFor(() =>
+      expect(validateResetTokenUseCase.execute).toHaveBeenCalledWith('abc123'),
+    );
     const estado = window.history.state;
     cleanup();
     vi.clearAllMocks();
 
     // La recarga: la barra ya limpia y el estado del historial, que el navegador conserva
     abrir('/reset-password', '/reset-password', ResetPassword, estado);
-    await waitFor(() => expect(validateResetTokenUseCase.execute).toHaveBeenCalledWith('abc123'));
+    await waitFor(() =>
+      expect(validateResetTokenUseCase.execute).toHaveBeenCalledWith('abc123'),
+    );
   });
 
   it('P5: al recargar verificar el correo, recupera el token del historial', async () => {
     abrir('/verify-email?token=abc123', '/verify-email', VerifyEmail);
-    await waitFor(() => expect(verifyEmailUseCase.execute).toHaveBeenCalledWith('abc123'));
+    await waitFor(() =>
+      expect(verifyEmailUseCase.execute).toHaveBeenCalledWith('abc123'),
+    );
     const estado = window.history.state;
     cleanup();
     vi.clearAllMocks();
 
     abrir('/verify-email', '/verify-email', VerifyEmail, estado);
-    await waitFor(() => expect(verifyEmailUseCase.execute).toHaveBeenCalledWith('abc123'));
+    await waitFor(() =>
+      expect(verifyEmailUseCase.execute).toHaveBeenCalledWith('abc123'),
+    );
   });
 });

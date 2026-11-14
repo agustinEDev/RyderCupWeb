@@ -9,7 +9,14 @@ const baseApiData = () => ({
   match_format: 'SINGLES',
   status: 'PENDING',
   participants: [
-    { participant_id: 'p-1', user_id: 'user-1', name: 'Creator', handicap: 10, team: null, is_guest: false },
+    {
+      participant_id: 'p-1',
+      user_id: 'user-1',
+      name: 'Creator',
+      handicap: 10,
+      team: null,
+      is_guest: false,
+    },
   ],
   scorer_ids: ['p-1'],
   created_at: '2026-01-01T00:00:00Z',
@@ -23,10 +30,19 @@ describe('QuickMatchMapper', () => {
         ...baseApiData(),
         participants: [
           ...baseApiData().participants,
-          { participant_id: 'p-2', user_id: null, name: 'María José de la Fuente', first_name: 'María José', last_name: 'de la Fuente', is_guest: true },
+          {
+            participant_id: 'p-2',
+            user_id: null,
+            name: 'María José de la Fuente',
+            first_name: 'María José',
+            last_name: 'de la Fuente',
+            is_guest: true,
+          },
         ],
       });
-      expect(quickMatch.participants.map((p) => [p.firstName, p.lastName])).toEqual([
+      expect(
+        quickMatch.participants.map((p) => [p.firstName, p.lastName]),
+      ).toEqual([
         [null, null],
         ['María José', 'de la Fuente'],
       ]);
@@ -38,8 +54,12 @@ describe('QuickMatchMapper', () => {
         created_at: '2026-09-23T23:55:00',
         updated_at: '2026-09-23T23:56:00.5',
       });
-      expect(quickMatch.createdAt.toISOString()).toBe('2026-09-23T23:55:00.000Z');
-      expect(quickMatch.updatedAt.toISOString()).toBe('2026-09-23T23:56:00.500Z');
+      expect(quickMatch.createdAt.toISOString()).toBe(
+        '2026-09-23T23:55:00.000Z',
+      );
+      expect(quickMatch.updatedAt.toISOString()).toBe(
+        '2026-09-23T23:56:00.500Z',
+      );
     });
 
     it('should convert a base API response to a QuickMatch entity', () => {
@@ -62,14 +82,38 @@ describe('QuickMatchMapper', () => {
     it('should convert detail-only fields (hole_scores, standing, scoring_assignments)', () => {
       const apiData = {
         ...baseApiData(),
-        hole_scores: [{ hole_number: 1, participant_id: 'p-1', score: 4, recorded_by_participant_id: 'p-1' }],
-        standing: { status: 'AS', leading_team: null, holes_played: 1, holes_remaining: 17, is_decided: false },
-        scoring_assignments: [{ scorer_participant_id: 'p-1', scorer_name: 'Creator', covered_participant_ids: ['p-2'] }],
+        hole_scores: [
+          {
+            hole_number: 1,
+            participant_id: 'p-1',
+            score: 4,
+            recorded_by_participant_id: 'p-1',
+          },
+        ],
+        standing: {
+          status: 'AS',
+          leading_team: null,
+          holes_played: 1,
+          holes_remaining: 17,
+          is_decided: false,
+        },
+        scoring_assignments: [
+          {
+            scorer_participant_id: 'p-1',
+            scorer_name: 'Creator',
+            covered_participant_ids: ['p-2'],
+          },
+        ],
       };
 
       const quickMatch = QuickMatchMapper.toDomain(apiData);
       expect(quickMatch.holeScores).toEqual([
-        { holeNumber: 1, participantId: 'p-1', score: 4, recordedByParticipantId: 'p-1' },
+        {
+          holeNumber: 1,
+          participantId: 'p-1',
+          score: 4,
+          recordedByParticipantId: 'p-1',
+        },
       ]);
       expect(quickMatch.standing).toEqual({
         status: 'AS',
@@ -79,7 +123,11 @@ describe('QuickMatchMapper', () => {
         isDecided: false,
       });
       expect(quickMatch.scoringAssignments).toEqual([
-        { scorerParticipantId: 'p-1', scorerName: 'Creator', coveredParticipantIds: ['p-2'] },
+        {
+          scorerParticipantId: 'p-1',
+          scorerName: 'Creator',
+          coveredParticipantIds: ['p-2'],
+        },
       ]);
     });
 
@@ -89,7 +137,10 @@ describe('QuickMatchMapper', () => {
     });
 
     it('should carry over the name when present', () => {
-      const quickMatch = QuickMatchMapper.toDomain({ ...baseApiData(), name: 'Viernes con Rafa' });
+      const quickMatch = QuickMatchMapper.toDomain({
+        ...baseApiData(),
+        name: 'Viernes con Rafa',
+      });
       expect(quickMatch.name).toBe('Viernes con Rafa');
     });
 
@@ -128,27 +179,40 @@ describe('QuickMatchMapper', () => {
     });
 
     it('should map a free-play response with null match_format and a scoring_format', () => {
-      const apiData = { ...baseApiData(), match_format: null, scoring_format: 'MEDAL' };
+      const apiData = {
+        ...baseApiData(),
+        match_format: null,
+        scoring_format: 'MEDAL',
+      };
       const quickMatch = QuickMatchMapper.toDomain(apiData);
       expect(quickMatch.matchFormat).toBeNull();
       expect(quickMatch.scoringFormat).toBe('MEDAL');
     });
 
     it('should throw when required fields are missing', () => {
-      expect(() => QuickMatchMapper.toDomain(null)).toThrow('apiData is required');
-      expect(() => QuickMatchMapper.toDomain({ id: 'qm-1' })).toThrow('Missing required fields');
+      expect(() => QuickMatchMapper.toDomain(null)).toThrow(
+        'apiData is required',
+      );
+      expect(() => QuickMatchMapper.toDomain({ id: 'qm-1' })).toThrow(
+        'Missing required fields',
+      );
     });
   });
 
   describe('toDomainMany', () => {
     it('should convert an array of API responses', () => {
-      const result = QuickMatchMapper.toDomainMany([baseApiData(), baseApiData()]);
+      const result = QuickMatchMapper.toDomainMany([
+        baseApiData(),
+        baseApiData(),
+      ]);
       expect(result).toHaveLength(2);
       expect(result[0]).toBeInstanceOf(QuickMatch);
     });
 
     it('should throw if given a non-array', () => {
-      expect(() => QuickMatchMapper.toDomainMany({})).toThrow('must be an array');
+      expect(() => QuickMatchMapper.toDomainMany({})).toThrow(
+        'must be an array',
+      );
     });
   });
 });
@@ -167,7 +231,11 @@ describe('QuickMatchMapper - reparto de golpes del backend', () => {
     const result = QuickMatchMapper.toDomain({
       ...base,
       participant_strokes: [
-        { participant_id: 'p-1', playing_handicap: 27, strokes_by_hole: { 2: 1, 11: 1 } },
+        {
+          participant_id: 'p-1',
+          playing_handicap: 27,
+          strokes_by_hole: { 2: 1, 11: 1 },
+        },
       ],
     });
 
@@ -183,11 +251,18 @@ describe('QuickMatchMapper - reparto de golpes del backend', () => {
     const result = QuickMatchMapper.toDomain({
       ...base,
       participant_strokes: [
-        { participant_id: 'p-1', playing_handicap: -2, strokes_by_hole: { 17: -1, 18: -1 } },
+        {
+          participant_id: 'p-1',
+          playing_handicap: -2,
+          strokes_by_hole: { 17: -1, 18: -1 },
+        },
       ],
     });
 
-    expect(result.participantStrokes[0].strokesByHole).toEqual({ 17: -1, 18: -1 });
+    expect(result.participantStrokes[0].strokesByHole).toEqual({
+      17: -1,
+      18: -1,
+    });
   });
 
   it('deja la lista vacía cuando la respuesta no trae reparto', () => {
@@ -196,14 +271,19 @@ describe('QuickMatchMapper - reparto de golpes del backend', () => {
 
   it('usa HANDICAP como modo de juego por defecto', () => {
     expect(QuickMatchMapper.toDomain(base).playMode).toBe('HANDICAP');
-    expect(QuickMatchMapper.toDomain({ ...base, play_mode: 'SCRATCH' }).playMode).toBe('SCRATCH');
+    expect(
+      QuickMatchMapper.toDomain({ ...base, play_mode: 'SCRATCH' }).playMode,
+    ).toBe('SCRATCH');
   });
 });
 
 // H5 (25 oct 2026): la fecha que se enseña es la de juego, no la de creación
 describe('QuickMatchMapper · played_at', () => {
   it('H5: played_at llega como playedAt, un instante en UTC', () => {
-    const qm = QuickMatchMapper.toDomain({ ...baseApiData(), played_at: '2026-10-21T22:30:00Z' });
+    const qm = QuickMatchMapper.toDomain({
+      ...baseApiData(),
+      played_at: '2026-10-21T22:30:00Z',
+    });
     expect(qm.playedAt.toISOString()).toBe('2026-10-21T22:30:00.000Z');
   });
 

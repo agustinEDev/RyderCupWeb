@@ -23,14 +23,20 @@ import { MemoryRouter } from 'react-router';
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
     t: (clave, valores) =>
-      valores && typeof valores === 'object' ? `${clave} ${Object.values(valores).join(' ')}` : clave,
+      valores && typeof valores === 'object'
+        ? `${clave} ${Object.values(valores).join(' ')}`
+        : clave,
     i18n: { language: 'es' },
   }),
 }));
 
 vi.mock('../components/layout/HeaderAuth', () => ({ default: () => null }));
-vi.mock('../hooks/useAuth', () => ({ useAuth: () => ({ user: { id: 'u-1', gender: 'MALE' }, loading: false }) }));
-vi.mock('../utils/toast', () => ({ default: { error: vi.fn(), success: vi.fn(), info: vi.fn() } }));
+vi.mock('../hooks/useAuth', () => ({
+  useAuth: () => ({ user: { id: 'u-1', gender: 'MALE' }, loading: false }),
+}));
+vi.mock('../utils/toast', () => ({
+  default: { error: vi.fn(), success: vi.fn(), info: vi.fn() },
+}));
 vi.mock('../services/countries', () => ({
   formatCountryName: () => 'España',
   sortCountriesByName: (paises) => paises || [],
@@ -44,16 +50,26 @@ vi.mock('../composition', () => ({
   getAdjacentCountriesUseCase: { execute: vi.fn().mockResolvedValue([]) },
   createGolfCourseRequestUseCase: { execute: vi.fn() },
 }));
-vi.mock('../components/ui/CountryAutocomplete', () => ({ default: () => null }));
-vi.mock('../components/golf_course/GolfCourseSearchBox', () => ({ default: () => null }));
-vi.mock('../components/golf_course/GolfCourseRequestModal', () => ({ default: () => null }));
+vi.mock('../components/ui/CountryAutocomplete', () => ({
+  default: () => null,
+}));
+vi.mock('../components/golf_course/GolfCourseSearchBox', () => ({
+  default: () => null,
+}));
+vi.mock('../components/golf_course/GolfCourseRequestModal', () => ({
+  default: () => null,
+}));
 vi.mock('../components/ui/FullScreenLoader', () => ({ default: () => null }));
 vi.mock('../components/ui/CountryFlag', () => ({ CountryFlag: () => null }));
 
 const CreateCompetition = (await import('./CreateCompetition')).default;
 
 const abreElFormulario = async () => {
-  render(<MemoryRouter><CreateCompetition /></MemoryRouter>);
+  render(
+    <MemoryRouter>
+      <CreateCompetition />
+    </MemoryRouter>,
+  );
   fireEvent.click(await screen.findByTestId('tipo-RYDER_CUP'));
   // Y el modo de configuración, que es el paso siguiente (FE #695). Estilo
   // RyderCup es lo que estas pantallas daban por hecho
@@ -71,7 +87,9 @@ describe('CreateCompetition · los campos de fecha caben (FE #648)', () => {
     await abreElFormulario();
 
     for (const id of ['startDate', 'endDate']) {
-      expect(document.querySelector(`#${id}`).className).toContain('appearance-none');
+      expect(document.querySelector(`#${id}`).className).toContain(
+        'appearance-none',
+      );
     }
   });
 

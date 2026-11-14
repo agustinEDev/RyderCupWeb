@@ -25,14 +25,19 @@ vi.mock('../hooks/useRedirectIfAuthenticated', () => ({
 }));
 
 vi.mock('react-i18next', () => ({
-  useTranslation: () => ({ t: (clave) => clave, i18n: { language: 'es' }, ready: estado.textosListos }),
+  useTranslation: () => ({
+    t: (clave) => clave,
+    i18n: { language: 'es' },
+    ready: estado.textosListos,
+  }),
 }));
 
 vi.mock('../components/auth/SignInForm', () => ({
   default: () => <div data-testid="formulario-de-acceso" />,
 }));
 
-const { esperaElAviso, reiniciaLaCortina } = await import('../utils/cortinaDeArranque');
+const { esperaElAviso, reiniciaLaCortina } =
+  await import('../utils/cortinaDeArranque');
 const AppStart = (await import('./AppStart')).default;
 
 const pintar = () =>
@@ -42,7 +47,7 @@ const pintar = () =>
         <Route path="/start" element={<AppStart />} />
         <Route path="/" element={<div>PORTADA</div>} />
       </Routes>
-    </MemoryRouter>
+    </MemoryRouter>,
   );
 
 describe('AppStart', () => {
@@ -70,7 +75,9 @@ describe('AppStart', () => {
     // Apareceria entero para desaparecer un segundo despues
     estado.comprobando = true;
     pintar();
-    expect(screen.queryByTestId('formulario-de-acceso')).not.toBeInTheDocument();
+    expect(
+      screen.queryByTestId('formulario-de-acceso'),
+    ).not.toBeInTheDocument();
   });
 
   it('deja una salida hacia la portada', () => {
@@ -95,7 +102,11 @@ describe('AppStart y la cortina del arranque', () => {
     reiniciaLaCortina();
     // La cortina pide las dos cosas: aplicacion instalada y la capa pintandose
     // de verde por el CSS
-    window.matchMedia = () => ({ matches: true, addEventListener: () => {}, removeEventListener: () => {} });
+    window.matchMedia = () => ({
+      matches: true,
+      addEventListener: () => {},
+      removeEventListener: () => {},
+    });
     document.body.innerHTML = '<div id="arranque"></div>';
     // La ruta `/start` avisa: al llegar, la cortina se queda esperando
     esperaElAviso();

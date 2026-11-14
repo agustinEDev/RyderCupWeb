@@ -2,7 +2,9 @@ import { renderHook, act } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('../services/vaciadoDeLaCola', () => ({
-  vaciaLaColaEntera: vi.fn(() => Promise.resolve({ enviadas: 0, descartadas: 0, pendientes: 0 })),
+  vaciaLaColaEntera: vi.fn(() =>
+    Promise.resolve({ enviadas: 0, descartadas: 0, pendientes: 0 }),
+  ),
 }));
 
 vi.mock('../utils/scoringSessionLock', () => ({
@@ -42,8 +44,14 @@ describe('useVaciadoDeLaCola (FE #521)', () => {
     // `clearAllMocks` borra las llamadas, no el valor devuelto: sin esto, el
     // 'm-9' de un test se llevaba por delante al siguiente
     cerrojo.partidaConSesionViva.mockReturnValue(null);
-    Object.defineProperty(document, 'visibilityState', { value: 'visible', configurable: true });
-    Object.defineProperty(globalThis.navigator, 'onLine', { value: true, configurable: true });
+    Object.defineProperty(document, 'visibilityState', {
+      value: 'visible',
+      configurable: true,
+    });
+    Object.defineProperty(globalThis.navigator, 'onLine', {
+      value: true,
+      configurable: true,
+    });
   });
 
   // Los temporizadores falsos se devuelven SIEMPRE, aunque el test falle a
@@ -69,7 +77,10 @@ describe('useVaciadoDeLaCola (FE #521)', () => {
     // Es el caso PARA el que existe esto. Sin la guarda, el arranque disparaba
     // una petición condenada y esperaba a que venciera —en iOS, decenas de
     // segundos en blanco— para descubrir lo que `navigator` ya decía
-    Object.defineProperty(globalThis.navigator, 'onLine', { value: false, configurable: true });
+    Object.defineProperty(globalThis.navigator, 'onLine', {
+      value: false,
+      configurable: true,
+    });
 
     await monta();
 
@@ -100,7 +111,10 @@ describe('useVaciadoDeLaCola (FE #521)', () => {
     // El mismo evento avisa de las dos cosas, y ahí no hay nada que enviar
     await monta();
     vi.clearAllMocks();
-    Object.defineProperty(document, 'visibilityState', { value: 'hidden', configurable: true });
+    Object.defineProperty(document, 'visibilityState', {
+      value: 'hidden',
+      configurable: true,
+    });
 
     document.dispatchEvent(new globalThis.Event('visibilitychange'));
 
@@ -138,7 +152,9 @@ describe('useVaciadoDeLaCola (FE #521)', () => {
 
     // Navegar a la pantalla de esa partida mientras el envío sigue en vuelo
     rutaActual = '/player/matches/m-7/scoring';
-    await act(async () => { rerender(); });
+    await act(async () => {
+      rerender();
+    });
 
     expect(args.saltaPartida()).toBe('m-7');
   });
@@ -180,7 +196,10 @@ describe('useVaciadoDeLaCola (FE #521)', () => {
     // Sin reintento, la cola se quedaba llena, CON cobertura, hasta cerrar
     vi.useFakeTimers();
     vaciaLaColaEntera.mockResolvedValue({
-      enviadas: 0, descartadas: 0, pendientes: 3, paroPor: 'no-es-de-esta',
+      enviadas: 0,
+      descartadas: 0,
+      pendientes: 3,
+      paroPor: 'no-es-de-esta',
     });
 
     await monta();
@@ -197,7 +216,10 @@ describe('useVaciadoDeLaCola (FE #521)', () => {
   it('pero no reintenta cuando ha ido bien', async () => {
     vi.useFakeTimers();
     vaciaLaColaEntera.mockResolvedValue({
-      enviadas: 3, descartadas: 0, pendientes: 0, paroPor: null,
+      enviadas: 3,
+      descartadas: 0,
+      pendientes: 0,
+      paroPor: null,
     });
 
     await monta();
@@ -215,7 +237,10 @@ describe('useVaciadoDeLaCola (FE #521)', () => {
     // servidor ya tiene. Reintentarlo lo convertía en automático
     vi.useFakeTimers();
     vaciaLaColaEntera.mockResolvedValue({
-      enviadas: 0, descartadas: 0, pendientes: 2, paroPor: 'no-se-pudo-borrar',
+      enviadas: 0,
+      descartadas: 0,
+      pendientes: 2,
+      paroPor: 'no-se-pudo-borrar',
     });
 
     await monta();
@@ -232,7 +257,10 @@ describe('useVaciadoDeLaCola (FE #521)', () => {
     // Confundirlo con «ha ido bien» desarmaba el reintento ya programado
     vi.useFakeTimers();
     vaciaLaColaEntera.mockResolvedValue({
-      enviadas: 0, descartadas: 0, pendientes: 3, paroPor: 'ya-hay-otro',
+      enviadas: 0,
+      descartadas: 0,
+      pendientes: 3,
+      paroPor: 'ya-hay-otro',
     });
 
     await monta();
@@ -246,8 +274,12 @@ describe('useVaciadoDeLaCola (FE #521)', () => {
   });
 
   describe('la escalera de reintentos (FE #551)', () => {
-    const paradoCon = (pendientes = 3) =>
-      ({ enviadas: 0, descartadas: 0, pendientes, paroPor: 'no-es-de-esta' });
+    const paradoCon = (pendientes = 3) => ({
+      enviadas: 0,
+      descartadas: 0,
+      pendientes,
+      paroPor: 'no-es-de-esta',
+    });
     const avanza = async (ms) => {
       await act(async () => {
         vi.advanceTimersByTime(ms);
@@ -287,9 +319,12 @@ describe('useVaciadoDeLaCola (FE #521)', () => {
       vaciaLaColaEntera.mockResolvedValue(paradoCon());
       await monta();
       // Al primer reintento, vuelta limpia sin progreso
-      vaciaLaColaEntera.mockResolvedValueOnce(
-        { enviadas: 0, descartadas: 0, pendientes: 3, paroPor: null }
-      );
+      vaciaLaColaEntera.mockResolvedValueOnce({
+        enviadas: 0,
+        descartadas: 0,
+        pendientes: 3,
+        paroPor: null,
+      });
       await avanza(30_000);
       expect(vaciaLaColaEntera).toHaveBeenCalledTimes(2);
 
@@ -350,9 +385,12 @@ describe('useVaciadoDeLaCola (FE #521)', () => {
       expect(vaciaLaColaEntera).toHaveBeenCalledTimes(2);
       // Hay uno armado a 120 s
 
-      vaciaLaColaEntera.mockResolvedValueOnce(
-        { enviadas: 3, descartadas: 0, pendientes: 0, paroPor: null }
-      );
+      vaciaLaColaEntera.mockResolvedValueOnce({
+        enviadas: 3,
+        descartadas: 0,
+        pendientes: 0,
+        paroPor: null,
+      });
       await act(async () => {
         window.dispatchEvent(new globalThis.Event('online'));
         await Promise.resolve();
@@ -379,14 +417,20 @@ describe('useVaciadoDeLaCola (FE #521)', () => {
       await monta();
       expect(vaciaLaColaEntera).toHaveBeenCalledTimes(1);
       // Se armó el de 30 s. Antes de que salte, se va la red
-      Object.defineProperty(globalThis.navigator, 'onLine', { value: false, configurable: true });
+      Object.defineProperty(globalThis.navigator, 'onLine', {
+        value: false,
+        configurable: true,
+      });
 
       await avanza(30_000);
       expect(vaciaLaColaEntera).toHaveBeenCalledTimes(1);
 
       // Y tampoco dejó otra armada: si la hubiera, al volver la red saltaría
       // sola, sin esperar al evento `online`, que es quien tiene que disparar
-      Object.defineProperty(globalThis.navigator, 'onLine', { value: true, configurable: true });
+      Object.defineProperty(globalThis.navigator, 'onLine', {
+        value: true,
+        configurable: true,
+      });
       await avanza(3_600_000);
       expect(vaciaLaColaEntera).toHaveBeenCalledTimes(1);
     });
@@ -395,7 +439,11 @@ describe('useVaciadoDeLaCola (FE #521)', () => {
       // Nadie lo cancelaría: seguiría llamando con la sesión ya cerrada
       vi.useFakeTimers();
       let resuelve;
-      vaciaLaColaEntera.mockReturnValue(new Promise((r) => { resuelve = r; }));
+      vaciaLaColaEntera.mockReturnValue(
+        new Promise((r) => {
+          resuelve = r;
+        }),
+      );
       const { unmount } = await monta();
       expect(vaciaLaColaEntera).toHaveBeenCalledTimes(1);
 
@@ -418,11 +466,13 @@ describe('useVaciadoDeLaCola (FE #521)', () => {
     const enLaConsola = vi.spyOn(console, 'error').mockImplementation(() => {});
 
     await monta();
-    await act(async () => { await Promise.resolve(); });
+    await act(async () => {
+      await Promise.resolve();
+    });
 
     expect(enLaConsola).toHaveBeenCalledWith(
       '[VaciadoDeLaCola] No se pudo vaciar la cola:',
-      expect.objectContaining({ message: 'boom' })
+      expect.objectContaining({ message: 'boom' }),
     );
   });
 });

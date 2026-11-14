@@ -21,15 +21,22 @@ import { captureError } from './sentryHelpers';
 // este módulo: MOTIVO_DEL_CIERRE (sus tests), esFinalNormalDelRefresco y
 // esUn401DeToken (services/sondaDeSesion). motivoDelRefrescoRechazado solo lo usa
 // el transporte, y lo toma de motivosDelCierre
-export { MOTIVO_DEL_CIERRE, esFinalNormalDelRefresco, esUn401DeToken } from './motivosDelCierre';
+export {
+  MOTIVO_DEL_CIERRE,
+  esFinalNormalDelRefresco,
+  esUn401DeToken,
+} from './motivosDelCierre';
 import { MOTIVO_DEL_CIERRE } from './motivosDelCierre';
 
 const TITULO = Object.freeze({
-  refresh_rejected: 'Forced logout: refresh rejected / Cierre de sesión forzado: refresco rechazado',
-  device_revoked: 'Forced logout: device revoked / Cierre de sesión forzado: dispositivo revocado',
+  refresh_rejected:
+    'Forced logout: refresh rejected / Cierre de sesión forzado: refresco rechazado',
+  device_revoked:
+    'Forced logout: device revoked / Cierre de sesión forzado: dispositivo revocado',
   csrf_unrecovered:
     'Forced logout: unrecovered CSRF 403 / Cierre de sesión forzado: 403 CSRF sin recuperar',
-  session_expired: 'Forced logout: session expired / Cierre de sesión forzado: sesión caducada',
+  session_expired:
+    'Forced logout: session expired / Cierre de sesión forzado: sesión caducada',
   session_lost:
     'Forced logout: session lost after a good refresh / Cierre de sesión forzado: sesión perdida tras refrescar bien',
 });
@@ -45,7 +52,8 @@ let silencioHasta = 0;
 const silenciadoAhora = () => {
   let guardado = 0;
   try {
-    guardado = Number(globalThis.sessionStorage?.getItem(CLAVE_DEL_SILENCIO)) || 0;
+    guardado =
+      Number(globalThis.sessionStorage?.getItem(CLAVE_DEL_SILENCIO)) || 0;
   } catch {
     // Sin almacenamiento, vale el de memoria
   }
@@ -59,7 +67,10 @@ export const seCierraLaSesionAPeticion = () => silenciadoAhora();
 export const noAvisesDeCierres = () => {
   silencioHasta = Date.now() + SILENCIO_TRAS_EL_LOGOUT_MS;
   try {
-    globalThis.sessionStorage?.setItem(CLAVE_DEL_SILENCIO, String(silencioHasta));
+    globalThis.sessionStorage?.setItem(
+      CLAVE_DEL_SILENCIO,
+      String(silencioHasta),
+    );
   } catch {
     // Sin almacenamiento, vale el de memoria
   }
@@ -245,7 +256,13 @@ const yaAvisados = new Set();
  *
  * @param {{motivo: string, metodo?: string, endpoint?: string, estado?: number, codigo?: string}} aviso
  */
-export const avisaDelCierreForzado = ({ motivo, metodo, endpoint, estado, codigo } = {}) => {
+export const avisaDelCierreForzado = ({
+  motivo,
+  metodo,
+  endpoint,
+  estado,
+  codigo,
+} = {}) => {
   const titulo = TITULO[motivo];
   if (!titulo || yaAvisados.has(motivo) || silenciadoAhora()) return;
   yaAvisados.add(motivo);
@@ -255,7 +272,9 @@ export const avisaDelCierreForzado = ({ motivo, metodo, endpoint, estado, codigo
       level: 'warning',
       tags: {
         'logout.reason': motivo,
-        'logout.route': ruta ? `${String(metodo ?? 'GET').toUpperCase()} ${ruta}` : 'unknown',
+        'logout.route': ruta
+          ? `${String(metodo ?? 'GET').toUpperCase()} ${ruta}`
+          : 'unknown',
         'logout.status': estado == null ? 'none' : String(estado),
         'logout.code': codigo ? String(codigo) : 'none',
       },

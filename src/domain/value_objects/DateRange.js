@@ -56,8 +56,10 @@ export class DateRange {
     if (this === other) return true;
     if (!(other instanceof DateRange)) return false;
 
-    return this.#startDate.getTime() === other.#startDate.getTime() &&
-           this.#endDate.getTime() === other.#endDate.getTime();
+    return (
+      this.#startDate.getTime() === other.#startDate.getTime() &&
+      this.#endDate.getTime() === other.#endDate.getTime()
+    );
   }
 
   /**

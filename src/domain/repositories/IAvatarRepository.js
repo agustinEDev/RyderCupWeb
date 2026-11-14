@@ -7,8 +7,6 @@
  * Implementations:
  * - ApiAvatarRepository (REST API)
  */
-/* eslint-disable no-unused-vars */
-
 class IAvatarRepository {
   /**
    * List the fixed catalog of preset avatars.

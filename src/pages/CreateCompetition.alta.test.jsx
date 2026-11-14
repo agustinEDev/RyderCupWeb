@@ -27,7 +27,8 @@ import { MemoryRouter, Routes, Route } from 'react-router';
  */
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
-    t: (clave, valores) => (valores ? `${clave} ${JSON.stringify(valores)}` : clave),
+    t: (clave, valores) =>
+      valores ? `${clave} ${JSON.stringify(valores)}` : clave,
     i18n: { language: 'es' },
   }),
 }));
@@ -36,8 +37,15 @@ vi.mock('../components/layout/HeaderAuth', () => ({ default: () => null }));
 // El mismo `user` en cada render: uno nuevo relanza los efectos (intermitente)
 const USUARIO = { user: { id: 'u-1', gender: 'MALE' }, loading: false };
 vi.mock('../hooks/useAuth', () => ({ useAuth: () => USUARIO }));
-vi.mock('../components/golf_course/GolfCourseSearchBox', () => ({ default: () => null }));
-const mockToast = { error: vi.fn(), success: vi.fn(), info: vi.fn(), warning: vi.fn() };
+vi.mock('../components/golf_course/GolfCourseSearchBox', () => ({
+  default: () => null,
+}));
+const mockToast = {
+  error: vi.fn(),
+  success: vi.fn(),
+  info: vi.fn(),
+  warning: vi.fn(),
+};
 vi.mock('../utils/toast', () => ({ default: mockToast }));
 vi.mock('../services/countries', () => ({
   formatCountryName: () => 'España',
@@ -54,8 +62,12 @@ vi.mock('../composition', () => ({
   createGolfCourseRequestUseCase: { execute: vi.fn() },
   configureScheduleUseCase: { execute: vi.fn() },
 }));
-vi.mock('../components/ui/CountryAutocomplete', () => ({ default: () => null }));
-vi.mock('../components/golf_course/GolfCourseRequestModal', () => ({ default: () => null }));
+vi.mock('../components/ui/CountryAutocomplete', () => ({
+  default: () => null,
+}));
+vi.mock('../components/golf_course/GolfCourseRequestModal', () => ({
+  default: () => null,
+}));
 vi.mock('../components/ui/FullScreenLoader', () => ({ default: () => null }));
 vi.mock('../components/ui/CountryFlag', () => ({ CountryFlag: () => null }));
 
@@ -69,7 +81,11 @@ const composicion = await import('../composition');
 const CreateCompetition = (await import('./CreateCompetition')).default;
 
 const alTipo = async (tipo) => {
-  render(<MemoryRouter><CreateCompetition /></MemoryRouter>);
+  render(
+    <MemoryRouter>
+      <CreateCompetition />
+    </MemoryRouter>,
+  );
   fireEvent.click(await screen.findByTestId(`tipo-${tipo}`));
 };
 
@@ -86,57 +102,81 @@ const MEDAL_GUARDADO = {
   endDate: '2030-10-12',
   playMode: 'HANDICAP',
   countries: [{ code: 'ES' }],
-  strokePlay: { categoryLimits: [12], categoryCount: null, maxMatchdaysPerPlayer: 1, overallStanding: 'ACCUMULATED' },
+  strokePlay: {
+    categoryLimits: [12],
+    categoryCount: null,
+    maxMatchdaysPerPlayer: 1,
+    overallStanding: 'ACCUMULATED',
+  },
 };
 
 const alEditar = async (competicion = MEDAL_GUARDADO) => {
-  composicion.getCompetitionDetailUseCase.execute.mockResolvedValue(competicion);
+  composicion.getCompetitionDetailUseCase.execute.mockResolvedValue(
+    competicion,
+  );
   render(
     <MemoryRouter initialEntries={['/competitions/c-1/edit']}>
       <Routes>
         <Route path="/competitions/:id/edit" element={<CreateCompetition />} />
       </Routes>
-    </MemoryRouter>
+    </MemoryRouter>,
   );
   const jornadas = await screen.findByLabelText('create.strokePlay.matchdays');
-  await vi.waitFor(() => expect(screen.getByTestId('campo-nombre')).toHaveValue(competicion.name));
+  await vi.waitFor(() =>
+    expect(screen.getByTestId('campo-nombre')).toHaveValue(competicion.name),
+  );
   return jornadas;
 };
-
 
 describe('CreateCompetition · BE-B en el alta (FE)', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.spyOn(console, 'error').mockImplementation(() => {});
     mockValidar.mockReturnValue(null);
-    composicion.fetchCountriesUseCase.execute.mockResolvedValue([{ code: 'ES', name_es: 'España', name_en: 'Spain' }]);
+    composicion.fetchCountriesUseCase.execute.mockResolvedValue([
+      { code: 'ES', name_es: 'España', name_en: 'Spain' },
+    ]);
     composicion.getCompetitionGolfCoursesUseCase.execute.mockResolvedValue([]);
-    composicion.createCompetitionWithGolfCoursesUseCase.execute.mockResolvedValue({
-      competition: { id: 'nueva' },
-      successCount: 0,
-      failedCourses: [],
-    });
+    composicion.createCompetitionWithGolfCoursesUseCase.execute.mockResolvedValue(
+      {
+        competition: { id: 'nueva' },
+        successCount: 0,
+        failedCourses: [],
+      },
+    );
     composicion.updateCompetitionUseCase.execute.mockResolvedValue({});
   });
 
   const enviado = async () => {
-    await vi.waitFor(() => expect(composicion.createCompetitionWithGolfCoursesUseCase.execute).toHaveBeenCalled());
-    return composicion.createCompetitionWithGolfCoursesUseCase.execute.mock.calls[0][0];
+    await vi.waitFor(() =>
+      expect(
+        composicion.createCompetitionWithGolfCoursesUseCase.execute,
+      ).toHaveBeenCalled(),
+    );
+    return composicion.createCompetitionWithGolfCoursesUseCase.execute.mock
+      .calls[0][0];
   };
 
-  it.each(['STABLEFORD', 'MEDAL'])('20: un %s pregunta «¿Juegas tú?», marcada, y lo manda', async (tipo) => {
-    await alTipo(tipo);
+  it.each(['STABLEFORD', 'MEDAL'])(
+    '20: un %s pregunta «¿Juegas tú?», marcada, y lo manda',
+    async (tipo) => {
+      await alTipo(tipo);
 
-    const casilla = await screen.findByRole('checkbox', { name: 'create.organizerPlays' });
-    expect(casilla).toBeChecked();
-    enviar();
+      const casilla = await screen.findByRole('checkbox', {
+        name: 'create.organizerPlays',
+      });
+      expect(casilla).toBeChecked();
+      enviar();
 
-    expect((await enviado()).organizer_plays).toBe(true);
-  });
+      expect((await enviado()).organizer_plays).toBe(true);
+    },
+  );
 
   it('20: desmarcada, se manda que no juega', async () => {
     await alTipo('MEDAL');
-    fireEvent.click(await screen.findByRole('checkbox', { name: 'create.organizerPlays' }));
+    fireEvent.click(
+      await screen.findByRole('checkbox', { name: 'create.organizerPlays' }),
+    );
 
     enviar();
 
@@ -148,7 +188,9 @@ describe('CreateCompetition · BE-B en el alta (FE)', () => {
     fireEvent.click(await screen.findByTestId('modo-RYDER_CUP'));
     await screen.findByTestId('campo-nombre');
 
-    expect(screen.queryByRole('checkbox', { name: 'create.organizerPlays' })).toBeNull();
+    expect(
+      screen.queryByRole('checkbox', { name: 'create.organizerPlays' }),
+    ).toBeNull();
     enviar();
 
     expect(await enviado()).not.toHaveProperty('organizer_plays');
@@ -157,11 +199,17 @@ describe('CreateCompetition · BE-B en el alta (FE)', () => {
   it('20c: al editar ni se pregunta ni se manda', async () => {
     await alEditar();
 
-    expect(screen.queryByRole('checkbox', { name: 'create.organizerPlays' })).toBeNull();
+    expect(
+      screen.queryByRole('checkbox', { name: 'create.organizerPlays' }),
+    ).toBeNull();
     enviar();
 
-    await vi.waitFor(() => expect(composicion.updateCompetitionUseCase.execute).toHaveBeenCalled());
-    expect(composicion.updateCompetitionUseCase.execute.mock.calls[0][1]).not.toHaveProperty('organizer_plays');
+    await vi.waitFor(() =>
+      expect(composicion.updateCompetitionUseCase.execute).toHaveBeenCalled(),
+    );
+    expect(
+      composicion.updateCompetitionUseCase.execute.mock.calls[0][1],
+    ).not.toHaveProperty('organizer_plays');
   });
 
   it.each(['nameRequired', 'nameTooShort', 'nameTooLong', 'nameUnreadable'])(
@@ -179,23 +227,34 @@ describe('CreateCompetition · BE-B en el alta (FE)', () => {
       expect(campo).toHaveAttribute('aria-describedby', aviso.id);
       // Una vez: junto al campo, no repetido en el aviso de arriba
       expect(screen.getAllByText(`create.errors.${clave}`)).toHaveLength(1);
-      expect(composicion.createCompetitionWithGolfCoursesUseCase.execute).not.toHaveBeenCalled();
-    }
+      expect(
+        composicion.createCompetitionWithGolfCoursesUseCase.execute,
+      ).not.toHaveBeenCalled();
+    },
   );
 
   it('21b: un 409 (ya tienes una con ese nombre), traducido junto al campo', async () => {
     composicion.createCompetitionWithGolfCoursesUseCase.execute.mockRejectedValue(
-      Object.assign(new Error('Ya existe una competición con el nombre «Medal»'), { status: 409 })
+      Object.assign(
+        new Error('Ya existe una competición con el nombre «Medal»'),
+        { status: 409 },
+      ),
     );
     await alTipo('MEDAL');
     const campo = await screen.findByTestId('campo-nombre');
 
     enviar();
 
-    expect(await screen.findByTestId('error-del-nombre')).toHaveTextContent('create.errors.nameTaken');
+    expect(await screen.findByTestId('error-del-nombre')).toHaveTextContent(
+      'create.errors.nameTaken',
+    );
     expect(campo).toHaveAttribute('aria-invalid', 'true');
-    expect(mockToast.error).not.toHaveBeenCalledWith('Ya existe una competición con el nombre «Medal»');
-    expect(screen.queryByText('Ya existe una competición con el nombre «Medal»')).toBeNull();
+    expect(mockToast.error).not.toHaveBeenCalledWith(
+      'Ya existe una competición con el nombre «Medal»',
+    );
+    expect(
+      screen.queryByText('Ya existe una competición con el nombre «Medal»'),
+    ).toBeNull();
   });
 
   it('21c: al cambiar el nombre, el aviso se va', async () => {
@@ -215,30 +274,46 @@ describe('CreateCompetition · BE-B en el alta (FE)', () => {
 
   it('21d: otro error del servidor, como antes: arriba y en un aviso', async () => {
     composicion.createCompetitionWithGolfCoursesUseCase.execute.mockRejectedValue(
-      Object.assign(new Error('País no válido'), { status: 400 })
+      Object.assign(new Error('País no válido'), { status: 400 }),
     );
     await alTipo('MEDAL');
 
     enviar();
 
-    await vi.waitFor(() => expect(mockToast.error).toHaveBeenCalledWith('País no válido'));
+    await vi.waitFor(() =>
+      expect(mockToast.error).toHaveBeenCalledWith('País no válido'),
+    );
     expect(screen.queryByTestId('error-del-nombre')).toBeNull();
   });
 
   it('21e: al editar, un 409 tras guardar los ajustes primero también va al campo', async () => {
-    composicion.updateStrokePlaySettingsUseCase.execute.mockResolvedValue({ ...MEDAL_GUARDADO.strokePlay, maxMatchdaysPerPlayer: 2 });
+    composicion.updateStrokePlaySettingsUseCase.execute.mockResolvedValue({
+      ...MEDAL_GUARDADO.strokePlay,
+      maxMatchdaysPerPlayer: 2,
+    });
     composicion.updateCompetitionUseCase.execute.mockRejectedValue(
-      Object.assign(new Error('Ya existe una competición con el nombre «Medal»'), { status: 409 })
+      Object.assign(
+        new Error('Ya existe una competición con el nombre «Medal»'),
+        { status: 409 },
+      ),
     );
     const jornadas = await alEditar();
     fireEvent.change(jornadas, { target: { value: '2' } });
 
     enviar();
 
-    expect(await screen.findByTestId('error-del-nombre')).toHaveTextContent('create.errors.nameTaken');
-    expect(screen.getByTestId('campo-nombre')).toHaveAttribute('aria-invalid', 'true');
-    expect(composicion.updateStrokePlaySettingsUseCase.execute.mock.invocationCallOrder[0]).toBeLessThan(
-      composicion.updateCompetitionUseCase.execute.mock.invocationCallOrder[0]
+    expect(await screen.findByTestId('error-del-nombre')).toHaveTextContent(
+      'create.errors.nameTaken',
+    );
+    expect(screen.getByTestId('campo-nombre')).toHaveAttribute(
+      'aria-invalid',
+      'true',
+    );
+    expect(
+      composicion.updateStrokePlaySettingsUseCase.execute.mock
+        .invocationCallOrder[0],
+    ).toBeLessThan(
+      composicion.updateCompetitionUseCase.execute.mock.invocationCallOrder[0],
     );
     expect(screen.queryByText(/edit\.generalNotSaved/)).toBeNull();
     expect(mockToast.error).not.toHaveBeenCalled();
@@ -246,39 +321,46 @@ describe('CreateCompetition · BE-B en el alta (FE)', () => {
 
   it('21f: un 409 de los ajustes (que van segundos) no es el nombre: arriba, como antes', async () => {
     composicion.updateStrokePlaySettingsUseCase.execute.mockRejectedValue(
-      Object.assign(new Error('conflicto'), { status: 409 })
+      Object.assign(new Error('conflicto'), { status: 409 }),
     );
     const jornadas = await alEditar();
-    fireEvent.change(screen.getByLabelText(/endDate/), { target: { value: '2030-10-13' } });
+    fireEvent.change(screen.getByLabelText(/endDate/), {
+      target: { value: '2030-10-13' },
+    });
     fireEvent.change(jornadas, { target: { value: '4' } });
 
     enviar();
 
-    expect(await screen.findByText('edit.strokePlayNotSaved {"motivo":"conflicto"}')).toBeInTheDocument();
+    expect(
+      await screen.findByText('edit.strokePlayNotSaved {"motivo":"conflicto"}'),
+    ).toBeInTheDocument();
     expect(screen.queryByTestId('error-del-nombre')).toBeNull();
   });
 
   it('21g: un 409 de los ajustes (que van primeros) tampoco es el nombre', async () => {
     composicion.updateStrokePlaySettingsUseCase.execute.mockRejectedValue(
-      Object.assign(new Error('conflicto'), { status: 409 })
+      Object.assign(new Error('conflicto'), { status: 409 }),
     );
     const jornadas = await alEditar();
     fireEvent.change(jornadas, { target: { value: '2' } });
 
     enviar();
 
-    await vi.waitFor(() => expect(mockToast.error).toHaveBeenCalledWith('conflicto'));
+    await vi.waitFor(() =>
+      expect(mockToast.error).toHaveBeenCalledWith('conflicto'),
+    );
     expect(screen.queryByTestId('error-del-nombre')).toBeNull();
     expect(composicion.updateCompetitionUseCase.execute).not.toHaveBeenCalled();
   });
 
   it('22: el nombre se manda sin espacios de sobra', async () => {
     await alTipo('MEDAL');
-    fireEvent.change(await screen.findByTestId('campo-nombre'), { target: { value: '  Medal   de\totoño ' } });
+    fireEvent.change(await screen.findByTestId('campo-nombre'), {
+      target: { value: '  Medal   de\totoño ' },
+    });
 
     enviar();
 
     expect((await enviado()).name).toBe('Medal de otoño');
   });
 });
-

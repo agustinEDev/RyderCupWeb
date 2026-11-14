@@ -20,7 +20,8 @@ import mockToast from '../../utils/toast';
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
     t: (key, params) => {
-      if (params?.count !== undefined && params?.name) return `${key}_${params.count}_${params.name}`;
+      if (params?.count !== undefined && params?.name)
+        return `${key}_${params.count}_${params.name}`;
       if (params?.count !== undefined) return `${key}_${params.count}`;
       return key;
     },
@@ -30,8 +31,20 @@ vi.mock('react-i18next', () => ({
 
 vi.mock('framer-motion', () => ({
   motion: {
-    div: ({ children, initial, animate, transition, whileHover, whileTap, ...rest }) => {
-      void initial; void animate; void transition; void whileHover; void whileTap;
+    div: ({
+      children,
+      initial,
+      animate,
+      transition,
+      whileHover,
+      whileTap,
+      ...rest
+    }) => {
+      void initial;
+      void animate;
+      void transition;
+      void whileHover;
+      void whileTap;
       return <div {...rest}>{children}</div>;
     },
   },
@@ -55,18 +68,36 @@ const mockListMyPendingEnvelopes = vi.fn();
 const mockListMySessionsWithoutMatches = vi.fn();
 const mockListMyAssignedPlaces = vi.fn();
 const mockAcknowledge = vi.fn();
-vi.mock('../../utils/toast', () => ({ default: { error: vi.fn(), success: vi.fn() } }));
+vi.mock('../../utils/toast', () => ({
+  default: { error: vi.fn(), success: vi.fn() },
+}));
 
 vi.mock('../../composition', () => ({
-  listMyInvitationsUseCase: { execute: (...args) => mockListMyInvitations(...args) },
-  listEnrollmentsUseCase: { execute: (...args) => mockListEnrollments(...args) },
+  listMyInvitationsUseCase: {
+    execute: (...args) => mockListMyInvitations(...args),
+  },
+  listEnrollmentsUseCase: {
+    execute: (...args) => mockListEnrollments(...args),
+  },
   getScheduleUseCase: { execute: (...args) => mockGetSchedule(...args) },
-  listPendingFriendRequestsUseCase: { execute: (...args) => mockListPendingFriendRequests(...args) },
-  listMyQuickMatchesUseCase: { execute: (...args) => mockListMyQuickMatches(...args) },
-  listMyPendingEnvelopesUseCase: { execute: (...args) => mockListMyPendingEnvelopes(...args) },
-  listMySessionsWithoutMatchesUseCase: { execute: (...args) => mockListMySessionsWithoutMatches(...args) },
-  listMyAssignedPlacesUseCase: { execute: (...args) => mockListMyAssignedPlaces(...args) },
-  acknowledgeAssignedPlaceUseCase: { execute: (...args) => mockAcknowledge(...args) },
+  listPendingFriendRequestsUseCase: {
+    execute: (...args) => mockListPendingFriendRequests(...args),
+  },
+  listMyQuickMatchesUseCase: {
+    execute: (...args) => mockListMyQuickMatches(...args),
+  },
+  listMyPendingEnvelopesUseCase: {
+    execute: (...args) => mockListMyPendingEnvelopes(...args),
+  },
+  listMySessionsWithoutMatchesUseCase: {
+    execute: (...args) => mockListMySessionsWithoutMatches(...args),
+  },
+  listMyAssignedPlacesUseCase: {
+    execute: (...args) => mockListMyAssignedPlaces(...args),
+  },
+  acknowledgeAssignedPlaceUseCase: {
+    execute: (...args) => mockAcknowledge(...args),
+  },
 }));
 
 const baseUser = {
@@ -76,8 +107,11 @@ const baseUser = {
   roles: [{ name: 'PLAYER' }],
 };
 
-
-const renderCard = (user = baseUser, competitions = [], upcomingMatches = 0) => {
+const renderCard = (
+  user = baseUser,
+  competitions = [],
+  upcomingMatches = 0,
+) => {
   return render(
     <MemoryRouter>
       <PendingActionsCard
@@ -85,13 +119,14 @@ const renderCard = (user = baseUser, competitions = [], upcomingMatches = 0) => 
         competitions={competitions}
         upcomingMatches={upcomingMatches}
       />
-    </MemoryRouter>
+    </MemoryRouter>,
   );
 };
 
 describe('PendingActionsCard · plaza asignada desde la espera (FE #824)', () => {
   beforeEach(async () => {
-    const { olvidaLasAccionesPendientes } = await import('../../services/accionesPendientes');
+    const { olvidaLasAccionesPendientes } =
+      await import('../../services/accionesPendientes');
     olvidaLasAccionesPendientes();
     vi.clearAllMocks();
     mockListMyInvitations.mockResolvedValue({ invitations: [] });
@@ -137,9 +172,15 @@ describe('PendingActionsCard · plaza asignada desde la espera (FE #824)', () =>
     mockListMyAssignedPlaces.mockResolvedValue([PLAZA]);
     renderCard();
 
-    fireEvent.click(await screen.findByRole('button', { name: 'pendingActions.placeAssignedOk' }));
+    fireEvent.click(
+      await screen.findByRole('button', {
+        name: 'pendingActions.placeAssignedOk',
+      }),
+    );
 
-    await vi.waitFor(() => expect(screen.queryByTestId('plaza-asignada-r1')).toBeNull());
+    await vi.waitFor(() =>
+      expect(screen.queryByTestId('plaza-asignada-r1')).toBeNull(),
+    );
     expect(mockAcknowledge).toHaveBeenCalledWith('r1');
     expect(mockNavigate).not.toHaveBeenCalled();
   });
@@ -149,7 +190,11 @@ describe('PendingActionsCard · plaza asignada desde la espera (FE #824)', () =>
     mockAcknowledge.mockRejectedValue(new Error('sin red'));
     renderCard();
 
-    fireEvent.click(await screen.findByRole('button', { name: 'pendingActions.placeAssignedOk' }));
+    fireEvent.click(
+      await screen.findByRole('button', {
+        name: 'pendingActions.placeAssignedOk',
+      }),
+    );
 
     await vi.waitFor(() => expect(mockToast.error).toHaveBeenCalled());
     expect(screen.getByTestId('plaza-asignada-r1')).toBeInTheDocument();
@@ -160,7 +205,9 @@ describe('PendingActionsCard · plaza asignada desde la espera (FE #824)', () =>
     mockAcknowledge.mockReturnValue(new Promise(() => {}));
     renderCard();
 
-    const ok = await screen.findByRole('button', { name: 'pendingActions.placeAssignedOk' });
+    const ok = await screen.findByRole('button', {
+      name: 'pendingActions.placeAssignedOk',
+    });
     fireEvent.click(ok);
     fireEvent.click(ok);
 
@@ -171,16 +218,30 @@ describe('PendingActionsCard · plaza asignada desde la espera (FE #824)', () =>
     mockListMyAssignedPlaces.mockResolvedValue([PLAZA]);
     renderCard();
 
-    expect((await screen.findByRole('button', { name: 'pendingActions.placeAssignedOk' })).className).toContain('min-h-11');
+    expect(
+      (
+        await screen.findByRole('button', {
+          name: 'pendingActions.placeAssignedOk',
+        })
+      ).className,
+    ).toContain('min-h-11');
   });
 
   it('17e: un «Entendido» que acaba con la tarjeta ya desmontada no escribe la memoria (/code-review)', async () => {
     const memoria = await import('../../services/accionesPendientes');
     mockListMyAssignedPlaces.mockResolvedValue([PLAZA]);
     let acaba;
-    mockAcknowledge.mockReturnValue(new Promise((r) => { acaba = r; }));
+    mockAcknowledge.mockReturnValue(
+      new Promise((r) => {
+        acaba = r;
+      }),
+    );
     const { unmount } = renderCard();
-    fireEvent.click(await screen.findByRole('button', { name: 'pendingActions.placeAssignedOk' }));
+    fireEvent.click(
+      await screen.findByRole('button', {
+        name: 'pendingActions.placeAssignedOk',
+      }),
+    );
 
     unmount();
     memoria.olvidaLasAccionesPendientes();
@@ -195,9 +256,17 @@ describe('PendingActionsCard · plaza asignada desde la espera (FE #824)', () =>
     mockAcknowledge.mockRejectedValue(new Error('Internal Server Error'));
     renderCard();
 
-    fireEvent.click(await screen.findByRole('button', { name: 'pendingActions.placeAssignedOk' }));
+    fireEvent.click(
+      await screen.findByRole('button', {
+        name: 'pendingActions.placeAssignedOk',
+      }),
+    );
 
-    await vi.waitFor(() => expect(mockToast.error).toHaveBeenCalledWith('pendingActions.placeAssignedOkFailed'));
+    await vi.waitFor(() =>
+      expect(mockToast.error).toHaveBeenCalledWith(
+        'pendingActions.placeAssignedOkFailed',
+      ),
+    );
   });
 
   it('19: al cambiar de cuenta no se ven, ni un momento, las plazas de la anterior (CodeRabbit)', async () => {
@@ -209,8 +278,12 @@ describe('PendingActionsCard · plaza asignada desde la espera (FE #824)', () =>
 
     rerender(
       <MemoryRouter>
-        <PendingActionsCard user={{ ...baseUser, id: 'otra-cuenta' }} competitions={[]} upcomingMatches={0} />
-      </MemoryRouter>
+        <PendingActionsCard
+          user={{ ...baseUser, id: 'otra-cuenta' }}
+          competitions={[]}
+          upcomingMatches={0}
+        />
+      </MemoryRouter>,
     );
 
     expect(screen.queryByTestId('plaza-asignada-r1')).toBeNull();

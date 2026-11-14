@@ -24,7 +24,7 @@ const renderFooter = () =>
   render(
     <MemoryRouter>
       <Footer />
-    </MemoryRouter>
+    </MemoryRouter>,
   );
 
 /**
@@ -41,7 +41,10 @@ describe('Footer', () => {
       value: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) Chrome/140.0',
       configurable: true,
     });
-    Object.defineProperty(window.navigator, 'standalone', { value: undefined, configurable: true });
+    Object.defineProperty(window.navigator, 'standalone', {
+      value: undefined,
+      configurable: true,
+    });
   });
 
   it('renders in a browser tab', () => {
@@ -68,10 +71,14 @@ describe('Footer', () => {
     // deteccion se apoya en el para no fiarse de `display-mode` en los
     // navegadores de alli basados en WebView
     Object.defineProperty(window.navigator, 'userAgent', {
-      value: 'Mozilla/5.0 (iPhone; CPU iPhone OS 26_0 like Mac OS X) AppleWebKit/605.1.15',
+      value:
+        'Mozilla/5.0 (iPhone; CPU iPhone OS 26_0 like Mac OS X) AppleWebKit/605.1.15',
       configurable: true,
     });
-    Object.defineProperty(window.navigator, 'standalone', { value: true, configurable: true });
+    Object.defineProperty(window.navigator, 'standalone', {
+      value: true,
+      configurable: true,
+    });
 
     const { container } = renderFooter();
 
@@ -84,8 +91,12 @@ describe('Footer', () => {
 
     renderFooter();
 
-    const hrefs = screen.getAllByRole('link').map((link) => link.getAttribute('href'));
-    expect(hrefs).toEqual(expect.arrayContaining(['/terms', '/privacy', '/cookies']));
+    const hrefs = screen
+      .getAllByRole('link')
+      .map((link) => link.getAttribute('href'));
+    expect(hrefs).toEqual(
+      expect.arrayContaining(['/terms', '/privacy', '/cookies']),
+    );
   });
 
   it('A3: enlaza al Aviso Legal junto a los demas legales', () => {
@@ -93,18 +104,23 @@ describe('Footer', () => {
 
     renderFooter();
 
-    expect(screen.getByRole('link', { name: 'footer.legalNotice' })).toHaveAttribute('href', '/legal');
+    expect(
+      screen.getByRole('link', { name: 'footer.legalNotice' }),
+    ).toHaveAttribute('href', '/legal');
   });
 
   it.each([
     ['es', commonEs],
     ['en', commonEn],
-  ])('A4 (%s): el copyright dice RyderCupFriends, sin datos del titular (6 nov 2026)', (_idioma, common) => {
-    for (const clave of ['copyright', 'copyrightShort']) {
-      expect(common.footer[clave]).toContain('© {{year}} RyderCupFriends');
-      expect(common.footer[clave]).not.toContain('Estévez');
-      expect(common.footer[clave]).not.toContain('RCF');
-    }
-    expect(common.footer.legalNotice).toBeTruthy();
-  });
+  ])(
+    'A4 (%s): el copyright dice RyderCupFriends, sin datos del titular (6 nov 2026)',
+    (_idioma, common) => {
+      for (const clave of ['copyright', 'copyrightShort']) {
+        expect(common.footer[clave]).toContain('© {{year}} RyderCupFriends');
+        expect(common.footer[clave]).not.toContain('Estévez');
+        expect(common.footer[clave]).not.toContain('RCF');
+      }
+      expect(common.footer.legalNotice).toBeTruthy();
+    },
+  );
 });

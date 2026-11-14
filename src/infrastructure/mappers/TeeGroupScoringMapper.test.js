@@ -21,34 +21,76 @@ describe('TeeGroupScoringMapper.toScoringViewDTO', () => {
     [false, false],
     [undefined, false],
     ['true', false],
-  ])('la raya, solo con picked_up_allowed verdadero (%s): una vista vieja no la ofrece', (dato, sale) => {
-    // 23 oct 2026: «que la raya no salga ya en Medal, no demos la oportunidad de que falle»
-    expect(
-      TeeGroupScoringMapper.toScoringViewDTO({ ...VISTA, picked_up_allowed: dato }).strokePlay.pickedUpAllowed
-    ).toBe(sale);
-  });
+  ])(
+    'la raya, solo con picked_up_allowed verdadero (%s): una vista vieja no la ofrece',
+    (dato, sale) => {
+      // 23 oct 2026: «que la raya no salga ya en Medal, no demos la oportunidad de que falle»
+      expect(
+        TeeGroupScoringMapper.toScoringViewDTO({
+          ...VISTA,
+          picked_up_allowed: dato,
+        }).strokePlay.pickedUpAllowed,
+      ).toBe(sale);
+    },
+  );
 
   it('lleva el campo de la franja, para pedir su mapa de hoyos', () => {
-    expect(TeeGroupScoringMapper.toScoringViewDTO(VISTA).roundInfo.golfCourseId).toBe('gc-1');
+    expect(
+      TeeGroupScoringMapper.toScoringViewDTO(VISTA).roundInfo.golfCourseId,
+    ).toBe('gc-1');
   });
 
   it('y su nombre, bajo el título de la anotación (BE #573); sin él, null', () => {
-    expect(TeeGroupScoringMapper.toScoringViewDTO({ ...VISTA, golf_course_name: 'Golf de Meis' }).roundInfo.golfCourseName).toBe('Golf de Meis');
-    expect(TeeGroupScoringMapper.toScoringViewDTO(VISTA).roundInfo.golfCourseName).toBeNull();
+    expect(
+      TeeGroupScoringMapper.toScoringViewDTO({
+        ...VISTA,
+        golf_course_name: 'Golf de Meis',
+      }).roundInfo.golfCourseName,
+    ).toBe('Golf de Meis');
+    expect(
+      TeeGroupScoringMapper.toScoringViewDTO(VISTA).roundInfo.golfCourseName,
+    ).toBeNull();
   });
 
   it('el país del campo: el mapa solo tiene imagen en España (19 oct); sin él, null', () => {
-    expect(TeeGroupScoringMapper.toScoringViewDTO({ ...VISTA, golf_course_country_code: 'PT' }).roundInfo.golfCourseCountryCode).toBe('PT');
-    expect(TeeGroupScoringMapper.toScoringViewDTO(VISTA).roundInfo.golfCourseCountryCode).toBeNull();
+    expect(
+      TeeGroupScoringMapper.toScoringViewDTO({
+        ...VISTA,
+        golf_course_country_code: 'PT',
+      }).roundInfo.golfCourseCountryCode,
+    ).toBe('PT');
+    expect(
+      TeeGroupScoringMapper.toScoringViewDTO(VISTA).roundInfo
+        .golfCourseCountryCode,
+    ).toBeNull();
   });
 
   it('F12 (BE #574): los metros de cada hoyo desde la barra de cada jugador; sin ellos, null', () => {
-    const hoyo = (n, meters) => ({ hole: n, par: 4, strokes_received: 0, own_score: null, own_submitted: false, marker_score: null, marker_submitted: false, status: 'PENDING', ...(meters === undefined ? {} : { meters }) });
-    const jugador = (id, metros) => ({ user_id: id, name: id, playing_handicap: 0, tee_color: 'YELLOW', holes: Array.from({ length: 18 }, (_, i) => hoyo(i + 1, metros(i))) });
+    const hoyo = (n, meters) => ({
+      hole: n,
+      par: 4,
+      strokes_received: 0,
+      own_score: null,
+      own_submitted: false,
+      marker_score: null,
+      marker_submitted: false,
+      status: 'PENDING',
+      ...(meters === undefined ? {} : { meters }),
+    });
+    const jugador = (id, metros) => ({
+      user_id: id,
+      name: id,
+      playing_handicap: 0,
+      tee_color: 'YELLOW',
+      holes: Array.from({ length: 18 }, (_, i) => hoyo(i + 1, metros(i))),
+    });
 
     const vista = TeeGroupScoringMapper.toScoringViewDTO({
       ...VISTA,
-      players: [jugador('ana', (i) => 300 + i), jugador('bea', (i) => (i === 0 ? null : undefined))],
+      players: [
+        jugador('ana', (i) => 300 + i),
+        jugador('bea', (i) => (i === 0 ? null : undefined)),
+      ],
     });
 
     const [ana, bea] = vista.players;
@@ -60,6 +102,8 @@ describe('TeeGroupScoringMapper.toScoringViewDTO', () => {
     const anterior = { ...VISTA };
     delete anterior.golf_course_id;
 
-    expect(TeeGroupScoringMapper.toScoringViewDTO(anterior).roundInfo.golfCourseId).toBeNull();
+    expect(
+      TeeGroupScoringMapper.toScoringViewDTO(anterior).roundInfo.golfCourseId,
+    ).toBeNull();
   });
 });

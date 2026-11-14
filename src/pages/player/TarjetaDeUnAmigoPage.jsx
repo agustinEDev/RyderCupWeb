@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useState } from 'react';
 import { Link, Navigate, useParams, useSearchParams } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import { ArrowLeft, Eye, Lock, RefreshCw, SearchX, Trophy } from 'lucide-react';
@@ -8,11 +8,15 @@ import TarjetasDeLaPartida from '../../components/scoring/TarjetasDeLaPartida';
 import ScorecardTable from '../../components/scoring/ScorecardTable';
 import { useAuth } from '../../hooks/useAuth';
 import { useGoBack } from '../../hooks/useGoBack';
+import { useCargaCancelableEffect } from '../../hooks/useCargaCancelableEffect';
 import { rutaDeAnotacion } from '../../utils/rutaDeAnotacion';
 import { esDeUnaPrivada } from '../../utils/competicionPrivada';
 import { rutaEnSuFila } from '../../utils/rutasDeUnAmigo';
 import { PANTALLA_MENOS_BARRA_INFERIOR } from '../../utils/barraInferior';
-import { getScoringViewUseCase, getTeeGroupScoringViewUseCase } from '../../composition';
+import {
+  getScoringViewUseCase,
+  getTeeGroupScoringViewUseCase,
+} from '../../composition';
 
 const HTTP_FORBIDDEN = 403;
 const HTTP_NOT_FOUND = 404;
@@ -55,7 +59,9 @@ const TarjetaDeUnAmigoPage = ({ tipo }) => {
 
   const [vista, setVista] = useState(null);
   const [fallo, setFallo] = useState(null);
-  const [cargando, setCargando] = useState(true);
+  // De qué partida llegó ya una respuesta: una vista vacía que llega es «no
+  // hay tarjeta», no algo que esperar
+  const [cargadaDe, setCargadaDe] = useState(null);
 
   // Otra partida sin desmontarse: de cero, sin enseñar la anterior (revisor)
   const [deLaVista, setDeLaVista] = useState(idDeLaVista);
@@ -63,53 +69,67 @@ const TarjetaDeUnAmigoPage = ({ tipo }) => {
     setDeLaVista(idDeLaVista);
     setVista(null);
     setFallo(null);
-    setCargando(true);
   }
-  // La carga vigente: una respuesta de otra partida ya no pinta nada
-  const vigenteRef = useRef(idDeLaVista);
-  // Al confirmar el cambio, antes de que llegue nada: con solo la carga
-  // (efecto pasivo) quedaba un hueco para la respuesta vieja (CodeRabbit)
-  useLayoutEffect(() => {
-    vigenteRef.current = idDeLaVista;
-  }, [idDeLaVista]);
 
-  const carga = useCallback(async () => {
-    vigenteRef.current = idDeLaVista;
-    setCargando(true);
+  // La vista, una vez por partida. Cada respuesta dice de qué partida es, y
+  // con su fallo: una de otra partida que llegue en el hueco entre que se pinta
+  // la nueva y se descarta la vieja ya no pinta nada (CodeRabbit)
+  const { cargando, recargar } = useCargaCancelableEffect(
+    () => {
+      const id = idDeLaVista;
+      const casoDeUso = esPartida
+        ? getTeeGroupScoringViewUseCase
+        : getScoringViewUseCase;
+      return casoDeUso.execute(id).then(
+        (leida) => ({ id, leida }),
+        (error) => ({ id, error }),
+      );
+    },
+    [esPartida, idDeLaVista],
+    {
+      alCargar: ({ id, leida, error }) => {
+        if (id !== idDeLaVista) return;
+        setCargadaDe(id);
+        if (error) setFallo(motivoDelFallo(error));
+        else setVista(leida);
+      },
+    },
+  );
+  // Reintentar, o una tarjeta que cambia: con lo ya pintado no hay espera
+  const vuelveACargar = () => {
     setFallo(null);
-    const vigente = () => vigenteRef.current === idDeLaVista;
-    try {
-      const casoDeUso = esPartida ? getTeeGroupScoringViewUseCase : getScoringViewUseCase;
-      const leida = await casoDeUso.execute(idDeLaVista);
-      if (vigente()) setVista(leida);
-    } catch (error) {
-      if (!vigente()) return;
-      setFallo(motivoDelFallo(error));
-    } finally {
-      if (vigente()) setCargando(false);
-    }
-  }, [esPartida, idDeLaVista]);
+    recargar();
+  };
 
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- the load sets state only after awaiting the API
-    carga();
-  }, [carga]);
-
-  const juego = !!user?.id && (vista?.players ?? []).some((p) => p.userId === user.id);
+  const juego =
+    !!user?.id && (vista?.players ?? []).some((p) => p.userId === user.id);
   if (juego) {
     return (
       <Navigate
-        to={rutaDeAnotacion({ id: idDeLaVista, competitionId, esPartidaDeFranja: esPartida })}
+        to={rutaDeAnotacion({
+          id: idDeLaVista,
+          competitionId,
+          esPartidaDeFranja: esPartida,
+        })}
         replace
       />
     );
   }
 
-  if (cargando && !vista) {
+  // Sin nada que enseñar ni fallo, se espera mientras carga y también en el
+  // pintado de otra partida, antes de que su carga salga con el efecto. Si ya
+  // llegó y vino vacía, la pantalla sin tarjeta, con Reintentar y Volver
+  if (!vista && fallo === null && (cargando || cargadaDe !== idDeLaVista)) {
     return (
       <div className={`${PANTALLA_MENOS_BARRA_INFERIOR} bg-gray-50`}>
         <HeaderAuth user={user} />
-        <BlockLoader texto={t(esPartida ? 'common:screens.friendGroup' : 'common:screens.friendMatch')} />
+        <BlockLoader
+          texto={t(
+            esPartida
+              ? 'common:screens.friendGroup'
+              : 'common:screens.friendMatch',
+          )}
+        />
       </div>
     );
   }
@@ -119,7 +139,12 @@ const TarjetaDeUnAmigoPage = ({ tipo }) => {
       <div className={`${PANTALLA_MENOS_BARRA_INFERIOR} bg-gray-50`}>
         <HeaderAuth user={user} />
         <main className="max-w-2xl mx-auto px-4 py-6 pb-24">
-          <SinTarjeta fallo={fallo} onReintentar={carga} onVolver={volver} t={t} />
+          <SinTarjeta
+            fallo={fallo}
+            onReintentar={vuelveACargar}
+            onVolver={volver}
+            t={t}
+          />
         </main>
       </div>
     );
@@ -131,19 +156,34 @@ const TarjetaDeUnAmigoPage = ({ tipo }) => {
     <div className={`${PANTALLA_MENOS_BARRA_INFERIOR} bg-gray-50`}>
       <HeaderAuth user={user} />
       <main className="max-w-4xl mx-auto px-4 py-4 pb-24">
-        <BotonVolver onVolver={volver} t={t} className="hidden md:inline-flex mb-3" />
+        <BotonVolver
+          onVolver={volver}
+          t={t}
+          className="hidden md:inline-flex mb-3"
+        />
         {/* En móvil el título lo pinta la cabecera contextual: un segundo
             encabezado de nivel 1 rompería la jerarquía */}
         <h1 className="hidden md:block text-sm font-medium text-gray-500 mb-1">
-          {t(esPartida ? 'common:screens.friendGroup' : 'common:screens.friendMatch')}
+          {t(
+            esPartida
+              ? 'common:screens.friendGroup'
+              : 'common:screens.friendMatch',
+          )}
         </h1>
         <div className="flex items-start justify-between gap-3 mb-4">
           <h2 className="text-xl font-bold text-gray-900 break-words">
             {vista.matchNumber != null
-              ? t(esPartida ? 'friendCard.groupTitle' : 'friendCard.matchTitle', {
-                  number: vista.matchNumber,
-                })
-              : t(esPartida ? 'common:screens.friendGroup' : 'common:screens.friendMatch')}
+              ? t(
+                  esPartida ? 'friendCard.groupTitle' : 'friendCard.matchTitle',
+                  {
+                    number: vista.matchNumber,
+                  },
+                )
+              : t(
+                  esPartida
+                    ? 'common:screens.friendGroup'
+                    : 'common:screens.friendMatch',
+                )}
           </h2>
           <span
             data-testid="tarjeta-solo-lectura"
@@ -159,7 +199,7 @@ const TarjetaDeUnAmigoPage = ({ tipo }) => {
             scoringView={vista}
             userId={jugador ?? undefined}
             organiza={false}
-            onCambio={carga}
+            onCambio={vuelveACargar}
           />
         ) : (
           <ScorecardTable
@@ -203,13 +243,35 @@ const BotonVolver = ({ onVolver, t, className = '' }) => (
 /** No hay tarjeta que enseñar: no se puede ver, no existe, o falló la carga. */
 const SinTarjeta = ({ fallo, onReintentar, onVolver, t }) => {
   if (fallo === HTTP_FORBIDDEN) {
-    return <Aviso testId="tarjeta-prohibida" Icono={Lock} texto={t('friendCard.forbidden')} onVolver={onVolver} t={t} />;
+    return (
+      <Aviso
+        testId="tarjeta-prohibida"
+        Icono={Lock}
+        texto={t('friendCard.forbidden')}
+        onVolver={onVolver}
+        t={t}
+      />
+    );
   }
   if (fallo === HTTP_NOT_FOUND) {
-    return <Aviso testId="tarjeta-no-existe" Icono={SearchX} texto={t('friendCard.notFound')} onVolver={onVolver} t={t} />;
+    return (
+      <Aviso
+        testId="tarjeta-no-existe"
+        Icono={SearchX}
+        texto={t('friendCard.notFound')}
+        onVolver={onVolver}
+        t={t}
+      />
+    );
   }
   return (
-    <Aviso testId="tarjeta-error" Icono={RefreshCw} texto={t('friendCard.error')} onVolver={onVolver} t={t}>
+    <Aviso
+      testId="tarjeta-error"
+      Icono={RefreshCw}
+      texto={t('friendCard.error')}
+      onVolver={onVolver}
+      t={t}
+    >
       <button
         type="button"
         onClick={onReintentar}
@@ -225,7 +287,10 @@ const SinTarjeta = ({ fallo, onReintentar, onVolver, t }) => {
 
 // Siempre con una salida: en escritorio no hay flecha en la cabecera
 const Aviso = ({ testId, Icono, texto, onVolver, t, children }) => (
-  <div data-testid={testId} className="text-center py-16 px-6 bg-white border border-gray-200 rounded-lg">
+  <div
+    data-testid={testId}
+    className="text-center py-16 px-6 bg-white border border-gray-200 rounded-lg"
+  >
     <Icono className="w-10 h-10 mx-auto text-gray-300" aria-hidden="true" />
     <p className="mt-3 text-base font-semibold text-gray-900">{texto}</p>
     {children}

@@ -1,4 +1,3 @@
-/* eslint-disable no-unused-vars */
 /**
  * La cola de los reportes de hoyo que esperan a enviarse (entrega 7, 18 oct
  * 2026), de cada jugador: en un móvil compartido, la de uno solo sale con la

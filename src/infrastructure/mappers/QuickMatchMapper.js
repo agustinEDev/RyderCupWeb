@@ -1,6 +1,9 @@
 import QuickMatch from '../../domain/entities/QuickMatch';
 import QuickMatchStatus from '../../domain/value_objects/QuickMatchStatus';
-import { instanteDeLaApi, instanteSiEsValido } from '../../utils/instanteDeLaApi';
+import {
+  instanteDeLaApi,
+  instanteSiEsValido,
+} from '../../utils/instanteDeLaApi';
 
 /**
  * QuickMatchMapper - Anti-Corruption Layer
@@ -22,9 +25,14 @@ class QuickMatchMapper {
       throw new Error('QuickMatchMapper.toDomain: apiData is required');
     }
 
-    if (!apiData.id || !apiData.creator_id || !apiData.golf_course_id || !apiData.status) {
+    if (
+      !apiData.id ||
+      !apiData.creator_id ||
+      !apiData.golf_course_id ||
+      !apiData.status
+    ) {
       throw new Error(
-        'QuickMatchMapper.toDomain: Missing required fields (id, creator_id, golf_course_id, status)'
+        'QuickMatchMapper.toDomain: Missing required fields (id, creator_id, golf_course_id, status)',
       );
     }
 
@@ -67,22 +75,29 @@ class QuickMatchMapper {
     // Los golpes que el backend ha usado para decidir cada hoyo. Solo vienen en
     // el detalle; en la respuesta base la lista llega vacía y el reparto se
     // recalcula en el cliente (que es lo que permite anotar sin conexión).
-    const participantStrokes = (apiData.participant_strokes || []).map((ps) => ({
-      participantId: ps.participant_id,
-      playingHandicap: ps.playing_handicap,
-      // Número de hoyo -> golpes, con signo: negativo si los cede (hándicap plus).
-      // Las claves llegan como texto en JSON; se normalizan a número para poder
-      // indexar por `holeNumber` sin convertir en cada consulta.
-      strokesByHole: Object.fromEntries(
-        Object.entries(ps.strokes_by_hole || {}).map(([hole, count]) => [Number(hole), count])
-      ),
-    }));
+    const participantStrokes = (apiData.participant_strokes || []).map(
+      (ps) => ({
+        participantId: ps.participant_id,
+        playingHandicap: ps.playing_handicap,
+        // Número de hoyo -> golpes, con signo: negativo si los cede (hándicap plus).
+        // Las claves llegan como texto en JSON; se normalizan a número para poder
+        // indexar por `holeNumber` sin convertir en cada consulta.
+        strokesByHole: Object.fromEntries(
+          Object.entries(ps.strokes_by_hole || {}).map(([hole, count]) => [
+            Number(hole),
+            count,
+          ]),
+        ),
+      }),
+    );
 
-    const scoringAssignments = (apiData.scoring_assignments || []).map((sa) => ({
-      scorerParticipantId: sa.scorer_participant_id,
-      scorerName: sa.scorer_name,
-      coveredParticipantIds: sa.covered_participant_ids || [],
-    }));
+    const scoringAssignments = (apiData.scoring_assignments || []).map(
+      (sa) => ({
+        scorerParticipantId: sa.scorer_participant_id,
+        scorerName: sa.scorer_name,
+        coveredParticipantIds: sa.covered_participant_ids || [],
+      }),
+    );
 
     return QuickMatch.fromPersistence({
       id: apiData.id,
@@ -116,7 +131,9 @@ class QuickMatchMapper {
    */
   static toDomainMany(apiDataArray) {
     if (!Array.isArray(apiDataArray)) {
-      throw new Error('QuickMatchMapper.toDomainMany: apiDataArray must be an array');
+      throw new Error(
+        'QuickMatchMapper.toDomainMany: apiDataArray must be an array',
+      );
     }
 
     return apiDataArray.map((apiData) => QuickMatchMapper.toDomain(apiData));

@@ -45,7 +45,8 @@ const PATRONES_PUBLICOS = [
  *  `/start/` no es otra pantalla que `/start`, pero sin esto no coincidia con
  *  ninguna lista y la pantalla de entrada pasaba por privada. La raiz se
  *  conserva tal cual. */
-const normalizar = (ruta) => (ruta.length > 1 ? ruta.replace(/\/+$/, '') || '/' : ruta);
+const normalizar = (ruta) =>
+  ruta.length > 1 ? ruta.replace(/\/+$/, '') || '/' : ruta;
 
 /** La misma normalización para quien compare rutas a mano. */
 export const normalizaLaRuta = normalizar;
@@ -62,18 +63,27 @@ export const normalizaLaRuta = normalizar;
  * - la gestión de dispositivos, para cerrar una sesión robada sin aceptar nada
  *   antes (el backend la exime del 403).
  */
-export const RUTAS_CON_TERMINOS_PENDIENTES = Object.freeze(['/accept-terms', '/auth/complete-profile', '/profile/devices']);
+export const RUTAS_CON_TERMINOS_PENDIENTES = Object.freeze([
+  '/accept-terms',
+  '/auth/complete-profile',
+  '/profile/devices',
+]);
 
 /** Si en esta ruta se puede estar con los Términos pendientes; con o sin barra final. */
-export const sePuedeEstarConTerminosPendientes = (ruta) => RUTAS_CON_TERMINOS_PENDIENTES.includes(normalizar(ruta));
+export const sePuedeEstarConTerminosPendientes = (ruta) =>
+  RUTAS_CON_TERMINOS_PENDIENTES.includes(normalizar(ruta));
 
 /** Si es la clasificacion compartida de una competicion; con o sin barra final. */
-export const esLaClasificacionCompartida = (ruta) => CLASIFICACION_COMPARTIDA.test(normalizar(ruta));
+export const esLaClasificacionCompartida = (ruta) =>
+  CLASIFICACION_COMPARTIDA.test(normalizar(ruta));
 
 /** Si una ruta concreta es publica. */
 export const esRutaPublica = (ruta) => {
   const limpia = normalizar(ruta);
-  return RUTAS_PUBLICAS.includes(limpia) || PATRONES_PUBLICOS.some((p) => p.test(limpia));
+  return (
+    RUTAS_PUBLICAS.includes(limpia) ||
+    PATRONES_PUBLICOS.some((p) => p.test(limpia))
+  );
 };
 
 /**
@@ -90,7 +100,13 @@ export const esRutaPublica = (ruta) => {
  *  la pantalla donde se aterriza con un `user` rancio. `/` estaba en la lista
  *  original y se perdio al reescribir esto: ser echado de la portada publica es
  *  peor que el bucle que la exencion evita. */
-const PANTALLAS_DE_ACCESO = ['/', '/start', '/login', '/register', '/forgot-password'];
+const PANTALLAS_DE_ACCESO = [
+  '/',
+  '/start',
+  '/login',
+  '/register',
+  '/forgot-password',
+];
 
 export const sinSesionEnRutaPublica = (ruta, hayUsuarioGuardado) => {
   // Una dirección que no existe, como la clasificación compartida: el visitante
@@ -105,7 +121,11 @@ export const sinSesionEnRutaPublica = (ruta, hayUsuarioGuardado) => {
   // vuelve dias despues llevaria un `user` rancio: el 401 dispararia el refresco,
   // fallaria, y le echaria a `/login` con «tu sesion expiro» borrando lo que
   // estuviera escribiendo. Es el bucle que estas pantallas ya evitaban.
-  if (PANTALLAS_DE_ACCESO.includes(limpia) || limpia.startsWith('/reset-password')) return true;
+  if (
+    PANTALLAS_DE_ACCESO.includes(limpia) ||
+    limpia.startsWith('/reset-password')
+  )
+    return true;
 
   // En el resto —la portada, una clasificacion compartida— depende: con sesion
   // hay que refrescar, o la pantalla se pinta como si estuviera desconectado.

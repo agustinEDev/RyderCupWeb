@@ -15,8 +15,20 @@ const holes = [
 ];
 
 const participants = [
-  { participantId: 'p-1', name: 'Alice', handicap: 0, team: null, isGuest: false },
-  { participantId: 'p-2', name: 'Bob', handicap: 0, team: null, isGuest: false },
+  {
+    participantId: 'p-1',
+    name: 'Alice',
+    handicap: 0,
+    team: null,
+    isGuest: false,
+  },
+  {
+    participantId: 'p-2',
+    name: 'Bob',
+    handicap: 0,
+    team: null,
+    isGuest: false,
+  },
 ];
 
 describe('QuickMatchScorecardTable', () => {
@@ -24,25 +36,45 @@ describe('QuickMatchScorecardTable', () => {
     const holeScores = [{ holeNumber: 1, participantId: 'p-1', score: 4 }];
 
     render(
-      <QuickMatchScorecardTable holes={holes} holeScores={holeScores} participants={participants} currentParticipantId="p-1" />
+      <QuickMatchScorecardTable
+        holes={holes}
+        holeScores={holeScores}
+        participants={participants}
+        currentParticipantId="p-1"
+      />,
     );
 
-    expect(screen.getByTestId('quick-match-scorecard-table')).toBeInTheDocument();
+    expect(
+      screen.getByTestId('quick-match-scorecard-table'),
+    ).toBeInTheDocument();
     expect(screen.getAllByTestId('golf-figure').length).toBeGreaterThan(0);
   });
 
   it('should not render a classification table anymore (moved to its own tab)', () => {
     render(
-      <QuickMatchScorecardTable holes={holes} holeScores={[]} participants={participants} currentParticipantId="p-1" />
+      <QuickMatchScorecardTable
+        holes={holes}
+        holeScores={[]}
+        participants={participants}
+        currentParticipantId="p-1"
+      />,
     );
 
-    expect(screen.queryByTestId('quick-match-classification-table')).not.toBeInTheDocument();
+    expect(
+      screen.queryByTestId('quick-match-classification-table'),
+    ).not.toBeInTheDocument();
   });
 
   it('should mark a hole with a stroke dot when the participant receives a stroke there', () => {
     // handicap 18 -> exactly 1 stroke on every hole (mirrors StablefordCalculator's own test fixture)
     const highHandicapParticipants = [
-      { participantId: 'p-1', name: 'Alice', handicap: 18, team: null, isGuest: false },
+      {
+        participantId: 'p-1',
+        name: 'Alice',
+        handicap: 18,
+        team: null,
+        isGuest: false,
+      },
     ];
     const holeScores = [{ holeNumber: 1, participantId: 'p-1', score: 5 }];
 
@@ -52,7 +84,7 @@ describe('QuickMatchScorecardTable', () => {
         holeScores={holeScores}
         participants={highHandicapParticipants}
         currentParticipantId="p-1"
-      />
+      />,
     );
 
     expect(screen.getAllByTestId('stroke-dots').length).toBeGreaterThan(0);
@@ -60,7 +92,13 @@ describe('QuickMatchScorecardTable', () => {
 
   it('should not mark a stroke dot for a scratch (0 handicap) participant', () => {
     const scratchParticipants = [
-      { participantId: 'p-1', name: 'Alice', handicap: 0, team: null, isGuest: false },
+      {
+        participantId: 'p-1',
+        name: 'Alice',
+        handicap: 0,
+        team: null,
+        isGuest: false,
+      },
     ];
     const holeScores = [{ holeNumber: 1, participantId: 'p-1', score: 5 }];
 
@@ -70,7 +108,7 @@ describe('QuickMatchScorecardTable', () => {
         holeScores={holeScores}
         participants={scratchParticipants}
         currentParticipantId="p-1"
-      />
+      />,
     );
 
     expect(screen.queryByTestId('stroke-dots')).not.toBeInTheDocument();
@@ -85,9 +123,19 @@ describe('QuickMatchScorecardTable', () => {
       strokeIndex: i + 1,
     }));
     const participant = [
-      { participantId: 'p-1', name: 'Alice', handicap: 18, team: null, isGuest: false, color: 'YELLOW', teeGender: 'MALE' },
+      {
+        participantId: 'p-1',
+        name: 'Alice',
+        handicap: 18,
+        team: null,
+        isGuest: false,
+        color: 'YELLOW',
+        teeGender: 'MALE',
+      },
     ];
-    const tees = [{ color: 'YELLOW', gender: 'MALE', courseRating: 72, slopeRating: 113 }];
+    const tees = [
+      { color: 'YELLOW', gender: 'MALE', courseRating: 72, slopeRating: 113 },
+    ];
 
     // Con allowance 20% el hándicap de juego baja a 4: solo los cuatro hoyos
     // más difíciles llevan punto, no los 18 que daría el hándicap en bruto
@@ -99,7 +147,7 @@ describe('QuickMatchScorecardTable', () => {
         currentParticipantId="p-1"
         tees={tees}
         allowancePercentage={20}
-      />
+      />,
     );
 
     expect(screen.getAllByTestId('stroke-dots')).toHaveLength(4);
@@ -109,11 +157,20 @@ describe('QuickMatchScorecardTable', () => {
     const holeScores = [{ holeNumber: 1, participantId: 'p-1', score: 4 }];
 
     render(
-      <QuickMatchScorecardTable holes={holes} holeScores={holeScores} participants={participants} currentParticipantId="p-1" />
+      <QuickMatchScorecardTable
+        holes={holes}
+        holeScores={holeScores}
+        participants={participants}
+        currentParticipantId="p-1"
+      />,
     );
 
-    expect(screen.getByTestId('quick-match-player-card-p-1')).toBeInTheDocument();
-    expect(screen.getByTestId('quick-match-player-card-p-2')).toBeInTheDocument();
+    expect(
+      screen.getByTestId('quick-match-player-card-p-1'),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByTestId('quick-match-player-card-p-2'),
+    ).toBeInTheDocument();
   });
 
   it('should show Stableford points per hole when scoringFormat is STABLEFORD', () => {
@@ -126,7 +183,7 @@ describe('QuickMatchScorecardTable', () => {
         participants={participants}
         currentParticipantId="p-1"
         scoringFormat="STABLEFORD"
-      />
+      />,
     );
 
     expect(screen.getAllByTestId('hole-points').length).toBeGreaterThan(0);
@@ -143,7 +200,7 @@ describe('QuickMatchScorecardTable', () => {
         participants={participants}
         currentParticipantId="p-1"
         scoringFormat="MEDAL"
-      />
+      />,
     );
 
     expect(screen.getAllByTestId('hole-net-strokes').length).toBeGreaterThan(0);
@@ -154,7 +211,12 @@ describe('QuickMatchScorecardTable', () => {
     const holeScores = [{ holeNumber: 1, participantId: 'p-1', score: 4 }];
 
     render(
-      <QuickMatchScorecardTable holes={holes} holeScores={holeScores} participants={participants} currentParticipantId="p-1" />
+      <QuickMatchScorecardTable
+        holes={holes}
+        holeScores={holeScores}
+        participants={participants}
+        currentParticipantId="p-1"
+      />,
     );
 
     expect(screen.queryByTestId('hole-points')).not.toBeInTheDocument();
@@ -170,7 +232,9 @@ describe('QuickMatchScorecardTable - reparto de golpes por formato', () => {
     { color: 'YELLOW', gender: 'MALE', courseRating: 73.1, slopeRating: 140 },
     { color: 'YELLOW', gender: 'FEMALE', courseRating: 79.4, slopeRating: 147 },
   ];
-  const meisStrokeIndex = [7, 1, 13, 5, 15, 9, 3, 11, 17, 16, 2, 14, 12, 8, 18, 6, 4, 10];
+  const meisStrokeIndex = [
+    7, 1, 13, 5, 15, 9, 3, 11, 17, 16, 2, 14, 12, 8, 18, 6, 4, 10,
+  ];
   const meisPars = [4, 5, 4, 4, 3, 4, 5, 4, 3, 3, 4, 5, 4, 4, 3, 4, 5, 4];
   const meisHoles = meisStrokeIndex.map((si, i) => ({
     holeNumber: i + 1,
@@ -202,10 +266,42 @@ describe('QuickMatchScorecardTable - reparto de golpes por formato', () => {
   // 11, y el reparto sale (ch - 11) x 90%: 11 / 0 / 14 / 23. Los hándicaps de
   // juego que se ENSEÑAN son otros —21/10/23/32—, y por eso 23 - 10 no da 14.
   const fourballParticipants = [
-    { participantId: 'p-1', name: 'Agustin', handicap: 18.0, color: 'YELLOW', teeGender: 'MALE', team: 'A', isGuest: false },
-    { participantId: 'p-2', name: 'Companero', handicap: 8.0, color: 'YELLOW', teeGender: 'MALE', team: 'A', isGuest: false },
-    { participantId: 'p-3', name: 'RivalUno', handicap: 20.0, color: 'YELLOW', teeGender: 'MALE', team: 'B', isGuest: false },
-    { participantId: 'p-4', name: 'RivalDos', handicap: 28.0, color: 'YELLOW', teeGender: 'MALE', team: 'B', isGuest: false },
+    {
+      participantId: 'p-1',
+      name: 'Agustin',
+      handicap: 18.0,
+      color: 'YELLOW',
+      teeGender: 'MALE',
+      team: 'A',
+      isGuest: false,
+    },
+    {
+      participantId: 'p-2',
+      name: 'Companero',
+      handicap: 8.0,
+      color: 'YELLOW',
+      teeGender: 'MALE',
+      team: 'A',
+      isGuest: false,
+    },
+    {
+      participantId: 'p-3',
+      name: 'RivalUno',
+      handicap: 20.0,
+      color: 'YELLOW',
+      teeGender: 'MALE',
+      team: 'B',
+      isGuest: false,
+    },
+    {
+      participantId: 'p-4',
+      name: 'RivalDos',
+      handicap: 28.0,
+      color: 'YELLOW',
+      teeGender: 'MALE',
+      team: 'B',
+      isGuest: false,
+    },
   ];
 
   const renderSingles = (props = {}) =>
@@ -219,14 +315,17 @@ describe('QuickMatchScorecardTable - reparto de golpes por formato', () => {
         allowancePercentage={100}
         matchFormat="SINGLES"
         {...props}
-      />
+      />,
     );
 
   it('en match play solo pinta puntos al de más hándicap', () => {
     const { container } = renderSingles();
 
-    const cards = container.querySelectorAll('[data-testid^="quick-match-player-card-"]');
-    const dotsInCard = (card) => card.querySelectorAll('[data-testid="stroke-dots"]').length;
+    const cards = container.querySelectorAll(
+      '[data-testid^="quick-match-player-card-"]',
+    );
+    const dotsInCard = (card) =>
+      card.querySelectorAll('[data-testid="stroke-dots"]').length;
 
     // El de menos Playing Handicap (18.0 -> 23) juega off scratch
     expect(dotsInCard(cards[0])).toBe(0);
@@ -239,37 +338,48 @@ describe('QuickMatchScorecardTable - reparto de golpes por formato', () => {
 
     // La barra es lo que faltaba: una salida del género equivocado cambia el
     // Playing Handicap varios golpes y no había forma de verlo desde la tarjeta
-    expect(screen.getByTestId('quick-match-player-handicap-p-1')).toHaveTextContent('(M)');
-    expect(screen.getByTestId('quick-match-player-handicap-p-2')).toHaveTextContent('(M)');
+    expect(
+      screen.getByTestId('quick-match-player-handicap-p-1'),
+    ).toHaveTextContent('(M)');
+    expect(
+      screen.getByTestId('quick-match-player-handicap-p-2'),
+    ).toHaveTextContent('(M)');
   });
 
   // Un plus se guarda negativo y se lee con «+» (FE #797). -5 en amarillas
   // de Meis: -5 x 140/113 + (73,1 - 72) = -5,09, de juego -5
   it('H2: el hándicap de juego de un plus lleva «+»', () => {
     renderSingles({
-      participants: [{ ...singlesParticipants[0], handicap: -5 }, singlesParticipants[1]],
+      participants: [
+        { ...singlesParticipants[0], handicap: -5 },
+        singlesParticipants[1],
+      ],
     });
 
     const plus = screen.getByTestId('quick-match-player-handicap-p-1');
-    expect(plus).toHaveTextContent('scoring.scorecard.playingHandicap {"value":"+5"}');
+    expect(plus).toHaveTextContent(
+      'scoring.scorecard.playingHandicap {"value":"+5"}',
+    );
     expect(plus).not.toHaveTextContent('-5');
   });
 
   it('H3: el de un positivo, sin signo', () => {
     renderSingles();
 
-    expect(screen.getByTestId('quick-match-player-handicap-p-1')).toHaveTextContent(
-      'scoring.scorecard.playingHandicap {"value":"23"}'
-    );
+    expect(
+      screen.getByTestId('quick-match-player-handicap-p-1'),
+    ).toHaveTextContent('scoring.scorecard.playingHandicap {"value":"23"}');
   });
 
   it('en scratch no pinta ningún punto', () => {
     const { container } = renderSingles({ playMode: 'SCRATCH' });
 
-    expect(container.querySelectorAll('[data-testid="stroke-dots"]').length).toBe(0);
-    expect(screen.getByTestId('quick-match-player-handicap-p-1')).toHaveTextContent(
-      'scoring.scorecard.scratchMatch'
-    );
+    expect(
+      container.querySelectorAll('[data-testid="stroke-dots"]').length,
+    ).toBe(0);
+    expect(
+      screen.getByTestId('quick-match-player-handicap-p-1'),
+    ).toHaveTextContent('scoring.scorecard.scratchMatch');
   });
 
   it('en partido libre sí reparte el hándicap entero a cada uno', () => {
@@ -283,13 +393,19 @@ describe('QuickMatchScorecardTable - reparto de golpes por formato', () => {
         allowancePercentage={100}
         matchFormat={null}
         scoringFormat="STABLEFORD"
-      />
+      />,
     );
 
-    const cards = container.querySelectorAll('[data-testid^="quick-match-player-card-"]');
+    const cards = container.querySelectorAll(
+      '[data-testid^="quick-match-player-card-"]',
+    );
     // Los dos reciben: aquí el reparto individual es el correcto
-    expect(cards[0].querySelectorAll('[data-testid="stroke-dots"]').length).toBe(18);
-    expect(cards[1].querySelectorAll('[data-testid="stroke-dots"]').length).toBe(18);
+    expect(
+      cards[0].querySelectorAll('[data-testid="stroke-dots"]').length,
+    ).toBe(18);
+    expect(
+      cards[1].querySelectorAll('[data-testid="stroke-dots"]').length,
+    ).toBe(18);
   });
 
   /**
@@ -308,7 +424,7 @@ describe('QuickMatchScorecardTable - reparto de golpes por formato', () => {
         tees={meisTees}
         allowancePercentage={90}
         matchFormat="FOURBALL"
-      />
+      />,
     );
 
     const receiver = screen.getByTestId('quick-match-player-handicap-p-3');
@@ -317,9 +433,9 @@ describe('QuickMatchScorecardTable - reparto de golpes por formato', () => {
     expect(receiver).toHaveTextContent('"allowance":90');
 
     // el de menor hándicap no recibe nada, así que no hay nada que explicarle
-    expect(screen.getByTestId('quick-match-player-handicap-p-2')).not.toHaveTextContent(
-      'scoring.scorecard.ofTheDifference'
-    );
+    expect(
+      screen.getByTestId('quick-match-player-handicap-p-2'),
+    ).not.toHaveTextContent('scoring.scorecard.ofTheDifference');
   });
 
   /**
@@ -352,7 +468,7 @@ describe('QuickMatchScorecardTable - reparto de golpes por formato', () => {
         tees={meisTees}
         allowancePercentage={50}
         matchFormat="FOURSOMES"
-      />
+      />,
     );
 
     // Al bando que recibe, que es a quien hay que explicarle de dónde sale
@@ -373,7 +489,7 @@ describe('QuickMatchScorecardTable - reparto de golpes por formato', () => {
         allowancePercentage={95}
         matchFormat={null}
         scoringFormat="STABLEFORD"
-      />
+      />,
     );
 
     // Recibe golpes —y muchos— pero son su Playing Handicap entero, no una
@@ -407,7 +523,7 @@ describe('QuickMatchScorecardTable · una tarjeta por bando en foursomes', () =>
         tees={[]}
         allowancePercentage={50}
         matchFormat="FOURSOMES"
-      />
+      />,
     );
 
   it('junta a los dos compañeros en una sola tarjeta', () => {
@@ -415,9 +531,15 @@ describe('QuickMatchScorecardTable · una tarjeta por bando en foursomes', () =>
 
     expect(screen.getByText(/Agustin & Companero/)).toBeInTheDocument();
     expect(screen.getByText(/RivalUno & RivalDos/)).toBeInTheDocument();
-    expect(screen.getByTestId('quick-match-player-card-p-1')).toBeInTheDocument();
-    expect(screen.queryByTestId('quick-match-player-card-p-2')).not.toBeInTheDocument();
-    expect(screen.queryByTestId('quick-match-player-card-p-4')).not.toBeInTheDocument();
+    expect(
+      screen.getByTestId('quick-match-player-card-p-1'),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByTestId('quick-match-player-card-p-2'),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByTestId('quick-match-player-card-p-4'),
+    ).not.toBeInTheDocument();
   });
 
   /**
@@ -468,13 +590,21 @@ describe('QuickMatchScorecardTable · una tarjeta por bando en foursomes', () =>
   it('da una tarjeta por jugador cuando no hay bando', () => {
     renderFoursomes(
       [],
-      sideParticipants.map((p) => ({ ...p, team: null }))
+      sideParticipants.map((p) => ({ ...p, team: null })),
     );
 
-    expect(screen.getByTestId('quick-match-player-card-p-1')).toBeInTheDocument();
-    expect(screen.getByTestId('quick-match-player-card-p-2')).toBeInTheDocument();
-    expect(screen.getByTestId('quick-match-player-card-p-3')).toBeInTheDocument();
-    expect(screen.getByTestId('quick-match-player-card-p-4')).toBeInTheDocument();
+    expect(
+      screen.getByTestId('quick-match-player-card-p-1'),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByTestId('quick-match-player-card-p-2'),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByTestId('quick-match-player-card-p-3'),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByTestId('quick-match-player-card-p-4'),
+    ).toBeInTheDocument();
   });
 });
 
@@ -498,8 +628,20 @@ describe('QuickMatchScorecardTable · el par sale de la barra de cada tarjeta', 
   ];
 
   const tees = [
-    { color: 'YELLOW', gender: 'MALE', courseRating: 70, slopeRating: 120, holes: courseHoles },
-    { color: 'ORANGE', gender: 'MALE', courseRating: 60, slopeRating: 100, holes: orangeCard },
+    {
+      color: 'YELLOW',
+      gender: 'MALE',
+      courseRating: 70,
+      slopeRating: 120,
+      holes: courseHoles,
+    },
+    {
+      color: 'ORANGE',
+      gender: 'MALE',
+      courseRating: 60,
+      slopeRating: 100,
+      holes: orangeCard,
+    },
   ];
 
   const onOrange = [
@@ -523,14 +665,17 @@ describe('QuickMatchScorecardTable · el par sale de la barra de cada tarjeta', 
         tees={tees}
         scoringFormat="STABLEFORD"
         {...props}
-      />
+      />,
     );
 
   it('pinta la figura contra el par de su barra, no contra el del campo', () => {
     renderOnOrange();
 
     // 3 golpes en un par 3 es par. Contra el par 4 del campo salía birdie.
-    expect(screen.getAllByTestId('golf-figure')[0]).toHaveAttribute('title', 'figures.par');
+    expect(screen.getAllByTestId('golf-figure')[0]).toHaveAttribute(
+      'title',
+      'figures.par',
+    );
   });
 
   it('puntúa el Stableford contra el par de su barra', () => {
@@ -553,10 +698,38 @@ describe('QuickMatchScorecardTable · el par sale de la barra de cada tarjeta', 
    */
   it('cae a la tarjeta del campo cuando el bando sale de dos barras', () => {
     const mixedSide = [
-      { participantId: 'p-1', name: 'Uno', handicap: 0, team: 'A', color: 'ORANGE', teeGender: 'MALE' },
-      { participantId: 'p-2', name: 'Dos', handicap: 0, team: 'A', color: 'YELLOW', teeGender: 'MALE' },
-      { participantId: 'p-3', name: 'Tres', handicap: 0, team: 'B', color: 'ORANGE', teeGender: 'MALE' },
-      { participantId: 'p-4', name: 'Cuatro', handicap: 0, team: 'B', color: 'ORANGE', teeGender: 'MALE' },
+      {
+        participantId: 'p-1',
+        name: 'Uno',
+        handicap: 0,
+        team: 'A',
+        color: 'ORANGE',
+        teeGender: 'MALE',
+      },
+      {
+        participantId: 'p-2',
+        name: 'Dos',
+        handicap: 0,
+        team: 'A',
+        color: 'YELLOW',
+        teeGender: 'MALE',
+      },
+      {
+        participantId: 'p-3',
+        name: 'Tres',
+        handicap: 0,
+        team: 'B',
+        color: 'ORANGE',
+        teeGender: 'MALE',
+      },
+      {
+        participantId: 'p-4',
+        name: 'Cuatro',
+        handicap: 0,
+        team: 'B',
+        color: 'ORANGE',
+        teeGender: 'MALE',
+      },
     ];
 
     render(
@@ -567,7 +740,7 @@ describe('QuickMatchScorecardTable · el par sale de la barra de cada tarjeta', 
         currentParticipantId="p-1"
         tees={tees}
         matchFormat="FOURSOMES"
-      />
+      />,
     );
 
     // El bando mixto se queda con el par del campo...
@@ -606,15 +779,19 @@ describe('QuickMatchScorecardTable · el hándicap de la tarjeta de foursomes es
         tees={[]}
         allowancePercentage={50}
         matchFormat="FOURSOMES"
-      />
+      />,
     );
 
   it('promedia a los dos jugadores en vez de enseñar el del primero', () => {
     renderSides();
 
     // 13 al 50% son 7 (el de p-1 solo serían 9), y 24 al 50% son 12 (p-3: 10)
-    expect(screen.getByTestId('quick-match-player-handicap-p-1')).toHaveTextContent('"value":"7"');
-    expect(screen.getByTestId('quick-match-player-handicap-p-3')).toHaveTextContent('"value":"12"');
+    expect(
+      screen.getByTestId('quick-match-player-handicap-p-1'),
+    ).toHaveTextContent('"value":"7"');
+    expect(
+      screen.getByTestId('quick-match-player-handicap-p-3'),
+    ).toHaveTextContent('"value":"12"');
   });
 
   it('deja los dos bandos con números distintos cuando juegan a hándicaps distintos', () => {
@@ -653,12 +830,42 @@ describe('QuickMatchScorecardTable · de dónde sale el hándicap del bando', ()
     { holeNumber: 1, par: 4, strokeIndex: 1 },
     { holeNumber: 2, par: 3, strokeIndex: 2 },
   ];
-  const tees = [{ color: 'YELLOW', gender: 'MALE', courseRating: 70, slopeRating: 120 }];
+  const tees = [
+    { color: 'YELLOW', gender: 'MALE', courseRating: 70, slopeRating: 120 },
+  ];
   const sides = [
-    { participantId: 'p-1', name: 'Uno', handicap: 18.0, team: 'A', color: 'YELLOW', teeGender: 'MALE' },
-    { participantId: 'p-2', name: 'Dos', handicap: 8.0, team: 'A', color: 'YELLOW', teeGender: 'MALE' },
-    { participantId: 'p-3', name: 'Tres', handicap: 20.0, team: 'B', color: 'YELLOW', teeGender: 'MALE' },
-    { participantId: 'p-4', name: 'Cuatro', handicap: 28.0, team: 'B', color: 'YELLOW', teeGender: 'MALE' },
+    {
+      participantId: 'p-1',
+      name: 'Uno',
+      handicap: 18.0,
+      team: 'A',
+      color: 'YELLOW',
+      teeGender: 'MALE',
+    },
+    {
+      participantId: 'p-2',
+      name: 'Dos',
+      handicap: 8.0,
+      team: 'A',
+      color: 'YELLOW',
+      teeGender: 'MALE',
+    },
+    {
+      participantId: 'p-3',
+      name: 'Tres',
+      handicap: 20.0,
+      team: 'B',
+      color: 'YELLOW',
+      teeGender: 'MALE',
+    },
+    {
+      participantId: 'p-4',
+      name: 'Cuatro',
+      handicap: 28.0,
+      team: 'B',
+      color: 'YELLOW',
+      teeGender: 'MALE',
+    },
   ];
 
   // Hándicaps de juego individuales, como los manda el backend. Su promedio
@@ -681,12 +888,14 @@ describe('QuickMatchScorecardTable · de dónde sale el hándicap del bando', ()
         allowancePercentage={50}
         matchFormat="FOURSOMES"
         participantStrokes={participantStrokes}
-      />
+      />,
     );
 
     // El promedio de Course Handicaps (13 al 50% = 7), no el de los 11 y 7 que
     // manda el servidor, que daría 9
-    expect(screen.getByTestId('quick-match-player-handicap-p-1')).toHaveTextContent('"value":"7"');
+    expect(
+      screen.getByTestId('quick-match-player-handicap-p-1'),
+    ).toHaveTextContent('"value":"7"');
   });
 
   it('sin campo cargado se apoya en los del servidor, que es lo único que hay', () => {
@@ -700,11 +909,13 @@ describe('QuickMatchScorecardTable · de dónde sale el hándicap del bando', ()
         allowancePercentage={50}
         matchFormat="FOURSOMES"
         participantStrokes={participantStrokes}
-      />
+      />,
     );
 
     // Promedio de 11 y 7: sin campo no hay Course Handicap que promediar
-    expect(screen.getByTestId('quick-match-player-handicap-p-1')).toHaveTextContent('"value":"9"');
+    expect(
+      screen.getByTestId('quick-match-player-handicap-p-1'),
+    ).toHaveTextContent('"value":"9"');
   });
 });
 
@@ -742,10 +953,38 @@ describe('QuickMatchScorecardTable · bando con una tarjeta de barra más corta'
 
   it('se queda con la tarjeta del campo en vez de con la del compañero', () => {
     const members = [
-      { participantId: 'p-1', name: 'Larga', handicap: 0, team: 'A', color: 'YELLOW', teeGender: 'MALE' },
-      { participantId: 'p-2', name: 'Corta', handicap: 0, team: 'A', color: 'ORANGE', teeGender: 'MALE' },
-      { participantId: 'p-3', name: 'Rival', handicap: 0, team: 'B', color: 'YELLOW', teeGender: 'MALE' },
-      { participantId: 'p-4', name: 'Rival2', handicap: 0, team: 'B', color: 'YELLOW', teeGender: 'MALE' },
+      {
+        participantId: 'p-1',
+        name: 'Larga',
+        handicap: 0,
+        team: 'A',
+        color: 'YELLOW',
+        teeGender: 'MALE',
+      },
+      {
+        participantId: 'p-2',
+        name: 'Corta',
+        handicap: 0,
+        team: 'A',
+        color: 'ORANGE',
+        teeGender: 'MALE',
+      },
+      {
+        participantId: 'p-3',
+        name: 'Rival',
+        handicap: 0,
+        team: 'B',
+        color: 'YELLOW',
+        teeGender: 'MALE',
+      },
+      {
+        participantId: 'p-4',
+        name: 'Rival2',
+        handicap: 0,
+        team: 'B',
+        color: 'YELLOW',
+        teeGender: 'MALE',
+      },
     ];
 
     render(
@@ -756,7 +995,7 @@ describe('QuickMatchScorecardTable · bando con una tarjeta de barra más corta'
         currentParticipantId="p-1"
         tees={tees}
         matchFormat="FOURSOMES"
-      />
+      />,
     );
 
     // El par 4 del campo, no el 5 de la barra del compañero
@@ -777,7 +1016,7 @@ describe('QuickMatchScorecardTable - raya (bola recogida)', () => {
         participants={[participants[0]]}
         currentParticipantId="p-1"
         scoringFormat="STABLEFORD"
-      />
+      />,
     );
 
     const celda = screen.getByTestId('quick-match-score-cell-p-1-1');
@@ -798,7 +1037,7 @@ describe('QuickMatchScorecardTable - raya (bola recogida)', () => {
         participants={[participants[0]]}
         currentParticipantId="p-1"
         scoringFormat="STABLEFORD"
-      />
+      />,
     );
 
     expect(screen.getByTestId('hole-points')).toHaveTextContent('0');
@@ -819,10 +1058,12 @@ describe('QuickMatchScorecardTable - raya (bola recogida)', () => {
         participants={[participants[0]]}
         currentParticipantId="p-1"
         scoringFormat="STABLEFORD"
-      />
+      />,
     );
 
-    expect(screen.getByTestId('quick-match-scorecard-table')).toHaveTextContent('9');
+    expect(screen.getByTestId('quick-match-scorecard-table')).toHaveTextContent(
+      '9',
+    );
   });
 });
 
@@ -835,10 +1076,34 @@ describe('QuickMatchScorecardTable - raya (bola recogida)', () => {
  */
 describe('QuickMatchScorecardTable — la tarjeta de quien mira va primero', () => {
   const cuatro = [
-    { participantId: 'p-1', name: 'Ana', handicap: 0, team: 'A', isGuest: false },
-    { participantId: 'p-2', name: 'Beto', handicap: 0, team: 'A', isGuest: false },
-    { participantId: 'p-3', name: 'Carlos', handicap: 0, team: 'B', isGuest: false },
-    { participantId: 'p-4', name: 'Diana', handicap: 0, team: 'B', isGuest: false },
+    {
+      participantId: 'p-1',
+      name: 'Ana',
+      handicap: 0,
+      team: 'A',
+      isGuest: false,
+    },
+    {
+      participantId: 'p-2',
+      name: 'Beto',
+      handicap: 0,
+      team: 'A',
+      isGuest: false,
+    },
+    {
+      participantId: 'p-3',
+      name: 'Carlos',
+      handicap: 0,
+      team: 'B',
+      isGuest: false,
+    },
+    {
+      participantId: 'p-4',
+      name: 'Diana',
+      handicap: 0,
+      team: 'B',
+      isGuest: false,
+    },
   ];
 
   const tarjetas = (container) => [
@@ -846,11 +1111,18 @@ describe('QuickMatchScorecardTable — la tarjeta de quien mira va primero', () 
   ];
 
   const clavesEnOrden = (container) =>
-    tarjetas(container).map((card) => card.dataset.testid.replace('quick-match-player-card-', ''));
+    tarjetas(container).map((card) =>
+      card.dataset.testid.replace('quick-match-player-card-', ''),
+    );
 
   it('sube la tarjeta propia en una partida sin bandos', () => {
     const { container } = render(
-      <QuickMatchScorecardTable holes={holes} holeScores={[]} participants={participants} currentParticipantId="p-2" />
+      <QuickMatchScorecardTable
+        holes={holes}
+        holeScores={[]}
+        participants={participants}
+        currentParticipantId="p-2"
+      />,
     );
 
     expect(clavesEnOrden(container)).toEqual(['p-2', 'p-1']);
@@ -858,7 +1130,13 @@ describe('QuickMatchScorecardTable — la tarjeta de quien mira va primero', () 
 
   it('en fourball sube al compañero detrás y respeta el orden de los rivales', () => {
     const { container } = render(
-      <QuickMatchScorecardTable holes={holes} holeScores={[]} participants={cuatro} currentParticipantId="p-4" matchFormat="FOURBALL" />
+      <QuickMatchScorecardTable
+        holes={holes}
+        holeScores={[]}
+        participants={cuatro}
+        currentParticipantId="p-4"
+        matchFormat="FOURBALL"
+      />,
     );
 
     expect(clavesEnOrden(container)).toEqual(['p-4', 'p-3', 'p-1', 'p-2']);
@@ -866,7 +1144,13 @@ describe('QuickMatchScorecardTable — la tarjeta de quien mira va primero', () 
 
   it('en foursomes sube el bando propio y escribe delante a quien mira', () => {
     const { container } = render(
-      <QuickMatchScorecardTable holes={holes} holeScores={[]} participants={cuatro} currentParticipantId="p-4" matchFormat="FOURSOMES" />
+      <QuickMatchScorecardTable
+        holes={holes}
+        holeScores={[]}
+        participants={cuatro}
+        currentParticipantId="p-4"
+        matchFormat="FOURSOMES"
+      />,
     );
 
     // La tarjeta sigue siendo la del dueño de la bola —el primer miembro del
@@ -878,7 +1162,13 @@ describe('QuickMatchScorecardTable — la tarjeta de quien mira va primero', () 
 
   it('deja el orden de alta a quien no juega la partida', () => {
     const { container } = render(
-      <QuickMatchScorecardTable holes={holes} holeScores={[]} participants={cuatro} currentParticipantId="p-9" matchFormat="FOURSOMES" />
+      <QuickMatchScorecardTable
+        holes={holes}
+        holeScores={[]}
+        participants={cuatro}
+        currentParticipantId="p-9"
+        matchFormat="FOURSOMES"
+      />,
     );
 
     expect(clavesEnOrden(container)).toEqual(['p-1', 'p-3']);
@@ -897,19 +1187,31 @@ describe('QuickMatchScorecardTable — la tarjeta de quien mira va primero', () 
     ];
 
     const comoJugador = render(
-      <QuickMatchScorecardTable holes={holes} holeScores={holeScores} participants={cuatro} currentParticipantId="p-4" matchFormat="FOURSOMES" />
+      <QuickMatchScorecardTable
+        holes={holes}
+        holeScores={holeScores}
+        participants={cuatro}
+        currentParticipantId="p-4"
+        matchFormat="FOURSOMES"
+      />,
     );
     const golpesDelJugador = tarjetas(comoJugador.container).map(
-      (card) => card.querySelector('table').textContent
+      (card) => card.querySelector('table').textContent,
     );
 
     comoJugador.unmount();
 
     const comoEspectador = render(
-      <QuickMatchScorecardTable holes={holes} holeScores={holeScores} participants={cuatro} currentParticipantId="p-9" matchFormat="FOURSOMES" />
+      <QuickMatchScorecardTable
+        holes={holes}
+        holeScores={holeScores}
+        participants={cuatro}
+        currentParticipantId="p-9"
+        matchFormat="FOURSOMES"
+      />,
     );
     const golpesDelEspectador = tarjetas(comoEspectador.container).map(
-      (card) => card.querySelector('table').textContent
+      (card) => card.querySelector('table').textContent,
     );
 
     expect(golpesDelJugador[0]).toEqual(golpesDelEspectador[1]);
@@ -932,13 +1234,39 @@ describe('QuickMatchScorecardTable — la barra sigue al nombre que encabeza', (
   }));
 
   const bandoMixto = [
-    { participantId: 'p-1', name: 'Carlos', handicap: 10, team: 'A', color: 'RED', teeGender: 'MALE' },
-    { participantId: 'p-2', name: 'Diana', handicap: 10, team: 'A', color: 'RED', teeGender: 'FEMALE' },
+    {
+      participantId: 'p-1',
+      name: 'Carlos',
+      handicap: 10,
+      team: 'A',
+      color: 'RED',
+      teeGender: 'MALE',
+    },
+    {
+      participantId: 'p-2',
+      name: 'Diana',
+      handicap: 10,
+      team: 'A',
+      color: 'RED',
+      teeGender: 'FEMALE',
+    },
   ];
 
   const tees = [
-    { color: 'RED', gender: 'MALE', identifier: 'Rojas M', courseRating: 70, slopeRating: 113 },
-    { color: 'RED', gender: 'FEMALE', identifier: 'Rojas F', courseRating: 72, slopeRating: 120 },
+    {
+      color: 'RED',
+      gender: 'MALE',
+      identifier: 'Rojas M',
+      courseRating: 70,
+      slopeRating: 113,
+    },
+    {
+      color: 'RED',
+      gender: 'FEMALE',
+      identifier: 'Rojas F',
+      courseRating: 72,
+      slopeRating: 120,
+    },
   ];
 
   it('enseña la barra de quien mira cuando su nombre sube al frente', () => {
@@ -950,7 +1278,7 @@ describe('QuickMatchScorecardTable — la barra sigue al nombre que encabeza', (
         currentParticipantId="p-2"
         matchFormat="FOURSOMES"
         tees={tees}
-      />
+      />,
     );
 
     const cabecera = screen.getByTestId('quick-match-player-handicap-p-1');
@@ -967,10 +1295,12 @@ describe('QuickMatchScorecardTable — la barra sigue al nombre que encabeza', (
         currentParticipantId="p-9"
         matchFormat="FOURSOMES"
         tees={tees}
-      />
+      />,
     );
 
-    expect(screen.getByTestId('quick-match-player-handicap-p-1')).toHaveTextContent('Rojas M (M)');
+    expect(
+      screen.getByTestId('quick-match-player-handicap-p-1'),
+    ).toHaveTextContent('Rojas M (M)');
   });
 });
 
@@ -985,7 +1315,15 @@ describe('QuickMatchScorecardTable · subtotales de puntos y de neto', () => {
     strokeIndex: 18 - i,
   }));
   // Hándicap 18 sin barras: un golpe en cada hoyo
-  const conGolpes = [{ participantId: 'p-1', name: 'Alice', handicap: 18, team: null, isGuest: false }];
+  const conGolpes = [
+    {
+      participantId: 'p-1',
+      name: 'Alice',
+      handicap: 18,
+      team: null,
+      isGuest: false,
+    },
+  ];
   const anotados = [
     { holeNumber: 1, participantId: 'p-1', score: 5 },
     { holeNumber: 2, participantId: 'p-1', score: null },
@@ -999,19 +1337,24 @@ describe('QuickMatchScorecardTable · subtotales de puntos y de neto', () => {
         participants={conGolpes}
         currentParticipantId="p-1"
         {...props}
-      />
+      />,
     );
-  const tramo = (seccion) => screen.getByTestId(`quick-match-section-total-p-1-${seccion}`);
+  const tramo = (seccion) =>
+    screen.getByTestId(`quick-match-section-total-p-1-${seccion}`);
 
   it('S1/S2: en Stableford, los puntos de la ida y de la vuelta bajo sus golpes', () => {
     pinta({ scoringFormat: 'STABLEFORD' });
 
-    expect(within(tramo('ida')).getByTestId('subtotal-points')).toHaveTextContent(/^2$/);
+    expect(
+      within(tramo('ida')).getByTestId('subtotal-points'),
+    ).toHaveTextContent(/^2$/);
     expect(within(tramo('ida')).getByTestId('subtotal-points')).toHaveAttribute(
       'title',
-      'scoring.scorecard.subtotalPoints {"count":2}'
+      'scoring.scorecard.subtotalPoints {"count":2}',
     );
-    expect(within(tramo('vuelta')).getByTestId('subtotal-points')).toHaveTextContent(/^4$/);
+    expect(
+      within(tramo('vuelta')).getByTestId('subtotal-points'),
+    ).toHaveTextContent(/^4$/);
     // Los golpes del tramo siguen ahí: 5 + 6 (raya en par 3 con un golpe
     // recibido: su doble bogey neto, Agustín 23 oct 2026) y 3
     expect(tramo('ida')).toHaveTextContent(/^11/);
@@ -1021,16 +1364,25 @@ describe('QuickMatchScorecardTable · subtotales de puntos y de neto', () => {
   it('S4: en Medal, el neto de cada tramo', () => {
     pinta({ scoringFormat: 'MEDAL' });
 
-    expect(within(tramo('ida')).getByTestId('subtotal-net-strokes')).toHaveTextContent(/^9$/);
-    expect(within(tramo('vuelta')).getByTestId('subtotal-net-strokes')).toHaveTextContent(/^2$/);
-    expect(within(tramo('vuelta')).getByTestId('subtotal-net-strokes')).toHaveAttribute(
+    expect(
+      within(tramo('ida')).getByTestId('subtotal-net-strokes'),
+    ).toHaveTextContent(/^9$/);
+    expect(
+      within(tramo('vuelta')).getByTestId('subtotal-net-strokes'),
+    ).toHaveTextContent(/^2$/);
+    expect(
+      within(tramo('vuelta')).getByTestId('subtotal-net-strokes'),
+    ).toHaveAttribute(
       'title',
-      'scoring.scorecard.subtotalNetStrokes {"count":2}'
+      'scoring.scorecard.subtotalNetStrokes {"count":2}',
     );
   });
 
   it('S2: un tramo sin hoyos jugados no enseña subtotal', () => {
-    pinta({ scoringFormat: 'STABLEFORD', holeScores: [{ holeNumber: 1, participantId: 'p-1', score: 5 }] });
+    pinta({
+      scoringFormat: 'STABLEFORD',
+      holeScores: [{ holeNumber: 1, participantId: 'p-1', score: 5 }],
+    });
 
     expect(within(tramo('vuelta')).queryByTestId('subtotal-points')).toBeNull();
   });
@@ -1041,9 +1393,15 @@ describe('QuickMatchScorecardTable · subtotales de puntos y de neto', () => {
     pinta({ scoringFormat: 'STABLEFORD', holes: dieciocho.slice(0, 9) });
 
     expect(screen.getAllByTestId('subtotal-points')).toHaveLength(2);
-    expect(within(tramo('ida')).getByTestId('subtotal-points')).toHaveTextContent(/^2$/);
-    expect(within(tramo('total')).getByTestId('subtotal-points')).toHaveTextContent(/^2$/);
-    expect(screen.queryByTestId('quick-match-section-total-p-1-vuelta')).toBeNull();
+    expect(
+      within(tramo('ida')).getByTestId('subtotal-points'),
+    ).toHaveTextContent(/^2$/);
+    expect(
+      within(tramo('total')).getByTestId('subtotal-points'),
+    ).toHaveTextContent(/^2$/);
+    expect(
+      screen.queryByTestId('quick-match-section-total-p-1-vuelta'),
+    ).toBeNull();
   });
 
   // Revisión del 22 oct: los golpes y el subtotal son dos cifras sin etiqueta
@@ -1051,9 +1409,13 @@ describe('QuickMatchScorecardTable · subtotales de puntos y de neto', () => {
   it('A2: el lector oye los golpes y los puntos del tramo por separado', () => {
     pinta({ scoringFormat: 'STABLEFORD' });
 
-    const frase = within(tramo('ida')).getByText('scoring.scorecard.sectionTotalPointsA11y {"strokes":11,"count":2}');
+    const frase = within(tramo('ida')).getByText(
+      'scoring.scorecard.sectionTotalPointsA11y {"strokes":11,"count":2}',
+    );
     expect(frase).toHaveClass('sr-only');
-    const visible = within(tramo('ida')).getByTestId('subtotal-points').parentElement;
+    const visible = within(tramo('ida')).getByTestId(
+      'subtotal-points',
+    ).parentElement;
     expect(visible).toHaveAttribute('aria-hidden', 'true');
     expect(visible).toHaveTextContent(/^112$/);
   });
@@ -1062,7 +1424,9 @@ describe('QuickMatchScorecardTable · subtotales de puntos y de neto', () => {
     pinta({ scoringFormat: 'MEDAL' });
 
     expect(
-      within(tramo('vuelta')).getByText('scoring.scorecard.sectionTotalNetA11y {"strokes":3,"net":2}')
+      within(tramo('vuelta')).getByText(
+        'scoring.scorecard.sectionTotalNetA11y {"strokes":3,"net":2}',
+      ),
     ).toHaveClass('sr-only');
   });
 
@@ -1104,36 +1468,48 @@ describe('QuickMatchScorecardTable · la cifra pequeña tiene nombre (#419)', ()
         participants={participants.slice(0, 1)}
         currentParticipantId="p-1"
         {...props}
-      />
+      />,
     );
-  const cabeceraDeGolpes = () => screen.getByTestId('vuelta-horizontal').querySelector('tbody th[scope="row"]');
+  const cabeceraDeGolpes = () =>
+    screen
+      .getByTestId('vuelta-horizontal')
+      .querySelector('tbody th[scope="row"]');
 
   it.each([
     ['STABLEFORD', 'scoring.scorecard.pointsShort', 'hole-points'],
     ['MEDAL', 'scoring.scorecard.netShort', 'hole-net-strokes'],
-  ])('E1: en %s la cabecera de la fila lo dice, a la vista', (scoringFormat, clave, testIdCifra) => {
-    pinta({ scoringFormat });
+  ])(
+    'E1: en %s la cabecera de la fila lo dice, a la vista',
+    (scoringFormat, clave, testIdCifra) => {
+      pinta({ scoringFormat });
 
-    const th = cabeceraDeGolpes();
-    expect(th).not.toHaveClass('sr-only');
-    const etiqueta = within(th).getByText(clave);
-    expect(etiqueta).not.toHaveClass('sr-only');
-    // El tramo se sigue oyendo
-    expect(within(th).getByText('scorecard.out')).toHaveClass('sr-only');
-    // Con la misma letra que la cifra que nombra
-    const cifra = screen.getByTestId(testIdCifra);
-    expect(etiqueta.className).toBe(cifra.className);
-    // En la cabecera, no en cada casilla
-    expect(screen.getAllByText(clave)).toHaveLength(1);
-    expect(within(screen.getByTestId('quick-match-score-cell-p-1-1')).queryByText(clave)).toBeNull();
-  });
+      const th = cabeceraDeGolpes();
+      expect(th).not.toHaveClass('sr-only');
+      const etiqueta = within(th).getByText(clave);
+      expect(etiqueta).not.toHaveClass('sr-only');
+      // El tramo se sigue oyendo
+      expect(within(th).getByText('scorecard.out')).toHaveClass('sr-only');
+      // Con la misma letra que la cifra que nombra
+      const cifra = screen.getByTestId(testIdCifra);
+      expect(etiqueta.className).toBe(cifra.className);
+      // En la cabecera, no en cada casilla
+      expect(screen.getAllByText(clave)).toHaveLength(1);
+      expect(
+        within(screen.getByTestId('quick-match-score-cell-p-1-1')).queryByText(
+          clave,
+        ),
+      ).toBeNull();
+    },
+  );
 
   it('E2: la etiqueta va debajo de un hueco del alto de la figura, arriba del todo', () => {
     pinta({ scoringFormat: 'STABLEFORD' });
 
     const th = cabeceraDeGolpes();
     expect(th).toHaveClass('align-top', 'py-1');
-    const columna = within(th).getByText('scoring.scorecard.pointsShort').parentElement;
+    const columna = within(th).getByText(
+      'scoring.scorecard.pointsShort',
+    ).parentElement;
     expect(columna).toHaveClass('flex', 'flex-col', 'gap-0.5');
     // El hueco mide lo que la figura (w-7 h-7) y no dice nada
     const hueco = columna.firstElementChild;

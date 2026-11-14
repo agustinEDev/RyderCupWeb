@@ -18,16 +18,19 @@
 // composition root registra (la infraestructura no llega al router ni a Sentry)
 import { interfaz } from './interfazDelTransporte';
 
-
 import { setCsrfTokenGlobal, getCsrfToken } from './csrfTokenSync'; // v1.13.0: CSRF Protection
 
 import {
   isDeviceRevoked,
   isSessionExpired,
   handleDeviceRevocationLogout,
-  handleSessionExpiredLogout
+  handleSessionExpiredLogout,
 } from './deviceRevocationLogout'; // v1.13.1: Device Revocation, v2.0.4: Separated expiration
-import { esUn401DeToken, MOTIVO_DEL_CIERRE, motivoDelRefrescoRechazado } from '../../utils/motivosDelCierre';
+import {
+  esUn401DeToken,
+  MOTIVO_DEL_CIERRE,
+  motivoDelRefrescoRechazado,
+} from '../../utils/motivosDelCierre';
 
 import { RUTA_DEL_REFRESCO } from '../../utils/rutasDeLaSesion';
 import { cabeceraDelModoDeLaApp } from '../../utils/modoDeLaApp';
@@ -48,7 +51,10 @@ const hayUsuarioGuardado = () => {
   }
 };
 
-const API_URL = globalThis.APP_CONFIG?.API_BASE_URL || import.meta.env.VITE_API_BASE_URL || '';
+const API_URL =
+  globalThis.APP_CONFIG?.API_BASE_URL ||
+  import.meta.env.VITE_API_BASE_URL ||
+  '';
 
 // El refresco que hay en vuelo ahora mismo, o null si no hay ninguno.
 //
@@ -73,7 +79,10 @@ const TOPE_DEL_REFRESCO_MS = 15000;
 
 // Las rutas que piden la contraseña actual y contestan 401 si está mal: ese 401 no es
 // de la sesión, y no se refresca ni se repite (RyderCupAm #753)
-const RUTAS_CON_CONTRASENA_ACTUAL = ['/api/v1/users/security', '/api/v1/auth/reauthenticate'];
+const RUTAS_CON_CONTRASENA_ACTUAL = [
+  '/api/v1/users/security',
+  '/api/v1/auth/reauthenticate',
+];
 
 // Momento del ultimo refresco con exito en esta carga de la pagina, o null si
 // todavia no ha habido ninguno. Lo consulta el refresco proactivo, que de otro
@@ -109,7 +118,8 @@ const anotaElRefresco = () => {
   refrescosCompletados += 1;
 };
 
-const esSesionSustituida = (error) => error?.errorData?.error_code === 'SESSION_REPLACED';
+const esSesionSustituida = (error) =>
+  error?.errorData?.error_code === 'SESSION_REPLACED';
 
 /**
  * Un POST al refresco, con su tope de tiempo.
@@ -142,7 +152,11 @@ const pideElRefresco = async () => {
     });
 
     if (!response.ok) {
-      console.error('❌ [TokenRefresh] Refresh failed:', response.status, response.statusText);
+      console.error(
+        '❌ [TokenRefresh] Refresh failed:',
+        response.status,
+        response.statusText,
+      );
 
       // Parse error response to get detail message
       let errorData = {};
@@ -156,7 +170,9 @@ const pideElRefresco = async () => {
 
       // Refresh token expired or invalid
       if (response.status === 401) {
-        const error = new Error(errorData.detail || 'Refresh token expired. Please login again.');
+        const error = new Error(
+          errorData.detail || 'Refresh token expired. Please login again.',
+        );
         error.response = response;
         error.errorData = errorData;
         throw error;
@@ -208,13 +224,18 @@ const pideConUnReintento = async () => {
     if (!esSesionSustituida(error)) throw error;
   }
 
-  await new Promise((resolve) => setTimeout(resolve, ESPERA_TRAS_SUSTITUIDA_MS));
+  await new Promise((resolve) =>
+    setTimeout(resolve, ESPERA_TRAS_SUSTITUIDA_MS),
+  );
 
   try {
     return await pideElRefresco();
   } catch (error) {
     if (!esSesionSustituida(error)) throw error;
-    throw new TypeError('The session was replaced and the new cookie has not arrived yet', { cause: error });
+    throw new TypeError(
+      'The session was replaced and the new cookie has not arrived yet',
+      { cause: error },
+    );
   }
 };
 
@@ -280,7 +301,9 @@ export const conElTokenAlDia = (opciones, { siempre = false } = {}) => {
     else nuevas.delete(CABECERA_CSRF);
     return { ...opciones, headers: nuevas };
   }
-  const nombres = Object.keys(headers ?? {}).filter((k) => k.toLowerCase() === CABECERA_CSRF.toLowerCase());
+  const nombres = Object.keys(headers ?? {}).filter(
+    (k) => k.toLowerCase() === CABECERA_CSRF.toLowerCase(),
+  );
   if (!siempre && nombres.length === 0) return opciones;
   const token = getCsrfToken();
   const nuevas = { ...headers };
@@ -336,15 +359,22 @@ const cierraSiElServidorDijoQueNo = (refreshError) => {
   if (respuestaDelServidor && refreshError.errorData) {
     // Check if refresh failed due to EXPLICIT device revocation
     if (isDeviceRevoked(respuestaDelServidor, refreshError.errorData)) {
-      console.log('🔒 [TokenRefresh] Device was revoked - logging out with revocation message');
+      console.log(
+        '🔒 [TokenRefresh] Device was revoked - logging out with revocation message',
+      );
       handleDeviceRevocationLogout(refreshError.errorData, delRefresco);
       return;
     }
 
     // Check if refresh failed due to session expiration (refresh token expired)
     if (isSessionExpired(respuestaDelServidor, refreshError.errorData)) {
-      console.log('⏱️ [TokenRefresh] Session expired - logging out with expiration message');
-      handleSessionExpiredLogout(refreshError.errorData, { ...delRefresco, motivo });
+      console.log(
+        '⏱️ [TokenRefresh] Session expired - logging out with expiration message',
+      );
+      handleSessionExpiredLogout(refreshError.errorData, {
+        ...delRefresco,
+        motivo,
+      });
       return;
     }
   }
@@ -355,7 +385,10 @@ const cierraSiElServidorDijoQueNo = (refreshError) => {
   // refresh token, y un 401 con otro mensaje también cierra la sesión
   if (credencialesRechazadas) {
     console.log('⏱️ [TokenRefresh] Refresh rejected with 401 - logging out');
-    handleSessionExpiredLogout(refreshError.errorData || null, { ...delRefresco, motivo });
+    handleSessionExpiredLogout(refreshError.errorData || null, {
+      ...delRefresco,
+      motivo,
+    });
   } else {
     // Nadie ha dicho que la sesión no valga: se conserva. El marcador
     // vuelve a preguntar en su siguiente vuelta y lo anotado sin conexión
@@ -387,10 +420,16 @@ const vigilaLaRepetida = async (url, opciones, repetida) => {
   const contexto = { metodo: opciones?.method, endpoint: url, estado: 401 };
   if (isDeviceRevoked(repetida, datos)) {
     handleDeviceRevocationLogout(datos, contexto);
-    throw Object.assign(new Error('Device revoked'), { response: repetida, errorData: datos });
+    throw Object.assign(new Error('Device revoked'), {
+      response: repetida,
+      errorData: datos,
+    });
   }
   if (esUn401DeToken(datos)) {
-    interfaz().avisaASentryDelCierre({ motivo: MOTIVO_DEL_CIERRE.SESION_PERDIDA, ...contexto });
+    interfaz().avisaASentryDelCierre({
+      motivo: MOTIVO_DEL_CIERRE.SESION_PERDIDA,
+      ...contexto,
+    });
   }
   return repetida;
 };
@@ -433,7 +472,9 @@ export const fetchWithTokenRefresh = async (url, options = {}) => {
     // Special case: Don't retry refresh token endpoint itself
     // Must check BEFORE device revocation to avoid infinite promise
     if (url.includes('/auth/refresh-token')) {
-      console.log('🚫 [TokenRefresh] Refresh endpoint itself returned 401. Session expired.');
+      console.log(
+        '🚫 [TokenRefresh] Refresh endpoint itself returned 401. Session expired.',
+      );
       return response;
     }
 
@@ -475,13 +516,18 @@ export const fetchWithTokenRefresh = async (url, options = {}) => {
     // La contraseña actual mal escrita no es una sesión caducada (RyderCupAm #753):
     // repetirla gastaba dos intentos del límite por usuario de esas dos rutas. Solo
     // un 401 de token se refresca allí
-    if (RUTAS_CON_CONTRASENA_ACTUAL.some((ruta) => url.includes(ruta)) && !esUn401DeToken(errorData)) {
+    if (
+      RUTAS_CON_CONTRASENA_ACTUAL.some((ruta) => url.includes(ruta)) &&
+      !esUn401DeToken(errorData)
+    ) {
       return response;
     }
 
     // Special case: Don't retry login endpoint - let it fail naturally
     if (url.includes('/auth/login')) {
-      console.log('🚫 [TokenRefresh] Login endpoint returned 401. Invalid credentials - not retrying.');
+      console.log(
+        '🚫 [TokenRefresh] Login endpoint returned 401. Invalid credentials - not retrying.',
+      );
       return response;
     }
 
@@ -490,13 +536,20 @@ export const fetchWithTokenRefresh = async (url, options = {}) => {
     // La lista vive en un solo sitio: esta copia iba dos entradas por detras.
     // Y se mira tambien si hay sesion guardada: en una clasificacion compartida
     // —que es publica— un usuario con sesion SI tiene que refrescar.
-    const isPublicPage = interfaz().sinSesionEnRutaPublica(currentPath, hayUsuarioGuardado());
+    const isPublicPage = interfaz().sinSesionEnRutaPublica(
+      currentPath,
+      hayUsuarioGuardado(),
+    );
     if (isPublicPage && url.includes('/current-user')) {
-      console.log('🚫 [TokenRefresh] On public page, not attempting refresh for current-user check');
+      console.log(
+        '🚫 [TokenRefresh] On public page, not attempting refresh for current-user check',
+      );
       return response;
     }
 
-    console.log('⚠️ [TokenRefresh] Received 401 Unauthorized. Attempting token refresh...');
+    console.log(
+      '⚠️ [TokenRefresh] Received 401 Unauthorized. Attempting token refresh...',
+    );
 
     // Si alguien ya refresco DESPUES de que esta peticion saliera, su 401 es de
     // un token que ya esta sustituido: se reintenta y punto, sin pedir otro
@@ -506,21 +559,33 @@ export const fetchWithTokenRefresh = async (url, options = {}) => {
     // la cookie que consiguio el primero fuera perfectamente valida
     const yaSeRefrescoDespues = refrescosCompletados > refrescosAlSalir;
     if (!refrescoEnCurso && yaSeRefrescoDespues) {
-      console.log('🔄 [TokenRefresh] A refresh already happened after this request left. Retrying...');
-      return await vigilaLaRepetida(url, fetchOptions, await fetch(url, conElTokenAlDia(fetchOptions)));
+      console.log(
+        '🔄 [TokenRefresh] A refresh already happened after this request left. Retrying...',
+      );
+      return await vigilaLaRepetida(
+        url,
+        fetchOptions,
+        await fetch(url, conElTokenAlDia(fetchOptions)),
+      );
     }
 
     // Si ya hay un refresco en vuelo, esta peticion se engancha a el en vez de
     // pedir otro. Al terminar, reintenta lo suyo. Si el refresco falla, el
     // error sube por aqui: ya lo ha tratado quien lo arranco
     if (refrescoEnCurso) {
-      console.log('⏳ [TokenRefresh] Refresh already in progress. Waiting for it...');
+      console.log(
+        '⏳ [TokenRefresh] Refresh already in progress. Waiting for it...',
+      );
       await refrescoEnCurso;
       console.log('🔄 [TokenRefresh] Retrying queued request...');
       // `return await` y no `return` a secas: sin esperar aqui, un fallo de red
       // en este reintento se escapa del catch de abajo y el mismo suceso deja
       // dos rastros distintos segun quien lo sufra
-      return await vigilaLaRepetida(url, fetchOptions, await fetch(url, conElTokenAlDia(fetchOptions)));
+      return await vigilaLaRepetida(
+        url,
+        fetchOptions,
+        await fetch(url, conElTokenAlDia(fetchOptions)),
+      );
     }
 
     try {
@@ -536,7 +601,6 @@ export const fetchWithTokenRefresh = async (url, options = {}) => {
       const retryResponse = await fetch(url, conElTokenAlDia(fetchOptions));
 
       return await vigilaLaRepetida(url, fetchOptions, retryResponse);
-
     } catch (refreshError) {
       trataElFalloDelRefresco(refreshError);
 
@@ -550,7 +614,6 @@ export const fetchWithTokenRefresh = async (url, options = {}) => {
       // segundos un 'Redirect timeout' en vez del error de verdad
       throw refreshError;
     }
-
   } catch (error) {
     console.error('❌ [TokenRefresh] Error in fetch interceptor:', error);
     // Re-throw to let the caller handle the error appropriately

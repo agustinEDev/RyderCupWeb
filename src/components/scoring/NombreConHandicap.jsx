@@ -20,7 +20,15 @@ import { formatoDeHandicapDeJuego } from '../../utils/formatoDeHandicap';
  * @param {string} [props.testId] El de la caja
  * @param {import('react').ReactNode} [props.children] Detrás del valor, dentro de la caja
  */
-const NombreConHandicap = ({ userId, nombre, playingHandicap, className, nombreClassName, testId, children }) => {
+const NombreConHandicap = ({
+  userId,
+  nombre,
+  playingHandicap,
+  className,
+  nombreClassName,
+  testId,
+  children,
+}) => {
   const { t } = useTranslation('scoring');
   const valor = formatoDeHandicapDeJuego(playingHandicap);
   return (
@@ -31,8 +39,12 @@ const NombreConHandicap = ({ userId, nombre, playingHandicap, className, nombreC
           data-testid={`hcp-de-juego-${userId}`}
           className="ml-1 shrink-0 whitespace-nowrap text-[10px] font-normal text-gray-500"
         >
-          <span aria-hidden="true">{t('scorecard.playingHandicapShort', { value: valor })}</span>
-          <span className="sr-only">{t('scorecard.playingHandicap', { value: valor })}</span>
+          <span aria-hidden="true">
+            {t('scorecard.playingHandicapShort', { value: valor })}
+          </span>
+          <span className="sr-only">
+            {t('scorecard.playingHandicap', { value: valor })}
+          </span>
         </span>
       )}
       {/* Lo que va detrás del valor (la etiqueta de retirado): dentro, para que

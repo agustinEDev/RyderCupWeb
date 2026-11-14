@@ -25,7 +25,8 @@ const zonaDelDispositivo = () => {
 const dos = (n) => String(n).padStart(2, '0');
 
 /** Si `Intl` conoce la zona: si no, no se le puede llamar «la del campo». */
-export const esZonaValida = (zona) => Boolean(zona) && zonaValida(zona) === zona;
+export const esZonaValida = (zona) =>
+  Boolean(zona) && zonaValida(zona) === zona;
 
 const zonaValida = (zona) => {
   if (!zona) return undefined;
@@ -51,14 +52,23 @@ const paredEn = (instante, zona) => {
       second: '2-digit',
     })
       .formatToParts(new Date(instante))
-      .map((p) => [p.type, p.value])
+      .map((p) => [p.type, p.value]),
   );
-  return Date.UTC(partes.year, partes.month - 1, partes.day, partes.hour, partes.minute, partes.second);
+  return Date.UTC(
+    partes.year,
+    partes.month - 1,
+    partes.day,
+    partes.hour,
+    partes.minute,
+    partes.second,
+  );
 };
 
 /** Minutos que la zona va por delante de UTC en ese instante. */
 const desfase = (instante, zona) =>
-  zona ? Math.round((paredEn(instante, zona) - instante) / 60000) : -new Date(instante).getTimezoneOffset();
+  zona
+    ? Math.round((paredEn(instante, zona) - instante) / 60000)
+    : -new Date(instante).getTimezoneOffset();
 
 const conSigno = (minutos) => {
   const signo = minutos >= 0 ? '+' : '-';
@@ -84,7 +94,12 @@ export const aIsoConHuso = (entrada, zonaDelCampo) => {
   }
   // Los desfases que la zona tiene alrededor de esa hora (antes y después de un
   // posible cambio): vale el que, aplicado, da justo esa hora de pared
-  const candidatos = [...new Set([desfase(pared - 86400000, zona), desfase(pared + 86400000, zona)])];
+  const candidatos = [
+    ...new Set([
+      desfase(pared - 86400000, zona),
+      desfase(pared + 86400000, zona),
+    ]),
+  ];
   const validos = candidatos
     .map((d) => ({ d, instante: pared - d * 60000 }))
     .filter(({ d, instante }) => desfase(instante, zona) === d)
@@ -98,17 +113,31 @@ export const aEntradaDelCampo = (iso, zonaDelCampo) => {
   const instante = Date.parse(iso);
   if (Number.isNaN(instante)) return '';
   const zona = zonaValida(zonaDelCampo);
-  const pared = zona ? paredEn(instante, zona) : instante - new Date(instante).getTimezoneOffset() * 60000;
+  const pared = zona
+    ? paredEn(instante, zona)
+    : instante - new Date(instante).getTimezoneOffset() * 60000;
   return new Date(pared).toISOString().slice(0, 16);
 };
 
 /** «sáb, 12 oct, 3:00», en la hora del campo y el idioma de la aplicación. */
 export const horaEnElCampo = (iso, zonaDelCampo, idioma) => {
-  const opciones = { weekday: 'short', day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' };
+  const opciones = {
+    weekday: 'short',
+    day: 'numeric',
+    month: 'short',
+    hour: 'numeric',
+    minute: '2-digit',
+  };
   const zona = zonaValida(zonaDelCampo);
   try {
-    return new Date(iso).toLocaleString(idioma, zona ? { ...opciones, timeZone: zona } : opciones);
+    return new Date(iso).toLocaleString(
+      idioma,
+      zona ? { ...opciones, timeZone: zona } : opciones,
+    );
   } catch {
-    return new Date(iso).toLocaleString(undefined, zona ? { ...opciones, timeZone: zona } : opciones);
+    return new Date(iso).toLocaleString(
+      undefined,
+      zona ? { ...opciones, timeZone: zona } : opciones,
+    );
   }
 };

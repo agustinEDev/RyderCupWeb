@@ -1,6 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { MAX_HANDICAP, MIN_HANDICAP } from '../../domain/services/handicapRange';
+import {
+  MAX_HANDICAP,
+  MIN_HANDICAP,
+} from '../../domain/services/handicapRange';
 
 /**
  * El hándicap a mano, con su «+» al lado (QA del 26 oct, FE #938).
@@ -21,7 +24,15 @@ import { MAX_HANDICAP, MIN_HANDICAP } from '../../domain/services/handicapRange'
 // Signo opcional, hasta dos cifras y un decimal, con coma o punto
 const FORMA_DEL_HANDICAP = /^([+-]?)(\d{0,2})(?:[.,](\d?))?$/;
 
-const CampoDeHandicap = ({ value, onChange, onBlur, disabled, className = '', ref, ...resto }) => {
+const CampoDeHandicap = ({
+  value,
+  onChange,
+  onBlur,
+  disabled,
+  className = '',
+  ref,
+  ...resto
+}) => {
   const { t } = useTranslation('common');
   const texto = String(value ?? '');
   const conSigno = texto.startsWith('-');
@@ -58,7 +69,10 @@ const CampoDeHandicap = ({ value, onChange, onBlur, disabled, className = '', re
     const esPlus = plus || conMenos;
     const loQueSeVe = tecleado.slice(signo.length);
     setEnPantalla(loQueSeVe);
-    const numero = entero === '' && decimal === '' ? '' : `${entero || '0'}${decimal ? `.${decimal}` : ''}`;
+    const numero =
+      entero === '' && decimal === ''
+        ? ''
+        : `${entero || '0'}${decimal ? `.${decimal}` : ''}`;
     if (numero === '') {
       // Vaciarlo suelta el «+»: si no, lo siguiente salía plus sin quererlo
       // (pasada del Kind, 26 oct). Escribir solo el signo sí lo enciende, y
@@ -79,7 +93,8 @@ const CampoDeHandicap = ({ value, onChange, onBlur, disabled, className = '', re
 
   // Fuera de rango no se envía el formulario, como hacía el numérico con su
   // max, pero con el aviso en su idioma
-  const fueraDeRango = sinSigno !== '' && Number(sinSigno) > (plus ? -MIN_HANDICAP : MAX_HANDICAP);
+  const fueraDeRango =
+    sinSigno !== '' && Number(sinSigno) > (plus ? -MIN_HANDICAP : MAX_HANDICAP);
   const campo = useRef(null);
   // El campo es de los dos: el suyo para la validez y el de quien lo usa (CodeRabbit)
   const alMontar = (nodo) => {
@@ -88,7 +103,9 @@ const CampoDeHandicap = ({ value, onChange, onBlur, disabled, className = '', re
     else if (ref) ref.current = nodo;
   };
   useEffect(() => {
-    campo.current?.setCustomValidity(fueraDeRango ? t('handicapField.outOfRange') : '');
+    campo.current?.setCustomValidity(
+      fueraDeRango ? t('handicapField.outOfRange') : '',
+    );
   }, [fueraDeRango, t]);
 
   const alPulsarMas = () => {
@@ -108,7 +125,9 @@ const CampoDeHandicap = ({ value, onChange, onBlur, disabled, className = '', re
         aria-pressed={plus}
         aria-label={t('handicapField.plus')}
         className={`shrink-0 min-w-11 rounded-lg border px-3 text-lg font-bold transition-colors disabled:opacity-50 ${
-          plus ? 'border-primary bg-primary text-white' : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50'
+          plus
+            ? 'border-primary bg-primary text-white'
+            : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50'
         }`}
       >
         +

@@ -21,8 +21,10 @@ const BarrasDeTuGenero = ({ t, courseTees, genero, value, onChange }) => {
   // El sufijo (M)/(F) solo en la del otro género: todas las demás son tuyas
   // (o mixtas), y ponerlo en cada botón era ruido. El nombre accesible es
   // exactamente lo que se ve, para que el control por voz lo encuentre
-  const generoVisible = (tee) => (tee.gender && tee.gender !== genero ? tee.gender : null);
-  const nombreDe = (tee) => nombreDeLaBarra(tCampos, { ...tee, gender: generoVisible(tee) });
+  const generoVisible = (tee) =>
+    tee.gender && tee.gender !== genero ? tee.gender : null;
+  const nombreDe = (tee) =>
+    nombreDeLaBarra(tCampos, { ...tee, gender: generoVisible(tee) });
   const mias = barrasDeMiGenero(courseTees, genero);
 
   if (!mias) {
@@ -40,12 +42,16 @@ const BarrasDeTuGenero = ({ t, courseTees, genero, value, onChange }) => {
 
   // La elegida en «Otras» (del otro género) también se ve, marcada, delante
   const elegidaDeOtras = courseTees.find(
-    (tee) => teeKey(tee.color, tee.gender) === value && !mias.includes(tee)
+    (tee) => teeKey(tee.color, tee.gender) === value && !mias.includes(tee),
   );
   const botones = elegidaDeOtras ? [elegidaDeOtras, ...mias] : mias;
 
   return (
-    <div className="flex flex-wrap gap-2" role="group" aria-label={t('create.course.yourTeeLabel')}>
+    <div
+      className="flex flex-wrap gap-2"
+      role="group"
+      aria-label={t('create.course.yourTeeLabel')}
+    >
       {botones.map((tee) => {
         const clave = teeKey(tee.color, tee.gender);
         const elegida = clave === value;
@@ -58,10 +64,16 @@ const BarrasDeTuGenero = ({ t, courseTees, genero, value, onChange }) => {
             aria-pressed={elegida}
             data-testid={`quick-match-creator-tee-option-${clave}`}
             className={`px-2 py-1 rounded-lg border transition-colors ${
-              elegida ? 'border-primary bg-primary/5 ring-1 ring-primary' : 'border-gray-200 hover:border-gray-300'
+              elegida
+                ? 'border-primary bg-primary/5 ring-1 ring-primary'
+                : 'border-gray-200 hover:border-gray-300'
             }`}
           >
-            <TeeColorBadge color={tee.color} identifier={tee.identifier} gender={generoVisible(tee)} />
+            <TeeColorBadge
+              color={tee.color}
+              identifier={tee.identifier}
+              gender={generoVisible(tee)}
+            />
           </button>
         );
       })}
@@ -74,7 +86,8 @@ const BarrasDeTuGenero = ({ t, courseTees, genero, value, onChange }) => {
           data-testid="quick-match-creator-tee-otras"
           className="px-3 py-1 rounded-lg border border-dashed border-gray-300 text-sm text-gray-600 hover:border-gray-400"
         >
-          {t('create.course.otrasBarras')} <span aria-hidden="true">&rsaquo;</span>
+          {t('create.course.otrasBarras')}{' '}
+          <span aria-hidden="true">&rsaquo;</span>
         </button>
       )}
       {otrasAbiertas && (

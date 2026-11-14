@@ -90,6 +90,9 @@ export const sortCountriesByName = (countries, language = 'en') => {
   const locale = toCollatorLocale(language);
 
   return [...countries].sort((a, b) =>
-    formatCountryName(a, language).localeCompare(formatCountryName(b, language), locale)
+    formatCountryName(a, language).localeCompare(
+      formatCountryName(b, language),
+      locale,
+    ),
   );
 };

@@ -23,7 +23,9 @@ describe('ApiCompetitionRepository · resumen público', () => {
 
     const resumen = await new ApiCompetitionRepository().findSummary('c-1');
 
-    expect(apiModule.default).toHaveBeenCalledWith('/api/v1/competitions/c-1/summary');
+    expect(apiModule.default).toHaveBeenCalledWith(
+      '/api/v1/competitions/c-1/summary',
+    );
     expect(resumen).toEqual({
       id: 'c-1',
       name: 'Medal',

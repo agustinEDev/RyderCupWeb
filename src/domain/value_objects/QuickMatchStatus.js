@@ -22,8 +22,14 @@ class QuickMatchStatus {
   static CANCELLED = 'CANCELLED';
 
   static VALID_TRANSITIONS = {
-    [QuickMatchStatus.PENDING]: [QuickMatchStatus.IN_PROGRESS, QuickMatchStatus.CANCELLED],
-    [QuickMatchStatus.IN_PROGRESS]: [QuickMatchStatus.COMPLETED, QuickMatchStatus.CANCELLED],
+    [QuickMatchStatus.PENDING]: [
+      QuickMatchStatus.IN_PROGRESS,
+      QuickMatchStatus.CANCELLED,
+    ],
+    [QuickMatchStatus.IN_PROGRESS]: [
+      QuickMatchStatus.COMPLETED,
+      QuickMatchStatus.CANCELLED,
+    ],
     [QuickMatchStatus.COMPLETED]: [],
     [QuickMatchStatus.CANCELLED]: [],
   };
@@ -34,7 +40,7 @@ class QuickMatchStatus {
     if (!QuickMatchStatus.isValid(value)) {
       throw new Error(
         `Invalid QuickMatchStatus: ${value}. ` +
-          `Valid values: ${QuickMatchStatus.getAllValues().join(', ')}`
+          `Valid values: ${QuickMatchStatus.getAllValues().join(', ')}`,
       );
     }
     this.#value = value;

@@ -1,6 +1,5 @@
-/* eslint-disable no-unused-vars */
-import Email from '../value_objects/Email';
-import Password from '../value_objects/Password'; // 1. Importar Password VO
+/** @typedef {import('../value_objects/Email').default} Email */
+/** @typedef {import('../value_objects/Password').default} Password */
 
 class IAuthRepository {
   /**

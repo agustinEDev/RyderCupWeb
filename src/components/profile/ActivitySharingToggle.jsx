@@ -37,7 +37,7 @@ const ActivitySharingToggle = ({ initialValue, onChange }) => {
         customToast.success(t('privacy.turnedOn'));
       } else {
         customToast.success(
-          t('privacy.turnedOff', { count: result.removedEvents })
+          t('privacy.turnedOff', { count: result.removedEvents }),
         );
       }
     } catch {

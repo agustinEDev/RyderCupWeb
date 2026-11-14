@@ -2,22 +2,44 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router';
 import { motion } from 'framer-motion';
 import {
-  Mail, Shield, Calendar, TrendingUp, Award,
-  CheckCircle, AlertCircle, Edit, LogOut, ArrowLeft, Globe, Clock, Smartphone,
-  FileText, Lock, Cookie, Users, Scale
+  Mail,
+  Shield,
+  Calendar,
+  TrendingUp,
+  Award,
+  CheckCircle,
+  AlertCircle,
+  Edit,
+  LogOut,
+  ArrowLeft,
+  Globe,
+  Clock,
+  Smartphone,
+  FileText,
+  Lock,
+  Cookie,
+  Users,
+  Scale,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import HeaderAuth from '../components/layout/HeaderAuth';
 import Avatar from '../components/ui/Avatar';
 import LanguageSwitcher from '../components/ui/LanguageSwitcher';
-import { SettingsGroup, SettingsRow, SettingsControlRow } from '../components/profile/SettingsList';
+import {
+  SettingsGroup,
+  SettingsRow,
+  SettingsControlRow,
+} from '../components/profile/SettingsList';
 import ActivitySharingToggle from '../components/profile/ActivitySharingToggle';
 import { useAuth } from '../hooks/useAuth';
 import { useStandalone } from '../hooks/useStandalone';
 import { useLogout } from '../hooks/useLogout';
 import { CountryFlag } from '../components/ui/CountryFlag';
 import { instanteEnTexto } from '../utils/instanteDeLaApi';
-import { fetchCountriesUseCase, listUserCompetitionsUseCase } from '../composition';
+import {
+  fetchCountriesUseCase,
+  listUserCompetitionsUseCase,
+} from '../composition';
 import FullScreenLoader from '../components/ui/FullScreenLoader';
 import { formatCountryName } from '../services/countries';
 import { formatoDeIndice } from '../utils/formatoDeHandicap';
@@ -48,7 +70,7 @@ const Profile = () => {
         if (user.country_code) {
           try {
             const countries = await fetchCountriesUseCase.execute();
-            const suyo = countries.find(c => c.code === user.country_code);
+            const suyo = countries.find((c) => c.code === user.country_code);
             // Y se limpia si no aparece: dejando el anterior, la bandera —que sale
             // del código nuevo— y el nombre —el viejo— se contradicen
             setCountry(suyo ?? null);
@@ -59,13 +81,18 @@ const Profile = () => {
 
         // Fetch user's competitions count
         try {
-          const competitionsData = await listUserCompetitionsUseCase.execute(user.id);
+          const competitionsData = await listUserCompetitionsUseCase.execute(
+            user.id,
+          );
 
           // Handle different response formats: array or object with results array
           let list = [];
           if (Array.isArray(competitionsData)) {
             list = competitionsData;
-          } else if (competitionsData && Array.isArray(competitionsData.results)) {
+          } else if (
+            competitionsData &&
+            Array.isArray(competitionsData.results)
+          ) {
             list = competitionsData.results;
           }
 
@@ -94,11 +121,8 @@ const Profile = () => {
   // donde salen todas
   const handleLogout = () => logout({ recargarEn: '/' });
 
-
   if (isLoadingUser || isLoadingData) {
-    return (
-      <FullScreenLoader texto={t('common:loading')} />
-    );
+    return <FullScreenLoader texto={t('common:loading')} />;
   }
 
   if (!user) {
@@ -113,38 +137,37 @@ const Profile = () => {
   // Las fechas en el idioma de la app y leídas como UTC; y si hay hándicap,
   // un booleano: era el texto «Not set» el que lo decidía (FE #710)
   const tieneHandicap = user.handicap !== null && user.handicap !== undefined;
-  const handicap = tieneHandicap ? formatoDeIndice(user.handicap) : t('edit.handicap.notSet');
+  const handicap = tieneHandicap
+    ? formatoDeIndice(user.handicap)
+    : t('edit.handicap.notSet');
   const fechaLarga = { year: 'numeric', month: 'long', day: 'numeric' };
   const handicapUpdated =
     instanteEnTexto(user.handicap_updated_at, i18n.language, fechaLarga) ??
     t('edit.handicap.never');
-  const memberSince = instanteEnTexto(user.created_at, i18n.language, fechaLarga) ?? '';
+  const memberSince =
+    instanteEnTexto(user.created_at, i18n.language, fechaLarga) ?? '';
 
   return (
-    <div className={`relative flex h-auto ${PANTALLA_MENOS_BARRA_INFERIOR} w-full flex-col bg-white`}>
+    <div
+      className={`relative flex h-auto ${PANTALLA_MENOS_BARRA_INFERIOR} w-full flex-col bg-white`}
+    >
       <div className="layout-container flex h-full grow flex-col">
         <HeaderAuth user={user} />
 
         <div className="px-4 md:px-40 flex flex-1 justify-center py-5">
           <div className="layout-content-container flex flex-col max-w-[960px] flex-1">
             {/* Page Title */}
-            <div
-              className="flex flex-wrap justify-between gap-3 p-4"
-            >
+            <div className="flex flex-wrap justify-between gap-3 p-4">
               <div>
                 <p className="hidden md:block text-gray-900 tracking-tight text-3xl md:text-[32px] font-bold leading-tight">
                   {t('title')}
                 </p>
-                <p className="text-gray-500 text-sm mt-1">
-                  {t('subtitle')}
-                </p>
+                <p className="text-gray-500 text-sm mt-1">{t('subtitle')}</p>
               </div>
             </div>
 
             {/* Profile Header Card */}
-            <div
-              className="p-4"
-            >
+            <div className="p-4">
               <div className="relative overflow-hidden bg-primary-50 rounded-xl border border-primary-200 p-6 shadow-md">
                 {/* Background Pattern */}
                 <div className="absolute top-0 right-0 opacity-10">
@@ -155,12 +178,18 @@ const Profile = () => {
                 <div className="relative z-10">
                   {/* Avatar */}
                   <div className="mb-4">
-                    <Avatar userId={user.id} size="xl" version={user.updated_at} />
+                    <Avatar
+                      userId={user.id}
+                      size="xl"
+                      version={user.updated_at}
+                    />
                   </div>
 
                   {/* Name and Badges */}
                   <div className="mb-4">
-                    <h2 className="text-3xl font-bold text-gray-900 mb-2">{fullName}</h2>
+                    <h2 className="text-3xl font-bold text-gray-900 mb-2">
+                      {fullName}
+                    </h2>
 
                     {/* Badges Row */}
                     <div className="flex flex-wrap gap-2 mb-3">
@@ -193,19 +222,35 @@ const Profile = () => {
                         direccion larga no puede partirse sola y desborda */}
                     <div className="flex items-center gap-2 text-gray-600 mb-2">
                       <Mail className="w-4 h-4 shrink-0" />
-                      <span data-testid="profile-email" className="min-w-0 break-all text-sm">{email}</span>
+                      <span
+                        data-testid="profile-email"
+                        className="min-w-0 break-all text-sm"
+                      >
+                        {email}
+                      </span>
                     </div>
 
                     {/* Member Since */}
                     <div className="flex items-center gap-2 text-gray-600 mb-2">
                       <Calendar className="w-4 h-4" />
-                      <span className="text-sm">{t('memberSince', { date: memberSince })}</span>
+                      <span className="text-sm">
+                        {t('memberSince', { date: memberSince })}
+                      </span>
                     </div>
 
                     {/* Last Updated */}
                     <div className="flex items-center gap-2 text-gray-600 mb-2">
                       <Clock className="w-4 h-4" />
-                      <span className="text-sm">{t('lastUpdated', { date: instanteEnTexto(user.updated_at, i18n.language, fechaLarga) ?? '' })}</span>
+                      <span className="text-sm">
+                        {t('lastUpdated', {
+                          date:
+                            instanteEnTexto(
+                              user.updated_at,
+                              i18n.language,
+                              fechaLarga,
+                            ) ?? '',
+                        })}
+                      </span>
                     </div>
 
                     {/* Nationality */}
@@ -215,8 +260,14 @@ const Profile = () => {
                         <span className="text-sm flex items-center gap-2">
                           <span>{t('nationality')}</span>
                           <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-xs font-semibold border border-blue-200">
-                            <CountryFlag countryCode={user.country_code} className="w-4 h-4" />
-                            <span>{formatCountryName(country, i18n.language) || user.country_code}</span>
+                            <CountryFlag
+                              countryCode={user.country_code}
+                              className="w-4 h-4"
+                            />
+                            <span>
+                              {formatCountryName(country, i18n.language) ||
+                                user.country_code}
+                            </span>
                           </span>
                         </span>
                       ) : (
@@ -232,7 +283,11 @@ const Profile = () => {
                         <Shield className="w-4 h-4" />
                         <span data-testid="profile-gender" className="text-sm">
                           {t('edit.personalInfo.gender')}:{' '}
-                          {user.gender ? t(`edit.personalInfo.genderOptions.${user.gender}`) : SIN_DATO}
+                          {user.gender
+                            ? t(
+                                `edit.personalInfo.genderOptions.${user.gender}`,
+                              )
+                            : SIN_DATO}
                         </span>
                       </div>
                     )}
@@ -243,23 +298,36 @@ const Profile = () => {
                     <div className="bg-white/80 backdrop-blur rounded-lg p-4 border border-primary-200">
                       <div className="flex items-center gap-2 mb-1">
                         <TrendingUp className="w-5 h-5 text-accent-600" />
-                        <span className="text-xs text-gray-500 font-medium">{t('handicapLabel')}</span>
+                        <span className="text-xs text-gray-500 font-medium">
+                          {t('handicapLabel')}
+                        </span>
                       </div>
-                      <p className="text-2xl font-bold text-gray-900">{handicap}</p>
+                      <p className="text-2xl font-bold text-gray-900">
+                        {handicap}
+                      </p>
                       {tieneHandicap && (
-                        <p className="text-xs text-gray-500 mt-1">{t('updatedOn', { date: handicapUpdated })}</p>
+                        <p className="text-xs text-gray-500 mt-1">
+                          {t('updatedOn', { date: handicapUpdated })}
+                        </p>
                       )}
                     </div>
 
                     <div className="bg-white/80 backdrop-blur rounded-lg p-4 border border-primary-200">
                       <div className="flex items-center gap-2 mb-1">
                         <Award className="w-5 h-5 text-primary-600" />
-                        <span className="text-xs text-gray-500 font-medium">{t('tournamentsLabel')}</span>
+                        <span className="text-xs text-gray-500 font-medium">
+                          {t('tournamentsLabel')}
+                        </span>
                       </div>
-                      <p className="text-2xl font-bold text-gray-900">{competitionsCount}</p>
+                      <p className="text-2xl font-bold text-gray-900">
+                        {competitionsCount}
+                      </p>
                       <p className="text-xs text-gray-500 mt-1">
-                        {competitionsCount === 0 ? t('notEnrolledYet') :
-                         competitionsCount === 1 ? t('competition') : t('competitions')}
+                        {competitionsCount === 0
+                          ? t('notEnrolledYet')
+                          : competitionsCount === 1
+                            ? t('competition')
+                            : t('competitions')}
                       </p>
                     </div>
                   </div>
@@ -279,16 +347,18 @@ const Profile = () => {
             </div>
 
             {/* Action Buttons */}
-            <div
-              className="p-4"
-            >
+            <div className="p-4">
               {/* Móvil: lista de ajustes (FE #324). La botonera de cuatro
                   colores no establecía jerarquía y se escalonaba al envolver;
                   aquí manda el orden de la lista, no el color. "Volver al
                   panel" no aparece: la navegación inferior ya tiene Inicio */}
               <div className="md:hidden">
                 <SettingsGroup title={t('sections.account')}>
-                  <SettingsRow icon={Edit} label={t('actions.editProfile')} to="/profile/edit" />
+                  <SettingsRow
+                    icon={Edit}
+                    label={t('actions.editProfile')}
+                    to="/profile/edit"
+                  />
                   <SettingsRow
                     icon={Smartphone}
                     label={t('actions.manageDevices')}
@@ -306,7 +376,10 @@ const Profile = () => {
                 {/* El selector de idioma cayó aquí al retirarse el menú
                     hamburguesa en móvil (FE #306) */}
                 <SettingsGroup title={t('sections.preferences')}>
-                  <SettingsControlRow icon={Globe} label={t('sections.language')}>
+                  <SettingsControlRow
+                    icon={Globe}
+                    label={t('sections.language')}
+                  >
                     <LanguageSwitcher />
                   </SettingsControlRow>
                 </SettingsGroup>
@@ -325,7 +398,11 @@ const Profile = () => {
                   {/* Sin red la copia del dispositivo no trae `share_activity`: saldría
                       encendido y apagarlo abriría el aviso destructivo. Se enseña al
                       confirmarse la sesión, ya con su valor (fase 3) */}
-                  {!sinConfirmar && <ActivitySharingToggle initialValue={user?.share_activity} />}
+                  {!sinConfirmar && (
+                    <ActivitySharingToggle
+                      initialValue={user?.share_activity}
+                    />
+                  )}
                 </SettingsControlRow>
               </SettingsGroup>
 
@@ -335,16 +412,37 @@ const Profile = () => {
                   ahí este es el único acceso que queda */}
               <div className={isStandalone ? '' : 'md:hidden'}>
                 <SettingsGroup title={t('sections.legal')}>
-                  <SettingsRow icon={Scale} label={t('legal.legalNotice')} to="/legal" />
-                  <SettingsRow icon={FileText} label={t('legal.terms')} to="/terms" />
-                  <SettingsRow icon={Lock} label={t('legal.privacy')} to="/privacy" />
-                  <SettingsRow icon={Cookie} label={t('legal.cookies')} to="/cookies" />
+                  <SettingsRow
+                    icon={Scale}
+                    label={t('legal.legalNotice')}
+                    to="/legal"
+                  />
+                  <SettingsRow
+                    icon={FileText}
+                    label={t('legal.terms')}
+                    to="/terms"
+                  />
+                  <SettingsRow
+                    icon={Lock}
+                    label={t('legal.privacy')}
+                    to="/privacy"
+                  />
+                  <SettingsRow
+                    icon={Cookie}
+                    label={t('legal.cookies')}
+                    to="/cookies"
+                  />
                 </SettingsGroup>
               </div>
 
               <div className="md:hidden">
                 <div className="overflow-hidden rounded-xl border border-gray-200 bg-white">
-                  <SettingsRow icon={LogOut} label={t('actions.logOut')} onClick={handleLogout} tone="danger" />
+                  <SettingsRow
+                    icon={LogOut}
+                    label={t('actions.logOut')}
+                    onClick={handleLogout}
+                    tone="danger"
+                  />
                 </div>
               </div>
 

@@ -62,12 +62,18 @@ describe('ApiSocialFeedRepository', () => {
 
     it('says who put the block: blocked_by_me -> blockedByMe (social decisions, case 6)', async () => {
       apiRequest.mockResolvedValue(
-        respuestaPerfil({ friendship: { status: 'BLOCKED', friendship_id: 'f1' }, blocked_by_me: false })
+        respuestaPerfil({
+          friendship: { status: 'BLOCKED', friendship_id: 'f1' },
+          blocked_by_me: false,
+        }),
       );
       expect((await repository.getPlayerProfile('u1')).blockedByMe).toBe(false);
 
       apiRequest.mockResolvedValue(
-        respuestaPerfil({ friendship: { status: 'BLOCKED', friendship_id: 'f1' }, blocked_by_me: true })
+        respuestaPerfil({
+          friendship: { status: 'BLOCKED', friendship_id: 'f1' },
+          blocked_by_me: true,
+        }),
       );
       expect((await repository.getPlayerProfile('u1')).blockedByMe).toBe(true);
     });
@@ -97,7 +103,7 @@ describe('ApiSocialFeedRepository', () => {
           email: 'ana@example.com',
           handicap: 12.4,
           stats: respuestaStats(),
-        })
+        }),
       );
 
       const perfil = await repository.getPlayerProfile('u1');
@@ -117,7 +123,7 @@ describe('ApiSocialFeedRepository', () => {
         respuestaPerfil({
           is_friend: true,
           stats: respuestaStats({ scoring_avg: null, estimated_index: null }),
-        })
+        }),
       );
 
       const perfil = await repository.getPlayerProfile('u1');
@@ -138,19 +144,33 @@ describe('ApiSocialFeedRepository', () => {
 
   describe('getPlayerActivity', () => {
     it('asks for a player activity page with its pagination', async () => {
-      apiRequest.mockResolvedValue({ events: [], authors: {}, next_cursor: null, unseen_count: 0 });
+      apiRequest.mockResolvedValue({
+        events: [],
+        authors: {},
+        next_cursor: null,
+        unseen_count: 0,
+      });
 
       await repository.getPlayerActivity('u1', { limit: 10, cursor: 'c1' });
 
-      expect(apiRequest).toHaveBeenCalledWith('/api/v1/users/u1/activity?limit=10&cursor=c1');
+      expect(apiRequest).toHaveBeenCalledWith(
+        '/api/v1/users/u1/activity?limit=10&cursor=c1',
+      );
     });
 
     it('omits the cursor on the first page', async () => {
-      apiRequest.mockResolvedValue({ events: [], authors: {}, next_cursor: null, unseen_count: 0 });
+      apiRequest.mockResolvedValue({
+        events: [],
+        authors: {},
+        next_cursor: null,
+        unseen_count: 0,
+      });
 
       await repository.getPlayerActivity('u1');
 
-      expect(apiRequest).toHaveBeenCalledWith('/api/v1/users/u1/activity?limit=20');
+      expect(apiRequest).toHaveBeenCalledWith(
+        '/api/v1/users/u1/activity?limit=20',
+      );
     });
   });
 
@@ -172,7 +192,12 @@ describe('ApiSocialFeedRepository', () => {
     it('falls back to an empty map when the response carries no courses', async () => {
       // Una respuesta de antes de BE #183 no trae `courses`. La página tiene que
       // pintarse igual, con las entradas sin nombre de campo.
-      apiRequest.mockResolvedValue({ events: [], authors: {}, next_cursor: null, unseen_count: 0 });
+      apiRequest.mockResolvedValue({
+        events: [],
+        authors: {},
+        next_cursor: null,
+        unseen_count: 0,
+      });
 
       const page = await repository.getFeed({ limit: 20 });
 
@@ -182,14 +207,20 @@ describe('ApiSocialFeedRepository', () => {
 
   describe('setActivitySharing', () => {
     it('sends the new value and reports how much was removed', async () => {
-      apiRequest.mockResolvedValue({ share_activity: false, removed_events: 7 });
+      apiRequest.mockResolvedValue({
+        share_activity: false,
+        removed_events: 7,
+      });
 
       const result = await repository.setActivitySharing(false);
 
-      expect(apiRequest).toHaveBeenCalledWith('/api/v1/social/activity-sharing', {
-        method: 'PUT',
-        body: JSON.stringify({ enabled: false }),
-      });
+      expect(apiRequest).toHaveBeenCalledWith(
+        '/api/v1/social/activity-sharing',
+        {
+          method: 'PUT',
+          body: JSON.stringify({ enabled: false }),
+        },
+      );
       expect(result).toEqual({ shareActivity: false, removedEvents: 7 });
     });
 
@@ -208,7 +239,9 @@ describe('ApiSocialFeedRepository', () => {
 
       const n = await repository.getUnseenCount();
 
-      expect(apiRequest).toHaveBeenCalledWith('/api/v1/users/me/feed/unseen-count');
+      expect(apiRequest).toHaveBeenCalledWith(
+        '/api/v1/users/me/feed/unseen-count',
+      );
       expect(n).toBe(4);
     });
 
@@ -223,7 +256,9 @@ describe('ApiSocialFeedRepository', () => {
     it('lets a failure through so the caller keeps the last value', async () => {
       apiRequest.mockRejectedValue(new TypeError('Failed to fetch'));
 
-      await expect(repository.getUnseenCount()).rejects.toThrow('Failed to fetch');
+      await expect(repository.getUnseenCount()).rejects.toThrow(
+        'Failed to fetch',
+      );
     });
   });
 
@@ -243,7 +278,13 @@ describe('ApiSocialFeedRepository', () => {
           },
         ],
         authors: {
-          u1: { id: 'u1', first_name: 'Ana', last_name: 'G', display_name: 'Ana G', avatar_source: 'PRESET' },
+          u1: {
+            id: 'u1',
+            first_name: 'Ana',
+            last_name: 'G',
+            display_name: 'Ana G',
+            avatar_source: 'PRESET',
+          },
         },
         courses: {},
         next_cursor: null,
@@ -272,10 +313,17 @@ describe('ApiSocialFeedRepository', () => {
       });
       expect(page.unseenCount).toBe(3);
       expect(page.pendingFriendRequests).toEqual([
-        { friendshipId: 'f1', requesterId: 'u9', createdAt: new Date('2026-10-22T16:00:00Z') },
+        {
+          friendshipId: 'f1',
+          requesterId: 'u9',
+          createdAt: new Date('2026-10-22T16:00:00Z'),
+        },
       ]);
       // Quien pide amistad entra en los autores: la tarjeta pinta su nombre
-      expect(page.authors.u9).toMatchObject({ id: 'u9', displayName: 'Pedro L' });
+      expect(page.authors.u9).toMatchObject({
+        id: 'u9',
+        displayName: 'Pedro L',
+      });
     });
 
     it('reads an instant without zone as UTC', async () => {
@@ -294,13 +342,25 @@ describe('ApiSocialFeedRepository', () => {
 
       const page = await repository.getFeed();
 
-      expect(page.events[0].publishedAt).toEqual(new Date('2026-10-22T17:00:00Z'));
-      expect(page.events[0].occurredAt).toEqual(new Date('2026-10-22T12:00:00Z'));
+      expect(page.events[0].publishedAt).toEqual(
+        new Date('2026-10-22T17:00:00Z'),
+      );
+      expect(page.events[0].occurredAt).toEqual(
+        new Date('2026-10-22T12:00:00Z'),
+      );
     });
 
     it('defaults the new fields when an older backend omits them', async () => {
       apiRequest.mockResolvedValue({
-        events: [{ id: 'e1', user_id: 'u1', type: 'BIRDIE', occurred_at: '2026-10-22T12:00:00Z', source_match_id: 'm1' }],
+        events: [
+          {
+            id: 'e1',
+            user_id: 'u1',
+            type: 'BIRDIE',
+            occurred_at: '2026-10-22T12:00:00Z',
+            source_match_id: 'm1',
+          },
+        ],
       });
 
       const page = await repository.getFeed();
@@ -313,7 +373,13 @@ describe('ApiSocialFeedRepository', () => {
     it('drops a request whose requester is missing', async () => {
       apiRequest.mockResolvedValue({
         events: [],
-        pending_friend_requests: [{ friendship_id: 'f1', requester: null, created_at: '2026-10-22T16:00:00Z' }],
+        pending_friend_requests: [
+          {
+            friendship_id: 'f1',
+            requester: null,
+            created_at: '2026-10-22T16:00:00Z',
+          },
+        ],
       });
 
       const page = await repository.getFeed();
@@ -347,7 +413,7 @@ describe('ApiSocialFeedRepository', () => {
             against: { won: 3, halved: 1, lost: 2 },
             alongside: { won: 1, halved: 0, lost: 4 },
           },
-        })
+        }),
       );
 
       const perfil = await repository.getPlayerProfile('u1');
@@ -360,10 +426,18 @@ describe('ApiSocialFeedRepository', () => {
 
     it('keeps a section without games as null and the whole block null when absent', async () => {
       apiRequest.mockResolvedValueOnce(
-        respuestaPerfil({ head_to_head: { against: { won: 1, halved: 0, lost: 0 }, alongside: null } })
+        respuestaPerfil({
+          head_to_head: {
+            against: { won: 1, halved: 0, lost: 0 },
+            alongside: null,
+          },
+        }),
       );
       const conUno = await repository.getPlayerProfile('u1');
-      expect(conUno.headToHead).toEqual({ against: { won: 1, halved: 0, lost: 0 }, alongside: null });
+      expect(conUno.headToHead).toEqual({
+        against: { won: 1, halved: 0, lost: 0 },
+        alongside: null,
+      });
 
       apiRequest.mockResolvedValueOnce(respuestaPerfil());
       const sinNada = await repository.getPlayerProfile('u1');
@@ -415,7 +489,10 @@ describe('ApiSocialFeedRepository', () => {
     // H5 (25 oct 2026): el instante de la partida rápida, para su día local
     it('H5: played_at llega como playedAt (un instante); sin él, nulo', async () => {
       apiRequest.mockResolvedValue({
-        games: [partida({ id: 'q1', played_at: '2026-10-21T22:30:00Z' }), partida({ id: 'q2' })],
+        games: [
+          partida({ id: 'q1', played_at: '2026-10-21T22:30:00Z' }),
+          partida({ id: 'q2' }),
+        ],
         next_cursor: null,
       });
 
@@ -460,7 +537,7 @@ describe('ApiSocialFeedRepository', () => {
             ],
             next_cursor: '2026-10-01|g2',
           },
-        })
+        }),
       );
 
       const perfil = await repository.getPlayerProfile('u1');
@@ -511,12 +588,17 @@ describe('ApiSocialFeedRepository', () => {
     });
 
     it('asks for the next page of games together with the cursor, encoded', async () => {
-      apiRequest.mockResolvedValue({ games: [partida({ id: 'g9', quick_match_id: 'g9' })], next_cursor: null });
+      apiRequest.mockResolvedValue({
+        games: [partida({ id: 'g9', quick_match_id: 'g9' })],
+        next_cursor: null,
+      });
 
-      const page = await repository.getGamesTogether('u1', { cursor: '2026-10-01|g2' });
+      const page = await repository.getGamesTogether('u1', {
+        cursor: '2026-10-01|g2',
+      });
 
       expect(apiRequest).toHaveBeenCalledWith(
-        '/api/v1/users/u1/games-together?cursor=2026-10-01%7Cg2'
+        '/api/v1/users/u1/games-together?cursor=2026-10-01%7Cg2',
       );
       expect(page.games.map((g) => g.id)).toEqual(['g9']);
       expect(page.nextCursor).toBeNull();
@@ -527,7 +609,9 @@ describe('ApiSocialFeedRepository', () => {
 
       const page = await repository.getGamesTogether('u1');
 
-      expect(apiRequest).toHaveBeenCalledWith('/api/v1/users/u1/games-together');
+      expect(apiRequest).toHaveBeenCalledWith(
+        '/api/v1/users/u1/games-together',
+      );
       expect(page).toEqual({ games: [], nextCursor: null });
     });
   });

@@ -46,20 +46,24 @@ describe('apiRequest - CSRF Protection', () => {
         json: async () => ({ success: true }),
       };
 
-      TokenRefreshInterceptor.fetchWithTokenRefresh.mockResolvedValue(mockResponse);
+      TokenRefreshInterceptor.fetchWithTokenRefresh.mockResolvedValue(
+        mockResponse,
+      );
 
       await apiRequest('/api/v1/test', {
         method: 'POST',
         body: JSON.stringify({ test: 'data' }),
       });
 
-      expect(TokenRefreshInterceptor.fetchWithTokenRefresh).toHaveBeenCalledWith(
+      expect(
+        TokenRefreshInterceptor.fetchWithTokenRefresh,
+      ).toHaveBeenCalledWith(
         expect.any(String),
         expect.objectContaining({
           headers: expect.objectContaining({
             'X-CSRF-Token': mockCsrfToken,
           }),
-        })
+        }),
       );
     });
 
@@ -73,20 +77,24 @@ describe('apiRequest - CSRF Protection', () => {
         json: async () => ({ success: true }),
       };
 
-      TokenRefreshInterceptor.fetchWithTokenRefresh.mockResolvedValue(mockResponse);
+      TokenRefreshInterceptor.fetchWithTokenRefresh.mockResolvedValue(
+        mockResponse,
+      );
 
       await apiRequest('/api/v1/test/123', {
         method: 'PUT',
         body: JSON.stringify({ updated: true }),
       });
 
-      expect(TokenRefreshInterceptor.fetchWithTokenRefresh).toHaveBeenCalledWith(
+      expect(
+        TokenRefreshInterceptor.fetchWithTokenRefresh,
+      ).toHaveBeenCalledWith(
         expect.any(String),
         expect.objectContaining({
           headers: expect.objectContaining({
             'X-CSRF-Token': mockCsrfToken,
           }),
-        })
+        }),
       );
     });
 
@@ -100,20 +108,24 @@ describe('apiRequest - CSRF Protection', () => {
         json: async () => ({ success: true }),
       };
 
-      TokenRefreshInterceptor.fetchWithTokenRefresh.mockResolvedValue(mockResponse);
+      TokenRefreshInterceptor.fetchWithTokenRefresh.mockResolvedValue(
+        mockResponse,
+      );
 
       await apiRequest('/api/v1/test/123', {
         method: 'PATCH',
         body: JSON.stringify({ patched: true }),
       });
 
-      expect(TokenRefreshInterceptor.fetchWithTokenRefresh).toHaveBeenCalledWith(
+      expect(
+        TokenRefreshInterceptor.fetchWithTokenRefresh,
+      ).toHaveBeenCalledWith(
         expect.any(String),
         expect.objectContaining({
           headers: expect.objectContaining({
             'X-CSRF-Token': mockCsrfToken,
           }),
-        })
+        }),
       );
     });
 
@@ -126,19 +138,23 @@ describe('apiRequest - CSRF Protection', () => {
         status: 204,
       };
 
-      TokenRefreshInterceptor.fetchWithTokenRefresh.mockResolvedValue(mockResponse);
+      TokenRefreshInterceptor.fetchWithTokenRefresh.mockResolvedValue(
+        mockResponse,
+      );
 
       await apiRequest('/api/v1/test/123', {
         method: 'DELETE',
       });
 
-      expect(TokenRefreshInterceptor.fetchWithTokenRefresh).toHaveBeenCalledWith(
+      expect(
+        TokenRefreshInterceptor.fetchWithTokenRefresh,
+      ).toHaveBeenCalledWith(
         expect.any(String),
         expect.objectContaining({
           headers: expect.objectContaining({
             'X-CSRF-Token': mockCsrfToken,
           }),
-        })
+        }),
       );
     });
 
@@ -151,13 +167,16 @@ describe('apiRequest - CSRF Protection', () => {
         json: async () => ({ data: 'test' }),
       };
 
-      TokenRefreshInterceptor.fetchWithTokenRefresh.mockResolvedValue(mockResponse);
+      TokenRefreshInterceptor.fetchWithTokenRefresh.mockResolvedValue(
+        mockResponse,
+      );
 
       await apiRequest('/api/v1/test', {
         method: 'GET',
       });
 
-      const callArgs = TokenRefreshInterceptor.fetchWithTokenRefresh.mock.calls[0][1];
+      const callArgs =
+        TokenRefreshInterceptor.fetchWithTokenRefresh.mock.calls[0][1];
       expect(callArgs.headers['X-CSRF-Token']).toBeUndefined();
     });
 
@@ -171,27 +190,33 @@ describe('apiRequest - CSRF Protection', () => {
         json: async () => ({ success: true }),
       };
 
-      TokenRefreshInterceptor.fetchWithTokenRefresh.mockResolvedValue(mockResponse);
+      TokenRefreshInterceptor.fetchWithTokenRefresh.mockResolvedValue(
+        mockResponse,
+      );
 
       await apiRequest('/api/v1/test', {
         method: 'post', // lowercase
         body: JSON.stringify({ test: true }),
       });
 
-      expect(TokenRefreshInterceptor.fetchWithTokenRefresh).toHaveBeenCalledWith(
+      expect(
+        TokenRefreshInterceptor.fetchWithTokenRefresh,
+      ).toHaveBeenCalledWith(
         expect.any(String),
         expect.objectContaining({
           headers: expect.objectContaining({
             'X-CSRF-Token': mockCsrfToken,
           }),
-        })
+        }),
       );
     });
 
     it('should warn when CSRF token is missing for POST request', async () => {
       CsrfTokenSync.getCsrfToken.mockReturnValue(null);
 
-      const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      const consoleWarnSpy = vi
+        .spyOn(console, 'warn')
+        .mockImplementation(() => {});
 
       const mockResponse = {
         ok: true,
@@ -199,7 +224,9 @@ describe('apiRequest - CSRF Protection', () => {
         json: async () => ({ success: true }),
       };
 
-      TokenRefreshInterceptor.fetchWithTokenRefresh.mockResolvedValue(mockResponse);
+      TokenRefreshInterceptor.fetchWithTokenRefresh.mockResolvedValue(
+        mockResponse,
+      );
 
       await apiRequest('/api/v1/test', {
         method: 'POST',
@@ -207,7 +234,7 @@ describe('apiRequest - CSRF Protection', () => {
       });
 
       expect(consoleWarnSpy).toHaveBeenCalledWith(
-        expect.stringContaining('CSRF token missing for POST')
+        expect.stringContaining('CSRF token missing for POST'),
       );
 
       consoleWarnSpy.mockRestore();
@@ -238,15 +265,19 @@ describe('apiRequest - CSRF Protection', () => {
         }),
       };
 
-      TokenRefreshInterceptor.fetchWithTokenRefresh.mockResolvedValue(mockResponse);
+      TokenRefreshInterceptor.fetchWithTokenRefresh.mockResolvedValue(
+        mockResponse,
+      );
 
-      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      const consoleErrorSpy = vi
+        .spyOn(console, 'error')
+        .mockImplementation(() => {});
 
       await expect(
         apiRequest('/api/v1/test', {
           method: 'POST',
           body: JSON.stringify({ test: true }),
-        })
+        }),
       ).rejects.toThrow('CSRF validation failed. Please log in again.');
 
       // Should clear user from localStorage
@@ -270,13 +301,15 @@ describe('apiRequest - CSRF Protection', () => {
         }),
       };
 
-      TokenRefreshInterceptor.fetchWithTokenRefresh.mockResolvedValue(mockResponse);
+      TokenRefreshInterceptor.fetchWithTokenRefresh.mockResolvedValue(
+        mockResponse,
+      );
 
       await expect(
         apiRequest('/api/v1/test', {
           method: 'POST',
           body: JSON.stringify({ test: true }),
-        })
+        }),
       ).rejects.toThrow('Permission denied');
 
       // Should NOT redirect to login for non-CSRF 403 errors
@@ -292,7 +325,9 @@ describe('apiRequest - CSRF Protection', () => {
       const cuerpo = {
         detail: 'Hay sesiones fuera de las fechas',
         error_code: 'DATES_LEAVE_SESSIONS_OUT',
-        sessions_outside: [{ id: 'r1', round_date: '2026-10-04', session_type: 'MORNING' }],
+        sessions_outside: [
+          { id: 'r1', round_date: '2026-10-04', session_type: 'MORNING' },
+        ],
       };
       TokenRefreshInterceptor.fetchWithTokenRefresh.mockResolvedValue({
         ok: false,
@@ -321,18 +356,22 @@ describe('apiRequest - CSRF Protection', () => {
         json: async () => ({ success: true }),
       };
 
-      TokenRefreshInterceptor.fetchWithTokenRefresh.mockResolvedValue(mockResponse);
+      TokenRefreshInterceptor.fetchWithTokenRefresh.mockResolvedValue(
+        mockResponse,
+      );
 
       await apiRequest('/api/v1/test', {
         method: 'POST',
         body: JSON.stringify({ test: true }),
       });
 
-      expect(TokenRefreshInterceptor.fetchWithTokenRefresh).toHaveBeenCalledWith(
+      expect(
+        TokenRefreshInterceptor.fetchWithTokenRefresh,
+      ).toHaveBeenCalledWith(
         expect.any(String),
         expect.objectContaining({
           credentials: 'include',
-        })
+        }),
       );
     });
   });
@@ -346,7 +385,9 @@ describe('apiRequest - CSRF Protection', () => {
         status: 204,
       };
 
-      TokenRefreshInterceptor.fetchWithTokenRefresh.mockResolvedValue(mockResponse);
+      TokenRefreshInterceptor.fetchWithTokenRefresh.mockResolvedValue(
+        mockResponse,
+      );
 
       const result = await apiRequest('/api/v1/test/123', {
         method: 'DELETE',
@@ -365,7 +406,9 @@ describe('apiRequest - CSRF Protection', () => {
         json: async () => mockData,
       };
 
-      TokenRefreshInterceptor.fetchWithTokenRefresh.mockResolvedValue(mockResponse);
+      TokenRefreshInterceptor.fetchWithTokenRefresh.mockResolvedValue(
+        mockResponse,
+      );
 
       const result = await apiRequest('/api/v1/test', {
         method: 'GET',
@@ -382,31 +425,40 @@ describe('apiRequest - CSRF Protection', () => {
         status: 201,
         json: async () => ({ id: 'upload-1' }),
       };
-      TokenRefreshInterceptor.fetchWithTokenRefresh.mockResolvedValue(mockResponse);
+      TokenRefreshInterceptor.fetchWithTokenRefresh.mockResolvedValue(
+        mockResponse,
+      );
 
       const formData = new FormData();
-      formData.append('file', new File(['bytes'], 'photo.jpg', { type: 'image/jpeg' }));
+      formData.append(
+        'file',
+        new File(['bytes'], 'photo.jpg', { type: 'image/jpeg' }),
+      );
 
       await apiRequest('/api/v1/users/me/avatar/upload', {
         method: 'POST',
         body: formData,
       });
 
-      const [, config] = TokenRefreshInterceptor.fetchWithTokenRefresh.mock.calls[0];
+      const [, config] =
+        TokenRefreshInterceptor.fetchWithTokenRefresh.mock.calls[0];
       expect(config.headers['Content-Type']).toBeUndefined();
       expect(config.body).toBe(formData);
     });
 
     it('should still set Content-Type: application/json for regular JSON bodies', async () => {
       const mockResponse = { ok: true, status: 200, json: async () => ({}) };
-      TokenRefreshInterceptor.fetchWithTokenRefresh.mockResolvedValue(mockResponse);
+      TokenRefreshInterceptor.fetchWithTokenRefresh.mockResolvedValue(
+        mockResponse,
+      );
 
       await apiRequest('/api/v1/test', {
         method: 'POST',
         body: JSON.stringify({ foo: 'bar' }),
       });
 
-      const [, config] = TokenRefreshInterceptor.fetchWithTokenRefresh.mock.calls[0];
+      const [, config] =
+        TokenRefreshInterceptor.fetchWithTokenRefresh.mock.calls[0];
       expect(config.headers['Content-Type']).toBe('application/json');
     });
   });

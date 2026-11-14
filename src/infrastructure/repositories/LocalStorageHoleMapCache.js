@@ -9,7 +9,10 @@ const INDICE = `${PREFIJO}indice`;
 const MAXIMO_DE_CAMPOS = 20;
 
 const esMapaDe = (mapa, golfCourseId) =>
-  Boolean(mapa) && mapa.golfCourseId === golfCourseId && typeof mapa.holes === 'object' && mapa.holes !== null;
+  Boolean(mapa) &&
+  mapa.golfCourseId === golfCourseId &&
+  typeof mapa.holes === 'object' &&
+  mapa.holes !== null;
 
 const leerIndice = () => {
   try {
@@ -34,8 +37,12 @@ class LocalStorageHoleMapCache extends IHoleMapCache {
       const indice = [id, ...leerIndice().filter((otro) => otro !== id)];
       // Primero se hace sitio: con el almacenamiento lleno, guardar antes de
       // quitar el más antiguo fallaba siempre y la copia se quedaba atascada
-      for (const viejo of indice.slice(MAXIMO_DE_CAMPOS)) globalThis.localStorage.removeItem(clave(viejo));
-      globalThis.localStorage.setItem(INDICE, JSON.stringify(indice.slice(0, MAXIMO_DE_CAMPOS)));
+      for (const viejo of indice.slice(MAXIMO_DE_CAMPOS))
+        globalThis.localStorage.removeItem(clave(viejo));
+      globalThis.localStorage.setItem(
+        INDICE,
+        JSON.stringify(indice.slice(0, MAXIMO_DE_CAMPOS)),
+      );
       globalThis.localStorage.setItem(clave(id), JSON.stringify(holeMap));
     } catch {
       // Sin sitio: se queda sin copia
@@ -55,7 +62,10 @@ class LocalStorageHoleMapCache extends IHoleMapCache {
   remove(golfCourseId) {
     try {
       globalThis.localStorage.removeItem(clave(golfCourseId));
-      globalThis.localStorage.setItem(INDICE, JSON.stringify(leerIndice().filter((id) => id !== golfCourseId)));
+      globalThis.localStorage.setItem(
+        INDICE,
+        JSON.stringify(leerIndice().filter((id) => id !== golfCourseId)),
+      );
     } catch {
       // Nada que borrar
     }

@@ -17,8 +17,13 @@ const datos = (extra = {}) => ({
 });
 
 const conRepositorio = () => {
-  const competitionRepository = { updateCompetition: vi.fn().mockResolvedValue({ id: 'c-1' }) };
-  return { useCase: new UpdateCompetitionUseCase({ competitionRepository }), competitionRepository };
+  const competitionRepository = {
+    updateCompetition: vi.fn().mockResolvedValue({ id: 'c-1' }),
+  };
+  return {
+    useCase: new UpdateCompetitionUseCase({ competitionRepository }),
+    competitionRepository,
+  };
 };
 
 describe('UpdateCompetitionUseCase (FE #791)', () => {
@@ -27,13 +32,19 @@ describe('UpdateCompetitionUseCase (FE #791)', () => {
 
     await useCase.execute('c-1', datos());
 
-    expect(competitionRepository.updateCompetition).toHaveBeenCalledWith('c-1', datos());
+    expect(competitionRepository.updateCompetition).toHaveBeenCalledWith(
+      'c-1',
+      datos(),
+    );
   });
 
   it('U2: con ellos, también', async () => {
     const { useCase, competitionRepository } = conRepositorio();
 
-    await useCase.execute('c-1', datos({ team_1_name: 'Europa', team_2_name: 'USA' }));
+    await useCase.execute(
+      'c-1',
+      datos({ team_1_name: 'Europa', team_2_name: 'USA' }),
+    );
 
     expect(competitionRepository.updateCompetition).toHaveBeenCalled();
   });

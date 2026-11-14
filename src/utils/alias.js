@@ -23,7 +23,8 @@ const ALIAS_REGEX = /^[a-zA-Z0-9À-ÖØ-öø-ÿ._\- ]+$/;
  * «Chu  chi» y «Chu chi» parecerían aliases distintos y el índice único de la
  * base de datos no los vería como el mismo.
  */
-export const normalizaElAlias = (valor) => (valor || '').split(/\s+/).filter(Boolean).join(' ');
+export const normalizaElAlias = (valor) =>
+  (valor || '').split(/\s+/).filter(Boolean).join(' ');
 
 /**
  * Qué tiene de malo este alias, o null si no tiene nada.
@@ -42,7 +43,8 @@ export const queLePasaAlAlias = (valor) => {
   if (!ALIAS_REGEX.test(alias)) return 'alias.errors.invalidChars';
   // Un alias de solo signos —«...», «-_-»— no identifica a nadie ni se puede
   // buscar por él
-  if (!/[a-zA-Z0-9À-ÖØ-öø-ÿ]/.test(alias)) return 'alias.errors.needsLetterOrDigit';
+  if (!/[a-zA-Z0-9À-ÖØ-öø-ÿ]/.test(alias))
+    return 'alias.errors.needsLetterOrDigit';
 
   return null;
 };

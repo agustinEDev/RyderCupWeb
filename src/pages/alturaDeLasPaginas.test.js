@@ -59,7 +59,10 @@ const LAS_QUE_LO_USABAN = [
 const paginas = readdirSync(AQUI, { recursive: true })
   // Con «/» también en Windows (CodeRabbit)
   .map((f) => String(f).replaceAll('\\', '/'))
-  .filter((f) => f.endsWith('.jsx') && !f.includes('.test.') && !f.startsWith('public/'))
+  .filter(
+    (f) =>
+      f.endsWith('.jsx') && !f.includes('.test.') && !f.startsWith('public/'),
+  )
   .filter((f) => !SIN_BARRA.has(f));
 
 describe('Las páginas con barra inferior no ocupan más que la pantalla', () => {
@@ -68,11 +71,15 @@ describe('Las páginas con barra inferior no ocupan más que la pantalla', () =>
   });
 
   it.each(paginas)('%s no usa min-h-screen', (pagina) => {
-    expect(readFileSync(join(AQUI, pagina), 'utf8')).not.toMatch(/\bmin-h-screen\b/);
+    expect(readFileSync(join(AQUI, pagina), 'utf8')).not.toMatch(
+      /\bmin-h-screen\b/,
+    );
   });
 
   // Las que lo usaban ocupan ahora la pantalla menos la barra (CodeRabbit)
   it.each(LAS_QUE_LO_USABAN)('%s usa la pantalla menos la barra', (pagina) => {
-    expect(readFileSync(join(AQUI, pagina), 'utf8')).toMatch(/\$\{PANTALLA_MENOS_BARRA_INFERIOR\}/);
+    expect(readFileSync(join(AQUI, pagina), 'utf8')).toMatch(
+      /\$\{PANTALLA_MENOS_BARRA_INFERIOR\}/,
+    );
   });
 });

@@ -1,6 +1,7 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useRef } from 'react';
 import { Flag, Plus, Trash2, GripVertical, MapPin, Loader } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { useCargaCancelableEffect } from '../../hooks/useCargaCancelableEffect';
 import TituloConNumero from '../ui/TituloConNumero';
 import {
   DndContext,
@@ -71,7 +72,14 @@ const nombreDelPais = (codigo, paises, idioma) => {
 /**
  * Sortable Item Component (used by dnd-kit)
  */
-const SortableGolfCourseItem = ({ course, onRemove, canEdit, i18n, t, paises }) => {
+const SortableGolfCourseItem = ({
+  course,
+  onRemove,
+  canEdit,
+  i18n,
+  t,
+  paises,
+}) => {
   const {
     attributes,
     listeners,
@@ -95,7 +103,9 @@ const SortableGolfCourseItem = ({ course, onRemove, canEdit, i18n, t, paises }) 
       ref={setNodeRef}
       style={style}
       className={`bg-gradient-to-r from-white to-green-50/30 border border-gray-200 rounded-xl overflow-hidden ${
-        isDragging ? 'shadow-xl ring-2 ring-primary/20' : 'shadow-sm hover:shadow-md'
+        isDragging
+          ? 'shadow-xl ring-2 ring-primary/20'
+          : 'shadow-sm hover:shadow-md'
       } transition-all duration-200`}
     >
       {/* Mobile Layout (stacked) */}
@@ -121,8 +131,12 @@ const SortableGolfCourseItem = ({ course, onRemove, canEdit, i18n, t, paises }) 
               <button
                 onClick={() => onRemove(course.id)}
                 className="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors shrink-0"
-                aria-label={t('detail.golfCourses.remove', { name: course.name || t('detail.golfCourses.unnamed') })}
-                title={t('detail.golfCourses.remove', { name: course.name || t('detail.golfCourses.unnamed') })}
+                aria-label={t('detail.golfCourses.remove', {
+                  name: course.name || t('detail.golfCourses.unnamed'),
+                })}
+                title={t('detail.golfCourses.remove', {
+                  name: course.name || t('detail.golfCourses.unnamed'),
+                })}
               >
                 <Trash2 className="w-4 h-4" />
               </button>
@@ -132,7 +146,10 @@ const SortableGolfCourseItem = ({ course, onRemove, canEdit, i18n, t, paises }) 
           {/* Country */}
           {course.country_code && (
             <div className="flex items-center gap-2 mb-3">
-              <CountryFlag countryCode={course.country_code} style={{ width: '20px', height: 'auto' }} />
+              <CountryFlag
+                countryCode={course.country_code}
+                style={{ width: '20px', height: 'auto' }}
+              />
               <span className="text-sm text-gray-700">
                 {nombreDelPais(course.country_code, paises, i18n.language)}
               </span>
@@ -142,7 +159,9 @@ const SortableGolfCourseItem = ({ course, onRemove, canEdit, i18n, t, paises }) 
           {/* Stats Grid */}
           <div className="grid grid-cols-3 gap-2">
             {/* Course Type */}
-            <div className={`px-2 py-1.5 rounded-lg border text-center ${colorDelTipo}`}>
+            <div
+              className={`px-2 py-1.5 rounded-lg border text-center ${colorDelTipo}`}
+            >
               <span className="text-xs font-semibold">
                 {etiquetaDelTipoDeCampo(course.course_type, t)}
               </span>
@@ -160,7 +179,9 @@ const SortableGolfCourseItem = ({ course, onRemove, canEdit, i18n, t, paises }) 
             {/* Tees */}
             {teesCount > 0 && (
               <div className="px-2 py-1.5 rounded-lg border bg-orange-50 text-orange-800 border-orange-200 text-center">
-                <span className="text-xs font-semibold">{teesCount} {t('detail.golfCourses.tees')}</span>
+                <span className="text-xs font-semibold">
+                  {teesCount} {t('detail.golfCourses.tees')}
+                </span>
               </div>
             )}
           </div>
@@ -183,7 +204,10 @@ const SortableGolfCourseItem = ({ course, onRemove, canEdit, i18n, t, paises }) 
         {/* Country Flag */}
         {course.country_code && (
           <div className="shrink-0">
-            <CountryFlag countryCode={course.country_code} style={{ width: '28px', height: 'auto' }} />
+            <CountryFlag
+              countryCode={course.country_code}
+              style={{ width: '28px', height: 'auto' }}
+            />
           </div>
         )}
 
@@ -220,7 +244,9 @@ const SortableGolfCourseItem = ({ course, onRemove, canEdit, i18n, t, paises }) 
           {/* Tees Count */}
           {teesCount > 0 && (
             <div className="px-3 py-1.5 rounded-lg border bg-orange-50 text-orange-800 border-orange-200">
-              <span className="text-xs font-semibold whitespace-nowrap">{teesCount} {t('detail.golfCourses.tees')}</span>
+              <span className="text-xs font-semibold whitespace-nowrap">
+                {teesCount} {t('detail.golfCourses.tees')}
+              </span>
             </div>
           )}
         </div>
@@ -230,8 +256,12 @@ const SortableGolfCourseItem = ({ course, onRemove, canEdit, i18n, t, paises }) 
           <button
             onClick={() => onRemove(course.id)}
             className="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors shrink-0"
-            aria-label={t('detail.golfCourses.remove', { name: course.name || t('detail.golfCourses.unnamed') })}
-            title={t('detail.golfCourses.remove', { name: course.name || t('detail.golfCourses.unnamed') })}
+            aria-label={t('detail.golfCourses.remove', {
+              name: course.name || t('detail.golfCourses.unnamed'),
+            })}
+            title={t('detail.golfCourses.remove', {
+              name: course.name || t('detail.golfCourses.unnamed'),
+            })}
           >
             <Trash2 className="w-5 h-5" />
           </button>
@@ -270,10 +300,13 @@ const SortableGolfCourseItem = ({ course, onRemove, canEdit, i18n, t, paises }) 
  * - Tells the page when the server confirms a change, so the agenda re-reads
  *   its courses (`onCamposCambiados`, FE #715)
  */
-const CompetitionGolfCoursesSection = ({ competition, canManage, onCamposCambiados }) => {
+const CompetitionGolfCoursesSection = ({
+  competition,
+  canManage,
+  onCamposCambiados,
+}) => {
   const { t, i18n } = useTranslation('competitions');
   const [golfCourses, setGolfCourses] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [isAdding, setIsAdding] = useState(false);
   // Los campos cuya alta está viajando. Va en un ref y no en el estado porque se
   // consulta y se apunta en el mismo suspiro, antes de que React vuelva a pintar
@@ -290,7 +323,7 @@ const CompetitionGolfCoursesSection = ({ competition, canManage, onCamposCambiad
     useSensor(PointerSensor),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
-    })
+    }),
   );
 
   // Los campos se pueden tocar mientras haya inscripciones abiertas (BE #323):
@@ -312,54 +345,55 @@ const CompetitionGolfCoursesSection = ({ competition, canManage, onCamposCambiad
 
   const compatibleCountries = [
     mainCountryCode,
-    ...(competition.countries?.slice(1).map(c => c.code) || [])
+    ...(competition.countries?.slice(1).map((c) => c.code) || []),
   ].filter(Boolean);
   const paisDelBuscador = compatibleCountries.includes(paisElegido)
     ? paisElegido
     : compatibleCountries[0] || null;
 
-  // Load golf courses
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/immutability -- pre-existing pattern surfaced by eslint-plugin-react-hooks 7.1.1 bump; needs dedicated review (tracked in follow-up)
-    loadGolfCourses();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [competition.id]);
+  // Los campos de la competición. Vuelve a pedirlos `recargar()` tras añadir,
+  // quitar o un orden rechazado: si se piden dos veces seguidas, la respuesta
+  // de la primera que llegue tarde no pisa la de la segunda
+  const { cargando: isLoading, recargar } = useCargaCancelableEffect(
+    () => getCompetitionGolfCoursesUseCase.execute(competition.id),
+    [competition.id],
+    {
+      alCargar: (result) => {
+        // Backend returns array with structure: { golf_course_id, display_order, created_at, golf_course: {...} }
+        // Flatten the structure for easier access in the UI
+        const courses = Array.isArray(result)
+          ? result
+          : result.golf_courses || [];
+        const mappedCourses = courses.map((item) => ({
+          ...item.golf_course, // Spread golf course data (id, name, country_code, etc.)
+          display_order: item.display_order,
+          created_at: item.created_at,
+          golf_course_id: item.golf_course_id, // Keep reference ID
+        }));
 
-  const loadGolfCourses = async () => {
-    setIsLoading(true);
-    try {
-      const result = await getCompetitionGolfCoursesUseCase.execute(competition.id);
-
-      // Backend returns array with structure: { golf_course_id, display_order, created_at, golf_course: {...} }
-      // Flatten the structure for easier access in the UI
-      const courses = Array.isArray(result) ? result : (result.golf_courses || []);
-      const mappedCourses = courses.map(item => ({
-        ...item.golf_course, // Spread golf course data (id, name, country_code, etc.)
-        display_order: item.display_order,
-        created_at: item.created_at,
-        golf_course_id: item.golf_course_id, // Keep reference ID
-      }));
-
-      setGolfCourses(mappedCourses);
-    } catch (error) {
-      console.error('Error loading golf courses:', error);
-      customToast.error(t('detail.golfCourses.errorLoading') + ': ' + error.message);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+        setGolfCourses(mappedCourses);
+      },
+      alFallar: (error) => {
+        console.error('Error loading golf courses:', error);
+        customToast.error(
+          t('detail.golfCourses.errorLoading') + ': ' + error.message,
+        );
+      },
+    },
+  );
 
   const handleAddCourse = async (course) => {
     // El buscador ya no lo ofrece, pero la guarda se queda: así el aviso lo da la
     // aplicación con sus palabras, en vez de enseñar el error crudo de la API.
     //
     // Cuenta también los que están EN VUELO: el desplegable se puede volver a
-    // abrir mientras la petición viaja, y hasta que no vuelve `loadGolfCourses`
+    // abrir mientras la petición viaja, y hasta que no vuelve la relectura
     // la lista no sabe nada del que se acaba de elegir, así que el mismo campo
     // pasaba la guarda dos veces y se mandaba dos veces
     const yaEsta =
       Boolean(course?.id) &&
-      (golfCourses.some((gc) => gc.id === course.id) || enVuelo.current.has(course.id));
+      (golfCourses.some((gc) => gc.id === course.id) ||
+        enVuelo.current.has(course.id));
     if (yaEsta) {
       customToast.info(t('detail.golfCourses.courseAlreadyAdded'));
       return;
@@ -368,10 +402,15 @@ const CompetitionGolfCoursesSection = ({ competition, canManage, onCamposCambiad
     enVuelo.current.add(course.id);
     setIsAdding(true);
     try {
-      await addGolfCourseToCompetitionUseCase.execute(competition.id, course.id);
+      await addGolfCourseToCompetitionUseCase.execute(
+        competition.id,
+        course.id,
+      );
       customToast.success(t('detail.golfCourses.courseAdded'));
       setShowAddForm(false);
-      await loadGolfCourses();
+      // La ficha se avisa cuando ya hay una lista que incluye el cambio: si otra
+      // acción sustituye esta relectura, la promesa espera a la más reciente
+      await recargar();
       onCamposCambiados?.();
     } catch (error) {
       console.error('Error adding golf course:', error);
@@ -385,15 +424,20 @@ const CompetitionGolfCoursesSection = ({ competition, canManage, onCamposCambiad
   // Quitar se confirma en el modal de la app, no con `window.confirm` (FE #730)
   const handleRemoveCourse = (courseId) => setQuitando(courseId);
   const campoQueSeQuita = golfCourses.find((c) => c.id === quitando);
-  const nombreDelQueSeQuita = campoQueSeQuita?.name || t('detail.golfCourses.unnamed');
+  const nombreDelQueSeQuita =
+    campoQueSeQuita?.name || t('detail.golfCourses.unnamed');
 
   const quitarCampo = async () => {
     const courseId = quitando;
     setQuitando(null);
     try {
-      await removeGolfCourseFromCompetitionUseCase.execute(competition.id, courseId);
+      await removeGolfCourseFromCompetitionUseCase.execute(
+        competition.id,
+        courseId,
+      );
       customToast.success(t('detail.golfCourses.courseRemoved'));
-      await loadGolfCourses();
+      // Como al añadir: la ficha se avisa con una lista que ya incluye el cambio
+      await recargar();
       onCamposCambiados?.();
     } catch (error) {
       console.error('Error removing golf course:', error);
@@ -417,15 +461,15 @@ const CompetitionGolfCoursesSection = ({ competition, canManage, onCamposCambiad
 
     try {
       // Send new order to backend
-      const courseIds = newOrder.map(course => course.id);
+      const courseIds = newOrder.map((course) => course.id);
       await reorderGolfCoursesUseCase.execute(competition.id, courseIds);
       customToast.success(t('detail.golfCourses.reordered'));
       onCamposCambiados?.();
     } catch (error) {
       console.error('Error reordering golf courses:', error);
       customToast.error(t('detail.golfCourses.errorReordering'));
-      // Revert on error
-      await loadGolfCourses();
+      // Revert on error. Sin esperarla: detrás no hay nada que dependa de ella
+      recargar();
     }
   };
 
@@ -451,7 +495,10 @@ const CompetitionGolfCoursesSection = ({ competition, canManage, onCamposCambiad
         <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
           <h3 className="w-full sm:w-auto sm:flex-1 text-gray-900 font-bold text-base sm:text-lg flex items-center gap-2">
             <Flag className="w-5 h-5 flex-none text-green-600" />
-            <TituloConNumero texto={t('detail.golfCourses.title')} numero={golfCourses.length} />
+            <TituloConNumero
+              texto={t('detail.golfCourses.title')}
+              numero={golfCourses.length}
+            />
           </h3>
           {canAdd && !showAddForm && (
             <button
@@ -485,22 +532,27 @@ const CompetitionGolfCoursesSection = ({ competition, canManage, onCamposCambiad
                 aria-label={t('detail.golfCourses.searchIn')}
                 className="flex flex-wrap gap-2 mb-3"
               >
-                {competition.countries.filter((pais) => pais?.code).map((pais) => (
-                  <button
-                    key={pais.code}
-                    type="button"
-                    onClick={() => setPaisElegido(pais.code)}
-                    aria-pressed={paisDelBuscador === pais.code}
-                    className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border text-sm transition-colors ${
-                      paisDelBuscador === pais.code
-                        ? 'border-primary bg-primary/10 text-primary font-medium'
-                        : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300'
-                    }`}
-                  >
-                    <CountryFlag countryCode={pais.code} style={{ width: '18px', height: 'auto' }} />
-                    {formatCountryName(pais, i18n.language)}
-                  </button>
-                ))}
+                {competition.countries
+                  .filter((pais) => pais?.code)
+                  .map((pais) => (
+                    <button
+                      key={pais.code}
+                      type="button"
+                      onClick={() => setPaisElegido(pais.code)}
+                      aria-pressed={paisDelBuscador === pais.code}
+                      className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border text-sm transition-colors ${
+                        paisDelBuscador === pais.code
+                          ? 'border-primary bg-primary/10 text-primary font-medium'
+                          : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300'
+                      }`}
+                    >
+                      <CountryFlag
+                        countryCode={pais.code}
+                        style={{ width: '18px', height: 'auto' }}
+                      />
+                      {formatCountryName(pais, i18n.language)}
+                    </button>
+                  ))}
               </div>
             )}
             <GolfCourseSearchBox
@@ -542,7 +594,7 @@ const CompetitionGolfCoursesSection = ({ competition, canManage, onCamposCambiad
             onDragEnd={handleDragEnd}
           >
             <SortableContext
-              items={golfCourses.map(c => c.id)}
+              items={golfCourses.map((c) => c.id)}
               strategy={verticalListSortingStrategy}
               disabled={!canEdit}
             >
@@ -574,7 +626,9 @@ const CompetitionGolfCoursesSection = ({ competition, canManage, onCamposCambiad
       <ConfirmModal
         isOpen={quitando !== null}
         // Con sus palabras, no «Confirmar» / «Cancelar» (FE #742)
-        title={t('detail.golfCourses.removeDialog.title', { name: nombreDelQueSeQuita })}
+        title={t('detail.golfCourses.removeDialog.title', {
+          name: nombreDelQueSeQuita,
+        })}
         message={t('detail.golfCourses.removeDialog.body')}
         confirmText={t('detail.golfCourses.removeDialog.confirm')}
         cancelText={t('detail.golfCourses.removeDialog.keep')}

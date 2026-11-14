@@ -38,7 +38,7 @@ const pintar = (r) =>
       playerHandicapMap={{}}
       teamNames={{}}
       t={(clave) => clave}
-    />
+    />,
   );
 
 describe('RoundCard · sin formato', () => {

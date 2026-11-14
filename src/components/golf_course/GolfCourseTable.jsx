@@ -7,7 +7,15 @@ import { CountryFlag } from '../ui/CountryFlag';
  * GolfCourseTable Component
  * Reusable table for displaying golf courses
  */
-const GolfCourseTable = ({ courses, onView, onEdit, onApprove, onReject, showActions = true, isAdmin = false }) => {
+const GolfCourseTable = ({
+  courses,
+  onView,
+  onEdit,
+  onApprove,
+  onReject,
+  showActions = true,
+  isAdmin = false,
+}) => {
   const { t } = useTranslation('golfCourses');
 
   const getStatusColor = (status) => {
@@ -93,7 +101,9 @@ const GolfCourseTable = ({ courses, onView, onEdit, onApprove, onReject, showAct
           <div key={course.id} className="p-4">
             <div className="flex items-start justify-between gap-2">
               <div className="min-w-0">
-                <p className="font-medium text-gray-900 break-words">{course.name}</p>
+                <p className="font-medium text-gray-900 break-words">
+                  {course.name}
+                </p>
                 {course.isPendingUpdate && (
                   <span className="inline-flex items-center gap-1 mt-1 text-xs text-yellow-700">
                     <AlertCircle className="w-3 h-3" />
@@ -107,7 +117,9 @@ const GolfCourseTable = ({ courses, onView, onEdit, onApprove, onReject, showAct
                   </span>
                 )}
               </div>
-              <span className={`shrink-0 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border ${getStatusColor(course.approvalStatus)}`}>
+              <span
+                className={`shrink-0 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border ${getStatusColor(course.approvalStatus)}`}
+              >
                 {getStatusIcon(course.approvalStatus)}
                 {t(`table.statuses.${course.approvalStatus}`)}
               </span>
@@ -117,17 +129,24 @@ const GolfCourseTable = ({ courses, onView, onEdit, onApprove, onReject, showAct
               <div>
                 <p className="text-xs text-gray-500">{t('table.country')}</p>
                 <div className="flex items-center gap-2 mt-0.5">
-                  <CountryFlag countryCode={course.countryCode} className="w-5 h-5" />
+                  <CountryFlag
+                    countryCode={course.countryCode}
+                    className="w-5 h-5"
+                  />
                   <span className="text-gray-700">{course.countryCode}</span>
                 </div>
               </div>
               <div>
                 <p className="text-xs text-gray-500">{t('table.type')}</p>
-                <p className="text-gray-700 mt-0.5">{t(`form.courseTypes.${course.courseType}`)}</p>
+                <p className="text-gray-700 mt-0.5">
+                  {t(`form.courseTypes.${course.courseType}`)}
+                </p>
               </div>
               <div>
                 <p className="text-xs text-gray-500">{t('table.par')}</p>
-                <p className="font-medium text-gray-900 mt-0.5">{course.totalPar}</p>
+                <p className="font-medium text-gray-900 mt-0.5">
+                  {course.totalPar}
+                </p>
               </div>
             </div>
 
@@ -135,7 +154,12 @@ const GolfCourseTable = ({ courses, onView, onEdit, onApprove, onReject, showAct
               <p className="text-xs text-gray-500 mb-1">{t('table.tees')}</p>
               <div className="flex flex-wrap gap-1">
                 {course.tees.map((tee, index) => (
-                  <TeeColorBadge key={index} color={tee.color} identifier={tee.identifier} gender={tee.teeGender || tee.tee_gender || tee.gender} />
+                  <TeeColorBadge
+                    key={index}
+                    color={tee.color}
+                    identifier={tee.identifier}
+                    gender={tee.teeGender || tee.tee_gender || tee.gender}
+                  />
                 ))}
               </div>
             </div>
@@ -154,18 +178,37 @@ const GolfCourseTable = ({ courses, onView, onEdit, onApprove, onReject, showAct
         <table className="w-full text-sm">
           <thead className="bg-gray-50 border-b border-gray-200">
             <tr>
-              <th className="text-left py-3 px-4 font-semibold text-gray-700">{t('table.name')}</th>
-              <th className="text-left py-3 px-4 font-semibold text-gray-700">{t('table.country')}</th>
-              <th className="text-left py-3 px-4 font-semibold text-gray-700">{t('table.type')}</th>
-              <th className="text-left py-3 px-4 font-semibold text-gray-700">{t('table.par')}</th>
-              <th className="text-left py-3 px-4 font-semibold text-gray-700">{t('table.tees')}</th>
-              <th className="text-left py-3 px-4 font-semibold text-gray-700">{t('table.status')}</th>
-              {showActions && <th className="text-right py-3 px-4 font-semibold text-gray-700">{t('table.actions')}</th>}
+              <th className="text-left py-3 px-4 font-semibold text-gray-700">
+                {t('table.name')}
+              </th>
+              <th className="text-left py-3 px-4 font-semibold text-gray-700">
+                {t('table.country')}
+              </th>
+              <th className="text-left py-3 px-4 font-semibold text-gray-700">
+                {t('table.type')}
+              </th>
+              <th className="text-left py-3 px-4 font-semibold text-gray-700">
+                {t('table.par')}
+              </th>
+              <th className="text-left py-3 px-4 font-semibold text-gray-700">
+                {t('table.tees')}
+              </th>
+              <th className="text-left py-3 px-4 font-semibold text-gray-700">
+                {t('table.status')}
+              </th>
+              {showActions && (
+                <th className="text-right py-3 px-4 font-semibold text-gray-700">
+                  {t('table.actions')}
+                </th>
+              )}
             </tr>
           </thead>
           <tbody>
             {courses.map((course) => (
-              <tr key={course.id} className="border-b border-gray-100 hover:bg-gray-50">
+              <tr
+                key={course.id}
+                className="border-b border-gray-100 hover:bg-gray-50"
+              >
                 <td className="py-3 px-4">
                   <div>
                     <p className="font-medium text-gray-900">{course.name}</p>
@@ -185,29 +228,41 @@ const GolfCourseTable = ({ courses, onView, onEdit, onApprove, onReject, showAct
                 </td>
                 <td className="py-3 px-4">
                   <div className="flex items-center gap-2">
-                    <CountryFlag countryCode={course.countryCode} className="w-5 h-5" />
+                    <CountryFlag
+                      countryCode={course.countryCode}
+                      className="w-5 h-5"
+                    />
                     <span className="text-gray-700">{course.countryCode}</span>
                   </div>
                 </td>
-                <td className="py-3 px-4 text-gray-700">{t(`form.courseTypes.${course.courseType}`)}</td>
-                <td className="py-3 px-4 font-medium text-gray-900">{course.totalPar}</td>
+                <td className="py-3 px-4 text-gray-700">
+                  {t(`form.courseTypes.${course.courseType}`)}
+                </td>
+                <td className="py-3 px-4 font-medium text-gray-900">
+                  {course.totalPar}
+                </td>
                 <td className="py-3 px-4">
                   <div className="flex flex-wrap gap-1">
                     {course.tees.map((tee, index) => (
-                      <TeeColorBadge key={index} color={tee.color} identifier={tee.identifier} gender={tee.teeGender || tee.tee_gender || tee.gender} />
+                      <TeeColorBadge
+                        key={index}
+                        color={tee.color}
+                        identifier={tee.identifier}
+                        gender={tee.teeGender || tee.tee_gender || tee.gender}
+                      />
                     ))}
                   </div>
                 </td>
                 <td className="py-3 px-4">
-                  <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border ${getStatusColor(course.approvalStatus)}`}>
+                  <span
+                    className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border ${getStatusColor(course.approvalStatus)}`}
+                  >
                     {getStatusIcon(course.approvalStatus)}
                     {t(`table.statuses.${course.approvalStatus}`)}
                   </span>
                 </td>
                 {showActions && (
-                  <td className="py-3 px-4">
-                    {renderActions(course)}
-                  </td>
+                  <td className="py-3 px-4">{renderActions(course)}</td>
                 )}
               </tr>
             ))}

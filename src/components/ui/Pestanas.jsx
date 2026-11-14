@@ -18,7 +18,8 @@ import { createContext, useContext, useId, useRef } from 'react';
 const Contexto = createContext(null);
 
 const idDePestana = (base, id) => `${base}-pestana-${id}`;
-const idDePanel = (base, id, unico) => (unico ? `${base}-panel` : `${base}-panel-${id}`);
+const idDePanel = (base, id, unico) =>
+  unico ? `${base}-panel` : `${base}-panel-${id}`;
 
 /**
  * @param {string} actual - el id de la abierta
@@ -26,10 +27,18 @@ const idDePanel = (base, id, unico) => (unico ? `${base}-panel` : `${base}-panel
  * @param {boolean} [panelUnico] - un solo panel para todas (una lista que cambia según la pestaña)
  * @param {boolean} [sinPestanas] - no se pinta la barra: los paneles salen como elementos normales
  */
-export const GrupoDePestanas = ({ actual, onElegir, panelUnico = false, sinPestanas = false, children }) => {
+export const GrupoDePestanas = ({
+  actual,
+  onElegir,
+  panelUnico = false,
+  sinPestanas = false,
+  children,
+}) => {
   const base = useId();
   return (
-    <Contexto.Provider value={{ base, actual, onElegir, panelUnico, sinPestanas }}>
+    <Contexto.Provider
+      value={{ base, actual, onElegir, panelUnico, sinPestanas }}
+    >
       {children}
     </Contexto.Provider>
   );
@@ -41,7 +50,12 @@ export const GrupoDePestanas = ({ actual, onElegir, panelUnico = false, sinPesta
  * @param {(abierta: boolean, id: string) => string} claseDePestana
  * El resto (`className`, `data-testid`, `ref`, `tabIndex`...) va a la barra.
  */
-export const ListaDePestanas = ({ etiqueta, pestanas, claseDePestana, ...resto }) => {
+export const ListaDePestanas = ({
+  etiqueta,
+  pestanas,
+  claseDePestana,
+  ...resto
+}) => {
   const { base, actual, onElegir, panelUnico } = useContext(Contexto);
   const botones = useRef(new Map());
 
@@ -52,7 +66,10 @@ export const ListaDePestanas = ({ etiqueta, pestanas, claseDePestana, ...resto }
   const alPulsar = (evento) => {
     if (evento.altKey || evento.metaKey || evento.ctrlKey) return;
     const ultima = pestanas.length - 1;
-    const donde = Math.max(0, pestanas.findIndex((p) => p.id === actual));
+    const donde = Math.max(
+      0,
+      pestanas.findIndex((p) => p.id === actual),
+    );
     const destinos = {
       ArrowRight: donde === ultima ? 0 : donde + 1,
       ArrowLeft: donde === 0 ? ultima : donde - 1,
@@ -107,11 +124,23 @@ export const ListaDePestanas = ({ etiqueta, pestanas, claseDePestana, ...resto }
  *   parada de más y un anillo alrededor de todo (WAI-ARIA)
  * El resto va al elemento.
  */
-export const PanelDePestana = ({ id, como: Elemento = 'div', montadoSiempre = false, enfocable = false, children, ...resto }) => {
+export const PanelDePestana = ({
+  id,
+  como: Elemento = 'div',
+  montadoSiempre = false,
+  enfocable = false,
+  children,
+  ...resto
+}) => {
   const { base, actual, panelUnico, sinPestanas } = useContext(Contexto);
   const abierto = panelUnico || id === actual;
   if (!abierto && !montadoSiempre) return null;
-  if (sinPestanas) return <Elemento hidden={!abierto} {...resto}>{children}</Elemento>;
+  if (sinPestanas)
+    return (
+      <Elemento hidden={!abierto} {...resto}>
+        {children}
+      </Elemento>
+    );
   return (
     <Elemento
       role="tabpanel"

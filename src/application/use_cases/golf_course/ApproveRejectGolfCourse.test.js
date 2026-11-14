@@ -14,7 +14,7 @@ describe('ApproveGolfCourseUseCase', () => {
     vi.clearAllMocks();
 
     golfCourseRepository = {
-      approve: vi.fn()
+      approve: vi.fn(),
     };
 
     useCase = new ApproveGolfCourseUseCase({ golfCourseRepository });
@@ -28,7 +28,7 @@ describe('ApproveGolfCourseUseCase', () => {
       name: 'Test Course',
       approvalStatus: 'APPROVED',
       tees: [],
-      holes: []
+      holes: [],
     };
 
     golfCourseRepository.approve.mockResolvedValue(mockApprovedCourse);
@@ -44,8 +44,12 @@ describe('ApproveGolfCourseUseCase', () => {
 
   it('should throw error when course id is not provided', async () => {
     // Act & Assert
-    await expect(useCase.execute(null)).rejects.toThrow('Golf course ID is required');
-    await expect(useCase.execute('')).rejects.toThrow('Golf course ID is required');
+    await expect(useCase.execute(null)).rejects.toThrow(
+      'Golf course ID is required',
+    );
+    await expect(useCase.execute('')).rejects.toThrow(
+      'Golf course ID is required',
+    );
 
     expect(golfCourseRepository.approve).not.toHaveBeenCalled();
   });
@@ -69,7 +73,7 @@ describe('RejectGolfCourseUseCase', () => {
     vi.clearAllMocks();
 
     golfCourseRepository = {
-      reject: vi.fn()
+      reject: vi.fn(),
     };
 
     useCase = new RejectGolfCourseUseCase({ golfCourseRepository });
@@ -85,7 +89,7 @@ describe('RejectGolfCourseUseCase', () => {
       approvalStatus: 'REJECTED',
       rejectionReason: reason,
       tees: [],
-      holes: []
+      holes: [],
     };
 
     golfCourseRepository.reject.mockResolvedValue(mockRejectedCourse);
@@ -102,24 +106,36 @@ describe('RejectGolfCourseUseCase', () => {
 
   it('should throw error when course id is not provided', async () => {
     // Act & Assert
-    await expect(useCase.execute(null, 'reason')).rejects.toThrow('Golf course ID is required');
-    await expect(useCase.execute('', 'reason')).rejects.toThrow('Golf course ID is required');
+    await expect(useCase.execute(null, 'reason')).rejects.toThrow(
+      'Golf course ID is required',
+    );
+    await expect(useCase.execute('', 'reason')).rejects.toThrow(
+      'Golf course ID is required',
+    );
 
     expect(golfCourseRepository.reject).not.toHaveBeenCalled();
   });
 
   it('should throw error when rejection reason is not provided', async () => {
     // Act & Assert
-    await expect(useCase.execute('course-123', null)).rejects.toThrow('Rejection reason must be between 10 and 500 characters');
-    await expect(useCase.execute('course-123', '')).rejects.toThrow('Rejection reason must be between 10 and 500 characters');
-    await expect(useCase.execute('course-123', '   ')).rejects.toThrow('Rejection reason must be between 10 and 500 characters');
+    await expect(useCase.execute('course-123', null)).rejects.toThrow(
+      'Rejection reason must be between 10 and 500 characters',
+    );
+    await expect(useCase.execute('course-123', '')).rejects.toThrow(
+      'Rejection reason must be between 10 and 500 characters',
+    );
+    await expect(useCase.execute('course-123', '   ')).rejects.toThrow(
+      'Rejection reason must be between 10 and 500 characters',
+    );
 
     expect(golfCourseRepository.reject).not.toHaveBeenCalled();
   });
 
   it('should throw error when rejection reason is too short', async () => {
     // Act & Assert
-    await expect(useCase.execute('course-123', 'short')).rejects.toThrow('Rejection reason must be between 10 and 500 characters');
+    await expect(useCase.execute('course-123', 'short')).rejects.toThrow(
+      'Rejection reason must be between 10 and 500 characters',
+    );
 
     expect(golfCourseRepository.reject).not.toHaveBeenCalled();
   });
@@ -131,7 +147,7 @@ describe('RejectGolfCourseUseCase', () => {
     const mockRejectedCourse = {
       id: courseId,
       approvalStatus: 'REJECTED',
-      rejectionReason: reason
+      rejectionReason: reason,
     };
 
     golfCourseRepository.reject.mockResolvedValue(mockRejectedCourse);
@@ -151,7 +167,9 @@ describe('RejectGolfCourseUseCase', () => {
     golfCourseRepository.reject.mockRejectedValue(new Error(errorMessage));
 
     // Act & Assert
-    await expect(useCase.execute(courseId, reason)).rejects.toThrow(errorMessage);
+    await expect(useCase.execute(courseId, reason)).rejects.toThrow(
+      errorMessage,
+    );
   });
 });
 
@@ -163,7 +181,7 @@ describe('ApproveGolfCourseUpdateUseCase', () => {
     vi.clearAllMocks();
 
     golfCourseRepository = {
-      approveUpdate: vi.fn()
+      approveUpdate: vi.fn(),
     };
 
     useCase = new ApproveGolfCourseUpdateUseCase({ golfCourseRepository });
@@ -178,7 +196,7 @@ describe('ApproveGolfCourseUpdateUseCase', () => {
       approvalStatus: 'APPROVED',
       isPendingUpdate: false,
       tees: [],
-      holes: []
+      holes: [],
     };
 
     golfCourseRepository.approveUpdate.mockResolvedValue(mockApprovedCourse);
@@ -204,7 +222,9 @@ describe('ApproveGolfCourseUpdateUseCase', () => {
     // Arrange
     const cloneId = 'clone-789';
     const errorMessage = 'Clone not found';
-    golfCourseRepository.approveUpdate.mockRejectedValue(new Error(errorMessage));
+    golfCourseRepository.approveUpdate.mockRejectedValue(
+      new Error(errorMessage),
+    );
 
     // Act & Assert
     await expect(useCase.execute(cloneId)).rejects.toThrow(errorMessage);
@@ -219,7 +239,7 @@ describe('RejectGolfCourseUpdateUseCase', () => {
     vi.clearAllMocks();
 
     golfCourseRepository = {
-      rejectUpdate: vi.fn()
+      rejectUpdate: vi.fn(),
     };
 
     useCase = new RejectGolfCourseUpdateUseCase({ golfCourseRepository });
@@ -234,7 +254,7 @@ describe('RejectGolfCourseUpdateUseCase', () => {
       approvalStatus: 'APPROVED',
       isPendingUpdate: false,
       tees: [],
-      holes: []
+      holes: [],
     };
 
     golfCourseRepository.rejectUpdate.mockResolvedValue(mockOriginalCourse);
@@ -260,7 +280,9 @@ describe('RejectGolfCourseUpdateUseCase', () => {
     // Arrange
     const cloneId = 'clone-999';
     const errorMessage = 'Clone not found';
-    golfCourseRepository.rejectUpdate.mockRejectedValue(new Error(errorMessage));
+    golfCourseRepository.rejectUpdate.mockRejectedValue(
+      new Error(errorMessage),
+    );
 
     // Act & Assert
     await expect(useCase.execute(cloneId)).rejects.toThrow(errorMessage);

@@ -35,7 +35,9 @@ export const borradorParaRepetir = ({ partida, yo, amigos, campo }) => {
   // El % por defecto de ese formato: si es el copiado, no cuenta como elegido
   // a mano, y cambiar de formato lo sigue moviendo (revisor)
   const copiado = partida.allowancePercentage ?? null;
-  const porDefecto = defaultAllowanceFor(juegoLibre ? null : partida.matchFormat);
+  const porDefecto = defaultAllowanceFor(
+    juegoLibre ? null : partida.matchFormat,
+  );
   const comun = {
     matchName: partida.name ?? '',
     mode: juegoLibre ? 'FREE_PLAY' : 'MATCH_PLAY',
@@ -51,16 +53,28 @@ export const borradorParaRepetir = ({ partida, yo, amigos, campo }) => {
     return {
       paso: PASO_DEL_CAMPO,
       avisos: [{ tipo: 'campo', paso: PASO_DEL_CAMPO }],
-      inicial: { ...comun, selectedCourse: null, creatorTeeKey: NO_TEE_KEY, participants: [], scorerIds: [] },
+      inicial: {
+        ...comun,
+        selectedCourse: null,
+        creatorTeeKey: NO_TEE_KEY,
+        participants: [],
+        scorerIds: [],
+      },
     };
   }
 
-  const barras = new Set((campo.tees || []).map((t) => teeKey(t.color, t.gender)));
+  const barras = new Set(
+    (campo.tees || []).map((t) => teeKey(t.color, t.gender)),
+  );
   // Un campo sin barras no pide ninguna, como al crear la partida: nadie lleva
   // la de antes (el servidor rechazaría una que el campo no tiene)
   const sinBarras = barras.size === 0;
-  const barraVale = (p) => sinBarras || barras.has(teeKey(p.color, p.teeGender));
-  const barraDe = (p) => (sinBarras ? { color: null, teeGender: null } : { color: p.color, teeGender: p.teeGender });
+  const barraVale = (p) =>
+    sinBarras || barras.has(teeKey(p.color, p.teeGender));
+  const barraDe = (p) =>
+    sinBarras
+      ? { color: null, teeGender: null }
+      : { color: p.color, teeGender: p.teeGender };
   // Quien no llevaba barra (el campo no tenía) no la «ha perdido»: le falta
   const avisoDeBarra = (p, nombre) => ({
     tipo: p.color ? 'barra' : 'sinBarra',
@@ -71,7 +85,7 @@ export const borradorParaRepetir = ({ partida, yo, amigos, campo }) => {
     paso: nombre ? PASO_DE_LOS_JUGADORES : PASO_DEL_CAMPO,
   });
   const porEquipos = !juegoLibre && TEAM_FORMATS.includes(partida.matchFormat);
-  const equipo = (p) => (porEquipos ? p.team ?? null : null);
+  const equipo = (p) => (porEquipos ? (p.team ?? null) : null);
   const avisos = [];
 
   const mio = partida.participants.find((p) => p.userId === yo.id);
@@ -94,7 +108,11 @@ export const borradorParaRepetir = ({ partida, yo, amigos, campo }) => {
       // lo guardado en el móvil antes) no se adivina: partir por un espacio
       // equivocaba los nombres compuestos sin decirlo (`/code-review`)
       if (!p.firstName || !p.lastName) {
-        avisos.push({ tipo: 'invitado', nombre: p.name, paso: PASO_DE_LOS_JUGADORES });
+        avisos.push({
+          tipo: 'invitado',
+          nombre: p.name,
+          paso: PASO_DE_LOS_JUGADORES,
+        });
         continue;
       }
       if (!barraVale(p)) {
@@ -108,13 +126,17 @@ export const borradorParaRepetir = ({ partida, yo, amigos, campo }) => {
           handicap: p.handicap ?? null,
           team: equipo(p),
           ...barraDe(p),
-        })
+        }),
       );
       continue;
     }
     const amigo = amigos.find((a) => a.otherUserId === p.userId);
     if (!amigo) {
-      avisos.push({ tipo: 'noAmigo', nombre: p.name, paso: PASO_DE_LOS_JUGADORES });
+      avisos.push({
+        tipo: 'noAmigo',
+        nombre: p.name,
+        paso: PASO_DE_LOS_JUGADORES,
+      });
       continue;
     }
     if (!barraVale(p)) {
@@ -128,7 +150,7 @@ export const borradorParaRepetir = ({ partida, yo, amigos, campo }) => {
         handicap: amigo.otherUserHandicap ?? null,
         team: equipo(p),
         ...barraDe(p),
-      })
+      }),
     );
   }
 
@@ -136,16 +158,22 @@ export const borradorParaRepetir = ({ partida, yo, amigos, campo }) => {
   // (pendiente, con menos jugadores) no la tenía: se dice y se completa en
   // Jugadores, en vez de un rechazo del servidor al confirmar (`/code-review`)
   const caben = juegoLibre ? null : FORMAT_CAPACITY[partida.matchFormat];
-  if (caben && jugadores.length < caben && !avisos.some((a) => a.paso === PASO_DE_LOS_JUGADORES)) {
+  if (
+    caben &&
+    jugadores.length < caben &&
+    !avisos.some((a) => a.paso === PASO_DE_LOS_JUGADORES)
+  ) {
     avisos.push({ tipo: 'faltan', paso: PASO_DE_LOS_JUGADORES });
   }
 
   // Quien repite anota siempre: el servidor lo exige al creador (R11)
-  const siguen = new Set(jugadores.filter((p) => !p.isGuest).map((p) => p.userId));
-  const scorerIds = [yo.id, ...partida.scorerIds.filter((id) => id !== yo.id && siguen.has(id))].slice(
-    0,
-    MAX_SCORERS
+  const siguen = new Set(
+    jugadores.filter((p) => !p.isGuest).map((p) => p.userId),
   );
+  const scorerIds = [
+    yo.id,
+    ...partida.scorerIds.filter((id) => id !== yo.id && siguen.has(id)),
+  ].slice(0, MAX_SCORERS);
 
   const paso = avisos.length > 0 ? Math.min(...avisos.map((a) => a.paso)) : 4;
 
@@ -155,7 +183,10 @@ export const borradorParaRepetir = ({ partida, yo, amigos, campo }) => {
     inicial: {
       ...comun,
       selectedCourse: campo,
-      creatorTeeKey: miBarraVale && !sinBarras ? teeKey(mio.color, mio.teeGender) : NO_TEE_KEY,
+      creatorTeeKey:
+        miBarraVale && !sinBarras
+          ? teeKey(mio.color, mio.teeGender)
+          : NO_TEE_KEY,
       participants: jugadores,
       scorerIds,
     },
@@ -177,7 +208,11 @@ const parejasElegidas = (partida, yo) => {
   if (partida.creatorId !== yo.id) return null;
   const mio = partida.participants.find((p) => p.userId === yo.id);
   if (!mio?.team) return null;
-  const rivales = partida.participants.filter((p) => !p.isGuest && p.userId && p.team === oppositeTeam(mio.team));
+  const rivales = partida.participants.filter(
+    (p) => !p.isGuest && p.userId && p.team === oppositeTeam(mio.team),
+  );
   if (rivales.length === 0) return null;
-  return rivales.some((p) => partida.scorerIds.includes(p.userId)) ? 'BOTH' : 'MINE';
+  return rivales.some((p) => partida.scorerIds.includes(p.userId))
+    ? 'BOTH'
+    : 'MINE';
 };

@@ -14,8 +14,8 @@ import * as useAuthHook from './useAuth';
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
     t: (key) => key,
-    i18n: { language: 'en' }
-  })
+    i18n: { language: 'en' },
+  }),
 }));
 
 // Mock dependencies
@@ -89,7 +89,7 @@ describe('useEditProfile - Password History', () => {
         // Por su código (BE #519): el texto ya no se mira
         Object.assign(new Error('Cannot use one of the last 5 passwords'), {
           errorCode: 'PASSWORD_REUSED',
-        })
+        }),
       );
 
       // Set form data with password change
@@ -116,7 +116,7 @@ describe('useEditProfile - Password History', () => {
         expect.objectContaining({
           duration: 8000,
           icon: '🔑',
-        })
+        }),
       );
     });
 
@@ -129,7 +129,9 @@ describe('useEditProfile - Password History', () => {
 
       // Mock password history error with different message
       composition.updateUserSecurityUseCase.execute.mockRejectedValue(
-        Object.assign(new Error('Otro texto cualquiera'), { errorCode: 'PASSWORD_REUSED' })
+        Object.assign(new Error('Otro texto cualquiera'), {
+          errorCode: 'PASSWORD_REUSED',
+        }),
       );
 
       act(() => {
@@ -153,7 +155,7 @@ describe('useEditProfile - Password History', () => {
         expect.objectContaining({
           duration: 8000,
           icon: '🔑',
-        })
+        }),
       );
     });
 
@@ -166,7 +168,7 @@ describe('useEditProfile - Password History', () => {
 
       // Mock generic error
       composition.updateUserSecurityUseCase.execute.mockRejectedValue(
-        new Error('Invalid current password')
+        new Error('Invalid current password'),
       );
 
       act(() => {
@@ -186,7 +188,9 @@ describe('useEditProfile - Password History', () => {
       });
 
       // Should show generic error, not password history error
-      expect(customToast.error).toHaveBeenCalledWith('Invalid current password');
+      expect(customToast.error).toHaveBeenCalledWith(
+        'Invalid current password',
+      );
     });
 
     it('should successfully update password when not reusing old passwords', async () => {
@@ -223,7 +227,7 @@ describe('useEditProfile - Password History', () => {
       });
 
       expect(customToast.success).toHaveBeenCalledWith(
-        'toasts.securityUpdated'
+        'toasts.securityUpdated',
       );
       expect(customToast.error).not.toHaveBeenCalled();
       expect(refetchMock).toHaveBeenCalled();

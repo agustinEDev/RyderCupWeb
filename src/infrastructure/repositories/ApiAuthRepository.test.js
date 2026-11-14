@@ -37,7 +37,9 @@ describe('ApiAuthRepository - Account Lockout', () => {
       mockApiRequest.mockRejectedValue(error);
 
       // Con su código: el texto lo pone la pantalla, traducido (BE #732)
-      await expect(repository.login(email, password)).rejects.toMatchObject({ code: 'LOGIN_LOCKED' });
+      await expect(repository.login(email, password)).rejects.toMatchObject({
+        code: 'LOGIN_LOCKED',
+      });
 
       expect(mockApiRequest).toHaveBeenCalledWith('/api/v1/auth/login', {
         method: 'POST',
@@ -52,16 +54,22 @@ describe('ApiAuthRepository - Account Lockout', () => {
       const email = new Email('test@example.com');
       const password = new Password('Password123', { validateStrength: false });
 
-      const error = new Error('Account locked due to too many failed login attempts');
+      const error = new Error(
+        'Account locked due to too many failed login attempts',
+      );
       error.status = 423;
       mockApiRequest.mockRejectedValue(error);
 
-      await expect(repository.login(email, password)).rejects.toMatchObject({ code: 'LOGIN_LOCKED' });
+      await expect(repository.login(email, password)).rejects.toMatchObject({
+        code: 'LOGIN_LOCKED',
+      });
     });
 
     it('should distinguish HTTP 423 from HTTP 401', async () => {
       const email = new Email('wrong@example.com');
-      const password = new Password('WrongPassword', { validateStrength: false });
+      const password = new Password('WrongPassword', {
+        validateStrength: false,
+      });
 
       // Mock 401 error (invalid credentials) with status property
       const error = new Error('Unauthorized');
@@ -69,7 +77,9 @@ describe('ApiAuthRepository - Account Lockout', () => {
       mockApiRequest.mockRejectedValue(error);
 
       // Con su código: el texto, traducido, lo pone la pantalla (como el 423)
-      await expect(repository.login(email, password)).rejects.toMatchObject({ code: 'INVALID_CREDENTIALS' });
+      await expect(repository.login(email, password)).rejects.toMatchObject({
+        code: 'INVALID_CREDENTIALS',
+      });
     });
 
     it('should successfully login after account is unlocked', async () => {
@@ -104,11 +114,11 @@ describe('ApiAuthRepository - Account Lockout', () => {
       const password = new Password('Password123', { validateStrength: false });
 
       mockApiRequest.mockRejectedValue(
-        new Error('Network error: Failed to fetch')
+        new Error('Network error: Failed to fetch'),
       );
 
       await expect(repository.login(email, password)).rejects.toThrow(
-        'Network error: Failed to fetch'
+        'Network error: Failed to fetch',
       );
     });
 
@@ -117,11 +127,11 @@ describe('ApiAuthRepository - Account Lockout', () => {
       const password = new Password('Password123', { validateStrength: false });
 
       mockApiRequest.mockRejectedValue(
-        new Error('HTTP 500: Internal Server Error')
+        new Error('HTTP 500: Internal Server Error'),
       );
 
       await expect(repository.login(email, password)).rejects.toThrow(
-        'HTTP 500: Internal Server Error'
+        'HTTP 500: Internal Server Error',
       );
     });
   });
@@ -132,7 +142,12 @@ describe('ApiAuthRepository · register con la aceptación de los Términos', ()
   beforeEach(() => vi.clearAllMocks());
 
   it('envía accept_terms: true', async () => {
-    api.default.mockResolvedValue({ id: 'u-1', email: 'ana@example.com', first_name: 'Ana', last_name: 'Prueba' });
+    api.default.mockResolvedValue({
+      id: 'u-1',
+      email: 'ana@example.com',
+      first_name: 'Ana',
+      last_name: 'Prueba',
+    });
 
     await new ApiAuthRepository().register({
       firstName: 'Ana',
@@ -152,10 +167,15 @@ describe('ApiAuthRepository · register con la aceptación de los Términos', ()
   // RyderCupAm #750: el 403 de cuenta desactivada llega a la pantalla con su código
   describe('cuenta desactivada (403 ACCOUNT_DEACTIVATED)', () => {
     const desactivada = () =>
-      Object.assign(new Error('This account has been deactivated. Contact an administrator.'), {
-        status: 403,
-        errorCode: 'ACCOUNT_DEACTIVATED',
-      });
+      Object.assign(
+        new Error(
+          'This account has been deactivated. Contact an administrator.',
+        ),
+        {
+          status: 403,
+          errorCode: 'ACCOUNT_DEACTIVATED',
+        },
+      );
 
     it('el login lo deja pasar con su errorCode', async () => {
       api.default.mockRejectedValue(desactivada());
@@ -163,15 +183,20 @@ describe('ApiAuthRepository · register con la aceptación de los Términos', ()
       await expect(
         new ApiAuthRepository().login(
           new Email('baja@example.com'),
-          new Password('Password123', { validateStrength: false })
-        )
-      ).rejects.toMatchObject({ status: 403, errorCode: 'ACCOUNT_DEACTIVATED' });
+          new Password('Password123', { validateStrength: false }),
+        ),
+      ).rejects.toMatchObject({
+        status: 403,
+        errorCode: 'ACCOUNT_DEACTIVATED',
+      });
     });
 
     it('la verificación del correo también', async () => {
       api.default.mockRejectedValue(desactivada());
 
-      await expect(new ApiAuthRepository().verifyEmail('token')).rejects.toMatchObject({
+      await expect(
+        new ApiAuthRepository().verifyEmail('token'),
+      ).rejects.toMatchObject({
         status: 403,
         errorCode: 'ACCOUNT_DEACTIVATED',
       });
@@ -180,9 +205,14 @@ describe('ApiAuthRepository · register con la aceptación de los Términos', ()
 
   describe('verificar el correo no abre sesión (RyderCupAm #753, fase 3)', () => {
     it('solo dice que quedó verificado', async () => {
-      api.default.mockResolvedValue({ message: 'Email verified. Please sign in.', email_verified: true });
+      api.default.mockResolvedValue({
+        message: 'Email verified. Please sign in.',
+        email_verified: true,
+      });
 
-      await expect(new ApiAuthRepository().verifyEmail('token')).resolves.toEqual({ emailVerified: true });
+      await expect(
+        new ApiAuthRepository().verifyEmail('token'),
+      ).resolves.toEqual({ emailVerified: true });
     });
 
     it('aunque el cuerpo trajera tokens y usuario, no los mira', async () => {
@@ -190,10 +220,17 @@ describe('ApiAuthRepository · register con la aceptación de los Términos', ()
         access_token: 'acceso',
         csrf_token: 'csrf',
         email_verified: true,
-        user: { id: 'u-1', email: 'ana@example.com', first_name: 'Ana', last_name: 'Prueba' },
+        user: {
+          id: 'u-1',
+          email: 'ana@example.com',
+          first_name: 'Ana',
+          last_name: 'Prueba',
+        },
       });
 
-      await expect(new ApiAuthRepository().verifyEmail('token')).resolves.toEqual({ emailVerified: true });
+      await expect(
+        new ApiAuthRepository().verifyEmail('token'),
+      ).resolves.toEqual({ emailVerified: true });
     });
   });
 
@@ -203,10 +240,13 @@ describe('ApiAuthRepository · register con la aceptación de los Términos', ()
 
       await new ApiAuthRepository().resendVerificationLink('caducado-1');
 
-      expect(api.default).toHaveBeenCalledWith('/api/v1/auth/resend-verification-link', {
-        method: 'POST',
-        body: JSON.stringify({ token: 'caducado-1' }),
-      });
+      expect(api.default).toHaveBeenCalledWith(
+        '/api/v1/auth/resend-verification-link',
+        {
+          method: 'POST',
+          body: JSON.stringify({ token: 'caducado-1' }),
+        },
+      );
     });
   });
 
@@ -214,7 +254,9 @@ describe('ApiAuthRepository · register con la aceptación de los Términos', ()
     it('manda la contraseña y devuelve cuánto dura la marca', async () => {
       api.default.mockResolvedValue({ expires_in: 300 });
 
-      const resultado = await new ApiAuthRepository().reauthenticate('Actual123!');
+      const resultado = await new ApiAuthRepository().reauthenticate(
+        'Actual123!',
+      );
 
       expect(api.default).toHaveBeenCalledWith('/api/v1/auth/reauthenticate', {
         method: 'POST',

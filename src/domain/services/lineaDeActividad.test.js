@@ -53,7 +53,11 @@ describe('armaLaLineaDeActividad', () => {
   it('orders the cards newest first by publication, not by when it was played (case 5)', () => {
     const linea = armaLaLineaDeActividad({
       eventos: [
-        evento({ id: 'viejo', groupKey: 'g-viejo', publishedAt: new Date(2026, 9, 22, 9, 0) }),
+        evento({
+          id: 'viejo',
+          groupKey: 'g-viejo',
+          publishedAt: new Date(2026, 9, 22, 9, 0),
+        }),
         evento({
           id: 'nuevo',
           groupKey: 'g-nuevo',
@@ -65,14 +69,26 @@ describe('armaLaLineaDeActividad', () => {
       ahora: AHORA,
     });
 
-    expect(tarjetasDe(linea).map((t) => t.clave)).toEqual(['g-nuevo', 'g-viejo']);
+    expect(tarjetasDe(linea).map((t) => t.clave)).toEqual([
+      'g-nuevo',
+      'g-viejo',
+    ]);
   });
 
   it('falls back to when it was played if the publication date is missing', () => {
     const linea = armaLaLineaDeActividad({
       eventos: [
-        evento({ id: 'a', groupKey: 'ga', publishedAt: null, occurredAt: new Date(2026, 9, 20, 12) }),
-        evento({ id: 'b', groupKey: 'gb', publishedAt: new Date(2026, 9, 21, 12) }),
+        evento({
+          id: 'a',
+          groupKey: 'ga',
+          publishedAt: null,
+          occurredAt: new Date(2026, 9, 20, 12),
+        }),
+        evento({
+          id: 'b',
+          groupKey: 'gb',
+          publishedAt: new Date(2026, 9, 21, 12),
+        }),
       ],
       ahora: AHORA,
     });
@@ -84,7 +100,12 @@ describe('armaLaLineaDeActividad', () => {
   it('groups the achievements of one round into one card, keeping all of them (case 9)', () => {
     const linea = armaLaLineaDeActividad({
       eventos: [
-        evento({ id: 'b', type: 'BIRDIE', groupKey: 'u1:m1', payload: { count: 3 } }),
+        evento({
+          id: 'b',
+          type: 'BIRDIE',
+          groupKey: 'u1:m1',
+          payload: { count: 3 },
+        }),
         evento({ id: 'e', type: 'EAGLE_OR_BETTER', groupKey: 'u1:m1' }),
         evento({ id: 'n', type: 'NEW_COURSE', groupKey: 'u1:m1' }),
         evento({ id: 'otro', type: 'BIRDIE', groupKey: 'u2:m1', userId: 'u2' }),
@@ -103,18 +124,28 @@ describe('armaLaLineaDeActividad', () => {
     const linea = armaLaLineaDeActividad({
       eventos: [
         evento({ id: 'a', groupKey: 'g1' }),
-        evento({ id: 'x', groupKey: 'g2', publishedAt: new Date(2026, 9, 22, 16) }),
+        evento({
+          id: 'x',
+          groupKey: 'g2',
+          publishedAt: new Date(2026, 9, 22, 16),
+        }),
         evento({ id: 'b', groupKey: 'g1', type: 'EAGLE_OR_BETTER' }),
       ],
       ahora: AHORA,
     });
 
-    expect(tarjetasDe(linea).map((t) => t.eventos.map((e) => e.id))).toEqual([['a', 'b'], ['x']]);
+    expect(tarjetasDe(linea).map((t) => t.eventos.map((e) => e.id))).toEqual([
+      ['a', 'b'],
+      ['x'],
+    ]);
   });
 
   it('gives each event its own card when it has no group key', () => {
     const linea = armaLaLineaDeActividad({
-      eventos: [evento({ id: 'a', groupKey: null }), evento({ id: 'b', groupKey: undefined })],
+      eventos: [
+        evento({ id: 'a', groupKey: null }),
+        evento({ id: 'b', groupKey: undefined }),
+      ],
       ahora: AHORA,
     });
 
@@ -124,7 +155,11 @@ describe('armaLaLineaDeActividad', () => {
   it('ignores event types it does not know (forward compatibility)', () => {
     const linea = armaLaLineaDeActividad({
       eventos: [
-        evento({ id: 'raro', type: 'SOMETHING_FROM_THE_FUTURE', groupKey: 'g-raro' }),
+        evento({
+          id: 'raro',
+          type: 'SOMETHING_FROM_THE_FUTURE',
+          groupKey: 'g-raro',
+        }),
         evento({ id: 'ok', type: 'QUICK_MATCH_FINISHED', groupKey: 'g-ok' }),
       ],
       ahora: AHORA,
@@ -151,7 +186,10 @@ describe('armaLaLineaDeActividad', () => {
     'TOURNAMENT_FINAL_STANDING',
     'QUICK_MATCH_FINISHED',
   ])('keeps the known type %s', (type) => {
-    const linea = armaLaLineaDeActividad({ eventos: [evento({ type })], ahora: AHORA });
+    const linea = armaLaLineaDeActividad({
+      eventos: [evento({ type })],
+      ahora: AHORA,
+    });
 
     expect(tarjetasDe(linea)).toHaveLength(1);
   });
@@ -159,10 +197,26 @@ describe('armaLaLineaDeActividad', () => {
   it('splits the cards by local day, newest day first (case 6)', () => {
     const linea = armaLaLineaDeActividad({
       eventos: [
-        evento({ id: 'hoy', groupKey: 'hoy', publishedAt: new Date(2026, 9, 22, 0, 5) }),
-        evento({ id: 'ayer1', groupKey: 'ayer1', publishedAt: new Date(2026, 9, 21, 23, 55) }),
-        evento({ id: 'ayer2', groupKey: 'ayer2', publishedAt: new Date(2026, 9, 21, 8, 0) }),
-        evento({ id: 'lunes', groupKey: 'lunes', publishedAt: new Date(2026, 9, 19, 10, 0) }),
+        evento({
+          id: 'hoy',
+          groupKey: 'hoy',
+          publishedAt: new Date(2026, 9, 22, 0, 5),
+        }),
+        evento({
+          id: 'ayer1',
+          groupKey: 'ayer1',
+          publishedAt: new Date(2026, 9, 21, 23, 55),
+        }),
+        evento({
+          id: 'ayer2',
+          groupKey: 'ayer2',
+          publishedAt: new Date(2026, 9, 21, 8, 0),
+        }),
+        evento({
+          id: 'lunes',
+          groupKey: 'lunes',
+          publishedAt: new Date(2026, 9, 19, 10, 0),
+        }),
       ],
       ahora: AHORA,
     });
@@ -184,13 +238,31 @@ describe('armaLaLineaDeActividad', () => {
     // que ella (17:00 y 16:30). La de las 15:00 ya se había visto
     const linea = armaLaLineaDeActividad({
       eventos: [
-        evento({ id: 'a', groupKey: 'a', publishedAt: new Date(2026, 9, 22, 17, 0) }),
-        evento({ id: 'b', groupKey: 'b', publishedAt: new Date(2026, 9, 22, 16, 30) }),
-        evento({ id: 'c', groupKey: 'c', publishedAt: new Date(2026, 9, 22, 15, 0) }),
+        evento({
+          id: 'a',
+          groupKey: 'a',
+          publishedAt: new Date(2026, 9, 22, 17, 0),
+        }),
+        evento({
+          id: 'b',
+          groupKey: 'b',
+          publishedAt: new Date(2026, 9, 22, 16, 30),
+        }),
+        evento({
+          id: 'c',
+          groupKey: 'c',
+          publishedAt: new Date(2026, 9, 22, 15, 0),
+        }),
       ],
       solicitudes: [
-        solicitud({ friendshipId: 'f-nueva', createdAt: new Date(2026, 9, 22, 16, 0) }),
-        solicitud({ friendshipId: 'f-vieja', createdAt: new Date(2026, 9, 20, 9, 0) }),
+        solicitud({
+          friendshipId: 'f-nueva',
+          createdAt: new Date(2026, 9, 22, 16, 0),
+        }),
+        solicitud({
+          friendshipId: 'f-vieja',
+          createdAt: new Date(2026, 9, 20, 9, 0),
+        }),
       ],
       novedades: 3,
       ahora: AHORA,
@@ -222,9 +294,21 @@ describe('armaLaLineaDeActividad', () => {
   it('counts a grouped card once when marking new', () => {
     const linea = armaLaLineaDeActividad({
       eventos: [
-        evento({ id: 'a1', groupKey: 'g1', publishedAt: new Date(2026, 9, 22, 17) }),
-        evento({ id: 'a2', groupKey: 'g1', publishedAt: new Date(2026, 9, 22, 17) }),
-        evento({ id: 'b', groupKey: 'g2', publishedAt: new Date(2026, 9, 22, 16) }),
+        evento({
+          id: 'a1',
+          groupKey: 'g1',
+          publishedAt: new Date(2026, 9, 22, 17),
+        }),
+        evento({
+          id: 'a2',
+          groupKey: 'g1',
+          publishedAt: new Date(2026, 9, 22, 17),
+        }),
+        evento({
+          id: 'b',
+          groupKey: 'g2',
+          publishedAt: new Date(2026, 9, 22, 16),
+        }),
       ],
       novedades: 2,
       ahora: AHORA,
@@ -243,12 +327,18 @@ describe('armaLaLineaDeActividad', () => {
       ahora: AHORA,
     });
 
-    expect(linea.solicitudes.map((s) => s.friendshipId)).toEqual(['nueva', 'vieja']);
+    expect(linea.solicitudes.map((s) => s.friendshipId)).toEqual([
+      'nueva',
+      'vieja',
+    ]);
     expect(linea.dias).toEqual([]);
   });
 
   it('copes with no input at all', () => {
-    expect(armaLaLineaDeActividad({ ahora: AHORA })).toEqual({ solicitudes: [], dias: [] });
+    expect(armaLaLineaDeActividad({ ahora: AHORA })).toEqual({
+      solicitudes: [],
+      dias: [],
+    });
   });
 });
 
@@ -313,14 +403,39 @@ describe('primerasTarjetasPorDia', () => {
     [0, []],
     [2, [['a', 2]]],
     [3, [['a', 3]]],
-    [4, [['a', 3], ['b', 1]]],
-    [6, [['a', 3], ['b', 2], ['c', 1]]],
-    [99, [['a', 3], ['b', 2], ['c', 1]]],
-  ])('the first %i cards keep their days and drop the empty ones', (n, esperado) => {
-    expect(forma(primerasTarjetasPorDia([dia('a', 3), dia('b', 2), dia('c', 1)], n))).toEqual(
-      esperado
-    );
-  });
+    [
+      4,
+      [
+        ['a', 3],
+        ['b', 1],
+      ],
+    ],
+    [
+      6,
+      [
+        ['a', 3],
+        ['b', 2],
+        ['c', 1],
+      ],
+    ],
+    [
+      99,
+      [
+        ['a', 3],
+        ['b', 2],
+        ['c', 1],
+      ],
+    ],
+  ])(
+    'the first %i cards keep their days and drop the empty ones',
+    (n, esperado) => {
+      expect(
+        forma(
+          primerasTarjetasPorDia([dia('a', 3), dia('b', 2), dia('c', 1)], n),
+        ),
+      ).toEqual(esperado);
+    },
+  );
 
   it('keeps the order of the cards inside a day cut in half', () => {
     const [a] = primerasTarjetasPorDia([dia('a', 3)], 2);
@@ -336,14 +451,23 @@ describe('primerasTarjetasPorDia', () => {
 });
 
 describe('the new notices are known types (social decisions, case 1)', () => {
-  it.each(['ENROLLMENT_CONFIRMED', 'TEE_TIME_ASSIGNED'])('%s gets its own card', (type) => {
-    const { dias } = armaLaLineaDeActividad({
-      eventos: [evento({ id: 'n1', type, groupKey: null }), evento({ id: 'n2', type, groupKey: null })],
-      ahora: AHORA,
-    });
+  it.each(['ENROLLMENT_CONFIRMED', 'TEE_TIME_ASSIGNED'])(
+    '%s gets its own card',
+    (type) => {
+      const { dias } = armaLaLineaDeActividad({
+        eventos: [
+          evento({ id: 'n1', type, groupKey: null }),
+          evento({ id: 'n2', type, groupKey: null }),
+        ],
+        ahora: AHORA,
+      });
 
-    expect(dias.flatMap((d) => d.tarjetas).map((t) => t.tipo)).toEqual([type, type]);
-  });
+      expect(dias.flatMap((d) => d.tarjetas).map((t) => t.tipo)).toEqual([
+        type,
+        type,
+      ]);
+    },
+  );
 });
 
 describe('the badge text with the real count up to 99 (social decisions, case 5)', () => {
@@ -356,9 +480,17 @@ describe('the badge text with the real count up to 99 (social decisions, case 5)
 
   it('marks up to 99 cards as new: the 99 most recent, not the 100th', () => {
     const eventos = Array.from({ length: 120 }, (_, i) =>
-      evento({ id: `e${i}`, groupKey: null, publishedAt: new Date(2026, 9, 22, 17, 0, 0, 0) - i * 60 * 1000 })
+      evento({
+        id: `e${i}`,
+        groupKey: null,
+        publishedAt: new Date(2026, 9, 22, 17, 0, 0, 0) - i * 60 * 1000,
+      }),
     ).map((e) => ({ ...e, publishedAt: new Date(e.publishedAt) }));
-    const { dias } = armaLaLineaDeActividad({ eventos, novedades: 99, ahora: AHORA });
+    const { dias } = armaLaLineaDeActividad({
+      eventos,
+      novedades: 99,
+      ahora: AHORA,
+    });
     const tarjetas = dias.flatMap((d) => d.tarjetas);
 
     expect(tarjetas).toHaveLength(120);

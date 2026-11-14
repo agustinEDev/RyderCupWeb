@@ -6,7 +6,11 @@ import BloqueoDePartidos from './BloqueoDePartidos';
 import { formatoDeIndice } from '../../utils/formatoDeHandicap';
 
 let matchIdCounter = 0;
-const createEmptyMatch = () => ({ id: ++matchIdCounter, teamAPlayerIds: [], teamBPlayerIds: [] });
+const createEmptyMatch = () => ({
+  id: ++matchIdCounter,
+  teamAPlayerIds: [],
+  teamBPlayerIds: [],
+});
 
 // Wrapper: controls mount/unmount so inner component always has fresh state
 const GenerateMatchesModal = ({ isOpen, ...props }) => {
@@ -38,30 +42,36 @@ const GenerateMatchesModalContent = ({
   const playersPerSide = round.matchFormat === 'SINGLES' ? 1 : 2;
 
   const approvedPlayers = useMemo(
-    () => enrollments.filter(e => e.status === 'APPROVED'),
-    [enrollments]
+    () => enrollments.filter((e) => e.status === 'APPROVED'),
+    [enrollments],
   );
 
   const teamAPlayers = useMemo(
-    () => approvedPlayers.filter(p =>
-      teamAssignment?.teamAPlayerIds?.includes(p.userId)
-    ),
-    [approvedPlayers, teamAssignment]
+    () =>
+      approvedPlayers.filter((p) =>
+        teamAssignment?.teamAPlayerIds?.includes(p.userId),
+      ),
+    [approvedPlayers, teamAssignment],
   );
 
   const teamBPlayers = useMemo(
-    () => approvedPlayers.filter(p =>
-      teamAssignment?.teamBPlayerIds?.includes(p.userId)
-    ),
-    [approvedPlayers, teamAssignment]
+    () =>
+      approvedPlayers.filter((p) =>
+        teamAssignment?.teamBPlayerIds?.includes(p.userId),
+      ),
+    [approvedPlayers, teamAssignment],
   );
 
   // All player IDs currently used across all matches
   const usedPlayerIds = useMemo(() => {
     const ids = new Set();
-    matches.forEach(m => {
-      m.teamAPlayerIds.forEach(id => { if (id) ids.add(id); });
-      m.teamBPlayerIds.forEach(id => { if (id) ids.add(id); });
+    matches.forEach((m) => {
+      m.teamAPlayerIds.forEach((id) => {
+        if (id) ids.add(id);
+      });
+      m.teamBPlayerIds.forEach((id) => {
+        if (id) ids.add(id);
+      });
     });
     return ids;
   }, [matches]);
@@ -70,36 +80,57 @@ const GenerateMatchesModalContent = ({
   const totalCount = teamAPlayers.length + teamBPlayers.length;
 
   const addMatch = () => {
-    setMatches(prev => [...prev, createEmptyMatch()]);
+    setMatches((prev) => [...prev, createEmptyMatch()]);
     setValidationError(null);
   };
 
   const removeMatch = (index) => {
-    setMatches(prev => prev.filter((_, i) => i !== index));
+    setMatches((prev) => prev.filter((_, i) => i !== index));
     setValidationError(null);
   };
 
   const updateMatchPlayer = (matchIndex, team, slotIndex, playerId) => {
-    setMatches(prev => prev.map((match, i) => {
-      if (i !== matchIndex) return match;
-      const key = team === 'A' ? 'teamAPlayerIds' : 'teamBPlayerIds';
-      const updated = [...match[key]];
-      if (playerId === '') {
-        updated[slotIndex] = '';
-      } else {
-        updated[slotIndex] = playerId;
-      }
-      return { ...match, [key]: updated };
-    }));
+    setMatches((prev) =>
+      prev.map((match, i) => {
+        if (i !== matchIndex) return match;
+        const key = team === 'A' ? 'teamAPlayerIds' : 'teamBPlayerIds';
+        const updated = [...match[key]];
+        if (playerId === '') {
+          updated[slotIndex] = '';
+        } else {
+          updated[slotIndex] = playerId;
+        }
+        return { ...match, [key]: updated };
+      }),
+    );
     setValidationError(null);
   };
 
-  const isPlayerUsedElsewhere = (playerId, currentMatchIndex, team, slotIndex) => {
+  const isPlayerUsedElsewhere = (
+    playerId,
+    currentMatchIndex,
+    team,
+    slotIndex,
+  ) => {
     if (!playerId) return false;
     for (let i = 0; i < matches.length; i++) {
       const m = matches[i];
-      if (m.teamAPlayerIds.some((id, si) => id === playerId && !(i === currentMatchIndex && team === 'A' && si === slotIndex))) return true;
-      if (m.teamBPlayerIds.some((id, si) => id === playerId && !(i === currentMatchIndex && team === 'B' && si === slotIndex))) return true;
+      if (
+        m.teamAPlayerIds.some(
+          (id, si) =>
+            id === playerId &&
+            !(i === currentMatchIndex && team === 'A' && si === slotIndex),
+        )
+      )
+        return true;
+      if (
+        m.teamBPlayerIds.some(
+          (id, si) =>
+            id === playerId &&
+            !(i === currentMatchIndex && team === 'B' && si === slotIndex),
+        )
+      )
+        return true;
     }
     return false;
   };
@@ -110,17 +141,25 @@ const GenerateMatchesModalContent = ({
     }
 
     for (const match of matches) {
-      if (match.teamAPlayerIds.length !== playersPerSide ||
-          match.teamBPlayerIds.length !== playersPerSide) {
+      if (
+        match.teamAPlayerIds.length !== playersPerSide ||
+        match.teamBPlayerIds.length !== playersPerSide
+      ) {
         return t('matches.pairings.validation.incompleteMatch');
       }
-      if (match.teamAPlayerIds.some(id => !id) || match.teamBPlayerIds.some(id => !id)) {
+      if (
+        match.teamAPlayerIds.some((id) => !id) ||
+        match.teamBPlayerIds.some((id) => !id)
+      ) {
         return t('matches.pairings.validation.incompleteMatch');
       }
     }
 
     // Check duplicates
-    const allIds = matches.flatMap(m => [...m.teamAPlayerIds, ...m.teamBPlayerIds]);
+    const allIds = matches.flatMap((m) => [
+      ...m.teamAPlayerIds,
+      ...m.teamBPlayerIds,
+    ]);
     if (new Set(allIds).size !== allIds.length) {
       return t('matches.pairings.validation.duplicatePlayer');
     }
@@ -131,7 +170,11 @@ const GenerateMatchesModalContent = ({
   const handleSubmit = (e) => {
     e.preventDefault();
 
-    if (!teamAssignment || (!teamAssignment.teamAPlayerIds?.length && !teamAssignment.teamBPlayerIds?.length)) {
+    if (
+      !teamAssignment ||
+      (!teamAssignment.teamAPlayerIds?.length &&
+        !teamAssignment.teamBPlayerIds?.length)
+    ) {
       setValidationError(t('matches.pairings.validation.noTeamAssignment'));
       return;
     }
@@ -147,7 +190,12 @@ const GenerateMatchesModalContent = ({
       return;
     }
 
-    onConfirm(matches.map(({ teamAPlayerIds, teamBPlayerIds }) => ({ teamAPlayerIds, teamBPlayerIds })));
+    onConfirm(
+      matches.map(({ teamAPlayerIds, teamBPlayerIds }) => ({
+        teamAPlayerIds,
+        teamBPlayerIds,
+      })),
+    );
   };
 
   const renderPlayerSelect = (matchIndex, team, slotIndex, players) => {
@@ -157,20 +205,27 @@ const GenerateMatchesModalContent = ({
     return (
       <select
         value={currentValue}
-        onChange={(e) => updateMatchPlayer(matchIndex, team, slotIndex, e.target.value)}
+        onChange={(e) =>
+          updateMatchPlayer(matchIndex, team, slotIndex, e.target.value)
+        }
         className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-primary focus:border-primary"
       >
         <option value="">{t('matches.pairings.selectPlayer')}</option>
-        {players.map(player => {
-          const isUsed = isPlayerUsedElsewhere(player.userId, matchIndex, team, slotIndex);
+        {players.map((player) => {
+          const isUsed = isPlayerUsedElsewhere(
+            player.userId,
+            matchIndex,
+            team,
+            slotIndex,
+          );
           return (
-            <option
-              key={player.userId}
-              value={player.userId}
-              disabled={isUsed}
-            >
-              {playerNameMap.get(player.userId) || player.userName || t('unnamedPlayer')}
-              {player.userHandicap != null ? ` (${t('handicapLabels.indexWithColon', { value: formatoDeIndice(player.userHandicap) })})` : ''}
+            <option key={player.userId} value={player.userId} disabled={isUsed}>
+              {playerNameMap.get(player.userId) ||
+                player.userName ||
+                t('unnamedPlayer')}
+              {player.userHandicap != null
+                ? ` (${t('handicapLabels.indexWithColon', { value: formatoDeIndice(player.userHandicap) })})`
+                : ''}
               {isUsed ? ` - ${t('matches.pairings.playerAlreadyUsed')}` : ''}
             </option>
           );
@@ -199,7 +254,10 @@ const GenerateMatchesModalContent = ({
         <div className="flex justify-between items-center p-6 border-b border-gray-200">
           <div className="flex items-center gap-2">
             <Zap className="w-5 h-5 text-primary" />
-            <h2 id="generar-partidos-titulo" className="text-xl font-bold text-gray-900">
+            <h2
+              id="generar-partidos-titulo"
+              className="text-xl font-bold text-gray-900"
+            >
               {t('matches.pairings.title')}
             </h2>
           </div>
@@ -217,10 +275,16 @@ const GenerateMatchesModalContent = ({
               sesión, en el idioma de la pantalla */}
           <BloqueoDePartidos bloqueo={bloqueo} />
           {/* Warning when no teams assigned */}
-          {(!teamAssignment || (!teamAssignment.teamAPlayerIds?.length && !teamAssignment.teamBPlayerIds?.length)) && (
+          {(!teamAssignment ||
+            (!teamAssignment.teamAPlayerIds?.length &&
+              !teamAssignment.teamBPlayerIds?.length)) && (
             <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
-              <p className="text-sm font-medium text-yellow-800">{t('matches.pairings.noTeamsWarning')}</p>
-              <p className="text-xs text-yellow-600 mt-1">{t('matches.pairings.noTeamsWarningDesc')}</p>
+              <p className="text-sm font-medium text-yellow-800">
+                {t('matches.pairings.noTeamsWarning')}
+              </p>
+              <p className="text-xs text-yellow-600 mt-1">
+                {t('matches.pairings.noTeamsWarningDesc')}
+              </p>
             </div>
           )}
 
@@ -244,12 +308,19 @@ const GenerateMatchesModalContent = ({
                     name="pairingMode"
                     value="automatic"
                     checked={mode === 'automatic'}
-                    onChange={() => { setMode('automatic'); setValidationError(null); }}
+                    onChange={() => {
+                      setMode('automatic');
+                      setValidationError(null);
+                    }}
                     className="mt-0.5 text-primary focus:ring-primary"
                   />
                   <div>
-                    <span className="text-sm font-medium">{t('matches.pairings.automatic')}</span>
-                    <p className="text-xs text-gray-500 mt-0.5">{t('matches.pairings.automaticDesc')}</p>
+                    <span className="text-sm font-medium">
+                      {t('matches.pairings.automatic')}
+                    </span>
+                    <p className="text-xs text-gray-500 mt-0.5">
+                      {t('matches.pairings.automaticDesc')}
+                    </p>
                   </div>
                 </label>
                 <label className="flex items-start gap-3 cursor-pointer p-3 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors">
@@ -258,12 +329,19 @@ const GenerateMatchesModalContent = ({
                     name="pairingMode"
                     value="manual"
                     checked={mode === 'manual'}
-                    onChange={() => { setMode('manual'); setValidationError(null); }}
+                    onChange={() => {
+                      setMode('manual');
+                      setValidationError(null);
+                    }}
                     className="mt-0.5 text-primary focus:ring-primary"
                   />
                   <div>
-                    <span className="text-sm font-medium">{t('matches.pairings.manual')}</span>
-                    <p className="text-xs text-gray-500 mt-0.5">{t('matches.pairings.manualDesc')}</p>
+                    <span className="text-sm font-medium">
+                      {t('matches.pairings.manual')}
+                    </span>
+                    <p className="text-xs text-gray-500 mt-0.5">
+                      {t('matches.pairings.manualDesc')}
+                    </p>
                   </div>
                 </label>
               </div>
@@ -274,7 +352,10 @@ const GenerateMatchesModalContent = ({
           {!emparejanLosSobres && mode === 'manual' && (
             <div className="space-y-4">
               {matches.map((match, matchIndex) => (
-                <div key={match.id} className="border border-gray-200 rounded-lg p-4 space-y-3">
+                <div
+                  key={match.id}
+                  className="border border-gray-200 rounded-lg p-4 space-y-3"
+                >
                   {/* Match header */}
                   <div className="flex justify-between items-center">
                     <span className="text-sm font-semibold text-gray-900">
@@ -295,27 +376,49 @@ const GenerateMatchesModalContent = ({
                   <div className="grid grid-cols-[1fr_auto_1fr] gap-3 items-start">
                     {/* Team A */}
                     <div className="space-y-2">
-                      <span className="text-xs font-medium text-blue-700">{teamNames.teamA}</span>
-                      {Array.from({ length: playersPerSide }, (_, slotIndex) => (
-                        <div key={`a-${slotIndex}`}>
-                          {renderPlayerSelect(matchIndex, 'A', slotIndex, teamAPlayers)}
-                        </div>
-                      ))}
+                      <span className="text-xs font-medium text-blue-700">
+                        {teamNames.teamA}
+                      </span>
+                      {Array.from(
+                        { length: playersPerSide },
+                        (_, slotIndex) => (
+                          <div key={`a-${slotIndex}`}>
+                            {renderPlayerSelect(
+                              matchIndex,
+                              'A',
+                              slotIndex,
+                              teamAPlayers,
+                            )}
+                          </div>
+                        ),
+                      )}
                     </div>
 
                     {/* VS */}
                     <div className="flex items-center justify-center pt-6">
-                      <span className="text-sm font-bold text-gray-400">{t('matches.vs')}</span>
+                      <span className="text-sm font-bold text-gray-400">
+                        {t('matches.vs')}
+                      </span>
                     </div>
 
                     {/* Team B */}
                     <div className="space-y-2">
-                      <span className="text-xs font-medium text-red-700">{teamNames.teamB}</span>
-                      {Array.from({ length: playersPerSide }, (_, slotIndex) => (
-                        <div key={`b-${slotIndex}`}>
-                          {renderPlayerSelect(matchIndex, 'B', slotIndex, teamBPlayers)}
-                        </div>
-                      ))}
+                      <span className="text-xs font-medium text-red-700">
+                        {teamNames.teamB}
+                      </span>
+                      {Array.from(
+                        { length: playersPerSide },
+                        (_, slotIndex) => (
+                          <div key={`b-${slotIndex}`}>
+                            {renderPlayerSelect(
+                              matchIndex,
+                              'B',
+                              slotIndex,
+                              teamBPlayers,
+                            )}
+                          </div>
+                        ),
+                      )}
                     </div>
                   </div>
                 </div>

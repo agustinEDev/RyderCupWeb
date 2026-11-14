@@ -1,6 +1,9 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { getScoringViewUseCase, withdrawMatchPlayerUseCase } from '../../composition';
+import {
+  getScoringViewUseCase,
+  withdrawMatchPlayerUseCase,
+} from '../../composition';
 import { opcionesDeRetirada } from '../../domain/services/retiradaDelFourball';
 
 /**
@@ -39,7 +42,10 @@ const RetiradaPorElOrganizador = ({ matchId }) => {
     };
   }, [matchId, version]);
 
-  const jugadores = (vista?.players ?? []).map((p) => ({ ...p, puede: opcionesDeRetirada(vista, p.userId) }));
+  const jugadores = (vista?.players ?? []).map((p) => ({
+    ...p,
+    puede: opcionesDeRetirada(vista, p.userId),
+  }));
   const conAlgo = jugadores.filter((p) => p.puede.retirarme || p.puede.volver);
   // Con un rechazo, el aviso se queda aunque la vista nueva ya no ofrezca nada
   if (conAlgo.length === 0 && !fallo) return null;
@@ -52,7 +58,8 @@ const RetiradaPorElOrganizador = ({ matchId }) => {
       await withdrawMatchPlayerUseCase.execute(matchId, playerId, { deshacer });
       setVersion((v) => v + 1);
     } catch (err) {
-      const motivo = err?.errorCode === 'WITHDRAWAL_NOT_ALLOWED' ? err?.data?.reason : null;
+      const motivo =
+        err?.errorCode === 'WITHDRAWAL_NOT_ALLOWED' ? err?.data?.reason : null;
       setFallo(motivo ? `withdraw.errors.${motivo}` : 'withdraw.failed');
       // El rechazo dice que la vista que había ya no vale (/code-review)
       setVersion((v) => v + 1);
@@ -61,11 +68,17 @@ const RetiradaPorElOrganizador = ({ matchId }) => {
     }
   };
 
-  const boton = 'min-h-11 px-3 py-2 rounded-lg text-sm font-medium border disabled:opacity-40';
+  const boton =
+    'min-h-11 px-3 py-2 rounded-lg text-sm font-medium border disabled:opacity-40';
 
   return (
-    <section data-testid="retirada-por-el-organizador" className="rounded-lg border border-gray-200 p-4 space-y-2">
-      <h4 className="font-semibold text-gray-800">{t('withdraw.organizerTitle')}</h4>
+    <section
+      data-testid="retirada-por-el-organizador"
+      className="rounded-lg border border-gray-200 p-4 space-y-2"
+    >
+      <h4 className="font-semibold text-gray-800">
+        {t('withdraw.organizerTitle')}
+      </h4>
       {fallo && (
         <p role="alert" className="text-sm text-red-600">
           {t(fallo)}
@@ -73,7 +86,10 @@ const RetiradaPorElOrganizador = ({ matchId }) => {
       )}
       {conAlgo.map((p) =>
         porConfirmar === p.userId ? (
-          <div key={p.userId} className="flex flex-wrap items-center gap-2 text-sm">
+          <div
+            key={p.userId}
+            className="flex flex-wrap items-center gap-2 text-sm"
+          >
             <span className="text-gray-700">{t('withdraw.confirmTitle')}</span>
             <button
               type="button"
@@ -83,7 +99,11 @@ const RetiradaPorElOrganizador = ({ matchId }) => {
             >
               {t('withdraw.confirmYes')}
             </button>
-            <button type="button" onClick={() => setPorConfirmar(null)} className={`${boton} bg-white border-gray-300`}>
+            <button
+              type="button"
+              onClick={() => setPorConfirmar(null)}
+              className={`${boton} bg-white border-gray-300`}
+            >
               {t('withdraw.cancel')}
             </button>
           </div>
@@ -107,7 +127,7 @@ const RetiradaPorElOrganizador = ({ matchId }) => {
           >
             {t('withdraw.organizerWithdraw', { nombre: p.userName })}
           </button>
-        )
+        ),
       )}
     </section>
   );

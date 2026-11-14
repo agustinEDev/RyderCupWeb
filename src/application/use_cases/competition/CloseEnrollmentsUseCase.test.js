@@ -10,7 +10,9 @@ describe('CloseEnrollmentsUseCase', () => {
     mockRepository = {
       closeEnrollments: vi.fn(),
     };
-    useCase = new CloseEnrollmentsUseCase({ competitionRepository: mockRepository });
+    useCase = new CloseEnrollmentsUseCase({
+      competitionRepository: mockRepository,
+    });
   });
 
   describe('execute', () => {
@@ -19,7 +21,7 @@ describe('CloseEnrollmentsUseCase', () => {
         id: 'comp-123',
         name: 'Test Competition',
         status: 'CLOSED',
-        updated_at: '2025-11-22T10:00:00Z'
+        updated_at: '2025-11-22T10:00:00Z',
       };
 
       mockRepository.closeEnrollments.mockResolvedValue(mockResponse);
@@ -31,40 +33,52 @@ describe('CloseEnrollmentsUseCase', () => {
         id: 'comp-123',
         name: 'Test Competition',
         status: 'CLOSED',
-        updatedAt: '2025-11-22T10:00:00Z'
+        updatedAt: '2025-11-22T10:00:00Z',
       });
     });
 
     it('should throw error if competitionId is not provided', async () => {
-      await expect(useCase.execute()).rejects.toThrow('Competition ID is required');
+      await expect(useCase.execute()).rejects.toThrow(
+        'Competition ID is required',
+      );
       expect(mockRepository.closeEnrollments).not.toHaveBeenCalled();
     });
 
     it('should throw error if competitionId is empty string', async () => {
-      await expect(useCase.execute('')).rejects.toThrow('Competition ID is required');
+      await expect(useCase.execute('')).rejects.toThrow(
+        'Competition ID is required',
+      );
       expect(mockRepository.closeEnrollments).not.toHaveBeenCalled();
     });
 
     it('should propagate repository errors for invalid state', async () => {
-      mockRepository.closeEnrollments.mockRejectedValue(new Error('Competition must be in ACTIVE status to close enrollments'));
+      mockRepository.closeEnrollments.mockRejectedValue(
+        new Error('Competition must be in ACTIVE status to close enrollments'),
+      );
 
       await expect(useCase.execute('comp-123')).rejects.toThrow(
-        'Competition must be in ACTIVE status to close enrollments'
+        'Competition must be in ACTIVE status to close enrollments',
       );
     });
 
     it('should propagate authorization errors', async () => {
-      mockRepository.closeEnrollments.mockRejectedValue(new Error('Only the creator can close enrollments'));
+      mockRepository.closeEnrollments.mockRejectedValue(
+        new Error('Only the creator can close enrollments'),
+      );
 
       await expect(useCase.execute('comp-123')).rejects.toThrow(
-        'Only the creator can close enrollments'
+        'Only the creator can close enrollments',
       );
     });
 
     it('should handle network errors', async () => {
-      mockRepository.closeEnrollments.mockRejectedValue(new Error('Network error'));
+      mockRepository.closeEnrollments.mockRejectedValue(
+        new Error('Network error'),
+      );
 
-      await expect(useCase.execute('comp-123')).rejects.toThrow('Network error');
+      await expect(useCase.execute('comp-123')).rejects.toThrow(
+        'Network error',
+      );
     });
   });
 });

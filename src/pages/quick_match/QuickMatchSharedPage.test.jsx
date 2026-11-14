@@ -1,6 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, within } from '@testing-library/react';
-import { MemoryRouter, Route, Routes, useLocation, useNavigationType } from 'react-router';
+import {
+  MemoryRouter,
+  Route,
+  Routes,
+  useLocation,
+  useNavigationType,
+} from 'react-router';
 import QuickMatchSharedPage from './QuickMatchSharedPage';
 import es from '../../i18n/locales/es/quickMatch.json';
 import en from '../../i18n/locales/en/quickMatch.json';
@@ -9,7 +15,8 @@ import commonEn from '../../i18n/locales/en/common.json';
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
-    t: (key, opts) => (opts?.value !== undefined ? `${key} ${opts.value}` : key),
+    t: (key, opts) =>
+      opts?.value !== undefined ? `${key} ${opts.value}` : key,
     i18n: { language: 'es' },
   }),
 }));
@@ -19,8 +26,11 @@ vi.mock('../../hooks/useAuth', () => {
   return { useAuth: () => ({ user, loading: false }) };
 });
 
+// Anota qué usuario recibe la cabecera: sin él pinta «?» y esconde Admin (#1129)
 vi.mock('../../components/layout/HeaderAuth', () => ({
-  default: () => <header data-testid="header" />,
+  default: ({ user }) => (
+    <header data-testid="header" data-usuario={user?.id ?? 'ninguno'} />
+  ),
 }));
 
 // La pantalla de solo lectura no anota: si tocara el hook de anotación (con su
@@ -33,7 +43,12 @@ vi.mock('../../hooks/useQuickMatchScoring', () => ({
 
 const toastInfo = vi.fn();
 vi.mock('../../utils/toast', () => ({
-  default: { info: (...a) => toastInfo(...a), error: vi.fn(), success: vi.fn(), warning: vi.fn() },
+  default: {
+    info: (...a) => toastInfo(...a),
+    error: vi.fn(),
+    success: vi.fn(),
+    warning: vi.fn(),
+  },
 }));
 
 const getShared = vi.fn();
@@ -65,9 +80,27 @@ const compartida = (overrides = {}) => ({
   isCompleted: true,
   isCancelled: false,
   participants: [
-    { participantId: 'p-1', userId: 'u2', name: 'Pedro', handicap: 10, isGuest: false },
-    { participantId: 'p-2', userId: null, name: null, handicap: null, isGuest: true },
-    { participantId: 'p-3', userId: 'u9', name: null, handicap: 3, isGuest: false },
+    {
+      participantId: 'p-1',
+      userId: 'u2',
+      name: 'Pedro',
+      handicap: 10,
+      isGuest: false,
+    },
+    {
+      participantId: 'p-2',
+      userId: null,
+      name: null,
+      handicap: null,
+      isGuest: true,
+    },
+    {
+      participantId: 'p-3',
+      userId: 'u9',
+      name: null,
+      handicap: 3,
+      isGuest: false,
+    },
   ],
   holeScores: [
     { holeNumber: 1, participantId: 'p-1', score: 4 },
@@ -76,7 +109,13 @@ const compartida = (overrides = {}) => ({
   ],
   participantStrokes: [],
   standing: null,
-  scoringAssignments: [{ scorerParticipantId: 'p-1', scorerName: null, coveredParticipantIds: ['p-1'] }],
+  scoringAssignments: [
+    {
+      scorerParticipantId: 'p-1',
+      scorerName: null,
+      coveredParticipantIds: ['p-1'],
+    },
+  ],
   readOnly: true,
   viewerIsParticipant: false,
   ...overrides,
@@ -89,7 +128,9 @@ const Donde = () => {
 
 const pinta = (state) =>
   render(
-    <MemoryRouter initialEntries={[{ pathname: '/quick-matches/qm-1/shared', state }]}>
+    <MemoryRouter
+      initialEntries={[{ pathname: '/quick-matches/qm-1/shared', state }]}
+    >
       <Routes>
         <Route
           path="/quick-matches/:quickMatchId/shared"
@@ -102,16 +143,44 @@ const pinta = (state) =>
         />
         <Route path="*" element={<Donde />} />
       </Routes>
-    </MemoryRouter>
+    </MemoryRouter>,
   );
 
-const error = (status) => Object.assign(new Error(`HTTP ${status}`), { status });
+const error = (status) =>
+  Object.assign(new Error(`HTTP ${status}`), { status });
 
-describe('QuickMatchSharedPage — a friend\'s finished quick match, read-only (K)', () => {
+describe("QuickMatchSharedPage — a friend's finished quick match, read-only (K)", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     getShared.mockResolvedValue(compartida());
     getCourse.mockResolvedValue({ name: 'El Saler', holes: hoyos, tees: [] });
+  });
+
+  // #1129: sin el usuario, la cabecera pintaba «?» y escondía lo de Admin
+  describe('the header gets the signed-in user', () => {
+    const cabecera = () => screen.getByTestId('header');
+
+    it('C3a: while the match loads', () => {
+      getShared.mockReturnValue(new Promise(() => {}));
+      pinta();
+
+      expect(cabecera()).toHaveAttribute('data-usuario', 'me');
+    });
+
+    it('C3b: when the match cannot be seen', async () => {
+      getShared.mockRejectedValue(error(403));
+      pinta();
+
+      await screen.findByTestId('quick-match-shared-forbidden');
+      expect(cabecera()).toHaveAttribute('data-usuario', 'me');
+    });
+
+    it('C3c: on the read-only match', async () => {
+      pinta();
+
+      await screen.findByTestId('quick-match-classification-table');
+      expect(cabecera()).toHaveAttribute('data-usuario', 'me');
+    });
   });
 
   it('asks the shared endpoint and the course, never the scoring detail', async () => {
@@ -139,10 +208,14 @@ describe('QuickMatchSharedPage — a friend\'s finished quick match, read-only (
     expect(within(tabla).getByText('Pedro')).toBeInTheDocument();
     expect(screen.getByText('El Saler')).toBeInTheDocument();
     expect(screen.getByText('Viernes')).toBeInTheDocument();
-    expect(screen.getByTestId('quick-match-shared-read-only')).toHaveTextContent('shared.readOnly');
+    expect(
+      screen.getByTestId('quick-match-shared-read-only'),
+    ).toHaveTextContent('shared.readOnly');
 
     fireEvent.click(screen.getByTestId('quick-match-tab-scorecard'));
-    expect(await screen.findByTestId('quick-match-shared-scorecard')).toBeInTheDocument();
+    expect(
+      await screen.findByTestId('quick-match-shared-scorecard'),
+    ).toBeInTheDocument();
   });
 
   it('a nameless guest reads «un invitado» and a nameless player «un jugador»', async () => {
@@ -161,31 +234,49 @@ describe('QuickMatchSharedPage — a friend\'s finished quick match, read-only (
     pinta();
 
     await screen.findByTestId('quick-match-classification-table');
-    expect(screen.queryByTestId('quick-match-tab-input')).not.toBeInTheDocument();
-    expect(screen.getByTestId('quick-match-tab-classification')).toBeInTheDocument();
+    expect(
+      screen.queryByTestId('quick-match-tab-input'),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByTestId('quick-match-tab-classification'),
+    ).toBeInTheDocument();
     expect(screen.getByTestId('quick-match-tab-scorecard')).toBeInTheDocument();
-    expect(screen.queryByTestId('quick-match-hole-input')).not.toBeInTheDocument();
+    expect(
+      screen.queryByTestId('quick-match-hole-input'),
+    ).not.toBeInTheDocument();
     expect(screen.queryByText('scoring.finish.button')).not.toBeInTheDocument();
     expect(screen.queryByText('scoring.cancel.button')).not.toBeInTheDocument();
-    const botones = [...document.querySelectorAll('button')].map((b) => b.getAttribute('data-testid'));
+    const botones = [...document.querySelectorAll('button')].map((b) =>
+      b.getAttribute('data-testid'),
+    );
     expect(botones.length).toBeGreaterThan(0);
     expect(
-      botones.every((id) => id?.startsWith('quick-match-tab-') || id === 'quick-match-shared-back')
+      botones.every(
+        (id) =>
+          id?.startsWith('quick-match-tab-') ||
+          id === 'quick-match-shared-back',
+      ),
     ).toBe(true);
-    expect(document.querySelectorAll('input, select, textarea')).toHaveLength(0);
+    expect(document.querySelectorAll('input, select, textarea')).toHaveLength(
+      0,
+    );
   });
 
   it('marks the result as final', async () => {
     pinta();
     const tabla = await screen.findByTestId('quick-match-classification-table');
-    expect(within(tabla).getAllByText('scoring.classification.finishedBadge').length).toBeGreaterThan(0);
+    expect(
+      within(tabla).getAllByText('scoring.classification.finishedBadge').length,
+    ).toBeGreaterThan(0);
   });
 
   it('who played it goes to their own scoring screen', async () => {
     getShared.mockResolvedValue(compartida({ viewerIsParticipant: true }));
     pinta();
 
-    expect(await screen.findByTestId('donde')).toHaveTextContent('/quick-matches/qm-1/scoring');
+    expect(await screen.findByTestId('donde')).toHaveTextContent(
+      '/quick-matches/qm-1/scoring',
+    );
   });
 
   it('a 403 coming from a friend card goes to that friend profile with a soft notice', async () => {
@@ -201,7 +292,9 @@ describe('QuickMatchSharedPage — a friend\'s finished quick match, read-only (
     getShared.mockRejectedValue(error(403));
     pinta();
 
-    expect(await screen.findByTestId('quick-match-shared-forbidden')).toHaveTextContent('shared.forbidden');
+    expect(
+      await screen.findByTestId('quick-match-shared-forbidden'),
+    ).toHaveTextContent('shared.forbidden');
     expect(toastInfo).not.toHaveBeenCalled();
   });
 
@@ -209,7 +302,9 @@ describe('QuickMatchSharedPage — a friend\'s finished quick match, read-only (
     getShared.mockRejectedValue(error(404));
     pinta({ perfilDe: 'u2' });
 
-    expect(await screen.findByTestId('quick-match-shared-not-found')).toHaveTextContent('scoring.errors.notFound');
+    expect(
+      await screen.findByTestId('quick-match-shared-not-found'),
+    ).toHaveTextContent('scoring.errors.notFound');
   });
 
   it('any other failure offers to retry, and retrying loads it', async () => {
@@ -218,7 +313,9 @@ describe('QuickMatchSharedPage — a friend\'s finished quick match, read-only (
 
     fireEvent.click(await screen.findByTestId('quick-match-shared-retry'));
 
-    expect(await screen.findByTestId('quick-match-classification-table')).toBeInTheDocument();
+    expect(
+      await screen.findByTestId('quick-match-classification-table'),
+    ).toBeInTheDocument();
     expect(getShared).toHaveBeenCalledTimes(2);
   });
 
@@ -230,28 +327,44 @@ describe('QuickMatchSharedPage — a friend\'s finished quick match, read-only (
         pinta({ perfilDe: 'u2' });
 
         expect(await screen.findByText('Viernes')).toBeInTheDocument();
-        expect(screen.getByTestId('quick-match-shared-read-only')).toBeInTheDocument();
-        expect(screen.queryByTestId('campo-de-la-partida')).not.toBeInTheDocument();
+        expect(
+          screen.getByTestId('quick-match-shared-read-only'),
+        ).toBeInTheDocument();
+        expect(
+          screen.queryByTestId('campo-de-la-partida'),
+        ).not.toBeInTheDocument();
         // Nunca un error de partida, ni la salida al perfil
         expect(screen.getByTestId('donde-sigue')).toBeInTheDocument();
         expect(toastInfo).not.toHaveBeenCalled();
-        expect(screen.queryByTestId('quick-match-shared-forbidden')).not.toBeInTheDocument();
-        expect(screen.queryByTestId('quick-match-shared-not-found')).not.toBeInTheDocument();
+        expect(
+          screen.queryByTestId('quick-match-shared-forbidden'),
+        ).not.toBeInTheDocument();
+        expect(
+          screen.queryByTestId('quick-match-shared-not-found'),
+        ).not.toBeInTheDocument();
         expect(screen.queryByText('shared.forbidden')).not.toBeInTheDocument();
-        expect(screen.queryByText('scoring.errors.notFound')).not.toBeInTheDocument();
+        expect(
+          screen.queryByText('scoring.errors.notFound'),
+        ).not.toBeInTheDocument();
 
         // Stroke play: la clasificación necesita los hoyos del campo
         const aviso = screen.getByTestId('quick-match-shared-course-error');
         expect(aviso).toHaveTextContent('scoring.errors.generic');
-        expect(screen.queryByTestId('quick-match-classification-table')).not.toBeInTheDocument();
+        expect(
+          screen.queryByTestId('quick-match-classification-table'),
+        ).not.toBeInTheDocument();
 
-        fireEvent.click(within(aviso).getByTestId('quick-match-shared-course-retry'));
+        fireEvent.click(
+          within(aviso).getByTestId('quick-match-shared-course-retry'),
+        );
 
-        expect(await screen.findByTestId('quick-match-classification-table')).toBeInTheDocument();
+        expect(
+          await screen.findByTestId('quick-match-classification-table'),
+        ).toBeInTheDocument();
         expect(screen.getByText('El Saler')).toBeInTheDocument();
         expect(getShared).toHaveBeenCalledTimes(1);
         expect(getCourse).toHaveBeenCalledTimes(2);
-      }
+      },
     );
 
     it('the scorecard also says the course failed, with retry', async () => {
@@ -261,8 +374,12 @@ describe('QuickMatchSharedPage — a friend\'s finished quick match, read-only (
       await screen.findByText('Viernes');
       fireEvent.click(screen.getByTestId('quick-match-tab-scorecard'));
 
-      expect(await screen.findAllByTestId('quick-match-shared-course-error')).not.toHaveLength(0);
-      expect(screen.queryByTestId('quick-match-shared-scorecard')).not.toBeInTheDocument();
+      expect(
+        await screen.findAllByTestId('quick-match-shared-course-error'),
+      ).not.toHaveLength(0);
+      expect(
+        screen.queryByTestId('quick-match-shared-scorecard'),
+      ).not.toBeInTheDocument();
     });
 
     it('match play still shows its standing without the course', async () => {
@@ -271,13 +388,21 @@ describe('QuickMatchSharedPage — a friend\'s finished quick match, read-only (
           matchFormat: 'SINGLES',
           scoringFormat: null,
           participants: compartida().participants.slice(0, 2),
-          standing: { status: '2', leadingTeam: 'A', holesPlayed: 18, holesRemaining: 0, isDecided: true },
-        })
+          standing: {
+            status: '2',
+            leadingTeam: 'A',
+            holesPlayed: 18,
+            holesRemaining: 0,
+            isDecided: true,
+          },
+        }),
       );
       getCourse.mockRejectedValueOnce(error(403));
       pinta({ perfilDe: 'u2' });
 
-      expect(await screen.findByTestId('quick-match-standing')).toBeInTheDocument();
+      expect(
+        await screen.findByTestId('quick-match-standing'),
+      ).toBeInTheDocument();
       expect(toastInfo).not.toHaveBeenCalled();
     });
   });
@@ -286,14 +411,23 @@ describe('QuickMatchSharedPage — a friend\'s finished quick match, read-only (
     const conHistoria = () =>
       render(
         <MemoryRouter
-          initialEntries={['/players/u2', { pathname: '/quick-matches/qm-1/shared', state: { perfilDe: 'u2' } }]}
+          initialEntries={[
+            '/players/u2',
+            {
+              pathname: '/quick-matches/qm-1/shared',
+              state: { perfilDe: 'u2' },
+            },
+          ]}
           initialIndex={1}
         >
           <Routes>
-            <Route path="/quick-matches/:quickMatchId/shared" element={<QuickMatchSharedPage />} />
+            <Route
+              path="/quick-matches/:quickMatchId/shared"
+              element={<QuickMatchSharedPage />}
+            />
             <Route path="*" element={<Donde />} />
           </Routes>
-        </MemoryRouter>
+        </MemoryRouter>,
       );
 
     it('with history, to the previous screen', async () => {
@@ -301,7 +435,9 @@ describe('QuickMatchSharedPage — a friend\'s finished quick match, read-only (
 
       fireEvent.click(await screen.findByTestId('quick-match-shared-back'));
 
-      expect(await screen.findByTestId('donde')).toHaveTextContent('/players/u2');
+      expect(await screen.findByTestId('donde')).toHaveTextContent(
+        '/players/u2',
+      );
     });
 
     it('without history, to Actividad', async () => {
@@ -314,7 +450,9 @@ describe('QuickMatchSharedPage — a friend\'s finished quick match, read-only (
 
     it('reads «Volver» / «Back»', async () => {
       pinta();
-      expect(await screen.findByTestId('quick-match-shared-back')).toHaveTextContent('shared.back');
+      expect(
+        await screen.findByTestId('quick-match-shared-back'),
+      ).toHaveTextContent('shared.back');
       expect(es.shared.back).toBe('Volver');
       expect(en.shared.back).toBe('Back');
     });
@@ -338,15 +476,21 @@ describe('QuickMatchSharedPage — a friend\'s finished quick match, read-only (
       pinta();
 
       const aviso = await screen.findByTestId('quick-match-shared-error');
-      expect(within(aviso).getByTestId('quick-match-shared-retry')).toBeInTheDocument();
-      expect(within(aviso).getByTestId('quick-match-shared-back')).toBeInTheDocument();
+      expect(
+        within(aviso).getByTestId('quick-match-shared-retry'),
+      ).toBeInTheDocument();
+      expect(
+        within(aviso).getByTestId('quick-match-shared-back'),
+      ).toBeInTheDocument();
     });
   });
 
   it('has the same keys in Spanish and English, and the screen title', () => {
     const claves = (obj, prefijo = '') =>
       Object.entries(obj).flatMap(([k, v]) =>
-        v && typeof v === 'object' ? claves(v, `${prefijo}${k}.`) : [`${prefijo}${k}`]
+        v && typeof v === 'object'
+          ? claves(v, `${prefijo}${k}.`)
+          : [`${prefijo}${k}`],
       );
     expect(claves(en.shared).sort()).toEqual(claves(es.shared).sort());
     expect(es.shared.readOnly).toBe('Solo lectura');
@@ -358,16 +502,21 @@ describe('QuickMatchSharedPage — a friend\'s finished quick match, read-only (
   describe("a 403 coming from that same friend's profile (final review)", () => {
     const ComoSeLlego = () => {
       const { pathname } = useLocation();
-      return <p data-testid="llegada">{`${pathname}|${useNavigationType()}`}</p>;
+      return (
+        <p data-testid="llegada">{`${pathname}|${useNavigationType()}`}</p>
+      );
     };
     const desdeSuPerfil = (entradas, indice) =>
       render(
         <MemoryRouter initialEntries={entradas} initialIndex={indice}>
           <Routes>
-            <Route path="/quick-matches/:quickMatchId/shared" element={<QuickMatchSharedPage />} />
+            <Route
+              path="/quick-matches/:quickMatchId/shared"
+              element={<QuickMatchSharedPage />}
+            />
             <Route path="*" element={<ComoSeLlego />} />
           </Routes>
-        </MemoryRouter>
+        </MemoryRouter>,
       );
     const compartidaDesdeSuPerfil = {
       pathname: '/quick-matches/qm-1/shared',
@@ -378,7 +527,9 @@ describe('QuickMatchSharedPage — a friend\'s finished quick match, read-only (
       getShared.mockRejectedValue(error(403));
       desdeSuPerfil(['/players/u2', compartidaDesdeSuPerfil], 1);
 
-      expect(await screen.findByTestId('llegada')).toHaveTextContent('/players/u2|POP');
+      expect(await screen.findByTestId('llegada')).toHaveTextContent(
+        '/players/u2|POP',
+      );
       expect(toastInfo).toHaveBeenCalledWith('shared.forbiddenBack');
       expect(toastInfo).not.toHaveBeenCalledWith('shared.forbiddenToast');
       expect(es.shared.forbiddenBack).toBe('No puedes ver esa partida.');
@@ -389,15 +540,25 @@ describe('QuickMatchSharedPage — a friend\'s finished quick match, read-only (
       getShared.mockRejectedValue(error(403));
       desdeSuPerfil([compartidaDesdeSuPerfil], 0);
 
-      expect(await screen.findByTestId('llegada')).toHaveTextContent('/players/u2|REPLACE');
+      expect(await screen.findByTestId('llegada')).toHaveTextContent(
+        '/players/u2|REPLACE',
+      );
       expect(toastInfo).toHaveBeenCalledWith('shared.forbiddenBack');
     });
 
     it('from Actividad it stays as it was: to the profile, replacing, «te llevamos a su perfil»', async () => {
       getShared.mockRejectedValue(error(403));
-      desdeSuPerfil(['/feed', { pathname: '/quick-matches/qm-1/shared', state: { perfilDe: 'u2' } }], 1);
+      desdeSuPerfil(
+        [
+          '/feed',
+          { pathname: '/quick-matches/qm-1/shared', state: { perfilDe: 'u2' } },
+        ],
+        1,
+      );
 
-      expect(await screen.findByTestId('llegada')).toHaveTextContent('/players/u2|REPLACE');
+      expect(await screen.findByTestId('llegada')).toHaveTextContent(
+        '/players/u2|REPLACE',
+      );
       expect(toastInfo).toHaveBeenCalledWith('shared.forbiddenToast');
     });
   });

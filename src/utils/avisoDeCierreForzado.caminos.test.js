@@ -28,7 +28,9 @@ vi.mock('./avisoDeCierreForzado', async (original) => ({
   ...(await original()),
   avisaDelCierreForzado: aviso.avisaDelCierreForzado,
 }));
-vi.mock('../services/novedadesDeActividad', () => ({ olvidaLasNovedades: vi.fn() }));
+vi.mock('../services/novedadesDeActividad', () => ({
+  olvidaLasNovedades: vi.fn(),
+}));
 vi.mock('./sentryHelpers', () => ({ clearUserContext: vi.fn() }));
 vi.mock('i18next', () => ({ default: { t: vi.fn((k) => k) } }));
 vi.mock('./toast', () => ({ default: { error: vi.fn() } }));
@@ -37,11 +39,11 @@ vi.mock('./toast', () => ({ default: { error: vi.fn() } }));
 await import('../composition/limpiezaAlCerrarLaSesion');
 const { olvidaLasNovedades } = await import('../services/novedadesDeActividad');
 const { olvidaElCierreDeEstaCarga } = await import('./cierreDeEstaCarga');
-const { handleDeviceRevocationLogout, handleSessionExpiredLogout } = await import(
-  '../infrastructure/http/deviceRevocationLogout'
-);
+const { handleDeviceRevocationLogout, handleSessionExpiredLogout } =
+  await import('../infrastructure/http/deviceRevocationLogout');
 const { handleCsrfLogout } = await import('../infrastructure/http/csrfLogout');
-const { trataElFalloDelRefresco } = await import('../infrastructure/http/tokenRefreshInterceptor');
+const { trataElFalloDelRefresco } =
+  await import('../infrastructure/http/tokenRefreshInterceptor');
 const { MOTIVO_DEL_CIERRE } = await import('./avisoDeCierreForzado');
 
 const REFRESCO = 'https://api.rydercupfriends.com/api/v1/auth/refresh-token';
@@ -49,7 +51,9 @@ const REFRESCO = 'https://api.rydercupfriends.com/api/v1/auth/refresh-token';
 const falloDelRefresco = (status, detail, error_code) =>
   Object.assign(new Error('refresh failed'), {
     response: { status, url: REFRESCO },
-    errorData: detail ? { detail, ...(error_code ? { error_code } : {}) } : undefined,
+    errorData: detail
+      ? { detail, ...(error_code ? { error_code } : {}) }
+      : undefined,
   });
 
 describe('quién avisa de un cierre de sesión forzado', () => {
@@ -70,7 +74,10 @@ describe('quién avisa de un cierre de sesión forzado', () => {
   });
 
   it('C1: el dispositivo revocado avisa con su motivo y el contexto que le pasan', () => {
-    handleDeviceRevocationLogout({ detail: 'Dispositivo revocado' }, { metodo: 'GET', endpoint: '/api/v1/x', estado: 401 });
+    handleDeviceRevocationLogout(
+      { detail: 'Dispositivo revocado' },
+      { metodo: 'GET', endpoint: '/api/v1/x', estado: 401 },
+    );
 
     expect(aviso.avisaDelCierreForzado).toHaveBeenCalledWith({
       motivo: MOTIVO_DEL_CIERRE.DISPOSITIVO_REVOCADO,
@@ -83,18 +90,25 @@ describe('quién avisa de un cierre de sesión forzado', () => {
   });
 
   it('C1b: un revocado es siempre device_revoked, aunque el contexto traiga otro motivo', () => {
-    handleDeviceRevocationLogout(null, { motivo: MOTIVO_DEL_CIERRE.SESION_CADUCADA });
+    handleDeviceRevocationLogout(null, {
+      motivo: MOTIVO_DEL_CIERRE.SESION_CADUCADA,
+    });
 
     expect(aviso.avisaDelCierreForzado).toHaveBeenCalledWith(
-      expect.objectContaining({ motivo: MOTIVO_DEL_CIERRE.DISPOSITIVO_REVOCADO })
+      expect.objectContaining({
+        motivo: MOTIVO_DEL_CIERRE.DISPOSITIVO_REVOCADO,
+      }),
     );
   });
 
   it('C2: la sesión que acaba sin más (SESSION_ENDED) avisa como session_expired', () => {
-    handleSessionExpiredLogout({ detail: 'Refresh token inválido o expirado', error_code: 'SESSION_ENDED' });
+    handleSessionExpiredLogout({
+      detail: 'Refresh token inválido o expirado',
+      error_code: 'SESSION_ENDED',
+    });
 
     expect(aviso.avisaDelCierreForzado).toHaveBeenCalledWith(
-      expect.objectContaining({ motivo: MOTIVO_DEL_CIERRE.SESION_CADUCADA })
+      expect.objectContaining({ motivo: MOTIVO_DEL_CIERRE.SESION_CADUCADA }),
     );
   });
 
@@ -102,15 +116,21 @@ describe('quién avisa de un cierre de sesión forzado', () => {
     handleSessionExpiredLogout({ detail: 'Refresh token inválido o expirado' });
 
     expect(aviso.avisaDelCierreForzado).toHaveBeenCalledWith(
-      expect.objectContaining({ motivo: MOTIVO_DEL_CIERRE.REFRESCO_RECHAZADO })
+      expect.objectContaining({ motivo: MOTIVO_DEL_CIERRE.REFRESCO_RECHAZADO }),
     );
   });
 
   it('C3: con otro motivo en el contexto, avisa con ese', () => {
-    handleSessionExpiredLogout(null, { motivo: MOTIVO_DEL_CIERRE.REFRESCO_RECHAZADO, estado: 401 });
+    handleSessionExpiredLogout(null, {
+      motivo: MOTIVO_DEL_CIERRE.REFRESCO_RECHAZADO,
+      estado: 401,
+    });
 
     expect(aviso.avisaDelCierreForzado).toHaveBeenCalledWith(
-      expect.objectContaining({ motivo: MOTIVO_DEL_CIERRE.REFRESCO_RECHAZADO, estado: 401 })
+      expect.objectContaining({
+        motivo: MOTIVO_DEL_CIERRE.REFRESCO_RECHAZADO,
+        estado: 401,
+      }),
     );
   });
 
@@ -128,9 +148,9 @@ describe('quién avisa de un cierre de sesión forzado', () => {
     handleSessionExpiredLogout({ detail: 'Refresh token inválido o expirado' });
 
     expect(aviso.avisaDelCierreForzado).toHaveBeenCalled();
-    expect(aviso.avisaDelCierreForzado.mock.invocationCallOrder[0]).toBeLessThan(
-      clearUserContext.mock.invocationCallOrder[0]
-    );
+    expect(
+      aviso.avisaDelCierreForzado.mock.invocationCallOrder[0],
+    ).toBeLessThan(clearUserContext.mock.invocationCallOrder[0]);
   });
 
   it('C4b: tras revocar el propio dispositivo (marca «propia»), no avisa: salió a propósito', () => {
@@ -142,7 +162,10 @@ describe('quién avisa de un cierre de sesión forzado', () => {
   });
 
   it('C5: el cierre por CSRF avisa como csrf_unrecovered con su ruta', () => {
-    handleCsrfLogout({ detail: 'x' }, { metodo: 'POST', endpoint: '/api/v1/quick-matches/start', estado: 403 });
+    handleCsrfLogout(
+      { detail: 'x' },
+      { metodo: 'POST', endpoint: '/api/v1/quick-matches/start', estado: 403 },
+    );
 
     expect(aviso.avisaDelCierreForzado).toHaveBeenCalledWith({
       motivo: MOTIVO_DEL_CIERRE.CSRF_SIN_RECUPERAR,
@@ -154,7 +177,12 @@ describe('quién avisa de un cierre de sesión forzado', () => {
   });
 
   it('C6: el refresco que dice «revocado» avisa con la ruta y el estado del refresco', () => {
-    trataElFalloDelRefresco(falloDelRefresco(401, 'Dispositivo revocado. Por favor, inicia sesión nuevamente.'));
+    trataElFalloDelRefresco(
+      falloDelRefresco(
+        401,
+        'Dispositivo revocado. Por favor, inicia sesión nuevamente.',
+      ),
+    );
 
     expect(aviso.avisaDelCierreForzado).toHaveBeenCalledWith({
       motivo: MOTIVO_DEL_CIERRE.DISPOSITIVO_REVOCADO,
@@ -165,40 +193,68 @@ describe('quién avisa de un cierre de sesión forzado', () => {
   });
 
   it.each([
-    ['Refresh token no proporcionado. Por favor, inicia sesión nuevamente.', 'REFRESH_TOKEN_MISSING'],
-    ['Refresh token inválido o expirado. Por favor, inicia sesión nuevamente.', 'REFRESH_TOKEN_EXPIRED'],
-    ['Refresh token inválido o expirado. Por favor, inicia sesión nuevamente.', 'SESSION_IDLE'],
-  ])('C7: el refresco con «%s» y %s avisa como session_expired', (detail, codigo) => {
-    trataElFalloDelRefresco(falloDelRefresco(401, detail, codigo));
+    [
+      'Refresh token no proporcionado. Por favor, inicia sesión nuevamente.',
+      'REFRESH_TOKEN_MISSING',
+    ],
+    [
+      'Refresh token inválido o expirado. Por favor, inicia sesión nuevamente.',
+      'REFRESH_TOKEN_EXPIRED',
+    ],
+    [
+      'Refresh token inválido o expirado. Por favor, inicia sesión nuevamente.',
+      'SESSION_IDLE',
+    ],
+  ])(
+    'C7: el refresco con «%s» y %s avisa como session_expired',
+    (detail, codigo) => {
+      trataElFalloDelRefresco(falloDelRefresco(401, detail, codigo));
 
-    expect(aviso.avisaDelCierreForzado).toHaveBeenCalledWith(
-      expect.objectContaining({
-        motivo: MOTIVO_DEL_CIERRE.SESION_CADUCADA,
-        endpoint: REFRESCO,
-        estado: 401,
-        codigo,
-      })
-    );
-  });
+      expect(aviso.avisaDelCierreForzado).toHaveBeenCalledWith(
+        expect.objectContaining({
+          motivo: MOTIVO_DEL_CIERRE.SESION_CADUCADA,
+          endpoint: REFRESCO,
+          estado: 401,
+          codigo,
+        }),
+      );
+    },
+  );
 
-  it.each(['REFRESH_TOKEN_REVOKED', 'REFRESH_TOKEN_INVALID', 'REFRESH_TOKEN_NOT_FOUND', 'USER_NOT_FOUND'])(
+  it.each([
+    'REFRESH_TOKEN_REVOKED',
+    'REFRESH_TOKEN_INVALID',
+    'REFRESH_TOKEN_NOT_FOUND',
+    'USER_NOT_FOUND',
+  ])(
     'C8: el refresco con el código %s avisa como refresh_rejected',
     (codigo) => {
       trataElFalloDelRefresco(
-        falloDelRefresco(401, 'Refresh token inválido o expirado. Por favor, inicia sesión nuevamente.', codigo)
+        falloDelRefresco(
+          401,
+          'Refresh token inválido o expirado. Por favor, inicia sesión nuevamente.',
+          codigo,
+        ),
       );
 
       expect(aviso.avisaDelCierreForzado).toHaveBeenCalledWith(
-        expect.objectContaining({ motivo: MOTIVO_DEL_CIERRE.REFRESCO_RECHAZADO, codigo })
+        expect.objectContaining({
+          motivo: MOTIVO_DEL_CIERRE.REFRESCO_RECHAZADO,
+          codigo,
+        }),
       );
-    }
+    },
   );
 
   it('C8b: un 401 del refresco sin código avisa como refresh_rejected', () => {
     trataElFalloDelRefresco(falloDelRefresco(401, 'Usuario no encontrado'));
 
     expect(aviso.avisaDelCierreForzado).toHaveBeenCalledWith(
-      expect.objectContaining({ motivo: MOTIVO_DEL_CIERRE.REFRESCO_RECHAZADO, endpoint: REFRESCO, estado: 401 })
+      expect.objectContaining({
+        motivo: MOTIVO_DEL_CIERRE.REFRESCO_RECHAZADO,
+        endpoint: REFRESCO,
+        estado: 401,
+      }),
     );
   });
 
@@ -217,6 +273,8 @@ describe('quién avisa de un cierre de sesión forzado', () => {
     // Su POST /auth/logout puede pasar por el interceptor y un refresco que ya
     // no vale: eso no es un cierre forzado (revisor, 5 nov)
     expect(fuente).toMatch(/noAvisesDeCierres\(\)/);
-    expect(fuente.indexOf('noAvisesDeCierres()')).toBeLessThan(fuente.indexOf('logoutUseCase.execute'));
+    expect(fuente.indexOf('noAvisesDeCierres()')).toBeLessThan(
+      fuente.indexOf('logoutUseCase.execute'),
+    );
   });
 });

@@ -10,7 +10,9 @@ class ListCompetitionInvitationsUseCase {
 
   constructor({ invitationRepository }) {
     if (!invitationRepository) {
-      throw new Error('ListCompetitionInvitationsUseCase requires invitationRepository');
+      throw new Error(
+        'ListCompetitionInvitationsUseCase requires invitationRepository',
+      );
     }
     this.#invitationRepository = invitationRepository;
   }
@@ -22,11 +24,11 @@ class ListCompetitionInvitationsUseCase {
 
     const result = await this.#invitationRepository.getCompetitionInvitations(
       competitionId,
-      filters
+      filters,
     );
 
     const dtos = result.invitations.map((invitation) =>
-      InvitationAssembler.toSimpleDTO(invitation, invitation._apiData)
+      InvitationAssembler.toSimpleDTO(invitation, invitation._apiData),
     );
 
     return {

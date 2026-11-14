@@ -8,6 +8,10 @@ import { useMemo, useRef } from 'react';
  * después. Pero sí mientras esa no ha llegado: si gana «la última pedida», una
  * que falla o que tarda más que el sondeo deja la pantalla sin poner al día
  * (/code-review).
+ *
+ * `corta()` cuando la lectura cambia de pregunta (otro filtro, otra franja):
+ * lo que estaba en vuelo con la de antes ya no se aplica nunca, ni aunque
+ * llegue antes que lo nuevo.
  */
 export const useLaMasNueva = () => {
   const pedidas = useRef(0);
@@ -21,7 +25,10 @@ export const useLaMasNueva = () => {
         aplicada.current = turno;
         return true;
       },
+      corta: () => {
+        aplicada.current = pedidas.current;
+      },
     }),
-    []
+    [],
   );
 };

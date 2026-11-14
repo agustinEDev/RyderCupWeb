@@ -53,7 +53,10 @@ const PERMITIDOS = {
   'pages/admin/GolfCourses.jsx': { modal: 2 },
   'pages/admin/PendingGolfCourses.jsx': { modal: 2 },
   // B1 + B2: la caja y el «enviado» tras mandar la solicitud
-  'components/golf_course/GolfCourseRequestModal.jsx': { modal: 1, 'motion.div': 1 },
+  'components/golf_course/GolfCourseRequestModal.jsx': {
+    modal: 1,
+    'motion.div': 1,
+  },
   // B2: el error de cada campo y los requisitos de la contraseña
   'components/auth/SignInForm.jsx': { 'motion.p': 2 },
   'components/ui/PasswordRequirements.jsx': { 'motion.div': 1 },
@@ -71,11 +74,14 @@ const PERMITIDOS = {
   'utils/animations.js': { objeto: 1 },
 };
 
-const fuentes = import.meta.glob(['/src/**/*.{js,jsx}', '!/src/**/*.test.{js,jsx}'], {
-  query: '?raw',
-  import: 'default',
-  eager: true,
-});
+const fuentes = import.meta.glob(
+  ['/src/**/*.{js,jsx}', '!/src/**/*.test.{js,jsx}'],
+  {
+    query: '?raw',
+    import: 'default',
+    eager: true,
+  },
+);
 
 // El índice tras la `}` que cierra la `{` de la posición `i`
 const finDeLlaves = (codigo, i) => {
@@ -101,12 +107,21 @@ const FOTOGRAMAS_DESDE_CERO = /opacity:\s*\[\s*['"]?0(?![.\d])/;
 const fundidosDe = (codigo) => {
   const encontrados = [];
   const apunta = (i, etiqueta, como) =>
-    encontrados.push({ linea: codigo.slice(0, i).split('\n').length, etiqueta, como });
+    encontrados.push({
+      linea: codigo.slice(0, i).split('\n').length,
+      etiqueta,
+      como,
+    });
   // La caja de un modal (lo que sigue a su `boxClassName`) cuenta aparte: así
   // un fundido de pantalla no ocupa su hueco en el mismo fichero (CodeRabbit)
   const etiquetaEn = (i) => {
     const desde = codigo.lastIndexOf('<', i);
-    if (/boxClassName=[^<]*>\s*$/.test(codigo.slice(Math.max(0, desde - 200), desde))) return 'modal';
+    if (
+      /boxClassName=[^<]*>\s*$/.test(
+        codigo.slice(Math.max(0, desde - 200), desde),
+      )
+    )
+      return 'modal';
     return /^<([\w.]+)/.exec(codigo.slice(desde))?.[1] ?? '?';
   };
   for (const m of codigo.matchAll(/\b(initial|animate|variants|style)=\{/g)) {
@@ -115,10 +130,15 @@ const fundidosDe = (codigo) => {
     const prop = m[1];
     const etiqueta = etiquetaEn(m.index);
     if (prop === 'animate') {
-      if (FOTOGRAMAS_DESDE_CERO.test(valor)) apunta(m.index, etiqueta, 'animate desde 0');
+      if (FOTOGRAMAS_DESDE_CERO.test(valor))
+        apunta(m.index, etiqueta, 'animate desde 0');
     } else if (OPACIDAD_CERO.test(valor)) {
       apunta(m.index, etiqueta, `${prop} con opacidad 0`);
-    } else if (prop === 'initial' && /^\{\s*[A-Za-z_$][\w$.]*\s*\}$/.test(valor) && !/^\{\s*(true|false)\s*\}$/.test(valor)) {
+    } else if (
+      prop === 'initial' &&
+      /^\{\s*[A-Za-z_$][\w$.]*\s*\}$/.test(valor) &&
+      !/^\{\s*(true|false)\s*\}$/.test(valor)
+    ) {
       apunta(m.index, etiqueta, 'initial con una constante');
     } else if (prop === 'variants' && /^\{\s*fadeInUp\s*\}$/.test(valor)) {
       apunta(m.index, etiqueta, 'variante fadeInUp');
@@ -136,7 +156,13 @@ const fundidosDe = (codigo) => {
 
 const relativo = (fichero) => fichero.replace(/^\/src\//, '');
 const cuenta = (encontrados) =>
-  encontrados.reduce((porEtiqueta, { etiqueta }) => ({ ...porEtiqueta, [etiqueta]: (porEtiqueta[etiqueta] ?? 0) + 1 }), {});
+  encontrados.reduce(
+    (porEtiqueta, { etiqueta }) => ({
+      ...porEtiqueta,
+      [etiqueta]: (porEtiqueta[etiqueta] ?? 0) + 1,
+    }),
+    {},
+  );
 const ordenado = (objeto) => JSON.stringify(Object.entries(objeto).sort());
 
 describe('ninguna pantalla aparece desde invisible al entrar', () => {
@@ -149,7 +175,7 @@ describe('ninguna pantalla aparece desde invisible al entrar', () => {
         distintos.push(
           `${relativo(fichero)}: ${JSON.stringify(cuenta(encontrados))} (permitidos ${JSON.stringify(permitidos)}) en ${encontrados
             .map((e) => `${e.linea} ${e.como}`)
-            .join(', ')}`
+            .join(', ')}`,
         );
       }
     }
@@ -174,7 +200,8 @@ describe('ninguna pantalla aparece desde invisible al entrar', () => {
       '<motion.div initial={cond ? false : { opacity: 0 }} />',
       'const aparece = { initial: { opacity: 0 }, animate: { opacity: 1 } };',
     ];
-    for (const forma of formas) expect(fundidosDe(forma), forma).toHaveLength(1);
+    for (const forma of formas)
+      expect(fundidosDe(forma), forma).toHaveLength(1);
   });
 
   it('y no confunde lo que no arranca invisible', () => {
@@ -191,14 +218,20 @@ describe('ninguna pantalla aparece desde invisible al entrar', () => {
   });
 
   it('la caja de un modal cuenta aparte: un fundido de pantalla no ocupa su hueco', () => {
-    const modal = '<Modal boxClassName={CAJA_PROPIA}>\n  <motion.div initial={{ opacity: 0, scale: 0.95 }} />\n</Modal>';
-    const pantalla = '<main>\n  <motion.div initial={{ opacity: 0, y: 20 }} />\n</main>';
+    const modal =
+      '<Modal boxClassName={CAJA_PROPIA}>\n  <motion.div initial={{ opacity: 0, scale: 0.95 }} />\n</Modal>';
+    const pantalla =
+      '<main>\n  <motion.div initial={{ opacity: 0, y: 20 }} />\n</main>';
     expect(cuenta(fundidosDe(modal))).toEqual({ modal: 1 });
     expect(cuenta(fundidosDe(pantalla))).toEqual({ 'motion.div': 1 });
   });
 
   it('cuenta por etiqueta: una caja de pantalla no ocupa el hueco de un error de campo', () => {
-    const codigo = '<motion.p initial={{ opacity: 0 }} /><motion.div initial={{ opacity: 0 }} />';
-    expect(cuenta(fundidosDe(codigo))).toEqual({ 'motion.p': 1, 'motion.div': 1 });
+    const codigo =
+      '<motion.p initial={{ opacity: 0 }} /><motion.div initial={{ opacity: 0 }} />';
+    expect(cuenta(fundidosDe(codigo))).toEqual({
+      'motion.p': 1,
+      'motion.div': 1,
+    });
   });
 });

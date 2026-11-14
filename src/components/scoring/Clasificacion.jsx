@@ -42,6 +42,10 @@ const Clasificacion = ({
 }) => {
   const { t } = useTranslation('scoring');
   const [clasificacion, setClasificacion] = useState(null);
+  // Con qué pregunta (`pedir` y categoría) se leyó lo pintado: lo de otra
+  // franja no se enseña mientras llega lo suyo, y lo de otra franja o
+  // categoría tampoco con el aviso si la lectura nueva falla
+  const [leidaPara, setLeidaPara] = useState(null);
   const [sinCargar, setSinCargar] = useState(false);
   // De una privada en la que no está, sin llave: reintentar no lo arregla
   const [privada, setPrivada] = useState(false);
@@ -62,11 +66,18 @@ const Clasificacion = ({
       const leida = await pedir(categoria ?? undefined);
       if (!lecturas.aplicar(turno)) return;
       setClasificacion(leida);
+      setLeidaPara({ pedir, categoria });
       setRespuestas((n) => n + 1);
       setSinCargar(false);
       setCambiandoDeFiltro(false);
       if (categoria == null) {
-        setCategorias([...new Set(leida.rows.map((r) => r.category).filter((c) => c != null))].sort((a, b) => a - b));
+        setCategorias(
+          [
+            ...new Set(
+              leida.rows.map((r) => r.category).filter((c) => c != null),
+            ),
+          ].sort((a, b) => a - b),
+        );
       }
     } catch (error) {
       if (!lecturas.aplicar(turno)) return;
@@ -84,12 +95,22 @@ const Clasificacion = ({
   // De una privada sin llave, tampoco al volver a su pestaña (/code-review)
   useEffect(() => {
     if (!activa || privada) return;
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- pedir la clasificación al servidor es el objetivo
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- leer al abrir y al cambiar de filtro, versión o cadencia: leer solo cambia estado tras el await y useLaMasNueva descarta lo viejo; useCargaCancelableEffect («gana la última») revertiría eaf6599f
     leer();
   }, [activa, leer, cada, version, privada]);
+  // Solo al cambiar de PREGUNTA (otra franja u otra categoría), lo que estaba
+  // en vuelo con la de antes no se pinta nunca: llegaba antes que lo nuevo y
+  // dejaba las filas de otra categoría bajo el selector (T6). Con la misma
+  // pregunta (cambia la cadencia, la versión, se abre o se cierra) sigue
+  // «nunca retroceder» sin congelarse: una respuesta reciente vale
+  useEffect(() => () => lecturas.corta(), [pedir, categoria, lecturas]);
   // De una privada sin llave, ni se repite: otro 403 no arregla nada (revisor)
   useSondeoMientras(activa && cada != null && !privada, leer, cada ?? 0);
-  const bloqueRef = useCentrarEnMiFila({ modo: centraEnMi, activa, respuestas });
+  const bloqueRef = useCentrarEnMiFila({
+    modo: centraEnMi,
+    activa,
+    respuestas,
+  });
 
   if (!activa) return null;
 
@@ -105,18 +126,35 @@ const Clasificacion = ({
     return (
       <div className="space-y-2 text-sm text-amber-800">
         <p>{t('partida.standingsNotLoaded')}</p>
-        <button type="button" onClick={leer} className="min-h-11 rounded-lg border border-gray-300 px-3 text-gray-700">
+        <button
+          type="button"
+          onClick={leer}
+          className="min-h-11 rounded-lg border border-gray-300 px-3 text-gray-700"
+        >
           {t('partida.retry')}
         </button>
       </div>
     );
   }
   if (!clasificacion) return null;
+  const deOtraFranja = leidaPara?.pedir !== pedir;
+  // Lo pintado no responde a la pregunta de ahora: sus filas no se enseñan
+  const ajena = deOtraFranja || leidaPara?.categoria !== categoria;
 
   const esMedal = clasificacion.tournamentType === 'MEDAL';
   const SIN = t('partida.none');
-  const valor = (fila) => (fila.value == null ? SIN : esMedal ? StablefordCalculator.formatToPar(fila.value) : fila.value);
-  const puesto = (fila) => (fila.position == null ? SIN : fila.tied ? `T${fila.position}` : `${fila.position}`);
+  const valor = (fila) =>
+    fila.value == null
+      ? SIN
+      : esMedal
+        ? StablefordCalculator.formatToPar(fila.value)
+        : fila.value;
+  const puesto = (fila) =>
+    fila.position == null
+      ? SIN
+      : fila.tied
+        ? `T${fila.position}`
+        : `${fila.position}`;
   // THRU, como en los circuitos: los hoyos jugados, F acabado, o el código
   // (NR, NP) con su nombre entero al pasar por encima (pasada, FE #824)
   // Un retirado en Stableford conserva su puesto con lo jugado, pero sus hoyos
@@ -128,9 +166,13 @@ const Clasificacion = ({
     titulo: t(`partida.status.${estado}`, conGenero(genero)),
   });
   const thru = (fila) => {
-    if (fila.status !== 'CLASIFICADO') return codigo(fila.status, fila.teeGender);
+    if (fila.status !== 'CLASIFICADO')
+      return codigo(fila.status, fila.teeGender);
     if (fila.retired) return codigo('RETIRADO', fila.teeGender);
-    return { texto: fila.thru >= HOYOS ? t('partida.thruFinished') : String(fila.thru), titulo: undefined };
+    return {
+      texto: fila.thru >= HOYOS ? t('partida.thruFinished') : String(fila.thru),
+      titulo: undefined,
+    };
   };
 
   // Una línea por jugador, en columnas: POS · JUGADOR · PTS/PAR · THRU, como
@@ -160,27 +202,55 @@ const Clasificacion = ({
         </td>
         {/* El nombre entero, en dos líneas si no cabe: cortado a 360 px se leía
             «Helena Pru…» (2.ª pasada del QA, 12 oct 2026) */}
-        <td title={fila.name} className={`break-words py-2.5 pr-2 leading-snug ${yo ? 'font-semibold text-gray-900' : 'text-gray-800'}`}>
+        <td
+          title={fila.name}
+          className={`break-words py-2.5 pr-2 leading-snug ${yo ? 'font-semibold text-gray-900' : 'text-gray-800'}`}
+        >
           {fila.name}
         </td>
-        <td className="w-12 py-2.5 text-right text-[15px] font-semibold text-gray-900 tabular-nums">{valor(fila)}</td>
-        <td data-columna="thru" className="w-12 py-2.5 pr-3 text-right text-[11px] text-gray-400 tabular-nums">
+        <td className="w-12 py-2.5 text-right text-[15px] font-semibold text-gray-900 tabular-nums">
+          {valor(fila)}
+        </td>
+        <td
+          data-columna="thru"
+          className="w-12 py-2.5 pr-3 text-right text-[11px] text-gray-400 tabular-nums"
+        >
           {/* NR, NP: abreviatura con su nombre entero, que los lectores de pantalla sí dicen (revisor) */}
-          {titulo ? <abbr title={titulo} className="no-underline">{texto}</abbr> : texto}
+          {titulo ? (
+            <abbr title={titulo} className="no-underline">
+              {texto}
+            </abbr>
+          ) : (
+            texto
+          )}
         </td>
       </tr>
     );
   };
 
   const tabla = (filas, conCabecera, nombre) => (
-    <table aria-label={nombre} className="w-full table-fixed border-collapse text-sm">
+    <table
+      aria-label={nombre}
+      className="w-full table-fixed border-collapse text-sm"
+    >
       {conCabecera && (
         <thead className="border-b border-gray-100 text-left text-[10px] font-medium uppercase tracking-wider text-gray-400">
           <tr>
-            <th scope="col" className="w-12 pt-1 pb-1.5 pr-2 pl-3 font-medium">{t('partida.colPos')}</th>
-            <th scope="col" className="pt-1 pb-1.5 pr-2 font-medium">{t('partida.colPlayer')}</th>
-            <th scope="col" className="w-12 pt-1 pb-1.5 text-right font-medium">{t(esMedal ? 'partida.colToPar' : 'partida.colPoints')}</th>
-            <th scope="col" className="w-12 pt-1 pb-1.5 pr-3 text-right font-medium">{t('partida.colThru')}</th>
+            <th scope="col" className="w-12 pt-1 pb-1.5 pr-2 pl-3 font-medium">
+              {t('partida.colPos')}
+            </th>
+            <th scope="col" className="pt-1 pb-1.5 pr-2 font-medium">
+              {t('partida.colPlayer')}
+            </th>
+            <th scope="col" className="w-12 pt-1 pb-1.5 text-right font-medium">
+              {t(esMedal ? 'partida.colToPar' : 'partida.colPoints')}
+            </th>
+            <th
+              scope="col"
+              className="w-12 pt-1 pb-1.5 pr-3 text-right font-medium"
+            >
+              {t('partida.colThru')}
+            </th>
           </tr>
         </thead>
       )}
@@ -190,7 +260,11 @@ const Clasificacion = ({
 
   return (
     <div ref={bloqueRef} className="space-y-3">
-      {conRegla && <p className="text-xs text-gray-500">{t(`partida.rule.${clasificacion.rule}`)}</p>}
+      {conRegla && (
+        <p className="text-xs text-gray-500">
+          {t(`partida.rule.${clasificacion.rule}`)}
+        </p>
+      )}
       {/* Solo donde hay categorías: las filas de la scratch traen la suya,
           pero la scratch no se filtra (revisor) */}
       {filtrable && categorias.length > 1 && (
@@ -201,7 +275,9 @@ const Clasificacion = ({
             value={categoria ?? ''}
             onChange={(e) => {
               setCambiandoDeFiltro(true);
-              setCategoria(e.target.value === '' ? null : Number(e.target.value));
+              setCategoria(
+                e.target.value === '' ? null : Number(e.target.value),
+              );
             }}
             className="mt-0.5 block min-h-11 w-full rounded-lg border border-gray-200 px-2 text-sm"
           >
@@ -217,17 +293,26 @@ const Clasificacion = ({
 
       {/* Falló una lectura con algo ya pintado: se dice (/code-review) */}
       {sinCargar && (
-        <div role="alert" className="flex flex-wrap items-center gap-2 text-xs text-amber-800">
+        <div
+          role="alert"
+          className="flex flex-wrap items-center gap-2 text-xs text-amber-800"
+        >
           <span>{t('partida.standingsNotLoaded')}</span>
-          <button type="button" onClick={leer} className="min-h-11 rounded-lg border border-gray-300 px-3 text-gray-700">
+          <button
+            type="button"
+            onClick={leer}
+            className="min-h-11 rounded-lg border border-gray-300 px-3 text-gray-700"
+          >
             {t('partida.retry')}
           </button>
         </div>
       )}
 
-      {cambiandoDeFiltro && !sinCargar ? (
-        <p aria-busy="true" className="text-sm text-gray-500">{t('partida.loadingStandings')}</p>
-      ) : clasificacion.rows.length === 0 ? (
+      {(cambiandoDeFiltro || deOtraFranja) && !sinCargar ? (
+        <p aria-busy="true" className="text-sm text-gray-500">
+          {t('partida.loadingStandings')}
+        </p>
+      ) : ajena ? null : clasificacion.rows.length === 0 ? (
         <p className="text-sm text-gray-500">{t(vacia)}</p>
       ) : (
         // Redondeada: sobre el fondo gris (su página, la anotación) no queda un
@@ -235,23 +320,33 @@ const Clasificacion = ({
         <div className="overflow-hidden rounded-lg bg-white">
           {tabla(
             // Sin sesión las filas llegan sin id (release social 3): su puesto en la lista
-            clasificacion.rows.map((fila, i) => pintaFila(fila, `fila-${fila.userId ?? `n${i}`}`)),
+            clasificacion.rows.map((fila, i) =>
+              pintaFila(fila, `fila-${fila.userId ?? `n${i}`}`),
+            ),
             true,
-            t('partida.standingsTable')
+            t('partida.standingsTable'),
           )}
         </div>
       )}
       {/* La scratch corta en el 25.º: quien queda fuera ve su fila debajo */}
       {/* Sin haber jugado no tiene posición (QA 3) */}
-      {clasificacion.me && clasificacion.me.status !== 'SIN_EMPEZAR' && (
-        <div>
-          <p className="mb-1 text-xs font-semibold text-gray-600">{t('partida.yourPosition')}</p>
-          <div className="overflow-hidden rounded-lg border border-dashed border-gray-300 bg-white">
-            {/* Con su cabecera también: sin ella sus celdas no dicen de qué columna son (revisor) */}
-            {tabla(pintaFila(clasificacion.me, 'fila-fuera-del-corte'), true, t('partida.yourPosition'))}
+      {!ajena &&
+        clasificacion.me &&
+        clasificacion.me.status !== 'SIN_EMPEZAR' && (
+          <div>
+            <p className="mb-1 text-xs font-semibold text-gray-600">
+              {t('partida.yourPosition')}
+            </p>
+            <div className="overflow-hidden rounded-lg border border-dashed border-gray-300 bg-white">
+              {/* Con su cabecera también: sin ella sus celdas no dicen de qué columna son (revisor) */}
+              {tabla(
+                pintaFila(clasificacion.me, 'fila-fuera-del-corte'),
+                true,
+                t('partida.yourPosition'),
+              )}
+            </div>
           </div>
-        </div>
-      )}
+        )}
     </div>
   );
 };

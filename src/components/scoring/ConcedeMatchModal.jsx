@@ -8,13 +8,20 @@ const ConcedeMatchModalContent = ({ onConfirm, onClose }) => {
 
   return (
     <>
-      <h2 id="concede-title" className="text-lg font-semibold text-gray-900 mb-2">
+      <h2
+        id="concede-title"
+        className="text-lg font-semibold text-gray-900 mb-2"
+      >
         {t('concede.title')}
       </h2>
-      <p id="concede-message" className="text-sm text-gray-600 mb-4">{t('concede.message')}</p>
+      <p id="concede-message" className="text-sm text-gray-600 mb-4">
+        {t('concede.message')}
+      </p>
 
       <div className="mb-4">
-        <label className="block text-sm font-medium text-gray-700 mb-1">{t('concede.reason')}</label>
+        <label className="block text-sm font-medium text-gray-700 mb-1">
+          {t('concede.reason')}
+        </label>
         <input
           data-testid="concede-reason-input"
           type="text"

@@ -1,10 +1,11 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState } from 'react';
 import { Link } from 'react-router';
 import { ArrowLeft, Users, UserPlus } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import customToast from '../../utils/toast';
 import HeaderAuth from '../../components/layout/HeaderAuth';
 import { useAuth } from '../../hooks/useAuth';
+import { useCargaCancelableEffect } from '../../hooks/useCargaCancelableEffect';
 import FriendCard from '../../components/friend/FriendCard';
 import AddFriendModal from '../../components/friend/AddFriendModal';
 import {
@@ -16,7 +17,11 @@ import {
   searchUsersUseCase,
 } from '../../composition';
 import BlockLoader from '../../components/ui/BlockLoader';
-import { GrupoDePestanas, ListaDePestanas, PanelDePestana } from '../../components/ui/Pestanas';
+import {
+  GrupoDePestanas,
+  ListaDePestanas,
+  PanelDePestana,
+} from '../../components/ui/Pestanas';
 import { PANTALLA_MENOS_BARRA_INFERIOR } from '../../utils/barraInferior';
 
 const TABS = ['friends', 'received', 'sent'];
@@ -29,7 +34,6 @@ const FriendsPage = () => {
   const [friends, setFriends] = useState([]);
   const [received, setReceived] = useState([]);
   const [sent, setSent] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [processingKeys, setProcessingKeys] = useState(() => new Set());
   const [showAddModal, setShowAddModal] = useState(false);
 
@@ -45,34 +49,41 @@ const FriendsPage = () => {
     });
   };
 
-  const loadData = useCallback(async ({ silent = false } = {}) => {
-    if (!user) return;
+  // Del id y no del objeto: la misma persona con un `user` nuevo (la sesión
+  // se vuelve a leer) no recarga la página ni suelta las tarjetas ocupadas
+  const userId = user?.id;
+  // Las tres listas, al entrar y tras cada acción. De dos acciones seguidas,
+  // la recarga de la primera que llegue tarde ya no pisa la de la segunda.
+  // Tras una acción se recarga en silencio: sin la espera de toda la página,
+  // solo la de su tarjeta, que sigue ocupada hasta que llega SU recarga
+  const { cargando, recargar } = useCargaCancelableEffect(
+    () =>
+      Promise.all([
+        listFriendsUseCase.execute(userId),
+        listPendingFriendRequestsUseCase.execute(userId, 'received'),
+        listPendingFriendRequestsUseCase.execute(userId, 'sent'),
+      ]),
+    [userId],
+    {
+      activa: Boolean(userId),
+      alCargar: ([friendsResult, receivedResult, sentResult]) => {
+        setFriends(friendsResult.friendships);
+        setReceived(receivedResult.friendships);
+        setSent(sentResult.friendships);
+      },
+      alFallar: (error) => {
+        console.error('Error loading friends:', error);
+        customToast.error(error.message || t('errors.failedToLoad'));
+      },
+    },
+  );
+  // Sin usuario no se pide nada y se sigue esperando, como antes
+  const isLoading = cargando || !user;
 
-    if (!silent) setIsLoading(true);
-    try {
-      const [friendsResult, receivedResult, sentResult] = await Promise.all([
-        listFriendsUseCase.execute(user.id),
-        listPendingFriendRequestsUseCase.execute(user.id, 'received'),
-        listPendingFriendRequestsUseCase.execute(user.id, 'sent'),
-      ]);
-      setFriends(friendsResult.friendships);
-      setReceived(receivedResult.friendships);
-      setSent(sentResult.friendships);
-    } catch (error) {
-      console.error('Error loading friends:', error);
-      customToast.error(error.message || t('errors.failedToLoad'));
-    } finally {
-      if (!silent) setIsLoading(false);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user]);
-
-  useEffect(() => {
-    if (user) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- pre-existing pattern surfaced by eslint-plugin-react-hooks 7.1.1 bump; needs dedicated review (tracked in follow-up)
-      loadData();
-    }
-  }, [user, loadData]);
+  // La recarga tras una acción, y que la tarjeta siga ocupada hasta que lleguen
+  // unas listas que ya la incluyan: si otra acción la sustituye, su promesa
+  // espera a la recarga más reciente (lo hace el hook)
+  const recargarTrasLaAccion = () => recargar({ silenciosa: true });
 
   const handleAccept = async (friendshipId) => {
     const key = `friendship:${friendshipId}`;
@@ -80,7 +91,7 @@ const FriendsPage = () => {
     try {
       await respondFriendRequestUseCase.execute(friendshipId, 'ACCEPT');
       customToast.success(t('success.accepted'));
-      await loadData({ silent: true });
+      await recargarTrasLaAccion();
     } catch (error) {
       console.error('Error accepting friend request:', error);
       customToast.error(error.message || t('errors.failedToRespond'));
@@ -95,7 +106,7 @@ const FriendsPage = () => {
     try {
       await respondFriendRequestUseCase.execute(friendshipId, 'DECLINE');
       customToast.success(t('success.declined'));
-      await loadData({ silent: true });
+      await recargarTrasLaAccion();
     } catch (error) {
       console.error('Error declining friend request:', error);
       customToast.error(error.message || t('errors.failedToRespond'));
@@ -110,7 +121,7 @@ const FriendsPage = () => {
     try {
       await removeFriendUseCase.execute(friendshipId);
       customToast.success(t('success.removed'));
-      await loadData({ silent: true });
+      await recargarTrasLaAccion();
     } catch (error) {
       console.error('Error removing friendship:', error);
       customToast.error(error.message || t('errors.failedToRemove'));
@@ -126,7 +137,7 @@ const FriendsPage = () => {
     try {
       await blockUserUseCase.execute(otherUserId);
       customToast.success(t('success.blocked'));
-      await loadData({ silent: true });
+      await recargarTrasLaAccion();
     } catch (error) {
       console.error('Error blocking user:', error);
       customToast.error(error.message || t('errors.failedToBlock'));
@@ -183,7 +194,9 @@ const FriendsPage = () => {
 
         <div className="mb-6 flex items-center justify-between">
           <div>
-            <h1 className="hidden md:block text-2xl font-bold text-gray-900">{t('title')}</h1>
+            <h1 className="hidden md:block text-2xl font-bold text-gray-900">
+              {t('title')}
+            </h1>
             <p className="text-sm text-gray-500 mt-1">{t('subtitle')}</p>
           </div>
           <button
@@ -239,7 +252,13 @@ const FriendsPage = () => {
                   <FriendCard
                     key={friendship.id}
                     friendship={friendship}
-                    mode={activeTab === 'friends' ? 'friend' : activeTab === 'received' ? 'received' : 'sent'}
+                    mode={
+                      activeTab === 'friends'
+                        ? 'friend'
+                        : activeTab === 'received'
+                          ? 'received'
+                          : 'sent'
+                    }
                     onAccept={handleAccept}
                     onDecline={handleDecline}
                     onRemove={handleRemoveOrCancel}

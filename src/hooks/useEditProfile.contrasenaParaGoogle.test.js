@@ -15,15 +15,17 @@ import { useEditProfile } from './useEditProfile';
 import * as composition from '../composition';
 import * as useAuthHook from './useAuth';
 
-vi.mock('../utils/googleOAuth', () => ({ buildGoogleOAuthUrl: vi.fn(() => 'https://google/vincular') }));
+vi.mock('../utils/googleOAuth', () => ({
+  buildGoogleOAuthUrl: vi.fn(() => 'https://google/vincular'),
+}));
 import * as googleOAuth from '../utils/googleOAuth';
 
 // Mock react-i18next
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
     t: (key) => key,
-    i18n: { language: 'en' }
-  })
+    i18n: { language: 'en' },
+  }),
 }));
 
 // Mock dependencies
@@ -75,7 +77,9 @@ describe('useEditProfile · la contraseña antes de vincular Google', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.stubGlobal('location', { href: '/profile/edit' });
-    composition.fetchCountriesUseCase.execute.mockResolvedValue([{ code: 'ES', name: 'Spain' }]);
+    composition.fetchCountriesUseCase.execute.mockResolvedValue([
+      { code: 'ES', name: 'Spain' },
+    ]);
   });
 
   afterEach(() => {
@@ -83,7 +87,10 @@ describe('useEditProfile · la contraseña antes de vincular Google', () => {
   });
 
   const monta = async (hasPassword = true) => {
-    useAuthHook.useAuth.mockReturnValue({ user: usuario(hasPassword), refetch: vi.fn() });
+    useAuthHook.useAuth.mockReturnValue({
+      user: usuario(hasPassword),
+      refetch: vi.fn(),
+    });
     const { result } = renderHook(() => useEditProfile());
     await waitFor(() => expect(result.current.isLoading).toBe(false));
     return result;
@@ -111,7 +118,12 @@ describe('useEditProfile · la contraseña antes de vincular Google', () => {
   it('H2c: un doble clic sin contraseña no genera dos pares de PKCE (revisión de la fase 3)', async () => {
     const result = await monta(false);
     let termina;
-    googleOAuth.buildGoogleOAuthUrl.mockImplementationOnce(() => new Promise((r) => { termina = r; }));
+    googleOAuth.buildGoogleOAuthUrl.mockImplementationOnce(
+      () =>
+        new Promise((r) => {
+          termina = r;
+        }),
+    );
 
     act(() => {
       result.current.handleLinkGoogle();
@@ -125,9 +137,13 @@ describe('useEditProfile · la contraseña antes de vincular Google', () => {
 
   it('H2b: sin contraseña, si no se puede montar la ida a Google, lo dice (fase 3)', async () => {
     const toast = (await import('../utils/toast')).default;
-    const consola = vi.spyOn(globalThis.console, 'error').mockImplementation(() => {});
+    const consola = vi
+      .spyOn(globalThis.console, 'error')
+      .mockImplementation(() => {});
     const result = await monta(false);
-    googleOAuth.buildGoogleOAuthUrl.mockRejectedValueOnce(new Error('sin crypto.subtle'));
+    googleOAuth.buildGoogleOAuthUrl.mockRejectedValueOnce(
+      new Error('sin crypto.subtle'),
+    );
 
     await act(async () => result.current.handleLinkGoogle());
 
@@ -141,14 +157,18 @@ describe('useEditProfile · la contraseña antes de vincular Google', () => {
   it('H3: con la contraseña correcta, va a Google', async () => {
     const result = await monta(true);
     act(() => result.current.handleLinkGoogle());
-    composition.reauthenticateUseCase.execute.mockResolvedValue({ expiresIn: 300 });
+    composition.reauthenticateUseCase.execute.mockResolvedValue({
+      expiresIn: 300,
+    });
 
     let fallo;
     await act(async () => {
       fallo = await result.current.confirmaContrasenaParaGoogle('Actual123!');
     });
 
-    expect(composition.reauthenticateUseCase.execute).toHaveBeenCalledWith('Actual123!');
+    expect(composition.reauthenticateUseCase.execute).toHaveBeenCalledWith(
+      'Actual123!',
+    );
     expect(fallo).toBeNull();
     expect(globalThis.location.href).toBe('https://google/vincular');
   });
@@ -156,7 +176,11 @@ describe('useEditProfile · la contraseña antes de vincular Google', () => {
   it('H7: si se cancela mientras comprueba, no va a Google aunque la contraseña valga', async () => {
     const result = await monta(true);
     let suelta;
-    composition.reauthenticateUseCase.execute.mockReturnValue(new Promise((r) => { suelta = r; }));
+    composition.reauthenticateUseCase.execute.mockReturnValue(
+      new Promise((r) => {
+        suelta = r;
+      }),
+    );
     act(() => result.current.handleLinkGoogle());
 
     let pendiente;
@@ -174,9 +198,13 @@ describe('useEditProfile · la contraseña antes de vincular Google', () => {
 
   it('H8: si no se puede montar la ida a Google, lo dice en vez de quedarse comprobando', async () => {
     const result = await monta(true);
-    composition.reauthenticateUseCase.execute.mockResolvedValue({ expiresIn: 300 });
+    composition.reauthenticateUseCase.execute.mockResolvedValue({
+      expiresIn: 300,
+    });
     googleOAuth.buildGoogleOAuthUrl.mockImplementationOnce(() => {
-      throw new Error('VITE_GOOGLE_CLIENT_ID environment variable is not configured');
+      throw new Error(
+        'VITE_GOOGLE_CLIENT_ID environment variable is not configured',
+      );
     });
     act(() => result.current.handleLinkGoogle());
 
@@ -195,7 +223,7 @@ describe('useEditProfile · la contraseña antes de vincular Google', () => {
   ])('%s: %s no va a Google y dice por qué', async (_caso, codigo, clave) => {
     const result = await monta(true);
     composition.reauthenticateUseCase.execute.mockRejectedValue(
-      Object.assign(new Error('no'), { errorCode: codigo })
+      Object.assign(new Error('no'), { errorCode: codigo }),
     );
 
     let fallo;

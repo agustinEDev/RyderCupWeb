@@ -18,7 +18,9 @@ vi.mock('../../utils/cortinaDeArranque', () => ({
 const { default: ErrorFallback } = await import('./ErrorFallback');
 
 const enIdioma = (idioma) =>
-  vi.spyOn(globalThis.Storage.prototype, 'getItem').mockImplementation((clave) => (clave === 'i18nextLng' ? idioma : null));
+  vi
+    .spyOn(globalThis.Storage.prototype, 'getItem')
+    .mockImplementation((clave) => (clave === 'i18nextLng' ? idioma : null));
 
 describe('ErrorFallback', () => {
   afterEach(() => vi.restoreAllMocks());
@@ -27,19 +29,31 @@ describe('ErrorFallback', () => {
     enIdioma('es');
     render(<ErrorFallback error={new Error('x')} resetError={() => {}} />);
 
-    expect(screen.getByRole('heading', { name: 'Algo ha fallado' })).toBeInTheDocument();
+    expect(
+      screen.getByRole('heading', { name: 'Algo ha fallado' }),
+    ).toBeInTheDocument();
     expect(screen.getByText(/el error ya nos ha llegado/)).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Reintentar' })).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: 'Reintentar' }),
+    ).toBeInTheDocument();
     // Para que el lector de pantalla lo lea con voz española: la página dice «en»
-    expect(screen.getByRole('heading', { name: 'Algo ha fallado' }).closest('[lang]')).toHaveAttribute('lang', 'es');
+    expect(
+      screen
+        .getByRole('heading', { name: 'Algo ha fallado' })
+        .closest('[lang]'),
+    ).toHaveAttribute('lang', 'es');
   });
 
   it('E: en inglés, la de siempre', () => {
     enIdioma('en');
     render(<ErrorFallback error={new Error('x')} resetError={() => {}} />);
 
-    expect(screen.getByRole('heading', { name: 'Oops! Something went wrong' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Try Again' })).toBeInTheDocument();
+    expect(
+      screen.getByRole('heading', { name: 'Oops! Something went wrong' }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: 'Try Again' }),
+    ).toBeInTheDocument();
   });
 
   it('E4: el botón reinicia y la cortina del arranque se retira', () => {

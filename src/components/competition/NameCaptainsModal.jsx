@@ -54,14 +54,18 @@ const NameCaptainsModal = ({
   const elMismo = Boolean(teamA) && teamA === teamB;
   // Por hándicap, de menor a mayor, y a la vista: es con lo que se elige (#710)
   const enOrden = [...players].sort(
-    (a, b) => (a.handicap ?? Infinity) - (b.handicap ?? Infinity)
+    (a, b) => (a.handicap ?? Infinity) - (b.handicap ?? Infinity),
   );
   const etiqueta = (p) =>
     p.handicap === null || p.handicap === undefined
       ? p.name
       : `${p.name} (${formatoDeIndice(p.handicap)})`;
   const listo = Boolean(
-    teamA && teamB && teamA !== teamB && disponibles.has(teamA) && disponibles.has(teamB)
+    teamA &&
+    teamB &&
+    teamA !== teamB &&
+    disponibles.has(teamA) &&
+    disponibles.has(teamB),
   );
 
   const selector = (id, nombreEquipo, valor, alCambiar, elegidoEnElOtro) => (
@@ -78,7 +82,11 @@ const NameCaptainsModal = ({
       >
         <option value="">{t('detail.captains.choose')}</option>
         {enOrden.map((p) => (
-          <option key={p.userId} value={p.userId} disabled={p.userId === elegidoEnElOtro}>
+          <option
+            key={p.userId}
+            value={p.userId}
+            disabled={p.userId === elegidoEnElOtro}
+          >
             {etiqueta(p)}
           </option>
         ))}
@@ -99,14 +107,19 @@ const NameCaptainsModal = ({
       busy={isLoading}
     >
       <div className="px-6 pt-6 pb-2">
-        <h2 id="capitanes-titulo" className="text-xl font-semibold text-gray-900">
+        <h2
+          id="capitanes-titulo"
+          className="text-xl font-semibold text-gray-900"
+        >
           {t('detail.captains.title')}
         </h2>
         <p id="capitanes-explicacion" className="text-sm text-gray-600 mt-1">
           {t('detail.captains.explanation')}
         </p>
         {closesEnrollment && (
-          <p className="text-sm text-amber-700 mt-2">{t('detail.captains.closesEnrollment')}</p>
+          <p className="text-sm text-amber-700 mt-2">
+            {t('detail.captains.closesEnrollment')}
+          </p>
         )}
         {/* Sin la lista no hay a quién elegir: desplegables vacíos sin explicación
             dejarían al organizador sin saber qué pasa */}
@@ -121,7 +134,11 @@ const NameCaptainsModal = ({
         {selector('capitan-a', teamNames.a, teamA, setTeamA, teamB)}
         {selector('capitan-b', teamNames.b, teamB, setTeamB, teamA)}
         {elMismo && (
-          <p data-testid="capitanes-el-mismo" role="alert" className="text-sm text-amber-700">
+          <p
+            data-testid="capitanes-el-mismo"
+            role="alert"
+            className="text-sm text-amber-700"
+          >
             {t('detail.captains.sameForBoth')}
           </p>
         )}

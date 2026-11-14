@@ -5,7 +5,10 @@ import { motion } from 'framer-motion';
 import { X, UserPlus } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import SelectorDeGenero from '../profile/SelectorDeGenero';
-import { franjaLlena, plazasLibres } from '../../domain/services/PlazasEnFranjas';
+import {
+  franjaLlena,
+  plazasLibres,
+} from '../../domain/services/PlazasEnFranjas';
 
 // Sin franjas: el mismo array siempre, para que el orden no se recalcule
 const SIN_FRANJAS = [];
@@ -88,15 +91,21 @@ const EnrollmentRequestModalContent = ({
       [...franjas].sort(
         (a, b) =>
           String(a.roundDate).localeCompare(String(b.roundDate)) ||
-          String(a.teeSheet.firstTeeTime).localeCompare(String(b.teeSheet.firstTeeTime))
+          String(a.teeSheet.firstTeeTime).localeCompare(
+            String(b.teeSheet.firstTeeTime),
+          ),
       ),
-    [franjas]
+    [franjas],
   );
   const conFranjas = ordenadas.length > 0;
   const laElegida = ordenadas.find((f) => f.id === elegida) ?? null;
   const aLaEspera = laElegida !== null && llena(laElegida);
   const falta =
-    faltaHandicap || (pideGenero && !genero) || (conFranjas && !laElegida) || franjasSinCargar || franjasCargando;
+    faltaHandicap ||
+    (pideGenero && !genero) ||
+    (conFranjas && !laElegida) ||
+    franjasSinCargar ||
+    franjasCargando;
 
   const elegir = (id) => {
     setElegida(id);
@@ -109,7 +118,7 @@ const EnrollmentRequestModalContent = ({
     onConfirm(
       selectedTee || null,
       pideGenero ? genero : null,
-      laElegida ? { roundId: laElegida.id, waiting: aLaEspera } : null
+      laElegida ? { roundId: laElegida.id, waiting: aLaEspera } : null,
     );
   };
 
@@ -117,7 +126,11 @@ const EnrollmentRequestModalContent = ({
     const d = new Date(`${fecha}T12:00:00`);
     return Number.isNaN(d.getTime())
       ? fecha
-      : d.toLocaleDateString(i18n?.language, { weekday: 'short', day: 'numeric', month: 'short' });
+      : d.toLocaleDateString(i18n?.language, {
+          weekday: 'short',
+          day: 'numeric',
+          month: 'short',
+        });
   };
 
   return (
@@ -139,7 +152,10 @@ const EnrollmentRequestModalContent = ({
         <div className="flex justify-between items-center p-6 border-b border-gray-200">
           <div className="flex items-center gap-2">
             <UserPlus className="w-5 h-5 text-primary" />
-            <h2 id="pedir-inscripcion-titulo" className="text-xl font-bold text-gray-900">
+            <h2
+              id="pedir-inscripcion-titulo"
+              className="text-xl font-bold text-gray-900"
+            >
               {t('competitions:enrollment.modalTitle')}
             </h2>
           </div>
@@ -154,7 +170,11 @@ const EnrollmentRequestModalContent = ({
 
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           {error && (
-            <p data-testid="apuntarse-error" role="alert" className="text-sm text-red-700">
+            <p
+              data-testid="apuntarse-error"
+              role="alert"
+              className="text-sm text-red-700"
+            >
               {error}
             </p>
           )}
@@ -162,24 +182,37 @@ const EnrollmentRequestModalContent = ({
               lleva al perfil, en vez de esperar al rechazo del servidor
               (FE #824, PR 5) */}
           {faltaHandicap && (
-            <p data-testid="falta-handicap" className="rounded-lg bg-amber-50 p-3 text-sm text-amber-900">
+            <p
+              data-testid="falta-handicap"
+              className="rounded-lg bg-amber-50 p-3 text-sm text-amber-900"
+            >
               {t('competitions:enrollment.needsHandicap')}{' '}
               <Link to="/profile/edit" className="font-semibold underline">
                 {t('competitions:enrollment.addHandicap')}
               </Link>
             </p>
           )}
-          {pideGenero && <SelectorDeGenero value={genero} onChange={setGenero} />}
+          {pideGenero && (
+            <SelectorDeGenero value={genero} onChange={setGenero} />
+          )}
 
           {/* La franja, o la espera de una llena, en el mismo paso (release
               social 3): con plaza se entra con ella; llena, a su espera */}
           {franjasCargando && (
-            <p data-testid="franjas-cargando" role="status" className="text-sm text-gray-500">
+            <p
+              data-testid="franjas-cargando"
+              role="status"
+              className="text-sm text-gray-500"
+            >
               {t('competitions:enrollment.windowsLoading')}
             </p>
           )}
           {franjasSinCargar && (
-            <div data-testid="franjas-sin-cargar" role="status" className="rounded-lg bg-amber-50 p-3 text-sm text-amber-900">
+            <div
+              data-testid="franjas-sin-cargar"
+              role="status"
+              className="rounded-lg bg-amber-50 p-3 text-sm text-amber-900"
+            >
               <p>{t('competitions:enrollment.windowsNotLoaded')}</p>
               {onReintentar && (
                 <button
@@ -206,7 +239,9 @@ const EnrollmentRequestModalContent = ({
                     key={franja.id}
                     data-testid={`franja-${franja.id}`}
                     className={`flex items-start gap-3 w-full min-h-11 px-3 py-2 rounded-lg border text-sm cursor-pointer transition-colors has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-primary ${
-                      marcada ? 'border-primary bg-primary/5' : 'border-gray-300 hover:bg-gray-50'
+                      marcada
+                        ? 'border-primary bg-primary/5'
+                        : 'border-gray-300 hover:bg-gray-50'
                     }`}
                   >
                     <input
@@ -220,11 +255,14 @@ const EnrollmentRequestModalContent = ({
                     <span>
                       <span className="font-medium text-gray-900">
                         {dia(franja.roundDate)} · {hoja.firstTeeTime}
-                        {hoja.lastTeeTime && hoja.lastTeeTime !== hoja.firstTeeTime
+                        {hoja.lastTeeTime &&
+                        hoja.lastTeeTime !== hoja.firstTeeTime
                           ? `–${hoja.lastTeeTime}`
                           : ''}
                       </span>
-                      <span className={`block text-xs ${sinSitio ? 'text-amber-700' : 'text-gray-500'}`}>
+                      <span
+                        className={`block text-xs ${sinSitio ? 'text-amber-700' : 'text-gray-500'}`}
+                      >
                         {sinSitio
                           ? `${t('competitions:enrollment.full')} · ${t('competitions:enrollment.waitingCount', { count: hoja.waitingCount ?? 0 })}`
                           : t('competitions:enrollment.freePlaces', {
@@ -252,7 +290,9 @@ const EnrollmentRequestModalContent = ({
               onChange={(e) => setSelectedTee(e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm"
             >
-              <option value="">{t('competitions:enrollment.noPreference')}</option>
+              <option value="">
+                {t('competitions:enrollment.noPreference')}
+              </option>
               {TEE_CATEGORIES.map((cat) => (
                 <option key={cat} value={cat}>
                   {t(`golfCourses:form.teeColors.${cat}`)}
@@ -280,7 +320,11 @@ const EnrollmentRequestModalContent = ({
             >
               {isProcessing
                 ? '...'
-                : t(aLaEspera ? 'competitions:enrollment.joinWaitingList' : 'competitions:enrollment.confirm')}
+                : t(
+                    aLaEspera
+                      ? 'competitions:enrollment.joinWaitingList'
+                      : 'competitions:enrollment.confirm',
+                  )}
             </button>
           </div>
         </form>

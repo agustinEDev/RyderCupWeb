@@ -22,9 +22,15 @@ const toast = vi.hoisted(() => ({ error: vi.fn() }));
 const textos = vi.hoisted(() => ({ listos: true }));
 vi.mock('../utils/toast', () => ({ default: toast }));
 vi.mock('react-i18next', () => ({
-  useTranslation: () => ({ t: (k, o) => `${o?.ns ?? ''}:${k}`, i18n: { language: 'es' }, ready: textos.listos }),
+  useTranslation: () => ({
+    t: (k, o) => `${o?.ns ?? ''}:${k}`,
+    i18n: { language: 'es' },
+    ready: textos.listos,
+  }),
 }));
-vi.mock('../hooks/useRedirectIfAuthenticated', () => ({ useRedirectIfAuthenticated: () => false }));
+vi.mock('../hooks/useRedirectIfAuthenticated', () => ({
+  useRedirectIfAuthenticated: () => false,
+}));
 vi.mock('../components/auth/SignInForm', () => ({ default: () => <form /> }));
 
 const Login = (await import('./Login')).default;
@@ -37,7 +43,7 @@ const abreElLogin = (envoltorio = ({ children }) => children) => {
       <MemoryRouter initialEntries={['/login']}>
         <Login />
       </MemoryRouter>
-    </Envoltorio>
+    </Envoltorio>,
   );
 };
 
@@ -60,11 +66,15 @@ describe('Login · el aviso del cierre forzado', () => {
     rerender(
       <MemoryRouter initialEntries={['/login']}>
         <Login />
-      </MemoryRouter>
+      </MemoryRouter>,
     );
 
     expect(toast.error).toHaveBeenCalledTimes(1);
-    expect(toast.error).toHaveBeenCalledWith('auth:errors.deviceRevoked', { duration: 8000, icon: '🔒', delCierre: true });
+    expect(toast.error).toHaveBeenCalledWith('auth:errors.deviceRevoked', {
+      duration: 8000,
+      icon: '🔒',
+      delCierre: true,
+    });
   });
 
   it.each([
@@ -77,7 +87,11 @@ describe('Login · el aviso del cierre forzado', () => {
     abreElLogin();
 
     expect(toast.error).toHaveBeenCalledTimes(1);
-    expect(toast.error).toHaveBeenCalledWith(texto, { duration: 8000, icon: icono, delCierre: true });
+    expect(toast.error).toHaveBeenCalledWith(texto, {
+      duration: 8000,
+      icon: icono,
+      delCierre: true,
+    });
   });
 
   it('al recargar /login después, no se repite', () => {

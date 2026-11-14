@@ -18,38 +18,38 @@ describe('CompetitionName', () => {
 
     it('should throw an error if the name is too short', () => {
       expect(() => new CompetitionName('AB')).toThrow(
-        `Competition name must be between ${CompetitionName.MIN_LENGTH} and ${CompetitionName.MAX_LENGTH} characters long.`
+        `Competition name must be between ${CompetitionName.MIN_LENGTH} and ${CompetitionName.MAX_LENGTH} characters long.`,
       );
     });
 
     it('should throw an error if the name is too long', () => {
       const longName = 'a'.repeat(CompetitionName.MAX_LENGTH + 1);
       expect(() => new CompetitionName(longName)).toThrow(
-        `Competition name must be between ${CompetitionName.MIN_LENGTH} and ${CompetitionName.MAX_LENGTH} characters long.`
+        `Competition name must be between ${CompetitionName.MIN_LENGTH} and ${CompetitionName.MAX_LENGTH} characters long.`,
       );
     });
 
     it('should throw an error if the name is empty', () => {
       expect(() => new CompetitionName('')).toThrow(
-        `Competition name must be between ${CompetitionName.MIN_LENGTH} and ${CompetitionName.MAX_LENGTH} characters long.`
+        `Competition name must be between ${CompetitionName.MIN_LENGTH} and ${CompetitionName.MAX_LENGTH} characters long.`,
       );
     });
 
     it('should throw an error if the name is just whitespace', () => {
       expect(() => new CompetitionName('   ')).toThrow(
-        `Competition name must be between ${CompetitionName.MIN_LENGTH} and ${CompetitionName.MAX_LENGTH} characters long.`
+        `Competition name must be between ${CompetitionName.MIN_LENGTH} and ${CompetitionName.MAX_LENGTH} characters long.`,
       );
     });
 
     it('should throw an error for non-string values', () => {
       expect(() => new CompetitionName(null)).toThrow(
-        `Competition name must be between ${CompetitionName.MIN_LENGTH} and ${CompetitionName.MAX_LENGTH} characters long.`
+        `Competition name must be between ${CompetitionName.MIN_LENGTH} and ${CompetitionName.MAX_LENGTH} characters long.`,
       );
       expect(() => new CompetitionName(undefined)).toThrow(
-        `Competition name must be between ${CompetitionName.MIN_LENGTH} and ${CompetitionName.MAX_LENGTH} characters long.`
+        `Competition name must be between ${CompetitionName.MIN_LENGTH} and ${CompetitionName.MAX_LENGTH} characters long.`,
       );
       expect(() => new CompetitionName(123)).toThrow(
-        `Competition name must be between ${CompetitionName.MIN_LENGTH} and ${CompetitionName.MAX_LENGTH} characters long.`
+        `Competition name must be between ${CompetitionName.MIN_LENGTH} and ${CompetitionName.MAX_LENGTH} characters long.`,
       );
     });
   });
@@ -107,7 +107,9 @@ describe('CompetitionName', () => {
    */
   describe('normalize y problemWith (al escribirlo)', () => {
     it('N1 · normalize deja un espacio entre palabras y ninguno en los bordes', () => {
-      expect(CompetitionName.normalize('  Ryder   de\totoño ')).toBe('Ryder de otoño');
+      expect(CompetitionName.normalize('  Ryder   de\totoño ')).toBe(
+        'Ryder de otoño',
+      );
       expect(CompetitionName.normalize(null)).toBe('');
     });
 
@@ -129,7 +131,9 @@ describe('CompetitionName', () => {
 
     it('N5 · largo, medido ya normalizado', () => {
       expect(CompetitionName.problemWith('x'.repeat(101))).toBe('TOO_LONG');
-      expect(CompetitionName.problemWith(`${'x'.repeat(50)}  ${'x'.repeat(49)}`)).toBeNull();
+      expect(
+        CompetitionName.problemWith(`${'x'.repeat(50)}  ${'x'.repeat(49)}`),
+      ).toBeNull();
     });
 
     it('N6 · un nombre bien, null', () => {
@@ -141,4 +145,3 @@ describe('CompetitionName', () => {
     });
   });
 });
-

@@ -17,7 +17,9 @@ class RecentMatchMapper {
       throw new Error('RecentMatchMapper.toDomain: apiData is required');
     }
     if (!apiData.id) {
-      throw new Error('RecentMatchMapper.toDomain: Missing required field (id)');
+      throw new Error(
+        'RecentMatchMapper.toDomain: Missing required field (id)',
+      );
     }
 
     return RecentMatch.fromPersistence({

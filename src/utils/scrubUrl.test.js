@@ -16,22 +16,30 @@ import { scrubUrl } from './scrubUrl';
 describe('scrubUrl', () => {
   it('retira la posicion de la busqueda por cercania', () => {
     expect(
-      scrubUrl('/api/v1/golf-courses?approval_status=APPROVED&limit=20&lat=40.417&lon=-3.704')
-    ).toBe('/api/v1/golf-courses?approval_status=APPROVED&limit=20&lat=[REDACTED]&lon=[REDACTED]');
+      scrubUrl(
+        '/api/v1/golf-courses?approval_status=APPROVED&limit=20&lat=40.417&lon=-3.704',
+      ),
+    ).toBe(
+      '/api/v1/golf-courses?approval_status=APPROVED&limit=20&lat=[REDACTED]&lon=[REDACTED]',
+    );
   });
 
   it('funciona igual con una URL absoluta y con fragmento', () => {
-    expect(scrubUrl('https://api.rydercupfriends.com/api/v1/golf-courses?lat=40.417#top')).toBe(
-      'https://api.rydercupfriends.com/api/v1/golf-courses?lat=[REDACTED]#top'
+    expect(
+      scrubUrl(
+        'https://api.rydercupfriends.com/api/v1/golf-courses?lat=40.417#top',
+      ),
+    ).toBe(
+      'https://api.rydercupfriends.com/api/v1/golf-courses?lat=[REDACTED]#top',
     );
   });
 
   it('sigue tapando los tokens, que es para lo que se escribio', () => {
     expect(scrubUrl('/auth/verify?token=abc123&next=/dashboard')).toBe(
-      '/auth/verify?token=[REDACTED]&next=/dashboard'
+      '/auth/verify?token=[REDACTED]&next=/dashboard',
     );
     expect(scrubUrl('/auth?access_token=abc&refresh_token=def')).toBe(
-      '/auth?access_token=[REDACTED]&refresh_token=[REDACTED]'
+      '/auth?access_token=[REDACTED]&refresh_token=[REDACTED]',
     );
   });
 
@@ -57,15 +65,25 @@ describe('scrubUrl', () => {
   //   R4  la query suelta, sin ? delante (url.query)    | tapada igual
   //   R5  el token en el fragmento (#access_token=)     | tapado
   it('R1: tapa el token que va en la ruta del restablecimiento', () => {
-    expect(scrubUrl('/reset-password/abc123')).toBe('/reset-password/[REDACTED]');
-    expect(scrubUrl('https://www.rydercupfriends.com/reset-password/abc123?lang=es#x')).toBe(
-      'https://www.rydercupfriends.com/reset-password/[REDACTED]?lang=es#x'
+    expect(scrubUrl('/reset-password/abc123')).toBe(
+      '/reset-password/[REDACTED]',
+    );
+    expect(
+      scrubUrl(
+        'https://www.rydercupfriends.com/reset-password/abc123?lang=es#x',
+      ),
+    ).toBe(
+      'https://www.rydercupfriends.com/reset-password/[REDACTED]?lang=es#x',
     );
   });
 
   it('R1b: tapa el token en la llamada que lo valida', () => {
-    expect(scrubUrl('https://api.rydercupfriends.com/api/v1/auth/validate-reset-token/abc123')).toBe(
-      'https://api.rydercupfriends.com/api/v1/auth/validate-reset-token/[REDACTED]'
+    expect(
+      scrubUrl(
+        'https://api.rydercupfriends.com/api/v1/auth/validate-reset-token/abc123',
+      ),
+    ).toBe(
+      'https://api.rydercupfriends.com/api/v1/auth/validate-reset-token/[REDACTED]',
     );
   });
 
@@ -76,8 +94,12 @@ describe('scrubUrl', () => {
   });
 
   it('R3: tapa el code y el state de la vuelta de Google, y deja el resto', () => {
-    expect(scrubUrl('/auth/google/callback?code=4/0Ab-x_y&state=nonce123&error=access_denied')).toBe(
-      '/auth/google/callback?code=[REDACTED]&state=[REDACTED]&error=access_denied'
+    expect(
+      scrubUrl(
+        '/auth/google/callback?code=4/0Ab-x_y&state=nonce123&error=access_denied',
+      ),
+    ).toBe(
+      '/auth/google/callback?code=[REDACTED]&state=[REDACTED]&error=access_denied',
     );
     const url = '/api/v1/players?country_code=ES&status=ACTIVE';
     expect(scrubUrl(url)).toBe(url);
@@ -89,7 +111,9 @@ describe('scrubUrl', () => {
   });
 
   it('R5: tapa un token en el fragmento', () => {
-    expect(scrubUrl('/cb#access_token=abc&x=1')).toBe('/cb#access_token=[REDACTED]&x=1');
+    expect(scrubUrl('/cb#access_token=abc&x=1')).toBe(
+      '/cb#access_token=[REDACTED]&x=1',
+    );
   });
 
   it('aguanta lo que no es una URL', () => {

@@ -49,7 +49,7 @@ describe('Device Entity', () => {
       };
 
       expect(() => new Device(deviceData)).toThrow(
-        'Device entity requires id, device_name, and ip_address'
+        'Device entity requires id, device_name, and ip_address',
       );
     });
 
@@ -60,7 +60,7 @@ describe('Device Entity', () => {
       };
 
       expect(() => new Device(deviceData)).toThrow(
-        'Device entity requires id, device_name, and ip_address'
+        'Device entity requires id, device_name, and ip_address',
       );
     });
 
@@ -71,7 +71,7 @@ describe('Device Entity', () => {
       };
 
       expect(() => new Device(deviceData)).toThrow(
-        'Device entity requires id, device_name, and ip_address'
+        'Device entity requires id, device_name, and ip_address',
       );
     });
   });
@@ -85,7 +85,7 @@ describe('Device Entity', () => {
         };
 
         expect(() => new Device(deviceData)).toThrow(
-          'Device id must be a string'
+          'Device id must be a string',
         );
       });
 
@@ -96,7 +96,7 @@ describe('Device Entity', () => {
         };
 
         expect(() => new Device(deviceData)).toThrow(
-          'Device id must be a string'
+          'Device id must be a string',
         );
       });
 
@@ -107,7 +107,7 @@ describe('Device Entity', () => {
         };
 
         expect(() => new Device(deviceData)).toThrow(
-          'Device id must be a string'
+          'Device id must be a string',
         );
       });
 
@@ -118,7 +118,7 @@ describe('Device Entity', () => {
         };
 
         expect(() => new Device(deviceData)).toThrow(
-          'Device id must be a string'
+          'Device id must be a string',
         );
       });
     });
@@ -131,7 +131,7 @@ describe('Device Entity', () => {
         };
 
         expect(() => new Device(deviceData)).toThrow(
-          'Device device_name must be a string'
+          'Device device_name must be a string',
         );
       });
 
@@ -142,7 +142,7 @@ describe('Device Entity', () => {
         };
 
         expect(() => new Device(deviceData)).toThrow(
-          'Device device_name must be a string'
+          'Device device_name must be a string',
         );
       });
 
@@ -153,7 +153,7 @@ describe('Device Entity', () => {
         };
 
         expect(() => new Device(deviceData)).toThrow(
-          'Device device_name must be a string'
+          'Device device_name must be a string',
         );
       });
     });
@@ -166,7 +166,7 @@ describe('Device Entity', () => {
         };
 
         expect(() => new Device(deviceData)).toThrow(
-          'Device ip_address must be a string'
+          'Device ip_address must be a string',
         );
       });
 
@@ -177,7 +177,7 @@ describe('Device Entity', () => {
         };
 
         expect(() => new Device(deviceData)).toThrow(
-          'Device ip_address must be a string'
+          'Device ip_address must be a string',
         );
       });
 
@@ -188,7 +188,7 @@ describe('Device Entity', () => {
         };
 
         expect(() => new Device(deviceData)).toThrow(
-          'Device ip_address must be a string'
+          'Device ip_address must be a string',
         );
       });
     });
@@ -223,7 +223,7 @@ describe('Device Entity', () => {
         };
 
         expect(() => new Device(deviceData)).toThrow(
-          'Device last_used_at must be a string, null, or undefined'
+          'Device last_used_at must be a string, null, or undefined',
         );
       });
 
@@ -234,7 +234,7 @@ describe('Device Entity', () => {
         };
 
         expect(() => new Device(deviceData)).toThrow(
-          'Device last_used_at must be a string, null, or undefined'
+          'Device last_used_at must be a string, null, or undefined',
         );
       });
 
@@ -245,7 +245,7 @@ describe('Device Entity', () => {
         };
 
         expect(() => new Device(deviceData)).toThrow(
-          'Device last_used_at must be a string, null, or undefined'
+          'Device last_used_at must be a string, null, or undefined',
         );
       });
     });
@@ -280,7 +280,7 @@ describe('Device Entity', () => {
         };
 
         expect(() => new Device(deviceData)).toThrow(
-          'Device created_at must be a string, null, or undefined'
+          'Device created_at must be a string, null, or undefined',
         );
       });
 
@@ -291,7 +291,7 @@ describe('Device Entity', () => {
         };
 
         expect(() => new Device(deviceData)).toThrow(
-          'Device created_at must be a string, null, or undefined'
+          'Device created_at must be a string, null, or undefined',
         );
       });
 
@@ -302,7 +302,7 @@ describe('Device Entity', () => {
         };
 
         expect(() => new Device(deviceData)).toThrow(
-          'Device created_at must be a string, null, or undefined'
+          'Device created_at must be a string, null, or undefined',
         );
       });
     });
@@ -337,7 +337,7 @@ describe('Device Entity', () => {
         };
 
         expect(() => new Device(deviceData)).toThrow(
-          'Device is_active must be a boolean'
+          'Device is_active must be a boolean',
         );
       });
 
@@ -348,7 +348,7 @@ describe('Device Entity', () => {
         };
 
         expect(() => new Device(deviceData)).toThrow(
-          'Device is_active must be a boolean'
+          'Device is_active must be a boolean',
         );
       });
 
@@ -359,7 +359,7 @@ describe('Device Entity', () => {
         };
 
         expect(() => new Device(deviceData)).toThrow(
-          'Device is_active must be a boolean'
+          'Device is_active must be a boolean',
         );
       });
 
@@ -370,7 +370,7 @@ describe('Device Entity', () => {
         };
 
         expect(() => new Device(deviceData)).toThrow(
-          'Device is_active must be a boolean'
+          'Device is_active must be a boolean',
         );
       });
     });
@@ -417,7 +417,7 @@ describe('Device Entity', () => {
         };
 
         expect(() => new Device(deviceData)).toThrow(
-          'Device is_current_device must be a boolean'
+          'Device is_current_device must be a boolean',
         );
       });
 
@@ -428,7 +428,7 @@ describe('Device Entity', () => {
         };
 
         expect(() => new Device(deviceData)).toThrow(
-          'Device is_current_device must be a boolean'
+          'Device is_current_device must be a boolean',
         );
       });
 
@@ -439,7 +439,7 @@ describe('Device Entity', () => {
         };
 
         expect(() => new Device(deviceData)).toThrow(
-          'Device is_current_device must be a boolean'
+          'Device is_current_device must be a boolean',
         );
       });
 
@@ -450,7 +450,7 @@ describe('Device Entity', () => {
         };
 
         expect(() => new Device(deviceData)).toThrow(
-          'Device is_current_device must be a boolean'
+          'Device is_current_device must be a boolean',
         );
       });
     });
@@ -511,19 +511,50 @@ describe('Device Entity', () => {
 
 // FE #1046: lo que la pantalla necesita para el nombre, el icono y el país
 describe('Device · los campos de la pantalla', () => {
-  const base = { id: 'd-1', device_name: 'x', ip_address: '90.71.66.***', last_used_at: '2026-11-05T19:07:00Z', created_at: '2026-11-05T19:04:00Z' };
+  const base = {
+    id: 'd-1',
+    device_name: 'x',
+    ip_address: '90.71.66.***',
+    last_used_at: '2026-11-05T19:07:00Z',
+    created_at: '2026-11-05T19:04:00Z',
+  };
 
   it('conserva tipo, plataforma, navegador, app instalada y país, y los devuelve en toPersistence', () => {
-    const device = new Device({ ...base, device_type: 'phone', platform: 'iphone', browser: 'safari', installed_app: true, country_code: 'ES' });
+    const device = new Device({
+      ...base,
+      device_type: 'phone',
+      platform: 'iphone',
+      browser: 'safari',
+      installed_app: true,
+      country_code: 'ES',
+    });
 
-    expect([device.deviceType, device.platform, device.browser, device.installedApp, device.countryCode]).toEqual(['phone', 'iphone', 'safari', true, 'ES']);
-    expect(device.toPersistence()).toMatchObject({ device_type: 'phone', platform: 'iphone', browser: 'safari', installed_app: true, country_code: 'ES' });
+    expect([
+      device.deviceType,
+      device.platform,
+      device.browser,
+      device.installedApp,
+      device.countryCode,
+    ]).toEqual(['phone', 'iphone', 'safari', true, 'ES']);
+    expect(device.toPersistence()).toMatchObject({
+      device_type: 'phone',
+      platform: 'iphone',
+      browser: 'safari',
+      installed_app: true,
+      country_code: 'ES',
+    });
   });
 
   it('sin esos campos (una API anterior), «unknown» y sin país', () => {
     const device = new Device(base);
 
-    expect([device.deviceType, device.platform, device.browser, device.installedApp, device.countryCode]).toEqual(['unknown', 'unknown', 'unknown', false, null]);
+    expect([
+      device.deviceType,
+      device.platform,
+      device.browser,
+      device.installedApp,
+      device.countryCode,
+    ]).toEqual(['unknown', 'unknown', 'unknown', false, null]);
   });
 
   it('acepta la IP vacía: sin IP real no hay nada que tapar', () => {

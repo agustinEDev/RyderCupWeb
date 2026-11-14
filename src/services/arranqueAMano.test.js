@@ -19,11 +19,18 @@ import { hayQueArrancarloAMano } from './arranqueAMano';
  */
 describe('a qué campos hay que arrancarles la anotación a mano', () => {
   it('1: con zona, no se dice nada', () => {
-    expect(hayQueArrancarloAMano({ name: 'Miño Artabro', timezone: 'Europe/Madrid' })).toBe(false);
+    expect(
+      hayQueArrancarloAMano({
+        name: 'Miño Artabro',
+        timezone: 'Europe/Madrid',
+      }),
+    ).toBe(false);
   });
 
   it('2: sin zona conocida, sí', () => {
-    expect(hayQueArrancarloAMano({ name: 'Pitch Putt', timezone: null })).toBe(true);
+    expect(hayQueArrancarloAMano({ name: 'Pitch Putt', timezone: null })).toBe(
+      true,
+    );
   });
 
   it('5: si el campo ni siquiera viene, NO se avisa: eso es no saberlo', () => {

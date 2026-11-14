@@ -28,38 +28,72 @@ import esCalendario from './locales/es/schedule.json';
 import enCalendario from './locales/en/schedule.json';
 
 const IDIOMAS = [
-  ['es', esQuickMatch, esDashboard, esPerfil, '1 contra 1', 'Match play individual (1 contra 1)', 'Individual'],
-  ['en', enQuickMatch, enDashboard, enPerfil, '1 vs 1', 'Singles match play (1 vs 1)', 'Singles'],
+  [
+    'es',
+    esQuickMatch,
+    esDashboard,
+    esPerfil,
+    '1 contra 1',
+    'Match play individual (1 contra 1)',
+    'Individual',
+  ],
+  [
+    'en',
+    enQuickMatch,
+    enDashboard,
+    enPerfil,
+    '1 vs 1',
+    'Singles match play (1 vs 1)',
+    'Singles',
+  ],
 ];
 
-describe.each(IDIOMAS)('%s: la modalidad individual', (_, quickMatch, dashboard, perfil, boton, explicacion, etiqueta) => {
-  it('20: el botón del paso 1 dice cuántos juegan', () => {
-    expect(quickMatch.create.course.corto.SINGLES).toBe(boton);
-  });
+describe.each(IDIOMAS)(
+  '%s: la modalidad individual',
+  (_, quickMatch, dashboard, perfil, boton, explicacion, etiqueta) => {
+    it('20: el botón del paso 1 dice cuántos juegan', () => {
+      expect(quickMatch.create.course.corto.SINGLES).toBe(boton);
+    });
 
-  it('21: la línea gris del paso 1, que es también la del resumen, dice la modalidad', () => {
-    expect(quickMatch.create.course.formatSingles).toBe(explicacion);
-  });
+    it('21: la línea gris del paso 1, que es también la del resumen, dice la modalidad', () => {
+      expect(quickMatch.create.course.formatSingles).toBe(explicacion);
+    });
 
-  it('ningún texto la llama «Match Play» a secas: Fourball y Foursomes también lo son', () => {
-    const todos = JSON.stringify([quickMatch, dashboard, perfil]);
-    expect(todos).not.toMatch(/"Match Play"/);
-  });
+    it('ningún texto la llama «Match Play» a secas: Fourball y Foursomes también lo son', () => {
+      const todos = JSON.stringify([quickMatch, dashboard, perfil]);
+      expect(todos).not.toMatch(/"Match Play"/);
+    });
 
-  it.each([
-    ['historial de partidas rápidas', () => quickMatch.history.format.SINGLES],
-    ['panel: acciones pendientes', () => dashboard.pendingActions.quickMatchFormat.SINGLES],
-    ['panel: próximo partido', () => dashboard.nextMatch.format.SINGLES],
-    ['panel: partidas recientes', () => dashboard.recentMatches.format.SINGLES],
-    ['perfil: jugáis juntos', () => perfil.gamesTogether.format.SINGLES],
-  ])('%s: la etiqueta de producción', (__, lee) => {
-    expect(lee()).toBe(etiqueta);
-  });
-});
+    it.each([
+      [
+        'historial de partidas rápidas',
+        () => quickMatch.history.format.SINGLES,
+      ],
+      [
+        'panel: acciones pendientes',
+        () => dashboard.pendingActions.quickMatchFormat.SINGLES,
+      ],
+      ['panel: próximo partido', () => dashboard.nextMatch.format.SINGLES],
+      [
+        'panel: partidas recientes',
+        () => dashboard.recentMatches.format.SINGLES,
+      ],
+      ['perfil: jugáis juntos', () => perfil.gamesTogether.format.SINGLES],
+    ])('%s: la etiqueta de producción', (__, lee) => {
+      expect(lee()).toBe(etiqueta);
+    });
+  },
+);
 
 describe('la sesión del calendario del torneo no cambia', () => {
   it('sigue «Individuales» / «Singles»', () => {
-    expect(esCalendario.SINGLES ?? Object.values(esCalendario).find((v) => v?.SINGLES)?.SINGLES).toBe('Individuales');
-    expect(enCalendario.SINGLES ?? Object.values(enCalendario).find((v) => v?.SINGLES)?.SINGLES).toBe('Singles');
+    expect(
+      esCalendario.SINGLES ??
+        Object.values(esCalendario).find((v) => v?.SINGLES)?.SINGLES,
+    ).toBe('Individuales');
+    expect(
+      enCalendario.SINGLES ??
+        Object.values(enCalendario).find((v) => v?.SINGLES)?.SINGLES,
+    ).toBe('Singles');
   });
 });

@@ -36,9 +36,12 @@ class UpdateUserSecurityUseCase {
     // Sin validar su fortaleza, como en el login: es la que ya tiene, y quien la
     // puso antes de la política actual no podría cambiarla nunca
     if (dataToUpdate.current_password) {
-      dataToUpdate.current_password = new Password(dataToUpdate.current_password, {
-        validateStrength: false,
-      });
+      dataToUpdate.current_password = new Password(
+        dataToUpdate.current_password,
+        {
+          validateStrength: false,
+        },
+      );
     }
 
     // 3. Si existe new_password, convertirlo a Password Value Object
@@ -47,7 +50,10 @@ class UpdateUserSecurityUseCase {
     }
     // Nota: El confirm_password se valida en la capa de UI. El VO Password solo valida una contraseña.
 
-    const updatedUser = await this.userRepository.updateSecurity(userId, dataToUpdate);
+    const updatedUser = await this.userRepository.updateSecurity(
+      userId,
+      dataToUpdate,
+    );
 
     return updatedUser;
   }

@@ -53,12 +53,12 @@ class ListEnrollmentsUseCase {
     // Buscar enrollments con filtros
     const enrollments = await this.#enrollmentRepository.findByCompetition(
       competitionId,
-      filters
+      filters,
     );
 
     // Convertir a DTOs simples para la UI, preservando campos extra de la API
     return enrollments.map((enrollment) =>
-      EnrollmentAssembler.toSimpleDTO(enrollment, enrollment._apiData)
+      EnrollmentAssembler.toSimpleDTO(enrollment, enrollment._apiData),
     );
   }
 }

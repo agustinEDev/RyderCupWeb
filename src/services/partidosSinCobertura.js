@@ -46,10 +46,14 @@ export const olvidaLasPrecargas = () => pedidas.clear();
  */
 export const partidosDelProximoDia = (partidos, ahora = new Date()) => {
   const hoy = fechaLocal(ahora);
-  const porJugar = (partidos ?? []).filter((p) => p?.id && p.roundDate && p.roundDate >= hoy);
+  const porJugar = (partidos ?? []).filter(
+    (p) => p?.id && p.roundDate && p.roundDate >= hoy,
+  );
   if (porJugar.length === 0) return [];
   const dia = porJugar.map((p) => p.roundDate).sort()[0];
-  return porJugar.filter((p) => p.roundDate === dia).slice(0, CUANTAS_SE_PRECARGAN);
+  return porJugar
+    .filter((p) => p.roundDate === dia)
+    .slice(0, CUANTAS_SE_PRECARGAN);
 };
 
 /**
@@ -57,13 +61,19 @@ export const partidosDelProximoDia = (partidos, ahora = new Date()) => {
  *
  * @param {{partidos: Array, userId: string, pideLaVista: (id: string) => Promise<Object>, ahora?: Date}} p
  */
-export const precargaElProximoDia = async ({ partidos, userId, pideLaVista, ahora = new Date() }) => {
+export const precargaElProximoDia = async ({
+  partidos,
+  userId,
+  pideLaVista,
+  ahora = new Date(),
+}) => {
   // Una detrás de otra y no a la vez: son peticiones de más sobre el mismo
   // cubo, y nadie está esperando por ellas
   const tanda = partidosDelProximoDia(partidos, ahora);
   for (const partido of tanda) {
     const antes = pedidas.get(partido.id);
-    if (antes !== undefined && ahora.getTime() - antes < CADA_CUANTO_MS) continue;
+    if (antes !== undefined && ahora.getTime() - antes < CADA_CUANTO_MS)
+      continue;
     pedidas.set(partido.id, ahora.getTime());
 
     try {
@@ -97,7 +107,9 @@ export const precargaElProximoDia = async ({ partidos, userId, pideLaVista, ahor
 /** Lo guardado, sin los partidos de días que ya pasaron. */
 const losGuardados = (ahora) => {
   const hoy = fechaLocal(ahora);
-  return (losUltimosPartidos() ?? []).filter((p) => p?.roundDate && p.roundDate >= hoy);
+  return (losUltimosPartidos() ?? []).filter(
+    (p) => p?.roundDate && p.roundDate >= hoy,
+  );
 };
 
 /**
@@ -114,7 +126,12 @@ const losGuardados = (ahora) => {
  *
  * @returns {Promise<{partidos: Array, desdeMemoria: boolean, sinRespuesta: boolean, incompleta: boolean}>}
  */
-export const leeLosProximosPartidos = async ({ lee, userId, pideLaVista, ahora = new Date() }) => {
+export const leeLosProximosPartidos = async ({
+  lee,
+  userId,
+  pideLaVista,
+  ahora = new Date(),
+}) => {
   try {
     const { matches, complete } = await lee();
     // Media lista VACÍA no dice nada: si falló la única competición con
@@ -124,7 +141,12 @@ export const leeLosProximosPartidos = async ({ lee, userId, pideLaVista, ahora =
       // campo faltaría justo el partido de la competición que falló
       if (complete) recuerdaLosPartidos(matches);
       precargaElProximoDia({ partidos: matches, userId, pideLaVista, ahora });
-      return { partidos: matches, desdeMemoria: false, sinRespuesta: false, incompleta: !complete };
+      return {
+        partidos: matches,
+        desdeMemoria: false,
+        sinRespuesta: false,
+        incompleta: !complete,
+      };
     }
   } catch (err) {
     console.error('Error loading upcoming matches:', err);
@@ -134,14 +156,29 @@ export const leeLosProximosPartidos = async ({ lee, userId, pideLaVista, ahora =
     // refresco fallido viene en `.response` y no desmiente nada (FE #514)—
     if (err?.status === 401 || err?.status === 403) {
       olvidaLoDeEstaCuenta();
-      return { partidos: [], desdeMemoria: false, sinRespuesta: true, incompleta: false };
+      return {
+        partidos: [],
+        desdeMemoria: false,
+        sinRespuesta: true,
+        incompleta: false,
+      };
     }
   }
 
   const guardados = losGuardados(ahora);
   return guardados.length > 0
-    ? { partidos: guardados, desdeMemoria: true, sinRespuesta: false, incompleta: false }
-    : { partidos: [], desdeMemoria: false, sinRespuesta: true, incompleta: false };
+    ? {
+        partidos: guardados,
+        desdeMemoria: true,
+        sinRespuesta: false,
+        incompleta: false,
+      }
+    : {
+        partidos: [],
+        desdeMemoria: false,
+        sinRespuesta: true,
+        incompleta: false,
+      };
 };
 
 /**
@@ -157,27 +194,54 @@ export const leeLosProximosPartidos = async ({ lee, userId, pideLaVista, ahora =
  *   pideLaVista: (id: string) => Promise<Object>, ahora?: Date}} p
  * @returns {Promise<{partidas: Array, desdeMemoria: boolean, sinRespuesta: boolean, incompleta: boolean}>}
  */
-export const leeLasProximasPartidas = async ({ lee, userId, pideLaVista, ahora = new Date() }) => {
+export const leeLasProximasPartidas = async ({
+  lee,
+  userId,
+  pideLaVista,
+  ahora = new Date(),
+}) => {
   try {
     const { matches, complete } = await lee();
     if (complete || matches.length > 0) {
       if (complete) recuerdaLasPartidas(matches);
       precargaElProximoDia({ partidos: matches, userId, pideLaVista, ahora });
-      return { partidas: matches, desdeMemoria: false, sinRespuesta: false, incompleta: !complete };
+      return {
+        partidas: matches,
+        desdeMemoria: false,
+        sinRespuesta: false,
+        incompleta: !complete,
+      };
     }
   } catch (err) {
     console.error('Error loading upcoming tee groups:', err);
     // Un 401 o un 403 desmienten lo guardado, como con los partidos (CodeRabbit)
     if (err?.status === 401 || err?.status === 403) {
       olvidaLoDeEstaCuenta();
-      return { partidas: [], desdeMemoria: false, sinRespuesta: true, incompleta: false };
+      return {
+        partidas: [],
+        desdeMemoria: false,
+        sinRespuesta: true,
+        incompleta: false,
+      };
     }
   }
   const hoy = fechaLocal(ahora);
-  const guardadas = (lasUltimasPartidas() ?? []).filter((p) => p?.roundDate && p.roundDate >= hoy);
+  const guardadas = (lasUltimasPartidas() ?? []).filter(
+    (p) => p?.roundDate && p.roundDate >= hoy,
+  );
   return guardadas.length > 0
-    ? { partidas: guardadas, desdeMemoria: true, sinRespuesta: false, incompleta: false }
-    : { partidas: [], desdeMemoria: false, sinRespuesta: true, incompleta: false };
+    ? {
+        partidas: guardadas,
+        desdeMemoria: true,
+        sinRespuesta: false,
+        incompleta: false,
+      }
+    : {
+        partidas: [],
+        desdeMemoria: false,
+        sinRespuesta: true,
+        incompleta: false,
+      };
 };
 
 /**
@@ -197,7 +261,9 @@ export const leeLasProximasPartidas = async ({ lee, userId, pideLaVista, ahora =
  * reloj habla.
  */
 const escritoComoEnElCampo = (iso, idioma, opciones, respaldo) => {
-  const partes = /(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/.exec(String(iso ?? ''));
+  const partes = /(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/.exec(
+    String(iso ?? ''),
+  );
   if (!partes) return null;
   if (!/(?:Z|[+-]\d{2}:?\d{2})$/.test(String(iso).trim())) return null;
 
@@ -205,7 +271,13 @@ const escritoComoEnElCampo = (iso, idioma, opciones, respaldo) => {
   // Una fecha de mentira con esos números, formateada en UTC: así el huso del
   // dispositivo no la mueve
   const comoSeEscribe = new Date(
-    Date.UTC(Number(anio), Number(mes) - 1, Number(dia), Number(hora), Number(minuto))
+    Date.UTC(
+      Number(anio),
+      Number(mes) - 1,
+      Number(dia),
+      Number(hora),
+      Number(minuto),
+    ),
   );
   try {
     return new Intl.DateTimeFormat(String(idioma || 'es').replace(/_/g, '-'), {
@@ -224,7 +296,7 @@ export const horaDelCampo = (iso, idioma = 'es') =>
     iso,
     idioma,
     { hour: '2-digit', minute: '2-digit' },
-    ({ hora, minuto }) => `${hora}:${minuto}`
+    ({ hora, minuto }) => `${hora}:${minuto}`,
   );
 
 /**
@@ -236,7 +308,7 @@ export const fechaYHoraDelCampo = (iso, idioma = 'es') =>
     iso,
     idioma,
     { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' },
-    ({ dia, mes, hora, minuto }) => `${dia}/${mes} ${hora}:${minuto}`
+    ({ dia, mes, hora, minuto }) => `${dia}/${mes} ${hora}:${minuto}`,
   );
 
 /**
@@ -258,7 +330,10 @@ export const laProximaApertura = (partidos, ahora = new Date()) => {
  * el servidor va a rechazar (FE #621). Devuelve la fecha, no un booleano,
  * porque quien pregunta necesita enseñarla.
  */
-export const abreMasTarde = ({ status, scoringOpensAt }, ahora = new Date()) => {
+export const abreMasTarde = (
+  { status, scoringOpensAt },
+  ahora = new Date(),
+) => {
   if (status !== 'SCHEDULED' || !scoringOpensAt) return null;
   const abre = new Date(scoringOpensAt);
   if (Number.isNaN(abre.getTime()) || ahora >= abre) return null;
@@ -287,13 +362,15 @@ export const abreMasTarde = ({ status, scoringOpensAt }, ahora = new Date()) => 
  * puede ofrecer anotar antes de tiempo. El servidor lo rechaza igual, y ese
  * rechazo es reintentable: el golpe se queda en la cola, no se pierde.
  */
-export const sePuedeAnotar = (partido, { desdeMemoria, ahora = new Date() }) => {
+export const sePuedeAnotar = (
+  partido,
+  { desdeMemoria, ahora = new Date() },
+) => {
   if (partido?.status === 'IN_PROGRESS') return true;
   if (partido?.status !== 'SCHEDULED') return false;
 
-  const deHoyYSinPoderPreguntar = () => Boolean(
-    desdeMemoria && partido.roundDate === fechaLocal(ahora)
-  );
+  const deHoyYSinPoderPreguntar = () =>
+    Boolean(desdeMemoria && partido.roundDate === fechaLocal(ahora));
 
   if (partido.scoringOpensAt !== undefined) {
     // Sin hora: ese campo no tiene coordenadas y no abre solo. Con red manda el

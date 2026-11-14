@@ -47,7 +47,9 @@ const HeaderAuth = ({ user, title, backTo, alVolver }) => {
   // Solo se lee: lo pide la barra inferior, montada también en escritorio
   const novedades = useNovedadesDeActividad();
   const insigniaDe = (to, className) =>
-    to === '/feed' ? <InsigniaDeNovedades n={novedades} className={className} /> : null;
+    to === '/feed' ? (
+      <InsigniaDeNovedades n={novedades} className={className} />
+    ) : null;
   // El número es solo visual: a los lectores de pantalla se lo cuenta esta
   // descripción, sin cambiarle el nombre al enlace (como en la barra inferior)
   const descripcionDe = (to) =>
@@ -57,7 +59,7 @@ const HeaderAuth = ({ user, title, backTo, alVolver }) => {
   // cada pantalla es lenguaje de sitio web, no de aplicacion (FE #310)
   const screen = resolveScreen(location.pathname);
   const screenTitle = title ?? (screen ? t(screen.titleKey) : null);
-  const screenBackTo = backTo !== undefined ? backTo : screen?.backTo ?? null;
+  const screenBackTo = backTo !== undefined ? backTo : (screen?.backTo ?? null);
 
   // Pantallas sin padre unico vuelven por donde se vino. En escritorio la
   // vuelta la pone la propia pagina, junto al contenido, como hace el detalle
@@ -159,9 +161,15 @@ const HeaderAuth = ({ user, title, backTo, alVolver }) => {
           </h1>
         </div>
       ) : (
-        <Link to="/dashboard" className="md:hidden flex items-center gap-3 text-gray-900 hover:opacity-80 transition-opacity">
+        <Link
+          to="/dashboard"
+          className="md:hidden flex items-center gap-3 text-gray-900 hover:opacity-80 transition-opacity"
+        >
           <div className="h-10 w-10 flex-shrink-0 flex items-center justify-center overflow-visible">
-            <BrandMark className="block h-full w-auto  transform -translate-y-[2px] scale-105" title={t('brandMarkAlt')} />
+            <BrandMark
+              className="block h-full w-auto  transform -translate-y-[2px] scale-105"
+              title={t('brandMarkAlt')}
+            />
           </div>
           <h2 className="text-gray-900 text-lg font-bold leading-tight tracking-tight font-poppins">
             RyderCupFriends
@@ -170,9 +178,15 @@ const HeaderAuth = ({ user, title, backTo, alVolver }) => {
       )}
 
       {/* Escritorio: la marca no se toca */}
-      <Link to="/dashboard" className="hidden md:flex items-center gap-3 text-gray-900 hover:opacity-80 transition-opacity">
+      <Link
+        to="/dashboard"
+        className="hidden md:flex items-center gap-3 text-gray-900 hover:opacity-80 transition-opacity"
+      >
         <div className="h-12 w-12 flex-shrink-0 flex items-center justify-center overflow-visible">
-          <BrandMark className="block h-full w-auto  transform -translate-y-[2px] scale-110" title={t('brandMarkAlt')} />
+          <BrandMark
+            className="block h-full w-auto  transform -translate-y-[2px] scale-110"
+            title={t('brandMarkAlt')}
+          />
         </div>
         <h2 className="text-gray-900 text-xl font-bold leading-tight tracking-tight font-poppins">
           RyderCupFriends
@@ -190,7 +204,10 @@ const HeaderAuth = ({ user, title, backTo, alVolver }) => {
         {/* En linea solo desde xl: con todo junto la cabecera pide ~1250 px, y por
             debajo la pagina se desplazaba en horizontal (FE #680). Por debajo,
             los mismos enlaces van al desplegable del avatar */}
-        <div data-testid="navegacion-en-linea" className="hidden xl:flex items-center gap-9">
+        <div
+          data-testid="navegacion-en-linea"
+          className="hidden xl:flex items-center gap-9"
+        >
           {NAVEGACION.map(({ to, clave }) => (
             <Link
               key={to}
@@ -218,7 +235,10 @@ const HeaderAuth = ({ user, title, backTo, alVolver }) => {
               className="flex items-center gap-2 hover:opacity-80 transition-opacity"
             >
               {user?.is_admin && (
-                <span data-testid="admin-badge" className="text-xs font-semibold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800">
+                <span
+                  data-testid="admin-badge"
+                  className="text-xs font-semibold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800"
+                >
                   {t('header.adminBadge')}
                 </span>
               )}
@@ -237,7 +257,10 @@ const HeaderAuth = ({ user, title, backTo, alVolver }) => {
             {/* Desktop Dropdown Menu */}
             {isDropdownOpen && (
               <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
-                <div data-testid="navegacion-en-desplegable" className="xl:hidden">
+                <div
+                  data-testid="navegacion-en-desplegable"
+                  className="xl:hidden"
+                >
                   {NAVEGACION.map(({ to, clave }) => (
                     <Link
                       key={to}
@@ -266,7 +289,10 @@ const HeaderAuth = ({ user, title, backTo, alVolver }) => {
                   className="flex items-center justify-between gap-3 px-4 py-2 text-sm text-gray-700"
                 >
                   <span className="flex items-center gap-2">
-                    <Globe className="h-4 w-4 text-gray-500" aria-hidden="true" />
+                    <Globe
+                      className="h-4 w-4 text-gray-500"
+                      aria-hidden="true"
+                    />
                     {t('header.language')}
                   </span>
                   <LanguageSwitcher />

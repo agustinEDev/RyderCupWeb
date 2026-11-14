@@ -10,7 +10,9 @@ class CompleteQuickMatchUseCase {
 
   constructor({ quickMatchRepository }) {
     if (!quickMatchRepository) {
-      throw new Error('CompleteQuickMatchUseCase requires quickMatchRepository');
+      throw new Error(
+        'CompleteQuickMatchUseCase requires quickMatchRepository',
+      );
     }
     this.#quickMatchRepository = quickMatchRepository;
   }

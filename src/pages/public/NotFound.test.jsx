@@ -18,13 +18,16 @@ const sesion = vi.hoisted(() => ({ valor: { user: null, loading: false } }));
 
 vi.mock('../../hooks/useAuth', () => ({ useAuth: () => sesion.valor }));
 
-const busca = (bloque, clave) => clave.split('.').reduce((nodo, parte) => nodo?.[parte], bloque);
+const busca = (bloque, clave) =>
+  clave.split('.').reduce((nodo, parte) => nodo?.[parte], bloque);
 
 vi.mock('react-i18next', async () => {
   const textos = (await import('../../i18n/locales/es/common.json')).default;
   return {
     useTranslation: () => ({
-      t: (clave, porDefecto) => busca(textos, clave) ?? (typeof porDefecto === 'string' ? porDefecto : clave),
+      t: (clave, porDefecto) =>
+        busca(textos, clave) ??
+        (typeof porDefecto === 'string' ? porDefecto : clave),
       i18n: { language: 'es' },
     }),
   };
@@ -36,7 +39,7 @@ const abrir = () =>
   render(
     <MemoryRouter initialEntries={['/esto-no-existe']}>
       <NotFound />
-    </MemoryRouter>
+    </MemoryRouter>,
   );
 
 describe('NotFound', () => {
@@ -48,8 +51,13 @@ describe('NotFound', () => {
     sesion.valor = { user: { id: 'u-1' }, loading: false };
     abrir();
 
-    expect(screen.getByRole('heading', { level: 1, name: 'Esta página no existe' })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Ir al panel' })).toHaveAttribute('href', '/dashboard');
+    expect(
+      screen.getByRole('heading', { level: 1, name: 'Esta página no existe' }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Ir al panel' })).toHaveAttribute(
+      'href',
+      '/dashboard',
+    );
     expect(screen.queryByRole('link', { name: 'Ir al inicio' })).toBeNull();
     expect(screen.queryByRole('link', { name: 'Entrar' })).toBeNull();
   });
@@ -57,16 +65,27 @@ describe('NotFound', () => {
   it('N2: sin sesión, al inicio o a entrar', () => {
     abrir();
 
-    expect(screen.getByRole('heading', { level: 1, name: 'Esta página no existe' })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Ir al inicio' })).toHaveAttribute('href', '/');
-    expect(screen.getByRole('link', { name: 'Entrar' })).toHaveAttribute('href', '/login');
+    expect(
+      screen.getByRole('heading', { level: 1, name: 'Esta página no existe' }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Ir al inicio' })).toHaveAttribute(
+      'href',
+      '/',
+    );
+    expect(screen.getByRole('link', { name: 'Entrar' })).toHaveAttribute(
+      'href',
+      '/login',
+    );
     expect(screen.queryByRole('link', { name: 'Ir al panel' })).toBeNull();
   });
 
   // El hueco de la barra inferior lo publica App en `--alto-barra-inferior`
   // solo cuando la pinta: la página no lo deduce de la sesión (QA del 21 oct)
   // Y el aviso de instalar, que también flota abajo (revisor de las sobras del QA)
-  const ALTO = ['min-h-[calc(100dvh-var(--alto-barra-inferior,0px)-var(--alto-aviso-instalar,0px))]', 'md:min-h-[calc(100dvh-var(--alto-aviso-instalar,0px))]'];
+  const ALTO = [
+    'min-h-[calc(100dvh-var(--alto-barra-inferior,0px)-var(--alto-aviso-instalar,0px))]',
+    'md:min-h-[calc(100dvh-var(--alto-aviso-instalar,0px))]',
+  ];
 
   it('N6: el fondo llena la pantalla menos el hueco que diga App (a 360 px la mitad de abajo salía blanca)', () => {
     abrir();
@@ -82,14 +101,19 @@ describe('NotFound', () => {
 
     const principal = screen.getByRole('main');
     expect(principal).toHaveClass(...ALTO);
-    expect(principal).not.toHaveClass('min-h-[calc(100dvh-4rem-env(safe-area-inset-bottom))]', 'min-h-dvh');
+    expect(principal).not.toHaveClass(
+      'min-h-[calc(100dvh-4rem-env(safe-area-inset-bottom))]',
+      'min-h-dvh',
+    );
   });
 
   it('N2b: mientras se pregunta, el mensaje sin botones', () => {
     sesion.valor = { user: null, loading: true };
     abrir();
 
-    expect(screen.getByRole('heading', { level: 1, name: 'Esta página no existe' })).toBeInTheDocument();
+    expect(
+      screen.getByRole('heading', { level: 1, name: 'Esta página no existe' }),
+    ).toBeInTheDocument();
     expect(screen.getByText(es.notFound.message)).toBeInTheDocument();
     expect(screen.queryAllByRole('link')).toHaveLength(0);
   });
@@ -101,7 +125,9 @@ describe('NotFound', () => {
         expect(typeof idioma.notFound?.[clave]).toBe('string');
       }
     }
-    expect(Object.keys(en.notFound).sort()).toEqual(Object.keys(es.notFound).sort());
+    expect(Object.keys(en.notFound).sort()).toEqual(
+      Object.keys(es.notFound).sort(),
+    );
     expect(en.notFound.title).not.toBe(es.notFound.title);
   });
 });

@@ -21,7 +21,9 @@ describe('PlayingHandicapCalculator', () => {
     const teeRating = { courseRating: 71.2, slopeRating: 128, par: 72 };
 
     it('should return null when handicapIndex is null', () => {
-      expect(PlayingHandicapCalculator.calculate(null, teeRating, 100)).toBeNull();
+      expect(
+        PlayingHandicapCalculator.calculate(null, teeRating, 100),
+      ).toBeNull();
     });
 
     it('should return null when teeRating is null', () => {

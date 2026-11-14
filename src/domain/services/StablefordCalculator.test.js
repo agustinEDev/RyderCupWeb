@@ -38,7 +38,11 @@ describe('StablefordCalculator', () => {
       const participant = { participantId: 'p-1', handicap: 0 };
       const holeScores = [{ holeNumber: 1, participantId: 'p-1', score: 4 }];
 
-      const result = StablefordCalculator.computeParticipantTotals(participant, holes, holeScores);
+      const result = StablefordCalculator.computeParticipantTotals(
+        participant,
+        holes,
+        holeScores,
+      );
       expect(result).toEqual({
         stablefordPoints: 2,
         totalStrokes: 4,
@@ -52,7 +56,11 @@ describe('StablefordCalculator', () => {
       const participant = { participantId: 'p-1', handicap: 0 };
       const holeScores = [{ holeNumber: 1, participantId: 'p-2', score: 3 }];
 
-      const result = StablefordCalculator.computeParticipantTotals(participant, holes, holeScores);
+      const result = StablefordCalculator.computeParticipantTotals(
+        participant,
+        holes,
+        holeScores,
+      );
       expect(result).toEqual({
         stablefordPoints: 0,
         totalStrokes: 0,
@@ -65,13 +73,15 @@ describe('StablefordCalculator', () => {
     it('should subtract strokes received from gross to compute net strokes', () => {
       const participant = { participantId: 'p-1', handicap: 18 };
       const holeScores = [{ holeNumber: 1, participantId: 'p-1', score: 5 }];
-      const allocation = { 'p-1': { playingHandicap: 18, strokesByHole: { 1: 1 } } };
+      const allocation = {
+        'p-1': { playingHandicap: 18, strokesByHole: { 1: 1 } },
+      };
 
       const result = StablefordCalculator.computeParticipantTotals(
         participant,
         holes,
         holeScores,
-        allocation
+        allocation,
       );
       expect(result.netStrokes).toBe(4);
     });
@@ -79,13 +89,15 @@ describe('StablefordCalculator', () => {
     it('should add back the strokes a plus handicap gives to the course', () => {
       const participant = { participantId: 'p-1', handicap: -2 };
       const holeScores = [{ holeNumber: 1, participantId: 'p-1', score: 4 }];
-      const allocation = { 'p-1': { playingHandicap: -2, strokesByHole: { 1: -1 } } };
+      const allocation = {
+        'p-1': { playingHandicap: -2, strokesByHole: { 1: -1 } },
+      };
 
       const result = StablefordCalculator.computeParticipantTotals(
         participant,
         holes,
         holeScores,
-        allocation
+        allocation,
       );
       // Cede un golpe: su neto empeora, no mejora
       expect(result.netStrokes).toBe(5);
@@ -97,7 +109,12 @@ describe('StablefordCalculator', () => {
       const holeScores = [{ holeNumber: 1, participantId: 'p-1', score: 5 }];
 
       // Sin reparto no hay golpes: el neto es el bruto
-      const result = StablefordCalculator.computeParticipantTotals(participant, holes, holeScores, {});
+      const result = StablefordCalculator.computeParticipantTotals(
+        participant,
+        holes,
+        holeScores,
+        {},
+      );
       expect(result.netStrokes).toBe(5);
     });
 
@@ -108,7 +125,11 @@ describe('StablefordCalculator', () => {
         { holeNumber: 2, participantId: 'p-1', score: 3 },
       ];
 
-      const result = StablefordCalculator.computeParticipantTotals(participant, holes, holeScores);
+      const result = StablefordCalculator.computeParticipantTotals(
+        participant,
+        holes,
+        holeScores,
+      );
       expect(result.parPlayed).toBe(7); // par 4 + par 3
     });
   });
@@ -140,7 +161,11 @@ describe('StablefordCalculator', () => {
         { holeNumber: 1, participantId: 'p-2', score: 3 }, // net birdie -> 3 pts
       ];
 
-      const ranking = StablefordCalculator.rankParticipants(participants, holes, holeScores);
+      const ranking = StablefordCalculator.rankParticipants(
+        participants,
+        holes,
+        holeScores,
+      );
       expect(ranking.map((r) => r.participantId)).toEqual(['p-2', 'p-1']);
     });
 
@@ -163,20 +188,24 @@ describe('StablefordCalculator', () => {
         { participantId: 'p-1', name: 'Alice', handicap: 0 },
         { participantId: 'p-2', name: 'Bob', handicap: 18 }, // stroke on every hole -> net 4 -> 2 pts
       ];
-      const allocation = { 'p-2': { playingHandicap: 18, strokesByHole: { 1: 1 } } };
+      const allocation = {
+        'p-2': { playingHandicap: 18, strokesByHole: { 1: 1 } },
+      };
 
       const ranking = StablefordCalculator.rankParticipants(
         participantsTie,
         holes,
         holeScoresTie,
-        allocation
+        allocation,
       );
       expect(ranking[0].stablefordPoints).toBe(ranking[1].stablefordPoints);
       // Alice tiene menos hándicap (0 contra 18): va delante en el desempate
       expect(ranking[0].participantId).toBe('p-1');
 
       // Sanity check the original (non-tied) scenario still resolves without throwing
-      expect(() => StablefordCalculator.rankParticipants(participants, holes, holeScores)).not.toThrow();
+      expect(() =>
+        StablefordCalculator.rankParticipants(participants, holes, holeScores),
+      ).not.toThrow();
     });
   });
 
@@ -185,15 +214,23 @@ describe('StablefordCalculator', () => {
     // El reparto va aparte del hándicap a propósito: así el bruto y el
     // hándicap dicen cosas distintas y se ve cuál desempata
     const allocation = { 'p-bajo': { strokesByHole: { 1: 1 } } };
-    const p = (participantId, handicap) => ({ participantId, name: participantId, handicap });
-    const s = (participantId, score) => ({ holeNumber: 1, participantId, score });
+    const p = (participantId, handicap) => ({
+      participantId,
+      name: participantId,
+      handicap,
+    });
+    const s = (participantId, score) => ({
+      holeNumber: 1,
+      participantId,
+      score,
+    });
 
     it('Stableford: tied on points, the lower handicap goes first even with more gross strokes', () => {
       const ranking = StablefordCalculator.rankParticipants(
         [p('p-alto', 20), p('p-bajo', 5)],
         holes,
         [s('p-alto', 4), s('p-bajo', 5)],
-        allocation
+        allocation,
       );
 
       expect(ranking.map((r) => r.participantId)).toEqual(['p-bajo', 'p-alto']);
@@ -207,48 +244,54 @@ describe('StablefordCalculator', () => {
       const ranking = StablefordCalculator.rankParticipants(
         [p('a', 12.4), p('b', 12.4), p('c', 3)],
         holes,
-        [s('a', 4), s('b', 4), s('c', 6)]
+        [s('a', 4), s('b', 4), s('c', 6)],
       );
 
-      expect(ranking.map((r) => [r.participantId, r.position, r.tied])).toEqual([
-        ['a', 1, true],
-        ['b', 1, true],
-        ['c', 3, false],
-      ]);
+      expect(ranking.map((r) => [r.participantId, r.position, r.tied])).toEqual(
+        [
+          ['a', 1, true],
+          ['b', 1, true],
+          ['c', 3, false],
+        ],
+      );
     });
 
     it('a missing handicap counts as 0: ahead of 0.1, level with 0.0, behind a plus', () => {
       const ranking = StablefordCalculator.rankParticipants(
         [p('decimo', 0.1), p('sin', null), p('cero', 0), p('plus', -1.2)],
         holes,
-        [s('decimo', 4), s('sin', 4), s('cero', 4), s('plus', 4)]
+        [s('decimo', 4), s('sin', 4), s('cero', 4), s('plus', 4)],
       );
 
-      expect(ranking.map((r) => [r.participantId, r.position, r.tied])).toEqual([
-        ['plus', 1, false],
-        ['sin', 2, true],
-        ['cero', 2, true],
-        ['decimo', 4, false],
-      ]);
+      expect(ranking.map((r) => [r.participantId, r.position, r.tied])).toEqual(
+        [
+          ['plus', 1, false],
+          ['sin', 2, true],
+          ['cero', 2, true],
+          ['decimo', 4, false],
+        ],
+      );
     });
 
     it('12.4 and 12.5 do not share: the exact index decides', () => {
       const ranking = StablefordCalculator.rankParticipants(
         [p('a', 12.5), p('b', 12.4)],
         holes,
-        [s('a', 4), s('b', 4)]
+        [s('a', 4), s('b', 4)],
       );
-      expect(ranking.map((r) => [r.participantId, r.position, r.tied])).toEqual([
-        ['b', 1, false],
-        ['a', 2, false],
-      ]);
+      expect(ranking.map((r) => [r.participantId, r.position, r.tied])).toEqual(
+        [
+          ['b', 1, false],
+          ['a', 2, false],
+        ],
+      );
     });
 
     it('more points always first, whatever the handicap', () => {
       const ranking = StablefordCalculator.rankParticipants(
         [p('bajo', 0), p('alto', 30)],
         holes,
-        [s('bajo', 5), s('alto', 3)]
+        [s('bajo', 5), s('alto', 3)],
       );
       expect(ranking.map((r) => [r.participantId, r.position])).toEqual([
         ['alto', 1],
@@ -261,7 +304,10 @@ describe('StablefordCalculator', () => {
         [p('p-alto', 20), p('p-bajo', 5), p('otro-bajo', 5), p('peor', 1)],
         holes,
         [s('p-alto', 4), s('p-bajo', 5), s('otro-bajo', 5), s('peor', 7)],
-        { 'p-bajo': { strokesByHole: { 1: 1 } }, 'otro-bajo': { strokesByHole: { 1: 1 } } }
+        {
+          'p-bajo': { strokesByHole: { 1: 1 } },
+          'otro-bajo': { strokesByHole: { 1: 1 } },
+        },
       );
 
       expect(medal.map((r) => [r.participantId, r.position, r.tied])).toEqual([
@@ -276,7 +322,7 @@ describe('StablefordCalculator', () => {
       const medal = StablefordCalculator.rankParticipantsByMedal(
         [p('nada', -5), p('otro-nada', -5), p('juega', 30), p('juega-mal', 2)],
         holes,
-        [s('juega', 9), s('juega-mal', 12)]
+        [s('juega', 9), s('juega-mal', 12)],
       );
       expect(medal.map((r) => [r.participantId, r.position, r.tied])).toEqual([
         ['juega', 1, false],
@@ -290,17 +336,23 @@ describe('StablefordCalculator', () => {
       const ranking = StablefordCalculator.rankParticipants(
         [p('nada', 0), p('cero-puntos', 30), p('nada-tambien', 0)],
         holes,
-        [s('cero-puntos', 9)]
+        [s('cero-puntos', 9)],
       );
-      expect(ranking.map((r) => [r.participantId, r.position, r.tied])).toEqual([
-        ['cero-puntos', 1, false],
-        ['nada', null, false],
-        ['nada-tambien', null, false],
-      ]);
+      expect(ranking.map((r) => [r.participantId, r.position, r.tied])).toEqual(
+        [
+          ['cero-puntos', 1, false],
+          ['nada', null, false],
+          ['nada-tambien', null, false],
+        ],
+      );
     });
 
     it('nobody has scored yet: nobody has a position', () => {
-      const ranking = StablefordCalculator.rankParticipants([p('a', 1), p('b', 1)], holes, []);
+      const ranking = StablefordCalculator.rankParticipants(
+        [p('a', 1), p('b', 1)],
+        holes,
+        [],
+      );
       expect(ranking.map((r) => [r.position, r.tied])).toEqual([
         [null, false],
         [null, false],
@@ -320,13 +372,15 @@ describe('StablefordCalculator', () => {
         { holeNumber: 1, participantId: 'p-1', score: 4 }, // net 4
         { holeNumber: 1, participantId: 'p-2', score: 4 }, // 1 stroke received -> net 3
       ];
-      const allocation = { 'p-2': { playingHandicap: 18, strokesByHole: { 1: 1 } } };
+      const allocation = {
+        'p-2': { playingHandicap: 18, strokesByHole: { 1: 1 } },
+      };
 
       const ranking = StablefordCalculator.rankParticipantsByMedal(
         participants,
         holes,
         holeScores,
-        allocation
+        allocation,
       );
       expect(ranking.map((r) => r.participantId)).toEqual(['p-2', 'p-1']);
     });
@@ -338,7 +392,11 @@ describe('StablefordCalculator', () => {
       ];
       const holeScores = [{ holeNumber: 1, participantId: 'p-1', score: 4 }];
 
-      const ranking = StablefordCalculator.rankParticipantsByMedal(participants, holes, holeScores);
+      const ranking = StablefordCalculator.rankParticipantsByMedal(
+        participants,
+        holes,
+        holeScores,
+      );
       expect(ranking.map((r) => r.participantId)).toEqual(['p-1', 'p-2']);
     });
 
@@ -365,12 +423,15 @@ describe('StablefordCalculator', () => {
       const ranking = StablefordCalculator.rankParticipantsByMedal(
         participants,
         multiHoles,
-        holeScores
+        holeScores,
       );
 
       // Raw net strokes would rank Bob first (5 < 12); score-to-par correctly
       // ranks Alice first instead (even vs. one over).
-      expect(ranking.map((r) => r.participantId)).toEqual(['further-along', 'just-started']);
+      expect(ranking.map((r) => r.participantId)).toEqual([
+        'further-along',
+        'just-started',
+      ]);
     });
   });
 
@@ -379,11 +440,17 @@ describe('StablefordCalculator', () => {
     // que `test_stableford_calculator.py`, para que los dos motores tengan que
     // inventar el mismo numero cuando no hay ninguno anotado.
     const PARS = [4, 5, 3, 4, 4, 3, 5, 4, 4, 4, 3, 5, 4, 4, 3, 4, 5, 4];
-    const STROKE_INDEXES = [7, 3, 15, 1, 11, 17, 5, 9, 13, 8, 16, 2, 10, 6, 18, 12, 4, 14];
+    const STROKE_INDEXES = [
+      7, 3, 15, 1, 11, 17, 5, 9, 13, 8, 16, 2, 10, 6, 18, 12, 4, 14,
+    ];
     const SCORES = [5, 6, 4, 6, 5, 3, 6, 5, 4, 5, 4, 7, 5, 4, 3, 5, 6, 5];
 
     const parityHoles = () =>
-      PARS.map((par, i) => ({ holeNumber: i + 1, par, strokeIndex: STROKE_INDEXES[i] }));
+      PARS.map((par, i) => ({
+        holeNumber: i + 1,
+        par,
+        strokeIndex: STROKE_INDEXES[i],
+      }));
 
     const parityScores = (pickedUpHole = null) =>
       SCORES.map((score, i) => ({
@@ -401,7 +468,11 @@ describe('StablefordCalculator', () => {
       const participant = { participantId: 'p-1', handicap: 0 };
       const holeScores = [{ holeNumber: 1, participantId: 'p-1', score: null }];
 
-      const result = StablefordCalculator.computeParticipantTotals(participant, holes, holeScores);
+      const result = StablefordCalculator.computeParticipantTotals(
+        participant,
+        holes,
+        holeScores,
+      );
 
       expect(result.holesPlayed).toBe(1);
       expect(result.parPlayed).toBe(4);
@@ -411,7 +482,11 @@ describe('StablefordCalculator', () => {
       const participant = { participantId: 'p-1', handicap: 0 };
       const holeScores = [{ holeNumber: 1, participantId: 'p-1', score: null }];
 
-      const result = StablefordCalculator.computeParticipantTotals(participant, holes, holeScores);
+      const result = StablefordCalculator.computeParticipantTotals(
+        participant,
+        holes,
+        holeScores,
+      );
 
       expect(result.totalStrokes).toBe(6);
       expect(result.netStrokes).toBe(6);
@@ -423,35 +498,46 @@ describe('StablefordCalculator', () => {
       [1, 7],
       [2, 8],
       [-1, 5], // plus: cede el golpe
-    ])('should charge %i strokes received into the gross of a raya (%i)', (golpes, bruto) => {
-      // «Siempre una raya es par + golpes recibidos + 2» (Agustin, 23 oct
-      // 2026): el bruto es su doble bogey NETO. El neto se queda en par + 2,
-      // de ahi los cero puntos.
-      const participant = { participantId: 'p-1', handicap: 18 };
-      const allocation = { 'p-1': { strokesByHole: { 1: golpes } } };
-      const holeScores = [{ holeNumber: 1, participantId: 'p-1', score: null }];
+    ])(
+      'should charge %i strokes received into the gross of a raya (%i)',
+      (golpes, bruto) => {
+        // «Siempre una raya es par + golpes recibidos + 2» (Agustin, 23 oct
+        // 2026): el bruto es su doble bogey NETO. El neto se queda en par + 2,
+        // de ahi los cero puntos.
+        const participant = { participantId: 'p-1', handicap: 18 };
+        const allocation = { 'p-1': { strokesByHole: { 1: golpes } } };
+        const holeScores = [
+          { holeNumber: 1, participantId: 'p-1', score: null },
+        ];
 
-      const result = StablefordCalculator.computeParticipantTotals(
-        participant,
-        holes,
-        holeScores,
-        allocation
-      );
+        const result = StablefordCalculator.computeParticipantTotals(
+          participant,
+          holes,
+          holeScores,
+          allocation,
+        );
 
-      expect(result.totalStrokes).toBe(bruto);
-      expect(result.netStrokes).toBe(6);
-      expect(result.stablefordPoints).toBe(0);
-    });
+        expect(result.totalStrokes).toBe(bruto);
+        expect(result.netStrokes).toBe(6);
+        expect(result.stablefordPoints).toBe(0);
+      },
+    );
 
     it('should still ignore a hole with no recorded entry at all', () => {
       // La trampa del cambio: sin entrada y con entrada sin numero, el `score`
       // es nulo en los dos casos y significan lo contrario.
       const participant = { participantId: 'p-1', handicap: 0 };
 
-      const sinAnotar = StablefordCalculator.computeParticipantTotals(participant, holes, []);
-      const conRaya = StablefordCalculator.computeParticipantTotals(participant, holes, [
-        { holeNumber: 1, participantId: 'p-1', score: null },
-      ]);
+      const sinAnotar = StablefordCalculator.computeParticipantTotals(
+        participant,
+        holes,
+        [],
+      );
+      const conRaya = StablefordCalculator.computeParticipantTotals(
+        participant,
+        holes,
+        [{ holeNumber: 1, participantId: 'p-1', score: null }],
+      );
 
       expect(sinAnotar.holesPlayed).toBe(0);
       expect(conRaya.holesPlayed).toBe(1);
@@ -463,7 +549,7 @@ describe('StablefordCalculator', () => {
       const scratch = StablefordCalculator.computeParticipantTotals(
         { participantId: 'p-1', handicap: 0 },
         parityHoles(),
-        parityScores(1)
+        parityScores(1),
       );
 
       expect(scratch.stablefordPoints).toBe(19);
@@ -478,7 +564,7 @@ describe('StablefordCalculator', () => {
       const allocation = {
         'p-1': {
           strokesByHole: Object.fromEntries(
-            STROKE_INDEXES.map((si, i) => [i + 1, si <= 12 ? 1 : 0])
+            STROKE_INDEXES.map((si, i) => [i + 1, si <= 12 ? 1 : 0]),
           ),
         },
       };
@@ -487,7 +573,7 @@ describe('StablefordCalculator', () => {
         { participantId: 'p-1', handicap: 12.4 },
         parityHoles(),
         parityScores(1),
-        allocation
+        allocation,
       );
 
       expect(result.stablefordPoints).toBe(30);

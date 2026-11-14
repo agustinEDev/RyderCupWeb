@@ -48,15 +48,23 @@
  *   Q1   invitado con nombre o apellido en blanco   | se avisa y no se añade (QA)
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
+import {
+  render,
+  screen,
+  fireEvent,
+  waitFor,
+  within,
+} from '@testing-library/react';
 import { MemoryRouter } from 'react-router';
 import CreateQuickMatchModal from './CreateQuickMatchModal';
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
     t: (key, params) => {
-      if (params?.current !== undefined) return `${key}_${params.current}_${params.total}`;
-      if (params?.count !== undefined) return `${key}_${params.count}_${params.max}`;
+      if (params?.current !== undefined)
+        return `${key}_${params.current}_${params.total}`;
+      if (params?.count !== undefined)
+        return `${key}_${params.count}_${params.max}`;
       return key;
     },
     i18n: { language: 'es' },
@@ -81,22 +89,45 @@ const mockGetGolfCourse = vi.fn();
 const mockCancel = vi.fn();
 
 const mockToastInfo = vi.fn();
-vi.mock('../../utils/toast', () => ({ default: { info: (...a) => mockToastInfo(...a), error: vi.fn(), success: vi.fn() } }));
+vi.mock('../../utils/toast', () => ({
+  default: {
+    info: (...a) => mockToastInfo(...a),
+    error: vi.fn(),
+    success: vi.fn(),
+  },
+}));
 
 vi.mock('../../composition', () => ({
   createAndStartQuickMatchUseCase: { execute: (...a) => mockIniciar(...a) },
   listFriendsUseCase: { execute: (...a) => mockListFriends(...a) },
   getGolfCourseUseCase: { execute: (...a) => mockGetGolfCourse(...a) },
   // Sin partidas anteriores: la barra no se sugiere por «la última vez» (FE #1025)
-  listMyQuickMatchesUseCase: { execute: () => Promise.resolve({ quickMatches: [] }) },
+  listMyQuickMatchesUseCase: {
+    execute: () => Promise.resolve({ quickMatches: [] }),
+  },
   cancelQuickMatchUseCase: { execute: (...a) => mockCancel(...a) },
 }));
 
-const yo = { id: 'user-1', country_code: 'ES', display_name: 'Yo', handicap: 12.4 };
+const yo = {
+  id: 'user-1',
+  country_code: 'ES',
+  display_name: 'Yo',
+  handicap: 12.4,
+};
 const AMIGOS = {
   friendships: [
-    { id: 'f-1', otherUserId: 'user-2', otherUserName: 'Rafa', otherUserHandicap: 20.1 },
-    { id: 'f-2', otherUserId: 'user-3', otherUserName: 'Luis', otherUserHandicap: null },
+    {
+      id: 'f-1',
+      otherUserId: 'user-2',
+      otherUserName: 'Rafa',
+      otherUserHandicap: 20.1,
+    },
+    {
+      id: 'f-2',
+      otherUserId: 'user-3',
+      otherUserName: 'Luis',
+      otherUserHandicap: null,
+    },
   ],
   totalCount: 2,
 };
@@ -104,15 +135,23 @@ const AMIGOS = {
 const abre = (props = {}) =>
   render(
     <MemoryRouter>
-      <CreateQuickMatchModal onClose={vi.fn()} onStarted={vi.fn()} currentUser={yo} {...props} />
-    </MemoryRouter>
+      <CreateQuickMatchModal
+        onClose={vi.fn()}
+        onStarted={vi.fn()}
+        currentUser={yo}
+        {...props}
+      />
+    </MemoryRouter>,
   );
 
 const alPaso2 = async ({ libre = true, formato } = {}) => {
-  if (libre) fireEvent.click(screen.getByTestId('scoring-format-option-STABLEFORD'));
+  if (libre)
+    fireEvent.click(screen.getByTestId('scoring-format-option-STABLEFORD'));
   if (formato) fireEvent.click(screen.getByTestId(`format-option-${formato}`));
   fireEvent.click(screen.getByTestId('select-course-stub'));
-  await waitFor(() => expect(screen.getByTestId('quick-match-course-next')).not.toBeDisabled());
+  await waitFor(() =>
+    expect(screen.getByTestId('quick-match-course-next')).not.toBeDisabled(),
+  );
   fireEvent.click(screen.getByTestId('quick-match-course-next'));
   await screen.findByTestId('quick-match-participants-next');
 };
@@ -124,13 +163,21 @@ const anadeAmigo = async (id) => {
 
 const anadeInvitado = (nombre, apellido) => {
   fireEvent.click(screen.getByTestId('quick-match-tab-guest'));
-  fireEvent.change(screen.getByTestId('quick-match-guest-first-name'), { target: { value: nombre } });
-  fireEvent.change(screen.getByTestId('quick-match-guest-last-name'), { target: { value: apellido } });
+  fireEvent.change(screen.getByTestId('quick-match-guest-first-name'), {
+    target: { value: nombre },
+  });
+  fireEvent.change(screen.getByTestId('quick-match-guest-last-name'), {
+    target: { value: apellido },
+  });
   fireEvent.click(screen.getByTestId('quick-match-add-guest'));
 };
 
 const alResumen = async () => {
-  await waitFor(() => expect(screen.getByTestId('quick-match-participants-next')).not.toBeDisabled());
+  await waitFor(() =>
+    expect(
+      screen.getByTestId('quick-match-participants-next'),
+    ).not.toBeDisabled(),
+  );
   fireEvent.click(screen.getByTestId('quick-match-participants-next'));
   fireEvent.click(await screen.findByTestId('quick-match-scorers-next'));
   await screen.findByTestId('quick-match-start');
@@ -140,7 +187,8 @@ const peticion = (n = 0) => mockIniciar.mock.calls[n][0];
 
 // El panel empieza con el valor que hay: se borra con el retroceso y se teclea
 const teclea = (panel, valor) => {
-  for (let i = 0; i < 6; i += 1) fireEvent.click(within(panel).getByTestId('handicap-panel-backspace'));
+  for (let i = 0; i < 6; i += 1)
+    fireEvent.click(within(panel).getByTestId('handicap-panel-backspace'));
   for (const c of valor) fireEvent.click(within(panel).getByText(c));
   fireEvent.click(within(panel).getByTestId('handicap-panel-confirm'));
 };
@@ -185,17 +233,23 @@ describe('CreateQuickMatchModal · borrador hasta «Confirmar e iniciar» (FE #8
     await anadeAmigo('f-2');
     await alResumen();
 
-    expect(screen.getByTestId('quick-match-handicap-button-user-1')).toHaveTextContent('12.4');
-    expect(screen.getByTestId('quick-match-handicap-button-user-2')).toHaveTextContent('20.1');
-    expect(screen.getByTestId('quick-match-handicap-button-user-3')).toHaveTextContent(
-      'create.summary.handicapPlaceholder'
-    );
+    expect(
+      screen.getByTestId('quick-match-handicap-button-user-1'),
+    ).toHaveTextContent('12.4');
+    expect(
+      screen.getByTestId('quick-match-handicap-button-user-2'),
+    ).toHaveTextContent('20.1');
+    expect(
+      screen.getByTestId('quick-match-handicap-button-user-3'),
+    ).toHaveTextContent('create.summary.handicapPlaceholder');
 
     fireEvent.click(screen.getByTestId('quick-match-handicap-button-user-2'));
     const panel = await screen.findByRole('dialog', { name: 'Rafa' });
     teclea(panel, '30');
 
-    expect(screen.getByTestId('quick-match-handicap-button-user-2')).toHaveTextContent('30');
+    expect(
+      screen.getByTestId('quick-match-handicap-button-user-2'),
+    ).toHaveTextContent('30');
     expect(mockIniciar).not.toHaveBeenCalled();
   });
 
@@ -205,7 +259,9 @@ describe('CreateQuickMatchModal · borrador hasta «Confirmar e iniciar» (FE #8
     await alPaso2();
 
     fireEvent.click(screen.getByTestId('quick-match-participants-back'));
-    expect(await screen.findByTestId('quick-match-course-next')).toBeInTheDocument();
+    expect(
+      await screen.findByTestId('quick-match-course-next'),
+    ).toBeInTheDocument();
     fireEvent.keyDown(document, { key: 'Escape' });
 
     await waitFor(() => expect(onClose).toHaveBeenCalled());
@@ -246,7 +302,14 @@ describe('CreateQuickMatchModal · borrador hasta «Confirmar e iniciar» (FE #8
           teeColor: null,
           teeGender: null,
         },
-        { kind: 'FRIEND', friendUserId: 'user-2', handicap: null, team: null, teeColor: null, teeGender: null },
+        {
+          kind: 'FRIEND',
+          friendUserId: 'user-2',
+          handicap: null,
+          team: null,
+          teeColor: null,
+          teeGender: null,
+        },
       ],
       scorerUserIds: ['user-1'],
     });
@@ -273,19 +336,26 @@ describe('CreateQuickMatchModal · borrador hasta «Confirmar e iniciar» (FE #8
     [403, 'create.errors.notFriends'],
     [409, 'create.errors.conflict'],
     [422, 'create.errors.invalid'],
-  ])('16 · un %i: su motivo, en el resumen, y el borrador sigue', async (status, clave) => {
-    mockIniciar.mockRejectedValue(Object.assign(new Error('server text'), { status }));
-    abre();
-    await alPaso2();
-    await anadeAmigo('f-1');
-    await alResumen();
+  ])(
+    '16 · un %i: su motivo, en el resumen, y el borrador sigue',
+    async (status, clave) => {
+      mockIniciar.mockRejectedValue(
+        Object.assign(new Error('server text'), { status }),
+      );
+      abre();
+      await alPaso2();
+      await anadeAmigo('f-1');
+      await alResumen();
 
-    fireEvent.click(screen.getByTestId('quick-match-start'));
+      fireEvent.click(screen.getByTestId('quick-match-start'));
 
-    expect(await screen.findByTestId('quick-match-modal-error')).toHaveTextContent(clave);
-    expect(screen.getByTestId('quick-match-start')).not.toBeDisabled();
-    expect(screen.getByText('Rafa')).toBeInTheDocument();
-  });
+      expect(
+        await screen.findByTestId('quick-match-modal-error'),
+      ).toHaveTextContent(clave);
+      expect(screen.getByTestId('quick-match-start')).not.toBeDisabled();
+      expect(screen.getByText('Rafa')).toBeInTheDocument();
+    },
+  );
 
   it('17 · sin red: el aviso de siempre, y el borrador sigue', async () => {
     mockIniciar.mockRejectedValue(new TypeError('Failed to fetch'));
@@ -295,7 +365,9 @@ describe('CreateQuickMatchModal · borrador hasta «Confirmar e iniciar» (FE #8
 
     fireEvent.click(screen.getByTestId('quick-match-start'));
 
-    expect(await screen.findByTestId('quick-match-modal-error')).toHaveTextContent('sinConexion.mensaje');
+    expect(
+      await screen.findByTestId('quick-match-modal-error'),
+    ).toHaveTextContent('sinConexion.mensaje');
     expect(screen.getByTestId('quick-match-start')).toBeInTheDocument();
   });
 
@@ -336,7 +408,9 @@ describe('CreateQuickMatchModal · borrador hasta «Confirmar e iniciar» (FE #8
 
     anadeInvitado('Ana', 'Pérez');
 
-    expect(screen.getByTestId('quick-match-modal-error')).toHaveTextContent('create.participants.errorTeamFull');
+    expect(screen.getByTestId('quick-match-modal-error')).toHaveTextContent(
+      'create.participants.errorTeamFull',
+    );
     expect(screen.queryByText('Ana Pérez')).not.toBeInTheDocument();
   });
 
@@ -347,7 +421,9 @@ describe('CreateQuickMatchModal · borrador hasta «Confirmar e iniciar» (FE #8
 
     await anadeAmigo('f-2');
 
-    expect(screen.getByTestId('quick-match-modal-error')).toHaveTextContent('create.participants.errorTeamFull');
+    expect(screen.getByTestId('quick-match-modal-error')).toHaveTextContent(
+      'create.participants.errorTeamFull',
+    );
     expect(screen.queryByTestId('quick-match-remove-user-3')).toBeNull();
   });
 
@@ -403,8 +479,12 @@ describe('CreateQuickMatchModal · borrador hasta «Confirmar e iniciar» (FE #8
     fireEvent.click(screen.getByTestId('quick-match-handicap-button-user-1'));
     teclea(await screen.findByRole('dialog', { name: 'Yo' }), '');
 
-    expect(screen.getByTestId('quick-match-handicap-button-user-2')).toHaveTextContent('20.1');
-    expect(screen.getByTestId('quick-match-handicap-button-user-1')).toHaveTextContent('12.4');
+    expect(
+      screen.getByTestId('quick-match-handicap-button-user-2'),
+    ).toHaveTextContent('20.1');
+    expect(
+      screen.getByTestId('quick-match-handicap-button-user-1'),
+    ).toHaveTextContent('12.4');
     fireEvent.click(screen.getByTestId('quick-match-start'));
     await waitFor(() => expect(mockIniciar).toHaveBeenCalled());
     expect(peticion().creatorHandicap).toBeNull();
@@ -422,7 +502,10 @@ describe('CreateQuickMatchModal · borrador hasta «Confirmar e iniciar» (FE #8
     fireEvent.click(screen.getByTestId('quick-match-start'));
 
     await waitFor(() => expect(mockIniciar).toHaveBeenCalled());
-    expect(peticion().participants[0]).toMatchObject({ friendUserId: 'user-3', handicap: 25 });
+    expect(peticion().participants[0]).toMatchObject({
+      friendUserId: 'user-3',
+      handicap: 25,
+    });
   });
 
   it('V3 · el hándicap tecleado de un invitado viaja en la petición', async () => {
@@ -430,14 +513,22 @@ describe('CreateQuickMatchModal · borrador hasta «Confirmar e iniciar» (FE #8
     await alPaso2();
     fireEvent.click(screen.getByTestId('quick-match-tab-guest'));
     fireEvent.click(screen.getByTestId('quick-match-guest-handicap-button'));
-    teclea(await screen.findByRole('dialog', { name: 'create.participants.guestHandicap' }), '18.4');
+    teclea(
+      await screen.findByRole('dialog', {
+        name: 'create.participants.guestHandicap',
+      }),
+      '18.4',
+    );
     anadeInvitado('Ana', 'Pérez');
     await alResumen();
 
     fireEvent.click(screen.getByTestId('quick-match-start'));
 
     await waitFor(() => expect(mockIniciar).toHaveBeenCalled());
-    expect(peticion().participants[0]).toMatchObject({ kind: 'GUEST', handicap: 18.4 });
+    expect(peticion().participants[0]).toMatchObject({
+      kind: 'GUEST',
+      handicap: 18.4,
+    });
   });
 
   it.each([
@@ -452,32 +543,42 @@ describe('CreateQuickMatchModal · borrador hasta «Confirmar e iniciar» (FE #8
 
     fireEvent.click(screen.getByTestId('quick-match-start'));
 
-    expect(await screen.findByTestId('quick-match-modal-error')).toHaveTextContent(esperado);
+    expect(
+      await screen.findByTestId('quick-match-modal-error'),
+    ).toHaveTextContent(esperado);
     expect(screen.getByText('Rafa')).toBeInTheDocument();
   });
 
   it.each([
     ['sin red', new TypeError('Failed to fetch')],
-    ['un 503', Object.assign(new Error('Service Unavailable'), { status: 503 })],
-  ])('V5 · %s, se cambia algo y se reintenta: el MISMO id', async (_caso, fallo) => {
-    mockIniciar.mockRejectedValueOnce(fallo);
-    abre();
-    await alPaso2();
-    await alResumen();
-    fireEvent.click(screen.getByTestId('quick-match-start'));
-    await screen.findByTestId('quick-match-modal-error');
+    [
+      'un 503',
+      Object.assign(new Error('Service Unavailable'), { status: 503 }),
+    ],
+  ])(
+    'V5 · %s, se cambia algo y se reintenta: el MISMO id',
+    async (_caso, fallo) => {
+      mockIniciar.mockRejectedValueOnce(fallo);
+      abre();
+      await alPaso2();
+      await alResumen();
+      fireEvent.click(screen.getByTestId('quick-match-start'));
+      await screen.findByTestId('quick-match-modal-error');
 
-    fireEvent.click(screen.getByTestId('quick-match-handicap-button-user-1'));
-    teclea(await screen.findByRole('dialog', { name: 'Yo' }), '8');
-    fireEvent.click(screen.getByTestId('quick-match-start'));
+      fireEvent.click(screen.getByTestId('quick-match-handicap-button-user-1'));
+      teclea(await screen.findByRole('dialog', { name: 'Yo' }), '8');
+      fireEvent.click(screen.getByTestId('quick-match-start'));
 
-    await waitFor(() => expect(mockIniciar).toHaveBeenCalledTimes(2));
-    expect(peticion(1).quickMatchId).toBe(peticion(0).quickMatchId);
-    expect(peticion(1).creatorHandicap).toBe(8);
-  });
+      await waitFor(() => expect(mockIniciar).toHaveBeenCalledTimes(2));
+      expect(peticion(1).quickMatchId).toBe(peticion(0).quickMatchId);
+      expect(peticion(1).creatorHandicap).toBe(8);
+    },
+  );
 
   it('V6 · un 4xx, se cambia algo y se reintenta: otro id', async () => {
-    mockIniciar.mockRejectedValueOnce(Object.assign(new Error('nope'), { status: 422 }));
+    mockIniciar.mockRejectedValueOnce(
+      Object.assign(new Error('nope'), { status: 422 }),
+    );
     abre();
     await alPaso2();
     await alResumen();
@@ -495,7 +596,9 @@ describe('CreateQuickMatchModal · borrador hasta «Confirmar e iniciar» (FE #8
   it('V7 · el aviso de error se desplaza a la vista', async () => {
     const desplaza = vi.fn();
     globalThis.Element.prototype.scrollIntoView = desplaza;
-    mockIniciar.mockRejectedValue(Object.assign(new Error('nope'), { status: 422 }));
+    mockIniciar.mockRejectedValue(
+      Object.assign(new Error('nope'), { status: 422 }),
+    );
     abre();
     await alPaso2();
     await alResumen();
@@ -511,7 +614,10 @@ describe('CreateQuickMatchModal · borrador hasta «Confirmar e iniciar» (FE #8
     abre();
     await alPaso2();
 
-    expect(mockListFriends).toHaveBeenCalledWith('user-1', { limit: 100, page: 1 });
+    expect(mockListFriends).toHaveBeenCalledWith('user-1', {
+      limit: 100,
+      page: 1,
+    });
   });
 
   it('V9 · el aviso de «equipo completo» se va al cambiar de equipo', async () => {
@@ -523,7 +629,9 @@ describe('CreateQuickMatchModal · borrador hasta «Confirmar e iniciar» (FE #8
 
     fireEvent.click(screen.getByTestId('quick-match-team-B'));
 
-    expect(screen.queryByTestId('quick-match-modal-error')).not.toBeInTheDocument();
+    expect(
+      screen.queryByTestId('quick-match-modal-error'),
+    ).not.toBeInTheDocument();
   });
 
   it('V1b · vaciar el de un invitado lo deja sin hándicap', async () => {
@@ -531,10 +639,17 @@ describe('CreateQuickMatchModal · borrador hasta «Confirmar e iniciar» (FE #8
     await alPaso2();
     fireEvent.click(screen.getByTestId('quick-match-tab-guest'));
     fireEvent.click(screen.getByTestId('quick-match-guest-handicap-button'));
-    teclea(await screen.findByRole('dialog', { name: 'create.participants.guestHandicap' }), '18.4');
+    teclea(
+      await screen.findByRole('dialog', {
+        name: 'create.participants.guestHandicap',
+      }),
+      '18.4',
+    );
     anadeInvitado('Ana', 'Pérez');
     await alResumen();
-    const boton = screen.getAllByTestId(/^quick-match-handicap-button-invitado-/)[0];
+    const boton = screen.getAllByTestId(
+      /^quick-match-handicap-button-invitado-/,
+    )[0];
 
     fireEvent.click(boton);
     teclea(await screen.findByRole('dialog', { name: 'Ana Pérez' }), '');
@@ -578,7 +693,9 @@ describe('CreateQuickMatchModal · borrador hasta «Confirmar e iniciar» (FE #8
   });
 
   it('C3 · un fallo antes de llegar al servidor no fija el id', async () => {
-    mockIniciar.mockRejectedValueOnce(new Error('scorerUserIds must contain 1 to 4 user ids'));
+    mockIniciar.mockRejectedValueOnce(
+      new Error('scorerUserIds must contain 1 to 4 user ids'),
+    );
     abre();
     await alPaso2();
     await alResumen();
@@ -594,24 +711,48 @@ describe('CreateQuickMatchModal · borrador hasta «Confirmar e iniciar» (FE #8
   });
 
   it('C5 · con más de 100 amigos se piden todas las páginas', async () => {
-    const amigo = (n) => ({ id: `f-${n}`, otherUserId: `u-${n}`, otherUserName: `Amigo ${n}`, otherUserHandicap: null });
+    const amigo = (n) => ({
+      id: `f-${n}`,
+      otherUserId: `u-${n}`,
+      otherUserName: `Amigo ${n}`,
+      otherUserHandicap: null,
+    });
     mockListFriends.mockImplementation((_id, { page }) =>
       Promise.resolve({
-        friendships: page === 1 ? Array.from({ length: 100 }, (_, i) => amigo(i)) : [amigo(100), amigo(101)],
+        friendships:
+          page === 1
+            ? Array.from({ length: 100 }, (_, i) => amigo(i))
+            : [amigo(100), amigo(101)],
         totalCount: 102,
-      })
+      }),
     );
     abre();
     await alPaso2();
 
-    expect(await screen.findByTestId('quick-match-add-friend-f-101')).toBeInTheDocument();
-    expect(mockListFriends).toHaveBeenCalledWith('user-1', { limit: 100, page: 1 });
-    expect(mockListFriends).toHaveBeenCalledWith('user-1', { limit: 100, page: 2 });
+    expect(
+      await screen.findByTestId('quick-match-add-friend-f-101'),
+    ).toBeInTheDocument();
+    expect(mockListFriends).toHaveBeenCalledWith('user-1', {
+      limit: 100,
+      page: 1,
+    });
+    expect(mockListFriends).toHaveBeenCalledWith('user-1', {
+      limit: 100,
+      page: 2,
+    });
   });
 
   it('C5b · justo 100 amigos: una sola página', async () => {
-    const amigo = (n) => ({ id: `f-${n}`, otherUserId: `u-${n}`, otherUserName: `Amigo ${n}`, otherUserHandicap: null });
-    mockListFriends.mockResolvedValue({ friendships: Array.from({ length: 100 }, (_, i) => amigo(i)), totalCount: 100 });
+    const amigo = (n) => ({
+      id: `f-${n}`,
+      otherUserId: `u-${n}`,
+      otherUserName: `Amigo ${n}`,
+      otherUserHandicap: null,
+    });
+    mockListFriends.mockResolvedValue({
+      friendships: Array.from({ length: 100 }, (_, i) => amigo(i)),
+      totalCount: 100,
+    });
     abre();
     await alPaso2();
 
@@ -621,7 +762,10 @@ describe('CreateQuickMatchModal · borrador hasta «Confirmar e iniciar» (FE #8
 
   it('C5c · un total que no cuadra no pide páginas para siempre', async () => {
     mockListFriends.mockImplementation((_id, { page }) =>
-      Promise.resolve({ friendships: page === 1 ? AMIGOS.friendships : [], totalCount: 150 })
+      Promise.resolve({
+        friendships: page === 1 ? AMIGOS.friendships : [],
+        totalCount: 150,
+      }),
     );
     abre();
     await alPaso2();
@@ -631,7 +775,9 @@ describe('CreateQuickMatchModal · borrador hasta «Confirmar e iniciar» (FE #8
   });
 
   it('C3b · cortada por tiempo cuenta como «pudo llegar»: el mismo id', async () => {
-    mockIniciar.mockRejectedValueOnce(Object.assign(new Error('aborted'), { name: 'AbortError' }));
+    mockIniciar.mockRejectedValueOnce(
+      Object.assign(new Error('aborted'), { name: 'AbortError' }),
+    );
     abre();
     await alPaso2();
     await alResumen();
@@ -649,15 +795,22 @@ describe('CreateQuickMatchModal · borrador hasta «Confirmar e iniciar» (FE #8
   it.each([
     ['nombre', '   ', 'Pérez'],
     ['apellido', 'Ana', '   '],
-  ])('Q1 · invitado con el %s en blanco: se avisa y no se añade', async (_campo, nombre, apellido) => {
-    abre();
-    await alPaso2();
+  ])(
+    'Q1 · invitado con el %s en blanco: se avisa y no se añade',
+    async (_campo, nombre, apellido) => {
+      abre();
+      await alPaso2();
 
-    anadeInvitado(nombre, apellido);
+      anadeInvitado(nombre, apellido);
 
-    expect(screen.getByTestId('quick-match-modal-error')).toHaveTextContent('create.participants.errorGuestName');
-    expect(screen.queryAllByTestId(/^quick-match-remove-invitado-/)).toHaveLength(0);
-  });
+      expect(screen.getByTestId('quick-match-modal-error')).toHaveTextContent(
+        'create.participants.errorGuestName',
+      );
+      expect(
+        screen.queryAllByTestId(/^quick-match-remove-invitado-/),
+      ).toHaveLength(0);
+    },
+  );
 
   it('Q1b · corregido el nombre, el aviso se va y se añade', async () => {
     abre();
@@ -667,7 +820,9 @@ describe('CreateQuickMatchModal · borrador hasta «Confirmar e iniciar» (FE #8
 
     anadeInvitado('Ana', 'Pérez');
 
-    expect(screen.queryByTestId('quick-match-modal-error')).not.toBeInTheDocument();
+    expect(
+      screen.queryByTestId('quick-match-modal-error'),
+    ).not.toBeInTheDocument();
     expect(await screen.findByText('Ana Pérez')).toBeInTheDocument();
   });
 
@@ -677,9 +832,12 @@ describe('CreateQuickMatchModal · borrador hasta «Confirmar e iniciar» (FE #8
     anadeInvitado('   ', 'Pérez');
     expect(screen.getByTestId('quick-match-modal-error')).toBeInTheDocument();
 
-    fireEvent.change(screen.getByTestId('quick-match-guest-first-name'), { target: { value: 'Ana' } });
+    fireEvent.change(screen.getByTestId('quick-match-guest-first-name'), {
+      target: { value: 'Ana' },
+    });
 
-    expect(screen.queryByTestId('quick-match-modal-error')).not.toBeInTheDocument();
+    expect(
+      screen.queryByTestId('quick-match-modal-error'),
+    ).not.toBeInTheDocument();
   });
 });
-

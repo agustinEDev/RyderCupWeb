@@ -27,16 +27,21 @@ import { MemoryRouter, Routes, Route, useLocation } from 'react-router';
  */
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
-    t: (clave, opciones) => (opciones?.email ? `${clave}:${opciones.email}` : clave),
+    t: (clave, opciones) =>
+      opciones?.email ? `${clave}:${opciones.email}` : clave,
     i18n: { language: 'es' },
   }),
 }));
 const refetch = vi.fn();
 vi.mock('../hooks/useAuth', () => ({ useAuth: () => ({ refetch }) }));
 vi.mock('../components/layout/HeaderAuth', () => ({ default: () => null }));
-vi.mock('../composition', () => ({ confirmEmailChangeUseCase: { execute: vi.fn() } }));
+vi.mock('../composition', () => ({
+  confirmEmailChangeUseCase: { execute: vi.fn() },
+}));
 const cierre = vi.hoisted(() => ({ enMarcha: vi.fn(() => false) }));
-vi.mock('../utils/cierreDeEstaCarga', () => ({ seEstaCerrandoLaSesion: cierre.enMarcha }));
+vi.mock('../utils/cierreDeEstaCarga', () => ({
+  seEstaCerrandoLaSesion: cierre.enMarcha,
+}));
 const secretos = vi.hoisted(() => ({ olvida: vi.fn() }));
 vi.mock('../utils/stripSecretsFromAddressBar', () => ({
   stripSecretsFromAddressBar: vi.fn(),
@@ -76,9 +81,13 @@ describe('ConfirmEmailChange', () => {
   afterEach(() => vi.clearAllMocks());
 
   it('P1/P6: confirmado: el correo nuevo, y la sesión se recarga', async () => {
-    confirmEmailChangeUseCase.execute.mockResolvedValue({ email: 'ana@trabajo.com' });
+    confirmEmailChangeUseCase.execute.mockResolvedValue({
+      email: 'ana@trabajo.com',
+    });
     abrir('?token=tok-1');
-    expect(await screen.findByText('confirmEmailChange.done:ana@trabajo.com')).toBeInTheDocument();
+    expect(
+      await screen.findByText('confirmEmailChange.done:ana@trabajo.com'),
+    ).toBeInTheDocument();
     expect(confirmEmailChangeUseCase.execute).toHaveBeenCalledWith('tok-1');
     expect(refetch).toHaveBeenCalled();
   });
@@ -88,7 +97,9 @@ describe('ConfirmEmailChange', () => {
     ['P3', 400, 'EMAIL_CHANGE_INVALID', 'confirmEmailChange.invalid'],
     ['P4', 409, 'EMAIL_ALREADY_IN_USE', 'confirmEmailChange.inUse'],
   ])('%s: %s %s', async (_n, status, codigo, texto) => {
-    confirmEmailChangeUseCase.execute.mockRejectedValue(rechazo(status, codigo));
+    confirmEmailChangeUseCase.execute.mockRejectedValue(
+      rechazo(status, codigo),
+    );
     abrir('?token=tok-1');
     expect(await screen.findByText(texto)).toBeInTheDocument();
   });
@@ -96,107 +107,184 @@ describe('ConfirmEmailChange', () => {
   it.each([
     ['caducado', 400, 'EMAIL_CHANGE_EXPIRED'],
     ['ocupado', 409, 'EMAIL_ALREADY_IN_USE'],
-  ])('P7: %s también recarga la sesión (ya no queda pendiente)', async (_n, status, codigo) => {
-    confirmEmailChangeUseCase.execute.mockRejectedValue(rechazo(status, codigo));
-    abrir('?token=tok-1');
-    expect(await screen.findByRole('alert')).toBeInTheDocument();
-    expect(refetch).toHaveBeenCalled();
-  });
+  ])(
+    'P7: %s también recarga la sesión (ya no queda pendiente)',
+    async (_n, status, codigo) => {
+      confirmEmailChangeUseCase.execute.mockRejectedValue(
+        rechazo(status, codigo),
+      );
+      abrir('?token=tok-1');
+      expect(await screen.findByRole('alert')).toBeInTheDocument();
+      expect(refetch).toHaveBeenCalled();
+    },
+  );
 
   it('P8: en StrictMode se confirma una sola vez', async () => {
-    confirmEmailChangeUseCase.execute.mockResolvedValue({ email: 'ana@trabajo.com' });
+    confirmEmailChangeUseCase.execute.mockResolvedValue({
+      email: 'ana@trabajo.com',
+    });
     abrir('?token=tok-1', { estricto: true });
     await screen.findByText('confirmEmailChange.done:ana@trabajo.com');
     expect(confirmEmailChangeUseCase.execute).toHaveBeenCalledTimes(1);
   });
 
   it('P6b: si recargar la sesión falla, sigue diciendo que está hecho', async () => {
-    confirmEmailChangeUseCase.execute.mockResolvedValue({ email: 'ana@trabajo.com' });
+    confirmEmailChangeUseCase.execute.mockResolvedValue({
+      email: 'ana@trabajo.com',
+    });
     refetch.mockRejectedValueOnce(new Error('sin red'));
     abrir('?token=tok-1');
-    expect(await screen.findByText('confirmEmailChange.done:ana@trabajo.com')).toBeInTheDocument();
+    expect(
+      await screen.findByText('confirmEmailChange.done:ana@trabajo.com'),
+    ).toBeInTheDocument();
   });
 
   it('P9: el token sale de la barra de direcciones', async () => {
     const quita = await import('../utils/stripSecretsFromAddressBar');
-    confirmEmailChangeUseCase.execute.mockResolvedValue({ email: 'ana@trabajo.com' });
+    confirmEmailChangeUseCase.execute.mockResolvedValue({
+      email: 'ana@trabajo.com',
+    });
     abrir('?token=tok-1');
     await screen.findByText('confirmEmailChange.done:ana@trabajo.com');
     expect(quita.stripSecretsFromAddressBar).toHaveBeenCalled();
   });
 
   it.each([
-    ['sin red', Object.assign(new Error('Failed to fetch'), { status: undefined })],
+    [
+      'sin red',
+      Object.assign(new Error('Failed to fetch'), { status: undefined }),
+    ],
     ['500', Object.assign(new Error('Error del servidor'), { status: 500 })],
-  ])('P10: %s: no dice que el enlace no vale, y deja reintentar', async (_n, fallo) => {
-    confirmEmailChangeUseCase.execute.mockRejectedValueOnce(fallo);
-    confirmEmailChangeUseCase.execute.mockResolvedValueOnce({ email: 'ana@trabajo.com' });
-    abrir('?token=tok-1');
-    expect(await screen.findByText('confirmEmailChange.failed')).toBeInTheDocument();
-    expect(screen.queryByText('confirmEmailChange.invalid')).toBeNull();
+  ])(
+    'P10: %s: no dice que el enlace no vale, y deja reintentar',
+    async (_n, fallo) => {
+      confirmEmailChangeUseCase.execute.mockRejectedValueOnce(fallo);
+      confirmEmailChangeUseCase.execute.mockResolvedValueOnce({
+        email: 'ana@trabajo.com',
+      });
+      abrir('?token=tok-1');
+      expect(
+        await screen.findByText('confirmEmailChange.failed'),
+      ).toBeInTheDocument();
+      expect(screen.queryByText('confirmEmailChange.invalid')).toBeNull();
 
-    fireEvent.click(screen.getByRole('button', { name: 'confirmEmailChange.retry' }));
+      fireEvent.click(
+        screen.getByRole('button', { name: 'confirmEmailChange.retry' }),
+      );
 
-    expect(await screen.findByText('confirmEmailChange.done:ana@trabajo.com')).toBeInTheDocument();
-    expect(confirmEmailChangeUseCase.execute).toHaveBeenCalledTimes(2);
-  });
+      expect(
+        await screen.findByText('confirmEmailChange.done:ana@trabajo.com'),
+      ).toBeInTheDocument();
+      expect(confirmEmailChangeUseCase.execute).toHaveBeenCalledTimes(2);
+    },
+  );
 
   it('P5: sin token no se llama al backend', async () => {
     abrir('');
-    expect(await screen.findByText('confirmEmailChange.invalid')).toBeInTheDocument();
+    expect(
+      await screen.findByText('confirmEmailChange.invalid'),
+    ).toBeInTheDocument();
     expect(confirmEmailChangeUseCase.execute).not.toHaveBeenCalled();
   });
 
   it.each([
     ['401', 401, undefined],
     ['403 de CSRF', 403, 'CSRF_VALIDATION_FAILED'],
-  ])('E1: con la sesión cerrándose (%s), sigue «Confirmando…»', async (_n, status, codigo) => {
-    cierre.enMarcha.mockReturnValue(true);
-    confirmEmailChangeUseCase.execute.mockRejectedValue(rechazo(status, codigo));
-    abrir('?token=tok-1');
+  ])(
+    'E1: con la sesión cerrándose (%s), sigue «Confirmando…»',
+    async (_n, status, codigo) => {
+      cierre.enMarcha.mockReturnValue(true);
+      confirmEmailChangeUseCase.execute.mockRejectedValue(
+        rechazo(status, codigo),
+      );
+      abrir('?token=tok-1');
 
-    await vi.waitFor(() => expect(confirmEmailChangeUseCase.execute).toHaveBeenCalled());
-    await new Promise((r) => setTimeout(r, 0));
+      await vi.waitFor(() =>
+        expect(confirmEmailChangeUseCase.execute).toHaveBeenCalled(),
+      );
+      await new Promise((r) => setTimeout(r, 0));
 
-    expect(screen.getByText('confirmEmailChange.confirming')).toBeInTheDocument();
-    expect(screen.queryByText('confirmEmailChange.failed')).toBeNull();
-    expect(screen.queryByRole('button', { name: 'confirmEmailChange.retry' })).toBeNull();
-    expect(refetch).not.toHaveBeenCalled();
-    cierre.enMarcha.mockReturnValue(false);
-  });
+      expect(
+        screen.getByText('confirmEmailChange.confirming'),
+      ).toBeInTheDocument();
+      expect(screen.queryByText('confirmEmailChange.failed')).toBeNull();
+      expect(
+        screen.queryByRole('button', { name: 'confirmEmailChange.retry' }),
+      ).toBeNull();
+      expect(refetch).not.toHaveBeenCalled();
+      cierre.enMarcha.mockReturnValue(false);
+    },
+  );
 
   it('E2: un 401 sin cierre en marcha enseña el fallo con «Reintentar»', async () => {
     cierre.enMarcha.mockReturnValue(false);
     confirmEmailChangeUseCase.execute.mockRejectedValue(rechazo(401));
     abrir('?token=tok-1');
 
-    expect(await screen.findByText('confirmEmailChange.failed')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'confirmEmailChange.retry' })).toBeInTheDocument();
+    expect(
+      await screen.findByText('confirmEmailChange.failed'),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: 'confirmEmailChange.retry' }),
+    ).toBeInTheDocument();
   });
 
   // Usado el token, se olvida del historial (revisión, 8 nov 2026): si luego la sesión
   // se cierra, la página guardada no lo repite y no sale «enlace no válido» con el
   // correo ya cambiado. Un fallo de red lo conserva: «Reintentar» lo necesita
   it.each([
-    ['confirmado', () => confirmEmailChangeUseCase.execute.mockResolvedValue({ email: 'a@b.c' }), 'confirmEmailChange.done:a@b.c'],
-    ['caducado', () => confirmEmailChangeUseCase.execute.mockRejectedValue(rechazo(400, 'EMAIL_CHANGE_EXPIRED')), 'confirmEmailChange.expired'],
-    ['no vale', () => confirmEmailChangeUseCase.execute.mockRejectedValue(rechazo(400, 'EMAIL_CHANGE_INVALID')), 'confirmEmailChange.invalid'],
-    ['ocupado', () => confirmEmailChangeUseCase.execute.mockRejectedValue(rechazo(409, 'EMAIL_ALREADY_IN_USE')), 'confirmEmailChange.inUse'],
-  ])('con respuesta final (%s), olvida el token', async (_n, prepara, texto) => {
-    cierre.enMarcha.mockReturnValue(false);
-    prepara();
-    abrir('?token=tok-1');
+    [
+      'confirmado',
+      () =>
+        confirmEmailChangeUseCase.execute.mockResolvedValue({ email: 'a@b.c' }),
+      'confirmEmailChange.done:a@b.c',
+    ],
+    [
+      'caducado',
+      () =>
+        confirmEmailChangeUseCase.execute.mockRejectedValue(
+          rechazo(400, 'EMAIL_CHANGE_EXPIRED'),
+        ),
+      'confirmEmailChange.expired',
+    ],
+    [
+      'no vale',
+      () =>
+        confirmEmailChangeUseCase.execute.mockRejectedValue(
+          rechazo(400, 'EMAIL_CHANGE_INVALID'),
+        ),
+      'confirmEmailChange.invalid',
+    ],
+    [
+      'ocupado',
+      () =>
+        confirmEmailChangeUseCase.execute.mockRejectedValue(
+          rechazo(409, 'EMAIL_ALREADY_IN_USE'),
+        ),
+      'confirmEmailChange.inUse',
+    ],
+  ])(
+    'con respuesta final (%s), olvida el token',
+    async (_n, prepara, texto) => {
+      cierre.enMarcha.mockReturnValue(false);
+      prepara();
+      abrir('?token=tok-1');
 
-    expect(await screen.findByText(texto)).toBeInTheDocument();
-    expect(secretos.olvida).toHaveBeenCalledWith('token');
-  });
+      expect(await screen.findByText(texto)).toBeInTheDocument();
+      expect(secretos.olvida).toHaveBeenCalledWith('token');
+    },
+  );
 
   it('con un fallo de red, conserva el token para reintentar', async () => {
     cierre.enMarcha.mockReturnValue(false);
-    confirmEmailChangeUseCase.execute.mockRejectedValue(new TypeError('Failed to fetch'));
+    confirmEmailChangeUseCase.execute.mockRejectedValue(
+      new TypeError('Failed to fetch'),
+    );
     abrir('?token=tok-1');
 
-    expect(await screen.findByText('confirmEmailChange.failed')).toBeInTheDocument();
+    expect(
+      await screen.findByText('confirmEmailChange.failed'),
+    ).toBeInTheDocument();
     expect(secretos.olvida).not.toHaveBeenCalled();
   });
 
@@ -208,18 +296,25 @@ describe('ConfirmEmailChange', () => {
     confirmEmailChangeUseCase.execute.mockResolvedValue({ email: 'a@b.c' });
     abrir('?token=tok-1');
 
-    expect(await screen.findByText('confirmEmailChange.done:a@b.c')).toBeInTheDocument();
-    await vi.waitFor(() => expect(screen.getByTestId('barra').textContent).toBe(''));
+    expect(
+      await screen.findByText('confirmEmailChange.done:a@b.c'),
+    ).toBeInTheDocument();
+    await vi.waitFor(() =>
+      expect(screen.getByTestId('barra').textContent).toBe(''),
+    );
     expect(confirmEmailChangeUseCase.execute).toHaveBeenCalledTimes(1);
   });
 
   it('con un fallo de red, el router conserva el token para reintentar', async () => {
     cierre.enMarcha.mockReturnValue(false);
-    confirmEmailChangeUseCase.execute.mockRejectedValue(new TypeError('Failed to fetch'));
+    confirmEmailChangeUseCase.execute.mockRejectedValue(
+      new TypeError('Failed to fetch'),
+    );
     abrir('?token=tok-1');
 
-    expect(await screen.findByText('confirmEmailChange.failed')).toBeInTheDocument();
+    expect(
+      await screen.findByText('confirmEmailChange.failed'),
+    ).toBeInTheDocument();
     expect(screen.getByTestId('barra').textContent).toBe('?token=tok-1');
   });
 });
-

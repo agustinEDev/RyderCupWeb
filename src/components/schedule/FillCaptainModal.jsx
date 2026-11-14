@@ -22,7 +22,15 @@ import ModalShell from '../ui/ModalShell';
  * @param {boolean} props.isLoading
  * @param {Function} props.t
  */
-const FillCaptainModal = ({ isOpen, teamName, players, onConfirm, onClose, isLoading, t }) => {
+const FillCaptainModal = ({
+  isOpen,
+  teamName,
+  players,
+  onConfirm,
+  onClose,
+  isLoading,
+  t,
+}) => {
   const [elegido, setElegido] = useState('');
   const disponibles = players || [];
 
@@ -37,10 +45,15 @@ const FillCaptainModal = ({ isOpen, teamName, players, onConfirm, onClose, isLoa
       busy={isLoading}
     >
       <div className="px-6 pt-6 pb-2">
-        <h2 id="cubrir-capitan-titulo" className="text-xl font-semibold text-gray-900">
+        <h2
+          id="cubrir-capitan-titulo"
+          className="text-xl font-semibold text-gray-900"
+        >
           {t('teams.fillCaptainTitle', { team: teamName })}
         </h2>
-        <p className="mt-1 text-sm text-gray-600">{t('teams.fillCaptainExplanation')}</p>
+        <p className="mt-1 text-sm text-gray-600">
+          {t('teams.fillCaptainExplanation')}
+        </p>
       </div>
 
       <div className="px-6 py-4">

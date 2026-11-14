@@ -21,7 +21,10 @@ vi.mock('react-i18next', () => ({
 }));
 
 const fingeConexion = (hay) =>
-  Object.defineProperty(globalThis.navigator, 'onLine', { value: hay, configurable: true });
+  Object.defineProperty(globalThis.navigator, 'onLine', {
+    value: hay,
+    configurable: true,
+  });
 
 describe('AvisoSinConexion', () => {
   beforeEach(() => fingeConexion(true));
@@ -48,7 +51,9 @@ describe('AvisoSinConexion', () => {
     expect(screen.queryByTestId('aviso-sin-conexion')).not.toBeInTheDocument();
 
     fingeConexion(false);
-    act(() => { globalThis.dispatchEvent(new globalThis.Event('offline')); });
+    act(() => {
+      globalThis.dispatchEvent(new globalThis.Event('offline'));
+    });
 
     expect(screen.getByTestId('aviso-sin-conexion')).toBeInTheDocument();
   });
@@ -59,7 +64,9 @@ describe('AvisoSinConexion', () => {
     expect(screen.getByTestId('aviso-sin-conexion')).toBeInTheDocument();
 
     fingeConexion(true);
-    act(() => { globalThis.dispatchEvent(new globalThis.Event('online')); });
+    act(() => {
+      globalThis.dispatchEvent(new globalThis.Event('online'));
+    });
 
     expect(screen.queryByTestId('aviso-sin-conexion')).not.toBeInTheDocument();
   });
@@ -67,7 +74,12 @@ describe('AvisoSinConexion', () => {
   it('en una pantalla de anotar, uno solo con lo de anotar y las pendientes', () => {
     fingeConexion(false);
 
-    render(<><AvisoSinConexion /><AnotarSinConexion pendingCount={2} /></>);
+    render(
+      <>
+        <AvisoSinConexion />
+        <AnotarSinConexion pendingCount={2} />
+      </>,
+    );
 
     const avisos = screen.getAllByTestId('aviso-sin-conexion');
     expect(avisos).toHaveLength(1);
@@ -78,48 +90,106 @@ describe('AvisoSinConexion', () => {
   it('sin pendientes no las cuenta', () => {
     fingeConexion(false);
 
-    render(<><AvisoSinConexion /><AnotarSinConexion pendingCount={0} /></>);
+    render(
+      <>
+        <AvisoSinConexion />
+        <AnotarSinConexion pendingCount={0} />
+      </>,
+    );
 
-    expect(screen.getByTestId('aviso-sin-conexion')).toHaveTextContent('sinConexion.anotando');
-    expect(screen.getByTestId('aviso-sin-conexion')).not.toHaveTextContent('sinConexion.pendientes');
+    expect(screen.getByTestId('aviso-sin-conexion')).toHaveTextContent(
+      'sinConexion.anotando',
+    );
+    expect(screen.getByTestId('aviso-sin-conexion')).not.toHaveTextContent(
+      'sinConexion.pendientes',
+    );
   });
 
   it('anotar sin red se ve aunque el navegador diga que hay', () => {
-    render(<><AvisoSinConexion /><AnotarSinConexion pendingCount={1} /></>);
+    render(
+      <>
+        <AvisoSinConexion />
+        <AnotarSinConexion pendingCount={1} />
+      </>,
+    );
 
-    expect(screen.getByTestId('aviso-sin-conexion')).toHaveTextContent('sinConexion.anotando');
+    expect(screen.getByTestId('aviso-sin-conexion')).toHaveTextContent(
+      'sinConexion.anotando',
+    );
   });
 
   it('revisor: con dos pantallas de anotar, al irse una sigue la otra', () => {
     fingeConexion(false);
-    const { rerender } = render(<><AvisoSinConexion /><AnotarSinConexion key="a" pendingCount={1} /><AnotarSinConexion key="b" pendingCount={3} /></>);
+    const { rerender } = render(
+      <>
+        <AvisoSinConexion />
+        <AnotarSinConexion key="a" pendingCount={1} />
+        <AnotarSinConexion key="b" pendingCount={3} />
+      </>,
+    );
 
-    rerender(<><AvisoSinConexion /><AnotarSinConexion key="b" pendingCount={3} /></>);
+    rerender(
+      <>
+        <AvisoSinConexion />
+        <AnotarSinConexion key="b" pendingCount={3} />
+      </>,
+    );
 
-    expect(screen.getByTestId('aviso-sin-conexion')).toHaveTextContent('sinConexion.anotando');
+    expect(screen.getByTestId('aviso-sin-conexion')).toHaveTextContent(
+      'sinConexion.anotando',
+    );
   });
 
   it('revisor: el contador va fuera de la región que se lee al cambiar', () => {
     fingeConexion(false);
-    render(<><AvisoSinConexion /><AnotarSinConexion pendingCount={2} /></>);
+    render(
+      <>
+        <AvisoSinConexion />
+        <AnotarSinConexion pendingCount={2} />
+      </>,
+    );
 
-    expect(screen.getByRole('status')).toHaveTextContent('sinConexion.anotando');
-    expect(screen.getByRole('status')).not.toHaveTextContent('sinConexion.pendientes');
-    expect(screen.getByTestId('aviso-sin-conexion')).toHaveTextContent('sinConexion.pendientes');
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'sinConexion.anotando',
+    );
+    expect(screen.getByRole('status')).not.toHaveTextContent(
+      'sinConexion.pendientes',
+    );
+    expect(screen.getByTestId('aviso-sin-conexion')).toHaveTextContent(
+      'sinConexion.pendientes',
+    );
     // Con su propia región educada: el número se anuncia sin repetir el aviso (CodeRabbit)
-    expect(screen.getByText(/sinConexion\.pendientes/)).toHaveAttribute('aria-live', 'polite');
+    expect(screen.getByText(/sinConexion\.pendientes/)).toHaveAttribute(
+      'aria-live',
+      'polite',
+    );
     // Y en la misma línea de texto que el aviso, no en una aparte (QA 3)
-    expect(screen.getByText(/sinConexion\.pendientes/).parentElement).toBe(screen.getByRole('status').parentElement);
+    expect(screen.getByText(/sinConexion\.pendientes/).parentElement).toBe(
+      screen.getByRole('status').parentElement,
+    );
     expect(screen.getByRole('status').parentElement.tagName).toBe('P');
   });
 
   it('al salir de anotar vuelve a ser el aviso general', () => {
     fingeConexion(false);
-    const { rerender } = render(<><AvisoSinConexion /><AnotarSinConexion pendingCount={1} /></>);
+    const { rerender } = render(
+      <>
+        <AvisoSinConexion />
+        <AnotarSinConexion pendingCount={1} />
+      </>,
+    );
 
-    rerender(<><AvisoSinConexion /></>);
+    rerender(
+      <>
+        <AvisoSinConexion />
+      </>,
+    );
 
-    expect(screen.getByTestId('aviso-sin-conexion')).toHaveTextContent('sinConexion.aviso');
-    expect(screen.getByTestId('aviso-sin-conexion')).not.toHaveTextContent('sinConexion.anotando');
+    expect(screen.getByTestId('aviso-sin-conexion')).toHaveTextContent(
+      'sinConexion.aviso',
+    );
+    expect(screen.getByTestId('aviso-sin-conexion')).not.toHaveTextContent(
+      'sinConexion.anotando',
+    );
   });
 });

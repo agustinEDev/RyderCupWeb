@@ -3,7 +3,10 @@ import { useTranslation } from 'react-i18next';
 import { Mail } from 'lucide-react';
 import GeneroParaApuntarseModal from '../profile/GeneroParaApuntarseModal';
 import { useResponderInvitacion } from '../../hooks/useResponderInvitacion';
-import { instanteEnTexto, instanteSiEsValido } from '../../utils/instanteDeLaApi';
+import {
+  instanteEnTexto,
+  instanteSiEsValido,
+} from '../../utils/instanteDeLaApi';
 
 /**
  * Si ya caducó, y al llegar la hora se vuelve a pintar: el cuadro se va solo,
@@ -38,7 +41,13 @@ const useCaducada = (expiresAt) => {
 const InvitacionEnLaFicha = ({ invitacion, alCambiar }) => {
   const { t, i18n } = useTranslation('invitations');
   const caducada = useCaducada(invitacion?.expiresAt);
-  const { seEstaRespondiendo, accionEnCurso, aceptar, rechazar, preguntaDelGenero } = useResponderInvitacion({
+  const {
+    seEstaRespondiendo,
+    accionEnCurso,
+    aceptar,
+    rechazar,
+    preguntaDelGenero,
+  } = useResponderInvitacion({
     alAceptar: alCambiar,
     alCambiar,
     textoYaNoPendiente: 'inDetail.notPendingAnymore',
@@ -46,7 +55,10 @@ const InvitacionEnLaFicha = ({ invitacion, alCambiar }) => {
 
   if (!invitacion || caducada) return null;
   const procesando = seEstaRespondiendo(invitacion.id);
-  const caduca = instanteEnTexto(invitacion.expiresAt, i18n.language, { day: 'numeric', month: 'short' });
+  const caduca = instanteEnTexto(invitacion.expiresAt, i18n.language, {
+    day: 'numeric',
+    month: 'short',
+  });
   // Qué se está respondiendo, para decirlo en su botón, como en la lista
   const textoDe = (accion) =>
     accionEnCurso(invitacion.id) === accion
@@ -60,13 +72,22 @@ const InvitacionEnLaFicha = ({ invitacion, alCambiar }) => {
       className="mx-4 mb-6 rounded-lg border border-primary/30 bg-primary/5 p-4"
     >
       <div className="flex items-start gap-3">
-        <Mail className="mt-0.5 h-5 w-5 shrink-0 text-primary" aria-hidden="true" />
+        <Mail
+          className="mt-0.5 h-5 w-5 shrink-0 text-primary"
+          aria-hidden="true"
+        />
         <div className="min-w-0 flex-1">
-          <h2 id="invitacion-en-la-ficha-titulo" className="font-semibold text-gray-900">
+          <h2
+            id="invitacion-en-la-ficha-titulo"
+            className="font-semibold text-gray-900"
+          >
             {t('inDetail.title')}
           </h2>
           {caduca && (
-            <p data-testid="invitacion-caduca" className="mt-0.5 text-sm text-gray-600">
+            <p
+              data-testid="invitacion-caduca"
+              className="mt-0.5 text-sm text-gray-600"
+            >
               {t('inDetail.expiresOn', { date: caduca.replace('.', '') })}
             </p>
           )}

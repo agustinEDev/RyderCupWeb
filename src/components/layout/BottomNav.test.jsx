@@ -30,10 +30,11 @@ const renderNav = (path = '/dashboard') =>
   render(
     <MemoryRouter initialEntries={[path]}>
       <BottomNav />
-    </MemoryRouter>
+    </MemoryRouter>,
   );
 
-const hrefOf = (label) => screen.getByRole('link', { name: label }).getAttribute('href');
+const hrefOf = (label) =>
+  screen.getByRole('link', { name: label }).getAttribute('href');
 
 /**
  * Navegación inferior en móvil (FE #306).
@@ -53,20 +54,28 @@ describe('BottomNav', () => {
     // pestaña debe seguir marcada al navegar a la lista de amigos.
     renderNav('/friends');
 
-    expect(screen.getByRole('link', { name: 'bottomNav.feed' })).toHaveAttribute('aria-current', 'page');
+    expect(
+      screen.getByRole('link', { name: 'bottomNav.feed' }),
+    ).toHaveAttribute('aria-current', 'page');
   });
 
   it('marks the current section as the active page', () => {
     renderNav('/competitions/abc-123');
 
-    expect(screen.getByRole('link', { name: 'bottomNav.tournaments' })).toHaveAttribute('aria-current', 'page');
-    expect(screen.getByRole('link', { name: 'bottomNav.home' })).not.toHaveAttribute('aria-current');
+    expect(
+      screen.getByRole('link', { name: 'bottomNav.tournaments' }),
+    ).toHaveAttribute('aria-current', 'page');
+    expect(
+      screen.getByRole('link', { name: 'bottomNav.home' }),
+    ).not.toHaveAttribute('aria-current');
   });
 
   it('keeps the profile tab active on its subpages', () => {
     renderNav('/profile/edit');
 
-    expect(screen.getByRole('link', { name: 'bottomNav.profile' })).toHaveAttribute('aria-current', 'page');
+    expect(
+      screen.getByRole('link', { name: 'bottomNav.profile' }),
+    ).toHaveAttribute('aria-current', 'page');
   });
 
   it('hides itself on desktop and clears the home indicator', () => {
@@ -82,7 +91,9 @@ describe('BottomNav', () => {
 
     expect(useAuthMock).not.toHaveBeenCalled();
 
-    fireEvent.click(screen.getByRole('button', { name: 'bottomNav.quickMatch' }));
+    fireEvent.click(
+      screen.getByRole('button', { name: 'bottomNav.quickMatch' }),
+    );
 
     expect(useAuthMock).toHaveBeenCalled();
   });

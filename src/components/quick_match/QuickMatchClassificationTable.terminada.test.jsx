@@ -11,8 +11,12 @@ import es from '../../i18n/locales/es/quickMatch.json';
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
     t: (key, opts = {}) => {
-      const busca = (clave) => clave.split('.').reduce((nodo, parte) => nodo?.[parte], es);
-      const plural = opts.count === undefined ? undefined : busca(`${key}_${opts.count === 1 ? 'one' : 'other'}`);
+      const busca = (clave) =>
+        clave.split('.').reduce((nodo, parte) => nodo?.[parte], es);
+      const plural =
+        opts.count === undefined
+          ? undefined
+          : busca(`${key}_${opts.count === 1 ? 'one' : 'other'}`);
       const texto = plural ?? busca(key) ?? key;
       return typeof texto === 'string'
         ? texto.replace(/{{(\w+)}}/g, (_, nombre) => String(opts[nombre] ?? ''))
@@ -23,17 +27,57 @@ vi.mock('react-i18next', () => ({
 }));
 
 const participants = [
-  { participantId: 'p-1', name: 'Alice', handicap: 0, team: null, isGuest: false },
-  { participantId: 'p-2', name: 'Bob', handicap: 0, team: null, isGuest: false },
+  {
+    participantId: 'p-1',
+    name: 'Alice',
+    handicap: 0,
+    team: null,
+    isGuest: false,
+  },
+  {
+    participantId: 'p-2',
+    name: 'Bob',
+    handicap: 0,
+    team: null,
+    isGuest: false,
+  },
 ];
 
-const delanteA = { status: '2UP', leadingTeam: 'A', holesPlayed: 18, holesRemaining: 0, isDecided: false };
-const empatados = { status: 'AS', leadingTeam: null, holesPlayed: 18, holesRemaining: 0, isDecided: false };
-const decidida = { status: '3UP', leadingTeam: 'A', holesPlayed: 16, holesRemaining: 2, isDecided: true };
-const aMedias = { status: '2UP', leadingTeam: 'A', holesPlayed: 9, holesRemaining: 9, isDecided: false };
+const delanteA = {
+  status: '2UP',
+  leadingTeam: 'A',
+  holesPlayed: 18,
+  holesRemaining: 0,
+  isDecided: false,
+};
+const empatados = {
+  status: 'AS',
+  leadingTeam: null,
+  holesPlayed: 18,
+  holesRemaining: 0,
+  isDecided: false,
+};
+const decidida = {
+  status: '3UP',
+  leadingTeam: 'A',
+  holesPlayed: 16,
+  holesRemaining: 2,
+  isDecided: true,
+};
+const aMedias = {
+  status: '2UP',
+  leadingTeam: 'A',
+  holesPlayed: 9,
+  holesRemaining: 9,
+  isDecided: false,
+};
 
 const losDiezYOcho = ['p-1', 'p-2'].flatMap((participantId) =>
-  Array.from({ length: 18 }, (_, i) => ({ participantId, holeNumber: i + 1, score: 4 }))
+  Array.from({ length: 18 }, (_, i) => ({
+    participantId,
+    holeNumber: i + 1,
+    score: 4,
+  })),
 );
 
 const pinta = (standing, estado = {}, holeScores = losDiezYOcho) =>
@@ -46,7 +90,7 @@ const pinta = (standing, estado = {}, holeScores = losDiezYOcho) =>
       matchFormat="SINGLES"
       standing={standing}
       {...estado}
-    />
+    />,
   );
 
 const terminada = { showFinalBadge: true };
@@ -86,7 +130,11 @@ describe('el marcador de un match play que ya acabó', () => {
   it('terminada con pocos hoyos y sin decidir: sin terminar, sin ganador', () => {
     const tresHoyos = losDiezYOcho.filter((h) => h.holeNumber <= 3);
 
-    pinta({ ...aMedias, holesPlayed: 3, holesRemaining: 15 }, terminada, tresHoyos);
+    pinta(
+      { ...aMedias, holesPlayed: 3, holesRemaining: 15 },
+      terminada,
+      tresHoyos,
+    );
 
     expect(screen.getByText('2 arriba')).toBeInTheDocument();
     expect(screen.getByText('Sin terminar')).toBeInTheDocument();
@@ -96,7 +144,11 @@ describe('el marcador de un match play que ya acabó', () => {
   it('terminada pocos hoyos pero decidida antes: ganó', () => {
     const tresHoyos = losDiezYOcho.filter((h) => h.holeNumber <= 3);
 
-    pinta({ ...decidida, holesPlayed: 3, holesRemaining: 15 }, terminada, tresHoyos);
+    pinta(
+      { ...decidida, holesPlayed: 3, holesRemaining: 15 },
+      terminada,
+      tresHoyos,
+    );
 
     expect(screen.getByText('Alice ganó')).toBeInTheDocument();
   });
@@ -128,29 +180,41 @@ describe('el marcador de un match play que ya acabó', () => {
 describe('lo que falta por cubrir (revisión, 24 oct 2026)', () => {
   it('terminada sin ningún hoyo de los dos: sin terminar, como Actividad', () => {
     const idaYVuelta = losDiezYOcho.filter(
-      (h) => (h.participantId === 'p-1') === (h.holeNumber <= 9)
+      (h) => (h.participantId === 'p-1') === h.holeNumber <= 9,
     );
 
     pinta(null, terminada, idaYVuelta);
 
     expect(screen.getByText('Sin terminar')).toBeInTheDocument();
-    expect(screen.queryByText(es.scoring.classification.noHolesYet)).not.toBeInTheDocument();
+    expect(
+      screen.queryByText(es.scoring.classification.noHolesYet),
+    ).not.toBeInTheDocument();
   });
 
   it('en juego y sin ningún hoyo de los dos: todavía no hay hoyos', () => {
-    pinta(null, {}, losDiezYOcho.filter((h) => h.participantId === 'p-1'));
+    pinta(
+      null,
+      {},
+      losDiezYOcho.filter((h) => h.participantId === 'p-1'),
+    );
 
-    expect(screen.getByText(es.scoring.classification.noHolesYet)).toBeInTheDocument();
+    expect(
+      screen.getByText(es.scoring.classification.noHolesYet),
+    ).toBeInTheDocument();
   });
 
   it('terminada y sin nada anotado: todavía no hay hoyos', () => {
     pinta(null, terminada, []);
 
-    expect(screen.getByText(es.scoring.classification.noHolesYet)).toBeInTheDocument();
+    expect(
+      screen.getByText(es.scoring.classification.noHolesYet),
+    ).toBeInTheDocument();
   });
 
   it('el veredicto mira lo que tiene el servidor, no lo que espera en el móvil', () => {
-    const delServidor = losDiezYOcho.filter((h) => h.participantId === 'p-2' || h.holeNumber <= 9);
+    const delServidor = losDiezYOcho.filter(
+      (h) => h.participantId === 'p-2' || h.holeNumber <= 9,
+    );
 
     pinta(delanteA, { ...terminada, holeScoresDelServidor: delServidor });
 
@@ -160,13 +224,41 @@ describe('lo que falta por cubrir (revisión, 24 oct 2026)', () => {
 
 describe('fourball', () => {
   const cuatro = [
-    { participantId: 'a1', name: 'Alice', handicap: 0, team: 'A', isGuest: false },
-    { participantId: 'a2', name: 'Carol', handicap: 0, team: 'A', isGuest: false },
-    { participantId: 'b1', name: 'Bob', handicap: 0, team: 'B', isGuest: false },
-    { participantId: 'b2', name: 'Dan', handicap: 0, team: 'B', isGuest: false },
+    {
+      participantId: 'a1',
+      name: 'Alice',
+      handicap: 0,
+      team: 'A',
+      isGuest: false,
+    },
+    {
+      participantId: 'a2',
+      name: 'Carol',
+      handicap: 0,
+      team: 'A',
+      isGuest: false,
+    },
+    {
+      participantId: 'b1',
+      name: 'Bob',
+      handicap: 0,
+      team: 'B',
+      isGuest: false,
+    },
+    {
+      participantId: 'b2',
+      name: 'Dan',
+      handicap: 0,
+      team: 'B',
+      isGuest: false,
+    },
   ];
   const todos = ['a1', 'a2', 'b1', 'b2'].flatMap((participantId) =>
-    Array.from({ length: 18 }, (_, i) => ({ participantId, holeNumber: i + 1, score: 4 }))
+    Array.from({ length: 18 }, (_, i) => ({
+      participantId,
+      holeNumber: i + 1,
+      score: 4,
+    })),
   );
   const pintaFourball = (standing, estado, holeScores) =>
     render(
@@ -178,7 +270,7 @@ describe('fourball', () => {
         matchFormat="FOURBALL"
         standing={standing}
         {...estado}
-      />
+      />,
     );
 
   it('la pareja gana en plural', () => {
@@ -194,7 +286,9 @@ describe('fourball', () => {
   });
 
   it('sin la bola del compañero en la vuelta: sin terminar', () => {
-    const sinCarolALaVuelta = todos.filter((h) => h.participantId !== 'a2' || h.holeNumber <= 9);
+    const sinCarolALaVuelta = todos.filter(
+      (h) => h.participantId !== 'a2' || h.holeNumber <= 9,
+    );
 
     pintaFourball(delanteA, terminada, sinCarolALaVuelta);
 

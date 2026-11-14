@@ -7,8 +7,18 @@ import { enviarReporteDeHoyo } from './enviarReporteDeHoyo';
  * el servidor, la sesión) se para ahí; `sigue` se mira antes de cada envío.
  */
 class SendPendingHoleReportsUseCase {
-  constructor({ golfCourseRepository, holeReportStore, reportarFallo = () => {}, enVuelo = new Set() }) {
-    this.dependencias = { golfCourseRepository, holeReportStore, reportarFallo, enVuelo };
+  constructor({
+    golfCourseRepository,
+    holeReportStore,
+    reportarFallo = () => {},
+    enVuelo = new Set(),
+  }) {
+    this.dependencias = {
+      golfCourseRepository,
+      holeReportStore,
+      reportarFallo,
+      enVuelo,
+    };
   }
 
   /** @returns {Promise<{enviados: number, descartados: number, pendientes: number}>} */
@@ -20,7 +30,11 @@ class SendPendingHoleReportsUseCase {
         cuenta.pendientes += todos.length - i;
         break;
       }
-      const { estado, paraLaTanda } = await enviarReporteDeHoyo(this.dependencias, userId, entrada);
+      const { estado, paraLaTanda } = await enviarReporteDeHoyo(
+        this.dependencias,
+        userId,
+        entrada,
+      );
       if (estado === 'enviado') cuenta.enviados += 1;
       else if (estado === 'descartado') cuenta.descartados += 1;
       else if (estado === 'pendiente') {

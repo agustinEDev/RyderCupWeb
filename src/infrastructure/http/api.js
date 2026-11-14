@@ -47,9 +47,14 @@ const llamaAlBackend = async (url, config) => {
  * medias. El original queda en `cause`.
  */
 const sinConexion = (causa) =>
-  Object.assign(new TypeError(interfaz().traduce('common:sinConexion.mensaje'), { cause: causa }), {
-    sinConexion: true,
-  });
+  Object.assign(
+    new TypeError(interfaz().traduce('common:sinConexion.mensaje'), {
+      cause: causa,
+    }),
+    {
+      sinConexion: true,
+    },
+  );
 
 const esRechazoCsrf = (response, errorData) =>
   response.status === 403 && errorData?.error_code === 'CSRF_VALIDATION_FAILED';
@@ -94,9 +99,13 @@ const renuevaTrasCsrf = async () => {
     const fallo = new Error(
       respuesta.status === 429
         ? interfaz().traduce('common:demasiadasPeticiones')
-        : `HTTP ${respuesta.status}: ${respuesta.statusText}`
+        : `HTTP ${respuesta.status}: ${respuesta.statusText}`,
     );
-    throw Object.assign(fallo, { status: respuesta.status, statusCode: respuesta.status, errorCode: null });
+    throw Object.assign(fallo, {
+      status: respuesta.status,
+      statusCode: respuesta.status,
+      errorCode: null,
+    });
   }
 };
 
@@ -139,7 +148,8 @@ const API_URL = getApiBaseUrl();
 export const apiRequest = async (endpoint, { topeMs, ...options } = {}) => {
   // Solo rutas propias de la API, sin «..» ni otro servidor (FE-03): ni las cookies ni el
   // token CSRF salen hacia una ruta que el navegador resolvería en otra
-  if (!esRutaDeLaApiSegura(endpoint)) rechazaLaRuta((options.method || 'GET').toUpperCase());
+  if (!esRutaDeLaApiSegura(endpoint))
+    rechazaLaRuta((options.method || 'GET').toUpperCase());
   // Cuándo salió la petición: con los Términos pendientes, decide si su 403 es de la
   // pantalla a la que se navega o de la actual (utils/navegacionEnCurso)
   const inicio = globalThis.performance.now();
@@ -175,12 +185,19 @@ export const apiRequest = async (endpoint, { topeMs, ...options } = {}) => {
   // interceptor espera al refresco compartido del token sin mirarla, y hay
   // motores —WebKit— que al abortar rechazan con otro error y no con su motivo.
   // Así, al vencer, se rechaza con el motivo pase lo que pase dentro
-  const vence = corte && new Promise((_, rechaza) => {
-    corte.signal.addEventListener('abort', () => rechaza(corte.signal.reason), { once: true });
-  });
+  const vence =
+    corte &&
+    new Promise((_, rechaza) => {
+      corte.signal.addEventListener(
+        'abort',
+        () => rechaza(corte.signal.reason),
+        { once: true },
+      );
+    });
   // Si vence mientras se lee el cuerpo de un error, nadie la está esperando
   vence?.catch(() => {});
-  const aTiempo = (promesa) => (vence ? Promise.race([promesa, vence]) : promesa);
+  const aTiempo = (promesa) =>
+    vence ? Promise.race([promesa, vence]) : promesa;
 
   const config = {
     ...options,
@@ -226,15 +243,21 @@ export const apiRequest = async (endpoint, { topeMs, ...options } = {}) => {
       // Que se vea si pasa a menudo, pero solo lo raro: con cookie al salir y
       // aun así rechazada. Método y ruta, nunca el token
       if (cookieAlSalir !== null) {
-        interfaz().informaDelError('CSRF token rejected with a cookie present: retried once', {
-          level: 'warning',
-          tags: { module: 'csrf' },
-          extra: { method, ruta: endpoint.split('?')[0] },
-        });
+        interfaz().informaDelError(
+          'CSRF token rejected with a cookie present: retried once',
+          {
+            level: 'warning',
+            tags: { module: 'csrf' },
+            extra: { method, ruta: endpoint.split('?')[0] },
+          },
+        );
       }
-      response = await aTiempo(llamaAlBackend(url, conElTokenAlDia(config, { siempre: true })));
+      response = await aTiempo(
+        llamaAlBackend(url, conElTokenAlDia(config, { siempre: true })),
+      );
       errorData = response.ok ? null : await leeElError(response);
-      if (!response.ok && esRechazoCsrf(response, errorData)) cierraPorCsrf(errorData, delAviso);
+      if (!response.ok && esRechazoCsrf(response, errorData))
+        cierraPorCsrf(errorData, delAviso);
     }
 
     if (!response.ok) {
@@ -244,8 +267,11 @@ export const apiRequest = async (endpoint, { topeMs, ...options } = {}) => {
       // después. Si la página se va, su aviso se calla; si no se va —un
       // desacuerdo del servidor, o una ruta desde la que no se redirige—, se
       // enseña como «no disponible»
-      const terminosPendientes = response.status === 403 && errorData.error_code === TERMINOS_NO_ACEPTADOS;
-      const seVaAAceptar = terminosPendientes && interfaz().llevaAAceptarLosTerminos({ inicio });
+      const terminosPendientes =
+        response.status === 403 &&
+        errorData.error_code === TERMINOS_NO_ACEPTADOS;
+      const seVaAAceptar =
+        terminosPendientes && interfaz().llevaAAceptarLosTerminos({ inicio });
 
       // Extract error message with proper fallback chain
       let errorMessage = '';

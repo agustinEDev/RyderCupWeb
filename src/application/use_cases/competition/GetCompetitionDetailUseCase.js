@@ -30,7 +30,8 @@ class GetCompetitionDetailUseCase {
     }
 
     // Fetch competition from repository (returns domain entity)
-    const competition = await this.competitionRepository.findById(competitionId);
+    const competition =
+      await this.competitionRepository.findById(competitionId);
 
     // If competition is not found, throw an error
     if (!competition) {

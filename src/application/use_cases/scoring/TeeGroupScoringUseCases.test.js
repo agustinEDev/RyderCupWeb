@@ -28,7 +28,9 @@ describe('Anotar partidas · casos de uso (FE #824, PR 7)', () => {
     const r = repo();
 
     await con(RetireFromTeeGroupUseCase, r).execute('g-1');
-    await con(CorrectTeeGroupHoleUseCase, r).execute('g-1', 'ana', 7, { ownScore: 5 });
+    await con(CorrectTeeGroupHoleUseCase, r).execute('g-1', 'ana', 7, {
+      ownScore: 5,
+    });
     await con(ReopenTeeGroupCardUseCase, r).execute('g-1', 'ana');
     await con(MarkTeeGroupNoShowUseCase, r).execute('g-1', 'ana');
     await con(ValidateTeeGroupScoredHolesUseCase, r).execute('g-1', 'ana');
@@ -38,7 +40,9 @@ describe('Anotar partidas · casos de uso (FE #824, PR 7)', () => {
     await con(GetScratchStandingsUseCase, r).execute('c-1');
 
     expect(r.retire).toHaveBeenCalledWith('g-1');
-    expect(r.correctHole).toHaveBeenCalledWith('g-1', 'ana', 7, { ownScore: 5 });
+    expect(r.correctHole).toHaveBeenCalledWith('g-1', 'ana', 7, {
+      ownScore: 5,
+    });
     expect(r.reopenCard).toHaveBeenCalledWith('g-1', 'ana');
     expect(r.markNoShow).toHaveBeenCalledWith('g-1', 'ana');
     expect(r.validateScored).toHaveBeenCalledWith('g-1', 'ana');
@@ -51,26 +55,99 @@ describe('Anotar partidas · casos de uso (FE #824, PR 7)', () => {
   it('corregir: solo los lados que vienen; nulo es recogida y se manda', async () => {
     const r = repo();
 
-    await con(CorrectTeeGroupHoleUseCase, r).execute('g-1', 'ana', 7, { ownScore: null, markerScore: undefined });
+    await con(CorrectTeeGroupHoleUseCase, r).execute('g-1', 'ana', 7, {
+      ownScore: null,
+      markerScore: undefined,
+    });
 
-    expect(r.correctHole).toHaveBeenCalledWith('g-1', 'ana', 7, { ownScore: null });
+    expect(r.correctHole).toHaveBeenCalledWith('g-1', 'ana', 7, {
+      ownScore: null,
+    });
   });
 
   it.each([
-    ['retirarse sin partida', (r) => con(RetireFromTeeGroupUseCase, r).execute(''), 'retire'],
-    ['validar lo anotado sin partida', (r) => con(ValidateTeeGroupScoredHolesUseCase, r).execute('', 'ana'), 'validateScored'],
-    ['validar lo anotado sin jugador', (r) => con(ValidateTeeGroupScoredHolesUseCase, r).execute('g-1', ''), 'validateScored'],
-    ['corregir sin jugador', (r) => con(CorrectTeeGroupHoleUseCase, r).execute('g-1', '', 7, { ownScore: 5 }), 'correctHole'],
-    ['corregir el hoyo 0', (r) => con(CorrectTeeGroupHoleUseCase, r).execute('g-1', 'ana', 0, { ownScore: 5 }), 'correctHole'],
-    ['corregir el hoyo 19', (r) => con(CorrectTeeGroupHoleUseCase, r).execute('g-1', 'ana', 19, { ownScore: 5 }), 'correctHole'],
-    ['corregir sin ningún lado', (r) => con(CorrectTeeGroupHoleUseCase, r).execute('g-1', 'ana', 7, {}), 'correctHole'],
-    ['corregir con 16 golpes', (r) => con(CorrectTeeGroupHoleUseCase, r).execute('g-1', 'ana', 7, { ownScore: 16 }), 'correctHole'],
-    ['reabrir sin jugador', (r) => con(ReopenTeeGroupCardUseCase, r).execute('g-1', ''), 'reopenCard'],
-    ['no presentado sin partida', (r) => con(MarkTeeGroupNoShowUseCase, r).execute('', 'ana'), 'markNoShow'],
-    ['cerrar sin franja', (r) => con(CloseTeeWindowUseCase, r).execute(''), 'closeWindow'],
-    ['clasificación sin franja', (r) => con(GetTeeWindowStandingsUseCase, r).execute(''), 'getWindowStandings'],
-    ['general sin competición', (r) => con(GetCompetitionStandingsUseCase, r).execute(''), 'getCompetitionStandings'],
-    ['scratch sin competición', (r) => con(GetScratchStandingsUseCase, r).execute(''), 'getScratchStandings'],
+    [
+      'retirarse sin partida',
+      (r) => con(RetireFromTeeGroupUseCase, r).execute(''),
+      'retire',
+    ],
+    [
+      'validar lo anotado sin partida',
+      (r) => con(ValidateTeeGroupScoredHolesUseCase, r).execute('', 'ana'),
+      'validateScored',
+    ],
+    [
+      'validar lo anotado sin jugador',
+      (r) => con(ValidateTeeGroupScoredHolesUseCase, r).execute('g-1', ''),
+      'validateScored',
+    ],
+    [
+      'corregir sin jugador',
+      (r) =>
+        con(CorrectTeeGroupHoleUseCase, r).execute('g-1', '', 7, {
+          ownScore: 5,
+        }),
+      'correctHole',
+    ],
+    [
+      'corregir el hoyo 0',
+      (r) =>
+        con(CorrectTeeGroupHoleUseCase, r).execute('g-1', 'ana', 0, {
+          ownScore: 5,
+        }),
+      'correctHole',
+    ],
+    [
+      'corregir el hoyo 19',
+      (r) =>
+        con(CorrectTeeGroupHoleUseCase, r).execute('g-1', 'ana', 19, {
+          ownScore: 5,
+        }),
+      'correctHole',
+    ],
+    [
+      'corregir sin ningún lado',
+      (r) => con(CorrectTeeGroupHoleUseCase, r).execute('g-1', 'ana', 7, {}),
+      'correctHole',
+    ],
+    [
+      'corregir con 16 golpes',
+      (r) =>
+        con(CorrectTeeGroupHoleUseCase, r).execute('g-1', 'ana', 7, {
+          ownScore: 16,
+        }),
+      'correctHole',
+    ],
+    [
+      'reabrir sin jugador',
+      (r) => con(ReopenTeeGroupCardUseCase, r).execute('g-1', ''),
+      'reopenCard',
+    ],
+    [
+      'no presentado sin partida',
+      (r) => con(MarkTeeGroupNoShowUseCase, r).execute('', 'ana'),
+      'markNoShow',
+    ],
+    [
+      'cerrar sin franja',
+      (r) => con(CloseTeeWindowUseCase, r).execute(''),
+      'closeWindow',
+    ],
+    [
+      'clasificación sin franja',
+      (r) => con(GetTeeWindowStandingsUseCase, r).execute(''),
+      'getWindowStandings',
+    ],
+    [
+      'general sin competición',
+      (r) => con(GetCompetitionStandingsUseCase, r).execute(''),
+      'getCompetitionStandings',
+    ],
+    [
+      'scratch sin competición',
+      (r) => con(GetScratchStandingsUseCase, r).execute(''),
+      'getScratchStandings',
+    ],
   ])('%s: no llama', async (_caso, ejecutar, metodo) => {
     const r = repo();
 

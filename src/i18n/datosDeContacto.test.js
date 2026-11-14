@@ -1,7 +1,10 @@
 import { describe, it, expect } from 'vitest';
 
 // Todos los ficheros de cada idioma: un dato personal en cualquier texto debe saltar
-const locales = import.meta.glob('./locales/*/*.json', { eager: true, import: 'default' });
+const locales = import.meta.glob('./locales/*/*.json', {
+  eager: true,
+  import: 'default',
+});
 
 /**
  * Datos de contacto y datos personales del titular (6 nov 2026).
@@ -22,19 +25,29 @@ const NOMBRE = 'Agustín Estévez';
 const textos = (objeto, ruta = '') =>
   typeof objeto === 'string'
     ? [[ruta, objeto]]
-    : Object.entries(objeto).flatMap(([clave, valor]) => textos(valor, `${ruta}.${clave}`));
+    : Object.entries(objeto).flatMap(([clave, valor]) =>
+        textos(valor, `${ruta}.${clave}`),
+      );
 
 const idiomas = ['es', 'en'].map((idioma) => [
   idioma,
   Object.fromEntries(
     Object.entries(locales)
       .filter(([ruta]) => ruta.startsWith(`./locales/${idioma}/`))
-      .map(([ruta, fichero]) => [ruta.split('/').pop().replace(/\.json$/, ''), fichero]),
+      .map(([ruta, fichero]) => [
+        ruta
+          .split('/')
+          .pop()
+          .replace(/\.json$/, ''),
+        fichero,
+      ]),
   ),
 ]);
 
 describe.each(idiomas)('Datos de contacto (%s)', (_idioma, ficheros) => {
-  const todos = Object.entries(ficheros).flatMap(([nombre, f]) => textos(f, nombre));
+  const todos = Object.entries(ficheros).flatMap(([nombre, f]) =>
+    textos(f, nombre),
+  );
   const avisoLegal = ficheros.legal.legalNotice.section1.content;
 
   it('D1: ningún correo personal, y el de contacto es admin@', () => {
@@ -48,12 +61,15 @@ describe.each(idiomas)('Datos de contacto (%s)', (_idioma, ficheros) => {
   });
 
   it('D2: NIF y domicilio solo en el Aviso Legal', () => {
-    const conDatos = todos.filter(([, t]) => t.includes(NIF) || t.includes(CALLE)).map(([r]) => r);
+    const conDatos = todos
+      .filter(([, t]) => t.includes(NIF) || t.includes(CALLE))
+      .map(([r]) => r);
     expect(conDatos).toEqual(['legal.legalNotice.section1.content']);
   });
 
   it('D3: el Aviso Legal tiene lo que pide la LSSI', () => {
-    for (const dato of [NOMBRE, NIF, CALLE, ADMIN]) expect(avisoLegal).toContain(dato);
+    for (const dato of [NOMBRE, NIF, CALLE, ADMIN])
+      expect(avisoLegal).toContain(dato);
   });
 
   it('D4: Privacidad nombra al responsable', () => {
@@ -62,7 +78,11 @@ describe.each(idiomas)('Datos de contacto (%s)', (_idioma, ficheros) => {
   });
 
   it('D5: el pie dice RyderCupFriends, no el nombre del titular', () => {
-    for (const pie of [ficheros.common.footer.copyright, ficheros.common.footer.copyrightShort, ficheros.competitions.footer]) {
+    for (const pie of [
+      ficheros.common.footer.copyright,
+      ficheros.common.footer.copyrightShort,
+      ficheros.competitions.footer,
+    ]) {
       expect(pie).toContain('© {{year}} RyderCupFriends');
       expect(pie).not.toContain(NOMBRE);
     }

@@ -15,7 +15,11 @@ vi.mock('react-i18next', () => ({
   }),
 }));
 
-const mockAuthUser = { id: 'player-1', first_name: 'Test', last_name: 'Player' };
+const mockAuthUser = {
+  id: 'player-1',
+  first_name: 'Test',
+  last_name: 'Player',
+};
 
 // Refrescar la sesión crea un `user` nuevo con el mismo id: se simula dando
 // uno nuevo en cada render (CodeRabbit en la #720)
@@ -36,14 +40,23 @@ vi.mock('../hooks/useUserRoles', () => ({
 }));
 
 vi.mock('../components/layout/HeaderAuth', () => ({
-  default: ({ backTo }) => <div data-testid="header-auth" data-back-to={backTo}>Header</div>,
+  default: ({ backTo }) => (
+    <div data-testid="header-auth" data-back-to={backTo}>
+      Header
+    </div>
+  ),
 }));
 
 // El cuadro, con sus casos, se prueba aparte: aquí, cuándo sale y qué recarga
 vi.mock('../components/invitation/InvitacionEnLaFicha', () => ({
   default: ({ invitacion, alCambiar }) =>
     invitacion ? (
-      <button type="button" data-testid="cuadro-invitacion" data-id={invitacion.id} onClick={alCambiar} />
+      <button
+        type="button"
+        data-testid="cuadro-invitacion"
+        data-id={invitacion.id}
+        onClick={alCambiar}
+      />
     ) : null,
 }));
 
@@ -96,32 +109,44 @@ const mockSetCustomHandicap = vi.fn().mockResolvedValue({});
 const mockRemoveCustomHandicap = vi.fn().mockResolvedValue({});
 
 vi.mock('../composition', () => ({
-  getCompetitionDetailUseCase: { execute: (...args) => mockGetCompetitionDetail(...args) },
+  getCompetitionDetailUseCase: {
+    execute: (...args) => mockGetCompetitionDetail(...args),
+  },
   getCompetitionGolfCoursesUseCase: { execute: vi.fn().mockResolvedValue([]) },
   activateCompetitionUseCase: { execute: vi.fn() },
-  closeEnrollmentsUseCase: { execute: (...args) => mockCloseEnrollments(...args) },
+  closeEnrollmentsUseCase: {
+    execute: (...args) => mockCloseEnrollments(...args),
+  },
   startCompetitionUseCase: { execute: vi.fn() },
   completeCompetitionUseCase: { execute: vi.fn() },
   cancelCompetitionUseCase: { execute: (...args) => mockCancel(...args) },
   deleteCompetitionUseCase: { execute: (...args) => mockDelete(...args) },
   reopenEnrollmentsUseCase: { execute: vi.fn() },
   revertCompetitionStatusUseCase: { execute: vi.fn() },
-  revertCompetitionToInProgressUseCase: { execute: (...args) => mockRevertToInProgress(...args) },
-  listEnrollmentsUseCase: { execute: (...args) => mockListEnrollments(...args) },
+  revertCompetitionToInProgressUseCase: {
+    execute: (...args) => mockRevertToInProgress(...args),
+  },
+  listEnrollmentsUseCase: {
+    execute: (...args) => mockListEnrollments(...args),
+  },
   requestEnrollmentUseCase: { execute: (...args) => mockRequest(...args) },
   approveEnrollmentUseCase: { execute: vi.fn() },
   rejectEnrollmentUseCase: { execute: vi.fn() },
   assignTeamsUseCase: { execute: (...args) => mockAssignTeams(...args) },
-  setCustomHandicapUseCase: { execute: (...args) => mockSetCustomHandicap(...args) },
-  removeCustomHandicapUseCase: { execute: (...args) => mockRemoveCustomHandicap(...args) },
-  setNamePreferenceUseCase: { execute: (...args) => mockSetNamePreference(...args) },
+  setCustomHandicapUseCase: {
+    execute: (...args) => mockSetCustomHandicap(...args),
+  },
+  removeCustomHandicapUseCase: {
+    execute: (...args) => mockRemoveCustomHandicap(...args),
+  },
+  setNamePreferenceUseCase: {
+    execute: (...args) => mockSetNamePreference(...args),
+  },
 }));
 
 vi.mock('../utils/toast', () => ({
   default: { success: vi.fn(), error: vi.fn() },
 }));
-
-
 
 const renderPage = () => {
   return render(
@@ -129,7 +154,7 @@ const renderPage = () => {
       <Routes>
         <Route path="/competitions/:id" element={<CompetitionDetail />} />
       </Routes>
-    </MemoryRouter>
+    </MemoryRouter>,
   );
 };
 
@@ -154,11 +179,17 @@ describe('CompetitionDetail · mi invitación pendiente', () => {
   });
 
   it('I1: con ella, el cuadro con su id', async () => {
-    mockGetCompetitionDetail.mockResolvedValue({ ...FICHA, myPendingInvitation: { id: 'inv-1', expiresAt: null } });
+    mockGetCompetitionDetail.mockResolvedValue({
+      ...FICHA,
+      myPendingInvitation: { id: 'inv-1', expiresAt: null },
+    });
 
     renderPage();
 
-    expect(await screen.findByTestId('cuadro-invitacion')).toHaveAttribute('data-id', 'inv-1');
+    expect(await screen.findByTestId('cuadro-invitacion')).toHaveAttribute(
+      'data-id',
+      'inv-1',
+    );
   });
 
   it('I2: sin ella, nada', async () => {
@@ -180,26 +211,38 @@ describe('CompetitionDetail · mi invitación pendiente', () => {
     renderPage();
 
     await screen.findByTestId('cuadro-invitacion');
-    expect(screen.queryByText('detail.actions.request-to-join')).not.toBeInTheDocument();
+    expect(
+      screen.queryByText('detail.actions.request-to-join'),
+    ).not.toBeInTheDocument();
   });
 
   it('pública sin invitación: «Pedir plaza» como siempre', async () => {
-    mockGetCompetitionDetail.mockResolvedValue({ ...FICHA, visibility: 'PUBLIC' });
+    mockGetCompetitionDetail.mockResolvedValue({
+      ...FICHA,
+      visibility: 'PUBLIC',
+    });
 
     renderPage();
 
-    expect(await screen.findByText('detail.actions.request-to-join')).toBeInTheDocument();
+    expect(
+      await screen.findByText('detail.actions.request-to-join'),
+    ).toBeInTheDocument();
   });
 
   it('I3/I12: al responder, la ficha se relee; ya sin invitación, el cuadro se va', async () => {
     mockGetCompetitionDetail
-      .mockResolvedValueOnce({ ...FICHA, myPendingInvitation: { id: 'inv-1', expiresAt: null } })
+      .mockResolvedValueOnce({
+        ...FICHA,
+        myPendingInvitation: { id: 'inv-1', expiresAt: null },
+      })
       .mockResolvedValue({ ...FICHA, enrollment_status: 'APPROVED' });
     renderPage();
 
     fireEvent.click(await screen.findByTestId('cuadro-invitacion'));
 
-    await waitFor(() => expect(screen.queryByTestId('cuadro-invitacion')).not.toBeInTheDocument());
+    await waitFor(() =>
+      expect(screen.queryByTestId('cuadro-invitacion')).not.toBeInTheDocument(),
+    );
     expect(mockGetCompetitionDetail).toHaveBeenCalledTimes(2);
   });
 });

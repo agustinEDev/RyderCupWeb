@@ -5,16 +5,34 @@ const localStorageMock = (() => {
   let store = {};
   return {
     getItem: vi.fn((key) => store[key] ?? null),
-    setItem: vi.fn((key, value) => { store[key] = String(value); }),
-    removeItem: vi.fn((key) => { delete store[key]; }),
-    clear: vi.fn(() => { store = {}; }),
+    setItem: vi.fn((key, value) => {
+      store[key] = String(value);
+    }),
+    removeItem: vi.fn((key) => {
+      delete store[key];
+    }),
+    clear: vi.fn(() => {
+      store = {};
+    }),
   };
 })();
 
-Object.defineProperty(globalThis, 'localStorage', { value: localStorageMock, writable: true });
+Object.defineProperty(globalThis, 'localStorage', {
+  value: localStorageMock,
+  writable: true,
+});
 
 // Must import after localStorage mock is set up
-import { acquire, release, refresh, getSession, onLockEvent, forceRelease, closeChannel, partidaConSesionViva } from './scoringSessionLock';
+import {
+  acquire,
+  release,
+  refresh,
+  getSession,
+  onLockEvent,
+  forceRelease,
+  closeChannel,
+  partidaConSesionViva,
+} from './scoringSessionLock';
 
 const USER_A = 'user-a';
 const USER_B = 'user-b';
@@ -63,7 +81,10 @@ describe('scoringSessionLock', () => {
       // Make the session stale by backdating timestamp
       const session = getSession(USER_A);
       session.timestamp = Date.now() - 130000; // 2+ minutes ago
-      localStorageMock.setItem('rydercup-scoring-session-user-a', JSON.stringify(session));
+      localStorageMock.setItem(
+        'rydercup-scoring-session-user-a',
+        JSON.stringify(session),
+      );
 
       expect(acquire('m-1', 'session-2', USER_A)).toBe(true);
     });
@@ -172,11 +193,15 @@ describe('scoringSessionLock', () => {
     it('a scoped lock lives in its own key and does not block the default one', () => {
       expect(acquire(null, 'vaciado-1', USER_A, 'vaciado')).toBe(true);
 
-      expect(localStorageMock.getItem('rydercup-scoring-session-user-a-vaciado')).not.toBeNull();
-      expect(localStorageMock.getItem('rydercup-scoring-session-user-a')).toBeNull();
+      expect(
+        localStorageMock.getItem('rydercup-scoring-session-user-a-vaciado'),
+      ).not.toBeNull();
+      expect(
+        localStorageMock.getItem('rydercup-scoring-session-user-a'),
+      ).toBeNull();
       expect(acquire('m-1', 'session-1', USER_A)).toBe(true);
       expect(getSession(USER_A, 'vaciado')).toEqual(
-        expect.objectContaining({ sessionId: 'vaciado-1', scope: 'vaciado' })
+        expect.objectContaining({ sessionId: 'vaciado-1', scope: 'vaciado' }),
       );
     });
 

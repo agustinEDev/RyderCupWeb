@@ -66,32 +66,42 @@ class DirectEnrollUseCase {
 
     // Validar customHandicap si está presente
     if (data.customHandicap !== null && data.customHandicap !== undefined) {
-      if (typeof data.customHandicap !== 'number' || isNaN(data.customHandicap)) {
+      if (
+        typeof data.customHandicap !== 'number' ||
+        isNaN(data.customHandicap)
+      ) {
         throw new Error('customHandicap debe ser un número válido');
       }
 
       const MIN_HANDICAP = -10.0;
       const MAX_HANDICAP = 54.0;
 
-      if (data.customHandicap < MIN_HANDICAP || data.customHandicap > MAX_HANDICAP) {
+      if (
+        data.customHandicap < MIN_HANDICAP ||
+        data.customHandicap > MAX_HANDICAP
+      ) {
         throw new Error(
-          `El handicap debe estar entre ${MIN_HANDICAP} y ${MAX_HANDICAP}. Recibido: ${data.customHandicap}`
+          `El handicap debe estar entre ${MIN_HANDICAP} y ${MAX_HANDICAP}. Recibido: ${data.customHandicap}`,
         );
       }
     }
 
     // Verificar si el usuario ya está inscrito
-    const existingEnrollment = await this.#enrollmentRepository.findByCompetitionAndUser(
-      competitionId,
-      data.userId
-    );
+    const existingEnrollment =
+      await this.#enrollmentRepository.findByCompetitionAndUser(
+        competitionId,
+        data.userId,
+      );
 
     if (existingEnrollment) {
       throw new Error('El usuario ya está inscrito en esta competición');
     }
 
     // Inscribir directamente (el backend valida permisos)
-    const enrollment = await this.#enrollmentRepository.directEnroll(competitionId, data);
+    const enrollment = await this.#enrollmentRepository.directEnroll(
+      competitionId,
+      data,
+    );
 
     // Convertir a DTO simple para la UI
     return EnrollmentAssembler.toSimpleDTO(enrollment);

@@ -23,21 +23,31 @@ vi.mock('./utils/broadcastAuth', () => ({
   },
 }));
 const mockLogout = vi.fn();
-vi.mock('./hooks/useLogout', () => ({ useLogout: () => ({ logout: mockLogout }) }));
+vi.mock('./hooks/useLogout', () => ({
+  useLogout: () => ({ logout: mockLogout }),
+}));
 vi.mock('./hooks/useAuth', () => ({
-  getUserData: vi.fn().mockResolvedValue({ id: 'u-1', email: 'ana@example.com' }),
+  getUserData: vi
+    .fn()
+    .mockResolvedValue({ id: 'u-1', email: 'ana@example.com' }),
   useAuth: () => ({ user: { id: 'u-1' }, loading: false }),
 }));
 vi.mock('./hooks/useVaciadoDeLaCola', () => ({ useVaciadoDeLaCola: () => {} }));
 vi.mock('./hooks/useProactiveTokenRefresh', () => ({ default: () => {} }));
-vi.mock('./hooks/useDeviceRevocationMonitor', () => ({ useDeviceRevocationMonitor: () => {} }));
-vi.mock('./hooks/useCortinaDeArranque', () => ({ useCortinaDeArranque: () => {} }));
+vi.mock('./hooks/useDeviceRevocationMonitor', () => ({
+  useDeviceRevocationMonitor: () => {},
+}));
+vi.mock('./hooks/useCortinaDeArranque', () => ({
+  useCortinaDeArranque: () => {},
+}));
 vi.mock('./hooks/useVolverArriba', () => ({ useVolverArriba: () => {} }));
 vi.mock('./utils/sentryHelpers', () => ({ setUserContext: () => {} }));
 vi.mock('./components/ui/InstallBanner', () => ({ default: () => null }));
 vi.mock('./components/ui/AvisoSinConexion', () => ({ default: () => null }));
 vi.mock('./components/layout/BottomNav', () => ({ default: () => null }));
-vi.mock('./components/auth/ProtectedRoute', () => ({ default: ({ children }) => children }));
+vi.mock('./components/auth/ProtectedRoute', () => ({
+  default: ({ children }) => children,
+}));
 vi.mock('./pages/Dashboard', () => ({ default: () => <p>panel</p> }));
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({ t: (k) => k, i18n: { language: 'es' } }),
@@ -53,7 +63,11 @@ describe('App · cerrar sesión en otra pestaña, sin eco (FE #865)', () => {
   beforeEach(() => {
     mockLogout.mockReset();
     mockAlAvisar = null;
-    window.matchMedia = () => ({ matches: false, addEventListener() {}, removeEventListener() {} });
+    window.matchMedia = () => ({
+      matches: false,
+      addEventListener() {},
+      removeEventListener() {},
+    });
     window.history.pushState({}, '', '/dashboard');
   });
 
@@ -84,7 +98,11 @@ describe('App · cerrar sesión en otra pestaña, sin eco (FE #865)', () => {
 
 describe('App · una página que vuelve de la caché del historial se recarga (FE #865)', () => {
   beforeEach(() => {
-    window.matchMedia = () => ({ matches: false, addEventListener() {}, removeEventListener() {} });
+    window.matchMedia = () => ({
+      matches: false,
+      addEventListener() {},
+      removeEventListener() {},
+    });
     window.history.pushState({}, '', '/dashboard');
   });
   afterEach(() => {
@@ -106,4 +124,3 @@ describe('App · una página que vuelve de la caché del historial se recarga (F
     expect(recarga).toHaveBeenCalledTimes(1);
   });
 });
-

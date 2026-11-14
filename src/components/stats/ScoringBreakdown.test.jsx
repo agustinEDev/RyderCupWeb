@@ -27,8 +27,20 @@ describe('ScoringBreakdown', () => {
   const desglose = (extra = {}) => ({
     holesCounted: 9,
     roundsCounted: 1,
-    grossDistribution: { birdieOrBetter: 0, par: 2, bogey: 4, doubleOrWorse: 3, holes: 9 },
-    netDistribution: { birdieOrBetter: 2, par: 4, bogey: 3, doubleOrWorse: 0, holes: 9 },
+    grossDistribution: {
+      birdieOrBetter: 0,
+      par: 2,
+      bogey: 4,
+      doubleOrWorse: 3,
+      holes: 9,
+    },
+    netDistribution: {
+      birdieOrBetter: 2,
+      par: 4,
+      bogey: 3,
+      doubleOrWorse: 0,
+      holes: 9,
+    },
     byPar: [
       { par: 3, holes: 3, averageToPar: 1 },
       { par: 4, holes: 4, averageToPar: 0 },
@@ -37,12 +49,18 @@ describe('ScoringBreakdown', () => {
     frontNine: { holes: 9, averageToPar: 0.11 },
     backNine: null,
     byCourse: [
-      { golfCourseId: 'c1', golfCourseName: 'Son Parc - Par 71', rounds: 1, averageToPar: 2 },
+      {
+        golfCourseId: 'c1',
+        golfCourseName: 'Son Parc - Par 71',
+        rounds: 1,
+        averageToPar: 2,
+      },
     ],
     ...extra,
   });
 
-  const pintar = (datos = desglose()) => render(<ScoringBreakdown breakdown={datos} />);
+  const pintar = (datos = desglose()) =>
+    render(<ScoringBreakdown breakdown={datos} />);
 
   describe('estado vacío', () => {
     it('lo muestra cuando no hay ni un hoyo contado', () => {
@@ -63,7 +81,9 @@ describe('ScoringBreakdown', () => {
     it('explica por qué está vacío', () => {
       pintar(desglose({ holesCounted: 0 }));
 
-      expect(screen.getByText('breakdown.emptyDescription')).toBeInTheDocument();
+      expect(
+        screen.getByText('breakdown.emptyDescription'),
+      ).toBeInTheDocument();
     });
   });
 
@@ -71,14 +91,12 @@ describe('ScoringBreakdown', () => {
     it('arranca en bruto', () => {
       pintar();
 
-      expect(screen.getByRole('button', { name: 'breakdown.gross' })).toHaveAttribute(
-        'aria-pressed',
-        'true'
-      );
-      expect(screen.getByRole('button', { name: 'breakdown.net' })).toHaveAttribute(
-        'aria-pressed',
-        'false'
-      );
+      expect(
+        screen.getByRole('button', { name: 'breakdown.gross' }),
+      ).toHaveAttribute('aria-pressed', 'true');
+      expect(
+        screen.getByRole('button', { name: 'breakdown.net' }),
+      ).toHaveAttribute('aria-pressed', 'false');
     });
 
     it('enseña los números en bruto de partida', () => {
@@ -96,10 +114,9 @@ describe('ScoringBreakdown', () => {
 
       // En neto hay 2 birdies donde en bruto había 0
       expect(screen.getByText('(2)')).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: 'breakdown.net' })).toHaveAttribute(
-        'aria-pressed',
-        'true'
-      );
+      expect(
+        screen.getByRole('button', { name: 'breakdown.net' }),
+      ).toHaveAttribute('aria-pressed', 'true');
     });
 
     it('el interruptor no toca el resto del desglose', () => {
@@ -147,7 +164,9 @@ describe('ScoringBreakdown', () => {
       pintar();
 
       expect(
-        within(screen.getByTestId('par-3')).getByText('breakdown.perHoleOver:{"count":3}')
+        within(screen.getByTestId('par-3')).getByText(
+          'breakdown.perHoleOver:{"count":3}',
+        ),
       ).toBeInTheDocument();
     });
   });
@@ -156,7 +175,9 @@ describe('ScoringBreakdown', () => {
     it('enseña la media de la ida', () => {
       pintar();
 
-      expect(within(screen.getByTestId('front-nine')).getByText('+0.11')).toBeInTheDocument();
+      expect(
+        within(screen.getByTestId('front-nine')).getByText('+0.11'),
+      ).toBeInTheDocument();
     });
 
     // Cero significaría jugar al par, que es un resultado extraordinario
@@ -164,7 +185,9 @@ describe('ScoringBreakdown', () => {
       pintar();
 
       const vuelta = screen.getByTestId('back-nine');
-      expect(within(vuelta).getByText('breakdown.nineNotPlayed')).toBeInTheDocument();
+      expect(
+        within(vuelta).getByText('breakdown.nineNotPlayed'),
+      ).toBeInTheDocument();
       expect(within(vuelta).queryByText('0')).toBeNull();
     });
 
@@ -172,7 +195,9 @@ describe('ScoringBreakdown', () => {
       pintar(desglose({ backNine: { holes: 9, averageToPar: 0 } }));
 
       expect(
-        within(screen.getByTestId('back-nine')).getByText('playerStats.levelPar')
+        within(screen.getByTestId('back-nine')).getByText(
+          'playerStats.levelPar',
+        ),
       ).toBeInTheDocument();
     });
   });
@@ -202,8 +227,15 @@ describe('ScoringBreakdown', () => {
     it('aguanta un campo sin nombre', () => {
       pintar(
         desglose({
-          byCourse: [{ golfCourseId: 'c9', golfCourseName: null, rounds: 2, averageToPar: 5 }],
-        })
+          byCourse: [
+            {
+              golfCourseId: 'c9',
+              golfCourseName: null,
+              rounds: 2,
+              averageToPar: 5,
+            },
+          ],
+        }),
       );
 
       expect(screen.getByText('breakdown.unnamedCourse')).toBeInTheDocument();
@@ -231,7 +263,9 @@ describe('ScoringBreakdown', () => {
     it('tranquiliza sobre el resto de la pantalla', () => {
       render(<ScoringBreakdown breakdown={null} failed />);
 
-      expect(screen.getByText('breakdown.errorDescription')).toBeInTheDocument();
+      expect(
+        screen.getByText('breakdown.errorDescription'),
+      ).toBeInTheDocument();
     });
   });
 
@@ -243,7 +277,7 @@ describe('ScoringBreakdown', () => {
             { par: 3, holes: 3, averageToPar: -0.5 },
             { par: 5, holes: 2, averageToPar: -0.1 },
           ],
-        })
+        }),
       );
 
       expect(screen.getByTestId('par-3').className).not.toContain('rose');
@@ -258,7 +292,7 @@ describe('ScoringBreakdown', () => {
             { par: 3, holes: 3, averageToPar: null },
             { par: 4, holes: 4, averageToPar: null },
           ],
-        })
+        }),
       );
 
       expect(screen.getByTestId('par-3').className).not.toContain('rose');
@@ -271,7 +305,7 @@ describe('ScoringBreakdown', () => {
             { par: 3, holes: 3, averageToPar: 0 },
             { par: 4, holes: 4, averageToPar: -1 },
           ],
-        })
+        }),
       );
 
       expect(screen.queryByText('breakdown.worstPar')).toBeNull();
@@ -281,8 +315,12 @@ describe('ScoringBreakdown', () => {
     it('lo dice con TEXTO, no solo con el color', () => {
       pintar();
 
-      expect(within(screen.getByTestId('par-3')).getByText('breakdown.worstPar')).toBeInTheDocument();
-      expect(within(screen.getByTestId('par-4')).queryByText('breakdown.worstPar')).toBeNull();
+      expect(
+        within(screen.getByTestId('par-3')).getByText('breakdown.worstPar'),
+      ).toBeInTheDocument();
+      expect(
+        within(screen.getByTestId('par-4')).queryByText('breakdown.worstPar'),
+      ).toBeNull();
     });
   });
 });

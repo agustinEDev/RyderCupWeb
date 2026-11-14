@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { useLayoutEffect } from 'react';
 
 // Este entorno no trae `localStorage`, y el aviso de «no se pudo guardar» vive
 // ahí. Se define arriba del todo: dentro de un `beforeEach` los módulos ya
@@ -7,12 +8,21 @@ const almacen = (() => {
   let datos = {};
   return {
     getItem: (clave) => datos[clave] ?? null,
-    setItem: (clave, valor) => { datos[clave] = String(valor); },
-    removeItem: (clave) => { delete datos[clave]; },
-    clear: () => { datos = {}; },
+    setItem: (clave, valor) => {
+      datos[clave] = String(valor);
+    },
+    removeItem: (clave) => {
+      delete datos[clave];
+    },
+    clear: () => {
+      datos = {};
+    },
   };
 })();
-Object.defineProperty(globalThis, 'localStorage', { value: almacen, writable: true });
+Object.defineProperty(globalThis, 'localStorage', {
+  value: almacen,
+  writable: true,
+});
 import { renderHook, act, waitFor } from '@testing-library/react';
 import { useScoring } from './useScoring';
 
@@ -87,7 +97,11 @@ const mockScoringView = {
     { scorerUserId: 'u1', marksUserId: 'u2', markedByUserId: 'u2' },
     { scorerUserId: 'u2', marksUserId: 'u1', markedByUserId: 'u1' },
   ],
-  holes: Array.from({ length: 18 }, (_, i) => ({ holeNumber: i + 1, par: 4, strokeIndex: i + 1 })),
+  holes: Array.from({ length: 18 }, (_, i) => ({
+    holeNumber: i + 1,
+    par: 4,
+    strokeIndex: i + 1,
+  })),
   scores: [],
   matchStanding: null,
   scorecardSubmittedBy: [],
@@ -99,7 +113,10 @@ describe('useScoring', () => {
     vi.clearAllMocks();
     almacen.clear();
     getScoringViewUseCase.execute.mockResolvedValue(mockScoringView);
-    Object.defineProperty(navigator, 'onLine', { value: true, configurable: true });
+    Object.defineProperty(navigator, 'onLine', {
+      value: true,
+      configurable: true,
+    });
   });
 
   it('should load scoring view on mount', async () => {
@@ -154,7 +171,11 @@ describe('useScoring', () => {
     await waitFor(() => expect(result.current.isLoading).toBe(false));
 
     await act(async () => {
-      await result.current.submitScore(1, { ownScore: 5, markedPlayerId: 'u2', markedScore: 4 });
+      await result.current.submitScore(1, {
+        ownScore: 5,
+        markedPlayerId: 'u2',
+        markedScore: 4,
+      });
     });
 
     expect(submitHoleScoreUseCase.execute).toHaveBeenCalledWith('m-1', 1, {
@@ -166,13 +187,20 @@ describe('useScoring', () => {
   });
 
   it('should queue score when offline', async () => {
-    Object.defineProperty(navigator, 'onLine', { value: false, configurable: true });
+    Object.defineProperty(navigator, 'onLine', {
+      value: false,
+      configurable: true,
+    });
 
     const { result } = renderHook(() => useScoring('m-1', 'u1'));
     await waitFor(() => expect(result.current.isLoading).toBe(false));
 
     await act(async () => {
-      await result.current.submitScore(1, { ownScore: 5, markedPlayerId: 'u2', markedScore: 4 });
+      await result.current.submitScore(1, {
+        ownScore: 5,
+        markedPlayerId: 'u2',
+        markedScore: 4,
+      });
     });
 
     // Con participante (null: es competición) y de quién es la anotación, para
@@ -194,7 +222,10 @@ describe('useScoring', () => {
   it('guarda campo y número, para que el aviso diga de qué partida es', async () => {
     // Sin él, quien vuelve a casa con golpes sin enviar de tres partidas ve
     // tres avisos idénticos y no sabe cuál mirar (FE #521)
-    Object.defineProperty(navigator, 'onLine', { value: false, configurable: true });
+    Object.defineProperty(navigator, 'onLine', {
+      value: false,
+      configurable: true,
+    });
     getScoringViewUseCase.execute.mockResolvedValue({
       ...mockScoringView,
       matchNumber: 3,
@@ -205,7 +236,11 @@ describe('useScoring', () => {
     await waitFor(() => expect(result.current.isLoading).toBe(false));
 
     await act(async () => {
-      await result.current.submitScore(1, { ownScore: 5, markedPlayerId: 'u2', markedScore: 4 });
+      await result.current.submitScore(1, {
+        ownScore: 5,
+        markedPlayerId: 'u2',
+        markedScore: 4,
+      });
     });
 
     expect(offlineQueue.enqueue).toHaveBeenCalledWith(
@@ -257,7 +292,11 @@ describe('useScoring', () => {
       await result.current.concedeMatch('A', 'Player injury');
     });
 
-    expect(concedeMatchUseCase.execute).toHaveBeenCalledWith('m-1', 'A', 'Player injury');
+    expect(concedeMatchUseCase.execute).toHaveBeenCalledWith(
+      'm-1',
+      'A',
+      'Player injury',
+    );
   });
 
   it('should handle hasSubmitted correctly', async () => {
@@ -293,11 +332,13 @@ describe('useScoring', () => {
     const scoredHoles = (count, { validated = true, from = 1 } = {}) =>
       Array.from({ length: count }, (_, i) => ({
         holeNumber: from + i,
-        playerScores: [{
-          userId: 'u1',
-          ownSubmitted: true,
-          validationStatus: validated ? 'match' : 'pending',
-        }],
+        playerScores: [
+          {
+            userId: 'u1',
+            ownSubmitted: true,
+            validationStatus: validated ? 'match' : 'pending',
+          },
+        ],
       }));
 
     it('allows submitting a decided match with the holes actually played', async () => {
@@ -323,7 +364,10 @@ describe('useScoring', () => {
         ...mockScoringView,
         isDecided: true,
         decidedResult: { winner: 'A', score: '9&7' },
-        scores: [...scoredHoles(10), ...scoredHoles(1, { validated: false, from: 11 })],
+        scores: [
+          ...scoredHoles(10),
+          ...scoredHoles(1, { validated: false, from: 11 }),
+        ],
       });
 
       const { result } = renderHook(() => useScoring('m-1', 'u1'));
@@ -369,12 +413,14 @@ describe('useScoring', () => {
           ...scoredHoles(6),
           {
             holeNumber: 7,
-            playerScores: [{
-              userId: 'u1',
-              ownSubmitted: false,
-              markerSubmitted: true,
-              validationStatus: 'pending',
-            }],
+            playerScores: [
+              {
+                userId: 'u1',
+                ownSubmitted: false,
+                markerSubmitted: true,
+                validationStatus: 'pending',
+              },
+            ],
           },
           ...scoredHoles(4, { from: 8 }),
         ],
@@ -420,7 +466,10 @@ describe('useScoring', () => {
       it('A2: los 18 jugados, acabado aunque quede alguno por validar', async () => {
         getScoringViewUseCase.execute.mockResolvedValue({
           ...mockScoringView,
-          scores: [...scoredHoles(17), ...scoredHoles(1, { validated: false, from: 18 })],
+          scores: [
+            ...scoredHoles(17),
+            ...scoredHoles(1, { validated: false, from: 18 }),
+          ],
         });
         const { result } = renderHook(() => useScoring('m-1', 'u1'));
         await waitFor(() => expect(result.current.isLoading).toBe(false));
@@ -489,7 +538,11 @@ describe('useScoring', () => {
     await waitFor(() => expect(result.current.isLoading).toBe(false));
 
     await act(async () => {
-      await result.current.submitScore(1, { ownScore: 5, markedPlayerId: 'u2', markedScore: 4 });
+      await result.current.submitScore(1, {
+        ownScore: 5,
+        markedPlayerId: 'u2',
+        markedScore: 4,
+      });
     });
 
     expect(submitHoleScoreUseCase.execute).not.toHaveBeenCalled();
@@ -500,7 +553,12 @@ describe('useScoring', () => {
       ...mockScoringView,
       isDecided: true,
       decidedResult: { winner: 'A', score: '5&4' },
-      matchStanding: { status: '5UP', leadingTeam: 'A', holesPlayed: 14, holesRemaining: 4 },
+      matchStanding: {
+        status: '5UP',
+        leadingTeam: 'A',
+        holesPlayed: 14,
+        holesRemaining: 4,
+      },
     };
     getScoringViewUseCase.execute.mockResolvedValue(decidedView);
 
@@ -560,7 +618,11 @@ describe('useScoring', () => {
 
     // isOwnScoreLocked=true but isMarkerScoreLocked=false → can still submit
     await act(async () => {
-      await result.current.submitScore(1, { ownScore: 4, markedPlayerId: 'u2', markedScore: 5 });
+      await result.current.submitScore(1, {
+        ownScore: 4,
+        markedPlayerId: 'u2',
+        markedScore: 5,
+      });
     });
 
     expect(submitHoleScoreUseCase.execute).toHaveBeenCalled();
@@ -577,7 +639,11 @@ describe('useScoring', () => {
     await waitFor(() => expect(result.current.isLoading).toBe(false));
 
     await act(async () => {
-      await result.current.submitScore(1, { ownScore: 4, markedPlayerId: 'u2', markedScore: 5 });
+      await result.current.submitScore(1, {
+        ownScore: 4,
+        markedPlayerId: 'u2',
+        markedScore: 5,
+      });
     });
 
     expect(submitHoleScoreUseCase.execute).not.toHaveBeenCalled();
@@ -632,7 +698,11 @@ describe('useScoring', () => {
 
     // u1 must still be able to correct the marker score for u2 (the discrepancy)
     await act(async () => {
-      await result.current.submitScore(1, { ownScore: 4, markedPlayerId: 'u2', markedScore: 5 });
+      await result.current.submitScore(1, {
+        ownScore: 4,
+        markedPlayerId: 'u2',
+        markedScore: 5,
+      });
     });
     expect(submitHoleScoreUseCase.execute).toHaveBeenCalled();
   });
@@ -654,7 +724,11 @@ describe('useScoring', () => {
       await waitFor(() => expect(result.current.isLoading).toBe(false));
 
       await act(async () => {
-        await result.current.submitScore(1, { ownScore: 4, markedPlayerId: 'u2', markedScore: 5 });
+        await result.current.submitScore(1, {
+          ownScore: 4,
+          markedPlayerId: 'u2',
+          markedScore: 5,
+        });
       });
 
       expect(submitHoleScoreUseCase.execute).toHaveBeenCalledWith('m-1', 1, {
@@ -680,7 +754,11 @@ describe('useScoring', () => {
       expect(result.current.canScore).toBe(false);
 
       await act(async () => {
-        await result.current.submitScore(1, { ownScore: 5, markedPlayerId: 'u2', markedScore: 4 });
+        await result.current.submitScore(1, {
+          ownScore: 5,
+          markedPlayerId: 'u2',
+          markedScore: 4,
+        });
       });
 
       expect(submitHoleScoreUseCase.execute).not.toHaveBeenCalled();
@@ -699,11 +777,18 @@ describe('useScoring', () => {
       // Va por otro endpoint y con otro cuerpo: mandarla desde el vaciado de
       // competición la guardaría mal y la borraría a continuación
       offlineQueue.getByMatch.mockReturnValue([
-        { matchId: 'm-1', holeNumber: 7, participantId: 'p-1', scoreData: { score: 5 } },
+        {
+          matchId: 'm-1',
+          holeNumber: 7,
+          participantId: 'p-1',
+          scoreData: { score: 5 },
+        },
       ]);
 
       renderHook(() => useScoring('m-1', 'u1'));
-      await waitFor(() => expect(getScoringViewUseCase.execute).toHaveBeenCalled());
+      await waitFor(() =>
+        expect(getScoringViewUseCase.execute).toHaveBeenCalled(),
+      );
 
       await act(async () => {
         window.dispatchEvent(new globalThis.Event('online'));
@@ -721,7 +806,9 @@ describe('useScoring', () => {
       submitHoleScoreUseCase.execute.mockResolvedValue({});
 
       renderHook(() => useScoring('m-1', 'u1'));
-      await waitFor(() => expect(getScoringViewUseCase.execute).toHaveBeenCalled());
+      await waitFor(() =>
+        expect(getScoringViewUseCase.execute).toHaveBeenCalled(),
+      );
 
       await act(async () => {
         window.dispatchEvent(new globalThis.Event('online'));
@@ -729,7 +816,13 @@ describe('useScoring', () => {
       });
 
       await waitFor(() =>
-        expect(offlineQueue.remove).toHaveBeenCalledWith('m-1', 7, undefined, null, null)
+        expect(offlineQueue.remove).toHaveBeenCalledWith(
+          'm-1',
+          7,
+          undefined,
+          null,
+          null,
+        ),
       );
     });
 
@@ -739,14 +832,21 @@ describe('useScoring', () => {
       // esto, seguir la instrucción de ese aviso no enviaba nada, y encima el
       // vaciado de fondo dejaba esta partida fuera por estar abierta
       offlineQueue.getByMatch.mockReturnValue([
-        { matchId: 'm-1', holeNumber: 7, scoreData: { ownScore: 5 }, userId: 'u1' },
+        {
+          matchId: 'm-1',
+          holeNumber: 7,
+          scoreData: { ownScore: 5 },
+          userId: 'u1',
+        },
       ]);
       submitHoleScoreUseCase.execute.mockResolvedValue({});
 
       renderHook(() => useScoring('m-1', 'u1'));
 
       await waitFor(() =>
-        expect(submitHoleScoreUseCase.execute).toHaveBeenCalledWith('m-1', 7, { ownScore: 5 })
+        expect(submitHoleScoreUseCase.execute).toHaveBeenCalledWith('m-1', 7, {
+          ownScore: 5,
+        }),
       );
     });
 
@@ -754,11 +854,18 @@ describe('useScoring', () => {
       // Una página suspendida no recibe `online`. La pantalla de partida
       // rápida ya lo escuchaba; esta era su gemela sin arreglar
       offlineQueue.getByMatch.mockReturnValue([
-        { matchId: 'm-1', holeNumber: 7, scoreData: { ownScore: 5 }, userId: 'u1' },
+        {
+          matchId: 'm-1',
+          holeNumber: 7,
+          scoreData: { ownScore: 5 },
+          userId: 'u1',
+        },
       ]);
       submitHoleScoreUseCase.execute.mockResolvedValue({});
       renderHook(() => useScoring('m-1', 'u1'));
-      await waitFor(() => expect(submitHoleScoreUseCase.execute).toHaveBeenCalled());
+      await waitFor(() =>
+        expect(submitHoleScoreUseCase.execute).toHaveBeenCalled(),
+      );
       submitHoleScoreUseCase.execute.mockClear();
 
       await act(async () => {
@@ -766,21 +873,37 @@ describe('useScoring', () => {
         await Promise.resolve();
       });
 
-      await waitFor(() => expect(submitHoleScoreUseCase.execute).toHaveBeenCalled());
+      await waitFor(() =>
+        expect(submitHoleScoreUseCase.execute).toHaveBeenCalled(),
+      );
     });
 
     it('reanotar el hoyo retira su aviso de perdido', async () => {
       // El aviso pide repetirlo, y eso es lo que se acaba de hacer. Sin esto,
       // el panel seguía pidiendo repetir un hoyo ya anotado, y la única salida
       // era «Entendido», que borra TODOS los de esa partida
-      golpesPerdidos.apunta({ matchId: 'm-1', matchName: 'Meis', holeNumber: 7, userId: 'u1' });
-      golpesPerdidos.apunta({ matchId: 'm-1', matchName: 'Meis', holeNumber: 9, userId: 'u1' });
+      golpesPerdidos.apunta({
+        matchId: 'm-1',
+        matchName: 'Meis',
+        holeNumber: 7,
+        userId: 'u1',
+      });
+      golpesPerdidos.apunta({
+        matchId: 'm-1',
+        matchName: 'Meis',
+        holeNumber: 9,
+        userId: 'u1',
+      });
       submitHoleScoreUseCase.execute.mockResolvedValue(mockScoringView);
 
       const { result } = renderHook(() => useScoring('m-1', 'u1'));
       await waitFor(() => expect(result.current.isLoading).toBe(false));
       await act(async () => {
-        await result.current.submitScore(7, { ownScore: 4, markedPlayerId: 'u2', markedScore: 5 });
+        await result.current.submitScore(7, {
+          ownScore: 4,
+          markedPlayerId: 'u2',
+          markedScore: 5,
+        });
       });
 
       // Solo el suyo: el hoyo 9 sigue perdido y hay que seguir diciéndolo
@@ -792,14 +915,26 @@ describe('useScoring', () => {
     it('pero si el reemplazo tampoco se puede guardar, el aviso SIGUE', async () => {
       // Retirarlo antes de saberlo dejaba al jugador sin golpe y sin aviso:
       // ni en la tarjeta, ni en la cola, ni en el panel
-      golpesPerdidos.apunta({ matchId: 'm-1', matchName: 'Meis', holeNumber: 7, userId: 'u1' });
-      Object.defineProperty(navigator, 'onLine', { value: false, configurable: true });
+      golpesPerdidos.apunta({
+        matchId: 'm-1',
+        matchName: 'Meis',
+        holeNumber: 7,
+        userId: 'u1',
+      });
+      Object.defineProperty(navigator, 'onLine', {
+        value: false,
+        configurable: true,
+      });
       offlineQueue.enqueue.mockReturnValue(false);
 
       const { result } = renderHook(() => useScoring('m-1', 'u1'));
       await waitFor(() => expect(result.current.isLoading).toBe(false));
       await act(async () => {
-        await result.current.submitScore(7, { ownScore: 4, markedPlayerId: 'u2', markedScore: 5 });
+        await result.current.submitScore(7, {
+          ownScore: 4,
+          markedPlayerId: 'u2',
+          markedScore: 5,
+        });
       });
 
       expect(golpesPerdidos.pendientes('u1')).toHaveLength(1);
@@ -807,15 +942,24 @@ describe('useScoring', () => {
     });
 
     it('ni cuando el servidor rechaza el reemplazo para siempre', async () => {
-      golpesPerdidos.apunta({ matchId: 'm-1', matchName: 'Meis', holeNumber: 7, userId: 'u1' });
+      golpesPerdidos.apunta({
+        matchId: 'm-1',
+        matchName: 'Meis',
+        holeNumber: 7,
+        userId: 'u1',
+      });
       submitHoleScoreUseCase.execute.mockRejectedValue(
-        Object.assign(new Error('Match completed'), { status: 409 })
+        Object.assign(new Error('Match completed'), { status: 409 }),
       );
 
       const { result } = renderHook(() => useScoring('m-1', 'u1'));
       await waitFor(() => expect(result.current.isLoading).toBe(false));
       await act(async () => {
-        await result.current.submitScore(7, { ownScore: 4, markedPlayerId: 'u2', markedScore: 5 });
+        await result.current.submitScore(7, {
+          ownScore: 4,
+          markedPlayerId: 'u2',
+          markedScore: 5,
+        });
       });
 
       expect(golpesPerdidos.pendientes('u1')).toHaveLength(1);
@@ -833,7 +977,9 @@ describe('useScoring', () => {
       // El partido abre a una hora (BE #305). Un golpe anotado antes —el reloj
       // del móvil va adelantado, o se anotó sin cobertura— se arregla ESPERANDO,
       // así que tirarlo es perder una vuelta que el servidor iba a aceptar
-      const rechazo = new Error('La anotacion de este partido abre a las 2026-09-19T06:00:00+02:00');
+      const rechazo = new Error(
+        'La anotacion de este partido abre a las 2026-09-19T06:00:00+02:00',
+      );
       rechazo.status = 409;
       rechazo.errorCode = 'SCORING_NOT_OPEN_YET';
       submitHoleScoreUseCase.execute.mockRejectedValue(rechazo);
@@ -841,7 +987,11 @@ describe('useScoring', () => {
       const { result } = renderHook(() => useScoring('m-1', 'u1'));
       await waitFor(() => expect(result.current.isLoading).toBe(false));
       await act(async () => {
-        await result.current.submitScore(7, { ownScore: 4, markedPlayerId: 'u2', markedScore: 5 });
+        await result.current.submitScore(7, {
+          ownScore: 4,
+          markedPlayerId: 'u2',
+          markedScore: 5,
+        });
       });
 
       expect(golpesPerdidos.pendientes('u1')).toHaveLength(0);
@@ -856,7 +1006,11 @@ describe('useScoring', () => {
       const { result } = renderHook(() => useScoring('m-1', 'u1'));
       await waitFor(() => expect(result.current.isLoading).toBe(false));
       await act(async () => {
-        await result.current.submitScore(7, { ownScore: 4, markedPlayerId: 'u2', markedScore: 5 });
+        await result.current.submitScore(7, {
+          ownScore: 4,
+          markedPlayerId: 'u2',
+          markedScore: 5,
+        });
       });
 
       expect(golpesPerdidos.pendientes('u1')).toHaveLength(1);
@@ -868,15 +1022,23 @@ describe('useScoring', () => {
       // se borraba en silencio mientras el vaciado de fondo, con el mismo 409,
       // sí dejaba constancia
       offlineQueue.getByMatch.mockReturnValue([
-        { matchId: 'm-1', holeNumber: 7, scoreData: { ownScore: 5 }, userId: 'u1',
-          matchName: 'La Herrería', matchNumber: 3 },
+        {
+          matchId: 'm-1',
+          holeNumber: 7,
+          scoreData: { ownScore: 5 },
+          userId: 'u1',
+          matchName: 'La Herrería',
+          matchNumber: 3,
+        },
       ]);
       const rechazo = new Error('Bad request');
       rechazo.status = 400;
       submitHoleScoreUseCase.execute.mockRejectedValue(rechazo);
 
       renderHook(() => useScoring('m-1', 'u1'));
-      await waitFor(() => expect(getScoringViewUseCase.execute).toHaveBeenCalled());
+      await waitFor(() =>
+        expect(getScoringViewUseCase.execute).toHaveBeenCalled(),
+      );
 
       await act(async () => {
         window.dispatchEvent(new globalThis.Event('online'));
@@ -884,34 +1046,53 @@ describe('useScoring', () => {
       });
 
       await waitFor(() =>
-        expect(offlineQueue.remove).toHaveBeenCalledWith('m-1', 7, undefined, 'u1', null)
+        expect(offlineQueue.remove).toHaveBeenCalledWith(
+          'm-1',
+          7,
+          undefined,
+          'u1',
+          null,
+        ),
       );
       expect(golpesPerdidos.pendientes('u1')).toEqual([
-        expect.objectContaining({ matchId: 'm-1', holeNumber: 7, matchName: 'La Herrería' }),
+        expect.objectContaining({
+          matchId: 'm-1',
+          holeNumber: 7,
+          matchName: 'La Herrería',
+        }),
       ]);
     });
 
     it('y si el aviso no se puede escribir, el golpe NO se borra', async () => {
       // Preferible reintentarlo mil veces a que desaparezca sin dejar rastro
       offlineQueue.getByMatch.mockReturnValue([
-        { matchId: 'm-1', holeNumber: 7, scoreData: { ownScore: 5 }, userId: 'u1' },
+        {
+          matchId: 'm-1',
+          holeNumber: 7,
+          scoreData: { ownScore: 5 },
+          userId: 'u1',
+        },
       ]);
       submitHoleScoreUseCase.execute.mockRejectedValue(
-        Object.assign(new Error('Bad request'), { status: 400 })
+        Object.assign(new Error('Bad request'), { status: 400 }),
       );
       vi.spyOn(almacen, 'setItem').mockImplementation(() => {
         throw new Error('QuotaExceededError');
       });
 
       renderHook(() => useScoring('m-1', 'u1'));
-      await waitFor(() => expect(getScoringViewUseCase.execute).toHaveBeenCalled());
+      await waitFor(() =>
+        expect(getScoringViewUseCase.execute).toHaveBeenCalled(),
+      );
 
       await act(async () => {
         window.dispatchEvent(new globalThis.Event('online'));
         await Promise.resolve();
       });
 
-      await waitFor(() => expect(submitHoleScoreUseCase.execute).toHaveBeenCalled());
+      await waitFor(() =>
+        expect(submitHoleScoreUseCase.execute).toHaveBeenCalled(),
+      );
       expect(offlineQueue.remove).not.toHaveBeenCalled();
     });
 
@@ -919,15 +1100,27 @@ describe('useScoring', () => {
       // El caso de uso valida antes de enviar y lanza un Error pelado. Parar
       // por él dejaba el resto de la partida sin salir en cada reconexión
       offlineQueue.getByMatch.mockReturnValue([
-        { matchId: 'm-1', holeNumber: 7, scoreData: { ownScore: 5 }, userId: 'u1' },
-        { matchId: 'm-1', holeNumber: 8, scoreData: { ownScore: 4 }, userId: 'u1' },
+        {
+          matchId: 'm-1',
+          holeNumber: 7,
+          scoreData: { ownScore: 5 },
+          userId: 'u1',
+        },
+        {
+          matchId: 'm-1',
+          holeNumber: 8,
+          scoreData: { ownScore: 4 },
+          userId: 'u1',
+        },
       ]);
       submitHoleScoreUseCase.execute
         .mockRejectedValueOnce(new Error('Marked player ID is required'))
         .mockResolvedValue({});
 
       renderHook(() => useScoring('m-1', 'u1'));
-      await waitFor(() => expect(getScoringViewUseCase.execute).toHaveBeenCalled());
+      await waitFor(() =>
+        expect(getScoringViewUseCase.execute).toHaveBeenCalled(),
+      );
 
       await act(async () => {
         window.dispatchEvent(new globalThis.Event('online'));
@@ -938,30 +1131,54 @@ describe('useScoring', () => {
       // falló, no cuántas vueltas de vaciado haya dado (aquí la cola está
       // mockeada y no se vacía, así que se repiten)
       await waitFor(() =>
-        expect(submitHoleScoreUseCase.execute.mock.calls.map((c) => c[1])).toContain(8)
+        expect(
+          submitHoleScoreUseCase.execute.mock.calls.map((c) => c[1]),
+        ).toContain(8),
       );
       // El 8 se intenta INMEDIATAMENTE después del 7 que falló, en la misma
       // vuelta: eso es lo que antes no pasaba, porque se salía con un `break`
-      expect(submitHoleScoreUseCase.execute.mock.calls.slice(0, 2).map((c) => c[1]))
-        .toEqual([7, 8]);
-      expect(offlineQueue.remove).toHaveBeenCalledWith('m-1', 8, undefined, 'u1', null);
+      expect(
+        submitHoleScoreUseCase.execute.mock.calls.slice(0, 2).map((c) => c[1]),
+      ).toEqual([7, 8]);
+      expect(offlineQueue.remove).toHaveBeenCalledWith(
+        'm-1',
+        8,
+        undefined,
+        'u1',
+        null,
+      );
     });
 
     it('pero un fallo de sesión sí para el vaciado entero', async () => {
       // `api.js` responde a un 403 de CSRF cerrando la sesión y redirigiendo:
       // insistir con el resto es repetir ese cierre una vez por golpe
       offlineQueue.getByMatch.mockReturnValue([
-        { matchId: 'm-1', holeNumber: 7, scoreData: { ownScore: 5 }, userId: 'u1' },
-        { matchId: 'm-1', holeNumber: 8, scoreData: { ownScore: 4 }, userId: 'u1' },
+        {
+          matchId: 'm-1',
+          holeNumber: 7,
+          scoreData: { ownScore: 5 },
+          userId: 'u1',
+        },
+        {
+          matchId: 'm-1',
+          holeNumber: 8,
+          scoreData: { ownScore: 4 },
+          userId: 'u1',
+        },
       ]);
       submitHoleScoreUseCase.execute.mockRejectedValue(
-        Object.assign(new Error('CSRF validation failed. Please log in again.'), {
-          errorCode: 'CSRF_VALIDATION_FAILED',
-        })
+        Object.assign(
+          new Error('CSRF validation failed. Please log in again.'),
+          {
+            errorCode: 'CSRF_VALIDATION_FAILED',
+          },
+        ),
       );
 
       renderHook(() => useScoring('m-1', 'u1'));
-      await waitFor(() => expect(getScoringViewUseCase.execute).toHaveBeenCalled());
+      await waitFor(() =>
+        expect(getScoringViewUseCase.execute).toHaveBeenCalled(),
+      );
 
       await act(async () => {
         window.dispatchEvent(new globalThis.Event('online'));
@@ -969,8 +1186,12 @@ describe('useScoring', () => {
       });
 
       // Una sola por vuelta de vaciado: no se insiste con la segunda
-      await waitFor(() => expect(submitHoleScoreUseCase.execute).toHaveBeenCalled());
-      expect(submitHoleScoreUseCase.execute.mock.calls.map((c) => c[1])).not.toContain(8);
+      await waitFor(() =>
+        expect(submitHoleScoreUseCase.execute).toHaveBeenCalled(),
+      );
+      expect(
+        submitHoleScoreUseCase.execute.mock.calls.map((c) => c[1]),
+      ).not.toContain(8);
       expect(offlineQueue.remove).not.toHaveBeenCalled();
     });
 
@@ -980,7 +1201,12 @@ describe('useScoring', () => {
       // de cero para siempre
       offlineQueue.getByMatch.mockReturnValue([
         { matchId: 'm-1', holeNumber: 7, scoreData: { ownScore: 5 } },
-        { matchId: 'm-1', holeNumber: 8, participantId: 'p-1', scoreData: { score: 4 } },
+        {
+          matchId: 'm-1',
+          holeNumber: 8,
+          participantId: 'p-1',
+          scoreData: { score: 4 },
+        },
       ]);
 
       const { result } = renderHook(() => useScoring('m-1', 'u1'));
@@ -999,7 +1225,10 @@ describe('useScoring · un móvil compartido (FE #521)', () => {
     vi.clearAllMocks();
     getScoringViewUseCase.execute.mockResolvedValue(mockScoringView);
     submitHoleScoreUseCase.execute.mockResolvedValue(mockScoringView);
-    Object.defineProperty(navigator, 'onLine', { value: true, configurable: true });
+    Object.defineProperty(navigator, 'onLine', {
+      value: true,
+      configurable: true,
+    });
   });
 
   it('no envía ni borra lo que anotó otra persona', async () => {
@@ -1009,7 +1238,17 @@ describe('useScoring · un móvil compartido (FE #521)', () => {
     offlineQueue.getByMatch.mockImplementation((matchId, userId) =>
       // La cola real ya filtra por dueño: aquí se imita para comprobar que el
       // hook pregunta por lo SUYO y no por todo
-      userId === 'u-b' ? [] : [{ matchId, holeNumber: 3, participantId: null, userId: 'u-a', scoreData: { ownScore: 4 } }]
+      userId === 'u-b'
+        ? []
+        : [
+            {
+              matchId,
+              holeNumber: 3,
+              participantId: null,
+              userId: 'u-a',
+              scoreData: { ownScore: 4 },
+            },
+          ],
     );
 
     const { result } = renderHook(() => useScoring('m-1', 'u-b'));
@@ -1038,7 +1277,10 @@ describe('useScoring · lo que no se puede perder en silencio (FE #521)', () => 
   beforeEach(() => {
     vi.clearAllMocks();
     getScoringViewUseCase.execute.mockResolvedValue(mockScoringView);
-    Object.defineProperty(navigator, 'onLine', { value: true, configurable: true });
+    Object.defineProperty(navigator, 'onLine', {
+      value: true,
+      configurable: true,
+    });
     offlineQueue.getByMatch.mockReturnValue([]);
     offlineQueue.enqueue.mockReturnValue(true);
   });
@@ -1048,18 +1290,25 @@ describe('useScoring · lo que no se puede perder en silencio (FE #521)', () => 
     const { result } = renderHook(() => useScoring('m-1', 'u1'));
     await waitFor(() => expect(result.current.isLoading).toBe(false));
     await act(async () => {
-      await result.current.submitScore(1, { ownScore: 5, markedPlayerId: 'u2', markedScore: 4 });
+      await result.current.submitScore(1, {
+        ownScore: 5,
+        markedPlayerId: 'u2',
+        markedScore: 4,
+      });
     });
     return result;
   };
 
-  it.each([401, 408, 429])('un %s guarda el golpe en vez de tirarlo', async (codigo) => {
-    // Antes solo se guardaba a partir del 500, así que una sesión caducada
-    // —lo normal al volver tras un rato— tiraba la anotación
-    await anotaCon(Object.assign(new Error('x'), { status: codigo }));
+  it.each([401, 408, 429])(
+    'un %s guarda el golpe en vez de tirarlo',
+    async (codigo) => {
+      // Antes solo se guardaba a partir del 500, así que una sesión caducada
+      // —lo normal al volver tras un rato— tiraba la anotación
+      await anotaCon(Object.assign(new Error('x'), { status: codigo }));
 
-    expect(offlineQueue.enqueue).toHaveBeenCalled();
-  });
+      expect(offlineQueue.enqueue).toHaveBeenCalled();
+    },
+  );
 
   it('si el móvil no puede guardarlo, se dice', async () => {
     // Sin espacio o en ventana privada. Callarlo deja al jugador creyendo que
@@ -1077,14 +1326,21 @@ describe('useScoring · el aviso dice la verdad (FE #521)', () => {
     vi.clearAllMocks();
     getScoringViewUseCase.execute.mockResolvedValue(mockScoringView);
     submitHoleScoreUseCase.execute.mockResolvedValue(mockScoringView);
-    Object.defineProperty(navigator, 'onLine', { value: true, configurable: true });
+    Object.defineProperty(navigator, 'onLine', {
+      value: true,
+      configurable: true,
+    });
     offlineQueue.getByMatch.mockReturnValue([]);
     offlineQueue.enqueue.mockReturnValue(true);
   });
 
   const anota = async (result, hole) => {
     await act(async () => {
-      await result.current.submitScore(hole, { ownScore: 5, markedPlayerId: 'u2', markedScore: 4 });
+      await result.current.submitScore(hole, {
+        ownScore: 5,
+        markedPlayerId: 'u2',
+        markedScore: 4,
+      });
     });
   };
 
@@ -1092,7 +1348,7 @@ describe('useScoring · el aviso dice la verdad (FE #521)', () => {
     // Se guardó: para el jugador está anotado, solo que no ha salido del móvil.
     // Decirle que ha fallado es lo que le hace anotarlo dos veces
     submitHoleScoreUseCase.execute.mockRejectedValueOnce(
-      Object.assign(new Error('sesión'), { status: 401 })
+      Object.assign(new Error('sesión'), { status: 401 }),
     );
     const { result } = renderHook(() => useScoring('m-1', 'u1'));
     await waitFor(() => expect(result.current.isLoading).toBe(false));
@@ -1107,7 +1363,10 @@ describe('useScoring · el aviso dice la verdad (FE #521)', () => {
     // Sin cobertura no hay sondeo que limpie nada, así que sin esto el cartel
     // del hoyo 1 se quedaba puesto el resto de la vuelta mientras los demás
     // hoyos se guardaban perfectamente
-    Object.defineProperty(navigator, 'onLine', { value: false, configurable: true });
+    Object.defineProperty(navigator, 'onLine', {
+      value: false,
+      configurable: true,
+    });
     const { result } = renderHook(() => useScoring('m-1', 'u1'));
     await waitFor(() => expect(result.current.isLoading).toBe(false));
 
@@ -1130,7 +1389,10 @@ describe('useScoring · cuando el vaciado se para, y lo que se nombra (FE #551)'
     vi.clearAllMocks();
     getScoringViewUseCase.execute.mockResolvedValue(mockScoringView);
     submitHoleScoreUseCase.execute.mockResolvedValue({});
-    Object.defineProperty(navigator, 'onLine', { value: true, configurable: true });
+    Object.defineProperty(navigator, 'onLine', {
+      value: true,
+      configurable: true,
+    });
     offlineQueue.getByMatch.mockReturnValue([]);
     offlineQueue.remove.mockReturnValue(true);
   });
@@ -1146,7 +1408,12 @@ describe('useScoring · cuando el vaciado se para, y lo que se nombra (FE #551)'
     // Antes iba en `error`, que la propia recarga y cada sondeo dejan a null:
     // el aviso vivía menos de un render y nadie lo llegó a ver
     offlineQueue.getByMatch.mockReturnValue([
-      { matchId: 'm-1', holeNumber: 7, scoreData: { ownScore: 5 }, userId: 'u1' },
+      {
+        matchId: 'm-1',
+        holeNumber: 7,
+        scoreData: { ownScore: 5 },
+        userId: 'u1',
+      },
     ]);
     offlineQueue.remove.mockReturnValue(false);
     const { result } = renderHook(() => useScoring('m-1', 'u1'));
@@ -1155,10 +1422,14 @@ describe('useScoring · cuando el vaciado se para, y lo que se nombra (FE #551)'
 
     await vuelveLaRed();
 
-    await waitFor(() => expect(result.current.avisoDelVaciado).toBe('no-se-pudo-borrar'));
+    await waitFor(() =>
+      expect(result.current.avisoDelVaciado).toBe('no-se-pudo-borrar'),
+    );
     // La vista se volvió a pedir después, y el aviso sigue
     await waitFor(() =>
-      expect(getScoringViewUseCase.execute.mock.calls.length).toBeGreaterThan(vecesAntes)
+      expect(getScoringViewUseCase.execute.mock.calls.length).toBeGreaterThan(
+        vecesAntes,
+      ),
     );
     expect(result.current.avisoDelVaciado).toBe('no-se-pudo-borrar');
     expect(result.current.error).toBeNull();
@@ -1171,17 +1442,24 @@ describe('useScoring · cuando el vaciado se para, y lo que se nombra (FE #551)'
 
   it('un paro por red o servidor no deja aviso: se arregla esperando', async () => {
     offlineQueue.getByMatch.mockReturnValue([
-      { matchId: 'm-1', holeNumber: 7, scoreData: { ownScore: 5 }, userId: 'u1' },
+      {
+        matchId: 'm-1',
+        holeNumber: 7,
+        scoreData: { ownScore: 5 },
+        userId: 'u1',
+      },
     ]);
     submitHoleScoreUseCase.execute.mockRejectedValue(
-      Object.assign(new Error('HTTP 503'), { status: 503 })
+      Object.assign(new Error('HTTP 503'), { status: 503 }),
     );
     const { result } = renderHook(() => useScoring('m-1', 'u1'));
     await waitFor(() => expect(result.current.isLoading).toBe(false));
 
     await vuelveLaRed();
 
-    await waitFor(() => expect(submitHoleScoreUseCase.execute).toHaveBeenCalled());
+    await waitFor(() =>
+      expect(submitHoleScoreUseCase.execute).toHaveBeenCalled(),
+    );
     expect(result.current.avisoDelVaciado).toBeNull();
   });
 
@@ -1189,26 +1467,44 @@ describe('useScoring · cuando el vaciado se para, y lo que se nombra (FE #551)'
     // Esa pasada no ha tocado el disco: quitarlo por una caída de red dejaba
     // al jugador sin saber que su móvil no guarda mientras la entrada seguía
     offlineQueue.getByMatch.mockReturnValue([
-      { matchId: 'm-1', holeNumber: 7, scoreData: { ownScore: 5 }, userId: 'u1' },
+      {
+        matchId: 'm-1',
+        holeNumber: 7,
+        scoreData: { ownScore: 5 },
+        userId: 'u1',
+      },
     ]);
     offlineQueue.remove.mockReturnValue(false);
     // El vaciado de entrar ya lo pone
     const { result } = renderHook(() => useScoring('m-1', 'u1'));
-    await waitFor(() => expect(result.current.avisoDelVaciado).toBe('no-se-pudo-borrar'));
+    await waitFor(() =>
+      expect(result.current.avisoDelVaciado).toBe('no-se-pudo-borrar'),
+    );
 
     submitHoleScoreUseCase.execute.mockRejectedValue(
-      Object.assign(new Error('HTTP 503'), { status: 503 })
+      Object.assign(new Error('HTTP 503'), { status: 503 }),
     );
     await vuelveLaRed();
-    await waitFor(() => expect(submitHoleScoreUseCase.execute).toHaveBeenCalledTimes(2));
+    await waitFor(() =>
+      expect(submitHoleScoreUseCase.execute).toHaveBeenCalledTimes(2),
+    );
     expect(result.current.avisoDelVaciado).toBe('no-se-pudo-borrar');
   });
 
   it('lo corregido MIENTRAS iba la pasada sale en la misma vuelta', async () => {
     // El bucle no manda un valor que no leyó al empezar: sin una pasada más,
     // la corrección esperaba al siguiente disparador, que puede no llegar
-    const enCola = [{ matchId: 'm-1', holeNumber: 7, scoreData: { ownScore: 5 }, userId: 'u1' }];
-    offlineQueue.getByMatch.mockImplementation(() => enCola.map((e) => ({ ...e })));
+    const enCola = [
+      {
+        matchId: 'm-1',
+        holeNumber: 7,
+        scoreData: { ownScore: 5 },
+        userId: 'u1',
+      },
+    ];
+    offlineQueue.getByMatch.mockImplementation(() =>
+      enCola.map((e) => ({ ...e })),
+    );
     submitHoleScoreUseCase.execute.mockImplementationOnce(async () => {
       // El jugador corrige el 5 por un 6 con la petición en vuelo
       enCola[0] = { ...enCola[0], scoreData: { ownScore: 6 } };
@@ -1217,7 +1513,9 @@ describe('useScoring · cuando el vaciado se para, y lo que se nombra (FE #551)'
     // El vaciado de entrar es el que lo manda
     renderHook(() => useScoring('m-1', 'u1'));
 
-    await waitFor(() => expect(submitHoleScoreUseCase.execute).toHaveBeenCalledTimes(2));
+    await waitFor(() =>
+      expect(submitHoleScoreUseCase.execute).toHaveBeenCalledTimes(2),
+    );
     expect(submitHoleScoreUseCase.execute.mock.calls.map((c) => c[2])).toEqual([
       { ownScore: 5 },
       { ownScore: 6 },
@@ -1231,10 +1529,17 @@ describe('useScoring · cuando el vaciado se para, y lo que se nombra (FE #551)'
     // Sin corrección no hay nada que releer: cada disparador haría dos
     // lecturas de la cola por una
     offlineQueue.getByMatch.mockReturnValue([
-      { matchId: 'm-1', holeNumber: 7, scoreData: { ownScore: 5 }, userId: 'u1' },
+      {
+        matchId: 'm-1',
+        holeNumber: 7,
+        scoreData: { ownScore: 5 },
+        userId: 'u1',
+      },
     ]);
     renderHook(() => useScoring('m-1', 'u1'));
-    await waitFor(() => expect(submitHoleScoreUseCase.execute).toHaveBeenCalledTimes(1));
+    await waitFor(() =>
+      expect(submitHoleScoreUseCase.execute).toHaveBeenCalledTimes(1),
+    );
     await new Promise((r) => setTimeout(r, 20));
     expect(motor.vaciaAnotaciones).toHaveBeenCalledTimes(1);
   });
@@ -1243,10 +1548,22 @@ describe('useScoring · cuando el vaciado se para, y lo que se nombra (FE #551)'
     // El 7 se corrige en vuelo (no se toca el disco por él); el 9 llega y no
     // se puede borrar: paro. La corrección del 7 espera al siguiente disparador
     const enCola = [
-      { matchId: 'm-1', holeNumber: 7, scoreData: { ownScore: 5 }, userId: 'u1' },
-      { matchId: 'm-1', holeNumber: 9, scoreData: { ownScore: 4 }, userId: 'u1' },
+      {
+        matchId: 'm-1',
+        holeNumber: 7,
+        scoreData: { ownScore: 5 },
+        userId: 'u1',
+      },
+      {
+        matchId: 'm-1',
+        holeNumber: 9,
+        scoreData: { ownScore: 4 },
+        userId: 'u1',
+      },
     ];
-    offlineQueue.getByMatch.mockImplementation(() => enCola.map((e) => ({ ...e })));
+    offlineQueue.getByMatch.mockImplementation(() =>
+      enCola.map((e) => ({ ...e })),
+    );
     offlineQueue.remove.mockReturnValue(false);
     submitHoleScoreUseCase.execute.mockImplementationOnce(async () => {
       enCola[0] = { ...enCola[0], scoreData: { ownScore: 6 } };
@@ -1254,9 +1571,13 @@ describe('useScoring · cuando el vaciado se para, y lo que se nombra (FE #551)'
     });
     const { result } = renderHook(() => useScoring('m-1', 'u1'));
 
-    await waitFor(() => expect(result.current.avisoDelVaciado).toBe('no-se-pudo-borrar'));
+    await waitFor(() =>
+      expect(result.current.avisoDelVaciado).toBe('no-se-pudo-borrar'),
+    );
     await new Promise((r) => setTimeout(r, 20));
-    expect(submitHoleScoreUseCase.execute.mock.calls.map((c) => [c[1], c[2]])).toEqual([
+    expect(
+      submitHoleScoreUseCase.execute.mock.calls.map((c) => [c[1], c[2]]),
+    ).toEqual([
       [7, { ownScore: 5 }],
       [9, { ownScore: 4 }],
     ]);
@@ -1270,7 +1591,7 @@ describe('useScoring · cuando el vaciado se para, y lo que se nombra (FE #551)'
       { matchId: 'm-1', holeNumber: 7, scoreData: { ownScore: 5 } },
     ]);
     submitHoleScoreUseCase.execute.mockRejectedValue(
-      Object.assign(new Error('Conflict'), { status: 409 })
+      Object.assign(new Error('Conflict'), { status: 409 }),
     );
     const { result } = renderHook(() => useScoring('m-1', 'u1'));
     await waitFor(() => expect(result.current.isLoading).toBe(false));
@@ -1279,14 +1600,24 @@ describe('useScoring · cuando el vaciado se para, y lo que se nombra (FE #551)'
 
     await waitFor(() =>
       expect(golpesPerdidos.pendientes('u1')).toEqual([
-        expect.objectContaining({ matchId: 'm-1', holeNumber: 7, userId: 'u1' }),
-      ])
+        expect.objectContaining({
+          matchId: 'm-1',
+          holeNumber: 7,
+          userId: 'u1',
+        }),
+      ]),
     );
     expect(golpesPerdidos.pendientes('otra')).toEqual([]);
   });
 
   it('pone nombre también a los avisos ya apartados, no solo a la cola', async () => {
-    golpesPerdidos.apunta({ matchId: 'm-1', matchName: null, matchNumber: null, holeNumber: 7, userId: 'u1' });
+    golpesPerdidos.apunta({
+      matchId: 'm-1',
+      matchName: null,
+      matchNumber: null,
+      holeNumber: 7,
+      userId: 'u1',
+    });
     getScoringViewUseCase.execute.mockResolvedValue({
       ...mockScoringView,
       roundInfo: { golfCourseName: 'Meis' },
@@ -1295,9 +1626,16 @@ describe('useScoring · cuando el vaciado se para, y lo que se nombra (FE #551)'
     const { result } = renderHook(() => useScoring('m-1', 'u1'));
     await waitFor(() => expect(result.current.isLoading).toBe(false));
 
-    expect(offlineQueue.ponleNombre).toHaveBeenCalledWith('m-1', { matchName: 'Meis', matchNumber: 1 });
+    expect(offlineQueue.ponleNombre).toHaveBeenCalledWith('m-1', {
+      matchName: 'Meis',
+      matchNumber: 1,
+    });
     expect(golpesPerdidos.pendientes('u1')).toEqual([
-      expect.objectContaining({ holeNumber: 7, matchName: 'Meis', matchNumber: 1 }),
+      expect.objectContaining({
+        holeNumber: 7,
+        matchName: 'Meis',
+        matchNumber: 1,
+      }),
     ]);
   });
 
@@ -1313,12 +1651,19 @@ describe('useScoring · cuando el vaciado se para, y lo que se nombra (FE #551)'
     });
     await waitFor(() => expect(result.current.isLoading).toBe(false));
     offlineQueue.ponleNombre.mockClear();
-    getScoringViewUseCase.execute.mockRejectedValue(new TypeError('Failed to fetch'));
+    getScoringViewUseCase.execute.mockRejectedValue(
+      new TypeError('Failed to fetch'),
+    );
 
     rerender({ id: 'm-2' });
 
-    await waitFor(() => expect(getScoringViewUseCase.execute).toHaveBeenCalledWith('m-2'));
-    expect(offlineQueue.ponleNombre).not.toHaveBeenCalledWith('m-2', expect.anything());
+    await waitFor(() =>
+      expect(getScoringViewUseCase.execute).toHaveBeenCalledWith('m-2'),
+    );
+    expect(offlineQueue.ponleNombre).not.toHaveBeenCalledWith(
+      'm-2',
+      expect.anything(),
+    );
   });
 
   it('los avisos del cerrojo del vaciado de fondo no le dicen nada a esta pantalla', async () => {
@@ -1331,15 +1676,29 @@ describe('useScoring · cuando el vaciado se para, y lo que se nombra (FE #551)'
     sessionLock.acquire.mockClear();
 
     act(() => {
-      escucha({ type: 'LOCK_RELEASED', sessionId: 'vaciado-1', userId: 'u1', scope: 'vaciado' });
+      escucha({
+        type: 'LOCK_RELEASED',
+        sessionId: 'vaciado-1',
+        userId: 'u1',
+        scope: 'vaciado',
+      });
     });
     expect(sessionLock.acquire).not.toHaveBeenCalled();
 
     // El del propio ámbito de anotar sí se atiende
     act(() => {
-      escucha({ type: 'LOCK_RELEASED', sessionId: 'otra-pestaña', userId: 'u1', scope: '' });
+      escucha({
+        type: 'LOCK_RELEASED',
+        sessionId: 'otra-pestaña',
+        userId: 'u1',
+        scope: '',
+      });
     });
-    expect(sessionLock.acquire).toHaveBeenCalledWith('m-1', expect.any(String), 'u1');
+    expect(sessionLock.acquire).toHaveBeenCalledWith(
+      'm-1',
+      expect.any(String),
+      'u1',
+    );
   });
 });
 
@@ -1353,23 +1712,39 @@ describe('useScoring · se guarda ANTES de enviar (FE #601)', () => {
   let relojFijo;
 
   const esLaMisma = (e, matchId, holeNumber, participantId, userId) =>
-    e.matchId === matchId
-    && e.holeNumber === holeNumber
-    && (e.participantId ?? null) === (participantId ?? null)
-    && (e.userId ?? null) === (userId ?? null);
+    e.matchId === matchId &&
+    e.holeNumber === holeNumber &&
+    (e.participantId ?? null) === (participantId ?? null) &&
+    (e.userId ?? null) === (userId ?? null);
 
-  const golpe = (ownScore) => ({ ownScore, markedPlayerId: 'u2', markedScore: 4 });
-  const guardadaDe = (holeNumber, scoreData, timestamp = 1) =>
-    ({ matchId: 'm-1', holeNumber, participantId: null, scoreData, timestamp, userId: 'u1' });
+  const golpe = (ownScore) => ({
+    ownScore,
+    markedPlayerId: 'u2',
+    markedScore: 4,
+  });
+  const guardadaDe = (holeNumber, scoreData, timestamp = 1) => ({
+    matchId: 'm-1',
+    holeNumber,
+    participantId: null,
+    scoreData,
+    timestamp,
+    userId: 'u1',
+  });
 
   const enVuelo = () => {
     let suelta;
     let falla;
-    const promesa = new Promise((resolve, reject) => { suelta = resolve; falla = reject; });
+    const promesa = new Promise((resolve, reject) => {
+      suelta = resolve;
+      falla = reject;
+    });
     return { promesa, suelta, falla };
   };
 
-  const esperaUnPoco = () => act(async () => { await new Promise((r) => setTimeout(r, 20)); });
+  const esperaUnPoco = () =>
+    act(async () => {
+      await new Promise((r) => setTimeout(r, 20));
+    });
 
   // Montada y con el vaciado de entrar ya terminado, que con la cola vacía no
   // manda nada pero sí tiene el cerrojo un momento
@@ -1388,19 +1763,37 @@ describe('useScoring · se guarda ANTES de enviar (FE #601)', () => {
     relojFijo = false;
     getScoringViewUseCase.execute.mockResolvedValue(mockScoringView);
     submitHoleScoreUseCase.execute.mockResolvedValue(mockScoringView);
-    Object.defineProperty(navigator, 'onLine', { value: true, configurable: true });
-    offlineQueue.enqueue.mockImplementation((matchId, holeNumber, scoreData, participantId = null, userId = null) => {
-      enCola = enCola.filter((e) => !esLaMisma(e, matchId, holeNumber, participantId, userId));
-      enCola.push({ matchId, holeNumber, participantId, scoreData, timestamp: relojFijo ? reloj : reloj++, userId });
-      return true;
+    Object.defineProperty(navigator, 'onLine', {
+      value: true,
+      configurable: true,
     });
-    offlineQueue.getByMatch.mockImplementation((matchId) =>
-      enCola.filter((e) => e.matchId === matchId).map((e) => ({ ...e }))
+    offlineQueue.enqueue.mockImplementation(
+      (matchId, holeNumber, scoreData, participantId = null, userId = null) => {
+        enCola = enCola.filter(
+          (e) => !esLaMisma(e, matchId, holeNumber, participantId, userId),
+        );
+        enCola.push({
+          matchId,
+          holeNumber,
+          participantId,
+          scoreData,
+          timestamp: relojFijo ? reloj : reloj++,
+          userId,
+        });
+        return true;
+      },
     );
-    offlineQueue.remove.mockImplementation((matchId, holeNumber, participantId = null, userId = null) => {
-      enCola = enCola.filter((e) => !esLaMisma(e, matchId, holeNumber, participantId, userId));
-      return true;
-    });
+    offlineQueue.getByMatch.mockImplementation((matchId) =>
+      enCola.filter((e) => e.matchId === matchId).map((e) => ({ ...e })),
+    );
+    offlineQueue.remove.mockImplementation(
+      (matchId, holeNumber, participantId = null, userId = null) => {
+        enCola = enCola.filter(
+          (e) => !esLaMisma(e, matchId, holeNumber, participantId, userId),
+        );
+        return true;
+      },
+    );
   });
 
   afterEach(() => {
@@ -1420,7 +1813,9 @@ describe('useScoring · se guarda ANTES de enviar (FE #601)', () => {
       return mockScoringView;
     });
 
-    await act(async () => { await result.current.submitScore(5, golpe(5)); });
+    await act(async () => {
+      await result.current.submitScore(5, golpe(5));
+    });
 
     expect(loGuardadoAlEnviar).toEqual([[5, golpe(5)]]);
     expect(enCola).toEqual([]);
@@ -1434,13 +1829,26 @@ describe('useScoring · se guarda ANTES de enviar (FE #601)', () => {
     submitHoleScoreUseCase.execute.mockReturnValueOnce(vuelo.promesa);
 
     let envio;
-    act(() => { envio = result.current.submitScore(5, golpe(5)); });
-    await waitFor(() => expect(submitHoleScoreUseCase.execute).toHaveBeenCalledTimes(1));
+    act(() => {
+      envio = result.current.submitScore(5, golpe(5));
+    });
+    await waitFor(() =>
+      expect(submitHoleScoreUseCase.execute).toHaveBeenCalledTimes(1),
+    );
 
     // Lo que hay aquí es lo único que sobrevive a cerrar la aplicación
-    expect(enCola).toEqual([expect.objectContaining({ holeNumber: 5, userId: 'u1', scoreData: golpe(5) })]);
+    expect(enCola).toEqual([
+      expect.objectContaining({
+        holeNumber: 5,
+        userId: 'u1',
+        scoreData: golpe(5),
+      }),
+    ]);
 
-    await act(async () => { vuelo.falla(new TypeError('Failed to fetch')); await envio; });
+    await act(async () => {
+      vuelo.falla(new TypeError('Failed to fetch'));
+      await envio;
+    });
   });
 
   it.each([
@@ -1450,10 +1858,14 @@ describe('useScoring · se guarda ANTES de enviar (FE #601)', () => {
     const result = await monta();
     submitHoleScoreUseCase.execute.mockRejectedValueOnce(fallo);
 
-    await act(async () => { await result.current.submitScore(5, golpe(5)); });
+    await act(async () => {
+      await result.current.submitScore(5, golpe(5));
+    });
 
     expect(offlineQueue.enqueue).toHaveBeenCalledTimes(1);
-    expect(enCola).toEqual([expect.objectContaining({ holeNumber: 5, scoreData: golpe(5) })]);
+    expect(enCola).toEqual([
+      expect.objectContaining({ holeNumber: 5, scoreData: golpe(5) }),
+    ]);
     expect(result.current.error).toBeNull();
     expect(result.current.pendingQueueSize).toBe(1);
   });
@@ -1464,10 +1876,12 @@ describe('useScoring · se guarda ANTES de enviar (FE #601)', () => {
     // siguiente anotación buena retire el error (FE #521)
     const result = await monta();
     submitHoleScoreUseCase.execute.mockRejectedValueOnce(
-      Object.assign(new Error('Match completed'), { status: 409 })
+      Object.assign(new Error('Match completed'), { status: 409 }),
     );
 
-    await act(async () => { await result.current.submitScore(5, golpe(5)); });
+    await act(async () => {
+      await result.current.submitScore(5, golpe(5));
+    });
 
     expect(enCola).toEqual([]);
     expect(golpesPerdidos.pendientes('u1')).toEqual([
@@ -1483,9 +1897,13 @@ describe('useScoring · se guarda ANTES de enviar (FE #601)', () => {
       throw Object.assign(new Error('Conflict'), { status: 409 });
     });
 
-    await act(async () => { await result.current.submitScore(5, golpe(5)); });
+    await act(async () => {
+      await result.current.submitScore(5, golpe(5));
+    });
 
-    expect(enCola).toEqual([expect.objectContaining({ holeNumber: 5, scoreData: golpe(6) })]);
+    expect(enCola).toEqual([
+      expect.objectContaining({ holeNumber: 5, scoreData: golpe(6) }),
+    ]);
     expect(golpesPerdidos.pendientes('u1')).toEqual([]);
   });
 
@@ -1493,7 +1911,9 @@ describe('useScoring · se guarda ANTES de enviar (FE #601)', () => {
     const result = await monta();
     offlineQueue.enqueue.mockReturnValueOnce(false);
 
-    await act(async () => { await result.current.submitScore(5, golpe(5)); });
+    await act(async () => {
+      await result.current.submitScore(5, golpe(5));
+    });
 
     expect(submitHoleScoreUseCase.execute).toHaveBeenCalledTimes(1);
     expect(result.current.error).toBeNull();
@@ -1512,7 +1932,9 @@ describe('useScoring · se guarda ANTES de enviar (FE #601)', () => {
     it('6b · si el envío llega, la vieja sale: el siguiente vaciado pisaría la corrección', async () => {
       const result = await montaConLaVieja();
 
-      await act(async () => { await result.current.submitScore(5, golpe(5)); });
+      await act(async () => {
+        await result.current.submitScore(5, golpe(5));
+      });
 
       expect(enCola).toEqual([]);
     });
@@ -1520,14 +1942,20 @@ describe('useScoring · se guarda ANTES de enviar (FE #601)', () => {
     it('4b · si lo rechazan, queda apuntado como perdido y la vieja no se reenvía', async () => {
       const result = await montaConLaVieja();
       submitHoleScoreUseCase.execute.mockRejectedValueOnce(
-        Object.assign(new Error('Match completed'), { status: 409 })
+        Object.assign(new Error('Match completed'), { status: 409 }),
       );
 
-      await act(async () => { await result.current.submitScore(5, golpe(5)); });
+      await act(async () => {
+        await result.current.submitScore(5, golpe(5));
+      });
 
       expect(enCola).toEqual([]);
       expect(golpesPerdidos.pendientes('u1')).toEqual([
-        expect.objectContaining({ matchId: 'm-1', holeNumber: 5, userId: 'u1' }),
+        expect.objectContaining({
+          matchId: 'm-1',
+          holeNumber: 5,
+          userId: 'u1',
+        }),
       ]);
     });
   });
@@ -1537,27 +1965,48 @@ describe('useScoring · se guarda ANTES de enviar (FE #601)', () => {
 
   it.each([
     ['8 · corregir el hoyo con el envío en vuelo', false],
-    ['9 · lo mismo en el mismo milisegundo, donde el empate lo decide el valor', true],
-  ])('%s: la corrección se guarda sin enviar, no se borra, y sale al llegar', async (_, mismoMilisegundo) => {
-    const result = await monta();
-    relojFijo = mismoMilisegundo;
-    const vuelo = enVuelo();
-    submitHoleScoreUseCase.execute.mockReturnValueOnce(vuelo.promesa);
+    [
+      '9 · lo mismo en el mismo milisegundo, donde el empate lo decide el valor',
+      true,
+    ],
+  ])(
+    '%s: la corrección se guarda sin enviar, no se borra, y sale al llegar',
+    async (_, mismoMilisegundo) => {
+      const result = await monta();
+      relojFijo = mismoMilisegundo;
+      const vuelo = enVuelo();
+      submitHoleScoreUseCase.execute.mockReturnValueOnce(vuelo.promesa);
 
-    let primero;
-    act(() => { primero = result.current.submitScore(5, golpe(5)); });
-    await waitFor(() => expect(submitHoleScoreUseCase.execute).toHaveBeenCalledTimes(1));
+      let primero;
+      act(() => {
+        primero = result.current.submitScore(5, golpe(5));
+      });
+      await waitFor(() =>
+        expect(submitHoleScoreUseCase.execute).toHaveBeenCalledTimes(1),
+      );
 
-    await act(async () => { await result.current.submitScore(5, golpe(6)); });
-    // Dos peticiones a la vez las decidiría el orden de llegada
-    expect(submitHoleScoreUseCase.execute).toHaveBeenCalledTimes(1);
+      await act(async () => {
+        await result.current.submitScore(5, golpe(6));
+      });
+      // Dos peticiones a la vez las decidiría el orden de llegada
+      expect(submitHoleScoreUseCase.execute).toHaveBeenCalledTimes(1);
 
-    await act(async () => { vuelo.suelta(mockScoringView); await primero; });
+      await act(async () => {
+        vuelo.suelta(mockScoringView);
+        await primero;
+      });
 
-    await waitFor(() => expect(submitHoleScoreUseCase.execute).toHaveBeenCalledTimes(2));
-    expect(submitHoleScoreUseCase.execute.mock.calls[1]).toEqual(['m-1', 5, golpe(6)]);
-    await waitFor(() => expect(enCola).toEqual([]));
-  });
+      await waitFor(() =>
+        expect(submitHoleScoreUseCase.execute).toHaveBeenCalledTimes(2),
+      );
+      expect(submitHoleScoreUseCase.execute.mock.calls[1]).toEqual([
+        'm-1',
+        5,
+        golpe(6),
+      ]);
+      await waitFor(() => expect(enCola).toEqual([]));
+    },
+  );
 
   it('10 · anotar con un vaciado enviando solo guarda, y sale al terminar ese vaciado', async () => {
     // El 8 no estaba en la lista de ese vaciado: su pasada de repaso solo
@@ -1566,17 +2015,33 @@ describe('useScoring · se guarda ANTES de enviar (FE #601)', () => {
     const vaciado = enVuelo();
     submitHoleScoreUseCase.execute.mockReturnValueOnce(vaciado.promesa);
     const { result } = renderHook(() => useScoring('m-1', 'u1'));
-    await waitFor(() => expect(submitHoleScoreUseCase.execute).toHaveBeenCalledWith('m-1', 3, golpe(4)));
+    await waitFor(() =>
+      expect(submitHoleScoreUseCase.execute).toHaveBeenCalledWith(
+        'm-1',
+        3,
+        golpe(4),
+      ),
+    );
     await waitFor(() => expect(result.current.isLoading).toBe(false));
 
-    await act(async () => { await result.current.submitScore(8, golpe(5)); });
+    await act(async () => {
+      await result.current.submitScore(8, golpe(5));
+    });
 
     expect(submitHoleScoreUseCase.execute).toHaveBeenCalledTimes(1);
     expect(enCola.map((e) => e.holeNumber)).toEqual([3, 8]);
 
-    await act(async () => { vaciado.suelta({}); });
+    await act(async () => {
+      vaciado.suelta({});
+    });
 
-    await waitFor(() => expect(submitHoleScoreUseCase.execute).toHaveBeenCalledWith('m-1', 8, golpe(5)));
+    await waitFor(() =>
+      expect(submitHoleScoreUseCase.execute).toHaveBeenCalledWith(
+        'm-1',
+        8,
+        golpe(5),
+      ),
+    );
     await waitFor(() => expect(enCola).toEqual([]));
   });
 
@@ -1585,8 +2050,12 @@ describe('useScoring · se guarda ANTES de enviar (FE #601)', () => {
       const vuelo = enVuelo();
       submitHoleScoreUseCase.execute.mockReturnValueOnce(vuelo.promesa);
       let envio;
-      act(() => { envio = result.current.submitScore(5, golpe(5)); });
-      await waitFor(() => expect(submitHoleScoreUseCase.execute).toHaveBeenCalledTimes(1));
+      act(() => {
+        envio = result.current.submitScore(5, golpe(5));
+      });
+      await waitFor(() =>
+        expect(submitHoleScoreUseCase.execute).toHaveBeenCalledTimes(1),
+      );
       // Un hoyo de antes, guardado sin cobertura
       enCola.unshift(guardadaDe(3, golpe(4)));
 
@@ -1603,10 +2072,21 @@ describe('useScoring · se guarda ANTES de enviar (FE #601)', () => {
 
       expect(submitHoleScoreUseCase.execute).toHaveBeenCalledTimes(1);
 
-      await act(async () => { vuelo.suelta(mockScoringView); await envio; });
+      await act(async () => {
+        vuelo.suelta(mockScoringView);
+        await envio;
+      });
 
-      await waitFor(() => expect(submitHoleScoreUseCase.execute).toHaveBeenCalledWith('m-1', 3, golpe(4)));
-      expect(submitHoleScoreUseCase.execute.mock.calls.filter((c) => c[1] === 5)).toHaveLength(1);
+      await waitFor(() =>
+        expect(submitHoleScoreUseCase.execute).toHaveBeenCalledWith(
+          'm-1',
+          3,
+          golpe(4),
+        ),
+      );
+      expect(
+        submitHoleScoreUseCase.execute.mock.calls.filter((c) => c[1] === 5),
+      ).toHaveLength(1);
       await waitFor(() => expect(enCola).toEqual([]));
     });
 
@@ -1614,7 +2094,10 @@ describe('useScoring · se guarda ANTES de enviar (FE #601)', () => {
       const result = await monta();
       const { vuelo, envio } = await arrancaElEnvioYVuelveLaRed(result);
 
-      await act(async () => { vuelo.falla(new TypeError('Failed to fetch')); await envio; });
+      await act(async () => {
+        vuelo.falla(new TypeError('Failed to fetch'));
+        await envio;
+      });
       await esperaUnPoco();
 
       expect(submitHoleScoreUseCase.execute).toHaveBeenCalledTimes(1);
@@ -1629,16 +2112,28 @@ describe('useScoring · lo que se ve junta el servidor y la cola (FE #606)', () 
   let reloj;
 
   const esLaMisma = (e, matchId, holeNumber, participantId, userId) =>
-    e.matchId === matchId
-    && e.holeNumber === holeNumber
-    && (e.participantId ?? null) === (participantId ?? null)
-    && (e.userId ?? null) === (userId ?? null);
+    e.matchId === matchId &&
+    e.holeNumber === holeNumber &&
+    (e.participantId ?? null) === (participantId ?? null) &&
+    (e.userId ?? null) === (userId ?? null);
 
-  const guardada = (holeNumber, scoreData, timestamp = 1) =>
-    ({ matchId: 'm-1', holeNumber, participantId: null, scoreData, timestamp, userId: 'u1' });
+  const guardada = (holeNumber, scoreData, timestamp = 1) => ({
+    matchId: 'm-1',
+    holeNumber,
+    participantId: null,
+    scoreData,
+    timestamp,
+    userId: 'u1',
+  });
   const fila = (userId, campos = {}) => ({
-    userId, ownScore: null, ownSubmitted: false, markerScore: null, markerSubmitted: false,
-    validationStatus: 'pending', netScore: null, ...campos,
+    userId,
+    ownScore: null,
+    ownSubmitted: false,
+    markerScore: null,
+    markerSubmitted: false,
+    validationStatus: 'pending',
+    netScore: null,
+    ...campos,
   });
   const hoyo = (holeNumber, playerScores) => ({ holeNumber, playerScores });
   const vistaCon = (scores) => ({ ...mockScoringView, scores });
@@ -1649,14 +2144,18 @@ describe('useScoring · lo que se ve junta el servidor y la cola (FE #606)', () 
 
   const enVuelo = () => {
     let suelta;
-    const promesa = new Promise((resolve) => { suelta = resolve; });
+    const promesa = new Promise((resolve) => {
+      suelta = resolve;
+    });
     return { promesa, suelta };
   };
 
   const monta = async () => {
     const app = renderHook(() => useScoring('m-1', 'u1'));
     await waitFor(() => expect(app.result.current.isLoading).toBe(false));
-    await act(async () => { await new Promise((r) => setTimeout(r, 20)); });
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 20));
+    });
     return app;
   };
 
@@ -1667,19 +2166,37 @@ describe('useScoring · lo que se ve junta el servidor y la cola (FE #606)', () 
     reloj = 1000;
     getScoringViewUseCase.execute.mockResolvedValue(vistaCon([]));
     submitHoleScoreUseCase.execute.mockResolvedValue(vistaCon([]));
-    Object.defineProperty(navigator, 'onLine', { value: true, configurable: true });
-    offlineQueue.enqueue.mockImplementation((matchId, holeNumber, scoreData, participantId = null, userId = null) => {
-      enCola = enCola.filter((e) => !esLaMisma(e, matchId, holeNumber, participantId, userId));
-      enCola.push({ matchId, holeNumber, participantId, scoreData, timestamp: reloj++, userId });
-      return true;
+    Object.defineProperty(navigator, 'onLine', {
+      value: true,
+      configurable: true,
     });
-    offlineQueue.getByMatch.mockImplementation((matchId) =>
-      enCola.filter((e) => e.matchId === matchId).map((e) => ({ ...e }))
+    offlineQueue.enqueue.mockImplementation(
+      (matchId, holeNumber, scoreData, participantId = null, userId = null) => {
+        enCola = enCola.filter(
+          (e) => !esLaMisma(e, matchId, holeNumber, participantId, userId),
+        );
+        enCola.push({
+          matchId,
+          holeNumber,
+          participantId,
+          scoreData,
+          timestamp: reloj++,
+          userId,
+        });
+        return true;
+      },
     );
-    offlineQueue.remove.mockImplementation((matchId, holeNumber, participantId = null, userId = null) => {
-      enCola = enCola.filter((e) => !esLaMisma(e, matchId, holeNumber, participantId, userId));
-      return true;
-    });
+    offlineQueue.getByMatch.mockImplementation((matchId) =>
+      enCola.filter((e) => e.matchId === matchId).map((e) => ({ ...e })),
+    );
+    offlineQueue.remove.mockImplementation(
+      (matchId, holeNumber, participantId = null, userId = null) => {
+        enCola = enCola.filter(
+          (e) => !esLaMisma(e, matchId, holeNumber, participantId, userId),
+        );
+        return true;
+      },
+    );
   });
 
   afterEach(() => {
@@ -1694,76 +2211,123 @@ describe('useScoring · lo que se ve junta el servidor y la cola (FE #606)', () 
     const app = await monta();
     submitHoleScoreUseCase.execute.mockReturnValue(new Promise(() => {}));
 
-    act(() => { app.result.current.submitScore(5, { ownScore: 5, markedPlayerId: 'u2' }); });
+    act(() => {
+      app.result.current.submitScore(5, { ownScore: 5, markedPlayerId: 'u2' });
+    });
 
     await waitFor(() =>
-      expect(visible(app.result, 5, 'u1')).toEqual(expect.objectContaining({ ownScore: 5, ownSubmitted: true }))
+      expect(visible(app.result, 5, 'u1')).toEqual(
+        expect.objectContaining({ ownScore: 5, ownSubmitted: true }),
+      ),
     );
     // El servidor no lo tiene: lo que se ve sale de la cola
     expect(app.result.current.scoringView.scores).toEqual([]);
 
     app.unmount();
     const reabierta = await monta();
-    expect(visible(reabierta.result, 5, 'u1')).toEqual(expect.objectContaining({ ownScore: 5, ownSubmitted: true }));
+    expect(visible(reabierta.result, 5, 'u1')).toEqual(
+      expect.objectContaining({ ownScore: 5, ownSubmitted: true }),
+    );
   });
 
   it('Q2 · una corrección en la cola se ve encima de lo que tiene el servidor', async () => {
     getScoringViewUseCase.execute.mockResolvedValue(
-      vistaCon([hoyo(5, [fila('u1', { ownScore: 4, ownSubmitted: true })])])
+      vistaCon([hoyo(5, [fila('u1', { ownScore: 4, ownSubmitted: true })])]),
     );
     const app = await monta();
     enCola = [guardada(5, { ownScore: 6, markedPlayerId: 'u2' })];
 
     app.rerender();
 
-    expect(visible(app.result, 5, 'u1')).toEqual(expect.objectContaining({ ownScore: 6, ownSubmitted: true }));
+    expect(visible(app.result, 5, 'u1')).toEqual(
+      expect.objectContaining({ ownScore: 6, ownSubmitted: true }),
+    );
   });
 
   it('/code-review: lo mío en la cola encima del número de otro marcador ya no se dice suyo', async () => {
     getScoringViewUseCase.execute.mockResolvedValue(
-      vistaCon([hoyo(5, [fila('u2', { markerScore: 6, markerSubmitted: true, markerBy: 'viejo', markerByName: 'Ulises' })])])
+      vistaCon([
+        hoyo(5, [
+          fila('u2', {
+            markerScore: 6,
+            markerSubmitted: true,
+            markerBy: 'viejo',
+            markerByName: 'Ulises',
+          }),
+        ]),
+      ]),
     );
     const app = await monta();
-    enCola = [guardada(5, { ownScore: 4, markedPlayerId: 'u2', markedScore: 5 })];
+    enCola = [
+      guardada(5, { ownScore: 4, markedPlayerId: 'u2', markedScore: 5 }),
+    ];
 
     app.rerender();
 
-    expect(visible(app.result, 5, 'u2')).toEqual(expect.objectContaining({ markerScore: 5, markerBy: null, markerByName: null }));
+    expect(visible(app.result, 5, 'u2')).toEqual(
+      expect.objectContaining({
+        markerScore: 5,
+        markerBy: null,
+        markerByName: null,
+      }),
+    );
   });
 
   it('Q3 · un golpe rechazado deja de verse: manda lo del servidor', async () => {
     getScoringViewUseCase.execute.mockResolvedValue(
-      vistaCon([hoyo(5, [fila('u1', { ownScore: 4, ownSubmitted: true })])])
+      vistaCon([hoyo(5, [fila('u1', { ownScore: 4, ownSubmitted: true })])]),
     );
     const app = await monta();
     submitHoleScoreUseCase.execute.mockRejectedValueOnce(
-      Object.assign(new Error('Match completed'), { status: 409 })
+      Object.assign(new Error('Match completed'), { status: 409 }),
     );
 
-    await act(async () => { await app.result.current.submitScore(5, { ownScore: 5, markedPlayerId: 'u2' }); });
+    await act(async () => {
+      await app.result.current.submitScore(5, {
+        ownScore: 5,
+        markedPlayerId: 'u2',
+      });
+    });
 
-    expect(visible(app.result, 5, 'u1')).toEqual(expect.objectContaining({ ownScore: 4 }));
+    expect(visible(app.result, 5, 'u1')).toEqual(
+      expect.objectContaining({ ownScore: 4 }),
+    );
   });
 
   it('Q4 · lo que ya llegó no manda sobre un cambio posterior del servidor', async () => {
     const app = await monta();
     submitHoleScoreUseCase.execute.mockResolvedValueOnce(
-      vistaCon([hoyo(5, [fila('u1', { ownScore: 5, ownSubmitted: true })])])
+      vistaCon([hoyo(5, [fila('u1', { ownScore: 5, ownSubmitted: true })])]),
     );
-    await act(async () => { await app.result.current.submitScore(5, { ownScore: 5, markedPlayerId: 'u2' }); });
+    await act(async () => {
+      await app.result.current.submitScore(5, {
+        ownScore: 5,
+        markedPlayerId: 'u2',
+      });
+    });
     getScoringViewUseCase.execute.mockResolvedValue(
-      vistaCon([hoyo(5, [fila('u1', { ownScore: 7, ownSubmitted: true })])])
+      vistaCon([hoyo(5, [fila('u1', { ownScore: 7, ownSubmitted: true })])]),
     );
 
-    await act(async () => { await app.result.current.refetch(); });
+    await act(async () => {
+      await app.result.current.refetch();
+    });
 
-    expect(visible(app.result, 5, 'u1')).toEqual(expect.objectContaining({ ownScore: 7 }));
+    expect(visible(app.result, 5, 'u1')).toEqual(
+      expect.objectContaining({ ownScore: 7 }),
+    );
   });
 
   it('Q5 · un golpe propio en la cola no toca la fila del marcado', async () => {
-    const delMarcado = fila('u2', { markerScore: 4, markerSubmitted: true, validationStatus: 'match' });
+    const delMarcado = fila('u2', {
+      markerScore: 4,
+      markerSubmitted: true,
+      validationStatus: 'match',
+    });
     getScoringViewUseCase.execute.mockResolvedValue(
-      vistaCon([hoyo(5, [fila('u1', { ownScore: 4, ownSubmitted: true }), delMarcado])])
+      vistaCon([
+        hoyo(5, [fila('u1', { ownScore: 4, ownSubmitted: true }), delMarcado]),
+      ]),
     );
     const app = await monta();
     enCola = [guardada(5, { ownScore: 6, markedPlayerId: 'u2' })];
@@ -1775,11 +2339,15 @@ describe('useScoring · lo que se ve junta el servidor y la cola (FE #606)', () 
 
   it('Q5b · y el golpe del marcado en la cola va a la fila del marcado', async () => {
     const app = await monta();
-    enCola = [guardada(5, { ownScore: 6, markedPlayerId: 'u2', markedScore: 5 })];
+    enCola = [
+      guardada(5, { ownScore: 6, markedPlayerId: 'u2', markedScore: 5 }),
+    ];
 
     app.rerender();
 
-    expect(visible(app.result, 5, 'u2')).toEqual(expect.objectContaining({ markerScore: 5, markerSubmitted: true }));
+    expect(visible(app.result, 5, 'u2')).toEqual(
+      expect.objectContaining({ markerScore: 5, markerSubmitted: true }),
+    );
   });
 
   it('Q6 · la raya en la cola se ve como raya, no como hueco', async () => {
@@ -1788,36 +2356,66 @@ describe('useScoring · lo que se ve junta el servidor y la cola (FE #606)', () 
 
     app.rerender();
 
-    expect(visible(app.result, 5, 'u1')).toEqual(expect.objectContaining({ ownScore: null, ownSubmitted: true }));
+    expect(visible(app.result, 5, 'u1')).toEqual(
+      expect.objectContaining({ ownScore: null, ownSubmitted: true }),
+    );
   });
 
   it('Q7 · con otro golpe en la cola, la validación del servidor ya no vale: pendiente', async () => {
     getScoringViewUseCase.execute.mockResolvedValue(
-      vistaCon([hoyo(5, [fila('u1', { ownScore: 4, ownSubmitted: true, validationStatus: 'match' })])])
+      vistaCon([
+        hoyo(5, [
+          fila('u1', {
+            ownScore: 4,
+            ownSubmitted: true,
+            validationStatus: 'match',
+          }),
+        ]),
+      ]),
     );
     const app = await monta();
     enCola = [guardada(5, { ownScore: 6, markedPlayerId: 'u2' })];
 
     app.rerender();
 
-    expect(visible(app.result, 5, 'u1')).toEqual(expect.objectContaining({ ownScore: 6, validationStatus: 'pending' }));
+    expect(visible(app.result, 5, 'u1')).toEqual(
+      expect.objectContaining({ ownScore: 6, validationStatus: 'pending' }),
+    );
   });
 
   it('Q7b · si la cola dice lo mismo que el servidor, su validación se respeta', async () => {
     getScoringViewUseCase.execute.mockResolvedValue(
-      vistaCon([hoyo(5, [fila('u1', { ownScore: 4, ownSubmitted: true, validationStatus: 'match' })])])
+      vistaCon([
+        hoyo(5, [
+          fila('u1', {
+            ownScore: 4,
+            ownSubmitted: true,
+            validationStatus: 'match',
+          }),
+        ]),
+      ]),
     );
     const app = await monta();
     enCola = [guardada(5, { ownScore: 4, markedPlayerId: 'u2' })];
 
     app.rerender();
 
-    expect(visible(app.result, 5, 'u1')).toEqual(expect.objectContaining({ ownScore: 4, validationStatus: 'match' }));
+    expect(visible(app.result, 5, 'u1')).toEqual(
+      expect.objectContaining({ ownScore: 4, validationStatus: 'match' }),
+    );
   });
 
   it('Q8 · los hoyos validados cuentan solo lo del servidor', async () => {
     getScoringViewUseCase.execute.mockResolvedValue(
-      vistaCon([hoyo(5, [fila('u1', { ownScore: 4, ownSubmitted: true, validationStatus: 'match' })])])
+      vistaCon([
+        hoyo(5, [
+          fila('u1', {
+            ownScore: 4,
+            ownSubmitted: true,
+            validationStatus: 'match',
+          }),
+        ]),
+      ]),
     );
     const app = await monta();
     expect(app.result.current.validatedHoles).toBe(1);
@@ -1834,12 +2432,24 @@ describe('useScoring · lo que se ve junta el servidor y la cola (FE #606)', () 
     const sondeo = enVuelo();
     getScoringViewUseCase.execute.mockReturnValueOnce(sondeo.promesa);
     let pedida;
-    act(() => { pedida = app.result.current.refetch(); });
-    const trasEnviar = vistaCon([hoyo(5, [fila('u1', { ownScore: 5, ownSubmitted: true })])]);
+    act(() => {
+      pedida = app.result.current.refetch();
+    });
+    const trasEnviar = vistaCon([
+      hoyo(5, [fila('u1', { ownScore: 5, ownSubmitted: true })]),
+    ]);
     submitHoleScoreUseCase.execute.mockResolvedValueOnce(trasEnviar);
-    await act(async () => { await app.result.current.submitScore(5, { ownScore: 5, markedPlayerId: 'u2' }); });
+    await act(async () => {
+      await app.result.current.submitScore(5, {
+        ownScore: 5,
+        markedPlayerId: 'u2',
+      });
+    });
 
-    await act(async () => { sondeo.suelta(vistaCon([])); await pedida; });
+    await act(async () => {
+      sondeo.suelta(vistaCon([]));
+      await pedida;
+    });
 
     expect(app.result.current.scoringView.scores).toEqual(trasEnviar.scores);
   });
@@ -1849,9 +2459,13 @@ describe('useScoring · lo que se ve junta el servidor y la cola (FE #606)', () 
     const sondeo = enVuelo();
     getScoringViewUseCase.execute.mockReturnValueOnce(sondeo.promesa);
     let pedida;
-    act(() => { pedida = app.result.current.refetch(); });
+    act(() => {
+      pedida = app.result.current.refetch();
+    });
     enCola = [guardada(3, { ownScore: 4, markedPlayerId: 'u2' })];
-    const trasVaciar = vistaCon([hoyo(3, [fila('u1', { ownScore: 4, ownSubmitted: true })])]);
+    const trasVaciar = vistaCon([
+      hoyo(3, [fila('u1', { ownScore: 4, ownSubmitted: true })]),
+    ]);
     getScoringViewUseCase.execute.mockResolvedValue(trasVaciar);
     await act(async () => {
       window.dispatchEvent(new globalThis.Event('online'));
@@ -1859,7 +2473,10 @@ describe('useScoring · lo que se ve junta el servidor y la cola (FE #606)', () 
     });
     await waitFor(() => expect(enCola).toEqual([]));
 
-    await act(async () => { sondeo.suelta(vistaCon([])); await pedida; });
+    await act(async () => {
+      sondeo.suelta(vistaCon([]));
+      await pedida;
+    });
 
     expect(app.result.current.scoringView.scores).toEqual(trasVaciar.scores);
   });
@@ -1872,13 +2489,17 @@ describe('useScoring · lo que se ve junta el servidor y la cola (FE #606)', () 
     const sondeo = enVuelo();
     getScoringViewUseCase.execute.mockReturnValueOnce(sondeo.promesa);
     let pedida;
-    act(() => { pedida = app.result.current.refetch(); });
+    act(() => {
+      pedida = app.result.current.refetch();
+    });
     enCola = [
       guardada(3, { ownScore: 4, markedPlayerId: 'u2' }, 1),
       guardada(4, { ownScore: 5, markedPlayerId: 'u2' }, 2),
     ];
     submitHoleScoreUseCase.execute
-      .mockResolvedValueOnce(vistaCon([hoyo(3, [fila('u1', { ownScore: 4, ownSubmitted: true })])]))
+      .mockResolvedValueOnce(
+        vistaCon([hoyo(3, [fila('u1', { ownScore: 4, ownSubmitted: true })])]),
+      )
       .mockReturnValueOnce(new Promise(() => {}));
     await act(async () => {
       window.dispatchEvent(new globalThis.Event('online'));
@@ -1887,11 +2508,16 @@ describe('useScoring · lo que se ve junta el servidor y la cola (FE #606)', () 
     // El 3 ya llegó y salió de la cola; el 4 sigue en camino
     await waitFor(() => expect(enCola.map((e) => e.holeNumber)).toEqual([4]));
 
-    await act(async () => { sondeo.suelta(vistaCon([])); await pedida; });
+    await act(async () => {
+      sondeo.suelta(vistaCon([]));
+      await pedida;
+    });
     // Un render más, para leer la cola como está AHORA y no como estaba
     app.rerender();
 
-    expect(visible(app.result, 3, 'u1')).toEqual(expect.objectContaining({ ownScore: 4, ownSubmitted: true }));
+    expect(visible(app.result, 3, 'u1')).toEqual(
+      expect.objectContaining({ ownScore: 4, ownSubmitted: true }),
+    );
   });
 
   it('Q10 · sondeos solapados sin envíos por medio se aplican: la vista no se congela con red lenta', async () => {
@@ -1906,14 +2532,26 @@ describe('useScoring · lo que se ve junta el servidor y la cola (FE #606)', () 
       .mockReturnValueOnce(segundo.promesa);
     let a;
     let b;
-    act(() => { a = app.result.current.refetch(); });
-    act(() => { b = app.result.current.refetch(); });
-    const delPrimero = vistaCon([hoyo(2, [fila('u1', { ownScore: 3, ownSubmitted: true })])]);
+    act(() => {
+      a = app.result.current.refetch();
+    });
+    act(() => {
+      b = app.result.current.refetch();
+    });
+    const delPrimero = vistaCon([
+      hoyo(2, [fila('u1', { ownScore: 3, ownSubmitted: true })]),
+    ]);
 
-    await act(async () => { primero.suelta(delPrimero); await a; });
+    await act(async () => {
+      primero.suelta(delPrimero);
+      await a;
+    });
 
     expect(app.result.current.scoringView.scores).toEqual(delPrimero.scores);
-    await act(async () => { segundo.suelta(vistaCon([])); await b; });
+    await act(async () => {
+      segundo.suelta(vistaCon([]));
+      await b;
+    });
   });
 
   it('Q10b · pero una respuesta más vieja que otra ya aplicada no hace retroceder la vista', async () => {
@@ -1927,12 +2565,24 @@ describe('useScoring · lo que se ve junta el servidor y la cola (FE #606)', () 
       .mockReturnValueOnce(segundo.promesa);
     let a;
     let b;
-    act(() => { a = app.result.current.refetch(); });
-    act(() => { b = app.result.current.refetch(); });
-    const delSegundo = vistaCon([hoyo(2, [fila('u1', { ownScore: 4, ownSubmitted: true })])]);
-    await act(async () => { segundo.suelta(delSegundo); await b; });
+    act(() => {
+      a = app.result.current.refetch();
+    });
+    act(() => {
+      b = app.result.current.refetch();
+    });
+    const delSegundo = vistaCon([
+      hoyo(2, [fila('u1', { ownScore: 4, ownSubmitted: true })]),
+    ]);
+    await act(async () => {
+      segundo.suelta(delSegundo);
+      await b;
+    });
 
-    await act(async () => { primero.suelta(vistaCon([])); await a; });
+    await act(async () => {
+      primero.suelta(vistaCon([]));
+      await a;
+    });
 
     expect(app.result.current.scoringView.scores).toEqual(delSegundo.scores);
   });
@@ -1941,12 +2591,21 @@ describe('useScoring · lo que se ve junta el servidor y la cola (FE #606)', () 
     // La ruta no lleva `key`: ir de un partido a otro deja el hook montado, con
     // la vista del anterior y sus peticiones todavía en camino. Hoy solo se
     // llega tecleando la URL, pero un enlace directo entre partidos lo abriría
-    const vistaDe = (id, scores = [], extra = {}) => ({ ...mockScoringView, matchId: id, scores, ...extra });
+    const vistaDe = (id, scores = [], extra = {}) => ({
+      ...mockScoringView,
+      matchId: id,
+      scores,
+      ...extra,
+    });
 
     const montaEn = async (id) => {
-      const app = renderHook(({ matchId }) => useScoring(matchId, 'u1'), { initialProps: { matchId: id } });
+      const app = renderHook(({ matchId }) => useScoring(matchId, 'u1'), {
+        initialProps: { matchId: id },
+      });
       await waitFor(() => expect(app.result.current.isLoading).toBe(false));
-      await act(async () => { await new Promise((r) => setTimeout(r, 20)); });
+      await act(async () => {
+        await new Promise((r) => setTimeout(r, 20));
+      });
       return app;
     };
 
@@ -1954,7 +2613,9 @@ describe('useScoring · lo que se ve junta el servidor y la cola (FE #606)', () 
     const conLaNuevaRetenida = () => {
       const nueva = enVuelo();
       getScoringViewUseCase.execute.mockImplementation((id) =>
-        id === 'm-2' ? nueva.promesa.then(() => vistaDe('m-2')) : Promise.resolve(vistaDe(id))
+        id === 'm-2'
+          ? nueva.promesa.then(() => vistaDe('m-2'))
+          : Promise.resolve(vistaDe(id)),
       );
       return nueva;
     };
@@ -1963,8 +2624,12 @@ describe('useScoring · lo que se ve junta el servidor y la cola (FE #606)', () 
     // después suelta la vista del nuevo
     const pasaAlNuevoYSuelta = async (app, nueva, sueltaLoViejo) => {
       app.rerender({ matchId: 'm-2' });
-      await act(async () => { await new Promise((r) => setTimeout(r, 20)); });
-      await act(async () => { await sueltaLoViejo(); });
+      await act(async () => {
+        await new Promise((r) => setTimeout(r, 20));
+      });
+      await act(async () => {
+        await sueltaLoViejo();
+      });
       await act(async () => {
         nueva.suelta();
         await new Promise((r) => setTimeout(r, 20));
@@ -1972,26 +2637,44 @@ describe('useScoring · lo que se ve junta el servidor y la cola (FE #606)', () 
     };
 
     beforeEach(() => {
-      getScoringViewUseCase.execute.mockImplementation(async (id) => vistaDe(id));
+      getScoringViewUseCase.execute.mockImplementation(async (id) =>
+        vistaDe(id),
+      );
     });
 
     it('Q12 · la vista con la cola no mezcla el servidor del partido anterior con la cola del nuevo', async () => {
       getScoringViewUseCase.execute.mockImplementation(async (id) =>
-        vistaDe(id, id === 'm-1' ? [hoyo(5, [fila('u1', { ownScore: 3, ownSubmitted: true })])] : [])
+        vistaDe(
+          id,
+          id === 'm-1'
+            ? [hoyo(5, [fila('u1', { ownScore: 3, ownSubmitted: true })])]
+            : [],
+        ),
       );
       const app = await montaEn('m-1');
       conLaNuevaRetenida();
-      enCola = [{ ...guardada(7, { ownScore: 4, markedPlayerId: 'u2' }), matchId: 'm-2' }];
+      enCola = [
+        {
+          ...guardada(7, { ownScore: 4, markedPlayerId: 'u2' }),
+          matchId: 'm-2',
+        },
+      ];
       // El vaciado de entrar en el nuevo se queda en camino: la anotación sigue en la cola
       submitHoleScoreUseCase.execute.mockReturnValue(new Promise(() => {}));
 
       app.rerender({ matchId: 'm-2' });
-      await act(async () => { await new Promise((r) => setTimeout(r, 20)); });
+      await act(async () => {
+        await new Promise((r) => setTimeout(r, 20));
+      });
 
       // La vista que hay es todavía la del partido anterior
       expect(app.result.current.scoringView.matchId).toBe('m-1');
-      expect(app.result.current.scoresVisibles.find((s) => s.holeNumber === 5)).toBeUndefined();
-      expect(visible(app.result, 7, 'u1')).toEqual(expect.objectContaining({ ownScore: 4 }));
+      expect(
+        app.result.current.scoresVisibles.find((s) => s.holeNumber === 5),
+      ).toBeUndefined();
+      expect(visible(app.result, 7, 'u1')).toEqual(
+        expect.objectContaining({ ownScore: 4 }),
+      );
     });
 
     it('Q13 · la respuesta tardía de un envío del partido anterior no tapa la vista del nuevo', async () => {
@@ -1999,15 +2682,26 @@ describe('useScoring · lo que se ve junta el servidor y la cola (FE #606)', () 
       const envio = enVuelo();
       submitHoleScoreUseCase.execute.mockReturnValueOnce(envio.promesa);
       let enviando;
-      act(() => { enviando = app.result.current.submitScore(5, { ownScore: 5, markedPlayerId: 'u2' }); });
+      act(() => {
+        enviando = app.result.current.submitScore(5, {
+          ownScore: 5,
+          markedPlayerId: 'u2',
+        });
+      });
       const nueva = conLaNuevaRetenida();
 
       await pasaAlNuevoYSuelta(app, nueva, async () => {
-        envio.suelta(vistaDe('m-1', [hoyo(5, [fila('u1', { ownScore: 5, ownSubmitted: true })])]));
+        envio.suelta(
+          vistaDe('m-1', [
+            hoyo(5, [fila('u1', { ownScore: 5, ownSubmitted: true })]),
+          ]),
+        );
         await enviando;
       });
 
-      await waitFor(() => expect(app.result.current.scoringView.matchId).toBe('m-2'));
+      await waitFor(() =>
+        expect(app.result.current.scoringView.matchId).toBe('m-2'),
+      );
     });
 
     it('Q14 · lo que el vaciado del partido anterior manda tarde no tapa la vista del nuevo', async () => {
@@ -2022,11 +2716,17 @@ describe('useScoring · lo que se ve junta el servidor y la cola (FE #606)', () 
       const nueva = conLaNuevaRetenida();
 
       await pasaAlNuevoYSuelta(app, nueva, async () => {
-        envio.suelta(vistaDe('m-1', [hoyo(3, [fila('u1', { ownScore: 4, ownSubmitted: true })])]));
+        envio.suelta(
+          vistaDe('m-1', [
+            hoyo(3, [fila('u1', { ownScore: 4, ownSubmitted: true })]),
+          ]),
+        );
         await new Promise((r) => setTimeout(r, 20));
       });
 
-      await waitFor(() => expect(app.result.current.scoringView.matchId).toBe('m-2'));
+      await waitFor(() =>
+        expect(app.result.current.scoringView.matchId).toBe('m-2'),
+      );
     });
 
     it('Q15 · conceder en el partido anterior y que conteste tarde no tapa la vista del nuevo', async () => {
@@ -2034,7 +2734,9 @@ describe('useScoring · lo que se ve junta el servidor y la cola (FE #606)', () 
       const concesion = enVuelo();
       concedeMatchUseCase.execute.mockReturnValueOnce(concesion.promesa);
       let concediendo;
-      act(() => { concediendo = app.result.current.concedeMatch('A', 'motivo'); });
+      act(() => {
+        concediendo = app.result.current.concedeMatch('A', 'motivo');
+      });
       const nueva = conLaNuevaRetenida();
 
       await pasaAlNuevoYSuelta(app, nueva, async () => {
@@ -2042,19 +2744,35 @@ describe('useScoring · lo que se ve junta el servidor y la cola (FE #606)', () 
         await concediendo;
       });
 
-      await waitFor(() => expect(app.result.current.scoringView.matchId).toBe('m-2'));
+      await waitFor(() =>
+        expect(app.result.current.scoringView.matchId).toBe('m-2'),
+      );
     });
 
     it('Q16 · entregar la tarjeta del partido anterior y que conteste tarde no tapa la vista del nuevo', async () => {
       getScoringViewUseCase.execute.mockImplementation(async (id) =>
-        vistaDe(id, [hoyo(1, [fila('u1', { ownScore: 4, ownSubmitted: true, validationStatus: 'match' })])], { isDecided: true })
+        vistaDe(
+          id,
+          [
+            hoyo(1, [
+              fila('u1', {
+                ownScore: 4,
+                ownSubmitted: true,
+                validationStatus: 'match',
+              }),
+            ]),
+          ],
+          { isDecided: true },
+        ),
       );
       const app = await montaEn('m-1');
       expect(app.result.current.canSubmitScorecard).toBe(true);
       const entrega = enVuelo();
       submitScorecardUseCase.execute.mockReturnValueOnce(entrega.promesa);
       let entregando;
-      act(() => { entregando = app.result.current.submitScorecard(); });
+      act(() => {
+        entregando = app.result.current.submitScorecard();
+      });
       const nueva = conLaNuevaRetenida();
 
       await pasaAlNuevoYSuelta(app, nueva, async () => {
@@ -2062,22 +2780,30 @@ describe('useScoring · lo que se ve junta el servidor y la cola (FE #606)', () 
         await entregando;
       });
 
-      await waitFor(() => expect(app.result.current.scoringView.matchId).toBe('m-2'));
+      await waitFor(() =>
+        expect(app.result.current.scoringView.matchId).toBe('m-2'),
+      );
     });
   });
 });
 
 // El servicio de verdad, como en partida rapida: lo que se quiere vigilar es
 // que la foto quede guardada y se sepa leer, no que se llame a una funcion
-import { recuerda, loQueSeSupo, olvidaTodo } from '../services/loUltimoConocido';
+import {
+  recuerda,
+  loQueSeSupo,
+  olvidaTodo,
+} from '../services/loUltimoConocido';
 
 describe('useScoring · lo último que se supo (FE #614)', () => {
   const sinSenal = () =>
-    getScoringViewUseCase.execute.mockRejectedValue(new TypeError('Failed to fetch'));
+    getScoringViewUseCase.execute.mockRejectedValue(
+      new TypeError('Failed to fetch'),
+    );
 
   const conEstado = (estado) =>
     getScoringViewUseCase.execute.mockRejectedValue(
-      Object.assign(new Error('no'), { status: estado })
+      Object.assign(new Error('no'), { status: estado }),
     );
 
   const monta = async (id = 'm-1', quien = 'u1') => {
@@ -2092,7 +2818,10 @@ describe('useScoring · lo último que se supo (FE #614)', () => {
     olvidaTodo();
     getScoringViewUseCase.execute.mockResolvedValue(mockScoringView);
     offlineQueue.getByMatch.mockReturnValue([]);
-    Object.defineProperty(navigator, 'onLine', { value: true, configurable: true });
+    Object.defineProperty(navigator, 'onLine', {
+      value: true,
+      configurable: true,
+    });
   });
 
   // Fila 1
@@ -2108,7 +2837,10 @@ describe('useScoring · lo último que se supo (FE #614)', () => {
   // esto se encuentra la carcasa vacia y ahi ya no hay nada que anotar
   it('sin señal se pinta lo guardado: hoyos, pares y jugadores', async () => {
     recuerda('m-1', { partida: mockScoringView, campo: null });
-    Object.defineProperty(navigator, 'onLine', { value: false, configurable: true });
+    Object.defineProperty(navigator, 'onLine', {
+      value: false,
+      configurable: true,
+    });
     sinSenal();
 
     const result = await monta();
@@ -2130,7 +2862,10 @@ describe('useScoring · lo último que se supo (FE #614)', () => {
         userId: 'u1',
       },
     ]);
-    Object.defineProperty(navigator, 'onLine', { value: false, configurable: true });
+    Object.defineProperty(navigator, 'onLine', {
+      value: false,
+      configurable: true,
+    });
     sinSenal();
 
     const result = await monta();
@@ -2145,7 +2880,10 @@ describe('useScoring · lo último que se supo (FE #614)', () => {
 
   // Fila 4. Callarlo deja la pantalla vacia sin decir por que
   it('sin señal y sin nada guardado, no hay vista que pintar', async () => {
-    Object.defineProperty(navigator, 'onLine', { value: false, configurable: true });
+    Object.defineProperty(navigator, 'onLine', {
+      value: false,
+      configurable: true,
+    });
     sinSenal();
 
     const result = await monta();
@@ -2155,7 +2893,10 @@ describe('useScoring · lo último que se supo (FE #614)', () => {
 
   // Fila 5
   it('cuando vuelve la red, lo del servidor manda y pasa a ser la foto nueva', async () => {
-    recuerda('m-1', { partida: { ...mockScoringView, matchNumber: 99 }, campo: null });
+    recuerda('m-1', {
+      partida: { ...mockScoringView, matchNumber: 99 },
+      campo: null,
+    });
 
     const result = await monta();
 
@@ -2212,7 +2953,10 @@ describe('useScoring · lo último que se supo (FE #614)', () => {
   // Fila 11. La ruta no lleva `key`: ir de un partido a otro reutiliza el hook
   it('la foto de otro partido no se pinta en el que está en pantalla', async () => {
     recuerda('m-1', { partida: mockScoringView, campo: null });
-    Object.defineProperty(navigator, 'onLine', { value: false, configurable: true });
+    Object.defineProperty(navigator, 'onLine', {
+      value: false,
+      configurable: true,
+    });
     sinSenal();
 
     const result = await monta('m-2');
@@ -2239,7 +2983,10 @@ describe('useScoring · lo último que se supo (FE #614)', () => {
   // partido a como estaba hace un rato, con el jugador mirándolo
   it('con la vista ya pintada, un fallo posterior no la sustituye por la foto', async () => {
     const result = await monta();
-    recuerda('m-1', { partida: { ...mockScoringView, matchNumber: 99 }, campo: null });
+    recuerda('m-1', {
+      partida: { ...mockScoringView, matchNumber: 99 },
+      campo: null,
+    });
     conEstado(500);
 
     await act(async () => {
@@ -2254,7 +3001,10 @@ describe('useScoring · lo último que se supo (FE #614)', () => {
   // foto no puede pintarse en el partido que está en pantalla — y aquí no hay
   // vista que lo tape, que es justo cuando se notaría
   it('el fallo tardío del partido anterior no mete su foto en el que se está viendo', async () => {
-    recuerda('m-1', { partida: { ...mockScoringView, matchNumber: 99 }, campo: null });
+    recuerda('m-1', {
+      partida: { ...mockScoringView, matchNumber: 99 },
+      campo: null,
+    });
 
     let mata;
     const deM1 = new Promise((_, reject) => {
@@ -2262,7 +3012,7 @@ describe('useScoring · lo último que se supo (FE #614)', () => {
     });
     // Ninguno de los dos contesta: así no hay vista pintada que disimule
     getScoringViewUseCase.execute.mockImplementation((id) =>
-      id === 'm-1' ? deM1 : new Promise(() => {})
+      id === 'm-1' ? deM1 : new Promise(() => {}),
     );
 
     const app = renderHook(({ matchId }) => useScoring(matchId, 'u1'), {
@@ -2300,7 +3050,9 @@ describe('useScoring · lo último que se supo (FE #614)', () => {
     await act(async () => {
       await result.current.refetch();
     });
-    await waitFor(() => expect(loQueSeSupo('m-1')?.partida.matchNumber).toBe(1));
+    await waitFor(() =>
+      expect(loQueSeSupo('m-1')?.partida.matchNumber).toBe(1),
+    );
 
     // Y ahora contesta la primera, que salió antes, con otra cosa
     await act(async () => {
@@ -2362,7 +3114,10 @@ describe('useScoring · cambiar de partido con una vista ya pintada (FE #614, Co
     almacen.clear();
     olvidaTodo();
     offlineQueue.getByMatch.mockReturnValue([]);
-    Object.defineProperty(navigator, 'onLine', { value: true, configurable: true });
+    Object.defineProperty(navigator, 'onLine', {
+      value: true,
+      configurable: true,
+    });
   });
 
   it('tras cargar bien el primero, la foto del segundo sí se pinta', async () => {
@@ -2377,7 +3132,9 @@ describe('useScoring · cambiar de partido con una vista ya pintada (FE #614, Co
     const app = renderHook(({ matchId }) => useScoring(matchId, 'u1'), {
       initialProps: { matchId: 'm-1' },
     });
-    await waitFor(() => expect(app.result.current.scoringView?.matchNumber).toBe(1));
+    await waitFor(() =>
+      expect(app.result.current.scoringView?.matchNumber).toBe(1),
+    );
 
     app.rerender({ matchId: 'm-2' });
     await act(async () => {
@@ -2396,7 +3153,7 @@ describe('useScoring · cambiar de partido con una vista ya pintada (FE #614, Co
     getScoringViewUseCase.execute.mockImplementation((id) =>
       id === 'm-1'
         ? Promise.reject(Object.assign(new Error('500'), { status: 500 }))
-        : new Promise(() => {})
+        : new Promise(() => {}),
     );
 
     const app = renderHook(({ matchId }) => useScoring(matchId, 'u1'), {
@@ -2454,26 +3211,43 @@ describe('useScoring · un guardado que falla no deja salir lo sustituido (FE #6
   let alFallar;
 
   const esLaMisma = (e, matchId, holeNumber, participantId, userId) =>
-    e.matchId === matchId
-    && e.holeNumber === holeNumber
-    && (e.participantId ?? null) === (participantId ?? null)
-    && (e.userId ?? null) === (userId ?? null);
+    e.matchId === matchId &&
+    e.holeNumber === holeNumber &&
+    (e.participantId ?? null) === (participantId ?? null) &&
+    (e.userId ?? null) === (userId ?? null);
 
-  const golpe = (ownScore) => ({ ownScore, markedPlayerId: 'u2', markedScore: 4 });
-  const guardadaDe = (holeNumber, scoreData, timestamp = 1) =>
-    ({ matchId: 'm-1', holeNumber, participantId: null, scoreData, timestamp, userId: 'u1' });
-  const delHoyo = (holeNumber) => enCola.filter((e) => e.holeNumber === holeNumber).map((e) => e.scoreData);
+  const golpe = (ownScore) => ({
+    ownScore,
+    markedPlayerId: 'u2',
+    markedScore: 4,
+  });
+  const guardadaDe = (holeNumber, scoreData, timestamp = 1) => ({
+    matchId: 'm-1',
+    holeNumber,
+    participantId: null,
+    scoreData,
+    timestamp,
+    userId: 'u1',
+  });
+  const delHoyo = (holeNumber) =>
+    enCola.filter((e) => e.holeNumber === holeNumber).map((e) => e.scoreData);
   // Lo que queda del 4 cuando sale el golpe propio: el del marcado, intacto
   const soloElMarcado = { markedPlayerId: 'u2', markedScore: 4 };
 
   const enVuelo = () => {
     let suelta;
     let falla;
-    const promesa = new Promise((resolve, reject) => { suelta = resolve; falla = reject; });
+    const promesa = new Promise((resolve, reject) => {
+      suelta = resolve;
+      falla = reject;
+    });
     return { promesa, suelta, falla };
   };
 
-  const esperaUnPoco = () => act(async () => { await new Promise((r) => setTimeout(r, 20)); });
+  const esperaUnPoco = () =>
+    act(async () => {
+      await new Promise((r) => setTimeout(r, 20));
+    });
 
   const monta = async () => {
     const { result } = renderHook(() => useScoring('m-1', 'u1'));
@@ -2492,25 +3266,43 @@ describe('useScoring · un guardado que falla no deja salir lo sustituido (FE #6
     alFallar = null;
     getScoringViewUseCase.execute.mockResolvedValue(mockScoringView);
     submitHoleScoreUseCase.execute.mockResolvedValue(mockScoringView);
-    Object.defineProperty(navigator, 'onLine', { value: true, configurable: true });
-    offlineQueue.enqueue.mockImplementation((matchId, holeNumber, scoreData, participantId = null, userId = null) => {
-      if (holeNumber === fallaEnHoyo && vecesQueFalla > 0) {
-        vecesQueFalla -= 1;
-        alFallar?.();
-        return false;
-      }
-      const limpio = JSON.parse(JSON.stringify(scoreData));
-      enCola = enCola.filter((e) => !esLaMisma(e, matchId, holeNumber, participantId, userId));
-      enCola.push({ matchId, holeNumber, participantId, scoreData: limpio, timestamp: reloj++, userId });
-      return true;
+    Object.defineProperty(navigator, 'onLine', {
+      value: true,
+      configurable: true,
     });
-    offlineQueue.getByMatch.mockImplementation((matchId) =>
-      enCola.filter((e) => e.matchId === matchId).map((e) => ({ ...e }))
+    offlineQueue.enqueue.mockImplementation(
+      (matchId, holeNumber, scoreData, participantId = null, userId = null) => {
+        if (holeNumber === fallaEnHoyo && vecesQueFalla > 0) {
+          vecesQueFalla -= 1;
+          alFallar?.();
+          return false;
+        }
+        const limpio = JSON.parse(JSON.stringify(scoreData));
+        enCola = enCola.filter(
+          (e) => !esLaMisma(e, matchId, holeNumber, participantId, userId),
+        );
+        enCola.push({
+          matchId,
+          holeNumber,
+          participantId,
+          scoreData: limpio,
+          timestamp: reloj++,
+          userId,
+        });
+        return true;
+      },
     );
-    offlineQueue.remove.mockImplementation((matchId, holeNumber, participantId = null, userId = null) => {
-      enCola = enCola.filter((e) => !esLaMisma(e, matchId, holeNumber, participantId, userId));
-      return true;
-    });
+    offlineQueue.getByMatch.mockImplementation((matchId) =>
+      enCola.filter((e) => e.matchId === matchId).map((e) => ({ ...e })),
+    );
+    offlineQueue.remove.mockImplementation(
+      (matchId, holeNumber, participantId = null, userId = null) => {
+        enCola = enCola.filter(
+          (e) => !esLaMisma(e, matchId, holeNumber, participantId, userId),
+        );
+        return true;
+      },
+    );
   });
 
   afterEach(() => {
@@ -2518,11 +3310,17 @@ describe('useScoring · un guardado que falla no deja salir lo sustituido (FE #6
     offlineQueue.getByMatch.mockReset().mockReturnValue([]);
     offlineQueue.remove.mockReset().mockReturnValue(true);
     submitHoleScoreUseCase.execute.mockReset();
-    Object.defineProperty(navigator, 'onLine', { value: true, configurable: true });
+    Object.defineProperty(navigator, 'onLine', {
+      value: true,
+      configurable: true,
+    });
   });
 
   const sinCobertura = async () => {
-    Object.defineProperty(navigator, 'onLine', { value: false, configurable: true });
+    Object.defineProperty(navigator, 'onLine', {
+      value: false,
+      configurable: true,
+    });
     return monta();
   };
 
@@ -2531,7 +3329,9 @@ describe('useScoring · un guardado que falla no deja salir lo sustituido (FE #6
     enCola = [guardadaDe(5, golpe(4))];
     fallaEnHoyo = 5;
 
-    await act(async () => { await result.current.submitScore(5, golpe(5)); });
+    await act(async () => {
+      await result.current.submitScore(5, golpe(5));
+    });
 
     expect(delHoyo(5)).toEqual([soloElMarcado]);
     expect(Object.keys(result.current.noGuardados)).toEqual(['5']);
@@ -2546,7 +3346,11 @@ describe('useScoring · un guardado que falla no deja salir lo sustituido (FE #6
     fallaEnHoyo = 5;
 
     await act(async () => {
-      await result.current.submitScore(5, { ownScore: 4, markedPlayerId: 'u2', markedScore: 5 });
+      await result.current.submitScore(5, {
+        ownScore: 4,
+        markedPlayerId: 'u2',
+        markedScore: 5,
+      });
     });
 
     // Entero, hora incluida: reescribirlo lo haría pasar por una corrección nueva
@@ -2561,7 +3365,11 @@ describe('useScoring · un guardado que falla no deja salir lo sustituido (FE #6
     fallaEnHoyo = 5;
 
     await act(async () => {
-      await result.current.submitScore(5, { ownScore: 5, markedPlayerId: 'u2', markedScore: undefined });
+      await result.current.submitScore(5, {
+        ownScore: 5,
+        markedPlayerId: 'u2',
+        markedScore: undefined,
+      });
     });
 
     expect(delHoyo(5)).toEqual([soloElMarcado]);
@@ -2572,17 +3380,30 @@ describe('useScoring · un guardado que falla no deja salir lo sustituido (FE #6
     const vuelo = enVuelo();
     submitHoleScoreUseCase.execute.mockReturnValueOnce(vuelo.promesa);
     let primero;
-    act(() => { primero = result.current.submitScore(3, golpe(4)); });
-    await waitFor(() => expect(submitHoleScoreUseCase.execute).toHaveBeenCalledTimes(1));
+    act(() => {
+      primero = result.current.submitScore(3, golpe(4));
+    });
+    await waitFor(() =>
+      expect(submitHoleScoreUseCase.execute).toHaveBeenCalledTimes(1),
+    );
     enCola.push(guardadaDe(5, golpe(4)));
     fallaEnHoyo = 5;
 
-    await act(async () => { await result.current.submitScore(5, golpe(5)); });
+    await act(async () => {
+      await result.current.submitScore(5, golpe(5));
+    });
 
     expect(delHoyo(5)).toEqual([soloElMarcado]);
     expect(Object.keys(result.current.noGuardados)).toEqual(['5']);
-    await act(async () => { vuelo.suelta(mockScoringView); await primero; });
-    expect(submitHoleScoreUseCase.execute).not.toHaveBeenCalledWith('m-1', 5, golpe(4));
+    await act(async () => {
+      vuelo.suelta(mockScoringView);
+      await primero;
+    });
+    expect(submitHoleScoreUseCase.execute).not.toHaveBeenCalledWith(
+      'm-1',
+      5,
+      golpe(4),
+    );
   });
 
   // Llegue o no: lo que llega es el 4, y el 5 sigue sin estar en ningún sitio.
@@ -2591,28 +3412,44 @@ describe('useScoring · un guardado que falla no deja salir lo sustituido (FE #6
   it.each([
     ['llega', (vuelo) => vuelo.suelta(mockScoringView)],
     ['no llega', (vuelo) => vuelo.falla(new TypeError('Failed to fetch'))],
-  ])('2b · el envío del 4 que %s no retira el aviso del 5 que no se pudo guardar', async (_, acaba) => {
-    const result = await monta();
-    const vuelo = enVuelo();
-    submitHoleScoreUseCase.execute.mockReturnValueOnce(vuelo.promesa);
-    let primero;
-    act(() => { primero = result.current.submitScore(5, golpe(4)); });
-    await waitFor(() => expect(submitHoleScoreUseCase.execute).toHaveBeenCalledTimes(1));
-    fallaEnHoyo = 5;
+  ])(
+    '2b · el envío del 4 que %s no retira el aviso del 5 que no se pudo guardar',
+    async (_, acaba) => {
+      const result = await monta();
+      const vuelo = enVuelo();
+      submitHoleScoreUseCase.execute.mockReturnValueOnce(vuelo.promesa);
+      let primero;
+      act(() => {
+        primero = result.current.submitScore(5, golpe(4));
+      });
+      await waitFor(() =>
+        expect(submitHoleScoreUseCase.execute).toHaveBeenCalledTimes(1),
+      );
+      fallaEnHoyo = 5;
 
-    await act(async () => { await result.current.submitScore(5, golpe(5)); });
-    await act(async () => { acaba(vuelo); await primero; });
+      await act(async () => {
+        await result.current.submitScore(5, golpe(5));
+      });
+      await act(async () => {
+        acaba(vuelo);
+        await primero;
+      });
 
-    expect(Object.keys(result.current.noGuardados)).toEqual(['5']);
-  });
+      expect(Object.keys(result.current.noGuardados)).toEqual(['5']);
+    },
+  );
 
   it('3 · envío directo que no llega: el 4 sale de la cola y se avisa', async () => {
     const result = await monta();
     enCola = [guardadaDe(5, golpe(4))];
     fallaEnHoyo = 5;
-    submitHoleScoreUseCase.execute.mockRejectedValueOnce(new TypeError('Failed to fetch'));
+    submitHoleScoreUseCase.execute.mockRejectedValueOnce(
+      new TypeError('Failed to fetch'),
+    );
 
-    await act(async () => { await result.current.submitScore(5, golpe(5)); });
+    await act(async () => {
+      await result.current.submitScore(5, golpe(5));
+    });
 
     expect(delHoyo(5)).toEqual([soloElMarcado]);
     expect(Object.keys(result.current.noGuardados)).toEqual(['5']);
@@ -2625,7 +3462,9 @@ describe('useScoring · un guardado que falla no deja salir lo sustituido (FE #6
     vecesQueFalla = Infinity;
     offlineQueue.remove.mockImplementation(() => false);
 
-    await act(async () => { await result.current.submitScore(5, golpe(5)); });
+    await act(async () => {
+      await result.current.submitScore(5, golpe(5));
+    });
 
     expect(enCola).toEqual([guardadaDe(5, golpe(4))]);
     expect(Object.keys(result.current.noGuardados)).toEqual(['5']);
@@ -2638,7 +3477,12 @@ describe('useScoring · un guardado que falla no deja salir lo sustituido (FE #6
     fallaEnHoyo = 5;
     offlineQueue.remove.mockImplementation(() => false);
 
-    await act(async () => { await result.current.submitScore(5, { ownScore: 5, markedPlayerId: 'u2' }); });
+    await act(async () => {
+      await result.current.submitScore(5, {
+        ownScore: 5,
+        markedPlayerId: 'u2',
+      });
+    });
 
     expect(enCola).toEqual([guardadaDe(5, propio)]);
     expect(Object.keys(result.current.noGuardados)).toEqual(['5']);
@@ -2649,9 +3493,13 @@ describe('useScoring · un guardado que falla no deja salir lo sustituido (FE #6
     enCola = [guardadaDe(5, golpe(4))];
     fallaEnHoyo = 5;
     // Otra escritura del mismo hoyo, justo en ese momento
-    alFallar = () => { enCola = [guardadaDe(5, golpe(7), 5000)]; };
+    alFallar = () => {
+      enCola = [guardadaDe(5, golpe(7), 5000)];
+    };
 
-    await act(async () => { await result.current.submitScore(5, golpe(5)); });
+    await act(async () => {
+      await result.current.submitScore(5, golpe(5));
+    });
 
     expect(enCola).toEqual([guardadaDe(5, golpe(7), 5000)]);
   });
@@ -2660,9 +3508,13 @@ describe('useScoring · un guardado que falla no deja salir lo sustituido (FE #6
     const result = await sinCobertura();
     enCola = [guardadaDe(5, golpe(4))];
     fallaEnHoyo = 5;
-    alFallar = () => { enCola = [guardadaDe(5, golpe(7))]; };
+    alFallar = () => {
+      enCola = [guardadaDe(5, golpe(7))];
+    };
 
-    await act(async () => { await result.current.submitScore(5, golpe(5)); });
+    await act(async () => {
+      await result.current.submitScore(5, golpe(5));
+    });
 
     expect(enCola).toEqual([guardadaDe(5, golpe(7))]);
   });
@@ -2671,9 +3523,13 @@ describe('useScoring · un guardado que falla no deja salir lo sustituido (FE #6
     const result = await sinCobertura();
     enCola = [guardadaDe(5, golpe(4))];
     fallaEnHoyo = 5;
-    alFallar = () => { enCola = [guardadaDe(5, golpe(4), 5000)]; };
+    alFallar = () => {
+      enCola = [guardadaDe(5, golpe(4), 5000)];
+    };
 
-    await act(async () => { await result.current.submitScore(5, golpe(5)); });
+    await act(async () => {
+      await result.current.submitScore(5, golpe(5));
+    });
 
     expect(enCola).toEqual([guardadaDe(5, golpe(4), 5000)]);
   });
@@ -2691,19 +3547,25 @@ describe('useScoring · un guardado que falla no deja salir lo sustituido (FE #6
  * cada 10 s. Solo lo que desmiente el partido (401/403/404) lo sustituye.
  */
 describe('useScoring · de dónde viene el fallo (FE #626)', () => {
-  const rechazo = (status) => Object.assign(new Error(`HTTP ${status}`), { status });
+  const rechazo = (status) =>
+    Object.assign(new Error(`HTTP ${status}`), { status });
   const monta = async () => {
     const app = renderHook(() => useScoring('m-1', 'u1'));
     // Con más margen que el segundo de siempre: con la batería entera, la
     // carga ha llegado a pasar de él (2 nov 2026)
-    await waitFor(() => expect(app.result.current.isLoading).toBe(false), { timeout: 5000 });
+    await waitFor(() => expect(app.result.current.isLoading).toBe(false), {
+      timeout: 5000,
+    });
     return app;
   };
 
   beforeEach(() => {
     vi.clearAllMocks();
     almacen.clear();
-    Object.defineProperty(navigator, 'onLine', { value: true, configurable: true });
+    Object.defineProperty(navigator, 'onLine', {
+      value: true,
+      configurable: true,
+    });
     offlineQueue.getByMatch.mockReturnValue([]);
     offlineQueue.enqueue.mockReturnValue(true);
     getScoringViewUseCase.execute.mockResolvedValue(mockScoringView);
@@ -2720,9 +3582,16 @@ describe('useScoring · de dónde viene el fallo (FE #626)', () => {
   it('1/2 · si el móvil no puede guardar el golpe, va a su propio aviso', async () => {
     const { result } = await monta();
     offlineQueue.enqueue.mockReturnValue(false);
-    submitHoleScoreUseCase.execute.mockRejectedValue(new TypeError('Failed to fetch'));
+    submitHoleScoreUseCase.execute.mockRejectedValue(
+      new TypeError('Failed to fetch'),
+    );
 
-    await act(async () => { await result.current.submitScore(1, { ownScore: 5, markedPlayerId: 'u2' }); });
+    await act(async () => {
+      await result.current.submitScore(1, {
+        ownScore: 5,
+        markedPlayerId: 'u2',
+      });
+    });
 
     // Ya no es un fallo del recuadro general: tiene su propio aviso (FE #622)
     expect(Object.keys(result.current.noGuardados)).toEqual(['1']);
@@ -2730,25 +3599,41 @@ describe('useScoring · de dónde viene el fallo (FE #626)', () => {
   });
 
   it('1 · también sin cobertura, que no llega a enviar', async () => {
-    Object.defineProperty(navigator, 'onLine', { value: false, configurable: true });
+    Object.defineProperty(navigator, 'onLine', {
+      value: false,
+      configurable: true,
+    });
     const { result } = await monta();
     offlineQueue.enqueue.mockReturnValue(false);
 
-    await act(async () => { await result.current.submitScore(1, { ownScore: 5, markedPlayerId: 'u2' }); });
+    await act(async () => {
+      await result.current.submitScore(1, {
+        ownScore: 5,
+        markedPlayerId: 'u2',
+      });
+    });
 
     expect(Object.keys(result.current.noGuardados)).toEqual(['1']);
     expect(result.current.error).toBeNull();
   });
 
-  it.each([409, 400, 422])('3/4 · un golpe que el servidor rechaza con %s es un fallo del golpe', async (estado) => {
-    const { result } = await monta();
-    submitHoleScoreUseCase.execute.mockRejectedValue(rechazo(estado));
+  it.each([409, 400, 422])(
+    '3/4 · un golpe que el servidor rechaza con %s es un fallo del golpe',
+    async (estado) => {
+      const { result } = await monta();
+      submitHoleScoreUseCase.execute.mockRejectedValue(rechazo(estado));
 
-    await act(async () => { await result.current.submitScore(1, { ownScore: 5, markedPlayerId: 'u2' }); });
+      await act(async () => {
+        await result.current.submitScore(1, {
+          ownScore: 5,
+          markedPlayerId: 'u2',
+        });
+      });
 
-    expect(result.current.error?.status).toBe(estado);
-    expect(result.current.origenDelError).toBe('golpe');
-  });
+      expect(result.current.error?.status).toBe(estado);
+      expect(result.current.origenDelError).toBe('golpe');
+    },
+  );
 
   it('5 · entregar la tarjeta que falla es un fallo de la tarjeta', async () => {
     getScoringViewUseCase.execute.mockResolvedValue({
@@ -2761,7 +3646,9 @@ describe('useScoring · de dónde viene el fallo (FE #626)', () => {
     const { result } = await monta();
     submitScorecardUseCase.execute.mockRejectedValue(rechazo(409));
 
-    await act(async () => { await result.current.submitScorecard(); });
+    await act(async () => {
+      await result.current.submitScorecard();
+    });
 
     expect(result.current.error?.status).toBe(409);
     expect(result.current.origenDelError).toBe('tarjeta');
@@ -2771,7 +3658,9 @@ describe('useScoring · de dónde viene el fallo (FE #626)', () => {
     const { result } = await monta();
     concedeMatchUseCase.execute.mockRejectedValue(rechazo(409));
 
-    await act(async () => { await result.current.concedeMatch('A', 'Lesión'); });
+    await act(async () => {
+      await result.current.concedeMatch('A', 'Lesión');
+    });
 
     expect(result.current.error?.status).toBe(409);
     expect(result.current.origenDelError).toBe('concesion');
@@ -2780,10 +3669,17 @@ describe('useScoring · de dónde viene el fallo (FE #626)', () => {
   it('9 · un sondeo bueno lo retira, con su origen', async () => {
     const { result } = await monta();
     submitHoleScoreUseCase.execute.mockRejectedValue(rechazo(409));
-    await act(async () => { await result.current.submitScore(1, { ownScore: 5, markedPlayerId: 'u2' }); });
+    await act(async () => {
+      await result.current.submitScore(1, {
+        ownScore: 5,
+        markedPlayerId: 'u2',
+      });
+    });
     expect(result.current.origenDelError).toBe('golpe');
 
-    await act(async () => { await result.current.refetch(); });
+    await act(async () => {
+      await result.current.refetch();
+    });
 
     expect(result.current.error).toBeNull();
     expect(result.current.origenDelError).toBeNull();
@@ -2796,35 +3692,62 @@ describe('useScoring · de dónde viene el fallo (FE #626)', () => {
   it.each([
     ['sin respuesta', () => new TypeError('Failed to fetch')],
     ['con un 503', () => rechazo(503)],
-  ])('11 · un sondeo que falla %s no pisa el aviso de un golpe', async (_, fallo) => {
-    const { result } = await monta();
-    offlineQueue.enqueue.mockReturnValue(false);
-    submitHoleScoreUseCase.execute.mockRejectedValue(new TypeError('Failed to fetch'));
-    await act(async () => { await result.current.submitScore(1, { ownScore: 5, markedPlayerId: 'u2' }); });
-    getScoringViewUseCase.execute.mockRejectedValue(fallo());
+  ])(
+    '11 · un sondeo que falla %s no pisa el aviso de un golpe',
+    async (_, fallo) => {
+      const { result } = await monta();
+      offlineQueue.enqueue.mockReturnValue(false);
+      submitHoleScoreUseCase.execute.mockRejectedValue(
+        new TypeError('Failed to fetch'),
+      );
+      await act(async () => {
+        await result.current.submitScore(1, {
+          ownScore: 5,
+          markedPlayerId: 'u2',
+        });
+      });
+      getScoringViewUseCase.execute.mockRejectedValue(fallo());
 
-    await act(async () => { await result.current.refetch(); });
+      await act(async () => {
+        await result.current.refetch();
+      });
 
-    expect(Object.keys(result.current.noGuardados)).toEqual(['1']);
-  });
+      expect(Object.keys(result.current.noGuardados)).toEqual(['1']);
+    },
+  );
 
-  it.each([401, 403, 404])('11b · pero un %s al cargar sí: el partido ya no se puede anotar', async (estado) => {
-    const { result } = await monta();
-    submitHoleScoreUseCase.execute.mockRejectedValue(rechazo(409));
-    await act(async () => { await result.current.submitScore(1, { ownScore: 5, markedPlayerId: 'u2' }); });
-    getScoringViewUseCase.execute.mockRejectedValue(rechazo(estado));
+  it.each([401, 403, 404])(
+    '11b · pero un %s al cargar sí: el partido ya no se puede anotar',
+    async (estado) => {
+      const { result } = await monta();
+      submitHoleScoreUseCase.execute.mockRejectedValue(rechazo(409));
+      await act(async () => {
+        await result.current.submitScore(1, {
+          ownScore: 5,
+          markedPlayerId: 'u2',
+        });
+      });
+      getScoringViewUseCase.execute.mockRejectedValue(rechazo(estado));
 
-    await act(async () => { await result.current.refetch(); });
+      await act(async () => {
+        await result.current.refetch();
+      });
 
-    expect(result.current.error?.status).toBe(estado);
-    expect(result.current.origenDelError).toBe('carga');
-  });
+      expect(result.current.error?.status).toBe(estado);
+      expect(result.current.origenDelError).toBe('carga');
+    },
+  );
 
   it('2 · un golpe que el servidor rechaza lleva su hoyo, para poder decirlo (CodeRabbit)', async () => {
     const { result } = await monta();
     submitHoleScoreUseCase.execute.mockRejectedValue(rechazo(409));
 
-    await act(async () => { await result.current.submitScore(7, { ownScore: 5, markedPlayerId: 'u2' }); });
+    await act(async () => {
+      await result.current.submitScore(7, {
+        ownScore: 5,
+        markedPlayerId: 'u2',
+      });
+    });
 
     expect(result.current.error?.holeNumber).toBe(7);
   });
@@ -2834,7 +3757,9 @@ describe('useScoring · de dónde viene el fallo (FE #626)', () => {
   describe('al cambiar de partido sin salir de la pantalla', () => {
     const vistaDe = (id) => ({ ...mockScoringView, matchId: id });
     const montaEn = async (id) => {
-      const app = renderHook(({ matchId }) => useScoring(matchId, 'u1'), { initialProps: { matchId: id } });
+      const app = renderHook(({ matchId }) => useScoring(matchId, 'u1'), {
+        initialProps: { matchId: id },
+      });
       await waitFor(() => expect(app.result.current.isLoading).toBe(false));
       return app;
     };
@@ -2843,14 +3768,22 @@ describe('useScoring · de dónde viene el fallo (FE #626)', () => {
     // el fallo y taparía que es de otro partido
     it('12 · el fallo de una acción del partido anterior no se ve en el nuevo', async () => {
       getScoringViewUseCase.execute.mockImplementation((id) =>
-        (id === 'm-1' ? Promise.resolve(vistaDe(id)) : new Promise(() => {})));
+        id === 'm-1' ? Promise.resolve(vistaDe(id)) : new Promise(() => {}),
+      );
       const app = await montaEn('m-1');
       submitHoleScoreUseCase.execute.mockRejectedValue(rechazo(409));
-      await act(async () => { await app.result.current.submitScore(1, { ownScore: 5, markedPlayerId: 'u2' }); });
+      await act(async () => {
+        await app.result.current.submitScore(1, {
+          ownScore: 5,
+          markedPlayerId: 'u2',
+        });
+      });
       expect(app.result.current.origenDelError).toBe('golpe');
 
       app.rerender({ matchId: 'm-2' });
-      await act(async () => { await new Promise((r) => setTimeout(r, 20)); });
+      await act(async () => {
+        await new Promise((r) => setTimeout(r, 20));
+      });
 
       expect(app.result.current.error).toBeNull();
       expect(app.result.current.origenDelError).toBeNull();
@@ -2858,13 +3791,23 @@ describe('useScoring · de dónde viene el fallo (FE #626)', () => {
 
     it('12b · la carga fallida del nuevo no conserva el aviso del anterior', async () => {
       getScoringViewUseCase.execute.mockImplementation((id) =>
-        (id === 'm-1' ? Promise.resolve(vistaDe(id)) : Promise.reject(rechazo(503))));
+        id === 'm-1'
+          ? Promise.resolve(vistaDe(id))
+          : Promise.reject(rechazo(503)),
+      );
       const app = await montaEn('m-1');
       submitHoleScoreUseCase.execute.mockRejectedValue(rechazo(409));
-      await act(async () => { await app.result.current.submitScore(1, { ownScore: 5, markedPlayerId: 'u2' }); });
+      await act(async () => {
+        await app.result.current.submitScore(1, {
+          ownScore: 5,
+          markedPlayerId: 'u2',
+        });
+      });
 
       app.rerender({ matchId: 'm-2' });
-      await act(async () => { await new Promise((r) => setTimeout(r, 20)); });
+      await act(async () => {
+        await new Promise((r) => setTimeout(r, 20));
+      });
 
       expect(app.result.current.error?.status).toBe(503);
       expect(app.result.current.origenDelError).toBe('carga');
@@ -2872,18 +3815,35 @@ describe('useScoring · de dónde viene el fallo (FE #626)', () => {
 
     it('12c · un rechazo tardío del anterior no pisa el fallo del nuevo', async () => {
       getScoringViewUseCase.execute.mockImplementation((id) =>
-        (id === 'm-1' ? Promise.resolve(vistaDe(id)) : Promise.reject(rechazo(503))));
+        id === 'm-1'
+          ? Promise.resolve(vistaDe(id))
+          : Promise.reject(rechazo(503)),
+      );
       const app = await montaEn('m-1');
       let rechazaTarde;
-      submitHoleScoreUseCase.execute.mockReturnValue(new Promise((_, rej) => { rechazaTarde = () => rej(rechazo(409)); }));
+      submitHoleScoreUseCase.execute.mockReturnValue(
+        new Promise((_, rej) => {
+          rechazaTarde = () => rej(rechazo(409));
+        }),
+      );
       let envio;
-      act(() => { envio = app.result.current.submitScore(1, { ownScore: 5, markedPlayerId: 'u2' }); });
+      act(() => {
+        envio = app.result.current.submitScore(1, {
+          ownScore: 5,
+          markedPlayerId: 'u2',
+        });
+      });
 
       app.rerender({ matchId: 'm-2' });
-      await act(async () => { await new Promise((r) => setTimeout(r, 20)); });
+      await act(async () => {
+        await new Promise((r) => setTimeout(r, 20));
+      });
       expect(app.result.current.origenDelError).toBe('carga');
 
-      await act(async () => { rechazaTarde(); await envio; });
+      await act(async () => {
+        rechazaTarde();
+        await envio;
+      });
 
       expect(app.result.current.error?.status).toBe(503);
       expect(app.result.current.origenDelError).toBe('carga');
@@ -2900,57 +3860,117 @@ describe('useScoring · de dónde viene el fallo (FE #626)', () => {
     };
     const golpe = { ownScore: 5, markedPlayerId: 'u2' };
     it.each([
-      ['un golpe que no se pudo guardar en el móvil', {
-        prepara: () => offlineQueue.enqueue.mockReturnValue(false),
-        casoDeUso: submitHoleScoreUseCase, lanza: (r) => r.submitScore(1, golpe),
-        acaba: (d) => d.falla(new TypeError('Failed to fetch')) }],
-      ['un golpe que llega', {
-        casoDeUso: submitHoleScoreUseCase, lanza: (r) => r.submitScore(1, golpe),
-        acaba: (d) => d.llega({ ...vistaDe('m-1') }) }],
-      ['un golpe que se queda en la cola por la red', {
-        casoDeUso: submitHoleScoreUseCase, lanza: (r) => r.submitScore(1, golpe),
-        acaba: (d) => d.falla(new TypeError('Failed to fetch')) }],
-      ['una tarjeta que falla', {
-        vista: conValidados, casoDeUso: submitScorecardUseCase, lanza: (r) => r.submitScorecard(),
-        acaba: (d) => d.falla(rechazo(409)) }],
-      ['una tarjeta que se entrega', {
-        vista: conValidados, casoDeUso: submitScorecardUseCase, lanza: (r) => r.submitScorecard(),
-        acaba: (d) => d.llega({ matchId: 'm-1' }) }],
-      ['una concesión que falla', {
-        casoDeUso: concedeMatchUseCase, lanza: (r) => r.concedeMatch('A', 'Lesión'),
-        acaba: (d) => d.falla(rechazo(409)) }],
-      ['una concesión que sale bien', {
-        casoDeUso: concedeMatchUseCase, lanza: (r) => r.concedeMatch('A', 'Lesión'),
-        acaba: (d) => d.llega({ status: 'CONCEDED' }) }],
-    ])('12d · %s del partido anterior no toca el fallo del nuevo', async (_, caso) => {
-      getScoringViewUseCase.execute.mockImplementation((id) =>
-        (id === 'm-1' ? Promise.resolve({ ...vistaDe(id), ...caso.vista }) : Promise.reject(rechazo(503))));
-      const app = await montaEn('m-1');
-      caso.prepara?.();
-      const d = {};
-      caso.casoDeUso.execute.mockReturnValue(new Promise((llega, falla) => { d.llega = llega; d.falla = falla; }));
-      let accion;
-      act(() => { accion = caso.lanza(app.result.current); });
+      [
+        'un golpe que no se pudo guardar en el móvil',
+        {
+          prepara: () => offlineQueue.enqueue.mockReturnValue(false),
+          casoDeUso: submitHoleScoreUseCase,
+          lanza: (r) => r.submitScore(1, golpe),
+          acaba: (d) => d.falla(new TypeError('Failed to fetch')),
+        },
+      ],
+      [
+        'un golpe que llega',
+        {
+          casoDeUso: submitHoleScoreUseCase,
+          lanza: (r) => r.submitScore(1, golpe),
+          acaba: (d) => d.llega({ ...vistaDe('m-1') }),
+        },
+      ],
+      [
+        'un golpe que se queda en la cola por la red',
+        {
+          casoDeUso: submitHoleScoreUseCase,
+          lanza: (r) => r.submitScore(1, golpe),
+          acaba: (d) => d.falla(new TypeError('Failed to fetch')),
+        },
+      ],
+      [
+        'una tarjeta que falla',
+        {
+          vista: conValidados,
+          casoDeUso: submitScorecardUseCase,
+          lanza: (r) => r.submitScorecard(),
+          acaba: (d) => d.falla(rechazo(409)),
+        },
+      ],
+      [
+        'una tarjeta que se entrega',
+        {
+          vista: conValidados,
+          casoDeUso: submitScorecardUseCase,
+          lanza: (r) => r.submitScorecard(),
+          acaba: (d) => d.llega({ matchId: 'm-1' }),
+        },
+      ],
+      [
+        'una concesión que falla',
+        {
+          casoDeUso: concedeMatchUseCase,
+          lanza: (r) => r.concedeMatch('A', 'Lesión'),
+          acaba: (d) => d.falla(rechazo(409)),
+        },
+      ],
+      [
+        'una concesión que sale bien',
+        {
+          casoDeUso: concedeMatchUseCase,
+          lanza: (r) => r.concedeMatch('A', 'Lesión'),
+          acaba: (d) => d.llega({ status: 'CONCEDED' }),
+        },
+      ],
+    ])(
+      '12d · %s del partido anterior no toca el fallo del nuevo',
+      async (_, caso) => {
+        getScoringViewUseCase.execute.mockImplementation((id) =>
+          id === 'm-1'
+            ? Promise.resolve({ ...vistaDe(id), ...caso.vista })
+            : Promise.reject(rechazo(503)),
+        );
+        const app = await montaEn('m-1');
+        caso.prepara?.();
+        const d = {};
+        caso.casoDeUso.execute.mockReturnValue(
+          new Promise((llega, falla) => {
+            d.llega = llega;
+            d.falla = falla;
+          }),
+        );
+        let accion;
+        act(() => {
+          accion = caso.lanza(app.result.current);
+        });
 
-      app.rerender({ matchId: 'm-2' });
-      await act(async () => { await new Promise((r) => setTimeout(r, 20)); });
-      expect(app.result.current.error?.status).toBe(503);
+        app.rerender({ matchId: 'm-2' });
+        await act(async () => {
+          await new Promise((r) => setTimeout(r, 20));
+        });
+        expect(app.result.current.error?.status).toBe(503);
 
-      await act(async () => { caso.acaba(d); await accion; await new Promise((r) => setTimeout(r, 20)); });
+        await act(async () => {
+          caso.acaba(d);
+          await accion;
+          await new Promise((r) => setTimeout(r, 20));
+        });
 
-      expect(app.result.current.error?.status).toBe(503);
-      expect(app.result.current.origenDelError).toBe('carga');
-    });
+        expect(app.result.current.error?.status).toBe(503);
+        expect(app.result.current.origenDelError).toBe('carga');
+      },
+    );
   });
 
   // Con un 503 y no con un 404, que ganaría igual por desmentir: la pantalla sin
   // vista mira si el servidor CONTESTÓ, así que el último fallo de carga importa
   it('11c · un fallo de carga sí pisa otro de carga', async () => {
-    getScoringViewUseCase.execute.mockRejectedValue(new TypeError('Failed to fetch'));
+    getScoringViewUseCase.execute.mockRejectedValue(
+      new TypeError('Failed to fetch'),
+    );
     const { result } = await monta();
     getScoringViewUseCase.execute.mockRejectedValue(rechazo(503));
 
-    await act(async () => { await result.current.refetch(); });
+    await act(async () => {
+      await result.current.refetch();
+    });
 
     expect(result.current.error?.status).toBe(503);
   });
@@ -2963,23 +3983,42 @@ describe('useScoring · el sondeo vacía la cola cuando el servidor vuelve (FE #
   let enCola;
   let sondeo;
 
-  const golpe = (ownScore) => ({ ownScore, markedPlayerId: 'u2', markedScore: 4 });
-  const guardadaDe = (holeNumber, scoreData) =>
-    ({ matchId: 'm-1', holeNumber, participantId: null, scoreData, timestamp: 1, userId: 'u1' });
+  const golpe = (ownScore) => ({
+    ownScore,
+    markedPlayerId: 'u2',
+    markedScore: 4,
+  });
+  const guardadaDe = (holeNumber, scoreData) => ({
+    matchId: 'm-1',
+    holeNumber,
+    participantId: null,
+    scoreData,
+    timestamp: 1,
+    userId: 'u1',
+  });
   const esLaMisma = (e, matchId, holeNumber, participantId, userId) =>
-    e.matchId === matchId
-    && e.holeNumber === holeNumber
-    && (e.participantId ?? null) === (participantId ?? null)
-    && (e.userId ?? null) === (userId ?? null);
+    e.matchId === matchId &&
+    e.holeNumber === holeNumber &&
+    (e.participantId ?? null) === (participantId ?? null) &&
+    (e.userId ?? null) === (userId ?? null);
   const enVuelo = () => {
     let suelta;
     let falla;
-    const promesa = new Promise((resolve, reject) => { suelta = resolve; falla = reject; });
+    const promesa = new Promise((resolve, reject) => {
+      suelta = resolve;
+      falla = reject;
+    });
     return { promesa, suelta, falla };
   };
-  const esperaUnPoco = () => act(async () => { await new Promise((r) => setTimeout(r, 20)); });
+  const esperaUnPoco = () =>
+    act(async () => {
+      await new Promise((r) => setTimeout(r, 20));
+    });
   // El sondeo, a mano: el último intervalo de 10 s que se programó
-  const sondea = () => act(async () => { await sondeo(); });
+  const sondea = () =>
+    act(async () => {
+      await sondeo();
+    });
 
   const monta = async () => {
     const { result } = renderHook(() => useScoring('m-1', 'u1'));
@@ -2995,25 +4034,48 @@ describe('useScoring · el sondeo vacía la cola cuando el servidor vuelve (FE #
     enCola = [];
     sondeo = null;
     const intervaloReal = globalThis.setInterval;
-    vi.spyOn(globalThis, 'setInterval').mockImplementation((fn, ms, ...resto) => {
-      if (ms === 10000) { sondeo = fn; return 0; }
-      return intervaloReal(fn, ms, ...resto);
-    });
+    vi.spyOn(globalThis, 'setInterval').mockImplementation(
+      (fn, ms, ...resto) => {
+        if (ms === 10000) {
+          sondeo = fn;
+          return 0;
+        }
+        return intervaloReal(fn, ms, ...resto);
+      },
+    );
     getScoringViewUseCase.execute.mockResolvedValue(mockScoringView);
     submitHoleScoreUseCase.execute.mockResolvedValue(mockScoringView);
-    Object.defineProperty(navigator, 'onLine', { value: true, configurable: true });
-    offlineQueue.enqueue.mockImplementation((matchId, holeNumber, scoreData, participantId = null, userId = null) => {
-      enCola = enCola.filter((e) => !esLaMisma(e, matchId, holeNumber, participantId, userId));
-      enCola.push({ matchId, holeNumber, participantId, scoreData, timestamp: 2, userId });
-      return true;
+    Object.defineProperty(navigator, 'onLine', {
+      value: true,
+      configurable: true,
     });
-    offlineQueue.getByMatch.mockImplementation((matchId) =>
-      enCola.filter((e) => e.matchId === matchId).map((e) => ({ ...e }))
+    offlineQueue.enqueue.mockImplementation(
+      (matchId, holeNumber, scoreData, participantId = null, userId = null) => {
+        enCola = enCola.filter(
+          (e) => !esLaMisma(e, matchId, holeNumber, participantId, userId),
+        );
+        enCola.push({
+          matchId,
+          holeNumber,
+          participantId,
+          scoreData,
+          timestamp: 2,
+          userId,
+        });
+        return true;
+      },
     );
-    offlineQueue.remove.mockImplementation((matchId, holeNumber, participantId = null, userId = null) => {
-      enCola = enCola.filter((e) => !esLaMisma(e, matchId, holeNumber, participantId, userId));
-      return true;
-    });
+    offlineQueue.getByMatch.mockImplementation((matchId) =>
+      enCola.filter((e) => e.matchId === matchId).map((e) => ({ ...e })),
+    );
+    offlineQueue.remove.mockImplementation(
+      (matchId, holeNumber, participantId = null, userId = null) => {
+        enCola = enCola.filter(
+          (e) => !esLaMisma(e, matchId, holeNumber, participantId, userId),
+        );
+        return true;
+      },
+    );
   });
 
   afterEach(() => {
@@ -3032,7 +4094,13 @@ describe('useScoring · el sondeo vacía la cola cuando el servidor vuelve (FE #
 
     await sondea();
 
-    await waitFor(() => expect(submitHoleScoreUseCase.execute).toHaveBeenCalledWith('m-1', 13, golpe(5)));
+    await waitFor(() =>
+      expect(submitHoleScoreUseCase.execute).toHaveBeenCalledWith(
+        'm-1',
+        13,
+        golpe(5),
+      ),
+    );
     await waitFor(() => expect(enCola).toEqual([]));
     await waitFor(() => expect(result.current.pendingQueueSize).toBe(0));
   });
@@ -3051,9 +4119,13 @@ describe('useScoring · el sondeo vacía la cola cuando el servidor vuelve (FE #
   it('H2b · tras un vaciado cortado por la red y la cola ya vacía, el sondeo no da otra pasada', async () => {
     await monta();
     enCola.push(guardadaDe(13, golpe(5)));
-    submitHoleScoreUseCase.execute.mockRejectedValueOnce(new TypeError('Failed to fetch'));
+    submitHoleScoreUseCase.execute.mockRejectedValueOnce(
+      new TypeError('Failed to fetch'),
+    );
     await sondea();
-    await waitFor(() => expect(motor.vaciaAnotaciones).toHaveBeenCalledTimes(1));
+    await waitFor(() =>
+      expect(motor.vaciaAnotaciones).toHaveBeenCalledTimes(1),
+    );
     await esperaUnPoco();
     enCola = [];
 
@@ -3068,25 +4140,42 @@ describe('useScoring · el sondeo vacía la cola cuando el servidor vuelve (FE #
     const vuelo = enVuelo();
     submitHoleScoreUseCase.execute.mockReturnValueOnce(vuelo.promesa);
     let envio;
-    act(() => { envio = result.current.submitScore(5, golpe(5)); });
-    await waitFor(() => expect(submitHoleScoreUseCase.execute).toHaveBeenCalledTimes(1));
+    act(() => {
+      envio = result.current.submitScore(5, golpe(5));
+    });
+    await waitFor(() =>
+      expect(submitHoleScoreUseCase.execute).toHaveBeenCalledTimes(1),
+    );
     enCola.unshift(guardadaDe(3, golpe(4)));
 
     await sondea();
 
     expect(submitHoleScoreUseCase.execute).toHaveBeenCalledTimes(1);
 
-    await act(async () => { vuelo.suelta(mockScoringView); await envio; });
+    await act(async () => {
+      vuelo.suelta(mockScoringView);
+      await envio;
+    });
 
-    await waitFor(() => expect(submitHoleScoreUseCase.execute).toHaveBeenCalledWith('m-1', 3, golpe(4)));
-    expect(submitHoleScoreUseCase.execute.mock.calls.filter((c) => c[1] === 5)).toHaveLength(1);
+    await waitFor(() =>
+      expect(submitHoleScoreUseCase.execute).toHaveBeenCalledWith(
+        'm-1',
+        3,
+        golpe(4),
+      ),
+    );
+    expect(
+      submitHoleScoreUseCase.execute.mock.calls.filter((c) => c[1] === 5),
+    ).toHaveLength(1);
     await waitFor(() => expect(enCola).toEqual([]));
   });
 
   it('H4 · si el sondeo falla, no se intenta vaciar', async () => {
     await monta();
     enCola.push(guardadaDe(13, golpe(5)));
-    getScoringViewUseCase.execute.mockRejectedValue(Object.assign(new Error('HTTP 503'), { status: 503 }));
+    getScoringViewUseCase.execute.mockRejectedValue(
+      Object.assign(new Error('HTTP 503'), { status: 503 }),
+    );
 
     await sondea();
     await esperaUnPoco();
@@ -3103,9 +4192,13 @@ describe('useScoring · el sondeo vacía la cola cuando el servidor vuelve (FE #
     submitHoleScoreUseCase.execute.mockReturnValueOnce(vuelo.promesa);
 
     await sondea();
-    await waitFor(() => expect(submitHoleScoreUseCase.execute).toHaveBeenCalledTimes(1));
+    await waitFor(() =>
+      expect(submitHoleScoreUseCase.execute).toHaveBeenCalledTimes(1),
+    );
     await sondea();
-    await act(async () => { vuelo.suelta(mockScoringView); });
+    await act(async () => {
+      vuelo.suelta(mockScoringView);
+    });
     await esperaUnPoco();
 
     expect(motor.vaciaAnotaciones).toHaveBeenCalledTimes(1);
@@ -3116,7 +4209,9 @@ describe('useScoring · el sondeo vacía la cola cuando el servidor vuelve (FE #
   it('H6 · si el vaciado se corta por la red, el golpe espera al siguiente sondeo bueno', async () => {
     await monta();
     enCola.push(guardadaDe(13, golpe(5)));
-    submitHoleScoreUseCase.execute.mockRejectedValueOnce(new TypeError('Failed to fetch'));
+    submitHoleScoreUseCase.execute.mockRejectedValueOnce(
+      new TypeError('Failed to fetch'),
+    );
 
     await sondea();
     await esperaUnPoco();
@@ -3138,7 +4233,9 @@ describe('useScoring · el sondeo vacía la cola cuando el servidor vuelve (FE #
       offlineQueue.remove.mockReturnValue(false);
 
       await sondea();
-      await waitFor(() => expect(submitHoleScoreUseCase.execute).toHaveBeenCalledTimes(1));
+      await waitFor(() =>
+        expect(submitHoleScoreUseCase.execute).toHaveBeenCalledTimes(1),
+      );
       await esperaUnPoco();
       await sondea();
       await esperaUnPoco();
@@ -3150,11 +4247,15 @@ describe('useScoring · el sondeo vacía la cola cuando el servidor vuelve (FE #
     it('H8 · rechazado y sin sitio para el aviso: el siguiente sondeo no lo reenvía', async () => {
       await monta();
       enCola.push(guardadaDe(13, golpe(5)));
-      submitHoleScoreUseCase.execute.mockRejectedValue(Object.assign(new Error('HTTP 422'), { status: 422 }));
+      submitHoleScoreUseCase.execute.mockRejectedValue(
+        Object.assign(new Error('HTTP 422'), { status: 422 }),
+      );
       vi.spyOn(golpesPerdidos, 'apunta').mockReturnValue(false);
 
       await sondea();
-      await waitFor(() => expect(submitHoleScoreUseCase.execute).toHaveBeenCalledTimes(1));
+      await waitFor(() =>
+        expect(submitHoleScoreUseCase.execute).toHaveBeenCalledTimes(1),
+      );
       await esperaUnPoco();
       await sondea();
       await esperaUnPoco();
@@ -3166,17 +4267,24 @@ describe('useScoring · el sondeo vacía la cola cuando el servidor vuelve (FE #
     it('H9 · una anotación que el móvil no puede mandar no provoca un vaciado por sondeo', async () => {
       await monta();
       enCola.push(guardadaDe(13, golpe(5)));
-      submitHoleScoreUseCase.execute.mockRejectedValue(new Error('Invalid score'));
+      submitHoleScoreUseCase.execute.mockRejectedValue(
+        new Error('Invalid score'),
+      );
 
       await sondea();
-      await waitFor(() => expect(motor.vaciaAnotaciones).toHaveBeenCalledTimes(1));
+      await waitFor(() =>
+        expect(motor.vaciaAnotaciones).toHaveBeenCalledTimes(1),
+      );
       await esperaUnPoco();
-      const vistasTrasElPrimero = getScoringViewUseCase.execute.mock.calls.length;
+      const vistasTrasElPrimero =
+        getScoringViewUseCase.execute.mock.calls.length;
       await sondea();
       await esperaUnPoco();
 
       expect(motor.vaciaAnotaciones).toHaveBeenCalledTimes(1);
-      expect(getScoringViewUseCase.execute.mock.calls.length).toBe(vistasTrasElPrimero + 1);
+      expect(getScoringViewUseCase.execute.mock.calls.length).toBe(
+        vistasTrasElPrimero + 1,
+      );
     });
 
     it('H10 · si la cola cambia después, el sondeo vuelve a intentarlo', async () => {
@@ -3185,12 +4293,20 @@ describe('useScoring · el sondeo vacía la cola cuando el servidor vuelve (FE #
       offlineQueue.remove.mockReturnValueOnce(false);
 
       await sondea();
-      await waitFor(() => expect(submitHoleScoreUseCase.execute).toHaveBeenCalledTimes(1));
+      await waitFor(() =>
+        expect(submitHoleScoreUseCase.execute).toHaveBeenCalledTimes(1),
+      );
       await esperaUnPoco();
       enCola.push({ ...guardadaDe(14, golpe(4)), timestamp: 3 });
       await sondea();
 
-      await waitFor(() => expect(submitHoleScoreUseCase.execute).toHaveBeenCalledWith('m-1', 14, golpe(4)));
+      await waitFor(() =>
+        expect(submitHoleScoreUseCase.execute).toHaveBeenCalledWith(
+          'm-1',
+          14,
+          golpe(4),
+        ),
+      );
     });
   });
 
@@ -3200,17 +4316,33 @@ describe('useScoring · el sondeo vacía la cola cuando el servidor vuelve (FE #
     offlineQueue.remove.mockReturnValueOnce(false);
 
     await sondea();
-    await waitFor(() => expect(submitHoleScoreUseCase.execute).toHaveBeenCalledTimes(1));
+    await waitFor(() =>
+      expect(submitHoleScoreUseCase.execute).toHaveBeenCalledTimes(1),
+    );
     await esperaUnPoco();
     enCola = [{ ...guardadaDe(13, golpe(6)), timestamp: 3 }];
     await sondea();
 
-    await waitFor(() => expect(submitHoleScoreUseCase.execute).toHaveBeenCalledWith('m-1', 13, golpe(6)));
+    await waitFor(() =>
+      expect(submitHoleScoreUseCase.execute).toHaveBeenCalledWith(
+        'm-1',
+        13,
+        golpe(6),
+      ),
+    );
   });
 
   describe('lo que espera a la hora de apertura (segunda revisión)', () => {
-    const noAbre = () => Object.assign(new Error('HTTP 409'), { status: 409, errorCode: 'SCORING_NOT_OPEN_YET' });
-    const sinAbrir = { ...mockScoringView, matchStatus: 'SCHEDULED', scoringOpensAt: '2999-01-01T12:00:00+01:00' };
+    const noAbre = () =>
+      Object.assign(new Error('HTTP 409'), {
+        status: 409,
+        errorCode: 'SCORING_NOT_OPEN_YET',
+      });
+    const sinAbrir = {
+      ...mockScoringView,
+      matchStatus: 'SCHEDULED',
+      scoringOpensAt: '2999-01-01T12:00:00+01:00',
+    };
 
     it('H12 · no se reintenta mientras la vista diga que no abre, y sale en cuanto abre', async () => {
       await monta();
@@ -3219,7 +4351,9 @@ describe('useScoring · el sondeo vacía la cola cuando el servidor vuelve (FE #
       submitHoleScoreUseCase.execute.mockRejectedValueOnce(noAbre());
 
       await sondea();
-      await waitFor(() => expect(submitHoleScoreUseCase.execute).toHaveBeenCalledTimes(1));
+      await waitFor(() =>
+        expect(submitHoleScoreUseCase.execute).toHaveBeenCalledTimes(1),
+      );
       await esperaUnPoco();
       await sondea();
       await esperaUnPoco();
@@ -3228,7 +4362,9 @@ describe('useScoring · el sondeo vacía la cola cuando el servidor vuelve (FE #
       getScoringViewUseCase.execute.mockResolvedValue(mockScoringView);
       await sondea();
 
-      await waitFor(() => expect(submitHoleScoreUseCase.execute).toHaveBeenCalledTimes(2));
+      await waitFor(() =>
+        expect(submitHoleScoreUseCase.execute).toHaveBeenCalledTimes(2),
+      );
       await waitFor(() => expect(enCola).toEqual([]));
     });
   });
@@ -3238,12 +4374,20 @@ describe('useScoring · el sondeo vacía la cola cuando el servidor vuelve (FE #
     enCola.push(guardadaDe(13, golpe(5)));
     offlineQueue.remove.mockReturnValue(false);
     await sondea();
-    await waitFor(() => expect(submitHoleScoreUseCase.execute).toHaveBeenCalledTimes(1));
+    await waitFor(() =>
+      expect(submitHoleScoreUseCase.execute).toHaveBeenCalledTimes(1),
+    );
     await esperaUnPoco();
 
-    submitHoleScoreUseCase.execute.mockRejectedValueOnce(new TypeError('Failed to fetch'));
-    await act(async () => { window.dispatchEvent(new globalThis.Event('online')); });
-    await waitFor(() => expect(submitHoleScoreUseCase.execute).toHaveBeenCalledTimes(2));
+    submitHoleScoreUseCase.execute.mockRejectedValueOnce(
+      new TypeError('Failed to fetch'),
+    );
+    await act(async () => {
+      window.dispatchEvent(new globalThis.Event('online'));
+    });
+    await waitFor(() =>
+      expect(submitHoleScoreUseCase.execute).toHaveBeenCalledTimes(2),
+    );
     await esperaUnPoco();
 
     await sondea();
@@ -3262,9 +4406,14 @@ describe('useScoring · el sondeo vacía la cola cuando el servidor vuelve (FE #
     getScoringViewUseCase.execute.mockReturnValueOnce(vuelo.promesa);
 
     let enCurso;
-    act(() => { enCurso = sondeo(); });
+    act(() => {
+      enCurso = sondeo();
+    });
     unmount();
-    await act(async () => { vuelo.suelta(mockScoringView); await enCurso; });
+    await act(async () => {
+      vuelo.suelta(mockScoringView);
+      await enCurso;
+    });
     await esperaUnPoco();
 
     expect(submitHoleScoreUseCase.execute).not.toHaveBeenCalled();
@@ -3275,31 +4424,51 @@ describe('useScoring · los hoyos que no se pudieron guardar (FE #622)', () => {
   // El aviso vivía en el mismo estado que los fallos de carga, y cada vista
   // buena lo borraba: con cobertura, el jugador muchas veces no llegaba a
   // verlo. Ahora es una lista por hoyo que solo se retira al guardar ESE hoyo
-  const golpe = (ownScore) => ({ ownScore, markedPlayerId: 'u2', markedScore: 4 });
+  const golpe = (ownScore) => ({
+    ownScore,
+    markedPlayerId: 'u2',
+    markedScore: 4,
+  });
   const enVuelo = () => {
     let suelta;
     let falla;
-    const promesa = new Promise((resolve, reject) => { suelta = resolve; falla = reject; });
+    const promesa = new Promise((resolve, reject) => {
+      suelta = resolve;
+      falla = reject;
+    });
     return { promesa, suelta, falla };
   };
 
   const monta = async (matchId = 'm-1') => {
-    const hook = renderHook(({ id }) => useScoring(id, 'u1'), { initialProps: { id: matchId } });
+    const hook = renderHook(({ id }) => useScoring(id, 'u1'), {
+      initialProps: { id: matchId },
+    });
     await waitFor(() => expect(hook.result.current.isLoading).toBe(false));
-    await act(async () => { await new Promise((r) => setTimeout(r, 20)); });
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 20));
+    });
     return hook;
   };
   const anota = (result, hoyo, valor) =>
-    act(async () => { await result.current.submitScore(hoyo, golpe(valor)); });
+    act(async () => {
+      await result.current.submitScore(hoyo, golpe(valor));
+    });
   const sinSitio = () => offlineQueue.enqueue.mockReturnValue(false);
   const conSitio = () => offlineQueue.enqueue.mockReturnValue(true);
-  const sinCobertura = () => Object.defineProperty(navigator, 'onLine', { value: false, configurable: true });
+  const sinCobertura = () =>
+    Object.defineProperty(navigator, 'onLine', {
+      value: false,
+      configurable: true,
+    });
 
   beforeEach(() => {
     vi.clearAllMocks();
     getScoringViewUseCase.execute.mockResolvedValue(mockScoringView);
     submitHoleScoreUseCase.execute.mockResolvedValue(mockScoringView);
-    Object.defineProperty(navigator, 'onLine', { value: true, configurable: true });
+    Object.defineProperty(navigator, 'onLine', {
+      value: true,
+      configurable: true,
+    });
     offlineQueue.getByMatch.mockReturnValue([]);
     conSitio();
   });
@@ -3334,14 +4503,38 @@ describe('useScoring · los hoyos que no se pudieron guardar (FE #622)', () => {
     const { result } = await monta();
     sinSitio();
 
-    await act(async () => { await result.current.submitScore(5, { ownScore: 4, markedPlayerId: 'u2', markedScore: 6 }); });
-    await act(async () => { await result.current.submitScore(5, { markedPlayerId: 'u4', markedScore: 4 }); });
-    expect(result.current.noGuardados[5].golpes).toEqual(['ownScore', 'markedScore@u2', 'markedScore@u4']);
+    await act(async () => {
+      await result.current.submitScore(5, {
+        ownScore: 4,
+        markedPlayerId: 'u2',
+        markedScore: 6,
+      });
+    });
+    await act(async () => {
+      await result.current.submitScore(5, {
+        markedPlayerId: 'u4',
+        markedScore: 4,
+      });
+    });
+    expect(result.current.noGuardados[5].golpes).toEqual([
+      'ownScore',
+      'markedScore@u2',
+      'markedScore@u4',
+    ]);
 
     conSitio();
-    await act(async () => { await result.current.submitScore(5, { markedPlayerId: 'u4', markedScore: 4 }, { tocado: 'markedScore' }); });
+    await act(async () => {
+      await result.current.submitScore(
+        5,
+        { markedPlayerId: 'u4', markedScore: 4 },
+        { tocado: 'markedScore' },
+      );
+    });
 
-    expect(result.current.noGuardados[5].golpes).toEqual(['ownScore', 'markedScore@u2']);
+    expect(result.current.noGuardados[5].golpes).toEqual([
+      'ownScore',
+      'markedScore@u2',
+    ]);
   });
 
   // CodeRabbit (FE #974): el nombre no depende de a cuántos se marca. Si no,
@@ -3358,13 +4551,26 @@ describe('useScoring · los hoyos que no se pudieron guardar (FE #622)', () => {
     sinCobertura();
     const { result } = await monta();
     sinSitio();
-    await act(async () => { await result.current.submitScore(5, { markedPlayerId: 'u2', markedScore: 6 }); });
+    await act(async () => {
+      await result.current.submitScore(5, {
+        markedPlayerId: 'u2',
+        markedScore: 6,
+      });
+    });
 
     // Se deshace la retirada: vuelve a marcar solo a u2
     getScoringViewUseCase.execute.mockResolvedValue(mockScoringView);
-    await act(async () => { await result.current.refetch(); });
+    await act(async () => {
+      await result.current.refetch();
+    });
     conSitio();
-    await act(async () => { await result.current.submitScore(5, { markedPlayerId: 'u2', markedScore: 6 }, { tocado: 'markedScore' }); });
+    await act(async () => {
+      await result.current.submitScore(
+        5,
+        { markedPlayerId: 'u2', markedScore: 6 },
+        { tocado: 'markedScore' },
+      );
+    });
 
     expect(result.current.noGuardados[5]).toBeUndefined();
   });
@@ -3372,7 +4578,9 @@ describe('useScoring · los hoyos que no se pudieron guardar (FE #622)', () => {
   it('N1b · enviando: la petición no llega y el móvil no tiene sitio', async () => {
     const { result } = await monta();
     sinSitio();
-    submitHoleScoreUseCase.execute.mockRejectedValue(new TypeError('Failed to fetch'));
+    submitHoleScoreUseCase.execute.mockRejectedValue(
+      new TypeError('Failed to fetch'),
+    );
 
     await anota(result, 5, 4);
 
@@ -3382,10 +4590,14 @@ describe('useScoring · los hoyos que no se pudieron guardar (FE #622)', () => {
   it('N2 · un sondeo bueno no lo retira', async () => {
     const { result } = await monta();
     sinSitio();
-    submitHoleScoreUseCase.execute.mockRejectedValue(new TypeError('Failed to fetch'));
+    submitHoleScoreUseCase.execute.mockRejectedValue(
+      new TypeError('Failed to fetch'),
+    );
     await anota(result, 5, 4);
 
-    await act(async () => { await result.current.refetch(); });
+    await act(async () => {
+      await result.current.refetch();
+    });
 
     expect(Object.keys(result.current.noGuardados)).toEqual(['5']);
   });
@@ -3405,7 +4617,9 @@ describe('useScoring · los hoyos que no se pudieron guardar (FE #622)', () => {
   it('N3b · y al enviarlo', async () => {
     const { result } = await monta();
     sinSitio();
-    submitHoleScoreUseCase.execute.mockRejectedValueOnce(new TypeError('Failed to fetch'));
+    submitHoleScoreUseCase.execute.mockRejectedValueOnce(
+      new TypeError('Failed to fetch'),
+    );
     await anota(result, 5, 4);
 
     await anota(result, 5, 4);
@@ -3441,24 +4655,37 @@ describe('useScoring · los hoyos que no se pudieron guardar (FE #622)', () => {
 
   it.each([
     ['llega', (vuelo) => vuelo.suelta(mockScoringView)],
-    ['se queda sin red', (vuelo) => vuelo.falla(new TypeError('Failed to fetch'))],
-  ])('N6 · el 4 que iba en camino %s después de fallar la corrección: el hoyo sigue apuntado', async (_, acaba) => {
-    const { result } = await monta();
-    const vuelo = enVuelo();
-    submitHoleScoreUseCase.execute.mockReturnValueOnce(vuelo.promesa);
-    let primero;
-    act(() => { primero = result.current.submitScore(5, golpe(4)); });
-    await waitFor(() => expect(submitHoleScoreUseCase.execute).toHaveBeenCalledTimes(1));
+    [
+      'se queda sin red',
+      (vuelo) => vuelo.falla(new TypeError('Failed to fetch')),
+    ],
+  ])(
+    'N6 · el 4 que iba en camino %s después de fallar la corrección: el hoyo sigue apuntado',
+    async (_, acaba) => {
+      const { result } = await monta();
+      const vuelo = enVuelo();
+      submitHoleScoreUseCase.execute.mockReturnValueOnce(vuelo.promesa);
+      let primero;
+      act(() => {
+        primero = result.current.submitScore(5, golpe(4));
+      });
+      await waitFor(() =>
+        expect(submitHoleScoreUseCase.execute).toHaveBeenCalledTimes(1),
+      );
 
-    // La corrección llega con el envío en vuelo, así que solo se guarda… y no cabe
-    sinSitio();
-    await anota(result, 5, 5);
-    expect(Object.keys(result.current.noGuardados)).toEqual(['5']);
+      // La corrección llega con el envío en vuelo, así que solo se guarda… y no cabe
+      sinSitio();
+      await anota(result, 5, 5);
+      expect(Object.keys(result.current.noGuardados)).toEqual(['5']);
 
-    await act(async () => { acaba(vuelo); await primero; });
+      await act(async () => {
+        acaba(vuelo);
+        await primero;
+      });
 
-    expect(Object.keys(result.current.noGuardados)).toEqual(['5']);
-  });
+      expect(Object.keys(result.current.noGuardados)).toEqual(['5']);
+    },
+  );
 
   it('N7 · lo de un partido no se arrastra a otro', async () => {
     sinCobertura();
@@ -3480,16 +4707,29 @@ describe('useScoring · los hoyos que no se pudieron guardar (FE #622)', () => {
     sinCobertura();
     const { result } = await monta();
     sinSitio();
-    await act(async () => { await result.current.submitScore(5, { ownScore: 4, markedPlayerId: 'u2' }); });
+    await act(async () => {
+      await result.current.submitScore(5, {
+        ownScore: 4,
+        markedPlayerId: 'u2',
+      });
+    });
 
     conSitio();
     await act(async () => {
-      await result.current.submitScore(5, { ownScore: undefined, markedPlayerId: 'u2', markedScore: 5 });
+      await result.current.submitScore(5, {
+        ownScore: undefined,
+        markedPlayerId: 'u2',
+        markedScore: 5,
+      });
     });
     expect(Object.keys(result.current.noGuardados)).toEqual(['5']);
 
     await act(async () => {
-      await result.current.submitScore(5, { ownScore: 4, markedPlayerId: 'u2', markedScore: 5 });
+      await result.current.submitScore(5, {
+        ownScore: 4,
+        markedPlayerId: 'u2',
+        markedScore: 5,
+      });
     });
     expect(result.current.noGuardados).toEqual({});
   });
@@ -3501,11 +4741,20 @@ describe('useScoring · los hoyos que no se pudieron guardar (FE #622)', () => {
     await anota(result, 5, 4);
 
     conSitio();
-    await act(async () => { await result.current.submitScore(5, { ownScore: 4, markedPlayerId: 'u2' }); });
+    await act(async () => {
+      await result.current.submitScore(5, {
+        ownScore: 4,
+        markedPlayerId: 'u2',
+      });
+    });
     expect(Object.keys(result.current.noGuardados)).toEqual(['5']);
 
     await act(async () => {
-      await result.current.submitScore(5, { ownScore: undefined, markedPlayerId: 'u2', markedScore: 4 });
+      await result.current.submitScore(5, {
+        ownScore: undefined,
+        markedPlayerId: 'u2',
+        markedScore: 4,
+      });
     });
     expect(result.current.noGuardados).toEqual({});
   });
@@ -3514,10 +4763,20 @@ describe('useScoring · los hoyos que no se pudieron guardar (FE #622)', () => {
     sinCobertura();
     const { result } = await monta();
     sinSitio();
-    await act(async () => { await result.current.submitScore(5, { ownScore: 4, markedPlayerId: 'u2' }); });
+    await act(async () => {
+      await result.current.submitScore(5, {
+        ownScore: 4,
+        markedPlayerId: 'u2',
+      });
+    });
 
     conSitio();
-    await act(async () => { await result.current.submitScore(5, { ownScore: null, markedPlayerId: 'u2' }); });
+    await act(async () => {
+      await result.current.submitScore(5, {
+        ownScore: null,
+        markedPlayerId: 'u2',
+      });
+    });
 
     expect(result.current.noGuardados).toEqual({});
   });
@@ -3526,14 +4785,27 @@ describe('useScoring · los hoyos que no se pudieron guardar (FE #622)', () => {
     sinCobertura();
     const { result } = await monta();
     sinSitio();
-    await act(async () => { await result.current.submitScore(5, { ownScore: 4, markedPlayerId: 'u2' }); });
     await act(async () => {
-      await result.current.submitScore(5, { ownScore: undefined, markedPlayerId: 'u2', markedScore: 5 });
+      await result.current.submitScore(5, {
+        ownScore: 4,
+        markedPlayerId: 'u2',
+      });
+    });
+    await act(async () => {
+      await result.current.submitScore(5, {
+        ownScore: undefined,
+        markedPlayerId: 'u2',
+        markedScore: 5,
+      });
     });
 
     conSitio();
     await act(async () => {
-      await result.current.submitScore(5, { ownScore: undefined, markedPlayerId: 'u2', markedScore: 5 });
+      await result.current.submitScore(5, {
+        ownScore: undefined,
+        markedPlayerId: 'u2',
+        markedScore: 5,
+      });
     });
 
     // El del marcado ya está; el propio, no
@@ -3548,7 +4820,12 @@ describe('useScoring · los hoyos que no se pudieron guardar (FE #622)', () => {
     const marca = result.current.noGuardados[5].turno;
 
     conSitio();
-    await act(async () => { await result.current.submitScore(5, { ownScore: 4, markedPlayerId: 'u2' }); });
+    await act(async () => {
+      await result.current.submitScore(5, {
+        ownScore: 4,
+        markedPlayerId: 'u2',
+      });
+    });
 
     expect(result.current.noGuardados[5].turno).toBe(marca);
   });
@@ -3559,19 +4836,39 @@ describe('useScoring · los hoyos que no se pudieron guardar (FE #622)', () => {
     sinCobertura();
     const { result } = await monta();
     // El 4 propio está guardado; la corrección a 5 no cabe
-    await act(async () => { await result.current.submitScore(5, { ownScore: 4, markedPlayerId: 'u2' }, { tocado: 'ownScore' }); });
+    await act(async () => {
+      await result.current.submitScore(
+        5,
+        { ownScore: 4, markedPlayerId: 'u2' },
+        { tocado: 'ownScore' },
+      );
+    });
     sinSitio();
-    await act(async () => { await result.current.submitScore(5, { ownScore: 5, markedPlayerId: 'u2' }, { tocado: 'ownScore' }); });
+    await act(async () => {
+      await result.current.submitScore(
+        5,
+        { ownScore: 5, markedPlayerId: 'u2' },
+        { tocado: 'ownScore' },
+      );
+    });
 
     conSitio();
     await act(async () => {
-      await result.current.submitScore(5, { ownScore: 4, markedPlayerId: 'u2', markedScore: 5 }, { tocado: 'markedScore' });
+      await result.current.submitScore(
+        5,
+        { ownScore: 4, markedPlayerId: 'u2', markedScore: 5 },
+        { tocado: 'markedScore' },
+      );
     });
     expect(result.current.noGuardados[5]?.golpes).toEqual(['ownScore']);
 
     // Si el jugador vuelve a elegir el propio —aunque sea el mismo 4—, es su decisión
     await act(async () => {
-      await result.current.submitScore(5, { ownScore: 4, markedPlayerId: 'u2', markedScore: 5 }, { tocado: 'ownScore' });
+      await result.current.submitScore(
+        5,
+        { ownScore: 4, markedPlayerId: 'u2', markedScore: 5 },
+        { tocado: 'ownScore' },
+      );
     });
     expect(result.current.noGuardados).toEqual({});
   });
@@ -3583,15 +4880,24 @@ describe('useScoring · los hoyos que no se pudieron guardar (FE #622)', () => {
     // La del turno anterior no cabe en el móvil y sale en vuelo
     sinSitio();
     let primero;
-    act(() => { primero = result.current.submitScore(5, golpe(4), { tocado: 'ownScore' }); });
-    await waitFor(() => expect(submitHoleScoreUseCase.execute).toHaveBeenCalledTimes(1));
+    act(() => {
+      primero = result.current.submitScore(5, golpe(4), { tocado: 'ownScore' });
+    });
+    await waitFor(() =>
+      expect(submitHoleScoreUseCase.execute).toHaveBeenCalledTimes(1),
+    );
 
     // La posterior, con el envío dentro, solo se guarda… y esta sí cabe
     conSitio();
-    await act(async () => { await result.current.submitScore(5, golpe(6), { tocado: 'ownScore' }); });
+    await act(async () => {
+      await result.current.submitScore(5, golpe(6), { tocado: 'ownScore' });
+    });
 
     // Y la anterior se queda sin red
-    await act(async () => { vuelo.falla(new TypeError('Failed to fetch')); await primero; });
+    await act(async () => {
+      vuelo.falla(new TypeError('Failed to fetch'));
+      await primero;
+    });
 
     expect(result.current.noGuardados).toEqual({});
   });
@@ -3616,20 +4922,31 @@ describe('useScoring · los hoyos que no se pudieron guardar (FE #622)', () => {
   it('N13 · si el guardado llega con el jugador en otro partido, al volver el aviso ya no está', async () => {
     const { result, rerender } = await monta('m-1');
     sinSitio();
-    submitHoleScoreUseCase.execute.mockRejectedValueOnce(new TypeError('Failed to fetch'));
-    await act(async () => { await result.current.submitScore(5, golpe(4), { tocado: 'ownScore' }); });
+    submitHoleScoreUseCase.execute.mockRejectedValueOnce(
+      new TypeError('Failed to fetch'),
+    );
+    await act(async () => {
+      await result.current.submitScore(5, golpe(4), { tocado: 'ownScore' });
+    });
     expect(Object.keys(result.current.noGuardados)).toEqual(['5']);
 
     conSitio();
     const vuelo = enVuelo();
     submitHoleScoreUseCase.execute.mockReturnValueOnce(vuelo.promesa);
     let envio;
-    act(() => { envio = result.current.submitScore(5, golpe(4), { tocado: 'ownScore' }); });
-    await waitFor(() => expect(submitHoleScoreUseCase.execute).toHaveBeenCalledTimes(2));
+    act(() => {
+      envio = result.current.submitScore(5, golpe(4), { tocado: 'ownScore' });
+    });
+    await waitFor(() =>
+      expect(submitHoleScoreUseCase.execute).toHaveBeenCalledTimes(2),
+    );
     rerender({ id: 'm-2' });
     expect(result.current.noGuardados).toEqual({});
 
-    await act(async () => { vuelo.suelta(mockScoringView); await envio; });
+    await act(async () => {
+      vuelo.suelta(mockScoringView);
+      await envio;
+    });
     rerender({ id: 'm-1' });
 
     expect(result.current.noGuardados).toEqual({});
@@ -3641,11 +4958,18 @@ describe('useScoring · los hoyos que no se pudieron guardar (FE #622)', () => {
     const vuelo = enVuelo();
     submitHoleScoreUseCase.execute.mockReturnValueOnce(vuelo.promesa);
     let envio;
-    act(() => { envio = result.current.submitScore(5, golpe(4), { tocado: 'ownScore' }); });
-    await waitFor(() => expect(submitHoleScoreUseCase.execute).toHaveBeenCalledTimes(1));
+    act(() => {
+      envio = result.current.submitScore(5, golpe(4), { tocado: 'ownScore' });
+    });
+    await waitFor(() =>
+      expect(submitHoleScoreUseCase.execute).toHaveBeenCalledTimes(1),
+    );
     rerender({ id: 'm-2' });
 
-    await act(async () => { vuelo.falla(new TypeError('Failed to fetch')); await envio; });
+    await act(async () => {
+      vuelo.falla(new TypeError('Failed to fetch'));
+      await envio;
+    });
     // En el partido de ahora no se pinta
     expect(result.current.noGuardados).toEqual({});
     rerender({ id: 'm-1' });
@@ -3669,25 +4993,37 @@ describe('useScoring · los hoyos que no se pudieron guardar (FE #622)', () => {
 describe('useScoring · el aviso de un golpe rechazado es de ESE golpe (FE #813)', () => {
   // El rechazo definitivo se apunta en `golpesPerdidos`, que sale también en el
   // panel. No decía qué golpe del hoyo se perdió, y guardar el otro lo retiraba
-  const golpe = (ownScore, markedScore) => ({ ownScore, markedPlayerId: 'u2', markedScore });
+  const golpe = (ownScore, markedScore) => ({
+    ownScore,
+    markedPlayerId: 'u2',
+    markedScore,
+  });
   const rechazo = () => Object.assign(new Error('HTTP 409'), { status: 409 });
 
   const monta = async () => {
     const { result } = renderHook(() => useScoring('m-1', 'u1'));
     await waitFor(() => expect(result.current.isLoading).toBe(false));
-    await act(async () => { await new Promise((r) => setTimeout(r, 20)); });
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 20));
+    });
     return result;
   };
   const anota = (result, datos, tocado) =>
-    act(async () => { await result.current.submitScore(5, datos, { tocado }); });
-  const delHoyo5 = () => golpesPerdidos.pendientes('u1').filter((a) => a.holeNumber === 5);
+    act(async () => {
+      await result.current.submitScore(5, datos, { tocado });
+    });
+  const delHoyo5 = () =>
+    golpesPerdidos.pendientes('u1').filter((a) => a.holeNumber === 5);
 
   beforeEach(() => {
     vi.clearAllMocks();
     almacen.clear();
     getScoringViewUseCase.execute.mockResolvedValue(mockScoringView);
     submitHoleScoreUseCase.execute.mockResolvedValue(mockScoringView);
-    Object.defineProperty(navigator, 'onLine', { value: true, configurable: true });
+    Object.defineProperty(navigator, 'onLine', {
+      value: true,
+      configurable: true,
+    });
     offlineQueue.getByMatch.mockReturnValue([]);
     offlineQueue.enqueue.mockReturnValue(true);
   });
@@ -3703,7 +5039,9 @@ describe('useScoring · el aviso de un golpe rechazado es de ESE golpe (FE #813)
 
     await anota(result, golpe(4, 5), 'ownScore');
 
-    expect(delHoyo5()).toEqual([expect.objectContaining({ golpes: ['ownScore'] })]);
+    expect(delHoyo5()).toEqual([
+      expect.objectContaining({ golpes: ['ownScore'] }),
+    ]);
   });
 
   it('R2 · guardar el del marcado no lo retira; reanotar el propio, sí', async () => {
@@ -3719,12 +5057,23 @@ describe('useScoring · el aviso de un golpe rechazado es de ESE golpe (FE #813)
   });
 
   it('R3 · lo que va a la cola lleva el golpe tocado', async () => {
-    Object.defineProperty(navigator, 'onLine', { value: false, configurable: true });
+    Object.defineProperty(navigator, 'onLine', {
+      value: false,
+      configurable: true,
+    });
     const result = await monta();
 
     await anota(result, golpe(4, 5), 'markedScore');
 
-    expect(offlineQueue.enqueue).toHaveBeenCalledWith('m-1', 5, golpe(4, 5), null, 'u1', expect.anything(), ['markedScore@u2']);
+    expect(offlineQueue.enqueue).toHaveBeenCalledWith(
+      'm-1',
+      5,
+      golpe(4, 5),
+      null,
+      'u1',
+      expect.anything(),
+      ['markedScore@u2'],
+    );
   });
 
   it('R3b · también lo que se guarda antes de enviar', async () => {
@@ -3732,7 +5081,15 @@ describe('useScoring · el aviso de un golpe rechazado es de ESE golpe (FE #813)
 
     await anota(result, golpe(4, 5), 'ownScore');
 
-    expect(offlineQueue.enqueue).toHaveBeenCalledWith('m-1', 5, golpe(4, 5), null, 'u1', expect.anything(), ['ownScore']);
+    expect(offlineQueue.enqueue).toHaveBeenCalledWith(
+      'm-1',
+      5,
+      golpe(4, 5),
+      null,
+      'u1',
+      expect.anything(),
+      ['ownScore'],
+    );
   });
 
   // Revisión: el rechazo directo saca de la cola la entrada del hoyo ENTERA, y
@@ -3742,8 +5099,13 @@ describe('useScoring · el aviso de un golpe rechazado es de ESE golpe (FE #813)
     const result = await monta();
     // En la cola: el propio, corregido sin cobertura, y ahora el del marcado
     const enCola = {
-      matchId: 'm-1', holeNumber: 5, participantId: null, userId: 'u1', timestamp: 1000,
-      scoreData: golpe(4, 5), tocados: ['ownScore', 'markedScore'],
+      matchId: 'm-1',
+      holeNumber: 5,
+      participantId: null,
+      userId: 'u1',
+      timestamp: 1000,
+      scoreData: golpe(4, 5),
+      tocados: ['ownScore', 'markedScore'],
     };
     offlineQueue.getByMatch.mockReturnValue([enCola]);
     offlineQueue.remove.mockReturnValue(true);
@@ -3752,14 +5114,22 @@ describe('useScoring · el aviso de un golpe rechazado es de ESE golpe (FE #813)
     await anota(result, golpe(4, 5), 'markedScore');
 
     expect(delHoyo5()).toHaveLength(1);
-    expect([...delHoyo5()[0].golpes].sort()).toEqual(['markedScore@u2', 'ownScore']);
+    expect([...delHoyo5()[0].golpes].sort()).toEqual([
+      'markedScore@u2',
+      'ownScore',
+    ]);
   });
 
   it('R5b · y si la corrección no cupo, lo que había de antes en la cola también', async () => {
     const result = await monta();
     const enCola = {
-      matchId: 'm-1', holeNumber: 5, participantId: null, userId: 'u1', timestamp: 1000,
-      scoreData: golpe(4, undefined), tocados: ['ownScore'],
+      matchId: 'm-1',
+      holeNumber: 5,
+      participantId: null,
+      userId: 'u1',
+      timestamp: 1000,
+      scoreData: golpe(4, undefined),
+      tocados: ['ownScore'],
     };
     offlineQueue.getByMatch.mockReturnValue([enCola]);
     offlineQueue.enqueue.mockReturnValue(false);
@@ -3768,14 +5138,22 @@ describe('useScoring · el aviso de un golpe rechazado es de ESE golpe (FE #813)
 
     await anota(result, golpe(4, 5), 'markedScore');
 
-    expect([...delHoyo5()[0].golpes].sort()).toEqual(['markedScore@u2', 'ownScore']);
+    expect([...delHoyo5()[0].golpes].sort()).toEqual([
+      'markedScore@u2',
+      'ownScore',
+    ]);
   });
 
   it('R5c · aunque el envío no traiga el golpe que la cola tenía', async () => {
     const result = await monta();
     const enCola = {
-      matchId: 'm-1', holeNumber: 5, participantId: null, userId: 'u1', timestamp: 1000,
-      scoreData: golpe(4, undefined), tocados: ['ownScore'],
+      matchId: 'm-1',
+      holeNumber: 5,
+      participantId: null,
+      userId: 'u1',
+      timestamp: 1000,
+      scoreData: golpe(4, undefined),
+      tocados: ['ownScore'],
     };
     offlineQueue.getByMatch.mockReturnValue([enCola]);
     offlineQueue.enqueue.mockReturnValue(false);
@@ -3784,13 +5162,20 @@ describe('useScoring · el aviso de un golpe rechazado es de ESE golpe (FE #813)
 
     await anota(result, golpe(undefined, 5), 'markedScore');
 
-    expect([...delHoyo5()[0].golpes].sort()).toEqual(['markedScore@u2', 'ownScore']);
+    expect([...delHoyo5()[0].golpes].sort()).toEqual([
+      'markedScore@u2',
+      'ownScore',
+    ]);
   });
 
   it('R5d · una entrada de antes, sin golpes tocados, cuenta con los que trae', async () => {
     const result = await monta();
     const enCola = {
-      matchId: 'm-1', holeNumber: 5, participantId: null, userId: 'u1', timestamp: 1000,
+      matchId: 'm-1',
+      holeNumber: 5,
+      participantId: null,
+      userId: 'u1',
+      timestamp: 1000,
       scoreData: golpe(4, undefined),
     };
     offlineQueue.getByMatch.mockReturnValue([enCola]);
@@ -3800,11 +5185,19 @@ describe('useScoring · el aviso de un golpe rechazado es de ESE golpe (FE #813)
 
     await anota(result, golpe(undefined, 5), 'markedScore');
 
-    expect([...delHoyo5()[0].golpes].sort()).toEqual(['markedScore@u2', 'ownScore']);
+    expect([...delHoyo5()[0].golpes].sort()).toEqual([
+      'markedScore@u2',
+      'ownScore',
+    ]);
   });
 
   it('R4 · un aviso de antes, sin golpes, se retira con cualquier guardado como siempre', async () => {
-    golpesPerdidos.apunta({ matchId: 'm-1', matchName: 'Meis', holeNumber: 5, userId: 'u1' });
+    golpesPerdidos.apunta({
+      matchId: 'm-1',
+      matchName: 'Meis',
+      holeNumber: 5,
+      userId: 'u1',
+    });
     const result = await monta();
 
     await anota(result, golpe(undefined, 5), 'markedScore');
@@ -3818,11 +5211,17 @@ describe('useScoring · retirada del fourball', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     almacen.clear();
-    getScoringViewUseCase.execute.mockResolvedValue({ ...mockScoringView, withdrawnPlayerIds: [] });
+    getScoringViewUseCase.execute.mockResolvedValue({
+      ...mockScoringView,
+      withdrawnPlayerIds: [],
+    });
   });
 
   it('F3: retirado, no anota (aunque juegue el partido)', async () => {
-    getScoringViewUseCase.execute.mockResolvedValue({ ...mockScoringView, withdrawnPlayerIds: ['u1'] });
+    getScoringViewUseCase.execute.mockResolvedValue({
+      ...mockScoringView,
+      withdrawnPlayerIds: ['u1'],
+    });
     const { result } = renderHook(() => useScoring('m-1', 'u1'));
     await waitFor(() => expect(result.current.isLoading).toBe(false));
 
@@ -3832,7 +5231,9 @@ describe('useScoring · retirada del fourball', () => {
   });
 
   it('F2: retirar llama al caso de uso y vuelve a leer la vista; deshacer, con su marca', async () => {
-    withdrawMatchPlayerUseCase.execute.mockResolvedValue({ withdrawnPlayerIds: ['u2'] });
+    withdrawMatchPlayerUseCase.execute.mockResolvedValue({
+      withdrawnPlayerIds: ['u2'],
+    });
     const { result } = renderHook(() => useScoring('m-1', 'u1'));
     await waitFor(() => expect(result.current.isLoading).toBe(false));
     const lecturas = getScoringViewUseCase.execute.mock.calls.length;
@@ -3840,13 +5241,23 @@ describe('useScoring · retirada del fourball', () => {
     await act(async () => {
       await result.current.retirarJugador('u2');
     });
-    expect(withdrawMatchPlayerUseCase.execute).toHaveBeenLastCalledWith('m-1', 'u2', { deshacer: false });
-    expect(getScoringViewUseCase.execute.mock.calls.length).toBeGreaterThan(lecturas);
+    expect(withdrawMatchPlayerUseCase.execute).toHaveBeenLastCalledWith(
+      'm-1',
+      'u2',
+      { deshacer: false },
+    );
+    expect(getScoringViewUseCase.execute.mock.calls.length).toBeGreaterThan(
+      lecturas,
+    );
 
     await act(async () => {
       await result.current.retirarJugador('u2', { deshacer: true });
     });
-    expect(withdrawMatchPlayerUseCase.execute).toHaveBeenLastCalledWith('m-1', 'u2', { deshacer: true });
+    expect(withdrawMatchPlayerUseCase.execute).toHaveBeenLastCalledWith(
+      'm-1',
+      'u2',
+      { deshacer: true },
+    );
   });
 
   it('F8: sin conexión no lo intenta y lo dice', async () => {
@@ -3868,9 +5279,17 @@ describe('useScoring · retirada del fourball', () => {
   // golpes (PLAYER_WITHDRAWN). Antes de retirarse, lo suyo tiene que salir
   it('F11: retirarme con golpes en la cola: primero los manda; si no salen, no me retira y lo dice', async () => {
     offlineQueue.getByMatch.mockReturnValue([
-      { matchId: 'm-1', holeNumber: 14, participantId: null, userId: 'u1', scoreData: { ownScore: 5, markedPlayerId: 'u2' } },
+      {
+        matchId: 'm-1',
+        holeNumber: 14,
+        participantId: null,
+        userId: 'u1',
+        scoreData: { ownScore: 5, markedPlayerId: 'u2' },
+      },
     ]);
-    submitHoleScoreUseCase.execute.mockRejectedValue(Object.assign(new Error('caído'), { status: 503 }));
+    submitHoleScoreUseCase.execute.mockRejectedValue(
+      Object.assign(new Error('caído'), { status: 503 }),
+    );
     const { result } = renderHook(() => useScoring('m-1', 'u1'));
     await waitFor(() => expect(result.current.isLoading).toBe(false));
     submitHoleScoreUseCase.execute.mockClear();
@@ -3888,7 +5307,13 @@ describe('useScoring · retirada del fourball', () => {
 
   it('F11b: a mi pareja sí, aunque yo tenga golpes en la cola (son míos, no suyos)', async () => {
     offlineQueue.getByMatch.mockReturnValue([
-      { matchId: 'm-1', holeNumber: 14, participantId: null, userId: 'u1', scoreData: { ownScore: 5, markedPlayerId: 'u2' } },
+      {
+        matchId: 'm-1',
+        holeNumber: 14,
+        participantId: null,
+        userId: 'u1',
+        scoreData: { ownScore: 5, markedPlayerId: 'u2' },
+      },
     ]);
     withdrawMatchPlayerUseCase.execute.mockResolvedValue({});
     const { result } = renderHook(() => useScoring('m-1', 'u1'));
@@ -3898,36 +5323,58 @@ describe('useScoring · retirada del fourball', () => {
       await result.current.retirarJugador('u3');
     });
 
-    expect(withdrawMatchPlayerUseCase.execute).toHaveBeenCalledWith('m-1', 'u3', { deshacer: false });
+    expect(withdrawMatchPlayerUseCase.execute).toHaveBeenCalledWith(
+      'm-1',
+      'u3',
+      { deshacer: false },
+    );
     offlineQueue.getByMatch.mockReturnValue([]);
   });
 
   it('F12: retirando tiene su propio indicador: un golpe que acaba no lo apaga', async () => {
     let suelta;
-    withdrawMatchPlayerUseCase.execute.mockReturnValue(new Promise((r) => { suelta = r; }));
-    submitHoleScoreUseCase.execute.mockResolvedValue({ ...mockScoringView, withdrawnPlayerIds: [] });
+    withdrawMatchPlayerUseCase.execute.mockReturnValue(
+      new Promise((r) => {
+        suelta = r;
+      }),
+    );
+    submitHoleScoreUseCase.execute.mockResolvedValue({
+      ...mockScoringView,
+      withdrawnPlayerIds: [],
+    });
     const { result } = renderHook(() => useScoring('m-1', 'u1'));
     await waitFor(() => expect(result.current.isLoading).toBe(false));
 
     let retirada;
-    act(() => { retirada = result.current.retirarJugador('u2'); });
+    act(() => {
+      retirada = result.current.retirarJugador('u2');
+    });
     await waitFor(() => expect(result.current.retirando).toBe(true));
     await act(async () => {
-      await result.current.submitScore(1, { ownScore: 4, markedPlayerId: 'u2' });
+      await result.current.submitScore(1, {
+        ownScore: 4,
+        markedPlayerId: 'u2',
+      });
     });
     expect(result.current.retirando).toBe(true);
 
-    await act(async () => { suelta({}); await retirada; });
+    await act(async () => {
+      suelta({});
+      await retirada;
+    });
     expect(result.current.retirando).toBe(false);
     submitHoleScoreUseCase.execute.mockReset();
   });
 
   it('F9: un 409 con motivo se explica con su texto', async () => {
-    const rechazo = Object.assign(new Error('Cannot withdraw the last player of a side'), {
-      status: 409,
-      errorCode: 'WITHDRAWAL_NOT_ALLOWED',
-      data: { reason: 'LAST_OF_SIDE' },
-    });
+    const rechazo = Object.assign(
+      new Error('Cannot withdraw the last player of a side'),
+      {
+        status: 409,
+        errorCode: 'WITHDRAWAL_NOT_ALLOWED',
+        data: { reason: 'LAST_OF_SIDE' },
+      },
+    );
     withdrawMatchPlayerUseCase.execute.mockRejectedValue(rechazo);
     const { result } = renderHook(() => useScoring('m-1', 'u1'));
     await waitFor(() => expect(result.current.isLoading).toBe(false));
@@ -3967,8 +5414,14 @@ describe('useScoring · quien marca a dos', () => {
   });
 
   it('el bloqueo va por marcado: entregó Carlos, a Dani se le sigue marcando', async () => {
-    getScoringViewUseCase.execute.mockResolvedValue({ ...vistaDeDos, scorecardSubmittedBy: ['u1', 'u2'] });
-    submitHoleScoreUseCase.execute.mockResolvedValue({ ...vistaDeDos, scorecardSubmittedBy: ['u1', 'u2'] });
+    getScoringViewUseCase.execute.mockResolvedValue({
+      ...vistaDeDos,
+      scorecardSubmittedBy: ['u1', 'u2'],
+    });
+    submitHoleScoreUseCase.execute.mockResolvedValue({
+      ...vistaDeDos,
+      scorecardSubmittedBy: ['u1', 'u2'],
+    });
     const { result } = renderHook(() => useScoring('m-1', 'u1'));
     await waitFor(() => expect(result.current.isLoading).toBe(false));
 
@@ -3978,14 +5431,26 @@ describe('useScoring · quien marca a dos', () => {
 
     // Con mi tarjeta entregada, la marca de Dani sigue saliendo
     await act(async () => {
-      await result.current.submitScore(1, { markedPlayerId: 'u4', markedScore: 5 }, { tocado: ['markedScore'] });
+      await result.current.submitScore(
+        1,
+        { markedPlayerId: 'u4', markedScore: 5 },
+        { tocado: ['markedScore'] },
+      );
     });
     expect(submitHoleScoreUseCase.execute).toHaveBeenCalled();
   });
 
   // 26 oct 2026: una casilla por marcado, y sin cobertura un hueco para cada uno
-  const sinRed = () => Object.defineProperty(navigator, 'onLine', { value: false, configurable: true });
-  const conRed = () => Object.defineProperty(navigator, 'onLine', { value: true, configurable: true });
+  const sinRed = () =>
+    Object.defineProperty(navigator, 'onLine', {
+      value: false,
+      configurable: true,
+    });
+  const conRed = () =>
+    Object.defineProperty(navigator, 'onLine', {
+      value: true,
+      configurable: true,
+    });
   afterEach(conRed);
 
   it('sin cobertura, cada marca va con su rival', async () => {
@@ -3995,19 +5460,57 @@ describe('useScoring · quien marca a dos', () => {
     await waitFor(() => expect(result.current.isLoading).toBe(false));
 
     await act(async () => {
-      await result.current.submitScore(3, { markedPlayerId: 'u4', markedScore: 4 }, { tocado: 'markedScore' });
-      await result.current.submitScore(3, { ownScore: 5, markedPlayerId: 'u2', markedScore: 6 }, { tocado: 'ownScore' });
+      await result.current.submitScore(
+        3,
+        { markedPlayerId: 'u4', markedScore: 4 },
+        { tocado: 'markedScore' },
+      );
+      await result.current.submitScore(
+        3,
+        { ownScore: 5, markedPlayerId: 'u2', markedScore: 6 },
+        { tocado: 'ownScore' },
+      );
     });
 
     // El hueco sale de a quién marca cada una; los golpes, con su rival
     const [deDani, deCarlos] = offlineQueue.enqueue.mock.calls;
-    expect(deDani).toEqual(['m-1', 3, { markedPlayerId: 'u4', markedScore: 4 }, null, 'u1', expect.anything(), ['markedScore@u4']]);
-    expect(deCarlos).toEqual(['m-1', 3, { ownScore: 5, markedPlayerId: 'u2', markedScore: 6 }, null, 'u1', expect.anything(), ['ownScore']]);
+    expect(deDani).toEqual([
+      'm-1',
+      3,
+      { markedPlayerId: 'u4', markedScore: 4 },
+      null,
+      'u1',
+      expect.anything(),
+      ['markedScore@u4'],
+    ]);
+    expect(deCarlos).toEqual([
+      'm-1',
+      3,
+      { ownScore: 5, markedPlayerId: 'u2', markedScore: 6 },
+      null,
+      'u1',
+      expect.anything(),
+      ['ownScore'],
+    ]);
   });
 
   const enLaCola = [
-    { matchId: 'm-1', holeNumber: 3, participantId: null, userId: 'u1', timestamp: 100, scoreData: { ownScore: 5, markedPlayerId: 'u2', markedScore: 6 } },
-    { matchId: 'm-1', holeNumber: 3, participantId: null, userId: 'u1', timestamp: 50, scoreData: { markedPlayerId: 'u4', markedScore: 4 } },
+    {
+      matchId: 'm-1',
+      holeNumber: 3,
+      participantId: null,
+      userId: 'u1',
+      timestamp: 100,
+      scoreData: { ownScore: 5, markedPlayerId: 'u2', markedScore: 6 },
+    },
+    {
+      matchId: 'm-1',
+      holeNumber: 3,
+      participantId: null,
+      userId: 'u1',
+      timestamp: 50,
+      scoreData: { markedPlayerId: 'u4', markedScore: 4 },
+    },
   ];
 
   it('al llegar lo del hoyo no se borra el hueco del segundo', async () => {
@@ -4019,10 +5522,16 @@ describe('useScoring · quien marca a dos', () => {
     offlineQueue.remove.mockClear();
 
     await act(async () => {
-      await result.current.submitScore(3, { ownScore: 5, markedPlayerId: 'u2', markedScore: 6 }, { tocado: 'ownScore' });
+      await result.current.submitScore(
+        3,
+        { ownScore: 5, markedPlayerId: 'u2', markedScore: 6 },
+        { tocado: 'ownScore' },
+      );
     });
 
-    expect(offlineQueue.remove.mock.calls).toEqual([['m-1', 3, null, 'u1', 'u2']]);
+    expect(offlineQueue.remove.mock.calls).toEqual([
+      ['m-1', 3, null, 'u1', 'u2'],
+    ]);
   });
 
   it('al llegar la marca del segundo se borra su hueco, y no el del hoyo', async () => {
@@ -4030,36 +5539,61 @@ describe('useScoring · quien marca a dos', () => {
     submitHoleScoreUseCase.execute.mockResolvedValue(vistaDeDos);
     const { result } = renderHook(() => useScoring('m-1', 'u1'));
     await waitFor(() => expect(result.current.isLoading).toBe(false));
-    offlineQueue.getByMatch.mockReturnValue([enLaCola[0], { ...enLaCola[1], timestamp: 200 }]);
+    offlineQueue.getByMatch.mockReturnValue([
+      enLaCola[0],
+      { ...enLaCola[1], timestamp: 200 },
+    ]);
     offlineQueue.remove.mockClear();
 
     await act(async () => {
-      await result.current.submitScore(3, { markedPlayerId: 'u4', markedScore: 4 }, { tocado: 'markedScore' });
+      await result.current.submitScore(
+        3,
+        { markedPlayerId: 'u4', markedScore: 4 },
+        { tocado: 'markedScore' },
+      );
     });
 
     // Se guarda antes de mandarlo, con su rival, y es el suyo el que sale
-    expect(offlineQueue.enqueue.mock.calls.at(-1).at(-1)).toEqual(['markedScore@u4']);
-    expect(offlineQueue.remove.mock.calls).toEqual([['m-1', 3, null, 'u1', 'u4']]);
+    expect(offlineQueue.enqueue.mock.calls.at(-1).at(-1)).toEqual([
+      'markedScore@u4',
+    ]);
+    expect(offlineQueue.remove.mock.calls).toEqual([
+      ['m-1', 3, null, 'u1', 'u4'],
+    ]);
   });
 
   it('si rechazan la marca del segundo (se deshizo la retirada), sale su hueco y el del hoyo se queda', async () => {
     getScoringViewUseCase.execute.mockResolvedValue(vistaDeDos);
-    submitHoleScoreUseCase.execute.mockRejectedValue(Object.assign(new Error('x'), { status: 403 }));
+    submitHoleScoreUseCase.execute.mockRejectedValue(
+      Object.assign(new Error('x'), { status: 403 }),
+    );
     const { result } = renderHook(() => useScoring('m-1', 'u1'));
     await waitFor(() => expect(result.current.isLoading).toBe(false));
     // Lo del hoyo, posterior: no es lo rechazado, y no sale
-    offlineQueue.getByMatch.mockReturnValue([{ ...enLaCola[0], timestamp: 300 }, { ...enLaCola[1], timestamp: 200 }]);
+    offlineQueue.getByMatch.mockReturnValue([
+      { ...enLaCola[0], timestamp: 300 },
+      { ...enLaCola[1], timestamp: 200 },
+    ]);
     offlineQueue.remove.mockClear();
 
     await act(async () => {
-      await result.current.submitScore(3, { markedPlayerId: 'u4', markedScore: 4 }, { tocado: 'markedScore' });
+      await result.current.submitScore(
+        3,
+        { markedPlayerId: 'u4', markedScore: 4 },
+        { tocado: 'markedScore' },
+      );
     });
 
-    expect(offlineQueue.remove.mock.calls).toEqual([['m-1', 3, null, 'u1', 'u4']]);
+    expect(offlineQueue.remove.mock.calls).toEqual([
+      ['m-1', 3, null, 'u1', 'u4'],
+    ]);
   });
 
   it('el retirado no coge el candado de la sesión (no anota)', async () => {
-    getScoringViewUseCase.execute.mockResolvedValue({ ...vistaDeDos, withdrawnPlayerIds: ['u1'] });
+    getScoringViewUseCase.execute.mockResolvedValue({
+      ...vistaDeDos,
+      withdrawnPlayerIds: ['u1'],
+    });
     sessionLock.acquire.mockClear();
     const { result } = renderHook(() => useScoring('m-1', 'u1'));
     await waitFor(() => expect(result.current.isLoading).toBe(false));
@@ -4080,20 +5614,272 @@ describe('useScoring · lo de la cola va marcado', () => {
   it('la fila corregida en la cola lleva enCola', async () => {
     getScoringViewUseCase.execute.mockResolvedValue({
       ...mockScoringView,
-      scores: [{
-        holeNumber: 2,
-        holeResult: { winner: 'A' },
-        playerScores: [{ userId: 'u1', ownScore: 4, ownSubmitted: true, validationStatus: 'match' }],
-      }],
+      scores: [
+        {
+          holeNumber: 2,
+          holeResult: { winner: 'A' },
+          playerScores: [
+            {
+              userId: 'u1',
+              ownScore: 4,
+              ownSubmitted: true,
+              validationStatus: 'match',
+            },
+          ],
+        },
+      ],
     });
     offlineQueue.getByMatch.mockReturnValue([
-      { matchId: 'm-1', holeNumber: 2, participantId: null, userId: 'u1', scoreData: { ownScore: 5 } },
+      {
+        matchId: 'm-1',
+        holeNumber: 2,
+        participantId: null,
+        userId: 'u1',
+        scoreData: { ownScore: 5 },
+      },
     ]);
     const { result } = renderHook(() => useScoring('m-1', 'u1'));
     await waitFor(() => expect(result.current.isLoading).toBe(false));
 
-    const fila = result.current.scoresVisibles.find((h) => h.holeNumber === 2).playerScores[0];
-    expect(fila).toMatchObject({ ownScore: 5, validationStatus: 'pending', enCola: true });
+    const fila = result.current.scoresVisibles.find((h) => h.holeNumber === 2)
+      .playerScores[0];
+    expect(fila).toMatchObject({
+      ownScore: 5,
+      validationStatus: 'pending',
+      enCola: true,
+    });
   });
 });
 
+// T6: el id de la sesión (candado) y el contador de golpes pendientes, sin
+// efectos que solo existían para eso
+describe('useScoring · el id de la sesión y el contador de pendientes (T6)', () => {
+  let enCola;
+  let intervalos;
+
+  const guardada = (matchId, holeNumber, userId = 'u1') => ({
+    matchId,
+    holeNumber,
+    participantId: null,
+    scoreData: { ownScore: 5, markedPlayerId: 'u2', markedScore: 4 },
+    timestamp: 1,
+    userId,
+  });
+  const esperaUnPoco = () =>
+    act(async () => {
+      await new Promise((r) => setTimeout(r, 20));
+    });
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    almacen.clear();
+    olvidaTodo();
+    enCola = [];
+    intervalos = {};
+    const intervaloReal = globalThis.setInterval;
+    // El sondeo (10 s) y el refresco del candado (30 s), a mano
+    vi.spyOn(globalThis, 'setInterval').mockImplementation(
+      (fn, ms, ...resto) => {
+        if (ms === 10000 || ms === 30000) {
+          intervalos[ms] = fn;
+          return 0;
+        }
+        return intervaloReal(fn, ms, ...resto);
+      },
+    );
+    getScoringViewUseCase.execute.mockResolvedValue(mockScoringView);
+    submitHoleScoreUseCase.execute.mockResolvedValue(mockScoringView);
+    Object.defineProperty(navigator, 'onLine', {
+      value: true,
+      configurable: true,
+    });
+    offlineQueue.getByMatch.mockImplementation((matchId, userId) =>
+      enCola
+        .filter(
+          (e) =>
+            e.matchId === matchId && (userId == null || e.userId === userId),
+        )
+        .map((e) => ({ ...e })),
+    );
+    offlineQueue.remove.mockImplementation(
+      (matchId, holeNumber, participantId = null, userId = null) => {
+        enCola = enCola.filter(
+          (e) =>
+            !(
+              e.matchId === matchId &&
+              e.holeNumber === holeNumber &&
+              (e.participantId ?? null) === (participantId ?? null) &&
+              (e.userId ?? null) === (userId ?? null)
+            ),
+        );
+        return true;
+      },
+    );
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+    offlineQueue.getByMatch.mockReset().mockReturnValue([]);
+    offlineQueue.remove.mockReset().mockReturnValue(true);
+    submitHoleScoreUseCase.execute.mockReset();
+    getScoringViewUseCase.execute.mockReset();
+    Object.defineProperty(navigator, 'onLine', {
+      value: true,
+      configurable: true,
+    });
+  });
+
+  it('T6-1 · el candado coge, refresca y suelta con el MISMO id aunque el sondeo vuelva a pintar', async () => {
+    const { result, rerender, unmount } = renderHook(() =>
+      useScoring('m-1', 'u1'),
+    );
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    const id = sessionLock.acquire.mock.calls[0][1];
+    expect(id).toMatch(
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/,
+    );
+
+    // El sondeo repinta; y otro pintado del padre
+    await act(async () => {
+      await intervalos[10000]();
+    });
+    rerender();
+    act(() => {
+      intervalos[30000]();
+    });
+    unmount();
+
+    expect(sessionLock.refresh).toHaveBeenCalledWith(id, 'u1');
+    expect(sessionLock.release).toHaveBeenCalledWith(id, 'u1');
+    expect(sessionLock.acquire.mock.calls.every((c) => c[1] === id)).toBe(true);
+  });
+
+  it('T6-1b · sin crypto.randomUUID (http en la red local, Safari viejo) monta y coge el candado; dos pantallas, ids distintos', async () => {
+    const real = globalThis.crypto;
+    vi.stubGlobal('crypto', {
+      getRandomValues: (a) => real.getRandomValues(a),
+    });
+    try {
+      const una = renderHook(() => useScoring('m-1', 'u1'));
+      await waitFor(() => expect(una.result.current.isLoading).toBe(false));
+      const otra = renderHook(() => useScoring('m-1', 'u1'));
+      await waitFor(() => expect(otra.result.current.isLoading).toBe(false));
+
+      const ids = sessionLock.acquire.mock.calls.map((c) => c[1]);
+      expect(ids).toHaveLength(2);
+      expect(ids[0]).toMatch(
+        /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/,
+      );
+      expect(ids[1]).toBeTruthy();
+      expect(ids[0]).not.toBe(ids[1]);
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it('T6-2 · dos pantallas (dos pestañas) tienen ids distintos: si no, el candado no bloquearía la otra', async () => {
+    const una = renderHook(() => useScoring('m-1', 'u1'));
+    await waitFor(() => expect(una.result.current.isLoading).toBe(false));
+    const otra = renderHook(() => useScoring('m-1', 'u1'));
+    await waitFor(() => expect(otra.result.current.isLoading).toBe(false));
+
+    const ids = sessionLock.acquire.mock.calls.map((c) => c[1]);
+    expect(ids).toHaveLength(2);
+    expect(ids[0]).not.toBe(ids[1]);
+  });
+
+  it('T6-3 · al pasar de m-1 (2 en cola) a m-2 (0) y volver, cuenta 0 y luego 2', async () => {
+    Object.defineProperty(navigator, 'onLine', {
+      value: false,
+      configurable: true,
+    });
+    enCola = [guardada('m-1', 3), guardada('m-1', 4)];
+    const { result, rerender } = renderHook(({ id }) => useScoring(id, 'u1'), {
+      initialProps: { id: 'm-1' },
+    });
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    expect(result.current.pendingQueueSize).toBe(2);
+
+    rerender({ id: 'm-2' });
+    await waitFor(() => expect(result.current.pendingQueueSize).toBe(0));
+
+    rerender({ id: 'm-1' });
+    await waitFor(() => expect(result.current.pendingQueueSize).toBe(2));
+  });
+
+  it('T6-4 · al cambiar de cuenta (u1→u2) en el mismo partido, cuenta la cola de u2', async () => {
+    Object.defineProperty(navigator, 'onLine', {
+      value: false,
+      configurable: true,
+    });
+    enCola = [guardada('m-1', 3, 'u1')];
+    const { result, rerender } = renderHook(
+      ({ quien }) => useScoring('m-1', quien),
+      { initialProps: { quien: 'u1' } },
+    );
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    expect(result.current.pendingQueueSize).toBe(1);
+
+    rerender({ quien: 'u2' });
+
+    await waitFor(() => expect(result.current.pendingQueueSize).toBe(0));
+  });
+
+  it('T6-5 · al reabrir sin red con 2 guardados, dice 2 sin enviar nada; al volver la red, 0', async () => {
+    recuerda('m-1', { partida: mockScoringView, campo: null });
+    Object.defineProperty(navigator, 'onLine', {
+      value: false,
+      configurable: true,
+    });
+    getScoringViewUseCase.execute.mockRejectedValue(
+      new TypeError('Failed to fetch'),
+    );
+    enCola = [guardada('m-1', 3), guardada('m-1', 4)];
+
+    const { result } = renderHook(() => useScoring('m-1', 'u1'));
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    await esperaUnPoco();
+
+    expect(result.current.pendingQueueSize).toBe(2);
+    expect(submitHoleScoreUseCase.execute).not.toHaveBeenCalled();
+
+    getScoringViewUseCase.execute.mockResolvedValue(mockScoringView);
+    Object.defineProperty(navigator, 'onLine', {
+      value: true,
+      configurable: true,
+    });
+    act(() => {
+      globalThis.dispatchEvent(new globalThis.Event('online'));
+    });
+
+    await waitFor(() =>
+      expect(submitHoleScoreUseCase.execute).toHaveBeenCalledTimes(2),
+    );
+    await waitFor(() => expect(result.current.pendingQueueSize).toBe(0));
+  });
+
+  it('T6-6 · con 2 en cola, el PRIMER pintado ya dice 2 (también al reabrir sin red)', async () => {
+    Object.defineProperty(navigator, 'onLine', {
+      value: false,
+      configurable: true,
+    });
+    getScoringViewUseCase.execute.mockRejectedValue(
+      new TypeError('Failed to fetch'),
+    );
+    enCola = [guardada('m-1', 3), guardada('m-1', 4)];
+    const vistos = [];
+
+    // Lo PINTADO (cada commit, antes de que el navegador lo enseñe), no cada
+    // pasada del render: una pasada que React tira no llega a la pantalla
+    const { result } = renderHook(() => {
+      const r = useScoring('m-1', 'u1');
+      useLayoutEffect(() => {
+        vistos.push(r.pendingQueueSize);
+      });
+      return r;
+    });
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+    expect(vistos[0]).toBe(2);
+  });
+});

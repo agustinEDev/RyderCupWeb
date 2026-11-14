@@ -50,7 +50,11 @@ export const useRepetirPartida = (currentUser) => {
         ]);
         leido = { partida, campo, amigos };
       } catch (err) {
-        customToast.error(esFalloDeRed(err) ? tComun('sinConexion.mensaje') : t('create.errors.generic'));
+        customToast.error(
+          esFalloDeRed(err)
+            ? tComun('sinConexion.mensaje')
+            : t('create.errors.generic'),
+        );
       } finally {
         setPreparando(false);
       }
@@ -63,7 +67,7 @@ export const useRepetirPartida = (currentUser) => {
         customToast.error(t('create.errors.generic'));
       }
     },
-    [currentUser, t, tComun]
+    [currentUser, t, tComun],
   );
 
   const cierra = useCallback(() => setBorrador(null), []);

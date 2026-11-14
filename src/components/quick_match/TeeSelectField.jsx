@@ -31,7 +31,8 @@ const TeeSelectField = ({
   const { color, teeGender } = parseTeeKey(value);
   const selectedTee = color
     ? courseTees.find(
-        (tee) => tee.color === color && (tee.gender ?? null) === (teeGender ?? null)
+        (tee) =>
+          tee.color === color && (tee.gender ?? null) === (teeGender ?? null),
       )
     : null;
 

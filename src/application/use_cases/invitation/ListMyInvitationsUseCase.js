@@ -19,7 +19,7 @@ class ListMyInvitationsUseCase {
     const result = await this.#invitationRepository.getMyInvitations(filters);
 
     const dtos = result.invitations.map((invitation) =>
-      InvitationAssembler.toSimpleDTO(invitation, invitation._apiData)
+      InvitationAssembler.toSimpleDTO(invitation, invitation._apiData),
     );
 
     return {

@@ -1,16 +1,28 @@
 import { useTranslation } from 'react-i18next';
 import ModalShell from '../ui/ModalShell';
 
-const SubmitScorecardModalContent = ({ validatedHoles, totalHoles, isSubmitting, onConfirm, onClose, reopenable }) => {
+const SubmitScorecardModalContent = ({
+  validatedHoles,
+  totalHoles,
+  isSubmitting,
+  onConfirm,
+  onClose,
+  reopenable,
+}) => {
   const { t } = useTranslation('scoring');
 
   return (
     <>
-      <h2 id="submit-title" className="text-lg font-semibold text-gray-900 mb-2">
+      <h2
+        id="submit-title"
+        className="text-lg font-semibold text-gray-900 mb-2"
+      >
         {t('submit.title')}
       </h2>
       {/* En una partida el organizador puede reabrirla (2.ª pasada del QA) */}
-      <p id="submit-message" className="text-sm text-gray-600 mb-2">{t(reopenable ? 'submit.confirmReopenable' : 'submit.confirm')}</p>
+      <p id="submit-message" className="text-sm text-gray-600 mb-2">
+        {t(reopenable ? 'submit.confirmReopenable' : 'submit.confirm')}
+      </p>
       <p className="text-sm font-medium text-gray-700 mb-6">
         {t('submit.allValidated', { count: validatedHoles, total: totalHoles })}
       </p>
@@ -41,7 +53,15 @@ const SubmitScorecardModalContent = ({ validatedHoles, totalHoles, isSubmitting,
 // jugador sin saber si su tarjeta salió. `busy` es lo que hace que ese bloqueo
 // no sea mudo: en pantalla se lee «Enviando…» en el botón, y un lector de
 // pantalla no tenía forma de saber por qué su Escape no hacía nada.
-const SubmitScorecardModal = ({ isOpen, validatedHoles, totalHoles, isSubmitting, onConfirm, onClose, reopenable = false }) => (
+const SubmitScorecardModal = ({
+  isOpen,
+  validatedHoles,
+  totalHoles,
+  isSubmitting,
+  onConfirm,
+  onClose,
+  reopenable = false,
+}) => (
   <ModalShell
     isOpen={isOpen}
     onClose={onClose}

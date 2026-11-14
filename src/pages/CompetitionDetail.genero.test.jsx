@@ -15,7 +15,11 @@ vi.mock('react-i18next', () => ({
   }),
 }));
 
-const mockAuthUser = { id: 'player-1', first_name: 'Test', last_name: 'Player' };
+const mockAuthUser = {
+  id: 'player-1',
+  first_name: 'Test',
+  last_name: 'Player',
+};
 
 // Refrescar la sesión crea un `user` nuevo con el mismo id: se simula dando
 // uno nuevo en cada render (CodeRabbit en la #720)
@@ -36,7 +40,11 @@ vi.mock('../hooks/useUserRoles', () => ({
 }));
 
 vi.mock('../components/layout/HeaderAuth', () => ({
-  default: ({ backTo }) => <div data-testid="header-auth" data-back-to={backTo}>Header</div>,
+  default: ({ backTo }) => (
+    <div data-testid="header-auth" data-back-to={backTo}>
+      Header
+    </div>
+  ),
 }));
 
 vi.mock('../components/competition/CompetitionGolfCoursesSection', () => ({
@@ -88,32 +96,44 @@ const mockSetCustomHandicap = vi.fn().mockResolvedValue({});
 const mockRemoveCustomHandicap = vi.fn().mockResolvedValue({});
 
 vi.mock('../composition', () => ({
-  getCompetitionDetailUseCase: { execute: (...args) => mockGetCompetitionDetail(...args) },
+  getCompetitionDetailUseCase: {
+    execute: (...args) => mockGetCompetitionDetail(...args),
+  },
   getCompetitionGolfCoursesUseCase: { execute: vi.fn().mockResolvedValue([]) },
   activateCompetitionUseCase: { execute: vi.fn() },
-  closeEnrollmentsUseCase: { execute: (...args) => mockCloseEnrollments(...args) },
+  closeEnrollmentsUseCase: {
+    execute: (...args) => mockCloseEnrollments(...args),
+  },
   startCompetitionUseCase: { execute: vi.fn() },
   completeCompetitionUseCase: { execute: vi.fn() },
   cancelCompetitionUseCase: { execute: (...args) => mockCancel(...args) },
   deleteCompetitionUseCase: { execute: (...args) => mockDelete(...args) },
   reopenEnrollmentsUseCase: { execute: vi.fn() },
   revertCompetitionStatusUseCase: { execute: vi.fn() },
-  revertCompetitionToInProgressUseCase: { execute: (...args) => mockRevertToInProgress(...args) },
-  listEnrollmentsUseCase: { execute: (...args) => mockListEnrollments(...args) },
+  revertCompetitionToInProgressUseCase: {
+    execute: (...args) => mockRevertToInProgress(...args),
+  },
+  listEnrollmentsUseCase: {
+    execute: (...args) => mockListEnrollments(...args),
+  },
   requestEnrollmentUseCase: { execute: (...args) => mockRequest(...args) },
   approveEnrollmentUseCase: { execute: vi.fn() },
   rejectEnrollmentUseCase: { execute: vi.fn() },
   assignTeamsUseCase: { execute: (...args) => mockAssignTeams(...args) },
-  setCustomHandicapUseCase: { execute: (...args) => mockSetCustomHandicap(...args) },
-  removeCustomHandicapUseCase: { execute: (...args) => mockRemoveCustomHandicap(...args) },
-  setNamePreferenceUseCase: { execute: (...args) => mockSetNamePreference(...args) },
+  setCustomHandicapUseCase: {
+    execute: (...args) => mockSetCustomHandicap(...args),
+  },
+  removeCustomHandicapUseCase: {
+    execute: (...args) => mockRemoveCustomHandicap(...args),
+  },
+  setNamePreferenceUseCase: {
+    execute: (...args) => mockSetNamePreference(...args),
+  },
 }));
 
 vi.mock('../utils/toast', () => ({
   default: { success: vi.fn(), error: vi.fn() },
 }));
-
-
 
 const renderPage = () => {
   return render(
@@ -121,7 +141,7 @@ const renderPage = () => {
       <Routes>
         <Route path="/competitions/:id" element={<CompetitionDetail />} />
       </Routes>
-    </MemoryRouter>
+    </MemoryRouter>,
   );
 };
 
@@ -174,7 +194,9 @@ describe('CompetitionDetail · el género al pedir plaza', () => {
     renderPage();
 
     await screen.findByText('Summer Cup');
-    expect(screen.queryByText('detail.actions.request-to-join')).not.toBeInTheDocument();
+    expect(
+      screen.queryByText('detail.actions.request-to-join'),
+    ).not.toBeInTheDocument();
   });
 
   it('P2: con género no se pregunta ni se toca el perfil', async () => {
@@ -201,7 +223,9 @@ describe('CompetitionDetail · el género al pedir plaza', () => {
     fireEvent.click(screen.getByText('competitions:enrollment.confirm'));
 
     // En el modal, que sigue abierto: el fallo no tiene estado, así que el genérico
-    expect(await screen.findByTestId('apuntarse-error')).toHaveTextContent('detail.failedToEnroll');
+    expect(await screen.findByTestId('apuntarse-error')).toHaveTextContent(
+      'detail.failedToEnroll',
+    );
     expect(mockRequest).not.toHaveBeenCalled();
     expect(mockRefrescarSesion).not.toHaveBeenCalled();
   });
@@ -237,15 +261,22 @@ describe('CompetitionDetail · el género al pedir plaza', () => {
   it('P6: el motivo del servidor se lee en el modal, que sigue abierto', async () => {
     faltaGenero = false;
     mockRequest.mockRejectedValueOnce(
-      Object.assign(new Error('La competición está completa: 4 plazas ocupadas.'), { status: 400 })
+      Object.assign(
+        new Error('La competición está completa: 4 plazas ocupadas.'),
+        { status: 400 },
+      ),
     );
     renderPage();
 
     fireEvent.click(await screen.findByText('detail.actions.request-to-join'));
     fireEvent.click(screen.getByText('competitions:enrollment.confirm'));
 
-    expect(await screen.findByTestId('apuntarse-error')).toHaveTextContent('completa');
-    expect(screen.getByText('competitions:enrollment.confirm')).toBeInTheDocument();
+    expect(await screen.findByTestId('apuntarse-error')).toHaveTextContent(
+      'completa',
+    );
+    expect(
+      screen.getByText('competitions:enrollment.confirm'),
+    ).toBeInTheDocument();
   });
 
   it('P7: sin conexión, lo dice así y no con el error crudo del navegador', async () => {
@@ -270,24 +301,34 @@ describe('CompetitionDetail · el género al pedir plaza', () => {
 
     // Con la ficha de vuelta: mientras recarga, el modal tampoco está
     await waitFor(() => expect(mockRequest).toHaveBeenCalled());
-    await waitFor(() => expect(mockGetCompetitionDetail).toHaveBeenCalledTimes(2));
+    await waitFor(() =>
+      expect(mockGetCompetitionDetail).toHaveBeenCalledTimes(2),
+    );
     await screen.findByText('detail.actions.request-to-join');
-    expect(screen.queryByText('competitions:enrollment.confirm')).not.toBeInTheDocument();
+    expect(
+      screen.queryByText('competitions:enrollment.confirm'),
+    ).not.toBeInTheDocument();
   });
 
   it('P9: ya inscrito (409): se cierra y la ficha se pone al día (CodeRabbit)', async () => {
     faltaGenero = false;
     mockRequest.mockRejectedValueOnce(
-      Object.assign(new Error('User x is already enrolled in competition y.'), { status: 409 })
+      Object.assign(new Error('User x is already enrolled in competition y.'), {
+        status: 409,
+      }),
     );
     renderPage();
 
     fireEvent.click(await screen.findByText('detail.actions.request-to-join'));
     fireEvent.click(screen.getByText('competitions:enrollment.confirm'));
 
-    await waitFor(() => expect(mockGetCompetitionDetail).toHaveBeenCalledTimes(2));
+    await waitFor(() =>
+      expect(mockGetCompetitionDetail).toHaveBeenCalledTimes(2),
+    );
     await screen.findByText('detail.actions.request-to-join');
     expect(screen.queryByTestId('apuntarse-error')).not.toBeInTheDocument();
-    expect(screen.queryByText('competitions:enrollment.confirm')).not.toBeInTheDocument();
+    expect(
+      screen.queryByText('competitions:enrollment.confirm'),
+    ).not.toBeInTheDocument();
   });
 });

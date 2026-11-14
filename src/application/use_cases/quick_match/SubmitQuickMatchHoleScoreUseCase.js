@@ -8,7 +8,9 @@ class SubmitQuickMatchHoleScoreUseCase {
 
   constructor({ quickMatchRepository }) {
     if (!quickMatchRepository) {
-      throw new Error('SubmitQuickMatchHoleScoreUseCase requires quickMatchRepository');
+      throw new Error(
+        'SubmitQuickMatchHoleScoreUseCase requires quickMatchRepository',
+      );
     }
     this.#quickMatchRepository = quickMatchRepository;
   }
@@ -18,7 +20,11 @@ class SubmitQuickMatchHoleScoreUseCase {
       throw new Error('quickMatchId and holeNumber are required');
     }
 
-    const result = await this.#quickMatchRepository.submitHoleScore(quickMatchId, holeNumber, score);
+    const result = await this.#quickMatchRepository.submitHoleScore(
+      quickMatchId,
+      holeNumber,
+      score,
+    );
     return {
       holeNumber: result.hole_number,
       participantId: result.participant_id,

@@ -4,7 +4,6 @@ import LoadingMark from './LoadingMark';
 import { respaldoDeCarga } from './textoDeEspera';
 import { elArranqueHaTerminado } from '../../utils/cortinaDeArranque';
 
-
 /**
  * La misma pantalla que muestra el `Suspense` de `App.jsx` mientras baja un
  * chunk —marca arriba y el aviso debajo—. Que sean iguales es la gracia: al
@@ -38,7 +37,11 @@ const FullScreenLoader = ({ texto }) => {
     <div
       role="status"
       aria-live="polite"
-      className={esTransicion ? 'pantalla-de-espera pantalla-de-espera--transicion' : 'pantalla-de-espera'}
+      className={
+        esTransicion
+          ? 'pantalla-de-espera pantalla-de-espera--transicion'
+          : 'pantalla-de-espera'
+      }
     >
       {/* En el arranque, `auto`: instalada el monograma va en blanco sobre el
           verde de la marca, y en el navegador en verde sobre blanco. `<picture>`
@@ -57,7 +60,9 @@ const FullScreenLoader = ({ texto }) => {
       {/* Cada pantalla puede traer el suyo —«Cargando competiciones...»— y las
           que no, se quedan con el generico. Lo que se unifica es el DIBUJO; el
           texto es informacion util y perderlo no mejora nada (FE #495). */}
-      <span className="pantalla-de-espera__texto">{texto ?? t('loading', { defaultValue: respaldo })}</span>
+      <span className="pantalla-de-espera__texto">
+        {texto ?? t('loading', { defaultValue: respaldo })}
+      </span>
     </div>
   );
 };

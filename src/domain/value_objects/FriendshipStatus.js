@@ -38,7 +38,7 @@ class FriendshipStatus {
     if (!FriendshipStatus.isValid(value)) {
       throw new Error(
         `Invalid FriendshipStatus: ${value}. ` +
-          `Valid values: ${FriendshipStatus.getAllValues().join(', ')}`
+          `Valid values: ${FriendshipStatus.getAllValues().join(', ')}`,
       );
     }
     this.#value = value;

@@ -45,11 +45,19 @@ const RECUERDO = 'rydercup-sesion-conocida';
 vi.mock('../infrastructure/http/tokenRefreshInterceptor', () => ({
   fetchWithTokenRefresh: (url) => {
     peticiones.push(url);
-    const siguiente = respuestas.shift() ?? { ok: true, status: 200, json: async () => ({ id: 'u-1' }) };
-    return typeof siguiente === 'function' ? siguiente() : Promise.resolve(siguiente);
+    const siguiente = respuestas.shift() ?? {
+      ok: true,
+      status: 200,
+      json: async () => ({ id: 'u-1' }),
+    };
+    return typeof siguiente === 'function'
+      ? siguiente()
+      : Promise.resolve(siguiente);
   },
 }));
-vi.mock('../infrastructure/http/deviceRevocationLogout', () => ({ clearDeviceRevocationFlag: vi.fn() }));
+vi.mock('../infrastructure/http/deviceRevocationLogout', () => ({
+  clearDeviceRevocationFlag: vi.fn(),
+}));
 
 const {
   consultaLaSesion,
@@ -63,21 +71,28 @@ const {
   vigilaLaVueltaALaAplicacion,
   MINIMO_ENTRE_REVALIDACIONES_MS,
 } = await import('./sesionCompartida');
-const { empiezaElCierreDeEstaCarga, olvidaElCierreDeEstaCarga } = await import('../utils/cierreDeEstaCarga');
+const { empiezaElCierreDeEstaCarga, olvidaElCierreDeEstaCarga } =
+  await import('../utils/cierreDeEstaCarga');
 
 const ok = (cuerpo) => ({ ok: true, status: 200, json: async () => cuerpo });
 const ACEPTADOS = { id: 'u-1', terms_accepted: true };
 const PENDIENTES = { id: 'u-1', terms_accepted: false };
 
 let ahora = 1_000_000;
-const pasa = (ms) => { ahora += ms; };
+const pasa = (ms) => {
+  ahora += ms;
+};
 const fingeVisibilidad = (estado) =>
-  Object.defineProperty(globalThis.document, 'visibilityState', { value: estado, configurable: true });
+  Object.defineProperty(globalThis.document, 'visibilityState', {
+    value: estado,
+    configurable: true,
+  });
 const vuelveAlFrente = () => {
   fingeVisibilidad('visible');
   globalThis.document.dispatchEvent(new globalThis.Event('visibilitychange'));
 };
-const vuelveLaRed = () => globalThis.dispatchEvent(new globalThis.Event('online'));
+const vuelveLaRed = () =>
+  globalThis.dispatchEvent(new globalThis.Event('online'));
 /** Lo que haya pendiente de promesas, resuelto. */
 const asienta = () => new Promise((r) => setTimeout(r, 0));
 
@@ -90,7 +105,11 @@ describe('la sesión se vuelve a preguntar al volver a la aplicación', () => {
     olvidaElCierreDeEstaCarga();
     peticiones.length = 0;
     respuestas.length = 0;
-    try { localStorage.removeItem(RECUERDO); } catch { /* sin almacenamiento */ }
+    try {
+      localStorage.removeItem(RECUERDO);
+    } catch {
+      /* sin almacenamiento */
+    }
     fingeVisibilidad('visible');
     dejaDeVigilar = vigilaLaVueltaALaAplicacion();
   });
@@ -118,7 +137,9 @@ describe('la sesión se vuelve a preguntar al volver a la aplicación', () => {
 
     expect(peticiones).toHaveLength(1);
     expect(loQueHaySobreLaSesion().user).toEqual(PENDIENTES);
-    expect(JSON.parse(localStorage.getItem(RECUERDO))).toMatchObject({ terms_accepted: false });
+    expect(JSON.parse(localStorage.getItem(RECUERDO))).toMatchObject({
+      terms_accepted: false,
+    });
   });
 
   it('2: con la misma respuesta nadie se entera (ni aviso ni objeto nuevo)', async () => {
@@ -169,31 +190,51 @@ describe('la sesión se vuelve a preguntar al volver a la aplicación', () => {
     expect(localStorage.getItem(RECUERDO)).not.toBeNull();
   });
 
-  it.each([401, 404])('4b: con un %s la sesión ya no vale, como al cargar', async (status) => {
-    // En '/', '/start' o '/login' el interceptor no refresca: sin esto, una
-    // sesión muerta o una cuenta borrada seguían dándose por buenas
-    await conSesion();
-    // Un 404 cuenta si es del backend, con su error_code (revisión de la fase 3)
-    respuestas.push({ ok: false, status, json: async () => ({ error_code: 'USER_NOT_FOUND' }) });
+  it.each([401, 404])(
+    '4b: con un %s la sesión ya no vale, como al cargar',
+    async (status) => {
+      // En '/', '/start' o '/login' el interceptor no refresca: sin esto, una
+      // sesión muerta o una cuenta borrada seguían dándose por buenas
+      await conSesion();
+      // Un 404 cuenta si es del backend, con su error_code (revisión de la fase 3)
+      respuestas.push({
+        ok: false,
+        status,
+        json: async () => ({ error_code: 'USER_NOT_FOUND' }),
+      });
 
-    vuelveAlFrente();
-    await asienta();
+      vuelveAlFrente();
+      await asienta();
 
-    expect(loQueHaySobreLaSesion()).toMatchObject({ user: null, resuelta: true, cargando: false });
-    expect(localStorage.getItem(RECUERDO)).toBeNull();
-  });
+      expect(loQueHaySobreLaSesion()).toMatchObject({
+        user: null,
+        resuelta: true,
+        cargando: false,
+      });
+      expect(localStorage.getItem(RECUERDO)).toBeNull();
+    },
+  );
 
   it('4c: un 401 que llega tras cerrar la sesión no escribe', async () => {
     await conSesion();
     let entrega;
-    respuestas.push(() => new Promise((r) => { entrega = r; }));
+    respuestas.push(
+      () =>
+        new Promise((r) => {
+          entrega = r;
+        }),
+    );
 
     vuelveAlFrente();
     olvidaLaSesion();
     entrega({ ok: false, status: 401, json: async () => ({}) });
     await asienta();
 
-    expect(loQueHaySobreLaSesion()).toMatchObject({ user: null, resuelta: false, cargando: true });
+    expect(loQueHaySobreLaSesion()).toMatchObject({
+      user: null,
+      resuelta: false,
+      cargando: true,
+    });
   });
 
   it('5: no pregunta antes del minuto desde la última respuesta; pasado, sí', async () => {
@@ -267,7 +308,12 @@ describe('la sesión se vuelve a preguntar al volver a la aplicación', () => {
   it('9: si se cierra la sesión a media pregunta, la respuesta no manda', async () => {
     await conSesion();
     let entrega;
-    respuestas.push(() => new Promise((r) => { entrega = r; }));
+    respuestas.push(
+      () =>
+        new Promise((r) => {
+          entrega = r;
+        }),
+    );
 
     vuelveAlFrente();
     olvidaLaSesion();
@@ -290,7 +336,12 @@ describe('la sesión se vuelve a preguntar al volver a la aplicación', () => {
   it('9b: un cierre forzado a media pregunta: la respuesta tardía no reescribe la copia', async () => {
     await conSesion();
     let entrega;
-    respuestas.push(() => new Promise((r) => { entrega = r; }));
+    respuestas.push(
+      () =>
+        new Promise((r) => {
+          entrega = r;
+        }),
+    );
 
     vuelveAlFrente();
     cierreForzado();
@@ -338,7 +389,8 @@ describe('la sesión se vuelve a preguntar al volver a la aplicación', () => {
       // La escribió una versión anterior: sin `terms_accepted`
       localStorage.setItem(RECUERDO, JSON.stringify({ id: 'u-1' }));
       // Se arranca sin red y se agotan los reintentos
-      for (let i = 0; i < 5; i += 1) respuestas.push(() => Promise.reject(new TypeError('Failed to fetch')));
+      for (let i = 0; i < 5; i += 1)
+        respuestas.push(() => Promise.reject(new TypeError('Failed to fetch')));
       consultaLaSesion();
       await vi.advanceTimersByTimeAsync(60_000);
       // Lo de la copia, con el error de no poder preguntar
@@ -353,7 +405,11 @@ describe('la sesión se vuelve a preguntar al volver a la aplicación', () => {
       await vi.advanceTimersByTimeAsync(0);
 
       expect(peticiones).toHaveLength(1);
-      expect(loQueHaySobreLaSesion()).toMatchObject({ user: PENDIENTES, sinConfirmar: false, error: null });
+      expect(loQueHaySobreLaSesion()).toMatchObject({
+        user: PENDIENTES,
+        sinConfirmar: false,
+        error: null,
+      });
     } finally {
       vi.useRealTimers();
     }
@@ -363,8 +419,12 @@ describe('la sesión se vuelve a preguntar al volver a la aplicación', () => {
     vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
     try {
       vi.spyOn(console, 'error').mockImplementation(() => {});
-      localStorage.setItem(RECUERDO, JSON.stringify({ id: 'u-1', is_admin: false }));
-      for (let i = 0; i < 5; i += 1) respuestas.push(() => Promise.reject(new TypeError('Failed to fetch')));
+      localStorage.setItem(
+        RECUERDO,
+        JSON.stringify({ id: 'u-1', is_admin: false }),
+      );
+      for (let i = 0; i < 5; i += 1)
+        respuestas.push(() => Promise.reject(new TypeError('Failed to fetch')));
       consultaLaSesion();
       await vi.advanceTimersByTimeAsync(60_000);
       respuestas.length = 0;
@@ -374,7 +434,10 @@ describe('la sesión se vuelve a preguntar al volver a la aplicación', () => {
       vuelveLaRed();
       await vi.advanceTimersByTimeAsync(0);
 
-      expect(loQueHaySobreLaSesion()).toMatchObject({ sinConfirmar: false, error: null });
+      expect(loQueHaySobreLaSesion()).toMatchObject({
+        sinConfirmar: false,
+        error: null,
+      });
     } finally {
       vi.useRealTimers();
     }
@@ -383,7 +446,12 @@ describe('la sesión se vuelve a preguntar al volver a la aplicación', () => {
   it('11: con una consulta en vuelo no abre otra', async () => {
     await conSesion();
     let entrega;
-    respuestas.push(() => new Promise((r) => { entrega = r; }));
+    respuestas.push(
+      () =>
+        new Promise((r) => {
+          entrega = r;
+        }),
+    );
     const enVuelo = consultaLaSesion({ forzar: true });
 
     vuelveAlFrente();
@@ -417,14 +485,22 @@ describe('la sesión se vuelve a preguntar al volver a la aplicación', () => {
     await conSesion();
     const antes = loQueHaySobreLaSesion();
     let entrega;
-    respuestas.push(() => new Promise((r) => { entrega = r; }));
+    respuestas.push(
+      () =>
+        new Promise((r) => {
+          entrega = r;
+        }),
+    );
 
     vuelveAlFrente();
     await asienta();
 
     expect(peticiones).toHaveLength(1);
     expect(loQueHaySobreLaSesion()).toBe(antes);
-    expect(loQueHaySobreLaSesion()).toMatchObject({ cargando: false, refrescando: false });
+    expect(loQueHaySobreLaSesion()).toMatchObject({
+      cargando: false,
+      refrescando: false,
+    });
     entrega(ok(ACEPTADOS));
     await asienta();
   });
@@ -443,7 +519,10 @@ describe('la sesión se vuelve a preguntar al volver a la aplicación', () => {
     // iOS despierta la aplicación antes que la radio: el primer intento falla
     vi.spyOn(console, 'error').mockImplementation(() => {});
     await conSesion();
-    respuestas.push(() => Promise.reject(new TypeError('Failed to fetch')), ok(PENDIENTES));
+    respuestas.push(
+      () => Promise.reject(new TypeError('Failed to fetch')),
+      ok(PENDIENTES),
+    );
 
     vuelveAlFrente();
     await asienta();
@@ -457,7 +536,10 @@ describe('la sesión se vuelve a preguntar al volver a la aplicación', () => {
 
   it('15b: un 502 tampoco gasta el minuto', async () => {
     await conSesion();
-    respuestas.push({ ok: false, status: 502, json: async () => ({}) }, ok(PENDIENTES));
+    respuestas.push(
+      { ok: false, status: 502, json: async () => ({}) },
+      ok(PENDIENTES),
+    );
 
     vuelveAlFrente();
     await asienta();
@@ -482,11 +564,15 @@ describe('la sesión se vuelve a preguntar al volver a la aplicación', () => {
     vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
     try {
       vi.spyOn(console, 'error').mockImplementation(() => {});
-      for (let i = 0; i < 4; i += 1) respuestas.push(() => Promise.reject(new TypeError('Failed to fetch')));
+      for (let i = 0; i < 4; i += 1)
+        respuestas.push(() => Promise.reject(new TypeError('Failed to fetch')));
       consultaLaSesion();
       await vi.advanceTimersByTimeAsync(60_000);
       // Sin saber nada y sin nadie que vuelva a preguntar
-      expect(loQueHaySobreLaSesion()).toMatchObject({ user: null, resuelta: false });
+      expect(loQueHaySobreLaSesion()).toMatchObject({
+        user: null,
+        resuelta: false,
+      });
       peticiones.length = 0;
       respuestas.push(ok(ACEPTADOS));
 
@@ -494,7 +580,11 @@ describe('la sesión se vuelve a preguntar al volver a la aplicación', () => {
       await vi.advanceTimersByTimeAsync(0);
 
       expect(peticiones).toHaveLength(1);
-      expect(loQueHaySobreLaSesion()).toMatchObject({ user: ACEPTADOS, cargando: false, resuelta: true });
+      expect(loQueHaySobreLaSesion()).toMatchObject({
+        user: ACEPTADOS,
+        cargando: false,
+        resuelta: true,
+      });
     } finally {
       vi.useRealTimers();
     }
@@ -519,7 +609,10 @@ describe('la sesión se vuelve a preguntar al volver a la aplicación', () => {
 
       anotaLaSesion({ ...ACEPTADOS });
 
-      expect(loQueHaySobreLaSesion()).toMatchObject({ user: ACEPTADOS, sinConfirmar: false });
+      expect(loQueHaySobreLaSesion()).toMatchObject({
+        user: ACEPTADOS,
+        sinConfirmar: false,
+      });
     } finally {
       vi.useRealTimers();
     }

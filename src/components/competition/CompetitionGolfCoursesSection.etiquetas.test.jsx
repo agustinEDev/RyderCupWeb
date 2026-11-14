@@ -19,7 +19,9 @@ const CLAVES = {
   'golfCourses:courseTypes.EXECUTIVE': 'Ejecutivo',
 };
 const t = (clave, opciones) =>
-  CLAVES[`${opciones?.ns ?? 'competitions'}:${clave}`] ?? opciones?.defaultValue ?? clave;
+  CLAVES[`${opciones?.ns ?? 'competitions'}:${clave}`] ??
+  opciones?.defaultValue ??
+  clave;
 
 describe('etiquetaDelTipoDeCampo', () => {
   it('E1: un campo de 18 hoyos se dice en español', () => {

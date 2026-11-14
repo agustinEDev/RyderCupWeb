@@ -14,26 +14,44 @@ import TeamAssignmentSection from './TeamAssignmentSection';
  */
 const t = (clave) => clave;
 
-const pintar = ({ canManage = true, sePuedenDeshacer = true, onUndoTeams = vi.fn() } = {}) => {
+const pintar = ({
+  canManage = true,
+  sePuedenDeshacer = true,
+  onUndoTeams = vi.fn(),
+} = {}) => {
   render(
     <TeamAssignmentSection
-      teamAssignment={{ teamAPlayerIds: ['ana'], teamBPlayerIds: ['bea'], mode: 'DRAFT' }}
+      teamAssignment={{
+        teamAPlayerIds: ['ana'],
+        teamBPlayerIds: ['bea'],
+        mode: 'DRAFT',
+      }}
       onAssignTeams={vi.fn()}
       onUndoTeams={onUndoTeams}
       sePuedenDeshacer={sePuedenDeshacer}
       onFillCaptain={vi.fn()}
       canManage={canManage}
-      playerNameMap={new Map([['ana', 'Ana Alba'], ['bea', 'Bea Blanco']])}
+      playerNameMap={
+        new Map([
+          ['ana', 'Ana Alba'],
+          ['bea', 'Bea Blanco'],
+        ])
+      }
       enrollments={[
         { userId: 'ana', status: 'APPROVED' },
         { userId: 'bea', status: 'APPROVED' },
       ]}
       teamNames={{ teamA: 'Europa', teamB: 'América' }}
       maxPlayingHandicap={null}
-      captains={{ teamA: 'ana', teamB: 'bea', viceTeamA: null, viceTeamB: null }}
+      captains={{
+        teamA: 'ana',
+        teamB: 'bea',
+        viceTeamA: null,
+        viceTeamB: null,
+      }}
       status="CLOSED"
       t={t}
-    />
+    />,
   );
   return onUndoTeams;
 };
@@ -44,7 +62,9 @@ describe('TeamAssignmentSection · deshacer los equipos', () => {
 
     fireEvent.click(screen.getByTestId('deshacer-equipos'));
 
-    expect(screen.getByTestId('deshacer-equipos')).toHaveTextContent('teams.undo');
+    expect(screen.getByTestId('deshacer-equipos')).toHaveTextContent(
+      'teams.undo',
+    );
     expect(onUndoTeams).toHaveBeenCalledTimes(1);
   });
 
@@ -64,6 +84,8 @@ describe('TeamAssignmentSection · deshacer los equipos', () => {
     pintar();
 
     // Se llame como se llame: el único botón es el de deshacerlos
-    expect(screen.getAllByRole('button').map((b) => b.textContent)).toEqual(['teams.undo']);
+    expect(screen.getAllByRole('button').map((b) => b.textContent)).toEqual([
+      'teams.undo',
+    ]);
   });
 });

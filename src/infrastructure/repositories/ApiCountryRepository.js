@@ -8,7 +8,10 @@ class ApiCountryRepository extends ICountryRepository {
   }
 
   async findAdjacent(countryCode) {
-    return await apiRequest(`/api/v1/countries/${segmento(countryCode)}/adjacent`, { method: 'GET' });
+    return await apiRequest(
+      `/api/v1/countries/${segmento(countryCode)}/adjacent`,
+      { method: 'GET' },
+    );
   }
 }
 

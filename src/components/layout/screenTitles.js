@@ -26,36 +26,124 @@ const SCREENS = [
   { pattern: '/friends', titleKey: 'screens.friends' },
   { pattern: '/profile', titleKey: 'screens.profile' },
 
-  { pattern: '/profile/edit', titleKey: 'screens.editProfile', parent: '/profile' },
-  { pattern: '/profile/devices', titleKey: 'screens.devices', parent: '/profile' },
-  { pattern: '/confirm-email-change', titleKey: 'screens.confirmEmail', parent: '/profile/edit' },
+  {
+    pattern: '/profile/edit',
+    titleKey: 'screens.editProfile',
+    parent: '/profile',
+  },
+  {
+    pattern: '/profile/devices',
+    titleKey: 'screens.devices',
+    parent: '/profile',
+  },
+  {
+    pattern: '/confirm-email-change',
+    titleKey: 'screens.confirmEmail',
+    parent: '/profile/edit',
+  },
   { pattern: '/admin', titleKey: 'screens.admin', parent: '/profile' },
-  { pattern: '/admin/resumen', titleKey: 'screens.adminOverview', parent: '/admin' },
-  { pattern: '/admin/usuarios', titleKey: 'screens.adminUsers', parent: '/admin' },
-  { pattern: '/admin/competiciones', titleKey: 'screens.adminCompetitions', parent: '/admin' },
-  { pattern: '/admin/campos', titleKey: 'screens.adminGolfCourses', parent: '/admin' },
+  {
+    pattern: '/admin/resumen',
+    titleKey: 'screens.adminOverview',
+    parent: '/admin',
+  },
+  {
+    pattern: '/admin/usuarios',
+    titleKey: 'screens.adminUsers',
+    parent: '/admin',
+  },
+  {
+    pattern: '/admin/competiciones',
+    titleKey: 'screens.adminCompetitions',
+    parent: '/admin',
+  },
+  {
+    pattern: '/admin/campos',
+    titleKey: 'screens.adminGolfCourses',
+    parent: '/admin',
+  },
   { pattern: '/admin/hoyos', titleKey: 'screens.adminHoles', parent: '/admin' },
 
-  { pattern: '/competitions/create', titleKey: 'screens.createCompetition', parent: '/competitions' },
-  { pattern: '/competitions/:id', titleKey: 'screens.competition', parent: '/competitions' },
-  { pattern: '/competitions/:id/edit', titleKey: 'screens.editCompetition', parent: '/competitions/:id' },
-  { pattern: '/competitions/:id/schedule', titleKey: 'screens.schedule', parent: '/competitions/:id' },
+  {
+    pattern: '/competitions/create',
+    titleKey: 'screens.createCompetition',
+    parent: '/competitions',
+  },
+  {
+    pattern: '/competitions/:id',
+    titleKey: 'screens.competition',
+    parent: '/competitions',
+  },
+  {
+    pattern: '/competitions/:id/edit',
+    titleKey: 'screens.editCompetition',
+    parent: '/competitions/:id',
+  },
+  {
+    pattern: '/competitions/:id/schedule',
+    titleKey: 'screens.schedule',
+    parent: '/competitions/:id',
+  },
   // Pública, pero con sesión lleva esta cabecera (QA, FE #865-4)
-  { pattern: '/competitions/:id/leaderboard', titleKey: 'screens.leaderboard', parent: '/competitions/:id' },
-  { pattern: '/creator/competitions/:id/schedule', titleKey: 'screens.schedule', parent: '/competitions/:id' },
-  { pattern: '/creator/competitions/:id/invitations', titleKey: 'screens.invitations', parent: '/competitions/:id' },
+  {
+    pattern: '/competitions/:id/leaderboard',
+    titleKey: 'screens.leaderboard',
+    parent: '/competitions/:id',
+  },
+  {
+    pattern: '/creator/competitions/:id/schedule',
+    titleKey: 'screens.schedule',
+    parent: '/competitions/:id',
+  },
+  {
+    pattern: '/creator/competitions/:id/invitations',
+    titleKey: 'screens.invitations',
+    parent: '/competitions/:id',
+  },
 
-  { pattern: '/players/:userId', titleKey: 'screens.playerProfile', back: 'history' },
+  {
+    pattern: '/players/:userId',
+    titleKey: 'screens.playerProfile',
+    back: 'history',
+  },
   // Se llega desde Actividad o desde el perfil de un amigo: se vuelve por donde se vino
-  { pattern: '/quick-matches/:quickMatchId/shared', titleKey: 'screens.sharedQuickMatch', back: 'history' },
+  {
+    pattern: '/quick-matches/:quickMatchId/shared',
+    titleKey: 'screens.sharedQuickMatch',
+    back: 'history',
+  },
   // La partida o el partido de un amigo, desde su logro en Actividad (release social 2)
-  { pattern: '/competitions/:id/groups/:groupId', titleKey: 'screens.friendGroup', back: 'history' },
-  { pattern: '/competitions/:id/matches/:matchId', titleKey: 'screens.friendMatch', back: 'history' },
+  {
+    pattern: '/competitions/:id/groups/:groupId',
+    titleKey: 'screens.friendGroup',
+    back: 'history',
+  },
+  {
+    pattern: '/competitions/:id/matches/:matchId',
+    titleKey: 'screens.friendMatch',
+    back: 'history',
+  },
 
-  { pattern: '/browse-competitions', titleKey: 'screens.browseCompetitions', parent: '/dashboard' },
-  { pattern: '/player/invitations', titleKey: 'screens.myInvitations', parent: '/dashboard' },
-  { pattern: '/player/matches', titleKey: 'screens.myMatches', parent: '/dashboard' },
-  { pattern: '/quick-matches', titleKey: 'screens.myQuickMatches', parent: '/dashboard' },
+  {
+    pattern: '/browse-competitions',
+    titleKey: 'screens.browseCompetitions',
+    parent: '/dashboard',
+  },
+  {
+    pattern: '/player/invitations',
+    titleKey: 'screens.myInvitations',
+    parent: '/dashboard',
+  },
+  {
+    pattern: '/player/matches',
+    titleKey: 'screens.myMatches',
+    parent: '/dashboard',
+  },
+  {
+    pattern: '/quick-matches',
+    titleKey: 'screens.myQuickMatches',
+    parent: '/dashboard',
+  },
   { pattern: '/stats', titleKey: 'screens.myStats', parent: '/dashboard' },
 ];
 
@@ -72,7 +160,9 @@ function buildPath(template, params) {
   }
 
   return segments
-    .map((segment) => (segment.startsWith(':') ? params[segment.slice(1)] : segment))
+    .map((segment) =>
+      segment.startsWith(':') ? params[segment.slice(1)] : segment,
+    )
     .join('/');
 }
 
@@ -83,7 +173,9 @@ function buildPath(template, params) {
  */
 function specificity(pattern) {
   const segments = pattern.split('/');
-  const staticSegments = segments.filter((segment) => !segment.startsWith(':')).length;
+  const staticSegments = segments.filter(
+    (segment) => !segment.startsWith(':'),
+  ).length;
 
   // Primero manda la profundidad (`/competitions/:id/edit` gana a
   // `/competitions/:id`), y a igualdad de profundidad gana lo estatico, o
@@ -94,19 +186,24 @@ function specificity(pattern) {
 export function resolveScreen(pathname) {
   // El orden del mapa no deberia importar: se elige la coincidencia mas
   // especifica
-  const matches = SCREENS
-    .map((screen) => ({ screen, match: matchPath({ path: screen.pattern, end: true }, pathname) }))
-    .filter(({ match }) => match !== null);
+  const matches = SCREENS.map((screen) => ({
+    screen,
+    match: matchPath({ path: screen.pattern, end: true }, pathname),
+  })).filter(({ match }) => match !== null);
 
   if (matches.length === 0) return null;
 
   const best = matches.reduce((winner, candidate) =>
-    specificity(candidate.screen.pattern) > specificity(winner.screen.pattern) ? candidate : winner
+    specificity(candidate.screen.pattern) > specificity(winner.screen.pattern)
+      ? candidate
+      : winner,
   );
 
   return {
     titleKey: best.screen.titleKey,
-    backTo: best.screen.parent ? buildPath(best.screen.parent, best.match.params) : null,
+    backTo: best.screen.parent
+      ? buildPath(best.screen.parent, best.match.params)
+      : null,
     backByHistory: best.screen.back === 'history',
   };
 }

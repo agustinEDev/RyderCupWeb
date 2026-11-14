@@ -14,8 +14,14 @@ const RECUERDO = 'rydercup-sesion-conocida';
 vi.mock('../infrastructure/http/tokenRefreshInterceptor', () => ({
   fetchWithTokenRefresh: (url) => {
     peticiones.push(url);
-    const siguiente = respuestas.shift() ?? { ok: true, status: 200, json: async () => ({ id: 'u-1' }) };
-    return typeof siguiente === 'function' ? siguiente() : Promise.resolve(siguiente);
+    const siguiente = respuestas.shift() ?? {
+      ok: true,
+      status: 200,
+      json: async () => ({ id: 'u-1' }),
+    };
+    return typeof siguiente === 'function'
+      ? siguiente()
+      : Promise.resolve(siguiente);
   },
 }));
 
@@ -37,7 +43,11 @@ const {
   ESPERA_TRAS_FALLO_MS,
 } = await import('./sesionCompartida');
 
-const usuario = (id = 'u-1') => ({ ok: true, status: 200, json: async () => ({ id }) });
+const usuario = (id = 'u-1') => ({
+  ok: true,
+  status: 200,
+  json: async () => ({ id }),
+});
 
 describe('la consulta compartida de la sesión', () => {
   beforeEach(() => {
@@ -49,7 +59,11 @@ describe('la consulta compartida de la sesión', () => {
     // confirme la sesión, así que sin esto un test se encontraba con el de
     // otro. Desde que el primer fallo pinta con lo apuntado (FE #529) eso ya
     // no da igual: cambia lo que publica el módulo
-    try { localStorage.removeItem(RECUERDO); } catch { /* sin almacenamiento */ }
+    try {
+      localStorage.removeItem(RECUERDO);
+    } catch {
+      /* sin almacenamiento */
+    }
   });
 
   afterEach(() => {
@@ -61,7 +75,11 @@ describe('la consulta compartida de la sesión', () => {
     // panel, montando casi a la vez
     respuestas.push(usuario());
 
-    const [a, b, c] = await Promise.all([consultaLaSesion(), consultaLaSesion(), consultaLaSesion()]);
+    const [a, b, c] = await Promise.all([
+      consultaLaSesion(),
+      consultaLaSesion(),
+      consultaLaSesion(),
+    ]);
 
     expect(peticiones).toHaveLength(1);
     expect(a).toEqual({ id: 'u-1' });
@@ -108,12 +126,21 @@ describe('la consulta compartida de la sesión', () => {
   });
 
   it('un 401 deja la sesión vacía, sin error', async () => {
-    respuestas.push({ ok: false, status: 401, clone: () => ({ json: async () => ({}) }) });
+    respuestas.push({
+      ok: false,
+      status: 401,
+      clone: () => ({ json: async () => ({}) }),
+    });
 
     const leido = await consultaLaSesion();
 
     expect(leido).toBeNull();
-    expect(loQueHaySobreLaSesion()).toMatchObject({ user: null, cargando: false, error: null, resuelta: true });
+    expect(loQueHaySobreLaSesion()).toMatchObject({
+      user: null,
+      cargando: false,
+      error: null,
+      resuelta: true,
+    });
   });
 
   it('un fallo de red se anota como error, y sigue sin saberse', async () => {
@@ -132,7 +159,9 @@ describe('la consulta compartida de la sesión', () => {
 
   it('avisa a quien se haya suscrito, y deja de hacerlo al darse de baja', async () => {
     const avisos = [];
-    const baja = suscribeALaSesion(() => avisos.push(loQueHaySobreLaSesion().user));
+    const baja = suscribeALaSesion(() =>
+      avisos.push(loQueHaySobreLaSesion().user),
+    );
     respuestas.push(usuario());
 
     await consultaLaSesion();
@@ -148,7 +177,12 @@ describe('la consulta compartida de la sesión', () => {
     // Otra pestaña cierra sesión mientras la consulta esta en vuelo: si la
     // respuesta escribiera, el guardia dejaria entrar a quien acaba de salir
     let resolver;
-    respuestas.push(() => new Promise((r) => { resolver = r; }));
+    respuestas.push(
+      () =>
+        new Promise((r) => {
+          resolver = r;
+        }),
+    );
     const enCurso = consultaLaSesion();
 
     olvidaLaSesion();
@@ -197,7 +231,7 @@ describe('la consulta compartida de la sesión', () => {
     vi.spyOn(console, 'error').mockImplementation(() => {});
     respuestas.push(() => Promise.reject(new Error('sin red')), usuario());
 
-    await consultaLaSesion();          // una sola, y nadie mas pregunta
+    await consultaLaSesion(); // una sola, y nadie mas pregunta
     expect(peticiones).toHaveLength(1);
 
     await vi.advanceTimersByTimeAsync(ESPERA_TRAS_FALLO_MS + 50);
@@ -212,7 +246,8 @@ describe('la consulta compartida de la sesión', () => {
     // rendirse: la espera crece y hay un tope
     vi.useFakeTimers();
     vi.spyOn(console, 'error').mockImplementation(() => {});
-    for (let i = 0; i < 10; i += 1) respuestas.push(() => Promise.reject(new Error('sin red')));
+    for (let i = 0; i < 10; i += 1)
+      respuestas.push(() => Promise.reject(new Error('sin red')));
 
     await consultaLaSesion();
     await vi.advanceTimersByTimeAsync(10 * 60 * 1000);
@@ -343,7 +378,11 @@ describe('sesionCompartida · sin señal no se echa a nadie (FE #524)', () => {
   };
 
   it('al confirmar la sesión apunta a quién pertenece', async () => {
-    respuestas.push({ ok: true, status: 200, json: async () => ({ id: 'u-1', email: 'a@b.c', is_admin: false }) });
+    respuestas.push({
+      ok: true,
+      status: 200,
+      json: async () => ({ id: 'u-1', email: 'a@b.c', is_admin: false }),
+    });
 
     await consultaLaSesion();
 
@@ -351,7 +390,10 @@ describe('sesionCompartida · sin señal no se echa a nadie (FE #524)', () => {
   });
 
   it('sin señal sigue con lo apuntado, en vez de mandar al formulario', async () => {
-    localStorage.setItem(RECUERDO, JSON.stringify({ id: 'u-1', email: 'a@b.c', is_admin: false }));
+    localStorage.setItem(
+      RECUERDO,
+      JSON.stringify({ id: 'u-1', email: 'a@b.c', is_admin: false }),
+    );
 
     await agotaLosReintentos();
 
@@ -365,7 +407,10 @@ describe('sesionCompartida · sin señal no se echa a nadie (FE #524)', () => {
     // pantalla en blanco antes siquiera de pedir la partida —medido—, y es
     // justo el caso para el que se guarda la sesión (FE #529)
     vi.spyOn(console, 'error').mockImplementation(() => {});
-    localStorage.setItem(RECUERDO, JSON.stringify({ id: 'u-1', email: 'a@b.c', is_admin: false }));
+    localStorage.setItem(
+      RECUERDO,
+      JSON.stringify({ id: 'u-1', email: 'a@b.c', is_admin: false }),
+    );
     respuestas.push(() => Promise.reject(new Error('sin red')));
 
     await consultaLaSesion();
@@ -381,7 +426,10 @@ describe('sesionCompartida · sin señal no se echa a nadie (FE #524)', () => {
     // Lo apuntado solo tapa el hueco: la primera respuesta que llegue decide
     vi.useFakeTimers();
     vi.spyOn(console, 'error').mockImplementation(() => {});
-    localStorage.setItem(RECUERDO, JSON.stringify({ id: 'u-1', email: 'a@b.c', is_admin: false }));
+    localStorage.setItem(
+      RECUERDO,
+      JSON.stringify({ id: 'u-1', email: 'a@b.c', is_admin: false }),
+    );
     respuestas.push(() => Promise.reject(new Error('sin red')), usuario('u-2'));
 
     await consultaLaSesion();
@@ -400,10 +448,13 @@ describe('sesionCompartida · sin señal no se echa a nadie (FE #524)', () => {
     // generación, con lo que un refresco en vuelo resolvía a nada
     vi.useFakeTimers();
     vi.spyOn(console, 'error').mockImplementation(() => {});
-    localStorage.setItem(RECUERDO, JSON.stringify({ id: 'u-1', email: 'a@b.c', is_admin: false }));
+    localStorage.setItem(
+      RECUERDO,
+      JSON.stringify({ id: 'u-1', email: 'a@b.c', is_admin: false }),
+    );
     respuestas.push(() => Promise.reject(new Error('sin red')), usuario('u-1'));
 
-    await consultaLaSesion();            // falla y arma el reintento
+    await consultaLaSesion(); // falla y arma el reintento
     await consultaLaSesion({ forzar: true }); // vuelve la señal y alguien refresca
     expect(peticiones).toHaveLength(2);
 
@@ -460,7 +511,10 @@ describe('sesionCompartida · sin señal no se echa a nadie (FE #524)', () => {
   it('lo que sale del apunte sí queda marcado, y deja de estarlo al confirmarse', async () => {
     vi.useFakeTimers();
     vi.spyOn(console, 'error').mockImplementation(() => {});
-    localStorage.setItem(RECUERDO, JSON.stringify({ id: 'u-1', email: 'a@b.c', is_admin: false }));
+    localStorage.setItem(
+      RECUERDO,
+      JSON.stringify({ id: 'u-1', email: 'a@b.c', is_admin: false }),
+    );
     respuestas.length = 0;
     respuestas.push(() => Promise.reject(new Error('sin red')), usuario('u-1'));
 
@@ -491,7 +545,11 @@ describe('sesionCompartida · sin señal no se echa a nadie (FE #524)', () => {
     // consumiría uno y el test pasaría por el motivo equivocado
     respuestas.length = 0;
 
-    respuestas.push({ ok: true, status: 200, json: async () => ({ id: 'u-1' }) });
+    respuestas.push({
+      ok: true,
+      status: 200,
+      json: async () => ({ id: 'u-1' }),
+    });
     await consultaLaSesion();
 
     expect(peticiones).toHaveLength(1);
@@ -501,7 +559,10 @@ describe('sesionCompartida · sin señal no se echa a nadie (FE #524)', () => {
   it('sin confirmar no se heredan privilegios', async () => {
     // Lo apuntado vive en el dispositivo y se puede tocar. El panel lo defiende
     // el backend, pero enseñar sus botones sin poder confirmar nada sobra
-    localStorage.setItem(RECUERDO, JSON.stringify({ id: 'u-1', email: 'a@b.c', is_admin: true }));
+    localStorage.setItem(
+      RECUERDO,
+      JSON.stringify({ id: 'u-1', email: 'a@b.c', is_admin: true }),
+    );
 
     await agotaLosReintentos();
 
@@ -549,7 +610,11 @@ describe('la consulta compartida cuando la página se va', () => {
     await consultaLaSesion({ forzar: true });
 
     expect(peticiones).toEqual([]);
-    expect(loQueHaySobreLaSesion()).toMatchObject({ user: null, cargando: true, resuelta: false });
+    expect(loQueHaySobreLaSesion()).toMatchObject({
+      user: null,
+      cargando: true,
+      resuelta: false,
+    });
   });
 
   it('Q2: sin ella (salida sin recarga), olvidar la sesión vuelve a preguntar como siempre', async () => {
@@ -579,4 +644,3 @@ describe('la consulta compartida cuando la página se va', () => {
     expect(peticiones).toHaveLength(1);
   });
 });
-

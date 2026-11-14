@@ -7,8 +7,26 @@
  */
 
 const TIPOS = new Set(['phone', 'tablet', 'computer']);
-const PLATAFORMAS = new Set(['iphone', 'ipad', 'mac', 'android', 'windows', 'chromebook', 'linux']);
-const NAVEGADORES = new Set(['safari', 'chrome', 'firefox', 'edge', 'opera', 'samsung', 'instagram', 'google', 'facebook']);
+const PLATAFORMAS = new Set([
+  'iphone',
+  'ipad',
+  'mac',
+  'android',
+  'windows',
+  'chromebook',
+  'linux',
+]);
+const NAVEGADORES = new Set([
+  'safari',
+  'chrome',
+  'firefox',
+  'edge',
+  'opera',
+  'samsung',
+  'instagram',
+  'google',
+  'facebook',
+]);
 
 /** El icono: phone, tablet, computer o unknown. */
 export const iconoDelDispositivo = (dispositivo) =>
@@ -26,7 +44,8 @@ export const nombreDelDispositivo = (dispositivo, t) => {
     return dispositivo?.deviceName || t('device.unknown');
   }
   const plataforma = t(`platform.${dispositivo.platform}`);
-  if (dispositivo.installedApp) return `${plataforma} · ${t('browser.installedApp')}`;
+  if (dispositivo.installedApp)
+    return `${plataforma} · ${t('browser.installedApp')}`;
   if (!NAVEGADORES.has(dispositivo.browser)) return plataforma;
   return `${plataforma} · ${t(`browser.${dispositivo.browser}`)}`;
 };
@@ -39,10 +58,14 @@ export const paisDelDispositivo = (codigo, idioma) => {
   if (typeof codigo !== 'string' || !/^[A-Za-z]{2}$/.test(codigo)) return null;
   const region = codigo.toUpperCase();
   try {
-    return new Intl.DisplayNames([idioma], { type: 'region' }).of(region) ?? null;
+    return (
+      new Intl.DisplayNames([idioma], { type: 'region' }).of(region) ?? null
+    );
   } catch {
     try {
-      return new Intl.DisplayNames(undefined, { type: 'region' }).of(region) ?? null;
+      return (
+        new Intl.DisplayNames(undefined, { type: 'region' }).of(region) ?? null
+      );
     } catch {
       return null;
     }

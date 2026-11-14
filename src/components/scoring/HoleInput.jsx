@@ -7,30 +7,45 @@ import { clasesDelHueco } from './clasesDelHueco';
 
 // Un golpe de la casilla: el botón que abre el teclado o, bloqueado, el número.
 // Uno para los tres —el tuyo y el de cada marcado— para que digan lo mismo
-const HuecoDelGolpe = ({ id, prefijo, valor, bloqueado, siguiente, onAbrir, pinta }) => (
+const HuecoDelGolpe = ({
+  id,
+  prefijo,
+  valor,
+  bloqueado,
+  siguiente,
+  onAbrir,
+  pinta,
+}) =>
   !bloqueado ? (
     <button
       id={id}
       data-testid={`${prefijo}-score-button`}
       onClick={onAbrir}
       className={`w-full h-12 flex items-center justify-center rounded-xl transition-colors ${
-        valor === undefined ? clasesDelHueco(siguiente) : 'bg-gray-100 hover:bg-gray-200 active:bg-gray-300'
+        valor === undefined
+          ? clasesDelHueco(siguiente)
+          : 'bg-gray-100 hover:bg-gray-200 active:bg-gray-300'
       }`}
     >
       {valor === undefined ? (
         <HuecoParaAnotar siguiente={siguiente} />
       ) : (
-        <span data-testid={`${prefijo}-score-value`} className="text-2xl font-bold text-gray-900">
+        <span
+          data-testid={`${prefijo}-score-value`}
+          className="text-2xl font-bold text-gray-900"
+        >
           {pinta(valor)}
         </span>
       )}
     </button>
   ) : (
-    <p data-testid={`${prefijo}-score-value`} className="h-12 flex items-center justify-center text-2xl font-bold text-gray-400">
+    <p
+      data-testid={`${prefijo}-score-value`}
+      className="h-12 flex items-center justify-center text-2xl font-bold text-gray-400"
+    >
       {pinta(valor)}
     </p>
-  )
-);
+  );
 
 const HoleInput = ({
   holeNumber,
@@ -80,7 +95,10 @@ const HoleInput = ({
   allowPickedUp = false,
 }) => {
   const { t } = useTranslation('scoring');
-  const conPie = (netScore !== null && netScore !== undefined) || Boolean(holeResult) || Boolean(standing);
+  const conPie =
+    (netScore !== null && netScore !== undefined) ||
+    Boolean(holeResult) ||
+    Boolean(standing);
   // Cada etiqueta, atada a su botón: con los dos huecos vacíos los dos se
   // anunciaban «Anotar» y un lector de pantalla no sabía cuál era el tuyo
   // (CodeRabbit en la #747)
@@ -108,10 +126,15 @@ const HoleInput = ({
   const conMarcado = enParejas || marksSomeone;
   const conMarcador = enParejas || hasMarker;
   // Lo que puso otro marcador no se toca desde aquí
-  const marcadoBloqueado = isMarkerScoreLocked || !conMarcado || Boolean(markedScoredBy);
+  const marcadoBloqueado =
+    isMarkerScoreLocked || !conMarcado || Boolean(markedScoredBy);
   // undefined = hole not scored yet (nothing persisted); null = explicitly picked up.
-  const ownDeLaVista = playerScore?.ownSubmitted ? playerScore.ownScore : undefined;
-  const markedDeLaVista = markedPlayerScore?.markerSubmitted ? markedPlayerScore.markerScore : undefined;
+  const ownDeLaVista = playerScore?.ownSubmitted
+    ? playerScore.ownScore
+    : undefined;
+  const markedDeLaVista = markedPlayerScore?.markerSubmitted
+    ? markedPlayerScore.markerScore
+    : undefined;
   const [ownValue, setOwnValue] = useState(ownDeLaVista);
   const [markedValue, setMarkedValue] = useState(markedDeLaVista);
 
@@ -142,7 +165,9 @@ const HoleInput = ({
   }
   // El segundo marcado, con la misma regla: lo tecleado se queda hasta que la
   // vista diga otra cosa, o hasta que el segundo pase a ser otro, como el primero
-  const segundoDeLaVista = secondMarked?.playerScore?.markerSubmitted ? secondMarked.playerScore.markerScore : undefined;
+  const segundoDeLaVista = secondMarked?.playerScore?.markerSubmitted
+    ? secondMarked.playerScore.markerScore
+    : undefined;
   const [segundoValue, setSegundoValue] = useState(segundoDeLaVista);
   const [segundoVisto, setSegundoVisto] = useState(segundoDeLaVista);
   const [segundoQuien, setSegundoQuien] = useState(secondMarked?.id);
@@ -157,15 +182,17 @@ const HoleInput = ({
   }
   const segundoBloqueado = Boolean(secondMarked?.isLocked);
   // Sin su nombre, las palabras de siempre, como el primero
-  const etiquetaSegundo = secondMarked?.name ? t('input.youMark', { nombre: secondMarked.name }) : t('input.markerScore');
+  const etiquetaSegundo = secondMarked?.name
+    ? t('input.youMark', { nombre: secondMarked.name })
+    : t('input.markerScore');
   const [openPanel, setOpenPanel] = useState(null); // 'own' | 'marked' | 'second' | null
   // Si su casilla se bloquea con el teclado abierto (el rival entrega su
   // tarjeta), el teclado se cierra: abierto, sus números ya no hacían nada
   const panelBloqueado =
-    (openPanel !== null && isReadOnly)
-    || (openPanel === 'own' && isOwnScoreLocked)
-    || (openPanel === 'marked' && marcadoBloqueado)
-    || (openPanel === 'second' && segundoBloqueado);
+    (openPanel !== null && isReadOnly) ||
+    (openPanel === 'own' && isOwnScoreLocked) ||
+    (openPanel === 'marked' && marcadoBloqueado) ||
+    (openPanel === 'second' && segundoBloqueado);
   if (panelBloqueado) setOpenPanel(null);
 
   const handleOwnSelect = (val) => {
@@ -176,14 +203,16 @@ const HoleInput = ({
     // necesita saber cuál volvió a anotar el jugador (FE #622)
     // El número de otro marcador no se reenvía como tuyo (/code-review)
     const marcado = markedScoredBy || !conMarcado ? undefined : markedValue;
-    if (onScoreChange) onScoreChange({ ownScore: val, markedScore: marcado }, 'ownScore');
+    if (onScoreChange)
+      onScoreChange({ ownScore: val, markedScore: marcado }, 'ownScore');
   };
 
   const handleMarkedSelect = (val) => {
     if (isReadOnly || marcadoBloqueado) return;
     setMarkedValue(val);
     setOpenPanel(null);
-    if (onScoreChange) onScoreChange({ ownScore: ownValue, markedScore: val }, 'markedScore');
+    if (onScoreChange)
+      onScoreChange({ ownScore: ownValue, markedScore: val }, 'markedScore');
   };
 
   // Bloqueada, el teclado ya se ha cerrado (`panelBloqueado`)
@@ -205,28 +234,44 @@ const HoleInput = ({
     if (val === undefined) {
       return <span className="sr-only">{t('input.notEntered')}</span>;
     }
-    return val === null
-      ? <span aria-label={ariaLabelNull || undefined} className="text-gray-600">—</span>
-      : val;
+    return val === null ? (
+      <span aria-label={ariaLabelNull || undefined} className="text-gray-600">
+        —
+      </span>
+    ) : (
+      val
+    );
   };
 
   const pinta = (val) => displayScore(val, t('input.pickedUp'));
 
   // En foursomes la bola es de la pareja: «La pareja rival puso…» (/code-review)
-  const nombreDelOtro = (nombre, porDefecto) => (enParejas ? t('input.rivalPair') : nombre || t(porDefecto));
-  const golpesEnTexto = (golpes) => (golpes === null ? t('input.pickedUp') : golpes);
+  const nombreDelOtro = (nombre, porDefecto) =>
+    enParejas ? t('input.rivalPair') : nombre || t(porDefecto);
+  const golpesEnTexto = (golpes) =>
+    golpes === null ? t('input.pickedUp') : golpes;
   const loQuePuso = {
     own:
       validationStatus === 'mismatch' && playerScore?.markerSubmitted
-        ? t('input.otherPut', { nombre: nombreDelOtro(markerName, 'input.yourMarker'), golpes: golpesEnTexto(playerScore.markerScore) })
+        ? t('input.otherPut', {
+            nombre: nombreDelOtro(markerName, 'input.yourMarker'),
+            golpes: golpesEnTexto(playerScore.markerScore),
+          })
         : null,
     marked:
       markedValidationStatus === 'mismatch' && markedPlayerScore?.ownSubmitted
-        ? t('input.otherPut', { nombre: nombreDelOtro(markedName, 'input.theMarkedPlayer'), golpes: golpesEnTexto(markedPlayerScore.ownScore) })
+        ? t('input.otherPut', {
+            nombre: nombreDelOtro(markedName, 'input.theMarkedPlayer'),
+            golpes: golpesEnTexto(markedPlayerScore.ownScore),
+          })
         : null,
     second:
-      secondMarked?.validationStatus === 'mismatch' && secondMarked.playerScore?.ownSubmitted
-        ? t('input.otherPut', { nombre: nombreDelOtro(secondMarked.name, 'input.theMarkedPlayer'), golpes: golpesEnTexto(secondMarked.playerScore.ownScore) })
+      secondMarked?.validationStatus === 'mismatch' &&
+      secondMarked.playerScore?.ownSubmitted
+        ? t('input.otherPut', {
+            nombre: nombreDelOtro(secondMarked.name, 'input.theMarkedPlayer'),
+            golpes: golpesEnTexto(secondMarked.playerScore.ownScore),
+          })
         : null,
   };
 
@@ -242,13 +287,24 @@ const HoleInput = ({
           : null;
 
   return (
-    <div data-testid="hole-input" className="bg-white rounded-lg border border-gray-200 p-4 space-y-4">
+    <div
+      data-testid="hole-input"
+      className="bg-white rounded-lg border border-gray-200 p-4 space-y-4"
+    >
       <div className="flex items-center justify-between gap-2">
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-          <span className="text-lg font-bold text-gray-900">{t('input.hole')} {holeNumber}</span>
-          <span className="text-sm text-gray-500">{t('input.par')} {par}</span>
+          <span className="text-lg font-bold text-gray-900">
+            {t('input.hole')} {holeNumber}
+          </span>
+          <span className="text-sm text-gray-500">
+            {t('input.par')} {par}
+          </span>
           {/* Las partidas de stroke play no traen el índice: sin él, ni la etiqueta (pasada, FE #824) */}
-          {strokeIndex != null && <span className="text-sm text-gray-500">{t('input.strokeIndex')} {strokeIndex}</span>}
+          {strokeIndex != null && (
+            <span className="text-sm text-gray-500">
+              {t('input.strokeIndex')} {strokeIndex}
+            </span>
+          )}
           {/* Cuántos: con 2 golpes decía lo mismo que con 1, y el plus que da
               golpe no veía nada (QA del 11 oct 2026) */}
           {strokesReceived > 0 && (
@@ -269,23 +325,36 @@ const HoleInput = ({
         // Etiquetas en una fila de la rejilla y huecos en la siguiente (FE #736):
         // la cabecera del marcado lleva su marca y es más alta que la tuya, y con
         // una columna por jugador su hueco quedaba más abajo. Así comparten fila
-        <div data-testid="huecos-del-hoyo" className={`grid ${conMarcado ? 'grid-cols-2' : 'grid-cols-1'} gap-x-4 gap-y-1 items-end`}>
-          <label htmlFor={idPropio} className="min-w-0 break-words text-xs font-medium text-gray-500">{etiquetaPropia}</label>
+        <div
+          data-testid="huecos-del-hoyo"
+          className={`grid ${conMarcado ? 'grid-cols-2' : 'grid-cols-1'} gap-x-4 gap-y-1 items-end`}
+        >
+          <label
+            htmlFor={idPropio}
+            className="min-w-0 break-words text-xs font-medium text-gray-500"
+          >
+            {etiquetaPropia}
+          </label>
           {/* La marca del jugador al que anotas va aquí y no en la cabecera:
               la de arriba es la de TU resultado, y son dos acuerdos distintos.
               Sin esta, un anotador veía su tick verde mientras la tira de
               hoyos se ponía roja por el otro, sin forma de saber por quién.
               La tarjeta ya no la lleva, así que este es el único sitio. */}
           {conMarcado && (
-          <div className="flex items-center justify-between gap-2">
-            {/* min-w-0 y break-words: en foursomes lleva la pareja, y un nombre largo ensanchaba la columna (scroll lateral a 360 px) */}
-            <label htmlFor={idMarcado} className="min-w-0 break-words text-xs font-medium text-gray-500">{etiquetaMarcado}</label>
-            {markedValidationStatus && (
-              <span data-testid="marked-validation">
-                <ValidationIcon status={markedValidationStatus} />
-              </span>
-            )}
-          </div>
+            <div className="flex items-center justify-between gap-2">
+              {/* min-w-0 y break-words: en foursomes lleva la pareja, y un nombre largo ensanchaba la columna (scroll lateral a 360 px) */}
+              <label
+                htmlFor={idMarcado}
+                className="min-w-0 break-words text-xs font-medium text-gray-500"
+              >
+                {etiquetaMarcado}
+              </label>
+              {markedValidationStatus && (
+                <span data-testid="marked-validation">
+                  <ValidationIcon status={markedValidationStatus} />
+                </span>
+              )}
+            </div>
           )}
 
           <HuecoDelGolpe
@@ -301,10 +370,16 @@ const HoleInput = ({
           {/* Marker score */}
           {!conMarcado ? null : marcadoBloqueado && markedScoredBy ? (
             <div className="flex h-12 flex-col items-center justify-center">
-              <p data-testid="marked-score-value" className="text-2xl font-bold text-gray-400">
+              <p
+                data-testid="marked-score-value"
+                className="text-2xl font-bold text-gray-400"
+              >
                 {displayScore(markedValue, t('input.pickedUp'))}
               </p>
-              <p data-testid="anotado-por-otro" className="text-xs text-gray-500">
+              <p
+                data-testid="anotado-por-otro"
+                className="text-xs text-gray-500"
+              >
                 {t('input.scoredBy', { nombre: markedScoredBy })}
               </p>
             </div>
@@ -322,15 +397,24 @@ const HoleInput = ({
 
           {/* En un desacuerdo, lo que puso el otro: con solo la ✗ no se sabía
               qué discutir (QA del 11 oct 2026) */}
-          {(validationStatus === 'mismatch' || markedValidationStatus === 'mismatch') && (
+          {(validationStatus === 'mismatch' ||
+            markedValidationStatus === 'mismatch') && (
             <>
               {/* Cada uno en su columna; vacío, un hueco sin texto (revisor) */}
               <p className="text-xs text-red-700">
-                {loQuePuso.own && <span data-testid="lo-que-puso-el-otro-own">{loQuePuso.own}</span>}
+                {loQuePuso.own && (
+                  <span data-testid="lo-que-puso-el-otro-own">
+                    {loQuePuso.own}
+                  </span>
+                )}
               </p>
               {conMarcado && (
                 <p className="text-xs text-red-700">
-                  {loQuePuso.marked && <span data-testid="lo-que-puso-el-otro-marked">{loQuePuso.marked}</span>}
+                  {loQuePuso.marked && (
+                    <span data-testid="lo-que-puso-el-otro-marked">
+                      {loQuePuso.marked}
+                    </span>
+                  )}
                 </p>
               )}
             </>
@@ -342,7 +426,12 @@ const HoleInput = ({
             <>
               <span aria-hidden="true" />
               <div className="flex items-center justify-between gap-2 pt-2">
-                <label htmlFor={idSegundo} className="min-w-0 break-words text-xs font-medium text-gray-500">{etiquetaSegundo}</label>
+                <label
+                  htmlFor={idSegundo}
+                  className="min-w-0 break-words text-xs font-medium text-gray-500"
+                >
+                  {etiquetaSegundo}
+                </label>
                 {secondMarked.validationStatus && (
                   <span data-testid="second-marked-validation">
                     <ValidationIcon status={secondMarked.validationStatus} />
@@ -363,7 +452,9 @@ const HoleInput = ({
                 <>
                   <span aria-hidden="true" />
                   <p className="text-xs text-red-700">
-                    <span data-testid="lo-que-puso-el-otro-second">{loQuePuso.second}</span>
+                    <span data-testid="lo-que-puso-el-otro-second">
+                      {loQuePuso.second}
+                    </span>
                   </p>
                 </>
               )}
@@ -373,16 +464,32 @@ const HoleInput = ({
       )}
 
       {isReadOnly && playerScore && (
-        <div className={`grid ${conMarcador ? 'grid-cols-2' : 'grid-cols-1'} gap-4 text-center`}>
+        <div
+          className={`grid ${conMarcador ? 'grid-cols-2' : 'grid-cols-1'} gap-4 text-center`}
+        >
           <div>
             <p className="text-xs text-gray-500">{etiquetaPropia}</p>
             {/* Sin anotar, hueco y no la raya de «recogió» (revisor, QA 3) */}
-            <p className="text-xl font-bold">{displayScore(playerScore.ownSubmitted === false ? undefined : playerScore.ownScore, t('input.pickedUp'))}</p>
+            <p className="text-xl font-bold">
+              {displayScore(
+                playerScore.ownSubmitted === false
+                  ? undefined
+                  : playerScore.ownScore,
+                t('input.pickedUp'),
+              )}
+            </p>
           </div>
           {conMarcador && (
             <div>
               <p className="text-xs text-gray-500">{etiquetaDelMarcador}</p>
-              <p className="text-xl font-bold">{displayScore(playerScore.markerSubmitted === false ? undefined : playerScore.markerScore, t('input.pickedUp'))}</p>
+              <p className="text-xl font-bold">
+                {displayScore(
+                  playerScore.markerSubmitted === false
+                    ? undefined
+                    : playerScore.markerScore,
+                  t('input.pickedUp'),
+                )}
+              </p>
             </div>
           )}
         </div>
@@ -390,22 +497,31 @@ const HoleInput = ({
 
       {/* Sin nada que decir, sin pie: era una franja vacía que empujaba la navegación */}
       {conPie && (
-        <div data-testid="pie-del-hoyo" className="flex flex-wrap items-center justify-between gap-2 text-sm border-t border-gray-100 pt-3">
+        <div
+          data-testid="pie-del-hoyo"
+          className="flex flex-wrap items-center justify-between gap-2 text-sm border-t border-gray-100 pt-3"
+        >
           {netScore !== null && netScore !== undefined && (
-            <span className="text-gray-600">{t('input.netScore')}: <strong>{netScore}</strong></span>
+            <span className="text-gray-600">
+              {t('input.netScore')}: <strong>{netScore}</strong>
+            </span>
           )}
           {holeResult && (
             <span className="text-gray-600">
               {holeResult.winner === 'HALVED'
                 ? t('input.halved')
-                : holeResult.winner === 'A' ? (teamAName || 'A') : holeResult.winner === 'B' ? (teamBName || 'B') : holeResult.winner}
+                : holeResult.winner === 'A'
+                  ? teamAName || 'A'
+                  : holeResult.winner === 'B'
+                    ? teamBName || 'B'
+                    : holeResult.winner}
             </span>
           )}
           {standing && (
             <span className="font-medium text-primary">
               {standing === 'AS'
                 ? t('input.allSquare')
-                : `${holeResult?.standingTeam === 'A' ? (teamAName || 'A') : holeResult?.standingTeam === 'B' ? (teamBName || 'B') : ''} ${standing}`}
+                : `${holeResult?.standingTeam === 'A' ? teamAName || 'A' : holeResult?.standingTeam === 'B' ? teamBName || 'B' : ''} ${standing}`}
             </span>
           )}
         </div>

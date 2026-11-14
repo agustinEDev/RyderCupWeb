@@ -1,7 +1,11 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { esRutaPublica, sinSesionEnRutaPublica, esPuertaDeEntrada } from './rutasPublicas';
+import {
+  esRutaPublica,
+  sinSesionEnRutaPublica,
+  esPuertaDeEntrada,
+} from './rutasPublicas';
 
 /**
  * En una ruta publica, un `401` de la consulta de sesion es lo ESPERABLE: no hay
@@ -43,15 +47,24 @@ describe('rutas publicas', () => {
     // atras. App.jsx tenia otra. Ahora las dos salen de aqui: el interceptor, a
     // través de la composition root, que le pasa `sinSesionEnRutaPublica`
     const interceptor = readFileSync(
-      resolve(process.cwd(), 'src/infrastructure/http/tokenRefreshInterceptor.js'),
-      'utf8'
+      resolve(
+        process.cwd(),
+        'src/infrastructure/http/tokenRefreshInterceptor.js',
+      ),
+      'utf8',
     );
-    const interfaz = readFileSync(resolve(process.cwd(), 'src/composition/interfazDelTransporte.js'), 'utf8');
+    const interfaz = readFileSync(
+      resolve(process.cwd(), 'src/composition/interfazDelTransporte.js'),
+      'utf8',
+    );
     const app = readFileSync(resolve(process.cwd(), 'src/App.jsx'), 'utf8');
 
-    expect(interceptor).not.toMatch(/\['\/login', '\/register'/);
+    // Con o sin saltos de línea: Prettier parte las listas largas
+    expect(interceptor).not.toMatch(/\[\s*'\/login',\s*'\/register'/);
     expect(interceptor).toMatch(/interfaz\(\)\.sinSesionEnRutaPublica\(/);
-    expect(interfaz).toMatch(/import \{ sinSesionEnRutaPublica \} from '\.\.\/utils\/rutasPublicas'/);
+    expect(interfaz).toMatch(
+      /import \{ sinSesionEnRutaPublica \} from '\.\.\/utils\/rutasPublicas'/,
+    );
 
     expect(app).not.toMatch(/const PUBLIC_ROUTES\s*=/);
     expect(app).toMatch(/rutasPublicas/);
@@ -61,8 +74,12 @@ describe('rutas publicas', () => {
     // La clasificacion compartida es publica, pero quien la abre CON sesion y el
     // access caducado tiene que refrescar: si no, la pantalla se pinta como si
     // estuviera desconectado
-    expect(sinSesionEnRutaPublica('/competitions/1/leaderboard', true)).toBe(false);
-    expect(sinSesionEnRutaPublica('/competitions/1/leaderboard', false)).toBe(true);
+    expect(sinSesionEnRutaPublica('/competitions/1/leaderboard', true)).toBe(
+      false,
+    );
+    expect(sinSesionEnRutaPublica('/competitions/1/leaderboard', false)).toBe(
+      true,
+    );
   });
 
   it('el arranque de la app se salta el refresco aunque quede un usuario rancio', () => {

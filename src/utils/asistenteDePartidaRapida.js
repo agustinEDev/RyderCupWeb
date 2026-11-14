@@ -21,7 +21,8 @@ export const oppositeTeam = (team) => (team === 'A' ? 'B' : 'A');
 export const MAX_SCORERS = 4;
 
 export const NO_TEE_KEY = '';
-export const teeKey = (category, gender) => (category ? `${category}|${gender ?? ''}` : NO_TEE_KEY);
+export const teeKey = (category, gender) =>
+  category ? `${category}|${gender ?? ''}` : NO_TEE_KEY;
 export const parseTeeKey = (key) => {
   if (!key) return { color: null, teeGender: null };
   const [category, gender] = key.split('|');

@@ -14,7 +14,11 @@
  *   entiende (no de la falta de red, que en el campo es lo normal)
  */
 class GetHoleMapUseCase {
-  constructor({ golfCourseRepository, holeMapCache, reportarFallo = () => {} }) {
+  constructor({
+    golfCourseRepository,
+    holeMapCache,
+    reportarFallo = () => {},
+  }) {
     this.golfCourseRepository = golfCourseRepository;
     this.holeMapCache = holeMapCache;
     this.reportarFallo = reportarFallo;
@@ -33,7 +37,8 @@ class GetHoleMapUseCase {
     } catch (error) {
       // Sin red (lleva `cause`) o con un estado HTTP, ya se sabe por qué; lo que
       // queda es un mapa que no se entiende, y sin avisar nadie se enteraría
-      if (!error?.cause && !error?.status) this.reportarFallo(error, { golfCourseId });
+      if (!error?.cause && !error?.status)
+        this.reportarFallo(error, { golfCourseId });
       return this.holeMapCache.load(golfCourseId);
     }
     if (mapa === null) {

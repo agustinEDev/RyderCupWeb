@@ -1,5 +1,3 @@
-/* eslint-disable no-unused-vars */
-
 class IHandicapRepository {
   /**
    * Actualiza manualmente el hándicap de un usuario.

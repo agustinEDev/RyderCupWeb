@@ -18,15 +18,23 @@ import { MemoryRouter, Routes, Route, useNavigate } from 'react-router';
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
     t: (clave, valores) =>
-      valores && typeof valores === 'object' ? `${clave} ${Object.values(valores).join(' ')}` : clave,
+      valores && typeof valores === 'object'
+        ? `${clave} ${Object.values(valores).join(' ')}`
+        : clave,
     i18n: { language: 'es' },
   }),
 }));
 
 vi.mock('../components/layout/HeaderAuth', () => ({ default: () => null }));
-vi.mock('../hooks/useAuth', () => ({ useAuth: () => ({ user: { id: 'u-1', gender: 'MALE' }, loading: false }) }));
-vi.mock('../components/golf_course/GolfCourseSearchBox', () => ({ default: () => null }));
-vi.mock('../utils/toast', () => ({ default: { error: vi.fn(), success: vi.fn(), info: vi.fn() } }));
+vi.mock('../hooks/useAuth', () => ({
+  useAuth: () => ({ user: { id: 'u-1', gender: 'MALE' }, loading: false }),
+}));
+vi.mock('../components/golf_course/GolfCourseSearchBox', () => ({
+  default: () => null,
+}));
+vi.mock('../utils/toast', () => ({
+  default: { error: vi.fn(), success: vi.fn(), info: vi.fn() },
+}));
 vi.mock('../services/countries', () => ({
   formatCountryName: () => 'España',
   sortCountriesByName: (paises) => paises || [],
@@ -38,8 +46,14 @@ vi.mock('../composition', () => ({
   createCompetitionWithGolfCoursesUseCase: { execute: vi.fn() },
   updateCompetitionUseCase: { execute: (...args) => mockActualizar(...args) },
   getCompetitionDetailUseCase: { execute: (...args) => mockDetalle(...args) },
-  getCompetitionGolfCoursesUseCase: { execute: (...args) => mockCampos(...args) },
-  fetchCountriesUseCase: { execute: vi.fn().mockResolvedValue([{ code: 'ES', name_es: 'España', name_en: 'Spain' }]) },
+  getCompetitionGolfCoursesUseCase: {
+    execute: (...args) => mockCampos(...args),
+  },
+  fetchCountriesUseCase: {
+    execute: vi
+      .fn()
+      .mockResolvedValue([{ code: 'ES', name_es: 'España', name_en: 'Spain' }]),
+  },
   getAdjacentCountriesUseCase: { execute: vi.fn().mockResolvedValue([]) },
   createGolfCourseRequestUseCase: { execute: vi.fn() },
 }));
@@ -47,8 +61,12 @@ const mockValidar = vi.fn(() => null);
 vi.mock('../utils/competitionFormValidation', () => ({
   validateCompetitionForm: (...a) => mockValidar(...a),
 }));
-vi.mock('../components/ui/CountryAutocomplete', () => ({ default: () => null }));
-vi.mock('../components/golf_course/GolfCourseRequestModal', () => ({ default: () => null }));
+vi.mock('../components/ui/CountryAutocomplete', () => ({
+  default: () => null,
+}));
+vi.mock('../components/golf_course/GolfCourseRequestModal', () => ({
+  default: () => null,
+}));
 vi.mock('../components/ui/FullScreenLoader', () => ({ default: () => null }));
 vi.mock('../components/ui/CountryFlag', () => ({ CountryFlag: () => null }));
 
@@ -75,7 +93,7 @@ const pintaEdicion = () =>
         <Route path="/competitions/:id/edit" element={<CreateCompetition />} />
         <Route path="/competitions/:id" element={<p>la ficha</p>} />
       </Routes>
-    </MemoryRouter>
+    </MemoryRouter>,
   );
 
 describe('CreateCompetition · editar (FE #710)', () => {
@@ -96,17 +114,24 @@ describe('CreateCompetition · editar (FE #710)', () => {
 
       expect(await screen.findByText('la ficha')).toBeInTheDocument();
       expect(customToast.error).toHaveBeenCalledWith('edit.notEditable');
-      expect(screen.queryByText('edit.updateCompetition')).not.toBeInTheDocument();
-    }
+      expect(
+        screen.queryByText('edit.updateCompetition'),
+      ).not.toBeInTheDocument();
+    },
   );
 
-  it.each(['DRAFT', 'ACTIVE'])('E3: %s se edita, como siempre', async (status) => {
-    mockDetalle.mockResolvedValueOnce(competicion(status));
-    pintaEdicion();
+  it.each(['DRAFT', 'ACTIVE'])(
+    'E3: %s se edita, como siempre',
+    async (status) => {
+      mockDetalle.mockResolvedValueOnce(competicion(status));
+      pintaEdicion();
 
-    expect(await screen.findByText('edit.updateCompetition')).toBeInTheDocument();
-    expect(customToast.error).not.toHaveBeenCalled();
-  });
+      expect(
+        await screen.findByText('edit.updateCompetition'),
+      ).toBeInTheDocument();
+      expect(customToast.error).not.toHaveBeenCalled();
+    },
+  );
 
   it('E4: si las fechas dejan sesiones fuera, dice cuáles, en su idioma', async () => {
     mockDetalle.mockResolvedValueOnce(competicion('ACTIVE'));
@@ -120,7 +145,7 @@ describe('CreateCompetition · editar (FE #710)', () => {
             { id: 'r2', round_date: '2026-10-05', session_type: 'AFTERNOON' },
           ],
         },
-      })
+      }),
     );
     pintaEdicion();
 
@@ -128,7 +153,9 @@ describe('CreateCompetition · editar (FE #710)', () => {
 
     const esperado =
       'edit.datesLeaveSessionsOut lun, 5 oct · schedule:sessions.MORNING, lun, 5 oct · schedule:sessions.AFTERNOON';
-    await waitFor(() => expect(customToast.error).toHaveBeenCalledWith(esperado));
+    await waitFor(() =>
+      expect(customToast.error).toHaveBeenCalledWith(esperado),
+    );
     expect(screen.getByText(esperado)).toBeInTheDocument();
   });
 
@@ -139,15 +166,21 @@ describe('CreateCompetition · editar (FE #710)', () => {
       Object.assign(new Error('Solo el creador puede actualizar'), {
         status: 403,
         errorCode: 'NOT_CREATOR',
-        data: { sessions_outside: [{ id: 'r1', round_date: '2026-10-05', session_type: 'MORNING' }] },
-      })
+        data: {
+          sessions_outside: [
+            { id: 'r1', round_date: '2026-10-05', session_type: 'MORNING' },
+          ],
+        },
+      }),
     );
     pintaEdicion();
 
     fireEvent.click(await screen.findByText('edit.updateCompetition'));
 
     await waitFor(() =>
-      expect(customToast.error).toHaveBeenCalledWith('Solo el creador puede actualizar')
+      expect(customToast.error).toHaveBeenCalledWith(
+        'Solo el creador puede actualizar',
+      ),
     );
   });
 
@@ -159,21 +192,30 @@ describe('CreateCompetition · editar (FE #710)', () => {
         ? new Promise((r) => {
             resolverA = r;
           })
-        : Promise.resolve({ ...competicion('ACTIVE'), id: 'c-2', name: 'La de B' })
+        : Promise.resolve({
+            ...competicion('ACTIVE'),
+            id: 'c-2',
+            name: 'La de B',
+          }),
     );
     render(
       <MemoryRouter initialEntries={['/competitions/c-1/edit']}>
         <Link to="/competitions/c-2/edit">a la B</Link>
         <Routes>
-          <Route path="/competitions/:id/edit" element={<CreateCompetition />} />
+          <Route
+            path="/competitions/:id/edit"
+            element={<CreateCompetition />}
+          />
           <Route path="/competitions/:id" element={<p>la ficha</p>} />
         </Routes>
-      </MemoryRouter>
+      </MemoryRouter>,
     );
     await waitFor(() => expect(mockDetalle).toHaveBeenCalledWith('c-1'));
 
     fireEvent.click(screen.getByText('a la B'));
-    expect(await screen.findByText('edit.updateCompetition')).toBeInTheDocument();
+    expect(
+      await screen.findByText('edit.updateCompetition'),
+    ).toBeInTheDocument();
     resolverA(competicion('CLOSED'));
     await new Promise((r) => setTimeout(r, 50));
 
@@ -186,22 +228,29 @@ describe('CreateCompetition · editar (FE #710)', () => {
     const { Link } = await import('react-router');
     let resolverCamposDeA;
     mockDetalle.mockImplementation((id) =>
-      Promise.resolve({ ...competicion('ACTIVE'), id, name: id === 'c-1' ? 'La de A' : 'La de B' })
+      Promise.resolve({
+        ...competicion('ACTIVE'),
+        id,
+        name: id === 'c-1' ? 'La de A' : 'La de B',
+      }),
     );
     mockCampos.mockImplementation((id) =>
       id === 'c-1'
         ? new Promise((r) => {
             resolverCamposDeA = r;
           })
-        : Promise.resolve([])
+        : Promise.resolve([]),
     );
     render(
       <MemoryRouter initialEntries={['/competitions/c-1/edit']}>
         <Link to="/competitions/c-2/edit">a la B</Link>
         <Routes>
-          <Route path="/competitions/:id/edit" element={<CreateCompetition />} />
+          <Route
+            path="/competitions/:id/edit"
+            element={<CreateCompetition />}
+          />
         </Routes>
-      </MemoryRouter>
+      </MemoryRouter>,
     );
     await waitFor(() => expect(mockCampos).toHaveBeenCalledWith('c-1'));
 
@@ -220,7 +269,9 @@ describe('CreateCompetition · editar (FE #710)', () => {
     globalThis.Element.prototype.scrollIntoView = desplazar;
     mockDetalle.mockResolvedValueOnce(competicion('ACTIVE'));
     mockActualizar.mockRejectedValueOnce(
-      Object.assign(new Error('Solo el creador puede actualizar'), { status: 403 })
+      Object.assign(new Error('Solo el creador puede actualizar'), {
+        status: 403,
+      }),
     );
     pintaEdicion();
 
@@ -250,13 +301,17 @@ describe('CreateCompetition · editar (FE #710)', () => {
     await screen.findByDisplayValue('Campeonato del club');
 
     fireEvent.click(screen.getByText('edit.updateCompetition'));
-    await waitFor(() => expect(document.activeElement).toBe(screen.getByRole('alert')));
+    await waitFor(() =>
+      expect(document.activeElement).toBe(screen.getByRole('alert')),
+    );
 
     const guardar = screen.getByText('edit.updateCompetition');
     guardar.focus();
     fireEvent.click(guardar);
 
-    await waitFor(() => expect(document.activeElement).toBe(screen.getByRole('alert')));
+    await waitFor(() =>
+      expect(document.activeElement).toBe(screen.getByRole('alert')),
+    );
     mockValidar.mockReturnValue(null);
     globalThis.Element.prototype.scrollIntoView = original;
   });
@@ -275,29 +330,51 @@ describe('CreateCompetition · el cupo no baja de los inscritos (FE #662)', () =
   });
 
   it('K1: con 14 dentro, el mínimo del campo es 14 y se dice por qué', async () => {
-    mockDetalle.mockResolvedValueOnce({ ...competicion('ACTIVE'), maxPlayers: 24, enrolledCount: 14 });
+    mockDetalle.mockResolvedValueOnce({
+      ...competicion('ACTIVE'),
+      maxPlayers: 24,
+      enrolledCount: 14,
+    });
     pintaEdicion();
 
     const campo = await screen.findByTestId('campo-jugadores');
     await waitFor(() => expect(campo).toHaveAttribute('min', '14'));
-    expect(screen.getByTestId('cupo-minimo')).toHaveTextContent('create.capFloor 14');
+    expect(screen.getByTestId('cupo-minimo')).toHaveTextContent(
+      'create.capFloor 14',
+    );
   });
 
   it('K2: la validación sabe cuántos hay dentro', async () => {
-    mockDetalle.mockResolvedValueOnce({ ...competicion('ACTIVE'), maxPlayers: 24, enrolledCount: 14 });
+    mockDetalle.mockResolvedValueOnce({
+      ...competicion('ACTIVE'),
+      maxPlayers: 24,
+      enrolledCount: 14,
+    });
     pintaEdicion();
     // Con la competición ya cargada, como cuando la tiene delante quien edita
-    await waitFor(() => expect(screen.getByTestId('campo-jugadores')).toHaveAttribute('min', '14'));
+    await waitFor(() =>
+      expect(screen.getByTestId('campo-jugadores')).toHaveAttribute(
+        'min',
+        '14',
+      ),
+    );
     fireEvent.click(screen.getByText('edit.updateCompetition'));
 
     // La del envío: la pantalla también valida en cada render, sin opciones
     await waitFor(() =>
-      expect(mockValidar.mock.calls.some(([, opciones]) => opciones?.inscritos === 14)).toBe(true)
+      expect(
+        mockValidar.mock.calls.some(
+          ([, opciones]) => opciones?.inscritos === 14,
+        ),
+      ).toBe(true),
     );
   });
 
   it('K3: sin nadie dentro, el mínimo de siempre y sin aviso', async () => {
-    mockDetalle.mockResolvedValueOnce({ ...competicion('ACTIVE'), enrolledCount: 0 });
+    mockDetalle.mockResolvedValueOnce({
+      ...competicion('ACTIVE'),
+      enrolledCount: 0,
+    });
     pintaEdicion();
 
     const campo = await screen.findByTestId('campo-jugadores');
@@ -307,14 +384,20 @@ describe('CreateCompetition · el cupo no baja de los inscritos (FE #662)', () =
   });
 
   it('K4: el error lleva el número para decirlo', async () => {
-    mockDetalle.mockResolvedValueOnce({ ...competicion('ACTIVE'), maxPlayers: 24, enrolledCount: 14 });
+    mockDetalle.mockResolvedValueOnce({
+      ...competicion('ACTIVE'),
+      maxPlayers: 24,
+      enrolledCount: 14,
+    });
     mockValidar.mockImplementation((_, opciones) =>
-      opciones ? { key: 'capBelowEnrolled', count: 14 } : null
+      opciones ? { key: 'capBelowEnrolled', count: 14 } : null,
     );
     pintaEdicion();
     fireEvent.click(await screen.findByText('edit.updateCompetition'));
 
-    expect(await screen.findByText('create.errors.capBelowEnrolled 14')).toBeInTheDocument();
+    expect(
+      await screen.findByText('create.errors.capBelowEnrolled 14'),
+    ).toBeInTheDocument();
     expect(mockActualizar).not.toHaveBeenCalled();
   });
 });
@@ -334,27 +417,44 @@ describe('CreateCompetition · los inscritos son de SU competición (FE #662, re
     // desmonta al ir de uno a otro
     const IrACrear = () => {
       const navegar = useNavigate();
-      return <button onClick={() => navegar('/competitions/create')}>ir a crear</button>;
+      return (
+        <button onClick={() => navegar('/competitions/create')}>
+          ir a crear
+        </button>
+      );
     };
-    mockDetalle.mockResolvedValueOnce({ ...competicion('ACTIVE'), maxPlayers: 24, enrolledCount: 14 });
+    mockDetalle.mockResolvedValueOnce({
+      ...competicion('ACTIVE'),
+      maxPlayers: 24,
+      enrolledCount: 14,
+    });
     render(
       <MemoryRouter initialEntries={['/competitions/c-1/edit']}>
         <IrACrear />
         <Routes>
-          <Route path="/competitions/:id/edit" element={<CreateCompetition />} />
+          <Route
+            path="/competitions/:id/edit"
+            element={<CreateCompetition />}
+          />
           <Route path="/competitions/create" element={<CreateCompetition />} />
         </Routes>
-      </MemoryRouter>
+      </MemoryRouter>,
     );
-    await waitFor(() => expect(screen.getByTestId('campo-jugadores')).toHaveAttribute('min', '14'));
+    await waitFor(() =>
+      expect(screen.getByTestId('campo-jugadores')).toHaveAttribute(
+        'min',
+        '14',
+      ),
+    );
 
     fireEvent.click(screen.getByText('ir a crear'));
     // Al crear se elige antes el tipo y el modo (FE #799, #695)
     fireEvent.click(await screen.findByTestId('tipo-RYDER_CUP'));
     fireEvent.click(await screen.findByTestId('modo-RYDER_CUP'));
 
-    await waitFor(() => expect(screen.getByTestId('campo-jugadores')).toHaveAttribute('min', '2'));
+    await waitFor(() =>
+      expect(screen.getByTestId('campo-jugadores')).toHaveAttribute('min', '2'),
+    );
     expect(screen.queryByTestId('cupo-minimo')).not.toBeInTheDocument();
   });
 });
-

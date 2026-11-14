@@ -9,9 +9,15 @@ const renderMenu = (props = {}) => {
   const onBlock = vi.fn();
   render(
     <div>
-      <PlayerProfileMenu isFriend onRemove={onRemove} onBlock={onBlock} t={t} {...props} />
+      <PlayerProfileMenu
+        isFriend
+        onRemove={onRemove}
+        onBlock={onBlock}
+        t={t}
+        {...props}
+      />
       <button type="button">fuera</button>
-    </div>
+    </div>,
   );
   return { onRemove, onBlock };
 };
@@ -26,14 +32,18 @@ describe('PlayerProfileMenu keyboard and focus (review FE-2)', () => {
     renderMenu();
     await abre();
 
-    await waitFor(() => expect(screen.getByTestId('player-profile-menu-remove')).toHaveFocus());
+    await waitFor(() =>
+      expect(screen.getByTestId('player-profile-menu-remove')).toHaveFocus(),
+    );
   });
 
   it('focuses the only item when there is one', async () => {
     renderMenu({ isFriend: false });
     await abre();
 
-    await waitFor(() => expect(screen.getByTestId('player-profile-menu-block')).toHaveFocus());
+    await waitFor(() =>
+      expect(screen.getByTestId('player-profile-menu-block')).toHaveFocus(),
+    );
   });
 
   it('moves with the arrows and wraps around', async () => {
@@ -56,7 +66,9 @@ describe('PlayerProfileMenu keyboard and focus (review FE-2)', () => {
   it('jumps to the first and last item with Home and End', async () => {
     renderMenu();
     const menu = await abre();
-    await waitFor(() => expect(screen.getByTestId('player-profile-menu-remove')).toHaveFocus());
+    await waitFor(() =>
+      expect(screen.getByTestId('player-profile-menu-remove')).toHaveFocus(),
+    );
 
     fireEvent.keyDown(menu, { key: 'End' });
     expect(screen.getByTestId('player-profile-menu-block')).toHaveFocus();
@@ -68,9 +80,13 @@ describe('PlayerProfileMenu keyboard and focus (review FE-2)', () => {
     const { onRemove, onBlock } = renderMenu();
     await abre();
 
-    fireEvent.keyDown(screen.getByTestId('player-profile-menu-remove'), { key: 'Escape' });
+    fireEvent.keyDown(screen.getByTestId('player-profile-menu-remove'), {
+      key: 'Escape',
+    });
 
-    await waitFor(() => expect(screen.queryByRole('menu')).not.toBeInTheDocument());
+    await waitFor(() =>
+      expect(screen.queryByRole('menu')).not.toBeInTheDocument(),
+    );
     expect(screen.getByTestId('player-profile-menu')).toHaveFocus();
     expect(onRemove).not.toHaveBeenCalled();
     expect(onBlock).not.toHaveBeenCalled();
@@ -82,7 +98,9 @@ describe('PlayerProfileMenu keyboard and focus (review FE-2)', () => {
 
     fireEvent.keyDown(menu, { key: 'Tab' });
 
-    await waitFor(() => expect(screen.queryByRole('menu')).not.toBeInTheDocument());
+    await waitFor(() =>
+      expect(screen.queryByRole('menu')).not.toBeInTheDocument(),
+    );
   });
 
   it('closes when you click outside, without doing anything', async () => {
@@ -91,7 +109,9 @@ describe('PlayerProfileMenu keyboard and focus (review FE-2)', () => {
 
     fireEvent.mouseDown(screen.getByText('fuera'));
 
-    await waitFor(() => expect(screen.queryByRole('menu')).not.toBeInTheDocument());
+    await waitFor(() =>
+      expect(screen.queryByRole('menu')).not.toBeInTheDocument(),
+    );
     expect(onRemove).not.toHaveBeenCalled();
     expect(onBlock).not.toHaveBeenCalled();
   });

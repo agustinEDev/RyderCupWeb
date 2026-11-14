@@ -75,11 +75,7 @@ const PasswordStrengthIndicator = ({ password }) => {
         </p>
 
         {/* Feedback opcional */}
-        {feedback && (
-          <p className="text-xs text-gray-500">
-            {feedback}
-          </p>
-        )}
+        {feedback && <p className="text-xs text-gray-500">{feedback}</p>}
       </div>
     </div>
   );

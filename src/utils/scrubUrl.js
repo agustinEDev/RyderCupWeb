@@ -29,16 +29,19 @@ const SENSITIVE_QUERY_PARAMS = [
  * del correo de restablecimiento es `/reset-password/<token>` (App.jsx), y la
  * pagina lo valida con `/api/v1/auth/validate-reset-token/<token>`.
  */
-export const SENSITIVE_PATH_PREFIXES = ['/reset-password/', '/auth/validate-reset-token/'];
+export const SENSITIVE_PATH_PREFIXES = [
+  '/reset-password/',
+  '/auth/validate-reset-token/',
+];
 
 // Compiladas una vez: esto se pasa por todo el texto de cada evento.
 // El parametro puede ir tras `?`, `&` o `#`, o abrir el texto: `url.query`
 // llega sin el `?` delante
 const QUERY_PATTERNS = SENSITIVE_QUERY_PARAMS.map(
-  (param) => new RegExp(`(^|[?&#])(${param}=)[^&#]*`, 'gi')
+  (param) => new RegExp(`(^|[?&#])(${param}=)[^&#]*`, 'gi'),
 );
 const PATH_PATTERNS = SENSITIVE_PATH_PREFIXES.map(
-  (prefix) => new RegExp(`(${prefix})[^/?#]+`, 'gi')
+  (prefix) => new RegExp(`(${prefix})[^/?#]+`, 'gi'),
 );
 
 /**
@@ -59,8 +62,11 @@ export const scrubUrl = (url) => {
 
   const sinQuery = QUERY_PATTERNS.reduce(
     (scrubbed, pattern) => scrubbed.replace(pattern, '$1$2[REDACTED]'),
-    url
+    url,
   );
 
-  return PATH_PATTERNS.reduce((scrubbed, pattern) => scrubbed.replace(pattern, '$1[REDACTED]'), sinQuery);
+  return PATH_PATTERNS.reduce(
+    (scrubbed, pattern) => scrubbed.replace(pattern, '$1[REDACTED]'),
+    sinQuery,
+  );
 };

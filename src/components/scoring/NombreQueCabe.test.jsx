@@ -32,12 +32,20 @@ const conMedidas = () => {
         if (elemento.dataset.medida === 'caja') avisar = this.fn;
       }
       disconnect() {}
-    }
+    },
   );
-  vi.spyOn(globalThis.HTMLElement.prototype, 'clientWidth', 'get').mockImplementation(function () {
+  vi.spyOn(
+    globalThis.HTMLElement.prototype,
+    'clientWidth',
+    'get',
+  ).mockImplementation(function () {
     return this.dataset.medida === 'caja' ? anchos.caja : 0;
   });
-  vi.spyOn(globalThis.HTMLElement.prototype, 'scrollWidth', 'get').mockImplementation(function () {
+  vi.spyOn(
+    globalThis.HTMLElement.prototype,
+    'scrollWidth',
+    'get',
+  ).mockImplementation(function () {
     return this.dataset.medida === 'nombre' ? anchos.nombre : 0;
   });
 };
@@ -57,7 +65,9 @@ describe('NombreQueCabe', () => {
 
     render(<NombreQueCabe nombre="Maximiliano R." />);
 
-    expect(screen.getByTestId('nombre-que-cabe')).toHaveTextContent(/^Maximiliano R\.$/);
+    expect(screen.getByTestId('nombre-que-cabe')).toHaveTextContent(
+      /^Maximiliano R\.$/,
+    );
   });
 
   it('N2: si no cabe, las iniciales, con el nombre en el title y para el lector', () => {
@@ -70,7 +80,9 @@ describe('NombreQueCabe', () => {
     const visible = screen.getByText('MR');
     expect(visible).toHaveAttribute('title', 'Maximiliano R.');
     expect(visible).toHaveAttribute('aria-hidden', 'true');
-    expect(screen.getByText('Maximiliano R.', { selector: '.sr-only' })).toBeInTheDocument();
+    expect(
+      screen.getByText('Maximiliano R.', { selector: '.sr-only' }),
+    ).toBeInTheDocument();
   });
 
   it('N3: si la casilla se ensancha, vuelve el nombre', () => {
@@ -84,7 +96,9 @@ describe('NombreQueCabe', () => {
     act(() => avisar());
 
     expect(screen.queryByText('MR')).not.toBeInTheDocument();
-    expect(screen.getByTestId('nombre-que-cabe')).toHaveTextContent(/^Maximiliano R\.$/);
+    expect(screen.getByTestId('nombre-que-cabe')).toHaveTextContent(
+      /^Maximiliano R\.$/,
+    );
   });
 
   it('N4: sin ResizeObserver, el nombre como antes', () => {
@@ -92,7 +106,9 @@ describe('NombreQueCabe', () => {
 
     render(<NombreQueCabe nombre="Maximiliano R." />);
 
-    expect(screen.getByTestId('nombre-que-cabe')).toHaveTextContent(/^Maximiliano R\.$/);
+    expect(screen.getByTestId('nombre-que-cabe')).toHaveTextContent(
+      /^Maximiliano R\.$/,
+    );
   });
 
   it('N6: al llegar la fuente de verdad vuelve a medir: el nombre ya no cabe', async () => {
@@ -102,9 +118,14 @@ describe('NombreQueCabe', () => {
     let llegada;
     const fonts = { ready: new Promise((r) => (llegada = r)) };
     // jsdom no trae `document.fonts`
-    Object.defineProperty(globalThis.document, 'fonts', { value: fonts, configurable: true });
+    Object.defineProperty(globalThis.document, 'fonts', {
+      value: fonts,
+      configurable: true,
+    });
     render(<NombreQueCabe nombre="Maximiliano R." />);
-    expect(screen.getByTestId('nombre-que-cabe')).toHaveTextContent(/^Maximiliano R\.$/);
+    expect(screen.getByTestId('nombre-que-cabe')).toHaveTextContent(
+      /^Maximiliano R\.$/,
+    );
 
     // La fuente de la app es más ancha que la de reserva; la casilla no cambia
     anchos.nombre = 110;

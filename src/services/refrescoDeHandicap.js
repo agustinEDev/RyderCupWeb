@@ -56,20 +56,24 @@ export const lanzaElRefrescoDeHandicap = ({ handicapDeAntes = null } = {}) => {
       localStorage.removeItem(HANDICAP_POR_PEDIR);
       if (needsHandicap) {
         localStorage.setItem(HANDICAP_POR_PEDIR, JSON.stringify({ handicap }));
-        globalThis.dispatchEvent(new globalThis.Event(EVENTO_HANDICAP_POR_PEDIR));
+        globalThis.dispatchEvent(
+          new globalThis.Event(EVENTO_HANDICAP_POR_PEDIR),
+        );
       } else {
         // Ya no hace falta pedirlo: el recordatorio de «Requiere tu atención»
         // sobra, también si el panel está abierto
         localStorage.removeItem(RECORDATORIO_HANDICAP);
         globalThis.dispatchEvent(new globalThis.Event(EVENTO_HANDICAP_AL_DIA));
-        if (handicap !== (handicapDeAntes ?? null)) consultaLaSesion({ forzar: true });
+        if (handicap !== (handicapDeAntes ?? null))
+          consultaLaSesion({ forzar: true });
       }
     })
     .catch((error) => {
       // Un 4xx no se va a arreglar solo (el endpoint no existe, el usuario ya
       // no): se deja de intentar. Sin respuesta o un 5xx no se sabe nada, así
       // que no se afirma nada y el apunte se queda para reintentar
-      if (esPermanente(error) && !esDeOtraCuenta()) localStorage.removeItem(APUNTE_REFRESCAR);
+      if (esPermanente(error) && !esDeOtraCuenta())
+        localStorage.removeItem(APUNTE_REFRESCAR);
     })
     .finally(() => {
       if (enVuelo === peticion) enVuelo = null;

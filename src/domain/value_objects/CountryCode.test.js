@@ -23,7 +23,9 @@ describe('CountryCode', () => {
 
     it('should throw InvalidCountryCodeError for codes with length > 2', () => {
       expect(() => new CountryCode('ESP')).toThrow(InvalidCountryCodeError);
-      expect(() => new CountryCode('ESP')).toThrow('Country code must have exactly 2 characters.');
+      expect(() => new CountryCode('ESP')).toThrow(
+        'Country code must have exactly 2 characters.',
+      );
     });
 
     it('should throw InvalidCountryCodeError for codes with length < 2', () => {
@@ -32,7 +34,9 @@ describe('CountryCode', () => {
 
     it('should throw InvalidCountryCodeError for codes with numbers', () => {
       expect(() => new CountryCode('E1')).toThrow(InvalidCountryCodeError);
-      expect(() => new CountryCode('E1')).toThrow('Country code must contain only letters (A-Z).');
+      expect(() => new CountryCode('E1')).toThrow(
+        'Country code must contain only letters (A-Z).',
+      );
     });
 
     it('should throw InvalidCountryCodeError for non-string values', () => {
@@ -40,10 +44,10 @@ describe('CountryCode', () => {
       expect(() => new CountryCode(undefined)).toThrow(InvalidCountryCodeError);
       expect(() => new CountryCode(12)).toThrow(InvalidCountryCodeError);
     });
-    
+
     it('should throw InvalidCountryCodeError for empty strings', () => {
-        expect(() => new CountryCode('')).toThrow(InvalidCountryCodeError);
-        expect(() => new CountryCode('  ')).toThrow(InvalidCountryCodeError);
+      expect(() => new CountryCode('')).toThrow(InvalidCountryCodeError);
+      expect(() => new CountryCode('  ')).toThrow(InvalidCountryCodeError);
     });
   });
 

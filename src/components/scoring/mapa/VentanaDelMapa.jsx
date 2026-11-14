@@ -15,7 +15,8 @@ import { useBarrasNegras } from '../../../hooks/useBarrasNegras';
 const cargarMapa = () => lazy(() => import('./MapaDelHoyo'));
 
 // La caja de `ModalShell` (que ya se anuncia como diálogo), a toda la pantalla
-const CAPA = 'fixed inset-x-0 inset-y-0 flex flex-col items-center justify-center gap-4 p-6 text-center';
+const CAPA =
+  'fixed inset-x-0 inset-y-0 flex flex-col items-center justify-center gap-4 p-6 text-center';
 
 /**
  * De un modal se sale siempre: también mientras carga y si no carga. En negro,
@@ -24,8 +25,17 @@ const CAPA = 'fixed inset-x-0 inset-y-0 flex flex-col items-center justify-cente
 const SalidaDelMapa = ({ onCerrar, children }) => {
   const { t } = useTranslation('scoring');
   return (
-    <ModalShell isOpen onClose={onCerrar} closeOnBackdrop={false} boxClassName={`${CAPA} espera-sobre-oscuro bg-black text-white`}>
-      <button type="button" onClick={onCerrar} className="min-h-11 order-last rounded-xl bg-white px-5 font-semibold text-gray-900">
+    <ModalShell
+      isOpen
+      onClose={onCerrar}
+      closeOnBackdrop={false}
+      boxClassName={`${CAPA} espera-sobre-oscuro bg-black text-white`}
+    >
+      <button
+        type="button"
+        onClick={onCerrar}
+        className="min-h-11 order-last rounded-xl bg-white px-5 font-semibold text-gray-900"
+      >
         {t('mapa.cerrar')}
       </button>
       {children}
@@ -54,22 +64,44 @@ class SiNoCarga extends Component {
     // De un modal se sale siempre: también mientras llega la recarga
     return (
       <SalidaDelMapa onCerrar={this.props.onCerrar}>
-        <p>{this.state.recargando ? this.props.textoRecargando : this.props.texto}</p>
+        <p>
+          {this.state.recargando
+            ? this.props.textoRecargando
+            : this.props.texto}
+        </p>
       </SalidaDelMapa>
     );
   }
 }
 
 // Un hoyo del que aún no se sabe nada: sin muestra, y recogiendo
-const SIN_MUESTRAS = { guardada: null, primera: null, green: null, recoge: true };
+const SIN_MUESTRAS = {
+  guardada: null,
+  primera: null,
+  green: null,
+  recoge: true,
+};
 const conSalida = (muestra) => Boolean(muestra?.tee);
-const mismoPunto = (a, b) => Boolean(a && b) && a.lat === b.lat && a.lon === b.lon;
+const mismoPunto = (a, b) =>
+  Boolean(a && b) && a.lat === b.lat && a.lon === b.lon;
 
-const MapaAbierto = ({ mapaDelHoyo, golfCourseId, numeroDeHoyo, par, metros = null, userId = null, barra = null }) => {
+const MapaAbierto = ({
+  mapaDelHoyo,
+  golfCourseId,
+  numeroDeHoyo,
+  par,
+  metros = null,
+  userId = null,
+  barra = null,
+}) => {
   const { t } = useTranslation('scoring');
   const [MapaDelHoyo] = useState(cargarMapa);
   const { mapaDelCampo, cerrar } = mapaDelHoyo;
-  const { muestras, pendientes, enviar } = useMuestrasDelCampo({ golfCourseId, userId, barra });
+  const { muestras, pendientes, enviar } = useMuestrasDelCampo({
+    golfCourseId,
+    userId,
+    barra,
+  });
   // Reportar un hoyo (entrega 7): basta la sesión, no hace falta la barra
   const reportar = useReportarHoyo({ golfCourseId, userId });
   // Las barras del sistema en negro desde que se abre: también mientras carga
@@ -85,25 +117,47 @@ const MapaAbierto = ({ mapaDelHoyo, golfCourseId, numeroDeHoyo, par, metros = nu
   const delHoyo = muestras[numeroDeHoyo] ?? SIN_MUESTRAS;
   const guardada = delHoyo.guardada ?? null;
   // Con la línea del admin, lo del mapa no se usa
-  const aprobado = guardada ? null : (mapaDelCampo?.holes?.[numeroDeHoyo] ?? null);
+  const aprobado = guardada
+    ? null
+    : (mapaDelCampo?.holes?.[numeroDeHoyo] ?? null);
   const aprobadoConSalida = (aprobado?.playLine?.length ?? 0) > 0;
   const completo = Boolean(aprobado?.green);
   const mia = pendientes[numeroDeHoyo] ?? null;
   // Mi línea completa que acaba en el green suelto es la que lo completa: va
   // antes que él, o al reabrir no la vería (revisión, 17 oct)
-  const miaLoCompleta = conSalida(mia) && mismoPunto(mia.greenCenter, delHoyo.green);
-  const muestra = guardada ?? delHoyo.primera ?? (miaLoCompleta || (!delHoyo.green && conSalida(mia)) ? mia : null);
+  const miaLoCompleta =
+    conSalida(mia) && mismoPunto(mia.greenCenter, delHoyo.green);
+  const muestra =
+    guardada ??
+    delHoyo.primera ??
+    (miaLoCompleta || (!delHoyo.green && conSalida(mia)) ? mia : null);
   // Con la salida del mapa aprobado, se pide el green desde ella, como siempre:
   // el green suelto no la tapa (revisión, 17 oct)
-  const greenSuelto = muestra || aprobadoConSalida ? null : (delHoyo.green ?? (mia && !conSalida(mia) ? mia.greenCenter : null));
+  const greenSuelto =
+    muestra || aprobadoConSalida
+      ? null
+      : (delHoyo.green ?? (mia && !conSalida(mia) ? mia.greenCenter : null));
   // Memorizado: la anotación se refresca cada 10 s, y un hoyo nuevo en cada
   // render rehacía las líneas del mapa
   const deLaMuestra = useMemo(
-    () => (muestra ? hoyoDeUnaMarca({ tee: muestra.tee, bends: muestra.bends, greenCenter: muestra.greenCenter }) : null),
+    () =>
+      muestra
+        ? hoyoDeUnaMarca({
+            tee: muestra.tee,
+            bends: muestra.bends,
+            greenCenter: muestra.greenCenter,
+          })
+        : null,
     [muestra],
   );
-  const deGreenSuelto = useMemo(() => (greenSuelto ? { playLine: [], green: { center: greenSuelto } } : null), [greenSuelto]);
-  const hoyo = completo ? aprobado : (deLaMuestra ?? deGreenSuelto ?? (aprobadoConSalida ? aprobado : null));
+  const deGreenSuelto = useMemo(
+    () =>
+      greenSuelto ? { playLine: [], green: { center: greenSuelto } } : null,
+    [greenSuelto],
+  );
+  const hoyo = completo
+    ? aprobado
+    : (deLaMuestra ?? deGreenSuelto ?? (aprobadoConSalida ? aprobado : null));
   // Sin línea, se pide: sin salida, salida y green (antes, si estás en la
   // salida); con salida, el green; con solo el green, la salida hasta él. Hace
   // falta la sesión y la barra: lo que se marca se envía con ellas
@@ -119,7 +173,9 @@ const MapaAbierto = ({ mapaDelHoyo, golfCourseId, numeroDeHoyo, par, metros = nu
   // Qué muestra se ve, no solo si hay una: si llega otra (la de mi barra tras la
   // de otra), el mapa se rehace con ella mientras el jugador no haya empezado
   const deCualMuestra = muestra
-    ? [muestra.tee, ...muestra.bends, muestra.greenCenter].map((p) => `${p.lat},${p.lon}`).join(';')
+    ? [muestra.tee, ...muestra.bends, muestra.greenCenter]
+        .map((p) => `${p.lat},${p.lon}`)
+        .join(';')
     : greenSuelto
       ? `green:${greenSuelto.lat},${greenSuelto.lon}`
       : '';
@@ -137,7 +193,11 @@ const MapaAbierto = ({ mapaDelHoyo, golfCourseId, numeroDeHoyo, par, metros = nu
   const visto = congelado ?? ahora;
 
   return (
-    <SiNoCarga onCerrar={cerrar} texto={t('mapa.noCarga')} textoRecargando={t('mapa.actualizando')}>
+    <SiNoCarga
+      onCerrar={cerrar}
+      texto={t('mapa.noCarga')}
+      textoRecargando={t('mapa.actualizando')}
+    >
       <Suspense
         fallback={
           <SalidaDelMapa onCerrar={cerrar}>
@@ -162,7 +222,9 @@ const MapaAbierto = ({ mapaDelHoyo, golfCourseId, numeroDeHoyo, par, metros = nu
           recoge={delHoyo.recoge && !guardada}
           // Mi propia línea (de este móvil) no se mueve a mis metros: ya es mía
           colocarSalida={!(muestra && muestra === mia)}
-          onMuestra={puedeEnviar ? (datos) => enviar(numeroDeHoyo, datos) : null}
+          onMuestra={
+            puedeEnviar ? (datos) => enviar(numeroDeHoyo, datos) : null
+          }
           onEmpezar={() => setCongelado((c) => c ?? ahora)}
           onReporte={reportar ? (datos) => reportar(numeroDeHoyo, datos) : null}
         />
@@ -175,6 +237,7 @@ const MapaAbierto = ({ mapaDelHoyo, golfCourseId, numeroDeHoyo, par, metros = nu
  * El mapa del hoyo cuando está abierto (BE #532), con los datos de ese hoyo
  * sacados del mapa del campo; sin mapa del campo, el hoyo va como sin mapa.
  */
-const VentanaDelMapa = (props) => (props.mapaDelHoyo.abierto ? <MapaAbierto {...props} /> : null);
+const VentanaDelMapa = (props) =>
+  props.mapaDelHoyo.abierto ? <MapaAbierto {...props} /> : null;
 
 export default VentanaDelMapa;

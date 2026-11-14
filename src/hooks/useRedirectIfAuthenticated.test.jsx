@@ -15,7 +15,11 @@ import { useRedirectIfAuthenticated } from './useRedirectIfAuthenticated';
 const navigate = vi.fn();
 let locationState = null;
 
-import { noAvisesDeCierres, seCierraLaSesionAPeticion, vuelvenLosAvisosDeCierre } from '../utils/avisoDeCierreForzado';
+import {
+  noAvisesDeCierres,
+  seCierraLaSesionAPeticion,
+  vuelvenLosAvisosDeCierre,
+} from '../utils/avisoDeCierreForzado';
 vi.mock('react-router', () => ({
   useNavigate: () => navigate,
   useLocation: () => ({ state: locationState }),
@@ -29,8 +33,11 @@ vi.mock('./useAuthContext', () => ({
   useAuthContext: () => ({ user: storedUser, setUser, clearAuth }),
 }));
 
-vi.mock('../utils/avisoDeVueltaALaAnotacion', () => ({ avisaDeLaVueltaALaAnotacion: vi.fn() }));
-const { avisaDeLaVueltaALaAnotacion } = await import('../utils/avisoDeVueltaALaAnotacion');
+vi.mock('../utils/avisoDeVueltaALaAnotacion', () => ({
+  avisaDeLaVueltaALaAnotacion: vi.fn(),
+}));
+const { avisaDeLaVueltaALaAnotacion } =
+  await import('../utils/avisoDeVueltaALaAnotacion');
 
 vi.mock('../infrastructure/http/tokenRefreshInterceptor', () => ({
   refrescoCompartido: vi.fn(),
@@ -45,10 +52,13 @@ vi.mock('../infrastructure/http/deviceRevocationLogout', () => ({
   olvidaLoGuardadoDeLaCuenta: vi.fn(),
 }));
 
-const { refrescoCompartido } = await import('../infrastructure/http/tokenRefreshInterceptor');
-const { isDeviceRevoked, handleDeviceRevocationLogout, olvidaLoGuardadoDeLaCuenta } = await import(
-  '../infrastructure/http/deviceRevocationLogout'
-);
+const { refrescoCompartido } =
+  await import('../infrastructure/http/tokenRefreshInterceptor');
+const {
+  isDeviceRevoked,
+  handleDeviceRevocationLogout,
+  olvidaLoGuardadoDeLaCuenta,
+} = await import('../infrastructure/http/deviceRevocationLogout');
 
 /** Forma que devuelve el backend: snake_case, la que espera la entidad User */
 const BACKEND_USER = {
@@ -121,7 +131,9 @@ describe('useRedirectIfAuthenticated', () => {
       // La portada lo usa así en el navegador: ahí no debe rebotar al panel, y
       // tampoco gastar una petición autenticada en cada visita anónima a la
       // página pública más visitada.
-      const { result } = renderHook(() => useRedirectIfAuthenticated({ enabled: false }));
+      const { result } = renderHook(() =>
+        useRedirectIfAuthenticated({ enabled: false }),
+      );
 
       expect(result.current).toBe(false);
       expect(globalThis.fetch).not.toHaveBeenCalled();
@@ -138,10 +150,20 @@ describe('useRedirectIfAuthenticated', () => {
       // Sin esto, `ProtectedRoute` pintaba su espera gris a pantalla completa en
       // cada arranque con sesion y abria una SEGUNDA consulta, justo despues de
       // que esta acabara de confirmarla (FE #489)
-      const { reiniciaLaSesionCompartida, loQueHaySobreLaSesion } = await import('../services/sesionCompartida');
+      const { reiniciaLaSesionCompartida, loQueHaySobreLaSesion } =
+        await import('../services/sesionCompartida');
       reiniciaLaSesionCompartida();
-      const delBackend = { id: 'u1', email: 'a@b.c', first_name: 'Agustin', last_name: 'Estevez' };
-      globalThis.fetch.mockResolvedValue({ ok: true, status: 200, json: async () => delBackend });
+      const delBackend = {
+        id: 'u1',
+        email: 'a@b.c',
+        first_name: 'Agustin',
+        last_name: 'Estevez',
+      };
+      globalThis.fetch.mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: async () => delBackend,
+      });
 
       renderHook(() => useRedirectIfAuthenticated());
 
@@ -170,7 +192,9 @@ describe('useRedirectIfAuthenticated', () => {
         renderHook(() => useRedirectIfAuthenticated({ entrarSinRed: true }));
 
         await waitFor(() =>
-          expect(navigate).toHaveBeenCalledWith('/dashboard', { replace: true })
+          expect(navigate).toHaveBeenCalledWith('/dashboard', {
+            replace: true,
+          }),
         );
       });
 
@@ -179,7 +203,9 @@ describe('useRedirectIfAuthenticated', () => {
         // cuya sesión ya no vale
         globalThis.fetch.mockResolvedValue(errorResponse(401));
 
-        const { result } = renderHook(() => useRedirectIfAuthenticated({ entrarSinRed: true }));
+        const { result } = renderHook(() =>
+          useRedirectIfAuthenticated({ entrarSinRed: true }),
+        );
 
         await waitFor(() => expect(result.current).toBe(false));
         expect(navigate).not.toHaveBeenCalled();
@@ -222,50 +248,72 @@ describe('useRedirectIfAuthenticated', () => {
     });
 
     it.each([
-      ['sin red', () => globalThis.fetch.mockRejectedValue(new TypeError('Failed to fetch'))],
-    ])('C5: entrar %s, sin sesión confirmada, no acaba el silencio', async (_caso, prepara) => {
-      storedUser = { id: 'u1' };
-      noAvisesDeCierres();
-      prepara();
+      [
+        'sin red',
+        () =>
+          globalThis.fetch.mockRejectedValue(new TypeError('Failed to fetch')),
+      ],
+    ])(
+      'C5: entrar %s, sin sesión confirmada, no acaba el silencio',
+      async (_caso, prepara) => {
+        storedUser = { id: 'u1' };
+        noAvisesDeCierres();
+        prepara();
 
-      renderHook(() => useRedirectIfAuthenticated({ entrarSinRed: true }));
+        renderHook(() => useRedirectIfAuthenticated({ entrarSinRed: true }));
 
-      await waitFor(() => expect(navigate).toHaveBeenCalled());
-      expect(seCierraLaSesionAPeticion()).toBe(true);
-      vuelvenLosAvisosDeCierre();
-    });
+        await waitFor(() => expect(navigate).toHaveBeenCalled());
+        expect(seCierraLaSesionAPeticion()).toBe(true);
+        vuelvenLosAvisosDeCierre();
+      },
+    );
 
     it.each([
-      ['la misma cuenta vuelve a la página', BACKEND_USER.id, '/competitions/7'],
+      [
+        'la misma cuenta vuelve a la página',
+        BACKEND_USER.id,
+        '/competitions/7',
+      ],
       ['otra cuenta va al panel', 'otra-cuenta', '/dashboard'],
-    ])('3b: sesión confirmada y página guardada por una cuenta: %s', async (_caso, deQuien, destino) => {
-      sessionStorage.setItem('vuelta_tras_entrar', '/competitions/7');
-      sessionStorage.setItem('vuelta_tras_entrar_cuenta', deQuien);
-      globalThis.fetch.mockResolvedValue(okResponse(BACKEND_USER));
+    ])(
+      '3b: sesión confirmada y página guardada por una cuenta: %s',
+      async (_caso, deQuien, destino) => {
+        sessionStorage.setItem('vuelta_tras_entrar', '/competitions/7');
+        sessionStorage.setItem('vuelta_tras_entrar_cuenta', deQuien);
+        globalThis.fetch.mockResolvedValue(okResponse(BACKEND_USER));
 
-      renderHook(() => useRedirectIfAuthenticated());
+        renderHook(() => useRedirectIfAuthenticated());
 
-      await waitFor(() => expect(navigate).toHaveBeenCalledWith(destino, { replace: true }));
-      sessionStorage.clear();
-    });
+        await waitFor(() =>
+          expect(navigate).toHaveBeenCalledWith(destino, { replace: true }),
+        );
+        sessionStorage.clear();
+      },
+    );
 
     it.each([
       ['la misma cuenta guardada vuelve a la página', 'u-1', '/competitions/7'],
       ['otra cuenta guardada va al panel', 'u-2', '/dashboard'],
-    ])('3b: sin red, con la sesión guardada: %s', async (_caso, guardada, destino) => {
-      storedUser = { id: guardada, firstName: 'Ana' };
-      sessionStorage.setItem('vuelta_tras_entrar', '/competitions/7');
-      sessionStorage.setItem('vuelta_tras_entrar_cuenta', 'u-1');
-      globalThis.fetch.mockRejectedValue(new TypeError('Failed to fetch'));
+    ])(
+      '3b: sin red, con la sesión guardada: %s',
+      async (_caso, guardada, destino) => {
+        storedUser = { id: guardada, firstName: 'Ana' };
+        sessionStorage.setItem('vuelta_tras_entrar', '/competitions/7');
+        sessionStorage.setItem('vuelta_tras_entrar_cuenta', 'u-1');
+        globalThis.fetch.mockRejectedValue(new TypeError('Failed to fetch'));
 
-      renderHook(() => useRedirectIfAuthenticated({ entrarSinRed: true }));
+        renderHook(() => useRedirectIfAuthenticated({ entrarSinRed: true }));
 
-      await waitFor(() => expect(navigate).toHaveBeenCalledWith(destino, { replace: true }));
-      sessionStorage.clear();
-    });
+        await waitFor(() =>
+          expect(navigate).toHaveBeenCalledWith(destino, { replace: true }),
+        );
+        sessionStorage.clear();
+      },
+    );
 
     describe('la anotación en curso al arrancar la app instalada (11 nov 2026)', () => {
-      const ANOTACION = '/quick-matches/0b5a6c1e-2d3f-4a5b-8c7d-9e0f1a2b3c4d/scoring';
+      const ANOTACION =
+        '/quick-matches/0b5a6c1e-2d3f-4a5b-8c7d-9e0f1a2b3c4d/scoring';
       const memoria = () => {
         const datos = new Map();
         return {
@@ -277,8 +325,16 @@ describe('useRedirectIfAuthenticated', () => {
       };
       beforeEach(async () => {
         vi.stubGlobal('localStorage', memoria());
-        const { guardaLaAnotacionEnCurso } = await import('../utils/anotacionEnCurso');
-        guardaLaAnotacionEnCurso({ cuenta: BACKEND_USER.id, pathname: ANOTACION, search: '', pestana: 'input', hoyo: 12, mapa: false });
+        const { guardaLaAnotacionEnCurso } =
+          await import('../utils/anotacionEnCurso');
+        guardaLaAnotacionEnCurso({
+          cuenta: BACKEND_USER.id,
+          pathname: ANOTACION,
+          search: '',
+          pestana: 'input',
+          hoyo: 12,
+          mapa: false,
+        });
       });
       afterEach(() => vi.unstubAllGlobals());
 
@@ -288,7 +344,9 @@ describe('useRedirectIfAuthenticated', () => {
 
         renderHook(() => useRedirectIfAuthenticated({ entrarSinRed: true }));
 
-        await waitFor(() => expect(navigate).toHaveBeenCalledWith(ANOTACION, { replace: true }));
+        await waitFor(() =>
+          expect(navigate).toHaveBeenCalledWith(ANOTACION, { replace: true }),
+        );
       });
 
       it('D1: la vuelta al arrancar la app instalada se avisa a Sentry; el formulario de entrar, no', async () => {
@@ -297,7 +355,9 @@ describe('useRedirectIfAuthenticated', () => {
 
         renderHook(() => useRedirectIfAuthenticated({ entrarSinRed: true }));
 
-        await waitFor(() => expect(navigate).toHaveBeenCalledWith(ANOTACION, { replace: true }));
+        await waitFor(() =>
+          expect(navigate).toHaveBeenCalledWith(ANOTACION, { replace: true }),
+        );
         expect(avisaDeLaVueltaALaAnotacion).toHaveBeenCalledTimes(1);
       });
 
@@ -307,7 +367,9 @@ describe('useRedirectIfAuthenticated', () => {
 
         renderHook(() => useRedirectIfAuthenticated());
 
-        await waitFor(() => expect(navigate).toHaveBeenCalledWith(ANOTACION, { replace: true }));
+        await waitFor(() =>
+          expect(navigate).toHaveBeenCalledWith(ANOTACION, { replace: true }),
+        );
         expect(avisaDeLaVueltaALaAnotacion).not.toHaveBeenCalled();
       });
 
@@ -317,7 +379,9 @@ describe('useRedirectIfAuthenticated', () => {
 
         renderHook(() => useRedirectIfAuthenticated({ entrarSinRed: true }));
 
-        await waitFor(() => expect(navigate).toHaveBeenCalledWith(ANOTACION, { replace: true }));
+        await waitFor(() =>
+          expect(navigate).toHaveBeenCalledWith(ANOTACION, { replace: true }),
+        );
       });
 
       it('B3: con la sesión de otra cuenta, al panel', async () => {
@@ -326,7 +390,11 @@ describe('useRedirectIfAuthenticated', () => {
 
         renderHook(() => useRedirectIfAuthenticated({ entrarSinRed: true }));
 
-        await waitFor(() => expect(navigate).toHaveBeenCalledWith('/dashboard', { replace: true }));
+        await waitFor(() =>
+          expect(navigate).toHaveBeenCalledWith('/dashboard', {
+            replace: true,
+          }),
+        );
       });
     });
 
@@ -335,7 +403,9 @@ describe('useRedirectIfAuthenticated', () => {
 
       const { result } = renderHook(() => useRedirectIfAuthenticated());
 
-      await waitFor(() => expect(navigate).toHaveBeenCalledWith('/dashboard', { replace: true }));
+      await waitFor(() =>
+        expect(navigate).toHaveBeenCalledWith('/dashboard', { replace: true }),
+      );
       // Sigue oculto: la página se va y bajarlo enseñaría el formulario
       expect(result.current).toBe(true);
     });
@@ -359,7 +429,9 @@ describe('useRedirectIfAuthenticated', () => {
 
       renderHook(() => useRedirectIfAuthenticated());
 
-      await waitFor(() => expect(navigate).toHaveBeenCalledWith('/dashboard', { replace: true }));
+      await waitFor(() =>
+        expect(navigate).toHaveBeenCalledWith('/dashboard', { replace: true }),
+      );
       expect(refrescoCompartido).toHaveBeenCalledTimes(1);
       expect(globalThis.fetch).toHaveBeenCalledTimes(2);
     });
@@ -371,7 +443,9 @@ describe('useRedirectIfAuthenticated', () => {
       renderHook(() => useRedirectIfAuthenticated());
 
       await waitFor(() =>
-        expect(navigate).toHaveBeenCalledWith('/competitions/42', { replace: true })
+        expect(navigate).toHaveBeenCalledWith('/competitions/42', {
+          replace: true,
+        }),
       );
     });
 
@@ -381,7 +455,9 @@ describe('useRedirectIfAuthenticated', () => {
 
       renderHook(() => useRedirectIfAuthenticated());
 
-      await waitFor(() => expect(navigate).toHaveBeenCalledWith('/dashboard', { replace: true }));
+      await waitFor(() =>
+        expect(navigate).toHaveBeenCalledWith('/dashboard', { replace: true }),
+      );
     });
 
     it('no se queda en la propia pantalla de acceso', async () => {
@@ -392,7 +468,9 @@ describe('useRedirectIfAuthenticated', () => {
 
       renderHook(() => useRedirectIfAuthenticated());
 
-      await waitFor(() => expect(navigate).toHaveBeenCalledWith('/dashboard', { replace: true }));
+      await waitFor(() =>
+        expect(navigate).toHaveBeenCalledWith('/dashboard', { replace: true }),
+      );
     });
 
     describe('cuando la comprobación no sale bien', () => {
@@ -476,7 +554,10 @@ describe('useRedirectIfAuthenticated', () => {
         await waitFor(() => expect(result.current).toBe(false));
         expect(navigate).not.toHaveBeenCalled();
         expect(clearAuth).not.toHaveBeenCalled();
-        expect(console.warn).toHaveBeenCalledWith('[auth] no se pudo comprobar la sesión:', expect.any(Error));
+        expect(console.warn).toHaveBeenCalledWith(
+          '[auth] no se pudo comprobar la sesión:',
+          expect.any(Error),
+        );
       });
 
       it('E2: con entrarSinRed entra con la sesión guardada, como cuando no se pudo preguntar', async () => {
@@ -487,7 +568,11 @@ describe('useRedirectIfAuthenticated', () => {
 
         renderHook(() => useRedirectIfAuthenticated({ entrarSinRed: true }));
 
-        await waitFor(() => expect(navigate).toHaveBeenCalledWith('/dashboard', { replace: true }));
+        await waitFor(() =>
+          expect(navigate).toHaveBeenCalledWith('/dashboard', {
+            replace: true,
+          }),
+        );
         expect(clearAuth).not.toHaveBeenCalled();
       });
 
@@ -497,7 +582,9 @@ describe('useRedirectIfAuthenticated', () => {
           throw new Error('navigate roto');
         });
 
-        const { result } = renderHook(() => useRedirectIfAuthenticated({ entrarSinRed: true }));
+        const { result } = renderHook(() =>
+          useRedirectIfAuthenticated({ entrarSinRed: true }),
+        );
 
         await waitFor(() => expect(result.current).toBe(false));
         expect(navigate).toHaveBeenCalledTimes(2);
@@ -520,13 +607,19 @@ describe('useRedirectIfAuthenticated', () => {
         // El aviso de revocación se da aunque la página se haya ido; si lanza,
         // no hay formulario que enseñar ni a dónde llevar a nadie
         let contesta;
-        globalThis.fetch.mockReturnValue(new Promise((r) => { contesta = r; }));
+        globalThis.fetch.mockReturnValue(
+          new Promise((r) => {
+            contesta = r;
+          }),
+        );
         isDeviceRevoked.mockReturnValue(true);
         handleDeviceRevocationLogout.mockImplementationOnce(() => {
           throw new Error('aviso roto');
         });
 
-        const { unmount } = renderHook(() => useRedirectIfAuthenticated({ entrarSinRed: true }));
+        const { unmount } = renderHook(() =>
+          useRedirectIfAuthenticated({ entrarSinRed: true }),
+        );
         unmount();
         await act(async () => {
           contesta(errorResponse(401));
@@ -540,10 +633,16 @@ describe('useRedirectIfAuthenticated', () => {
     // Revisión del 21 oct: el 401 de /current-user es llano y la revocación la
     // dice el 401 del refresco
     it('avisa de la revocación también cuando la dice el refresco', async () => {
-      const detalle = { detail: 'Dispositivo revocado. Por favor, inicia sesión nuevamente.' };
+      const detalle = {
+        detail: 'Dispositivo revocado. Por favor, inicia sesión nuevamente.',
+      };
       globalThis.fetch.mockResolvedValue(errorResponse(401));
-      isDeviceRevoked.mockImplementation((_respuesta, datos) => datos === detalle);
-      refrescoCompartido.mockRejectedValue(Object.assign(rejectedRefresh(), { errorData: detalle }));
+      isDeviceRevoked.mockImplementation(
+        (_respuesta, datos) => datos === detalle,
+      );
+      refrescoCompartido.mockRejectedValue(
+        Object.assign(rejectedRefresh(), { errorData: detalle }),
+      );
 
       const { result } = renderHook(() => useRedirectIfAuthenticated());
 
@@ -552,7 +651,7 @@ describe('useRedirectIfAuthenticated', () => {
           metodo: 'GET',
           endpoint: '/api/v1/auth/current-user',
           estado: 401,
-        })
+        }),
       );
       expect(refrescoCompartido).toHaveBeenCalledTimes(1);
       expect(result.current).toBe(false);
@@ -564,7 +663,9 @@ describe('useRedirectIfAuthenticated', () => {
 
       const { result } = renderHook(() => useRedirectIfAuthenticated());
 
-      await waitFor(() => expect(handleDeviceRevocationLogout).toHaveBeenCalledTimes(1));
+      await waitFor(() =>
+        expect(handleDeviceRevocationLogout).toHaveBeenCalledTimes(1),
+      );
       expect(refrescoCompartido).not.toHaveBeenCalled();
       expect(result.current).toBe(false);
     });
@@ -593,7 +694,10 @@ describe('useRedirectIfAuthenticated · pantalla de entrar sin sesión (fase 3)'
 
   it('L1b: si otra pestaña acaba de entrar (hay usuario en el almacenamiento), no limpia', () => {
     // El contexto es una foto de cuando cargó esta pestaña; el almacenamiento es lo de ahora
-    globalThis.localStorage.setItem('user', JSON.stringify({ id: 'otra-pestana' }));
+    globalThis.localStorage.setItem(
+      'user',
+      JSON.stringify({ id: 'otra-pestana' }),
+    );
 
     renderHook(() => useRedirectIfAuthenticated());
 

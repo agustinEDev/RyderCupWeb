@@ -29,12 +29,18 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 const efectos = vi.hoisted(() => []);
 vi.mock('../../utils/toast', () => ({
-  default: { error: vi.fn((texto, opciones) => efectos.push(['toast', texto, opciones])) },
+  default: {
+    error: vi.fn((texto, opciones) => efectos.push(['toast', texto, opciones])),
+  },
 }));
-vi.mock('i18next', () => ({ default: { t: vi.fn((clave, { ns } = {}) => `${ns}:${clave}`) } }));
+vi.mock('i18next', () => ({
+  default: { t: vi.fn((clave, { ns } = {}) => `${ns}:${clave}`) },
+}));
 vi.mock('../../utils/sentryHelpers', () => ({
   clearUserContext: vi.fn(() => efectos.push(['sentry:olvidaUsuario'])),
-  captureError: vi.fn((titulo, { tags }) => efectos.push(['sentry:aviso', tags['logout.reason']])),
+  captureError: vi.fn((titulo, { tags }) =>
+    efectos.push(['sentry:aviso', tags['logout.reason']]),
+  ),
 }));
 
 const cargaUnaPaginaNueva = async ({ cuenta }) => {
@@ -72,7 +78,13 @@ describe('cierre de sesión forzado: lo que pasa en cada caso', () => {
     vi.useFakeTimers();
     globalThis.sessionStorage.clear();
     delete globalThis.window.location;
-    globalThis.window.location = { href: '', pathname: '/competitions/7', search: '?tab=2', hash: '', origin: 'http://localhost' };
+    globalThis.window.location = {
+      href: '',
+      pathname: '/competitions/7',
+      search: '?tab=2',
+      hash: '',
+      origin: 'http://localhost',
+    };
   });
 
   afterEach(() => {
@@ -83,11 +95,46 @@ describe('cierre de sesión forzado: lo que pasa en cada caso', () => {
   const AVISO = { duration: 8000, delCierre: true };
 
   it.each([
-    ['dispositivo revocado, con cuenta', 'revocado', true, null, 'device_revoked', ['auth:errors.deviceRevoked', '🔒']],
-    ['dispositivo revocado, sin cuenta', 'revocado', false, null, 'device_revoked', ['auth:errors.deviceRevoked', '🔒']],
-    ['sesión caducada', 'caducada', true, { error_code: 'SESSION_ENDED' }, 'session_expired', ['auth:errors.sessionExpired', '⏱️']],
-    ['sesión caducada, sin cuenta', 'caducada', false, { error_code: 'SESSION_ENDED' }, 'session_expired', null],
-    ['refresco rechazado', 'caducada', true, { error_code: 'REFRESH_TOKEN_REVOKED' }, 'refresh_rejected', ['auth:errors.sessionEnded', 'ℹ️']],
+    [
+      'dispositivo revocado, con cuenta',
+      'revocado',
+      true,
+      null,
+      'device_revoked',
+      ['auth:errors.deviceRevoked', '🔒'],
+    ],
+    [
+      'dispositivo revocado, sin cuenta',
+      'revocado',
+      false,
+      null,
+      'device_revoked',
+      ['auth:errors.deviceRevoked', '🔒'],
+    ],
+    [
+      'sesión caducada',
+      'caducada',
+      true,
+      { error_code: 'SESSION_ENDED' },
+      'session_expired',
+      ['auth:errors.sessionExpired', '⏱️'],
+    ],
+    [
+      'sesión caducada, sin cuenta',
+      'caducada',
+      false,
+      { error_code: 'SESSION_ENDED' },
+      'session_expired',
+      null,
+    ],
+    [
+      'refresco rechazado',
+      'caducada',
+      true,
+      { error_code: 'REFRESH_TOKEN_REVOKED' },
+      'refresh_rejected',
+      ['auth:errors.sessionEnded', 'ℹ️'],
+    ],
   ])('%s', async (_caso, tipo, cuenta, datos, motivo, aviso) => {
     almacenConMarca();
     const cierre = await cargaUnaPaginaNueva({ cuenta });
@@ -107,12 +154,17 @@ describe('cierre de sesión forzado: lo que pasa en cada caso', () => {
     expect(efectos).toEqual(esperado);
 
     // /login enseña el MISMO aviso, una vez
-    const { tomaElAvisoDelCierre, muestraElAvisoDelCierre } = await import('../../utils/avisoTrasElCierre');
+    const { tomaElAvisoDelCierre, muestraElAvisoDelCierre } =
+      await import('../../utils/avisoTrasElCierre');
     const i18next = (await import('i18next')).default;
     const guardado = tomaElAvisoDelCierre();
     if (aviso) {
       muestraElAvisoDelCierre(guardado, i18next.t);
-      expect(efectos.at(-1)).toEqual(['toast', aviso[0], { ...AVISO, icon: aviso[1] }]);
+      expect(efectos.at(-1)).toEqual([
+        'toast',
+        aviso[0],
+        { ...AVISO, icon: aviso[1] },
+      ]);
     } else {
       expect(guardado).toBeNull();
     }
@@ -120,7 +172,9 @@ describe('cierre de sesión forzado: lo que pasa en cada caso', () => {
 
     // El aviso se lee en /login: se sale al momento, guardando la página
     expect(globalThis.window.location.href).toBe('/login');
-    expect(globalThis.sessionStorage.getItem('vuelta_tras_entrar')).toBe('/competitions/7?tab=2');
+    expect(globalThis.sessionStorage.getItem('vuelta_tras_entrar')).toBe(
+      '/competitions/7?tab=2',
+    );
   });
 
   it('revocó su propio dispositivo: limpia, sin aviso ni página guardada, y sale sin esperar', async () => {
@@ -130,10 +184,16 @@ describe('cierre de sesión forzado: lo que pasa en cada caso', () => {
 
     cierre.handleDeviceRevocationLogout({ detail: 'Dispositivo revocado' });
 
-    expect(efectos).toEqual([['borra', 'user'], ['borra', 'access_token'], ['limpieza'], ['sentry:olvidaUsuario']]);
+    expect(efectos).toEqual([
+      ['borra', 'user'],
+      ['borra', 'access_token'],
+      ['limpieza'],
+      ['sentry:olvidaUsuario'],
+    ]);
     expect(globalThis.window.location.href).toBe('/login');
     expect(globalThis.sessionStorage.getItem('vuelta_tras_entrar')).toBeNull();
-    const { tomaElAvisoDelCierre } = await import('../../utils/avisoTrasElCierre');
+    const { tomaElAvisoDelCierre } =
+      await import('../../utils/avisoTrasElCierre');
     expect(tomaElAvisoDelCierre()).toBeNull();
   });
 
@@ -141,7 +201,10 @@ describe('cierre de sesión forzado: lo que pasa en cada caso', () => {
     almacenConMarca();
     const cierre = await cargaUnaPaginaNueva({ cuenta: true });
 
-    cierre.handleCsrfLogout({ detail: 'x' }, { metodo: 'POST', endpoint: '/api/v1/x', estado: 403 });
+    cierre.handleCsrfLogout(
+      { detail: 'x' },
+      { metodo: 'POST', endpoint: '/api/v1/x', estado: 403 },
+    );
 
     expect(efectos).toEqual([
       ['sentry:aviso', 'csrf_unrecovered'],
@@ -151,8 +214,11 @@ describe('cierre de sesión forzado: lo que pasa en cada caso', () => {
       ['sentry:olvidaUsuario'],
     ]);
     expect(globalThis.window.location.href).toBe('/login');
-    expect(globalThis.sessionStorage.getItem('vuelta_tras_entrar')).toBe('/competitions/7?tab=2');
-    const { tomaElAvisoDelCierre } = await import('../../utils/avisoTrasElCierre');
+    expect(globalThis.sessionStorage.getItem('vuelta_tras_entrar')).toBe(
+      '/competitions/7?tab=2',
+    );
+    const { tomaElAvisoDelCierre } =
+      await import('../../utils/avisoTrasElCierre');
     expect(tomaElAvisoDelCierre()).toBeNull();
   });
 
@@ -173,7 +239,11 @@ describe('cierre de sesión forzado: lo que pasa en cada caso', () => {
 
     cierre.handleDeviceRevocationLogout(null);
 
-    expect(efectos.at(-1)).toEqual(['toast', 'auth:errors.deviceRevoked', { ...AVISO, icon: '🔒' }]);
+    expect(efectos.at(-1)).toEqual([
+      'toast',
+      'auth:errors.deviceRevoked',
+      { ...AVISO, icon: '🔒' },
+    ]);
     // Aquí sí se espera 500 ms: el aviso sale en esta página y hay que leerlo
     vi.advanceTimersByTime(499);
     expect(globalThis.window.location.href).toBe('');

@@ -4,7 +4,9 @@ const MOBILE_QUERY = '(max-width: 767px)';
 export const REDUCED_MOTION_QUERY = '(prefers-reduced-motion: reduce)';
 
 function matches(query) {
-  return typeof window.matchMedia === 'function' && window.matchMedia(query).matches;
+  return (
+    typeof window.matchMedia === 'function' && window.matchMedia(query).matches
+  );
 }
 
 function useMediaQuery(query) {

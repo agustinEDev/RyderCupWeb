@@ -25,7 +25,11 @@ import { getApiBaseUrl } from './urlDeLaApi';
  */
 export class RutaDeLaApiNoValida extends Error {
   constructor() {
-    super(hayInterfazDelTransporte() ? interfaz().traduce('common:errors.generic') : 'Ruta de la API no válida');
+    super(
+      hayInterfazDelTransporte()
+        ? interfaz().traduce('common:errors.generic')
+        : 'Ruta de la API no válida',
+    );
     this.name = 'RutaDeLaApiNoValida';
   }
 }
@@ -34,7 +38,8 @@ export class RutaDeLaApiNoValida extends Error {
 // ya no es un punto para el navegador
 const PUNTOS_LITERALES = /^\.{1,2}$/;
 // Caracteres de control (U+0000-U+001F y U+007F): el navegador borra algunos de la ruta
-const tieneControl = (texto) => [...texto].some((c) => c.charCodeAt(0) < 0x20 || c.charCodeAt(0) === 0x7f);
+const tieneControl = (texto) =>
+  [...texto].some((c) => c.charCodeAt(0) < 0x20 || c.charCodeAt(0) === 0x7f);
 
 // Las barras, aunque vayan codificadas: el servidor decodifica `%2F` antes de enrutar
 const BARRAS = /[/\\]/;
@@ -92,7 +97,12 @@ export const rechazaLaRuta = (donde) => {
  * @returns {boolean}
  */
 export const esRutaDeLaApiSegura = (ruta) => {
-  if (typeof ruta !== 'string' || !ruta.startsWith('/api/') || ruta.includes('#')) return false;
+  if (
+    typeof ruta !== 'string' ||
+    !ruta.startsWith('/api/') ||
+    ruta.includes('#')
+  )
+    return false;
   // Ningún carácter de control, tampoco en la búsqueda: el navegador borra tabuladores y
   // saltos de línea antes de resolver la ruta («.\t.» acabaría siendo «..»)
   if (tieneControl(ruta)) return false;
@@ -113,4 +123,5 @@ export const esRutaDeLaApiSegura = (ruta) => {
  * @param {unknown} ruta
  * @returns {string|null}
  */
-export const urlDeImagenDeLaApi = (ruta) => (esRutaDeLaApiSegura(ruta) ? `${getApiBaseUrl()}${ruta}` : null);
+export const urlDeImagenDeLaApi = (ruta) =>
+  esRutaDeLaApiSegura(ruta) ? `${getApiBaseUrl()}${ruta}` : null;

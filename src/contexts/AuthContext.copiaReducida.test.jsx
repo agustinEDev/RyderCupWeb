@@ -7,9 +7,16 @@ import { renderHook, act } from '@testing-library/react';
  * reescribe al arrancar. Sus lectores (este contexto, `vueltaTrasEntrar` y el
  * interceptor) solo miran `id` o si hay algo.
  */
-vi.mock('../services/loUltimoConocido', () => ({ olvidaLoDeEstaCuenta: vi.fn(), abreLoGuardadoParaLaCuenta: vi.fn() }));
-vi.mock('../services/refrescoDeHandicapApuntes', () => ({ olvidaElRefrescoDeHandicap: vi.fn() }));
-vi.mock('../services/novedadesDeActividad', () => ({ olvidaLasNovedades: vi.fn() }));
+vi.mock('../services/loUltimoConocido', () => ({
+  olvidaLoDeEstaCuenta: vi.fn(),
+  abreLoGuardadoParaLaCuenta: vi.fn(),
+}));
+vi.mock('../services/refrescoDeHandicapApuntes', () => ({
+  olvidaElRefrescoDeHandicap: vi.fn(),
+}));
+vi.mock('../services/novedadesDeActividad', () => ({
+  olvidaLasNovedades: vi.fn(),
+}));
 
 const { AuthProvider } = await import('./AuthContext');
 const { useAuthContext } = await import('../hooks/useAuthContext');
@@ -42,19 +49,31 @@ const almacenDePrueba = () => {
   };
 };
 
-const SECRETOS = ['ana@example.com', 'nueva@example.com', 'FEMALE', '12.4', '"ES"'];
+const SECRETOS = [
+  'ana@example.com',
+  'nueva@example.com',
+  'FEMALE',
+  '12.4',
+  '"ES"',
+];
 
 describe('AuthContext · copia reducida en localStorage.user (fase 3)', () => {
   beforeEach(() => globalThis.localStorage.clear());
 
   it('al entrar guarda solo lo permitido', () => {
-    const { result } = renderHook(() => useAuthContext(), { wrapper: AuthProvider });
+    const { result } = renderHook(() => useAuthContext(), {
+      wrapper: AuthProvider,
+    });
 
     act(() => result.current.setUser(new User(DTO)));
 
     const guardado = globalThis.localStorage.getItem('user');
     for (const secreto of SECRETOS) expect(guardado).not.toContain(secreto);
-    expect(JSON.parse(guardado)).toMatchObject({ id: 'u-1', firstName: 'Ana', emailVerified: true });
+    expect(JSON.parse(guardado)).toMatchObject({
+      id: 'u-1',
+      firstName: 'Ana',
+      emailVerified: true,
+    });
     // En memoria, completo
     expect(result.current.user.email.getValue()).toBe('ana@example.com');
   });
@@ -64,7 +83,9 @@ describe('AuthContext · copia reducida en localStorage.user (fase 3)', () => {
     almacen.pon('user', JSON.stringify(new User(DTO)));
     vi.stubGlobal('localStorage', almacen);
 
-    const { result } = renderHook(() => useAuthContext(), { wrapper: AuthProvider });
+    const { result } = renderHook(() => useAuthContext(), {
+      wrapper: AuthProvider,
+    });
 
     const guardado = globalThis.localStorage.getItem('user');
     for (const secreto of SECRETOS) expect(guardado).not.toContain(secreto);
@@ -77,7 +98,9 @@ describe('AuthContext · reescribir la copia vieja falla (revisión de la fase 3
   afterEach(() => vi.unstubAllGlobals());
 
   it('con el almacenamiento lleno, se queda con la copia reducida en memoria', () => {
-    const consola = vi.spyOn(globalThis.console, 'error').mockImplementation(() => {});
+    const consola = vi
+      .spyOn(globalThis.console, 'error')
+      .mockImplementation(() => {});
     const vieja = JSON.stringify(new User(DTO));
     vi.stubGlobal('localStorage', {
       getItem: (clave) => (clave === 'user' ? vieja : null),
@@ -87,10 +110,14 @@ describe('AuthContext · reescribir la copia vieja falla (revisión de la fase 3
       removeItem: vi.fn(),
     });
 
-    const { result } = renderHook(() => useAuthContext(), { wrapper: AuthProvider });
+    const { result } = renderHook(() => useAuthContext(), {
+      wrapper: AuthProvider,
+    });
 
     expect(result.current.user).toMatchObject({ id: 'u-1', firstName: 'Ana' });
-    expect(JSON.stringify(result.current.user)).not.toContain('ana@example.com');
+    expect(JSON.stringify(result.current.user)).not.toContain(
+      'ana@example.com',
+    );
     consola.mockRestore();
   });
 });
@@ -99,7 +126,9 @@ describe('AuthContext · guardar al entrar falla (CodeRabbit, #1092)', () => {
   afterEach(() => vi.unstubAllGlobals());
 
   it('con el almacenamiento lleno, entrar no falla y el usuario queda en memoria', () => {
-    const consola = vi.spyOn(globalThis.console, 'error').mockImplementation(() => {});
+    const consola = vi
+      .spyOn(globalThis.console, 'error')
+      .mockImplementation(() => {});
     vi.stubGlobal('localStorage', {
       getItem: () => null,
       setItem: () => {
@@ -107,9 +136,13 @@ describe('AuthContext · guardar al entrar falla (CodeRabbit, #1092)', () => {
       },
       removeItem: vi.fn(),
     });
-    const { result } = renderHook(() => useAuthContext(), { wrapper: AuthProvider });
+    const { result } = renderHook(() => useAuthContext(), {
+      wrapper: AuthProvider,
+    });
 
-    expect(() => act(() => result.current.setUser(new User(DTO)))).not.toThrow();
+    expect(() =>
+      act(() => result.current.setUser(new User(DTO))),
+    ).not.toThrow();
 
     expect(result.current.user).toMatchObject({ id: 'u-1' });
     consola.mockRestore();

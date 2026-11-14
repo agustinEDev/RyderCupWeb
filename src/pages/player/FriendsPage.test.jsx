@@ -1,4 +1,10 @@
-import { render, screen, waitFor, fireEvent, within } from '@testing-library/react';
+import {
+  render,
+  screen,
+  waitFor,
+  fireEvent,
+  within,
+} from '@testing-library/react';
 import { MemoryRouter } from 'react-router';
 import { vi, describe, it, expect, beforeEach } from 'vitest';
 import FriendsPage from './FriendsPage';
@@ -21,7 +27,9 @@ vi.mock('../../components/layout/HeaderAuth', () => ({
 }));
 
 vi.mock('../../components/friend/FriendCard', () => ({
-  default: ({ friendship }) => <div data-testid="friend-card">{friendship.id}</div>,
+  default: ({ friendship }) => (
+    <div data-testid="friend-card">{friendship.id}</div>
+  ),
 }));
 
 const listFriends = vi.fn();
@@ -29,7 +37,9 @@ const listPending = vi.fn();
 
 vi.mock('../../composition', () => ({
   listFriendsUseCase: { execute: (...args) => listFriends(...args) },
-  listPendingFriendRequestsUseCase: { execute: (...args) => listPending(...args) },
+  listPendingFriendRequestsUseCase: {
+    execute: (...args) => listPending(...args),
+  },
   respondFriendRequestUseCase: { execute: vi.fn() },
   removeFriendUseCase: { execute: vi.fn() },
   blockUserUseCase: { execute: vi.fn() },
@@ -41,7 +51,7 @@ const renderFriends = () =>
   render(
     <MemoryRouter>
       <FriendsPage />
-    </MemoryRouter>
+    </MemoryRouter>,
   );
 
 describe('FriendsPage', () => {
@@ -81,8 +91,12 @@ describe('FriendsPage', () => {
        */
       renderFriends();
 
-      await waitFor(() => expect(screen.getByTestId('friends-back-to-feed')).toBeInTheDocument());
-      expect(screen.getByTestId('friends-back-to-feed')).toHaveTextContent('backToFeed');
+      await waitFor(() =>
+        expect(screen.getByTestId('friends-back-to-feed')).toBeInTheDocument(),
+      );
+      expect(screen.getByTestId('friends-back-to-feed')).toHaveTextContent(
+        'backToFeed',
+      );
     });
 
     it('tiene rotulo traducido en los dos idiomas', () => {
@@ -100,7 +114,11 @@ describe('FriendsPage', () => {
   describe('las pestañas (FE #658)', () => {
     it('son pestañas de verdad: barra con nombre, contador dentro y la lista como su panel', async () => {
       listPending.mockImplementation((_id, tipo) =>
-        Promise.resolve(tipo === 'received' ? { friendships: [{ id: 'f-1' }], totalCount: 1 } : { friendships: [], totalCount: 0 })
+        Promise.resolve(
+          tipo === 'received'
+            ? { friendships: [{ id: 'f-1' }], totalCount: 1 }
+            : { friendships: [], totalCount: 0 },
+        ),
       );
       renderFriends();
 
@@ -114,19 +132,33 @@ describe('FriendsPage', () => {
       expect(within(panel).getByText('empty.friends')).toBeInTheDocument();
       // Vacía no hay nada enfocable dentro: el panel es la parada
       expect(panel).toHaveAttribute('tabindex', '0');
-      [amigos, recibidas, enviadas].forEach((tab) => expect(tab).toHaveAttribute('aria-controls', panel.id));
+      [amigos, recibidas, enviadas].forEach((tab) =>
+        expect(tab).toHaveAttribute('aria-controls', panel.id),
+      );
 
       fireEvent.keyDown(amigos, { key: 'ArrowRight' });
       expect(recibidas).toHaveAttribute('aria-selected', 'true');
       expect(recibidas).toHaveFocus();
-      expect(within(screen.getByRole('tabpanel', { name: 'tabs.received1' })).getByTestId('friend-card')).toHaveTextContent('f-1');
+      expect(
+        within(
+          screen.getByRole('tabpanel', { name: 'tabs.received1' }),
+        ).getByTestId('friend-card'),
+      ).toHaveTextContent('f-1');
       // Con tarjetas, sus botones ya son paradas: el panel no
-      expect(screen.getByRole('tabpanel', { name: 'tabs.received1' })).not.toHaveAttribute('tabindex');
+      expect(
+        screen.getByRole('tabpanel', { name: 'tabs.received1' }),
+      ).not.toHaveAttribute('tabindex');
 
       fireEvent.keyDown(recibidas, { key: 'End' });
       expect(enviadas).toHaveAttribute('aria-selected', 'true');
-      expect(within(screen.getByRole('tabpanel', { name: 'tabs.sent' })).getByText('empty.sent')).toBeInTheDocument();
-      expect(screen.getByRole('tabpanel', { name: 'tabs.sent' })).toHaveAttribute('tabindex', '0');
+      expect(
+        within(screen.getByRole('tabpanel', { name: 'tabs.sent' })).getByText(
+          'empty.sent',
+        ),
+      ).toBeInTheDocument();
+      expect(
+        screen.getByRole('tabpanel', { name: 'tabs.sent' }),
+      ).toHaveAttribute('tabindex', '0');
     });
   });
 });

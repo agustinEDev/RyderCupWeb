@@ -13,42 +13,52 @@ const Unauthorized = () => {
 
   const requestedPath = location.state?.from?.pathname;
   // Validate redirect target is a relative path to prevent Open Redirect (CWE-601)
-  const from = (requestedPath && requestedPath.startsWith('/') && !requestedPath.startsWith('//'))
-    ? requestedPath
-    : '/dashboard';
+  const from =
+    requestedPath &&
+    requestedPath.startsWith('/') &&
+    !requestedPath.startsWith('//')
+      ? requestedPath
+      : '/dashboard';
 
   // La pantalla menos el hueco de la barra inferior, si App la pinta: 100vh
   // sobraban 64 px en el móvil (QA del 21 oct 2026). En clase y no en el
   // estilo, que no sabe de `md:`
   return (
-    <div className={PANTALLA_MENOS_BARRA_INFERIOR} style={{
-      display: 'flex',
-      flexDirection: 'column',
-      alignItems: 'center',
-      justifyContent: 'center',
-      padding: '2rem',
-      fontFamily: 'system-ui, sans-serif',
-      backgroundColor: '#f9fafb',
-    }}>
-      <div style={{
-        maxWidth: '32rem',
-        textAlign: 'center',
-        backgroundColor: 'white',
-        padding: '3rem 2rem',
-        borderRadius: '0.5rem',
-        boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)',
-      }}>
+    <div
+      className={PANTALLA_MENOS_BARRA_INFERIOR}
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '2rem',
+        fontFamily: 'system-ui, sans-serif',
+        backgroundColor: '#f9fafb',
+      }}
+    >
+      <div
+        style={{
+          maxWidth: '32rem',
+          textAlign: 'center',
+          backgroundColor: 'white',
+          padding: '3rem 2rem',
+          borderRadius: '0.5rem',
+          boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)',
+        }}
+      >
         {/* Icon */}
-        <div style={{
-          width: '4rem',
-          height: '4rem',
-          margin: '0 auto 1.5rem',
-          borderRadius: '50%',
-          backgroundColor: '#fee2e2',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-        }}>
+        <div
+          style={{
+            width: '4rem',
+            height: '4rem',
+            margin: '0 auto 1.5rem',
+            borderRadius: '50%',
+            backgroundColor: '#fee2e2',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
           <svg
             style={{ width: '2rem', height: '2rem', color: '#dc2626' }}
             fill="none"
@@ -65,49 +75,57 @@ const Unauthorized = () => {
         </div>
 
         {/* Title */}
-        <h1 style={{
-          fontSize: '1.875rem',
-          fontWeight: 'bold',
-          color: '#111827',
-          marginBottom: '0.5rem',
-        }}>
+        <h1
+          style={{
+            fontSize: '1.875rem',
+            fontWeight: 'bold',
+            color: '#111827',
+            marginBottom: '0.5rem',
+          }}
+        >
           {t('unauthorized.title', 'Access Denied')}
         </h1>
 
         {/* Message */}
-        <p style={{
-          color: '#6b7280',
-          marginBottom: '2rem',
-          lineHeight: '1.625',
-        }}>
+        <p
+          style={{
+            color: '#6b7280',
+            marginBottom: '2rem',
+            lineHeight: '1.625',
+          }}
+        >
           {t(
             'unauthorized.message',
-            'You do not have permission to access this page. If you believe this is an error, please contact an administrator.'
+            'You do not have permission to access this page. If you believe this is an error, please contact an administrator.',
           )}
         </p>
 
         {/* Attempted path (if available) */}
         {from && from !== '/dashboard' && (
-          <p style={{
-            fontSize: '0.875rem',
-            color: '#9ca3af',
-            marginBottom: '2rem',
-            fontFamily: 'monospace',
-            backgroundColor: '#f3f4f6',
-            padding: '0.5rem 1rem',
-            borderRadius: '0.25rem',
-          }}>
+          <p
+            style={{
+              fontSize: '0.875rem',
+              color: '#9ca3af',
+              marginBottom: '2rem',
+              fontFamily: 'monospace',
+              backgroundColor: '#f3f4f6',
+              padding: '0.5rem 1rem',
+              borderRadius: '0.25rem',
+            }}
+          >
             {t('unauthorized.attempted', 'Attempted to access')}: {from}
           </p>
         )}
 
         {/* Actions */}
-        <div style={{
-          display: 'flex',
-          gap: '1rem',
-          justifyContent: 'center',
-          flexWrap: 'wrap',
-        }}>
+        <div
+          style={{
+            display: 'flex',
+            gap: '1rem',
+            justifyContent: 'center',
+            flexWrap: 'wrap',
+          }}
+        >
           <button
             onClick={() => navigate('/dashboard')}
             style={{
@@ -120,8 +138,8 @@ const Unauthorized = () => {
               cursor: 'pointer',
               fontSize: '0.875rem',
             }}
-            onMouseOver={(e) => e.target.style.backgroundColor = '#1d4ed8'}
-            onMouseOut={(e) => e.target.style.backgroundColor = '#2563eb'}
+            onMouseOver={(e) => (e.target.style.backgroundColor = '#1d4ed8')}
+            onMouseOut={(e) => (e.target.style.backgroundColor = '#2563eb')}
           >
             {t('unauthorized.goToDashboard', 'Go to Dashboard')}
           </button>
@@ -138,8 +156,8 @@ const Unauthorized = () => {
               cursor: 'pointer',
               fontSize: '0.875rem',
             }}
-            onMouseOver={(e) => e.target.style.backgroundColor = '#f9fafb'}
-            onMouseOut={(e) => e.target.style.backgroundColor = 'white'}
+            onMouseOver={(e) => (e.target.style.backgroundColor = '#f9fafb')}
+            onMouseOut={(e) => (e.target.style.backgroundColor = 'white')}
           >
             {t('unauthorized.goBack', 'Go Back')}
           </button>

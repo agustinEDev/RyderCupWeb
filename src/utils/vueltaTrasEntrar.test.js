@@ -11,12 +11,19 @@ import {
   redirigeAlLogin,
   vueltaTrasEntrar,
 } from './vueltaTrasEntrar';
-import { noAvisesDeCierres, seCierraLaSesionAPeticion, vuelvenLosAvisosDeCierre } from './avisoDeCierreForzado';
+import {
+  noAvisesDeCierres,
+  seCierraLaSesionAPeticion,
+  vuelvenLosAvisosDeCierre,
+} from './avisoDeCierreForzado';
 import { captureError } from './sentryHelpers';
 import { guardaLaAnotacionEnCurso } from './anotacionEnCurso';
 import { olvidaElAvisoDeLaVuelta } from './avisoDeVueltaALaAnotacion';
 
-vi.mock('./sentryHelpers', async (importOriginal) => ({ ...(await importOriginal()), captureError: vi.fn() }));
+vi.mock('./sentryHelpers', async (importOriginal) => ({
+  ...(await importOriginal()),
+  captureError: vi.fn(),
+}));
 
 /**
  * La vuelta tras una redirección dura a /login (probador de la release, 8 nov 2026).
@@ -36,7 +43,13 @@ vi.mock('./sentryHelpers', async (importOriginal) => ({ ...(await importOriginal
  *   V11 calcular a dónde volver no toca el silencio: lo acaba quien entra (C5, /code-review 8 nov)
  */
 const en = (pathname, search = '') =>
-  vi.stubGlobal('location', { ...globalThis.location, pathname, search, hash: '', origin: 'http://localhost:3000' });
+  vi.stubGlobal('location', {
+    ...globalThis.location,
+    pathname,
+    search,
+    hash: '',
+    origin: 'http://localhost:3000',
+  });
 
 describe('la vuelta tras una redirección dura', () => {
   beforeEach(() => sessionStorage.clear());
@@ -54,7 +67,9 @@ describe('la vuelta tras una redirección dura', () => {
     en('/competitions/7');
     guardaLaVueltaTrasEntrar();
 
-    expect(vueltaTrasEntrar({ pathname: '/profile/edit' })).toBe('/profile/edit');
+    expect(vueltaTrasEntrar({ pathname: '/profile/edit' })).toBe(
+      '/profile/edit',
+    );
     expect(leeLaVueltaTrasEntrar()).toBeNull();
   });
 
@@ -83,16 +98,19 @@ describe('la vuelta tras una redirección dura', () => {
 
       expect(leeLaVueltaTrasEntrar()).toBeNull();
       expect(vueltaTrasEntrar(undefined)).toBe('/dashboard');
-    }
+    },
   );
 
-  it.each([['/'], ['/start'], ['/verify-email'], ['/reset-password/tok']])('V6: desde %s no se guarda', (ruta) => {
-    en(ruta, ruta === '/verify-email' ? '?token=abc' : '');
+  it.each([['/'], ['/start'], ['/verify-email'], ['/reset-password/tok']])(
+    'V6: desde %s no se guarda',
+    (ruta) => {
+      en(ruta, ruta === '/verify-email' ? '?token=abc' : '');
 
-    guardaLaVueltaTrasEntrar();
+      guardaLaVueltaTrasEntrar();
 
-    expect(sessionStorage.getItem('vuelta_tras_entrar')).toBeNull();
-  });
+      expect(sessionStorage.getItem('vuelta_tras_entrar')).toBeNull();
+    },
+  );
 
   it('V8: cerrar sesión la olvida', () => {
     en('/competitions/7');
@@ -171,7 +189,9 @@ describe('la página guardada, de la cuenta que estaba dentro', () => {
 
     redirigeAlLogin({ cuenta: 'u-1' });
 
-    expect(sessionStorage.getItem('vuelta_tras_entrar')).toBe('/competitions/7');
+    expect(sessionStorage.getItem('vuelta_tras_entrar')).toBe(
+      '/competitions/7',
+    );
     expect(sessionStorage.getItem('vuelta_tras_entrar_cuenta')).toBe('u-1');
   });
 
@@ -180,7 +200,9 @@ describe('la página guardada, de la cuenta que estaba dentro', () => {
     guardaLaVueltaTrasEntrar({ cuenta: 'u-1' });
     en('/login');
 
-    expect(vueltaTrasEntrar(undefined, { cuenta: 'u-1' })).toBe('/competitions/7');
+    expect(vueltaTrasEntrar(undefined, { cuenta: 'u-1' })).toBe(
+      '/competitions/7',
+    );
   });
 
   it('VC3: entra otra cuenta, va al panel y la guardada se borra', () => {
@@ -206,7 +228,9 @@ describe('la página guardada, de la cuenta que estaba dentro', () => {
     sessionStorage.setItem('vuelta_tras_entrar', '/competitions/7');
     en('/login');
 
-    expect(vueltaTrasEntrar(undefined, { cuenta: 'u-2' })).toBe('/competitions/7');
+    expect(vueltaTrasEntrar(undefined, { cuenta: 'u-2' })).toBe(
+      '/competitions/7',
+    );
   });
 
   it('VC4: guardar sin saber quién estaba no deja id', () => {
@@ -214,7 +238,9 @@ describe('la página guardada, de la cuenta que estaba dentro', () => {
 
     redirigeAlLogin();
 
-    expect(sessionStorage.getItem('vuelta_tras_entrar')).toBe('/competitions/7');
+    expect(sessionStorage.getItem('vuelta_tras_entrar')).toBe(
+      '/competitions/7',
+    );
     expect(sessionStorage.getItem('vuelta_tras_entrar_cuenta')).toBeNull();
   });
 
@@ -234,7 +260,9 @@ describe('la página guardada, de la cuenta que estaba dentro', () => {
     en('/login');
 
     expect(sessionStorage.getItem('vuelta_tras_entrar_cuenta')).toBeNull();
-    expect(vueltaTrasEntrar(undefined, { cuenta: 'u-2' })).toBe('/competitions/8');
+    expect(vueltaTrasEntrar(undefined, { cuenta: 'u-2' })).toBe(
+      '/competitions/8',
+    );
   });
 
   it('VC6: guardar desde una página que no vale se lleva también el id', () => {
@@ -271,7 +299,9 @@ describe('la página guardada, de la cuenta que estaba dentro', () => {
     en('/competitions/7');
     guardaLaVueltaTrasEntrar({ cuenta: 'u-1' });
 
-    expect(vueltaTrasEntrar({ pathname: '/profile/edit' }, { cuenta: 'u-2' })).toBe('/profile/edit');
+    expect(
+      vueltaTrasEntrar({ pathname: '/profile/edit' }, { cuenta: 'u-2' }),
+    ).toBe('/profile/edit');
     expect(sessionStorage.getItem('vuelta_tras_entrar_cuenta')).toBeNull();
   });
 });
@@ -357,22 +387,32 @@ describe('el cierre guarda la página con la última cuenta de la pestaña', () 
 
     redirigeAlLogin({ cuenta: ultimaCuentaDeEstaPestana() });
 
-    expect(sessionStorage.getItem('vuelta_tras_entrar')).toBe('/competitions/7');
+    expect(sessionStorage.getItem('vuelta_tras_entrar')).toBe(
+      '/competitions/7',
+    );
     expect(sessionStorage.getItem('vuelta_tras_entrar_cuenta')).toBe('u-1');
     expect(vueltaTrasEntrar(undefined, { cuenta: 'u-2' })).toBe('/dashboard');
   });
 
   it('si nunca hubo nadie, la guarda para quien entre (el enlace abierto sin sesión)', () => {
-    vi.stubGlobal('localStorage', { getItem: () => null, setItem: vi.fn(), removeItem: vi.fn() });
+    vi.stubGlobal('localStorage', {
+      getItem: () => null,
+      setItem: vi.fn(),
+      removeItem: vi.fn(),
+    });
     // Lo que hace AuthContext al arrancar sin usuario guardado
     anotaLaCuentaDeEstaPestana(null);
     en('/confirm-email-change', '?token=abc');
 
     redirigeAlLogin({ cuenta: ultimaCuentaDeEstaPestana() });
 
-    expect(sessionStorage.getItem('vuelta_tras_entrar')).toBe('/confirm-email-change?token=abc');
+    expect(sessionStorage.getItem('vuelta_tras_entrar')).toBe(
+      '/confirm-email-change?token=abc',
+    );
     expect(sessionStorage.getItem('vuelta_tras_entrar_cuenta')).toBeNull();
-    expect(vueltaTrasEntrar(undefined, { cuenta: 'u-2' })).toBe('/confirm-email-change?token=abc');
+    expect(vueltaTrasEntrar(undefined, { cuenta: 'u-2' })).toBe(
+      '/confirm-email-change?token=abc',
+    );
   });
 });
 
@@ -397,7 +437,9 @@ describe('el token que la página quitó de la barra', () => {
 
     guardaLaVueltaTrasEntrar({ cuenta: 'u-1' });
 
-    expect(sessionStorage.getItem('vuelta_tras_entrar')).toBe('/confirm-email-change?token=abc');
+    expect(sessionStorage.getItem('vuelta_tras_entrar')).toBe(
+      '/confirm-email-change?token=abc',
+    );
   });
 
   it('T1: junto a lo que ya llevara la barra', () => {
@@ -407,7 +449,7 @@ describe('el token que la página quitó de la barra', () => {
     guardaLaVueltaTrasEntrar();
 
     expect(sessionStorage.getItem('vuelta_tras_entrar')).toBe(
-      '/confirm-email-change?origen=correo&token=abc'
+      '/confirm-email-change?origen=correo&token=abc',
     );
   });
 
@@ -417,7 +459,9 @@ describe('el token que la página quitó de la barra', () => {
 
     guardaLaVueltaTrasEntrar();
 
-    expect(sessionStorage.getItem('vuelta_tras_entrar')).toBe('/confirm-email-change?token=abc');
+    expect(sessionStorage.getItem('vuelta_tras_entrar')).toBe(
+      '/confirm-email-change?token=abc',
+    );
   });
 
   it('T2: sin token guardado, la página como estaba', () => {
@@ -426,7 +470,9 @@ describe('el token que la página quitó de la barra', () => {
 
     guardaLaVueltaTrasEntrar();
 
-    expect(sessionStorage.getItem('vuelta_tras_entrar')).toBe('/competitions/7');
+    expect(sessionStorage.getItem('vuelta_tras_entrar')).toBe(
+      '/competitions/7',
+    );
   });
 
   it('T2: no reescribe el resto de la barra (%20, ?flag)', () => {
@@ -436,7 +482,7 @@ describe('el token que la página quitó de la barra', () => {
     guardaLaVueltaTrasEntrar();
 
     expect(sessionStorage.getItem('vuelta_tras_entrar')).toBe(
-      '/confirm-email-change?flag&x=a%20b&token=abc'
+      '/confirm-email-change?flag&x=a%20b&token=abc',
     );
   });
 
@@ -459,7 +505,9 @@ describe('el token que la página quitó de la barra', () => {
 
     guardaLaVueltaTrasEntrar();
 
-    expect(sessionStorage.getItem('vuelta_tras_entrar')).toBe('/confirm-email-change?token=abc');
+    expect(sessionStorage.getItem('vuelta_tras_entrar')).toBe(
+      '/confirm-email-change?token=abc',
+    );
   });
 
   it('T1: también con la barra final, como la reconoce el router', () => {
@@ -468,7 +516,9 @@ describe('el token que la página quitó de la barra', () => {
 
     guardaLaVueltaTrasEntrar();
 
-    expect(sessionStorage.getItem('vuelta_tras_entrar')).toBe('/confirm-email-change/?token=abc');
+    expect(sessionStorage.getItem('vuelta_tras_entrar')).toBe(
+      '/confirm-email-change/?token=abc',
+    );
   });
 
   it('T2: solo en la página de confirmar el correo', () => {
@@ -477,16 +527,23 @@ describe('el token que la página quitó de la barra', () => {
 
     guardaLaVueltaTrasEntrar();
 
-    expect(sessionStorage.getItem('vuelta_tras_entrar')).toBe('/competitions/7');
+    expect(sessionStorage.getItem('vuelta_tras_entrar')).toBe(
+      '/competitions/7',
+    );
   });
 
   it('T2: solo el token: ni el code ni el state de Google', () => {
-    window.history.replaceState({ secretosDeLaUrl: { code: 'c', state: 's' } }, '');
+    window.history.replaceState(
+      { secretosDeLaUrl: { code: 'c', state: 's' } },
+      '',
+    );
     en('/competitions/7');
 
     guardaLaVueltaTrasEntrar();
 
-    expect(sessionStorage.getItem('vuelta_tras_entrar')).toBe('/competitions/7');
+    expect(sessionStorage.getItem('vuelta_tras_entrar')).toBe(
+      '/competitions/7',
+    );
   });
 });
 
@@ -549,38 +606,54 @@ describe('la página de la que venía, con su cuenta (R4-R6)', () => {
   afterEach(() => vi.unstubAllGlobals());
 
   it('R4: entra la misma cuenta, vuelve a ella', () => {
-    expect(vueltaTrasEntrar({ pathname: '/competitions/7', cuenta: 'u-1' }, { cuenta: 'u-1' })).toBe(
-      '/competitions/7'
-    );
+    expect(
+      vueltaTrasEntrar(
+        { pathname: '/competitions/7', cuenta: 'u-1' },
+        { cuenta: 'u-1' },
+      ),
+    ).toBe('/competitions/7');
   });
 
   it('R5: entra otra cuenta, a su panel', () => {
-    expect(vueltaTrasEntrar({ pathname: '/competitions/7', cuenta: 'u-1' }, { cuenta: 'u-2' })).toBe(
-      '/dashboard'
-    );
+    expect(
+      vueltaTrasEntrar(
+        { pathname: '/competitions/7', cuenta: 'u-1' },
+        { cuenta: 'u-2' },
+      ),
+    ).toBe('/dashboard');
   });
 
   it('R5: compara como texto', () => {
-    expect(vueltaTrasEntrar({ pathname: '/competitions/7', cuenta: '42' }, { cuenta: 42 })).toBe(
-      '/competitions/7'
-    );
+    expect(
+      vueltaTrasEntrar(
+        { pathname: '/competitions/7', cuenta: '42' },
+        { cuenta: 42 },
+      ),
+    ).toBe('/competitions/7');
   });
 
   it('R5: con cuenta apuntada y quien entra sin cuenta conocida, al panel', () => {
-    expect(vueltaTrasEntrar({ pathname: '/competitions/7', cuenta: 'u-1' })).toBe('/dashboard');
+    expect(
+      vueltaTrasEntrar({ pathname: '/competitions/7', cuenta: 'u-1' }),
+    ).toBe('/dashboard');
   });
 
   it('R6: sin cuenta apuntada, la página para cualquiera, como hasta ahora', () => {
-    expect(vueltaTrasEntrar({ pathname: '/competitions/7' }, { cuenta: 'u-2' })).toBe('/competitions/7');
+    expect(
+      vueltaTrasEntrar({ pathname: '/competitions/7' }, { cuenta: 'u-2' }),
+    ).toBe('/competitions/7');
   });
 
   it('R5: la de otra cuenta tampoco cae en la guardada de esa otra cuenta', () => {
     en('/competitions/9');
     guardaLaVueltaTrasEntrar({ cuenta: 'u-1' });
 
-    expect(vueltaTrasEntrar({ pathname: '/competitions/7', cuenta: 'u-1' }, { cuenta: 'u-2' })).toBe(
-      '/dashboard'
-    );
+    expect(
+      vueltaTrasEntrar(
+        { pathname: '/competitions/7', cuenta: 'u-1' },
+        { cuenta: 'u-2' },
+      ),
+    ).toBe('/dashboard');
   });
 });
 
@@ -592,13 +665,28 @@ describe('estadoParaElLogin (R1: la única forma de ir al login con la página d
     anotaLaCuentaDeEstaPestana('u-1');
     anotaLaCuentaDeEstaPestana(null);
 
-    expect(estadoParaElLogin({ pathname: '/competitions/7', search: '?a=1', hash: '' })).toEqual({
-      from: { pathname: '/competitions/7', search: '?a=1', hash: '', cuenta: 'u-1' },
+    expect(
+      estadoParaElLogin({
+        pathname: '/competitions/7',
+        search: '?a=1',
+        hash: '',
+      }),
+    ).toEqual({
+      from: {
+        pathname: '/competitions/7',
+        search: '?a=1',
+        hash: '',
+        cuenta: 'u-1',
+      },
     });
   });
 
   it('sin cuenta en la pestaña, la página sin cuenta', () => {
-    vi.stubGlobal('localStorage', { getItem: () => null, setItem: vi.fn(), removeItem: vi.fn() });
+    vi.stubGlobal('localStorage', {
+      getItem: () => null,
+      setItem: vi.fn(),
+      removeItem: vi.fn(),
+    });
 
     expect(estadoParaElLogin({ pathname: '/stats' }).from.cuenta).toBeNull();
     vi.unstubAllGlobals();
@@ -657,7 +745,6 @@ describe('los tres estados de la última cuenta de la pestaña', () => {
   });
 });
 
-
 /**
  * La vuelta a la anotación en curso cuando no hay otra a dónde volver (11 nov 2026): iOS
  * cerró la app anotando y al abrirla arranca de cero.
@@ -686,7 +773,14 @@ describe('la vuelta a la anotación en curso', () => {
     vi.stubGlobal('localStorage', memoria());
     sessionStorage.clear();
     olvidaLaCuentaDeEstaPestana();
-    guardaLaAnotacionEnCurso({ cuenta: CUENTA, pathname: ANOTACION, search: '', pestana: 'input', hoyo: 12, mapa: true });
+    guardaLaAnotacionEnCurso({
+      cuenta: CUENTA,
+      pathname: ANOTACION,
+      search: '',
+      pestana: 'input',
+      hoyo: 12,
+      mapa: true,
+    });
     olvidaElAvisoDeLaVuelta();
     vi.mocked(captureError).mockClear();
   });
@@ -697,11 +791,18 @@ describe('la vuelta a la anotación en curso', () => {
   });
 
   it('B3: con otra cuenta, al panel', () => {
-    expect(vueltaTrasEntrar(undefined, { cuenta: 'u-otra' })).toBe('/dashboard');
+    expect(vueltaTrasEntrar(undefined, { cuenta: 'u-otra' })).toBe(
+      '/dashboard',
+    );
   });
 
   it('B7: la página de la que venía (un enlace) manda sobre la anotación', () => {
-    expect(vueltaTrasEntrar({ pathname: '/friends', search: '', hash: '' }, { cuenta: CUENTA })).toBe('/friends');
+    expect(
+      vueltaTrasEntrar(
+        { pathname: '/friends', search: '', hash: '' },
+        { cuenta: CUENTA },
+      ),
+    ).toBe('/friends');
   });
 
   it('B7: la página guardada en la pestaña manda sobre la anotación', () => {

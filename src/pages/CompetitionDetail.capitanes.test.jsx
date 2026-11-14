@@ -1,5 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
+import {
+  render,
+  screen,
+  fireEvent,
+  waitFor,
+  within,
+} from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import CompetitionDetail from './CompetitionDetail';
 
@@ -44,13 +50,24 @@ const mockAssignTeams = vi.fn();
 const mockCloseEnrollments = vi.fn();
 
 vi.mock('../composition', () => ({
-  getCompetitionDetailUseCase: { execute: (...a) => mockGetCompetitionDetail(...a) },
+  getCompetitionDetailUseCase: {
+    execute: (...a) => mockGetCompetitionDetail(...a),
+  },
   getCompetitionGolfCoursesUseCase: { execute: vi.fn().mockResolvedValue([]) },
   // Una sesión: sin ninguna, iniciar no se ofrece (FE #710)
   getScheduleUseCase: {
     execute: vi.fn().mockResolvedValue({
       teamAssignment: null,
-      rounds: [{ id: 'r1', roundDate: '2026-10-03', sessionType: 'MORNING', matchFormat: 'SINGLES', status: 'PENDING_TEAMS', matches: [] }],
+      rounds: [
+        {
+          id: 'r1',
+          roundDate: '2026-10-03',
+          sessionType: 'MORNING',
+          matchFormat: 'SINGLES',
+          status: 'PENDING_TEAMS',
+          matches: [],
+        },
+      ],
     }),
   },
   activateCompetitionUseCase: { execute: vi.fn() },
@@ -74,7 +91,12 @@ vi.mock('../composition', () => ({
 }));
 
 vi.mock('../utils/toast', () => ({
-  default: { success: vi.fn(), error: vi.fn(), warning: vi.fn(), info: vi.fn() },
+  default: {
+    success: vi.fn(),
+    error: vi.fn(),
+    warning: vi.fn(),
+    info: vi.fn(),
+  },
 }));
 import customToast from '../utils/toast';
 
@@ -117,9 +139,8 @@ const renderPage = () =>
       <Routes>
         <Route path="/competitions/:id" element={<CompetitionDetail />} />
       </Routes>
-    </MemoryRouter>
+    </MemoryRouter>,
   );
-
 
 // Desde FE #705 la ficha ofrece UNA acción y el resto vive en el menú «···»:
 // para tocarlas hay que abrirlo primero. Tolerante a que no exista, porque
@@ -144,12 +165,17 @@ const abrirModal = async (boton = 'detail.actions.nameCaptains') => {
 };
 
 const elegir = (modal, equipo, userId) =>
-  fireEvent.change(within(modal).getByLabelText(`detail.captains.teamLabel_${equipo}`), {
-    target: { value: userId },
-  });
+  fireEvent.change(
+    within(modal).getByLabelText(`detail.captains.teamLabel_${equipo}`),
+    {
+      target: { value: userId },
+    },
+  );
 
 const confirmar = (modal) =>
-  fireEvent.click(within(modal).getByRole('button', { name: 'detail.captains.confirm' }));
+  fireEvent.click(
+    within(modal).getByRole('button', { name: 'detail.captains.confirm' }),
+  );
 
 describe('CompetitionDetail · nombrar a los capitanes (FE #692)', () => {
   beforeEach(() => {
@@ -175,25 +201,45 @@ describe('CompetitionDetail · nombrar a los capitanes (FE #692)', () => {
     abrirMenuDeAcciones();
     expect(screen.getByText('detail.actions.nameCaptains')).toBeInTheDocument();
     abrirMenuDeAcciones();
-    expect(screen.queryByText('detail.actions.close-enrollments')).not.toBeInTheDocument();
+    expect(
+      screen.queryByText('detail.actions.close-enrollments'),
+    ).not.toBeInTheDocument();
   });
 
   it('K1b: los desplegables llevan el hándicap que cuenta en la competición (#710)', async () => {
     mockListEnrollments.mockResolvedValue([
       { ...inscrito('ana', 'Ana Alba'), userHandicap: 18 },
-      { ...inscrito('bea', 'Bea Blanco'), userHandicap: 30, hasCustomHandicap: true, customHandicap: 5 },
+      {
+        ...inscrito('bea', 'Bea Blanco'),
+        userHandicap: 30,
+        hasCustomHandicap: true,
+        customHandicap: 5,
+      },
       { ...inscrito('carla', 'Carla Cruz'), userHandicap: null },
     ]);
     renderPage();
     const modal = await abrirModal();
 
-    const desplegable = within(modal).getByLabelText('detail.captains.teamLabel_Europa');
-    const textos = within(desplegable).getAllByRole('option').slice(1).map((o) => o.textContent);
-    expect(textos).toEqual(['Bea Blanco (5.0)', 'Ana Alba (18.0)', 'Carla Cruz']);
+    const desplegable = within(modal).getByLabelText(
+      'detail.captains.teamLabel_Europa',
+    );
+    const textos = within(desplegable)
+      .getAllByRole('option')
+      .slice(1)
+      .map((o) => o.textContent);
+    expect(textos).toEqual([
+      'Bea Blanco (5.0)',
+      'Ana Alba (18.0)',
+      'Carla Cruz',
+    ]);
   });
 
   it.each([
-    ['K1c: con plazas libres (4 de 20), lo principal es invitar', () => {}, 'detail.actions.manageInvitations'],
+    [
+      'K1c: con plazas libres (4 de 20), lo principal es invitar',
+      () => {},
+      'detail.actions.manageInvitations',
+    ],
     [
       'K1d: sin la lista de inscritos no se sabe si quedan: nombrarlos, como antes',
       () => mockListEnrollments.mockRejectedValue(new Error('boom')),
@@ -203,42 +249,62 @@ describe('CompetitionDetail · nombrar a los capitanes (FE #692)', () => {
     montar();
     renderPage();
 
-    expect(await screen.findByTestId('accion-principal')).toHaveTextContent(principal);
+    expect(await screen.findByTestId('accion-principal')).toHaveTextContent(
+      principal,
+    );
   });
 
   it('K2: quien no organiza no lo ve', async () => {
     mockRoles = { isAdmin: false, isCreator: false, isLoading: false };
-    mockGetCompetitionDetail.mockResolvedValue(competicion({ creatorId: 'otra' }));
+    mockGetCompetitionDetail.mockResolvedValue(
+      competicion({ creatorId: 'otra' }),
+    );
     renderPage();
 
     await screen.findByText('Ryder de los amigos');
     abrirMenuDeAcciones();
-    expect(screen.queryByText('detail.actions.nameCaptains')).not.toBeInTheDocument();
+    expect(
+      screen.queryByText('detail.actions.nameCaptains'),
+    ).not.toBeInTheDocument();
   });
 
   it('K3: el modal ofrece a los aprobados, el organizador incluido, con el nombre de cada equipo', async () => {
     renderPage();
     const modal = await abrirModal();
 
-    const selectorA = within(modal).getByLabelText('detail.captains.teamLabel_Europa');
-    const opciones = within(selectorA).getAllByRole('option').map((o) => o.textContent);
+    const selectorA = within(modal).getByLabelText(
+      'detail.captains.teamLabel_Europa',
+    );
+    const opciones = within(selectorA)
+      .getAllByRole('option')
+      .map((o) => o.textContent);
     // Con su hándicap detrás (#710)
     expect(opciones).toEqual(
-      expect.arrayContaining(['Olga Organiza (10.0)', 'Ana Alba (10.0)', 'Bea Blanco (10.0)', 'Carla Cruz (10.0)'])
+      expect.arrayContaining([
+        'Olga Organiza (10.0)',
+        'Ana Alba (10.0)',
+        'Bea Blanco (10.0)',
+        'Carla Cruz (10.0)',
+      ]),
     );
-    expect(within(modal).getByLabelText('detail.captains.teamLabel_América')).toBeInTheDocument();
+    expect(
+      within(modal).getByLabelText('detail.captains.teamLabel_América'),
+    ).toBeInTheDocument();
   });
 
   it('K4: no se confirma hasta tener a los dos, y el elegido en un equipo no se ofrece en el otro', async () => {
     renderPage();
     const modal = await abrirModal();
-    const boton = within(modal).getByRole('button', { name: 'detail.captains.confirm' });
+    const boton = within(modal).getByRole('button', {
+      name: 'detail.captains.confirm',
+    });
 
     expect(boton).toBeDisabled();
     elegir(modal, 'Europa', 'ana');
     expect(boton).toBeDisabled();
-    const anaEnB = within(within(modal).getByLabelText('detail.captains.teamLabel_América'))
-      .getByRole('option', { name: 'Ana Alba (10.0)' });
+    const anaEnB = within(
+      within(modal).getByLabelText('detail.captains.teamLabel_América'),
+    ).getByRole('option', { name: 'Ana Alba (10.0)' });
     expect(anaEnB).toBeDisabled();
     elegir(modal, 'América', 'bea');
     expect(boton).toBeEnabled();
@@ -250,14 +316,18 @@ describe('CompetitionDetail · nombrar a los capitanes (FE #692)', () => {
     elegir(modal, 'Europa', 'ana');
     elegir(modal, 'América', 'ana');
 
-    expect(within(modal).getByRole('button', { name: 'detail.captains.confirm' })).toBeDisabled();
+    expect(
+      within(modal).getByRole('button', { name: 'detail.captains.confirm' }),
+    ).toBeDisabled();
   });
 
   it('K5: con las inscripciones abiertas, avisa de que nombrarlos las cierra', async () => {
     renderPage();
     const modal = await abrirModal();
 
-    expect(within(modal).getByText('detail.captains.closesEnrollment')).toBeInTheDocument();
+    expect(
+      within(modal).getByText('detail.captains.closesEnrollment'),
+    ).toBeInTheDocument();
   });
 
   it('K6: al confirmar los nombra, cierra y la ficha pasa a «Cambiar capitanes»', async () => {
@@ -269,23 +339,40 @@ describe('CompetitionDetail · nombrar a los capitanes (FE #692)', () => {
     confirmar(modal);
 
     await waitFor(() =>
-      expect(mockNameCaptains).toHaveBeenCalledWith('comp-1', { teamA: 'ana', teamB: 'bea' })
+      expect(mockNameCaptains).toHaveBeenCalledWith('comp-1', {
+        teamA: 'ana',
+        teamB: 'bea',
+      }),
     );
-    expect(customToast.success).toHaveBeenCalledWith('detail.success.captainsNamed');
-    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    expect(customToast.success).toHaveBeenCalledWith(
+      'detail.success.captainsNamed',
+    );
+    await waitFor(() =>
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
+    );
     await screen.findByTestId('menu-acciones');
     abrirMenuDeAcciones();
     abrirMenuDeAcciones();
-    expect(screen.getByText('detail.actions.changeCaptains')).toBeInTheDocument();
+    expect(
+      screen.getByText('detail.actions.changeCaptains'),
+    ).toBeInTheDocument();
     abrirMenuDeAcciones();
-    expect(screen.queryByText('detail.actions.nameCaptains')).not.toBeInTheDocument();
+    expect(
+      screen.queryByText('detail.actions.nameCaptains'),
+    ).not.toBeInTheDocument();
     // Y la lista marca a las recién nombradas, sin esperar a recargar
-    expect(screen.getByText('detail.captains.captainOf_Europa')).toBeInTheDocument();
-    expect(screen.getByText('detail.captains.captainOf_América')).toBeInTheDocument();
+    expect(
+      screen.getByText('detail.captains.captainOf_Europa'),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText('detail.captains.captainOf_América'),
+    ).toBeInTheDocument();
   });
 
   it('K7: con impares enseña el aviso y no intenta el reparto automático', async () => {
-    mockGetCompetitionDetail.mockResolvedValue(competicion({ teamAssignment: 'AUTOMATIC' }));
+    mockGetCompetitionDetail.mockResolvedValue(
+      competicion({ teamAssignment: 'AUTOMATIC' }),
+    );
     mockNameCaptains.mockResolvedValue({
       id: 'comp-1',
       status: 'CLOSED',
@@ -300,32 +387,51 @@ describe('CompetitionDetail · nombrar a los capitanes (FE #692)', () => {
 
     confirmar(modal);
 
-    await waitFor(() => expect(customToast.warning).toHaveBeenCalledWith('detail.captains.uneven_5'));
+    await waitFor(() =>
+      expect(customToast.warning).toHaveBeenCalledWith(
+        'detail.captains.uneven_5',
+      ),
+    );
     expect(mockAssignTeams).not.toHaveBeenCalled();
   });
 
   it.each([
     ['AUTOMATIC', 1],
     ['MANUAL', 0],
-  ])('K8: con números pares y reparto %s, se reparte solo si es automático', async (modo, veces) => {
-    mockGetCompetitionDetail.mockResolvedValue(competicion({ teamAssignment: modo }));
-    renderPage();
-    const modal = await abrirModal();
-    elegir(modal, 'Europa', 'ana');
-    elegir(modal, 'América', 'bea');
+  ])(
+    'K8: con números pares y reparto %s, se reparte solo si es automático',
+    async (modo, veces) => {
+      mockGetCompetitionDetail.mockResolvedValue(
+        competicion({ teamAssignment: modo }),
+      );
+      renderPage();
+      const modal = await abrirModal();
+      elegir(modal, 'Europa', 'ana');
+      elegir(modal, 'América', 'bea');
 
-    confirmar(modal);
+      confirmar(modal);
 
-    await waitFor(() => expect(customToast.success).toHaveBeenCalledWith('detail.success.captainsNamed'));
-    expect(mockAssignTeams).toHaveBeenCalledTimes(veces);
-    if (veces) expect(mockAssignTeams).toHaveBeenCalledWith('comp-1', { mode: 'AUTOMATIC' });
-  });
+      await waitFor(() =>
+        expect(customToast.success).toHaveBeenCalledWith(
+          'detail.success.captainsNamed',
+        ),
+      );
+      expect(mockAssignTeams).toHaveBeenCalledTimes(veces);
+      if (veces)
+        expect(mockAssignTeams).toHaveBeenCalledWith('comp-1', {
+          mode: 'AUTOMATIC',
+        });
+    },
+  );
 
   it('K8c: el reparto automático lo decide el modo configurado, no el que se hizo', async () => {
     // Una automática rehecha a mano: al reabrir y volver a cerrar, los que
     // entraron después también tienen que quedar repartidos
     mockGetCompetitionDetail.mockResolvedValue(
-      competicion({ teamAssignment: 'AUTOMATIC', actualTeamAssignment: 'MANUAL' })
+      competicion({
+        teamAssignment: 'AUTOMATIC',
+        actualTeamAssignment: 'MANUAL',
+      }),
     );
     renderPage();
     const modal = await abrirModal();
@@ -334,33 +440,55 @@ describe('CompetitionDetail · nombrar a los capitanes (FE #692)', () => {
 
     confirmar(modal);
 
-    await waitFor(() => expect(mockAssignTeams).toHaveBeenCalledWith('comp-1', { mode: 'AUTOMATIC' }));
+    await waitFor(() =>
+      expect(mockAssignTeams).toHaveBeenCalledWith('comp-1', {
+        mode: 'AUTOMATIC',
+      }),
+    );
   });
 
   it('K8e: al volver a cerrar una reabierta con equipos, quedan así: ni se reparten ni hay error', async () => {
     // Formados, los equipos no se vuelven a formar (29 oct 2026): repartirlos
     // daba un 409 TEAMS_FORMED tras un cierre que sí había ido bien (revisor)
     mockGetCompetitionDetail.mockResolvedValue(
-      competicion({ teamAssignment: 'AUTOMATIC', actualTeamAssignment: 'MANUAL', teamsAssigned: true })
+      competicion({
+        teamAssignment: 'AUTOMATIC',
+        actualTeamAssignment: 'MANUAL',
+        teamsAssigned: true,
+      }),
     );
     mockCloseEnrollments.mockResolvedValue({ id: 'comp-1', status: 'CLOSED' });
     renderPage();
 
-    fireEvent.click(await screen.findByRole('button', { name: 'detail.actions.close-enrollments' }));
+    fireEvent.click(
+      await screen.findByRole('button', {
+        name: 'detail.actions.close-enrollments',
+      }),
+    );
     // Se confirma en el modal de la app (FE #730)
     fireEvent.click(await screen.findByTestId('confirm-modal-confirm'));
 
     await waitFor(() => expect(mockCloseEnrollments).toHaveBeenCalled());
     await waitFor(() =>
-      expect(customToast.success).toHaveBeenCalledWith('detail.success.enrollmentsClosed')
+      expect(customToast.success).toHaveBeenCalledWith(
+        'detail.success.enrollmentsClosed',
+      ),
     );
     expect(mockAssignTeams).not.toHaveBeenCalled();
     expect(customToast.error).not.toHaveBeenCalled();
   });
 
   it.each([
-    ['con reparto hecho, enseña el que se hizo', { actualTeamAssignment: 'DRAFT' }, 'DRAFT'],
-    ['sin reparto, enseña el configurado', { actualTeamAssignment: null }, 'MANUAL'],
+    [
+      'con reparto hecho, enseña el que se hizo',
+      { actualTeamAssignment: 'DRAFT' },
+      'DRAFT',
+    ],
+    [
+      'sin reparto, enseña el configurado',
+      { actualTeamAssignment: null },
+      'MANUAL',
+    ],
   ])('K8d: %s', async (_caso, extra, esperado) => {
     mockGetCompetitionDetail.mockResolvedValue(competicion(extra));
     renderPage();
@@ -372,7 +500,9 @@ describe('CompetitionDetail · nombrar a los capitanes (FE #692)', () => {
   it('K8b: si falla el reparto automático, los capitanes y el cierre se quedan', async () => {
     // Venía del botón viejo: el cierre del servidor no puede perderse por un
     // reparto que falla después en el navegador
-    mockGetCompetitionDetail.mockResolvedValue(competicion({ teamAssignment: 'AUTOMATIC' }));
+    mockGetCompetitionDetail.mockResolvedValue(
+      competicion({ teamAssignment: 'AUTOMATIC' }),
+    );
     mockAssignTeams.mockRejectedValue(new Error('assign failed'));
     renderPage();
     const modal = await abrirModal();
@@ -381,18 +511,28 @@ describe('CompetitionDetail · nombrar a los capitanes (FE #692)', () => {
 
     confirmar(modal);
 
-    await waitFor(() => expect(customToast.error).toHaveBeenCalledWith('assign failed'));
-    expect(customToast.success).toHaveBeenCalledWith('detail.success.captainsNamed');
+    await waitFor(() =>
+      expect(customToast.error).toHaveBeenCalledWith('assign failed'),
+    );
+    expect(customToast.success).toHaveBeenCalledWith(
+      'detail.success.captainsNamed',
+    );
     // Con plazas libres «Nombrar» vive en el menú, que se cierra al pulsarlo (#710)
     await screen.findByTestId('menu-acciones');
     abrirMenuDeAcciones();
-    expect(await screen.findByText('detail.actions.start-competition')).toBeInTheDocument();
-    expect(screen.getByText('detail.actions.changeCaptains')).toBeInTheDocument();
+    expect(
+      await screen.findByText('detail.actions.start-competition'),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText('detail.actions.changeCaptains'),
+    ).toBeInTheDocument();
   });
 
   it('K9: si el servidor lo rechaza, enseña su motivo y el modal sigue abierto', async () => {
     mockNameCaptains.mockRejectedValue(
-      Object.assign(new Error('Los equipos ya estan repartidos'), { status: 400 })
+      Object.assign(new Error('Los equipos ya estan repartidos'), {
+        status: 400,
+      }),
     );
     renderPage();
     const modal = await abrirModal();
@@ -402,7 +542,9 @@ describe('CompetitionDetail · nombrar a los capitanes (FE #692)', () => {
     confirmar(modal);
 
     await waitFor(() =>
-      expect(customToast.error).toHaveBeenCalledWith('Los equipos ya estan repartidos')
+      expect(customToast.error).toHaveBeenCalledWith(
+        'Los equipos ya estan repartidos',
+      ),
     );
     expect(screen.getByRole('dialog')).toBeInTheDocument();
     abrirMenuDeAcciones();
@@ -418,22 +560,37 @@ describe('CompetitionDetail · nombrar a los capitanes (FE #692)', () => {
 
     confirmar(modal);
 
-    await waitFor(() => expect(customToast.error).toHaveBeenCalledWith('common:sinConexion.mensaje'));
+    await waitFor(() =>
+      expect(customToast.error).toHaveBeenCalledWith(
+        'common:sinConexion.mensaje',
+      ),
+    );
   });
 
   it('K11: ya cerrada se pueden cambiar, y el modal sale con los de ahora elegidos', async () => {
     mockGetCompetitionDetail.mockResolvedValue(
       competicion({
         status: 'CLOSED',
-        captains: { teamA: 'ana', teamB: 'bea', viceTeamA: null, viceTeamB: null },
-      })
+        captains: {
+          teamA: 'ana',
+          teamB: 'bea',
+          viceTeamA: null,
+          viceTeamB: null,
+        },
+      }),
     );
     renderPage();
     const modal = await abrirModal('detail.actions.changeCaptains');
 
-    expect(within(modal).getByLabelText('detail.captains.teamLabel_Europa')).toHaveValue('ana');
-    expect(within(modal).getByLabelText('detail.captains.teamLabel_América')).toHaveValue('bea');
-    expect(within(modal).queryByText('detail.captains.closesEnrollment')).not.toBeInTheDocument();
+    expect(
+      within(modal).getByLabelText('detail.captains.teamLabel_Europa'),
+    ).toHaveValue('ana');
+    expect(
+      within(modal).getByLabelText('detail.captains.teamLabel_América'),
+    ).toHaveValue('bea');
+    expect(
+      within(modal).queryByText('detail.captains.closesEnrollment'),
+    ).not.toBeInTheDocument();
   });
 
   it('K11b: cambiarlos ya cerrada no vuelve a repartir, y lo dice como cambio', async () => {
@@ -441,8 +598,13 @@ describe('CompetitionDetail · nombrar a los capitanes (FE #692)', () => {
       competicion({
         status: 'CLOSED',
         teamAssignment: 'AUTOMATIC',
-        captains: { teamA: 'ana', teamB: 'bea', viceTeamA: null, viceTeamB: null },
-      })
+        captains: {
+          teamA: 'ana',
+          teamB: 'bea',
+          viceTeamA: null,
+          viceTeamB: null,
+        },
+      }),
     );
     mockNameCaptains.mockResolvedValue({
       id: 'comp-1',
@@ -457,8 +619,14 @@ describe('CompetitionDetail · nombrar a los capitanes (FE #692)', () => {
 
     confirmar(modal);
 
-    await waitFor(() => expect(customToast.success).toHaveBeenCalledWith('detail.success.captainsChanged'));
-    expect(customToast.success).not.toHaveBeenCalledWith('detail.success.captainsNamed');
+    await waitFor(() =>
+      expect(customToast.success).toHaveBeenCalledWith(
+        'detail.success.captainsChanged',
+      ),
+    );
+    expect(customToast.success).not.toHaveBeenCalledWith(
+      'detail.success.captainsNamed',
+    );
     expect(mockAssignTeams).not.toHaveBeenCalled();
   });
 
@@ -466,14 +634,25 @@ describe('CompetitionDetail · nombrar a los capitanes (FE #692)', () => {
     mockGetCompetitionDetail.mockResolvedValue(
       competicion({
         status: 'CLOSED',
-        captains: { teamA: 'ana', teamB: 'bea', viceTeamA: 'carla', viceTeamB: null },
-      })
+        captains: {
+          teamA: 'ana',
+          teamB: 'bea',
+          viceTeamA: 'carla',
+          viceTeamB: null,
+        },
+      }),
     );
     renderPage();
 
-    expect(await screen.findByText('detail.captains.captainOf_Europa')).toBeInTheDocument();
-    expect(screen.getByText('detail.captains.captainOf_América')).toBeInTheDocument();
-    expect(screen.getByText('detail.captains.viceCaptainOf_Europa')).toBeInTheDocument();
+    expect(
+      await screen.findByText('detail.captains.captainOf_Europa'),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText('detail.captains.captainOf_América'),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText('detail.captains.viceCaptainOf_Europa'),
+    ).toBeInTheDocument();
   });
 
   it('K13: reabierta con equipos, vuelve «Cerrar inscripciones»: los capitanes ya no se tocan', async () => {
@@ -482,17 +661,26 @@ describe('CompetitionDetail · nombrar a los capitanes (FE #692)', () => {
     mockGetCompetitionDetail.mockResolvedValue(
       competicion({
         teamsAssigned: true,
-        captains: { teamA: 'ana', teamB: 'bea', viceTeamA: null, viceTeamB: null },
-      })
+        captains: {
+          teamA: 'ana',
+          teamB: 'bea',
+          viceTeamA: null,
+          viceTeamB: null,
+        },
+      }),
     );
     renderPage();
 
     await screen.findByTestId('menu-acciones');
     abrirMenuDeAcciones();
     abrirMenuDeAcciones();
-    expect(screen.getByText('detail.actions.close-enrollments')).toBeInTheDocument();
+    expect(
+      screen.getByText('detail.actions.close-enrollments'),
+    ).toBeInTheDocument();
     abrirMenuDeAcciones();
-    expect(screen.queryByText('detail.actions.nameCaptains')).not.toBeInTheDocument();
+    expect(
+      screen.queryByText('detail.actions.nameCaptains'),
+    ).not.toBeInTheDocument();
   });
 
   it('K14: cerrada con equipos no ofrece cambiar capitanes, que fallaría siempre', async () => {
@@ -500,8 +688,13 @@ describe('CompetitionDetail · nombrar a los capitanes (FE #692)', () => {
       competicion({
         status: 'CLOSED',
         teamsAssigned: true,
-        captains: { teamA: 'ana', teamB: 'bea', viceTeamA: null, viceTeamB: null },
-      })
+        captains: {
+          teamA: 'ana',
+          teamB: 'bea',
+          viceTeamA: null,
+          viceTeamB: null,
+        },
+      }),
     );
     renderPage();
 
@@ -510,31 +703,46 @@ describe('CompetitionDetail · nombrar a los capitanes (FE #692)', () => {
     // Iniciar la competición sí se ofrece; cambiar capitanes ya no. Se espera:
     // iniciar sale cuando llegan las sesiones, que es otra petición, y en la CI
     // con cobertura el menú se abría antes (falló en la #799)
-    expect(await screen.findByText('detail.actions.start-competition')).toBeInTheDocument();
-    expect(screen.queryByText('detail.actions.changeCaptains')).not.toBeInTheDocument();
+    expect(
+      await screen.findByText('detail.actions.start-competition'),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByText('detail.actions.changeCaptains'),
+    ).not.toBeInTheDocument();
   });
 
   it.each([
     ['DRAFT_IN_PROGRESS', 'detail.errors.waitForDraft'],
     ['TEAMS_FORMED', 'detail.errors.teamsFormedOrganizer'],
-  ])('K16: si el reparto automático da %s, dice por qué (29 oct 2026)', async (errorCode, texto) => {
-    mockAssignTeams.mockRejectedValueOnce(Object.assign(new Error('x'), { status: 409, errorCode }));
-    mockGetCompetitionDetail.mockResolvedValue(competicion({ teamAssignment: 'AUTOMATIC' }));
-    renderPage();
-    const modal = await abrirModal();
-    elegir(modal, 'Europa', 'ana');
-    elegir(modal, 'América', 'bea');
+  ])(
+    'K16: si el reparto automático da %s, dice por qué (29 oct 2026)',
+    async (errorCode, texto) => {
+      mockAssignTeams.mockRejectedValueOnce(
+        Object.assign(new Error('x'), { status: 409, errorCode }),
+      );
+      mockGetCompetitionDetail.mockResolvedValue(
+        competicion({ teamAssignment: 'AUTOMATIC' }),
+      );
+      renderPage();
+      const modal = await abrirModal();
+      elegir(modal, 'Europa', 'ana');
+      elegir(modal, 'América', 'bea');
 
-    confirmar(modal);
+      confirmar(modal);
 
-    await waitFor(() => expect(customToast.error).toHaveBeenCalledWith(texto));
-  });
+      await waitFor(() =>
+        expect(customToast.error).toHaveBeenCalledWith(texto),
+      );
+    },
+  );
 
   it('K17: si el reparto automático da TEAMS_FORMED, es que ya los había: «Cambiar capitanes» desaparece (code-review)', async () => {
     mockAssignTeams.mockRejectedValueOnce(
-      Object.assign(new Error('x'), { status: 409, errorCode: 'TEAMS_FORMED' })
+      Object.assign(new Error('x'), { status: 409, errorCode: 'TEAMS_FORMED' }),
     );
-    mockGetCompetitionDetail.mockResolvedValue(competicion({ teamAssignment: 'AUTOMATIC' }));
+    mockGetCompetitionDetail.mockResolvedValue(
+      competicion({ teamAssignment: 'AUTOMATIC' }),
+    );
     renderPage();
     const modal = await abrirModal();
     elegir(modal, 'Europa', 'ana');
@@ -545,12 +753,18 @@ describe('CompetitionDetail · nombrar a los capitanes (FE #692)', () => {
     await waitFor(() => expect(customToast.error).toHaveBeenCalled());
     await screen.findByTestId('menu-acciones');
     abrirMenuDeAcciones();
-    expect(await screen.findByText('detail.actions.start-competition')).toBeInTheDocument();
-    expect(screen.queryByText('detail.actions.changeCaptains')).not.toBeInTheDocument();
+    expect(
+      await screen.findByText('detail.actions.start-competition'),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByText('detail.actions.changeCaptains'),
+    ).not.toBeInTheDocument();
   });
 
   it('K15: si el reparto automático sale bien, «Cambiar capitanes» desaparece', async () => {
-    mockGetCompetitionDetail.mockResolvedValue(competicion({ teamAssignment: 'AUTOMATIC' }));
+    mockGetCompetitionDetail.mockResolvedValue(
+      competicion({ teamAssignment: 'AUTOMATIC' }),
+    );
     renderPage();
     const modal = await abrirModal();
     elegir(modal, 'Europa', 'ana');
@@ -558,14 +772,22 @@ describe('CompetitionDetail · nombrar a los capitanes (FE #692)', () => {
 
     confirmar(modal);
 
-    await waitFor(() => expect(customToast.success).toHaveBeenCalledWith('detail.success.teamsAutoAssigned'));
+    await waitFor(() =>
+      expect(customToast.success).toHaveBeenCalledWith(
+        'detail.success.teamsAutoAssigned',
+      ),
+    );
     await screen.findByTestId('menu-acciones');
     abrirMenuDeAcciones();
     // Iniciar la competición sí se ofrece; cambiar capitanes ya no. Se espera:
     // iniciar sale cuando llegan las sesiones, que es otra petición, y en la CI
     // con cobertura el menú se abría antes (falló en la #799)
-    expect(await screen.findByText('detail.actions.start-competition')).toBeInTheDocument();
-    expect(screen.queryByText('detail.actions.changeCaptains')).not.toBeInTheDocument();
+    expect(
+      await screen.findByText('detail.actions.start-competition'),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByText('detail.actions.changeCaptains'),
+    ).not.toBeInTheDocument();
   });
 
   it('K16: si la lista de inscritos no cargó, el modal lo dice y no deja confirmar', async () => {
@@ -573,8 +795,12 @@ describe('CompetitionDetail · nombrar a los capitanes (FE #692)', () => {
     renderPage();
     const modal = await abrirModal();
 
-    expect(within(modal).getByText('detail.captains.playersUnavailable')).toBeInTheDocument();
-    expect(within(modal).getByRole('button', { name: 'detail.captains.confirm' })).toBeDisabled();
+    expect(
+      within(modal).getByText('detail.captains.playersUnavailable'),
+    ).toBeInTheDocument();
+    expect(
+      within(modal).getByRole('button', { name: 'detail.captains.confirm' }),
+    ).toBeDisabled();
   });
 
   it('K17: con capitanes y sin lista, no se puede confirmar lo que no se ve', async () => {
@@ -583,15 +809,24 @@ describe('CompetitionDetail · nombrar a los capitanes (FE #692)', () => {
     mockGetCompetitionDetail.mockResolvedValue(
       competicion({
         status: 'CLOSED',
-        captains: { teamA: 'ana', teamB: 'bea', viceTeamA: null, viceTeamB: null },
-      })
+        captains: {
+          teamA: 'ana',
+          teamB: 'bea',
+          viceTeamA: null,
+          viceTeamB: null,
+        },
+      }),
     );
     mockListEnrollments.mockRejectedValue(new Error('boom'));
     renderPage();
     const modal = await abrirModal('detail.actions.changeCaptains');
 
-    expect(within(modal).getByText('detail.captains.playersUnavailable')).toBeInTheDocument();
-    expect(within(modal).getByRole('button', { name: 'detail.captains.confirm' })).toBeDisabled();
+    expect(
+      within(modal).getByText('detail.captains.playersUnavailable'),
+    ).toBeInTheDocument();
+    expect(
+      within(modal).getByRole('button', { name: 'detail.captains.confirm' }),
+    ).toBeDisabled();
   });
 
   it('K18: un capitán que ya no está inscrito hay que sustituirlo antes de confirmar', async () => {
@@ -599,12 +834,19 @@ describe('CompetitionDetail · nombrar a los capitanes (FE #692)', () => {
     mockGetCompetitionDetail.mockResolvedValue(
       competicion({
         status: 'CLOSED',
-        captains: { teamA: 'quien-se-fue', teamB: 'bea', viceTeamA: null, viceTeamB: null },
-      })
+        captains: {
+          teamA: 'quien-se-fue',
+          teamB: 'bea',
+          viceTeamA: null,
+          viceTeamB: null,
+        },
+      }),
     );
     renderPage();
     const modal = await abrirModal('detail.actions.changeCaptains');
-    const boton = within(modal).getByRole('button', { name: 'detail.captains.confirm' });
+    const boton = within(modal).getByRole('button', {
+      name: 'detail.captains.confirm',
+    });
 
     expect(boton).toBeDisabled();
     elegir(modal, 'Europa', 'ana');
@@ -615,12 +857,19 @@ describe('CompetitionDetail · nombrar a los capitanes (FE #692)', () => {
     mockGetCompetitionDetail.mockResolvedValue(
       competicion({
         status: 'CLOSED',
-        captains: { teamA: 'ana', teamB: 'quien-se-fue', viceTeamA: null, viceTeamB: null },
-      })
+        captains: {
+          teamA: 'ana',
+          teamB: 'quien-se-fue',
+          viceTeamA: null,
+          viceTeamB: null,
+        },
+      }),
     );
     renderPage();
     const modal = await abrirModal('detail.actions.changeCaptains');
-    const boton = within(modal).getByRole('button', { name: 'detail.captains.confirm' });
+    const boton = within(modal).getByRole('button', {
+      name: 'detail.captains.confirm',
+    });
 
     expect(boton).toBeDisabled();
     elegir(modal, 'América', 'bea');

@@ -7,7 +7,7 @@ const getTestCredentials = () => {
 
   if (!email || !password) {
     throw new Error(
-      'Missing test credentials. Please set TEST_EMAIL and TEST_PASSWORD environment variables.'
+      'Missing test credentials. Please set TEST_EMAIL and TEST_PASSWORD environment variables.',
     );
   }
 
@@ -37,7 +37,9 @@ test.describe('Login Flow', () => {
     await expect(page.locator('p:text("Welcome,")')).toBeVisible();
   });
 
-  test('should display an error message for incorrect credentials', async ({ page }) => {
+  test('should display an error message for incorrect credentials', async ({
+    page,
+  }) => {
     // 1. Arrange: Navigate to the login page
     await page.goto('/login');
 
@@ -45,7 +47,9 @@ test.describe('Login Flow', () => {
     await expect(page.getByRole('heading', { name: 'Sign In' })).toBeVisible();
 
     // 2. Act: Fill the form with incorrect credentials and submit
-    await page.getByPlaceholder('your.email@example.com').fill('wrong@example.com');
+    await page
+      .getByPlaceholder('your.email@example.com')
+      .fill('wrong@example.com');
     await page.getByPlaceholder('Enter your password').fill('wrongpassword');
     await page.getByRole('button', { name: 'Sign In' }).click();
 
@@ -53,5 +57,4 @@ test.describe('Login Flow', () => {
     await expect(page.getByText('Incorrect email or password')).toBeVisible();
     await expect(page).toHaveURL('/login'); // Should remain on the login page
   });
-
 });

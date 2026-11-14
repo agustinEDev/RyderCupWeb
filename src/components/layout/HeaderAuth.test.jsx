@@ -12,7 +12,13 @@ vi.mock('react-i18next', () => ({
 }));
 
 vi.mock('../ui/LanguageSwitcher', () => ({
-  default: ({ compacto }) => <div data-testid={compacto ? 'language-switcher-compacto' : 'language-switcher'} />,
+  default: ({ compacto }) => (
+    <div
+      data-testid={
+        compacto ? 'language-switcher-compacto' : 'language-switcher'
+      }
+    />
+  ),
 }));
 
 vi.mock('../../composition', () => ({
@@ -40,7 +46,7 @@ const renderHeader = (path, props = {}) =>
   render(
     <MemoryRouter initialEntries={[path]}>
       <HeaderAuth user={user} {...props} />
-    </MemoryRouter>
+    </MemoryRouter>,
   );
 
 /**
@@ -48,49 +54,103 @@ const renderHeader = (path, props = {}) =>
  * lugar de repetir la marca en cada pantalla.
  */
 describe('HeaderAuth', () => {
+  // #1129: lo que cambia cuando una pantalla no le pasa el usuario
+  describe('who is signed in', () => {
+    it('C4a: a player sees their initials and no Admin badge', () => {
+      renderHeader('/feed');
+
+      expect(screen.getByText('AS')).toBeInTheDocument();
+      expect(screen.queryByTestId('admin-badge')).not.toBeInTheDocument();
+      fireEvent.click(screen.getByText('AS'));
+      expect(
+        screen.queryByText('header.administration'),
+      ).not.toBeInTheDocument();
+    });
+
+    it('C4b: an admin sees their initials, the Admin badge and the admin entries', () => {
+      renderHeader('/feed', { user: { ...user, is_admin: true } });
+
+      expect(screen.getByText('AS')).toBeInTheDocument();
+      expect(screen.getByTestId('admin-badge')).toBeInTheDocument();
+      fireEvent.click(screen.getByText('AS'));
+      expect(
+        screen.getAllByText('header.administration').length,
+      ).toBeGreaterThan(0);
+    });
+
+    it('C4c: without a user it shows «?», which is what the three screens showed', () => {
+      renderHeader('/feed', { user: undefined });
+
+      expect(screen.getByText('?')).toBeInTheDocument();
+      expect(screen.queryByTestId('admin-badge')).not.toBeInTheDocument();
+    });
+  });
+
   it('shows the screen title instead of the brand on mobile', () => {
     renderHeader('/profile/devices');
 
-    expect(screen.getByRole('heading', { level: 1, name: 'screens.devices' })).toBeInTheDocument();
+    expect(
+      screen.getByRole('heading', { level: 1, name: 'screens.devices' }),
+    ).toBeInTheDocument();
   });
 
   it('offers a back arrow to the parent screen', () => {
     renderHeader('/profile/devices');
 
-    expect(screen.getByRole('link', { name: 'back' })).toHaveAttribute('href', '/profile');
+    expect(screen.getByRole('link', { name: 'back' })).toHaveAttribute(
+      'href',
+      '/profile',
+    );
   });
 
   it('omits the back arrow on a bottom-navigation root', () => {
     renderHeader('/dashboard');
 
-    expect(screen.queryByRole('link', { name: 'back' })).not.toBeInTheDocument();
-    expect(screen.getByRole('heading', { level: 1, name: 'screens.dashboard' })).toBeInTheDocument();
+    expect(
+      screen.queryByRole('link', { name: 'back' }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByRole('heading', { level: 1, name: 'screens.dashboard' }),
+    ).toBeInTheDocument();
   });
 
   it('lets a page override the title with a runtime name', () => {
     // El nombre de un torneo no cabe en un mapa estatico
     renderHeader('/competitions/abc-123', { title: 'Copa de Otoño' });
 
-    expect(screen.getByRole('heading', { level: 1, name: 'Copa de Otoño' })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'back' })).toHaveAttribute('href', '/competitions');
+    expect(
+      screen.getByRole('heading', { level: 1, name: 'Copa de Otoño' }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'back' })).toHaveAttribute(
+      'href',
+      '/competitions',
+    );
   });
 
   it('lets a page drop the back arrow explicitly', () => {
     renderHeader('/profile/devices', { backTo: null });
 
-    expect(screen.queryByRole('link', { name: 'back' })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('link', { name: 'back' }),
+    ).not.toBeInTheDocument();
   });
 
   it('lets a page decide how the arrow goes back (FE #647, fase 3)', () => {
     // El detalle de un torneo al que se llegó desde Torneos: vuelve atrás de
     // verdad, para que Torneos quede donde estaba
     const alVolver = vi.fn();
-    renderHeader('/competitions/abc', { title: 'Summer Cup', backTo: '/competitions', alVolver });
+    renderHeader('/competitions/abc', {
+      title: 'Summer Cup',
+      backTo: '/competitions',
+      alVolver,
+    });
 
     fireEvent.click(screen.getByRole('button', { name: 'back' }));
 
     expect(alVolver).toHaveBeenCalledTimes(1);
-    expect(screen.queryByRole('link', { name: 'back' })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('link', { name: 'back' }),
+    ).not.toBeInTheDocument();
   });
 
   it('keeps the brand on a route outside the map', () => {
@@ -105,8 +165,16 @@ describe('HeaderAuth', () => {
   it('keeps the desktop navigation untouched', () => {
     renderHeader('/profile/devices');
 
-    const hrefs = screen.getAllByRole('link').map((link) => link.getAttribute('href'));
-    expect(hrefs).toEqual(expect.arrayContaining(['/dashboard', '/browse-competitions', '/competitions']));
+    const hrefs = screen
+      .getAllByRole('link')
+      .map((link) => link.getAttribute('href'));
+    expect(hrefs).toEqual(
+      expect.arrayContaining([
+        '/dashboard',
+        '/browse-competitions',
+        '/competitions',
+      ]),
+    );
   });
 
   it('reaches the feed from the desktop navigation', () => {
@@ -122,7 +190,9 @@ describe('HeaderAuth', () => {
      */
     renderHeader('/dashboard');
 
-    const hrefs = screen.getAllByRole('link').map((link) => link.getAttribute('href'));
+    const hrefs = screen
+      .getAllByRole('link')
+      .map((link) => link.getAttribute('href'));
     expect(hrefs).toContain('/feed');
   });
 
@@ -139,9 +209,12 @@ describe('HeaderAuth', () => {
           <Routes>
             <Route path="/friends" element={<p>lista de amigos</p>} />
             <Route path="/feed" element={<p>actividad</p>} />
-            <Route path="/players/:userId" element={<HeaderAuth user={user} />} />
+            <Route
+              path="/players/:userId"
+              element={<HeaderAuth user={user} />}
+            />
           </Routes>
-        </MemoryRouter>
+        </MemoryRouter>,
       );
 
     it('goes back to the previous page instead of a fixed parent', () => {
@@ -244,13 +317,17 @@ describe('HeaderAuth', () => {
       '/player/invitations',
       '/feed',
     ];
-    const abrePerfil = () => fireEvent.click(screen.getByText('AS').closest('button'));
-    const enDesplegable = () => screen.queryByTestId('navegacion-en-desplegable');
+    const abrePerfil = () =>
+      fireEvent.click(screen.getByText('AS').closest('button'));
+    const enDesplegable = () =>
+      screen.queryByTestId('navegacion-en-desplegable');
 
     it('M1: no hay un botón «Menú» aparte', () => {
       renderHeader('/dashboard');
 
-      expect(screen.queryByRole('button', { name: /header\.menu/ })).not.toBeInTheDocument();
+      expect(
+        screen.queryByRole('button', { name: /header\.menu/ }),
+      ).not.toBeInTheDocument();
     });
 
     it('M2: el desplegable del avatar trae los seis enlaces, en el orden de siempre, antes del perfil', () => {
@@ -258,11 +335,14 @@ describe('HeaderAuth', () => {
 
       abrePerfil();
 
-      const hrefs = [...enDesplegable().querySelectorAll('a')].map((a) => a.getAttribute('href'));
+      const hrefs = [...enDesplegable().querySelectorAll('a')].map((a) =>
+        a.getAttribute('href'),
+      );
       expect(hrefs).toEqual(ENLACES);
       const verPerfil = screen.getByText('header.viewProfile');
       expect(
-        enDesplegable().compareDocumentPosition(verPerfil) & globalThis.Node.DOCUMENT_POSITION_FOLLOWING
+        enDesplegable().compareDocumentPosition(verPerfil) &
+          globalThis.Node.DOCUMENT_POSITION_FOLLOWING,
       ).toBeTruthy();
     });
 
@@ -291,12 +371,16 @@ describe('HeaderAuth', () => {
       const botonPerfil = screen.getByText('AS').closest('button');
 
       expect(botonPerfil).toHaveAttribute('aria-expanded', 'false');
-      expect(screen.getByTestId('indicador-desplegable')).not.toHaveClass('rotate-180');
+      expect(screen.getByTestId('indicador-desplegable')).not.toHaveClass(
+        'rotate-180',
+      );
 
       abrePerfil();
 
       expect(botonPerfil).toHaveAttribute('aria-expanded', 'true');
-      expect(screen.getByTestId('indicador-desplegable')).toHaveClass('rotate-180');
+      expect(screen.getByTestId('indicador-desplegable')).toHaveClass(
+        'rotate-180',
+      );
     });
 
     // Antes (FE #680) el idioma solo vivia en el desplegable para ahorrar
@@ -305,7 +389,9 @@ describe('HeaderAuth', () => {
     it('L1: en la barra de escritorio el idioma es un globo compacto, sin abrir nada', () => {
       renderHeader('/dashboard');
 
-      expect(screen.getByTestId('language-switcher-compacto')).toBeInTheDocument();
+      expect(
+        screen.getByTestId('language-switcher-compacto'),
+      ).toBeInTheDocument();
       // El selector con texto sigue sin ocupar la barra
       expect(screen.queryByTestId('language-switcher')).not.toBeInTheDocument();
     });
@@ -316,13 +402,17 @@ describe('HeaderAuth', () => {
       const botonPerfil = screen.getByText('AS').closest('button');
       // Hermano del bloque del avatar, no dentro de el: dentro, cada pulsacion
       // en el globo contaria como pulsar en el desplegable
-      expect(screen.getByTestId('language-switcher-compacto').nextElementSibling).toBe(botonPerfil.parentElement);
+      expect(
+        screen.getByTestId('language-switcher-compacto').nextElementSibling,
+      ).toBe(botonPerfil.parentElement);
     });
 
     it('L1c: solo en escritorio; en movil el idioma sigue en Perfil', () => {
       renderHeader('/dashboard');
 
-      const bloque = screen.getByTestId('language-switcher-compacto').closest('.md\\:flex');
+      const bloque = screen
+        .getByTestId('language-switcher-compacto')
+        .closest('.md\\:flex');
       expect(bloque).toHaveClass('hidden');
     });
 
@@ -355,7 +445,10 @@ describe('HeaderAuth', () => {
       renderHeader('/dashboard');
       abrePerfil();
 
-      expect(screen.getByTestId('navegacion-en-linea')).toHaveClass('hidden', 'xl:flex');
+      expect(screen.getByTestId('navegacion-en-linea')).toHaveClass(
+        'hidden',
+        'xl:flex',
+      );
       expect(enDesplegable()).toHaveClass('xl:hidden');
     });
   });
@@ -366,22 +459,32 @@ describe('HeaderAuth', () => {
     });
 
     const enLinea = () =>
-      screen.getByTestId('navegacion-en-linea').querySelector('a[href="/feed"]');
+      screen
+        .getByTestId('navegacion-en-linea')
+        .querySelector('a[href="/feed"]');
 
     it('shows nothing at zero', () => {
       renderHeader('/dashboard');
 
-      expect(enLinea().querySelector('[data-testid="insignia-novedades"]')).toBeNull();
+      expect(
+        enLinea().querySelector('[data-testid="insignia-novedades"]'),
+      ).toBeNull();
     });
 
     it('shows 9+ from ten, inline and in the avatar menu', () => {
       novedades = 12;
       renderHeader('/dashboard');
 
-      expect(enLinea().querySelector('[data-testid="insignia-novedades"]')).toHaveTextContent('9+');
+      expect(
+        enLinea().querySelector('[data-testid="insignia-novedades"]'),
+      ).toHaveTextContent('9+');
       fireEvent.click(screen.getByText('AS').closest('button'));
-      const enMenu = screen.getByTestId('navegacion-en-desplegable').querySelector('a[href="/feed"]');
-      expect(enMenu.querySelector('[data-testid="insignia-novedades"]')).toHaveTextContent('9+');
+      const enMenu = screen
+        .getByTestId('navegacion-en-desplegable')
+        .querySelector('a[href="/feed"]');
+      expect(
+        enMenu.querySelector('[data-testid="insignia-novedades"]'),
+      ).toHaveTextContent('9+');
     });
 
     it('tells screen readers the number, inline and in the menu (review FE-1)', () => {
@@ -391,7 +494,9 @@ describe('HeaderAuth', () => {
       expect(enLinea()).toHaveAccessibleDescription('bottomNav.unseen');
       expect(enLinea()).toHaveAccessibleName('header.feed');
       fireEvent.click(screen.getByText('AS').closest('button'));
-      const enMenu = screen.getByTestId('navegacion-en-desplegable').querySelector('a[href="/feed"]');
+      const enMenu = screen
+        .getByTestId('navegacion-en-desplegable')
+        .querySelector('a[href="/feed"]');
       expect(enMenu).toHaveAccessibleDescription('bottomNav.unseen');
     });
 

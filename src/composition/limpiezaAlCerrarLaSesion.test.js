@@ -32,24 +32,38 @@ vi.mock('../services/novedadesDeActividad', () => ({
 }));
 vi.mock('../services/sesionCompartida', async (original) => ({
   ...(await original()),
-  olvidaLaCopiaParaArrancarSinCobertura: vi.fn(() => orden.push('sesionConocida')),
+  olvidaLaCopiaParaArrancarSinCobertura: vi.fn(() =>
+    orden.push('sesionConocida'),
+  ),
 }));
 vi.mock('../utils/toast', () => ({
-  default: { error: vi.fn(), success: vi.fn(), info: vi.fn(), dismiss: vi.fn() },
+  default: {
+    error: vi.fn(),
+    success: vi.fn(),
+    info: vi.fn(),
+    dismiss: vi.fn(),
+  },
 }));
 vi.mock('../utils/sentryHelpers', () => ({ clearUserContext: vi.fn() }));
 vi.mock('i18next', () => ({ default: { t: vi.fn((clave) => clave) } }));
 
 await import('./limpiezaAlCerrarLaSesion');
-const { limpiaLaCuenta, handleDeviceRevocationLogout } = await import('../infrastructure/http/deviceRevocationLogout');
-const { olvidaElCierreDeEstaCarga } = await import('../utils/cierreDeEstaCarga');
-const { anotaLaCuentaDeEstaPestana, olvidaLaCuentaDeEstaPestana } = await import('../utils/vueltaTrasEntrar');
+const { limpiaLaCuenta, handleDeviceRevocationLogout } =
+  await import('../infrastructure/http/deviceRevocationLogout');
+const { olvidaElCierreDeEstaCarga } =
+  await import('../utils/cierreDeEstaCarga');
+const { anotaLaCuentaDeEstaPestana, olvidaLaCuentaDeEstaPestana } =
+  await import('../utils/vueltaTrasEntrar');
 
 describe('limpiezaAlCerrarLaSesion', () => {
   beforeEach(() => {
     orden.length = 0;
     olvidaElCierreDeEstaCarga();
-    vi.stubGlobal('localStorage', { getItem: vi.fn(), setItem: vi.fn(), removeItem: vi.fn() });
+    vi.stubGlobal('localStorage', {
+      getItem: vi.fn(),
+      setItem: vi.fn(),
+      removeItem: vi.fn(),
+    });
     delete globalThis.window.location;
     globalThis.window.location = { href: '', pathname: '/dashboard' };
     olvidaLaCuentaDeEstaPestana();
@@ -57,16 +71,29 @@ describe('limpiezaAlCerrarLaSesion', () => {
   });
 
   it('main.jsx lo importa el primero, antes que nada que pueda cerrar la sesión', () => {
-    const main = readFileSync(resolve(globalThis.process.cwd(), 'src/main.jsx'), 'utf8');
-    const primerImport = main.split('\n').find((linea) => linea.startsWith('import '));
+    const main = readFileSync(
+      resolve(globalThis.process.cwd(), 'src/main.jsx'),
+      'utf8',
+    );
+    const primerImport = main
+      .split('\n')
+      .find((linea) => linea.startsWith('import '));
 
-    expect(primerImport).toBe("import './composition/limpiezaAlCerrarLaSesion';");
+    expect(primerImport).toBe(
+      "import './composition/limpiezaAlCerrarLaSesion';",
+    );
   });
 
   it('limpiaLaCuenta borra las cinco cosas de la cuenta, en el orden de siempre (C1: también la anotación en curso)', () => {
     limpiaLaCuenta();
 
-    expect(orden).toEqual(['loUltimoConocido', 'refrescoDeHandicap', 'novedades', 'sesionConocida', 'anotacionEnCurso']);
+    expect(orden).toEqual([
+      'loUltimoConocido',
+      'refrescoDeHandicap',
+      'novedades',
+      'sesionConocida',
+      'anotacionEnCurso',
+    ]);
   });
 
   it('un cierre forzado de verdad (dispositivo revocado) las ejecuta', () => {
@@ -77,6 +104,12 @@ describe('limpiezaAlCerrarLaSesion', () => {
       vi.useRealTimers();
     }
 
-    expect(orden).toEqual(['loUltimoConocido', 'refrescoDeHandicap', 'novedades', 'sesionConocida', 'anotacionEnCurso']);
+    expect(orden).toEqual([
+      'loUltimoConocido',
+      'refrescoDeHandicap',
+      'novedades',
+      'sesionConocida',
+      'anotacionEnCurso',
+    ]);
   });
 });

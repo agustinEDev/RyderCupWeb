@@ -28,13 +28,17 @@ export const opcionesDeRetirada = (vista, yo) => {
   const mio = jugadores.find((p) => p.userId === yo);
   if (!mio) return NADA;
   const retirados = vista.withdrawnPlayerIds ?? [];
-  const companero = jugadores.find((p) => p.team === mio.team && p.userId !== yo) ?? null;
-  const pareja = companero ? { userId: companero.userId, userName: companero.userName } : null;
+  const companero =
+    jugadores.find((p) => p.team === mio.team && p.userId !== yo) ?? null;
+  const pareja = companero
+    ? { userId: companero.userId, userName: companero.userName }
+    : null;
   const disponible =
     vista.matchFormat === 'FOURBALL' &&
     ESTADOS_EN_JUEGO.has(vista.matchStatus) &&
     (vista.scorecardSubmittedBy ?? []).length === 0;
-  if (!disponible) return { ...NADA, pareja, yoRetirado: retirados.includes(yo) };
+  if (!disponible)
+    return { ...NADA, pareja, yoRetirado: retirados.includes(yo) };
 
   const yoRetirado = retirados.includes(yo);
   const parejaRetirada = Boolean(pareja) && retirados.includes(pareja.userId);
@@ -55,7 +59,11 @@ export const opcionesDeRetirada = (vista, yo) => {
  * retirada, también al rival que ella marcaba (F5).
  */
 export const aQuienesMarco = (asignaciones, yo) => [
-  ...new Set((asignaciones ?? []).filter((a) => a.scorerUserId === yo).map((a) => a.marksUserId)),
+  ...new Set(
+    (asignaciones ?? [])
+      .filter((a) => a.scorerUserId === yo)
+      .map((a) => a.marksUserId),
+  ),
 ];
 
 /**

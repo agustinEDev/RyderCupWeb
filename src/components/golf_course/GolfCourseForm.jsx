@@ -35,27 +35,64 @@ const TEE_GENDERS = [null, 'MALE', 'FEMALE'];
 const GolfCourseForm = ({ initialData = null, onSubmit, onCancel }) => {
   const { t } = useTranslation('golfCourses');
 
+  // Lo que trae `initialData` se toma al montar, una sola vez: copiarlo en un
+  // efecto en cada cambio de identidad borraba lo escrito cada vez que quien lo
+  // monta volvía a pintar (al pedir un campo, el `{ countryCode }` nuevo de
+  // cada render vaciaba nombre y tipo al enviar). Para editar otro campo sin
+  // desmontar, quien lo monta le da otra `key`
   // Basic fields
-  const [name, setName] = useState('');
-  const [countryCode, setCountryCode] = useState('');
-  const [courseType, setCourseType] = useState('STANDARD_18');
+  const [name, setName] = useState(() => initialData?.name || '');
+  const [countryCode, setCountryCode] = useState(
+    () => initialData?.countryCode || initialData?.country_code || '',
+  );
+  const [courseType, setCourseType] = useState(
+    () => initialData?.courseType || initialData?.course_type || 'STANDARD_18',
+  );
 
   // Countries data
   const [allCountries, setAllCountries] = useState([]);
 
   // Tees (1 a 14: MIN_TEES/MAX_TEES en `courseTypeRanges`)
-  const [tees, setTees] = useState([
-    { color: 'WHITE', teeGender: null, identifier: '', courseRating: '', slopeRating: '' },
-    { color: 'YELLOW', teeGender: null, identifier: '', courseRating: '', slopeRating: '' },
-  ]);
+  const [tees, setTees] = useState(() =>
+    initialData?.tees?.length > 0
+      ? initialData.tees.map((tee) => ({
+          color: tee.color,
+          teeGender: tee.teeGender ?? tee.tee_gender ?? tee.gender ?? null,
+          identifier: tee.identifier || '',
+          courseRating: tee.courseRating || tee.course_rating || '',
+          slopeRating: tee.slopeRating || tee.slope_rating || '',
+        }))
+      : [
+          {
+            color: 'WHITE',
+            teeGender: null,
+            identifier: '',
+            courseRating: '',
+            slopeRating: '',
+          },
+          {
+            color: 'YELLOW',
+            teeGender: null,
+            identifier: '',
+            courseRating: '',
+            slopeRating: '',
+          },
+        ],
+  );
 
   // Holes (18 fixed)
-  const [holes, setHoles] = useState(
-    Array.from({ length: 18 }, (_, i) => ({
-      holeNumber: i + 1,
-      par: 4,
-      strokeIndex: i + 1,
-    }))
+  const [holes, setHoles] = useState(() =>
+    initialData?.holes?.length === 18
+      ? initialData.holes.map((hole) => ({
+          holeNumber: hole.holeNumber || hole.hole_number,
+          par: hole.par,
+          strokeIndex: hole.strokeIndex || hole.stroke_index,
+        }))
+      : Array.from({ length: 18 }, (_, i) => ({
+          holeNumber: i + 1,
+          par: 4,
+          strokeIndex: i + 1,
+        })),
   );
 
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -82,12 +119,12 @@ const GolfCourseForm = ({ initialData = null, onSubmit, onCancel }) => {
         const data = await fetchCountriesUseCase.execute();
         const validCountries = Array.isArray(data)
           ? data
-              .filter(c => c?.code && (c?.name_en || c?.name_es))
-              .map(c => ({
+              .filter((c) => c?.code && (c?.name_en || c?.name_es))
+              .map((c) => ({
                 id: c.code,
                 code: c.code,
                 name_en: c.name_en,
-                name_es: c.name_es
+                name_es: c.name_es,
               }))
           : [];
         setAllCountries(validCountries);
@@ -98,34 +135,6 @@ const GolfCourseForm = ({ initialData = null, onSubmit, onCancel }) => {
     };
     fetchCountries();
   }, []);
-
-  // Load initial data if editing
-  useEffect(() => {
-    if (initialData) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- pre-existing pattern surfaced by eslint-plugin-react-hooks 7.1.1 bump; needs dedicated review (tracked in follow-up)
-      setName(initialData.name || '');
-      setCountryCode(initialData.countryCode || initialData.country_code || '');
-      setCourseType(initialData.courseType || initialData.course_type || 'STANDARD_18');
-
-      if (initialData.tees && initialData.tees.length > 0) {
-        setTees(initialData.tees.map(tee => ({
-          color: tee.color,
-          teeGender: tee.teeGender ?? tee.tee_gender ?? tee.gender ?? null,
-          identifier: tee.identifier || '',
-          courseRating: tee.courseRating || tee.course_rating || '',
-          slopeRating: tee.slopeRating || tee.slope_rating || '',
-        })));
-      }
-
-      if (initialData.holes && initialData.holes.length === 18) {
-        setHoles(initialData.holes.map(hole => ({
-          holeNumber: hole.holeNumber || hole.hole_number,
-          par: hole.par,
-          strokeIndex: hole.strokeIndex || hole.stroke_index,
-        })));
-      }
-    }
-  }, [initialData]);
 
   // Add tee
   //
@@ -141,7 +150,13 @@ const GolfCourseForm = ({ initialData = null, onSubmit, onCancel }) => {
 
     setTees([
       ...tees,
-      { color: 'YELLOW', teeGender: null, identifier: '', courseRating: '', slopeRating: '' },
+      {
+        color: 'YELLOW',
+        teeGender: null,
+        identifier: '',
+        courseRating: '',
+        slopeRating: '',
+      },
     ]);
   };
 
@@ -181,14 +196,15 @@ const GolfCourseForm = ({ initialData = null, onSubmit, onCancel }) => {
     // Todo lo enfocable del panel son botones y todos están visibles por
     // construcción, así que no hace falta filtrar por visibilidad (y hacerlo
     // con offsetParent falla dentro de un contenedor position:fixed).
-    const getFocusable = () => Array.from(panel.querySelectorAll('button:not([disabled])'));
+    const getFocusable = () =>
+      Array.from(panel.querySelectorAll('button:not([disabled])'));
 
     // Enfocar el valor actual para que el usuario sepa de dónde parte.
     const focusables = getFocusable();
     const selected = panel.querySelector('[aria-pressed="true"]');
     (selected || focusables[0])?.focus();
 
-    const handleKeyDown = event => {
+    const handleKeyDown = (event) => {
       if (event.key === 'Escape') {
         event.preventDefault();
         event.stopPropagation();
@@ -219,10 +235,13 @@ const GolfCourseForm = ({ initialData = null, onSubmit, onCancel }) => {
 
   // Select stroke index with auto-swap: if another hole already uses the chosen SI, swap them
   const handleStrokeIndexSelect = (holeIndex, newSI) => {
-    const conflictIndex = holes.findIndex((h, hi) => hi !== holeIndex && h.strokeIndex === newSI);
+    const conflictIndex = holes.findIndex(
+      (h, hi) => hi !== holeIndex && h.strokeIndex === newSI,
+    );
     const updatedHoles = holes.map((h, hi) => {
       if (hi === holeIndex) return { ...h, strokeIndex: newSI };
-      if (hi === conflictIndex) return { ...h, strokeIndex: holes[holeIndex].strokeIndex };
+      if (hi === conflictIndex)
+        return { ...h, strokeIndex: holes[holeIndex].strokeIndex };
       return h;
     });
     setHoles(updatedHoles);
@@ -256,7 +275,9 @@ const GolfCourseForm = ({ initialData = null, onSubmit, onCancel }) => {
     }
 
     if (!isTeeCountValid(tees.length)) {
-      customToast.error(t('form.errors.teesRange', { min: MIN_TEES, max: MAX_TEES }));
+      customToast.error(
+        t('form.errors.teesRange', { min: MIN_TEES, max: MAX_TEES }),
+      );
       return false;
     }
 
@@ -290,7 +311,10 @@ const GolfCourseForm = ({ initialData = null, onSubmit, onCancel }) => {
       }
     }
     for (const cat of Object.keys(categoryGenderMap)) {
-      if (categoryGenderMap[cat].hasGendered && categoryGenderMap[cat].hasUnisex) {
+      if (
+        categoryGenderMap[cat].hasGendered &&
+        categoryGenderMap[cat].hasUnisex
+      ) {
         customToast.error(t('form.errors.genderMixing'));
         return false;
       }
@@ -300,7 +324,9 @@ const GolfCourseForm = ({ initialData = null, onSubmit, onCancel }) => {
     for (let i = 0; i < tees.length; i++) {
       const tee = tees[i];
       if (tee.color === TeeColor.OTHER && !tee.identifier?.trim()) {
-        customToast.error(t('form.errors.teeIdentifierRequired', { index: i + 1 }));
+        customToast.error(
+          t('form.errors.teeIdentifierRequired', { index: i + 1 }),
+        );
         return false;
       }
 
@@ -312,18 +338,34 @@ const GolfCourseForm = ({ initialData = null, onSubmit, onCancel }) => {
       // constraint validation. No borrarlas por parecer inalcanzables.
       const [minRating, maxRating] = ratingRange;
       const courseRating = parseFloat(tee.courseRating);
-      if (isNaN(courseRating) || courseRating < minRating || courseRating > maxRating) {
+      if (
+        isNaN(courseRating) ||
+        courseRating < minRating ||
+        courseRating > maxRating
+      ) {
         customToast.error(
-          t('form.errors.courseRatingRange', { index: i + 1, min: minRating.toFixed(1), max: maxRating.toFixed(1) })
+          t('form.errors.courseRatingRange', {
+            index: i + 1,
+            min: minRating.toFixed(1),
+            max: maxRating.toFixed(1),
+          }),
         );
         return false;
       }
 
       const [minSlope, maxSlope] = slopeRange;
       const slopeRating = parseInt(tee.slopeRating, 10);
-      if (isNaN(slopeRating) || slopeRating < minSlope || slopeRating > maxSlope) {
+      if (
+        isNaN(slopeRating) ||
+        slopeRating < minSlope ||
+        slopeRating > maxSlope
+      ) {
         customToast.error(
-          t('form.errors.slopeRatingRange', { index: i + 1, min: minSlope, max: maxSlope })
+          t('form.errors.slopeRatingRange', {
+            index: i + 1,
+            min: minSlope,
+            max: maxSlope,
+          }),
         );
         return false;
       }
@@ -339,7 +381,7 @@ const GolfCourseForm = ({ initialData = null, onSubmit, onCancel }) => {
     }
 
     // Validate holes - check uniqueness
-    const strokeIndices = holes.map(h => h.strokeIndex);
+    const strokeIndices = holes.map((h) => h.strokeIndex);
     const uniqueIndices = new Set(strokeIndices);
     if (uniqueIndices.size !== 18) {
       customToast.error(t('form.errors.uniqueStrokeIndices'));
@@ -350,7 +392,11 @@ const GolfCourseForm = ({ initialData = null, onSubmit, onCancel }) => {
     const totalPar = calculateTotalPar();
     if (totalPar < minTotalPar || totalPar > maxTotalPar) {
       customToast.error(
-        t('form.errors.totalParRange', { totalPar, min: minTotalPar, max: maxTotalPar })
+        t('form.errors.totalParRange', {
+          totalPar,
+          min: minTotalPar,
+          max: maxTotalPar,
+        }),
       );
       return false;
     }
@@ -373,14 +419,14 @@ const GolfCourseForm = ({ initialData = null, onSubmit, onCancel }) => {
         name: name.trim(),
         countryCode: countryCode.toUpperCase(),
         courseType,
-        tees: tees.map(tee => ({
+        tees: tees.map((tee) => ({
           color: tee.color,
           teeGender: tee.teeGender || null,
           identifier: tee.identifier?.trim() || null,
           courseRating: parseFloat(tee.courseRating),
           slopeRating: parseInt(tee.slopeRating, 10),
         })),
-        holes: holes.map(hole => ({
+        holes: holes.map((hole) => ({
           holeNumber: hole.holeNumber,
           par: hole.par,
           strokeIndex: hole.strokeIndex,
@@ -397,13 +443,17 @@ const GolfCourseForm = ({ initialData = null, onSubmit, onCancel }) => {
   };
 
   const totalPar = calculateTotalPar();
-  const parColor = isTotalParValid(totalPar, courseType) ? 'text-green-600' : 'text-red-600';
+  const parColor = isTotalParValid(totalPar, courseType)
+    ? 'text-green-600'
+    : 'text-red-600';
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       {/* Basic Info Section */}
       <div className="bg-white border border-gray-200 rounded-lg p-6">
-        <h3 className="text-lg font-bold text-gray-900 mb-4">{t('form.basicInfo')}</h3>
+        <h3 className="text-lg font-bold text-gray-900 mb-4">
+          {t('form.basicInfo')}
+        </h3>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* Name */}
@@ -439,7 +489,7 @@ const GolfCourseForm = ({ initialData = null, onSubmit, onCancel }) => {
               {t('form.courseType')} *
             </label>
             <div className="flex flex-wrap gap-2">
-              {COURSE_TYPES.map(type => (
+              {COURSE_TYPES.map((type) => (
                 <button
                   key={type}
                   type="button"
@@ -462,7 +512,9 @@ const GolfCourseForm = ({ initialData = null, onSubmit, onCancel }) => {
       {/* Tees Section */}
       <div className="bg-white border border-gray-200 rounded-lg p-6">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-bold text-gray-900">{t('form.tees')} ({tees.length}/{MAX_TEES})</h3>
+          <h3 className="text-lg font-bold text-gray-900">
+            {t('form.tees')} ({tees.length}/{MAX_TEES})
+          </h3>
           <button
             type="button"
             onClick={handleAddTee}
@@ -505,7 +557,7 @@ const GolfCourseForm = ({ initialData = null, onSubmit, onCancel }) => {
                     {t('form.color')}
                   </label>
                   <div className="flex flex-col gap-1">
-                    {TEE_COLORS.map(cat => (
+                    {TEE_COLORS.map((cat) => (
                       <button
                         key={cat}
                         type="button"
@@ -536,7 +588,7 @@ const GolfCourseForm = ({ initialData = null, onSubmit, onCancel }) => {
                     {t('form.teeGender')}
                   </label>
                   <div className="flex flex-col gap-1">
-                    {TEE_GENDERS.map(g => (
+                    {TEE_GENDERS.map((g) => (
                       <button
                         key={g ?? 'none'}
                         type="button"
@@ -561,7 +613,9 @@ const GolfCourseForm = ({ initialData = null, onSubmit, onCancel }) => {
                   <input
                     type="text"
                     value={tee.identifier}
-                    onChange={(e) => handleTeeChange(index, 'identifier', e.target.value)}
+                    onChange={(e) =>
+                      handleTeeChange(index, 'identifier', e.target.value)
+                    }
                     placeholder={t('form.identifierPlaceholder')}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
                     required={tee.color === TeeColor.OTHER}
@@ -579,7 +633,9 @@ const GolfCourseForm = ({ initialData = null, onSubmit, onCancel }) => {
                     min={ratingRange[0]}
                     max={ratingRange[1]}
                     value={tee.courseRating}
-                    onChange={(e) => handleTeeChange(index, 'courseRating', e.target.value)}
+                    onChange={(e) =>
+                      handleTeeChange(index, 'courseRating', e.target.value)
+                    }
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
                     required
                   />
@@ -595,7 +651,9 @@ const GolfCourseForm = ({ initialData = null, onSubmit, onCancel }) => {
                     min={slopeRange[0]}
                     max={slopeRange[1]}
                     value={tee.slopeRating}
-                    onChange={(e) => handleTeeChange(index, 'slopeRating', e.target.value)}
+                    onChange={(e) =>
+                      handleTeeChange(index, 'slopeRating', e.target.value)
+                    }
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
                     required
                   />
@@ -623,9 +681,15 @@ const GolfCourseForm = ({ initialData = null, onSubmit, onCancel }) => {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-gray-200">
-                <th className="text-left py-2 px-3 font-medium text-gray-700">{t('form.hole')}</th>
-                <th className="text-left py-2 px-3 font-medium text-gray-700">{t('form.par')}</th>
-                <th className="text-left py-2 px-3 font-medium text-gray-700">{t('form.strokeIndex')}</th>
+                <th className="text-left py-2 px-3 font-medium text-gray-700">
+                  {t('form.hole')}
+                </th>
+                <th className="text-left py-2 px-3 font-medium text-gray-700">
+                  {t('form.par')}
+                </th>
+                <th className="text-left py-2 px-3 font-medium text-gray-700">
+                  {t('form.strokeIndex')}
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -634,7 +698,7 @@ const GolfCourseForm = ({ initialData = null, onSubmit, onCancel }) => {
                   <td className="py-2 px-3 font-medium">{hole.holeNumber}</td>
                   <td className="py-2 px-3">
                     <div className="flex gap-1">
-                      {VALID_HOLE_PARS.map(p => (
+                      {VALID_HOLE_PARS.map((p) => (
                         <button
                           key={p}
                           type="button"
@@ -653,7 +717,7 @@ const GolfCourseForm = ({ initialData = null, onSubmit, onCancel }) => {
                   <td className="py-2 px-3">
                     <button
                       type="button"
-                      onClick={event => {
+                      onClick={(event) => {
                         pickerTriggerRef.current = event.currentTarget;
                         setOpenPickerIndex(index);
                       }}
@@ -700,7 +764,8 @@ const GolfCourseForm = ({ initialData = null, onSubmit, onCancel }) => {
           >
             <div className="flex items-center justify-between mb-3">
               <span className="text-sm font-semibold text-gray-600">
-                {t('form.strokeIndex')} — {t('form.hole')} {holes[openPickerIndex]?.holeNumber}
+                {t('form.strokeIndex')} — {t('form.hole')}{' '}
+                {holes[openPickerIndex]?.holeNumber}
               </span>
               <button
                 type="button"
@@ -712,9 +777,9 @@ const GolfCourseForm = ({ initialData = null, onSubmit, onCancel }) => {
               </button>
             </div>
             <div className="grid grid-cols-6 gap-2">
-              {Array.from({ length: 18 }, (_, i) => i + 1).map(n => {
+              {Array.from({ length: 18 }, (_, i) => i + 1).map((n) => {
                 const conflictHole = holes.find(
-                  (h, hi) => hi !== openPickerIndex && h.strokeIndex === n
+                  (h, hi) => hi !== openPickerIndex && h.strokeIndex === n,
                 );
                 const usedByOther = Boolean(conflictHole);
                 const isSelected = holes[openPickerIndex]?.strokeIndex === n;
@@ -743,8 +808,8 @@ const GolfCourseForm = ({ initialData = null, onSubmit, onCancel }) => {
                       isSelected
                         ? 'bg-primary text-white'
                         : usedByOther
-                        ? 'bg-gray-100 text-gray-500 border border-gray-200 hover:border-amber-400 hover:text-amber-700 hover:bg-amber-50'
-                        : 'bg-white text-gray-700 border border-gray-200 hover:border-primary hover:text-primary'
+                          ? 'bg-gray-100 text-gray-500 border border-gray-200 hover:border-amber-400 hover:text-amber-700 hover:bg-amber-50'
+                          : 'bg-white text-gray-700 border border-gray-200 hover:border-primary hover:text-primary'
                     }`}
                   >
                     {n}
@@ -770,7 +835,11 @@ const GolfCourseForm = ({ initialData = null, onSubmit, onCancel }) => {
           disabled={isSubmitting}
           className="px-6 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 disabled:opacity-50"
         >
-          {isSubmitting ? t('form.submitting') : (initialData ? t('form.update') : t('form.create'))}
+          {isSubmitting
+            ? t('form.submitting')
+            : initialData
+              ? t('form.update')
+              : t('form.create')}
         </button>
       </div>
     </form>

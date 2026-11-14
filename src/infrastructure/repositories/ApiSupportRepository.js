@@ -1,7 +1,10 @@
 import ISupportRepository from '../../domain/repositories/ISupportRepository.js';
 
 // Use plain fetch (not apiRequest) since this is an unauthenticated public endpoint
-const API_URL = globalThis.APP_CONFIG?.API_BASE_URL || import.meta.env.VITE_API_BASE_URL || '';
+const API_URL =
+  globalThis.APP_CONFIG?.API_BASE_URL ||
+  import.meta.env.VITE_API_BASE_URL ||
+  '';
 
 /**
  * API implementation of Support Repository
@@ -42,7 +45,7 @@ class ApiSupportRepository extends ISupportRepository {
       return JSON.parse(bodyText);
     } catch (parseError) {
       const error = new Error(
-        `Invalid JSON response (status ${response.status}): ${bodySnippet} — ${parseError.message}`
+        `Invalid JSON response (status ${response.status}): ${bodySnippet} — ${parseError.message}`,
       );
       error.code = 'INVALID_JSON_RESPONSE';
       error.status = response.status;

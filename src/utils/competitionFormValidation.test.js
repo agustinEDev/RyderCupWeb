@@ -11,24 +11,36 @@ const validFormData = {
   adjacentCountry1: null,
   adjacentCountry2: null,
   golfCourses: [{ countryCode: 'ES' }],
-  numberOfPlayers: '24'
+  numberOfPlayers: '24',
 };
 
 describe('validateCompetitionForm', () => {
   it('V3: al editar no se exigen campos de golf: se gestionan en la ficha', () => {
     expect(
-      validateCompetitionForm({ ...validFormData, golfCourses: [] }, { exigirCampos: false })
+      validateCompetitionForm(
+        { ...validFormData, golfCourses: [] },
+        { exigirCampos: false },
+      ),
     ).toBeNull();
   });
 
   it('V4: al crear, sí (en todos los tipos)', () => {
-    expect(validateCompetitionForm({ ...validFormData, golfCourses: [] })).toEqual({
+    expect(
+      validateCompetitionForm({ ...validFormData, golfCourses: [] }),
+    ).toEqual({
       key: 'golfCoursesRequired',
       missingCourseCountryCodes: ['ES'],
     });
     expect(
-      validateCompetitionForm({ ...validFormData, tournamentType: 'STABLEFORD', golfCourses: [] })
-    ).toEqual({ key: 'golfCoursesRequired', missingCourseCountryCodes: ['ES'] });
+      validateCompetitionForm({
+        ...validFormData,
+        tournamentType: 'STABLEFORD',
+        golfCourses: [],
+      }),
+    ).toEqual({
+      key: 'golfCoursesRequired',
+      missingCourseCountryCodes: ['ES'],
+    });
   });
 
   it('V1: un torneo sin equipos no pide nombres de equipo (FE #791)', () => {
@@ -38,13 +50,17 @@ describe('validateCompetitionForm', () => {
         tournamentType: 'STABLEFORD',
         teamOneName: '',
         teamTwoName: '',
-      })
+      }),
     ).toBeNull();
   });
 
   it('V2: una Ryder los sigue pidiendo', () => {
     expect(
-      validateCompetitionForm({ ...validFormData, tournamentType: 'RYDER_CUP', teamOneName: '' })
+      validateCompetitionForm({
+        ...validFormData,
+        tournamentType: 'RYDER_CUP',
+        teamOneName: '',
+      }),
     ).toEqual({ key: 'teamNamesRequired' });
   });
 
@@ -53,12 +69,18 @@ describe('validateCompetitionForm', () => {
   });
 
   it('returns nameRequired when competitionName is empty', () => {
-    const result = validateCompetitionForm({ ...validFormData, competitionName: '' });
+    const result = validateCompetitionForm({
+      ...validFormData,
+      competitionName: '',
+    });
     expect(result).toEqual({ key: 'nameRequired' });
   });
 
   it('returns nameRequired when competitionName is only whitespace', () => {
-    const result = validateCompetitionForm({ ...validFormData, competitionName: '   ' });
+    const result = validateCompetitionForm({
+      ...validFormData,
+      competitionName: '   ',
+    });
     expect(result).toEqual({ key: 'nameRequired' });
   });
 
@@ -69,32 +91,67 @@ describe('validateCompetitionForm', () => {
    * cifra: «...» o «---» no son un nombre.
    */
   it('returns nameTooShort below 3 characters, counted without spare spaces', () => {
-    expect(validateCompetitionForm({ ...validFormData, competitionName: 'ab' })).toEqual({ key: 'nameTooShort' });
-    expect(validateCompetitionForm({ ...validFormData, competitionName: '  ab   ' })).toEqual({ key: 'nameTooShort' });
-    expect(validateCompetitionForm({ ...validFormData, competitionName: 'abc' })).toBeNull();
+    expect(
+      validateCompetitionForm({ ...validFormData, competitionName: 'ab' }),
+    ).toEqual({ key: 'nameTooShort' });
+    expect(
+      validateCompetitionForm({ ...validFormData, competitionName: '  ab   ' }),
+    ).toEqual({ key: 'nameTooShort' });
+    expect(
+      validateCompetitionForm({ ...validFormData, competitionName: 'abc' }),
+    ).toBeNull();
   });
 
   it('returns nameTooLong above 100 characters', () => {
-    expect(validateCompetitionForm({ ...validFormData, competitionName: 'a'.repeat(101) })).toEqual({ key: 'nameTooLong' });
-    expect(validateCompetitionForm({ ...validFormData, competitionName: 'a'.repeat(100) })).toBeNull();
+    expect(
+      validateCompetitionForm({
+        ...validFormData,
+        competitionName: 'a'.repeat(101),
+      }),
+    ).toEqual({ key: 'nameTooLong' });
+    expect(
+      validateCompetitionForm({
+        ...validFormData,
+        competitionName: 'a'.repeat(100),
+      }),
+    ).toBeNull();
     // Los espacios de sobra no cuentan: la API los junta antes de medir
-    expect(validateCompetitionForm({ ...validFormData, competitionName: `a${' '.repeat(120)}b` })).toBeNull();
+    expect(
+      validateCompetitionForm({
+        ...validFormData,
+        competitionName: `a${' '.repeat(120)}b`,
+      }),
+    ).toBeNull();
   });
 
   it('returns nameUnreadable without any letter or digit', () => {
-    expect(validateCompetitionForm({ ...validFormData, competitionName: '...' })).toEqual({ key: 'nameUnreadable' });
-    expect(validateCompetitionForm({ ...validFormData, competitionName: '- - -' })).toEqual({ key: 'nameUnreadable' });
-    expect(validateCompetitionForm({ ...validFormData, competitionName: 'Ñu 2' })).toBeNull();
-    expect(validateCompetitionForm({ ...validFormData, competitionName: '2026' })).toBeNull();
+    expect(
+      validateCompetitionForm({ ...validFormData, competitionName: '...' }),
+    ).toEqual({ key: 'nameUnreadable' });
+    expect(
+      validateCompetitionForm({ ...validFormData, competitionName: '- - -' }),
+    ).toEqual({ key: 'nameUnreadable' });
+    expect(
+      validateCompetitionForm({ ...validFormData, competitionName: 'Ñu 2' }),
+    ).toBeNull();
+    expect(
+      validateCompetitionForm({ ...validFormData, competitionName: '2026' }),
+    ).toBeNull();
   });
 
   it('returns teamNamesRequired when teamOneName is empty', () => {
-    const result = validateCompetitionForm({ ...validFormData, teamOneName: '' });
+    const result = validateCompetitionForm({
+      ...validFormData,
+      teamOneName: '',
+    });
     expect(result).toEqual({ key: 'teamNamesRequired' });
   });
 
   it('returns teamNamesRequired when teamTwoName is empty', () => {
-    const result = validateCompetitionForm({ ...validFormData, teamTwoName: '  ' });
+    const result = validateCompetitionForm({
+      ...validFormData,
+      teamTwoName: '  ',
+    });
     expect(result).toEqual({ key: 'teamNamesRequired' });
   });
 
@@ -112,7 +169,7 @@ describe('validateCompetitionForm', () => {
     const result = validateCompetitionForm({
       ...validFormData,
       startDate: '2026-06-05',
-      endDate: '2026-06-01'
+      endDate: '2026-06-01',
     });
     expect(result).toEqual({ key: 'endDateAfterStart' });
   });
@@ -123,8 +180,14 @@ describe('validateCompetitionForm', () => {
   });
 
   it('returns golfCoursesRequired with the missing main country code', () => {
-    const result = validateCompetitionForm({ ...validFormData, golfCourses: [] });
-    expect(result).toEqual({ key: 'golfCoursesRequired', missingCourseCountryCodes: ['ES'] });
+    const result = validateCompetitionForm({
+      ...validFormData,
+      golfCourses: [],
+    });
+    expect(result).toEqual({
+      key: 'golfCoursesRequired',
+      missingCourseCountryCodes: ['ES'],
+    });
   });
 
   it('returns golfCoursesRequired listing every country missing a course, including adjacents', () => {
@@ -132,11 +195,11 @@ describe('validateCompetitionForm', () => {
       ...validFormData,
       adjacentCountry1: 'PT',
       adjacentCountry2: 'FR',
-      golfCourses: [{ countryCode: 'ES' }]
+      golfCourses: [{ countryCode: 'ES' }],
     });
     expect(result).toEqual({
       key: 'golfCoursesRequired',
-      missingCourseCountryCodes: ['PT', 'FR']
+      missingCourseCountryCodes: ['PT', 'FR'],
     });
   });
 
@@ -144,42 +207,58 @@ describe('validateCompetitionForm', () => {
     const result = validateCompetitionForm({
       ...validFormData,
       adjacentCountry1: 'PT',
-      golfCourses: [{ countryCode: 'ES' }, { countryCode: 'PT' }]
+      golfCourses: [{ countryCode: 'ES' }, { countryCode: 'PT' }],
     });
     expect(result).toBeNull();
   });
 
   it('returns playersInvalid when numberOfPlayers is not a number', () => {
-    const result = validateCompetitionForm({ ...validFormData, numberOfPlayers: 'abc' });
+    const result = validateCompetitionForm({
+      ...validFormData,
+      numberOfPlayers: 'abc',
+    });
     expect(result).toEqual({ key: 'playersInvalid' });
   });
 
   it('returns playersMinimum when numberOfPlayers is below 2', () => {
-    const result = validateCompetitionForm({ ...validFormData, numberOfPlayers: '1' });
+    const result = validateCompetitionForm({
+      ...validFormData,
+      numberOfPlayers: '1',
+    });
     expect(result).toEqual({ key: 'playersMinimum' });
   });
 
   it('accepts numberOfPlayers at the minimum boundary (2)', () => {
-    const result = validateCompetitionForm({ ...validFormData, numberOfPlayers: '2' });
+    const result = validateCompetitionForm({
+      ...validFormData,
+      numberOfPlayers: '2',
+    });
     expect(result).toBeNull();
   });
 
   it('returns playersMaximum when numberOfPlayers is above 200', () => {
-    const result = validateCompetitionForm({ ...validFormData, numberOfPlayers: '201' });
+    const result = validateCompetitionForm({
+      ...validFormData,
+      numberOfPlayers: '201',
+    });
     expect(result).toEqual({ key: 'playersMaximum', max: 200 });
   });
 
   it('accepts numberOfPlayers at the maximum boundary (200)', () => {
     // La API sube a 200 con la BE #314: 150 ya no es un error
-    expect(validateCompetitionForm({ ...validFormData, numberOfPlayers: '200' })).toBeNull();
-    expect(validateCompetitionForm({ ...validFormData, numberOfPlayers: '150' })).toBeNull();
+    expect(
+      validateCompetitionForm({ ...validFormData, numberOfPlayers: '200' }),
+    ).toBeNull();
+    expect(
+      validateCompetitionForm({ ...validFormData, numberOfPlayers: '150' }),
+    ).toBeNull();
   });
 
   it('short-circuits on the first failing rule (name before team names)', () => {
     const result = validateCompetitionForm({
       ...validFormData,
       competitionName: '',
-      teamOneName: ''
+      teamOneName: '',
     });
     expect(result).toEqual({ key: 'nameRequired' });
   });
@@ -198,66 +277,128 @@ describe('validateCompetitionForm', () => {
   it('5: sin número de jugadores es válido — serán 12', () => {
     // Antes obligaba a escribirlo, y el campo nacía vacío: una decisión que
     // nadie quería tomar antes de poder pulsar el botón
-    expect(validateCompetitionForm({ ...validFormData, numberOfPlayers: '' })).toBeNull();
-    expect(validateCompetitionForm({ ...validFormData, numberOfPlayers: null })).toBeNull();
-    expect(validateCompetitionForm({ ...validFormData, numberOfPlayers: undefined })).toBeNull();
+    expect(
+      validateCompetitionForm({ ...validFormData, numberOfPlayers: '' }),
+    ).toBeNull();
+    expect(
+      validateCompetitionForm({ ...validFormData, numberOfPlayers: null }),
+    ).toBeNull();
+    expect(
+      validateCompetitionForm({ ...validFormData, numberOfPlayers: undefined }),
+    ).toBeNull();
   });
 
   it('6: pero un número imposible sigue siendo un error', () => {
     // El tope de 200 no es del formulario: lo pone la API (`le=200`), así que
     // saltárselo aquí solo cambia un aviso claro por un 422 del servidor
-    expect(validateCompetitionForm({ ...validFormData, numberOfPlayers: '250' })).toEqual({ key: 'playersMaximum', max: 200 });
-    expect(validateCompetitionForm({ ...validFormData, numberOfPlayers: '1' })).toEqual({ key: 'playersMinimum' });
+    expect(
+      validateCompetitionForm({ ...validFormData, numberOfPlayers: '250' }),
+    ).toEqual({ key: 'playersMaximum', max: 200 });
+    expect(
+      validateCompetitionForm({ ...validFormData, numberOfPlayers: '1' }),
+    ).toEqual({ key: 'playersMinimum' });
     // «doce» no es un número pequeño: no es un número. Decir «mínimo 2» era
     // contestar a otra cosa
-    expect(validateCompetitionForm({ ...validFormData, numberOfPlayers: 'doce' })).toEqual({ key: 'playersInvalid' });
+    expect(
+      validateCompetitionForm({ ...validFormData, numberOfPlayers: 'doce' }),
+    ).toEqual({ key: 'playersInvalid' });
   });
 
   it('8: un nombre de equipo de dos letras lo para el formulario, no un 422', () => {
     // La API pide `min_length=3` en `team_1_name`/`team_2_name`. «EU» y «US» son
     // nombres perfectamente plausibles: pasaban de largo y volvían como un 422
     // bajo el genérico «Error al crear la competición» (`/code-review`)
-    expect(validateCompetitionForm({ ...validFormData, teamOneName: 'EU' })).toEqual({ key: 'teamNamesTooShort' });
-    expect(validateCompetitionForm({ ...validFormData, teamTwoName: 'US' })).toEqual({ key: 'teamNamesTooShort' });
-    expect(validateCompetitionForm({ ...validFormData, teamOneName: 'Los' })).toBeNull();
+    expect(
+      validateCompetitionForm({ ...validFormData, teamOneName: 'EU' }),
+    ).toEqual({ key: 'teamNamesTooShort' });
+    expect(
+      validateCompetitionForm({ ...validFormData, teamTwoName: 'US' }),
+    ).toEqual({ key: 'teamNamesTooShort' });
+    expect(
+      validateCompetitionForm({ ...validFormData, teamOneName: 'Los' }),
+    ).toBeNull();
   });
 
   it('9: y uno de 51 letras tampoco pasa: la API corta en 50 (el gemelo)', () => {
     const largo = 'A'.repeat(51);
-    expect(validateCompetitionForm({ ...validFormData, teamOneName: largo })).toEqual({ key: 'teamNamesTooLong' });
-    expect(validateCompetitionForm({ ...validFormData, teamTwoName: largo })).toEqual({ key: 'teamNamesTooLong' });
-    expect(validateCompetitionForm({ ...validFormData, teamOneName: 'A'.repeat(50) })).toBeNull();
+    expect(
+      validateCompetitionForm({ ...validFormData, teamOneName: largo }),
+    ).toEqual({ key: 'teamNamesTooLong' });
+    expect(
+      validateCompetitionForm({ ...validFormData, teamTwoName: largo }),
+    ).toEqual({ key: 'teamNamesTooLong' });
+    expect(
+      validateCompetitionForm({
+        ...validFormData,
+        teamOneName: 'A'.repeat(50),
+      }),
+    ).toBeNull();
   });
 
   it('11: un nombre de equipo que no es texto da clave de error, no un TypeError', () => {
     // La guarda de arriba usa `?.` y la de abajo no: hoy no se alcanza, pero la
     // asimetría es la trampa (`/code-review`)
-    expect(() => validateCompetitionForm({ ...validFormData, teamOneName: 42 })).not.toThrow();
-    expect(validateCompetitionForm({ ...validFormData, teamOneName: 42 })).toHaveProperty('key');
+    expect(() =>
+      validateCompetitionForm({ ...validFormData, teamOneName: 42 }),
+    ).not.toThrow();
+    expect(
+      validateCompetitionForm({ ...validFormData, teamOneName: 42 }),
+    ).toHaveProperty('key');
   });
 
   it('10: el tope de hándicap fuera de 1–54 se para aquí', () => {
     // Vive dentro del plegable, y al plegarse el input se desmonta: con él se
     // fue el `min`/`max` del navegador, que era lo único que lo paraba
-    expect(validateCompetitionForm({ ...validFormData, maxPlayingHandicap: '99' })).toEqual({ key: 'handicapLimitRange' });
-    expect(validateCompetitionForm({ ...validFormData, maxPlayingHandicap: '0' })).toEqual({ key: 'handicapLimitRange' });
-    expect(validateCompetitionForm({ ...validFormData, maxPlayingHandicap: '54' })).toBeNull();
-    expect(validateCompetitionForm({ ...validFormData, maxPlayingHandicap: '' })).toBeNull();
-    expect(validateCompetitionForm({ ...validFormData, maxPlayingHandicap: undefined })).toBeNull();
+    expect(
+      validateCompetitionForm({ ...validFormData, maxPlayingHandicap: '99' }),
+    ).toEqual({ key: 'handicapLimitRange' });
+    expect(
+      validateCompetitionForm({ ...validFormData, maxPlayingHandicap: '0' }),
+    ).toEqual({ key: 'handicapLimitRange' });
+    expect(
+      validateCompetitionForm({ ...validFormData, maxPlayingHandicap: '54' }),
+    ).toBeNull();
+    expect(
+      validateCompetitionForm({ ...validFormData, maxPlayingHandicap: '' }),
+    ).toBeNull();
+    expect(
+      validateCompetitionForm({
+        ...validFormData,
+        maxPlayingHandicap: undefined,
+      }),
+    ).toBeNull();
   });
 
   it('12: un tope de hándicap a medias no se trunca, se rechaza (CodeRabbit)', () => {
     // `parseInt` convierte «24,5» y «24abc» en 24: con el panel plegado el
     // navegador ya no protege, y al servidor llega un número que nadie escribió
-    expect(validateCompetitionForm({ ...validFormData, maxPlayingHandicap: '24.5' })).toEqual({ key: 'handicapLimitRange' });
-    expect(validateCompetitionForm({ ...validFormData, maxPlayingHandicap: '24abc' })).toEqual({ key: 'handicapLimitRange' });
-    expect(validateCompetitionForm({ ...validFormData, maxPlayingHandicap: '24' })).toBeNull();
+    expect(
+      validateCompetitionForm({ ...validFormData, maxPlayingHandicap: '24.5' }),
+    ).toEqual({ key: 'handicapLimitRange' });
+    expect(
+      validateCompetitionForm({
+        ...validFormData,
+        maxPlayingHandicap: '24abc',
+      }),
+    ).toEqual({ key: 'handicapLimitRange' });
+    expect(
+      validateCompetitionForm({ ...validFormData, maxPlayingHandicap: '24' }),
+    ).toBeNull();
   });
 
   it('13: y un cupo a medias, igual (el gemelo)', () => {
-    expect(validateCompetitionForm({ ...validFormData, numberOfPlayers: '12.5' })).toEqual({ key: 'playersInvalid' });
-    expect(validateCompetitionForm({ ...validFormData, numberOfPlayers: '12players' })).toEqual({ key: 'playersInvalid' });
-    expect(validateCompetitionForm({ ...validFormData, numberOfPlayers: '12' })).toBeNull();
+    expect(
+      validateCompetitionForm({ ...validFormData, numberOfPlayers: '12.5' }),
+    ).toEqual({ key: 'playersInvalid' });
+    expect(
+      validateCompetitionForm({
+        ...validFormData,
+        numberOfPlayers: '12players',
+      }),
+    ).toEqual({ key: 'playersInvalid' });
+    expect(
+      validateCompetitionForm({ ...validFormData, numberOfPlayers: '12' }),
+    ).toBeNull();
   });
 });
 
@@ -266,26 +407,40 @@ describe('validateCompetitionForm', () => {
 describe('validateCompetitionForm · el cupo y los inscritos (FE #662)', () => {
   it('C1: por debajo de los inscritos, no', () => {
     expect(
-      validateCompetitionForm({ ...validFormData, numberOfPlayers: '10' }, { inscritos: 14 })
+      validateCompetitionForm(
+        { ...validFormData, numberOfPlayers: '10' },
+        { inscritos: 14 },
+      ),
     ).toEqual({ key: 'capBelowEnrolled', count: 14 });
   });
 
   it('C2: justo en los inscritos, sí', () => {
     expect(
-      validateCompetitionForm({ ...validFormData, numberOfPlayers: '14' }, { inscritos: 14 })
+      validateCompetitionForm(
+        { ...validFormData, numberOfPlayers: '14' },
+        { inscritos: 14 },
+      ),
     ).toBeNull();
   });
 
   it('C3: sin inscritos (crear, o nadie dentro), nada que comprobar', () => {
-    expect(validateCompetitionForm({ ...validFormData, numberOfPlayers: '2' })).toBeNull();
     expect(
-      validateCompetitionForm({ ...validFormData, numberOfPlayers: '2' }, { inscritos: 0 })
+      validateCompetitionForm({ ...validFormData, numberOfPlayers: '2' }),
+    ).toBeNull();
+    expect(
+      validateCompetitionForm(
+        { ...validFormData, numberOfPlayers: '2' },
+        { inscritos: 0 },
+      ),
     ).toBeNull();
   });
 
   it('C4: en blanco se queda el cupo que tenía, que ya era válido', () => {
     expect(
-      validateCompetitionForm({ ...validFormData, numberOfPlayers: '' }, { inscritos: 14 })
+      validateCompetitionForm(
+        { ...validFormData, numberOfPlayers: '' },
+        { inscritos: 14 },
+      ),
     ).toBeNull();
   });
 });
@@ -293,11 +448,13 @@ describe('validateCompetitionForm · el cupo y los inscritos (FE #662)', () => {
 describe('validateCompetitionForm · el mínimo general manda (FE #662, revisión)', () => {
   it('C5: con 14 dentro y un 1, lo que se dice es el mínimo de siempre', () => {
     expect(
-      validateCompetitionForm({ ...validFormData, numberOfPlayers: '1' }, { inscritos: 14 })
+      validateCompetitionForm(
+        { ...validFormData, numberOfPlayers: '1' },
+        { inscritos: 14 },
+      ),
     ).toEqual({ key: 'playersMinimum' });
   });
 });
-
 
 describe('validateCompetitionForm · los ajustes del stroke play (FE #824)', () => {
   const stableford = (strokePlay) => ({
@@ -318,7 +475,9 @@ describe('validateCompetitionForm · los ajustes del stroke play (FE #824)', () 
   });
 
   it('SP2: unos límites desordenados no se envían', () => {
-    expect(validateCompetitionForm(stableford({ limites: ['26,0', '12,0'] }))).toEqual({
+    expect(
+      validateCompetitionForm(stableford({ limites: ['26,0', '12,0'] })),
+    ).toEqual({
       key: 'categoryLimitsOrder',
     });
   });
@@ -332,12 +491,20 @@ describe('validateCompetitionForm · los ajustes del stroke play (FE #824)', () 
 
   it('SP4: una Ryder no mira los ajustes del stroke play', () => {
     expect(
-      validateCompetitionForm({ ...stableford({ jornadas: '9' }), tournamentType: 'RYDER_CUP' })
+      validateCompetitionForm({
+        ...stableford({ jornadas: '9' }),
+        tournamentType: 'RYDER_CUP',
+      }),
     ).toBeNull();
   });
 
   it('SP5: sin fechas manda el error de las fechas', () => {
-    expect(validateCompetitionForm({ ...stableford({ jornadas: '9' }), endDate: '' })).toEqual({
+    expect(
+      validateCompetitionForm({
+        ...stableford({ jornadas: '9' }),
+        endDate: '',
+      }),
+    ).toEqual({
       key: 'datesRequired',
     });
   });

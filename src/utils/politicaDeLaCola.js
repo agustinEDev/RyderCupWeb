@@ -46,7 +46,8 @@ const CODIGOS_DE_TODA_LA_SESION = new Set([TERMINOS_NO_ACEPTADOS]);
 const codigoDe = (error) => error?.status ?? error?.response?.status;
 
 /** El código propio del servidor, que dice de qué rechazo se trata. */
-const codigoPropioDe = (error) => error?.errorCode ?? error?.response?.data?.error_code;
+const codigoPropioDe = (error) =>
+  error?.errorCode ?? error?.response?.data?.error_code;
 
 /**
  * Si esta anotación hay que guardarla para intentarlo más tarde.
@@ -62,7 +63,9 @@ export const seGuardaParaDespues = (error) => {
   if (SE_ARREGLA_SOLO.has(codigo)) return true;
   if (CODIGOS_QUE_SE_ARREGLAN_ESPERANDO.has(codigoPropioDe(error))) return true;
   // El resto del rango 4xx es la petición en sí: reintentarla no cambia nada
-  return !(codigo >= PRIMER_ERROR_DEL_CLIENTE && codigo < PRIMER_ERROR_DEL_SERVIDOR);
+  return !(
+    codigo >= PRIMER_ERROR_DEL_CLIENTE && codigo < PRIMER_ERROR_DEL_SERVIDOR
+  );
 };
 
 /**
@@ -79,7 +82,8 @@ export const esRechazoDefinitivo = (error) => !seGuardaParaDespues(error);
  * puede mandar. Quien vacía en el sondeo lo necesita para no darla por
  * imposible (FE #625).
  */
-export const esperaASuHora = (error) => CODIGOS_QUE_SE_ARREGLAN_ESPERANDO.has(codigoPropioDe(error));
+export const esperaASuHora = (error) =>
+  CODIGOS_QUE_SE_ARREGLAN_ESPERANDO.has(codigoPropioDe(error));
 
 /**
  * Si el fallo no es de ESTA anotación, sino de la sesión o del servidor
@@ -106,7 +110,8 @@ export const esFalloDeTodaLaSesion = (error) => {
   // el partido de la tarde no ha abierto, el de la mañana sí. Tomarlo por un
   // fallo de sesión paraba el vaciado ENTERO, y los golpes de la mañana se
   // quedaban sin salir en cada reconexión hasta que llegara la hora de la tarde
-  if (CODIGOS_QUE_SE_ARREGLAN_ESPERANDO.has(codigoPropioDe(error))) return false;
+  if (CODIGOS_QUE_SE_ARREGLAN_ESPERANDO.has(codigoPropioDe(error)))
+    return false;
   return seGuardaParaDespues(error);
 };
 
@@ -134,6 +139,9 @@ export const noLlegoAlServidor = (error) => {
   // las tres categorías y el bucle seguía con la siguiente: doce golpes
   // guardados eran tres minutos de peticiones condenadas, en cada arranque y
   // en cada vuelta a la aplicación
-  if (error?.name === 'AbortError' || error?.name === 'TimeoutError') return true;
-  return /failed to fetch|networkerror|network error|load failed/i.test(error?.message ?? '');
+  if (error?.name === 'AbortError' || error?.name === 'TimeoutError')
+    return true;
+  return /failed to fetch|networkerror|network error|load failed/i.test(
+    error?.message ?? '',
+  );
 };

@@ -10,8 +10,10 @@ import { describe, it, expect, beforeEach } from 'vitest';
  * | el servidor confirma la sesión (consultaLaSesion)     | olvidado        |
  * | queda guardado, se entra y se sale con el botón       | no sale el viejo (useLogout.test) |
  */
-const { anotaLaSesion, consultaLaSesion, reiniciaLaSesionCompartida } = await import('./sesionCompartida');
-const { guardaElAvisoDelCierre, tomaElAvisoDelCierre } = await import('../utils/avisoTrasElCierre');
+const { anotaLaSesion, consultaLaSesion, reiniciaLaSesionCompartida } =
+  await import('./sesionCompartida');
+const { guardaElAvisoDelCierre, tomaElAvisoDelCierre } =
+  await import('../utils/avisoTrasElCierre');
 
 describe('entrar olvida el aviso de un cierre forzado', () => {
   beforeEach(() => {
@@ -30,7 +32,11 @@ describe('entrar olvida el aviso de un cierre forzado', () => {
   it('cuando el servidor confirma la sesión', async () => {
     guardaElAvisoDelCierre('expiration');
     const fetchOriginal = globalThis.fetch;
-    globalThis.fetch = async () => ({ ok: true, status: 200, json: async () => ({ id: 'u-1' }) });
+    globalThis.fetch = async () => ({
+      ok: true,
+      status: 200,
+      json: async () => ({ id: 'u-1' }),
+    });
     try {
       await consultaLaSesion();
     } finally {

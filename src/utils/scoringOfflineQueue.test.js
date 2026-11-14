@@ -1,18 +1,40 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { enqueue, getAll, remove, clear, size, getByMatch, deQuien, resumenPorPartida, ponleNombre, marcaDesaparecida, olvidaLasDe, TIPO_PARTIDA_DE_FRANJA } from './scoringOfflineQueue';
+import {
+  enqueue,
+  getAll,
+  remove,
+  clear,
+  size,
+  getByMatch,
+  deQuien,
+  resumenPorPartida,
+  ponleNombre,
+  marcaDesaparecida,
+  olvidaLasDe,
+  TIPO_PARTIDA_DE_FRANJA,
+} from './scoringOfflineQueue';
 
 // Mock localStorage for non-jsdom environment
 const localStorageMock = (() => {
   let store = {};
   return {
     getItem: vi.fn((key) => store[key] ?? null),
-    setItem: vi.fn((key, value) => { store[key] = String(value); }),
-    removeItem: vi.fn((key) => { delete store[key]; }),
-    clear: vi.fn(() => { store = {}; }),
+    setItem: vi.fn((key, value) => {
+      store[key] = String(value);
+    }),
+    removeItem: vi.fn((key) => {
+      delete store[key];
+    }),
+    clear: vi.fn(() => {
+      store = {};
+    }),
   };
 })();
 
-Object.defineProperty(globalThis, 'localStorage', { value: localStorageMock, writable: true });
+Object.defineProperty(globalThis, 'localStorage', {
+  value: localStorageMock,
+  writable: true,
+});
 
 describe('scoringOfflineQueue', () => {
   beforeEach(() => {
@@ -37,7 +59,11 @@ describe('scoringOfflineQueue', () => {
     // nulo es una raya. Al serializar a JSON, una clave sin valor se cae sola;
     // esto lo fija, porque de ello depende que el vaciado no conceda un hoyo
     it('no guarda la clave de un golpe que no se ha anotado', () => {
-      enqueue('m-1', 3, { ownScore: 5, markedPlayerId: 'u2', markedScore: undefined });
+      enqueue('m-1', 3, {
+        ownScore: 5,
+        markedPlayerId: 'u2',
+        markedScore: undefined,
+      });
 
       const [guardada] = getAll();
       expect('markedScore' in guardada.scoreData).toBe(false);
@@ -45,10 +71,18 @@ describe('scoringOfflineQueue', () => {
     });
 
     it('pero si guarda una raya, que es un valor', () => {
-      enqueue('m-1', 3, { ownScore: null, markedPlayerId: 'u2', markedScore: null });
+      enqueue('m-1', 3, {
+        ownScore: null,
+        markedPlayerId: 'u2',
+        markedScore: null,
+      });
 
       const [guardada] = getAll();
-      expect(guardada.scoreData).toEqual({ ownScore: null, markedPlayerId: 'u2', markedScore: null });
+      expect(guardada.scoreData).toEqual({
+        ownScore: null,
+        markedPlayerId: 'u2',
+        markedScore: null,
+      });
     });
 
     it('should replace existing entry for same match+hole', () => {
@@ -157,7 +191,10 @@ describe('anotaciones por participante (FE #515)', () => {
 
     const guardadas = getByMatch('qm-1');
     expect(guardadas).toHaveLength(2);
-    expect(guardadas.map((e) => e.participantId).sort()).toEqual(['p-1', 'p-2']);
+    expect(guardadas.map((e) => e.participantId).sort()).toEqual([
+      'p-1',
+      'p-2',
+    ]);
   });
 
   it('reanotar el mismo hoyo del mismo participante reemplaza, no duplica', () => {
@@ -190,7 +227,10 @@ describe('anotaciones por participante (FE #515)', () => {
     const guardadas = getByMatch('qm-1');
     expect(guardadas).toHaveLength(2);
     expect(guardadas.every((e) => e.scoreData.score === null)).toBe(true);
-    expect(guardadas.map((e) => e.participantId).sort()).toEqual(['p-1', 'p-2']);
+    expect(guardadas.map((e) => e.participantId).sort()).toEqual([
+      'p-1',
+      'p-2',
+    ]);
   });
 
   it('reanotar sobre una entrada guardada por una versión anterior la reemplaza', () => {
@@ -198,7 +238,14 @@ describe('anotaciones por participante (FE #515)', () => {
     // competición reanota ese mismo hoyo
     localStorage.setItem(
       'rydercup-scoring-queue',
-      JSON.stringify([{ matchId: 'm-1', holeNumber: 7, scoreData: { ownScore: 5 }, timestamp: 1 }])
+      JSON.stringify([
+        {
+          matchId: 'm-1',
+          holeNumber: 7,
+          scoreData: { ownScore: 5 },
+          timestamp: 1,
+        },
+      ]),
     );
 
     enqueue('m-1', 7, { ownScore: 6 });
@@ -243,7 +290,14 @@ describe('anotaciones por participante (FE #515)', () => {
     // Sin el campo `participantId`: `undefined` cuenta como «de nadie»
     localStorage.setItem(
       'rydercup-scoring-queue',
-      JSON.stringify([{ matchId: 'm-1', holeNumber: 7, scoreData: { ownScore: 5 }, timestamp: 1 }])
+      JSON.stringify([
+        {
+          matchId: 'm-1',
+          holeNumber: 7,
+          scoreData: { ownScore: 5 },
+          timestamp: 1,
+        },
+      ]),
     );
 
     remove('m-1', 7);
@@ -293,7 +347,10 @@ describe('scoringOfflineQueue — de quién es cada anotación (FE #521)', () =>
 
     const todas = getAll();
     expect(todas).toHaveLength(2);
-    expect(todas.map((e) => e.userId).sort()).toEqual(['usuario-A', 'usuario-B']);
+    expect(todas.map((e) => e.userId).sort()).toEqual([
+      'usuario-A',
+      'usuario-B',
+    ]);
   });
 
   it('la misma persona sí se corrige a sí misma', () => {
@@ -398,16 +455,25 @@ describe('ponleNombre (FE #551)', () => {
     enqueue('m-1', 3, { ownScore: 4 }, null, 'u1');
     enqueue('m-1', 4, { ownScore: 5 }, null, 'u1');
 
-    expect(ponleNombre('m-1', { matchName: 'La Herrería', matchNumber: 3 })).toBe(true);
+    expect(
+      ponleNombre('m-1', { matchName: 'La Herrería', matchNumber: 3 }),
+    ).toBe(true);
 
     expect(resumenPorPartida('u1')).toEqual([
-      expect.objectContaining({ matchName: 'La Herrería', matchNumber: 3, cuantas: 2 }),
+      expect.objectContaining({
+        matchName: 'La Herrería',
+        matchNumber: 3,
+        cuantas: 2,
+      }),
     ]);
   });
 
   it('pero no pisa lo que ya tenía nombre', () => {
     // Lo guardado es de cuando se anotó, y es más fiable que lo de ahora
-    enqueue('m-1', 3, { ownScore: 4 }, null, 'u1', { matchName: 'El de aquel día', matchNumber: 1 });
+    enqueue('m-1', 3, { ownScore: 4 }, null, 'u1', {
+      matchName: 'El de aquel día',
+      matchNumber: 1,
+    });
 
     ponleNombre('m-1', { matchName: 'Otro', matchNumber: 9 });
 
@@ -419,7 +485,9 @@ describe('ponleNombre (FE #551)', () => {
   it('con nombre pero sin número, conserva el nombre y gana el número', () => {
     // El caso que de verdad ejercita el `??`: la entrada entra en el cuerpo
     // del bucle porque le falta el número, y ahí el nombre no se puede pisar
-    enqueue('m-1', 3, { ownScore: 4 }, null, 'u1', { matchName: 'El de aquel día' });
+    enqueue('m-1', 3, { ownScore: 4 }, null, 'u1', {
+      matchName: 'El de aquel día',
+    });
 
     ponleNombre('m-1', { matchName: 'Otro', matchNumber: 9 });
 
@@ -496,7 +564,10 @@ describe('la partida que ya no existe (FE #557)', () => {
 
     expect(olvidaLasDe('qm-1', 'u1')).toBe(true);
 
-    expect(getAll().map((e) => [e.matchId, e.holeNumber])).toEqual([['qm-1', 8], ['m-2', 3]]);
+    expect(getAll().map((e) => [e.matchId, e.holeNumber])).toEqual([
+      ['qm-1', 8],
+      ['m-2', 3],
+    ]);
   });
 });
 
@@ -543,18 +614,24 @@ describe('scoringOfflineQueue · los golpes tocados (FE #813)', () => {
   });
 });
 
-
 describe('las partidas de stroke play en la cola (FE #824, PR 7)', () => {
   beforeEach(() => {
     clear();
   });
 
   it('el tipo se guarda con la anotación y se conserva al sustituirla', () => {
-    enqueue('g-1', 3, { ownScore: 4, markedPlayerId: 'b' }, null, 'u1', { tipo: TIPO_PARTIDA_DE_FRANJA });
+    enqueue('g-1', 3, { ownScore: 4, markedPlayerId: 'b' }, null, 'u1', {
+      tipo: TIPO_PARTIDA_DE_FRANJA,
+    });
     // Quien reencola sin decirlo (resolver un desacuerdo) no se lo quita
     enqueue('g-1', 3, { ownScore: 5, markedPlayerId: 'b' }, null, 'u1');
 
-    expect(getByMatch('g-1', 'u1')).toEqual([expect.objectContaining({ tipo: TIPO_PARTIDA_DE_FRANJA, scoreData: { ownScore: 5, markedPlayerId: 'b' } })]);
+    expect(getByMatch('g-1', 'u1')).toEqual([
+      expect.objectContaining({
+        tipo: TIPO_PARTIDA_DE_FRANJA,
+        scoreData: { ownScore: 5, markedPlayerId: 'b' },
+      }),
+    ]);
   });
 
   it('las de la Ryder no llevan tipo, como antes', () => {
@@ -564,12 +641,21 @@ describe('las partidas de stroke play en la cola (FE #824, PR 7)', () => {
   });
 
   it('el panel sabe que es una partida de stroke play (para llevar a su pantalla)', () => {
-    enqueue('g-1', 3, { ownScore: 4 }, null, 'u1', { tipo: TIPO_PARTIDA_DE_FRANJA, matchNumber: 2 });
+    enqueue('g-1', 3, { ownScore: 4 }, null, 'u1', {
+      tipo: TIPO_PARTIDA_DE_FRANJA,
+      matchNumber: 2,
+    });
     enqueue('m-1', 3, { ownScore: 4 }, null, 'u1');
 
     const resumen = resumenPorPartida('u1');
-    expect(resumen.find((p) => p.matchId === 'g-1')).toMatchObject({ esPartidaDeFranja: true, esPartidaRapida: false, matchNumber: 2 });
-    expect(resumen.find((p) => p.matchId === 'm-1')).toMatchObject({ esPartidaDeFranja: false });
+    expect(resumen.find((p) => p.matchId === 'g-1')).toMatchObject({
+      esPartidaDeFranja: true,
+      esPartidaRapida: false,
+      matchNumber: 2,
+    });
+    expect(resumen.find((p) => p.matchId === 'm-1')).toMatchObject({
+      esPartidaDeFranja: false,
+    });
   });
 });
 
@@ -606,7 +692,15 @@ describe('scoringOfflineQueue · un hueco por marcado (quien marca a dos)', () =
 
   it('el golpe propio vive en un solo hueco: al guardarlo con otro marcado, sale del anterior', () => {
     // Con la retirada, el primero de la lista pasó de Dani a Carlos
-    enqueue('m-1', 3, { ownScore: 5, markedPlayerId: 'D', markedScore: 4 }, null, 'A', {}, ['ownScore', 'markedScore']);
+    enqueue(
+      'm-1',
+      3,
+      { ownScore: 5, markedPlayerId: 'D', markedScore: 4 },
+      null,
+      'A',
+      {},
+      ['ownScore', 'markedScore'],
+    );
     enqueue('m-1', 3, deCarlos, null, 'A');
 
     expect(loGuardado()).toEqual([deDani(4), deCarlos]);

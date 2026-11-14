@@ -3,10 +3,20 @@ import { useTranslation } from 'react-i18next';
 import { Map as MapaDeMapLibre, Marker, setWorkerUrl } from 'maplibre-gl';
 import urlDelWorker from 'maplibre-gl/dist/maplibre-gl-worker.mjs?url';
 import '../../scoring/mapa/mapa.css';
-import { TESELAS_PNOA, atribucionDeLaOrtofoto, ponerOrtofoto } from '../../scoring/mapa/teselas';
+import {
+  TESELAS_PNOA,
+  atribucionDeLaOrtofoto,
+  ponerOrtofoto,
+} from '../../scoring/mapa/teselas';
 import { comunidadDelPunto } from '../../../domain/services/comunidadDelCampo';
-import { lineaDePuntos, puntosDeLaLinea } from '../../../domain/services/hoyoMarcado';
-import { camaraGirada, rumboDeLaLinea } from '../../../domain/services/geometriaDelHoyo';
+import {
+  lineaDePuntos,
+  puntosDeLaLinea,
+} from '../../../domain/services/hoyoMarcado';
+import {
+  camaraGirada,
+  rumboDeLaLinea,
+} from '../../../domain/services/geometriaDelHoyo';
 
 setWorkerUrl(urlDelWorker);
 
@@ -16,15 +26,39 @@ const COLOR_DE_LAS_MUESTRAS = '#ffffff';
 
 const lngLat = (p) => [p.lon, p.lat];
 const coleccion = (features) => ({ type: 'FeatureCollection', features });
-const comoPuntos = (puntos) => coleccion(puntos.map((p) => ({ type: 'Feature', properties: {}, geometry: { type: 'Point', coordinates: lngLat(p) } })));
+const comoPuntos = (puntos) =>
+  coleccion(
+    puntos.map((p) => ({
+      type: 'Feature',
+      properties: {},
+      geometry: { type: 'Point', coordinates: lngLat(p) },
+    })),
+  );
 const comoLinea = (linea, properties = {}) =>
-  linea ? [{ type: 'Feature', properties, geometry: { type: 'LineString', coordinates: puntosDeLaLinea(linea).map(lngLat) } }] : [];
+  linea
+    ? [
+        {
+          type: 'Feature',
+          properties,
+          geometry: {
+            type: 'LineString',
+            coordinates: puntosDeLaLinea(linea).map(lngLat),
+          },
+        },
+      ]
+    : [];
 // Con su id y su sitio en la lista: tocada en el mapa, se elige (M1-M4)
 const deLasMuestras = (muestras) =>
   coleccion(
     muestras.map((m, orden) => {
       const properties = { id: m.id, orden };
-      return m.tee ? comoLinea(m, properties)[0] : { type: 'Feature', properties, geometry: { type: 'Point', coordinates: lngLat(m.greenCenter) } };
+      return m.tee
+        ? comoLinea(m, properties)[0]
+        : {
+            type: 'Feature',
+            properties,
+            geometry: { type: 'Point', coordinates: lngLat(m.greenCenter) },
+          };
     }),
   );
 // Para acertar con el dedo, una franja invisible más ancha que lo que se ve (M3)
@@ -32,16 +66,23 @@ const CAPAS_DE_TOQUE = ['muestras-toque-lineas', 'muestras-toque-greens'];
 
 const ESTILO = {
   version: 8,
-  sources: { pnoa: { type: 'raster', tiles: [TESELAS_PNOA], tileSize: 256, maxzoom: 20 } },
+  sources: {
+    pnoa: { type: 'raster', tiles: [TESELAS_PNOA], tileSize: 256, maxzoom: 20 },
+  },
   layers: [
-    { id: 'fondo', type: 'background', paint: { 'background-color': '#6b7280' } },
+    {
+      id: 'fondo',
+      type: 'background',
+      paint: { 'background-color': '#6b7280' },
+    },
     { id: 'pnoa', type: 'raster', source: 'pnoa' },
   ],
 };
 
 // 44 px donde tocar (con el dedo, en el móvil) y el punto de 20 px dentro
 const CLASE_DEL_PUNTO = 'h-11 w-11 flex items-center justify-center';
-const CLASE_DE_LA_BOLA = 'h-5 w-5 rounded-full border-[3px] border-white bg-red-600 shadow';
+const CLASE_DE_LA_BOLA =
+  'h-5 w-5 rounded-full border-[3px] border-white bg-red-600 shadow';
 // Lo guardado en cian; lo que se edita (y un green suelto seleccionado),
 // siempre en rojo (Agustín, 18 oct)
 const COLOR_DE_LO_GUARDADO = '#06b6d4';
@@ -49,7 +90,15 @@ const COLOR_DE_LA_LINEA = '#dc2626';
 // La del mapa de OSM aprobado (17 oct)
 const COLOR_DE_OSM = '#84cc16';
 const comoLineaDeOsm = (puntos) =>
-  puntos?.length > 1 ? coleccion([{ type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: puntos.map(lngLat) } }]) : coleccion([]);
+  puntos?.length > 1
+    ? coleccion([
+        {
+          type: 'Feature',
+          properties: {},
+          geometry: { type: 'LineString', coordinates: puntos.map(lngLat) },
+        },
+      ])
+    : coleccion([]);
 
 /**
  * El mapa de revisar un hoyo (BE #575, 17 oct 2026), sobre la ortofoto del
@@ -80,7 +129,14 @@ const MapaDeRevision = ({
 }) => {
   const { t } = useTranslation('admin');
   const { t: tMapa } = useTranslation('scoring');
-  const nombreDe = (i, total) => t(i === 0 ? 'holeReviews.pointTee' : i === total - 1 ? 'holeReviews.pointGreen' : 'holeReviews.pointBend');
+  const nombreDe = (i, total) =>
+    t(
+      i === 0
+        ? 'holeReviews.pointTee'
+        : i === total - 1
+          ? 'holeReviews.pointGreen'
+          : 'holeReviews.pointBend',
+    );
   const contenedor = useRef(null);
   const mapaRef = useRef(null);
   const cargado = useRef(false);
@@ -91,17 +147,54 @@ const MapaDeRevision = ({
   const latDelCampo = delCampo?.lat ?? null;
   const lonDelCampo = delCampo?.lon ?? null;
   const comunidad = useMemo(
-    () => comunidadDelPunto(latDelCampo === null || lonDelCampo === null ? null : { lat: latDelCampo, lon: lonDelCampo }),
+    () =>
+      comunidadDelPunto(
+        latDelCampo === null || lonDelCampo === null
+          ? null
+          : { lat: latDelCampo, lon: lonDelCampo },
+      ),
     [latDelCampo, lonDelCampo],
   );
   const comunidadAhora = useRef(comunidad);
   const puntos = useRef([]);
   // El centro de partida solo cuenta al montar: va con lo demás
-  const datos = useRef({ muestras, guardada, linea, onLinea, onToque, marcados, centro, posicion, centrarEnMi, bloqueada, osm, destacado, onElegir, par, orientar });
+  const datos = useRef({
+    muestras,
+    guardada,
+    linea,
+    onLinea,
+    onToque,
+    marcados,
+    centro,
+    posicion,
+    centrarEnMi,
+    bloqueada,
+    osm,
+    destacado,
+    onElegir,
+    par,
+    orientar,
+  });
   // Hasta qué pedido de «Mi posición» se ha centrado ya el mapa
   const centradoPara = useRef(0);
   useLayoutEffect(() => {
-    datos.current = { muestras, guardada, linea, onLinea, onToque, marcados, centro, posicion, centrarEnMi, bloqueada, osm, destacado, onElegir, par, orientar };
+    datos.current = {
+      muestras,
+      guardada,
+      linea,
+      onLinea,
+      onToque,
+      marcados,
+      centro,
+      posicion,
+      centrarEnMi,
+      bloqueada,
+      osm,
+      destacado,
+      onElegir,
+      par,
+      orientar,
+    };
   });
 
   // La línea que se edita y sus puntos. Con los mismos puntos, se mueven (no
@@ -125,11 +218,20 @@ const MapaDeRevision = ({
       bola.className = CLASE_DE_LA_BOLA;
       elemento.appendChild(bola);
       // Mientras se marca desde cero, la línea de antes no se arrastra sin querer
-      const marca = new Marker({ element: elemento, draggable: !datos.current.bloqueada }).setLngLat(lngLat(p)).addTo(mapa);
+      const marca = new Marker({
+        element: elemento,
+        draggable: !datos.current.bloqueada,
+      })
+        .setLngLat(lngLat(p))
+        .addTo(mapa);
       marca.on('dragend', (e) => {
         const { lat, lng } = e.target.getLngLat();
         const deAhora = puntosDeLaLinea(datos.current.linea);
-        datos.current.onLinea(lineaDePuntos(deAhora.map((q, j) => (j === i ? { lat, lon: lng } : q))));
+        datos.current.onLinea(
+          lineaDePuntos(
+            deAhora.map((q, j) => (j === i ? { lat, lon: lng } : q)),
+          ),
+        );
       });
       return marca;
     });
@@ -145,14 +247,27 @@ const MapaDeRevision = ({
     mapa.getSource('yo')?.setData(comoPuntos(yo ? [yo] : []));
     if (yo && pedido > centradoPara.current) {
       centradoPara.current = pedido;
-      mapa.easeTo({ center: lngLat(yo), zoom: Math.max(mapa.getZoom?.() ?? 16, 16) });
+      mapa.easeTo({
+        center: lngLat(yo),
+        zoom: Math.max(mapa.getZoom?.() ?? 16, 16),
+      });
     }
   };
 
   // Todo lo que hay: las muestras y los reportes, lo guardado, la línea y OSM
   const todosLosPuntos = () => {
-    const { muestras: todas, guardada: lo, linea: actual, osm: deOsm } = datos.current;
-    return [...todas.flatMap((m) => (m.tee ? puntosDeLaLinea(m) : [m.greenCenter])), ...(lo ? puntosDeLaLinea(lo) : []), ...(actual ? puntosDeLaLinea(actual) : []), ...(deOsm ?? [])];
+    const {
+      muestras: todas,
+      guardada: lo,
+      linea: actual,
+      osm: deOsm,
+    } = datos.current;
+    return [
+      ...todas.flatMap((m) => (m.tee ? puntosDeLaLinea(m) : [m.greenCenter])),
+      ...(lo ? puntosDeLaLinea(lo) : []),
+      ...(actual ? puntosDeLaLinea(actual) : []),
+      ...(deOsm ?? []),
+    ];
   };
   // Como el mapa del jugador (Agustín, 18 oct): girado como se juega la línea
   // roja (par 3 al green, 4 o 5 al primer codo), una vez por cada vez que se
@@ -181,12 +296,16 @@ const MapaDeRevision = ({
       verTodoAlNorte();
       return;
     }
-    const girada = camaraGirada({ playLine: todosLosPuntos(), green: null }, rumboDeLaLinea(puntosDeLaLinea(actual), delHoyo), {
-      ancho: contenedor.current?.clientWidth || 360,
-      alto: contenedor.current?.clientHeight || 640,
-      // Abajo, «Mi posición» y «Orientar»; arriba, la instrucción al marcar (revisor)
-      padding: { top: 64, bottom: 120, left: 40, right: 40 },
-    });
+    const girada = camaraGirada(
+      { playLine: todosLosPuntos(), green: null },
+      rumboDeLaLinea(puntosDeLaLinea(actual), delHoyo),
+      {
+        ancho: contenedor.current?.clientWidth || 360,
+        alto: contenedor.current?.clientHeight || 640,
+        // Abajo, «Mi posición» y «Orientar»; arriba, la instrucción al marcar (revisor)
+        padding: { top: 64, bottom: 120, left: 40, right: 40 },
+      },
+    );
     // Con línea siempre hay rumbo y puntos
     const camara = { ...girada, center: lngLat(girada.center) };
     if (animar) mapa.easeTo(camara);
@@ -208,32 +327,159 @@ const MapaDeRevision = ({
   useEffect(() => {
     // Sin nada que encuadrar (un hoyo sin muestras), se parte del campo
     const { centro: deInicio } = datos.current;
-    const inicio = deInicio ? { center: lngLat(deInicio), zoom: 16 } : { center: [-3.7, 40.4], zoom: 5 };
-    const mapa = new MapaDeMapLibre({ container: contenedor.current, style: ESTILO, attributionControl: false, ...inicio });
+    const inicio = deInicio
+      ? { center: lngLat(deInicio), zoom: 16 }
+      : { center: [-3.7, 40.4], zoom: 5 };
+    const mapa = new MapaDeMapLibre({
+      container: contenedor.current,
+      style: ESTILO,
+      attributionControl: false,
+      ...inicio,
+    });
     mapaRef.current = mapa;
     mapa.on('load', () => {
       // Antes que lo demás: justo encima de la PNOA, debajo de las líneas
       ponerOrtofoto(mapa, comunidadAhora.current);
       const { muestras: todas, guardada: lo, linea: actual } = datos.current;
-      mapa.addSource('muestras', { type: 'geojson', data: deLasMuestras(todas) });
-      mapa.addLayer({ id: 'muestras-lineas', type: 'line', source: 'muestras', filter: ['==', ['geometry-type'], 'LineString'], paint: { 'line-color': COLOR_DE_LAS_MUESTRAS, 'line-width': 2, 'line-opacity': 0.6 } });
-      mapa.addLayer({ id: 'muestras-greens', type: 'circle', source: 'muestras', filter: ['==', ['geometry-type'], 'Point'], paint: { 'circle-radius': 6, 'circle-color': COLOR_DE_LAS_MUESTRAS, 'circle-opacity': 0.6, 'circle-stroke-color': '#000', 'circle-stroke-width': 1 } });
-      mapa.addLayer({ id: CAPAS_DE_TOQUE[0], type: 'line', source: 'muestras', filter: ['==', ['geometry-type'], 'LineString'], paint: { 'line-color': COLOR_DE_LAS_MUESTRAS, 'line-width': 22, 'line-opacity': 0 } });
-      mapa.addLayer({ id: CAPAS_DE_TOQUE[1], type: 'circle', source: 'muestras', filter: ['==', ['geometry-type'], 'Point'], paint: { 'circle-radius': 11, 'circle-color': COLOR_DE_LAS_MUESTRAS, 'circle-opacity': 0 } });
-      mapa.addSource('osm', { type: 'geojson', data: comoLineaDeOsm(datos.current.osm) });
-      mapa.addLayer({ id: 'osm', type: 'line', source: 'osm', paint: { 'line-color': COLOR_DE_OSM, 'line-width': 3, 'line-dasharray': [1, 1] } });
-      mapa.addSource('guardada', { type: 'geojson', data: coleccion(comoLinea(lo)) });
-      mapa.addLayer({ id: 'guardada', type: 'line', source: 'guardada', paint: { 'line-color': COLOR_DE_LO_GUARDADO, 'line-width': 3, 'line-dasharray': [2, 2] } });
-      mapa.addSource('linea', { type: 'geojson', data: coleccion(comoLinea(actual)) });
-      mapa.addLayer({ id: 'linea', type: 'line', source: 'linea', paint: { 'line-color': COLOR_DE_LA_LINEA, 'line-width': 4 } });
+      mapa.addSource('muestras', {
+        type: 'geojson',
+        data: deLasMuestras(todas),
+      });
+      mapa.addLayer({
+        id: 'muestras-lineas',
+        type: 'line',
+        source: 'muestras',
+        filter: ['==', ['geometry-type'], 'LineString'],
+        paint: {
+          'line-color': COLOR_DE_LAS_MUESTRAS,
+          'line-width': 2,
+          'line-opacity': 0.6,
+        },
+      });
+      mapa.addLayer({
+        id: 'muestras-greens',
+        type: 'circle',
+        source: 'muestras',
+        filter: ['==', ['geometry-type'], 'Point'],
+        paint: {
+          'circle-radius': 6,
+          'circle-color': COLOR_DE_LAS_MUESTRAS,
+          'circle-opacity': 0.6,
+          'circle-stroke-color': '#000',
+          'circle-stroke-width': 1,
+        },
+      });
+      mapa.addLayer({
+        id: CAPAS_DE_TOQUE[0],
+        type: 'line',
+        source: 'muestras',
+        filter: ['==', ['geometry-type'], 'LineString'],
+        paint: {
+          'line-color': COLOR_DE_LAS_MUESTRAS,
+          'line-width': 22,
+          'line-opacity': 0,
+        },
+      });
+      mapa.addLayer({
+        id: CAPAS_DE_TOQUE[1],
+        type: 'circle',
+        source: 'muestras',
+        filter: ['==', ['geometry-type'], 'Point'],
+        paint: {
+          'circle-radius': 11,
+          'circle-color': COLOR_DE_LAS_MUESTRAS,
+          'circle-opacity': 0,
+        },
+      });
+      mapa.addSource('osm', {
+        type: 'geojson',
+        data: comoLineaDeOsm(datos.current.osm),
+      });
+      mapa.addLayer({
+        id: 'osm',
+        type: 'line',
+        source: 'osm',
+        paint: {
+          'line-color': COLOR_DE_OSM,
+          'line-width': 3,
+          'line-dasharray': [1, 1],
+        },
+      });
+      mapa.addSource('guardada', {
+        type: 'geojson',
+        data: coleccion(comoLinea(lo)),
+      });
+      mapa.addLayer({
+        id: 'guardada',
+        type: 'line',
+        source: 'guardada',
+        paint: {
+          'line-color': COLOR_DE_LO_GUARDADO,
+          'line-width': 3,
+          'line-dasharray': [2, 2],
+        },
+      });
+      mapa.addSource('linea', {
+        type: 'geojson',
+        data: coleccion(comoLinea(actual)),
+      });
+      mapa.addLayer({
+        id: 'linea',
+        type: 'line',
+        source: 'linea',
+        paint: { 'line-color': COLOR_DE_LA_LINEA, 'line-width': 4 },
+      });
       // Lo ya tocado al marcar desde cero (la salida, mientras se toca el green)
-      mapa.addSource('marcados', { type: 'geojson', data: comoPuntos(datos.current.marcados) });
-      mapa.addSource('yo', { type: 'geojson', data: comoPuntos(datos.current.posicion ? [datos.current.posicion] : []) });
-      mapa.addLayer({ id: 'yo', type: 'circle', source: 'yo', paint: { 'circle-radius': 7, 'circle-color': '#2563eb', 'circle-stroke-color': '#fff', 'circle-stroke-width': 3 } });
-      mapa.addLayer({ id: 'marcados', type: 'circle', source: 'marcados', paint: { 'circle-radius': 8, 'circle-color': COLOR_DE_LA_LINEA, 'circle-stroke-color': '#fff', 'circle-stroke-width': 3 } });
+      mapa.addSource('marcados', {
+        type: 'geojson',
+        data: comoPuntos(datos.current.marcados),
+      });
+      mapa.addSource('yo', {
+        type: 'geojson',
+        data: comoPuntos(
+          datos.current.posicion ? [datos.current.posicion] : [],
+        ),
+      });
+      mapa.addLayer({
+        id: 'yo',
+        type: 'circle',
+        source: 'yo',
+        paint: {
+          'circle-radius': 7,
+          'circle-color': '#2563eb',
+          'circle-stroke-color': '#fff',
+          'circle-stroke-width': 3,
+        },
+      });
+      mapa.addLayer({
+        id: 'marcados',
+        type: 'circle',
+        source: 'marcados',
+        paint: {
+          'circle-radius': 8,
+          'circle-color': COLOR_DE_LA_LINEA,
+          'circle-stroke-color': '#fff',
+          'circle-stroke-width': 3,
+        },
+      });
       // El green suelto seleccionado, encima de todo: ninguna línea lo tapa (S6b)
-      mapa.addSource('destacado', { type: 'geojson', data: comoPuntos(datos.current.destacado ? [datos.current.destacado] : []) });
-      mapa.addLayer({ id: 'destacado', type: 'circle', source: 'destacado', paint: { 'circle-radius': 8, 'circle-color': COLOR_DE_LA_LINEA, 'circle-stroke-color': '#fff', 'circle-stroke-width': 2 } });
+      mapa.addSource('destacado', {
+        type: 'geojson',
+        data: comoPuntos(
+          datos.current.destacado ? [datos.current.destacado] : [],
+        ),
+      });
+      mapa.addLayer({
+        id: 'destacado',
+        type: 'circle',
+        source: 'destacado',
+        paint: {
+          'circle-radius': 8,
+          'circle-color': COLOR_DE_LA_LINEA,
+          'circle-stroke-color': '#fff',
+          'circle-stroke-width': 2,
+        },
+      });
       cargado.current = true;
       // Con la línea roja, orientado con ella (A1); sin ella, todo y norte arriba
       if (datos.current.orientar > 0 && actual) orientarAhora.current(false);
@@ -253,9 +499,13 @@ const MapaDeRevision = ({
       if (!elegir) return;
       // Un toque en un punto de la roja (sin llegar a arrastrarlo) no es elegir otra (CodeRabbit)
       if (e.originalEvent?.target?.closest?.('.maplibregl-marker')) return;
-      const debajo = mapa.queryRenderedFeatures(e.point, { layers: CAPAS_DE_TOQUE });
+      const debajo = mapa.queryRenderedFeatures(e.point, {
+        layers: CAPAS_DE_TOQUE,
+      });
       if (!debajo.length) return;
-      const primera = debajo.reduce((a, b) => (b.properties.orden < a.properties.orden ? b : a));
+      const primera = debajo.reduce((a, b) =>
+        b.properties.orden < a.properties.orden ? b : a,
+      );
       elegir(primera.properties.id);
     });
     return () => {
@@ -280,16 +530,21 @@ const MapaDeRevision = ({
   useEffect(() => orientarAhora.current(true), [orientar]);
 
   useEffect(() => {
-    if (cargado.current) mapaRef.current?.getSource('destacado')?.setData(comoPuntos(destacado ? [destacado] : []));
+    if (cargado.current)
+      mapaRef.current
+        ?.getSource('destacado')
+        ?.setData(comoPuntos(destacado ? [destacado] : []));
   }, [destacado]);
 
   useEffect(() => {
-    if (cargado.current) mapaRef.current?.getSource('marcados')?.setData(comoPuntos(marcados));
+    if (cargado.current)
+      mapaRef.current?.getSource('marcados')?.setData(comoPuntos(marcados));
   }, [marcados]);
 
   useEffect(() => {
     comunidadAhora.current = comunidad;
-    if (cargado.current && mapaRef.current) ponerOrtofoto(mapaRef.current, comunidad);
+    if (cargado.current && mapaRef.current)
+      ponerOrtofoto(mapaRef.current, comunidad);
   }, [comunidad]);
 
   useEffect(() => centrar.current(), [posicion, centrarEnMi]);
@@ -303,7 +558,10 @@ const MapaDeRevision = ({
   return (
     <>
       <div ref={contenedor} className="absolute inset-0" />
-      <p data-testid="atribucion-del-mapa" className="pointer-events-none absolute bottom-1 left-2 z-10 text-[10px] text-white/80 [text-shadow:0_1px_2px_#000]">
+      <p
+        data-testid="atribucion-del-mapa"
+        className="pointer-events-none absolute bottom-1 left-2 z-10 text-[10px] text-white/80 [text-shadow:0_1px_2px_#000]"
+      >
         {tMapa('mapa.atribucionPnoa')}
         {atribucion && ` · ${tMapa(atribucion)}`}
       </p>

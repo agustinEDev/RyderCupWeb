@@ -3,7 +3,8 @@ import { render, screen } from '@testing-library/react';
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
-    t: (clave, valores) => (valores ? `${clave}|${JSON.stringify(valores)}` : clave),
+    t: (clave, valores) =>
+      valores ? `${clave}|${JSON.stringify(valores)}` : clave,
   }),
 }));
 vi.mock('../golf_course/TeeColorBadge', () => ({
@@ -33,7 +34,12 @@ const BLOQUEO = {
   reason: 'PLAYERS_WITHOUT_TEE',
   players: [
     { userId: 'u1', name: 'Bea Dos', missing: 'GENDER', teeColor: null },
-    { userId: 'u2', name: 'Carla Tres', missing: 'TEE_COLOR', teeColor: 'WHITE' },
+    {
+      userId: 'u2',
+      name: 'Carla Tres',
+      missing: 'TEE_COLOR',
+      teeColor: 'WHITE',
+    },
   ],
 };
 
@@ -56,15 +62,21 @@ describe('BloqueoDePartidos', () => {
   });
 
   it('B3: otro motivo sin jugadores dice el suyo', () => {
-    render(<BloqueoDePartidos bloqueo={{ reason: 'NOT_ENOUGH_PLAYERS', players: [] }} />);
+    render(
+      <BloqueoDePartidos
+        bloqueo={{ reason: 'NOT_ENOUGH_PLAYERS', players: [] }}
+      />,
+    );
 
     expect(screen.getByTestId('bloqueo-de-partidos')).toHaveTextContent(
-      'generationBlock.reason.NOT_ENOUGH_PLAYERS'
+      'generationBlock.reason.NOT_ENOUGH_PLAYERS',
     );
   });
 
   it('B4: un motivo que esta versión no conoce no enseña la clave', () => {
-    render(<BloqueoDePartidos bloqueo={{ reason: 'ALGO_NUEVO', players: [] }} />);
+    render(
+      <BloqueoDePartidos bloqueo={{ reason: 'ALGO_NUEVO', players: [] }} />,
+    );
 
     const aviso = screen.getByTestId('bloqueo-de-partidos');
     expect(aviso).toHaveTextContent('generationBlock.reason.UNEXPECTED');
@@ -72,10 +84,14 @@ describe('BloqueoDePartidos', () => {
   });
 
   it('B8: abiertos con las inscripciones reabiertas, dice eso (RyderCupAM, revisión de la #711)', () => {
-    render(<BloqueoDePartidos bloqueo={{ reason: 'ENROLLMENT_OPEN', players: [] }} />);
+    render(
+      <BloqueoDePartidos
+        bloqueo={{ reason: 'ENROLLMENT_OPEN', players: [] }}
+      />,
+    );
 
     expect(screen.getByTestId('bloqueo-de-partidos')).toHaveTextContent(
-      'generationBlock.reason.ENROLLMENT_OPEN'
+      'generationBlock.reason.ENROLLMENT_OPEN',
     );
   });
 
@@ -84,13 +100,22 @@ describe('BloqueoDePartidos', () => {
       <BloqueoDePartidos
         bloqueo={{
           reason: 'NOT_ENOUGH_PLAYERS',
-          players: [{ userId: 'u9', name: 'Iván Ido', missing: 'ENROLLMENT', teeColor: null }],
+          players: [
+            {
+              userId: 'u9',
+              name: 'Iván Ido',
+              missing: 'ENROLLMENT',
+              teeColor: null,
+            },
+          ],
         }}
-      />
+      />,
     );
 
     expect(screen.getByTestId('falta-u9')).toHaveTextContent('Iván Ido');
-    expect(screen.getByTestId('falta-u9')).toHaveTextContent('generationBlock.missing.ENROLLMENT');
+    expect(screen.getByTestId('falta-u9')).toHaveTextContent(
+      'generationBlock.missing.ENROLLMENT',
+    );
   });
 
   it('B5: sin motivo no pinta nada', () => {
@@ -100,11 +125,17 @@ describe('BloqueoDePartidos', () => {
   });
 
   it('B6: «pulsa Generar» solo se lo dice a quien puede pulsarlo', () => {
-    const { rerender } = render(<BloqueoDePartidos bloqueo={BLOQUEO} puedeReintentar />);
-    expect(screen.getByTestId('bloqueo-de-partidos')).toHaveTextContent('generationBlock.retry');
+    const { rerender } = render(
+      <BloqueoDePartidos bloqueo={BLOQUEO} puedeReintentar />,
+    );
+    expect(screen.getByTestId('bloqueo-de-partidos')).toHaveTextContent(
+      'generationBlock.retry',
+    );
 
     rerender(<BloqueoDePartidos bloqueo={BLOQUEO} />);
-    expect(screen.getByTestId('bloqueo-de-partidos')).not.toHaveTextContent('generationBlock.retry');
+    expect(screen.getByTestId('bloqueo-de-partidos')).not.toHaveTextContent(
+      'generationBlock.retry',
+    );
   });
 
   it('B7: cada motivo y cada falta que se pinta tiene su texto en los dos idiomas', async () => {
@@ -112,7 +143,9 @@ describe('BloqueoDePartidos', () => {
     // cruda al organizador, como «generationBlock.reason.PLAYERS_WITHOUT_TEE»
     const idiomas = ['es', 'en'];
     for (const idioma of idiomas) {
-      const textos = (await import(`../../i18n/locales/${idioma}/schedule.json`)).default;
+      const textos = (
+        await import(`../../i18n/locales/${idioma}/schedule.json`)
+      ).default;
       for (const motivo of [
         'PLAYERS_WITHOUT_TEE',
         'NOT_ENOUGH_PLAYERS',
@@ -121,10 +154,16 @@ describe('BloqueoDePartidos', () => {
         'UNEXPECTED',
         'ENROLLMENT_OPEN',
       ]) {
-        expect(textos.generationBlock.reason[motivo], `${idioma}: ${motivo}`).toBeTruthy();
+        expect(
+          textos.generationBlock.reason[motivo],
+          `${idioma}: ${motivo}`,
+        ).toBeTruthy();
       }
       for (const falta of ['GENDER', 'TEE_COLOR', 'ENROLLMENT', 'OTHER']) {
-        expect(textos.generationBlock.missing[falta], `${idioma}: ${falta}`).toBeTruthy();
+        expect(
+          textos.generationBlock.missing[falta],
+          `${idioma}: ${falta}`,
+        ).toBeTruthy();
       }
     }
   });
@@ -134,12 +173,20 @@ describe('BloqueoDePartidos', () => {
       <BloqueoDePartidos
         bloqueo={{
           reason: 'PLAYERS_WITHOUT_TEE',
-          players: [{ userId: 'u9', name: 'Ana Alba', missing: 'HANDICAP', teeColor: null }],
+          players: [
+            {
+              userId: 'u9',
+              name: 'Ana Alba',
+              missing: 'HANDICAP',
+              teeColor: null,
+            },
+          ],
         }}
-      />
+      />,
     );
 
-    expect(screen.getByTestId('falta-u9')).toHaveTextContent('generationBlock.missing.OTHER');
+    expect(screen.getByTestId('falta-u9')).toHaveTextContent(
+      'generationBlock.missing.OTHER',
+    );
   });
 });
-

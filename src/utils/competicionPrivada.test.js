@@ -3,7 +3,9 @@ import { esDeUnaPrivada } from './competicionPrivada';
 
 describe('esDeUnaPrivada (release social 2)', () => {
   it('el 403 con su código, sí', () => {
-    expect(esDeUnaPrivada({ status: 403, errorCode: 'PRIVATE_COMPETITION' })).toBe(true);
+    expect(
+      esDeUnaPrivada({ status: 403, errorCode: 'PRIVATE_COMPETITION' }),
+    ).toBe(true);
   });
 
   it.each([

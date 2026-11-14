@@ -33,14 +33,15 @@ const EditUserModal = ({ user, onSubmit, onCancel }) => {
     try {
       await onSubmit({
         ...formData,
-        handicap: formData.handicap === '' ? undefined : Number(formData.handicap),
+        handicap:
+          formData.handicap === '' ? undefined : Number(formData.handicap),
       });
     } catch (err) {
       // El correo de otra cuenta, en el idioma de la app: el texto del backend es inglés
       setError(
         err?.errorCode === 'EMAIL_ALREADY_IN_USE'
           ? t('editModal.emailAlreadyInUse')
-          : err?.message || t('editModal.error')
+          : err?.message || t('editModal.error'),
       );
     } finally {
       setIsSaving(false);
@@ -64,10 +65,21 @@ const EditUserModal = ({ user, onSubmit, onCancel }) => {
       >
         <div className="flex items-start justify-between p-6 border-b border-gray-200">
           <div>
-            <h2 id="admin-editar-usuario-titulo" className="text-xl font-bold text-gray-900">{t('editModal.title')}</h2>
-            <p className="text-sm text-gray-500 mt-1">{t('editModal.subtitle')}</p>
+            <h2
+              id="admin-editar-usuario-titulo"
+              className="text-xl font-bold text-gray-900"
+            >
+              {t('editModal.title')}
+            </h2>
+            <p className="text-sm text-gray-500 mt-1">
+              {t('editModal.subtitle')}
+            </p>
           </div>
-          <button onClick={onCancel} className="text-gray-400 hover:text-gray-600" aria-label={t('editModal.cancel')}>
+          <button
+            onClick={onCancel}
+            className="text-gray-400 hover:text-gray-600"
+            aria-label={t('editModal.cancel')}
+          >
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -81,7 +93,12 @@ const EditUserModal = ({ user, onSubmit, onCancel }) => {
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label htmlFor="edit-user-first-name" className="block text-sm font-medium text-gray-700 mb-1">{t('editModal.firstName')}</label>
+              <label
+                htmlFor="edit-user-first-name"
+                className="block text-sm font-medium text-gray-700 mb-1"
+              >
+                {t('editModal.firstName')}
+              </label>
               <input
                 id="edit-user-first-name"
                 type="text"
@@ -92,7 +109,12 @@ const EditUserModal = ({ user, onSubmit, onCancel }) => {
               />
             </div>
             <div>
-              <label htmlFor="edit-user-last-name" className="block text-sm font-medium text-gray-700 mb-1">{t('editModal.lastName')}</label>
+              <label
+                htmlFor="edit-user-last-name"
+                className="block text-sm font-medium text-gray-700 mb-1"
+              >
+                {t('editModal.lastName')}
+              </label>
               <input
                 id="edit-user-last-name"
                 type="text"
@@ -105,7 +127,12 @@ const EditUserModal = ({ user, onSubmit, onCancel }) => {
           </div>
 
           <div>
-            <label htmlFor="edit-user-email" className="block text-sm font-medium text-gray-700 mb-1">{t('editModal.email')}</label>
+            <label
+              htmlFor="edit-user-email"
+              className="block text-sm font-medium text-gray-700 mb-1"
+            >
+              {t('editModal.email')}
+            </label>
             <input
               id="edit-user-email"
               type="email"
@@ -124,11 +151,18 @@ const EditUserModal = ({ user, onSubmit, onCancel }) => {
           </div>
 
           <div>
-            <label htmlFor="edit-user-handicap" className="block text-sm font-medium text-gray-700 mb-1">{t('editModal.handicap')}</label>
+            <label
+              htmlFor="edit-user-handicap"
+              className="block text-sm font-medium text-gray-700 mb-1"
+            >
+              {t('editModal.handicap')}
+            </label>
             <CampoDeHandicap
               id="edit-user-handicap"
               value={formData.handicap}
-              onChange={(valor) => setFormData((prev) => ({ ...prev, handicap: valor }))}
+              onChange={(valor) =>
+                setFormData((prev) => ({ ...prev, handicap: valor }))
+              }
               className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-400 focus:border-primary-400 outline-none"
             />
           </div>
@@ -141,8 +175,12 @@ const EditUserModal = ({ user, onSubmit, onCancel }) => {
               className="mt-0.5 w-4 h-4 accent-primary-600"
             />
             <span>
-              <span className="block text-sm font-medium text-gray-900">{t('editModal.isAdmin')}</span>
-              <span className="block text-xs text-gray-500">{t('editModal.isAdminHint')}</span>
+              <span className="block text-sm font-medium text-gray-900">
+                {t('editModal.isAdmin')}
+              </span>
+              <span className="block text-xs text-gray-500">
+                {t('editModal.isAdminHint')}
+              </span>
             </span>
           </label>
 

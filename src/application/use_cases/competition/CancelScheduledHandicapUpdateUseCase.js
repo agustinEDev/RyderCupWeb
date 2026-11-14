@@ -8,7 +8,9 @@ class CancelScheduledHandicapUpdateUseCase {
 
   async execute(competitionId) {
     if (!competitionId) throw new Error('Competition ID is required');
-    return this.competitionRepository.cancelScheduledHandicapUpdate(competitionId);
+    return this.competitionRepository.cancelScheduledHandicapUpdate(
+      competitionId,
+    );
   }
 }
 

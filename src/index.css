@@ -3,7 +3,7 @@
    debajo de `utilities`. Sin capa, ganaba a todas las utilidades de Tailwind en
    cualquier elemento `.maplibregl-*` (el mapa del hoyo salía gris, BE #532) */
 @layer theme, base, components, maplibre, utilities;
-@import "tailwindcss";
+@import 'tailwindcss';
 /* Inter y Poppins se importan en main.jsx, desde la propia aplicación */
 
 @theme inline {
@@ -19,21 +19,21 @@
   --color-primary-900: #14532d;
   --color-primary-950: #052e16;
 
-  --color-secondary-500: #1E3A5F;
+  --color-secondary-500: #1e3a5f;
 
   --color-accent-50: #fffbeb;
   --color-accent-100: #fef3c7;
   --color-accent-200: #fde68a;
   --color-accent-300: #fcd34d;
   --color-accent-400: #fbbf24;
-  --color-accent-500: #D4AF37;
+  --color-accent-500: #d4af37;
   --color-accent-600: #d97706;
   --color-accent-700: #b45309;
   --color-accent-800: #92400e;
   --color-accent-900: #78350f;
 
   --color-navy-700: #1e3a8a;
-  --color-navy-800: #1E3A5F;
+  --color-navy-800: #1e3a5f;
   --color-navy-900: #1e293b;
 
   --color-gray-50: #f8f9fa;
@@ -80,7 +80,12 @@
     padding-right: env(safe-area-inset-right, 0px);
   }
 
-  h1, h2, h3, h4, h5, h6 {
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
     font-family: 'Poppins', sans-serif;
   }
 }
@@ -225,9 +230,15 @@
    que es el remedio que sale en todas partes: quita el pinch-zoom a todo el
    mundo, y hay quien lo necesita para leer. */
 @media (hover: none) and (pointer: coarse), (max-width: 767px) {
-  input:not([type='checkbox']):not([type='radio']):not(.text-base):not(.text-lg):not(.text-xl):not(.text-2xl):not(.text-3xl),
-  select:not(.text-base):not(.text-lg):not(.text-xl):not(.text-2xl):not(.text-3xl),
-  textarea:not(.text-base):not(.text-lg):not(.text-xl):not(.text-2xl):not(.text-3xl) {
+  input:not([type='checkbox']):not([type='radio']):not(.text-base):not(
+      .text-lg
+    ):not(.text-xl):not(.text-2xl):not(.text-3xl),
+  select:not(.text-base):not(.text-lg):not(.text-xl):not(.text-2xl):not(
+      .text-3xl
+    ),
+  textarea:not(.text-base):not(.text-lg):not(.text-xl):not(.text-2xl):not(
+      .text-3xl
+    ) {
     font-size: 16px;
   }
 }
@@ -347,6 +358,10 @@
 /* La barra fina de arriba mientras la pantalla siguiente espera sus datos
    (BarraDeCarga, FE #647 fase 3): un tramo que cruza de lado a lado */
 @keyframes barra-de-carga {
-  from { transform: translateX(-100%); }
-  to { transform: translateX(300%); }
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(300%);
+  }
 }

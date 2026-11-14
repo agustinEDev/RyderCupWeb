@@ -17,7 +17,11 @@ import {
 import ConfirmModal from '../../components/modals/ConfirmModal';
 import PersonalRoundCalculator from '../../domain/services/PersonalRoundCalculator';
 import customToast from '../../utils/toast';
-import { laUltimaLista, olvidaLoDeEstaCuenta, recuerdaLaLista } from '../../services/loUltimoConocido';
+import {
+  laUltimaLista,
+  olvidaLoDeEstaCuenta,
+  recuerdaLaLista,
+} from '../../services/loUltimoConocido';
 
 import BlockLoader from '../../components/ui/BlockLoader';
 import { esFalloDeRed } from '../../utils/sinCobertura';
@@ -72,8 +76,8 @@ const MyQuickMatchesPage = () => {
   // ojo a proposito: una marca heredada sobre una partida a medias si dice
   // algo, porque cuando termine no contara. En una cancelada no, que no contara
   // nunca.
-  const llevaMarcaDeNoCuenta = (qm) => qm.status !== 'CANCELLED' && excludedIds.has(qm.id);
-
+  const llevaMarcaDeNoCuenta = (qm) =>
+    qm.status !== 'CANCELLED' && excludedIds.has(qm.id);
 
   // El ojo: la partida deja de contar en MIS estadísticas, pero sigue en la
   // lista. Es la otra mitad de la separación que dejó a la papelera como
@@ -92,7 +96,11 @@ const MyQuickMatchesPage = () => {
         else next.delete(id);
         return next;
       });
-      customToast.success(updated.excludedFromStats ? t('history.excluded') : t('history.included'));
+      customToast.success(
+        updated.excludedFromStats
+          ? t('history.excluded')
+          : t('history.included'),
+      );
     } catch {
       customToast.error(t('history.statsToggleError'));
     } finally {
@@ -154,7 +162,11 @@ const MyQuickMatchesPage = () => {
         if (!vigente) return;
         setQuickMatches(result.quickMatches);
         setExcludedIds(
-          new Set(result.quickMatches.filter((qm) => qm.excludedFromStats).map((qm) => qm.id))
+          new Set(
+            result.quickMatches
+              .filter((qm) => qm.excludedFromStats)
+              .map((qm) => qm.id),
+          ),
         );
         // Para poder LLEGAR a una partida sin cobertura: la pantalla de
         // anotación sabe pintarse sola, pero hay que poder pulsar en ella
@@ -178,11 +190,16 @@ const MyQuickMatchesPage = () => {
         // llevaría por delante la partida que se está jugando, sin vuelta atrás
         // y sin cobertura con la que recuperarla
         if (err?.status === 401 || err?.status === 403) olvidaLoDeEstaCuenta();
-        const guardadas = estado === 401 || estado === 403 ? null : laUltimaLista();
+        const guardadas =
+          estado === 401 || estado === 403 ? null : laUltimaLista();
         setSinCobertura(esFalloDeRed(err));
         if (guardadas?.length) {
           setQuickMatches(guardadas);
-          setExcludedIds(new Set(guardadas.filter((qm) => qm.excludedFromStats).map((qm) => qm.id)));
+          setExcludedIds(
+            new Set(
+              guardadas.filter((qm) => qm.excludedFromStats).map((qm) => qm.id),
+            ),
+          );
         }
         setError(err);
       })
@@ -190,7 +207,9 @@ const MyQuickMatchesPage = () => {
         if (vigente) setIsLoading(false);
       });
 
-    return () => { vigente = false; };
+    return () => {
+      vigente = false;
+    };
   }, [user]);
 
   // For each finished quick match, compute the current user's own result
@@ -198,14 +217,19 @@ const MyQuickMatchesPage = () => {
   // carry hole scores, so this fetches match detail + course per finished
   // match (course lookups deduplicated), same approach the scoring page uses.
   useEffect(() => {
-    const completedMatches = quickMatches.filter((qm) => qm.status === 'COMPLETED');
+    const completedMatches = quickMatches.filter(
+      (qm) => qm.status === 'COMPLETED',
+    );
     if (!user || completedMatches.length === 0) return;
 
     let cancelled = false;
     const courseCache = new Map();
     const loadCourse = (golfCourseId) => {
       if (!courseCache.has(golfCourseId)) {
-        courseCache.set(golfCourseId, getGolfCourseUseCase.execute(golfCourseId));
+        courseCache.set(
+          golfCourseId,
+          getGolfCourseUseCase.execute(golfCourseId),
+        );
       }
       return courseCache.get(golfCourseId);
     };
@@ -216,7 +240,9 @@ const MyQuickMatchesPage = () => {
           getQuickMatchUseCase.execute(qm.id),
           loadCourse(qm.golfCourseId),
         ]);
-        const myParticipant = detail.participants.find((p) => p.userId === user.id);
+        const myParticipant = detail.participants.find(
+          (p) => p.userId === user.id,
+        );
         if (!myParticipant) return null;
 
         // «Tu vuelta», la real de la partida: la misma que al anotar (Agustín,
@@ -250,7 +276,7 @@ const MyQuickMatchesPage = () => {
         // ya tenía resultado, lo pierde, como antes; no se queda el viejo
         setResultsByMatchId((prev) => ({ ...prev, [qm.id]: result }));
       },
-      { sigue: () => !cancelled }
+      { sigue: () => !cancelled },
     );
 
     return () => {
@@ -281,17 +307,26 @@ const MyQuickMatchesPage = () => {
           &larr; {t('scoring.backToDashboard')}
         </button>
 
-        <h1 className="hidden md:block text-xl font-bold text-gray-900 mb-4">{t('history.title')}</h1>
+        <h1 className="hidden md:block text-xl font-bold text-gray-900 mb-4">
+          {t('history.title')}
+        </h1>
 
         {/* Quedarse sin cobertura no es un error, y aquí además puede haber
             partidas en pantalla —las últimas que se vieron—: llamarlo error
             sobre una lista que se está usando es contradecirse */}
         {sinCobertura ? (
-          <p className="text-sm text-amber-800 mb-4" data-testid="quick-matches-sin-conexion">
+          <p
+            className="text-sm text-amber-800 mb-4"
+            data-testid="quick-matches-sin-conexion"
+          >
             {t('scoring.offline.noSeActualiza')}
           </p>
-        ) : error && (
-          <p className="text-sm text-red-600 mb-4">{error.message || t('scoring.errors.generic')}</p>
+        ) : (
+          error && (
+            <p className="text-sm text-red-600 mb-4">
+              {error.message || t('scoring.errors.generic')}
+            </p>
+          )
         )}
 
         {quickMatches.length === 0 ? (
@@ -322,7 +357,13 @@ const MyQuickMatchesPage = () => {
                 <button
                   onClick={() => navigate(`/quick-matches/${qm.id}/scoring`)}
                   data-testid={`quick-match-history-item-${qm.id}`}
-                  aria-label={qm.name || t(`history.format.${qm.matchFormat ?? qm.scoringFormat}`, qm.matchFormat ?? qm.scoringFormat)}
+                  aria-label={
+                    qm.name ||
+                    t(
+                      `history.format.${qm.matchFormat ?? qm.scoringFormat}`,
+                      qm.matchFormat ?? qm.scoringFormat,
+                    )
+                  }
                   className="absolute inset-0 z-0 rounded-lg"
                 />
 
@@ -336,12 +377,21 @@ const MyQuickMatchesPage = () => {
                       fecha, y no debajo del icono. */}
                   <div className="min-w-0 flex-1">
                     <p className="text-sm font-semibold text-gray-900 truncate">
-                      {qm.name || t(`history.format.${qm.matchFormat ?? qm.scoringFormat}`, qm.matchFormat ?? qm.scoringFormat)}
+                      {qm.name ||
+                        t(
+                          `history.format.${qm.matchFormat ?? qm.scoringFormat}`,
+                          qm.matchFormat ?? qm.scoringFormat,
+                        )}
                     </p>
                     <p className="text-xs text-gray-500 truncate">
-                      {qm.name && `${t(`history.format.${qm.matchFormat ?? qm.scoringFormat}`, qm.matchFormat ?? qm.scoringFormat)} · `}
+                      {qm.name &&
+                        `${t(`history.format.${qm.matchFormat ?? qm.scoringFormat}`, qm.matchFormat ?? qm.scoringFormat)} · `}
                       {/* Cuando se jugó (H5); con un backend viejo, cuando se creó */}
-                      {instanteEnTexto(qm.playedAt ?? qm.createdAt, i18n.language, { day: 'numeric', month: 'numeric', year: 'numeric' })}
+                      {instanteEnTexto(
+                        qm.playedAt ?? qm.createdAt,
+                        i18n.language,
+                        { day: 'numeric', month: 'numeric', year: 'numeric' },
+                      )}
                     </p>
 
                     {/* En todo menos en las canceladas: ver `llevaMarcaDeNoCuenta` */}
@@ -362,27 +412,33 @@ const MyQuickMatchesPage = () => {
                         className="mt-2 flex items-baseline flex-wrap gap-x-2 gap-y-1"
                         data-testid={`quick-match-result-${qm.id}`}
                       >
-                          {/* En foursomes no hay vuelta propia —una sola bola a
+                        {/* En foursomes no hay vuelta propia —una sola bola a
                               golpes alternos—, asi que el calculador la deja
                               en null y los golpes del equipo pasan a ser el
                               titular, con su etiqueta detras. */}
-                          {resultsByMatchId[qm.id].personalToPar ? (
-                            <>
-                              <span className="text-sm font-bold text-gray-900">
-                                {resultsByMatchId[qm.id].personalToPar}
-                              </span>
-                              <span className="text-xs text-gray-500">
-                                {t('history.grossStrokes', { count: resultsByMatchId[qm.id].totalStrokes })}
-                              </span>
-                            </>
-                          ) : (
-                            <>
-                              <span className="text-sm font-bold text-gray-900">
-                                {t('history.grossStrokes', { count: resultsByMatchId[qm.id].totalStrokes })}
-                              </span>
-                              <span className="text-xs text-gray-500">{t('history.teamTotal')}</span>
-                            </>
-                          )}
+                        {resultsByMatchId[qm.id].personalToPar ? (
+                          <>
+                            <span className="text-sm font-bold text-gray-900">
+                              {resultsByMatchId[qm.id].personalToPar}
+                            </span>
+                            <span className="text-xs text-gray-500">
+                              {t('history.grossStrokes', {
+                                count: resultsByMatchId[qm.id].totalStrokes,
+                              })}
+                            </span>
+                          </>
+                        ) : (
+                          <>
+                            <span className="text-sm font-bold text-gray-900">
+                              {t('history.grossStrokes', {
+                                count: resultsByMatchId[qm.id].totalStrokes,
+                              })}
+                            </span>
+                            <span className="text-xs text-gray-500">
+                              {t('history.teamTotal')}
+                            </span>
+                          </>
+                        )}
                       </span>
                     )}
                   </div>
@@ -397,14 +453,16 @@ const MyQuickMatchesPage = () => {
                       terminada o cancelada, que es justo lo que hace falta
                       saber para decidir si pulsarlos. */}
                   <div className="flex flex-col-reverse items-end gap-1 flex-shrink-0">
-                    <span className={`whitespace-nowrap text-xs font-semibold px-2 py-1 rounded-full ${STATUS_STYLES[qm.status] ?? 'bg-gray-100 text-gray-700'}`}>
+                    <span
+                      className={`whitespace-nowrap text-xs font-semibold px-2 py-1 rounded-full ${STATUS_STYLES[qm.status] ?? 'bg-gray-100 text-gray-700'}`}
+                    >
                       {t(`history.status.${qm.status}`, qm.status)}
                     </span>
                     <div className="pointer-events-auto flex items-center gap-2">
                       {/* Una que ya acabó se puede repetir (FE #1021) */}
-                      {(qm.status === 'COMPLETED' || qm.status === 'CANCELLED') && user && (
-                        <RepetirPartida partida={qm} usuario={user} />
-                      )}
+                      {(qm.status === 'COMPLETED' ||
+                        qm.status === 'CANCELLED') &&
+                        user && <RepetirPartida partida={qm} usuario={user} />}
                       {/* El ojo solo en las terminadas: una partida a medias no
                           cuenta todavia en ninguna estadistica, asi que el
                           control no diria nada —y el servidor lo rechaza con un
@@ -476,7 +534,11 @@ const MyQuickMatchesPage = () => {
           // de ahi: una cancelada SI esta terminada, una que se esta jugando
           // sigue para los demas, y a quien ya uso el ojo no hay que mandarle
           // a usarlo otra vez.
-          if (pendiente && esElegibleParaElOjo(pendiente) && !excludedIds.has(pendiente.id)) {
+          if (
+            pendiente &&
+            esElegibleParaElOjo(pendiente) &&
+            !excludedIds.has(pendiente.id)
+          ) {
             return `${t('history.deleteBody')} ${t('history.deleteHint')}`;
           }
           // PENDING va con IN_PROGRESS, no con CANCELLED: es una partida viva
@@ -490,7 +552,10 @@ const MyQuickMatchesPage = () => {
         confirmText={t('history.deleteConfirm')}
         cancelText={t('history.deleteCancel')}
         isDestructive
-        isLoading={matchPendingDeletion !== null && hidingIds.has(matchPendingDeletion.id)}
+        isLoading={
+          matchPendingDeletion !== null &&
+          hidingIds.has(matchPendingDeletion.id)
+        }
         onConfirm={handleConfirmHide}
         onCancel={() => setMatchPendingDeletion(null)}
       />

@@ -15,7 +15,8 @@ import customToast from './toast';
  * | K4 | Oculto                                       | No se puede pulsar ni enfocar       |
  * | K5 | Se cierra uno                                | Los demás, igual                    |
  */
-const caja = (texto) => screen.getByText(texto).closest('[data-testid="toast"]');
+const caja = (texto) =>
+  screen.getByText(texto).closest('[data-testid="toast"]');
 const oculto = (el) => {
   expect(el).toHaveClass('opacity-0', 'pointer-events-none');
   // `inert`: fuera del árbol de accesibilidad y del foco (con la X pulsada
@@ -31,7 +32,11 @@ const aLaVista = (el) => {
 describe('customToast · al cerrarlo se va en el acto', () => {
   // El `Toaster` pregunta por el movimiento reducido, y jsdom no trae matchMedia
   beforeEach(() => {
-    vi.stubGlobal('matchMedia', () => ({ matches: false, addEventListener() {}, removeEventListener() {} }));
+    vi.stubGlobal('matchMedia', () => ({
+      matches: false,
+      addEventListener() {},
+      removeEventListener() {},
+    }));
   });
   afterEach(() => {
     act(() => toast.remove());
@@ -53,19 +58,24 @@ describe('customToast · al cerrarlo se va en el acto', () => {
     });
 
     fireEvent.click(
-      caja('No se han podido cargar los inscritos').querySelector('button[aria-label]')
+      caja('No se han podido cargar los inscritos').querySelector(
+        'button[aria-label]',
+      ),
     );
 
     oculto(caja('No se han podido cargar los inscritos'));
     aLaVista(caja('Equipos deshechos'));
   });
 
-  it.each(['success', 'error', 'warning', 'info'])('K2: cerrado por código, igual (%s)', (tipo) => {
-    render(<Toaster />);
-    act(() => customToast[tipo]('Aviso', { id: 'aviso' }));
+  it.each(['success', 'error', 'warning', 'info'])(
+    'K2: cerrado por código, igual (%s)',
+    (tipo) => {
+      render(<Toaster />);
+      act(() => customToast[tipo]('Aviso', { id: 'aviso' }));
 
-    act(() => customToast.dismiss('aviso'));
+      act(() => customToast.dismiss('aviso'));
 
-    oculto(caja('Aviso'));
-  });
+      oculto(caja('Aviso'));
+    },
+  );
 });

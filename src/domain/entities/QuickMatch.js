@@ -68,16 +68,26 @@ class QuickMatch {
       throw new TypeError('golfCourseId must be a non-empty string');
     }
     if ((matchFormat == null) === (scoringFormat == null)) {
-      throw new TypeError('Exactly one of matchFormat or scoringFormat must be provided');
+      throw new TypeError(
+        'Exactly one of matchFormat or scoringFormat must be provided',
+      );
     }
     if (matchFormat != null && !VALID_MATCH_FORMATS.includes(matchFormat)) {
       throw new TypeError(`Invalid matchFormat: ${matchFormat}`);
     }
-    if (scoringFormat != null && !VALID_SCORING_FORMATS.includes(scoringFormat)) {
+    if (
+      scoringFormat != null &&
+      !VALID_SCORING_FORMATS.includes(scoringFormat)
+    ) {
       throw new TypeError(`Invalid scoringFormat: ${scoringFormat}`);
     }
-    if (name != null && (typeof name !== 'string' || name.length > MAX_NAME_LENGTH)) {
-      throw new TypeError(`name must be a string of at most ${MAX_NAME_LENGTH} characters`);
+    if (
+      name != null &&
+      (typeof name !== 'string' || name.length > MAX_NAME_LENGTH)
+    ) {
+      throw new TypeError(
+        `name must be a string of at most ${MAX_NAME_LENGTH} characters`,
+      );
     }
     if (!(status instanceof QuickMatchStatus)) {
       throw new TypeError('status must be a QuickMatchStatus instance');
@@ -237,7 +247,9 @@ class QuickMatch {
   }
 
   findParticipant(participantId) {
-    return this.#participants.find((p) => p.participantId === participantId) || null;
+    return (
+      this.#participants.find((p) => p.participantId === participantId) || null
+    );
   }
 
   findParticipantByUserId(userId) {

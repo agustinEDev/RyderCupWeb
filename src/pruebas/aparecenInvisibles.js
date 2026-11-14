@@ -8,7 +8,10 @@
 export const aparecenInvisibles = () => {
   const vistos = [];
   const mira = (el) => {
-    if (el.style?.opacity === '0') vistos.push(el.tagName + (el.dataset?.testid ? `#${el.dataset.testid}` : ''));
+    if (el.style?.opacity === '0')
+      vistos.push(
+        el.tagName + (el.dataset?.testid ? `#${el.dataset.testid}` : ''),
+      );
   };
   const observador = new globalThis.MutationObserver((cambios) => {
     for (const c of cambios) {

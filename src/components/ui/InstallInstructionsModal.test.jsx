@@ -20,7 +20,13 @@ const open = (route, onClose = vi.fn()) =>
  */
 describe('InstallInstructionsModal', () => {
   it('renders nothing while closed', () => {
-    const { container } = render(<InstallInstructionsModal isOpen={false} route="safari-iphone" onClose={vi.fn()} />);
+    const { container } = render(
+      <InstallInstructionsModal
+        isOpen={false}
+        route="safari-iphone"
+        onClose={vi.fn()}
+      />,
+    );
 
     expect(container).toBeEmptyDOMElement();
   });
@@ -43,21 +49,30 @@ describe('InstallInstructionsModal', () => {
     open('safari-ipad');
 
     expect(screen.getByText('installModal.steps.shareTop')).toBeInTheDocument();
-    expect(screen.queryByText('installModal.steps.moreButton')).not.toBeInTheDocument();
+    expect(
+      screen.queryByText('installModal.steps.moreButton'),
+    ).not.toBeInTheDocument();
   });
 
   it('gives a non-Safari browser its own two steps', () => {
     open('other-browser');
 
     const steps = screen.getAllByRole('listitem').map((li) => li.textContent);
-    expect(steps).toEqual(['1installModal.steps.openMenu', '2installModal.steps.chooseAdd']);
+    expect(steps).toEqual([
+      '1installModal.steps.openMenu',
+      '2installModal.steps.chooseAdd',
+    ]);
   });
 
   it('covers desktop Safari through the File menu', () => {
     open('desktop-safari');
 
-    expect(screen.getByText('installModal.steps.openFileMenu')).toBeInTheDocument();
-    expect(screen.getByText('installModal.steps.chooseDock')).toBeInTheDocument();
+    expect(
+      screen.getByText('installModal.steps.openFileMenu'),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText('installModal.steps.chooseDock'),
+    ).toBeInTheDocument();
   });
 
   it('draws the phone only where a position can be pointed at', () => {
@@ -114,7 +129,9 @@ describe('InstallInstructionsModal', () => {
   it('moves focus into the dialog on open', () => {
     open('safari-iphone');
 
-    expect(document.activeElement).toBe(screen.getByLabelText('installModal.close'));
+    expect(document.activeElement).toBe(
+      screen.getByLabelText('installModal.close'),
+    );
   });
 
   it('returns focus to whatever opened it', () => {

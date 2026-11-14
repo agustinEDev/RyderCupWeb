@@ -16,7 +16,9 @@ import '../composition/interfazDelTransporte';
  *   RC4  uno detrás de otro (no a la vez)           | dos: no se queda pegado
  */
 
-vi.mock('../infrastructure/http/csrfTokenSync', () => ({ setCsrfTokenGlobal: vi.fn() }));
+vi.mock('../infrastructure/http/csrfTokenSync', () => ({
+  setCsrfTokenGlobal: vi.fn(),
+}));
 vi.mock('../infrastructure/http/deviceRevocationLogout', async (original) => ({
   ...(await original()),
   handleDeviceRevocationLogout: vi.fn(),
@@ -24,7 +26,8 @@ vi.mock('../infrastructure/http/deviceRevocationLogout', async (original) => ({
 }));
 
 const { preguntaLaSesionSinInterceptor } = await import('./sondaDeSesion');
-const { fetchWithTokenRefresh, refrescoCompartido } = await import('../infrastructure/http/tokenRefreshInterceptor');
+const { fetchWithTokenRefresh, refrescoCompartido } =
+  await import('../infrastructure/http/tokenRefreshInterceptor');
 
 const USUARIO = { id: 'u1' };
 const respuesta = (status, cuerpo = {}) => ({
@@ -40,7 +43,9 @@ const respuesta = (status, cuerpo = {}) => ({
 let sueltaElRefresco;
 const fetchFalso = vi.fn();
 const postsAlRefresco = () =>
-  fetchFalso.mock.calls.filter(([url]) => String(url).includes('/auth/refresh-token')).length;
+  fetchFalso.mock.calls.filter(([url]) =>
+    String(url).includes('/auth/refresh-token'),
+  ).length;
 
 // Hasta que la condición se cumpla, dejando correr las promesas pendientes
 const hasta = async (condicion) => {
@@ -68,7 +73,11 @@ beforeEach(() => {
         };
       });
     }
-    return Promise.resolve(refrescado ? respuesta(200, USUARIO) : respuesta(401, { detail: 'expired' }));
+    return Promise.resolve(
+      refrescado
+        ? respuesta(200, USUARIO)
+        : respuesta(401, { detail: 'expired' }),
+    );
   });
 });
 

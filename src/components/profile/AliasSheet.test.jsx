@@ -18,7 +18,13 @@ describe('AliasSheet (FE #435)', () => {
   });
 
   const abre = (aliasActual = '') =>
-    render(<AliasSheet aliasActual={aliasActual} onGuardar={onGuardar} onClose={onClose} />);
+    render(
+      <AliasSheet
+        aliasActual={aliasActual}
+        onGuardar={onGuardar}
+        onClose={onClose}
+      />,
+    );
 
   it('llega con el alias actual escrito', () => {
     abre('Chuchi');
@@ -29,7 +35,9 @@ describe('AliasSheet (FE #435)', () => {
   it('guarda el alias nuevo y se cierra', async () => {
     abre('');
 
-    fireEvent.change(screen.getByTestId('alias-sheet-input'), { target: { value: 'Chuchi' } });
+    fireEvent.change(screen.getByTestId('alias-sheet-input'), {
+      target: { value: 'Chuchi' },
+    });
     fireEvent.click(screen.getByTestId('alias-sheet-save'));
 
     await waitFor(() => expect(onGuardar).toHaveBeenCalledWith('Chuchi'));
@@ -39,7 +47,9 @@ describe('AliasSheet (FE #435)', () => {
   it('vaciar el campo pide que se borre el alias', async () => {
     abre('Chuchi');
 
-    fireEvent.change(screen.getByTestId('alias-sheet-input'), { target: { value: '' } });
+    fireEvent.change(screen.getByTestId('alias-sheet-input'), {
+      target: { value: '' },
+    });
     fireEvent.click(screen.getByTestId('alias-sheet-save'));
 
     await waitFor(() => expect(onGuardar).toHaveBeenCalledWith(''));
@@ -57,7 +67,9 @@ describe('AliasSheet (FE #435)', () => {
   it('no ofrece quitar cuando no hay alias que quitar', () => {
     abre('');
 
-    expect(screen.queryByText('edit.personalInfo.aliasClear')).not.toBeInTheDocument();
+    expect(
+      screen.queryByText('edit.personalInfo.aliasClear'),
+    ).not.toBeInTheDocument();
   });
 
   it('sin cambios se cierra sin llamar a la API', async () => {
@@ -72,12 +84,16 @@ describe('AliasSheet (FE #435)', () => {
   it('para un alias inválido antes de llamar a la API', async () => {
     abre('');
 
-    fireEvent.change(screen.getByTestId('alias-sheet-input'), { target: { value: 'C' } });
+    fireEvent.change(screen.getByTestId('alias-sheet-input'), {
+      target: { value: 'C' },
+    });
     fireEvent.click(screen.getByTestId('alias-sheet-save'));
 
     await screen.findByRole('alert');
     expect(onGuardar).not.toHaveBeenCalled();
-    expect(screen.getByRole('alert')).toHaveTextContent('alias.errors.tooShort');
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      'alias.errors.tooShort',
+    );
   });
 
   it('un 409 se queda dentro de la hoja, con lo tecleado intacto', async () => {
@@ -86,7 +102,9 @@ describe('AliasSheet (FE #435)', () => {
     onGuardar.mockRejectedValue(conflicto);
     abre('');
 
-    fireEvent.change(screen.getByTestId('alias-sheet-input'), { target: { value: 'Chuchi' } });
+    fireEvent.change(screen.getByTestId('alias-sheet-input'), {
+      target: { value: 'Chuchi' },
+    });
     fireEvent.click(screen.getByTestId('alias-sheet-save'));
 
     await screen.findByRole('alert');
@@ -128,13 +146,20 @@ describe('AliasSheet (FE #435)', () => {
 
 describe('AliasSheet · el foco de la hoja modal, el compartido (#389)', () => {
   const tab = (el, opciones = {}) => {
-    const evento = new globalThis.KeyboardEvent('keydown', { key: 'Tab', bubbles: true, cancelable: true, ...opciones });
+    const evento = new globalThis.KeyboardEvent('keydown', {
+      key: 'Tab',
+      bubbles: true,
+      cancelable: true,
+      ...opciones,
+    });
     el.dispatchEvent(evento);
     return evento;
   };
 
   it('Tab en el último vuelve al primero, y Shift+Tab en el primero va al último', () => {
-    render(<AliasSheet aliasActual="Chuchi" onGuardar={vi.fn()} onClose={vi.fn()} />);
+    render(
+      <AliasSheet aliasActual="Chuchi" onGuardar={vi.fn()} onClose={vi.fn()} />,
+    );
     const cruz = screen.getByRole('button', { name: 'alias.sheet.close' });
     const guardar = screen.getByTestId('alias-sheet-save');
 
@@ -149,12 +174,16 @@ describe('AliasSheet · el foco de la hoja modal, el compartido (#389)', () => {
   it('con el foco fuera, Tab lo devuelve a la hoja', () => {
     const fuera = document.createElement('button');
     document.body.appendChild(fuera);
-    render(<AliasSheet aliasActual="Chuchi" onGuardar={vi.fn()} onClose={vi.fn()} />);
+    render(
+      <AliasSheet aliasActual="Chuchi" onGuardar={vi.fn()} onClose={vi.fn()} />,
+    );
 
     fuera.focus();
     tab(fuera);
 
-    expect(screen.getByRole('dialog').contains(document.activeElement)).toBe(true);
+    expect(screen.getByRole('dialog').contains(document.activeElement)).toBe(
+      true,
+    );
     fuera.remove();
   });
 
@@ -162,11 +191,15 @@ describe('AliasSheet · el foco de la hoja modal, el compartido (#389)', () => {
     // Antes los contaba: el último era «Guardar», desactivado, y el tabulador
     // desde el campo seguía de largo hacia la página de detrás
     const onGuardar = vi.fn(() => new Promise(() => {}));
-    render(<AliasSheet aliasActual="" onGuardar={onGuardar} onClose={vi.fn()} />);
+    render(
+      <AliasSheet aliasActual="" onGuardar={onGuardar} onClose={vi.fn()} />,
+    );
     const campo = screen.getByTestId('alias-sheet-input');
     fireEvent.change(campo, { target: { value: 'Chuchi' } });
     fireEvent.click(screen.getByTestId('alias-sheet-save'));
-    await waitFor(() => expect(screen.getByTestId('alias-sheet-save')).toBeDisabled());
+    await waitFor(() =>
+      expect(screen.getByTestId('alias-sheet-save')).toBeDisabled(),
+    );
 
     campo.focus();
     const evento = tab(campo);
@@ -180,7 +213,9 @@ describe('AliasSheet · el foco de la hoja modal, el compartido (#389)', () => {
     const alPulsar = (e) => e.key === 'Escape' && escapeDeLaPagina();
     document.addEventListener('keydown', alPulsar);
     const onClose = vi.fn();
-    render(<AliasSheet aliasActual="Chuchi" onGuardar={vi.fn()} onClose={onClose} />);
+    render(
+      <AliasSheet aliasActual="Chuchi" onGuardar={vi.fn()} onClose={onClose} />,
+    );
 
     fireEvent.keyDown(document.activeElement, { key: 'Escape' });
 
@@ -196,9 +231,15 @@ describe('AliasSheet · el foco de la hoja modal, el compartido (#389)', () => {
       <ModalShell isOpen onClose={cerrarModal} labelledBy="t">
         <h2 id="t">Debajo</h2>
         <button type="button">del modal</button>
-      </ModalShell>
+      </ModalShell>,
     );
-    render(<AliasSheet aliasActual="Chuchi" onGuardar={vi.fn()} onClose={cerrarHoja} />);
+    render(
+      <AliasSheet
+        aliasActual="Chuchi"
+        onGuardar={vi.fn()}
+        onClose={cerrarHoja}
+      />,
+    );
 
     fireEvent.keyDown(document.activeElement, { key: 'Escape' });
 
@@ -212,11 +253,20 @@ describe('AliasSheet — lo que no se puede afirmar (FE #435)', () => {
     // Si se cerrara y esa petición acabara en 409, el aviso caería sobre un
     // componente desmontado: el conflicto desaparecería sin decir nada
     let resolver;
-    const onGuardar = vi.fn(() => new Promise((r) => { resolver = r; }));
+    const onGuardar = vi.fn(
+      () =>
+        new Promise((r) => {
+          resolver = r;
+        }),
+    );
     const onClose = vi.fn();
-    render(<AliasSheet aliasActual="" onGuardar={onGuardar} onClose={onClose} />);
+    render(
+      <AliasSheet aliasActual="" onGuardar={onGuardar} onClose={onClose} />,
+    );
 
-    fireEvent.change(screen.getByTestId('alias-sheet-input'), { target: { value: 'Chuchi' } });
+    fireEvent.change(screen.getByTestId('alias-sheet-input'), {
+      target: { value: 'Chuchi' },
+    });
     fireEvent.click(screen.getByTestId('alias-sheet-save'));
 
     fireEvent.keyDown(document, { key: 'Escape' });

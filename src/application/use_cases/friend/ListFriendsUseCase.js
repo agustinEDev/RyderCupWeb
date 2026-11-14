@@ -19,7 +19,11 @@ class ListFriendsUseCase {
     const result = await this.#friendRepository.getFriends(filters);
 
     const dtos = result.friendships.map((friendship) =>
-      FriendshipAssembler.toSimpleDTO(friendship, friendship._apiData, currentUserId)
+      FriendshipAssembler.toSimpleDTO(
+        friendship,
+        friendship._apiData,
+        currentUserId,
+      ),
     );
 
     return {

@@ -8,12 +8,17 @@ import {
 import GolfFigure from '../scoring/GolfFigure';
 import CarruselDeTarjetas from '../scoring/CarruselDeTarjetas';
 import TarjetaVertical from '../scoring/TarjetaVertical';
-import ColumnasDeLaVuelta, { CLASE_DE_LA_TABLA } from '../scoring/ColumnasDeLaVuelta';
+import ColumnasDeLaVuelta, {
+  CLASE_DE_LA_TABLA,
+} from '../scoring/ColumnasDeLaVuelta';
 import { useEsMovil } from '../../hooks/useEsMovil';
 import StablefordCalculator from '../../domain/services/StablefordCalculator';
 
 import MatchPlayStrokeAllocator from '../../domain/services/MatchPlayStrokeAllocator';
-import { conLaMiaPrimero, conMiNombrePrimero } from '../../utils/ordenDeLasTarjetas';
+import {
+  conLaMiaPrimero,
+  conMiNombrePrimero,
+} from '../../utils/ordenDeLasTarjetas';
 import PlayingHandicapCalculator from '../../domain/services/PlayingHandicapCalculator';
 import { formatoDeHandicapDeJuego } from '../../utils/formatoDeHandicap';
 import { nombreDeLaBarra } from '../../utils/nombreDeLaBarra';
@@ -89,7 +94,8 @@ const QuickMatchScorecardTable = ({
   // formatos menos foursomes, donde el bando comparte bola. Se elige recorriendo
   // el bando —no los golpes anotados, que llegan en el orden del backend— para
   // que esta tarjeta y la pantalla de anotación enseñen siempre la misma.
-  const getEntry = (holeNumber, members) => sideEntryOf(members, entryAt(holeNumber));
+  const getEntry = (holeNumber, members) =>
+    sideEntryOf(members, entryAt(holeNumber));
 
   const getStrokesReceived = (holeNumber, participantId) =>
     allocation[participantId]?.strokesByHole?.[holeNumber] ?? 0;
@@ -98,7 +104,10 @@ const QuickMatchScorecardTable = ({
   // secas y preguntar por "> 0" hacía que la cabecera dijese "no recibe golpes"
   // mientras la propia tarjeta pintaba los puntos de los golpes cedidos.
   const totalStrokesFor = (participantId) =>
-    holes.reduce((sum, h) => sum + getStrokesReceived(h.holeNumber, participantId), 0);
+    holes.reduce(
+      (sum, h) => sum + getStrokesReceived(h.holeNumber, participantId),
+      0,
+    );
 
   // Se nombra el allowance en los formatos cuyo reparto NO se puede reproducir
   // restando los dos números de la cabecera:
@@ -115,7 +124,8 @@ const QuickMatchScorecardTable = ({
   //              de los dos números de la cabecera cuadra siempre. Decir aquí
   //              "el N% de la diferencia" sería falso.
   //   libre      cada uno recibe su Playing Handicap entero, sin diferencia.
-  const explainsAllowance = matchFormat === 'FOURBALL' || matchFormat === 'FOURSOMES';
+  const explainsAllowance =
+    matchFormat === 'FOURBALL' || matchFormat === 'FOURSOMES';
 
   const withAllowanceNote = (text) =>
     explainsAllowance
@@ -124,11 +134,13 @@ const QuickMatchScorecardTable = ({
 
   const describeStrokes = (total) => {
     if (total > 0) {
-      return withAllowanceNote(t('scoring.scorecard.receivesStrokes', { count: total }));
+      return withAllowanceNote(
+        t('scoring.scorecard.receivesStrokes', { count: total }),
+      );
     }
     if (total < 0) {
       return withAllowanceNote(
-        t('scoring.scorecard.givesStrokes', { count: Math.abs(total) })
+        t('scoring.scorecard.givesStrokes', { count: Math.abs(total) }),
       );
     }
     return t('scoring.scorecard.receivesNoStrokes');
@@ -159,7 +171,7 @@ const QuickMatchScorecardTable = ({
       // se pintan y el hándicap del bando.
       const comoSeLee = conMiNombrePrimero(
         members,
-        (m) => m.participantId === currentParticipantId
+        (m) => m.participantId === currentParticipantId,
       );
 
       return {
@@ -196,7 +208,7 @@ const QuickMatchScorecardTable = ({
   // mismo par. Comparando salidas, la reserva saltaba justo ahí.
   const holesForCard = (card) => {
     const memberCards = card.members.map((m) =>
-      MatchPlayStrokeAllocator.holeCardFor(m, holes, tees)
+      MatchPlayStrokeAllocator.holeCardFor(m, holes, tees),
     );
     const [first] = memberCards;
     // La longitud entra en la comparación: sin ella, una tarjeta de barra más
@@ -205,7 +217,11 @@ const QuickMatchScorecardTable = ({
     const samePar = memberCards.every(
       (c) =>
         c.length === first.length &&
-        c.every((hole, i) => hole.par === first[i].par && hole.holeNumber === first[i].holeNumber)
+        c.every(
+          (hole, i) =>
+            hole.par === first[i].par &&
+            hole.holeNumber === first[i].holeNumber,
+        ),
     );
     return samePar ? first : holes;
   };
@@ -236,17 +252,19 @@ const QuickMatchScorecardTable = ({
       return allocation[card.strokesId]?.playingHandicap ?? null;
     }
     const sinCampo = holes.length === 0 || tees.length === 0;
-    const fromServer = card.members.map((m) => allocation[m.participantId]?.playingHandicap);
+    const fromServer = card.members.map(
+      (m) => allocation[m.participantId]?.playingHandicap,
+    );
     if (sinCampo && fromServer.every((ph) => ph != null)) {
       return PlayingHandicapCalculator.roundHalfAwayFromZero(
-        fromServer.reduce((sum, ph) => sum + ph, 0) / fromServer.length
+        fromServer.reduce((sum, ph) => sum + ph, 0) / fromServer.length,
       );
     }
     return MatchPlayStrokeAllocator.sidePlayingHandicap(
       card.members,
       holes,
       tees,
-      allowancePercentage
+      allowancePercentage,
     );
   };
 
@@ -267,7 +285,7 @@ const QuickMatchScorecardTable = ({
     {
       esMia: (card) => card.isMine,
       equipoDe: (card) => card.members[0]?.team,
-    }
+    },
   );
 
   const renderTeeLabel = (participant) => {
@@ -308,7 +326,8 @@ const QuickMatchScorecardTable = ({
   const valorExtraDelHoyo = (h, card) => {
     const { score, strokesReceived } = datosDelHoyo(h, card);
     if (score == null) return null;
-    if (isStableford) return StablefordCalculator.holePoints(score, h.par, strokesReceived);
+    if (isStableford)
+      return StablefordCalculator.holePoints(score, h.par, strokesReceived);
     if (isMedal) return score - strokesReceived;
     return null;
   };
@@ -320,7 +339,10 @@ const QuickMatchScorecardTable = ({
     const prefijo = subtotal ? 'subtotal' : 'hole';
     const [testId, clave] = isStableford
       ? [`${prefijo}-points`, subtotal ? 'subtotalPoints' : 'holePoints']
-      : [`${prefijo}-net-strokes`, subtotal ? 'subtotalNetStrokes' : 'holeNetStrokes'];
+      : [
+          `${prefijo}-net-strokes`,
+          subtotal ? 'subtotalNetStrokes' : 'holeNetStrokes',
+        ];
     return (
       <span
         data-testid={testId}
@@ -337,11 +359,14 @@ const QuickMatchScorecardTable = ({
   // Suma de los puntos o del neto de un tramo, solo de los hoyos jugados (la
   // raya ya cuenta como doble bogey neto). Sin ninguno jugado, nada
   const valorDelTramo = (holeRange, card) => {
-    const valores = holeRange.map((h) => valorExtraDelHoyo(h, card)).filter((v) => v != null);
+    const valores = holeRange
+      .map((h) => valorExtraDelHoyo(h, card))
+      .filter((v) => v != null);
     if (valores.length === 0) return null;
     return valores.reduce((sum, v) => sum + v, 0);
   };
-  const extraDelTramo = (holeRange, card) => pintaExtra(valorDelTramo(holeRange, card), { subtotal: true });
+  const extraDelTramo = (holeRange, card) =>
+    pintaExtra(valorDelTramo(holeRange, card), { subtotal: true });
 
   // La suma de un tramo en la horizontal: los golpes y, debajo, los puntos o
   // el neto. Son dos cifras sin etiqueta que el lector leía de un tirón
@@ -353,11 +378,20 @@ const QuickMatchScorecardTable = ({
       extra == null
         ? null
         : isStableford
-          ? t('scoring.scorecard.sectionTotalPointsA11y', { strokes: golpes, count: extra })
-          : t('scoring.scorecard.sectionTotalNetA11y', { strokes: golpes, net: extra });
+          ? t('scoring.scorecard.sectionTotalPointsA11y', {
+              strokes: golpes,
+              count: extra,
+            })
+          : t('scoring.scorecard.sectionTotalNetA11y', {
+              strokes: golpes,
+              net: extra,
+            });
     return (
       <>
-        <div className="flex flex-col items-center gap-0.5" aria-hidden={frase ? 'true' : undefined}>
+        <div
+          className="flex flex-col items-center gap-0.5"
+          aria-hidden={frase ? 'true' : undefined}
+        >
           {golpes || '-'}
           {pintaExtra(extra, { subtotal: true })}
         </div>
@@ -370,10 +404,17 @@ const QuickMatchScorecardTable = ({
   // del hoyo y los puntitos de los golpes. La comparten la tarjeta horizontal
   // y la vertical del móvil (FE #739)
   const casilla = (h, card, { conExtra = true } = {}) => {
-    const { isPickedUp, score, strokesReceived, dotCount } = datosDelHoyo(h, card);
+    const { isPickedUp, score, strokesReceived, dotCount } = datosDelHoyo(
+      h,
+      card,
+    );
     return (
       <div className="flex flex-col items-center gap-0.5">
-        <GolfFigure score={isPickedUp ? null : score} par={h.par} pickedUp={isPickedUp} />
+        <GolfFigure
+          score={isPickedUp ? null : score}
+          par={h.par}
+          pickedUp={isPickedUp}
+        />
         {conExtra && extraDelHoyo(h, card)}
         {dotCount > 0 && (
           <div
@@ -381,8 +422,12 @@ const QuickMatchScorecardTable = ({
             data-testid="stroke-dots"
             title={
               strokesReceived > 0
-                ? t('scoring.scorecard.strokeReceived', { count: strokesReceived })
-                : t('scoring.scorecard.strokeGiven', { count: Math.abs(strokesReceived) })
+                ? t('scoring.scorecard.strokeReceived', {
+                    count: strokesReceived,
+                  })
+                : t('scoring.scorecard.strokeGiven', {
+                    count: Math.abs(strokesReceived),
+                  })
             }
           >
             {Array.from({ length: dotCount }).map((_, i) => (
@@ -408,21 +453,35 @@ const QuickMatchScorecardTable = ({
           <ColumnasDeLaVuelta hoyos={sectionHoles} anchoPrimera="w-16" />
           <thead>
             <tr className="bg-gray-50">
-              <th className="px-2 py-1 text-left font-medium text-gray-500">{ts('scorecard.hole')}</th>
+              <th className="px-2 py-1 text-left font-medium text-gray-500">
+                {ts('scorecard.hole')}
+              </th>
               {sectionHoles.map((h) => (
-                <th key={h.holeNumber} className="px-2 py-1 text-center font-medium text-gray-500">
+                <th
+                  key={h.holeNumber}
+                  className="px-2 py-1 text-center font-medium text-gray-500"
+                >
                   {h.holeNumber}
                 </th>
               ))}
-              <th className="px-2 py-1 text-center font-bold text-gray-700">{label}</th>
+              <th className="px-2 py-1 text-center font-bold text-gray-700">
+                {label}
+              </th>
               {conTotal ? (
-                <th className="px-2 py-1 text-center font-bold text-gray-700">{ts('scorecard.total')}</th>
+                <th className="px-2 py-1 text-center font-bold text-gray-700">
+                  {ts('scorecard.total')}
+                </th>
               ) : (
                 <td />
               )}
             </tr>
             <tr className="bg-gray-50">
-              <th scope="row" className="px-2 py-1 text-left text-gray-400 font-normal">{ts('scorecard.par')}</th>
+              <th
+                scope="row"
+                className="px-2 py-1 text-left text-gray-400 font-normal"
+              >
+                {ts('scorecard.par')}
+              </th>
               {sectionHoles.map((h) => (
                 <th
                   key={h.holeNumber}
@@ -433,7 +492,10 @@ const QuickMatchScorecardTable = ({
                   {h.par}
                 </th>
               ))}
-              <th scope="col" className="px-2 py-1 text-center font-medium text-gray-500">
+              <th
+                scope="col"
+                className="px-2 py-1 text-center font-medium text-gray-500"
+              >
                 {sectionHoles.reduce((s, h) => s + h.par, 0)}
               </th>
               {conTotal ? (
@@ -456,18 +518,26 @@ const QuickMatchScorecardTable = ({
                 // casilla. El hueco mide lo que la figura, así la etiqueta cae a la
                 // altura de las cifras y la fila no crece. Sin cifras en el tramo
                 // no hay nada que nombrar, y sola la haría más alta
-                <th scope="row" className="px-2 py-1 text-left align-top font-normal">
+                <th
+                  scope="row"
+                  className="px-2 py-1 text-left align-top font-normal"
+                >
                   <span className="sr-only">{label}</span>
                   <div className="flex flex-col gap-0.5">
                     <span aria-hidden="true" className="h-7" />
-                    <span className={LETRA_DE_LA_CIFRA}>{etiquetaDeLaCifra}</span>
+                    <span className={LETRA_DE_LA_CIFRA}>
+                      {etiquetaDeLaCifra}
+                    </span>
                   </div>
                 </th>
               ) : (
                 // `sr-only` saca la celda del flujo, pero la tabla conserva su
                 // columna: medido en Chrome (21 oct), las casillas siguen bajo
                 // su hoyo, también en match play
-                <th scope="row" className="px-2 py-1.5 text-left font-medium text-gray-400 sr-only">
+                <th
+                  scope="row"
+                  className="px-2 py-1.5 text-left font-medium text-gray-400 sr-only"
+                >
                   {label}
                 </th>
               )}
@@ -491,7 +561,11 @@ const QuickMatchScorecardTable = ({
                   data-testid={`quick-match-section-total-${card.key}-total`}
                   className="px-2 py-1 text-center font-bold align-top"
                 >
-                  {totalDelTramo(card.holes, card, valorDelTramo(card.holes, card))}
+                  {totalDelTramo(
+                    card.holes,
+                    card,
+                    valorDelTramo(card.holes, card),
+                  )}
                 </td>
               ) : (
                 <td />
@@ -541,7 +615,11 @@ const QuickMatchScorecardTable = ({
     <TarjetaVertical
       clave={card.key}
       testId={`quick-match-player-card-${card.key}`}
-      equipo={card.members[0]?.team === 'A' || card.members[0]?.team === 'B' ? card.members[0].team : null}
+      equipo={
+        card.members[0]?.team === 'A' || card.members[0]?.team === 'B'
+          ? card.members[0].team
+          : null
+      }
       cabecera={cabeceraDe(card)}
       // Los puntos o el neto en su columna, no apilados bajo la figura: hay
       // sitio y la fila queda más baja (ronda 2 de pruebas)
@@ -554,14 +632,34 @@ const QuickMatchScorecardTable = ({
         extra: extraDelHoyo(h, card),
       }))}
       sumas={{
-        ida: conVuelta(card) ? sumStrokes(card.holes.filter((h) => h.holeNumber <= 9), card) : undefined,
-        vuelta: conVuelta(card) ? sumStrokes(card.holes.filter((h) => h.holeNumber > 9), card) : undefined,
+        ida: conVuelta(card)
+          ? sumStrokes(
+              card.holes.filter((h) => h.holeNumber <= 9),
+              card,
+            )
+          : undefined,
+        vuelta: conVuelta(card)
+          ? sumStrokes(
+              card.holes.filter((h) => h.holeNumber > 9),
+              card,
+            )
+          : undefined,
         total: sumStrokes(card.holes, card),
       }}
       // Como `sumas`: con 9 hoyos no hay ida ni vuelta que sumar
       sumasExtra={{
-        ida: conVuelta(card) ? extraDelTramo(card.holes.filter((h) => h.holeNumber <= 9), card) : undefined,
-        vuelta: conVuelta(card) ? extraDelTramo(card.holes.filter((h) => h.holeNumber > 9), card) : undefined,
+        ida: conVuelta(card)
+          ? extraDelTramo(
+              card.holes.filter((h) => h.holeNumber <= 9),
+              card,
+            )
+          : undefined,
+        vuelta: conVuelta(card)
+          ? extraDelTramo(
+              card.holes.filter((h) => h.holeNumber > 9),
+              card,
+            )
+          : undefined,
         total: extraDelTramo(card.holes, card),
       }}
     />
@@ -576,7 +674,10 @@ const QuickMatchScorecardTable = ({
           tarjetas={cards.map((card) => ({
             clave: card.key,
             nombre: card.title,
-            equipo: card.members[0]?.team === 'A' || card.members[0]?.team === 'B' ? card.members[0].team : undefined,
+            equipo:
+              card.members[0]?.team === 'A' || card.members[0]?.team === 'B'
+                ? card.members[0].team
+                : undefined,
             contenido: tarjetaVertical(card),
           }))}
         />
@@ -603,7 +704,7 @@ const QuickMatchScorecardTable = ({
               ts('scorecard.out'),
               card,
               'ida',
-              !conVuelta(card)
+              !conVuelta(card),
             )}
             {conVuelta(card) &&
               renderSection(
@@ -611,7 +712,7 @@ const QuickMatchScorecardTable = ({
                 ts('scorecard.in'),
                 card,
                 'vuelta',
-                true
+                true,
               )}
           </div>
         </div>

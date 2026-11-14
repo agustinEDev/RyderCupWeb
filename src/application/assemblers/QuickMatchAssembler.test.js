@@ -24,10 +24,14 @@ const deLaApi = (extra = {}) =>
 
 describe('QuickMatchAssembler.toSimpleDTO · la fecha de juego', () => {
   it('H5: lleva playedAt en ISO, que sobrevive al guardarse como JSON', () => {
-    const dto = QuickMatchAssembler.toSimpleDTO(deLaApi({ played_at: '2026-10-21T22:30:00Z' }));
+    const dto = QuickMatchAssembler.toSimpleDTO(
+      deLaApi({ played_at: '2026-10-21T22:30:00Z' }),
+    );
 
     expect(dto.playedAt).toBe('2026-10-21T22:30:00.000Z');
-    expect(new Date(JSON.parse(JSON.stringify(dto)).playedAt).toISOString()).toBe('2026-10-21T22:30:00.000Z');
+    expect(
+      new Date(JSON.parse(JSON.stringify(dto)).playedAt).toISOString(),
+    ).toBe('2026-10-21T22:30:00.000Z');
   });
 
   it('H5: con un backend viejo (sin played_at), nulo y la pantalla usa la de creación', () => {

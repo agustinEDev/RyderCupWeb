@@ -46,17 +46,19 @@ class CompetitionAssembler {
         name_en: country.name_en,
         name_es: country.name_es,
         flag: getCountryFlag(country.code),
-        isMain: index === 0
+        isMain: index === 0,
       }));
     } else {
       const allCountries = competition.location.getAllCountries();
-      const countryCodes = allCountries.map(countryCode => countryCode.value());
+      const countryCodes = allCountries.map((countryCode) =>
+        countryCode.value(),
+      );
 
       countries = countryCodes.map((code, index) => ({
         code: code,
         name: code,
         flag: getCountryFlag(code),
-        isMain: index === 0
+        isMain: index === 0,
       }));
     }
 
@@ -87,7 +89,9 @@ class CompetitionAssembler {
       tournamentType: competition.tournamentType,
       // Categorías, jornadas por jugador y general de un Stableford o un Medal
       // (FE #824); null en una Ryder
-      strokePlay: competition.strokePlay ? CompetitionAssembler.toStrokePlayDTO(competition.strokePlay) : null,
+      strokePlay: competition.strokePlay
+        ? CompetitionAssembler.toStrokePlayDTO(competition.strokePlay)
+        : null,
       // La última actualización de hándicaps y la ventana del botón (FE #824).
       // Solo le llegan al organizador: a los demás, null
       handicapUpdate: apiData?.handicap_update
@@ -96,10 +100,12 @@ class CompetitionAssembler {
             origin: apiData.handicap_update.origin,
             startedAt: apiData.handicap_update.started_at,
             finishedAt: apiData.handicap_update.finished_at ?? null,
-            pendingPlayers: (apiData.handicap_update.pending_players || []).map((p) => ({
-              userId: p.user_id,
-              name: p.name,
-            })),
+            pendingPlayers: (apiData.handicap_update.pending_players || []).map(
+              (p) => ({
+                userId: p.user_id,
+                name: p.name,
+              }),
+            ),
           }
         : null,
       handicapUpdateWindow: apiData?.handicap_update_window
@@ -115,7 +121,11 @@ class CompetitionAssembler {
       // Lo que pinta la tarjeta de «Mis competiciones» (FE #846, RyderCupAm#558).
       // Sin el campo (un servidor anterior), null: no se sabe, que no es «ninguno»
       golfCourses: Array.isArray(apiData?.golf_courses)
-        ? apiData.golf_courses.map((c) => ({ id: c.id, name: c.name, countryCode: c.country_code }))
+        ? apiData.golf_courses.map((c) => ({
+            id: c.id,
+            name: c.name,
+            countryCode: c.country_code,
+          }))
         : null,
       // Cuántos días se juega en un stroke play; null en una Ryder
       playingDays: apiData?.playing_days ?? null,
@@ -139,7 +149,8 @@ class CompetitionAssembler {
       // Cuánto monta la app por su cuenta (FE #695). De él sale además cómo se
       // reparten los equipos, que ya no se pregunta aparte (RyderCupAm#351).
       // Solo una Ryder lo tiene: a un Stableford no se le inventa
-      setupMode: apiData?.setup_mode || (competition.hasTeams ? 'RYDER_CUP' : null),
+      setupMode:
+        apiData?.setup_mode || (competition.hasTeams ? 'RYDER_CUP' : null),
       // Si ya hay equipos repartidos: con ellos los capitanes no se cambian, y una
       // reabierta se vuelve a cerrar con «Cerrar inscripciones» (FE #692). Solo lo
       // manda la ficha; sin el campo, no se afirma un reparto que nadie ha dicho
@@ -157,13 +168,15 @@ class CompetitionAssembler {
       enrolledCount: apiData?.enrolled_count || 0,
       isCreator: apiData?.is_creator || false,
       creatorId: competition.creatorId,
-      creator: apiData?.creator ? {
-        id: apiData.creator.id,
-        firstName: apiData.creator.first_name,
-        lastName: apiData.creator.last_name,
-        handicap: apiData.creator.handicap,
-        countryCode: apiData.creator.country_code
-      } : null,
+      creator: apiData?.creator
+        ? {
+            id: apiData.creator.id,
+            firstName: apiData.creator.first_name,
+            lastName: apiData.creator.last_name,
+            handicap: apiData.creator.handicap,
+            countryCode: apiData.creator.country_code,
+          }
+        : null,
       createdAt: competition.createdAt.toISOString(),
       updatedAt: competition.updatedAt.toISOString(),
       enrollment_status: apiData?.user_enrollment_status || null,
@@ -178,7 +191,7 @@ class CompetitionAssembler {
       // cerrar, dejaría sin equipo a los que entraron después. Solo lo manda
       // la ficha; los listados, no
       actualTeamAssignment: apiData?.actual_team_assignment ?? null,
-      maxPlayingHandicap: apiData?.max_playing_handicap ?? null
+      maxPlayingHandicap: apiData?.max_playing_handicap ?? null,
     };
   }
 }

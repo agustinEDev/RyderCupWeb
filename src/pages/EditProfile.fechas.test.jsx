@@ -9,13 +9,18 @@ import { MemoryRouter } from 'react-router';
  */
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
-    t: (clave, v) => (v && typeof v === 'object' ? `${clave} ${Object.values(v).join(' ')}` : clave),
+    t: (clave, v) =>
+      v && typeof v === 'object'
+        ? `${clave} ${Object.values(v).join(' ')}`
+        : clave,
     i18n: { language: 'es' },
   }),
 }));
 vi.mock('../components/layout/HeaderAuth', () => ({ default: () => null }));
 vi.mock('../components/profile/AvatarPicker', () => ({ default: () => null }));
-vi.mock('../components/ui/CountryAutocomplete', () => ({ default: () => null }));
+vi.mock('../components/ui/CountryAutocomplete', () => ({
+  default: () => null,
+}));
 vi.mock('../components/ui/FullScreenLoader', () => ({ default: () => null }));
 vi.mock('../hooks/useAvatar', () => ({ useAvatar: () => ({}) }));
 
@@ -28,8 +33,16 @@ vi.mock('../hooks/useEditProfile', () => ({
     user: usuario,
     sinConfirmar,
     formData: {
-      firstName: '', lastName: '', alias: '', countryCode: '', gender: '',
-      currentPassword: '', email: '', newPassword: '', confirmPassword: '', handicap: handicapEscrito,
+      firstName: '',
+      lastName: '',
+      alias: '',
+      countryCode: '',
+      gender: '',
+      currentPassword: '',
+      email: '',
+      newPassword: '',
+      confirmPassword: '',
+      handicap: handicapEscrito,
     },
     countries: [],
     handleInputChange: cambiar,
@@ -42,7 +55,7 @@ const pintar = () =>
   render(
     <MemoryRouter>
       <EditProfile />
-    </MemoryRouter>
+    </MemoryRouter>,
   );
 
 describe('EditProfile · la fecha del hándicap (FE #710)', () => {
@@ -50,19 +63,26 @@ describe('EditProfile · la fecha del hándicap (FE #710)', () => {
     usuario = { handicap: 18.2, handicap_updated_at: '2026-09-24T10:00:00' };
     pintar();
 
-    expect(screen.getByText(/edit\.handicap\.lastUpdated .*24 de septiembre de 2026/)).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        /edit\.handicap\.lastUpdated .*24 de septiembre de 2026/,
+      ),
+    ).toBeInTheDocument();
   });
 
   it('EP2: sin fecha ni hándicap, traducido', () => {
     usuario = { handicap: null, handicap_updated_at: null };
     pintar();
 
-    expect(screen.getByText('edit.handicap.lastUpdated edit.handicap.never')).toBeInTheDocument();
+    expect(
+      screen.getByText('edit.handicap.lastUpdated edit.handicap.never'),
+    ).toBeInTheDocument();
     expect(screen.getByText('edit.handicap.notSet')).toBeInTheDocument();
   });
 
   it('FE #826: el correo actual se parte en el móvil', () => {
-    const largo = 'un.correo.muy.largo.sin.espacios.para.partir@ejemplo-de-dominio.com';
+    const largo =
+      'un.correo.muy.largo.sin.espacios.para.partir@ejemplo-de-dominio.com';
     usuario = { handicap: null, handicap_updated_at: null, email: largo };
     pintar();
 
@@ -99,7 +119,9 @@ describe('EditProfile · fuente del hándicap (F4)', () => {
     pintar();
 
     expect(screen.getByText(/source\.prefix/)).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'source.rfegName' })).toHaveAttribute('href', 'https://www.rfegolf.es');
+    expect(
+      screen.getByRole('link', { name: 'source.rfegName' }),
+    ).toHaveAttribute('href', 'https://www.rfegolf.es');
   });
 
   it('F4: sin ella, no', () => {
@@ -119,7 +141,9 @@ describe('EditProfile · el «+» del hándicap a mano', () => {
     pintar();
 
     expect(screen.getByLabelText('edit.handicap.manual')).toHaveValue('2');
-    expect(screen.getByRole('button', { name: 'handicapField.plus' })).toHaveAttribute('aria-pressed', 'true');
+    expect(
+      screen.getByRole('button', { name: 'handicapField.plus' }),
+    ).toHaveAttribute('aria-pressed', 'true');
   });
 
   it('P2: pulsar «+» deja en el formulario el hándicap en negativo, como antes', () => {
@@ -130,7 +154,9 @@ describe('EditProfile · el «+» del hándicap a mano', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'handicapField.plus' }));
 
-    expect(cambiar).toHaveBeenCalledWith({ target: { name: 'handicap', value: '-2' } });
+    expect(cambiar).toHaveBeenCalledWith({
+      target: { name: 'handicap', value: '-2' },
+    });
   });
 });
 

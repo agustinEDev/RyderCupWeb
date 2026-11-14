@@ -12,14 +12,19 @@ describe('cargarConReintento', () => {
     const modulo = { default: () => null };
     const esperar = vi.fn(sinEspera);
 
-    await expect(cargarConReintento(async () => modulo, esperar)).resolves.toBe(modulo);
+    await expect(cargarConReintento(async () => modulo, esperar)).resolves.toBe(
+      modulo,
+    );
 
     expect(esperar).not.toHaveBeenCalled();
   });
 
   it('si falla y el reintento carga, el módulo, tras 1,5 s', async () => {
     const modulo = { default: () => null };
-    const importar = vi.fn().mockRejectedValueOnce(new TypeError('Failed to fetch')).mockResolvedValueOnce(modulo);
+    const importar = vi
+      .fn()
+      .mockRejectedValueOnce(new TypeError('Failed to fetch'))
+      .mockResolvedValueOnce(modulo);
     const esperar = vi.fn(sinEspera);
 
     await expect(cargarConReintento(importar, esperar)).resolves.toBe(modulo);
@@ -29,7 +34,9 @@ describe('cargarConReintento', () => {
   });
 
   it('si falla dos veces, el error sigue hacia la barrera', async () => {
-    const fallo = new TypeError('Failed to fetch dynamically imported module: x.js');
+    const fallo = new TypeError(
+      'Failed to fetch dynamically imported module: x.js',
+    );
     const importar = vi.fn().mockRejectedValue(fallo);
 
     await expect(cargarConReintento(importar, sinEspera)).rejects.toBe(fallo);

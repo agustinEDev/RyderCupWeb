@@ -8,13 +8,19 @@ import CheckDeviceStatusUseCase from './CheckDeviceStatusUseCase';
  */
 describe('CheckDeviceStatusUseCase', () => {
   it('sin repositorio no se puede crear', () => {
-    expect(() => new CheckDeviceStatusUseCase({})).toThrow('deviceRepository is required');
+    expect(() => new CheckDeviceStatusUseCase({})).toThrow(
+      'deviceRepository is required',
+    );
   });
 
   it('hace la petición con sesión del repositorio y no devuelve nada', async () => {
-    const deviceRepository = { checkDeviceStatus: vi.fn().mockResolvedValue({ id: 'u-1' }) };
+    const deviceRepository = {
+      checkDeviceStatus: vi.fn().mockResolvedValue({ id: 'u-1' }),
+    };
 
-    const resultado = await new CheckDeviceStatusUseCase({ deviceRepository }).execute();
+    const resultado = await new CheckDeviceStatusUseCase({
+      deviceRepository,
+    }).execute();
 
     expect(deviceRepository.checkDeviceStatus).toHaveBeenCalledTimes(1);
     expect(resultado).toBeUndefined();
@@ -22,8 +28,12 @@ describe('CheckDeviceStatusUseCase', () => {
 
   it('un fallo del repositorio sale tal cual (el hook lo calla)', async () => {
     const fallo = Object.assign(new Error('Unauthorized'), { status: 401 });
-    const deviceRepository = { checkDeviceStatus: vi.fn().mockRejectedValue(fallo) };
+    const deviceRepository = {
+      checkDeviceStatus: vi.fn().mockRejectedValue(fallo),
+    };
 
-    await expect(new CheckDeviceStatusUseCase({ deviceRepository }).execute()).rejects.toBe(fallo);
+    await expect(
+      new CheckDeviceStatusUseCase({ deviceRepository }).execute(),
+    ).rejects.toBe(fallo);
   });
 });

@@ -13,12 +13,12 @@ import { useDeviceRevocationMonitor } from './useDeviceRevocationMonitor';
 import { checkDeviceStatusUseCase } from '../composition';
 
 // El hook pide la comprobación al caso de uso de la composition root (F2)
-vi.mock('../composition', () => ({ checkDeviceStatusUseCase: { execute: vi.fn() } }));
+vi.mock('../composition', () => ({
+  checkDeviceStatusUseCase: { execute: vi.fn() },
+}));
 
 // Wrapper with React Router
-const wrapper = ({ children }) => (
-  <BrowserRouter>{children}</BrowserRouter>
-);
+const wrapper = ({ children }) => <BrowserRouter>{children}</BrowserRouter>;
 
 describe('useDeviceRevocationMonitor', () => {
   beforeEach(() => {
@@ -38,7 +38,7 @@ describe('useDeviceRevocationMonitor', () => {
   it('should return checkDeviceStatus function', () => {
     const { result } = renderHook(
       () => useDeviceRevocationMonitor({ enabled: false }),
-      { wrapper }
+      { wrapper },
     );
 
     expect(result.current).toBeDefined();
@@ -46,7 +46,9 @@ describe('useDeviceRevocationMonitor', () => {
   });
 
   it('should NOT check device status when disabled', () => {
-    renderHook(() => useDeviceRevocationMonitor({ enabled: false }), { wrapper });
+    renderHook(() => useDeviceRevocationMonitor({ enabled: false }), {
+      wrapper,
+    });
 
     // Should NOT have called API
     expect(checkDeviceStatusUseCase.execute).not.toHaveBeenCalled();
@@ -55,7 +57,7 @@ describe('useDeviceRevocationMonitor', () => {
   it('should respect enabled=false flag', () => {
     const { result } = renderHook(
       () => useDeviceRevocationMonitor({ enabled: false }),
-      { wrapper }
+      { wrapper },
     );
 
     // Hook should still provide checkDeviceStatus
@@ -70,17 +72,28 @@ describe('useDeviceRevocationMonitor', () => {
 // el interceptor con el 401 «Dispositivo revocado»
 describe('useDeviceRevocationMonitor · la petición que hace', () => {
   it('pide la comprobación al caso de uso (la ruta la fija su repositorio)', async () => {
-    renderHook(() => useDeviceRevocationMonitor({ enabled: true }), { wrapper });
+    renderHook(() => useDeviceRevocationMonitor({ enabled: true }), {
+      wrapper,
+    });
 
-    await vi.waitFor(() => expect(checkDeviceStatusUseCase.execute).toHaveBeenCalledTimes(1));
+    await vi.waitFor(() =>
+      expect(checkDeviceStatusUseCase.execute).toHaveBeenCalledTimes(1),
+    );
     expect(checkDeviceStatusUseCase.execute).toHaveBeenCalledWith();
   });
 
   it('un fallo de la comprobación no sale del hook (lo trata el interceptor)', async () => {
-    checkDeviceStatusUseCase.execute.mockRejectedValue(Object.assign(new Error('x'), { status: 401 }));
-    const { result } = renderHook(() => useDeviceRevocationMonitor({ enabled: true }), { wrapper });
+    checkDeviceStatusUseCase.execute.mockRejectedValue(
+      Object.assign(new Error('x'), { status: 401 }),
+    );
+    const { result } = renderHook(
+      () => useDeviceRevocationMonitor({ enabled: true }),
+      { wrapper },
+    );
 
-    await vi.waitFor(() => expect(checkDeviceStatusUseCase.execute).toHaveBeenCalled());
+    await vi.waitFor(() =>
+      expect(checkDeviceStatusUseCase.execute).toHaveBeenCalled(),
+    );
     await expect(result.current.checkDeviceStatus()).resolves.toBeUndefined();
   });
 });

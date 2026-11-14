@@ -1,4 +1,3 @@
-/* eslint-disable no-unused-vars */
 /**
  * Interface for Country Repository
  * Defines the contract for accessing country data

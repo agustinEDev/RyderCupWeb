@@ -20,7 +20,12 @@ const avisa = () => {
   anotando =
     pantallas.size === 0
       ? null
-      : { pendientes: [...pantallas.values()].reduce((total, n) => total + n, 0) };
+      : {
+          pendientes: [...pantallas.values()].reduce(
+            (total, n) => total + n,
+            0,
+          ),
+        };
   oyentes.forEach((oyente) => oyente());
 };
 
@@ -31,7 +36,11 @@ const suscribe = (oyente) => {
 
 /** Lo que dijeron las pantallas de anotar: `{ pendientes }`, o null si no hay ninguna sin red. */
 export const useAnotacionSinConexion = () =>
-  useSyncExternalStore(suscribe, () => anotando, () => null);
+  useSyncExternalStore(
+    suscribe,
+    () => anotando,
+    () => null,
+  );
 
 /** La pantalla de anotar lo dice mientras está sin red; al irse, lo retira. */
 export const usePublicarAnotacionSinConexion = (pendientes) => {

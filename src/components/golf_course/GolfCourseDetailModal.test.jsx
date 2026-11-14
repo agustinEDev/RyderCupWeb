@@ -6,13 +6,18 @@ import GolfCourse from '../../domain/entities/GolfCourse';
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
-    t: (key, params) => (params && !('defaultValue' in params) ? `${key}:${JSON.stringify(params)}` : key),
+    t: (key, params) =>
+      params && !('defaultValue' in params)
+        ? `${key}:${JSON.stringify(params)}`
+        : key,
     i18n: { language: 'es' },
   }),
 }));
 
 vi.mock('../ui/CountryFlag', () => ({
-  CountryFlag: ({ countryCode }) => <span data-testid="bandera">{countryCode}</span>,
+  CountryFlag: ({ countryCode }) => (
+    <span data-testid="bandera">{countryCode}</span>
+  ),
 }));
 
 /**
@@ -54,8 +59,20 @@ describe('GolfCourseDetailModal', () => {
       total_par: 72,
       holes: tarjeta({ conMetros: false }),
       tees: [
-        { color: 'WHITE', tee_gender: 'MALE', course_rating: 71.2, slope_rating: 128, holes: tarjeta({ parDelNueve: 6 }) },
-        { color: 'YELLOW', tee_gender: 'FEMALE', course_rating: 69.0, slope_rating: 120, holes: tarjeta() },
+        {
+          color: 'WHITE',
+          tee_gender: 'MALE',
+          course_rating: 71.2,
+          slope_rating: 128,
+          holes: tarjeta({ parDelNueve: 6 }),
+        },
+        {
+          color: 'YELLOW',
+          tee_gender: 'FEMALE',
+          course_rating: 69.0,
+          slope_rating: 120,
+          holes: tarjeta(),
+        },
       ],
       ...extra,
     });
@@ -68,7 +85,9 @@ describe('GolfCourseDetailModal', () => {
 
   const tablaTarjeta = () => screen.getByRole('table');
   const filaDelHoyo = (numero) => {
-    const celda = within(tablaTarjeta()).getAllByRole('cell').find(c => c.textContent === String(numero));
+    const celda = within(tablaTarjeta())
+      .getAllByRole('cell')
+      .find((c) => c.textContent === String(numero));
     return celda.closest('tr');
   };
 
@@ -76,9 +95,13 @@ describe('GolfCourseDetailModal', () => {
     it('enseña el nombre, el país, el tipo, el par y el estado', () => {
       abrir();
 
-      expect(screen.getByRole('heading', { name: 'La Marquesa' })).toBeInTheDocument();
+      expect(
+        screen.getByRole('heading', { name: 'La Marquesa' }),
+      ).toBeInTheDocument();
       expect(screen.getByTestId('bandera')).toHaveTextContent('ES');
-      expect(screen.getByText('form.courseTypes.STANDARD_18')).toBeInTheDocument();
+      expect(
+        screen.getByText('form.courseTypes.STANDARD_18'),
+      ).toBeInTheDocument();
       expect(screen.getByText('72')).toBeInTheDocument();
       expect(screen.getByText('table.statuses.APPROVED')).toBeInTheDocument();
     });
@@ -89,7 +112,7 @@ describe('GolfCourseDetailModal', () => {
 
       expect(cerrar).toHaveLength(2);
 
-      cerrar.forEach(boton => fireEvent.click(boton));
+      cerrar.forEach((boton) => fireEvent.click(boton));
 
       expect(onClose).toHaveBeenCalledTimes(2);
     });
@@ -97,9 +120,17 @@ describe('GolfCourseDetailModal', () => {
 
   describe('ubicación', () => {
     it('la enseña cuando el campo la tiene', () => {
-      abrir(campo({
-        location: { latitude: 38.08, longitude: -0.71, address: 'Ctra. San Miguel', city: 'Rojales', province: 'Alicante' },
-      }));
+      abrir(
+        campo({
+          location: {
+            latitude: 38.08,
+            longitude: -0.71,
+            address: 'Ctra. San Miguel',
+            city: 'Rojales',
+            province: 'Alicante',
+          },
+        }),
+      );
 
       expect(screen.getByText('detail.location')).toBeInTheDocument();
       expect(screen.getByText('Ctra. San Miguel')).toBeInTheDocument();
@@ -116,7 +147,17 @@ describe('GolfCourseDetailModal', () => {
     });
 
     it('no enseña la sección cuando la ubicación viene entera a null', () => {
-      abrir(campo({ location: { latitude: null, longitude: null, address: null, city: null, province: null } }));
+      abrir(
+        campo({
+          location: {
+            latitude: null,
+            longitude: null,
+            address: null,
+            city: null,
+            province: null,
+          },
+        }),
+      );
 
       expect(screen.queryByText('detail.location')).toBeNull();
     });
@@ -125,13 +166,33 @@ describe('GolfCourseDetailModal', () => {
     // entidad: con dos reglas escritas aparte, media coordenada sacaba el
     // título sobre una lista vacía
     it('no enseña la sección con una coordenada suelta', () => {
-      abrir(campo({ location: { latitude: 38.08, longitude: null, address: null, city: null, province: null } }));
+      abrir(
+        campo({
+          location: {
+            latitude: 38.08,
+            longitude: null,
+            address: null,
+            city: null,
+            province: null,
+          },
+        }),
+      );
 
       expect(screen.queryByText('detail.location')).toBeNull();
     });
 
     it('enseña solo lo que hay: dirección sin coordenadas', () => {
-      abrir(campo({ location: { address: 'Ctra. San Miguel', city: null, province: null, latitude: null, longitude: null } }));
+      abrir(
+        campo({
+          location: {
+            address: 'Ctra. San Miguel',
+            city: null,
+            province: null,
+            latitude: null,
+            longitude: null,
+          },
+        }),
+      );
 
       expect(screen.getByText('Ctra. San Miguel')).toBeInTheDocument();
       expect(screen.queryByText('detail.coordinates')).toBeNull();
@@ -162,7 +223,9 @@ describe('GolfCourseDetailModal', () => {
 
       expect(within(filaDelHoyo(9)).getByText('6')).toBeInTheDocument();
 
-      fireEvent.change(screen.getByRole('combobox'), { target: { value: '1' } });
+      fireEvent.change(screen.getByRole('combobox'), {
+        target: { value: '1' },
+      });
 
       // La segunda salida tiene el hoyo 9 en par 4, no en 6
       const fila = filaDelHoyo(9);
@@ -198,7 +261,9 @@ describe('GolfCourseDetailModal', () => {
     // Un hoyo sin distancia se deja VACÍO. Un cero se leería como una distancia
     it('deja la celda de metros vacía cuando el hoyo no los tiene', () => {
       const curso = campo();
-      curso.tees = [{ ...curso.tees[0], holes: tarjetaYaMapeada({ conMetros: false }) }];
+      curso.tees = [
+        { ...curso.tees[0], holes: tarjetaYaMapeada({ conMetros: false }) },
+      ];
       abrir(curso);
 
       const celdas = within(filaDelHoyo(9)).getAllByRole('cell');
@@ -232,13 +297,20 @@ describe('GolfCourseDetailModal', () => {
   // y la ficha lo dice. Los dados de alta a mano no llevan la cita
   describe('fuente de los datos', () => {
     it('F1: un campo de la RFEG la cita con su enlace', () => {
-      abrir(campo({ provenance: { source: 'RFEG', external_id: '42', imported_at: null } }));
+      abrir(
+        campo({
+          provenance: { source: 'RFEG', external_id: '42', imported_at: null },
+        }),
+      );
 
       expect(screen.getByText('source.courseData')).toBeInTheDocument();
       const enlace = screen.getByRole('link', { name: 'source.rfegName' });
       expect(enlace).toHaveAttribute('href', 'https://www.rfegolf.es');
       expect(enlace).toHaveAttribute('target', '_blank');
-      expect(enlace).toHaveAttribute('rel', expect.stringContaining('noopener'));
+      expect(enlace).toHaveAttribute(
+        'rel',
+        expect.stringContaining('noopener'),
+      );
     });
 
     it.each([
@@ -249,7 +321,9 @@ describe('GolfCourseDetailModal', () => {
       abrir(campo({ provenance }));
 
       expect(screen.queryByText('source.courseData')).toBeNull();
-      expect(screen.queryByRole('link', { name: 'source.rfegName' })).toBeNull();
+      expect(
+        screen.queryByRole('link', { name: 'source.rfegName' }),
+      ).toBeNull();
     });
   });
 });

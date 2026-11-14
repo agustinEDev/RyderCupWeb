@@ -1,10 +1,17 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen, fireEvent, within, waitFor } from '@testing-library/react';
+import {
+  render,
+  screen,
+  fireEvent,
+  within,
+  waitFor,
+} from '@testing-library/react';
 import HandicapRequestModal from './HandicapRequestModal';
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
-    t: (clave, valores) => (valores ? `${clave} ${Object.values(valores).join(' ')}` : clave),
+    t: (clave, valores) =>
+      valores ? `${clave} ${Object.values(valores).join(' ')}` : clave,
   }),
 }));
 
@@ -13,7 +20,9 @@ vi.mock('../../composition', () => ({
   updateManualHandicapUseCase: { execute: vi.fn() },
 }));
 
-vi.mock('../../utils/toast', () => ({ default: { success: vi.fn(), error: vi.fn() } }));
+vi.mock('../../utils/toast', () => ({
+  default: { success: vi.fn(), error: vi.fn() },
+}));
 
 /**
  * El modal se abre por dos motivos distintos, y decía lo mismo en los dos
@@ -29,28 +38,36 @@ describe('HandicapRequestModal · el texto dice por qué se abre (FE #677)', () 
         onClose={() => {}}
         onSaved={() => {}}
         {...props}
-      />
+      />,
     );
 
   it('M1: sin hándicap, dice que no lo tiene', () => {
     abrir({ handicapActual: null });
 
     expect(screen.getByText('handicapModal.subtitle')).toBeInTheDocument();
-    expect(screen.queryByText(/handicapModal\.subtitleStale/)).not.toBeInTheDocument();
+    expect(
+      screen.queryByText(/handicapModal\.subtitleStale/),
+    ).not.toBeInTheDocument();
   });
 
   it('M2: con uno guardado, dice cuál es y que hoy no se ha podido actualizar', () => {
     abrir({ handicapActual: 18 });
 
-    expect(screen.getByText('handicapModal.subtitleStale 18.0')).toBeInTheDocument();
-    expect(screen.queryByText('handicapModal.subtitle')).not.toBeInTheDocument();
+    expect(
+      screen.getByText('handicapModal.subtitleStale 18.0'),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByText('handicapModal.subtitle'),
+    ).not.toBeInTheDocument();
   });
 
   // Un hándicap plus se guarda negativo y se lee con «+» (FE #797)
   it('H1: con un plus guardado, se dice con «+»', () => {
     abrir({ handicapActual: -2 });
 
-    expect(screen.getByText('handicapModal.subtitleStale +2.0')).toBeInTheDocument();
+    expect(
+      screen.getByText('handicapModal.subtitleStale +2.0'),
+    ).toBeInTheDocument();
   });
 });
 
@@ -60,7 +77,14 @@ describe('HandicapRequestModal · el texto dice por qué se abre (FE #677)', () 
  */
 describe('HandicapRequestModal · fuente del hándicap (F4)', () => {
   const abrir = (user) =>
-    render(<HandicapRequestModal isOpen user={user} onClose={() => {}} onSaved={() => {}} />);
+    render(
+      <HandicapRequestModal
+        isOpen
+        user={user}
+        onClose={() => {}}
+        onSaved={() => {}}
+      />,
+    );
 
   it('F4: en la pestaña de la RFEG se cita a la federación, con su enlace', () => {
     abrir({ id: 'u-1', country_code: 'ES' });
@@ -92,18 +116,31 @@ describe('HandicapRequestModal · fuente del hándicap (F4)', () => {
  */
 describe('HandicapRequestModal · pestañas (FE #658)', () => {
   const abrir = (user) =>
-    render(<HandicapRequestModal isOpen user={user} onClose={() => {}} onSaved={() => {}} />);
+    render(
+      <HandicapRequestModal
+        isOpen
+        user={user}
+        onClose={() => {}}
+        onSaved={() => {}}
+      />,
+    );
 
   it('T1: en España, barra con nombre, panel nombrado por su pestaña y las flechas', () => {
     abrir({ id: 'u-1', country_code: 'ES' });
 
-    const barra = screen.getByRole('tablist', { name: 'handicapModal.tabsLabel' });
+    const barra = screen.getByRole('tablist', {
+      name: 'handicapModal.tabsLabel',
+    });
     const [rfeg, manual] = within(barra).getAllByRole('tab');
     expect(rfeg).toHaveAttribute('aria-selected', 'true');
     expect(manual).toHaveAttribute('tabindex', '-1');
-    const panel = screen.getByRole('tabpanel', { name: 'handicapModal.rfegTab' });
+    const panel = screen.getByRole('tabpanel', {
+      name: 'handicapModal.rfegTab',
+    });
     expect(rfeg).toHaveAttribute('aria-controls', panel.id);
-    expect(within(panel).getByRole('button', { name: 'handicapModal.fetchRfeg' })).toBeInTheDocument();
+    expect(
+      within(panel).getByRole('button', { name: 'handicapModal.fetchRfeg' }),
+    ).toBeInTheDocument();
     // Con su botón dentro, el panel no es una parada más
     expect(panel).not.toHaveAttribute('tabindex');
 
@@ -111,7 +148,9 @@ describe('HandicapRequestModal · pestañas (FE #658)', () => {
 
     expect(manual).toHaveAttribute('aria-selected', 'true');
     expect(manual).toHaveFocus();
-    expect(screen.getByRole('tabpanel', { name: 'handicapModal.manualTab' }).tagName).toBe('FORM');
+    expect(
+      screen.getByRole('tabpanel', { name: 'handicapModal.manualTab' }).tagName,
+    ).toBe('FORM');
     fireEvent.keyDown(manual, { key: 'ArrowRight' });
     expect(rfeg).toHaveAttribute('aria-selected', 'true');
   });
@@ -121,17 +160,35 @@ describe('HandicapRequestModal · pestañas (FE #658)', () => {
 
     expect(screen.queryByRole('tablist')).toBeNull();
     expect(screen.queryByRole('tabpanel')).toBeNull();
-    expect(screen.getByRole('button', { name: 'edit.handicap.updateManually' }).closest('form')).toBeInTheDocument();
+    expect(
+      screen
+        .getByRole('button', { name: 'edit.handicap.updateManually' })
+        .closest('form'),
+    ).toBeInTheDocument();
   });
 
   it('T3: si deja de poder tirar de la RFEG con el modal abierto, no se queda en su panel', () => {
     const props = { isOpen: true, onClose: () => {}, onSaved: () => {} };
-    const { rerender } = render(<HandicapRequestModal {...props} user={{ id: 'u-1', country_code: 'ES' }} />);
+    const { rerender } = render(
+      <HandicapRequestModal
+        {...props}
+        user={{ id: 'u-1', country_code: 'ES' }}
+      />,
+    );
 
-    rerender(<HandicapRequestModal {...props} user={{ id: 'u-1', country_code: 'FR' }} />);
+    rerender(
+      <HandicapRequestModal
+        {...props}
+        user={{ id: 'u-1', country_code: 'FR' }}
+      />,
+    );
 
-    expect(screen.queryByRole('button', { name: 'handicapModal.fetchRfeg' })).toBeNull();
-    expect(screen.getByRole('button', { name: 'edit.handicap.updateManually' })).toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: 'handicapModal.fetchRfeg' }),
+    ).toBeNull();
+    expect(
+      screen.getByRole('button', { name: 'edit.handicap.updateManually' }),
+    ).toBeInTheDocument();
   });
 });
 
@@ -140,15 +197,29 @@ describe('HandicapRequestModal · el «+» del hándicap a mano', () => {
   it('P4: con el «+» pulsado se guarda en negativo', async () => {
     const { updateManualHandicapUseCase } = await import('../../composition');
     updateManualHandicapUseCase.execute.mockResolvedValue({});
-    render(<HandicapRequestModal isOpen user={{ id: 'u-1', country_code: 'ES' }} onClose={() => {}} onSaved={() => {}} />);
+    render(
+      <HandicapRequestModal
+        isOpen
+        user={{ id: 'u-1', country_code: 'ES' }}
+        onClose={() => {}}
+        onSaved={() => {}}
+      />,
+    );
     fireEvent.click(screen.getByText('handicapModal.manualTab'));
 
-    fireEvent.change(screen.getByLabelText('edit.handicap.manual'), { target: { value: '1.5' } });
+    fireEvent.change(screen.getByLabelText('edit.handicap.manual'), {
+      target: { value: '1.5' },
+    });
     fireEvent.click(screen.getByRole('button', { name: 'handicapField.plus' }));
-    fireEvent.submit(screen.getByLabelText('edit.handicap.manual').closest('form'));
+    fireEvent.submit(
+      screen.getByLabelText('edit.handicap.manual').closest('form'),
+    );
 
     await waitFor(() =>
-      expect(updateManualHandicapUseCase.execute).toHaveBeenCalledWith({ userId: 'u-1', handicap: -1.5 })
+      expect(updateManualHandicapUseCase.execute).toHaveBeenCalledWith({
+        userId: 'u-1',
+        handicap: -1.5,
+      }),
     );
   });
 
@@ -156,14 +227,28 @@ describe('HandicapRequestModal · el «+» del hándicap a mano', () => {
   it('P7: «1,» guarda 1', async () => {
     const { updateManualHandicapUseCase } = await import('../../composition');
     updateManualHandicapUseCase.execute.mockResolvedValue({});
-    render(<HandicapRequestModal isOpen user={{ id: 'u-1', country_code: 'ES' }} onClose={() => {}} onSaved={() => {}} />);
+    render(
+      <HandicapRequestModal
+        isOpen
+        user={{ id: 'u-1', country_code: 'ES' }}
+        onClose={() => {}}
+        onSaved={() => {}}
+      />,
+    );
     fireEvent.click(screen.getByText('handicapModal.manualTab'));
 
-    fireEvent.change(screen.getByLabelText('edit.handicap.manual'), { target: { value: '1,' } });
-    fireEvent.submit(screen.getByLabelText('edit.handicap.manual').closest('form'));
+    fireEvent.change(screen.getByLabelText('edit.handicap.manual'), {
+      target: { value: '1,' },
+    });
+    fireEvent.submit(
+      screen.getByLabelText('edit.handicap.manual').closest('form'),
+    );
 
     await waitFor(() =>
-      expect(updateManualHandicapUseCase.execute).toHaveBeenCalledWith({ userId: 'u-1', handicap: 1 })
+      expect(updateManualHandicapUseCase.execute).toHaveBeenCalledWith({
+        userId: 'u-1',
+        handicap: 1,
+      }),
     );
   });
 });

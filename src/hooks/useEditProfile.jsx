@@ -77,7 +77,9 @@ export const useEditProfile = () => {
           newPassword: '',
           confirmPassword: '',
           handicap:
-            authUser.handicap === null || authUser.handicap === undefined ? '' : authUser.handicap.toString(),
+            authUser.handicap === null || authUser.handicap === undefined
+              ? ''
+              : authUser.handicap.toString(),
           countryCode: authUser.country_code || '',
           gender: authUser.gender || '',
         });
@@ -210,17 +212,20 @@ export const useEditProfile = () => {
     const isNameChanged =
       trimmedFirstName !== user.first_name ||
       trimmedLastName !== user.last_name;
-    const isCountryChanged =
-      trimmedCountryCode !== (user.country_code || '');
-    const isGenderChanged =
-      formData.gender !== (user.gender || '');
+    const isCountryChanged = trimmedCountryCode !== (user.country_code || '');
+    const isGenderChanged = formData.gender !== (user.gender || '');
     // `undefined` significa «el alias no viaja»: ni ha cambiado, ni se esta
     // pidiendo borrar uno que nunca existio. La cadena vacia SI viaja, y es
     // lo que le dice al servidor que lo quite
     const aliasAEnviar = loQueHayQueMandar(formData.alias, user.alias);
     const isAliasChanged = aliasAEnviar !== undefined;
 
-    if (!isNameChanged && !isCountryChanged && !isGenderChanged && !isAliasChanged) {
+    if (
+      !isNameChanged &&
+      !isCountryChanged &&
+      !isGenderChanged &&
+      !isAliasChanged
+    ) {
       customToast.info(t('toasts.noProfileChanges'));
       return;
     }
@@ -257,18 +262,14 @@ export const useEditProfile = () => {
       }
 
       if (isGenderChanged) {
-        updateData.gender =
-          formData.gender === '' ? null : formData.gender;
+        updateData.gender = formData.gender === '' ? null : formData.gender;
       }
 
       if (isAliasChanged) {
         updateData.alias = aliasAEnviar;
       }
 
-      await updateUserProfileUseCase.execute(
-        user.id,
-        updateData,
-      );
+      await updateUserProfileUseCase.execute(user.id, updateData);
 
       await refetchUser();
       // refetchUser updates authUser, which triggers useEffect to update formData
@@ -344,7 +345,11 @@ export const useEditProfile = () => {
   };
 
   const cierraContrasenaParaGoogle = () => {
-    ventana.current = { ...ventana.current, id: ventana.current.id + 1, abierta: false };
+    ventana.current = {
+      ...ventana.current,
+      id: ventana.current.id + 1,
+      abierta: false,
+    };
     setIsGooglePasswordOpen(false);
   };
 
@@ -359,7 +364,8 @@ export const useEditProfile = () => {
     } catch (error) {
       setIsUnlinkingGoogle(false);
       // La marca caducó o ya se usó: que la confirme otra vez, en la ventana
-      if (error?.errorCode === 'REAUTHENTICATION_REQUIRED') return 'edit.linkedAccounts.reauthExpired';
+      if (error?.errorCode === 'REAUTHENTICATION_REQUIRED')
+        return 'edit.linkedAccounts.reauthExpired';
       console.error('Error unlinking Google:', error);
       customToast.error(error.message || t('edit.linkedAccounts.unlinkError'));
       return null;
@@ -369,7 +375,10 @@ export const useEditProfile = () => {
     try {
       await refetchUser();
     } catch (error) {
-      console.warn('[useEditProfile] Session refresh after unlinking failed:', error);
+      console.warn(
+        '[useEditProfile] Session refresh after unlinking failed:',
+        error,
+      );
     } finally {
       setIsUnlinkingGoogle(false);
     }
@@ -387,8 +396,10 @@ export const useEditProfile = () => {
     try {
       await reauthenticateUseCase.execute(password);
     } catch (error) {
-      if (error?.errorCode === 'CURRENT_PASSWORD_INCORRECT') return 'edit.linkedAccounts.wrongPassword';
-      if (error?.errorCode === 'TOO_MANY_SECURITY_CHANGES') return 'toasts.tooManySecurityChanges';
+      if (error?.errorCode === 'CURRENT_PASSWORD_INCORRECT')
+        return 'edit.linkedAccounts.wrongPassword';
+      if (error?.errorCode === 'TOO_MANY_SECURITY_CHANGES')
+        return 'toasts.tooManySecurityChanges';
       return 'edit.linkedAccounts.passwordCheckFailed';
     }
     if (ventana.current.id !== id || !ventana.current.abierta) return null;
@@ -426,8 +437,7 @@ export const useEditProfile = () => {
     }
 
     const trimmedEmail = formData.email.trim();
-    const isEmailChanged =
-      trimmedEmail !== '' && trimmedEmail !== user.email;
+    const isEmailChanged = trimmedEmail !== '' && trimmedEmail !== user.email;
     const isPasswordChanged = formData.newPassword !== '';
 
     if (!isEmailChanged && !isPasswordChanged) {
@@ -441,7 +451,10 @@ export const useEditProfile = () => {
       const passwordValidation = validatePassword(formData.newPassword);
       if (!passwordValidation.isValid) {
         customToast.error(
-          t(`auth:${passwordValidation.messageKey}`, passwordValidation.messageOptions)
+          t(
+            `auth:${passwordValidation.messageKey}`,
+            passwordValidation.messageOptions,
+          ),
         );
         return;
       }
@@ -488,7 +501,9 @@ export const useEditProfile = () => {
         // (RyderCupAm #749): la cuenta sigue con el de antes. Con el backend de
         // antes, sin pendiente, se cambia al momento: el aviso de siempre
         const correos = { nuevo: trimmedEmail, actual: user.email };
-        customToast.success(t('toasts.emailChangePending', correos), { duration: 8000 });
+        customToast.success(t('toasts.emailChangePending', correos), {
+          duration: 8000,
+        });
       } else {
         customToast.success(t('toasts.securityUpdated'));
       }
@@ -510,20 +525,15 @@ export const useEditProfile = () => {
       } else if (error.errorCode === 'PASSWORD_REUSED') {
         // v1.13.0, por su código desde la BE #519: antes se buscaba el texto en
         // inglés del backend, que se rompía en cuanto cambiara una palabra
-        customToast.error(
-          t('toasts.passwordReused'),
-          {
-            duration: 8000,
-            icon: '🔑',
-          }
-        );
+        customToast.error(t('toasts.passwordReused'), {
+          duration: 8000,
+          icon: '🔑',
+        });
       } else if (contrasena) {
         // El backend la rechaza con un código (BE #519): en el idioma de la app
         customToast.error(contrasena);
       } else {
-        customToast.error(
-          error.message || t('toasts.failedToUpdateSecurity'),
-        );
+        customToast.error(error.message || t('toasts.failedToUpdateSecurity'));
       }
     } finally {
       setIsSaving(false);

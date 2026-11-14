@@ -28,23 +28,31 @@ const CarruselDeTarjetas = ({ tarjetas, inicial }) => {
   // Los ids de los nombres, para que cada tarjeta se nombre con el suyo (FE #658)
   const base = useId();
   const idDelNombre = (clave) => `${base}-nombre-${clave}`;
-  const [actual, setActual] = useState(() =>
-    Math.max(0, tarjetas.findIndex((t) => t.clave === inicial))
+  // Dónde arranca, fijado al montar: ni el sondeo (tarjetas nuevas) ni otra
+  // `inicial` lo cambian, porque después manda quien desliza
+  const [desde] = useState(() =>
+    Math.max(
+      0,
+      tarjetas.findIndex((t) => t.clave === inicial),
+    ),
   );
+  const [actual, setActual] = useState(desde);
 
-  // Arranca en la suya sin que se vea el viaje desde la primera
+  // Arranca en la suya sin que se vea el viaje desde la primera. `desde` no
+  // cambia nunca: corre solo al montar
   useLayoutEffect(() => {
     const el = carril.current;
-    if (el && actual > 0) el.scrollLeft = actual * el.clientWidth;
-    // Solo al montar: después manda quien desliza
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    if (el && desde > 0) el.scrollLeft = desde * el.clientWidth;
+  }, [desde]);
 
   const ir = (indice) => {
     const destino = Math.min(Math.max(indice, 0), tarjetas.length - 1);
     setActual(destino);
     const el = carril.current;
-    el?.scrollTo?.({ left: destino * el.clientWidth, behavior: sinMovimiento() ? 'auto' : 'smooth' });
+    el?.scrollTo?.({
+      left: destino * el.clientWidth,
+      behavior: sinMovimiento() ? 'auto' : 'smooth',
+    });
   };
 
   const alDeslizar = () => {
@@ -80,7 +88,9 @@ const CarruselDeTarjetas = ({ tarjetas, inicial }) => {
               aria-controls={`tarjeta-${tarjeta.clave}`}
               onClick={() => ir(i)}
               className={`rounded-full border border-transparent bg-gray-100 px-3 py-1 text-xs font-semibold text-gray-600 ${
-                tarjeta.equipo ? `border-l-4 ${COLOR_DEL_NOMBRE[tarjeta.equipo]}` : 'aria-selected:bg-primary-100 aria-selected:text-primary-700'
+                tarjeta.equipo
+                  ? `border-l-4 ${COLOR_DEL_NOMBRE[tarjeta.equipo]}`
+                  : 'aria-selected:bg-primary-100 aria-selected:text-primary-700'
               } focus:outline-none focus-visible:ring-2 focus-visible:ring-primary`}
             >
               {tarjeta.nombre}

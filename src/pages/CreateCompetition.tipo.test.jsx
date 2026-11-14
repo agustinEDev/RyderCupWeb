@@ -25,9 +25,15 @@ vi.mock('react-i18next', () => ({
 }));
 
 vi.mock('../components/layout/HeaderAuth', () => ({ default: () => null }));
-vi.mock('../hooks/useAuth', () => ({ useAuth: () => ({ user: { id: 'u-1', gender: 'MALE' }, loading: false }) }));
-vi.mock('../components/golf_course/GolfCourseSearchBox', () => ({ default: () => null }));
-vi.mock('../utils/toast', () => ({ default: { error: vi.fn(), success: vi.fn(), info: vi.fn() } }));
+vi.mock('../hooks/useAuth', () => ({
+  useAuth: () => ({ user: { id: 'u-1', gender: 'MALE' }, loading: false }),
+}));
+vi.mock('../components/golf_course/GolfCourseSearchBox', () => ({
+  default: () => null,
+}));
+vi.mock('../utils/toast', () => ({
+  default: { error: vi.fn(), success: vi.fn(), info: vi.fn() },
+}));
 vi.mock('../services/countries', () => ({
   formatCountryName: () => 'España',
   sortCountriesByName: (paises) => paises || [],
@@ -37,27 +43,39 @@ vi.mock('../composition', () => ({
   updateCompetitionUseCase: { execute: vi.fn() },
   getCompetitionDetailUseCase: { execute: vi.fn() },
   getCompetitionGolfCoursesUseCase: { execute: vi.fn().mockResolvedValue([]) },
-  fetchCountriesUseCase: { execute: vi.fn().mockResolvedValue([{ code: 'ES', name: 'España' }]) },
+  fetchCountriesUseCase: {
+    execute: vi.fn().mockResolvedValue([{ code: 'ES', name: 'España' }]),
+  },
   getAdjacentCountriesUseCase: { execute: vi.fn().mockResolvedValue([]) },
   createGolfCourseRequestUseCase: { execute: vi.fn() },
 }));
 
-vi.mock('../components/ui/CountryAutocomplete', () => ({ default: () => null }));
-vi.mock('../components/golf_course/GolfCourseRequestModal', () => ({ default: () => null }));
+vi.mock('../components/ui/CountryAutocomplete', () => ({
+  default: () => null,
+}));
+vi.mock('../components/golf_course/GolfCourseRequestModal', () => ({
+  default: () => null,
+}));
 vi.mock('../components/ui/FullScreenLoader', () => ({ default: () => null }));
 vi.mock('../components/ui/CountryFlag', () => ({ CountryFlag: () => null }));
 
 const CreateCompetition = (await import('./CreateCompetition')).default;
 
-const pinta = () => render(<MemoryRouter><CreateCompetition /></MemoryRouter>);
+const pinta = () =>
+  render(
+    <MemoryRouter>
+      <CreateCompetition />
+    </MemoryRouter>,
+  );
 
-const pintaEdicion = () => render(
-  <MemoryRouter initialEntries={['/competitions/c-1/edit']}>
-    <Routes>
-      <Route path="/competitions/:id/edit" element={<CreateCompetition />} />
-    </Routes>
-  </MemoryRouter>
-);
+const pintaEdicion = () =>
+  render(
+    <MemoryRouter initialEntries={['/competitions/c-1/edit']}>
+      <Routes>
+        <Route path="/competitions/:id/edit" element={<CreateCompetition />} />
+      </Routes>
+    </MemoryRouter>,
+  );
 
 describe('CreateCompetition · elegir el tipo primero (FE #639)', () => {
   beforeEach(() => {
@@ -68,7 +86,9 @@ describe('CreateCompetition · elegir el tipo primero (FE #639)', () => {
     pinta();
 
     expect(await screen.findByTestId('tipo-RYDER_CUP')).toBeInTheDocument();
-    expect(screen.queryByLabelText(/create\.competitionName/)).not.toBeInTheDocument();
+    expect(
+      screen.queryByLabelText(/create\.competitionName/),
+    ).not.toBeInTheDocument();
   });
 
   it('2: elegir Ryder Cup lleva al modo y, con él, al formulario de siempre', async () => {
@@ -78,7 +98,9 @@ describe('CreateCompetition · elegir el tipo primero (FE #639)', () => {
     fireEvent.click(await screen.findByTestId('tipo-RYDER_CUP'));
     fireEvent.click(await screen.findByTestId('modo-RYDER_CUP'));
 
-    expect(await screen.findByText('create.competitionDetails')).toBeInTheDocument();
+    expect(
+      await screen.findByText('create.competitionDetails'),
+    ).toBeInTheDocument();
     expect(screen.queryByTestId('tipo-RYDER_CUP')).not.toBeInTheDocument();
   });
 
@@ -111,7 +133,9 @@ describe('CreateCompetition · elegir el tipo primero (FE #639)', () => {
 
     fireEvent.click(screen.getByTestId('tipo-RYDER_CUP'));
     fireEvent.click(await screen.findByTestId('modo-RYDER_CUP'));
-    expect(await screen.findByTestId('campo-nombre')).toHaveValue('Ryder de los amigos');
+    expect(await screen.findByTestId('campo-nombre')).toHaveValue(
+      'Ryder de los amigos',
+    );
   });
 
   it('5: editando NUNCA se pregunta el tipo, ni aunque falle la carga de países', async () => {
@@ -129,7 +153,6 @@ describe('CreateCompetition · elegir el tipo primero (FE #639)', () => {
     expect(screen.queryByTestId('tipo-RYDER_CUP')).not.toBeInTheDocument();
     expect(screen.queryByTestId('volver-al-tipo')).not.toBeInTheDocument();
   });
-
 
   /**
    * LA TABLA de la FE #637 en la pantalla: lo que el servidor rellena solo deja
@@ -171,7 +194,7 @@ describe('CreateCompetition · elegir el tipo primero (FE #639)', () => {
     // El nombre por defecto sale del idioma de la app: este doble de `t`
     // devuelve la clave y su respaldo juntos
     expect(await screen.findByTestId('campo-equipo-1')).toHaveValue(
-      'create.defaultTeamOne Europe'
+      'create.defaultTeamOne Europe',
     );
     expect(screen.getByTestId('campo-jugadores')).toBeInTheDocument();
   });
@@ -192,10 +215,14 @@ describe('CreateCompetition · elegir el tipo primero (FE #639)', () => {
     await abreElFormulario();
 
     fireEvent.click(screen.getByTestId('mas-opciones'));
-    fireEvent.change(await screen.findByTestId('campo-equipo-1'), { target: { value: 'Los Pinos' } });
+    fireEvent.change(await screen.findByTestId('campo-equipo-1'), {
+      target: { value: 'Los Pinos' },
+    });
     fireEvent.click(screen.getByTestId('mas-opciones'));
 
-    expect(screen.getByTestId('resumen-opciones').textContent).toContain('Los Pinos');
+    expect(screen.getByTestId('resumen-opciones').textContent).toContain(
+      'Los Pinos',
+    );
   });
 
   it('12: el reparto de equipos ya no se decide aquí: lo decide el modo', async () => {
@@ -203,8 +230,13 @@ describe('CreateCompetition · elegir el tipo primero (FE #639)', () => {
     // contradecir al modo (FE #695). El modo está arriba, a la vista
     await abreElFormulario();
 
-    expect(screen.getByTestId('resumen-opciones').textContent).not.toContain('create.summaryAutomatic');
-    expect(screen.getByTestId('modo-RYDER_CUP')).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByTestId('resumen-opciones').textContent).not.toContain(
+      'create.summaryAutomatic',
+    );
+    expect(screen.getByTestId('modo-RYDER_CUP')).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
 
     fireEvent.click(screen.getByTestId('mas-opciones'));
 
@@ -213,10 +245,14 @@ describe('CreateCompetition · elegir el tipo primero (FE #639)', () => {
 
   it('13: y el resumen dice si hay tope de hándicap o no', async () => {
     await abreElFormulario();
-    expect(screen.getByTestId('resumen-opciones').textContent).toContain('create.summaryNoHandicapLimit');
+    expect(screen.getByTestId('resumen-opciones').textContent).toContain(
+      'create.summaryNoHandicapLimit',
+    );
 
     fireEvent.click(screen.getByTestId('mas-opciones'));
-    fireEvent.change(screen.getByTestId('campo-handicap'), { target: { value: '24' } });
+    fireEvent.change(screen.getByTestId('campo-handicap'), {
+      target: { value: '24' },
+    });
     fireEvent.click(screen.getByTestId('mas-opciones'));
 
     const resumen = screen.getByTestId('resumen-opciones').textContent;
@@ -232,7 +268,9 @@ describe('CreateCompetition · elegir el tipo primero (FE #639)', () => {
     fireEvent.change(nombre, { target: { value: 'Ryder de los amigos' } });
 
     fireEvent.click(screen.getByTestId('mas-opciones'));
-    fireEvent.change(await screen.findByTestId('campo-equipo-1'), { target: { value: '  ' } });
+    fireEvent.change(await screen.findByTestId('campo-equipo-1'), {
+      target: { value: '  ' },
+    });
     fireEvent.click(screen.getByTestId('mas-opciones'));
     expect(screen.queryByTestId('campo-equipo-1')).not.toBeInTheDocument();
 
@@ -247,7 +285,9 @@ describe('CreateCompetition · elegir el tipo primero (FE #639)', () => {
     await abreElFormulario();
 
     fireEvent.click(screen.getByTestId('mas-opciones'));
-    fireEvent.change(await screen.findByTestId('campo-equipo-1'), { target: { value: '' } });
+    fireEvent.change(await screen.findByTestId('campo-equipo-1'), {
+      target: { value: '' },
+    });
     fireEvent.click(screen.getByTestId('mas-opciones'));
 
     const resumen = screen.getByTestId('resumen-opciones').textContent;
@@ -278,8 +318,14 @@ describe('CreateCompetition · elegir el tipo primero (FE #639)', () => {
   it('17: y el modo de juego también, con hándicap marcado', async () => {
     await abreElFormulario();
 
-    expect(screen.getByText('create.handicap')).toHaveAttribute('aria-pressed', 'true');
-    expect(screen.getByText('create.scratch')).toHaveAttribute('aria-pressed', 'false');
+    expect(screen.getByText('create.handicap')).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+    expect(screen.getByText('create.scratch')).toHaveAttribute(
+      'aria-pressed',
+      'false',
+    );
   });
 
   it('18: lo que queda plegado son los equipos y el tope de hándicap', async () => {
@@ -297,7 +343,9 @@ describe('CreateCompetition · elegir el tipo primero (FE #639)', () => {
   it('19: el resumen ya no promete un cupo que está a la vista', async () => {
     await abreElFormulario();
 
-    expect(screen.getByTestId('resumen-opciones').textContent).not.toContain('12');
+    expect(screen.getByTestId('resumen-opciones').textContent).not.toContain(
+      '12',
+    );
   });
 
   it('23: un equipo demasiado corto también despliega el panel (el gemelo)', async () => {
@@ -305,7 +353,9 @@ describe('CreateCompetition · elegir el tipo primero (FE #639)', () => {
     fireEvent.change(nombre, { target: { value: 'Ryder de los amigos' } });
 
     fireEvent.click(screen.getByTestId('mas-opciones'));
-    fireEvent.change(await screen.findByTestId('campo-equipo-1'), { target: { value: 'EU' } });
+    fireEvent.change(await screen.findByTestId('campo-equipo-1'), {
+      target: { value: 'EU' },
+    });
     fireEvent.click(screen.getByTestId('mas-opciones'));
     fireEvent.click(document.querySelector('button[type="submit"]'));
 
@@ -317,7 +367,9 @@ describe('CreateCompetition · elegir el tipo primero (FE #639)', () => {
     fireEvent.change(nombre, { target: { value: 'Ryder de los amigos' } });
 
     fireEvent.click(screen.getByTestId('mas-opciones'));
-    fireEvent.change(await screen.findByTestId('campo-handicap'), { target: { value: '99' } });
+    fireEvent.change(await screen.findByTestId('campo-handicap'), {
+      target: { value: '99' },
+    });
     fireEvent.click(screen.getByTestId('mas-opciones'));
     fireEvent.click(document.querySelector('button[type="submit"]'));
 
@@ -328,10 +380,14 @@ describe('CreateCompetition · elegir el tipo primero (FE #639)', () => {
     await abreElFormulario();
 
     fireEvent.click(screen.getByTestId('mas-opciones'));
-    fireEvent.change(await screen.findByTestId('campo-equipo-1'), { target: { value: 'EU' } });
+    fireEvent.change(await screen.findByTestId('campo-equipo-1'), {
+      target: { value: 'EU' },
+    });
     fireEvent.click(screen.getByTestId('mas-opciones'));
 
-    expect(screen.getByTestId('resumen-opciones').textContent).toContain('create.moreOptionsIncomplete');
+    expect(screen.getByTestId('resumen-opciones').textContent).toContain(
+      'create.moreOptionsIncomplete',
+    );
   });
 
   /**
@@ -407,19 +463,39 @@ describe('CreateCompetition · elegir el tipo primero (FE #639)', () => {
   it('21: editando, vaciar el cupo conserva el que había', async () => {
     // Caía al 12 del front: una competición de 24 pasaba a 12 sin decir nada, y
     // con 13 inscritos aprobados eso es una competición llena de golpe
-    const { getCompetitionDetailUseCase, updateCompetitionUseCase, fetchCountriesUseCase } = await import('../composition');
+    const {
+      getCompetitionDetailUseCase,
+      updateCompetitionUseCase,
+      fetchCountriesUseCase,
+    } = await import('../composition');
     // La carga de la competición no arranca hasta que hay países, y el filtro
     // de `fetchCountries` exige `name_en`/`name_es`
-    fetchCountriesUseCase.execute.mockResolvedValue([{ code: 'ES', name_es: 'España', name_en: 'Spain' }]);
+    fetchCountriesUseCase.execute.mockResolvedValue([
+      { code: 'ES', name_es: 'España', name_en: 'Spain' },
+    ]);
     const { getCompetitionGolfCoursesUseCase } = await import('../composition');
     getCompetitionGolfCoursesUseCase.execute.mockResolvedValue([
-      { golf_course: { id: 'g-1', name: 'La Resina', country_code: 'ES', approval_status: 'APPROVED' } },
+      {
+        golf_course: {
+          id: 'g-1',
+          name: 'La Resina',
+          country_code: 'ES',
+          approval_status: 'APPROVED',
+        },
+      },
     ]);
     getCompetitionDetailUseCase.execute.mockResolvedValue({
-      id: 'c-1', name: 'Ryder vieja', maxPlayers: 24, status: 'ACTIVE',
-      team1Name: 'Europa', team2Name: 'USA',
-      startDate: '2026-10-10', endDate: '2026-10-12',
-      playMode: 'HANDICAP', teamAssignment: 'AUTOMATIC', countries: [{ code: 'ES' }],
+      id: 'c-1',
+      name: 'Ryder vieja',
+      maxPlayers: 24,
+      status: 'ACTIVE',
+      team1Name: 'Europa',
+      team2Name: 'USA',
+      startDate: '2026-10-10',
+      endDate: '2026-10-12',
+      playMode: 'HANDICAP',
+      teamAssignment: 'AUTOMATIC',
+      countries: [{ code: 'ES' }],
     });
 
     pintaEdicion();
@@ -432,7 +508,9 @@ describe('CreateCompetition · elegir el tipo primero (FE #639)', () => {
     fireEvent.change(jugadores, { target: { value: '' } });
     fireEvent.click(document.querySelector('button[type="submit"]'));
 
-    await vi.waitFor(() => expect(updateCompetitionUseCase.execute).toHaveBeenCalled());
+    await vi.waitFor(() =>
+      expect(updateCompetitionUseCase.execute).toHaveBeenCalled(),
+    );
     const [, enviado] = updateCompetitionUseCase.execute.mock.calls[0];
     expect(enviado.number_of_players ?? enviado.max_players).toBe(24);
   });

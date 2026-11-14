@@ -41,11 +41,23 @@ const cierre = vi.hoisted(() => ({
   handleSessionExpiredLogout: vi.fn(),
   handleDeviceRevocationLogout: vi.fn(),
 }));
-vi.mock('./deviceRevocationLogout', async (original) => ({ ...(await original()), ...cierre }));
+vi.mock('./deviceRevocationLogout', async (original) => ({
+  ...(await original()),
+  ...cierre,
+}));
 
-const REPLACED = { detail: 'Refresh token inválido o expirado.', error_code: 'SESSION_REPLACED' };
-const ENDED = { detail: 'Refresh token inválido o expirado.', error_code: 'SESSION_ENDED' };
-const REJECTED = { detail: 'Refresh token inválido o expirado.', error_code: 'SESSION_REJECTED' };
+const REPLACED = {
+  detail: 'Refresh token inválido o expirado.',
+  error_code: 'SESSION_REPLACED',
+};
+const ENDED = {
+  detail: 'Refresh token inválido o expirado.',
+  error_code: 'SESSION_ENDED',
+};
+const REJECTED = {
+  detail: 'Refresh token inválido o expirado.',
+  error_code: 'SESSION_REJECTED',
+};
 
 const respuesta = (status, cuerpo = {}) => ({
   ok: status >= 200 && status < 300,
@@ -66,8 +78,10 @@ const sinRed = () => {
 };
 
 const esRefresco = (url) => String(url).includes('/auth/refresh-token');
-const posts = () => globalThis.fetch.mock.calls.filter(([url]) => esRefresco(url)).length;
-const peticiones = () => globalThis.fetch.mock.calls.filter(([url]) => !esRefresco(url)).length;
+const posts = () =>
+  globalThis.fetch.mock.calls.filter(([url]) => esRefresco(url)).length;
+const peticiones = () =>
+  globalThis.fetch.mock.calls.filter(([url]) => !esRefresco(url)).length;
 
 /** El guion del refresco, en orden; las demás peticiones dan 401 hasta que uno vaya bien. */
 const conRefrescos = (...guion) => {
@@ -77,14 +91,16 @@ const conRefrescos = (...guion) => {
     'fetch',
     vi.fn(async (url) => {
       if (!esRefresco(url)) {
-        return refrescado ? respuesta(200, { id: 'u1' }) : respuesta(401, { detail: 'Token inválido o expirado' });
+        return refrescado
+          ? respuesta(200, { id: 'u1' })
+          : respuesta(401, { detail: 'Token inválido o expirado' });
       }
       const paso = pendientes.shift();
       if (!paso) throw new Error('Un POST al refresco de más');
       const contestacion = paso();
       if (contestacion.ok) refrescado = true;
       return contestacion;
-    })
+    }),
   );
 };
 
@@ -92,7 +108,7 @@ const conRefrescos = (...guion) => {
 const hastaElFinal = async (promesa) => {
   const resultado = promesa.then(
     (valor) => ({ valor }),
-    (error) => ({ error })
+    (error) => ({ error }),
   );
   await vi.advanceTimersByTimeAsync(600);
   return resultado;
@@ -123,7 +139,11 @@ describe('SESSION_REPLACED: se reintenta una vez y no se cierra la sesión', () 
     vi.restoreAllMocks();
   });
 
-  const pide = () => interceptor.fetchWithTokenRefresh('/api/v1/users/me', { method: 'GET', headers: {} });
+  const pide = () =>
+    interceptor.fetchWithTokenRefresh('/api/v1/users/me', {
+      method: 'GET',
+      headers: {},
+    });
 
   /** Refresca y trata el fallo como el interceptor: lo que queda es qué se hizo con la sesión. */
   const refrescaYTrata = async () => {
@@ -135,7 +155,9 @@ describe('SESSION_REPLACED: se reintenta una vez y no se cierra la sesión', () 
   describe('sin SESSION_REPLACED, nada cambia y no hay reintento', () => {
     it('S1: 200, un POST', async () => {
       conRefrescos(OK);
-      const { error, valor } = await hastaElFinal(interceptor.refrescoCompartido());
+      const { error, valor } = await hastaElFinal(
+        interceptor.refrescoCompartido(),
+      );
       expect(error).toBeUndefined();
       expect(valor).toBe(true);
       expect(posts()).toBe(1);
@@ -145,23 +167,31 @@ describe('SESSION_REPLACED: se reintenta una vez y no se cierra la sesión', () 
       ['S2', ENDED, 'session_expired'],
       ['S3', REJECTED, 'refresh_rejected'],
       ['S3b', { detail: 'otro' }, 'refresh_rejected'],
-    ])('%s: un 401 definitivo cierra, sin reintento', async (_caso, cuerpo, motivo) => {
-      conRefrescos(r401(cuerpo));
-      await refrescaYTrata();
-      expect(posts()).toBe(1);
-      expect(cierre.handleSessionExpiredLogout).toHaveBeenCalledTimes(1);
-      expect(cierre.handleSessionExpiredLogout.mock.calls[0][1].motivo).toBe(motivo);
-    });
+    ])(
+      '%s: un 401 definitivo cierra, sin reintento',
+      async (_caso, cuerpo, motivo) => {
+        conRefrescos(r401(cuerpo));
+        await refrescaYTrata();
+        expect(posts()).toBe(1);
+        expect(cierre.handleSessionExpiredLogout).toHaveBeenCalledTimes(1);
+        expect(cierre.handleSessionExpiredLogout.mock.calls[0][1].motivo).toBe(
+          motivo,
+        );
+      },
+    );
 
     it.each([
       ['S4', r500],
       ['S4b', sinRed],
-    ])('%s: sin un «no» del servidor se conserva, sin reintento', async (_caso, paso) => {
-      conRefrescos(paso);
-      await refrescaYTrata();
-      expect(posts()).toBe(1);
-      expect(cierre.handleSessionExpiredLogout).not.toHaveBeenCalled();
-    });
+    ])(
+      '%s: sin un «no» del servidor se conserva, sin reintento',
+      async (_caso, paso) => {
+        conRefrescos(paso);
+        await refrescaYTrata();
+        expect(posts()).toBe(1);
+        expect(cierre.handleSessionExpiredLogout).not.toHaveBeenCalled();
+      },
+    );
   });
 
   describe('con SESSION_REPLACED', () => {
@@ -191,23 +221,31 @@ describe('SESSION_REPLACED: se reintenta una vez y no se cierra la sesión', () 
     it.each([
       ['S6', ENDED, 'session_expired'],
       ['S7', REJECTED, 'refresh_rejected'],
-    ])('%s: el reintento da un 401 definitivo y se cierra con su motivo', async (_caso, cuerpo, motivo) => {
-      conRefrescos(r401(REPLACED), r401(cuerpo));
-      await refrescaYTrata();
-      expect(posts()).toBe(2);
-      expect(cierre.handleSessionExpiredLogout).toHaveBeenCalledTimes(1);
-      expect(cierre.handleSessionExpiredLogout.mock.calls[0][1].motivo).toBe(motivo);
-    });
+    ])(
+      '%s: el reintento da un 401 definitivo y se cierra con su motivo',
+      async (_caso, cuerpo, motivo) => {
+        conRefrescos(r401(REPLACED), r401(cuerpo));
+        await refrescaYTrata();
+        expect(posts()).toBe(2);
+        expect(cierre.handleSessionExpiredLogout).toHaveBeenCalledTimes(1);
+        expect(cierre.handleSessionExpiredLogout.mock.calls[0][1].motivo).toBe(
+          motivo,
+        );
+      },
+    );
 
     it.each([
       ['S8', r500],
       ['S8b', sinRed],
-    ])('%s: el reintento no obtiene un «no» y se conserva', async (_caso, paso) => {
-      conRefrescos(r401(REPLACED), paso);
-      await refrescaYTrata();
-      expect(posts()).toBe(2);
-      expect(cierre.handleSessionExpiredLogout).not.toHaveBeenCalled();
-    });
+    ])(
+      '%s: el reintento no obtiene un «no» y se conserva',
+      async (_caso, paso) => {
+        conRefrescos(r401(REPLACED), paso);
+        await refrescaYTrata();
+        expect(posts()).toBe(2);
+        expect(cierre.handleSessionExpiredLogout).not.toHaveBeenCalled();
+      },
+    );
 
     it('S9: dos REPLACED: sin tercer POST, sin cierre y con el error de sin respuesta', async () => {
       conRefrescos(r401(REPLACED), r401(REPLACED));
@@ -221,7 +259,9 @@ describe('SESSION_REPLACED: se reintenta una vez y no se cierra la sesión', () 
 
     it('S10: tres peticiones a la vez comparten los dos POST y cada una repite', async () => {
       conRefrescos(r401(REPLACED), OK);
-      const { valor } = await hastaElFinal(Promise.all([pide(), pide(), pide()]));
+      const { valor } = await hastaElFinal(
+        Promise.all([pide(), pide(), pide()]),
+      );
       expect(valor.map((r) => r.status)).toEqual([200, 200, 200]);
       expect(posts()).toBe(2);
       expect(peticiones()).toBe(6);
@@ -235,7 +275,9 @@ describe('SESSION_REPLACED: se reintenta una vez y no se cierra la sesión', () 
         vi.fn((_url, { signal }) => {
           intentos += 1;
           if (intentos === 1) {
-            return new Promise((resolve) => setTimeout(() => resolve(respuesta(401, REPLACED)), 14000));
+            return new Promise((resolve) =>
+              setTimeout(() => resolve(respuesta(401, REPLACED)), 14000),
+            );
           }
           return new Promise((_resolve, reject) => {
             signal.addEventListener('abort', () => {
@@ -243,7 +285,7 @@ describe('SESSION_REPLACED: se reintenta una vez y no se cierra la sesión', () 
               reject(new globalThis.DOMException('Aborted', 'AbortError'));
             });
           });
-        })
+        }),
       );
       const enCurso = interceptor.refrescoCompartido().catch((error) => error);
       await vi.advanceTimersByTimeAsync(14000 + 500);
@@ -264,35 +306,40 @@ describe('SESSION_REPLACED: se reintenta una vez y no se cierra la sesión', () 
           ...respuesta(status),
           json: () =>
             new Promise((_resolve, reject) => {
-              signal.addEventListener('abort', () => reject(new globalThis.DOMException('Aborted', 'AbortError')));
+              signal.addEventListener('abort', () =>
+                reject(new globalThis.DOMException('Aborted', 'AbortError')),
+              );
             }),
-        }))
+        })),
       );
     };
 
     it.each([
       ['del 200', 200],
       ['del 401', 401],
-    ])('S14: con el cuerpo %s parado, a los 15 s falla sin respuesta y no cierra', async (_caso, status) => {
-      conCuerpoParado(status);
-      const resultado = interceptor.refrescoCompartido().then(
-        () => ({ acabo: 'bien' }),
-        (error) => ({ acabo: 'mal', error })
-      );
-      await vi.advanceTimersByTimeAsync(14999);
-      expect(posts()).toBe(1);
-      await vi.advanceTimersByTimeAsync(1);
+    ])(
+      'S14: con el cuerpo %s parado, a los 15 s falla sin respuesta y no cierra',
+      async (_caso, status) => {
+        conCuerpoParado(status);
+        const resultado = interceptor.refrescoCompartido().then(
+          () => ({ acabo: 'bien' }),
+          (error) => ({ acabo: 'mal', error }),
+        );
+        await vi.advanceTimersByTimeAsync(14999);
+        expect(posts()).toBe(1);
+        await vi.advanceTimersByTimeAsync(1);
 
-      const { acabo, error } = await resultado;
-      expect(acabo).toBe('mal');
-      expect(error.response).toBeUndefined();
-      interceptor.trataElFalloDelRefresco(error);
-      expect(cierre.handleSessionExpiredLogout).not.toHaveBeenCalled();
+        const { acabo, error } = await resultado;
+        expect(acabo).toBe('mal');
+        expect(error.response).toBeUndefined();
+        interceptor.trataElFalloDelRefresco(error);
+        expect(cierre.handleSessionExpiredLogout).not.toHaveBeenCalled();
 
-      // Se ha soltado: el siguiente pide el suyo
-      conRefrescos(OK);
-      await expect(interceptor.refrescoCompartido()).resolves.toBe(true);
-    });
+        // Se ha soltado: el siguiente pide el suyo
+        conRefrescos(OK);
+        await expect(interceptor.refrescoCompartido()).resolves.toBe(true);
+      },
+    );
   });
 
   describe('S15: el reintento trae la sesión de otra cuenta', () => {
@@ -307,7 +354,8 @@ describe('SESSION_REPLACED: se reintenta una vez y no se cierra la sesión', () 
     });
 
     const conPestanaDe = async (usuario) => {
-      const { registraElUsuarioDeLaPestana } = await import('../../utils/usuarioDeLaPestana');
+      const { registraElUsuarioDeLaPestana } =
+        await import('../../utils/usuarioDeLaPestana');
       registraElUsuarioDeLaPestana(() => usuario);
     };
 
@@ -348,15 +396,18 @@ describe('SESSION_REPLACED: se reintenta una vez y no se cierra la sesión', () 
     it.each([
       ['la pestaña no sabe quién es', null, CUENTA_B],
       ['el 200 no trae usuario', CUENTA_A, undefined],
-    ])('S15c: %s: sigue sin recargar', async (_caso, deLaPestana, delRefresco) => {
-      await conPestanaDe(deLaPestana);
-      conRefrescos(r401(REPLACED), OK_DE(delRefresco));
+    ])(
+      'S15c: %s: sigue sin recargar',
+      async (_caso, deLaPestana, delRefresco) => {
+        await conPestanaDe(deLaPestana);
+        conRefrescos(r401(REPLACED), OK_DE(delRefresco));
 
-      const { valor } = await hastaElFinal(pide());
+        const { valor } = await hastaElFinal(pide());
 
-      expect(valor.status).toBe(200);
-      expect(recarga).not.toHaveBeenCalled();
-    });
+        expect(valor.status).toBe(200);
+        expect(recarga).not.toHaveBeenCalled();
+      },
+    );
 
     it('S15: también si el refresco sale bien a la primera con otra cuenta', async () => {
       await conPestanaDe(CUENTA_A);
@@ -386,7 +437,12 @@ describe('SESSION_REPLACED: se reintenta una vez y no se cierra la sesión', () 
     const conCuerpo = (falla) => {
       vi.stubGlobal(
         'fetch',
-        vi.fn(async () => ({ ...respuesta(401), json: async () => { throw falla; } }))
+        vi.fn(async () => ({
+          ...respuesta(401),
+          json: async () => {
+            throw falla;
+          },
+        })),
       );
     };
 
@@ -414,7 +470,8 @@ describe('SESSION_REPLACED: se reintenta una vez y no se cierra la sesión', () 
     });
 
     it('S11b: la sonda sigue con S5b y da «fallo», no «rechazada», con S9', async () => {
-      const { preguntaLaSesionSinInterceptor } = await import('../../services/sondaDeSesion');
+      const { preguntaLaSesionSinInterceptor } =
+        await import('../../services/sondaDeSesion');
       conRefrescos(r401(REPLACED), OK);
       const bien = await hastaElFinal(preguntaLaSesionSinInterceptor());
       expect(bien.valor.estado).toBe('ok');
@@ -445,10 +502,17 @@ describe('SESSION_REPLACED: se reintenta una vez y no se cierra la sesión', () 
         vi.fn((url, opciones) =>
           esRefresco(url)
             ? fetchDelRefresco(url, opciones)
-            : Promise.resolve(respuesta(403, { error_code: 'CSRF_VALIDATION_FAILED', detail: 'CSRF' }))
-        )
+            : Promise.resolve(
+                respuesta(403, {
+                  error_code: 'CSRF_VALIDATION_FAILED',
+                  detail: 'CSRF',
+                }),
+              ),
+        ),
       );
-      const { error } = await hastaElFinal(apiRequest('/api/v1/users/me', { method: 'POST', body: '{}' }));
+      const { error } = await hastaElFinal(
+        apiRequest('/api/v1/users/me', { method: 'POST', body: '{}' }),
+      );
       expect(error?.sinConexion).toBe(true);
       expect(cierre.handleSessionExpiredLogout).not.toHaveBeenCalled();
     });

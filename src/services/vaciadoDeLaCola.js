@@ -24,7 +24,11 @@
  *   partida.
  */
 
-import { submitHoleScoreUseCase, submitTeeGroupHoleScoreUseCase } from '../composition';
+import {
+  submitHoleScoreUseCase,
+  submitTeeGroupHoleScoreUseCase,
+} from '../composition';
+import { idAleatorio } from '../utils/idAleatorio';
 import * as cola from '../utils/scoringOfflineQueue';
 import * as cerrojo from '../utils/scoringSessionLock';
 import { PARO, vaciaAnotaciones } from './vaciaAnotaciones';
@@ -73,15 +77,19 @@ const nada = (pendientes, paroPor) => ({
  *   salió antes de tiempo, o `PARO.YA_HAY_OTRO` si ni llegó a empezar. Quien
  *   llama lo necesita para saber si reintentar
  */
-export const vaciaLaColaEntera = async ({ saltaPartida = null, userId = null } = {}) => {
-  const cualSalta = () => (typeof saltaPartida === 'function' ? saltaPartida() : saltaPartida);
+export const vaciaLaColaEntera = async ({
+  saltaPartida = null,
+  userId = null,
+} = {}) => {
+  const cualSalta = () =>
+    typeof saltaPartida === 'function' ? saltaPartida() : saltaPartida;
   // Solo lo de esta persona: `deQuien` deja fuera lo huérfano a propósito, y
   // explica el precio de no hacerlo. Lo huérfano se rescata desde la pantalla
   // de su partida, donde hay alguien mirando
   const mias = userId ? cola.deQuien(userId) : [];
   if (mias.length === 0) return nada(0, null);
 
-  const miTurno = `${AMBITO}-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  const miTurno = `${AMBITO}-${idAleatorio()}`;
   if (!cerrojo.acquire(null, miTurno, userId, AMBITO)) {
     // Se dice POR QUÉ no se hizo nada: quien llama tiene un reintento
     // programado, y confundir esto con «ha ido bien» se lo desarmaba. Es real:
@@ -114,8 +122,10 @@ export const vaciaLaColaEntera = async ({ saltaPartida = null, userId = null } =
       // Cada tipo a su endpoint, con el mismo cuerpo: una de stroke play que
       // fuera al de la Ryder se perdía con un 404 (FE #824, PR 7)
       manda: (entrada) =>
-        (entrada.tipo === cola.TIPO_PARTIDA_DE_FRANJA ? submitTeeGroupHoleScoreUseCase : submitHoleScoreUseCase)
-          .execute(entrada.matchId, entrada.holeNumber, entrada.scoreData),
+        (entrada.tipo === cola.TIPO_PARTIDA_DE_FRANJA
+          ? submitTeeGroupHoleScoreUseCase
+          : submitHoleScoreUseCase
+        ).execute(entrada.matchId, entrada.holeNumber, entrada.scoreData),
       // La partida abierta la vacía su propia pantalla; y una anotación con
       // participante que no sea de partida rápida en solitario se deja para
       // ella, que sabe preguntar cuando otro anotador puso otra cosa

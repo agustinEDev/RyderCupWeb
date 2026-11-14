@@ -23,7 +23,15 @@ const RESPUESTA = {
   team_b_captain_name: 'Bea Blanco',
   team_a: ['ana', 'carla'],
   team_b: ['bea'],
-  picks: [{ user_id: 'carla', name: 'Carla Cruz', team: 'A', order: 1, automatic: false }],
+  picks: [
+    {
+      user_id: 'carla',
+      name: 'Carla Cruz',
+      team: 'A',
+      order: 1,
+      automatic: false,
+    },
+  ],
   available_players: [{ user_id: 'dani', name: 'Dani Díaz', handicap: '12.0' }],
 };
 
@@ -47,7 +55,14 @@ describe('DraftMapper', () => {
       teamA: ['ana', 'carla'],
       teamB: ['bea'],
       picks: [
-        { userId: 'carla', name: 'Carla Cruz', team: 'A', order: 1, automatic: false, lastRemaining: false },
+        {
+          userId: 'carla',
+          name: 'Carla Cruz',
+          team: 'A',
+          order: 1,
+          automatic: false,
+          lastRemaining: false,
+        },
       ],
       availablePlayers: [{ userId: 'dani', name: 'Dani Díaz', handicap: 12 }],
     });
@@ -57,7 +72,14 @@ describe('DraftMapper', () => {
     const sala = DraftMapper.toDraftDTO({
       ...RESPUESTA,
       picks: [
-        { user_id: 'carla', name: 'Carla Cruz', team: 'A', order: 1, automatic: false, last_remaining: true },
+        {
+          user_id: 'carla',
+          name: 'Carla Cruz',
+          team: 'A',
+          order: 1,
+          automatic: false,
+          last_remaining: true,
+        },
       ],
     });
 
@@ -72,7 +94,10 @@ describe('DraftMapper', () => {
     const sala = DraftMapper.toDraftDTO(RESPUESTA);
 
     expect(sala.picks[0].name).toBe('Carla Cruz');
-    expect([sala.teamACaptainName, sala.teamBCaptainName]).toEqual(['Ana Alba', 'Bea Blanco']);
+    expect([sala.teamACaptainName, sala.teamBCaptainName]).toEqual([
+      'Ana Alba',
+      'Bea Blanco',
+    ]);
   });
 
   it('M2: el hándicap llega como texto y se usa como número', () => {
@@ -86,7 +111,7 @@ describe('DraftMapper', () => {
       ],
     });
 
-    expect(sala.availablePlayers.map(j => j.handicap)).toEqual([9, 12]);
+    expect(sala.availablePlayers.map((j) => j.handicap)).toEqual([9, 12]);
   });
 
   it('M3: una sala terminada no trae turno ni reloj, y no se inventan', () => {
@@ -107,16 +132,24 @@ describe('DraftMapper', () => {
 
   it('M4: sin listas en la respuesta devuelve listas vacías, no undefined', () => {
     // La pantalla hace `.map` sobre las cuatro: una sola que falte la tumba
-    const sala = DraftMapper.toDraftDTO({ id: 'x', competition_id: 'c', status: 'PENDING' });
+    const sala = DraftMapper.toDraftDTO({
+      id: 'x',
+      competition_id: 'c',
+      status: 'PENDING',
+    });
 
-    expect([sala.teamA, sala.teamB, sala.picks, sala.availablePlayers]).toEqual([[], [], [], []]);
+    expect([sala.teamA, sala.teamB, sala.picks, sala.availablePlayers]).toEqual(
+      [[], [], [], []],
+    );
   });
 
   it('M5b: ni uno que no es un número', () => {
     // Llega de fuera: un texto acabaría pintado tal cual como «NaN»
     const sala = DraftMapper.toDraftDTO({
       ...RESPUESTA,
-      available_players: [{ user_id: 'a', name: 'A', handicap: 'sin hándicap' }],
+      available_players: [
+        { user_id: 'a', name: 'A', handicap: 'sin hándicap' },
+      ],
     });
 
     expect(sala.availablePlayers[0].handicap).toBeNull();

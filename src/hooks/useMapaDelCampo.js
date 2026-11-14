@@ -8,7 +8,10 @@ import { getHoleMapUseCase } from '../composition';
  * la petición no falla, se queda sin contestar, y la copia es para ese caso.
  */
 export function useMapaDelCampo(golfCourseId) {
-  const copia = useMemo(() => getHoleMapUseCase.guardado(golfCourseId), [golfCourseId]);
+  const copia = useMemo(
+    () => getHoleMapUseCase.guardado(golfCourseId),
+    [golfCourseId],
+  );
   const [delServidor, setDelServidor] = useState({ de: null, datos: null });
 
   useEffect(() => {

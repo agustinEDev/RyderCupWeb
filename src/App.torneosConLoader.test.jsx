@@ -24,24 +24,40 @@ import { textosDelError } from './components/errors/textosDelError';
  */
 const carga = vi.hoisted(() => ({ espera: null, falla: false, pedidas: 0 }));
 
-vi.mock('./hooks/useLogout', () => ({ useLogout: () => ({ logout: vi.fn() }) }));
+vi.mock('./hooks/useLogout', () => ({
+  useLogout: () => ({ logout: vi.fn() }),
+}));
 vi.mock('./hooks/useAuth', () => ({
   getUserData: vi.fn(async () => ({ id: 'u-1' })),
   useAuth: () => ({ user: { id: 'u-1' }, loading: false }),
 }));
-vi.mock('./hooks/useTerminosPendientes', () => ({ useTerminosPendientes: () => false }));
+vi.mock('./hooks/useTerminosPendientes', () => ({
+  useTerminosPendientes: () => false,
+}));
 vi.mock('./hooks/useVaciadoDeLaCola', () => ({ useVaciadoDeLaCola: () => {} }));
 vi.mock('./hooks/useEnvioDeMuestras', () => ({ useEnvioDeMuestras: () => {} }));
-vi.mock('./hooks/useDeviceRevocationMonitor', () => ({ useDeviceRevocationMonitor: () => {} }));
+vi.mock('./hooks/useDeviceRevocationMonitor', () => ({
+  useDeviceRevocationMonitor: () => {},
+}));
 vi.mock('./hooks/useProactiveTokenRefresh', () => ({ default: () => {} }));
-vi.mock('./hooks/useCortinaDeArranque', () => ({ useCortinaDeArranque: () => {} }));
+vi.mock('./hooks/useCortinaDeArranque', () => ({
+  useCortinaDeArranque: () => {},
+}));
 vi.mock('./utils/sentryHelpers', () => ({ setUserContext: () => {} }));
 vi.mock('./components/ui/InstallBanner', () => ({ default: () => null }));
 vi.mock('./components/ui/AvisoSinConexion', () => ({ default: () => null }));
-vi.mock('./components/ui/FullScreenLoader', () => ({ default: () => <p>pantalla de espera</p> }));
-vi.mock('./components/layout/BottomNav', () => ({ default: () => <nav>barra inferior</nav> }));
-vi.mock('./components/auth/ProtectedRoute', () => ({ default: ({ children }) => children }));
-vi.mock('./utils/routerParaSentry', () => ({ registrarRouterParaSentry: () => {} }));
+vi.mock('./components/ui/FullScreenLoader', () => ({
+  default: () => <p>pantalla de espera</p>,
+}));
+vi.mock('./components/layout/BottomNav', () => ({
+  default: () => <nav>barra inferior</nav>,
+}));
+vi.mock('./components/auth/ProtectedRoute', () => ({
+  default: ({ children }) => children,
+}));
+vi.mock('./utils/routerParaSentry', () => ({
+  registrarRouterParaSentry: () => {},
+}));
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({ t: (k) => k, i18n: { language: 'es' } }),
 }));
@@ -101,14 +117,20 @@ vi.mock('./pages/Competitions', async () => {
 });
 
 const { default: App, rutasDeLaApp } = await import('./App');
-const { marcaElArranque, olvidaLoQueEstaEnCamino } = await import('./services/cargaDeLaPantalla');
+const { marcaElArranque, olvidaLoQueEstaEnCamino } =
+  await import('./services/cargaDeLaPantalla');
 const datosDeTorneos = await import('./pages/Competitions.datos');
 
 const abrir = (ruta) => {
   window.history.pushState({}, '', ruta);
   return render(<App />);
 };
-const bajaHasta = (y) => Object.defineProperty(window, 'scrollY', { value: y, configurable: true, writable: true });
+const bajaHasta = (y) =>
+  Object.defineProperty(window, 'scrollY', {
+    value: y,
+    configurable: true,
+    writable: true,
+  });
 const rutaDe = (rutas, path) => {
   for (const r of rutas) {
     if (r.path === path) return r;
@@ -120,7 +142,11 @@ const rutaDe = (rutas, path) => {
 
 describe('App · Torneos con loader (FE #647, fase 3)', () => {
   beforeEach(() => {
-    window.matchMedia = () => ({ matches: false, addEventListener() {}, removeEventListener() {} });
+    window.matchMedia = () => ({
+      matches: false,
+      addEventListener() {},
+      removeEventListener() {},
+    });
     globalThis.scrollTo = vi.fn();
     carga.espera = null;
     carga.falla = false;
@@ -145,7 +171,9 @@ describe('App · Torneos con loader (FE #647, fase 3)', () => {
 
     fireEvent.click(screen.getByRole('link', { name: 'a torneos' }));
 
-    expect(await screen.findByRole('heading', { name: 'torneos ok' })).toBeInTheDocument();
+    expect(
+      await screen.findByRole('heading', { name: 'torneos ok' }),
+    ).toBeInTheDocument();
     expect(globalThis.scrollTo).toHaveBeenLastCalledWith(0, 0);
   });
 
@@ -166,7 +194,9 @@ describe('App · Torneos con loader (FE #647, fase 3)', () => {
       await new Promise((r) => setTimeout(r, 50));
     });
 
-    expect(await screen.findByRole('heading', { name: 'torneos ok' })).toBeInTheDocument();
+    expect(
+      await screen.findByRole('heading', { name: 'torneos ok' }),
+    ).toBeInTheDocument();
     expect(globalThis.scrollTo).toHaveBeenLastCalledWith(0, 1323);
   });
 
@@ -174,7 +204,9 @@ describe('App · Torneos con loader (FE #647, fase 3)', () => {
     abrir('/dashboard');
     await screen.findByRole('heading', { name: 'panel' });
     let responde;
-    carga.espera = new Promise((r) => { responde = r; });
+    carga.espera = new Promise((r) => {
+      responde = r;
+    });
 
     fireEvent.click(screen.getByRole('link', { name: 'a torneos' }));
     await act(() => new Promise((r) => setTimeout(r, 200)));
@@ -184,7 +216,9 @@ describe('App · Torneos con loader (FE #647, fase 3)', () => {
 
     await act(async () => responde([]));
 
-    expect(await screen.findByRole('heading', { name: 'torneos ok' })).toBeInTheDocument();
+    expect(
+      await screen.findByRole('heading', { name: 'torneos ok' }),
+    ).toBeInTheDocument();
     expect(screen.queryByTestId('barra-de-carga')).not.toBeInTheDocument();
   });
 
@@ -193,21 +227,34 @@ describe('App · Torneos con loader (FE #647, fase 3)', () => {
     abrir('/competitions');
 
     // Sin esperar a la lista: la pantalla sabe que tiene que pedirla
-    expect(await screen.findByRole('heading', { name: 'torneos pendiente' })).toBeInTheDocument();
+    expect(
+      await screen.findByRole('heading', { name: 'torneos pendiente' }),
+    ).toBeInTheDocument();
     expect(await screen.findByText('barra inferior')).toBeInTheDocument();
   });
 
-  it.each(['/dashboard', '/competitions'])('T35: recargar %s con una posición guardada empieza arriba', async (ruta) => {
-    window.history.replaceState({ usr: null, key: 'k1', idx: 0 }, '', ruta);
-    sessionStorage.setItem('react-router-scroll-positions', JSON.stringify({ k1: 900 }));
-    sessionStorage.setItem('rcf-posiciones-del-scroll', JSON.stringify({ k1: 900 }));
-    render(<App />);
-    await screen.findByRole('heading', { name: ruta === '/dashboard' ? 'panel' : 'torneos pendiente' });
-    await act(() => new Promise((r) => setTimeout(r, 50)));
+  it.each(['/dashboard', '/competitions'])(
+    'T35: recargar %s con una posición guardada empieza arriba',
+    async (ruta) => {
+      window.history.replaceState({ usr: null, key: 'k1', idx: 0 }, '', ruta);
+      sessionStorage.setItem(
+        'react-router-scroll-positions',
+        JSON.stringify({ k1: 900 }),
+      );
+      sessionStorage.setItem(
+        'rcf-posiciones-del-scroll',
+        JSON.stringify({ k1: 900 }),
+      );
+      render(<App />);
+      await screen.findByRole('heading', {
+        name: ruta === '/dashboard' ? 'panel' : 'torneos pendiente',
+      });
+      await act(() => new Promise((r) => setTimeout(r, 50)));
 
-    expect(globalThis.scrollTo).not.toHaveBeenCalledWith(0, 900);
-    expect(globalThis.scrollTo).toHaveBeenLastCalledWith(0, 0);
-  });
+      expect(globalThis.scrollTo).not.toHaveBeenCalledWith(0, 900);
+      expect(globalThis.scrollTo).toHaveBeenLastCalledWith(0, 0);
+    },
+  );
 
   it('T36: pulsar el enlace de la pantalla en la que estás no la mueve', async () => {
     abrir('/dashboard');
@@ -226,7 +273,11 @@ describe('App · Torneos con loader (FE #647, fase 3)', () => {
     carga.falla = true;
     abrir('/competitions');
 
-    expect(await screen.findByRole('heading', { name: textosDelError().sinCargar.titulo })).toBeInTheDocument();
+    expect(
+      await screen.findByRole('heading', {
+        name: textosDelError().sinCargar.titulo,
+      }),
+    ).toBeInTheDocument();
     expect(screen.queryByText(/Unexpected Application Error/)).toBeNull();
     consola.mockRestore();
   });
@@ -242,13 +293,19 @@ describe('App · Torneos con loader (FE #647, fase 3)', () => {
     await act(() => new Promise((r) => setTimeout(r, 50)));
 
     expect(carga.pedidas).toBe(1);
-    expect(screen.getByRole('heading', { name: 'torneos ok' })).toBeInTheDocument();
+    expect(
+      screen.getByRole('heading', { name: 'torneos ok' }),
+    ).toBeInTheDocument();
   });
 
   it('A1: solo Torneos restaura su scroll, por ahora', () => {
     // Y vuelve a pedir solo cuando lo pide la pantalla: su propia política
-    expect(rutaDe(rutasDeLaApp, '/competitions').shouldRevalidate).toBe(datosDeTorneos.shouldRevalidate);
-    expect(rutaDe(rutasDeLaApp, '/competitions').handle).toEqual({ restauraElScroll: true });
+    expect(rutaDe(rutasDeLaApp, '/competitions').shouldRevalidate).toBe(
+      datosDeTorneos.shouldRevalidate,
+    );
+    expect(rutaDe(rutasDeLaApp, '/competitions').handle).toEqual({
+      restauraElScroll: true,
+    });
     expect(rutaDe(rutasDeLaApp, '/dashboard').handle).toBeUndefined();
     expect(rutaDe(rutasDeLaApp, '/friends').handle).toBeUndefined();
   });

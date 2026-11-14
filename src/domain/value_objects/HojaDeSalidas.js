@@ -40,7 +40,11 @@ export const errorDeHoja = ({ primera, ultima, intervalo, tamano }) => {
   const hasta = minutos(ultima);
   if (desde === null || hasta === null) return 'teeTimeFormat';
   if (hasta < desde) return 'lastBeforeFirst';
-  if (!Number.isInteger(intervalo) || intervalo < INTERVALO_MINIMO || intervalo > INTERVALO_MAXIMO) {
+  if (
+    !Number.isInteger(intervalo) ||
+    intervalo < INTERVALO_MINIMO ||
+    intervalo > INTERVALO_MAXIMO
+  ) {
     return 'intervalRange';
   }
   if (!TAMANOS_DE_PARTIDA.includes(tamano)) return 'groupSize';
@@ -58,7 +62,10 @@ export const errorDeHoja = ({ primera, ultima, intervalo, tamano }) => {
  * @param {Date} [ahora]
  * @returns {string|null}
  */
-export const errorDeLaFranja = ({ dia, hoja, primeraAntes }, ahora = new Date()) => {
+export const errorDeLaFranja = (
+  { dia, hoja, primeraAntes },
+  ahora = new Date(),
+) => {
   const deLaHoja = errorDeHoja(hoja);
   if (deLaHoja || !dia || hoja.primera === primeraAntes) return deLaHoja;
   const [anio, mes, diaDelMes] = dia.split('-').map(Number);
@@ -78,22 +85,37 @@ export const errorDeLaFranja = ({ dia, hoja, primeraAntes }, ahora = new Date())
 export const avisoDeLaFranja = ({ dia, hoja }) => {
   if (!dia || errorDeHoja(hoja)) return null;
   const [anio, mes, diaDelMes] = dia.split('-').map(Number);
-  for (let hora = minutos(hoja.primera); hora <= minutos(hoja.ultima); hora += hoja.intervalo) {
+  for (
+    let hora = minutos(hoja.primera);
+    hora <= minutos(hoja.ultima);
+    hora += hoja.intervalo
+  ) {
     const sale = new Date(anio, mes - 1, diaDelMes, 0, hora);
-    if (sale.getHours() * 60 + sale.getMinutes() !== hora) return 'teeTimeSkipped';
+    if (sale.getHours() * 60 + sale.getMinutes() !== hora)
+      return 'teeTimeSkipped';
   }
   return null;
 };
 
 /** Cuántas salidas tiene: de la primera a la última que cabe. 0 si no es posible. */
 export const numeroDeSalidas = (hoja) =>
-  errorDeHoja(hoja) ? 0 : Math.floor((minutos(hoja.ultima) - minutos(hoja.primera)) / hoja.intervalo) + 1;
+  errorDeHoja(hoja)
+    ? 0
+    : Math.floor(
+        (minutos(hoja.ultima) - minutos(hoja.primera)) / hoja.intervalo,
+      ) + 1;
 
 /** Cuántos jugadores caben: salidas por jugadores por partida (0 si no es posible). */
 export const cupoDeLaHoja = (hoja) => numeroDeSalidas(hoja) * hoja.tamano;
 
 /** La hoja que se propone al añadir una franja de ese tipo. */
 export const hojaPropuesta = (franja) => {
-  const [primera, ultima] = HORAS_PROPUESTAS[franja] ?? HORAS_PROPUESTAS.MORNING;
-  return { primera, ultima, intervalo: INTERVALO_PROPUESTO, tamano: TAMANO_PROPUESTO };
+  const [primera, ultima] =
+    HORAS_PROPUESTAS[franja] ?? HORAS_PROPUESTAS.MORNING;
+  return {
+    primera,
+    ultima,
+    intervalo: INTERVALO_PROPUESTO,
+    tamano: TAMANO_PROPUESTO,
+  };
 };

@@ -6,4 +6,5 @@ export const MAX_HANDICAP = 54;
  * a player's handicap: profile (UpdateManualHandicapUseCase) and the
  * HandicapInputPanel keypad UI, which is also the quick match override.
  */
-export const isValidHandicap = (value) => value >= MIN_HANDICAP && value <= MAX_HANDICAP;
+export const isValidHandicap = (value) =>
+  value >= MIN_HANDICAP && value <= MAX_HANDICAP;

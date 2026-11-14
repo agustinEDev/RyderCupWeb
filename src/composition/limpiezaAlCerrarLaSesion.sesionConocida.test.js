@@ -9,13 +9,19 @@ import './interfazDelTransporte';
  * cuenta revocada. Aquí, con los módulos de verdad, el cierre forzado la borra.
  */
 vi.mock('../utils/toast', () => ({
-  default: { error: vi.fn(), success: vi.fn(), info: vi.fn(), dismiss: vi.fn() },
+  default: {
+    error: vi.fn(),
+    success: vi.fn(),
+    info: vi.fn(),
+    dismiss: vi.fn(),
+  },
 }));
 vi.mock('../utils/sentryHelpers', () => ({ clearUserContext: vi.fn() }));
 vi.mock('i18next', () => ({ default: { t: vi.fn((clave) => clave) } }));
 
 const almacen = new Map();
-const { olvidaElCierreDeEstaCarga } = await import('../utils/cierreDeEstaCarga');
+const { olvidaElCierreDeEstaCarga } =
+  await import('../utils/cierreDeEstaCarga');
 const locationOriginal = globalThis.window.location;
 
 describe('cierre forzado y copia para arrancar sin cobertura', () => {
@@ -39,9 +45,13 @@ describe('cierre forzado y copia para arrancar sin cobertura', () => {
   });
 
   it('revocar el dispositivo borra la copia del usuario y lleva al login', async () => {
-    almacen.set('rydercup-sesion-conocida', JSON.stringify({ id: 'u-1', email: 'a@b.c' }));
+    almacen.set(
+      'rydercup-sesion-conocida',
+      JSON.stringify({ id: 'u-1', email: 'a@b.c' }),
+    );
     await import('./limpiezaAlCerrarLaSesion');
-    const { handleDeviceRevocationLogout } = await import('../infrastructure/http/deviceRevocationLogout');
+    const { handleDeviceRevocationLogout } =
+      await import('../infrastructure/http/deviceRevocationLogout');
 
     vi.useFakeTimers();
     try {

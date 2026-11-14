@@ -1,5 +1,11 @@
 /* eslint-disable react-refresh/only-export-components */
-import { useEffect, useLayoutEffect, useCallback, Suspense, useState } from 'react';
+import {
+  useEffect,
+  useLayoutEffect,
+  useCallback,
+  Suspense,
+  useState,
+} from 'react';
 import {
   createRoutesFromElements,
   Outlet,
@@ -7,6 +13,7 @@ import {
   RouterProvider,
   ScrollRestoration,
   useLocation,
+  useParams,
   useRouteError,
 } from 'react-router';
 import { Toaster } from 'react-hot-toast';
@@ -29,8 +36,15 @@ import { useLogout } from './hooks/useLogout';
 import { useDeviceRevocationMonitor } from './hooks/useDeviceRevocationMonitor';
 import InstallBanner from './components/ui/InstallBanner';
 import BottomNav from './components/layout/BottomNav';
-import { esRutaPublica, esPuertaDeEntrada, esLaClasificacionCompartida } from './utils/rutasPublicas';
-import { VARIABLE_ALTO_BARRA_INFERIOR, ALTO_BARRA_INFERIOR } from './utils/barraInferior';
+import {
+  esRutaPublica,
+  esPuertaDeEntrada,
+  esLaClasificacionCompartida,
+} from './utils/rutasPublicas';
+import {
+  VARIABLE_ALTO_BARRA_INFERIOR,
+  ALTO_BARRA_INFERIOR,
+} from './utils/barraInferior';
 import ErrorFallback from './components/errors/ErrorFallback';
 import { useCortinaDeArranque } from './hooks/useCortinaDeArranque';
 import { useVolverArriba } from './hooks/useVolverArriba';
@@ -38,8 +52,14 @@ import { useRecargaAlVolverDeLaCache } from './hooks/useRecargaAlVolverDeLaCache
 import { lazyWithRetry } from './utils/lazyWithRetry';
 import BarraDeCarga from './components/layout/BarraDeCarga';
 import { marcaElArranque } from './services/cargaDeLaPantalla';
-import { loader as cargaDeTorneos, shouldRevalidate as cuandoVolverAPedirTorneos } from './pages/Competitions.datos';
-import { CLAVE_DEL_SCROLL, creaElRouterDeLaAplicacion } from './utils/routerDeLaAplicacion';
+import {
+  loader as cargaDeTorneos,
+  shouldRevalidate as cuandoVolverAPedirTorneos,
+} from './pages/Competitions.datos';
+import {
+  CLAVE_DEL_SCROLL,
+  creaElRouterDeLaAplicacion,
+} from './utils/routerDeLaAplicacion';
 import { registrarRouterParaSentry } from './utils/routerParaSentry';
 import { apuntaElRouterDeLaAplicacion } from './utils/navegacionEnCurso';
 
@@ -55,43 +75,82 @@ const Dashboard = lazyWithRetry(() => import('./pages/Dashboard'));
 const PlayerStatsPage = lazyWithRetry(() => import('./pages/PlayerStatsPage'));
 const Profile = lazyWithRetry(() => import('./pages/Profile'));
 const EditProfile = lazyWithRetry(() => import('./pages/EditProfile'));
-const DeviceManagement = lazyWithRetry(() => import('./pages/DeviceManagement'));
+const DeviceManagement = lazyWithRetry(
+  () => import('./pages/DeviceManagement'),
+);
 const Competitions = lazyWithRetry(() => import('./pages/Competitions'));
-const CreateCompetition = lazyWithRetry(() => import('./pages/CreateCompetition'));
-const CompetitionDetail = lazyWithRetry(() => import('./pages/CompetitionDetail'));
-const BrowseCompetitions = lazyWithRetry(() => import('./pages/BrowseCompetitions'));
+const CreateCompetition = lazyWithRetry(
+  () => import('./pages/CreateCompetition'),
+);
+const CompetitionDetail = lazyWithRetry(
+  () => import('./pages/CompetitionDetail'),
+);
+
+// Editar, con una instancia por competición: de editar una a editar otra el
+// formulario no arrastra nada de la anterior, como las listas de vecinos (T3-18)
+function EditarCompeticion() {
+  const { id } = useParams();
+  return <CreateCompetition key={id} />;
+}
+const BrowseCompetitions = lazyWithRetry(
+  () => import('./pages/BrowseCompetitions'),
+);
 
 // Admin pages (v2.4.0 - Admin Panel)
 const AdminPanel = lazyWithRetry(() => import('./pages/admin/AdminPanel'));
 
 // Creator pages (v2.1.0 - Sprint 2)
-const SchedulePage = lazyWithRetry(() => import('./pages/creator/SchedulePage'));
-const InvitationsPage = lazyWithRetry(() => import('./pages/creator/InvitationsPage'));
+const SchedulePage = lazyWithRetry(
+  () => import('./pages/creator/SchedulePage'),
+);
+const InvitationsPage = lazyWithRetry(
+  () => import('./pages/creator/InvitationsPage'),
+);
 
 // Player pages (Sprint 3 + Sprint 4)
-const MyInvitationsPage = lazyWithRetry(() => import('./pages/player/MyInvitationsPage'));
+const MyInvitationsPage = lazyWithRetry(
+  () => import('./pages/player/MyInvitationsPage'),
+);
 const FriendsPage = lazyWithRetry(() => import('./pages/player/FriendsPage'));
 const FeedPage = lazyWithRetry(() => import('./pages/player/FeedPage'));
-const PlayerProfilePage = lazyWithRetry(() => import('./pages/player/PlayerProfilePage'));
+const PlayerProfilePage = lazyWithRetry(
+  () => import('./pages/player/PlayerProfilePage'),
+);
 const ScoringPage = lazyWithRetry(() => import('./pages/player/ScoringPage'));
 // Anotar una partida de stroke play (FE #824, PR 7)
-const GroupScoringPage = lazyWithRetry(() => import('./pages/player/GroupScoringPage'));
-const UpcomingMatchesPage = lazyWithRetry(() => import('./pages/player/UpcomingMatchesPage'));
+const GroupScoringPage = lazyWithRetry(
+  () => import('./pages/player/GroupScoringPage'),
+);
+const UpcomingMatchesPage = lazyWithRetry(
+  () => import('./pages/player/UpcomingMatchesPage'),
+);
 
 // Quick Match pages (FE #236)
-const QuickMatchScoringPage = lazyWithRetry(() => import('./pages/quick_match/QuickMatchScoringPage'));
-const QuickMatchSharedPage = lazyWithRetry(() => import('./pages/quick_match/QuickMatchSharedPage'));
-const TarjetaDeUnAmigoPage = lazyWithRetry(() => import('./pages/player/TarjetaDeUnAmigoPage'));
-const MyQuickMatchesPage = lazyWithRetry(() => import('./pages/quick_match/MyQuickMatchesPage'));
+const QuickMatchScoringPage = lazyWithRetry(
+  () => import('./pages/quick_match/QuickMatchScoringPage'),
+);
+const QuickMatchSharedPage = lazyWithRetry(
+  () => import('./pages/quick_match/QuickMatchSharedPage'),
+);
+const TarjetaDeUnAmigoPage = lazyWithRetry(
+  () => import('./pages/player/TarjetaDeUnAmigoPage'),
+);
+const MyQuickMatchesPage = lazyWithRetry(
+  () => import('./pages/quick_match/MyQuickMatchesPage'),
+);
 
 // Google OAuth pages
 const GoogleCallback = lazyWithRetry(() => import('./pages/GoogleCallback'));
 const CompleteProfile = lazyWithRetry(() => import('./pages/CompleteProfile'));
 const AcceptTerms = lazyWithRetry(() => import('./pages/AcceptTerms'));
-const ConfirmEmailChange = lazyWithRetry(() => import('./pages/ConfirmEmailChange'));
+const ConfirmEmailChange = lazyWithRetry(
+  () => import('./pages/ConfirmEmailChange'),
+);
 
 // Public pages
-const LeaderboardPage = lazyWithRetry(() => import('./pages/public/LeaderboardPage'));
+const LeaderboardPage = lazyWithRetry(
+  () => import('./pages/public/LeaderboardPage'),
+);
 const DraftRoomPage = lazyWithRetry(() => import('./pages/DraftRoomPage'));
 const EnvelopePage = lazyWithRetry(() => import('./pages/EnvelopePage'));
 const Pricing = lazyWithRetry(() => import('./pages/public/Pricing'));
@@ -129,7 +188,8 @@ function AppContent() {
   // su competición y la ve como el resto de la aplicación, con su barra
   // inferior (QA, FE #865-4). Ahí sí se pregunta por la sesión: el interceptor
   // ya no refresca sin `user` guardado (`sinSesionEnRutaPublica`)
-  const conSesionPosible = !isPublicRoute || esLaClasificacionCompartida(location.pathname);
+  const conSesionPosible =
+    !isPublicRoute || esLaClasificacionCompartida(location.pathname);
 
   // Cada pantalla empieza por el principio, menos al volver atrás (FE #643).
   // Va aquí arriba, colgado del router y no de cada pantalla: el defecto no era
@@ -178,7 +238,10 @@ function AppContent() {
   // solo cuando la barra está de verdad, sin deducirlo de la sesión
   useLayoutEffect(() => {
     const raiz = document.documentElement.style;
-    raiz.setProperty(VARIABLE_ALTO_BARRA_INFERIOR, showBottomNav ? ALTO_BARRA_INFERIOR : '0px');
+    raiz.setProperty(
+      VARIABLE_ALTO_BARRA_INFERIOR,
+      showBottomNav ? ALTO_BARRA_INFERIOR : '0px',
+    );
     return () => raiz.removeProperty(VARIABLE_ALTO_BARRA_INFERIOR);
   }, [showBottomNav]);
 
@@ -242,7 +305,7 @@ function AppContent() {
   // Solo activo cuando hay usuario autenticado
   useDeviceRevocationMonitor({
     // Pide /users/me/devices, que da 403 con los Términos pendientes
-    enabled: conApi
+    enabled: conApi,
   });
 
   // Hook de refresh proactivo de token (v2.0.4)
@@ -251,7 +314,7 @@ function AppContent() {
   // Los tiempos (TTL del token y margen de refresco) los define el propio hook,
   // que es donde se anota de donde sale el valor del backend (FE #392)
   useProactiveTokenRefresh({
-    enabled: isAuthenticated
+    enabled: isAuthenticated,
   });
 
   return (
@@ -260,7 +323,9 @@ function AppContent() {
           esta visible, o la taparian por completo (FE #322) */}
       <Toaster
         position="bottom-right"
-        containerClassName={showBottomNav ? 'toast-container-above-bottom-nav' : undefined}
+        containerClassName={
+          showBottomNav ? 'toast-container-above-bottom-nav' : undefined
+        }
         toastOptions={{
           duration: 4000,
           style: {
@@ -270,7 +335,8 @@ function AppContent() {
             borderRadius: '0.5rem',
             padding: '16px',
             fontSize: '14px',
-            boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+            boxShadow:
+              '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
           },
           success: {
             iconTheme: {
@@ -309,35 +375,33 @@ function AppContent() {
         <ScrollRestoration storageKey={CLAVE_DEL_SCROLL} />
         <BarraDeCarga />
         <Outlet />
-      {showBottomNav && (
-        <>
-          {/* Espaciador en el flujo: la nav es fixed y taparía el final de la
+        {showBottomNav && (
+          <>
+            {/* Espaciador en el flujo: la nav es fixed y taparía el final de la
               página. 5rem y no los 4 de la barra: el botón «Partida» sobresale
               por encima y llega a 71 px del borde (QA, FE #865-8). Más el aviso
               de instalar, que va encima (#865-13) */}
-          <div
-            aria-hidden="true"
-            data-testid="hueco-barra-inferior"
-            data-tapa-abajo=""
-            className="md:hidden h-[calc(5rem+env(safe-area-inset-bottom)+var(--alto-aviso-instalar,0px))]"
-          />
-          <BottomNav />
-        </>
-      )}
-      {/* Sin la barra (sin sesión, o en el escritorio), el aviso de instalar va
+            <div
+              aria-hidden="true"
+              data-testid="hueco-barra-inferior"
+              data-tapa-abajo=""
+              className="md:hidden h-[calc(5rem+env(safe-area-inset-bottom)+var(--alto-aviso-instalar,0px))]"
+            />
+            <BottomNav />
+          </>
+        )}
+        {/* Sin la barra (sin sesión, o en el escritorio), el aviso de instalar va
           al borde: su hueco, para que no tape lo último (QA, FE #865-13). En la
           anotación no: es inmersiva */}
-      {!isScoringRoute && (
-        <div
-          aria-hidden="true"
-          data-testid="hueco-aviso-instalar"
-          data-tapa-abajo=""
-          className={`${showBottomNav ? 'hidden md:block' : ''} h-[var(--alto-aviso-instalar,0px)]`}
-        />
-      )}
-
+        {!isScoringRoute && (
+          <div
+            aria-hidden="true"
+            data-testid="hueco-aviso-instalar"
+            data-tapa-abajo=""
+            className={`${showBottomNav ? 'hidden md:block' : ''} h-[var(--alto-aviso-instalar,0px)]`}
+          />
+        )}
       </Suspense>
-
     </LazyLoadErrorBoundary>
   );
 }
@@ -355,7 +419,11 @@ function RelanzarElError() {
 // Las rutas siguen escritas como JSX (`createRoutesFromElements`); `rutasDeLaAplicacion`
 // es su copia sin la comodín, y un test vigila que no se separen
 export const rutasDeLaApp = createRoutesFromElements(
-  <Route element={<AppContent />} errorElement={<RelanzarElError />} hydrateFallbackElement={<FullScreenLoader />}>
+  <Route
+    element={<AppContent />}
+    errorElement={<RelanzarElError />}
+    hydrateFallbackElement={<FullScreenLoader />}
+  >
     <Route errorElement={<RelanzarElError />}>
       {/* Public routes */}
       <Route path="/" element={<Landing />} />
@@ -375,127 +443,292 @@ export const rutasDeLaApp = createRoutesFromElements(
       <Route path="/cookies" element={<Cookies />} />
       <Route path="/legal" element={<LegalNotice />} />
       <Route path="/auth/google/callback" element={<GoogleCallback />} />
-      <Route path="/competitions/:id/leaderboard" element={<LeaderboardPage />} />
+      <Route
+        path="/competitions/:id/leaderboard"
+        element={<LeaderboardPage />}
+      />
 
       {/* Protected routes */}
-      <Route path="/auth/complete-profile" element={<ProtectedRoute><CompleteProfile /></ProtectedRoute>} />
-      <Route path="/accept-terms" element={<ProtectedRoute><AcceptTerms /></ProtectedRoute>} />
+      <Route
+        path="/auth/complete-profile"
+        element={
+          <ProtectedRoute>
+            <CompleteProfile />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/accept-terms"
+        element={
+          <ProtectedRoute>
+            <AcceptTerms />
+          </ProtectedRoute>
+        }
+      />
       {/* El enlace del correo nuevo, solo con sesión (RyderCupAm #749) */}
-      <Route path="/confirm-email-change" element={<ProtectedRoute><ConfirmEmailChange /></ProtectedRoute>} />
-      <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-      <Route path="/stats" element={<ProtectedRoute><PlayerStatsPage /></ProtectedRoute>} />
-      <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
-      <Route path="/profile/edit" element={<ProtectedRoute><EditProfile /></ProtectedRoute>} />
-      <Route path="/profile/devices" element={<ProtectedRoute><DeviceManagement /></ProtectedRoute>} />
+      <Route
+        path="/confirm-email-change"
+        element={
+          <ProtectedRoute>
+            <ConfirmEmailChange />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/dashboard"
+        element={
+          <ProtectedRoute>
+            <Dashboard />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/stats"
+        element={
+          <ProtectedRoute>
+            <PlayerStatsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/profile"
+        element={
+          <ProtectedRoute>
+            <Profile />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/profile/edit"
+        element={
+          <ProtectedRoute>
+            <EditProfile />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/profile/devices"
+        element={
+          <ProtectedRoute>
+            <DeviceManagement />
+          </ProtectedRoute>
+        }
+      />
       {/* Con sus datos antes de pintarse (FE #647, fase 3): sin ellos, volver
           atrás no puede devolverte a donde estabas */}
-      <Route path="/competitions"
+      <Route
+        path="/competitions"
         loader={cargaDeTorneos}
         shouldRevalidate={cuandoVolverAPedirTorneos}
         handle={{ restauraElScroll: true }}
-        element={<ProtectedRoute><Competitions /></ProtectedRoute>}
+        element={
+          <ProtectedRoute>
+            <Competitions />
+          </ProtectedRoute>
+        }
       />
-      <Route path="/competitions/create" element={<ProtectedRoute><CreateCompetition /></ProtectedRoute>} />
-      <Route path="/competitions/:id/edit" element={<ProtectedRoute><CreateCompetition /></ProtectedRoute>} />
-      <Route path="/competitions/:id" element={<ProtectedRoute><CompetitionDetail /></ProtectedRoute>} />
+      {/* Crear y editar son la misma pantalla: cada ruta con su instancia, y editar
+          una por competición, para que al pasar de una a otra no se arrastren la
+          espera ni los datos de la otra (T3-18) */}
+      <Route
+        path="/competitions/create"
+        element={
+          <ProtectedRoute>
+            <CreateCompetition key="crear" />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/competitions/:id/edit"
+        element={
+          <ProtectedRoute>
+            <EditarCompeticion />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/competitions/:id"
+        element={
+          <ProtectedRoute>
+            <CompetitionDetail />
+          </ProtectedRoute>
+        }
+      />
       {/* La sala de draft la ve el grupo entero, no solo los capitanes (FE #653) */}
-      <Route path="/competitions/:id/draft" element={<ProtectedRoute><DraftRoomPage /></ProtectedRoute>} />
+      <Route
+        path="/competitions/:id/draft"
+        element={
+          <ProtectedRoute>
+            <DraftRoomPage />
+          </ProtectedRoute>
+        }
+      />
       {/* El sobre de cada capitán para una sesión (FE #655) */}
-      <Route path="/competitions/:id/rounds/:roundId/envelope" element={<ProtectedRoute><EnvelopePage /></ProtectedRoute>} />
+      <Route
+        path="/competitions/:id/rounds/:roundId/envelope"
+        element={
+          <ProtectedRoute>
+            <EnvelopePage />
+          </ProtectedRoute>
+        }
+      />
       {/* La partida o el partido de un amigo, en solo lectura, desde su logro (release social 2) */}
-      <Route path="/competitions/:id/groups/:groupId" element={<ProtectedRoute><TarjetaDeUnAmigoPage tipo="partida" /></ProtectedRoute>} />
-      <Route path="/competitions/:id/matches/:matchId" element={<ProtectedRoute><TarjetaDeUnAmigoPage tipo="partido" /></ProtectedRoute>} />
-      <Route path="/browse-competitions" element={<ProtectedRoute><BrowseCompetitions /></ProtectedRoute>} />
+      <Route
+        path="/competitions/:id/groups/:groupId"
+        element={
+          <ProtectedRoute>
+            <TarjetaDeUnAmigoPage tipo="partida" />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/competitions/:id/matches/:matchId"
+        element={
+          <ProtectedRoute>
+            <TarjetaDeUnAmigoPage tipo="partido" />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/browse-competitions"
+        element={
+          <ProtectedRoute>
+            <BrowseCompetitions />
+          </ProtectedRoute>
+        }
+      />
 
       {/* Admin (v2.4.0), protegido por el rol ADMIN; cada sección del panel en su ruta (17 oct): resumen, usuarios, competiciones, campos y hoyos */}
-      <Route path="/admin/:seccion?" element={
-        <ProtectedRoute>
-          <RoleGuard allowedRoles="ADMIN">
-            <AdminPanel />
-          </RoleGuard>
-        </ProtectedRoute>
-      } />
+      <Route
+        path="/admin/:seccion?"
+        element={
+          <ProtectedRoute>
+            <RoleGuard allowedRoles="ADMIN">
+              <AdminPanel />
+            </RoleGuard>
+          </ProtectedRoute>
+        }
+      />
 
       {/* Invitation routes (Sprint 3) */}
-      <Route path="/creator/competitions/:id/invitations" element={
-        <ProtectedRoute>
-          <InvitationsPage />
-        </ProtectedRoute>
-      } />
-      <Route path="/player/invitations" element={
-        <ProtectedRoute>
-          <MyInvitationsPage />
-        </ProtectedRoute>
-      } />
+      <Route
+        path="/creator/competitions/:id/invitations"
+        element={
+          <ProtectedRoute>
+            <InvitationsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/player/invitations"
+        element={
+          <ProtectedRoute>
+            <MyInvitationsPage />
+          </ProtectedRoute>
+        }
+      />
 
       {/* Social routes */}
-      <Route path="/feed" element={
-        <ProtectedRoute>
-          <FeedPage />
-        </ProtectedRoute>
-      } />
+      <Route
+        path="/feed"
+        element={
+          <ProtectedRoute>
+            <FeedPage />
+          </ProtectedRoute>
+        }
+      />
 
-      <Route path="/players/:userId" element={
-        <ProtectedRoute>
-          <PlayerProfilePage />
-        </ProtectedRoute>
-      } />
+      <Route
+        path="/players/:userId"
+        element={
+          <ProtectedRoute>
+            <PlayerProfilePage />
+          </ProtectedRoute>
+        }
+      />
 
       {/* Friends routes */}
-      <Route path="/friends" element={
-        <ProtectedRoute>
-          <FriendsPage />
-        </ProtectedRoute>
-      } />
+      <Route
+        path="/friends"
+        element={
+          <ProtectedRoute>
+            <FriendsPage />
+          </ProtectedRoute>
+        }
+      />
 
       {/* Player routes (Sprint 4) */}
-      <Route path="/player/matches" element={
-        <ProtectedRoute>
-          <UpcomingMatchesPage />
-        </ProtectedRoute>
-      } />
-      <Route path="/player/matches/:matchId/scoring" element={
-        <ProtectedRoute>
-          <ScoringPage />
-        </ProtectedRoute>
-      } />
-      <Route path="/player/groups/:groupId/scoring" element={
-        <ProtectedRoute>
-          <GroupScoringPage />
-        </ProtectedRoute>
-      } />
+      <Route
+        path="/player/matches"
+        element={
+          <ProtectedRoute>
+            <UpcomingMatchesPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/player/matches/:matchId/scoring"
+        element={
+          <ProtectedRoute>
+            <ScoringPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/player/groups/:groupId/scoring"
+        element={
+          <ProtectedRoute>
+            <GroupScoringPage />
+          </ProtectedRoute>
+        }
+      />
 
       {/* Quick Match routes (FE #236) */}
-      <Route path="/quick-matches" element={
-        <ProtectedRoute>
-          <MyQuickMatchesPage />
-        </ProtectedRoute>
-      } />
-      <Route path="/quick-matches/:quickMatchId/scoring" element={
-        <ProtectedRoute>
-          <QuickMatchScoringPage />
-        </ProtectedRoute>
-      } />
+      <Route
+        path="/quick-matches"
+        element={
+          <ProtectedRoute>
+            <MyQuickMatchesPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/quick-matches/:quickMatchId/scoring"
+        element={
+          <ProtectedRoute>
+            <QuickMatchScoringPage />
+          </ProtectedRoute>
+        }
+      />
       {/* La partida terminada de un amigo, en solo lectura (K) */}
-      <Route path="/quick-matches/:quickMatchId/shared" element={
-        <ProtectedRoute>
-          <QuickMatchSharedPage />
-        </ProtectedRoute>
-      } />
+      <Route
+        path="/quick-matches/:quickMatchId/shared"
+        element={
+          <ProtectedRoute>
+            <QuickMatchSharedPage />
+          </ProtectedRoute>
+        }
+      />
 
       {/* Schedule routes (v2.1.0 - Sprint 2) */}
       {/* Creator route: full management. Player route: read-only (canManage=false) */}
       {/* Authorization is per-competition (handled by useUserRoles inside SchedulePage) */}
-      <Route path="/creator/competitions/:id/schedule" element={
-        <ProtectedRoute>
-          <SchedulePage />
-        </ProtectedRoute>
-      } />
-      <Route path="/competitions/:id/schedule" element={
-        <ProtectedRoute>
-          <SchedulePage />
-        </ProtectedRoute>
-      } />
+      <Route
+        path="/creator/competitions/:id/schedule"
+        element={
+          <ProtectedRoute>
+            <SchedulePage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/competitions/:id/schedule"
+        element={
+          <ProtectedRoute>
+            <SchedulePage />
+          </ProtectedRoute>
+        }
+      />
 
       {/* Error routes */}
       <Route path="/unauthorized" element={<Unauthorized />} />
@@ -503,7 +736,7 @@ export const rutasDeLaApp = createRoutesFromElements(
           Cualquier ruta nueva va también en `utils/rutasDeLaAplicacion` */}
       <Route path="*" element={<NotFound />} />
     </Route>
-  </Route>
+  </Route>,
 );
 
 /**
@@ -523,10 +756,7 @@ function App() {
     return apuntaElRouterDeLaAplicacion(router);
   }, [router]);
   return (
-    <Sentry.ErrorBoundary
-      fallback={ErrorFallback}
-      showDialog={false}
-    >
+    <Sentry.ErrorBoundary fallback={ErrorFallback} showDialog={false}>
       <RouterProvider router={router} />
     </Sentry.ErrorBoundary>
   );

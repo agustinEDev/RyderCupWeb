@@ -18,7 +18,12 @@ const api = (extra = {}) => ({
   updated_at: '2026-10-01T10:00:00Z',
   ...extra,
 });
-const dto = (apiData, yo) => FriendshipAssembler.toSimpleDTO(FriendshipMapper.toDomain(apiData), apiData, yo);
+const dto = (apiData, yo) =>
+  FriendshipAssembler.toSimpleDTO(
+    FriendshipMapper.toDomain(apiData),
+    apiData,
+    yo,
+  );
 
 describe('FriendshipAssembler · hándicap del amigo (FE #848)', () => {
   it('el del otro lado, sea quien sea quien pidió la amistad', () => {
@@ -29,11 +34,15 @@ describe('FriendshipAssembler · hándicap del amigo (FE #848)', () => {
   });
 
   it('sin hándicap, o un servidor que no lo manda: null', () => {
-    expect(dto(api({ addressee_handicap: null }), 'user-1').otherUserHandicap).toBeNull();
+    expect(
+      dto(api({ addressee_handicap: null }), 'user-1').otherUserHandicap,
+    ).toBeNull();
     expect(dto(api(), 'user-1').otherUserHandicap).toBeNull();
   });
 
   it('el hándicap 0 es un hándicap', () => {
-    expect(dto(api({ addressee_handicap: 0 }), 'user-1').otherUserHandicap).toBe(0);
+    expect(
+      dto(api({ addressee_handicap: 0 }), 'user-1').otherUserHandicap,
+    ).toBe(0);
   });
 });

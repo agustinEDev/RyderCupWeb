@@ -1,5 +1,18 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { recuerda, loQueSeSupo, olvida, olvidaTodo, recuerdaLaLista, laUltimaLista, olvidaLoDeEstaCuenta, precarga, recuerdaLosPartidos, losUltimosPartidos, recuerdaLasPartidas, lasUltimasPartidas } from './loUltimoConocido';
+import {
+  recuerda,
+  loQueSeSupo,
+  olvida,
+  olvidaTodo,
+  recuerdaLaLista,
+  laUltimaLista,
+  olvidaLoDeEstaCuenta,
+  precarga,
+  recuerdaLosPartidos,
+  losUltimosPartidos,
+  recuerdaLasPartidas,
+  lasUltimasPartidas,
+} from './loUltimoConocido';
 
 /**
  * LA TABLA M — lo último que se supo de una partida.
@@ -23,7 +36,10 @@ describe('loUltimoConocido', () => {
     olvidaTodo();
   });
 
-  const lo = (n) => ({ partida: { id: `m-${n}`, holeScores: [] }, campo: { holes: [{ holeNumber: 1 }] } });
+  const lo = (n) => ({
+    partida: { id: `m-${n}`, holeScores: [] },
+    campo: { holes: [{ holeNumber: 1 }] },
+  });
 
   it('lo guardado vuelve tal cual, con su campo', () => {
     recuerda('m-1', lo(1));
@@ -66,7 +82,9 @@ describe('loUltimoConocido', () => {
   });
 
   it('si el almacenamiento se niega, lo dice en vez de reventar', () => {
-    localStorage.setItem = () => { throw new Error('quota'); };
+    localStorage.setItem = () => {
+      throw new Error('quota');
+    };
 
     expect(recuerda('m-1', lo(1))).toBe(false);
   });
@@ -129,7 +147,10 @@ describe('loUltimoConocido', () => {
     recuerda('m-1', lo(1));
     let escrituras = 0;
     const original = localStorage.setItem;
-    localStorage.setItem = (...a) => { escrituras += 1; return original(...a); };
+    localStorage.setItem = (...a) => {
+      escrituras += 1;
+      return original(...a);
+    };
 
     recuerda('m-1', lo(1));
 
@@ -154,7 +175,10 @@ describe('loUltimoConocido', () => {
   it('pero un cambio sí se guarda', () => {
     recuerda('m-1', lo(1));
 
-    recuerda('m-1', { partida: { id: 'm-1', holeScores: [{ holeNumber: 1 }] }, campo: null });
+    recuerda('m-1', {
+      partida: { id: 'm-1', holeScores: [{ holeNumber: 1 }] },
+      campo: null,
+    });
 
     expect(loQueSeSupo('m-1').partida.holeScores).toHaveLength(1);
   });
@@ -189,8 +213,12 @@ describe('loUltimoConocido, lo precargado', () => {
     olvidaTodo();
   });
 
-  const lo = (n) => ({ partida: { id: `m-${n}`, holeScores: [] }, campo: null });
-  const guardadas = () => JSON.parse(localStorage.getItem('rydercup-ultimo-conocido'));
+  const lo = (n) => ({
+    partida: { id: `m-${n}`, holeScores: [] },
+    campo: null,
+  });
+  const guardadas = () =>
+    JSON.parse(localStorage.getItem('rydercup-ultimo-conocido'));
 
   it('con sitio, se guarda y se puede pintar', () => {
     expect(precarga('m-1', lo(1))).toBe(true);
@@ -251,7 +279,9 @@ describe('loUltimoConocido, lo precargado', () => {
     recuerda('a-2', lo(2));
     recuerda('a-3', lo(3));
 
-    expect(precarga('p-1', lo(4), { protegidas: new Set(['a-1', 'a-2']) })).toBe(false);
+    expect(
+      precarga('p-1', lo(4), { protegidas: new Set(['a-1', 'a-2']) }),
+    ).toBe(false);
   });
 
   it('abrir de verdad una precargada la convierte en abierta', () => {
@@ -266,7 +296,10 @@ describe('loUltimoConocido, lo precargado', () => {
     // La precarga sale del panel sin esperarla. Si el jugador abre el partido
     // mientras tanto, esa pantalla guarda su foto —con los golpes ya enviados—
     // y la respuesta tardía del panel la devolvía a la de antes
-    recuerda('a-1', { partida: { id: 'm-1', holeScores: [{ holeNumber: 1 }] }, campo: null });
+    recuerda('a-1', {
+      partida: { id: 'm-1', holeScores: [{ holeNumber: 1 }] },
+      campo: null,
+    });
 
     expect(precarga('a-1', lo(1))).toBe(true);
 
@@ -277,13 +310,18 @@ describe('loUltimoConocido, lo precargado', () => {
   it('una precargada sí se refresca', () => {
     precarga('p-1', lo(1));
 
-    precarga('p-1', { partida: { id: 'm-1', holeScores: [{ holeNumber: 1 }] }, campo: null });
+    precarga('p-1', {
+      partida: { id: 'm-1', holeScores: [{ holeNumber: 1 }] },
+      campo: null,
+    });
 
     expect(loQueSeSupo('p-1').partida.holeScores).toHaveLength(1);
   });
 
   it('si el almacenamiento se niega, lo dice en vez de reventar', () => {
-    localStorage.setItem = () => { throw new Error('quota'); };
+    localStorage.setItem = () => {
+      throw new Error('quota');
+    };
 
     expect(precarga('p-1', lo(1))).toBe(false);
   });
@@ -317,7 +355,9 @@ describe('loUltimoConocido, lo precargado', () => {
     recuerdaLasPartidas([{ id: 'g-1', esPartidaDeFranja: true }]);
 
     expect(losUltimosPartidos()).toEqual([{ id: 'm-1' }]);
-    expect(lasUltimasPartidas()).toEqual([{ id: 'g-1', esPartidaDeFranja: true }]);
+    expect(lasUltimasPartidas()).toEqual([
+      { id: 'g-1', esPartidaDeFranja: true },
+    ]);
   });
 
   it('al cerrar sesión se van también las partidas', () => {

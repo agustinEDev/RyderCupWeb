@@ -44,10 +44,13 @@ class ApiFriendRepository extends IFriendRepository {
   }
 
   async respondToRequest(friendshipId, action) {
-    const apiData = await apiRequest(`/api/v1/friends/requests/${segmento(friendshipId)}/respond`, {
-      method: 'POST',
-      body: JSON.stringify({ action }),
-    });
+    const apiData = await apiRequest(
+      `/api/v1/friends/requests/${segmento(friendshipId)}/respond`,
+      {
+        method: 'POST',
+        body: JSON.stringify({ action }),
+      },
+    );
 
     const friendship = FriendshipMapper.toDomain(apiData);
     friendship._apiData = apiData;
@@ -61,9 +64,12 @@ class ApiFriendRepository extends IFriendRepository {
   }
 
   async blockUser(userId) {
-    const apiData = await apiRequest(`/api/v1/friends/${segmento(userId)}/block`, {
-      method: 'POST',
-    });
+    const apiData = await apiRequest(
+      `/api/v1/friends/${segmento(userId)}/block`,
+      {
+        method: 'POST',
+      },
+    );
 
     const friendship = FriendshipMapper.toDomain(apiData);
     friendship._apiData = apiData;
@@ -97,7 +103,9 @@ class ApiFriendRepository extends IFriendRepository {
     if (filters.limit) apiFilters.limit = filters.limit;
 
     const queryString = this.#buildQueryString(apiFilters);
-    const response = await apiRequest(`/api/v1/friends/requests/me${queryString}`);
+    const response = await apiRequest(
+      `/api/v1/friends/requests/me${queryString}`,
+    );
 
     const apiDataArray = response.friendships || [];
     const friendships = FriendshipMapper.toDomainMany(apiDataArray);

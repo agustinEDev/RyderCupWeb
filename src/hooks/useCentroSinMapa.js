@@ -11,7 +11,10 @@ import { getCourseLocationUseCase } from '../composition';
 export function useCentroSinMapa({ golfCourseId, activo }) {
   const [delCampo, setDelCampo] = useState({ de: null, posicion: null });
   const copia = useMemo(
-    () => (activo && golfCourseId ? getCourseLocationUseCase.guardada(golfCourseId) : null),
+    () =>
+      activo && golfCourseId
+        ? getCourseLocationUseCase.guardada(golfCourseId)
+        : null,
     [activo, golfCourseId],
   );
 

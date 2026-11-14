@@ -31,7 +31,7 @@ const Register = () => {
     password: '',
     confirmPassword: '',
     countryCode: '', // Campo opcional para nacionalidad
-    gender: '' // Campo opcional para género
+    gender: '', // Campo opcional para género
   });
   const [errors, setErrors] = useState({});
   // Los Términos se aceptan con un gesto expreso, y con ellos la edad mínima
@@ -66,12 +66,12 @@ const Register = () => {
         if (controller.signal.aborted) return;
         const validCountries = Array.isArray(data)
           ? data
-              .filter(c => c?.code && (c?.name_en || c?.name_es))
-              .map(c => ({
+              .filter((c) => c?.code && (c?.name_en || c?.name_es))
+              .map((c) => ({
                 code: c.code,
                 name: c.name_en || c.name_es,
                 name_en: c.name_en,
-                name_es: c.name_es
+                name_es: c.name_es,
               }))
           : [];
         setCountries(validCountries);
@@ -92,12 +92,12 @@ const Register = () => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [name]: value
+      [name]: value,
     }));
     if (errors[name]) {
-      setErrors(prev => ({ ...prev, [name]: '' }));
+      setErrors((prev) => ({ ...prev, [name]: '' }));
     }
   };
 
@@ -106,22 +106,34 @@ const Register = () => {
 
     const firstNameValidation = validateName(formData.firstName, 'First name');
     if (!firstNameValidation.isValid) {
-      newErrors.firstName = t(firstNameValidation.messageKey, firstNameValidation.messageOptions);
+      newErrors.firstName = t(
+        firstNameValidation.messageKey,
+        firstNameValidation.messageOptions,
+      );
     }
 
     const lastNameValidation = validateName(formData.lastName, 'Last name');
     if (!lastNameValidation.isValid) {
-      newErrors.lastName = t(lastNameValidation.messageKey, lastNameValidation.messageOptions);
+      newErrors.lastName = t(
+        lastNameValidation.messageKey,
+        lastNameValidation.messageOptions,
+      );
     }
 
     const emailValidation = validateEmail(formData.email);
     if (!emailValidation.isValid) {
-      newErrors.email = t(emailValidation.messageKey, emailValidation.messageOptions);
+      newErrors.email = t(
+        emailValidation.messageKey,
+        emailValidation.messageOptions,
+      );
     }
 
     const passwordValidation = validatePassword(formData.password);
     if (!passwordValidation.isValid) {
-      newErrors.password = t(passwordValidation.messageKey, passwordValidation.messageOptions);
+      newErrors.password = t(
+        passwordValidation.messageKey,
+        passwordValidation.messageOptions,
+      );
     }
 
     if (!formData.confirmPassword) {
@@ -141,7 +153,7 @@ const Register = () => {
   const handleAcceptTermsChange = (marcada) => {
     setAcceptedTerms(marcada);
     if (marcada && errors.acceptTerms) {
-      setErrors(prev => ({ ...prev, acceptTerms: '' }));
+      setErrors((prev) => ({ ...prev, acceptTerms: '' }));
     }
   };
 
@@ -172,15 +184,16 @@ const Register = () => {
       navigationTimerRef.current = setTimeout(() => {
         navigate('/login', {
           state: {
-            message: t('register.successMessage')
-          }
+            message: t('register.successMessage'),
+          },
         });
       }, 1000);
-
     } catch (error) {
       // El backend dice por qué rechaza la contraseña con un código (BE #519):
       // su texto va en español, así que se dice con la clave del idioma de la app
-      customToast.error(passwordErrorMessage(error, t) || error.message || t('register.error'));
+      customToast.error(
+        passwordErrorMessage(error, t) || error.message || t('register.error'),
+      );
     } finally {
       setIsLoading(false);
     }
@@ -194,7 +207,6 @@ const Register = () => {
   return (
     <div className="relative flex min-h-screen w-full bg-white">
       <div className="flex w-full">
-
         {/* Left Side - Hero Image/Brand (Hidden on Mobile) */}
         <motion.div
           initial={{ opacity: 0, x: -20 }}
@@ -212,19 +224,22 @@ const Register = () => {
           <div
             className="absolute inset-0 bg-cover bg-center mix-blend-overlay opacity-20"
             style={{
-              backgroundImage: `url("https://images.unsplash.com/photo-1593111774240-d529f12cf4bb?q=80&w=1000")`
+              backgroundImage: `url("https://images.unsplash.com/photo-1593111774240-d529f12cf4bb?q=80&w=1000")`,
             }}
           />
 
           {/* Content */}
           <div className="relative z-10 flex flex-col justify-between p-12 text-white w-full">
-
             {/* Logo */}
             <Link to="/" className="flex items-center gap-3 group">
               <BrandMark className="size-10" tinta="blanco" />
               <div className="flex flex-col group-hover:opacity-80 transition-opacity">
-                <h1 className="text-2xl font-bold font-poppins">RyderCupFriends</h1>
-                <span className="text-sm font-semibold text-white/90 -mt-1">RCF</span>
+                <h1 className="text-2xl font-bold font-poppins">
+                  RyderCupFriends
+                </h1>
+                <span className="text-sm font-semibold text-white/90 -mt-1">
+                  RCF
+                </span>
               </div>
             </Link>
 
@@ -245,7 +260,7 @@ const Register = () => {
                   { icon: '⚡', text: t('register.benefits.quickSetup') },
                   { icon: '🎯', text: t('register.benefits.fairHandicap') },
                   { icon: '📱', text: t('register.benefits.mobileFriendly') },
-                  { icon: '🤝', text: t('register.benefits.friendships') }
+                  { icon: '🤝', text: t('register.benefits.friendships') },
                 ].map((item, idx) => (
                   <motion.div
                     key={item.text}
@@ -265,23 +280,37 @@ const Register = () => {
               {/* Stats */}
               <div className="grid grid-cols-3 gap-6 pt-8 mt-8 border-t border-white/20">
                 <div>
-                  <div className="text-2xl font-bold font-poppins">{t('register.stats.free')}</div>
-                  <div className="text-sm text-white/70 mt-1">{t('register.stats.freeDetail')}</div>
+                  <div className="text-2xl font-bold font-poppins">
+                    {t('register.stats.free')}
+                  </div>
+                  <div className="text-sm text-white/70 mt-1">
+                    {t('register.stats.freeDetail')}
+                  </div>
                 </div>
                 <div>
-                  <div className="text-2xl font-bold font-poppins">{t('register.stats.handicap')}</div>
-                  <div className="text-sm text-white/70 mt-1">{t('register.stats.handicapDetail')}</div>
+                  <div className="text-2xl font-bold font-poppins">
+                    {t('register.stats.handicap')}
+                  </div>
+                  <div className="text-sm text-white/70 mt-1">
+                    {t('register.stats.handicapDetail')}
+                  </div>
                 </div>
                 <div>
-                  <div className="text-2xl font-bold font-poppins">{t('register.stats.noAds')}</div>
-                  <div className="text-sm text-white/70 mt-1">{t('register.stats.noAdsDetail')}</div>
+                  <div className="text-2xl font-bold font-poppins">
+                    {t('register.stats.noAds')}
+                  </div>
+                  <div className="text-sm text-white/70 mt-1">
+                    {t('register.stats.noAdsDetail')}
+                  </div>
                 </div>
               </div>
             </div>
 
             {/* Footer */}
             <div className="text-white/70 text-sm">
-              {t('common:footer.copyrightShort', { year: new Date().getFullYear() })}
+              {t('common:footer.copyrightShort', {
+                year: new Date().getFullYear(),
+              })}
             </div>
           </div>
         </motion.div>
@@ -294,37 +323,42 @@ const Register = () => {
             transition={{ duration: 0.5 }}
             className="w-full max-w-md"
           >
-
             {/* Mobile Logo */}
-            <Link to="/" className="flex lg:hidden items-center gap-3 mb-8 justify-center group">
+            <Link
+              to="/"
+              className="flex lg:hidden items-center gap-3 mb-8 justify-center group"
+            >
               <BrandMark className="size-10" />
               <div className="flex flex-col group-hover:opacity-80 transition-opacity">
-                <h1 className="text-2xl font-bold font-poppins text-gray-900">RyderCupFriends</h1>
-                <span className="text-sm font-semibold text-primary -mt-1">RCF</span>
+                <h1 className="text-2xl font-bold font-poppins text-gray-900">
+                  RyderCupFriends
+                </h1>
+                <span className="text-sm font-semibold text-primary -mt-1">
+                  RCF
+                </span>
               </div>
             </Link>
 
             {/* Form Card */}
             <div className="bg-white rounded-2xl shadow-xl p-8 border border-gray-200">
-
               {/* Header */}
               <div className="mb-8">
                 <h2 className="text-3xl font-black text-gray-900 font-poppins mb-2">
                   {t('register.title')}
                 </h2>
-                <p className="text-gray-600">
-                  {t('register.subtitle')}
-                </p>
+                <p className="text-gray-600">{t('register.subtitle')}</p>
               </div>
 
               {/* Form */}
               <form onSubmit={handleSubmit} className="space-y-5">
-
                 {/* 1. Name Fields - Side by Side */}
                 <div className="grid grid-cols-2 gap-4">
                   {/* First Name */}
                   <div>
-                    <label htmlFor="firstName" className="block text-sm font-semibold text-gray-700 mb-2">
+                    <label
+                      htmlFor="firstName"
+                      className="block text-sm font-semibold text-gray-700 mb-2"
+                    >
                       {t('register.firstNameLabel')}
                     </label>
                     <input
@@ -348,8 +382,16 @@ const Register = () => {
                         animate={{ opacity: 1, y: 0 }}
                         className="text-red-500 text-xs mt-2 flex items-center gap-1"
                       >
-                        <svg className="w-3 h-3 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                        <svg
+                          className="w-3 h-3 flex-shrink-0"
+                          fill="currentColor"
+                          viewBox="0 0 20 20"
+                        >
+                          <path
+                            fillRule="evenodd"
+                            d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
+                            clipRule="evenodd"
+                          />
                         </svg>
                         {errors.firstName}
                       </motion.p>
@@ -358,7 +400,10 @@ const Register = () => {
 
                   {/* Last Name */}
                   <div>
-                    <label htmlFor="lastName" className="block text-sm font-semibold text-gray-700 mb-2">
+                    <label
+                      htmlFor="lastName"
+                      className="block text-sm font-semibold text-gray-700 mb-2"
+                    >
                       {t('register.lastNameLabel')}
                     </label>
                     <input
@@ -382,8 +427,16 @@ const Register = () => {
                         animate={{ opacity: 1, y: 0 }}
                         className="text-red-500 text-xs mt-2 flex items-center gap-1"
                       >
-                        <svg className="w-3 h-3 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                        <svg
+                          className="w-3 h-3 flex-shrink-0"
+                          fill="currentColor"
+                          viewBox="0 0 20 20"
+                        >
+                          <path
+                            fillRule="evenodd"
+                            d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
+                            clipRule="evenodd"
+                          />
                         </svg>
                         {errors.lastName}
                       </motion.p>
@@ -393,8 +446,14 @@ const Register = () => {
 
                 {/* 2. Gender (Optional) */}
                 <div>
-                  <label htmlFor="gender" className="block text-sm font-semibold text-gray-700 mb-2">
-                    {t('register.genderLabel')} <span className="text-gray-400 font-normal">{t('register.genderOptional')}</span>
+                  <label
+                    htmlFor="gender"
+                    className="block text-sm font-semibold text-gray-700 mb-2"
+                  >
+                    {t('register.genderLabel')}{' '}
+                    <span className="text-gray-400 font-normal">
+                      {t('register.genderOptional')}
+                    </span>
                   </label>
                   <div className="relative">
                     <select
@@ -405,19 +464,43 @@ const Register = () => {
                       className="w-full px-4 py-3 rounded-lg border-2 border-gray-200 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none text-gray-900 bg-white disabled:bg-gray-50 disabled:cursor-not-allowed appearance-none pr-10"
                       disabled={isLoading}
                     >
-                      <option value="">{t('register.genderPlaceholder')}</option>
-                      <option value="MALE">{t('register.genderOptions.MALE')}</option>
-                      <option value="FEMALE">{t('register.genderOptions.FEMALE')}</option>
+                      <option value="">
+                        {t('register.genderPlaceholder')}
+                      </option>
+                      <option value="MALE">
+                        {t('register.genderOptions.MALE')}
+                      </option>
+                      <option value="FEMALE">
+                        {t('register.genderOptions.FEMALE')}
+                      </option>
                     </select>
                     <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                      <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      <svg
+                        className="w-5 h-5 text-gray-400"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M19 9l-7 7-7-7"
+                        />
                       </svg>
                     </div>
                   </div>
                   <p className="text-xs text-gray-500 mt-2 flex items-center gap-1">
-                    <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                    <svg
+                      className="w-3 h-3"
+                      fill="currentColor"
+                      viewBox="0 0 20 20"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
+                        clipRule="evenodd"
+                      />
                     </svg>
                     {t('register.genderHint')}
                   </p>
@@ -425,7 +508,10 @@ const Register = () => {
 
                 {/* 3. Email */}
                 <div>
-                  <label htmlFor="email" className="block text-sm font-semibold text-gray-700 mb-2">
+                  <label
+                    htmlFor="email"
+                    className="block text-sm font-semibold text-gray-700 mb-2"
+                  >
                     {t('register.emailLabel')}
                   </label>
                   <input
@@ -449,8 +535,16 @@ const Register = () => {
                       animate={{ opacity: 1, y: 0 }}
                       className="text-red-500 text-xs mt-2 flex items-center gap-1"
                     >
-                      <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                      <svg
+                        className="w-4 h-4"
+                        fill="currentColor"
+                        viewBox="0 0 20 20"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
+                          clipRule="evenodd"
+                        />
                       </svg>
                       {errors.email}
                     </motion.p>
@@ -473,7 +567,9 @@ const Register = () => {
                     label={
                       <>
                         {t('register.countryLabel')}{' '}
-                        <span className="text-gray-400 font-normal">{t('register.countryOptional')}</span>
+                        <span className="text-gray-400 font-normal">
+                          {t('register.countryOptional')}
+                        </span>
                       </>
                     }
                     labelClassName="block text-sm font-semibold text-gray-700 mb-2"
@@ -481,12 +577,22 @@ const Register = () => {
                     placeholder={t('register.countryPlaceholder')}
                     disabled={isLoading || isLoadingCountries}
                     onChange={(code) =>
-                      handleChange({ target: { name: 'countryCode', value: code } })
+                      handleChange({
+                        target: { name: 'countryCode', value: code },
+                      })
                     }
                   />
                   <p className="text-xs text-gray-500 mt-2 flex items-center gap-1">
-                    <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                    <svg
+                      className="w-3 h-3"
+                      fill="currentColor"
+                      viewBox="0 0 20 20"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
+                        clipRule="evenodd"
+                      />
                     </svg>
                     {t('register.countryHint')}
                   </p>
@@ -494,7 +600,10 @@ const Register = () => {
 
                 {/* 5. Password */}
                 <div>
-                  <label htmlFor="password" className="block text-sm font-semibold text-gray-700 mb-2">
+                  <label
+                    htmlFor="password"
+                    className="block text-sm font-semibold text-gray-700 mb-2"
+                  >
                     {t('register.passwordLabel')}
                   </label>
                   <PasswordInput
@@ -518,8 +627,16 @@ const Register = () => {
                       animate={{ opacity: 1, y: 0 }}
                       className="text-red-500 text-xs mt-2 flex items-center gap-1"
                     >
-                      <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                      <svg
+                        className="w-4 h-4"
+                        fill="currentColor"
+                        viewBox="0 0 20 20"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
+                          clipRule="evenodd"
+                        />
                       </svg>
                       {errors.password}
                     </motion.p>
@@ -532,7 +649,10 @@ const Register = () => {
 
                 {/* 6. Confirm Password */}
                 <div>
-                  <label htmlFor="confirmPassword" className="block text-sm font-semibold text-gray-700 mb-2">
+                  <label
+                    htmlFor="confirmPassword"
+                    className="block text-sm font-semibold text-gray-700 mb-2"
+                  >
                     {t('register.confirmPasswordLabel')}
                   </label>
                   <PasswordInput
@@ -556,8 +676,16 @@ const Register = () => {
                       animate={{ opacity: 1, y: 0 }}
                       className="text-red-500 text-xs mt-2 flex items-center gap-1"
                     >
-                      <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                      <svg
+                        className="w-4 h-4"
+                        fill="currentColor"
+                        viewBox="0 0 20 20"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
+                          clipRule="evenodd"
+                        />
                       </svg>
                       {errors.confirmPassword}
                     </motion.p>
@@ -587,9 +715,25 @@ const Register = () => {
                 >
                   {isLoading ? (
                     <span className="flex items-center justify-center gap-2">
-                      <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      <svg
+                        className="animate-spin h-5 w-5"
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                      >
+                        <circle
+                          className="opacity-25"
+                          cx="12"
+                          cy="12"
+                          r="10"
+                          stroke="currentColor"
+                          strokeWidth="4"
+                        ></circle>
+                        <path
+                          className="opacity-75"
+                          fill="currentColor"
+                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                        ></path>
                       </svg>
                       {t('register.creatingAccount')}
                     </span>
@@ -597,7 +741,6 @@ const Register = () => {
                     t('register.createAccountButton')
                   )}
                 </motion.button>
-
               </form>
 
               {/* Divider */}
@@ -606,7 +749,9 @@ const Register = () => {
                   <div className="w-full border-t border-gray-200"></div>
                 </div>
                 <div className="relative flex justify-center text-sm">
-                  <span className="px-4 bg-white text-gray-500">{t('google.orDivider', { ns: 'auth' })}</span>
+                  <span className="px-4 bg-white text-gray-500">
+                    {t('google.orDivider', { ns: 'auth' })}
+                  </span>
                 </div>
               </div>
 
@@ -631,7 +776,6 @@ const Register = () => {
                   </Link>
                 </p>
               </div>
-
             </div>
 
             {/* Back to Home */}
@@ -639,15 +783,25 @@ const Register = () => {
               to="/"
               className="flex items-center justify-center gap-2 mt-6 text-gray-600 hover:text-primary transition-colors group"
             >
-              <svg className="w-4 h-4 group-hover:-translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+              <svg
+                className="w-4 h-4 group-hover:-translate-x-1 transition-transform"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M10 19l-7-7m0 0l7-7m-7 7h18"
+                />
               </svg>
-              <span className="text-sm font-medium">{t('register.backToHome')}</span>
+              <span className="text-sm font-medium">
+                {t('register.backToHome')}
+              </span>
             </Link>
-
           </motion.div>
         </div>
-
       </div>
     </div>
   );

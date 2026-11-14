@@ -1,5 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor, fireEvent, act, within } from '@testing-library/react';
+import {
+  render,
+  screen,
+  waitFor,
+  fireEvent,
+  act,
+  within,
+} from '@testing-library/react';
 import { MemoryRouter, Route, Routes, useNavigate } from 'react-router';
 
 /**
@@ -35,10 +42,19 @@ vi.mock('react-i18next', () => ({
   }),
 }));
 
-const sesion = { user: { id: 'user-1', first_name: 'Test', last_name: 'User' }, loading: false };
+const sesion = {
+  user: { id: 'user-1', first_name: 'Test', last_name: 'User' },
+  loading: false,
+};
 vi.mock('../../hooks/useAuth', () => ({ useAuth: () => sesion }));
 vi.mock('../../hooks/useUserRoles', () => ({
-  useUserRoles: () => ({ isAdmin: false, isCreator: true, isLoading: false, error: null, refetch: vi.fn() }),
+  useUserRoles: () => ({
+    isAdmin: false,
+    isCreator: true,
+    isLoading: false,
+    error: null,
+    refetch: vi.fn(),
+  }),
 }));
 vi.mock('../../components/layout/HeaderAuth', () => ({ default: () => null }));
 // El modal de enviar, reducido a lo que importa aquí: dispara el envío
@@ -46,8 +62,12 @@ vi.mock('../../components/invitation/SendInvitationModal', () => ({
   default: ({ isOpen, onSendByUserId, onSend }) =>
     isOpen ? (
       <>
-        <button onClick={() => onSendByUserId('u-9', null)}>enviar a u-9</button>
-        <button onClick={() => onSend('nuevo@test.com', null)}>enviar por correo</button>
+        <button onClick={() => onSendByUserId('u-9', null)}>
+          enviar a u-9
+        </button>
+        <button onClick={() => onSend('nuevo@test.com', null)}>
+          enviar por correo
+        </button>
       </>
     ) : null,
 }));
@@ -62,13 +82,19 @@ vi.mock('../../composition', () => ({
   getCompetitionDetailUseCase: { execute: (...a) => mockDetalle(...a) },
   listCompetitionInvitationsUseCase: { execute: (...a) => mockLista(...a) },
   cancelInvitationUseCase: { execute: (...a) => mockRetirar(...a) },
-  sendInvitationByEmailUseCase: { execute: (...a) => mockEnviarPorCorreo(...a) },
+  sendInvitationByEmailUseCase: {
+    execute: (...a) => mockEnviarPorCorreo(...a),
+  },
   sendInvitationUseCase: { execute: (...a) => mockEnviar(...a) },
   searchUsersUseCase: { execute: vi.fn().mockResolvedValue([]) },
-  listFriendsUseCase: { execute: vi.fn().mockResolvedValue({ friendships: [], totalCount: 0 }) },
+  listFriendsUseCase: {
+    execute: vi.fn().mockResolvedValue({ friendships: [], totalCount: 0 }),
+  },
   listEnrollmentsUseCase: { execute: (...a) => mockInscritos(...a) },
 }));
-vi.mock('../../utils/toast', () => ({ default: { success: vi.fn(), error: vi.fn(), warning: vi.fn() } }));
+vi.mock('../../utils/toast', () => ({
+  default: { success: vi.fn(), error: vi.fn(), warning: vi.fn() },
+}));
 
 const InvitationsPage = (await import('./InvitationsPage')).default;
 const customToast = (await import('../../utils/toast')).default;
@@ -90,13 +116,22 @@ const invitacion = (status, extra = {}) => ({
 });
 
 const competicion = (extra = {}) => ({
-  id: 'comp-1', name: 'Summer Cup', status: 'ACTIVE', maxPlayers: 12, enrolledCount: 4, ...extra,
+  id: 'comp-1',
+  name: 'Summer Cup',
+  status: 'ACTIVE',
+  maxPlayers: 12,
+  enrolledCount: 4,
+  ...extra,
 });
 
 const AOtra = () => {
   const navegar = useNavigate();
   return (
-    <button type="button" data-testid="a-la-otra" onClick={() => navegar('/creator/competitions/comp-2/invitations')} />
+    <button
+      type="button"
+      data-testid="a-la-otra"
+      onClick={() => navegar('/creator/competitions/comp-2/invitations')}
+    />
   );
 };
 
@@ -105,9 +140,12 @@ const pinta = () =>
     <MemoryRouter initialEntries={['/creator/competitions/comp-1/invitations']}>
       <AOtra />
       <Routes>
-        <Route path="/creator/competitions/:id/invitations" element={<InvitationsPage />} />
+        <Route
+          path="/creator/competitions/:id/invitations"
+          element={<InvitationsPage />}
+        />
       </Routes>
-    </MemoryRouter>
+    </MemoryRouter>,
   );
 
 const volverAInvitar = () => screen.queryByTestId('reinvite-button');
@@ -118,8 +156,8 @@ const conLista = (lista, pendientes = []) =>
     Promise.resolve(
       filtros.status === 'PENDING'
         ? { invitations: pendientes, totalCount: pendientes.length }
-        : { invitations: lista, totalCount: lista.length }
-    )
+        : { invitations: lista, totalCount: lista.length },
+    ),
   );
 
 // El botón sale cuando se sabe quién está dentro: mirar antes no prueba nada
@@ -145,10 +183,14 @@ describe('InvitationsPage · volver a invitar (release social 2)', () => {
 
       fireEvent.click(await screen.findByTestId('reinvite-button'));
 
-      await waitFor(() => expect(mockEnviar).toHaveBeenCalledWith('comp-1', 'u-2', null));
+      await waitFor(() =>
+        expect(mockEnviar).toHaveBeenCalledWith('comp-1', 'u-2', null),
+      );
       expect(mockEnviarPorCorreo).not.toHaveBeenCalled();
-      await waitFor(() => expect(customToast.success).toHaveBeenCalledWith('success.sent'));
-    }
+      await waitFor(() =>
+        expect(customToast.success).toHaveBeenCalledWith('success.sent'),
+      );
+    },
   );
 
   it('R1: invitada solo por correo, por correo', async () => {
@@ -157,7 +199,13 @@ describe('InvitationsPage · volver a invitar (release social 2)', () => {
 
     fireEvent.click(await screen.findByTestId('reinvite-button'));
 
-    await waitFor(() => expect(mockEnviarPorCorreo).toHaveBeenCalledWith('comp-1', 'player@test.com', null));
+    await waitFor(() =>
+      expect(mockEnviarPorCorreo).toHaveBeenCalledWith(
+        'comp-1',
+        'player@test.com',
+        null,
+      ),
+    );
   });
 
   it.each(['PENDING', 'ACCEPTED'])('%s: sin botón', async (status) => {
@@ -171,7 +219,12 @@ describe('InvitationsPage · volver a invitar (release social 2)', () => {
   it('en una lista con cerradas, a una aceptada o pendiente no se le ofrece', async () => {
     conLista([
       invitacion('DECLINED', { id: 'inv-1', inviteeUserId: 'u-2' }),
-      invitacion('ACCEPTED', { id: 'inv-3', inviteeUserId: 'u-3', inviteeEmail: 'tres@test.com', inviteeName: 'Tres' }),
+      invitacion('ACCEPTED', {
+        id: 'inv-3',
+        inviteeUserId: 'u-3',
+        inviteeEmail: 'tres@test.com',
+        inviteeName: 'Tres',
+      }),
     ]);
     pinta();
     await screen.findByText('Tres');
@@ -183,14 +236,21 @@ describe('InvitationsPage · volver a invitar (release social 2)', () => {
   it('mandada, el botón se va al momento: un segundo toque no manda otra (revisor)', async () => {
     conLista([invitacion('DECLINED', { inviteeUserId: 'u-2' })]);
     let soltar;
-    mockEnviar.mockReturnValue(new Promise((r) => { soltar = r; }));
+    mockEnviar.mockReturnValue(
+      new Promise((r) => {
+        soltar = r;
+      }),
+    );
     pinta();
     fireEvent.click(await screen.findByTestId('reinvite-button'));
     // La lista releída aún no trae la nueva pendiente
     mockLista.mockImplementation((_, filtros = {}) =>
       filtros.status === 'PENDING'
         ? new Promise(() => {})
-        : Promise.resolve({ invitations: [invitacion('DECLINED', { inviteeUserId: 'u-2' })], totalCount: 1 })
+        : Promise.resolve({
+            invitations: [invitacion('DECLINED', { inviteeUserId: 'u-2' })],
+            totalCount: 1,
+          }),
     );
 
     await act(async () => soltar({}));
@@ -205,7 +265,7 @@ describe('InvitationsPage · volver a invitar (release social 2)', () => {
 
     expect(await screen.findByTestId('reinvite-button')).toHaveAttribute(
       'aria-label',
-      'actions.reinviteAria {"name":"Player One"}'
+      'actions.reinviteAria {"name":"Player One"}',
     );
   });
 
@@ -220,7 +280,10 @@ describe('InvitationsPage · volver a invitar (release social 2)', () => {
   });
 
   it('R2: con otra pendiente a ese correo, sin botón', async () => {
-    const pendiente = invitacion('PENDING', { id: 'inv-2', inviteeUserId: 'u-2' });
+    const pendiente = invitacion('PENDING', {
+      id: 'inv-2',
+      inviteeUserId: 'u-2',
+    });
     conLista([invitacion('DECLINED', { inviteeUserId: 'u-2' })], [pendiente]);
     pinta();
     await screen.findByText('Player One');
@@ -230,8 +293,15 @@ describe('InvitationsPage · volver a invitar (release social 2)', () => {
   });
 
   it('R2: con otra pendiente a ese usuario (sin correo), sin botón (/code-review)', async () => {
-    const pendiente = invitacion('PENDING', { id: 'inv-2', inviteeUserId: 'u-2', inviteeEmail: null });
-    conLista([invitacion('DECLINED', { inviteeUserId: 'u-2', inviteeEmail: null })], [pendiente]);
+    const pendiente = invitacion('PENDING', {
+      id: 'inv-2',
+      inviteeUserId: 'u-2',
+      inviteeEmail: null,
+    });
+    conLista(
+      [invitacion('DECLINED', { inviteeUserId: 'u-2', inviteeEmail: null })],
+      [pendiente],
+    );
     pinta();
     await screen.findByText('Player One');
     await trasSaberLaSituacion();
@@ -240,16 +310,23 @@ describe('InvitationsPage · volver a invitar (release social 2)', () => {
   });
 
   it('mandada a un usuario sin correo a la vista, el botón también se va (/code-review)', async () => {
-    conLista([invitacion('DECLINED', { inviteeUserId: 'u-2', inviteeEmail: null })]);
+    conLista([
+      invitacion('DECLINED', { inviteeUserId: 'u-2', inviteeEmail: null }),
+    ]);
     pinta();
     fireEvent.click(await screen.findByTestId('reinvite-button'));
     mockLista.mockImplementation((_, filtros = {}) =>
       filtros.status === 'PENDING'
         ? new Promise(() => {})
         : Promise.resolve({
-            invitations: [invitacion('DECLINED', { inviteeUserId: 'u-2', inviteeEmail: null })],
+            invitations: [
+              invitacion('DECLINED', {
+                inviteeUserId: 'u-2',
+                inviteeEmail: null,
+              }),
+            ],
             totalCount: 1,
-          })
+          }),
     );
 
     await waitFor(() => expect(mockEnviar).toHaveBeenCalledTimes(1));
@@ -260,8 +337,13 @@ describe('InvitationsPage · volver a invitar (release social 2)', () => {
     let soltarLasViejas;
     mockLista.mockImplementation((_, filtros = {}) =>
       filtros.status === 'PENDING'
-        ? new Promise((r) => { soltarLasViejas = r; })
-        : Promise.resolve({ invitations: [invitacion('DECLINED', { inviteeUserId: 'u-2' })], totalCount: 1 })
+        ? new Promise((r) => {
+            soltarLasViejas = r;
+          })
+        : Promise.resolve({
+            invitations: [invitacion('DECLINED', { inviteeUserId: 'u-2' })],
+            totalCount: 1,
+          }),
     );
     mockInscritos.mockResolvedValue([]);
     pinta();
@@ -277,7 +359,7 @@ describe('InvitationsPage · volver a invitar (release social 2)', () => {
     mockLista.mockImplementation((_, filtros = {}) =>
       filtros.status === 'PENDING'
         ? Promise.resolve({ invitations: [], totalCount: 0 })
-        : Promise.reject(new Error('sin red'))
+        : Promise.reject(new Error('sin red')),
     );
     await act(async () => {});
 
@@ -294,7 +376,11 @@ describe('InvitationsPage · volver a invitar (release social 2)', () => {
 
     fireEvent.click(screen.getByTestId('a-la-otra'));
 
-    await waitFor(() => expect(mockInscritos).toHaveBeenCalledWith('comp-2', { status: 'APPROVED' }));
+    await waitFor(() =>
+      expect(mockInscritos).toHaveBeenCalledWith('comp-2', {
+        status: 'APPROVED',
+      }),
+    );
     await screen.findByText('Player One');
     expect(volverAInvitar()).not.toBeInTheDocument();
   });
@@ -310,12 +396,23 @@ describe('InvitationsPage · volver a invitar (release social 2)', () => {
     conLista([nueva, vieja], [nueva]);
     fireEvent.click(boton);
     await waitFor(() => expect(mockEnviar).toHaveBeenCalled());
-    fireEvent.click(await screen.findByRole('button', { name: 'actions.withdraw' }));
-    conLista([invitacion('CANCELLED', { id: 'inv-2', inviteeUserId: 'u-2' }), vieja]);
-    fireEvent.click(within(await screen.findByRole('dialog')).getByRole('button', { name: 'creator.withdrawDialog.confirm' }));
+    fireEvent.click(
+      await screen.findByRole('button', { name: 'actions.withdraw' }),
+    );
+    conLista([
+      invitacion('CANCELLED', { id: 'inv-2', inviteeUserId: 'u-2' }),
+      vieja,
+    ]);
+    fireEvent.click(
+      within(await screen.findByRole('dialog')).getByRole('button', {
+        name: 'creator.withdrawDialog.confirm',
+      }),
+    );
 
     await waitFor(() => expect(mockRetirar).toHaveBeenCalledWith('inv-2'));
-    await waitFor(() => expect(screen.getAllByTestId('reinvite-button')).toHaveLength(2));
+    await waitFor(() =>
+      expect(screen.getAllByTestId('reinvite-button')).toHaveLength(2),
+    );
   });
 
   it('R2: sin saber quién está dentro, no se ofrece', async () => {
@@ -363,24 +460,35 @@ describe('InvitationsPage · volver a invitar (release social 2)', () => {
   it('R6: si el servidor dice que ya están formados, lo dice y se relee', async () => {
     conLista([invitacion('DECLINED', { inviteeUserId: 'u-2' })]);
     mockEnviar.mockRejectedValue(
-      Object.assign(new Error('x'), { status: 409, errorCode: 'TEAMS_FORMED' })
+      Object.assign(new Error('x'), { status: 409, errorCode: 'TEAMS_FORMED' }),
     );
     pinta();
     fireEvent.click(await screen.findByTestId('reinvite-button'));
 
     await waitFor(() =>
-      expect(customToast.error).toHaveBeenCalledWith('errors.teamsFormedOrganizer')
+      expect(customToast.error).toHaveBeenCalledWith(
+        'errors.teamsFormedOrganizer',
+      ),
     );
-    await waitFor(() => expect(mockDetalle.mock.calls.length).toBeGreaterThan(1));
+    await waitFor(() =>
+      expect(mockDetalle.mock.calls.length).toBeGreaterThan(1),
+    );
   });
 
   it('R3: si el servidor dice que está llena, lo dice (el aviso de siempre)', async () => {
     conLista([invitacion('DECLINED', { inviteeUserId: 'u-2' })]);
-    mockEnviar.mockRejectedValue(Object.assign(new Error('x'), { status: 409, errorCode: 'COMPETITION_FULL' }));
+    mockEnviar.mockRejectedValue(
+      Object.assign(new Error('x'), {
+        status: 409,
+        errorCode: 'COMPETITION_FULL',
+      }),
+    );
     pinta();
 
     fireEvent.click(await screen.findByTestId('reinvite-button'));
 
-    await waitFor(() => expect(customToast.error).toHaveBeenCalledWith('errors.competitionFull'));
+    await waitFor(() =>
+      expect(customToast.error).toHaveBeenCalledWith('errors.competitionFull'),
+    );
   });
 });

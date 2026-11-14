@@ -65,22 +65,32 @@ describe('RecentMatchMapper', () => {
   });
 
   it('keeps zero stableford points, which is a real score', () => {
-    const match = RecentMatchMapper.toDomain({ id: 'qm-1', stableford_points: 0 });
+    const match = RecentMatchMapper.toDomain({
+      id: 'qm-1',
+      stableford_points: 0,
+    });
 
     expect(match.stablefordPoints).toBe(0);
   });
 
   it('refuses an entry with no id', () => {
-    expect(() => RecentMatchMapper.toDomain({ date: '2026-08-01' })).toThrow('Missing required field');
+    expect(() => RecentMatchMapper.toDomain({ date: '2026-08-01' })).toThrow(
+      'Missing required field',
+    );
   });
 
   it('refuses nothing at all', () => {
-    expect(() => RecentMatchMapper.toDomain(null)).toThrow('apiData is required');
+    expect(() => RecentMatchMapper.toDomain(null)).toThrow(
+      'apiData is required',
+    );
   });
 
   describe('toDomainList', () => {
     it('maps every entry', () => {
-      const matches = RecentMatchMapper.toDomainList([{ id: 'a' }, { id: 'b' }]);
+      const matches = RecentMatchMapper.toDomainList([
+        { id: 'a' },
+        { id: 'b' },
+      ]);
 
       expect(matches.map((m) => m.id)).toEqual(['a', 'b']);
     });
@@ -95,18 +105,32 @@ describe('RecentMatchMapper', () => {
 // H5 (25 oct 2026): el instante de la partida rápida, para su día local
 describe('RecentMatchMapper · played_at', () => {
   it('H5: played_at llega como playedAt; sin él, nulo', () => {
-    const conInstante = RecentMatchMapper.toDomain({ id: 'qm-1', date: '2026-10-21', played_at: '2026-10-21T22:30:00Z' });
+    const conInstante = RecentMatchMapper.toDomain({
+      id: 'qm-1',
+      date: '2026-10-21',
+      played_at: '2026-10-21T22:30:00Z',
+    });
     expect(conInstante.playedAt.toISOString()).toBe('2026-10-21T22:30:00.000Z');
-    expect(RecentMatchMapper.toDomain({ id: 'm-1', date: '2026-10-21' }).playedAt).toBeNull();
+    expect(
+      RecentMatchMapper.toDomain({ id: 'm-1', date: '2026-10-21' }).playedAt,
+    ).toBeNull();
   });
 
   it('H5: un día sin hora es ese día en la hora local, no la medianoche UTC (al oeste de Greenwich salía el día antes)', () => {
     // Al oeste de Greenwich: en UTC, la zona del CI, el fallo no se ve
     vi.stubEnv('TZ', 'America/New_York');
     try {
-      const partida = RecentMatchMapper.toDomain({ id: 'm-1', date: '2026-10-21' });
+      const partida = RecentMatchMapper.toDomain({
+        id: 'm-1',
+        date: '2026-10-21',
+      });
       // A medianoche LOCAL: leído como UTC, en cualquier zona distinta de UTC la hora no es 0
-      expect([partida.date.getFullYear(), partida.date.getMonth(), partida.date.getDate(), partida.date.getHours()]).toEqual([2026, 9, 21, 0]);
+      expect([
+        partida.date.getFullYear(),
+        partida.date.getMonth(),
+        partida.date.getDate(),
+        partida.date.getHours(),
+      ]).toEqual([2026, 9, 21, 0]);
     } finally {
       vi.unstubAllEnvs();
     }
@@ -115,6 +139,12 @@ describe('RecentMatchMapper · played_at', () => {
 
 describe('RecentMatchMapper · played_at ilegible', () => {
   it('H5: un played_at que no se lee es nulo (no «Invalid Date»), y la fila cae a date', () => {
-    expect(RecentMatchMapper.toDomain({ id: 'qm-1', date: '2026-10-21', played_at: 'basura' }).playedAt).toBeNull();
+    expect(
+      RecentMatchMapper.toDomain({
+        id: 'qm-1',
+        date: '2026-10-21',
+        played_at: 'basura',
+      }).playedAt,
+    ).toBeNull();
   });
 });

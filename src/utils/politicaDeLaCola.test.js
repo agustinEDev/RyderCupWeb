@@ -1,9 +1,16 @@
 import { describe, expect, it } from 'vitest';
 
-import { esFalloDeTodaLaSesion, esRechazoDefinitivo, seGuardaParaDespues, noLlegoAlServidor} from './politicaDeLaCola';
+import {
+  esFalloDeTodaLaSesion,
+  esRechazoDefinitivo,
+  seGuardaParaDespues,
+  noLlegoAlServidor,
+} from './politicaDeLaCola';
 
-const errorCon = (status) => Object.assign(new Error(`HTTP ${status}`), { status });
-const errorDeRespuesta = (status) => Object.assign(new Error('boom'), { response: { status } });
+const errorCon = (status) =>
+  Object.assign(new Error(`HTTP ${status}`), { status });
+const errorDeRespuesta = (status) =>
+  Object.assign(new Error('boom'), { response: { status } });
 
 describe('politicaDeLaCola', () => {
   it('sin respuesta se guarda: no se ha podido preguntar', () => {
@@ -13,16 +20,22 @@ describe('politicaDeLaCola', () => {
     expect(seGuardaParaDespues(undefined)).toBe(true);
   });
 
-  it.each([401, 408, 429])('un %s se guarda: no es culpa del golpe', (codigo) => {
-    // Abrir la aplicación días después con golpes guardados da un 401, y
-    // descartar por eso sería borrar anotaciones buenas
-    expect(seGuardaParaDespues(errorCon(codigo))).toBe(true);
-    expect(esRechazoDefinitivo(errorCon(codigo))).toBe(false);
-  });
+  it.each([401, 408, 429])(
+    'un %s se guarda: no es culpa del golpe',
+    (codigo) => {
+      // Abrir la aplicación días después con golpes guardados da un 401, y
+      // descartar por eso sería borrar anotaciones buenas
+      expect(seGuardaParaDespues(errorCon(codigo))).toBe(true);
+      expect(esRechazoDefinitivo(errorCon(codigo))).toBe(false);
+    },
+  );
 
-  it.each([400, 403, 404, 409, 422])('un %s se descarta: la petición no entra', (codigo) => {
-    expect(esRechazoDefinitivo(errorCon(codigo))).toBe(true);
-  });
+  it.each([400, 403, 404, 409, 422])(
+    'un %s se descarta: la petición no entra',
+    (codigo) => {
+      expect(esRechazoDefinitivo(errorCon(codigo))).toBe(true);
+    },
+  );
 
   it.each([500, 502, 503])('un %s se guarda: el servidor volverá', (codigo) => {
     expect(seGuardaParaDespues(errorCon(codigo))).toBe(true);
@@ -72,8 +85,20 @@ describe('politicaDeLaCola', () => {
   });
 
   it('las dos preguntas son exactamente contrarias', () => {
-    for (const codigo of [undefined, 400, 401, 403, 408, 409, 422, 429, 500, 503]) {
-      const err = codigo === undefined ? new Error('sin código') : errorCon(codigo);
+    for (const codigo of [
+      undefined,
+      400,
+      401,
+      403,
+      408,
+      409,
+      422,
+      429,
+      500,
+      503,
+    ]) {
+      const err =
+        codigo === undefined ? new Error('sin código') : errorCon(codigo);
       expect(esRechazoDefinitivo(err)).toBe(!seGuardaParaDespues(err));
     }
   });
@@ -101,14 +126,19 @@ describe('noLlegoAlServidor · la petición abortada (FE #551)', () => {
   it('pero un error de validación del caso de uso NO', () => {
     // Ese habla solo de esa anotación: parar por él dejaría las demás sin
     // enviar en cada reconexión, para siempre
-    expect(noLlegoAlServidor(new Error('Marked player ID is required'))).toBe(false);
+    expect(noLlegoAlServidor(new Error('Marked player ID is required'))).toBe(
+      false,
+    );
   });
 });
 
 // F4: el 403 de Términos sin aceptar no es culpa del golpe, sino de la sesión.
 // Descartarlo como un 403 cualquiera borraba anotaciones buenas
 describe('politicaDeLaCola · Términos sin aceptar', () => {
-  const terminos = Object.assign(new Error('Terms not accepted'), { status: 403, errorCode: 'TERMS_NOT_ACCEPTED' });
+  const terminos = Object.assign(new Error('Terms not accepted'), {
+    status: 403,
+    errorCode: 'TERMS_NOT_ACCEPTED',
+  });
 
   it('se guarda para después, no se descarta', () => {
     expect(seGuardaParaDespues(terminos)).toBe(true);
@@ -128,7 +158,10 @@ describe('politicaDeLaCola · Términos sin aceptar', () => {
 // golpe en la cola no se salva reintentándolo (RyderCupAM#665)
 describe('politicaDeLaCola · jugador retirado', () => {
   it('F7: un 409 PLAYER_WITHDRAWN es definitivo', () => {
-    const rechazo = Object.assign(new Error('retirado'), { status: 409, errorCode: 'PLAYER_WITHDRAWN' });
+    const rechazo = Object.assign(new Error('retirado'), {
+      status: 409,
+      errorCode: 'PLAYER_WITHDRAWN',
+    });
     expect(esRechazoDefinitivo(rechazo)).toBe(true);
     expect(seGuardaParaDespues(rechazo)).toBe(false);
   });

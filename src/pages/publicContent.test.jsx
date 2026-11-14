@@ -25,7 +25,10 @@ function sourceFiles(dir = SRC, acc = []) {
   return acc;
 }
 
-const files = sourceFiles().map((path) => ({ path, content: readFileSync(path, 'utf8') }));
+const files = sourceFiles().map((path) => ({
+  path,
+  content: readFileSync(path, 'utf8'),
+}));
 const relative = (path) => path.slice(resolve(process.cwd()).length + 1);
 
 describe('public content', () => {
@@ -34,14 +37,19 @@ describe('public content', () => {
     ['player count', /\b2K\+/],
     ['satisfaction rate', /\b98%/],
   ])('has no invented %s', (_label, pattern) => {
-    const offenders = files.filter((f) => pattern.test(f.content)).map((f) => relative(f.path));
+    const offenders = files
+      .filter((f) => pattern.test(f.content))
+      .map((f) => relative(f.path));
 
     expect(offenders).toEqual([]);
   });
 
   it('makes no unmeasured claim about how many people use the product', () => {
-    const pattern = /(miles|cientos) de (golfistas|entusiastas)|(thousands|hundreds) of (golf|amateur)/i;
-    const offenders = files.filter((f) => pattern.test(f.content)).map((f) => relative(f.path));
+    const pattern =
+      /(miles|cientos) de (golfistas|entusiastas)|(thousands|hundreds) of (golf|amateur)/i;
+    const offenders = files
+      .filter((f) => pattern.test(f.content))
+      .map((f) => relative(f.path));
 
     expect(offenders).toEqual([]);
   });
@@ -66,7 +74,12 @@ describe('public content', () => {
 
   it('interpolates the year into both copyright strings', () => {
     for (const locale of ['es', 'en']) {
-      const common = JSON.parse(readFileSync(resolve(SRC, `i18n/locales/${locale}/common.json`), 'utf8'));
+      const common = JSON.parse(
+        readFileSync(
+          resolve(SRC, `i18n/locales/${locale}/common.json`),
+          'utf8',
+        ),
+      );
 
       expect(common.footer.copyright).toContain('{{year}}');
       expect(common.footer.copyrightShort).toContain('{{year}}');
@@ -81,8 +94,11 @@ describe('public content', () => {
     // Se acepta cualquier nombre de traductor —la página que falló usaba
     // `tComp`—, las tres comillas y también `<Trans i18nKey=...>`. Un barrido
     // sobre el fuente que no reconoce una forma no falla: dice que no hay nada
-    const clave = "(?:[\\w-]+:)?footer(?:\\.copyright(?:Short|Long)?)?";
-    const llamadas = new RegExp(`\\b[A-Za-z_$][\\w$]*\\(\\s*['"\`]${clave}['"\`]`, 'g');
+    const clave = '(?:[\\w-]+:)?footer(?:\\.copyright(?:Short|Long)?)?';
+    const llamadas = new RegExp(
+      `\\b[A-Za-z_$][\\w$]*\\(\\s*['"\`]${clave}['"\`]`,
+      'g',
+    );
     const enTrans = new RegExp(`i18nKey\\s*=\\s*[{"']+${clave}["'}]+`, 'g');
 
     // Solo los argumentos de ESA llamada: mirar los siguientes N caracteres
@@ -111,8 +127,9 @@ describe('public content', () => {
         const abre = f.content.indexOf('(', uso.index);
         // `year` como propiedad, no en cualquier sitio: un
         // `t('footer', { defaultValue: 'year' })` no interpola nada y pasaba
-        const pasaElAno = /\byear\s*:/.test(argumentosDe(f.content, abre))
-          || /\{[^}]*\byear\b\s*[,}]/.test(argumentosDe(f.content, abre));
+        const pasaElAno =
+          /\byear\s*:/.test(argumentosDe(f.content, abre)) ||
+          /\{[^}]*\byear\b\s*[,}]/.test(argumentosDe(f.content, abre));
         if (!pasaElAno) {
           offenders.push(`${relative(f.path)}: ${uso[0]}`);
         }
@@ -120,7 +137,9 @@ describe('public content', () => {
       // `<Trans>` no lleva argumentos: el año va por `values` o por un hijo,
       // así que se pide a mano en vez de adivinarlo
       for (const uso of f.content.matchAll(enTrans)) {
-        offenders.push(`${relative(f.path)}: ${uso[0]} (usa t() con year, no <Trans>)`);
+        offenders.push(
+          `${relative(f.path)}: ${uso[0]} (usa t() con year, no <Trans>)`,
+        );
       }
     }
 

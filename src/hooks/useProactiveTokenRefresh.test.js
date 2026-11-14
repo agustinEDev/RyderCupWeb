@@ -27,8 +27,11 @@ vi.mock('../infrastructure/http/tokenRefreshInterceptor', () => ({
   getLastRefreshAt: () => getLastRefreshAt(),
 }));
 
-const { default: useProactiveTokenRefresh, ACCESS_TOKEN_TTL_MS, REFRESH_BEFORE_MS } =
-  await import('./useProactiveTokenRefresh');
+const {
+  default: useProactiveTokenRefresh,
+  ACCESS_TOKEN_TTL_MS,
+  REFRESH_BEFORE_MS,
+} = await import('./useProactiveTokenRefresh');
 
 const MINUTE = 60 * 1000;
 
@@ -120,7 +123,9 @@ describe('useProactiveTokenRefresh', () => {
     getLastRefreshAt.mockReturnValue(Date.now());
 
     // Se llega al plazo viejo (14 min desde el montaje): ya no toca
-    vi.advanceTimersByTime(ACCESS_TOKEN_TTL_MS - REFRESH_BEFORE_MS - 5 * MINUTE);
+    vi.advanceTimersByTime(
+      ACCESS_TOKEN_TTL_MS - REFRESH_BEFORE_MS - 5 * MINUTE,
+    );
     document.dispatchEvent(new MouseEvent('mousemove'));
     vi.advanceTimersByTime(1000);
     expect(refreshAccessToken).not.toHaveBeenCalled();

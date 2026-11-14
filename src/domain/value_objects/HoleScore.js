@@ -23,13 +23,13 @@ class HoleScore {
 
     if (!Number.isInteger(score)) {
       throw new Error(
-        `Invalid HoleScore: ${value}. Must be an integer between ${HoleScore.MIN}-${HoleScore.MAX} or null (picked up).`
+        `Invalid HoleScore: ${value}. Must be an integer between ${HoleScore.MIN}-${HoleScore.MAX} or null (picked up).`,
       );
     }
 
     if (score < HoleScore.MIN || score > HoleScore.MAX) {
       throw new Error(
-        `Invalid HoleScore: ${score}. Must be between ${HoleScore.MIN} and ${HoleScore.MAX}.`
+        `Invalid HoleScore: ${score}. Must be between ${HoleScore.MIN} and ${HoleScore.MAX}.`,
       );
     }
 

@@ -41,7 +41,9 @@ const AvatarPicker = ({
 
   return (
     <div className="border border-gray-200 rounded-lg p-6">
-      <h3 className="text-gray-900 font-bold text-lg mb-1">{t('edit.avatar.title')}</h3>
+      <h3 className="text-gray-900 font-bold text-lg mb-1">
+        {t('edit.avatar.title')}
+      </h3>
       <p className="text-sm text-gray-600 mb-4">{t('edit.avatar.subtitle')}</p>
 
       <div className="flex items-center gap-4 mb-6">
@@ -64,11 +66,14 @@ const AvatarPicker = ({
       ) : (
         <>
           <div className="mb-4">
-            <p className="text-sm font-medium text-gray-700 mb-2">{t('edit.avatar.presetsLabel')}</p>
+            <p className="text-sm font-medium text-gray-700 mb-2">
+              {t('edit.avatar.presetsLabel')}
+            </p>
             <div className="grid grid-cols-5 gap-2">
               {presets.map((preset) => {
                 const isSelected =
-                  user?.avatar_source === 'PRESET' && user?.avatar_preset_id === preset.id;
+                  user?.avatar_source === 'PRESET' &&
+                  user?.avatar_preset_id === preset.id;
                 return (
                   <button
                     key={preset.id}
@@ -76,7 +81,9 @@ const AvatarPicker = ({
                     onClick={() => onSelectPreset(preset.id)}
                     disabled={isBusy}
                     className={`relative aspect-square rounded-full overflow-hidden border-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed ${
-                      isSelected ? 'border-primary ring-2 ring-primary/40' : 'border-gray-200 hover:border-primary/50'
+                      isSelected
+                        ? 'border-primary ring-2 ring-primary/40'
+                        : 'border-gray-200 hover:border-primary/50'
                     }`}
                   >
                     <ImagenDelAvatar
@@ -97,7 +104,9 @@ const AvatarPicker = ({
 
           {uploads.length > 0 && (
             <div className="mb-4">
-              <p className="text-sm font-medium text-gray-700 mb-2">{t('edit.avatar.historyLabel')}</p>
+              <p className="text-sm font-medium text-gray-700 mb-2">
+                {t('edit.avatar.historyLabel')}
+              </p>
               <div className="flex flex-wrap gap-2">
                 {uploads.map((upload) => (
                   <button
@@ -106,7 +115,9 @@ const AvatarPicker = ({
                     onClick={() => onActivateUpload(upload.id)}
                     disabled={isBusy}
                     className={`relative w-14 h-14 rounded-full overflow-hidden border-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed ${
-                      upload.is_active ? 'border-primary ring-2 ring-primary/40' : 'border-gray-200 hover:border-primary/50'
+                      upload.is_active
+                        ? 'border-primary ring-2 ring-primary/40'
+                        : 'border-gray-200 hover:border-primary/50'
                     }`}
                   >
                     {/* Va con credenciales: solo a la propia API (FE-11) */}
@@ -128,7 +139,9 @@ const AvatarPicker = ({
           )}
 
           <div>
-            <p className="text-sm font-medium text-gray-700 mb-2">{t('edit.avatar.uploadLabel')}</p>
+            <p className="text-sm font-medium text-gray-700 mb-2">
+              {t('edit.avatar.uploadLabel')}
+            </p>
             <input
               ref={fileInputRef}
               type="file"
@@ -143,7 +156,9 @@ const AvatarPicker = ({
               className="flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Upload className="w-4 h-4" />
-              {isUploading ? t('edit.avatar.uploading') : t('edit.avatar.uploadButton')}
+              {isUploading
+                ? t('edit.avatar.uploading')
+                : t('edit.avatar.uploadButton')}
             </button>
           </div>
         </>

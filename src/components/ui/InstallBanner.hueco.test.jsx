@@ -17,7 +17,10 @@ import { VARIABLE_ALTO_AVISO_INSTALAR } from '../../utils/barraInferior';
  *   A5   | no se pinta                 | ni se pone
  */
 vi.mock('react-i18next', () => ({
-  useTranslation: () => ({ t: (k) => k, i18n: { language: 'es', changeLanguage: vi.fn() } }),
+  useTranslation: () => ({
+    t: (k) => k,
+    i18n: { language: 'es', changeLanguage: vi.fn() },
+  }),
 }));
 
 const instalable = vi.hoisted(() => ({ si: true }));
@@ -33,13 +36,18 @@ vi.mock('../../hooks/useInstallPrompt', () => ({
 
 let alto;
 let observadores;
-const variable = () => document.documentElement.style.getPropertyValue(VARIABLE_ALTO_AVISO_INSTALAR);
+const variable = () =>
+  document.documentElement.style.getPropertyValue(VARIABLE_ALTO_AVISO_INSTALAR);
 
 beforeEach(() => {
   alto = 72;
   observadores = [];
   instalable.si = true;
-  vi.spyOn(globalThis.HTMLElement.prototype, 'offsetHeight', 'get').mockImplementation(() => alto);
+  vi.spyOn(
+    globalThis.HTMLElement.prototype,
+    'offsetHeight',
+    'get',
+  ).mockImplementation(() => alto);
   vi.stubGlobal(
     'ResizeObserver',
     class {
@@ -54,7 +62,7 @@ beforeEach(() => {
       disconnect() {
         this.desconectado = true;
       }
-    }
+    },
   );
 });
 
@@ -73,7 +81,9 @@ describe('InstallBanner · su hueco al final de la página', () => {
 
   it('A2: si cambia de alto, el nuevo', () => {
     const { getByTestId } = render(<InstallBanner />);
-    expect(observadores.map((o) => o.observado)).toContain(getByTestId('install-banner'));
+    expect(observadores.map((o) => o.observado)).toContain(
+      getByTestId('install-banner'),
+    );
 
     alto = 96;
     act(() => observadores.forEach((o) => o.fn([])));

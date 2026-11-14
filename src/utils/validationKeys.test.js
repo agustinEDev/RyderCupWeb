@@ -23,7 +23,10 @@ import {
 const bundles = { es, en };
 
 const resuelve = (clave) => (idioma) =>
-  clave.replace(/^validation\./, '').split('.').reduce((o, k) => o?.[k], bundles[idioma].validation);
+  clave
+    .replace(/^validation\./, '')
+    .split('.')
+    .reduce((o, k) => o?.[k], bundles[idioma].validation);
 
 const CASOS = [
   ['correo vacio', () => validateEmail('')],
@@ -44,7 +47,10 @@ const CASOS = [
   // Todos los del mapa, no una lista copiada: uno nuevo sin su texto lo cazaría
   ...PASSWORD_ERROR_CODES.map((codigo) => [
     `codigo del backend ${codigo}`,
-    () => ({ isValid: false, messageKey: passwordErrorTranslation(codigo).key }),
+    () => ({
+      isValid: false,
+      messageKey: passwordErrorTranslation(codigo).key,
+    }),
   ]),
 ];
 
@@ -59,6 +65,8 @@ describe('toda clave de validacion existe en los dos idiomas', () => {
   });
 
   it('los dos idiomas traen las mismas claves de validacion', () => {
-    expect(Object.keys(es.validation).sort()).toEqual(Object.keys(en.validation).sort());
+    expect(Object.keys(es.validation).sort()).toEqual(
+      Object.keys(en.validation).sort(),
+    );
   });
 });

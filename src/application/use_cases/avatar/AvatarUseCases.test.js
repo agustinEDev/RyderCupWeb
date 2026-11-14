@@ -53,7 +53,9 @@ describe('Avatar Use Cases', () => {
     it('rejects a missing presetId', async () => {
       const useCase = new SetAvatarPresetUseCase({ avatarRepository });
 
-      await expect(useCase.execute()).rejects.toThrow(/must be an integer between 1 and 10/);
+      await expect(useCase.execute()).rejects.toThrow(
+        /must be an integer between 1 and 10/,
+      );
       expect(avatarRepository.setPreset).not.toHaveBeenCalled();
     });
 
@@ -90,7 +92,9 @@ describe('Avatar Use Cases', () => {
       const oversizedFile = { size: 10 * 1024 * 1024 + 1 };
       const useCase = new UploadAvatarUseCase({ avatarRepository });
 
-      await expect(useCase.execute(oversizedFile)).rejects.toThrow('FILE_TOO_LARGE');
+      await expect(useCase.execute(oversizedFile)).rejects.toThrow(
+        'FILE_TOO_LARGE',
+      );
       expect(avatarRepository.upload).not.toHaveBeenCalled();
     });
 

@@ -6,7 +6,9 @@ describe('DeleteTeeGroupHoleUseCase', () => {
   it.each(['own', 'marker', 'both'])('borra el lado %s', async (lado) => {
     const repo = { deleteHole: vi.fn().mockResolvedValue({ matchId: 'g-1' }) };
 
-    await new DeleteTeeGroupHoleUseCase({ teeGroupScoringRepository: repo }).execute('g-1', 'ana', 7, lado);
+    await new DeleteTeeGroupHoleUseCase({
+      teeGroupScoringRepository: repo,
+    }).execute('g-1', 'ana', 7, lado);
 
     expect(repo.deleteHole).toHaveBeenCalledWith('g-1', 'ana', 7, lado);
   });
@@ -20,7 +22,11 @@ describe('DeleteTeeGroupHoleUseCase', () => {
   ])('%s, error sin llamar', async (_caso, args) => {
     const repo = { deleteHole: vi.fn() };
 
-    await expect(new DeleteTeeGroupHoleUseCase({ teeGroupScoringRepository: repo }).execute(...args)).rejects.toThrow();
+    await expect(
+      new DeleteTeeGroupHoleUseCase({
+        teeGroupScoringRepository: repo,
+      }).execute(...args),
+    ).rejects.toThrow();
     expect(repo.deleteHole).not.toHaveBeenCalled();
   });
 });

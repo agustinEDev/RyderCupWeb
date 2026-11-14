@@ -13,7 +13,9 @@ vi.mock('react-i18next', () => ({
 vi.mock('../../components/layout/Header', () => ({ default: () => null }));
 vi.mock('../../components/layout/Footer', () => ({ default: () => null }));
 // «Volver» tira el `user` de una sesion muerta, y vive bajo el AuthProvider
-vi.mock('../../hooks/useAuthContext', () => ({ useAuthContext: () => ({ clearAuth: vi.fn() }) }));
+vi.mock('../../hooks/useAuthContext', () => ({
+  useAuthContext: () => ({ clearAuth: vi.fn() }),
+}));
 
 const { default: LegalNotice } = await import('./LegalNotice');
 
@@ -27,7 +29,7 @@ const abrir = () =>
   render(
     <MemoryRouter>
       <LegalNotice />
-    </MemoryRouter>
+    </MemoryRouter>,
   );
 
 const todoElTexto = (bloque) => JSON.stringify(bloque);
@@ -36,10 +38,17 @@ describe('Aviso Legal · la página', () => {
   it('A1: pinta el título, la fecha y todas sus secciones', () => {
     abrir();
 
-    expect(screen.getByRole('heading', { level: 1, name: 'legalNotice.title' })).toBeInTheDocument();
+    expect(
+      screen.getByRole('heading', { level: 1, name: 'legalNotice.title' }),
+    ).toBeInTheDocument();
     expect(screen.getByText('legalNotice.lastUpdated')).toBeInTheDocument();
     for (const n of [1, 2, 3, 4, 5, 6, 7]) {
-      expect(screen.getByRole('heading', { level: 2, name: `legalNotice.section${n}.title` })).toBeInTheDocument();
+      expect(
+        screen.getByRole('heading', {
+          level: 2,
+          name: `legalNotice.section${n}.title`,
+        }),
+      ).toBeInTheDocument();
     }
   });
 
@@ -50,20 +59,30 @@ describe('Aviso Legal · la página', () => {
     ['icgc', 'https://www.icgc.cat'],
     ['geoeuskadi', 'https://www.geo.euskadi.eus'],
     ['idena', 'https://idena.navarra.es'],
-    ['maplibre', 'https://github.com/maplibre/maplibre-gl-js/blob/main/LICENSE.txt'],
+    [
+      'maplibre',
+      'https://github.com/maplibre/maplibre-gl-js/blob/main/LICENSE.txt',
+    ],
     ['fonts', 'https://openfontlicense.org'],
   ])('F5: la fuente %s enlaza a %s en pestaña nueva', (fuente, url) => {
     abrir();
 
-    const enlace = screen.getByRole('link', { name: `legalNotice.section6.sources.${fuente}.name` });
+    const enlace = screen.getByRole('link', {
+      name: `legalNotice.section6.sources.${fuente}.name`,
+    });
     expect(enlace).toHaveAttribute('href', url);
     expect(enlace).toHaveAttribute('target', '_blank');
     expect(enlace).toHaveAttribute('rel', expect.stringContaining('noopener'));
-    expect(screen.getByText(`legalNotice.section6.sources.${fuente}.detail`)).toBeInTheDocument();
+    expect(
+      screen.getByText(`legalNotice.section6.sources.${fuente}.detail`),
+    ).toBeInTheDocument();
   });
 
   it('F5 (revisión): la URL de la RFEG sale de la constante compartida, no de un literal', () => {
-    const pagina = readFileSync(resolve(process.cwd(), 'src/pages/public/LegalNotice.jsx'), 'utf8');
+    const pagina = readFileSync(
+      resolve(process.cwd(), 'src/pages/public/LegalNotice.jsx'),
+      'utf8',
+    );
 
     expect(pagina).toContain('URL_RFEG');
     expect(pagina).not.toContain('https://www.rfegolf.es');
@@ -80,15 +99,18 @@ describe('Aviso Legal · los textos', () => {
   it.each([
     ['es', es],
     ['en', en],
-  ])('A1/A5 (%s): identifica al titular con nombre, NIF, domicilio y correo', (_idioma, textos) => {
-    const titular = textos.legalNotice.section1.content;
+  ])(
+    'A1/A5 (%s): identifica al titular con nombre, NIF, domicilio y correo',
+    (_idioma, textos) => {
+      const titular = textos.legalNotice.section1.content;
 
-    expect(titular).toContain('Agustín Estévez Domínguez');
-    expect(titular).toContain('76826889N');
-    expect(titular).toContain('Germán Adrio Sobrido, 10 - 1D');
-    expect(titular).toContain('36003 Pontevedra');
-    expect(titular).toContain('admin@rydercupfriends.com');
-  });
+      expect(titular).toContain('Agustín Estévez Domínguez');
+      expect(titular).toContain('76826889N');
+      expect(titular).toContain('Germán Adrio Sobrido, 10 - 1D');
+      expect(titular).toContain('36003 Pontevedra');
+      expect(titular).toContain('admin@rydercupfriends.com');
+    },
+  );
 
   it.each([
     ['es', es, '6 de noviembre de 2026'],
@@ -100,12 +122,15 @@ describe('Aviso Legal · los textos', () => {
   it.each([
     ['es', es, /ley española/i, /consumidor/i],
     ['en', en, /Spanish law/i, /consumer/i],
-  ])('A1 (%s): ley española sin quitar los derechos del consumidor', (_idioma, textos, ley, consumidor) => {
-    const texto = textos.legalNotice.section7.content;
+  ])(
+    'A1 (%s): ley española sin quitar los derechos del consumidor',
+    (_idioma, textos, ley, consumidor) => {
+      const texto = textos.legalNotice.section7.content;
 
-    expect(texto).toMatch(ley);
-    expect(texto).toMatch(consumidor);
-  });
+      expect(texto).toMatch(ley);
+      expect(texto).toMatch(consumidor);
+    },
+  );
 
   it.each([
     ['es', es],
@@ -134,7 +159,12 @@ describe('Aviso Legal · los textos', () => {
   it.each([
     ['es', es],
     ['en', en],
-  ])('A1 (%s): no presenta el nombre comercial como si fuera la empresa titular', (_idioma, textos) => {
-    expect(textos.legalNotice.section1.content).not.toMatch(/operado por RyderCupFriends|operated by RyderCupFriends/i);
-  });
+  ])(
+    'A1 (%s): no presenta el nombre comercial como si fuera la empresa titular',
+    (_idioma, textos) => {
+      expect(textos.legalNotice.section1.content).not.toMatch(
+        /operado por RyderCupFriends|operated by RyderCupFriends/i,
+      );
+    },
+  );
 });

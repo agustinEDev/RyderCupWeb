@@ -14,7 +14,10 @@ function setUserAgent(value) {
 }
 
 function setNavigatorStandalone(value) {
-  Object.defineProperty(window.navigator, 'standalone', { value, configurable: true });
+  Object.defineProperty(window.navigator, 'standalone', {
+    value,
+    configurable: true,
+  });
 }
 
 /**
@@ -48,7 +51,9 @@ describe('useStandalone', () => {
     // Se restaura por prueba: `defineProperty` persiste entre ellas, y un
     // userAgent de iPhone colado deja la deteccion mirando solo
     // `navigator.standalone` en las que vienen detras
-    setUserAgent('Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) Chrome/140.0');
+    setUserAgent(
+      'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) Chrome/140.0',
+    );
     setNavigatorStandalone(undefined);
   });
 
@@ -74,7 +79,9 @@ describe('useStandalone', () => {
 
   it('detects standalone on iOS, which does not implement display-mode', () => {
     mockMatchMedia(false);
-    setUserAgent('Mozilla/5.0 (iPhone; CPU iPhone OS 26_0 like Mac OS X) AppleWebKit/605.1.15');
+    setUserAgent(
+      'Mozilla/5.0 (iPhone; CPU iPhone OS 26_0 like Mac OS X) AppleWebKit/605.1.15',
+    );
     setNavigatorStandalone(true);
 
     const { result } = renderHook(() => useStandalone());
@@ -86,7 +93,9 @@ describe('useStandalone', () => {
     // Fuera de iOS manda `display-mode`, que Android implementa bien y es lo
     // que declara el manifiesto (`display: 'standalone'`)
     mockMatchMedia(true);
-    setUserAgent('Mozilla/5.0 (Linux; Android 15; Pixel 9) Chrome/140.0 Mobile');
+    setUserAgent(
+      'Mozilla/5.0 (Linux; Android 15; Pixel 9) Chrome/140.0 Mobile',
+    );
 
     const { result } = renderHook(() => useStandalone());
 
@@ -95,7 +104,9 @@ describe('useStandalone', () => {
 
   it('no toma por instalada una pestana normal de Android', () => {
     mockMatchMedia(false);
-    setUserAgent('Mozilla/5.0 (Linux; Android 15; Pixel 9) Chrome/140.0 Mobile');
+    setUserAgent(
+      'Mozilla/5.0 (Linux; Android 15; Pixel 9) Chrome/140.0 Mobile',
+    );
 
     const { result } = renderHook(() => useStandalone());
 
@@ -107,7 +118,9 @@ describe('useStandalone', () => {
     // estando en una pestana normal: con el OR de antes, cualquiera que abriera
     // ahi la portada con sesion acababa rebotado al panel sin poder verla.
     mockMatchMedia(true);
-    setUserAgent('Mozilla/5.0 (iPhone; CPU iPhone OS 26_0 like Mac OS X) CriOS/140.0');
+    setUserAgent(
+      'Mozilla/5.0 (iPhone; CPU iPhone OS 26_0 like Mac OS X) CriOS/140.0',
+    );
     setNavigatorStandalone(false);
 
     const { result } = renderHook(() => useStandalone());
@@ -121,7 +134,7 @@ describe('useStandalone', () => {
     // ahi el enlace con sesion se quedaria sin ver la portada.
     mockMatchMedia(true);
     setUserAgent(
-      'Mozilla/5.0 (Linux; Android 15; Pixel 9; wv) Chrome/140.0 Mobile Instagram 350.0'
+      'Mozilla/5.0 (Linux; Android 15; Pixel 9; wv) Chrome/140.0 Mobile Instagram 350.0',
     );
 
     const { result } = renderHook(() => useStandalone());

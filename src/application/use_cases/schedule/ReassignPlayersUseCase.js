@@ -13,7 +13,11 @@ class ReassignPlayersUseCase {
     if (!Array.isArray(teamBIds) || teamBIds.length === 0) {
       throw new Error('Team B player IDs are required');
     }
-    return await this.scheduleRepository.reassignPlayers(matchId, teamAIds, teamBIds);
+    return await this.scheduleRepository.reassignPlayers(
+      matchId,
+      teamAIds,
+      teamBIds,
+    );
   }
 }
 

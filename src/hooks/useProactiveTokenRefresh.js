@@ -1,5 +1,9 @@
 import { useEffect, useRef, useCallback } from 'react';
-import { refrescoCompartido, getLastRefreshAt, trataElFalloDelRefresco } from '../composition/http';
+import {
+  refrescoCompartido,
+  getLastRefreshAt,
+  trataElFalloDelRefresco,
+} from '../composition/http';
 
 /**
  * Vida util de la cookie del access token: 15 minutos.
@@ -57,7 +61,7 @@ const initialLastRefresh = (tokenTTL, refreshBefore) =>
 const useProactiveTokenRefresh = ({
   tokenTTL = ACCESS_TOKEN_TTL_MS,
   refreshBefore = REFRESH_BEFORE_MS,
-  enabled = true
+  enabled = true,
 } = {}) => {
   // Track when the token was last refreshed
   const lastRefreshRef = useRef(initialLastRefresh(tokenTTL, refreshBefore));
@@ -114,7 +118,9 @@ const useProactiveTokenRefresh = ({
       return;
     }
 
-    console.log('🔄 [ProactiveRefresh] Token expiring soon, refreshing proactively...');
+    console.log(
+      '🔄 [ProactiveRefresh] Token expiring soon, refreshing proactively...',
+    );
 
     isRefreshingRef.current = true;
 
@@ -129,7 +135,10 @@ const useProactiveTokenRefresh = ({
     } catch (error) {
       // If refresh fails, let the normal 401 handling take over
       lastFailedRefreshRef.current = Date.now();
-      console.warn('⚠️ [ProactiveRefresh] Proactive refresh failed:', error.message);
+      console.warn(
+        '⚠️ [ProactiveRefresh] Proactive refresh failed:',
+        error.message,
+      );
       // Con el «no» del servidor, se cierra la sesión con su aviso. Hace falta
       // aquí: una petición con un 401 que se enganchó a ESTE refresco no lo
       // trata, porque da por hecho que lo hizo quien lo arrancó (`/code-review`)
@@ -152,7 +161,8 @@ const useProactiveTokenRefresh = ({
 
     const now = Date.now();
     const timeSinceLastRefresh = now - syncLastRefresh();
-    const timeUntilRefreshWindow = (tokenTTL - refreshBefore) - timeSinceLastRefresh;
+    const timeUntilRefreshWindow =
+      tokenTTL - refreshBefore - timeSinceLastRefresh;
 
     // If we're already in the refresh window, check now
     if (timeUntilRefreshWindow <= 0) {
@@ -164,7 +174,6 @@ const useProactiveTokenRefresh = ({
     refreshTimerRef.current = setTimeout(() => {
       doProactiveRefresh();
     }, timeUntilRefreshWindow);
-
   }, [enabled, tokenTTL, refreshBefore, doProactiveRefresh, syncLastRefresh]);
 
   /**
@@ -206,7 +215,9 @@ const useProactiveTokenRefresh = ({
       return;
     }
 
-    console.log('✅ [ProactiveRefresh] Hook enabled - monitoring activity for proactive token refresh');
+    console.log(
+      '✅ [ProactiveRefresh] Hook enabled - monitoring activity for proactive token refresh',
+    );
 
     // Events that indicate user activity
     const events = [
@@ -216,14 +227,14 @@ const useProactiveTokenRefresh = ({
       'scroll',
       'touchstart',
       'click',
-      'focus'
+      'focus',
     ];
 
     // Initialize: schedule first refresh check
     scheduleRefreshCheck();
 
     // Add event listeners
-    events.forEach(event => {
+    events.forEach((event) => {
       document.addEventListener(event, handleActivity, { passive: true });
     });
 
@@ -240,7 +251,7 @@ const useProactiveTokenRefresh = ({
     return () => {
       console.log('🧹 [ProactiveRefresh] Cleaning up listeners and timers');
 
-      events.forEach(event => {
+      events.forEach((event) => {
         document.removeEventListener(event, handleActivity);
       });
       document.removeEventListener('visibilitychange', handleVisibilityChange);
@@ -256,7 +267,7 @@ const useProactiveTokenRefresh = ({
 
   // Return utility function for external use
   return {
-    resetRefreshTime
+    resetRefreshTime,
   };
 };
 

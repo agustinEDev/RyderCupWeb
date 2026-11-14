@@ -24,12 +24,19 @@ const respuestaDeLaApi = (extra = {}) => ({
 });
 
 const loQueLlegaALaPantalla = (apiData) =>
-  CompetitionAssembler.toSimpleDTO(CompetitionMapper.toDomain(apiData), apiData);
+  CompetitionAssembler.toSimpleDTO(
+    CompetitionMapper.toDomain(apiData),
+    apiData,
+  );
 
 describe('CompetitionAssembler · el tipo de torneo (FE #791)', () => {
   it('A1: el tipo y la modalidad llegan a la pantalla', () => {
     const dto = loQueLlegaALaPantalla(
-      respuestaDeLaApi({ tournament_type: 'RYDER_CUP', modality: 'MATCH_PLAY', setup_mode: 'MANUAL' })
+      respuestaDeLaApi({
+        tournament_type: 'RYDER_CUP',
+        modality: 'MATCH_PLAY',
+        setup_mode: 'MANUAL',
+      }),
     );
 
     expect(dto.tournamentType).toBe('RYDER_CUP');
@@ -47,7 +54,11 @@ describe('CompetitionAssembler · el tipo de torneo (FE #791)', () => {
 
   it('A3: un Stableford no se inventa el modo de montaje de la Ryder', () => {
     const dto = loQueLlegaALaPantalla(
-      respuestaDeLaApi({ tournament_type: 'STABLEFORD', modality: 'STROKE_PLAY', setup_mode: null })
+      respuestaDeLaApi({
+        tournament_type: 'STABLEFORD',
+        modality: 'STROKE_PLAY',
+        setup_mode: null,
+      }),
     );
 
     expect(dto.tournamentType).toBe('STABLEFORD');
@@ -64,7 +75,7 @@ describe('CompetitionAssembler · el tipo de torneo (FE #791)', () => {
         team_2_name: null,
         team_assignment: null,
         setup_mode: null,
-      })
+      }),
     );
 
     expect(dto.team1Name).toBeNull();

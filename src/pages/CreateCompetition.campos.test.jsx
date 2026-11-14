@@ -31,7 +31,9 @@ vi.mock('react-i18next', () => ({
 const toast = { error: vi.fn(), success: vi.fn(), info: vi.fn() };
 
 vi.mock('../components/layout/HeaderAuth', () => ({ default: () => null }));
-vi.mock('../hooks/useAuth', () => ({ useAuth: () => ({ user: { id: 'u-1', gender: 'MALE' }, loading: false }) }));
+vi.mock('../hooks/useAuth', () => ({
+  useAuth: () => ({ user: { id: 'u-1', gender: 'MALE' }, loading: false }),
+}));
 vi.mock('../utils/toast', () => ({ default: toast }));
 vi.mock('../services/countries', () => ({
   formatCountryName: () => 'España',
@@ -45,7 +47,9 @@ vi.mock('../composition', () => ({
   // La página descarta los países sin `name_en`/`name_es`, así que con `name` a
   // secas la lista se quedaba vacía y no se podía elegir ninguno
   fetchCountriesUseCase: {
-    execute: vi.fn().mockResolvedValue([{ code: 'ES', name_es: 'España', name_en: 'Spain' }]),
+    execute: vi
+      .fn()
+      .mockResolvedValue([{ code: 'ES', name_es: 'España', name_en: 'Spain' }]),
   },
   getAdjacentCountriesUseCase: { execute: vi.fn().mockResolvedValue([]) },
   createGolfCourseRequestUseCase: { execute: vi.fn() },
@@ -54,10 +58,14 @@ vi.mock('../composition', () => ({
 // selector tiene que poder elegirlo
 vi.mock('../components/ui/CountryAutocomplete', () => ({
   default: ({ onChange }) => (
-    <button type="button" onClick={() => onChange('ES')}>elegir país</button>
+    <button type="button" onClick={() => onChange('ES')}>
+      elegir país
+    </button>
   ),
 }));
-vi.mock('../components/golf_course/GolfCourseRequestModal', () => ({ default: () => null }));
+vi.mock('../components/golf_course/GolfCourseRequestModal', () => ({
+  default: () => null,
+}));
 vi.mock('../components/ui/FullScreenLoader', () => ({ default: () => null }));
 vi.mock('../components/ui/CountryFlag', () => ({ CountryFlag: () => null }));
 
@@ -73,8 +81,12 @@ vi.mock('../components/golf_course/GolfCourseSearchBox', () => ({
     idsRecibidos = idsYaElegidos;
     return (
       <div>
-        <button type="button" onClick={() => onCourseSelect(CAMPO_A)}>elegir A</button>
-        <button type="button" onClick={() => onCourseSelect(CAMPO_B)}>elegir B</button>
+        <button type="button" onClick={() => onCourseSelect(CAMPO_A)}>
+          elegir A
+        </button>
+        <button type="button" onClick={() => onCourseSelect(CAMPO_B)}>
+          elegir B
+        </button>
       </div>
     );
   },
@@ -83,7 +95,11 @@ vi.mock('../components/golf_course/GolfCourseSearchBox', () => ({
 const CreateCompetition = (await import('./CreateCompetition')).default;
 
 const abreElFormulario = async () => {
-  render(<MemoryRouter><CreateCompetition /></MemoryRouter>);
+  render(
+    <MemoryRouter>
+      <CreateCompetition />
+    </MemoryRouter>,
+  );
   fireEvent.click(await screen.findByTestId('tipo-RYDER_CUP'));
   // Y el modo de configuración, que es el paso siguiente (FE #695). Estilo
   // RyderCup es lo que estas pantallas daban por hecho
@@ -92,14 +108,18 @@ const abreElFormulario = async () => {
   // Los países llegan del backend: hasta que no están, elegir uno no prende.
   // Se espera a que estén (un tick de microtareas) en vez de repetir el click,
   // que dejaba el test dando vueltas
-  await act(async () => { await Promise.resolve(); });
+  await act(async () => {
+    await Promise.resolve();
+  });
   fireEvent.click(screen.getByText('elegir país'));
   await screen.findByText('elegir A');
 };
 
 /** Filas de campos ya añadidos: las que llevan su botón de quitar. */
 const camposAnadidos = () =>
-  screen.queryAllByText(CAMPO_A.name).concat(screen.queryAllByText(CAMPO_B.name));
+  screen
+    .queryAllByText(CAMPO_A.name)
+    .concat(screen.queryAllByText(CAMPO_B.name));
 
 describe('CreateCompetition · campos de golf repetidos (FE #644)', () => {
   beforeEach(() => {

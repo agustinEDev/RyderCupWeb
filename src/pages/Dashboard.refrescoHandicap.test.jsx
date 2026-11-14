@@ -1,5 +1,12 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, waitFor, act, cleanup, fireEvent } from '@testing-library/react';
+import {
+  render,
+  screen,
+  waitFor,
+  act,
+  cleanup,
+  fireEvent,
+} from '@testing-library/react';
 
 /**
  * El refresco del hándicap al entrar, en segundo plano (FE #677).
@@ -16,7 +23,8 @@ vi.mock('../composition', () => ({
   getPlayerStatsUseCase: { execute: () => Promise.resolve(null) },
   getRecentMatchesUseCase: { execute: () => Promise.resolve([]) },
   getUpcomingMatchesUseCase: {
-    executeWithCompleteness: () => Promise.resolve({ matches: [], complete: true }),
+    executeWithCompleteness: () =>
+      Promise.resolve({ matches: [], complete: true }),
   },
   getScoringViewUseCase: { execute: () => new Promise(() => {}) },
   refreshOwnHandicapUseCase: { execute: (...args) => refresco(...args) },
@@ -32,14 +40,24 @@ const recargarUsuario = vi.fn();
 // Objeto CONSTANTE: los efectos del panel dependen de `user`, y uno nuevo en
 // cada render los relanzaría sin parar
 const sesion = {
-  user: { id: 'u-1', first_name: 'Ana', email: 'a@b.c', country_code: 'ES', handicap: 12.4 },
+  user: {
+    id: 'u-1',
+    first_name: 'Ana',
+    email: 'a@b.c',
+    country_code: 'ES',
+    handicap: 12.4,
+  },
   loading: false,
   refetch: (...args) => recargarUsuario(...args),
 };
 vi.mock('../hooks/useAuth', () => ({ useAuth: () => sesion }));
 
 vi.mock('react-i18next', () => ({
-  useTranslation: () => ({ t: (clave) => clave, i18n: { language: 'es' }, ready: true }),
+  useTranslation: () => ({
+    t: (clave) => clave,
+    i18n: { language: 'es' },
+    ready: true,
+  }),
 }));
 
 vi.mock('react-router', () => ({
@@ -56,19 +74,28 @@ vi.mock('framer-motion', () => {
   return { motion: new Proxy({}, { get: () => Caja }) };
 });
 
-vi.mock('../hooks/useEntryMotion', () => ({ useEntryMotion: () => ({ animateEntry: false }) }));
+vi.mock('../hooks/useEntryMotion', () => ({
+  useEntryMotion: () => ({ animateEntry: false }),
+}));
 
 // Deja rastro de con qué se abre: lo que se mira es el motivo
 vi.doMock('../components/profile/HandicapRequestModal', () => ({
   default: ({ isOpen, handicapActual }) =>
-    isOpen ? <div data-testid="modal-handicap" data-handicap={String(handicapActual)} /> : null,
+    isOpen ? (
+      <div
+        data-testid="modal-handicap"
+        data-handicap={String(handicapActual)}
+      />
+    ) : null,
 }));
 
 // Deja rastro del recordatorio y un botón para abrir el modal desde él
 vi.doMock('../components/dashboard/PendingActionsCard', () => ({
   default: ({ handicapPending, onHandicapAction }) => (
     <div data-testid="recordatorio" data-pendiente={String(handicapPending)}>
-      <button type="button" onClick={onHandicapAction}>configurar</button>
+      <button type="button" onClick={onHandicapAction}>
+        configurar
+      </button>
     </div>
   ),
 }));
@@ -101,7 +128,8 @@ vi.stubGlobal('localStorage', {
 });
 
 const Dashboard = (await import('./Dashboard')).default;
-const { reiniciaElRefrescoDeHandicap } = await import('../services/refrescoDeHandicap');
+const { reiniciaElRefrescoDeHandicap } =
+  await import('../services/refrescoDeHandicap');
 
 const panelPintado = () => screen.findByText('quickActions.title');
 
@@ -123,7 +151,9 @@ describe('Dashboard · refresco del hándicap al entrar (FE #677)', () => {
 
     render(<Dashboard />);
 
-    await waitFor(() => expect(consultaSesion).toHaveBeenCalledWith({ forzar: true }));
+    await waitFor(() =>
+      expect(consultaSesion).toHaveBeenCalledWith({ forzar: true }),
+    );
     expect(refresco).toHaveBeenCalledTimes(1);
     expect(screen.queryByTestId('modal-handicap')).not.toBeInTheDocument();
     expect(localStorage.getItem('refrescar_handicap')).toBeNull();
@@ -135,7 +165,10 @@ describe('Dashboard · refresco del hándicap al entrar (FE #677)', () => {
 
     render(<Dashboard />);
 
-    expect(await screen.findByTestId('modal-handicap')).toHaveAttribute('data-handicap', 'null');
+    expect(await screen.findByTestId('modal-handicap')).toHaveAttribute(
+      'data-handicap',
+      'null',
+    );
   });
 
   it('D3: si hace falta y ya tiene uno, el modal lo sabe', async () => {
@@ -144,7 +177,10 @@ describe('Dashboard · refresco del hándicap al entrar (FE #677)', () => {
 
     render(<Dashboard />);
 
-    expect(await screen.findByTestId('modal-handicap')).toHaveAttribute('data-handicap', '18');
+    expect(await screen.findByTestId('modal-handicap')).toHaveAttribute(
+      'data-handicap',
+      '18',
+    );
   });
 
   // Sin red, la copia del dispositivo no trae el hándicap (fase 3, FE-06): no se lanza
@@ -203,14 +239,20 @@ describe('Dashboard · refresco del hándicap al entrar (FE #677)', () => {
 
     render(<Dashboard />);
 
-    await waitFor(() => expect(localStorage.getItem('refrescar_handicap')).toBeNull());
+    await waitFor(() =>
+      expect(localStorage.getItem('refrescar_handicap')).toBeNull(),
+    );
     expect(consultaSesion).not.toHaveBeenCalled();
   });
 
   it('D9: si el usuario cambia con el refresco en vuelo, se pide una sola vez y no se pierde la respuesta', async () => {
     localStorage.setItem('refrescar_handicap', 'true');
     let responder;
-    refresco.mockReturnValue(new Promise((resolver) => { responder = resolver; }));
+    refresco.mockReturnValue(
+      new Promise((resolver) => {
+        responder = resolver;
+      }),
+    );
 
     const { rerender } = render(<Dashboard />);
     await waitFor(() => expect(refresco).toHaveBeenCalledTimes(1));
@@ -257,7 +299,11 @@ describe('Dashboard · refresco del hándicap al entrar (FE #677)', () => {
     // Nadie ha visto el resultado todavía: se guarda y lo abre el próximo panel
     localStorage.setItem('refrescar_handicap', 'true');
     let responder;
-    refresco.mockReturnValue(new Promise((resolver) => { responder = resolver; }));
+    refresco.mockReturnValue(
+      new Promise((resolver) => {
+        responder = resolver;
+      }),
+    );
 
     const { unmount } = render(<Dashboard />);
     await waitFor(() => expect(refresco).toHaveBeenCalledTimes(1));
@@ -276,7 +322,10 @@ describe('Dashboard · refresco del hándicap al entrar (FE #677)', () => {
 
     render(<Dashboard />);
 
-    expect(await screen.findByTestId('modal-handicap')).toHaveAttribute('data-handicap', '18');
+    expect(await screen.findByTestId('modal-handicap')).toHaveAttribute(
+      'data-handicap',
+      '18',
+    );
     expect(refresco).not.toHaveBeenCalled();
     expect(localStorage.getItem('pedir_handicap')).toBeNull();
   });
@@ -302,10 +351,14 @@ describe('Dashboard · refresco del hándicap al entrar (FE #677)', () => {
     // Un 404 (el endpoint no existe, o el usuario ya no) repetido en cada
     // visita al panel sería un POST fallido tras otro, para nada
     localStorage.setItem('refrescar_handicap', 'true');
-    refresco.mockRejectedValue(Object.assign(new Error('Not Found'), { status: 404 }));
+    refresco.mockRejectedValue(
+      Object.assign(new Error('Not Found'), { status: 404 }),
+    );
 
     const { rerender } = render(<Dashboard />);
-    await waitFor(() => expect(localStorage.getItem('refrescar_handicap')).toBeNull());
+    await waitFor(() =>
+      expect(localStorage.getItem('refrescar_handicap')).toBeNull(),
+    );
 
     const anterior = sesion.user;
     sesion.user = { ...anterior };
@@ -322,7 +375,9 @@ describe('Dashboard · refresco del hándicap al entrar (FE #677)', () => {
 
   it('D13: un 5xx sí puede arreglarse solo: el apunte se queda', async () => {
     localStorage.setItem('refrescar_handicap', 'true');
-    refresco.mockRejectedValue(Object.assign(new Error('Service Unavailable'), { status: 503 }));
+    refresco.mockRejectedValue(
+      Object.assign(new Error('Service Unavailable'), { status: 503 }),
+    );
 
     render(<Dashboard />);
 
@@ -352,7 +407,10 @@ describe('Dashboard · refresco del hándicap al entrar (FE #677)', () => {
     render(<Dashboard />);
 
     await waitFor(() =>
-      expect(screen.getByTestId('recordatorio')).toHaveAttribute('data-pendiente', 'false')
+      expect(screen.getByTestId('recordatorio')).toHaveAttribute(
+        'data-pendiente',
+        'false',
+      ),
     );
   });
 
@@ -364,6 +422,9 @@ describe('Dashboard · refresco del hándicap al entrar (FE #677)', () => {
     render(<Dashboard />);
     fireEvent.click(await screen.findByText('configurar'));
 
-    expect(await screen.findByTestId('modal-handicap')).toHaveAttribute('data-handicap', '12.4');
+    expect(await screen.findByTestId('modal-handicap')).toHaveAttribute(
+      'data-handicap',
+      '12.4',
+    );
   });
 });

@@ -18,9 +18,12 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 const toast = vi.hoisted(() => ({ error: vi.fn() }));
 vi.mock('./toast', () => ({ default: toast }));
 
-const { guardaElAvisoDelCierre, tomaElAvisoDelCierre, muestraElAvisoDelCierre, olvidaElAvisoDelCierre } = await import(
-  './avisoTrasElCierre'
-);
+const {
+  guardaElAvisoDelCierre,
+  tomaElAvisoDelCierre,
+  muestraElAvisoDelCierre,
+  olvidaElAvisoDelCierre,
+} = await import('./avisoTrasElCierre');
 const traduce = (clave, { ns }) => `${ns}:${clave}`;
 
 describe('el aviso de un cierre forzado, para /login', () => {
@@ -65,7 +68,10 @@ describe('el aviso de un cierre forzado, para /login', () => {
   });
 
   it('una hora futura no vale (reloj cambiado o un valor manipulado)', () => {
-    globalThis.sessionStorage.setItem('rydercup-aviso-del-cierre', JSON.stringify({ motivo: 'revocation', hora: Date.now() + 60_000 }));
+    globalThis.sessionStorage.setItem(
+      'rydercup-aviso-del-cierre',
+      JSON.stringify({ motivo: 'revocation', hora: Date.now() + 60_000 }),
+    );
 
     expect(tomaElAvisoDelCierre()).toBeNull();
   });
@@ -100,9 +106,16 @@ describe('el aviso de un cierre forzado, para /login', () => {
     ['expiration', 'auth:errors.sessionExpired', '⏱️'],
     ['ended', 'auth:errors.sessionEnded', 'ℹ️'],
     ['toString', 'auth:errors.sessionEnded', 'ℹ️'],
-  ])('%s se enseña con su texto y su icono, 8 s y como aviso del cierre', (motivo, texto, icono) => {
-    muestraElAvisoDelCierre(motivo, traduce);
+  ])(
+    '%s se enseña con su texto y su icono, 8 s y como aviso del cierre',
+    (motivo, texto, icono) => {
+      muestraElAvisoDelCierre(motivo, traduce);
 
-    expect(toast.error).toHaveBeenCalledWith(texto, { duration: 8000, icon: icono, delCierre: true });
-  });
+      expect(toast.error).toHaveBeenCalledWith(texto, {
+        duration: 8000,
+        icon: icono,
+        delCierre: true,
+      });
+    },
+  );
 });

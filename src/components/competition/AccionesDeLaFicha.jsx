@@ -22,7 +22,12 @@ import { MoreHorizontal } from 'lucide-react';
  * @param {Array} props.destructivas - Las que no tienen vuelta atrás
  * @param {Function} props.t
  */
-const AccionesDeLaFicha = ({ principal, acciones = [], destructivas = [], t }) => {
+const AccionesDeLaFicha = ({
+  principal,
+  acciones = [],
+  destructivas = [],
+  t,
+}) => {
   const [abierto, setAbierto] = useState(false);
   const contenedor = useRef(null);
   const disparador = useRef(null);
@@ -126,7 +131,10 @@ const AccionesDeLaFicha = ({ principal, acciones = [], destructivas = [], t }) =
             >
               {acciones.map((accion) => filaDelMenu(accion, false))}
               {destructivas.length > 0 && acciones.length > 0 && (
-                <div data-testid="separador-destructivas" className="my-1 border-t border-gray-200" />
+                <div
+                  data-testid="separador-destructivas"
+                  className="my-1 border-t border-gray-200"
+                />
               )}
               {destructivas.map((accion) => filaDelMenu(accion, true))}
             </div>

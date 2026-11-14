@@ -20,4 +20,5 @@ const leer = () => hayMatchMedia() && window.matchMedia(CONSULTA).matches;
  * Lo decide React con `useSyncExternalStore`, la pieza pensada para leer algo
  * que vive fuera de él: sin estado propio que sincronizar a mano.
  */
-export const useEsMovil = () => useSyncExternalStore(suscribir, leer, () => false);
+export const useEsMovil = () =>
+  useSyncExternalStore(suscribir, leer, () => false);

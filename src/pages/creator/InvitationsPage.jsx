@@ -1,10 +1,11 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Navigate, useNavigate, useParams } from 'react-router';
 import { ArrowLeft, Plus, Mail } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import customToast from '../../utils/toast';
 import HeaderAuth from '../../components/layout/HeaderAuth';
 import { useAuth } from '../../hooks/useAuth';
+import { useCargaCancelableEffect } from '../../hooks/useCargaCancelableEffect';
 import { useUserRoles } from '../../hooks/useUserRoles';
 import InvitationCard from '../../components/invitation/InvitationCard';
 import SendInvitationModal from '../../components/invitation/SendInvitationModal';
@@ -47,26 +48,48 @@ const todasLasPaginas = async (pideLaPagina, sacaLasFilas) => {
     const lote = sacaLasFilas(respuesta);
     filas.push(...lote);
     // Una página incompleta ya es la última, y el total manda sobre el resto
-    if (lote.length < POR_PAGINA || filas.length >= (respuesta?.totalCount ?? filas.length)) break;
+    if (
+      lote.length < POR_PAGINA ||
+      filas.length >= (respuesta?.totalCount ?? filas.length)
+    )
+      break;
   }
   return filas;
 };
+
+// Lo que pinta la pantalla: la competición y sus invitaciones con el filtro
+// elegido
+const pedirLaPantalla = (competitionId, statusFilter) =>
+  Promise.all([
+    getCompetitionDetailUseCase.execute(competitionId),
+    listCompetitionInvitationsUseCase.execute(
+      competitionId,
+      statusFilter ? { status: statusFilter } : {},
+    ),
+  ]);
 
 // Quién está dentro: solo APPROVED. Sin filtro vienen también REQUESTED,
 // REJECTED, CANCELLED e INVITED, y quien se retiró o fue rechazado SÍ se puede
 // volver a invitar. Marcarlos habría bloqueado a quien el backend acepta
 const idsDeLosInscritos = (competitionId) =>
-  listEnrollmentsUseCase.execute(competitionId, { status: 'APPROVED' }).then((res) => {
-    const inscripciones = Array.isArray(res) ? res : (res?.enrollments ?? []);
-    return inscripciones.map((e) => e.userId ?? e.user_id).filter(Boolean);
-  });
+  listEnrollmentsUseCase
+    .execute(competitionId, { status: 'APPROVED' })
+    .then((res) => {
+      const inscripciones = Array.isArray(res) ? res : (res?.enrollments ?? []);
+      return inscripciones.map((e) => e.userId ?? e.user_id).filter(Boolean);
+    });
 
 // Las pendientes, enteras y sin el filtro de la pantalla: `invitations` está
 // filtrada por lo que el creador haya elegido arriba y paginada
 const lasPendientes = (competitionId) =>
   todasLasPaginas(
-    (page) => listCompetitionInvitationsUseCase.execute(competitionId, { status: 'PENDING', limit: POR_PAGINA, page }),
-    (res) => res.invitations ?? []
+    (page) =>
+      listCompetitionInvitationsUseCase.execute(competitionId, {
+        status: 'PENDING',
+        limit: POR_PAGINA,
+        page,
+      }),
+    (res) => res.invitations ?? [],
   );
 
 // A quién va una invitación: por su usuario y por su correo, los que traiga
@@ -91,13 +114,11 @@ const InvitationsPage = () => {
     isLoading: isLoadingRoles,
     error: falloAlPedirLosPermisos,
     refetch: volverAPedirLosPermisos,
-  } = useUserRoles(id);
+  } = useUserRoles(id, user?.id);
 
   const [competition, setCompetition] = useState(null);
-  const cargaEnCurso = useRef(0);
   const [invitations, setInvitations] = useState([]);
   const [totalCount, setTotalCount] = useState(0);
-  const [isLoading, setIsLoading] = useState(true);
   const [isProcessing, setIsProcessing] = useState(false);
   const [statusFilter, setStatusFilter] = useState('');
   const [showSendModal, setShowSendModal] = useState(false);
@@ -107,7 +128,12 @@ const InvitationsPage = () => {
   // A quién no se le ofrece volver a invitar (release social 2): ya inscritos y
   // correos con otra pendiente. Sin saberlo, a nadie: el servidor lo rechazaría
   // De qué competición es (`de`): al cambiar de una a otra no vale la anterior
-  const [situacion, setSituacion] = useState({ de: null, sabida: false, inscritos: new Set(), pendientes: new Set() });
+  const [situacion, setSituacion] = useState({
+    de: null,
+    sabida: false,
+    inscritos: new Set(),
+    pendientes: new Set(),
+  });
   // Las mandadas desde aquí: una lectura de antes del envío no las borra (/code-review)
   // Por competición: las de otra no cuentan aquí
   const enviadasRef = useRef(new Map());
@@ -118,46 +144,45 @@ const InvitationsPage = () => {
   const [idsInvitados, setIdsInvitados] = useState([]);
   const [cargandoAmigos, setCargandoAmigos] = useState(false);
   const [falloAlCargarAmigos, setFalloAlCargarAmigos] = useState(false);
-  const [falloAlComprobarSituacion, setFalloAlComprobarSituacion] = useState(false);
+  const [falloAlComprobarSituacion, setFalloAlComprobarSituacion] =
+    useState(false);
   const [falloAlCargar, setFalloAlCargar] = useState(false);
 
   const canManage = isAdmin || hasCreatorRole;
 
-  // `silencioso`: tras invitar, el listado se pone al día sin la pantalla de
-  // carga, que desmontaba el modal abierto (#710)
-  const loadData = useCallback(async ({ silencioso = false } = {}) => {
-    if (!user) return;
-    // Cada carga lleva su número: una que vuelve tarde no pisa a otra
-    // posterior, como dos refrescos tras invitar a dos seguidos (CodeRabbit, #721)
-    const mia = ++cargaEnCurso.current;
+  // La carga de la pantalla, con useCargaCancelableEffect: al cambiar el filtro,
+  // al volver a pedirla o al salir, la anterior ya no toca nada, ni su espera.
+  // Así, de dos refrescos tras invitar a dos seguidos, el que vuelve tarde no
+  // pisa al de después (CodeRabbit, #721). El aviso no es dependencia: la
+  // pantalla no se vuelve a pedir por cambiar de idioma
+  const { cargando: isLoading, recargar } = useCargaCancelableEffect(
+    () => pedirLaPantalla(id, statusFilter),
+    [user, id, statusFilter],
+    {
+      activa: Boolean(user),
+      alCargar: ([compData, invResult]) => {
+        setCompetition(compData);
+        setInvitations(invResult.invitations);
+        setTotalCount(invResult.totalCount);
+      },
+      alFallar: (error, { silenciosa }) => {
+        console.error('Error loading invitations:', error);
+        // En silencio, lo que ya se veía sigue valiendo: echar de la pantalla
+        // con el modal abierto por un refresco fallido no es silencioso
+        // (revisión local)
+        if (silenciosa) return;
+        customToast.error(error.message || t('errors.failedToLoad'));
+        // Marcar y que decida el render, en vez de irse desde aquí: esta carga
+        // y la de los permisos van por su cuenta, y salir corriendo la primera
+        // se llevaba por delante el aviso de la otra (FE #656)
+        setFalloAlCargar(true);
+      },
+    },
+  );
 
-    if (!silencioso) setIsLoading(true);
-    try {
-      const [compData, invResult] = await Promise.all([
-        getCompetitionDetailUseCase.execute(id),
-        listCompetitionInvitationsUseCase.execute(id, statusFilter ? { status: statusFilter } : {}),
-      ]);
-
-      if (mia !== cargaEnCurso.current) return;
-      setCompetition(compData);
-      setInvitations(invResult.invitations);
-      setTotalCount(invResult.totalCount);
-    } catch (error) {
-      console.error('Error loading invitations:', error);
-      if (mia !== cargaEnCurso.current) return;
-      // En silencio, lo que ya se veía sigue valiendo: echar de la pantalla con
-      // el modal abierto por un refresco fallido no es silencioso (revisión local)
-      if (silencioso) return;
-      customToast.error(error.message || t('errors.failedToLoad'));
-      // Marcar y que decida el render, en vez de irse desde aquí: esta carga y
-      // la de los permisos van por su cuenta, y salir corriendo la primera se
-      // llevaba por delante el aviso de la otra (FE #656)
-      setFalloAlCargar(true);
-    } finally {
-      if (!silencioso) setIsLoading(false);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [id, user, statusFilter, navigate]);
+  // Tras invitar o retirar, el listado se pone al día en silencio: sin la
+  // pantalla de carga, que desmontaba el modal abierto (#710)
+  const recargarEnSilencio = () => recargar({ silenciosa: true });
 
   // Los amigos y la situación de cada uno se piden APARTE, no dentro del
   // `Promise.all` de arriba: colgarlos ahí haría que un fallo suyo tumbara la
@@ -177,69 +202,84 @@ const InvitationsPage = () => {
     });
 
     const amigos = todasLasPaginas(
-      (page) => listFriendsUseCase.execute(user.id, { limit: POR_PAGINA, page }),
-      (res) => res.friendships ?? []
+      (page) =>
+        listFriendsUseCase.execute(user.id, { limit: POR_PAGINA, page }),
+      (res) => res.friendships ?? [],
     );
 
     const inscritos = idsDeLosInscritos(id);
     // Con el desplegable en «Aceptadas» no habría ninguna pendiente en la
     // lista, y se ofrecería invitar a quien ya está invitado
-    const invitados = lasPendientes(id).then((lista) => lista.map((inv) => inv.inviteeUserId).filter(Boolean));
+    const invitados = lasPendientes(id).then((lista) =>
+      lista.map((inv) => inv.inviteeUserId).filter(Boolean),
+    );
 
     // Las tres a la vez, pero la pestaña no se da por cargada hasta que están
     // las tres: con solo los amigos, las filas salían pulsables durante un
     // instante y se podía invitar a quien ya estaba dentro
-    Promise.allSettled([amigos, inscritos, invitados]).then(([losAmigos, losInscritos, losInvitados]) => {
-      if (!vigente) return;
+    Promise.allSettled([amigos, inscritos, invitados]).then(
+      ([losAmigos, losInscritos, losInvitados]) => {
+        if (!vigente) return;
 
-      // Vaciar la lista diría «no tienes amigos», que es afirmar lo que no se
-      // ha podido preguntar. Se distingue de no tenerlos
-      setFriends(losAmigos.status === 'fulfilled' ? losAmigos.value : []);
-      setFalloAlCargarAmigos(losAmigos.status === 'rejected');
+        // Vaciar la lista diría «no tienes amigos», que es afirmar lo que no se
+        // ha podido preguntar. Se distingue de no tenerlos
+        setFriends(losAmigos.status === 'fulfilled' ? losAmigos.value : []);
+        setFalloAlCargarAmigos(losAmigos.status === 'rejected');
 
-      setIdsInscritos(losInscritos.status === 'fulfilled' ? losInscritos.value : []);
-      setIdsInvitados(losInvitados.status === 'fulfilled' ? losInvitados.value : []);
-      // Si no se sabe quién está ya dentro, no se ofrece a nadie: darlo por
-      // vacío habilitaba justo a quien el servidor va a rechazar
-      setFalloAlComprobarSituacion(
-        losInscritos.status === 'rejected' || losInvitados.status === 'rejected'
-      );
+        setIdsInscritos(
+          losInscritos.status === 'fulfilled' ? losInscritos.value : [],
+        );
+        setIdsInvitados(
+          losInvitados.status === 'fulfilled' ? losInvitados.value : [],
+        );
+        // Si no se sabe quién está ya dentro, no se ofrece a nadie: darlo por
+        // vacío habilitaba justo a quien el servidor va a rechazar
+        setFalloAlComprobarSituacion(
+          losInscritos.status === 'rejected' ||
+            losInvitados.status === 'rejected',
+        );
 
-      setCargandoAmigos(false);
-    });
+        setCargandoAmigos(false);
+      },
+    );
 
     return () => {
       vigente = false;
     };
   }, [user?.id, id, showSendModal]);
 
-  useEffect(() => {
-    if (user) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- pre-existing pattern surfaced by eslint-plugin-react-hooks 7.1.1 bump; needs dedicated review (tracked in follow-up)
-      loadData();
-    }
-  }, [user, loadData]);
-
   // Quién está dentro y a qué correos ya hay una pendiente, para «Volver a
   // invitar» (release social 2). Se relee con la lista: tras invitar o retirar.
   // Solo si hay alguna que volver a mandar: si no, son dos consultas de más
-  const hayReinvitables = invitations.some((inv) => REINVITABLES.has(inv.status));
+  const hayReinvitables = invitations.some((inv) =>
+    REINVITABLES.has(inv.status),
+  );
   useEffect(() => {
     if (!user?.id || !hayReinvitables) return undefined;
     let vigente = true;
     // Las pendientes, por usuario y por correo: una invitación por usuario
     // puede no traer el correo (/code-review)
-    const pendientes = lasPendientes(id).then((lista) => lista.flatMap(clavesDe));
-    Promise.allSettled([idsDeLosInscritos(id), pendientes]).then(([losInscritos, lasDeAhora]) => {
-      if (!vigente) return;
-      const sabida = losInscritos.status === 'fulfilled' && lasDeAhora.status === 'fulfilled';
-      setSituacion({
-        de: id,
-        sabida,
-        inscritos: new Set(sabida ? losInscritos.value : []),
-        pendientes: new Set(sabida ? [...lasDeAhora.value, ...(enviadasRef.current.get(id) ?? [])] : []),
-      });
-    });
+    const pendientes = lasPendientes(id).then((lista) =>
+      lista.flatMap(clavesDe),
+    );
+    Promise.allSettled([idsDeLosInscritos(id), pendientes]).then(
+      ([losInscritos, lasDeAhora]) => {
+        if (!vigente) return;
+        const sabida =
+          losInscritos.status === 'fulfilled' &&
+          lasDeAhora.status === 'fulfilled';
+        setSituacion({
+          de: id,
+          sabida,
+          inscritos: new Set(sabida ? losInscritos.value : []),
+          pendientes: new Set(
+            sabida
+              ? [...lasDeAhora.value, ...(enviadasRef.current.get(id) ?? [])]
+              : [],
+          ),
+        });
+      },
+    );
     return () => {
       vigente = false;
     };
@@ -252,22 +292,24 @@ const InvitationsPage = () => {
     if (error?.errorCode === 'COMPETITION_FULL') {
       customToast.error(t('errors.competitionFull'));
       setShowSendModal(false);
-      loadData({ silencioso: true });
-    // Con los equipos formados no se invita (29-30 oct 2026): igual, que la
-    // pantalla deje de ofrecerlo
+      recargarEnSilencio();
+      // Con los equipos formados no se invita (29-30 oct 2026): igual, que la
+      // pantalla deje de ofrecerlo
     } else if (error?.errorCode === 'TEAMS_FORMED') {
       customToast.error(t('errors.teamsFormedOrganizer'));
       setShowSendModal(false);
-      loadData({ silencioso: true });
-    // El freno por hora de la competición: con cuántas admite, y no el «espera
-    // un minuto» del 429 general, que es de otro límite (probado en el Kind)
+      recargarEnSilencio();
+      // El freno por hora de la competición: con cuántas admite, y no el «espera
+      // un minuto» del 429 general, que es de otro límite (probado en el Kind)
     } else if (error?.errorCode === 'INVITATION_RATE_LIMIT') {
       // Sin el número no hay frase que decir: el aviso genérico (CodeRabbit)
       const limite = error.data?.limit;
       customToast.error(
-        Number.isFinite(limite) ? t('errors.rateLimited', { count: limite }) : t('errors.failedToSend')
+        Number.isFinite(limite)
+          ? t('errors.rateLimited', { count: limite })
+          : t('errors.failedToSend'),
       );
-    // Por el estado: el texto del servidor no lleva «409» (revisión local)
+      // Por el estado: el texto del servidor no lleva «409» (revisión local)
     } else if (error?.status === 409) {
       customToast.error(t('errors.duplicateInvitation'));
     } else {
@@ -281,7 +323,7 @@ const InvitationsPage = () => {
       await sendInvitationByEmailUseCase.execute(id, email, personalMessage);
       customToast.success(t('success.sent'));
       // Abierto, para invitar al siguiente sin volver a abrirlo (#710)
-      loadData({ silencioso: true });
+      recargarEnSilencio();
       return true;
     } catch (error) {
       console.error('Error sending invitation:', error);
@@ -299,7 +341,7 @@ const InvitationsPage = () => {
       customToast.success(t('success.sent'));
       // Abierto, y el invitado ya como tal: el siguiente sin volver a abrirlo (#710)
       setIdsInvitados((antes) => [...antes, userId]);
-      loadData({ silencioso: true });
+      recargarEnSilencio();
       return true;
     } catch (error) {
       console.error('Error sending invitation:', error);
@@ -322,16 +364,21 @@ const InvitationsPage = () => {
       // enviada y su invitación cerrada vuelve a ofrecer «Volver a invitar»
       // (CodeRabbit). Antes de la recarga del `finally`
       const retiradas = new Set(clavesDe(retirando));
-      enviadasRef.current.set(id, new Set([...enviadasAqui()].filter((clave) => !retiradas.has(clave))));
+      enviadasRef.current.set(
+        id,
+        new Set([...enviadasAqui()].filter((clave) => !retiradas.has(clave))),
+      );
     } catch (error) {
       console.error('Error withdrawing invitation:', error);
       customToast.error(
-        error?.status === 409 ? t('errors.notPendingAnymore') : error.message || t('errors.failedToWithdraw')
+        error?.status === 409
+          ? t('errors.notPendingAnymore')
+          : error.message || t('errors.failedToWithdraw'),
       );
     } finally {
       setRetirandoEnCurso(false);
       setRetirando(null);
-      loadData({ silencioso: true });
+      recargarEnSilencio();
     }
   };
 
@@ -346,7 +393,10 @@ const InvitationsPage = () => {
     if (enviada) {
       const claves = clavesDe(invitation);
       enviadasRef.current.set(id, new Set([...enviadasAqui(), ...claves]));
-      setSituacion((antes) => ({ ...antes, pendientes: new Set([...antes.pendientes, ...claves]) }));
+      setSituacion((antes) => ({
+        ...antes,
+        pendientes: new Set([...antes.pendientes, ...claves]),
+      }));
     }
   };
 
@@ -362,11 +412,13 @@ const InvitationsPage = () => {
 
   // Si la competición deja de admitir invitaciones con el modal abierto, se
   // cierra: si no, se mandaba una que el servidor rechaza (CodeRabbit, #720)
-  const sePuedeInvitar = !competition || SE_PUEDE_INVITAR.has(competition.status);
+  const sePuedeInvitar =
+    !competition || SE_PUEDE_INVITAR.has(competition.status);
   // Sin plazas no se invita (FE #724, BE #359): el servidor lo rechaza, y
   // ofrecerlo era enterarse al enviar
   const inscritos = competition?.enrolledCount ?? 0;
-  const lleno = Boolean(competition?.maxPlayers) && inscritos >= competition.maxPlayers;
+  const lleno =
+    Boolean(competition?.maxPlayers) && inscritos >= competition.maxPlayers;
   // Formados, los equipos quedan así: para que entre alguien se deshacen en la
   // agenda, y el servidor rechaza invitar (29-30 oct 2026)
   const equiposFormados = Boolean(competition?.teamsAssigned);
@@ -392,7 +444,9 @@ const InvitationsPage = () => {
         <HeaderAuth user={user} />
         <div className="max-w-4xl mx-auto px-4 py-6">
           <div className="py-12 text-center" data-testid="roles-error">
-            <p className="text-sm text-gray-600 mb-4">{t('errors.rolesCheckFailed')}</p>
+            <p className="text-sm text-gray-600 mb-4">
+              {t('errors.rolesCheckFailed')}
+            </p>
             <button
               type="button"
               onClick={volverAPedirLosPermisos}
@@ -452,8 +506,12 @@ const InvitationsPage = () => {
               línea; al lado del subtítulo los dos quedaban en columnas estrechas */}
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
-              <h1 className="hidden md:block text-2xl font-bold text-gray-900">{t('creator.title')}</h1>
-              <p className="text-sm text-gray-500 mt-1">{t('creator.subtitle')}</p>
+              <h1 className="hidden md:block text-2xl font-bold text-gray-900">
+                {t('creator.title')}
+              </h1>
+              <p className="text-sm text-gray-500 mt-1">
+                {t('creator.subtitle')}
+              </p>
               {totalCount > 0 && (
                 <p className="text-xs text-gray-400 mt-1">
                   {t('creator.sentCount', { count: totalCount })}
@@ -465,23 +523,42 @@ const InvitationsPage = () => {
                 invitar (#710). La lista sigue, que es donde se ve quién se
                 quedó sin plaza */}
             {!sePuedeInvitar ? (
-              <p data-testid="invitar-cerrada" className="w-full sm:w-auto sm:max-w-xs text-sm text-gray-500">
+              <p
+                data-testid="invitar-cerrada"
+                className="w-full sm:w-auto sm:max-w-xs text-sm text-gray-500"
+              >
                 {t('creator.enrollmentClosed')}
               </p>
             ) : equiposFormados ? (
-              <p data-testid="invitar-equipos-formados" className="w-full sm:w-auto sm:max-w-xs text-sm text-gray-500">
+              <p
+                data-testid="invitar-equipos-formados"
+                className="w-full sm:w-auto sm:max-w-xs text-sm text-gray-500"
+              >
                 {t('creator.teamsFormed')}
               </p>
             ) : lleno ? (
-              <p data-testid="invitar-lleno" className="w-full sm:w-auto sm:max-w-xs text-sm text-gray-500">
+              <p
+                data-testid="invitar-lleno"
+                className="w-full sm:w-auto sm:max-w-xs text-sm text-gray-500"
+              >
                 {t('creator.competitionFull', { count: inscritos })}
               </p>
             ) : (
               <button
                 onClick={() => {
-                  const acceptedCount = invitations.filter(inv => inv.status === 'ACCEPTED').length;
-                  if (competition?.maxPlayers && acceptedCount >= competition.maxPlayers - 1) {
-                    customToast.warning(t('creator.nearCapacity', { accepted: acceptedCount, max: competition.maxPlayers }));
+                  const acceptedCount = invitations.filter(
+                    (inv) => inv.status === 'ACCEPTED',
+                  ).length;
+                  if (
+                    competition?.maxPlayers &&
+                    acceptedCount >= competition.maxPlayers - 1
+                  ) {
+                    customToast.warning(
+                      t('creator.nearCapacity', {
+                        accepted: acceptedCount,
+                        max: competition.maxPlayers,
+                      }),
+                    );
                   }
                   setShowSendModal(true);
                 }}
@@ -526,7 +603,9 @@ const InvitationsPage = () => {
                 invitation={invitation}
                 mode="creator"
                 onWithdraw={setRetirando}
-                onReinvite={puedeReinvitar(invitation) ? handleReinvitar : undefined}
+                onReinvite={
+                  puedeReinvitar(invitation) ? handleReinvitar : undefined
+                }
                 isProcessing={retirandoEnCurso || isProcessing}
                 t={t}
               />

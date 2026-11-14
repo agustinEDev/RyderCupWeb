@@ -77,10 +77,15 @@ describe('ActivitySharingToggle', () => {
 
     render(<ActivitySharingToggle initialValue={true} />);
     fireEvent.click(screen.getByRole('switch'));
-    fireEvent.click(screen.getByRole('button', { name: 'privacy.confirmOffAction' }));
+    fireEvent.click(
+      screen.getByRole('button', { name: 'privacy.confirmOffAction' }),
+    );
 
     await waitFor(() => {
-      expect(screen.getByRole('switch')).toHaveAttribute('aria-checked', 'false');
+      expect(screen.getByRole('switch')).toHaveAttribute(
+        'aria-checked',
+        'false',
+      );
     });
     expect(setActivitySharingUseCase.execute).toHaveBeenCalledWith(false);
     expect(tMock).toHaveBeenCalledWith('privacy.turnedOff', { count: 4 });
@@ -94,7 +99,9 @@ describe('ActivitySharingToggle', () => {
 
     render(<ActivitySharingToggle initialValue={true} />);
     fireEvent.click(screen.getByRole('switch'));
-    fireEvent.click(screen.getByRole('button', { name: 'privacy.confirmOffAction' }));
+    fireEvent.click(
+      screen.getByRole('button', { name: 'privacy.confirmOffAction' }),
+    );
 
     await waitFor(() => {
       expect(customToast.error).toHaveBeenCalledWith('privacy.saveFailed');
@@ -111,7 +118,9 @@ describe('ActivitySharingToggle', () => {
 
     render(<ActivitySharingToggle initialValue={true} onChange={onChange} />);
     fireEvent.click(screen.getByRole('switch'));
-    fireEvent.click(screen.getByRole('button', { name: 'privacy.confirmOffAction' }));
+    fireEvent.click(
+      screen.getByRole('button', { name: 'privacy.confirmOffAction' }),
+    );
 
     await waitFor(() => {
       expect(onChange).toHaveBeenCalledWith(false);

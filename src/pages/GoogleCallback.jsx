@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useEffectEvent, useRef, useState } from 'react';
 import { useSearchParams, useNavigate, Link } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import { useAuthContext } from '../hooks/useAuthContext';
@@ -8,7 +8,10 @@ import {
   recogeLaVueltaDeGoogleConSuCuenta,
   recogeElVerificadorDeGoogle,
 } from '../utils/googleOAuth';
-import { olvidaLaVueltaTrasEntrar, vueltaTrasEntrar } from '../utils/vueltaTrasEntrar';
+import {
+  olvidaLaVueltaTrasEntrar,
+  vueltaTrasEntrar,
+} from '../utils/vueltaTrasEntrar';
 import { vuelvenLosAvisosDeCierre } from '../utils/avisoDeCierreForzado';
 import { stripSecretsFromAddressBar } from '../utils/stripSecretsFromAddressBar';
 import customToast from '../utils/toast';
@@ -30,138 +33,181 @@ const GoogleCallback = () => {
     stripSecretsFromAddressBar();
   }, []);
 
-  useEffect(() => {
-    // Prevent double execution in StrictMode
-    if (hasProcessed.current) return;
-    hasProcessed.current = true;
-
+  // La vuelta de Google se procesa UNA vez: el código solo se canjea una (A07),
+  // y el verifier de PKCE se lee y se borra al recogerlo. Es un evento del
+  // efecto y no el efecto: lee la URL, `t` y `navigate` del momento en que se
+  // lanza, sin que un cambio de idioma o un repintado lo vuelvan a lanzar
+  const procesaLaVuelta = useEffectEvent(async () => {
     const code = searchParams.get('code');
     const errorParam = searchParams.get('error');
     const stateParam = searchParams.get('state');
 
-    const processCallback = async () => {
-      // El verifier de PKCE se recoge lo primero, y así se borra pase lo que pase: bien,
-      // mal o con la vuelta rechazada (fase 3)
-      const codeVerifier = recogeElVerificadorDeGoogle();
-      // Y la página de vuelta guardada (lleva el token del enlace de cambio de correo):
-      // se recoge antes de cualquier salida temprana, para que no se quede guardada
-      // (/code-review). Solo la usa la entrada; vincular no la guarda
-      const vuelta = recogeLaVueltaDeGoogleConSuCuenta();
+    // El verifier de PKCE se recoge lo primero, y así se borra pase lo que pase: bien,
+    // mal o con la vuelta rechazada (fase 3)
+    const codeVerifier = recogeElVerificadorDeGoogle();
+    // Y la página de vuelta guardada (lleva el token del enlace de cambio de correo):
+    // se recoge antes de cualquier salida temprana, para que no se quede guardada
+    // (/code-review). Solo la usa la entrada; vincular no la guarda
+    const vuelta = recogeLaVueltaDeGoogleConSuCuenta();
 
-      // Verify CSRF nonce from state parameter
-      const { flow: parsedFlow, valid } = verifyOAuthState(stateParam);
-      setFlow(parsedFlow);
+    // Verify CSRF nonce from state parameter
+    const { flow: parsedFlow, valid } = verifyOAuthState(stateParam);
+    setFlow(parsedFlow);
 
-      if (!valid) {
-        setError(t('google.callbackError'));
-        return;
-      }
+    if (!valid) {
+      setError(t('google.callbackError'));
+      return;
+    }
 
-      // Handle Google OAuth error
-      if (errorParam) {
-        setError(t('google.callbackError'));
-        return;
-      }
+    // Handle Google OAuth error
+    if (errorParam) {
+      setError(t('google.callbackError'));
+      return;
+    }
 
-      // Missing authorization code
-      if (!code) {
-        setError(t('google.missingCode'));
-        return;
-      }
+    // Missing authorization code
+    if (!code) {
+      setError(t('google.missingCode'));
+      return;
+    }
 
-      // Sin verifier (la vuelta llegó a otra pestaña, o el almacenamiento se vació) el
-      // backend no canjearía el código: ni se le pregunta
-      if (!codeVerifier) {
-        setError(t(parsedFlow === 'link' ? 'google.missingVerifierLink' : 'google.missingVerifier'));
-        return;
-      }
+    // Sin verifier (la vuelta llegó a otra pestaña, o el almacenamiento se vació) el
+    // backend no canjearía el código: ni se le pregunta
+    if (!codeVerifier) {
+      setError(
+        t(
+          parsedFlow === 'link'
+            ? 'google.missingVerifierLink'
+            : 'google.missingVerifier',
+        ),
+      );
+      return;
+    }
 
-      try {
-        if (parsedFlow === 'link') {
-          // Link Google account flow
-          await linkGoogleAccountUseCase.execute(code, codeVerifier);
-          customToast.success(t('google.linkSuccess'));
-          navigate('/profile/edit', { replace: true });
+    try {
+      if (parsedFlow === 'link') {
+        // Link Google account flow
+        await linkGoogleAccountUseCase.execute(code, codeVerifier);
+        customToast.success(t('google.linkSuccess'));
+        navigate('/profile/edit', { replace: true });
+      } else {
+        // Login/register flow. La vuelta ya se recogió arriba
+        const { user, csrfToken, isNewUser } = await googleLoginUseCase.execute(
+          code,
+          codeVerifier,
+        );
+
+        // Update auth context
+        setUser(user);
+        updateCsrfToken(csrfToken);
+
+        if (isNewUser) {
+          // Se entró: acaba el silencio de un cierre de sesión anterior (C5). Un alta
+          // es otra cuenta y no vuelve a ninguna página: la guardada se olvida
+          vuelvenLosAvisosDeCierre();
+          olvidaLaVueltaTrasEntrar();
+          customToast.info(t('google.welcomeNewUser'));
+          navigate('/auth/complete-profile', { replace: true });
         } else {
-          // Login/register flow. La vuelta ya se recogió arriba
-          const { user, csrfToken, isNewUser } = await googleLoginUseCase.execute(code, codeVerifier);
-
-          // Update auth context
-          setUser(user);
-          updateCsrfToken(csrfToken);
-
-          if (isNewUser) {
-            // Se entró: acaba el silencio de un cierre de sesión anterior (C5). Un alta
-            // es otra cuenta y no vuelve a ninguna página: la guardada se olvida
-            vuelvenLosAvisosDeCierre();
-            olvidaLaVueltaTrasEntrar();
-            customToast.info(t('google.welcomeNewUser'));
-            navigate('/auth/complete-profile', { replace: true });
-          } else {
-            vuelvenLosAvisosDeCierre();
-            customToast.success(t('login.welcomeMessage', { name: user.firstName }));
-            // A la página de la que se vino: la que trae Google (confirmar el correo) o
-            // la guardada por una redirección dura, que se gasta; si no, al panel
-            // Con la cuenta que la apuntó: si es otra la que entra, a su panel (FE #1064)
-            const url = vuelta ? new globalThis.URL(vuelta.ruta, globalThis.location.origin) : null;
-            const desdeGoogle = url
-              ? { pathname: url.pathname, search: url.search, hash: url.hash, cuenta: vuelta.cuenta }
-              : null;
-            navigate(vueltaTrasEntrar(desdeGoogle ?? undefined, { cuenta: user?.id }), { replace: true });
-          }
-        }
-      } catch (err) {
-        console.error('Google OAuth callback error:', err);
-        // La página guardada se conserva: solo una entrada con éxito la gasta, y quien
-        // entre después con contraseña vuelve a ella (Agustín, 8 nov 2026)
-
-        // Sin 423: el bloqueo por fallos de contraseña no frena a Google (BE #732)
-        if (err.errorCode === 'GOOGLE_LINK_NEEDS_VERIFIED_EMAIL') {
-          // Vincular Google pide el correo de la cuenta verificado (RyderCupAm #749)
-          setError(t('google.linkNeedsVerifiedEmail'));
-        } else if (err.errorCode === 'REAUTHENTICATION_REQUIRED') {
-          // Vincular pide la contraseña confirmada hace menos de 5 minutos
-          // (RyderCupAm #753): caducó o no se confirmó. Desde el perfil se vuelve a pedir
-          setError(t('google.reauthRequired'));
-        } else if (err.errorCode === 'GOOGLE_EMAIL_NOT_VERIFIED') {
-          // Google no verificó el correo: ni alta ni vínculo (RyderCupAm, revisión
-          // del registro con Google)
-          setError(t('google.emailNotVerified'));
-        } else if (err.errorCode === 'ACCOUNT_DEACTIVATED') {
-          // Reintentar no sirve: que lo diga
-          setError(t('google.accountDeactivated'));
-        } else if (err.status === 429) {
-          setError(t('google.rateLimited'));
-        } else if (err.status === 409) {
-          setError(t('google.alreadyLinked'));
-        } else {
-          // Texto propio y traducido: el del backend no sigue el idioma de la app
-          setError(parsedFlow === 'link' ? t('google.linkError') : t('google.genericError'));
+          vuelvenLosAvisosDeCierre();
+          customToast.success(
+            t('login.welcomeMessage', { name: user.firstName }),
+          );
+          // A la página de la que se vino: la que trae Google (confirmar el correo) o
+          // la guardada por una redirección dura, que se gasta; si no, al panel
+          // Con la cuenta que la apuntó: si es otra la que entra, a su panel (FE #1064)
+          const url = vuelta
+            ? new globalThis.URL(vuelta.ruta, globalThis.location.origin)
+            : null;
+          const desdeGoogle = url
+            ? {
+                pathname: url.pathname,
+                search: url.search,
+                hash: url.hash,
+                cuenta: vuelta.cuenta,
+              }
+            : null;
+          navigate(
+            vueltaTrasEntrar(desdeGoogle ?? undefined, { cuenta: user?.id }),
+            { replace: true },
+          );
         }
       }
-    };
+    } catch (err) {
+      console.error('Google OAuth callback error:', err);
+      // La página guardada se conserva: solo una entrada con éxito la gasta, y quien
+      // entre después con contraseña vuelve a ella (Agustín, 8 nov 2026)
 
-    processCallback();
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+      // Sin 423: el bloqueo por fallos de contraseña no frena a Google (BE #732)
+      if (err.errorCode === 'GOOGLE_LINK_NEEDS_VERIFIED_EMAIL') {
+        // Vincular Google pide el correo de la cuenta verificado (RyderCupAm #749)
+        setError(t('google.linkNeedsVerifiedEmail'));
+      } else if (err.errorCode === 'REAUTHENTICATION_REQUIRED') {
+        // Vincular pide la contraseña confirmada hace menos de 5 minutos
+        // (RyderCupAm #753): caducó o no se confirmó. Desde el perfil se vuelve a pedir
+        setError(t('google.reauthRequired'));
+      } else if (err.errorCode === 'GOOGLE_EMAIL_NOT_VERIFIED') {
+        // Google no verificó el correo: ni alta ni vínculo (RyderCupAm, revisión
+        // del registro con Google)
+        setError(t('google.emailNotVerified'));
+      } else if (err.errorCode === 'ACCOUNT_DEACTIVATED') {
+        // Reintentar no sirve: que lo diga
+        setError(t('google.accountDeactivated'));
+      } else if (err.status === 429) {
+        setError(t('google.rateLimited'));
+      } else if (err.status === 409) {
+        setError(t('google.alreadyLinked'));
+      } else {
+        // Texto propio y traducido: el del backend no sigue el idioma de la app
+        setError(
+          parsedFlow === 'link'
+            ? t('google.linkError')
+            : t('google.genericError'),
+        );
+      }
+    }
+  });
+
+  useEffect(() => {
+    // StrictMode monta los efectos dos veces en desarrollo: el ref, que sobrevive
+    // a ese doble montaje, deja pasar solo la primera
+    if (hasProcessed.current) return;
+    hasProcessed.current = true;
+    procesaLaVuelta();
+  }, []);
 
   if (error) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gray-50">
         <div className="bg-white rounded-2xl shadow-xl p-8 border border-gray-200 max-w-md w-full mx-4 text-center">
           <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            <svg
+              className="w-6 h-6 text-red-600"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M6 18L18 6M6 6l12 12"
+              />
             </svg>
           </div>
           <h2 className="text-xl font-bold text-gray-900 mb-2">
-            {flow === 'link' ? t('google.linkErrorTitle') : t('google.errorTitle')}
+            {flow === 'link'
+              ? t('google.linkErrorTitle')
+              : t('google.errorTitle')}
           </h2>
           <p className="text-gray-600 text-sm mb-6">{error}</p>
           <Link
             to={flow === 'link' ? '/profile/edit' : '/login'}
             className="inline-block bg-primary hover:bg-primary/90 text-white font-bold py-2.5 px-6 rounded-lg transition-colors"
           >
-            {flow === 'link' ? t('google.backToProfile') : t('login.signInButton')}
+            {flow === 'link'
+              ? t('google.backToProfile')
+              : t('login.signInButton')}
           </Link>
         </div>
       </div>

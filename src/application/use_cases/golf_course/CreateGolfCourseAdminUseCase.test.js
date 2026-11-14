@@ -11,7 +11,7 @@ describe('CreateGolfCourseAdminUseCase', () => {
     vi.clearAllMocks();
 
     golfCourseRepository = {
-      createAsAdmin: vi.fn()
+      createAsAdmin: vi.fn(),
     };
 
     useCase = new CreateGolfCourseAdminUseCase({ golfCourseRepository });
@@ -27,21 +27,21 @@ describe('CreateGolfCourseAdminUseCase', () => {
         identifier: 'Black',
         courseRating: 75.5,
         slopeRating: 140,
-        gender: 'MALE'
+        gender: 'MALE',
       },
       {
         color: 'YELLOW',
         identifier: 'Blue',
         courseRating: 72.0,
         slopeRating: 130,
-        gender: 'MALE'
-      }
+        gender: 'MALE',
+      },
     ],
     holes: Array.from({ length: 18 }, (_, i) => ({
       holeNumber: i + 1,
       par: 4,
-      strokeIndex: i + 1
-    }))
+      strokeIndex: i + 1,
+    })),
   });
 
   it('should successfully create a golf course as admin (directly APPROVED)', async () => {
@@ -53,7 +53,7 @@ describe('CreateGolfCourseAdminUseCase', () => {
       approvalStatus: 'APPROVED',
       totalPar: 72,
       createdAt: '2024-01-01T00:00:00Z',
-      updatedAt: '2024-01-01T00:00:00Z'
+      updatedAt: '2024-01-01T00:00:00Z',
     };
 
     golfCourseRepository.createAsAdmin.mockResolvedValue(mockCreatedCourse);
@@ -70,8 +70,12 @@ describe('CreateGolfCourseAdminUseCase', () => {
 
   it('should throw error when course data is not provided', async () => {
     // Act & Assert
-    await expect(useCase.execute(null)).rejects.toThrow('Golf course data is required');
-    await expect(useCase.execute(undefined)).rejects.toThrow('Golf course data is required');
+    await expect(useCase.execute(null)).rejects.toThrow(
+      'Golf course data is required',
+    );
+    await expect(useCase.execute(undefined)).rejects.toThrow(
+      'Golf course data is required',
+    );
 
     expect(golfCourseRepository.createAsAdmin).not.toHaveBeenCalled();
   });
@@ -86,23 +90,23 @@ describe('CreateGolfCourseAdminUseCase', () => {
           identifier: 'Yellow',
           courseRating: 70.0,
           slopeRating: 120,
-          gender: 'MALE'
+          gender: 'MALE',
         },
         {
           color: 'YELLOW',
           identifier: 'Red',
           courseRating: 68.0,
           slopeRating: 115,
-          gender: 'FEMALE'
-        }
-      ]
+          gender: 'FEMALE',
+        },
+      ],
     };
 
     const mockCreatedCourse = {
       id: 'course-456',
       ...courseData,
       approvalStatus: 'APPROVED',
-      totalPar: 72
+      totalPar: 72,
     };
 
     golfCourseRepository.createAsAdmin.mockResolvedValue(mockCreatedCourse);
@@ -119,20 +123,56 @@ describe('CreateGolfCourseAdminUseCase', () => {
     const courseData = {
       ...createValidCourseData(),
       tees: [
-        { color: 'WHITE', identifier: 'Black', courseRating: 75.5, slopeRating: 140, gender: 'MALE' },
-        { color: 'YELLOW', identifier: 'Blue', courseRating: 72.0, slopeRating: 130, gender: 'MALE' },
-        { color: 'BLUE', identifier: 'Yellow', courseRating: 70.0, slopeRating: 120, gender: 'MALE' },
-        { color: 'GREEN', identifier: 'Orange', courseRating: 72.0, slopeRating: 130, gender: 'FEMALE' },
-        { color: 'RED', identifier: 'Red', courseRating: 68.0, slopeRating: 115, gender: 'FEMALE' },
-        { color: 'YELLOW', identifier: 'Green', courseRating: 65.0, slopeRating: 110, gender: 'FEMALE' }
-      ]
+        {
+          color: 'WHITE',
+          identifier: 'Black',
+          courseRating: 75.5,
+          slopeRating: 140,
+          gender: 'MALE',
+        },
+        {
+          color: 'YELLOW',
+          identifier: 'Blue',
+          courseRating: 72.0,
+          slopeRating: 130,
+          gender: 'MALE',
+        },
+        {
+          color: 'BLUE',
+          identifier: 'Yellow',
+          courseRating: 70.0,
+          slopeRating: 120,
+          gender: 'MALE',
+        },
+        {
+          color: 'GREEN',
+          identifier: 'Orange',
+          courseRating: 72.0,
+          slopeRating: 130,
+          gender: 'FEMALE',
+        },
+        {
+          color: 'RED',
+          identifier: 'Red',
+          courseRating: 68.0,
+          slopeRating: 115,
+          gender: 'FEMALE',
+        },
+        {
+          color: 'YELLOW',
+          identifier: 'Green',
+          courseRating: 65.0,
+          slopeRating: 110,
+          gender: 'FEMALE',
+        },
+      ],
     };
 
     const mockCreatedCourse = {
       id: 'course-789',
       ...courseData,
       approvalStatus: 'APPROVED',
-      totalPar: 72
+      totalPar: 72,
     };
 
     golfCourseRepository.createAsAdmin.mockResolvedValue(mockCreatedCourse);
@@ -156,14 +196,14 @@ describe('CreateGolfCourseAdminUseCase', () => {
         identifier: `Barra ${i + 1}`,
         courseRating: 70.0,
         slopeRating: 120,
-        gender: 'MALE'
-      }))
+        gender: 'MALE',
+      })),
     };
 
     golfCourseRepository.createAsAdmin.mockResolvedValue({
       id: 'course-790',
       ...courseData,
-      totalPar: 72
+      totalPar: 72,
     });
 
     // Act
@@ -179,19 +219,21 @@ describe('CreateGolfCourseAdminUseCase', () => {
     // Arrange
     const courseData = {
       ...createValidCourseData(),
-      tees: [{
-        color: 'YELLOW',
-        identifier: null,
-        courseRating: 70.0,
-        slopeRating: 120,
-        gender: 'MALE'
-      }]
+      tees: [
+        {
+          color: 'YELLOW',
+          identifier: null,
+          courseRating: 70.0,
+          slopeRating: 120,
+          gender: 'MALE',
+        },
+      ],
     };
 
     golfCourseRepository.createAsAdmin.mockResolvedValue({
       id: 'course-791',
       ...courseData,
-      totalPar: 72
+      totalPar: 72,
     });
 
     // Act
@@ -210,13 +252,13 @@ describe('CreateGolfCourseAdminUseCase', () => {
         identifier: `Barra ${i + 1}`,
         courseRating: 70.0,
         slopeRating: 120,
-        gender: 'MALE'
-      }))
+        gender: 'MALE',
+      })),
     };
 
     // Act & Assert
     await expect(useCase.execute(courseData)).rejects.toThrow(
-      'Golf course must have between 1 and 14 tees'
+      'Golf course must have between 1 and 14 tees',
     );
     expect(golfCourseRepository.createAsAdmin).not.toHaveBeenCalled();
   });
@@ -227,7 +269,7 @@ describe('CreateGolfCourseAdminUseCase', () => {
 
     // Act & Assert
     await expect(useCase.execute(courseData)).rejects.toThrow(
-      'Golf course must have between 1 and 14 tees'
+      'Golf course must have between 1 and 14 tees',
     );
     expect(golfCourseRepository.createAsAdmin).not.toHaveBeenCalled();
   });
@@ -239,13 +281,13 @@ describe('CreateGolfCourseAdminUseCase', () => {
     const holes = Array.from({ length: 18 }, (_, i) => ({
       holeNumber: i + 1,
       par: i === 0 ? 7 : i === 1 ? 3 : 4,
-      strokeIndex: i + 1
+      strokeIndex: i + 1,
     }));
 
     // Act & Assert
-    await expect(useCase.execute({ ...createValidCourseData(), holes })).rejects.toThrow(
-      'Hole 1 par must be one of 3, 4, 5, 6 (current: 7)'
-    );
+    await expect(
+      useCase.execute({ ...createValidCourseData(), holes }),
+    ).rejects.toThrow('Hole 1 par must be one of 3, 4, 5, 6 (current: 7)');
     expect(golfCourseRepository.createAsAdmin).not.toHaveBeenCalled();
   });
 
@@ -254,10 +296,13 @@ describe('CreateGolfCourseAdminUseCase', () => {
     const holes = Array.from({ length: 18 }, (_, i) => ({
       holeNumber: i + 1,
       par: i === 0 ? 6 : i === 1 ? 3 : 4,
-      strokeIndex: i + 1
+      strokeIndex: i + 1,
     }));
     const courseData = { ...createValidCourseData(), holes };
-    golfCourseRepository.createAsAdmin.mockResolvedValue({ id: 'course-792', ...courseData });
+    golfCourseRepository.createAsAdmin.mockResolvedValue({
+      id: 'course-792',
+      ...courseData,
+    });
 
     // Act
     const result = await useCase.execute(courseData);
@@ -273,7 +318,7 @@ describe('CreateGolfCourseAdminUseCase', () => {
       id: 'course-999',
       ...courseData,
       approvalStatus: 'APPROVED',
-      totalPar: 72
+      totalPar: 72,
     };
 
     golfCourseRepository.createAsAdmin.mockResolvedValue(mockCreatedCourse);
@@ -296,21 +341,21 @@ describe('CreateGolfCourseAdminUseCase', () => {
         ...Array.from({ length: 10 }, (_, i) => ({
           holeNumber: i + 1,
           par: 4,
-          strokeIndex: i + 1
+          strokeIndex: i + 1,
         })),
         ...Array.from({ length: 8 }, (_, i) => ({
           holeNumber: i + 11,
           par: 3,
-          strokeIndex: i + 11
-        }))
-      ]
+          strokeIndex: i + 11,
+        })),
+      ],
     };
 
     const mockCreatedCourse = {
       id: 'course-111',
       ...executiveData,
       approvalStatus: 'APPROVED',
-      totalPar: 64 // 10*4 + 8*3 = 40+24 = 64
+      totalPar: 64, // 10*4 + 8*3 = 40+24 = 64
     };
 
     golfCourseRepository.createAsAdmin.mockResolvedValue(mockCreatedCourse);
@@ -332,14 +377,14 @@ describe('CreateGolfCourseAdminUseCase', () => {
       holes: Array.from({ length: 18 }, (_, i) => ({
         holeNumber: i + 1,
         par: 3,
-        strokeIndex: i + 1
-      }))
+        strokeIndex: i + 1,
+      })),
     };
 
     golfCourseRepository.createAsAdmin.mockResolvedValue({
       id: 'course-112',
       ...pitchAndPuttData,
-      totalPar: 54
+      totalPar: 54,
     });
 
     // Act
@@ -358,13 +403,13 @@ describe('CreateGolfCourseAdminUseCase', () => {
       holes: Array.from({ length: 18 }, (_, i) => ({
         holeNumber: i + 1,
         par: 3,
-        strokeIndex: i + 1
-      }))
+        strokeIndex: i + 1,
+      })),
     };
 
     // Act & Assert - el mensaje nombra el rango del tipo, no uno fijo
     await expect(useCase.execute(standardData)).rejects.toThrow(
-      'Total par must be between 66 and 76'
+      'Total par must be between 66 and 76',
     );
     expect(golfCourseRepository.createAsAdmin).not.toHaveBeenCalled();
   });
@@ -373,7 +418,9 @@ describe('CreateGolfCourseAdminUseCase', () => {
     // Arrange
     const courseData = createValidCourseData();
     const errorMessage = 'Database connection failed';
-    golfCourseRepository.createAsAdmin.mockRejectedValue(new Error(errorMessage));
+    golfCourseRepository.createAsAdmin.mockRejectedValue(
+      new Error(errorMessage),
+    );
 
     // Act & Assert
     await expect(useCase.execute(courseData)).rejects.toThrow(errorMessage);
@@ -386,7 +433,7 @@ describe('CreateGolfCourseAdminUseCase', () => {
       id: 'course-222',
       ...courseData,
       approvalStatus: 'APPROVED',
-      totalPar: 72
+      totalPar: 72,
     };
 
     golfCourseRepository.createAsAdmin.mockResolvedValue(mockCreatedCourse);

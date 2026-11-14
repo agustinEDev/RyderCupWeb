@@ -4,7 +4,9 @@ import { useLocation, useNavigate } from 'react-router';
 /** Si hay una entrada propia detrás de esta: ver `useGoBack`, abajo. */
 export const hayHistorialPropio = (location) => {
   const historyIndex = window.history.state?.idx;
-  return historyIndex !== undefined ? historyIndex > 0 : location.key !== 'default';
+  return historyIndex !== undefined
+    ? historyIndex > 0
+    : location.key !== 'default';
 };
 
 /**

@@ -28,10 +28,15 @@ const ResetEnvelopesModal = ({ isOpen, onConfirm, onClose, isLoading, t }) => (
     busy={isLoading}
   >
     <div className="px-6 pt-6 pb-2">
-      <h2 id="rehacer-sobres-titulo" className="text-xl font-semibold text-gray-900">
+      <h2
+        id="rehacer-sobres-titulo"
+        className="text-xl font-semibold text-gray-900"
+      >
         {t('envelope.resetTitle')}
       </h2>
-      <p className="mt-1 text-sm text-gray-600">{t('envelope.resetExplanation')}</p>
+      <p className="mt-1 text-sm text-gray-600">
+        {t('envelope.resetExplanation')}
+      </p>
     </div>
 
     <div className="flex flex-col-reverse gap-3 px-6 pt-4 pb-6 sm:flex-row sm:justify-end">

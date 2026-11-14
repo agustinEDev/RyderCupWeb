@@ -34,49 +34,63 @@ class CompetitionMapper {
         ? new CountryCode(apiData.tertiary_country_code)
         : null;
 
-      const location = new Location(mainCountry, adjacentCountry1, adjacentCountry2);
+      const location = new Location(
+        mainCountry,
+        adjacentCountry1,
+        adjacentCountry2,
+      );
 
       // Map date range
       const dates = new DateRange(
         new Date(apiData.start_date),
-        new Date(apiData.end_date)
+        new Date(apiData.end_date),
       );
 
       // Map handicap settings (play_mode replaces handicap_type/handicap_percentage)
       const handicapSettings = new HandicapSettings(
-        apiData.play_mode || apiData.handicap_type || 'SCRATCH'
+        apiData.play_mode || apiData.handicap_type || 'SCRATCH',
       );
 
-    // Map team assignment. Si el torneo no tiene equipos, la entidad lo
-    // descarta: la regla vive en ella (FE #791)
-    const teamAssignment = new TeamAssignment(apiData.team_assignment || 'MANUAL');
+      // Map team assignment. Si el torneo no tiene equipos, la entidad lo
+      // descarta: la regla vive en ella (FE #791)
+      const teamAssignment = new TeamAssignment(
+        apiData.team_assignment || 'MANUAL',
+      );
 
-    // Bidirectional mapping for maxPlayers/number_of_players
-    // Prefer number_of_players (current API contract), fallback to max_players (legacy)
-    const maxPlayers = apiData.number_of_players ?? apiData.max_players ?? 24;
+      // Bidirectional mapping for maxPlayers/number_of_players
+      // Prefer number_of_players (current API contract), fallback to max_players (legacy)
+      const maxPlayers = apiData.number_of_players ?? apiData.max_players ?? 24;
 
-    // Create Competition entity
-    return new Competition({
-      id: new CompetitionId(apiData.id),
-      creatorId: apiData.creator_id || apiData.created_by,
-      name: new CompetitionName(apiData.name),
-      dates,
-      location,
-      team1Name: apiData.team_1_name || apiData.team_one_name || apiData.team1_Name || 'Team 1',
-      team2Name: apiData.team_2_name || apiData.team_two_name || apiData.team2_name || 'Team 2',
-      // Una respuesta de antes del tipo es una Ryder Cup
-      tournamentType: apiData.tournament_type || 'RYDER_CUP',
-      strokePlay: CompetitionMapper.ajustesDeStrokePlay(apiData),
-      handicapSettings,
-      maxPlayers,
-      teamAssignment,
-      // Sin el campo, privada: una respuesta de antes de que existiera no
-      // convierte en pública una competición que no lo es (FE #664)
-      visibility: apiData.visibility || 'PRIVATE',
-      status: new CompetitionStatus(apiData.status || 'DRAFT'),
-      createdAt: instanteDeLaApi(apiData.created_at),
-      updatedAt: instanteDeLaApi(apiData.updated_at)
-    });
+      // Create Competition entity
+      return new Competition({
+        id: new CompetitionId(apiData.id),
+        creatorId: apiData.creator_id || apiData.created_by,
+        name: new CompetitionName(apiData.name),
+        dates,
+        location,
+        team1Name:
+          apiData.team_1_name ||
+          apiData.team_one_name ||
+          apiData.team1_Name ||
+          'Team 1',
+        team2Name:
+          apiData.team_2_name ||
+          apiData.team_two_name ||
+          apiData.team2_name ||
+          'Team 2',
+        // Una respuesta de antes del tipo es una Ryder Cup
+        tournamentType: apiData.tournament_type || 'RYDER_CUP',
+        strokePlay: CompetitionMapper.ajustesDeStrokePlay(apiData),
+        handicapSettings,
+        maxPlayers,
+        teamAssignment,
+        // Sin el campo, privada: una respuesta de antes de que existiera no
+        // convierte en pública una competición que no lo es (FE #664)
+        visibility: apiData.visibility || 'PRIVATE',
+        status: new CompetitionStatus(apiData.status || 'DRAFT'),
+        createdAt: instanteDeLaApi(apiData.created_at),
+        updatedAt: instanteDeLaApi(apiData.updated_at),
+      });
     } catch (error) {
       throw new Error(`Failed to map competition data: ${error.message}`);
     }
@@ -114,12 +128,15 @@ class CompetitionMapper {
       start_date: competition.dates.startDate.toISOString().split('T')[0],
       end_date: competition.dates.endDate.toISOString().split('T')[0],
       main_country: competition.location.mainCountry().value(),
-      countries: competition.location.getAllCountries().slice(1).map(c => c.value()),
+      countries: competition.location
+        .getAllCountries()
+        .slice(1)
+        .map((c) => c.value()),
       play_mode: competition.handicapSettings.type(),
       number_of_players: competition.maxPlayers, // Use API contract field name
       team_assignment: competition.ryderCup?.teamAssignment?.value() ?? null,
       status: competition.status.value,
-      creator_id: competition.creatorId
+      creator_id: competition.creatorId,
     };
   }
 
@@ -142,18 +159,20 @@ class CompetitionMapper {
         nameEn: country.name_en,
         nameEs: country.name_es,
         flag: getCountryFlag(country.code),
-        isMain: index === 0
+        isMain: index === 0,
       }));
     } else {
       // Fallback: build from domain Location value object
       const allCountries = competition.location.getAllCountries();
-      const countryCodes = allCountries.map(countryCode => countryCode.value());
+      const countryCodes = allCountries.map((countryCode) =>
+        countryCode.value(),
+      );
 
       countries = countryCodes.map((code, index) => ({
         code: code,
         name: code, // Fallback to ISO code if no API data
         flag: getCountryFlag(code),
-        isMain: index === 0
+        isMain: index === 0,
       }));
     }
 
@@ -171,20 +190,22 @@ class CompetitionMapper {
       enrolledCount: apiData?.enrolled_count || 0,
       isCreator: apiData?.is_creator || false,
       creatorId: competition.creatorId,
-      creator: apiData?.creator ? {
-        id: apiData.creator.id,
-        firstName: apiData.creator.first_name,
-        lastName: apiData.creator.last_name,
-        email: apiData.creator.email,
-        handicap: apiData.creator.handicap,
-        countryCode: apiData.creator.country_code
-      } : null,
+      creator: apiData?.creator
+        ? {
+            id: apiData.creator.id,
+            firstName: apiData.creator.first_name,
+            lastName: apiData.creator.last_name,
+            email: apiData.creator.email,
+            handicap: apiData.creator.handicap,
+            countryCode: apiData.creator.country_code,
+          }
+        : null,
       createdAt: competition.createdAt.toISOString(),
       updatedAt: competition.updatedAt.toISOString(),
       enrollment_status: apiData?.user_enrollment_status || null,
       pending_enrollments_count: apiData?.pending_enrollments_count || 0,
       playMode: competition.handicapSettings.type(),
-      teamAssignment: competition.ryderCup?.teamAssignment?.value() ?? null
+      teamAssignment: competition.ryderCup?.teamAssignment?.value() ?? null,
     };
   }
 }

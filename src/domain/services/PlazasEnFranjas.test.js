@@ -1,5 +1,14 @@
 import { describe, it, expect } from 'vitest';
-import { situacionEnLasFranjas, destinosParaMover, sinFranja, COGER, CAMBIAR, SOLTAR, ESPERAR, DEJAR_DE_ESPERAR } from './PlazasEnFranjas';
+import {
+  situacionEnLasFranjas,
+  destinosParaMover,
+  sinFranja,
+  COGER,
+  CAMBIAR,
+  SOLTAR,
+  ESPERAR,
+  DEJAR_DE_ESPERAR,
+} from './PlazasEnFranjas';
 
 /**
  * Qué puede hacer un jugador en cada franja (FE #824, PR 4). Las reglas del
@@ -14,17 +23,32 @@ const franja = (id, dia, extra = {}) => ({
   id,
   roundDate: dia,
   sessionType: 'MORNING',
-  teeSheet: { capacity: 4, placesTaken: 0, playerIds: [], waitingIds: [], ...extra },
+  teeSheet: {
+    capacity: 4,
+    placesTaken: 0,
+    playerIds: [],
+    waitingIds: [],
+    ...extra,
+  },
 });
 const llena = (id, dia, extra = {}) =>
-  franja(id, dia, { capacity: 2, placesTaken: 2, playerIds: ['a', 'b'], ...extra });
+  franja(id, dia, {
+    capacity: 2,
+    placesTaken: 2,
+    playerIds: ['a', 'b'],
+    ...extra,
+  });
 const mia = (id, dia) => franja(id, dia, { placesTaken: 1, playerIds: [YO] });
 
 const accion = (situacion, id) => situacion.porFranja[id];
 
 describe('PlazasEnFranjas (FE #824)', () => {
   it('cuenta las jornadas en que juega y su máximo', () => {
-    const s = situacionEnLasFranjas([mia('m', '2030-10-12'), franja('t', '2030-10-13')], YO, 2);
+    const s = situacionEnLasFranjas(
+      [mia('m', '2030-10-12'), franja('t', '2030-10-13')],
+      YO,
+      2,
+    );
 
     expect(s.jornadas).toEqual({ juega: 1, maximo: 2 });
   });
@@ -37,9 +61,12 @@ describe('PlazasEnFranjas (FE #824)', () => {
 
   it('3: con sitio y ya juega ese día: cambiarse directamente desde la suya', () => {
     const s = situacionEnLasFranjas(
-      [mia('m', '2030-10-12'), { ...franja('t', '2030-10-12'), sessionType: 'AFTERNOON' }],
+      [
+        mia('m', '2030-10-12'),
+        { ...franja('t', '2030-10-12'), sessionType: 'AFTERNOON' },
+      ],
       YO,
-      1
+      1,
     );
 
     expect(accion(s, 't')).toEqual({ tipo: CAMBIAR, dejar: ['m'] });
@@ -47,9 +74,12 @@ describe('PlazasEnFranjas (FE #824)', () => {
 
   it('3b: ya juega ese día aunque le queden jornadas: cambiarse, no coger otra ese día', () => {
     const s = situacionEnLasFranjas(
-      [mia('m', '2030-10-12'), { ...franja('t', '2030-10-12'), sessionType: 'AFTERNOON' }],
+      [
+        mia('m', '2030-10-12'),
+        { ...franja('t', '2030-10-12'), sessionType: 'AFTERNOON' },
+      ],
       YO,
-      2
+      2,
     );
 
     expect(accion(s, 't')).toEqual({ tipo: CAMBIAR, dejar: ['m'] });
@@ -57,9 +87,13 @@ describe('PlazasEnFranjas (FE #824)', () => {
 
   it('4: con sitio, otro día y las jornadas llenas: cambiar por esta, eligiendo cuál deja', () => {
     const s = situacionEnLasFranjas(
-      [mia('a', '2030-10-12'), mia('b', '2030-10-13'), franja('c', '2030-10-14')],
+      [
+        mia('a', '2030-10-12'),
+        mia('b', '2030-10-13'),
+        franja('c', '2030-10-14'),
+      ],
       YO,
-      2
+      2,
     );
 
     expect(accion(s, 'c')).toEqual({ tipo: CAMBIAR, dejar: ['a', 'b'] });
@@ -79,22 +113,33 @@ describe('PlazasEnFranjas (FE #824)', () => {
 
   it('6b: llena y ya juega ese día: nada (la espera es para conseguir jornada)', () => {
     const s = situacionEnLasFranjas(
-      [mia('m', '2030-10-12'), { ...llena('f', '2030-10-12'), sessionType: 'AFTERNOON' }],
+      [
+        mia('m', '2030-10-12'),
+        { ...llena('f', '2030-10-12'), sessionType: 'AFTERNOON' },
+      ],
       YO,
-      2
+      2,
     );
 
     expect(accion(s, 'f')).toBeNull();
   });
 
   it('6c: llena y con las jornadas llenas: nada', () => {
-    const s = situacionEnLasFranjas([mia('m', '2030-10-12'), llena('f', '2030-10-13')], YO, 1);
+    const s = situacionEnLasFranjas(
+      [mia('m', '2030-10-12'), llena('f', '2030-10-13')],
+      YO,
+      1,
+    );
 
     expect(accion(s, 'f')).toBeNull();
   });
 
   it('7: espera en ella: salir de la espera, con su posición', () => {
-    const s = situacionEnLasFranjas([llena('f', '2030-10-12', { waitingIds: ['x', 'y', YO] })], YO, 1);
+    const s = situacionEnLasFranjas(
+      [llena('f', '2030-10-12', { waitingIds: ['x', 'y', YO] })],
+      YO,
+      1,
+    );
 
     expect(accion(s, 'f')).toEqual({ tipo: DEJAR_DE_ESPERAR, posicion: 3 });
   });
@@ -103,20 +148,28 @@ describe('PlazasEnFranjas (FE #824)', () => {
     const s = situacionEnLasFranjas(
       [llena('f', '2030-10-12', { waitingIds: [YO], myWaitingPosition: 5 })],
       YO,
-      1
+      1,
     );
 
     expect(accion(s, 'f')).toEqual({ tipo: DEJAR_DE_ESPERAR, posicion: 5 });
   });
 
   it('una franja sin hoja (de antes) no ofrece nada', () => {
-    const s = situacionEnLasFranjas([{ id: 'r', roundDate: '2030-10-12', teeSheet: null }], YO, 1);
+    const s = situacionEnLasFranjas(
+      [{ id: 'r', roundDate: '2030-10-12', teeSheet: null }],
+      YO,
+      1,
+    );
 
     expect(accion(s, 'r')).toBeNull();
   });
 
   it('sin máximo conocido, una jornada', () => {
-    const s = situacionEnLasFranjas([mia('m', '2030-10-12'), franja('t', '2030-10-13')], YO, undefined);
+    const s = situacionEnLasFranjas(
+      [mia('m', '2030-10-12'), franja('t', '2030-10-13')],
+      YO,
+      undefined,
+    );
 
     expect(s.jornadas.maximo).toBe(1);
     expect(accion(s, 't')).toEqual({ tipo: CAMBIAR, dejar: ['m'] });
@@ -124,7 +177,6 @@ describe('PlazasEnFranjas (FE #824)', () => {
 });
 
 describe('adónde puede mover el organizador a un jugador (/code-review: la regla en el dominio)', () => {
-
   it('a otra con sitio del mismo día o de un día en que no juega; no a las llenas ni a la suya', () => {
     const franjas = [
       mia('m', '2030-10-12'),
@@ -135,7 +187,10 @@ describe('adónde puede mover el organizador a un jugador (/code-review: la regl
       llena('g', '2030-10-14'),
     ];
 
-    expect(destinosParaMover(franjas, YO, 'm').map((f) => f.id)).toEqual(['t', 'f']);
+    expect(destinosParaMover(franjas, YO, 'm').map((f) => f.id)).toEqual([
+      't',
+      'f',
+    ]);
   });
 });
 
@@ -144,14 +199,23 @@ describe('sinFranja: los aprobados sin plaza en ninguna (QA del 11 oct 2026: la 
   const conPlaza = (ids) => ({ teeSheet: { playerIds: ids } });
 
   it('los que no tienen plaza en ninguna franja', () => {
-    expect(sinFranja([conPlaza(['ana']), conPlaza(['cris'])], inscritos)).toEqual([{ userId: 'bea' }]);
+    expect(
+      sinFranja([conPlaza(['ana']), conPlaza(['cris'])], inscritos),
+    ).toEqual([{ userId: 'bea' }]);
   });
 
   it('en lista de espera no es tener plaza', () => {
-    expect(sinFranja([{ teeSheet: { playerIds: [], waitingIds: ['ana'] } }], inscritos).map((i) => i.userId)).toEqual(['ana', 'bea', 'cris']);
+    expect(
+      sinFranja(
+        [{ teeSheet: { playerIds: [], waitingIds: ['ana'] } }],
+        inscritos,
+      ).map((i) => i.userId),
+    ).toEqual(['ana', 'bea', 'cris']);
   });
 
   it('una sesión sin hoja no cuenta', () => {
-    expect(sinFranja([{}, conPlaza(['ana', 'bea', 'cris'])], inscritos)).toEqual([]);
+    expect(
+      sinFranja([{}, conPlaza(['ana', 'bea', 'cris'])], inscritos),
+    ).toEqual([]);
   });
 });

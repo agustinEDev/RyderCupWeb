@@ -21,7 +21,12 @@ class Device {
   }) {
     // Validaciones de presencia. La IP puede venir vacía: el backend la manda tapada,
     // y sin IP real no hay nada que tapar (FE #1046)
-    if (!id || !device_name || ip_address === undefined || ip_address === null) {
+    if (
+      !id ||
+      !device_name ||
+      ip_address === undefined ||
+      ip_address === null
+    ) {
       throw new Error('Device entity requires id, device_name, and ip_address');
     }
 
@@ -37,10 +42,20 @@ class Device {
     }
 
     // Validaciones de tipo - timestamps opcionales (string, null, o undefined)
-    if (last_used_at !== null && last_used_at !== undefined && typeof last_used_at !== 'string') {
-      throw new Error('Device last_used_at must be a string, null, or undefined');
+    if (
+      last_used_at !== null &&
+      last_used_at !== undefined &&
+      typeof last_used_at !== 'string'
+    ) {
+      throw new Error(
+        'Device last_used_at must be a string, null, or undefined',
+      );
     }
-    if (created_at !== null && created_at !== undefined && typeof created_at !== 'string') {
+    if (
+      created_at !== null &&
+      created_at !== undefined &&
+      typeof created_at !== 'string'
+    ) {
       throw new Error('Device created_at must be a string, null, or undefined');
     }
 

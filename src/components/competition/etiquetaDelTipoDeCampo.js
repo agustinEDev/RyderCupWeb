@@ -15,5 +15,8 @@
  */
 export const etiquetaDelTipoDeCampo = (courseType, t) => {
   if (!courseType) return '';
-  return t(`courseTypes.${courseType}`, { ns: 'golfCourses', defaultValue: courseType });
+  return t(`courseTypes.${courseType}`, {
+    ns: 'golfCourses',
+    defaultValue: courseType,
+  });
 };

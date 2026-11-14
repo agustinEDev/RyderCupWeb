@@ -16,8 +16,20 @@ import { crearRecienEnviadas } from './recienEnviadas';
  * sesión a mitad, lo que queda de uno no puede salir con las cookies de otro.
  */
 class SendPendingHoleSamplesUseCase {
-  constructor({ golfCourseRepository, holeSampleStore, reportarFallo = () => {}, enVuelo = new Set(), recienEnviadas = crearRecienEnviadas() }) {
-    this.dependencias = { golfCourseRepository, holeSampleStore, reportarFallo, enVuelo, recienEnviadas };
+  constructor({
+    golfCourseRepository,
+    holeSampleStore,
+    reportarFallo = () => {},
+    enVuelo = new Set(),
+    recienEnviadas = crearRecienEnviadas(),
+  }) {
+    this.dependencias = {
+      golfCourseRepository,
+      holeSampleStore,
+      reportarFallo,
+      enVuelo,
+      recienEnviadas,
+    };
     this.enMarcha = new Map();
   }
 
@@ -30,7 +42,8 @@ class SendPendingHoleSamplesUseCase {
       .catch(() => {})
       .then(() => this.vaciar(userId, sigue))
       .finally(() => {
-        if (this.enMarcha.get(userId)?.promesa === promesa) this.enMarcha.delete(userId);
+        if (this.enMarcha.get(userId)?.promesa === promesa)
+          this.enMarcha.delete(userId);
       });
     this.enMarcha.set(userId, { promesa, sigue });
     return promesa;
@@ -44,7 +57,11 @@ class SendPendingHoleSamplesUseCase {
         cuenta.pendientes += todas.length - i;
         break;
       }
-      const { estado, paraLaTanda } = await enviarMuestraDeHoyo(this.dependencias, userId, entrada);
+      const { estado, paraLaTanda } = await enviarMuestraDeHoyo(
+        this.dependencias,
+        userId,
+        entrada,
+      );
       // La que ya va de camino la cuenta quien la envió, y la sustituida ya no está
       if (estado === 'enviada') cuenta.enviadas += 1;
       else if (estado === 'descartada') cuenta.descartadas += 1;

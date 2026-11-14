@@ -89,7 +89,11 @@ module.exports = {
         'Lista de PERMITIDOS: el dominio y los casos de uso solo llegan, directa o indirectamente, a las librerías de CORE_ALLOWED_PACKAGES. Sustituye a domain-without-frameworks, que era una lista de prohibidos (React, router, i18n, Sentry) y se quedaba atrás con cada librería de interfaz nueva. CompetitionAssembler llegaba a React por utils/countryUtils.',
       severity: 'error',
       from: { path: '^src/(domain|application)/', pathNot: TEST },
-      to: { path: 'node_modules/', pathNot: CORE_ALLOWED_PACKAGES, reachable: true },
+      to: {
+        path: 'node_modules/',
+        pathNot: CORE_ALLOWED_PACKAGES,
+        reachable: true,
+      },
     },
     {
       name: 'core-does-not-reach-ui',
@@ -129,7 +133,10 @@ module.exports = {
         'src/services (la sesión compartida, la cola sin conexión…) lo usa la interfaz: a los casos de uso y la infraestructura solo llega por la composition root, como la interfaz (vaciadoDeLaCola y refrescoDeHandicap lanzan casos de uso desde ahí). La única excepción es el transporte de la sesión, src/infrastructure/http, que services usa directamente (decidido con Agustín, 9 nov 2026), salvo el cliente de la API (api.js): services no llama a la API, la llaman los repositorios. La interfaz la vigila infrastructure-and-services-do-not-reach-ui.',
       severity: 'error',
       from: { path: '^src/services/', pathNot: TEST },
-      to: { path: '^src/(application|infrastructure)/', pathNot: '^src/infrastructure/http/(?!api\\.js$)' },
+      to: {
+        path: '^src/(application|infrastructure)/',
+        pathNot: '^src/infrastructure/http/(?!api\\.js$)',
+      },
     },
     {
       name: 'http-does-not-reach-services',
@@ -145,15 +152,25 @@ module.exports = {
         'El transporte (api.js, el refresco, los cierres forzados, el token CSRF) no usa el resto de la infraestructura (repositorios, mappers, Sentry), ni directa ni indirectamente: son los repositorios los que llegan a él (apiRequest, con su reintento CSRF), nunca al revés. Al salir de utils estos módulos dejaron de estar bajo utils-does-not-reach-up, y nada lo impedía (revisión de la PR 2a).',
       severity: 'error',
       from: { path: '^src/infrastructure/http/', pathNot: TEST },
-      to: { path: '^src/infrastructure/', pathNot: '^src/infrastructure/http/', reachable: true },
+      to: {
+        path: '^src/infrastructure/',
+        pathNot: '^src/infrastructure/http/',
+        reachable: true,
+      },
     },
     {
       name: 'infrastructure-reaches-http-only-through-api',
       comment:
         'Los repositorios y los mappers llegan al transporte solo por infrastructure/http/api.js (apiRequest, con el refresco del token y el reintento CSRF). Importar el interceptor, el token CSRF o los cierres forzados directamente se salta ese camino.',
       severity: 'error',
-      from: { path: '^src/infrastructure/(repositories|mappers)/', pathNot: TEST },
-      to: { path: '^src/infrastructure/http/', pathNot: '^src/infrastructure/http/api\\.js$' },
+      from: {
+        path: '^src/infrastructure/(repositories|mappers)/',
+        pathNot: TEST,
+      },
+      to: {
+        path: '^src/infrastructure/http/',
+        pathNot: '^src/infrastructure/http/api\\.js$',
+      },
     },
     {
       name: 'infrastructure-does-not-import-services',
@@ -169,7 +186,11 @@ module.exports = {
         'Lista de PERMITIDOS: la infraestructura solo llega, directa o indirectamente (p. ej. a través de utils), a las librerías de INFRASTRUCTURE_ALLOWED_PACKAGES. Ni React, ni el router, ni los avisos, ni i18n, ni Sentry para React, ni los iconos, ni ninguna librería de interfaz nueva. Lo que necesita de la interfaz (traducir, avisar, informar a Sentry, redirigir, saber si una ruta es pública) se lo da la composition root (composition/interfazDelTransporte).',
       severity: 'error',
       from: { path: '^src/infrastructure/', pathNot: TEST },
-      to: { path: 'node_modules/', pathNot: INFRASTRUCTURE_ALLOWED_PACKAGES, reachable: true },
+      to: {
+        path: 'node_modules/',
+        pathNot: INFRASTRUCTURE_ALLOWED_PACKAGES,
+        reachable: true,
+      },
     },
     {
       name: 'infrastructure-and-services-do-not-reach-ui',

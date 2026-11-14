@@ -14,7 +14,10 @@ const mockAccepted = Invitation.fromPersistence({
   createdAt: '2026-02-18T10:00:00Z',
   updatedAt: '2026-02-19T10:00:00Z',
 });
-mockAccepted._apiData = { competition_name: 'Summer Cup', inviter_name: 'Creator' };
+mockAccepted._apiData = {
+  competition_name: 'Summer Cup',
+  inviter_name: 'Creator',
+};
 
 describe('RespondToInvitationUseCase', () => {
   let useCase;
@@ -22,25 +25,36 @@ describe('RespondToInvitationUseCase', () => {
 
   beforeEach(() => {
     mockRepo = { respondToInvitation: vi.fn().mockResolvedValue(mockAccepted) };
-    useCase = new RespondToInvitationUseCase({ invitationRepository: mockRepo });
+    useCase = new RespondToInvitationUseCase({
+      invitationRepository: mockRepo,
+    });
   });
 
   it('should throw if invitationRepository is missing', () => {
-    expect(() => new RespondToInvitationUseCase({})).toThrow('requires invitationRepository');
+    expect(() => new RespondToInvitationUseCase({})).toThrow(
+      'requires invitationRepository',
+    );
   });
 
   it('should throw for invalid invitationId', async () => {
-    await expect(useCase.execute('', 'ACCEPT')).rejects.toThrow('invitationId is required');
+    await expect(useCase.execute('', 'ACCEPT')).rejects.toThrow(
+      'invitationId is required',
+    );
   });
 
   it('should throw for invalid action', async () => {
-    await expect(useCase.execute('inv-1', 'INVALID')).rejects.toThrow('action must be one of');
+    await expect(useCase.execute('inv-1', 'INVALID')).rejects.toThrow(
+      'action must be one of',
+    );
   });
 
   it('should respond and return DTO', async () => {
     const result = await useCase.execute('inv-1', 'ACCEPT');
 
-    expect(mockRepo.respondToInvitation).toHaveBeenCalledWith('inv-1', 'ACCEPT');
+    expect(mockRepo.respondToInvitation).toHaveBeenCalledWith(
+      'inv-1',
+      'ACCEPT',
+    );
     expect(result.status).toBe('ACCEPTED');
     expect(result.isAccepted).toBe(true);
   });

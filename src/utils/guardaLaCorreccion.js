@@ -41,23 +41,32 @@ export const guardaLaCorreccion = (
   participantId = null,
   userId = null,
   laPartida = {},
-  tocados = null
+  tocados = null,
 ) => {
   // La de ese hoyo y ese marcado: quien marca a dos tiene una por rival (26 oct 2026)
   const marcado = marcadoDe(scoreData);
-  const laDeEseHoyo = () => offlineQueue
-    .getByMatch(matchId, userId)
-    .find((e) =>
-      e.holeNumber === holeNumber
-      && (e.participantId ?? null) === (participantId ?? null)
-      && (e.userId ?? null) === (userId ?? null)
-      && marcadoDe(e.scoreData) === marcado);
+  const laDeEseHoyo = () =>
+    offlineQueue
+      .getByMatch(matchId, userId)
+      .find(
+        (e) =>
+          e.holeNumber === holeNumber &&
+          (e.participantId ?? null) === (participantId ?? null) &&
+          (e.userId ?? null) === (userId ?? null) &&
+          marcadoDe(e.scoreData) === marcado,
+      );
 
   const anterior = laDeEseHoyo();
   // Los golpes tocados solo si los hay: partida rápida no los usa —cada aviso ya
   // es de un participante— y su llamada sigue siendo la de siempre (FE #813)
   const guardado = offlineQueue.enqueue(
-    matchId, holeNumber, scoreData, participantId, userId, laPartida, ...(tocados ? [tocados] : [])
+    matchId,
+    holeNumber,
+    scoreData,
+    participantId,
+    userId,
+    laPartida,
+    ...(tocados ? [tocados] : []),
   );
   if (guardado !== false || !anterior) return guardado;
 
@@ -65,22 +74,31 @@ export const guardaLaCorreccion = (
   // una raya, y no sustituye nada (#609)
   const loNuevo = JSON.parse(JSON.stringify(scoreData ?? {}));
   const loViejo = anterior.scoreData ?? {};
-  const sustituidos = GOLPES.filter((g) => g in loViejo && g in loNuevo && loNuevo[g] !== loViejo[g]);
+  const sustituidos = GOLPES.filter(
+    (g) => g in loViejo && g in loNuevo && loNuevo[g] !== loViejo[g],
+  );
   if (sustituidos.length === 0) return guardado;
 
   const ahora = laDeEseHoyo();
   const sigueSiendoLaMisma = Boolean(
-    ahora
-      && ahora.timestamp === anterior.timestamp
-      && JSON.stringify(ahora.scoreData) === JSON.stringify(loViejo)
+    ahora &&
+    ahora.timestamp === anterior.timestamp &&
+    JSON.stringify(ahora.scoreData) === JSON.stringify(loViejo),
   );
   if (!sigueSiendoLaMisma) return guardado;
 
   const loQueQueda = Object.fromEntries(
-    Object.entries(loViejo).filter(([campo]) => !sustituidos.includes(campo))
+    Object.entries(loViejo).filter(([campo]) => !sustituidos.includes(campo)),
   );
   if (GOLPES.some((g) => g in loQueQueda)) {
-    offlineQueue.enqueue(matchId, holeNumber, loQueQueda, participantId, userId, laPartida);
+    offlineQueue.enqueue(
+      matchId,
+      holeNumber,
+      loQueQueda,
+      participantId,
+      userId,
+      laPartida,
+    );
   } else {
     offlineQueue.remove(matchId, holeNumber, participantId, userId, marcado);
   }

@@ -10,21 +10,25 @@ class SubmitQuickMatchProxyHoleScoreUseCase {
 
   constructor({ quickMatchRepository }) {
     if (!quickMatchRepository) {
-      throw new Error('SubmitQuickMatchProxyHoleScoreUseCase requires quickMatchRepository');
+      throw new Error(
+        'SubmitQuickMatchProxyHoleScoreUseCase requires quickMatchRepository',
+      );
     }
     this.#quickMatchRepository = quickMatchRepository;
   }
 
   async execute(quickMatchId, targetParticipantId, holeNumber, score) {
     if (!quickMatchId || !targetParticipantId || !holeNumber) {
-      throw new Error('quickMatchId, targetParticipantId and holeNumber are required');
+      throw new Error(
+        'quickMatchId, targetParticipantId and holeNumber are required',
+      );
     }
 
     const result = await this.#quickMatchRepository.submitProxyHoleScore(
       quickMatchId,
       targetParticipantId,
       holeNumber,
-      score
+      score,
     );
     return {
       holeNumber: result.hole_number,

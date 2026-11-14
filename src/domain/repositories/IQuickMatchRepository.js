@@ -6,8 +6,6 @@
  * Implementations:
  * - ApiQuickMatchRepository (REST API)
  */
-/* eslint-disable no-unused-vars */
-
 class IQuickMatchRepository {
   /**
    * Create the quick match with the wizard's whole draft and start it, in one
@@ -111,7 +109,12 @@ class IQuickMatchRepository {
    * @returns {Promise<Object>} Hole score result
    * @throws {Error} If operation fails
    */
-  async submitProxyHoleScore(quickMatchId, targetParticipantId, holeNumber, score) {
+  async submitProxyHoleScore(
+    quickMatchId,
+    targetParticipantId,
+    holeNumber,
+    score,
+  ) {
     throw new Error('Method submitProxyHoleScore() must be implemented');
   }
 

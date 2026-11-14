@@ -5,10 +5,18 @@ import { handleCsrfLogout } from './csrfLogout';
 // Lo que se borra de la cuenta lo registra la composition root (main.jsx lo carga el primero)
 import '../../composition/limpiezaAlCerrarLaSesion';
 import { olvidaElCierreDeEstaCarga } from '../../utils/cierreDeEstaCarga';
-import { recuerda, recuerdaLaLista, loQueSeSupo, laUltimaLista, olvidaTodo } from '../../services/loUltimoConocido';
+import {
+  recuerda,
+  recuerdaLaLista,
+  loQueSeSupo,
+  laUltimaLista,
+  olvidaTodo,
+} from '../../services/loUltimoConocido';
 import { olvidaLasNovedades } from '../../services/novedadesDeActividad';
 
-vi.mock('../../services/novedadesDeActividad', () => ({ olvidaLasNovedades: vi.fn() }));
+vi.mock('../../services/novedadesDeActividad', () => ({
+  olvidaLasNovedades: vi.fn(),
+}));
 
 /**
  * LA TABLA — salir por un fallo de CSRF.
@@ -33,7 +41,14 @@ describe('handleCsrfLogout · lo guardado sin cobertura (FE #524)', () => {
     olvidaTodo();
     href = '';
     delete window.location;
-    window.location = { set href(v) { href = v; }, get href() { return href; } };
+    window.location = {
+      set href(v) {
+        href = v;
+      },
+      get href() {
+        return href;
+      },
+    };
   });
 
   afterEach(() => vi.restoreAllMocks());
@@ -88,14 +103,19 @@ describe('handleCsrfLogout · lo guardado sin cobertura (FE #524)', () => {
       search: '',
       hash: '',
       origin: 'http://localhost:3000',
-      set href(v) { destino = v; },
-      get href() { return destino; },
+      set href(v) {
+        destino = v;
+      },
+      get href() {
+        return destino;
+      },
     };
 
     handleCsrfLogout();
 
-    expect(sessionStorage.getItem('vuelta_tras_entrar')).toBe('/competitions/7');
+    expect(sessionStorage.getItem('vuelta_tras_entrar')).toBe(
+      '/competitions/7',
+    );
     expect(destino).toBe('/login');
   });
 });
-

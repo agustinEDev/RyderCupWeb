@@ -35,15 +35,29 @@ vi.mock('react-i18next', () => ({
   useTranslation: () => ({ t, i18n: { language: 'es' } }),
 }));
 vi.mock('framer-motion', () => ({
-  motion: new Proxy({}, { get: () => ({ children, ...p }) => <div {...p}>{children}</div> }),
+  motion: new Proxy(
+    {},
+    {
+      get:
+        () =>
+        ({ children, ...p }) => <div {...p}>{children}</div>,
+    },
+  ),
 }));
 vi.mock('../components/layout/HeaderAuth', () => ({ default: () => null }));
 vi.mock('../components/ui/FullScreenLoader', () => ({ default: () => null }));
-vi.mock('../hooks/useAuth', () => ({ useAuth: () => ({ user: { id: 'creator-1' }, loading: false }) }));
+vi.mock('../hooks/useAuth', () => ({
+  useAuth: () => ({ user: { id: 'creator-1' }, loading: false }),
+}));
 let roles = { isAdmin: false, isCreator: true, isLoading: false };
 vi.mock('../hooks/useUserRoles', () => ({ useUserRoles: () => roles }));
 vi.mock('../utils/toast', () => ({
-  default: { success: vi.fn(), error: vi.fn(), warning: vi.fn(), info: vi.fn() },
+  default: {
+    success: vi.fn(),
+    error: vi.fn(),
+    warning: vi.fn(),
+    info: vi.fn(),
+  },
 }));
 
 const mockDetalle = vi.fn();
@@ -74,7 +88,9 @@ const CompetitionDetail = (await import('./CompetitionDetail')).default;
 const PaginaDeClasificacion = () => (
   <>
     <p>pagina-de-clasificacion</p>
-    <pre data-testid="estado-de-la-navegacion">{JSON.stringify(useLocation().state)}</pre>
+    <pre data-testid="estado-de-la-navegacion">
+      {JSON.stringify(useLocation().state)}
+    </pre>
   </>
 );
 
@@ -83,9 +99,12 @@ const pintar = (ruta = '/competitions/comp-1') =>
     <MemoryRouter initialEntries={[ruta]}>
       <Routes>
         <Route path="/competitions/:id" element={<CompetitionDetail />} />
-        <Route path="/competitions/:id/leaderboard" element={<PaginaDeClasificacion />} />
+        <Route
+          path="/competitions/:id/leaderboard"
+          element={<PaginaDeClasificacion />}
+        />
       </Routes>
-    </MemoryRouter>
+    </MemoryRouter>,
   );
 
 const ficha = (extra = {}) =>
@@ -129,7 +148,9 @@ describe('CompetitionDetail · la configuración, en cristiano', () => {
     pintar();
 
     expect(await screen.findByText('LO_QUE_VENGA')).toBeInTheDocument();
-    expect(screen.queryByText(/detail\.settings\.assignment/)).not.toBeInTheDocument();
+    expect(
+      screen.queryByText(/detail\.settings\.assignment/),
+    ).not.toBeInTheDocument();
   });
 
   it('C4: al organizador la clasificación no se le ofrece dos veces', async () => {
@@ -147,7 +168,9 @@ describe('CompetitionDetail · la configuración, en cristiano', () => {
     ficha({ status: 'IN_PROGRESS', creatorId: 'otra-persona' });
     pintar();
 
-    expect(await screen.findByText('detail.actions.leaderboard')).toBeInTheDocument();
+    expect(
+      await screen.findByText('detail.actions.leaderboard'),
+    ).toBeInTheDocument();
   });
 
   /**
@@ -157,23 +180,45 @@ describe('CompetitionDetail · la configuración, en cristiano', () => {
   describe('el botón «Clasificación» en stroke play', () => {
     it('F2: quien juega va a la página de la general', async () => {
       roles = { isAdmin: false, isCreator: false, isLoading: false };
-      ficha({ status: 'IN_PROGRESS', creatorId: 'otra-persona', hasTeams: false, tournamentType: 'STABLEFORD' });
+      ficha({
+        status: 'IN_PROGRESS',
+        creatorId: 'otra-persona',
+        hasTeams: false,
+        tournamentType: 'STABLEFORD',
+      });
       pintar();
 
       fireEvent.click(await screen.findByText('detail.actions.leaderboard'));
 
-      expect(await screen.findByText('pagina-de-clasificacion')).toBeInTheDocument();
+      expect(
+        await screen.findByText('pagina-de-clasificacion'),
+      ).toBeInTheDocument();
     });
 
     it('G13 (/code-review): le pasa lo que ya sabe de la competición, para no volver a preguntarlo', async () => {
       roles = { isAdmin: false, isCreator: false, isLoading: false };
-      ficha({ status: 'IN_PROGRESS', creatorId: 'otra-persona', hasTeams: false, tournamentType: 'STABLEFORD' });
+      ficha({
+        status: 'IN_PROGRESS',
+        creatorId: 'otra-persona',
+        hasTeams: false,
+        tournamentType: 'STABLEFORD',
+      });
       pintar();
 
       fireEvent.click(await screen.findByText('detail.actions.leaderboard'));
 
-      const estado = JSON.parse((await screen.findByTestId('estado-de-la-navegacion')).textContent);
-      expect(estado).toEqual({ from: 'detail', competicion: { id: 'comp-1', hasTeams: false, name: 'Prueba', status: 'IN_PROGRESS' } });
+      const estado = JSON.parse(
+        (await screen.findByTestId('estado-de-la-navegacion')).textContent,
+      );
+      expect(estado).toEqual({
+        from: 'detail',
+        competicion: {
+          id: 'comp-1',
+          hasTeams: false,
+          name: 'Prueba',
+          status: 'IN_PROGRESS',
+        },
+      });
     });
 
     it('G13c: a la de una Ryder no le pasa nada más que de dónde viene', async () => {
@@ -183,7 +228,11 @@ describe('CompetitionDetail · la configuración, en cristiano', () => {
 
       fireEvent.click(await screen.findByText('detail.actions.leaderboard'));
 
-      expect(JSON.parse((await screen.findByTestId('estado-de-la-navegacion')).textContent)).toEqual({ from: 'detail' });
+      expect(
+        JSON.parse(
+          (await screen.findByTestId('estado-de-la-navegacion')).textContent,
+        ),
+      ).toEqual({ from: 'detail' });
     });
 
     it('F2b: y el organizador, desde su acción principal', async () => {
@@ -192,17 +241,26 @@ describe('CompetitionDetail · la configuración, en cristiano', () => {
 
       fireEvent.click(await screen.findByTestId('accion-principal'));
 
-      expect(await screen.findByText('pagina-de-clasificacion')).toBeInTheDocument();
+      expect(
+        await screen.findByText('pagina-de-clasificacion'),
+      ).toBeInTheDocument();
     });
 
     it('F5: un enlace viejo con #clasificaciones abre la ficha, sin más', async () => {
       const baja = vi.fn();
       globalThis.Element.prototype.scrollIntoView = baja;
       roles = { isAdmin: false, isCreator: false, isLoading: false };
-      ficha({ status: 'IN_PROGRESS', creatorId: 'otra-persona', hasTeams: false, tournamentType: 'MEDAL' });
+      ficha({
+        status: 'IN_PROGRESS',
+        creatorId: 'otra-persona',
+        hasTeams: false,
+        tournamentType: 'MEDAL',
+      });
       pintar('/competitions/comp-1#clasificaciones');
 
-      expect(await screen.findByText('detail.actions.leaderboard')).toBeInTheDocument();
+      expect(
+        await screen.findByText('detail.actions.leaderboard'),
+      ).toBeInTheDocument();
       expect(document.getElementById('clasificaciones')).toBeNull();
       expect(baja).not.toHaveBeenCalled();
       delete globalThis.Element.prototype.scrollIntoView;
@@ -214,7 +272,9 @@ describe('CompetitionDetail · la configuración, en cristiano', () => {
 
       fireEvent.click(await screen.findByTestId('accion-principal'));
 
-      expect(await screen.findByText('pagina-de-clasificacion')).toBeInTheDocument();
+      expect(
+        await screen.findByText('pagina-de-clasificacion'),
+      ).toBeInTheDocument();
     });
 
     it('F3b: en una Ryder sigue llevando a su página', async () => {
@@ -224,7 +284,9 @@ describe('CompetitionDetail · la configuración, en cristiano', () => {
 
       fireEvent.click(await screen.findByText('detail.actions.leaderboard'));
 
-      expect(await screen.findByText('pagina-de-clasificacion')).toBeInTheDocument();
+      expect(
+        await screen.findByText('pagina-de-clasificacion'),
+      ).toBeInTheDocument();
     });
   });
 
@@ -268,11 +330,17 @@ describe('CompetitionDetail · la configuración, en cristiano', () => {
     await screen.findByText('Tipo:');
     expect(screen.queryByText('Equipo 1:')).not.toBeInTheDocument();
     expect(screen.queryByText('Equipo 2:')).not.toBeInTheDocument();
-    expect(screen.queryByText('Asignación de Equipos:')).not.toBeInTheDocument();
+    expect(
+      screen.queryByText('Asignación de Equipos:'),
+    ).not.toBeInTheDocument();
   });
 
   it('C14: un tipo que no conozcamos sale tal cual, no como clave', async () => {
-    ficha({ tournamentType: 'SCRAMBLE', modality: 'STROKE_PLAY', hasTeams: false });
+    ficha({
+      tournamentType: 'SCRAMBLE',
+      modality: 'STROKE_PLAY',
+      hasTeams: false,
+    });
     pintar();
 
     const etiqueta = await screen.findByText('Tipo:');
@@ -292,7 +360,11 @@ describe('CompetitionDetail · la configuración, en cristiano', () => {
   });
 
   it('C11: estilo Ryder sin equipos hechos no dice «Manual»: aún no están (#710)', async () => {
-    ficha({ setupMode: 'RYDER_CUP', teamAssignment: 'MANUAL', actualTeamAssignment: null });
+    ficha({
+      setupMode: 'RYDER_CUP',
+      teamAssignment: 'MANUAL',
+      actualTeamAssignment: null,
+    });
     pintar();
 
     const etiqueta = await screen.findByText('Asignación de Equipos:');
@@ -300,7 +372,11 @@ describe('CompetitionDetail · la configuración, en cristiano', () => {
   });
 
   it('C12: y hecho el draft, lo dice', async () => {
-    ficha({ setupMode: 'RYDER_CUP', teamAssignment: 'MANUAL', actualTeamAssignment: 'DRAFT' });
+    ficha({
+      setupMode: 'RYDER_CUP',
+      teamAssignment: 'MANUAL',
+      actualTeamAssignment: 'DRAFT',
+    });
     pintar();
 
     const etiqueta = await screen.findByText('Asignación de Equipos:');
@@ -319,7 +395,7 @@ describe('CompetitionDetail · la configuración, en cristiano', () => {
     pintar();
 
     expect(await screen.findByTestId('accion-principal')).toHaveTextContent(
-      'detail.actions.nameCaptains'
+      'detail.actions.nameCaptains',
     );
   });
 
@@ -335,23 +411,34 @@ describe('CompetitionDetail · la configuración, en cristiano', () => {
     pintar();
 
     for (const boton of await screen.findAllByTestId('menu-acciones')) {
-      if (boton.getAttribute('aria-expanded') === 'false') fireEvent.click(boton);
+      if (boton.getAttribute('aria-expanded') === 'false')
+        fireEvent.click(boton);
     }
-    expect(screen.queryByText('detail.actions.nameCaptains')).not.toBeInTheDocument();
+    expect(
+      screen.queryByText('detail.actions.nameCaptains'),
+    ).not.toBeInTheDocument();
   });
 
   it('C9: y con los dos puestos, cambiarlos', async () => {
     ficha({
       status: 'ACTIVE',
       teamsAssigned: false,
-      captains: { teamA: 'ana', teamB: 'bea', viceTeamA: null, viceTeamB: null },
+      captains: {
+        teamA: 'ana',
+        teamB: 'bea',
+        viceTeamA: null,
+        viceTeamB: null,
+      },
     });
     pintar();
 
     // Con plazas libres lo principal es invitar (#710): cambiarlos, en el menú
     for (const boton of await screen.findAllByTestId('menu-acciones')) {
-      if (boton.getAttribute('aria-expanded') === 'false') fireEvent.click(boton);
+      if (boton.getAttribute('aria-expanded') === 'false')
+        fireEvent.click(boton);
     }
-    expect(screen.getByText('detail.actions.changeCaptains')).toBeInTheDocument();
+    expect(
+      screen.getByText('detail.actions.changeCaptains'),
+    ).toBeInTheDocument();
   });
 });

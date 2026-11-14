@@ -113,14 +113,14 @@ describe('validation utilities', () => {
           const result = validatePassword(`Abcdefghi1${caracter}x`);
           expect(result.isValid).toBe(false);
           expect(result.messageKey).toBe('validation.passwordNoSymbol');
-        }
+        },
       );
 
       it.each('!@#$%^&*()_+-=[]{}|;:,.<>?'.split(''))(
         'acepta «%s» como símbolo',
         (simbolo) => {
           expect(validatePassword(`Abcdefghi1${simbolo}x`).isValid).toBe(true);
-        }
+        },
       );
 
       it.each([
@@ -148,32 +148,45 @@ describe('validation utilities', () => {
 
       // FE #827: los 29 de `str.isspace()` de Python, por delante y por detrás
       const ESPACIOS_DE_PYTHON = [
-        ...[0x9, 0xa, 0xb, 0xc, 0xd, 0x1c, 0x1d, 0x1e, 0x1f, 0x20, 0x85, 0xa0, 0x1680],
+        ...[
+          0x9, 0xa, 0xb, 0xc, 0xd, 0x1c, 0x1d, 0x1e, 0x1f, 0x20, 0x85, 0xa0,
+          0x1680,
+        ],
         ...Array.from({ length: 11 }, (_v, i) => 0x2000 + i),
-        0x2028, 0x2029, 0x202f, 0x205f, 0x3000,
+        0x2028,
+        0x2029,
+        0x202f,
+        0x205f,
+        0x3000,
       ].map((codigo) => String.fromCodePoint(codigo));
 
       it('son 29, como en Python', () => {
         expect(ESPACIOS_DE_PYTHON).toHaveLength(29);
       });
 
-      it.each(ESPACIOS_DE_PYTHON.map((c) => [`U+${c.codePointAt(0).toString(16).padStart(4, '0')}`, c]))(
-        '%s se rechaza al principio y al final',
-        (_codigo, caracter) => {
-          expect(validatePassword(`${caracter}Abcdefghi1!`).messageKey).toBe('validation.passwordSpaces');
-          expect(validatePassword(`Abcdefghi1!${caracter}`).messageKey).toBe('validation.passwordSpaces');
-        }
-      );
+      it.each(
+        ESPACIOS_DE_PYTHON.map((c) => [
+          `U+${c.codePointAt(0).toString(16).padStart(4, '0')}`,
+          c,
+        ]),
+      )('%s se rechaza al principio y al final', (_codigo, caracter) => {
+        expect(validatePassword(`${caracter}Abcdefghi1!`).messageKey).toBe(
+          'validation.passwordSpaces',
+        );
+        expect(validatePassword(`Abcdefghi1!${caracter}`).messageKey).toBe(
+          'validation.passwordSpaces',
+        );
+      });
 
       // FE #827: «espacio» es lo que quita `str.strip()` de Python, no `trim()`
-      it.each([['NEL (U+0085)', '\u0085'], ['separador (U+001F)', '\u001f']])(
-        'rechaza un %s al final, como el backend',
-        (_nombre, caracter) => {
-          const result = validatePassword(`Abcdefghi1!${caracter}`);
-          expect(result.isValid).toBe(false);
-          expect(result.messageKey).toBe('validation.passwordSpaces');
-        }
-      );
+      it.each([
+        ['NEL (U+0085)', '\u0085'],
+        ['separador (U+001F)', '\u001f'],
+      ])('rechaza un %s al final, como el backend', (_nombre, caracter) => {
+        const result = validatePassword(`Abcdefghi1!${caracter}`);
+        expect(result.isValid).toBe(false);
+        expect(result.messageKey).toBe('validation.passwordSpaces');
+      });
 
       it('admite una marca de orden de bytes (U+FEFF) al final, como el backend', () => {
         expect(validatePassword('Abcdefghi1!\ufeff').isValid).toBe(true);
@@ -307,7 +320,8 @@ describe('validation utilities', () => {
 
     it('should accept long compound Spanish name (51-100 chars)', () => {
       // This name was previously rejected with 50 char limit
-      const longSpanishName = 'María del Carmen Fernández-González de la Torre y Habsburgo';
+      const longSpanishName =
+        'María del Carmen Fernández-González de la Torre y Habsburgo';
       expect(longSpanishName.length).toBeGreaterThan(50);
       expect(longSpanishName.length).toBeLessThanOrEqual(100);
 
@@ -392,23 +406,38 @@ describe('validation utilities', () => {
     it('passwordErrorMessage traduce con el espacio de nombres auth, sea cual sea el de la pantalla', () => {
       const t = vi.fn((clave, opciones) => `${opciones?.ns}:${clave}`);
 
-      expect(passwordErrorMessage({ errorCode: 'PASSWORD_TOO_COMMON' }, t)).toBe('auth:validation.passwordCommon');
-      expect(passwordErrorMessage({ errorCode: 'PASSWORD_TOO_SHORT' }, t)).toBe('auth:validation.passwordTooShort');
-      expect(t).toHaveBeenLastCalledWith('validation.passwordTooShort', { ns: 'auth', min: 12 });
+      expect(
+        passwordErrorMessage({ errorCode: 'PASSWORD_TOO_COMMON' }, t),
+      ).toBe('auth:validation.passwordCommon');
+      expect(passwordErrorMessage({ errorCode: 'PASSWORD_TOO_SHORT' }, t)).toBe(
+        'auth:validation.passwordTooShort',
+      );
+      expect(t).toHaveBeenLastCalledWith('validation.passwordTooShort', {
+        ns: 'auth',
+        min: 12,
+      });
       expect(passwordErrorMessage({ errorCode: 'OTRO' }, t)).toBeNull();
       expect(passwordErrorMessage(new Error('sin código'), t)).toBeNull();
     });
 
     it('las de longitud llevan su límite', () => {
-      expect(passwordErrorTranslation('PASSWORD_TOO_SHORT').options).toEqual({ min: 12 });
-      expect(passwordErrorTranslation('PASSWORD_TOO_LONG').options).toEqual({ max: 128 });
+      expect(passwordErrorTranslation('PASSWORD_TOO_SHORT').options).toEqual({
+        min: 12,
+      });
+      expect(passwordErrorTranslation('PASSWORD_TOO_LONG').options).toEqual({
+        max: 128,
+      });
     });
 
-    it.each([null, undefined, 'CSRF_VALIDATION_FAILED', 'OTRO', 'constructor', 'toString'])(
-      'un código que no es de la contraseña (%s) no se traduce',
-      (codigo) => {
-        expect(passwordErrorTranslation(codigo)).toBeNull();
-      }
-    );
+    it.each([
+      null,
+      undefined,
+      'CSRF_VALIDATION_FAILED',
+      'OTRO',
+      'constructor',
+      'toString',
+    ])('un código que no es de la contraseña (%s) no se traduce', (codigo) => {
+      expect(passwordErrorTranslation(codigo)).toBeNull();
+    });
   });
 });

@@ -1,7 +1,14 @@
 import { useState } from 'react';
 import ModalShell, { CAJA_PROPIA } from '../ui/ModalShell';
 import { motion } from 'framer-motion';
-import { X, Loader, UserX, UserCheck, Trash2, AlertTriangle } from 'lucide-react';
+import {
+  X,
+  Loader,
+  UserX,
+  UserCheck,
+  Trash2,
+  AlertTriangle,
+} from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 /**
@@ -64,10 +71,21 @@ const ManageAccountModal = ({ user, onToggleActive, onDelete, onCancel }) => {
       >
         <div className="flex items-start justify-between p-6 border-b border-gray-200">
           <div>
-            <h2 id="gestionar-cuenta-titulo" className="text-xl font-bold text-gray-900">{t('manageModal.title', { name: fullName })}</h2>
-            <p className="text-sm text-gray-500 mt-1">{t('manageModal.subtitle')}</p>
+            <h2
+              id="gestionar-cuenta-titulo"
+              className="text-xl font-bold text-gray-900"
+            >
+              {t('manageModal.title', { name: fullName })}
+            </h2>
+            <p className="text-sm text-gray-500 mt-1">
+              {t('manageModal.subtitle')}
+            </p>
           </div>
-          <button onClick={onCancel} className="text-gray-400 hover:text-gray-600" aria-label={t('manageModal.cancel')}>
+          <button
+            onClick={onCancel}
+            className="text-gray-400 hover:text-gray-600"
+            aria-label={t('manageModal.cancel')}
+          >
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -83,8 +101,12 @@ const ManageAccountModal = ({ user, onToggleActive, onDelete, onCancel }) => {
             <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 flex gap-2">
               <AlertTriangle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
               <div>
-                <p className="text-sm font-semibold text-amber-800">{t('manageModal.deleteBlockedTitle')}</p>
-                <p className="text-sm text-amber-700 mt-0.5">{t('manageModal.deleteBlockedHint')}</p>
+                <p className="text-sm font-semibold text-amber-800">
+                  {t('manageModal.deleteBlockedTitle')}
+                </p>
+                <p className="text-sm text-amber-700 mt-0.5">
+                  {t('manageModal.deleteBlockedHint')}
+                </p>
               </div>
             </div>
           )}
@@ -93,7 +115,9 @@ const ManageAccountModal = ({ user, onToggleActive, onDelete, onCancel }) => {
             {user.isActive ? (
               <label
                 className={`flex items-start gap-3 p-3 rounded-lg border-2 cursor-pointer transition-colors ${
-                  option === 'deactivate' ? 'border-primary-400 bg-primary-50' : 'border-gray-200'
+                  option === 'deactivate'
+                    ? 'border-primary-400 bg-primary-50'
+                    : 'border-gray-200'
                 }`}
               >
                 <input
@@ -108,13 +132,17 @@ const ManageAccountModal = ({ user, onToggleActive, onDelete, onCancel }) => {
                     <UserX className="w-4 h-4 text-amber-600" />
                     {t('manageModal.deactivateOption')}
                   </span>
-                  <span className="block text-xs text-gray-500 mt-0.5">{t('manageModal.deactivateDesc')}</span>
+                  <span className="block text-xs text-gray-500 mt-0.5">
+                    {t('manageModal.deactivateDesc')}
+                  </span>
                 </span>
               </label>
             ) : (
               <label
                 className={`flex items-start gap-3 p-3 rounded-lg border-2 cursor-pointer transition-colors ${
-                  option === 'reactivate' ? 'border-primary-400 bg-primary-50' : 'border-gray-200'
+                  option === 'reactivate'
+                    ? 'border-primary-400 bg-primary-50'
+                    : 'border-gray-200'
                 }`}
               >
                 <input
@@ -134,7 +162,9 @@ const ManageAccountModal = ({ user, onToggleActive, onDelete, onCancel }) => {
             {!blocked && (
               <label
                 className={`flex items-start gap-3 p-3 rounded-lg border-2 cursor-pointer transition-colors ${
-                  option === 'delete' ? 'border-red-400 bg-red-50' : 'border-gray-200'
+                  option === 'delete'
+                    ? 'border-red-400 bg-red-50'
+                    : 'border-gray-200'
                 }`}
               >
                 <input
@@ -149,14 +179,19 @@ const ManageAccountModal = ({ user, onToggleActive, onDelete, onCancel }) => {
                     <Trash2 className="w-4 h-4 text-red-600" />
                     {t('manageModal.deleteOption')}
                   </span>
-                  <span className="block text-xs text-gray-500 mt-0.5">{t('manageModal.deleteDesc')}</span>
+                  <span className="block text-xs text-gray-500 mt-0.5">
+                    {t('manageModal.deleteDesc')}
+                  </span>
                 </span>
               </label>
             )}
 
             {!blocked && option === 'delete' && (
               <div className="pl-3">
-                <label htmlFor="manage-confirm-delete" className="block text-xs font-medium text-gray-700 mb-1">
+                <label
+                  htmlFor="manage-confirm-delete"
+                  className="block text-xs font-medium text-gray-700 mb-1"
+                >
                   {t('manageModal.confirmDeleteLabel')}
                 </label>
                 <input

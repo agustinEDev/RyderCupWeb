@@ -13,8 +13,9 @@ vi.mock('react-i18next', () => ({
       if (typeof fallbackOrOptions === 'string') return fallbackOrOptions;
       if (fallbackOrOptions?.defaultValue) {
         return Object.entries(fallbackOrOptions).reduce(
-          (text, [name, value]) => text.replaceAll(`{{${name}}}`, String(value)),
-          fallbackOrOptions.defaultValue
+          (text, [name, value]) =>
+            text.replaceAll(`{{${name}}}`, String(value)),
+          fallbackOrOptions.defaultValue,
         );
       }
       return key;
@@ -44,7 +45,7 @@ const renderBox = (props = {}) =>
       onCourseSelect={vi.fn()}
       onRequestNewCourse={vi.fn()}
       {...props}
-    />
+    />,
   );
 
 // El buscador es controlado: quien lo usa decide qué campo hay elegido. Con un
@@ -71,7 +72,10 @@ const renderControlledBox = (props) => render(<ControlledBox {...props} />);
 describe('GolfCourseSearchBox', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockList.mockResolvedValue({ courses: [course('1', 'Real Club de Golf')], total: 1 });
+    mockList.mockResolvedValue({
+      courses: [course('1', 'Real Club de Golf')],
+      total: 1,
+    });
   });
 
   it('pide una página al backend, no el catálogo entero', async () => {
@@ -89,10 +93,13 @@ describe('GolfCourseSearchBox', () => {
     renderBox();
     await waitFor(() => expect(mockList).toHaveBeenCalled());
 
-    fireEvent.change(screen.getByRole('textbox'), { target: { value: 'Prat' } });
+    fireEvent.change(screen.getByRole('textbox'), {
+      target: { value: 'Prat' },
+    });
 
     await waitFor(() => {
-      const lastFilters = mockList.mock.calls[mockList.mock.calls.length - 1][0];
+      const lastFilters =
+        mockList.mock.calls[mockList.mock.calls.length - 1][0];
       expect(lastFilters.name).toBe('Prat');
     });
   });
@@ -108,7 +115,8 @@ describe('GolfCourseSearchBox', () => {
     fireEvent.change(input, { target: { value: 'Real' } });
 
     await waitFor(() => {
-      const lastFilters = mockList.mock.calls[mockList.mock.calls.length - 1][0];
+      const lastFilters =
+        mockList.mock.calls[mockList.mock.calls.length - 1][0];
       expect(lastFilters.name).toBe('Real');
     });
     // La primera carga más una sola búsqueda: sin la espera serían cinco
@@ -146,7 +154,7 @@ describe('GolfCourseSearchBox', () => {
   it('no pregunta nada sin país', async () => {
     renderBox({ countryCode: '' });
 
-    await new Promise(resolve => setTimeout(resolve, 400));
+    await new Promise((resolve) => setTimeout(resolve, 400));
     expect(mockList).not.toHaveBeenCalled();
   });
 
@@ -165,7 +173,7 @@ describe('GolfCourseSearchBox', () => {
         selectedCourse={null}
         onCourseSelect={vi.fn()}
         onRequestNewCourse={vi.fn()}
-      />
+      />,
     );
 
     await waitFor(() => {
@@ -180,7 +188,10 @@ describe('GolfCourseSearchBox', () => {
     // padre nunca soltaría la selección y la casilla seguiría congelada aunque
     // el arreglo no estuviera
     const onCourseSelect = vi.fn();
-    renderControlledBox({ initialCourse: course('1', 'Real Club de Golf'), onCourseSelect });
+    renderControlledBox({
+      initialCourse: course('1', 'Real Club de Golf'),
+      onCourseSelect,
+    });
 
     const input = screen.getByRole('textbox');
     expect(input).toHaveValue('Real Club de Golf');
@@ -219,7 +230,7 @@ describe('GolfCourseSearchBox', () => {
       fireEvent.click(await screen.findByText('Real Club de Golf'));
 
       expect(onCourseSelect).toHaveBeenCalledWith(
-        expect.objectContaining({ name: 'Real Club de Golf' })
+        expect.objectContaining({ name: 'Real Club de Golf' }),
       );
       expect(screen.getByRole('textbox')).toHaveValue('');
     });
@@ -246,7 +257,9 @@ describe('GolfCourseSearchBox', () => {
       renderBox({ idsYaElegidos: ['1'] });
 
       fireEvent.focus(screen.getByRole('textbox'));
-      await waitFor(() => expect(screen.getByText('El Prat')).toBeInTheDocument());
+      await waitFor(() =>
+        expect(screen.getByText('El Prat')).toBeInTheDocument(),
+      );
       expect(screen.queryByText('Real Club de Golf')).not.toBeInTheDocument();
     });
 
@@ -255,18 +268,29 @@ describe('GolfCourseSearchBox', () => {
       // buscador decía «no hay campos aprobados en este país» y ofrecía PEDIRLO:
       // mandar a los administradores un campo que existe y que además ya está en
       // tu lista. Le pasó a un organizador en Portugal, con el único campo que hay
-      mockList.mockResolvedValue({ courses: [course('1', 'Real Club de Golf')], total: 1 });
+      mockList.mockResolvedValue({
+        courses: [course('1', 'Real Club de Golf')],
+        total: 1,
+      });
 
       renderBox({ idsYaElegidos: ['1'] });
 
       fireEvent.focus(screen.getByRole('textbox'));
-      fireEvent.change(screen.getByRole('textbox'), { target: { value: 'Real' } });
+      fireEvent.change(screen.getByRole('textbox'), {
+        target: { value: 'Real' },
+      });
 
       await waitFor(() => {
-        expect(screen.getByText(/already added every course/i)).toBeInTheDocument();
+        expect(
+          screen.getByText(/already added every course/i),
+        ).toBeInTheDocument();
       });
-      expect(screen.queryByText(/no golf courses found/i)).not.toBeInTheDocument();
-      expect(screen.queryByText(/request new golf course/i)).not.toBeInTheDocument();
+      expect(
+        screen.queryByText(/no golf courses found/i),
+      ).not.toBeInTheDocument();
+      expect(
+        screen.queryByText(/request new golf course/i),
+      ).not.toBeInTheDocument();
     });
 
     it('no cuenta como pendientes los que ya tienes', async () => {
@@ -281,9 +305,13 @@ describe('GolfCourseSearchBox', () => {
       renderBox({ idsYaElegidos: ['1'] });
 
       fireEvent.focus(screen.getByRole('textbox'));
-      await waitFor(() => expect(screen.getByText('El Prat')).toBeInTheDocument());
+      await waitFor(() =>
+        expect(screen.getByText('El Prat')).toBeInTheDocument(),
+      );
 
-      expect(screen.queryByText(/showing 1 of 2|mostrando 1 de 2/i)).not.toBeInTheDocument();
+      expect(
+        screen.queryByText(/showing 1 of 2|mostrando 1 de 2/i),
+      ).not.toBeInTheDocument();
     });
 
     it('sí ofrece pedir uno nuevo cuando de verdad no hay ninguno', async () => {
@@ -293,10 +321,14 @@ describe('GolfCourseSearchBox', () => {
       renderBox();
 
       fireEvent.focus(screen.getByRole('textbox'));
-      fireEvent.change(screen.getByRole('textbox'), { target: { value: 'Noexiste' } });
+      fireEvent.change(screen.getByRole('textbox'), {
+        target: { value: 'Noexiste' },
+      });
 
       await waitFor(() => {
-        expect(screen.getByText(/request new golf course/i)).toBeInTheDocument();
+        expect(
+          screen.getByText(/request new golf course/i),
+        ).toBeInTheDocument();
       });
     });
   });
@@ -304,7 +336,9 @@ describe('GolfCourseSearchBox', () => {
   describe('búsqueda por cercanía', () => {
     // Con toda la precisión que da una lectura real del GPS: es lo que hay que
     // demostrar que no sale del navegador
-    const MADRID = { coords: { latitude: 40.41677382, longitude: -3.70379409 } };
+    const MADRID = {
+      coords: { latitude: 40.41677382, longitude: -3.70379409 },
+    };
 
     const stubGeolocation = (implementation) => {
       Object.defineProperty(navigator, 'geolocation', {
@@ -327,7 +361,9 @@ describe('GolfCourseSearchBox', () => {
       renderBox();
       await openDropdown();
 
-      expect(await screen.findByTestId('golf-course-nearby-button')).toBeInTheDocument();
+      expect(
+        await screen.findByTestId('golf-course-nearby-button'),
+      ).toBeInTheDocument();
     });
 
     it('en una competición, la cercanía busca dentro de su país', async () => {
@@ -336,7 +372,9 @@ describe('GolfCourseSearchBox', () => {
 
       fireEvent.click(await screen.findByTestId('golf-course-nearby-button'));
 
-      await waitFor(() => expect(mockList.mock.calls.at(-1)[0].lat).toBe(40.417));
+      await waitFor(() =>
+        expect(mockList.mock.calls.at(-1)[0].lat).toBe(40.417),
+      );
       expect(mockList.mock.calls.at(-1)[0].countryCode).toBe('ES');
     });
 
@@ -359,7 +397,8 @@ describe('GolfCourseSearchBox', () => {
       fireEvent.click(await screen.findByTestId('golf-course-nearby-button'));
 
       await waitFor(() => {
-        const lastFilters = mockList.mock.calls[mockList.mock.calls.length - 1][0];
+        const lastFilters =
+          mockList.mock.calls[mockList.mock.calls.length - 1][0];
         expect(lastFilters.lat).toBe(40.417);
         expect(lastFilters.lon).toBe(-3.704);
       });
@@ -373,10 +412,12 @@ describe('GolfCourseSearchBox', () => {
       fireEvent.click(await screen.findByTestId('golf-course-nearby-button'));
 
       await waitFor(() => {
-        const lastFilters = mockList.mock.calls[mockList.mock.calls.length - 1][0];
+        const lastFilters =
+          mockList.mock.calls[mockList.mock.calls.length - 1][0];
         expect(lastFilters.lat).toBeDefined();
       });
-      const lastFilters = mockList.mock.calls[mockList.mock.calls.length - 1][0];
+      const lastFilters =
+        mockList.mock.calls[mockList.mock.calls.length - 1][0];
       expect(lastFilters.radiusKm).toBeUndefined();
     });
 
@@ -418,10 +459,13 @@ describe('GolfCourseSearchBox', () => {
         expect(filters.lat).toBeDefined();
       });
 
-      fireEvent.change(screen.getByRole('textbox'), { target: { value: 'Prat' } });
+      fireEvent.change(screen.getByRole('textbox'), {
+        target: { value: 'Prat' },
+      });
 
       await waitFor(() => {
-        const lastFilters = mockList.mock.calls[mockList.mock.calls.length - 1][0];
+        const lastFilters =
+          mockList.mock.calls[mockList.mock.calls.length - 1][0];
         expect(lastFilters.name).toBe('Prat');
         expect(lastFilters.lat).toBeUndefined();
       });
@@ -434,13 +478,16 @@ describe('GolfCourseSearchBox', () => {
 
       fireEvent.click(await screen.findByTestId('golf-course-nearby-button'));
 
-      expect(await screen.findByText(/Location permission is off/)).toBeInTheDocument();
+      expect(
+        await screen.findByText(/Location permission is off/),
+      ).toBeInTheDocument();
       const input = screen.getByRole('textbox');
       expect(input).not.toBeDisabled();
 
       fireEvent.change(input, { target: { value: 'Prat' } });
       await waitFor(() => {
-        const lastFilters = mockList.mock.calls[mockList.mock.calls.length - 1][0];
+        const lastFilters =
+          mockList.mock.calls[mockList.mock.calls.length - 1][0];
         expect(lastFilters.name).toBe('Prat');
       });
     });
@@ -450,8 +497,16 @@ describe('GolfCourseSearchBox', () => {
     // permisos vieja servida por el service worker en el escritorio— y los dos
     // imprimían la misma frase. Distinguirlos es toda la issue (FE #387)
     it.each([
-      [1, 'el permiso denegado manda a los ajustes', /Location permission is off/],
-      [2, 'sin posición se apunta a los ajustes del dispositivo', /device settings/],
+      [
+        1,
+        'el permiso denegado manda a los ajustes',
+        /Location permission is off/,
+      ],
+      [
+        2,
+        'sin posición se apunta a los ajustes del dispositivo',
+        /device settings/,
+      ],
       [3, 'el tiempo agotado invita a reintentar', /took too long/],
     ])('código %i: %s', async (code, _description, expected) => {
       stubGeolocation((_success, failure) => failure({ code }));
@@ -462,7 +517,9 @@ describe('GolfCourseSearchBox', () => {
 
       expect(await screen.findByText(expected)).toBeInTheDocument();
       // El botón sigue ahí: en el caso del tiempo agotado es el reintento
-      expect(screen.getByTestId('golf-course-nearby-button')).toBeInTheDocument();
+      expect(
+        screen.getByTestId('golf-course-nearby-button'),
+      ).toBeInTheDocument();
     });
 
     it('trata una lectura de GPS que no es un número como falta de posición', async () => {
@@ -470,15 +527,20 @@ describe('GolfCourseSearchBox', () => {
       // Sin esto, `position` quedaría con lat/lon a null: la interfaz anunciaría
       // orden por distancia, el backend no recibiría coordenadas y el botón de
       // reintentar habría desaparecido
-      stubGeolocation((success) => success({ coords: { latitude: NaN, longitude: NaN } }));
+      stubGeolocation((success) =>
+        success({ coords: { latitude: NaN, longitude: NaN } }),
+      );
       renderBox();
       await openDropdown();
 
       fireEvent.click(await screen.findByTestId('golf-course-nearby-button'));
 
       expect(await screen.findByText(/device settings/)).toBeInTheDocument();
-      expect(screen.getByTestId('golf-course-nearby-button')).toBeInTheDocument();
-      const lastFilters = mockList.mock.calls[mockList.mock.calls.length - 1][0];
+      expect(
+        screen.getByTestId('golf-course-nearby-button'),
+      ).toBeInTheDocument();
+      const lastFilters =
+        mockList.mock.calls[mockList.mock.calls.length - 1][0];
       expect(lastFilters.lat).toBeUndefined();
     });
 
@@ -501,7 +563,7 @@ describe('GolfCourseSearchBox', () => {
       // mensaje que lo explique ni botón para reintentar
       let readingFails = false;
       stubGeolocation((success, failure) =>
-        readingFails ? failure({ code: 3 }) : success(MADRID)
+        readingFails ? failure({ code: 3 }) : success(MADRID),
       );
       renderBox();
       await openDropdown();
@@ -512,16 +574,22 @@ describe('GolfCourseSearchBox', () => {
         expect(filters.lat).toBe(40.417);
       });
 
-      fireEvent.change(screen.getByRole('textbox'), { target: { value: 'Prat' } });
+      fireEvent.change(screen.getByRole('textbox'), {
+        target: { value: 'Prat' },
+      });
       await waitFor(() => {
-        expect(mockList.mock.calls[mockList.mock.calls.length - 1][0].name).toBe('Prat');
+        expect(
+          mockList.mock.calls[mockList.mock.calls.length - 1][0].name,
+        ).toBe('Prat');
       });
 
       readingFails = true;
       fireEvent.click(await screen.findByTestId('golf-course-nearby-button'));
 
       expect(await screen.findByText(/took too long/)).toBeInTheDocument();
-      expect(screen.getByTestId('golf-course-nearby-button')).toBeInTheDocument();
+      expect(
+        screen.getByTestId('golf-course-nearby-button'),
+      ).toBeInTheDocument();
       await waitFor(() => {
         const filters = mockList.mock.calls[mockList.mock.calls.length - 1][0];
         expect(filters.lat).toBeUndefined();
@@ -546,16 +614,22 @@ describe('GolfCourseSearchBox', () => {
     });
   });
   describe('campos de otros países (FE #509)', () => {
-    const MADRID = { coords: { latitude: 40.41677382, longitude: -3.70379409 } };
+    const MADRID = {
+      coords: { latitude: 40.41677382, longitude: -3.70379409 },
+    };
 
-    const abroad = (id, name, countryCode) => ({ ...course(id, name), countryCode });
+    const abroad = (id, name, countryCode) => ({
+      ...course(id, name),
+      countryCode,
+    });
 
     const openDropdown = async () => {
       await waitFor(() => expect(mockList).toHaveBeenCalled());
       fireEvent.focus(screen.getByRole('textbox'));
     };
 
-    const ultimaConsulta = () => mockList.mock.calls[mockList.mock.calls.length - 1][0];
+    const ultimaConsulta = () =>
+      mockList.mock.calls[mockList.mock.calls.length - 1][0];
 
     beforeEach(() => {
       Object.defineProperty(navigator, 'geolocation', {
@@ -584,7 +658,9 @@ describe('GolfCourseSearchBox', () => {
       renderBox();
       await openDropdown();
 
-      fireEvent.change(screen.getByRole('textbox'), { target: { value: 'Real' } });
+      fireEvent.change(screen.getByRole('textbox'), {
+        target: { value: 'Real' },
+      });
 
       await waitFor(() => expect(ultimaConsulta().name).toBe('Real'));
       expect(ultimaConsulta().countryCode).toBe('ES');
@@ -594,14 +670,23 @@ describe('GolfCourseSearchBox', () => {
       mockList
         .mockResolvedValueOnce({ courses: [], total: 0 })
         .mockResolvedValueOnce({ courses: [], total: 0 })
-        .mockResolvedValueOnce({ courses: [abroad('9', 'Axis Golfe Ponte de Lima', 'PT')], total: 1 });
+        .mockResolvedValueOnce({
+          courses: [abroad('9', 'Axis Golfe Ponte de Lima', 'PT')],
+          total: 1,
+        });
 
       renderBox({ allowOtherCountries: true });
       await openDropdown();
-      fireEvent.change(screen.getByRole('textbox'), { target: { value: 'Axis' } });
+      fireEvent.change(screen.getByRole('textbox'), {
+        target: { value: 'Axis' },
+      });
 
-      expect(await screen.findByText('Axis Golfe Ponte de Lima')).toBeInTheDocument();
-      expect(screen.getByTestId('golf-course-widened-notice')).not.toHaveTextContent('');
+      expect(
+        await screen.findByText('Axis Golfe Ponte de Lima'),
+      ).toBeInTheDocument();
+      expect(
+        screen.getByTestId('golf-course-widened-notice'),
+      ).not.toHaveTextContent('');
 
       const consultas = mockList.mock.calls.map(([f]) => f);
       const porNombre = consultas.filter((f) => f.name === 'Axis');
@@ -627,11 +712,15 @@ describe('GolfCourseSearchBox', () => {
 
       renderBox({ allowOtherCountries: true });
       await openDropdown();
-      fireEvent.change(screen.getByRole('textbox'), { target: { value: 'Inexistente' } });
+      fireEvent.change(screen.getByRole('textbox'), {
+        target: { value: 'Inexistente' },
+      });
 
       await waitFor(() => expect(ultimaConsulta().name).toBe('Inexistente'));
       await waitFor(() =>
-        expect(screen.getByTestId('golf-course-widened-notice')).toHaveTextContent('')
+        expect(
+          screen.getByTestId('golf-course-widened-notice'),
+        ).toHaveTextContent(''),
       );
     });
 
@@ -644,10 +733,14 @@ describe('GolfCourseSearchBox', () => {
 
       renderBox();
       await openDropdown();
-      fireEvent.change(screen.getByRole('textbox'), { target: { value: 'Axis' } });
+      fireEvent.change(screen.getByRole('textbox'), {
+        target: { value: 'Axis' },
+      });
 
       await waitFor(() => expect(ultimaConsulta().name).toBe('Axis'));
-      const porNombre = mockList.mock.calls.map(([f]) => f).filter((f) => f.name === 'Axis');
+      const porNombre = mockList.mock.calls
+        .map(([f]) => f)
+        .filter((f) => f.name === 'Axis');
       expect(porNombre).toHaveLength(1);
       expect(porNombre[0].countryCode).toBe('ES');
     });
@@ -655,18 +748,26 @@ describe('GolfCourseSearchBox', () => {
     it('no marca como extranjeros los campos del país propio escrito en minúsculas', async () => {
       // Hay cuentas con `country_code: 'es'` (countryUtils.test.js), y el
       // buscador recibe ese valor tal cual desde `currentUser.country_code`
-      mockList.mockResolvedValue({ courses: [abroad('1', 'Real Club de Golf', 'ES')], total: 1 });
+      mockList.mockResolvedValue({
+        courses: [abroad('1', 'Real Club de Golf', 'ES')],
+        total: 1,
+      });
 
       renderBox({ countryCode: 'es' });
       await openDropdown();
 
       await screen.findByText('Real Club de Golf');
-      expect(screen.queryByTestId('golf-course-country-1')).not.toBeInTheDocument();
+      expect(
+        screen.queryByTestId('golf-course-country-1'),
+      ).not.toBeInTheDocument();
     });
 
     it('enseña el país solo en los campos que no son del tuyo', async () => {
       mockList.mockResolvedValue({
-        courses: [abroad('9', 'Axis Golfe Ponte de Lima', 'PT'), abroad('1', 'Real Club de Golf', 'ES')],
+        courses: [
+          abroad('9', 'Axis Golfe Ponte de Lima', 'PT'),
+          abroad('1', 'Real Club de Golf', 'ES'),
+        ],
         total: 2,
       });
 
@@ -676,8 +777,12 @@ describe('GolfCourseSearchBox', () => {
       await screen.findByText('Axis Golfe Ponte de Lima');
       // Dos campos con el mismo nombre a un lado y otro de la frontera se
       // eligen a ciegas si la fila no dice de dónde es cada uno
-      expect(screen.getByTestId('golf-course-country-9')).toHaveTextContent('PT');
-      expect(screen.queryByTestId('golf-course-country-1')).not.toBeInTheDocument();
+      expect(screen.getByTestId('golf-course-country-9')).toHaveTextContent(
+        'PT',
+      );
+      expect(
+        screen.queryByTestId('golf-course-country-1'),
+      ).not.toBeInTheDocument();
     });
   });
 });

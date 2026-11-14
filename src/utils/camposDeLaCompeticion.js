@@ -10,12 +10,15 @@
  * @returns {Array<{id: string, name: string, approvalStatus: string, countryCode: string|null}>}
  */
 export const aCamposDeLaCompeticion = (resultado) => {
-  const lista = Array.isArray(resultado) ? resultado : resultado?.golf_courses || [];
+  const lista = Array.isArray(resultado)
+    ? resultado
+    : resultado?.golf_courses || [];
   return lista
     .map((item) => ({
       id: item.golf_course?.id || item.golf_course_id,
       name: item.golf_course?.name || item.name || '',
-      approvalStatus: item.golf_course?.approval_status || item.approval_status || 'APPROVED',
+      approvalStatus:
+        item.golf_course?.approval_status || item.approval_status || 'APPROVED',
       // La zona del campo (FE #824): la hora del campo para programar
       timezone: item.golf_course?.timezone ?? item.timezone ?? null,
       countryCode: item.golf_course?.country_code || item.country_code || null,

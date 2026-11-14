@@ -30,11 +30,17 @@ import EmailVerificationBanner from './components/EmailVerificationBanner';
  */
 
 vi.mock('react-i18next', () => ({
-  useTranslation: () => ({ t: (k) => k, ready: true, i18n: { language: 'es' } }),
+  useTranslation: () => ({
+    t: (k) => k,
+    ready: true,
+    i18n: { language: 'es' },
+  }),
   Trans: ({ i18nKey }) => i18nKey,
 }));
 
-vi.mock('./composition', () => ({ resendVerificationEmailUseCase: { execute: vi.fn() } }));
+vi.mock('./composition', () => ({
+  resendVerificationEmailUseCase: { execute: vi.fn() },
+}));
 
 const css = readFileSync(resolve(process.cwd(), 'src/index.css'), 'utf8');
 
@@ -47,7 +53,10 @@ const reglas = () =>
   }));
 
 const reglaDeFoco = () =>
-  reglas().find((r) => /(^|,|\s):focus-visible\b/.test(r.selector) && /outline:/.test(r.cuerpo));
+  reglas().find(
+    (r) =>
+      /(^|,|\s):focus-visible\b/.test(r.selector) && /outline:/.test(r.cuerpo),
+  );
 
 describe('anillo de foco en el verde de la marca', () => {
   it('F1: hay una regla global :focus-visible con el outline en el primario', () => {
@@ -55,7 +64,9 @@ describe('anillo de foco en el verde de la marca', () => {
     expect(regla).toBeDefined();
     // Global: el selector es el pseudo a secas, sin elemento ni clase delante
     expect(regla.selector).toMatch(/^:focus-visible$/);
-    expect(regla.cuerpo).toMatch(/outline:\s*2px\s+solid\s+var\(--color-primary-\d+\)/);
+    expect(regla.cuerpo).toMatch(
+      /outline:\s*2px\s+solid\s+var\(--color-primary-\d+\)/,
+    );
     expect(regla.cuerpo).toMatch(/outline-offset:\s*2px/);
   });
 
@@ -68,25 +79,29 @@ describe('anillo de foco en el verde de la marca', () => {
     const ultimaCapa = aperturas.at(-1).index;
     // Sin cerrar la capa entre medias
     const tramo = antes.slice(ultimaCapa);
-    const abiertas = (tramo.match(/\{/g) || []).length - (tramo.match(/\}/g) || []).length;
+    const abiertas =
+      (tramo.match(/\{/g) || []).length - (tramo.match(/\}/g) || []).length;
     expect(abiertas).toBeGreaterThan(0);
   });
 
   it('F2: ninguna regla de :focus a secas pinta un outline en todo', () => {
     const globales = reglas().filter(
-      (r) => /(^|,)\s*(\*\s*)?:focus(?![-\w])/.test(r.selector) && /outline:(?!\s*none\b)/.test(r.cuerpo)
+      (r) =>
+        /(^|,)\s*(\*\s*)?:focus(?![-\w])/.test(r.selector) &&
+        /outline:(?!\s*none\b)/.test(r.cuerpo),
     );
     expect(globales).toEqual([]);
   });
 
   it('F3: cada outline: none del CSS trae un reemplazo visible', () => {
     // Los del mapa, no: su reemplazo está en la hoja de MapLibre (F5)
-    const delMapa = (selector) => selector.split(',').every((s) => s.trim().startsWith('.maplibregl-'));
+    const delMapa = (selector) =>
+      selector.split(',').every((s) => s.trim().startsWith('.maplibregl-'));
     const sinReemplazo = reglas().filter(
       (r) =>
         /outline:\s*(none|0)\b/.test(r.cuerpo) &&
         !/box-shadow:|outline:(?!\s*(none|0)\b)/.test(r.cuerpo) &&
-        !delMapa(r.selector)
+        !delMapa(r.selector),
     );
     expect(sinReemplazo.map((r) => r.selector)).toEqual([]);
   });
@@ -99,9 +114,12 @@ describe('anillo de foco en el verde de la marca', () => {
 
   it('F3: la X del aviso de verificar el correo ya no se queda sin anillo', () => {
     render(<EmailVerificationBanner userEmail="a@b.c" />);
-    const cerrar = screen.getAllByRole('button', { name: 'emailVerification.dismiss' });
+    const cerrar = screen.getAllByRole('button', {
+      name: 'emailVerification.dismiss',
+    });
     expect(cerrar).toHaveLength(2);
-    for (const b of cerrar) expect(b.className).not.toMatch(/(^|\s)focus:outline-none/);
+    for (const b of cerrar)
+      expect(b.className).not.toMatch(/(^|\s)focus:outline-none/);
   });
 });
 
@@ -131,8 +149,12 @@ const atributosDeClase = (codigo) => {
 // `focus:ring-primary` solo da el color, y sin grosor no se ve
 const BORDE = '(?:^|[\\s\'"`{])';
 const FIN = '(?=[\\s\'"`}]|$)';
-const PINTA_ANILLO = new RegExp(BORDE + 'focus(?:-visible)?:ring(?:-(?:\\d+|\\[[^\\]]+\\]))?' + FIN);
-const QUITA_EL_OUTLINE = new RegExp(BORDE + '(?:focus:|focus-visible:)?outline-(?:none|0|hidden)' + FIN);
+const PINTA_ANILLO = new RegExp(
+  BORDE + 'focus(?:-visible)?:ring(?:-(?:\\d+|\\[[^\\]]+\\]))?' + FIN,
+);
+const QUITA_EL_OUTLINE = new RegExp(
+  BORDE + '(?:focus:|focus-visible:)?outline-(?:none|0|hidden)' + FIN,
+);
 
 /** Los `.jsx` de `src`, sin los tests. */
 const ficherosJsx = (dir = resolve(process.cwd(), 'src')) =>
@@ -144,16 +166,28 @@ const ficherosJsx = (dir = resolve(process.cwd(), 'src')) =>
 
 describe('un anillo propio sustituye al global, no se suma (F4)', () => {
   it('el detector distingue lo que pinta anillo de lo que solo le da color', () => {
-    expect(PINTA_ANILLO.test('"px-3 focus:ring-2 focus:ring-primary"')).toBe(true);
-    expect(PINTA_ANILLO.test('`a ${x ? \'focus-visible:ring-2\' : \'\'}`')).toBe(true);
+    expect(PINTA_ANILLO.test('"px-3 focus:ring-2 focus:ring-primary"')).toBe(
+      true,
+    );
+    expect(PINTA_ANILLO.test("`a ${x ? 'focus-visible:ring-2' : ''}`")).toBe(
+      true,
+    );
     expect(PINTA_ANILLO.test('"a focus:ring b"')).toBe(true);
-    expect(PINTA_ANILLO.test('"text-primary focus:ring-primary focus:ring-offset-2"')).toBe(false);
-    expect(QUITA_EL_OUTLINE.test('"focus:outline-none focus:ring-2"')).toBe(true);
+    expect(
+      PINTA_ANILLO.test(
+        '"text-primary focus:ring-primary focus:ring-offset-2"',
+      ),
+    ).toBe(false);
+    expect(QUITA_EL_OUTLINE.test('"focus:outline-none focus:ring-2"')).toBe(
+      true,
+    );
     expect(QUITA_EL_OUTLINE.test('"focus:outline-primary"')).toBe(false);
   });
 
   it('el test lee de verdad los componentes', () => {
-    const conAnillo = ficherosJsx().flatMap((f) => atributosDeClase(readFileSync(f, 'utf8'))).filter((v) => PINTA_ANILLO.test(v));
+    const conAnillo = ficherosJsx()
+      .flatMap((f) => atributosDeClase(readFileSync(f, 'utf8')))
+      .filter((v) => PINTA_ANILLO.test(v));
     expect(conAnillo.length).toBeGreaterThan(20);
   });
 
@@ -162,26 +196,39 @@ describe('un anillo propio sustituye al global, no se suma (F4)', () => {
     const dobles = ficherosJsx().flatMap((f) =>
       atributosDeClase(readFileSync(f, 'utf8'))
         .filter((v) => PINTA_ANILLO.test(v) && !QUITA_EL_OUTLINE.test(v))
-        .map((v) => `${relative(raiz, f)}: ${v.replace(/\s+/g, ' ').slice(0, 90)}`)
+        .map(
+          (v) => `${relative(raiz, f)}: ${v.replace(/\s+/g, ' ').slice(0, 90)}`,
+        ),
     );
     expect(dobles).toEqual([]);
   });
 });
 
 describe('los botones del mapa (F5)', () => {
-  const maplibre = readFileSync(resolve(process.cwd(), 'node_modules/maplibre-gl/dist/maplibre-gl.css'), 'utf8');
+  const maplibre = readFileSync(
+    resolve(process.cwd(), 'node_modules/maplibre-gl/dist/maplibre-gl.css'),
+    'utf8',
+  );
 
   it('F5: MapLibre trae su propia marca de foco en esos botones', () => {
-    expect(maplibre).toMatch(/\.maplibregl-ctrl-group button:focus:focus-visible\{box-shadow:[^}]+\}/);
-    expect(maplibre).toMatch(/\.maplibregl-ctrl-attrib-button:focus[,{][^}]*box-shadow/);
+    expect(maplibre).toMatch(
+      /\.maplibregl-ctrl-group button:focus:focus-visible\{box-shadow:[^}]+\}/,
+    );
+    expect(maplibre).toMatch(
+      /\.maplibregl-ctrl-attrib-button:focus[,{][^}]*box-shadow/,
+    );
   });
 
   it('F5: el global no se le suma: outline none en sus botones, en base', () => {
     const regla = reglas().find(
-      (r) => /\.maplibregl-ctrl-group button:focus-visible/.test(r.selector) && /outline:\s*none/.test(r.cuerpo)
+      (r) =>
+        /\.maplibregl-ctrl-group button:focus-visible/.test(r.selector) &&
+        /outline:\s*none/.test(r.cuerpo),
     );
     expect(regla).toBeDefined();
-    expect(regla.selector).toMatch(/\.maplibregl-ctrl-attrib-button:focus-visible/);
+    expect(regla.selector).toMatch(
+      /\.maplibregl-ctrl-attrib-button:focus-visible/,
+    );
     expect(regla.inicio).toBeGreaterThan(reglaDeFoco().inicio);
   });
 });

@@ -19,7 +19,11 @@ const ESTA_CARGA = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
  * `pais`: el del campo. La imagen solo cubre España (19 oct): en otro país el
  * mapa no está `disponible`, ni se pide ni se abre; sin saberlo, sí.
  */
-export function useMapaDelHoyo({ golfCourseId, cerrarSi = false, pais = null }) {
+export function useMapaDelHoyo({
+  golfCourseId,
+  cerrarSi = false,
+  pais = null,
+}) {
   const location = useLocation();
   const navigate = useNavigate();
   const disponible = hayMapaEnElPais(pais);
@@ -38,14 +42,20 @@ export function useMapaDelHoyo({ golfCourseId, cerrarSi = false, pais = null }) 
   // sabe en qué hoyo estaba; se quita y se queda en la tarjeta
   useEffect(() => {
     if (location.hash === ANCLA && !abiertoAqui) {
-      navigate({ search: location.search, hash: '' }, { replace: true, state: location.state });
+      navigate(
+        { search: location.search, hash: '' },
+        { replace: true, state: location.state },
+      );
     }
   }, [location.hash, abiertoAqui, location.search, location.state, navigate]);
 
   const abrir = useCallback(() => {
     if (!disponible || navegando.current || abierto) return;
     navegando.current = true;
-    navigate({ search: location.search, hash: ANCLA }, { state: { ...location.state, mapaAbiertoAqui: ESTA_CARGA } });
+    navigate(
+      { search: location.search, hash: ANCLA },
+      { state: { ...location.state, mapaAbiertoAqui: ESTA_CARGA } },
+    );
   }, [navigate, disponible, abierto, location.search, location.state]);
 
   const cerrar = useCallback(() => {
@@ -57,7 +67,13 @@ export function useMapaDelHoyo({ golfCourseId, cerrarSi = false, pais = null }) 
   // Abierto sin saber el país, y resulta que es otro: se cierra quitando su
   // entrada, o el botón atrás se gastaría en un mapa que ya no se ve (CodeRabbit)
   useEffect(() => {
-    if (disponible || location.hash !== ANCLA || !abiertoAqui || navegando.current) return;
+    if (
+      disponible ||
+      location.hash !== ANCLA ||
+      !abiertoAqui ||
+      navegando.current
+    )
+      return;
     navegando.current = true;
     navigate(-1);
   }, [disponible, location.hash, abiertoAqui, navigate]);

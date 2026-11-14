@@ -10,7 +10,9 @@ import { render, screen, fireEvent } from '@testing-library/react';
  */
 const mockCampos = vi.fn();
 vi.mock('../../composition', () => ({
-  getCompetitionGolfCoursesUseCase: { execute: (...args) => mockCampos(...args) },
+  getCompetitionGolfCoursesUseCase: {
+    execute: (...args) => mockCampos(...args),
+  },
   addGolfCourseToCompetitionUseCase: { execute: vi.fn() },
   removeGolfCourseFromCompetitionUseCase: { execute: vi.fn() },
   reorderGolfCoursesUseCase: { execute: vi.fn() },
@@ -24,11 +26,17 @@ vi.mock('react-i18next', () => ({
 vi.mock('../golf_course/GolfCourseSearchBox', () => ({
   default: ({ countryCode }) => <p data-testid="buscando-en">{countryCode}</p>,
 }));
-vi.mock('../../services/countries', () => ({ formatCountryName: (pais) => pais.name_es }));
+vi.mock('../../services/countries', () => ({
+  formatCountryName: (pais) => pais.name_es,
+}));
 vi.mock('../ui/CountryFlag', () => ({ CountryFlag: () => null }));
-vi.mock('../../utils/toast', () => ({ default: { error: vi.fn(), success: vi.fn(), info: vi.fn() } }));
+vi.mock('../../utils/toast', () => ({
+  default: { error: vi.fn(), success: vi.fn(), info: vi.fn() },
+}));
 
-const CompetitionGolfCoursesSection = (await import('./CompetitionGolfCoursesSection')).default;
+const CompetitionGolfCoursesSection = (
+  await import('./CompetitionGolfCoursesSection')
+).default;
 
 const ES = { code: 'ES', name_es: 'España' };
 const FR = { code: 'FR', name_es: 'Francia' };
@@ -39,7 +47,7 @@ const abrirElBuscador = async (countries) => {
     <CompetitionGolfCoursesSection
       competition={{ id: 'c-1', status: 'ACTIVE', countries }}
       canManage={true}
-    />
+    />,
   );
   fireEvent.click(await screen.findByText('detail.golfCourses.addCourse'));
 };
@@ -53,14 +61,22 @@ describe('CompetitionGolfCoursesSection · en qué país se buscan campos', () =
     await abrirElBuscador([ES]);
 
     expect(screen.getByTestId('buscando-en')).toHaveTextContent('ES');
-    expect(screen.queryByRole('button', { name: 'España' })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: 'España' }),
+    ).not.toBeInTheDocument();
   });
 
   it('P2: con adyacente, un botón por país y arranca en el principal', async () => {
     await abrirElBuscador([FR, ES]);
 
-    expect(screen.getByRole('button', { name: 'Francia' })).toHaveAttribute('aria-pressed', 'true');
-    expect(screen.getByRole('button', { name: 'España' })).toHaveAttribute('aria-pressed', 'false');
+    expect(screen.getByRole('button', { name: 'Francia' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+    expect(screen.getByRole('button', { name: 'España' })).toHaveAttribute(
+      'aria-pressed',
+      'false',
+    );
     expect(screen.getByTestId('buscando-en')).toHaveTextContent('FR');
   });
 
@@ -70,8 +86,14 @@ describe('CompetitionGolfCoursesSection · en qué país se buscan campos', () =
     fireEvent.click(screen.getByRole('button', { name: 'España' }));
 
     expect(screen.getByTestId('buscando-en')).toHaveTextContent('ES');
-    expect(screen.getByRole('button', { name: 'España' })).toHaveAttribute('aria-pressed', 'true');
-    expect(screen.getByRole('button', { name: 'Francia' })).toHaveAttribute('aria-pressed', 'false');
+    expect(screen.getByRole('button', { name: 'España' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+    expect(screen.getByRole('button', { name: 'Francia' })).toHaveAttribute(
+      'aria-pressed',
+      'false',
+    );
   });
 
   it('P4: con dos adyacentes, tres botones', async () => {

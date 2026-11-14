@@ -26,8 +26,14 @@ const controlable = () => {
       maximo = Math.max(maximo, enVuelo);
       llamadas.push({
         elemento,
-        resolve: (v) => { enVuelo -= 1; resolve(v); },
-        reject: (e) => { enVuelo -= 1; reject(e); },
+        resolve: (v) => {
+          enVuelo -= 1;
+          resolve(v);
+        },
+        reject: (e) => {
+          enVuelo -= 1;
+          reject(e);
+        },
       });
     });
   return { tarea, llamadas, maximo: () => maximo };
@@ -80,7 +86,9 @@ describe('recorreConTope', () => {
   it('cuando `sigue` pasa a falso no empieza ninguna más', async () => {
     const { tarea, llamadas } = controlable();
     let vigente = true;
-    const fin = recorreConTope([1, 2, 3, 4], 2, tarea, { sigue: () => vigente });
+    const fin = recorreConTope([1, 2, 3, 4], 2, tarea, {
+      sigue: () => vigente,
+    });
 
     vigente = false;
     llamadas[0].resolve();

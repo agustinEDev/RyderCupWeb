@@ -1,5 +1,11 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
+import {
+  render,
+  screen,
+  fireEvent,
+  waitFor,
+  within,
+} from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import MyInvitationsPage from './MyInvitationsPage';
 import customToast from '../../utils/toast';
@@ -49,8 +55,12 @@ vi.mock('../../hooks/useGeneroParaApuntarse', () => ({
 }));
 
 vi.mock('../../composition', () => ({
-  listMyInvitationsUseCase: { execute: (...args) => mockListMyInvitations(...args) },
-  respondToInvitationUseCase: { execute: (...args) => mockRespondToInvitation(...args) },
+  listMyInvitationsUseCase: {
+    execute: (...args) => mockListMyInvitations(...args),
+  },
+  respondToInvitationUseCase: {
+    execute: (...args) => mockRespondToInvitation(...args),
+  },
 }));
 
 vi.mock('../../utils/toast', () => ({
@@ -72,7 +82,7 @@ const renderPage = () => {
       <Routes>
         <Route path="/player/invitations" element={<MyInvitationsPage />} />
       </Routes>
-    </MemoryRouter>
+    </MemoryRouter>,
   );
 };
 
@@ -122,12 +132,27 @@ describe('MyInvitationsPage', () => {
   it('dos tarjetas: con una respondiendo, la otra también se responde (revisor de la PR 3)', async () => {
     faltaGenero = false;
     const tarjeta = (id) => ({
-      id, competitionId: `c-${id}`, competitionName: id, inviterName: 'Creator', inviteeEmail: 'p@test.com',
-      status: 'PENDING', isPending: true, isAccepted: false, isDeclined: false, isExpired: false,
-      personalMessage: null, expiresAt: new Date(Date.now() + 86400000).toISOString(), respondedAt: null,
+      id,
+      competitionId: `c-${id}`,
+      competitionName: id,
+      inviterName: 'Creator',
+      inviteeEmail: 'p@test.com',
+      status: 'PENDING',
+      isPending: true,
+      isAccepted: false,
+      isDeclined: false,
+      isExpired: false,
+      personalMessage: null,
+      expiresAt: new Date(Date.now() + 86400000).toISOString(),
+      respondedAt: null,
     });
-    mockListMyInvitations.mockResolvedValue({ invitations: [tarjeta('inv-a'), tarjeta('inv-b')], totalCount: 2 });
-    mockRespondToInvitation.mockImplementation((id) => (id === 'inv-a' ? new Promise(() => {}) : Promise.resolve({})));
+    mockListMyInvitations.mockResolvedValue({
+      invitations: [tarjeta('inv-a'), tarjeta('inv-b')],
+      totalCount: 2,
+    });
+    mockRespondToInvitation.mockImplementation((id) =>
+      id === 'inv-a' ? new Promise(() => {}) : Promise.resolve({}),
+    );
     renderPage();
     const [, rechazarB] = await screen.findAllByTestId('decline-button');
     const [rechazarA] = screen.getAllByTestId('decline-button');
@@ -135,7 +160,9 @@ describe('MyInvitationsPage', () => {
     fireEvent.click(rechazarA);
     fireEvent.click(rechazarB);
 
-    await waitFor(() => expect(mockRespondToInvitation).toHaveBeenCalledWith('inv-b', 'DECLINE'));
+    await waitFor(() =>
+      expect(mockRespondToInvitation).toHaveBeenCalledWith('inv-b', 'DECLINE'),
+    );
     expect(mockRespondToInvitation).toHaveBeenCalledTimes(2);
     // Respondida B, A sigue en curso: su tarjeta, desactivada
     await waitFor(() => expect(mockListMyInvitations).toHaveBeenCalledTimes(2));
@@ -145,9 +172,13 @@ describe('MyInvitationsPage', () => {
   it('A4: se puede filtrar por las que se quedaron sin plaza (#710)', async () => {
     renderPage();
     const filtro = await screen.findByTestId('status-filter');
-    expect(within(filtro).getByRole('option', { name: 'status.NO_ROOM' })).toBeInTheDocument();
+    expect(
+      within(filtro).getByRole('option', { name: 'status.NO_ROOM' }),
+    ).toBeInTheDocument();
     // Y las que retiró quien invitaba (FE #724)
-    expect(within(filtro).getByRole('option', { name: 'status.CANCELLED' })).toBeInTheDocument();
+    expect(
+      within(filtro).getByRole('option', { name: 'status.CANCELLED' }),
+    ).toBeInTheDocument();
   });
 
   describe('aceptar sin género (#710)', () => {
@@ -168,7 +199,10 @@ describe('MyInvitationsPage', () => {
     };
 
     beforeEach(() => {
-      mockListMyInvitations.mockResolvedValue({ invitations: [PENDIENTE], totalCount: 1 });
+      mockListMyInvitations.mockResolvedValue({
+        invitations: [PENDIENTE],
+        totalCount: 1,
+      });
       mockRespondToInvitation.mockResolvedValue({ competitionId: 'comp-1' });
     });
 
@@ -194,9 +228,13 @@ describe('MyInvitationsPage', () => {
       });
       fireEvent.click(screen.getByTestId('genero-confirmar'));
 
-      await waitFor(() => expect(mockRespondToInvitation).toHaveBeenCalledWith('inv-1', 'ACCEPT'));
+      await waitFor(() =>
+        expect(mockRespondToInvitation).toHaveBeenCalledWith('inv-1', 'ACCEPT'),
+      );
       expect(mockGuardarGenero).toHaveBeenCalledWith('FEMALE');
-      await waitFor(() => expect(orden).toEqual(['genero', 'acepta', 'sesion']));
+      await waitFor(() =>
+        expect(orden).toEqual(['genero', 'acepta', 'sesion']),
+      );
     });
 
     it('I2: con género, aceptar acepta sin preguntar', async () => {
@@ -204,8 +242,12 @@ describe('MyInvitationsPage', () => {
 
       fireEvent.click(await screen.findByTestId('accept-button'));
 
-      await waitFor(() => expect(mockRespondToInvitation).toHaveBeenCalledWith('inv-1', 'ACCEPT'));
-      expect(screen.queryByTestId('selector-de-genero')).not.toBeInTheDocument();
+      await waitFor(() =>
+        expect(mockRespondToInvitation).toHaveBeenCalledWith('inv-1', 'ACCEPT'),
+      );
+      expect(
+        screen.queryByTestId('selector-de-genero'),
+      ).not.toBeInTheDocument();
     });
 
     // FE #733 · el motivo de «sin plaza» sale del código, en el idioma de la app
@@ -213,10 +255,15 @@ describe('MyInvitationsPage', () => {
     //   I5  otro error           → el mensaje del servidor, como siempre
     it('I4: sin plaza, lo dice en su idioma y relee la lista', async () => {
       mockRespondToInvitation.mockRejectedValueOnce(
-        Object.assign(new Error('Esta invitación se quedó sin plaza al cerrarse la inscripción'), {
-          status: 409,
-          errorCode: 'INVITATION_NO_ROOM',
-        })
+        Object.assign(
+          new Error(
+            'Esta invitación se quedó sin plaza al cerrarse la inscripción',
+          ),
+          {
+            status: 409,
+            errorCode: 'INVITATION_NO_ROOM',
+          },
+        ),
       );
       renderPage();
       await screen.findByTestId('accept-button');
@@ -224,8 +271,14 @@ describe('MyInvitationsPage', () => {
 
       fireEvent.click(screen.getByTestId('accept-button'));
 
-      await waitFor(() => expect(customToast.error).toHaveBeenCalledWith('errors.noRoom'));
-      await waitFor(() => expect(mockListMyInvitations.mock.calls.length).toBeGreaterThan(lecturas));
+      await waitFor(() =>
+        expect(customToast.error).toHaveBeenCalledWith('errors.noRoom'),
+      );
+      await waitFor(() =>
+        expect(mockListMyInvitations.mock.calls.length).toBeGreaterThan(
+          lecturas,
+        ),
+      );
     });
 
     // FE #737 · rechazar una que se quedó sin plaza NO es un fallo: el jugador no
@@ -233,10 +286,15 @@ describe('MyInvitationsPage', () => {
     // tarjeta dice «Sin plaza», que es lo que pasó
     it('I4b: rechazar una que ya está sin plaza no da error: solo relee la lista', async () => {
       mockRespondToInvitation.mockRejectedValueOnce(
-        Object.assign(new Error('Esta invitación se quedó sin plaza al cerrarse la inscripción'), {
-          status: 409,
-          errorCode: 'INVITATION_NO_ROOM',
-        })
+        Object.assign(
+          new Error(
+            'Esta invitación se quedó sin plaza al cerrarse la inscripción',
+          ),
+          {
+            status: 409,
+            errorCode: 'INVITATION_NO_ROOM',
+          },
+        ),
       );
       renderPage();
       await screen.findByTestId('decline-button');
@@ -244,7 +302,11 @@ describe('MyInvitationsPage', () => {
 
       fireEvent.click(screen.getByTestId('decline-button'));
 
-      await waitFor(() => expect(mockListMyInvitations.mock.calls.length).toBeGreaterThan(lecturas));
+      await waitFor(() =>
+        expect(mockListMyInvitations.mock.calls.length).toBeGreaterThan(
+          lecturas,
+        ),
+      );
       expect(customToast.error).not.toHaveBeenCalled();
       expect(customToast.success).not.toHaveBeenCalled();
     });
@@ -254,26 +316,48 @@ describe('MyInvitationsPage', () => {
     // El motivo del servidor (4xx) tal cual; un 5xx, el genérico, y no el
     // fallo en crudo; sin red, el de la app (`mensajeDeError`, CodeRabbit)
     it.each([
-      ['decline-button', { status: 422, message: 'No se puede' }, 'No se puede'],
-      ['decline-button', { status: 500, message: 'Internal error' }, 'errors.failedToRespond'],
+      [
+        'decline-button',
+        { status: 422, message: 'No se puede' },
+        'No se puede',
+      ],
+      [
+        'decline-button',
+        { status: 500, message: 'Internal error' },
+        'errors.failedToRespond',
+      ],
       ['accept-button', { status: 422, message: 'No se puede' }, 'No se puede'],
-      ['accept-button', { status: 500, message: 'Internal error' }, 'errors.failedToRespond'],
+      [
+        'accept-button',
+        { status: 500, message: 'Internal error' },
+        'errors.failedToRespond',
+      ],
     ])('I5: %s con otro error (%j) → «%s»', async (boton, fallo, texto) => {
-      mockRespondToInvitation.mockRejectedValueOnce(Object.assign(new Error(fallo.message), { status: fallo.status }));
+      mockRespondToInvitation.mockRejectedValueOnce(
+        Object.assign(new Error(fallo.message), { status: fallo.status }),
+      );
       renderPage();
 
       fireEvent.click(await screen.findByTestId(boton));
 
-      await waitFor(() => expect(customToast.error).toHaveBeenCalledWith(texto));
+      await waitFor(() =>
+        expect(customToast.error).toHaveBeenCalledWith(texto),
+      );
     });
 
     it('I5: sin red, el aviso de sin conexión de la app', async () => {
-      mockRespondToInvitation.mockRejectedValueOnce(new TypeError('Failed to fetch'));
+      mockRespondToInvitation.mockRejectedValueOnce(
+        new TypeError('Failed to fetch'),
+      );
       renderPage();
 
       fireEvent.click(await screen.findByTestId('accept-button'));
 
-      await waitFor(() => expect(customToast.error).toHaveBeenCalledWith('common:sinConexion.mensaje'));
+      await waitFor(() =>
+        expect(customToast.error).toHaveBeenCalledWith(
+          'common:sinConexion.mensaje',
+        ),
+      );
     });
 
     // Probado en el Kind (5 oct): el organizador la retira con la pantalla del
@@ -285,7 +369,10 @@ describe('MyInvitationsPage', () => {
     //        y ya no la juega, igual que con «sin plaza» (I4b; Agustín, 5 oct)
     //   I7   409 CON otro código      → su camino, el mensaje del servidor (CodeRabbit en la #821)
     const yaNoPendiente = () =>
-      Object.assign(new Error('Invitation is in status CANCELLED.'), { status: 409, errorCode: null });
+      Object.assign(new Error('Invitation is in status CANCELLED.'), {
+        status: 409,
+        errorCode: null,
+      });
 
     it('I6: aceptar una que ya no estaba pendiente lo dice en su idioma y relee la lista', async () => {
       mockRespondToInvitation.mockRejectedValueOnce(yaNoPendiente());
@@ -295,9 +382,19 @@ describe('MyInvitationsPage', () => {
 
       fireEvent.click(screen.getByTestId('accept-button'));
 
-      await waitFor(() => expect(customToast.error).toHaveBeenCalledWith('errors.notPendingAnymore'));
-      expect(customToast.error).not.toHaveBeenCalledWith('Invitation is in status CANCELLED.');
-      await waitFor(() => expect(mockListMyInvitations.mock.calls.length).toBeGreaterThan(lecturas));
+      await waitFor(() =>
+        expect(customToast.error).toHaveBeenCalledWith(
+          'errors.notPendingAnymore',
+        ),
+      );
+      expect(customToast.error).not.toHaveBeenCalledWith(
+        'Invitation is in status CANCELLED.',
+      );
+      await waitFor(() =>
+        expect(mockListMyInvitations.mock.calls.length).toBeGreaterThan(
+          lecturas,
+        ),
+      );
     });
 
     it('I6b: rechazar una que ya no estaba pendiente no da error: solo relee la lista', async () => {
@@ -308,32 +405,48 @@ describe('MyInvitationsPage', () => {
 
       fireEvent.click(screen.getByTestId('decline-button'));
 
-      await waitFor(() => expect(mockListMyInvitations.mock.calls.length).toBeGreaterThan(lecturas));
+      await waitFor(() =>
+        expect(mockListMyInvitations.mock.calls.length).toBeGreaterThan(
+          lecturas,
+        ),
+      );
       expect(customToast.error).not.toHaveBeenCalled();
       expect(customToast.success).not.toHaveBeenCalled();
     });
 
     it('I7: un 409 con otro código no se da por «ya no estaba pendiente»', async () => {
       mockRespondToInvitation.mockRejectedValueOnce(
-        Object.assign(new Error('Some other conflict'), { status: 409, errorCode: 'OTHER_CODE' })
+        Object.assign(new Error('Some other conflict'), {
+          status: 409,
+          errorCode: 'OTHER_CODE',
+        }),
       );
       renderPage();
 
       fireEvent.click(await screen.findByTestId('accept-button'));
 
-      await waitFor(() => expect(customToast.error).toHaveBeenCalledWith('Some other conflict'));
-      expect(customToast.error).not.toHaveBeenCalledWith('errors.notPendingAnymore');
+      await waitFor(() =>
+        expect(customToast.error).toHaveBeenCalledWith('Some other conflict'),
+      );
+      expect(customToast.error).not.toHaveBeenCalledWith(
+        'errors.notPendingAnymore',
+      );
     });
 
     it('I7b: rechazar con un 409 de otro código sí lo dice', async () => {
       mockRespondToInvitation.mockRejectedValueOnce(
-        Object.assign(new Error('Some other conflict'), { status: 409, errorCode: 'OTHER_CODE' })
+        Object.assign(new Error('Some other conflict'), {
+          status: 409,
+          errorCode: 'OTHER_CODE',
+        }),
       );
       renderPage();
 
       fireEvent.click(await screen.findByTestId('decline-button'));
 
-      await waitFor(() => expect(customToast.error).toHaveBeenCalledWith('Some other conflict'));
+      await waitFor(() =>
+        expect(customToast.error).toHaveBeenCalledWith('Some other conflict'),
+      );
     });
 
     it('I3: si no se pudo guardar el género, no se acepta', async () => {
@@ -347,7 +460,11 @@ describe('MyInvitationsPage', () => {
       });
       fireEvent.click(screen.getByTestId('genero-confirmar'));
 
-      await waitFor(() => expect(customToast.error).toHaveBeenCalledWith('common:sinConexion.mensaje'));
+      await waitFor(() =>
+        expect(customToast.error).toHaveBeenCalledWith(
+          'common:sinConexion.mensaje',
+        ),
+      );
       expect(mockRespondToInvitation).not.toHaveBeenCalled();
     });
   });
@@ -421,7 +538,9 @@ describe('MyInvitationsPage', () => {
     });
 
     renderPage();
-    expect(await screen.findByText('player.pendingCount_1')).toBeInTheDocument();
+    expect(
+      await screen.findByText('player.pendingCount_1'),
+    ).toBeInTheDocument();
   });
 
   it('P1: una aceptada se abre desde su tarjeta, sin la caja suelta de abajo (FE #682)', async () => {
@@ -452,7 +571,10 @@ describe('MyInvitationsPage', () => {
     const accesos = screen.getAllByText('Summer Cup');
     expect(accesos).toHaveLength(1);
     expect(tarjeta).toContainElement(accesos[0]);
-    expect(accesos[0].closest('a')).toHaveAttribute('href', '/competitions/comp-123');
+    expect(accesos[0].closest('a')).toHaveAttribute(
+      'href',
+      '/competitions/comp-123',
+    );
   });
 
   /**
@@ -470,20 +592,22 @@ describe('MyInvitationsPage', () => {
       // «mensaje» y no «aviso»: el aviso dice «lo que ves puede no estar al día»,
       // y aquí no queda nada a la vista
       expect(aviso).toHaveTextContent('common:sinConexion.mensaje');
-      expect(screen.getByRole('button', { name: 'errors.retry' })).toBeInTheDocument();
+      expect(
+        screen.getByRole('button', { name: 'errors.retry' }),
+      ).toBeInTheDocument();
       expect(screen.queryByText('noInvitations')).not.toBeInTheDocument();
     });
 
     it('E2: si falla el servidor, dice que no se han podido cargar', async () => {
       mockListMyInvitations.mockRejectedValue(
-        Object.assign(new Error('Internal Server Error'), { status: 500 })
+        Object.assign(new Error('Internal Server Error'), { status: 500 }),
       );
 
       renderPage();
 
-      expect(await screen.findByTestId('invitaciones-sin-cargar')).toHaveTextContent(
-        'errors.failedToLoad'
-      );
+      expect(
+        await screen.findByTestId('invitaciones-sin-cargar'),
+      ).toHaveTextContent('errors.failedToLoad');
       expect(screen.queryByText('noInvitations')).not.toBeInTheDocument();
     });
 
@@ -512,16 +636,20 @@ describe('MyInvitationsPage', () => {
               ],
               totalCount: 1,
             })
-          : Promise.reject(new TypeError('Sin conexión'))
+          : Promise.reject(new TypeError('Sin conexión')),
       );
 
       renderPage();
-      const reintentar = await screen.findByRole('button', { name: 'errors.retry' });
+      const reintentar = await screen.findByRole('button', {
+        name: 'errors.retry',
+      });
       hayRed = true;
       fireEvent.click(reintentar);
 
       expect(await screen.findByText('Summer Cup')).toBeInTheDocument();
-      expect(screen.queryByTestId('invitaciones-sin-cargar')).not.toBeInTheDocument();
+      expect(
+        screen.queryByTestId('invitaciones-sin-cargar'),
+      ).not.toBeInTheDocument();
     });
 
     it('E5: si falla tras haber cargado, el contador de pendientes no se queda a la vista', async () => {
@@ -545,25 +673,36 @@ describe('MyInvitationsPage', () => {
       mockListMyInvitations.mockImplementation(() =>
         hayRed
           ? Promise.resolve({ invitations: [pendiente], totalCount: 1 })
-          : Promise.reject(new TypeError('Sin conexión'))
+          : Promise.reject(new TypeError('Sin conexión')),
       );
 
       renderPage();
-      expect(await screen.findByText('player.pendingCount_1')).toBeInTheDocument();
+      expect(
+        await screen.findByText('player.pendingCount_1'),
+      ).toBeInTheDocument();
       hayRed = false;
-      fireEvent.change(screen.getByRole('combobox'), { target: { value: 'ACCEPTED' } });
+      fireEvent.change(screen.getByRole('combobox'), {
+        target: { value: 'ACCEPTED' },
+      });
 
       await screen.findByTestId('invitaciones-sin-cargar');
-      expect(screen.queryByText('player.pendingCount_1')).not.toBeInTheDocument();
+      expect(
+        screen.queryByText('player.pendingCount_1'),
+      ).not.toBeInTheDocument();
     });
 
     it('E4: si cargan y no hay ninguna, sí lo dice', async () => {
-      mockListMyInvitations.mockResolvedValue({ invitations: [], totalCount: 0 });
+      mockListMyInvitations.mockResolvedValue({
+        invitations: [],
+        totalCount: 0,
+      });
 
       renderPage();
 
       expect(await screen.findByText('noInvitations')).toBeInTheDocument();
-      expect(screen.queryByTestId('invitaciones-sin-cargar')).not.toBeInTheDocument();
+      expect(
+        screen.queryByTestId('invitaciones-sin-cargar'),
+      ).not.toBeInTheDocument();
     });
   });
 });

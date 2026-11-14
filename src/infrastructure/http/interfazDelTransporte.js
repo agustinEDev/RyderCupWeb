@@ -43,8 +43,11 @@ let registrada = null;
  * @param {Record<string, Function>} implementacion
  */
 export const registraLaInterfazDelTransporte = (implementacion) => {
-  if (registrada) throw new Error('La interfaz del transporte ya está registrada');
-  const faltan = LO_QUE_HACE_FALTA.filter((nombre) => typeof implementacion?.[nombre] !== 'function');
+  if (registrada)
+    throw new Error('La interfaz del transporte ya está registrada');
+  const faltan = LO_QUE_HACE_FALTA.filter(
+    (nombre) => typeof implementacion?.[nombre] !== 'function',
+  );
   if (faltan.length > 0) {
     throw new Error(`La interfaz del transporte no trae: ${faltan.join(', ')}`);
   }

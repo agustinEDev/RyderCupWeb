@@ -8,12 +8,21 @@ const almacen = (() => {
   let datos = {};
   return {
     getItem: (clave) => datos[clave] ?? null,
-    setItem: (clave, valor) => { datos[clave] = String(valor); },
-    removeItem: (clave) => { delete datos[clave]; },
-    clear: () => { datos = {}; },
+    setItem: (clave, valor) => {
+      datos[clave] = String(valor);
+    },
+    removeItem: (clave) => {
+      delete datos[clave];
+    },
+    clear: () => {
+      datos = {};
+    },
   };
 })();
-Object.defineProperty(globalThis, 'localStorage', { value: almacen, writable: true });
+Object.defineProperty(globalThis, 'localStorage', {
+  value: almacen,
+  writable: true,
+});
 
 import GolpesSinEnviar from './GolpesSinEnviar';
 import { COLA_VACIADA } from '../../services/vaciadoDeLaCola';
@@ -53,14 +62,24 @@ describe('GolpesSinEnviar', () => {
   });
 
   it('cuenta los golpes de cada partida y los nombra por su campo', () => {
-    cola.enqueue('m-1', 3, { ownScore: 4 }, null, 'u1', { matchName: 'La Herrería' });
-    cola.enqueue('m-1', 4, { ownScore: 5 }, null, 'u1', { matchName: 'La Herrería' });
-    cola.enqueue('m-2', 7, { ownScore: 3 }, null, 'u1', { matchName: 'El Encín' });
+    cola.enqueue('m-1', 3, { ownScore: 4 }, null, 'u1', {
+      matchName: 'La Herrería',
+    });
+    cola.enqueue('m-1', 4, { ownScore: 5 }, null, 'u1', {
+      matchName: 'La Herrería',
+    });
+    cola.enqueue('m-2', 7, { ownScore: 3 }, null, 'u1', {
+      matchName: 'El Encín',
+    });
 
     render(<GolpesSinEnviar userId="u1" />);
 
-    expect(screen.getByText(/aviso\(count=2,partida=La Herrería\)/)).toBeInTheDocument();
-    expect(screen.getByText(/aviso\(count=1,partida=El Encín\)/)).toBeInTheDocument();
+    expect(
+      screen.getByText(/aviso\(count=2,partida=La Herrería\)/),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/aviso\(count=1,partida=El Encín\)/),
+    ).toBeInTheDocument();
   });
 
   it('lo que se guardó sin nombre se llama de alguna manera, no de ninguna', () => {
@@ -70,12 +89,14 @@ describe('GolpesSinEnviar', () => {
     render(<GolpesSinEnviar userId="u1" />);
 
     expect(
-      screen.getByText(/partida=golpesSinEnviar.partidaSinNombre/)
+      screen.getByText(/partida=golpesSinEnviar.partidaSinNombre/),
     ).toBeInTheDocument();
   });
 
   it('lleva a la pantalla de anotación de esa partida', () => {
-    cola.enqueue('m-1', 3, { ownScore: 4 }, null, 'u1', { matchName: 'La Herrería' });
+    cola.enqueue('m-1', 3, { ownScore: 4 }, null, 'u1', {
+      matchName: 'La Herrería',
+    });
     render(<GolpesSinEnviar userId="u1" />);
 
     fireEvent.click(screen.getByRole('button'));
@@ -86,7 +107,9 @@ describe('GolpesSinEnviar', () => {
   it('y a la de partida rápida cuando la anotación es de una', () => {
     // Una anotación con participante es de partida rápida: llevar a la ruta de
     // competición dejaría al jugador en una página que no existe
-    cola.enqueue('qm-1', 3, { score: 4 }, 'p-1', 'u1', { matchName: 'Amistoso' });
+    cola.enqueue('qm-1', 3, { score: 4 }, 'p-1', 'u1', {
+      matchName: 'Amistoso',
+    });
     render(<GolpesSinEnviar userId="u1" />);
 
     fireEvent.click(screen.getByRole('button'));
@@ -95,25 +118,45 @@ describe('GolpesSinEnviar', () => {
   });
 
   it('y a la de su partida cuando es de stroke play, nombrada como partida (FE #824, PR 7)', () => {
-    cola.enqueue('g-1', 3, { ownScore: 4 }, null, 'u1', { tipo: cola.TIPO_PARTIDA_DE_FRANJA, matchNumber: 2 });
+    cola.enqueue('g-1', 3, { ownScore: 4 }, null, 'u1', {
+      tipo: cola.TIPO_PARTIDA_DE_FRANJA,
+      matchNumber: 2,
+    });
     render(<GolpesSinEnviar userId="u1" />);
 
-    expect(screen.getByText(/partida=golpesSinEnviar.partidaDeFranja\(numero=2\)/)).toBeInTheDocument();
+    expect(
+      screen.getByText(/partida=golpesSinEnviar.partidaDeFranja\(numero=2\)/),
+    ).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button'));
 
     expect(mockNavigate).toHaveBeenCalledWith('/player/groups/g-1/scoring');
   });
 
   it('un golpe perdido de una partida de stroke play también se nombra como partida', () => {
-    golpesPerdidos.apunta({ matchId: 'g-1', matchNumber: 3, holeNumber: 5, userId: 'u1', tipo: cola.TIPO_PARTIDA_DE_FRANJA });
+    golpesPerdidos.apunta({
+      matchId: 'g-1',
+      matchNumber: 3,
+      holeNumber: 5,
+      userId: 'u1',
+      tipo: cola.TIPO_PARTIDA_DE_FRANJA,
+    });
     render(<GolpesSinEnviar userId="u1" />);
 
-    expect(screen.getByText(/golpesSinEnviar.partidaDeFranja\(numero=3\)/)).toBeInTheDocument();
+    expect(
+      screen.getByText(/golpesSinEnviar.partidaDeFranja\(numero=3\)/),
+    ).toBeInTheDocument();
   });
 
   it('no enseña lo de la persona que usó el móvil antes', () => {
-    cola.enqueue('m-9', 3, { ownScore: 4 }, null, 'otra', { matchName: 'Partida ajena' });
-    golpesPerdidos.apunta({ matchId: 'm-9', matchName: 'Partida ajena', holeNumber: 5, userId: 'otra' });
+    cola.enqueue('m-9', 3, { ownScore: 4 }, null, 'otra', {
+      matchName: 'Partida ajena',
+    });
+    golpesPerdidos.apunta({
+      matchId: 'm-9',
+      matchName: 'Partida ajena',
+      holeNumber: 5,
+      userId: 'otra',
+    });
 
     const { container } = render(<GolpesSinEnviar userId="u1" />);
 
@@ -121,22 +164,47 @@ describe('GolpesSinEnviar', () => {
   });
 
   it('los rechazados se agrupan por partida y se descartan uno a uno', () => {
-    golpesPerdidos.apunta({ matchId: 'm-1', matchName: 'La Herrería', holeNumber: 3, userId: 'u1' });
-    golpesPerdidos.apunta({ matchId: 'm-1', matchName: 'La Herrería', holeNumber: 4, userId: 'u1' });
-    golpesPerdidos.apunta({ matchId: 'm-2', matchName: 'El Encín', holeNumber: 7, userId: 'u1' });
+    golpesPerdidos.apunta({
+      matchId: 'm-1',
+      matchName: 'La Herrería',
+      holeNumber: 3,
+      userId: 'u1',
+    });
+    golpesPerdidos.apunta({
+      matchId: 'm-1',
+      matchName: 'La Herrería',
+      holeNumber: 4,
+      userId: 'u1',
+    });
+    golpesPerdidos.apunta({
+      matchId: 'm-2',
+      matchName: 'El Encín',
+      holeNumber: 7,
+      userId: 'u1',
+    });
 
     render(<GolpesSinEnviar userId="u1" />);
 
-    expect(screen.getByText(/perdidos\(count=2,partida=La Herrería\)/)).toBeInTheDocument();
-    expect(screen.getByText(/perdidos\(count=1,partida=El Encín\)/)).toBeInTheDocument();
+    expect(
+      screen.getByText(/perdidos\(count=2,partida=La Herrería\)/),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/perdidos\(count=1,partida=El Encín\)/),
+    ).toBeInTheDocument();
 
     fireEvent.click(
-      screen.getByRole('button', { name: /descartarDe\(partida=La Herrería\)/ })
+      screen.getByRole('button', {
+        name: /descartarDe\(partida=La Herrería\)/,
+      }),
     );
 
     // Solo se va el suyo: el de la otra partida sigue sin leerse
-    expect(screen.queryByText(/perdidos\(count=2,partida=La Herrería\)/)).not.toBeInTheDocument();
-    expect(screen.getByText(/perdidos\(count=1,partida=El Encín\)/)).toBeInTheDocument();
+    expect(
+      screen.queryByText(/perdidos\(count=2,partida=La Herrería\)/),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByText(/perdidos\(count=1,partida=El Encín\)/),
+    ).toBeInTheDocument();
     expect(golpesPerdidos.pendientes('u1')).toHaveLength(1);
   });
 
@@ -145,17 +213,32 @@ describe('GolpesSinEnviar', () => {
     // hoyo: por aviso salían cuatro «Hoyo 7» iguales, y claves repetidas
     for (const participante of ['p-1', 'p-2', 'p-3', 'p-4']) {
       golpesPerdidos.apunta({
-        matchId: 'qm-1', matchName: 'Meis', holeNumber: 7, participantId: participante, userId: 'u1',
+        matchId: 'qm-1',
+        matchName: 'Meis',
+        holeNumber: 7,
+        participantId: participante,
+        userId: 'u1',
       });
     }
-    golpesPerdidos.apunta({ matchId: 'qm-1', matchName: 'Meis', holeNumber: 3, participantId: 'p-1', userId: 'u1' });
+    golpesPerdidos.apunta({
+      matchId: 'qm-1',
+      matchName: 'Meis',
+      holeNumber: 3,
+      participantId: 'p-1',
+      userId: 'u1',
+    });
 
     render(<GolpesSinEnviar userId="u1" />);
 
     const lineas = screen.getAllByRole('listitem').map((li) => li.textContent);
-    expect(lineas).toEqual(['golpesSinEnviar.perdido(hoyo=3)', 'golpesSinEnviar.perdido(hoyo=7)']);
+    expect(lineas).toEqual([
+      'golpesSinEnviar.perdido(hoyo=3)',
+      'golpesSinEnviar.perdido(hoyo=7)',
+    ]);
     // Y la cabecera cuenta lo mismo que la lista: dos hoyos, no cinco avisos
-    expect(screen.getByText(/golpesSinEnviar\.perdidos\(count=2,/)).toBeInTheDocument();
+    expect(
+      screen.getByText(/golpesSinEnviar\.perdidos\(count=2,/),
+    ).toBeInTheDocument();
     // El anuncio del lector de pantalla, también: decía cinco fallos sobre una
     // lista de dos líneas
     expect(screen.getByRole('status')).toHaveTextContent('perdidos=2');
@@ -170,11 +253,17 @@ describe('GolpesSinEnviar', () => {
 
     render(<GolpesSinEnviar userId="u1" />);
 
-    expect(screen.queryByRole('button', { name: /golpesSinEnviar.aviso/ })).toBeNull();
-    expect(screen.getByText(/golpesSinEnviar\.desaparecida\(count=1,partida=Meis\)/)).toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: /golpesSinEnviar.aviso/ }),
+    ).toBeNull();
+    expect(
+      screen.getByText(/golpesSinEnviar\.desaparecida\(count=1,partida=Meis\)/),
+    ).toBeInTheDocument();
     // Y sigue habiendo forma de abrirla: su pantalla es la única que puede
     // enviar esos golpes si el 404 fue de un portal cautivo
-    expect(screen.getByRole('button', { name: 'golpesSinEnviar.abrir' })).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: 'golpesSinEnviar.abrir' }),
+    ).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: /descartarYPerderDe/ }));
 
@@ -194,9 +283,13 @@ describe('GolpesSinEnviar', () => {
       throw Object.assign(new Error('quota'), { name: 'QuotaExceededError' });
     });
 
-    fireEvent.click(screen.getByRole('button', { name: /descartarYPerderDe.*Meis/ }));
+    fireEvent.click(
+      screen.getByRole('button', { name: /descartarYPerderDe.*Meis/ }),
+    );
 
-    expect(screen.getAllByText('golpesSinEnviar.noSePudoDescartar')).toHaveLength(1);
+    expect(
+      screen.getAllByText('golpesSinEnviar.noSePudoDescartar'),
+    ).toHaveLength(1);
   });
 
   it('un descarte que sale bien en otra partida no borra el aviso del que falló', () => {
@@ -211,12 +304,18 @@ describe('GolpesSinEnviar', () => {
       throw Object.assign(new Error('quota'), { name: 'QuotaExceededError' });
     });
 
-    fireEvent.click(screen.getByRole('button', { name: /descartarYPerderDe.*Meis/ }));
-    fireEvent.click(screen.getByRole('button', { name: /descartarYPerderDe.*Domaio/ }));
+    fireEvent.click(
+      screen.getByRole('button', { name: /descartarYPerderDe.*Meis/ }),
+    );
+    fireEvent.click(
+      screen.getByRole('button', { name: /descartarYPerderDe.*Domaio/ }),
+    );
 
     expect(screen.queryByText(/desaparecida.*Domaio/)).toBeNull();
     expect(screen.getByText(/desaparecida.*Meis/)).toBeInTheDocument();
-    expect(screen.getAllByText('golpesSinEnviar.noSePudoDescartar')).toHaveLength(1);
+    expect(
+      screen.getAllByText('golpesSinEnviar.noSePudoDescartar'),
+    ).toHaveLength(1);
   });
 
   it('si fallan las dos, las dos lo dicen', () => {
@@ -230,10 +329,16 @@ describe('GolpesSinEnviar', () => {
       throw Object.assign(new Error('quota'), { name: 'QuotaExceededError' });
     });
 
-    fireEvent.click(screen.getByRole('button', { name: /descartarYPerderDe.*Meis/ }));
-    fireEvent.click(screen.getByRole('button', { name: /descartarYPerderDe.*Domaio/ }));
+    fireEvent.click(
+      screen.getByRole('button', { name: /descartarYPerderDe.*Meis/ }),
+    );
+    fireEvent.click(
+      screen.getByRole('button', { name: /descartarYPerderDe.*Domaio/ }),
+    );
 
-    expect(screen.getAllByText('golpesSinEnviar.noSePudoDescartar')).toHaveLength(2);
+    expect(
+      screen.getAllByText('golpesSinEnviar.noSePudoDescartar'),
+    ).toHaveLength(2);
   });
 
   it('sin sesión resuelta no ofrece descartar: no borraría lo que enseña', () => {
@@ -244,8 +349,12 @@ describe('GolpesSinEnviar', () => {
 
     render(<GolpesSinEnviar userId={null} />);
 
-    expect(screen.queryByRole('button', { name: /descartarYPerderDe/ })).toBeNull();
-    expect(screen.getByRole('button', { name: 'golpesSinEnviar.abrir' })).toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: /descartarYPerderDe/ }),
+    ).toBeNull();
+    expect(
+      screen.getByRole('button', { name: 'golpesSinEnviar.abrir' }),
+    ).toBeInTheDocument();
   });
 
   it('al descartar el último aviso, el foco no se cae al body', () => {
@@ -275,39 +384,69 @@ describe('GolpesSinEnviar', () => {
 
     fireEvent.click(screen.getByRole('button', { name: /descartarYPerderDe/ }));
 
-    expect(screen.getByText('golpesSinEnviar.noSePudoDescartar')).toBeInTheDocument();
+    expect(
+      screen.getByText('golpesSinEnviar.noSePudoDescartar'),
+    ).toBeInTheDocument();
   });
 
   it('distingue dos partidos del MISMO campo por su número', () => {
     // Una jornada juega varios partidos en un solo campo: solo con el nombre
     // del campo salían dos avisos idénticos y no se sabía cuál mirar
-    cola.enqueue('m-3', 3, { ownScore: 4 }, null, 'u1', { matchName: 'La Herrería', matchNumber: 3 });
-    cola.enqueue('m-7', 8, { ownScore: 5 }, null, 'u1', { matchName: 'La Herrería', matchNumber: 7 });
+    cola.enqueue('m-3', 3, { ownScore: 4 }, null, 'u1', {
+      matchName: 'La Herrería',
+      matchNumber: 3,
+    });
+    cola.enqueue('m-7', 8, { ownScore: 5 }, null, 'u1', {
+      matchName: 'La Herrería',
+      matchNumber: 7,
+    });
 
     render(<GolpesSinEnviar userId="u1" />);
 
-    expect(screen.getByText(/partida=golpesSinEnviar.partidaConNumero\(numero=3,campo=La Herrería\)/)).toBeInTheDocument();
-    expect(screen.getByText(/partida=golpesSinEnviar.partidaConNumero\(numero=7,campo=La Herrería\)/)).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        /partida=golpesSinEnviar.partidaConNumero\(numero=3,campo=La Herrería\)/,
+      ),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        /partida=golpesSinEnviar.partidaConNumero\(numero=7,campo=La Herrería\)/,
+      ),
+    ).toBeInTheDocument();
   });
 
   it('anuncia UNA vez para el lector de pantalla, no una por tarjeta', () => {
     // Varias regiones que se montan a la vez se interrumpen entre ellas, y
     // creadas ya con su texto dentro hay lectores que no anuncian ninguna. Es
     // la convención del panel, escrita en `Dashboard.jsx`
-    cola.enqueue('m-1', 3, { ownScore: 4 }, null, 'u1', { matchName: 'La Herrería' });
-    golpesPerdidos.apunta({ matchId: 'm-2', matchName: 'El Encín', holeNumber: 7, userId: 'u1' });
+    cola.enqueue('m-1', 3, { ownScore: 4 }, null, 'u1', {
+      matchName: 'La Herrería',
+    });
+    golpesPerdidos.apunta({
+      matchId: 'm-2',
+      matchName: 'El Encín',
+      holeNumber: 7,
+      userId: 'u1',
+    });
 
     render(<GolpesSinEnviar userId="u1" />);
 
     expect(screen.queryAllByRole('alert')).toHaveLength(0);
     expect(screen.getAllByRole('status')).toHaveLength(1);
-    expect(screen.getByRole('status')).toHaveTextContent('resumen(sinEnviar=1,perdidos=1)');
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'resumen(sinEnviar=1,perdidos=1)',
+    );
   });
 
   it('si el aviso no se puede quitar, se dice: no se finge que sí', () => {
     // El móvil sin espacio es justo el estado que produjo el rechazo. Callarlo
     // deja un botón que no hace nada y no explica por qué
-    golpesPerdidos.apunta({ matchId: 'm-1', matchName: 'La Herrería', holeNumber: 3, userId: 'u1' });
+    golpesPerdidos.apunta({
+      matchId: 'm-1',
+      matchName: 'La Herrería',
+      holeNumber: 3,
+      userId: 'u1',
+    });
     render(<GolpesSinEnviar userId="u1" />);
     vi.spyOn(almacen, 'setItem').mockImplementation(() => {
       throw new Error('QuotaExceededError');
@@ -315,28 +454,52 @@ describe('GolpesSinEnviar', () => {
 
     fireEvent.click(screen.getByRole('button', { name: /descartarDe/ }));
 
-    expect(screen.getByText('golpesSinEnviar.noSePudoDescartar')).toBeInTheDocument();
+    expect(
+      screen.getByText('golpesSinEnviar.noSePudoDescartar'),
+    ).toBeInTheDocument();
     expect(screen.getByText(/perdidos\(count=1/)).toBeInTheDocument();
   });
 
   it('al quitar un aviso el foco no se cae al vacío', () => {
     // Desmontar el bloque que contiene el botón pulsado dejaba el foco en
     // `<body>`, con otros avisos todavía en pantalla
-    golpesPerdidos.apunta({ matchId: 'm-1', matchName: 'La Herrería', holeNumber: 3, userId: 'u1' });
-    golpesPerdidos.apunta({ matchId: 'm-2', matchName: 'El Encín', holeNumber: 7, userId: 'u1' });
+    golpesPerdidos.apunta({
+      matchId: 'm-1',
+      matchName: 'La Herrería',
+      holeNumber: 3,
+      userId: 'u1',
+    });
+    golpesPerdidos.apunta({
+      matchId: 'm-2',
+      matchName: 'El Encín',
+      holeNumber: 7,
+      userId: 'u1',
+    });
     render(<GolpesSinEnviar userId="u1" />);
 
-    fireEvent.click(screen.getByRole('button', { name: /descartarDe\(partida=La Herrería\)/ }));
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: /descartarDe\(partida=La Herrería\)/,
+      }),
+    );
 
-    expect(document.activeElement).toBe(screen.getByTestId('golpes-sin-enviar'));
+    expect(document.activeElement).toBe(
+      screen.getByTestId('golpes-sin-enviar'),
+    );
   });
 
   it('y al quitar el ÚLTIMO, tampoco: sube al bloque del panel', () => {
     // Aquí el componente entero deja de existir, así que el contenedor al que
     // se devolvía el foco desaparece con él
-    golpesPerdidos.apunta({ matchId: 'm-1', matchName: 'La Herrería', holeNumber: 3, userId: 'u1' });
+    golpesPerdidos.apunta({
+      matchId: 'm-1',
+      matchName: 'La Herrería',
+      holeNumber: 3,
+      userId: 'u1',
+    });
     const { container } = render(<GolpesSinEnviar userId="u1" />);
-    const bloqueDelPanel = screen.getByTestId('golpes-sin-enviar').parentElement;
+    const bloqueDelPanel =
+      screen.getByTestId('golpes-sin-enviar').parentElement;
 
     fireEvent.click(screen.getByRole('button', { name: /descartarDe/ }));
 
@@ -345,7 +508,9 @@ describe('GolpesSinEnviar', () => {
   });
 
   it('deja de contar los golpes que el vaciado ya ha enviado', () => {
-    cola.enqueue('m-1', 3, { ownScore: 4 }, null, 'u1', { matchName: 'La Herrería' });
+    cola.enqueue('m-1', 3, { ownScore: 4 }, null, 'u1', {
+      matchName: 'La Herrería',
+    });
     render(<GolpesSinEnviar userId="u1" />);
     expect(screen.getByText(/aviso\(count=1/)).toBeInTheDocument();
 

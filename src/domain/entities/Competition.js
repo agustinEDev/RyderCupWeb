@@ -12,8 +12,14 @@ export const MAX_PLAYERS = 200;
 
 const comprobarCupo = (maxPlayers) => {
   // Entero: `typeof NaN` también es 'number', y 2,5 jugadores no es un cupo
-  if (!Number.isInteger(maxPlayers) || maxPlayers < MIN_PLAYERS || maxPlayers > MAX_PLAYERS) {
-    throw new Error(`maxPlayers must be a number between ${MIN_PLAYERS} and ${MAX_PLAYERS}.`);
+  if (
+    !Number.isInteger(maxPlayers) ||
+    maxPlayers < MIN_PLAYERS ||
+    maxPlayers > MAX_PLAYERS
+  ) {
+    throw new Error(
+      `maxPlayers must be a number between ${MIN_PLAYERS} and ${MAX_PLAYERS}.`,
+    );
   }
 };
 
@@ -75,7 +81,10 @@ export default class Competition {
         : null;
     }
     // Y lo que solo tiene un Stableford o un Medal, en la suya (FE #824)
-    this.#strokePlay = Competition.#piezaDeStrokePlay(tournamentType, strokePlay);
+    this.#strokePlay = Competition.#piezaDeStrokePlay(
+      tournamentType,
+      strokePlay,
+    );
 
     this.#id = id;
     this.#creatorId = creatorId;
@@ -152,11 +161,16 @@ export default class Competition {
    * Ryder no tiene ninguna, igual que al revés con los equipos.
    */
   static #piezaDeStrokePlay(tournamentType, strokePlay) {
-    if (strokePlay !== undefined && strokePlay !== null && !(strokePlay instanceof StrokePlaySetup)) {
+    if (
+      strokePlay !== undefined &&
+      strokePlay !== null &&
+      !(strokePlay instanceof StrokePlaySetup)
+    ) {
       throw new Error('strokePlay tiene que ser una StrokePlaySetup o null');
     }
     if (tieneEquipos(tournamentType)) {
-      if (strokePlay) throw new Error('Una Ryder Cup no tiene ajustes de stroke play');
+      if (strokePlay)
+        throw new Error('Una Ryder Cup no tiene ajustes de stroke play');
       return null;
     }
     return strokePlay ?? new StrokePlaySetup({});
@@ -177,38 +191,57 @@ export default class Competition {
     return this.#ryderCup !== null;
   }
 
-
   // --- GETTERS ---
 
-  get id() { return this.#id; }
-  get creatorId() { return this.#creatorId; }
-  get name() { return this.#name; }
-  get dates() { return this.#dates; }
-  get location() { return this.#location; }
-  get handicapSettings() { return this.#handicapSettings; }
+  get id() {
+    return this.#id;
+  }
+  get creatorId() {
+    return this.#creatorId;
+  }
+  get name() {
+    return this.#name;
+  }
+  get dates() {
+    return this.#dates;
+  }
+  get location() {
+    return this.#location;
+  }
+  get handicapSettings() {
+    return this.#handicapSettings;
+  }
   /** Quién puede ver el torneo y pedir sitio: PRIVATE o PUBLIC (FE #664). */
   get visibility() {
     return this.#visibility;
   }
 
-  get maxPlayers() { return this.#maxPlayers; }
-  get status() { return this.#status; }
-  get createdAt() { return this.#createdAt; }
-  get updatedAt() { return this.#updatedAt; }
+  get maxPlayers() {
+    return this.#maxPlayers;
+  }
+  get status() {
+    return this.#status;
+  }
+  get createdAt() {
+    return this.#createdAt;
+  }
+  get updatedAt() {
+    return this.#updatedAt;
+  }
 
   // --- QUERY METHODS ---
 
   isCreator(userId) {
     return this.#creatorId.equals(userId);
   }
-  
+
   isDraft = () => this.#status.equals(CompetitionStatus.DRAFT);
   isActive = () => this.#status.equals(CompetitionStatus.ACTIVE);
   isClosed = () => this.#status.equals(CompetitionStatus.CLOSED);
   isInProgress = () => this.#status.equals(CompetitionStatus.IN_PROGRESS);
   isCompleted = () => this.#status.equals(CompetitionStatus.COMPLETED);
   isCancelled = () => this.#status.equals(CompetitionStatus.CANCELLED);
-  
+
   allowsEnrollments = () => this.isActive();
   allowsModifications = () => this.isDraft();
 
@@ -216,57 +249,91 @@ export default class Competition {
 
   activate() {
     if (!this.#status.canTransitionTo(CompetitionStatus.ACTIVE)) {
-      throw new CompetitionStateError(`Cannot activate a competition in state ${this.#status.toString()}`);
+      throw new CompetitionStateError(
+        `Cannot activate a competition in state ${this.#status.toString()}`,
+      );
     }
-    return this._with({ status: CompetitionStatus.ACTIVE, updatedAt: new Date() });
+    return this._with({
+      status: CompetitionStatus.ACTIVE,
+      updatedAt: new Date(),
+    });
   }
 
   closeEnrollments() {
     if (!this.#status.canTransitionTo(CompetitionStatus.CLOSED)) {
-      throw new CompetitionStateError(`Cannot close enrollments in state ${this.#status.toString()}`);
+      throw new CompetitionStateError(
+        `Cannot close enrollments in state ${this.#status.toString()}`,
+      );
     }
-    return this._with({ status: CompetitionStatus.CLOSED, updatedAt: new Date() });
+    return this._with({
+      status: CompetitionStatus.CLOSED,
+      updatedAt: new Date(),
+    });
   }
 
   start() {
     if (!this.#status.canTransitionTo(CompetitionStatus.IN_PROGRESS)) {
-      throw new CompetitionStateError(`Cannot start a competition in state ${this.#status.toString()}`);
+      throw new CompetitionStateError(
+        `Cannot start a competition in state ${this.#status.toString()}`,
+      );
     }
-    return this._with({ status: CompetitionStatus.IN_PROGRESS, updatedAt: new Date() });
+    return this._with({
+      status: CompetitionStatus.IN_PROGRESS,
+      updatedAt: new Date(),
+    });
   }
 
   complete() {
     if (!this.#status.canTransitionTo(CompetitionStatus.COMPLETED)) {
-      throw new CompetitionStateError(`Cannot complete a competition in state ${this.#status.toString()}`);
+      throw new CompetitionStateError(
+        `Cannot complete a competition in state ${this.#status.toString()}`,
+      );
     }
-    return this._with({ status: CompetitionStatus.COMPLETED, updatedAt: new Date() });
+    return this._with({
+      status: CompetitionStatus.COMPLETED,
+      updatedAt: new Date(),
+    });
   }
 
   cancel() {
     if (this.#status.isFinal()) {
-      throw new CompetitionStateError(`Cannot cancel a competition in a final state: ${this.#status.toString()}`);
+      throw new CompetitionStateError(
+        `Cannot cancel a competition in a final state: ${this.#status.toString()}`,
+      );
     }
     if (!this.#status.canTransitionTo(CompetitionStatus.CANCELLED)) {
       // This is defensive, as isFinal() should already catch COMPLETED and CANCELLED
-      throw new CompetitionStateError(`Cannot cancel from state ${this.#status.toString()}`);
+      throw new CompetitionStateError(
+        `Cannot cancel from state ${this.#status.toString()}`,
+      );
     }
-    return this._with({ status: CompetitionStatus.CANCELLED, updatedAt: new Date() });
+    return this._with({
+      status: CompetitionStatus.CANCELLED,
+      updatedAt: new Date(),
+    });
   }
 
   updateInfo(updates) {
     if (!this.allowsModifications()) {
-      throw new CompetitionStateError(`Cannot modify competition info in state ${this.#status.toString()}. Only allowed in DRAFT.`);
+      throw new CompetitionStateError(
+        `Cannot modify competition info in state ${this.#status.toString()}. Only allowed in DRAFT.`,
+      );
     }
 
     // Los equipos y el reparto son de la pieza de la Ryder: un torneo sin ella
     // no los recibe, y la pieza valida sus nombres al cambiar (FE #791)
     const { team1Name, team2Name, teamAssignment, ...resto } = updates;
     // El tipo de una competición que ya existe no cambia: tampoco aquí
-    if (resto.tournamentType !== undefined && resto.tournamentType !== this.#tournamentType) {
+    if (
+      resto.tournamentType !== undefined &&
+      resto.tournamentType !== this.#tournamentType
+    ) {
       throw new Error('El tipo de una competición no se cambia');
     }
     const cambiosDeLaRyder = Object.fromEntries(
-      Object.entries({ team1Name, team2Name, teamAssignment }).filter(([, v]) => v !== undefined)
+      Object.entries({ team1Name, team2Name, teamAssignment }).filter(
+        ([, v]) => v !== undefined,
+      ),
     );
     let ryderCup = this.#ryderCup;
     if (Object.keys(cambiosDeLaRyder).length > 0) {
@@ -286,7 +353,7 @@ export default class Competition {
     };
 
     const newProps = { ...currentProps, ...resto, ryderCup };
-    
+
     // Validate maxPlayers range if updated
     if (updates.maxPlayers !== undefined) {
       comprobarCupo(updates.maxPlayers);

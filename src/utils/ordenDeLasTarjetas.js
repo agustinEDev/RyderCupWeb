@@ -39,7 +39,8 @@ export const conLaMiaPrimero = (filas = [], { esMia, equipoDe } = {}) => {
 
   // Sin bando no hay pareja a la que arrastrar: en una partida libre o en
   // individuales, `equipoDe` devuelve nulo y el rango 1 no lo alcanza nadie.
-  const miBando = typeof equipoDe === 'function' ? equipoDe(filas[posicionPropia]) : null;
+  const miBando =
+    typeof equipoDe === 'function' ? equipoDe(filas[posicionPropia]) : null;
 
   const rango = (fila, posicion) => {
     if (posicion === posicionPropia) return 0;
@@ -67,7 +68,8 @@ export const conLaMiaPrimero = (filas = [], { esMia, equipoDe } = {}) => {
  * @returns {Array<Object>} Copia ordenada, solo para componer el texto
  */
 export const conMiNombrePrimero = (miembros = [], esMio) => {
-  const posicionPropia = typeof esMio === 'function' ? miembros.findIndex(esMio) : -1;
+  const posicionPropia =
+    typeof esMio === 'function' ? miembros.findIndex(esMio) : -1;
 
   // Copia SIEMPRE, también cuando no hay nada que mover: quien reciba esto
   // espera poder ordenarlo, y devolver el array de miembros de la tarjeta

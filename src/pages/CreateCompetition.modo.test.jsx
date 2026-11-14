@@ -20,9 +20,15 @@ vi.mock('react-i18next', () => ({
 }));
 
 vi.mock('../components/layout/HeaderAuth', () => ({ default: () => null }));
-vi.mock('../hooks/useAuth', () => ({ useAuth: () => ({ user: { id: 'u-1', gender: 'MALE' }, loading: false }) }));
-vi.mock('../components/golf_course/GolfCourseSearchBox', () => ({ default: () => null }));
-vi.mock('../utils/toast', () => ({ default: { error: vi.fn(), success: vi.fn(), info: vi.fn() } }));
+vi.mock('../hooks/useAuth', () => ({
+  useAuth: () => ({ user: { id: 'u-1', gender: 'MALE' }, loading: false }),
+}));
+vi.mock('../components/golf_course/GolfCourseSearchBox', () => ({
+  default: () => null,
+}));
+vi.mock('../utils/toast', () => ({
+  default: { error: vi.fn(), success: vi.fn(), info: vi.fn() },
+}));
 vi.mock('../services/countries', () => ({
   formatCountryName: () => 'España',
   sortCountriesByName: (paises) => paises || [],
@@ -32,7 +38,11 @@ vi.mock('../composition', () => ({
   updateCompetitionUseCase: { execute: vi.fn() },
   getCompetitionDetailUseCase: { execute: vi.fn() },
   getCompetitionGolfCoursesUseCase: { execute: vi.fn().mockResolvedValue([]) },
-  fetchCountriesUseCase: { execute: vi.fn().mockResolvedValue([{ code: 'ES', name_es: 'España', name_en: 'Spain' }]) },
+  fetchCountriesUseCase: {
+    execute: vi
+      .fn()
+      .mockResolvedValue([{ code: 'ES', name_es: 'España', name_en: 'Spain' }]),
+  },
   getAdjacentCountriesUseCase: { execute: vi.fn().mockResolvedValue([]) },
   createGolfCourseRequestUseCase: { execute: vi.fn() },
 }));
@@ -42,26 +52,40 @@ vi.mock('../composition', () => ({
 vi.mock('../utils/competitionFormValidation', () => ({
   validateCompetitionForm: vi.fn(() => null),
 }));
-vi.mock('../components/ui/CountryAutocomplete', () => ({ default: () => null }));
-vi.mock('../components/golf_course/GolfCourseRequestModal', () => ({ default: () => null }));
+vi.mock('../components/ui/CountryAutocomplete', () => ({
+  default: () => null,
+}));
+vi.mock('../components/golf_course/GolfCourseRequestModal', () => ({
+  default: () => null,
+}));
 vi.mock('../components/ui/FullScreenLoader', () => ({ default: () => null }));
 vi.mock('../components/ui/CountryFlag', () => ({ CountryFlag: () => null }));
 
 const CreateCompetition = (await import('./CreateCompetition')).default;
 
-const pinta = () => render(<MemoryRouter><CreateCompetition /></MemoryRouter>);
+const pinta = () =>
+  render(
+    <MemoryRouter>
+      <CreateCompetition />
+    </MemoryRouter>,
+  );
 
-const pintaEdicion = () => render(
-  <MemoryRouter initialEntries={['/competitions/c-1/edit']}>
-    <Routes>
-      <Route path="/competitions/:id/edit" element={<CreateCompetition />} />
-    </Routes>
-  </MemoryRouter>
-);
+const pintaEdicion = () =>
+  render(
+    <MemoryRouter initialEntries={['/competitions/c-1/edit']}>
+      <Routes>
+        <Route path="/competitions/:id/edit" element={<CreateCompetition />} />
+      </Routes>
+    </MemoryRouter>,
+  );
 
-const { createCompetitionWithGolfCoursesUseCase, updateCompetitionUseCase, getCompetitionDetailUseCase } =
-  await import('../composition');
-const { validateCompetitionForm } = await import('../utils/competitionFormValidation');
+const {
+  createCompetitionWithGolfCoursesUseCase,
+  updateCompetitionUseCase,
+  getCompetitionDetailUseCase,
+} = await import('../composition');
+const { validateCompetitionForm } =
+  await import('../utils/competitionFormValidation');
 
 const elegirTipoYModo = async (modo = 'RYDER_CUP') => {
   fireEvent.click(await screen.findByTestId('tipo-RYDER_CUP'));
@@ -119,7 +143,9 @@ describe('CreateCompetition · elegir el modo de configuración (FE #695)', () =
     expect(await screen.findByTestId('modo-AUTOMATIC')).toBeInTheDocument();
     expect(screen.getByTestId('modo-MANUAL')).toBeInTheDocument();
     expect(screen.getByTestId('modo-RYDER_CUP')).toBeInTheDocument();
-    expect(screen.queryByText('create.competitionDetails')).not.toBeInTheDocument();
+    expect(
+      screen.queryByText('create.competitionDetails'),
+    ).not.toBeInTheDocument();
   });
 
   it('S2: al elegirlo sale el formulario de siempre', async () => {
@@ -127,10 +153,15 @@ describe('CreateCompetition · elegir el modo de configuración (FE #695)', () =
 
     await elegirTipoYModo('MANUAL');
 
-    expect(await screen.findByText('create.competitionDetails')).toBeInTheDocument();
+    expect(
+      await screen.findByText('create.competitionDetails'),
+    ).toBeInTheDocument();
     // Sigue a la vista dentro del formulario, con el elegido marcado: el modo
     // decide el resto del camino, así que se puede cambiar sin volver atrás
-    expect(screen.getByTestId('modo-MANUAL')).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByTestId('modo-MANUAL')).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
   });
 
   it('S3: el modo elegido viaja al crear', async () => {
@@ -139,13 +170,17 @@ describe('CreateCompetition · elegir el modo de configuración (FE #695)', () =
     await screen.findByText('create.competitionDetails');
     rellenarMinimo();
 
-    fireEvent.click(screen.getByRole('button', { name: 'create.createCompetition' }));
+    fireEvent.click(
+      screen.getByRole('button', { name: 'create.createCompetition' }),
+    );
 
     await vi.waitFor(() =>
-      expect(createCompetitionWithGolfCoursesUseCase.execute).toHaveBeenCalledWith(
+      expect(
+        createCompetitionWithGolfCoursesUseCase.execute,
+      ).toHaveBeenCalledWith(
         expect.objectContaining({ setup_mode: 'MANUAL' }),
-        expect.anything()
-      )
+        expect.anything(),
+      ),
     );
   });
 
@@ -155,13 +190,17 @@ describe('CreateCompetition · elegir el modo de configuración (FE #695)', () =
     await screen.findByText('create.competitionDetails');
     rellenarMinimo();
 
-    fireEvent.click(screen.getByRole('button', { name: 'create.createCompetition' }));
+    fireEvent.click(
+      screen.getByRole('button', { name: 'create.createCompetition' }),
+    );
 
     await vi.waitFor(() =>
-      expect(createCompetitionWithGolfCoursesUseCase.execute).toHaveBeenCalledWith(
+      expect(
+        createCompetitionWithGolfCoursesUseCase.execute,
+      ).toHaveBeenCalledWith(
         expect.objectContaining({ tournament_type: 'RYDER_CUP' }),
-        expect.anything()
-      )
+        expect.anything(),
+      ),
     );
   });
 
@@ -174,7 +213,10 @@ describe('CreateCompetition · elegir el modo de configuración (FE #695)', () =
 
     expect(screen.queryByText('create.teamAssignment')).not.toBeInTheDocument();
     // Y el modo se puede cambiar sin desplegar nada: decide el resto del camino
-    expect(screen.getByTestId('modo-RYDER_CUP')).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByTestId('modo-RYDER_CUP')).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
   });
 
   it('S5: y tampoco se manda, para no contradecir al modo', async () => {
@@ -183,10 +225,17 @@ describe('CreateCompetition · elegir el modo de configuración (FE #695)', () =
     await screen.findByText('create.competitionDetails');
     rellenarMinimo();
 
-    fireEvent.click(screen.getByRole('button', { name: 'create.createCompetition' }));
+    fireEvent.click(
+      screen.getByRole('button', { name: 'create.createCompetition' }),
+    );
 
-    await vi.waitFor(() => expect(createCompetitionWithGolfCoursesUseCase.execute).toHaveBeenCalled());
-    const [payload] = createCompetitionWithGolfCoursesUseCase.execute.mock.calls[0];
+    await vi.waitFor(() =>
+      expect(
+        createCompetitionWithGolfCoursesUseCase.execute,
+      ).toHaveBeenCalled(),
+    );
+    const [payload] =
+      createCompetitionWithGolfCoursesUseCase.execute.mock.calls[0];
     expect(payload).not.toHaveProperty('team_assignment');
   });
 
@@ -195,25 +244,36 @@ describe('CreateCompetition · elegir el modo de configuración (FE #695)', () =
 
     // Esperando a que llegue la competición: el selector se pinta antes que ella
     await vi.waitFor(() =>
-      expect(screen.getByTestId('modo-MANUAL')).toHaveAttribute('aria-pressed', 'true')
+      expect(screen.getByTestId('modo-MANUAL')).toHaveAttribute(
+        'aria-pressed',
+        'true',
+      ),
     );
-    expect(screen.getByTestId('modo-RYDER_CUP')).toHaveAttribute('aria-pressed', 'false');
+    expect(screen.getByTestId('modo-RYDER_CUP')).toHaveAttribute(
+      'aria-pressed',
+      'false',
+    );
   });
 
   it('S7: al editar, el cambio viaja', async () => {
     pintaEdicion();
     await vi.waitFor(() =>
-      expect(screen.getByTestId('modo-MANUAL')).toHaveAttribute('aria-pressed', 'true')
+      expect(screen.getByTestId('modo-MANUAL')).toHaveAttribute(
+        'aria-pressed',
+        'true',
+      ),
     );
     fireEvent.click(screen.getByTestId('modo-RYDER_CUP'));
 
-    fireEvent.click(screen.getByRole('button', { name: 'edit.updateCompetition' }));
+    fireEvent.click(
+      screen.getByRole('button', { name: 'edit.updateCompetition' }),
+    );
 
     await vi.waitFor(() =>
       expect(updateCompetitionUseCase.execute).toHaveBeenCalledWith(
         'c-1',
-        expect.objectContaining({ setup_mode: 'RYDER_CUP' })
-      )
+        expect.objectContaining({ setup_mode: 'RYDER_CUP' }),
+      ),
     );
   });
 
@@ -240,9 +300,13 @@ describe('CreateCompetition · elegir el modo de configuración (FE #695)', () =
     await screen.findByDisplayValue('Stableford del club');
 
     expect(screen.queryByTestId('modo-RYDER_CUP')).not.toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: 'edit.updateCompetition' }));
+    fireEvent.click(
+      screen.getByRole('button', { name: 'edit.updateCompetition' }),
+    );
 
-    await vi.waitFor(() => expect(updateCompetitionUseCase.execute).toHaveBeenCalled());
+    await vi.waitFor(() =>
+      expect(updateCompetitionUseCase.execute).toHaveBeenCalled(),
+    );
     const [, payload] = updateCompetitionUseCase.execute.mock.calls[0];
     expect(payload).not.toHaveProperty('setup_mode');
     expect(payload).not.toHaveProperty('team_1_name');
@@ -257,17 +321,26 @@ describe('CreateCompetition · elegir el modo de configuración (FE #695)', () =
     // Modo de juego, hándicap y cupo valen para cualquier tipo de torneo
     // Su propio título: acortar el de la ficha (FE #865-5) no lo cambia aquí
     expect(screen.getByText('create.settingsTitle')).toBeInTheDocument();
-    expect(screen.queryByText('create.ryderCupSettings')).not.toBeInTheDocument();
+    expect(
+      screen.queryByText('create.ryderCupSettings'),
+    ).not.toBeInTheDocument();
   });
 
   it('E2: al editar, la pantalla no exige campos de golf: los gestiona la ficha', async () => {
     pintaEdicion();
     await screen.findByDisplayValue('Ryder de los amigos');
 
-    fireEvent.click(screen.getByRole('button', { name: 'edit.updateCompetition' }));
+    fireEvent.click(
+      screen.getByRole('button', { name: 'edit.updateCompetition' }),
+    );
 
-    await vi.waitFor(() => expect(updateCompetitionUseCase.execute).toHaveBeenCalled());
-    expect(validateCompetitionForm).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ exigirCampos: false }));
+    await vi.waitFor(() =>
+      expect(updateCompetitionUseCase.execute).toHaveBeenCalled(),
+    );
+    expect(validateCompetitionForm).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ exigirCampos: false }),
+    );
   });
 
   it('E4: si la ubicación nueva deja campos fuera, se ve el motivo del servidor (BE #481)', async () => {
@@ -277,7 +350,9 @@ describe('CreateCompetition · elegir el modo de configuración (FE #695)', () =
     pintaEdicion();
     await screen.findByDisplayValue('Ryder de los amigos');
 
-    fireEvent.click(screen.getByRole('button', { name: 'edit.updateCompetition' }));
+    fireEvent.click(
+      screen.getByRole('button', { name: 'edit.updateCompetition' }),
+    );
 
     expect(await screen.findByText(motivo)).toBeInTheDocument();
   });
@@ -288,10 +363,19 @@ describe('CreateCompetition · elegir el modo de configuración (FE #695)', () =
     await screen.findByText('create.competitionDetails');
     rellenarMinimo();
 
-    fireEvent.click(screen.getByRole('button', { name: 'create.createCompetition' }));
+    fireEvent.click(
+      screen.getByRole('button', { name: 'create.createCompetition' }),
+    );
 
-    await vi.waitFor(() => expect(createCompetitionWithGolfCoursesUseCase.execute).toHaveBeenCalled());
-    expect(validateCompetitionForm).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ exigirCampos: true }));
+    await vi.waitFor(() =>
+      expect(
+        createCompetitionWithGolfCoursesUseCase.execute,
+      ).toHaveBeenCalled(),
+    );
+    expect(validateCompetitionForm).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ exigirCampos: true }),
+    );
   });
 
   it('S8: volver a elegir el tipo vuelve a preguntar el modo', async () => {
@@ -304,8 +388,13 @@ describe('CreateCompetition · elegir el modo de configuración (FE #695)', () =
     fireEvent.click(screen.getByTestId('volver-al-tipo'));
     fireEvent.click(await screen.findByTestId('tipo-RYDER_CUP'));
 
-    expect(await screen.findByTestId('modo-MANUAL')).toHaveAttribute('aria-pressed', 'false');
-    expect(screen.queryByText('create.competitionDetails')).not.toBeInTheDocument();
+    expect(await screen.findByTestId('modo-MANUAL')).toHaveAttribute(
+      'aria-pressed',
+      'false',
+    );
+    expect(
+      screen.queryByText('create.competitionDetails'),
+    ).not.toBeInTheDocument();
   });
 
   it('S9: «Todo automático» se enseña pero todavía no se puede elegir', async () => {
@@ -321,6 +410,8 @@ describe('CreateCompetition · elegir el modo de configuración (FE #695)', () =
 
     fireEvent.click(automatico);
 
-    expect(screen.queryByText('create.competitionDetails')).not.toBeInTheDocument();
+    expect(
+      screen.queryByText('create.competitionDetails'),
+    ).not.toBeInTheDocument();
   });
 });

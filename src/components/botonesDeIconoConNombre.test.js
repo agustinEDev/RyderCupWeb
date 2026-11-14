@@ -58,20 +58,29 @@ const sinComentarios = (codigo) =>
 
 const botonesSinNombre = (codigo) => {
   const encontrados = [];
-  for (const [entero, atributos, contenido] of botones(sinComentarios(codigo))) {
+  for (const [entero, atributos, contenido] of botones(
+    sinComentarios(codigo),
+  )) {
     if (/aria-label|aria-labelledby|title=/.test(atributos)) continue;
     const tieneIcono = ICONO.test(contenido);
     ICONO.lastIndex = 0;
     const resto = contenido.replace(ICONO, '').replace(COMENTARIO, '').trim();
-    if (tieneIcono && resto === '') encontrados.push(entero.split('\n')[0].trim());
+    if (tieneIcono && resto === '')
+      encontrados.push(entero.split('\n')[0].trim());
   }
   return encontrados;
 };
 
 describe('Botones de solo icono', () => {
   it('el detector encuentra uno sin nombre y deja pasar los nombrados', () => {
-    expect(botonesSinNombre('<button onClick={f}>\n  <X className="w-4" />\n</button>')).toHaveLength(1);
-    expect(botonesSinNombre('<button aria-label={t("close")}><X /></button>')).toEqual([]);
+    expect(
+      botonesSinNombre(
+        '<button onClick={f}>\n  <X className="w-4" />\n</button>',
+      ),
+    ).toHaveLength(1);
+    expect(
+      botonesSinNombre('<button aria-label={t("close")}><X /></button>'),
+    ).toEqual([]);
     expect(botonesSinNombre('<button><X /> {t("close")}</button>')).toEqual([]);
   });
 
@@ -79,11 +88,17 @@ describe('Botones de solo icono', () => {
   // ni el `aria-label` de después ni el botón entero
   it('tampoco se le escapa un botón con una flecha o un `>` en sus atributos', () => {
     expect(
-      botonesSinNombre('<button\n  onClick={() => quitar(i)}\n  className="p-2"\n>\n  <Trash2 />\n</button>')
+      botonesSinNombre(
+        '<button\n  onClick={() => quitar(i)}\n  className="p-2"\n>\n  <Trash2 />\n</button>',
+      ),
     ).toHaveLength(1);
-    expect(botonesSinNombre('<button disabled={a > b}><X /></button>')).toHaveLength(1);
     expect(
-      botonesSinNombre('<button onClick={() => quitar(i)} aria-label={t("quitar")}><Trash2 /></button>')
+      botonesSinNombre('<button disabled={a > b}><X /></button>'),
+    ).toHaveLength(1);
+    expect(
+      botonesSinNombre(
+        '<button onClick={() => quitar(i)} aria-label={t("quitar")}><Trash2 /></button>',
+      ),
     ).toEqual([]);
   });
 
@@ -92,19 +107,27 @@ describe('Botones de solo icono', () => {
   // comentario `//` entre los atributos cortaba la etiqueta
   it('los comentarios no esconden botones', () => {
     expect(
-      botonesSinNombre('{/* aquí iba un <button> viejo */}\n<button onClick={cerrar}>\n  <X />\n</button>')
+      botonesSinNombre(
+        '{/* aquí iba un <button> viejo */}\n<button onClick={cerrar}>\n  <X />\n</button>',
+      ),
     ).toHaveLength(1);
     expect(
-      botonesSinNombre('// el <button> de cerrar\n<button onClick={cerrar}><X /></button>')
+      botonesSinNombre(
+        '// el <button> de cerrar\n<button onClick={cerrar}><X /></button>',
+      ),
     ).toHaveLength(1);
     expect(
-      botonesSinNombre('<button\n  // el <select> reportaba mal\n  aria-label={t("cerrar")}\n>\n  <X />\n</button>')
+      botonesSinNombre(
+        '<button\n  // el <select> reportaba mal\n  aria-label={t("cerrar")}\n>\n  <X />\n</button>',
+      ),
     ).toEqual([]);
   });
 
   it('el `//` de una dirección no se toma por comentario', () => {
     expect(
-      botonesSinNombre('<a href="https://x.es">x</a> <button onClick={cerrar}><X /></button>')
+      botonesSinNombre(
+        '<a href="https://x.es">x</a> <button onClick={cerrar}><X /></button>',
+      ),
     ).toHaveLength(1);
   });
 

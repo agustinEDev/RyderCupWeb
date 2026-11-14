@@ -7,7 +7,10 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 // Como en la app: la respuesta de la interfaz al transporte, registrada antes de nada
 import '../../composition/interfazDelTransporte';
-import { refreshAccessToken, fetchWithTokenRefresh } from './tokenRefreshInterceptor';
+import {
+  refreshAccessToken,
+  fetchWithTokenRefresh,
+} from './tokenRefreshInterceptor';
 
 // Mock deviceRevocationLogout module
 // v2.0.4: Now uses separate handlers for revocation vs expiration
@@ -91,7 +94,7 @@ describe('tokenRefreshInterceptor', () => {
         expect.objectContaining({
           method: 'POST',
           credentials: 'include',
-        })
+        }),
       );
     });
 
@@ -101,10 +104,14 @@ describe('tokenRefreshInterceptor', () => {
         ok: false,
         status: 401,
         statusText: 'Unauthorized',
-        json: async () => { throw new SyntaxError('not JSON'); },
+        json: async () => {
+          throw new SyntaxError('not JSON');
+        },
       });
 
-      await expect(refreshAccessToken()).rejects.toThrow('Refresh token expired');
+      await expect(refreshAccessToken()).rejects.toThrow(
+        'Refresh token expired',
+      );
     });
 
     it('should throw error when refresh endpoint fails', async () => {
@@ -113,10 +120,14 @@ describe('tokenRefreshInterceptor', () => {
         ok: false,
         status: 500,
         statusText: 'Internal Server Error',
-        json: async () => { throw new SyntaxError('not JSON'); },
+        json: async () => {
+          throw new SyntaxError('not JSON');
+        },
       });
 
-      await expect(refreshAccessToken()).rejects.toThrow('Failed to refresh token');
+      await expect(refreshAccessToken()).rejects.toThrow(
+        'Failed to refresh token',
+      );
     });
 
     it('should throw error on network failure', async () => {
@@ -137,7 +148,9 @@ describe('tokenRefreshInterceptor', () => {
       });
       globalThis.fetch.mockResolvedValueOnce(mockResponse);
 
-      const result = await fetchWithTokenRefresh('http://localhost:8000/api/v1/test');
+      const result = await fetchWithTokenRefresh(
+        'http://localhost:8000/api/v1/test',
+      );
 
       expect(result).toBe(mockResponse);
       expect(globalThis.fetch).toHaveBeenCalledTimes(1);
@@ -145,19 +158,23 @@ describe('tokenRefreshInterceptor', () => {
 
     it('should refresh token and retry request on 401', async () => {
       // First call: 401 (access token expired)
-      globalThis.fetch.mockResolvedValueOnce(createMockResponse({
-        ok: false,
-        status: 401,
-        statusText: 'Unauthorized',
-        json: async () => ({ detail: 'Token expired' }),
-      }));
+      globalThis.fetch.mockResolvedValueOnce(
+        createMockResponse({
+          ok: false,
+          status: 401,
+          statusText: 'Unauthorized',
+          json: async () => ({ detail: 'Token expired' }),
+        }),
+      );
 
       // Second call: successful refresh
-      globalThis.fetch.mockResolvedValueOnce(createMockResponse({
-        ok: true,
-        status: 200,
-        json: async () => ({ message: 'Token refreshed' }),
-      }));
+      globalThis.fetch.mockResolvedValueOnce(
+        createMockResponse({
+          ok: true,
+          status: 200,
+          json: async () => ({ message: 'Token refreshed' }),
+        }),
+      );
 
       // Third call: retry original request with new token (success)
       const mockSuccessResponse = createMockResponse({
@@ -167,7 +184,9 @@ describe('tokenRefreshInterceptor', () => {
       });
       globalThis.fetch.mockResolvedValueOnce(mockSuccessResponse);
 
-      const result = await fetchWithTokenRefresh('http://localhost:8000/api/v1/test');
+      const result = await fetchWithTokenRefresh(
+        'http://localhost:8000/api/v1/test',
+      );
 
       expect(result).toBe(mockSuccessResponse);
       expect(globalThis.fetch).toHaveBeenCalledTimes(3);
@@ -178,25 +197,31 @@ describe('tokenRefreshInterceptor', () => {
 
     it('should redirect to login if refresh token also expired', async () => {
       // First call: 401 (access token expired)
-      globalThis.fetch.mockResolvedValueOnce(createMockResponse({
-        ok: false,
-        status: 401,
-        statusText: 'Unauthorized',
-        json: async () => ({ detail: 'Token expired' }),
-      }));
+      globalThis.fetch.mockResolvedValueOnce(
+        createMockResponse({
+          ok: false,
+          status: 401,
+          statusText: 'Unauthorized',
+          json: async () => ({ detail: 'Token expired' }),
+        }),
+      );
 
       // Second call: refresh fails with 401 (refresh token expired)
-      globalThis.fetch.mockResolvedValueOnce(createMockResponse({
-        ok: false,
-        status: 401,
-        statusText: 'Unauthorized',
-      }));
+      globalThis.fetch.mockResolvedValueOnce(
+        createMockResponse({
+          ok: false,
+          status: 401,
+          statusText: 'Unauthorized',
+        }),
+      );
 
       // La petición ahora rechaza en vez de quedarse colgada para siempre
       // (FE #514). Colgarla escondía el fallo a quien la había pedido, que se
       // quedaba esperando una respuesta que no iba a llegar nunca; la
       // redirección sigue ocurriendo igual
-      const peticion = fetchWithTokenRefresh('http://localhost:8000/api/v1/test');
+      const peticion = fetchWithTokenRefresh(
+        'http://localhost:8000/api/v1/test',
+      );
 
       await expect(peticion).rejects.toThrow();
 
@@ -214,7 +239,9 @@ describe('tokenRefreshInterceptor', () => {
       });
       globalThis.fetch.mockResolvedValueOnce(mockResponse);
 
-      const result = await fetchWithTokenRefresh('http://localhost:8000/api/v1/auth/refresh-token');
+      const result = await fetchWithTokenRefresh(
+        'http://localhost:8000/api/v1/auth/refresh-token',
+      );
 
       // Should NOT attempt to refresh again (infinite loop prevention)
       expect(result).toBe(mockResponse);
@@ -226,53 +253,73 @@ describe('tokenRefreshInterceptor', () => {
       // su cola— que se quedaba colgado entre casos. Con el refresco en una
       // promesa que se suelta sola al terminar (FE #518), ya no hay nada que
       // limpiar y el caso vuelve a ejercitarse.
-      
+
       // Mock all fetch calls upfront
       // First two calls: 401 for both requests
       globalThis.fetch
-        .mockResolvedValueOnce(createMockResponse({
-          ok: false,
-          status: 401,
-          statusText: 'Unauthorized',
-          json: async () => ({ detail: 'Token expired' }),
-        }))
-        .mockResolvedValueOnce(createMockResponse({
-          ok: false,
-          status: 401,
-          statusText: 'Unauthorized',
-          json: async () => ({ detail: 'Token expired' }),
-        }))
+        .mockResolvedValueOnce(
+          createMockResponse({
+            ok: false,
+            status: 401,
+            statusText: 'Unauthorized',
+            json: async () => ({ detail: 'Token expired' }),
+          }),
+        )
+        .mockResolvedValueOnce(
+          createMockResponse({
+            ok: false,
+            status: 401,
+            statusText: 'Unauthorized',
+            json: async () => ({ detail: 'Token expired' }),
+          }),
+        )
         // Third call: successful refresh (should only happen once)
-        .mockResolvedValueOnce(createMockResponse({
-          ok: true,
-          status: 200,
-          json: async () => ({ message: 'Token refreshed', csrf_token: 'new-token' }),
-        }))
+        .mockResolvedValueOnce(
+          createMockResponse({
+            ok: true,
+            status: 200,
+            json: async () => ({
+              message: 'Token refreshed',
+              csrf_token: 'new-token',
+            }),
+          }),
+        )
         // Fourth and fifth calls: retry both original requests
-        .mockResolvedValueOnce(createMockResponse({
-          ok: true,
-          status: 200,
-          json: async () => ({ data: 'test1' }),
-        }))
-        .mockResolvedValueOnce(createMockResponse({
-          ok: true,
-          status: 200,
-          json: async () => ({ data: 'test2' }),
-        }));
+        .mockResolvedValueOnce(
+          createMockResponse({
+            ok: true,
+            status: 200,
+            json: async () => ({ data: 'test1' }),
+          }),
+        )
+        .mockResolvedValueOnce(
+          createMockResponse({
+            ok: true,
+            status: 200,
+            json: async () => ({ data: 'test2' }),
+          }),
+        );
 
       // Simulate multiple concurrent requests receiving 401
-      const request1Promise = fetchWithTokenRefresh('http://localhost:8000/api/v1/test1');
-      const request2Promise = fetchWithTokenRefresh('http://localhost:8000/api/v1/test2');
+      const request1Promise = fetchWithTokenRefresh(
+        'http://localhost:8000/api/v1/test1',
+      );
+      const request2Promise = fetchWithTokenRefresh(
+        'http://localhost:8000/api/v1/test2',
+      );
 
       // Wait for both requests to complete
-      const [result1, result2] = await Promise.all([request1Promise, request2Promise]);
+      const [result1, result2] = await Promise.all([
+        request1Promise,
+        request2Promise,
+      ]);
 
       expect(result1.ok).toBe(true);
       expect(result2.ok).toBe(true);
 
       // Should have called fetch 5 times total:
       // 1. Original request 1 (401)
-      // 2. Original request 2 (401)  
+      // 2. Original request 2 (401)
       // 3. Refresh token (once)
       // 4. Retry request 1
       // 5. Retry request 2
@@ -281,11 +328,13 @@ describe('tokenRefreshInterceptor', () => {
 
     it('should always include credentials in requests', async () => {
       // Mock successful response
-      globalThis.fetch.mockResolvedValueOnce(createMockResponse({
-        ok: true,
-        status: 200,
-        json: async () => ({ data: 'test' }),
-      }));
+      globalThis.fetch.mockResolvedValueOnce(
+        createMockResponse({
+          ok: true,
+          status: 200,
+          json: async () => ({ data: 'test' }),
+        }),
+      );
 
       await fetchWithTokenRefresh('http://localhost:8000/api/v1/test', {
         method: 'POST',
@@ -297,7 +346,7 @@ describe('tokenRefreshInterceptor', () => {
         expect.objectContaining({
           credentials: 'include',
           method: 'POST',
-        })
+        }),
       );
     });
   });
@@ -310,12 +359,14 @@ describe('tokenRefreshInterceptor', () => {
 
     it('should handle network errors gracefully', async () => {
       // Mock network error - this should be propagated
-      globalThis.fetch.mockRejectedValueOnce(new Error('Network request failed'));
+      globalThis.fetch.mockRejectedValueOnce(
+        new Error('Network request failed'),
+      );
 
       // Expect the error to be thrown
-      await expect(fetchWithTokenRefresh('http://localhost:8000/api/v1/test'))
-        .rejects
-        .toThrow('Network request failed');
+      await expect(
+        fetchWithTokenRefresh('http://localhost:8000/api/v1/test'),
+      ).rejects.toThrow('Network request failed');
     });
 
     it('should preserve original error messages', async () => {
@@ -324,9 +375,9 @@ describe('tokenRefreshInterceptor', () => {
       globalThis.fetch.mockRejectedValueOnce(new Error(errorMessage));
 
       // Expect the error to be thrown with the same message
-      await expect(fetchWithTokenRefresh('http://localhost:8000/api/v1/test'))
-        .rejects
-        .toThrow(errorMessage);
+      await expect(
+        fetchWithTokenRefresh('http://localhost:8000/api/v1/test'),
+      ).rejects.toThrow(errorMessage);
     });
   });
 
@@ -342,7 +393,9 @@ describe('tokenRefreshInterceptor', () => {
         ok: true,
         status: 200,
         json: async () => ({ data: 'test' }),
-        clone: vi.fn(function() { return this; }),
+        clone: vi.fn(function () {
+          return this;
+        }),
       });
 
       await fetchWithTokenRefresh('http://localhost:8000/api/v1/test');
@@ -352,7 +405,7 @@ describe('tokenRefreshInterceptor', () => {
         expect.any(String),
         expect.objectContaining({
           credentials: 'include',
-        })
+        }),
       );
     });
 
@@ -361,7 +414,10 @@ describe('tokenRefreshInterceptor', () => {
       globalThis.fetch.mockResolvedValueOnce({
         ok: true,
         status: 200,
-        json: async () => ({ message: 'Token refreshed', csrf_token: 'new-token' }),
+        json: async () => ({
+          message: 'Token refreshed',
+          csrf_token: 'new-token',
+        }),
       });
 
       await refreshAccessToken();
@@ -385,7 +441,8 @@ describe('tokenRefreshInterceptor', () => {
       vi.resetModules();
       await import('../../composition/interfazDelTransporte');
       ({ fetchWithTokenRefresh } = await import('./tokenRefreshInterceptor'));
-      ({ handleSessionExpiredLogout, handleDeviceRevocationLogout } = await import('./deviceRevocationLogout'));
+      ({ handleSessionExpiredLogout, handleDeviceRevocationLogout } =
+        await import('./deviceRevocationLogout'));
       vi.clearAllMocks();
     });
 
@@ -406,7 +463,10 @@ describe('tokenRefreshInterceptor', () => {
         .mockRejectedValueOnce(new TypeError('Failed to fetch'));
 
       await expect(
-        fetchWithTokenRefresh('http://localhost:8000/api/v1/quick-matches/1/scores', { method: 'POST' })
+        fetchWithTokenRefresh(
+          'http://localhost:8000/api/v1/quick-matches/1/scores',
+          { method: 'POST' },
+        ),
       ).rejects.toThrow('Failed to fetch');
 
       expect(handleSessionExpiredLogout).not.toHaveBeenCalled();
@@ -417,10 +477,18 @@ describe('tokenRefreshInterceptor', () => {
       // Un servidor con un mal momento no dice nada sobre las credenciales
       globalThis.fetch
         .mockResolvedValueOnce(respuesta401())
-        .mockResolvedValueOnce({ ok: false, status: 502, statusText: 'Bad Gateway', json: async () => ({}) });
+        .mockResolvedValueOnce({
+          ok: false,
+          status: 502,
+          statusText: 'Bad Gateway',
+          json: async () => ({}),
+        });
 
       await expect(
-        fetchWithTokenRefresh('http://localhost:8000/api/v1/quick-matches/1/scores', { method: 'POST' })
+        fetchWithTokenRefresh(
+          'http://localhost:8000/api/v1/quick-matches/1/scores',
+          { method: 'POST' },
+        ),
       ).rejects.toThrow('Failed to refresh token');
 
       expect(handleSessionExpiredLogout).not.toHaveBeenCalled();
@@ -438,7 +506,10 @@ describe('tokenRefreshInterceptor', () => {
         });
 
       await expect(
-        fetchWithTokenRefresh('http://localhost:8000/api/v1/quick-matches/1/scores', { method: 'POST' })
+        fetchWithTokenRefresh(
+          'http://localhost:8000/api/v1/quick-matches/1/scores',
+          { method: 'POST' },
+        ),
       ).rejects.toThrow('Refresh token inválido o expirado');
 
       expect(handleSessionExpiredLogout).toHaveBeenCalled();
@@ -538,9 +609,13 @@ describe('un refresco, muchas peticiones (FE #518)', () => {
       }
       if (String(url).includes('/lenta')) {
         // B: su 401 tarda en llegar, y para entonces ya se habrá refrescado
-        return llamadas[url] === 1 ? respuestaDeB.promesa : Promise.resolve(respuesta(200, { ok: 'B' }));
+        return llamadas[url] === 1
+          ? respuestaDeB.promesa
+          : Promise.resolve(respuesta(200, { ok: 'B' }));
       }
-      return Promise.resolve(llamadas[url] === 1 ? respuesta(401) : respuesta(200, { ok: 'A' }));
+      return Promise.resolve(
+        llamadas[url] === 1 ? respuesta(401) : respuesta(200, { ok: 'A' }),
+      );
     });
 
     const b = fetchWithTokenRefresh('/api/v1/lenta');
@@ -567,7 +642,9 @@ describe('un refresco, muchas peticiones (FE #518)', () => {
       if (String(url).includes('/auth/refresh-token')) {
         return Promise.resolve(respuesta(200, { refreshed: true }));
       }
-      return Promise.resolve(llamadas[url] === 1 ? respuesta(401) : respuesta(200, { ok: true }));
+      return Promise.resolve(
+        llamadas[url] === 1 ? respuesta(401) : respuesta(200, { ok: true }),
+      );
     });
 
     const [a, b] = await Promise.all([
@@ -617,7 +694,8 @@ describe('un refresco, muchas peticiones (FE #518)', () => {
   it('si el refresco falla, las dos peticiones reciben el error', async () => {
     // Y ninguna se queda esperando a un refresco que ya no va a llegar
     globalThis.fetch.mockImplementation(async (url) => {
-      if (url.includes('/auth/refresh-token')) return respuesta(500, { detail: 'boom' });
+      if (url.includes('/auth/refresh-token'))
+        return respuesta(500, { detail: 'boom' });
       return respuesta(401);
     });
 

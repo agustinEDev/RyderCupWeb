@@ -73,10 +73,11 @@ const AppStart = () => {
   return (
     <div className="flex min-h-screen w-full flex-col bg-gray-50 px-6 pb-[calc(1.5rem+env(safe-area-inset-bottom))] pt-[calc(2rem+env(safe-area-inset-top))]">
       <div className="mx-auto flex w-full max-w-md flex-1 flex-col justify-center">
-
         <div className="mb-8 flex flex-col items-center">
           <BrandMark className="size-16" />
-          <h1 className="mt-3 font-poppins text-2xl font-bold text-gray-900">RyderCupFriends</h1>
+          <h1 className="mt-3 font-poppins text-2xl font-bold text-gray-900">
+            RyderCupFriends
+          </h1>
           <span className="text-sm font-semibold text-primary">RCF</span>
         </div>
 

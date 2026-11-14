@@ -22,11 +22,22 @@ import { clasesDelHueco } from '../scoring/clasesDelHueco';
  * Quien anota no necesita excepción: su hoyo y la cabecera salen de la misma
  * resolución, así que no difiere de sí mismo y no se le duplica nada.
  */
-const QuickMatchHoleInput = ({ holeNumber, par, strokeIndex, meters = null, entries, isReadOnly = false, allowPickedUp = false, myRound = null, onScoreChange }) => {
+const QuickMatchHoleInput = ({
+  holeNumber,
+  par,
+  strokeIndex,
+  meters = null,
+  entries,
+  isReadOnly = false,
+  allowPickedUp = false,
+  myRound = null,
+  onScoreChange,
+}) => {
   const { t } = useTranslation('scoring');
   const [openParticipantId, setOpenParticipantId] = useState(null);
 
-  const openEntry = entries.find((e) => e.participantId === openParticipantId) || null;
+  const openEntry =
+    entries.find((e) => e.participantId === openParticipantId) || null;
 
   // El hoyo de cada jugador. Quien no lo traiga se queda sin datos propios: la
   // cabecera es la barra de quien anota, y pintarla bajo otro nombre es el
@@ -52,23 +63,31 @@ const QuickMatchHoleInput = ({ holeNumber, par, strokeIndex, meters = null, entr
   // debajo un par que ya estaba arriba y era el mismo.
   const differsInPar = (hole) => hole !== null && hole.par !== par;
 
-  const differsInStrokeIndex = (hole) => hole !== null && hole.strokeIndex !== strokeIndex;
+  const differsInStrokeIndex = (hole) =>
+    hole !== null && hole.strokeIndex !== strokeIndex;
 
-  const differsInMeters = (hole) => hole !== null && (hole.meters ?? null) !== meters;
+  const differsInMeters = (hole) =>
+    hole !== null && (hole.meters ?? null) !== meters;
 
   const differsInAnything = (hole) =>
     differsInPar(hole) || differsInStrokeIndex(hole) || differsInMeters(hole);
 
   const parFact = (hole) => (
-    <span className="whitespace-nowrap">{t('input.par')} {hole.par}</span>
+    <span className="whitespace-nowrap">
+      {t('input.par')} {hole.par}
+    </span>
   );
 
   const strokeIndexFact = (hole) => (
-    <span className="whitespace-nowrap">{t('input.strokeIndex')} {hole.strokeIndex}</span>
+    <span className="whitespace-nowrap">
+      {t('input.strokeIndex')} {hole.strokeIndex}
+    </span>
   );
 
   const metersFact = (hole) => (
-    <span className="whitespace-nowrap">{t('input.meters')} {hole.meters ?? '-'}</span>
+    <span className="whitespace-nowrap">
+      {t('input.meters')} {hole.meters ?? '-'}
+    </span>
   );
 
   // Ni golpes ni raya: el hoyo está por anotar. La raya SÍ tiene entrada, así
@@ -92,9 +111,12 @@ const QuickMatchHoleInput = ({ holeNumber, par, strokeIndex, meters = null, entr
   const myRoundSpoken = () => {
     if (myRound?.toPar == null) return t('input.myRoundA11yNone');
     if (myRound.toPar === 0) return t('input.myRoundA11yPar');
-    return t(myRound.toPar > 0 ? 'input.myRoundA11yOver' : 'input.myRoundA11yUnder', {
-      count: Math.abs(myRound.toPar),
-    });
+    return t(
+      myRound.toPar > 0 ? 'input.myRoundA11yOver' : 'input.myRoundA11yUnder',
+      {
+        count: Math.abs(myRound.toPar),
+      },
+    );
   };
 
   // Con un número impar de casillas queda un hueco en la rejilla de dos y la
@@ -109,9 +131,14 @@ const QuickMatchHoleInput = ({ holeNumber, par, strokeIndex, meters = null, entr
   };
 
   return (
-    <div data-testid="quick-match-hole-input" className="bg-white rounded-lg border border-gray-200 p-4 space-y-4">
+    <div
+      data-testid="quick-match-hole-input"
+      className="bg-white rounded-lg border border-gray-200 p-4 space-y-4"
+    >
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-        <span className="text-lg font-bold text-gray-900 whitespace-nowrap">{t('input.hole')} {holeNumber}</span>
+        <span className="text-lg font-bold text-gray-900 whitespace-nowrap">
+          {t('input.hole')} {holeNumber}
+        </span>
         {/* Los metros son de la barra, y las salidas dadas de alta a mano no
             los traen. Se ensena siempre la etiqueta con un guion en vez de
             esconder el dato: el hueco se lee como "aqui falta", que es lo que
@@ -130,14 +157,17 @@ const QuickMatchHoleInput = ({ holeNumber, par, strokeIndex, meters = null, entr
       <div className="grid grid-cols-2 gap-3">
         {entries.map((entry) => (
           <div key={entry.participantId} className="space-y-1 flex flex-col">
-            <label className="text-xs font-medium text-gray-500 truncate block">{entry.name}</label>
+            <label className="text-xs font-medium text-gray-500 truncate block">
+              {entry.name}
+            </label>
             {differsInAnything(holeOf(entry)) && (
               <span
                 className="text-xs text-gray-500 flex flex-wrap items-center gap-x-2 gap-y-0.5"
                 data-testid={`quick-match-hole-facts-${entry.participantId}`}
               >
                 {differsInPar(holeOf(entry)) && parFact(holeOf(entry))}
-                {differsInStrokeIndex(holeOf(entry)) && strokeIndexFact(holeOf(entry))}
+                {differsInStrokeIndex(holeOf(entry)) &&
+                  strokeIndexFact(holeOf(entry))}
                 {differsInMeters(holeOf(entry)) && metersFact(holeOf(entry))}
               </span>
             )}
@@ -157,18 +187,30 @@ const QuickMatchHoleInput = ({ holeNumber, par, strokeIndex, meters = null, entr
                     una palabra no se confunde con la raya. En verde, y el
                     primero sin golpe, lleno (FE #725) */}
                 {isEmpty(entry) ? (
-                  <HuecoParaAnotar siguiente={entry.participantId === primerVacio} />
+                  <HuecoParaAnotar
+                    siguiente={entry.participantId === primerVacio}
+                  />
                 ) : (
-                  <GolfFigure score={entry.score} par={parOf(entry)} pickedUp={entry.isPickedUp} />
+                  <GolfFigure
+                    score={entry.score}
+                    par={parOf(entry)}
+                    pickedUp={entry.isPickedUp}
+                  />
                 )}
               </button>
             ) : (
               <div className="w-full h-14 mt-auto flex items-center justify-center">
                 {/* En solo lectura no hay nada que pulsar: se dice el estado. */}
                 {isEmpty(entry) ? (
-                  <span className="text-sm text-gray-400">{t('input.notEntered')}</span>
+                  <span className="text-sm text-gray-400">
+                    {t('input.notEntered')}
+                  </span>
                 ) : (
-                  <GolfFigure score={entry.score} par={parOf(entry)} pickedUp={entry.isPickedUp} />
+                  <GolfFigure
+                    score={entry.score}
+                    par={parOf(entry)}
+                    pickedUp={entry.isPickedUp}
+                  />
                 )}
               </div>
             )}
@@ -177,8 +219,14 @@ const QuickMatchHoleInput = ({ holeNumber, par, strokeIndex, meters = null, entr
         {myRoundInCell && (
           // `min-w-0`: un valor no ensancha la columna a 360 px. Borde
           // discontinuo y sin fondo: no se confunde con un golpe
-          <div data-testid="quick-match-my-round-cell" className="space-y-1 flex flex-col min-w-0">
-            <span className="text-xs font-medium text-gray-500 truncate block" aria-hidden="true">
+          <div
+            data-testid="quick-match-my-round-cell"
+            className="space-y-1 flex flex-col min-w-0"
+          >
+            <span
+              className="text-xs font-medium text-gray-500 truncate block"
+              aria-hidden="true"
+            >
               {t('input.myRound')}
             </span>
             <span
@@ -198,9 +246,15 @@ const QuickMatchHoleInput = ({ holeNumber, par, strokeIndex, meters = null, entr
       </div>
 
       {myRoundInLine && (
-        <p data-testid="quick-match-my-round-line" className="text-xs text-gray-500 whitespace-nowrap truncate">
+        <p
+          data-testid="quick-match-my-round-line"
+          className="text-xs text-gray-500 whitespace-nowrap truncate"
+        >
           <span aria-hidden="true">
-            {t('input.myRound')}: <span className="text-base font-bold text-gray-900">{myRoundValue()}</span>
+            {t('input.myRound')}:{' '}
+            <span className="text-base font-bold text-gray-900">
+              {myRoundValue()}
+            </span>
           </span>
           <span className="sr-only">{myRoundSpoken()}</span>
         </p>

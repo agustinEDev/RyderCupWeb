@@ -10,7 +10,14 @@ const mockQuickMatch = QuickMatch.fromPersistence({
   matchFormat: 'SINGLES',
   status: QuickMatchStatus.completed(),
   participants: [
-    { participantId: 'p-1', userId: 'user-1', name: 'Creator', handicap: 10, team: null, isGuest: false },
+    {
+      participantId: 'p-1',
+      userId: 'user-1',
+      name: 'Creator',
+      handicap: 10,
+      team: null,
+      isGuest: false,
+    },
   ],
   scorerIds: ['p-1'],
 });
@@ -25,11 +32,15 @@ describe('HideQuickMatchUseCase', () => {
   });
 
   it('should throw if quickMatchRepository is missing', () => {
-    expect(() => new HideQuickMatchUseCase({})).toThrow('requires quickMatchRepository');
+    expect(() => new HideQuickMatchUseCase({})).toThrow(
+      'requires quickMatchRepository',
+    );
   });
 
   it('should throw for a missing quickMatchId', async () => {
-    await expect(useCase.execute('')).rejects.toThrow('quickMatchId is required');
+    await expect(useCase.execute('')).rejects.toThrow(
+      'quickMatchId is required',
+    );
   });
 
   it('should hide the quick match and return a simple DTO', async () => {
@@ -42,6 +53,8 @@ describe('HideQuickMatchUseCase', () => {
   it('should propagate repository errors', async () => {
     mockRepo.hide.mockRejectedValue(new Error('Quick match not found'));
 
-    await expect(useCase.execute('qm-1')).rejects.toThrow('Quick match not found');
+    await expect(useCase.execute('qm-1')).rejects.toThrow(
+      'Quick match not found',
+    );
   });
 });

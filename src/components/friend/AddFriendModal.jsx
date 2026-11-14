@@ -28,14 +28,15 @@ const AddFriendModalContent = ({ onClose, onSearchUsers, t }) => {
   const [highlightedIndex, setHighlightedIndex] = useState(-1);
   const dropdownRef = useRef(null);
   const searchInputRef = useRef(null);
-  const searchTimerRef = useRef(null);
   const searchRequestIdRef = useRef(0);
   const onSearchUsersRef = useRef(onSearchUsers);
   const highlightedIndexRef = useRef(highlightedIndex);
   const showDropdownRef = useRef(showDropdown);
   const searchResultsRef = useRef(searchResults);
   const openProfileRef = useRef(null);
-  useEffect(() => { onSearchUsersRef.current = onSearchUsers; });
+  useEffect(() => {
+    onSearchUsersRef.current = onSearchUsers;
+  });
 
   // El resaltado se mueve SIEMPRE por aqui, y la ref se escribe en el mismo
   // momento que el estado. Antes la ref la copiaba un efecto sin dependencias,
@@ -74,7 +75,8 @@ const AddFriendModalContent = ({ onClose, onSearchUsers, t }) => {
     // caia en lo que subia a ocupar su sitio. En captura, para cerrar antes
     // que el manejador del propio destino, como hacia el `mousedown`
     document.addEventListener('click', handleClickOutside, true);
-    return () => document.removeEventListener('click', handleClickOutside, true);
+    return () =>
+      document.removeEventListener('click', handleClickOutside, true);
   }, [openDropdown]);
 
   useEffect(() => {
@@ -93,7 +95,8 @@ const AddFriendModalContent = ({ onClose, onSearchUsers, t }) => {
         return;
       }
 
-      if (!showDropdownRef.current || searchResultsRef.current.length === 0) return;
+      if (!showDropdownRef.current || searchResultsRef.current.length === 0)
+        return;
 
       if (e.key === 'ArrowDown') {
         e.preventDefault();
@@ -118,34 +121,35 @@ const AddFriendModalContent = ({ onClose, onSearchUsers, t }) => {
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [highlight, openDropdown]);
 
-  useEffect(() => {
-    if (searchTimerRef.current) {
-      clearTimeout(searchTimerRef.current);
-    }
-
-    const trimmed = searchQuery.trim();
-    if (trimmed.length < 2) {
-      // Invalida lo que este en vuelo: sin esto, una respuesta tardia
-      // aterrizaba sobre el campo ya vacio —la buena reabriendo resultados de
-      // una busqueda que ya no se lee, y la mala plantando el aviso rojo bajo
-      // un buscador en blanco—.
-      searchRequestIdRef.current += 1;
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- pre-existing pattern surfaced by eslint-plugin-react-hooks 7.1.1 bump; needs dedicated review (tracked in follow-up)
+  // Lo que cambia con el texto se hace al teclear, no en un efecto: lo que
+  // estuviera en vuelo deja de valer y, por debajo de dos letras, la lista se
+  // cierra en ese mismo pintado. El efecto de abajo solo espera los 300 ms
+  const cambiaLaBusqueda = (texto) => {
+    setSearchQuery(texto);
+    // Invalida lo que este en vuelo: sin esto, una respuesta tardia aterrizaba
+    // sobre el campo ya vacio —la buena reabriendo resultados de una busqueda
+    // que ya no se lee, y la mala plantando el aviso rojo bajo un buscador en
+    // blanco—, o la de un texto anterior sobre la del actual.
+    searchRequestIdRef.current += 1;
+    setSearchFailed(false);
+    if (texto.trim().length < 2) {
       putResults([]);
       openDropdown(false);
       setIsSearching(false);
-      setSearchFailed(false);
       // Como en el camino de error: sin esto el `aria-activedescendant` se
       // queda apuntando a una opcion que ya no esta en el DOM.
       highlight(-1);
       return;
     }
-
     setIsSearching(true);
-    setSearchFailed(false);
-    searchRequestIdRef.current += 1;
+  };
+
+  useEffect(() => {
+    const trimmed = searchQuery.trim();
+    if (trimmed.length < 2) return undefined;
+
     const currentRequestId = searchRequestIdRef.current;
-    searchTimerRef.current = setTimeout(async () => {
+    const temporizador = setTimeout(async () => {
       try {
         const results = await onSearchUsersRef.current(trimmed);
         if (currentRequestId !== searchRequestIdRef.current) return;
@@ -172,11 +176,7 @@ const AddFriendModalContent = ({ onClose, onSearchUsers, t }) => {
       }
     }, 300);
 
-    return () => {
-      if (searchTimerRef.current) {
-        clearTimeout(searchTimerRef.current);
-      }
-    };
+    return () => clearTimeout(temporizador);
   }, [searchQuery, highlight, openDropdown, putResults]);
 
   const handleOpenProfile = (user) => {
@@ -192,7 +192,9 @@ const AddFriendModalContent = ({ onClose, onSearchUsers, t }) => {
   // render actual, asi que la funcion viaja por ref igual que las demas. Se
   // asigna en un efecto y no en el cuerpo: escribir un ref durante el render
   // rompe con React Compiler y lo vigila `react-hooks/refs`
-  useEffect(() => { openProfileRef.current = handleOpenProfile; });
+  useEffect(() => {
+    openProfileRef.current = handleOpenProfile;
+  });
 
   // El armazón común (QA del 21 oct 2026): el foco entra en el buscador, no
   // sale con el tabulador y vuelve al botón que lo abrió; la página de debajo
@@ -212,7 +214,12 @@ const AddFriendModalContent = ({ onClose, onSearchUsers, t }) => {
       boxClassName="bg-white rounded-lg shadow-xl w-full max-w-md mx-4 max-h-[calc(100dvh-2rem)] overflow-y-auto"
     >
       <div className="flex items-center justify-between p-4 border-b border-gray-200">
-        <h2 id="add-friend-modal-title" className="text-lg font-semibold text-gray-900">{t('add.title')}</h2>
+        <h2
+          id="add-friend-modal-title"
+          className="text-lg font-semibold text-gray-900"
+        >
+          {t('add.title')}
+        </h2>
         {/* h-11 w-11 y no el icono a secas: es la zona tactil minima que usa
             el resto de la aplicacion, y al quitar el pie esta X paso a ser la
             unica forma de cerrar */}
@@ -235,7 +242,7 @@ const AddFriendModalContent = ({ onClose, onSearchUsers, t }) => {
               ref={searchInputRef}
               type="text"
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={(e) => cambiaLaBusqueda(e.target.value)}
               placeholder={t('add.searchPlaceholder')}
               className="w-full pl-9 pr-8 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
               data-testid="user-search-input"
@@ -243,7 +250,11 @@ const AddFriendModalContent = ({ onClose, onSearchUsers, t }) => {
               aria-expanded={showDropdown && searchResults.length > 0}
               aria-haspopup="listbox"
               aria-controls="friend-search-listbox"
-              aria-activedescendant={highlightedIndex >= 0 ? `friend-search-option-${highlightedIndex}` : undefined}
+              aria-activedescendant={
+                highlightedIndex >= 0
+                  ? `friend-search-option-${highlightedIndex}`
+                  : undefined
+              }
             />
             {isSearching && (
               <Loader className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 animate-spin" />
@@ -251,13 +262,20 @@ const AddFriendModalContent = ({ onClose, onSearchUsers, t }) => {
           </div>
 
           {searchQuery.trim().length > 0 && searchQuery.trim().length < 2 && (
-            <p className="text-xs text-gray-400 mt-1">{t('add.searchMinChars')}</p>
+            <p className="text-xs text-gray-400 mt-1">
+              {t('add.searchMinChars')}
+            </p>
           )}
 
           {/* En el flujo y no `absolute`: flotando no ocupaba sitio y asomaba
               por debajo de la caja (QA, 20 oct) */}
           {showDropdown && searchResults.length > 0 && (
-            <div id="friend-search-listbox" className="w-full mt-1 bg-white border border-gray-200 rounded-md max-h-48 overflow-y-auto" data-testid="search-results-dropdown" role="listbox">
+            <div
+              id="friend-search-listbox"
+              className="w-full mt-1 bg-white border border-gray-200 rounded-md max-h-48 overflow-y-auto"
+              data-testid="search-results-dropdown"
+              role="listbox"
+            >
               {searchResults.map((user, index) => (
                 <button
                   key={user.id}
@@ -266,7 +284,9 @@ const AddFriendModalContent = ({ onClose, onSearchUsers, t }) => {
                   onClick={() => handleOpenProfile(user)}
                   onMouseEnter={() => highlight(index)}
                   className={`w-full px-3 py-2 text-left transition-colors border-b border-gray-100 last:border-b-0 ${
-                    index === highlightedIndex ? 'bg-blue-100' : 'hover:bg-gray-50'
+                    index === highlightedIndex
+                      ? 'bg-blue-100'
+                      : 'hover:bg-gray-50'
                   }`}
                   role="option"
                   aria-selected={index === highlightedIndex}
@@ -297,16 +317,32 @@ const AddFriendModalContent = ({ onClose, onSearchUsers, t }) => {
             </div>
           )}
 
-          {showDropdown && searchResults.length === 0 && searchQuery.trim().length >= 2 && !isSearching && (
-            <p className="text-xs text-gray-500 mt-1" data-testid="no-users-found">{t('add.noUsersFound')}</p>
-          )}
+          {showDropdown &&
+            searchResults.length === 0 &&
+            searchQuery.trim().length >= 2 &&
+            !isSearching && (
+              <p
+                className="text-xs text-gray-500 mt-1"
+                data-testid="no-users-found"
+              >
+                {t('add.noUsersFound')}
+              </p>
+            )}
 
           {searchFailed && (
-            <p role="alert" className="text-sm text-red-600 mt-1" data-testid="search-error">{t('add.searchFailed')}</p>
+            <p
+              role="alert"
+              className="text-sm text-red-600 mt-1"
+              data-testid="search-error"
+            >
+              {t('add.searchFailed')}
+            </p>
           )}
         </div>
 
-        <p className="mt-3 text-xs text-gray-500">{t('add.opensProfileHint')}</p>
+        <p className="mt-3 text-xs text-gray-500">
+          {t('add.opensProfileHint')}
+        </p>
       </div>
     </ModalShell>
   );
@@ -315,7 +351,11 @@ const AddFriendModalContent = ({ onClose, onSearchUsers, t }) => {
 const AddFriendModal = ({ isOpen, onClose, onSearchUsers, t }) => {
   if (!isOpen) return null;
   return (
-    <AddFriendModalContent onClose={onClose} onSearchUsers={onSearchUsers} t={t} />
+    <AddFriendModalContent
+      onClose={onClose}
+      onSearchUsers={onSearchUsers}
+      t={t}
+    />
   );
 };
 

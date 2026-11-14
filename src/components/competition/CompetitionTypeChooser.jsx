@@ -30,7 +30,9 @@ const CompetitionTypeChooser = ({ onSelect, tipos = TIPOS }) => {
   return (
     <div className="space-y-3">
       <div>
-        <h2 className="text-lg font-bold text-gray-900">{t('create.type.title')}</h2>
+        <h2 className="text-lg font-bold text-gray-900">
+          {t('create.type.title')}
+        </h2>
         <p className="text-sm text-gray-600">{t('create.type.subtitle')}</p>
       </div>
 
@@ -50,17 +52,23 @@ const CompetitionTypeChooser = ({ onSelect, tipos = TIPOS }) => {
             className={`flex w-full flex-col items-start justify-start rounded-xl border p-4 text-left transition-colors ${
               disponible
                 ? 'border-gray-200 bg-white hover:border-green-500 hover:bg-green-50'
-                // Fondo apagado, NO `opacity` sobre la tarjeta: atenuar el
-                // conjunto se lleva por delante el texto y la propia etiqueta,
-                // y estos tienen que leerse —es lo que vienen a decir—
-                : 'pointer-events-none cursor-default border-gray-200 bg-gray-50'
+                : // Fondo apagado, NO `opacity` sobre la tarjeta: atenuar el
+                  // conjunto se lleva por delante el texto y la propia etiqueta,
+                  // y estos tienen que leerse —es lo que vienen a decir—
+                  'pointer-events-none cursor-default border-gray-200 bg-gray-50'
             }`}
           >
-            <Icono className={`mb-2 h-6 w-6 ${disponible ? 'text-green-600' : 'text-gray-500'}`} />
-            <span className={`block font-semibold ${disponible ? 'text-gray-900' : 'text-gray-700'}`}>
+            <Icono
+              className={`mb-2 h-6 w-6 ${disponible ? 'text-green-600' : 'text-gray-500'}`}
+            />
+            <span
+              className={`block font-semibold ${disponible ? 'text-gray-900' : 'text-gray-700'}`}
+            >
               {t(`create.type.${id}.title`)}
             </span>
-            <span className="mt-1 block text-sm text-gray-600">{t(`create.type.${id}.blurb`)}</span>
+            <span className="mt-1 block text-sm text-gray-600">
+              {t(`create.type.${id}.blurb`)}
+            </span>
             {!disponible && (
               <span className="mt-2 inline-block rounded-full bg-gray-200 px-2 py-0.5 text-xs font-medium text-gray-700">
                 {t('create.type.comingSoon')}

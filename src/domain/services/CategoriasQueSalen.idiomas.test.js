@@ -8,11 +8,16 @@ describe('los textos del aviso de menos categorías', () => {
   it.each([
     ['español', es],
     ['inglés', en],
-  ])('en %s, con cuántas se pidieron y cuántas salen, en singular y en plural', (_idioma, textos) => {
-    for (const motivo of [REPETIDOS, MENOS_DE_SEIS]) {
-      for (const forma of ['one', 'other']) {
-        expect(textos.detail.fewerCategories[`${motivo}_${forma}`]).toMatch(/\{\{pedidas\}\}.*\{\{count\}\}/);
+  ])(
+    'en %s, con cuántas se pidieron y cuántas salen, en singular y en plural',
+    (_idioma, textos) => {
+      for (const motivo of [REPETIDOS, MENOS_DE_SEIS]) {
+        for (const forma of ['one', 'other']) {
+          expect(textos.detail.fewerCategories[`${motivo}_${forma}`]).toMatch(
+            /\{\{pedidas\}\}.*\{\{count\}\}/,
+          );
+        }
       }
-    }
-  });
+    },
+  );
 });

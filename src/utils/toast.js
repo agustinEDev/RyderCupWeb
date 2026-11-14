@@ -1,5 +1,11 @@
 import toast from 'react-hot-toast';
-import { X, CheckCircle2, AlertCircle, AlertTriangle, Info } from 'lucide-react';
+import {
+  X,
+  CheckCircle2,
+  AlertCircle,
+  AlertTriangle,
+  Info,
+} from 'lucide-react';
 import { createElement } from 'react';
 import { esUnAvisoSilenciado } from './terminosPendientes';
 import { seEstaCerrandoLaSesion } from './cierreDeEstaCarga';
@@ -50,23 +56,35 @@ const ToastContent = ({ message, type, toastId, icon, visible }) => {
       className: `flex items-start gap-3 p-4 pr-2 ${bgClass} border ${borderClass} rounded-lg shadow-lg min-w-[300px] max-w-md transition-opacity duration-150 motion-reduce:transition-none ${visible ? 'opacity-100' : 'opacity-0 pointer-events-none'}`,
     },
     // Icon (custom emoji or default Icon component)
-    createElement('div', { className: 'flex-shrink-0' },
+    createElement(
+      'div',
+      { className: 'flex-shrink-0' },
       icon
         ? createElement('span', { className: 'text-xl' }, icon)
-        : createElement(Icon, { className: `w-5 h-5 ${textClass}` })
+        : createElement(Icon, { className: `w-5 h-5 ${textClass}` }),
     ),
     // Message
-    createElement('div', { className: 'flex-1 min-w-0 wrap-anywhere text-sm text-gray-900 leading-relaxed' }, message),
+    createElement(
+      'div',
+      {
+        className:
+          'flex-1 min-w-0 wrap-anywhere text-sm text-gray-900 leading-relaxed',
+      },
+      message,
+    ),
     // Close Button
     createElement(
       'button',
       {
         onClick: () => toast.dismiss(toastId),
-        className: 'flex-shrink-0 p-1 rounded-lg hover:bg-white/50 transition-colors cursor-pointer',
+        className:
+          'flex-shrink-0 p-1 rounded-lg hover:bg-white/50 transition-colors cursor-pointer',
         'aria-label': 'Close notification',
       },
-      createElement(X, { className: 'w-4 h-4 text-gray-600 hover:text-gray-900' })
-    )
+      createElement(X, {
+        className: 'w-4 h-4 text-gray-600 hover:text-gray-900',
+      }),
+    ),
   );
 };
 
@@ -77,8 +95,15 @@ export const customToast = {
   success: (message, options = {}) => {
     const { icon, ...toastOptions } = options;
     return toast.custom(
-      (t) => createElement(ToastContent, { message, type: 'success', toastId: t.id, icon, visible: t.visible }),
-      { duration: 4000, ...toastOptions }
+      (t) =>
+        createElement(ToastContent, {
+          message,
+          type: 'success',
+          toastId: t.id,
+          icon,
+          visible: t.visible,
+        }),
+      { duration: 4000, ...toastOptions },
     );
   },
 
@@ -92,24 +117,45 @@ export const customToast = {
     // que es el único que sale (`delCierre`; A1, 8 nov 2026)
     if (seEstaCerrandoLaSesion() && !delCierre) return undefined;
     return toast.custom(
-      (t) => createElement(ToastContent, { message, type: 'error', toastId: t.id, icon, visible: t.visible }),
-      { duration: 5000, ...toastOptions }
+      (t) =>
+        createElement(ToastContent, {
+          message,
+          type: 'error',
+          toastId: t.id,
+          icon,
+          visible: t.visible,
+        }),
+      { duration: 5000, ...toastOptions },
     );
   },
 
   warning: (message, options = {}) => {
     const { icon, ...toastOptions } = options;
     return toast.custom(
-      (t) => createElement(ToastContent, { message, type: 'warning', toastId: t.id, icon, visible: t.visible }),
-      { duration: 5000, ...toastOptions }
+      (t) =>
+        createElement(ToastContent, {
+          message,
+          type: 'warning',
+          toastId: t.id,
+          icon,
+          visible: t.visible,
+        }),
+      { duration: 5000, ...toastOptions },
     );
   },
 
   info: (message, options = {}) => {
     const { icon, ...toastOptions } = options;
     return toast.custom(
-      (t) => createElement(ToastContent, { message, type: 'info', toastId: t.id, icon, visible: t.visible }),
-      { duration: 4000, ...toastOptions }
+      (t) =>
+        createElement(ToastContent, {
+          message,
+          type: 'info',
+          toastId: t.id,
+          icon,
+          visible: t.visible,
+        }),
+      { duration: 4000, ...toastOptions },
     );
   },
 

@@ -35,7 +35,10 @@ class AddGolfCourseToCompetitionUseCase {
     }
 
     // Call repository (backend validates business rules)
-    const result = await this.competitionRepository.addGolfCourse(competitionId, golfCourseId);
+    const result = await this.competitionRepository.addGolfCourse(
+      competitionId,
+      golfCourseId,
+    );
 
     return result;
   }

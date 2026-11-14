@@ -31,7 +31,10 @@ const FriendCard = ({
   const name = friendship.otherUserName || t('card.unknownUser');
 
   return (
-    <div data-testid="friend-card" className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm">
+    <div
+      data-testid="friend-card"
+      className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm"
+    >
       <div className="flex items-start justify-between gap-3">
         <div className="flex-1 min-w-0 flex items-start gap-3">
           <Link
@@ -62,7 +65,9 @@ const FriendCard = ({
                   {name}
                 </Link>
               </h3>
-              {mode !== 'friend' && <FriendshipBadge status={friendship.status} />}
+              {mode !== 'friend' && (
+                <FriendshipBadge status={friendship.status} />
+              )}
             </div>
 
             {friendship.createdAt && (
@@ -71,10 +76,14 @@ const FriendCard = ({
                 <span>
                   {mode === 'friend'
                     ? t('card.friendsSince', {
-                        date: new Date(friendship.respondedAt || friendship.createdAt).toLocaleDateString(),
+                        date: new Date(
+                          friendship.respondedAt || friendship.createdAt,
+                        ).toLocaleDateString(),
                       })
                     : t('card.requestedAt', {
-                        date: new Date(friendship.createdAt).toLocaleDateString(),
+                        date: new Date(
+                          friendship.createdAt,
+                        ).toLocaleDateString(),
                       })}
                 </span>
               </div>

@@ -64,7 +64,11 @@ describe('PlayerStats', () => {
 
   describe('hasEstimatedIndex', () => {
     it('is true when the backend published one', () => {
-      expect(PlayerStats.fromPersistence({ estimatedIndex: 12.8 }).hasEstimatedIndex()).toBe(true);
+      expect(
+        PlayerStats.fromPersistence({
+          estimatedIndex: 12.8,
+        }).hasEstimatedIndex(),
+      ).toBe(true);
     });
 
     it('is false when there are not enough rounds yet', () => {
@@ -72,11 +76,17 @@ describe('PlayerStats', () => {
     });
 
     it('is true for a plus player, whose index is negative', () => {
-      expect(PlayerStats.fromPersistence({ estimatedIndex: -1.4 }).hasEstimatedIndex()).toBe(true);
+      expect(
+        PlayerStats.fromPersistence({
+          estimatedIndex: -1.4,
+        }).hasEstimatedIndex(),
+      ).toBe(true);
     });
 
     it('is true for a scratch player, whose index is exactly zero', () => {
-      expect(PlayerStats.fromPersistence({ estimatedIndex: 0 }).hasEstimatedIndex()).toBe(true);
+      expect(
+        PlayerStats.fromPersistence({ estimatedIndex: 0 }).hasEstimatedIndex(),
+      ).toBe(true);
     });
   });
 
@@ -106,13 +116,19 @@ describe('PlayerStats', () => {
 
   describe('isPlayingBetterThanHandicap', () => {
     it('is true when the index beats the official handicap', () => {
-      const stats = PlayerStats.fromPersistence({ handicap: 14.2, estimatedIndex: 12.8 });
+      const stats = PlayerStats.fromPersistence({
+        handicap: 14.2,
+        estimatedIndex: 12.8,
+      });
 
       expect(stats.isPlayingBetterThanHandicap()).toBe(true);
     });
 
     it('is false when playing worse than the handicap', () => {
-      const stats = PlayerStats.fromPersistence({ handicap: 12.0, estimatedIndex: 15.3 });
+      const stats = PlayerStats.fromPersistence({
+        handicap: 12.0,
+        estimatedIndex: 15.3,
+      });
 
       expect(stats.isPlayingBetterThanHandicap()).toBe(false);
     });
@@ -133,7 +149,10 @@ describe('PlayerStats', () => {
   describe('hasPlayingAverage', () => {
     it('is true with a single round, unlike the index', () => {
       // Una vuelta ya dice a que nivel se jugo ese dia; el indice necesita tres
-      const stats = PlayerStats.fromPersistence({ playingAvg: 18.9, roundsPlayed: 1 });
+      const stats = PlayerStats.fromPersistence({
+        playingAvg: 18.9,
+        roundsPlayed: 1,
+      });
 
       expect(stats.hasPlayingAverage()).toBe(true);
       expect(stats.hasEstimatedIndex()).toBe(false);
@@ -144,7 +163,9 @@ describe('PlayerStats', () => {
     });
 
     it('keeps a scratch average of exactly zero', () => {
-      expect(PlayerStats.fromPersistence({ playingAvg: 0 }).hasPlayingAverage()).toBe(true);
+      expect(
+        PlayerStats.fromPersistence({ playingAvg: 0 }).hasPlayingAverage(),
+      ).toBe(true);
     });
   });
 
@@ -177,15 +198,21 @@ describe('PlayerStats', () => {
   describe('isImproving', () => {
     it('reads a negative trend as improvement', () => {
       // Los diferenciales bajan al jugar mejor, igual que baja un hándicap
-      expect(PlayerStats.fromPersistence({ handicapTrend: -0.4 }).isImproving()).toBe(true);
+      expect(
+        PlayerStats.fromPersistence({ handicapTrend: -0.4 }).isImproving(),
+      ).toBe(true);
     });
 
     it('reads a positive trend as getting worse', () => {
-      expect(PlayerStats.fromPersistence({ handicapTrend: 1.2 }).isImproving()).toBe(false);
+      expect(
+        PlayerStats.fromPersistence({ handicapTrend: 1.2 }).isImproving(),
+      ).toBe(false);
     });
 
     it('does not call standing still an improvement', () => {
-      expect(PlayerStats.fromPersistence({ handicapTrend: 0 }).isImproving()).toBe(false);
+      expect(
+        PlayerStats.fromPersistence({ handicapTrend: 0 }).isImproving(),
+      ).toBe(false);
     });
 
     it('is false while there is no trend yet', () => {

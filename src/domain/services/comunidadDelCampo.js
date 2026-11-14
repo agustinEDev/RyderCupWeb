@@ -12,19 +12,26 @@ const dentroDelAnillo = (lon, lat, anillo) => {
   for (let i = 0, j = anillo.length - 1; i < anillo.length; j = i++) {
     const [xi, yi] = anillo[i];
     const [xj, yj] = anillo[j];
-    if (yi > lat !== yj > lat && lon < ((xj - xi) * (lat - yi)) / (yj - yi) + xi) dentro = !dentro;
+    if (
+      yi > lat !== yj > lat &&
+      lon < ((xj - xi) * (lat - yi)) / (yj - yi) + xi
+    )
+      dentro = !dentro;
   }
   return dentro;
 };
 
 // Dentro del borde y fuera de sus huecos (el enclave de Treviño en Álava)
 const dentroDelPoligono = (lon, lat, [borde, ...huecos]) =>
-  dentroDelAnillo(lon, lat, borde) && !huecos.some((hueco) => dentroDelAnillo(lon, lat, hueco));
+  dentroDelAnillo(lon, lat, borde) &&
+  !huecos.some((hueco) => dentroDelAnillo(lon, lat, hueco));
 
 export const comunidadDelPunto = (punto) => {
   if (!punto) return null;
   const encontrada = Object.entries(CONTORNOS).find(([, poligonos]) =>
-    poligonos.some((poligono) => dentroDelPoligono(punto.lon, punto.lat, poligono)),
+    poligonos.some((poligono) =>
+      dentroDelPoligono(punto.lon, punto.lat, poligono),
+    ),
   );
   return encontrada ? encontrada[0] : null;
 };
@@ -36,5 +43,10 @@ export const limitesDeLaComunidad = (codigo) => {
   const puntos = poligonos.flatMap(([borde]) => borde);
   const lons = puntos.map(([lon]) => lon);
   const lats = puntos.map(([, lat]) => lat);
-  return [Math.min(...lons), Math.min(...lats), Math.max(...lons), Math.max(...lats)];
+  return [
+    Math.min(...lons),
+    Math.min(...lats),
+    Math.max(...lons),
+    Math.max(...lats),
+  ];
 };

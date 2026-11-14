@@ -23,7 +23,8 @@ const AvisoTerminosPendientes = () => {
   const location = useLocation();
   const pendientes = useTerminosPendientes({ soloConfirmados: true });
 
-  if (!pendientes || !esLaClasificacionCompartida(location.pathname)) return null;
+  if (!pendientes || !esLaClasificacionCompartida(location.pathname))
+    return null;
 
   return (
     <div

@@ -13,7 +13,6 @@ import { olvidaLaMarcaDeTerminos } from '../utils/terminosPendientes';
 
 const PANEL = '/dashboard';
 
-
 /**
  * A dónde volver tras aceptar. Llega por el estado de la navegación —desde
  * `ProtectedRoute`— o por `?from=` —desde `api.js`, que redirige recargando—.
@@ -63,7 +62,8 @@ const AcceptTerms = () => {
   // guardia. Entonces se pinta aunque la sesión diga que ya están aceptados:
   // si el servidor se contradice, rebotar a la ruta sería un bucle de recargas,
   // y aceptar otra vez es inofensivo (accept-terms es idempotente)
-  const vieneDeUn403 = !location.state?.from && new URLSearchParams(location.search).has('from');
+  const vieneDeUn403 =
+    !location.state?.from && new URLSearchParams(location.search).has('from');
 
   // Ya aceptados, o un backend que no lo dice: aquí no hay nada que hacer
   if (!debeAceptarLosTerminos(user) && !vieneDeUn403) {
@@ -105,7 +105,9 @@ const AcceptTerms = () => {
           <h1 className="text-2xl font-bold text-gray-900 font-poppins break-words">
             {t('acceptTermsPage.title')}
           </h1>
-          <p className="text-gray-600 mt-2 mb-6 break-words">{t('acceptTermsPage.subtitle')}</p>
+          <p className="text-gray-600 mt-2 mb-6 break-words">
+            {t('acceptTermsPage.subtitle')}
+          </p>
 
           <AceptacionDeTerminos
             id="acceptTerms"
@@ -128,7 +130,9 @@ const AcceptTerms = () => {
             aria-busy={enviando || undefined}
             className="w-full mt-6 py-3 rounded-lg font-bold text-white bg-primary hover:bg-primary/90 disabled:bg-gray-400 disabled:cursor-not-allowed"
           >
-            {enviando ? t('acceptTermsPage.accepting') : t('acceptTermsPage.acceptButton')}
+            {enviando
+              ? t('acceptTermsPage.accepting')
+              : t('acceptTermsPage.acceptButton')}
           </button>
 
           {/* Sin aceptar se pueden ver y cerrar los dispositivos: para cortar

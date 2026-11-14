@@ -57,14 +57,19 @@ describe('Avatar', () => {
   });
 
   // FE-03: un id que no vale para una ruta («.», «..», vacío) no rompe la pantalla: el icono
-  it.each(['.', '..'])('with an id that is not a valid path segment (%j) it shows the placeholder', (id) => {
-    const { container } = render(<Avatar userId={id} />);
-    expect(container.querySelector('img')).toBeNull();
-    expect(container.querySelector('svg')).not.toBeNull();
-  });
+  it.each(['.', '..'])(
+    'with an id that is not a valid path segment (%j) it shows the placeholder',
+    (id) => {
+      const { container } = render(<Avatar userId={id} />);
+      expect(container.querySelector('img')).toBeNull();
+      expect(container.querySelector('svg')).not.toBeNull();
+    },
+  );
 
   it('encodes the user id in the image path', () => {
     const { container } = render(<Avatar userId="a?c#d" />);
-    expect(container.querySelector('img').getAttribute('src')).toContain('/api/v1/users/a%3Fc%23d/avatar');
+    expect(container.querySelector('img').getAttribute('src')).toContain(
+      '/api/v1/users/a%3Fc%23d/avatar',
+    );
   });
 });

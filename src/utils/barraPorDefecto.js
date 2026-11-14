@@ -11,7 +11,8 @@ import TeeColor from '../domain/value_objects/TeeColor';
 // La habitual de cada género: amarillas los hombres y rojas las mujeres
 const COLOR_HABITUAL = { MALE: TeeColor.YELLOW, FEMALE: TeeColor.RED };
 
-const delGenero = (tee, genero) => (tee.gender ?? null) === genero || (tee.gender ?? null) === null;
+const delGenero = (tee, genero) =>
+  (tee.gender ?? null) === genero || (tee.gender ?? null) === null;
 
 /**
  * @param {Object} opciones
@@ -27,7 +28,9 @@ export const barraPorDefecto = ({ tees, genero, ultima }) => {
   const color = COLOR_HABITUAL[genero];
   if (!color) return NO_TEE_KEY;
   const suya = tees.find((t) => t.color === color && t.gender === genero);
-  const mixta = tees.find((t) => t.color === color && (t.gender ?? null) === null);
+  const mixta = tees.find(
+    (t) => t.color === color && (t.gender ?? null) === null,
+  );
   const habitual = suya ?? mixta;
   return habitual ? teeKey(habitual.color, habitual.gender) : NO_TEE_KEY;
 };

@@ -18,13 +18,19 @@ describe('animations', () => {
   describe('entry rules', () => {
     it('keeps every entry animation at or below 300 ms', () => {
       expect(ENTRY_DURATION).toBeLessThanOrEqual(MAX_DURATION);
-      expect(fadeInUp.animate.transition.duration).toBeLessThanOrEqual(MAX_DURATION);
-      expect(slideUp.animate.transition.duration).toBeLessThanOrEqual(MAX_DURATION);
+      expect(fadeInUp.animate.transition.duration).toBeLessThanOrEqual(
+        MAX_DURATION,
+      );
+      expect(slideUp.animate.transition.duration).toBeLessThanOrEqual(
+        MAX_DURATION,
+      );
     });
 
     it('keeps the stagger between siblings at or below 80 ms', () => {
       expect(ENTRY_STAGGER).toBeLessThanOrEqual(MAX_STAGGER);
-      expect(staggerContainer.animate.transition.staggerChildren).toBeLessThanOrEqual(MAX_STAGGER);
+      expect(
+        staggerContainer.animate.transition.staggerChildren,
+      ).toBeLessThanOrEqual(MAX_STAGGER);
     });
   });
 
@@ -50,11 +56,17 @@ describe('animations', () => {
 
   describe('getEntryProps', () => {
     it('animates from the hidden variant when motion is enabled', () => {
-      expect(getEntryProps(true)).toEqual({ initial: 'initial', animate: 'animate' });
+      expect(getEntryProps(true)).toEqual({
+        initial: 'initial',
+        animate: 'animate',
+      });
     });
 
     it('mounts directly in the final state when motion is disabled', () => {
-      expect(getEntryProps(false)).toEqual({ initial: false, animate: 'animate' });
+      expect(getEntryProps(false)).toEqual({
+        initial: false,
+        animate: 'animate',
+      });
     });
   });
 

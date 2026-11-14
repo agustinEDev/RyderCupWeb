@@ -25,7 +25,11 @@ vi.mock('react-i18next', () => ({
  *   C5  hoyos sin jugar                               | suma solo lo anotado; nada, «-»
  *   C7  el TOTAL sigue al botón bruto/neto            | neto con el botón; foursomes, el bando
  */
-const dieciocho = Array.from({ length: 18 }, (_, i) => ({ holeNumber: i + 1, par: 4, strokeIndex: i + 1 }));
+const dieciocho = Array.from({ length: 18 }, (_, i) => ({
+  holeNumber: i + 1,
+  par: 4,
+  strokeIndex: i + 1,
+}));
 const nueve = dieciocho.slice(0, 9);
 
 const players = [
@@ -38,12 +42,18 @@ const golpe = (holeNumber, userId, ownScore, netScore = ownScore) => ({
   playerScores: [{ userId, ownScore, netScore, ownSubmitted: true }],
 });
 
-const tablas = () => screen.getAllByTestId('vuelta-horizontal').map((d) => d.querySelector('table'));
-const columnas = (tabla) => [...tabla.querySelectorAll('colgroup col')].map((c) => c.className);
+const tablas = () =>
+  screen
+    .getAllByTestId('vuelta-horizontal')
+    .map((d) => d.querySelector('table'));
+const columnas = (tabla) =>
+  [...tabla.querySelectorAll('colgroup col')].map((c) => c.className);
 
 describe('ScorecardTable · columnas de la ida y la vuelta', () => {
   it('C1: las dos tablas son fijas y reparten las columnas igual', () => {
-    render(<ScorecardTable holes={dieciocho} players={players} currentUserId="u1" />);
+    render(
+      <ScorecardTable holes={dieciocho} players={players} currentUserId="u1" />,
+    );
 
     const [ida, vuelta] = tablas();
     expect(ida).toHaveClass('table-fixed');
@@ -66,7 +76,14 @@ describe('ScorecardTable · columnas de la ida y la vuelta', () => {
       { userId: 'u2', userName: 'Player B', team: 'B' },
       { userId: 'u4', userName: 'Player D', team: 'B' },
     ];
-    render(<ScorecardTable holes={dieciocho} players={pareja} currentUserId="u1" matchFormat="FOURSOMES" />);
+    render(
+      <ScorecardTable
+        holes={dieciocho}
+        players={pareja}
+        currentUserId="u1"
+        matchFormat="FOURSOMES"
+      />,
+    );
 
     const [ida, vuelta] = tablas();
     expect(columnas(ida)).toHaveLength(12);
@@ -80,7 +97,14 @@ describe('ScorecardTable · columnas de la ida y la vuelta', () => {
 
   it('C2: la vuelta acaba en TOTAL, con el par y los golpes de los 18', () => {
     const scores = [golpe(1, 'u1', 5), golpe(10, 'u1', 6)];
-    render(<ScorecardTable holes={dieciocho} players={players} scores={scores} currentUserId="u1" />);
+    render(
+      <ScorecardTable
+        holes={dieciocho}
+        players={players}
+        scores={scores}
+        currentUserId="u1"
+      />,
+    );
 
     const [, vuelta] = tablas();
     const cabecera = vuelta.querySelector('thead tr');
@@ -90,28 +114,53 @@ describe('ScorecardTable · columnas de la ida y la vuelta', () => {
   });
 
   it('C3: la ida no lleva TOTAL, sino su hueco vacío', () => {
-    render(<ScorecardTable holes={dieciocho} players={players} scores={[golpe(1, 'u1', 5)]} currentUserId="u1" />);
+    render(
+      <ScorecardTable
+        holes={dieciocho}
+        players={players}
+        scores={[golpe(1, 'u1', 5)]}
+        currentUserId="u1"
+      />,
+    );
 
     const [ida] = tablas();
     expect(ida).not.toHaveTextContent('scorecard.total');
     for (const fila of ida.querySelectorAll('tr')) {
       expect(fila.lastElementChild.textContent).toBe('');
     }
-    expect(within(ida).queryByTestId('scorecard-total-u1')).not.toBeInTheDocument();
+    expect(
+      within(ida).queryByTestId('scorecard-total-u1'),
+    ).not.toBeInTheDocument();
   });
 
   it('C4: con 9 hoyos, la ida acaba en IDA | TOTAL con la misma cifra', () => {
-    render(<ScorecardTable holes={nueve} players={players} scores={[golpe(1, 'u1', 5), golpe(2, 'u1', 4)]} currentUserId="u1" />);
+    render(
+      <ScorecardTable
+        holes={nueve}
+        players={players}
+        scores={[golpe(1, 'u1', 5), golpe(2, 'u1', 4)]}
+        currentUserId="u1"
+      />,
+    );
 
     const [ida, ...resto] = tablas();
     expect(resto).toHaveLength(0);
-    expect(ida.querySelector('thead tr').lastElementChild).toHaveTextContent('scorecard.total');
+    expect(ida.querySelector('thead tr').lastElementChild).toHaveTextContent(
+      'scorecard.total',
+    );
     expect(screen.getByTestId('scorecard-total-par')).toHaveTextContent(/^36$/);
     expect(screen.getByTestId('scorecard-total-u1')).toHaveTextContent(/^9$/);
   });
 
   it('C5: suma solo lo anotado, y sin nada anotado pinta «-»', () => {
-    render(<ScorecardTable holes={dieciocho} players={players} scores={[golpe(3, 'u1', 7)]} currentUserId="u1" />);
+    render(
+      <ScorecardTable
+        holes={dieciocho}
+        players={players}
+        scores={[golpe(3, 'u1', 7)]}
+        currentUserId="u1"
+      />,
+    );
 
     expect(screen.getByTestId('scorecard-total-u1')).toHaveTextContent(/^7$/);
     expect(screen.getByTestId('scorecard-total-u2')).toHaveTextContent(/^-$/);
@@ -119,7 +168,14 @@ describe('ScorecardTable · columnas de la ida y la vuelta', () => {
 
   it('C7: con el botón en neto, el TOTAL suma el neto', () => {
     const scores = [golpe(1, 'u1', 5, 4), golpe(10, 'u1', 6, 6)];
-    render(<ScorecardTable holes={dieciocho} players={players} scores={scores} currentUserId="u1" />);
+    render(
+      <ScorecardTable
+        holes={dieciocho}
+        players={players}
+        scores={scores}
+        currentUserId="u1"
+      />,
+    );
     expect(screen.getByTestId('scorecard-total-u1')).toHaveTextContent(/^11$/);
 
     fireEvent.click(screen.getByRole('switch'));
@@ -136,10 +192,18 @@ describe('ScorecardTable · columnas de la ida y la vuelta', () => {
     ];
     const scores = [golpe(1, 'u1', 5), golpe(12, 'u3', 4)];
     render(
-      <ScorecardTable holes={dieciocho} players={pareja} scores={scores} currentUserId="u1" matchFormat="FOURSOMES" />
+      <ScorecardTable
+        holes={dieciocho}
+        players={pareja}
+        scores={scores}
+        currentUserId="u1"
+        matchFormat="FOURSOMES"
+      />,
     );
 
-    expect(screen.getByTestId('scorecard-total-team-a')).toHaveTextContent(/^9$/);
+    expect(screen.getByTestId('scorecard-total-team-a')).toHaveTextContent(
+      /^9$/,
+    );
   });
 });
 
@@ -152,26 +216,53 @@ describe('ScorecardTable · el nombre de la mejor bola, si no cabe', () => {
       class {
         observe() {}
         disconnect() {}
-      }
+      },
     );
-    vi.spyOn(globalThis.HTMLElement.prototype, 'clientWidth', 'get').mockImplementation(function () {
+    vi.spyOn(
+      globalThis.HTMLElement.prototype,
+      'clientWidth',
+      'get',
+    ).mockImplementation(function () {
       return this.dataset.medida === 'caja' ? 47 : 0;
     });
-    vi.spyOn(globalThis.HTMLElement.prototype, 'scrollWidth', 'get').mockImplementation(function () {
+    vi.spyOn(
+      globalThis.HTMLElement.prototype,
+      'scrollWidth',
+      'get',
+    ).mockImplementation(function () {
       return this.dataset.medida === 'nombre' ? 75 : 0;
     });
     const largos = [
       { userId: 'u1', userName: 'Maximiliano Rodríguez', team: 'A' },
       { userId: 'u2', userName: 'Ana Gil', team: 'B' },
     ];
-    const scores = [{ holeNumber: 1, playerScores: [], holeResult: { winner: 'A', bestBallPlayerA: ['u1'] } }];
+    const scores = [
+      {
+        holeNumber: 1,
+        playerScores: [],
+        holeResult: { winner: 'A', bestBallPlayerA: ['u1'] },
+      },
+    ];
 
     try {
-      render(<ScorecardTable holes={dieciocho} players={largos} scores={scores} currentUserId="u1" matchFormat="SINGLES" />);
+      render(
+        <ScorecardTable
+          holes={dieciocho}
+          players={largos}
+          scores={scores}
+          currentUserId="u1"
+          matchFormat="SINGLES"
+        />,
+      );
 
       const [ida] = tablas();
-      expect(within(ida).getByText('MR')).toHaveAttribute('title', 'Maximiliano R.');
-      expect(within(ida).getByText('Maximiliano R.', { selector: '.sr-only' })).toBeInTheDocument();
+      expect(within(ida).getByText('MR')).toHaveAttribute(
+        'title',
+        'Maximiliano R.',
+      );
+      expect(
+        within(ida).getByText('Maximiliano R.', { selector: '.sr-only' }),
+      ).toBeInTheDocument();
     } finally {
       vi.unstubAllGlobals();
       vi.restoreAllMocks();

@@ -39,7 +39,10 @@ const MatchStandingSummary = ({
   if (!standing && terminada && holeScores.length > 0) {
     // Hubo partida, pero ningún hoyo lo anotaron los dos bandos: como Actividad
     return (
-      <p className="text-sm text-gray-500 text-center py-6" data-testid="quick-match-standing-unfinished">
+      <p
+        className="text-sm text-gray-500 text-center py-6"
+        data-testid="quick-match-standing-unfinished"
+      >
         {t('scoring.classification.unfinished')}
       </p>
     );
@@ -47,7 +50,10 @@ const MatchStandingSummary = ({
 
   if (!standing) {
     return (
-      <p className="text-sm text-gray-500 text-center py-6" data-testid="quick-match-standing-empty">
+      <p
+        className="text-sm text-gray-500 text-center py-6"
+        data-testid="quick-match-standing-empty"
+      >
         {t('scoring.classification.noHolesYet')}
       </p>
     );
@@ -70,9 +76,16 @@ const MatchStandingSummary = ({
 
   let resultLabel;
   if (!standing.leadingTeam) {
-    resultLabel = t(conGanador ? 'scoring.classification.halved' : 'scoring.classification.allSquare');
+    resultLabel = t(
+      conGanador
+        ? 'scoring.classification.halved'
+        : 'scoring.classification.allSquare',
+    );
   } else if (standing.isDecided && standing.holesRemaining > 0) {
-    resultLabel = t('scoring.classification.decidedResult', { lead, remaining: standing.holesRemaining });
+    resultLabel = t('scoring.classification.decidedResult', {
+      lead,
+      remaining: standing.holesRemaining,
+    });
   } else if (conGanador) {
     resultLabel = t('scoring.classification.wonUp', { count: lead });
   } else {
@@ -83,9 +96,15 @@ const MatchStandingSummary = ({
   if (sinTerminar) {
     quien = t('scoring.classification.unfinished');
   } else if (standing.leadingTeam && conGanador) {
-    quien = t('scoring.classification.won', { name: leaderNames, count: leaders.length });
+    quien = t('scoring.classification.won', {
+      name: leaderNames,
+      count: leaders.length,
+    });
   } else if (standing.leadingTeam && !cancelada && !terminada) {
-    quien = t('scoring.classification.leads', { name: leaderNames, count: leaders.length });
+    quien = t('scoring.classification.leads', {
+      name: leaderNames,
+      count: leaders.length,
+    });
   }
 
   return (
@@ -93,7 +112,9 @@ const MatchStandingSummary = ({
       <p className="text-2xl font-bold text-gray-900">{resultLabel}</p>
       {quien && <p className="text-sm text-gray-500 mt-1">{quien}</p>}
       <p className="text-xs text-gray-400 mt-2">
-        {t('scoring.classification.holesPlayed', { count: standing.holesPlayed })}
+        {t('scoring.classification.holesPlayed', {
+          count: standing.holesPlayed,
+        })}
       </p>
     </div>
   );
@@ -118,12 +139,19 @@ const PersonalRound = ({ round, className = '' }) => {
 
   return (
     <div className={`text-center ${className}`}>
-      <p className="text-sm text-gray-600 mt-3" data-testid="quick-match-my-round">
+      <p
+        className="text-sm text-gray-600 mt-3"
+        data-testid="quick-match-my-round"
+      >
         {t('scoring.classification.yourRound')}{' '}
         <span className="font-bold text-gray-900">{round.personalToPar}</span>
         {round.matchToPar && (
-          <span className="text-gray-500" data-testid="quick-match-my-round-in-match">
-            {' '}{t('personalRound.inMatch', { value: round.matchToPar })}
+          <span
+            className="text-gray-500"
+            data-testid="quick-match-my-round-in-match"
+          >
+            {' '}
+            {t('personalRound.inMatch', { value: round.matchToPar })}
           </span>
         )}
       </p>
@@ -181,7 +209,8 @@ const QuickMatchClassificationTable = ({
 }) => {
   const { t } = useTranslation('quickMatch');
 
-  const isFreePlay = scoringFormat === 'MEDAL' || scoringFormat === 'STABLEFORD';
+  const isFreePlay =
+    scoringFormat === 'MEDAL' || scoringFormat === 'STABLEFORD';
 
   // La vuelta propia se enseña en los dos formatos. En juego libre la columna
   // "Resultado" va con el reparto del partido —el allowance WHS del 95%— y el
@@ -189,7 +218,9 @@ const QuickMatchClassificationTable = ({
   // misma vuelta, uno en cada pantalla y sin nada que lo explicara, que es el
   // fallo que este servicio existe para cerrar.
   const myRound = PersonalRoundCalculator.compute({
-    me: participants.find((p) => p.participantId === currentParticipantId) ?? null,
+    me:
+      participants.find((p) => p.participantId === currentParticipantId) ??
+      null,
     participants,
     holes,
     holeScores,
@@ -249,82 +280,121 @@ const QuickMatchClassificationTable = ({
           <thead>
             <tr className="bg-gray-50 text-gray-500">
               <th className="px-2 py-1.5 text-left font-medium">#</th>
-              <th className="px-2 py-1.5 text-left font-medium">{t('scoring.classification.player')}</th>
+              <th className="px-2 py-1.5 text-left font-medium">
+                {t('scoring.classification.player')}
+              </th>
               {isMedal ? (
                 <>
-                  <th className="px-2 py-1.5 text-center font-medium">{t('scoring.classification.result')}</th>
-                  <th className="px-2 py-1.5 text-center font-medium">{t('scoring.classification.netStrokes')}</th>
+                  <th className="px-2 py-1.5 text-center font-medium">
+                    {t('scoring.classification.result')}
+                  </th>
+                  <th className="px-2 py-1.5 text-center font-medium">
+                    {t('scoring.classification.netStrokes')}
+                  </th>
                 </>
               ) : (
-                <th className="px-2 py-1.5 text-center font-medium">{t('scoring.classification.points')}</th>
+                <th className="px-2 py-1.5 text-center font-medium">
+                  {t('scoring.classification.points')}
+                </th>
               )}
-              <th className="px-2 py-1.5 text-center font-medium">{t('scoring.classification.strokes')}</th>
-              <th className="px-2 py-1.5 text-center font-medium">{t('scoring.classification.hole')}</th>
+              <th className="px-2 py-1.5 text-center font-medium">
+                {t('scoring.classification.strokes')}
+              </th>
+              <th className="px-2 py-1.5 text-center font-medium">
+                {t('scoring.classification.hole')}
+              </th>
             </tr>
           </thead>
           <tbody>
             {ranking.map((row, index) => {
-              const atrasado = participantesAlDia !== null
-                && !participantesAlDia.includes(row.participantId);
+              const atrasado =
+                participantesAlDia !== null &&
+                !participantesAlDia.includes(row.participantId);
               return (
-              <tr
-                key={row.participantId}
-                data-testid={`quick-match-clasificacion-fila-${row.participantId}`}
-                className={row.participantId === currentParticipantId ? 'bg-blue-50' : index % 2 === 1 ? 'bg-gray-50' : ''}
-              >
-                {/* Sin puesto mientras falten datos: el orden mezclaría lo
+                <tr
+                  key={row.participantId}
+                  data-testid={`quick-match-clasificacion-fila-${row.participantId}`}
+                  className={
+                    row.participantId === currentParticipantId
+                      ? 'bg-blue-50'
+                      : index % 2 === 1
+                        ? 'bg-gray-50'
+                        : ''
+                  }
+                >
+                  {/* Sin puesto mientras falten datos: el orden mezclaría lo
                     nuestro al día con lo suyo de hace rato, y pondría un «1»
                     al lado de nuestro nombre solo porque a ellos no se les ha
                     contado lo que llevan hecho desde el corte */}
-                <td className="px-2 py-1.5 text-left text-gray-500">
-                  {participantesAlDia === null
-                    ? (
+                  <td className="px-2 py-1.5 text-left text-gray-500">
+                    {participantesAlDia === null ? (
                       // El puesto lo da el desempate por hándicap (H): a igual
                       // resultado y mismo hándicap exacto se comparte, «T2»,
                       // como en la clasificación del torneo
                       <span data-testid="quick-match-clasificacion-puesto">
                         {/* Sin hoyos anotados no hay puesto (va al final) */}
-                        {row.position == null ? '·' : row.tied ? `T${row.position}` : row.position}
+                        {row.position == null
+                          ? '·'
+                          : row.tied
+                            ? `T${row.position}`
+                            : row.position}
                       </span>
-                    )
-                    : '·'}
-                </td>
-                <td className="px-2 py-1.5 text-left font-medium text-gray-900">
-                  {row.name}
-                  {row.participantId === currentParticipantId && (
-                    <span className="ml-1 text-xs text-primary">({t('scoring.classification.you')})</span>
-                  )}
-                  {/* Con texto y no solo con un gris: al sol el texto apagado
-                      no se lee, y un lector de pantalla no ve el color */}
-                  {atrasado && (
-                    <span className="ml-1 rounded bg-gray-100 px-1 text-xs text-gray-600">
-                      {t('scoring.classification.stale')}
-                    </span>
-                  )}
-                </td>
-                {isMedal ? (
-                  <>
-                    <td className="px-2 py-1.5 text-center font-bold text-primary">
-                      {row.holesPlayed ? StablefordCalculator.formatToPar(row.netStrokes - row.parPlayed) : '-'}
-                      {showFinalBadge && <FinishedBadge t={t} isCancelled={isCancelled} />}
-                    </td>
-                    <td className="px-2 py-1.5 text-center text-gray-700">
-                      {row.holesPlayed ? row.netStrokes : '-'}
-                      {showFinalBadge && <FinishedBadge t={t} isCancelled={isCancelled} />}
-                    </td>
-                  </>
-                ) : (
-                  <td className="px-2 py-1.5 text-center font-bold text-primary">
-                    {row.stablefordPoints}
-                    {showFinalBadge && <FinishedBadge t={t} isCancelled={isCancelled} />}
+                    ) : (
+                      '·'
+                    )}
                   </td>
-                )}
-                <td className="px-2 py-1.5 text-center text-gray-700">
-                  {row.totalStrokes || '-'}
-                  {showFinalBadge && <FinishedBadge t={t} isCancelled={isCancelled} />}
-                </td>
-                <td className="px-2 py-1.5 text-center text-gray-500">{row.holesPlayed || '-'}</td>
-              </tr>
+                  <td className="px-2 py-1.5 text-left font-medium text-gray-900">
+                    {row.name}
+                    {row.participantId === currentParticipantId && (
+                      <span className="ml-1 text-xs text-primary">
+                        ({t('scoring.classification.you')})
+                      </span>
+                    )}
+                    {/* Con texto y no solo con un gris: al sol el texto apagado
+                      no se lee, y un lector de pantalla no ve el color */}
+                    {atrasado && (
+                      <span className="ml-1 rounded bg-gray-100 px-1 text-xs text-gray-600">
+                        {t('scoring.classification.stale')}
+                      </span>
+                    )}
+                  </td>
+                  {isMedal ? (
+                    <>
+                      <td className="px-2 py-1.5 text-center font-bold text-primary">
+                        {row.holesPlayed
+                          ? StablefordCalculator.formatToPar(
+                              row.netStrokes - row.parPlayed,
+                            )
+                          : '-'}
+                        {showFinalBadge && (
+                          <FinishedBadge t={t} isCancelled={isCancelled} />
+                        )}
+                      </td>
+                      <td className="px-2 py-1.5 text-center text-gray-700">
+                        {row.holesPlayed ? row.netStrokes : '-'}
+                        {showFinalBadge && (
+                          <FinishedBadge t={t} isCancelled={isCancelled} />
+                        )}
+                      </td>
+                    </>
+                  ) : (
+                    <td className="px-2 py-1.5 text-center font-bold text-primary">
+                      {row.stablefordPoints}
+                      {showFinalBadge && (
+                        <FinishedBadge t={t} isCancelled={isCancelled} />
+                      )}
+                    </td>
+                  )}
+                  <td className="px-2 py-1.5 text-center text-gray-700">
+                    {row.totalStrokes || '-'}
+                    {showFinalBadge && (
+                      <FinishedBadge t={t} isCancelled={isCancelled} />
+                    )}
+                  </td>
+                  <td className="px-2 py-1.5 text-center text-gray-500">
+                    {row.holesPlayed || '-'}
+                  </td>
+                </tr>
               );
             })}
           </tbody>

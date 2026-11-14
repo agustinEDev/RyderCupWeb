@@ -8,10 +8,19 @@
  * VITE_SENTRY_*_SAMPLE_RATE (sentrySampleRates).
  */
 
-import { replayIntegration, reactRouterV7BrowserTracingIntegration, getClient } from '@sentry/react';
+import {
+  replayIntegration,
+  reactRouterV7BrowserTracingIntegration,
+  getClient,
+} from '@sentry/react';
 import { grabaSoloLoQueNoEsNormal } from './utils/avisoDeCierreForzado';
 import { useEffect } from 'react';
-import { useLocation, useNavigationType, createRoutesFromChildren, matchRoutes } from 'react-router';
+import {
+  useLocation,
+  useNavigationType,
+  createRoutesFromChildren,
+  matchRoutes,
+} from 'react-router';
 import { sentryScrubbing } from './utils/sentryScrubbing';
 import { instrumentarRouterEnSentry } from './utils/navegacionesEnSentry';
 import { sentrySampleRates } from './utils/sentrySampleRates';
@@ -30,7 +39,6 @@ const SENTRY_CONFIG = {
 
 // Obtener release desde package.json
 const RELEASE = `rydercup-web@${import.meta.env.VITE_APP_VERSION}`;
-
 
 // ============================================
 // VALIDACIÓN DE CONFIGURACIÓN
@@ -125,7 +133,8 @@ if (!SENTRY_CONFIG.dsn) {
   // LOGS DE INICIALIZACIÓN
   // ============================================
 
-  if (existingClient) console.log(`
+  if (existingClient)
+    console.log(`
 ┌─────────────────────────────────────────────────────────┐
 │ 🚀 Sentry Initialized                                   │
 ├─────────────────────────────────────────────────────────┤

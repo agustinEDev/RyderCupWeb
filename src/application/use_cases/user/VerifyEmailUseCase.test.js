@@ -40,8 +40,9 @@ describe('VerifyEmailUseCase', () => {
   });
 
   it('should throw an error if token is not provided', async () => {
-    await expect(verifyEmailUseCase.execute(''))
-      .rejects.toThrow('Verification token is required');
+    await expect(verifyEmailUseCase.execute('')).rejects.toThrow(
+      'Verification token is required',
+    );
   });
 
   it('should propagate errors from the auth repository', async () => {
@@ -52,8 +53,9 @@ describe('VerifyEmailUseCase', () => {
     authRepository.verifyEmail.mockRejectedValue(mockError);
 
     // Act & Assert
-    await expect(verifyEmailUseCase.execute(token))
-      .rejects.toThrow('Invalid or expired verification token');
+    await expect(verifyEmailUseCase.execute(token)).rejects.toThrow(
+      'Invalid or expired verification token',
+    );
     expect(authRepository.verifyEmail).toHaveBeenCalledWith(token);
   });
 });

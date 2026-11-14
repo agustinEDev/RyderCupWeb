@@ -13,23 +13,35 @@ import { render, screen } from '@testing-library/react';
  */
 const sesion = vi.hoisted(() => ({ usuario: { id: 'u-1' } }));
 
-vi.mock('./hooks/useLogout', () => ({ useLogout: () => ({ logout: vi.fn() }) }));
+vi.mock('./hooks/useLogout', () => ({
+  useLogout: () => ({ logout: vi.fn() }),
+}));
 vi.mock('./hooks/useAuth', () => ({
   getUserData: vi.fn(async () => sesion.usuario),
   useAuth: () => ({ user: sesion.usuario, loading: false }),
 }));
-vi.mock('./hooks/useTerminosPendientes', () => ({ useTerminosPendientes: () => false }));
+vi.mock('./hooks/useTerminosPendientes', () => ({
+  useTerminosPendientes: () => false,
+}));
 vi.mock('./hooks/useVaciadoDeLaCola', () => ({ useVaciadoDeLaCola: () => {} }));
 vi.mock('./hooks/useEnvioDeMuestras', () => ({ useEnvioDeMuestras: () => {} }));
-vi.mock('./hooks/useDeviceRevocationMonitor', () => ({ useDeviceRevocationMonitor: () => {} }));
+vi.mock('./hooks/useDeviceRevocationMonitor', () => ({
+  useDeviceRevocationMonitor: () => {},
+}));
 vi.mock('./hooks/useProactiveTokenRefresh', () => ({ default: () => {} }));
-vi.mock('./hooks/useCortinaDeArranque', () => ({ useCortinaDeArranque: () => {} }));
+vi.mock('./hooks/useCortinaDeArranque', () => ({
+  useCortinaDeArranque: () => {},
+}));
 vi.mock('./hooks/useVolverArriba', () => ({ useVolverArriba: () => {} }));
 vi.mock('./utils/sentryHelpers', () => ({ setUserContext: () => {} }));
 vi.mock('./components/ui/InstallBanner', () => ({ default: () => null }));
 vi.mock('./components/ui/AvisoSinConexion', () => ({ default: () => null }));
-vi.mock('./components/layout/BottomNav', () => ({ default: () => <nav>barra inferior</nav> }));
-vi.mock('./components/auth/ProtectedRoute', () => ({ default: ({ children }) => children }));
+vi.mock('./components/layout/BottomNav', () => ({
+  default: () => <nav>barra inferior</nav>,
+}));
+vi.mock('./components/auth/ProtectedRoute', () => ({
+  default: ({ children }) => children,
+}));
 vi.mock('./pages/Dashboard', () => ({ default: () => <p>panel</p> }));
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({ t: (k) => k, i18n: { language: 'es' } }),
@@ -43,7 +55,11 @@ const App = (await import('./App')).default;
 
 describe('App · dirección que no existe', () => {
   beforeEach(() => {
-    window.matchMedia = () => ({ matches: false, addEventListener() {}, removeEventListener() {} });
+    window.matchMedia = () => ({
+      matches: false,
+      addEventListener() {},
+      removeEventListener() {},
+    });
   });
 
   afterEach(() => {
@@ -56,8 +72,12 @@ describe('App · dirección que no existe', () => {
     window.history.pushState({}, '', '/esto-no-existe');
     render(<App />);
 
-    expect(await screen.findByRole('heading', { level: 1, name: 'notFound.title' })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'notFound.goToDashboard' })).toHaveAttribute('href', '/dashboard');
+    expect(
+      await screen.findByRole('heading', { level: 1, name: 'notFound.title' }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('link', { name: 'notFound.goToDashboard' }),
+    ).toHaveAttribute('href', '/dashboard');
     expect(await screen.findByText('barra inferior')).toBeInTheDocument();
   });
 
@@ -66,8 +86,12 @@ describe('App · dirección que no existe', () => {
     window.history.pushState({}, '', '/competitions/1/otra-cosa');
     render(<App />);
 
-    expect(await screen.findByRole('heading', { level: 1, name: 'notFound.title' })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'notFound.login' })).toHaveAttribute('href', '/login');
+    expect(
+      await screen.findByRole('heading', { level: 1, name: 'notFound.title' }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('link', { name: 'notFound.login' }),
+    ).toHaveAttribute('href', '/login');
     expect(screen.queryByText('barra inferior')).toBeNull();
   });
 
@@ -77,6 +101,8 @@ describe('App · dirección que no existe', () => {
     render(<App />);
 
     await screen.findByText('panel');
-    expect(screen.queryByRole('heading', { name: 'notFound.title' })).toBeNull();
+    expect(
+      screen.queryByRole('heading', { name: 'notFound.title' }),
+    ).toBeNull();
   });
 });

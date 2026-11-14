@@ -28,7 +28,11 @@
  * barreras de error y a Sentry no tomarlo por un fallo. Se apaga sola si la
  * recarga no llega.
  */
-import { apuntarLaRecarga, buildDeLaPagina, puedeRecargar } from './recargaDeLaBarrera';
+import {
+  apuntarLaRecarga,
+  buildDeLaPagina,
+  puedeRecargar,
+} from './recargaDeLaBarrera';
 
 export const OLVIDAR_LA_RECARGA_MS = 10_000;
 
@@ -55,7 +59,9 @@ export function instalarRecargaPorTrozoViejo({
   const comprobar = async () => {
     if (!buildQueCorre || !cachesApi?.match) return;
     try {
-      const guardado = await cachesApi.match('/index.html', { ignoreSearch: true });
+      const guardado = await cachesApi.match('/index.html', {
+        ignoreSearch: true,
+      });
       const marca = guardado ? marcaDelBuild(await guardado.text()) : null;
       esViejo = marca !== null && marca !== buildQueCorre;
       buildNuevo = marca;
@@ -67,7 +73,11 @@ export function instalarRecargaPorTrozoViejo({
   ventana.addEventListener('vite:preloadError', (evento) => {
     if (!esViejo || !ventana.navigator?.serviceWorker?.controller) return;
     // Ya recargó a esa versión en esta página: el error sigue su camino
-    const nota = { build: buildNuevo, ruta: ventana.location?.pathname ?? '', almacen };
+    const nota = {
+      build: buildNuevo,
+      ruta: ventana.location?.pathname ?? '',
+      almacen,
+    };
     if (puedeRecargar(nota) !== true || !apuntarLaRecarga(nota)) return;
     recargando = true;
     // Si la recarga no llega (la aplicación se fue a segundo plano), lo que
@@ -82,7 +92,10 @@ export function instalarRecargaPorTrozoViejo({
   documento?.addEventListener?.('visibilitychange', () => {
     if (documento.visibilityState === 'visible') comprobar();
   });
-  ventana.navigator?.serviceWorker?.addEventListener?.('controllerchange', comprobar);
+  ventana.navigator?.serviceWorker?.addEventListener?.(
+    'controllerchange',
+    comprobar,
+  );
   return comprobar();
 }
 

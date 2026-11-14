@@ -1,8 +1,6 @@
-/* eslint-disable no-unused-vars */
 import User from '../../domain/entities/User.js';
 import IUserRepository from '../../domain/repositories/IUserRepository.js';
-import apiRequest from '../http/api.js';
-import { segmento } from '../http/api';
+import apiRequest, { segmento } from '../http/api.js';
 
 class ApiUserRepository extends IUserRepository {
   constructor() {
@@ -13,9 +11,12 @@ class ApiUserRepository extends IUserRepository {
   /**
    * @override
    */
-  async getById(userId) {
-    // Usar current-user en lugar de /users/{userId}
-    // El userId se ignora porque obtenemos el usuario del token JWT
+  async getById() {
+    // OJO: no cumple el contrato de la interfaz (`getById(id)`): devuelve SIEMPRE
+    // el usuario de la sesión (current-user, por la cookie), sea cual sea el id
+    // que se pase. Vale porque su único uso —actualizar el hándicap RFEG desde el
+    // perfil— pasa el id del propio usuario; otro uso necesitaría un endpoint
+    // por id
     const data = await apiRequest('/api/v1/auth/current-user');
 
     const userEntity = new User(data);
@@ -96,7 +97,9 @@ class ApiUserRepository extends IUserRepository {
    * @override
    */
   async getUserRoles(competitionId) {
-    const data = await apiRequest(`/api/v1/users/me/roles/${segmento(competitionId)}`);
+    const data = await apiRequest(
+      `/api/v1/users/me/roles/${segmento(competitionId)}`,
+    );
 
     return {
       is_admin: data.is_admin,
@@ -142,9 +145,11 @@ class ApiUserRepository extends IUserRepository {
    * Uses GET /api/v1/users/search-autocomplete?query=... for partial name matching.
    */
   async searchUsers(query) {
-    const data = await apiRequest(`/api/v1/users/search-autocomplete?query=${encodeURIComponent(query)}`);
+    const data = await apiRequest(
+      `/api/v1/users/search-autocomplete?query=${encodeURIComponent(query)}`,
+    );
 
-    return (data.users || []).map(user => {
+    return (data.users || []).map((user) => {
       // El backend manda nombre y apellidos ya separados. Antes se partía
       // `full_name` por el primer espacio, que daba "Ana" / "García Pérez" bien
       // pero rompía con nombres compuestos: "María José García" se quedaba con
@@ -154,8 +159,12 @@ class ApiUserRepository extends IUserRepository {
 
       return {
         id: user.user_id,
-        firstName: user.first_name ?? (spaceIndex > 0 ? fullName.substring(0, spaceIndex) : fullName),
-        lastName: user.last_name ?? (spaceIndex > 0 ? fullName.substring(spaceIndex + 1) : ''),
+        firstName:
+          user.first_name ??
+          (spaceIndex > 0 ? fullName.substring(0, spaceIndex) : fullName),
+        lastName:
+          user.last_name ??
+          (spaceIndex > 0 ? fullName.substring(spaceIndex + 1) : ''),
         // Los dos, y a propósito (BE #239): esta lista es la única pantalla
         // que enseña alias y nombre real juntos, porque ahora se puede buscar
         // por alias y hace falta saber cuál de los dos «Chuchi» es cuál

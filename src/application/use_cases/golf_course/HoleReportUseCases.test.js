@@ -32,8 +32,12 @@ const CODO = { lat: 36.2815, lon: -5.331 };
 const GREEN = { lat: 36.2827, lon: -5.33 };
 const AHORA = '2026-10-18T08:05:00.000Z';
 
-const sinRed = () => Object.assign(new TypeError('sin conexión'), { cause: new TypeError('Failed to fetch') });
-const http = (status, errorCode = null) => Object.assign(new Error(`HTTP ${status}`), { status, errorCode });
+const sinRed = () =>
+  Object.assign(new TypeError('sin conexión'), {
+    cause: new TypeError('Failed to fetch'),
+  });
+const http = (status, errorCode = null) =>
+  Object.assign(new Error(`HTTP ${status}`), { status, errorCode });
 
 describe('reportes de hoyo — casos de uso', () => {
   let guardado;
@@ -54,9 +58,20 @@ describe('reportes de hoyo — casos de uso', () => {
     ...extra,
   });
   const enviar = (extra) =>
-    new SendHoleReportUseCase({ golfCourseRepository: repo, holeReportStore: store, reportarFallo, enVuelo, ahora: () => AHORA }).execute(reporte(extra));
+    new SendHoleReportUseCase({
+      golfCourseRepository: repo,
+      holeReportStore: store,
+      reportarFallo,
+      enVuelo,
+      ahora: () => AHORA,
+    }).execute(reporte(extra));
   const vaciar = (userId = 'yo', opciones) =>
-    new SendPendingHoleReportsUseCase({ golfCourseRepository: repo, holeReportStore: store, reportarFallo, enVuelo }).execute(userId, opciones);
+    new SendPendingHoleReportsUseCase({
+      golfCourseRepository: repo,
+      holeReportStore: store,
+      reportarFallo,
+      enVuelo,
+    }).execute(userId, opciones);
 
   beforeEach(() => {
     guardado = new Map();
@@ -82,7 +97,13 @@ describe('reportes de hoyo — casos de uso', () => {
 
     expect(estado).toBe('enviado');
     expect(enLaColaAlPedir).toBe(1);
-    expect(repo.sendHoleReport).toHaveBeenCalledWith('gc-1', 3, { id: 'r-1', reason: 'WRONG_LINE', tee: SALIDA, bends: [CODO], greenCenter: GREEN });
+    expect(repo.sendHoleReport).toHaveBeenCalledWith('gc-1', 3, {
+      id: 'r-1',
+      reason: 'WRONG_LINE',
+      tee: SALIDA,
+      bends: [CODO],
+      greenCenter: GREEN,
+    });
     expect(store.cola('yo')).toEqual([]);
     expect(reportarFallo).not.toHaveBeenCalled();
   });
@@ -109,31 +130,46 @@ describe('reportes de hoyo — casos de uso', () => {
   it.each([
     [404, 'GOLF_COURSE_NOT_FOUND'],
     [422, 'HOLE_NOT_IN_COURSE'],
-  ])('D4: un %i (%s) lo saca de la cola y va a Sentry', async (status, errorCode) => {
-    repo.sendHoleReport.mockRejectedValue(http(status, errorCode));
+  ])(
+    'D4: un %i (%s) lo saca de la cola y va a Sentry',
+    async (status, errorCode) => {
+      repo.sendHoleReport.mockRejectedValue(http(status, errorCode));
 
-    const { estado } = await enviar();
+      const { estado } = await enviar();
 
-    expect(estado).toBe('descartado');
-    expect(store.cola('yo')).toEqual([]);
-    expect(reportarFallo).toHaveBeenCalledWith(expect.any(Error), expect.objectContaining({ status, errorCode, holeNumber: 3 }));
-  });
+      expect(estado).toBe('descartado');
+      expect(store.cola('yo')).toEqual([]);
+      expect(reportarFallo).toHaveBeenCalledWith(
+        expect.any(Error),
+        expect.objectContaining({ status, errorCode, holeNumber: 3 }),
+      );
+    },
+  );
 
   it.each([
     ['sin red', sinRed()],
     ['un 503', http(503)],
     ['un 429', http(429)],
     ['un 401', http(401)],
-  ])('D5: %s, se queda en la cola y para la tanda, sin Sentry', async (_caso, error) => {
-    repo.sendHoleReport.mockRejectedValue(error);
+  ])(
+    'D5: %s, se queda en la cola y para la tanda, sin Sentry',
+    async (_caso, error) => {
+      repo.sendHoleReport.mockRejectedValue(error);
 
-    const resultado = await enviar();
+      const resultado = await enviar();
 
-    expect(resultado).toEqual({ estado: 'pendiente', paraLaTanda: true });
-    expect(store.cola('yo')).toHaveLength(1);
-    expect(store.cola('yo')[0]).toMatchObject({ id: 'r-1', golfCourseId: 'gc-1', holeNumber: 3, reason: 'WRONG_LINE', enCola: AHORA });
-    expect(reportarFallo).not.toHaveBeenCalled();
-  });
+      expect(resultado).toEqual({ estado: 'pendiente', paraLaTanda: true });
+      expect(store.cola('yo')).toHaveLength(1);
+      expect(store.cola('yo')[0]).toMatchObject({
+        id: 'r-1',
+        golfCourseId: 'gc-1',
+        holeNumber: 3,
+        reason: 'WRONG_LINE',
+        enCola: AHORA,
+      });
+      expect(reportarFallo).not.toHaveBeenCalled();
+    },
+  );
 
   it('D6: el mismo reporte otra vez sustituye al de la cola', async () => {
     repo.sendHoleReport.mockRejectedValue(sinRed());
@@ -164,7 +200,10 @@ describe('reportes de hoyo — casos de uso', () => {
     const cuenta = await vaciar('yo');
 
     expect(cuenta).toEqual({ enviados: 2, descartados: 0, pendientes: 0 });
-    expect(repo.sendHoleReport.mock.calls.map((c) => c[2].id)).toEqual(['r-1', 'r-2']);
+    expect(repo.sendHoleReport.mock.calls.map((c) => c[2].id)).toEqual([
+      'r-1',
+      'r-2',
+    ]);
     expect(store.cola('yo')).toEqual([]);
     expect(store.cola('otro')).toHaveLength(1);
   });
@@ -174,7 +213,10 @@ describe('reportes de hoyo — casos de uso', () => {
     await enviar();
     await enviar({ id: 'r-2', holeNumber: 7 });
     await enviar({ id: 'r-3', holeNumber: 8 });
-    repo.sendHoleReport.mockReset().mockResolvedValueOnce(undefined).mockRejectedValueOnce(sinRed());
+    repo.sendHoleReport
+      .mockReset()
+      .mockResolvedValueOnce(undefined)
+      .mockRejectedValueOnce(sinRed());
 
     const cuenta = await vaciar('yo');
 
@@ -187,7 +229,10 @@ describe('reportes de hoyo — casos de uso', () => {
     repo.sendHoleReport.mockRejectedValue(sinRed());
     await enviar();
     await enviar({ id: 'r-2', holeNumber: 7 });
-    repo.sendHoleReport.mockReset().mockRejectedValueOnce(http(422, 'HOLE_NOT_IN_COURSE')).mockResolvedValueOnce(undefined);
+    repo.sendHoleReport
+      .mockReset()
+      .mockRejectedValueOnce(http(422, 'HOLE_NOT_IN_COURSE'))
+      .mockResolvedValueOnce(undefined);
 
     const cuenta = await vaciar('yo');
 
@@ -213,7 +258,9 @@ describe('reportes de hoyo — casos de uso', () => {
 
   it('D12: la tanda no manda otra vez el que ya va de camino', async () => {
     let suelta;
-    repo.sendHoleReport.mockImplementation(() => new Promise((ok) => (suelta = ok)));
+    repo.sendHoleReport.mockImplementation(
+      () => new Promise((ok) => (suelta = ok)),
+    );
     const primero = enviar();
 
     const cuenta = await vaciar('yo');
@@ -231,7 +278,10 @@ describe('reportes de hoyo — casos de uso', () => {
     ['con los codos que no son una lista', { bends: 'x' }],
     ['con un codo a medias', { bends: [{ lat: 42.3 }] }],
     ['con la salida a medias', { tee: { lat: 42.3 } }],
-    ['con el green sin número', { greenCenter: { lat: Number.NaN, lon: -8.7 } }],
+    [
+      'con el green sin número',
+      { greenCenter: { lat: Number.NaN, lon: -8.7 } },
+    ],
   ])('D14: %s, nada y a Sentry', async (_caso, extra) => {
     const { estado } = await enviar(extra);
 
@@ -242,7 +292,20 @@ describe('reportes de hoyo — casos de uso', () => {
   });
 
   it('D14: una entrada de la cola sin salida no cuenta (no atasca las demás)', async () => {
-    guardado.set('reportesDeHoyosPendientes:v1:yo', JSON.stringify([{ id: 'r-0', golfCourseId: 'gc-1', holeNumber: 3, reason: 'WRONG_LINE', tee: null, greenCenter: GREEN, enCola: AHORA }]));
+    guardado.set(
+      'reportesDeHoyosPendientes:v1:yo',
+      JSON.stringify([
+        {
+          id: 'r-0',
+          golfCourseId: 'gc-1',
+          holeNumber: 3,
+          reason: 'WRONG_LINE',
+          tee: null,
+          greenCenter: GREEN,
+          enCola: AHORA,
+        },
+      ]),
+    );
 
     expect(store.cola('yo')).toEqual([]);
   });
@@ -250,21 +313,53 @@ describe('reportes de hoyo — casos de uso', () => {
   it('D14: un codo roto llega a Sentry como tal, no como «sin línea» (/code-review)', async () => {
     await enviar({ bends: [null] });
 
-    expect(reportarFallo.mock.calls[0][0].message).toBe('Reporte de hoyo con un codo roto');
+    expect(reportarFallo.mock.calls[0][0].message).toBe(
+      'Reporte de hoyo con un codo roto',
+    );
   });
 
   it.each([
     ['un codo roto', [null]],
     ['un codo sin lon', [{ lat: 42.3 }]],
     ['codos que no son una lista', 'x'],
-  ])('D14: una entrada de la cola con %s no cuenta (CodeRabbit)', async (_caso, bends) => {
-    guardado.set('reportesDeHoyosPendientes:v1:yo', JSON.stringify([{ id: 'r-0', golfCourseId: 'gc-1', holeNumber: 3, reason: 'WRONG_LINE', tee: GREEN, bends, greenCenter: GREEN, enCola: AHORA }]));
+  ])(
+    'D14: una entrada de la cola con %s no cuenta (CodeRabbit)',
+    async (_caso, bends) => {
+      guardado.set(
+        'reportesDeHoyosPendientes:v1:yo',
+        JSON.stringify([
+          {
+            id: 'r-0',
+            golfCourseId: 'gc-1',
+            holeNumber: 3,
+            reason: 'WRONG_LINE',
+            tee: GREEN,
+            bends,
+            greenCenter: GREEN,
+            enCola: AHORA,
+          },
+        ]),
+      );
 
-    expect(store.cola('yo')).toEqual([]);
-  });
+      expect(store.cola('yo')).toEqual([]);
+    },
+  );
 
   it('D14: una entrada de la cola sin codos sí cuenta', async () => {
-    guardado.set('reportesDeHoyosPendientes:v1:yo', JSON.stringify([{ id: 'r-0', golfCourseId: 'gc-1', holeNumber: 3, reason: 'WRONG_LINE', tee: GREEN, greenCenter: GREEN, enCola: AHORA }]));
+    guardado.set(
+      'reportesDeHoyosPendientes:v1:yo',
+      JSON.stringify([
+        {
+          id: 'r-0',
+          golfCourseId: 'gc-1',
+          holeNumber: 3,
+          reason: 'WRONG_LINE',
+          tee: GREEN,
+          greenCenter: GREEN,
+          enCola: AHORA,
+        },
+      ]),
+    );
 
     expect(store.cola('yo')).toHaveLength(1);
   });

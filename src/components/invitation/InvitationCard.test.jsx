@@ -1,5 +1,10 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render as renderSinRouter, screen, fireEvent, act } from '@testing-library/react';
+import {
+  render as renderSinRouter,
+  screen,
+  fireEvent,
+  act,
+} from '@testing-library/react';
 import { MemoryRouter, Routes, Route, useLocation } from 'react-router';
 import InvitationCard from './InvitationCard';
 
@@ -51,23 +56,35 @@ describe('InvitationCard', () => {
   });
 
   it('should render competition name and status badge', () => {
-    render(<InvitationCard invitation={pendingInvitation} mode="player" t={mockT} />);
+    render(
+      <InvitationCard invitation={pendingInvitation} mode="player" t={mockT} />,
+    );
     expect(screen.getByText('Summer Cup')).toBeInTheDocument();
     expect(screen.getByTestId('invitation-badge')).toBeInTheDocument();
   });
 
   it('should show inviter name in player mode', () => {
-    render(<InvitationCard invitation={pendingInvitation} mode="player" t={mockT} />);
+    render(
+      <InvitationCard invitation={pendingInvitation} mode="player" t={mockT} />,
+    );
     expect(screen.getByText(/John Creator/)).toBeInTheDocument();
   });
 
   it('should show invitee email in creator mode', () => {
-    render(<InvitationCard invitation={pendingInvitation} mode="creator" t={mockT} />);
+    render(
+      <InvitationCard
+        invitation={pendingInvitation}
+        mode="creator"
+        t={mockT}
+      />,
+    );
     expect(screen.getByText('Jane Player')).toBeInTheDocument();
   });
 
   it('should show personal message', () => {
-    render(<InvitationCard invitation={pendingInvitation} mode="player" t={mockT} />);
+    render(
+      <InvitationCard invitation={pendingInvitation} mode="player" t={mockT} />,
+    );
     expect(screen.getByText('Join our tournament!')).toBeInTheDocument();
   });
 
@@ -80,19 +97,31 @@ describe('InvitationCard', () => {
         onDecline={onDecline}
         isProcessing={false}
         t={mockT}
-      />
+      />,
     );
     expect(screen.getByTestId('accept-button')).toBeInTheDocument();
     expect(screen.getByTestId('decline-button')).toBeInTheDocument();
   });
 
   it('should NOT show buttons in creator mode', () => {
-    render(<InvitationCard invitation={pendingInvitation} mode="creator" t={mockT} />);
+    render(
+      <InvitationCard
+        invitation={pendingInvitation}
+        mode="creator"
+        t={mockT}
+      />,
+    );
     expect(screen.queryByTestId('accept-button')).not.toBeInTheDocument();
   });
 
   it('should NOT show buttons for non-PENDING in player mode', () => {
-    render(<InvitationCard invitation={acceptedInvitation} mode="player" t={mockT} />);
+    render(
+      <InvitationCard
+        invitation={acceptedInvitation}
+        mode="player"
+        t={mockT}
+      />,
+    );
     expect(screen.queryByTestId('accept-button')).not.toBeInTheDocument();
   });
 
@@ -105,7 +134,7 @@ describe('InvitationCard', () => {
         onDecline={onDecline}
         isProcessing={false}
         t={mockT}
-      />
+      />,
     );
     fireEvent.click(screen.getByTestId('accept-button'));
     expect(onAccept).toHaveBeenCalledWith('inv-1');
@@ -120,7 +149,7 @@ describe('InvitationCard', () => {
         onDecline={onDecline}
         isProcessing={false}
         t={mockT}
-      />
+      />,
     );
     fireEvent.click(screen.getByTestId('decline-button'));
     expect(onDecline).toHaveBeenCalledWith('inv-1');
@@ -133,7 +162,13 @@ describe('InvitationCard', () => {
    */
   describe('enlace a la competición (FE #682)', () => {
     it('I1: aceptada, la tarjeta entera lleva a la competición', () => {
-      render(<InvitationCard invitation={acceptedInvitation} mode="player" t={mockT} />);
+      render(
+        <InvitationCard
+          invitation={acceptedInvitation}
+          mode="player"
+          t={mockT}
+        />,
+      );
 
       const tarjeta = screen.getByTestId('invitation-card');
       expect(tarjeta.tagName).toBe('A');
@@ -143,10 +178,16 @@ describe('InvitationCard', () => {
     it('I4: y lleva una flecha que dice que se abre', () => {
       // Sin ratón no hay subrayado al pasar por encima: en el móvil la flecha
       // es lo único que dice que la tarjeta se puede pulsar
-      render(<InvitationCard invitation={acceptedInvitation} mode="player" t={mockT} />);
+      render(
+        <InvitationCard
+          invitation={acceptedInvitation}
+          mode="player"
+          t={mockT}
+        />,
+      );
 
       expect(screen.getByTestId('invitation-card')).toContainElement(
-        screen.getByTestId('abre-competicion')
+        screen.getByTestId('abre-competicion'),
       );
     });
 
@@ -160,10 +201,12 @@ describe('InvitationCard', () => {
           onAccept={onAccept}
           onDecline={onDecline}
           t={mockT}
-        />
+        />,
       );
 
-      const enlace = screen.getByRole('link', { name: 'card.viewCompetition: Summer Cup' });
+      const enlace = screen.getByRole('link', {
+        name: 'card.viewCompetition: Summer Cup',
+      });
       expect(enlace).toHaveAttribute('href', '/competitions/comp-1');
       expect(screen.getByTestId('invitation-card').tagName).not.toBe('A');
       expect(screen.getByTestId('accept-button')).toBeInTheDocument();
@@ -171,20 +214,30 @@ describe('InvitationCard', () => {
     });
 
     it('I2b: y vuelve a las invitaciones desde la ficha', () => {
-      const Origen = () => <div data-testid="origen">{useLocation().state?.from}</div>;
+      const Origen = () => (
+        <div data-testid="origen">{useLocation().state?.from}</div>
+      );
       renderSinRouter(
         <MemoryRouter initialEntries={['/player/invitations']}>
           <Routes>
             <Route
               path="/player/invitations"
-              element={<InvitationCard invitation={pendingInvitation} mode="player" t={mockT} />}
+              element={
+                <InvitationCard
+                  invitation={pendingInvitation}
+                  mode="player"
+                  t={mockT}
+                />
+              }
             />
             <Route path="/competitions/:id" element={<Origen />} />
           </Routes>
-        </MemoryRouter>
+        </MemoryRouter>,
       );
 
-      fireEvent.click(screen.getByRole('link', { name: 'card.viewCompetition: Summer Cup' }));
+      fireEvent.click(
+        screen.getByRole('link', { name: 'card.viewCompetition: Summer Cup' }),
+      );
 
       expect(screen.getByTestId('origen')).toHaveTextContent('invitations');
     });
@@ -192,10 +245,15 @@ describe('InvitationCard', () => {
     it('I2c: rechazada o caducada, sin enlace', () => {
       render(
         <InvitationCard
-          invitation={{ ...pendingInvitation, status: 'DECLINED', isPending: false, isDeclined: true }}
+          invitation={{
+            ...pendingInvitation,
+            status: 'DECLINED',
+            isPending: false,
+            isDeclined: true,
+          }}
           mode="player"
           t={mockT}
-        />
+        />,
       );
 
       expect(screen.queryByRole('link')).not.toBeInTheDocument();
@@ -204,10 +262,13 @@ describe('InvitationCard', () => {
     it('I2e: pendiente pero ya caducada, sin enlace: ya no deja verla', () => {
       render(
         <InvitationCard
-          invitation={{ ...pendingInvitation, expiresAt: new Date(Date.now() - 60_000).toISOString() }}
+          invitation={{
+            ...pendingInvitation,
+            expiresAt: new Date(Date.now() - 60_000).toISOString(),
+          }}
           mode="player"
           t={mockT}
-        />
+        />,
       );
 
       expect(screen.queryByRole('link')).not.toBeInTheDocument();
@@ -227,7 +288,13 @@ describe('InvitationCard', () => {
       });
 
       it('el enlace se va y dice «Caducada» en cuanto llega su hora', () => {
-        render(<InvitationCard invitation={queCaducaEnUnMinuto()} mode="player" t={mockT} />);
+        render(
+          <InvitationCard
+            invitation={queCaducaEnUnMinuto()}
+            mode="player"
+            t={mockT}
+          />,
+        );
         expect(screen.getByRole('link')).toBeInTheDocument();
 
         act(() => {
@@ -239,7 +306,13 @@ describe('InvitationCard', () => {
       });
 
       it('antes de su hora sigue ahí', () => {
-        render(<InvitationCard invitation={queCaducaEnUnMinuto()} mode="player" t={mockT} />);
+        render(
+          <InvitationCard
+            invitation={queCaducaEnUnMinuto()}
+            mode="player"
+            t={mockT}
+          />,
+        );
 
         act(() => {
           vi.advanceTimersByTime(59_000);
@@ -250,7 +323,11 @@ describe('InvitationCard', () => {
 
       it('al desmontarse no deja el reloj puesto', () => {
         const { unmount } = render(
-          <InvitationCard invitation={queCaducaEnUnMinuto()} mode="player" t={mockT} />
+          <InvitationCard
+            invitation={queCaducaEnUnMinuto()}
+            mode="player"
+            t={mockT}
+          />,
         );
         expect(vi.getTimerCount()).toBe(1);
 
@@ -260,9 +337,20 @@ describe('InvitationCard', () => {
       });
 
       it('si cambia la fecha, cuenta con la nueva y suelta la vieja', () => {
-        const enUnaHora = { ...pendingInvitation, expiresAt: new Date(Date.now() + 3_600_000).toISOString() };
-        const { rerender } = render(<InvitationCard invitation={enUnaHora} mode="player" t={mockT} />);
-        rerender(<InvitationCard invitation={queCaducaEnUnMinuto()} mode="player" t={mockT} />);
+        const enUnaHora = {
+          ...pendingInvitation,
+          expiresAt: new Date(Date.now() + 3_600_000).toISOString(),
+        };
+        const { rerender } = render(
+          <InvitationCard invitation={enUnaHora} mode="player" t={mockT} />,
+        );
+        rerender(
+          <InvitationCard
+            invitation={queCaducaEnUnMinuto()}
+            mode="player"
+            t={mockT}
+          />,
+        );
 
         expect(vi.getTimerCount()).toBe(1);
         act(() => {
@@ -272,21 +360,39 @@ describe('InvitationCard', () => {
       });
 
       it('sin fecha, o ya caducada, no pone reloj', () => {
-        render(<InvitationCard invitation={{ ...pendingInvitation, expiresAt: null }} mode="player" t={mockT} />);
-        render(<InvitationCard invitation={{ ...pendingInvitation, expiresAt: undefined }} mode="player" t={mockT} />);
         render(
           <InvitationCard
-            invitation={{ ...pendingInvitation, expiresAt: new Date(Date.now() - 1).toISOString() }}
+            invitation={{ ...pendingInvitation, expiresAt: null }}
             mode="player"
             t={mockT}
-          />
+          />,
+        );
+        render(
+          <InvitationCard
+            invitation={{ ...pendingInvitation, expiresAt: undefined }}
+            mode="player"
+            t={mockT}
+          />,
+        );
+        render(
+          <InvitationCard
+            invitation={{
+              ...pendingInvitation,
+              expiresAt: new Date(Date.now() - 1).toISOString(),
+            }}
+            mode="player"
+            t={mockT}
+          />,
         );
 
         expect(vi.getTimerCount()).toBe(0);
       });
 
       it('una fecha lejana no pone reloj: con más de 24,8 días, setTimeout saltaría enseguida', () => {
-        const lejana = { ...pendingInvitation, expiresAt: new Date(Date.now() + 30 * 86_400_000).toISOString() };
+        const lejana = {
+          ...pendingInvitation,
+          expiresAt: new Date(Date.now() + 30 * 86_400_000).toISOString(),
+        };
         render(<InvitationCard invitation={lejana} mode="player" t={mockT} />);
 
         expect(vi.getTimerCount()).toBe(0);
@@ -295,31 +401,47 @@ describe('InvitationCard', () => {
     });
 
     it('I2d: «Ver la competición», en los dos idiomas', async () => {
-      const es = (await import('../../i18n/locales/es/invitations.json')).default;
-      const en = (await import('../../i18n/locales/en/invitations.json')).default;
+      const es = (await import('../../i18n/locales/es/invitations.json'))
+        .default;
+      const en = (await import('../../i18n/locales/en/invitations.json'))
+        .default;
 
       expect(es.card.viewCompetition).toBe('Ver la competición');
       expect(en.card.viewCompetition).toBe('View the competition');
     });
 
     it('I3: el organizador no necesita el enlace: su lista ya está dentro de la competición', () => {
-      render(<InvitationCard invitation={acceptedInvitation} mode="creator" t={mockT} />);
+      render(
+        <InvitationCard
+          invitation={acceptedInvitation}
+          mode="creator"
+          t={mockT}
+        />,
+      );
 
       expect(screen.queryByRole('link')).not.toBeInTheDocument();
     });
 
     it('C1: la ficha sabe que se llegó desde las invitaciones, para volver ahí', () => {
-      const Origen = () => <div data-testid="origen">{useLocation().state?.from}</div>;
+      const Origen = () => (
+        <div data-testid="origen">{useLocation().state?.from}</div>
+      );
       renderSinRouter(
         <MemoryRouter initialEntries={['/player/invitations']}>
           <Routes>
             <Route
               path="/player/invitations"
-              element={<InvitationCard invitation={acceptedInvitation} mode="player" t={mockT} />}
+              element={
+                <InvitationCard
+                  invitation={acceptedInvitation}
+                  mode="player"
+                  t={mockT}
+                />
+              }
             />
             <Route path="/competitions/:id" element={<Origen />} />
           </Routes>
-        </MemoryRouter>
+        </MemoryRouter>,
       );
 
       fireEvent.click(screen.getByTestId('invitation-card'));
@@ -333,7 +455,14 @@ describe('InvitationCard', () => {
 describe('InvitationCard · retirar (FE #724)', () => {
   it('al organizador, en una pendiente, le ofrece retirarla', () => {
     const onWithdraw = vi.fn();
-    render(<InvitationCard invitation={pendingInvitation} mode="creator" onWithdraw={onWithdraw} t={mockT} />);
+    render(
+      <InvitationCard
+        invitation={pendingInvitation}
+        mode="creator"
+        onWithdraw={onWithdraw}
+        t={mockT}
+      />,
+    );
 
     fireEvent.click(screen.getByRole('button', { name: 'actions.withdraw' }));
 
@@ -341,15 +470,33 @@ describe('InvitationCard · retirar (FE #724)', () => {
   });
 
   it('en una ya respondida, no', () => {
-    render(<InvitationCard invitation={acceptedInvitation} mode="creator" onWithdraw={vi.fn()} t={mockT} />);
+    render(
+      <InvitationCard
+        invitation={acceptedInvitation}
+        mode="creator"
+        onWithdraw={vi.fn()}
+        t={mockT}
+      />,
+    );
 
-    expect(screen.queryByRole('button', { name: 'actions.withdraw' })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: 'actions.withdraw' }),
+    ).not.toBeInTheDocument();
   });
 
   it('al jugador, no: él la rechaza', () => {
-    render(<InvitationCard invitation={pendingInvitation} mode="player" onWithdraw={vi.fn()} t={mockT} />);
+    render(
+      <InvitationCard
+        invitation={pendingInvitation}
+        mode="player"
+        onWithdraw={vi.fn()}
+        t={mockT}
+      />,
+    );
 
-    expect(screen.queryByRole('button', { name: 'actions.withdraw' })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: 'actions.withdraw' }),
+    ).not.toBeInTheDocument();
   });
 });
 
@@ -369,19 +516,32 @@ describe('InvitationCard · la fecha dice qué pasó (FE #724)', () => {
     ['ACCEPTED', 'card.respondedAt'],
     ['DECLINED', 'card.respondedAt'],
   ])('%s → %s', (status, clave) => {
-    render(<InvitationCard invitation={conEstado(status)} mode="creator" t={mockT} />);
+    render(
+      <InvitationCard
+        invitation={conEstado(status)}
+        mode="creator"
+        t={mockT}
+      />,
+    );
 
-    expect(screen.getByTestId('fecha-de-la-invitacion')).toHaveTextContent(clave);
+    expect(screen.getByTestId('fecha-de-la-invitacion')).toHaveTextContent(
+      clave,
+    );
   });
 
   it('FE #826: el correo del invitado se parte y el icono no se aplasta', () => {
-    const largo = 'un.correo.muy.largo.sin.espacios.para.partir@ejemplo-de-dominio.com';
+    const largo =
+      'un.correo.muy.largo.sin.espacios.para.partir@ejemplo-de-dominio.com';
     render(
       <InvitationCard
-        invitation={{ ...pendingInvitation, inviteeName: null, inviteeEmail: largo }}
+        invitation={{
+          ...pendingInvitation,
+          inviteeName: null,
+          inviteeEmail: largo,
+        }}
         mode="creator"
         t={mockT}
-      />
+      />,
     );
 
     const correo = screen.getByText(largo);
@@ -391,16 +551,29 @@ describe('InvitationCard · la fecha dice qué pasó (FE #724)', () => {
 });
 
 describe('InvitationCard — volver a invitar (release social 2)', () => {
-  const rechazada = { ...pendingInvitation, status: 'DECLINED', isPending: false };
+  const rechazada = {
+    ...pendingInvitation,
+    status: 'DECLINED',
+    isPending: false,
+  };
 
   it('con onReinvite, el organizador ve el botón y lo usa con esa invitación', () => {
     const onReinvite = vi.fn();
-    render(<InvitationCard invitation={rechazada} mode="creator" onReinvite={onReinvite} t={mockT} />);
+    render(
+      <InvitationCard
+        invitation={rechazada}
+        mode="creator"
+        onReinvite={onReinvite}
+        t={mockT}
+      />,
+    );
 
     fireEvent.click(screen.getByTestId('reinvite-button'));
 
     expect(onReinvite).toHaveBeenCalledWith(rechazada);
-    expect(screen.getByTestId('reinvite-button')).toHaveTextContent('actions.reinvite');
+    expect(screen.getByTestId('reinvite-button')).toHaveTextContent(
+      'actions.reinvite',
+    );
   });
 
   it('sin onReinvite (la página no la ofrece), no sale', () => {
@@ -410,20 +583,42 @@ describe('InvitationCard — volver a invitar (release social 2)', () => {
   });
 
   it('el invitado nunca lo ve', () => {
-    render(<InvitationCard invitation={rechazada} mode="player" onReinvite={vi.fn()} t={mockT} />);
+    render(
+      <InvitationCard
+        invitation={rechazada}
+        mode="player"
+        onReinvite={vi.fn()}
+        t={mockT}
+      />,
+    );
 
     expect(screen.queryByTestId('reinvite-button')).not.toBeInTheDocument();
   });
 
   it('mide 44 px de alto, como pide el dedo (revisor)', () => {
-    render(<InvitationCard invitation={rechazada} mode="creator" onReinvite={vi.fn()} t={mockT} />);
+    render(
+      <InvitationCard
+        invitation={rechazada}
+        mode="creator"
+        onReinvite={vi.fn()}
+        t={mockT}
+      />,
+    );
 
-    expect(screen.getByTestId('reinvite-button').className).toMatch(/\bmin-h-11\b/);
+    expect(screen.getByTestId('reinvite-button').className).toMatch(
+      /\bmin-h-11\b/,
+    );
   });
 
   it('mientras se procesa, desactivado', () => {
     render(
-      <InvitationCard invitation={rechazada} mode="creator" onReinvite={vi.fn()} isProcessing t={mockT} />
+      <InvitationCard
+        invitation={rechazada}
+        mode="creator"
+        onReinvite={vi.fn()}
+        isProcessing
+        t={mockT}
+      />,
     );
 
     expect(screen.getByTestId('reinvite-button')).toBeDisabled();
@@ -436,10 +631,22 @@ describe('InvitationCard — volver a invitar (release social 2)', () => {
  * sin huecos ni «undefined».
  */
 describe('InvitationCard · invitado sin nombre (fase 3)', () => {
-  const sinNombre = { ...pendingInvitation, inviteeName: undefined, inviteeUserId: null };
+  const sinNombre = {
+    ...pendingInvitation,
+    inviteeName: undefined,
+    inviteeUserId: null,
+  };
 
   it('enseña el correo donde iría el nombre', () => {
-    render(<InvitationCard invitation={sinNombre} mode="creator" onWithdraw={vi.fn()} onReinvite={vi.fn()} t={mockT} />);
+    render(
+      <InvitationCard
+        invitation={sinNombre}
+        mode="creator"
+        onWithdraw={vi.fn()}
+        onReinvite={vi.fn()}
+        t={mockT}
+      />,
+    );
 
     expect(screen.getByText('player@example.com')).toBeInTheDocument();
     expect(document.body.textContent).not.toMatch(/undefined|null/);
@@ -447,8 +654,18 @@ describe('InvitationCard · invitado sin nombre (fase 3)', () => {
 
   it('el botón de volver a invitar se nombra con el correo', () => {
     const t = (key, params) => (params ? `${key}:${params.name}` : key);
-    render(<InvitationCard invitation={sinNombre} mode="creator" onReinvite={vi.fn()} t={t} />);
+    render(
+      <InvitationCard
+        invitation={sinNombre}
+        mode="creator"
+        onReinvite={vi.fn()}
+        t={t}
+      />,
+    );
 
-    expect(screen.getByTestId('reinvite-button')).toHaveAttribute('aria-label', 'actions.reinviteAria:player@example.com');
+    expect(screen.getByTestId('reinvite-button')).toHaveAttribute(
+      'aria-label',
+      'actions.reinviteAria:player@example.com',
+    );
   });
 });

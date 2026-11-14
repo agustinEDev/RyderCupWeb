@@ -27,13 +27,27 @@ const sesion = vi.hoisted(() => ({ user: null }));
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({ t: (clave) => clave, i18n: { language: 'es' } }),
 }));
-vi.mock('../utils/toast', () => ({ default: { error: (...a) => toastError(...a), success: vi.fn(), info: vi.fn() } }));
-vi.mock('../hooks/useAuth', () => ({ useAuth: () => ({ user: sesion.user, loading: false, refetch: vi.fn() }) }));
+vi.mock('../utils/toast', () => ({
+  default: {
+    error: (...a) => toastError(...a),
+    success: vi.fn(),
+    info: vi.fn(),
+  },
+}));
+vi.mock('../hooks/useAuth', () => ({
+  useAuth: () => ({ user: sesion.user, loading: false, refetch: vi.fn() }),
+}));
 vi.mock('../hooks/useLogout', () => ({ useLogout: () => ({ logout }) }));
-vi.mock('../services/sesionCompartida', () => ({ anotaLaSesion: (...a) => anotaLaSesion(...a) }));
-vi.mock('../composition', () => ({ acceptTermsUseCase: { execute: (...a) => aceptar(...a) } }));
+vi.mock('../services/sesionCompartida', () => ({
+  anotaLaSesion: (...a) => anotaLaSesion(...a),
+}));
+vi.mock('../composition', () => ({
+  acceptTermsUseCase: { execute: (...a) => aceptar(...a) },
+}));
 const pantallaLista = vi.fn();
-vi.mock('../utils/cortinaDeArranque', () => ({ laPantallaEstaLista: (...a) => pantallaLista(...a) }));
+vi.mock('../utils/cortinaDeArranque', () => ({
+  laPantallaEstaLista: (...a) => pantallaLista(...a),
+}));
 
 const { default: AcceptTerms } = await import('./AcceptTerms');
 
@@ -42,7 +56,12 @@ const Competicion = () => {
   return <p>la competición{hash}</p>;
 };
 
-const abrir = (entrada = { pathname: '/accept-terms', state: { from: { pathname: '/competitions/7' } } }) =>
+const abrir = (
+  entrada = {
+    pathname: '/accept-terms',
+    state: { from: { pathname: '/competitions/7' } },
+  },
+) =>
   render(
     <MemoryRouter initialEntries={[entrada]}>
       <Routes>
@@ -50,11 +69,13 @@ const abrir = (entrada = { pathname: '/accept-terms', state: { from: { pathname:
         <Route path="/competitions/:id" element={<Competicion />} />
         <Route path="/dashboard" element={<p>panel</p>} />
       </Routes>
-    </MemoryRouter>
+    </MemoryRouter>,
   );
 
-const casilla = () => screen.getByRole('checkbox', { name: /register\.acceptTerms/ });
-const botonAceptar = () => screen.getByRole('button', { name: 'acceptTermsPage.acceptButton' });
+const casilla = () =>
+  screen.getByRole('checkbox', { name: /register\.acceptTerms/ });
+const botonAceptar = () =>
+  screen.getByRole('button', { name: 'acceptTermsPage.acceptButton' });
 const DTO = { id: 'u-1', is_admin: true, terms_accepted: true };
 
 const aceptarMarcando = () => {
@@ -72,12 +93,20 @@ describe('AcceptTerms (F3)', () => {
   it('pinta el título, la casilla, la privacidad informada, aceptar, dispositivos y salir', () => {
     abrir();
 
-    expect(screen.getByRole('heading', { level: 1, name: 'acceptTermsPage.title' })).toBeInTheDocument();
+    expect(
+      screen.getByRole('heading', { level: 1, name: 'acceptTermsPage.title' }),
+    ).toBeInTheDocument();
     expect(casilla()).not.toBeChecked();
-    expect(screen.getByRole('link', { name: 'register.privacyLink' })).toHaveAttribute('href', '/privacy');
+    expect(
+      screen.getByRole('link', { name: 'register.privacyLink' }),
+    ).toHaveAttribute('href', '/privacy');
     expect(botonAceptar()).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'acceptTermsPage.devices' })).toHaveAttribute('href', '/profile/devices');
-    expect(screen.getByRole('button', { name: 'acceptTermsPage.logout' })).toBeInTheDocument();
+    expect(
+      screen.getByRole('link', { name: 'acceptTermsPage.devices' }),
+    ).toHaveAttribute('href', '/profile/devices');
+    expect(
+      screen.getByRole('button', { name: 'acceptTermsPage.logout' }),
+    ).toBeInTheDocument();
   });
 
   it('no pinta cabecera, navegación ni avatar: darían 403 hasta aceptar', () => {
@@ -93,7 +122,9 @@ describe('AcceptTerms (F3)', () => {
 
     fireEvent.click(botonAceptar());
 
-    expect(screen.getByText('google.completeProfile.acceptTermsRequired')).toBeInTheDocument();
+    expect(
+      screen.getByText('google.completeProfile.acceptTermsRequired'),
+    ).toBeInTheDocument();
     expect(casilla()).toHaveAttribute('aria-invalid', 'true');
     expect(aceptar).not.toHaveBeenCalled();
   });
@@ -109,11 +140,16 @@ describe('AcceptTerms (F3)', () => {
   });
 
   it('vuelve con el hash del origen', async () => {
-    abrir({ pathname: '/accept-terms', state: { from: { pathname: '/competitions/7', hash: '#hoyo-3' } } });
+    abrir({
+      pathname: '/accept-terms',
+      state: { from: { pathname: '/competitions/7', hash: '#hoyo-3' } },
+    });
 
     aceptarMarcando();
 
-    expect(await screen.findByText('la competición#hoyo-3')).toBeInTheDocument();
+    expect(
+      await screen.findByText('la competición#hoyo-3'),
+    ).toBeInTheDocument();
   });
 
   it('sin origen, al panel', async () => {
@@ -150,7 +186,9 @@ describe('AcceptTerms (F3)', () => {
 
     aceptarMarcando();
 
-    expect(await screen.findByRole('alert')).toHaveTextContent('acceptTermsPage.error');
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'acceptTermsPage.error',
+    );
     expect(toastError).not.toHaveBeenCalled();
     expect(anotaLaSesion).not.toHaveBeenCalled();
     expect(casilla()).toBeChecked();
@@ -175,18 +213,28 @@ describe('AcceptTerms (F3)', () => {
   it.each([
     ['aceptados', { id: 'u-1', terms_accepted: true }],
     ['sin el campo', { id: 'u-1' }],
-  ])('llegando desde un 403 (?from=) con la sesión %s: se pinta igual, sin rebotar', (_caso, usuario) => {
-    sesion.user = usuario;
-    abrir('/accept-terms?from=%2Fcompetitions%2F7');
+  ])(
+    'llegando desde un 403 (?from=) con la sesión %s: se pinta igual, sin rebotar',
+    (_caso, usuario) => {
+      sesion.user = usuario;
+      abrir('/accept-terms?from=%2Fcompetitions%2F7');
 
-    expect(screen.getByRole('heading', { level: 1, name: 'acceptTermsPage.title' })).toBeInTheDocument();
-    expect(screen.queryByText('la competición')).toBeNull();
-  });
+      expect(
+        screen.getByRole('heading', {
+          level: 1,
+          name: 'acceptTermsPage.title',
+        }),
+      ).toBeInTheDocument();
+      expect(screen.queryByText('la competición')).toBeNull();
+    },
+  );
 
   it('salir cierra la sesión', () => {
     abrir();
 
-    fireEvent.click(screen.getByRole('button', { name: 'acceptTermsPage.logout' }));
+    fireEvent.click(
+      screen.getByRole('button', { name: 'acceptTermsPage.logout' }),
+    );
 
     expect(logout).toHaveBeenCalledTimes(1);
   });
@@ -209,7 +257,10 @@ describe('AcceptTerms · la marca contra los bucles', () => {
     vi.clearAllMocks();
     sesion.user = { id: 'u-1', terms_accepted: false };
     aceptar.mockResolvedValue(DTO);
-    globalThis.sessionStorage.setItem('rydercup-terminos-redirigido', JSON.stringify({ ruta: '/competitions/7' }));
+    globalThis.sessionStorage.setItem(
+      'rydercup-terminos-redirigido',
+      JSON.stringify({ ruta: '/competitions/7' }),
+    );
   });
 
   it('al aceptar, se borra', async () => {
@@ -218,7 +269,9 @@ describe('AcceptTerms · la marca contra los bucles', () => {
     aceptarMarcando();
 
     await screen.findByText('la competición');
-    expect(globalThis.sessionStorage.getItem('rydercup-terminos-redirigido')).toBeNull();
+    expect(
+      globalThis.sessionStorage.getItem('rydercup-terminos-redirigido'),
+    ).toBeNull();
   });
 
   it('si aceptar falla, se queda', async () => {
@@ -228,6 +281,8 @@ describe('AcceptTerms · la marca contra los bucles', () => {
     aceptarMarcando();
 
     await screen.findByRole('alert');
-    expect(globalThis.sessionStorage.getItem('rydercup-terminos-redirigido')).not.toBeNull();
+    expect(
+      globalThis.sessionStorage.getItem('rydercup-terminos-redirigido'),
+    ).not.toBeNull();
   });
 });

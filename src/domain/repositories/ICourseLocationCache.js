@@ -1,4 +1,3 @@
-/* eslint-disable no-unused-vars */
 /**
  * Copia en el móvil de la ubicación de cada campo (BE #532): es pública (la
  * misma que da la API a cualquiera), y sin cobertura dice dónde abrir el mapa

@@ -19,8 +19,12 @@ vi.mock('../components/layout/HeaderAuth', () => ({ default: () => null }));
 // dependen de él y vuelve el test intermitente
 const USUARIO = { user: { id: 'u-1', gender: 'MALE' }, loading: false };
 vi.mock('../hooks/useAuth', () => ({ useAuth: () => USUARIO }));
-vi.mock('../components/golf_course/GolfCourseSearchBox', () => ({ default: () => null }));
-vi.mock('../utils/toast', () => ({ default: { error: vi.fn(), success: vi.fn(), info: vi.fn() } }));
+vi.mock('../components/golf_course/GolfCourseSearchBox', () => ({
+  default: () => null,
+}));
+vi.mock('../utils/toast', () => ({
+  default: { error: vi.fn(), success: vi.fn(), info: vi.fn() },
+}));
 vi.mock('../services/countries', () => ({
   formatCountryName: () => 'España',
   sortCountriesByName: (paises) => paises || [],
@@ -30,13 +34,19 @@ vi.mock('../composition', () => ({
   updateCompetitionUseCase: { execute: vi.fn() },
   getCompetitionDetailUseCase: { execute: vi.fn() },
   getCompetitionGolfCoursesUseCase: { execute: vi.fn().mockResolvedValue([]) },
-  fetchCountriesUseCase: { execute: vi.fn().mockResolvedValue([{ code: 'ES', name: 'España' }]) },
+  fetchCountriesUseCase: {
+    execute: vi.fn().mockResolvedValue([{ code: 'ES', name: 'España' }]),
+  },
   getAdjacentCountriesUseCase: { execute: vi.fn().mockResolvedValue([]) },
   createGolfCourseRequestUseCase: { execute: vi.fn() },
 }));
 
-vi.mock('../components/ui/CountryAutocomplete', () => ({ default: () => null }));
-vi.mock('../components/golf_course/GolfCourseRequestModal', () => ({ default: () => null }));
+vi.mock('../components/ui/CountryAutocomplete', () => ({
+  default: () => null,
+}));
+vi.mock('../components/golf_course/GolfCourseRequestModal', () => ({
+  default: () => null,
+}));
 vi.mock('../components/ui/FullScreenLoader', () => ({ default: () => null }));
 vi.mock('../components/ui/CountryFlag', () => ({ CountryFlag: () => null }));
 
@@ -50,7 +60,11 @@ vi.mock('../utils/competitionFormValidation', () => ({
 const CreateCompetition = (await import('./CreateCompetition')).default;
 
 const alFormulario = async () => {
-  render(<MemoryRouter><CreateCompetition /></MemoryRouter>);
+  render(
+    <MemoryRouter>
+      <CreateCompetition />
+    </MemoryRouter>,
+  );
   fireEvent.click(await screen.findByTestId('tipo-RYDER_CUP'));
   fireEvent.click(await screen.findByTestId('modo-RYDER_CUP'));
   fireEvent.click(await screen.findByTestId('mas-opciones'));
@@ -71,6 +85,8 @@ describe('CreateCompetition · cupo de inscritos (BE #314)', () => {
     const campo = await alFormulario();
     fireEvent.submit(campo.closest('form'));
 
-    expect(await screen.findByText(/create\.errors\.playersMaximum.*200/)).toBeInTheDocument();
+    expect(
+      await screen.findByText(/create\.errors\.playersMaximum.*200/),
+    ).toBeInTheDocument();
   });
 });

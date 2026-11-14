@@ -43,7 +43,7 @@ describe('SendInvitationModal', () => {
         isProcessing={false}
         t={mockT}
         {...props}
-      />
+      />,
     );
   };
 
@@ -57,7 +57,7 @@ describe('SendInvitationModal', () => {
         onSearchUsers={onSearchUsers}
         isProcessing={false}
         t={mockT}
-      />
+      />,
     );
     expect(screen.queryByTestId('invitation-tabs')).not.toBeInTheDocument();
   });
@@ -71,7 +71,9 @@ describe('SendInvitationModal', () => {
   it('should default to search user tab', () => {
     renderModal();
     expect(screen.getByTestId('user-search-input')).toBeInTheDocument();
-    expect(screen.queryByTestId('invitation-email-input')).not.toBeInTheDocument();
+    expect(
+      screen.queryByTestId('invitation-email-input'),
+    ).not.toBeInTheDocument();
   });
 
   it('should switch to email tab', () => {
@@ -93,15 +95,21 @@ describe('SendInvitationModal', () => {
   it('should have required email field on email tab', () => {
     renderModal();
     fireEvent.click(screen.getByTestId('tab-by-email'));
-    expect(screen.getByTestId('invitation-email-input')).toHaveAttribute('required');
+    expect(screen.getByTestId('invitation-email-input')).toHaveAttribute(
+      'required',
+    );
   });
 
   it('should call onSend with email and message from email tab', () => {
     renderModal();
     fireEvent.click(screen.getByTestId('tab-by-email'));
 
-    fireEvent.change(screen.getByTestId('invitation-email-input'), { target: { value: 'player@example.com' } });
-    fireEvent.change(screen.getByTestId('invitation-message-input'), { target: { value: 'Welcome!' } });
+    fireEvent.change(screen.getByTestId('invitation-email-input'), {
+      target: { value: 'player@example.com' },
+    });
+    fireEvent.change(screen.getByTestId('invitation-message-input'), {
+      target: { value: 'Welcome!' },
+    });
 
     const form = screen.getByTestId('invitation-email-input').closest('form');
     fireEvent.submit(form);
@@ -113,7 +121,9 @@ describe('SendInvitationModal', () => {
     renderModal();
     fireEvent.click(screen.getByTestId('tab-by-email'));
 
-    fireEvent.change(screen.getByTestId('invitation-email-input'), { target: { value: 'player@example.com' } });
+    fireEvent.change(screen.getByTestId('invitation-email-input'), {
+      target: { value: 'player@example.com' },
+    });
 
     const form = screen.getByTestId('invitation-email-input').closest('form');
     fireEvent.submit(form);
@@ -125,18 +135,28 @@ describe('SendInvitationModal', () => {
 
   it('should show min chars hint when typing less than 2 chars', () => {
     renderModal();
-    fireEvent.change(screen.getByTestId('user-search-input'), { target: { value: 'a' } });
+    fireEvent.change(screen.getByTestId('user-search-input'), {
+      target: { value: 'a' },
+    });
     expect(screen.getByText('send.searchMinChars')).toBeInTheDocument();
   });
 
   it('should call onSearchUsers after debounce', async () => {
     const mockResults = [
-      { id: 'u1', firstName: 'John', lastName: 'Doe', email: 'john@test.com', countryCode: 'ES' },
+      {
+        id: 'u1',
+        firstName: 'John',
+        lastName: 'Doe',
+        email: 'john@test.com',
+        countryCode: 'ES',
+      },
     ];
     onSearchUsers.mockResolvedValue(mockResults);
 
     renderModal();
-    fireEvent.change(screen.getByTestId('user-search-input'), { target: { value: 'John' } });
+    fireEvent.change(screen.getByTestId('user-search-input'), {
+      target: { value: 'John' },
+    });
 
     // Advance past debounce
     await act(async () => {
@@ -148,13 +168,27 @@ describe('SendInvitationModal', () => {
 
   it('should show search results in dropdown', async () => {
     const mockResults = [
-      { id: 'u1', firstName: 'John', lastName: 'Doe', email: 'john@test.com', countryCode: 'ES' },
-      { id: 'u2', firstName: 'Jane', lastName: 'Smith', email: 'jane@test.com', countryCode: 'US' },
+      {
+        id: 'u1',
+        firstName: 'John',
+        lastName: 'Doe',
+        email: 'john@test.com',
+        countryCode: 'ES',
+      },
+      {
+        id: 'u2',
+        firstName: 'Jane',
+        lastName: 'Smith',
+        email: 'jane@test.com',
+        countryCode: 'US',
+      },
     ];
     onSearchUsers.mockResolvedValue(mockResults);
 
     renderModal();
-    fireEvent.change(screen.getByTestId('user-search-input'), { target: { value: 'Jo' } });
+    fireEvent.change(screen.getByTestId('user-search-input'), {
+      target: { value: 'Jo' },
+    });
 
     // Advance debounce timer and flush promise microtasks
     await act(async () => {
@@ -170,7 +204,9 @@ describe('SendInvitationModal', () => {
     onSearchUsers.mockResolvedValue([]);
 
     renderModal();
-    fireEvent.change(screen.getByTestId('user-search-input'), { target: { value: 'xyz' } });
+    fireEvent.change(screen.getByTestId('user-search-input'), {
+      target: { value: 'xyz' },
+    });
 
     await act(async () => {
       vi.advanceTimersByTime(350);
@@ -181,12 +217,20 @@ describe('SendInvitationModal', () => {
 
   it('should select user and show chip', async () => {
     const mockResults = [
-      { id: 'u1', firstName: 'John', lastName: 'Doe', email: 'john@test.com', countryCode: 'ES' },
+      {
+        id: 'u1',
+        firstName: 'John',
+        lastName: 'Doe',
+        email: 'john@test.com',
+        countryCode: 'ES',
+      },
     ];
     onSearchUsers.mockResolvedValue(mockResults);
 
     renderModal();
-    fireEvent.change(screen.getByTestId('user-search-input'), { target: { value: 'John' } });
+    fireEvent.change(screen.getByTestId('user-search-input'), {
+      target: { value: 'John' },
+    });
 
     await act(async () => {
       vi.advanceTimersByTime(350);
@@ -202,12 +246,20 @@ describe('SendInvitationModal', () => {
 
   it('should clear selected user when X is clicked', async () => {
     const mockResults = [
-      { id: 'u1', firstName: 'John', lastName: 'Doe', email: 'john@test.com', countryCode: 'ES' },
+      {
+        id: 'u1',
+        firstName: 'John',
+        lastName: 'Doe',
+        email: 'john@test.com',
+        countryCode: 'ES',
+      },
     ];
     onSearchUsers.mockResolvedValue(mockResults);
 
     renderModal();
-    fireEvent.change(screen.getByTestId('user-search-input'), { target: { value: 'John' } });
+    fireEvent.change(screen.getByTestId('user-search-input'), {
+      target: { value: 'John' },
+    });
 
     await act(async () => {
       vi.advanceTimersByTime(350);
@@ -225,12 +277,20 @@ describe('SendInvitationModal', () => {
 
   it('should call onSendByUserId when submitting with selected user', async () => {
     const mockResults = [
-      { id: 'u1', firstName: 'John', lastName: 'Doe', email: 'john@test.com', countryCode: 'ES' },
+      {
+        id: 'u1',
+        firstName: 'John',
+        lastName: 'Doe',
+        email: 'john@test.com',
+        countryCode: 'ES',
+      },
     ];
     onSearchUsers.mockResolvedValue(mockResults);
 
     renderModal();
-    fireEvent.change(screen.getByTestId('user-search-input'), { target: { value: 'John' } });
+    fireEvent.change(screen.getByTestId('user-search-input'), {
+      target: { value: 'John' },
+    });
 
     await act(async () => {
       vi.advanceTimersByTime(350);
@@ -240,7 +300,9 @@ describe('SendInvitationModal', () => {
 
     fireEvent.click(screen.getByTestId('search-result-u1'));
 
-    fireEvent.change(screen.getByTestId('invitation-message-input'), { target: { value: 'Hello!' } });
+    fireEvent.change(screen.getByTestId('invitation-message-input'), {
+      target: { value: 'Hello!' },
+    });
 
     const form = screen.getByTestId('selected-user-chip').closest('form');
     fireEvent.submit(form);
@@ -270,7 +332,9 @@ describe('SendInvitationModal', () => {
     renderModal();
     expect(screen.getByText('0/500')).toBeInTheDocument();
 
-    fireEvent.change(screen.getByTestId('invitation-message-input'), { target: { value: 'Hello' } });
+    fireEvent.change(screen.getByTestId('invitation-message-input'), {
+      target: { value: 'Hello' },
+    });
     expect(screen.getByText('5/500')).toBeInTheDocument();
   });
 
@@ -286,8 +350,20 @@ describe('SendInvitationModal', () => {
 
   it('should highlight next result on ArrowDown', async () => {
     const mockResults = [
-      { id: 'u1', firstName: 'John', lastName: 'Doe', email: 'john@test.com', countryCode: 'ES' },
-      { id: 'u2', firstName: 'Jane', lastName: 'Smith', email: 'jane@test.com', countryCode: 'US' },
+      {
+        id: 'u1',
+        firstName: 'John',
+        lastName: 'Doe',
+        email: 'john@test.com',
+        countryCode: 'ES',
+      },
+      {
+        id: 'u2',
+        firstName: 'Jane',
+        lastName: 'Smith',
+        email: 'jane@test.com',
+        countryCode: 'US',
+      },
     ];
     onSearchUsers.mockResolvedValue(mockResults);
 
@@ -302,15 +378,25 @@ describe('SendInvitationModal', () => {
     expect(screen.getByTestId('search-results-dropdown')).toBeInTheDocument();
 
     fireEvent.keyDown(input, { key: 'ArrowDown' });
-    expect(screen.getByTestId('search-result-u1').getAttribute('aria-selected')).toBe('true');
+    expect(
+      screen.getByTestId('search-result-u1').getAttribute('aria-selected'),
+    ).toBe('true');
 
     fireEvent.keyDown(input, { key: 'ArrowDown' });
-    expect(screen.getByTestId('search-result-u2').getAttribute('aria-selected')).toBe('true');
+    expect(
+      screen.getByTestId('search-result-u2').getAttribute('aria-selected'),
+    ).toBe('true');
   });
 
   it('should wrap around on ArrowDown past last result', async () => {
     const mockResults = [
-      { id: 'u1', firstName: 'John', lastName: 'Doe', email: 'john@test.com', countryCode: 'ES' },
+      {
+        id: 'u1',
+        firstName: 'John',
+        lastName: 'Doe',
+        email: 'john@test.com',
+        countryCode: 'ES',
+      },
     ];
     onSearchUsers.mockResolvedValue(mockResults);
 
@@ -325,12 +411,20 @@ describe('SendInvitationModal', () => {
     fireEvent.keyDown(input, { key: 'ArrowDown' });
     fireEvent.keyDown(input, { key: 'ArrowDown' });
     // Should wrap back to first
-    expect(screen.getByTestId('search-result-u1').getAttribute('aria-selected')).toBe('true');
+    expect(
+      screen.getByTestId('search-result-u1').getAttribute('aria-selected'),
+    ).toBe('true');
   });
 
   it('should select highlighted result on Enter', async () => {
     const mockResults = [
-      { id: 'u1', firstName: 'John', lastName: 'Doe', email: 'john@test.com', countryCode: 'ES' },
+      {
+        id: 'u1',
+        firstName: 'John',
+        lastName: 'Doe',
+        email: 'john@test.com',
+        countryCode: 'ES',
+      },
     ];
     onSearchUsers.mockResolvedValue(mockResults);
 
@@ -350,7 +444,13 @@ describe('SendInvitationModal', () => {
 
   it('should close dropdown on Escape', async () => {
     const mockResults = [
-      { id: 'u1', firstName: 'John', lastName: 'Doe', email: 'john@test.com', countryCode: 'ES' },
+      {
+        id: 'u1',
+        firstName: 'John',
+        lastName: 'Doe',
+        email: 'john@test.com',
+        countryCode: 'ES',
+      },
     ];
     onSearchUsers.mockResolvedValue(mockResults);
 
@@ -365,26 +465,46 @@ describe('SendInvitationModal', () => {
     expect(screen.getByTestId('search-results-dropdown')).toBeInTheDocument();
 
     fireEvent.keyDown(input, { key: 'Escape' });
-    expect(screen.queryByTestId('search-results-dropdown')).not.toBeInTheDocument();
+    expect(
+      screen.queryByTestId('search-results-dropdown'),
+    ).not.toBeInTheDocument();
   });
 
   it('should highlight result on mouse enter', async () => {
     const mockResults = [
-      { id: 'u1', firstName: 'John', lastName: 'Doe', email: 'john@test.com', countryCode: 'ES' },
-      { id: 'u2', firstName: 'Jane', lastName: 'Smith', email: 'jane@test.com', countryCode: 'US' },
+      {
+        id: 'u1',
+        firstName: 'John',
+        lastName: 'Doe',
+        email: 'john@test.com',
+        countryCode: 'ES',
+      },
+      {
+        id: 'u2',
+        firstName: 'Jane',
+        lastName: 'Smith',
+        email: 'jane@test.com',
+        countryCode: 'US',
+      },
     ];
     onSearchUsers.mockResolvedValue(mockResults);
 
     renderModal();
-    fireEvent.change(screen.getByTestId('user-search-input'), { target: { value: 'Jo' } });
+    fireEvent.change(screen.getByTestId('user-search-input'), {
+      target: { value: 'Jo' },
+    });
 
     await act(async () => {
       vi.advanceTimersByTime(350);
     });
 
     fireEvent.mouseEnter(screen.getByTestId('search-result-u2'));
-    expect(screen.getByTestId('search-result-u2').getAttribute('aria-selected')).toBe('true');
-    expect(screen.getByTestId('search-result-u1').getAttribute('aria-selected')).toBe('false');
+    expect(
+      screen.getByTestId('search-result-u2').getAttribute('aria-selected'),
+    ).toBe('true');
+    expect(
+      screen.getByTestId('search-result-u1').getAttribute('aria-selected'),
+    ).toBe('false');
   });
 
   it('should stop intercepting keys after switching to the email tab', async () => {
@@ -392,12 +512,20 @@ describe('SendInvitationModal', () => {
     // estado sobrevivia y el listener es de `document`: en la pestana de
     // correo se tragaba el Enter, asi que el formulario no se enviaba.
     const mockResults = [
-      { id: 'u1', firstName: 'John', lastName: 'Doe', email: 'john@test.com', countryCode: 'ES' },
+      {
+        id: 'u1',
+        firstName: 'John',
+        lastName: 'Doe',
+        email: 'john@test.com',
+        countryCode: 'ES',
+      },
     ];
     onSearchUsers.mockResolvedValue(mockResults);
 
     renderModal();
-    fireEvent.change(screen.getByTestId('user-search-input'), { target: { value: 'Jo' } });
+    fireEvent.change(screen.getByTestId('user-search-input'), {
+      target: { value: 'Jo' },
+    });
 
     await act(async () => {
       vi.advanceTimersByTime(350);
@@ -422,7 +550,9 @@ describe('SendInvitationModal', () => {
     onSearchUsers.mockRejectedValue(new Error('API caida'));
 
     renderModal();
-    fireEvent.change(screen.getByTestId('user-search-input'), { target: { value: 'Jo' } });
+    fireEvent.change(screen.getByTestId('user-search-input'), {
+      target: { value: 'Jo' },
+    });
 
     await act(async () => {
       vi.advanceTimersByTime(350);
@@ -438,12 +568,20 @@ describe('SendInvitationModal', () => {
     // debounce solo se relanza si cambia la busqueda, asi que no habia forma de
     // recuperar los resultados sin editar lo escrito.
     const mockResults = [
-      { id: 'u1', firstName: 'John', lastName: 'Doe', email: 'john@test.com', countryCode: 'ES' },
+      {
+        id: 'u1',
+        firstName: 'John',
+        lastName: 'Doe',
+        email: 'john@test.com',
+        countryCode: 'ES',
+      },
     ];
     onSearchUsers.mockResolvedValue(mockResults);
 
     renderModal();
-    fireEvent.change(screen.getByTestId('user-search-input'), { target: { value: 'Jo' } });
+    fireEvent.change(screen.getByTestId('user-search-input'), {
+      target: { value: 'Jo' },
+    });
 
     await act(async () => {
       vi.advanceTimersByTime(350);
@@ -461,12 +599,20 @@ describe('SendInvitationModal', () => {
     // otra pestana: volvia a comerse el Enter del formulario y encima dejaba a
     // un usuario seleccionado sin que nadie lo eligiera.
     const mockResults = [
-      { id: 'u1', firstName: 'John', lastName: 'Doe', email: 'john@test.com', countryCode: 'ES' },
+      {
+        id: 'u1',
+        firstName: 'John',
+        lastName: 'Doe',
+        email: 'john@test.com',
+        countryCode: 'ES',
+      },
     ];
     onSearchUsers.mockResolvedValue(mockResults);
 
     renderModal();
-    fireEvent.change(screen.getByTestId('user-search-input'), { target: { value: 'Jo' } });
+    fireEvent.change(screen.getByTestId('user-search-input'), {
+      target: { value: 'Jo' },
+    });
     fireEvent.click(screen.getByTestId('tab-by-email'));
 
     await act(async () => {
@@ -487,12 +633,20 @@ describe('SendInvitationModal', () => {
     // cerrado sin que el usuario lo hubiera cerrado, y al volver no habia forma
     // de ver los resultados sin editar lo escrito.
     const mockResults = [
-      { id: 'u1', firstName: 'John', lastName: 'Doe', email: 'john@test.com', countryCode: 'ES' },
+      {
+        id: 'u1',
+        firstName: 'John',
+        lastName: 'Doe',
+        email: 'john@test.com',
+        countryCode: 'ES',
+      },
     ];
     onSearchUsers.mockResolvedValue(mockResults);
 
     renderModal();
-    fireEvent.change(screen.getByTestId('user-search-input'), { target: { value: 'Jo' } });
+    fireEvent.change(screen.getByTestId('user-search-input'), {
+      target: { value: 'Jo' },
+    });
     fireEvent.click(screen.getByTestId('tab-by-email'));
 
     await act(async () => {
@@ -509,17 +663,27 @@ describe('SendInvitationModal', () => {
     // vuelo: al volver, reabrir la lista de «Jo» le ofreceria a John para una
     // busqueda en la que nunca aparecio.
     const mockResults = [
-      { id: 'u1', firstName: 'John', lastName: 'Doe', email: 'john@test.com', countryCode: 'ES' },
+      {
+        id: 'u1',
+        firstName: 'John',
+        lastName: 'Doe',
+        email: 'john@test.com',
+        countryCode: 'ES',
+      },
     ];
     onSearchUsers.mockResolvedValue(mockResults);
 
     renderModal();
-    fireEvent.change(screen.getByTestId('user-search-input'), { target: { value: 'Jo' } });
+    fireEvent.change(screen.getByTestId('user-search-input'), {
+      target: { value: 'Jo' },
+    });
     await act(async () => {
       vi.advanceTimersByTime(350);
     });
 
-    fireEvent.change(screen.getByTestId('user-search-input'), { target: { value: 'zzz' } });
+    fireEvent.change(screen.getByTestId('user-search-input'), {
+      target: { value: 'zzz' },
+    });
     fireEvent.click(screen.getByTestId('tab-by-email'));
     fireEvent.click(screen.getByTestId('tab-search-user'));
 
@@ -530,11 +694,21 @@ describe('SendInvitationModal', () => {
   // subia el pie antes del `click` y el clic caia en otro boton
   it('M1c: pulsar Cancelar con la lista abierta cierra el modal', async () => {
     onSearchUsers.mockResolvedValue([
-      { id: 'u1', firstName: 'John', lastName: 'Doe', email: 'john@test.com', countryCode: 'ES' },
+      {
+        id: 'u1',
+        firstName: 'John',
+        lastName: 'Doe',
+        email: 'john@test.com',
+        countryCode: 'ES',
+      },
     ]);
     renderModal();
-    fireEvent.change(screen.getByTestId('user-search-input'), { target: { value: 'Jo' } });
-    await act(async () => { vi.advanceTimersByTime(350); });
+    fireEvent.change(screen.getByTestId('user-search-input'), {
+      target: { value: 'Jo' },
+    });
+    await act(async () => {
+      vi.advanceTimersByTime(350);
+    });
     const cancelar = screen.getByRole('button', { name: 'cancel' });
 
     fireEvent.mouseDown(cancelar);
@@ -546,21 +720,35 @@ describe('SendInvitationModal', () => {
 
   it('M1d: un clic fuera de la lista la sigue cerrando, y elegir sigue eligiendo', async () => {
     onSearchUsers.mockResolvedValue([
-      { id: 'u1', firstName: 'John', lastName: 'Doe', email: 'john@test.com', countryCode: 'ES' },
+      {
+        id: 'u1',
+        firstName: 'John',
+        lastName: 'Doe',
+        email: 'john@test.com',
+        countryCode: 'ES',
+      },
     ]);
     renderModal();
     const input = screen.getByTestId('user-search-input');
     fireEvent.change(input, { target: { value: 'Jo' } });
-    await act(async () => { vi.advanceTimersByTime(350); });
+    await act(async () => {
+      vi.advanceTimersByTime(350);
+    });
 
     fireEvent.click(screen.getByTestId('invitation-message-input'));
-    expect(screen.queryByTestId('search-results-dropdown')).not.toBeInTheDocument();
+    expect(
+      screen.queryByTestId('search-results-dropdown'),
+    ).not.toBeInTheDocument();
     expect(onClose).not.toHaveBeenCalled();
 
     fireEvent.change(input, { target: { value: 'Joh' } });
-    await act(async () => { vi.advanceTimersByTime(350); });
+    await act(async () => {
+      vi.advanceTimersByTime(350);
+    });
     fireEvent.click(screen.getByTestId('search-result-u1'));
-    expect(screen.queryByTestId('search-results-dropdown')).not.toBeInTheDocument();
+    expect(
+      screen.queryByTestId('search-results-dropdown'),
+    ).not.toBeInTheDocument();
     expect(screen.getByTestId('selected-user-chip')).toBeInTheDocument();
   });
 
@@ -570,11 +758,21 @@ describe('SendInvitationModal', () => {
     // asi que se mira con la pestana ya montada: pulsar la de busqueda
     // estando en ella devuelve la lista y nada la vuelve a cerrar detras
     onSearchUsers.mockResolvedValue([
-      { id: 'u1', firstName: 'John', lastName: 'Doe', email: 'john@test.com', countryCode: 'ES' },
+      {
+        id: 'u1',
+        firstName: 'John',
+        lastName: 'Doe',
+        email: 'john@test.com',
+        countryCode: 'ES',
+      },
     ]);
     renderModal();
-    fireEvent.change(screen.getByTestId('user-search-input'), { target: { value: 'Jo' } });
-    await act(async () => { vi.advanceTimersByTime(350); });
+    fireEvent.change(screen.getByTestId('user-search-input'), {
+      target: { value: 'Jo' },
+    });
+    await act(async () => {
+      vi.advanceTimersByTime(350);
+    });
 
     fireEvent.click(screen.getByTestId('invitation-message-input'));
     fireEvent.click(screen.getByTestId('tab-search-user'));
@@ -587,12 +785,20 @@ describe('SendInvitationModal', () => {
     // cualquier intento de recordar «lo cerro el usuario» lo marcaba como
     // cerrado y la restauracion no ocurria nunca fuera de los tests.
     const mockResults = [
-      { id: 'u1', firstName: 'John', lastName: 'Doe', email: 'john@test.com', countryCode: 'ES' },
+      {
+        id: 'u1',
+        firstName: 'John',
+        lastName: 'Doe',
+        email: 'john@test.com',
+        countryCode: 'ES',
+      },
     ];
     onSearchUsers.mockResolvedValue(mockResults);
 
     renderModal();
-    fireEvent.change(screen.getByTestId('user-search-input'), { target: { value: 'Jo' } });
+    fireEvent.change(screen.getByTestId('user-search-input'), {
+      target: { value: 'Jo' },
+    });
     await act(async () => {
       vi.advanceTimersByTime(350);
     });
@@ -607,12 +813,20 @@ describe('SendInvitationModal', () => {
 
   it('respects a dropdown the user dismissed, even across a tab round trip', async () => {
     const mockResults = [
-      { id: 'u1', firstName: 'John', lastName: 'Doe', email: 'john@test.com', countryCode: 'ES' },
+      {
+        id: 'u1',
+        firstName: 'John',
+        lastName: 'Doe',
+        email: 'john@test.com',
+        countryCode: 'ES',
+      },
     ];
     onSearchUsers.mockResolvedValue(mockResults);
 
     renderModal();
-    fireEvent.change(screen.getByTestId('user-search-input'), { target: { value: 'Jo' } });
+    fireEvent.change(screen.getByTestId('user-search-input'), {
+      target: { value: 'Jo' },
+    });
     await act(async () => {
       vi.advanceTimersByTime(350);
     });
@@ -625,21 +839,33 @@ describe('SendInvitationModal', () => {
     fireEvent.mouseDown(screen.getByTestId('tab-search-user'));
     fireEvent.click(screen.getByTestId('tab-search-user'));
 
-    expect(screen.queryByTestId('search-results-dropdown')).not.toBeInTheDocument();
+    expect(
+      screen.queryByTestId('search-results-dropdown'),
+    ).not.toBeInTheDocument();
   });
 
   it('stops pointing at an option that is no longer there when the field is emptied', async () => {
     const mockResults = [
-      { id: 'u1', firstName: 'John', lastName: 'Doe', email: 'john@test.com', countryCode: 'ES' },
+      {
+        id: 'u1',
+        firstName: 'John',
+        lastName: 'Doe',
+        email: 'john@test.com',
+        countryCode: 'ES',
+      },
     ];
     onSearchUsers.mockResolvedValue(mockResults);
 
     renderModal();
     const input = screen.getByTestId('user-search-input');
     fireEvent.change(input, { target: { value: 'Jo' } });
-    await act(async () => { vi.advanceTimersByTime(350); });
+    await act(async () => {
+      vi.advanceTimersByTime(350);
+    });
 
-    act(() => { fireEvent.keyDown(document, { key: 'ArrowDown' }); });
+    act(() => {
+      fireEvent.keyDown(document, { key: 'ArrowDown' });
+    });
     expect(input.getAttribute('aria-activedescendant')).toBeTruthy();
 
     fireEvent.change(input, { target: { value: '' } });
@@ -651,13 +877,23 @@ describe('SendInvitationModal', () => {
     // seguir usando el formulario. Contarlo como descarte dejaba la
     // restauracion inservible en el camino mas normal.
     const mockResults = [
-      { id: 'u1', firstName: 'John', lastName: 'Doe', email: 'john@test.com', countryCode: 'ES' },
+      {
+        id: 'u1',
+        firstName: 'John',
+        lastName: 'Doe',
+        email: 'john@test.com',
+        countryCode: 'ES',
+      },
     ];
     onSearchUsers.mockResolvedValue(mockResults);
 
     renderModal();
-    fireEvent.change(screen.getByTestId('user-search-input'), { target: { value: 'Jo' } });
-    await act(async () => { vi.advanceTimersByTime(350); });
+    fireEvent.change(screen.getByTestId('user-search-input'), {
+      target: { value: 'Jo' },
+    });
+    await act(async () => {
+      vi.advanceTimersByTime(350);
+    });
 
     fireEvent.click(screen.getByTestId('invitation-message-input'));
     fireEvent.click(screen.getByTestId('tab-by-email'));
@@ -670,18 +906,32 @@ describe('SendInvitationModal', () => {
     // Se llega tabulando, sin ningun clic que lo cierre: si la guarda de foco
     // va por delante, Escape deja de funcionar y no queda forma de cerrarlo.
     const mockResults = [
-      { id: 'u1', firstName: 'John', lastName: 'Doe', email: 'john@test.com', countryCode: 'ES' },
+      {
+        id: 'u1',
+        firstName: 'John',
+        lastName: 'Doe',
+        email: 'john@test.com',
+        countryCode: 'ES',
+      },
     ];
     onSearchUsers.mockResolvedValue(mockResults);
 
     renderModal();
-    fireEvent.change(screen.getByTestId('user-search-input'), { target: { value: 'Jo' } });
-    await act(async () => { vi.advanceTimersByTime(350); });
+    fireEvent.change(screen.getByTestId('user-search-input'), {
+      target: { value: 'Jo' },
+    });
+    await act(async () => {
+      vi.advanceTimersByTime(350);
+    });
 
     screen.getByTestId('invitation-message-input').focus();
-    act(() => { fireEvent.keyDown(document, { key: 'Escape' }); });
+    act(() => {
+      fireEvent.keyDown(document, { key: 'Escape' });
+    });
 
-    expect(screen.queryByTestId('search-results-dropdown')).not.toBeInTheDocument();
+    expect(
+      screen.queryByTestId('search-results-dropdown'),
+    ).not.toBeInTheDocument();
   });
 
   it('still drives the dropdown from the keyboard while typing in the search box', async () => {
@@ -689,14 +939,22 @@ describe('SendInvitationModal', () => {
     // el `ref` del buscador, la guarda se tragaria las flechas y el Enter y la
     // navegacion con teclado moriria en el navegador con la suite en verde.
     const mockResults = [
-      { id: 'u1', firstName: 'John', lastName: 'Doe', email: 'john@test.com', countryCode: 'ES' },
+      {
+        id: 'u1',
+        firstName: 'John',
+        lastName: 'Doe',
+        email: 'john@test.com',
+        countryCode: 'ES',
+      },
     ];
     onSearchUsers.mockResolvedValue(mockResults);
 
     renderModal();
     const input = screen.getByTestId('user-search-input');
     fireEvent.change(input, { target: { value: 'Jo' } });
-    await act(async () => { vi.advanceTimersByTime(350); });
+    await act(async () => {
+      vi.advanceTimersByTime(350);
+    });
 
     input.focus();
     act(() => {
@@ -704,7 +962,9 @@ describe('SendInvitationModal', () => {
       fireEvent.keyDown(document, { key: 'Enter' });
     });
 
-    expect(screen.getByTestId('selected-user-chip')).toHaveTextContent('John Doe');
+    expect(screen.getByTestId('selected-user-chip')).toHaveTextContent(
+      'John Doe',
+    );
   });
 
   it('leaves the keyboard alone while the user writes the personal message', async () => {
@@ -712,13 +972,23 @@ describe('SendInvitationModal', () => {
     // flechas y el Enter de quien estaba escribiendo el mensaje, y el Enter
     // llegaba a seleccionar a alguien por su cuenta.
     const mockResults = [
-      { id: 'u1', firstName: 'John', lastName: 'Doe', email: 'john@test.com', countryCode: 'ES' },
+      {
+        id: 'u1',
+        firstName: 'John',
+        lastName: 'Doe',
+        email: 'john@test.com',
+        countryCode: 'ES',
+      },
     ];
     onSearchUsers.mockResolvedValue(mockResults);
 
     renderModal();
-    fireEvent.change(screen.getByTestId('user-search-input'), { target: { value: 'Jo' } });
-    await act(async () => { vi.advanceTimersByTime(350); });
+    fireEvent.change(screen.getByTestId('user-search-input'), {
+      target: { value: 'Jo' },
+    });
+    await act(async () => {
+      vi.advanceTimersByTime(350);
+    });
 
     screen.getByTestId('invitation-message-input').focus();
 
@@ -737,10 +1007,14 @@ describe('SendInvitationModal', () => {
     onSearchUsers.mockRejectedValue(new Error('API caida'));
 
     renderModal();
-    fireEvent.change(screen.getByTestId('user-search-input'), { target: { value: 'Jo' } });
+    fireEvent.change(screen.getByTestId('user-search-input'), {
+      target: { value: 'Jo' },
+    });
     fireEvent.click(screen.getByTestId('tab-by-email'));
 
-    await act(async () => { vi.advanceTimersByTime(350); });
+    await act(async () => {
+      vi.advanceTimersByTime(350);
+    });
 
     expect(screen.queryByTestId('search-error')).not.toBeInTheDocument();
 
@@ -753,20 +1027,38 @@ describe('SendInvitationModal', () => {
     // para siempre: quien pulso Escape una vez sobre «Jo» no recuperaba ningun
     // «Jo» futuro al volver de la otra pestana.
     const mockResults = [
-      { id: 'u1', firstName: 'John', lastName: 'Doe', email: 'john@test.com', countryCode: 'ES' },
+      {
+        id: 'u1',
+        firstName: 'John',
+        lastName: 'Doe',
+        email: 'john@test.com',
+        countryCode: 'ES',
+      },
     ];
     onSearchUsers.mockResolvedValue(mockResults);
 
     renderModal();
-    fireEvent.change(screen.getByTestId('user-search-input'), { target: { value: 'Jo' } });
-    await act(async () => { vi.advanceTimersByTime(350); });
+    fireEvent.change(screen.getByTestId('user-search-input'), {
+      target: { value: 'Jo' },
+    });
+    await act(async () => {
+      vi.advanceTimersByTime(350);
+    });
 
-    act(() => { fireEvent.keyDown(document, { key: 'Escape' }); });
+    act(() => {
+      fireEvent.keyDown(document, { key: 'Escape' });
+    });
 
     // Se vacia y se vuelve a escribir lo mismo: es una busqueda nueva
-    fireEvent.change(screen.getByTestId('user-search-input'), { target: { value: '' } });
-    fireEvent.change(screen.getByTestId('user-search-input'), { target: { value: 'Jo' } });
-    await act(async () => { vi.advanceTimersByTime(350); });
+    fireEvent.change(screen.getByTestId('user-search-input'), {
+      target: { value: '' },
+    });
+    fireEvent.change(screen.getByTestId('user-search-input'), {
+      target: { value: 'Jo' },
+    });
+    await act(async () => {
+      vi.advanceTimersByTime(350);
+    });
 
     fireEvent.click(screen.getByTestId('tab-by-email'));
     fireEvent.click(screen.getByTestId('tab-search-user'));
@@ -777,22 +1069,41 @@ describe('SendInvitationModal', () => {
   it('does not let a late response land on an already-emptied field', async () => {
     // La rama de menos de dos caracteres no invalidaba la peticion en vuelo.
     let resolver;
-    onSearchUsers.mockImplementation(() => new Promise((res) => { resolver = res; }));
+    onSearchUsers.mockImplementation(
+      () =>
+        new Promise((res) => {
+          resolver = res;
+        }),
+    );
 
     renderModal();
-    fireEvent.change(screen.getByTestId('user-search-input'), { target: { value: 'Jo' } });
+    fireEvent.change(screen.getByTestId('user-search-input'), {
+      target: { value: 'Jo' },
+    });
     await act(async () => {
       vi.advanceTimersByTime(350);
     });
 
-    fireEvent.change(screen.getByTestId('user-search-input'), { target: { value: '' } });
+    fireEvent.change(screen.getByTestId('user-search-input'), {
+      target: { value: '' },
+    });
 
     await act(async () => {
-      resolver([{ id: 'u1', firstName: 'John', lastName: 'Doe', email: 'john@test.com', countryCode: 'ES' }]);
+      resolver([
+        {
+          id: 'u1',
+          firstName: 'John',
+          lastName: 'Doe',
+          email: 'john@test.com',
+          countryCode: 'ES',
+        },
+      ]);
       await Promise.resolve();
     });
 
-    expect(screen.queryByTestId('search-results-dropdown')).not.toBeInTheDocument();
+    expect(
+      screen.queryByTestId('search-results-dropdown'),
+    ).not.toBeInTheDocument();
   });
 
   it('brings back the no-results notice too, not just the list', async () => {
@@ -801,7 +1112,9 @@ describe('SendInvitationModal', () => {
     onSearchUsers.mockResolvedValue([]);
 
     renderModal();
-    fireEvent.change(screen.getByTestId('user-search-input'), { target: { value: 'zzz' } });
+    fireEvent.change(screen.getByTestId('user-search-input'), {
+      target: { value: 'zzz' },
+    });
     await act(async () => {
       vi.advanceTimersByTime(350);
     });
@@ -819,7 +1132,9 @@ describe('SendInvitationModal', () => {
     onSearchUsers.mockResolvedValue([]);
 
     renderModal();
-    fireEvent.change(screen.getByTestId('user-search-input'), { target: { value: 'zzz' } });
+    fireEvent.change(screen.getByTestId('user-search-input'), {
+      target: { value: 'zzz' },
+    });
 
     await act(async () => {
       vi.advanceTimersByTime(350);
@@ -840,13 +1155,27 @@ describe('SendInvitationModal', () => {
     // copiado a la ref despues del render, el `Enter` leia todavia -1 y no
     // seleccionaba a nadie. Mismo fallo que FE #440 en AddFriendModal.
     const mockResults = [
-      { id: 'u1', firstName: 'John', lastName: 'Doe', email: 'john@test.com', countryCode: 'ES' },
-      { id: 'u2', firstName: 'Jane', lastName: 'Smith', email: 'jane@test.com', countryCode: 'US' },
+      {
+        id: 'u1',
+        firstName: 'John',
+        lastName: 'Doe',
+        email: 'john@test.com',
+        countryCode: 'ES',
+      },
+      {
+        id: 'u2',
+        firstName: 'Jane',
+        lastName: 'Smith',
+        email: 'jane@test.com',
+        countryCode: 'US',
+      },
     ];
     onSearchUsers.mockResolvedValue(mockResults);
 
     renderModal();
-    fireEvent.change(screen.getByTestId('user-search-input'), { target: { value: 'Jo' } });
+    fireEvent.change(screen.getByTestId('user-search-input'), {
+      target: { value: 'Jo' },
+    });
 
     await act(async () => {
       vi.advanceTimersByTime(350);
@@ -860,7 +1189,166 @@ describe('SendInvitationModal', () => {
     // El chip a secas no basta: con dos resultados sembrados, pasaria aunque
     // el Enter hubiera cogido a Jane. Lo que se prueba es que cogio al que
     // resalto el ArrowDown.
-    expect(screen.getByTestId('selected-user-chip')).toHaveTextContent('John Doe');
+    expect(screen.getByTestId('selected-user-chip')).toHaveTextContent(
+      'John Doe',
+    );
+  });
+
+  describe('T3-7 · elegir o quitar con una búsqueda en vuelo', () => {
+    const JOHN = {
+      id: 'u1',
+      firstName: 'John',
+      lastName: 'Doe',
+      email: 'john@test.com',
+      countryCode: 'ES',
+    };
+    const JOHNNY = {
+      id: 'u9',
+      firstName: 'Johnny',
+      lastName: 'Late',
+      email: 'late@test.com',
+      countryCode: 'ES',
+    };
+    let responderTarde;
+
+    // Con «Jo» ya encontrado, se sigue tecleando: la de «Joh» sale y no vuelve
+    const conBusquedaEnVuelo = async () => {
+      onSearchUsers.mockImplementation((q) =>
+        q === 'Jo'
+          ? Promise.resolve([JOHN])
+          : new Promise((r) => {
+              responderTarde = r;
+            }),
+      );
+      renderModal();
+      fireEvent.change(screen.getByTestId('user-search-input'), {
+        target: { value: 'Jo' },
+      });
+      await act(async () => {
+        vi.advanceTimersByTime(350);
+      });
+      fireEvent.change(screen.getByTestId('user-search-input'), {
+        target: { value: 'Joh' },
+      });
+      await act(async () => {
+        vi.advanceTimersByTime(350);
+      });
+      expect(onSearchUsers).toHaveBeenCalledWith('Joh');
+      expect(document.querySelector('.animate-spin')).not.toBeNull();
+    };
+
+    const llegaLaTardia = async () => {
+      await act(async () => {
+        responderTarde([JOHNNY]);
+        await Promise.resolve();
+        await Promise.resolve();
+      });
+    };
+
+    it.each([
+      [
+        'con un clic',
+        () => fireEvent.click(screen.getByTestId('search-result-u1')),
+      ],
+      [
+        'con Enter',
+        () => {
+          fireEvent.keyDown(document, { key: 'ArrowDown' });
+          fireEvent.keyDown(document, { key: 'Enter' });
+        },
+      ],
+    ])(
+      'elegir %s y quitarlo: sin lista ni espera, y la respuesta tardía no abre nada',
+      async (_, elegir) => {
+        await conBusquedaEnVuelo();
+
+        elegir();
+        expect(screen.getByTestId('selected-user-chip')).toHaveTextContent(
+          'John Doe',
+        );
+        fireEvent.click(screen.getByTestId('clear-selected-user'));
+
+        expect(screen.getByTestId('user-search-input')).toHaveValue('');
+        expect(
+          screen.queryByTestId('search-results-dropdown'),
+        ).not.toBeInTheDocument();
+        expect(document.querySelector('.animate-spin')).toBeNull();
+        await llegaLaTardia();
+        expect(
+          screen.queryByTestId('search-results-dropdown'),
+        ).not.toBeInTheDocument();
+        expect(
+          screen.queryByTestId('search-result-u9'),
+        ).not.toBeInTheDocument();
+        expect(document.querySelector('.animate-spin')).toBeNull();
+      },
+    );
+
+    it('elegido, la respuesta tardía no cambia al elegido', async () => {
+      await conBusquedaEnVuelo();
+      fireEvent.click(screen.getByTestId('search-result-u1'));
+
+      await llegaLaTardia();
+
+      expect(screen.getByTestId('selected-user-chip')).toHaveTextContent(
+        'John Doe',
+      );
+    });
+
+    it.each([
+      [
+        'con un clic',
+        () => fireEvent.click(screen.getByTestId('search-result-u1')),
+      ],
+      [
+        'con Enter',
+        () => {
+          fireEvent.keyDown(document, { key: 'ArrowDown' });
+          fireEvent.keyDown(document, { key: 'Enter' });
+        },
+      ],
+    ])(
+      'elegido %s, la tardía no deja una lista oculta que el teclado elija',
+      async (_, elegir) => {
+        await conBusquedaEnVuelo();
+        elegir();
+
+        await llegaLaTardia();
+        fireEvent.keyDown(document, { key: 'ArrowDown' });
+        fireEvent.keyDown(document, { key: 'Enter' });
+
+        expect(screen.getByTestId('selected-user-chip')).toHaveTextContent(
+          'John Doe',
+        );
+      },
+    );
+  });
+
+  it('T3-8: si onSearchUsers cambia antes de que salte el temporizador, busca con el último', async () => {
+    const viejo = vi.fn().mockResolvedValue([]);
+    const nuevo = vi.fn().mockResolvedValue([]);
+    const { rerender } = renderModal({ onSearchUsers: viejo });
+    fireEvent.change(screen.getByTestId('user-search-input'), {
+      target: { value: 'Jo' },
+    });
+
+    rerender(
+      <SendInvitationModal
+        isOpen={true}
+        onClose={onClose}
+        onSend={onSend}
+        onSendByUserId={onSendByUserId}
+        onSearchUsers={nuevo}
+        isProcessing={false}
+        t={mockT}
+      />,
+    );
+    await act(async () => {
+      vi.advanceTimersByTime(350);
+    });
+
+    expect(viejo).not.toHaveBeenCalled();
+    expect(nuevo).toHaveBeenCalledWith('Jo');
   });
 
   describe('pestaña de amigos (FE #409)', () => {
@@ -960,7 +1448,9 @@ describe('SendInvitationModal', () => {
 
       fireEvent.click(screen.getByTestId('tab-by-email'));
       const mensaje = document.querySelector('textarea');
-      fireEvent.change(mensaje, { target: { value: 'Te espero en el hoyo 1' } });
+      fireEvent.change(mensaje, {
+        target: { value: 'Te espero en el hoyo 1' },
+      });
 
       fireEvent.click(screen.getByTestId('tab-friends'));
       fireEvent.click(screen.getByTestId('invite-friend-u-1'));
@@ -983,7 +1473,9 @@ describe('SendInvitationModal', () => {
         falloAlComprobarSituacion: true,
       });
 
-      expect(screen.getByTestId('friends-eligibility-error')).toBeInTheDocument();
+      expect(
+        screen.getByTestId('friends-eligibility-error'),
+      ).toBeInTheDocument();
       // La lista no se enseña: ofrecer invitar sin saber quién está ya dentro
       // es ofrecer lo que el servidor va a rechazar
       expect(screen.queryByTestId('invite-friend-u-1')).not.toBeInTheDocument();
@@ -992,7 +1484,10 @@ describe('SendInvitationModal', () => {
     it('las pestañas se anuncian como pestañas', () => {
       renderModalCrudo();
 
-      expect(screen.getByTestId('invitation-tabs')).toHaveAttribute('role', 'tablist');
+      expect(screen.getByTestId('invitation-tabs')).toHaveAttribute(
+        'role',
+        'tablist',
+      );
       const amigos = screen.getByTestId('tab-friends');
       const buscar = screen.getByTestId('tab-search-user');
       expect(amigos).toHaveAttribute('role', 'tab');
@@ -1022,24 +1517,39 @@ describe('SendInvitationModal', () => {
       fireEvent.keyDown(amigos, { key: 'ArrowRight' });
       expect(buscar).toHaveAttribute('aria-selected', 'true');
       expect(buscar).toHaveFocus();
-      expect(screen.getByRole('tabpanel', { name: 'send.tabSearchUser' }).tagName).toBe('FORM');
+      expect(
+        screen.getByRole('tabpanel', { name: 'send.tabSearchUser' }).tagName,
+      ).toBe('FORM');
 
       fireEvent.keyDown(buscar, { key: 'End' });
       expect(correo).toHaveAttribute('aria-selected', 'true');
-      expect(within(screen.getByRole('tabpanel', { name: 'send.tabByEmail' })).getByLabelText('send.emailLabel')).toBeInTheDocument();
+      expect(
+        within(
+          screen.getByRole('tabpanel', { name: 'send.tabByEmail' }),
+        ).getByLabelText('send.emailLabel'),
+      ).toBeInTheDocument();
 
       fireEvent.keyDown(correo, { key: 'ArrowRight' });
       expect(amigos).toHaveAttribute('aria-selected', 'true');
-      expect(screen.getByRole('tabpanel', { name: 'send.tabFriends' })).toBeInTheDocument();
+      expect(
+        screen.getByRole('tabpanel', { name: 'send.tabFriends' }),
+      ).toBeInTheDocument();
     });
 
     it('FE #658: cambiar de pestaña con el teclado también borra el mensaje personal', () => {
       renderModal();
-      fireEvent.change(screen.getByPlaceholderText('send.personalMessagePlaceholder'), { target: { value: 'hola' } });
+      fireEvent.change(
+        screen.getByPlaceholderText('send.personalMessagePlaceholder'),
+        { target: { value: 'hola' } },
+      );
 
-      fireEvent.keyDown(screen.getByTestId('tab-search-user'), { key: 'ArrowRight' });
+      fireEvent.keyDown(screen.getByTestId('tab-search-user'), {
+        key: 'ArrowRight',
+      });
 
-      expect(screen.getByPlaceholderText('send.personalMessagePlaceholder')).toHaveValue('');
+      expect(
+        screen.getByPlaceholderText('send.personalMessagePlaceholder'),
+      ).toHaveValue('');
     });
   });
 
@@ -1048,10 +1558,18 @@ describe('SendInvitationModal', () => {
   describe('la lista de resultados cabe en el modal', () => {
     const abrirLista = async () => {
       onSearchUsers.mockResolvedValue([
-        { id: 'u1', firstName: 'John', lastName: 'Doe', email: 'john@test.com', countryCode: 'ES' },
+        {
+          id: 'u1',
+          firstName: 'John',
+          lastName: 'Doe',
+          email: 'john@test.com',
+          countryCode: 'ES',
+        },
       ]);
       renderModal();
-      fireEvent.change(screen.getByTestId('user-search-input'), { target: { value: 'Jo' } });
+      fireEvent.change(screen.getByTestId('user-search-input'), {
+        target: { value: 'Jo' },
+      });
       await act(async () => {
         vi.advanceTimersByTime(350);
       });
@@ -1061,20 +1579,28 @@ describe('SendInvitationModal', () => {
       await abrirLista();
 
       const lista = screen.getByTestId('search-results-dropdown');
-      expect(screen.getByTestId('caja-enviar-invitacion')).toContainElement(lista);
+      expect(screen.getByTestId('caja-enviar-invitacion')).toContainElement(
+        lista,
+      );
       expect(lista).not.toHaveClass('absolute');
     });
 
     it('A2b: con muchos resultados la lista se desplaza dentro, con su alto maximo', async () => {
       await abrirLista();
 
-      expect(screen.getByTestId('search-results-dropdown')).toHaveClass('max-h-48', 'overflow-y-auto');
+      expect(screen.getByTestId('search-results-dropdown')).toHaveClass(
+        'max-h-48',
+        'overflow-y-auto',
+      );
     });
 
     it('A2c: la caja nunca pasa del alto de la pantalla: se desplaza por dentro', () => {
       renderModal();
 
-      expect(screen.getByTestId('caja-enviar-invitacion')).toHaveClass('max-h-[calc(100dvh-2rem)]', 'overflow-y-auto');
+      expect(screen.getByTestId('caja-enviar-invitacion')).toHaveClass(
+        'max-h-[calc(100dvh-2rem)]',
+        'overflow-y-auto',
+      );
     });
   });
 
@@ -1084,10 +1610,18 @@ describe('SendInvitationModal', () => {
   describe('Escape con la lista de resultados abierta', () => {
     const abrirLista = async () => {
       onSearchUsers.mockResolvedValue([
-        { id: 'u1', firstName: 'John', lastName: 'Doe', email: 'john@test.com', countryCode: 'ES' },
+        {
+          id: 'u1',
+          firstName: 'John',
+          lastName: 'Doe',
+          email: 'john@test.com',
+          countryCode: 'ES',
+        },
       ]);
       renderModal();
-      fireEvent.change(screen.getByTestId('user-search-input'), { target: { value: 'Jo' } });
+      fireEvent.change(screen.getByTestId('user-search-input'), {
+        target: { value: 'Jo' },
+      });
       await act(async () => {
         vi.advanceTimersByTime(350);
       });
@@ -1127,7 +1661,10 @@ describe('SendInvitationModal', () => {
     let rerenderConInvitados;
     const buscar = async () => {
       onSearchUsers.mockResolvedValue(resultados);
-      const { rerender } = renderModal({ idsInscritos: ['dentro'], idsInvitados: ['invitada'] });
+      const { rerender } = renderModal({
+        idsInscritos: ['dentro'],
+        idsInvitados: ['invitada'],
+      });
       rerenderConInvitados = (idsInvitados) =>
         rerender(
           <SendInvitationModal
@@ -1140,7 +1677,7 @@ describe('SendInvitationModal', () => {
             t={mockT}
             idsInscritos={['dentro']}
             idsInvitados={idsInvitados}
-          />
+          />,
         );
       const input = screen.getByTestId('user-search-input');
       fireEvent.change(input, { target: { value: 'a' + 'a' } });
@@ -1154,10 +1691,14 @@ describe('SendInvitationModal', () => {
       await buscar();
       const fila = screen.getByTestId('search-result-dentro');
 
-      expect(within(fila).getByText('send.alreadyEnrolled')).toBeInTheDocument();
+      expect(
+        within(fila).getByText('send.alreadyEnrolled'),
+      ).toBeInTheDocument();
       expect(fila).toBeDisabled();
       fireEvent.click(fila);
-      expect(screen.queryByTestId('selected-user-chip')).not.toBeInTheDocument();
+      expect(
+        screen.queryByTestId('selected-user-chip'),
+      ).not.toBeInTheDocument();
     });
 
     it('B2: el invitado sale marcado y no se puede elegir', async () => {
@@ -1166,18 +1707,25 @@ describe('SendInvitationModal', () => {
 
       expect(within(fila).getByText('send.alreadyInvited')).toBeInTheDocument();
       expect(fila).toBeDisabled();
-      expect(within(fila).queryByText('send.alreadyEnrolled')).not.toBeInTheDocument();
+      expect(
+        within(fila).queryByText('send.alreadyEnrolled'),
+      ).not.toBeInTheDocument();
     });
 
     it('B3: si el resaltado pasa a estar invitado con la lista abierta, Enter no lo elige', async () => {
       const input = await buscar();
       fireEvent.keyDown(input, { key: 'ArrowDown' });
-      expect(screen.getByTestId('search-result-libre')).toHaveAttribute('aria-selected', 'true');
+      expect(screen.getByTestId('search-result-libre')).toHaveAttribute(
+        'aria-selected',
+        'true',
+      );
 
       rerenderConInvitados(['invitada', 'libre']);
       fireEvent.keyDown(input, { key: 'Enter' });
 
-      expect(screen.queryByTestId('selected-user-chip')).not.toBeInTheDocument();
+      expect(
+        screen.queryByTestId('selected-user-chip'),
+      ).not.toBeInTheDocument();
     });
 
     // CodeRabbit: las flechas pasaban por los marcados uno a uno
@@ -1185,12 +1733,21 @@ describe('SendInvitationModal', () => {
       const input = await buscar();
 
       fireEvent.keyDown(input, { key: 'ArrowDown' });
-      expect(screen.getByTestId('search-result-libre')).toHaveAttribute('aria-selected', 'true');
+      expect(screen.getByTestId('search-result-libre')).toHaveAttribute(
+        'aria-selected',
+        'true',
+      );
       // Y al dar la vuelta, otra vez al único que se puede
       fireEvent.keyDown(input, { key: 'ArrowDown' });
-      expect(screen.getByTestId('search-result-libre')).toHaveAttribute('aria-selected', 'true');
+      expect(screen.getByTestId('search-result-libre')).toHaveAttribute(
+        'aria-selected',
+        'true',
+      );
       fireEvent.keyDown(input, { key: 'ArrowUp' });
-      expect(screen.getByTestId('search-result-libre')).toHaveAttribute('aria-selected', 'true');
+      expect(screen.getByTestId('search-result-libre')).toHaveAttribute(
+        'aria-selected',
+        'true',
+      );
     });
 
     it('B3d: si no se puede ninguno, las flechas no resaltan nada', async () => {
@@ -1204,8 +1761,14 @@ describe('SendInvitationModal', () => {
 
       fireEvent.keyDown(input, { key: 'ArrowDown' });
 
-      expect(screen.getByTestId('search-result-dentro')).toHaveAttribute('aria-selected', 'false');
-      expect(screen.getByTestId('search-result-invitada')).toHaveAttribute('aria-selected', 'false');
+      expect(screen.getByTestId('search-result-dentro')).toHaveAttribute(
+        'aria-selected',
+        'false',
+      );
+      expect(screen.getByTestId('search-result-invitada')).toHaveAttribute(
+        'aria-selected',
+        'false',
+      );
     });
 
     it('B3e: sin nadie marcado, la flecha arriba empieza por el último', async () => {
@@ -1219,7 +1782,10 @@ describe('SendInvitationModal', () => {
 
       fireEvent.keyDown(input, { key: 'ArrowUp' });
 
-      expect(screen.getByTestId('search-result-libre')).toHaveAttribute('aria-selected', 'true');
+      expect(screen.getByTestId('search-result-libre')).toHaveAttribute(
+        'aria-selected',
+        'true',
+      );
     });
 
     // CodeRabbit: mientras no se sabe quién está ya dentro, o si no se pudo
@@ -1230,7 +1796,9 @@ describe('SendInvitationModal', () => {
     ])('B5: %s, ningún resultado se puede elegir', async (_caso, props) => {
       onSearchUsers.mockResolvedValue(resultados);
       renderModal(props);
-      fireEvent.change(screen.getByTestId('user-search-input'), { target: { value: 'aa' } });
+      fireEvent.change(screen.getByTestId('user-search-input'), {
+        target: { value: 'aa' },
+      });
       await act(async () => {
         vi.advanceTimersByTime(350);
       });
@@ -1242,12 +1810,16 @@ describe('SendInvitationModal', () => {
       const input = await buscar();
       const libre = screen.getByTestId('search-result-libre');
       expect(libre).toBeEnabled();
-      expect(within(libre).queryByText(/send\.already/)).not.toBeInTheDocument();
+      expect(
+        within(libre).queryByText(/send\.already/),
+      ).not.toBeInTheDocument();
 
       fireEvent.keyDown(input, { key: 'ArrowUp' });
       fireEvent.keyDown(input, { key: 'Enter' });
 
-      expect(screen.getByTestId('selected-user-chip')).toHaveTextContent('Carla');
+      expect(screen.getByTestId('selected-user-chip')).toHaveTextContent(
+        'Carla',
+      );
     });
   });
 });

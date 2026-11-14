@@ -40,8 +40,12 @@ const mockPartidos = vi.fn();
 const mockPartidas = vi.fn();
 vi.mock('../../composition', () => ({
   listUserCompetitionsUseCase: { execute: () => Promise.resolve([]) },
-  getUpcomingMatchesUseCase: { executeWithCompleteness: (...a) => mockPartidos(...a) },
-  getUpcomingTeeGroupsUseCase: { executeWithCompleteness: (...a) => mockPartidas(...a) },
+  getUpcomingMatchesUseCase: {
+    executeWithCompleteness: (...a) => mockPartidos(...a),
+  },
+  getUpcomingTeeGroupsUseCase: {
+    executeWithCompleteness: (...a) => mockPartidas(...a),
+  },
   getScoringViewUseCase: { execute: vi.fn().mockResolvedValue(null) },
   getTeeGroupScoringViewUseCase: { execute: vi.fn().mockResolvedValue(null) },
 }));
@@ -59,8 +63,10 @@ vi.mock('react-i18next', () => ({
 
 vi.mock('../../components/layout/HeaderAuth', () => ({ default: () => null }));
 
-const { olvidaTodo, recuerdaLasPartidas } = await import('../../services/loUltimoConocido');
-const { olvidaLasPrecargas } = await import('../../services/partidosSinCobertura');
+const { olvidaTodo, recuerdaLasPartidas } =
+  await import('../../services/loUltimoConocido');
+const { olvidaLasPrecargas } =
+  await import('../../services/partidosSinCobertura');
 const UpcomingMatchesPage = (await import('./UpcomingMatchesPage')).default;
 
 const partido = (extra = {}) => ({
@@ -98,7 +104,12 @@ const responde = ({ partidos = [], partidas = [] } = {}) => {
   mockPartidas.mockResolvedValue({ matches: partidas, complete: true });
 };
 
-const pinta = () => render(<MemoryRouter><UpcomingMatchesPage /></MemoryRouter>);
+const pinta = () =>
+  render(
+    <MemoryRouter>
+      <UpcomingMatchesPage />
+    </MemoryRouter>,
+  );
 const tarjetas = async () => screen.findAllByTestId('upcoming-match-card');
 
 describe('Mis próximos partidos · tarjetas (FE #845)', () => {
@@ -124,16 +135,36 @@ describe('Mis próximos partidos · tarjetas (FE #845)', () => {
 
   it('1 · partidos y partidas juntos, por día, franja y hora', async () => {
     responde({
-      partidos: [partido({ id: 'ryder-tarde', roundDate: '2026-09-24', sessionType: 'AFTERNOON' })],
+      partidos: [
+        partido({
+          id: 'ryder-tarde',
+          roundDate: '2026-09-24',
+          sessionType: 'AFTERNOON',
+        }),
+      ],
       partidas: [
-        partida({ id: 'medal-pronto', roundDate: '2026-09-24', sessionType: 'MORNING', teeTime: '08:10' }),
-        partida({ id: 'medal-antes', roundDate: '2026-09-22', sessionType: 'AFTERNOON', teeTime: '13:00' }),
+        partida({
+          id: 'medal-pronto',
+          roundDate: '2026-09-24',
+          sessionType: 'MORNING',
+          teeTime: '08:10',
+        }),
+        partida({
+          id: 'medal-antes',
+          roundDate: '2026-09-22',
+          sessionType: 'AFTERNOON',
+          teeTime: '13:00',
+        }),
       ],
     });
 
     pinta();
 
-    expect((await tarjetas()).map((t) => t.dataset.id)).toEqual(['medal-antes', 'medal-pronto', 'ryder-tarde']);
+    expect((await tarjetas()).map((t) => t.dataset.id)).toEqual([
+      'medal-antes',
+      'medal-pronto',
+      'ryder-tarde',
+    ]);
   });
 
   it('2 · el tipo de torneo y el nombre, que lleva a la competición; sin «Ver calendario»', async () => {
@@ -142,11 +173,21 @@ describe('Mis próximos partidos · tarjetas (FE #845)', () => {
     pinta();
 
     const [ryder, medal] = await tarjetas();
-    expect(within(ryder).getByTestId('tipo-de-torneo')).toHaveTextContent('create.type.RYDER_CUP.title');
-    expect(within(medal).getByTestId('tipo-de-torneo')).toHaveTextContent('create.type.MEDAL.title');
-    expect(within(ryder).getByRole('link', { name: 'Ryder Amigos' })).toHaveAttribute('href', '/competitions/c-1');
-    expect(within(medal).getByRole('link', { name: 'Medal de otoño' })).toHaveAttribute('href', '/competitions/c-2');
-    expect(screen.queryByText('upcomingMatches.viewSchedule')).not.toBeInTheDocument();
+    expect(within(ryder).getByTestId('tipo-de-torneo')).toHaveTextContent(
+      'create.type.RYDER_CUP.title',
+    );
+    expect(within(medal).getByTestId('tipo-de-torneo')).toHaveTextContent(
+      'create.type.MEDAL.title',
+    );
+    expect(
+      within(ryder).getByRole('link', { name: 'Ryder Amigos' }),
+    ).toHaveAttribute('href', '/competitions/c-1');
+    expect(
+      within(medal).getByRole('link', { name: 'Medal de otoño' }),
+    ).toHaveAttribute('href', '/competitions/c-2');
+    expect(
+      screen.queryByText('upcomingMatches.viewSchedule'),
+    ).not.toBeInTheDocument();
   });
 
   it('3 · Ryder: día, sesión y formato, sin hora', async () => {
@@ -155,7 +196,9 @@ describe('Mis próximos partidos · tarjetas (FE #845)', () => {
     pinta();
 
     const [ryder] = await tarjetas();
-    expect(within(ryder).getByTestId('cuando')).toHaveTextContent(/^Jue 24 sept? · sessions\.AFTERNOON · formats\.FOURBALL$/);
+    expect(within(ryder).getByTestId('cuando')).toHaveTextContent(
+      /^Jue 24 sept? · sessions\.AFTERNOON · formats\.FOURBALL$/,
+    );
   });
 
   it('4 · stroke play: día, hora y número de partida', async () => {
@@ -164,7 +207,9 @@ describe('Mis próximos partidos · tarjetas (FE #845)', () => {
     pinta();
 
     const [medal] = await tarjetas();
-    expect(within(medal).getByTestId('cuando')).toHaveTextContent('Lun 12 oct · 08:10 · upcomingMatches.teeGroup {"numero":2}');
+    expect(within(medal).getByTestId('cuando')).toHaveTextContent(
+      'Lun 12 oct · 08:10 · upcomingMatches.teeGroup {"numero":2}',
+    );
   });
 
   it('4b · stroke play sin hora todavía: día y número', async () => {
@@ -173,7 +218,9 @@ describe('Mis próximos partidos · tarjetas (FE #845)', () => {
     pinta();
 
     const [medal] = await tarjetas();
-    expect(within(medal).getByTestId('cuando')).toHaveTextContent(/^Lun 12 oct · upcomingMatches\.teeGroup/);
+    expect(within(medal).getByTestId('cuando')).toHaveTextContent(
+      /^Lun 12 oct · upcomingMatches\.teeGroup/,
+    );
   });
 
   it('5 · con quién: «Tú y Nacho vs Luna y Óscar»', async () => {
@@ -183,18 +230,26 @@ describe('Mis próximos partidos · tarjetas (FE #845)', () => {
 
     const [ryder] = await tarjetas();
     expect(within(ryder).getByTestId('con-quien')).toHaveTextContent(
-      'upcomingMatches.versus {"nosotros":"upcomingMatches.you y Nacho","ellos":"Luna y Óscar"}'
+      'upcomingMatches.versus {"nosotros":"upcomingMatches.you y Nacho","ellos":"Luna y Óscar"}',
     );
   });
 
   it('5b · individual: «Tú vs Luna»', async () => {
-    responde({ partidos: [partido({ matchFormat: 'SINGLES', partnerNames: [], opponentNames: ['Luna'] })] });
+    responde({
+      partidos: [
+        partido({
+          matchFormat: 'SINGLES',
+          partnerNames: [],
+          opponentNames: ['Luna'],
+        }),
+      ],
+    });
 
     pinta();
 
     const [ryder] = await tarjetas();
     expect(within(ryder).getByTestId('con-quien')).toHaveTextContent(
-      'upcomingMatches.versus {"nosotros":"upcomingMatches.you","ellos":"Luna"}'
+      'upcomingMatches.versus {"nosotros":"upcomingMatches.you","ellos":"Luna"}',
     );
   });
 
@@ -204,7 +259,9 @@ describe('Mis próximos partidos · tarjetas (FE #845)', () => {
     pinta();
 
     const [medal] = await tarjetas();
-    expect(within(medal).getByTestId('con-quien')).toHaveTextContent('upcomingMatches.with {"companeros":"Bea, Cris y Dani"}');
+    expect(within(medal).getByTestId('con-quien')).toHaveTextContent(
+      'upcomingMatches.with {"companeros":"Bea, Cris y Dani"}',
+    );
   });
 
   it('5e · una compañera retirada sigue, marcada: «Con Bea (retirada)» (QA de la release)', async () => {
@@ -224,7 +281,7 @@ describe('Mis próximos partidos · tarjetas (FE #845)', () => {
 
     const [medal] = await tarjetas();
     expect(within(medal).getByTestId('con-quien')).toHaveTextContent(
-      'upcomingMatches.with {"companeros":"upcomingMatches.withdrawnPartner {\\"nombre\\":\\"Bea\\",\\"context\\":\\"female\\"} y Cris"}'
+      'upcomingMatches.with {"companeros":"upcomingMatches.withdrawnPartner {\\"nombre\\":\\"Bea\\",\\"context\\":\\"female\\"} y Cris"}',
     );
   });
 
@@ -234,7 +291,9 @@ describe('Mis próximos partidos · tarjetas (FE #845)', () => {
     pinta();
 
     const [medal] = await tarjetas();
-    expect(within(medal).getByTestId('con-quien')).toHaveTextContent('upcomingMatches.with {"companeros":"Bea"}');
+    expect(within(medal).getByTestId('con-quien')).toHaveTextContent(
+      'upcomingMatches.with {"companeros":"Bea"}',
+    );
   });
 
   it('5d · solo en su partida: «De momento sin compañeros»', async () => {
@@ -243,7 +302,9 @@ describe('Mis próximos partidos · tarjetas (FE #845)', () => {
     pinta();
 
     const [medal] = await tarjetas();
-    expect(within(medal).getByTestId('con-quien')).toHaveTextContent('upcomingMatches.alone');
+    expect(within(medal).getByTestId('con-quien')).toHaveTextContent(
+      'upcomingMatches.alone',
+    );
   });
 
   it('6 · en juego: un solo botón, «Anotar», a su pantalla', async () => {
@@ -255,12 +316,15 @@ describe('Mis próximos partidos · tarjetas (FE #845)', () => {
     pinta();
 
     const [ryder, medal] = await tarjetas();
-    expect(within(ryder).getByRole('link', { name: 'upcomingMatches.scoreMatch' })).toHaveAttribute('href', '/player/matches/m-1/scoring');
-    expect(within(medal).getByRole('link', { name: 'upcomingMatches.scoreMatch' })).toHaveAttribute(
-      'href',
-      '/player/groups/g-1/scoring?competition=c-2'
-    );
-    expect(within(ryder).queryByText('upcomingMatches.viewCard')).not.toBeInTheDocument();
+    expect(
+      within(ryder).getByRole('link', { name: 'upcomingMatches.scoreMatch' }),
+    ).toHaveAttribute('href', '/player/matches/m-1/scoring');
+    expect(
+      within(medal).getByRole('link', { name: 'upcomingMatches.scoreMatch' }),
+    ).toHaveAttribute('href', '/player/groups/g-1/scoring?competition=c-2');
+    expect(
+      within(ryder).queryByText('upcomingMatches.viewCard'),
+    ).not.toBeInTheDocument();
   });
 
   it('6b · sin poder anotar todavía: «Ver tarjeta», al mismo sitio', async () => {
@@ -269,12 +333,15 @@ describe('Mis próximos partidos · tarjetas (FE #845)', () => {
     pinta();
 
     const [ryder, medal] = await tarjetas();
-    expect(within(ryder).getByRole('link', { name: 'upcomingMatches.viewCard' })).toHaveAttribute('href', '/player/matches/m-1/scoring');
-    expect(within(medal).getByRole('link', { name: 'upcomingMatches.viewCard' })).toHaveAttribute(
-      'href',
-      '/player/groups/g-1/scoring?competition=c-2'
-    );
-    expect(within(ryder).queryByText('upcomingMatches.scoreMatch')).not.toBeInTheDocument();
+    expect(
+      within(ryder).getByRole('link', { name: 'upcomingMatches.viewCard' }),
+    ).toHaveAttribute('href', '/player/matches/m-1/scoring');
+    expect(
+      within(medal).getByRole('link', { name: 'upcomingMatches.viewCard' }),
+    ).toHaveAttribute('href', '/player/groups/g-1/scoring?competition=c-2');
+    expect(
+      within(ryder).queryByText('upcomingMatches.scoreMatch'),
+    ).not.toBeInTheDocument();
   });
 
   it('6c · una partida de stroke play de hoy, sin empezar: «Anotar», con red', async () => {
@@ -283,17 +350,26 @@ describe('Mis próximos partidos · tarjetas (FE #845)', () => {
     pinta();
 
     const [medal] = await tarjetas();
-    expect(within(medal).getByRole('link', { name: 'upcomingMatches.scoreMatch' })).toBeInTheDocument();
+    expect(
+      within(medal).getByRole('link', { name: 'upcomingMatches.scoreMatch' }),
+    ).toBeInTheDocument();
   });
 
   it('7 · solo se ve el estado «En juego»', async () => {
-    responde({ partidos: [partido({ status: 'IN_PROGRESS' })], partidas: [partida()] });
+    responde({
+      partidos: [partido({ status: 'IN_PROGRESS' })],
+      partidas: [partida()],
+    });
 
     pinta();
 
     const [ryder, medal] = await tarjetas();
-    expect(within(ryder).getByText('upcomingMatches.inPlay')).toBeInTheDocument();
-    expect(within(medal).queryByText('upcomingMatches.inPlay')).not.toBeInTheDocument();
+    expect(
+      within(ryder).getByText('upcomingMatches.inPlay'),
+    ).toBeInTheDocument();
+    expect(
+      within(medal).queryByText('upcomingMatches.inPlay'),
+    ).not.toBeInTheDocument();
     expect(screen.queryByText(/status\.SCHEDULED/)).not.toBeInTheDocument();
   });
 
@@ -302,7 +378,9 @@ describe('Mis próximos partidos · tarjetas (FE #845)', () => {
 
     pinta();
 
-    expect(await screen.findByText('upcomingMatches.noMatches')).toBeInTheDocument();
+    expect(
+      await screen.findByText('upcomingMatches.noMatches'),
+    ).toBeInTheDocument();
   });
 
   it('9 · la Ryder no contesta y nada guardado: se enseñan las partidas que sí llegaron', async () => {
@@ -312,8 +390,12 @@ describe('Mis próximos partidos · tarjetas (FE #845)', () => {
     pinta();
 
     expect(await tarjetas()).toHaveLength(1);
-    expect(screen.queryByText('upcomingMatches.sinRespuesta')).not.toBeInTheDocument();
-    expect(screen.getByTestId('upcoming-matches-incompleta')).toHaveTextContent('upcomingMatches.incompleta');
+    expect(
+      screen.queryByText('upcomingMatches.sinRespuesta'),
+    ).not.toBeInTheDocument();
+    expect(screen.getByTestId('upcoming-matches-incompleta')).toHaveTextContent(
+      'upcomingMatches.incompleta',
+    );
   });
 
   it('9 · y al revés: las partidas no contestan y los partidos sí', async () => {
@@ -323,7 +405,9 @@ describe('Mis próximos partidos · tarjetas (FE #845)', () => {
     pinta();
 
     expect(await tarjetas()).toHaveLength(1);
-    expect(screen.getByTestId('upcoming-matches-incompleta')).toBeInTheDocument();
+    expect(
+      screen.getByTestId('upcoming-matches-incompleta'),
+    ).toBeInTheDocument();
   });
 
   it('9 · contestan las dos: sin aviso', async () => {
@@ -332,7 +416,9 @@ describe('Mis próximos partidos · tarjetas (FE #845)', () => {
     pinta();
 
     await tarjetas();
-    expect(screen.queryByTestId('upcoming-matches-incompleta')).not.toBeInTheDocument();
+    expect(
+      screen.queryByTestId('upcoming-matches-incompleta'),
+    ).not.toBeInTheDocument();
   });
 
   it('9c · solo las partidas vienen de memoria: «algunos de» los que se vieron', async () => {
@@ -343,8 +429,12 @@ describe('Mis próximos partidos · tarjetas (FE #845)', () => {
     pinta();
 
     expect(await tarjetas()).toHaveLength(2);
-    expect(screen.getByTestId('upcoming-matches-desde-memoria')).toHaveTextContent('upcomingMatches.desdeMemoriaParcial');
-    expect(screen.queryByTestId('upcoming-matches-incompleta')).not.toBeInTheDocument();
+    expect(
+      screen.getByTestId('upcoming-matches-desde-memoria'),
+    ).toHaveTextContent('upcomingMatches.desdeMemoriaParcial');
+    expect(
+      screen.queryByTestId('upcoming-matches-incompleta'),
+    ).not.toBeInTheDocument();
   });
 
   it('9d · una lista llega a medias, con algo: el mismo aviso', async () => {
@@ -354,7 +444,9 @@ describe('Mis próximos partidos · tarjetas (FE #845)', () => {
     pinta();
 
     expect(await tarjetas()).toHaveLength(2);
-    expect(screen.getByTestId('upcoming-matches-incompleta')).toBeInTheDocument();
+    expect(
+      screen.getByTestId('upcoming-matches-incompleta'),
+    ).toBeInTheDocument();
   });
 
   it('9d · y si la que llega a medias es la de la Ryder, también', async () => {
@@ -364,7 +456,9 @@ describe('Mis próximos partidos · tarjetas (FE #845)', () => {
     pinta();
 
     expect(await tarjetas()).toHaveLength(2);
-    expect(screen.getByTestId('upcoming-matches-incompleta')).toBeInTheDocument();
+    expect(
+      screen.getByTestId('upcoming-matches-incompleta'),
+    ).toBeInTheDocument();
   });
 
   it('9b · no contesta ninguno y nada guardado: no se pudo preguntar', async () => {
@@ -373,9 +467,15 @@ describe('Mis próximos partidos · tarjetas (FE #845)', () => {
 
     pinta();
 
-    expect(await screen.findByText('upcomingMatches.sinRespuesta')).toBeInTheDocument();
-    expect(screen.queryByText('upcomingMatches.noMatches')).not.toBeInTheDocument();
-    expect(screen.queryByTestId('upcoming-matches-incompleta')).not.toBeInTheDocument();
+    expect(
+      await screen.findByText('upcomingMatches.sinRespuesta'),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByText('upcomingMatches.noMatches'),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByTestId('upcoming-matches-incompleta'),
+    ).not.toBeInTheDocument();
   });
 
   it('10 · un partido sin formato no pinta «formats.null»', async () => {
@@ -384,8 +484,12 @@ describe('Mis próximos partidos · tarjetas (FE #845)', () => {
     pinta();
 
     const [ryder] = await tarjetas();
-    expect(within(ryder).getByTestId('cuando')).toHaveTextContent(/^Jue 24 sept? · sessions\.AFTERNOON$/);
-    expect(within(ryder).getByTestId('cuando')).not.toHaveTextContent('formats');
+    expect(within(ryder).getByTestId('cuando')).toHaveTextContent(
+      /^Jue 24 sept? · sessions\.AFTERNOON$/,
+    );
+    expect(within(ryder).getByTestId('cuando')).not.toHaveTextContent(
+      'formats',
+    );
   });
 
   it('11 · una Ryder sin rivales todavía: «por decidir», no «Tú vs »', async () => {
@@ -395,7 +499,7 @@ describe('Mis próximos partidos · tarjetas (FE #845)', () => {
 
     const [ryder] = await tarjetas();
     expect(within(ryder).getByTestId('con-quien')).toHaveTextContent(
-      'upcomingMatches.versus {"nosotros":"upcomingMatches.you y Nacho","ellos":"upcomingMatches.toBeDecided"}'
+      'upcomingMatches.versus {"nosotros":"upcomingMatches.you y Nacho","ellos":"upcomingMatches.toBeDecided"}',
     );
   });
 });
@@ -413,12 +517,19 @@ describe('Mis próximos partidos · me pasaron de partida (`/code-review`)', () 
   });
 
   it('12 · se dice en la tarjeta, como en el panel; si no, nada', async () => {
-    responde({ partidas: [partida({ broughtIn: true }), partida({ id: 'g-2', matchNumber: 3 })] });
+    responde({
+      partidas: [
+        partida({ broughtIn: true }),
+        partida({ id: 'g-2', matchNumber: 3 }),
+      ],
+    });
 
     pinta();
 
     const [traida, otra] = await tarjetas();
-    expect(within(traida).getByTestId('me-pasaron')).toHaveTextContent('nextMatch.broughtIn {"numero":2}');
+    expect(within(traida).getByTestId('me-pasaron')).toHaveTextContent(
+      'nextMatch.broughtIn {"numero":2}',
+    );
     expect(within(otra).queryByTestId('me-pasaron')).not.toBeInTheDocument();
   });
 });
@@ -427,11 +538,17 @@ describe('Mis próximos partidos · una sola lectura de competiciones (FE #845)'
   it('las dos listas reciben las mismas competiciones, leídas una vez', async () => {
     const composicion = await import('../../composition');
     const lista = [{ id: 'c-1', status: 'CLOSED' }];
-    const leer = vi.spyOn(composicion.listUserCompetitionsUseCase, 'execute').mockResolvedValue(lista);
+    const leer = vi
+      .spyOn(composicion.listUserCompetitionsUseCase, 'execute')
+      .mockResolvedValue(lista);
     mockPartidos.mockResolvedValue({ matches: [], complete: true });
     mockPartidas.mockResolvedValue({ matches: [], complete: true });
 
-    render(<MemoryRouter><UpcomingMatchesPage /></MemoryRouter>);
+    render(
+      <MemoryRouter>
+        <UpcomingMatchesPage />
+      </MemoryRouter>,
+    );
 
     await screen.findByText('upcomingMatches.noMatches');
     expect(leer).toHaveBeenCalledTimes(1);

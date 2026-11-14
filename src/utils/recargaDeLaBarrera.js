@@ -27,7 +27,9 @@ const PARES_QUE_SE_GUARDAN = 20;
 
 /** La versión de la página, o '' sin ella (en desarrollo). */
 export const buildDeLaPagina = (documento = globalThis.document) =>
-  documento?.querySelector?.('meta[name="app-build"]')?.getAttribute('content') ?? '';
+  documento
+    ?.querySelector?.('meta[name="app-build"]')
+    ?.getAttribute('content') ?? '';
 
 const rutaDeLaPagina = () => globalThis.location?.pathname ?? '';
 // Se lee dentro de cada `try`: con el almacenamiento bloqueado (Safari sin
@@ -39,19 +41,28 @@ const leer = (almacen) => {
   const guardada = almacen.getItem(CLAVE_DE_LA_BARRERA);
   try {
     const recargas = JSON.parse(guardada)?.recargas;
-    return Array.isArray(recargas) ? recargas.filter((par) => Array.isArray(par) && par.length === 2) : [];
+    return Array.isArray(recargas)
+      ? recargas.filter((par) => Array.isArray(par) && par.length === 2)
+      : [];
   } catch {
     return [];
   }
 };
 
-const esElPar = (build, ruta) => ([b, r]) => b === build && r === ruta;
+const esElPar =
+  (build, ruta) =>
+  ([b, r]) =>
+    b === build && r === ruta;
 
 /**
  * Si se puede recargar con esta versión en esta página: `true`, `false` si ya
  * se hizo, o `null` si no se puede leer el almacenamiento.
  */
-export const puedeRecargar = ({ build = buildDeLaPagina(), ruta = rutaDeLaPagina(), almacen } = {}) => {
+export const puedeRecargar = ({
+  build = buildDeLaPagina(),
+  ruta = rutaDeLaPagina(),
+  almacen,
+} = {}) => {
   try {
     return !leer(almacen ?? almacenDeLaSesion()).some(esElPar(build, ruta));
   } catch {
@@ -60,12 +71,19 @@ export const puedeRecargar = ({ build = buildDeLaPagina(), ruta = rutaDeLaPagina
 };
 
 /** Apunta la recarga; `false` si no se pudo. */
-export const apuntarLaRecarga = ({ build = buildDeLaPagina(), ruta = rutaDeLaPagina(), almacen: dado } = {}) => {
+export const apuntarLaRecarga = ({
+  build = buildDeLaPagina(),
+  ruta = rutaDeLaPagina(),
+  almacen: dado,
+} = {}) => {
   try {
     const almacen = dado ?? almacenDeLaSesion();
     const recargas = leer(almacen).filter((par) => !esElPar(build, ruta)(par));
     recargas.push([build, ruta]);
-    almacen.setItem(CLAVE_DE_LA_BARRERA, JSON.stringify({ recargas: recargas.slice(-PARES_QUE_SE_GUARDAN) }));
+    almacen.setItem(
+      CLAVE_DE_LA_BARRERA,
+      JSON.stringify({ recargas: recargas.slice(-PARES_QUE_SE_GUARDAN) }),
+    );
     // Releída: un almacén que acepta la nota sin guardarla traería el bucle
     return leer(almacen).some(esElPar(build, ruta));
   } catch {

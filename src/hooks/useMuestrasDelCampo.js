@@ -29,10 +29,19 @@ export function useMuestrasDelCampo({ golfCourseId, userId, barra }) {
   // La barra llega como objeto nuevo en cada render: cuenta lo que dice
   const color = barra?.color ?? null;
   const gender = barra?.gender ?? null;
-  const miBarra = useMemo(() => (color ? { color, gender } : null), [color, gender]);
+  const miBarra = useMemo(
+    () => (color ? { color, gender } : null),
+    [color, gender],
+  );
   const de = `${userId}|${golfCourseId}|${color}|${gender}`;
-  const copiaDeMuestras = useMemo(() => getHoleSamplesUseCase.guardadas(golfCourseId), [golfCourseId]);
-  const copiaDePendientes = useMemo(() => getHoleSamplesUseCase.pendientes(userId, golfCourseId, miBarra), [userId, golfCourseId, miBarra]);
+  const copiaDeMuestras = useMemo(
+    () => getHoleSamplesUseCase.guardadas(golfCourseId),
+    [golfCourseId],
+  );
+  const copiaDePendientes = useMemo(
+    () => getHoleSamplesUseCase.pendientes(userId, golfCourseId, miBarra),
+    [userId, golfCourseId, miBarra],
+  );
   const [muestras, setMuestras] = useState({ de: null, muestras: {} });
   const [pendientes, setPendientes] = useState({ de: null, pendientes: {} });
   // El campo, el jugador y la barra de ahora: un envío lento de otro no pisa su estado
@@ -44,7 +53,14 @@ export function useMuestrasDelCampo({ golfCourseId, userId, barra }) {
   const refrescarPendientes = useCallback(
     (clave) => {
       if (deAhora.current !== clave) return;
-      setPendientes({ de: clave, pendientes: getHoleSamplesUseCase.pendientes(userId, golfCourseId, miBarra) });
+      setPendientes({
+        de: clave,
+        pendientes: getHoleSamplesUseCase.pendientes(
+          userId,
+          golfCourseId,
+          miBarra,
+        ),
+      });
     },
     [userId, golfCourseId, miBarra],
   );
@@ -78,7 +94,14 @@ export function useMuestrasDelCampo({ golfCourseId, userId, barra }) {
       .then((nuevas) => {
         if (!vigente) return;
         if (nuevas) setMuestras({ de, muestras: nuevas });
-        setPendientes({ de, pendientes: getHoleSamplesUseCase.pendientes(userId, golfCourseId, miBarra) });
+        setPendientes({
+          de,
+          pendientes: getHoleSamplesUseCase.pendientes(
+            userId,
+            golfCourseId,
+            miBarra,
+          ),
+        });
       });
     // Lo que la cola de fondo envía o descarta llega al mapa abierto
     const alCambiar = () => {
@@ -108,7 +131,10 @@ export function useMuestrasDelCampo({ golfCourseId, userId, barra }) {
           greenCenter,
           alQuedarEnCola: () => refrescarPendientes(clave),
         });
-        if (estado === 'pendiente') globalThis.dispatchEvent(new globalThis.CustomEvent(MUESTRA_PENDIENTE));
+        if (estado === 'pendiente')
+          globalThis.dispatchEvent(
+            new globalThis.CustomEvent(MUESTRA_PENDIENTE),
+          );
         // Puede ser la primera del hoyo, o la que cierra la recogida: la
         // pendiente se sigue viendo hasta que el resumen nuevo está aquí
         if (estado === 'enviada') await refrescarTodo(clave);
@@ -122,7 +148,8 @@ export function useMuestrasDelCampo({ golfCourseId, userId, barra }) {
 
   return {
     muestras: muestras.de === de ? muestras.muestras : copiaDeMuestras,
-    pendientes: pendientes.de === de ? pendientes.pendientes : copiaDePendientes,
+    pendientes:
+      pendientes.de === de ? pendientes.pendientes : copiaDePendientes,
     enviar,
   };
 }

@@ -1,7 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 vi.mock('../http/api.js', async () => ({
-  segmento: (await vi.importActual('../http/rutaDeLaApi')).segmento, default: vi.fn() }));
+  segmento: (await vi.importActual('../http/rutaDeLaApi')).segmento,
+  default: vi.fn(),
+}));
 
 import apiRequest from '../http/api.js';
 import ApiDraftRepository from './ApiDraftRepository';
@@ -13,7 +15,12 @@ import ApiDraftRepository from './ApiDraftRepository';
  * llama, con qué método, y que un 404 al mirar significa «todavía no se ha
  * sorteado» y no un error que tumbe la pantalla.
  */
-const RESPUESTA = { id: 's1', competition_id: 'c1', status: 'IN_PROGRESS', available_players: [] };
+const RESPUESTA = {
+  id: 's1',
+  competition_id: 'c1',
+  status: 'IN_PROGRESS',
+  available_players: [],
+};
 
 describe('ApiDraftRepository', () => {
   let repo;
@@ -28,7 +35,9 @@ describe('ApiDraftRepository', () => {
 
     const sala = await repo.startDraft('c1');
 
-    expect(apiRequest).toHaveBeenCalledWith('/api/v1/competitions/c1/draft', { method: 'POST' });
+    expect(apiRequest).toHaveBeenCalledWith('/api/v1/competitions/c1/draft', {
+      method: 'POST',
+    });
     expect(sala.status).toBe('IN_PROGRESS');
   });
 
@@ -44,13 +53,17 @@ describe('ApiDraftRepository', () => {
   it('R3: un 404 al mirar es «todavía no hay sala», no un error', async () => {
     // La ficha pregunta por la sala en cuanto se abre: sin esto, toda
     // competición sin draft pintaría un error
-    apiRequest.mockRejectedValue(Object.assign(new Error('Not Found'), { status: 404 }));
+    apiRequest.mockRejectedValue(
+      Object.assign(new Error('Not Found'), { status: 404 }),
+    );
 
     expect(await repo.getDraft('c1')).toBeNull();
   });
 
   it('R4: cualquier otro error al mirar sí se propaga', async () => {
-    apiRequest.mockRejectedValue(Object.assign(new Error('Boom'), { status: 500 }));
+    apiRequest.mockRejectedValue(
+      Object.assign(new Error('Boom'), { status: 500 }),
+    );
 
     await expect(repo.getDraft('c1')).rejects.toThrow('Boom');
   });
@@ -60,9 +73,12 @@ describe('ApiDraftRepository', () => {
 
     await repo.makePick('c1', 'dani');
 
-    expect(apiRequest).toHaveBeenCalledWith('/api/v1/competitions/c1/draft/picks', {
-      method: 'POST',
-      body: JSON.stringify({ player_id: 'dani' }),
-    });
+    expect(apiRequest).toHaveBeenCalledWith(
+      '/api/v1/competitions/c1/draft/picks',
+      {
+        method: 'POST',
+        body: JSON.stringify({ player_id: 'dani' }),
+      },
+    );
   });
 });

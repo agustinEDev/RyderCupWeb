@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef } from 'react';
+import { useEffectEvent, useLayoutEffect, useRef } from 'react';
 import { useLocation, useMatches, useNavigationType } from 'react-router';
 
 /**
@@ -24,7 +24,8 @@ import { useLocation, useMatches, useNavigationType } from 'react-router';
 export function useVolverArriba() {
   const { pathname } = useLocation();
   const tipo = useNavigationType();
-  const restauraElScroll = useMatches().at(-1)?.handle?.restauraElScroll === true;
+  const restauraElScroll =
+    useMatches().at(-1)?.handle?.restauraElScroll === true;
   // Recargar también llega como POP, y hoy empieza arriba: solo un «atrás» de
   // verdad, ya montada la aplicación, la deja donde estaba (Agustín, 2 nov 2026)
   const yaMontada = useRef(false);
@@ -34,11 +35,16 @@ export function useVolverArriba() {
   // pintar, y entonces se ve un fotograma con el scroll de la pantalla anterior
   // antes del salto. La pega de `useLayoutEffect` es el renderizado en servidor,
   // que esta aplicación no tiene.
-  useLayoutEffect(() => {
+  //
+  // Solo al cambiar de pantalla (`pathname`): el tipo de navegación y la ruta
+  // se leen de esa misma, como evento del efecto, y no lo vuelven a lanzar
+  const subirSiToca = useEffectEvent(() => {
     const esLaPrimeraCarga = !yaMontada.current;
     yaMontada.current = true;
     if (vuelveAtrasAUnaQueRestaura && !esLaPrimeraCarga) return;
     window.scrollTo(0, 0);
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- solo al cambiar de pantalla: el tipo de navegación y la ruta se leen de esa misma
+  });
+  useLayoutEffect(() => {
+    subirSiToca();
   }, [pathname]);
 }

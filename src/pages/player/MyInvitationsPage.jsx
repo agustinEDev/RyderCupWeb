@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router';
 import { Mail, WifiOff, AlertCircle } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
@@ -6,6 +6,7 @@ import customToast from '../../utils/toast';
 import { esFalloDeRed, mensajeDeError } from '../../utils/sinCobertura';
 import HeaderAuth from '../../components/layout/HeaderAuth';
 import { useAuth } from '../../hooks/useAuth';
+import { useCargaCancelableEffect } from '../../hooks/useCargaCancelableEffect';
 import GeneroParaApuntarseModal from '../../components/profile/GeneroParaApuntarseModal';
 import { useResponderInvitacion } from '../../hooks/useResponderInvitacion';
 import InvitationCard from '../../components/invitation/InvitationCard';
@@ -20,7 +21,6 @@ const MyInvitationsPage = () => {
   const { user, loading: isLoadingUser } = useAuth();
 
   const [invitations, setInvitations] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState('');
   // Por qué no se han podido cargar: 'red', 'otro' o null si cargaron. Sin esto
   // la lista vacía decía «No hay invitaciones todavía» sin haberlo podido
@@ -29,48 +29,53 @@ const MyInvitationsPage = () => {
 
   const pendingCount = invitations.filter((inv) => inv.isPending).length;
 
-  const loadData = useCallback(async () => {
-    if (!user) return;
-
-    setIsLoading(true);
-    try {
-      const result = await listMyInvitationsUseCase.execute(
-        statusFilter ? { status: statusFilter } : {}
-      );
-      setInvitations(result.invitations);
-      setCargaFallida(null);
-    } catch (error) {
-      console.error('Error loading invitations:', error);
-      setCargaFallida(esFalloDeRed(error) ? 'red' : 'otro');
-      customToast.error(
-        mensajeDeError(error, {
-          sinConexion: t('common:sinConexion.mensaje'),
-          generico: t('errors.failedToLoad'),
-        })
-      );
-    } finally {
-      setIsLoading(false);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, statusFilter]);
-
-  useEffect(() => {
-    if (user) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- pre-existing pattern surfaced by eslint-plugin-react-hooks 7.1.1 bump; needs dedicated review (tracked in follow-up)
-      loadData();
-    }
-  }, [user, loadData]);
+  // Del id y no del objeto: la misma persona con un `user` nuevo (la sesión
+  // se vuelve a leer) no relee la lista ni suelta la invitación que se está
+  // respondiendo, que podría mandarse otra vez
+  const userId = user?.id;
+  // La lista, con el filtro elegido. Si se cambia de filtro con una en vuelo,
+  // la del filtro anterior ni se pinta ni avisa de su fallo
+  const { cargando, recargar } = useCargaCancelableEffect(
+    () =>
+      listMyInvitationsUseCase.execute(
+        statusFilter ? { status: statusFilter } : {},
+      ),
+    [userId, statusFilter],
+    {
+      activa: Boolean(userId),
+      alCargar: (result) => {
+        setInvitations(result.invitations);
+        setCargaFallida(null);
+      },
+      alFallar: (error) => {
+        console.error('Error loading invitations:', error);
+        setCargaFallida(esFalloDeRed(error) ? 'red' : 'otro');
+        customToast.error(
+          mensajeDeError(error, {
+            sinConexion: t('common:sinConexion.mensaje'),
+            generico: t('errors.failedToLoad'),
+          }),
+        );
+      },
+    },
+  );
+  // Sin usuario no se pide nada y se sigue esperando, como antes
+  const isLoading = cargando || !user;
 
   // Aceptar o rechazar, con las mismas reglas que el cuadro de la ficha. Al
   // aceptar, a su ficha, con el origen para que «Volver» traiga de nuevo aquí
-  const { seEstaRespondiendo, aceptar, rechazar, preguntaDelGenero } = useResponderInvitacion({
-    alAceptar: (result) => {
-      if (result?.competitionId) {
-        navigate(`/competitions/${result.competitionId}`, { state: { from: 'invitations' } });
-      }
-    },
-    alCambiar: loadData,
-  });
+  const { seEstaRespondiendo, aceptar, rechazar, preguntaDelGenero } =
+    useResponderInvitacion({
+      alAceptar: (result) => {
+        if (result?.competitionId) {
+          navigate(`/competitions/${result.competitionId}`, {
+            state: { from: 'invitations' },
+          });
+        }
+      },
+      // Releer con la espera, como antes; se espera a que llegue
+      alCambiar: () => recargar(),
+    });
 
   const isPageLoading = isLoadingUser || isLoading;
 
@@ -94,7 +99,9 @@ const MyInvitationsPage = () => {
         {/* Header */}
         <div className="mb-6">
           <div className="flex items-center gap-3">
-            <h1 className="hidden md:block text-2xl font-bold text-gray-900">{t('player.title')}</h1>
+            <h1 className="hidden md:block text-2xl font-bold text-gray-900">
+              {t('player.title')}
+            </h1>
             {/* Si la carga falló, el recuento es de la lista de antes */}
             {pendingCount > 0 && !cargaFallida && (
               <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
@@ -106,7 +113,9 @@ const MyInvitationsPage = () => {
         </div>
 
         {/* Sin el correo verificado no llegan las enviadas a su dirección (fase 3) */}
-        {user?.email_verified === false && <AvisoVerificaParaVerInvitaciones correo={user.email} />}
+        {user?.email_verified === false && (
+          <AvisoVerificaParaVerInvitaciones correo={user.email} />
+        )}
 
         {/* Filter */}
         <div className="mb-4">
@@ -130,20 +139,31 @@ const MyInvitationsPage = () => {
         {cargaFallida ? (
           // En vez de la lista, que sería la de antes del fallo o una vacía que
           // afirma algo que no se ha podido comprobar
-          <div data-testid="invitaciones-sin-cargar" className="text-center py-12">
+          <div
+            data-testid="invitaciones-sin-cargar"
+            className="text-center py-12"
+          >
             {cargaFallida === 'red' ? (
-              <WifiOff className="h-12 w-12 text-gray-400 mx-auto mb-3" aria-hidden="true" />
+              <WifiOff
+                className="h-12 w-12 text-gray-400 mx-auto mb-3"
+                aria-hidden="true"
+              />
             ) : (
-              <AlertCircle className="h-12 w-12 text-gray-400 mx-auto mb-3" aria-hidden="true" />
+              <AlertCircle
+                className="h-12 w-12 text-gray-400 mx-auto mb-3"
+                aria-hidden="true"
+              />
             )}
             <p className="text-gray-700 mb-4">
               {/* «mensaje» y no «aviso»: el aviso dice que lo que se ve puede no
                   estar al día, y aquí no queda nada a la vista */}
-              {cargaFallida === 'red' ? t('common:sinConexion.mensaje') : t('errors.failedToLoad')}
+              {cargaFallida === 'red'
+                ? t('common:sinConexion.mensaje')
+                : t('errors.failedToLoad')}
             </p>
             <button
               type="button"
-              onClick={loadData}
+              onClick={() => recargar()}
               className="px-4 py-2 text-sm font-medium text-white bg-primary rounded-lg hover:bg-primary/90 transition-colors"
             >
               {t('errors.retry')}

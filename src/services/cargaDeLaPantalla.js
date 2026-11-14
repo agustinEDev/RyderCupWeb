@@ -137,16 +137,22 @@ export const cargaDeLaPantalla = async ({ clave, pedir }) => {
       // de antes (`/code-review`); si no, la pantalla pide al saberse quién es
       const sabido = loQueHaySobreLaSesion().user;
       return sabido && !debeAceptarLosTerminos(sabido)
-        ? { estado: 'sinRed', datos: loGuardadoEnMemoria(clave, sabido.id), usuarioId: sabido.id }
+        ? {
+            estado: 'sinRed',
+            datos: loGuardadoEnMemoria(clave, sabido.id),
+            usuarioId: sabido.id,
+          }
         : { estado: 'sinSesion', datos: null };
     }
-    if (!usuario || debeAceptarLosTerminos(usuario)) return { estado: 'sinSesion', datos: null };
+    if (!usuario || debeAceptarLosTerminos(usuario))
+      return { estado: 'sinSesion', datos: null };
 
     compartida = pideUnaVez(clave, usuario, pedir, nueva);
     pedida = compartida.then((datos) => {
       // Solo si la sesión sigue siendo la suya: un cierre de sesión mientras se
       // pedía ya vació la memoria, y esto la volvería a llenar
-      if (loQueHaySobreLaSesion().user?.id === usuario.id) guardaEnMemoria(clave, usuario.id, datos);
+      if (loQueHaySobreLaSesion().user?.id === usuario.id)
+        guardaEnMemoria(clave, usuario.id, datos);
       return datos;
     });
     const datos = await aTiempo(pedida);
@@ -162,7 +168,8 @@ export const cargaDeLaPantalla = async ({ clave, pedir }) => {
       usuarioId: usuario?.id,
     };
     // La que sigue en camino tras el tope; si al final falla, no entrega nada
-    if (sinRespuesta && pedida) resultado.tardia = pedida.catch(() => new Promise(() => {}));
+    if (sinRespuesta && pedida)
+      resultado.tardia = pedida.catch(() => new Promise(() => {}));
     return resultado;
   } finally {
     clearTimeout(reloj);

@@ -15,7 +15,7 @@ const GESTOS = ['wheel', 'touchmove', 'keydown', 'pointerdown'];
 const tapaAbajo = () =>
   [...document.querySelectorAll('[data-tapa-abajo]')].reduce(
     (total, hueco) => total + hueco.getBoundingClientRect().height,
-    0
+    0,
   );
 
 const hacerSitioDebajo = (bloque, fila, tapa) => {
@@ -29,8 +29,10 @@ const hacerSitioDebajo = (bloque, fila, tapa) => {
   // Ya se ve entera: no hace falta espacio, ni dejar media pantalla en blanco
   // debajo de una tabla corta (revisor)
   if (caja.top >= 0 && caja.bottom <= visible) return;
-  const hastaElCentro = caja.top + globalThis.scrollY + caja.height / 2 - visible / 2;
-  const puedeBajar = document.documentElement.scrollHeight - globalThis.innerHeight;
+  const hastaElCentro =
+    caja.top + globalThis.scrollY + caja.height / 2 - visible / 2;
+  const puedeBajar =
+    document.documentElement.scrollHeight - globalThis.innerHeight;
   const falta = Math.ceil(hastaElCentro - puedeBajar);
   if (falta > 0) bloque.style.paddingBottom = `${falta}px`;
 };
@@ -67,12 +69,21 @@ export const useCentrarEnMiFila = ({ modo, activa, respuestas }) => {
     const seMueve = () => {
       yaVista.current = true;
     };
-    GESTOS.forEach((g) => globalThis.addEventListener(g, seMueve, { passive: true }));
-    return () => GESTOS.forEach((g) => globalThis.removeEventListener(g, seMueve));
+    GESTOS.forEach((g) =>
+      globalThis.addEventListener(g, seMueve, { passive: true }),
+    );
+    return () =>
+      GESTOS.forEach((g) => globalThis.removeEventListener(g, seMueve));
   }, [modo, activa]);
 
   useEffect(() => {
-    if (!modo || !activa || yaVista.current || respuestas <= abiertaTras.current) return;
+    if (
+      !modo ||
+      !activa ||
+      yaVista.current ||
+      respuestas <= abiertaTras.current
+    )
+      return;
     yaVista.current = true;
     // También la de debajo del corte (scratch)
     const mia = bloqueRef.current?.querySelector('tr[data-yo="true"]');
@@ -85,7 +96,10 @@ export const useCentrarEnMiFila = ({ modo, activa, respuestas }) => {
     const raiz = document.documentElement.style;
     const antes = raiz.scrollPaddingBottom;
     raiz.scrollPaddingBottom = `${tapa}px`;
-    mia.scrollIntoView({ block: 'center', behavior: sinAnimacion ? 'auto' : 'smooth' });
+    mia.scrollIntoView({
+      block: 'center',
+      behavior: sinAnimacion ? 'auto' : 'smooth',
+    });
     raiz.scrollPaddingBottom = antes;
     // El foco con ella, para el lector de pantalla, sin mover más la vista
     mia.focus({ preventScroll: true });

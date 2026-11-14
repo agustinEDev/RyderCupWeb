@@ -14,7 +14,11 @@ const mockInvitation = Invitation.fromPersistence({
   createdAt: '2026-02-18T10:00:00Z',
   updatedAt: '2026-02-18T10:00:00Z',
 });
-mockInvitation._apiData = { competition_name: 'Summer Cup', inviter_name: 'Creator', invitee_name: 'Player' };
+mockInvitation._apiData = {
+  competition_name: 'Summer Cup',
+  inviter_name: 'Creator',
+  invitee_name: 'Player',
+};
 
 describe('SendInvitationUseCase', () => {
   let useCase;
@@ -26,21 +30,31 @@ describe('SendInvitationUseCase', () => {
   });
 
   it('should throw if invitationRepository is missing', () => {
-    expect(() => new SendInvitationUseCase({})).toThrow('requires invitationRepository');
+    expect(() => new SendInvitationUseCase({})).toThrow(
+      'requires invitationRepository',
+    );
   });
 
   it('should throw for invalid competitionId', async () => {
-    await expect(useCase.execute('', 'user-2')).rejects.toThrow('competitionId is required');
+    await expect(useCase.execute('', 'user-2')).rejects.toThrow(
+      'competitionId is required',
+    );
   });
 
   it('should throw for invalid inviteeUserId', async () => {
-    await expect(useCase.execute('comp-1', '')).rejects.toThrow('inviteeUserId is required');
+    await expect(useCase.execute('comp-1', '')).rejects.toThrow(
+      'inviteeUserId is required',
+    );
   });
 
   it('should send invitation and return DTO', async () => {
     const result = await useCase.execute('comp-1', 'user-2', 'Join us!');
 
-    expect(mockRepo.sendInvitation).toHaveBeenCalledWith('comp-1', 'user-2', 'Join us!');
+    expect(mockRepo.sendInvitation).toHaveBeenCalledWith(
+      'comp-1',
+      'user-2',
+      'Join us!',
+    );
     expect(result.id).toBe('inv-1');
     expect(result.status).toBe('PENDING');
     expect(result.competitionName).toBe('Summer Cup');

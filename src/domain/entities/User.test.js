@@ -10,7 +10,7 @@ describe('User Entity', () => {
         id: 'user-123',
         email: 'test@example.com',
         first_name: 'John',
-        last_name: 'Doe'
+        last_name: 'Doe',
       };
 
       const user = new User(userData);
@@ -29,7 +29,9 @@ describe('User Entity', () => {
         // missing id and last_name
       };
 
-      expect(() => new User(userData)).toThrow('User entity requires id, email, first_name, and last_name');
+      expect(() => new User(userData)).toThrow(
+        'User entity requires id, email, first_name, and last_name',
+      );
     });
   });
 
@@ -40,7 +42,7 @@ describe('User Entity', () => {
         email: 'test@example.com',
         first_name: 'John',
         last_name: 'Doe',
-        country_code: 'ES'
+        country_code: 'ES',
       };
 
       const user = new User(userData);
@@ -56,7 +58,7 @@ describe('User Entity', () => {
         email: 'test@example.com',
         first_name: 'John',
         last_name: 'Doe',
-        country_code: countryCodeVO
+        country_code: countryCodeVO,
       };
 
       const user = new User(userData);
@@ -72,7 +74,7 @@ describe('User Entity', () => {
         email: 'test@example.com',
         first_name: 'John',
         last_name: 'Doe',
-        country_code: null
+        country_code: null,
       };
 
       const user = new User(userData);
@@ -100,7 +102,7 @@ describe('User Entity', () => {
         email: 'test@example.com',
         first_name: 'John',
         last_name: 'Doe',
-        country_code: undefined
+        country_code: undefined,
       };
 
       const user = new User(userData);
@@ -120,7 +122,7 @@ describe('User Entity', () => {
         handicap: 15.5,
         email_verified: true,
         created_at: '2025-11-23T10:00:00Z',
-        updated_at: '2025-11-23T10:00:00Z'
+        updated_at: '2025-11-23T10:00:00Z',
       };
 
       const user = new User(userData);
@@ -154,7 +156,7 @@ describe('User Entity', () => {
         email: 'test@example.com',
         first_name: 'John',
         last_name: 'Doe',
-        country_code: null
+        country_code: null,
       };
 
       const user = new User(userData);
@@ -169,7 +171,7 @@ describe('User Entity', () => {
         email: 'test@example.com',
         first_name: 'John',
         last_name: 'Doe',
-        country_code: new CountryCode('IT')
+        country_code: new CountryCode('IT'),
       };
 
       const user = new User(userData);
@@ -187,7 +189,7 @@ describe('User Entity', () => {
         email: 'test@example.com',
         first_name: 'John',
         last_name: 'Doe',
-        gender: 'MALE'
+        gender: 'MALE',
       });
 
       expect(user.gender).toBe('MALE');
@@ -199,7 +201,7 @@ describe('User Entity', () => {
         email: 'test@example.com',
         first_name: 'Jane',
         last_name: 'Doe',
-        gender: 'FEMALE'
+        gender: 'FEMALE',
       });
 
       expect(user.gender).toBe('FEMALE');
@@ -211,7 +213,7 @@ describe('User Entity', () => {
         email: 'test@example.com',
         first_name: 'John',
         last_name: 'Doe',
-        gender: null
+        gender: null,
       });
 
       expect(user.gender).toBeNull();
@@ -222,20 +224,23 @@ describe('User Entity', () => {
         id: 'user-123',
         email: 'test@example.com',
         first_name: 'John',
-        last_name: 'Doe'
+        last_name: 'Doe',
       });
 
       expect(user.gender).toBeNull();
     });
 
     it('should throw error for invalid gender value', () => {
-      expect(() => new User({
-        id: 'user-123',
-        email: 'test@example.com',
-        first_name: 'John',
-        last_name: 'Doe',
-        gender: 'OTHER'
-      })).toThrow("Invalid gender: OTHER. Must be 'MALE', 'FEMALE', or null");
+      expect(
+        () =>
+          new User({
+            id: 'user-123',
+            email: 'test@example.com',
+            first_name: 'John',
+            last_name: 'Doe',
+            gender: 'OTHER',
+          }),
+      ).toThrow("Invalid gender: OTHER. Must be 'MALE', 'FEMALE', or null");
     });
 
     it('should include gender in toPersistence output', () => {
@@ -244,7 +249,7 @@ describe('User Entity', () => {
         email: 'test@example.com',
         first_name: 'John',
         last_name: 'Doe',
-        gender: 'MALE'
+        gender: 'MALE',
       });
 
       const plainObject = user.toPersistence();
@@ -256,7 +261,7 @@ describe('User Entity', () => {
         id: 'user-123',
         email: 'test@example.com',
         first_name: 'John',
-        last_name: 'Doe'
+        last_name: 'Doe',
       });
 
       const plainObject = user.toPersistence();
@@ -336,7 +341,7 @@ describe('User Entity', () => {
         email: 'test@example.com',
         first_name: 'John',
         last_name: 'Doe',
-        handicap: 18.5
+        handicap: 18.5,
       };
 
       const user = new User(userData);
@@ -349,7 +354,7 @@ describe('User Entity', () => {
         id: 'user-123',
         email: 'test@example.com',
         first_name: 'John',
-        last_name: 'Doe'
+        last_name: 'Doe',
       };
 
       const user = new User(userData);
@@ -363,7 +368,7 @@ describe('User Entity', () => {
         email: 'test@example.com',
         first_name: 'John',
         last_name: 'Doe',
-        email_verified: true
+        email_verified: true,
       };
 
       const user = new User(userData);
@@ -376,7 +381,7 @@ describe('User Entity', () => {
         id: 'user-123',
         email: 'test@example.com',
         first_name: 'John',
-        last_name: 'Doe'
+        last_name: 'Doe',
       };
 
       const user = new User(userData);
@@ -392,7 +397,7 @@ describe('User Entity', () => {
         email: 'test@example.com',
         first_name: 'John',
         last_name: 'Doe',
-        handicap: 15.0
+        handicap: 15.0,
       };
 
       const user = new User(userData);
@@ -410,16 +415,18 @@ describe('User Entity', () => {
         id: 'user-123',
         email: 'test@example.com',
         first_name: 'John',
-        last_name: 'Doe'
+        last_name: 'Doe',
       };
 
       const user = new User(userData);
 
-      expect(() => user.updateHandicap(60, new Date().toISOString()))
-        .toThrow('Handicap must be between -10.0 and 54.0 or null');
+      expect(() => user.updateHandicap(60, new Date().toISOString())).toThrow(
+        'Handicap must be between -10.0 and 54.0 or null',
+      );
 
-      expect(() => user.updateHandicap(-15, new Date().toISOString()))
-        .toThrow('Handicap must be between -10.0 and 54.0 or null');
+      expect(() => user.updateHandicap(-15, new Date().toISOString())).toThrow(
+        'Handicap must be between -10.0 and 54.0 or null',
+      );
     });
 
     it('should mark email as verified with markEmailAsVerified method', () => {
@@ -429,7 +436,7 @@ describe('User Entity', () => {
         first_name: 'John',
         last_name: 'Doe',
         email_verified: false,
-        verification_token: 'some-token'
+        verification_token: 'some-token',
       };
 
       const user = new User(userData);
@@ -451,7 +458,11 @@ describe('User — el alias (FE #435)', () => {
   };
 
   it('guarda el alias y el nombre resuelto que manda el servidor', () => {
-    const user = new User({ ...datos, alias: 'Chuchi', display_name: 'Chuchi' });
+    const user = new User({
+      ...datos,
+      alias: 'Chuchi',
+      display_name: 'Chuchi',
+    });
 
     expect(user.alias).toBe('Chuchi');
     expect(user.displayName).toBe('Chuchi');
@@ -465,7 +476,11 @@ describe('User — el alias (FE #435)', () => {
 
   it('el alias sobrevive a toPersistence', () => {
     // Sin esto, guardar y reconstruir perdía el alias por el camino
-    const user = new User({ ...datos, alias: 'Chuchi', display_name: 'Chuchi' });
+    const user = new User({
+      ...datos,
+      alias: 'Chuchi',
+      display_name: 'Chuchi',
+    });
 
     const guardado = user.toPersistence();
 
@@ -476,7 +491,11 @@ describe('User — el alias (FE #435)', () => {
   it('toPersistence NO guarda el nombre resuelto', () => {
     // Lo resuelve el servidor: una copia aquí envejece en cuanto alguien
     // cambia su alias, y al reconstruir se deriva solo
-    const user = new User({ ...datos, alias: 'Chuchi', display_name: 'Chuchi' });
+    const user = new User({
+      ...datos,
+      alias: 'Chuchi',
+      display_name: 'Chuchi',
+    });
 
     expect(user.toPersistence()).not.toHaveProperty('display_name');
   });
@@ -486,10 +505,19 @@ describe('User — el alias (FE #435)', () => {
 // terms_version_required). Sin el campo —backend antiguo— no se sabe, y no
 // se bloquea
 describe('User · aceptación de los Términos', () => {
-  const datos = { id: 'u-1', email: 'ana@example.com', first_name: 'Ana', last_name: 'Prueba' };
+  const datos = {
+    id: 'u-1',
+    email: 'ana@example.com',
+    first_name: 'Ana',
+    last_name: 'Prueba',
+  };
 
   it('mapea los dos campos nuevos', () => {
-    const user = new User({ ...datos, terms_accepted: false, terms_version_required: '2026-10-20' });
+    const user = new User({
+      ...datos,
+      terms_accepted: false,
+      terms_version_required: '2026-10-20',
+    });
 
     expect(user.termsAccepted).toBe(false);
     expect(user.termsVersionRequired).toBe('2026-10-20');
@@ -497,7 +525,9 @@ describe('User · aceptación de los Términos', () => {
   });
 
   it('aceptados, no hay que aceptar', () => {
-    expect(new User({ ...datos, terms_accepted: true }).mustAcceptTerms()).toBe(false);
+    expect(new User({ ...datos, terms_accepted: true }).mustAcceptTerms()).toBe(
+      false,
+    );
   });
 
   it('sin el campo, null y sin bloquear', () => {
@@ -509,8 +539,15 @@ describe('User · aceptación de los Términos', () => {
   });
 
   it('toPersistence los conserva', () => {
-    const user = new User({ ...datos, terms_accepted: true, terms_version_required: '2026-10-20' });
+    const user = new User({
+      ...datos,
+      terms_accepted: true,
+      terms_version_required: '2026-10-20',
+    });
 
-    expect(user.toPersistence()).toMatchObject({ terms_accepted: true, terms_version_required: '2026-10-20' });
+    expect(user.toPersistence()).toMatchObject({
+      terms_accepted: true,
+      terms_version_required: '2026-10-20',
+    });
   });
 });

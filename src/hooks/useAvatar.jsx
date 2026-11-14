@@ -114,7 +114,9 @@ export const useAvatar = (user, refetchUser) => {
     } catch (error) {
       console.error('Error updating avatar:', error);
       customToast.error(
-        mapError ? mapError(error) : error.message || t('toasts.failedToUpdateAvatar'),
+        mapError
+          ? mapError(error)
+          : error.message || t('toasts.failedToUpdateAvatar'),
       );
       setBusy(false);
       return;
@@ -147,7 +149,8 @@ export const useAvatar = (user, refetchUser) => {
       action: () => uploadAvatarUseCase.execute(file),
       refreshUploads: true,
       mapError: (error) => {
-        if (error.message === 'FILE_TOO_LARGE') return t('toasts.avatarFileTooLarge');
+        if (error.message === 'FILE_TOO_LARGE')
+          return t('toasts.avatarFileTooLarge');
         if (error.status === 400) return t('toasts.avatarInvalidImage');
         return error.message || t('toasts.failedToUpdateAvatar');
       },

@@ -14,7 +14,7 @@ class ApiHandicapRepository extends IHandicapRepository {
   async updateManual(userId, handicap) {
     const payload = {
       user_id: userId,
-      handicap: handicap
+      handicap: handicap,
     };
 
     const data = await apiRequest('/api/v1/handicaps/update-manual', {
@@ -30,7 +30,7 @@ class ApiHandicapRepository extends IHandicapRepository {
    */
   async updateFromRfeg(userId) {
     const payload = {
-      user_id: userId
+      user_id: userId,
     };
 
     const data = await apiRequest('/api/v1/handicaps/update', {
@@ -45,9 +45,14 @@ class ApiHandicapRepository extends IHandicapRepository {
    * @override
    */
   async refreshMine() {
-    const data = await apiRequest('/api/v1/handicaps/refresh-mine', { method: 'POST' });
+    const data = await apiRequest('/api/v1/handicaps/refresh-mine', {
+      method: 'POST',
+    });
 
-    return { needsHandicap: data.needs_handicap, handicap: data.handicap ?? null };
+    return {
+      needsHandicap: data.needs_handicap,
+      handicap: data.handicap ?? null,
+    };
   }
 }
 

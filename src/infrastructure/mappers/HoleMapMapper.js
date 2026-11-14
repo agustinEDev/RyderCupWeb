@@ -18,13 +18,22 @@ class HoleMapMapper {
     for (const feature of api.geojson?.features ?? []) {
       const { hole, kind } = feature.properties ?? {};
       if (!hole) continue;
-      if (kind === 'play_line') hoyo(hole).playLine = feature.geometry.coordinates.map(punto);
-      else if (kind === 'green_front' || kind === 'green_center' || kind === 'green_back') {
+      if (kind === 'play_line')
+        hoyo(hole).playLine = feature.geometry.coordinates.map(punto);
+      else if (
+        kind === 'green_front' ||
+        kind === 'green_center' ||
+        kind === 'green_back'
+      ) {
         hoyo(hole).puntos[kind] = punto(feature.geometry.coordinates);
       }
     }
     for (const datos of Object.values(holes)) {
-      const { green_front: front, green_center: center, green_back: back } = datos.puntos;
+      const {
+        green_front: front,
+        green_center: center,
+        green_back: back,
+      } = datos.puntos;
       datos.green = front && center && back ? { front, center, back } : null;
       delete datos.puntos;
     }

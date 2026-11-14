@@ -13,7 +13,13 @@ import { nombresDeCompaneros } from '../../utils/nombreDeCompanero';
  * panel se lee como que algo ha fallado, y para la mayoría de la gente, que no
  * está metida en un torneo, ese sería el estado de siempre.
  */
-const NextMatchBanner = ({ match, isLoading = false, onCreateQuickMatch, sinRespuesta = false, desdeMemoria = false }) => {
+const NextMatchBanner = ({
+  match,
+  isLoading = false,
+  onCreateQuickMatch,
+  sinRespuesta = false,
+  desdeMemoria = false,
+}) => {
   const { t, i18n } = useTranslation('dashboard');
   const navigate = useNavigate();
 
@@ -56,8 +62,12 @@ const NextMatchBanner = ({ match, isLoading = false, onCreateQuickMatch, sinResp
           <Calendar className="h-5 w-5 text-white" aria-hidden="true" />
         </span>
         <span className="min-w-0">
-          <span className="block text-sm font-bold text-amber-900">{t('nextMatch.sinRespuestaTitle')}</span>
-          <span className="block text-xs text-amber-800">{t('nextMatch.sinRespuestaDesc')}</span>
+          <span className="block text-sm font-bold text-amber-900">
+            {t('nextMatch.sinRespuestaTitle')}
+          </span>
+          <span className="block text-xs text-amber-800">
+            {t('nextMatch.sinRespuestaDesc')}
+          </span>
         </span>
       </div>
     );
@@ -75,15 +85,23 @@ const NextMatchBanner = ({ match, isLoading = false, onCreateQuickMatch, sinResp
             ancho de su contenido salvo que se le diga, así que sin esto el
             texto largo empujaba la banda más allá de la pantalla y la página
             entera acababa con scroll horizontal */}
-        <span data-testid="next-match-empty-content" className="flex min-w-0 items-center gap-3">
-          <span data-testid="next-match-empty-icon" className="flex-shrink-0 rounded-lg bg-primary-500 p-2">
+        <span
+          data-testid="next-match-empty-content"
+          className="flex min-w-0 items-center gap-3"
+        >
+          <span
+            data-testid="next-match-empty-icon"
+            className="flex-shrink-0 rounded-lg bg-primary-500 p-2"
+          >
             <Zap className="h-5 w-5 text-white" aria-hidden="true" />
           </span>
           <span data-testid="next-match-empty-text" className="min-w-0">
             <span className="block text-sm font-bold text-primary-900">
               {t('nextMatch.emptyTitle')}
             </span>
-            <span className="block text-xs text-primary-700">{t('nextMatch.emptyDescription')}</span>
+            <span className="block text-xs text-primary-700">
+              {t('nextMatch.emptyDescription')}
+            </span>
           </span>
         </span>
         <span className="flex-shrink-0 rounded-lg bg-primary-500 px-3 py-1.5 text-xs font-semibold text-white">
@@ -100,16 +118,28 @@ const NextMatchBanner = ({ match, isLoading = false, onCreateQuickMatch, sinResp
         month: 'short',
       })
     : null;
-  const session = match.sessionType ? t(`nextMatch.session.${match.sessionType}`) : null;
+  const session = match.sessionType
+    ? t(`nextMatch.session.${match.sessionType}`)
+    : null;
   const opponents = (match.opponentNames || []).join(', ');
   // Como la tarjeta: quien se retiró, dicho (QA de la release)
-  const partners = nombresDeCompaneros(t, 'upcomingMatches.withdrawnPartner', match).join(', ');
+  const partners = nombresDeCompaneros(
+    t,
+    'upcomingMatches.withdrawnPartner',
+    match,
+  ).join(', ');
   // Una partida de stroke play (FE #824, PR 7): sin formato ni rivales, con su
   // número, su hora y su pantalla
   const esPartida = Boolean(match.esPartidaDeFranja);
   const titulo = esPartida
-    ? [t('nextMatch.teeGroup', { numero: match.matchNumber }), match.competitionName]
-    : [match.matchFormat && t(`nextMatch.format.${match.matchFormat}`), match.competitionName];
+    ? [
+        t('nextMatch.teeGroup', { numero: match.matchNumber }),
+        match.competitionName,
+      ]
+    : [
+        match.matchFormat && t(`nextMatch.format.${match.matchFormat}`),
+        match.competitionName,
+      ];
   const destino = rutaDeAnotacion(match);
 
   return (
@@ -139,11 +169,15 @@ const NextMatchBanner = ({ match, isLoading = false, onCreateQuickMatch, sinResp
         )}
         {(when || session) && (
           <span className="block truncate text-xs text-amber-800">
-            {[when, session, esPartida ? match.teeTime : match.golfCourseName].filter(Boolean).join(' · ')}
+            {[when, session, esPartida ? match.teeTime : match.golfCourseName]
+              .filter(Boolean)
+              .join(' · ')}
           </span>
         )}
         {esPartida && partners && (
-          <span className="mt-0.5 block truncate text-xs text-gray-600">{t('nextMatch.withPartners', { partners })}</span>
+          <span className="mt-0.5 block truncate text-xs text-gray-600">
+            {t('nextMatch.withPartners', { partners })}
+          </span>
         )}
         {opponents && (
           <span className="mt-0.5 block truncate text-xs text-gray-600">
@@ -155,7 +189,10 @@ const NextMatchBanner = ({ match, isLoading = false, onCreateQuickMatch, sinResp
             calendario cambió, esto no es el partido de ahora. Sin `truncate`:
             cortado a media frase el aviso no dice nada */}
         {desdeMemoria && (
-          <span data-testid="next-match-desde-memoria" className="mt-0.5 block text-xs font-medium text-amber-900">
+          <span
+            data-testid="next-match-desde-memoria"
+            className="mt-0.5 block text-xs font-medium text-amber-900"
+          >
             {t('nextMatch.desdeMemoria')}
           </span>
         )}

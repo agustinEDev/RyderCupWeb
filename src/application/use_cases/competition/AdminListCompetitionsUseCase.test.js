@@ -23,7 +23,9 @@ describe('AdminListCompetitionsUseCase', () => {
   });
 
   it('throws if no competitionRepository is provided', () => {
-    expect(() => new AdminListCompetitionsUseCase()).toThrow('AdminListCompetitionsUseCase requires a competitionRepository');
+    expect(() => new AdminListCompetitionsUseCase()).toThrow(
+      'AdminListCompetitionsUseCase requires a competitionRepository',
+    );
   });
 
   it('lists competitions of any status by not restricting the status filter', async () => {
@@ -42,7 +44,12 @@ describe('AdminListCompetitionsUseCase', () => {
   it('passes search filters and pagination through', async () => {
     competitionRepository.findPublic.mockResolvedValue([]);
 
-    await useCase.execute({ searchName: 'Cup', searchCreator: 'Ana', limit: 10, offset: 20 });
+    await useCase.execute({
+      searchName: 'Cup',
+      searchCreator: 'Ana',
+      limit: 10,
+      offset: 20,
+    });
 
     expect(competitionRepository.findPublic).toHaveBeenCalledWith({
       searchName: 'Cup',
@@ -59,6 +66,8 @@ describe('AdminListCompetitionsUseCase', () => {
 
     const result = await useCase.execute();
 
-    expect(result).toEqual([{ id: 'c1', name: 'Draft Cup', status: 'DRAFT', creator: { id: 'u1' } }]);
+    expect(result).toEqual([
+      { id: 'c1', name: 'Draft Cup', status: 'DRAFT', creator: { id: 'u1' } },
+    ]);
   });
 });

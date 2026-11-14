@@ -1,6 +1,7 @@
 import { enviarReporteDeHoyo } from './enviarReporteDeHoyo';
 
-const esPunto = (p) => Boolean(p) && Number.isFinite(p.lat) && Number.isFinite(p.lon);
+const esPunto = (p) =>
+  Boolean(p) && Number.isFinite(p.lat) && Number.isFinite(p.lon);
 
 /**
  * SendHoleReportUseCase: el jugador reporta un hoyo con un motivo y la línea
@@ -19,25 +20,62 @@ const esPunto = (p) => Boolean(p) && Number.isFinite(p.lat) && Number.isFinite(p
  * @param {Set} [dependencies.enVuelo] - los que van de camino, compartido con el vaciado de la cola
  */
 class SendHoleReportUseCase {
-  constructor({ golfCourseRepository, holeReportStore, ahora = () => new Date().toISOString(), reportarFallo = () => {}, enVuelo = new Set() }) {
-    this.dependencias = { golfCourseRepository, holeReportStore, reportarFallo, enVuelo };
+  constructor({
+    golfCourseRepository,
+    holeReportStore,
+    ahora = () => new Date().toISOString(),
+    reportarFallo = () => {},
+    enVuelo = new Set(),
+  }) {
+    this.dependencias = {
+      golfCourseRepository,
+      holeReportStore,
+      reportarFallo,
+      enVuelo,
+    };
     this.ahora = ahora;
   }
 
   /**
    * @param {{userId: string, golfCourseId: string, holeNumber: number, id: string, reason: string, tee: Object, bends?: Object[], greenCenter: Object}} datos
    */
-  async execute({ userId, golfCourseId, holeNumber, id, reason, tee, bends, greenCenter }) {
+  async execute({
+    userId,
+    golfCourseId,
+    holeNumber,
+    id,
+    reason,
+    tee,
+    bends,
+    greenCenter,
+  }) {
     if (!userId || !golfCourseId) return { estado: 'ignorado' };
     // El mapa siempre pone el id, la salida y el green: si falta algo, es un
     // fallo nuestro, y en la cola atascaría a los demás
-    const codosBien = bends == null || (Array.isArray(bends) && bends.every(esPunto));
+    const codosBien =
+      bends == null || (Array.isArray(bends) && bends.every(esPunto));
     if (!id || !esPunto(tee) || !esPunto(greenCenter) || !codosBien) {
-      const motivo = !id ? 'sin id' : codosBien ? 'sin línea' : 'con un codo roto';
-      this.dependencias.reportarFallo(new Error(`Reporte de hoyo ${motivo}`), { golfCourseId, holeNumber });
+      const motivo = !id
+        ? 'sin id'
+        : codosBien
+          ? 'sin línea'
+          : 'con un codo roto';
+      this.dependencias.reportarFallo(new Error(`Reporte de hoyo ${motivo}`), {
+        golfCourseId,
+        holeNumber,
+      });
       return { estado: 'ignorado' };
     }
-    const entrada = { id, golfCourseId, holeNumber, reason, tee, bends: bends ?? [], greenCenter, enCola: this.ahora() };
+    const entrada = {
+      id,
+      golfCourseId,
+      holeNumber,
+      reason,
+      tee,
+      bends: bends ?? [],
+      greenCenter,
+      enCola: this.ahora(),
+    };
     this.dependencias.holeReportStore.ponerEnCola(userId, entrada);
     return enviarReporteDeHoyo(this.dependencias, userId, entrada);
   }

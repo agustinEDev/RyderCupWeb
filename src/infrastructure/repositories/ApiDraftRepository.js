@@ -13,9 +13,12 @@ class ApiDraftRepository extends IDraftRepository {
    * POST /api/v1/competitions/{competitionId}/draft
    */
   async startDraft(competitionId) {
-    const data = await apiRequest(`/api/v1/competitions/${segmento(competitionId)}/draft`, {
-      method: 'POST',
-    });
+    const data = await apiRequest(
+      `/api/v1/competitions/${segmento(competitionId)}/draft`,
+      {
+        method: 'POST',
+      },
+    );
     return DraftMapper.toDraftDTO(data);
   }
 
@@ -27,7 +30,9 @@ class ApiDraftRepository extends IDraftRepository {
    */
   async getDraft(competitionId) {
     try {
-      const data = await apiRequest(`/api/v1/competitions/${segmento(competitionId)}/draft`);
+      const data = await apiRequest(
+        `/api/v1/competitions/${segmento(competitionId)}/draft`,
+      );
       return DraftMapper.toDraftDTO(data);
     } catch (error) {
       if (error?.status === 404) return null;
@@ -39,10 +44,13 @@ class ApiDraftRepository extends IDraftRepository {
    * POST /api/v1/competitions/{competitionId}/draft/picks
    */
   async makePick(competitionId, playerId) {
-    const data = await apiRequest(`/api/v1/competitions/${segmento(competitionId)}/draft/picks`, {
-      method: 'POST',
-      body: JSON.stringify({ player_id: playerId }),
-    });
+    const data = await apiRequest(
+      `/api/v1/competitions/${segmento(competitionId)}/draft/picks`,
+      {
+        method: 'POST',
+        body: JSON.stringify({ player_id: playerId }),
+      },
+    );
     return DraftMapper.toDraftDTO(data);
   }
 }

@@ -4,7 +4,7 @@ import ScorecardTable from './ScorecardTable';
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
-    t: (key, opts) => opts ? `${key} ${JSON.stringify(opts)}` : key,
+    t: (key, opts) => (opts ? `${key} ${JSON.stringify(opts)}` : key),
     i18n: { language: 'en' },
   }),
 }));
@@ -22,34 +22,59 @@ const players = [
 
 describe('ScorecardTable', () => {
   it('should render the scorecard', () => {
-    render(<ScorecardTable holes={holes} players={players} currentUserId="u1" />);
+    render(
+      <ScorecardTable holes={holes} players={players} currentUserId="u1" />,
+    );
     expect(screen.getByTestId('scorecard-table')).toBeInTheDocument();
   });
 
   it('should display OUT and IN sections', () => {
-    render(<ScorecardTable holes={holes} players={players} currentUserId="u1" />);
-    expect(screen.getByTestId('scorecard-table')).toHaveTextContent('scorecard.out');
-    expect(screen.getByTestId('scorecard-table')).toHaveTextContent('scorecard.in');
+    render(
+      <ScorecardTable holes={holes} players={players} currentUserId="u1" />,
+    );
+    expect(screen.getByTestId('scorecard-table')).toHaveTextContent(
+      'scorecard.out',
+    );
+    expect(screen.getByTestId('scorecard-table')).toHaveTextContent(
+      'scorecard.in',
+    );
   });
 
   it('should display player names', () => {
-    render(<ScorecardTable holes={holes} players={players} currentUserId="u1" />);
+    render(
+      <ScorecardTable holes={holes} players={players} currentUserId="u1" />,
+    );
     expect(screen.getByTestId('scorecard-table')).toHaveTextContent('Player A');
     expect(screen.getByTestId('scorecard-table')).toHaveTextContent('Player B');
   });
 
   it('should display par values', () => {
-    render(<ScorecardTable holes={holes} players={players} currentUserId="u1" />);
-    expect(screen.getByTestId('scorecard-table')).toHaveTextContent('scorecard.par');
+    render(
+      <ScorecardTable holes={holes} players={players} currentUserId="u1" />,
+    );
+    expect(screen.getByTestId('scorecard-table')).toHaveTextContent(
+      'scorecard.par',
+    );
   });
 
   it('should display stroke index values', () => {
-    render(<ScorecardTable holes={holes} players={players} currentUserId="u1" />);
-    expect(screen.getByTestId('scorecard-table')).toHaveTextContent('scorecard.si');
+    render(
+      <ScorecardTable holes={holes} players={players} currentUserId="u1" />,
+    );
+    expect(screen.getByTestId('scorecard-table')).toHaveTextContent(
+      'scorecard.si',
+    );
   });
 
   it('should show dash when no score', () => {
-    render(<ScorecardTable holes={holes} players={players} scores={[]} currentUserId="u1" />);
+    render(
+      <ScorecardTable
+        holes={holes}
+        players={players}
+        scores={[]}
+        currentUserId="u1"
+      />,
+    );
     const table = screen.getByTestId('scorecard-table');
     expect(table).toBeInTheDocument();
   });
@@ -65,25 +90,53 @@ describe('ScorecardTable', () => {
         holeNumber: 1,
         playerScores: [
           { userId: 'u1', ownScore: 5, netScore: 4, validationStatus: 'match' },
-          { userId: 'u2', ownScore: 6, netScore: 6, validationStatus: 'mismatch' },
+          {
+            userId: 'u2',
+            ownScore: 6,
+            netScore: 6,
+            validationStatus: 'mismatch',
+          },
         ],
       },
     ];
 
-    render(<ScorecardTable holes={holes} players={players} scores={scores} currentUserId="u1" />);
+    render(
+      <ScorecardTable
+        holes={holes}
+        players={players}
+        scores={scores}
+        currentUserId="u1"
+      />,
+    );
 
     expect(screen.queryByTestId('validation-icon')).not.toBeInTheDocument();
     // pero los resultados siguen estando: GolfFigure emite el mismo testid para
     // su guión de "sin resultado", así que contar iconos no distinguiría una
     // tarjeta con datos de una vacía
-    const figures = screen.getAllByTestId('golf-figure').map((f) => f.textContent);
+    const figures = screen
+      .getAllByTestId('golf-figure')
+      .map((f) => f.textContent);
     expect(figures).toContain('5');
     expect(figures).toContain('6');
   });
 
   it('should highlight current user row', () => {
-    const scores = [{ holeNumber: 1, playerScores: [{ userId: 'u1', ownScore: 5, netScore: 4, validationStatus: 'match' }] }];
-    render(<ScorecardTable holes={holes} players={players} scores={scores} currentUserId="u1" />);
+    const scores = [
+      {
+        holeNumber: 1,
+        playerScores: [
+          { userId: 'u1', ownScore: 5, netScore: 4, validationStatus: 'match' },
+        ],
+      },
+    ];
+    render(
+      <ScorecardTable
+        holes={holes}
+        players={players}
+        scores={scores}
+        currentUserId="u1"
+      />,
+    );
     const table = screen.getByTestId('scorecard-table');
     expect(table.innerHTML).toContain('bg-blue-50');
   });
@@ -94,26 +147,85 @@ describe('ScorecardTable', () => {
   });
 
   it('should display result row', () => {
-    render(<ScorecardTable holes={holes} players={players} currentUserId="u1" />);
-    expect(screen.getByTestId('scorecard-table')).toHaveTextContent('scorecard.result');
+    render(
+      <ScorecardTable holes={holes} players={players} currentUserId="u1" />,
+    );
+    expect(screen.getByTestId('scorecard-table')).toHaveTextContent(
+      'scorecard.result',
+    );
   });
 
   it('should show hole result winner with team name', () => {
-    const scores = [{ holeNumber: 1, playerScores: [{ userId: 'u1', ownScore: 4, validationStatus: 'match' }], holeResult: { winner: 'A', standing: '1UP' } }];
-    render(<ScorecardTable holes={holes} players={players} scores={scores} currentUserId="u1" teamAName="Team Red" teamBName="Team Blue" />);
+    const scores = [
+      {
+        holeNumber: 1,
+        playerScores: [
+          { userId: 'u1', ownScore: 4, validationStatus: 'match' },
+        ],
+        holeResult: { winner: 'A', standing: '1UP' },
+      },
+    ];
+    render(
+      <ScorecardTable
+        holes={holes}
+        players={players}
+        scores={scores}
+        currentUserId="u1"
+        teamAName="Team Red"
+        teamBName="Team Blue"
+      />,
+    );
     expect(screen.getByTestId('scorecard-table')).toHaveTextContent('Team Red');
   });
 
   it('should show halved symbol for halved holes', () => {
-    const scores = [{ holeNumber: 1, playerScores: [{ userId: 'u1', ownScore: 4, validationStatus: 'match' }], holeResult: { winner: 'HALVED', standing: 'AS' } }];
-    render(<ScorecardTable holes={holes} players={players} scores={scores} currentUserId="u1" teamAName="Team Red" teamBName="Team Blue" />);
-    expect(screen.getByTestId('scorecard-table')).toHaveTextContent('scorecard.halved');
+    const scores = [
+      {
+        holeNumber: 1,
+        playerScores: [
+          { userId: 'u1', ownScore: 4, validationStatus: 'match' },
+        ],
+        holeResult: { winner: 'HALVED', standing: 'AS' },
+      },
+    ];
+    render(
+      <ScorecardTable
+        holes={holes}
+        players={players}
+        scores={scores}
+        currentUserId="u1"
+        teamAName="Team Red"
+        teamBName="Team Blue"
+      />,
+    );
+    expect(screen.getByTestId('scorecard-table')).toHaveTextContent(
+      'scorecard.halved',
+    );
   });
 
   it('should show team B name when team B wins hole', () => {
-    const scores = [{ holeNumber: 1, playerScores: [{ userId: 'u2', ownScore: 3, validationStatus: 'match' }], holeResult: { winner: 'B', standing: '1UP' } }];
-    render(<ScorecardTable holes={holes} players={players} scores={scores} currentUserId="u1" teamAName="Team Red" teamBName="Team Blue" />);
-    expect(screen.getByTestId('scorecard-table')).toHaveTextContent('Team Blue');
+    const scores = [
+      {
+        holeNumber: 1,
+        playerScores: [
+          { userId: 'u2', ownScore: 3, validationStatus: 'match' },
+        ],
+        holeResult: { winner: 'B', standing: '1UP' },
+      },
+    ];
+    render(
+      <ScorecardTable
+        holes={holes}
+        players={players}
+        scores={scores}
+        currentUserId="u1"
+        teamAName="Team Red"
+        teamBName="Team Blue"
+      />,
+    );
+    expect(screen.getByTestId('scorecard-table')).toHaveTextContent(
+      'Team Blue',
+    );
   });
 
   describe('FOURSOMES format', () => {
@@ -125,7 +237,16 @@ describe('ScorecardTable', () => {
     ];
 
     it('should render 2 rows with combined names for FOURSOMES', () => {
-      render(<ScorecardTable holes={holes} players={foursomePlayers} currentUserId="u1" matchFormat="FOURSOMES" teamAName="Team Red" teamBName="Team Blue" />);
+      render(
+        <ScorecardTable
+          holes={holes}
+          players={foursomePlayers}
+          currentUserId="u1"
+          matchFormat="FOURSOMES"
+          teamAName="Team Red"
+          teamBName="Team Blue"
+        />,
+      );
       const table = screen.getByTestId('scorecard-table');
       expect(table).toHaveTextContent('Player A1 / Player A2');
       expect(table).toHaveTextContent('Player B1 / Player B2');
@@ -133,7 +254,16 @@ describe('ScorecardTable', () => {
 
     it('las parejas se leen enteras: la celda parte en líneas, no corta (FE #727)', () => {
       // «Nacho Noche / …» no decía quién jugaba con quién
-      render(<ScorecardTable holes={holes} players={foursomePlayers} currentUserId="u1" matchFormat="FOURSOMES" teamAName="Team Red" teamBName="Team Blue" />);
+      render(
+        <ScorecardTable
+          holes={holes}
+          players={foursomePlayers}
+          currentUserId="u1"
+          matchFormat="FOURSOMES"
+          teamAName="Team Red"
+          teamBName="Team Blue"
+        />,
+      );
       // Cada nombre va en su propio elemento desde #414 (con su hándicap al lado)
       const celda = screen.getAllByTestId('jugador-u1')[0].closest('td');
       expect(celda).toHaveTextContent('Player A1 / Player A2');
@@ -142,43 +272,87 @@ describe('ScorecardTable', () => {
       // Ni el nombre: en la tabla, la caja del jugador va en línea, sin cortar
       const jugadorEnLaTabla = screen.getAllByTestId('jugador-u1')[0];
       expect(jugadorEnLaTabla).not.toHaveAttribute('class');
-      expect(within(jugadorEnLaTabla).getByText('Player A1')).not.toHaveAttribute('class');
+      expect(
+        within(jugadorEnLaTabla).getByText('Player A1'),
+      ).not.toHaveAttribute('class');
     });
 
     it('should show team names above player names in FOURSOMES', () => {
-      render(<ScorecardTable holes={holes} players={foursomePlayers} currentUserId="u1" matchFormat="FOURSOMES" teamAName="Team Red" teamBName="Team Blue" />);
+      render(
+        <ScorecardTable
+          holes={holes}
+          players={foursomePlayers}
+          currentUserId="u1"
+          matchFormat="FOURSOMES"
+          teamAName="Team Red"
+          teamBName="Team Blue"
+        />,
+      );
       const table = screen.getByTestId('scorecard-table');
       expect(table).toHaveTextContent('Team Red');
       expect(table).toHaveTextContent('Team Blue');
     });
 
     it('should show team color borders in FOURSOMES', () => {
-      render(<ScorecardTable holes={holes} players={foursomePlayers} currentUserId="u1" matchFormat="FOURSOMES" teamAName="Team Red" teamBName="Team Blue" />);
+      render(
+        <ScorecardTable
+          holes={holes}
+          players={foursomePlayers}
+          currentUserId="u1"
+          matchFormat="FOURSOMES"
+          teamAName="Team Red"
+          teamBName="Team Blue"
+        />,
+      );
       const table = screen.getByTestId('scorecard-table');
       expect(table.innerHTML).toContain('border-l-blue-500');
       expect(table.innerHTML).toContain('border-l-red-500');
     });
 
     it('should use first available score from teammates in FOURSOMES', () => {
-      const foursomeScores = [{
-        holeNumber: 1,
-        playerScores: [
-          { userId: 'u1', ownScore: 4, validationStatus: 'match' },
-          { userId: 'u3', ownScore: 5, validationStatus: 'match' },
-        ],
-      }];
-      render(<ScorecardTable holes={holes} players={foursomePlayers} scores={foursomeScores} currentUserId="u1" matchFormat="FOURSOMES" />);
+      const foursomeScores = [
+        {
+          holeNumber: 1,
+          playerScores: [
+            { userId: 'u1', ownScore: 4, validationStatus: 'match' },
+            { userId: 'u3', ownScore: 5, validationStatus: 'match' },
+          ],
+        },
+      ];
+      render(
+        <ScorecardTable
+          holes={holes}
+          players={foursomePlayers}
+          scores={foursomeScores}
+          currentUserId="u1"
+          matchFormat="FOURSOMES"
+        />,
+      );
       expect(screen.getByTestId('scorecard-table')).toBeInTheDocument();
     });
 
     it('should not show best-ball highlighting in FOURSOMES', () => {
-      const scoresWithBestBall = [{
-        holeNumber: 1,
-        playerScores: [{ userId: 'u1', ownScore: 4, validationStatus: 'match' }],
-        holeResult: { winner: 'A', bestBallPlayerA: ['u1'] },
-      }];
-      render(<ScorecardTable holes={holes} players={foursomePlayers} scores={scoresWithBestBall} currentUserId="u1" matchFormat="FOURSOMES" />);
-      expect(screen.getByTestId('scorecard-table').innerHTML).not.toContain('bg-yellow-50');
+      const scoresWithBestBall = [
+        {
+          holeNumber: 1,
+          playerScores: [
+            { userId: 'u1', ownScore: 4, validationStatus: 'match' },
+          ],
+          holeResult: { winner: 'A', bestBallPlayerA: ['u1'] },
+        },
+      ];
+      render(
+        <ScorecardTable
+          holes={holes}
+          players={foursomePlayers}
+          scores={scoresWithBestBall}
+          currentUserId="u1"
+          matchFormat="FOURSOMES"
+        />,
+      );
+      expect(screen.getByTestId('scorecard-table').innerHTML).not.toContain(
+        'bg-yellow-50',
+      );
     });
   });
 
@@ -191,14 +365,32 @@ describe('ScorecardTable', () => {
     ];
 
     it('should show team color borders for FOURBALL', () => {
-      render(<ScorecardTable holes={holes} players={fourballPlayers} currentUserId="u1" matchFormat="FOURBALL" teamAName="Team Red" teamBName="Team Blue" />);
+      render(
+        <ScorecardTable
+          holes={holes}
+          players={fourballPlayers}
+          currentUserId="u1"
+          matchFormat="FOURBALL"
+          teamAName="Team Red"
+          teamBName="Team Blue"
+        />,
+      );
       const table = screen.getByTestId('scorecard-table');
       expect(table.innerHTML).toContain('border-l-blue-500');
       expect(table.innerHTML).toContain('border-l-red-500');
     });
 
     it('should render 4 individual rows for FOURBALL', () => {
-      render(<ScorecardTable holes={holes} players={fourballPlayers} currentUserId="u1" matchFormat="FOURBALL" teamAName="Team Red" teamBName="Team Blue" />);
+      render(
+        <ScorecardTable
+          holes={holes}
+          players={fourballPlayers}
+          currentUserId="u1"
+          matchFormat="FOURBALL"
+          teamAName="Team Red"
+          teamBName="Team Blue"
+        />,
+      );
       const table = screen.getByTestId('scorecard-table');
       expect(table).toHaveTextContent('Player A1');
       expect(table).toHaveTextContent('Player A2');
@@ -207,7 +399,16 @@ describe('ScorecardTable', () => {
     });
 
     it('should show team names above player names in FOURBALL', () => {
-      render(<ScorecardTable holes={holes} players={fourballPlayers} currentUserId="u1" matchFormat="FOURBALL" teamAName="Team Red" teamBName="Team Blue" />);
+      render(
+        <ScorecardTable
+          holes={holes}
+          players={fourballPlayers}
+          currentUserId="u1"
+          matchFormat="FOURBALL"
+          teamAName="Team Red"
+          teamBName="Team Blue"
+        />,
+      );
       const table = screen.getByTestId('scorecard-table');
       expect(table).toHaveTextContent('Team Red');
       expect(table).toHaveTextContent('Team Blue');
@@ -216,7 +417,14 @@ describe('ScorecardTable', () => {
 
   describe('SINGLES format', () => {
     it('should not show team color borders for SINGLES', () => {
-      render(<ScorecardTable holes={holes} players={players} currentUserId="u1" matchFormat="SINGLES" />);
+      render(
+        <ScorecardTable
+          holes={holes}
+          players={players}
+          currentUserId="u1"
+          matchFormat="SINGLES"
+        />,
+      );
       const table = screen.getByTestId('scorecard-table');
       expect(table.innerHTML).not.toContain('border-l-blue-500');
       expect(table.innerHTML).not.toContain('border-l-red-500');
@@ -237,7 +445,9 @@ describe('ScorecardTable · la figura sale del par de cada jugador', () => {
   }));
 
   // El de naranjas juega un par 3 donde la tarjeta del campo dice 4
-  const orangeCard = courseHoles.map((h) => (h.holeNumber === 1 ? { ...h, par: 3 } : h));
+  const orangeCard = courseHoles.map((h) =>
+    h.holeNumber === 1 ? { ...h, par: 3 } : h,
+  );
 
   const players = [
     { userId: 'u1', userName: 'Naranjas', team: 'A', holeCard: orangeCard },
@@ -261,7 +471,7 @@ describe('ScorecardTable · la figura sale del par de cada jugador', () => {
         players={players}
         scores={scores}
         currentUserId="u1"
-      />
+      />,
     );
 
     const figures = screen.getAllByTestId('golf-figure');
@@ -277,9 +487,11 @@ describe('ScorecardTable · la figura sale del par de cada jugador', () => {
       <ScorecardTable
         holes={courseHoles}
         players={[players[1]]}
-        scores={[{ holeNumber: 1, playerScores: [{ userId: 'u2', ownScore: 3 }] }]}
+        scores={[
+          { holeNumber: 1, playerScores: [{ userId: 'u2', ownScore: 3 }] },
+        ]}
         currentUserId="u2"
-      />
+      />,
     );
 
     const titles = screen
@@ -336,7 +548,7 @@ describe('ScorecardTable · foursomes con los dos jugadores en barras distintas'
         scores={scores}
         currentUserId="a1"
         matchFormat="FOURSOMES"
-      />
+      />,
     );
 
     const titles = screen
@@ -365,7 +577,7 @@ describe('ScorecardTable · foursomes con los dos jugadores en barras distintas'
         scores={scores}
         currentUserId="a1"
         matchFormat="FOURSOMES"
-      />
+      />,
     );
 
     const titles = screen
@@ -400,11 +612,18 @@ describe('ScorecardTable — la fila de quien mira va primero', () => {
     [...container.querySelector('tbody').querySelectorAll('tr')].slice(0, -1);
 
   const etiquetasEnOrden = (container) =>
-    filasDeLaIda(container).map((tr) => tr.querySelector('td')?.textContent ?? '');
+    filasDeLaIda(container).map(
+      (tr) => tr.querySelector('td')?.textContent ?? '',
+    );
 
   it('saca la fila propia delante en individuales', () => {
     const { container } = render(
-      <ScorecardTable holes={holes} players={players} currentUserId="u2" matchFormat="SINGLES" />
+      <ScorecardTable
+        holes={holes}
+        players={players}
+        currentUserId="u2"
+        matchFormat="SINGLES"
+      />,
     );
 
     expect(etiquetasEnOrden(container)).toEqual(['Player B', 'Player A']);
@@ -412,7 +631,14 @@ describe('ScorecardTable — la fila de quien mira va primero', () => {
 
   it('en fourball sube al compañero detrás y deja a los rivales en su orden', () => {
     const { container } = render(
-      <ScorecardTable holes={holes} players={cuatro} currentUserId="u4" matchFormat="FOURBALL" teamAName="Rojos" teamBName="Azules" />
+      <ScorecardTable
+        holes={holes}
+        players={cuatro}
+        currentUserId="u4"
+        matchFormat="FOURBALL"
+        teamAName="Rojos"
+        teamBName="Azules"
+      />,
     );
 
     expect(etiquetasEnOrden(container)).toEqual([
@@ -425,20 +651,40 @@ describe('ScorecardTable — la fila de quien mira va primero', () => {
 
   it('en foursomes sube el bando propio y escribe delante el nombre de quien mira', () => {
     const { container } = render(
-      <ScorecardTable holes={holes} players={cuatro} currentUserId="u2" matchFormat="FOURSOMES" teamAName="Rojos" teamBName="Azules" />
+      <ScorecardTable
+        holes={holes}
+        players={cuatro}
+        currentUserId="u2"
+        matchFormat="FOURSOMES"
+        teamAName="Rojos"
+        teamBName="Azules"
+      />,
     );
 
     // La etiqueta del equipo sigue pegada a su fila: se resuelve por `row.team`
     // y no por la posición, así que subir el bando no la descoloca.
-    expect(etiquetasEnOrden(container)).toEqual(['RojosBeto / Ana', 'AzulesCarlos / Diana']);
+    expect(etiquetasEnOrden(container)).toEqual([
+      'RojosBeto / Ana',
+      'AzulesCarlos / Diana',
+    ]);
   });
 
   it('deja el orden del servidor a quien no juega la partida', () => {
     const { container } = render(
-      <ScorecardTable holes={holes} players={cuatro} currentUserId="organizador" matchFormat="FOURSOMES" teamAName="Rojos" teamBName="Azules" />
+      <ScorecardTable
+        holes={holes}
+        players={cuatro}
+        currentUserId="organizador"
+        matchFormat="FOURSOMES"
+        teamAName="Rojos"
+        teamBName="Azules"
+      />,
     );
 
-    expect(etiquetasEnOrden(container)).toEqual(['RojosAna / Beto', 'AzulesCarlos / Diana']);
+    expect(etiquetasEnOrden(container)).toEqual([
+      'RojosAna / Beto',
+      'AzulesCarlos / Diana',
+    ]);
   });
 
   /**
@@ -459,19 +705,32 @@ describe('ScorecardTable — la fila de quien mira va primero', () => {
     // Quien mira es del bando B, el segundo que manda el servidor: si no
     // cambiase de sitio, comparar las dos vistas no probaría nada.
     const comoJugador = render(
-      <ScorecardTable holes={holes} players={cuatro} scores={scores} currentUserId="u4" matchFormat="FOURSOMES" />
+      <ScorecardTable
+        holes={holes}
+        players={cuatro}
+        scores={scores}
+        currentUserId="u4"
+        matchFormat="FOURSOMES"
+      />,
     );
-    const filasDelJugador = filasDeLaIda(comoJugador.container).map(
-      (tr) => [...tr.querySelectorAll('td')].slice(1, 3).map((td) => td.textContent)
+    const filasDelJugador = filasDeLaIda(comoJugador.container).map((tr) =>
+      [...tr.querySelectorAll('td')].slice(1, 3).map((td) => td.textContent),
     );
 
     comoJugador.unmount();
 
     const comoEspectador = render(
-      <ScorecardTable holes={holes} players={cuatro} scores={scores} currentUserId="nadie" matchFormat="FOURSOMES" />
+      <ScorecardTable
+        holes={holes}
+        players={cuatro}
+        scores={scores}
+        currentUserId="nadie"
+        matchFormat="FOURSOMES"
+      />,
     );
     const filasDelEspectador = filasDeLaIda(comoEspectador.container).map(
-      (tr) => [...tr.querySelectorAll('td')].slice(1, 3).map((td) => td.textContent)
+      (tr) =>
+        [...tr.querySelectorAll('td')].slice(1, 3).map((td) => td.textContent),
     );
 
     // Las mismas casillas, intercambiadas de sitio: el 3 del bando B sube con su
@@ -490,33 +749,69 @@ describe('ScorecardTable — la fila de quien mira va primero', () => {
 describe('ScorecardTable · el hándicap de juego junto al nombre (#414)', () => {
   // Corto a la vista («Hcp juego 12»): «Hcp de juego 12» ensanchaba la columna del
   // nombre en el ordenador. El lector de pantalla oye el largo.
-  const hcp = (valor) => `scorecard.playingHandicapShort ${JSON.stringify({ value: valor })}`;
-  const hcpLargo = (valor) => `scorecard.playingHandicap ${JSON.stringify({ value: valor })}`;
+  const hcp = (valor) =>
+    `scorecard.playingHandicapShort ${JSON.stringify({ value: valor })}`;
+  const hcpLargo = (valor) =>
+    `scorecard.playingHandicap ${JSON.stringify({ value: valor })}`;
   const conHandicap = [
     { userId: 'u1', userName: 'Player A', team: 'A', playingHandicap: -2 },
     { userId: 'u2', userName: 'Player B', team: 'B', playingHandicap: 14 },
   ];
 
   it('T1: cada fila dice su hándicap de juego, el plus con su signo', () => {
-    render(<ScorecardTable holes={holes} players={conHandicap} currentUserId="u1" matchFormat="SINGLES" />);
+    render(
+      <ScorecardTable
+        holes={holes}
+        players={conHandicap}
+        currentUserId="u1"
+        matchFormat="SINGLES"
+      />,
+    );
 
-    expect(screen.getAllByTestId('hcp-de-juego-u1')[0]).toHaveTextContent(hcp('+2'));
-    expect(screen.getAllByTestId('hcp-de-juego-u2')[0]).toHaveTextContent(hcp('14'));
+    expect(screen.getAllByTestId('hcp-de-juego-u1')[0]).toHaveTextContent(
+      hcp('+2'),
+    );
+    expect(screen.getAllByTestId('hcp-de-juego-u2')[0]).toHaveTextContent(
+      hcp('14'),
+    );
   });
 
   it('T1: a la vista la etiqueta corta; el lector de pantalla oye la larga', () => {
-    render(<ScorecardTable holes={holes} players={conHandicap} currentUserId="u1" matchFormat="SINGLES" />);
+    render(
+      <ScorecardTable
+        holes={holes}
+        players={conHandicap}
+        currentUserId="u1"
+        matchFormat="SINGLES"
+      />,
+    );
 
     const valor = screen.getAllByTestId('hcp-de-juego-u1')[0];
-    expect(within(valor).getByText(hcp('+2'))).toHaveAttribute('aria-hidden', 'true');
-    expect(within(valor).getByText(hcpLargo('+2')).className).toMatch(/\bsr-only\b/);
+    expect(within(valor).getByText(hcp('+2'))).toHaveAttribute(
+      'aria-hidden',
+      'true',
+    );
+    expect(within(valor).getByText(hcpLargo('+2')).className).toMatch(
+      /\bsr-only\b/,
+    );
   });
 
   it('T1: el cero también se dice', () => {
-    const conCero = [{ userId: 'u1', userName: 'Player A', team: 'A', playingHandicap: 0 }];
-    render(<ScorecardTable holes={holes} players={conCero} currentUserId="u1" matchFormat="SINGLES" />);
+    const conCero = [
+      { userId: 'u1', userName: 'Player A', team: 'A', playingHandicap: 0 },
+    ];
+    render(
+      <ScorecardTable
+        holes={holes}
+        players={conCero}
+        currentUserId="u1"
+        matchFormat="SINGLES"
+      />,
+    );
 
-    expect(screen.getAllByTestId('hcp-de-juego-u1')[0]).toHaveTextContent(hcp('0'));
+    expect(screen.getAllByTestId('hcp-de-juego-u1')[0]).toHaveTextContent(
+      hcp('0'),
+    );
   });
 
   it('T2: en foursomes, cada miembro del bando con el suyo, junto a su nombre', () => {
@@ -526,7 +821,14 @@ describe('ScorecardTable · el hándicap de juego junto al nombre (#414)', () =>
       { userId: 'b1', userName: 'Luna', team: 'B', playingHandicap: 20 },
       { userId: 'b2', userName: 'Óscar', team: 'B', playingHandicap: 3 },
     ];
-    render(<ScorecardTable holes={holes} players={foursomes} currentUserId="a1" matchFormat="FOURSOMES" />);
+    render(
+      <ScorecardTable
+        holes={holes}
+        players={foursomes}
+        currentUserId="a1"
+        matchFormat="FOURSOMES"
+      />,
+    );
 
     const nacho = screen.getAllByTestId('jugador-a1')[0];
     const agustin = screen.getAllByTestId('jugador-a2')[0];
@@ -535,12 +837,23 @@ describe('ScorecardTable · el hándicap de juego junto al nombre (#414)', () =>
     expect(nacho).not.toHaveTextContent('Agustín');
     // Los dos en la fila de su bando
     expect(nacho.closest('td')).toBe(agustin.closest('td'));
-    expect(screen.getAllByTestId('hcp-de-juego-b1')[0]).toHaveTextContent(hcp('20'));
-    expect(screen.getAllByTestId('hcp-de-juego-b2')[0]).toHaveTextContent(hcp('3'));
+    expect(screen.getAllByTestId('hcp-de-juego-b1')[0]).toHaveTextContent(
+      hcp('20'),
+    );
+    expect(screen.getAllByTestId('hcp-de-juego-b2')[0]).toHaveTextContent(
+      hcp('3'),
+    );
   });
 
   it('T3: en la misma línea que el nombre, nunca en una propia', () => {
-    render(<ScorecardTable holes={holes} players={conHandicap} currentUserId="u1" matchFormat="SINGLES" />);
+    render(
+      <ScorecardTable
+        holes={holes}
+        players={conHandicap}
+        currentUserId="u1"
+        matchFormat="SINGLES"
+      />,
+    );
 
     const jugador = screen.getAllByTestId('jugador-u1')[0];
     const valor = screen.getAllByTestId('hcp-de-juego-u1')[0];
@@ -555,13 +868,24 @@ describe('ScorecardTable · el hándicap de juego junto al nombre (#414)', () =>
       { userId: 'u1', userName: 'Player A', team: 'A', playingHandicap: null },
       { userId: 'u2', userName: 'Player B', team: 'B' },
     ];
-    render(<ScorecardTable holes={holes} players={sinHandicap} currentUserId="u1" matchFormat="SINGLES" />);
+    render(
+      <ScorecardTable
+        holes={holes}
+        players={sinHandicap}
+        currentUserId="u1"
+        matchFormat="SINGLES"
+      />,
+    );
 
     expect(screen.queryAllByTestId(/^hcp-de-juego-/)).toHaveLength(0);
     expect(screen.getAllByTestId('jugador-u1')[0].textContent).toBe('Player A');
     expect(screen.getAllByTestId('jugador-u2')[0].textContent).toBe('Player B');
-    expect(screen.getByTestId('scorecard-table')).not.toHaveTextContent('undefined');
-    expect(screen.getByTestId('scorecard-table')).not.toHaveTextContent('playingHandicap');
+    expect(screen.getByTestId('scorecard-table')).not.toHaveTextContent(
+      'undefined',
+    );
+    expect(screen.getByTestId('scorecard-table')).not.toHaveTextContent(
+      'playingHandicap',
+    );
   });
 });
 
@@ -580,12 +904,26 @@ describe('ScorecardTable · la raya suma su doble bogey neto', () => {
     {
       holeNumber: 1,
       playerScores: [
-        { userId: 'u1', ownScore: null, ownSubmitted: true, netScore: null, strokesReceivedThisHole: 1 },
+        {
+          userId: 'u1',
+          ownScore: null,
+          ownSubmitted: true,
+          netScore: null,
+          strokesReceivedThisHole: 1,
+        },
       ],
     },
     {
       holeNumber: 2,
-      playerScores: [{ userId: 'u1', ownScore: 4, ownSubmitted: true, netScore: 4, strokesReceivedThisHole: 0 }],
+      playerScores: [
+        {
+          userId: 'u1',
+          ownScore: 4,
+          ownSubmitted: true,
+          netScore: 4,
+          strokesReceivedThisHole: 0,
+        },
+      ],
     },
   ];
   // La suma de la ida de Player A: última casilla de su fila en la primera tabla
@@ -598,22 +936,45 @@ describe('ScorecardTable · la raya suma su doble bogey neto', () => {
   };
 
   it('en bruto: par 4 con un golpe recogido vale 7', () => {
-    render(<ScorecardTable holes={holes} scores={scores} players={singles} currentUserId="u1" />);
+    render(
+      <ScorecardTable
+        holes={holes}
+        scores={scores}
+        players={singles}
+        currentUserId="u1"
+      />,
+    );
 
     expect(sumaDeLaIda()).toHaveTextContent(/^11$/);
   });
 
   it('en neto: la raya vale par + 2', () => {
-    render(<ScorecardTable holes={holes} scores={scores} players={singles} currentUserId="u1" />);
+    render(
+      <ScorecardTable
+        holes={holes}
+        scores={scores}
+        players={singles}
+        currentUserId="u1"
+      />,
+    );
     fireEvent.click(screen.getByRole('switch', { name: 'scorecard.grossNet' }));
 
     expect(sumaDeLaIda()).toHaveTextContent(/^10$/);
   });
 
   it('con el par de la barra del jugador, no el del campo', () => {
-    const naranjas = holes.map((h) => (h.holeNumber === 1 ? { ...h, par: 3 } : h));
+    const naranjas = holes.map((h) =>
+      h.holeNumber === 1 ? { ...h, par: 3 } : h,
+    );
     const conBarra = [{ ...singles[0], holeCard: naranjas }, singles[1]];
-    render(<ScorecardTable holes={holes} scores={scores} players={conBarra} currentUserId="u1" />);
+    render(
+      <ScorecardTable
+        holes={holes}
+        scores={scores}
+        players={conBarra}
+        currentUserId="u1"
+      />,
+    );
 
     // Par 3 recogido con un golpe: 6, más el 4 del hoyo 2
     expect(sumaDeLaIda()).toHaveTextContent(/^10$/);
@@ -631,8 +992,18 @@ describe('ScorecardTable · la raya suma su doble bogey neto', () => {
       {
         holeNumber: 1,
         playerScores: [
-          { userId: 'u1', ownScore: null, ownSubmitted: false, strokesReceivedThisHole: 1 },
-          { userId: 'u3', ownScore: null, ownSubmitted: true, strokesReceivedThisHole: 1 },
+          {
+            userId: 'u1',
+            ownScore: null,
+            ownSubmitted: false,
+            strokesReceivedThisHole: 1,
+          },
+          {
+            userId: 'u3',
+            ownScore: null,
+            ownSubmitted: true,
+            strokesReceivedThisHole: 1,
+          },
         ],
       },
     ];
@@ -643,11 +1014,13 @@ describe('ScorecardTable · la raya suma su doble bogey neto', () => {
         players={bandos}
         currentUserId="u1"
         matchFormat="FOURSOMES"
-      />
+      />,
     );
 
     const [ida] = screen.getAllByRole('table');
-    const fila = within(ida).getAllByRole('row').find((tr) => tr.textContent.includes('Player C'));
+    const fila = within(ida)
+      .getAllByRole('row')
+      .find((tr) => tr.textContent.includes('Player C'));
     const celdas = within(fila).getAllByRole('cell');
     // La penúltima: la última es el hueco del TOTAL (FE #938)
     expect(celdas[celdas.length - 2]).toHaveTextContent(/^7$/);
@@ -663,8 +1036,18 @@ describe('ScorecardTable · la raya suma su doble bogey neto', () => {
       {
         holeNumber: 1,
         playerScores: [
-          { userId: 'u1', ownScore: 5, ownSubmitted: false, strokesReceivedThisHole: 1 },
-          { userId: 'u3', ownScore: null, ownSubmitted: true, strokesReceivedThisHole: 1 },
+          {
+            userId: 'u1',
+            ownScore: 5,
+            ownSubmitted: false,
+            strokesReceivedThisHole: 1,
+          },
+          {
+            userId: 'u3',
+            ownScore: null,
+            ownSubmitted: true,
+            strokesReceivedThisHole: 1,
+          },
         ],
       },
     ];
@@ -675,11 +1058,13 @@ describe('ScorecardTable · la raya suma su doble bogey neto', () => {
         players={bandos}
         currentUserId="u1"
         matchFormat="FOURSOMES"
-      />
+      />,
     );
 
     const [ida] = screen.getAllByRole('table');
-    const fila = within(ida).getAllByRole('row').find((tr) => tr.textContent.includes('Player C'));
+    const fila = within(ida)
+      .getAllByRole('row')
+      .find((tr) => tr.textContent.includes('Player C'));
     const celdas = within(fila).getAllByRole('cell');
     // La penúltima: la última es el hueco del TOTAL (FE #938)
     expect(celdas[celdas.length - 2]).toHaveTextContent(/^7$/);
@@ -687,9 +1072,19 @@ describe('ScorecardTable · la raya suma su doble bogey neto', () => {
 
   it('un hoyo sin anotar sigue sin sumar', () => {
     const sinEnviar = [
-      { holeNumber: 1, playerScores: [{ userId: 'u1', ownScore: null, ownSubmitted: false }] },
+      {
+        holeNumber: 1,
+        playerScores: [{ userId: 'u1', ownScore: null, ownSubmitted: false }],
+      },
     ];
-    render(<ScorecardTable holes={holes} scores={sinEnviar} players={singles} currentUserId="u1" />);
+    render(
+      <ScorecardTable
+        holes={holes}
+        scores={sinEnviar}
+        players={singles}
+        currentUserId="u1"
+      />,
+    );
 
     expect(sumaDeLaIda()).toHaveTextContent(/^-$/);
   });
@@ -698,15 +1093,35 @@ describe('ScorecardTable · la raya suma su doble bogey neto', () => {
 // F4 (25 oct 2026): el retirado del fourball lleva su etiqueta junto al nombre
 describe('ScorecardTable · fourball con un retirado', () => {
   it('F4: «Retirado» junto a su nombre, y solo junto al suyo', () => {
-    render(<ScorecardTable holes={holes} players={players} currentUserId="u1" retirados={['u2']} />);
-    expect(screen.getAllByTestId('etiqueta-retirado-u2').length).toBeGreaterThan(0);
-    expect(screen.queryByTestId('etiqueta-retirado-u1')).not.toBeInTheDocument();
-    expect(screen.getAllByTestId('etiqueta-retirado-u2')[0]).toHaveTextContent('withdraw.badge');
+    render(
+      <ScorecardTable
+        holes={holes}
+        players={players}
+        currentUserId="u1"
+        retirados={['u2']}
+      />,
+    );
+    expect(
+      screen.getAllByTestId('etiqueta-retirado-u2').length,
+    ).toBeGreaterThan(0);
+    expect(
+      screen.queryByTestId('etiqueta-retirado-u1'),
+    ).not.toBeInTheDocument();
+    expect(screen.getAllByTestId('etiqueta-retirado-u2')[0]).toHaveTextContent(
+      'withdraw.badge',
+    );
   });
   // /code-review (26 oct 2026): dentro del envoltorio que recorta el nombre: a
   // 360 px cede el nombre, no se ensancha la fila
   it('F4: la etiqueta va dentro del nombre que se recorta', () => {
-    render(<ScorecardTable holes={holes} players={players} currentUserId="u1" retirados={['u2']} />);
+    render(
+      <ScorecardTable
+        holes={holes}
+        players={players}
+        currentUserId="u1"
+        retirados={['u2']}
+      />,
+    );
     for (const etiqueta of screen.getAllByTestId('etiqueta-retirado-u2')) {
       expect(etiqueta.closest('[data-testid="jugador-u2"]')).not.toBeNull();
     }

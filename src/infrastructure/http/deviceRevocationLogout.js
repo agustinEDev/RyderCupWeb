@@ -20,13 +20,19 @@
  * @see src/config/dependencies.py:576-583 (backend)
  */
 
-import { esFinalNormalDelRefresco, MOTIVO_DEL_CIERRE } from '../../utils/motivosDelCierre';
+import {
+  esFinalNormalDelRefresco,
+  MOTIVO_DEL_CIERRE,
+} from '../../utils/motivosDelCierre';
 // El aviso a Sentry, el usuario de Sentry, el aviso al usuario, la cuenta de la
 // pestaña y la redirección con la página guardada: de la interfaz, que la
 // composition root registra (la infraestructura no llega a sus librerías)
 import { hayInterfazDelTransporte, interfaz } from './interfazDelTransporte';
 // El freno de un cierre por carga vive en su módulo (C1, S1)
-import { empiezaElCierreDeEstaCarga, seEstaCerrandoLaSesion } from '../../utils/cierreDeEstaCarga';
+import {
+  empiezaElCierreDeEstaCarga,
+  seEstaCerrandoLaSesion,
+} from '../../utils/cierreDeEstaCarga';
 
 // localStorage key to track if we've already handled device revocation
 const REVOCATION_HANDLED_KEY = 'device_revocation_handled';
@@ -68,7 +74,10 @@ export const isDeviceRevoked = (response, errorData = {}) => {
     // ONLY explicit revocation messages
     // Backend sends: "Dispositivo revocado. Por favor, inicia sesión nuevamente."
     // or English: "Device revoked. Please sign in again."
-    if (detail.includes('dispositivo revocado') || detail.includes('device revoked')) {
+    if (
+      detail.includes('dispositivo revocado') ||
+      detail.includes('device revoked')
+    ) {
       return true;
     }
   }
@@ -97,15 +106,21 @@ export const isSessionExpired = (response, errorData = {}) => {
     const detail = String(errorData.detail).toLowerCase();
 
     // Refresh token expired or invalid
-    if (detail.includes('refresh token inválido o expirado') ||
-        detail.includes('refresh token invalid or expired')) {
+    if (
+      detail.includes('refresh token inválido o expirado') ||
+      detail.includes('refresh token invalid or expired')
+    ) {
       return true;
     }
 
     // Generic refresh token errors
-    if (detail.includes('refresh token') &&
-        (detail.includes('inválido') || detail.includes('invalid') ||
-         detail.includes('expirado') || detail.includes('expired'))) {
+    if (
+      detail.includes('refresh token') &&
+      (detail.includes('inválido') ||
+        detail.includes('invalid') ||
+        detail.includes('expirado') ||
+        detail.includes('expired'))
+    ) {
       return true;
     }
   }
@@ -118,8 +133,14 @@ export const isSessionExpired = (response, errorData = {}) => {
  *
  * @param {Object} errorData - Optional error data
  */
-export const handleDeviceRevocationLogout = (errorData = null, contexto = {}) => {
-  handleLogout(errorData, 'revocation', { ...contexto, motivo: MOTIVO_DEL_CIERRE.DISPOSITIVO_REVOCADO });
+export const handleDeviceRevocationLogout = (
+  errorData = null,
+  contexto = {},
+) => {
+  handleLogout(errorData, 'revocation', {
+    ...contexto,
+    motivo: MOTIVO_DEL_CIERRE.DISPOSITIVO_REVOCADO,
+  });
 };
 
 /**
@@ -141,7 +162,9 @@ export const handleSessionExpiredLogout = (errorData = null, contexto = {}) => {
       ? !esFinalNormalDelRefresco(errorData)
       : contexto.motivo === MOTIVO_DEL_CIERRE.REFRESCO_RECHAZADO;
   handleLogout(errorData, rechazado ? 'ended' : 'expiration', {
-    motivo: rechazado ? MOTIVO_DEL_CIERRE.REFRESCO_RECHAZADO : MOTIVO_DEL_CIERRE.SESION_CADUCADA,
+    motivo: rechazado
+      ? MOTIVO_DEL_CIERRE.REFRESCO_RECHAZADO
+      : MOTIVO_DEL_CIERRE.SESION_CADUCADA,
     ...contexto,
   });
 };
@@ -312,8 +335,12 @@ const handleLogout = (errorData = null, reason = 'unknown', aviso = {}) => {
       const detail = String(errorData.detail).toLowerCase();
       if (detail.includes('revocado') || detail.includes('revoked')) {
         reason = 'revocation';
-      } else if (detail.includes('expirado') || detail.includes('expired') ||
-                 detail.includes('inválido') || detail.includes('invalid')) {
+      } else if (
+        detail.includes('expirado') ||
+        detail.includes('expired') ||
+        detail.includes('inválido') ||
+        detail.includes('invalid')
+      ) {
         reason = 'expiration';
       }
     }
@@ -330,6 +357,9 @@ const handleLogout = (errorData = null, reason = 'unknown', aviso = {}) => {
     // A /login, con la página en la que estaba para volver tras entrar (la redirección
     // dura pierde el `state.from`). El aviso se enseña en /login: al momento. Solo si
     // salió aquí, 500 ms para que se lea (10 nov 2026)
-    interfaz().redirigeAlLogin({ retraso: avisoEnEstaPagina ? 500 : 0, cuenta });
+    interfaz().redirigeAlLogin({
+      retraso: avisoEnEstaPagina ? 500 : 0,
+      cuenta,
+    });
   }
 };

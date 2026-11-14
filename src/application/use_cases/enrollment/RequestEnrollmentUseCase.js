@@ -53,10 +53,11 @@ class RequestEnrollmentUseCase {
 
     // Verificar si el usuario ya está inscrito (solo si tenemos userId)
     if (userId) {
-      const existingEnrollment = await this.#enrollmentRepository.findByCompetitionAndUser(
-        competitionId,
-        userId
-      );
+      const existingEnrollment =
+        await this.#enrollmentRepository.findByCompetitionAndUser(
+          competitionId,
+          userId,
+        );
 
       if (existingEnrollment) {
         throw new Error('Ya estás inscrito en esta competición');
@@ -65,10 +66,8 @@ class RequestEnrollmentUseCase {
 
     // En una pública se entra directamente (release social 3, 28 oct 2026): con
     // plaza en la franja elegida o en su espera. El userId sale del token
-    const { enrollment, roundId, waiting } = await this.#enrollmentRepository.requestEnrollment(
-      competitionId,
-      data
-    );
+    const { enrollment, roundId, waiting } =
+      await this.#enrollmentRepository.requestEnrollment(competitionId, data);
 
     return { ...EnrollmentAssembler.toSimpleDTO(enrollment), roundId, waiting };
   }

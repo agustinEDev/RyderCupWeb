@@ -28,7 +28,9 @@ const TarjetaDeLoProximo = ({ partido, puedeAnotar }) => {
   const lista = (nombres) => {
     // Un idioma mal escrito («es_ES») hace lanzar a `Intl`: comas, sin más
     try {
-      return new Intl.ListFormat(i18n.language, { type: 'conjunction' }).format(nombres);
+      return new Intl.ListFormat(i18n.language, { type: 'conjunction' }).format(
+        nombres,
+      );
     } catch {
       return nombres.join(', ');
     }
@@ -38,7 +40,10 @@ const TarjetaDeLoProximo = ({ partido, puedeAnotar }) => {
   const cuando = [
     diaCorto(partido.roundDate, i18n.language),
     ...(esPartida
-      ? [partido.teeTime, t('upcomingMatches.teeGroup', { numero: partido.matchNumber })]
+      ? [
+          partido.teeTime,
+          t('upcomingMatches.teeGroup', { numero: partido.matchNumber }),
+        ]
       : [
           partido.sessionType && tSchedule(`sessions.${partido.sessionType}`),
           // Una sesión sin formato todavía no pinta «formats.null» (RyderCupAm#541)
@@ -47,7 +52,11 @@ const TarjetaDeLoProximo = ({ partido, puedeAnotar }) => {
   ].filter(Boolean);
 
   // Con quién, y quién se retiró (QA de la release)
-  const companeros = nombresDeCompaneros(t, 'upcomingMatches.withdrawnPartner', partido);
+  const companeros = nombresDeCompaneros(
+    t,
+    'upcomingMatches.withdrawnPartner',
+    partido,
+  );
   const conQuien = esPartida
     ? companeros.length > 0
       ? t('upcomingMatches.with', { companeros: lista(companeros) })
@@ -55,7 +64,9 @@ const TarjetaDeLoProximo = ({ partido, puedeAnotar }) => {
     : t('upcomingMatches.versus', {
         nosotros: lista([t('upcomingMatches.you'), ...companeros]),
         // Sin rivales todavía, «por decidir»: no «Tú vs » (revisión de la FE-B)
-        ellos: partido.opponentNames?.length ? lista(partido.opponentNames) : t('upcomingMatches.toBeDecided'),
+        ellos: partido.opponentNames?.length
+          ? lista(partido.opponentNames)
+          : t('upcomingMatches.toBeDecided'),
       });
 
   const destino = rutaDeAnotacion(partido);
@@ -88,17 +99,26 @@ const TarjetaDeLoProximo = ({ partido, puedeAnotar }) => {
           </p>
           {/* El campo donde se juega (16 oct); sin nombre, ni la línea */}
           {partido.golfCourseName && (
-            <p data-testid="campo" className="mt-0.5 flex min-w-0 items-center gap-1 text-xs text-gray-500">
+            <p
+              data-testid="campo"
+              className="mt-0.5 flex min-w-0 items-center gap-1 text-xs text-gray-500"
+            >
               <MapPin className="h-3 w-3 shrink-0" aria-hidden="true" />
               <span className="truncate">{partido.golfCourseName}</span>
             </p>
           )}
-          <p data-testid="con-quien" className="mt-0.5 break-words text-sm font-medium text-gray-900">
+          <p
+            data-testid="con-quien"
+            className="mt-0.5 break-words text-sm font-medium text-gray-900"
+          >
             {conQuien}
           </p>
           {/* Le pasaron de partida: su hora puede ser otra. Como en el panel (`/code-review`) */}
           {esPartida && partido.broughtIn && (
-            <p data-testid="me-pasaron" className="mt-0.5 text-xs font-medium text-amber-700">
+            <p
+              data-testid="me-pasaron"
+              className="mt-0.5 text-xs font-medium text-amber-700"
+            >
               {t('nextMatch.broughtIn', { numero: partido.matchNumber })}
             </p>
           )}
@@ -112,7 +132,11 @@ const TarjetaDeLoProximo = ({ partido, puedeAnotar }) => {
           }`}
         >
           {puedeAnotar && <Play className="h-3 w-3" aria-hidden="true" />}
-          {t(puedeAnotar ? 'upcomingMatches.scoreMatch' : 'upcomingMatches.viewCard')}
+          {t(
+            puedeAnotar
+              ? 'upcomingMatches.scoreMatch'
+              : 'upcomingMatches.viewCard',
+          )}
         </Link>
       </div>
     </article>

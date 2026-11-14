@@ -25,7 +25,7 @@ export class CountryCode {
   constructor(value) {
     if (typeof value !== 'string') {
       throw new InvalidCountryCodeError(
-        `Country code must be a string. Received: ${typeof value}`
+        `Country code must be a string. Received: ${typeof value}`,
       );
     }
 
@@ -34,14 +34,14 @@ export class CountryCode {
 
     if (normalizedValue.length !== 2) {
       throw new InvalidCountryCodeError(
-        `Country code must have exactly 2 characters. Received: '${value}' (length: ${normalizedValue.length})`
+        `Country code must have exactly 2 characters. Received: '${value}' (length: ${normalizedValue.length})`,
       );
     }
 
     // Check if it contains only letters (A-Z)
     if (!/^[A-Z]{2}$/.test(normalizedValue)) {
       throw new InvalidCountryCodeError(
-        `Country code must contain only letters (A-Z). Received: '${value}'`
+        `Country code must contain only letters (A-Z). Received: '${value}'`,
       );
     }
 

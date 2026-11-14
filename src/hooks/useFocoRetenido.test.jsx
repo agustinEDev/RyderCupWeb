@@ -80,14 +80,16 @@ describe('useFocoRetenido', () => {
       <Dialogo>
         <button type="button">primero</button>
         <button type="button">ultimo</button>
-        <button type="button" tabIndex={-1}>boton fuera</button>
+        <button type="button" tabIndex={-1}>
+          boton fuera
+        </button>
         <a href="#x" tabIndex={-1}>
           enlace fuera
         </a>
         <input aria-label="campo fuera" tabIndex={-1} />
         <select aria-label="lista fuera" tabIndex={-1} />
         <textarea aria-label="texto fuera" tabIndex={-1} />
-      </Dialogo>
+      </Dialogo>,
     );
     const primero = screen.getByText('primero');
     const ultimo = screen.getByText('ultimo');
@@ -112,7 +114,7 @@ describe('useFocoRetenido', () => {
         <div hidden>
           <button type="button">oculto al final</button>
         </div>
-      </Dialogo>
+      </Dialogo>,
     );
     const primero = screen.getByText('primero');
     const ultimo = screen.getByText('ultimo');
@@ -149,7 +151,7 @@ describe('useFocoRetenido', () => {
     const { unmount } = render(
       <Dialogo inicial>
         <button type="button">primero</button>
-      </Dialogo>
+      </Dialogo>,
     );
     expect(screen.getByLabelText('campo')).toHaveFocus();
 
@@ -167,12 +169,49 @@ describe('useFocoRetenido', () => {
         <Dialogo alEscape={escapeDentro}>
           <button type="button">del de dentro</button>
         </Dialogo>
-      </Dialogo>
+      </Dialogo>,
     );
 
     expect(screen.getByText('del de dentro')).toHaveFocus();
     fireEvent.keyDown(document.activeElement, { key: 'Escape' });
     expect(escapeDentro).toHaveBeenCalledTimes(1);
     expect(escapeFuera).not.toHaveBeenCalled();
+  });
+});
+
+/**
+ * T4-29: `inicialRef` se lee al abrir y nada más. Si el diálogo abierto se
+ * vuelve a pintar con otra ref (o sin ella), el foco ni salta ni se devuelve.
+ */
+describe('useFocoRetenido · inicialRef solo al abrir (T4)', () => {
+  const ConDosCampos = ({ inicial }) => {
+    const caja = useRef(null);
+    const a = useRef(null);
+    const b = useRef(null);
+    const refs = { a, b };
+    useFocoRetenido(caja, { inicialRef: inicial ? refs[inicial] : undefined });
+    return (
+      <div ref={caja} role="dialog" aria-modal="true" tabIndex={-1}>
+        <input ref={a} aria-label="a" />
+        <input ref={b} aria-label="b" />
+      </div>
+    );
+  };
+
+  it('T4-29: con el diálogo abierto, cambiar inicialRef o quitarla no mueve el foco', () => {
+    const fuera = document.createElement('button');
+    document.body.appendChild(fuera);
+    fuera.focus();
+    const { rerender, unmount } = render(<ConDosCampos inicial="a" />);
+    expect(screen.getByLabelText('a')).toHaveFocus();
+
+    rerender(<ConDosCampos inicial="b" />);
+    expect(screen.getByLabelText('a')).toHaveFocus();
+    rerender(<ConDosCampos inicial={null} />);
+    expect(screen.getByLabelText('a')).toHaveFocus();
+
+    unmount();
+    expect(fuera).toHaveFocus();
+    fuera.remove();
   });
 });

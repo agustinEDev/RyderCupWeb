@@ -10,7 +10,9 @@ class ListMyQuickMatchesUseCase {
 
   constructor({ quickMatchRepository }) {
     if (!quickMatchRepository) {
-      throw new Error('ListMyQuickMatchesUseCase requires quickMatchRepository');
+      throw new Error(
+        'ListMyQuickMatchesUseCase requires quickMatchRepository',
+      );
     }
     this.#quickMatchRepository = quickMatchRepository;
   }

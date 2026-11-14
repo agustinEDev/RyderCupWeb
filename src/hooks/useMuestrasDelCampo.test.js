@@ -22,14 +22,26 @@ import { renderHook, act, waitFor } from '@testing-library/react';
  */
 
 const casos = vi.hoisted(() => ({
-  muestras: { guardadas: vi.fn(() => ({})), execute: vi.fn(async () => ({})), pendientes: vi.fn(() => ({})) },
+  muestras: {
+    guardadas: vi.fn(() => ({})),
+    execute: vi.fn(async () => ({})),
+    pendientes: vi.fn(() => ({})),
+  },
   enviar: { execute: vi.fn(async () => ({ estado: 'enviada' })) },
 }));
-vi.mock('../composition', () => ({ getHoleSamplesUseCase: casos.muestras, sendHoleSampleUseCase: casos.enviar, sendPendingHoleSamplesUseCase: {} }));
+vi.mock('../composition', () => ({
+  getHoleSamplesUseCase: casos.muestras,
+  sendHoleSampleUseCase: casos.enviar,
+  sendPendingHoleSamplesUseCase: {},
+}));
 
 const { useMuestrasDelCampo } = await import('./useMuestrasDelCampo');
 
-const P = { tee: { lat: 1, lon: 2 }, bends: [], greenCenter: { lat: 3, lon: 4 } };
+const P = {
+  tee: { lat: 1, lon: 2 },
+  bends: [],
+  greenCenter: { lat: 3, lon: 4 },
+};
 const MUESTRA = { id: 'm-1', ...P };
 // Por hoyo, de cualquier barra (BE #575, 17 oct)
 const H3 = { primera: P, green: null, recoge: true };
@@ -37,7 +49,15 @@ const H5 = { primera: null, green: { lat: 5, lon: 6 }, recoge: true };
 const AMARILLA = { color: 'YELLOW', gender: 'MALE' };
 const ROJA = { color: 'RED', gender: null };
 
-const montar = (props = {}) => renderHook((p) => useMuestrasDelCampo(p), { initialProps: { golfCourseId: 'gc-1', userId: 'u1', barra: AMARILLA, ...props } });
+const montar = (props = {}) =>
+  renderHook((p) => useMuestrasDelCampo(p), {
+    initialProps: {
+      golfCourseId: 'gc-1',
+      userId: 'u1',
+      barra: AMARILLA,
+      ...props,
+    },
+  });
 
 describe('useMuestrasDelCampo', () => {
   beforeEach(() => {
@@ -51,7 +71,11 @@ describe('useMuestrasDelCampo', () => {
   it('S15: devuelve exactamente { muestras, pendientes, enviar }', () => {
     const { result } = montar();
 
-    expect(Object.keys(result.current).sort()).toEqual(['enviar', 'muestras', 'pendientes']);
+    expect(Object.keys(result.current).sort()).toEqual([
+      'enviar',
+      'muestras',
+      'pendientes',
+    ]);
     expect(typeof result.current.enviar).toBe('function');
   });
 
@@ -75,7 +99,11 @@ describe('useMuestrasDelCampo', () => {
     const { result } = montar();
 
     expect(result.current.pendientes).toEqual({ 3: P });
-    expect(casos.muestras.pendientes).toHaveBeenCalledWith('u1', 'gc-1', AMARILLA);
+    expect(casos.muestras.pendientes).toHaveBeenCalledWith(
+      'u1',
+      'gc-1',
+      AMARILLA,
+    );
   });
 
   it('S15: una barra nueva en cada render (mismo color y género) no vuelve a pedir', async () => {
@@ -90,14 +118,20 @@ describe('useMuestrasDelCampo', () => {
 
   it('S15: cambiar de barra vuelve a mirar lo pendiente de la nueva (el resumen es el mismo)', async () => {
     casos.muestras.execute.mockResolvedValue({ 3: H3 });
-    casos.muestras.pendientes.mockImplementation((_u, _gc, b) => (b?.color === 'RED' ? { 4: P } : {}));
+    casos.muestras.pendientes.mockImplementation((_u, _gc, b) =>
+      b?.color === 'RED' ? { 4: P } : {},
+    );
     const { result, rerender } = montar();
     await waitFor(() => expect(result.current.muestras).toEqual({ 3: H3 }));
 
     rerender({ golfCourseId: 'gc-1', userId: 'u1', barra: ROJA });
 
     await waitFor(() => expect(result.current.pendientes).toEqual({ 4: P }));
-    expect(casos.muestras.pendientes).toHaveBeenLastCalledWith('u1', 'gc-1', ROJA);
+    expect(casos.muestras.pendientes).toHaveBeenLastCalledWith(
+      'u1',
+      'gc-1',
+      ROJA,
+    );
   });
 
   it('S15: si el servidor falla, se queda el del móvil', async () => {
@@ -129,10 +163,16 @@ describe('useMuestrasDelCampo', () => {
   });
 
   it('S15: cambiar de campo no deja ver el del anterior mientras llega el nuevo', async () => {
-    casos.muestras.guardadas.mockImplementation((gc) => (gc === 'gc-1' ? { 3: H3 } : {}));
-    casos.muestras.execute.mockImplementation(async (gc) => (gc === 'gc-1' ? { 3: H3, 5: H5 } : new Promise(() => {})));
+    casos.muestras.guardadas.mockImplementation((gc) =>
+      gc === 'gc-1' ? { 3: H3 } : {},
+    );
+    casos.muestras.execute.mockImplementation(async (gc) =>
+      gc === 'gc-1' ? { 3: H3, 5: H5 } : new Promise(() => {}),
+    );
     const { result, rerender } = montar();
-    await waitFor(() => expect(result.current.muestras).toEqual({ 3: H3, 5: H5 }));
+    await waitFor(() =>
+      expect(result.current.muestras).toEqual({ 3: H3, 5: H5 }),
+    );
 
     rerender({ golfCourseId: 'gc-2', userId: 'u1', barra: AMARILLA });
 
@@ -153,7 +193,16 @@ describe('useMuestrasDelCampo', () => {
     });
 
     expect(casos.enviar.execute).toHaveBeenCalledWith(
-      expect.objectContaining({ userId: 'u1', golfCourseId: 'gc-1', holeNumber: 3, barra: AMARILLA, id: 'm-1', tee: P.tee, bends: P.bends, greenCenter: P.greenCenter }),
+      expect.objectContaining({
+        userId: 'u1',
+        golfCourseId: 'gc-1',
+        holeNumber: 3,
+        barra: AMARILLA,
+        id: 'm-1',
+        tee: P.tee,
+        bends: P.bends,
+        greenCenter: P.greenCenter,
+      }),
     );
     expect(result.current.pendientes).toEqual({ 3: P });
   });
@@ -174,8 +223,15 @@ describe('useMuestrasDelCampo', () => {
   it('S15 (#3b): al llegar, sale de `pendientes` en el MISMO render en que entra en el resumen', async () => {
     const vistos = [];
     const { result } = renderHook(() => {
-      const r = useMuestrasDelCampo({ golfCourseId: 'gc-1', userId: 'u1', barra: AMARILLA });
-      vistos.push({ muestra: r.muestras[3]?.primera ?? null, pendiente: r.pendientes[3] ?? null });
+      const r = useMuestrasDelCampo({
+        golfCourseId: 'gc-1',
+        userId: 'u1',
+        barra: AMARILLA,
+      });
+      vistos.push({
+        muestra: r.muestras[3]?.primera ?? null,
+        pendiente: r.pendientes[3] ?? null,
+      });
       return r;
     });
     await act(async () => {});
@@ -228,7 +284,11 @@ describe('useMuestrasDelCampo', () => {
     await act(async () => result.current.enviar(3, MUESTRA));
 
     expect(result.current.pendientes).toEqual({ 3: P });
-    expect(casos.muestras.pendientes).toHaveBeenLastCalledWith('u1', 'gc-1', AMARILLA);
+    expect(casos.muestras.pendientes).toHaveBeenLastCalledWith(
+      'u1',
+      'gc-1',
+      AMARILLA,
+    );
   });
 
   it('S15: si se queda en la cola, sigue en `pendientes`, no se pide el resumen y se avisa para reintentar', async () => {
@@ -238,7 +298,10 @@ describe('useMuestrasDelCampo', () => {
     await act(async () => {});
     casos.muestras.execute.mockClear();
     casos.muestras.pendientes.mockReturnValue({ 3: P });
-    casos.enviar.execute.mockResolvedValue({ estado: 'pendiente', paraLaTanda: true });
+    casos.enviar.execute.mockResolvedValue({
+      estado: 'pendiente',
+      paraLaTanda: true,
+    });
 
     let r;
     await act(async () => {
@@ -249,7 +312,10 @@ describe('useMuestrasDelCampo', () => {
     expect(result.current.pendientes).toEqual({ 3: P });
     expect(casos.muestras.execute).not.toHaveBeenCalled();
     expect(oyente).toHaveBeenCalledTimes(1);
-    globalThis.removeEventListener('rydercup:muestra-de-hoyo-pendiente', oyente);
+    globalThis.removeEventListener(
+      'rydercup:muestra-de-hoyo-pendiente',
+      oyente,
+    );
   });
 
   it('S15: una descartada sale de `pendientes`, sin avisar para reintentar ni pedir el resumen', async () => {
@@ -260,14 +326,20 @@ describe('useMuestrasDelCampo', () => {
     await act(async () => {});
     casos.muestras.execute.mockClear();
     casos.muestras.pendientes.mockReturnValue({});
-    casos.enviar.execute.mockResolvedValue({ estado: 'descartada', errorCode: 'HOLE_NOT_IN_COURSE' });
+    casos.enviar.execute.mockResolvedValue({
+      estado: 'descartada',
+      errorCode: 'HOLE_NOT_IN_COURSE',
+    });
 
     await act(async () => result.current.enviar(3, MUESTRA));
 
     expect(oyente).not.toHaveBeenCalled();
     expect(casos.muestras.execute).not.toHaveBeenCalled();
     expect(result.current.pendientes).toEqual({});
-    globalThis.removeEventListener('rydercup:muestra-de-hoyo-pendiente', oyente);
+    globalThis.removeEventListener(
+      'rydercup:muestra-de-hoyo-pendiente',
+      oyente,
+    );
   });
 
   it('S15: si el envío revienta, la promesa no se rechaza', async () => {
@@ -297,7 +369,9 @@ describe('useMuestrasDelCampo', () => {
     casos.muestras.execute.mockReturnValue(new Promise((r) => (responder = r)));
 
     act(() => {
-      globalThis.dispatchEvent(new globalThis.CustomEvent('rydercup:muestras-de-hoyos'));
+      globalThis.dispatchEvent(
+        new globalThis.CustomEvent('rydercup:muestras-de-hoyos'),
+      );
     });
     // El resumen aún no ha llegado: la pendiente se sigue viendo
     expect(result.current.pendientes).toEqual({ 3: P });
@@ -313,16 +387,24 @@ describe('useMuestrasDelCampo', () => {
     unmount();
     casos.muestras.execute.mockClear();
 
-    globalThis.dispatchEvent(new globalThis.CustomEvent('rydercup:muestras-de-hoyos'));
+    globalThis.dispatchEvent(
+      new globalThis.CustomEvent('rydercup:muestras-de-hoyos'),
+    );
 
     expect(casos.muestras.execute).not.toHaveBeenCalled();
   });
 
   it('S15: un envío lento de otro campo no pisa lo del campo de ahora', async () => {
-    casos.muestras.pendientes.mockImplementation((_u, gc) => (gc === 'gc-2' ? { 5: P } : {}));
-    casos.muestras.execute.mockImplementation(async (gc) => (gc === 'gc-2' ? { 5: H5 } : { 3: H3 }));
+    casos.muestras.pendientes.mockImplementation((_u, gc) =>
+      gc === 'gc-2' ? { 5: P } : {},
+    );
+    casos.muestras.execute.mockImplementation(async (gc) =>
+      gc === 'gc-2' ? { 5: H5 } : { 3: H3 },
+    );
     let terminar;
-    casos.enviar.execute.mockImplementation(() => new Promise((r) => (terminar = r)));
+    casos.enviar.execute.mockImplementation(
+      () => new Promise((r) => (terminar = r)),
+    );
     const { result, rerender } = montar();
     let enviado;
     act(() => {
@@ -332,9 +414,13 @@ describe('useMuestrasDelCampo', () => {
     rerender({ golfCourseId: 'gc-2', userId: 'u1', barra: AMARILLA });
     await waitFor(() => expect(result.current.muestras).toEqual({ 5: H5 }));
     // En gc-2 la cola de fondo cambia algo: lo de ahora ya no es la copia del principio
-    casos.muestras.pendientes.mockImplementation((_u, gc) => (gc === 'gc-2' ? { 5: P, 6: P } : {}));
+    casos.muestras.pendientes.mockImplementation((_u, gc) =>
+      gc === 'gc-2' ? { 5: P, 6: P } : {},
+    );
     await act(async () => {
-      globalThis.dispatchEvent(new globalThis.CustomEvent('rydercup:muestras-de-hoyos'));
+      globalThis.dispatchEvent(
+        new globalThis.CustomEvent('rydercup:muestras-de-hoyos'),
+      );
     });
     expect(result.current.pendientes).toEqual({ 5: P, 6: P });
     await act(async () => {

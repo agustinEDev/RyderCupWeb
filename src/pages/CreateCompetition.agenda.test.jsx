@@ -27,9 +27,15 @@ vi.mock('react-i18next', () => ({
 }));
 
 vi.mock('../components/layout/HeaderAuth', () => ({ default: () => null }));
-vi.mock('../hooks/useAuth', () => ({ useAuth: () => ({ user: { id: 'u-1', gender: 'MALE' }, loading: false }) }));
-vi.mock('../components/golf_course/GolfCourseSearchBox', () => ({ default: () => null }));
-vi.mock('../utils/toast', () => ({ default: { error: vi.fn(), success: vi.fn(), info: vi.fn() } }));
+vi.mock('../hooks/useAuth', () => ({
+  useAuth: () => ({ user: { id: 'u-1', gender: 'MALE' }, loading: false }),
+}));
+vi.mock('../components/golf_course/GolfCourseSearchBox', () => ({
+  default: () => null,
+}));
+vi.mock('../utils/toast', () => ({
+  default: { error: vi.fn(), success: vi.fn(), info: vi.fn() },
+}));
 vi.mock('../services/countries', () => ({
   formatCountryName: () => 'España',
   sortCountriesByName: (paises) => paises || [],
@@ -39,7 +45,11 @@ vi.mock('../composition', () => ({
   updateCompetitionUseCase: { execute: vi.fn() },
   getCompetitionDetailUseCase: { execute: vi.fn() },
   getCompetitionGolfCoursesUseCase: { execute: vi.fn().mockResolvedValue([]) },
-  fetchCountriesUseCase: { execute: vi.fn().mockResolvedValue([{ code: 'ES', name_es: 'España', name_en: 'Spain' }]) },
+  fetchCountriesUseCase: {
+    execute: vi
+      .fn()
+      .mockResolvedValue([{ code: 'ES', name_es: 'España', name_en: 'Spain' }]),
+  },
   getAdjacentCountriesUseCase: { execute: vi.fn().mockResolvedValue([]) },
   createGolfCourseRequestUseCase: { execute: vi.fn() },
   configureScheduleUseCase: { execute: vi.fn() },
@@ -50,14 +60,23 @@ vi.mock('../composition', () => ({
 vi.mock('../utils/competitionFormValidation', () => ({
   validateCompetitionForm: () => null,
 }));
-vi.mock('../components/ui/CountryAutocomplete', () => ({ default: () => null }));
-vi.mock('../components/golf_course/GolfCourseRequestModal', () => ({ default: () => null }));
+vi.mock('../components/ui/CountryAutocomplete', () => ({
+  default: () => null,
+}));
+vi.mock('../components/golf_course/GolfCourseRequestModal', () => ({
+  default: () => null,
+}));
 vi.mock('../components/ui/FullScreenLoader', () => ({ default: () => null }));
 vi.mock('../components/ui/CountryFlag', () => ({ CountryFlag: () => null }));
 
 const CreateCompetition = (await import('./CreateCompetition')).default;
 
-const pinta = () => render(<MemoryRouter><CreateCompetition /></MemoryRouter>);
+const pinta = () =>
+  render(
+    <MemoryRouter>
+      <CreateCompetition />
+    </MemoryRouter>,
+  );
 
 const { createCompetitionWithGolfCoursesUseCase, configureScheduleUseCase } =
   await import('../composition');
@@ -98,8 +117,14 @@ describe('CreateCompetition · la agenda propuesta (FE #654)', () => {
     pinta();
     await elegirTipoYModo(modo);
     rellenarMinimo();
-    fireEvent.click(screen.getByRole('button', { name: 'create.createCompetition' }));
-    await vi.waitFor(() => expect(createCompetitionWithGolfCoursesUseCase.execute).toHaveBeenCalled());
+    fireEvent.click(
+      screen.getByRole('button', { name: 'create.createCompetition' }),
+    );
+    await vi.waitFor(() =>
+      expect(
+        createCompetitionWithGolfCoursesUseCase.execute,
+      ).toHaveBeenCalled(),
+    );
   };
 
   it('AP1: al estilo Ryder, con su campo, se propone la agenda de esos días', async () => {
@@ -110,7 +135,7 @@ describe('CreateCompetition · la agenda propuesta (FE #654)', () => {
         mode: 'AUTOMATIC',
         total_sessions: 5,
         sessions_per_day: 2,
-      })
+      }),
     );
   });
 
@@ -137,7 +162,9 @@ describe('CreateCompetition · la agenda propuesta (FE #654)', () => {
     configureScheduleUseCase.execute.mockRejectedValue(new Error('caído'));
     await crear('RYDER_CUP');
 
-    await vi.waitFor(() => expect(configureScheduleUseCase.execute).toHaveBeenCalled());
+    await vi.waitFor(() =>
+      expect(configureScheduleUseCase.execute).toHaveBeenCalled(),
+    );
     await new Promise((r) => setTimeout(r, 50));
     expect(customToast.success).toHaveBeenCalledWith('create.success');
     expect(customToast.error).not.toHaveBeenCalled();

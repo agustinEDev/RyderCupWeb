@@ -1,6 +1,12 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { AlertTriangle, CalendarDays, MapPin, Plus, Trash2 } from 'lucide-react';
+import {
+  AlertTriangle,
+  CalendarDays,
+  MapPin,
+  Plus,
+  Trash2,
+} from 'lucide-react';
 import {
   getScheduleUseCase,
   getCompetitionGolfCoursesUseCase,
@@ -9,8 +15,14 @@ import {
   deleteRoundUseCase,
 } from '../../composition';
 import customToast from '../../utils/toast';
+import { useCargaCancelableEffect } from '../../hooks/useCargaCancelableEffect';
 import { mensajeConJugadores } from '../../utils/erroresConJugadores';
-import { FRANJAS, diasDelTorneo, franjasLibres, partidosDeLaSesion } from '../../utils/agenda';
+import {
+  FRANJAS,
+  diasDelTorneo,
+  franjasLibres,
+  partidosDeLaSesion,
+} from '../../utils/agenda';
 import { aCamposDeLaCompeticion } from '../../utils/camposDeLaCompeticion';
 
 const FORMATOS = ['SINGLES', 'FOURBALL', 'FOURSOMES'];
@@ -65,28 +77,24 @@ const AgendaDeLaCompeticion = ({
   // Lo que espera un «sí»: cambiar el formato con sobres posibles, o quitar
   const [confirmando, setConfirmando] = useState(null);
 
-  // Cuál es la última lectura pedida. Solo esa se pinta: si la competición
-  // cambia mientras se recarga tras un cambio, hay dos en vuelo, y la vieja
-  // podía llegar la última y pisar la buena (CodeRabbit en la #709). Al
-  // desmontar también se invalida lo que quede por llegar
-  const ultimaLectura = useRef(0);
-
-  const cargarAgenda = useCallback(async () => {
-    const esta = ++ultimaLectura.current;
-    // Dentro de su función async: un fallo, aunque sea síncrono, es un
-    // rechazo más y no se lleva la ficha entera
-    try {
-      const leida = await (async () => getScheduleUseCase.execute(competitionId))();
-      if (esta !== ultimaLectura.current) return;
-      setAgenda(leida);
-      setSinCargar(false);
-    } catch {
-      if (esta !== ultimaLectura.current) return;
+  // La agenda vive en su efecto: se vuelve a leer al cambiar la competición
+  // (`version`) y solo se pinta la última pedida. Si la competición cambia
+  // mientras se relee tras un cambio, hay dos en vuelo, y la vieja podía
+  // llegar la última y pisar la buena (CodeRabbit en la #709). Al desmontar
+  // tampoco se aplica lo que quede por llegar
+  const { recargar } = useCargaCancelableEffect(
+    () => getScheduleUseCase.execute(competitionId),
+    [competitionId, version],
+    {
+      alCargar: (leida) => {
+        setAgenda(leida);
+        setSinCargar(false);
+      },
       // No se pudo preguntar: decir «no hay sesiones» sería afirmar algo que
       // no se sabe, y el organizador se pondría a crear las que ya tiene
-      setSinCargar(true);
-    }
-  }, [competitionId]);
+      alFallar: () => setSinCargar(true),
+    },
+  );
 
   // Los campos: los cambios de la agenda no los tocan, pero los de la sección de
   // campos sí, y la ficha avisa con `versionCampos` (FE #715). Sin ellos la
@@ -94,21 +102,14 @@ const AgendaDeLaCompeticion = ({
   useEffect(() => {
     let vigente = true;
     (async () => getCompetitionGolfCoursesUseCase.execute(competitionId))()
-      .then((resultado) => vigente && setCampos(aCamposDeLaCompeticion(resultado)))
+      .then(
+        (resultado) => vigente && setCampos(aCamposDeLaCompeticion(resultado)),
+      )
       .catch(() => {});
     return () => {
       vigente = false;
     };
   }, [competitionId, versionCampos]);
-
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- pedir la agenda al servidor es justamente el objetivo, y se repite cuando cambia la competición (`version`)
-    cargarAgenda();
-    const lecturas = ultimaLectura;
-    return () => {
-      lecturas.current += 1;
-    };
-  }, [cargarAgenda, version]);
 
   const sesiones = useMemo(() => agenda?.rounds || [], [agenda]);
 
@@ -118,16 +119,19 @@ const AgendaDeLaCompeticion = ({
   useEffect(() => {
     onAgenda?.(agenda && !sinCargar ? agenda : null);
   }, [agenda, sinCargar, onAgenda]);
-  const dias = useMemo(() => diasDelTorneo(startDate, endDate), [startDate, endDate]);
+  const dias = useMemo(
+    () => diasDelTorneo(startDate, endDate),
+    [startDate, endDate],
+  );
 
   const porDia = useMemo(() => {
     const orden = (s) => FRANJAS.indexOf(s.sessionType);
-    return [...new Set(sesiones.map((s) => s.roundDate))]
-      .sort()
-      .map((dia) => ({
-        dia,
-        sesiones: sesiones.filter((s) => s.roundDate === dia).sort((a, b) => orden(a) - orden(b)),
-      }));
+    return [...new Set(sesiones.map((s) => s.roundDate))].sort().map((dia) => ({
+      dia,
+      sesiones: sesiones
+        .filter((s) => s.roundDate === dia)
+        .sort((a, b) => orden(a) - orden(b)),
+    }));
   }, [sesiones]);
 
   const nombreDelCampo = (id) => campos.find((c) => c.id === id)?.name || '';
@@ -162,9 +166,14 @@ const AgendaDeLaCompeticion = ({
       await accion();
     } catch (error) {
       // Con la lista de afectados, sus nombres; si no, el motivo del servidor
-      customToast.error(mensajeConJugadores(t, error, 'agenda.errors') || error.message || t('agenda.error'));
+      customToast.error(
+        mensajeConJugadores(t, error, 'agenda.errors') ||
+          error.message ||
+          t('agenda.error'),
+      );
     } finally {
-      await cargarAgenda();
+      // Sin espera: la agenda de ahora se queda a la vista hasta que llega la nueva
+      await recargar({ silenciosa: true });
       setOcupado(false);
     }
   };
@@ -172,7 +181,8 @@ const AgendaDeLaCompeticion = ({
   const franjasDelDia = diaNuevo ? franjasLibres(sesiones, diaNuevo) : [];
 
   const empezarAAnadir = () => {
-    const primerDia = dias.find((dia) => franjasLibres(sesiones, dia).length > 0) || '';
+    const primerDia =
+      dias.find((dia) => franjasLibres(sesiones, dia).length > 0) || '';
     setDiaNuevo(primerDia);
     setFranjaNueva(primerDia ? franjasLibres(sesiones, primerDia)[0] : '');
     setAnadiendo(true);
@@ -241,20 +251,28 @@ const AgendaDeLaCompeticion = ({
                   ? s.matches.length
                   : partidosDeLaSesion(s.matchFormat, plantilla);
                 return (
-                  <li key={s.id} data-testid={`agenda-sesion-${s.id}`} className="p-3 space-y-2">
+                  <li
+                    key={s.id}
+                    data-testid={`agenda-sesion-${s.id}`}
+                    className="p-3 space-y-2"
+                  >
                     <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-sm">
                       <span className="font-semibold text-gray-900">
                         {t(`sessions.${s.sessionType}`)}
                       </span>
                       {/* Una sesión sin formato no pinta «formats.null» (`/code-review`) */}
                       {!tocable && s.matchFormat && (
-                        <span className="text-gray-700">· {t(`formats.${s.matchFormat}`)}</span>
-                      )}
-                      {!unSoloCampo && !tocable && nombreDelCampo(s.golfCourseId) && (
-                        <span className="min-w-0 truncate text-gray-500">
-                          · {nombreDelCampo(s.golfCourseId)}
+                        <span className="text-gray-700">
+                          · {t(`formats.${s.matchFormat}`)}
                         </span>
                       )}
+                      {!unSoloCampo &&
+                        !tocable &&
+                        nombreDelCampo(s.golfCourseId) && (
+                          <span className="min-w-0 truncate text-gray-500">
+                            · {nombreDelCampo(s.golfCourseId)}
+                          </span>
+                        )}
                       <span
                         data-testid={`agenda-partidos-${s.id}`}
                         className="ml-auto shrink-0 text-xs text-gray-500"
@@ -279,11 +297,17 @@ const AgendaDeLaCompeticion = ({
                               disabled={ocupado || s.matchFormat === formato}
                               onClick={() => {
                                 const cambio = () =>
-                                  updateRoundUseCase.execute(s.id, { match_format: formato });
+                                  updateRoundUseCase.execute(s.id, {
+                                    match_format: formato,
+                                  });
                                 // Con equipos puede haber sobres entregados, y cambiar el
                                 // formato los tira: eso no puede ser un toque de pasada
                                 if (s.status === 'PENDING_MATCHES') {
-                                  setConfirmando({ id: s.id, texto: 'agenda.confirmFormat', cambio });
+                                  setConfirmando({
+                                    id: s.id,
+                                    texto: 'agenda.confirmFormat',
+                                    cambio,
+                                  });
                                 } else {
                                   cambiar(cambio);
                                 }
@@ -306,13 +330,17 @@ const AgendaDeLaCompeticion = ({
                             disabled={ocupado}
                             onChange={(e) =>
                               cambiar(() =>
-                                updateRoundUseCase.execute(s.id, { golf_course_id: e.target.value })
+                                updateRoundUseCase.execute(s.id, {
+                                  golf_course_id: e.target.value,
+                                }),
                               )
                             }
                             className="min-w-0 max-w-full truncate rounded-lg border border-gray-200 px-2 py-1 text-xs"
                           >
                             {/* Un campo ya retirado no se hace pasar por el primero */}
-                            {!campos.some((campo) => campo.id === s.golfCourseId) && (
+                            {!campos.some(
+                              (campo) => campo.id === s.golfCourseId,
+                            ) && (
                               <option value={s.golfCourseId} disabled>
                                 {t('agenda.courseRemoved')}
                               </option>
@@ -348,7 +376,9 @@ const AgendaDeLaCompeticion = ({
                         data-testid={`agenda-confirmar-${s.id}`}
                         className="flex min-w-0 flex-wrap items-center gap-2 rounded-lg bg-amber-50 p-2 text-xs text-amber-900"
                       >
-                        <span className="min-w-0 flex-1">{t(confirmando.texto)}</span>
+                        <span className="min-w-0 flex-1">
+                          {t(confirmando.texto)}
+                        </span>
                         <button
                           type="button"
                           data-testid={`agenda-confirmar-si-${s.id}`}

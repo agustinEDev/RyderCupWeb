@@ -29,16 +29,28 @@ describe('ApiCompetitionRepository · ajustes del stroke play (FE #824)', () => 
   });
 
   it('R1: hace un PATCH con los nombres de la API, solo con lo que llega', async () => {
-    await repository.updateStrokePlay('c-1', { categoryLimits: [12], maxMatchdaysPerPlayer: 2 });
-
-    expect(apiRequestMock).toHaveBeenCalledWith('/api/v1/competitions/c-1/stroke-play', {
-      method: 'PATCH',
-      body: JSON.stringify({ category_limits: [12], max_matchdays_per_player: 2 }),
+    await repository.updateStrokePlay('c-1', {
+      categoryLimits: [12],
+      maxMatchdaysPerPlayer: 2,
     });
+
+    expect(apiRequestMock).toHaveBeenCalledWith(
+      '/api/v1/competitions/c-1/stroke-play',
+      {
+        method: 'PATCH',
+        body: JSON.stringify({
+          category_limits: [12],
+          max_matchdays_per_player: 2,
+        }),
+      },
+    );
   });
 
   it('R2: el contador y la general viajan con sus nombres', async () => {
-    await repository.updateStrokePlay('c-1', { categoryCount: 3, overallStanding: 'BEST_CARD' });
+    await repository.updateStrokePlay('c-1', {
+      categoryCount: 3,
+      overallStanding: 'BEST_CARD',
+    });
 
     expect(JSON.parse(apiRequestMock.mock.calls[0][1].body)).toEqual({
       category_count: 3,
@@ -47,7 +59,9 @@ describe('ApiCompetitionRepository · ajustes del stroke play (FE #824)', () => 
   });
 
   it('R3: devuelve los ajustes como quedan, en su pieza', async () => {
-    const ajustes = await repository.updateStrokePlay('c-1', { maxMatchdaysPerPlayer: 2 });
+    const ajustes = await repository.updateStrokePlay('c-1', {
+      maxMatchdaysPerPlayer: 2,
+    });
 
     expect(ajustes).toBeInstanceOf(StrokePlaySetup);
     expect(ajustes.categoryLimits).toEqual([12]);

@@ -47,7 +47,7 @@ class InvitationStatus {
     if (!InvitationStatus.isValid(value)) {
       throw new Error(
         `Invalid InvitationStatus: ${value}. ` +
-          `Valid values: ${InvitationStatus.getAllValues().join(', ')}`
+          `Valid values: ${InvitationStatus.getAllValues().join(', ')}`,
       );
     }
     this.#value = value;
@@ -101,7 +101,7 @@ class InvitationStatus {
     if (!this.canTransitionTo(targetStatus)) {
       throw new Error(
         `Invalid transition: ${this.#value} -> ${targetStatus.toString()}. ` +
-          `Allowed transitions: ${InvitationStatus.VALID_TRANSITIONS[this.#value].join(', ') || 'none'}`
+          `Allowed transitions: ${InvitationStatus.VALID_TRANSITIONS[this.#value].join(', ') || 'none'}`,
       );
     }
   }

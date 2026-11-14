@@ -1,4 +1,8 @@
-import { GrupoDePestanas, ListaDePestanas, PanelDePestana } from '../ui/Pestanas';
+import {
+  GrupoDePestanas,
+  ListaDePestanas,
+  PanelDePestana,
+} from '../ui/Pestanas';
 
 /**
  * Las pestañas de una sección del panel de admin (17 oct): Campos de golf
@@ -12,7 +16,13 @@ import { GrupoDePestanas, ListaDePestanas, PanelDePestana } from '../ui/Pestanas
  * @param {string} actual - el id de la abierta
  * @param {(id: string) => void} onElegir
  */
-const PestanasDeSeccion = ({ etiqueta, pestanas, actual, onElegir, children }) => (
+const PestanasDeSeccion = ({
+  etiqueta,
+  pestanas,
+  actual,
+  onElegir,
+  children,
+}) => (
   <GrupoDePestanas actual={actual} onElegir={onElegir} panelUnico>
     <ListaDePestanas
       etiqueta={etiqueta}
@@ -20,7 +30,9 @@ const PestanasDeSeccion = ({ etiqueta, pestanas, actual, onElegir, children }) =
       pestanas={pestanas.map(({ id, label }) => ({ id, contenido: label }))}
       claseDePestana={(abierta) =>
         `min-h-11 flex-1 border-b-2 px-3 text-sm font-medium ${
-          abierta ? 'border-primary text-primary' : 'border-transparent text-gray-500'
+          abierta
+            ? 'border-primary text-primary'
+            : 'border-transparent text-gray-500'
         }`
       }
     />

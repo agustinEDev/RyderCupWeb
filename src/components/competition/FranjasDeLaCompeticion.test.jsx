@@ -1,5 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, within, waitFor } from '@testing-library/react';
+import {
+  render,
+  screen,
+  fireEvent,
+  within,
+  waitFor,
+} from '@testing-library/react';
 
 // El aviso del cambio de hora depende de la zona del móvil: aquí se controla
 // (su regla se prueba en HojaDeSalidas.test.js)
@@ -29,7 +35,8 @@ vi.mock('../../domain/value_objects/HojaDeSalidas', async (original) => ({
  */
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
-    t: (clave, params) => (params ? `${clave} ${JSON.stringify(params)}` : clave),
+    t: (clave, params) =>
+      params ? `${clave} ${JSON.stringify(params)}` : clave,
     i18n: { language: 'es' },
   }),
 }));
@@ -55,7 +62,8 @@ vi.mock('../../composition', () => ({
   leaveWaitingListUseCase: { execute: vi.fn() },
 }));
 
-const FranjasDeLaCompeticion = (await import('./FranjasDeLaCompeticion')).default;
+const FranjasDeLaCompeticion = (await import('./FranjasDeLaCompeticion'))
+  .default;
 
 const hoja = (extra = {}) => ({
   firstTeeTime: '08:00',
@@ -84,8 +92,22 @@ const franja = (extra = {}) => ({
 });
 
 const CAMPOS = [
-  { golf_course: { id: 'g-1', name: 'La Resina', country_code: 'ES', approval_status: 'APPROVED' } },
-  { golf_course: { id: 'g-2', name: 'El Robledal', country_code: 'ES', approval_status: 'APPROVED' } },
+  {
+    golf_course: {
+      id: 'g-1',
+      name: 'La Resina',
+      country_code: 'ES',
+      approval_status: 'APPROVED',
+    },
+  },
+  {
+    golf_course: {
+      id: 'g-2',
+      name: 'El Robledal',
+      country_code: 'ES',
+      approval_status: 'APPROVED',
+    },
+  },
 ];
 
 const pinta = (props = {}) =>
@@ -97,7 +119,7 @@ const pinta = (props = {}) =>
       canManage
       maxPlayers={100}
       {...props}
-    />
+    />,
   );
 
 describe('FranjasDeLaCompeticion (FE #824)', () => {
@@ -115,8 +137,12 @@ describe('FranjasDeLaCompeticion (FE #824)', () => {
 
     const fila = await screen.findByTestId('franja-r-1');
     expect(within(fila).getByText('sessions.MORNING')).toBeInTheDocument();
-    expect(fila).toHaveTextContent('franjas.hours {"primera":"08:00","ultima":"11:50","intervalo":10}');
-    expect(fila).toHaveTextContent('franjas.capacity {"count":24,"tamano":4,"cupo":96}');
+    expect(fila).toHaveTextContent(
+      'franjas.hours {"primera":"08:00","ultima":"11:50","intervalo":10}',
+    );
+    expect(fila).toHaveTextContent(
+      'franjas.capacity {"count":24,"tamano":4,"cupo":96}',
+    );
     expect(fila).toHaveTextContent('franjas.taken {"count":12,"espera":3}');
     // Con más de un campo, el suyo
     expect(await within(fila).findByText('La Resina')).toBeInTheDocument();
@@ -129,8 +155,12 @@ describe('FranjasDeLaCompeticion (FE #824)', () => {
     });
     pinta();
 
-    expect(await screen.findByTestId('franjas-dia-2030-10-12')).toContainElement(screen.getByTestId('franja-r-1'));
-    expect(screen.getByTestId('franjas-dia-2030-10-13')).toContainElement(screen.getByTestId('franja-r-2'));
+    expect(
+      await screen.findByTestId('franjas-dia-2030-10-12'),
+    ).toContainElement(screen.getByTestId('franja-r-1'));
+    expect(screen.getByTestId('franjas-dia-2030-10-13')).toContainElement(
+      screen.getByTestId('franja-r-2'),
+    );
   });
 
   it('2: sin franjas lo dice, y al organizador le ofrece añadir', async () => {
@@ -138,7 +168,9 @@ describe('FranjasDeLaCompeticion (FE #824)', () => {
     pinta();
 
     expect(await screen.findByText('franjas.emptyManage')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'franjas.add' })).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: 'franjas.add' }),
+    ).toBeInTheDocument();
   });
 
   it('3: quien no organiza solo mira', async () => {
@@ -146,8 +178,12 @@ describe('FranjasDeLaCompeticion (FE #824)', () => {
 
     await screen.findByTestId('franja-r-1');
     expect(screen.queryByRole('button', { name: 'franjas.add' })).toBeNull();
-    expect(screen.queryByRole('button', { name: /^franjas\.change/ })).toBeNull();
-    expect(screen.queryByRole('button', { name: /^franjas\.remove/ })).toBeNull();
+    expect(
+      screen.queryByRole('button', { name: /^franjas\.change/ }),
+    ).toBeNull();
+    expect(
+      screen.queryByRole('button', { name: /^franjas\.remove/ }),
+    ).toBeNull();
   });
 
   it('4: al añadir propone un día con hueco, una franja libre y su hoja', async () => {
@@ -162,7 +198,7 @@ describe('FranjasDeLaCompeticion (FE #824)', () => {
     expect(screen.getByLabelText('franjas.interval')).toHaveValue(10);
     expect(screen.getByLabelText('franjas.groupSize')).toHaveValue('4');
     expect(screen.getByTestId('franjas-resumen-nueva')).toHaveTextContent(
-      'franjas.capacity {"count":36,"tamano":4,"cupo":144}'
+      'franjas.capacity {"count":36,"tamano":4,"cupo":144}',
     );
   });
 
@@ -171,17 +207,30 @@ describe('FranjasDeLaCompeticion (FE #824)', () => {
     vi.setSystemTime(new Date(2030, 9, 12, 13, 0));
     try {
       pinta();
-      fireEvent.click(await screen.findByRole('button', { name: 'franjas.add' }));
+      fireEvent.click(
+        await screen.findByRole('button', { name: 'franjas.add' }),
+      );
 
       // La tarde del 12 empieza a las 12:00 y ya son las 13:00
-      expect(screen.getByRole('alert')).toHaveTextContent('franjas.errors.firstTeePassed');
-      expect(screen.getByLabelText('franjas.firstTee')).toHaveAttribute('aria-invalid', 'true');
-      expect(screen.getByRole('button', { name: 'franjas.save' })).toBeDisabled();
+      expect(screen.getByRole('alert')).toHaveTextContent(
+        'franjas.errors.firstTeePassed',
+      );
+      expect(screen.getByLabelText('franjas.firstTee')).toHaveAttribute(
+        'aria-invalid',
+        'true',
+      );
+      expect(
+        screen.getByRole('button', { name: 'franjas.save' }),
+      ).toBeDisabled();
 
-      fireEvent.change(screen.getByLabelText('franjas.firstTee'), { target: { value: '13:30' } });
+      fireEvent.change(screen.getByLabelText('franjas.firstTee'), {
+        target: { value: '13:30' },
+      });
 
       expect(screen.queryByRole('alert')).toBeNull();
-      expect(screen.getByRole('button', { name: 'franjas.save' })).toBeEnabled();
+      expect(
+        screen.getByRole('button', { name: 'franjas.save' }),
+      ).toBeEnabled();
     } finally {
       vi.useRealTimers();
     }
@@ -191,11 +240,17 @@ describe('FranjasDeLaCompeticion (FE #824)', () => {
     mockAviso.valor = 'teeTimeSkipped';
     try {
       pinta();
-      fireEvent.click(await screen.findByRole('button', { name: 'franjas.add' }));
+      fireEvent.click(
+        await screen.findByRole('button', { name: 'franjas.add' }),
+      );
 
-      expect(screen.getByTestId('franjas-resumen-nueva-aviso')).toHaveTextContent('franjas.errors.teeTimeSkipped');
+      expect(
+        screen.getByTestId('franjas-resumen-nueva-aviso'),
+      ).toHaveTextContent('franjas.errors.teeTimeSkipped');
       expect(screen.queryByRole('alert')).toBeNull();
-      expect(screen.getByRole('button', { name: 'franjas.save' })).toBeEnabled();
+      expect(
+        screen.getByRole('button', { name: 'franjas.save' }),
+      ).toBeEnabled();
     } finally {
       mockAviso.valor = null;
     }
@@ -205,7 +260,9 @@ describe('FranjasDeLaCompeticion (FE #824)', () => {
     pinta();
     fireEvent.click(await screen.findByRole('button', { name: 'franjas.add' }));
 
-    fireEvent.change(screen.getByLabelText('franjas.slot'), { target: { value: 'EVENING' } });
+    fireEvent.change(screen.getByLabelText('franjas.slot'), {
+      target: { value: 'EVENING' },
+    });
 
     expect(screen.getByLabelText('franjas.firstTee')).toHaveValue('18:00');
     expect(screen.getByLabelText('franjas.lastTee')).toHaveValue('23:50');
@@ -214,9 +271,13 @@ describe('FranjasDeLaCompeticion (FE #824)', () => {
   it('4c: …salvo que el organizador ya las haya tocado', async () => {
     pinta();
     fireEvent.click(await screen.findByRole('button', { name: 'franjas.add' }));
-    fireEvent.change(screen.getByLabelText('franjas.firstTee'), { target: { value: '13:00' } });
+    fireEvent.change(screen.getByLabelText('franjas.firstTee'), {
+      target: { value: '13:00' },
+    });
 
-    fireEvent.change(screen.getByLabelText('franjas.slot'), { target: { value: 'EVENING' } });
+    fireEvent.change(screen.getByLabelText('franjas.slot'), {
+      target: { value: 'EVENING' },
+    });
 
     expect(screen.getByLabelText('franjas.firstTee')).toHaveValue('13:00');
   });
@@ -224,9 +285,13 @@ describe('FranjasDeLaCompeticion (FE #824)', () => {
   it('4e: cambiar el intervalo o el tamaño no impide reponer las horas (revisor)', async () => {
     pinta();
     fireEvent.click(await screen.findByRole('button', { name: 'franjas.add' }));
-    fireEvent.change(screen.getByLabelText('franjas.groupSize'), { target: { value: '3' } });
+    fireEvent.change(screen.getByLabelText('franjas.groupSize'), {
+      target: { value: '3' },
+    });
 
-    fireEvent.change(screen.getByLabelText('franjas.slot'), { target: { value: 'EVENING' } });
+    fireEvent.change(screen.getByLabelText('franjas.slot'), {
+      target: { value: 'EVENING' },
+    });
 
     expect(screen.getByLabelText('franjas.firstTee')).toHaveValue('18:00');
     expect(screen.getByLabelText('franjas.lastTee')).toHaveValue('23:50');
@@ -244,12 +309,21 @@ describe('FranjasDeLaCompeticion (FE #824)', () => {
     });
 
     rerender(
-      <FranjasDeLaCompeticion competitionId="c-1" startDate="2030-10-12" endDate="2030-10-13" canManage maxPlayers={100} version="2" />
+      <FranjasDeLaCompeticion
+        competitionId="c-1"
+        startDate="2030-10-12"
+        endDate="2030-10-13"
+        canManage
+        maxPlayers={100}
+        version="2"
+      />,
     );
 
     // Las dos con espera: el selector ya enseña «Noche» en cuanto «Tarde» deja
     // de estar entre sus opciones, antes de que el estado cambie
-    await waitFor(() => expect(screen.getByLabelText('franjas.firstTee')).toHaveValue('18:00'));
+    await waitFor(() =>
+      expect(screen.getByLabelText('franjas.firstTee')).toHaveValue('18:00'),
+    );
     expect(screen.getByLabelText('franjas.slot')).toHaveValue('EVENING');
   });
 
@@ -264,7 +338,9 @@ describe('FranjasDeLaCompeticion (FE #824)', () => {
   it('4h: con todas las jornadas llenas, también', async () => {
     mockLeer.mockResolvedValue({
       rounds: ['2030-10-12', '2030-10-13'].flatMap((dia) =>
-        ['MORNING', 'AFTERNOON', 'EVENING'].map((s) => franja({ id: `${dia}-${s}`, roundDate: dia, sessionType: s }))
+        ['MORNING', 'AFTERNOON', 'EVENING'].map((s) =>
+          franja({ id: `${dia}-${s}`, roundDate: dia, sessionType: s }),
+        ),
       ),
       teeSheetCapacity: 576,
     });
@@ -275,13 +351,17 @@ describe('FranjasDeLaCompeticion (FE #824)', () => {
 
   it('4d: el día que ya tiene las tres no se ofrece', async () => {
     mockLeer.mockResolvedValue({
-      rounds: ['MORNING', 'AFTERNOON', 'EVENING'].map((s, i) => franja({ id: `r-${i}`, sessionType: s })),
+      rounds: ['MORNING', 'AFTERNOON', 'EVENING'].map((s, i) =>
+        franja({ id: `r-${i}`, sessionType: s }),
+      ),
       teeSheetCapacity: 288,
     });
     pinta();
     fireEvent.click(await screen.findByRole('button', { name: 'franjas.add' }));
 
-    const dias = [...screen.getByLabelText('franjas.day').options].map((o) => o.value);
+    const dias = [...screen.getByLabelText('franjas.day').options].map(
+      (o) => o.value,
+    );
     expect(dias).toEqual(['2030-10-13']);
   });
 
@@ -289,16 +369,22 @@ describe('FranjasDeLaCompeticion (FE #824)', () => {
     pinta();
     fireEvent.click(await screen.findByRole('button', { name: 'franjas.add' }));
 
-    fireEvent.change(screen.getByLabelText('franjas.interval'), { target: { value: '25' } });
+    fireEvent.change(screen.getByLabelText('franjas.interval'), {
+      target: { value: '25' },
+    });
 
-    expect(screen.getByRole('alert')).toHaveTextContent('franjas.errors.intervalRange');
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      'franjas.errors.intervalRange',
+    );
     expect(screen.getByRole('button', { name: 'franjas.save' })).toBeDisabled();
   });
 
   it('6: guardar crea la franja con su hoja, sin formato, y vuelve a leer', async () => {
     pinta();
     fireEvent.click(await screen.findByRole('button', { name: 'franjas.add' }));
-    fireEvent.change(screen.getByLabelText('franjas.course'), { target: { value: 'g-2' } });
+    fireEvent.change(screen.getByLabelText('franjas.course'), {
+      target: { value: 'g-2' },
+    });
 
     fireEvent.click(screen.getByRole('button', { name: 'franjas.save' }));
 
@@ -307,48 +393,72 @@ describe('FranjasDeLaCompeticion (FE #824)', () => {
         golf_course_id: 'g-2',
         round_date: '2030-10-12',
         session_type: 'AFTERNOON',
-        tee_sheet: { first_tee_time: '12:00', last_tee_time: '17:50', interval_minutes: 10, group_size: 4 },
-      })
+        tee_sheet: {
+          first_tee_time: '12:00',
+          last_tee_time: '17:50',
+          interval_minutes: 10,
+          group_size: 4,
+        },
+      }),
     );
     await waitFor(() => expect(mockLeer).toHaveBeenCalledTimes(2));
     expect(screen.queryByLabelText('franjas.day')).toBeNull();
   });
 
   it('7: si el servidor la rechaza, su motivo, y lo escrito sigue ahí', async () => {
-    mockCrear.mockRejectedValue(new Error('Se solapa con la franja MORNING de ese día en el mismo campo'));
+    mockCrear.mockRejectedValue(
+      new Error('Se solapa con la franja MORNING de ese día en el mismo campo'),
+    );
     pinta();
     fireEvent.click(await screen.findByRole('button', { name: 'franjas.add' }));
-    fireEvent.change(screen.getByLabelText('franjas.firstTee'), { target: { value: '11:00' } });
+    fireEvent.change(screen.getByLabelText('franjas.firstTee'), {
+      target: { value: '11:00' },
+    });
 
     fireEvent.click(screen.getByRole('button', { name: 'franjas.save' }));
 
     await waitFor(() =>
-      expect(mockToast.error).toHaveBeenCalledWith('Se solapa con la franja MORNING de ese día en el mismo campo')
+      expect(mockToast.error).toHaveBeenCalledWith(
+        'Se solapa con la franja MORNING de ese día en el mismo campo',
+      ),
     );
     expect(screen.getByLabelText('franjas.firstTee')).toHaveValue('11:00');
   });
 
   it('8: cambiar abre la franja con sus valores y manda la hoja nueva', async () => {
     pinta();
-    fireEvent.click(await screen.findByRole('button', { name: /^franjas\.change/ }));
+    fireEvent.click(
+      await screen.findByRole('button', { name: /^franjas\.change/ }),
+    );
 
     expect(screen.getByLabelText('franjas.firstTee')).toHaveValue('08:00');
-    fireEvent.change(screen.getByLabelText('franjas.lastTee'), { target: { value: '10:50' } });
+    fireEvent.change(screen.getByLabelText('franjas.lastTee'), {
+      target: { value: '10:50' },
+    });
     fireEvent.click(screen.getByRole('button', { name: 'franjas.save' }));
 
     await waitFor(() =>
       expect(mockCambiar).toHaveBeenCalledWith('r-1', {
-        tee_sheet: { first_tee_time: '08:00', last_tee_time: '10:50', interval_minutes: 10, group_size: 4 },
-      })
+        tee_sheet: {
+          first_tee_time: '08:00',
+          last_tee_time: '10:50',
+          interval_minutes: 10,
+          group_size: 4,
+        },
+      }),
     );
     await waitFor(() => expect(mockLeer).toHaveBeenCalledTimes(2));
   });
 
   it('8b: solo el campo, si solo cambia el campo (revisor)', async () => {
     pinta();
-    fireEvent.click(await screen.findByRole('button', { name: /^franjas\.change/ }));
+    fireEvent.click(
+      await screen.findByRole('button', { name: /^franjas\.change/ }),
+    );
 
-    fireEvent.change(screen.getByLabelText('franjas.course'), { target: { value: 'g-2' } });
+    fireEvent.change(screen.getByLabelText('franjas.course'), {
+      target: { value: 'g-2' },
+    });
     fireEvent.click(screen.getByRole('button', { name: 'franjas.save' }));
 
     await waitFor(() => expect(mockCambiar).toHaveBeenCalled());
@@ -359,34 +469,53 @@ describe('FranjasDeLaCompeticion (FE #824)', () => {
     pinta();
 
     await screen.findByTestId('franja-r-1');
-    expect(screen.getByRole('button', { name: /^franjas\.change.*"franja":"sessions\.MORNING"/ })).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', {
+        name: /^franjas\.change.*"franja":"sessions\.MORNING"/,
+      }),
+    ).toBeInTheDocument();
   });
 
   it('8e: una franja sin hoja (de antes) no se ofrece a cambiar', async () => {
-    mockLeer.mockResolvedValue({ rounds: [franja({ teeSheet: null })], teeSheetCapacity: 0 });
+    mockLeer.mockResolvedValue({
+      rounds: [franja({ teeSheet: null })],
+      teeSheetCapacity: 0,
+    });
     pinta();
 
     await screen.findByTestId('franja-r-1');
-    expect(screen.queryByRole('button', { name: /^franjas\.change/ })).toBeNull();
+    expect(
+      screen.queryByRole('button', { name: /^franjas\.change/ }),
+    ).toBeNull();
   });
 
   it('8c: si el servidor no deja (alguien perdería su plaza), su motivo', async () => {
-    mockCambiar.mockRejectedValue(new Error('La franja quedaría con 40 plazas y tiene 48 jugadores dentro'));
+    mockCambiar.mockRejectedValue(
+      new Error('La franja quedaría con 40 plazas y tiene 48 jugadores dentro'),
+    );
     pinta();
-    fireEvent.click(await screen.findByRole('button', { name: /^franjas\.change/ }));
-    fireEvent.change(screen.getByLabelText('franjas.lastTee'), { target: { value: '09:30' } });
+    fireEvent.click(
+      await screen.findByRole('button', { name: /^franjas\.change/ }),
+    );
+    fireEvent.change(screen.getByLabelText('franjas.lastTee'), {
+      target: { value: '09:30' },
+    });
 
     fireEvent.click(screen.getByRole('button', { name: 'franjas.save' }));
 
     await waitFor(() =>
-      expect(mockToast.error).toHaveBeenCalledWith('La franja quedaría con 40 plazas y tiene 48 jugadores dentro')
+      expect(mockToast.error).toHaveBeenCalledWith(
+        'La franja quedaría con 40 plazas y tiene 48 jugadores dentro',
+      ),
     );
     expect(screen.getByLabelText('franjas.lastTee')).toHaveValue('09:30');
   });
 
   it('9: borrar pide confirmación en línea', async () => {
     pinta();
-    fireEvent.click(await screen.findByRole('button', { name: /^franjas\.remove/ }));
+    fireEvent.click(
+      await screen.findByRole('button', { name: /^franjas\.remove/ }),
+    );
 
     expect(mockBorrar).not.toHaveBeenCalled();
     fireEvent.click(screen.getByRole('button', { name: 'franjas.yes' }));
@@ -397,7 +526,9 @@ describe('FranjasDeLaCompeticion (FE #824)', () => {
   it('9c: un doble toque en «Sí» no borra dos veces (revisor)', async () => {
     mockBorrar.mockReturnValue(new Promise(() => {}));
     pinta();
-    fireEvent.click(await screen.findByRole('button', { name: /^franjas\.remove/ }));
+    fireEvent.click(
+      await screen.findByRole('button', { name: /^franjas\.remove/ }),
+    );
 
     fireEvent.click(screen.getByRole('button', { name: 'franjas.yes' }));
     fireEvent.click(screen.getByRole('button', { name: 'franjas.yes' }));
@@ -406,19 +537,27 @@ describe('FranjasDeLaCompeticion (FE #824)', () => {
   });
 
   it('9b: con gente dentro, el motivo del servidor', async () => {
-    mockBorrar.mockRejectedValue(new Error('La franja tiene 12 jugadores con plaza'));
+    mockBorrar.mockRejectedValue(
+      new Error('La franja tiene 12 jugadores con plaza'),
+    );
     pinta();
-    fireEvent.click(await screen.findByRole('button', { name: /^franjas\.remove/ }));
+    fireEvent.click(
+      await screen.findByRole('button', { name: /^franjas\.remove/ }),
+    );
     fireEvent.click(screen.getByRole('button', { name: 'franjas.yes' }));
 
-    await waitFor(() => expect(mockToast.error).toHaveBeenCalledWith('La franja tiene 12 jugadores con plaza'));
+    await waitFor(() =>
+      expect(mockToast.error).toHaveBeenCalledWith(
+        'La franja tiene 12 jugadores con plaza',
+      ),
+    );
   });
 
   it('11: si con las franjas no caben todos, lo dice', async () => {
     pinta({ maxPlayers: 100 });
 
     expect(await screen.findByTestId('franjas-cupo-corto')).toHaveTextContent(
-      'franjas.capacityShort {"count":96,"maximo":100}'
+      'franjas.capacityShort {"count":96,"maximo":100}',
     );
   });
 
@@ -431,46 +570,70 @@ describe('FranjasDeLaCompeticion (FE #824)', () => {
 
   it('1c: las salidas son las que dice el servidor', async () => {
     mockLeer.mockResolvedValue({
-      rounds: [franja({ teeSheet: hoja({ teeTimes: ['08:00', '08:10', '08:20'], capacity: 12 }) })],
+      rounds: [
+        franja({
+          teeSheet: hoja({
+            teeTimes: ['08:00', '08:10', '08:20'],
+            capacity: 12,
+          }),
+        }),
+      ],
       teeSheetCapacity: 12,
     });
     pinta();
 
-    expect(await screen.findByTestId('franja-r-1')).toHaveTextContent('franjas.capacity {"count":3,"tamano":4,"cupo":12}');
+    expect(await screen.findByTestId('franja-r-1')).toHaveTextContent(
+      'franjas.capacity {"count":3,"tamano":4,"cupo":12}',
+    );
   });
 
   it('5b: el campo que falla se marca', async () => {
     pinta();
     fireEvent.click(await screen.findByRole('button', { name: 'franjas.add' }));
 
-    fireEvent.change(screen.getByLabelText('franjas.interval'), { target: { value: '25' } });
+    fireEvent.change(screen.getByLabelText('franjas.interval'), {
+      target: { value: '25' },
+    });
 
-    expect(screen.getByLabelText('franjas.interval')).toHaveAttribute('aria-invalid', 'true');
-    expect(screen.getByLabelText('franjas.firstTee')).not.toHaveAttribute('aria-invalid');
+    expect(screen.getByLabelText('franjas.interval')).toHaveAttribute(
+      'aria-invalid',
+      'true',
+    );
+    expect(screen.getByLabelText('franjas.firstTee')).not.toHaveAttribute(
+      'aria-invalid',
+    );
   });
 
   it('11c: sin máximo de jugadores no pinta un «0» suelto', async () => {
     pinta({ maxPlayers: 0 });
 
     await screen.findByTestId('franja-r-1');
-    const sueltos = [...screen.getByTestId('franjas').childNodes].filter((n) => n.nodeType === 3);
+    const sueltos = [...screen.getByTestId('franjas').childNodes].filter(
+      (n) => n.nodeType === 3,
+    );
     expect(sueltos.map((n) => n.textContent)).not.toContain('0');
     expect(screen.queryByTestId('franjas-cupo-corto')).toBeNull();
   });
 
   it('1d: sin el cupo del servidor, el que sale de la hoja (/code-review)', async () => {
     mockLeer.mockResolvedValue({
-      rounds: [franja({ teeSheet: hoja({ teeTimes: [], capacity: undefined }) })],
+      rounds: [
+        franja({ teeSheet: hoja({ teeTimes: [], capacity: undefined }) }),
+      ],
       teeSheetCapacity: 96,
     });
     pinta();
 
-    expect(await screen.findByTestId('franja-r-1')).toHaveTextContent('franjas.capacity {"count":24,"tamano":4,"cupo":96}');
+    expect(await screen.findByTestId('franja-r-1')).toHaveTextContent(
+      'franjas.capacity {"count":24,"tamano":4,"cupo":96}',
+    );
   });
 
   it('8f: sin cambiar nada no se guarda (/code-review)', async () => {
     pinta();
-    fireEvent.click(await screen.findByRole('button', { name: /^franjas\.change/ }));
+    fireEvent.click(
+      await screen.findByRole('button', { name: /^franjas\.change/ }),
+    );
 
     expect(screen.getByRole('button', { name: 'franjas.save' })).toBeDisabled();
   });
@@ -479,23 +642,36 @@ describe('FranjasDeLaCompeticion (FE #824)', () => {
     mockCampos.mockRejectedValue(new Error('sin red'));
     pinta();
 
-    expect(await screen.findByText('franjas.coursesNotLoaded')).toBeInTheDocument();
+    expect(
+      await screen.findByText('franjas.coursesNotLoaded'),
+    ).toBeInTheDocument();
     expect(screen.queryByText('franjas.noCourses')).toBeNull();
   });
 
   it('4j: si el campo elegido desaparece al releer los campos, se propone otro (/code-review)', async () => {
     const { rerender } = pinta();
     fireEvent.click(await screen.findByRole('button', { name: 'franjas.add' }));
-    fireEvent.change(screen.getByLabelText('franjas.course'), { target: { value: 'g-2' } });
+    fireEvent.change(screen.getByLabelText('franjas.course'), {
+      target: { value: 'g-2' },
+    });
     mockCampos.mockResolvedValue([CAMPOS[0]]);
 
     rerender(
-      <FranjasDeLaCompeticion competitionId="c-1" startDate="2030-10-12" endDate="2030-10-13" canManage maxPlayers={100} versionCampos={2} />
+      <FranjasDeLaCompeticion
+        competitionId="c-1"
+        startDate="2030-10-12"
+        endDate="2030-10-13"
+        canManage
+        maxPlayers={100}
+        versionCampos={2}
+      />,
     );
     // Se pulsa en cuanto cambia la LISTA de campos, sin esperar al estado: el
     // selector ya enseña «g-1» y guardar tiene que mandar ese (falló en el CI
     // de la #838 con la espera al valor)
-    await waitFor(() => expect(screen.getByLabelText('franjas.course').options).toHaveLength(1));
+    await waitFor(() =>
+      expect(screen.getByLabelText('franjas.course').options).toHaveLength(1),
+    );
     expect(screen.getByLabelText('franjas.course')).toHaveValue('g-1');
     fireEvent.click(screen.getByRole('button', { name: 'franjas.save' }));
 
@@ -505,29 +681,56 @@ describe('FranjasDeLaCompeticion (FE #824)', () => {
 
   it('4k: al cambiar una franja, si el campo elegido desaparece, se manda el que enseña el selector', async () => {
     const { rerender } = pinta();
-    fireEvent.click(await screen.findByRole('button', { name: /^franjas\.change/ }));
-    fireEvent.change(screen.getByLabelText('franjas.course'), { target: { value: 'g-2' } });
+    fireEvent.click(
+      await screen.findByRole('button', { name: /^franjas\.change/ }),
+    );
+    fireEvent.change(screen.getByLabelText('franjas.course'), {
+      target: { value: 'g-2' },
+    });
     mockCampos.mockResolvedValue([CAMPOS[0]]);
 
     rerender(
-      <FranjasDeLaCompeticion competitionId="c-1" startDate="2030-10-12" endDate="2030-10-13" canManage maxPlayers={100} versionCampos={2} />
+      <FranjasDeLaCompeticion
+        competitionId="c-1"
+        startDate="2030-10-12"
+        endDate="2030-10-13"
+        canManage
+        maxPlayers={100}
+        versionCampos={2}
+      />,
     );
     // Con un solo campo el selector ya no sale: la franja vuelve al suyo, sin
     // nada que mandar
-    await waitFor(() => expect(screen.queryByLabelText('franjas.course')).toBeNull());
+    await waitFor(() =>
+      expect(screen.queryByLabelText('franjas.course')).toBeNull(),
+    );
     expect(screen.getByRole('button', { name: 'franjas.save' })).toBeDisabled();
   });
 
   it('4l: si el campo de la propia franja deja de ser de la competición, guardar la pasa al que queda', async () => {
-    mockLeer.mockResolvedValue({ rounds: [franja({ golfCourseId: 'g-2' })], teeSheetCapacity: 96 });
+    mockLeer.mockResolvedValue({
+      rounds: [franja({ golfCourseId: 'g-2' })],
+      teeSheetCapacity: 96,
+    });
     const { rerender } = pinta();
-    fireEvent.click(await screen.findByRole('button', { name: /^franjas\.change/ }));
+    fireEvent.click(
+      await screen.findByRole('button', { name: /^franjas\.change/ }),
+    );
     mockCampos.mockResolvedValue([CAMPOS[0]]);
 
     rerender(
-      <FranjasDeLaCompeticion competitionId="c-1" startDate="2030-10-12" endDate="2030-10-13" canManage maxPlayers={100} versionCampos={2} />
+      <FranjasDeLaCompeticion
+        competitionId="c-1"
+        startDate="2030-10-12"
+        endDate="2030-10-13"
+        canManage
+        maxPlayers={100}
+        versionCampos={2}
+      />,
     );
-    await waitFor(() => expect(screen.queryByLabelText('franjas.course')).toBeNull());
+    await waitFor(() =>
+      expect(screen.queryByLabelText('franjas.course')).toBeNull(),
+    );
     fireEvent.click(screen.getByRole('button', { name: 'franjas.save' }));
 
     await waitFor(() => expect(mockCambiar).toHaveBeenCalled());
@@ -536,7 +739,9 @@ describe('FranjasDeLaCompeticion (FE #824)', () => {
 
   it('9d: abrir una cosa cierra las demás (/code-review)', async () => {
     pinta();
-    fireEvent.click(await screen.findByRole('button', { name: /^franjas\.remove/ }));
+    fireEvent.click(
+      await screen.findByRole('button', { name: /^franjas\.remove/ }),
+    );
 
     fireEvent.click(screen.getByRole('button', { name: 'franjas.add' }));
     expect(screen.queryByRole('button', { name: 'franjas.yes' })).toBeNull();
@@ -549,7 +754,9 @@ describe('FranjasDeLaCompeticion (FE #824)', () => {
     mockLeer.mockRejectedValueOnce(new Error('sin red'));
     pinta();
 
-    fireEvent.click(await screen.findByRole('button', { name: 'franjas.retry' }));
+    fireEvent.click(
+      await screen.findByRole('button', { name: 'franjas.retry' }),
+    );
 
     expect(await screen.findByTestId('franja-r-1')).toBeInTheDocument();
   });
@@ -558,26 +765,39 @@ describe('FranjasDeLaCompeticion (FE #824)', () => {
     ['guardar una nueva', 'franjas.saved'],
     ['cambiar una', 'franjas.changed'],
     ['borrar una', 'franjas.removed'],
-  ])('13: al %s se dice que salió bien, aunque luego falle releer (CodeRabbit)', async (accion, aviso) => {
-    pinta();
-    await screen.findByTestId('franja-r-1');
-    mockLeer.mockRejectedValue(new Error('sin red'));
+  ])(
+    '13: al %s se dice que salió bien, aunque luego falle releer (CodeRabbit)',
+    async (accion, aviso) => {
+      pinta();
+      await screen.findByTestId('franja-r-1');
+      mockLeer.mockRejectedValue(new Error('sin red'));
 
-    if (accion === 'guardar una nueva') {
-      fireEvent.click(screen.getByRole('button', { name: 'franjas.add' }));
-      fireEvent.click(screen.getByRole('button', { name: 'franjas.save' }));
-    } else if (accion === 'cambiar una') {
-      fireEvent.click(screen.getByRole('button', { name: /^franjas\.change/ }));
-      fireEvent.change(screen.getByLabelText('franjas.lastTee'), { target: { value: '10:50' } });
-      fireEvent.click(screen.getByRole('button', { name: 'franjas.save' }));
-    } else {
-      fireEvent.click(screen.getByRole('button', { name: /^franjas\.remove/ }));
-      fireEvent.click(screen.getByRole('button', { name: 'franjas.yes' }));
-    }
+      if (accion === 'guardar una nueva') {
+        fireEvent.click(screen.getByRole('button', { name: 'franjas.add' }));
+        fireEvent.click(screen.getByRole('button', { name: 'franjas.save' }));
+      } else if (accion === 'cambiar una') {
+        fireEvent.click(
+          screen.getByRole('button', { name: /^franjas\.change/ }),
+        );
+        fireEvent.change(screen.getByLabelText('franjas.lastTee'), {
+          target: { value: '10:50' },
+        });
+        fireEvent.click(screen.getByRole('button', { name: 'franjas.save' }));
+      } else {
+        fireEvent.click(
+          screen.getByRole('button', { name: /^franjas\.remove/ }),
+        );
+        fireEvent.click(screen.getByRole('button', { name: 'franjas.yes' }));
+      }
 
-    await waitFor(() => expect(mockToast.success).toHaveBeenCalledWith(aviso));
-    expect(await screen.findByRole('button', { name: 'franjas.retry' })).toBeInTheDocument();
-  });
+      await waitFor(() =>
+        expect(mockToast.success).toHaveBeenCalledWith(aviso),
+      );
+      expect(
+        await screen.findByRole('button', { name: 'franjas.retry' }),
+      ).toBeInTheDocument();
+    },
+  );
 
   it('13b: si falla la acción, no se dice que salió bien', async () => {
     mockCrear.mockRejectedValue(new Error('Se solapa'));
@@ -586,7 +806,9 @@ describe('FranjasDeLaCompeticion (FE #824)', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'franjas.save' }));
 
-    await waitFor(() => expect(mockToast.error).toHaveBeenCalledWith('Se solapa'));
+    await waitFor(() =>
+      expect(mockToast.error).toHaveBeenCalledWith('Se solapa'),
+    );
     expect(mockToast.success).not.toHaveBeenCalled();
   });
 
@@ -601,7 +823,12 @@ describe('FranjasDeLaCompeticion (FE #824)', () => {
     const onAgenda = vi.fn();
     pinta({ onAgenda });
 
-    await waitFor(() => expect(onAgenda).toHaveBeenLastCalledWith(expect.objectContaining({ rounds: [expect.anything()] }), false));
+    await waitFor(() =>
+      expect(onAgenda).toHaveBeenLastCalledWith(
+        expect.objectContaining({ rounds: [expect.anything()] }),
+        false,
+      ),
+    );
   });
 });
 
@@ -624,40 +851,235 @@ describe('FranjasDeLaCompeticion · avisos con nombres', () => {
   });
 
   const rechazo = (errorCode, players) =>
-    Object.assign(new Error('Hay jugadores afectados'), { errorCode, data: { detail: 'x', error_code: errorCode, players } });
+    Object.assign(new Error('Hay jugadores afectados'), {
+      errorCode,
+      data: { detail: 'x', error_code: errorCode, players },
+    });
 
   const llevarAOtroCampo = async () => {
     pinta();
-    fireEvent.click(await screen.findByRole('button', { name: /^franjas\.change/ }));
-    fireEvent.change(screen.getByLabelText('franjas.course'), { target: { value: 'g-2' } });
+    fireEvent.click(
+      await screen.findByRole('button', { name: /^franjas\.change/ }),
+    );
+    fireEvent.change(screen.getByLabelText('franjas.course'), {
+      target: { value: 'g-2' },
+    });
     fireEvent.click(screen.getByRole('button', { name: 'franjas.save' }));
   };
 
-  it.each(['PLAYERS_WITHOUT_TEE', 'PLAYERS_WITHOUT_HANDICAP', 'PLAYERS_WITHOUT_TEE_WINDOW'])(
-    'J1: %s nombra a los jugadores',
-    async (codigo) => {
-      mockCambiar.mockRejectedValue(rechazo(codigo, [{ user_id: 'u1', name: 'Ana' }, { user_id: 'u2', name: 'Luis' }]));
-      await llevarAOtroCampo();
-
-      await waitFor(() =>
-        expect(mockToast.error).toHaveBeenCalledWith(
-          `agenda.errors.${codigo} ${JSON.stringify({ count: 2, jugadores: 'Ana, Luis' })}`
-        )
-      );
-    }
-  );
-
-  it('J2: sin nombres, el texto sin hueco', async () => {
-    mockCambiar.mockRejectedValue(rechazo('PLAYERS_WITHOUT_HANDICAP', [{ user_id: 'u1', name: null }]));
+  it.each([
+    'PLAYERS_WITHOUT_TEE',
+    'PLAYERS_WITHOUT_HANDICAP',
+    'PLAYERS_WITHOUT_TEE_WINDOW',
+  ])('J1: %s nombra a los jugadores', async (codigo) => {
+    mockCambiar.mockRejectedValue(
+      rechazo(codigo, [
+        { user_id: 'u1', name: 'Ana' },
+        { user_id: 'u2', name: 'Luis' },
+      ]),
+    );
     await llevarAOtroCampo();
 
-    await waitFor(() => expect(mockToast.error).toHaveBeenCalledWith('agenda.errors.PLAYERS_WITHOUT_HANDICAP_unnamed'));
+    await waitFor(() =>
+      expect(mockToast.error).toHaveBeenCalledWith(
+        `agenda.errors.${codigo} ${JSON.stringify({ count: 2, jugadores: 'Ana, Luis' })}`,
+      ),
+    );
+  });
+
+  it('J2: sin nombres, el texto sin hueco', async () => {
+    mockCambiar.mockRejectedValue(
+      rechazo('PLAYERS_WITHOUT_HANDICAP', [{ user_id: 'u1', name: null }]),
+    );
+    await llevarAOtroCampo();
+
+    await waitFor(() =>
+      expect(mockToast.error).toHaveBeenCalledWith(
+        'agenda.errors.PLAYERS_WITHOUT_HANDICAP_unnamed',
+      ),
+    );
   });
 
   it('J3: otro código, su mensaje', async () => {
-    mockCambiar.mockRejectedValue(rechazo('NOT_A_TEE_WINDOW', [{ name: 'Ana' }]));
+    mockCambiar.mockRejectedValue(
+      rechazo('NOT_A_TEE_WINDOW', [{ name: 'Ana' }]),
+    );
     await llevarAOtroCampo();
 
-    await waitFor(() => expect(mockToast.error).toHaveBeenCalledWith('Hay jugadores afectados'));
+    await waitFor(() =>
+      expect(mockToast.error).toHaveBeenCalledWith('Hay jugadores afectados'),
+    );
+  });
+});
+
+/**
+ * Las lecturas que llegan tarde y el formulario de «Añadir» al releer (T4).
+ *
+ *   #     caso                                                     | qué pasa
+ *   ------|--------------------------------------------------------|----------------------------------
+ *   T4-4  la lectura de la versión 1 llega después que la de la 2  | se ve la 2
+ *   T4-5  se desmonta con la lectura en vuelo                      | no se aplica nada
+ *   T4-6  «Reintentar» dos veces y la primera llega la última      | se ve la segunda
+ *   T4-7  formulario abierto y al releer no queda hueco            | se cierra
+ *   T4-8  cerrado así, otra relectura vuelve a dar hueco           | sigue cerrado
+ *   T4-9  formulario abierto en un día que al releer se llena      | el siguiente día, y su franja libre con sus horas
+ */
+describe('FranjasDeLaCompeticion · lecturas que llegan tarde y el formulario al releer (T4)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockLeer.mockResolvedValue({ rounds: [franja()], teeSheetCapacity: 96 });
+    mockCampos.mockResolvedValue(CAMPOS);
+  });
+
+  const conVersion = (version) => (
+    <FranjasDeLaCompeticion
+      competitionId="c-1"
+      startDate="2030-10-12"
+      endDate="2030-10-13"
+      canManage
+      maxPlayers={100}
+      version={version}
+    />
+  );
+  const llenas = (dias) => ({
+    rounds: dias.flatMap((dia) =>
+      ['MORNING', 'AFTERNOON', 'EVENING'].map((s) =>
+        franja({ id: `${dia}-${s}`, roundDate: dia, sessionType: s }),
+      ),
+    ),
+    teeSheetCapacity: 96 * 3 * dias.length,
+  });
+
+  it('T4-4: la lectura de la versión 1 que llega la última no pisa la de la 2', async () => {
+    let soltarLaVieja;
+    mockLeer
+      .mockImplementationOnce(
+        () =>
+          new Promise((r) => {
+            soltarLaVieja = r;
+          }),
+      )
+      .mockResolvedValueOnce({
+        rounds: [franja({ id: 'r-nueva' })],
+        teeSheetCapacity: 96,
+      });
+    const { rerender } = render(conVersion('1'));
+    await waitFor(() => expect(mockLeer).toHaveBeenCalledTimes(1));
+
+    rerender(conVersion('2'));
+    await screen.findByTestId('franja-r-nueva');
+    soltarLaVieja({
+      rounds: [franja({ id: 'r-vieja' })],
+      teeSheetCapacity: 96,
+    });
+    await new Promise((r) => setTimeout(r, 20));
+
+    expect(screen.queryByTestId('franja-r-vieja')).toBeNull();
+    expect(screen.getByTestId('franja-r-nueva')).toBeInTheDocument();
+  });
+
+  it('T4-5: desmontada con la lectura en vuelo, lo que llega no se le pasa a la ficha', async () => {
+    let soltar;
+    mockLeer.mockImplementationOnce(
+      () =>
+        new Promise((r) => {
+          soltar = r;
+        }),
+    );
+    const onAgenda = vi.fn();
+    const { unmount } = pinta({ onAgenda });
+    await waitFor(() => expect(mockLeer).toHaveBeenCalledTimes(1));
+
+    unmount();
+    soltar({ rounds: [franja()], teeSheetCapacity: 96 });
+    await new Promise((r) => setTimeout(r, 20));
+
+    expect(onAgenda).not.toHaveBeenCalledWith(
+      expect.objectContaining({ rounds: expect.anything() }),
+      false,
+    );
+  });
+
+  it('T4-6: «Reintentar» dos veces y la primera llega la última: se ve la segunda', async () => {
+    let soltarLaPrimera;
+    mockLeer
+      .mockRejectedValueOnce(new Error('sin red'))
+      .mockImplementationOnce(
+        () =>
+          new Promise((r) => {
+            soltarLaPrimera = r;
+          }),
+      )
+      .mockResolvedValueOnce({
+        rounds: [franja({ id: 'r-segunda' })],
+        teeSheetCapacity: 96,
+      });
+    pinta();
+
+    fireEvent.click(
+      await screen.findByRole('button', { name: 'franjas.retry' }),
+    );
+    await waitFor(() => expect(mockLeer).toHaveBeenCalledTimes(2));
+    fireEvent.click(screen.getByRole('button', { name: 'franjas.retry' }));
+    await screen.findByTestId('franja-r-segunda');
+    soltarLaPrimera({
+      rounds: [franja({ id: 'r-primera' })],
+      teeSheetCapacity: 96,
+    });
+    await new Promise((r) => setTimeout(r, 20));
+
+    expect(screen.queryByTestId('franja-r-primera')).toBeNull();
+    expect(screen.getByTestId('franja-r-segunda')).toBeInTheDocument();
+  });
+
+  it('T4-7 y T4-8: sin hueco al releer, el formulario se cierra, y no vuelve aunque luego haya hueco', async () => {
+    const { rerender } = render(conVersion('1'));
+    fireEvent.click(await screen.findByRole('button', { name: 'franjas.add' }));
+    expect(screen.getByLabelText('franjas.day')).toBeInTheDocument();
+
+    mockLeer.mockResolvedValue(llenas(['2030-10-12', '2030-10-13']));
+    rerender(conVersion('2'));
+    await screen.findByText('franjas.allFull');
+    await waitFor(() =>
+      expect(screen.queryByLabelText('franjas.day')).toBeNull(),
+    );
+
+    mockLeer.mockResolvedValue({ rounds: [franja()], teeSheetCapacity: 96 });
+    rerender(conVersion('3'));
+    await waitFor(() => expect(mockLeer).toHaveBeenCalledTimes(3));
+    await waitFor(() =>
+      expect(screen.queryByText('franjas.allFull')).toBeNull(),
+    );
+    expect(screen.queryByLabelText('franjas.day')).toBeNull();
+  });
+
+  it('T4-9: si al releer el día elegido se llena, propone el siguiente día; sin su franja libre, la primera, con sus horas', async () => {
+    const { rerender } = render(conVersion('1'));
+    fireEvent.click(await screen.findByRole('button', { name: 'franjas.add' }));
+    expect(screen.getByLabelText('franjas.day')).toHaveValue('2030-10-12');
+    expect(screen.getByLabelText('franjas.slot')).toHaveValue('AFTERNOON');
+
+    // El 12 se llena y el 13 ya tiene la tarde: queda su mañana
+    const releida = llenas(['2030-10-12']);
+    mockLeer.mockResolvedValue({
+      ...releida,
+      rounds: [
+        ...releida.rounds,
+        franja({
+          id: 'r-13-tarde',
+          roundDate: '2030-10-13',
+          sessionType: 'AFTERNOON',
+        }),
+      ],
+    });
+    rerender(conVersion('2'));
+
+    // Las horas son del estado: el selector ya enseña el 13 antes de corregirlo
+    await waitFor(() =>
+      expect(screen.getByLabelText('franjas.firstTee')).toHaveValue('08:00'),
+    );
+    expect(screen.getByLabelText('franjas.day')).toHaveValue('2030-10-13');
+    expect(screen.getByLabelText('franjas.slot')).toHaveValue('MORNING');
+    expect(screen.getByLabelText('franjas.lastTee')).toHaveValue('11:50');
   });
 });

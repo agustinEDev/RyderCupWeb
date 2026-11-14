@@ -8,7 +8,8 @@ import TituloConNumero from './TituloConNumero';
  * izquierda, que se parte si no cabe, y el número en su pastilla al borde
  * derecho, centrado en altura, igual en todas las secciones.
  */
-const enFila = (ui) => render(<h3 className="flex items-center gap-2">{ui}</h3>);
+const enFila = (ui) =>
+  render(<h3 className="flex items-center gap-2">{ui}</h3>);
 
 describe('TituloConNumero', () => {
   it('T1: el texto ocupa lo que sobra y puede partirse', () => {
@@ -25,7 +26,11 @@ describe('TituloConNumero', () => {
     expect(numero).toHaveTextContent('2');
     expect(numero).toHaveClass('flex-none');
     // Hermano del texto, no dentro de él: así se alinea a la derecha
-    expect(screen.getByText('Solicitudes rechazadas')).not.toContainElement(numero);
-    expect(numero.previousElementSibling).toBe(screen.getByText('Solicitudes rechazadas'));
+    expect(screen.getByText('Solicitudes rechazadas')).not.toContainElement(
+      numero,
+    );
+    expect(numero.previousElementSibling).toBe(
+      screen.getByText('Solicitudes rechazadas'),
+    );
   });
 });

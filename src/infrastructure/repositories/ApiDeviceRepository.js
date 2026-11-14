@@ -1,4 +1,3 @@
- 
 import Device from '../../domain/entities/Device.js';
 import IDeviceRepository from '../../domain/repositories/IDeviceRepository.js';
 import apiRequest from '../http/api.js';
@@ -9,7 +8,10 @@ import { segmento } from '../http/api';
  * API implementation of Device Repository
  * v1.13.0: Device Fingerprinting feature
  */
-const MOTIVOS_DE_UN_403 = new Set(['CSRF_VALIDATION_FAILED', 'TERMS_NOT_ACCEPTED']);
+const MOTIVOS_DE_UN_403 = new Set([
+  'CSRF_VALIDATION_FAILED',
+  'TERMS_NOT_ACCEPTED',
+]);
 // La ruta con sesión más ligera (RUTA_DEL_USUARIO_ACTUAL): el backend comprueba en
 // ella el dispositivo del token. La lista de dispositivos era la consulta más cara (FE #1046)
 
@@ -43,7 +45,7 @@ class ApiDeviceRepository extends IDeviceRepository {
     }
 
     // Map API DTOs to Device entities
-    const devices = data.devices.map(deviceDto => new Device(deviceDto));
+    const devices = data.devices.map((deviceDto) => new Device(deviceDto));
 
     return {
       devices,
@@ -76,9 +78,12 @@ class ApiDeviceRepository extends IDeviceRepository {
     }
 
     try {
-      const data = await apiRequest(`/api/v1/users/me/devices/${segmento(deviceId)}`, {
-        method: 'DELETE',
-      });
+      const data = await apiRequest(
+        `/api/v1/users/me/devices/${segmento(deviceId)}`,
+        {
+          method: 'DELETE',
+        },
+      );
 
       return {
         message: data.message || 'Device revoked successfully',
@@ -93,7 +98,9 @@ class ApiDeviceRepository extends IDeviceRepository {
       if (statusCode === 403) {
         // Cada 403 con su motivo (FE #1046): antes todos eran «CSRF», también los
         // Términos pendientes o un dispositivo que no es tuyo
-        const codigo = MOTIVOS_DE_UN_403.has(error.errorCode) ? error.errorCode : 'FORBIDDEN';
+        const codigo = MOTIVOS_DE_UN_403.has(error.errorCode)
+          ? error.errorCode
+          : 'FORBIDDEN';
         const domainError = new Error(codigo);
         domainError.code = codigo;
         throw domainError;
@@ -110,7 +117,9 @@ class ApiDeviceRepository extends IDeviceRepository {
         throw error;
       } else {
         // For other errors, return generic error code with original message
-        const domainError = new Error(error.message || 'FAILED_TO_REVOKE_DEVICE');
+        const domainError = new Error(
+          error.message || 'FAILED_TO_REVOKE_DEVICE',
+        );
         domainError.code = 'FAILED_TO_REVOKE_DEVICE';
         domainError.originalMessage = error.message;
         throw domainError;

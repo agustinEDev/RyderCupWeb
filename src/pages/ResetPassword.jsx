@@ -2,7 +2,10 @@ import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useSearchParams, useParams } from 'react-router';
 import { motion } from 'framer-motion';
 import customToast from '../utils/toast';
-import { stripSecretsFromAddressBar, readStrippedSecret } from '../utils/stripSecretsFromAddressBar';
+import {
+  stripSecretsFromAddressBar,
+  readStrippedSecret,
+} from '../utils/stripSecretsFromAddressBar';
 import { useTranslation } from 'react-i18next';
 import { passwordErrorMessage, validatePassword } from '../utils/validation';
 import { broadcastLogout } from '../utils/broadcastAuth';
@@ -49,7 +52,8 @@ const ResetPassword = () => {
 
   // Soportar ambos formatos: /reset-password/:token y /reset-password?token=xxx.
   // Tras quitarlo de la barra, una recarga lo recupera del historial
-  const token = params.token || searchParams.get('token') || readStrippedSecret('token');
+  const token =
+    params.token || searchParams.get('token') || readStrippedSecret('token');
 
   // Leido: fuera de la barra, antes de que Replay grabe el href de la pagina
   // y de que acabe en el Referer (utils/stripSecretsFromAddressBar.js)
@@ -122,7 +126,11 @@ const ResetPassword = () => {
         const status = error?.status;
         const sinRed = esFalloDeRedDeLaApi(error);
         const enlaceMalo =
-          !sinRed && status >= 400 && status < 500 && status !== 408 && status !== 429;
+          !sinRed &&
+          status >= 400 &&
+          status < 500 &&
+          status !== 408 &&
+          status !== 429;
         if (enlaceMalo) {
           setTokenState('invalid');
           setTokenMessage(t('resetPassword.tokenInvalidMessage'));
@@ -166,14 +174,21 @@ const ResetPassword = () => {
     // Validación 1: Nueva contraseña con requisitos OWASP
     const passwordValidation = validatePassword(formData.newPassword);
     if (!passwordValidation.isValid) {
-      newErrors.newPassword = t(passwordValidation.messageKey, passwordValidation.messageOptions);
+      newErrors.newPassword = t(
+        passwordValidation.messageKey,
+        passwordValidation.messageOptions,
+      );
     }
 
     // Validación 2: Confirmación de contraseña
     if (!formData.confirmPassword) {
-      newErrors.confirmPassword = t('validation.confirmPasswordRequired', { ns: 'auth' });
+      newErrors.confirmPassword = t('validation.confirmPasswordRequired', {
+        ns: 'auth',
+      });
     } else if (formData.newPassword !== formData.confirmPassword) {
-      newErrors.confirmPassword = t('validation.passwordsDoNotMatch', { ns: 'auth' });
+      newErrors.confirmPassword = t('validation.passwordsDoNotMatch', {
+        ns: 'auth',
+      });
     }
 
     setErrors(newErrors);
@@ -231,7 +246,9 @@ const ResetPassword = () => {
       } else if (error.errorCode === 'RESET_TOKEN_INVALID') {
         // Por su código (BE #519): el texto va en español («inválido») y buscar
         // «invalid» en él no lo encontraba nunca
-        customToast.error(t('resetPassword.tokenInvalidMessage'), { duration: 6000 });
+        customToast.error(t('resetPassword.tokenInvalidMessage'), {
+          duration: 6000,
+        });
         setTokenState('invalid');
         setTokenMessage(t('resetPassword.tokenInvalidMessage'));
       } else if (error.status === 429) {
@@ -265,8 +282,12 @@ const ResetPassword = () => {
           <div className="flex justify-center mb-4">
             <LoadingMark tamano="pequeno" tinta="verde" />
           </div>
-          <h2 className="text-xl font-bold text-gray-900 mb-2">{t('resetPassword.validatingToken')}</h2>
-          <p className="text-gray-600">{t('resetPassword.validatingMessage')}</p>
+          <h2 className="text-xl font-bold text-gray-900 mb-2">
+            {t('resetPassword.validatingToken')}
+          </h2>
+          <p className="text-gray-600">
+            {t('resetPassword.validatingMessage')}
+          </p>
         </motion.div>
       </div>
     );
@@ -303,7 +324,9 @@ const ResetPassword = () => {
             </div>
           </div>
 
-          <h2 className="text-2xl font-bold text-gray-900 text-center mb-3">{t('resetPassword.checkFailedTitle')}</h2>
+          <h2 className="text-2xl font-bold text-gray-900 text-center mb-3">
+            {t('resetPassword.checkFailedTitle')}
+          </h2>
           <p className="text-gray-600 text-center mb-6">{t(checkFailure)}</p>
 
           <div className="space-y-3">
@@ -357,7 +380,9 @@ const ResetPassword = () => {
           </div>
 
           {/* Error Message */}
-          <h2 className="text-2xl font-bold text-gray-900 text-center mb-3">{t('resetPassword.invalidTokenTitle')}</h2>
+          <h2 className="text-2xl font-bold text-gray-900 text-center mb-3">
+            {t('resetPassword.invalidTokenTitle')}
+          </h2>
           <p className="text-gray-600 text-center mb-6">{tokenMessage}</p>
 
           {/* Actions */}
@@ -413,8 +438,12 @@ const ResetPassword = () => {
             <Link to="/" className="flex items-center gap-3 group">
               <BrandMark className="size-10" tinta="blanco" />
               <div className="flex flex-col group-hover:opacity-80 transition-opacity">
-                <h1 className="text-2xl font-bold font-poppins">RyderCupFriends</h1>
-                <span className="text-sm font-semibold text-accent -mt-1">RCF</span>
+                <h1 className="text-2xl font-bold font-poppins">
+                  RyderCupFriends
+                </h1>
+                <span className="text-sm font-semibold text-accent -mt-1">
+                  RCF
+                </span>
               </div>
             </Link>
 
@@ -454,7 +483,11 @@ const ResetPassword = () => {
             </div>
 
             {/* Footer */}
-            <div className="text-white/70 text-sm">{t('common:footer.copyrightShort', { year: new Date().getFullYear() })}</div>
+            <div className="text-white/70 text-sm">
+              {t('common:footer.copyrightShort', {
+                year: new Date().getFullYear(),
+              })}
+            </div>
           </div>
         </motion.div>
 
@@ -467,11 +500,18 @@ const ResetPassword = () => {
             className="w-full max-w-md"
           >
             {/* Mobile Logo */}
-            <Link to="/" className="flex lg:hidden items-center gap-3 mb-8 justify-center group">
+            <Link
+              to="/"
+              className="flex lg:hidden items-center gap-3 mb-8 justify-center group"
+            >
               <BrandMark className="size-10" />
               <div className="flex flex-col group-hover:opacity-80 transition-opacity">
-                <h1 className="text-2xl font-bold font-poppins text-gray-900">RyderCupFriends</h1>
-                <span className="text-sm font-semibold text-primary -mt-1">RCF</span>
+                <h1 className="text-2xl font-bold font-poppins text-gray-900">
+                  RyderCupFriends
+                </h1>
+                <span className="text-sm font-semibold text-primary -mt-1">
+                  RCF
+                </span>
               </div>
             </Link>
 
@@ -482,17 +522,21 @@ const ResetPassword = () => {
                 <h2 className="text-3xl font-black text-gray-900 font-poppins mb-2">
                   {t('resetPassword.title')}
                 </h2>
-                <p className="text-gray-600">
-                  {t('resetPassword.subtitle')}
-                </p>
+                <p className="text-gray-600">{t('resetPassword.subtitle')}</p>
               </div>
 
               {/* Password Requirements */}
               <div className="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
-                <p className="text-sm font-semibold text-blue-900 mb-2">{t('resetPassword.requirementsTitle')}</p>
+                <p className="text-sm font-semibold text-blue-900 mb-2">
+                  {t('resetPassword.requirementsTitle')}
+                </p>
                 <ul className="space-y-1 text-sm text-blue-700">
                   <li className="flex items-center gap-2">
-                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                    <svg
+                      className="w-4 h-4"
+                      fill="currentColor"
+                      viewBox="0 0 20 20"
+                    >
                       <path
                         fillRule="evenodd"
                         d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
@@ -502,7 +546,11 @@ const ResetPassword = () => {
                     {t('resetPassword.requirement1')}
                   </li>
                   <li className="flex items-center gap-2">
-                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                    <svg
+                      className="w-4 h-4"
+                      fill="currentColor"
+                      viewBox="0 0 20 20"
+                    >
                       <path
                         fillRule="evenodd"
                         d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
@@ -512,7 +560,11 @@ const ResetPassword = () => {
                     {t('resetPassword.requirement2')}
                   </li>
                   <li className="flex items-center gap-2">
-                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                    <svg
+                      className="w-4 h-4"
+                      fill="currentColor"
+                      viewBox="0 0 20 20"
+                    >
                       <path
                         fillRule="evenodd"
                         d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
@@ -522,7 +574,11 @@ const ResetPassword = () => {
                     {t('resetPassword.requirement3')}
                   </li>
                   <li className="flex items-center gap-2">
-                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                    <svg
+                      className="w-4 h-4"
+                      fill="currentColor"
+                      viewBox="0 0 20 20"
+                    >
                       <path
                         fillRule="evenodd"
                         d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
@@ -532,7 +588,11 @@ const ResetPassword = () => {
                     {t('resetPassword.requirement4')}
                   </li>
                   <li className="flex items-center gap-2">
-                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                    <svg
+                      className="w-4 h-4"
+                      fill="currentColor"
+                      viewBox="0 0 20 20"
+                    >
                       <path
                         fillRule="evenodd"
                         d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
@@ -565,7 +625,11 @@ const ResetPassword = () => {
                   />
 
                   {/* Password Strength Indicator */}
-                  {formData.newPassword && <PasswordStrengthIndicator password={formData.newPassword} />}
+                  {formData.newPassword && (
+                    <PasswordStrengthIndicator
+                      password={formData.newPassword}
+                    />
+                  )}
 
                   {errors.newPassword && (
                     <motion.p
@@ -573,7 +637,11 @@ const ResetPassword = () => {
                       animate={{ opacity: 1, y: 0 }}
                       className="text-red-500 text-xs mt-2 flex items-center gap-1"
                     >
-                      <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                      <svg
+                        className="w-4 h-4"
+                        fill="currentColor"
+                        viewBox="0 0 20 20"
+                      >
                         <path
                           fillRule="evenodd"
                           d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
@@ -609,7 +677,11 @@ const ResetPassword = () => {
                       animate={{ opacity: 1, y: 0 }}
                       className="text-red-500 text-xs mt-2 flex items-center gap-1"
                     >
-                      <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                      <svg
+                        className="w-4 h-4"
+                        fill="currentColor"
+                        viewBox="0 0 20 20"
+                      >
                         <path
                           fillRule="evenodd"
                           d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
@@ -669,7 +741,9 @@ const ResetPassword = () => {
                   <div className="w-full border-t border-gray-200"></div>
                 </div>
                 <div className="relative flex justify-center text-sm">
-                  <span className="px-4 bg-white text-gray-500">{t('google.orDivider')}</span>
+                  <span className="px-4 bg-white text-gray-500">
+                    {t('google.orDivider')}
+                  </span>
                 </div>
               </div>
 
@@ -705,7 +779,9 @@ const ResetPassword = () => {
                   d="M10 19l-7-7m0 0l7-7m-7 7h18"
                 />
               </svg>
-              <span className="text-sm font-medium">{t('resetPassword.backToHome')}</span>
+              <span className="text-sm font-medium">
+                {t('resetPassword.backToHome')}
+              </span>
             </Link>
           </motion.div>
         </div>

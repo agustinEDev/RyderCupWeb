@@ -16,10 +16,10 @@ describe('El jugador sin nombre está traducido', () => {
 
   it('R3 (1 nov): el aviso de reasignar sin la lista, en los dos idiomas', () => {
     expect(es.matches.reassignNeedsEnrollments).toBe(
-      'Sin la lista de inscritos no se puede reasignar: recarga la página.'
+      'Sin la lista de inscritos no se puede reasignar: recarga la página.',
     );
     expect(en.matches.reassignNeedsEnrollments).toBe(
-      "Without the list of enrolled players you can't reassign: reload the page."
+      "Without the list of enrolled players you can't reassign: reload the page.",
     );
   });
 });

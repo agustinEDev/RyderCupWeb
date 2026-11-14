@@ -13,7 +13,11 @@ class DeclareWalkoverUseCase {
     if (!reason || typeof reason !== 'string' || reason.trim().length === 0) {
       throw new Error('Reason is required');
     }
-    return await this.scheduleRepository.declareWalkover(matchId, winningTeam, reason);
+    return await this.scheduleRepository.declareWalkover(
+      matchId,
+      winningTeam,
+      reason,
+    );
   }
 }
 

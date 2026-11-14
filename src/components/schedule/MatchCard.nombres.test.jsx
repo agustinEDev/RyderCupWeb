@@ -11,7 +11,8 @@ import MatchCard from './MatchCard';
  * | N1 | Nombre y HCP no caben en una fila  | El HCP baja debajo: la fila se parte (flex-wrap) |
  * | N2 | Una palabra que no cabe ni sola    | Se parte por letras, como antes (break-words) |
  */
-const t = (clave, params) => (params ? `${clave}:${Object.values(params).join(',')}` : clave);
+const t = (clave, params) =>
+  params ? `${clave}:${Object.values(params).join(',')}` : clave;
 
 describe('MatchCard · nombres a 360 px', () => {
   it('N1/N2: la fila del jugador se parte antes que el nombre', () => {
@@ -21,16 +22,25 @@ describe('MatchCard · nombres a 360 px', () => {
           id: 'm1',
           matchNumber: 1,
           status: 'SCHEDULED',
-          teamAPlayers: [{ userId: 'olga', playerHandicap: 18, playingHandicap: 30 }],
-          teamBPlayers: [{ userId: 'ana', playerHandicap: 18, playingHandicap: 30 }],
+          teamAPlayers: [
+            { userId: 'olga', playerHandicap: 18, playingHandicap: 30 },
+          ],
+          teamBPlayers: [
+            { userId: 'ana', playerHandicap: 18, playingHandicap: 30 },
+          ],
         }}
         matchFormat="SINGLES"
         canManage={false}
-        playerNameMap={new Map([['olga', 'Olga Organiza'], ['ana', 'Ana Prueba']])}
+        playerNameMap={
+          new Map([
+            ['olga', 'Olga Organiza'],
+            ['ana', 'Ana Prueba'],
+          ])
+        }
         playerHandicapMap={new Map()}
         teamNames={{ teamA: 'A', teamB: 'B' }}
         t={t}
-      />
+      />,
     );
 
     const nombre = screen.getByText('Olga Organiza');

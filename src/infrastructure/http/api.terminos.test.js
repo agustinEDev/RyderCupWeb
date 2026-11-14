@@ -17,14 +17,21 @@ import '../../composition/interfazDelTransporte';
  *   rutas con Términos pendientes o públicas              | no redirige
  *   otro 403                                              | el error de siempre
  */
-vi.mock('./csrfTokenSync', () => ({ getCsrfCookie: () => null, getCsrfToken: vi.fn(() => 'csrf') }));
-vi.mock('./tokenRefreshInterceptor', () => ({ fetchWithTokenRefresh: vi.fn() }));
+vi.mock('./csrfTokenSync', () => ({
+  getCsrfCookie: () => null,
+  getCsrfToken: vi.fn(() => 'csrf'),
+}));
+vi.mock('./tokenRefreshInterceptor', () => ({
+  fetchWithTokenRefresh: vi.fn(),
+}));
 vi.mock('i18next', () => ({ default: { t: (clave) => `t(${clave})` } }));
 
 const { fetchWithTokenRefresh } = await import('./tokenRefreshInterceptor');
 const { apiRequest } = await import('./api');
-const { olvidaLaRedireccionATerminos, esUnAvisoSilenciado } = await import('../../utils/terminosPendientes');
-const { apuntaElRouterDeLaAplicacion } = await import('../../utils/navegacionEnCurso');
+const { olvidaLaRedireccionATerminos, esUnAvisoSilenciado } =
+  await import('../../utils/terminosPendientes');
+const { apuntaElRouterDeLaAplicacion } =
+  await import('../../utils/navegacionEnCurso');
 const { createMemoryRouter } = await import('react-router');
 
 const AVISO_DE_ACEPTAR = 't(common:terminosPendientes)';
@@ -38,7 +45,13 @@ const respuesta403 = (error_code) => ({
 });
 
 const enUna = (pathname, search = '', assign = vi.fn()) => {
-  vi.stubGlobal('location', { pathname, search, hash: '', origin: 'http://localhost', assign });
+  vi.stubGlobal('location', {
+    pathname,
+    search,
+    hash: '',
+    origin: 'http://localhost',
+    assign,
+  });
   return assign;
 };
 
@@ -64,8 +77,14 @@ describe('apiRequest · Términos sin aceptar (F4)', () => {
 
     const error = await falla('/api/v1/competitions/7');
 
-    expect(assign).toHaveBeenCalledWith('/accept-terms?from=%2Fcompetitions%2F7%3Ftab%3Dagenda');
-    expect(error).toMatchObject({ status: 403, errorCode: 'TERMS_NOT_ACCEPTED', message: AVISO_DE_ACEPTAR });
+    expect(assign).toHaveBeenCalledWith(
+      '/accept-terms?from=%2Fcompetitions%2F7%3Ftab%3Dagenda',
+    );
+    expect(error).toMatchObject({
+      status: 403,
+      errorCode: 'TERMS_NOT_ACCEPTED',
+      message: AVISO_DE_ACEPTAR,
+    });
     expect(esUnAvisoSilenciado(error.message)).toBe(true);
   });
 
@@ -74,9 +93,13 @@ describe('apiRequest · Términos sin aceptar (F4)', () => {
     const router = createMemoryRouter(
       [
         { path: '/dashboard', element: null },
-        { path: '/competitions', element: null, loader: async () => (await falla('/api/v1/competitions'), null) },
+        {
+          path: '/competitions',
+          element: null,
+          loader: async () => (await falla('/api/v1/competitions'), null),
+        },
       ],
-      { initialEntries: ['/dashboard'] }
+      { initialEntries: ['/dashboard'] },
     );
     const deshacer = apuntaElRouterDeLaAplicacion(router);
 
@@ -92,7 +115,11 @@ describe('apiRequest · Términos sin aceptar (F4)', () => {
   it('varias llamadas a la vez: una sola redirección, y todas terminan', async () => {
     const assign = enUna('/dashboard');
 
-    const resultados = await Promise.allSettled([apiRequest('/api/v1/a'), apiRequest('/api/v1/b'), apiRequest('/api/v1/c')]);
+    const resultados = await Promise.allSettled([
+      apiRequest('/api/v1/a'),
+      apiRequest('/api/v1/b'),
+      apiRequest('/api/v1/c'),
+    ]);
 
     expect(assign).toHaveBeenCalledTimes(1);
     expect(resultados.every((r) => r.status === 'rejected')).toBe(true);
@@ -131,7 +158,10 @@ describe('apiRequest · Términos sin aceptar (F4)', () => {
     const deOtraRuta = await falla();
 
     expect(assign).toHaveBeenCalledTimes(1);
-    expect(error).toMatchObject({ errorCode: 'TERMS_NOT_ACCEPTED', message: NO_DISPONIBLE });
+    expect(error).toMatchObject({
+      errorCode: 'TERMS_NOT_ACCEPTED',
+      message: NO_DISPONIBLE,
+    });
     expect(esUnAvisoSilenciado(error.message)).toBe(false);
     expect(deOtraRuta.message).toBe(NO_DISPONIBLE);
   });
@@ -151,9 +181,15 @@ describe('apiRequest · Términos sin aceptar (F4)', () => {
     vi.useFakeTimers({ toFake: ['Date'] });
     const assign = enUna('/dashboard');
     vi.stubGlobal('sessionStorage', {
-      getItem: () => { throw new Error('bloqueado'); },
-      setItem: () => { throw new Error('bloqueado'); },
-      removeItem: () => { throw new Error('bloqueado'); },
+      getItem: () => {
+        throw new Error('bloqueado');
+      },
+      setItem: () => {
+        throw new Error('bloqueado');
+      },
+      removeItem: () => {
+        throw new Error('bloqueado');
+      },
       clear: () => {},
     });
 
@@ -165,18 +201,27 @@ describe('apiRequest · Términos sin aceptar (F4)', () => {
     expect(assign).toHaveBeenCalledTimes(1);
   });
 
-  it.each([['/accept-terms'], ['/auth/complete-profile'], ['/profile/devices'], ['/profile/devices/'], ['/terms'], ['/privacy'], ['/legal'], ['/']])(
-    'en %s no redirige: lanza el error marcado, visible',
-    async (ruta) => {
-      const assign = enUna(ruta);
+  it.each([
+    ['/accept-terms'],
+    ['/auth/complete-profile'],
+    ['/profile/devices'],
+    ['/profile/devices/'],
+    ['/terms'],
+    ['/privacy'],
+    ['/legal'],
+    ['/'],
+  ])('en %s no redirige: lanza el error marcado, visible', async (ruta) => {
+    const assign = enUna(ruta);
 
-      const error = await falla('/api/v1/users/me/devices');
+    const error = await falla('/api/v1/users/me/devices');
 
-      expect(assign).not.toHaveBeenCalled();
-      expect(error).toMatchObject({ status: 403, errorCode: 'TERMS_NOT_ACCEPTED' });
-      expect(esUnAvisoSilenciado(error.message)).toBe(false);
-    }
-  );
+    expect(assign).not.toHaveBeenCalled();
+    expect(error).toMatchObject({
+      status: 403,
+      errorCode: 'TERMS_NOT_ACCEPTED',
+    });
+    expect(esUnAvisoSilenciado(error.message)).toBe(false);
+  });
 
   it('otro 403: el error de siempre, sin redirigir', async () => {
     const assign = enUna('/dashboard');

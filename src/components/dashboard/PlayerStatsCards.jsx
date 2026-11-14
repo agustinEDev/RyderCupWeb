@@ -15,41 +15,60 @@ import { formatoDeIndice } from '../../utils/formatoDeHandicap';
  * vueltas. Enseñar uno sin el otro pierde justamente la comparación.
  */
 
-const StatCard = ({ icon: Icon, label, value, hint, tone, testId, onClick, ariaLabel }) => {
+const StatCard = ({
+  icon: Icon,
+  label,
+  value,
+  hint,
+  tone,
+  testId,
+  onClick,
+  ariaLabel,
+}) => {
   // Una tarjeta que lleva a algún sitio tiene que ser un botón, no un div con
   // un manejador: el teclado y los lectores de pantalla lo necesitan
   const Tag = onClick ? 'button' : 'div';
   return (
-  <Tag
-    data-testid={testId}
-    onClick={onClick}
-    type={onClick ? 'button' : undefined}
-    aria-label={onClick ? ariaLabel : undefined}
-    // `min-w-0`: una columna de grid tampoco encoge por debajo del ancho de su
-    // contenido, así que sin esto una etiqueta larga desborda la rejilla.
-    //
-    // `flex flex-col`: un <button> centra verticalmente su contenido y un <div>
-    // lo alinea arriba. Como la rejilla estira las tres tarjetas a la misma
-    // altura, la que es botón y tiene menos contenido —el hándicap cuando no
-    // hay tendencia que enseñar— aparecía bajada respecto a las demás. Con la
-    // columna explícita, la alineación deja de depender de si la tarjeta lleva
-    // onClick o no.
-    className={`relative flex min-w-0 flex-col overflow-hidden rounded-xl border p-3 md:p-6 text-left ${tone.container} ${
-      onClick ? 'transition-shadow hover:shadow-md' : ''
-    }`}
-  >
-    {/* `self-start`: en una columna flex los hijos se estiran a lo ancho por
+    <Tag
+      data-testid={testId}
+      onClick={onClick}
+      type={onClick ? 'button' : undefined}
+      aria-label={onClick ? ariaLabel : undefined}
+      // `min-w-0`: una columna de grid tampoco encoge por debajo del ancho de su
+      // contenido, así que sin esto una etiqueta larga desborda la rejilla.
+      //
+      // `flex flex-col`: un <button> centra verticalmente su contenido y un <div>
+      // lo alinea arriba. Como la rejilla estira las tres tarjetas a la misma
+      // altura, la que es botón y tiene menos contenido —el hándicap cuando no
+      // hay tendencia que enseñar— aparecía bajada respecto a las demás. Con la
+      // columna explícita, la alineación deja de depender de si la tarjeta lleva
+      // onClick o no.
+      className={`relative flex min-w-0 flex-col overflow-hidden rounded-xl border p-3 md:p-6 text-left ${tone.container} ${
+        onClick ? 'transition-shadow hover:shadow-md' : ''
+      }`}
+    >
+      {/* `self-start`: en una columna flex los hijos se estiran a lo ancho por
         defecto, y el recuadro del icono dejaría de ser un cuadrado */}
-    <div className={`inline-flex self-start rounded-lg p-1.5 md:p-2.5 shadow-sm ${tone.iconBackground}`}>
-      <Icon className="h-4 w-4 md:h-5 md:w-5 text-white" aria-hidden="true" />
-    </div>
-    <p className={`mt-2 text-[10px] md:text-sm font-medium leading-tight ${tone.label}`}>{label}</p>
-    <p className={`text-2xl md:text-4xl font-bold leading-tight ${tone.value}`}>{value}</p>
-    {hint}
-    <div className="pointer-events-none absolute -bottom-6 -right-6 hidden opacity-10 md:block">
-      <Icon className={`h-32 w-32 ${tone.value}`} aria-hidden="true" />
-    </div>
-  </Tag>
+      <div
+        className={`inline-flex self-start rounded-lg p-1.5 md:p-2.5 shadow-sm ${tone.iconBackground}`}
+      >
+        <Icon className="h-4 w-4 md:h-5 md:w-5 text-white" aria-hidden="true" />
+      </div>
+      <p
+        className={`mt-2 text-[10px] md:text-sm font-medium leading-tight ${tone.label}`}
+      >
+        {label}
+      </p>
+      <p
+        className={`text-2xl md:text-4xl font-bold leading-tight ${tone.value}`}
+      >
+        {value}
+      </p>
+      {hint}
+      <div className="pointer-events-none absolute -bottom-6 -right-6 hidden opacity-10 md:block">
+        <Icon className={`h-32 w-32 ${tone.value}`} aria-hidden="true" />
+      </div>
+    </Tag>
   );
 };
 
@@ -95,7 +114,8 @@ const PlayerStatsCards = ({
   const navigate = useNavigate();
   const openStats = () => navigate('/stats');
 
-  const formatNumber = (value) => (value === null || value === undefined ? '--' : value.toFixed(1));
+  const formatNumber = (value) =>
+    value === null || value === undefined ? '--' : value.toFixed(1);
 
   const handicap = stats?.handicap ?? fallbackHandicap;
   const trend = stats?.handicapTrend;
@@ -106,7 +126,10 @@ const PlayerStatsCards = ({
   const TrendIcon = isSteady ? Minus : isImproving ? TrendingDown : TrendingUp;
 
   return (
-    <div className="grid grid-cols-3 gap-2 md:gap-4" data-testid="player-stats-cards">
+    <div
+      className="grid grid-cols-3 gap-2 md:gap-4"
+      data-testid="player-stats-cards"
+    >
       <StatCard
         testId="stat-card-handicap"
         icon={TrendingUp}
@@ -123,7 +146,11 @@ const PlayerStatsCards = ({
             <p
               data-testid="handicap-trend"
               className={`mt-0.5 flex items-center gap-0.5 text-[10px] md:text-xs font-medium ${
-                isSteady ? 'text-gray-600' : isImproving ? 'text-green-700' : 'text-red-700'
+                isSteady
+                  ? 'text-gray-600'
+                  : isImproving
+                    ? 'text-green-700'
+                    : 'text-red-700'
               }`}
             >
               <TrendIcon className="h-3 w-3" aria-hidden="true" />
@@ -162,7 +189,9 @@ const PlayerStatsCards = ({
           isLoading ? null : (
             <p className="mt-0.5 text-[10px] md:text-xs text-green-700">
               {stats?.hasPlayingAverage?.()
-                ? t('statistics.overRounds', { count: stats.roundsWithDifferential })
+                ? t('statistics.overRounds', {
+                    count: stats.roundsWithDifferential,
+                  })
                 : t('statistics.needsMoreRounds')}
             </p>
           )

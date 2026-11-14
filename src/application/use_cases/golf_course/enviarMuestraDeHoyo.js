@@ -1,7 +1,12 @@
-import { esFalloDeTodaLaSesion, esRechazoDefinitivo, noLlegoAlServidor } from '../../../utils/politicaDeLaCola';
+import {
+  esFalloDeTodaLaSesion,
+  esRechazoDefinitivo,
+  noLlegoAlServidor,
+} from '../../../utils/politicaDeLaCola';
 
 /** Lo que identifica una entrada de la cola mientras va de camino. */
-export const claveDelEnvio = (userId, { id, enCola }) => `${userId}|${id}|${enCola}`;
+export const claveDelEnvio = (userId, { id, enCola }) =>
+  `${userId}|${id}|${enCola}`;
 
 /**
  * Enviar una muestra de hoyo que ya está en la cola del móvil y apuntar lo que
@@ -31,14 +36,36 @@ export const claveDelEnvio = (userId, { id, enCola }) => `${userId}|${id}|${enCo
  *
  * @returns {Promise<{estado: 'enviada'|'pendiente'|'descartada'|'enVuelo'|'sustituida', paraLaTanda?: boolean, errorCode?: string|null}>}
  */
-export const enviarMuestraDeHoyo = async ({ golfCourseRepository, holeSampleStore, reportarFallo, enVuelo, recienEnviadas }, userId, entrada) => {
+export const enviarMuestraDeHoyo = async (
+  {
+    golfCourseRepository,
+    holeSampleStore,
+    reportarFallo,
+    enVuelo,
+    recienEnviadas,
+  },
+  userId,
+  entrada,
+) => {
   const clave = claveDelEnvio(userId, entrada);
   if (enVuelo.has(clave)) return { estado: 'enVuelo' };
-  if (!holeSampleStore.cola(userId).some((otra) => otra.id === entrada.id && otra.enCola === entrada.enCola)) return { estado: 'sustituida' };
+  if (
+    !holeSampleStore
+      .cola(userId)
+      .some((otra) => otra.id === entrada.id && otra.enCola === entrada.enCola)
+  )
+    return { estado: 'sustituida' };
   enVuelo.add(clave);
-  const { id, barra, golfCourseId, holeNumber, tee, bends, greenCenter } = entrada;
+  const { id, barra, golfCourseId, holeNumber, tee, bends, greenCenter } =
+    entrada;
   try {
-    await golfCourseRepository.sendHoleSample(golfCourseId, holeNumber, { id, barra, tee, bends, greenCenter });
+    await golfCourseRepository.sendHoleSample(golfCourseId, holeNumber, {
+      id,
+      barra,
+      tee,
+      bends,
+      greenCenter,
+    });
     holeSampleStore.quitarDeLaCola(userId, entrada);
     // La suya: se sigue viendo en su mapa cuando no hay otra que enseñar
     holeSampleStore.apuntarMia(userId, entrada);
@@ -49,10 +76,16 @@ export const enviarMuestraDeHoyo = async ({ golfCourseRepository, holeSampleStor
       holeSampleStore.quitarDeLaCola(userId, entrada);
       const status = error?.status ?? error?.response?.status;
       const errorCode = error?.errorCode ?? null;
-      reportarFallo(new Error(`Muestra de hoyo rechazada: ${status} ${errorCode ?? ''}`.trim()), { golfCourseId, holeNumber, status, errorCode });
+      reportarFallo(
+        new Error(
+          `Muestra de hoyo rechazada: ${status} ${errorCode ?? ''}`.trim(),
+        ),
+        { golfCourseId, holeNumber, status, errorCode },
+      );
       return { estado: 'descartada', errorCode };
     }
-    const paraLaTanda = esFalloDeTodaLaSesion(error) || noLlegoAlServidor(error);
+    const paraLaTanda =
+      esFalloDeTodaLaSesion(error) || noLlegoAlServidor(error);
     // Lo que no es de red ni del servidor es nuestro, y sin avisar nadie se enteraría
     if (!paraLaTanda) reportarFallo(error, { golfCourseId, holeNumber });
     return { estado: 'pendiente', paraLaTanda };

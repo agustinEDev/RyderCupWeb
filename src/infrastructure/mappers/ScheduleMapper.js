@@ -16,17 +16,19 @@ class ScheduleMapper {
   static toScheduleDTO(apiData) {
     // Backend returns { days: [{ date, rounds: [...] }, ...] }
     // Flatten all rounds from all days into a single array
-    const allRounds = (apiData.days || []).flatMap(day =>
-      (day.rounds || []).map(round => ScheduleMapper.toRoundDTO(round))
+    const allRounds = (apiData.days || []).flatMap((day) =>
+      (day.rounds || []).map((round) => ScheduleMapper.toRoundDTO(round)),
     );
 
     return {
       competitionId: apiData.competition_id,
-      teamAssignment: apiData.team_assignment ? {
-        mode: apiData.team_assignment.mode,
-        teamAPlayerIds: apiData.team_assignment.team_a_player_ids || [],
-        teamBPlayerIds: apiData.team_assignment.team_b_player_ids || [],
-      } : null,
+      teamAssignment: apiData.team_assignment
+        ? {
+            mode: apiData.team_assignment.mode,
+            teamAPlayerIds: apiData.team_assignment.team_a_player_ids || [],
+            teamBPlayerIds: apiData.team_assignment.team_b_player_ids || [],
+          }
+        : null,
       rounds: allRounds,
       // La suma de los cupos de las franjas de un stroke play (FE #824); null
       // en una Ryder
@@ -53,7 +55,8 @@ class ScheduleMapper {
       waitingIds: apiTeeSheet.waiting_ids || [],
       // Los ids son los que deja ver el servidor (release social 2); la cuenta
       // y el puesto, de la lista entera. De un servidor de antes, de los ids
-      waitingCount: apiTeeSheet.waiting_count ?? (apiTeeSheet.waiting_ids || []).length,
+      waitingCount:
+        apiTeeSheet.waiting_count ?? (apiTeeSheet.waiting_ids || []).length,
       myWaitingPosition: apiTeeSheet.my_waiting_position ?? null,
     };
   }
@@ -91,7 +94,9 @@ class ScheduleMapper {
       allowancePercentage: apiRound.allowance_percentage ?? null,
       effectiveAllowance: apiRound.effective_allowance ?? null,
       status: apiRound.status,
-      matches: (apiRound.matches || []).map(match => ScheduleMapper.toMatchDTO(match)),
+      matches: (apiRound.matches || []).map((match) =>
+        ScheduleMapper.toMatchDTO(match),
+      ),
       createdAt: apiRound.created_at,
       updatedAt: apiRound.updated_at,
     };
@@ -118,8 +123,12 @@ class ScheduleMapper {
       id: apiMatch.id,
       roundId: apiMatch.round_id,
       matchNumber: apiMatch.match_number,
-      teamAPlayers: (apiMatch.team_a_players || []).map(ScheduleMapper.toMatchPlayerDTO),
-      teamBPlayers: (apiMatch.team_b_players || []).map(ScheduleMapper.toMatchPlayerDTO),
+      teamAPlayers: (apiMatch.team_a_players || []).map(
+        ScheduleMapper.toMatchPlayerDTO,
+      ),
+      teamBPlayers: (apiMatch.team_b_players || []).map(
+        ScheduleMapper.toMatchPlayerDTO,
+      ),
       status: apiMatch.status,
       handicapStrokesGiven: apiMatch.handicap_strokes_given ?? null,
       strokesGivenToTeam: apiMatch.strokes_given_to_team || null,
@@ -153,7 +162,10 @@ class ScheduleMapper {
     return {
       id: apiGroup.id,
       number: apiGroup.number,
-      teeTime: typeof apiGroup.tee_time === 'string' ? apiGroup.tee_time.slice(0, 5) : apiGroup.tee_time,
+      teeTime:
+        typeof apiGroup.tee_time === 'string'
+          ? apiGroup.tee_time.slice(0, 5)
+          : apiGroup.tee_time,
       status: apiGroup.status,
       incomplete: apiGroup.incomplete,
       players: (apiGroup.players || []).map((p) => ({
@@ -177,10 +189,16 @@ class ScheduleMapper {
     return {
       roundId: apiView.round_id,
       editable: apiView.editable,
-      unassignedPlayers: (apiView.unassigned_players || []).map((p) => ({ userId: p.user_id, name: p.name })),
+      unassignedPlayers: (apiView.unassigned_players || []).map((p) => ({
+        userId: p.user_id,
+        name: p.name,
+      })),
       // Sin los campos nuevos (un backend de antes), lo que diga `editable` (#544)
       canAddGroup: apiView.can_add_group ?? apiView.editable,
-      groups: (apiView.groups || []).map((g) => ({ ...ScheduleMapper.toTeeGroupDTO(g), canChange: g.can_change ?? apiView.editable })),
+      groups: (apiView.groups || []).map((g) => ({
+        ...ScheduleMapper.toTeeGroupDTO(g),
+        canChange: g.can_change ?? apiView.editable,
+      })),
     };
   }
 }

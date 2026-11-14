@@ -13,7 +13,9 @@ class CreateAndStartQuickMatchUseCase {
 
   constructor({ quickMatchRepository }) {
     if (!quickMatchRepository) {
-      throw new Error('CreateAndStartQuickMatchUseCase requires quickMatchRepository');
+      throw new Error(
+        'CreateAndStartQuickMatchUseCase requires quickMatchRepository',
+      );
     }
     this.#quickMatchRepository = quickMatchRepository;
   }
@@ -26,14 +28,21 @@ class CreateAndStartQuickMatchUseCase {
       throw new Error('golfCourseId is required');
     }
     if (!peticion.matchFormat === !peticion.scoringFormat) {
-      throw new Error('exactly one of matchFormat or scoringFormat is required');
+      throw new Error(
+        'exactly one of matchFormat or scoringFormat is required',
+      );
     }
     const anotadores = peticion.scorerUserIds;
-    if (!Array.isArray(anotadores) || anotadores.length < 1 || anotadores.length > 4) {
+    if (
+      !Array.isArray(anotadores) ||
+      anotadores.length < 1 ||
+      anotadores.length > 4
+    ) {
       throw new Error('scorerUserIds must contain 1 to 4 user ids');
     }
 
-    const quickMatch = await this.#quickMatchRepository.createAndStart(peticion);
+    const quickMatch =
+      await this.#quickMatchRepository.createAndStart(peticion);
     return QuickMatchAssembler.toSimpleDTO(quickMatch);
   }
 }

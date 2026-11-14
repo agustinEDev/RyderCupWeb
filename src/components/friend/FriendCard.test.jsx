@@ -23,8 +23,13 @@ const amistad = (overrides = {}) => ({
 const pintar = (props = {}) =>
   render(
     <MemoryRouter>
-      <FriendCard friendship={amistad()} mode="friend" t={(k) => k} {...props} />
-    </MemoryRouter>
+      <FriendCard
+        friendship={amistad()}
+        mode="friend"
+        t={(k) => k}
+        {...props}
+      />
+    </MemoryRouter>,
   );
 
 /**
@@ -35,7 +40,10 @@ describe('FriendCard', () => {
   it('links the name to the player profile', () => {
     pintar();
 
-    expect(screen.getByTestId('friend-profile-link')).toHaveAttribute('href', '/players/u-9');
+    expect(screen.getByTestId('friend-profile-link')).toHaveAttribute(
+      'href',
+      '/players/u-9',
+    );
   });
 
   it.each(['friend', 'received', 'sent'])('links in mode %s too', (mode) => {
@@ -43,7 +51,10 @@ describe('FriendCard', () => {
     // antes de aceptarla
     pintar({ mode, friendship: amistad({ status: 'PENDING' }) });
 
-    expect(screen.getByTestId('friend-profile-link')).toHaveAttribute('href', '/players/u-9');
+    expect(screen.getByTestId('friend-profile-link')).toHaveAttribute(
+      'href',
+      '/players/u-9',
+    );
   });
 
   it('keeps the photo out of the tab order', () => {
@@ -71,18 +82,22 @@ describe('FriendCard', () => {
     // Sin la pista, volver desde el perfil deja en el feed y hay que rehacer el
     // camino hasta Amigos en cada solicitud que se revisa. El state no aparece
     // en el DOM, asi que se navega de verdad y se lee en el destino
-    const Destino = () => <p>viene de: {useLocation().state?.from ?? 'ningun sitio'}</p>;
+    const Destino = () => (
+      <p>viene de: {useLocation().state?.from ?? 'ningun sitio'}</p>
+    );
 
     render(
       <MemoryRouter initialEntries={['/friends']}>
         <Routes>
           <Route
             path="/friends"
-            element={<FriendCard friendship={amistad()} mode="friend" t={(k) => k} />}
+            element={
+              <FriendCard friendship={amistad()} mode="friend" t={(k) => k} />
+            }
           />
           <Route path="/players/:userId" element={<Destino />} />
         </Routes>
-      </MemoryRouter>
+      </MemoryRouter>,
     );
 
     fireEvent.click(screen.getByTestId('friend-profile-link'));
@@ -94,6 +109,9 @@ describe('FriendCard', () => {
     // Sin nombre la etiqueta cae en una traduccion, pero el id sigue estando
     pintar({ friendship: amistad({ otherUserName: null }) });
 
-    expect(screen.getByTestId('friend-profile-link')).toHaveAttribute('href', '/players/u-9');
+    expect(screen.getByTestId('friend-profile-link')).toHaveAttribute(
+      'href',
+      '/players/u-9',
+    );
   });
 });

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import ModalShell, { CAJA_PROPIA } from '../../components/ui/ModalShell';
 import { motion } from 'framer-motion';
 import { Plus } from 'lucide-react';
@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next';
 import customToast from '../../utils/toast';
 import HeaderAuth from '../../components/layout/HeaderAuth';
 import { useAuth } from '../../hooks/useAuth';
+import { useCargaCancelableEffect } from '../../hooks/useCargaCancelableEffect';
 import GolfCourseTable from '../../components/golf_course/GolfCourseTable';
 import GolfCourseForm from '../../components/golf_course/GolfCourseForm';
 import GolfCourseDetailModal from '../../components/golf_course/GolfCourseDetailModal';
@@ -32,7 +33,6 @@ const GolfCourses = ({ embedded = false }) => {
   const { user, loading: isLoadingUser } = useAuth();
 
   const [courses, setCourses] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [isLoadingCourse, setIsLoadingCourse] = useState(false);
   // Un alta o una edición en vuelo: mientras dura, Escape no cierra su modal.
   // Si fallara, el error lo enseña el formulario, y cerrado no lo vería nadie
@@ -44,31 +44,29 @@ const GolfCourses = ({ embedded = false }) => {
 
   // Derive isAdmin from authenticated user's roles or is_admin flag
   // Backend returns is_admin: true for admin users (see RoleGuard.jsx for reference)
-  const isAdmin = user?.is_admin === true || user?.roles?.some(role =>
-    typeof role === 'string' ? role === 'ADMIN' : role.name === 'ADMIN'
-  ) || false;
+  const isAdmin =
+    user?.is_admin === true ||
+    user?.roles?.some((role) =>
+      typeof role === 'string' ? role === 'ADMIN' : role.name === 'ADMIN',
+    ) ||
+    false;
 
-  // Load approved courses
-  const loadCourses = async () => {
-    setIsLoading(true);
-    try {
-      const page = await listGolfCoursesUseCase.execute({ approvalStatus: 'APPROVED' });
-      setCourses(page.courses);
-    } catch (error) {
-      console.error('Error loading golf courses:', error);
-      customToast.error(error.message || t('pages.admin.errorLoading'));
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    if (user) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- pre-existing pattern surfaced by eslint-plugin-react-hooks 7.1.1 bump; needs dedicated review (tracked in follow-up)
-      loadCourses();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user]);
+  // Load approved courses, con useCargaCancelableEffect: al salir o al pedirla
+  // otra vez, la respuesta anterior no toca nada. El aviso no es dependencia:
+  // la lista no se vuelve a pedir por cambiar de idioma
+  const { cargando: isLoading, recargar: recargarCourses } =
+    useCargaCancelableEffect(
+      () => listGolfCoursesUseCase.execute({ approvalStatus: 'APPROVED' }),
+      [user],
+      {
+        activa: Boolean(user),
+        alCargar: (page) => setCourses(page.courses),
+        alFallar: (error) => {
+          console.error('Error loading golf courses:', error);
+          customToast.error(error.message || t('pages.admin.errorLoading'));
+        },
+      },
+    );
 
   // Handle create
   const handleCreate = async (formData) => {
@@ -77,7 +75,7 @@ const GolfCourses = ({ embedded = false }) => {
       await createGolfCourseAdminUseCase.execute(formData);
       customToast.success(t('pages.admin.createSuccess'));
       setShowCreateModal(false);
-      await loadCourses();
+      recargarCourses();
     } catch (error) {
       console.error('Error creating golf course:', error);
       throw error; // Let form handle the error
@@ -98,7 +96,7 @@ const GolfCourses = ({ embedded = false }) => {
       customToast.success(t('pages.admin.updateSuccess'));
       setShowEditModal(false);
       setSelectedCourse(null);
-      await loadCourses();
+      recargarCourses();
     } catch (error) {
       console.error('Error updating golf course:', error);
       throw error; // Let form handle the error
@@ -160,11 +158,15 @@ const GolfCourses = ({ embedded = false }) => {
   }
 
   const content = (
-    <div className={embedded ? undefined : 'layout-content-container flex flex-col max-w-[1200px] flex-1'}>
+    <div
+      className={
+        embedded
+          ? undefined
+          : 'layout-content-container flex flex-col max-w-[1200px] flex-1'
+      }
+    >
       {/* Header */}
-      <div
-        className="flex flex-wrap justify-between items-center gap-3 p-4"
-      >
+      <div className="flex flex-wrap justify-between items-center gap-3 p-4">
         <div>
           {!embedded && (
             <>
@@ -189,20 +191,17 @@ const GolfCourses = ({ embedded = false }) => {
       </div>
 
       {/* Stats */}
-      <div
-        className="p-4"
-      >
+      <div className="p-4">
         <div className="bg-primary-50 border border-primary-200 rounded-lg p-4">
           <p className="text-sm text-gray-600">
-            {t('pages.admin.totalCourses')}: <span className="font-bold text-gray-900">{courses.length}</span>
+            {t('pages.admin.totalCourses')}:{' '}
+            <span className="font-bold text-gray-900">{courses.length}</span>
           </p>
         </div>
       </div>
 
       {/* Table */}
-      <div
-        className="p-4"
-      >
+      <div className="p-4">
         <div className="relative bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
           <GolfCourseTable
             courses={courses}
@@ -258,7 +257,12 @@ const GolfCourses = ({ embedded = false }) => {
             className="bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto"
           >
             <div className="p-6 border-b border-gray-200">
-              <h2 id="crear-campo-titulo" className="text-2xl font-bold text-gray-900">{t('pages.admin.createCourseTitle')}</h2>
+              <h2
+                id="crear-campo-titulo"
+                className="text-2xl font-bold text-gray-900"
+              >
+                {t('pages.admin.createCourseTitle')}
+              </h2>
             </div>
             <div className="p-6">
               <GolfCourseForm
@@ -302,10 +306,16 @@ const GolfCourses = ({ embedded = false }) => {
             className="bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto"
           >
             <div className="p-6 border-b border-gray-200">
-              <h2 id="editar-campo-titulo" className="text-2xl font-bold text-gray-900">{t('pages.admin.editCourseTitle')}</h2>
+              <h2
+                id="editar-campo-titulo"
+                className="text-2xl font-bold text-gray-900"
+              >
+                {t('pages.admin.editCourseTitle')}
+              </h2>
             </div>
             <div className="p-6">
               <GolfCourseForm
+                key={selectedCourse.id}
                 initialData={selectedCourse}
                 onSubmit={handleEdit}
                 onCancel={() => {

@@ -1,8 +1,16 @@
-import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { nombreVisible } from '../../utils/nombreVisible';
 import { Link, Navigate, useLocation, useParams } from 'react-router';
 import { useTranslation } from 'react-i18next';
-import { ArrowLeft, Check, Loader, Lock, UserPlus, UserX, X } from 'lucide-react';
+import {
+  ArrowLeft,
+  Check,
+  Loader,
+  Lock,
+  UserPlus,
+  UserX,
+  X,
+} from 'lucide-react';
 import customToast from '../../utils/toast';
 import HeaderAuth from '../../components/layout/HeaderAuth';
 import Avatar from '../../components/ui/Avatar';
@@ -17,6 +25,7 @@ import {
   primerasTarjetasPorDia,
 } from '../../domain/services/lineaDeActividad';
 import { useAuth } from '../../hooks/useAuth';
+import { useCargaCancelableEffect } from '../../hooks/useCargaCancelableEffect';
 import {
   getPlayerProfileUseCase,
   getPlayerActivityUseCase,
@@ -38,6 +47,34 @@ const ACTIVITY_PAGE_SIZE = 20;
 const CARDS_STEP = 5;
 const HTTP_NOT_FOUND = 404;
 const HTTP_FORBIDDEN = 403;
+
+// La ficha y, entre amigos, la primera página de su actividad: la pantalla
+// espera a las dos. Un 403 en la actividad no es un fallo: no la publica,
+// aunque seáis amigos, y el resto del perfil sigue valiendo. Otro fallo de la
+// actividad tampoco tira la ficha: se avisa y se enseña sin ella
+const leeElPerfil = async (userId) => {
+  const data = await getPlayerProfileUseCase.execute(userId);
+  const sinActividad = {
+    data,
+    actividad: null,
+    actividadOculta: false,
+    actividadFallida: false,
+  };
+  if (!data.isFriend) return sinActividad;
+  try {
+    const actividad = await getPlayerActivityUseCase.execute(userId, {
+      limit: ACTIVITY_PAGE_SIZE,
+    });
+    return { ...sinActividad, actividad };
+  } catch (error) {
+    const oculta = error?.status === HTTP_FORBIDDEN;
+    return {
+      ...sinActividad,
+      actividadOculta: oculta,
+      actividadFallida: !oculta,
+    };
+  }
+};
 
 /**
  * PlayerProfilePage - El perfil de otro jugador.
@@ -68,11 +105,12 @@ const PlayerProfilePage = () => {
   // feed, que es de donde se llega la mayoría de las veces
   const cameFromFriends = location.state?.from === 'friends';
   const backLink = cameFromFriends ? '/friends' : '/feed';
-  const backTextKey = cameFromFriends ? 'playerProfile:backToFriends' : 'playerProfile:backToFeed';
+  const backTextKey = cameFromFriends
+    ? 'playerProfile:backToFriends'
+    : 'playerProfile:backToFeed';
 
   const [profile, setProfile] = useState(null);
   const [isNotFound, setIsNotFound] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
   const [activity, setActivity] = useState(null);
   const [isActivityHidden, setIsActivityHidden] = useState(false);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
@@ -82,9 +120,9 @@ const PlayerProfilePage = () => {
   // 'remove' | 'block' | null: lo que espera confirmación
   const [pendingConfirm, setPendingConfirm] = useState(null);
   const [visibleCards, setVisibleCards] = useState(CARDS_STEP);
-  // Cada carga del perfil abre una generación nueva. Lo que conteste tarde
-  // —una carga anterior, un «Ver más» de otro perfil— se descarta: si no, un
-  // perfil viejo pisaba al nuevo (revisión FE-2)
+  // Cada recarga del perfil abre una generación nueva: un «Ver más» que
+  // conteste después ya no se pega a la ficha recargada (revisión FE-2). Lo
+  // tardío de la carga misma lo descarta useCargaCancelableEffect
   const generacion = useRef(0);
   // Una acción que termina cuando ya se ha salido de este perfil no recarga
   // ni toca nada: el perfil que se ve ya es otro (revisión final FE-2)
@@ -96,81 +134,45 @@ const PlayerProfilePage = () => {
     };
   }, []);
 
-  // `t` solo hace falta para los mensajes de error, pero ponerla en las
-  // dependencias ata la carga a la identidad de esa función: un proveedor que
-  // devuelva una `t` nueva por render dispararía el efecto sin parar. Es el
-  // mismo motivo por el que se depende del id y no del objeto `user`.
-  const tRef = useRef(t);
-  useEffect(() => {
-    tRef.current = t;
-  }, [t]);
-
   const myId = user?.id;
   const isSelf = Boolean(myId) && myId === userId;
 
   /**
-   * Carga el perfil. Devuelve `false` solo si la ficha no se pudo leer (y no
-   * por un 404, que ya es una respuesta): quien acaba de cambiar la relación
-   * lo necesita para no dejar la pantalla contradiciendo a su aviso de éxito.
+   * Carga el perfil, al entrar y tras cambiar la relación. `t` solo se usa en
+   * los avisos, que se leen al llegar la respuesta: cambiar de idioma no lo
+   * vuelve a pedir. Se depende del id y no del objeto `user`.
    */
-  const loadProfile = useCallback(async ({ avisar = true } = {}) => {
-    if (!userId || isSelf) return true;
-
-    const gen = ++generacion.current;
-    const vigente = () => gen === generacion.current;
-
-    setIsLoading(true);
-    try {
-      const data = await getPlayerProfileUseCase.execute(userId);
-      if (!vigente()) return true;
-      setProfile(data);
-      setGames(data.gamesTogether ?? null);
-      setIsNotFound(false);
-      setActivity(null);
-      setIsActivityHidden(false);
-      setVisibleCards(CARDS_STEP);
-
-      if (data.isFriend) {
-        try {
-          const page = await getPlayerActivityUseCase.execute(userId, { limit: ACTIVITY_PAGE_SIZE });
-          if (!vigente()) return true;
-          setActivity(page);
-          setIsActivityHidden(false);
-        } catch (error) {
-          if (!vigente()) return true;
-          // Un 403 aquí no es un fallo: significa que no publica su actividad,
-          // aunque seáis amigos. El resto del perfil sigue siendo válido, así
-          // que no se tira toda la pantalla por esto.
-          if (error?.status === HTTP_FORBIDDEN) {
-            setActivity(null);
-            setIsActivityHidden(true);
-          } else {
-            customToast.error(tRef.current('common:errors.generic'));
-          }
+  const { cargando, recargar } = useCargaCancelableEffect(
+    () => leeElPerfil(userId),
+    [userId, isSelf],
+    {
+      activa: Boolean(userId) && !isSelf,
+      alCargar: ({ data, actividad, actividadOculta, actividadFallida }) => {
+        setProfile(data);
+        setGames(data.gamesTogether ?? null);
+        setIsNotFound(false);
+        setActivity(actividad);
+        setIsActivityHidden(actividadOculta);
+        setVisibleCards(CARDS_STEP);
+        if (actividadFallida) customToast.error(t('common:errors.generic'));
+      },
+      alFallar: (error) => {
+        // El backend responde 404 tanto si el jugador no existe como si no se
+        // puede ver, a propósito: un 403 confirmaría que la cuenta existe y
+        // probar identificadores serviría para averiguar quién está registrado.
+        if (error?.status === HTTP_NOT_FOUND) {
+          setIsNotFound(true);
+          setProfile(null);
+          return;
         }
-      }
-      return true;
-    } catch (error) {
-      if (!vigente()) return true;
-      // El backend responde 404 tanto si el jugador no existe como si no se
-      // puede ver, a propósito: un 403 confirmaría que la cuenta existe y
-      // probar identificadores serviría para averiguar quién está registrado.
-      if (error?.status === HTTP_NOT_FOUND) {
-        setIsNotFound(true);
-        setProfile(null);
-        return true;
-      }
-      if (avisar) customToast.error(tRef.current('common:errors.generic'));
-      return false;
-    } finally {
-      if (vigente()) setIsLoading(false);
-    }
-  }, [userId, isSelf]);
-
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- pre-existing pattern surfaced by eslint-plugin-react-hooks 7.1.1 bump; needs dedicated review (tracked in follow-up)
-    loadProfile();
-  }, [loadProfile]);
+        // Tras una acción no: la acción ya dice que la recarga falló, con su
+        // propio aviso (revisión FE-2)
+        if (!isActing) customToast.error(t('common:errors.generic'));
+      },
+    },
+  );
+  // Sin id no se pide nada y se sigue esperando, como antes
+  const isLoading = cargando || !userId;
 
   // Las tarjetas que salen de lo cargado: las mismas que Actividad (FE-1), con
   // los logros de una vuelta juntos y los tipos que no se conocen, fuera. Van
@@ -178,9 +180,13 @@ const PlayerProfilePage = () => {
   // la hora
   const { activityDays, activityCards } = useMemo(() => {
     const dias = activity
-      ? armaLaLineaDeActividad({ eventos: activity.events, ahora: new Date() }).dias
+      ? armaLaLineaDeActividad({ eventos: activity.events, ahora: new Date() })
+          .dias
       : [];
-    return { activityDays: dias, activityCards: dias.flatMap((dia) => dia.tarjetas) };
+    return {
+      activityDays: dias,
+      activityCards: dias.flatMap((dia) => dia.tarjetas),
+    };
   }, [activity]);
 
   // «Ver más» enseña 5 tarjetas más; solo pide otra página al servidor cuando
@@ -211,14 +217,15 @@ const PlayerProfilePage = () => {
               courses: { ...prev.courses, ...page.courses },
               nextCursor: page.nextCursor,
             }
-          : prev
+          : prev,
       );
       // Ya se veían todas las cargadas: 5 más a partir de ahí, no del límite
       // anterior, que una página de menos de 5 tarjetas dejaba por encima
       // (CodeRabbit FE-2)
       setVisibleCards(activityCards.length + CARDS_STEP);
     } catch {
-      if (gen === generacion.current) customToast.error(t('common:errors.generic'));
+      if (gen === generacion.current)
+        customToast.error(t('common:errors.generic'));
     } finally {
       setIsLoadingMore(false);
     }
@@ -230,13 +237,21 @@ const PlayerProfilePage = () => {
     const gen = generacion.current;
     setIsLoadingMoreGames(true);
     try {
-      const page = await getGamesTogetherUseCase.execute(userId, { cursor: games.nextCursor });
+      const page = await getGamesTogetherUseCase.execute(userId, {
+        cursor: games.nextCursor,
+      });
       if (gen !== generacion.current) return;
       setGames((prev) =>
-        prev ? { games: [...prev.games, ...page.games], nextCursor: page.nextCursor } : prev
+        prev
+          ? {
+              games: [...prev.games, ...page.games],
+              nextCursor: page.nextCursor,
+            }
+          : prev,
       );
     } catch {
-      if (gen === generacion.current) customToast.error(t('common:errors.generic'));
+      if (gen === generacion.current)
+        customToast.error(t('common:errors.generic'));
     } finally {
       setIsLoadingMoreGames(false);
     }
@@ -256,7 +271,9 @@ const PlayerProfilePage = () => {
           // El id nuevo lo da la respuesta de enviar o bloquear; sin él,
           // «Cancelar solicitud» y «Desbloquear» no tendrían qué deshacer
           friendshipId:
-            status === 'NONE' ? null : (friendshipId ?? prev.friendship?.friendshipId ?? null),
+            status === 'NONE'
+              ? null
+              : (friendshipId ?? prev.friendship?.friendshipId ?? null),
         },
         isFriend: sigueAmigo,
         stats: sigueAmigo ? prev.stats : null,
@@ -278,7 +295,11 @@ const PlayerProfilePage = () => {
   // hasta ese momento llegaban en null, y bloquear las cierra. Nada cambia
   // antes de que el servidor conteste: si falla, el botón sigue como estaba
   // y lo dice un aviso.
-  const runFriendshipAction = async (action, successKey, { statusAfter, forbiddenKey, notFoundKey } = {}) => {
+  const runFriendshipAction = async (
+    action,
+    successKey,
+    { statusAfter, forbiddenKey, notFoundKey } = {},
+  ) => {
     if (isActing) return;
 
     setIsActing(true);
@@ -289,17 +310,24 @@ const PlayerProfilePage = () => {
       } catch (error) {
         if (!montado.current) return;
         let clave = 'common:errors.generic';
-        if (error?.status === HTTP_FORBIDDEN && forbiddenKey) clave = forbiddenKey;
+        if (error?.status === HTTP_FORBIDDEN && forbiddenKey)
+          clave = forbiddenKey;
         // Un 404 puede ser que ese jugador te bloqueó (fase 3): no se dice que no existe
-        else if (error?.status === HTTP_NOT_FOUND && notFoundKey) clave = notFoundKey;
+        else if (error?.status === HTTP_NOT_FOUND && notFoundKey)
+          clave = notFoundKey;
         customToast.error(t(clave));
         return;
       }
       if (!montado.current) return;
       customToast.success(t(successKey));
-      const reloaded = await loadProfile({ avisar: false });
+      generacion.current += 1;
+      const recarga = await recargar();
       if (!montado.current) return;
-      if (!reloaded) {
+      // Un 404 ya es una respuesta: la ficha pasa a «no existe»
+      const recargaFallida =
+        recarga.estado === 'fallida' &&
+        recarga.error?.status !== HTTP_NOT_FOUND;
+      if (recargaFallida) {
         applyRelationshipLocally(statusAfter, result?.id ?? null);
         customToast.error(t('playerProfile:errors.reloadFailed'));
       }
@@ -318,7 +346,7 @@ const PlayerProfilePage = () => {
     // compartido.
     return (
       <div className={`${PANTALLA_MENOS_BARRA_INFERIOR} bg-gray-50`}>
-        <HeaderAuth />
+        <HeaderAuth user={user} />
         <BlockLoader texto={t('playerProfile:loading')} />
       </div>
     );
@@ -327,17 +355,22 @@ const PlayerProfilePage = () => {
   if (isNotFound || !profile) {
     return (
       <div className={`${PANTALLA_MENOS_BARRA_INFERIOR} bg-gray-50`}>
-        <HeaderAuth />
+        <HeaderAuth user={user} />
         <main className="max-w-2xl mx-auto px-4 py-6 pb-24">
           <div
             className="text-center py-16 px-6 bg-white border border-gray-200 rounded-lg"
             data-testid="player-profile-not-found"
           >
-            <UserX className="w-10 h-10 mx-auto text-gray-300" aria-hidden="true" />
+            <UserX
+              className="w-10 h-10 mx-auto text-gray-300"
+              aria-hidden="true"
+            />
             <h2 className="mt-3 text-base font-semibold text-gray-900">
               {t('playerProfile:notFound.title')}
             </h2>
-            <p className="mt-1 text-sm text-gray-500">{t('playerProfile:notFound.hint')}</p>
+            <p className="mt-1 text-sm text-gray-500">
+              {t('playerProfile:notFound.hint')}
+            </p>
             <Link
               to="/feed"
               className="mt-4 inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-primary rounded-md hover:bg-primary/90"
@@ -355,7 +388,9 @@ const PlayerProfilePage = () => {
   const isBlocked = relationship === 'BLOCKED';
   // El hándicap va en la rejilla de estadísticas cuando la hay; si no, bajo
   // el nombre (y no en los dos sitios a la vez, revisión FE-2)
-  const hasStatsGrid = Boolean(profile.isFriend && profile.stats && profile.stats.roundsPlayed > 0);
+  const hasStatsGrid = Boolean(
+    profile.isFriend && profile.stats && profile.stats.roundsPlayed > 0,
+  );
 
   const handleConfirm = () => {
     const accion = pendingConfirm;
@@ -364,20 +399,20 @@ const PlayerProfilePage = () => {
       runFriendshipAction(
         () => removeFriendUseCase.execute(profile.friendship.friendshipId),
         'playerProfile:friendship.removed',
-        { statusAfter: 'NONE' }
+        { statusAfter: 'NONE' },
       );
     } else if (accion === 'block') {
       runFriendshipAction(
         () => blockUserUseCase.execute(profile.id),
         'playerProfile:friendship.blockedNow',
-        { statusAfter: 'BLOCKED' }
+        { statusAfter: 'BLOCKED' },
       );
     }
   };
 
   return (
     <div className={`${PANTALLA_MENOS_BARRA_INFERIOR} bg-gray-50`}>
-      <HeaderAuth />
+      <HeaderAuth user={user} />
 
       <main className="max-w-2xl mx-auto px-4 py-6 pb-24">
         {/* En móvil la vuelta la da la flecha de la cabecera contextual. En
@@ -408,20 +443,28 @@ const PlayerProfilePage = () => {
         >
           <Avatar userId={profile.id} size="lg" />
           <div className="min-w-0 flex-1">
-            <h2 className="text-lg font-bold text-gray-900 truncate">{nombre}</h2>
+            <h2 className="text-lg font-bold text-gray-900 truncate">
+              {nombre}
+            </h2>
             {/* Con un bloqueo de por medio, solo nombre y foto: el backend
                 manda el contador a 0 y el hándicap en null, y aquí no se
                 pintan para no decir «0 amigos» de quien sí los tiene */}
             {!isBlocked && (
               <>
                 <p className="text-sm text-gray-500">
-                  {t('playerProfile:friendsCount', { count: profile.friendsCount })}
+                  {t('playerProfile:friendsCount', {
+                    count: profile.friendsCount,
+                  })}
                 </p>
                 {!hasStatsGrid && (
-                  <p className="text-sm text-gray-500" data-testid="player-profile-handicap">
+                  <p
+                    className="text-sm text-gray-500"
+                    data-testid="player-profile-handicap"
+                  >
                     {t('playerProfile:handicap')}{' '}
                     <span className="font-semibold text-gray-900">
-                      {formatoDeIndice(profile.handicap) ?? t('playerProfile:stats.noValue')}
+                      {formatoDeIndice(profile.handicap) ??
+                        t('playerProfile:stats.noValue')}
                     </span>
                   </p>
                 )}
@@ -447,40 +490,53 @@ const PlayerProfilePage = () => {
             runFriendshipAction(
               () => sendFriendRequestUseCase.execute(profile.id),
               'playerProfile:friendship.requestSent',
-              { statusAfter: 'PENDING_SENT', notFoundKey: 'playerProfile:errors.requestNotSent' }
+              {
+                statusAfter: 'PENDING_SENT',
+                notFoundKey: 'playerProfile:errors.requestNotSent',
+              },
             )
           }
           onAccept={() =>
             runFriendshipAction(
-              () => respondFriendRequestUseCase.execute(profile.friendship.friendshipId, 'ACCEPT'),
+              () =>
+                respondFriendRequestUseCase.execute(
+                  profile.friendship.friendshipId,
+                  'ACCEPT',
+                ),
               'playerProfile:friendship.accepted',
-              { statusAfter: 'ACCEPTED' }
+              { statusAfter: 'ACCEPTED' },
             )
           }
           onDecline={() =>
             runFriendshipAction(
-              () => respondFriendRequestUseCase.execute(profile.friendship.friendshipId, 'DECLINE'),
+              () =>
+                respondFriendRequestUseCase.execute(
+                  profile.friendship.friendshipId,
+                  'DECLINE',
+                ),
               'playerProfile:friendship.declined',
-              { statusAfter: 'NONE' }
+              { statusAfter: 'NONE' },
             )
           }
           onCancelRequest={() =>
             runFriendshipAction(
-              () => removeFriendUseCase.execute(profile.friendship.friendshipId),
+              () =>
+                removeFriendUseCase.execute(profile.friendship.friendshipId),
               'playerProfile:friendship.cancelled',
-              { statusAfter: 'NONE' }
+              { statusAfter: 'NONE' },
             )
           }
           onUnblock={() =>
             runFriendshipAction(
-              () => removeFriendUseCase.execute(profile.friendship.friendshipId),
+              () =>
+                removeFriendUseCase.execute(profile.friendship.friendshipId),
               'playerProfile:friendship.unblocked',
               {
                 statusAfter: 'NONE',
                 // Solo desbloquea quien bloqueó: el perfil no dice quién fue,
                 // y el 403 del otro lado se explica en vez de un error genérico
                 forbiddenKey: 'playerProfile:friendship.onlyBlockerCanUnblock',
-              }
+              },
             )
           }
         />
@@ -490,9 +546,23 @@ const PlayerProfilePage = () => {
             falla, lo dice un aviso */}
         <ConfirmModal
           isOpen={pendingConfirm !== null}
-          title={pendingConfirm ? t(`playerProfile:confirm.${pendingConfirm}.title`, { name: nombre }) : ''}
-          message={pendingConfirm ? t(`playerProfile:confirm.${pendingConfirm}.message`) : ''}
-          confirmText={pendingConfirm ? t(`playerProfile:confirm.${pendingConfirm}.confirm`) : undefined}
+          title={
+            pendingConfirm
+              ? t(`playerProfile:confirm.${pendingConfirm}.title`, {
+                  name: nombre,
+                })
+              : ''
+          }
+          message={
+            pendingConfirm
+              ? t(`playerProfile:confirm.${pendingConfirm}.message`)
+              : ''
+          }
+          confirmText={
+            pendingConfirm
+              ? t(`playerProfile:confirm.${pendingConfirm}.confirm`)
+              : undefined
+          }
           isDestructive
           onCancel={() => setPendingConfirm(null)}
           onConfirm={handleConfirm}
@@ -520,7 +590,8 @@ const PlayerProfilePage = () => {
                 {t('playerProfile:activity.title')}
               </h3>
 
-              {isActivityHidden || (activityCards.length === 0 && !activity?.nextCursor) ? (
+              {isActivityHidden ||
+              (activityCards.length === 0 && !activity?.nextCursor) ? (
                 <p className="p-4 text-sm text-gray-500 bg-white border border-gray-200 rounded-lg">
                   {isActivityHidden
                     ? t('playerProfile:activity.hidden')
@@ -544,7 +615,8 @@ const PlayerProfilePage = () => {
                     )}
                   />
 
-                  {(activityCards.length > visibleCards || activity.nextCursor) && (
+                  {(activityCards.length > visibleCards ||
+                    activity.nextCursor) && (
                     <button
                       type="button"
                       onClick={handleLoadMore}
@@ -568,11 +640,16 @@ const PlayerProfilePage = () => {
             className="mt-4 p-4 text-center bg-white border border-gray-200 rounded-lg"
             data-testid="player-profile-private"
           >
-            <Lock className="w-6 h-6 mx-auto text-gray-300" aria-hidden="true" />
+            <Lock
+              className="w-6 h-6 mx-auto text-gray-300"
+              aria-hidden="true"
+            />
             <h3 className="mt-2 text-sm font-semibold text-gray-900">
               {t('playerProfile:private.title')}
             </h3>
-            <p className="mt-1 text-sm text-gray-500">{t('playerProfile:private.hint')}</p>
+            <p className="mt-1 text-sm text-gray-500">
+              {t('playerProfile:private.hint')}
+            </p>
           </section>
         )}
       </main>
@@ -615,7 +692,9 @@ const FriendshipAction = ({
         className="mt-3 flex items-center justify-between gap-3 py-2 pl-3 pr-2 bg-white border border-gray-200 rounded-lg"
         data-testid="player-profile-friendship-sent"
       >
-        <span className="min-w-0 text-sm text-gray-600">{t('playerProfile:friendship.sent')}</span>
+        <span className="min-w-0 text-sm text-gray-600">
+          {t('playerProfile:friendship.sent')}
+        </span>
         <button
           type="button"
           onClick={onCancelRequest}
@@ -712,10 +791,13 @@ const PlayerStatsSummary = ({ profile, t }) => {
   const stats = profile.stats;
 
   const format = (value) =>
-    value === null || value === undefined ? t('playerProfile:stats.noValue') : value.toFixed(1);
+    value === null || value === undefined
+      ? t('playerProfile:stats.noValue')
+      : value.toFixed(1);
 
   const formatToPar = (value) => {
-    if (value === null || value === undefined) return t('playerProfile:stats.noValue');
+    if (value === null || value === undefined)
+      return t('playerProfile:stats.noValue');
     return value > 0 ? `+${value.toFixed(1)}` : value.toFixed(1);
   };
 
@@ -725,18 +807,29 @@ const PlayerStatsSummary = ({ profile, t }) => {
         className="mt-4 p-4 bg-white border border-gray-200 rounded-lg"
         data-testid="player-profile-stats-empty"
       >
-        <h3 className="text-sm font-semibold text-gray-900">{t('playerProfile:stats.title')}</h3>
-        <p className="mt-1 text-sm text-gray-500">{t('playerProfile:stats.empty')}</p>
+        <h3 className="text-sm font-semibold text-gray-900">
+          {t('playerProfile:stats.title')}
+        </h3>
+        <p className="mt-1 text-sm text-gray-500">
+          {t('playerProfile:stats.empty')}
+        </p>
       </section>
     );
   }
 
   const items = [
-    { key: 'handicap', label: t('playerProfile:stats.handicap'), value: formatoDeIndice(profile.handicap) ?? t('playerProfile:stats.noValue') },
+    {
+      key: 'handicap',
+      label: t('playerProfile:stats.handicap'),
+      value:
+        formatoDeIndice(profile.handicap) ?? t('playerProfile:stats.noValue'),
+    },
     {
       key: 'estimatedIndex',
       label: t('playerProfile:stats.estimatedIndex'),
-      value: formatoDeIndice(stats.estimatedIndex) ?? t('playerProfile:stats.noValue'),
+      value:
+        formatoDeIndice(stats.estimatedIndex) ??
+        t('playerProfile:stats.noValue'),
       hint: t('playerProfile:stats.estimatedIndexHint'),
     },
     {
@@ -763,7 +856,9 @@ const PlayerStatsSummary = ({ profile, t }) => {
 
   return (
     <section className="mt-4" data-testid="player-profile-stats">
-      <h3 className="mb-2 text-sm font-semibold text-gray-900">{t('playerProfile:stats.title')}</h3>
+      <h3 className="mb-2 text-sm font-semibold text-gray-900">
+        {t('playerProfile:stats.title')}
+      </h3>
       <div className="grid grid-cols-3 gap-2">
         {items.map((item) => (
           <div
@@ -773,7 +868,11 @@ const PlayerStatsSummary = ({ profile, t }) => {
           >
             <p className="text-xs text-gray-500">{item.label}</p>
             <p className="text-lg font-bold text-gray-900">{item.value}</p>
-            {item.hint && <p className="mt-0.5 text-[11px] leading-tight text-gray-400">{item.hint}</p>}
+            {item.hint && (
+              <p className="mt-0.5 text-[11px] leading-tight text-gray-400">
+                {item.hint}
+              </p>
+            )}
           </div>
         ))}
       </div>

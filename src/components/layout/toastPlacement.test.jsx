@@ -14,28 +14,37 @@ import { resolve } from 'node:path';
  * sigue declarada. El resultado visual hay que mirarlo en un dispositivo real.
  */
 
-const read = (relativePath) => readFileSync(resolve(process.cwd(), relativePath), 'utf8');
+const read = (relativePath) =>
+  readFileSync(resolve(process.cwd(), relativePath), 'utf8');
 
 describe('toast placement', () => {
   it('lets react-hot-toast take a class on its container', () => {
     // Si una futura version renombra la prop, el desfase dejaria de aplicarse
     // en silencio: el toast volveria a taparse contra la navegacion
-    const { container } = render(<Toaster containerClassName="toast-container-above-bottom-nav" />);
+    const { container } = render(
+      <Toaster containerClassName="toast-container-above-bottom-nav" />,
+    );
 
-    expect(container.querySelector('.toast-container-above-bottom-nav')).not.toBeNull();
+    expect(
+      container.querySelector('.toast-container-above-bottom-nav'),
+    ).not.toBeNull();
   });
 
   it('declares the offset that clears the bottom navigation', () => {
     const css = read('src/index.css');
 
     expect(css).toContain('.toast-container-above-bottom-nav');
-    expect(css).toContain('bottom: calc(6rem + env(safe-area-inset-bottom)) !important');
+    expect(css).toContain(
+      'bottom: calc(6rem + env(safe-area-inset-bottom)) !important',
+    );
   });
 
   it('restores the default offset from md upwards', () => {
     // Por encima de `md` la navegacion inferior no se pinta (`md:hidden`)
     const css = read('src/index.css');
-    const mediaQuery = css.match(/@media \(min-width: 768px\) \{[^}]*\.toast-container-above-bottom-nav \{[^}]*\}/s);
+    const mediaQuery = css.match(
+      /@media \(min-width: 768px\) \{[^}]*\.toast-container-above-bottom-nav \{[^}]*\}/s,
+    );
 
     expect(mediaQuery).not.toBeNull();
     expect(mediaQuery[0]).toContain('bottom: 16px !important');
@@ -44,7 +53,10 @@ describe('toast placement', () => {
   it('ties the offset to the bottom navigation being visible', () => {
     const app = read('src/App.jsx');
 
-    expect(app).toContain("containerClassName={showBottomNav ? 'toast-container-above-bottom-nav' : undefined}");
+    // Sin depender del formato (Prettier puede partirlo en varias líneas)
+    expect(app).toMatch(
+      /containerClassName=\{\s*showBottomNav\s*\?\s*'toast-container-above-bottom-nav'\s*:\s*undefined\s*\}/,
+    );
   });
 
   it('mounts a single Toaster, inside App', () => {
