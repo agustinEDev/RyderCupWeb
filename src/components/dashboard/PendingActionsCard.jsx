@@ -59,30 +59,31 @@ const PendingActionsCard = ({
   // Arranca con lo ultimo que esta tarjeta llego a enseñar (FE #502). El panel
   // se remonta cada vez que se vuelve a Inicio desde la barra inferior, asi que
   // sin esto cada vuelta empezaba de cero y pintaba el esqueleto amarillo
-  const recordado = loQueSeEnseñoAntes(user?.id);
+  // Una vez, al montar: lo que siembra los estados y lo aplicado (/code-review)
+  const [inicial] = useState(() => loRecordado(loQueSeEnseñoAntes(user?.id)));
 
   const [pendingInvitations, setPendingInvitations] = useState(
-    recordado?.pendingInvitations ?? 0,
+    inicial.pendingInvitations,
   );
   const [pendingEnrollments, setPendingEnrollments] = useState(
-    recordado?.pendingEnrollments ?? [],
+    inicial.pendingEnrollments,
   );
   const [pendingFriendRequests, setPendingFriendRequests] = useState(
-    recordado?.pendingFriendRequests ?? 0,
+    inicial.pendingFriendRequests,
   );
   const [activeQuickMatches, setActiveQuickMatches] = useState(
-    recordado?.activeQuickMatches ?? [],
+    inicial.activeQuickMatches,
   );
   const [sobresPendientes, setSobresPendientes] = useState(
-    recordado?.sobresPendientes ?? [],
+    inicial.sobresPendientes,
   );
   const [sesionesSinPartidos, setSesionesSinPartidos] = useState(
-    recordado?.sesionesSinPartidos ?? [],
+    inicial.sesionesSinPartidos,
   );
   // Las plazas que le asignaron desde una lista de espera (FE #824): sin
   // correo, se entera aquí hasta que pulsa «Entendido»
   const [plazasAsignadas, setPlazasAsignadas] = useState(
-    recordado?.plazasAsignadas ?? [],
+    inicial.plazasAsignadas,
   );
   // Las que ya se mandaron como vistas: un doble toque no repite el envío, y una
   // lectura lanzada antes no las devuelve a la lista (revisor)
@@ -112,6 +113,8 @@ const PendingActionsCard = ({
     setSobresPendientes(deLaNueva.sobresPendientes);
     setSesionesSinPartidos(deLaNueva.sesionesSinPartidos);
     setPlazasAsignadas(deLaNueva.plazasAsignadas);
+    // Lo que la anterior tenía a medio enviar no es de esta
+    setEnviandoVista(new Set());
   }
   // Solo se enseña la espera cuando NO hay nada que enseñar: con lo de antes en
   // pantalla, el refresco va en silencio
@@ -120,7 +123,7 @@ const PendingActionsCard = ({
   // Lo ultimo que se llego a APLICAR, que es lo que hay que recordar. En una ref
   // y no leyendo los estados dentro del efecto: eso obligaria a meterlos en sus
   // dependencias y el efecto se relanzaria a si mismo
-  const ultimoAplicado = useRef(loRecordado(recordado));
+  const ultimoAplicado = useRef(inicial);
   // De qué cuenta es lo aplicado: lo de la anterior no puede quedarse, ni
   // guardarse en el móvil, bajo la nueva si a esta le falla una petición (revisor)
   const aplicadoDe = useRef(user?.id);
@@ -290,24 +293,27 @@ const PendingActionsCard = ({
   // la memoria (si no, volvería al volver a Inicio). Si falla, se queda y se dice
   const entendido = async (plaza) => {
     setEnviandoVista((s) => new Set(s).add(plaza.roundId));
+    // De quién era: si al volver la tarjeta es de otra cuenta, esto no toca lo
+    // suyo ni guarda lo de la nueva a nombre de la vieja (/code-review)
+    const deQuien = user?.id;
     try {
       await acknowledgeAssignedPlaceUseCase.execute(plaza.roundId);
+      if (!montada.current || aplicadoDe.current !== deQuien) return;
       vistas.current.add(plaza.roundId);
-      if (!montada.current) return;
       const quedan = (lista) =>
         lista.filter((p) => p.roundId !== plaza.roundId);
       ultimoAplicado.current = {
         ...ultimoAplicado.current,
         plazasAsignadas: quedan(ultimoAplicado.current.plazasAsignadas),
       };
-      recuerdaLasAccionesPendientes({ ...ultimoAplicado.current }, user?.id);
+      recuerdaLasAccionesPendientes({ ...ultimoAplicado.current }, deQuien);
       setPlazasAsignadas(quedan);
     } catch (error) {
       // El nuestro, traducido: el del servidor puede venir en otro idioma (CodeRabbit)
       console.error('No se ha podido marcar la plaza como vista:', error);
       customToast.error(t('pendingActions.placeAssignedOkFailed'));
     } finally {
-      if (montada.current)
+      if (montada.current && aplicadoDe.current === deQuien)
         setEnviandoVista((s) => {
           const sin = new Set(s);
           sin.delete(plaza.roundId);

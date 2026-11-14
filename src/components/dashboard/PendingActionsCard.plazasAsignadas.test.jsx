@@ -207,6 +207,69 @@ describe('PendingActionsCard · plaza asignada desde la espera (FE #824)', () =>
     expect(memoria.loQueSeEnseñoAntes(baseUser.id).plazasAsignadas).toEqual([]);
   });
 
+  // /code-review (14 nov 2026): un «Entendido» que acaba con otra cuenta en la
+  // misma tarjeta no toca nada de la nueva ni guarda lo suyo a nombre de la vieja
+  it('17h: un «Entendido» que acaba tras cambiar de cuenta no toca la nueva', async () => {
+    const memoria = await import('../../services/accionesPendientes');
+    const otra = { ...baseUser, id: 'user-2' };
+    const pinta = (user, competitions = []) => (
+      <MemoryRouter>
+        <PendingActionsCard
+          user={user}
+          competitions={competitions}
+          upcomingMatches={0}
+        />
+      </MemoryRouter>
+    );
+    let acaba;
+    mockAcknowledge.mockReturnValue(
+      new Promise((r) => {
+        acaba = r;
+      }),
+    );
+    // Las dos cuentas tienen plaza en la misma sesión
+    const DE_LA_OTRA = { ...PLAZA, competitionName: 'De la otra cuenta' };
+    mockListMyAssignedPlaces
+      .mockResolvedValueOnce([PLAZA])
+      .mockResolvedValue([DE_LA_OTRA]);
+    const { rerender } = render(pinta(baseUser));
+    fireEvent.click(
+      await screen.findByRole('button', {
+        name: 'pendingActions.placeAssignedOk',
+      }),
+    );
+
+    rerender(pinta(otra));
+    await vi.waitFor(() =>
+      expect(screen.getByTestId('plaza-asignada-r1')).toHaveTextContent(
+        'De la otra cuenta',
+      ),
+    );
+    acaba();
+    await new Promise((r) => setTimeout(r, 0));
+
+    // La nueva sigue viendo la suya, con su «Entendido» activo, y lo de la vieja
+    // no se guarda con la nueva
+    expect(screen.getByTestId('plaza-asignada-r1')).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: 'pendingActions.placeAssignedOk' }),
+    ).toBeEnabled();
+    expect(memoria.loQueSeEnseñoAntes(otra.id).plazasAsignadas).toHaveLength(1);
+    const deLaVieja = memoria.loQueSeEnseñoAntes(baseUser.id);
+    expect(JSON.stringify(deLaVieja ?? {})).not.toMatch(/De la otra cuenta/);
+
+    // Y en su siguiente carga la plaza de la nueva no sale como ya vista
+    const cargas = mockListMyAssignedPlaces.mock.calls.length;
+    rerender(pinta(otra, [{ id: 'c9', name: 'Otra', status: 'ACTIVE' }]));
+    await vi.waitFor(() =>
+      expect(mockListMyAssignedPlaces.mock.calls.length).toBeGreaterThan(
+        cargas,
+      ),
+    );
+    await new Promise((r) => setTimeout(r, 0));
+    expect(screen.getByTestId('plaza-asignada-r1')).toBeInTheDocument();
+  });
+
   it('17b: si «Entendido» falla, la fila se queda y se dice', async () => {
     mockListMyAssignedPlaces.mockResolvedValue([PLAZA]);
     mockAcknowledge.mockRejectedValue(new Error('sin red'));

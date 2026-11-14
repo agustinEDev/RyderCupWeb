@@ -29,7 +29,10 @@ let guardado = null;
  */
 export const loQueSeEnseñoAntes = (usuarioId) => {
   if (guardado && guardado.usuarioId === usuarioId) return guardado.datos;
-  return lasPendientesGuardadas(usuarioId);
+  // Lo del móvil se lee una vez: se queda en memoria, de esa cuenta (/code-review)
+  const delMovil = lasPendientesGuardadas(usuarioId);
+  if (delMovil) guardado = { usuarioId, datos: delMovil };
+  return delMovil;
 };
 
 /**

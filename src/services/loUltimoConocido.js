@@ -305,7 +305,9 @@ const enPlano = (campos, x) =>
 const esUnObjeto = (x) =>
   Boolean(x) && typeof x === 'object' && !Array.isArray(x);
 
-const conId = (x) => esUnObjeto(x) && typeof x.id === 'string' && x.id !== '';
+/** Con su clave (el id, por defecto) en texto no vacío. */
+const conClave = (x, clave = 'id') =>
+  esUnObjeto(x) && typeof x[clave] === 'string' && x[clave] !== '';
 
 /**
  * Lo que se pinta tiene que ser de su tipo: un nombre que no es texto (un
@@ -340,8 +342,11 @@ const TIPOS_DE_LA_PARTIDA = {
 
 const TIPOS_DE_LA_COMPETICION = { name: textoONada, status: textoONada };
 
-const deSuTipo = (tipos) => (x) =>
-  conId(x) && Object.entries(tipos).every(([campo, vale]) => vale(x[campo]));
+const deSuTipo =
+  (tipos, clave = 'id') =>
+  (x) =>
+    conClave(x, clave) &&
+    Object.entries(tipos).every(([campo, vale]) => vale(x[campo]));
 
 /**
  * Lo que enseña «Requiere tu Atención», para pintarlo al abrir la app de cero
@@ -378,14 +383,6 @@ const CIFRAS_DE_PENDIENTES = ['pendingInvitations', 'pendingFriendRequests'];
 
 const camposDe = ({ clave, tipos }) => [clave, ...Object.keys(tipos)];
 
-const elementoValido =
-  ({ clave, tipos }) =>
-  (x) =>
-    esUnObjeto(x) &&
-    typeof x[clave] === 'string' &&
-    x[clave] !== '' &&
-    Object.entries(tipos).every(([campo, vale]) => vale(x[campo]));
-
 /** Lo que se enseñó, en valores sueltos y solo lo que se pinta. */
 const pendientesEnPlano = (p) => ({
   ...Object.fromEntries(CIFRAS_DE_PENDIENTES.map((c) => [c, p[c]])),
@@ -413,7 +410,7 @@ const pendientesValidas = (p) =>
           Object.entries(LISTAS_DE_PENDIENTES).map(([lista, forma]) => [
             lista,
             Array.isArray(p[lista])
-              ? p[lista].filter(elementoValido(forma))
+              ? p[lista].filter(deSuTipo(forma.tipos, forma.clave))
               : [],
           ]),
         ),
