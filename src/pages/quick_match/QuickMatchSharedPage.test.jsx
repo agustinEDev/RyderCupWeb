@@ -26,8 +26,11 @@ vi.mock('../../hooks/useAuth', () => {
   return { useAuth: () => ({ user, loading: false }) };
 });
 
+// Anota qué usuario recibe la cabecera: sin él pinta «?» y esconde Admin (#1129)
 vi.mock('../../components/layout/HeaderAuth', () => ({
-  default: () => <header data-testid="header" />,
+  default: ({ user }) => (
+    <header data-testid="header" data-usuario={user?.id ?? 'ninguno'} />
+  ),
 }));
 
 // La pantalla de solo lectura no anota: si tocara el hook de anotación (con su
@@ -151,6 +154,33 @@ describe("QuickMatchSharedPage — a friend's finished quick match, read-only (K
     vi.clearAllMocks();
     getShared.mockResolvedValue(compartida());
     getCourse.mockResolvedValue({ name: 'El Saler', holes: hoyos, tees: [] });
+  });
+
+  // #1129: sin el usuario, la cabecera pintaba «?» y escondía lo de Admin
+  describe('the header gets the signed-in user', () => {
+    const cabecera = () => screen.getByTestId('header');
+
+    it('C3a: while the match loads', () => {
+      getShared.mockReturnValue(new Promise(() => {}));
+      pinta();
+
+      expect(cabecera()).toHaveAttribute('data-usuario', 'me');
+    });
+
+    it('C3b: when the match cannot be seen', async () => {
+      getShared.mockRejectedValue(error(403));
+      pinta();
+
+      await screen.findByTestId('quick-match-shared-forbidden');
+      expect(cabecera()).toHaveAttribute('data-usuario', 'me');
+    });
+
+    it('C3c: on the read-only match', async () => {
+      pinta();
+
+      await screen.findByTestId('quick-match-classification-table');
+      expect(cabecera()).toHaveAttribute('data-usuario', 'me');
+    });
   });
 
   it('asks the shared endpoint and the course, never the scoring detail', async () => {

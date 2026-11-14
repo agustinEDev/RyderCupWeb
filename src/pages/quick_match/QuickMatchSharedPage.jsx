@@ -1,6 +1,7 @@
 import { useCallback, useMemo, useRef, useState } from 'react';
 import { Navigate, useLocation, useNavigate, useParams } from 'react-router';
 import { useGoBack } from '../../hooks/useGoBack';
+import { useAuth } from '../../hooks/useAuth';
 import { useCargaCancelableEffect } from '../../hooks/useCargaCancelableEffect';
 import { useTranslation } from 'react-i18next';
 import { ArrowLeft, Eye, Lock, RefreshCw, SearchX } from 'lucide-react';
@@ -48,6 +49,8 @@ const QuickMatchSharedPage = () => {
   // A la pantalla anterior; sin ella (enlace directo), a Actividad
   const volver = useGoBack('/feed');
   const { t } = useTranslation(['quickMatch', 'common']);
+  // Para la cabecera: sin él pinta «?» y esconde lo de Admin (#1129)
+  const { user } = useAuth();
 
   // La partida y su fallo, con la partida de la que son: al pasar a otra sin
   // salir, la anterior nunca se pinta bajo la URL de la nueva. Mientras llega,
@@ -150,7 +153,7 @@ const QuickMatchSharedPage = () => {
   if (!cargada || (cargando && !partida)) {
     return (
       <div className={`${PANTALLA_MENOS_BARRA_INFERIOR} bg-gray-50`}>
-        <HeaderAuth />
+        <HeaderAuth user={user} />
         <BlockLoader texto={t('scoring.matchHeader')} />
       </div>
     );
@@ -159,7 +162,7 @@ const QuickMatchSharedPage = () => {
   if (fallo !== null || !partida) {
     return (
       <div className={`${PANTALLA_MENOS_BARRA_INFERIOR} bg-gray-50`}>
-        <HeaderAuth />
+        <HeaderAuth user={user} />
         <main className="max-w-2xl mx-auto px-4 py-6 pb-24">
           <SinPartida
             fallo={fallo}
@@ -188,7 +191,7 @@ const QuickMatchSharedPage = () => {
 
   return (
     <div className={`${PANTALLA_MENOS_BARRA_INFERIOR} bg-gray-50`}>
-      <HeaderAuth />
+      <HeaderAuth user={user} />
 
       <main className="max-w-4xl mx-auto px-4 py-4 pb-24">
         {/* En móvil la vuelta la da la cabecera contextual (por historial) */}

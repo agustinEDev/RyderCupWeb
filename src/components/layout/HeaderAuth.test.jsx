@@ -54,6 +54,38 @@ const renderHeader = (path, props = {}) =>
  * lugar de repetir la marca en cada pantalla.
  */
 describe('HeaderAuth', () => {
+  // #1129: lo que cambia cuando una pantalla no le pasa el usuario
+  describe('who is signed in', () => {
+    it('C4a: a player sees their initials and no Admin badge', () => {
+      renderHeader('/feed');
+
+      expect(screen.getByText('AS')).toBeInTheDocument();
+      expect(screen.queryByTestId('admin-badge')).not.toBeInTheDocument();
+      fireEvent.click(screen.getByText('AS'));
+      expect(
+        screen.queryByText('header.administration'),
+      ).not.toBeInTheDocument();
+    });
+
+    it('C4b: an admin sees their initials, the Admin badge and the admin entries', () => {
+      renderHeader('/feed', { user: { ...user, is_admin: true } });
+
+      expect(screen.getByText('AS')).toBeInTheDocument();
+      expect(screen.getByTestId('admin-badge')).toBeInTheDocument();
+      fireEvent.click(screen.getByText('AS'));
+      expect(
+        screen.getAllByText('header.administration').length,
+      ).toBeGreaterThan(0);
+    });
+
+    it('C4c: without a user it shows «?», which is what the three screens showed', () => {
+      renderHeader('/feed', { user: undefined });
+
+      expect(screen.getByText('?')).toBeInTheDocument();
+      expect(screen.queryByTestId('admin-badge')).not.toBeInTheDocument();
+    });
+  });
+
   it('shows the screen title instead of the brand on mobile', () => {
     renderHeader('/profile/devices');
 

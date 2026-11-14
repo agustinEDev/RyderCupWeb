@@ -346,7 +346,7 @@ const PlayerProfilePage = () => {
     // compartido.
     return (
       <div className={`${PANTALLA_MENOS_BARRA_INFERIOR} bg-gray-50`}>
-        <HeaderAuth />
+        <HeaderAuth user={user} />
         <BlockLoader texto={t('playerProfile:loading')} />
       </div>
     );
@@ -355,7 +355,7 @@ const PlayerProfilePage = () => {
   if (isNotFound || !profile) {
     return (
       <div className={`${PANTALLA_MENOS_BARRA_INFERIOR} bg-gray-50`}>
-        <HeaderAuth />
+        <HeaderAuth user={user} />
         <main className="max-w-2xl mx-auto px-4 py-6 pb-24">
           <div
             className="text-center py-16 px-6 bg-white border border-gray-200 rounded-lg"
@@ -412,7 +412,7 @@ const PlayerProfilePage = () => {
 
   return (
     <div className={`${PANTALLA_MENOS_BARRA_INFERIOR} bg-gray-50`}>
-      <HeaderAuth />
+      <HeaderAuth user={user} />
 
       <main className="max-w-2xl mx-auto px-4 py-6 pb-24">
         {/* En móvil la vuelta la da la flecha de la cabecera contextual. En
