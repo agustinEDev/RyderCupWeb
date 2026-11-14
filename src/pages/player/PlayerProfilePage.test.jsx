@@ -22,8 +22,11 @@ vi.mock('../../hooks/useAuth', () => {
   return { useAuth: () => ({ user, loading: false }) };
 });
 
+// Anota qué usuario recibe la cabecera: sin él pinta «?» y esconde Admin (#1129)
 vi.mock('../../components/layout/HeaderAuth', () => ({
-  default: () => <header data-testid="header" />,
+  default: ({ user }) => (
+    <header data-testid="header" data-usuario={user?.id ?? 'ninguno'} />
+  ),
 }));
 
 vi.mock('../../components/ui/Avatar', () => ({
@@ -155,6 +158,33 @@ describe('PlayerProfilePage', () => {
     removeFriend.mockResolvedValue(undefined);
     blockUser.mockResolvedValue({});
     getGamesTogether.mockResolvedValue({ games: [], nextCursor: null });
+  });
+
+  // #1129: sin el usuario, la cabecera pintaba «?» y escondía lo de Admin
+  describe('the header gets the signed-in user', () => {
+    const cabecera = () => screen.getByTestId('header');
+
+    it('C2a: while the profile loads', () => {
+      getProfile.mockReturnValue(new Promise(() => {}));
+      renderProfile();
+
+      expect(cabecera()).toHaveAttribute('data-usuario', 'me');
+    });
+
+    it('C2b: when the profile is not found', async () => {
+      getProfile.mockRejectedValue(error(404));
+      renderProfile();
+
+      await screen.findByTestId('player-profile-not-found');
+      expect(cabecera()).toHaveAttribute('data-usuario', 'me');
+    });
+
+    it('C2c: on the profile card', async () => {
+      renderProfile();
+
+      await screen.findByTestId('player-profile-card');
+      expect(cabecera()).toHaveAttribute('data-usuario', 'me');
+    });
   });
 
   describe('the public card anyone sees', () => {
