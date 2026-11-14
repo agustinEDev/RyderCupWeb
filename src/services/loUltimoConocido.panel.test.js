@@ -7,6 +7,7 @@ import {
   olvidaTodo,
 } from './loUltimoConocido';
 import PlayerStats from '../domain/entities/PlayerStats';
+import RecentMatch from '../domain/entities/RecentMatch';
 
 /**
  * LA TABLA G — lo último que se vio del panel (Agustín, 14 nov 2026).
@@ -22,6 +23,11 @@ import PlayerStats from '../domain/entities/PlayerStats';
  *   G3 las partes llegan por separado     | se juntan si son de la misma cuenta
  *   G4 lo que no hace falta               | no se guarda (solo id, nombre, estado)
  *   G9 las cifras y el hándicap           | se guardan sus valores, sin diferenciales
+ *   G10 las partidas son entidades        | se guardan sus valores y se pueden rehacer
+ *   G11 lo guardado es de otra versión    | no se usa
+ *   G12 elementos sin id                  | se descartan
+ *   G13 cifras que no son números         | se descartan
+ *   G14 una cifra que no vino             | no vuelve como null (la entidad pone la suya)
  *   G5 se cierra la sesión                | se borra y no se reescribe
  *   G6 el móvil no tiene sitio            | no se guarda y no revienta
  *   G7 lo guardado está roto              | nada
@@ -45,7 +51,11 @@ describe('loUltimoConocido, el panel', () => {
     status: 'ACTIVE',
     ...extra,
   });
-  const partida = (n) => ({ id: `p-${n}`, courseName: 'El Saler', points: 30 });
+  const partida = (n) => ({
+    id: `p-${n}`,
+    golfCourseName: 'El Saler',
+    stablefordPoints: 30,
+  });
 
   it('G1: lo guardado vuelve, para esa cuenta', () => {
     const guardo = recuerdaElPanel('u-1', {
@@ -208,6 +218,81 @@ describe('loUltimoConocido, el panel', () => {
 
     const leido = elUltimoPanel('u-1');
     expect(leido === null || leido.competiciones === null).toBe(true);
+  });
+
+  it('G10: una partida reciente de verdad se guarda y se puede rehacer', () => {
+    const real = RecentMatch.fromPersistence({
+      id: 'p-9',
+      date: '2026-11-10T09:00:00.000Z',
+      golfCourseName: 'El Saler',
+      tournamentName: 'Liga',
+      stablefordPoints: 34,
+      partners: [{ name: 'Ana' }],
+    });
+
+    recuerdaElPanel('u-1', { ultimasPartidas: [real] });
+
+    const [leida] = elUltimoPanel('u-1').ultimasPartidas;
+    expect(leida).toMatchObject({
+      id: 'p-9',
+      golfCourseName: 'El Saler',
+      tournamentName: 'Liga',
+      stablefordPoints: 34,
+      partners: [{ name: 'Ana' }],
+    });
+    const rehecha = RecentMatch.fromPersistence(leida);
+    expect(rehecha.isFromTournament()).toBe(real.isFromTournament());
+    expect(rehecha.date.toISOString()).toBe('2026-11-10T09:00:00.000Z');
+  });
+
+  it('G11: lo guardado con otra versión no se usa', () => {
+    guardado.set(
+      'rydercup-ultimo-panel',
+      JSON.stringify({ v: 0, usuarioId: 'u-1', competiciones: [] }),
+    );
+
+    expect(elUltimoPanel('u-1')).toBeNull();
+  });
+
+  it('G12: los elementos sin id se descartan', () => {
+    guardado.set(
+      'rydercup-ultimo-panel',
+      JSON.stringify({
+        v: 1,
+        usuarioId: 'u-1',
+        competiciones: [competicion(1), {}, null, { id: 3 }],
+        ultimasPartidas: [{}, partida(1), 'x'],
+      }),
+    );
+
+    const leido = elUltimoPanel('u-1');
+    expect(leido.competiciones).toEqual([competicion(1)]);
+    expect(leido.ultimasPartidas).toEqual([partida(1)]);
+  });
+
+  it('G13: las cifras que no son números se descartan', () => {
+    guardado.set(
+      'rydercup-ultimo-panel',
+      JSON.stringify({
+        v: 1,
+        usuarioId: 'u-1',
+        estadisticas: { handicap: 'x', playingAvg: 18.6, roundsPlayed: null },
+      }),
+    );
+
+    expect(elUltimoPanel('u-1').estadisticas).toEqual({
+      playingAvg: 18.6,
+      roundsPlayed: null,
+    });
+  });
+
+  it('G14: una cifra que no vino no vuelve como null', () => {
+    recuerdaElPanel('u-1', { estadisticas: { playingAvg: 18.6 } });
+
+    const rehecha = PlayerStats.fromPersistence(
+      elUltimoPanel('u-1').estadisticas,
+    );
+    expect(rehecha.roundsPlayed).toBe(0);
   });
 
   it('G8: sin cuenta no se guarda nada', () => {

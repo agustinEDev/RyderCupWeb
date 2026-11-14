@@ -30,6 +30,7 @@ import {
 import { elUltimoPanel, recuerdaElPanel } from '../services/loUltimoConocido';
 import { esFalloDeRedDeLaApi } from '../utils/sinCobertura';
 import PlayerStats from '../domain/entities/PlayerStats';
+import RecentMatch from '../domain/entities/RecentMatch';
 import { elMasCercano } from '../utils/elMasCercano';
 import {
   elPanelYaSePinto,
@@ -116,19 +117,35 @@ const Dashboard = () => {
     const proximos = panel ? losProximosGuardados() : [];
     const partidas = panel ? lasPartidasGuardadas() : [];
     const hayProximos = proximos.length + partidas.length > 0;
-    if (panel?.competiciones) setCompetitions(panel.competiciones);
-    if (panel?.ultimasPartidas) setRecentMatches(panel.ultimasPartidas);
-    if (panel?.estadisticas) {
-      setPlayerStats(PlayerStats.fromPersistence(panel.estadisticas));
-    }
-    if (hayProximos) {
-      setUpcomingMatches(proximos);
-      setProximasPartidas({ partidas, desdeMemoria: false });
-    }
+    // Lo guardado son valores sueltos: las tarjetas esperan las entidades (con
+    // sus métodos). Una partida que no se pueda rehacer, fuera
+    const recientes = panel?.ultimasPartidas
+      ?.map((p) => {
+        try {
+          return RecentMatch.fromPersistence(p);
+        } catch {
+          return null;
+        }
+      })
+      .filter(Boolean);
+    // Siempre, también vacío: otra cuenta en el panel montado no ve lo de la
+    // anterior mientras llega lo suyo
+    setCompetitions(panel?.competiciones ?? []);
+    setRecentMatches(recientes ?? []);
+    setPlayerStats(
+      panel?.estadisticas
+        ? PlayerStats.fromPersistence(panel.estadisticas)
+        : null,
+    );
+    setUpcomingMatches(hayProximos ? proximos : []);
+    setProximasPartidas({
+      partidas: hayProximos ? partidas : [],
+      desdeMemoria: false,
+    });
     setGuardado({
       cuenta: cuentaConfirmada,
       competiciones: Boolean(panel?.competiciones),
-      recientes: Boolean(panel?.ultimasPartidas),
+      recientes: Boolean(recientes),
       cifras: Boolean(panel?.estadisticas),
       proximos: hayProximos,
     });

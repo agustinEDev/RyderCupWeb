@@ -23,6 +23,8 @@ import { render, act, screen } from '@testing-library/react';
  *   D10 hay panel pero ningún próximo guardado  | el banner espera (no «crea una partida»)
  *   D11 los textos aún no han llegado           | se espera
  *   D12 sin red, con el usuario del móvil       | se pinta con lo guardado
+ *   D13 las partidas sembradas                  | llegan como entidades (con sus métodos)
+ *   D14 otra cuenta sin panel guardado          | no se queda lo de la anterior
  */
 const enEspera = () => {
   let resolver;
@@ -158,6 +160,7 @@ vi.doMock('../components/dashboard/RecentMatches', () => ({
       data-testid="recientes"
       data-partidas={ids(matches)}
       data-cargando={String(isLoading)}
+      data-entidad={typeof matches?.[0]?.isFromTournament}
     />
   ),
 }));
@@ -408,11 +411,36 @@ describe('el panel con lo último visto', () => {
     expect(leido.competiciones).toEqual([
       { id: 'c-3', name: 'Liga 3', status: 'ACTIVE' },
     ]);
-    expect(leido.ultimasPartidas).toEqual([partida(4)]);
+    expect(leido.ultimasPartidas).toEqual([{ id: 'r-4' }]);
     expect(leido.estadisticas).toMatchObject({
       handicap: 17.5,
       playingAvg: 18.6,
     });
+  });
+
+  it('D13: las partidas sembradas llegan como entidades, con sus métodos', async () => {
+    guardaElPanelDeUno();
+
+    render(<Dashboard />);
+    await asienta();
+
+    expect(rastro('recientes', 'partidas')).toBe('r-1');
+    expect(rastro('recientes', 'entidad')).toBe('function');
+  });
+
+  it('D14: otra cuenta sin panel guardado no ve lo de la anterior', async () => {
+    guardaElPanelDeUno();
+    const { rerender } = render(<Dashboard />);
+    await asienta();
+    expect(rastro('recientes', 'partidas')).toBe('r-1');
+
+    sesion.user = dos;
+    rerender(<Dashboard />);
+    await asienta();
+
+    expect(rastro('pendientes', 'competiciones')).toBe('');
+    expect(rastro('recientes', 'partidas')).toBe('');
+    expect(rastro('cifras', 'media')).toBe('');
   });
 
   it('D11: sin los textos todavía, se espera aunque haya guardado', async () => {

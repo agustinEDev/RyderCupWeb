@@ -245,6 +245,8 @@ export const lasUltimasPartidas = () => leeLista(CLAVE_PARTIDAS);
  * Se borra al cerrar sesión, como todo lo de la cuenta.
  */
 const CLAVE_PANEL = 'rydercup-ultimo-panel';
+/** Si cambia la forma de lo guardado, se sube y lo de antes se ignora. */
+const VERSION_DEL_PANEL = 1;
 
 /** De cada competición, lo que usa el panel: contarlas y la tarjeta de pendientes. */
 const loJustoDeLaCompeticion = (c) => ({
@@ -267,30 +269,72 @@ const CAMPOS_DE_LAS_CIFRAS = [
   'roundsWithDifferential',
 ];
 
-/** Valores sueltos: lo que llega es una entidad con getters, y así se guarda. */
-const lasCifrasEnPlano = (cifras) =>
-  Object.fromEntries(CAMPOS_DE_LAS_CIFRAS.map((c) => [c, cifras[c] ?? null]));
+/** Lo que hace falta para rehacer cada partida reciente (`RecentMatch`). */
+const CAMPOS_DE_LA_PARTIDA = [
+  'id',
+  'date',
+  'playedAt',
+  'matchFormat',
+  'scoringFormat',
+  'golfCourseId',
+  'golfCourseName',
+  'matchName',
+  'tournamentName',
+  'result',
+  'score',
+  'stablefordPoints',
+  'totalStrokes',
+  'holesPlayed',
+  'partners',
+  'opponents',
+  'excludedFromStats',
+];
+
+/**
+ * Valores sueltos de esos campos: lo que llega son entidades con campos privados
+ * y getters, y `JSON.stringify` de una entidad da `{}`. Lo que no vino no se
+ * guarda, para que al rehacerla la entidad ponga su valor por defecto.
+ */
+const enPlano = (campos, x) =>
+  Object.fromEntries(
+    campos
+      .map((c) => [c, x?.[c] instanceof Date ? x[c].toISOString() : x?.[c]])
+      .filter(([, v]) => v !== undefined),
+  );
 
 const esUnObjeto = (x) =>
   Boolean(x) && typeof x === 'object' && !Array.isArray(x);
+
+const conId = (x) => esUnObjeto(x) && typeof x.id === 'string' && x.id !== '';
+
+/** Una lista guardada, sin los elementos que no se pueden pintar. */
+const listaValida = (lista) =>
+  Array.isArray(lista) ? lista.filter(conId) : null;
+
+/** Las cifras guardadas, solo las que son números (o nada). */
+const cifrasValidas = (cifras) =>
+  esUnObjeto(cifras)
+    ? Object.fromEntries(
+        Object.entries(cifras).filter(
+          ([c, v]) =>
+            CAMPOS_DE_LAS_CIFRAS.includes(c) &&
+            (v === null || Number.isFinite(v)),
+        ),
+      )
+    : null;
 
 const leeElPanel = () => {
   try {
     const crudo = localStorage.getItem(CLAVE_PANEL);
     if (!crudo) return null;
     const panel = JSON.parse(crudo);
-    if (!panel || typeof panel !== 'object' || Array.isArray(panel))
-      return null;
+    if (!esUnObjeto(panel) || panel.v !== VERSION_DEL_PANEL) return null;
     if (typeof panel.usuarioId !== 'string' || !panel.usuarioId) return null;
     return {
       usuarioId: panel.usuarioId,
-      competiciones: Array.isArray(panel.competiciones)
-        ? panel.competiciones
-        : null,
-      ultimasPartidas: Array.isArray(panel.ultimasPartidas)
-        ? panel.ultimasPartidas
-        : null,
-      estadisticas: esUnObjeto(panel.estadisticas) ? panel.estadisticas : null,
+      competiciones: listaValida(panel.competiciones),
+      ultimasPartidas: listaValida(panel.ultimasPartidas),
+      estadisticas: cifrasValidas(panel.estadisticas),
     };
   } catch {
     return null;
@@ -312,15 +356,16 @@ export const recuerdaElPanel = (
   const antes = leeElPanel();
   const deEsta = antes?.usuarioId === usuarioId ? antes : null;
   const panel = {
+    v: VERSION_DEL_PANEL,
     usuarioId,
     competiciones: Array.isArray(competiciones)
       ? competiciones.map(loJustoDeLaCompeticion)
       : (deEsta?.competiciones ?? null),
     ultimasPartidas: Array.isArray(ultimasPartidas)
-      ? ultimasPartidas
+      ? ultimasPartidas.map((m) => enPlano(CAMPOS_DE_LA_PARTIDA, m))
       : (deEsta?.ultimasPartidas ?? null),
     estadisticas: esUnObjeto(estadisticas)
-      ? lasCifrasEnPlano(estadisticas)
+      ? enPlano(CAMPOS_DE_LAS_CIFRAS, estadisticas)
       : (deEsta?.estadisticas ?? null),
   };
   try {
