@@ -8,15 +8,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 ## [2.77.0] - 2026-11-14
 
 **Fase 5 del plan de calidad: pantallas grandes repartidas, efectos de React sin excepciones
-y Prettier** (#1106–#1111, #1113–#1117, #1124, #1125, #1127). Sin cambios en el backend: va con
-la 2.64.0 en producción. Probado en el Kind con la 2.64.0: detalle de competición, draft en
-directo (elecciones, elección automática al agotarse el turno, recarga a mitad de turno),
-sobres que se abren al entregar los dos, anotación con y sin conexión (cola que sobrevive a
-una recarga y se envía al volver la red), tarjeta, clasificación, mapa, Actividad hasta el
-final, perfil, amigos, partidas rápidas y compartidas, y panel de administración, sin
-errores en la consola.
+y Prettier** (#1106–#1111, #1113–#1117, #1124, #1125, #1127), y la cabecera con tu usuario
+en tres pantallas (#1130). Sin cambios en el backend: va con la 2.64.0 en producción. Probado
+en el Kind con la 2.64.0: detalle de competición, draft en directo (elecciones, elección
+automática al agotarse el turno, recarga a mitad de turno), sobres que se abren al entregar
+los dos, anotación con y sin conexión (cola que sobrevive a una recarga y se envía al volver
+la red), tarjeta, clasificación, mapa, Actividad hasta el final, perfil, amigos, partidas
+rápidas y compartidas, panel de administración y la cabecera de las tres pantallas del
+#1129, sin errores en la consola.
 
 ### Fixed
+
+- **La cabecera enseña tus iniciales y lo de Admin en Actividad, la ficha de un jugador y
+  una partida rápida compartida** (#1129, #1130): salía «?» y sin la marca ni el menú de
+  administración, porque esas pantallas no le pasaban el usuario. Un test falla si alguna
+  pantalla vuelve a pintar la cabecera sin él.
 
 - **Una respuesta que llega tarde ya no pisa la pantalla actual.** Al cambiar de filtro,
   búsqueda, página, pestaña, competición, partido o cuenta, o al salir de la pantalla, una
