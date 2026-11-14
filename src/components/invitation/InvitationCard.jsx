@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router';
 import { Mail, Clock, User, MessageSquare, ChevronRight } from 'lucide-react';
 import InvitationBadge from './InvitationBadge';
+import { quienEsElInvitado } from '../../utils/quienEsElInvitado';
 
 // Una sola regla para «Caducada» y para dejar de ofrecer la ficha (/code-review)
 const haCaducado = (expiresAt) =>
@@ -113,7 +114,7 @@ const InvitationCard = ({
                   desbordaba la tarjeta a 360 (FE #826) */}
               <Mail className="h-3.5 w-3.5 flex-shrink-0" />
               <span className="min-w-0 wrap-anywhere">
-                {invitation.inviteeName || invitation.inviteeEmail}
+                {quienEsElInvitado(invitation, t)}
               </span>
             </div>
           )}
@@ -202,7 +203,7 @@ const InvitationCard = ({
             onClick={() => onReinvite(invitation)}
             disabled={isProcessing}
             aria-label={t('actions.reinviteAria', {
-              name: invitation.inviteeName || invitation.inviteeEmail,
+              name: quienEsElInvitado(invitation, t),
             })}
             className="flex-shrink-0 min-h-11 px-3 py-1.5 text-xs font-medium text-primary bg-primary/10 rounded-md hover:bg-primary/20 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >

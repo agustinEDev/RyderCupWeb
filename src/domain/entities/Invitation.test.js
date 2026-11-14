@@ -47,10 +47,38 @@ describe('Invitation', () => {
       );
     });
 
+    // C9 (B-01/B-03): por id llega sin correo; por correo, sin usuario hasta que responda
+    it('C9: por id, sin correo pero con el invitado, vale', () => {
+      const inv = new Invitation({ ...validProps, inviteeEmail: null });
+      expect(inv.inviteeEmail).toBeNull();
+      expect(inv.inviteeUserId).toBe('user-2');
+    });
+
+    it('C9: por correo, con el correo y sin el invitado, vale', () => {
+      const inv = new Invitation({ ...validProps, inviteeUserId: null });
+      expect(inv.inviteeEmail).toBe('player@example.com');
+    });
+
+    it('C9: sin correo ni invitado no vale', () => {
+      expect(
+        () =>
+          new Invitation({
+            ...validProps,
+            inviteeEmail: null,
+            inviteeUserId: null,
+          }),
+      ).toThrow(TypeError);
+    });
+
     it('should throw for missing inviteeEmail', () => {
-      expect(() => new Invitation({ ...validProps, inviteeEmail: '' })).toThrow(
-        TypeError,
-      );
+      expect(
+        () =>
+          new Invitation({
+            ...validProps,
+            inviteeEmail: '',
+            inviteeUserId: null,
+          }),
+      ).toThrow(TypeError);
     });
 
     it('should throw for invalid status', () => {

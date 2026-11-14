@@ -22,6 +22,7 @@ import {
 } from '../../composition';
 import BlockLoader from '../../components/ui/BlockLoader';
 import { PANTALLA_MENOS_BARRA_INFERIOR } from '../../utils/barraInferior';
+import { quienEsElInvitado } from '../../utils/quienEsElInvitado';
 
 // Ni `/friends/me` ni el listado de invitaciones dan más de 100 filas por
 // página. Pedir una sola dejaba fuera al amigo 101 y a la invitación pendiente
@@ -301,12 +302,20 @@ const InvitationsPage = () => {
       recargarEnSilencio();
       // El freno por hora de la competición: con cuántas admite, y no el «espera
       // un minuto» del 429 general, que es de otro límite (probado en el Kind)
-    } else if (error?.errorCode === 'INVITATION_RATE_LIMIT') {
-      // Sin el número no hay frase que decir: el aviso genérico (CodeRabbit)
+    } else if (
+      error?.errorCode === 'INVITATION_RATE_LIMIT' ||
+      error?.errorCode === 'INVITATION_USER_RATE_LIMIT'
+    ) {
+      // Sin el número no hay frase que decir: el aviso genérico (CodeRabbit). El de
+      // la competición o el del organizador, que suma todas las suyas (C7, B-03)
       const limite = error.data?.limit;
+      const frase =
+        error.errorCode === 'INVITATION_USER_RATE_LIMIT'
+          ? 'errors.userRateLimited'
+          : 'errors.rateLimited';
       customToast.error(
         Number.isFinite(limite)
-          ? t('errors.rateLimited', { count: limite })
+          ? t(frase, { count: limite })
           : t('errors.failedToSend'),
       );
       // Por el estado: el texto del servidor no lleva «409» (revisión local)
@@ -618,7 +627,8 @@ const InvitationsPage = () => {
       <ConfirmModal
         isOpen={retirando !== null}
         title={t('creator.withdrawDialog.title', {
-          name: retirando?.inviteeName || retirando?.inviteeEmail || '',
+          // Como la tarjeta: nunca en blanco (B-01/B-03)
+          name: quienEsElInvitado(retirando, t),
         })}
         message={t('creator.withdrawDialog.body')}
         confirmText={t('creator.withdrawDialog.confirm')}

@@ -163,6 +163,26 @@ describe('InvitationsPage · retirar una invitación (FE #724)', () => {
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
 
+  it('C9: sin nombre ni correo, la ventana nombra al invitado igual (B-01/B-03)', async () => {
+    mockLista.mockResolvedValue({
+      invitations: [
+        invitacion('PENDING', {
+          inviteeEmail: null,
+          inviteeName: undefined,
+          inviteeUserId: 'u-2',
+        }),
+      ],
+      totalCount: 1,
+    });
+    pinta();
+    fireEvent.click(
+      await screen.findByRole('button', { name: 'actions.withdraw' }),
+    );
+    expect(await screen.findByRole('dialog')).toHaveTextContent(
+      'creator.withdrawDialog.title {"name":"card.invitedPlayer"}',
+    );
+  });
+
   it('R2: «Mantener» no retira nada', async () => {
     pinta();
     fireEvent.click(
@@ -374,6 +394,24 @@ describe('InvitationsPage · lo que se dice tras probar en el Kind', () => {
     await waitFor(() =>
       expect(customToast.error).toHaveBeenCalledWith(
         'errors.rateLimited {"count":12}',
+      ),
+    );
+  });
+
+  it('H3: el tope por organizador (todas sus competiciones) se dice con su frase (C7)', async () => {
+    mockEnviar.mockRejectedValueOnce(
+      Object.assign(new Error('Demasiadas'), {
+        status: 429,
+        errorCode: 'INVITATION_USER_RATE_LIMIT',
+        data: { error_code: 'INVITATION_USER_RATE_LIMIT', limit: 30 },
+      }),
+    );
+    pinta();
+    fireEvent.click(await screen.findByText('creator.sendNew'));
+    fireEvent.click(await screen.findByText('enviar a u-9'));
+    await waitFor(() =>
+      expect(customToast.error).toHaveBeenCalledWith(
+        'errors.userRateLimited {"count":30}',
       ),
     );
   });

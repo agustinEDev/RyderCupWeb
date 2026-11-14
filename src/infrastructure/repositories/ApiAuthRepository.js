@@ -1,6 +1,9 @@
 import IAuthRepository from '../../domain/repositories/IAuthRepository.js';
 import User from '../../domain/entities/User.js';
-import apiRequest from '../http/api.js';
+import apiRequest, {
+  apuntaElCierrePendiente,
+  mandaElCierrePendiente,
+} from '../http/api.js';
 
 class ApiAuthRepository extends IAuthRepository {
   /**
@@ -225,10 +228,12 @@ class ApiAuthRepository extends IAuthRepository {
    * @override
    */
   async logout() {
-    await apiRequest('/api/v1/auth/logout', {
-      method: 'POST',
-      body: JSON.stringify({}),
-    });
+    // Pendiente hasta que el servidor lo confirme: sin cobertura, o si la recarga de
+    // la salida corta la petición, la sesión seguiría viva y quien abra la app
+    // después entraría. Con la marca, el cierre va antes que cualquier otra
+    // petición; y es el mismo envío, con su candado entre pestañas (F-01)
+    apuntaElCierrePendiente();
+    await mandaElCierrePendiente();
     return { success: true };
   }
 

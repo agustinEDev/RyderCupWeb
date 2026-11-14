@@ -25,4 +25,23 @@ describe('InvitationMapper', () => {
       'NO_ROOM',
     ]);
   });
+
+  it('C9: una invitación por id llega sin correo y se lee igual', () => {
+    const inv = InvitationMapper.toDomain({
+      ...invitacion('PENDING'),
+      invitee_email: undefined,
+      invitee_user_id: 'u-2',
+    });
+    expect(inv.inviteeEmail).toBeNull();
+    expect(inv.inviteeUserId).toBe('u-2');
+  });
+
+  it('C9: sin correo ni invitado sigue siendo un error', () => {
+    expect(() =>
+      InvitationMapper.toDomain({
+        ...invitacion('PENDING'),
+        invitee_email: undefined,
+      }),
+    ).toThrow();
+  });
 });
