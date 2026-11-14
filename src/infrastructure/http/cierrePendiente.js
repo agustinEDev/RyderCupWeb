@@ -15,16 +15,25 @@
  * - 2xx: cerrada.
  * - 401: el acceso pudo caducar (dura 15 minutos y la marca puede tener días):
  *   se refresca una vez y se repite. Si el refresco también dice 401, la sesión
- *   ya estaba muerta.
- * - Sin red, sin respuesta a tiempo o un 5xx: no se sabe si cerró; la marca sigue.
- * - Otra respuesta del servidor: se da por cerrada. Quedarse con la marca dejaría
- *   la app sin poder hablar con la API para siempre.
+ *   ya estaba muerta. Si el refresco va bien, solo vale que el cierre diga 2xx.
+ * - Sin red, sin respuesta a tiempo, un 5xx, un 408, un 429 o un 403 que no es de
+ *   la app (un reto de Cloudflare): no se sabe si cerró; la marca sigue.
+ * - Otro 4xx de la app (con su `error_code`): se da por cerrada. Quedarse con la
+ *   marca dejaría la app sin poder hablar con la API.
+ * - Una marca de más de 7 días se olvida: es lo que dura la cookie de refresco, así
+ *   que la sesión ya no puede estar viva, y la app no se queda atascada para siempre.
+ *
+ * Entre pestañas, un envío a la vez (`navigator.locks`), y antes de cada paso se
+ * vuelve a mirar la marca: si otra pestaña cerró y alguien entró, refrescar aquí
+ * mataría la sesión nueva (revisor de la rama).
  */
 import { getCsrfCookie } from './csrfTokenSync';
 import { cabeceraDelModoDeLaApp } from '../../utils/modoDeLaApp';
 
 const CLAVE = 'rydercup-cierre-pendiente';
 const TOPE_MS = 10_000;
+/** Lo que dura la cookie de refresco: pasado esto no queda sesión que cerrar. */
+const CADUCA_MS = 7 * 24 * 60 * 60 * 1000;
 
 const API_URL =
   globalThis.APP_CONFIG?.API_BASE_URL ||
@@ -40,14 +49,18 @@ export const apuntaElCierrePendiente = () => {
   }
 };
 
-/** Si hay un cierre de sesión que el servidor no ha confirmado. */
-export const hayCierrePendiente = () => {
+const leeLaMarca = () => {
   try {
-    return globalThis.localStorage.getItem(CLAVE) !== null;
+    return globalThis.localStorage.getItem(CLAVE);
   } catch {
-    return false;
+    return null;
   }
 };
+
+/** Si hay un cierre de sesión que el servidor no ha confirmado. */
+export const hayCierrePendiente = () => leeLaMarca() !== null;
+
+const caducada = () => Date.now() - Number(leeLaMarca()) > CADUCA_MS;
 
 /** El servidor ya cerró la sesión (o ya no existe). */
 export const olvidaElCierrePendiente = () => {
@@ -92,19 +105,50 @@ const cierra = () => {
   return post('/api/v1/auth/logout', csrf ? { 'X-CSRF-Token': csrf } : {});
 };
 
-/** 2xx o 401 dicen algo de la sesión; un 5xx, no. */
-const noSeSabe = (respuesta) => respuesta.status >= 500;
+/** Si la respuesta es de la app: un 4xx con su `error_code`. */
+const esDeLaApp = async (respuesta) => {
+  try {
+    return Boolean((await respuesta.json())?.error_code);
+  } catch {
+    return false;
+  }
+};
+
+/** Una respuesta que no dice si el servidor cerró la sesión. */
+const noSeSabe = async (respuesta) =>
+  respuesta.status >= 500 ||
+  [408, 429].includes(respuesta.status) ||
+  (respuesta.status === 403 && !(await esDeLaApp(respuesta)));
 
 const envia = async () => {
-  let respuesta = await cierra();
-  if (respuesta.status === 401) {
-    const refresco = await post('/api/v1/auth/refresh-token');
-    // Sin refresco válido no queda sesión que cerrar
-    if (refresco.status === 401) return;
-    if (noSeSabe(refresco)) throw sinConexion();
-    respuesta = await cierra();
+  const respuesta = await cierra();
+  if (respuesta.ok) return;
+  if (respuesta.status !== 401) {
+    if (await noSeSabe(respuesta)) throw sinConexion();
+    return;
   }
-  if (noSeSabe(respuesta)) throw sinConexion();
+  // Otra pestaña lo resolvió mientras: refrescar mataría su sesión nueva
+  if (!hayCierrePendiente()) return;
+  const refresco = await post('/api/v1/auth/refresh-token');
+  // Sin refresco válido no queda sesión que cerrar
+  if (refresco.status === 401) return;
+  if (!refresco.ok) throw sinConexion();
+  if (!hayCierrePendiente()) return;
+  // Con la sesión recién rotada, solo un 2xx la da por cerrada
+  if (!(await cierra()).ok) throw sinConexion();
+};
+
+/** Un envío a la vez entre pestañas, si el navegador lo permite. */
+const conCandado = (fn) =>
+  globalThis.navigator?.locks?.request
+    ? globalThis.navigator.locks.request(CLAVE, fn)
+    : fn();
+
+const resuelve = async () => {
+  // Dentro del candado se vuelve a mirar: otra pestaña pudo resolverlo
+  if (!hayCierrePendiente()) return;
+  if (!caducada()) await envia();
+  olvidaElCierrePendiente();
 };
 
 let enVuelo = null;
@@ -116,11 +160,9 @@ let enVuelo = null;
 export const mandaElCierrePendiente = () => {
   if (!hayCierrePendiente()) return Promise.resolve();
   if (!enVuelo) {
-    enVuelo = envia()
-      .then(olvidaElCierrePendiente)
-      .finally(() => {
-        enVuelo = null;
-      });
+    enVuelo = conCandado(resuelve).finally(() => {
+      enVuelo = null;
+    });
   }
   return enVuelo;
 };

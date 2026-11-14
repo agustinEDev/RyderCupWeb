@@ -26,7 +26,12 @@ import {
  *   5xx                                               | igual que sin red: no se sabe si cerró
  *   E5 acceso caducado: 401 → refresco → cierre       | se borra la marca
  *   E5 401 y el refresco también 401 (sesión muerta)  | se borra la marca
- *   otra respuesta del servidor (p. ej. 403)          | se borra: no se queda la app atascada
+ *   429, 408 o 403 sin código de la app (Cloudflare)  | la marca sigue
+ *   otro 4xx de la app (con su código)                | se borra: no se queda la app atascada
+ *   refresco bien y el cierre sigue en 401            | la marca sigue
+ *   otra pestaña ya lo resolvió                       | no se refresca (no mata la sesión nueva)
+ *   entre pestañas                                    | un cierre a la vez (navigator.locks)
+ *   marca de más de 7 días                            | se olvida: la sesión ya no puede vivir
  *   el cierre lleva su token CSRF                     | el de la cookie, también tras refrescar
  *   dos a la vez                                      | un solo cierre
  *   E2/E6 una petición con la marca                   | espera al cierre; sin red, falla sin salir
@@ -183,10 +188,85 @@ describe('mandar el cierre pendiente', () => {
     expect(hayCierrePendiente()).toBe(true);
   });
 
-  it('otra respuesta del servidor (403) borra la marca: la app no se queda atascada', async () => {
+  it('un 403 sin código de la app (Cloudflare) deja la marca', async () => {
     apuntaElCierrePendiente();
     fetch.mockResolvedValueOnce(respuesta(403));
+    await expect(mandaElCierrePendiente()).rejects.toBeInstanceOf(TypeError);
+    expect(hayCierrePendiente()).toBe(true);
+  });
+
+  it('un 429 deja la marca', async () => {
+    apuntaElCierrePendiente();
+    fetch.mockResolvedValueOnce(respuesta(429));
+    await expect(mandaElCierrePendiente()).rejects.toBeInstanceOf(TypeError);
+    expect(hayCierrePendiente()).toBe(true);
+  });
+
+  it('otra respuesta de la app (un 4xx con su código) borra la marca: no se queda atascada', async () => {
+    apuntaElCierrePendiente();
+    fetch.mockResolvedValueOnce({
+      ...respuesta(400),
+      json: async () => ({ error_code: 'ALGO' }),
+    });
     await mandaElCierrePendiente();
+    expect(hayCierrePendiente()).toBe(false);
+  });
+
+  it('revisión: un refresco con 429 deja la marca', async () => {
+    apuntaElCierrePendiente();
+    fetch
+      .mockResolvedValueOnce(respuesta(401))
+      .mockResolvedValueOnce(respuesta(429));
+    await expect(mandaElCierrePendiente()).rejects.toBeInstanceOf(TypeError);
+    expect(llamadasA(URL_DEL_CIERRE)).toHaveLength(1);
+    expect(hayCierrePendiente()).toBe(true);
+  });
+
+  it('revisión: el refresco va bien y el cierre sigue en 401: la marca sigue', async () => {
+    apuntaElCierrePendiente();
+    fetch
+      .mockResolvedValueOnce(respuesta(401))
+      .mockResolvedValueOnce(respuesta(200))
+      .mockResolvedValueOnce(respuesta(401));
+    await expect(mandaElCierrePendiente()).rejects.toBeInstanceOf(TypeError);
+    expect(hayCierrePendiente()).toBe(true);
+  });
+
+  it('revisión: si otra pestaña resolvió la marca mientras tanto, no se refresca', async () => {
+    apuntaElCierrePendiente();
+    fetch.mockImplementationOnce(async () => {
+      // Otra pestaña cerró y entró con una sesión nueva durante este 401
+      olvidaElCierrePendiente();
+      return respuesta(401);
+    });
+    await mandaElCierrePendiente();
+    expect(llamadasA(URL_DEL_REFRESCO)).toHaveLength(0);
+  });
+
+  it('revisión: entre pestañas, un cierre a la vez (candado del navegador)', async () => {
+    const pedidos = [];
+    vi.stubGlobal('navigator', {
+      locks: {
+        request: vi.fn(async (nombre, fn) => {
+          pedidos.push(nombre);
+          return fn();
+        }),
+      },
+    });
+    apuntaElCierrePendiente();
+    fetch.mockResolvedValueOnce(respuesta(200));
+    await mandaElCierrePendiente();
+    expect(pedidos).toEqual(['rydercup-cierre-pendiente']);
+    expect(hayCierrePendiente()).toBe(false);
+  });
+
+  it('una marca de más de 7 días se olvida sin llamar: la sesión ya no puede vivir', async () => {
+    almacen.set(
+      'rydercup-cierre-pendiente',
+      String(Date.now() - 8 * 24 * 60 * 60 * 1000),
+    );
+    await mandaElCierrePendiente();
+    expect(fetch).not.toHaveBeenCalled();
     expect(hayCierrePendiente()).toBe(false);
   });
 
