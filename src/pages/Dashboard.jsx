@@ -22,9 +22,14 @@ import { slideUp, staggerContainer, getEntryProps } from '../utils/animations';
 import FullScreenLoader from '../components/ui/FullScreenLoader';
 import { laPantallaEstaLista } from '../utils/cortinaDeArranque';
 import {
+  lasPartidasGuardadas,
   leeLasProximasPartidas,
   leeLosProximosPartidos,
+  losProximosGuardados,
 } from '../services/partidosSinCobertura';
+import { elUltimoPanel, recuerdaElPanel } from '../services/loUltimoConocido';
+import { esFalloDeRedDeLaApi } from '../utils/sinCobertura';
+import PlayerStats from '../domain/entities/PlayerStats';
 import { elMasCercano } from '../utils/elMasCercano';
 import {
   elPanelYaSePinto,
@@ -87,6 +92,50 @@ const Dashboard = () => {
   const [upcomingSinRespuesta, setUpcomingSinRespuesta] = useState(false);
   const [upcomingDesdeMemoria, setUpcomingDesdeMemoria] = useState(false);
   const [isLoadingUpcoming, setIsLoadingUpcoming] = useState(true);
+
+  // Lo último que se vio en este móvil con esta cuenta, con el hándicap y las
+  // cifras, para pintarlo al entrar y actualizarlo por detrás sin avisos (Agustín,
+  // 14 nov 2026). Solo con la sesión que ha CONFIRMADO el servidor: `useAuth` no da
+  // usuario mientras `/current-user` está en camino (la copia del móvil solo sale
+  // sin red o con un 5xx, como siempre), así que una sesión que ya no vale no
+  // enseña nada. Se siembra al pintar, no en un efecto, para que el primer pintado
+  // ya lo lleve
+  const cuentaConfirmada = user?.id ?? null;
+  const [guardado, setGuardado] = useState({
+    cuenta: null,
+    competiciones: false,
+    recientes: false,
+    cifras: false,
+    proximos: false,
+  });
+  if (cuentaConfirmada && guardado.cuenta !== cuentaConfirmada) {
+    const panel = elUltimoPanel(cuentaConfirmada);
+    // Los próximos ya se guardan para anotar sin cobertura; solo se usan si hay
+    // panel de ESTA cuenta, y solo si hay alguno: una lista vacía pintaría un
+    // momento «crea una partida rápida» y se podría pulsar
+    const proximos = panel ? losProximosGuardados() : [];
+    const partidas = panel ? lasPartidasGuardadas() : [];
+    const hayProximos = proximos.length + partidas.length > 0;
+    if (panel?.competiciones) setCompetitions(panel.competiciones);
+    if (panel?.ultimasPartidas) setRecentMatches(panel.ultimasPartidas);
+    if (panel?.estadisticas) {
+      setPlayerStats(PlayerStats.fromPersistence(panel.estadisticas));
+    }
+    if (hayProximos) {
+      setUpcomingMatches(proximos);
+      setProximasPartidas({ partidas, desdeMemoria: false });
+    }
+    setGuardado({
+      cuenta: cuentaConfirmada,
+      competiciones: Boolean(panel?.competiciones),
+      recientes: Boolean(panel?.ultimasPartidas),
+      cifras: Boolean(panel?.estadisticas),
+      proximos: hayProximos,
+    });
+  }
+  // Las banderas son de la cuenta sembrada: al cambiar de cuenta se rehacen
+  const hayPanelGuardado =
+    guardado.competiciones || guardado.recientes || guardado.cifras;
   const [showHandicapModal, setShowHandicapModal] = useState(false);
   // El hándicap guardado cuando se abre el modal: decide qué dice (FE #677)
   const [handicapAlAbrir, setHandicapAlAbrir] = useState(null);
@@ -210,15 +259,17 @@ const Dashboard = () => {
           user.id,
         );
         if (!cancelled) {
-          setCompetitions(
-            Array.isArray(competitionsData) ? competitionsData : [],
-          );
+          const lista = Array.isArray(competitionsData) ? competitionsData : [];
+          setCompetitions(lista);
           setCompetitionsError(null);
+          recuerdaElPanel(user.id, { competiciones: lista });
         }
       } catch (error) {
         console.error('Failed to load dashboard data:', error);
         if (!cancelled) {
-          setCompetitions([]);
+          // Sin red se queda lo que se ve (lo guardado). Una respuesta con error
+          // no se tapa: como siempre. Los próximos lo saben por el error
+          if (!esFalloDeRedDeLaApi(error)) setCompetitions([]);
           setCompetitionsError(error);
         }
       } finally {
@@ -271,10 +322,12 @@ const Dashboard = () => {
         const stats = await getPlayerStatsUseCase.execute();
         if (!cancelled) {
           setPlayerStats(stats);
+          recuerdaElPanel(user.id, { estadisticas: stats });
         }
       } catch (error) {
         console.error('Failed to load player stats:', error);
-        if (!cancelled) {
+        // Sin red se quedan las de la última vez; con respuesta, como siempre
+        if (!cancelled && !esFalloDeRedDeLaApi(error)) {
           setPlayerStats(null);
         }
       } finally {
@@ -323,10 +376,12 @@ const Dashboard = () => {
           await getRecentMatchesUseCase.execute(RECENT_MATCHES_SHOWN);
         if (!cancelled) {
           setRecentMatches(matches);
+          recuerdaElPanel(user.id, { ultimasPartidas: matches });
         }
       } catch (error) {
         console.error('Failed to load recent matches:', error);
-        if (!cancelled) {
+        // Sin red se queda lo que se ve; con respuesta, como siempre
+        if (!cancelled && !esFalloDeRedDeLaApi(error)) {
           setRecentMatches([]);
         }
       } finally {
@@ -493,7 +548,12 @@ const Dashboard = () => {
     return () => clearTimeout(plazo);
   }, []);
 
-  const puedePintar = noQuedaNadaCargando || seAgotoLaEspera;
+  // Con lo último visto de esta cuenta no se espera a las cuatro: se pinta en
+  // cuanto la sesión está confirmada y hay textos, y lo nuevo llega por detrás
+  const puedePintar =
+    noQuedaNadaCargando ||
+    seAgotoLaEspera ||
+    (hayPanelGuardado && textosListos && textosDeRapidaListos);
 
   // Solo la PRIMERA vez manda: ni una recarga posterior —al guardar el
   // handicap— debe desmontar lo que ya hay en pantalla, ni volver aqui desde la
@@ -720,7 +780,7 @@ const Dashboard = () => {
             <motion.div variants={slideUp} className="p-4">
               <PlayerStatsCards
                 stats={playerStats}
-                isLoading={isLoadingStats}
+                isLoading={isLoadingStats && !guardado.cifras}
                 fallbackHandicap={user.handicap ?? null}
                 fallbackTournaments={
                   Array.isArray(competitions) ? competitions.length : 0
@@ -751,7 +811,7 @@ const Dashboard = () => {
                     ? proximasPartidas.desdeMemoria
                     : upcomingDesdeMemoria
                 }
-                isLoading={isLoadingUpcoming}
+                isLoading={isLoadingUpcoming && !guardado.proximos}
                 onCreateQuickMatch={abrePartidaRapida}
               />
             </motion.div>
@@ -761,7 +821,7 @@ const Dashboard = () => {
               <RecentMatches
                 usuario={user}
                 matches={recentMatches}
-                isLoading={isLoadingRecent}
+                isLoading={isLoadingRecent && !guardado.recientes}
                 esperaSilenciosa
                 onCreateQuickMatch={abrePartidaRapida}
               />

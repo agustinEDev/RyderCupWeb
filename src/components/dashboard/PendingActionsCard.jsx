@@ -130,9 +130,25 @@ const PendingActionsCard = ({
     [user],
   );
 
+  // La lista por lo que dice, no por el objeto (Agustín, 14 nov 2026): el panel
+  // pinta primero la lista guardada y luego la que llega, y con las mismas
+  // competiciones eso pedía todo dos veces. Lo que se pide es en vivo igualmente.
+  // Se ajusta al pintar, no en un efecto (el patrón de la documentación de React)
+  const claveDeLaLista = JSON.stringify(
+    (competitions ?? []).map((c) => [c?.id, c?.name, c?.status]),
+  );
+  const [lista, setLista] = useState({
+    clave: claveDeLaLista,
+    competiciones: competitions ?? [],
+  });
+  if (lista.clave !== claveDeLaLista) {
+    setLista({ clave: claveDeLaLista, competiciones: competitions ?? [] });
+  }
+  const competiciones = lista.competiciones;
+
   // Quien organiza algo (BE #361): el rol, o tener alguna competición. La
   // lista que recibe esta tarjeta ya son las que ha CREADO (`findByCreator`)
-  const organiza = Boolean(isCreator || competitions?.length > 0);
+  const organiza = Boolean(isCreator || competiciones.length > 0);
 
   useEffect(() => {
     if (!user) return;
@@ -148,7 +164,7 @@ const PendingActionsCard = ({
         const results = await Promise.allSettled([
           pedir(() => listMyInvitationsUseCase.execute({ status: 'PENDING' })),
           isCreator
-            ? pedir(() => loadPendingEnrollments(competitions))
+            ? pedir(() => loadPendingEnrollments(competiciones))
             : Promise.resolve([]),
           pedir(() =>
             listPendingFriendRequestsUseCase.execute(user.id, 'received'),
@@ -188,7 +204,7 @@ const PendingActionsCard = ({
         // cero en cada vuelta y la fila del creador parpadeaba
         if (
           results[1].status === 'fulfilled' &&
-          (competitions.length > 0 || !isCreator)
+          (competiciones.length > 0 || !isCreator)
         ) {
           aplicado.pendingEnrollments = results[1].value;
           setPendingEnrollments(aplicado.pendingEnrollments);
@@ -230,7 +246,7 @@ const PendingActionsCard = ({
     return () => {
       cancelado = true;
     };
-  }, [user, competitions, isCreator, organiza]);
+  }, [user, competiciones, isCreator, organiza]);
 
   // El día y la franja, con el idioma de la aplicación. `Intl` revienta con un
   // RangeError si la fecha no se puede leer, y esto vive dentro de la tarjeta

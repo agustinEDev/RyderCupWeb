@@ -473,4 +473,68 @@ describe('PendingActionsCard al volver al panel', () => {
       'no debe verse la espera',
     ).toBeNull();
   });
+
+  // El panel pinta primero la lista guardada y luego la que llega (Agustín, 14 nov
+  // 2026): sin esto, la tarjeta pedía todo dos veces por la misma lista
+  describe('a new list object with the same competitions', () => {
+    const lista = () => [
+      { id: 'c-1', name: 'Liga', status: 'ACTIVE' },
+      { id: 'c-2', name: 'Copa', status: 'COMPLETED' },
+    ];
+    const pinta = (competitions) => (
+      <MemoryRouter>
+        <PendingActionsCard
+          user={creatorUser}
+          competitions={competitions}
+          upcomingMatches={0}
+        />
+      </MemoryRouter>
+    );
+
+    it('P-a: the same ids and statuses do not ask again', async () => {
+      const { rerender } = render(pinta(lista()));
+      await waitFor(() =>
+        expect(mockListMyInvitations).toHaveBeenCalledTimes(1),
+      );
+
+      rerender(pinta(lista()));
+      await new Promise((r) => setTimeout(r, 0));
+
+      expect(mockListMyInvitations).toHaveBeenCalledTimes(1);
+      expect(mockListEnrollments).toHaveBeenCalledTimes(1);
+    });
+
+    it('P-b: a status change asks again', async () => {
+      const { rerender } = render(pinta(lista()));
+      await waitFor(() =>
+        expect(mockListMyInvitations).toHaveBeenCalledTimes(1),
+      );
+
+      rerender(
+        pinta([lista()[0], { id: 'c-2', name: 'Copa', status: 'ENROLLING' }]),
+      );
+
+      await waitFor(() =>
+        expect(mockListMyInvitations).toHaveBeenCalledTimes(2),
+      );
+      expect(mockListEnrollments).toHaveBeenCalledWith('c-2', {
+        status: 'REQUESTED',
+      });
+    });
+
+    it('P-c: one more competition asks again', async () => {
+      const { rerender } = render(pinta(lista()));
+      await waitFor(() =>
+        expect(mockListMyInvitations).toHaveBeenCalledTimes(1),
+      );
+
+      rerender(
+        pinta([...lista(), { id: 'c-3', name: 'Nueva', status: 'ACTIVE' }]),
+      );
+
+      await waitFor(() =>
+        expect(mockListMyInvitations).toHaveBeenCalledTimes(2),
+      );
+    });
+  });
 });

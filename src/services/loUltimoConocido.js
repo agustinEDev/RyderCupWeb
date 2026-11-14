@@ -238,6 +238,116 @@ export const recuerdaLasPartidas = (partidas) =>
 export const lasUltimasPartidas = () => leeLista(CLAVE_PARTIDAS);
 
 /**
+ * Lo último que se vio del panel, para pintarlo al entrar sin esperar a sus
+ * cuatro peticiones (Agustín, 14 nov 2026). Con su cuenta dentro: solo lo usa
+ * esa. Con el hándicap y las cifras que se veían: Agustín lo pidió así el mismo
+ * día, aunque en la fase 3 el hándicap se dejó fuera de la copia del usuario.
+ * Se borra al cerrar sesión, como todo lo de la cuenta.
+ */
+const CLAVE_PANEL = 'rydercup-ultimo-panel';
+
+/** De cada competición, lo que usa el panel: contarlas y la tarjeta de pendientes. */
+const loJustoDeLaCompeticion = (c) => ({
+  id: c?.id,
+  name: c?.name,
+  status: c?.status,
+});
+
+/** Las cifras que pinta el panel. Sin la lista de diferenciales, que no enseña. */
+const CAMPOS_DE_LAS_CIFRAS = [
+  'handicap',
+  'handicapTrend',
+  'scoringAvg',
+  'roundsPlayed',
+  'tournamentsTotal',
+  'tournamentsActive',
+  'estimatedIndex',
+  'playingAvg',
+  'bestDifferential',
+  'roundsWithDifferential',
+];
+
+/** Valores sueltos: lo que llega es una entidad con getters, y así se guarda. */
+const lasCifrasEnPlano = (cifras) =>
+  Object.fromEntries(CAMPOS_DE_LAS_CIFRAS.map((c) => [c, cifras[c] ?? null]));
+
+const esUnObjeto = (x) =>
+  Boolean(x) && typeof x === 'object' && !Array.isArray(x);
+
+const leeElPanel = () => {
+  try {
+    const crudo = localStorage.getItem(CLAVE_PANEL);
+    if (!crudo) return null;
+    const panel = JSON.parse(crudo);
+    if (!panel || typeof panel !== 'object' || Array.isArray(panel))
+      return null;
+    if (typeof panel.usuarioId !== 'string' || !panel.usuarioId) return null;
+    return {
+      usuarioId: panel.usuarioId,
+      competiciones: Array.isArray(panel.competiciones)
+        ? panel.competiciones
+        : null,
+      ultimasPartidas: Array.isArray(panel.ultimasPartidas)
+        ? panel.ultimasPartidas
+        : null,
+      estadisticas: esUnObjeto(panel.estadisticas) ? panel.estadisticas : null,
+    };
+  } catch {
+    return null;
+  }
+};
+
+/**
+ * Guarda una parte del panel de esta cuenta, o las dos. Cada una llega por su
+ * lado; si lo guardado es de otra cuenta, se empieza de cero.
+ *
+ * @param {string} usuarioId
+ * @param {{competiciones?: Array, ultimasPartidas?: Array, estadisticas?: Object}} partes
+ */
+export const recuerdaElPanel = (
+  usuarioId,
+  { competiciones, ultimasPartidas, estadisticas } = {},
+) => {
+  if (cerrado || !usuarioId) return false;
+  const antes = leeElPanel();
+  const deEsta = antes?.usuarioId === usuarioId ? antes : null;
+  const panel = {
+    usuarioId,
+    competiciones: Array.isArray(competiciones)
+      ? competiciones.map(loJustoDeLaCompeticion)
+      : (deEsta?.competiciones ?? null),
+    ultimasPartidas: Array.isArray(ultimasPartidas)
+      ? ultimasPartidas
+      : (deEsta?.ultimasPartidas ?? null),
+    estadisticas: esUnObjeto(estadisticas)
+      ? lasCifrasEnPlano(estadisticas)
+      : (deEsta?.estadisticas ?? null),
+  };
+  try {
+    localStorage.setItem(CLAVE_PANEL, JSON.stringify(panel));
+    return true;
+  } catch {
+    // Sin sitio: no se guarda. La cola de golpes sin enviar manda
+    return false;
+  }
+};
+
+/**
+ * @param {string} usuarioId
+ * @returns {{competiciones: Array|null, ultimasPartidas: Array|null, estadisticas: Object|null}|null}
+ */
+export const elUltimoPanel = (usuarioId) => {
+  if (!usuarioId) return null;
+  const panel = leeElPanel();
+  if (!panel || panel.usuarioId !== usuarioId) return null;
+  return {
+    competiciones: panel.competiciones,
+    ultimasPartidas: panel.ultimasPartidas,
+    estadisticas: panel.estadisticas,
+  };
+};
+
+/**
  * Al cerrar sesión: son datos de ESTA cuenta. En un móvil compartido, sin esto
  * la siguiente persona que entrara y se quedara sin señal vería la lista de
  * partidas de la anterior, con sus nombres y sus resultados.
@@ -247,6 +357,7 @@ const borra = () => {
     localStorage.removeItem(CLAVE_LISTA);
     localStorage.removeItem(CLAVE_PARTIDOS);
     localStorage.removeItem(CLAVE_PARTIDAS);
+    localStorage.removeItem(CLAVE_PANEL);
     localStorage.removeItem(CLAVE);
   } catch {
     // Nada que hacer
