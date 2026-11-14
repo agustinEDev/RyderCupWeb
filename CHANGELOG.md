@@ -5,6 +5,37 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.79.0] - 2026-11-14
+
+**Tanda 1 de la auditoría de la fase 6** (#1138, #1139). Va con el backend 2.65.0, y **sale
+ANTES que él**: la 2.65.0 deja de mandar el correo del invitado en algunas invitaciones, y
+esta versión ya lo acepta (la 2.78.0 no). Probado en el Kind con el backend 2.65.0: cerrar sesión con la API
+apagada deja el cierre pendiente y, al volver, la app lo manda antes que nada (logout 200 y
+luego la sesión ya da 401) sin volver a entrar; cerrar sesión con red, como siempre; la
+lista de invitaciones del organizador con nombres y correos según cómo se enviaron.
+
+### Security
+
+- **Cerrar sesión sin cobertura ya no deja la sesión viva en el móvil** (F-01). Las cookies de
+  la sesión solo las borra el servidor: si el cierre no le llegaba (sin red, o cortado por la
+  recarga), quien abriera la app después entraba en la cuenta. Ahora el cierre queda
+  pendiente hasta que el servidor lo confirma, y mientras tanto va antes que cualquier otra
+  petición; sin red, la app no pregunta por la sesión. Se manda en cuanto vuelve la red o al
+  abrir la app, de una pestaña a la vez, y solo se da por hecho con una respuesta clara del
+  servidor.
+- **El paquete ya no lleva el objeto entero de variables de la compilación** (F-03): solo las
+  tres de Sentry que se usan.
+
+### Changed
+
+- **Invitaciones** (B-01/B-03): la tarjeta y la ventana de retirar nombran al invitado por su
+  nombre o por el correo que se tecleó, y si no hay ninguno, «Jugador invitado». Ya no hace
+  falta que la invitación traiga el correo.
+- Nuevo aviso para el tope de invitaciones por organizador: «Ya has enviado N invitaciones
+  en la última hora. Podrás enviar más en un rato».
+- Cabeceras de producción: el HSTS y la cabecera del logo de los correos los pone ahora
+  Cloudflare; el comprobador diario y la documentación esperan esos valores.
+
 ## [2.78.0] - 2026-11-14
 
 **El panel sin «Cargando» al entrar** (#1132). Sin cambios en el backend: va con la 2.64.0 en
