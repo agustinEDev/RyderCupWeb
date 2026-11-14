@@ -24,6 +24,12 @@ fichero y abre una issue si algo no cuadra; `src/cabecerasDeSeguridad.test.js` e
 las copias de Vite y del Kind lleven lo mismo. Para cambiar una cabecera: primero el
 fichero (en una PR), después el dashboard de Render.
 
+**HSTS lo pone Cloudflare** (SSL/TLS → Edge Certificates → HSTS: 12 meses, sin
+`includeSubDomains`, sin precarga) para toda la zona, también el dominio sin `www`, y
+sustituye al que mande Render. Sin `includeSubDomains` a propósito:
+`email.rydercupfriends.com` es el dominio de seguimiento de Mailgun y no tiene `https`
+(auditoría de la fase 6, P-01; 14 nov 2026).
+
 En Render, regla con `Request Path` = `/*`, para que cubra también `/assets/`:
 
 ```
@@ -31,7 +37,7 @@ X-Content-Type-Options: nosniff
 X-Frame-Options: DENY
 Referrer-Policy: strict-origin-when-cross-origin
 Permissions-Policy: geolocation=(self), microphone=(), camera=()
-Strict-Transport-Security: max-age=31536000; includeSubDomains
+Strict-Transport-Security: max-age=31536000
 Cross-Origin-Opener-Policy: same-origin
 Cross-Origin-Resource-Policy: same-origin
 Reporting-Endpoints: csp="https://o4510427294662656.ingest.de.sentry.io/api/4510427296825424/security/?sentry_key=5548cda036a3fedd1f50791b66a93354&sentry_environment=production"
