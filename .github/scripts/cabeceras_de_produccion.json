@@ -1,5 +1,5 @@
 {
-  "_comentario": "Las cabeceras de seguridad de www.rydercupfriends.com: la única fuente. Render las sirve desde su dashboard (Static Site RyderCupWeb → Headers), que no lee este fichero; docs/SECURITY_HEADERS.md explica cómo pegarlas. Cada ruta lleva las de / más las suyas, que mandan; sobra cualquier otra de seguridad. Las comprueban cada día el workflow cabeceras-de-produccion.yml contra producción y src/cabecerasDeSeguridad.test.js contra las copias de Vite y del Kind. Fase 4 del plan a 9 (FE-04, FE-05), 11 nov 2026.",
+  "_comentario": "Las cabeceras de seguridad de www.rydercupfriends.com: la única fuente. Render las sirve desde su dashboard (Static Site RyderCupWeb → Headers), que no lee este fichero; docs/SECURITY_HEADERS.md explica cómo pegarlas. Cada ruta lleva las de / más las suyas, que mandan; sobra cualquier otra de seguridad. Las comprueban cada día el workflow cabeceras-de-produccion.yml contra producción y src/cabecerasDeSeguridad.test.js contra las copias de Vite y del Kind. Fase 4 del plan a 9 (FE-04, FE-05), 11 nov 2026. HSTS lo pone Cloudflare para toda la zona y sustituye al de Render (sin includeSubDomains: email.rydercupfriends.com, el seguimiento de Mailgun, no tiene https), 14 nov 2026.",
   "sentry_csp": "https://o4510427294662656.ingest.de.sentry.io/api/4510427296825424/security/?sentry_key=5548cda036a3fedd1f50791b66a93354&sentry_environment=production",
   "rutas": {
     "/": {
@@ -7,7 +7,7 @@
       "x-frame-options": "DENY",
       "referrer-policy": "strict-origin-when-cross-origin",
       "permissions-policy": "geolocation=(self), microphone=(), camera=()",
-      "strict-transport-security": "max-age=31536000; includeSubDomains",
+      "strict-transport-security": "max-age=31536000",
       "cross-origin-opener-policy": "same-origin",
       "cross-origin-resource-policy": "same-origin",
       "reporting-endpoints": "csp=\"{sentry_csp}\"",

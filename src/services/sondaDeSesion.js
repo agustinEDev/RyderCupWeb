@@ -30,6 +30,7 @@ import {
   esUn401DeToken,
   MOTIVO_DEL_CIERRE,
 } from '../utils/avisoDeCierreForzado';
+import { esperaAlCierrePendiente } from '../infrastructure/http/cierrePendiente';
 
 /** El aviso del dispositivo revocado que ve la sonda (FE #1042). */
 const avisaDeLaRevocacion = () =>
@@ -76,6 +77,8 @@ const cuerpoDelRechazo = async (respuesta) => {
  */
 export const preguntaLaSesionSinInterceptor = async (signal) => {
   try {
+    // Con un cierre pendiente, primero ese; sin red, no se pregunta (F-01)
+    await esperaAlCierrePendiente();
     let respuesta = await pideElUsuario(signal);
 
     if (respuesta.status === 401) {

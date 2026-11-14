@@ -21,8 +21,9 @@ import { esRutaPublica } from '../utils/rutasPublicas';
  * @returns {Object} - { logout: Function }
  */
 /** Lo que se espera al backend antes de salir de todas formas. Cerrar la sesion
- *  de este lado no depende de que conteste: la cookie caduca sola, y quedarse
- *  dentro con los datos puestos es peor que salir sin que el servidor se entere. */
+ *  de este lado no depende de que conteste: si no confirma, queda el cierre
+ *  pendiente (lo apunta el repositorio), que se manda antes que cualquier otra
+ *  petición (F-01). */
 const ESPERA_MAXIMA_MS = 5_000;
 
 /** Adónde sale la pestaña que se entera de otra: si estaba en una página que se

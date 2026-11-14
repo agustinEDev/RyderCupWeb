@@ -47,6 +47,7 @@ import {
 } from '../infrastructure/http/copiaDelUsuarioEnElDispositivo';
 import { olvidaElAvisoDelCierre } from '../utils/avisoTrasElCierre';
 import { fetchWithTokenRefresh } from '../infrastructure/http/tokenRefreshInterceptor';
+import { mandaElCierrePendiente } from '../infrastructure/http/cierrePendiente';
 import { registraElUsuarioDeLaPestana } from '../utils/usuarioDeLaPestana';
 import { olvidaLasNovedades } from './novedadesDeActividad';
 
@@ -661,6 +662,9 @@ export const vigilaLaVueltaALaAplicacion = () => {
     if (globalThis.document.visibilityState === 'visible') revalidaLaSesion();
   };
   const alVolverLaRed = () => {
+    // Un cierre de sesión que no llegó, lo primero; sin esperar a que alguien
+    // pregunte (F-01). Si vuelve a fallar, queda para la próxima
+    mandaElCierrePendiente().catch(() => {});
     alVolverLaRedSinSaberNada();
     revalidaLaSesion();
   };

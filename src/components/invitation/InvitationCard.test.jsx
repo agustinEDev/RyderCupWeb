@@ -668,4 +668,48 @@ describe('InvitationCard · invitado sin nombre (fase 3)', () => {
       'actions.reinviteAria:player@example.com',
     );
   });
+
+  describe('C9: lo que ve el organizador (B-01/B-03)', () => {
+    it('por id: el nombre, sin correo', () => {
+      render(
+        <InvitationCard
+          invitation={{ ...pendingInvitation, inviteeEmail: null }}
+          mode="creator"
+          t={mockT}
+        />,
+      );
+      expect(screen.getByText('Jane Player')).toBeInTheDocument();
+    });
+
+    it('por correo: el correo tecleado, sin nombre', () => {
+      render(
+        <InvitationCard
+          invitation={{ ...pendingInvitation, inviteeName: undefined }}
+          mode="creator"
+          t={mockT}
+        />,
+      );
+      expect(screen.getByText('player@example.com')).toBeInTheDocument();
+    });
+
+    it('sin nombre ni correo: un texto, nunca vacío', () => {
+      render(
+        <InvitationCard
+          invitation={{
+            ...pendingInvitation,
+            inviteeEmail: null,
+            inviteeName: undefined,
+          }}
+          mode="creator"
+          onReinvite={() => {}}
+          t={mockT}
+        />,
+      );
+      expect(screen.getByText('card.invitedPlayer')).toBeInTheDocument();
+      expect(screen.getByTestId('reinvite-button')).toHaveAttribute(
+        'aria-label',
+        'actions.reinviteAria',
+      );
+    });
+  });
 });

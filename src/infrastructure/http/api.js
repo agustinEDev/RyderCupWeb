@@ -21,6 +21,12 @@ import { esRutaDeLaApiSegura, rechazaLaRuta } from './rutaDeLaApi';
 
 // Para que los repositorios construyan sus rutas (FE-03): llegan a http solo por aquí
 export { segmento } from './rutaDeLaApi';
+// El cierre de sesión, con su marca de pendiente: los repositorios llegan al
+// transporte solo por aquí (F-01)
+export {
+  apuntaElCierrePendiente,
+  mandaElCierrePendiente,
+} from './cierrePendiente';
 
 /**
  * La llamada de red, con el aviso de «sin conexión» ya traducido (FE #685).

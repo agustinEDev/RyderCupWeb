@@ -34,7 +34,7 @@ const SENTRY_CONFIG = {
   environment: import.meta.env.VITE_SENTRY_ENVIRONMENT || 'development',
   debug: import.meta.env.VITE_SENTRY_DEBUG === 'true',
   // Los mismos que aplica el arranque de main.jsx, de un solo sitio (FE #792)
-  ...sentrySampleRates(import.meta.env),
+  ...sentrySampleRates(),
 };
 
 // Obtener release desde package.json

@@ -108,6 +108,9 @@ export default [
   //   acceso (un bucle de refresco) y para «Volver» de los documentos legales
   //   (un `user` rancio acabaría en «tu sesión expiró» al pulsarlo)
   // - ApiSupportRepository.js: el formulario de contacto es un endpoint público
+  // - cierrePendiente.js: manda un cierre de sesión que no llegó SIN interceptor;
+  //   un refresco rechazado ahí dispara la salida forzada con recarga, y con la
+  //   marca puesta sería un bucle (F-01)
   {
     files: ['src/**/*.{js,jsx}'],
     ignores: [
@@ -116,6 +119,7 @@ export default [
       'src/infrastructure/http/tokenRefreshInterceptor.js',
       'src/services/sondaDeSesion.js',
       'src/infrastructure/repositories/ApiSupportRepository.js',
+      'src/infrastructure/http/cierrePendiente.js',
     ],
     rules: {
       'no-restricted-globals': [
