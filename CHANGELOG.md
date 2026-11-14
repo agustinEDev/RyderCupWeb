@@ -5,6 +5,34 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.78.0] - 2026-11-14
+
+**El panel sin «Cargando» al entrar** (#1132). Sin cambios en el backend: va con la 2.64.0 en
+producción. Probado en el Kind con la 2.64.0: con la API encendida guarda el panel entero; con
+la API apagada, al recargar sale todo pintado con lo de la última vez (competiciones, «Requiere
+tu atención», hándicap y cifras, próximo partido y últimas partidas); al cerrar sesión se borra
+y al volver a entrar se guarda de nuevo, sin errores en la consola.
+
+### Added
+
+- **El panel se pinta al momento con lo de la última vez.** Si ya se vio en este móvil con esta
+  cuenta, al abrir la app o entrar en el panel se enseña en cuanto el servidor confirma la
+  sesión (sin red, con la copia del usuario del móvil, como el resto de la aplicación). Cada
+  parte se sustituye sola, sin avisos, cuando llega la de ahora. Incluye las competiciones,
+  «Requiere tu atención», el hándicap y las cifras, el próximo partido y las últimas partidas.
+- Lo guardado es de una cuenta y se borra al cerrar sesión; nunca se escribe tras un cierre
+  forzado. Lleva versión y, al leerlo, se descarta lo que no tenga el tipo que toca. Si el
+  móvil no tiene sitio, no se guarda: la cola de golpes sin enviar manda.
+- Sin red, lo que se ve se queda; un error del servidor o del código hace lo de siempre y
+  borra esa parte de lo guardado.
+
+### Changed
+
+- «Requiere tu atención» depende de lo que dicen las competiciones (id, nombre y estado), no del
+  objeto de la lista: la lista guardada seguida de la nueva no pide todo dos veces. Su memoria
+  es ahora de una cuenta, también al cambiar de cuenta con la tarjeta abierta o con un
+  «Entendido» a medias.
+
 ## [2.77.0] - 2026-11-14
 
 **Fase 5 del plan de calidad: pantallas grandes repartidas, efectos de React sin excepciones
