@@ -35,6 +35,17 @@ import {
 import BlockLoader from '../ui/BlockLoader';
 import { diaDeLaSesion } from '../../utils/diaDeLaSesion';
 
+/** Lo que la tarjeta recuerda, con sus valores por defecto. */
+const loRecordado = (r) => ({
+  pendingInvitations: r?.pendingInvitations ?? 0,
+  pendingEnrollments: r?.pendingEnrollments ?? [],
+  pendingFriendRequests: r?.pendingFriendRequests ?? 0,
+  activeQuickMatches: r?.activeQuickMatches ?? [],
+  sobresPendientes: r?.sobresPendientes ?? [],
+  sesionesSinPartidos: r?.sesionesSinPartidos ?? [],
+  plazasAsignadas: r?.plazasAsignadas ?? [],
+});
+
 const PendingActionsCard = ({
   user,
   competitions,
@@ -48,30 +59,31 @@ const PendingActionsCard = ({
   // Arranca con lo ultimo que esta tarjeta llego a enseñar (FE #502). El panel
   // se remonta cada vez que se vuelve a Inicio desde la barra inferior, asi que
   // sin esto cada vuelta empezaba de cero y pintaba el esqueleto amarillo
-  const recordado = loQueSeEnseñoAntes();
+  // Una vez, al montar: lo que siembra los estados y lo aplicado (/code-review)
+  const [inicial] = useState(() => loRecordado(loQueSeEnseñoAntes(user?.id)));
 
   const [pendingInvitations, setPendingInvitations] = useState(
-    recordado?.pendingInvitations ?? 0,
+    inicial.pendingInvitations,
   );
   const [pendingEnrollments, setPendingEnrollments] = useState(
-    recordado?.pendingEnrollments ?? [],
+    inicial.pendingEnrollments,
   );
   const [pendingFriendRequests, setPendingFriendRequests] = useState(
-    recordado?.pendingFriendRequests ?? 0,
+    inicial.pendingFriendRequests,
   );
   const [activeQuickMatches, setActiveQuickMatches] = useState(
-    recordado?.activeQuickMatches ?? [],
+    inicial.activeQuickMatches,
   );
   const [sobresPendientes, setSobresPendientes] = useState(
-    recordado?.sobresPendientes ?? [],
+    inicial.sobresPendientes,
   );
   const [sesionesSinPartidos, setSesionesSinPartidos] = useState(
-    recordado?.sesionesSinPartidos ?? [],
+    inicial.sesionesSinPartidos,
   );
   // Las plazas que le asignaron desde una lista de espera (FE #824): sin
   // correo, se entera aquí hasta que pulsa «Entendido»
   const [plazasAsignadas, setPlazasAsignadas] = useState(
-    recordado?.plazasAsignadas ?? [],
+    inicial.plazasAsignadas,
   );
   // Las que ya se mandaron como vistas: un doble toque no repite el envío, y una
   // lectura lanzada antes no las devuelve a la lista (revisor)
@@ -88,17 +100,21 @@ const PendingActionsCard = ({
   }, []);
   // Otra cuenta en la misma tarjeta montada: lo de la anterior no se enseña ni
   // un momento mientras llega lo nuevo (CodeRabbit en la #836). Se reinicia al
-  // pintar, no en un efecto, para que no llegue a verse
+  // pintar, no en un efecto, para que no llegue a verse; con lo que la nueva
+  // cuenta tenga recordado, si tiene algo (revisor, 14 nov 2026)
   const [cuentaDe, setCuentaDe] = useState(user?.id);
   if (user?.id !== cuentaDe) {
+    const deLaNueva = loRecordado(loQueSeEnseñoAntes(user?.id));
     setCuentaDe(user?.id);
-    setPendingInvitations(0);
-    setPendingEnrollments([]);
-    setPendingFriendRequests(0);
-    setActiveQuickMatches([]);
-    setSobresPendientes([]);
-    setSesionesSinPartidos([]);
-    setPlazasAsignadas([]);
+    setPendingInvitations(deLaNueva.pendingInvitations);
+    setPendingEnrollments(deLaNueva.pendingEnrollments);
+    setPendingFriendRequests(deLaNueva.pendingFriendRequests);
+    setActiveQuickMatches(deLaNueva.activeQuickMatches);
+    setSobresPendientes(deLaNueva.sobresPendientes);
+    setSesionesSinPartidos(deLaNueva.sesionesSinPartidos);
+    setPlazasAsignadas(deLaNueva.plazasAsignadas);
+    // Lo que la anterior tenía a medio enviar no es de esta
+    setEnviandoVista(new Set());
   }
   // Solo se enseña la espera cuando NO hay nada que enseñar: con lo de antes en
   // pantalla, el refresco va en silencio
@@ -107,15 +123,10 @@ const PendingActionsCard = ({
   // Lo ultimo que se llego a APLICAR, que es lo que hay que recordar. En una ref
   // y no leyendo los estados dentro del efecto: eso obligaria a meterlos en sus
   // dependencias y el efecto se relanzaria a si mismo
-  const ultimoAplicado = useRef({
-    pendingInvitations: recordado?.pendingInvitations ?? 0,
-    pendingEnrollments: recordado?.pendingEnrollments ?? [],
-    pendingFriendRequests: recordado?.pendingFriendRequests ?? 0,
-    activeQuickMatches: recordado?.activeQuickMatches ?? [],
-    sobresPendientes: recordado?.sobresPendientes ?? [],
-    sesionesSinPartidos: recordado?.sesionesSinPartidos ?? [],
-    plazasAsignadas: recordado?.plazasAsignadas ?? [],
-  });
+  const ultimoAplicado = useRef(inicial);
+  // De qué cuenta es lo aplicado: lo de la anterior no puede quedarse, ni
+  // guardarse en el móvil, bajo la nueva si a esta le falla una petición (revisor)
+  const aplicadoDe = useRef(user?.id);
 
   const isCreator = useMemo(
     () =>
@@ -130,17 +141,40 @@ const PendingActionsCard = ({
     [user],
   );
 
+  // La lista por lo que dice, no por el objeto (Agustín, 14 nov 2026): el panel
+  // pinta primero la lista guardada y luego la que llega, y con las mismas
+  // competiciones eso pedía todo dos veces. Lo que se pide es en vivo igualmente.
+  // Se ajusta al pintar, no en un efecto (el patrón de la documentación de React)
+  const claveDeLaLista = JSON.stringify(
+    (competitions ?? []).map((c) => [c?.id, c?.name, c?.status]),
+  );
+  const [lista, setLista] = useState({
+    clave: claveDeLaLista,
+    competiciones: competitions ?? [],
+  });
+  if (lista.clave !== claveDeLaLista) {
+    setLista({ clave: claveDeLaLista, competiciones: competitions ?? [] });
+  }
+  const competiciones = lista.competiciones;
+
   // Quien organiza algo (BE #361): el rol, o tener alguna competición. La
   // lista que recibe esta tarjeta ya son las que ha CREADO (`findByCreator`)
-  const organiza = Boolean(isCreator || competitions?.length > 0);
+  const organiza = Boolean(isCreator || competiciones.length > 0);
 
   useEffect(() => {
     if (!user) return;
 
     let cancelado = false;
+    if (aplicadoDe.current !== user.id) {
+      aplicadoDe.current = user.id;
+      ultimoAplicado.current = loRecordado(loQueSeEnseñoAntes(user.id));
+      vistas.current = new Set();
+    }
 
     const loadPendingData = async () => {
-      if (!loQueSeEnseñoAntes()) setIsLoading(true);
+      // Con lo de antes en pantalla, sin espera; también si la cuenta anterior
+      // dejó la suya puesta al cambiar con su carga a medias
+      setIsLoading(!loQueSeEnseñoAntes(user.id));
       try {
         // Cada una dentro de su función async: si alguna fallara aunque fuera
         // en síncrono, queda como un rechazo más y no tumba el panel entero
@@ -148,7 +182,7 @@ const PendingActionsCard = ({
         const results = await Promise.allSettled([
           pedir(() => listMyInvitationsUseCase.execute({ status: 'PENDING' })),
           isCreator
-            ? pedir(() => loadPendingEnrollments(competitions))
+            ? pedir(() => loadPendingEnrollments(competiciones))
             : Promise.resolve([]),
           pedir(() =>
             listPendingFriendRequestsUseCase.execute(user.id, 'received'),
@@ -188,7 +222,7 @@ const PendingActionsCard = ({
         // cero en cada vuelta y la fila del creador parpadeaba
         if (
           results[1].status === 'fulfilled' &&
-          (competitions.length > 0 || !isCreator)
+          (competiciones.length > 0 || !isCreator)
         ) {
           aplicado.pendingEnrollments = results[1].value;
           setPendingEnrollments(aplicado.pendingEnrollments);
@@ -217,7 +251,7 @@ const PendingActionsCard = ({
         }
 
         ultimoAplicado.current = aplicado;
-        recuerdaLasAccionesPendientes({ ...aplicado });
+        recuerdaLasAccionesPendientes({ ...aplicado }, user.id);
       } catch (error) {
         console.error('Error loading pending actions:', error);
       } finally {
@@ -230,7 +264,7 @@ const PendingActionsCard = ({
     return () => {
       cancelado = true;
     };
-  }, [user, competitions, isCreator, organiza]);
+  }, [user, competiciones, isCreator, organiza]);
 
   // El día y la franja, con el idioma de la aplicación. `Intl` revienta con un
   // RangeError si la fecha no se puede leer, y esto vive dentro de la tarjeta
@@ -259,24 +293,27 @@ const PendingActionsCard = ({
   // la memoria (si no, volvería al volver a Inicio). Si falla, se queda y se dice
   const entendido = async (plaza) => {
     setEnviandoVista((s) => new Set(s).add(plaza.roundId));
+    // De quién era: si al volver la tarjeta es de otra cuenta, esto no toca lo
+    // suyo ni guarda lo de la nueva a nombre de la vieja (/code-review)
+    const deQuien = user?.id;
     try {
       await acknowledgeAssignedPlaceUseCase.execute(plaza.roundId);
+      if (!montada.current || aplicadoDe.current !== deQuien) return;
       vistas.current.add(plaza.roundId);
-      if (!montada.current) return;
       const quedan = (lista) =>
         lista.filter((p) => p.roundId !== plaza.roundId);
       ultimoAplicado.current = {
         ...ultimoAplicado.current,
         plazasAsignadas: quedan(ultimoAplicado.current.plazasAsignadas),
       };
-      recuerdaLasAccionesPendientes({ ...ultimoAplicado.current });
+      recuerdaLasAccionesPendientes({ ...ultimoAplicado.current }, deQuien);
       setPlazasAsignadas(quedan);
     } catch (error) {
       // El nuestro, traducido: el del servidor puede venir en otro idioma (CodeRabbit)
       console.error('No se ha podido marcar la plaza como vista:', error);
       customToast.error(t('pendingActions.placeAssignedOkFailed'));
     } finally {
-      if (montada.current)
+      if (montada.current && aplicadoDe.current === deQuien)
         setEnviandoVista((s) => {
           const sin = new Set(s);
           sin.delete(plaza.roundId);
