@@ -26,7 +26,8 @@ import {
  *   5xx                                               | igual que sin red: no se sabe si cerró
  *   E5 acceso caducado: 401 → refresco → cierre       | se borra la marca
  *   E5 401 y el refresco también 401 (sesión muerta)  | se borra la marca
- *   429, 408 o 403 sin código de la app (Cloudflare)  | la marca sigue
+ *   429, 408 o un 4xx sin código de la app (borde)    | la marca sigue
+ *   un cuerpo que no termina de llegar                | igual que sin red, sin colgarse
  *   otro 4xx de la app (con su código)                | se borra: no se queda la app atascada
  *   refresco bien y el cierre sigue en 401            | la marca sigue
  *   otra pestaña ya lo resolvió                       | no se refresca (no mata la sesión nueva)
@@ -152,6 +153,16 @@ describe('mandar el cierre pendiente', () => {
     expect(hayCierrePendiente()).toBe(true);
   });
 
+  it('un 5xx de la app (con su código) también deja la marca', async () => {
+    apuntaElCierrePendiente();
+    fetch.mockResolvedValueOnce({
+      ...respuesta(500),
+      json: async () => ({ error_code: 'INTERNAL_ERROR' }),
+    });
+    await expect(mandaElCierrePendiente()).rejects.toBeInstanceOf(TypeError);
+    expect(hayCierrePendiente()).toBe(true);
+  });
+
   it('E5: con el acceso caducado refresca, repite el cierre y borra la marca', async () => {
     apuntaElCierrePendiente();
     fetch
@@ -195,10 +206,51 @@ describe('mandar el cierre pendiente', () => {
     expect(hayCierrePendiente()).toBe(true);
   });
 
+  it('un 429 de la app (con su código) también deja la marca', async () => {
+    apuntaElCierrePendiente();
+    fetch.mockResolvedValueOnce({
+      ...respuesta(429),
+      json: async () => ({ error_code: 'RATE_LIMIT_EXCEEDED' }),
+    });
+    await expect(mandaElCierrePendiente()).rejects.toBeInstanceOf(TypeError);
+    expect(hayCierrePendiente()).toBe(true);
+  });
+
   it('un 429 deja la marca', async () => {
     apuntaElCierrePendiente();
     fetch.mockResolvedValueOnce(respuesta(429));
     await expect(mandaElCierrePendiente()).rejects.toBeInstanceOf(TypeError);
+    expect(hayCierrePendiente()).toBe(true);
+  });
+
+  it('code-review: un 404 o 400 sin código de la app (borde o proxy) deja la marca', async () => {
+    apuntaElCierrePendiente();
+    fetch.mockResolvedValueOnce({
+      ...respuesta(404),
+      json: async () => {
+        throw new SyntaxError('html');
+      },
+    });
+    await expect(mandaElCierrePendiente()).rejects.toBeInstanceOf(TypeError);
+    expect(hayCierrePendiente()).toBe(true);
+  });
+
+  it('code-review: un cuerpo que no termina de llegar no deja el envío colgado', async () => {
+    vi.useFakeTimers();
+    apuntaElCierrePendiente();
+    fetch.mockImplementationOnce(async (_url, { signal }) => ({
+      ...respuesta(403),
+      json: () =>
+        new Promise((_, rechaza) =>
+          signal.addEventListener('abort', () =>
+            rechaza(new globalThis.DOMException('cortado', 'AbortError')),
+          ),
+        ),
+    }));
+    const envio = mandaElCierrePendiente();
+    const comprobacion = expect(envio).rejects.toBeInstanceOf(TypeError);
+    await vi.advanceTimersByTimeAsync(20_000);
+    await comprobacion;
     expect(hayCierrePendiente()).toBe(true);
   });
 

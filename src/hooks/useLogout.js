@@ -13,10 +13,6 @@ import { logoutUseCase } from '../composition';
 import { laPaginaSeVa } from '../services/sesionCompartida';
 import { olvidaLasNovedades } from './useNovedadesDeActividad';
 import { esRutaPublica } from '../utils/rutasPublicas';
-import {
-  apuntaElCierrePendiente,
-  olvidaElCierrePendiente,
-} from '../composition/http';
 
 /**
  * Centralized logout hook
@@ -26,7 +22,8 @@ import {
  */
 /** Lo que se espera al backend antes de salir de todas formas. Cerrar la sesion
  *  de este lado no depende de que conteste: si no confirma, queda el cierre
- *  pendiente, que se manda antes que cualquier otra petición (F-01). */
+ *  pendiente (lo apunta el repositorio), que se manda antes que cualquier otra
+ *  petición (F-01). */
 const ESPERA_MAXIMA_MS = 5_000;
 
 /** Adónde sale la pestaña que se entera de otra: si estaba en una página que se
@@ -89,22 +86,15 @@ export const useLogout = () => {
       if (!desdeOtraPestana) broadcastLogout();
 
       if (!skipBackendCall && !desdeOtraPestana) {
-        // Pendiente hasta que el servidor confirme: sin cobertura, o si la recarga
-        // corta la petición, la sesión seguiría viva y quien abra la app después
-        // entraría. Con la marca, el cierre va antes que cualquier otra petición (F-01)
-        apuntaElCierrePendiente();
         try {
           // Con un tope: un rechazo se recoge abajo, pero una peticion COLGADA
           // —la cobertura de dos barras del campo— no se rechaza nunca, y sin
           // esto la limpieza no llegaba a ejecutarse y la salida se quedaba a
           // medias, con la pantalla puesta y los datos en el dispositivo
-          const confirmado = await Promise.race([
-            logoutUseCase.execute().then(() => true),
-            new Promise((suelta) =>
-              setTimeout(() => suelta(false), ESPERA_MAXIMA_MS),
-            ),
+          await Promise.race([
+            logoutUseCase.execute(),
+            new Promise((suelta) => setTimeout(suelta, ESPERA_MAXIMA_MS)),
           ]);
-          if (confirmado) olvidaElCierrePendiente();
         } catch {
           // Continue with client-side cleanup even if backend fails
         }

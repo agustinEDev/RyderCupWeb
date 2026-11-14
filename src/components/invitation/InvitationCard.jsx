@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router';
 import { Mail, Clock, User, MessageSquare, ChevronRight } from 'lucide-react';
 import InvitationBadge from './InvitationBadge';
+import { quienEsElInvitado } from '../../utils/quienEsElInvitado';
 
 // Una sola regla para «Caducada» y para dejar de ofrecer la ficha (/code-review)
 const haCaducado = (expiresAt) =>
@@ -44,11 +45,6 @@ const CLAVE_DE_LA_FECHA = {
   CANCELLED: 'card.withdrawnAt',
   NO_ROOM: 'card.noRoomSince',
 };
-
-/** El nombre (por id o tras responder), el correo tecleado (por correo) o, si no
- *  hay ninguno, un texto: la tarjeta nunca queda en blanco (B-01/B-03) */
-const quienEsElInvitado = (invitation, t) =>
-  invitation.inviteeName || invitation.inviteeEmail || t('card.invitedPlayer');
 
 const InvitationCard = ({
   invitation,

@@ -13,6 +13,8 @@ import * as api from '../http/api.js';
 // Mock api module
 vi.mock('../http/api.js', async () => ({
   segmento: (await vi.importActual('../http/rutaDeLaApi')).segmento,
+  // El cierre de sesión de verdad: su marca y su envío (F-01)
+  ...(await vi.importActual('../http/cierrePendiente')),
   default: vi.fn(),
 }));
 
@@ -270,14 +272,38 @@ describe('ApiAuthRepository · register con la aceptación de los Términos', ()
 describe('ApiAuthRepository - cerrar sesión (F-01)', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    localStorage.clear();
   });
 
-  it('el cierre no espera a un cierre pendiente: es él mismo', async () => {
-    api.default.mockResolvedValue({});
-    await new ApiAuthRepository().logout();
-    expect(api.default).toHaveBeenCalledWith(
-      '/api/v1/auth/logout',
-      expect.objectContaining({ method: 'POST', sinEsperarAlCierre: true }),
+  it('apunta el cierre pendiente y lo manda por su envío, no por apiRequest', async () => {
+    const pendiente = await import('../http/cierrePendiente');
+    let habiaMarca = null;
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => {
+        habiaMarca = pendiente.hayCierrePendiente();
+        return { ok: true, status: 200 };
+      }),
     );
+
+    await new ApiAuthRepository().logout();
+
+    expect(habiaMarca).toBe(true);
+    expect(String(fetch.mock.calls[0][0])).toContain('/api/v1/auth/logout');
+    expect(api.default).not.toHaveBeenCalled();
+    expect(pendiente.hayCierrePendiente()).toBe(false);
+    vi.unstubAllGlobals();
+  });
+
+  it('sin red falla y la marca sigue para mandarla después', async () => {
+    const pendiente = await import('../http/cierrePendiente');
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new TypeError('offline')));
+
+    await expect(new ApiAuthRepository().logout()).rejects.toBeInstanceOf(
+      TypeError,
+    );
+
+    expect(pendiente.hayCierrePendiente()).toBe(true);
+    vi.unstubAllGlobals();
   });
 });

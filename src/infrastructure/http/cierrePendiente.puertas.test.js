@@ -16,7 +16,6 @@ import { apuntaElCierrePendiente, hayCierrePendiente } from './cierrePendiente';
  *   E4 transporte con marca y red                  | primero el cierre, luego la petición
  *   E2 transporte con marca y sin red              | falla como «sin conexión», no sale
  *   transporte sin marca                           | la petición, como siempre
- *   transporte con `sinEsperarAlCierre`            | no espera (el propio cierre)
  *   E4 sonda con marca y red                       | primero el cierre, luego pregunta
  *   E2 sonda con marca y sin red                   | «fallo», sin preguntar por la sesión
  */
@@ -71,17 +70,6 @@ describe('el transporte espera al cierre pendiente', () => {
     fetch.mockResolvedValueOnce(respuesta(200));
     await fetchWithTokenRefresh('/api/v1/competitions', {});
     expect(rutas()).toEqual(['/api/v1/competitions']);
-  });
-
-  it('el propio cierre no espera a la marca, y la opción no llega a fetch', async () => {
-    apuntaElCierrePendiente();
-    fetch.mockResolvedValueOnce(respuesta(200));
-    await fetchWithTokenRefresh('/api/v1/auth/logout', {
-      method: 'POST',
-      sinEsperarAlCierre: true,
-    });
-    expect(rutas()).toEqual(['/api/v1/auth/logout']);
-    expect(fetch.mock.calls[0][1]).not.toHaveProperty('sinEsperarAlCierre');
   });
 });
 

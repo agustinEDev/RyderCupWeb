@@ -22,6 +22,7 @@ import {
 } from '../../composition';
 import BlockLoader from '../../components/ui/BlockLoader';
 import { PANTALLA_MENOS_BARRA_INFERIOR } from '../../utils/barraInferior';
+import { quienEsElInvitado } from '../../utils/quienEsElInvitado';
 
 // Ni `/friends/me` ni el listado de invitaciones dan más de 100 filas por
 // página. Pedir una sola dejaba fuera al amigo 101 y a la invitación pendiente
@@ -627,10 +628,7 @@ const InvitationsPage = () => {
         isOpen={retirando !== null}
         title={t('creator.withdrawDialog.title', {
           // Como la tarjeta: nunca en blanco (B-01/B-03)
-          name:
-            retirando?.inviteeName ||
-            retirando?.inviteeEmail ||
-            t('card.invitedPlayer'),
+          name: quienEsElInvitado(retirando, t),
         })}
         message={t('creator.withdrawDialog.body')}
         confirmText={t('creator.withdrawDialog.confirm')}

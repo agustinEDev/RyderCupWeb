@@ -3,8 +3,9 @@
  *
  * Las cookies de la sesión son httpOnly: solo el servidor las borra. Si alguien
  * cierra la sesión sin cobertura, la app queda «fuera» pero la sesión sigue viva
- * en el móvil, y quien lo abra después entra en su cuenta. Por eso `useLogout`
- * apunta aquí una marca ANTES de llamar al servidor y la borra cuando confirma;
+ * en el móvil, y quien lo abra después entra en su cuenta. Por eso el cierre de
+ * sesión (`ApiAuthRepository.logout`) apunta aquí una marca ANTES de llamar al
+ * servidor, y se borra cuando confirma;
  * mientras siga, el transporte y la sonda de la sesión mandan primero el cierre
  * (`esperaAlCierrePendiente`) y, sin red, fallan como «sin conexión» sin llegar
  * a preguntar por la sesión. El evento `online` lo manda en cuanto vuelve la red.
@@ -16,8 +17,9 @@
  * - 401: el acceso pudo caducar (dura 15 minutos y la marca puede tener días):
  *   se refresca una vez y se repite. Si el refresco también dice 401, la sesión
  *   ya estaba muerta. Si el refresco va bien, solo vale que el cierre diga 2xx.
- * - Sin red, sin respuesta a tiempo, un 5xx, un 408, un 429 o un 403 que no es de
- *   la app (un reto de Cloudflare): no se sabe si cerró; la marca sigue.
+ * - Sin red, sin respuesta a tiempo (también al leer el cuerpo), un 5xx, un 408,
+ *   un 429 o cualquier otro 4xx que no sea de la app (de Cloudflare o de un proxy,
+ *   sin `error_code`): no se sabe si cerró; la marca sigue.
  * - Otro 4xx de la app (con su `error_code`): se da por cerrada. Quedarse con la
  *   marca dejaría la app sin poder hablar con la API.
  * - Una marca de más de 7 días se olvida: es lo que dura la cookie de refresco, así
@@ -28,17 +30,13 @@
  * mataría la sesión nueva (revisor de la rama).
  */
 import { getCsrfCookie } from './csrfTokenSync';
+import { getApiBaseUrl } from './urlDeLaApi';
 import { cabeceraDelModoDeLaApp } from '../../utils/modoDeLaApp';
 
 const CLAVE = 'rydercup-cierre-pendiente';
 const TOPE_MS = 10_000;
 /** Lo que dura la cookie de refresco: pasado esto no queda sesión que cerrar. */
 const CADUCA_MS = 7 * 24 * 60 * 60 * 1000;
-
-const API_URL =
-  globalThis.APP_CONFIG?.API_BASE_URL ||
-  import.meta.env.VITE_API_BASE_URL ||
-  '';
 
 /** El usuario pidió cerrar la sesión: hasta que el servidor confirme, queda pendiente. */
 export const apuntaElCierrePendiente = () => {
@@ -77,12 +75,26 @@ const sinConexion = (causa) =>
     cause: causa,
   });
 
-/** Un POST con tope de tiempo; sin red o sin respuesta a tiempo, `TypeError`. */
+/** Si el cuerpo es de la app: un JSON con su `error_code`. */
+const esDeLaApp = async (respuesta) => {
+  try {
+    return Boolean((await respuesta.json())?.error_code);
+  } catch {
+    return false;
+  }
+};
+
+/**
+ * Un POST con tope de tiempo, que cubre también la lectura del cuerpo (con mala
+ * cobertura puede pararse con las cabeceras ya recibidas, y aquí se tiene el
+ * candado). Devuelve el estado y si un 4xx es de la app.
+ * @throws {TypeError} Sin red o sin respuesta a tiempo
+ */
 const post = async (ruta, cabeceras = {}) => {
   const corte = new AbortController();
   const temporizador = setTimeout(() => corte.abort(), TOPE_MS);
   try {
-    return await fetch(`${API_URL}${ruta}`, {
+    const respuesta = await fetch(`${getApiBaseUrl()}${ruta}`, {
       method: 'POST',
       credentials: 'include',
       headers: {
@@ -93,6 +105,10 @@ const post = async (ruta, cabeceras = {}) => {
       body: JSON.stringify({}),
       signal: corte.signal,
     });
+    const { ok, status } = respuesta;
+    const deLaApp =
+      !ok && status >= 400 && status < 500 && (await esDeLaApp(respuesta));
+    return { ok, status, deLaApp };
   } catch (error) {
     throw sinConexion(error);
   } finally {
@@ -105,27 +121,16 @@ const cierra = () => {
   return post('/api/v1/auth/logout', csrf ? { 'X-CSRF-Token': csrf } : {});
 };
 
-/** Si la respuesta es de la app: un 4xx con su `error_code`. */
-const esDeLaApp = async (respuesta) => {
-  try {
-    return Boolean((await respuesta.json())?.error_code);
-  } catch {
-    return false;
-  }
-};
-
-/** Una respuesta que no dice si el servidor cerró la sesión. */
-const noSeSabe = async (respuesta) =>
-  respuesta.status >= 500 ||
-  [408, 429].includes(respuesta.status) ||
-  (respuesta.status === 403 && !(await esDeLaApp(respuesta)));
+/** Un «no» de la app que no es de caducidad ni de freno: la sesión no se puede cerrar más. */
+const rechazoDeLaApp = ({ status, deLaApp }) =>
+  deLaApp && ![401, 408, 429].includes(status);
 
 const envia = async () => {
   const respuesta = await cierra();
   if (respuesta.ok) return;
   if (respuesta.status !== 401) {
-    if (await noSeSabe(respuesta)) throw sinConexion();
-    return;
+    if (rechazoDeLaApp(respuesta)) return;
+    throw sinConexion();
   }
   // Otra pestaña lo resolvió mientras: refrescar mataría su sesión nueva
   if (!hayCierrePendiente()) return;
