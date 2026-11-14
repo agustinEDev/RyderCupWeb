@@ -22,7 +22,23 @@ La fuente es **`.github/scripts/cabeceras_de_produccion.json`** (fase 4 del plan
 2026). Cada día, el workflow **Production Security Headers** compara producción con ese
 fichero y abre una issue si algo no cuadra; `src/cabecerasDeSeguridad.test.js` exige que
 las copias de Vite y del Kind lleven lo mismo. Para cambiar una cabecera: primero el
-fichero (en una PR), después el dashboard de Render.
+fichero (en una PR), después el panel que la sirve: Render para casi todas, **Cloudflare**
+para las dos de abajo. Cambiar solo Render no cambia lo que llega al navegador en esas dos,
+porque Cloudflare responde después y la sustituye.
+
+**HSTS lo pone Cloudflare** (SSL/TLS → Edge Certificates → HSTS: 12 meses, sin
+`includeSubDomains`, sin precarga) para toda la zona, también el dominio sin `www`, y
+sustituye al que mande Render. Sin `includeSubDomains` a propósito:
+`email.rydercupfriends.com` es el dominio de seguimiento de Mailgun y no tiene `https`
+(auditoría de la fase 6, P-01; 14 nov 2026). Para cambiarlo: el fichero, **Cloudflare**, y
+la fila de Render por coherencia (es la que valdría si se apagara en Cloudflare).
+
+**La `Cross-Origin-Resource-Policy` de `/images/*` también la pone Cloudflare**: Rules →
+regla de transformación de encabezado de **respuesta** «Logo de los correos: CORP
+cross-origin», con `http.host eq "www.rydercupfriends.com" and
+starts_with(http.request.uri.path, "/images/")` → establecer `cross-origin`. La regla de
+`/images/*` de Render no ganaba a la de `/*` para esa cabecera, pusiera la fila antes o
+después (FE #1133, 14 nov 2026).
 
 En Render, regla con `Request Path` = `/*`, para que cubra también `/assets/`:
 
@@ -31,15 +47,15 @@ X-Content-Type-Options: nosniff
 X-Frame-Options: DENY
 Referrer-Policy: strict-origin-when-cross-origin
 Permissions-Policy: geolocation=(self), microphone=(), camera=()
-Strict-Transport-Security: max-age=31536000; includeSubDomains
+Strict-Transport-Security: max-age=31536000
 Cross-Origin-Opener-Policy: same-origin
 Cross-Origin-Resource-Policy: same-origin
 Reporting-Endpoints: csp="https://o4510427294662656.ingest.de.sentry.io/api/4510427296825424/security/?sentry_key=5548cda036a3fedd1f50791b66a93354&sentry_environment=production"
 Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' https: data:; connect-src 'self' https://www.ign.es https://geoserveis.icgc.cat https://www.geo.euskadi.eus https://idena.navarra.es https://api.rydercupfriends.com https://o4510427294662656.ingest.de.sentry.io; worker-src 'self' blob:; child-src 'self' blob:; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; object-src 'none'; upgrade-insecure-requests; report-uri https://o4510427294662656.ingest.de.sentry.io/api/4510427296825424/security/?sentry_key=5548cda036a3fedd1f50791b66a93354&sentry_environment=production; report-to csp
 ```
 
-Y una segunda regla, con `Request Path` = `/images/*`, que **sustituye** la de arriba para
-esa cabecera: el logo de los correos (`/images/rcf-monogram-white.png`) lo cargan clientes
+Y una segunda regla, con `Request Path` = `/images/*`, que **debería** sustituir la de arriba
+para esa cabecera (no lo hace: manda la de Cloudflare, ver arriba): el logo de los correos (`/images/rcf-monogram-white.png`) lo cargan clientes
 de correo desde otro origen, y con `same-origin` no lo verían:
 
 ```
