@@ -9,9 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 **Tanda 1 de la auditoría de la fase 6** (#1138, #1139). Va con el backend 2.65.0, y **sale
 ANTES que él**: la 2.65.0 deja de mandar el correo del invitado en algunas invitaciones, y
-esta versión ya lo acepta (la 2.78.0 no). En el Kind, con el backend 2.65.0:
-las invitaciones por id y por correo, comprobadas por la API; la tarjeta en pantalla y el
-cierre de sesión sin red, PENDIENTES.
+esta versión ya lo acepta (la 2.78.0 no). Probado en el Kind con el backend 2.65.0: cerrar sesión con la API
+apagada deja el cierre pendiente y, al volver, la app lo manda antes que nada (logout 200 y
+luego la sesión ya da 401) sin volver a entrar; cerrar sesión con red, como siempre; la
+lista de invitaciones del organizador con nombres y correos según cómo se enviaron.
 
 ### Security
 
