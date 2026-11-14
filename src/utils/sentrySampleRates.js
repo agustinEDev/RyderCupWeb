@@ -13,9 +13,20 @@
  *   antes del fallo.
  *
  * Cada valor se puede cambiar con su variable de entorno, que se lee al
- * construir.
+ * construir. Una a una y nunca el objeto de variables entero: Vite convierte el objeto
+ * entero en TODAS las variables `VITE_*` de la compilación y las mete en el
+ * paquete que descarga cualquiera (auditoría de la fase 6, F-03).
  */
-export function sentrySampleRates(env = import.meta.env) {
+const VARIABLES_DE_SENTRY = {
+  VITE_SENTRY_TRACES_SAMPLE_RATE: import.meta.env
+    .VITE_SENTRY_TRACES_SAMPLE_RATE,
+  VITE_SENTRY_REPLAYS_SESSION_SAMPLE_RATE: import.meta.env
+    .VITE_SENTRY_REPLAYS_SESSION_SAMPLE_RATE,
+  VITE_SENTRY_REPLAYS_ON_ERROR_SAMPLE_RATE: import.meta.env
+    .VITE_SENTRY_REPLAYS_ON_ERROR_SAMPLE_RATE,
+};
+
+export function sentrySampleRates(env = VARIABLES_DE_SENTRY) {
   return {
     tracesSampleRate: parseFloat(env.VITE_SENTRY_TRACES_SAMPLE_RATE || '1.0'),
     replaysSessionSampleRate: parseFloat(

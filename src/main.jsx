@@ -63,7 +63,7 @@ if (sentryDsn) {
     integrations: [],
     // Sample rates: no se pueden cambiar despues de init. Salen de un solo
     // sitio (FE #792): sin grabacion de sesiones al azar, todas las de error
-    ...sentrySampleRates(import.meta.env),
+    ...sentrySampleRates(),
     attachStacktrace: true,
 
     // El saneado de URLs va AQUI y no en sentry.ts (FE #385).
