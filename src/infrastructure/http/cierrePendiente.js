@@ -39,15 +39,23 @@ const TOPE_MS = 10_000;
 const CADUCA_MS = 7 * 24 * 60 * 60 * 1000;
 
 /** El usuario pidió cerrar la sesión: hasta que el servidor confirme, queda pendiente. */
+// Si el navegador no deja guardar la marca, vive aquí mientras dure la página: el cierre
+// se manda igual antes que nada (CodeRabbit). Solo entonces: con almacenamiento, manda
+// el de verdad, que es el que ven las demás pestañas
+let enMemoria = null;
+
 export const apuntaElCierrePendiente = () => {
+  const ahora = String(Date.now());
   try {
-    globalThis.localStorage.setItem(CLAVE, String(Date.now()));
+    globalThis.localStorage.setItem(CLAVE, ahora);
+    enMemoria = null;
   } catch {
-    // Sin almacenamiento no hay marca; el cierre se intenta igual
+    enMemoria = ahora;
   }
 };
 
 const leeLaMarca = () => {
+  if (enMemoria !== null) return enMemoria;
   try {
     return globalThis.localStorage.getItem(CLAVE);
   } catch {
@@ -62,10 +70,11 @@ const caducada = () => Date.now() - Number(leeLaMarca()) > CADUCA_MS;
 
 /** El servidor ya cerró la sesión (o ya no existe). */
 export const olvidaElCierrePendiente = () => {
+  enMemoria = null;
   try {
     globalThis.localStorage.removeItem(CLAVE);
   } catch {
-    // Sin almacenamiento no había marca
+    // Sin almacenamiento no había más marca que la de memoria
   }
 };
 
@@ -135,8 +144,9 @@ const envia = async () => {
   // Otra pestaña lo resolvió mientras: refrescar mataría su sesión nueva
   if (!hayCierrePendiente()) return;
   const refresco = await post('/api/v1/auth/refresh-token');
-  // Sin refresco válido no queda sesión que cerrar
-  if (refresco.status === 401) return;
+  // Sin refresco válido no queda sesión que cerrar. Solo si lo dice la app (con su
+  // `error_code`): un 401 de un intermediario no dice nada de la sesión (CodeRabbit)
+  if (refresco.status === 401 && refresco.deLaApp) return;
   if (!refresco.ok) throw sinConexion();
   if (!hayCierrePendiente()) return;
   // Con la sesión recién rotada, solo un 2xx la da por cerrada

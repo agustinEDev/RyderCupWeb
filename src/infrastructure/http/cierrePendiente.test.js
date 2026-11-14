@@ -92,6 +92,28 @@ describe('la marca del cierre pendiente', () => {
       },
     });
     expect(() => apuntaElCierrePendiente()).not.toThrow();
+    // CodeRabbit: sin almacenamiento, la marca vive en memoria mientras dure la página
+    expect(hayCierrePendiente()).toBe(true);
+    olvidaElCierrePendiente();
+    expect(hayCierrePendiente()).toBe(false);
+  });
+
+  it('CodeRabbit: sin almacenamiento, el cierre se manda igual y se olvida al confirmarse', async () => {
+    vi.stubGlobal('localStorage', {
+      getItem: () => {
+        throw new Error('bloqueado');
+      },
+      setItem: () => {
+        throw new Error('bloqueado');
+      },
+      removeItem: () => {
+        throw new Error('bloqueado');
+      },
+    });
+    apuntaElCierrePendiente();
+    fetch.mockResolvedValueOnce(respuesta(200));
+    await mandaElCierrePendiente();
+    expect(llamadasA(URL_DEL_CIERRE)).toHaveLength(1);
     expect(hayCierrePendiente()).toBe(false);
   });
 });
@@ -182,12 +204,22 @@ describe('mandar el cierre pendiente', () => {
 
   it('E5: si el refresco también dice 401, la sesión ya está muerta y se borra la marca', async () => {
     apuntaElCierrePendiente();
-    fetch
-      .mockResolvedValueOnce(respuesta(401))
-      .mockResolvedValueOnce(respuesta(401));
+    fetch.mockResolvedValueOnce(respuesta(401)).mockResolvedValueOnce({
+      ...respuesta(401),
+      json: async () => ({ error_code: 'SESSION_ENDED' }),
+    });
     await mandaElCierrePendiente();
     expect(llamadasA(URL_DEL_CIERRE)).toHaveLength(1);
     expect(hayCierrePendiente()).toBe(false);
+  });
+
+  it('CodeRabbit: un 401 del refresco que no es de la app (un intermediario) deja la marca', async () => {
+    apuntaElCierrePendiente();
+    fetch
+      .mockResolvedValueOnce(respuesta(401))
+      .mockResolvedValueOnce(respuesta(401));
+    await expect(mandaElCierrePendiente()).rejects.toBeInstanceOf(TypeError);
+    expect(hayCierrePendiente()).toBe(true);
   });
 
   it('el refresco sin red deja la marca', async () => {
