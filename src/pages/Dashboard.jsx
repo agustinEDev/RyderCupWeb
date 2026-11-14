@@ -22,9 +22,15 @@ import { slideUp, staggerContainer, getEntryProps } from '../utils/animations';
 import FullScreenLoader from '../components/ui/FullScreenLoader';
 import { laPantallaEstaLista } from '../utils/cortinaDeArranque';
 import {
+  lasPartidasGuardadas,
   leeLasProximasPartidas,
   leeLosProximosPartidos,
+  losProximosGuardados,
 } from '../services/partidosSinCobertura';
+import { elUltimoPanel, recuerdaElPanel } from '../services/loUltimoConocido';
+import { esFalloDeRedDeLaApi } from '../utils/sinCobertura';
+import PlayerStats from '../domain/entities/PlayerStats';
+import RecentMatch from '../domain/entities/RecentMatch';
 import { elMasCercano } from '../utils/elMasCercano';
 import {
   elPanelYaSePinto,
@@ -87,6 +93,69 @@ const Dashboard = () => {
   const [upcomingSinRespuesta, setUpcomingSinRespuesta] = useState(false);
   const [upcomingDesdeMemoria, setUpcomingDesdeMemoria] = useState(false);
   const [isLoadingUpcoming, setIsLoadingUpcoming] = useState(true);
+
+  // Lo último que se vio en este móvil con esta cuenta, con el hándicap y las
+  // cifras, para pintarlo al entrar y actualizarlo por detrás sin avisos (Agustín,
+  // 14 nov 2026). Se siembra en cuanto `useAuth` da usuario: con red, eso es
+  // cuando `/current-user` ha contestado (mientras pregunta no da ninguno), así
+  // que una sesión que ya no vale no enseña nada; sin red o con un 5xx, es la
+  // copia del usuario en el móvil (`sinConfirmar`), y entonces se pinta con lo
+  // guardado, como el resto de la aplicación sin cobertura. Se siembra al pintar,
+  // no en un efecto, para que el primer pintado ya lo lleve
+  const cuentaDelPanel = user?.id ?? null;
+  const [guardado, setGuardado] = useState({
+    cuenta: null,
+    competiciones: false,
+    recientes: false,
+    cifras: false,
+    proximos: false,
+  });
+  if (cuentaDelPanel && guardado.cuenta !== cuentaDelPanel) {
+    const panel = elUltimoPanel(cuentaDelPanel);
+    // Los próximos ya se guardan para anotar sin cobertura; solo se usan si hay
+    // panel de ESTA cuenta, y solo si hay alguno: una lista vacía pintaría un
+    // momento «crea una partida rápida» y se podría pulsar
+    const proximos = panel ? losProximosGuardados() : [];
+    const partidas = panel ? lasPartidasGuardadas() : [];
+    const hayProximos = proximos.length + partidas.length > 0;
+    // Lo guardado son valores sueltos: las tarjetas esperan las entidades (con
+    // sus métodos). Una partida que no se pueda rehacer, fuera
+    const recientes = panel?.ultimasPartidas
+      ?.map((p) => {
+        try {
+          return RecentMatch.fromPersistence(p);
+        } catch {
+          return null;
+        }
+      })
+      .filter(Boolean);
+    // Siempre, también vacío: otra cuenta en el panel montado no ve lo de la
+    // anterior mientras llega lo suyo
+    setCompetitions(panel?.competiciones ?? []);
+    setRecentMatches(recientes ?? []);
+    setPlayerStats(
+      panel?.estadisticas
+        ? PlayerStats.fromPersistence(panel.estadisticas)
+        : null,
+    );
+    setUpcomingMatches(hayProximos ? proximos : []);
+    setProximasPartidas({
+      partidas: hayProximos ? partidas : [],
+      desdeMemoria: false,
+    });
+    setGuardado({
+      cuenta: cuentaDelPanel,
+      competiciones: Boolean(panel?.competiciones),
+      // Una lista vacía (ninguna se pudo rehacer) no cuenta: pintaría «crea una
+      // partida» a quien sí tiene
+      recientes: recientes?.length > 0,
+      cifras: Boolean(panel?.estadisticas),
+      proximos: hayProximos,
+    });
+  }
+  // Las banderas son de la cuenta sembrada: al cambiar de cuenta se rehacen
+  const hayPanelGuardado =
+    guardado.competiciones || guardado.recientes || guardado.cifras;
   const [showHandicapModal, setShowHandicapModal] = useState(false);
   // El hándicap guardado cuando se abre el modal: decide qué dice (FE #677)
   const [handicapAlAbrir, setHandicapAlAbrir] = useState(null);
@@ -210,15 +279,21 @@ const Dashboard = () => {
           user.id,
         );
         if (!cancelled) {
-          setCompetitions(
-            Array.isArray(competitionsData) ? competitionsData : [],
-          );
+          const lista = Array.isArray(competitionsData) ? competitionsData : [];
+          setCompetitions(lista);
           setCompetitionsError(null);
+          recuerdaElPanel(user.id, { competiciones: lista });
         }
       } catch (error) {
         console.error('Failed to load dashboard data:', error);
         if (!cancelled) {
-          setCompetitions([]);
+          // Sin red se queda lo que se ve (lo guardado). Una respuesta con error
+          // no se tapa: como siempre. Los próximos lo saben por el error
+          if (!esFalloDeRedDeLaApi(error)) {
+            setCompetitions([]);
+            // Lo guardado tampoco vale: la próxima vez no se enseña
+            recuerdaElPanel(user.id, { competiciones: null });
+          }
           setCompetitionsError(error);
         }
       } finally {
@@ -271,11 +346,14 @@ const Dashboard = () => {
         const stats = await getPlayerStatsUseCase.execute();
         if (!cancelled) {
           setPlayerStats(stats);
+          recuerdaElPanel(user.id, { estadisticas: stats });
         }
       } catch (error) {
         console.error('Failed to load player stats:', error);
-        if (!cancelled) {
+        // Sin red se quedan las de la última vez; con respuesta, como siempre
+        if (!cancelled && !esFalloDeRedDeLaApi(error)) {
           setPlayerStats(null);
+          recuerdaElPanel(user.id, { estadisticas: null });
         }
       } finally {
         if (!cancelled) {
@@ -323,11 +401,14 @@ const Dashboard = () => {
           await getRecentMatchesUseCase.execute(RECENT_MATCHES_SHOWN);
         if (!cancelled) {
           setRecentMatches(matches);
+          recuerdaElPanel(user.id, { ultimasPartidas: matches });
         }
       } catch (error) {
         console.error('Failed to load recent matches:', error);
-        if (!cancelled) {
+        // Sin red se queda lo que se ve; con respuesta, como siempre
+        if (!cancelled && !esFalloDeRedDeLaApi(error)) {
           setRecentMatches([]);
+          recuerdaElPanel(user.id, { ultimasPartidas: null });
         }
       } finally {
         if (!cancelled) {
@@ -493,7 +574,12 @@ const Dashboard = () => {
     return () => clearTimeout(plazo);
   }, []);
 
-  const puedePintar = noQuedaNadaCargando || seAgotoLaEspera;
+  // Con lo último visto de esta cuenta no se espera a las cuatro: se pinta en
+  // cuanto la sesión está confirmada y hay textos, y lo nuevo llega por detrás
+  const puedePintar =
+    noQuedaNadaCargando ||
+    seAgotoLaEspera ||
+    (hayPanelGuardado && textosListos && textosDeRapidaListos);
 
   // Solo la PRIMERA vez manda: ni una recarga posterior —al guardar el
   // handicap— debe desmontar lo que ya hay en pantalla, ni volver aqui desde la
@@ -720,7 +806,7 @@ const Dashboard = () => {
             <motion.div variants={slideUp} className="p-4">
               <PlayerStatsCards
                 stats={playerStats}
-                isLoading={isLoadingStats}
+                isLoading={isLoadingStats && !guardado.cifras}
                 fallbackHandicap={user.handicap ?? null}
                 fallbackTournaments={
                   Array.isArray(competitions) ? competitions.length : 0
@@ -751,7 +837,7 @@ const Dashboard = () => {
                     ? proximasPartidas.desdeMemoria
                     : upcomingDesdeMemoria
                 }
-                isLoading={isLoadingUpcoming}
+                isLoading={isLoadingUpcoming && !guardado.proximos}
                 onCreateQuickMatch={abrePartidaRapida}
               />
             </motion.div>
@@ -761,7 +847,7 @@ const Dashboard = () => {
               <RecentMatches
                 usuario={user}
                 matches={recentMatches}
-                isLoading={isLoadingRecent}
+                isLoading={isLoadingRecent && !guardado.recientes}
                 esperaSilenciosa
                 onCreateQuickMatch={abrePartidaRapida}
               />

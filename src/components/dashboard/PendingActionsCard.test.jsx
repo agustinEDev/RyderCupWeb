@@ -1,7 +1,8 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, onTestFinished } from 'vitest';
 import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import { MemoryRouter } from 'react-router';
 import PendingActionsCard from './PendingActionsCard';
+import { olvidaTodo } from '../../services/loUltimoConocido';
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
@@ -110,6 +111,8 @@ describe('PendingActionsCard', () => {
     const { olvidaLasAccionesPendientes } =
       await import('../../services/accionesPendientes');
     olvidaLasAccionesPendientes();
+    // Y lo guardado en el móvil: si no, lo de un test lo pinta el siguiente
+    olvidaTodo();
     vi.clearAllMocks();
     mockListMyInvitations.mockResolvedValue({ invitations: [], totalCount: 0 });
     mockListEnrollments.mockResolvedValue([]);
@@ -421,6 +424,8 @@ describe('PendingActionsCard al volver al panel', () => {
   beforeEach(async () => {
     const { olvidaLasAccionesPendientes } = await memoria();
     olvidaLasAccionesPendientes();
+    // Y lo guardado en el móvil: si no, lo de un test lo pinta el siguiente
+    olvidaTodo();
   });
 
   it('la primera vez sí enseña que está cargando', async () => {
@@ -457,12 +462,16 @@ describe('PendingActionsCard al volver al panel', () => {
 
   it('al volver enseña lo de antes, sin esqueleto', async () => {
     const { recuerdaLasAccionesPendientes } = await memoria();
-    recuerdaLasAccionesPendientes({
-      pendingInvitations: 0,
-      pendingEnrollments: [],
-      pendingFriendRequests: 0,
-      activeQuickMatches: [{ id: 'q1', name: 'Partida en curso' }],
-    });
+    recuerdaLasAccionesPendientes(
+      {
+        pendingInvitations: 0,
+        pendingEnrollments: [],
+        pendingFriendRequests: 0,
+        activeQuickMatches: [{ id: 'q1', name: 'Partida en curso' }],
+        // La memoria es de una cuenta: la de quien pinta la tarjeta (14 nov 2026)
+      },
+      baseUser.id,
+    );
     // La recarga se queda en vuelo: lo que se vea viene de la memoria
     mockListMyQuickMatches.mockReturnValue(new Promise(() => {}));
 
@@ -472,5 +481,230 @@ describe('PendingActionsCard al volver al panel', () => {
       container.querySelector('.espera-anillo'),
       'no debe verse la espera',
     ).toBeNull();
+  });
+
+  // Al abrir la app de cero, lo que enseñó la última vez sale del móvil
+  // (Agustín, 14 nov 2026): sin esto, la tarjeta pintaba su espera
+  it('P-d: al abrir de cero enseña lo de la última vez, sin espera', async () => {
+    const enElMovil = new Map();
+    vi.stubGlobal('localStorage', {
+      getItem: (k) => (enElMovil.has(k) ? enElMovil.get(k) : null),
+      setItem: (k, v) => enElMovil.set(k, String(v)),
+      removeItem: (k) => enElMovil.delete(k),
+    });
+    onTestFinished(() => vi.unstubAllGlobals());
+    const { olvidaTodo } = await import('../../services/loUltimoConocido');
+    olvidaTodo();
+    const { recuerdaLasAccionesPendientes, olvidaLasAccionesPendientes } =
+      await memoria();
+    recuerdaLasAccionesPendientes(
+      {
+        pendingInvitations: 2,
+        pendingEnrollments: [],
+        pendingFriendRequests: 0,
+        activeQuickMatches: [],
+        sobresPendientes: [],
+        sesionesSinPartidos: [],
+        plazasAsignadas: [],
+      },
+      baseUser.id,
+    );
+    // La recarga de la página se lleva la memoria del módulo; el móvil, no
+    olvidaLasAccionesPendientes();
+    mockListMyInvitations.mockReturnValue(new Promise(() => {}));
+
+    const { container } = renderCard();
+
+    expect(container.querySelector('.espera-anillo')).toBeNull();
+    expect(
+      screen.getByTestId('pending-invitations-action'),
+    ).toBeInTheDocument();
+  });
+
+  it('P-e: lo que llega queda guardado en el móvil, para esa cuenta', async () => {
+    const enElMovil = new Map();
+    vi.stubGlobal('localStorage', {
+      getItem: (k) => (enElMovil.has(k) ? enElMovil.get(k) : null),
+      setItem: (k, v) => enElMovil.set(k, String(v)),
+      removeItem: (k) => enElMovil.delete(k),
+    });
+    onTestFinished(() => vi.unstubAllGlobals());
+    const { olvidaTodo: borraElMovil, lasPendientesGuardadas } =
+      await import('../../services/loUltimoConocido');
+    borraElMovil();
+    mockListMyInvitations.mockResolvedValue({
+      invitations: [{ id: 'i-1' }, { id: 'i-2' }],
+      totalCount: 2,
+    });
+    // Sus propias respuestas, no las que dejó otro test de este bloque en vuelo
+    mockListMyQuickMatches.mockResolvedValue({
+      quickMatches: [],
+      totalCount: 0,
+      page: 1,
+      limit: 20,
+    });
+
+    renderCard();
+
+    await waitFor(() =>
+      expect(lasPendientesGuardadas(baseUser.id)?.pendingInvitations).toBe(2),
+    );
+    expect(lasPendientesGuardadas('otra')).toBeNull();
+  });
+
+  // Revisor (14 nov 2026): con la tarjeta montada, otra cuenta a la que le falla
+  // una petición no puede quedarse, ni guardar en el móvil, lo aplicado a la anterior
+  it('P-f: al cambiar de cuenta no se guarda nada de la anterior bajo la nueva', async () => {
+    const enElMovil = new Map();
+    vi.stubGlobal('localStorage', {
+      getItem: (k) => (enElMovil.has(k) ? enElMovil.get(k) : null),
+      setItem: (k, v) => enElMovil.set(k, String(v)),
+      removeItem: (k) => enElMovil.delete(k),
+    });
+    onTestFinished(() => vi.unstubAllGlobals());
+    const { olvidaTodo: borraElMovil, lasPendientesGuardadas } =
+      await import('../../services/loUltimoConocido');
+    borraElMovil();
+    mockListMyQuickMatches.mockResolvedValue({
+      quickMatches: [],
+      totalCount: 0,
+      page: 1,
+      limit: 20,
+    });
+    mockListMyInvitations.mockResolvedValue({
+      invitations: [{ id: 'i-1' }, { id: 'i-2' }],
+      totalCount: 2,
+    });
+    mockListPendingFriendRequests.mockResolvedValue({
+      friendships: [],
+      totalCount: 4,
+    });
+    const otra = { ...baseUser, id: 'user-2' };
+    const pinta = (user) => (
+      <MemoryRouter>
+        <PendingActionsCard user={user} competitions={[]} upcomingMatches={0} />
+      </MemoryRouter>
+    );
+    const { rerender } = render(pinta(baseUser));
+    await waitFor(() =>
+      expect(lasPendientesGuardadas(baseUser.id)?.pendingInvitations).toBe(2),
+    );
+
+    // A la otra cuenta le fallan las dos que la primera sí tenía
+    mockListMyInvitations.mockRejectedValue(new Error('500'));
+    mockListPendingFriendRequests.mockRejectedValue(new Error('500'));
+    rerender(pinta(otra));
+
+    await waitFor(() => expect(lasPendientesGuardadas(otra.id)).not.toBeNull());
+    expect(lasPendientesGuardadas(otra.id).pendingInvitations).toBe(0);
+    expect(lasPendientesGuardadas(otra.id).pendingFriendRequests).toBe(0);
+  });
+
+  it('P-g: al cambiar de cuenta se ve al momento lo que la nueva tiene guardado', async () => {
+    const enElMovil = new Map();
+    vi.stubGlobal('localStorage', {
+      getItem: (k) => (enElMovil.has(k) ? enElMovil.get(k) : null),
+      setItem: (k, v) => enElMovil.set(k, String(v)),
+      removeItem: (k) => enElMovil.delete(k),
+    });
+    onTestFinished(() => vi.unstubAllGlobals());
+    const { olvidaTodo: borraElMovil, recuerdaElPanel } =
+      await import('../../services/loUltimoConocido');
+    borraElMovil();
+    const otra = { ...baseUser, id: 'user-2' };
+    recuerdaElPanel(otra.id, {
+      pendientes: {
+        pendingInvitations: 3,
+        pendingEnrollments: [],
+        pendingFriendRequests: 0,
+        activeQuickMatches: [],
+        sobresPendientes: [],
+        sesionesSinPartidos: [],
+        plazasAsignadas: [],
+      },
+    });
+    // Todo se queda en vuelo: lo que se vea viene de lo guardado
+    mockListMyInvitations.mockReturnValue(new Promise(() => {}));
+    const pinta = (user) => (
+      <MemoryRouter>
+        <PendingActionsCard user={user} competitions={[]} upcomingMatches={0} />
+      </MemoryRouter>
+    );
+    const { rerender } = render(pinta(baseUser));
+
+    rerender(pinta(otra));
+
+    expect(
+      screen.getByTestId('pending-invitations-action'),
+    ).toBeInTheDocument();
+  });
+
+  // El panel pinta primero la lista guardada y luego la que llega (Agustín, 14 nov
+  // 2026): sin esto, la tarjeta pedía todo dos veces por la misma lista
+  describe('a new list object with the same competitions', () => {
+    // Cuentan llamadas: los contadores, a cero aquí y no por el orden (CodeRabbit)
+    beforeEach(() => {
+      vi.clearAllMocks();
+    });
+
+    const lista = () => [
+      { id: 'c-1', name: 'Liga', status: 'ACTIVE' },
+      { id: 'c-2', name: 'Copa', status: 'COMPLETED' },
+    ];
+    const pinta = (competitions) => (
+      <MemoryRouter>
+        <PendingActionsCard
+          user={creatorUser}
+          competitions={competitions}
+          upcomingMatches={0}
+        />
+      </MemoryRouter>
+    );
+
+    it('P-a: the same ids and statuses do not ask again', async () => {
+      const { rerender } = render(pinta(lista()));
+      await waitFor(() =>
+        expect(mockListMyInvitations).toHaveBeenCalledTimes(1),
+      );
+
+      rerender(pinta(lista()));
+      await new Promise((r) => setTimeout(r, 0));
+
+      expect(mockListMyInvitations).toHaveBeenCalledTimes(1);
+      expect(mockListEnrollments).toHaveBeenCalledTimes(1);
+    });
+
+    it('P-b: a status change asks again', async () => {
+      const { rerender } = render(pinta(lista()));
+      await waitFor(() =>
+        expect(mockListMyInvitations).toHaveBeenCalledTimes(1),
+      );
+
+      rerender(
+        pinta([lista()[0], { id: 'c-2', name: 'Copa', status: 'ENROLLING' }]),
+      );
+
+      await waitFor(() =>
+        expect(mockListMyInvitations).toHaveBeenCalledTimes(2),
+      );
+      expect(mockListEnrollments).toHaveBeenCalledWith('c-2', {
+        status: 'REQUESTED',
+      });
+    });
+
+    it('P-c: one more competition asks again', async () => {
+      const { rerender } = render(pinta(lista()));
+      await waitFor(() =>
+        expect(mockListMyInvitations).toHaveBeenCalledTimes(1),
+      );
+
+      rerender(
+        pinta([...lista(), { id: 'c-3', name: 'Nueva', status: 'ACTIVE' }]),
+      );
+
+      await waitFor(() =>
+        expect(mockListMyInvitations).toHaveBeenCalledTimes(2),
+      );
+    });
   });
 });

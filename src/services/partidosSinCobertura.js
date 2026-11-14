@@ -104,13 +104,20 @@ export const precargaElProximoDia = async ({
   }
 };
 
-/** Lo guardado, sin los partidos de días que ya pasaron. */
-const losGuardados = (ahora) => {
+/** Sin los de días que ya pasaron. */
+const deHoyEnAdelante = (lista, ahora) => {
   const hoy = fechaLocal(ahora);
-  return (losUltimosPartidos() ?? []).filter(
-    (p) => p?.roundDate && p.roundDate >= hoy,
-  );
+  return (lista ?? []).filter((p) => p?.roundDate && p.roundDate >= hoy);
 };
+
+/** Lo guardado, sin los partidos de días que ya pasaron. También lo pinta el
+ *  panel al entrar mientras pide los de ahora (Agustín, 14 nov 2026). */
+export const losProximosGuardados = (ahora = new Date()) =>
+  deHoyEnAdelante(losUltimosPartidos(), ahora);
+
+/** Lo mismo con las partidas de stroke play. */
+export const lasPartidasGuardadas = (ahora = new Date()) =>
+  deHoyEnAdelante(lasUltimasPartidas(), ahora);
 
 /**
  * Los próximos partidos para enseñar, con red o sin ella. Nunca lanza.
@@ -165,7 +172,7 @@ export const leeLosProximosPartidos = async ({
     }
   }
 
-  const guardados = losGuardados(ahora);
+  const guardados = losProximosGuardados(ahora);
   return guardados.length > 0
     ? {
         partidos: guardados,
@@ -225,10 +232,7 @@ export const leeLasProximasPartidas = async ({
       };
     }
   }
-  const hoy = fechaLocal(ahora);
-  const guardadas = (lasUltimasPartidas() ?? []).filter(
-    (p) => p?.roundDate && p.roundDate >= hoy,
-  );
+  const guardadas = lasPartidasGuardadas(ahora);
   return guardadas.length > 0
     ? {
         partidas: guardadas,

@@ -238,6 +238,316 @@ export const recuerdaLasPartidas = (partidas) =>
 export const lasUltimasPartidas = () => leeLista(CLAVE_PARTIDAS);
 
 /**
+ * Lo último que se vio del panel, para pintarlo al entrar sin esperar a sus
+ * cuatro peticiones (Agustín, 14 nov 2026). Con su cuenta dentro: solo lo usa
+ * esa. Con el hándicap y las cifras que se veían: Agustín lo pidió así el mismo
+ * día, aunque en la fase 3 el hándicap se dejó fuera de la copia del usuario.
+ * Se borra al cerrar sesión, como todo lo de la cuenta.
+ */
+const CLAVE_PANEL = 'rydercup-ultimo-panel';
+/** Si cambia la forma de lo guardado, se sube y lo de antes se ignora. */
+const VERSION_DEL_PANEL = 1;
+
+/** De cada competición, lo que usa el panel: contarlas y la tarjeta de pendientes. */
+const loJustoDeLaCompeticion = (c) => ({
+  id: c?.id,
+  name: c?.name,
+  status: c?.status,
+});
+
+/** Las cifras que pinta el panel. Sin la lista de diferenciales, que no enseña. */
+const CAMPOS_DE_LAS_CIFRAS = [
+  'handicap',
+  'handicapTrend',
+  'scoringAvg',
+  'roundsPlayed',
+  'tournamentsTotal',
+  'tournamentsActive',
+  'estimatedIndex',
+  'playingAvg',
+  'bestDifferential',
+  'roundsWithDifferential',
+];
+
+/** Lo que hace falta para rehacer cada partida reciente (`RecentMatch`). */
+const CAMPOS_DE_LA_PARTIDA = [
+  'id',
+  'date',
+  'playedAt',
+  'matchFormat',
+  'scoringFormat',
+  'golfCourseId',
+  'golfCourseName',
+  'matchName',
+  'tournamentName',
+  'result',
+  'score',
+  'stablefordPoints',
+  'totalStrokes',
+  'holesPlayed',
+  'partners',
+  'opponents',
+  'excludedFromStats',
+];
+
+/**
+ * Valores sueltos de esos campos: lo que llega son entidades con campos privados
+ * y getters, y `JSON.stringify` de una entidad da `{}`. Lo que no vino no se
+ * guarda, para que al rehacerla la entidad ponga su valor por defecto.
+ */
+const enPlano = (campos, x) =>
+  Object.fromEntries(
+    campos
+      .map((c) => [c, x?.[c] instanceof Date ? x[c].toISOString() : x?.[c]])
+      .filter(([, v]) => v !== undefined),
+  );
+
+const esUnObjeto = (x) =>
+  Boolean(x) && typeof x === 'object' && !Array.isArray(x);
+
+/** Con su clave (el id, por defecto) en texto no vacío. */
+const conClave = (x, clave = 'id') =>
+  esUnObjeto(x) && typeof x[clave] === 'string' && x[clave] !== '';
+
+/**
+ * Lo que se pinta tiene que ser de su tipo: un nombre que no es texto (un
+ * objeto, por ejemplo) revienta al pintarlo, y como se pinta antes de que llegue
+ * lo nuevo, tumbaría el panel en cada apertura hasta cerrar sesión (CodeRabbit).
+ */
+const nada = (x) => x === null || x === undefined;
+const textoONada = (x) => nada(x) || typeof x === 'string';
+const numeroONada = (x) => nada(x) || Number.isFinite(x);
+const textos = (x) =>
+  x === undefined ||
+  (Array.isArray(x) && x.every((t) => typeof t === 'string'));
+
+const TIPOS_DE_LA_PARTIDA = {
+  date: textoONada,
+  playedAt: textoONada,
+  matchFormat: textoONada,
+  scoringFormat: textoONada,
+  golfCourseId: textoONada,
+  golfCourseName: textoONada,
+  matchName: textoONada,
+  tournamentName: textoONada,
+  result: textoONada,
+  score: (x) => textoONada(x) || Number.isFinite(x),
+  stablefordPoints: numeroONada,
+  totalStrokes: numeroONada,
+  holesPlayed: numeroONada,
+  partners: textos,
+  opponents: textos,
+  excludedFromStats: (x) => x === undefined || typeof x === 'boolean',
+};
+
+const TIPOS_DE_LA_COMPETICION = { name: textoONada, status: textoONada };
+
+const deSuTipo =
+  (tipos, clave = 'id') =>
+  (x) =>
+    conClave(x, clave) &&
+    Object.entries(tipos).every(([campo, vale]) => vale(x[campo]));
+
+/**
+ * Lo que enseña «Requiere tu Atención», para pintarlo al abrir la app de cero
+ * (Agustín, 14 nov 2026): dos cifras y cinco listas, de cada elemento solo lo
+ * que se pinta. La clave de cada elemento (su id) tiene que ser texto.
+ */
+const ELEMENTO_DE_LA_SESION = {
+  clave: 'roundId',
+  tipos: {
+    competitionId: textoONada,
+    competitionName: textoONada,
+    roundDate: textoONada,
+    sessionType: textoONada,
+  },
+};
+const LISTAS_DE_PENDIENTES = {
+  pendingEnrollments: {
+    clave: 'competitionId',
+    tipos: { name: textoONada, count: Number.isFinite },
+  },
+  activeQuickMatches: {
+    clave: 'id',
+    tipos: {
+      name: textoONada,
+      matchFormat: textoONada,
+      scoringFormat: textoONada,
+    },
+  },
+  sobresPendientes: ELEMENTO_DE_LA_SESION,
+  sesionesSinPartidos: ELEMENTO_DE_LA_SESION,
+  plazasAsignadas: ELEMENTO_DE_LA_SESION,
+};
+const CIFRAS_DE_PENDIENTES = ['pendingInvitations', 'pendingFriendRequests'];
+
+const camposDe = ({ clave, tipos }) => [clave, ...Object.keys(tipos)];
+
+/** Lo que se enseñó, en valores sueltos y solo lo que se pinta. */
+const pendientesEnPlano = (p) => ({
+  ...Object.fromEntries(CIFRAS_DE_PENDIENTES.map((c) => [c, p[c]])),
+  ...Object.fromEntries(
+    Object.entries(LISTAS_DE_PENDIENTES).map(([lista, forma]) => [
+      lista,
+      Array.isArray(p[lista])
+        ? p[lista].map((x) => enPlano(camposDe(forma), x))
+        : [],
+    ]),
+  ),
+});
+
+/** Al leer: una cifra que no es número vale 0; un elemento que no cuadra, fuera. */
+const pendientesValidas = (p) =>
+  esUnObjeto(p)
+    ? {
+        ...Object.fromEntries(
+          CIFRAS_DE_PENDIENTES.map((c) => [
+            c,
+            Number.isFinite(p[c]) ? p[c] : 0,
+          ]),
+        ),
+        ...Object.fromEntries(
+          Object.entries(LISTAS_DE_PENDIENTES).map(([lista, forma]) => [
+            lista,
+            Array.isArray(p[lista])
+              ? p[lista].filter(deSuTipo(forma.tipos, forma.clave))
+              : [],
+          ]),
+        ),
+      }
+    : null;
+
+/** Una lista guardada, sin los elementos que no se pueden pintar. */
+const listaValida = (lista, esValido) =>
+  Array.isArray(lista) ? lista.filter(esValido) : null;
+
+/** Las cifras guardadas, solo las que son números (o nada). */
+const cifrasValidas = (cifras) =>
+  esUnObjeto(cifras)
+    ? Object.fromEntries(
+        Object.entries(cifras).filter(
+          ([c, v]) =>
+            CAMPOS_DE_LAS_CIFRAS.includes(c) &&
+            (v === null || Number.isFinite(v)),
+        ),
+      )
+    : null;
+
+const leeElPanel = () => {
+  try {
+    const crudo = localStorage.getItem(CLAVE_PANEL);
+    if (!crudo) return null;
+    const panel = JSON.parse(crudo);
+    if (!esUnObjeto(panel) || panel.v !== VERSION_DEL_PANEL) return null;
+    if (typeof panel.usuarioId !== 'string' || !panel.usuarioId) return null;
+    return {
+      usuarioId: panel.usuarioId,
+      competiciones: listaValida(
+        panel.competiciones,
+        deSuTipo(TIPOS_DE_LA_COMPETICION),
+      ),
+      ultimasPartidas: listaValida(
+        panel.ultimasPartidas,
+        deSuTipo(TIPOS_DE_LA_PARTIDA),
+      ),
+      estadisticas: cifrasValidas(panel.estadisticas),
+      pendientes: pendientesValidas(panel.pendientes),
+    };
+  } catch {
+    return null;
+  }
+};
+
+/**
+ * Guarda partes del panel de esta cuenta (competiciones, últimas partidas,
+ * cifras, lo de «Requiere tu Atención»). Cada una llega por su lado; si lo
+ * guardado es de otra cuenta, se empieza de cero.
+ *
+ * @param {string} usuarioId
+ * @param {{competiciones?: Array|null, ultimasPartidas?: Array|null, estadisticas?: Object|null, pendientes?: Object|null}} partes
+ *   Cada parte: lo nuevo, `null` para borrarla, o sin poner para dejar la que había
+ */
+export const recuerdaElPanel = (
+  usuarioId,
+  { competiciones, ultimasPartidas, estadisticas, pendientes } = {},
+) => {
+  if (cerrado || !usuarioId) return false;
+  // Nada de aquí puede hacer reventar a quien guarda: guardar va justo después
+  // de aplicar una respuesta buena, y su fallo no puede deshacerla (/code-review).
+  // Una fecha imposible en una partida, por ejemplo, lanza al pasarla a texto
+  try {
+    const antes = leeElPanel();
+    const deEsta = antes?.usuarioId === usuarioId ? antes : null;
+    // Una parte nueva, `null` para borrarla (el servidor dijo que no), o nada
+    // para dejar la que había
+    const parte = (valor, esValida, enPlanoDeLaParte, anterior) => {
+      if (valor === null) return null;
+      return esValida(valor) ? enPlanoDeLaParte(valor) : (anterior ?? null);
+    };
+    const panel = {
+      v: VERSION_DEL_PANEL,
+      usuarioId,
+      competiciones: parte(
+        competiciones,
+        Array.isArray,
+        (lista) => lista.map(loJustoDeLaCompeticion),
+        deEsta?.competiciones,
+      ),
+      ultimasPartidas: parte(
+        ultimasPartidas,
+        Array.isArray,
+        (lista) => lista.map((m) => enPlano(CAMPOS_DE_LA_PARTIDA, m)),
+        deEsta?.ultimasPartidas,
+      ),
+      estadisticas: parte(
+        estadisticas,
+        esUnObjeto,
+        (cifras) => enPlano(CAMPOS_DE_LAS_CIFRAS, cifras),
+        deEsta?.estadisticas,
+      ),
+      pendientes: parte(
+        pendientes,
+        esUnObjeto,
+        pendientesEnPlano,
+        deEsta?.pendientes,
+      ),
+    };
+    localStorage.setItem(CLAVE_PANEL, JSON.stringify(panel));
+    return true;
+  } catch {
+    // Sin sitio, o algo que no se deja guardar: no se guarda. La cola de golpes
+    // sin enviar manda
+    return false;
+  }
+};
+
+/**
+ * @param {string} usuarioId
+ * @returns {{competiciones: Array|null, ultimasPartidas: Array|null, estadisticas: Object|null}|null}
+ */
+export const elUltimoPanel = (usuarioId) => {
+  if (!usuarioId) return null;
+  const panel = leeElPanel();
+  if (!panel || panel.usuarioId !== usuarioId) return null;
+  return {
+    competiciones: panel.competiciones,
+    ultimasPartidas: panel.ultimasPartidas,
+    estadisticas: panel.estadisticas,
+  };
+};
+
+/**
+ * Lo que enseñó «Requiere tu Atención» con esta cuenta, para pintarlo al abrir.
+ * @param {string} usuarioId
+ * @returns {Object|null}
+ */
+export const lasPendientesGuardadas = (usuarioId) => {
+  if (!usuarioId) return null;
+  const panel = leeElPanel();
+  return panel?.usuarioId === usuarioId ? panel.pendientes : null;
+};
+
+/**
  * Al cerrar sesión: son datos de ESTA cuenta. En un móvil compartido, sin esto
  * la siguiente persona que entrara y se quedara sin señal vería la lista de
  * partidas de la anterior, con sus nombres y sus resultados.
@@ -247,6 +557,7 @@ const borra = () => {
     localStorage.removeItem(CLAVE_LISTA);
     localStorage.removeItem(CLAVE_PARTIDOS);
     localStorage.removeItem(CLAVE_PARTIDAS);
+    localStorage.removeItem(CLAVE_PANEL);
     localStorage.removeItem(CLAVE);
   } catch {
     // Nada que hacer
