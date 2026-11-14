@@ -462,11 +462,12 @@ const leeElPanel = () => {
 };
 
 /**
- * Guarda una parte del panel de esta cuenta, o las dos. Cada una llega por su
- * lado; si lo guardado es de otra cuenta, se empieza de cero.
+ * Guarda partes del panel de esta cuenta (competiciones, últimas partidas,
+ * cifras, lo de «Requiere tu Atención»). Cada una llega por su lado; si lo
+ * guardado es de otra cuenta, se empieza de cero.
  *
  * @param {string} usuarioId
- * @param {{competiciones?: Array|null, ultimasPartidas?: Array|null, estadisticas?: Object|null}} partes
+ * @param {{competiciones?: Array|null, ultimasPartidas?: Array|null, estadisticas?: Object|null, pendientes?: Object|null}} partes
  *   Cada parte: lo nuevo, `null` para borrarla, o sin poner para dejar la que había
  */
 export const recuerdaElPanel = (

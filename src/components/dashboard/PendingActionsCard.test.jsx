@@ -552,6 +552,93 @@ describe('PendingActionsCard al volver al panel', () => {
     expect(lasPendientesGuardadas('otra')).toBeNull();
   });
 
+  // Revisor (14 nov 2026): con la tarjeta montada, otra cuenta a la que le falla
+  // una petición no puede quedarse, ni guardar en el móvil, lo aplicado a la anterior
+  it('P-f: al cambiar de cuenta no se guarda nada de la anterior bajo la nueva', async () => {
+    const enElMovil = new Map();
+    vi.stubGlobal('localStorage', {
+      getItem: (k) => (enElMovil.has(k) ? enElMovil.get(k) : null),
+      setItem: (k, v) => enElMovil.set(k, String(v)),
+      removeItem: (k) => enElMovil.delete(k),
+    });
+    onTestFinished(() => vi.unstubAllGlobals());
+    const { olvidaTodo: borraElMovil, lasPendientesGuardadas } =
+      await import('../../services/loUltimoConocido');
+    borraElMovil();
+    mockListMyQuickMatches.mockResolvedValue({
+      quickMatches: [],
+      totalCount: 0,
+      page: 1,
+      limit: 20,
+    });
+    mockListMyInvitations.mockResolvedValue({
+      invitations: [{ id: 'i-1' }, { id: 'i-2' }],
+      totalCount: 2,
+    });
+    mockListPendingFriendRequests.mockResolvedValue({
+      friendships: [],
+      totalCount: 4,
+    });
+    const otra = { ...baseUser, id: 'user-2' };
+    const pinta = (user) => (
+      <MemoryRouter>
+        <PendingActionsCard user={user} competitions={[]} upcomingMatches={0} />
+      </MemoryRouter>
+    );
+    const { rerender } = render(pinta(baseUser));
+    await waitFor(() =>
+      expect(lasPendientesGuardadas(baseUser.id)?.pendingInvitations).toBe(2),
+    );
+
+    // A la otra cuenta le fallan las dos que la primera sí tenía
+    mockListMyInvitations.mockRejectedValue(new Error('500'));
+    mockListPendingFriendRequests.mockRejectedValue(new Error('500'));
+    rerender(pinta(otra));
+
+    await waitFor(() => expect(lasPendientesGuardadas(otra.id)).not.toBeNull());
+    expect(lasPendientesGuardadas(otra.id).pendingInvitations).toBe(0);
+    expect(lasPendientesGuardadas(otra.id).pendingFriendRequests).toBe(0);
+  });
+
+  it('P-g: al cambiar de cuenta se ve al momento lo que la nueva tiene guardado', async () => {
+    const enElMovil = new Map();
+    vi.stubGlobal('localStorage', {
+      getItem: (k) => (enElMovil.has(k) ? enElMovil.get(k) : null),
+      setItem: (k, v) => enElMovil.set(k, String(v)),
+      removeItem: (k) => enElMovil.delete(k),
+    });
+    onTestFinished(() => vi.unstubAllGlobals());
+    const { olvidaTodo: borraElMovil, recuerdaElPanel } =
+      await import('../../services/loUltimoConocido');
+    borraElMovil();
+    const otra = { ...baseUser, id: 'user-2' };
+    recuerdaElPanel(otra.id, {
+      pendientes: {
+        pendingInvitations: 3,
+        pendingEnrollments: [],
+        pendingFriendRequests: 0,
+        activeQuickMatches: [],
+        sobresPendientes: [],
+        sesionesSinPartidos: [],
+        plazasAsignadas: [],
+      },
+    });
+    // Todo se queda en vuelo: lo que se vea viene de lo guardado
+    mockListMyInvitations.mockReturnValue(new Promise(() => {}));
+    const pinta = (user) => (
+      <MemoryRouter>
+        <PendingActionsCard user={user} competitions={[]} upcomingMatches={0} />
+      </MemoryRouter>
+    );
+    const { rerender } = render(pinta(baseUser));
+
+    rerender(pinta(otra));
+
+    expect(
+      screen.getByTestId('pending-invitations-action'),
+    ).toBeInTheDocument();
+  });
+
   // El panel pinta primero la lista guardada y luego la que llega (Agustín, 14 nov
   // 2026): sin esto, la tarjeta pedía todo dos veces por la misma lista
   describe('a new list object with the same competitions', () => {

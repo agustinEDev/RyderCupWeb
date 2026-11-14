@@ -35,6 +35,17 @@ import {
 import BlockLoader from '../ui/BlockLoader';
 import { diaDeLaSesion } from '../../utils/diaDeLaSesion';
 
+/** Lo que la tarjeta recuerda, con sus valores por defecto. */
+const loRecordado = (r) => ({
+  pendingInvitations: r?.pendingInvitations ?? 0,
+  pendingEnrollments: r?.pendingEnrollments ?? [],
+  pendingFriendRequests: r?.pendingFriendRequests ?? 0,
+  activeQuickMatches: r?.activeQuickMatches ?? [],
+  sobresPendientes: r?.sobresPendientes ?? [],
+  sesionesSinPartidos: r?.sesionesSinPartidos ?? [],
+  plazasAsignadas: r?.plazasAsignadas ?? [],
+});
+
 const PendingActionsCard = ({
   user,
   competitions,
@@ -88,17 +99,19 @@ const PendingActionsCard = ({
   }, []);
   // Otra cuenta en la misma tarjeta montada: lo de la anterior no se enseña ni
   // un momento mientras llega lo nuevo (CodeRabbit en la #836). Se reinicia al
-  // pintar, no en un efecto, para que no llegue a verse
+  // pintar, no en un efecto, para que no llegue a verse; con lo que la nueva
+  // cuenta tenga recordado, si tiene algo (revisor, 14 nov 2026)
   const [cuentaDe, setCuentaDe] = useState(user?.id);
   if (user?.id !== cuentaDe) {
+    const deLaNueva = loRecordado(loQueSeEnseñoAntes(user?.id));
     setCuentaDe(user?.id);
-    setPendingInvitations(0);
-    setPendingEnrollments([]);
-    setPendingFriendRequests(0);
-    setActiveQuickMatches([]);
-    setSobresPendientes([]);
-    setSesionesSinPartidos([]);
-    setPlazasAsignadas([]);
+    setPendingInvitations(deLaNueva.pendingInvitations);
+    setPendingEnrollments(deLaNueva.pendingEnrollments);
+    setPendingFriendRequests(deLaNueva.pendingFriendRequests);
+    setActiveQuickMatches(deLaNueva.activeQuickMatches);
+    setSobresPendientes(deLaNueva.sobresPendientes);
+    setSesionesSinPartidos(deLaNueva.sesionesSinPartidos);
+    setPlazasAsignadas(deLaNueva.plazasAsignadas);
   }
   // Solo se enseña la espera cuando NO hay nada que enseñar: con lo de antes en
   // pantalla, el refresco va en silencio
@@ -107,15 +120,10 @@ const PendingActionsCard = ({
   // Lo ultimo que se llego a APLICAR, que es lo que hay que recordar. En una ref
   // y no leyendo los estados dentro del efecto: eso obligaria a meterlos en sus
   // dependencias y el efecto se relanzaria a si mismo
-  const ultimoAplicado = useRef({
-    pendingInvitations: recordado?.pendingInvitations ?? 0,
-    pendingEnrollments: recordado?.pendingEnrollments ?? [],
-    pendingFriendRequests: recordado?.pendingFriendRequests ?? 0,
-    activeQuickMatches: recordado?.activeQuickMatches ?? [],
-    sobresPendientes: recordado?.sobresPendientes ?? [],
-    sesionesSinPartidos: recordado?.sesionesSinPartidos ?? [],
-    plazasAsignadas: recordado?.plazasAsignadas ?? [],
-  });
+  const ultimoAplicado = useRef(loRecordado(recordado));
+  // De qué cuenta es lo aplicado: lo de la anterior no puede quedarse, ni
+  // guardarse en el móvil, bajo la nueva si a esta le falla una petición (revisor)
+  const aplicadoDe = useRef(user?.id);
 
   const isCreator = useMemo(
     () =>
@@ -154,9 +162,16 @@ const PendingActionsCard = ({
     if (!user) return;
 
     let cancelado = false;
+    if (aplicadoDe.current !== user.id) {
+      aplicadoDe.current = user.id;
+      ultimoAplicado.current = loRecordado(loQueSeEnseñoAntes(user.id));
+      vistas.current = new Set();
+    }
 
     const loadPendingData = async () => {
-      if (!loQueSeEnseñoAntes(user.id)) setIsLoading(true);
+      // Con lo de antes en pantalla, sin espera; también si la cuenta anterior
+      // dejó la suya puesta al cambiar con su carga a medias
+      setIsLoading(!loQueSeEnseñoAntes(user.id));
       try {
         // Cada una dentro de su función async: si alguna fallara aunque fuera
         // en síncrono, queda como un rechazo más y no tumba el panel entero

@@ -10,7 +10,7 @@
  * pantalla completa del panel; al quitar esa espera (FE #495) se quedó a la vista.
  *
  * Guardando lo último, al volver se pinta lo de antes al instante y se refresca
- * en silencio. Se ve una carga la primera vez de la sesión, y ninguna después.
+ * en silencio. Se ve una carga solo la primera vez en este móvil con esta cuenta.
  *
  * Vive en el módulo y, desde el 14 nov 2026, también en el móvil, dentro de lo
  * guardado del panel de esa cuenta: al abrir la app de cero tampoco espera.
