@@ -48,7 +48,7 @@ const PendingActionsCard = ({
   // Arranca con lo ultimo que esta tarjeta llego a enseñar (FE #502). El panel
   // se remonta cada vez que se vuelve a Inicio desde la barra inferior, asi que
   // sin esto cada vuelta empezaba de cero y pintaba el esqueleto amarillo
-  const recordado = loQueSeEnseñoAntes();
+  const recordado = loQueSeEnseñoAntes(user?.id);
 
   const [pendingInvitations, setPendingInvitations] = useState(
     recordado?.pendingInvitations ?? 0,
@@ -156,7 +156,7 @@ const PendingActionsCard = ({
     let cancelado = false;
 
     const loadPendingData = async () => {
-      if (!loQueSeEnseñoAntes()) setIsLoading(true);
+      if (!loQueSeEnseñoAntes(user.id)) setIsLoading(true);
       try {
         // Cada una dentro de su función async: si alguna fallara aunque fuera
         // en síncrono, queda como un rechazo más y no tumba el panel entero
@@ -233,7 +233,7 @@ const PendingActionsCard = ({
         }
 
         ultimoAplicado.current = aplicado;
-        recuerdaLasAccionesPendientes({ ...aplicado });
+        recuerdaLasAccionesPendientes({ ...aplicado }, user.id);
       } catch (error) {
         console.error('Error loading pending actions:', error);
       } finally {
@@ -285,7 +285,7 @@ const PendingActionsCard = ({
         ...ultimoAplicado.current,
         plazasAsignadas: quedan(ultimoAplicado.current.plazasAsignadas),
       };
-      recuerdaLasAccionesPendientes({ ...ultimoAplicado.current });
+      recuerdaLasAccionesPendientes({ ...ultimoAplicado.current }, user?.id);
       setPlazasAsignadas(quedan);
     } catch (error) {
       // El nuestro, traducido: el del servidor puede venir en otro idioma (CodeRabbit)

@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { MemoryRouter } from 'react-router';
 import PendingActionsCard from './PendingActionsCard';
+import { olvidaTodo } from '../../services/loUltimoConocido';
 
 /**
  * Las sesiones que se quedaron sin partidos al abrir los sobres (BE #361).
@@ -125,6 +126,8 @@ describe('PendingActionsCard · sesiones sin partidos', () => {
     const { olvidaLasAccionesPendientes } =
       await import('../../services/accionesPendientes');
     olvidaLasAccionesPendientes();
+    // Y lo guardado en el móvil: si no, lo de un test lo pinta el siguiente
+    olvidaTodo();
     vi.clearAllMocks();
     mockListMyInvitations.mockResolvedValue({ invitations: [] });
     mockListEnrollments.mockResolvedValue([]);

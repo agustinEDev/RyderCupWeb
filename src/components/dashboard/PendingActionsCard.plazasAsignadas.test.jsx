@@ -3,6 +3,7 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import { MemoryRouter } from 'react-router';
 import PendingActionsCard from './PendingActionsCard';
 import mockToast from '../../utils/toast';
+import { olvidaTodo } from '../../services/loUltimoConocido';
 
 /**
  * La plaza asignada desde una lista de espera (FE #824, PR 4; RyderCupAm#512).
@@ -128,6 +129,8 @@ describe('PendingActionsCard · plaza asignada desde la espera (FE #824)', () =>
     const { olvidaLasAccionesPendientes } =
       await import('../../services/accionesPendientes');
     olvidaLasAccionesPendientes();
+    // Y lo guardado en el móvil: si no, lo de un test lo pinta el siguiente
+    olvidaTodo();
     vi.clearAllMocks();
     mockListMyInvitations.mockResolvedValue({ invitations: [] });
     mockListEnrollments.mockResolvedValue([]);
@@ -183,6 +186,25 @@ describe('PendingActionsCard · plaza asignada desde la espera (FE #824)', () =>
     );
     expect(mockAcknowledge).toHaveBeenCalledWith('r1');
     expect(mockNavigate).not.toHaveBeenCalled();
+  });
+
+  // Lo que se recuerda de la cuenta ya no la lleva: si no, al volver al panel
+  // reaparecía desde el móvil hasta que llegaba la respuesta (14 nov 2026)
+  it('17g: tras «Entendido», lo que se recuerda de esa cuenta ya no la lleva', async () => {
+    const memoria = await import('../../services/accionesPendientes');
+    mockListMyAssignedPlaces.mockResolvedValue([PLAZA]);
+    renderCard();
+
+    fireEvent.click(
+      await screen.findByRole('button', {
+        name: 'pendingActions.placeAssignedOk',
+      }),
+    );
+    await vi.waitFor(() =>
+      expect(screen.queryByTestId('plaza-asignada-r1')).toBeNull(),
+    );
+
+    expect(memoria.loQueSeEnseñoAntes(baseUser.id).plazasAsignadas).toEqual([]);
   });
 
   it('17b: si «Entendido» falla, la fila se queda y se dice', async () => {

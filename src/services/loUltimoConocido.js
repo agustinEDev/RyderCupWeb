@@ -343,6 +343,83 @@ const TIPOS_DE_LA_COMPETICION = { name: textoONada, status: textoONada };
 const deSuTipo = (tipos) => (x) =>
   conId(x) && Object.entries(tipos).every(([campo, vale]) => vale(x[campo]));
 
+/**
+ * Lo que enseña «Requiere tu Atención», para pintarlo al abrir la app de cero
+ * (Agustín, 14 nov 2026): dos cifras y cinco listas, de cada elemento solo lo
+ * que se pinta. La clave de cada elemento (su id) tiene que ser texto.
+ */
+const ELEMENTO_DE_LA_SESION = {
+  clave: 'roundId',
+  tipos: {
+    competitionId: textoONada,
+    competitionName: textoONada,
+    roundDate: textoONada,
+    sessionType: textoONada,
+  },
+};
+const LISTAS_DE_PENDIENTES = {
+  pendingEnrollments: {
+    clave: 'competitionId',
+    tipos: { name: textoONada, count: Number.isFinite },
+  },
+  activeQuickMatches: {
+    clave: 'id',
+    tipos: {
+      name: textoONada,
+      matchFormat: textoONada,
+      scoringFormat: textoONada,
+    },
+  },
+  sobresPendientes: ELEMENTO_DE_LA_SESION,
+  sesionesSinPartidos: ELEMENTO_DE_LA_SESION,
+  plazasAsignadas: ELEMENTO_DE_LA_SESION,
+};
+const CIFRAS_DE_PENDIENTES = ['pendingInvitations', 'pendingFriendRequests'];
+
+const camposDe = ({ clave, tipos }) => [clave, ...Object.keys(tipos)];
+
+const elementoValido =
+  ({ clave, tipos }) =>
+  (x) =>
+    esUnObjeto(x) &&
+    typeof x[clave] === 'string' &&
+    x[clave] !== '' &&
+    Object.entries(tipos).every(([campo, vale]) => vale(x[campo]));
+
+/** Lo que se enseñó, en valores sueltos y solo lo que se pinta. */
+const pendientesEnPlano = (p) => ({
+  ...Object.fromEntries(CIFRAS_DE_PENDIENTES.map((c) => [c, p[c]])),
+  ...Object.fromEntries(
+    Object.entries(LISTAS_DE_PENDIENTES).map(([lista, forma]) => [
+      lista,
+      Array.isArray(p[lista])
+        ? p[lista].map((x) => enPlano(camposDe(forma), x))
+        : [],
+    ]),
+  ),
+});
+
+/** Al leer: una cifra que no es número vale 0; un elemento que no cuadra, fuera. */
+const pendientesValidas = (p) =>
+  esUnObjeto(p)
+    ? {
+        ...Object.fromEntries(
+          CIFRAS_DE_PENDIENTES.map((c) => [
+            c,
+            Number.isFinite(p[c]) ? p[c] : 0,
+          ]),
+        ),
+        ...Object.fromEntries(
+          Object.entries(LISTAS_DE_PENDIENTES).map(([lista, forma]) => [
+            lista,
+            Array.isArray(p[lista])
+              ? p[lista].filter(elementoValido(forma))
+              : [],
+          ]),
+        ),
+      }
+    : null;
+
 /** Una lista guardada, sin los elementos que no se pueden pintar. */
 const listaValida = (lista, esValido) =>
   Array.isArray(lista) ? lista.filter(esValido) : null;
@@ -377,6 +454,7 @@ const leeElPanel = () => {
         deSuTipo(TIPOS_DE_LA_PARTIDA),
       ),
       estadisticas: cifrasValidas(panel.estadisticas),
+      pendientes: pendientesValidas(panel.pendientes),
     };
   } catch {
     return null;
@@ -393,7 +471,7 @@ const leeElPanel = () => {
  */
 export const recuerdaElPanel = (
   usuarioId,
-  { competiciones, ultimasPartidas, estadisticas } = {},
+  { competiciones, ultimasPartidas, estadisticas, pendientes } = {},
 ) => {
   if (cerrado || !usuarioId) return false;
   // Nada de aquí puede hacer reventar a quien guarda: guardar va justo después
@@ -429,6 +507,12 @@ export const recuerdaElPanel = (
         (cifras) => enPlano(CAMPOS_DE_LAS_CIFRAS, cifras),
         deEsta?.estadisticas,
       ),
+      pendientes: parte(
+        pendientes,
+        esUnObjeto,
+        pendientesEnPlano,
+        deEsta?.pendientes,
+      ),
     };
     localStorage.setItem(CLAVE_PANEL, JSON.stringify(panel));
     return true;
@@ -452,6 +536,17 @@ export const elUltimoPanel = (usuarioId) => {
     ultimasPartidas: panel.ultimasPartidas,
     estadisticas: panel.estadisticas,
   };
+};
+
+/**
+ * Lo que enseñó «Requiere tu Atención» con esta cuenta, para pintarlo al abrir.
+ * @param {string} usuarioId
+ * @returns {Object|null}
+ */
+export const lasPendientesGuardadas = (usuarioId) => {
+  if (!usuarioId) return null;
+  const panel = leeElPanel();
+  return panel?.usuarioId === usuarioId ? panel.pendientes : null;
 };
 
 /**

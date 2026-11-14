@@ -1,7 +1,8 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, onTestFinished } from 'vitest';
 import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import { MemoryRouter } from 'react-router';
 import PendingActionsCard from './PendingActionsCard';
+import { olvidaTodo } from '../../services/loUltimoConocido';
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
@@ -110,6 +111,8 @@ describe('PendingActionsCard', () => {
     const { olvidaLasAccionesPendientes } =
       await import('../../services/accionesPendientes');
     olvidaLasAccionesPendientes();
+    // Y lo guardado en el móvil: si no, lo de un test lo pinta el siguiente
+    olvidaTodo();
     vi.clearAllMocks();
     mockListMyInvitations.mockResolvedValue({ invitations: [], totalCount: 0 });
     mockListEnrollments.mockResolvedValue([]);
@@ -421,6 +424,8 @@ describe('PendingActionsCard al volver al panel', () => {
   beforeEach(async () => {
     const { olvidaLasAccionesPendientes } = await memoria();
     olvidaLasAccionesPendientes();
+    // Y lo guardado en el móvil: si no, lo de un test lo pinta el siguiente
+    olvidaTodo();
   });
 
   it('la primera vez sí enseña que está cargando', async () => {
@@ -457,12 +462,16 @@ describe('PendingActionsCard al volver al panel', () => {
 
   it('al volver enseña lo de antes, sin esqueleto', async () => {
     const { recuerdaLasAccionesPendientes } = await memoria();
-    recuerdaLasAccionesPendientes({
-      pendingInvitations: 0,
-      pendingEnrollments: [],
-      pendingFriendRequests: 0,
-      activeQuickMatches: [{ id: 'q1', name: 'Partida en curso' }],
-    });
+    recuerdaLasAccionesPendientes(
+      {
+        pendingInvitations: 0,
+        pendingEnrollments: [],
+        pendingFriendRequests: 0,
+        activeQuickMatches: [{ id: 'q1', name: 'Partida en curso' }],
+        // La memoria es de una cuenta: la de quien pinta la tarjeta (14 nov 2026)
+      },
+      baseUser.id,
+    );
     // La recarga se queda en vuelo: lo que se vea viene de la memoria
     mockListMyQuickMatches.mockReturnValue(new Promise(() => {}));
 
@@ -472,6 +481,75 @@ describe('PendingActionsCard al volver al panel', () => {
       container.querySelector('.espera-anillo'),
       'no debe verse la espera',
     ).toBeNull();
+  });
+
+  // Al abrir la app de cero, lo que enseñó la última vez sale del móvil
+  // (Agustín, 14 nov 2026): sin esto, la tarjeta pintaba su espera
+  it('P-d: al abrir de cero enseña lo de la última vez, sin espera', async () => {
+    const enElMovil = new Map();
+    vi.stubGlobal('localStorage', {
+      getItem: (k) => (enElMovil.has(k) ? enElMovil.get(k) : null),
+      setItem: (k, v) => enElMovil.set(k, String(v)),
+      removeItem: (k) => enElMovil.delete(k),
+    });
+    onTestFinished(() => vi.unstubAllGlobals());
+    const { olvidaTodo } = await import('../../services/loUltimoConocido');
+    olvidaTodo();
+    const { recuerdaLasAccionesPendientes, olvidaLasAccionesPendientes } =
+      await memoria();
+    recuerdaLasAccionesPendientes(
+      {
+        pendingInvitations: 2,
+        pendingEnrollments: [],
+        pendingFriendRequests: 0,
+        activeQuickMatches: [],
+        sobresPendientes: [],
+        sesionesSinPartidos: [],
+        plazasAsignadas: [],
+      },
+      baseUser.id,
+    );
+    // La recarga de la página se lleva la memoria del módulo; el móvil, no
+    olvidaLasAccionesPendientes();
+    mockListMyInvitations.mockReturnValue(new Promise(() => {}));
+
+    const { container } = renderCard();
+
+    expect(container.querySelector('.espera-anillo')).toBeNull();
+    expect(
+      screen.getByTestId('pending-invitations-action'),
+    ).toBeInTheDocument();
+  });
+
+  it('P-e: lo que llega queda guardado en el móvil, para esa cuenta', async () => {
+    const enElMovil = new Map();
+    vi.stubGlobal('localStorage', {
+      getItem: (k) => (enElMovil.has(k) ? enElMovil.get(k) : null),
+      setItem: (k, v) => enElMovil.set(k, String(v)),
+      removeItem: (k) => enElMovil.delete(k),
+    });
+    onTestFinished(() => vi.unstubAllGlobals());
+    const { olvidaTodo: borraElMovil, lasPendientesGuardadas } =
+      await import('../../services/loUltimoConocido');
+    borraElMovil();
+    mockListMyInvitations.mockResolvedValue({
+      invitations: [{ id: 'i-1' }, { id: 'i-2' }],
+      totalCount: 2,
+    });
+    // Sus propias respuestas, no las que dejó otro test de este bloque en vuelo
+    mockListMyQuickMatches.mockResolvedValue({
+      quickMatches: [],
+      totalCount: 0,
+      page: 1,
+      limit: 20,
+    });
+
+    renderCard();
+
+    await waitFor(() =>
+      expect(lasPendientesGuardadas(baseUser.id)?.pendingInvitations).toBe(2),
+    );
+    expect(lasPendientesGuardadas('otra')).toBeNull();
   });
 
   // El panel pinta primero la lista guardada y luego la que llega (Agustín, 14 nov

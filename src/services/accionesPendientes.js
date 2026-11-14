@@ -12,19 +12,37 @@
  * Guardando lo último, al volver se pinta lo de antes al instante y se refresca
  * en silencio. Se ve una carga la primera vez de la sesión, y ninguna después.
  *
- * Vive en el módulo, así que se vacía al recargar la página: no es un caché con
- * fecha de caducidad, es memoria de lo que ya estaba en pantalla hace un momento.
+ * Vive en el módulo y, desde el 14 nov 2026, también en el móvil, dentro de lo
+ * guardado del panel de esa cuenta: al abrir la app de cero tampoco espera.
  */
 
+import { lasPendientesGuardadas, recuerdaElPanel } from './loUltimoConocido';
+
+/** `{ usuarioId, datos }`: la memoria es de una cuenta. */
 let guardado = null;
 
-export const loQueSeEnseñoAntes = () => guardado;
-
-export const recuerdaLasAccionesPendientes = (datos) => {
-  guardado = datos;
+/**
+ * Lo último que se enseñó con esta cuenta: lo de esta visita, o si no lo hay
+ * (se abrió la app de cero), lo guardado en el móvil (Agustín, 14 nov 2026).
+ *
+ * @param {string} [usuarioId]
+ */
+export const loQueSeEnseñoAntes = (usuarioId) => {
+  if (guardado && guardado.usuarioId === usuarioId) return guardado.datos;
+  return lasPendientesGuardadas(usuarioId);
 };
 
-/** Al cerrar sesión: lo de la cuenta anterior no puede asomar en la siguiente. */
+/**
+ * @param {Object} datos
+ * @param {string} [usuarioId] Sin cuenta, solo en memoria
+ */
+export const recuerdaLasAccionesPendientes = (datos, usuarioId) => {
+  guardado = { usuarioId, datos };
+  if (usuarioId) recuerdaElPanel(usuarioId, { pendientes: datos });
+};
+
+/** Al cerrar sesión: lo de la cuenta anterior no puede asomar en la siguiente.
+ *  Lo del móvil lo borra el registro de limpiezas, con el resto del panel. */
 export const olvidaLasAccionesPendientes = () => {
   guardado = null;
 };
