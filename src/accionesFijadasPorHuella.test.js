@@ -18,8 +18,14 @@ import { join } from 'node:path';
  *   A3 una imagen `docker://` por digest                 | vale
  *   A4 toda línea con `uses:` la reconoce el escáner      | si no, se le escaparía
  *   A5 el escáner                                        | distingue etiqueta, rama y huella
+ *   A6 trufflehog: la versión de su imagen               | la de la acción y por digest
+ *
+ * A6: la acción de trufflehog ejecuta una imagen de Docker (`version`, por defecto
+ * `latest`). Dependabot sube la huella y el comentario de la acción, pero no ese
+ * `version:`: si no coinciden, su PR falla aquí hasta que se actualicen los dos.
  */
 
+// Desde la raíz del proyecto, como los demás vigilantes de src (Vitest arranca en ella)
 const GITHUB = join(globalThis.process.cwd(), '.github');
 const USES = /^\s*-?\s*uses:\s*(?<accion>[^\s#]+)(?<resto>.*)$/;
 const FIJADA = /^[\w.-]+\/[\w./-]+@[0-9a-f]{40}$/;
@@ -80,6 +86,19 @@ describe('acciones de GitHub fijadas por huella (INF-03)', () => {
 
     expect(usos.length).toBeGreaterThan(0);
     expect(sinReconocer).toEqual([]);
+  });
+
+  it('A6: trufflehog corre la imagen de su versión, por digest', () => {
+    const ci = readFileSync(join(GITHUB, 'workflows', 'ci-cd.yml'), 'utf8');
+    const accion = ci.match(
+      /uses:\s*trufflesecurity\/trufflehog@[0-9a-f]{40}\s*#\s*v(?<version>[\d.]+)/,
+    );
+    const imagen = ci.match(
+      /\n\s*version:\s*(?<version>[\d.]+)@sha256:[0-9a-f]{64}\s*\n/,
+    );
+
+    expect(accion?.groups.version).toBeTruthy();
+    expect(imagen?.groups.version).toBe(accion.groups.version);
   });
 
   it('A5: el escáner distingue una etiqueta, una rama y una huella', () => {

@@ -175,9 +175,10 @@ jobs:
         uses: trufflesecurity/trufflehog@ea68ca03c865c5f324e86e849ced20ed3cf9dbbb  # v3.99.8
         with:
           # La acción ejecuta una imagen de Docker, por defecto `latest`: la huella de
-          # arriba solo fija el envoltorio. La versión del escáner, la misma (INF-03).
-          # Al subirla, Dependabot cambia la huella y el comentario, no esto
-          version: 3.99.8
+          # arriba solo fija el envoltorio. El escáner, la misma versión y por digest
+          # (INF-03). Dependabot sube la huella y el comentario, no esto: el test
+          # src/accionesFijadasPorHuella.test.js (A6) falla hasta que se actualice
+          version: 3.99.8@sha256:674b2f187620a19df77f44cf9a7d77efcc581a5662accef2f2739cbb46ba4a3a
           path: ./
           extra_args: --debug --only-verified
 
