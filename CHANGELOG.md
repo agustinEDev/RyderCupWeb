@@ -5,6 +5,82 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.77.0] - 2026-11-14
+
+**Fase 5 del plan de calidad: pantallas grandes repartidas, efectos de React sin excepciones
+y Prettier** (#1106–#1111, #1113–#1117, #1124, #1125, #1127), y la cabecera con tu usuario
+en tres pantallas (#1130). Sin cambios en el backend: va con la 2.64.0 en producción. Probado
+en el Kind con la 2.64.0: detalle de competición, draft en directo (elecciones, elección
+automática al agotarse el turno, recarga a mitad de turno), sobres que se abren al entregar
+los dos, anotación con y sin conexión (cola que sobrevive a una recarga y se envía al volver
+la red), tarjeta, clasificación, mapa, Actividad hasta el final, perfil, amigos, partidas
+rápidas y compartidas, panel de administración y la cabecera de las tres pantallas del
+#1129, sin errores en la consola.
+
+### Fixed
+
+- **La cabecera enseña tus iniciales y lo de Admin en Actividad, la ficha de un jugador y
+  una partida rápida compartida** (#1129, #1130): salía «?» y sin la marca ni el menú de
+  administración, porque esas pantallas no le pasaban el usuario. Un test falla si alguna
+  pantalla vuelve a pintar la cabecera sin él.
+
+- **Una respuesta que llega tarde ya no pisa la pantalla actual.** Al cambiar de filtro,
+  búsqueda, página, pestaña, competición, partido o cuenta, o al salir de la pantalla, una
+  carga anterior se descarta en vez de pintarse encima de la nueva, quitar el «Cargando» de
+  la nueva o mostrar un error que ya no toca. Afecta al panel de administración (usuarios,
+  competiciones, campos, solicitudes, invitaciones, calendario), Actividad, amigos,
+  invitaciones, ficha de jugador, próximos partidos, estadísticas, agenda y franjas de la
+  competición, dispositivos, draft, sobres y partida rápida compartida (#1111, #1113, #1117,
+  #1124).
+- **Los permisos de una competición ya no se cuelan en otra** (A01): si los de la
+  competición A llegaban tarde, podían verse en la B. Ahora van por usuario y competición
+  (#1117).
+- **El candado de la anotación** se reinicia al cambiar de partido o de usuario, sin pintar
+  antes el estado del partido anterior, y sus avisos tardíos ya no se aplican al nuevo (A07,
+  #1117).
+- **Actividad:** al cambiar de cuenta con la pantalla abierta ya no se mezclan los eventos de
+  la cuenta anterior, y la primera página de la nueva cuenta cuenta como vista. Arreglada una
+  carrera del «cargar más» que podía perder el cursor (#1116).
+- **Clasificación por categorías y franjas:** nunca se pinta una lectura de otra categoría o
+  franja; mientras carga una franja nueva (o si falla) no se ven las filas de la anterior.
+  Al cambiar de categoría, las filas anteriores siguen debajo del «Cargando» (#1125).
+- **Draft:** ya no se queda cargando sin fin si una elección se resolvía antes de la primera
+  lectura, y el reloj solo se reinicia cuando el servidor acepta la elección (#1124).
+- **Sobres:** una acción siempre llega a la pantalla (una carga cada vez), y el sobre de una
+  sesión anterior ya no se recarga tras salir (#1124).
+- **Partida rápida compartida:** nunca se ve la partida o el campo anteriores bajo la nueva
+  dirección, y al salir ya no aparece un aviso 403 tardío (#1124).
+- **Próximos partidos** avisa de que no se ha podido comprobar si falla la lectura, en vez de
+  cargar sin fin; sin usuario ya no se queda girando (#1113).
+- **Amigos e invitaciones:** la fila que se está respondiendo sigue ocupada hasta que llega
+  una lista con la respuesta (#1113, #1115).
+- **Formularios:** la solicitud de campo ya no borra el nombre y el tipo al enviar (se
+  perdían si fallaba); los países vecinos tardíos ya no pisan los actuales al crear o editar
+  una competición; en los campos de la competición, una recarga lenta ya no pisa otra más
+  nueva; pasar de editar a crear, o de una competición a otra, ya no deja el «Cargando» de la
+  edición para siempre (#1114).
+- El aviso de verificación de correo pintaba dos veces el dominio de una dirección con
+  `{{…}}` (#1109).
+- El carrusel de tarjetas fija la tarjeta de inicio al abrirse: los sondeos ya no lo
+  recolocan (#1125).
+
+### Changed
+
+- **Pantallas grandes repartidas, sin cambios para el usuario:** el detalle de competición
+  (2.247 → 433 líneas), el mapa del hoyo (1.443 → 488) y la anotación de torneo y de partida
+  rápida (cuatro ficheros por debajo de 500 líneas) (#1106, #1107, #1108).
+- Las cargas de las pantallas usan una sola pieza, `useCargaCancelableEffect` (el patrón de
+  la documentación de React); quedan 5 `eslint-disable` de React en `src`, todos justificados
+  (#1111–#1125). Fuera los 27 `eslint-disable no-unused-vars` (#1110).
+- **Prettier** (estilo estándar con comillas simples) formatea el código, y el CI lo
+  comprueba (`npm run format:check`). El commit del formateo cambia solo la forma (el árbol
+  de 1.318 ficheros es idéntico) y `git blame` se lo salta con `.git-blame-ignore-revs`
+  (#1127).
+- Cabeceras de seguridad comparadas entre Vite, nginx/Kind y producción en los dos sentidos;
+  el comprobador de producción mira también un `/assets/*.js` real y una ruta profunda, y ya
+  no sigue redirecciones; el escáner de rutas detecta más formas de pegar un id sin
+  `segmento()`; el humo del build comprueba también recursos con URL relativa (#1109).
+
 ## [2.76.0] - 2026-11-12
 
 **Limpieza de código muerto** (#1103, fase 5 del plan de calidad). Sin cambios para el usuario.
