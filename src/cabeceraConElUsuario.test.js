@@ -20,44 +20,49 @@ const ficheros = (dir) =>
       : [];
   });
 
-/**
- * Las etiquetas `<HeaderAuth …>` de un texto, enteras: las llaves de los
- * atributos pueden llevar `>` (una flecha) y no cierran la etiqueta. Aquí no se
- * tratan las comillas ni los comentarios: un `title="a > b"` o un
- * `<HeaderAuth />` comentado hacen fallar el guardián de más, nunca de menos.
- */
-const etiquetasDeLaCabecera = (texto) => {
-  const etiquetas = [];
-  const re = /<HeaderAuth(?![\w.])/g;
-  let m;
-  while ((m = re.exec(texto))) {
-    let llaves = 0;
-    let i = m.index + m[0].length;
-    for (; i < texto.length; i++) {
-      const c = texto[i];
-      if (c === '{') llaves++;
-      else if (c === '}') llaves--;
-      else if (c === '>' && llaves === 0) break;
-    }
-    etiquetas.push(texto.slice(m.index, i + 1));
-  }
-  return etiquetas;
-};
+const APERTURA = '<HeaderAuth';
 
-const llevaElUsuario = (etiqueta) => {
-  // Solo los nombres de los atributos: sin lo que va entre llaves ni entre
-  // comillas, que un `title="para user=x"` no cuente como la prop
-  let fuera = '';
+/**
+ * Recorre los atributos de una etiqueta desde `desde` hasta su `>`. Lo que va
+ * entre llaves (una flecha con `>`) o entre comillas (un `title="{"` o
+ * `"a > b"`) no cierra la etiqueta ni cuenta como nombre de atributo.
+ * Devuelve dónde cierra y el texto de fuera: los nombres de los atributos.
+ * Las comillas dentro de unas llaves y los comentarios no se tratan: solo
+ * pueden hacer fallar el guardián de más.
+ */
+const recorreLosAtributos = (texto, desde) => {
   let llaves = 0;
   let comilla = null;
-  for (const c of etiqueta) {
+  let fuera = '';
+  for (let i = desde; i < texto.length; i++) {
+    const c = texto[i];
     if (comilla) {
       if (c === comilla) comilla = null;
     } else if (llaves === 0 && (c === '"' || c === "'")) comilla = c;
     else if (c === '{') llaves++;
     else if (c === '}') llaves--;
-    else if (llaves === 0) fuera += c;
+    else if (llaves === 0) {
+      if (c === '>') return { fin: i, fuera };
+      fuera += c;
+    }
   }
+  return { fin: texto.length - 1, fuera };
+};
+
+/** Las etiquetas `<HeaderAuth …>` de un texto, enteras. */
+const etiquetasDeLaCabecera = (texto) => {
+  const etiquetas = [];
+  const re = /<HeaderAuth(?![\w.])/g;
+  let m;
+  while ((m = re.exec(texto))) {
+    const { fin } = recorreLosAtributos(texto, m.index + APERTURA.length);
+    etiquetas.push(texto.slice(m.index, fin + 1));
+  }
+  return etiquetas;
+};
+
+const llevaElUsuario = (etiqueta) => {
+  const { fuera } = recorreLosAtributos(etiqueta, APERTURA.length);
   // `user={undefined}` vuelve a pintar «?»; un `{...props}` no dice si lo trae
   return (
     /\suser\s*=/.test(fuera) &&
@@ -110,10 +115,27 @@ describe('every session header gets the user (#1129)', () => {
       ['<HeaderAuth title="para user=x" />', false],
       ["<HeaderAuth title='para user=x' user={user} />", true],
       ['<HeaderAuth {...props} user={user} />', true],
+      // Las comillas tampoco cierran ni abren nada al buscar el final
+      ['<HeaderAuth title="a > b" user={user} />', true],
+      ['<HeaderAuth title="{" user={user} />', true],
     ])('%s → %s', (etiqueta, esperado) => {
       const [leida] = etiquetasDeLaCabecera(`x ${etiqueta} y`);
       expect(leida).toBe(etiqueta);
       expect(llevaElUsuario(leida)).toBe(esperado);
+    });
+
+    // CodeRabbit en #1130: una llave entre comillas juntaba las dos cabeceras,
+    // y el `user` de la segunda daba por buena a la primera
+    it('a quoted brace does not merge a header with the next one', () => {
+      const etiquetas = etiquetasDeLaCabecera(
+        '<HeaderAuth title="{" />\n<p>x</p>\n<HeaderAuth user={user} />',
+      );
+
+      expect(etiquetas).toEqual([
+        '<HeaderAuth title="{" />',
+        '<HeaderAuth user={user} />',
+      ]);
+      expect(etiquetas.map(llevaElUsuario)).toEqual([false, true]);
     });
 
     it('does not take HeaderAuthLike or the import for a header', () => {
