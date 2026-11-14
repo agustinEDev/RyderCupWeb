@@ -40,6 +40,13 @@ describe('acciones de GitHub fijadas por huella (INF-03)', () => {
   it('cada acción de cada workflow va por huella y con su versión al lado', () => {
     const ficheros = readdirSync(WORKFLOWS).filter((f) => /\.ya?ml$/.test(f));
     expect(ficheros.length).toBeGreaterThan(0);
+    // Que el escáner vea acciones: si un día no casara con nada, pasaría en vacío
+    const usos = ficheros.flatMap((f) =>
+      readFileSync(join(WORKFLOWS, f), 'utf8')
+        .split('\n')
+        .filter((linea) => USES.test(linea)),
+    );
+    expect(usos.length).toBeGreaterThan(0);
 
     const malas = Object.fromEntries(
       ficheros

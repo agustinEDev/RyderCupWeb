@@ -174,6 +174,10 @@ jobs:
         id: trufflehog
         uses: trufflesecurity/trufflehog@ea68ca03c865c5f324e86e849ced20ed3cf9dbbb  # v3.99.8
         with:
+          # La acción ejecuta una imagen de Docker, por defecto `latest`: la huella de
+          # arriba solo fija el envoltorio. La versión del escáner, la misma (INF-03).
+          # Al subirla, Dependabot cambia la huella y el comentario, no esto
+          version: 3.99.8
           path: ./
           extra_args: --debug --only-verified
 
@@ -688,6 +692,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+
+      # ===== Entrada «Deploy like Render» de la matriz =====
       # En su propia máquina: Render usa el npm que trae su Node, y en la otra
       # entrada se sube a la 11.17.
       # Render no usa el entorno de arriba: el Node de .nvmrc con su npm de serie,
