@@ -25,6 +25,9 @@ import { render, act, screen } from '@testing-library/react';
  *   D12 sin red, con el usuario del móvil       | se pinta con lo guardado
  *   D13 las partidas sembradas                  | llegan como entidades (con sus métodos)
  *   D14 otra cuenta sin panel guardado          | no se queda lo de la anterior
+ *   D15 el servidor contesta con un error       | esa parte se borra también de lo guardado
+ *   D16 ninguna partida guardada se puede rehacer | se espera (no «crea una partida»)
+ *   D17 una respuesta buena que no se puede guardar | se pinta igual
  */
 const enEspera = () => {
   let resolver;
@@ -441,6 +444,74 @@ describe('el panel con lo último visto', () => {
     expect(rastro('pendientes', 'competiciones')).toBe('');
     expect(rastro('recientes', 'partidas')).toBe('');
     expect(rastro('cifras', 'media')).toBe('');
+  });
+
+  it('D15: un error con respuesta borra esa parte de lo guardado', async () => {
+    guardaElPanelDeUno();
+    render(<Dashboard />);
+    await asienta();
+
+    await act(async () => {
+      peticiones.competiciones.rechazar(conRespuesta(500));
+      peticiones.recientes.rechazar(conRespuesta(404));
+      peticiones.estadisticas.rechazar(conRespuesta(500));
+    });
+    await asienta();
+
+    expect(elUltimoPanel('u-1')).toEqual({
+      competiciones: null,
+      ultimasPartidas: null,
+      estadisticas: null,
+    });
+  });
+
+  it('D15b: sin red no se borra nada de lo guardado', async () => {
+    guardaElPanelDeUno();
+    render(<Dashboard />);
+    await asienta();
+
+    await act(async () => {
+      peticiones.competiciones.rechazar(sinRed());
+      peticiones.recientes.rechazar(sinRed());
+      peticiones.estadisticas.rechazar(sinRed());
+    });
+    await asienta();
+
+    const leido = elUltimoPanel('u-1');
+    expect(leido.competiciones).toHaveLength(2);
+    expect(leido.ultimasPartidas).toHaveLength(1);
+    expect(leido.estadisticas.playingAvg).toBe(18.6);
+  });
+
+  it('D16: si ninguna partida guardada se puede rehacer, las partidas esperan', async () => {
+    guardaElPanelDeUno();
+    // Una que pasa la lectura pero no se deja rehacer (compañeros que no son lista)
+    const crudo = JSON.parse(localStorage.getItem('rydercup-ultimo-panel'));
+    crudo.ultimasPartidas = [{ id: 'r-1', partners: 5 }];
+    localStorage.setItem('rydercup-ultimo-panel', JSON.stringify(crudo));
+
+    render(<Dashboard />);
+    await asienta();
+
+    expect(espera()).toBeNull();
+    expect(rastro('recientes', 'cargando')).toBe('true');
+  });
+
+  it('D17: una respuesta buena que no se puede guardar se pinta igual', async () => {
+    render(<Dashboard />);
+    const rara = (
+      await import('../domain/entities/RecentMatch')
+    ).default.fromPersistence({ id: 'r-7', date: 'no-es-fecha' });
+    await act(async () => {
+      peticiones.competiciones.resolver([competicion(3)]);
+      peticiones.recientes.resolver([rara]);
+      peticiones.estadisticas.resolver({ playingAvg: 18.6 });
+      peticiones.proximos.resolver([]);
+      peticiones.partidas.resolver([]);
+    });
+    await asienta();
+
+    expect(rastro('recientes', 'partidas')).toBe('r-7');
   });
 
   it('D11: sin los textos todavía, se espera aunque haya guardado', async () => {

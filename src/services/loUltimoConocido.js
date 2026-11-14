@@ -346,33 +346,53 @@ const leeElPanel = () => {
  * lado; si lo guardado es de otra cuenta, se empieza de cero.
  *
  * @param {string} usuarioId
- * @param {{competiciones?: Array, ultimasPartidas?: Array, estadisticas?: Object}} partes
+ * @param {{competiciones?: Array|null, ultimasPartidas?: Array|null, estadisticas?: Object|null}} partes
+ *   Cada parte: lo nuevo, `null` para borrarla, o sin poner para dejar la que había
  */
 export const recuerdaElPanel = (
   usuarioId,
   { competiciones, ultimasPartidas, estadisticas } = {},
 ) => {
   if (cerrado || !usuarioId) return false;
-  const antes = leeElPanel();
-  const deEsta = antes?.usuarioId === usuarioId ? antes : null;
-  const panel = {
-    v: VERSION_DEL_PANEL,
-    usuarioId,
-    competiciones: Array.isArray(competiciones)
-      ? competiciones.map(loJustoDeLaCompeticion)
-      : (deEsta?.competiciones ?? null),
-    ultimasPartidas: Array.isArray(ultimasPartidas)
-      ? ultimasPartidas.map((m) => enPlano(CAMPOS_DE_LA_PARTIDA, m))
-      : (deEsta?.ultimasPartidas ?? null),
-    estadisticas: esUnObjeto(estadisticas)
-      ? enPlano(CAMPOS_DE_LAS_CIFRAS, estadisticas)
-      : (deEsta?.estadisticas ?? null),
-  };
+  // Nada de aquí puede hacer reventar a quien guarda: guardar va justo después
+  // de aplicar una respuesta buena, y su fallo no puede deshacerla (/code-review).
+  // Una fecha imposible en una partida, por ejemplo, lanza al pasarla a texto
   try {
+    const antes = leeElPanel();
+    const deEsta = antes?.usuarioId === usuarioId ? antes : null;
+    // Una parte nueva, `null` para borrarla (el servidor dijo que no), o nada
+    // para dejar la que había
+    const parte = (valor, esValida, enPlanoDeLaParte, anterior) => {
+      if (valor === null) return null;
+      return esValida(valor) ? enPlanoDeLaParte(valor) : (anterior ?? null);
+    };
+    const panel = {
+      v: VERSION_DEL_PANEL,
+      usuarioId,
+      competiciones: parte(
+        competiciones,
+        Array.isArray,
+        (lista) => lista.map(loJustoDeLaCompeticion),
+        deEsta?.competiciones,
+      ),
+      ultimasPartidas: parte(
+        ultimasPartidas,
+        Array.isArray,
+        (lista) => lista.map((m) => enPlano(CAMPOS_DE_LA_PARTIDA, m)),
+        deEsta?.ultimasPartidas,
+      ),
+      estadisticas: parte(
+        estadisticas,
+        esUnObjeto,
+        (cifras) => enPlano(CAMPOS_DE_LAS_CIFRAS, cifras),
+        deEsta?.estadisticas,
+      ),
+    };
     localStorage.setItem(CLAVE_PANEL, JSON.stringify(panel));
     return true;
   } catch {
-    // Sin sitio: no se guarda. La cola de golpes sin enviar manda
+    // Sin sitio, o algo que no se deja guardar: no se guarda. La cola de golpes
+    // sin enviar manda
     return false;
   }
 };

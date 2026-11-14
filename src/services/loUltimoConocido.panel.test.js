@@ -28,6 +28,8 @@ import RecentMatch from '../domain/entities/RecentMatch';
  *   G12 elementos sin id                  | se descartan
  *   G13 cifras que no son números         | se descartan
  *   G14 una cifra que no vino             | no vuelve como null (la entidad pone la suya)
+ *   G15 una partida con una fecha imposible | no revienta ni guarda nada a medias
+ *   G16 una parte en null                 | se borra esa parte
  *   G5 se cierra la sesión                | se borra y no se reescribe
  *   G6 el móvil no tiene sitio            | no se guarda y no revienta
  *   G7 lo guardado está roto              | nada
@@ -293,6 +295,38 @@ describe('loUltimoConocido, el panel', () => {
       elUltimoPanel('u-1').estadisticas,
     );
     expect(rehecha.roundsPlayed).toBe(0);
+  });
+
+  it('G15: una fecha imposible no hace reventar al que guarda', () => {
+    recuerdaElPanel('u-1', { competiciones: [competicion(1)] });
+    const rara = RecentMatch.fromPersistence({
+      id: 'p-1',
+      date: 'no-es-fecha',
+    });
+
+    let guardo;
+    expect(() => {
+      guardo = recuerdaElPanel('u-1', { ultimasPartidas: [rara] });
+    }).not.toThrow();
+    expect(guardo).toBe(false);
+    // Lo de antes sigue como estaba
+    expect(elUltimoPanel('u-1').competiciones).toEqual([competicion(1)]);
+  });
+
+  it('G16: una parte en null se borra, y las demás siguen', () => {
+    recuerdaElPanel('u-1', {
+      competiciones: [competicion(1)],
+      ultimasPartidas: [partida(1)],
+      estadisticas: { playingAvg: 18.6 },
+    });
+
+    recuerdaElPanel('u-1', { estadisticas: null, ultimasPartidas: null });
+
+    expect(elUltimoPanel('u-1')).toEqual({
+      competiciones: [competicion(1)],
+      ultimasPartidas: null,
+      estadisticas: null,
+    });
   });
 
   it('G8: sin cuenta no se guarda nada', () => {

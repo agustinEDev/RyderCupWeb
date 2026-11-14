@@ -96,12 +96,13 @@ const Dashboard = () => {
 
   // Lo último que se vio en este móvil con esta cuenta, con el hándicap y las
   // cifras, para pintarlo al entrar y actualizarlo por detrás sin avisos (Agustín,
-  // 14 nov 2026). Solo con la sesión que ha CONFIRMADO el servidor: `useAuth` no da
-  // usuario mientras `/current-user` está en camino (la copia del móvil solo sale
-  // sin red o con un 5xx, como siempre), así que una sesión que ya no vale no
-  // enseña nada. Se siembra al pintar, no en un efecto, para que el primer pintado
-  // ya lo lleve
-  const cuentaConfirmada = user?.id ?? null;
+  // 14 nov 2026). Se siembra en cuanto `useAuth` da usuario: con red, eso es
+  // cuando `/current-user` ha contestado (mientras pregunta no da ninguno), así
+  // que una sesión que ya no vale no enseña nada; sin red o con un 5xx, es la
+  // copia del usuario en el móvil (`sinConfirmar`), y entonces se pinta con lo
+  // guardado, como el resto de la aplicación sin cobertura. Se siembra al pintar,
+  // no en un efecto, para que el primer pintado ya lo lleve
+  const cuentaDelPanel = user?.id ?? null;
   const [guardado, setGuardado] = useState({
     cuenta: null,
     competiciones: false,
@@ -109,8 +110,8 @@ const Dashboard = () => {
     cifras: false,
     proximos: false,
   });
-  if (cuentaConfirmada && guardado.cuenta !== cuentaConfirmada) {
-    const panel = elUltimoPanel(cuentaConfirmada);
+  if (cuentaDelPanel && guardado.cuenta !== cuentaDelPanel) {
+    const panel = elUltimoPanel(cuentaDelPanel);
     // Los próximos ya se guardan para anotar sin cobertura; solo se usan si hay
     // panel de ESTA cuenta, y solo si hay alguno: una lista vacía pintaría un
     // momento «crea una partida rápida» y se podría pulsar
@@ -143,9 +144,11 @@ const Dashboard = () => {
       desdeMemoria: false,
     });
     setGuardado({
-      cuenta: cuentaConfirmada,
+      cuenta: cuentaDelPanel,
       competiciones: Boolean(panel?.competiciones),
-      recientes: Boolean(recientes),
+      // Una lista vacía (ninguna se pudo rehacer) no cuenta: pintaría «crea una
+      // partida» a quien sí tiene
+      recientes: recientes?.length > 0,
       cifras: Boolean(panel?.estadisticas),
       proximos: hayProximos,
     });
@@ -286,7 +289,11 @@ const Dashboard = () => {
         if (!cancelled) {
           // Sin red se queda lo que se ve (lo guardado). Una respuesta con error
           // no se tapa: como siempre. Los próximos lo saben por el error
-          if (!esFalloDeRedDeLaApi(error)) setCompetitions([]);
+          if (!esFalloDeRedDeLaApi(error)) {
+            setCompetitions([]);
+            // Lo guardado tampoco vale: la próxima vez no se enseña
+            recuerdaElPanel(user.id, { competiciones: null });
+          }
           setCompetitionsError(error);
         }
       } finally {
@@ -346,6 +353,7 @@ const Dashboard = () => {
         // Sin red se quedan las de la última vez; con respuesta, como siempre
         if (!cancelled && !esFalloDeRedDeLaApi(error)) {
           setPlayerStats(null);
+          recuerdaElPanel(user.id, { estadisticas: null });
         }
       } finally {
         if (!cancelled) {
@@ -400,6 +408,7 @@ const Dashboard = () => {
         // Sin red se queda lo que se ve; con respuesta, como siempre
         if (!cancelled && !esFalloDeRedDeLaApi(error)) {
           setRecentMatches([]);
+          recuerdaElPanel(user.id, { ultimasPartidas: null });
         }
       } finally {
         if (!cancelled) {

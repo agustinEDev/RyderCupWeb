@@ -104,22 +104,20 @@ export const precargaElProximoDia = async ({
   }
 };
 
-/** Lo guardado, sin los partidos de días que ya pasaron. También lo pinta el
- *  panel al entrar mientras pide los de ahora (Agustín, 14 nov 2026). */
-export const losProximosGuardados = (ahora = new Date()) => {
+/** Sin los de días que ya pasaron. */
+const deHoyEnAdelante = (lista, ahora) => {
   const hoy = fechaLocal(ahora);
-  return (losUltimosPartidos() ?? []).filter(
-    (p) => p?.roundDate && p.roundDate >= hoy,
-  );
+  return (lista ?? []).filter((p) => p?.roundDate && p.roundDate >= hoy);
 };
 
+/** Lo guardado, sin los partidos de días que ya pasaron. También lo pinta el
+ *  panel al entrar mientras pide los de ahora (Agustín, 14 nov 2026). */
+export const losProximosGuardados = (ahora = new Date()) =>
+  deHoyEnAdelante(losUltimosPartidos(), ahora);
+
 /** Lo mismo con las partidas de stroke play. */
-export const lasPartidasGuardadas = (ahora = new Date()) => {
-  const hoy = fechaLocal(ahora);
-  return (lasUltimasPartidas() ?? []).filter(
-    (p) => p?.roundDate && p.roundDate >= hoy,
-  );
-};
+export const lasPartidasGuardadas = (ahora = new Date()) =>
+  deHoyEnAdelante(lasUltimasPartidas(), ahora);
 
 /**
  * Los próximos partidos para enseñar, con red o sin ella. Nunca lanza.
