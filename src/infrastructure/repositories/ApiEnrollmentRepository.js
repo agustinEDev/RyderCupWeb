@@ -24,7 +24,6 @@ import { segmento } from '../http/api';
  * - POST   /api/v1/competitions/{competitionId}/enrollments/{enrollmentId}/reject
  * - PUT    /api/v1/competitions/{competitionId}/enrollments/{enrollmentId}/handicap
  * - PUT    /api/v1/enrollments/{enrollmentId}/name-preference
- * - POST   /api/v1/competitions/{competitionId}/enrollments/direct
  * - POST   /api/v1/enrollments/{enrollmentId}/remove
  */
 class ApiEnrollmentRepository extends IEnrollmentRepository {

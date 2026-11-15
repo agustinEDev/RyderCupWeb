@@ -532,9 +532,9 @@ const InvitationsPage = () => {
               )}
             </div>
 
-            {/* Cerrada la inscripción no quedan plazas: el servidor ya no deja
-                invitar (#710). La lista sigue, que es donde se ve quién se
-                quedó sin plaza */}
+            {/* Donde ya no se invita (stroke play cerrado, en juego o terminada,
+                B-02): se dice por qué. La lista sigue, que es donde se ve quién
+                se quedó sin plaza */}
             {!sePuedeInvitar ? (
               <p
                 data-testid="invitar-cerrada"
