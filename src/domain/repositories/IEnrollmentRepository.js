@@ -164,6 +164,21 @@ class IEnrollmentRepository {
   }
 
   /**
+   * Inscripción directa por el creador (sin solicitud previa)
+   *
+   * @param {string} competitionId - UUID de la competición
+   * @param {Object} data
+   * @param {string} data.userId - UUID del usuario a inscribir
+   * @param {number|null} data.customHandicap - Handicap personalizado (opcional)
+   * @param {string|null} data.teamId - ID del equipo (opcional)
+   * @returns {Promise<Enrollment>} Enrollment creado con estado APPROVED
+   * @throws {Error} Si falla la operación
+   */
+  async directEnroll(competitionId, data) {
+    throw new Error('Method directEnroll() must be implemented');
+  }
+
+  /**
    * El organizador quita a un inscrito (release social 2): POST /enrollments/{id}/remove
    *
    * @param {string} enrollmentId - UUID del enrollment

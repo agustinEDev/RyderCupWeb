@@ -24,6 +24,7 @@ import { segmento } from '../http/api';
  * - POST   /api/v1/competitions/{competitionId}/enrollments/{enrollmentId}/reject
  * - PUT    /api/v1/competitions/{competitionId}/enrollments/{enrollmentId}/handicap
  * - PUT    /api/v1/enrollments/{enrollmentId}/name-preference
+ * - POST   /api/v1/competitions/{competitionId}/enrollments/direct
  * - POST   /api/v1/enrollments/{enrollmentId}/remove
  */
 class ApiEnrollmentRepository extends IEnrollmentRepository {
@@ -342,6 +343,35 @@ class ApiEnrollmentRepository extends IEnrollmentRepository {
       {
         method: 'PUT',
         body: JSON.stringify({ use_real_name: useRealName }),
+      },
+    );
+
+    return EnrollmentMapper.toDomain(apiData);
+  }
+
+  /**
+   * Inscripción directa por el creador (sin solicitud previa)
+   *
+   * @param {string} competitionId
+   * @param {Object} data - { userId, customHandicap?, teamId? }
+   * @returns {Promise<Enrollment>}
+   */
+  async directEnroll(competitionId, data) {
+    const payload = {
+      user_id: data.userId,
+      ...(data.customHandicap !== null &&
+        data.customHandicap !== undefined && {
+          custom_handicap: data.customHandicap,
+        }),
+      ...(data.teamId && { team_id: data.teamId }),
+      ...(data.color && { color: data.color }),
+    };
+
+    const apiData = await this.#request(
+      `/api/v1/competitions/${segmento(competitionId)}/enrollments/direct`,
+      {
+        method: 'POST',
+        body: JSON.stringify(payload),
       },
     );
 
