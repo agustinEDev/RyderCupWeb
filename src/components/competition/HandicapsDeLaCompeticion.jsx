@@ -241,11 +241,13 @@ const HandicapsDeLaCompeticion = ({
       </h3>
 
       {handicapUpdate && (
-        <div>
+        // La región que se anuncia es el contenedor, que siempre está: así se
+        // oye el resultado aunque desaparezca la línea del estado (completa con
+        // alguien sin actualizar), sin pintar un párrafo vacío (CodeRabbit #1153)
+        <div data-testid="handicaps-resultado" aria-live="polite">
           {lineaDeEstado && (
             <p
               data-testid="handicaps-estado"
-              aria-live="polite"
               className="text-sm text-gray-800"
             >
               {lineaDeEstado}

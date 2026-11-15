@@ -36,6 +36,7 @@ import {
  *   N4   servidor de antes del campo (incompleta)    | como antes: los pendientes
  *   N5   en marcha (se termina una incompleta)       | «faltan N» y los del aviso
  *   N6   en marcha (primera pasada, lista vacía)     | solo «faltan N»
+ *   N7   completa con alguien sin actualizar          | la lista, en una región que se anuncia
  */
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
@@ -672,10 +673,31 @@ describe('HandicapsDeLaCompeticion (FE #824, PR 5)', () => {
       },
     });
 
-    expect(await screen.findByTestId('handicaps-estado')).toHaveAttribute(
-      'aria-live',
-      'polite',
-    );
+    expect(
+      (await screen.findByTestId('handicaps-estado')).closest(
+        '[aria-live="polite"]',
+      ),
+    ).not.toBeNull();
+  });
+
+  it('N7: el resultado se anuncia aunque desaparezca la línea del estado (CodeRabbit #1153)', async () => {
+    // Given: termina completa con alguien sin actualizar (no hay línea de estado)
+    pinta({
+      handicapUpdate: {
+        status: 'COMPLETED',
+        origin: 'ENROLLMENTS_CLOSED',
+        startedAt: 'x',
+        finishedAt: '2030-10-10T20:09:00Z',
+        pendingPlayers: [],
+        notUpdatedPlayers: [{ userId: 'a', name: 'Ana Alba' }],
+      },
+    });
+
+    // Then: la lista está dentro de una región que se anuncia, que sigue ahí
+    const lista = await screen.findByTestId('handicaps-pendientes');
+    const region = lista.closest('[aria-live="polite"]');
+    expect(region).not.toBeNull();
+    expect(region).toHaveAttribute('data-testid', 'handicaps-resultado');
   });
 
   it('14c: sin fecha no se puede guardar', async () => {
