@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useEffectEvent, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { RefreshCw, Clock } from 'lucide-react';
 import {
@@ -69,15 +69,11 @@ const HandicapsDeLaCompeticion = ({
   handicapUpdateWindow,
   onReleer,
   traerALaVista = false,
+  alTraerla,
 }) => {
   const { t, i18n } = useTranslation('competitions');
-  // Se llega desde «{N} jugadores sin actualizar con la RFEG» (15 nov 2026):
-  // la tarjeta se trae a la vista una vez, al montarla
   const tarjeta = useRef(null);
-  const [traer] = useState(traerALaVista);
-  useEffect(() => {
-    if (traer) tarjeta.current?.scrollIntoView?.({ block: 'start' });
-  }, [traer]);
+  const traida = useRef(false);
   // Lo leído del campo, con el intento al que pertenece: mientras se reintenta,
   // la zona no se da por sabida. Una competición nueva no lo arrastra: al
   // cambiar de ficha la tarjeta se monta de nuevo (`/code-review`, #863)
@@ -95,6 +91,17 @@ const HandicapsDeLaCompeticion = ({
   // ni se programa a ciegas en la del dispositivo (QA de la release, 14 oct).
   // Mientras se reintenta, el aviso se queda
   const zonaIlegible = leido.ilegible;
+
+  // Se llega desde «{N} jugadores sin actualizar con la RFEG» (15 nov 2026): la
+  // tarjeta se trae a la vista una vez, con la ficha ya asentada (lo dice quien
+  // la pinta) y la zona leída, que si no la tarjeta aún cambia de alto
+  const avisaDeQueSeTrajo = useEffectEvent(() => alTraerla?.());
+  useEffect(() => {
+    if (!traerALaVista || !zonaSabida || traida.current) return;
+    traida.current = true;
+    tarjeta.current?.scrollIntoView?.({ block: 'start' });
+    avisaDeQueSeTrajo();
+  }, [traerALaVista, zonaSabida]);
   const [ocupado, setOcupado] = useState(false);
   const [programando, setProgramando] = useState(null);
 

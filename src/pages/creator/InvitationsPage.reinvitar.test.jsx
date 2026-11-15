@@ -475,6 +475,45 @@ describe('InvitationsPage · volver a invitar (release social 2)', () => {
     );
   });
 
+  // Pasado el plazo de inscripción (15 nov 2026): su texto, no «ya estaba invitado»
+  it('R9: si el plazo de inscripción ya pasó, lo dice', async () => {
+    conLista([invitacion('DECLINED', { inviteeUserId: 'u-2' })]);
+    mockEnviar.mockRejectedValue(
+      Object.assign(new Error('x'), {
+        status: 400,
+        errorCode: 'ENROLLMENT_DEADLINE_PASSED',
+      }),
+    );
+    pinta();
+
+    fireEvent.click(await screen.findByTestId('reinvite-button'));
+
+    await waitFor(() =>
+      expect(customToast.error).toHaveBeenCalledWith(
+        'errors.enrollmentDeadlinePassed',
+      ),
+    );
+  });
+
+  it('R9b: por correo, pasado el plazo, lo mismo', async () => {
+    conLista([invitacion('DECLINED', { inviteeUserId: null })]);
+    mockEnviarPorCorreo.mockRejectedValue(
+      Object.assign(new Error('x'), {
+        status: 400,
+        errorCode: 'ENROLLMENT_DEADLINE_PASSED',
+      }),
+    );
+    pinta();
+
+    fireEvent.click(await screen.findByTestId('reinvite-button'));
+
+    await waitFor(() =>
+      expect(customToast.error).toHaveBeenCalledWith(
+        'errors.enrollmentDeadlinePassed',
+      ),
+    );
+  });
+
   it('R3: si el servidor dice que está llena, lo dice (el aviso de siempre)', async () => {
     conLista([invitacion('DECLINED', { inviteeUserId: 'u-2' })]);
     mockEnviar.mockRejectedValue(

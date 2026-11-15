@@ -410,6 +410,13 @@ const destinoDe = (tarjeta, yoId, autores) => {
   // La RFEG no le encontró: el nombre se arregla en su perfil (15 nov 2026)
   if (tarjeta.tipo === 'RFEG_HANDICAP_NOT_FOUND')
     return { ruta: '/profile/edit' };
+  // Los que no se actualizaron: a la ficha, con su tarjeta de hándicaps a la
+  // vista, como desde «Requiere tu Atención»
+  if (tarjeta.tipo === 'HANDICAPS_NOT_UPDATED' && payload.competition_id)
+    return {
+      ruta: `/competitions/${payload.competition_id}`,
+      estado: { verHandicaps: true },
+    };
   // La posición final de un amigo: la clasificación, en su fila (F5)
   if (
     tarjeta.tipo === 'TOURNAMENT_FINAL_STANDING' &&

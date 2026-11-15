@@ -98,6 +98,13 @@ const CompetitionDetail = () => {
   // terminar el torneo (todas las franjas cerradas)
   const [versionDePartidas, setVersionDePartidas] = useState(0);
   const numeroDeSesiones = agendaLeida?.rounds?.length ?? null;
+  // Traída la tarjeta de hándicaps, el encargo sale del historial: recargar o
+  // volver atrás no la trae otra vez. Misma ruta, así que no sube arriba
+  const olvidaVerHandicaps = () =>
+    navigate(`${location.pathname}${location.search}`, {
+      replace: true,
+      state: { ...location.state, verHandicaps: undefined },
+    });
 
   // Determine where user came from (browse or my competitions)
   const origen = location.state?.from;
@@ -413,7 +420,13 @@ const CompetitionDetail = () => {
               claveDeFranjas={claveDeFranjas}
               cierre={cierre}
               handleStatusChange={handleStatusChange}
-              verHandicaps={location.state?.verHandicaps === true}
+              // Con la ficha asentada: la agenda leída (o fallida) ya no
+              // mueve nada por encima de la tarjeta (15 nov 2026)
+              verHandicaps={
+                location.state?.verHandicaps === true &&
+                (agendaLeida != null || agendaFallo)
+              }
+              alVerLosHandicaps={olvidaVerHandicaps}
             />
 
             <AgendaDeLaFicha

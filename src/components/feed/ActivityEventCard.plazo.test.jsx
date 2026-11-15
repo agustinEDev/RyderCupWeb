@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeAll } from 'vitest';
-import { render, screen } from '@testing-library/react';
-import { MemoryRouter } from 'react-router';
+import { render, screen, fireEvent } from '@testing-library/react';
+import { MemoryRouter, Routes, Route, useLocation } from 'react-router';
 import i18next from 'i18next';
 import { I18nextProvider, initReactI18next } from 'react-i18next';
 import feedEs from '../../i18n/locales/es/feed.json';
@@ -205,4 +205,40 @@ describe('ActivityEventCard — RFEG y plazo de inscripción', () => {
       expect(frase()).toBe(texto);
     },
   );
+
+  it('P9: Given HANDICAPS_NOT_UPDATED, When se toca, Then a la ficha con la tarjeta de hándicaps a la vista', () => {
+    const Destino = () => {
+      const { pathname, state } = useLocation();
+      return (
+        <p data-testid="destino">{`${pathname}|${state?.verHandicaps ?? ''}`}</p>
+      );
+    };
+    render(
+      <I18nextProvider i18n={instancias.es}>
+        <MemoryRouter initialEntries={['/feed']}>
+          <Routes>
+            <Route
+              path="/feed"
+              element={
+                <ActivityEventCard
+                  tarjeta={conTorneo('HANDICAPS_NOT_UPDATED', { count: 2 })}
+                  autores={AUTORES}
+                  campos={CAMPOS}
+                  yoId={YO}
+                  ahora={AHORA}
+                />
+              }
+            />
+            <Route path="/competitions/:id" element={<Destino />} />
+          </Routes>
+        </MemoryRouter>
+      </I18nextProvider>,
+    );
+
+    fireEvent.click(enlaceDeLaTarjeta());
+
+    expect(screen.getByTestId('destino')).toHaveTextContent(
+      '/competitions/c-1|true',
+    );
+  });
 });

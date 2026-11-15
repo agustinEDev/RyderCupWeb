@@ -52,6 +52,7 @@ import {
   ajustesParaCrear,
   cambiosDeAjustes,
   primeroLosAjustes,
+  errorDeAjustes,
 } from '../utils/ajustesDeStrokePlay';
 import { cupoDeJugadores, CUPO_POR_DEFECTO } from '../utils/cupoDeJugadores';
 import { CompetitionStatus } from '../domain/value_objects/CompetitionStatus';
@@ -93,6 +94,11 @@ const ERRORES_DEL_NOMBRE = new Set([
   'nameUnreadable',
   'nameTaken',
 ]);
+
+// Lo único que se comprueba aquí cuando solo se mueven las fechas (15 nov
+// 2026): lo demás no se puede tocar, y abrir «Más opciones» por un campo
+// desactivado sería un callejón sin salida
+const ERRORES_DE_LAS_FECHAS = new Set(['datesRequired', 'endDateAfterStart']);
 
 const ERRORES_DE_LAS_OPCIONES = new Set([
   'teamNamesRequired',
@@ -260,6 +266,8 @@ const CreateCompetition = () => {
   // Cerrada por el plazo de inscripción: solo se cambian las fechas, y el
   // servidor la reabre si el plazo nuevo queda por delante (RyderCupAm #865)
   const [soloFechas, setSoloFechas] = useState(false);
+  // Lo que el servidor no aceptó de las fechas nuevas, junto a ellas
+  const [errorDeLasFechas, setErrorDeLasFechas] = useState(null);
   // El género del organizador, que juega: solo al crear y solo si le falta (#710)
   const generoParaApuntarse = useGeneroParaApuntarse();
   const [genero, setGenero] = useState('');
@@ -821,6 +829,16 @@ const CreateCompetition = () => {
     return t('edit.datesLeaveSessionsOut', { sesiones });
   };
 
+  // Las jornadas de cada jugador no caben en las fechas nuevas: el servidor lo
+  // dice sin código, y aquí se sabe por los ajustes guardados (15 nov 2026)
+  const porQueNoCabenLasJornadas = () => {
+    if (conEquipos || !formData.strokePlay) return null;
+    const dias = diasDelTorneo(formData.startDate, formData.endDate);
+    return errorDeAjustes(formData.strokePlay, dias) === 'matchdaysMoreThanDays'
+      ? t('create.errors.matchdaysMoreThanDays', { count: dias })
+      : null;
+  };
+
   // El aviso del nombre, y el campo a la vista y con el foco: el botón queda
   // abajo y en un teléfono no se vería qué falló (como el aviso de arriba)
   const senalaElNombre = (clave) => {
@@ -844,12 +862,20 @@ const CreateCompetition = () => {
       }
     }
 
+    setErrorDeLasFechas(null);
     // UI Validation
     // Los campos de golf solo se piden al crear: al editar los gestiona la ficha
-    const validationError = validateCompetitionForm(formData, {
+    const errorDelFormulario = validateCompetitionForm(formData, {
       exigirCampos: !isEditMode,
       inscritos,
     });
+    // Solo las fechas: lo demás lo juzga el servidor, y su error sale junto a ellas
+    const validationError =
+      soloFechas &&
+      errorDelFormulario &&
+      !ERRORES_DE_LAS_FECHAS.has(errorDelFormulario.key)
+        ? null
+        : errorDelFormulario;
     if (validationError && ERRORES_DEL_NOMBRE.has(validationError.key)) {
       senalaElNombre(validationError.key);
       return;
@@ -1117,6 +1143,17 @@ const CreateCompetition = () => {
       if (error?.errorCode === 'EMAIL_NOT_VERIFIED') {
         setFaltaVerificar(true);
         globalThis.scrollTo?.({ top: 0, behavior: 'smooth' });
+        return;
+      }
+      // Solo las fechas: el error, traducido si se sabe cuál es, junto a ellas
+      if (soloFechas) {
+        const texto =
+          sesionesQueQuedanFuera(error) ||
+          porQueNoCabenLasJornadas() ||
+          error.message ||
+          t('edit.error');
+        customToast.error(texto);
+        setErrorDeLasFechas(texto);
         return;
       }
       const texto =
@@ -1442,6 +1479,18 @@ const CreateCompetition = () => {
                         />
                       </div>
                     </div>
+
+                    {/* Lo que el servidor no aceptó de las fechas nuevas: junto a
+                        ellas, que son lo único que se puede cambiar */}
+                    {errorDeLasFechas && (
+                      <p
+                        data-testid="error-de-las-fechas"
+                        role="alert"
+                        className="text-sm text-red-700"
+                      >
+                        {errorDeLasFechas}
+                      </p>
+                    )}
 
                     <SoloLectura activa={soloFechas} className="space-y-3">
                       {/* El país principal se elige entre los 200: es el único de

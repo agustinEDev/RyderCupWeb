@@ -15,6 +15,10 @@ import { MemoryRouter, Routes, Route } from 'react-router';
  *   M3 las fechas                                      | se cambian y se guardan, con lo demás como estaba
  *   M4 cerrada a mano                                  | no se edita, como siempre
  *   M4b ya empezada (aunque la cerrara el plazo)       | no se edita
+ *   M7 acortar por debajo de las jornadas (stroke play) | se manda igual (solo se validan las fechas) y el
+ *                                                    | error del servidor, traducido, junto a las fechas
+ *   M8 un error de otro campo en el formulario        | no frena: se manda (lo juzga el servidor)
+ *   M8b un error de las fechas                         | frena, como siempre
  *   M5 abierta                                         | todo se edita, sin el aviso
  */
 vi.mock('react-i18next', () => ({
@@ -101,6 +105,7 @@ const pintaEdicion = () =>
 describe('CreateCompetition · cerrada por el plazo: solo las fechas', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockValidar.mockImplementation(() => null);
     mockDetalle.mockReset();
     mockCampos.mockReset();
     mockCampos.mockResolvedValue([]);
@@ -166,6 +171,71 @@ describe('CreateCompetition · cerrada por el plazo: solo las fechas', () => {
       end_date: '2026-10-12',
     });
   });
+
+  it('M7: Given un Medal de 3 jornadas cerrado por el plazo, When lo deja en un día, Then se manda y el error sale junto a las fechas', async () => {
+    mockDetalle.mockResolvedValueOnce(
+      porElPlazo({
+        tournamentType: 'MEDAL',
+        hasTeams: false,
+        strokePlay: {
+          categoryCount: 2,
+          categoryLimits: [],
+          maxMatchdaysPerPlayer: 3,
+          overallStanding: 'ACCUMULATED',
+        },
+      }),
+    );
+    mockActualizar.mockRejectedValueOnce(
+      Object.assign(
+        new Error(
+          'Cada jugador puede jugar 3 jornadas, pero el torneo dura 1 días',
+        ),
+        { status: 400 },
+      ),
+    );
+    pintaEdicion();
+    await screen.findByDisplayValue('Campeonato del club');
+
+    fireEvent.change(screen.getByLabelText('create.endDate'), {
+      target: { value: '2026-10-03' },
+    });
+    fireEvent.click(
+      screen.getByRole('button', { name: 'edit.updateCompetition' }),
+    );
+
+    await waitFor(() => expect(mockActualizar).toHaveBeenCalled());
+    expect(await screen.findByTestId('error-de-las-fechas')).toHaveTextContent(
+      'create.errors.matchdaysMoreThanDays 1',
+    );
+  });
+
+  it.each([
+    ['M8', { key: 'countryRequired' }, true],
+    ['M8b', { key: 'endDateAfterStart' }, false],
+  ])(
+    '%s: Given solo fechas y el formulario dice %o, When guarda, Then se manda: %s',
+    async (_, error, seManda) => {
+      mockDetalle.mockResolvedValueOnce(porElPlazo());
+      mockActualizar.mockResolvedValueOnce({});
+      // Solo la del envío, que lleva sus opciones: la del pintado no
+      mockValidar.mockImplementation((_f, opciones) =>
+        opciones ? error : null,
+      );
+      pintaEdicion();
+      await screen.findByDisplayValue('Campeonato del club');
+
+      fireEvent.click(
+        screen.getByRole('button', { name: 'edit.updateCompetition' }),
+      );
+
+      if (seManda) {
+        await waitFor(() => expect(mockActualizar).toHaveBeenCalled());
+      } else {
+        await waitFor(() => expect(mockValidar).toHaveBeenCalled());
+        expect(mockActualizar).not.toHaveBeenCalled();
+      }
+    },
+  );
 
   it('M4: Given cerrada a mano, When se abre, Then no se edita', async () => {
     mockDetalle.mockResolvedValueOnce(

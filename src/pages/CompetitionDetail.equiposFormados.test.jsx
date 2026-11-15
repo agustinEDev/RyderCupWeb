@@ -284,6 +284,32 @@ describe('CompetitionDetail · equipos formados', () => {
       );
     });
 
+    // Pasado el plazo o con la sala de draft abierta (15 nov 2026): el texto de
+    // la app, no el del servidor
+    it.each([
+      ['ENROLLMENT_DEADLINE_PASSED', 'detail.errors.enrollmentDeadlinePassed'],
+      ['DRAFT_IN_PROGRESS', 'detail.errors.waitForDraft'],
+    ])('al aprobar con %s: su texto traducido', async (codigo, texto) => {
+      mockAprobar.mockRejectedValueOnce(fallo(codigo));
+      await pinta({
+        usuario: 'org-1',
+        inscritos: [
+          {
+            id: 'enr-ana',
+            userId: 'u-ana',
+            status: 'REQUESTED',
+            userName: 'Ana Ruiz',
+            team: null,
+          },
+        ],
+      });
+
+      fireEvent.click(await screen.findByTitle('detail.approve'));
+
+      await waitFor(() => expect(mockToast.error).toHaveBeenCalledWith(texto));
+      expect(mockToast.error).not.toHaveBeenCalledWith('x');
+    });
+
     it('al aprobar una solicitud: aviso para el organizador y se relee', async () => {
       mockAprobar.mockRejectedValueOnce(fallo('TEAMS_FORMED'));
       await pinta({
