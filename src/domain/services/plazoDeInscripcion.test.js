@@ -13,6 +13,7 @@ import { plazoQueSeEnseña } from './plazoDeInscripcion';
  *   D2 el día del campo no es el de quien la mira   | el del campo (no se convierte)
  *   D3 ya pasó (o es justo ahora)                   | nada
  *   D4 no vale (abierta a mano pasado el plazo)     | nada
+ *   D4b sin decir si vale (backend de antes)        | nada
  *   D5 no está abierta (borrador, cerrada…)         | nada
  *   D6 sin plazo, o ilegible                        | nada
  */
@@ -35,7 +36,7 @@ describe('plazoQueSeEnseña', () => {
   it('D2: Given un campo lejos, When se pide, Then su día, sin convertirlo', () => {
     expect(
       plazoQueSeEnseña(
-        abierta({ enrollmentDeadline: '2026-11-13T12:00:00-10:00' }),
+        abierta({ enrollmentDeadline: '2026-11-13T12:00:00+13:00' }),
         AHORA,
       ),
     ).toEqual({ dia: '2026-11-13', hora: '12:00' });
@@ -51,6 +52,15 @@ describe('plazoQueSeEnseña', () => {
   it('D4: Given no vale para ella, When se pide, Then nada', () => {
     expect(
       plazoQueSeEnseña(abierta({ enrollmentDeadlineApplies: false }), AHORA),
+    ).toBeNull();
+  });
+
+  it('D4b: Given no dice si vale, When se pide, Then nada', () => {
+    expect(
+      plazoQueSeEnseña(
+        abierta({ enrollmentDeadlineApplies: undefined }),
+        AHORA,
+      ),
     ).toBeNull();
   });
 

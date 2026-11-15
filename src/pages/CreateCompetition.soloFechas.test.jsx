@@ -14,6 +14,7 @@ import { MemoryRouter, Routes, Route } from 'react-router';
  *   M2 lo demás                                        | desactivado (nombre, visibilidad…)
  *   M3 las fechas                                      | se cambian y se guardan, con lo demás como estaba
  *   M4 cerrada a mano                                  | no se edita, como siempre
+ *   M4b ya empezada (aunque la cerrara el plazo)       | no se edita
  *   M5 abierta                                         | todo se edita, sin el aviso
  */
 vi.mock('react-i18next', () => ({
@@ -170,6 +171,14 @@ describe('CreateCompetition · cerrada por el plazo: solo las fechas', () => {
     mockDetalle.mockResolvedValueOnce(
       porElPlazo({ enrollmentClosedByDeadline: false }),
     );
+    pintaEdicion();
+
+    expect(await screen.findByText('la ficha')).toBeInTheDocument();
+    expect(customToast.error).toHaveBeenCalledWith('edit.notEditable');
+  });
+
+  it('M4b: Given ya empezada aunque la cerrara el plazo, When se abre, Then no se edita', async () => {
+    mockDetalle.mockResolvedValueOnce(porElPlazo({ status: 'IN_PROGRESS' }));
     pintaEdicion();
 
     expect(await screen.findByText('la ficha')).toBeInTheDocument();
