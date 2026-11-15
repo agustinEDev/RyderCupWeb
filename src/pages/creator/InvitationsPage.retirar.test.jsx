@@ -479,14 +479,8 @@ describe('InvitationsPage · lo que se dice tras probar en el Kind', () => {
   });
 
   it('H5: y el de inscripción cerrada, igual', async () => {
-    // Un stroke play: cerrado no se invita (B-02); una Ryder cerrada sí
     mockDetalle.mockResolvedValue(
-      competicion({
-        status: 'CLOSED',
-        hasTeams: false,
-        maxPlayers: 12,
-        enrolledCount: 3,
-      }),
+      competicion({ status: 'CLOSED', maxPlayers: 12, enrolledCount: 3 }),
     );
     pinta();
 

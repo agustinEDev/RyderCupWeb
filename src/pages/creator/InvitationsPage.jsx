@@ -102,14 +102,9 @@ const clavesDe = (invitation) =>
     invitation.inviteeEmail && `c:${invitation.inviteeEmail.toLowerCase()}`,
   ].filter(Boolean);
 
-// Se invita con la inscripción por abrir, abierta o cerrada: cerrada, la invitación es
-// la forma de entrar, porque el organizador ya no inscribe a mano (B-02, 15 nov 2026,
-// deshace #710). Un stroke play cerrado no: sus hándicaps, categorías y franjas ya están
-// fijados, y se reabre para invitar. En juego, terminada o cancelada, nunca
+// Solo se invita con la inscripción por abrir o abierta: es lo que acepta el
+// servidor (#710). Cerrada, en juego o terminada, no
 const SE_PUEDE_INVITAR = new Set(['DRAFT', 'ACTIVE']);
-const sePuedeInvitarEn = (competition) =>
-  SE_PUEDE_INVITAR.has(competition.status) ||
-  (competition.status === 'CLOSED' && competition.hasTeams !== false);
 
 const InvitationsPage = () => {
   const navigate = useNavigate();
@@ -461,7 +456,8 @@ const InvitationsPage = () => {
 
   // Si la competición deja de admitir invitaciones con el modal abierto, se
   // cierra: si no, se mandaba una que el servidor rechaza (CodeRabbit, #720)
-  const sePuedeInvitar = !competition || sePuedeInvitarEn(competition);
+  const sePuedeInvitar =
+    !competition || SE_PUEDE_INVITAR.has(competition.status);
   // Sin plazas no se invita (FE #724, BE #359): el servidor lo rechaza, y
   // ofrecerlo era enterarse al enviar
   const inscritos = competition?.enrolledCount ?? 0;
@@ -572,9 +568,9 @@ const InvitationsPage = () => {
               )}
             </div>
 
-            {/* Donde ya no se invita (stroke play cerrado, en juego o terminada,
-                B-02): se dice por qué. La lista sigue, que es donde se ve quién
-                se quedó sin plaza */}
+            {/* Cerrada la inscripción no quedan plazas: el servidor ya no deja
+                invitar (#710). La lista sigue, que es donde se ve quién se
+                quedó sin plaza */}
             {!sePuedeInvitar ? (
               <p
                 data-testid="invitar-cerrada"
