@@ -371,6 +371,33 @@ describe('CreateCompetition · BE-B en el alta (FE)', () => {
     expect(mockToast.error).not.toHaveBeenCalled();
   });
 
+  // Solo el 409 sin código es el del nombre (15 nov 2026): uno con código
+  // conocido dice el suyo con lo que se guardó; uno desconocido, el genérico
+  it.each([
+    ['21h', 'DRAFT_IN_PROGRESS', 'edit.datesDuringDraft'],
+    ['21i', 'OTRO_CODIGO', 'edit.error'],
+  ])(
+    '%s: Given ajustes guardados primero y lo general con 409 %s, When guarda, Then su motivo y lo guardado, no el nombre',
+    async (_, errorCode, motivo) => {
+      composicion.updateStrokePlaySettingsUseCase.execute.mockResolvedValue({
+        ...MEDAL_GUARDADO.strokePlay,
+        maxMatchdaysPerPlayer: 2,
+      });
+      composicion.updateCompetitionUseCase.execute.mockRejectedValue(
+        Object.assign(new Error('texto en bruto'), { status: 409, errorCode }),
+      );
+      const jornadas = await alEditar();
+      fireEvent.change(jornadas, { target: { value: '2' } });
+
+      enviar();
+
+      expect(
+        await screen.findByText(`edit.generalNotSaved {"motivo":"${motivo}"}`),
+      ).toBeInTheDocument();
+      expect(screen.queryByTestId('error-del-nombre')).toBeNull();
+    },
+  );
+
   it('21f: un 409 de los ajustes (que van segundos) no es el nombre: arriba, como antes', async () => {
     composicion.updateStrokePlaySettingsUseCase.execute.mockRejectedValue(
       Object.assign(new Error('conflicto'), { status: 409 }),

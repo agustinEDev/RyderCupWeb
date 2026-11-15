@@ -848,6 +848,18 @@ const CreateCompetition = () => {
       : null;
   };
 
+  // Por qué no se guardó al editar: las sesiones que se quedan fuera, con sus
+  // días; con un código conocido, su texto; con otro, el genérico; sin código,
+  // lo que diga el servidor, como siempre (15 nov 2026)
+  const MOTIVOS_AL_EDITAR = { DRAFT_IN_PROGRESS: 'edit.datesDuringDraft' };
+  const motivoDelFalloAlEditar = (error) => {
+    const sesiones = sesionesQueQuedanFuera(error);
+    if (sesiones) return sesiones;
+    if (error?.errorCode)
+      return t(MOTIVOS_AL_EDITAR[error.errorCode] ?? 'edit.error');
+    return error?.message || t('edit.error');
+  };
+
   // El aviso del nombre, y el campo a la vista y con el foco: el botón queda
   // abajo y en un teléfono no se vería qué falló (como el aviso de arriba)
   const senalaElNombre = (clave) => {
@@ -949,6 +961,10 @@ const CreateCompetition = () => {
     // Solo el 409 de la propia competición es «ese nombre ya lo tienes»: el del
     // perfil o el de los ajustes no tienen nada que ver con él (`/code-review`)
     let enLaCompeticion = false;
+    // El nombre ya lo tiene otra: un 409 de lo general y sin código. Con código
+    // (la sala de draft abierta, por ejemplo) es otra cosa (15 nov 2026)
+    const esElNombreYaUsado = (error) =>
+      enLaCompeticion && error?.status === 409 && !error?.errorCode;
 
     try {
       const numPlayers = cupoDeJugadores(
@@ -1042,22 +1058,19 @@ const CreateCompetition = () => {
             // Lo general fue segundo y el nombre ya lo tiene otra: junto al
             // campo, como si fuera la primera (revisión de la FE-B). Los
             // ajustes ya quedaron guardados y al reintentar no se reenvían
-            if (enLaCompeticion && error?.status === 409) {
+            // Solo el 409 sin código es el del nombre (15 nov 2026)
+            if (esElNombreYaUsado(error)) {
               senalaElNombre('nameTaken');
               return;
             }
             // El motivo como en cualquier otro fallo: las sesiones que se quedan
-            // fuera, con sus días, antes que el texto en bruto (revisor)
+            // fuera, con sus días, antes que el texto en bruto (revisor); con un
+            // código, su texto o el genérico
             const texto = t(
               ajustesPrimero
                 ? 'edit.generalNotSaved'
                 : 'edit.strokePlayNotSaved',
-              {
-                motivo:
-                  sesionesQueQuedanFuera(error) ||
-                  error.message ||
-                  t('edit.error'),
-              },
+              { motivo: motivoDelFalloAlEditar(error) },
             );
             customToast.error(texto);
             setMessage({ type: 'error', text: texto });
@@ -1150,7 +1163,7 @@ const CreateCompetition = () => {
       }
       // Ya tiene otra con ese nombre: junto al campo y en el idioma de la app,
       // no el texto del servidor (RyderCupAm#540)
-      if (enLaCompeticion && error?.status === 409) {
+      if (esElNombreYaUsado(error)) {
         senalaElNombre('nameTaken');
         return;
       }

@@ -60,15 +60,34 @@ const todasLasPaginas = async (pideLaPagina, sacaLasFilas) => {
   return filas;
 };
 
+// Las de la lista con el filtro elegido. «En lista de espera» se lee entera y
+// sin estado y se elige aquí (15 nov 2026): el servidor de antes no conoce
+// ON_HOLD, contesta 400 y la pantalla echaría al organizador
+const lasDeLaPantalla = (competitionId, statusFilter) => {
+  if (statusFilter !== 'ON_HOLD')
+    return listCompetitionInvitationsUseCase.execute(
+      competitionId,
+      statusFilter ? { status: statusFilter } : {},
+    );
+  return todasLasPaginas(
+    (page) =>
+      listCompetitionInvitationsUseCase.execute(competitionId, {
+        limit: POR_PAGINA,
+        page,
+      }),
+    (res) => res.invitations ?? [],
+  ).then((lista) => {
+    const enEspera = lista.filter((inv) => inv.status === 'ON_HOLD');
+    return { invitations: enEspera, totalCount: enEspera.length };
+  });
+};
+
 // Lo que pinta la pantalla: la competición y sus invitaciones con el filtro
 // elegido
 const pedirLaPantalla = (competitionId, statusFilter) =>
   Promise.all([
     getCompetitionDetailUseCase.execute(competitionId),
-    listCompetitionInvitationsUseCase.execute(
-      competitionId,
-      statusFilter ? { status: statusFilter } : {},
-    ),
+    lasDeLaPantalla(competitionId, statusFilter),
   ]);
 
 // Quién está dentro: solo APPROVED. Sin filtro vienen también REQUESTED,

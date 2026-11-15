@@ -216,6 +216,50 @@ describe('InvitationsPage', () => {
     ).toBeInTheDocument();
   });
 
+  // El front sale antes que el back (15 nov 2026): el servidor de hoy contesta
+  // 400 a `status=ON_HOLD`. El filtro lee sin estado y elige aquí; nunca echa
+  it('A4c: con el servidor de antes, filtrar por «En lista de espera» enseña las suyas y no echa', async () => {
+    const una = (id, status, nombre) => ({
+      id,
+      competitionName: 'Summer Cup',
+      inviteeEmail: `${id}@test.com`,
+      inviteeName: nombre,
+      status,
+      isPending: status === 'PENDING',
+      isOnHold: status === 'ON_HOLD',
+      isAccepted: false,
+      isDeclined: false,
+      isExpired: false,
+      personalMessage: null,
+      expiresAt: new Date(Date.now() + 86400000).toISOString(),
+      respondedAt: null,
+    });
+    mockListCompetitionInvitations.mockImplementation((_id, filtros = {}) =>
+      filtros.status === 'ON_HOLD'
+        ? Promise.reject(
+            Object.assign(new Error('Bad Request'), { status: 400 }),
+          )
+        : Promise.resolve({
+            invitations: [
+              una('i-1', 'ON_HOLD', 'Espera Ana'),
+              una('i-2', 'PENDING', 'Pendiente Luis'),
+            ],
+            totalCount: 2,
+          }),
+    );
+    renderPage();
+    const filtro = await screen.findByTestId('status-filter');
+
+    fireEvent.change(filtro, { target: { value: 'ON_HOLD' } });
+
+    expect(await screen.findByText(/Espera Ana/)).toBeInTheDocument();
+    await waitFor(() =>
+      expect(screen.queryByText(/Pendiente Luis/)).not.toBeInTheDocument(),
+    );
+    expect(customToast.error).not.toHaveBeenCalled();
+    expect(screen.getByTestId('status-filter')).toBeInTheDocument();
+  });
+
   it('A6: si se cierra con el modal abierto, el modal se cierra (CodeRabbit)', async () => {
     mockGetCompetitionDetail
       .mockResolvedValueOnce({
