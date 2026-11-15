@@ -25,6 +25,8 @@ import {
   primerasTarjetasPorDia,
 } from '../../domain/services/lineaDeActividad';
 import { useAuth } from '../../hooks/useAuth';
+import { useCorreoVerificado } from '../../hooks/useCorreoVerificado';
+import AvisoVerificaParaLlegarAOtros from '../../components/auth/AvisoVerificaParaLlegarAOtros';
 import { useCargaCancelableEffect } from '../../hooks/useCargaCancelableEffect';
 import {
   getPlayerProfileUseCase,
@@ -115,6 +117,14 @@ const PlayerProfilePage = () => {
   const [isActivityHidden, setIsActivityHidden] = useState(false);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [isActing, setIsActing] = useState(false);
+  // Sin el correo verificado no se pide amistad (B-17): el aviso en vez de la petición.
+  // Con la ficha en la que pasó: en la de otro jugador no se arrastra (/code-review)
+  const [faltaVerificarEn, setFaltaVerificarEn] = useState(null);
+  const faltaVerificar = faltaVerificarEn === userId;
+  const setFaltaVerificar = (falta) =>
+    setFaltaVerificarEn(falta ? userId : null);
+  const { sinVerificar: copiaSinVerificar, confirma: confirmaVerificado } =
+    useCorreoVerificado();
   const [games, setGames] = useState(null);
   const [isLoadingMoreGames, setIsLoadingMoreGames] = useState(false);
   // 'remove' | 'block' | null: lo que espera confirmación
@@ -310,6 +320,10 @@ const PlayerProfilePage = () => {
       } catch (error) {
         if (!montado.current) return;
         let clave = 'common:errors.generic';
+        if (error?.errorCode === 'EMAIL_NOT_VERIFIED') {
+          setFaltaVerificar(true);
+          return;
+        }
         if (error?.status === HTTP_FORBIDDEN && forbiddenKey)
           clave = forbiddenKey;
         // Un 404 puede ser que ese jugador te bloqueó (fase 3): no se dice que no existe
@@ -482,20 +496,34 @@ const PlayerProfilePage = () => {
           )}
         </section>
 
+        {faltaVerificar && (
+          <AvisoVerificaParaLlegarAOtros correo={user?.email} />
+        )}
+
         <FriendshipAction
           profile={profile}
           isActing={isActing}
           t={t}
-          onSend={() =>
-            runFriendshipAction(
-              () => sendFriendRequestUseCase.execute(profile.id),
-              'playerProfile:friendship.requestSent',
-              {
-                statusAfter: 'PENDING_SENT',
-                notFoundKey: 'playerProfile:errors.requestNotSent',
-              },
-            )
-          }
+          onSend={() => {
+            const pedir = () =>
+              runFriendshipAction(
+                () => sendFriendRequestUseCase.execute(profile.id),
+                'playerProfile:friendship.requestSent',
+                {
+                  statusAfter: 'PENDING_SENT',
+                  notFoundKey: 'playerProfile:errors.requestNotSent',
+                },
+              );
+            // Verificado (lo normal): en el acto, sin esperar, que un doble toque no
+            // mande dos. Si la copia dice que no, se vuelve a preguntar antes (B-17)
+            if (!copiaSinVerificar) return pedir();
+            return confirmaVerificado().then((verificado) => {
+              // Otro toque mientras se pregunta: no cuenta
+              if (verificado === null) return;
+              setFaltaVerificar(!verificado);
+              if (verificado) return pedir();
+            });
+          }}
           onAccept={() =>
             runFriendshipAction(
               () =>
