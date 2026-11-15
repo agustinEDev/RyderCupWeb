@@ -542,6 +542,27 @@ describe('InvitationsPage · volver a invitar (release social 2)', () => {
     );
   });
 
+  // Ya tiene una en lista de espera (15 nov 2026, RyderCupAm B-02): su texto
+  it('R8: si ya tiene una en lista de espera, lo dice', async () => {
+    conLista([invitacion('DECLINED', { inviteeUserId: 'u-2' })]);
+    mockEnviar.mockRejectedValue(
+      Object.assign(new Error('x'), {
+        status: 409,
+        errorCode: 'INVITATION_ON_HOLD_EXISTS',
+      }),
+    );
+    pinta();
+
+    fireEvent.click(await screen.findByTestId('reinvite-button'));
+
+    await waitFor(() =>
+      expect(customToast.error).toHaveBeenCalledWith('errors.onHoldExists'),
+    );
+    expect(customToast.error).not.toHaveBeenCalledWith(
+      'errors.duplicateInvitation',
+    );
+  });
+
   it('R3: si el servidor dice que está llena, lo dice (el aviso de siempre)', async () => {
     conLista([invitacion('DECLINED', { inviteeUserId: 'u-2' })]);
     mockEnviar.mockRejectedValue(

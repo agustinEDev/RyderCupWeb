@@ -190,6 +190,9 @@ describe('armaLaLineaDeActividad', () => {
     'RFEG_HANDICAP_NOT_FOUND',
     'ENROLLMENTS_CLOSED',
     'ENROLLMENT_CLOSE_BLOCKED',
+    // Invitaciones en espera y equipos deshechos al entrar alguien (15 nov 2026)
+    'INVITATION_ACCEPTABLE_AGAIN',
+    'TEAMS_UNDONE_BY_ENTRY',
   ])('keeps the known type %s', (type) => {
     const linea = armaLaLineaDeActividad({
       eventos: [evento({ type })],

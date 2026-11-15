@@ -322,6 +322,9 @@ const InvitationsPage = () => {
       // «ya estaba invitado», que es lo que decía el 409 genérico
     } else if (error?.errorCode === 'DRAFT_IN_PROGRESS') {
       customToast.error(t('errors.draftInProgress'));
+      // Ya tiene una en lista de espera: su texto, no «ya estaba invitado»
+    } else if (error?.errorCode === 'INVITATION_ON_HOLD_EXISTS') {
+      customToast.error(t('errors.onHoldExists'));
       // El freno por hora de la competición: con cuántas admite, y no el «espera
       // un minuto» del 429 general, que es de otro límite (probado en el Kind)
     } else if (

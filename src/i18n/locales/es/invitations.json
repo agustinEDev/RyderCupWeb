@@ -89,6 +89,7 @@
     "enrollmentDeadlinePassed": "La inscripción está cerrada.",
     "teamsFormedOrganizer": "Con los equipos formados no se invita. Si aún no hay partidos, puedes deshacerlos en la agenda.",
     "draftInProgress": "Ahora mismo se está haciendo el draft: inténtalo cuando acabe",
+    "onHoldExists": "Esa persona ya tiene una invitación en lista de espera.",
     "onHold": "En lista de espera: la inscripción está cerrada. Si el organizador la reabre, podrás aceptarla."
   },
   "creator": {

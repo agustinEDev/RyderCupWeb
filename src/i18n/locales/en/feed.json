@@ -147,7 +147,9 @@
     "ENROLLMENT_CLOSE_BLOCKED_NO_TEE_WINDOW_other": "{{count}} players without a tee window in {{competition}}: place them and close",
     "ENROLLMENT_CLOSE_BLOCKED_NO_HANDICAP_one": "{{count}} player without a handicap in {{competition}}: set it and close",
     "ENROLLMENT_CLOSE_BLOCKED_NO_HANDICAP_other": "{{count}} players without a handicap in {{competition}}: set it and close",
-    "ENROLLMENT_CLOSE_BLOCKED": "Enrolment for {{competition}} couldn't be closed"
+    "ENROLLMENT_CLOSE_BLOCKED": "Enrolment for {{competition}} couldn't be closed",
+    "TEAMS_UNDONE_BY_ENTRY": "{{player}} has joined {{competition}}: the teams have been undone and need to be formed again",
+    "INVITATION_ACCEPTABLE_AGAIN": "Enrolment for {{competition}} has reopened: you can now accept your invitation"
   },
   "teeTime": {
     "group": "You have a tee time in {{competition}}: {{when}}",

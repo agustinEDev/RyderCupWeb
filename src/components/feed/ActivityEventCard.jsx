@@ -64,6 +64,8 @@ const ICONOS = {
   RFEG_HANDICAP_NOT_FOUND: TrendingUp,
   ENROLLMENTS_CLOSED: CalendarCheck,
   ENROLLMENT_CLOSE_BLOCKED: AlertTriangle,
+  INVITATION_ACCEPTABLE_AGAIN: Mail,
+  TEAMS_UNDONE_BY_ENTRY: UserPlus,
 };
 
 const TONOS = {
@@ -92,6 +94,8 @@ const TONOS = {
   RFEG_HANDICAP_NOT_FOUND: 'bg-amber-100 text-amber-700',
   ENROLLMENTS_CLOSED: 'bg-sky-100 text-sky-700',
   ENROLLMENT_CLOSE_BLOCKED: 'bg-red-100 text-red-700',
+  INVITATION_ACCEPTABLE_AGAIN: 'bg-sky-100 text-sky-700',
+  TEAMS_UNDONE_BY_ENTRY: 'bg-amber-100 text-amber-700',
 };
 
 const LOGROS = new Set([
@@ -157,6 +161,9 @@ const AVISOS_DEL_PLAZO_Y_LA_RFEG = new Set([
   'RFEG_HANDICAP_NOT_FOUND',
   'ENROLLMENTS_CLOSED',
   'ENROLLMENT_CLOSE_BLOCKED',
+  // Invitaciones en espera y equipos deshechos al entrar alguien (15 nov 2026)
+  'INVITATION_ACCEPTABLE_AGAIN',
+  'TEAMS_UNDONE_BY_ENTRY',
 ]);
 
 // Por qué no se pudieron cerrar solas: un motivo que no se conoce, sin cuántos
@@ -169,6 +176,13 @@ const fraseDelPlazoYLaRfeg = (tipo, payload, t) => {
       competition,
       count: payload.count ?? 0,
     });
+  if (tipo === 'TEAMS_UNDONE_BY_ENTRY') {
+    // `player` y no `name`: fraseCon reserva `name` para las personas con enlace
+    return fraseCon(t, 'feed:cards.TEAMS_UNDONE_BY_ENTRY', {
+      competition,
+      player: payload.player_name || t('feed:cards.aPlayer'),
+    });
+  }
   if (tipo === 'ENROLLMENT_CLOSE_BLOCKED') {
     if (!MOTIVOS_DEL_BLOQUEO.has(payload.reason))
       return fraseCon(t, 'feed:cards.ENROLLMENT_CLOSE_BLOCKED', {
