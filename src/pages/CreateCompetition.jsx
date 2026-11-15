@@ -17,6 +17,7 @@ import { agendaPropuesta } from '../utils/agenda';
 import { aCamposDeLaCompeticion } from '../utils/camposDeLaCompeticion';
 import HeaderAuth from '../components/layout/HeaderAuth';
 import { useAuth } from '../hooks/useAuth';
+import AvisoVerificaParaLlegarAOtros from '../components/auth/AvisoVerificaParaLlegarAOtros';
 import { useGeneroParaApuntarse } from '../hooks/useGeneroParaApuntarse';
 import SelectorDeGenero from '../components/profile/SelectorDeGenero';
 import {
@@ -263,6 +264,9 @@ const CreateCompetition = () => {
     globalThis.scrollTo?.(0, 0);
   };
   const [message, setMessage] = useState({ type: '', text: '' });
+  // Sin el correo verificado no se crea una competición (B-17): el aviso arriba, y el
+  // envío no llama a la API; también si la API lo dice
+  const [faltaVerificar, setFaltaVerificar] = useState(false);
   // El aviso del nombre, junto a su campo: la clave de `create.errors`
   const [errorDelNombre, setErrorDelNombre] = useState(null);
   const campoDelNombre = useRef(null);
@@ -799,6 +803,11 @@ const CreateCompetition = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setMessage({ type: '', text: '' });
+    if (!isEditMode && (user?.email_verified === false || faltaVerificar)) {
+      setFaltaVerificar(true);
+      globalThis.scrollTo?.({ top: 0, behavior: 'smooth' });
+      return;
+    }
 
     // UI Validation
     // Los campos de golf solo se piden al crear: al editar los gestiona la ficha
@@ -1105,6 +1114,13 @@ const CreateCompetition = () => {
 
         <div className="px-4 md:px-40 flex flex-1 justify-center py-5">
           <div className="layout-content-container flex flex-col max-w-[960px] flex-1">
+            {!isEditMode &&
+              (user?.email_verified === false || faltaVerificar) && (
+                <div className="px-4">
+                  <AvisoVerificaParaLlegarAOtros correo={user?.email} />
+                </div>
+              )}
+
             {/* Page Title */}
             <div className="flex flex-wrap justify-between gap-3 p-4">
               <p

@@ -25,6 +25,7 @@ import {
   primerasTarjetasPorDia,
 } from '../../domain/services/lineaDeActividad';
 import { useAuth } from '../../hooks/useAuth';
+import AvisoVerificaParaLlegarAOtros from '../../components/auth/AvisoVerificaParaLlegarAOtros';
 import { useCargaCancelableEffect } from '../../hooks/useCargaCancelableEffect';
 import {
   getPlayerProfileUseCase,
@@ -115,6 +116,8 @@ const PlayerProfilePage = () => {
   const [isActivityHidden, setIsActivityHidden] = useState(false);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [isActing, setIsActing] = useState(false);
+  // Sin el correo verificado no se pide amistad (B-17): el aviso en vez de la petición
+  const [faltaVerificar, setFaltaVerificar] = useState(false);
   const [games, setGames] = useState(null);
   const [isLoadingMoreGames, setIsLoadingMoreGames] = useState(false);
   // 'remove' | 'block' | null: lo que espera confirmación
@@ -310,6 +313,10 @@ const PlayerProfilePage = () => {
       } catch (error) {
         if (!montado.current) return;
         let clave = 'common:errors.generic';
+        if (error?.errorCode === 'EMAIL_NOT_VERIFIED') {
+          setFaltaVerificar(true);
+          return;
+        }
         if (error?.status === HTTP_FORBIDDEN && forbiddenKey)
           clave = forbiddenKey;
         // Un 404 puede ser que ese jugador te bloqueó (fase 3): no se dice que no existe
@@ -482,19 +489,25 @@ const PlayerProfilePage = () => {
           )}
         </section>
 
+        {faltaVerificar && (
+          <AvisoVerificaParaLlegarAOtros correo={user?.email} />
+        )}
+
         <FriendshipAction
           profile={profile}
           isActing={isActing}
           t={t}
           onSend={() =>
-            runFriendshipAction(
-              () => sendFriendRequestUseCase.execute(profile.id),
-              'playerProfile:friendship.requestSent',
-              {
-                statusAfter: 'PENDING_SENT',
-                notFoundKey: 'playerProfile:errors.requestNotSent',
-              },
-            )
+            user?.email_verified === false
+              ? setFaltaVerificar(true)
+              : runFriendshipAction(
+                  () => sendFriendRequestUseCase.execute(profile.id),
+                  'playerProfile:friendship.requestSent',
+                  {
+                    statusAfter: 'PENDING_SENT',
+                    notFoundKey: 'playerProfile:errors.requestNotSent',
+                  },
+                )
           }
           onAccept={() =>
             runFriendshipAction(

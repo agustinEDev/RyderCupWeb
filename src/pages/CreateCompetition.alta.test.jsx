@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { MemoryRouter, Routes, Route } from 'react-router';
 
@@ -34,6 +34,10 @@ vi.mock('react-i18next', () => ({
 }));
 
 vi.mock('../components/layout/HeaderAuth', () => ({ default: () => null }));
+// El aviso de verificar, sin su reenvío de verdad (B-17)
+vi.mock('../components/auth/AvisoVerificaParaLlegarAOtros', () => ({
+  default: () => <div data-testid="aviso-verificar" />,
+}));
 // El mismo `user` en cada render: uno nuevo relanza los efectos (intermitente)
 const USUARIO = { user: { id: 'u-1', gender: 'MALE' }, loading: false };
 vi.mock('../hooks/useAuth', () => ({ useAuth: () => USUARIO }));
@@ -171,6 +175,38 @@ describe('CreateCompetition · BE-B en el alta (FE)', () => {
       expect((await enviado()).organizer_plays).toBe(true);
     },
   );
+
+  describe('sin el correo verificado (B-17)', () => {
+    const usuarioDeSiempre = USUARIO.user;
+    afterEach(() => {
+      USUARIO.user = usuarioDeSiempre;
+    });
+
+    it('V6: el aviso arriba y la competición no se crea', async () => {
+      USUARIO.user = { ...usuarioDeSiempre, email_verified: false };
+      await alTipo('MEDAL');
+
+      expect(screen.getByTestId('aviso-verificar')).toBeInTheDocument();
+      enviar();
+
+      await vi.waitFor(() =>
+        expect(screen.getByTestId('aviso-verificar')).toBeInTheDocument(),
+      );
+      expect(
+        composicion.createCompetitionWithGolfCoursesUseCase.execute,
+      ).not.toHaveBeenCalled();
+    });
+
+    it('verificado, sin aviso y se crea como siempre', async () => {
+      USUARIO.user = { ...usuarioDeSiempre, email_verified: true };
+      await alTipo('MEDAL');
+
+      expect(screen.queryByTestId('aviso-verificar')).toBeNull();
+      enviar();
+
+      await enviado();
+    });
+  });
 
   it('20: desmarcada, se manda que no juega', async () => {
     await alTipo('MEDAL');
