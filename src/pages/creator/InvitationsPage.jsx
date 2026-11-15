@@ -342,6 +342,8 @@ const InvitationsPage = () => {
   const handleSendInvitation = async (email, personalMessage) => {
     // Solo se espera si la copia dice que no: verificado, sale en el acto, como antes
     const verificado = copiaSinVerificar ? await confirma() : true;
+    // Otro toque mientras se pregunta: no cuenta
+    if (verificado === null) return false;
     setFaltaVerificar(!verificado);
     if (!verificado) {
       setShowSendModal(false);
@@ -368,6 +370,8 @@ const InvitationsPage = () => {
   const handleSendByUserId = async (userId, personalMessage) => {
     // Solo se espera si la copia dice que no: verificado, sale en el acto, como antes
     const verificado = copiaSinVerificar ? await confirma() : true;
+    // Otro toque mientras se pregunta: no cuenta
+    if (verificado === null) return false;
     setFaltaVerificar(!verificado);
     if (!verificado) {
       setShowSendModal(false);

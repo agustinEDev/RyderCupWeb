@@ -518,6 +518,8 @@ const PlayerProfilePage = () => {
             // mande dos. Si la copia dice que no, se vuelve a preguntar antes (B-17)
             if (!copiaSinVerificar) return pedir();
             return confirmaVerificado().then((verificado) => {
+              // Otro toque mientras se pregunta: no cuenta
+              if (verificado === null) return;
               setFaltaVerificar(!verificado);
               if (verificado) return pedir();
             });

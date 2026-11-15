@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useCallback, useRef } from 'react';
 import { useAuth } from './useAuth';
 
 /**
@@ -10,19 +10,29 @@ import { useAuth } from './useAuth';
  * Por eso, cuando la copia dice que no, `confirma` vuelve a preguntar al servidor antes de
  * decidir; si dice que sí, no hace falta (el servidor lo comprueba igual).
  *
- * @returns {{ sinVerificar: boolean, confirma: () => Promise<boolean> }}
+ * Mientras se vuelve a preguntar, otro toque devuelve `null`: no cuenta (ni pasa ni
+ * enseña el aviso), y así un doble toque no lanza dos envíos (CodeRabbit). Sin usuario en
+ * la respuesta, no vale: como un error.
+ *
+ * @returns {{ sinVerificar: boolean, confirma: () => Promise<boolean|null> }}
  */
 export const useCorreoVerificado = () => {
   const { user, refetch } = useAuth();
   const sinVerificar = user?.email_verified === false;
 
+  const preguntando = useRef(false);
+
   const confirma = useCallback(async () => {
     if (!sinVerificar) return true;
+    if (preguntando.current) return null;
+    preguntando.current = true;
     try {
       const fresco = await refetch();
-      return fresco?.email_verified !== false;
+      return Boolean(fresco) && fresco.email_verified !== false;
     } catch {
       return false;
+    } finally {
+      preguntando.current = false;
     }
   }, [sinVerificar, refetch]);
 

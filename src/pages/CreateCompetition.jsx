@@ -809,6 +809,8 @@ const CreateCompetition = () => {
     if (!isEditMode) {
       // Solo se espera si la copia dice que no: verificado, sigue en el acto
       const verificado = copiaSinVerificar ? await confirmaVerificado() : true;
+      // Otro toque mientras se pregunta: no cuenta
+      if (verificado === null) return;
       setFaltaVerificar(!verificado);
       if (!verificado) {
         globalThis.scrollTo?.({ top: 0, behavior: 'smooth' });

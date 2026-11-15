@@ -31,6 +31,31 @@ describe('useCorreoVerificado (B-17)', () => {
     expect(sesion.refetch).toHaveBeenCalled();
   });
 
+  it('sin usuario en la respuesta, no vale (CodeRabbit)', async () => {
+    sesion.user = { email_verified: false };
+    sesion.refetch.mockResolvedValue(null);
+    const { result } = renderHook(() => useCorreoVerificado());
+
+    expect(await result.current.confirma()).toBe(false);
+  });
+
+  it('un segundo toque mientras se pregunta no cuenta (CodeRabbit)', async () => {
+    sesion.user = { email_verified: false };
+    let contesta;
+    sesion.refetch.mockReturnValue(
+      new Promise((resolve) => {
+        contesta = resolve;
+      }),
+    );
+    const { result } = renderHook(() => useCorreoVerificado());
+
+    const primero = result.current.confirma();
+    expect(await result.current.confirma()).toBeNull();
+    contesta({ email_verified: true });
+    expect(await primero).toBe(true);
+    expect(sesion.refetch).toHaveBeenCalledTimes(1);
+  });
+
   it('sigue sin verificar, o no se pudo preguntar: no vale', async () => {
     sesion.user = { email_verified: false };
     sesion.refetch.mockResolvedValueOnce({ email_verified: false });
