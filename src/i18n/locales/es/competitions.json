@@ -539,7 +539,7 @@
     "subtitle": "Descubre torneos para unirse o explora competiciones completadas",
     "joinCompetition": {
       "title": "Unirse a una Competición",
-      "description": "Encuentra torneos a los que puedes unirte y solicita inscripción",
+      "description": "Encuentra torneos abiertos y apúntate directamente",
       "searchByName": "nombre de la competición",
       "searchByCreator": "nombre del creador",
       "searchPlaceholder": "Buscar por {{type}}...",
@@ -615,7 +615,7 @@
   },
   "apertura": {
     "titulo": "¿Cuándo se abren las inscripciones?",
-    "explicacion": "Esta competición será pública: cualquiera podrá verla y pedir plaza.",
+    "explicacion": "Esta competición será pública: cualquiera podrá verla y apuntarse directamente mientras haya plaza.",
     "ahora": "Ahora mismo",
     "ahoraDetalle": "Se publica al crearla y la gente puede apuntarse ya.",
     "programada": "Unos días antes del torneo",
