@@ -184,18 +184,43 @@ const HandicapsDeLaCompeticion = ({
   const anular = () =>
     hacer(() => cancelScheduledHandicapUpdateUseCase.execute(competitionId));
 
+  // Quién se quedó sin actualizar: los mismos que el aviso al organizador
+  // (15 nov 2026), también con la completa y mientras se vuelve a pasar una
+  // incompleta (en la primera pasada y en la cortada viene vacía). En una
+  // incompleta, además, a quién volverá a preguntar el botón (un extranjero
+  // fuera de España no sale en el aviso), sin repetir a nadie. Un servidor de
+  // antes del campo no lo manda: entonces, como antes, los pendientes de la
+  // incompleta
+  const sinActualizar = (() => {
+    if (!handicapUpdate) return [];
+    const { status, pendingPlayers, notUpdatedPlayers } = handicapUpdate;
+    if (!notUpdatedPlayers)
+      return status === 'INCOMPLETE' ? pendingPlayers : [];
+    if (status !== 'INCOMPLETE') return notUpdatedPlayers;
+    const nombrados = new Set(notUpdatedPlayers.map((p) => p.userId));
+    return [
+      ...notUpdatedPlayers,
+      ...pendingPlayers.filter((p) => !nombrados.has(p.userId)),
+    ];
+  })();
+
   const estado = () => {
     if (!handicapUpdate) return null;
     const { status, finishedAt, pendingPlayers } = handicapUpdate;
     if (status === 'IN_PROGRESS')
       return t('handicaps.inProgress', { count: pendingPlayers.length });
+    // Con alguien sin actualizar no se dice «Actualizados»: lo dice la línea
+    // de quiénes
     if (status === 'COMPLETED')
-      return t('handicaps.completed', { cuando: cuando(finishedAt) });
+      return sinActualizar.length > 0
+        ? null
+        : t('handicaps.completed', { cuando: cuando(finishedAt) });
     if (status === 'INCOMPLETE')
       return t('handicaps.incomplete', { cuando: cuando(finishedAt) });
     return t('handicaps.stopped');
   };
 
+  const lineaDeEstado = estado();
   const ventana = handicapUpdateWindow;
   // «hora del campo (Madrid)», o la del dispositivo si el campo no la tiene
   const delCampo = esZonaValida(zona);
@@ -216,27 +241,25 @@ const HandicapsDeLaCompeticion = ({
       </h3>
 
       {handicapUpdate && (
-        <div>
-          <p
-            data-testid="handicaps-estado"
-            aria-live="polite"
-            className="text-sm text-gray-800"
-          >
-            {estado()}
-          </p>
-          {handicapUpdate.status === 'INCOMPLETE' &&
-            handicapUpdate.pendingPlayers.length > 0 && (
-              <p
-                data-testid="handicaps-pendientes"
-                className="text-sm text-amber-800"
-              >
-                {t('handicaps.pending', {
-                  jugadores: handicapUpdate.pendingPlayers
-                    .map((p) => p.name)
-                    .join(', '),
-                })}
-              </p>
-            )}
+        // La región que se anuncia es el contenedor, que siempre está: así se
+        // oye el resultado aunque desaparezca la línea del estado (completa con
+        // alguien sin actualizar), sin pintar un párrafo vacío (CodeRabbit #1153)
+        <div data-testid="handicaps-resultado" aria-live="polite">
+          {lineaDeEstado && (
+            <p data-testid="handicaps-estado" className="text-sm text-gray-800">
+              {lineaDeEstado}
+            </p>
+          )}
+          {sinActualizar.length > 0 && (
+            <p
+              data-testid="handicaps-pendientes"
+              className="text-sm text-amber-800"
+            >
+              {t('handicaps.pending', {
+                jugadores: sinActualizar.map((p) => p.name).join(', '),
+              })}
+            </p>
+          )}
         </div>
       )}
 

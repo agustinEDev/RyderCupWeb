@@ -48,7 +48,31 @@ describe('CompetitionAssembler · actualizaciones de hándicap (FE #824)', () =>
       startedAt: '2030-10-10T20:05:00Z',
       finishedAt: '2030-10-10T20:09:00Z',
       pendingPlayers: [{ userId: 'u1', name: 'Ana Alba' }],
+      // Un servidor de antes del campo: null, y la tarjeta usa pendingPlayers
+      notUpdatedPlayers: null,
     });
+  });
+
+  it('los mismos que el aviso al organizador (15 nov 2026), en camelCase', () => {
+    // Given: una completa con un no encontrado
+    const d = ficha(
+      api({
+        handicap_update: {
+          status: 'COMPLETED',
+          origin: 'ENROLLMENTS_CLOSED',
+          started_at: '2030-10-10T20:05:00Z',
+          finished_at: '2030-10-10T20:09:00Z',
+          pending_players: [],
+          not_updated_players: [{ user_id: 'u1', name: 'Ana Alba' }],
+        },
+      }),
+    );
+
+    // Then
+    expect(d.handicapUpdate.notUpdatedPlayers).toEqual([
+      { userId: 'u1', name: 'Ana Alba' },
+    ]);
+    expect(d.handicapUpdate.pendingPlayers).toEqual([]);
   });
 
   it('la ventana del botón', () => {
