@@ -246,10 +246,7 @@ const HandicapsDeLaCompeticion = ({
         // alguien sin actualizar), sin pintar un párrafo vacío (CodeRabbit #1153)
         <div data-testid="handicaps-resultado" aria-live="polite">
           {lineaDeEstado && (
-            <p
-              data-testid="handicaps-estado"
-              className="text-sm text-gray-800"
-            >
+            <p data-testid="handicaps-estado" className="text-sm text-gray-800">
               {lineaDeEstado}
             </p>
           )}
