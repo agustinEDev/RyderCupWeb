@@ -539,7 +539,7 @@
     "subtitle": "Discover tournaments to join or explore completed competitions",
     "joinCompetition": {
       "title": "Join a Competition",
-      "description": "Find tournaments you can join and request enrollment",
+      "description": "Find open tournaments and sign up directly",
       "searchByName": "competition name",
       "searchByCreator": "creator name",
       "searchPlaceholder": "Search by {{type}}...",
@@ -615,7 +615,7 @@
   },
   "apertura": {
     "titulo": "When does enrolment open?",
-    "explicacion": "This competition will be public: anyone can see it and ask for a place.",
+    "explicacion": "This competition will be public: anyone can see it and sign up directly while there's room.",
     "ahora": "Right now",
     "ahoraDetalle": "It goes up when you create it and people can enrol straight away.",
     "programada": "A few days before the tournament",

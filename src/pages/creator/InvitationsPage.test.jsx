@@ -56,6 +56,10 @@ const sesionDePrueba = {
 vi.mock('../../hooks/useAuth', () => ({
   useAuth: () => sesionDePrueba,
 }));
+// El aviso de verificar, sin su reenvío de verdad (B-17)
+vi.mock('../../components/auth/AvisoVerificaParaLlegarAOtros', () => ({
+  default: () => <div data-testid="aviso-verificar" />,
+}));
 
 const mockRefetchRoles = vi.hoisted(() => vi.fn());
 
@@ -243,6 +247,55 @@ describe('InvitationsPage', () => {
       expect(screen.getByTestId('status-filter')).toBeInTheDocument();
     },
   );
+
+  // B-17 de la auditoría de la fase 6: sin el correo verificado no se invita
+  describe('sin el correo verificado (B-17)', () => {
+    const usuarioDeSiempre = sesionDePrueba.user;
+    beforeEach(() => {
+      mockListFriends.mockReset().mockResolvedValue({
+        friendships: [{ otherUserId: 'u-1', otherUserName: 'Luna Noche' }],
+        totalCount: 1,
+      });
+      mockListEnrollments.mockReset().mockResolvedValue([]);
+      mockListCompetitionInvitations
+        .mockReset()
+        .mockResolvedValue({ invitations: [], totalCount: 0 });
+      mockSendInvitation.mockReset().mockResolvedValue({});
+    });
+    afterEach(() => {
+      sesionDePrueba.user = usuarioDeSiempre;
+    });
+
+    it('V6: sin verificar, el aviso y la invitación no sale', async () => {
+      sesionDePrueba.user = { ...usuarioDeSiempre, email_verified: false };
+      renderPage();
+
+      expect(await screen.findByTestId('aviso-verificar')).toBeInTheDocument();
+      fireEvent.click(await screen.findByText('creator.sendNew'));
+      fireEvent.click(await screen.findByTestId('invite-friend-u-1'));
+
+      await waitFor(() =>
+        expect(screen.getByTestId('aviso-verificar')).toBeInTheDocument(),
+      );
+      expect(mockSendInvitation).not.toHaveBeenCalled();
+    });
+
+    it('V7: si la API dice EMAIL_NOT_VERIFIED, el aviso y no un error', async () => {
+      mockSendInvitation.mockRejectedValue(
+        Object.assign(new Error('no'), {
+          status: 403,
+          errorCode: 'EMAIL_NOT_VERIFIED',
+        }),
+      );
+      renderPage();
+      expect(screen.queryByTestId('aviso-verificar')).not.toBeInTheDocument();
+      fireEvent.click(await screen.findByText('creator.sendNew'));
+      fireEvent.click(await screen.findByTestId('invite-friend-u-1'));
+
+      expect(await screen.findByTestId('aviso-verificar')).toBeInTheDocument();
+      expect(customToast.error).not.toHaveBeenCalled();
+    });
+  });
 
   // #710: invitar cerraba el modal tras cada invitación, e invitar a un grupo
   // era abrirlo una y otra vez
