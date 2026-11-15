@@ -1140,6 +1140,14 @@ const CreateCompetition = () => {
         `Error ${isEditMode ? 'updating' : 'creating'} competition:`,
         error,
       );
+      // Con la sala de draft abierta no se mueven las fechas (15 nov 2026). Antes
+      // que el 409 del nombre, que lo tomaría por un nombre ya usado
+      if (isEditMode && error?.errorCode === 'DRAFT_IN_PROGRESS') {
+        const texto = t('edit.datesDuringDraft');
+        customToast.error(texto);
+        setMessage({ type: 'error', text: texto });
+        return;
+      }
       // Ya tiene otra con ese nombre: junto al campo y en el idioma de la app,
       // no el texto del servidor (RyderCupAm#540)
       if (enLaCompeticion && error?.status === 409) {
