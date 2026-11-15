@@ -5,6 +5,49 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.81.0] - 2026-11-15
+
+**Cierre automático de las inscripciones, avisos de la RFEG e invitaciones en lista de espera**
+(#1150, #1151, #1153). Va con el backend 2.68.0 y **sale ANTES que él**: los campos nuevos son
+opcionales y la lista de invitaciones se lee de una vez y se filtra en el cliente, así que
+funciona también con el backend 2.67.0 de producción (que responde 400 a `status=ON_HOLD`).
+
+### Added
+
+- **Fecha de cierre de la inscripción** en la página de la competición: «Inscripción abierta
+  hasta el {día} a las 12:00», con el día según la zona horaria del campo y no la del
+  navegador.
+- **Hándicaps sin actualizar con la RFEG en «Requiere tu atención».** El organizador ve
+  «{N} jugadores sin actualizar con la RFEG en {X}», que abre la competición en la tarjeta de
+  los hándicaps; el jugador español que la RFEG no encuentra ve su aviso, que abre la edición
+  del perfil. Se pinta con lo de la última vez y se actualiza por detrás.
+- **Avisos nuevos en Actividad**: hándicaps sin actualizar, jugador no encontrado en la RFEG,
+  inscripción cerrada, cierre bloqueado (sin horario de salida, sin hándicap o por otro
+  motivo), invitación que vuelve a poder aceptarse y equipos deshechos por una entrada
+  («{X} ha entrado en {Y}: los equipos se han deshecho y hay que volver a formarlos»).
+- **Invitaciones «En lista de espera»** (`ON_HOLD`) en «Mis invitaciones» y en la lista del
+  organizador, con su filtro. El invitado puede rechazarla pero no aceptarla mientras la
+  inscripción siga cerrada; el organizador puede retirarla con «Retirar», y el amigo con una
+  invitación en espera cuenta como ya invitado.
+- **Competición cerrada por la fecha límite**: el organizador puede mover solo las fechas; el
+  resto de campos quedan desactivados.
+
+### Changed
+
+- **La apertura programada de la inscripción** se elige ahora de 2 a 14 días antes.
+- **La tarjeta de hándicaps nombra a los mismos jugadores que el aviso** del organizador: si
+  quedó alguno sin actualizar ya no dice «Actualizados con la RFEG el …», y durante un
+  reintento enseña «Actualizando… faltan N» con la lista del aviso. El resultado se anuncia
+  desde una región accesible estable.
+- **Errores traducidos**: fecha límite pasada (al apuntarse, aceptar, invitar y aprobar; al
+  invitar o aprobar se cierra la ventana y se recargan los datos), invitación en espera y draft
+  en curso (al aceptar, invitar, aprobar, reabrir y mover las fechas).
+
+### Removed
+
+- El cliente de la inscripción directa por el organizador (`/enrollments/direct`): ninguna
+  pantalla lo usaba.
+
 ## [2.80.0] - 2026-11-15
 
 **Tanda 2 de la auditoría de la fase 6 y decisiones del 15 nov** (#1142, #1143, #1144, #1145).
