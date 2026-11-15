@@ -57,11 +57,17 @@ const InvitationCard = ({
   t,
 }) => {
   const showActions = mode === 'player' && invitation.isPending;
+  // En lista de espera (15 nov 2026): no se acepta hasta que se reabra; se
+  // puede rechazar
+  const enEspera = mode === 'player' && invitation.isOnHold === true;
   const caducada = useHaCaducado(invitation.expiresAt);
   // Quien invita puede retirar una pendiente (FE #724). El jugador no: él la
   // rechaza, y las ya respondidas no estorban en su lista
+  // También la que está en lista de espera (15 nov 2026)
   const sePuedeRetirar =
-    mode === 'creator' && invitation.isPending && Boolean(onWithdraw);
+    mode === 'creator' &&
+    (invitation.isPending || invitation.isOnHold === true) &&
+    Boolean(onWithdraw);
   const expirationText = invitation.isPending
     ? getExpirationText(invitation.expiresAt, t)
     : null;
@@ -72,7 +78,11 @@ const InvitationCard = ({
   // Pendiente, el invitado ya puede mirarla antes de contestar (release social
   // 2): con un enlace propio, porque la tarjeta lleva dentro aceptar y rechazar
   // Caducada ya no deja verla: el servidor tampoco la cuenta (revisor)
-  const puedeMirarla = showActions && invitation.competitionId && !caducada;
+  // En lista de espera también, aunque haya pasado su fecha: esperando no
+  // caduca (15 nov 2026)
+  const puedeMirarla =
+    Boolean(invitation.competitionId) &&
+    ((showActions && !caducada) || enEspera);
   const nombre = invitation.competitionName || t('card.for');
 
   // Aceptada, la tarjeta entera es el enlace: el titulo solo era un blanco
@@ -146,32 +156,46 @@ const InvitationCard = ({
             </Link>
           )}
 
-          {invitation.respondedAt && !invitation.isPending && (
-            <div className="flex items-center gap-1.5 text-xs text-gray-400 mt-1.5">
-              <Clock className="h-3.5 w-3.5" />
-              <span data-testid="fecha-de-la-invitacion">
-                {CLAVE_DE_LA_FECHA[invitation.status]
-                  ? t(CLAVE_DE_LA_FECHA[invitation.status], {
-                      date: new Date(
-                        invitation.respondedAt,
-                      ).toLocaleDateString(),
-                    })
-                  : `${t('card.respondedAt')}: ${new Date(invitation.respondedAt).toLocaleDateString()}`}
-              </span>
-            </div>
+          {enEspera && (
+            <p
+              data-testid="invitacion-en-espera"
+              className="mt-1.5 text-xs text-amber-800"
+            >
+              {t('card.onHold')}
+            </p>
           )}
+
+          {/* En lista de espera nadie ha respondido: sin fecha (15 nov 2026) */}
+          {invitation.respondedAt &&
+            !invitation.isPending &&
+            invitation.isOnHold !== true && (
+              <div className="flex items-center gap-1.5 text-xs text-gray-400 mt-1.5">
+                <Clock className="h-3.5 w-3.5" />
+                <span data-testid="fecha-de-la-invitacion">
+                  {CLAVE_DE_LA_FECHA[invitation.status]
+                    ? t(CLAVE_DE_LA_FECHA[invitation.status], {
+                        date: new Date(
+                          invitation.respondedAt,
+                        ).toLocaleDateString(),
+                      })
+                    : `${t('card.respondedAt')}: ${new Date(invitation.respondedAt).toLocaleDateString()}`}
+                </span>
+              </div>
+            )}
         </div>
 
-        {showActions && (
+        {(showActions || enEspera) && (
           <div className="flex flex-col gap-2 flex-shrink-0">
-            <button
-              data-testid="accept-button"
-              onClick={() => onAccept?.(invitation.id)}
-              disabled={isProcessing}
-              className="px-3 py-1.5 text-xs font-medium text-white bg-green-600 rounded-md hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            >
-              {isProcessing ? t('actions.accepting') : t('actions.accept')}
-            </button>
+            {showActions && (
+              <button
+                data-testid="accept-button"
+                onClick={() => onAccept?.(invitation.id)}
+                disabled={isProcessing}
+                className="px-3 py-1.5 text-xs font-medium text-white bg-green-600 rounded-md hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                {isProcessing ? t('actions.accepting') : t('actions.accept')}
+              </button>
+            )}
             <button
               data-testid="decline-button"
               onClick={() => onDecline?.(invitation.id)}

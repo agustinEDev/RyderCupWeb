@@ -10,10 +10,13 @@
  * - DECLINED: Invitee declined the invitation
  * - EXPIRED: Invitation expired (7-day TTL)
  * - NO_ROOM: Enrolment closed while it was pending (RyderCupWeb#710)
+ * - ON_HOLD: Enrolment closed while it was pending: it waits for the organiser
+ *   to reopen it, and cannot be accepted meanwhile (15 nov 2026)
  *
  * Transitions:
  * - CANCELLED: Withdrawn by whoever invites (RyderCupWeb#724, BE #359)
- * - PENDING -> ACCEPTED | DECLINED | EXPIRED | NO_ROOM | CANCELLED
+ * - PENDING -> ACCEPTED | DECLINED | EXPIRED | NO_ROOM | CANCELLED | ON_HOLD
+ * - ON_HOLD -> PENDING | DECLINED | NO_ROOM | CANCELLED
  * - ACCEPTED, DECLINED, EXPIRED, NO_ROOM, CANCELLED -> (terminal states)
  */
 class InvitationStatus {
@@ -25,12 +28,22 @@ class InvitationStatus {
   static NO_ROOM = 'NO_ROOM';
   // La retiró quien invita (FE #724): distinto de que el invitado diga que no
   static CANCELLED = 'CANCELLED';
+  // En lista de espera: se cerró la inscripción y espera a que se reabra (15 nov
+  // 2026). No se acepta ni caduca; se rechaza o se retira
+  static ON_HOLD = 'ON_HOLD';
 
   static VALID_TRANSITIONS = {
     [InvitationStatus.PENDING]: [
       InvitationStatus.ACCEPTED,
       InvitationStatus.DECLINED,
       InvitationStatus.EXPIRED,
+      InvitationStatus.NO_ROOM,
+      InvitationStatus.CANCELLED,
+      InvitationStatus.ON_HOLD,
+    ],
+    [InvitationStatus.ON_HOLD]: [
+      InvitationStatus.PENDING,
+      InvitationStatus.DECLINED,
       InvitationStatus.NO_ROOM,
       InvitationStatus.CANCELLED,
     ],
@@ -85,6 +98,7 @@ class InvitationStatus {
       InvitationStatus.EXPIRED,
       InvitationStatus.NO_ROOM,
       InvitationStatus.CANCELLED,
+      InvitationStatus.ON_HOLD,
     ];
   }
 
@@ -108,6 +122,10 @@ class InvitationStatus {
 
   isPending() {
     return this.#value === InvitationStatus.PENDING;
+  }
+
+  isOnHold() {
+    return this.#value === InvitationStatus.ON_HOLD;
   }
 
   isAccepted() {

@@ -145,7 +145,7 @@ describe('InvitationStatus', () => {
       expect(InvitationStatus.isValid('INVALID')).toBe(false);
     });
 
-    it('getAllValues returns all 6 values', () => {
+    it('getAllValues returns all 7 values', () => {
       expect(InvitationStatus.getAllValues()).toEqual([
         'PENDING',
         'ACCEPTED',
@@ -153,6 +153,8 @@ describe('InvitationStatus', () => {
         'EXPIRED',
         'NO_ROOM',
         'CANCELLED',
+        // En lista de espera (15 nov 2026)
+        'ON_HOLD',
       ]);
     });
   });
@@ -190,4 +192,54 @@ describe('InvitationStatus · CANCELLED', () => {
     expect(InvitationStatus.pending().canTransitionTo(retirada)).toBe(true);
     expect(InvitationStatus.accepted().canTransitionTo(retirada)).toBe(false);
   });
+});
+
+/**
+ * La invitación en lista de espera (ON_HOLD, 15 nov 2026; RyderCupAm B-02).
+ *
+ *   caso                        | qué pasa
+ *   ----------------------------|------------------------------------------------
+ *   H1 ON_HOLD                  | es un estado válido, ni pendiente ni terminal
+ *   H2 PENDING -> ON_HOLD       | se puede (se cierra la inscripción)
+ *   H3 ON_HOLD -> PENDING…      | a PENDING, DECLINED, NO_ROOM o CANCELLED
+ *   H4 ON_HOLD -> ACCEPTED      | no: en espera no se acepta (ni caduca)
+ */
+describe('InvitationStatus · en lista de espera', () => {
+  it('H1: Given ON_HOLD, When se crea, Then vale y no es pendiente ni terminal', () => {
+    const espera = new InvitationStatus('ON_HOLD');
+
+    expect(espera.isOnHold()).toBe(true);
+    expect(espera.isPending()).toBe(false);
+    expect(espera.isTerminal()).toBe(false);
+  });
+
+  it('H2: Given PENDING, When se cierra la inscripción, Then puede pasar a ON_HOLD', () => {
+    expect(
+      new InvitationStatus('PENDING').canTransitionTo(
+        new InvitationStatus('ON_HOLD'),
+      ),
+    ).toBe(true);
+  });
+
+  it.each(['PENDING', 'DECLINED', 'NO_ROOM', 'CANCELLED'])(
+    'H3: Given ON_HOLD, When pasa a %s, Then se puede',
+    (destino) => {
+      expect(
+        new InvitationStatus('ON_HOLD').canTransitionTo(
+          new InvitationStatus(destino),
+        ),
+      ).toBe(true);
+    },
+  );
+
+  it.each(['ACCEPTED', 'EXPIRED'])(
+    'H4: Given ON_HOLD, When pasa a %s, Then no se puede',
+    (destino) => {
+      expect(
+        new InvitationStatus('ON_HOLD').canTransitionTo(
+          new InvitationStatus(destino),
+        ),
+      ).toBe(false);
+    },
+  );
 });

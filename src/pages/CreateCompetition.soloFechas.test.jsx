@@ -22,6 +22,7 @@ import { MemoryRouter, Routes, Route } from 'react-router';
  *   M8d el aviso de las fechas, en un móvil          | se trae a la vista y se le da el foco, también al repetirlo
  *   M9 el servidor lo rechaza con un código conocido  | su texto traducido, junto a las fechas
  *   M9b el servidor lo rechaza sin código conocido    | el genérico, no su texto en bruto
+ *   M6 mover con la sala de draft abierta (409)      | «No se pueden mover las fechas con la sala de draft abierta…», no «nombre ya usado»
  *   M5 abierta                                         | todo se edita, sin el aviso
  */
 vi.mock('react-i18next', () => ({
@@ -109,6 +110,8 @@ describe('CreateCompetition · cerrada por el plazo: solo las fechas', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockValidar.mockImplementation(() => null);
+    // Lo que un caso deja en cola (un «Once» sin usar) no pasa al siguiente
+    mockActualizar.mockReset();
     mockDetalle.mockReset();
     mockCampos.mockReset();
     mockCampos.mockResolvedValue([]);
@@ -314,6 +317,26 @@ describe('CreateCompetition · cerrada por el plazo: solo las fechas', () => {
       expect(aviso).not.toHaveTextContent('en bruto');
     },
   );
+
+  it('M6: Given la sala de draft abierta, When guarda las fechas, Then se dice que termine antes el draft', async () => {
+    mockDetalle.mockResolvedValueOnce(porElPlazo());
+    mockActualizar.mockRejectedValueOnce(
+      Object.assign(new Error('Draft in progress'), {
+        status: 409,
+        errorCode: 'DRAFT_IN_PROGRESS',
+      }),
+    );
+    pintaEdicion();
+    await screen.findByDisplayValue('Campeonato del club');
+
+    fireEvent.click(
+      screen.getByRole('button', { name: 'edit.updateCompetition' }),
+    );
+
+    await waitFor(() =>
+      expect(customToast.error).toHaveBeenCalledWith('edit.datesDuringDraft'),
+    );
+  });
 
   it('M4: Given cerrada a mano, When se abre, Then no se edita', async () => {
     mockDetalle.mockResolvedValueOnce(

@@ -147,7 +147,9 @@
     "ENROLLMENT_CLOSE_BLOCKED_NO_TEE_WINDOW_other": "{{count}} jugadores sin franja en {{competition}}: colócalos y cierra",
     "ENROLLMENT_CLOSE_BLOCKED_NO_HANDICAP_one": "{{count}} jugador sin hándicap en {{competition}}: pónselo y cierra",
     "ENROLLMENT_CLOSE_BLOCKED_NO_HANDICAP_other": "{{count}} jugadores sin hándicap en {{competition}}: pónselo y cierra",
-    "ENROLLMENT_CLOSE_BLOCKED": "No se han podido cerrar las inscripciones de {{competition}}"
+    "ENROLLMENT_CLOSE_BLOCKED": "No se han podido cerrar las inscripciones de {{competition}}",
+    "TEAMS_UNDONE_BY_ENTRY": "{{player}} ha entrado en {{competition}}: los equipos se han deshecho y hay que volver a formarlos",
+    "INVITATION_ACCEPTABLE_AGAIN": "Se han reabierto las inscripciones de {{competition}}: ya puedes aceptar tu invitación"
   },
   "teeTime": {
     "group": "Ya tienes salida en {{competition}}: {{when}}",

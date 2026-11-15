@@ -22,6 +22,8 @@ import ActivityEventCard from './ActivityEventCard';
  *   P5 ENROLLMENT_CLOSE_BLOCKED, NO_HANDICAP     | propuesta, pendiente de aprobar                        | la competición
  *   P6 ENROLLMENT_CLOSE_BLOCKED, motivo raro     | «No se han podido cerrar las inscripciones de X»       | la competición
  *   P7 en inglés                                 | su texto en inglés                                     |
+ *   P8 con uno, en los dos idiomas               | en singular (plural de i18next)                        |
+ *   P9 tocar HANDICAPS_NOT_UPDATED                | a la ficha, con la tarjeta de hándicaps a la vista     |
  */
 vi.mock('../ui/Avatar', () => ({
   default: ({ userId }) => <div data-testid={`avatar-${userId}`} />,
@@ -241,4 +243,51 @@ describe('ActivityEventCard — RFEG y plazo de inscripción', () => {
       '/competitions/c-1|true',
     );
   });
+
+  // Los singulares aprobados (15 nov 2026): plurales de verdad, en los dos idiomas
+  it.each([
+    [
+      'es',
+      'HANDICAPS_NOT_UPDATED',
+      { count: 1 },
+      '1 jugador sin actualizar con la RFEG en Ryder Otoño',
+    ],
+    [
+      'es',
+      'ENROLLMENT_CLOSE_BLOCKED',
+      { reason: 'NO_TEE_WINDOW', player_count: 1 },
+      '1 jugador sin franja en Ryder Otoño: colócalo y cierra',
+    ],
+    [
+      'es',
+      'ENROLLMENT_CLOSE_BLOCKED',
+      { reason: 'NO_HANDICAP', player_count: 1 },
+      '1 jugador sin hándicap en Ryder Otoño: pónselo y cierra',
+    ],
+    [
+      'en',
+      'HANDICAPS_NOT_UPDATED',
+      { count: 1 },
+      '1 player not updated with the RFEG in Ryder Otoño',
+    ],
+    [
+      'en',
+      'ENROLLMENT_CLOSE_BLOCKED',
+      { reason: 'NO_TEE_WINDOW', player_count: 1 },
+      '1 player without a tee window in Ryder Otoño: place them and close',
+    ],
+    [
+      'en',
+      'ENROLLMENT_CLOSE_BLOCKED',
+      { reason: 'NO_HANDICAP', player_count: 1 },
+      '1 player without a handicap in Ryder Otoño: set it and close',
+    ],
+  ])(
+    'P8: Given %s y %s con uno, When se pinta, Then en singular',
+    (lng, type, extra, texto) => {
+      pinta(conTorneo(type, extra), { lng });
+
+      expect(frase()).toBe(texto);
+    },
+  );
 });

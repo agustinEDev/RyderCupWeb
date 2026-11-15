@@ -53,6 +53,24 @@ describe('InvitationBadge', () => {
   });
 });
 
+describe('InvitationBadge · en lista de espera (15 nov 2026)', () => {
+  it('tiene su texto y su color, en los dos idiomas', async () => {
+    render(<InvitationBadge status="ON_HOLD" />);
+    const etiqueta = screen.getByTestId('invitation-badge');
+    expect(etiqueta).toHaveTextContent('status.ON_HOLD');
+    expect(etiqueta.className).not.toContain('bg-gray-100');
+    for (const idioma of ['es', 'en']) {
+      const textos = (
+        await import(`../../i18n/locales/${idioma}/invitations.json`)
+      ).default;
+      expect(textos.status.ON_HOLD, idioma).toBeTruthy();
+      expect(textos.card.onHold, idioma).toBeTruthy();
+      expect(textos.errors.onHold, idioma).toBeTruthy();
+      expect(textos.errors.draftInProgress, idioma).toBeTruthy();
+    }
+  });
+});
+
 describe('InvitationBadge · retirada (FE #724)', () => {
   it('tiene su texto y su color', () => {
     render(<InvitationBadge status="CANCELLED" />);

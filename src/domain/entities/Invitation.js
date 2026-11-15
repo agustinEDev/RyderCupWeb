@@ -162,6 +162,10 @@ class Invitation {
     return this.#status.isPending();
   }
 
+  isOnHold() {
+    return this.#status.isOnHold();
+  }
+
   isAccepted() {
     return this.#status.isAccepted();
   }
