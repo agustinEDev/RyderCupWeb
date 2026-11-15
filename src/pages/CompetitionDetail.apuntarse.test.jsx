@@ -298,6 +298,24 @@ describe('CompetitionDetail · apuntarse a una pública', () => {
     );
   });
 
+  // F3 (15 nov 2026): pasado el plazo de inscripción, su texto
+  it('pasado el plazo de inscripción: «La inscripción está cerrada.»', async () => {
+    mockRequest.mockRejectedValue(
+      Object.assign(new Error('x'), {
+        status: 400,
+        errorCode: 'ENROLLMENT_DEADLINE_PASSED',
+      }),
+    );
+    renderPage();
+
+    await apuntarse();
+    fireEvent.click(screen.getByText('competitions:enrollment.confirm'));
+
+    expect(await screen.findByTestId('apuntarse-error')).toHaveTextContent(
+      'detail.errors.enrollmentDeadlinePassed',
+    );
+  });
+
   it('con franjas el máximo de jugadores no quita el botón (revisor)', async () => {
     agenda = { rounds: [FRANJA] };
     mockGetCompetitionDetail.mockResolvedValue(

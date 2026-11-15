@@ -52,6 +52,8 @@ export const MOTIVOS_PARA_NO_APUNTARSE = {
   TEE_WINDOW_REQUIRED: 'detail.errors.teeWindowRequired',
   TEE_WINDOW_NOT_FOUND: 'detail.errors.teeWindowNotFound',
   DRAFT_IN_PROGRESS: 'detail.errors.draftInProgress',
+  // Pasadas las 12:00 del día anterior (15 nov 2026, RyderCupAm #865)
+  ENROLLMENT_DEADLINE_PASSED: 'detail.errors.enrollmentDeadlinePassed',
 };
 
 // Por qué no se formaron los equipos al cerrar (29 oct 2026)
