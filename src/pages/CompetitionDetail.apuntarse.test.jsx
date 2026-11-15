@@ -293,8 +293,27 @@ describe('CompetitionDetail · apuntarse a una pública', () => {
     await apuntarse();
     fireEvent.click(screen.getByText('competitions:enrollment.confirm'));
 
+    // Un solo texto para el draft en toda la ficha (15 nov 2026)
     expect(await screen.findByTestId('apuntarse-error')).toHaveTextContent(
-      'detail.errors.draftInProgress',
+      'detail.errors.waitForDraft',
+    );
+  });
+
+  // F3 (15 nov 2026): pasado el plazo de inscripción, su texto
+  it('pasado el plazo de inscripción: «La inscripción está cerrada.»', async () => {
+    mockRequest.mockRejectedValue(
+      Object.assign(new Error('x'), {
+        status: 400,
+        errorCode: 'ENROLLMENT_DEADLINE_PASSED',
+      }),
+    );
+    renderPage();
+
+    await apuntarse();
+    fireEvent.click(screen.getByText('competitions:enrollment.confirm'));
+
+    expect(await screen.findByTestId('apuntarse-error')).toHaveTextContent(
+      'detail.errors.enrollmentDeadlinePassed',
     );
   });
 

@@ -187,6 +187,14 @@ export const crearAccionesDeInscripcion = (contexto) => {
         await releerTrasQuitar();
         return;
       }
+      // Pasado el plazo o con la sala de draft abierta (15 nov 2026): su texto
+      // Los mismos motivos que al apuntarse, y la ficha al día (15 nov 2026)
+      const motivo = MOTIVOS_PARA_NO_APUNTARSE[error?.errorCode];
+      if (motivo) {
+        customToast.error(t(motivo));
+        await releerTrasQuitar();
+        return;
+      }
       customToast.error(error.message || t('detail.failedToApprove'));
     }
   };

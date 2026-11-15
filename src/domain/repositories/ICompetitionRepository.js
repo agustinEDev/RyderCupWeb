@@ -195,6 +195,16 @@ export class ICompetitionRepository {
     );
   }
 
+  /**
+   * Mis hándicaps sin actualizar con la RFEG (15 nov 2026).
+   * @returns {Promise<{asOrganizer: Array<{competitionId: string, competitionName: string, count: number}>, asPlayer: Array<{competitionId: string, competitionName: string}>}>}
+   */
+  async getMyHandicapsNotUpdated() {
+    throw new Error(
+      'ICompetitionRepository.getMyHandicapsNotUpdated must be implemented',
+    );
+  }
+
   async updateStrokePlay(competitionId, cambios) {
     throw new Error(
       'ICompetitionRepository.updateStrokePlay must be implemented',

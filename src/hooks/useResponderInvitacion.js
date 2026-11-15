@@ -10,6 +10,8 @@ import { respondToInvitationUseCase } from '../composition';
 const MOTIVOS_PARA_NO_ENTRAR = {
   INVITATION_NO_ROOM: 'errors.noRoom',
   TEAMS_FORMED: 'errors.teamsFormed',
+  // Pasadas las 12:00 del día anterior (15 nov 2026, RyderCupAm #865)
+  ENROLLMENT_DEADLINE_PASSED: 'errors.enrollmentDeadlinePassed',
 };
 
 /**

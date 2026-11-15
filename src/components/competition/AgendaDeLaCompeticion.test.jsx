@@ -489,26 +489,33 @@ describe('AgendaDeLaCompeticion · lo leído, para la ficha (FE #710)', () => {
     const onAgenda = vi.fn();
     pintar({ onAgenda });
 
-    await waitFor(() => expect(onAgenda).toHaveBeenLastCalledWith(AGENDA));
+    await waitFor(() =>
+      expect(onAgenda).toHaveBeenLastCalledWith(AGENDA, false),
+    );
 
     const sinLaR2 = { ...AGENDA, rounds: AGENDA.rounds.slice(0, 2) };
     mockVerAgenda.mockResolvedValue(sinLaR2);
     fireEvent.click(await screen.findByTestId('agenda-quitar-r2'));
     fireEvent.click(screen.getByTestId('agenda-confirmar-si-r2'));
 
-    await waitFor(() => expect(onAgenda).toHaveBeenLastCalledWith(sinLaR2));
+    await waitFor(() =>
+      expect(onAgenda).toHaveBeenLastCalledWith(sinLaR2, false),
+    );
   });
 
   it('AG21b: si falla una relectura, tampoco se sabe ya', async () => {
     const onAgenda = vi.fn();
     pintar({ onAgenda });
-    await waitFor(() => expect(onAgenda).toHaveBeenLastCalledWith(AGENDA));
+    await waitFor(() =>
+      expect(onAgenda).toHaveBeenLastCalledWith(AGENDA, false),
+    );
 
     mockVerAgenda.mockRejectedValue(new TypeError('Sin conexión'));
     fireEvent.click(await screen.findByTestId('agenda-quitar-r2'));
     fireEvent.click(screen.getByTestId('agenda-confirmar-si-r2'));
 
-    await waitFor(() => expect(onAgenda).toHaveBeenLastCalledWith(null));
+    // Con el fallo dicho, como las franjas: la ficha no espera para siempre
+    await waitFor(() => expect(onAgenda).toHaveBeenLastCalledWith(null, true));
   });
 
   it('AG21: si no se puede leer, dice que no se sabe', async () => {
@@ -517,7 +524,8 @@ describe('AgendaDeLaCompeticion · lo leído, para la ficha (FE #710)', () => {
     pintar({ onAgenda });
 
     await screen.findByTestId('agenda-sin-cargar');
-    expect(onAgenda).toHaveBeenLastCalledWith(null);
+    // Con el fallo dicho (15 nov 2026): así la ficha sabe que no va a llegar
+    expect(onAgenda).toHaveBeenLastCalledWith(null, true);
   });
 });
 

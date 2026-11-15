@@ -51,7 +51,10 @@ export const MOTIVOS_PARA_NO_APUNTARSE = {
   TEE_WINDOW_HAS_ROOM: 'detail.errors.teeWindowHasRoom',
   TEE_WINDOW_REQUIRED: 'detail.errors.teeWindowRequired',
   TEE_WINDOW_NOT_FOUND: 'detail.errors.teeWindowNotFound',
-  DRAFT_IN_PROGRESS: 'detail.errors.draftInProgress',
+  // Un solo texto para el draft en toda la ficha (15 nov 2026)
+  DRAFT_IN_PROGRESS: 'detail.errors.waitForDraft',
+  // Pasadas las 12:00 del día anterior (15 nov 2026, RyderCupAm #865)
+  ENROLLMENT_DEADLINE_PASSED: 'detail.errors.enrollmentDeadlinePassed',
 };
 
 // Por qué no se formaron los equipos al cerrar (29 oct 2026)
@@ -242,9 +245,13 @@ export const derivarLaFicha = ({
       : competition.teamAssignment);
   // La configuración se corrige mientras haya inscripciones abiertas (BE #323):
   // quien invita antes de poner el campo de golf tiene que poder ponerlo después
+  // Cerrada por el plazo (no a mano), también: se mueve, solo las fechas
+  // (15 nov 2026, RyderCupAm #865)
   const canEdit =
     canManage &&
-    new CompetitionStatus(competition.status).allowsModifications();
+    (new CompetitionStatus(competition.status).allowsModifications() ||
+      (competition.status === 'CLOSED' &&
+        competition.enrollmentClosedByDeadline === true));
   // Quién puede y cuándo lo decide el backend con la misma regla que el borrado
   // (RyderCupAM#347): estado, calendario y rol. Copiar aquí la lista de estados
   // ofrecería el botón en una cancelada ya jugada, donde siempre falla (FE #667)

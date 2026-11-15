@@ -1,6 +1,7 @@
 import { Link } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import {
+  AlertTriangle,
   Award,
   CalendarCheck,
   Clock,
@@ -10,6 +11,7 @@ import {
   Star,
   Swords,
   TrendingDown,
+  TrendingUp,
   Trophy,
   UserPlus,
   XCircle,
@@ -58,6 +60,10 @@ const ICONOS = {
   TOURNAMENT_MATCH_RESULT: Swords,
   TOURNAMENT_FINAL_STANDING: Medal,
   QUICK_MATCH_FINISHED: Flag,
+  HANDICAPS_NOT_UPDATED: TrendingUp,
+  RFEG_HANDICAP_NOT_FOUND: TrendingUp,
+  ENROLLMENTS_CLOSED: CalendarCheck,
+  ENROLLMENT_CLOSE_BLOCKED: AlertTriangle,
 };
 
 const TONOS = {
@@ -82,6 +88,10 @@ const TONOS = {
   TOURNAMENT_MATCH_RESULT: 'bg-indigo-100 text-indigo-700',
   TOURNAMENT_FINAL_STANDING: 'bg-amber-100 text-amber-700',
   QUICK_MATCH_FINISHED: 'bg-primary-100 text-primary-700',
+  HANDICAPS_NOT_UPDATED: 'bg-amber-100 text-amber-700',
+  RFEG_HANDICAP_NOT_FOUND: 'bg-amber-100 text-amber-700',
+  ENROLLMENTS_CLOSED: 'bg-sky-100 text-sky-700',
+  ENROLLMENT_CLOSE_BLOCKED: 'bg-red-100 text-red-700',
 };
 
 const LOGROS = new Set([
@@ -138,6 +148,42 @@ const fraseDeLaEspera = (tipo, payload, t, { ahora, idioma } = {}) => {
   // Sin la hora de la franja, la frase sin ella (revisor)
   const clave = time ? `feed:cards.${tipo}` : `feed:cards.${tipo}_NoTime`;
   return fraseCon(t, clave, { competition, time });
+};
+
+// Los avisos al organizador o al jugador de los hándicaps con la RFEG y del
+// plazo de inscripción (15 nov 2026)
+const AVISOS_DEL_PLAZO_Y_LA_RFEG = new Set([
+  'HANDICAPS_NOT_UPDATED',
+  'RFEG_HANDICAP_NOT_FOUND',
+  'ENROLLMENTS_CLOSED',
+  'ENROLLMENT_CLOSE_BLOCKED',
+]);
+
+// Por qué no se pudieron cerrar solas: un motivo que no se conoce, sin cuántos
+const MOTIVOS_DEL_BLOQUEO = new Set(['NO_TEE_WINDOW', 'NO_HANDICAP']);
+
+const fraseDelPlazoYLaRfeg = (tipo, payload, t) => {
+  const competition = nombreDelTorneo(payload, t);
+  if (tipo === 'HANDICAPS_NOT_UPDATED')
+    return fraseCon(t, 'feed:cards.HANDICAPS_NOT_UPDATED', {
+      competition,
+      count: payload.count ?? 0,
+    });
+  if (tipo === 'ENROLLMENT_CLOSE_BLOCKED') {
+    if (!MOTIVOS_DEL_BLOQUEO.has(payload.reason))
+      return fraseCon(t, 'feed:cards.ENROLLMENT_CLOSE_BLOCKED', {
+        competition,
+      });
+    return fraseCon(
+      t,
+      `feed:cards.ENROLLMENT_CLOSE_BLOCKED_${payload.reason}`,
+      {
+        competition,
+        count: payload.player_count ?? 0,
+      },
+    );
+  }
+  return fraseCon(t, `feed:cards.${tipo}`, { competition });
 };
 
 const HALF_ROUND_HOLES = 9;
@@ -361,6 +407,16 @@ const destinoDe = (tarjeta, yoId, autores) => {
         : null,
     };
   }
+  // La RFEG no le encontró: el nombre se arregla en su perfil (15 nov 2026)
+  if (tarjeta.tipo === 'RFEG_HANDICAP_NOT_FOUND')
+    return { ruta: '/profile/edit' };
+  // Los que no se actualizaron: a la ficha, con su tarjeta de hándicaps a la
+  // vista, como desde «Requiere tu Atención»
+  if (tarjeta.tipo === 'HANDICAPS_NOT_UPDATED' && payload.competition_id)
+    return {
+      ruta: `/competitions/${payload.competition_id}`,
+      estado: { verHandicaps: true },
+    };
   // La posición final de un amigo: la clasificación, en su fila (F5)
   if (
     tarjeta.tipo === 'TOURNAMENT_FINAL_STANDING' &&
@@ -779,6 +835,13 @@ const contenidoDe = (tarjeta, { t, idioma, autores, campos, yoId, ahora }) => {
   if (AVISOS_DE_LA_ESPERA.has(tarjeta.tipo)) {
     return {
       frase: fraseDeLaEspera(tarjeta.tipo, payload, t, { ahora, idioma }),
+      detalles: [],
+    };
+  }
+
+  if (AVISOS_DEL_PLAZO_Y_LA_RFEG.has(tarjeta.tipo)) {
+    return {
+      frase: fraseDelPlazoYLaRfeg(tarjeta.tipo, payload, t),
       detalles: [],
     };
   }

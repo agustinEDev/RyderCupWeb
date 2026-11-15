@@ -55,7 +55,10 @@
     "sessionWithoutMatches": "A session was left without matches",
     "placeAssigned": "You got a place from the waiting list",
     "placeAssignedOk": "Got it",
-    "placeAssignedOkFailed": "Could not mark it as seen. Try again."
+    "placeAssignedOkFailed": "Could not mark it as seen. Try again.",
+    "handicapsNotUpdated_one": "{{count}} player not updated with the RFEG in {{competition}}",
+    "handicapsNotUpdated_other": "{{count}} players not updated with the RFEG in {{competition}}",
+    "rfegHandicapNotFound": "We couldn't find your handicap with the RFEG for {{competition}}. Check that the first and last names in your profile match your licence, and request it again from your profile."
   },
   "upcomingMatches": {
     "title": "My Upcoming Matches",

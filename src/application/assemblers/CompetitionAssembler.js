@@ -80,6 +80,16 @@ class CompetitionAssembler {
       // Cuántos días antes del torneo abren solas las inscripciones, o null si
       // se abren al invitar (FE #678). Sin esto la ficha no puede decir cuándo
       enrollmentOpensDaysBefore: apiData?.enrollment_opens_days_before ?? null,
+      // El plazo de inscripción (15 nov 2026, RyderCupAm #865): las 12:00 del
+      // día anterior con el desfase del campo; si vale para esta (no, si se
+      // abrió a mano pasado el plazo), y si la cerró el plazo y no el organizador
+      enrollmentDeadline:
+        typeof apiData?.enrollment_deadline === 'string'
+          ? apiData.enrollment_deadline
+          : null,
+      enrollmentDeadlineApplies: apiData?.enrollment_deadline_applies === true,
+      enrollmentClosedByDeadline:
+        apiData?.enrollment_closed_by_deadline === true,
       // Si quien la mira puede borrarla ahora (FE #667). Lo decide el backend con la
       // misma regla que el borrado —estado, nada jugado y quién— y solo lo manda la
       // ficha (RyderCupAM#347); sin el campo, no se ofrece

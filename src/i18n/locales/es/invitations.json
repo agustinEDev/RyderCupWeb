@@ -84,6 +84,7 @@
     "userRateLimited_one": "Ya has enviado {{count}} invitación en la última hora. Podrás enviar más en un rato.",
     "userRateLimited_other": "Ya has enviado {{count}} invitaciones en la última hora. Podrás enviar más en un rato.",
     "teamsFormed": "Los equipos ya están formados: habla con el organizador.",
+    "enrollmentDeadlinePassed": "La inscripción está cerrada.",
     "teamsFormedOrganizer": "Con los equipos formados no se invita. Si aún no hay partidos, puedes deshacerlos en la agenda."
   },
   "creator": {

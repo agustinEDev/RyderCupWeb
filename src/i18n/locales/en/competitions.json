@@ -216,6 +216,7 @@
     "error": "Failed to update competition",
     "errorLoading": "Failed to load competition",
     "notEditable": "This competition can no longer be edited: it can only be edited while enrolment is open.",
+    "onlyDates": "Enrolment was closed by the deadline: you can only change the dates. If the new deadline is still ahead, enrolment opens again.",
     "datesLeaveSessionsOut": "Those dates leave these sessions out: {{sesiones}}. Move or delete them before changing the dates.",
     "strokePlayNotSaved": "The general details were saved, but not the tournament settings: {{motivo}}",
     "generalNotSaved": "The tournament settings were saved, but not the general details: {{motivo}}"
@@ -235,6 +236,7 @@
     "invitingOpensScheduled": "Enrolment opens on its own on {{fecha}}. If you invite someone before then, it opens at that moment.",
     "enrollment": "Enrolment",
     "enrollmentOpensOn": "From {{fecha}}",
+    "enrollmentOpenUntil": "Enrolment open until {{dia}} at {{hora}}",
     "actions": {
       "edit": "Edit",
       "more": "More actions",
@@ -367,7 +369,7 @@
       "teeWindowHasRoom": "That tee window has room: join it directly",
       "teeWindowRequired": "Choose a tee window to join",
       "teeWindowNotFound": "That tee window no longer exists: choose another",
-      "draftInProgress": "The draft is in progress: try again when it ends",
+      "enrollmentDeadlinePassed": "Enrolment is closed.",
       "teamsFormed": "Teams are already formed: talk to the organizer.",
       "teamsFormedOrganizer": "Teams are already formed: to let someone in, undo them first.",
       "waitForDraft": "Wait until the draft is over",

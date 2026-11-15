@@ -333,9 +333,29 @@ describe('BrowseCompetitions · apuntarse (release social 3)', () => {
     fireEvent.click(screen.getByText('competitions:enrollment.confirm'));
 
     expect(await screen.findByTestId('apuntarse-error')).toHaveTextContent(
-      'detail.errors.draftInProgress',
+      'detail.errors.waitForDraft',
     );
     expect(screen.getByText('browse.card.request-to-join')).toBeInTheDocument();
+  });
+
+  // Pasadas las 12:00 del día anterior (15 nov 2026): el texto de la app en el
+  // diálogo, como en la ficha, no el del servidor
+  it('pasado el plazo de inscripción se dice en el diálogo, traducido', async () => {
+    mockUnirse.mockResolvedValue([COMPETICION]);
+    mockPedir.mockRejectedValueOnce(
+      Object.assign(new Error('La inscripción está cerrada.'), {
+        status: 400,
+        errorCode: 'ENROLLMENT_DEADLINE_PASSED',
+      }),
+    );
+    conRutas();
+
+    fireEvent.click(await screen.findByText('browse.card.request-to-join'));
+    fireEvent.click(screen.getByText('competitions:enrollment.confirm'));
+
+    expect(await screen.findByTestId('apuntarse-error')).toHaveTextContent(
+      'detail.errors.enrollmentDeadlinePassed',
+    );
   });
 
   it('con los equipos formados: se cierra, se dice y la tarjeta se va (29 oct 2026)', async () => {
