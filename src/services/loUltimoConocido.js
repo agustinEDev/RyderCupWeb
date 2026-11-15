@@ -378,6 +378,15 @@ const LISTAS_DE_PENDIENTES = {
   sobresPendientes: ELEMENTO_DE_LA_SESION,
   sesionesSinPartidos: ELEMENTO_DE_LA_SESION,
   plazasAsignadas: ELEMENTO_DE_LA_SESION,
+  // Los hándicaps sin actualizar con la RFEG (15 nov 2026)
+  rfegSinActualizar: {
+    clave: 'competitionId',
+    tipos: { competitionName: textoONada, count: Number.isFinite },
+  },
+  rfegNoEncontrado: {
+    clave: 'competitionId',
+    tipos: { competitionName: textoONada },
+  },
 };
 const CIFRAS_DE_PENDIENTES = ['pendingInvitations', 'pendingFriendRequests'];
 

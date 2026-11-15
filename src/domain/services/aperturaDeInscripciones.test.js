@@ -15,7 +15,7 @@ import {
  *
  *   #   caso                                  | qué pasa
  *   ----|---------------------------------------|----------------------------
- *   1   el rango                               | de 1 a 14
+ *   1   el rango                               | de 2 a 14 (15 nov 2026)
  *   2   torneo dentro de 30 días               | faltan 30
  *   3   torneo hoy                             | faltan 0
  *   4   torneo pasado                          | negativo
@@ -29,8 +29,10 @@ describe('aperturaDeInscripciones', () => {
     vi.useRealTimers();
   });
 
-  it('1: el rango es de 1 a 14 días', () => {
-    expect(MIN_DIAS_DE_APERTURA).toBe(1);
+  // Con uno abría a las 0:00 del día anterior y cerraba a las 12:00 de ese
+  // mismo día, por el plazo de inscripción (15 nov 2026, RyderCupAm #865)
+  it('1: el rango es de 2 a 14 días', () => {
+    expect(MIN_DIAS_DE_APERTURA).toBe(2);
     expect(MAX_DIAS_DE_APERTURA).toBe(14);
   });
 

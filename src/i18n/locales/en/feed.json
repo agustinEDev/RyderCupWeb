@@ -138,7 +138,18 @@
     "PLACE_FROM_WAITING_LIST_NoTime": "You're in {{competition}} from the waiting list",
     "TEE_WINDOW_REMOVED_NoTime": "A tee window of {{competition}} you were waiting for was removed",
     "ENROLLMENT_NO_PLACE_NoTime": "There was no place for you in {{competition}}: entries are closed",
-    "TEAMS_CHANGED_NoTime": "The teams of {{competition}} have changed: check your envelope"
+    "TEAMS_CHANGED_NoTime": "The teams of {{competition}} have changed: check your envelope",
+    "HANDICAPS_NOT_UPDATED_one": "{{count}} player not updated with the RFEG in {{competition}}",
+    "HANDICAPS_NOT_UPDATED_other": "{{count}} players not updated with the RFEG in {{competition}}",
+    "RFEG_HANDICAP_NOT_FOUND": "We couldn't find your handicap with the RFEG for {{competition}}",
+    "ENROLLMENTS_CLOSED": "Enrolment for {{competition}} has closed",
+    "ENROLLMENT_CLOSE_BLOCKED_NO_TEE_WINDOW_one": "{{count}} player without a tee window in {{competition}}: place them and close",
+    "ENROLLMENT_CLOSE_BLOCKED_NO_TEE_WINDOW_other": "{{count}} players without a tee window in {{competition}}: place them and close",
+    "ENROLLMENT_CLOSE_BLOCKED_NO_HANDICAP_one": "{{count}} player without a handicap in {{competition}}: set it and close",
+    "ENROLLMENT_CLOSE_BLOCKED_NO_HANDICAP_other": "{{count}} players without a handicap in {{competition}}: set it and close",
+    "ENROLLMENT_CLOSE_BLOCKED": "Enrolment for {{competition}} couldn't be closed",
+    "TEAMS_UNDONE_BY_ENTRY": "{{player}} has joined {{competition}}: the teams have been undone and need to be formed again",
+    "INVITATION_ACCEPTABLE_AGAIN": "Enrolment for {{competition}} has reopened: you can now accept your invitation"
   },
   "teeTime": {
     "group": "You have a tee time in {{competition}}: {{when}}",

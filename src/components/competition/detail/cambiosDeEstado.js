@@ -406,6 +406,11 @@ export const crearCambiosDeEstado = (contexto) => {
         setIrASinFranja((v) => v + 1);
         return;
       }
+      // Con la sala de draft abierta no se reabre (15 nov 2026): el texto de la app
+      if (error?.errorCode === 'DRAFT_IN_PROGRESS') {
+        customToast.error(t('detail.errors.waitForDraft'));
+        return;
+      }
       customToast.error(error.message || t('detail.failedToUpdateCompetition'));
     } finally {
       setIsProcessing(false);

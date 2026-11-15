@@ -35,6 +35,7 @@ class InvitationAssembler {
 
       // Computed fields
       isPending: invitation.isPending(),
+      isOnHold: invitation.isOnHold(),
       isAccepted: invitation.isAccepted(),
       isDeclined: invitation.isDeclined(),
       isExpired: invitation.isExpired(),

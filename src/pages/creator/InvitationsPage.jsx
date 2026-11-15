@@ -60,15 +60,34 @@ const todasLasPaginas = async (pideLaPagina, sacaLasFilas) => {
   return filas;
 };
 
+// Las de la lista con el filtro elegido. «En lista de espera» se lee entera y
+// sin estado y se elige aquí (15 nov 2026): el servidor de antes no conoce
+// ON_HOLD, contesta 400 y la pantalla echaría al organizador
+const lasDeLaPantalla = (competitionId, statusFilter) => {
+  if (statusFilter !== 'ON_HOLD')
+    return listCompetitionInvitationsUseCase.execute(
+      competitionId,
+      statusFilter ? { status: statusFilter } : {},
+    );
+  return todasLasPaginas(
+    (page) =>
+      listCompetitionInvitationsUseCase.execute(competitionId, {
+        limit: POR_PAGINA,
+        page,
+      }),
+    (res) => res.invitations ?? [],
+  ).then((lista) => {
+    const enEspera = lista.filter((inv) => inv.status === 'ON_HOLD');
+    return { invitations: enEspera, totalCount: enEspera.length };
+  });
+};
+
 // Lo que pinta la pantalla: la competición y sus invitaciones con el filtro
 // elegido
 const pedirLaPantalla = (competitionId, statusFilter) =>
   Promise.all([
     getCompetitionDetailUseCase.execute(competitionId),
-    listCompetitionInvitationsUseCase.execute(
-      competitionId,
-      statusFilter ? { status: statusFilter } : {},
-    ),
+    lasDeLaPantalla(competitionId, statusFilter),
   ]);
 
 // Quién está dentro: solo APPROVED. Sin filtro vienen también REQUESTED,
@@ -82,18 +101,21 @@ const idsDeLosInscritos = (competitionId) =>
       return inscripciones.map((e) => e.userId ?? e.user_id).filter(Boolean);
     });
 
-// Las pendientes, enteras y sin el filtro de la pantalla: `invitations` está
-// filtrada por lo que el creador haya elegido arriba y paginada
+// Las que siguen vivas: pendientes y en lista de espera (15 nov 2026). A quien
+// ya tiene una de las dos no se le ofrece otra: el servidor la rechazaría.
+// Enteras y sin el filtro de la pantalla (`invitations` está filtrada por lo
+// que el creador haya elegido arriba y paginada), y en UNA lectura sin estado:
+// el servidor de antes no conoce ON_HOLD y contestaría 400 si se le pidiera
+const VIVAS = new Set(['PENDING', 'ON_HOLD']);
 const lasPendientes = (competitionId) =>
   todasLasPaginas(
     (page) =>
       listCompetitionInvitationsUseCase.execute(competitionId, {
-        status: 'PENDING',
         limit: POR_PAGINA,
         page,
       }),
     (res) => res.invitations ?? [],
-  );
+  ).then((lista) => lista.filter((inv) => VIVAS.has(inv.status)));
 
 // A quién va una invitación: por su usuario y por su correo, los que traiga
 const clavesDe = (invitation) =>
@@ -313,6 +335,18 @@ const InvitationsPage = () => {
       customToast.error(t('errors.teamsFormedOrganizer'));
       setShowSendModal(false);
       recargarEnSilencio();
+      // Pasado el plazo de inscripción (15 nov 2026): su texto, no el genérico
+    } else if (error?.errorCode === 'ENROLLMENT_DEADLINE_PASSED') {
+      customToast.error(t('errors.enrollmentDeadlinePassed'));
+      setShowSendModal(false);
+      recargarEnSilencio();
+      // Con la sala de draft abierta no se invita (15 nov 2026): su texto, no
+      // «ya estaba invitado», que es lo que decía el 409 genérico
+    } else if (error?.errorCode === 'DRAFT_IN_PROGRESS') {
+      customToast.error(t('errors.draftInProgress'));
+      // Ya tiene una en lista de espera: su texto, no «ya estaba invitado»
+    } else if (error?.errorCode === 'INVITATION_ON_HOLD_EXISTS') {
+      customToast.error(t('errors.onHoldExists'));
       // El freno por hora de la competición: con cuántas admite, y no el «espera
       // un minuto» del 429 general, que es de otro límite (probado en el Kind)
     } else if (
@@ -633,6 +667,7 @@ const InvitationsPage = () => {
             <option value="ACCEPTED">{t('status.ACCEPTED')}</option>
             <option value="DECLINED">{t('status.DECLINED')}</option>
             <option value="EXPIRED">{t('status.EXPIRED')}</option>
+            <option value="ON_HOLD">{t('status.ON_HOLD')}</option>
             <option value="NO_ROOM">{t('status.NO_ROOM')}</option>
             <option value="CANCELLED">{t('status.CANCELLED')}</option>
           </select>

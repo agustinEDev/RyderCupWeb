@@ -185,6 +185,14 @@ describe('armaLaLineaDeActividad', () => {
     'TOURNAMENT_MATCH_RESULT',
     'TOURNAMENT_FINAL_STANDING',
     'QUICK_MATCH_FINISHED',
+    // Hándicaps con la RFEG y el plazo de inscripción (15 nov 2026)
+    'HANDICAPS_NOT_UPDATED',
+    'RFEG_HANDICAP_NOT_FOUND',
+    'ENROLLMENTS_CLOSED',
+    'ENROLLMENT_CLOSE_BLOCKED',
+    // Invitaciones en espera y equipos deshechos al entrar alguien (15 nov 2026)
+    'INVITATION_ACCEPTABLE_AGAIN',
+    'TEAMS_UNDONE_BY_ENTRY',
   ])('keeps the known type %s', (type) => {
     const linea = armaLaLineaDeActividad({
       eventos: [evento({ type })],

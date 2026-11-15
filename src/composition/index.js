@@ -137,6 +137,7 @@ import TakeTeeWindowPlaceUseCase from '../application/use_cases/schedule/TakeTee
 import ReleaseTeeWindowPlaceUseCase from '../application/use_cases/schedule/ReleaseTeeWindowPlaceUseCase';
 import JoinWaitingListUseCase from '../application/use_cases/schedule/JoinWaitingListUseCase';
 import LeaveWaitingListUseCase from '../application/use_cases/schedule/LeaveWaitingListUseCase';
+import ListMyHandicapsNotUpdatedUseCase from '../application/use_cases/competition/ListMyHandicapsNotUpdatedUseCase';
 import ListMyAssignedPlacesUseCase from '../application/use_cases/schedule/ListMyAssignedPlacesUseCase';
 import AcknowledgeAssignedPlaceUseCase from '../application/use_cases/schedule/AcknowledgeAssignedPlaceUseCase';
 // Partidas de las franjas (FE #824, PR 6)
@@ -235,7 +236,6 @@ import RemoveEnrolledPlayerUseCase from '../application/use_cases/enrollment/Rem
 import SetCustomHandicapUseCase from '../application/use_cases/enrollment/SetCustomHandicapUseCase';
 import RemoveCustomHandicapUseCase from '../application/use_cases/enrollment/RemoveCustomHandicapUseCase';
 import SetNamePreferenceUseCase from '../application/use_cases/enrollment/SetNamePreferenceUseCase';
-import DirectEnrollUseCase from '../application/use_cases/enrollment/DirectEnrollUseCase';
 
 // Quick Match Use Cases (FE #236)
 import ApiQuickMatchRepository from '../infrastructure/repositories/ApiQuickMatchRepository';
@@ -358,6 +358,9 @@ const cancelScheduledHandicapUpdateUseCase =
   new CancelScheduledHandicapUpdateUseCase({
     competitionRepository: apiCompetitionRepository,
   });
+const listMyHandicapsNotUpdatedUseCase = new ListMyHandicapsNotUpdatedUseCase({
+  competitionRepository: apiCompetitionRepository,
+});
 const listUserCompetitionsUseCase = new ListUserCompetitionsUseCase({
   competitionRepository: apiCompetitionRepository,
 });
@@ -750,7 +753,6 @@ const removeCustomHandicapUseCase = new RemoveCustomHandicapUseCase(
 const setNamePreferenceUseCase = new SetNamePreferenceUseCase(
   apiEnrollmentRepository,
 );
-const directEnrollUseCase = new DirectEnrollUseCase(apiEnrollmentRepository);
 
 // Quick Match Use Cases (FE #236)
 const createAndStartQuickMatchUseCase = new CreateAndStartQuickMatchUseCase({
@@ -963,6 +965,7 @@ export {
   launchHandicapUpdateUseCase,
   scheduleHandicapUpdateUseCase,
   cancelScheduledHandicapUpdateUseCase,
+  listMyHandicapsNotUpdatedUseCase,
   listUserCompetitionsUseCase,
   getCompetitionDetailUseCase,
   getCompetitionSummaryUseCase,
@@ -995,7 +998,6 @@ export {
   setCustomHandicapUseCase,
   removeCustomHandicapUseCase,
   setNamePreferenceUseCase,
-  directEnrollUseCase,
   // Device Management Use Cases (v1.13.0)
   getActiveDevicesUseCase,
   revokeDeviceUseCase,

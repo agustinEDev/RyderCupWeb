@@ -17,6 +17,8 @@ const PanelesDelOrganizador = ({
   claveDeFranjas,
   cierre,
   handleStatusChange,
+  verHandicaps = false,
+  alVerLosHandicaps,
 }) => (
   <>
     {/* Los hándicaps del organizador, desde el cierre (FE #824, PR 5):
@@ -31,6 +33,8 @@ const PanelesDelOrganizador = ({
             handicapUpdate={competition.handicapUpdate}
             handicapUpdateWindow={competition.handicapUpdateWindow}
             onReleer={releerHandicaps}
+            traerALaVista={verHandicaps}
+            alTraerla={alVerLosHandicaps}
           />
         </div>
       )}

@@ -216,6 +216,8 @@
     "error": "Error al actualizar la competición",
     "errorLoading": "Error al cargar la competición",
     "notEditable": "Esta competición ya no se puede editar: solo se edita mientras las inscripciones están abiertas.",
+    "onlyDates": "Las inscripciones las cerró el plazo: solo puedes cambiar las fechas. Si el nuevo plazo queda por delante, se vuelven a abrir.",
+    "datesDuringDraft": "No se pueden mover las fechas con la sala de draft abierta: termina antes el draft.",
     "datesLeaveSessionsOut": "Con esas fechas se quedan fuera estas sesiones: {{sesiones}}. Muévelas o bórralas antes de cambiar las fechas.",
     "strokePlayNotSaved": "Se guardaron los datos generales, pero no los ajustes del torneo: {{motivo}}",
     "generalNotSaved": "Se guardaron los ajustes del torneo, pero no los datos generales: {{motivo}}"
@@ -235,6 +237,7 @@
     "invitingOpensScheduled": "Las inscripciones se abren solas el {{fecha}}. Si invitas a alguien antes, se abren en ese momento.",
     "enrollment": "Inscripciones",
     "enrollmentOpensOn": "A partir del {{fecha}}",
+    "enrollmentOpenUntil": "Inscripción abierta hasta el {{dia}} a las {{hora}}",
     "actions": {
       "edit": "Editar",
       "more": "Más acciones",
@@ -367,7 +370,7 @@
       "teeWindowHasRoom": "Esa franja tiene sitio: apúntate directamente",
       "teeWindowRequired": "Elige una franja para apuntarte",
       "teeWindowNotFound": "Esa franja ya no existe: elige otra",
-      "draftInProgress": "Ahora mismo se está haciendo el draft: inténtalo cuando acabe",
+      "enrollmentDeadlinePassed": "La inscripción está cerrada.",
       "teamsFormed": "Los equipos ya están formados: habla con el organizador.",
       "teamsFormedOrganizer": "Los equipos ya están formados: para que entre alguien, deshazlos primero.",
       "waitForDraft": "Espera a que termine el draft",

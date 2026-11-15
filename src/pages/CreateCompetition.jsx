@@ -52,6 +52,7 @@ import {
   ajustesParaCrear,
   cambiosDeAjustes,
   primeroLosAjustes,
+  errorDeAjustes,
 } from '../utils/ajustesDeStrokePlay';
 import { cupoDeJugadores, CUPO_POR_DEFECTO } from '../utils/cupoDeJugadores';
 import { CompetitionStatus } from '../domain/value_objects/CompetitionStatus';
@@ -158,7 +159,15 @@ const leeLaCompeticionParaEditar = async (competitionId) => {
   // Por URL se llegaba al formulario de una cerrada, y solo al guardar
   // fallaba, con el estado sin traducir (FE #710). La misma regla que
   // ofrece «Editar» en la ficha
-  if (!new CompetitionStatus(competition.status).allowsModifications()) {
+  // Cerrada por el plazo (no por el organizador), se mueve: solo las fechas
+  // (15 nov 2026, RyderCupAm #865)
+  const soloFechas =
+    competition.status === 'CLOSED' &&
+    competition.enrollmentClosedByDeadline === true;
+  if (
+    !soloFechas &&
+    !new CompetitionStatus(competition.status).allowsModifications()
+  ) {
     return { competition, editable: false };
   }
 
@@ -211,6 +220,7 @@ const leeLaCompeticionParaEditar = async (competitionId) => {
   return {
     competition,
     editable: true,
+    soloFechas,
     mainCountryCode,
     adjacentCountry1,
     adjacentCountry2,
@@ -219,6 +229,19 @@ const leeLaCompeticionParaEditar = async (competitionId) => {
     golfCoursesData,
   };
 };
+
+/**
+ * Lo que no se toca con la competición cerrada por el plazo: desactivado, no
+ * escondido (15 nov 2026). Sin eso, lo de dentro queda igual que siempre.
+ */
+const SoloLectura = ({ activa, className, children }) =>
+  activa ? (
+    <fieldset disabled className={`min-w-0 ${className ?? ''}`}>
+      {children}
+    </fieldset>
+  ) : (
+    children
+  );
 
 const CreateCompetition = () => {
   const navigate = useNavigate();
@@ -235,6 +258,20 @@ const CreateCompetition = () => {
   // de tipo— y al enviar creaba una competición nueva en vez de editar la que
   // se había abierto (`/code-review`)
   const isEditMode = Boolean(competitionId);
+  // Cerrada por el plazo de inscripción: solo se cambian las fechas, y el
+  // servidor la reabre si el plazo nuevo queda por delante (RyderCupAm #865)
+  const [soloFechas, setSoloFechas] = useState(false);
+  // Lo que no vale de las fechas nuevas, junto a ellas. Un objeto y no su texto:
+  // el mismo aviso repetido tiene que volver a traerse a la vista
+  const [errorDeLasFechas, setErrorDeLasFechas] = useState(null);
+  const avisoDeLasFechas = useRef(null);
+  // En el móvil se guarda desde abajo y el aviso queda arriba: a la vista y con
+  // el foco, como el aviso general (FE #731)
+  useEffect(() => {
+    if (!errorDeLasFechas) return;
+    avisoDeLasFechas.current?.scrollIntoView({ block: 'center' });
+    avisoDeLasFechas.current?.focus({ preventScroll: true });
+  }, [errorDeLasFechas]);
   // El género del organizador, que juega: solo al crear y solo si le falta (#710)
   const generoParaApuntarse = useGeneroParaApuntarse();
   const [genero, setGenero] = useState('');
@@ -497,6 +534,7 @@ const CreateCompetition = () => {
       olvidaLosVecinosPedidos(2);
       setAdjacentCountries2(datos.vecinos2);
     }
+    setSoloFechas(datos.soloFechas === true);
     // Lo que había guardado: vaciar el campo no puede recortarlo
     cupoCargado.current = formDataToSet.numberOfPlayers;
     ajustesCargados.current = competition.strokePlay ?? null;
@@ -795,6 +833,33 @@ const CreateCompetition = () => {
     return t('edit.datesLeaveSessionsOut', { sesiones });
   };
 
+  // Solo las fechas (15 nov 2026): se comprueban ellas, aquí mismo, y que las
+  // jornadas de cada jugador quepan; lo demás no se puede tocar. Sin petición
+  // que vaya a fallar
+  const errorDeLasFechasNuevas = () => {
+    const { startDate, endDate } = formData;
+    if (!startDate || !endDate) return t('create.errors.datesRequired');
+    if (new Date(startDate) > new Date(endDate))
+      return t('create.errors.endDateAfterStart');
+    if (conEquipos || !formData.strokePlay) return null;
+    const dias = diasDelTorneo(startDate, endDate);
+    return errorDeAjustes(formData.strokePlay, dias) === 'matchdaysMoreThanDays'
+      ? t('create.errors.matchdaysMoreThanDays', { count: dias })
+      : null;
+  };
+
+  // Por qué no se guardó al editar: las sesiones que se quedan fuera, con sus
+  // días; con un código conocido, su texto; con otro, el genérico; sin código,
+  // lo que diga el servidor, como siempre (15 nov 2026)
+  const MOTIVOS_AL_EDITAR = { DRAFT_IN_PROGRESS: 'edit.datesDuringDraft' };
+  const motivoDelFalloAlEditar = (error) => {
+    const sesiones = sesionesQueQuedanFuera(error);
+    if (sesiones) return sesiones;
+    if (error?.errorCode)
+      return t(MOTIVOS_AL_EDITAR[error.errorCode] ?? 'edit.error');
+    return error?.message || t('edit.error');
+  };
+
   // El aviso del nombre, y el campo a la vista y con el foco: el botón queda
   // abajo y en un teléfono no se vería qué falló (como el aviso de arriba)
   const senalaElNombre = (clave) => {
@@ -818,6 +883,13 @@ const CreateCompetition = () => {
       }
     }
 
+    if (soloFechas) {
+      const fallo = errorDeLasFechasNuevas();
+      setErrorDeLasFechas(fallo ? { texto: fallo } : null);
+      if (fallo) return;
+      await crear(null);
+      return;
+    }
     // UI Validation
     // Los campos de golf solo se piden al crear: al editar los gestiona la ficha
     const validationError = validateCompetitionForm(formData, {
@@ -889,6 +961,10 @@ const CreateCompetition = () => {
     // Solo el 409 de la propia competición es «ese nombre ya lo tienes»: el del
     // perfil o el de los ajustes no tienen nada que ver con él (`/code-review`)
     let enLaCompeticion = false;
+    // El nombre ya lo tiene otra: un 409 de lo general y sin código. Con código
+    // (la sala de draft abierta, por ejemplo) es otra cosa (15 nov 2026)
+    const esElNombreYaUsado = (error) =>
+      enLaCompeticion && error?.status === 409 && !error?.errorCode;
 
     try {
       const numPlayers = cupoDeJugadores(
@@ -982,22 +1058,19 @@ const CreateCompetition = () => {
             // Lo general fue segundo y el nombre ya lo tiene otra: junto al
             // campo, como si fuera la primera (revisión de la FE-B). Los
             // ajustes ya quedaron guardados y al reintentar no se reenvían
-            if (enLaCompeticion && error?.status === 409) {
+            // Solo el 409 sin código es el del nombre (15 nov 2026)
+            if (esElNombreYaUsado(error)) {
               senalaElNombre('nameTaken');
               return;
             }
             // El motivo como en cualquier otro fallo: las sesiones que se quedan
-            // fuera, con sus días, antes que el texto en bruto (revisor)
+            // fuera, con sus días, antes que el texto en bruto (revisor); con un
+            // código, su texto o el genérico
             const texto = t(
               ajustesPrimero
                 ? 'edit.generalNotSaved'
                 : 'edit.strokePlayNotSaved',
-              {
-                motivo:
-                  sesionesQueQuedanFuera(error) ||
-                  error.message ||
-                  t('edit.error'),
-              },
+              { motivo: motivoDelFalloAlEditar(error) },
             );
             customToast.error(texto);
             setMessage({ type: 'error', text: texto });
@@ -1080,9 +1153,17 @@ const CreateCompetition = () => {
         `Error ${isEditMode ? 'updating' : 'creating'} competition:`,
         error,
       );
+      // Con la sala de draft abierta no se mueven las fechas (15 nov 2026). Antes
+      // que el 409 del nombre, que lo tomaría por un nombre ya usado
+      if (isEditMode && error?.errorCode === 'DRAFT_IN_PROGRESS') {
+        const texto = t('edit.datesDuringDraft');
+        customToast.error(texto);
+        setMessage({ type: 'error', text: texto });
+        return;
+      }
       // Ya tiene otra con ese nombre: junto al campo y en el idioma de la app,
       // no el texto del servidor (RyderCupAm#540)
-      if (enLaCompeticion && error?.status === 409) {
+      if (esElNombreYaUsado(error)) {
         senalaElNombre('nameTaken');
         return;
       }
@@ -1091,6 +1172,14 @@ const CreateCompetition = () => {
       if (error?.errorCode === 'EMAIL_NOT_VERIFIED') {
         setFaltaVerificar(true);
         globalThis.scrollTo?.({ top: 0, behavior: 'smooth' });
+        return;
+      }
+      // Solo las fechas: el error del servidor junto a ellas, traducido por su
+      // código si se conoce; si no, el genérico, nunca el texto en bruto
+      if (soloFechas) {
+        const texto = sesionesQueQuedanFuera(error) || t('edit.error');
+        customToast.error(texto);
+        setErrorDeLasFechas({ texto });
         return;
       }
       const texto =
@@ -1202,6 +1291,17 @@ const CreateCompetition = () => {
                   </button>
                 )}
 
+                {/* Cerrada por el plazo, solo las fechas: se dice arriba */}
+                {soloFechas && (
+                  <p
+                    data-testid="solo-las-fechas"
+                    role="status"
+                    className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900"
+                  >
+                    {t('edit.onlyDates')}
+                  </p>
+                )}
+
                 {/* Lo básico de la competición, en UNA tarjeta: nombre, fechas y
                   país eran tres, y cada una pagaba su icono y su marco. Medido a
                   360 px, ese adorno costaba 230 px de scroll (Agustín, 19 sep) */}
@@ -1210,12 +1310,14 @@ const CreateCompetition = () => {
                   resto del camino (FE #695). Al crear ya viene elegido del paso
                   anterior; aquí se cambia */}
                 {conEquipos && (
-                  <div className="border border-gray-200 rounded-xl p-4">
-                    <SetupModeChooser
-                      value={formData.setupMode}
-                      onSelect={eligeElModo}
-                    />
-                  </div>
+                  <SoloLectura activa={soloFechas}>
+                    <div className="border border-gray-200 rounded-xl p-4">
+                      <SetupModeChooser
+                        value={formData.setupMode}
+                        onSelect={eligeElModo}
+                      />
+                    </div>
+                  </SoloLectura>
                 )}
 
                 {/* El organizador juega: su género, solo si le falta (#710) */}
@@ -1239,117 +1341,121 @@ const CreateCompetition = () => {
                   </div>
 
                   <div className="space-y-3">
-                    {/* Arriba y pequeño: de quién es el torneo se decide al montarlo,
+                    <SoloLectura activa={soloFechas} className="space-y-3">
+                      {/* Arriba y pequeño: de quién es el torneo se decide al montarlo,
                       no en «Más opciones». Privada por defecto, que es lo que hay
                       hoy y lo que no enseña nada a nadie por error (FE #664) */}
-                    <div>
-                      <span
-                        id="etiqueta-visibilidad"
-                        className="block text-sm font-medium text-gray-700 mb-2"
-                      >
-                        {t('create.visibility')}
-                      </span>
-                      {/* Los dos botones van juntos y con su pregunta: sueltos, un
+                      <div>
+                        <span
+                          id="etiqueta-visibilidad"
+                          className="block text-sm font-medium text-gray-700 mb-2"
+                        >
+                          {t('create.visibility')}
+                        </span>
+                        {/* Los dos botones van juntos y con su pregunta: sueltos, un
                         lector de pantalla dice «Solo invitados, pulsado» sin
                         decir a qué pregunta responde */}
-                      <div
-                        role="group"
-                        aria-labelledby="etiqueta-visibilidad"
-                        className="flex flex-wrap gap-2"
-                      >
-                        {['PRIVATE', 'PUBLIC'].map((cual) => (
-                          <button
-                            key={cual}
-                            type="button"
-                            data-testid={`visibilidad-${cual}`}
-                            aria-pressed={formData.visibility === cual}
-                            onClick={() =>
-                              setFormData((prev) => ({
-                                ...prev,
-                                visibility: cual,
-                              }))
-                            }
-                            className={`border-2 rounded-lg text-sm px-3 py-2 transition-colors ${
-                              formData.visibility === cual
-                                ? 'bg-primary text-white border-primary'
-                                : 'bg-white text-gray-600 border-gray-200 hover:border-primary hover:text-primary'
-                            }`}
-                          >
-                            {t(
-                              `create.visibility${cual === 'PRIVATE' ? 'Private' : 'Public'}`,
-                            )}
-                          </button>
-                        ))}
-                      </div>
-                      {/* «Privada» a secas no dice si la gente puede apuntarse sola */}
-                      <p
-                        data-testid="visibilidad-explicacion"
-                        className="text-xs text-gray-500 mt-1"
-                      >
-                        {t(
-                          formData.visibility === 'PUBLIC'
-                            ? 'create.visibilityPublicHelp'
-                            : 'create.visibilityPrivateHelp',
-                        )}
-                      </p>
-                    </div>
-
-                    <div>
-                      <label
-                        htmlFor="competitionName"
-                        className="block text-sm font-medium text-gray-700 mb-1"
-                      >
-                        {t('create.competitionName')}
-                      </label>
-                      <input
-                        ref={campoDelNombre}
-                        id="competitionName"
-                        data-testid="campo-nombre"
-                        type="text"
-                        name="competitionName"
-                        value={formData.competitionName}
-                        onChange={handleInputChange}
-                        aria-invalid={errorDelNombre ? 'true' : undefined}
-                        aria-describedby={
-                          errorDelNombre ? 'error-del-nombre' : undefined
-                        }
-                        // El ejemplo, del tipo elegido: «Ryder Cup de amigos» en un Medal no (pasada)
-                        placeholder={t(
-                          formData.tournamentType && !conEquipos
-                            ? `create.competitionNamePlaceholderFor.${formData.tournamentType}`
-                            : 'create.competitionNamePlaceholder',
-                        )}
-                        className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary ${errorDelNombre ? 'border-red-400' : 'border-gray-300'}`}
-                      />
-                      {errorDelNombre && (
-                        <p
-                          id="error-del-nombre"
-                          data-testid="error-del-nombre"
-                          className="mt-1 text-sm text-red-700"
+                        <div
+                          role="group"
+                          aria-labelledby="etiqueta-visibilidad"
+                          className="flex flex-wrap gap-2"
                         >
-                          {t(`create.errors.${errorDelNombre}`)}
+                          {['PRIVATE', 'PUBLIC'].map((cual) => (
+                            <button
+                              key={cual}
+                              type="button"
+                              data-testid={`visibilidad-${cual}`}
+                              aria-pressed={formData.visibility === cual}
+                              onClick={() =>
+                                setFormData((prev) => ({
+                                  ...prev,
+                                  visibility: cual,
+                                }))
+                              }
+                              className={`border-2 rounded-lg text-sm px-3 py-2 transition-colors ${
+                                formData.visibility === cual
+                                  ? 'bg-primary text-white border-primary'
+                                  : 'bg-white text-gray-600 border-gray-200 hover:border-primary hover:text-primary'
+                              }`}
+                            >
+                              {t(
+                                `create.visibility${cual === 'PRIVATE' ? 'Private' : 'Public'}`,
+                              )}
+                            </button>
+                          ))}
+                        </div>
+                        {/* «Privada» a secas no dice si la gente puede apuntarse sola */}
+                        <p
+                          data-testid="visibilidad-explicacion"
+                          className="text-xs text-gray-500 mt-1"
+                        >
+                          {t(
+                            formData.visibility === 'PUBLIC'
+                              ? 'create.visibilityPublicHelp'
+                              : 'create.visibilityPrivateHelp',
+                          )}
                         </p>
-                      )}
-                    </div>
+                      </div>
 
-                    {/* ¿Juega el organizador? Solo al crear un Stableford o un
-                      Medal: si no, no queda inscrito (RyderCupAm#552) */}
-                    {!isEditMode && formData.tournamentType && !conEquipos && (
-                      <label className="flex min-h-11 items-center gap-2 text-sm text-gray-700">
+                      <div>
+                        <label
+                          htmlFor="competitionName"
+                          className="block text-sm font-medium text-gray-700 mb-1"
+                        >
+                          {t('create.competitionName')}
+                        </label>
                         <input
-                          type="checkbox"
-                          checked={formData.organizerPlays}
-                          onChange={(e) =>
-                            setFormData((prev) => ({
-                              ...prev,
-                              organizerPlays: e.target.checked,
-                            }))
+                          ref={campoDelNombre}
+                          id="competitionName"
+                          data-testid="campo-nombre"
+                          type="text"
+                          name="competitionName"
+                          value={formData.competitionName}
+                          onChange={handleInputChange}
+                          aria-invalid={errorDelNombre ? 'true' : undefined}
+                          aria-describedby={
+                            errorDelNombre ? 'error-del-nombre' : undefined
                           }
-                          className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                          // El ejemplo, del tipo elegido: «Ryder Cup de amigos» en un Medal no (pasada)
+                          placeholder={t(
+                            formData.tournamentType && !conEquipos
+                              ? `create.competitionNamePlaceholderFor.${formData.tournamentType}`
+                              : 'create.competitionNamePlaceholder',
+                          )}
+                          className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary ${errorDelNombre ? 'border-red-400' : 'border-gray-300'}`}
                         />
-                        {t('create.organizerPlays')}
-                      </label>
-                    )}
+                        {errorDelNombre && (
+                          <p
+                            id="error-del-nombre"
+                            data-testid="error-del-nombre"
+                            className="mt-1 text-sm text-red-700"
+                          >
+                            {t(`create.errors.${errorDelNombre}`)}
+                          </p>
+                        )}
+                      </div>
+
+                      {/* ¿Juega el organizador? Solo al crear un Stableford o un
+                      Medal: si no, no queda inscrito (RyderCupAm#552) */}
+                      {!isEditMode &&
+                        formData.tournamentType &&
+                        !conEquipos && (
+                          <label className="flex min-h-11 items-center gap-2 text-sm text-gray-700">
+                            <input
+                              type="checkbox"
+                              checked={formData.organizerPlays}
+                              onChange={(e) =>
+                                setFormData((prev) => ({
+                                  ...prev,
+                                  organizerPlays: e.target.checked,
+                                }))
+                              }
+                              className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                            />
+                            {t('create.organizerPlays')}
+                          </label>
+                        )}
+                    </SoloLectura>
 
                     {/* Los campos de fecha se salían de la tarjeta en el iPhone (FE #648).
                     Medido en un iPhone 14 real: con el mismo `w-full`, el campo de
@@ -1400,171 +1506,191 @@ const CreateCompetition = () => {
                       </div>
                     </div>
 
-                    {/* El país principal se elige entre los 200: es el único de
-                      los tres selectores que necesita búsqueda, porque los
-                      adyacentes ya listan solo países fronterizos */}
-                    <CountryAutocomplete
-                      id="country"
-                      countries={allCountries}
-                      value={formData.country?.code || ''}
-                      label={t('create.country')}
-                      placeholder={t('create.selectCountry')}
-                      onChange={(code) => {
-                        const selectedCountry = allCountries.find(
-                          (c) => c.code === code,
-                        );
-                        if (selectedCountry) {
-                          handleCountrySelect(selectedCountry);
-                        } else {
-                          setFormData((prev) => ({
-                            ...prev,
-                            country: null,
-                            adjacentCountry1: '',
-                            adjacentCountry2: '',
-                            showAdjacentCountry1: false,
-                            showAdjacentCountry2: false,
-                          }));
-                        }
-                      }}
-                    />
-
-                    {/* Adjacent Country 1 */}
-                    {formData.country &&
-                      !formData.showAdjacentCountry1 &&
-                      adjacentCountries1.length > 0 && (
-                        <button
-                          type="button"
-                          onClick={handleAddAdjacentCountry1}
-                          className="flex items-center gap-2 text-sm text-primary hover:text-primary/80 font-medium"
-                        >
-                          <Plus className="w-4 h-4" />
-                          {t('create.addAdjacentCountry')}
-                        </button>
-                      )}
-
-                    {formData.showAdjacentCountry1 && (
-                      <div className="flex items-end gap-2">
-                        <div className="flex-1">
-                          <label
-                            htmlFor="adjacentCountry1"
-                            className="block text-sm font-medium text-gray-700 mb-1"
-                          >
-                            {t('create.adjacentCountry')}
-                          </label>
-                          <div className="relative">
-                            <select
-                              id="adjacentCountry1"
-                              name="adjacentCountry1"
-                              value={formData.adjacentCountry1}
-                              onChange={handleAdjacentCountry1Change}
-                              className={`w-full py-2 px-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary appearance-none pr-10 ${
-                                formData.adjacentCountry1 ? 'pl-12' : 'pl-3'
-                              }`}
-                            >
-                              <option value="">
-                                {t('create.selectAdjacentCountry')}
-                              </option>
-                              {sortedAdjacentCountries1.map((country) => (
-                                <option key={country.id} value={country.id}>
-                                  {formatCountryName(country, i18n.language)}
-                                </option>
-                              ))}
-                            </select>
-                            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" />
-                            {/* Show flag if country is selected */}
-                            {formData.adjacentCountry1 && (
-                              <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none">
-                                <CountryFlag
-                                  countryCode={formData.adjacentCountry1}
-                                  style={{ width: '24px', height: 'auto' }}
-                                />
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={handleRemoveAdjacentCountry1}
-                          aria-label={t('create.removeCountryField', {
-                            field: t('create.adjacentCountry'),
-                          })}
-                          className="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg"
-                        >
-                          <X className="w-5 h-5" />
-                        </button>
-                      </div>
+                    {/* Lo que el servidor no aceptó de las fechas nuevas: junto a
+                        ellas, que son lo único que se puede cambiar */}
+                    {errorDeLasFechas && (
+                      <p
+                        ref={avisoDeLasFechas}
+                        tabIndex={-1}
+                        data-testid="error-de-las-fechas"
+                        role="alert"
+                        // Recibe el foco: con un anillo que se vea, como el aviso general
+                        className="rounded text-sm text-red-700 focus:outline-none focus:ring-2 focus:ring-red-400 focus:ring-offset-2"
+                      >
+                        {errorDeLasFechas.texto}
+                      </p>
                     )}
 
-                    {/* Adjacent Country 2 */}
-                    {formData.adjacentCountry1 &&
-                      !formData.showAdjacentCountry2 &&
-                      adjacentCountries2.length > 0 && (
-                        <button
-                          type="button"
-                          onClick={handleAddAdjacentCountry2}
-                          className="flex items-center gap-2 text-sm text-primary hover:text-primary/80 font-medium"
-                        >
-                          <Plus className="w-4 h-4" />
-                          {t('create.addThirdCountry')}
-                        </button>
-                      )}
+                    <SoloLectura activa={soloFechas} className="space-y-3">
+                      {/* El país principal se elige entre los 200: es el único de
+                      los tres selectores que necesita búsqueda, porque los
+                      adyacentes ya listan solo países fronterizos */}
+                      <CountryAutocomplete
+                        id="country"
+                        countries={allCountries}
+                        value={formData.country?.code || ''}
+                        label={t('create.country')}
+                        placeholder={t('create.selectCountry')}
+                        onChange={(code) => {
+                          const selectedCountry = allCountries.find(
+                            (c) => c.code === code,
+                          );
+                          if (selectedCountry) {
+                            handleCountrySelect(selectedCountry);
+                          } else {
+                            setFormData((prev) => ({
+                              ...prev,
+                              country: null,
+                              adjacentCountry1: '',
+                              adjacentCountry2: '',
+                              showAdjacentCountry1: false,
+                              showAdjacentCountry2: false,
+                            }));
+                          }
+                        }}
+                      />
 
-                    {formData.showAdjacentCountry2 && (
-                      <div className="flex items-end gap-2">
-                        <div className="flex-1">
-                          <label
-                            htmlFor="adjacentCountry2"
-                            className="block text-sm font-medium text-gray-700 mb-1"
+                      {/* Adjacent Country 1 */}
+                      {formData.country &&
+                        !formData.showAdjacentCountry1 &&
+                        adjacentCountries1.length > 0 && (
+                          <button
+                            type="button"
+                            onClick={handleAddAdjacentCountry1}
+                            className="flex items-center gap-2 text-sm text-primary hover:text-primary/80 font-medium"
                           >
-                            {t('create.thirdCountry')}
-                          </label>
-                          <div className="relative">
-                            <select
-                              id="adjacentCountry2"
-                              name="adjacentCountry2"
-                              value={formData.adjacentCountry2}
-                              onChange={handleInputChange}
-                              className={`w-full py-2 px-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary appearance-none pr-10 ${
-                                formData.adjacentCountry2 ? 'pl-12' : 'pl-3'
-                              }`}
+                            <Plus className="w-4 h-4" />
+                            {t('create.addAdjacentCountry')}
+                          </button>
+                        )}
+
+                      {formData.showAdjacentCountry1 && (
+                        <div className="flex items-end gap-2">
+                          <div className="flex-1">
+                            <label
+                              htmlFor="adjacentCountry1"
+                              className="block text-sm font-medium text-gray-700 mb-1"
                             >
-                              <option value="">
-                                {t('create.selectThirdCountry')}
-                              </option>
-                              {sortedAdjacentCountries2
-                                .filter(
-                                  (c) => c.code !== formData.adjacentCountry1,
-                                )
-                                .map((country) => (
+                              {t('create.adjacentCountry')}
+                            </label>
+                            <div className="relative">
+                              <select
+                                id="adjacentCountry1"
+                                name="adjacentCountry1"
+                                value={formData.adjacentCountry1}
+                                onChange={handleAdjacentCountry1Change}
+                                className={`w-full py-2 px-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary appearance-none pr-10 ${
+                                  formData.adjacentCountry1 ? 'pl-12' : 'pl-3'
+                                }`}
+                              >
+                                <option value="">
+                                  {t('create.selectAdjacentCountry')}
+                                </option>
+                                {sortedAdjacentCountries1.map((country) => (
                                   <option key={country.id} value={country.id}>
                                     {formatCountryName(country, i18n.language)}
                                   </option>
                                 ))}
-                            </select>
-                            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" />
-                            {/* Show flag if country is selected */}
-                            {formData.adjacentCountry2 && (
-                              <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none">
-                                <CountryFlag
-                                  countryCode={formData.adjacentCountry2}
-                                  style={{ width: '24px', height: 'auto' }}
-                                />
-                              </div>
-                            )}
+                              </select>
+                              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" />
+                              {/* Show flag if country is selected */}
+                              {formData.adjacentCountry1 && (
+                                <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none">
+                                  <CountryFlag
+                                    countryCode={formData.adjacentCountry1}
+                                    style={{ width: '24px', height: 'auto' }}
+                                  />
+                                </div>
+                              )}
+                            </div>
                           </div>
+                          <button
+                            type="button"
+                            onClick={handleRemoveAdjacentCountry1}
+                            aria-label={t('create.removeCountryField', {
+                              field: t('create.adjacentCountry'),
+                            })}
+                            className="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg"
+                          >
+                            <X className="w-5 h-5" />
+                          </button>
                         </div>
-                        <button
-                          type="button"
-                          onClick={handleRemoveAdjacentCountry2}
-                          aria-label={t('create.removeCountryField', {
-                            field: t('create.thirdCountry'),
-                          })}
-                          className="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg"
-                        >
-                          <X className="w-5 h-5" />
-                        </button>
-                      </div>
-                    )}
+                      )}
+
+                      {/* Adjacent Country 2 */}
+                      {formData.adjacentCountry1 &&
+                        !formData.showAdjacentCountry2 &&
+                        adjacentCountries2.length > 0 && (
+                          <button
+                            type="button"
+                            onClick={handleAddAdjacentCountry2}
+                            className="flex items-center gap-2 text-sm text-primary hover:text-primary/80 font-medium"
+                          >
+                            <Plus className="w-4 h-4" />
+                            {t('create.addThirdCountry')}
+                          </button>
+                        )}
+
+                      {formData.showAdjacentCountry2 && (
+                        <div className="flex items-end gap-2">
+                          <div className="flex-1">
+                            <label
+                              htmlFor="adjacentCountry2"
+                              className="block text-sm font-medium text-gray-700 mb-1"
+                            >
+                              {t('create.thirdCountry')}
+                            </label>
+                            <div className="relative">
+                              <select
+                                id="adjacentCountry2"
+                                name="adjacentCountry2"
+                                value={formData.adjacentCountry2}
+                                onChange={handleInputChange}
+                                className={`w-full py-2 px-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary appearance-none pr-10 ${
+                                  formData.adjacentCountry2 ? 'pl-12' : 'pl-3'
+                                }`}
+                              >
+                                <option value="">
+                                  {t('create.selectThirdCountry')}
+                                </option>
+                                {sortedAdjacentCountries2
+                                  .filter(
+                                    (c) => c.code !== formData.adjacentCountry1,
+                                  )
+                                  .map((country) => (
+                                    <option key={country.id} value={country.id}>
+                                      {formatCountryName(
+                                        country,
+                                        i18n.language,
+                                      )}
+                                    </option>
+                                  ))}
+                              </select>
+                              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" />
+                              {/* Show flag if country is selected */}
+                              {formData.adjacentCountry2 && (
+                                <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none">
+                                  <CountryFlag
+                                    countryCode={formData.adjacentCountry2}
+                                    style={{ width: '24px', height: 'auto' }}
+                                  />
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={handleRemoveAdjacentCountry2}
+                            aria-label={t('create.removeCountryField', {
+                              field: t('create.thirdCountry'),
+                            })}
+                            className="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg"
+                          >
+                            <X className="w-5 h-5" />
+                          </button>
+                        </div>
+                      )}
+                    </SoloLectura>
                   </div>
                 </div>
 
@@ -1870,252 +1996,260 @@ const CreateCompetition = () => {
                   </div>
                 )}
 
-                {/* Section 5: RyderCup Settings — el formato se decide aquí, a la
+                <SoloLectura
+                  activa={soloFechas}
+                  className="flex flex-col gap-6"
+                >
+                  {/* Section 5: RyderCup Settings — el formato se decide aquí, a la
                   vista: cuántos sois y si se juega con hándicap son las dos
                   preguntas que el organizador SÍ contesta (Agustín, 19 sep) */}
-                <div className="border border-gray-200 rounded-xl p-4">
-                  <div className="flex items-center gap-3 mb-3">
-                    <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
-                      <Settings className="w-4 h-4 text-primary" />
-                    </div>
-                    <h3 className="text-gray-900 font-bold text-base">
-                      {t('create.settingsTitle')}
-                    </h3>
-                  </div>
-
-                  <div className="space-y-4">
-                    {/* Play Mode */}
-                    <div>
-                      <span className="block text-sm font-medium text-gray-700 mb-2">
-                        {t('create.playMode')}
-                      </span>
-                      <div className="flex flex-wrap gap-2">
-                        {['HANDICAP', 'SCRATCH'].map((mode) => (
-                          <button
-                            key={mode}
-                            type="button"
-                            aria-pressed={formData.playMode === mode}
-                            onClick={() =>
-                              setFormData((prev) => ({
-                                ...prev,
-                                playMode: mode,
-                              }))
-                            }
-                            className={`border-2 rounded-lg text-sm px-3 py-2 transition-colors ${
-                              formData.playMode === mode
-                                ? 'bg-primary text-white border-primary'
-                                : 'bg-white text-gray-600 border-gray-200 hover:border-primary hover:text-primary'
-                            }`}
-                          >
-                            {t(`create.${mode.toLowerCase()}`)}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Number of Players */}
-                    <div>
-                      <label
-                        htmlFor="numberOfPlayers"
-                        className="block text-sm font-medium text-gray-700 mb-1"
-                      >
-                        {t('create.numberOfPlayers')}
-                      </label>
-                      <input
-                        id="numberOfPlayers"
-                        data-testid="campo-jugadores"
-                        type="number"
-                        name="numberOfPlayers"
-                        value={
-                          formData.numberOfPlayers === undefined
-                            ? ''
-                            : formData.numberOfPlayers
-                        }
-                        onChange={handleInputChange}
-                        onBlur={() =>
-                          setFormData((prev) => ({
-                            ...prev,
-                            // Dejarlo en blanco no es «sin límite»: hay cupo igual, y
-                            // callárselo es enterarse con el jugador 13 fuera
-                            numberOfPlayers: cupoDeJugadores(
-                              prev.numberOfPlayers,
-                              cupoCargado.current,
-                            ),
-                          }))
-                        }
-                        min={Math.max(MIN_PLAYERS, inscritos)}
-                        max={MAX_PLAYERS}
-                        aria-describedby={
-                          inscritos > 0 ? 'cupo-minimo' : undefined
-                        }
-                        placeholder={t('create.numberOfPlayersPlaceholder')}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-                      />
-                      {/* Por qué no baja de ahí (FE #662): sin decirlo, el número
-                        se rechazaba sin motivo */}
-                      {inscritos > 0 && (
-                        <p
-                          id="cupo-minimo"
-                          data-testid="cupo-minimo"
-                          className="mt-1 text-xs text-gray-500"
-                        >
-                          {t('create.capFloor', { count: inscritos })}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Los ajustes de un Stableford o un Medal, a la vista: las
-                  categorías y las jornadas sí se deciden al crear (FE #824) */}
-                {!conEquipos && (
-                  <div
-                    data-testid="ajustes-stroke-play"
-                    className="border border-gray-200 rounded-xl p-4"
-                  >
+                  <div className="border border-gray-200 rounded-xl p-4">
                     <div className="flex items-center gap-3 mb-3">
                       <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
                         <Settings className="w-4 h-4 text-primary" />
                       </div>
                       <h3 className="text-gray-900 font-bold text-base">
-                        {t('create.strokePlay.title', {
-                          tipo: t(
-                            `create.type.${formData.tournamentType}.title`,
-                          ),
-                        })}
+                        {t('create.settingsTitle')}
                       </h3>
                     </div>
-                    <StrokePlaySettings
-                      valor={formData.strokePlay}
-                      onCambio={(strokePlay) =>
-                        setFormData((prev) => ({ ...prev, strokePlay }))
-                      }
-                      tipo={formData.tournamentType}
-                      dias={diasDelTorneo(formData.startDate, formData.endDate)}
-                    />
-                  </div>
-                )}
 
-                {/* Lo que no hay que decidir para crear: se pliega, pero se dice
-                  qué se acepta si nadie lo toca (FE #637) */}
-                <div className="border border-gray-200 rounded-xl">
-                  <button
-                    type="button"
-                    data-testid="mas-opciones"
-                    onClick={() => setMasOpciones((abierto) => !abierto)}
-                    aria-expanded={masOpciones}
-                    className="flex w-full items-center justify-between gap-3 p-4 text-left"
-                  >
-                    <span className="font-medium text-gray-900">
-                      {t('create.moreOptions')}
-                    </span>
-                    <span className="text-gray-500">
-                      {masOpciones ? '−' : '+'}
-                    </span>
-                  </button>
-
-                  {!masOpciones && (
-                    <p
-                      data-testid="resumen-opciones"
-                      className="px-4 pb-4 text-sm text-gray-600"
-                    >
-                      {faltaAlgoPlegado
-                        ? t('create.moreOptionsIncomplete')
-                        : // Sin el reparto de equipos: ya no se decide aquí, lo
-                          // decide el modo, que está a la vista arriba (FE #695)
-                          t(
-                            conEquipos
-                              ? 'create.moreOptionsSummary'
-                              : 'create.moreOptionsSummaryNoTeams',
-                            {
-                              equipo1: formData.teamOneName,
-                              equipo2: formData.teamTwoName,
-                              handicap: formData.maxPlayingHandicap
-                                ? t('create.summaryHandicapLimit', {
-                                    limite: formData.maxPlayingHandicap,
-                                  })
-                                : t('create.summaryNoHandicapLimit'),
-                            },
-                          )}
-                    </p>
-                  )}
-
-                  {masOpciones && (
-                    <div className="space-y-4 border-t border-gray-200 p-4">
-                      {conEquipos && (
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <div>
-                            <label
-                              htmlFor="teamOneName"
-                              className="block text-sm font-medium text-gray-700 mb-1"
+                    <div className="space-y-4">
+                      {/* Play Mode */}
+                      <div>
+                        <span className="block text-sm font-medium text-gray-700 mb-2">
+                          {t('create.playMode')}
+                        </span>
+                        <div className="flex flex-wrap gap-2">
+                          {['HANDICAP', 'SCRATCH'].map((mode) => (
+                            <button
+                              key={mode}
+                              type="button"
+                              aria-pressed={formData.playMode === mode}
+                              onClick={() =>
+                                setFormData((prev) => ({
+                                  ...prev,
+                                  playMode: mode,
+                                }))
+                              }
+                              className={`border-2 rounded-lg text-sm px-3 py-2 transition-colors ${
+                                formData.playMode === mode
+                                  ? 'bg-primary text-white border-primary'
+                                  : 'bg-white text-gray-600 border-gray-200 hover:border-primary hover:text-primary'
+                              }`}
                             >
-                              {t('create.teamOneName')}
-                            </label>
-                            <input
-                              id="teamOneName"
-                              data-testid="campo-equipo-1"
-                              type="text"
-                              name="teamOneName"
-                              value={formData.teamOneName}
-                              onChange={handleInputChange}
-                              placeholder={t('create.teamOneNamePlaceholder')}
-                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-                            />
-                          </div>
-
-                          <div>
-                            <label
-                              htmlFor="teamTwoName"
-                              className="block text-sm font-medium text-gray-700 mb-1"
-                            >
-                              {t('create.teamTwoName')}
-                            </label>
-                            <input
-                              id="teamTwoName"
-                              data-testid="campo-equipo-2"
-                              type="text"
-                              name="teamTwoName"
-                              value={formData.teamTwoName}
-                              onChange={handleInputChange}
-                              placeholder={t('create.teamTwoNamePlaceholder')}
-                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-                            />
-                          </div>
+                              {t(`create.${mode.toLowerCase()}`)}
+                            </button>
+                          ))}
                         </div>
-                      )}
-                      {/* Max Playing Handicap */}
+                      </div>
+
+                      {/* Number of Players */}
                       <div>
                         <label
-                          htmlFor="maxPlayingHandicap"
+                          htmlFor="numberOfPlayers"
                           className="block text-sm font-medium text-gray-700 mb-1"
                         >
-                          {t('create.maxPlayingHandicap')}
+                          {t('create.numberOfPlayers')}
                         </label>
                         <input
-                          id="maxPlayingHandicap"
-                          data-testid="campo-handicap"
+                          id="numberOfPlayers"
+                          data-testid="campo-jugadores"
                           type="number"
-                          name="maxPlayingHandicap"
+                          name="numberOfPlayers"
                           value={
-                            formData.maxPlayingHandicap === undefined
+                            formData.numberOfPlayers === undefined
                               ? ''
-                              : formData.maxPlayingHandicap
+                              : formData.numberOfPlayers
                           }
                           onChange={handleInputChange}
-                          min="1"
-                          max="54"
-                          placeholder={t(
-                            'create.maxPlayingHandicapPlaceholder',
-                          )}
+                          onBlur={() =>
+                            setFormData((prev) => ({
+                              ...prev,
+                              // Dejarlo en blanco no es «sin límite»: hay cupo igual, y
+                              // callárselo es enterarse con el jugador 13 fuera
+                              numberOfPlayers: cupoDeJugadores(
+                                prev.numberOfPlayers,
+                                cupoCargado.current,
+                              ),
+                            }))
+                          }
+                          min={Math.max(MIN_PLAYERS, inscritos)}
+                          max={MAX_PLAYERS}
+                          aria-describedby={
+                            inscritos > 0 ? 'cupo-minimo' : undefined
+                          }
+                          placeholder={t('create.numberOfPlayersPlaceholder')}
                           className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
                         />
-                        <p className="mt-1 text-xs text-gray-500">
-                          {t('create.maxPlayingHandicapHint')}
-                        </p>
+                        {/* Por qué no baja de ahí (FE #662): sin decirlo, el número
+                        se rechazaba sin motivo */}
+                        {inscritos > 0 && (
+                          <p
+                            id="cupo-minimo"
+                            data-testid="cupo-minimo"
+                            className="mt-1 text-xs text-gray-500"
+                          >
+                            {t('create.capFloor', { count: inscritos })}
+                          </p>
+                        )}
                       </div>
                     </div>
+                  </div>
+
+                  {/* Los ajustes de un Stableford o un Medal, a la vista: las
+                  categorías y las jornadas sí se deciden al crear (FE #824) */}
+                  {!conEquipos && (
+                    <div
+                      data-testid="ajustes-stroke-play"
+                      className="border border-gray-200 rounded-xl p-4"
+                    >
+                      <div className="flex items-center gap-3 mb-3">
+                        <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                          <Settings className="w-4 h-4 text-primary" />
+                        </div>
+                        <h3 className="text-gray-900 font-bold text-base">
+                          {t('create.strokePlay.title', {
+                            tipo: t(
+                              `create.type.${formData.tournamentType}.title`,
+                            ),
+                          })}
+                        </h3>
+                      </div>
+                      <StrokePlaySettings
+                        valor={formData.strokePlay}
+                        onCambio={(strokePlay) =>
+                          setFormData((prev) => ({ ...prev, strokePlay }))
+                        }
+                        tipo={formData.tournamentType}
+                        dias={diasDelTorneo(
+                          formData.startDate,
+                          formData.endDate,
+                        )}
+                      />
+                    </div>
                   )}
-                </div>
+
+                  {/* Lo que no hay que decidir para crear: se pliega, pero se dice
+                  qué se acepta si nadie lo toca (FE #637) */}
+                  <div className="border border-gray-200 rounded-xl">
+                    <button
+                      type="button"
+                      data-testid="mas-opciones"
+                      onClick={() => setMasOpciones((abierto) => !abierto)}
+                      aria-expanded={masOpciones}
+                      className="flex w-full items-center justify-between gap-3 p-4 text-left"
+                    >
+                      <span className="font-medium text-gray-900">
+                        {t('create.moreOptions')}
+                      </span>
+                      <span className="text-gray-500">
+                        {masOpciones ? '−' : '+'}
+                      </span>
+                    </button>
+
+                    {!masOpciones && (
+                      <p
+                        data-testid="resumen-opciones"
+                        className="px-4 pb-4 text-sm text-gray-600"
+                      >
+                        {faltaAlgoPlegado
+                          ? t('create.moreOptionsIncomplete')
+                          : // Sin el reparto de equipos: ya no se decide aquí, lo
+                            // decide el modo, que está a la vista arriba (FE #695)
+                            t(
+                              conEquipos
+                                ? 'create.moreOptionsSummary'
+                                : 'create.moreOptionsSummaryNoTeams',
+                              {
+                                equipo1: formData.teamOneName,
+                                equipo2: formData.teamTwoName,
+                                handicap: formData.maxPlayingHandicap
+                                  ? t('create.summaryHandicapLimit', {
+                                      limite: formData.maxPlayingHandicap,
+                                    })
+                                  : t('create.summaryNoHandicapLimit'),
+                              },
+                            )}
+                      </p>
+                    )}
+
+                    {masOpciones && (
+                      <div className="space-y-4 border-t border-gray-200 p-4">
+                        {conEquipos && (
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                              <label
+                                htmlFor="teamOneName"
+                                className="block text-sm font-medium text-gray-700 mb-1"
+                              >
+                                {t('create.teamOneName')}
+                              </label>
+                              <input
+                                id="teamOneName"
+                                data-testid="campo-equipo-1"
+                                type="text"
+                                name="teamOneName"
+                                value={formData.teamOneName}
+                                onChange={handleInputChange}
+                                placeholder={t('create.teamOneNamePlaceholder')}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                              />
+                            </div>
+
+                            <div>
+                              <label
+                                htmlFor="teamTwoName"
+                                className="block text-sm font-medium text-gray-700 mb-1"
+                              >
+                                {t('create.teamTwoName')}
+                              </label>
+                              <input
+                                id="teamTwoName"
+                                data-testid="campo-equipo-2"
+                                type="text"
+                                name="teamTwoName"
+                                value={formData.teamTwoName}
+                                onChange={handleInputChange}
+                                placeholder={t('create.teamTwoNamePlaceholder')}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                              />
+                            </div>
+                          </div>
+                        )}
+                        {/* Max Playing Handicap */}
+                        <div>
+                          <label
+                            htmlFor="maxPlayingHandicap"
+                            className="block text-sm font-medium text-gray-700 mb-1"
+                          >
+                            {t('create.maxPlayingHandicap')}
+                          </label>
+                          <input
+                            id="maxPlayingHandicap"
+                            data-testid="campo-handicap"
+                            type="number"
+                            name="maxPlayingHandicap"
+                            value={
+                              formData.maxPlayingHandicap === undefined
+                                ? ''
+                                : formData.maxPlayingHandicap
+                            }
+                            onChange={handleInputChange}
+                            min="1"
+                            max="54"
+                            placeholder={t(
+                              'create.maxPlayingHandicapPlaceholder',
+                            )}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                          />
+                          <p className="mt-1 text-xs text-gray-500">
+                            {t('create.maxPlayingHandicapHint')}
+                          </p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </SoloLectura>
 
                 {/* Submit Button */}
                 {/* En el móvil la fila ocupa el ancho, alineada con las tarjetas:

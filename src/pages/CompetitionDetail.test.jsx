@@ -890,6 +890,44 @@ describe('CompetitionDetail - invitar desde el borrador (FE #660)', () => {
     abrirMenuDeAcciones();
     expect(screen.queryByText('detail.actions.edit')).not.toBeInTheDocument();
   });
+
+  // Cerrada por el plazo (15 nov 2026, RyderCupAm #865): se mueve, solo las fechas
+  it('cerrada por el plazo de inscripción, se edita (solo las fechas)', async () => {
+    conEstado('CLOSED', { enrollmentClosedByDeadline: true });
+
+    renderPage();
+
+    await screen.findByTestId('menu-acciones');
+    abrirMenuDeAcciones();
+    expect(screen.getByText('detail.actions.edit')).toBeInTheDocument();
+  });
+
+  // Con la sala de draft abierta no se reabre (15 nov 2026, RyderCupAm B-02):
+  // el texto de la app, no el del servidor
+  it('reabrir durante el draft: «Espera a que termine el draft»', async () => {
+    const { reopenEnrollmentsUseCase } = await import('../composition');
+    reopenEnrollmentsUseCase.execute.mockRejectedValueOnce(
+      Object.assign(new Error('Draft in progress'), {
+        status: 409,
+        errorCode: 'DRAFT_IN_PROGRESS',
+      }),
+    );
+    conEstado('CLOSED');
+
+    renderPage();
+
+    await screen.findByTestId('menu-acciones');
+    abrirMenuDeAcciones();
+    fireEvent.click(screen.getByText('detail.actions.reopen-enrollments'));
+    fireEvent.click(await screen.findByTestId('confirm-modal-confirm'));
+
+    await waitFor(() =>
+      expect(customToast.error).toHaveBeenCalledWith(
+        'detail.errors.waitForDraft',
+      ),
+    );
+    expect(customToast.error).not.toHaveBeenCalledWith('Draft in progress');
+  });
 });
 
 describe('CompetitionDetail - de quién es el torneo (FE #664)', () => {

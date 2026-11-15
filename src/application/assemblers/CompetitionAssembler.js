@@ -1,5 +1,9 @@
 import { getCountryFlag } from '../../utils/countryUtils';
 
+// Un jugador de la actualización de hándicaps: el que falta por preguntar y el
+// que se quedó sin actualizar llegan igual
+const aJugadorDeLaActualizacion = (p) => ({ userId: p.user_id, name: p.name });
+
 /**
  * CompetitionAssembler - Application Layer
  *
@@ -80,6 +84,16 @@ class CompetitionAssembler {
       // Cuántos días antes del torneo abren solas las inscripciones, o null si
       // se abren al invitar (FE #678). Sin esto la ficha no puede decir cuándo
       enrollmentOpensDaysBefore: apiData?.enrollment_opens_days_before ?? null,
+      // El plazo de inscripción (15 nov 2026, RyderCupAm #865): las 12:00 del
+      // día anterior con el desfase del campo; si vale para esta (no, si se
+      // abrió a mano pasado el plazo), y si la cerró el plazo y no el organizador
+      enrollmentDeadline:
+        typeof apiData?.enrollment_deadline === 'string'
+          ? apiData.enrollment_deadline
+          : null,
+      enrollmentDeadlineApplies: apiData?.enrollment_deadline_applies === true,
+      enrollmentClosedByDeadline:
+        apiData?.enrollment_closed_by_deadline === true,
       // Si quien la mira puede borrarla ahora (FE #667). Lo decide el backend con la
       // misma regla que el borrado —estado, nada jugado y quién— y solo lo manda la
       // ficha (RyderCupAM#347); sin el campo, no se ofrece
@@ -101,11 +115,18 @@ class CompetitionAssembler {
             startedAt: apiData.handicap_update.started_at,
             finishedAt: apiData.handicap_update.finished_at ?? null,
             pendingPlayers: (apiData.handicap_update.pending_players || []).map(
-              (p) => ({
-                userId: p.user_id,
-                name: p.name,
-              }),
+              aJugadorDeLaActualizacion,
             ),
+            // Los mismos que el aviso al organizador «{N} jugadores sin
+            // actualizar con la RFEG» (15 nov 2026). Null si el servidor es de
+            // antes del campo: la tarjeta sigue con pendingPlayers
+            notUpdatedPlayers: Array.isArray(
+              apiData.handicap_update.not_updated_players,
+            )
+              ? apiData.handicap_update.not_updated_players.map(
+                  aJugadorDeLaActualizacion,
+                )
+              : null,
           }
         : null,
       handicapUpdateWindow: apiData?.handicap_update_window

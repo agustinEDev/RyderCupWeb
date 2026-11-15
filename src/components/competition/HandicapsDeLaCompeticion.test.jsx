@@ -22,6 +22,21 @@ import {
  *   12   lanzar                         | se lanza y se relee; un 409, su motivo
  *   13   programada                     | cuándo (hora del campo) y «Anular»
  *   14   programar                      | fecha y hora del campo, con su huso; el servidor manda
+ *
+ * Desde el aviso «{N} jugadores sin actualizar con la RFEG» (15 nov 2026): la
+ * tarjeta nombra a los MISMOS que el aviso (`notUpdatedPlayers`):
+ *
+ *   #    caso                                         | qué pasa
+ *   -----|-----------------------------------------------|----------------------------------
+ *   N1   completa con alguien sin actualizar         | solo «Sin actualizar: …» (sin la línea
+ *                                                    | de la fecha, ni vacía; Agustín, 15 nov)
+ *   N2   completa con la lista vacía                 | «Actualizados … el …», nadie nombrado
+ *   N3   incompleta                                  | los del aviso y, además, a quién
+ *                                                    | volverá a preguntar el botón, sin repetir
+ *   N4   servidor de antes del campo (incompleta)    | como antes: los pendientes
+ *   N5   en marcha (se termina una incompleta)       | «faltan N» y los del aviso
+ *   N6   en marcha (primera pasada, lista vacía)     | solo «faltan N»
+ *   N7   completa con alguien sin actualizar          | la lista, en una región que se anuncia
  */
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
@@ -165,6 +180,136 @@ describe('HandicapsDeLaCompeticion (FE #824, PR 5)', () => {
     expect(screen.getByTestId('handicaps-pendientes')).toHaveTextContent(
       'Ana Alba',
     );
+  });
+
+  it('N1: completa con alguien sin actualizar lo nombra y no dice que están todos', async () => {
+    // Given: la RFEG no encontró a Ana en una completa
+    pinta({
+      handicapUpdate: {
+        status: 'COMPLETED',
+        origin: 'ENROLLMENTS_CLOSED',
+        startedAt: 'x',
+        finishedAt: '2030-10-10T20:09:00Z',
+        pendingPlayers: [],
+        notUpdatedPlayers: [
+          { userId: 'a', name: 'Ana Alba' },
+          { userId: 'b', name: 'Bea Bas' },
+        ],
+      },
+    });
+
+    // Then
+    expect(await screen.findByTestId('handicaps-pendientes')).toHaveTextContent(
+      'handicaps.pending {"jugadores":"Ana Alba, Bea Bas"}',
+    );
+    expect(screen.queryByText(/handicaps\.completed/)).not.toBeInTheDocument();
+    // Ni el párrafo vacío del estado: un aria-live sin texto
+    expect(screen.queryByTestId('handicaps-estado')).not.toBeInTheDocument();
+  });
+
+  it('N2: completa con la lista vacía dice cuándo y no nombra a nadie', async () => {
+    pinta({
+      handicapUpdate: {
+        status: 'COMPLETED',
+        origin: 'ENROLLMENTS_CLOSED',
+        startedAt: 'x',
+        finishedAt: '2030-10-10T20:09:00Z',
+        pendingPlayers: [],
+        notUpdatedPlayers: [],
+      },
+    });
+
+    expect(await screen.findByTestId('handicaps-estado')).toHaveTextContent(
+      /^handicaps\.completed/,
+    );
+    expect(
+      screen.queryByTestId('handicaps-pendientes'),
+    ).not.toBeInTheDocument();
+  });
+
+  it('N3: incompleta nombra a los del aviso y a quién volverá a preguntar el botón, sin repetir', async () => {
+    // Given: Pierre (francés, fuera de España) queda por preguntar, pero el
+    // aviso no lo nombra; Ana está en las dos
+    pinta({
+      handicapUpdate: {
+        status: 'INCOMPLETE',
+        origin: 'ORGANIZER',
+        startedAt: 'x',
+        finishedAt: '2030-10-10T20:09:00Z',
+        pendingPlayers: [
+          { userId: 'a', name: 'Ana Alba' },
+          { userId: 'p', name: 'Pierre' },
+        ],
+        notUpdatedPlayers: [{ userId: 'a', name: 'Ana Alba' }],
+      },
+    });
+
+    // Then
+    expect(await screen.findByTestId('handicaps-estado')).toHaveTextContent(
+      /^handicaps\.incomplete/,
+    );
+    expect(screen.getByTestId('handicaps-pendientes')).toHaveTextContent(
+      'handicaps.pending {"jugadores":"Ana Alba, Pierre"}',
+    );
+  });
+
+  it('N4: un servidor de antes del campo, la incompleta como antes', async () => {
+    pinta({
+      handicapUpdate: {
+        status: 'INCOMPLETE',
+        origin: 'ORGANIZER',
+        startedAt: 'x',
+        finishedAt: '2030-10-10T20:09:00Z',
+        pendingPlayers: [{ userId: 'a', name: 'Ana Alba' }],
+        notUpdatedPlayers: null,
+      },
+    });
+
+    expect(await screen.findByTestId('handicaps-pendientes')).toHaveTextContent(
+      'handicaps.pending {"jugadores":"Ana Alba"}',
+    );
+  });
+
+  it('N5: al volver a pasar una incompleta, cuántos faltan y los del aviso', async () => {
+    // Given: se termina una incompleta; el aviso sigue nombrando a Bea
+    pinta({
+      handicapUpdate: {
+        status: 'IN_PROGRESS',
+        origin: 'ORGANIZER',
+        startedAt: 'x',
+        finishedAt: null,
+        pendingPlayers: [{ userId: 'a', name: 'Ana Alba' }],
+        notUpdatedPlayers: [{ userId: 'b', name: 'Bea Bas' }],
+      },
+    });
+
+    // Then: los mismos que el aviso, no los que faltan por preguntar
+    expect(await screen.findByTestId('handicaps-estado')).toHaveTextContent(
+      'handicaps.inProgress {"count":1}',
+    );
+    expect(screen.getByTestId('handicaps-pendientes')).toHaveTextContent(
+      'handicaps.pending {"jugadores":"Bea Bas"}',
+    );
+  });
+
+  it('N6: en la primera pasada solo dice cuántos faltan', async () => {
+    pinta({
+      handicapUpdate: {
+        status: 'IN_PROGRESS',
+        origin: 'ORGANIZER',
+        startedAt: 'x',
+        finishedAt: null,
+        pendingPlayers: [{ userId: 'a', name: 'Ana Alba' }],
+        notUpdatedPlayers: [],
+      },
+    });
+
+    expect(await screen.findByTestId('handicaps-estado')).toHaveTextContent(
+      'handicaps.inProgress {"count":1}',
+    );
+    expect(
+      screen.queryByTestId('handicaps-pendientes'),
+    ).not.toBeInTheDocument();
   });
 
   it('9: cortada se dice', async () => {
@@ -528,10 +673,31 @@ describe('HandicapsDeLaCompeticion (FE #824, PR 5)', () => {
       },
     });
 
-    expect(await screen.findByTestId('handicaps-estado')).toHaveAttribute(
-      'aria-live',
-      'polite',
-    );
+    expect(
+      (await screen.findByTestId('handicaps-estado')).closest(
+        '[aria-live="polite"]',
+      ),
+    ).not.toBeNull();
+  });
+
+  it('N7: el resultado se anuncia aunque desaparezca la línea del estado (CodeRabbit #1153)', async () => {
+    // Given: termina completa con alguien sin actualizar (no hay línea de estado)
+    pinta({
+      handicapUpdate: {
+        status: 'COMPLETED',
+        origin: 'ENROLLMENTS_CLOSED',
+        startedAt: 'x',
+        finishedAt: '2030-10-10T20:09:00Z',
+        pendingPlayers: [],
+        notUpdatedPlayers: [{ userId: 'a', name: 'Ana Alba' }],
+      },
+    });
+
+    // Then: la lista está dentro de una región que se anuncia, que sigue ahí
+    const lista = await screen.findByTestId('handicaps-pendientes');
+    const region = lista.closest('[aria-live="polite"]');
+    expect(region).not.toBeNull();
+    expect(region).toHaveAttribute('data-testid', 'handicaps-resultado');
   });
 
   it('14c: sin fecha no se puede guardar', async () => {

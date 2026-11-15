@@ -8,6 +8,8 @@ const STATUS_COLORS = {
   NO_ROOM: 'bg-orange-100 text-orange-800',
   // La retiró quien invita (FE #724): distinta de la caducada
   CANCELLED: 'bg-slate-100 text-slate-700',
+  // En lista de espera hasta que se reabra la inscripción (15 nov 2026)
+  ON_HOLD: 'bg-amber-100 text-amber-800',
 };
 
 const InvitationBadge = ({ status }) => {

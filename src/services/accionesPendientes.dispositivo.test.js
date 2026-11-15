@@ -64,6 +64,11 @@ describe('accionesPendientes, en el móvil', () => {
     ],
     sesionesSinPartidos: [],
     plazasAsignadas: [],
+    // Los hándicaps sin actualizar con la RFEG (15 nov 2026)
+    rfegSinActualizar: [
+      { competitionId: 'c-1', competitionName: 'Liga', count: 2 },
+    ],
+    rfegNoEncontrado: [{ competitionId: 'c-2', competitionName: 'Medal' }],
   });
 
   it('A1: al abrir de cero vuelve lo que se enseñó, desde el móvil', () => {
@@ -121,6 +126,14 @@ describe('accionesPendientes, en el móvil', () => {
     ],
     ['una plaza sin ronda', { plazasAsignadas: [{ competitionId: 'c' }] }],
     ['una lista que no es lista', { sesionesSinPartidos: 'x' }],
+    [
+      'unos sin actualizar con cuenta de otro tipo',
+      { rfegSinActualizar: [{ competitionId: 'c', count: '2' }] },
+    ],
+    [
+      'un no encontrado con nombre de otro tipo',
+      { rfegNoEncontrado: [{ competitionId: 'c', competitionName: 5 }] },
+    ],
   ])('A4: lo guardado con %s se descarta', (_, malo) => {
     guardado.set(
       'rydercup-ultimo-panel',
