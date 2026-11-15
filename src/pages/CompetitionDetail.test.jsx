@@ -890,6 +890,17 @@ describe('CompetitionDetail - invitar desde el borrador (FE #660)', () => {
     abrirMenuDeAcciones();
     expect(screen.queryByText('detail.actions.edit')).not.toBeInTheDocument();
   });
+
+  // Cerrada por el plazo (15 nov 2026, RyderCupAm #865): se mueve, solo las fechas
+  it('cerrada por el plazo de inscripción, se edita (solo las fechas)', async () => {
+    conEstado('CLOSED', { enrollmentClosedByDeadline: true });
+
+    renderPage();
+
+    await screen.findByTestId('menu-acciones');
+    abrirMenuDeAcciones();
+    expect(screen.getByText('detail.actions.edit')).toBeInTheDocument();
+  });
 });
 
 describe('CompetitionDetail - de quién es el torneo (FE #664)', () => {

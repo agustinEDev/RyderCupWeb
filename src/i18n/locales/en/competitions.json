@@ -216,6 +216,7 @@
     "error": "Failed to update competition",
     "errorLoading": "Failed to load competition",
     "notEditable": "This competition can no longer be edited: it can only be edited while enrolment is open.",
+    "onlyDates": "Enrolment was closed by the deadline: you can only change the dates. If the new deadline is still ahead, enrolment opens again.",
     "datesLeaveSessionsOut": "Those dates leave these sessions out: {{sesiones}}. Move or delete them before changing the dates.",
     "strokePlayNotSaved": "The general details were saved, but not the tournament settings: {{motivo}}",
     "generalNotSaved": "The tournament settings were saved, but not the general details: {{motivo}}"

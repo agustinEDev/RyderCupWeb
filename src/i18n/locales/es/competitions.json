@@ -216,6 +216,7 @@
     "error": "Error al actualizar la competición",
     "errorLoading": "Error al cargar la competición",
     "notEditable": "Esta competición ya no se puede editar: solo se edita mientras las inscripciones están abiertas.",
+    "onlyDates": "Las inscripciones las cerró el plazo: solo puedes cambiar las fechas. Si el nuevo plazo queda por delante, se vuelven a abrir.",
     "datesLeaveSessionsOut": "Con esas fechas se quedan fuera estas sesiones: {{sesiones}}. Muévelas o bórralas antes de cambiar las fechas.",
     "strokePlayNotSaved": "Se guardaron los datos generales, pero no los ajustes del torneo: {{motivo}}",
     "generalNotSaved": "Se guardaron los ajustes del torneo, pero no los datos generales: {{motivo}}"
