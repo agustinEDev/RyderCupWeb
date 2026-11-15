@@ -49,13 +49,23 @@ describe('PasswordRequirements', () => {
     expect(cumplido('register.requirementUppercase')).toBe(true);
   });
 
-  it('la longitud tiene máximo: 129 caracteres no salen en verde', () => {
-    // «Abc1!» son 5: con 123 más, 128; con 124, 129
+  it('la longitud tiene máximo: 65 caracteres no salen en verde (B-14)', () => {
+    // «Abc1!» son 5: con 59 más, 64; con 60, 65
     const { rerender } = render(
-      <PasswordRequirements password={`Abc1!${'a'.repeat(123)}`} />,
+      <PasswordRequirements password={`Abc1!${'a'.repeat(59)}`} />,
     );
     expect(cumplido('register.requirementLength')).toBe(true);
-    rerender(<PasswordRequirements password={`Abc1!${'a'.repeat(124)}`} />);
+    rerender(<PasswordRequirements password={`Abc1!${'a'.repeat(60)}`} />);
+    expect(cumplido('register.requirementLength')).toBe(false);
+  });
+
+  it('con eñes, 73 bytes no salen en verde aunque sean menos de 64 caracteres (B-14)', () => {
+    // «Abc1!» son 5 bytes; 33 eñes, 66: 71. Con una «a» más, 72; con dos, 73
+    const { rerender } = render(
+      <PasswordRequirements password={`Abc1!${'ñ'.repeat(33)}a`} />,
+    );
+    expect(cumplido('register.requirementLength')).toBe(true);
+    rerender(<PasswordRequirements password={`Abc1!${'ñ'.repeat(33)}aa`} />);
     expect(cumplido('register.requirementLength')).toBe(false);
   });
 
