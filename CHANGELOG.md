@@ -5,6 +5,34 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.80.0] - 2026-11-15
+
+**Tanda 2 de la auditoría de la fase 6 y decisiones del 15 nov** (#1142, #1143, #1144, #1145).
+Va con el backend 2.67.0 y **sale ANTES que él**: la 2.67.0 pide el correo verificado para
+crear competiciones, pedir amistad e invitar, y esta versión ya lo explica con su aviso (la
+2.79.0 enseñaría el texto del servidor). La parte de B-02 (#1146) se revirtió en develop
+(#1147): vuelve con el cierre automático de las inscripciones.
+
+### Security
+
+- **Sin el correo verificado no se invita, no se pide amistad ni se crean competiciones**
+  (B-17). Al intentarlo sale «Verifica tu correo para invitar, pedir amistad o crear
+  competiciones», con el botón de reenviar el correo, sin llamar al servidor; y lo mismo si
+  el servidor lo dice. Quien acaba de verificar desde el enlace del correo no queda bloqueado:
+  la app vuelve a preguntar al servidor antes de impedirlo.
+- **Contraseñas nuevas de 12 a 64 caracteres y como mucho 72 bytes** (B-14), como el
+  backend: con eñes o tildes, algo menos. Iniciar sesión con una contraseña de antes más
+  larga sigue funcionando.
+- **Todas las acciones del CI fijadas por la huella de su commit** (INF-03), con un test que
+  lo vigila.
+
+### Fixed
+
+- **Los textos de las competiciones públicas** decían «solicita inscripción» y «pedir plaza»:
+  la inscripción es directa desde el 28 oct (#989); ahora lo dicen.
+- **El medidor de fuerza** ya no aconseja añadir símbolos a una contraseña que solo falla por
+  larga.
+
 ## [2.79.0] - 2026-11-14
 
 **Tanda 1 de la auditoría de la fase 6** (#1138, #1139). Va con el backend 2.65.0, y **sale
