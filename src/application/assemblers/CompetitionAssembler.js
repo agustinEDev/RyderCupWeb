@@ -1,5 +1,9 @@
 import { getCountryFlag } from '../../utils/countryUtils';
 
+// Un jugador de la actualización de hándicaps: el que falta por preguntar y el
+// que se quedó sin actualizar llegan igual
+const aJugadorDeLaActualizacion = (p) => ({ userId: p.user_id, name: p.name });
+
 /**
  * CompetitionAssembler - Application Layer
  *
@@ -111,10 +115,7 @@ class CompetitionAssembler {
             startedAt: apiData.handicap_update.started_at,
             finishedAt: apiData.handicap_update.finished_at ?? null,
             pendingPlayers: (apiData.handicap_update.pending_players || []).map(
-              (p) => ({
-                userId: p.user_id,
-                name: p.name,
-              }),
+              aJugadorDeLaActualizacion,
             ),
             // Los mismos que el aviso al organizador «{N} jugadores sin
             // actualizar con la RFEG» (15 nov 2026). Null si el servidor es de
@@ -122,10 +123,9 @@ class CompetitionAssembler {
             notUpdatedPlayers: Array.isArray(
               apiData.handicap_update.not_updated_players,
             )
-              ? apiData.handicap_update.not_updated_players.map((p) => ({
-                  userId: p.user_id,
-                  name: p.name,
-                }))
+              ? apiData.handicap_update.not_updated_players.map(
+                  aJugadorDeLaActualizacion,
+                )
               : null,
           }
         : null,

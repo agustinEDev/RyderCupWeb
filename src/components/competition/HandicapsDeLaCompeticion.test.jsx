@@ -28,11 +28,14 @@ import {
  *
  *   #    caso                                         | qué pasa
  *   -----|-----------------------------------------------|----------------------------------
- *   N1   completa con alguien sin actualizar         | «Sin actualizar: …», sin «Actualizados»
+ *   N1   completa con alguien sin actualizar         | solo «Sin actualizar: …» (sin la línea
+ *                                                    | de la fecha, ni vacía; Agustín, 15 nov)
  *   N2   completa con la lista vacía                 | «Actualizados … el …», nadie nombrado
- *   N3   incompleta                                  | los del aviso, no los pendientes de reintentar
+ *   N3   incompleta                                  | los del aviso y, además, a quién
+ *                                                    | volverá a preguntar el botón, sin repetir
  *   N4   servidor de antes del campo (incompleta)    | como antes: los pendientes
- *   N5   en marcha (se termina una incompleta)       | solo «faltan N», sin nombres
+ *   N5   en marcha (se termina una incompleta)       | «faltan N» y los del aviso
+ *   N6   en marcha (primera pasada, lista vacía)     | solo «faltan N»
  */
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
@@ -199,6 +202,8 @@ describe('HandicapsDeLaCompeticion (FE #824, PR 5)', () => {
       'handicaps.pending {"jugadores":"Ana Alba, Bea Bas"}',
     );
     expect(screen.queryByText(/handicaps\.completed/)).not.toBeInTheDocument();
+    // Ni el párrafo vacío del estado: un aria-live sin texto
+    expect(screen.queryByTestId('handicaps-estado')).not.toBeInTheDocument();
   });
 
   it('N2: completa con la lista vacía dice cuándo y no nombra a nadie', async () => {
@@ -221,8 +226,9 @@ describe('HandicapsDeLaCompeticion (FE #824, PR 5)', () => {
     ).not.toBeInTheDocument();
   });
 
-  it('N3: incompleta nombra a los del aviso, no a los pendientes de reintentar', async () => {
-    // Given: Pierre (francés, fuera de España) queda por preguntar, pero el aviso no lo nombra
+  it('N3: incompleta nombra a los del aviso y a quién volverá a preguntar el botón, sin repetir', async () => {
+    // Given: Pierre (francés, fuera de España) queda por preguntar, pero el
+    // aviso no lo nombra; Ana está en las dos
     pinta({
       handicapUpdate: {
         status: 'INCOMPLETE',
@@ -242,7 +248,7 @@ describe('HandicapsDeLaCompeticion (FE #824, PR 5)', () => {
       /^handicaps\.incomplete/,
     );
     expect(screen.getByTestId('handicaps-pendientes')).toHaveTextContent(
-      'handicaps.pending {"jugadores":"Ana Alba"}',
+      'handicaps.pending {"jugadores":"Ana Alba, Pierre"}',
     );
   });
 
@@ -263,7 +269,8 @@ describe('HandicapsDeLaCompeticion (FE #824, PR 5)', () => {
     );
   });
 
-  it('N5: en marcha solo dice cuántos faltan, sin nombres', async () => {
+  it('N5: al volver a pasar una incompleta, cuántos faltan y los del aviso', async () => {
+    // Given: se termina una incompleta; el aviso sigue nombrando a Bea
     pinta({
       handicapUpdate: {
         status: 'IN_PROGRESS',
@@ -271,7 +278,28 @@ describe('HandicapsDeLaCompeticion (FE #824, PR 5)', () => {
         startedAt: 'x',
         finishedAt: null,
         pendingPlayers: [{ userId: 'a', name: 'Ana Alba' }],
-        notUpdatedPlayers: [{ userId: 'a', name: 'Ana Alba' }],
+        notUpdatedPlayers: [{ userId: 'b', name: 'Bea Bas' }],
+      },
+    });
+
+    // Then: los mismos que el aviso, no los que faltan por preguntar
+    expect(await screen.findByTestId('handicaps-estado')).toHaveTextContent(
+      'handicaps.inProgress {"count":1}',
+    );
+    expect(screen.getByTestId('handicaps-pendientes')).toHaveTextContent(
+      'handicaps.pending {"jugadores":"Bea Bas"}',
+    );
+  });
+
+  it('N6: en la primera pasada solo dice cuántos faltan', async () => {
+    pinta({
+      handicapUpdate: {
+        status: 'IN_PROGRESS',
+        origin: 'ORGANIZER',
+        startedAt: 'x',
+        finishedAt: null,
+        pendingPlayers: [{ userId: 'a', name: 'Ana Alba' }],
+        notUpdatedPlayers: [],
       },
     });
 

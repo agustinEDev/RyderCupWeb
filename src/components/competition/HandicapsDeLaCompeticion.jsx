@@ -185,15 +185,23 @@ const HandicapsDeLaCompeticion = ({
     hacer(() => cancelScheduledHandicapUpdateUseCase.execute(competitionId));
 
   // Quién se quedó sin actualizar: los mismos que el aviso al organizador
-  // (15 nov 2026), también con la actualización completa. Solo con una ya
-  // terminada; en marcha basta con cuántos faltan. Un servidor de antes del
-  // campo no lo manda: entonces, como antes, los pendientes de la incompleta
+  // (15 nov 2026), también con la completa y mientras se vuelve a pasar una
+  // incompleta (en la primera pasada y en la cortada viene vacía). En una
+  // incompleta, además, a quién volverá a preguntar el botón (un extranjero
+  // fuera de España no sale en el aviso), sin repetir a nadie. Un servidor de
+  // antes del campo no lo manda: entonces, como antes, los pendientes de la
+  // incompleta
   const sinActualizar = (() => {
     if (!handicapUpdate) return [];
     const { status, pendingPlayers, notUpdatedPlayers } = handicapUpdate;
-    if (status !== 'COMPLETED' && status !== 'INCOMPLETE') return [];
-    if (notUpdatedPlayers) return notUpdatedPlayers;
-    return status === 'INCOMPLETE' ? pendingPlayers : [];
+    if (!notUpdatedPlayers)
+      return status === 'INCOMPLETE' ? pendingPlayers : [];
+    if (status !== 'INCOMPLETE') return notUpdatedPlayers;
+    const nombrados = new Set(notUpdatedPlayers.map((p) => p.userId));
+    return [
+      ...notUpdatedPlayers,
+      ...pendingPlayers.filter((p) => !nombrados.has(p.userId)),
+    ];
   })();
 
   const estado = () => {
@@ -212,6 +220,7 @@ const HandicapsDeLaCompeticion = ({
     return t('handicaps.stopped');
   };
 
+  const lineaDeEstado = estado();
   const ventana = handicapUpdateWindow;
   // «hora del campo (Madrid)», o la del dispositivo si el campo no la tiene
   const delCampo = esZonaValida(zona);
@@ -233,13 +242,15 @@ const HandicapsDeLaCompeticion = ({
 
       {handicapUpdate && (
         <div>
-          <p
-            data-testid="handicaps-estado"
-            aria-live="polite"
-            className="text-sm text-gray-800"
-          >
-            {estado()}
-          </p>
+          {lineaDeEstado && (
+            <p
+              data-testid="handicaps-estado"
+              aria-live="polite"
+              className="text-sm text-gray-800"
+            >
+              {lineaDeEstado}
+            </p>
+          )}
           {sinActualizar.length > 0 && (
             <p
               data-testid="handicaps-pendientes"
