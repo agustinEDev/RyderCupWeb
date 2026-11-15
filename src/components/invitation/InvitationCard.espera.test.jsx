@@ -14,6 +14,7 @@ import InvitationCard from './InvitationCard';
  *   W1 el invitado, en espera                | «En lista de espera», el porqué y solo «Rechazar»
  *   W2 el organizador, en espera             | «En lista de espera» en su lista, sin el porqué
  *   W3 el invitado, pendiente                | «Aceptar» y «Rechazar», como siempre
+ *   W4 el organizador, en espera             | «Retirar», como en una pendiente (15 nov 2026)
  */
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({ t: (key) => key, i18n: { language: 'es' } }),
@@ -85,5 +86,23 @@ describe('InvitationCard · en lista de espera', () => {
     expect(screen.getByTestId('accept-button')).toBeInTheDocument();
     expect(screen.getByTestId('decline-button')).toBeInTheDocument();
     expect(screen.queryByTestId('invitacion-en-espera')).toBeNull();
+  });
+
+  it('W4: Given el organizador con una en espera, When se pinta, Then puede retirarla', () => {
+    const retirar = vi.fn();
+    render(
+      <MemoryRouter>
+        <InvitationCard
+          invitation={enEspera}
+          mode="creator"
+          onWithdraw={retirar}
+          t={t}
+        />
+      </MemoryRouter>,
+    );
+
+    screen.getByTestId('withdraw-button').click();
+
+    expect(retirar).toHaveBeenCalledWith(enEspera);
   });
 });

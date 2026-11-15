@@ -63,8 +63,11 @@ const InvitationCard = ({
   const caducada = useHaCaducado(invitation.expiresAt);
   // Quien invita puede retirar una pendiente (FE #724). El jugador no: él la
   // rechaza, y las ya respondidas no estorban en su lista
+  // También la que está en lista de espera (15 nov 2026)
   const sePuedeRetirar =
-    mode === 'creator' && invitation.isPending && Boolean(onWithdraw);
+    mode === 'creator' &&
+    (invitation.isPending || invitation.isOnHold === true) &&
+    Boolean(onWithdraw);
   const expirationText = invitation.isPending
     ? getExpirationText(invitation.expiresAt, t)
     : null;
