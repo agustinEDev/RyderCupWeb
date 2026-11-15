@@ -184,13 +184,29 @@ const HandicapsDeLaCompeticion = ({
   const anular = () =>
     hacer(() => cancelScheduledHandicapUpdateUseCase.execute(competitionId));
 
+  // Quién se quedó sin actualizar: los mismos que el aviso al organizador
+  // (15 nov 2026), también con la actualización completa. Solo con una ya
+  // terminada; en marcha basta con cuántos faltan. Un servidor de antes del
+  // campo no lo manda: entonces, como antes, los pendientes de la incompleta
+  const sinActualizar = (() => {
+    if (!handicapUpdate) return [];
+    const { status, pendingPlayers, notUpdatedPlayers } = handicapUpdate;
+    if (status !== 'COMPLETED' && status !== 'INCOMPLETE') return [];
+    if (notUpdatedPlayers) return notUpdatedPlayers;
+    return status === 'INCOMPLETE' ? pendingPlayers : [];
+  })();
+
   const estado = () => {
     if (!handicapUpdate) return null;
     const { status, finishedAt, pendingPlayers } = handicapUpdate;
     if (status === 'IN_PROGRESS')
       return t('handicaps.inProgress', { count: pendingPlayers.length });
+    // Con alguien sin actualizar no se dice «Actualizados»: lo dice la línea
+    // de quiénes
     if (status === 'COMPLETED')
-      return t('handicaps.completed', { cuando: cuando(finishedAt) });
+      return sinActualizar.length > 0
+        ? null
+        : t('handicaps.completed', { cuando: cuando(finishedAt) });
     if (status === 'INCOMPLETE')
       return t('handicaps.incomplete', { cuando: cuando(finishedAt) });
     return t('handicaps.stopped');
@@ -224,19 +240,16 @@ const HandicapsDeLaCompeticion = ({
           >
             {estado()}
           </p>
-          {handicapUpdate.status === 'INCOMPLETE' &&
-            handicapUpdate.pendingPlayers.length > 0 && (
-              <p
-                data-testid="handicaps-pendientes"
-                className="text-sm text-amber-800"
-              >
-                {t('handicaps.pending', {
-                  jugadores: handicapUpdate.pendingPlayers
-                    .map((p) => p.name)
-                    .join(', '),
-                })}
-              </p>
-            )}
+          {sinActualizar.length > 0 && (
+            <p
+              data-testid="handicaps-pendientes"
+              className="text-sm text-amber-800"
+            >
+              {t('handicaps.pending', {
+                jugadores: sinActualizar.map((p) => p.name).join(', '),
+              })}
+            </p>
+          )}
         </div>
       )}
 

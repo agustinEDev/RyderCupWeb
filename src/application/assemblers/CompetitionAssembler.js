@@ -116,6 +116,17 @@ class CompetitionAssembler {
                 name: p.name,
               }),
             ),
+            // Los mismos que el aviso al organizador «{N} jugadores sin
+            // actualizar con la RFEG» (15 nov 2026). Null si el servidor es de
+            // antes del campo: la tarjeta sigue con pendingPlayers
+            notUpdatedPlayers: Array.isArray(
+              apiData.handicap_update.not_updated_players,
+            )
+              ? apiData.handicap_update.not_updated_players.map((p) => ({
+                  userId: p.user_id,
+                  name: p.name,
+                }))
+              : null,
           }
         : null,
       handicapUpdateWindow: apiData?.handicap_update_window
