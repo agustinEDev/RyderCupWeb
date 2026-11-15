@@ -261,8 +261,17 @@ const CreateCompetition = () => {
   // Cerrada por el plazo de inscripción: solo se cambian las fechas, y el
   // servidor la reabre si el plazo nuevo queda por delante (RyderCupAm #865)
   const [soloFechas, setSoloFechas] = useState(false);
-  // Lo que el servidor no aceptó de las fechas nuevas, junto a ellas
+  // Lo que no vale de las fechas nuevas, junto a ellas. Un objeto y no su texto:
+  // el mismo aviso repetido tiene que volver a traerse a la vista
   const [errorDeLasFechas, setErrorDeLasFechas] = useState(null);
+  const avisoDeLasFechas = useRef(null);
+  // En el móvil se guarda desde abajo y el aviso queda arriba: a la vista y con
+  // el foco, como el aviso general (FE #731)
+  useEffect(() => {
+    if (!errorDeLasFechas) return;
+    avisoDeLasFechas.current?.scrollIntoView({ block: 'center' });
+    avisoDeLasFechas.current?.focus({ preventScroll: true });
+  }, [errorDeLasFechas]);
   // El género del organizador, que juega: solo al crear y solo si le falta (#710)
   const generoParaApuntarse = useGeneroParaApuntarse();
   const [genero, setGenero] = useState('');
@@ -862,13 +871,10 @@ const CreateCompetition = () => {
       }
     }
 
-    setErrorDeLasFechas(null);
     if (soloFechas) {
       const fallo = errorDeLasFechasNuevas();
-      if (fallo) {
-        setErrorDeLasFechas(fallo);
-        return;
-      }
+      setErrorDeLasFechas(fallo ? { texto: fallo } : null);
+      if (fallo) return;
       await crear(null);
       return;
     }
@@ -1152,7 +1158,7 @@ const CreateCompetition = () => {
       if (soloFechas) {
         const texto = sesionesQueQuedanFuera(error) || t('edit.error');
         customToast.error(texto);
-        setErrorDeLasFechas(texto);
+        setErrorDeLasFechas({ texto });
         return;
       }
       const texto =
@@ -1483,11 +1489,14 @@ const CreateCompetition = () => {
                         ellas, que son lo único que se puede cambiar */}
                     {errorDeLasFechas && (
                       <p
+                        ref={avisoDeLasFechas}
+                        tabIndex={-1}
                         data-testid="error-de-las-fechas"
                         role="alert"
-                        className="text-sm text-red-700"
+                        // Recibe el foco: con un anillo que se vea, como el aviso general
+                        className="rounded text-sm text-red-700 focus:outline-none focus:ring-2 focus:ring-red-400 focus:ring-offset-2"
                       >
-                        {errorDeLasFechas}
+                        {errorDeLasFechas.texto}
                       </p>
                     )}
 

@@ -19,6 +19,7 @@ import { MemoryRouter, Routes, Route } from 'react-router';
  *   M8 lo demás del formulario no se valida            | se manda (lo demás no se puede tocar)
  *   M8b el fin antes del comienzo                      | no se manda: el aviso junto a las fechas
  *   M8c sin una de las fechas                          | no se manda: el aviso junto a las fechas
+ *   M8d el aviso de las fechas, en un móvil          | se trae a la vista y se le da el foco, también al repetirlo
  *   M9 el servidor lo rechaza con un código conocido  | su texto traducido, junto a las fechas
  *   M9b el servidor lo rechaza sin código conocido    | el genérico, no su texto en bruto
  *   M5 abierta                                         | todo se edita, sin el aviso
@@ -247,6 +248,35 @@ describe('CreateCompetition · cerrada por el plazo: solo las fechas', () => {
       expect(mockActualizar).not.toHaveBeenCalled();
     },
   );
+
+  it('M8d: Given unas fechas que no valen, When guarda (dos veces), Then el aviso se trae a la vista y tiene el foco', async () => {
+    const traer = vi.spyOn(globalThis.Element.prototype, 'scrollIntoView');
+    mockDetalle.mockResolvedValueOnce(porElPlazo());
+    pintaEdicion();
+    await screen.findByDisplayValue('Campeonato del club');
+    fireEvent.change(screen.getByLabelText('create.endDate'), {
+      target: { value: '2026-10-01' },
+    });
+    const guardar = screen.getByRole('button', {
+      name: 'edit.updateCompetition',
+    });
+
+    fireEvent.click(guardar);
+
+    const aviso = await screen.findByTestId('error-de-las-fechas');
+    await waitFor(() => expect(aviso).toHaveFocus());
+    expect(traer.mock.instances).toContain(aviso);
+
+    // El mismo aviso otra vez: se vuelve a traer
+    traer.mockClear();
+    guardar.focus();
+    fireEvent.click(guardar);
+    await waitFor(() =>
+      expect(screen.getByTestId('error-de-las-fechas')).toHaveFocus(),
+    );
+    expect(traer).toHaveBeenCalled();
+    traer.mockRestore();
+  });
 
   it.each([
     [

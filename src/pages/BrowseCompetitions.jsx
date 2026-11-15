@@ -19,6 +19,7 @@ import EnrollmentRequestModal from '../components/enrollment/EnrollmentRequestMo
 import BlockLoader from '../components/ui/BlockLoader';
 import { formatDateRange } from '../services/competitions';
 import { PANTALLA_MENOS_BARRA_INFERIOR } from '../utils/barraInferior';
+import { MOTIVOS_PARA_NO_APUNTARSE } from '../utils/fichaDeLaCompeticion';
 
 const BrowseCompetitions = () => {
   // El género para apuntarse, solo a quien le falta (#710)
@@ -235,10 +236,12 @@ const BrowseCompetitions = () => {
     } catch (error) {
       console.error('❌ Error requesting enrollment:', error);
 
-      // Con la sala de draft abierta no entra nadie: se dice en el diálogo, que
-      // sigue abierto, y la tarjeta se queda (release social 3, revisor)
-      if (error?.errorCode === 'DRAFT_IN_PROGRESS') {
-        if (esSuModal()) setErrorAlApuntarse(t('detail.errors.waitForDraft'));
+      // Con la sala de draft abierta, pasado el plazo (15 nov 2026) o con la
+      // franja que ya no vale, no entra: se dice en el diálogo, que sigue
+      // abierto, con los mismos textos que la ficha, y la tarjeta se queda
+      const motivo = MOTIVOS_PARA_NO_APUNTARSE[error?.errorCode];
+      if (motivo) {
+        if (esSuModal()) setErrorAlApuntarse(t(motivo));
         return;
       }
       // Check if it's a duplicate enrollment error (409 Conflict)
