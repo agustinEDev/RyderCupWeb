@@ -124,7 +124,6 @@ const TRAMOS_FIJOS = new Set([
   'countries',
   'current-user',
   'devices',
-  'direct',
   'draft',
   'email-change',
   'enrollments',
