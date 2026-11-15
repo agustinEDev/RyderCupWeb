@@ -209,7 +209,8 @@ describe('InvitationsPage', () => {
       .mockResolvedValueOnce({
         id: 'comp-1',
         name: 'Summer Cup',
-        status: 'CLOSED',
+        // Empezada: ahí ya no se invita (cerrada sí, B-02)
+        status: 'IN_PROGRESS',
       });
     renderPage();
     fireEvent.click(await screen.findByText('creator.sendNew'));
@@ -225,13 +226,18 @@ describe('InvitationsPage', () => {
     expect(screen.queryByText('send.title')).not.toBeInTheDocument();
   });
 
-  it.each(['CLOSED', 'IN_PROGRESS', 'COMPLETED'])(
-    'A5: con la inscripción cerrada (%s) no se ofrece invitar y se dice por qué',
-    async (estado) => {
+  it.each([
+    ['CLOSED', false],
+    ['IN_PROGRESS', true],
+    ['COMPLETED', true],
+  ])(
+    'A5: %s (con equipos: %s) no ofrece invitar y dice por qué (un stroke play cerrado, B-02)',
+    async (estado, hasTeams) => {
       mockGetCompetitionDetail.mockResolvedValueOnce({
         id: 'comp-1',
         name: 'Summer Cup',
         status: estado,
+        hasTeams,
       });
       renderPage();
 
@@ -243,6 +249,19 @@ describe('InvitationsPage', () => {
       expect(screen.getByTestId('status-filter')).toBeInTheDocument();
     },
   );
+
+  it('B-02: una Ryder con la inscripción cerrada sí ofrece invitar', async () => {
+    mockGetCompetitionDetail.mockResolvedValueOnce({
+      id: 'comp-1',
+      name: 'Summer Cup',
+      status: 'CLOSED',
+      hasTeams: true,
+    });
+    renderPage();
+
+    expect(await screen.findByText('creator.sendNew')).toBeInTheDocument();
+    expect(screen.queryByTestId('invitar-cerrada')).not.toBeInTheDocument();
+  });
 
   // #710: invitar cerraba el modal tras cada invitación, e invitar a un grupo
   // era abrirlo una y otra vez

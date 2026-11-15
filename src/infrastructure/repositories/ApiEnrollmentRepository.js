@@ -350,35 +350,6 @@ class ApiEnrollmentRepository extends IEnrollmentRepository {
   }
 
   /**
-   * Inscripción directa por el creador (sin solicitud previa)
-   *
-   * @param {string} competitionId
-   * @param {Object} data - { userId, customHandicap?, teamId? }
-   * @returns {Promise<Enrollment>}
-   */
-  async directEnroll(competitionId, data) {
-    const payload = {
-      user_id: data.userId,
-      ...(data.customHandicap !== null &&
-        data.customHandicap !== undefined && {
-          custom_handicap: data.customHandicap,
-        }),
-      ...(data.teamId && { team_id: data.teamId }),
-      ...(data.color && { color: data.color }),
-    };
-
-    const apiData = await this.#request(
-      `/api/v1/competitions/${segmento(competitionId)}/enrollments/direct`,
-      {
-        method: 'POST',
-        body: JSON.stringify(payload),
-      },
-    );
-
-    return EnrollmentMapper.toDomain(apiData);
-  }
-
-  /**
    * El organizador quita a un inscrito (release social 2)
    *
    * @param {string} enrollmentId

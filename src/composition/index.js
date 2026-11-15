@@ -235,7 +235,6 @@ import RemoveEnrolledPlayerUseCase from '../application/use_cases/enrollment/Rem
 import SetCustomHandicapUseCase from '../application/use_cases/enrollment/SetCustomHandicapUseCase';
 import RemoveCustomHandicapUseCase from '../application/use_cases/enrollment/RemoveCustomHandicapUseCase';
 import SetNamePreferenceUseCase from '../application/use_cases/enrollment/SetNamePreferenceUseCase';
-import DirectEnrollUseCase from '../application/use_cases/enrollment/DirectEnrollUseCase';
 
 // Quick Match Use Cases (FE #236)
 import ApiQuickMatchRepository from '../infrastructure/repositories/ApiQuickMatchRepository';
@@ -750,7 +749,6 @@ const removeCustomHandicapUseCase = new RemoveCustomHandicapUseCase(
 const setNamePreferenceUseCase = new SetNamePreferenceUseCase(
   apiEnrollmentRepository,
 );
-const directEnrollUseCase = new DirectEnrollUseCase(apiEnrollmentRepository);
 
 // Quick Match Use Cases (FE #236)
 const createAndStartQuickMatchUseCase = new CreateAndStartQuickMatchUseCase({
@@ -995,7 +993,6 @@ export {
   setCustomHandicapUseCase,
   removeCustomHandicapUseCase,
   setNamePreferenceUseCase,
-  directEnrollUseCase,
   // Device Management Use Cases (v1.13.0)
   getActiveDevicesUseCase,
   revokeDeviceUseCase,
