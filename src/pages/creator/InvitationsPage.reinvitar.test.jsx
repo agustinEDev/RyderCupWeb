@@ -150,11 +150,15 @@ const pinta = () =>
 
 const volverAInvitar = () => screen.queryByTestId('reinvite-button');
 
+// La lectura entera, por páginas, de la que salen las vivas (pendientes y en
+// lista de espera): la que no es la de la pantalla (15 nov 2026)
+const esLaDeLasVivas = (filtros) => filtros?.page !== undefined;
+
 // La lista de la pantalla, y aparte las pendientes (para saber a quién no ofrecer)
 const conLista = (lista, pendientes = []) =>
   mockLista.mockImplementation((_, filtros = {}) =>
     Promise.resolve(
-      filtros.status === 'PENDING'
+      esLaDeLasVivas(filtros)
         ? { invitations: pendientes, totalCount: pendientes.length }
         : { invitations: lista, totalCount: lista.length },
     ),
@@ -245,7 +249,7 @@ describe('InvitationsPage · volver a invitar (release social 2)', () => {
     fireEvent.click(await screen.findByTestId('reinvite-button'));
     // La lista releída aún no trae la nueva pendiente
     mockLista.mockImplementation((_, filtros = {}) =>
-      filtros.status === 'PENDING'
+      esLaDeLasVivas(filtros)
         ? new Promise(() => {})
         : Promise.resolve({
             invitations: [invitacion('DECLINED', { inviteeUserId: 'u-2' })],
@@ -316,7 +320,7 @@ describe('InvitationsPage · volver a invitar (release social 2)', () => {
     pinta();
     fireEvent.click(await screen.findByTestId('reinvite-button'));
     mockLista.mockImplementation((_, filtros = {}) =>
-      filtros.status === 'PENDING'
+      esLaDeLasVivas(filtros)
         ? new Promise(() => {})
         : Promise.resolve({
             invitations: [
@@ -336,7 +340,7 @@ describe('InvitationsPage · volver a invitar (release social 2)', () => {
   it('una lectura de las pendientes de antes del envío no lo vuelve a ofrecer (/code-review)', async () => {
     let soltarLasViejas;
     mockLista.mockImplementation((_, filtros = {}) =>
-      filtros.status === 'PENDING'
+      esLaDeLasVivas(filtros)
         ? new Promise((r) => {
             soltarLasViejas = r;
           })
@@ -357,7 +361,7 @@ describe('InvitationsPage · volver a invitar (release social 2)', () => {
     // La recarga de la lista falla: la lectura de las pendientes que estaba en
     // marcha, de antes del envío, llega después
     mockLista.mockImplementation((_, filtros = {}) =>
-      filtros.status === 'PENDING'
+      esLaDeLasVivas(filtros)
         ? Promise.resolve({ invitations: [], totalCount: 0 })
         : Promise.reject(new Error('sin red')),
     );
@@ -568,14 +572,12 @@ describe('InvitationsPage · volver a invitar (release social 2)', () => {
     const enEspera = invitacion('ON_HOLD', { inviteeUserId: 'u-2' });
     mockLista.mockImplementation((_, filtros = {}) =>
       Promise.resolve(
-        filtros.status === 'ON_HOLD'
+        esLaDeLasVivas(filtros)
           ? { invitations: [enEspera], totalCount: 1 }
-          : filtros.status === 'PENDING'
-            ? { invitations: [], totalCount: 0 }
-            : {
-                invitations: [invitacion('DECLINED', { inviteeUserId: 'u-2' })],
-                totalCount: 1,
-              },
+          : {
+              invitations: [invitacion('DECLINED', { inviteeUserId: 'u-2' })],
+              totalCount: 1,
+            },
       ),
     );
     pinta();
@@ -583,6 +585,17 @@ describe('InvitationsPage · volver a invitar (release social 2)', () => {
     await trasSaberLaSituacion();
 
     expect(volverAInvitar()).not.toBeInTheDocument();
+  });
+
+  // La lectura entera trae también las cerradas: solo cuentan las vivas
+  it('R11: una rechazada en la lectura entera no impide volver a invitar', async () => {
+    const rechazada = invitacion('DECLINED', { inviteeUserId: 'u-2' });
+    conLista([rechazada], [rechazada]);
+    pinta();
+    await screen.findByText('Player One');
+    await trasSaberLaSituacion();
+
+    expect(await screen.findByTestId('reinvite-button')).toBeInTheDocument();
   });
 
   it('R3: si el servidor dice que está llena, lo dice (el aviso de siempre)', async () => {

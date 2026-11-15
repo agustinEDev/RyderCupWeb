@@ -140,10 +140,9 @@ const renderPage = () => {
   );
 };
 
-// Las vivas (pendientes y en lista de espera) se piden aparte del listado de
-// la pantalla, con su estado (15 nov 2026)
-const esDeLasVivas = (filtros) =>
-  filtros?.status === 'PENDING' || filtros?.status === 'ON_HOLD';
+// Las vivas (pendientes y en lista de espera) salen de una lectura entera, por
+// páginas y sin estado, aparte del listado de la pantalla (15 nov 2026)
+const esDeLasVivas = (filtros) => filtros?.page !== undefined;
 
 describe('InvitationsPage', () => {
   beforeEach(() => {
@@ -571,8 +570,8 @@ describe('InvitationsPage', () => {
       );
 
       const llamadas = mockListCompetitionInvitations.mock.calls;
-      const pidePendientes = llamadas.some(
-        ([, filtros]) => filtros && filtros.status === 'PENDING',
+      const pidePendientes = llamadas.some(([, filtros]) =>
+        esDeLasVivas(filtros),
       );
       expect(pidePendientes).toBe(true);
     });
@@ -589,7 +588,7 @@ describe('InvitationsPage', () => {
       });
       mockListCompetitionInvitations.mockImplementation((_id, filtros = {}) =>
         Promise.resolve(
-          filtros.status === 'ON_HOLD'
+          esDeLasVivas(filtros)
             ? {
                 invitations: [
                   { id: 'i-1', inviteeUserId: 'u-1', status: 'ON_HOLD' },
@@ -609,6 +608,35 @@ describe('InvitationsPage', () => {
         'send.alreadyInvited',
       );
       expect(screen.getByTestId('invite-friend-u-2')).not.toBeDisabled();
+    });
+
+    // El front sale antes que el back (15 nov 2026): el servidor de hoy no
+    // conoce ON_HOLD y contesta 400 si se le pide. Una sola lectura, sin
+    // filtro de estado, y las vivas se eligen aquí
+    it('3c: con el servidor de antes (sin ON_HOLD), se sigue pudiendo invitar', async () => {
+      mockListFriends.mockResolvedValue({
+        friendships: [{ otherUserId: 'u-1', otherUserName: 'Amigo' }],
+        totalCount: 1,
+      });
+      mockListCompetitionInvitations.mockImplementation((_id, filtros = {}) =>
+        filtros.status === 'ON_HOLD'
+          ? Promise.reject(Object.assign(new Error('x'), { status: 400 }))
+          : Promise.resolve({ invitations: [], totalCount: 0 }),
+      );
+
+      await abreElModal();
+
+      await waitFor(() =>
+        expect(screen.getByTestId('invite-friend-u-1')).not.toBeDisabled(),
+      );
+      expect(
+        screen.queryByTestId('friends-eligibility-error'),
+      ).not.toBeInTheDocument();
+      const conEstado = mockListCompetitionInvitations.mock.calls.filter(
+        ([, filtros]) =>
+          filtros?.status === 'PENDING' || filtros?.status === 'ON_HOLD',
+      );
+      expect(conEstado).toHaveLength(0);
     });
 
     it('4: los amigos se piden con límite propio, no con el de por defecto', async () => {
@@ -656,15 +684,16 @@ describe('InvitationsPage', () => {
         totalCount: 1,
       });
       mockListCompetitionInvitations.mockImplementation((_id, filtros = {}) => {
-        if (filtros.status !== 'PENDING')
+        if (!esDeLasVivas(filtros))
           return Promise.resolve({ invitations: [], totalCount: 0 });
         const pagina = filtros.page ?? 1;
         const invitados =
           pagina === 1
             ? Array.from({ length: 100 }, (_, i) => ({
                 inviteeUserId: `u-${i}`,
+                status: 'PENDING',
               }))
-            : [{ inviteeUserId: 'u-120' }];
+            : [{ inviteeUserId: 'u-120', status: 'PENDING' }];
         return Promise.resolve({ invitations: invitados, totalCount: 101 });
       });
 
@@ -724,7 +753,7 @@ describe('InvitationsPage', () => {
         totalCount: 1,
       });
       mockListCompetitionInvitations.mockImplementation((_id, filtros = {}) =>
-        filtros.status === 'PENDING'
+        esDeLasVivas(filtros)
           ? Promise.reject(new Error('la red'))
           : Promise.resolve({ invitations: [], totalCount: 0 }),
       );
