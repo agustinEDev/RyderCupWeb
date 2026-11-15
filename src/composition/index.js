@@ -137,6 +137,7 @@ import TakeTeeWindowPlaceUseCase from '../application/use_cases/schedule/TakeTee
 import ReleaseTeeWindowPlaceUseCase from '../application/use_cases/schedule/ReleaseTeeWindowPlaceUseCase';
 import JoinWaitingListUseCase from '../application/use_cases/schedule/JoinWaitingListUseCase';
 import LeaveWaitingListUseCase from '../application/use_cases/schedule/LeaveWaitingListUseCase';
+import ListMyHandicapsNotUpdatedUseCase from '../application/use_cases/competition/ListMyHandicapsNotUpdatedUseCase';
 import ListMyAssignedPlacesUseCase from '../application/use_cases/schedule/ListMyAssignedPlacesUseCase';
 import AcknowledgeAssignedPlaceUseCase from '../application/use_cases/schedule/AcknowledgeAssignedPlaceUseCase';
 // Partidas de las franjas (FE #824, PR 6)
@@ -358,6 +359,9 @@ const cancelScheduledHandicapUpdateUseCase =
   new CancelScheduledHandicapUpdateUseCase({
     competitionRepository: apiCompetitionRepository,
   });
+const listMyHandicapsNotUpdatedUseCase = new ListMyHandicapsNotUpdatedUseCase({
+  competitionRepository: apiCompetitionRepository,
+});
 const listUserCompetitionsUseCase = new ListUserCompetitionsUseCase({
   competitionRepository: apiCompetitionRepository,
 });
@@ -963,6 +967,7 @@ export {
   launchHandicapUpdateUseCase,
   scheduleHandicapUpdateUseCase,
   cancelScheduledHandicapUpdateUseCase,
+  listMyHandicapsNotUpdatedUseCase,
   listUserCompetitionsUseCase,
   getCompetitionDetailUseCase,
   getCompetitionSummaryUseCase,

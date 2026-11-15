@@ -278,6 +278,28 @@ class ApiCompetitionRepository extends ICompetitionRepository {
     return { runAt: data?.run_at ?? runAt };
   }
 
+  /**
+   * Mis hándicaps sin actualizar con la RFEG (15 nov 2026; RyderCupAm #864):
+   * como organizador, cuántos en cada competición; como jugador, dónde no me
+   * encontró. De los jugadores solo hace falta la cuenta.
+   */
+  async getMyHandicapsNotUpdated() {
+    const data = await apiRequest(
+      '/api/v1/competitions/me/handicaps-not-updated',
+    );
+    return {
+      asOrganizer: (data?.as_organizer || []).map((c) => ({
+        competitionId: c.competition_id,
+        competitionName: c.competition_name,
+        count: c.count,
+      })),
+      asPlayer: (data?.as_player || []).map((c) => ({
+        competitionId: c.competition_id,
+        competitionName: c.competition_name,
+      })),
+    };
+  }
+
   /** DELETE /competitions/{id}/handicap-updates/schedule → 204. */
   async cancelScheduledHandicapUpdate(competitionId) {
     await apiRequest(

@@ -55,7 +55,10 @@
     "sessionWithoutMatches": "Una sesión se ha quedado sin partidos",
     "placeAssigned": "Tienes plaza: te tocó desde la lista de espera",
     "placeAssignedOk": "Entendido",
-    "placeAssignedOkFailed": "No se ha podido marcar como vista. Inténtalo otra vez."
+    "placeAssignedOkFailed": "No se ha podido marcar como vista. Inténtalo otra vez.",
+    "handicapsNotUpdated_one": "{{count}} jugador sin actualizar con la RFEG en {{competition}}",
+    "handicapsNotUpdated_other": "{{count}} jugadores sin actualizar con la RFEG en {{competition}}",
+    "rfegHandicapNotFound": "No hemos encontrado tu hándicap en la RFEG para {{competition}}. Revisa que tu nombre y apellidos en tu perfil sean los de tu licencia, y vuelve a pedirlo desde tu perfil."
   },
   "upcomingMatches": {
     "title": "Mis Próximos Partidos",

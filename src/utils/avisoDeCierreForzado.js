@@ -140,6 +140,7 @@ const TRAMOS_FIJOS = new Set([
   'handicap',
   'handicap-updates',
   'handicaps',
+  'handicaps-not-updated',
   'hide',
   'hole-lines',
   'hole-map',

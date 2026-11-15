@@ -413,6 +413,7 @@ const CompetitionDetail = () => {
               claveDeFranjas={claveDeFranjas}
               cierre={cierre}
               handleStatusChange={handleStatusChange}
+              verHandicaps={location.state?.verHandicaps === true}
             />
 
             <AgendaDeLaFicha

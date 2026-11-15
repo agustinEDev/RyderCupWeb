@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { RefreshCw, Clock } from 'lucide-react';
 import {
@@ -68,8 +68,16 @@ const HandicapsDeLaCompeticion = ({
   handicapUpdate,
   handicapUpdateWindow,
   onReleer,
+  traerALaVista = false,
 }) => {
   const { t, i18n } = useTranslation('competitions');
+  // Se llega desde «{N} jugadores sin actualizar con la RFEG» (15 nov 2026):
+  // la tarjeta se trae a la vista una vez, al montarla
+  const tarjeta = useRef(null);
+  const [traer] = useState(traerALaVista);
+  useEffect(() => {
+    if (traer) tarjeta.current?.scrollIntoView?.({ block: 'start' });
+  }, [traer]);
   // Lo leído del campo, con el intento al que pertenece: mientras se reintenta,
   // la zona no se da por sabida. Una competición nueva no lo arrastra: al
   // cambiar de ficha la tarjeta se monta de nuevo (`/code-review`, #863)
@@ -191,6 +199,7 @@ const HandicapsDeLaCompeticion = ({
 
   return (
     <section
+      ref={tarjeta}
       data-testid="handicaps"
       className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm space-y-3"
     >

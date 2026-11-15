@@ -13,6 +13,7 @@ import {
   Inbox,
   AlertTriangle,
   CalendarCheck,
+  UserX,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useEntryMotion } from '../../hooks/useEntryMotion';
@@ -26,6 +27,7 @@ import {
   listMySessionsWithoutMatchesUseCase,
   listMyAssignedPlacesUseCase,
   acknowledgeAssignedPlaceUseCase,
+  listMyHandicapsNotUpdatedUseCase,
 } from '../../composition';
 import customToast from '../../utils/toast';
 import {
@@ -44,6 +46,8 @@ const loRecordado = (r) => ({
   sobresPendientes: r?.sobresPendientes ?? [],
   sesionesSinPartidos: r?.sesionesSinPartidos ?? [],
   plazasAsignadas: r?.plazasAsignadas ?? [],
+  rfegSinActualizar: r?.rfegSinActualizar ?? [],
+  rfegNoEncontrado: r?.rfegNoEncontrado ?? [],
 });
 
 const PendingActionsCard = ({
@@ -85,6 +89,14 @@ const PendingActionsCard = ({
   const [plazasAsignadas, setPlazasAsignadas] = useState(
     inicial.plazasAsignadas,
   );
+  // Los hándicaps sin actualizar con la RFEG (15 nov 2026): las competiciones
+  // que organiza con jugadores sin actualizar, y en las que no le encontró
+  const [rfegSinActualizar, setRfegSinActualizar] = useState(
+    inicial.rfegSinActualizar,
+  );
+  const [rfegNoEncontrado, setRfegNoEncontrado] = useState(
+    inicial.rfegNoEncontrado,
+  );
   // Las que ya se mandaron como vistas: un doble toque no repite el envío, y una
   // lectura lanzada antes no las devuelve a la lista (revisor)
   const [enviandoVista, setEnviandoVista] = useState(() => new Set());
@@ -113,6 +125,8 @@ const PendingActionsCard = ({
     setSobresPendientes(deLaNueva.sobresPendientes);
     setSesionesSinPartidos(deLaNueva.sesionesSinPartidos);
     setPlazasAsignadas(deLaNueva.plazasAsignadas);
+    setRfegSinActualizar(deLaNueva.rfegSinActualizar);
+    setRfegNoEncontrado(deLaNueva.rfegNoEncontrado);
     // Lo que la anterior tenía a medio enviar no es de esta
     setEnviandoVista(new Set());
   }
@@ -197,6 +211,7 @@ const PendingActionsCard = ({
             ? pedir(() => listMySessionsWithoutMatchesUseCase.execute())
             : Promise.resolve([]),
           pedir(() => listMyAssignedPlacesUseCase.execute()),
+          pedir(() => listMyHandicapsNotUpdatedUseCase.execute()),
         ]);
 
         // Una respuesta que llega cuando ya nos hemos ido no escribe: antes solo
@@ -248,6 +263,12 @@ const PendingActionsCard = ({
             (p) => !vistas.current.has(p.roundId),
           );
           setPlazasAsignadas(aplicado.plazasAsignadas);
+        }
+        if (results[7].status === 'fulfilled') {
+          aplicado.rfegSinActualizar = results[7].value?.asOrganizer || [];
+          aplicado.rfegNoEncontrado = results[7].value?.asPlayer || [];
+          setRfegSinActualizar(aplicado.rfegSinActualizar);
+          setRfegNoEncontrado(aplicado.rfegNoEncontrado);
         }
 
         ultimoAplicado.current = aplicado;
@@ -331,7 +352,9 @@ const PendingActionsCard = ({
     activeQuickMatches.length +
     sobresPendientes.length +
     sesionesSinPartidos.length +
-    plazasAsignadas.length;
+    plazasAsignadas.length +
+    rfegSinActualizar.length +
+    rfegNoEncontrado.length;
 
   if (isLoading) {
     return (
@@ -562,6 +585,56 @@ const PendingActionsCard = ({
                       .join(' · ')}
                   </p>
                 </div>
+              </div>
+              <ChevronRight className="w-4 h-4 shrink-0 text-gray-400 group-hover:text-gray-600 transition-colors" />
+            </button>
+          ))}
+
+          {/* Jugadores sin actualizar con la RFEG en una que organiza: a la
+              tarjeta de hándicaps de la competición (15 nov 2026) */}
+          {rfegSinActualizar.map((c) => (
+            <button
+              key={c.competitionId}
+              onClick={() =>
+                navigate(`/competitions/${c.competitionId}`, {
+                  state: { verHandicaps: true },
+                })
+              }
+              className="flex items-center justify-between w-full p-3 bg-white/70 rounded-lg hover:bg-white transition-colors group"
+              data-testid={`rfeg-sin-actualizar-${c.competitionId}`}
+            >
+              <div className="flex min-w-0 items-center gap-3">
+                <div className="p-2 bg-amber-100 rounded-lg">
+                  <TrendingUp className="w-4 h-4 text-amber-600" />
+                </div>
+                <p className="min-w-0 text-left text-sm font-semibold text-gray-900">
+                  {t('pendingActions.handicapsNotUpdated', {
+                    count: c.count,
+                    competition: c.competitionName,
+                  })}
+                </p>
+              </div>
+              <ChevronRight className="w-4 h-4 shrink-0 text-gray-400 group-hover:text-gray-600 transition-colors" />
+            </button>
+          ))}
+
+          {/* La RFEG no le encontró: a revisar el nombre en su perfil */}
+          {rfegNoEncontrado.map((c) => (
+            <button
+              key={c.competitionId}
+              onClick={() => navigate('/profile/edit')}
+              className="flex items-center justify-between w-full p-3 bg-white/70 rounded-lg hover:bg-white transition-colors group"
+              data-testid={`rfeg-no-encontrado-${c.competitionId}`}
+            >
+              <div className="flex min-w-0 items-center gap-3">
+                <div className="p-2 bg-amber-100 rounded-lg">
+                  <UserX className="w-4 h-4 text-amber-600" />
+                </div>
+                <p className="min-w-0 text-left text-sm text-gray-900">
+                  {t('pendingActions.rfegHandicapNotFound', {
+                    competition: c.competitionName,
+                  })}
+                </p>
               </div>
               <ChevronRight className="w-4 h-4 shrink-0 text-gray-400 group-hover:text-gray-600 transition-colors" />
             </button>
