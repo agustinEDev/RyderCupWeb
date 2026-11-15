@@ -7,7 +7,9 @@
  * solo importa para decidir si YA abrió, y eso lo decide el servidor.
  */
 
-export const MIN_DIAS_DE_APERTURA = 1;
+// Dos desde el 15 nov 2026 (RyderCupAm #865): con uno abría a las 0:00 del día
+// anterior y cerraba a las 12:00 de ese mismo día, por el plazo de inscripción
+export const MIN_DIAS_DE_APERTURA = 2;
 export const MAX_DIAS_DE_APERTURA = 14;
 
 /**
