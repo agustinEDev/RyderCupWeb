@@ -315,7 +315,7 @@ src/
 | **Device Control** | Fingerprinting with remote revocation |
 | **Asset Integrity** | SRI (Subresource Integrity) |
 | **Monitoring** | Sentry error tracking + session replay |
-| **Password Policy** | 12-128 chars, uppercase + lowercase + numbers |
+| **Password Policy** | 12-64 chars and 72 bytes (new passwords), uppercase + lowercase + numbers + symbol |
 
 </div>
 

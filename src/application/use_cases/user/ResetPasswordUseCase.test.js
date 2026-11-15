@@ -112,14 +112,14 @@ describe('ResetPasswordUseCase', () => {
       expect(authRepository.resetPassword).not.toHaveBeenCalled();
     });
 
-    it('should throw error if password is too long (>128 chars)', async () => {
-      // Arrange: 129 characters (exceeds 128 limit)
-      const longPassword = 'A'.repeat(127) + '1a';
+    it('should throw error if password is too long (>64 chars, B-14)', async () => {
+      // Arrange: 65 characters (exceeds the 64 limit)
+      const longPassword = 'A'.repeat(63) + '1a';
 
       // Act & Assert
       await expect(
         resetPasswordUseCase.execute('valid_token', longPassword),
-      ).rejects.toThrow('Password must not exceed 128 characters.');
+      ).rejects.toThrow('Password must not exceed 64 characters.');
       expect(authRepository.resetPassword).not.toHaveBeenCalled();
     });
 
@@ -166,10 +166,10 @@ describe('ResetPasswordUseCase', () => {
       );
     });
 
-    it('should accept password with exactly 128 characters (maximum)', async () => {
+    it('should accept password with exactly 64 characters (maximum)', async () => {
       // Arrange
       const token = 'valid_token';
-      const newPassword = 'A'.repeat(125) + '1a!'; // Exactamente 128 caracteres
+      const newPassword = 'A'.repeat(61) + '1a!'; // Exactamente 64 caracteres
       const mockResponse = { message: 'Success' };
 
       authRepository.resetPassword.mockResolvedValue(mockResponse);

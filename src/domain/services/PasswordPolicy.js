@@ -22,6 +22,16 @@ export const PASSWORD_SPECIAL_CHARS = /[!@#$%^&*()_+\-=[\]{}|;:,.<>?]/;
  */
 export const passwordLength = (password) => [...password].length;
 
+/** Los bytes que usa bcrypt: la contraseña en UTF-8 (una eñe o una tilde ocupan 2). */
+export const PASSWORD_MAX_BYTES = 72;
+export const passwordBytes = (password) =>
+  new globalThis.TextEncoder().encode(password).length;
+
+/** Cabe en el máximo: 64 caracteres y 72 bytes, como el backend (B-14). */
+export const fitsMaxLength = (password) =>
+  passwordLength(password) <= PASSWORD_MAX_LENGTH &&
+  passwordBytes(password) <= PASSWORD_MAX_BYTES;
+
 /**
  * Mayúscula, minúscula y dígito en Unicode, como `isupper()`, `islower()` e
  * `isdigit()` del backend: con /[A-Z]/ una «Ñ» no contaba y el formulario
@@ -31,9 +41,13 @@ export const PASSWORD_UPPERCASE = /\p{Lu}/u;
 export const PASSWORD_LOWERCASE = /\p{Ll}/u;
 export const PASSWORD_DIGIT = /\p{Nd}/u;
 
-/** Límites de la política, los del backend: 12 (OWASP ASVS V2.1.1) y 128 (coste del hash). */
+/**
+ * Límites de la política, los del backend: 12 (OWASP ASVS V2.1.1) y 64 para las nuevas
+ * (bcrypt usa los 72 primeros bytes; B-14 de la auditoría de la fase 6, 15 nov 2026). El
+ * login no la aplica: quien ya tenía una más larga sigue entrando.
+ */
 export const PASSWORD_MIN_LENGTH = 12;
-export const PASSWORD_MAX_LENGTH = 128;
+export const PASSWORD_MAX_LENGTH = 64;
 
 /**
  * Lo que el backend considera espacio en los bordes: los 29 caracteres de
@@ -102,8 +116,8 @@ export const validatePassword = (password) => {
     };
   }
 
-  // Validation: Check maximum length (128 characters)
-  if (passwordLength(password) > maxLength) {
+  // Validation: Check maximum length (64 characters and 72 bytes for a new password)
+  if (!fitsMaxLength(password)) {
     return {
       isValid: false,
       messageKey: 'validation.passwordTooLong',

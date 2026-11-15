@@ -76,6 +76,22 @@ describe('UpdateUserSecurityUseCase', () => {
     expect(enviado.new_password.getValue()).toBe('NuevaSegura123!');
   });
 
+  it('acepta una contraseña ACTUAL de más de 64 caracteres (B-14: de antes)', async () => {
+    userRepository.updateSecurity.mockResolvedValue({});
+    const larga = 'Aa1!' + 'x'.repeat(96);
+
+    await updateUserSecurityUseCase.execute({
+      userId: 'user-123',
+      securityData: {
+        current_password: larga,
+        new_password: 'NuevaSegura123!',
+      },
+    });
+
+    const [, enviado] = userRepository.updateSecurity.mock.calls[0];
+    expect(enviado.current_password.getValue()).toBe(larga);
+  });
+
   it('la contraseña NUEVA sí tiene que cumplir la política', async () => {
     await expect(
       updateUserSecurityUseCase.execute({

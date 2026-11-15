@@ -20,12 +20,28 @@ describe('Password Value Object', () => {
     );
   });
 
-  it('should throw PasswordValidationError if password is too long', () => {
-    const longPassword = 'A'.repeat(127) + '1a';
+  it('should throw PasswordValidationError if password is too long (B-14: 64)', () => {
+    const longPassword = 'A'.repeat(63) + '1a';
     expect(() => new Password(longPassword)).toThrow(PasswordValidationError);
     expect(() => new Password(longPassword)).toThrow(
-      'Password must not exceed 128 characters.',
+      'Password must not exceed 64 characters.',
     );
+  });
+
+  it('rejects a new password over 72 bytes even under 64 characters (B-14)', () => {
+    const conEnes = 'Aa1!' + 'ñ'.repeat(34) + 'x'; // 39 caracteres, 73 bytes
+    expect(() => new Password(conEnes)).toThrow(PasswordValidationError);
+    expect(() => new Password('Aa1!' + 'ñ'.repeat(34))).not.toThrow(); // 72 bytes
+  });
+
+  it('accepts a new password of exactly 64 characters', () => {
+    expect(() => new Password('Aa1!' + 'x'.repeat(60))).not.toThrow();
+  });
+
+  it('login does not apply the maximum: a longer existing password still works', () => {
+    expect(
+      () => new Password('Aa1!' + 'x'.repeat(96), { validateStrength: false }),
+    ).not.toThrow();
   });
 
   it('should throw PasswordValidationError if password is missing an uppercase letter', () => {

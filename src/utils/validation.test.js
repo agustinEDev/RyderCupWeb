@@ -26,16 +26,16 @@ describe('validation utilities', () => {
       expect(result.message).toBe('Strong password');
     });
 
-    // Test: Maximum length requirement (128 characters)
-    it('should reject password with more than 128 characters', () => {
-      const longPassword = 'A1' + 'a'.repeat(127); // 129 characters
+    // Test: Maximum length requirement (64 characters for a new password, B-14)
+    it('should reject password with more than 64 characters', () => {
+      const longPassword = 'A1' + 'a'.repeat(63); // 65 characters
       const result = validatePassword(longPassword);
       expect(result.isValid).toBe(false);
-      expect(result.message).toContain('must not exceed 128 characters');
+      expect(result.message).toContain('must not exceed 64 characters');
     });
 
-    it('should accept password with exactly 128 characters and complexity', () => {
-      const maxPassword = 'A1!' + 'a'.repeat(125); // 128 characters
+    it('should accept password with exactly 64 characters and complexity', () => {
+      const maxPassword = 'A1!' + 'a'.repeat(61); // 64 characters
       const result = validatePassword(maxPassword);
       expect(result.isValid).toBe(true);
     });
@@ -425,7 +425,7 @@ describe('validation utilities', () => {
         min: 12,
       });
       expect(passwordErrorTranslation('PASSWORD_TOO_LONG').options).toEqual({
-        max: 128,
+        max: 64,
       });
     });
 
@@ -438,6 +438,17 @@ describe('validation utilities', () => {
       'toString',
     ])('un código que no es de la contraseña (%s) no se traduce', (codigo) => {
       expect(passwordErrorTranslation(codigo)).toBeNull();
+    });
+  });
+
+  describe('validatePasswordStrength · demasiado larga (B-14)', () => {
+    it.each([
+      ['65 caracteres', 'Abc1!' + 'a'.repeat(60)],
+      ['73 bytes con eñes', 'Aa1!' + 'ñ'.repeat(34) + 'x'],
+    ])('%s: no aconseja añadir símbolos que ya tiene', (_caso, larga) => {
+      const { score, feedback } = validatePasswordStrength(larga);
+      expect(score).toBeLessThan(4);
+      expect(feedback).toBe('');
     });
   });
 });
