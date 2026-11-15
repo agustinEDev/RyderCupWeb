@@ -1042,7 +1042,9 @@ const CreateCompetition = () => {
             // Lo general fue segundo y el nombre ya lo tiene otra: junto al
             // campo, como si fuera la primera (revisión de la FE-B). Los
             // ajustes ya quedaron guardados y al reintentar no se reenvían
-            if (enLaCompeticion && error?.status === 409) {
+            // Con la sala de draft abierta, el 409 no es del nombre (15 nov 2026)
+            const conElDraft = error?.errorCode === 'DRAFT_IN_PROGRESS';
+            if (enLaCompeticion && error?.status === 409 && !conElDraft) {
               senalaElNombre('nameTaken');
               return;
             }
@@ -1054,6 +1056,7 @@ const CreateCompetition = () => {
                 : 'edit.strokePlayNotSaved',
               {
                 motivo:
+                  (conElDraft && t('edit.datesDuringDraft')) ||
                   sesionesQueQuedanFuera(error) ||
                   error.message ||
                   t('edit.error'),

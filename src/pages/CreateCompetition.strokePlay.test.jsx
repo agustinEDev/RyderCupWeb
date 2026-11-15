@@ -362,6 +362,25 @@ describe('CreateCompetition · Stableford y Medal con sus ajustes (FE #824)', ()
     expect(aviso.textContent).not.toContain('mensaje en bruto');
   });
 
+  // Con la sala de draft abierta (15 nov 2026): su texto, no el del servidor ni
+  // «nombre ya usado», que es lo que decía un 409 de lo general
+  it('18e: si lo general choca con el draft, lo dice traducido', async () => {
+    composicion.updateCompetitionUseCase.execute.mockRejectedValue(
+      Object.assign(new Error('Draft in progress'), {
+        status: 409,
+        errorCode: 'DRAFT_IN_PROGRESS',
+      }),
+    );
+    const jornadas = await alEditar();
+    fireEvent.change(jornadas, { target: { value: '2' } });
+
+    enviar();
+
+    const aviso = await screen.findByText(/^edit\.generalNotSaved/);
+    expect(aviso.textContent).toContain('edit.datesDuringDraft');
+    expect(aviso.textContent).not.toContain('Draft in progress');
+  });
+
   it('18c: y al reintentar no vuelve a mandar los ajustes que ya se guardaron', async () => {
     composicion.updateCompetitionUseCase.execute.mockRejectedValueOnce(
       new Error('nombre repetido'),

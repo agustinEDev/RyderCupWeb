@@ -140,6 +140,11 @@ const renderPage = () => {
   );
 };
 
+// Las vivas (pendientes y en lista de espera) se piden aparte del listado de
+// la pantalla, con su estado (15 nov 2026)
+const esDeLasVivas = (filtros) =>
+  filtros?.status === 'PENDING' || filtros?.status === 'ON_HOLD';
+
 describe('InvitationsPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -420,20 +425,26 @@ describe('InvitationsPage', () => {
     });
 
     it('V7: si falla el refresco silencioso, no se echa a nadie de la pantalla', async () => {
-      mockListCompetitionInvitations
-        .mockReset()
-        .mockResolvedValueOnce({ invitations: [], totalCount: 0 })
+      // El listado de la pantalla: el primero bien, el refresco falla. Las
+      // vivas (pendientes y en espera) se piden aparte y aquí no cuentan
+      const listado = vi
+        .fn()
         .mockResolvedValueOnce({ invitations: [], totalCount: 0 })
         .mockRejectedValue(new Error('Boom'));
+      mockListCompetitionInvitations
+        .mockReset()
+        .mockImplementation((_id, filtros = {}) =>
+          esDeLasVivas(filtros)
+            ? Promise.resolve({ invitations: [], totalCount: 0 })
+            : listado(),
+        );
       renderPage();
       fireEvent.click(await screen.findByText('creator.sendNew'));
       fireEvent.click(await screen.findByTestId('invite-friend-u-1'));
 
       await waitFor(() => expect(mockSendInvitation).toHaveBeenCalled());
       // Que el refresco silencioso llegó a hacerse, y falló
-      await waitFor(() =>
-        expect(mockListCompetitionInvitations).toHaveBeenCalledTimes(3),
-      );
+      await waitFor(() => expect(listado).toHaveBeenCalledTimes(2));
       await act(async () => {});
       expect(screen.getByText('send.title')).toBeInTheDocument();
       expect(screen.queryByText('LA COMPETICION')).not.toBeInTheDocument();
@@ -455,9 +466,10 @@ describe('InvitationsPage', () => {
         expiresAt: new Date(Date.now() + 86400000).toISOString(),
         respondedAt: null,
       };
-      mockListCompetitionInvitations
-        .mockReset()
-        .mockResolvedValueOnce({ invitations: [], totalCount: 0 })
+      // El listado de la pantalla: el primero, el refresco viejo (que tarda) y
+      // el de después. Las vivas se piden aparte y aquí no cuentan
+      const listado = vi
+        .fn()
         .mockResolvedValueOnce({ invitations: [], totalCount: 0 })
         .mockImplementationOnce(
           () =>
@@ -466,16 +478,19 @@ describe('InvitationsPage', () => {
             }),
         )
         .mockResolvedValue({ invitations: [INVITACION], totalCount: 1 });
+      mockListCompetitionInvitations
+        .mockReset()
+        .mockImplementation((_id, filtros = {}) =>
+          esDeLasVivas(filtros)
+            ? Promise.resolve({ invitations: [], totalCount: 0 })
+            : listado(),
+        );
       renderPage();
       fireEvent.click(await screen.findByText('creator.sendNew'));
       fireEvent.click(await screen.findByTestId('invite-friend-u-1'));
-      await waitFor(() =>
-        expect(mockListCompetitionInvitations).toHaveBeenCalledTimes(3),
-      );
+      await waitFor(() => expect(listado).toHaveBeenCalledTimes(2));
       fireEvent.click(screen.getByTestId('invite-friend-u-2'));
-      await waitFor(() =>
-        expect(mockListCompetitionInvitations).toHaveBeenCalledTimes(4),
-      );
+      await waitFor(() => expect(listado).toHaveBeenCalledTimes(3));
       await waitFor(() =>
         expect(screen.getAllByTestId('invitation-card')).toHaveLength(1),
       );
@@ -560,6 +575,40 @@ describe('InvitationsPage', () => {
         ([, filtros]) => filtros && filtros.status === 'PENDING',
       );
       expect(pidePendientes).toBe(true);
+    });
+
+    // En lista de espera también está invitado (15 nov 2026): no se le ofrece
+    // otra, que el servidor contestaría INVITATION_ON_HOLD_EXISTS
+    it('3b: un amigo con una invitación en lista de espera sale como ya invitado', async () => {
+      mockListFriends.mockResolvedValue({
+        friendships: [
+          { otherUserId: 'u-1', otherUserName: 'Amigo' },
+          { otherUserId: 'u-2', otherUserName: 'Otro' },
+        ],
+        totalCount: 2,
+      });
+      mockListCompetitionInvitations.mockImplementation((_id, filtros = {}) =>
+        Promise.resolve(
+          filtros.status === 'ON_HOLD'
+            ? {
+                invitations: [
+                  { id: 'i-1', inviteeUserId: 'u-1', status: 'ON_HOLD' },
+                ],
+                totalCount: 1,
+              }
+            : { invitations: [], totalCount: 0 },
+        ),
+      );
+
+      await abreElModal();
+
+      await waitFor(() =>
+        expect(screen.getByTestId('invite-friend-u-1')).toBeDisabled(),
+      );
+      expect(screen.getByTestId('invite-friend-u-1')).toHaveTextContent(
+        'send.alreadyInvited',
+      );
+      expect(screen.getByTestId('invite-friend-u-2')).not.toBeDisabled();
     });
 
     it('4: los amigos se piden con límite propio, no con el de por defecto', async () => {

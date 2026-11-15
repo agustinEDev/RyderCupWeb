@@ -110,6 +110,8 @@ describe('CreateCompetition · cerrada por el plazo: solo las fechas', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockValidar.mockImplementation(() => null);
+    // Lo que un caso deja en cola (un «Once» sin usar) no pasa al siguiente
+    mockActualizar.mockReset();
     mockDetalle.mockReset();
     mockCampos.mockReset();
     mockCampos.mockResolvedValue([]);

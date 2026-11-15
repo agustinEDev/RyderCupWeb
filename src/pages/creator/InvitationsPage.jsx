@@ -82,18 +82,28 @@ const idsDeLosInscritos = (competitionId) =>
       return inscripciones.map((e) => e.userId ?? e.user_id).filter(Boolean);
     });
 
-// Las pendientes, enteras y sin el filtro de la pantalla: `invitations` está
+// Las de un estado, enteras y sin el filtro de la pantalla: `invitations` está
 // filtrada por lo que el creador haya elegido arriba y paginada
-const lasPendientes = (competitionId) =>
+const lasDeUnEstado = (competitionId, status) =>
   todasLasPaginas(
     (page) =>
       listCompetitionInvitationsUseCase.execute(competitionId, {
-        status: 'PENDING',
+        status,
         limit: POR_PAGINA,
         page,
       }),
     (res) => res.invitations ?? [],
   );
+
+// Las que siguen vivas: pendientes y en lista de espera (15 nov 2026). A quien
+// ya tiene una de las dos no se le ofrece otra: el servidor la rechazaría
+const lasPendientes = (competitionId) =>
+  Promise.all([
+    lasDeUnEstado(competitionId, 'PENDING'),
+    lasDeUnEstado(competitionId, 'ON_HOLD').then((lista) =>
+      lista.filter((inv) => inv.status === 'ON_HOLD'),
+    ),
+  ]).then(([pendientes, enEspera]) => [...pendientes, ...enEspera]);
 
 // A quién va una invitación: por su usuario y por su correo, los que traiga
 const clavesDe = (invitation) =>

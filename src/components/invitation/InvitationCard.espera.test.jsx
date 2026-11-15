@@ -15,6 +15,8 @@ import InvitationCard from './InvitationCard';
  *   W2 el organizador, en espera             | «En lista de espera» en su lista, sin el porqué
  *   W3 el invitado, pendiente                | «Aceptar» y «Rechazar», como siempre
  *   W4 el organizador, en espera             | «Retirar», como en una pendiente (15 nov 2026)
+ *   W5 el invitado, en espera                | conserva «Ver la competición», aunque haya pasado su caducidad
+ *   W6 en espera con fecha de respuesta      | sin «Respondida»: nadie ha respondido
  */
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({ t: (key) => key, i18n: { language: 'es' } }),
@@ -104,5 +106,25 @@ describe('InvitationCard · en lista de espera', () => {
     screen.getByTestId('withdraw-button').click();
 
     expect(retirar).toHaveBeenCalledWith(enEspera);
+  });
+
+  it('W5: Given el invitado con una en espera ya pasada su caducidad, When se pinta, Then puede ver la competición', () => {
+    pinta(
+      {
+        ...enEspera,
+        expiresAt: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
+      },
+      'player',
+    );
+
+    expect(
+      screen.getByRole('link', { name: 'card.viewCompetition: Summer Cup' }),
+    ).toHaveAttribute('href', '/competitions/comp-1');
+  });
+
+  it('W6: Given una en espera con fecha de respuesta, When se pinta, Then sin «Respondida»', () => {
+    pinta({ ...enEspera, respondedAt: '2026-11-15T10:00:00Z' }, 'creator');
+
+    expect(screen.queryByTestId('fecha-de-la-invitacion')).toBeNull();
   });
 });

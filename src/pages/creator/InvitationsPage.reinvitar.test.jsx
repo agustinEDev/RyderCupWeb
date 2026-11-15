@@ -563,6 +563,28 @@ describe('InvitationsPage · volver a invitar (release social 2)', () => {
     );
   });
 
+  // En lista de espera también está invitado (15 nov 2026): no se le reinvita
+  it('R10: con una invitación en lista de espera, no se ofrece volver a invitar', async () => {
+    const enEspera = invitacion('ON_HOLD', { inviteeUserId: 'u-2' });
+    mockLista.mockImplementation((_, filtros = {}) =>
+      Promise.resolve(
+        filtros.status === 'ON_HOLD'
+          ? { invitations: [enEspera], totalCount: 1 }
+          : filtros.status === 'PENDING'
+            ? { invitations: [], totalCount: 0 }
+            : {
+                invitations: [invitacion('DECLINED', { inviteeUserId: 'u-2' })],
+                totalCount: 1,
+              },
+      ),
+    );
+    pinta();
+    await screen.findByText('Player One');
+    await trasSaberLaSituacion();
+
+    expect(volverAInvitar()).not.toBeInTheDocument();
+  });
+
   it('R3: si el servidor dice que está llena, lo dice (el aviso de siempre)', async () => {
     conLista([invitacion('DECLINED', { inviteeUserId: 'u-2' })]);
     mockEnviar.mockRejectedValue(

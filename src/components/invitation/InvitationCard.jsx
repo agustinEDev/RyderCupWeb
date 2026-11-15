@@ -78,7 +78,11 @@ const InvitationCard = ({
   // Pendiente, el invitado ya puede mirarla antes de contestar (release social
   // 2): con un enlace propio, porque la tarjeta lleva dentro aceptar y rechazar
   // Caducada ya no deja verla: el servidor tampoco la cuenta (revisor)
-  const puedeMirarla = showActions && invitation.competitionId && !caducada;
+  // En lista de espera también, aunque haya pasado su fecha: esperando no
+  // caduca (15 nov 2026)
+  const puedeMirarla =
+    Boolean(invitation.competitionId) &&
+    ((showActions && !caducada) || enEspera);
   const nombre = invitation.competitionName || t('card.for');
 
   // Aceptada, la tarjeta entera es el enlace: el titulo solo era un blanco
@@ -161,20 +165,23 @@ const InvitationCard = ({
             </p>
           )}
 
-          {invitation.respondedAt && !invitation.isPending && (
-            <div className="flex items-center gap-1.5 text-xs text-gray-400 mt-1.5">
-              <Clock className="h-3.5 w-3.5" />
-              <span data-testid="fecha-de-la-invitacion">
-                {CLAVE_DE_LA_FECHA[invitation.status]
-                  ? t(CLAVE_DE_LA_FECHA[invitation.status], {
-                      date: new Date(
-                        invitation.respondedAt,
-                      ).toLocaleDateString(),
-                    })
-                  : `${t('card.respondedAt')}: ${new Date(invitation.respondedAt).toLocaleDateString()}`}
-              </span>
-            </div>
-          )}
+          {/* En lista de espera nadie ha respondido: sin fecha (15 nov 2026) */}
+          {invitation.respondedAt &&
+            !invitation.isPending &&
+            invitation.isOnHold !== true && (
+              <div className="flex items-center gap-1.5 text-xs text-gray-400 mt-1.5">
+                <Clock className="h-3.5 w-3.5" />
+                <span data-testid="fecha-de-la-invitacion">
+                  {CLAVE_DE_LA_FECHA[invitation.status]
+                    ? t(CLAVE_DE_LA_FECHA[invitation.status], {
+                        date: new Date(
+                          invitation.respondedAt,
+                        ).toLocaleDateString(),
+                      })
+                    : `${t('card.respondedAt')}: ${new Date(invitation.respondedAt).toLocaleDateString()}`}
+                </span>
+              </div>
+            )}
         </div>
 
         {(showActions || enEspera) && (
