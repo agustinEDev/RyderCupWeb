@@ -203,6 +203,15 @@ describe('InvitationsPage', () => {
     ).toBeInTheDocument();
   });
 
+  // F2 (15 nov 2026): las que esperan a que se reabra, también
+  it('A4b: se puede filtrar por las que están en lista de espera', async () => {
+    renderPage();
+    const filtro = await screen.findByTestId('status-filter');
+    expect(
+      within(filtro).getByRole('option', { name: 'status.ON_HOLD' }),
+    ).toBeInTheDocument();
+  });
+
   it('A6: si se cierra con el modal abierto, el modal se cierra (CodeRabbit)', async () => {
     mockGetCompetitionDetail
       .mockResolvedValueOnce({

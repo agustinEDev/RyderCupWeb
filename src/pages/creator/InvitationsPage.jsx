@@ -318,6 +318,10 @@ const InvitationsPage = () => {
       customToast.error(t('errors.enrollmentDeadlinePassed'));
       setShowSendModal(false);
       recargarEnSilencio();
+      // Con la sala de draft abierta no se invita (15 nov 2026): su texto, no
+      // «ya estaba invitado», que es lo que decía el 409 genérico
+    } else if (error?.errorCode === 'DRAFT_IN_PROGRESS') {
+      customToast.error(t('errors.draftInProgress'));
       // El freno por hora de la competición: con cuántas admite, y no el «espera
       // un minuto» del 429 general, que es de otro límite (probado en el Kind)
     } else if (
@@ -638,6 +642,7 @@ const InvitationsPage = () => {
             <option value="ACCEPTED">{t('status.ACCEPTED')}</option>
             <option value="DECLINED">{t('status.DECLINED')}</option>
             <option value="EXPIRED">{t('status.EXPIRED')}</option>
+            <option value="ON_HOLD">{t('status.ON_HOLD')}</option>
             <option value="NO_ROOM">{t('status.NO_ROOM')}</option>
             <option value="CANCELLED">{t('status.CANCELLED')}</option>
           </select>

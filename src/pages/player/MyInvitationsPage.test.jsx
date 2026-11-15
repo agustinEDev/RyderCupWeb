@@ -179,6 +179,10 @@ describe('MyInvitationsPage', () => {
     expect(
       within(filtro).getByRole('option', { name: 'status.CANCELLED' }),
     ).toBeInTheDocument();
+    // Y las que esperan a que se reabra la inscripción (15 nov 2026)
+    expect(
+      within(filtro).getByRole('option', { name: 'status.ON_HOLD' }),
+    ).toBeInTheDocument();
   });
 
   describe('aceptar sin género (#710)', () => {

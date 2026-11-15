@@ -12,6 +12,10 @@ const MOTIVOS_PARA_NO_ENTRAR = {
   TEAMS_FORMED: 'errors.teamsFormed',
   // Pasadas las 12:00 del día anterior (15 nov 2026, RyderCupAm #865)
   ENROLLMENT_DEADLINE_PASSED: 'errors.enrollmentDeadlinePassed',
+  // En lista de espera hasta que se reabra, y la sala de draft abierta (15 nov
+  // 2026, RyderCupAm B-02)
+  INVITATION_ON_HOLD: 'errors.onHold',
+  DRAFT_IN_PROGRESS: 'errors.draftInProgress',
 };
 
 /**

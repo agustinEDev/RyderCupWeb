@@ -520,6 +520,28 @@ describe('InvitationsPage · volver a invitar (release social 2)', () => {
     );
   });
 
+  // Con la sala de draft abierta no se invita (15 nov 2026, RyderCupAm B-02):
+  // su texto, no «ya estaba invitado»
+  it('R7: si el servidor dice que se está haciendo el draft, lo dice', async () => {
+    conLista([invitacion('DECLINED', { inviteeUserId: 'u-2' })]);
+    mockEnviar.mockRejectedValue(
+      Object.assign(new Error('x'), {
+        status: 409,
+        errorCode: 'DRAFT_IN_PROGRESS',
+      }),
+    );
+    pinta();
+
+    fireEvent.click(await screen.findByTestId('reinvite-button'));
+
+    await waitFor(() =>
+      expect(customToast.error).toHaveBeenCalledWith('errors.draftInProgress'),
+    );
+    expect(customToast.error).not.toHaveBeenCalledWith(
+      'errors.duplicateInvitation',
+    );
+  });
+
   it('R3: si el servidor dice que está llena, lo dice (el aviso de siempre)', async () => {
     conLista([invitacion('DECLINED', { inviteeUserId: 'u-2' })]);
     mockEnviar.mockRejectedValue(
