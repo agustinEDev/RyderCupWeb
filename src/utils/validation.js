@@ -9,6 +9,7 @@ import {
   PASSWORD_MIN_LENGTH,
   PASSWORD_SPECIAL_CHARS,
   PASSWORD_UPPERCASE,
+  fitsMaxLength,
   passwordLength,
   validatePassword,
 } from '../domain/services/PasswordPolicy';
@@ -122,6 +123,12 @@ export const validatePasswordStrength = (password) => {
   // Cap at 4. La máxima solo para lo que el formulario va a aceptar: sin
   // símbolo el indicador salía «Excellent!» en verde y al enviar se rechazaba
   score = Math.min(score, validatePassword(password).isValid ? 4 : 3);
+
+  // Demasiado larga: la lista de requisitos ya marca la longitud; el consejo de
+  // «añade símbolos» no tendría sentido, que los tiene (B-14, /code-review)
+  if (!fitsMaxLength(password)) {
+    return { score, feedback: '' };
+  }
 
   // Generate feedback for valid passwords (>= 12 chars)
   if (score === 2) {

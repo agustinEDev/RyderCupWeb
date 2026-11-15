@@ -440,4 +440,15 @@ describe('validation utilities', () => {
       expect(passwordErrorTranslation(codigo)).toBeNull();
     });
   });
+
+  describe('validatePasswordStrength · demasiado larga (B-14)', () => {
+    it.each([
+      ['65 caracteres', 'Abc1!' + 'a'.repeat(60)],
+      ['73 bytes con eñes', 'Aa1!' + 'ñ'.repeat(34) + 'x'],
+    ])('%s: no aconseja añadir símbolos que ya tiene', (_caso, larga) => {
+      const { score, feedback } = validatePasswordStrength(larga);
+      expect(score).toBeLessThan(4);
+      expect(feedback).toBe('');
+    });
+  });
 });

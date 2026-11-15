@@ -61,6 +61,22 @@ describe('LoginUseCase', () => {
     });
   });
 
+  it('entra con una contraseña de más de 64 caracteres (B-14: las de antes valen)', async () => {
+    authRepository.login.mockResolvedValue({
+      user: {},
+      token: 't',
+      csrfToken: 'c',
+    });
+    const larga = 'Aa1!' + 'x'.repeat(96);
+
+    await loginUseCase.execute('test@example.com', larga);
+
+    expect(authRepository.login).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ _value: larga }),
+    );
+  });
+
   it('should throw an error if email is not provided', async () => {
     // Act & Assert
     await expect(loginUseCase.execute('', 'password123')).rejects.toThrow(
