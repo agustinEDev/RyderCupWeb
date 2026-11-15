@@ -485,6 +485,8 @@ describe('InvitationsPage · volver a invitar (release social 2)', () => {
       }),
     );
     pinta();
+    await screen.findByText('Player One');
+    const lecturas = mockDetalle.mock.calls.length;
 
     fireEvent.click(await screen.findByTestId('reinvite-button'));
 
@@ -492,6 +494,10 @@ describe('InvitationsPage · volver a invitar (release social 2)', () => {
       expect(customToast.error).toHaveBeenCalledWith(
         'errors.enrollmentDeadlinePassed',
       ),
+    );
+    // Y se relee, que la pantalla deje de ofrecer invitar
+    await waitFor(() =>
+      expect(mockDetalle.mock.calls.length).toBeGreaterThan(lecturas),
     );
   });
 

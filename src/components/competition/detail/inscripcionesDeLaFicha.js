@@ -9,12 +9,6 @@ import {
   setNamePreferenceUseCase,
 } from '../../../composition';
 
-// Por qué no se pudo aprobar, por el código del servidor (15 nov 2026)
-const MOTIVOS_PARA_NO_APROBAR = {
-  ENROLLMENT_DEADLINE_PASSED: 'detail.errors.enrollmentDeadlinePassed',
-  DRAFT_IN_PROGRESS: 'detail.errors.waitForDraft',
-};
-
 /**
  * Las inscripciones desde la ficha de una competición: apuntarse, aprobar o
  * rechazar una solicitud y elegir el nombre con el que se sale.
@@ -194,10 +188,14 @@ export const crearAccionesDeInscripcion = (contexto) => {
         return;
       }
       // Pasado el plazo o con la sala de draft abierta (15 nov 2026): su texto
-      const motivo = MOTIVOS_PARA_NO_APROBAR[error?.errorCode];
-      customToast.error(
-        motivo ? t(motivo) : error.message || t('detail.failedToApprove'),
-      );
+      // Los mismos motivos que al apuntarse, y la ficha al día (15 nov 2026)
+      const motivo = MOTIVOS_PARA_NO_APUNTARSE[error?.errorCode];
+      if (motivo) {
+        customToast.error(t(motivo));
+        await releerTrasQuitar();
+        return;
+      }
+      customToast.error(error.message || t('detail.failedToApprove'));
     }
   };
 

@@ -95,11 +95,6 @@ const ERRORES_DEL_NOMBRE = new Set([
   'nameTaken',
 ]);
 
-// Lo único que se comprueba aquí cuando solo se mueven las fechas (15 nov
-// 2026): lo demás no se puede tocar, y abrir «Más opciones» por un campo
-// desactivado sería un callejón sin salida
-const ERRORES_DE_LAS_FECHAS = new Set(['datesRequired', 'endDateAfterStart']);
-
 const ERRORES_DE_LAS_OPCIONES = new Set([
   'teamNamesRequired',
   'teamNamesTooShort',
@@ -829,11 +824,16 @@ const CreateCompetition = () => {
     return t('edit.datesLeaveSessionsOut', { sesiones });
   };
 
-  // Las jornadas de cada jugador no caben en las fechas nuevas: el servidor lo
-  // dice sin código, y aquí se sabe por los ajustes guardados (15 nov 2026)
-  const porQueNoCabenLasJornadas = () => {
+  // Solo las fechas (15 nov 2026): se comprueban ellas, aquí mismo, y que las
+  // jornadas de cada jugador quepan; lo demás no se puede tocar. Sin petición
+  // que vaya a fallar
+  const errorDeLasFechasNuevas = () => {
+    const { startDate, endDate } = formData;
+    if (!startDate || !endDate) return t('create.errors.datesRequired');
+    if (new Date(startDate) > new Date(endDate))
+      return t('create.errors.endDateAfterStart');
     if (conEquipos || !formData.strokePlay) return null;
-    const dias = diasDelTorneo(formData.startDate, formData.endDate);
+    const dias = diasDelTorneo(startDate, endDate);
     return errorDeAjustes(formData.strokePlay, dias) === 'matchdaysMoreThanDays'
       ? t('create.errors.matchdaysMoreThanDays', { count: dias })
       : null;
@@ -863,19 +863,21 @@ const CreateCompetition = () => {
     }
 
     setErrorDeLasFechas(null);
+    if (soloFechas) {
+      const fallo = errorDeLasFechasNuevas();
+      if (fallo) {
+        setErrorDeLasFechas(fallo);
+        return;
+      }
+      await crear(null);
+      return;
+    }
     // UI Validation
     // Los campos de golf solo se piden al crear: al editar los gestiona la ficha
-    const errorDelFormulario = validateCompetitionForm(formData, {
+    const validationError = validateCompetitionForm(formData, {
       exigirCampos: !isEditMode,
       inscritos,
     });
-    // Solo las fechas: lo demás lo juzga el servidor, y su error sale junto a ellas
-    const validationError =
-      soloFechas &&
-      errorDelFormulario &&
-      !ERRORES_DE_LAS_FECHAS.has(errorDelFormulario.key)
-        ? null
-        : errorDelFormulario;
     if (validationError && ERRORES_DEL_NOMBRE.has(validationError.key)) {
       senalaElNombre(validationError.key);
       return;
@@ -1145,13 +1147,10 @@ const CreateCompetition = () => {
         globalThis.scrollTo?.({ top: 0, behavior: 'smooth' });
         return;
       }
-      // Solo las fechas: el error, traducido si se sabe cuál es, junto a ellas
+      // Solo las fechas: el error del servidor junto a ellas, traducido por su
+      // código si se conoce; si no, el genérico, nunca el texto en bruto
       if (soloFechas) {
-        const texto =
-          sesionesQueQuedanFuera(error) ||
-          porQueNoCabenLasJornadas() ||
-          error.message ||
-          t('edit.error');
+        const texto = sesionesQueQuedanFuera(error) || t('edit.error');
         customToast.error(texto);
         setErrorDeLasFechas(texto);
         return;

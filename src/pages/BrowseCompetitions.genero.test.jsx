@@ -333,7 +333,7 @@ describe('BrowseCompetitions · apuntarse (release social 3)', () => {
     fireEvent.click(screen.getByText('competitions:enrollment.confirm'));
 
     expect(await screen.findByTestId('apuntarse-error')).toHaveTextContent(
-      'detail.errors.draftInProgress',
+      'detail.errors.waitForDraft',
     );
     expect(screen.getByText('browse.card.request-to-join')).toBeInTheDocument();
   });

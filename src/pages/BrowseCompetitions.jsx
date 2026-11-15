@@ -238,8 +238,7 @@ const BrowseCompetitions = () => {
       // Con la sala de draft abierta no entra nadie: se dice en el diálogo, que
       // sigue abierto, y la tarjeta se queda (release social 3, revisor)
       if (error?.errorCode === 'DRAFT_IN_PROGRESS') {
-        if (esSuModal())
-          setErrorAlApuntarse(t('detail.errors.draftInProgress'));
+        if (esSuModal()) setErrorAlApuntarse(t('detail.errors.waitForDraft'));
         return;
       }
       // Check if it's a duplicate enrollment error (409 Conflict)

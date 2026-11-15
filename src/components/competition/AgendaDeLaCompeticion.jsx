@@ -117,7 +117,7 @@ const AgendaDeLaCompeticion = ({
   // reparto dice el equipo de cada uno (FE #710). Mientras no se ha leído, o si
   // no se pudo, no se sabe: null
   useEffect(() => {
-    onAgenda?.(agenda && !sinCargar ? agenda : null);
+    onAgenda?.(agenda && !sinCargar ? agenda : null, sinCargar);
   }, [agenda, sinCargar, onAgenda]);
   const dias = useMemo(
     () => diasDelTorneo(startDate, endDate),

@@ -304,10 +304,19 @@ describe('CompetitionDetail · equipos formados', () => {
         ],
       });
 
-      fireEvent.click(await screen.findByTitle('detail.approve'));
+      const aprobar = await screen.findByTitle('detail.approve');
+      const lecturas = mockGetCompetitionDetail.mock.calls.length;
+
+      fireEvent.click(aprobar);
 
       await waitFor(() => expect(mockToast.error).toHaveBeenCalledWith(texto));
       expect(mockToast.error).not.toHaveBeenCalledWith('x');
+      // Y la ficha, al día: la solicitud puede haber cambiado
+      await waitFor(() =>
+        expect(mockGetCompetitionDetail.mock.calls.length).toBeGreaterThan(
+          lecturas,
+        ),
+      );
     });
 
     it('al aprobar una solicitud: aviso para el organizador y se relee', async () => {

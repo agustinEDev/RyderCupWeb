@@ -15,10 +15,12 @@ import { MemoryRouter, Routes, Route } from 'react-router';
  *   M3 las fechas                                      | se cambian y se guardan, con lo demás como estaba
  *   M4 cerrada a mano                                  | no se edita, como siempre
  *   M4b ya empezada (aunque la cerrara el plazo)       | no se edita
- *   M7 acortar por debajo de las jornadas (stroke play) | se manda igual (solo se validan las fechas) y el
- *                                                    | error del servidor, traducido, junto a las fechas
- *   M8 un error de otro campo en el formulario        | no frena: se manda (lo juzga el servidor)
- *   M8b un error de las fechas                         | frena, como siempre
+ *   M7 acortar por debajo de las jornadas (stroke play) | no se manda: el aviso, traducido, junto a las fechas
+ *   M8 lo demás del formulario no se valida            | se manda (lo demás no se puede tocar)
+ *   M8b el fin antes del comienzo                      | no se manda: el aviso junto a las fechas
+ *   M8c sin una de las fechas                          | no se manda: el aviso junto a las fechas
+ *   M9 el servidor lo rechaza con un código conocido  | su texto traducido, junto a las fechas
+ *   M9b el servidor lo rechaza sin código conocido    | el genérico, no su texto en bruto
  *   M5 abierta                                         | todo se edita, sin el aviso
  */
 vi.mock('react-i18next', () => ({
@@ -172,7 +174,7 @@ describe('CreateCompetition · cerrada por el plazo: solo las fechas', () => {
     });
   });
 
-  it('M7: Given un Medal de 3 jornadas cerrado por el plazo, When lo deja en un día, Then se manda y el error sale junto a las fechas', async () => {
+  it('M7: Given un Medal de 3 jornadas cerrado por el plazo, When lo deja en un día, Then no se manda y el aviso sale junto a las fechas', async () => {
     mockDetalle.mockResolvedValueOnce(
       porElPlazo({
         tournamentType: 'MEDAL',
@@ -185,14 +187,6 @@ describe('CreateCompetition · cerrada por el plazo: solo las fechas', () => {
         },
       }),
     );
-    mockActualizar.mockRejectedValueOnce(
-      Object.assign(
-        new Error(
-          'Cada jugador puede jugar 3 jornadas, pero el torneo dura 1 días',
-        ),
-        { status: 400 },
-      ),
-    );
     pintaEdicion();
     await screen.findByDisplayValue('Campeonato del club');
 
@@ -203,24 +197,81 @@ describe('CreateCompetition · cerrada por el plazo: solo las fechas', () => {
       screen.getByRole('button', { name: 'edit.updateCompetition' }),
     );
 
-    await waitFor(() => expect(mockActualizar).toHaveBeenCalled());
     expect(await screen.findByTestId('error-de-las-fechas')).toHaveTextContent(
       'create.errors.matchdaysMoreThanDays 1',
     );
+    expect(mockActualizar).not.toHaveBeenCalled();
+  });
+
+  it('M8: Given el resto del formulario no pasaría, When guarda las fechas, Then se manda igual', async () => {
+    mockDetalle.mockResolvedValueOnce(porElPlazo());
+    mockActualizar.mockResolvedValueOnce({});
+    mockValidar.mockImplementation((_f, opciones) =>
+      opciones ? { key: 'countryRequired' } : null,
+    );
+    pintaEdicion();
+    await screen.findByDisplayValue('Campeonato del club');
+
+    fireEvent.click(
+      screen.getByRole('button', { name: 'edit.updateCompetition' }),
+    );
+
+    await waitFor(() => expect(mockActualizar).toHaveBeenCalled());
   });
 
   it.each([
-    ['M8', { key: 'countryRequired' }, true],
-    ['M8b', { key: 'endDateAfterStart' }, false],
+    ['M8b', { endDate: '2026-10-01' }, 'create.errors.endDateAfterStart'],
+    ['M8c', { startDate: '' }, 'create.errors.datesRequired'],
   ])(
-    '%s: Given solo fechas y el formulario dice %o, When guarda, Then se manda: %s',
-    async (_, error, seManda) => {
+    '%s: Given unas fechas que no valen, When guarda, Then no se manda y se dice junto a ellas',
+    async (_, fechas, texto) => {
       mockDetalle.mockResolvedValueOnce(porElPlazo());
-      mockActualizar.mockResolvedValueOnce({});
-      // Solo la del envío, que lleva sus opciones: la del pintado no
-      mockValidar.mockImplementation((_f, opciones) =>
-        opciones ? error : null,
+      pintaEdicion();
+      await screen.findByDisplayValue('Campeonato del club');
+
+      if (fechas.endDate !== undefined)
+        fireEvent.change(screen.getByLabelText('create.endDate'), {
+          target: { value: fechas.endDate },
+        });
+      if (fechas.startDate !== undefined)
+        fireEvent.change(screen.getByLabelText('create.startDate'), {
+          target: { value: fechas.startDate },
+        });
+      fireEvent.click(
+        screen.getByRole('button', { name: 'edit.updateCompetition' }),
       );
+
+      expect(
+        await screen.findByTestId('error-de-las-fechas'),
+      ).toHaveTextContent(texto);
+      expect(mockActualizar).not.toHaveBeenCalled();
+    },
+  );
+
+  it.each([
+    [
+      'M9',
+      Object.assign(new Error('raw'), {
+        status: 400,
+        errorCode: 'DATES_LEAVE_SESSIONS_OUT',
+        data: {
+          sessions_outside: [
+            { round_date: '2026-10-05', session_type: 'MORNING' },
+          ],
+        },
+      }),
+      'edit.datesLeaveSessionsOut',
+    ],
+    [
+      'M9b',
+      Object.assign(new Error('Texto en bruto del servidor'), { status: 400 }),
+      'edit.error',
+    ],
+  ])(
+    '%s: Given el servidor lo rechaza, When guarda, Then su texto traducido junto a las fechas',
+    async (_, error, texto) => {
+      mockDetalle.mockResolvedValueOnce(porElPlazo());
+      mockActualizar.mockRejectedValueOnce(error);
       pintaEdicion();
       await screen.findByDisplayValue('Campeonato del club');
 
@@ -228,12 +279,9 @@ describe('CreateCompetition · cerrada por el plazo: solo las fechas', () => {
         screen.getByRole('button', { name: 'edit.updateCompetition' }),
       );
 
-      if (seManda) {
-        await waitFor(() => expect(mockActualizar).toHaveBeenCalled());
-      } else {
-        await waitFor(() => expect(mockValidar).toHaveBeenCalled());
-        expect(mockActualizar).not.toHaveBeenCalled();
-      }
+      const aviso = await screen.findByTestId('error-de-las-fechas');
+      expect(aviso).toHaveTextContent(texto);
+      expect(aviso).not.toHaveTextContent('en bruto');
     },
   );
 

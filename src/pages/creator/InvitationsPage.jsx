@@ -316,6 +316,8 @@ const InvitationsPage = () => {
       // Pasado el plazo de inscripción (15 nov 2026): su texto, no el genérico
     } else if (error?.errorCode === 'ENROLLMENT_DEADLINE_PASSED') {
       customToast.error(t('errors.enrollmentDeadlinePassed'));
+      setShowSendModal(false);
+      recargarEnSilencio();
       // El freno por hora de la competición: con cuántas admite, y no el «espera
       // un minuto» del 429 general, que es de otro límite (probado en el Kind)
     } else if (

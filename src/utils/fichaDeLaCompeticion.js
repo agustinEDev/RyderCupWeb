@@ -51,7 +51,8 @@ export const MOTIVOS_PARA_NO_APUNTARSE = {
   TEE_WINDOW_HAS_ROOM: 'detail.errors.teeWindowHasRoom',
   TEE_WINDOW_REQUIRED: 'detail.errors.teeWindowRequired',
   TEE_WINDOW_NOT_FOUND: 'detail.errors.teeWindowNotFound',
-  DRAFT_IN_PROGRESS: 'detail.errors.draftInProgress',
+  // Un solo texto para el draft en toda la ficha (15 nov 2026)
+  DRAFT_IN_PROGRESS: 'detail.errors.waitForDraft',
   // Pasadas las 12:00 del día anterior (15 nov 2026, RyderCupAm #865)
   ENROLLMENT_DEADLINE_PASSED: 'detail.errors.enrollmentDeadlinePassed',
 };
