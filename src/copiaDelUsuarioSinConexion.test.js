@@ -106,14 +106,14 @@ const AUDITADOS = {
   '/src/pages/Competitions.jsx': 'desconocido: etiqueta de inscripción neutra',
   '/src/pages/player/MyInvitationsPage.jsx':
     'desconocido: el aviso sin botón de reenviar',
-  // B-17: sin conexión no hay `email_verified` ni correo; el aviso no sale (esas
-  // acciones necesitan red) y, si saliera, sin botón de reenviar
+  // B-17: la copia sin conexión guarda `email_verified` pero no el correo: el aviso
+  // de verificar sale, sin el botón de reenviar (como en Mis invitaciones)
   '/src/pages/CreateCompetition.jsx':
-    'desconocido: sin el dato no hay aviso; el envío necesita red',
+    'desconocido: el aviso sin botón de reenviar',
   '/src/pages/creator/InvitationsPage.jsx':
-    'desconocido: sin el dato no hay aviso; invitar necesita red',
+    'desconocido: el aviso sin botón de reenviar',
   '/src/pages/player/PlayerProfilePage.jsx':
-    'desconocido: sin el dato no hay aviso; pedir amistad necesita red',
+    'desconocido: el aviso sin botón de reenviar',
   '/src/utils/datosQueFaltanSinConexion.js':
     'la regla misma (faltaElGenero / faltaElHandicap)',
   '/src/components/admin/hoyos/TodosLosCampos.jsx':

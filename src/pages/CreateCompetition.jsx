@@ -17,6 +17,7 @@ import { agendaPropuesta } from '../utils/agenda';
 import { aCamposDeLaCompeticion } from '../utils/camposDeLaCompeticion';
 import HeaderAuth from '../components/layout/HeaderAuth';
 import { useAuth } from '../hooks/useAuth';
+import { useCorreoVerificado } from '../hooks/useCorreoVerificado';
 import AvisoVerificaParaLlegarAOtros from '../components/auth/AvisoVerificaParaLlegarAOtros';
 import { useGeneroParaApuntarse } from '../hooks/useGeneroParaApuntarse';
 import SelectorDeGenero from '../components/profile/SelectorDeGenero';
@@ -267,6 +268,8 @@ const CreateCompetition = () => {
   // Sin el correo verificado no se crea una competición (B-17): el aviso arriba, y el
   // envío no llama a la API; también si la API lo dice
   const [faltaVerificar, setFaltaVerificar] = useState(false);
+  const { sinVerificar: copiaSinVerificar, confirma: confirmaVerificado } =
+    useCorreoVerificado();
   // El aviso del nombre, junto a su campo: la clave de `create.errors`
   const [errorDelNombre, setErrorDelNombre] = useState(null);
   const campoDelNombre = useRef(null);
@@ -803,10 +806,14 @@ const CreateCompetition = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setMessage({ type: '', text: '' });
-    if (!isEditMode && (user?.email_verified === false || faltaVerificar)) {
-      setFaltaVerificar(true);
-      globalThis.scrollTo?.({ top: 0, behavior: 'smooth' });
-      return;
+    if (!isEditMode) {
+      // Solo se espera si la copia dice que no: verificado, sigue en el acto
+      const verificado = copiaSinVerificar ? await confirmaVerificado() : true;
+      setFaltaVerificar(!verificado);
+      if (!verificado) {
+        globalThis.scrollTo?.({ top: 0, behavior: 'smooth' });
+        return;
+      }
     }
 
     // UI Validation
@@ -1077,6 +1084,13 @@ const CreateCompetition = () => {
         senalaElNombre('nameTaken');
         return;
       }
+      // El servidor dice que falta verificar (la copia del usuario estaba desfasada):
+      // el aviso con su botón de reenviar, no el texto del servidor (B-17)
+      if (error?.errorCode === 'EMAIL_NOT_VERIFIED') {
+        setFaltaVerificar(true);
+        globalThis.scrollTo?.({ top: 0, behavior: 'smooth' });
+        return;
+      }
       const texto =
         sesionesQueQuedanFuera(error) ||
         error.message ||
@@ -1114,12 +1128,11 @@ const CreateCompetition = () => {
 
         <div className="px-4 md:px-40 flex flex-1 justify-center py-5">
           <div className="layout-content-container flex flex-col max-w-[960px] flex-1">
-            {!isEditMode &&
-              (user?.email_verified === false || faltaVerificar) && (
-                <div className="px-4">
-                  <AvisoVerificaParaLlegarAOtros correo={user?.email} />
-                </div>
-              )}
+            {!isEditMode && (copiaSinVerificar || faltaVerificar) && (
+              <div className="px-4">
+                <AvisoVerificaParaLlegarAOtros correo={user?.email} />
+              </div>
+            )}
 
             {/* Page Title */}
             <div className="flex flex-wrap justify-between gap-3 p-4">

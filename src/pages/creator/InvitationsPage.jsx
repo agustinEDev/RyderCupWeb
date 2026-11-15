@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import customToast from '../../utils/toast';
 import HeaderAuth from '../../components/layout/HeaderAuth';
 import { useAuth } from '../../hooks/useAuth';
+import { useCorreoVerificado } from '../../hooks/useCorreoVerificado';
 import AvisoVerificaParaLlegarAOtros from '../../components/auth/AvisoVerificaParaLlegarAOtros';
 import { useCargaCancelableEffect } from '../../hooks/useCargaCancelableEffect';
 import { useUserRoles } from '../../hooks/useUserRoles';
@@ -125,7 +126,8 @@ const InvitationsPage = () => {
   // Sin el correo verificado no se invita (B-17): el aviso, antes de llamar a la API, o si
   // la API lo dice (la copia del usuario podía estar desfasada)
   const [faltaVerificar, setFaltaVerificar] = useState(false);
-  const sinVerificar = user?.email_verified === false || faltaVerificar;
+  const { sinVerificar: copiaSinVerificar, confirma } = useCorreoVerificado();
+  const sinVerificar = copiaSinVerificar || faltaVerificar;
   const [statusFilter, setStatusFilter] = useState('');
   const [showSendModal, setShowSendModal] = useState(false);
   // La invitación que se va a retirar, a la espera de confirmarlo (FE #724)
@@ -296,6 +298,7 @@ const InvitationsPage = () => {
     if (error?.errorCode === 'EMAIL_NOT_VERIFIED') {
       setFaltaVerificar(true);
       setShowSendModal(false);
+      globalThis.scrollTo?.({ top: 0, behavior: 'smooth' });
       return;
     }
     // Sin plazas (FE #724): se dice así y se recarga, que la pantalla ya no
@@ -337,9 +340,13 @@ const InvitationsPage = () => {
   };
 
   const handleSendInvitation = async (email, personalMessage) => {
-    if (sinVerificar) {
-      setFaltaVerificar(true);
+    // Solo se espera si la copia dice que no: verificado, sale en el acto, como antes
+    const verificado = copiaSinVerificar ? await confirma() : true;
+    setFaltaVerificar(!verificado);
+    if (!verificado) {
       setShowSendModal(false);
+      // El aviso está arriba: que se vea (/code-review)
+      globalThis.scrollTo?.({ top: 0, behavior: 'smooth' });
       return false;
     }
     setIsProcessing(true);
@@ -359,9 +366,13 @@ const InvitationsPage = () => {
   };
 
   const handleSendByUserId = async (userId, personalMessage) => {
-    if (sinVerificar) {
-      setFaltaVerificar(true);
+    // Solo se espera si la copia dice que no: verificado, sale en el acto, como antes
+    const verificado = copiaSinVerificar ? await confirma() : true;
+    setFaltaVerificar(!verificado);
+    if (!verificado) {
       setShowSendModal(false);
+      // El aviso está arriba: que se vea (/code-review)
+      globalThis.scrollTo?.({ top: 0, behavior: 'smooth' });
       return false;
     }
     setIsProcessing(true);

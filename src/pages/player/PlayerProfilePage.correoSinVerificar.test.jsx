@@ -8,13 +8,21 @@ import PlayerProfilePage from './PlayerProfilePage';
  * aviso con el botón de reenviar, en vez de la petición; y si la API lo dice igual.
  */
 
-const sesion = vi.hoisted(() => ({ user: { id: 'me', email: 'yo@x.test' } }));
+const sesion = vi.hoisted(() => ({
+  user: { id: 'me', email: 'yo@x.test' },
+  // Lo que contesta el servidor al volver a preguntar
+  fresco: null,
+}));
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({ t: (key) => key, i18n: { language: 'es' } }),
 }));
 vi.mock('../../hooks/useAuth', () => ({
-  useAuth: () => ({ user: sesion.user, loading: false }),
+  useAuth: () => ({
+    user: sesion.user,
+    loading: false,
+    refetch: () => Promise.resolve(sesion.fresco ?? sesion.user),
+  }),
 }));
 vi.mock('../../components/layout/HeaderAuth', () => ({
   default: () => <header />,
@@ -76,6 +84,18 @@ describe('PlayerProfilePage · pedir amistad sin el correo verificado (B-17)', (
   beforeEach(() => {
     vi.clearAllMocks();
     sendRequest.mockResolvedValue(undefined);
+    sesion.fresco = null;
+  });
+
+  it('acaba de verificar en otra pestaña: se vuelve a preguntar y la solicitud sale', async () => {
+    sesion.user = { id: 'me', email: 'yo@x.test', email_verified: false };
+    sesion.fresco = { id: 'me', email: 'yo@x.test', email_verified: true };
+    pinta();
+
+    fireEvent.click(await screen.findByTestId('player-profile-add-friend'));
+
+    await waitFor(() => expect(sendRequest).toHaveBeenCalledWith('u1'));
+    expect(screen.queryByTestId('aviso-verificar')).not.toBeInTheDocument();
   });
 
   it('V6: sin verificar, el aviso en vez de la petición', async () => {

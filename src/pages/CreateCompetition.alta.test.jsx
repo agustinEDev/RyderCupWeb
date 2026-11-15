@@ -197,6 +197,22 @@ describe('CreateCompetition · BE-B en el alta (FE)', () => {
       ).not.toHaveBeenCalled();
     });
 
+    it('V7: si la API dice EMAIL_NOT_VERIFIED, el aviso y no su texto', async () => {
+      USUARIO.user = { ...usuarioDeSiempre, email_verified: true };
+      composicion.createCompetitionWithGolfCoursesUseCase.execute.mockRejectedValue(
+        Object.assign(new Error('Verify your email'), {
+          status: 403,
+          errorCode: 'EMAIL_NOT_VERIFIED',
+        }),
+      );
+      await alTipo('MEDAL');
+
+      enviar();
+
+      expect(await screen.findByTestId('aviso-verificar')).toBeInTheDocument();
+      expect(mockToast.error).not.toHaveBeenCalled();
+    });
+
     it('verificado, sin aviso y se crea como siempre', async () => {
       USUARIO.user = { ...usuarioDeSiempre, email_verified: true };
       await alTipo('MEDAL');
