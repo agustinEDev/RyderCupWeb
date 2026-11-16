@@ -46,8 +46,9 @@ import { vaciaLaColaEntera } from './vaciadoDeLaCola';
  * | C6 | fecha en el futuro (reloj cambiado)          | no caduca                                 |
  * | C7 | la partida abierta                           | la vacía su pantalla, no el global        |
  *
- * Los partidos y las partidas rápidas se cierran al acabar el día siguiente: pasadas
- * 48 h el servidor rechazaría el golpe. El aviso le cuenta a su dueño que no entró.
+ * 48 h para todo (Agustín, 16 nov 2026): las partidas rápidas se cierran solas al acabar
+ * el día siguiente y los torneos lo harán con BE #469 y #878. El aviso le cuenta a su
+ * dueño que no entró, y puede volver a anotar el hoyo.
  */
 
 const YO = 'usuario-A';

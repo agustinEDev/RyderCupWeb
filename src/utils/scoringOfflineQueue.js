@@ -94,10 +94,12 @@ const sinElPropioDeOtroHueco = (cola, nueva) => {
 /**
  * Cuánto vale un golpe guardado sin cobertura (FS-03, re-auditoría del 16 nov 2026).
  *
- * Los partidos y las partidas rápidas se cierran al acabar el día siguiente, en la
- * hora del campo: pasadas 48 h desde que se anotó, el servidor ya lo rechazaría. A
- * partir de ahí no se envía; el vaciado lo aparta como un rechazo, dejando aviso a su
- * dueño (`vaciaAnotaciones`), y deja de quedarse en el móvil.
+ * 48 h para todo, decidido por Agustín el 16 nov 2026: las partidas rápidas se cierran
+ * solas al acabar el día siguiente, y los torneos se cerrarán solos (BE #469, BE #878).
+ * Hasta entonces un partido de torneo todavía aceptaría un golpe más viejo; a cambio,
+ * nada se queda en el móvil más de dos días. A partir de ahí no se envía: el vaciado
+ * lo aparta como un rechazo, dejando aviso a su dueño (`vaciaAnotaciones`), que puede
+ * volver a anotar el hoyo.
  */
 export const CADUCIDAD_DE_LA_COLA_MS = 48 * 60 * 60 * 1000;
 
