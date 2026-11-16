@@ -65,6 +65,10 @@ if (sentryDsn) {
     // sitio (FE #792): sin grabacion de sesiones al azar, todas las de error
     ...sentrySampleRates(),
     attachStacktrace: true,
+    // Sin la IP de quien juega (FS-01): Sentry 11 pide por defecto a su
+    // servidor que la deduzca de la conexión (`infer_ip: 'auto'`) en errores,
+    // sesiones y spans. El id de la cuenta (`setUserContext`) sigue llegando
+    dataCollection: { userInfo: false },
 
     // El saneado de URLs va AQUI y no en sentry.ts (FE #385).
     // Aquel fichero carga dos segundos mas tarde y para entonces ya hay
