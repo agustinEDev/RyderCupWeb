@@ -71,7 +71,9 @@ describe('apiRequest · demasiadas peticiones', () => {
     // Given el servidor está procesando otras imágenes al subir el avatar
     const texto =
       'Ahora mismo se están procesando otras imágenes. Inténtalo de nuevo en unos segundos.';
-    llamarAlBackend.mockResolvedValue(respuesta(503, { detail: texto }));
+    llamarAlBackend.mockResolvedValue(
+      respuesta(503, { detail: texto, error_code: 'IMAGES_BUSY' }),
+    );
 
     // When se sube
     const error = await apiRequest('/api/v1/users/me/avatar/upload', {
@@ -81,6 +83,8 @@ describe('apiRequest · demasiadas peticiones', () => {
     // Then el error lleva ese texto tal cual, para que la pantalla lo enseñe
     expect(error.message).toBe(texto);
     expect(error.status).toBe(503);
+    // Y su código, en la raíz del cuerpo, para traducirlo
+    expect(error.errorCode).toBe('IMAGES_BUSY');
   });
 
   // El 429 sale también en el login, el registro y las lecturas: el texto no

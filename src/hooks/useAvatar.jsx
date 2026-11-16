@@ -152,6 +152,10 @@ export const useAvatar = (user, refetchUser) => {
         if (error.message === 'FILE_TOO_LARGE')
           return t('toasts.avatarFileTooLarge');
         if (error.status === 400) return t('toasts.avatarInvalidImage');
+        // Otras imágenes en proceso (503 con su código): en su idioma. Sin el
+        // código —un servidor anterior— se enseña su texto, como antes
+        if (error.errorCode === 'IMAGES_BUSY')
+          return t('toasts.avatarImagesBusy');
         return error.message || t('toasts.failedToUpdateAvatar');
       },
     });

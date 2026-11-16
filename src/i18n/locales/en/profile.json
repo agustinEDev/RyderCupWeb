@@ -164,6 +164,7 @@
     "failedToUpdateAvatar": "Failed to update profile photo",
     "avatarFileTooLarge": "That photo is too large (max 10MB).",
     "avatarInvalidImage": "That file isn't a valid image (JPEG, PNG or WEBP).",
+    "avatarImagesBusy": "Other images are being processed right now. Try again in a few seconds.",
     "avatarRemoved": "Profile photo removed.",
     "failedToRemoveAvatar": "Failed to remove profile photo",
     "failedToLoadAvatarOptions": "Failed to load avatar options.",

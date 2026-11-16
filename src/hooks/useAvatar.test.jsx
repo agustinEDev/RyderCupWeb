@@ -131,6 +131,28 @@ describe('useAvatar', () => {
     expect(refetchUser).not.toHaveBeenCalled();
   });
 
+  it('handleUpload translates the busy images 503 by its code (IMAGES_BUSY)', async () => {
+    // Given the server answers 503 with its code
+    const refetchUser = vi.fn();
+    const error = Object.assign(
+      new Error(
+        'Ahora mismo se están procesando otras imágenes. Inténtalo de nuevo en unos segundos.',
+      ),
+      { status: 503, errorCode: 'IMAGES_BUSY' },
+    );
+    uploadAvatarUseCase.execute.mockRejectedValue(error);
+    const { result } = renderHook(() => useAvatar(mockUser, refetchUser));
+    await waitFor(() => expect(result.current.isLoadingOptions).toBe(false));
+
+    // When the upload fails
+    await act(async () => {
+      await result.current.handleUpload({ size: 999 });
+    });
+
+    // Then the text is the app's, in the user's language
+    expect(customToast.error).toHaveBeenCalledWith('toasts.avatarImagesBusy');
+  });
+
   it('handleActivateUpload switches to a previous upload', async () => {
     const refetchUser = vi.fn();
     activateUploadedAvatarUseCase.execute.mockResolvedValue({});
