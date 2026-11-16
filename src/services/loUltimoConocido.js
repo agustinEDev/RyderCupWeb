@@ -615,6 +615,31 @@ export const seSabeQueNoHayProximos = (usuarioId, ahora = new Date()) => {
 };
 
 /**
+ * Olvida «no hay próximos» en cuanto se hace algo que puede dar un partido desde
+ * otra pantalla —aceptar una invitación, inscribirse, coger plaza en una franja,
+ * crear una partida rápida…— (Agustín, 16 nov 2026): al volver, el panel lo
+ * comprueba en vez de ofrecer «¿Partido improvisado?». Lo demás se queda. Sin
+ * marca no escribe. Nunca lanza.
+ */
+export const olvidaQueNoHayProximos = () => {
+  try {
+    // Tras un cierre de la cuenta no hay panel (y no se vuelve a escribir: lo
+    // impide el cerrojo de `recuerdaElPanel`), así que aquí no hay nada que hacer
+    const crudo = localStorage.getItem(CLAVE_PANEL);
+    if (!crudo) return;
+    const panel = JSON.parse(crudo);
+    if (!esUnObjeto(panel) || panel.sinProximosEl == null) return;
+    localStorage.setItem(
+      CLAVE_PANEL,
+      JSON.stringify({ ...panel, sinProximosEl: null }),
+    );
+  } catch {
+    // Sin sitio o roto: la marca de otro día no vale, y la de hoy se corrige al
+    // entrar en el panel
+  }
+};
+
+/**
  * Al cerrar sesión: son datos de ESTA cuenta. En un móvil compartido, sin esto
  * la siguiente persona que entrara y se quedara sin señal vería la lista de
  * partidas de la anterior, con sus nombres y sus resultados.

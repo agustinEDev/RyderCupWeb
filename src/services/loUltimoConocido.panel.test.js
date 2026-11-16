@@ -6,6 +6,7 @@ import {
   abreLoGuardadoParaLaCuenta,
   olvidaTodo,
   seSabeQueNoHayProximos,
+  olvidaQueNoHayProximos,
 } from './loUltimoConocido';
 import PlayerStats from '../domain/entities/PlayerStats';
 import { fechaLocal } from '../utils/fechaLocal';
@@ -43,6 +44,7 @@ import RecentMatch from '../domain/entities/RecentMatch';
  *   G26 lo guardado de la marca               | un solo campo, `sinProximosEl`
  *   G27 competiciones guardadas que no se pueden leer | null, no «0 torneos»
  *   G28 lo mismo otra vez                     | no se reescribe
+ *   G29 algo que puede dar un partido         | se borra «no hay próximos», y nada más
  *   G5 se cierra la sesión                | se borra y no se reescribe
  *   G6 el móvil no tiene sitio            | no se guarda y no revienta
  *   G7 lo guardado está roto              | nada
@@ -630,5 +632,52 @@ describe('loUltimoConocido, el panel', () => {
 
     // Then se escribe
     expect(escribe).toHaveBeenCalledTimes(1);
+  });
+  it('G29: olvidar «no hay próximos» la borra y deja lo demás', () => {
+    // Given hoy se sabe que no hay, con el resto del panel
+    recuerdaElPanel('u-1', {
+      competiciones: [competicion(1)],
+      sinProximos: true,
+    });
+
+    // When se hace algo que puede dar un partido
+    olvidaQueNoHayProximos();
+
+    // Then ya no se sabe, y lo demás sigue
+    expect(seSabeQueNoHayProximos('u-1')).toBe(false);
+    expect(elUltimoPanel('u-1').competiciones).toEqual([competicion(1)]);
+  });
+
+  it('G29b: sin marca, olvidar no escribe nada', () => {
+    // Given un panel sin la marca
+    recuerdaElPanel('u-1', { competiciones: [competicion(1)] });
+    const escribe = vi.spyOn(localStorage, 'setItem');
+
+    // When se olvida
+    olvidaQueNoHayProximos();
+
+    // Then no se escribe
+    expect(escribe).not.toHaveBeenCalled();
+  });
+
+  it('G29c: olvidar sin nada guardado ni tras un cierre no crea un panel', () => {
+    // Given nada guardado
+    olvidaQueNoHayProximos();
+    expect(guardado.has('rydercup-ultimo-panel')).toBe(false);
+
+    // And tras un cierre de la cuenta, con la marca guardada antes
+    recuerdaElPanel('u-1', { sinProximos: true });
+    olvidaLoDeEstaCuenta();
+    olvidaQueNoHayProximos();
+    expect(guardado.has('rydercup-ultimo-panel')).toBe(false);
+  });
+
+  it('G29d: si el móvil no deja escribir, no revienta', () => {
+    recuerdaElPanel('u-1', { sinProximos: true });
+    vi.spyOn(localStorage, 'setItem').mockImplementation(() => {
+      throw new Error('QuotaExceededError');
+    });
+
+    expect(() => olvidaQueNoHayProximos()).not.toThrow();
   });
 });
