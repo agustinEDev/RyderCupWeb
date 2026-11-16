@@ -251,7 +251,10 @@ jobs:
         # .github/dependency-review-config.yml. Primero los tests de la puerta.
         run: |
           python3 -m unittest discover -s .github/scripts -p "test_*.py"
-          npx license-checker --json --out licenses.json
+          # El comprobador, fijado y con su lock, en su carpeta: `npx` bajaba la última
+          # versión de un paquete sin mantener en cada ejecución (INF-06)
+          npm ci --prefix .github/license-tool --ignore-scripts --no-audit --no-fund
+          .github/license-tool/node_modules/.bin/license-checker-rseidelsohn --start . --json --out licenses.json
           python3 .github/scripts/license_gate.py licenses.json .github/dependency-review-config.yml
 
       - name: Upload license report
