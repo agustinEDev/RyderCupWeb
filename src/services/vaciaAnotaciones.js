@@ -149,7 +149,11 @@ const golpesPerdidosDe = (entrada) => {
  *
  * @returns {boolean} Si de verdad se apartó
  */
-export const apartaLaRechazada = (entrada, dueñoSiNoLoTiene = null) => {
+export const apartaLaRechazada = (
+  entrada,
+  dueñoSiNoLoTiene = null,
+  { caducado = false } = {},
+) => {
   const apuntado = golpesPerdidos.apunta({
     matchId: entrada.matchId,
     matchName: entrada.matchName ?? null,
@@ -163,6 +167,8 @@ export const apartaLaRechazada = (entrada, dueñoSiNoLoTiene = null) => {
     // lo vea el suyo
     userId: entrada.userId ?? dueñoSiNoLoTiene ?? null,
     ...golpesPerdidosDe(entrada),
+    // No llegó a enviarse: el aviso no dice que el servidor la rechazara (FS-03)
+    ...(caducado ? { caducado: true } : {}),
   });
   if (!apuntado) return false;
 
@@ -254,7 +260,7 @@ export const vaciaAnotaciones = async ({
     // partida (`ponleNombre`) mientras iba el bucle
     if (cola.estaCaducada(enLaCola)) {
       alDescartar(enLaCola);
-      if (apartaLaRechazada(enLaCola, dueñoSiNoLoTiene)) {
+      if (apartaLaRechazada(enLaCola, dueñoSiNoLoTiene, { caducado: true })) {
         descartadas += 1;
         continue;
       }

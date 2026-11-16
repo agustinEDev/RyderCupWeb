@@ -177,6 +177,7 @@
     "perdidos_one": "One hole from {{partida}} could not be saved:",
     "perdidos_other": "{{count}} holes from {{partida}} could not be saved:",
     "perdido": "Hole {{hoyo}} — the server did not accept it",
+    "perdidoCaducado": "Hole {{hoyo}} — it could not be sent within 48 hours",
     "entendido": "Got it",
     "descartarDe": "Got it, dismiss the notice for {{partida}}",
     "noSePudoDescartar": "The notice could not be dismissed: the device is out of space.",

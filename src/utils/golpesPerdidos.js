@@ -114,9 +114,17 @@ export const apunta = (aviso) => {
     elQueHabia.golpes && aviso.golpes
       ? [...new Set([...elQueHabia.golpes, ...aviso.golpes])]
       : undefined;
-  if (JSON.stringify(golpes) === JSON.stringify(elQueHabia.golpes)) return true;
+  // Caducado solo si lo son los dos: si el servidor rechazó alguno, eso es lo
+  // que hay que contar (FS-03)
+  const caducado = Boolean(elQueHabia.caducado && aviso.caducado);
+  if (
+    JSON.stringify(golpes) === JSON.stringify(elQueHabia.golpes) &&
+    caducado === Boolean(elQueHabia.caducado)
+  )
+    return true;
   const actualizado = { ...elQueHabia, golpes };
   if (!golpes) delete actualizado.golpes;
+  if (!caducado) delete actualizado.caducado;
   return guarda(avisos.map((a) => (a === elQueHabia ? actualizado : a)));
 };
 

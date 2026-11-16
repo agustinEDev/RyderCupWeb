@@ -147,6 +147,54 @@ describe('GolpesSinEnviar', () => {
     ).toBeInTheDocument();
   });
 
+  // FS-03: un golpe caducado no llegó a enviarse; su aviso no dice que el
+  // servidor lo rechazara
+  it('el hoyo de un golpe caducado dice que no se pudo enviar en 48 horas', () => {
+    golpesPerdidos.apunta({
+      matchId: 'm-c',
+      matchName: 'Sábado',
+      holeNumber: 4,
+      userId: 'u1',
+      caducado: true,
+    });
+    golpesPerdidos.apunta({
+      matchId: 'm-c',
+      matchName: 'Sábado',
+      holeNumber: 6,
+      userId: 'u1',
+    });
+    render(<GolpesSinEnviar userId="u1" />);
+
+    expect(
+      screen.getByText('golpesSinEnviar.perdidoCaducado(hoyo=4)'),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText('golpesSinEnviar.perdido(hoyo=6)'),
+    ).toBeInTheDocument();
+  });
+
+  it('si en un hoyo hay un rechazo y una caducidad, manda el rechazo', () => {
+    for (const [userId, caducado] of [
+      ['u1', true],
+      [null, false],
+    ])
+      golpesPerdidos.apunta({
+        matchId: 'm-d',
+        matchName: 'Domingo',
+        holeNumber: 2,
+        userId,
+        ...(caducado ? { caducado } : {}),
+      });
+    render(<GolpesSinEnviar userId="u1" />);
+
+    expect(
+      screen.getByText('golpesSinEnviar.perdido(hoyo=2)'),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByText('golpesSinEnviar.perdidoCaducado(hoyo=2)'),
+    ).not.toBeInTheDocument();
+  });
+
   it('no enseña lo de la persona que usó el móvil antes', () => {
     cola.enqueue('m-9', 3, { ownScore: 4 }, null, 'otra', {
       matchName: 'Partida ajena',

@@ -178,6 +178,7 @@
     "perdidos_one": "Un hoyo de {{partida}} no se pudo guardar:",
     "perdidos_other": "{{count}} hoyos de {{partida}} no se pudieron guardar:",
     "perdido": "Hoyo {{hoyo}} — el servidor no lo aceptó",
+    "perdidoCaducado": "Hoyo {{hoyo}} — no se pudo enviar en 48 horas",
     "entendido": "Entendido",
     "descartarDe": "Entendido, quitar el aviso de {{partida}}",
     "noSePudoDescartar": "No se pudo quitar el aviso: el dispositivo no tiene espacio.",

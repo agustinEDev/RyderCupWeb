@@ -108,6 +108,8 @@ describe('caducidad de lo guardado sin cobertura (FS-03)', () => {
       });
       // El aviso cuenta desde ahora: vive sus 7 días para que lo vea
       expect(aviso.cuando).toBe(AHORA);
+      // Y dice que caducó, no que el servidor lo rechazara
+      expect(aviso.caducado).toBe(true);
     });
 
     it('C2b: si el aviso no cabe, el golpe se queda en la cola', async () => {
@@ -277,5 +279,37 @@ describe('caducidad de lo guardado sin cobertura (FS-03)', () => {
 
       expect(escribe).not.toHaveBeenCalled();
     });
+  });
+});
+
+describe('el aviso de un rechazo no se marca como caducado', () => {
+  beforeEach(() => {
+    almacen.clear();
+    vi.restoreAllMocks();
+  });
+
+  it('un 404 de un golpe reciente deja un aviso sin la marca', async () => {
+    cola.enqueue('p-2', 1, { ownScore: 4 }, null, YO);
+    const manda = vi
+      .fn()
+      .mockRejectedValue(Object.assign(new Error('HTTP 404'), { status: 404 }));
+
+    await vaciaAnotaciones({ entradas: cola.deQuien(YO), manda });
+
+    const [aviso] = golpesPerdidos.pendientes(YO);
+    expect(aviso.matchId).toBe('p-2');
+    expect(aviso.caducado).toBeUndefined();
+  });
+
+  it('si el mismo hoyo se rechaza después de caducar otro aviso suyo, deja de ser caducado', () => {
+    golpesPerdidos.apunta({
+      matchId: 'p-3',
+      holeNumber: 2,
+      userId: YO,
+      caducado: true,
+    });
+    golpesPerdidos.apunta({ matchId: 'p-3', holeNumber: 2, userId: YO });
+
+    expect(golpesPerdidos.pendientes(YO)[0].caducado).toBeUndefined();
   });
 });
