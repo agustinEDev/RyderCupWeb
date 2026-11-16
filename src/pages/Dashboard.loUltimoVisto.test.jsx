@@ -46,6 +46,8 @@ import { render, act, screen } from '@testing-library/react';
  *   D30 «no hay próximos» de ayer               | espera («comprobando»), como antes
  *   D31 «no hay próximos» sin fecha             | espera, como antes
  *   D32 pintada la marca, con red               | se piden los próximos igual, en cada entrada
+ *   D33 un 401 en los partidos con partidas     | no se guarda la marca
+ *   D34 partidas a medias y vacías              | no se guarda que no hay
  */
 const enEspera = () => {
   let resolver;
@@ -920,5 +922,40 @@ describe('el panel con lo último visto', () => {
 
     // Then las dos veces se preguntan
     expect(pedidos.proximos).toBe(2);
+  });
+
+  it('D33: un 401 en los partidos no guarda la marca aunque lleguen partidas', async () => {
+    // Given nada recordado
+    render(<Dashboard />);
+
+    // When los partidos dicen 401 y las partidas llegan con una
+    await contestanLasCompeticiones();
+    await act(async () => {
+      peticiones.proximos.rechazar(conRespuesta(401));
+      peticiones.partidas.resolver([
+        { id: 'tg-1', roundDate: MANANA, esPartidaDeFranja: true },
+      ]);
+    });
+    await asienta();
+
+    // Then lo de la cuenta se borró y no se reescribe
+    expect(localStorage.getItem('rydercup-ultimo-panel')).toBeNull();
+  });
+
+  it('D34: partidas a medias y vacías no guardan que no hay', async () => {
+    // Given una competición no contestó a las partidas
+    completitud.partidas = false;
+    render(<Dashboard />);
+
+    // When los partidos llegan enteros y vacíos, y las partidas a medias y vacías
+    await contestanLasCompeticiones();
+    await act(async () => {
+      peticiones.proximos.resolver([]);
+      peticiones.partidas.resolver([]);
+    });
+    await asienta();
+
+    // Then no se afirma que no haya
+    expect(seSabeQueNoHayProximos('u-1')).toBe(false);
   });
 });

@@ -543,4 +543,15 @@ describe('loUltimoConocido, el panel', () => {
     // Then sigue siendo de ayer: no vale
     expect(seSabeQueNoHayProximos('u-1')).toBe(false);
   });
+
+  it('G24: tras un cierre de la cuenta no se guarda la marca', () => {
+    // Given un 401/403 borró lo de la cuenta
+    olvidaLoDeEstaCuenta();
+
+    // When llega la marca
+    recuerdaElPanel('u-1', { sinProximos: true });
+
+    // Then no se guarda
+    expect(guardado.has('rydercup-ultimo-panel')).toBe(false);
+  });
 });
