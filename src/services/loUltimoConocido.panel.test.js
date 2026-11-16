@@ -42,6 +42,7 @@ import RecentMatch from '../domain/entities/RecentMatch';
  *   G25 un valor no válido para la marca      | no le pone la fecha de hoy a una vieja
  *   G26 lo guardado de la marca               | un solo campo, `sinProximosEl`
  *   G27 competiciones guardadas que no se pueden leer | null, no «0 torneos»
+ *   G28 lo mismo otra vez                     | no se reescribe
  *   G5 se cierra la sesión                | se borra y no se reescribe
  *   G6 el móvil no tiene sitio            | no se guarda y no revienta
  *   G7 lo guardado está roto              | nada
@@ -605,5 +606,29 @@ describe('loUltimoConocido, el panel', () => {
     recuerdaElPanel('u-1', { competiciones: [] });
 
     expect(elUltimoPanel('u-1').competiciones).toEqual([]);
+  });
+  it('G28: la misma marca otra vez no se reescribe', () => {
+    // Given hoy ya se sabe que no hay
+    recuerdaElPanel('u-1', { sinProximos: true });
+    const escribe = vi.spyOn(localStorage, 'setItem');
+
+    // When se vuelve a saber lo mismo
+    const guardo = recuerdaElPanel('u-1', { sinProximos: true });
+
+    // Then no se escribe, y se da por guardado
+    expect(escribe).not.toHaveBeenCalled();
+    expect(guardo).toBe(true);
+  });
+
+  it('G28b: si cambia, se escribe', () => {
+    // Given hoy ya se sabe que no hay
+    recuerdaElPanel('u-1', { sinProximos: true });
+    const escribe = vi.spyOn(localStorage, 'setItem');
+
+    // When ahora sí hay
+    recuerdaElPanel('u-1', { sinProximos: false });
+
+    // Then se escribe
+    expect(escribe).toHaveBeenCalledTimes(1);
   });
 });

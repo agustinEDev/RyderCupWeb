@@ -49,6 +49,7 @@ import { render, act, screen } from '@testing-library/react';
  *   D33 un 401 en los partidos con partidas     | no se guarda la marca
  *   D34 partidas a medias y vacías              | no se guarda que no hay
  *   D35 competiciones guardadas ilegibles       | no cuentan como panel guardado («0 torneos»)
+ *   D36 la misma respuesta otra vez             | la marca no se reescribe
  */
 const enEspera = () => {
   let resolver;
@@ -211,11 +212,15 @@ const {
 } = await import('../services/loUltimoConocido');
 const Dashboard = (await import('./Dashboard')).default;
 
+// Cuántas veces se escribe cada clave
+const escrituras = {};
 const almacenLimpio = () => {
   const guardado = {};
+  for (const clave of Object.keys(escrituras)) delete escrituras[clave];
   vi.stubGlobal('localStorage', {
     getItem: (clave) => guardado[clave] ?? null,
     setItem: (clave, valor) => {
+      escrituras[clave] = (escrituras[clave] ?? 0) + 1;
       guardado[clave] = String(valor);
     },
     removeItem: (clave) => {
@@ -972,5 +977,25 @@ describe('el panel con lo último visto', () => {
 
     // Then se espera, como sin nada guardado
     expect(espera()).not.toBeNull();
+  });
+  it('D36: con la misma respuesta otra vez, la marca no se reescribe', async () => {
+    // Given hoy ya se supo que no hay próximos
+    guardaQueNoHayProximos();
+    const antes = escrituras['rydercup-ultimo-panel'];
+
+    // When se entra y el servidor vuelve a decir que no hay
+    render(<Dashboard />);
+    await contestanLasCompeticiones();
+    const trasLasCompeticiones = escrituras['rydercup-ultimo-panel'];
+    await act(async () => {
+      peticiones.proximos.resolver([]);
+      peticiones.partidas.resolver([]);
+    });
+    await asienta();
+
+    // Then no se vuelve a escribir el panel por la marca
+    expect(trasLasCompeticiones).toBeGreaterThanOrEqual(antes);
+    expect(escrituras['rydercup-ultimo-panel']).toBe(trasLasCompeticiones);
+    expect(seSabeQueNoHayProximos('u-1')).toBe(true);
   });
 });

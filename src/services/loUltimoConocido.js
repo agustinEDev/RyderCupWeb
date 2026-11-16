@@ -556,7 +556,12 @@ export const recuerdaElPanel = (
       // no llega un sí o un no, el que había (sin cambiarle el día)
       sinProximosEl: diaDeLaMarca(sinProximos, deEsta?.sinProximosEl),
     };
-    localStorage.setItem(CLAVE_PANEL, JSON.stringify(panel));
+    // Solo si cambia: el panel se vuelve a pedir en cada entrada y casi siempre
+    // contesta lo mismo (/code-review)
+    const enTexto = JSON.stringify(panel);
+    if (localStorage.getItem(CLAVE_PANEL) !== enTexto) {
+      localStorage.setItem(CLAVE_PANEL, enTexto);
+    }
     return true;
   } catch {
     // Sin sitio, o algo que no se deja guardar: no se guarda. La cola de golpes
