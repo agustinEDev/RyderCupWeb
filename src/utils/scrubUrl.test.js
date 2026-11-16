@@ -121,4 +121,56 @@ describe('scrubUrl', () => {
     expect(scrubUrl(null)).toBeNull();
     expect(scrubUrl('')).toBe('');
   });
+  // Lo que se teclea al buscar (FS-02): nombres de personas, correos. Los que la
+  // aplicación manda de verdad, y los habituales por si llega uno de fuera:
+  //
+  //   #   caso                                                  | esperado
+  //   ----|-----------------------------------------------------|----------------
+  //   B1  buscar jugadores (`/users/search-autocomplete?query`) | tapado
+  //   B2  buscar usuarios en Admin (`?search=`)                 | tapado
+  //   B3  explorar torneos por nombre y por creador             | tapados
+  //   B4  buscar campos por nombre (`?name=`)                   | tapado
+  //   B5  `q` y `email`                                         | tapados
+  //   B6  lo que solo se parece (`username`, `query_id`)        | intacto
+  it.each([
+    [
+      'B1',
+      '/api/v1/users/search-autocomplete?query=Jose%20Garcia',
+      '/api/v1/users/search-autocomplete?query=[REDACTED]',
+    ],
+    [
+      'B2',
+      '/api/v1/admin/users?search=ana%40correo.es&limit=20&offset=0',
+      '/api/v1/admin/users?search=[REDACTED]&limit=20&offset=0',
+    ],
+    [
+      'B3',
+      '/api/v1/competitions?search_name=ryder&search_creator=Luis&limit=20',
+      '/api/v1/competitions?search_name=[REDACTED]&search_creator=[REDACTED]&limit=20',
+    ],
+    [
+      'B4',
+      '/api/v1/golf-courses?approval_status=APPROVED&name=El%20Saler',
+      '/api/v1/golf-courses?approval_status=APPROVED&name=[REDACTED]',
+    ],
+    [
+      'B5',
+      'https://www.rydercupfriends.com/x?q=Ana&email=a%40b.c#y',
+      'https://www.rydercupfriends.com/x?q=[REDACTED]&email=[REDACTED]#y',
+    ],
+  ])('%s: tapa lo que se busca', (_, url, esperado) => {
+    // Given una URL con lo que alguien buscó
+    // When se sanea
+    // Then no sale el término
+    expect(scrubUrl(url)).toBe(esperado);
+  });
+
+  it('B6: no tapa lo que solo se parece a un término de búsqueda', () => {
+    // Given parámetros que contienen el nombre pero no son él
+    const url =
+      '/api/v1/x?username=a&query_id=3&searchable=1&qa=2&email_verified=true';
+
+    // Then se queda igual
+    expect(scrubUrl(url)).toBe(url);
+  });
 });

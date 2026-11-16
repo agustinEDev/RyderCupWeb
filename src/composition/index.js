@@ -1,6 +1,7 @@
 // La respuesta de la interfaz al transporte, registrada antes que los repositorios
 // que lo usan (infrastructure/http/interfazDelTransporte)
 import './interfazDelTransporte';
+import { puedeDarUnPartido } from './proximosPorSaber';
 import ApiUserRepository from '../infrastructure/repositories/ApiUserRepository';
 // User Use Cases
 import UpdateUserProfileUseCase from '../application/use_cases/user/UpdateUserProfileUseCase';
@@ -452,36 +453,46 @@ const undoTeamsUseCase = new UndoTeamsUseCase({
 const createRoundUseCase = new CreateRoundUseCase({
   scheduleRepository: apiScheduleRepository,
 });
-const takeTeeWindowPlaceUseCase = new TakeTeeWindowPlaceUseCase({
-  scheduleRepository: apiScheduleRepository,
-});
+const takeTeeWindowPlaceUseCase = puedeDarUnPartido(
+  new TakeTeeWindowPlaceUseCase({
+    scheduleRepository: apiScheduleRepository,
+  }),
+);
 const releaseTeeWindowPlaceUseCase = new ReleaseTeeWindowPlaceUseCase({
   scheduleRepository: apiScheduleRepository,
 });
-const joinWaitingListUseCase = new JoinWaitingListUseCase({
-  scheduleRepository: apiScheduleRepository,
-});
+const joinWaitingListUseCase = puedeDarUnPartido(
+  new JoinWaitingListUseCase({
+    scheduleRepository: apiScheduleRepository,
+  }),
+);
 const leaveWaitingListUseCase = new LeaveWaitingListUseCase({
   scheduleRepository: apiScheduleRepository,
 });
 const listMyAssignedPlacesUseCase = new ListMyAssignedPlacesUseCase({
   scheduleRepository: apiScheduleRepository,
 });
-const acknowledgeAssignedPlaceUseCase = new AcknowledgeAssignedPlaceUseCase({
-  scheduleRepository: apiScheduleRepository,
-});
+const acknowledgeAssignedPlaceUseCase = puedeDarUnPartido(
+  new AcknowledgeAssignedPlaceUseCase({
+    scheduleRepository: apiScheduleRepository,
+  }),
+);
 const getTeeGroupsUseCase = new GetTeeGroupsUseCase({
   scheduleRepository: apiScheduleRepository,
 });
 const getMyTeeGroupsUseCase = new GetMyTeeGroupsUseCase({
   scheduleRepository: apiScheduleRepository,
 });
-const generateTeeGroupsUseCase = new GenerateTeeGroupsUseCase({
-  scheduleRepository: apiScheduleRepository,
-});
-const moveTeeGroupPlayerUseCase = new MoveTeeGroupPlayerUseCase({
-  scheduleRepository: apiScheduleRepository,
-});
+const generateTeeGroupsUseCase = puedeDarUnPartido(
+  new GenerateTeeGroupsUseCase({
+    scheduleRepository: apiScheduleRepository,
+  }),
+);
+const moveTeeGroupPlayerUseCase = puedeDarUnPartido(
+  new MoveTeeGroupPlayerUseCase({
+    scheduleRepository: apiScheduleRepository,
+  }),
+);
 const reorderTeeGroupsUseCase = new ReorderTeeGroupsUseCase({
   scheduleRepository: apiScheduleRepository,
 });
@@ -497,9 +508,11 @@ const updateRoundUseCase = new UpdateRoundUseCase({
 const deleteRoundUseCase = new DeleteRoundUseCase({
   scheduleRepository: apiScheduleRepository,
 });
-const generateMatchesUseCase = new GenerateMatchesUseCase({
-  scheduleRepository: apiScheduleRepository,
-});
+const generateMatchesUseCase = puedeDarUnPartido(
+  new GenerateMatchesUseCase({
+    scheduleRepository: apiScheduleRepository,
+  }),
+);
 const getMatchDetailUseCase = new GetMatchDetailUseCase({
   scheduleRepository: apiScheduleRepository,
 });
@@ -509,9 +522,11 @@ const updateMatchStatusUseCase = new UpdateMatchStatusUseCase({
 const declareWalkoverUseCase = new DeclareWalkoverUseCase({
   scheduleRepository: apiScheduleRepository,
 });
-const reassignPlayersUseCase = new ReassignPlayersUseCase({
-  scheduleRepository: apiScheduleRepository,
-});
+const reassignPlayersUseCase = puedeDarUnPartido(
+  new ReassignPlayersUseCase({
+    scheduleRepository: apiScheduleRepository,
+  }),
+);
 
 // Sala de draft (FE #653)
 const startDraftUseCase = new StartDraftUseCase({
@@ -559,9 +574,11 @@ const sendInvitationByEmailUseCase = new SendInvitationByEmailUseCase({
 const listMyInvitationsUseCase = new ListMyInvitationsUseCase({
   invitationRepository: apiInvitationRepository,
 });
-const respondToInvitationUseCase = new RespondToInvitationUseCase({
-  invitationRepository: apiInvitationRepository,
-});
+const respondToInvitationUseCase = puedeDarUnPartido(
+  new RespondToInvitationUseCase({
+    invitationRepository: apiInvitationRepository,
+  }),
+);
 const cancelInvitationUseCase = new CancelInvitationUseCase({
   invitationRepository: apiInvitationRepository,
 });
@@ -715,8 +732,8 @@ const getScratchStandingsUseCase = new GetScratchStandingsUseCase({
 });
 
 // Enrollment Use Cases
-const requestEnrollmentUseCase = new RequestEnrollmentUseCase(
-  apiEnrollmentRepository,
+const requestEnrollmentUseCase = puedeDarUnPartido(
+  new RequestEnrollmentUseCase(apiEnrollmentRepository),
 );
 const listEnrollmentsUseCase = new ListEnrollmentsUseCase(
   apiEnrollmentRepository,
@@ -755,9 +772,11 @@ const setNamePreferenceUseCase = new SetNamePreferenceUseCase(
 );
 
 // Quick Match Use Cases (FE #236)
-const createAndStartQuickMatchUseCase = new CreateAndStartQuickMatchUseCase({
-  quickMatchRepository: apiQuickMatchRepository,
-});
+const createAndStartQuickMatchUseCase = puedeDarUnPartido(
+  new CreateAndStartQuickMatchUseCase({
+    quickMatchRepository: apiQuickMatchRepository,
+  }),
+);
 const completeQuickMatchUseCase = new CompleteQuickMatchUseCase({
   quickMatchRepository: apiQuickMatchRepository,
 });

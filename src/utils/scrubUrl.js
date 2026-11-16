@@ -22,6 +22,16 @@ const SENSITIVE_QUERY_PARAMS = [
   // La vuelta de Google: el codigo de autorizacion y el nonce anti-CSRF
   'code',
   'state',
+  // Lo que se teclea al buscar (FS-02): nombres de personas y correos. Los que
+  // manda la aplicacion —jugadores (`query`), usuarios en Admin (`search`),
+  // torneos por nombre y por creador, campos por nombre— y los habituales
+  'query',
+  'search',
+  'search_name',
+  'search_creator',
+  'name',
+  'q',
+  'email',
 ];
 
 /**

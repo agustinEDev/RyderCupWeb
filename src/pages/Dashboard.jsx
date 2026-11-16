@@ -27,7 +27,11 @@ import {
   leeLosProximosPartidos,
   losProximosGuardados,
 } from '../services/partidosSinCobertura';
-import { elUltimoPanel, recuerdaElPanel } from '../services/loUltimoConocido';
+import {
+  elUltimoPanel,
+  recuerdaElPanel,
+  seSabeQueNoHayProximos,
+} from '../services/loUltimoConocido';
 import { esFalloDeRedDeLaApi } from '../utils/sinCobertura';
 import PlayerStats from '../domain/entities/PlayerStats';
 import RecentMatch from '../domain/entities/RecentMatch';
@@ -113,11 +117,16 @@ const Dashboard = () => {
   if (cuentaDelPanel && guardado.cuenta !== cuentaDelPanel) {
     const panel = elUltimoPanel(cuentaDelPanel);
     // Los próximos ya se guardan para anotar sin cobertura; solo se usan si hay
-    // panel de ESTA cuenta, y solo si hay alguno: una lista vacía pintaría un
-    // momento «crea una partida rápida» y se podría pulsar
+    // panel de ESTA cuenta, y solo si hay alguno: esas listas son del móvil y,
+    // vacías, no distinguen «no hay» de «nunca se guardaron»; pintarían un
+    // momento «crea una partida rápida» y se podría pulsar. Que no hay lo dice
+    // la marca del panel de la cuenta, que solo pone una respuesta entera del
+    // servidor (FE #1152)
     const proximos = panel ? losProximosGuardados() : [];
     const partidas = panel ? lasPartidasGuardadas() : [];
     const hayProximos = proximos.length + partidas.length > 0;
+    const noHayProximos =
+      Boolean(panel) && !hayProximos && seSabeQueNoHayProximos(cuentaDelPanel);
     // Lo guardado son valores sueltos: las tarjetas esperan las entidades (con
     // sus métodos). Una partida que no se pueda rehacer, fuera
     const recientes = panel?.ultimasPartidas
@@ -146,11 +155,13 @@ const Dashboard = () => {
     setGuardado({
       cuenta: cuentaDelPanel,
       competiciones: Boolean(panel?.competiciones),
-      // Una lista vacía (ninguna se pudo rehacer) no cuenta: pintaría «crea una
-      // partida» a quien sí tiene
-      recientes: recientes?.length > 0,
+      // Vacía porque el servidor dijo «ninguna», sí (FE #1152); vacía porque
+      // ninguna se pudo rehacer, no: pintaría «crea una partida» a quien sí tiene
+      recientes:
+        Array.isArray(panel?.ultimasPartidas) &&
+        (panel.ultimasPartidas.length === 0 || recientes.length > 0),
       cifras: Boolean(panel?.estadisticas),
-      proximos: hayProximos,
+      proximos: hayProximos || noHayProximos,
     });
   }
   // Las banderas son de la cuenta sembrada: al cambiar de cuenta se rehacen
@@ -503,6 +514,21 @@ const Dashboard = () => {
         leeLasPartidas(),
       ]);
       if (!cancelled) {
+        // Lo que dijo el servidor de los próximos, para pintarlo al volver
+        // (FE #1152): que no hay, solo con las dos vacías y de él; que hay, con
+        // cualquiera que traiga alguno. Sin red o de memoria no se sabe y no
+        // se toca
+        const deLaRespuesta = (r) => !r.desdeMemoria && !r.sinRespuesta;
+        if (
+          (deLaRespuesta(leido) && leido.partidos.length > 0) ||
+          (deLaRespuesta(partidas) && partidas.partidas.length > 0)
+        ) {
+          recuerdaElPanel(user.id, { sinProximos: false });
+        } else if (deLaRespuesta(leido) && deLaRespuesta(partidas)) {
+          // Vacías y de la respuesta: enteras, que media lista vacía se lee
+          // como sin red (`partidosSinCobertura`)
+          recuerdaElPanel(user.id, { sinProximos: true });
+        }
         setProximasPartidas(partidas);
         setUpcomingMatches(leido.partidos);
         setUpcomingSinRespuesta(leido.sinRespuesta);

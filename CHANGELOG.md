@@ -5,6 +5,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.82.0] - 2026-11-16
+
+**Panel sin «Cargando» cuando no hay próximos ni partidas, y Sentry sin IP ni búsquedas**
+(#1161, cierra #1152; merge-back de la 2.81.0 en #1155). Va con el backend 2.69.0, que sale
+primero; nada cambia de contrato.
+
+### Fixed
+
+- **El panel recuerda que no hay próximos partidos ni partidas recientes** (#1152): al volver
+  se pinta ya el «¿Partido improvisado?» y «Todavía no has jugado ninguna partida», sin espera,
+  y se comprueba por detrás. La marca `sinProximosEl` lleva fecha y solo vale el mismo día
+  local; se olvida tras cualquier acción que pueda dar un partido (inscribirse, aceptar una
+  invitación, acciones del organizador, rechazar). Competiciones o recientes guardadas que no
+  se pueden leer cuentan como «no se sabe», y el panel guardado solo se reescribe si cambia.
+- **Sentry no guarda la IP ni el agente de usuario inferidos** (`dataCollection.userInfo:
+  false`, FS-01) y los términos de búsqueda de las URL se tapan antes de enviarse (FS-02).
+
+### Added
+
+- Texto traducido (es/en) para el 503 `IMAGES_BUSY` al subir el avatar.
+
 ## [2.81.0] - 2026-11-15
 
 **Cierre automático de las inscripciones, avisos de la RFEG e invitaciones en lista de espera**

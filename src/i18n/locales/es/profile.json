@@ -164,6 +164,7 @@
     "failedToUpdateAvatar": "Error al actualizar la foto de perfil",
     "avatarFileTooLarge": "Esa foto es demasiado grande (máx. 10MB).",
     "avatarInvalidImage": "Ese archivo no es una imagen válida (JPEG, PNG o WEBP).",
+    "avatarImagesBusy": "Ahora mismo se están procesando otras imágenes. Inténtalo de nuevo en unos segundos.",
     "avatarRemoved": "Foto de perfil eliminada.",
     "failedToRemoveAvatar": "Error al quitar la foto de perfil",
     "failedToLoadAvatarOptions": "Error al cargar las opciones de avatar.",

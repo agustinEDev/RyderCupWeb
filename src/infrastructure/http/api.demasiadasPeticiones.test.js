@@ -67,6 +67,26 @@ describe('apiRequest · demasiadas peticiones', () => {
     expect(error.status).toBe(400);
   });
 
+  it('R2b: el 503 de imágenes ocupadas llega con el texto del servidor', async () => {
+    // Given el servidor está procesando otras imágenes al subir el avatar
+    const texto =
+      'Ahora mismo se están procesando otras imágenes. Inténtalo de nuevo en unos segundos.';
+    llamarAlBackend.mockResolvedValue(
+      respuesta(503, { detail: texto, error_code: 'IMAGES_BUSY' }),
+    );
+
+    // When se sube
+    const error = await apiRequest('/api/v1/users/me/avatar/upload', {
+      method: 'POST',
+    }).catch((e) => e);
+
+    // Then el error lleva ese texto tal cual, para que la pantalla lo enseñe
+    expect(error.message).toBe(texto);
+    expect(error.status).toBe(503);
+    // Y su código, en la raíz del cuerpo, para traducirlo
+    expect(error.errorCode).toBe('IMAGES_BUSY');
+  });
+
   // El 429 sale también en el login, el registro y las lecturas: el texto no
   // habla de «cambios» (revisión local de la PR; Agustín, 4 oct 2026)
   it.each([
