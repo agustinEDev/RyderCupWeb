@@ -8,6 +8,10 @@ import * as golpesPerdidos from '../../utils/golpesPerdidos';
 import * as offlineQueue from '../../utils/scoringOfflineQueue';
 import { resumenPorPartida } from '../../utils/scoringOfflineQueue';
 
+// Lo mismo que había, si no cambió: así una relectura sin novedades no repinta
+const igualQue = (antes, ahora) =>
+  JSON.stringify(antes) === JSON.stringify(ahora) ? antes : ahora;
+
 /**
  * Lo que quedó sin enviar, y lo que ya no se pudo guardar (FE #521).
  *
@@ -24,10 +28,6 @@ import { resumenPorPartida } from '../../utils/scoringOfflineQueue';
  * contando como pendiente un golpe que ya había salido o ya era un aviso hasta
  * cambiar de pantalla. Si no cambió nada, la relectura no repinta.
  */
-// Lo mismo que había, si no cambió: así una relectura sin novedades no repinta
-const igualQue = (antes, ahora) =>
-  JSON.stringify(antes) === JSON.stringify(ahora) ? antes : ahora;
-
 const GolpesSinEnviar = ({ userId = null }) => {
   const navigate = useNavigate();
   const { t } = useTranslation('dashboard');
