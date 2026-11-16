@@ -54,6 +54,15 @@ class TestSecurityTxt(unittest.TestCase):
         self.assertLess(caduca, datetime.now(UTC) + timedelta(days=366))
 
 
+class TestServiceWorker(unittest.TestCase):
+    def test_does_not_answer_well_known_files_with_the_app(self):
+        # Con la app instalada, el service worker contesta cualquier navegación con el
+        # index.html salvo lo que esté en esta lista: security.txt tiene que llegar
+        config = (RAIZ / "vite.config.js").read_text(encoding="utf-8")
+        lista = config.split("navigateFallbackDenylist:", 1)[1].split("]", 1)[0]
+        self.assertIn(r"/^\/\.well-known\//", lista)
+
+
 class TestDependabot(unittest.TestCase):
     def test_every_ecosystem_waits_before_proposing_a_new_release(self):
         bloques = _bloques_de_dependabot()
