@@ -242,17 +242,19 @@ export const vaciaAnotaciones = async ({
     // corrección NO se manda desde aquí: quien llama puede tener que mirarla
     // contra el servidor antes —la partida rápida pregunta cuando otro
     // anotador puso otra cosa—, así que se le cuenta y él decide
-    if (!laMismaEnLaCola(entrada)) {
+    const enLaCola = laMismaEnLaCola(entrada);
+    if (!enLaCola) {
       cambiadas += 1;
       continue;
     }
 
-    // Caducada (FS-03): pasadas 48 h el partido ya se cerró y el servidor la
-    // rechazaría. No se manda; se aparta como un rechazo, con su aviso, y por
-    // el mismo camino: solo sale de la cola si el aviso quedó escrito
-    if (cola.estaCaducada(entrada)) {
-      alDescartar(entrada);
-      if (apartaLaRechazada(entrada, dueñoSiNoLoTiene)) {
+    // Caducada (FS-03): ya no se manda; se aparta como un rechazo, con su aviso,
+    // y por el mismo camino: solo sale de la cola si el aviso quedó escrito. La
+    // copia de la cola, no la de la lista: puede haber recibido el nombre de la
+    // partida (`ponleNombre`) mientras iba el bucle
+    if (cola.estaCaducada(enLaCola)) {
+      alDescartar(enLaCola);
+      if (apartaLaRechazada(enLaCola, dueñoSiNoLoTiene)) {
         descartadas += 1;
         continue;
       }

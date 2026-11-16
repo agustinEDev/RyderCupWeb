@@ -157,6 +157,15 @@ describe('caducidad de lo guardado sin cobertura (FS-03)', () => {
       expect(cola.getAll()).toEqual([]);
       expect(golpesPerdidos.pendientes(YO)).toHaveLength(1);
     });
+    it('el aviso lleva el nombre que la partida recibió mientras iba el vaciado', async () => {
+      guardaHace(3 * DIA, 'p-1', 5, { ownScore: 6 }, null, YO);
+      const entradas = cola.deQuien(YO);
+      cola.ponleNombre('p-1', { matchName: 'Domingo' });
+
+      await vaciaAnotaciones({ entradas, manda: vi.fn() });
+
+      expect(golpesPerdidos.pendientes(YO)[0].matchName).toBe('Domingo');
+    });
   });
 
   describe('C4: lo que el vaciado global no envía, sí lo caduca', () => {
