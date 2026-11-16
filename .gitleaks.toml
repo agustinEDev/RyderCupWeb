@@ -1,0 +1,30 @@
+# Configuración de gitleaks del frontend (INF-07, re-auditoría del 16 nov 2026).
+# TruffleHog solo avisa de lo que puede verificar contra el proveedor (--only-verified):
+# claves privadas, URLs con contraseña o tokens propios pasaban. gitleaks, con sus reglas
+# por defecto, cubre esos secretos genéricos. Lo vigilan el paso «Gitleaks self-test»
+# del CI y .github/scripts/test_gitleaks.py.
+title = "RyderCupWeb - Gitleaks"
+
+[extend]
+useDefault = true
+
+# Lo que se salta, cuanto más estrecho mejor: cada entrada esconde un secreto real que
+# caiga ahí.
+[allowlist]
+  description = "Known false positives"
+
+  # Los tests llevan contraseñas y tokens de ejemplo (`password="Abcdefghijk1"`,
+  # `token = 'global-csrf-123'`)
+  paths = [
+    '''\.test\.(js|jsx|ts|tsx)$''',
+  ]
+
+  # Commits viejos con valores de ejemplo en ficheros que ya no existen: JWT recortados
+  # («eyJhbGciOi...») en especificaciones de la API y la contraseña del mock de pruebas
+  # local de 2025. Ninguno es una credencial en uso.
+  commits = [
+    "3204c9476cc35ff6a8c8d4a3a5ef8380e041429e",
+    "32546a1abc165857e69aca7771d562c5f7774953",
+    "4930df05ebbd936c9b7c39aedeb3eb40b40fd239",
+    "a263895d75c058b049252146b44ed03bb98d8e3c",
+  ]
