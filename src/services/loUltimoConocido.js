@@ -452,6 +452,13 @@ const cifrasValidas = (cifras) =>
       )
     : null;
 
+/** El día que se guarda con «no hay próximos», según lo que se sabe ahora. */
+const diaDeLaMarca = (sinProximos, anterior) => {
+  if (sinProximos === true) return fechaLocal();
+  if (sinProximos === false || sinProximos === null) return null;
+  return anterior ?? null;
+};
+
 const leeElPanel = () => {
   try {
     const crudo = localStorage.getItem(CLAVE_PANEL);
@@ -471,9 +478,9 @@ const leeElPanel = () => {
       ),
       estadisticas: cifrasValidas(panel.estadisticas),
       pendientes: pendientesValidas(panel.pendientes),
-      // Solo `true` lo afirma: cualquier otra cosa es que no se sabe
-      sinProximos: panel.sinProximos === true,
-      // El día en que se supo: la marca solo vale ese día (Agustín, 16 nov 2026)
+      // «No hay próximos», con el día en que se supo: solo vale ese día
+      // (Agustín, 16 nov 2026). Sin él —o el panel de una versión anterior—, no
+      // se sabe
       sinProximosEl:
         typeof panel.sinProximosEl === 'string' ? panel.sinProximosEl : null,
     };
@@ -545,17 +552,9 @@ export const recuerdaElPanel = (
         pendientesEnPlano,
         deEsta?.pendientes,
       ),
-      sinProximos: parte(
-        sinProximos,
-        (marca) => typeof marca === 'boolean',
-        (marca) => marca,
-        deEsta?.sinProximos,
-      ),
-      // Con su día: se pone al ponerla y se queda si no llega
-      sinProximosEl:
-        sinProximos === undefined
-          ? (deEsta?.sinProximosEl ?? null)
-          : fechaLocal(),
+      // Un solo campo: el día de hoy si no hay; null si hay o se borra; y si
+      // no llega un sí o un no, el que había (sin cambiarle el día)
+      sinProximosEl: diaDeLaMarca(sinProximos, deEsta?.sinProximosEl),
     };
     localStorage.setItem(CLAVE_PANEL, JSON.stringify(panel));
     return true;
@@ -606,9 +605,7 @@ export const seSabeQueNoHayProximos = (usuarioId, ahora = new Date()) => {
   if (!usuarioId) return false;
   const panel = leeElPanel();
   return (
-    panel?.usuarioId === usuarioId &&
-    panel.sinProximos &&
-    panel.sinProximosEl === fechaLocal(ahora)
+    panel?.usuarioId === usuarioId && panel.sinProximosEl === fechaLocal(ahora)
   );
 };
 

@@ -39,6 +39,8 @@ import RecentMatch from '../domain/entities/RecentMatch';
  *   G21 últimas partidas guardadas vacías | vuelven vacías: el servidor dijo «ninguna»
  *   G22 partidas guardadas que no se pueden leer | null, no «ninguna» (FE #1152)
  *   G23 «no hay próximos» de otro día o sin fecha | no se sabe: solo vale el día que se guardó
+ *   G25 un valor no válido para la marca      | no le pone la fecha de hoy a una vieja
+ *   G26 lo guardado de la marca               | un solo campo, `sinProximosEl`
  *   G5 se cierra la sesión                | se borra y no se reescribe
  *   G6 el móvil no tiene sitio            | no se guarda y no revienta
  *   G7 lo guardado está roto              | nada
@@ -445,18 +447,13 @@ describe('loUltimoConocido, el panel', () => {
 
   it.each([
     ['null', null],
-    ['un texto', 'true'],
-    ['un número', 1],
-  ])('G20: la marca guardada como %s no dice nada', (_, valor) => {
-    // Given una marca que no es `true`
+    ['un número', 20261116],
+    ['un objeto', { dia: 'hoy' }],
+  ])('G20: la fecha de la marca guardada como %s no dice nada', (_, valor) => {
+    // Given una fecha que no es texto
     guardado.set(
       'rydercup-ultimo-panel',
-      JSON.stringify({
-        v: 1,
-        usuarioId: 'u-1',
-        sinProximos: valor,
-        sinProximosEl: fechaLocal(),
-      }),
+      JSON.stringify({ v: 1, usuarioId: 'u-1', sinProximosEl: valor }),
     );
 
     // Then no se sabe que no haya
@@ -512,13 +509,13 @@ describe('loUltimoConocido, el panel', () => {
 
   it.each([
     ['de ayer', () => ({ sinProximosEl: ayer() })],
-    ['sin fecha (versión anterior)', () => ({})],
+    ['sin el campo (la versión en producción)', () => ({})],
     ['con una fecha que no es texto', () => ({ sinProximosEl: 20261116 })],
   ])('G23b: «no hay próximos» %s no dice nada', (_, fecha) => {
     // Given la marca guardada con esa fecha
     guardado.set(
       'rydercup-ultimo-panel',
-      JSON.stringify({ v: 1, usuarioId: 'u-1', sinProximos: true, ...fecha() }),
+      JSON.stringify({ v: 1, usuarioId: 'u-1', ...fecha() }),
     );
 
     // Then no se sabe que no haya
@@ -529,12 +526,7 @@ describe('loUltimoConocido, el panel', () => {
     // Given la marca de ayer
     guardado.set(
       'rydercup-ultimo-panel',
-      JSON.stringify({
-        v: 1,
-        usuarioId: 'u-1',
-        sinProximos: true,
-        sinProximosEl: ayer(),
-      }),
+      JSON.stringify({ v: 1, usuarioId: 'u-1', sinProximosEl: ayer() }),
     );
 
     // When hoy se guardan las competiciones
@@ -553,5 +545,43 @@ describe('loUltimoConocido, el panel', () => {
 
     // Then no se guarda
     expect(guardado.has('rydercup-ultimo-panel')).toBe(false);
+  });
+  it.each([
+    ['un texto', 'x'],
+    ['un número', 1],
+  ])(
+    'G25: %s como marca no le pone la fecha de hoy a una vieja',
+    (_, valor) => {
+      // Given la marca de ayer
+      guardado.set(
+        'rydercup-ultimo-panel',
+        JSON.stringify({ v: 1, usuarioId: 'u-1', sinProximosEl: ayer() }),
+      );
+
+      // When llega un valor que no es sí o no
+      recuerdaElPanel('u-1', { sinProximos: valor });
+
+      // Then sigue siendo de ayer
+      expect(seSabeQueNoHayProximos('u-1')).toBe(false);
+      expect(
+        JSON.parse(guardado.get('rydercup-ultimo-panel')).sinProximosEl,
+      ).toBe(ayer());
+    },
+  );
+
+  it('G26: la marca se guarda en un solo campo, con el día', () => {
+    // When se sabe que no hay
+    recuerdaElPanel('u-1', { sinProximos: true });
+    const conMarca = JSON.parse(guardado.get('rydercup-ultimo-panel'));
+
+    // Then va el día, y nada más
+    expect(conMarca.sinProximosEl).toBe(fechaLocal());
+    expect('sinProximos' in conMarca).toBe(false);
+
+    // And al saber que hay, el campo queda vacío
+    recuerdaElPanel('u-1', { sinProximos: false });
+    expect(
+      JSON.parse(guardado.get('rydercup-ultimo-panel')).sinProximosEl,
+    ).toBeNull();
   });
 });
