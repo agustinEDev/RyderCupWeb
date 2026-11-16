@@ -72,7 +72,9 @@ Qué hace cada novedad de la fase 4:
   saltaría en cada carga sin que hubiera ataque (el registro del service worker, los workers
   del mapa y de Sentry, MapLibre), y mandar esos avisos a Sentry gastaría la cuota y taparía
   los de la CSP. De momento solo va en local (Vite y el Kind), en aviso y a la consola, para
-  ver qué salta antes de escribir las políticas.
+  ver qué salta antes de escribir las políticas. La re-auditoría del 16 nov 2026 lo marcó
+  como deriva entre copias (FS-04, informativo); Agustín confirmó ese día que siga solo en
+  local hasta que se escriban las políticas.
 - **`Cross-Origin-Opener-Policy: same-origin`** (FE-05): la ventana de la app no comparte
   contexto con las que la abren o abre. La entrada con Google es una redirección de página
   completa, sin ventanas emergentes: no le afecta.
