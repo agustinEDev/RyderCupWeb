@@ -247,17 +247,17 @@ describe('Política de Privacidad', () => {
     expect(p).toContain('www.aepd.es');
   });
 
-  // Privacidad cambia el 7 nov 2026 (Resend y Brevo); Cookies, el 10 nov (todas
-  // las claves del almacenamiento del navegador); Términos, no
+  // Privacidad y Cookies cambian el 16 nov 2026 (plazos de lo guardado sin
+  // cobertura, FS-03); Términos, no
   it.each([
     [
       'es',
       es,
-      '7 de noviembre de 2026',
+      '16 de noviembre de 2026',
       '6 de noviembre de 2026',
-      '10 de noviembre de 2026',
+      '16 de noviembre de 2026',
     ],
-    ['en', en, '7 November 2026', '6 November 2026', '10 November 2026'],
+    ['en', en, '16 November 2026', '6 November 2026', '16 November 2026'],
   ])(
     'fecha de la última actualización (%s)',
     (_i, textos, privacidad, terminos, cookies) => {
@@ -1046,11 +1046,24 @@ describe('revisión de la release', () => {
   );
 
   it.each([
-    ['es', es, 'Última actualización: 10 de noviembre de 2026'],
-    ['en', en, 'Last updated: 10 November 2026'],
+    ['es', es, 'Última actualización: 16 de noviembre de 2026'],
+    ['en', en, 'Last updated: 16 November 2026'],
   ])('Cookies (%s): fecha de la última actualización', (_i, textos, fecha) => {
     expect(textos.cookies.lastUpdated).toBe(fecha);
   });
+
+  // FS-03 (16 nov 2026): lo guardado sin cobertura caduca, y las dos políticas
+  // dicen cuándo, con los mismos plazos que el código (48 h y 7 días)
+  it.each([
+    ['es', es, /48 horas[^.]*\. [^.]*7 días/],
+    ['en', en, /48 hours[^.]*\. [^.]*7 days/],
+  ])(
+    'Privacidad y Cookies (%s): plazos de lo guardado sin cobertura',
+    (_i, textos, plazos) => {
+      expect(textos.privacy.section8.content).toMatch(plazos);
+      expect(textos.cookies.section1.content).toMatch(plazos);
+    },
+  );
 
   // La marca de un cierre forzado o propio (device_revocation_handled), en
   // localStorage: dura hasta que vuelves a entrar, no hasta cerrar la pestaña

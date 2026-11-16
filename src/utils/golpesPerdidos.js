@@ -228,14 +228,15 @@ export const olvidaTodos = () => {
 };
 
 /**
- * Saca del móvil los avisos caducados (FS-03). Solo escribe si había alguno: el
- * vaciado lo llama cada vez que arranca.
+ * Saca del móvil los avisos caducados (FS-03). Solo escribe si había alguno. Lo
+ * llaman la carga de la aplicación (composition/caducidadAlArrancar) y cada vaciado.
  *
  * @returns {boolean} false si había que escribir y no se pudo
  */
 export const purgaLosCaducados = () => {
   const todos = leeCrudo();
-  const vigentes = leeTodo();
+  const ahora = Date.now();
+  const vigentes = todos.filter((aviso) => vigente(aviso, ahora));
   if (vigentes.length === todos.length) return true;
   return guarda(vigentes);
 };
