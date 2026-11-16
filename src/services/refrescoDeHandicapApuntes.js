@@ -12,6 +12,16 @@ export const HANDICAP_POR_PEDIR = 'pedir_handicap';
 // El recordatorio de «Requiere tu atención» que deja cerrar el modal con «Ahora no»
 export const RECORDATORIO_HANDICAP = 'handicap_pending';
 
+// El recordatorio por su nombre, no por la clave a mano en cada pantalla: un cambio
+// de clave se dejaba alguna (re-auditoría del 16 nov 2026, Q-FE-11)
+export const hayRecordatorioDeHandicap = () =>
+  typeof localStorage !== 'undefined' &&
+  localStorage.getItem(RECORDATORIO_HANDICAP) === 'true';
+export const apuntaRecordatorioDeHandicap = () =>
+  localStorage.setItem(RECORDATORIO_HANDICAP, 'true');
+export const quitaRecordatorioDeHandicap = () =>
+  localStorage.removeItem(RECORDATORIO_HANDICAP);
+
 // Sube en cada cierre de sesión. Una respuesta de una generación anterior es de
 // una cuenta que ya salió, y no puede tocar nada de la siguiente
 let generacion = 0;

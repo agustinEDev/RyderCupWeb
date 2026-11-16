@@ -58,6 +58,11 @@ import {
   lanzaElRefrescoDeHandicap,
   recogeElHandicapPorPedir,
 } from '../services/refrescoDeHandicap';
+import {
+  apuntaRecordatorioDeHandicap,
+  hayRecordatorioDeHandicap,
+  quitaRecordatorioDeHandicap,
+} from '../services/refrescoDeHandicapApuntes';
 import { PANTALLA_MENOS_BARRA_INFERIOR } from '../utils/barraInferior';
 
 // El panel enseña un resumen, no el historial entero
@@ -188,9 +193,7 @@ const Dashboard = () => {
   };
   const abrePartidaRapida = abreSiHayRed(() => setShowQuickMatchModal(true));
   const [handicapPending, setHandicapPending] = useState(
-    () =>
-      typeof localStorage !== 'undefined' &&
-      localStorage.getItem('handicap_pending') === 'true',
+    hayRecordatorioDeHandicap,
   );
 
   // El refresco del hándicap al entrar lo lanza el login, sin esperarlo
@@ -235,14 +238,14 @@ const Dashboard = () => {
   const handleHandicapSaved = useCallback(async () => {
     setShowHandicapModal(false);
     setHandicapPending(false);
-    localStorage.removeItem('handicap_pending');
+    quitaRecordatorioDeHandicap();
     await refetchUser();
   }, [refetchUser]);
 
   const handleHandicapDismiss = useCallback(() => {
     setShowHandicapModal(false);
     setHandicapPending(true);
-    localStorage.setItem('handicap_pending', 'true');
+    apuntaRecordatorioDeHandicap();
   }, []);
 
   const handleQuickMatchStarted = useCallback(
