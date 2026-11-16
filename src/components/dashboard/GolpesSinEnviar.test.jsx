@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { useLayoutEffect } from 'react';
 import { render, screen, act, fireEvent } from '@testing-library/react';
 
 // El entorno de este fichero no trae `localStorage`, y los módulos que se
@@ -570,5 +571,36 @@ describe('GolpesSinEnviar', () => {
     });
 
     expect(screen.queryByText(/aviso\(count=/)).not.toBeInTheDocument();
+  });
+  it('no se pierde el vaciado que acaba entre que se pinta y se suscribe', () => {
+    cola.enqueue('m-1', 3, { ownScore: 4 }, null, 'u1', {
+      matchName: 'La Herrería',
+    });
+    // El vaciado del arranque corre en App, no aquí: puede acabar después de
+    // que este aviso haya leído la cola y antes de que su efecto se suscriba.
+    // El efecto de diseño del padre cae justo en ese hueco
+    const AcabaEnElHueco = ({ children }) => {
+      useLayoutEffect(() => {
+        cola.clear();
+        golpesPerdidos.apunta({
+          matchId: 'm-1',
+          matchName: 'La Herrería',
+          holeNumber: 3,
+          userId: 'u1',
+          caducado: true,
+        });
+        globalThis.dispatchEvent(new globalThis.CustomEvent(COLA_VACIADA));
+      }, []);
+      return children;
+    };
+
+    render(
+      <AcabaEnElHueco>
+        <GolpesSinEnviar userId="u1" />
+      </AcabaEnElHueco>,
+    );
+
+    expect(screen.queryByText(/aviso\(count=/)).not.toBeInTheDocument();
+    expect(screen.getByText(/perdidoCaducado\(hoyo=3\)/)).toBeInTheDocument();
   });
 });
