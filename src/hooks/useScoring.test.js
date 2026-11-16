@@ -38,6 +38,9 @@ vi.mock('../composition', () => ({
 // Mock offline queue
 vi.mock('../utils/scoringOfflineQueue', () => ({
   enqueue: vi.fn(),
+  // Lo guardado de estos tests es reciente: no caduca (FS-03, sus tests en
+  // services/caducidadDeLoGuardado.test.js)
+  estaCaducada: vi.fn(() => false),
   getAll: vi.fn(() => []),
   // Devuelve `true` como el de verdad: con `undefined`, el vaciado creía que
   // no había podido borrar y cortaba tras el primer envío, así que la mitad de

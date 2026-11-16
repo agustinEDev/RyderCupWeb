@@ -149,7 +149,11 @@ const golpesPerdidosDe = (entrada) => {
  *
  * @returns {boolean} Si de verdad se apartó
  */
-export const apartaLaRechazada = (entrada, dueñoSiNoLoTiene = null) => {
+export const apartaLaRechazada = (
+  entrada,
+  dueñoSiNoLoTiene = null,
+  { caducado = false } = {},
+) => {
   const apuntado = golpesPerdidos.apunta({
     matchId: entrada.matchId,
     matchName: entrada.matchName ?? null,
@@ -163,6 +167,8 @@ export const apartaLaRechazada = (entrada, dueñoSiNoLoTiene = null) => {
     // lo vea el suyo
     userId: entrada.userId ?? dueñoSiNoLoTiene ?? null,
     ...golpesPerdidosDe(entrada),
+    // No llegó a enviarse: el aviso no dice que el servidor la rechazara (FS-03)
+    ...(caducado ? { caducado: true } : {}),
   });
   if (!apuntado) return false;
 
@@ -242,9 +248,24 @@ export const vaciaAnotaciones = async ({
     // corrección NO se manda desde aquí: quien llama puede tener que mirarla
     // contra el servidor antes —la partida rápida pregunta cuando otro
     // anotador puso otra cosa—, así que se le cuenta y él decide
-    if (!laMismaEnLaCola(entrada)) {
+    const enLaCola = laMismaEnLaCola(entrada);
+    if (!enLaCola) {
       cambiadas += 1;
       continue;
+    }
+
+    // Caducada (FS-03): ya no se manda; se aparta como un rechazo, con su aviso,
+    // y por el mismo camino: solo sale de la cola si el aviso quedó escrito. La
+    // copia de la cola, no la de la lista: puede haber recibido el nombre de la
+    // partida (`ponleNombre`) mientras iba el bucle
+    if (cola.estaCaducada(enLaCola)) {
+      alDescartar(enLaCola);
+      if (apartaLaRechazada(enLaCola, dueñoSiNoLoTiene, { caducado: true })) {
+        descartadas += 1;
+        continue;
+      }
+      paroPor = PARO.NO_SE_PUDO_ESCRIBIR;
+      break;
     }
 
     // Señal de vida también MIENTRAS la petición va: sin esto, una colgada

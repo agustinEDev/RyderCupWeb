@@ -8,6 +8,10 @@ import * as golpesPerdidos from '../../utils/golpesPerdidos';
 import * as offlineQueue from '../../utils/scoringOfflineQueue';
 import { resumenPorPartida } from '../../utils/scoringOfflineQueue';
 
+// Lo mismo que había, si no cambió: así una relectura sin novedades no repinta
+const igualQue = (antes, ahora) =>
+  JSON.stringify(antes) === JSON.stringify(ahora) ? antes : ahora;
+
 /**
  * Lo que quedó sin enviar, y lo que ya no se pudo guardar (FE #521).
  *
@@ -16,8 +20,13 @@ import { resumenPorPartida } from '../../utils/scoringOfflineQueue';
  * volver a abrirla. Y no se enseña nada cuando no hay nada, que es lo normal.
  *
  * Quien lo monta le pasa `key={userId}`: si se cambia de cuenta sin recargar,
- * el componente se rehace y vuelve a leer lo que corresponde a la nueva. Un
- * efecto que lo releyera haría lo mismo a costa de un render de más.
+ * el componente se rehace y vuelve a leer lo que corresponde a la nueva.
+ *
+ * Y relee al suscribirse: el vaciado del arranque corre en `App`, por su
+ * cuenta, y puede acabar entre que esto lee el almacenamiento al pintarse y
+ * que su efecto escucha `COLA_VACIADA`. Ese aviso se perdía, y el panel seguía
+ * contando como pendiente un golpe que ya había salido o ya era un aviso hasta
+ * cambiar de pantalla. Si no cambió nada, la relectura no repinta.
  */
 const GolpesSinEnviar = ({ userId = null }) => {
   const navigate = useNavigate();
@@ -102,14 +111,19 @@ const GolpesSinEnviar = ({ userId = null }) => {
   const contenedorRef = useRef(null);
 
   const relee = useCallback(() => {
-    setPendientes(resumenPorPartida(userId));
-    setPerdidos(golpesPerdidos.pendientes(userId));
+    const pendientesAhora = resumenPorPartida(userId);
+    const perdidosAhora = golpesPerdidos.pendientes(userId);
+    setPendientes((antes) => igualQue(antes, pendientesAhora));
+    setPerdidos((antes) => igualQue(antes, perdidosAhora));
   }, [userId]);
 
   useEffect(() => {
     // El vaciado corre por su cuenta, así que este aviso se entera por él y no
     // adivinando: sin esto se quedaría contando golpes que ya han llegado
     window.addEventListener(COLA_VACIADA, relee);
+    // Lo que el vaciado escribiera antes de esta suscripción no ha avisado a
+    // nadie: se lee ahora (ver la cabecera)
+    relee();
     return () => window.removeEventListener(COLA_VACIADA, relee);
   }, [relee]);
 
@@ -294,7 +308,18 @@ const GolpesSinEnviar = ({ userId = null }) => {
                     si además había una huérfana y una con dueño—. Lo que hay
                     que repetir es el hoyo, una vez */}
                 {hoyosDe(delGrupo).map((hoyo) => (
-                  <li key={hoyo}>{t('golpesSinEnviar.perdido', { hoyo })}</li>
+                  <li key={hoyo}>
+                    {/* Un golpe caducado no llegó a enviarse (FS-03); si en
+                        el hoyo hay además un rechazo, se cuenta el rechazo */}
+                    {t(
+                      delGrupo
+                        .filter((a) => a.holeNumber === hoyo)
+                        .every((a) => a.caducado)
+                        ? 'golpesSinEnviar.perdidoCaducado'
+                        : 'golpesSinEnviar.perdido',
+                      { hoyo },
+                    )}
+                  </li>
                 ))}
               </ul>
               <button

@@ -23,7 +23,20 @@ import { esElMismoGolpe } from './golpesDelHoyo';
 
 const CLAVE = 'rydercup-golpes-perdidos';
 
-const leeTodo = () => {
+/**
+ * Cuánto se guarda un aviso (FS-03, re-auditoría del 16 nov 2026): una semana, para
+ * que su dueño abra la app y lo vea. Después ya no se lee, y la siguiente escritura
+ * (o `purgaLosCaducados`) lo saca del móvil. Sin fecha, caducado; con fecha en el
+ * futuro —un reloj cambiado—, no.
+ */
+export const CADUCIDAD_DE_LOS_AVISOS_MS = 7 * 24 * 60 * 60 * 1000;
+
+const vigente = (aviso, ahora) =>
+  typeof aviso?.cuando === 'number' &&
+  Number.isFinite(aviso.cuando) &&
+  ahora - aviso.cuando <= CADUCIDAD_DE_LOS_AVISOS_MS;
+
+const leeCrudo = () => {
   try {
     const crudo = localStorage.getItem(CLAVE);
     const guardado = crudo ? JSON.parse(crudo) : [];
@@ -31,6 +44,13 @@ const leeTodo = () => {
   } catch {
     return [];
   }
+};
+
+// Todo lo que se lee y se reescribe pasa por aquí: lo caducado no se enseña y la
+// siguiente escritura ya no lo guarda
+const leeTodo = () => {
+  const ahora = Date.now();
+  return leeCrudo().filter((aviso) => vigente(aviso, ahora));
 };
 
 const guarda = (avisos) => {
@@ -94,9 +114,17 @@ export const apunta = (aviso) => {
     elQueHabia.golpes && aviso.golpes
       ? [...new Set([...elQueHabia.golpes, ...aviso.golpes])]
       : undefined;
-  if (JSON.stringify(golpes) === JSON.stringify(elQueHabia.golpes)) return true;
+  // Caducado solo si lo son los dos: si el servidor rechazó alguno, eso es lo
+  // que hay que contar (FS-03)
+  const caducado = Boolean(elQueHabia.caducado && aviso.caducado);
+  if (
+    JSON.stringify(golpes) === JSON.stringify(elQueHabia.golpes) &&
+    caducado === Boolean(elQueHabia.caducado)
+  )
+    return true;
   const actualizado = { ...elQueHabia, golpes };
   if (!golpes) delete actualizado.golpes;
+  if (!caducado) delete actualizado.caducado;
   return guarda(avisos.map((a) => (a === elQueHabia ? actualizado : a)));
 };
 
@@ -205,4 +233,18 @@ export const olvidaTodos = () => {
   } catch {
     return false;
   }
+};
+
+/**
+ * Saca del móvil los avisos caducados (FS-03). Solo escribe si había alguno. Lo
+ * llaman la carga de la aplicación (composition/caducidadAlArrancar) y cada vaciado.
+ *
+ * @returns {boolean} false si había que escribir y no se pudo
+ */
+export const purgaLosCaducados = () => {
+  const todos = leeCrudo();
+  const ahora = Date.now();
+  const vigentes = todos.filter((aviso) => vigente(aviso, ahora));
+  if (vigentes.length === todos.length) return true;
+  return guarda(vigentes);
 };

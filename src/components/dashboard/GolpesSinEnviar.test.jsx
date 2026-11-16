@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { useLayoutEffect } from 'react';
 import { render, screen, act, fireEvent } from '@testing-library/react';
 
 // El entorno de este fichero no trae `localStorage`, y los módulos que se
@@ -145,6 +146,54 @@ describe('GolpesSinEnviar', () => {
     expect(
       screen.getByText(/golpesSinEnviar.partidaDeFranja\(numero=3\)/),
     ).toBeInTheDocument();
+  });
+
+  // FS-03: un golpe caducado no llegó a enviarse; su aviso no dice que el
+  // servidor lo rechazara
+  it('el hoyo de un golpe caducado dice que no se pudo enviar en 48 horas', () => {
+    golpesPerdidos.apunta({
+      matchId: 'm-c',
+      matchName: 'Sábado',
+      holeNumber: 4,
+      userId: 'u1',
+      caducado: true,
+    });
+    golpesPerdidos.apunta({
+      matchId: 'm-c',
+      matchName: 'Sábado',
+      holeNumber: 6,
+      userId: 'u1',
+    });
+    render(<GolpesSinEnviar userId="u1" />);
+
+    expect(
+      screen.getByText('golpesSinEnviar.perdidoCaducado(hoyo=4)'),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText('golpesSinEnviar.perdido(hoyo=6)'),
+    ).toBeInTheDocument();
+  });
+
+  it('si en un hoyo hay un rechazo y una caducidad, manda el rechazo', () => {
+    for (const [userId, caducado] of [
+      ['u1', true],
+      [null, false],
+    ])
+      golpesPerdidos.apunta({
+        matchId: 'm-d',
+        matchName: 'Domingo',
+        holeNumber: 2,
+        userId,
+        ...(caducado ? { caducado } : {}),
+      });
+    render(<GolpesSinEnviar userId="u1" />);
+
+    expect(
+      screen.getByText('golpesSinEnviar.perdido(hoyo=2)'),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByText('golpesSinEnviar.perdidoCaducado(hoyo=2)'),
+    ).not.toBeInTheDocument();
   });
 
   it('no enseña lo de la persona que usó el móvil antes', () => {
@@ -522,5 +571,36 @@ describe('GolpesSinEnviar', () => {
     });
 
     expect(screen.queryByText(/aviso\(count=/)).not.toBeInTheDocument();
+  });
+  it('no se pierde el vaciado que acaba entre que se pinta y se suscribe', () => {
+    cola.enqueue('m-1', 3, { ownScore: 4 }, null, 'u1', {
+      matchName: 'La Herrería',
+    });
+    // El vaciado del arranque corre en App, no aquí: puede acabar después de
+    // que este aviso haya leído la cola y antes de que su efecto se suscriba.
+    // El efecto de diseño del padre cae justo en ese hueco
+    const AcabaEnElHueco = ({ children }) => {
+      useLayoutEffect(() => {
+        cola.clear();
+        golpesPerdidos.apunta({
+          matchId: 'm-1',
+          matchName: 'La Herrería',
+          holeNumber: 3,
+          userId: 'u1',
+          caducado: true,
+        });
+        globalThis.dispatchEvent(new globalThis.CustomEvent(COLA_VACIADA));
+      }, []);
+      return children;
+    };
+
+    render(
+      <AcabaEnElHueco>
+        <GolpesSinEnviar userId="u1" />
+      </AcabaEnElHueco>,
+    );
+
+    expect(screen.queryByText(/aviso\(count=/)).not.toBeInTheDocument();
+    expect(screen.getByText(/perdidoCaducado\(hoyo=3\)/)).toBeInTheDocument();
   });
 });

@@ -4,6 +4,7 @@ import './composition/limpiezaAlCerrarLaSesion';
 // Y cómo responde la interfaz a lo que avisa el transporte (textos, avisos,
 // Sentry, la página para volver): antes de que nada llame a la API
 import './composition/interfazDelTransporte';
+import './composition/caducidadAlArrancar';
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import * as Sentry from '@sentry/react';

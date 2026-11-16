@@ -51,7 +51,7 @@ Strict-Transport-Security: max-age=31536000
 Cross-Origin-Opener-Policy: same-origin
 Cross-Origin-Resource-Policy: same-origin
 Reporting-Endpoints: csp="https://o4510427294662656.ingest.de.sentry.io/api/4510427296825424/security/?sentry_key=5548cda036a3fedd1f50791b66a93354&sentry_environment=production"
-Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' https: data:; connect-src 'self' https://www.ign.es https://geoserveis.icgc.cat https://www.geo.euskadi.eus https://idena.navarra.es https://api.rydercupfriends.com https://o4510427294662656.ingest.de.sentry.io; worker-src 'self' blob:; child-src 'self' blob:; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; object-src 'none'; upgrade-insecure-requests; report-uri https://o4510427294662656.ingest.de.sentry.io/api/4510427296825424/security/?sentry_key=5548cda036a3fedd1f50791b66a93354&sentry_environment=production; report-to csp
+Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' data: blob: https://api.rydercupfriends.com https://flagcdn.com https://images.unsplash.com; connect-src 'self' https://www.ign.es https://geoserveis.icgc.cat https://www.geo.euskadi.eus https://idena.navarra.es https://api.rydercupfriends.com https://o4510427294662656.ingest.de.sentry.io; worker-src 'self' blob:; child-src 'self' blob:; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; object-src 'none'; upgrade-insecure-requests; report-uri https://o4510427294662656.ingest.de.sentry.io/api/4510427296825424/security/?sentry_key=5548cda036a3fedd1f50791b66a93354&sentry_environment=production; report-to csp
 ```
 
 Y una segunda regla, con `Request Path` = `/images/*`, que **debería** sustituir la de arriba
@@ -72,7 +72,9 @@ Qué hace cada novedad de la fase 4:
   saltaría en cada carga sin que hubiera ataque (el registro del service worker, los workers
   del mapa y de Sentry, MapLibre), y mandar esos avisos a Sentry gastaría la cuota y taparía
   los de la CSP. De momento solo va en local (Vite y el Kind), en aviso y a la consola, para
-  ver qué salta antes de escribir las políticas.
+  ver qué salta antes de escribir las políticas. La re-auditoría del 16 nov 2026 lo marcó
+  como deriva entre copias (FS-04, informativo); Agustín confirmó ese día que siga solo en
+  local hasta que se escriban las políticas.
 - **`Cross-Origin-Opener-Policy: same-origin`** (FE-05): la ventana de la app no comparte
   contexto con las que la abren o abre. La entrada con Google es una redirección de página
   completa, sin ventanas emergentes: no le afecta.

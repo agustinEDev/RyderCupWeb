@@ -29,6 +29,7 @@ import {
   submitTeeGroupHoleScoreUseCase,
 } from '../composition';
 import { idAleatorio } from '../utils/idAleatorio';
+import * as golpesPerdidos from '../utils/golpesPerdidos';
 import * as cola from '../utils/scoringOfflineQueue';
 import * as cerrojo from '../utils/scoringSessionLock';
 import { PARO, vaciaAnotaciones } from './vaciaAnotaciones';
@@ -83,10 +84,20 @@ export const vaciaLaColaEntera = async ({
 } = {}) => {
   const cualSalta = () =>
     typeof saltaPartida === 'function' ? saltaPartida() : saltaPartida;
+  // Los avisos de más de una semana salen del móvil (FS-03). Es la puerta por la
+  // que se pasa al arrancar y al volver la red, haya o no algo que enviar
+  golpesPerdidos.purgaLosCaducados();
   // Solo lo de esta persona: `deQuien` deja fuera lo huérfano a propósito, y
   // explica el precio de no hacerlo. Lo huérfano se rescata desde la pantalla
-  // de su partida, donde hay alguien mirando
-  const mias = userId ? cola.deQuien(userId) : [];
+  // de su partida, donde hay alguien mirando. Lo huérfano CADUCADO sí entra: no
+  // se envía, solo pasa a aviso (FS-03), y sin esto se quedaría en el móvil
+  // hasta que alguien abriera esa partida
+  const huerfanasCaducadas = userId
+    ? cola
+        .getAll()
+        .filter((e) => (e.userId ?? null) === null && cola.estaCaducada(e))
+    : [];
+  const mias = userId ? [...cola.deQuien(userId), ...huerfanasCaducadas] : [];
   if (mias.length === 0) return nada(0, null);
 
   const miTurno = `${AMBITO}-${idAleatorio()}`;
@@ -129,8 +140,11 @@ export const vaciaLaColaEntera = async ({
       // La partida abierta la vacía su propia pantalla; y una anotación con
       // participante que no sea de partida rápida en solitario se deja para
       // ella, que sabe preguntar cuando otro anotador puso otra cosa
+      // Las caducadas no se envían (pasan a aviso), así que esa duda no existe
+      // y no hace falta esperar a su pantalla (FS-03)
       seSalta: (entrada) =>
-        entrada.matchId === cualSalta() || entrada.participantId != null,
+        entrada.matchId === cualSalta() ||
+        (entrada.participantId != null && !cola.estaCaducada(entrada)),
     });
   } finally {
     // Solo lo suelta quien lo tiene: `release` ya lo comprueba
