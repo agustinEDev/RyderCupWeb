@@ -468,7 +468,7 @@ const leeElPanel = () => {
     if (typeof panel.usuarioId !== 'string' || !panel.usuarioId) return null;
     return {
       usuarioId: panel.usuarioId,
-      competiciones: listaValida(
+      competiciones: listaValidaONada(
         panel.competiciones,
         deSuTipo(TIPOS_DE_LA_COMPETICION),
       ),

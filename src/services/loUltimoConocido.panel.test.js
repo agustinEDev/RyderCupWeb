@@ -41,6 +41,7 @@ import RecentMatch from '../domain/entities/RecentMatch';
  *   G23 «no hay próximos» de otro día o sin fecha | no se sabe: solo vale el día que se guardó
  *   G25 un valor no válido para la marca      | no le pone la fecha de hoy a una vieja
  *   G26 lo guardado de la marca               | un solo campo, `sinProximosEl`
+ *   G27 competiciones guardadas que no se pueden leer | null, no «0 torneos»
  *   G5 se cierra la sesión                | se borra y no se reescribe
  *   G6 el móvil no tiene sitio            | no se guarda y no revienta
  *   G7 lo guardado está roto              | nada
@@ -583,5 +584,26 @@ describe('loUltimoConocido, el panel', () => {
     expect(
       JSON.parse(guardado.get('rydercup-ultimo-panel')).sinProximosEl,
     ).toBeNull();
+  });
+
+  it('G27: si ninguna competición guardada se puede leer, no se sabe', () => {
+    // Given una lista con competiciones que no pasan la lectura
+    guardado.set(
+      'rydercup-ultimo-panel',
+      JSON.stringify({
+        v: 1,
+        usuarioId: 'u-1',
+        competiciones: [{}, { id: 3 }, { id: 'c-1', name: 5 }],
+      }),
+    );
+
+    // Then no es «ninguna» (pintaría «0 torneos»): es que no se sabe
+    expect(elUltimoPanel('u-1').competiciones).toBeNull();
+  });
+
+  it('G27b: unas competiciones guardadas vacías vuelven vacías', () => {
+    recuerdaElPanel('u-1', { competiciones: [] });
+
+    expect(elUltimoPanel('u-1').competiciones).toEqual([]);
   });
 });

@@ -48,6 +48,7 @@ import { render, act, screen } from '@testing-library/react';
  *   D32 pintada la marca, con red               | se piden los próximos igual, en cada entrada
  *   D33 un 401 en los partidos con partidas     | no se guarda la marca
  *   D34 partidas a medias y vacías              | no se guarda que no hay
+ *   D35 competiciones guardadas ilegibles       | no cuentan como panel guardado («0 torneos»)
  */
 const enEspera = () => {
   let resolver;
@@ -957,5 +958,19 @@ describe('el panel con lo último visto', () => {
 
     // Then no se afirma que no haya
     expect(seSabeQueNoHayProximos('u-1')).toBe(false);
+  });
+  it('D35: competiciones guardadas que no se pueden leer no pintan «0 torneos»', async () => {
+    // Given solo hay competiciones guardadas, y ninguna se puede leer
+    localStorage.setItem(
+      'rydercup-ultimo-panel',
+      JSON.stringify({ v: 1, usuarioId: 'u-1', competiciones: [{ id: 3 }] }),
+    );
+
+    // When se entra al panel
+    render(<Dashboard />);
+    await asienta();
+
+    // Then se espera, como sin nada guardado
+    expect(espera()).not.toBeNull();
   });
 });
