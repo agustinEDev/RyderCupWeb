@@ -182,6 +182,26 @@ jobs:
           path: ./
           extra_args: --debug --only-verified
 
+      # TruffleHog solo avisa de lo que puede verificar: gitleaks, con sus reglas por
+      # defecto, cubre los secretos genéricos (INF-07). La misma versión que el backend,
+      # descargada con el sha256 de su release; primero se comprueba que la config detecta
+      # algo y después se escanea todo el historial
+      - name: Gitleaks (generic secrets)
+        id: gitleaks
+        if: ${{ !cancelled() }}  # aunque TruffleHog falle: un secreto no esconde otro
+        env:
+          GITLEAKS_VERSION: 8.24.3
+          GITLEAKS_SHA256: 9991e0b2903da4c8f6122b5c3186448b927a5da4deef1fe45271c3793f4ee29c
+        run: |
+          curl -fsSL -o "$RUNNER_TEMP/gitleaks.tar.gz" \
+            "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz"
+          echo "${GITLEAKS_SHA256}  $RUNNER_TEMP/gitleaks.tar.gz" | sha256sum --check --strict
+          mkdir -p "$RUNNER_TEMP/gitleaks"
+          tar -xzf "$RUNNER_TEMP/gitleaks.tar.gz" -C "$RUNNER_TEMP/gitleaks" gitleaks
+          export PATH="$RUNNER_TEMP/gitleaks:$PATH"
+          bash .github/scripts/gitleaks_self_test.sh
+          gitleaks git . --config .gitleaks.toml --no-banner --redact --exit-code 1
+
       # La acción no deja su salida a los pasos siguientes: la tarjeta dice el
       # resultado y qué se ha escaneado, y el recuento queda en el log
       - name: Summary card
@@ -190,14 +210,16 @@ jobs:
         env:
           STATUS: ${{ job.status }}
           OUTCOME: ${{ steps.trufflehog.outcome }}
+          GITLEAKS_OUTCOME: ${{ steps.gitleaks.outcome }}
           EVENT: ${{ github.event_name }}
         run: |
           RESULT=$(python3 .github/scripts/summary_results.py secrets outcome="$OUTCOME" event="$EVENT")
+          RESULT="$RESULT · gitleaks: ${GITLEAKS_OUTCOME:-did not run}"
           python3 .github/scripts/summary_card.py \
             --title "🔐 Secret Scanning" \
-            --what "TruffleHog looks for credentials (API keys, tokens, passwords) in the new commits and only reports the ones it can verify are live, so a leaked secret is caught before it reaches main." \
+            --what "TruffleHog looks for credentials (API keys, tokens, passwords) and reports the ones it can verify are live; gitleaks, with its default rules, catches generic secrets (private keys, passwords in URLs, own tokens) in the whole history." \
             --status "$STATUS" --result "$RESULT" \
-            --if-fails "Revoke the secret at its provider first (it is already in git history), then remove it from the code and load it from the environment."
+            --if-fails "If a secret was found: revoke it at its provider first (it is already in git history), then remove it from the code and load it from the environment. If the gitleaks self-test or download failed, the config or the pinned sha256 is broken: see the gitleaks step log."
 
   license-check:
     name: 📜 License Compliance
@@ -229,7 +251,10 @@ jobs:
         # .github/dependency-review-config.yml. Primero los tests de la puerta.
         run: |
           python3 -m unittest discover -s .github/scripts -p "test_*.py"
-          npx license-checker --json --out licenses.json
+          # El comprobador, fijado y con su lock, en su carpeta: `npx` bajaba la última
+          # versión de un paquete sin mantener en cada ejecución (INF-06)
+          npm ci --prefix .github/license-tool --ignore-scripts --no-audit --no-fund
+          .github/license-tool/node_modules/.bin/license-checker-rseidelsohn --start . --json --out licenses.json
           python3 .github/scripts/license_gate.py licenses.json .github/dependency-review-config.yml
 
       - name: Upload license report

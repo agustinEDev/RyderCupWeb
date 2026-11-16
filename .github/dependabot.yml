@@ -92,6 +92,21 @@ updates:
       separator: "-"
 
   # Mantener GitHub Actions actualizadas
+  # El comprobador de licencias del CI, fijado con su lock aparte (INF-06). Sin subir de
+  # versión mayor: la 5 pide Node 24 y el CI va con la 22 del .nvmrc
+  - package-ecosystem: "npm"
+    directory: "/.github/license-tool"
+    target-branch: "develop"
+    schedule:
+      interval: "monthly"
+    open-pull-requests-limit: 2
+    labels:
+      - "dependencies"
+      - "automated"
+    ignore:
+      - dependency-name: "license-checker-rseidelsohn"
+        update-types: ["version-update:semver-major"]
+
   - package-ecosystem: "github-actions"
     directory: "/"
     target-branch: "develop"  # Seguir Gitflow: dependabot → develop → release → main
