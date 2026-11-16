@@ -294,7 +294,18 @@ const GolpesSinEnviar = ({ userId = null }) => {
                     si además había una huérfana y una con dueño—. Lo que hay
                     que repetir es el hoyo, una vez */}
                 {hoyosDe(delGrupo).map((hoyo) => (
-                  <li key={hoyo}>{t('golpesSinEnviar.perdido', { hoyo })}</li>
+                  <li key={hoyo}>
+                    {/* Un golpe caducado no llegó a enviarse (FS-03); si en
+                        el hoyo hay además un rechazo, se cuenta el rechazo */}
+                    {t(
+                      delGrupo
+                        .filter((a) => a.holeNumber === hoyo)
+                        .every((a) => a.caducado)
+                        ? 'golpesSinEnviar.perdidoCaducado'
+                        : 'golpesSinEnviar.perdido',
+                      { hoyo },
+                    )}
+                  </li>
                 ))}
               </ul>
               <button
