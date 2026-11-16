@@ -247,6 +247,19 @@ export const vaciaAnotaciones = async ({
       continue;
     }
 
+    // Caducada (FS-03): pasadas 48 h el partido ya se cerró y el servidor la
+    // rechazaría. No se manda; se aparta como un rechazo, con su aviso, y por
+    // el mismo camino: solo sale de la cola si el aviso quedó escrito
+    if (cola.estaCaducada(entrada)) {
+      alDescartar(entrada);
+      if (apartaLaRechazada(entrada, dueñoSiNoLoTiene)) {
+        descartadas += 1;
+        continue;
+      }
+      paroPor = PARO.NO_SE_PUDO_ESCRIBIR;
+      break;
+    }
+
     // Señal de vida también MIENTRAS la petición va: sin esto, una colgada
     // más de dos minutos dejaba que otra pestaña tomara el relevo y la
     // reenviara. Si en ese rato contesta que ya no mando, no se puede hacer

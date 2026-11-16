@@ -92,6 +92,27 @@ const sinElPropioDeOtroHueco = (cola, nueva) => {
 };
 
 /**
+ * Cuánto vale un golpe guardado sin cobertura (FS-03, re-auditoría del 16 nov 2026).
+ *
+ * Los partidos y las partidas rápidas se cierran al acabar el día siguiente, en la
+ * hora del campo: pasadas 48 h desde que se anotó, el servidor ya lo rechazaría. A
+ * partir de ahí no se envía; el vaciado lo aparta como un rechazo, dejando aviso a su
+ * dueño (`vaciaAnotaciones`), y deja de quedarse en el móvil.
+ */
+export const CADUCIDAD_DE_LA_COLA_MS = 48 * 60 * 60 * 1000;
+
+/**
+ * Si un golpe guardado ya no se puede enviar por viejo. Sin fecha, caducado (no se
+ * sabe de cuándo es); con fecha en el futuro —un reloj cambiado—, no: no se tira
+ * nada por un reloj mal puesto.
+ */
+export const estaCaducada = (entrada, ahora = Date.now()) => {
+  const cuando = entrada?.timestamp;
+  if (typeof cuando !== 'number' || !Number.isFinite(cuando)) return true;
+  return ahora - cuando > CADUCIDAD_DE_LA_COLA_MS;
+};
+
+/**
  * Get all queued scores from localStorage.
  * @returns {Array} Array of queued score entries
  */
