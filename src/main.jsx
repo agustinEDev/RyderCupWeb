@@ -67,7 +67,10 @@ if (sentryDsn) {
     attachStacktrace: true,
     // Sin la IP de quien juega (FS-01): Sentry 11 pide por defecto a su
     // servidor que la deduzca de la conexión (`infer_ip: 'auto'`) en errores,
-    // sesiones y spans. El id de la cuenta (`setUserContext`) sigue llegando
+    // sesiones y spans. El id de la cuenta (`setUserContext`) sigue llegando.
+    // Apagarlo quita también el user agent que Sentry deduce en spans, logs y
+    // métricas (`infer_user_agent: 'never'`). Aceptado: los errores siguen
+    // llevando el navegador, que va en sus cabeceras
     dataCollection: { userInfo: false },
 
     // El saneado de URLs va AQUI y no en sentry.ts (FE #385).
