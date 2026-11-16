@@ -5,6 +5,45 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.83.0] - 2026-11-16
+
+**Anotaciones que caducan a las 48 horas, avisos que se borran a los 7 días, CSP de imágenes
+acotada y cadena de suministro del CI** (#1165, #1166, #1168; merge-back de la 2.82.0 en
+#1164). Va con el backend 2.70.0, que solo cambia el CI; nada cambia de contrato. **Tras el
+despliegue hay que pegar la CSP nueva en Render** (Static Site → Headers `/*`).
+
+### Changed
+
+- **Una anotación que lleva más de 48 horas sin poder enviarse ya no se envía** (FS-03): pasa
+  a aviso en el panel, «Hoyo N — no se pudo enviar en 48 horas». Vale para todas las
+  modalidades, también las sin dueño y las de partida rápida; si en el mismo hoyo hubo un
+  rechazo del servidor, se dice el rechazo. Sin fecha cuenta como caducada; con fecha en el
+  futuro (un reloj cambiado), no.
+- **Los avisos de golpes perdidos se borran a los 7 días**, al arrancar la app y en cada
+  vaciado de la cola. Política de Privacidad (apartado 8) y de Cookies (apartado 1), en
+  español e inglés, explican los dos plazos; fecha de actualización 16 de noviembre de 2026.
+- **`img-src` de la CSP acotado** (FS-05) a `'self' data: blob:`, la API, `flagcdn.com` e
+  `images.unsplash.com`, en nginx, Vite y la lista de cabeceras de producción.
+
+### Fixed
+
+- **El panel ya no cuenta como pendiente un golpe que el vaciado del arranque acaba de enviar
+  o de convertir en aviso**: el aviso se suscribía al final del vaciado después de haber leído
+  el almacenamiento, y si el vaciado acababa en ese hueco el panel no se enteraba hasta cambiar
+  de pantalla. Ahora relee al suscribirse.
+
+### Security
+
+- **gitleaks 8.24.3** (con su hash) en el job de secretos del CI, con su configuración y una
+  autoprueba (INF-07).
+- **Comprobación de licencias con una herramienta fijada** (`license-checker-rseidelsohn`
+  4.4.2, instalada con `npm ci --ignore-scripts`), con su entrada mensual en Dependabot
+  (INF-06).
+- Trusted Types sigue en modo informe por decisión; documentado en nginx y
+  `docs/SECURITY_HEADERS.md` (FS-04).
+- La herramienta de licencias fija `glob` 14.0.6 y `minimatch` 11.0.1 (GHSA-3g3m-2fjr-6pw4 y
+  GHSA-g3hv-75wg-m249, alerta 64 de Dependabot); el informe de licencias sale idéntico.
+
 ## [2.82.0] - 2026-11-16
 
 **Panel sin «Cargando» cuando no hay próximos ni partidas, y Sentry sin IP ni búsquedas**
