@@ -219,7 +219,7 @@ jobs:
             --title "🔐 Secret Scanning" \
             --what "TruffleHog looks for credentials (API keys, tokens, passwords) and reports the ones it can verify are live; gitleaks, with its default rules, catches generic secrets (private keys, passwords in URLs, own tokens) in the whole history." \
             --status "$STATUS" --result "$RESULT" \
-            --if-fails "Revoke the secret at its provider first (it is already in git history), then remove it from the code and load it from the environment."
+            --if-fails "If a secret was found: revoke it at its provider first (it is already in git history), then remove it from the code and load it from the environment. If the gitleaks self-test or download failed, the config or the pinned sha256 is broken: see the gitleaks step log."
 
   license-check:
     name: 📜 License Compliance

@@ -55,6 +55,12 @@ class TestLicenseChecker(unittest.TestCase):
         # Fuera del árbol de la app: sus dependencias no entran en el informe de licencias
         app = json.loads((RAIZ / "package.json").read_text(encoding="utf-8"))
         self.assertNotIn("license-checker-rseidelsohn", app.get("devDependencies", {}))
+        # Que arranque en la Node 22 del CI (la 5.x pide Node 24)
+        self.assertEqual(entrada["engines"]["node"], ">=18")
+
+    def test_dependabot_keeps_the_license_tool_up_to_date(self):
+        dependabot = (RAIZ / ".github" / "dependabot.yml").read_text(encoding="utf-8")
+        self.assertIn('directory: "/.github/license-tool"', dependabot)
 
     def test_ci_runs_the_installed_binary(self):
         self.assertIn("npm ci --prefix .github/license-tool --ignore-scripts", CI)

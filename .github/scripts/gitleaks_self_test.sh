@@ -3,7 +3,7 @@
 # que encontrar un secreto. Hasta entonces `.gitleaks.toml` no cargaba ninguna regla y
 # el escaneo pasaba siempre en verde sin que nadie lo notara.
 #
-# Escribe tres secretos sintéticos en un fichero de src/ (fuera de la allowlist), pasa
+# Escribe tres secretos sintéticos en un fichero temporal (fuera de la allowlist), pasa
 # gitleaks con la config del repo y falla si no encuentra los tres. Los valores se
 # derivan de un sha256 fijo, así que no hay azar (el mismo resultado en cada ejecución)
 # y ninguno aparece literal en el repo: si estuvieran escritos aquí, el escaneo de los
@@ -12,9 +12,12 @@
 # Uso: bash .github/scripts/gitleaks_self_test.sh   (desde la raíz, con gitleaks en el PATH)
 set -euo pipefail
 
-fixture="src/_gitleaks_self_test.js"
-report="$(mktemp)"
-trap 'rm -f "$fixture" "$report"' EXIT
+# Fuera del repo: si algo corta el script, no queda ningún fichero con secretos falsos
+# donde lo pueda recoger un `git add`, el build o el lint
+carpeta="$(mktemp -d)"
+fixture="$carpeta/gitleaks_self_test.js"
+report="$carpeta/report.json"
+trap 'rm -rf "$carpeta"' EXIT
 
 python3 - "$fixture" <<'PY'
 import hashlib
