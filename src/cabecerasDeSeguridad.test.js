@@ -213,6 +213,24 @@ describe('cabeceras de seguridad: las copias como producción (FE-04/FE-05)', ()
     expect([...pro.get('script-src')]).toEqual(["'self'"]);
   });
 
+  it('las imágenes solo de los orígenes que usa la app, no de cualquier https (FS-05)', () => {
+    // La API (avatares y fotos), flagcdn (banderas), Unsplash (fondos de las páginas de
+    // acceso); data: (iconos en línea) y blob: (las teselas de MapLibre cuando no puede
+    // usar createImageBitmap). Con `https:` a secas, una inyección de HTML podía sacar
+    // datos por la URL de una imagen (re-auditoría del 16 nov 2026)
+    const pro = directivas(RAIZ_DE_PRO['content-security-policy']);
+    expect([...pro.get('img-src')].sort()).toEqual(
+      [
+        "'self'",
+        'data:',
+        'blob:',
+        'https://api.rydercupfriends.com',
+        'https://flagcdn.com',
+        'https://images.unsplash.com',
+      ].sort(),
+    );
+  });
+
   it.each([
     ['vite.config.js', cabecerasDeVite],
     ['nginx-security-headers.conf', cabecerasDeNginx],
