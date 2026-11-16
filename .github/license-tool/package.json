@@ -4,5 +4,9 @@
   "description": "El comprobador de licencias del CI, fijado y con su lock (INF-06). Va aparte para que sus dependencias no entren en el árbol que analiza.",
   "devDependencies": {
     "license-checker-rseidelsohn": "4.4.2"
+  },
+  "overrides": {
+    "glob": "14.0.6",
+    "minimatch": "11.0.1"
   }
 }
