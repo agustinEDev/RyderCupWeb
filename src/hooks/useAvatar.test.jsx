@@ -107,6 +107,30 @@ describe('useAvatar', () => {
     expect(refetchUser).not.toHaveBeenCalled();
   });
 
+  it('handleUpload shows the server text when other images are being processed (503)', async () => {
+    // Given the server is busy with other images and answers 503 with its text,
+    // turned into an Error by apiRequest (message = detail)
+    const refetchUser = vi.fn();
+    const texto =
+      'Ahora mismo se están procesando otras imágenes. Inténtalo de nuevo en unos segundos.';
+    const error = Object.assign(new Error(texto), {
+      status: 503,
+      statusCode: 503,
+    });
+    uploadAvatarUseCase.execute.mockRejectedValue(error);
+    const { result } = renderHook(() => useAvatar(mockUser, refetchUser));
+    await waitFor(() => expect(result.current.isLoadingOptions).toBe(false));
+
+    // When the upload fails
+    await act(async () => {
+      await result.current.handleUpload({ size: 999 });
+    });
+
+    // Then the user reads that exact text
+    expect(customToast.error).toHaveBeenCalledWith(texto);
+    expect(refetchUser).not.toHaveBeenCalled();
+  });
+
   it('handleActivateUpload switches to a previous upload', async () => {
     const refetchUser = vi.fn();
     activateUploadedAvatarUseCase.execute.mockResolvedValue({});
