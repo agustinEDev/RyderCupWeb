@@ -10,6 +10,9 @@ import { resolve } from 'node:path';
  * | Caso                                      | Esperado                                               |
  * |-------------------------------------------|--------------------------------------------------------|
  * | main.jsx                                  | `Sentry.init` al cargar, con el saneado y sus procesadores |
+ * | main.jsx, la IP del usuario (FS-01)       | `dataCollection: { userInfo: false }`: Sentry no la deduce |
+ * |   y, con ella, el user agent              | tampoco se deduce en spans, logs y métricas (aceptado: |
+ * |                                           | los errores llevan el navegador en sus cabeceras)      |
  * | src/sentry.ts                             | solo por `import()` dinámico                           |
  * | App.jsx                                   | registra el router en `routerParaSentry`, sin Sentry    |
  * | routerParaSentry                          | no importa nada de Sentry                              |
@@ -36,6 +39,42 @@ describe('Sentry en el arranque', () => {
     expect(main).toMatch(
       /Sentry\.addEventProcessor\(\(evento\) =>[\s\S]*esElEcoDeLaRecarga/,
     );
+  });
+
+  it('FS-01: main.jsx no deja a Sentry deducir la IP del usuario', () => {
+    // Given Sentry 11, que por defecto pide a su servidor la IP de quien envía
+    // (`infer_ip: 'auto'` con `dataCollection.userInfo` a true)
+    const main = fuente('src/main.jsx');
+
+    // Then el init la apaga —y con ella el user agent deducido en spans, logs
+    // y métricas, aceptado—, y no hay otro init que la vuelva a encender
+    expect(main).toMatch(
+      /Sentry\.init\(\{[\s\S]*dataCollection: \{ userInfo: false \},[\s\S]*\}\);/,
+    );
+    expect(main.match(/Sentry\.init\(/g)).toHaveLength(1);
+    expect(fuente('src/sentry.ts')).not.toMatch(/Sentry\.init\(|userInfo/);
+  });
+
+  it('FS-01: con esa opción, el Sentry instalado pide no deducir la IP', async () => {
+    // Given el cliente del navegador de la versión instalada
+    const { BrowserClient, makeFetchTransport, defaultStackParser } =
+      await import('@sentry/react');
+
+    // When se crea con la opción de main.jsx
+    const cliente = new BrowserClient({
+      dsn: 'https://clave@o0.ingest.sentry.io/0',
+      integrations: [],
+      transport: makeFetchTransport,
+      stackParser: defaultStackParser,
+      dataCollection: { userInfo: false },
+    });
+
+    // Then lo que manda con cada envío le dice a Sentry que no la deduzca
+    expect(cliente.getOptions()._metadata.sdk.settings.infer_ip).toBe('never');
+    // And la misma opción es la que, en spans, logs y métricas, pide
+    // `infer_ip` e `infer_user_agent: 'never'`: sin el user agent deducido ahí
+    // (aceptado; los errores llevan el navegador en sus cabeceras)
+    expect(cliente.getDataCollectionOptions().userInfo).toBe(false);
   });
 
   it('src/sentry.ts (Replay, navegaciones) se carga después, nunca en el arranque', () => {

@@ -25,6 +25,7 @@
  */
 
 import { vaciaLaMemoriaDeLasListas } from './memoriaDeLasListas';
+import { fechaLocal } from '../utils/fechaLocal';
 
 const CLAVE = 'rydercup-ultimo-conocido';
 
@@ -430,6 +431,15 @@ const pendientesValidas = (p) =>
 const listaValida = (lista, esValido) =>
   Array.isArray(lista) ? lista.filter(esValido) : null;
 
+/**
+ * Lo mismo, pero una lista que tenía algo y se queda sin nada no es «ninguna»:
+ * es que no se sabe (FE #1152). Vacía de verdad solo la guarda una respuesta.
+ */
+const listaValidaONada = (lista, esValido) => {
+  const valida = listaValida(lista, esValido);
+  return valida?.length === 0 && lista.length > 0 ? null : valida;
+};
+
 /** Las cifras guardadas, solo las que son números (o nada). */
 const cifrasValidas = (cifras) =>
   esUnObjeto(cifras)
@@ -442,6 +452,13 @@ const cifrasValidas = (cifras) =>
       )
     : null;
 
+/** El día que se guarda con «no hay próximos», según lo que se sabe ahora. */
+const diaDeLaMarca = (sinProximos, anterior) => {
+  if (sinProximos === true) return fechaLocal();
+  if (sinProximos === false || sinProximos === null) return null;
+  return anterior ?? null;
+};
+
 const leeElPanel = () => {
   try {
     const crudo = localStorage.getItem(CLAVE_PANEL);
@@ -451,16 +468,21 @@ const leeElPanel = () => {
     if (typeof panel.usuarioId !== 'string' || !panel.usuarioId) return null;
     return {
       usuarioId: panel.usuarioId,
-      competiciones: listaValida(
+      competiciones: listaValidaONada(
         panel.competiciones,
         deSuTipo(TIPOS_DE_LA_COMPETICION),
       ),
-      ultimasPartidas: listaValida(
+      ultimasPartidas: listaValidaONada(
         panel.ultimasPartidas,
         deSuTipo(TIPOS_DE_LA_PARTIDA),
       ),
       estadisticas: cifrasValidas(panel.estadisticas),
       pendientes: pendientesValidas(panel.pendientes),
+      // «No hay próximos», con el día en que se supo: solo vale ese día
+      // (Agustín, 16 nov 2026). Sin él —o el panel de una versión anterior—, no
+      // se sabe
+      sinProximosEl:
+        typeof panel.sinProximosEl === 'string' ? panel.sinProximosEl : null,
     };
   } catch {
     return null;
@@ -473,12 +495,22 @@ const leeElPanel = () => {
  * guardado es de otra cuenta, se empieza de cero.
  *
  * @param {string} usuarioId
- * @param {{competiciones?: Array|null, ultimasPartidas?: Array|null, estadisticas?: Object|null, pendientes?: Object|null}} partes
+ * `sinProximos` es lo que contestó el servidor de los próximos partidos y partidas
+ * (FE #1152): `true` si dijo «ninguno», `false` si había alguno. Solo con
+ * respuesta: sin ella no se sabe y no se pone.
+ *
+ * @param {{competiciones?: Array|null, ultimasPartidas?: Array|null, estadisticas?: Object|null, pendientes?: Object|null, sinProximos?: boolean|null}} partes
  *   Cada parte: lo nuevo, `null` para borrarla, o sin poner para dejar la que había
  */
 export const recuerdaElPanel = (
   usuarioId,
-  { competiciones, ultimasPartidas, estadisticas, pendientes } = {},
+  {
+    competiciones,
+    ultimasPartidas,
+    estadisticas,
+    pendientes,
+    sinProximos,
+  } = {},
 ) => {
   if (cerrado || !usuarioId) return false;
   // Nada de aquí puede hacer reventar a quien guarda: guardar va justo después
@@ -520,8 +552,16 @@ export const recuerdaElPanel = (
         pendientesEnPlano,
         deEsta?.pendientes,
       ),
+      // Un solo campo: el día de hoy si no hay; null si hay o se borra; y si
+      // no llega un sí o un no, el que había (sin cambiarle el día)
+      sinProximosEl: diaDeLaMarca(sinProximos, deEsta?.sinProximosEl),
     };
-    localStorage.setItem(CLAVE_PANEL, JSON.stringify(panel));
+    // Solo si cambia: el panel se vuelve a pedir en cada entrada y casi siempre
+    // contesta lo mismo (/code-review)
+    const enTexto = JSON.stringify(panel);
+    if (localStorage.getItem(CLAVE_PANEL) !== enTexto) {
+      localStorage.setItem(CLAVE_PANEL, enTexto);
+    }
     return true;
   } catch {
     // Sin sitio, o algo que no se deja guardar: no se guarda. La cola de golpes
@@ -554,6 +594,49 @@ export const lasPendientesGuardadas = (usuarioId) => {
   if (!usuarioId) return null;
   const panel = leeElPanel();
   return panel?.usuarioId === usuarioId ? panel.pendientes : null;
+};
+
+/**
+ * Si la última respuesta de esta cuenta dijo que no tiene próximos partidos ni
+ * partidas, para pintar «¿Partido improvisado?» al entrar sin esperar (FE #1152).
+ * Solo el MISMO día local en que se supo: de otro día, o de una versión sin
+ * fecha, no se sabe y el panel lo comprueba como antes (Agustín, 16 nov 2026).
+ * Va en el panel, que es de la cuenta: las listas de próximos son del móvil, y
+ * vacías no distinguen «el servidor dijo que no» de «nunca se guardaron».
+ * @param {string} usuarioId
+ * @returns {boolean}
+ */
+export const seSabeQueNoHayProximos = (usuarioId, ahora = new Date()) => {
+  if (!usuarioId) return false;
+  const panel = leeElPanel();
+  return (
+    panel?.usuarioId === usuarioId && panel.sinProximosEl === fechaLocal(ahora)
+  );
+};
+
+/**
+ * Olvida «no hay próximos» en cuanto se hace algo que puede dar un partido desde
+ * otra pantalla —aceptar una invitación, inscribirse, coger plaza en una franja,
+ * crear una partida rápida…— (Agustín, 16 nov 2026): al volver, el panel lo
+ * comprueba en vez de ofrecer «¿Partido improvisado?». Lo demás se queda. Sin
+ * marca no escribe. Nunca lanza.
+ */
+export const olvidaQueNoHayProximos = () => {
+  try {
+    // Tras un cierre de la cuenta no hay panel (y no se vuelve a escribir: lo
+    // impide el cerrojo de `recuerdaElPanel`), así que aquí no hay nada que hacer
+    const crudo = localStorage.getItem(CLAVE_PANEL);
+    if (!crudo) return;
+    const panel = JSON.parse(crudo);
+    if (!esUnObjeto(panel) || panel.sinProximosEl == null) return;
+    localStorage.setItem(
+      CLAVE_PANEL,
+      JSON.stringify({ ...panel, sinProximosEl: null }),
+    );
+  } catch {
+    // Sin sitio o roto: la marca de otro día no vale, y la de hoy se corrige al
+    // entrar en el panel
+  }
 };
 
 /**
