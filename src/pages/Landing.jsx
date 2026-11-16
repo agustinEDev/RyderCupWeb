@@ -278,7 +278,7 @@ const Landing = () => {
                   <div className="relative rounded-2xl overflow-hidden shadow-2xl">
                     <img
                       src="/images/hero-tournament.jpeg"
-                      alt="Golf Tournament"
+                      alt={t('hero.imageAlt')}
                       className="w-full h-[500px] object-cover"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
@@ -434,7 +434,7 @@ const Landing = () => {
                 <div className="rounded-2xl overflow-hidden shadow-2xl">
                   <img
                     src="/images/golf-friends.jpeg"
-                    alt="Golf Friends"
+                    alt={t('benefits.imageAlt')}
                     className="w-full h-[400px] object-cover"
                   />
                 </div>

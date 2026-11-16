@@ -182,7 +182,7 @@ const EditProfile = () => {
                       name="firstName"
                       value={formData.firstName}
                       onChange={handleInputChange}
-                      placeholder="Enter your first name"
+                      placeholder={t('edit.personalInfo.firstNamePlaceholder')}
                       maxLength={100}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
                     />
@@ -201,7 +201,7 @@ const EditProfile = () => {
                       name="lastName"
                       value={formData.lastName}
                       onChange={handleInputChange}
-                      placeholder="Enter your last name"
+                      placeholder={t('edit.personalInfo.lastNamePlaceholder')}
                       maxLength={100}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
                     />

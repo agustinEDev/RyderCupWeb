@@ -72,7 +72,7 @@ describe('LanguageSwitcher', () => {
 
       expect(screen.queryByTestId('idioma-compacto')).toBeNull();
       expect(
-        screen.getByRole('combobox', { name: 'Select language' }),
+        screen.getByRole('combobox', { name: 'header.changeLanguage' }),
       ).not.toHaveClass('opacity-0');
     });
   });

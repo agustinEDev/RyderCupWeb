@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { Navigate, useLocation } from 'react-router';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../hooks/useAuth';
 import {
   anotaLaCuentaDeEstaPestana,
@@ -14,6 +15,7 @@ import { sePuedeEstarConTerminosPendientes } from '../../utils/rutasPublicas';
  * Redirects to login if user is not authenticated (via httpOnly cookie validation)
  */
 const ProtectedRoute = ({ children }) => {
+  const { t } = useTranslation('common');
   const location = useLocation();
   const { user, loading, sinConfirmar } = useAuth();
   // La cuenta que confirma el backend es la de esta pestaña, aunque falte el usuario
@@ -45,7 +47,7 @@ const ProtectedRoute = ({ children }) => {
           color: '#6b7280',
         }}
       >
-        Loading...
+        {t('loading')}
       </div>
     );
   }

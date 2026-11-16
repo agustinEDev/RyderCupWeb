@@ -14,7 +14,8 @@
       "noAdsDetail": "Ni rastreo"
     },
     "nextTournament": "Próximo Torneo",
-    "springClassic": "Clásico de Primavera"
+    "springClassic": "Clásico de Primavera",
+    "imageAlt": "Torneo de golf"
   },
   "features": {
     "title": "Todo lo que Necesitas para tu Torneo",
@@ -69,7 +70,8 @@
     "socialFun": {
       "title": "Social y Divertido",
       "description": "Construye amistades duraderas a través de la rivalidad amistosa"
-    }
+    },
+    "imageAlt": "Amigos jugando al golf"
   },
   "pricing": {
     "title": "Precios Simples y Transparentes",

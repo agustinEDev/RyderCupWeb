@@ -75,7 +75,9 @@
         "FEMALE": "Femenino"
       },
       "updating": "Actualizando...",
-      "update": "Actualizar Información Personal"
+      "update": "Actualizar Información Personal",
+      "firstNamePlaceholder": "Escribe tu nombre",
+      "lastNamePlaceholder": "Escribe tus apellidos"
     },
     "security": {
       "title": "Configuración de Seguridad",
