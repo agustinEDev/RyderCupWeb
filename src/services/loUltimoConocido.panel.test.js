@@ -8,6 +8,7 @@ import {
   seSabeQueNoHayProximos,
 } from './loUltimoConocido';
 import PlayerStats from '../domain/entities/PlayerStats';
+import { fechaLocal } from '../utils/fechaLocal';
 import RecentMatch from '../domain/entities/RecentMatch';
 
 /**
@@ -37,6 +38,7 @@ import RecentMatch from '../domain/entities/RecentMatch';
  *   G20 la marca en null o de otro tipo   | no se sabe (null borra; sin poner, se queda)
  *   G21 últimas partidas guardadas vacías | vuelven vacías: el servidor dijo «ninguna»
  *   G22 partidas guardadas que no se pueden leer | null, no «ninguna» (FE #1152)
+ *   G23 «no hay próximos» de otro día o sin fecha | no se sabe: solo vale el día que se guardó
  *   G5 se cierra la sesión                | se borra y no se reescribe
  *   G6 el móvil no tiene sitio            | no se guarda y no revienta
  *   G7 lo guardado está roto              | nada
@@ -449,7 +451,12 @@ describe('loUltimoConocido, el panel', () => {
     // Given una marca que no es `true`
     guardado.set(
       'rydercup-ultimo-panel',
-      JSON.stringify({ v: 1, usuarioId: 'u-1', sinProximos: valor }),
+      JSON.stringify({
+        v: 1,
+        usuarioId: 'u-1',
+        sinProximos: valor,
+        sinProximosEl: fechaLocal(),
+      }),
     );
 
     // Then no se sabe que no haya
@@ -485,5 +492,55 @@ describe('loUltimoConocido, el panel', () => {
 
     // Then no es «ninguna»: es que no se sabe
     expect(elUltimoPanel('u-1').ultimasPartidas).toBeNull();
+  });
+  const ayer = () => {
+    const d = new Date();
+    d.setDate(d.getDate() - 1);
+    return fechaLocal(d);
+  };
+
+  it('G23: «no hay próximos» guardado hoy vale hoy', () => {
+    // Given guardado ahora
+    recuerdaElPanel('u-1', { sinProximos: true });
+
+    // Then vale hoy, y no mañana
+    expect(seSabeQueNoHayProximos('u-1')).toBe(true);
+    const manana = new Date();
+    manana.setDate(manana.getDate() + 1);
+    expect(seSabeQueNoHayProximos('u-1', manana)).toBe(false);
+  });
+
+  it.each([
+    ['de ayer', () => ({ sinProximosEl: ayer() })],
+    ['sin fecha (versión anterior)', () => ({})],
+    ['con una fecha que no es texto', () => ({ sinProximosEl: 20261116 })],
+  ])('G23b: «no hay próximos» %s no dice nada', (_, fecha) => {
+    // Given la marca guardada con esa fecha
+    guardado.set(
+      'rydercup-ultimo-panel',
+      JSON.stringify({ v: 1, usuarioId: 'u-1', sinProximos: true, ...fecha() }),
+    );
+
+    // Then no se sabe que no haya
+    expect(seSabeQueNoHayProximos('u-1')).toBe(false);
+  });
+
+  it('G23c: guardar otra parte no le cambia la fecha a la marca', () => {
+    // Given la marca de ayer
+    guardado.set(
+      'rydercup-ultimo-panel',
+      JSON.stringify({
+        v: 1,
+        usuarioId: 'u-1',
+        sinProximos: true,
+        sinProximosEl: ayer(),
+      }),
+    );
+
+    // When hoy se guardan las competiciones
+    recuerdaElPanel('u-1', { competiciones: [competicion(1)] });
+
+    // Then sigue siendo de ayer: no vale
+    expect(seSabeQueNoHayProximos('u-1')).toBe(false);
   });
 });

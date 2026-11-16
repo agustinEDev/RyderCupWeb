@@ -43,6 +43,9 @@ import { render, act, screen } from '@testing-library/react';
  *   D28 las competiciones caídas                | no se guarda que no hay
  *   D23b partidos vacíos y partidas sin red     | no se guarda que no hay
  *   D29 panel sin partidas recientes guardadas  | las partidas esperan, como hoy
+ *   D30 «no hay próximos» de ayer               | espera («comprobando»), como antes
+ *   D31 «no hay próximos» sin fecha             | espera, como antes
+ *   D32 pintada la marca, con red               | se piden los próximos igual, en cada entrada
  */
 const enEspera = () => {
   let resolver;
@@ -68,7 +71,9 @@ const reiniciaLasPeticiones = () => {
 };
 reiniciaLasPeticiones();
 // Si la lista de próximos vino entera (todas las competiciones contestaron)
-const completitud = { proximos: true };
+const completitud = { proximos: true, partidas: true };
+// Cuántas veces se piden los próximos
+const pedidos = { proximos: 0 };
 
 vi.mock('../composition', () => ({
   listUserCompetitionsUseCase: {
@@ -77,17 +82,19 @@ vi.mock('../composition', () => ({
   getPlayerStatsUseCase: { execute: () => peticiones.estadisticas.promesa },
   getRecentMatchesUseCase: { execute: () => peticiones.recientes.promesa },
   getUpcomingMatchesUseCase: {
-    executeWithCompleteness: () =>
-      peticiones.proximos.promesa.then((matches) => ({
+    executeWithCompleteness: () => {
+      pedidos.proximos += 1;
+      return peticiones.proximos.promesa.then((matches) => ({
         matches,
         complete: completitud.proximos,
-      })),
+      }));
+    },
   },
   getUpcomingTeeGroupsUseCase: {
     executeWithCompleteness: () =>
       peticiones.partidas.promesa.then((matches) => ({
         matches,
-        complete: true,
+        complete: completitud.partidas,
       })),
   },
   getScoringViewUseCase: { execute: () => new Promise(() => {}) },
@@ -189,6 +196,7 @@ vi.doMock('../components/ui/FullScreenLoader', () => ({
 }));
 
 const { reiniciaLaCortina } = await import('../utils/cortinaDeArranque');
+const { fechaLocal } = await import('../utils/fechaLocal');
 const { olvidaQueElPanelSePinto } =
   await import('../utils/primeraCargaDelPanel');
 const {
@@ -274,6 +282,8 @@ describe('el panel con lo último visto', () => {
     sesion.sinConfirmar = false;
     textos.listos = true;
     completitud.proximos = true;
+    completitud.partidas = true;
+    pedidos.proximos = 0;
     document.body.innerHTML = '';
   });
 
@@ -856,5 +866,59 @@ describe('el panel con lo último visto', () => {
 
     // Then las partidas esperan: no se sabe si hay
     expect(rastro('recientes', 'cargando')).toBe('true');
+  });
+  // La marca, escrita a mano con la fecha que se quiera
+  const marcaDel = (extra) => {
+    guardaQueNoHayProximos();
+    const crudo = JSON.parse(localStorage.getItem('rydercup-ultimo-panel'));
+    delete crudo.sinProximosEl;
+    localStorage.setItem(
+      'rydercup-ultimo-panel',
+      JSON.stringify({ ...crudo, ...extra }),
+    );
+  };
+
+  it('D30: «no hay próximos» de ayer no vale: el banner espera', async () => {
+    // Given la marca se guardó ayer
+    const ayer = new Date();
+    ayer.setDate(ayer.getDate() - 1);
+    marcaDel({ sinProximosEl: fechaLocal(ayer) });
+
+    // When se entra al panel
+    render(<Dashboard />);
+    await asienta();
+
+    // Then se comprueba, como antes
+    expect(espera()).toBeNull();
+    expect(rastro('proximo', 'cargando')).toBe('true');
+  });
+
+  it('D31: «no hay próximos» sin fecha (versión anterior) no vale', async () => {
+    // Given la marca sin fecha
+    marcaDel({});
+
+    // When se entra al panel
+    render(<Dashboard />);
+    await asienta();
+
+    // Then se comprueba
+    expect(rastro('proximo', 'cargando')).toBe('true');
+  });
+
+  it('D32: con la marca pintada, cada entrada pide los próximos', async () => {
+    // Given la marca de hoy
+    guardaQueNoHayProximos();
+
+    // When se entra al panel dos veces, con red
+    const primera = render(<Dashboard />);
+    await contestanLasCompeticiones();
+    expect(rastro('proximo', 'cargando')).toBe('false');
+    primera.unmount();
+    reiniciaLasPeticiones();
+    render(<Dashboard />);
+    await contestanLasCompeticiones();
+
+    // Then las dos veces se preguntan
+    expect(pedidos.proximos).toBe(2);
   });
 });

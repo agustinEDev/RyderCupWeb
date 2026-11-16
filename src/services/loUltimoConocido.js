@@ -25,6 +25,7 @@
  */
 
 import { vaciaLaMemoriaDeLasListas } from './memoriaDeLasListas';
+import { fechaLocal } from '../utils/fechaLocal';
 
 const CLAVE = 'rydercup-ultimo-conocido';
 
@@ -472,6 +473,9 @@ const leeElPanel = () => {
       pendientes: pendientesValidas(panel.pendientes),
       // Solo `true` lo afirma: cualquier otra cosa es que no se sabe
       sinProximos: panel.sinProximos === true,
+      // El día en que se supo: la marca solo vale ese día (Agustín, 16 nov 2026)
+      sinProximosEl:
+        typeof panel.sinProximosEl === 'string' ? panel.sinProximosEl : null,
     };
   } catch {
     return null;
@@ -547,6 +551,11 @@ export const recuerdaElPanel = (
         (marca) => marca,
         deEsta?.sinProximos,
       ),
+      // Con su día: se pone al ponerla y se queda si no llega
+      sinProximosEl:
+        sinProximos === undefined
+          ? (deEsta?.sinProximosEl ?? null)
+          : fechaLocal(),
     };
     localStorage.setItem(CLAVE_PANEL, JSON.stringify(panel));
     return true;
@@ -586,15 +595,21 @@ export const lasPendientesGuardadas = (usuarioId) => {
 /**
  * Si la última respuesta de esta cuenta dijo que no tiene próximos partidos ni
  * partidas, para pintar «¿Partido improvisado?» al entrar sin esperar (FE #1152).
+ * Solo el MISMO día local en que se supo: de otro día, o de una versión sin
+ * fecha, no se sabe y el panel lo comprueba como antes (Agustín, 16 nov 2026).
  * Va en el panel, que es de la cuenta: las listas de próximos son del móvil, y
  * vacías no distinguen «el servidor dijo que no» de «nunca se guardaron».
  * @param {string} usuarioId
  * @returns {boolean}
  */
-export const seSabeQueNoHayProximos = (usuarioId) => {
+export const seSabeQueNoHayProximos = (usuarioId, ahora = new Date()) => {
   if (!usuarioId) return false;
   const panel = leeElPanel();
-  return panel?.usuarioId === usuarioId && panel.sinProximos;
+  return (
+    panel?.usuarioId === usuarioId &&
+    panel.sinProximos &&
+    panel.sinProximosEl === fechaLocal(ahora)
+  );
 };
 
 /**
