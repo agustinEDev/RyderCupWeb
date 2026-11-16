@@ -182,6 +182,24 @@ describe('caducidad de lo guardado sin cobertura (FS-03)', () => {
       expect(golpesPerdidos.pendientes(YO)).toHaveLength(1);
     });
 
+    it('lo huérfano elegido por caducado que se vuelve a guardar a mitad del vaciado no se manda: cuenta como cambiado (CodeRabbit en FE #1166)', async () => {
+      guardaHace(5 * DIA, 'p-a', 1, { ownScore: 4 }, null, null);
+      guardaHace(5 * DIA, 'p-b', 2, { ownScore: 5 }, null, null);
+      // Mientras se aparta el primero, alguien vuelve a guardar el segundo
+      // (fecha de ahora): ya no está caducado cuando le llega el turno
+      const apuntaDeVerdad = golpesPerdidos.apunta;
+      vi.spyOn(golpesPerdidos, 'apunta').mockImplementation((aviso) => {
+        if (aviso.matchId === 'p-a')
+          cola.enqueue('p-b', 2, { ownScore: 5 }, null, null);
+        return apuntaDeVerdad(aviso);
+      });
+
+      await vaciaLaColaEntera({ userId: YO });
+
+      expect(submitHoleScoreUseCase.execute).not.toHaveBeenCalled();
+      expect(cola.getAll().map((e) => e.matchId)).toEqual(['p-b']);
+    });
+
     it('lo huérfano sin caducar sigue sin tocarse', async () => {
       guardaHace(HORA, 'p', 1, { ownScore: 4 }, null, null);
 
