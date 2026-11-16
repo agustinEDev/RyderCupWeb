@@ -9,6 +9,11 @@ updates:
       day: "monday"
       time: "09:00"
     open-pull-requests-limit: 10
+    # Espera 5 días antes de proponer una versión recién publicada: es la ventana de
+    # los paquetes envenenados de npm, que se retiran en horas o días (re-auditoría del
+    # 16 nov 2026, INF-12). Las actualizaciones de seguridad no esperan.
+    cooldown:
+      default-days: 5
     reviewers:
       - "agustinEDev"
     labels:
@@ -91,7 +96,6 @@ updates:
     pull-request-branch-name:
       separator: "-"
 
-  # Mantener GitHub Actions actualizadas
   # El comprobador de licencias del CI, fijado con su lock aparte (INF-06). Sin subir de
   # versión mayor: la 5 pide Node 24 y el CI va con la 22 del .nvmrc
   - package-ecosystem: "npm"
@@ -99,6 +103,8 @@ updates:
     target-branch: "develop"
     schedule:
       interval: "monthly"
+    cooldown:
+      default-days: 5
     open-pull-requests-limit: 2
     labels:
       - "dependencies"
@@ -114,6 +120,9 @@ updates:
       interval: "weekly"
       day: "monday"
       time: "09:00"
+    # 5 días: la ventana en que se detecta una acción comprometida (INF-12)
+    cooldown:
+      default-days: 5
     labels:
       - "github-actions"
       - "automated"
@@ -123,3 +132,26 @@ updates:
     # Personalizar títulos de PR para cumplir con Conventional Commits (mayúscula)
     pull-request-branch-name:
       separator: "-"
+
+  # Imágenes base del Dockerfile (node y nginx), que solo usa el Kind: van fijadas por
+  # digest y Dependabot propone el nuevo cada semana, que es como entran los parches
+  # del sistema (INF-12). Los saltos de versión de node se suben a mano, con el .nvmrc
+  - package-ecosystem: "docker"
+    directory: "/"
+    target-branch: "develop"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+    cooldown:
+      default-days: 3
+    labels:
+      - "dependencies"
+      - "docker"
+      - "automated"
+    commit-message:
+      prefix: "chore"
+      include: "scope"
+    ignore:
+      - dependency-name: "node"
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]
