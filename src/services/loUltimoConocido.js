@@ -430,6 +430,15 @@ const pendientesValidas = (p) =>
 const listaValida = (lista, esValido) =>
   Array.isArray(lista) ? lista.filter(esValido) : null;
 
+/**
+ * Lo mismo, pero una lista que tenía algo y se queda sin nada no es «ninguna»:
+ * es que no se sabe (FE #1152). Vacía de verdad solo la guarda una respuesta.
+ */
+const listaValidaONada = (lista, esValido) => {
+  const valida = listaValida(lista, esValido);
+  return valida?.length === 0 && lista.length > 0 ? null : valida;
+};
+
 /** Las cifras guardadas, solo las que son números (o nada). */
 const cifrasValidas = (cifras) =>
   esUnObjeto(cifras)
@@ -455,12 +464,14 @@ const leeElPanel = () => {
         panel.competiciones,
         deSuTipo(TIPOS_DE_LA_COMPETICION),
       ),
-      ultimasPartidas: listaValida(
+      ultimasPartidas: listaValidaONada(
         panel.ultimasPartidas,
         deSuTipo(TIPOS_DE_LA_PARTIDA),
       ),
       estadisticas: cifrasValidas(panel.estadisticas),
       pendientes: pendientesValidas(panel.pendientes),
+      // Solo `true` lo afirma: cualquier otra cosa es que no se sabe
+      sinProximos: panel.sinProximos === true,
     };
   } catch {
     return null;
@@ -473,12 +484,22 @@ const leeElPanel = () => {
  * guardado es de otra cuenta, se empieza de cero.
  *
  * @param {string} usuarioId
- * @param {{competiciones?: Array|null, ultimasPartidas?: Array|null, estadisticas?: Object|null, pendientes?: Object|null}} partes
+ * `sinProximos` es lo que contestó el servidor de los próximos partidos y partidas
+ * (FE #1152): `true` si dijo «ninguno», `false` si había alguno. Solo con
+ * respuesta: sin ella no se sabe y no se pone.
+ *
+ * @param {{competiciones?: Array|null, ultimasPartidas?: Array|null, estadisticas?: Object|null, pendientes?: Object|null, sinProximos?: boolean|null}} partes
  *   Cada parte: lo nuevo, `null` para borrarla, o sin poner para dejar la que había
  */
 export const recuerdaElPanel = (
   usuarioId,
-  { competiciones, ultimasPartidas, estadisticas, pendientes } = {},
+  {
+    competiciones,
+    ultimasPartidas,
+    estadisticas,
+    pendientes,
+    sinProximos,
+  } = {},
 ) => {
   if (cerrado || !usuarioId) return false;
   // Nada de aquí puede hacer reventar a quien guarda: guardar va justo después
@@ -520,6 +541,12 @@ export const recuerdaElPanel = (
         pendientesEnPlano,
         deEsta?.pendientes,
       ),
+      sinProximos: parte(
+        sinProximos,
+        (marca) => typeof marca === 'boolean',
+        (marca) => marca,
+        deEsta?.sinProximos,
+      ),
     };
     localStorage.setItem(CLAVE_PANEL, JSON.stringify(panel));
     return true;
@@ -554,6 +581,20 @@ export const lasPendientesGuardadas = (usuarioId) => {
   if (!usuarioId) return null;
   const panel = leeElPanel();
   return panel?.usuarioId === usuarioId ? panel.pendientes : null;
+};
+
+/**
+ * Si la última respuesta de esta cuenta dijo que no tiene próximos partidos ni
+ * partidas, para pintar «¿Partido improvisado?» al entrar sin esperar (FE #1152).
+ * Va en el panel, que es de la cuenta: las listas de próximos son del móvil, y
+ * vacías no distinguen «el servidor dijo que no» de «nunca se guardaron».
+ * @param {string} usuarioId
+ * @returns {boolean}
+ */
+export const seSabeQueNoHayProximos = (usuarioId) => {
+  if (!usuarioId) return false;
+  const panel = leeElPanel();
+  return panel?.usuarioId === usuarioId && panel.sinProximos;
 };
 
 /**

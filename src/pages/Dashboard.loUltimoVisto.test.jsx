@@ -28,6 +28,21 @@ import { render, act, screen } from '@testing-library/react';
  *   D15 el servidor contesta con un error       | esa parte se borra también de lo guardado
  *   D16 ninguna partida guardada se puede rehacer | se espera (no «crea una partida»)
  *   D17 una respuesta buena que no se puede guardar | se pinta igual
+ *
+ *   FE #1152 — «no hay» también se recuerda (Agustín, 15 nov 2026)
+ *   D18 la última vez no había próximos         | «¿Partido improvisado?» ya, sin espera
+ *   D19 y ahora llega uno                       | el banner cambia a él
+ *   D20 una respuesta entera sin ninguno        | se guarda que no hay
+ *   D21 una respuesta con alguno                | se guarda que sí hay
+ *   D22 sin red en los próximos                 | no se toca lo guardado
+ *   D23 media lista vacía                       | no se guarda que no hay
+ *   D24 «no hay» de otra cuenta                 | no se usa: espera
+ *   D25 cambio de cuenta con la respuesta en vuelo | no se guarda para nadie
+ *   D26 la última vez no había partidas recientes | «sin partidas» ya, sin espera
+ *   D27 había y ahora vienen vacías             | se guarda la lista vacía
+ *   D28 las competiciones caídas                | no se guarda que no hay
+ *   D23b partidos vacíos y partidas sin red     | no se guarda que no hay
+ *   D29 panel sin partidas recientes guardadas  | las partidas esperan, como hoy
  */
 const enEspera = () => {
   let resolver;
@@ -52,6 +67,8 @@ const reiniciaLasPeticiones = () => {
   for (const nombre of NOMBRES) peticiones[nombre] = enEspera();
 };
 reiniciaLasPeticiones();
+// Si la lista de próximos vino entera (todas las competiciones contestaron)
+const completitud = { proximos: true };
 
 vi.mock('../composition', () => ({
   listUserCompetitionsUseCase: {
@@ -63,7 +80,7 @@ vi.mock('../composition', () => ({
     executeWithCompleteness: () =>
       peticiones.proximos.promesa.then((matches) => ({
         matches,
-        complete: true,
+        complete: completitud.proximos,
       })),
   },
   getUpcomingTeeGroupsUseCase: {
@@ -174,8 +191,13 @@ vi.doMock('../components/ui/FullScreenLoader', () => ({
 const { reiniciaLaCortina } = await import('../utils/cortinaDeArranque');
 const { olvidaQueElPanelSePinto } =
   await import('../utils/primeraCargaDelPanel');
-const { recuerdaElPanel, elUltimoPanel, recuerdaLosPartidos, olvidaTodo } =
-  await import('../services/loUltimoConocido');
+const {
+  recuerdaElPanel,
+  elUltimoPanel,
+  recuerdaLosPartidos,
+  olvidaTodo,
+  seSabeQueNoHayProximos,
+} = await import('../services/loUltimoConocido');
 const Dashboard = (await import('./Dashboard')).default;
 
 const almacenLimpio = () => {
@@ -251,6 +273,7 @@ describe('el panel con lo último visto', () => {
     sesion.loading = false;
     sesion.sinConfirmar = false;
     textos.listos = true;
+    completitud.proximos = true;
     document.body.innerHTML = '';
   });
 
@@ -557,5 +580,281 @@ describe('el panel con lo último visto', () => {
 
     expect(elUltimoPanel('u-2')).toBeNull();
     expect(elUltimoPanel('u-1')).toBeNull();
+  });
+  // Lo que guarda una respuesta de los próximos, entera y sin ninguno
+  const guardaQueNoHayProximos = () => {
+    recuerdaElPanel('u-1', {
+      competiciones: [competicion(1)],
+      ultimasPartidas: [partida(1)],
+      sinProximos: true,
+    });
+    recuerdaLosPartidos([]);
+  };
+  // Las competiciones primero: los próximos se piden con ellas
+  const contestanLasCompeticiones = async () => {
+    await act(async () => {
+      peticiones.competiciones.resolver([competicion(1)]);
+    });
+    await asienta();
+  };
+
+  it('D18: si la última vez no había próximos, se pinta ya sin espera', async () => {
+    // Given la última respuesta dijo que no hay próximos
+    guardaQueNoHayProximos();
+
+    // When se entra al panel
+    render(<Dashboard />);
+    await asienta();
+
+    // Then el banner no espera: ofrece la partida rápida
+    expect(espera()).toBeNull();
+    expect(rastro('proximo', 'cargando')).toBe('false');
+    expect(rastro('proximo', 'partido')).toBe('');
+  });
+
+  it('D19: si ahora llega un próximo, el banner cambia a él', async () => {
+    // Given se pintó «no hay próximos»
+    guardaQueNoHayProximos();
+    render(<Dashboard />);
+    await asienta();
+
+    // When la actualización trae uno
+    await contestanLasCompeticiones();
+    await act(async () => {
+      peticiones.proximos.resolver([partido(7)]);
+      peticiones.partidas.resolver([]);
+    });
+    await asienta();
+
+    // Then se enseña, y ya no se recuerda que no hay
+    expect(rastro('proximo', 'partido')).toBe('m-7');
+    expect(seSabeQueNoHayProximos('u-1')).toBe(false);
+  });
+
+  it('D20: una respuesta entera sin próximos guarda que no hay', async () => {
+    // Given nada guardado
+    render(<Dashboard />);
+
+    // When el servidor contesta entero y sin ninguno
+    await contestanLasCompeticiones();
+    await act(async () => {
+      peticiones.proximos.resolver([]);
+      peticiones.partidas.resolver([]);
+    });
+    await asienta();
+
+    // Then se recuerda para la próxima vez
+    expect(seSabeQueNoHayProximos('u-1')).toBe(true);
+  });
+
+  it('D21: una respuesta con alguno quita la marca', async () => {
+    // Given se recordaba que no había
+    guardaQueNoHayProximos();
+    render(<Dashboard />);
+    await asienta();
+
+    // When llega una partida de stroke play
+    await contestanLasCompeticiones();
+    await act(async () => {
+      peticiones.proximos.resolver([]);
+      peticiones.partidas.resolver([
+        { id: 'tg-1', roundDate: MANANA, esPartidaDeFranja: true },
+      ]);
+    });
+    await asienta();
+
+    // Then ya no se recuerda que no hay
+    expect(seSabeQueNoHayProximos('u-1')).toBe(false);
+  });
+
+  it('D22: sin red en los próximos no se toca lo guardado', async () => {
+    // Given se recordaba que no había
+    guardaQueNoHayProximos();
+    render(<Dashboard />);
+    await asienta();
+
+    // When los próximos se quedan sin red
+    await contestanLasCompeticiones();
+    await act(async () => {
+      peticiones.proximos.rechazar(sinRed());
+      peticiones.partidas.rechazar(sinRed());
+    });
+    await asienta();
+
+    // Then la marca sigue
+    expect(seSabeQueNoHayProximos('u-1')).toBe(true);
+  });
+
+  it('D22b: sin red no se pone la marca', async () => {
+    // Given nada recordado de los próximos
+    render(<Dashboard />);
+
+    // When los próximos se quedan sin red
+    await contestanLasCompeticiones();
+    await act(async () => {
+      peticiones.proximos.rechazar(sinRed());
+      peticiones.partidas.rechazar(sinRed());
+    });
+    await asienta();
+
+    // Then no se sabe que no haya
+    expect(seSabeQueNoHayProximos('u-1')).toBe(false);
+  });
+
+  it('D23: media lista vacía no guarda que no hay', async () => {
+    // Given una competición que no contestó
+    completitud.proximos = false;
+    render(<Dashboard />);
+
+    // When llega la lista a medias y sin ninguno
+    await contestanLasCompeticiones();
+    await act(async () => {
+      peticiones.proximos.resolver([]);
+      peticiones.partidas.resolver([]);
+    });
+    await asienta();
+
+    // Then no se afirma que no haya
+    expect(seSabeQueNoHayProximos('u-1')).toBe(false);
+  });
+
+  it('D24: «no hay próximos» de otra cuenta no se usa', async () => {
+    // Given la marca de otra cuenta, y un panel de esta sin ella
+    recuerdaElPanel('u-2', { sinProximos: true });
+    recuerdaElPanel('u-1', {
+      competiciones: [competicion(1)],
+      ultimasPartidas: [partida(1)],
+    });
+
+    // When entra esta cuenta
+    render(<Dashboard />);
+    await asienta();
+
+    // Then el banner espera, como hoy
+    expect(rastro('proximo', 'cargando')).toBe('true');
+  });
+
+  it('D25: una respuesta de la cuenta anterior no guarda la marca', async () => {
+    // Given la primera cuenta con los próximos en vuelo
+    const { rerender } = render(<Dashboard />);
+    await contestanLasCompeticiones();
+    const enVuelo = {
+      proximos: peticiones.proximos,
+      partidas: peticiones.partidas,
+    };
+    reiniciaLasPeticiones();
+
+    // When cambia la cuenta y contesta la de la anterior
+    sesion.user = dos;
+    rerender(<Dashboard />);
+    await asienta();
+    await act(async () => {
+      enVuelo.proximos.resolver([]);
+      enVuelo.partidas.resolver([]);
+    });
+    await asienta();
+
+    // Then no se guarda para ninguna
+    expect(seSabeQueNoHayProximos('u-1')).toBe(false);
+    expect(seSabeQueNoHayProximos('u-2')).toBe(false);
+  });
+
+  it('D26: si la última vez no había partidas recientes, se pinta ya', async () => {
+    // Given el servidor dijo «ninguna» la última vez
+    recuerdaElPanel('u-1', {
+      competiciones: [competicion(1)],
+      ultimasPartidas: [],
+    });
+
+    // When se entra al panel
+    render(<Dashboard />);
+    await asienta();
+
+    // Then las partidas no esperan
+    expect(espera()).toBeNull();
+    expect(rastro('recientes', 'cargando')).toBe('false');
+    expect(rastro('recientes', 'partidas')).toBe('');
+  });
+
+  it('D26b: si la última vez no había ninguna y ahora llega una, se enseña', async () => {
+    // Given se pintó «ninguna»
+    recuerdaElPanel('u-1', {
+      competiciones: [competicion(1)],
+      ultimasPartidas: [],
+    });
+    render(<Dashboard />);
+    await asienta();
+
+    // When llega una
+    await act(async () => {
+      peticiones.recientes.resolver([partida(3)]);
+    });
+    await asienta();
+
+    // Then se enseña
+    expect(rastro('recientes', 'partidas')).toBe('r-3');
+  });
+
+  it('D27: si ahora no hay ninguna, se guarda la lista vacía', async () => {
+    // Given había partidas
+    guardaElPanelDeUno();
+    render(<Dashboard />);
+    await asienta();
+
+    // When el servidor dice «ninguna»
+    await act(async () => {
+      peticiones.recientes.resolver([]);
+    });
+    await asienta();
+
+    // Then se guarda vacía (y se pintará así la próxima vez)
+    expect(elUltimoPanel('u-1').ultimasPartidas).toEqual([]);
+    expect(rastro('recientes', 'partidas')).toBe('');
+  });
+
+  it('D28: con las competiciones caídas no se guarda que no hay', async () => {
+    // Given nada recordado
+    render(<Dashboard />);
+
+    // When las competiciones fallan con respuesta
+    await act(async () => {
+      peticiones.competiciones.rechazar(conRespuesta(500));
+    });
+    await asienta();
+    await act(async () => {
+      peticiones.proximos.resolver([]);
+      peticiones.partidas.resolver([]);
+    });
+    await asienta();
+
+    // Then no se afirma que no haya
+    expect(seSabeQueNoHayProximos('u-1')).toBe(false);
+  });
+  it('D23b: con los partidos vacíos y las partidas sin red no se guarda que no hay', async () => {
+    // Given nada recordado
+    render(<Dashboard />);
+
+    // When los partidos contestan vacíos y las partidas se quedan sin red
+    await contestanLasCompeticiones();
+    await act(async () => {
+      peticiones.proximos.resolver([]);
+      peticiones.partidas.rechazar(sinRed());
+    });
+    await asienta();
+
+    // Then no se afirma que no haya: puede haber una partida
+    expect(seSabeQueNoHayProximos('u-1')).toBe(false);
+  });
+
+  it('D29: con panel pero sin partidas recientes guardadas, esperan', async () => {
+    // Given un panel sin la parte de las partidas (la borró un error)
+    recuerdaElPanel('u-1', { competiciones: [competicion(1)] });
+
+    // When se entra al panel
+    render(<Dashboard />);
+    await asienta();
+
+    // Then las partidas esperan: no se sabe si hay
+    expect(rastro('recientes', 'cargando')).toBe('true');
   });
 });

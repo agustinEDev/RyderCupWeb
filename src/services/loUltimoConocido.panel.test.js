@@ -5,6 +5,7 @@ import {
   olvidaLoDeEstaCuenta,
   abreLoGuardadoParaLaCuenta,
   olvidaTodo,
+  seSabeQueNoHayProximos,
 } from './loUltimoConocido';
 import PlayerStats from '../domain/entities/PlayerStats';
 import RecentMatch from '../domain/entities/RecentMatch';
@@ -32,6 +33,10 @@ import RecentMatch from '../domain/entities/RecentMatch';
  *   G16 una parte en null                 | se borra esa parte
  *   G17 una partida con un campo de otro tipo | se descarta (pintarla tumbaría el panel)
  *   G18 una competición con un campo de otro tipo | se descarta
+ *   G19 «no hay próximos» (FE #1152)     | se guarda y vuelve, solo para esa cuenta
+ *   G20 la marca en null o de otro tipo   | no se sabe (null borra; sin poner, se queda)
+ *   G21 últimas partidas guardadas vacías | vuelven vacías: el servidor dijo «ninguna»
+ *   G22 partidas guardadas que no se pueden leer | null, no «ninguna» (FE #1152)
  *   G5 se cierra la sesión                | se borra y no se reescribe
  *   G6 el móvil no tiene sitio            | no se guarda y no revienta
  *   G7 lo guardado está roto              | nada
@@ -398,5 +403,87 @@ describe('loUltimoConocido, el panel', () => {
     recuerdaElPanel(null, { competiciones: [competicion(1)] });
 
     expect(guardado.has('rydercup-ultimo-panel')).toBe(false);
+  });
+  it('G19: «no hay próximos» se guarda y vuelve, solo para esa cuenta', () => {
+    // Given el servidor dijo que esta cuenta no tiene próximos
+    recuerdaElPanel('u-1', { sinProximos: true });
+
+    // When se pregunta por esa cuenta y por otra
+    // Then lo sabe esa cuenta y nadie más
+    expect(seSabeQueNoHayProximos('u-1')).toBe(true);
+    expect(seSabeQueNoHayProximos('u-2')).toBe(false);
+    expect(seSabeQueNoHayProximos(null)).toBe(false);
+  });
+
+  it('G19b: la marca se queda al guardar otras partes y cambia a false', () => {
+    // Given la marca puesta
+    recuerdaElPanel('u-1', { sinProximos: true });
+
+    // When llega otra parte sin la marca
+    recuerdaElPanel('u-1', { competiciones: [competicion(1)] });
+    // Then sigue
+    expect(seSabeQueNoHayProximos('u-1')).toBe(true);
+
+    // When se ve un próximo
+    recuerdaElPanel('u-1', { sinProximos: false });
+    // Then ya no
+    expect(seSabeQueNoHayProximos('u-1')).toBe(false);
+  });
+
+  it('G19c: la marca de otra cuenta no pasa a la nueva', () => {
+    // Given la marca de u-1
+    recuerdaElPanel('u-1', { sinProximos: true });
+
+    // When guarda u-2
+    recuerdaElPanel('u-2', { competiciones: [competicion(1)] });
+
+    // Then u-2 no la hereda
+    expect(seSabeQueNoHayProximos('u-2')).toBe(false);
+  });
+
+  it.each([
+    ['null', null],
+    ['un texto', 'true'],
+    ['un número', 1],
+  ])('G20: la marca guardada como %s no dice nada', (_, valor) => {
+    // Given una marca que no es `true`
+    guardado.set(
+      'rydercup-ultimo-panel',
+      JSON.stringify({ v: 1, usuarioId: 'u-1', sinProximos: valor }),
+    );
+
+    // Then no se sabe que no haya
+    expect(seSabeQueNoHayProximos('u-1')).toBe(false);
+  });
+
+  it('G20b: la marca en null se borra', () => {
+    recuerdaElPanel('u-1', { sinProximos: true });
+
+    recuerdaElPanel('u-1', { sinProximos: null });
+
+    expect(seSabeQueNoHayProximos('u-1')).toBe(false);
+  });
+
+  it('G21: unas últimas partidas guardadas vacías vuelven vacías', () => {
+    // Given el servidor dijo «ninguna»
+    recuerdaElPanel('u-1', { ultimasPartidas: [] });
+
+    // Then vuelve la lista vacía, no «no se sabe»
+    expect(elUltimoPanel('u-1').ultimasPartidas).toEqual([]);
+  });
+
+  it('G22: si ninguna partida guardada se puede leer, no se sabe', () => {
+    // Given una lista con partidas que no pasan la lectura
+    guardado.set(
+      'rydercup-ultimo-panel',
+      JSON.stringify({
+        v: 1,
+        usuarioId: 'u-1',
+        ultimasPartidas: [{}, { id: 5 }],
+      }),
+    );
+
+    // Then no es «ninguna»: es que no se sabe
+    expect(elUltimoPanel('u-1').ultimasPartidas).toBeNull();
   });
 });
