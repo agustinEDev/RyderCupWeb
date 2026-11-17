@@ -367,7 +367,13 @@ export default defineConfig(() => ({
           },
         ],
         navigateFallback: '/index.html',
-        navigateFallbackDenylist: [/^\/api\//, /^\/offline\.html$/],
+        // /.well-known/ son ficheros de verdad (security.txt, P-07): con la app instalada,
+        // el service worker contestaba la app en su lugar
+        navigateFallbackDenylist: [
+          /^\/api\//,
+          /^\/offline\.html$/,
+          /^\/\.well-known\//,
+        ],
       },
     }),
     // Plugin to inject security headers in dev and preview

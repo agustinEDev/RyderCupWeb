@@ -75,7 +75,9 @@
         "FEMALE": "Female"
       },
       "updating": "Updating...",
-      "update": "Update Personal Info"
+      "update": "Update Personal Info",
+      "firstNamePlaceholder": "Enter your first name",
+      "lastNamePlaceholder": "Enter your last name"
     },
     "security": {
       "title": "Security Settings",

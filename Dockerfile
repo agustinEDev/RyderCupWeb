@@ -8,7 +8,8 @@
 # Stage 1: Build - Construir aplicación React
 # ==========================================
 # Actualizado a node:22-alpine (LTS) para resolver CVE de Type Confusion (HIGH) en node:20-alpine
-FROM node:22-alpine AS build
+# Fijada por digest (INF-12): Dependabot propone el nuevo cada semana; solo el Kind la usa
+FROM node:22-alpine@sha256:1314fb30ec37592d5845e5a160d522c0e680972aa534549940b8d73bde88481a AS build
 
 # Directorio de trabajo
 WORKDIR /app
@@ -35,7 +36,7 @@ RUN npm run build
 # ==========================================
 # Stage 2: Production - Servir con Nginx
 # ==========================================
-FROM nginx:alpine
+FROM nginx:alpine@sha256:fed7e14be83cbd2661a75cdc5b872d936cf155d46c327084d30b8df19ae88d72
 
 # Copiar archivos construidos desde stage 1
 COPY --from=build /app/dist /usr/share/nginx/html

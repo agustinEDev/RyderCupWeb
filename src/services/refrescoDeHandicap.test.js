@@ -40,7 +40,7 @@ const {
   EVENTO_HANDICAP_AL_DIA,
   reiniciaElRefrescoDeHandicap,
 } = await import('./refrescoDeHandicap');
-const { olvidaElRefrescoDeHandicap } =
+const { olvidaElRefrescoDeHandicap, RECORDATORIO_HANDICAP } =
   await import('./refrescoDeHandicapApuntes');
 
 describe('refrescoDeHandicap (FE #677)', () => {
@@ -218,15 +218,15 @@ describe('refrescoDeHandicap (FE #677)', () => {
   it('F13: al salir también se olvida el recordatorio de «Requiere tu atención»', () => {
     // Existía antes (FE #677 lo encontró por CodeRabbit): la siguiente cuenta
     // del móvil veía el recordatorio de la anterior
-    localStorage.setItem('handicap_pending', 'true');
+    localStorage.setItem(RECORDATORIO_HANDICAP, 'true');
 
     olvidaElRefrescoDeHandicap();
 
-    expect(localStorage.getItem('handicap_pending')).toBeNull();
+    expect(localStorage.getItem(RECORDATORIO_HANDICAP)).toBeNull();
   });
 
   it('F14: si ya no hace falta pedirlo, se retira el recordatorio y se avisa al panel', async () => {
-    localStorage.setItem('handicap_pending', 'true');
+    localStorage.setItem(RECORDATORIO_HANDICAP, 'true');
     refresco.mockResolvedValue({ needsHandicap: false, handicap: 12.4 });
     const aviso = vi.fn();
     window.addEventListener(EVENTO_HANDICAP_AL_DIA, aviso);
@@ -234,7 +234,32 @@ describe('refrescoDeHandicap (FE #677)', () => {
     await lanzaElRefrescoDeHandicap({ handicapDeAntes: 12.4 });
 
     window.removeEventListener(EVENTO_HANDICAP_AL_DIA, aviso);
-    expect(localStorage.getItem('handicap_pending')).toBeNull();
+    expect(localStorage.getItem(RECORDATORIO_HANDICAP)).toBeNull();
     expect(aviso).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('los apuntes del hándicap con el almacenamiento bloqueado (CodeRabbit)', () => {
+  it('leer el recordatorio o el refresco pendiente no lanza: dice que no hay', async () => {
+    const {
+      hayRecordatorioDeHandicap,
+      hayRefrescoPendiente,
+      olvidaElApunteAntiguo,
+    } = await import('./refrescoDeHandicapApuntes');
+    const leer = vi.spyOn(localStorage, 'getItem').mockImplementation(() => {
+      throw new Error('SecurityError');
+    });
+    const borrar = vi
+      .spyOn(localStorage, 'removeItem')
+      .mockImplementation(() => {
+        throw new Error('SecurityError');
+      });
+
+    expect(hayRecordatorioDeHandicap()).toBe(false);
+    expect(hayRefrescoPendiente()).toBe(false);
+    expect(() => olvidaElApunteAntiguo()).not.toThrow();
+
+    leer.mockRestore();
+    borrar.mockRestore();
   });
 });
