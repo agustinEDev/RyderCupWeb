@@ -116,7 +116,7 @@ describe('registraElFallo', () => {
       expect(todo).not.toContain('Ana');
     });
 
-    it('keeps the stack frames of the original, without its first line', async () => {
+    it('keeps the stack frames of the original, without its header', async () => {
       const registraElFallo = await carga();
       const error = http(500);
       error.stack =
@@ -188,6 +188,115 @@ describe('registraElFallo', () => {
       const [enviado] = captureError.mock.calls[0];
       expect(enviado.stack).not.toContain('ana@club.es');
       expect(enviado.stack).toContain('    at carga (x.js:1:1)');
+    });
+
+    it.each([
+      [
+        'an email and a time in the header',
+        'Error: Aviso a pepe@gmail.com a las 10:30:45\n    at f (x.js:1:1)',
+      ],
+      [
+        'a message line that starts with «at»',
+        'Error: datos\n    at casa de ana@club.es\n    at f (x.js:1:1)',
+      ],
+    ])(
+      'a changed header that looks like a frame (%s) is still dropped',
+      async (_caso, stack) => {
+        const registraElFallo = await carga();
+        const error = http(500);
+        error.message = 'otro';
+        error.stack = stack;
+
+        registraElFallo('panel', 'x', error);
+
+        const [enviado] = captureError.mock.calls[0];
+        expect(enviado.stack).toBe(
+          'Error: Fallo en panel (Error)\n    at f (x.js:1:1)',
+        );
+      },
+    );
+
+    it.each([
+      [
+        'the message inside a frame',
+        'panel',
+        'carga@https://x/a.js:1:1\npanel@https://x/b.js:2:2\nglobal code@https://x/c.js:3:3',
+      ],
+      [
+        'native code first',
+        'Unexpected token',
+        'parse@[native code]\ncarga@https://x/a.js:1:1',
+      ],
+      [
+        'Firefox async frames and a trailing newline',
+        'x',
+        'carga@https://x/a.js:1:1\nasync*panel@https://x/b.js:2:2\n',
+      ],
+    ])(
+      'a Safari or Firefox stack keeps every frame (%s)',
+      async (_caso, message, stack) => {
+        const registraElFallo = await carga();
+        const error = http(500);
+        error.message = message;
+        error.stack = stack;
+
+        registraElFallo('panel', 'x', error);
+
+        const [enviado] = captureError.mock.calls[0];
+        expect(enviado.stack).toBe(
+          `Error: Fallo en panel (Error)\n${stack.replace(/\n$/, '')}`,
+        );
+      },
+    );
+
+    it('V8 async and anonymous frames are kept', async () => {
+      const registraElFallo = await carga();
+      const error = http(500);
+      error.stack =
+        'Error: Internal Server Error\n    at async carga (https://x/a.js:1:1)\n    at https://x/b.js:2:2\n    at JSON.parse (<anonymous>)';
+
+      registraElFallo('panel', 'x', error);
+
+      const [enviado] = captureError.mock.calls[0];
+      expect(enviado.stack).toBe(
+        'Error: Fallo en panel (Error)\n    at async carga (https://x/a.js:1:1)\n    at https://x/b.js:2:2\n    at JSON.parse (<anonymous>)',
+      );
+    });
+
+    it.each([
+      [
+        'an empty message',
+        '',
+        'Error\n    at f (x.js:1:1)',
+        '\n    at f (x.js:1:1)',
+      ],
+      ['a stack without frames', 'texto', 'Error: texto de ana@club.es', ''],
+    ])('%s', async (_caso, message, stack, cola) => {
+      const registraElFallo = await carga();
+      const error = http(500);
+      error.message = message;
+      error.stack = stack;
+
+      registraElFallo('panel', 'x', error);
+
+      const [enviado] = captureError.mock.calls[0];
+      expect(enviado.stack).toBe(`Error: Fallo en panel (Error)${cola}`);
+    });
+
+    it('a very long line is never a frame and does not hang', async () => {
+      const registraElFallo = await carga();
+      const error = http(500);
+      error.message = 'otro';
+      error.stack = `Error: ${'@:1:1 '.repeat(10_000)}\n    at f (x.js:1:1)`;
+
+      const antes = Date.now();
+      registraElFallo('panel', 'x', error);
+
+      expect(Date.now() - antes).toBeLessThan(200);
+      const [enviado] = captureError.mock.calls[0];
+      expect(enviado.stack).toBe(
+        'Error: Fallo en panel (Error)\n    at f (x.js:1:1)',
+      );
     });
 
     it('a non-Error rejection without network is not reported', async () => {
