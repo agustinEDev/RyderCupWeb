@@ -41,6 +41,7 @@ import BlockLoader from '../../components/ui/BlockLoader';
 import { formatoDeIndice } from '../../utils/formatoDeHandicap';
 import { PANTALLA_MENOS_BARRA_INFERIOR } from '../../utils/barraInferior';
 import NombrePequeno from '../../components/ui/NombrePequeno';
+import FriendshipStatus from '../../domain/value_objects/FriendshipStatus';
 
 // La actividad de un amigo se enseña de 5 en 5 TARJETAS, como las partidas
 // juntos (22 oct). Al servidor se le piden eventos de 20 en 20: los logros de
@@ -274,7 +275,7 @@ const PlayerProfilePage = () => {
   const applyRelationshipLocally = (status, friendshipId) => {
     setProfile((prev) => {
       if (!prev) return prev;
-      const sigueAmigo = status === 'ACCEPTED' && prev.isFriend;
+      const sigueAmigo = status === FriendshipStatus.ACCEPTED && prev.isFriend;
       return {
         ...prev,
         friendship: {
@@ -290,12 +291,12 @@ const PlayerProfilePage = () => {
         stats: sigueAmigo ? prev.stats : null,
         headToHead: sigueAmigo ? prev.headToHead : null,
         gamesTogether: sigueAmigo ? prev.gamesTogether : null,
-        handicap: status === 'BLOCKED' ? null : prev.handicap,
+        handicap: status === FriendshipStatus.BLOCKED ? null : prev.handicap,
         // Quien llega aquí con un bloqueo acaba de ponerlo
-        blockedByMe: status === 'BLOCKED' ? true : null,
+        blockedByMe: status === FriendshipStatus.BLOCKED ? true : null,
       };
     });
-    if (status !== 'ACCEPTED') {
+    if (status !== FriendshipStatus.ACCEPTED) {
       setGames(null);
       setActivity(null);
     }
@@ -400,7 +401,7 @@ const PlayerProfilePage = () => {
 
   const nombre = nombreVisible(profile);
   const relationship = profile.friendship?.status ?? 'NONE';
-  const isBlocked = relationship === 'BLOCKED';
+  const isBlocked = relationship === FriendshipStatus.BLOCKED;
   // El hándicap va en la rejilla de estadísticas cuando la hay; si no, bajo
   // el nombre (y no en los dos sitios a la vez, revisión FE-2)
   const hasStatsGrid = Boolean(
@@ -489,7 +490,7 @@ const PlayerProfilePage = () => {
           </div>
           {!isBlocked && (
             <PlayerProfileMenu
-              isFriend={relationship === 'ACCEPTED'}
+              isFriend={relationship === FriendshipStatus.ACCEPTED}
               disabled={isActing || isLoadingMore || isLoadingMoreGames}
               onRemove={() => setPendingConfirm('remove')}
               onBlock={() => setPendingConfirm('block')}
@@ -665,7 +666,7 @@ const PlayerProfilePage = () => {
               )}
             </section>
           </>
-        ) : isBlocked || relationship === 'ACCEPTED' ? null : (
+        ) : isBlocked || relationship === FriendshipStatus.ACCEPTED ? null : (
           <section
             className="mt-4 p-4 text-center bg-white border border-gray-200 rounded-lg"
             data-testid="player-profile-private"
@@ -704,7 +705,7 @@ const FriendshipAction = ({
 }) => {
   const status = profile.friendship?.status ?? 'NONE';
 
-  if (status === 'ACCEPTED') {
+  if (status === FriendshipStatus.ACCEPTED) {
     return (
       <p
         className="mt-3 flex items-center justify-center gap-1.5 py-2 text-sm font-medium text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg"
@@ -768,7 +769,7 @@ const FriendshipAction = ({
     );
   }
 
-  if (status === 'BLOCKED') {
+  if (status === FriendshipStatus.BLOCKED) {
     return (
       <div
         className="mt-3 flex items-center justify-between gap-3 py-2 pl-3 pr-2 bg-white border border-gray-200 rounded-lg"
