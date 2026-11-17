@@ -136,7 +136,7 @@ const Header = () => {
         <button
           onClick={toggleMobileMenu}
           className="flex items-center justify-center w-10 h-10 rounded-lg hover:bg-gray-100 transition-colors"
-          aria-label="Toggle menu"
+          aria-label={t('header.toggleMenu')}
         >
           <svg
             className="w-6 h-6 text-gray-900"

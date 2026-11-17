@@ -72,7 +72,8 @@
     "leaderboard": "Clasificación",
     "administration": "Administración",
     "adminBadge": "Admin",
-    "logout": "Cerrar Sesión"
+    "logout": "Cerrar Sesión",
+    "toggleMenu": "Abrir o cerrar el menú"
   },
   "bottomNav": {
     "label": "Navegación principal",
@@ -180,5 +181,6 @@
     "plus": "Hándicap plus",
     "outOfRange": "Entre +10 y 54"
   },
-  "cargandoTuCuenta": "Cargando tu cuenta, inténtalo en un momento"
+  "cargandoTuCuenta": "Cargando tu cuenta, inténtalo en un momento",
+  "avatarAlt": "Foto de perfil"
 }

@@ -2,6 +2,7 @@ import { Clock } from 'lucide-react';
 import { Link } from 'react-router';
 import FriendshipBadge from './FriendshipBadge';
 import Avatar from '../ui/Avatar';
+import NombrePequeno from '../ui/NombrePequeno';
 
 /**
  * FriendCard
@@ -69,6 +70,7 @@ const FriendCard = ({
                 <FriendshipBadge status={friendship.status} />
               )}
             </div>
+            <NombrePequeno texto={friendship.otherUserSubName} />
 
             {friendship.createdAt && (
               <div className="flex items-center gap-1.5 text-xs text-gray-400 mt-1.5">

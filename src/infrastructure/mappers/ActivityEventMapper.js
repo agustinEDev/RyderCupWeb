@@ -41,6 +41,8 @@ class ActivityEventMapper {
       lastName: apiAuthor.last_name,
       // Ya resuelto por el servidor: alias si lo tiene (BE #239)
       displayName: apiAuthor.display_name || null,
+      // Para el nombre real pequeño debajo del alias (SB-08)
+      alias: apiAuthor.alias ?? null,
       avatarSource: apiAuthor.avatar_source,
       avatarPresetId: apiAuthor.avatar_preset_id,
     };

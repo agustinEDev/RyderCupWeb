@@ -26,11 +26,12 @@ fichero (en una PR), después el panel que la sirve: Render para casi todas, **C
 para las dos de abajo. Cambiar solo Render no cambia lo que llega al navegador en esas dos,
 porque Cloudflare responde después y la sustituye.
 
-**HSTS lo pone Cloudflare** (SSL/TLS → Edge Certificates → HSTS: 12 meses, sin
+**HSTS lo pone Cloudflare** (SSL/TLS → Edge Certificates → HSTS: 12 meses, con
 `includeSubDomains`, sin precarga) para toda la zona, también el dominio sin `www`, y
-sustituye al que mande Render. Sin `includeSubDomains` a propósito:
-`email.rydercupfriends.com` es el dominio de seguimiento de Mailgun y no tiene `https`
-(auditoría de la fase 6, P-01; 14 nov 2026). Para cambiarlo: el fichero, **Cloudflare**, y
+sustituye al que mande Render. `includeSubDomains` va desde el 16 nov 2026 (re-auditoría,
+P-04): hasta entonces no se podía porque `email.rydercupfriends.com`, el seguimiento de
+Mailgun, no tiene `https`; con el seguimiento apagado ya no lleva enlaces. Sin precarga a
+propósito: no tiene vuelta atrás en meses. Para cambiarlo: el fichero, **Cloudflare**, y
 la fila de Render por coherencia (es la que valdría si se apagara en Cloudflare).
 
 **La `Cross-Origin-Resource-Policy` de `/images/*` también la pone Cloudflare**: Rules →
@@ -47,7 +48,7 @@ X-Content-Type-Options: nosniff
 X-Frame-Options: DENY
 Referrer-Policy: strict-origin-when-cross-origin
 Permissions-Policy: geolocation=(self), microphone=(), camera=()
-Strict-Transport-Security: max-age=31536000
+Strict-Transport-Security: max-age=31536000; includeSubDomains
 Cross-Origin-Opener-Policy: same-origin
 Cross-Origin-Resource-Policy: same-origin
 Reporting-Endpoints: csp="https://o4510427294662656.ingest.de.sentry.io/api/4510427296825424/security/?sentry_key=5548cda036a3fedd1f50791b66a93354&sentry_environment=production"

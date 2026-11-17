@@ -408,6 +408,33 @@ describe('derivarLaFicha', () => {
     expect(ficha.hasEnrollment).toBe(mia);
   });
 
+  it('given a public competition, when deriving, then there is no name to choose but the fixed line shows', () => {
+    const mia = {
+      id: 'e-1',
+      userId: 'u-1',
+      status: 'APPROVED',
+      useRealName: false,
+    };
+    const ficha = base({ visibility: 'PUBLIC' }, { enrollments: [mia] });
+    // En las públicas delante va siempre el nombre real, con el alias debajo
+    // (17 nov 2026): el interruptor no cambiaría nada de lo que se ve
+    expect(ficha.puedeElegirNombre).toBe(false);
+    expect(ficha.nombreFijoEnPublica).toBe(true);
+    expect(ficha.nombreLegal).toBe('Ana Gil');
+  });
+
+  it('given a private competition, when deriving, then the name can be chosen and there is no fixed line', () => {
+    const mia = {
+      id: 'e-1',
+      userId: 'u-1',
+      status: 'APPROVED',
+      useRealName: false,
+    };
+    const ficha = base({ visibility: 'PRIVATE' }, { enrollments: [mia] });
+    expect(ficha.puedeElegirNombre).toBe(true);
+    expect(ficha.nombreFijoEnPublica).toBe(false);
+  });
+
   it('given a scheduled draft, when deriving, then it gives the readable opening date', () => {
     const ficha = base({
       status: 'DRAFT',

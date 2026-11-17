@@ -1,3 +1,5 @@
+import { contieneEnlace } from '../services/textoSinEnlaces';
+
 // src/domain/value_objects/CompetitionName.js
 
 export class CompetitionName {
@@ -65,7 +67,7 @@ export class CompetitionName {
    * API measures it (RyderCupAm#540). Stricter than `isValid`, which stays as
    * it was so names saved before this rule can still be read.
    * @param {unknown} value
-   * @returns {'REQUIRED'|'TOO_SHORT'|'UNREADABLE'|'TOO_LONG'|null}
+   * @returns {'REQUIRED'|'TOO_SHORT'|'UNREADABLE'|'TOO_LONG'|'HAS_LINK'|null}
    */
   static problemWith(value) {
     const name = CompetitionName.normalize(value);
@@ -74,6 +76,8 @@ export class CompetitionName {
     // «...» is not a name: at least one letter or digit
     if (!/[\p{L}\p{N}]/u.test(name)) return 'UNREADABLE';
     if (name.length > CompetitionName.MAX_LENGTH) return 'TOO_LONG';
+    // Sale en correos que firma la app: sin enlaces (SB-05, 17 nov 2026)
+    if (contieneEnlace(name)) return 'HAS_LINK';
     return null;
   }
 

@@ -50,3 +50,23 @@ export const nombreRealSiAporta = (persona) => {
 
   return completo && completo !== nombreVisible(persona) ? completo : '';
 };
+
+/**
+ * El otro nombre, el que va pequeño debajo del que se pinta delante (SB-08).
+ *
+ * El alias es el apodo con el que te conocen tus amigos, no un dato oculto
+ * (Agustín, 17 nov 2026): donde se pinta el alias, el nombre real va debajo; donde
+ * va el nombre real (las competiciones públicas), el alias. Quien no tiene alias
+ * solo tiene un nombre, y aquí no sale nada. Tampoco si los dos coinciden.
+ */
+export const nombrePequeno = (persona) => {
+  if (!persona?.alias) return '';
+
+  const delante = nombreVisible(persona);
+  if (delante === persona.alias) return nombreRealSiAporta(persona);
+  // Delante, el nombre real: debajo, el alias. Si delante va otra cosa (un nombre
+  // guardado de antes de que cambiara su alias), mejor nada que dos alias
+  const nombre = persona.first_name ?? persona.firstName ?? '';
+  const apellido = persona.last_name ?? persona.lastName ?? '';
+  return delante === `${nombre} ${apellido}`.trim() ? persona.alias : '';
+};

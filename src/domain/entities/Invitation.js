@@ -1,16 +1,6 @@
 import InvitationStatus from '../value_objects/InvitationStatus';
 
 /**
- * Exception for invitation state errors
- */
-export class InvitationStateError extends Error {
-  constructor(message) {
-    super(message);
-    this.name = 'InvitationStateError';
-  }
-}
-
-/**
  * Entity: Invitation
  *
  * Represents an invitation from a competition creator to a player.

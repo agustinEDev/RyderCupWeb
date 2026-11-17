@@ -128,7 +128,8 @@
       "nameTooShort": "The name needs at least 3 characters.",
       "nameTooLong": "The name cannot be longer than 100 characters.",
       "nameUnreadable": "The name needs at least one letter or digit.",
-      "nameTaken": "You already have a competition with that name: choose another."
+      "nameTaken": "You already have a competition with that name: choose another.",
+      "nameHasLink": "The name cannot contain links or web addresses."
     },
     "success": "Competition created successfully!",
     "partialSuccess": "Competition created, but {{failed}} course(s) could not be added: {{courses}}. {{success}} course(s) were added successfully.",
@@ -379,6 +380,7 @@
     "enrollmentStatus": "Your enrollment status:",
     "namePreference": {
       "label": "Use my alias in this competition",
+      "publicShowsRealName": "In public competitions your name, {{realName}}, is shown with your alias {{alias}} below it.",
       "helpUsingRealName": "In this competition you appear as {{realName}}. In quick matches you are still {{alias}}.",
       "helpUsingAlias": "In this competition you appear as {{alias}}, same as in quick matches.",
       "visibility": "Others see it on the standings and the scorecards.",

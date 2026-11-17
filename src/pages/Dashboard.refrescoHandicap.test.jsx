@@ -128,6 +128,8 @@ vi.stubGlobal('localStorage', {
 });
 
 const Dashboard = (await import('./Dashboard')).default;
+const { RECORDATORIO_HANDICAP } =
+  await import('../services/refrescoDeHandicapApuntes');
 const { reiniciaElRefrescoDeHandicap } =
   await import('../services/refrescoDeHandicap');
 
@@ -400,7 +402,7 @@ describe('Dashboard · refresco del hándicap al entrar (FE #677)', () => {
   });
 
   it('D15: si un refresco dice que ya no hace falta, el recordatorio se retira con el panel abierto', async () => {
-    localStorage.setItem('handicap_pending', 'true');
+    localStorage.setItem(RECORDATORIO_HANDICAP, 'true');
     localStorage.setItem('refrescar_handicap', 'true');
     refresco.mockResolvedValue({ needsHandicap: false, handicap: 12.4 });
 
@@ -417,7 +419,7 @@ describe('Dashboard · refresco del hándicap al entrar (FE #677)', () => {
   it('D16: abrir el modal desde el recordatorio le pasa el hándicap guardado', async () => {
     // Tras una recarga no hay resultado de refresco a mano: sin esto, el modal
     // volvía a decir «no tienes hándicap» a quien tiene 12.4
-    localStorage.setItem('handicap_pending', 'true');
+    localStorage.setItem(RECORDATORIO_HANDICAP, 'true');
 
     render(<Dashboard />);
     fireEvent.click(await screen.findByText('configurar'));

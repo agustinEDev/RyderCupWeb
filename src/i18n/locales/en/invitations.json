@@ -90,7 +90,8 @@
     "teamsFormedOrganizer": "With teams formed there are no invitations. If there are no matches yet, you can undo them in the schedule.",
     "draftInProgress": "The draft is under way right now: try again when it ends",
     "onHoldExists": "That person already has an invitation on the waiting list.",
-    "onHold": "On the waiting list: enrolment is closed. If the organiser reopens it, you will be able to accept it."
+    "onHold": "On the waiting list: enrolment is closed. If the organiser reopens it, you will be able to accept it.",
+    "messageHasLink": "The message cannot contain links or web addresses."
   },
   "creator": {
     "title": "Invitations",

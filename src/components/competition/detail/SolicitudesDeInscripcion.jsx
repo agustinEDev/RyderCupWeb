@@ -1,6 +1,7 @@
 import { AlertCircle, UserX, ChevronRight } from 'lucide-react';
 import TituloConNumero from '../../ui/TituloConNumero';
 import { formatoDeIndice } from '../../../utils/formatoDeHandicap';
+import NombrePequeno from '../../ui/NombrePequeno';
 
 /**
  * Las solicitudes pendientes (aprobar o rechazar) y las rechazadas, plegadas.
@@ -42,6 +43,7 @@ const SolicitudesDeInscripcion = ({
                   <p className="text-gray-900 font-semibold break-words">
                     {enrollment.userName || t('detail.unknownUser')}
                   </p>
+                  <NombrePequeno texto={enrollment.userSubName} />
                   <p className="text-gray-600 text-sm wrap-anywhere">
                     {enrollment.userEmail || t('detail.noEmail')}
                   </p>
@@ -126,6 +128,7 @@ const SolicitudesDeInscripcion = ({
                   <p className="font-medium text-gray-700 break-words">
                     {enrollment.userName || t('detail.unknownUser')}
                   </p>
+                  <NombrePequeno texto={enrollment.userSubName} />
                   <p className="text-xs text-gray-500 wrap-anywhere">
                     {enrollment.userEmail || t('detail.noEmail')}
                   </p>

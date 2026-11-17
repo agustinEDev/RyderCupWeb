@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
-import { nombreVisible } from '../../utils/nombreVisible';
+import { nombrePequeno, nombreVisible } from '../../utils/nombreVisible';
 import { Link, Navigate, useLocation, useParams } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import {
@@ -40,6 +40,7 @@ import {
 import BlockLoader from '../../components/ui/BlockLoader';
 import { formatoDeIndice } from '../../utils/formatoDeHandicap';
 import { PANTALLA_MENOS_BARRA_INFERIOR } from '../../utils/barraInferior';
+import NombrePequeno from '../../components/ui/NombrePequeno';
 
 // La actividad de un amigo se enseña de 5 en 5 TARJETAS, como las partidas
 // juntos (22 oct). Al servidor se le piden eventos de 20 en 20: los logros de
@@ -460,6 +461,7 @@ const PlayerProfilePage = () => {
             <h2 className="text-lg font-bold text-gray-900 truncate">
               {nombre}
             </h2>
+            <NombrePequeno texto={nombrePequeno(profile)} />
             {/* Con un bloqueo de por medio, solo nombre y foto: el backend
                 manda el contador a 0 y el hándicap en null, y aquí no se
                 pintan para no decir «0 amigos» de quien sí los tiene */}

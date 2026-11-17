@@ -5,7 +5,7 @@ import TeeColor from '../value_objects/TeeColor';
 /**
  * Excepción para errores de estado de Enrollment
  */
-export class EnrollmentStateError extends Error {
+class EnrollmentStateError extends Error {
   constructor(message) {
     super(message);
     this.name = 'EnrollmentStateError';
