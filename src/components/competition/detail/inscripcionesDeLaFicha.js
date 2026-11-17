@@ -2,6 +2,7 @@ import customToast from '../../../utils/toast';
 import { mensajeDeError } from '../../../utils/sinCobertura';
 import { MOTIVOS_PARA_NO_APUNTARSE } from '../../../utils/fichaDeLaCompeticion';
 import {
+  getCompetitionDetailUseCase,
   listEnrollmentsUseCase,
   requestEnrollmentUseCase,
   approveEnrollmentUseCase,
@@ -27,6 +28,7 @@ export const crearAccionesDeInscripcion = (contexto) => {
     isFull,
     generoParaApuntarse,
     loadCompetition,
+    setCompetition,
     releerTrasQuitar,
     preguntar,
     setIsProcessing,
@@ -81,6 +83,15 @@ export const crearAccionesDeInscripcion = (contexto) => {
         competition.id,
       );
       setEnrollments(enrollmentsData);
+      // Si es la del organizador, su nombre también sale en «Organizado por»:
+      // se relee la competición, que lo trae ya con su elección (Kind, 17 nov).
+      // Sin `loadCompetition`, que tapa la ficha con la espera mientras lee
+      const cambiada = enrollments.find((e) => e.id === enrollmentId);
+      if (cambiada && cambiada.userId === competition.creatorId) {
+        setCompetition(
+          await getCompetitionDetailUseCase.execute(competition.id),
+        );
+      }
     } catch (error) {
       console.error(
         'Error reloading enrollments after name preference:',
