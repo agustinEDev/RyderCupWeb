@@ -163,7 +163,11 @@ export const cargaDeLaPantalla = async ({ clave, pedir }) => {
     if (sinRespuesta && compartida) dejaDeCompartir(clave, compartida);
     // Como antes del `loader`, todo fallo a la consola; el tope no es un fallo
     if (!sinRespuesta)
-      registraElFallo('cargaDeLaPantalla.1', `Error loading ${clave}:`, error);
+      registraElFallo(
+        `cargaDeLaPantalla.${clave}`,
+        `Error loading ${clave}:`,
+        error,
+      );
     const resultado = {
       estado: sinRespuesta || esFalloDeRed(error) ? 'sinRed' : 'error',
       datos: usuario ? loGuardadoEnMemoria(clave, usuario.id) : null,

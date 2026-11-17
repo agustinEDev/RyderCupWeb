@@ -82,6 +82,8 @@ const cierraPorCsrf = (errorData, contexto) => {
 const errorDeCsrf = () =>
   Object.assign(new Error('CSRF validation failed. Please log in again.'), {
     errorCode: 'CSRF_VALIDATION_FAILED',
+    // En inglés: la pantalla dice el suyo (re-auditoría Q-FE-06)
+    mensajeTecnico: true,
   });
 
 /**

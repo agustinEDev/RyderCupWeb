@@ -66,6 +66,18 @@ vi.mock('./sesionCompartida', () => ({
   }),
 }));
 
+// El sitio con el que se registra el fallo, sin cambiar lo que hace
+const registra = vi.hoisted(() => vi.fn());
+vi.mock('../utils/registraElFallo', async (original) => {
+  const real = await original();
+  return {
+    registraElFallo: (...args) => {
+      registra(...args);
+      return real.registraElFallo(...args);
+    },
+  };
+});
+
 const {
   cargaDeLaPantalla,
   marcaElArranque,
@@ -369,6 +381,26 @@ describe('cargaDeLaPantalla', () => {
     });
 
     expect(consola).toHaveBeenCalledWith('Error loading competitions:', fallo);
+    consola.mockRestore();
+  });
+
+  it('T39b: cada pantalla registra con su propio sitio (revisión de Q-FE-07)', async () => {
+    const consola = vi.spyOn(console, 'error').mockImplementation(() => {});
+    registra.mockClear();
+    const fallo = new Error('boom');
+
+    await cargaDeLaPantalla({
+      clave: 'competitions',
+      pedir: async () => {
+        throw fallo;
+      },
+    });
+
+    expect(registra).toHaveBeenCalledWith(
+      'cargaDeLaPantalla.competitions',
+      'Error loading competitions:',
+      fallo,
+    );
     consola.mockRestore();
   });
 

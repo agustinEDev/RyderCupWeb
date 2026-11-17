@@ -75,6 +75,21 @@ describe('registraElFallo', () => {
       expect(JSON.stringify(contexto)).not.toContain('ana@club.es');
     });
 
+    it('a 5xx that only travels in .response is reported, with its status', async () => {
+      const registraElFallo = await carga();
+      const error = Object.assign(new Error('Failed to refresh token'), {
+        response: { status: 502 },
+      });
+
+      registraElFallo('sesion', 'x', error);
+
+      expect(captureError).toHaveBeenCalledWith(error, {
+        level: 'warning',
+        tags: { fallo: 'sesion', status: '502' },
+        fingerprint: ['registraElFallo', 'sesion'],
+      });
+    });
+
     it('a code failure without status is reported too', async () => {
       const registraElFallo = await carga();
       const error = new TypeError('Cannot read properties of undefined');
@@ -104,6 +119,32 @@ describe('registraElFallo', () => {
 
     it.each([
       ['a 4xx (a business rejection)', http(409)],
+      // Cierres de sesión de rutina: ya los cuenta avisaASentryDelCierre
+      [
+        'a refresh rejected (401 in .response)',
+        Object.assign(new Error('Refresh token expired'), {
+          response: { status: 401 },
+        }),
+      ],
+      [
+        'a revoked device (401 in .response)',
+        Object.assign(new Error('Device revoked'), {
+          response: { status: 401 },
+          errorData: { detail: 'Dispositivo revocado' },
+        }),
+      ],
+      [
+        'the CSRF logout (no status, its code)',
+        Object.assign(new Error('CSRF validation failed'), {
+          errorCode: 'CSRF_VALIDATION_FAILED',
+        }),
+      ],
+      [
+        'a replaced session (code in errorData)',
+        Object.assign(new Error('x'), {
+          errorData: { error_code: 'SESSION_REPLACED' },
+        }),
+      ],
       [
         'an offline failure',
         Object.assign(new TypeError('x'), { sinConexion: true }),

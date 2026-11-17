@@ -9,8 +9,10 @@ import '../../composition/interfazDelTransporte';
  */
 
 const llamarAlBackend = vi.fn();
+// Un 403 CSRF refresca y repite una vez antes de cerrar la sesión
 vi.mock('./tokenRefreshInterceptor', () => ({
   fetchWithTokenRefresh: (...args) => llamarAlBackend(...args),
+  refrescoCompartido: async () => true,
 }));
 vi.mock('./csrfTokenSync', () => ({
   getCsrfCookie: () => null,
@@ -70,6 +72,15 @@ describe('apiRequest · qué clase de texto lleva el error', () => {
   it('M4: un detail que es un objeto sale en JSON, y es técnico', async () => {
     const error = await falla(400, { detail: { campo: 'x' } });
     expect(error.message).toBe('{"campo":"x"}');
+    expect(error.mensajeTecnico).toBe(true);
+  });
+
+  it('M6: el error del cierre por CSRF, en inglés, es técnico', async () => {
+    const error = await falla(403, {
+      detail: 'CSRF token missing or invalid',
+      error_code: 'CSRF_VALIDATION_FAILED',
+    });
+    expect(error.errorCode).toBe('CSRF_VALIDATION_FAILED');
     expect(error.mensajeTecnico).toBe(true);
   });
 

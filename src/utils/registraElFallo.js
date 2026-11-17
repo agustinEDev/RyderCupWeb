@@ -11,7 +11,9 @@ import { captureError } from './sentryHelpers';
  *   - En producción, un aviso a Sentry (`warning`) con una huella fija por
  *     sitio, y como mucho uno por sitio y minuto en cada carga de la página.
  *     No se informa de lo que no es un fallo: un 4xx es el servidor diciendo
- *     que no (con su aviso en pantalla), y la falta de cobertura no es nuestra.
+ *     que no (con su aviso en pantalla), la falta de cobertura no es nuestra,
+ *     y los cierres de sesión (refresco rechazado, dispositivo revocado, CSRF)
+ *     ya los avisa `avisaASentryDelCierre`.
  *
  * Sin datos de la persona: solo el error y, como etiquetas, el sitio, el
  * estado HTTP y el código del servidor. El resto de argumentos (textos que
@@ -50,17 +52,30 @@ const tocaAvisar = (sitio) => {
   return true;
 };
 
+// Cierres de sesión de rutina: los cuenta ya `avisaASentryDelCierre` (revisión)
+const CIERRES_DE_SESION = new Set([
+  'CSRF_VALIDATION_FAILED',
+  'SESSION_REPLACED',
+]);
+
+// El refresco y el dispositivo revocado llevan el estado en `.response`
+const estadoDe = (error) => error?.status ?? error?.response?.status;
+
+const codigoDe = (error) => error?.errorCode ?? error?.errorData?.error_code;
+
 const merecePorAviso = (error) => {
   if (!error) return true;
   if (error.sinConexion === true || globalThis.navigator?.onLine === false)
     return false;
-  const status = error.status;
+  if (CIERRES_DE_SESION.has(codigoDe(error))) return false;
+  const status = estadoDe(error);
   return !(typeof status === 'number' && status >= 400 && status < 500);
 };
 
 const etiquetas = (sitio, error) => {
   const tags = { fallo: sitio };
-  if (typeof error?.status === 'number') tags.status = String(error.status);
+  const status = estadoDe(error);
+  if (typeof status === 'number') tags.status = String(status);
   if (typeof error?.errorCode === 'string') tags.errorCode = error.errorCode;
   return tags;
 };

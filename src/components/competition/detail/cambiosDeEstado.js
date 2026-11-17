@@ -371,11 +371,6 @@ export const crearCambiosDeEstado = (contexto) => {
       }
     } catch (error) {
       registraElFallo('cambiosDeEstado.5', `Error ${action}:`, error);
-      registraElFallo(
-        'cambiosDeEstado.error-details',
-        'Error details:',
-        error.stack || error.message || String(error),
-      );
       // Un stroke play no se cierra ni se inicia con aprobados sin franja: se
       // dice quiénes y se lleva a «Sin franja», donde se colocan (FE #824)
       // Y sin hándicap tampoco se cierra: se dice quiénes, se marcan en la lista

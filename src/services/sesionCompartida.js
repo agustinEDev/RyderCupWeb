@@ -275,8 +275,14 @@ const preguntaAlServidor = async (sigoValiendo) => {
   // lo guardado para anotar sin cobertura (revisión de la fase 3)
   if (respuesta.status === 404 && (await esDelBackend(respuesta)))
     return SIN_SESION;
+  // Con su estado: un 4xx no es un fallo que avisar (registraElFallo)
   if (!respuesta.ok)
-    throw new Error(`Failed to fetch user: ${respuesta.status}`);
+    throw Object.assign(
+      new Error(`Failed to fetch user: ${respuesta.status}`),
+      {
+        status: respuesta.status,
+      },
+    );
 
   const usuario = await respuesta.json();
   // Otra vez: en el `await` de arriba cabe un login o un cierre de sesión
