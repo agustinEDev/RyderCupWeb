@@ -106,6 +106,23 @@ class TestExcepcionesDeNpmAudit(unittest.TestCase):
         self.assertEqual(filtrado["metadata"]["vulnerabilities"]["high"], 3)
         self.assertEqual(puerta.returncode, 1)
 
+    def test_paquete_con_el_aviso_exceptuado_y_otro_moderado_cuenta_como_moderado(self):
+        """Given vite con el aviso exceptuado (alto) y otro moderado / When se filtra / Then cuenta como moderado y no bloquea."""
+        informe = _informe()
+        informe["vulnerabilities"]["vite"]["via"].append(
+            {"url": "https://github.com/advisories/GHSA-mmmm-oooo-dddd", "severity": "moderate"}
+        )
+        _, puerta, filtrado = self._corre(informe, _excepciones("2026-11-24"), "2026-11-17")
+        self.assertEqual(filtrado["metadata"]["vulnerabilities"]["high"], 0)
+        self.assertEqual(filtrado["metadata"]["vulnerabilities"]["moderate"], 1)
+        self.assertEqual(puerta.returncode, 0)
+
+    def test_informe_sin_recuentos_se_deja_tal_cual_y_la_puerta_lo_rechaza(self):
+        """Given un informe sin recuentos (registro caído) / When se filtra / Then no se reescribe y la puerta sale con 2."""
+        _, puerta, filtrado = self._corre({"metadata": {"vulnerabilities": {}}}, _excepciones("2026-11-24"), "2026-11-17")
+        self.assertEqual(filtrado, {"metadata": {"vulnerabilities": {}}})
+        self.assertEqual(puerta.returncode, 2)
+
     def test_sin_fichero_de_excepciones_no_cambia_nada(self):
         """Given un fichero de excepciones vacío / When se filtra / Then el informe queda igual."""
         _, puerta, informe = self._corre(_informe(), [], "2026-11-17")
