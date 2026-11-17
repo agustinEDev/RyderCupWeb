@@ -1,5 +1,6 @@
 import { Navigate, useLocation } from 'react-router';
 import { useTranslation } from 'react-i18next';
+import { respaldoDeCarga } from '../ui/textoDeEspera';
 import { useAuth } from '../../hooks/useAuth';
 import { estadoParaElLogin } from '../../utils/vueltaTrasEntrar';
 
@@ -35,7 +36,7 @@ const RoleGuard = ({
   requireAll = false,
   redirectTo = '/unauthorized',
 }) => {
-  const { t } = useTranslation('common');
+  const { t, i18n } = useTranslation('common');
   const location = useLocation();
   const { user, loading, sinConfirmar } = useAuth();
 
@@ -58,7 +59,8 @@ const RoleGuard = ({
           color: '#6b7280',
         }}
       >
-        {t('loading')}
+        {/* Con `common` aún sin bajar, el respaldo en su idioma y no la clave */}
+        {t('loading', { defaultValue: respaldoDeCarga(i18n) })}
       </div>
     );
   }

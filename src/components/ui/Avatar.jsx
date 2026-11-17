@@ -74,7 +74,7 @@ const Avatar = ({ userId, size = 'md', className = '', version }) => {
     <div className={containerClass}>
       <img
         src={src}
-        alt={t('avatarAlt')}
+        alt={t('avatarAlt', { defaultValue: 'Avatar' })}
         crossOrigin="use-credentials"
         className="w-full h-full object-cover"
         onError={() => setErroredSrc(src)}
