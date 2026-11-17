@@ -17,10 +17,22 @@ export const RECORDATORIO_HANDICAP = 'handicap_pending';
 export const hayRecordatorioDeHandicap = () =>
   typeof localStorage !== 'undefined' &&
   localStorage.getItem(RECORDATORIO_HANDICAP) === 'true';
-export const apuntaRecordatorioDeHandicap = () =>
-  localStorage.setItem(RECORDATORIO_HANDICAP, 'true');
-export const quitaRecordatorioDeHandicap = () =>
-  localStorage.removeItem(RECORDATORIO_HANDICAP);
+// Sin almacenamiento (Safari con los datos bloqueados, sin espacio), el recordatorio
+// simplemente no se guarda: no puede romper el botón que lo apunta
+export const apuntaRecordatorioDeHandicap = () => {
+  try {
+    localStorage.setItem(RECORDATORIO_HANDICAP, 'true');
+  } catch {
+    // Sin sitio donde apuntarlo: el modal volverá a salir cuando toque
+  }
+};
+export const quitaRecordatorioDeHandicap = () => {
+  try {
+    localStorage.removeItem(RECORDATORIO_HANDICAP);
+  } catch {
+    // Sin almacenamiento tampoco hay nada que quitar
+  }
+};
 
 // Sube en cada cierre de sesión. Una respuesta de una generación anterior es de
 // una cuenta que ya salió, y no puede tocar nada de la siguiente
