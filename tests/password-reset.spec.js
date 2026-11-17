@@ -32,68 +32,76 @@ test.describe('Password Reset System', () => {
       );
     });
 
-    test('should display forgot password form with correct elements', async ({
-      page,
-    }) => {
-      await page.goto('/forgot-password');
+    test(
+      'should display forgot password form with correct elements',
+      { tag: '@smoke' },
+      async ({ page }) => {
+        await page.goto('/forgot-password');
 
-      // Check for email input
-      const emailInput = page.locator('input[type="email"]');
-      await expect(emailInput).toBeVisible();
-      await expect(emailInput).toHaveAttribute('placeholder', /email/i);
+        // Check for email input
+        const emailInput = page.locator('input[type="email"]');
+        await expect(emailInput).toBeVisible();
+        await expect(emailInput).toHaveAttribute('placeholder', /email/i);
 
-      // Check for submit button
-      const submitButton = page.locator('button[type="submit"]');
-      await expect(submitButton).toBeVisible();
-      await expect(submitButton).toContainText('Send Reset Link');
+        // Check for submit button
+        const submitButton = page.locator('button[type="submit"]');
+        await expect(submitButton).toBeVisible();
+        await expect(submitButton).toContainText('Send Reset Link');
 
-      // Check for navigation links (Back to Sign In)
-      await expect(page.locator('a[href="/login"]')).toBeVisible();
-    });
+        // Check for navigation links (Back to Sign In)
+        await expect(page.locator('a[href="/login"]')).toBeVisible();
+      },
+    );
 
-    test('should show validation error for empty email', async ({ page }) => {
-      await page.goto('/forgot-password');
+    test(
+      'should show validation error for empty email',
+      { tag: '@smoke' },
+      async ({ page }) => {
+        await page.goto('/forgot-password');
 
-      // Submit form without email
-      await page.click('button[type="submit"]');
+        // Submit form without email
+        await page.click('button[type="submit"]');
 
-      // Should show validation error
-      await expect(
-        page.locator('text=/Email is required|Invalid email/i'),
-      ).toBeVisible();
-    });
+        // Should show validation error
+        await expect(
+          page.locator('text=/Email is required|Invalid email/i'),
+        ).toBeVisible();
+      },
+    );
 
-    test('should show validation error for invalid email format', async ({
-      page,
-    }) => {
-      await page.goto('/forgot-password');
+    test(
+      'should show validation error for invalid email format',
+      { tag: '@smoke' },
+      async ({ page }) => {
+        await page.goto('/forgot-password');
 
-      // Enter invalid email (HTML5 validation may prevent submit, so use valid format but check validation logic)
-      await page.fill('input[type="email"]', 'invalid@test');
+        // Enter invalid email (HTML5 validation may prevent submit, so use valid format but check validation logic)
+        await page.fill('input[type="email"]', 'invalid@test');
 
-      // Trigger blur to show validation
-      await page.locator('input[type="email"]').blur();
+        // Trigger blur to show validation
+        await page.locator('input[type="email"]').blur();
 
-      // Submit form
-      await page.click('button[type="submit"]');
+        // Submit form
+        await page.click('button[type="submit"]');
 
-      // Wait a bit for validation to trigger
-      await page.waitForTimeout(500);
+        // Wait a bit for validation to trigger
+        await page.waitForTimeout(500);
 
-      // Should show validation error OR browser validation message
-      const hasValidationError = await page
-        .locator('.text-red-500')
-        .first()
-        .isVisible()
-        .catch(() => false);
-      const hasNativeValidation = await page
-        .locator('input[type="email"]:invalid')
-        .count()
-        .then((c) => c > 0)
-        .catch(() => false);
+        // Should show validation error OR browser validation message
+        const hasValidationError = await page
+          .locator('.text-red-500')
+          .first()
+          .isVisible()
+          .catch(() => false);
+        const hasNativeValidation = await page
+          .locator('input[type="email"]:invalid')
+          .count()
+          .then((c) => c > 0)
+          .catch(() => false);
 
-      expect(hasValidationError || hasNativeValidation).toBeTruthy();
-    });
+        expect(hasValidationError || hasNativeValidation).toBeTruthy();
+      },
+    );
 
     test('should accept valid email format and show generic success message', async ({
       page,
@@ -123,31 +131,35 @@ test.describe('Password Reset System', () => {
       }
     });
 
-    test('should disable submit button while loading', async ({ page }) => {
-      await page.goto('/forgot-password');
+    test(
+      'should disable submit button while loading',
+      { tag: '@smoke' },
+      async ({ page }) => {
+        await page.goto('/forgot-password');
 
-      // Fill email
-      await page.fill('input[type="email"]', 'test@example.com');
+        // Fill email
+        await page.fill('input[type="email"]', 'test@example.com');
 
-      // Submit form
-      await page.click('button[type="submit"]');
+        // Submit form
+        await page.click('button[type="submit"]');
 
-      // Wait for either loading state or completion
-      // The button should either show "Sending..." or transition to success/error quickly
-      try {
-        await page.waitForSelector('button:has-text("Sending...")', {
-          timeout: 1000,
-        });
-      } catch {
-        // If we don't see "Sending...", the request might have completed very quickly
-        // Check if we got a success or error response
-        const hasResponse = await page
-          .locator('[role="status"]')
-          .count()
-          .then((c) => c > 0);
-        expect(hasResponse).toBeTruthy();
-      }
-    });
+        // Wait for either loading state or completion
+        // The button should either show "Sending..." or transition to success/error quickly
+        try {
+          await page.waitForSelector('button:has-text("Sending...")', {
+            timeout: 1000,
+          });
+        } catch {
+          // If we don't see "Sending...", the request might have completed very quickly
+          // Check if we got a success or error response
+          const hasResponse = await page
+            .locator('[role="status"]')
+            .count()
+            .then((c) => c > 0);
+          expect(hasResponse).toBeTruthy();
+        }
+      },
+    );
 
     test('should show anti-enumeration message for non-existent email', async ({
       page,
@@ -181,28 +193,30 @@ test.describe('Password Reset System', () => {
   });
 
   test.describe('Reset Password Page', () => {
-    test('should show invalid token message for missing token', async ({
-      page,
-    }) => {
-      // Navigate to reset password without token
-      await page.goto('/reset-password');
+    test(
+      'should show invalid token message for missing token',
+      { tag: '@smoke' },
+      async ({ page }) => {
+        // Navigate to reset password without token
+        await page.goto('/reset-password');
 
-      // Wait for validation
-      await page.waitForTimeout(1500);
+        // Wait for validation
+        await page.waitForTimeout(1500);
 
-      // Should show error message - use first() to avoid strict mode
-      await expect(
-        page
-          .locator('h2')
-          .filter({ hasText: /Invalid Reset Link/i })
-          .first(),
-      ).toBeVisible();
+        // Should show error message - use first() to avoid strict mode
+        await expect(
+          page
+            .locator('h2')
+            .filter({ hasText: /Invalid Reset Link/i })
+            .first(),
+        ).toBeVisible();
 
-      // Should show link to request new reset
-      await expect(
-        page.locator('a').filter({ hasText: /Request New Reset Link/i }),
-      ).toBeVisible();
-    });
+        // Should show link to request new reset
+        await expect(
+          page.locator('a').filter({ hasText: /Request New Reset Link/i }),
+        ).toBeVisible();
+      },
+    );
 
     test('should show invalid token message for invalid token', async ({
       page,
@@ -246,121 +260,149 @@ test.describe('Password Reset System', () => {
       expect(hasForm || hasError).toBeTruthy();
     });
 
-    test('should show password requirements list', async ({ page }) => {
-      // Use query param format (alternative to path param)
-      await page.goto('/reset-password?token=test-token-123');
+    test(
+      'should show password requirements list',
+      { tag: '@smoke' },
+      async ({ page }) => {
+        // Use query param format (alternative to path param)
+        await page.goto('/reset-password?token=test-token-123');
 
-      // Wait for validation
-      await page.waitForTimeout(1000);
+        // Wait for validation
+        await page.waitForTimeout(1000);
 
-      // If form is shown, check for requirements
-      const formVisible = await page
-        .locator('input[name="newPassword"]')
-        .isVisible()
-        .catch(() => false);
-
-      if (formVisible) {
-        // Check for password requirements
-        await expect(page.locator('text=/12 characters/i')).toBeVisible();
-        await expect(page.locator('text=/Uppercase/i')).toBeVisible();
-        await expect(page.locator('text=/lowercase/i')).toBeVisible();
-        await expect(page.locator('text=/number/i')).toBeVisible();
-      }
-    });
-
-    test('should validate password confirmation mismatch', async ({ page }) => {
-      // This test assumes we can get to the form (would need a valid token from backend)
-      // For now, we'll test the UI structure
-      await page.goto('/reset-password?token=test-token');
-
-      await page.waitForTimeout(1000);
-
-      // Check if form is visible
-      const newPasswordInput = page.locator('input[name="newPassword"]');
-      const confirmPasswordInput = page.locator(
-        'input[name="confirmPassword"]',
-      );
-
-      const formVisible = await newPasswordInput.isVisible().catch(() => false);
-
-      if (formVisible) {
-        // Fill with mismatched passwords
-        await newPasswordInput.fill('ValidPassword123');
-        await confirmPasswordInput.fill('DifferentPassword456');
-
-        // Submit
-        await page.click('button[type="submit"]');
-
-        // Should show error
-        await expect(page.locator('text=/do not match/i')).toBeVisible();
-      }
-    });
-
-    test('should validate weak password (too short)', async ({ page }) => {
-      await page.goto('/reset-password?token=test-token');
-      await page.waitForTimeout(1000);
-
-      const newPasswordInput = page.locator('input[name="newPassword"]');
-      const formVisible = await newPasswordInput.isVisible().catch(() => false);
-
-      if (formVisible) {
-        // Fill with weak password
-        await newPasswordInput.fill('Short1');
-        await page.locator('input[name="confirmPassword"]').fill('Short1');
-
-        // Submit
-        await page.click('button[type="submit"]');
-
-        // Should show error about length
-        await expect(page.locator('text=/12 characters/i')).toBeVisible();
-      }
-    });
-
-    test('should validate password missing uppercase', async ({ page }) => {
-      await page.goto('/reset-password?token=test-token');
-      await page.waitForTimeout(1000);
-
-      const newPasswordInput = page.locator('input[name="newPassword"]');
-      const formVisible = await newPasswordInput.isVisible().catch(() => false);
-
-      if (formVisible) {
-        // Fill with password missing uppercase
-        await newPasswordInput.fill('lowercase123');
-        await page
-          .locator('input[name="confirmPassword"]')
-          .fill('lowercase123');
-
-        // Submit
-        await page.click('button[type="submit"]');
-
-        // Should show error about uppercase
-        await expect(page.locator('text=/uppercase/i')).toBeVisible();
-      }
-    });
-
-    test('should show password strength indicator', async ({ page }) => {
-      await page.goto('/reset-password?token=test-token');
-      await page.waitForTimeout(1000);
-
-      const newPasswordInput = page.locator('input[name="newPassword"]');
-      const formVisible = await newPasswordInput.isVisible().catch(() => false);
-
-      if (formVisible) {
-        // Type a strong password
-        await newPasswordInput.fill('VeryStrongPassword123');
-
-        // Should show strength indicator
-        // Wait a bit for indicator to appear
-        await page.waitForTimeout(300);
-
-        // Check for strength indicator (weak/medium/strong/very strong)
-        const hasIndicator = await page
-          .locator('text=/weak|medium|strong|fuerte|débil/i')
+        // If form is shown, check for requirements
+        const formVisible = await page
+          .locator('input[name="newPassword"]')
           .isVisible()
           .catch(() => false);
-        expect(hasIndicator).toBeTruthy();
-      }
-    });
+
+        if (formVisible) {
+          // Check for password requirements
+          await expect(page.locator('text=/12 characters/i')).toBeVisible();
+          await expect(page.locator('text=/Uppercase/i')).toBeVisible();
+          await expect(page.locator('text=/lowercase/i')).toBeVisible();
+          await expect(page.locator('text=/number/i')).toBeVisible();
+        }
+      },
+    );
+
+    test(
+      'should validate password confirmation mismatch',
+      { tag: '@smoke' },
+      async ({ page }) => {
+        // This test assumes we can get to the form (would need a valid token from backend)
+        // For now, we'll test the UI structure
+        await page.goto('/reset-password?token=test-token');
+
+        await page.waitForTimeout(1000);
+
+        // Check if form is visible
+        const newPasswordInput = page.locator('input[name="newPassword"]');
+        const confirmPasswordInput = page.locator(
+          'input[name="confirmPassword"]',
+        );
+
+        const formVisible = await newPasswordInput
+          .isVisible()
+          .catch(() => false);
+
+        if (formVisible) {
+          // Fill with mismatched passwords
+          await newPasswordInput.fill('ValidPassword123');
+          await confirmPasswordInput.fill('DifferentPassword456');
+
+          // Submit
+          await page.click('button[type="submit"]');
+
+          // Should show error
+          await expect(page.locator('text=/do not match/i')).toBeVisible();
+        }
+      },
+    );
+
+    test(
+      'should validate weak password (too short)',
+      { tag: '@smoke' },
+      async ({ page }) => {
+        await page.goto('/reset-password?token=test-token');
+        await page.waitForTimeout(1000);
+
+        const newPasswordInput = page.locator('input[name="newPassword"]');
+        const formVisible = await newPasswordInput
+          .isVisible()
+          .catch(() => false);
+
+        if (formVisible) {
+          // Fill with weak password
+          await newPasswordInput.fill('Short1');
+          await page.locator('input[name="confirmPassword"]').fill('Short1');
+
+          // Submit
+          await page.click('button[type="submit"]');
+
+          // Should show error about length
+          await expect(page.locator('text=/12 characters/i')).toBeVisible();
+        }
+      },
+    );
+
+    test(
+      'should validate password missing uppercase',
+      { tag: '@smoke' },
+      async ({ page }) => {
+        await page.goto('/reset-password?token=test-token');
+        await page.waitForTimeout(1000);
+
+        const newPasswordInput = page.locator('input[name="newPassword"]');
+        const formVisible = await newPasswordInput
+          .isVisible()
+          .catch(() => false);
+
+        if (formVisible) {
+          // Fill with password missing uppercase
+          await newPasswordInput.fill('lowercase123');
+          await page
+            .locator('input[name="confirmPassword"]')
+            .fill('lowercase123');
+
+          // Submit
+          await page.click('button[type="submit"]');
+
+          // Should show error about uppercase
+          await expect(page.locator('text=/uppercase/i')).toBeVisible();
+        }
+      },
+    );
+
+    test(
+      'should show password strength indicator',
+      { tag: '@smoke' },
+      async ({ page }) => {
+        await page.goto('/reset-password?token=test-token');
+        await page.waitForTimeout(1000);
+
+        const newPasswordInput = page.locator('input[name="newPassword"]');
+        const formVisible = await newPasswordInput
+          .isVisible()
+          .catch(() => false);
+
+        if (formVisible) {
+          // Type a strong password
+          await newPasswordInput.fill('VeryStrongPassword123');
+
+          // Should show strength indicator
+          // Wait a bit for indicator to appear
+          await page.waitForTimeout(300);
+
+          // Check for strength indicator (weak/medium/strong/very strong)
+          const hasIndicator = await page
+            .locator('text=/weak|medium|strong|fuerte|débil/i')
+            .isVisible()
+            .catch(() => false);
+          expect(hasIndicator).toBeTruthy();
+        }
+      },
+    );
   });
 
   test.describe('Navigation Flow', () => {
@@ -380,15 +422,19 @@ test.describe('Password Reset System', () => {
       await expect(page).toHaveURL('/login');
     });
 
-    test('should navigate from forgot password to home', async ({ page }) => {
-      await page.goto('/forgot-password');
+    test(
+      'should navigate from forgot password to home',
+      { tag: '@smoke' },
+      async ({ page }) => {
+        await page.goto('/forgot-password');
 
-      // Click "Back to home" link
-      await page.click('text=Back to home');
+        // Click "Back to home" link
+        await page.click('text=Back to home');
 
-      // Should be on landing page
-      await expect(page).toHaveURL('/');
-    });
+        // Should be on landing page
+        await expect(page).toHaveURL('/');
+      },
+    );
 
     test('should navigate from reset password error to forgot password', async ({
       page,
@@ -406,77 +452,89 @@ test.describe('Password Reset System', () => {
       await expect(page).toHaveURL('/forgot-password');
     });
 
-    test('should navigate from reset password error to login', async ({
-      page,
-    }) => {
-      await page.goto('/reset-password/invalid');
-      await page.waitForTimeout(1500);
+    test(
+      'should navigate from reset password error to login',
+      { tag: '@smoke' },
+      async ({ page }) => {
+        await page.goto('/reset-password/invalid');
+        await page.waitForTimeout(1500);
 
-      // Click back to login
-      await page.click('text=Back to Login');
+        // Click back to login
+        await page.click('text=Back to Login');
 
-      // Should be on login page
-      await expect(page).toHaveURL('/login');
-    });
+        // Should be on login page
+        await expect(page).toHaveURL('/login');
+      },
+    );
   });
 
   test.describe('Responsive Design', () => {
-    test('should display mobile-friendly layout on forgot password page', async ({
-      page,
-    }) => {
-      // Set mobile viewport
-      await page.setViewportSize({ width: 375, height: 667 });
+    test(
+      'should display mobile-friendly layout on forgot password page',
+      { tag: '@smoke' },
+      async ({ page }) => {
+        // Set mobile viewport
+        await page.setViewportSize({ width: 375, height: 667 });
 
-      await page.goto('/forgot-password');
+        await page.goto('/forgot-password');
 
-      // Form should still be visible
-      await expect(page.locator('input[type="email"]')).toBeVisible();
-      await expect(page.locator('button[type="submit"]')).toBeVisible();
+        // Form should still be visible
+        await expect(page.locator('input[type="email"]')).toBeVisible();
+        await expect(page.locator('button[type="submit"]')).toBeVisible();
 
-      // Mobile logo should be visible (desktop logo hidden)
-      const mobileLogo = page.locator('.lg\\:hidden').first();
-      await expect(mobileLogo).toBeVisible();
-    });
+        // Mobile logo should be visible (desktop logo hidden)
+        const mobileLogo = page.locator('.lg\\:hidden').first();
+        await expect(mobileLogo).toBeVisible();
+      },
+    );
 
-    test('should display mobile-friendly layout on reset password page', async ({
-      page,
-    }) => {
-      await page.setViewportSize({ width: 375, height: 667 });
+    test(
+      'should display mobile-friendly layout on reset password page',
+      { tag: '@smoke' },
+      async ({ page }) => {
+        await page.setViewportSize({ width: 375, height: 667 });
 
-      await page.goto('/reset-password?token=test');
-      await page.waitForTimeout(1000);
+        await page.goto('/reset-password?token=test');
+        await page.waitForTimeout(1000);
 
-      // Check that page is responsive
-      const viewportWidth = await page.viewportSize();
-      expect(viewportWidth?.width).toBe(375);
-    });
+        // Check that page is responsive
+        const viewportWidth = await page.viewportSize();
+        expect(viewportWidth?.width).toBe(375);
+      },
+    );
   });
 
   test.describe('Accessibility', () => {
-    test('should have proper form labels on forgot password page', async ({
-      page,
-    }) => {
-      await page.goto('/forgot-password');
+    test(
+      'should have proper form labels on forgot password page',
+      { tag: '@smoke' },
+      async ({ page }) => {
+        await page.goto('/forgot-password');
 
-      // Check for label
-      const emailLabel = page.locator('label[for="email"]');
-      await expect(emailLabel).toBeVisible();
-    });
+        // Check for label
+        const emailLabel = page.locator('label[for="email"]');
+        await expect(emailLabel).toBeVisible();
+      },
+    );
 
-    test('should have proper form labels on reset password page', async ({
-      page,
-    }) => {
-      await page.goto('/reset-password?token=test');
-      await page.waitForTimeout(1000);
+    test(
+      'should have proper form labels on reset password page',
+      { tag: '@smoke' },
+      async ({ page }) => {
+        await page.goto('/reset-password?token=test');
+        await page.waitForTimeout(1000);
 
-      const newPasswordLabel = page.locator('text=New Password');
-      const formVisible = await newPasswordLabel.isVisible().catch(() => false);
+        const newPasswordLabel = page.locator('text=New Password');
+        const formVisible = await newPasswordLabel
+          .isVisible()
+          .catch(() => false);
 
-      if (formVisible) {
-        await expect(newPasswordLabel).toBeVisible();
-        await expect(page.locator('text=Confirm Password')).toBeVisible();
-      }
-    });
+        if (formVisible) {
+          await expect(newPasswordLabel).toBeVisible();
+          await expect(page.locator('text=Confirm Password')).toBeVisible();
+        }
+      },
+    );
 
     test('should support keyboard navigation on forgot password form', async ({
       page,

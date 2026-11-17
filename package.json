@@ -15,6 +15,7 @@
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:headed": "playwright test --headed",
+    "test:e2e:smoke": "playwright test --grep @smoke --project=chromium",
     "test:integration": "playwright test tests/integration.spec.js",
     "test:integration:ci": "playwright test tests/integration.spec.js --project=chromium --workers=1",
     "test:security": "playwright test tests/security.spec.js",
