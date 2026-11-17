@@ -124,6 +124,9 @@ jobs:
           # aprobado). Ver .github/scripts/npm-audit-gate.sh
           npm audit --json > audit-report.json || true
           set +e
+          # Avisos exceptuados por un tiempo (solo de desarrollo y sin versión corregida):
+          # .github/npm-audit-excepciones.json; uno caducado vuelve a bloquear
+          python3 .github/scripts/npm_audit_excepciones.py audit-report.json .github/npm-audit-excepciones.json
           bash .github/scripts/npm-audit-gate.sh audit-report.json
           PUERTA=$?
           set -e
