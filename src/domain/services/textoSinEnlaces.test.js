@@ -31,6 +31,16 @@ describe('contieneEnlace (SB-05)', () => {
     'premio\u200e.com',
     'premio\u2063.com',
     'Club.golf',
+    // Marcas que se combinan dentro de la terminación (CodeRabbit en BE #890)
+    'ejemplo.\u092d\u093e\u0930\u0924',
+    'ejemplo.xn--h2brj9c',
+    'premio\u200b.\u092d\u093e\u0930\u0924',
+    // Mayúscula inicial: las habituales y con ruta sí cuentan (17 nov 2026)
+    'premio.Com',
+    'premio.Com/regalo',
+    'premio.Es/regalo',
+    'Entra en premio.Net',
+    'premio.Golf/regalo',
   ])('detecta «%s»', (texto) => {
     expect(contieneEnlace(texto)).toBe(true);
   });

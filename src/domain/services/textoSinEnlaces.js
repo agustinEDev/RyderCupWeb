@@ -8,9 +8,11 @@
  * Esto solo evita el viaje a la API para decir algo que ya se sabe aquí.
  *
  * Cuenta como enlace, siempre: un esquema («https://», «tel:»…), lo que empieza por
- * «www.», una dirección de correo y una IPv4. Y «algo.terminación» solo si la
- * terminación existe (la lista de la IANA) y no está escrita «Mayúscula+minúsculas»,
- * que es como empieza una frase o un nombre («Juan.Te invito», «Copa Pro.Am»).
+ * «www.», una dirección de correo y una IPv4. Y «algo.terminación» si la terminación
+ * existe (la lista de la IANA). Escrita «Mayúscula+minúsculas» es como empieza una frase
+ * o un nombre («Juan.Te invito», «Copa Pro.Am»), así que entonces solo cuenta si es de
+ * las habituales («premio.Com») o le sigue una ruta («premio.Golf/x»). Decidido por
+ * Agustín el 17 nov 2026.
  */
 import { TERMINACIONES_DE_DOMINIO } from './terminacionesDeDominio';
 
@@ -26,20 +28,36 @@ const WWW = /(?<![a-z0-9])www\.[^\s.]/i;
 const CORREO = /[^\s@]+@[^\s@.]+\.[^\s@]+/;
 const IP = /(?<![0-9.])(?:[0-9]{1,3}\.){3}[0-9]{1,3}(?![0-9]|\.[0-9])/;
 
-const ETIQUETA = String.raw`[\p{L}\p{N}](?:[\p{L}\p{N}_-]{0,61}[\p{L}\p{N}])?`;
+// Las letras van con sus marcas (\p{M}): el signo de la «ा» de «भारत» es una marca
+const ETIQUETA = String.raw`[\p{L}\p{N}](?:[\p{L}\p{M}\p{N}_-]{0,61}[\p{L}\p{M}\p{N}])?`;
 const DOMINIO = new RegExp(
-  String.raw`(?<![\p{L}\p{N}_-])(?:${ETIQUETA}\.)+(\p{L}{2,63}|xn--[a-z0-9-]{1,59})(?![\p{L}\p{N}_-])`,
+  String.raw`(?<![\p{L}\p{M}\p{N}_-])(?:${ETIQUETA}\.)+(\p{L}[\p{L}\p{M}]{1,62}|xn--[a-z0-9-]{1,59})(?![\p{L}\p{M}\p{N}_-])`,
   'giu',
 );
 
-/** Si la última etiqueta es una terminación de dominio, escrita como dirección. */
-const esTerminacion = (final) => {
-  // «Te», «Am», «Golf»: una palabra que empieza frase o nombre, no una dirección
+// Las que se escriben con mayúscula inicial sin dejar de ser una dirección: las
+// habituales. Las demás, así escritas, se leen como palabra («Juan.Te», «Pro.Am»)
+const HABITUALES = new Set(
+  'com net org es eu info io app me biz co xyz online site shop club top link click live store uk de fr it pt us ai dev tv ly gg cat'.split(
+    ' ',
+  ),
+);
+
+/**
+ * Si la última etiqueta es una terminación de dominio, escrita como dirección.
+ * @param {string} final - La última etiqueta («com», «Te», «рф»)
+ * @param {string} sigue - El carácter que va detrás («/» si sigue una ruta)
+ */
+const esTerminacion = (final, sigue) => {
+  // «Te», «Am», «Golf»: una palabra que empieza frase o nombre, salvo que sea una
+  // terminación habitual o le siga una ruta
   if (
     final.length > 1 &&
     final[0] === final[0].toUpperCase() &&
     final[0] !== final[0].toLowerCase() &&
-    final.slice(1) === final.slice(1).toLowerCase()
+    final.slice(1) === final.slice(1).toLowerCase() &&
+    !HABITUALES.has(final.toLowerCase()) &&
+    sigue !== '/'
   )
     return false;
   // eslint-disable-next-line no-control-regex
@@ -60,13 +78,17 @@ const esTerminacion = (final) => {
  */
 export const contieneEnlace = (texto) => {
   if (!texto) return false;
+  // Primero fuera los invisibles: quitarlos después de normalizar podría dejar una
+  // letra y su marca sin juntar
   const limpio = texto
+    .replace(INVISIBLES, '')
     .normalize('NFC')
-    .replace(PUNTOS, '.')
-    .replace(INVISIBLES, '');
+    .replace(PUNTOS, '.');
   if (
     [ESQUEMA, ESQUEMA_SIN_BARRAS, WWW, CORREO, IP].some((p) => p.test(limpio))
   )
     return true;
-  return [...limpio.matchAll(DOMINIO)].some((m) => esTerminacion(m[1]));
+  return [...limpio.matchAll(DOMINIO)].some((m) =>
+    esTerminacion(m[1], limpio.charAt(m.index + m[0].length)),
+  );
 };
