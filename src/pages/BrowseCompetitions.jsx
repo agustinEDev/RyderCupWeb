@@ -20,6 +20,7 @@ import BlockLoader from '../components/ui/BlockLoader';
 import { formatDateRange } from '../services/competitions';
 import { PANTALLA_MENOS_BARRA_INFERIOR } from '../utils/barraInferior';
 import { MOTIVOS_PARA_NO_APUNTARSE } from '../utils/fichaDeLaCompeticion';
+import { nombrePequeno } from '../utils/nombreVisible';
 
 const BrowseCompetitions = () => {
   // El género para apuntarse, solo a quien le falta (#710)
@@ -637,6 +638,10 @@ const CompetitionCard = ({
             <span className="font-medium text-gray-900">
               {creator?.displayName || t('detail.unknownUser')}
             </span>
+            {/* El otro nombre, entre paréntesis: en la tarjeta no cabe otra línea */}
+            {nombrePequeno(creator) && (
+              <span className="text-gray-500"> ({nombrePequeno(creator)})</span>
+            )}
           </span>
         </div>
 

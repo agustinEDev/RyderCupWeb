@@ -4,6 +4,7 @@ import { Check } from 'lucide-react';
 import Avatar from '../ui/Avatar';
 import FraseDeActividad, { NombreDePersona } from './FraseDeActividad';
 import { fraseCon, horaDeLaTarjeta, personaDe } from './textosDeActividad';
+import NombrePequeno from '../ui/NombrePequeno';
 
 /**
  * FriendRequestCard - Una solicitud de amistad en Actividad (FE-1).
@@ -67,6 +68,8 @@ const FriendRequestCard = ({
           </p>
         )}
 
+        {/* Quien pide amistad se presenta con sus dos nombres (Agustín, 17 nov) */}
+        <NombrePequeno texto={persona.pequeno} />
         <p className="mt-1 flex items-center gap-2 text-xs text-gray-400">
           {hora && <span>{hora}</span>}
           {solicitud.nueva && (

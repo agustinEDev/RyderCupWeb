@@ -14,6 +14,8 @@ import {
 } from '../../../services/competitions';
 import { formatCountryName } from '../../../services/countries';
 import { plazoQueSeEnseña } from '../../../domain/services/plazoDeInscripcion';
+import NombrePequeno from '../../ui/NombrePequeno';
+import { nombrePequeno } from '../../../utils/nombreVisible';
 
 /**
  * «Inscripción abierta hasta el 13 de noviembre a las 12:00» (15 nov 2026): el
@@ -171,6 +173,7 @@ const ResumenDeLaCompeticion = ({
               <p className="text-sm font-medium">
                 {competition.creator.displayName}
               </p>
+              <NombrePequeno texto={nombrePequeno(competition.creator)} />
             </div>
           </div>
         )}

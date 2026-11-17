@@ -6,7 +6,11 @@ import {
   useCallback,
 } from 'react';
 import ModalShell, { CAJA_PROPIA } from '../ui/ModalShell';
-import { nombreRealSiAporta, nombreVisible } from '../../utils/nombreVisible';
+import {
+  nombrePequeno,
+  nombreRealSiAporta,
+  nombreVisible,
+} from '../../utils/nombreVisible';
 import { Loader, Search, UserPlus, X } from 'lucide-react';
 import Avatar from '../ui/Avatar';
 import {
@@ -14,6 +18,7 @@ import {
   ListaDePestanas,
   PanelDePestana,
 } from '../ui/Pestanas';
+import NombrePequeno from '../ui/NombrePequeno';
 
 const SendInvitationModalContent = ({
   onClose,
@@ -553,6 +558,7 @@ const SendInvitationModalContent = ({
                     <p className="text-sm font-medium text-gray-900 truncate">
                       {nombreVisible(selectedUser)}
                     </p>
+                    <NombrePequeno texto={nombrePequeno(selectedUser)} />
                   </div>
                   <button
                     type="button"

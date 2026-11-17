@@ -32,6 +32,7 @@ import {
   personaDe,
   unaTrasOtra,
 } from './textosDeActividad';
+import NombrePequeno from '../ui/NombrePequeno';
 
 /**
  * Un icono por tipo. Sin esto todas las entradas se ven iguales y el feed se
@@ -990,6 +991,7 @@ const ActivityEventCard = ({
             <NombreDePersona persona={contenido.cabecera} />
           </p>
         )}
+        <NombrePequeno texto={contenido.cabecera?.pequeno} />
         <p
           data-testid="frase-tarjeta"
           className="text-sm text-gray-800 break-words"

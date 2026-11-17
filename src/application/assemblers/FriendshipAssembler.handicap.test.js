@@ -46,3 +46,23 @@ describe('FriendshipAssembler · hándicap del amigo (FE #848)', () => {
     ).toBe(0);
   });
 });
+
+describe('FriendshipAssembler · el otro nombre del otro lado (SB-08)', () => {
+  it('con alias delante, su nombre real pequeño debajo', () => {
+    const datos = api({
+      addressee_name: 'Trinx',
+      addressee_real_name: 'Agustín Estévez',
+      addressee_alias: 'Trinx',
+    });
+
+    expect(dto(datos, 'user-1').otherUserSubName).toBe('Agustín Estévez');
+  });
+
+  it('sin alias, o un servidor que no los manda: null', () => {
+    expect(
+      dto(api({ addressee_real_name: 'Rafa Nadal' }), 'user-1')
+        .otherUserSubName,
+    ).toBeNull();
+    expect(dto(api(), 'user-1').otherUserSubName).toBeNull();
+  });
+});
