@@ -114,7 +114,7 @@ export default class Competition {
     teamAssignment,
     tournamentType = 'RYDER_CUP',
   }) {
-    // El mismo rango que al editar: solo lo miraba `updateInfo`
+    // El cupo, en el rango de la API (BE #314)
     comprobarCupo(maxPlayers);
     return new Competition({
       id,
@@ -231,10 +231,6 @@ export default class Competition {
 
   // --- QUERY METHODS ---
 
-  isCreator(userId) {
-    return this.#creatorId.equals(userId);
-  }
-
   isDraft = () => this.#status.equals(CompetitionStatus.DRAFT);
   isActive = () => this.#status.equals(CompetitionStatus.ACTIVE);
   isClosed = () => this.#status.equals(CompetitionStatus.CLOSED);
@@ -242,8 +238,8 @@ export default class Competition {
   isCompleted = () => this.#status.equals(CompetitionStatus.COMPLETED);
   isCancelled = () => this.#status.equals(CompetitionStatus.CANCELLED);
 
-  allowsEnrollments = () => this.isActive();
-  allowsModifications = () => this.isDraft();
+  // La regla es del valor, como en el backend: DRAFT o ACTIVE (re-auditoría Q-FE-03)
+  allowsModifications = () => this.#status.allowsModifications();
 
   // --- COMMAND METHODS ---
 
@@ -311,55 +307,6 @@ export default class Competition {
       status: CompetitionStatus.CANCELLED,
       updatedAt: new Date(),
     });
-  }
-
-  updateInfo(updates) {
-    if (!this.allowsModifications()) {
-      throw new CompetitionStateError(
-        `Cannot modify competition info in state ${this.#status.toString()}. Only allowed in DRAFT.`,
-      );
-    }
-
-    // Los equipos y el reparto son de la pieza de la Ryder: un torneo sin ella
-    // no los recibe, y la pieza valida sus nombres al cambiar (FE #791)
-    const { team1Name, team2Name, teamAssignment, ...resto } = updates;
-    // El tipo de una competición que ya existe no cambia: tampoco aquí
-    if (
-      resto.tournamentType !== undefined &&
-      resto.tournamentType !== this.#tournamentType
-    ) {
-      throw new Error('El tipo de una competición no se cambia');
-    }
-    const cambiosDeLaRyder = Object.fromEntries(
-      Object.entries({ team1Name, team2Name, teamAssignment }).filter(
-        ([, v]) => v !== undefined,
-      ),
-    );
-    let ryderCup = this.#ryderCup;
-    if (Object.keys(cambiosDeLaRyder).length > 0) {
-      if (ryderCup === null) {
-        throw new Error(`Un ${this.#tournamentType} no tiene equipos`);
-      }
-      ryderCup = ryderCup.with(cambiosDeLaRyder);
-    }
-
-    const currentProps = {
-      name: this.#name,
-      dates: this.#dates,
-      location: this.#location,
-      handicapSettings: this.#handicapSettings,
-      maxPlayers: this.#maxPlayers,
-      visibility: this.#visibility,
-    };
-
-    const newProps = { ...currentProps, ...resto, ryderCup };
-
-    // Validate maxPlayers range if updated
-    if (updates.maxPlayers !== undefined) {
-      comprobarCupo(updates.maxPlayers);
-    }
-
-    return this._with({ ...newProps, updatedAt: new Date() });
   }
 
   // --- IMMUTABILITY HELPER ---

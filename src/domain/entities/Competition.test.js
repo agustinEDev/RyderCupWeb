@@ -190,27 +190,29 @@ describe('Competition', () => {
   });
 
   describe('Query Methods', () => {
-    it('isCreator should return true for the creator', () => {
-      const competition = new Competition(createValidCompetitionProps());
-      expect(competition.isCreator(mockCreatorId)).toBe(true);
-    });
-
-    it('isCreator should return false for a different user', () => {
-      const competition = new Competition(createValidCompetitionProps());
-      expect(competition.isCreator(new UserId('another-user'))).toBe(false);
-    });
-
     it('isDraft should be true for a new competition', () => {
       const competition = Competition.create(createValidCompetitionProps());
       expect(competition.isDraft()).toBe(true);
-      expect(competition.allowsModifications()).toBe(true);
+    });
+
+    // Re-auditoría Q-FE-03: la entidad decía «solo DRAFT» y el valor, como el
+    // backend, «DRAFT o ACTIVE». Manda el valor
+    it('allowsModifications follows the status rule: DRAFT or ACTIVE', () => {
+      const draft = Competition.create(createValidCompetitionProps());
+      const active = draft.activate();
+      const closed = active.closeEnrollments();
+      const inProgress = closed.start();
+      expect(draft.allowsModifications()).toBe(true);
+      expect(active.allowsModifications()).toBe(true);
+      expect(closed.allowsModifications()).toBe(false);
+      expect(inProgress.allowsModifications()).toBe(false);
+      expect(draft.cancel().allowsModifications()).toBe(false);
     });
 
     it('isActive should be true after activation', () => {
       let competition = Competition.create(createValidCompetitionProps());
       competition = competition.activate();
       expect(competition.isActive()).toBe(true);
-      expect(competition.allowsEnrollments()).toBe(true);
     });
 
     // Test other status queries similarly
@@ -352,64 +354,9 @@ describe('Competition', () => {
     });
   });
 
-  describe('updateInfo()', () => {
-    it('should update properties in DRAFT state and return a new instance', () => {
-      const initialCompetition = Competition.create(
-        createValidCompetitionProps(),
-      );
-      const newName = new CompetitionName('Updated Name');
-      const updatedCompetition = initialCompetition.updateInfo({
-        name: newName,
-      });
-
-      expect(updatedCompetition).not.toBe(initialCompetition); // New instance
-      expect(updatedCompetition.name.equals(newName)).toBe(true);
-      // expect(updatedCompetition.updatedAt.getTime()).toBeGreaterThan(initialCompetition.updatedAt.getTime());
-      expect(updatedCompetition.status.equals(CompetitionStatus.DRAFT)).toBe(
-        true,
-      ); // Status should remain DRAFT
-    });
-
-    it('should throw CompetitionStateError if updateInfo() from non-DRAFT state', () => {
-      let competition = Competition.create(
-        createValidCompetitionProps(),
-      ).activate(); // Now ACTIVE
-      expect(() =>
-        competition.updateInfo({ name: new CompetitionName('New Name') }),
-      ).toThrow(CompetitionStateError);
-    });
-
-    it('should throw error for invalid team names during update', () => {
-      const competition = Competition.create(createValidCompetitionProps());
-      expect(() => competition.updateInfo({ team1Name: '' })).toThrow(
-        'Team 1 name cannot be empty.',
-      );
-      expect(() =>
-        competition.updateInfo({ team1Name: 'Same', team2Name: 'Same' }),
-      ).toThrow('Team names must be different.');
-    });
-
-    it('should throw error for invalid maxPlayers during update', () => {
-      const competition = Competition.create(createValidCompetitionProps());
-      expect(() => competition.updateInfo({ maxPlayers: 1 })).toThrow(
-        'maxPlayers must be a number between 2 and 200.',
-      );
-      expect(() => competition.updateInfo({ maxPlayers: 201 })).toThrow(
-        'maxPlayers must be a number between 2 and 200.',
-      );
-      expect(() => competition.updateInfo({ maxPlayers: 'invalid' })).toThrow(
-        'maxPlayers must be a number between 2 and 200.',
-      );
-    });
-
-    it('accepts up to 200 players, the API limit since BE #314', () => {
-      const competition = Competition.create(createValidCompetitionProps());
-      expect(competition.updateInfo({ maxPlayers: 200 }).maxPlayers).toBe(200);
-      expect(competition.updateInfo({ maxPlayers: 2 }).maxPlayers).toBe(2);
-    });
-
-    it('creating checks the same range as updating', () => {
-      // Solo lo miraba `updateInfo`: crear con 500 daba una competición imposible
+  describe('maxPlayers', () => {
+    it('creating checks the API range', () => {
+      // Crear con 500 daba una competición imposible
       expect(() =>
         Competition.create({
           ...createValidCompetitionProps(),
@@ -431,10 +378,6 @@ describe('Competition', () => {
       'a non-whole count (%s) is not a count either',
       (cupo) => {
         // `typeof NaN` es 'number' y no es ni < 2 ni > 200: pasaba (CodeRabbit en la #833)
-        const competition = Competition.create(createValidCompetitionProps());
-        expect(() => competition.updateInfo({ maxPlayers: cupo })).toThrow(
-          'maxPlayers must be a number between 2 and 200.',
-        );
         expect(() =>
           Competition.create({
             ...createValidCompetitionProps(),
