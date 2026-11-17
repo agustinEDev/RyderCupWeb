@@ -5,6 +5,57 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.84.0] - 2026-11-17
+
+**Nombre y alias a la vista, avisos de «no puede llevar enlaces» y endurecimiento de la
+re-auditoría** (#1172, #1173, #1174; merge-back de la 2.83.0 en #1170). Va con el backend
+2.71.0, que sale antes; no hay cambio incompatible de contrato. Probado en el Kind con la
+copia anonimizada de producción.
+
+### Added
+
+- **El otro nombre, pequeño debajo** (SB-08): con el alias delante va el nombre real debajo,
+  y con el nombre real delante, el alias. En la lista de aprobados y de solicitudes, la ficha
+  de la competición, las tarjetas de Explorar (con el alias entre paréntesis), el perfil, la
+  lista de amigos y sus solicitudes, las tarjetas del feed, el modal de invitar (elegido,
+  resultados y pestaña de amigos) y el de añadir amigo. Se busca por cualquiera de los dos.
+- **Avisos de «no puede llevar enlaces ni direcciones web»** (SB-05) en el nombre de la
+  competición, el alias (en el saludo del panel y en Editar perfil) y el mensaje de una
+  invitación, antes de enviar nada; el aviso del mensaje va debajo del mensaje. La regla es
+  la misma del servidor, y el `MESSAGE_HAS_LINK` de la API se traduce también.
+- **`/.well-known/security.txt`** (P-07), con contacto admin@ y caducidad a un año; el
+  service worker no lo sustituye por la app.
+
+### Changed
+
+- **El organizador sale por su nombre visible**, con la regla del servidor: en una
+  competición pública, el nombre real.
+- **En una competición pública no hay interruptor de alias**: delante va siempre el nombre
+  real y lo dice una línea fija, «En las competiciones públicas se ve tu nombre, X, con tu
+  alias Y debajo». En las privadas sigue el interruptor.
+- **El monitor diario de cabeceras espera el HSTS con `includeSubDomains`** (#1172), como
+  lo pone Cloudflare.
+
+### Fixed
+
+- **Al cambiar el organizador su alias en su competición, «Organizado por» cambia en el
+  momento**, sin tapar la ficha con la espera.
+- **Tras enviar una invitación se vacía también el mensaje**, para que la siguiente no salga
+  con el texto de la anterior.
+- **El panel ya no se rompe si el navegador bloquea el almacenamiento** al leer los
+  recordatorios del hándicap (Q-FE-11).
+- **Textos que salían en inglés** en las esperas de las rutas protegidas y el texto
+  alternativo del avatar (Q-FE-13).
+
+### Removed
+
+- Código muerto (Q-FE-14).
+
+### CI
+
+- **Dependabot espera unos días** antes de proponer una versión nueva y vigila también las
+  imágenes de Docker, fijadas por digest (INF-12).
+
 ## [2.83.0] - 2026-11-16
 
 **Anotaciones que caducan a las 48 horas, avisos que se borran a los 7 días, CSP de imágenes
