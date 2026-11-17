@@ -372,12 +372,18 @@ export const derivarLaFicha = ({
   // - la inscripción es la propia y llega de la lista, porque
   //   `competition.enrollment_status` viene sin `id` y sin él no hay PUT,
   // - y el nombre se ve en algún sitio: una inscripción rechazada, cancelada o
-  //   retirada no aparece en ninguna pantalla.
+  //   retirada no aparece en ninguna pantalla,
+  // - y la competición es privada: en las públicas delante va siempre el nombre
+  //   real, con el alias debajo (17 nov 2026), y el interruptor no cambiaría
+  //   nada de lo que se ve. Ahí se explica con una línea fija.
   const NOMBRE_A_LA_VISTA = ['APPROVED', 'REQUESTED', 'INVITED'];
-  const puedeElegirNombre =
+  const suNombreSeVe =
     Boolean(user.alias) &&
     Boolean(userEnrollment?.id) &&
     NOMBRE_A_LA_VISTA.includes(userEnrollment.status);
+  const esPublica = competition.visibility === 'PUBLIC';
+  const puedeElegirNombre = suNombreSeVe && !esPublica;
+  const nombreFijoEnPublica = suNombreSeVe && esPublica;
   const nombreLegal = [user.first_name, user.last_name]
     .filter(Boolean)
     .join(' ');
@@ -415,6 +421,7 @@ export const derivarLaFicha = ({
     soloEspero,
     franjasParaApuntarse,
     puedeElegirNombre,
+    nombreFijoEnPublica,
     nombreLegal,
     usaSuAlias,
   };

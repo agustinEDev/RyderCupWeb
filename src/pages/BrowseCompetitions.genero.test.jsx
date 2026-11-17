@@ -59,7 +59,7 @@ const COMPETICION = {
   startDate: '2030-06-01',
   endDate: '2030-06-02',
   status: 'ACTIVE',
-  creator: { firstName: 'Ana', lastName: 'Alba' },
+  creator: { firstName: '', lastName: '', displayName: 'Anita' },
   enrolledCount: 2,
   maxPlayers: 12,
   countries: [],
@@ -88,6 +88,12 @@ describe('BrowseCompetitions · el género al pedir plaza', () => {
     vi.clearAllMocks();
     orden.length = 0;
     mockUnirse.mockResolvedValue([COMPETICION]);
+  });
+
+  it('X5: el organizador sale por su nombre visible aunque no lleguen nombre ni apellidos (SB-08)', async () => {
+    pintar();
+
+    expect(await screen.findByText('Anita')).toBeInTheDocument();
   });
 
   it('X3: un user nuevo con el mismo id no vuelve a cargar la lista', async () => {

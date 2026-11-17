@@ -643,6 +643,30 @@ describe('useEditProfile — el alias (FE #435)', () => {
     expect(result.current.aliasError).toBe('alias.errors.tooShort');
   });
 
+  it('un alias nuevo con un enlace se para antes de la API (SB-05)', async () => {
+    const { result } = montaCon();
+    await escribeAlias(result, 'premio.com');
+    await guarda(result);
+
+    expect(composition.updateUserProfileUseCase.execute).not.toHaveBeenCalled();
+    expect(result.current.aliasError).toBe('alias.errors.hasLink');
+  });
+
+  it('un alias de antes que hoy no pasaría no impide guardar lo demás', async () => {
+    // Sin tocar el alias, no viaja: no se valida (revisión de SB-05)
+    const { result } = montaCon({ alias: 'premio.com' });
+    await act(async () => {
+      result.current.handleInputChange({
+        target: { name: 'firstName', value: 'Agus' },
+      });
+    });
+    await guarda(result);
+
+    expect(composition.updateUserProfileUseCase.execute).toHaveBeenCalled();
+    const datos = composition.updateUserProfileUseCase.execute.mock.calls[0][1];
+    expect(datos).not.toHaveProperty('alias');
+  });
+
   it('un 409 se enseña en el campo y no como aviso suelto', async () => {
     const conflicto = new Error('El alias ya está en uso.');
     conflicto.status = 409;

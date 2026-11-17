@@ -21,6 +21,7 @@ const MiInscripcion = ({
   miEspera,
   puestoEnEspera,
   puedeElegirNombre,
+  nombreFijoEnPublica,
   usaSuAlias,
   nombreLegal,
   savingNamePreference,
@@ -69,6 +70,19 @@ const MiInscripcion = ({
             {t('detail.teamsFormed.enrolled')}
           </p>
         )}
+
+      {/* En una pública no se elige: delante el nombre real y el alias debajo */}
+      {nombreFijoEnPublica && (
+        <p
+          data-testid="nombre-fijo-en-publica"
+          className="mt-3 pt-3 border-t border-blue-200 text-blue-800 text-sm"
+        >
+          {t('detail.namePreference.publicShowsRealName', {
+            realName: nombreLegal,
+            alias: user.alias,
+          })}
+        </p>
+      )}
 
       {puedeElegirNombre && (
         <div className="mt-3 pt-3 border-t border-blue-200">

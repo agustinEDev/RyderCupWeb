@@ -8,6 +8,7 @@ import {
   equipoDe,
   esCapitan,
 } from '../../../utils/fichaDeLaCompeticion';
+import NombrePequeno from '../../ui/NombrePequeno';
 
 /**
  * Un inscrito aprobado en la lista de la ficha: su nombre, capitanía o equipo,
@@ -49,6 +50,7 @@ const FilaDeAprobado = ({
       <p className="text-gray-900 font-semibold">
         {enrollment.userName || t('detail.unknownUser')}
       </p>
+      <NombrePequeno texto={enrollment.userSubName} />
       <CaptainBadge
         userId={enrollment.userId}
         captains={competition.captains}

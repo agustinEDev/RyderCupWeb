@@ -199,7 +199,8 @@
       "invalidChars": "El alias solo admite letras, números, espacios y los signos . _ -",
       "needsLetterOrDigit": "El alias necesita alguna letra o algún número",
       "taken": "Ese alias ya está en uso",
-      "saveFailed": "No se ha podido guardar. Inténtalo otra vez."
+      "saveFailed": "No se ha podido guardar. Inténtalo otra vez.",
+      "hasLink": "El alias no puede llevar enlaces ni direcciones web"
     },
     "sheet": {
       "title": "Tu alias",

@@ -117,6 +117,93 @@ describe('SendInvitationModal', () => {
     expect(onSend).toHaveBeenCalledWith('player@example.com', 'Welcome!');
   });
 
+  it('no envía un mensaje con un enlace y lo dice (SB-05)', () => {
+    renderModal();
+    fireEvent.click(screen.getByTestId('tab-by-email'));
+
+    fireEvent.change(screen.getByTestId('invitation-email-input'), {
+      target: { value: 'player@example.com' },
+    });
+    fireEvent.change(screen.getByTestId('invitation-message-input'), {
+      target: { value: 'Entra en premio.com' },
+    });
+    fireEvent.submit(
+      screen.getByTestId('invitation-email-input').closest('form'),
+    );
+
+    expect(onSend).not.toHaveBeenCalled();
+    // Debajo del mensaje, que es lo que hay que cambiar, no del correo (Kind, 17 nov)
+    expect(screen.getByTestId('message-error')).toHaveTextContent(
+      /messageHasLink/,
+    );
+    expect(
+      screen.getByTestId('invitation-email-input').parentElement,
+    ).not.toHaveTextContent(/messageHasLink/);
+  });
+
+  it('el aviso del enlace se va al cambiar el mensaje', () => {
+    renderModal();
+    fireEvent.click(screen.getByTestId('tab-by-email'));
+    fireEvent.change(screen.getByTestId('invitation-email-input'), {
+      target: { value: 'player@example.com' },
+    });
+    fireEvent.change(screen.getByTestId('invitation-message-input'), {
+      target: { value: 'Entra en premio.com' },
+    });
+    fireEvent.submit(
+      screen.getByTestId('invitation-email-input').closest('form'),
+    );
+
+    fireEvent.change(screen.getByTestId('invitation-message-input'), {
+      target: { value: 'Te espero' },
+    });
+
+    expect(screen.queryByTestId('message-error')).not.toBeInTheDocument();
+  });
+
+  it('enviada por correo, el mensaje también se vacía para la siguiente (Kind, 17 nov)', async () => {
+    onSend.mockResolvedValue(true);
+    renderModal();
+    fireEvent.click(screen.getByTestId('tab-by-email'));
+    fireEvent.change(screen.getByTestId('invitation-email-input'), {
+      target: { value: 'player@example.com' },
+    });
+    fireEvent.change(screen.getByTestId('invitation-message-input'), {
+      target: { value: 'Te espero' },
+    });
+
+    fireEvent.submit(
+      screen.getByTestId('invitation-email-input').closest('form'),
+    );
+
+    // Con relojes falsos: se deja terminar la promesa del envío
+    await act(async () => {});
+    expect(screen.getByTestId('invitation-message-input')).toHaveValue('');
+    expect(screen.getByTestId('invitation-email-input')).toHaveValue('');
+  });
+
+  it('si no se envía, el mensaje se queda para corregirlo', async () => {
+    onSend.mockResolvedValue(false);
+    renderModal();
+    fireEvent.click(screen.getByTestId('tab-by-email'));
+    fireEvent.change(screen.getByTestId('invitation-email-input'), {
+      target: { value: 'player@example.com' },
+    });
+    fireEvent.change(screen.getByTestId('invitation-message-input'), {
+      target: { value: 'Te espero' },
+    });
+
+    fireEvent.submit(
+      screen.getByTestId('invitation-email-input').closest('form'),
+    );
+
+    await act(async () => {});
+    expect(onSend).toHaveBeenCalled();
+    expect(screen.getByTestId('invitation-message-input')).toHaveValue(
+      'Te espero',
+    );
+  });
+
   it('should call onSend with null message when empty from email tab', () => {
     renderModal();
     fireEvent.click(screen.getByTestId('tab-by-email'));

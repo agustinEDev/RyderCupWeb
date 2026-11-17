@@ -6,7 +6,7 @@ import {
   useCallback,
 } from 'react';
 import ModalShell, { CAJA_PROPIA } from '../ui/ModalShell';
-import { nombreRealSiAporta, nombreVisible } from '../../utils/nombreVisible';
+import { nombrePequeno, nombreVisible } from '../../utils/nombreVisible';
 import { Loader, Search, UserPlus, X } from 'lucide-react';
 import Avatar from '../ui/Avatar';
 import {
@@ -14,6 +14,8 @@ import {
   ListaDePestanas,
   PanelDePestana,
 } from '../ui/Pestanas';
+import NombrePequeno from '../ui/NombrePequeno';
+import { contieneEnlace } from '../../domain/services/textoSinEnlaces';
 
 const SendInvitationModalContent = ({
   onClose,
@@ -37,6 +39,8 @@ const SendInvitationModalContent = ({
   const [email, setEmail] = useState('');
   const [personalMessage, setPersonalMessage] = useState('');
   const [error, setError] = useState('');
+  // El del mensaje va aparte y debajo de él: es lo que hay que cambiar
+  const [errorDelMensaje, setErrorDelMensaje] = useState('');
   // Booleano, no el texto traducido: `t` viene por props y meterlo en las
   // dependencias del efecto de busqueda relanzaria la peticion.
   const [searchFailed, setSearchFailed] = useState(false);
@@ -306,32 +310,48 @@ const SendInvitationModalContent = ({
     ...situacionDe(amigo.otherUserId),
   }));
 
+  // El mensaje sale en el correo que firma la app: sin enlaces (SB-05, 17 nov 2026).
+  // Lo dice aquí y no espera a que lo rechace la API
+  const mensajeConEnlace = () => {
+    if (!contieneEnlace(personalMessage)) return false;
+    setErrorDelMensaje(t('errors.messageHasLink'));
+    return true;
+  };
+
   const handleEmailSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    setErrorDelMensaje('');
 
     const trimmedEmail = email.trim();
     if (!trimmedEmail) {
       setError(t('errors.invalidEmail'));
       return;
     }
+    if (mensajeConEnlace()) return;
 
-    // Enviada, el campo queda listo para el siguiente (#710)
-    if (await onSend(trimmedEmail, personalMessage.trim() || null))
+    // Enviada, el formulario queda listo para la siguiente (#710; el mensaje
+    // también, Kind 17 nov): si no, salía con el texto de la anterior
+    if (await onSend(trimmedEmail, personalMessage.trim() || null)) {
       setEmail('');
+      setPersonalMessage('');
+    }
   };
 
   const handleUserSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    setErrorDelMensaje('');
 
     if (!selectedUser) {
       setError(t('send.noUserSelected'));
       return;
     }
+    if (mensajeConEnlace()) return;
 
     if (await onSendByUserId(selectedUser.id, personalMessage.trim() || null)) {
       setSelectedUser(null);
+      setPersonalMessage('');
     }
   };
 
@@ -350,6 +370,7 @@ const SendInvitationModalContent = ({
   const handleTabChange = (tab) => {
     setActiveTab(tab);
     setError('');
+    setErrorDelMensaje('');
     // El mensaje personal se escribe en las pestañas de búsqueda y correo, y no
     // se ve desde la de amigos: conservarlo enviaría, sin decirlo, un texto que
     // el organizador no tiene delante. Se limpia al cambiar
@@ -515,6 +536,7 @@ const SendInvitationModalContent = ({
                           }`}
                         >
                           {amigo.otherUserName}
+                          <NombrePequeno texto={amigo.otherUserSubName} />
                         </span>
                         {amigo.yaInscrito ? (
                           <span className="shrink-0 text-xs text-gray-500">
@@ -553,6 +575,7 @@ const SendInvitationModalContent = ({
                     <p className="text-sm font-medium text-gray-900 truncate">
                       {nombreVisible(selectedUser)}
                     </p>
+                    <NombrePequeno texto={nombrePequeno(selectedUser)} />
                   </div>
                   <button
                     type="button"
@@ -658,11 +681,7 @@ const SendInvitationModalContent = ({
                                 >
                                   {nombreVisible(user)}
                                 </p>
-                                {nombreRealSiAporta(user) && (
-                                  <p className="text-xs text-gray-500 truncate">
-                                    {nombreRealSiAporta(user)}
-                                  </p>
-                                )}
+                                <NombrePequeno texto={nombrePequeno(user)} />
                               </div>
                               {yaInscrito ? (
                                 <span className="shrink-0 text-xs text-gray-500">
@@ -718,7 +737,10 @@ const SendInvitationModalContent = ({
               <textarea
                 id="invitation-message-search"
                 value={personalMessage}
-                onChange={(e) => setPersonalMessage(e.target.value)}
+                onChange={(e) => {
+                  setPersonalMessage(e.target.value);
+                  setErrorDelMensaje('');
+                }}
                 placeholder={t('send.personalMessagePlaceholder')}
                 disabled={isProcessing}
                 maxLength={500}
@@ -726,6 +748,15 @@ const SendInvitationModalContent = ({
                 className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:opacity-50 resize-none"
                 data-testid="invitation-message-input"
               />
+              {errorDelMensaje && (
+                <p
+                  role="alert"
+                  className="text-sm text-red-600 mt-1"
+                  data-testid="message-error"
+                >
+                  {errorDelMensaje}
+                </p>
+              )}
               <p className="text-xs text-gray-400 mt-1 text-right">
                 {personalMessage.length}/500
               </p>
@@ -792,7 +823,10 @@ const SendInvitationModalContent = ({
               <textarea
                 id="invitation-message-email"
                 value={personalMessage}
-                onChange={(e) => setPersonalMessage(e.target.value)}
+                onChange={(e) => {
+                  setPersonalMessage(e.target.value);
+                  setErrorDelMensaje('');
+                }}
                 placeholder={t('send.personalMessagePlaceholder')}
                 disabled={isProcessing}
                 maxLength={500}
@@ -800,6 +834,15 @@ const SendInvitationModalContent = ({
                 className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:opacity-50 resize-none"
                 data-testid="invitation-message-input"
               />
+              {errorDelMensaje && (
+                <p
+                  role="alert"
+                  className="text-sm text-red-600 mt-1"
+                  data-testid="message-error"
+                >
+                  {errorDelMensaje}
+                </p>
+              )}
               <p className="text-xs text-gray-400 mt-1 text-right">
                 {personalMessage.length}/500
               </p>

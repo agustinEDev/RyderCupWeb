@@ -7,6 +7,8 @@
  * solo evita el viaje a la API para decir algo que ya se sabe aquí.
  */
 
+import { contieneEnlace } from '../domain/services/textoSinEnlaces';
+
 const ALIAS_MIN_LENGTH = 2;
 export const ALIAS_MAX_LENGTH = 20;
 
@@ -45,6 +47,8 @@ export const queLePasaAlAlias = (valor) => {
   // buscar por él
   if (!/[a-zA-Z0-9À-ÖØ-öø-ÿ]/.test(alias))
     return 'alias.errors.needsLetterOrDigit';
+  // Sale en correos que firma la app: sin enlaces (SB-05, 17 nov 2026)
+  if (contieneEnlace(alias)) return 'alias.errors.hasLink';
 
   return null;
 };

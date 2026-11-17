@@ -746,6 +746,40 @@ describe('CompetitionDetail - alias o nombre real', () => {
     expect(customToast.error).not.toHaveBeenCalled();
   });
 
+  it('si quien cambia es el organizador, relee también la competición para «Organizado por»', async () => {
+    // El nombre del organizador sale en la cabecera con su elección (Kind, 17 nov
+    // 2026): sin releerla seguía el de antes hasta recargar la página
+    mockSetNamePreference.mockResolvedValue({ useRealName: false });
+    const interruptor = await encuentraElInterruptor();
+    const antes = mockGetCompetitionDetail.mock.calls.length;
+
+    fireEvent.click(interruptor);
+
+    await waitFor(() =>
+      expect(mockGetCompetitionDetail.mock.calls.length).toBeGreaterThan(antes),
+    );
+    expect(customToast.error).not.toHaveBeenCalled();
+  });
+
+  it('si quien cambia no es el organizador, no relee la competición', async () => {
+    mockGetCompetitionDetail.mockResolvedValue({
+      id: 'comp-1',
+      name: 'Summer Cup',
+      status: 'ACTIVE',
+      creatorId: 'otro-organizador',
+      maxPlayers: 20,
+      countries: [],
+    });
+    mockSetNamePreference.mockResolvedValue({ useRealName: false });
+    const interruptor = await encuentraElInterruptor();
+    const antes = mockGetCompetitionDetail.mock.calls.length;
+
+    fireEvent.click(interruptor);
+
+    await waitFor(() => expect(mockListEnrollments).toHaveBeenCalledTimes(2));
+    expect(mockGetCompetitionDetail.mock.calls.length).toBe(antes);
+  });
+
   it('si el guardado falla, avisa con el texto traducido y el interruptor se queda donde estaba', async () => {
     mockSetNamePreference.mockRejectedValue(new Error('403 Forbidden'));
 

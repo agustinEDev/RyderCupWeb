@@ -71,3 +71,31 @@ describe('EnrollmentAssembler', () => {
     });
   });
 });
+
+describe('EnrollmentAssembler · el otro nombre, debajo (SB-08)', () => {
+  it('con el alias delante, el nombre real debajo', () => {
+    const dto = EnrollmentAssembler.toSimpleDTO(unaInscripcion(), {
+      user: {
+        first_name: 'Agustín',
+        last_name: 'Estévez',
+        alias: 'Trinx',
+        display_name: 'Trinx',
+      },
+    });
+
+    expect(dto.userSubName).toBe('Agustín Estévez');
+  });
+
+  it('con el nombre real delante (pública), el alias debajo', () => {
+    const dto = EnrollmentAssembler.toSimpleDTO(unaInscripcion(), {
+      user: {
+        first_name: 'Agustín',
+        last_name: 'Estévez',
+        alias: 'Trinx',
+        display_name: 'Agustín Estévez',
+      },
+    });
+
+    expect(dto.userSubName).toBe('Trinx');
+  });
+});

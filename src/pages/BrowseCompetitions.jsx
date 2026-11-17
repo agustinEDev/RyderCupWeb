@@ -20,6 +20,7 @@ import BlockLoader from '../components/ui/BlockLoader';
 import { formatDateRange } from '../services/competitions';
 import { PANTALLA_MENOS_BARRA_INFERIOR } from '../utils/barraInferior';
 import { MOTIVOS_PARA_NO_APUNTARSE } from '../utils/fichaDeLaCompeticion';
+import { nombrePequeno } from '../utils/nombreVisible';
 
 const BrowseCompetitions = () => {
   // El género para apuntarse, solo a quien le falta (#710)
@@ -121,10 +122,17 @@ const BrowseCompetitions = () => {
     if (joinableSearchType === 'name') {
       return comp.name.toLowerCase().includes(searchLower);
     } else if (joinableSearchType === 'creator') {
-      const creatorName =
-        `${comp.creator?.firstName || ''} ${comp.creator?.lastName || ''}`
-          .trim()
-          .toLowerCase();
+      // Por cualquiera de sus nombres: el visible, el alias (pública) y, a quien le
+      // llega (admin), el real
+      const creatorName = [
+        comp.creator?.displayName,
+        comp.creator?.alias,
+        comp.creator?.firstName,
+        comp.creator?.lastName,
+      ]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase();
       return creatorName.includes(searchLower);
     }
 
@@ -140,10 +148,17 @@ const BrowseCompetitions = () => {
     if (exploreSearchType === 'name') {
       return comp.name.toLowerCase().includes(searchLower);
     } else if (exploreSearchType === 'creator') {
-      const creatorName =
-        `${comp.creator?.firstName || ''} ${comp.creator?.lastName || ''}`
-          .trim()
-          .toLowerCase();
+      // Por cualquiera de sus nombres: el visible, el alias (pública) y, a quien le
+      // llega (admin), el real
+      const creatorName = [
+        comp.creator?.displayName,
+        comp.creator?.alias,
+        comp.creator?.firstName,
+        comp.creator?.lastName,
+      ]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase();
       return creatorName.includes(searchLower);
     }
 
@@ -554,6 +569,7 @@ const CompetitionCard = ({
     countries,
     visibility,
   } = competition;
+  const otroNombreDelCreador = nombrePequeno(creator);
   // En un stroke play el cupo es de sus franjas, que se ven en la ficha (release social 3)
   const llena = competition.hasTeams !== false && enrolledCount >= maxPlayers;
   // Solo en una pública se pide plaza: un admin ve también las privadas en esta
@@ -621,8 +637,12 @@ const CompetitionCard = ({
           <span>
             {t('browse.card.created-by')}{' '}
             <span className="font-medium text-gray-900">
-              {creator?.firstName} {creator?.lastName}
+              {creator?.displayName || t('detail.unknownUser')}
             </span>
+            {/* El otro nombre, entre paréntesis: en la tarjeta no cabe otra línea */}
+            {otroNombreDelCreador && (
+              <span className="text-gray-500"> ({otroNombreDelCreador})</span>
+            )}
           </span>
         </div>
 

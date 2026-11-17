@@ -1,5 +1,5 @@
 import Enrollment from '../../domain/entities/Enrollment';
-import { nombreVisible } from '../../utils/nombreVisible';
+import { nombrePequeno, nombreVisible } from '../../utils/nombreVisible';
 
 /**
  * EnrollmentAssembler - Application Layer
@@ -60,11 +60,15 @@ class EnrollmentAssembler {
         // (FE #571)—. Componiéndolo aquí, esta lista era el único sitio de la
         // aplicación donde el alias no se veía nunca
         simpleDTO.userName = nombreVisible(apiData.user) || null;
+        // El otro nombre, pequeño debajo: el real si delante va el alias, el alias
+        // si delante va el real (competición pública). SB-08, 17 nov 2026
+        simpleDTO.userSubName = nombrePequeno(apiData.user) || null;
         simpleDTO.userEmail = apiData.user.email || null;
         simpleDTO.userHandicap = apiData.user.handicap;
         simpleDTO.userCountryCode = apiData.user.country_code;
         simpleDTO.userGender = apiData.user.gender || null;
       } else {
+        simpleDTO.userSubName = null;
         if (apiData.user_name) {
           simpleDTO.userName = apiData.user_name;
         }

@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest';
 
-import { nombreRealSiAporta, nombreVisible } from './nombreVisible';
+import {
+  nombrePequeno,
+  nombreRealSiAporta,
+  nombreVisible,
+} from './nombreVisible';
 
 describe('nombreVisible', () => {
   it('usa lo que el servidor ya resolvió', () => {
@@ -77,5 +81,46 @@ describe('nombreRealSiAporta', () => {
   it('devuelve vacío si no se sabe el nombre real', () => {
     expect(nombreRealSiAporta({ display_name: 'Chuchi' })).toBe('');
     expect(nombreRealSiAporta(null)).toBe('');
+  });
+});
+
+describe('nombrePequeno · el otro nombre, debajo (SB-08)', () => {
+  const trinx = {
+    first_name: 'Agustín',
+    last_name: 'Estévez',
+    alias: 'Trinx',
+  };
+
+  it('con el alias delante, el nombre real debajo', () => {
+    expect(nombrePequeno({ ...trinx, display_name: 'Trinx' })).toBe(
+      'Agustín Estévez',
+    );
+  });
+
+  it('con el nombre real delante (pública), el alias debajo', () => {
+    expect(nombrePequeno({ ...trinx, display_name: 'Agustín Estévez' })).toBe(
+      'Trinx',
+    );
+  });
+
+  it('sin alias, nada: solo tiene un nombre', () => {
+    expect(
+      nombrePequeno({
+        first_name: 'Ana',
+        last_name: 'Alba',
+        display_name: 'Ana Alba',
+      }),
+    ).toBe('');
+  });
+
+  it('en camelCase, igual', () => {
+    expect(
+      nombrePequeno({
+        firstName: 'Agustín',
+        lastName: 'Estévez',
+        alias: 'Trinx',
+        displayName: 'Trinx',
+      }),
+    ).toBe('Agustín Estévez');
   });
 });

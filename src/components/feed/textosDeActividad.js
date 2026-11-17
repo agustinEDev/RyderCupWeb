@@ -1,4 +1,4 @@
-import { nombreVisible } from '../../utils/nombreVisible';
+import { nombrePequeno, nombreVisible } from '../../utils/nombreVisible';
 import { haceCuanto, queDiaEs } from '../../domain/services/lineaDeActividad';
 
 /**
@@ -36,7 +36,8 @@ export const personaDe = (id, autores, t) => {
   const autor = id ? autores?.[id] : null;
   const nombre = nombreVisible(autor);
   if (!nombre) return { nombre: t('feed:player'), enlace: null };
-  return { nombre, enlace: `/players/${id}` };
+  // El otro nombre, para pintarlo pequeño donde haya sitio (SB-08)
+  return { nombre, enlace: `/players/${id}`, pequeno: nombrePequeno(autor) };
 };
 
 /** Un invitado de partida rápida: no tiene cuenta, va por su nombre o «un invitado». */

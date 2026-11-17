@@ -342,6 +342,10 @@ const InvitationsPage = () => {
       recargarEnSilencio();
       // Con la sala de draft abierta no se invita (15 nov 2026): su texto, no
       // «ya estaba invitado», que es lo que decía el 409 genérico
+      // Un enlace en el mensaje (SB-05): el modal ya lo frena; si el servidor
+      // lo ve antes, el mismo texto y el modal sigue abierto para corregirlo
+    } else if (error?.errorCode === 'MESSAGE_HAS_LINK') {
+      customToast.error(t('errors.messageHasLink'));
     } else if (error?.errorCode === 'DRAFT_IN_PROGRESS') {
       customToast.error(t('errors.draftInProgress'));
       // Ya tiene una en lista de espera: su texto, no «ya estaba invitado»

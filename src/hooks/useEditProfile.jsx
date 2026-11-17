@@ -232,7 +232,10 @@ export const useEditProfile = () => {
 
     // Lo que ya se sabe aqui no hace falta preguntarlo al servidor. El aviso
     // va bajo el campo, que es donde esta el problema
-    const problemaDelAlias = queLePasaAlAlias(formData.alias);
+    // Solo si va a viajar: un alias de antes que hoy no pasaría (con un enlace,
+    // SB-05) no puede impedir cambiar el país o el nombre (revisión de SB-05)
+    const problemaDelAlias =
+      aliasAEnviar === undefined ? null : queLePasaAlAlias(formData.alias);
     if (problemaDelAlias) {
       setAliasError(problemaDelAlias);
       return;
