@@ -2,7 +2,6 @@ import Enrollment from '../../domain/entities/Enrollment';
 import EnrollmentId from '../../domain/value_objects/EnrollmentId';
 import EnrollmentStatus from '../../domain/value_objects/EnrollmentStatus';
 import TeeColor from '../../domain/value_objects/TeeColor';
-import { nombreVisible } from '../../utils/nombreVisible';
 
 /**
  * EnrollmentMapper - Anti-Corruption Layer
@@ -129,93 +128,6 @@ class EnrollmentMapper {
       created_at: enrollment.createdAt.toISOString(),
       updated_at: enrollment.updatedAt.toISOString(),
     };
-  }
-
-  /**
-   * Convierte una entidad del dominio a un DTO simple para la UI
-   * @deprecated Use EnrollmentAssembler.toSimpleDTO from application/assemblers instead
-   *
-   * @param {Enrollment} enrollment - Entidad del dominio
-   * @param {Object} apiData - Datos originales de la API (opcional, para incluir campos extra)
-   * @returns {Object} DTO simple para UI (camelCase, plano)
-   */
-  static toSimpleDTO(enrollment, apiData = null) {
-    if (!(enrollment instanceof Enrollment)) {
-      throw new Error(
-        'EnrollmentMapper.toSimpleDTO: enrollment must be an Enrollment instance',
-      );
-    }
-
-    const simpleDTO = {
-      id: enrollment.enrollmentId.toString(),
-      competitionId: enrollment.competitionId,
-      userId: enrollment.userId,
-      status: enrollment.status.toString(),
-      teamId: enrollment.teamId,
-      customHandicap: enrollment.customHandicap,
-      color: enrollment.color ? enrollment.color.toString() : null,
-      useRealName: enrollment.useRealName,
-      createdAt: enrollment.createdAt.toISOString(),
-      updatedAt: enrollment.updatedAt.toISOString(),
-
-      // Campos calculados (helpers para UI)
-      isPending: enrollment.isPending(),
-      isApproved: enrollment.isApproved(),
-      isRejected: enrollment.isRejected(),
-      isCancelled: enrollment.isCancelled(),
-      isWithdrawn: enrollment.isWithdrawn(),
-      hasTeamAssigned: enrollment.hasTeamAssigned(),
-      hasCustomHandicap: enrollment.hasCustomHandicap(),
-    };
-
-    // Si hay datos de la API, incluir campos adicionales (joins)
-    if (apiData) {
-      // Caso 1: user_name/user_email directos (backward compatibility)
-      if (apiData.user_name) {
-        simpleDTO.userName = apiData.user_name;
-      }
-      if (apiData.user_email) {
-        simpleDTO.userEmail = apiData.user_email;
-      }
-      if (apiData.user_handicap !== undefined) {
-        simpleDTO.userHandicap = apiData.user_handicap;
-      }
-
-      // Caso 2: objeto user anidado (nuevo formato del backend)
-      if (apiData.user) {
-        // El nombre ya resuelto por el servidor, igual que en
-        // EnrollmentAssembler: componerlo de nombre + apellidos se saltaba el
-        // alias y la preferencia de esta inscripción (FE #571)
-        simpleDTO.userName = nombreVisible(apiData.user);
-        simpleDTO.userEmail = apiData.user.email;
-        simpleDTO.userHandicap = apiData.user.handicap;
-        simpleDTO.userCountryCode = apiData.user.country_code;
-        simpleDTO.userGender = apiData.user.gender || null;
-      }
-    }
-
-    return simpleDTO;
-  }
-
-  /**
-   * Convierte múltiples entidades del dominio a DTOs simples para la UI
-   * @deprecated Use EnrollmentAssembler.toSimpleDTOMany from application/assemblers instead
-   *
-   * @param {Array<Enrollment>} enrollments - Array de entidades del dominio
-   * @param {Array<Object>} apiDataArray - Array de datos originales de la API (opcional)
-   * @returns {Array<Object>} Array de DTOs simples para UI
-   */
-  static toSimpleDTOMany(enrollments, apiDataArray = null) {
-    if (!Array.isArray(enrollments)) {
-      throw new Error(
-        'EnrollmentMapper.toSimpleDTOMany: enrollments must be an array',
-      );
-    }
-
-    return enrollments.map((enrollment, index) => {
-      const apiData = apiDataArray ? apiDataArray[index] : null;
-      return EnrollmentMapper.toSimpleDTO(enrollment, apiData);
-    });
   }
 }
 
