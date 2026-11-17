@@ -195,12 +195,6 @@ class CompetitionMapper {
             id: apiData.creator.id,
             firstName: apiData.creator.first_name,
             lastName: apiData.creator.last_name,
-            // Lo que hay que pintar: en una privada con alias, nombre y apellidos
-            // llegan vacíos para quien no es el organizador ni un admin (SB-08)
-            displayName:
-              apiData.creator.display_name ||
-              `${apiData.creator.first_name ?? ''} ${apiData.creator.last_name ?? ''}`.trim(),
-            alias: apiData.creator.alias ?? null,
             email: apiData.creator.email,
             handicap: apiData.creator.handicap,
             countryCode: apiData.creator.country_code,

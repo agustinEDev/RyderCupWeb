@@ -1,3 +1,4 @@
+import { nombreVisible } from '../../utils/nombreVisible';
 import { getCountryFlag } from '../../utils/countryUtils';
 
 // Un jugador de la actualización de hándicaps: el que falta por preguntar y el
@@ -196,9 +197,7 @@ class CompetitionAssembler {
             lastName: apiData.creator.last_name,
             // Lo que hay que pintar: en una privada con alias, nombre y apellidos
             // llegan vacíos para quien no es el organizador ni un admin (SB-08)
-            displayName:
-              apiData.creator.display_name ||
-              `${apiData.creator.first_name ?? ''} ${apiData.creator.last_name ?? ''}`.trim(),
+            displayName: nombreVisible(apiData.creator),
             alias: apiData.creator.alias ?? null,
             handicap: apiData.creator.handicap,
             countryCode: apiData.creator.country_code,

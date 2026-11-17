@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import CompetitionMapper from './CompetitionMapper';
-import CompetitionAssembler from '../../application/assemblers/CompetitionAssembler';
+import CompetitionMapper from '../../infrastructure/mappers/CompetitionMapper';
+import CompetitionAssembler from './CompetitionAssembler';
 
 /**
  * El nombre del organizador (SB-08, 17 nov 2026). En una privada con alias, el
@@ -24,12 +24,12 @@ const DATOS = {
 
 const conCreador = (creator) => ({ ...DATOS, creator });
 
-describe.each([
-  ['CompetitionMapper', CompetitionMapper],
-  ['CompetitionAssembler', CompetitionAssembler],
-])('%s · el organizador', (_, mapper) => {
+describe('CompetitionAssembler · el organizador', () => {
   const dto = (apiData) =>
-    mapper.toSimpleDTO(CompetitionMapper.toDomain(apiData), apiData);
+    CompetitionAssembler.toSimpleDTO(
+      CompetitionMapper.toDomain(apiData),
+      apiData,
+    );
 
   it('privada con alias: se pinta el alias aunque no lleguen nombre ni apellidos', () => {
     const { creator } = dto(
@@ -59,6 +59,14 @@ describe.each([
 
     expect(creator.displayName).toBe('Agustín Estévez');
     expect(creator.alias).toBe('Trinx');
+  });
+
+  it('sin display_name ni nombre, el alias: el mismo criterio que el resto de la app', () => {
+    const { creator } = dto(
+      conCreador({ id: 'c-1', first_name: '', last_name: '', alias: 'Trinx' }),
+    );
+
+    expect(creator.displayName).toBe('Trinx');
   });
 
   it('una respuesta antigua sin display_name sigue enseñando nombre y apellidos', () => {

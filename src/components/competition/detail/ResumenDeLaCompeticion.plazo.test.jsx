@@ -78,3 +78,15 @@ describe('ResumenDeLaCompeticion · el plazo de inscripción', () => {
     expect(screen.queryByTestId('plazo-de-inscripcion')).toBeNull();
   });
 });
+
+describe('ResumenDeLaCompeticion · quién organiza (SB-08)', () => {
+  it('O1: se pinta su nombre visible aunque no lleguen nombre ni apellidos', () => {
+    pinta({
+      creator: { firstName: '', lastName: '', displayName: 'Trinx' },
+    });
+
+    expect(
+      screen.getByText('detail.organizedBy').nextSibling,
+    ).toHaveTextContent('Trinx');
+  });
+});

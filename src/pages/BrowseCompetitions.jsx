@@ -121,7 +121,17 @@ const BrowseCompetitions = () => {
     if (joinableSearchType === 'name') {
       return comp.name.toLowerCase().includes(searchLower);
     } else if (joinableSearchType === 'creator') {
-      const creatorName = (comp.creator?.displayName || '').toLowerCase();
+      // Por cualquiera de sus nombres: el visible, el alias (pública) y, a quien le
+      // llega (admin), el real
+      const creatorName = [
+        comp.creator?.displayName,
+        comp.creator?.alias,
+        comp.creator?.firstName,
+        comp.creator?.lastName,
+      ]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase();
       return creatorName.includes(searchLower);
     }
 
@@ -137,7 +147,17 @@ const BrowseCompetitions = () => {
     if (exploreSearchType === 'name') {
       return comp.name.toLowerCase().includes(searchLower);
     } else if (exploreSearchType === 'creator') {
-      const creatorName = (comp.creator?.displayName || '').toLowerCase();
+      // Por cualquiera de sus nombres: el visible, el alias (pública) y, a quien le
+      // llega (admin), el real
+      const creatorName = [
+        comp.creator?.displayName,
+        comp.creator?.alias,
+        comp.creator?.firstName,
+        comp.creator?.lastName,
+      ]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase();
       return creatorName.includes(searchLower);
     }
 
@@ -615,7 +635,7 @@ const CompetitionCard = ({
           <span>
             {t('browse.card.created-by')}{' '}
             <span className="font-medium text-gray-900">
-              {creator?.displayName}
+              {creator?.displayName || t('detail.unknownUser')}
             </span>
           </span>
         </div>
