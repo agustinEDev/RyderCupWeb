@@ -39,10 +39,31 @@ describe('mensajeDelError', () => {
     ).toBe('Ese jugador ya es participante');
   });
 
-  it('so is the reason a use case gives', () => {
+  // Agustín, 17 nov: solo el texto de un 4xx del servidor; lo que lanza el
+  // propio front (un caso de uso, una validación) no trae estado y va en
+  // genérico, que muchos de esos textos están en inglés
+  it.each([
+    ['a use case reason', 'El hándicap se sale de rango'],
+    ['an internal English check', 'Competition ID is required'],
+  ])('%s, without an HTTP status, is not shown', (_caso, texto) => {
+    expect(mensajeDelError(new Error(texto), ALTERNATIVA)).toBe(ALTERNATIVA);
+  });
+
+  it.each([399, 600])('a status outside 4xx (%i) is not shown', (status) => {
+    expect(mensajeDelError(http(status, 'Algo'), ALTERNATIVA)).toBe(
+      ALTERNATIVA,
+    );
+  });
+
+  it('the 4xx status may travel in .response', () => {
     expect(
-      mensajeDelError(new Error('El hándicap se sale de rango'), ALTERNATIVA),
-    ).toBe('El hándicap se sale de rango');
+      mensajeDelError(
+        Object.assign(new Error('Ya es participante'), {
+          response: { status: 409 },
+        }),
+        ALTERNATIVA,
+      ),
+    ).toBe('Ya es participante');
   });
 
   it('a reason marked as technical (an internal invariant) is not shown', () => {

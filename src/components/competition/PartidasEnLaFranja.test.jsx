@@ -470,7 +470,10 @@ describe('PartidasEnLaFranja (FE #824, PR 6)', () => {
   it('9b: un error sin código conocido, el texto del servidor', async () => {
     mockLeer.mockResolvedValue(vista({ groups: [] }));
     mockGenerar.mockRejectedValue(
-      Object.assign(new Error('server text'), { errorCode: 'OTRO' }),
+      Object.assign(new Error('server text'), {
+        status: 409,
+        errorCode: 'OTRO',
+      }),
     );
     pintar({ organiza: true });
     await desplegar();

@@ -97,7 +97,8 @@ describe('EditUserModal', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'editModal.save' }));
 
-    expect(await screen.findByText('Email already in use')).toBeInTheDocument();
+    // Sin estado HTTP no es un motivo del servidor: el aviso traducido
+    expect(await screen.findByText('editModal.error')).toBeInTheDocument();
   });
 });
 

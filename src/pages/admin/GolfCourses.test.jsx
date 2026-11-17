@@ -383,9 +383,11 @@ describe('GolfCourses (admin) · la carga de la lista', () => {
     // When se abre la página
     render(<GolfCourses embedded />);
 
-    // Then el aviso, y sin la espera
+    // Then el aviso traducido (sin estado HTTP no es un motivo), y sin la espera
     await waitFor(() =>
-      expect(customToast.error).toHaveBeenCalledWith('sin red'),
+      expect(customToast.error).toHaveBeenCalledWith(
+        'pages.admin.errorLoading',
+      ),
     );
     await waitFor(() => expect(screen.queryByRole('status')).toBeNull());
     expect(screen.getByText('pages.admin.createCourse')).toBeInTheDocument();

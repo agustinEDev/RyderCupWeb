@@ -8,11 +8,12 @@
  *
  *   1. Un código conocido por quien llama (`codigos`), con su texto traducido.
  *   2. El texto que `api.js` ya puso en el idioma de la app (429, Términos).
- *   3. El motivo que da el servidor o el caso de uso, en texto: «ese jugador
- *      ya es participante» le dice al jugador qué cambiar (`sinCobertura.js`).
- *      No un 5xx, un fallo de red, lo que `api.js` marcó como técnico, un
- *      fallo del código (`TypeError` y compañía), algo que parece JSON ni un
- *      código suelto («FAILED_TO_REVOKE_DEVICE»).
+ *   3. El motivo que da el servidor en un 4xx, en texto: «ese jugador ya es
+ *      participante» le dice al jugador qué cambiar. No un 401, un 5xx, lo
+ *      que no trae estado (lo lanza el propio front), un fallo de red, lo que
+ *      `api.js` marcó como técnico, un fallo del código (`TypeError` y
+ *      compañía), algo que parece JSON ni un código suelto
+ *      («FAILED_TO_REVOKE_DEVICE»). La misma regla usa `motivoDelError`.
  *   4. Si no, la alternativa traducida de quien llama.
  *
  * @param {unknown} error
@@ -34,15 +35,20 @@ const estadoDe = (error) => error?.status ?? error?.response?.status;
 
 const tieneTexto = (texto) => typeof texto === 'string' && texto.trim() !== '';
 
+// Solo un 4xx del servidor trae un motivo (Agustín, 17 nov). Sin estado es
+// algo del propio front —un caso de uso, una validación, a menudo en inglés—,
+// y un 401 es la sesión, no un motivo que enseñar
+const esUn4xxQueExplica = (estado) =>
+  typeof estado === 'number' && estado >= 400 && estado < 500 && estado !== 401;
+
 // Los errores del propio JavaScript: un fallo del código, o el `fetch` sin red
 const FALLOS_DEL_CODIGO = [TypeError, ReferenceError, RangeError, SyntaxError];
 
-const esElMotivoDelServidor = (error) =>
+// También la usa `motivoDelError` (sinCobertura.js): una sola regla
+export const esElMotivoDelServidor = (error) =>
   error instanceof Error &&
   !FALLOS_DEL_CODIGO.some((clase) => error instanceof clase) &&
-  !(estadoDe(error) >= 500) &&
-  // Un 401 es la sesión, no un motivo que enseñar
-  estadoDe(error) !== 401 &&
+  esUn4xxQueExplica(estadoDe(error)) &&
   error.sinConexion !== true &&
   error.mensajeTecnico !== true &&
   tieneTexto(error.message) &&

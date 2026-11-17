@@ -88,8 +88,11 @@ describe('GolfCourseForm · lo que toma de initialData', () => {
       });
     fireEvent.submit(nombre().closest('form'));
 
+    // Un fallo sin estado HTTP: el aviso traducido, no el texto crudo
     await waitFor(() =>
-      expect(screen.getByText('sin red')).toBeInTheDocument(),
+      expect(
+        screen.getByText('requestModal.errorCreating'),
+      ).toBeInTheDocument(),
     );
     expect(nombre()).toHaveValue('Golf de Meis');
     expect(

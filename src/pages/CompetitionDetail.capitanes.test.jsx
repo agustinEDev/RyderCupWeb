@@ -511,8 +511,11 @@ describe('CompetitionDetail · nombrar a los capitanes (FE #692)', () => {
 
     confirmar(modal);
 
+    // Un fallo sin estado HTTP: el aviso traducido del reparto
     await waitFor(() =>
-      expect(customToast.error).toHaveBeenCalledWith('assign failed'),
+      expect(customToast.error).toHaveBeenCalledWith(
+        'detail.errors.teamAssignmentFailed',
+      ),
     );
     expect(customToast.success).toHaveBeenCalledWith(
       'detail.success.captainsNamed',

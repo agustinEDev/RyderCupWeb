@@ -1,3 +1,5 @@
+import { esElMotivoDelServidor } from './mensajeDelError';
+
 /**
  * Si lo que ha fallado es la red, y no el servidor ni la petición.
  *
@@ -64,9 +66,10 @@ export const mensajeDeError = (err, { sinConexion, generico }) => {
  */
 export const motivoDelError = (err) => {
   if (esFalloDeRed(err)) return 'sinConexion';
-  // Un 5xx no trae un motivo para quien mira, sino el fallo del servidor en
-  // crudo —«Internal Server Error», o el 503 del service worker— (FE #710)
-  if (err?.status >= 500) return 'generico';
-  if (err?.status && err?.message) return { delServidor: err.message };
+  // Qué texto del servidor se enseña lo decide la misma regla que
+  // `mensajeDelError` (re-auditoría Q-FE-06): ni un 5xx —el «Internal Server
+  // Error» o el 503 del service worker (FE #710)—, ni un 401, ni lo que
+  // `api.js` marcó como técnico, ni JSON, ni un código suelto
+  if (esElMotivoDelServidor(err)) return { delServidor: err.message };
   return 'generico';
 };
