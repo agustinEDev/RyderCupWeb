@@ -55,7 +55,10 @@ import {
   errorDeAjustes,
 } from '../utils/ajustesDeStrokePlay';
 import { cupoDeJugadores, CUPO_POR_DEFECTO } from '../utils/cupoDeJugadores';
-import { CompetitionStatus } from '../domain/value_objects/CompetitionStatus';
+import {
+  soloSePuedenEditarLasFechas,
+  seEditaLaCompeticion,
+} from '../domain/services/edicionDeLaCompeticion';
 import { MAX_PLAYERS, MIN_PLAYERS } from '../domain/entities/Competition';
 import { CompetitionName } from '../domain/value_objects/CompetitionName';
 import { diaDeLaSesion } from '../utils/diaDeLaSesion';
@@ -161,13 +164,8 @@ const leeLaCompeticionParaEditar = async (competitionId) => {
   // ofrece «Editar» en la ficha
   // Cerrada por el plazo (no por el organizador), se mueve: solo las fechas
   // (15 nov 2026, RyderCupAm #865)
-  const soloFechas =
-    competition.status === 'CLOSED' &&
-    competition.enrollmentClosedByDeadline === true;
-  if (
-    !soloFechas &&
-    !new CompetitionStatus(competition.status).allowsModifications()
-  ) {
+  const soloFechas = soloSePuedenEditarLasFechas(competition);
+  if (!seEditaLaCompeticion(competition)) {
     return { competition, editable: false };
   }
 

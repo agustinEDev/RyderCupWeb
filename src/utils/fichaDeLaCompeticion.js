@@ -9,10 +9,8 @@ import {
   salenDeLosInscritos,
 } from '../domain/services/CategoriasQueSalen';
 import { fechaDeApertura } from '../domain/services/aperturaDeInscripciones';
-import {
-  CompetitionStatus,
-  CompetitionStatusEnum,
-} from '../domain/value_objects/CompetitionStatus';
+import { CompetitionStatusEnum } from '../domain/value_objects/CompetitionStatus';
+import { seEditaLaCompeticion } from '../domain/services/edicionDeLaCompeticion';
 import { siguientePasoDeLaCompeticion } from './siguientePasoDeLaCompeticion';
 import EnrollmentStatus from '../domain/value_objects/EnrollmentStatus';
 
@@ -258,11 +256,7 @@ export const derivarLaFicha = ({
   // quien invita antes de poner el campo de golf tiene que poder ponerlo después
   // Cerrada por el plazo (no a mano), también: se mueve, solo las fechas
   // (15 nov 2026, RyderCupAm #865)
-  const canEdit =
-    canManage &&
-    (new CompetitionStatus(competition.status).allowsModifications() ||
-      (competition.status === 'CLOSED' &&
-        competition.enrollmentClosedByDeadline === true));
+  const canEdit = canManage && seEditaLaCompeticion(competition);
   // Quién puede y cuándo lo decide el backend con la misma regla que el borrado
   // (RyderCupAM#347): estado, calendario y rol. Copiar aquí la lista de estados
   // ofrecería el botón en una cancelada ya jugada, donde siempre falla (FE #667)
