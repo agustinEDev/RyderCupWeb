@@ -130,6 +130,38 @@ describe('tokenRefreshInterceptor', () => {
       );
     });
 
+    it.each([429, 500, 503])(
+      'a %i of the refresh is technical: its English text never reaches the screen',
+      async (status) => {
+        globalThis.fetch.mockResolvedValueOnce({
+          ok: false,
+          status,
+          statusText: 'x',
+          json: async () => ({ detail: 'Too many requests' }),
+        });
+
+        const error = await refreshAccessToken().catch((e) => e);
+
+        expect(error.message).toBe('Failed to refresh token');
+        expect(error.mensajeTecnico).toBe(true);
+        expect(error.response.status).toBe(status);
+      },
+    );
+
+    it('a 401 of the refresh is not marked: it is the session ending', async () => {
+      globalThis.fetch.mockResolvedValueOnce({
+        ok: false,
+        status: 401,
+        statusText: 'Unauthorized',
+        json: async () => ({ detail: 'Refresh token expired' }),
+      });
+
+      const error = await refreshAccessToken().catch((e) => e);
+
+      expect(error.mensajeTecnico).toBeUndefined();
+      expect(error.response.status).toBe(401);
+    });
+
     it('should throw error on network failure', async () => {
       // Mock network error
       globalThis.fetch.mockRejectedValueOnce(new Error('Network error'));

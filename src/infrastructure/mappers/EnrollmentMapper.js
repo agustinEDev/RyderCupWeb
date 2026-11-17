@@ -64,26 +64,36 @@ class EnrollmentMapper {
       );
     }
 
-    return Enrollment.fromPersistence({
-      enrollmentId: EnrollmentId.fromString(apiData.id),
-      competitionId: apiData.competition_id,
-      userId: apiData.user_id,
-      status: EnrollmentStatus.fromString(apiData.status),
-      teamId: apiData.team_id || null,
-      customHandicap:
-        apiData.custom_handicap !== null &&
-        apiData.custom_handicap !== undefined
-          ? Number(apiData.custom_handicap)
-          : null,
-      color: apiData.color == null ? null : TeeColor.fromString(apiData.color),
-      // El campo llega siempre desde BE #254. Si falta es que responde un
-      // backend anterior, y ese resuelve TODOS los nombres con el alias: leerlo
-      // como `false` es describir lo que esa respuesta trae, no el valor por
-      // defecto de hoy, que es el nombre legal
-      useRealName: apiData.use_real_name === true,
-      createdAt: apiData.created_at,
-      updatedAt: apiData.updated_at,
-    });
+    // Un id, estado o color que no se puede convertir es técnico, como lo que
+    // falta arriba: la persona ve la alternativa traducida (mensajeDelError)
+    try {
+      return Enrollment.fromPersistence({
+        enrollmentId: EnrollmentId.fromString(apiData.id),
+        competitionId: apiData.competition_id,
+        userId: apiData.user_id,
+        status: EnrollmentStatus.fromString(apiData.status),
+        teamId: apiData.team_id || null,
+        customHandicap:
+          apiData.custom_handicap !== null &&
+          apiData.custom_handicap !== undefined
+            ? Number(apiData.custom_handicap)
+            : null,
+        color:
+          apiData.color == null ? null : TeeColor.fromString(apiData.color),
+        // El campo llega siempre desde BE #254. Si falta es que responde un
+        // backend anterior, y ese resuelve TODOS los nombres con el alias: leerlo
+        // como `false` es describir lo que esa respuesta trae, no el valor por
+        // defecto de hoy, que es el nombre legal
+        useRealName: apiData.use_real_name === true,
+        createdAt: apiData.created_at,
+        updatedAt: apiData.updated_at,
+      });
+    } catch (error) {
+      throw Object.assign(
+        new Error(`Failed to map enrollment data: ${error.message}`),
+        { mensajeTecnico: true },
+      );
+    }
   }
 
   /**
