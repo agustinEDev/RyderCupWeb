@@ -9,6 +9,7 @@ const ERRORES_DEL_NOMBRE = {
   TOO_SHORT: 'nameTooShort',
   UNREADABLE: 'nameUnreadable',
   TOO_LONG: 'nameTooLong',
+  HAS_LINK: 'nameHasLink',
 };
 const MIN_TEAM_NAME = 3;
 const MAX_TEAM_NAME = 50;

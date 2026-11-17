@@ -15,6 +15,7 @@ import {
   PanelDePestana,
 } from '../ui/Pestanas';
 import NombrePequeno from '../ui/NombrePequeno';
+import { contieneEnlace } from '../../domain/services/textoSinEnlaces';
 
 const SendInvitationModalContent = ({
   onClose,
@@ -307,6 +308,14 @@ const SendInvitationModalContent = ({
     ...situacionDe(amigo.otherUserId),
   }));
 
+  // El mensaje sale en el correo que firma la app: sin enlaces (SB-05, 17 nov 2026).
+  // Lo dice aquí y no espera a que lo rechace la API
+  const mensajeConEnlace = () => {
+    if (!contieneEnlace(personalMessage)) return false;
+    setError(t('errors.messageHasLink'));
+    return true;
+  };
+
   const handleEmailSubmit = async (e) => {
     e.preventDefault();
     setError('');
@@ -316,6 +325,7 @@ const SendInvitationModalContent = ({
       setError(t('errors.invalidEmail'));
       return;
     }
+    if (mensajeConEnlace()) return;
 
     // Enviada, el campo queda listo para el siguiente (#710)
     if (await onSend(trimmedEmail, personalMessage.trim() || null))
@@ -330,6 +340,7 @@ const SendInvitationModalContent = ({
       setError(t('send.noUserSelected'));
       return;
     }
+    if (mensajeConEnlace()) return;
 
     if (await onSendByUserId(selectedUser.id, personalMessage.trim() || null)) {
       setSelectedUser(null);

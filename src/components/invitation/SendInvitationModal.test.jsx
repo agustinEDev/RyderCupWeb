@@ -117,6 +117,24 @@ describe('SendInvitationModal', () => {
     expect(onSend).toHaveBeenCalledWith('player@example.com', 'Welcome!');
   });
 
+  it('no envía un mensaje con un enlace y lo dice (SB-05)', () => {
+    renderModal();
+    fireEvent.click(screen.getByTestId('tab-by-email'));
+
+    fireEvent.change(screen.getByTestId('invitation-email-input'), {
+      target: { value: 'player@example.com' },
+    });
+    fireEvent.change(screen.getByTestId('invitation-message-input'), {
+      target: { value: 'Entra en premio.com' },
+    });
+    fireEvent.submit(
+      screen.getByTestId('invitation-email-input').closest('form'),
+    );
+
+    expect(onSend).not.toHaveBeenCalled();
+    expect(screen.getByText(/messageHasLink/)).toBeInTheDocument();
+  });
+
   it('should call onSend with null message when empty from email tab', () => {
     renderModal();
     fireEvent.click(screen.getByTestId('tab-by-email'));

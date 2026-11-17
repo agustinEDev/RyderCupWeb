@@ -1,0 +1,45 @@
+import { describe, it, expect } from 'vitest';
+import { contieneEnlace } from './textoSinEnlaces';
+
+// Los mismos casos que el servidor (test_texto_sin_enlaces.py): las dos reglas no
+// pueden discrepar, o el formulario dejaría pasar lo que la API rechaza
+describe('contieneEnlace (SB-05)', () => {
+  it.each([
+    'entra en https://premio.com/ya',
+    'http://x.es',
+    'www.premio.com',
+    'Premio en premio.com',
+    'PREMIO.COM',
+    'escribe a gana@premio.net',
+    'sub.dominio.premio.io/ruta?x=1',
+    'premio\u3002com',
+    'premio\uff0ecom/regalo',
+    'premio\u200b.com',
+    'premio.c\u00adom',
+    'en 203.0.113.7/regalo',
+    'Entra en 203.0.113.7.',
+    'Gana en пример.рф',
+    'premio.xn--p1ai/ya',
+    'Llama ya: tel:+34600000000',
+    'sms:+34600000000?body=x',
+    'mailto:gana@premio.com',
+    'cafe\u0301.fr',
+  ])('detecta «%s»', (texto) => {
+    expect(contieneEnlace(texto)).toBe(true);
+  });
+
+  it.each([
+    'Ryder Cup de los amigos',
+    'Torneo 2026.1',
+    'J.R. Martín',
+    'Sr. Pérez',
+    'Club de Golf La Herrería',
+    'j.garcia',
+    'Ana.Maria',
+    'Copa St.Andrews',
+    '',
+    null,
+  ])('no ve enlace en «%s»', (texto) => {
+    expect(contieneEnlace(texto)).toBe(false);
+  });
+});

@@ -128,7 +128,8 @@
       "nameTooShort": "El nombre necesita al menos 3 caracteres.",
       "nameTooLong": "El nombre no puede pasar de 100 caracteres.",
       "nameUnreadable": "El nombre necesita alguna letra o cifra.",
-      "nameTaken": "Ya tienes una competición con ese nombre: elige otro."
+      "nameTaken": "Ya tienes una competición con ese nombre: elige otro.",
+      "nameHasLink": "El nombre no puede llevar enlaces ni direcciones web."
     },
     "success": "¡Competición creada exitosamente!",
     "partialSuccess": "Competición creada, pero {{failed}} campo(s) no se pudieron añadir: {{courses}}. Se añadieron {{success}} campo(s) correctamente.",

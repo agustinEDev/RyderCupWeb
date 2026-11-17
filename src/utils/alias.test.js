@@ -93,3 +93,13 @@ describe('loQueHayQueMandar', () => {
     expect(loQueHayQueMandar('CHUCHI', 'Chuchi')).toBe('CHUCHI');
   });
 });
+
+describe('queLePasaAlAlias · sin enlaces (SB-05)', () => {
+  it('un alias con un dominio no vale', () => {
+    expect(queLePasaAlAlias('premio.com')).toBe('alias.errors.hasLink');
+  });
+
+  it('un alias con puntos que no es un dominio sí', () => {
+    expect(queLePasaAlAlias('j.garcia')).toBeNull();
+  });
+});

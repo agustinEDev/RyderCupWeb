@@ -115,6 +115,11 @@ describe('CompetitionName', () => {
 
     it('N2 · vacío o solo espacios: REQUIRED', () => {
       expect(CompetitionName.problemWith('')).toBe('REQUIRED');
+      // Sale en correos que firma la app: sin enlaces (SB-05)
+      expect(CompetitionName.problemWith('Copa en premio.com')).toBe(
+        'HAS_LINK',
+      );
+      expect(CompetitionName.problemWith('Copa St. Andrews')).toBeNull();
       expect(CompetitionName.problemWith('    ')).toBe('REQUIRED');
       expect(CompetitionName.problemWith(undefined)).toBe('REQUIRED');
     });
