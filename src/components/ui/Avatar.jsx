@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { User } from 'lucide-react';
 import {
   segmento,
@@ -47,6 +48,7 @@ const rutaDelAvatar = (userId, version) => {
 };
 
 const Avatar = ({ userId, size = 'md', className = '', version }) => {
+  const { t } = useTranslation('common');
   // Guarda el `src` concreto que falló, no un booleano: así, si userId/version
   // cambian (p.ej. tras cambiar de avatar), el `src` nuevo ya no coincide con
   // el que falló y el componente reintenta cargarlo automáticamente en el
@@ -72,7 +74,7 @@ const Avatar = ({ userId, size = 'md', className = '', version }) => {
     <div className={containerClass}>
       <img
         src={src}
-        alt="Avatar"
+        alt={t('avatarAlt', { defaultValue: 'Avatar' })}
         crossOrigin="use-credentials"
         className="w-full h-full object-cover"
         onError={() => setErroredSrc(src)}

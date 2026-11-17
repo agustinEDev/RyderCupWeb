@@ -72,7 +72,8 @@
     "leaderboard": "Leaderboard",
     "administration": "Administration",
     "adminBadge": "Admin",
-    "logout": "Logout"
+    "logout": "Logout",
+    "toggleMenu": "Toggle menu"
   },
   "bottomNav": {
     "label": "Main navigation",
@@ -180,5 +181,6 @@
     "plus": "Plus handicap",
     "outOfRange": "Between +10 and 54"
   },
-  "cargandoTuCuenta": "Loading your account, try again in a moment"
+  "cargandoTuCuenta": "Loading your account, try again in a moment",
+  "avatarAlt": "Profile photo"
 }

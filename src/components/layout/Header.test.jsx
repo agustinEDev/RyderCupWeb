@@ -54,7 +54,7 @@ describe('Header', () => {
   it('keeps the mobile menu for marketing links only', () => {
     renderHeader();
 
-    fireEvent.click(screen.getByLabelText('Toggle menu'));
+    fireEvent.click(screen.getByLabelText('header.toggleMenu'));
 
     const menu = screen.getByTestId('mobile-menu');
     const menuLinks = within(menu)
@@ -96,9 +96,9 @@ describe('Header', () => {
       renderHeader();
 
       expect(screen.getByTestId('acciones-compactas')).toHaveClass('lg:hidden');
-      expect(screen.getByLabelText('Toggle menu').parentElement).toHaveClass(
-        'lg:hidden',
-      );
+      expect(
+        screen.getByLabelText('header.toggleMenu').parentElement,
+      ).toHaveClass('lg:hidden');
     });
   });
 });

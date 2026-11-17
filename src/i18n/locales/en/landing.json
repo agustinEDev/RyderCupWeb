@@ -14,7 +14,8 @@
       "noAdsDetail": "No tracking"
     },
     "nextTournament": "Next Tournament",
-    "springClassic": "Spring Classic"
+    "springClassic": "Spring Classic",
+    "imageAlt": "Golf tournament"
   },
   "features": {
     "title": "Everything You Need to Run Your Tournament",
@@ -69,7 +70,8 @@
     "socialFun": {
       "title": "Social & Fun",
       "description": "Build lasting friendships through friendly rivalry"
-    }
+    },
+    "imageAlt": "Friends playing golf"
   },
   "pricing": {
     "title": "Simple, Transparent Pricing",

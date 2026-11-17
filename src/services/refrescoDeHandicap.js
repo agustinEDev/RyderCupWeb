@@ -3,8 +3,8 @@ import { consultaLaSesion } from './sesionCompartida';
 import {
   APUNTE_REFRESCAR,
   HANDICAP_POR_PEDIR,
-  RECORDATORIO_HANDICAP,
   generacionDelRefresco,
+  quitaRecordatorioDeHandicap,
 } from './refrescoDeHandicapApuntes';
 
 export { APUNTE_REFRESCAR };
@@ -62,7 +62,7 @@ export const lanzaElRefrescoDeHandicap = ({ handicapDeAntes = null } = {}) => {
       } else {
         // Ya no hace falta pedirlo: el recordatorio de «Requiere tu atención»
         // sobra, también si el panel está abierto
-        localStorage.removeItem(RECORDATORIO_HANDICAP);
+        quitaRecordatorioDeHandicap();
         globalThis.dispatchEvent(new globalThis.Event(EVENTO_HANDICAP_AL_DIA));
         if (handicap !== (handicapDeAntes ?? null))
           consultaLaSesion({ forzar: true });

@@ -23,8 +23,8 @@ export const PASSWORD_SPECIAL_CHARS = /[!@#$%^&*()_+\-=[\]{}|;:,.<>?]/;
 export const passwordLength = (password) => [...password].length;
 
 /** Los bytes que usa bcrypt: la contraseña en UTF-8 (una eñe o una tilde ocupan 2). */
-export const PASSWORD_MAX_BYTES = 72;
-export const passwordBytes = (password) =>
+const PASSWORD_MAX_BYTES = 72;
+const passwordBytes = (password) =>
   new globalThis.TextEncoder().encode(password).length;
 
 /** Cabe en el máximo: 64 caracteres y 72 bytes, como el backend (B-14). */
