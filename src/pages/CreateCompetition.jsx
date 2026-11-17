@@ -63,6 +63,7 @@ import { MAX_PLAYERS, MIN_PLAYERS } from '../domain/entities/Competition';
 import { CompetitionName } from '../domain/value_objects/CompetitionName';
 import { diaDeLaSesion } from '../utils/diaDeLaSesion';
 import { PANTALLA_MENOS_BARRA_INFERIOR } from '../utils/barraInferior';
+import { mensajeDelError } from '../utils/mensajeDelError';
 
 // Helper function to get message className
 const getMessageClassName = (type) => {
@@ -855,7 +856,7 @@ const CreateCompetition = () => {
     if (sesiones) return sesiones;
     if (error?.errorCode)
       return t(MOTIVOS_AL_EDITAR[error.errorCode] ?? 'edit.error');
-    return error?.message || t('edit.error');
+    return mensajeDelError(error, t('edit.error'));
   };
 
   // El aviso del nombre, y el campo a la vista y con el foco: el botón queda
@@ -1182,8 +1183,7 @@ const CreateCompetition = () => {
       }
       const texto =
         sesionesQueQuedanFuera(error) ||
-        error.message ||
-        t(isEditMode ? 'edit.error' : 'create.error');
+        mensajeDelError(error, t(isEditMode ? 'edit.error' : 'create.error'));
       customToast.error(texto);
       setMessage({ type: 'error', text: texto });
     } finally {

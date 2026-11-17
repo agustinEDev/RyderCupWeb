@@ -9,6 +9,7 @@ import {
   rejectEnrollmentUseCase,
   setNamePreferenceUseCase,
 } from '../../../composition';
+import { mensajeDelError } from '../../../utils/mensajeDelError';
 
 /**
  * Las inscripciones desde la ficha de una competición: apuntarse, aprobar o
@@ -206,7 +207,7 @@ export const crearAccionesDeInscripcion = (contexto) => {
         await releerTrasQuitar();
         return;
       }
-      customToast.error(error.message || t('detail.failedToApprove'));
+      customToast.error(mensajeDelError(error, t('detail.failedToApprove')));
     }
   };
 
@@ -232,7 +233,7 @@ export const crearAccionesDeInscripcion = (contexto) => {
       setEnrollments(enrollmentsData);
     } catch (error) {
       console.error('Error rejecting enrollment:', error);
-      customToast.error(error.message || t('detail.failedToReject'));
+      customToast.error(mensajeDelError(error, t('detail.failedToReject')));
     }
   };
 

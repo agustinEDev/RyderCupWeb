@@ -4,6 +4,7 @@ import { X, AlertCircle, CheckCircle } from 'lucide-react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import GolfCourseForm from './GolfCourseForm';
+import { mensajeDelError } from '../../utils/mensajeDelError';
 
 /**
  * GolfCourseRequestModal Component
@@ -53,8 +54,10 @@ const GolfCourseRequestModal = ({
     } catch (err) {
       console.error('Error creating golf course request:', err);
       setError(
-        err.message ||
+        mensajeDelError(
+          err,
           t('requestModal.errorCreating', 'Error creating golf course request'),
+        ),
       );
     } finally {
       setIsSubmitting(false);

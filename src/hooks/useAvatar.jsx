@@ -9,6 +9,7 @@ import {
   activateUploadedAvatarUseCase,
   removeAvatarUseCase,
 } from '../composition';
+import { mensajeDelError } from '../utils/mensajeDelError';
 
 /**
  * useAvatar - Avatar picker state and handlers for the Edit Profile page.
@@ -116,7 +117,7 @@ export const useAvatar = (user, refetchUser) => {
       customToast.error(
         mapError
           ? mapError(error)
-          : error.message || t('toasts.failedToUpdateAvatar'),
+          : mensajeDelError(error, t('toasts.failedToUpdateAvatar')),
       );
       setBusy(false);
       return;
@@ -156,7 +157,7 @@ export const useAvatar = (user, refetchUser) => {
         // código —un servidor anterior— se enseña su texto, como antes
         if (error.errorCode === 'IMAGES_BUSY')
           return t('toasts.avatarImagesBusy');
-        return error.message || t('toasts.failedToUpdateAvatar');
+        return mensajeDelError(error, t('toasts.failedToUpdateAvatar'));
       },
     });
   };
@@ -172,7 +173,8 @@ export const useAvatar = (user, refetchUser) => {
     runAvatarAction({
       setBusy: setIsRemoving,
       action: () => removeAvatarUseCase.execute(),
-      mapError: (error) => error.message || t('toasts.failedToRemoveAvatar'),
+      mapError: (error) =>
+        mensajeDelError(error, t('toasts.failedToRemoveAvatar')),
       successMessage: t('toasts.avatarRemoved'),
     });
 

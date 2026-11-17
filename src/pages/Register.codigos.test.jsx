@@ -74,7 +74,7 @@ describe('Register · el rechazo del backend en su idioma', () => {
     );
   });
 
-  it('otro error sigue enseñando su mensaje', async () => {
+  it('un 500 enseña el texto de la app, no el suyo (Q-FE-06)', async () => {
     registrar.mockRejectedValue(
       Object.assign(new Error('Error interno'), { status: 500 }),
     );
@@ -82,7 +82,7 @@ describe('Register · el rechazo del backend en su idioma', () => {
     await enviar();
 
     await waitFor(() =>
-      expect(toastError).toHaveBeenCalledWith('Error interno'),
+      expect(toastError).toHaveBeenCalledWith('register.error'),
     );
   });
 });

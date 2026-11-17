@@ -19,6 +19,7 @@ import {
   validateResetTokenUseCase,
   resetPasswordUseCase,
 } from '../composition';
+import { mensajeDelError } from '../utils/mensajeDelError';
 
 /**
  * ResetPasswordPage Component
@@ -256,7 +257,7 @@ const ResetPassword = () => {
           duration: 6000,
         });
       } else {
-        customToast.error(error.message || t('resetPassword.error'), {
+        customToast.error(mensajeDelError(error, t('resetPassword.error')), {
           duration: 5000,
         });
       }

@@ -4,6 +4,7 @@ import customToast from '../utils/toast';
 import { useCargaCancelableEffect } from './useCargaCancelableEffect';
 
 import { getActiveDevicesUseCase, revokeDeviceUseCase } from '../composition';
+import { mensajeDelError } from '../utils/mensajeDelError';
 
 /**
  * Custom hook for Device Management
@@ -37,7 +38,7 @@ export const useDeviceManagement = () => {
           ? t(`errors.${error.code}`, {
               defaultValue: t('errors.FAILED_TO_LOAD_DEVICES'),
             })
-          : error.message || t('errors.FAILED_TO_LOAD_DEVICES');
+          : mensajeDelError(error, t('errors.FAILED_TO_LOAD_DEVICES'));
 
         customToast.error(errorMessage);
       },
@@ -83,7 +84,7 @@ export const useDeviceManagement = () => {
         ? t(`errors.${error.code}`, {
             defaultValue: t('errors.FAILED_TO_REVOKE_DEVICE'),
           })
-        : error.message || t('errors.FAILED_TO_REVOKE_DEVICE');
+        : mensajeDelError(error, t('errors.FAILED_TO_REVOKE_DEVICE'));
 
       // Show toast AND save error for inline display
       customToast.error(errorMessage);

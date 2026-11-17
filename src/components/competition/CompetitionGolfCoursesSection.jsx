@@ -37,6 +37,7 @@ import {
   CompetitionStatus,
   CompetitionStatusEnum,
 } from '../../domain/value_objects/CompetitionStatus';
+import { mensajeDelError } from '../../utils/mensajeDelError';
 
 /**
  * El color de cada tipo de campo. El TEXTO sale de i18n: escrito aquí a mano
@@ -418,7 +419,9 @@ const CompetitionGolfCoursesSection = ({
       onCamposCambiados?.();
     } catch (error) {
       console.error('Error adding golf course:', error);
-      customToast.error(error.message || t('detail.golfCourses.errorAdding'));
+      customToast.error(
+        mensajeDelError(error, t('detail.golfCourses.errorAdding')),
+      );
     } finally {
       enVuelo.current.delete(course.id);
       setIsAdding(false);
@@ -445,7 +448,9 @@ const CompetitionGolfCoursesSection = ({
       onCamposCambiados?.();
     } catch (error) {
       console.error('Error removing golf course:', error);
-      customToast.error(error.message || t('detail.golfCourses.errorRemoving'));
+      customToast.error(
+        mensajeDelError(error, t('detail.golfCourses.errorRemoving')),
+      );
     }
   };
 

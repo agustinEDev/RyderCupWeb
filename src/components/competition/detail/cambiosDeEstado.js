@@ -28,6 +28,7 @@ import {
 } from '../../../composition';
 import { CompetitionStatusEnum } from '../../../domain/value_objects/CompetitionStatus';
 import EnrollmentStatus from '../../../domain/value_objects/EnrollmentStatus';
+import { mensajeDelError } from '../../../utils/mensajeDelError';
 
 /**
  * Lo que el organizador hace con la competición desde su ficha: cambiar su
@@ -415,7 +416,9 @@ export const crearCambiosDeEstado = (contexto) => {
         customToast.error(t('detail.errors.waitForDraft'));
         return;
       }
-      customToast.error(error.message || t('detail.failedToUpdateCompetition'));
+      customToast.error(
+        mensajeDelError(error, t('detail.failedToUpdateCompetition')),
+      );
     } finally {
       setIsProcessing(false);
     }

@@ -18,6 +18,7 @@ import { esFalloDeRed } from '../../utils/sinCobertura';
 import { useSondeoMientras } from '../../hooks/useSondeoMientras';
 import { PANTALLA_MENOS_BARRA_INFERIOR } from '../../utils/barraInferior';
 import { CompetitionStatusEnum } from '../../domain/value_objects/CompetitionStatus';
+import { mensajeDelError } from '../../utils/mensajeDelError';
 
 const POLL_INTERVAL = 30000; // 30 seconds
 // La ficha de un stroke play en juego, para enterarse de que empieza o acaba
@@ -338,7 +339,7 @@ const LeaderboardPage = () => {
               </>
             ) : (
               <p className="text-red-600">
-                {error.message || t('errors.generic')}
+                {mensajeDelError(error, t('errors.generic'))}
               </p>
             )}
           </div>

@@ -18,6 +18,7 @@ import {
 } from '../../composition';
 import FullScreenLoader from '../../components/ui/FullScreenLoader';
 import BlockLoader from '../../components/ui/BlockLoader';
+import { mensajeDelError } from '../../utils/mensajeDelError';
 
 /**
  * GolfCourses Page (Admin)
@@ -63,7 +64,9 @@ const GolfCourses = ({ embedded = false }) => {
         alCargar: (page) => setCourses(page.courses),
         alFallar: (error) => {
           console.error('Error loading golf courses:', error);
-          customToast.error(error.message || t('pages.admin.errorLoading'));
+          customToast.error(
+            mensajeDelError(error, t('pages.admin.errorLoading')),
+          );
         },
       },
     );
@@ -118,7 +121,7 @@ const GolfCourses = ({ embedded = false }) => {
       return await getGolfCourseUseCase.execute(course.id);
     } catch (error) {
       console.error('Error loading golf course:', error);
-      customToast.error(error.message || t('pages.admin.errorLoading'));
+      customToast.error(mensajeDelError(error, t('pages.admin.errorLoading')));
       return null;
     } finally {
       setIsLoadingCourse(false);

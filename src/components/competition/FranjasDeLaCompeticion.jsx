@@ -45,6 +45,7 @@ import {
   INTERVALO_MAXIMO,
   TAMANOS_DE_PARTIDA,
 } from '../../domain/value_objects/HojaDeSalidas';
+import { mensajeDelError } from '../../utils/mensajeDelError';
 
 /** La hoja del formulario como la pide la API. */
 const aTeeSheet = (hoja) => ({
@@ -443,8 +444,7 @@ const FranjasDeLaCompeticion = ({
       // Con la lista de afectados, sus nombres; si no, el motivo del servidor
       customToast.error(
         mensajeConJugadores(t, error, 'agenda.errors') ||
-          error.message ||
-          t('agenda.error'),
+          mensajeDelError(error, t('agenda.error')),
       );
     } finally {
       // Sin espera: lo de ahora se queda a la vista hasta que llega lo releído

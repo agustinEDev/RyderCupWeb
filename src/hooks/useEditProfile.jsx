@@ -17,6 +17,7 @@ import {
 import { buildGoogleOAuthUrl } from '../utils/googleOAuth';
 
 import { useAuth } from './useAuth';
+import { mensajeDelError } from '../utils/mensajeDelError';
 
 // 409 Conflict: el alias pedido ya lo tiene otra persona (BE #239)
 const CONFLICTO = 409;
@@ -165,7 +166,9 @@ export const useEditProfile = () => {
       customToast.success(t('toasts.handicapUpdated'));
     } catch (error) {
       console.error('Error updating handicap:', error);
-      customToast.error(error.message || t('toasts.failedToUpdateHandicap'));
+      customToast.error(
+        mensajeDelError(error, t('toasts.failedToUpdateHandicap')),
+      );
     } finally {
       setIsSaving(false);
     }
@@ -190,7 +193,7 @@ export const useEditProfile = () => {
     } catch (error) {
       console.error('Error updating handicap from RFEG:', error);
       customToast.error(
-        error.message || t('toasts.failedToUpdateHandicapRFEG'),
+        mensajeDelError(error, t('toasts.failedToUpdateHandicapRFEG')),
       );
     } finally {
       setIsUpdatingRFEG(false);
@@ -291,7 +294,9 @@ export const useEditProfile = () => {
         setAliasError('alias.errors.taken');
         return;
       }
-      customToast.error(error.message || t('toasts.failedToUpdateProfile'));
+      customToast.error(
+        mensajeDelError(error, t('toasts.failedToUpdateProfile')),
+      );
     } finally {
       setIsSaving(false);
     }
@@ -370,7 +375,9 @@ export const useEditProfile = () => {
       if (error?.errorCode === 'REAUTHENTICATION_REQUIRED')
         return 'edit.linkedAccounts.reauthExpired';
       console.error('Error unlinking Google:', error);
-      customToast.error(error.message || t('edit.linkedAccounts.unlinkError'));
+      customToast.error(
+        mensajeDelError(error, t('edit.linkedAccounts.unlinkError')),
+      );
       return null;
     }
     // Ya desvinculado: si recargar la sesión falla, el aviso sigue siendo el de éxito
@@ -536,7 +543,9 @@ export const useEditProfile = () => {
         // El backend la rechaza con un código (BE #519): en el idioma de la app
         customToast.error(contrasena);
       } else {
-        customToast.error(error.message || t('toasts.failedToUpdateSecurity'));
+        customToast.error(
+          mensajeDelError(error, t('toasts.failedToUpdateSecurity')),
+        );
       }
     } finally {
       setIsSaving(false);

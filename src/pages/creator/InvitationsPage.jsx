@@ -28,6 +28,7 @@ import { quienEsElInvitado } from '../../utils/quienEsElInvitado';
 import { CompetitionStatusEnum } from '../../domain/value_objects/CompetitionStatus';
 import EnrollmentStatus from '../../domain/value_objects/EnrollmentStatus';
 import InvitationStatus from '../../domain/value_objects/InvitationStatus';
+import { mensajeDelError } from '../../utils/mensajeDelError';
 
 // Ni `/friends/me` ni el listado de invitaciones dan más de 100 filas por
 // página. Pedir una sola dejaba fuera al amigo 101 y a la invitación pendiente
@@ -214,7 +215,7 @@ const InvitationsPage = () => {
         // con el modal abierto por un refresco fallido no es silencioso
         // (revisión local)
         if (silenciosa) return;
-        customToast.error(error.message || t('errors.failedToLoad'));
+        customToast.error(mensajeDelError(error, t('errors.failedToLoad')));
         // Marcar y que decida el render, en vez de irse desde aquí: esta carga
         // y la de los permisos van por su cuenta, y salir corriendo la primera
         // se llevaba por delante el aviso de la otra (FE #656)
@@ -386,7 +387,7 @@ const InvitationsPage = () => {
     } else if (error?.status === 409) {
       customToast.error(t('errors.duplicateInvitation'));
     } else {
-      customToast.error(error.message || t('errors.failedToSend'));
+      customToast.error(mensajeDelError(error, t('errors.failedToSend')));
     }
   };
 
@@ -468,7 +469,7 @@ const InvitationsPage = () => {
       customToast.error(
         error?.status === 409
           ? t('errors.notPendingAnymore')
-          : error.message || t('errors.failedToWithdraw'),
+          : mensajeDelError(error, t('errors.failedToWithdraw')),
       );
     } finally {
       setRetirandoEnCurso(false);

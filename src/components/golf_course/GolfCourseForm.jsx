@@ -17,6 +17,7 @@ import {
   ratingRangeFor,
   slopeRangeFor,
 } from '../../domain/services/courseTypeRanges';
+import { mensajeDelError } from '../../utils/mensajeDelError';
 
 // Los diez colores admitidos, ordenados de barras mas largas a mas cortas
 // segun el uso habitual. OTHER cubre las salidas cuyo nombre no es un color
@@ -436,7 +437,7 @@ const GolfCourseForm = ({ initialData = null, onSubmit, onCancel }) => {
       await onSubmit(formData);
     } catch (error) {
       console.error('Error submitting form:', error);
-      customToast.error(error.message || t('form.errors.submitFailed'));
+      customToast.error(mensajeDelError(error, t('form.errors.submitFailed')));
     } finally {
       setIsSubmitting(false);
     }

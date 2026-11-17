@@ -17,6 +17,7 @@ import {
   esEntradaDeFecha,
 } from '../../utils/horaDelCampo';
 import { useSondeoMientras } from '../../hooks/useSondeoMientras';
+import { mensajeDelError } from '../../utils/mensajeDelError';
 
 // Mientras hay una en marcha, cada cuánto se mira cómo va
 const CADA = 15000;
@@ -140,7 +141,7 @@ const HandicapsDeLaCompeticion = ({
   const porQueNo = (error, alProgramar) => {
     const codigo = error?.data?.reason_code;
     const traducido = motivo(codigo);
-    if (!traducido) return error.message || t('handicaps.error');
+    if (!traducido) return mensajeDelError(error, t('handicaps.error'));
     return alProgramar && !DE_LA_HORA_PEDIDA.has(codigo)
       ? t('handicaps.notAtThatTime', { motivo: traducido })
       : traducido;

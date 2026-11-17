@@ -23,6 +23,7 @@ import {
   PanelDePestana,
 } from '../../components/ui/Pestanas';
 import { PANTALLA_MENOS_BARRA_INFERIOR } from '../../utils/barraInferior';
+import { mensajeDelError } from '../../utils/mensajeDelError';
 
 const TABS = ['friends', 'received', 'sent'];
 
@@ -73,7 +74,7 @@ const FriendsPage = () => {
       },
       alFallar: (error) => {
         console.error('Error loading friends:', error);
-        customToast.error(error.message || t('errors.failedToLoad'));
+        customToast.error(mensajeDelError(error, t('errors.failedToLoad')));
       },
     },
   );
@@ -94,7 +95,7 @@ const FriendsPage = () => {
       await recargarTrasLaAccion();
     } catch (error) {
       console.error('Error accepting friend request:', error);
-      customToast.error(error.message || t('errors.failedToRespond'));
+      customToast.error(mensajeDelError(error, t('errors.failedToRespond')));
     } finally {
       stopProcessing(key);
     }
@@ -109,7 +110,7 @@ const FriendsPage = () => {
       await recargarTrasLaAccion();
     } catch (error) {
       console.error('Error declining friend request:', error);
-      customToast.error(error.message || t('errors.failedToRespond'));
+      customToast.error(mensajeDelError(error, t('errors.failedToRespond')));
     } finally {
       stopProcessing(key);
     }
@@ -124,7 +125,7 @@ const FriendsPage = () => {
       await recargarTrasLaAccion();
     } catch (error) {
       console.error('Error removing friendship:', error);
-      customToast.error(error.message || t('errors.failedToRemove'));
+      customToast.error(mensajeDelError(error, t('errors.failedToRemove')));
     } finally {
       stopProcessing(key);
     }
@@ -140,7 +141,7 @@ const FriendsPage = () => {
       await recargarTrasLaAccion();
     } catch (error) {
       console.error('Error blocking user:', error);
-      customToast.error(error.message || t('errors.failedToBlock'));
+      customToast.error(mensajeDelError(error, t('errors.failedToBlock')));
     } finally {
       stopProcessing(key);
     }

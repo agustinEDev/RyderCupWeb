@@ -20,6 +20,7 @@ import {
   lanzaElRefrescoDeHandicap,
   APUNTE_REFRESCAR,
 } from '../../services/refrescoDeHandicap';
+import { mensajeDelError } from '../../utils/mensajeDelError';
 
 /**
  * El acceso con correo y contraseña, con Google debajo: el formulario entero y
@@ -177,7 +178,7 @@ const SignInForm = () => {
         // Con su código, como la vuelta de Google: el texto, traducido (RyderCupAm #750)
         customToast.error(t('google.accountDeactivated'), { duration: 10000 });
       } else {
-        customToast.error(error.message || t('login.error'), {
+        customToast.error(mensajeDelError(error, t('login.error')), {
           duration: 5000,
         });
       }

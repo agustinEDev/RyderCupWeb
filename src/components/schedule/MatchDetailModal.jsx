@@ -10,6 +10,7 @@ import {
   formatoDeIndice,
   formatoDeHandicapDeJuego,
 } from '../../utils/formatoDeHandicap';
+import { mensajeDelError } from '../../utils/mensajeDelError';
 
 const MatchDetailModal = ({
   isOpen,
@@ -41,7 +42,7 @@ const MatchDetailModal = ({
         setMatch(data);
       } catch (err) {
         console.error('Error loading match detail:', err);
-        setError(err.message || t('errors.failedToLoadMatch'));
+        setError(mensajeDelError(err, t('errors.failedToLoadMatch')));
       } finally {
         setIsLoading(false);
       }

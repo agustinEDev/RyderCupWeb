@@ -26,6 +26,7 @@ import {
   ListaDePestanas,
   PanelDePestana,
 } from '../../components/ui/Pestanas';
+import { mensajeDelError } from '../../utils/mensajeDelError';
 
 /**
  * PendingGolfCourses Page (Admin)
@@ -71,7 +72,9 @@ const PendingGolfCourses = ({ embedded = false, onCambio }) => {
         alCargar: setPendingCourses,
         alFallar: (error) => {
           console.error('Error loading pending golf courses:', error);
-          customToast.error(error.message || t('pages.pending.errorLoading'));
+          customToast.error(
+            mensajeDelError(error, t('pages.pending.errorLoading')),
+          );
         },
       },
     );
@@ -112,7 +115,9 @@ const PendingGolfCourses = ({ embedded = false, onCambio }) => {
       recargarPendientes();
     } catch (error) {
       console.error('Error approving golf course:', error);
-      customToast.error(error.message || t('pages.pending.approveFailed'));
+      customToast.error(
+        mensajeDelError(error, t('pages.pending.approveFailed')),
+      );
     }
   };
 
@@ -151,7 +156,9 @@ const PendingGolfCourses = ({ embedded = false, onCambio }) => {
       recargarPendientes();
     } catch (error) {
       console.error('Error rejecting golf course:', error);
-      customToast.error(error.message || t('pages.pending.rejectFailed'));
+      customToast.error(
+        mensajeDelError(error, t('pages.pending.rejectFailed')),
+      );
     }
   };
 
@@ -173,7 +180,7 @@ const PendingGolfCourses = ({ embedded = false, onCambio }) => {
     } catch (error) {
       console.error('Error approving update:', error);
       customToast.error(
-        error.message || t('pages.pending.approveUpdateFailed'),
+        mensajeDelError(error, t('pages.pending.approveUpdateFailed')),
       );
     }
   };
@@ -195,7 +202,9 @@ const PendingGolfCourses = ({ embedded = false, onCambio }) => {
       recargarPendientes();
     } catch (error) {
       console.error('Error rejecting update:', error);
-      customToast.error(error.message || t('pages.pending.rejectUpdateFailed'));
+      customToast.error(
+        mensajeDelError(error, t('pages.pending.rejectUpdateFailed')),
+      );
     }
   };
 

@@ -52,7 +52,7 @@ describe('ForgotPassword · demasiados intentos', () => {
     );
   });
 
-  it('F2: otro error enseña su texto', async () => {
+  it('F2: otro error, el texto de la app y no el del 500 (Q-FE-06)', async () => {
     enviar.mockRejectedValue(
       Object.assign(new Error('Algo falló'), { status: 500 }),
     );
@@ -68,7 +68,10 @@ describe('ForgotPassword · demasiados intentos', () => {
     fireEvent.submit(screen.getByRole('textbox').closest('form'));
 
     await waitFor(() =>
-      expect(toastError).toHaveBeenCalledWith('Algo falló', expect.anything()),
+      expect(toastError).toHaveBeenCalledWith(
+        'forgotPassword.error',
+        expect.anything(),
+      ),
     );
   });
 

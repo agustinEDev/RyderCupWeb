@@ -12,6 +12,7 @@ import {
   listEnrollmentsUseCase,
 } from '../composition';
 import { useLaMasNueva } from './useLaMasNueva';
+import { mensajeDelError } from '../utils/mensajeDelError';
 
 /**
  * La ficha de una competición y sus inscripciones, tal como las lee
@@ -87,7 +88,10 @@ export const useFichaDeLaCompeticion = ({ id, userId, t, navigate }) => {
       // lista solo enseñaba otro fallo (A2, 8 nov 2026)
       if (seEstaCerrandoLaSesion()) return;
       customToast.error(
-        error.message || traductor.current('detail.failedToLoadCompetition'),
+        mensajeDelError(
+          error,
+          traductor.current('detail.failedToLoadCompetition'),
+        ),
       );
       navigate('/competitions');
     } finally {

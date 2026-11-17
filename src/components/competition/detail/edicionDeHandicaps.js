@@ -4,6 +4,7 @@ import {
   setCustomHandicapUseCase,
   removeCustomHandicapUseCase,
 } from '../../../composition';
+import { mensajeDelError } from '../../../utils/mensajeDelError';
 
 /**
  * El hándicap personalizado de un inscrito, desde la ficha: abrir el editor,
@@ -68,7 +69,9 @@ export const crearEdicionDeHandicaps = (contexto) => {
       setEditingHandicapId(null);
     } catch (error) {
       console.error('Error setting custom handicap:', error);
-      customToast.error(error.message || t('detail.failedToUpdateHandicap'));
+      customToast.error(
+        mensajeDelError(error, t('detail.failedToUpdateHandicap')),
+      );
     } finally {
       setSavingHandicapId(null);
     }
@@ -86,7 +89,9 @@ export const crearEdicionDeHandicaps = (contexto) => {
       setEditingHandicapId(null);
     } catch (error) {
       console.error('Error reverting custom handicap:', error);
-      customToast.error(error.message || t('detail.failedToRevertHandicap'));
+      customToast.error(
+        mensajeDelError(error, t('detail.failedToRevertHandicap')),
+      );
     } finally {
       setRevertingHandicapId(null);
     }

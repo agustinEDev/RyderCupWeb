@@ -38,6 +38,7 @@ import { PANTALLA_MENOS_BARRA_INFERIOR } from '../../utils/barraInferior';
 import { mensajeDeError } from '../../utils/sinCobertura';
 import { CompetitionStatusEnum } from '../../domain/value_objects/CompetitionStatus';
 import EnrollmentStatus from '../../domain/value_objects/EnrollmentStatus';
+import { mensajeDelError } from '../../utils/mensajeDelError';
 
 // El toast de «no se han podido cargar los inscritos»: uno solo, y se va al volver la lista
 const AVISO_INSCRITOS = 'inscritos-sin-cargar';
@@ -197,7 +198,9 @@ const SchedulePage = () => {
       customToast.success(t('success.captainFilled'));
     } catch (error) {
       console.error('Error filling captain:', error);
-      customToast.error(error.message || t('errors.failedToFillCaptain'));
+      customToast.error(
+        mensajeDelError(error, t('errors.failedToFillCaptain')),
+      );
     } finally {
       setIsProcessing(false);
     }
@@ -279,7 +282,9 @@ const SchedulePage = () => {
           customToast.error(error.message);
         }
       } else {
-        customToast.error(error.message || t('errors.failedToGenerateMatches'));
+        customToast.error(
+          mensajeDelError(error, t('errors.failedToGenerateMatches')),
+        );
       }
     } finally {
       setIsProcessing(false);
@@ -300,7 +305,9 @@ const SchedulePage = () => {
       await reloadSchedule();
     } catch (error) {
       console.error('Error starting match:', error);
-      customToast.error(error.message || t('errors.failedToUpdateMatchStatus'));
+      customToast.error(
+        mensajeDelError(error, t('errors.failedToUpdateMatchStatus')),
+      );
     } finally {
       setIsProcessing(false);
     }
@@ -314,7 +321,9 @@ const SchedulePage = () => {
       await reloadSchedule();
     } catch (error) {
       console.error('Error completing match:', error);
-      customToast.error(error.message || t('errors.failedToUpdateMatchStatus'));
+      customToast.error(
+        mensajeDelError(error, t('errors.failedToUpdateMatchStatus')),
+      );
     } finally {
       setIsProcessing(false);
     }
@@ -335,7 +344,9 @@ const SchedulePage = () => {
       await reloadSchedule();
     } catch (error) {
       console.error('Error declaring walkover:', error);
-      customToast.error(error.message || t('errors.failedToDeclareWalkover'));
+      customToast.error(
+        mensajeDelError(error, t('errors.failedToDeclareWalkover')),
+      );
     } finally {
       setIsProcessing(false);
     }
@@ -356,7 +367,9 @@ const SchedulePage = () => {
       await reloadSchedule();
     } catch (error) {
       console.error('Error reassigning players:', error);
-      customToast.error(error.message || t('errors.failedToReassignPlayers'));
+      customToast.error(
+        mensajeDelError(error, t('errors.failedToReassignPlayers')),
+      );
     } finally {
       setIsProcessing(false);
     }
@@ -384,7 +397,9 @@ const SchedulePage = () => {
         setShowTeamsModal(false);
         await Promise.all([reloadSchedule(), recargarCompeticion()]);
       } else {
-        customToast.error(error.message || t('errors.failedToAssignTeams'));
+        customToast.error(
+          mensajeDelError(error, t('errors.failedToAssignTeams')),
+        );
       }
     } finally {
       setIsProcessing(false);

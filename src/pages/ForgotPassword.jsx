@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { validateEmail } from '../utils/validation';
 import { requestPasswordResetUseCase } from '../composition';
 import BrandMark from '../components/ui/BrandMark';
+import { mensajeDelError } from '../utils/mensajeDelError';
 
 const ForgotPassword = () => {
   const { t } = useTranslation(['auth', 'common']);
@@ -59,7 +60,7 @@ const ForgotPassword = () => {
           duration: 6000,
         });
       } else {
-        customToast.error(error.message || t('forgotPassword.error'), {
+        customToast.error(mensajeDelError(error, t('forgotPassword.error')), {
           duration: 5000,
         });
       }

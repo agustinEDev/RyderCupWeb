@@ -3,6 +3,7 @@ import ModalShell, { CAJA_PROPIA } from '../ui/ModalShell';
 import { motion } from 'framer-motion';
 import { X, Loader } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { mensajeDelError } from '../../utils/mensajeDelError';
 
 /**
  * AdminEditCompetitionModal Component
@@ -34,7 +35,7 @@ const AdminEditCompetitionModal = ({ competition, onSubmit, onCancel }) => {
         end_date: formData.endDate,
       });
     } catch (err) {
-      setError(err.message || t('competitions.editModal.error'));
+      setError(mensajeDelError(err, t('competitions.editModal.error')));
     } finally {
       setIsSaving(false);
     }

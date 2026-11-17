@@ -13,6 +13,7 @@ import { CompetitionStatusEnum } from '../domain/value_objects/CompetitionStatus
 import { seEditaLaCompeticion } from '../domain/services/edicionDeLaCompeticion';
 import { siguientePasoDeLaCompeticion } from './siguientePasoDeLaCompeticion';
 import EnrollmentStatus from '../domain/value_objects/EnrollmentStatus';
+import { mensajeDelError } from './mensajeDelError';
 
 // «Volver» lleva a donde se vino: explorar, las invitaciones (FE #682) o, por
 // defecto, las competiciones propias
@@ -80,7 +81,7 @@ export const porQueNoSeFormaron = (t, error) => {
   const motivo = MOTIVOS_PARA_NO_FORMAR[error?.errorCode];
   return motivo
     ? t(motivo)
-    : error?.message || t('detail.errors.teamAssignmentFailed');
+    : mensajeDelError(error, t('detail.errors.teamAssignmentFailed'));
 };
 
 // Por qué no se pudo quitar, por el código del servidor

@@ -27,6 +27,7 @@ import BlockLoader from '../../components/ui/BlockLoader';
 import { esFalloDeRed } from '../../utils/sinCobertura';
 import { recorreConTope } from '../../utils/recorreConTope';
 import { PANTALLA_MENOS_BARRA_INFERIOR } from '../../utils/barraInferior';
+import { mensajeDelError } from '../../utils/mensajeDelError';
 
 // Cuántos detalles de partida terminada se piden a la vez (FE #418)
 const DETALLES_A_LA_VEZ = 5;
@@ -324,7 +325,7 @@ const MyQuickMatchesPage = () => {
         ) : (
           error && (
             <p className="text-sm text-red-600 mb-4">
-              {error.message || t('scoring.errors.generic')}
+              {mensajeDelError(error, t('scoring.errors.generic'))}
             </p>
           )
         )}

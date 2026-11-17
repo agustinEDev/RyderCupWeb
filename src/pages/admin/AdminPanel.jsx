@@ -49,6 +49,7 @@ import {
 import FullScreenLoader from '../../components/ui/FullScreenLoader';
 import BlockLoader from '../../components/ui/BlockLoader';
 import { PANTALLA_MENOS_BARRA_INFERIOR } from '../../utils/barraInferior';
+import { mensajeDelError } from '../../utils/mensajeDelError';
 
 const TRANSITION_USE_CASES = {
   activate: activateCompetitionUseCase,
@@ -189,7 +190,7 @@ const AdminPanel = () => {
       alCargar: setStats,
       alFallar: (error) => {
         console.error('Error loading admin stats:', error);
-        customToast.error(error.message || t('overview.loadError'));
+        customToast.error(mensajeDelError(error, t('overview.loadError')));
       },
     });
 
@@ -213,7 +214,7 @@ const AdminPanel = () => {
       },
       alFallar: (error) => {
         console.error('Error loading users:', error);
-        customToast.error(error.message || t('users.loadError'));
+        customToast.error(mensajeDelError(error, t('users.loadError')));
       },
     },
   );
@@ -237,7 +238,9 @@ const AdminPanel = () => {
         },
         alFallar: (error) => {
           console.error('Error loading competitions:', error);
-          customToast.error(error.message || t('competitions.loadError'));
+          customToast.error(
+            mensajeDelError(error, t('competitions.loadError')),
+          );
         },
       },
     );
@@ -317,7 +320,9 @@ const AdminPanel = () => {
       recargarCompetitions();
     } catch (error) {
       console.error(`Error running competition transition "${action}":`, error);
-      customToast.error(error.message || t('competitions.transitionError'));
+      customToast.error(
+        mensajeDelError(error, t('competitions.transitionError')),
+      );
     } finally {
       setIsTransitioning(false);
       setCancelingCompetition(null);

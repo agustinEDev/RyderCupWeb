@@ -622,7 +622,7 @@ describe('MyQuickMatchesPage', () => {
     ).not.toBeInTheDocument();
   });
 
-  it('un fallo del servidor se enseña con su mensaje', async () => {
+  it('un fallo del servidor se enseña con el texto de la app (Q-FE-06)', async () => {
     mockListMyQuickMatches.mockRejectedValue(
       Object.assign(new Error('Server error'), { status: 500 }),
     );
@@ -630,7 +630,7 @@ describe('MyQuickMatchesPage', () => {
     renderPage();
 
     await waitFor(() => {
-      expect(screen.getByText('Server error')).toBeInTheDocument();
+      expect(screen.getByText('scoring.errors.generic')).toBeInTheDocument();
     });
   });
 

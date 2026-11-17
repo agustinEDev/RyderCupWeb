@@ -16,6 +16,7 @@ import { anotaLaSesion } from '../services/sesionCompartida';
 import { debeAceptarLosTerminos } from '../domain/services/aceptacionDeTerminos';
 import CampoDeHandicap from '../components/ui/CampoDeHandicap';
 import { olvidaLaMarcaDeTerminos } from '../utils/terminosPendientes';
+import { mensajeDelError } from '../utils/mensajeDelError';
 
 const CompleteProfile = () => {
   const { t } = useTranslation('auth');
@@ -137,7 +138,7 @@ const CompleteProfile = () => {
       navigate('/dashboard', { replace: true });
     } catch (error) {
       console.error('Error completing profile:', error);
-      customToast.error(error.message || t('google.genericError'));
+      customToast.error(mensajeDelError(error, t('google.genericError')));
     } finally {
       setIsSaving(false);
     }
