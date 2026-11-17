@@ -63,7 +63,10 @@ export const nombrePequeno = (persona) => {
   if (!persona?.alias) return '';
 
   const delante = nombreVisible(persona);
-  const real = nombreRealSiAporta(persona);
-  if (delante === persona.alias) return real;
-  return persona.alias !== delante ? persona.alias : '';
+  if (delante === persona.alias) return nombreRealSiAporta(persona);
+  // Delante, el nombre real: debajo, el alias. Si delante va otra cosa (un nombre
+  // guardado de antes de que cambiara su alias), mejor nada que dos alias
+  const nombre = persona.first_name ?? persona.firstName ?? '';
+  const apellido = persona.last_name ?? persona.lastName ?? '';
+  return delante === `${nombre} ${apellido}`.trim() ? persona.alias : '';
 };

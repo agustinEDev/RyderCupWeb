@@ -6,11 +6,7 @@ import {
   useCallback,
 } from 'react';
 import ModalShell, { CAJA_PROPIA } from '../ui/ModalShell';
-import {
-  nombrePequeno,
-  nombreRealSiAporta,
-  nombreVisible,
-} from '../../utils/nombreVisible';
+import { nombrePequeno, nombreVisible } from '../../utils/nombreVisible';
 import { Loader, Search, UserPlus, X } from 'lucide-react';
 import Avatar from '../ui/Avatar';
 import {
@@ -520,6 +516,7 @@ const SendInvitationModalContent = ({
                           }`}
                         >
                           {amigo.otherUserName}
+                          <NombrePequeno texto={amigo.otherUserSubName} />
                         </span>
                         {amigo.yaInscrito ? (
                           <span className="shrink-0 text-xs text-gray-500">
@@ -664,11 +661,7 @@ const SendInvitationModalContent = ({
                                 >
                                   {nombreVisible(user)}
                                 </p>
-                                {nombreRealSiAporta(user) && (
-                                  <p className="text-xs text-gray-500 truncate">
-                                    {nombreRealSiAporta(user)}
-                                  </p>
-                                )}
+                                <NombrePequeno texto={nombrePequeno(user)} />
                               </div>
                               {yaInscrito ? (
                                 <span className="shrink-0 text-xs text-gray-500">

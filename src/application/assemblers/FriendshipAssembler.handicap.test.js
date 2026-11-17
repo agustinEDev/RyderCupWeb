@@ -58,6 +58,17 @@ describe('FriendshipAssembler · el otro nombre del otro lado (SB-08)', () => {
     expect(dto(datos, 'user-1').otherUserSubName).toBe('Agustín Estévez');
   });
 
+  it('si la pidió el otro (solicitud recibida), el nombre real de quien la pidió', () => {
+    const datos = api({
+      requester_name: 'Trinx',
+      requester_real_name: 'Agustín Estévez',
+      requester_alias: 'Trinx',
+      addressee_real_name: 'Yo Mismo',
+    });
+
+    expect(dto(datos, 'user-2').otherUserSubName).toBe('Agustín Estévez');
+  });
+
   it('sin alias, o un servidor que no los manda: null', () => {
     expect(
       dto(api({ addressee_real_name: 'Rafa Nadal' }), 'user-1')

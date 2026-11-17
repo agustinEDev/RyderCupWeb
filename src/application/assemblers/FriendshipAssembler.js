@@ -54,15 +54,12 @@ class FriendshipAssembler {
       // El otro nombre del otro lado, pequeño debajo (SB-08). Lo traen la lista de
       // amigos y la de solicitudes; si no, null
       const lado = isRequester ? 'addressee' : 'requester';
-      const [nombre = '', ...apellidos] = (
-        apiData?.[`${lado}_real_name`] ?? ''
-      ).split(' ');
       simpleDTO.otherUserSubName =
         nombrePequeno({
           display_name: simpleDTO.otherUserName,
           alias: apiData?.[`${lado}_alias`] ?? null,
-          first_name: nombre,
-          last_name: apellidos.join(' '),
+          // El nombre real ya viene entero: va en `first_name` tal cual
+          first_name: apiData?.[`${lado}_real_name`] ?? '',
         }) || null;
       // El del otro lado, para el resumen de la partida rápida antes de crear
       // nada (FE #848). Solo lo trae la lista de amigos; si no, null

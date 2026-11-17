@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { flushSync } from 'react-dom';
-import { nombreRealSiAporta, nombreVisible } from '../../utils/nombreVisible';
+import { nombrePequeno, nombreVisible } from '../../utils/nombreVisible';
+import NombrePequeno from '../ui/NombrePequeno';
 import { useNavigate } from 'react-router';
 import { X, Search, Loader } from 'lucide-react';
 import Avatar from '../ui/Avatar';
@@ -305,11 +306,7 @@ const AddFriendModalContent = ({ onClose, onSearchUsers, t }) => {
                       <p className="text-sm font-medium text-gray-900 truncate">
                         {nombreVisible(user)}
                       </p>
-                      {nombreRealSiAporta(user) && (
-                        <p className="text-xs text-gray-500 truncate">
-                          {nombreRealSiAporta(user)}
-                        </p>
-                      )}
+                      <NombrePequeno texto={nombrePequeno(user)} />
                     </div>
                   </div>
                 </button>

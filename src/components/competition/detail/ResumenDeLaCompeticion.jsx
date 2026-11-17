@@ -168,7 +168,7 @@ const ResumenDeLaCompeticion = ({
         {competition.creator && (
           <div className="flex items-center gap-2 text-gray-700">
             <Shield className="w-5 h-5" />
-            <div>
+            <div className="min-w-0">
               <p className="text-xs text-gray-500">{t('detail.organizedBy')}</p>
               <p className="text-sm font-medium">
                 {competition.creator.displayName}

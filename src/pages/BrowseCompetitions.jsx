@@ -569,6 +569,7 @@ const CompetitionCard = ({
     countries,
     visibility,
   } = competition;
+  const otroNombreDelCreador = nombrePequeno(creator);
   // En un stroke play el cupo es de sus franjas, que se ven en la ficha (release social 3)
   const llena = competition.hasTeams !== false && enrolledCount >= maxPlayers;
   // Solo en una pública se pide plaza: un admin ve también las privadas en esta
@@ -639,8 +640,8 @@ const CompetitionCard = ({
               {creator?.displayName || t('detail.unknownUser')}
             </span>
             {/* El otro nombre, entre paréntesis: en la tarjeta no cabe otra línea */}
-            {nombrePequeno(creator) && (
-              <span className="text-gray-500"> ({nombrePequeno(creator)})</span>
+            {otroNombreDelCreador && (
+              <span className="text-gray-500"> ({otroNombreDelCreador})</span>
             )}
           </span>
         </div>

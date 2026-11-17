@@ -68,6 +68,7 @@ class EnrollmentAssembler {
         simpleDTO.userCountryCode = apiData.user.country_code;
         simpleDTO.userGender = apiData.user.gender || null;
       } else {
+        simpleDTO.userSubName = null;
         if (apiData.user_name) {
           simpleDTO.userName = apiData.user_name;
         }
