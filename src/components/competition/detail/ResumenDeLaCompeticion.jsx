@@ -169,7 +169,7 @@ const ResumenDeLaCompeticion = ({
             <div>
               <p className="text-xs text-gray-500">{t('detail.organizedBy')}</p>
               <p className="text-sm font-medium">
-                {competition.creator.firstName} {competition.creator.lastName}
+                {competition.creator.displayName}
               </p>
             </div>
           </div>

@@ -121,10 +121,7 @@ const BrowseCompetitions = () => {
     if (joinableSearchType === 'name') {
       return comp.name.toLowerCase().includes(searchLower);
     } else if (joinableSearchType === 'creator') {
-      const creatorName =
-        `${comp.creator?.firstName || ''} ${comp.creator?.lastName || ''}`
-          .trim()
-          .toLowerCase();
+      const creatorName = (comp.creator?.displayName || '').toLowerCase();
       return creatorName.includes(searchLower);
     }
 
@@ -140,10 +137,7 @@ const BrowseCompetitions = () => {
     if (exploreSearchType === 'name') {
       return comp.name.toLowerCase().includes(searchLower);
     } else if (exploreSearchType === 'creator') {
-      const creatorName =
-        `${comp.creator?.firstName || ''} ${comp.creator?.lastName || ''}`
-          .trim()
-          .toLowerCase();
+      const creatorName = (comp.creator?.displayName || '').toLowerCase();
       return creatorName.includes(searchLower);
     }
 
@@ -621,7 +615,7 @@ const CompetitionCard = ({
           <span>
             {t('browse.card.created-by')}{' '}
             <span className="font-medium text-gray-900">
-              {creator?.firstName} {creator?.lastName}
+              {creator?.displayName}
             </span>
           </span>
         </div>
