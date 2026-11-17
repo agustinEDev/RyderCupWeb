@@ -5,7 +5,8 @@ estándar, como el resto de tests de esta carpeta:
   python3 -m unittest discover -s .github/scripts -p "test_*.py"
 
 - P-07: `security.txt` (RFC 9116), para que quien encuentre un fallo sepa a quién
-  avisar. Caduca: este test falla un mes antes, para renovarlo a tiempo.
+  avisar. Caduca: este test falla cuando ya ha caducado (un security.txt caducado no
+  vale); el aviso para renovarlo con tiempo es aparte, para no parar un hotfix.
 - INF-12: Dependabot espera unos días antes de proponer una versión recién publicada, y
   las imágenes del Dockerfile (las del Kind) van fijadas por digest y vigiladas.
 """
@@ -41,11 +42,11 @@ class TestSecurityTxt(unittest.TestCase):
             campos["canonical"], "https://www.rydercupfriends.com/.well-known/security.txt"
         )
 
-    def test_does_not_expire_within_a_month(self):
+    def test_has_not_expired(self):
         caduca = datetime.fromisoformat(_campos_de_security_txt()["expires"])
         self.assertGreater(
             caduca,
-            datetime.now(UTC) + timedelta(days=30),
+            datetime.now(UTC),
             "Renovar Expires en public/.well-known/security.txt (máximo un año)",
         )
 

@@ -17,7 +17,7 @@ const PasswordInput = ({
   name,
   value,
   onChange,
-  placeholder = 'Enter your password',
+  placeholder,
   error = false,
   disabled = false,
   label = 'Password',
