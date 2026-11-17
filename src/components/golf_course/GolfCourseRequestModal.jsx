@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import GolfCourseForm from './GolfCourseForm';
 import { mensajeDelError } from '../../utils/mensajeDelError';
+import { registraElFallo } from '../../utils/registraElFallo';
 
 /**
  * GolfCourseRequestModal Component
@@ -52,7 +53,11 @@ const GolfCourseRequestModal = ({
         onClose();
       }, 1500);
     } catch (err) {
-      console.error('Error creating golf course request:', err);
+      registraElFallo(
+        'GolfCourseRequestModal.error-creating-golf-course-request',
+        'Error creating golf course request:',
+        err,
+      );
       setError(
         mensajeDelError(
           err,

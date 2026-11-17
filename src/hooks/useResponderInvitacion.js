@@ -4,6 +4,7 @@ import customToast from '../utils/toast';
 import { mensajeDeError } from '../utils/sinCobertura';
 import { useGeneroParaApuntarse } from './useGeneroParaApuntarse';
 import { respondToInvitationUseCase } from '../composition';
+import { registraElFallo } from '../utils/registraElFallo';
 
 // Sin plaza, o con los equipos ya formados (29 oct 2026): se dice por qué y
 // la pantalla se pone al día
@@ -70,7 +71,11 @@ export const useResponderInvitacion = ({
     try {
       await hacer(...argumentos);
     } catch (error) {
-      console.error('Error reloading after answering an invitation:', error);
+      registraElFallo(
+        'useResponderInvitacion.error-reloading-after-answering-an-invit',
+        'Error reloading after answering an invitation:',
+        error,
+      );
     }
   };
 
@@ -108,7 +113,11 @@ export const useResponderInvitacion = ({
           'ACCEPT',
         );
       } catch (error) {
-        console.error('Error accepting invitation:', error);
+        registraElFallo(
+          'useResponderInvitacion.error-accepting-invitation',
+          'Error accepting invitation:',
+          error,
+        );
         avisarDelFallo(error);
         return;
       }
@@ -134,7 +143,11 @@ export const useResponderInvitacion = ({
     try {
       await generoParaApuntarse.guardar(genero);
     } catch (error) {
-      console.error('Error saving gender:', error);
+      registraElFallo(
+        'useResponderInvitacion.error-saving-gender',
+        'Error saving gender:',
+        error,
+      );
       customToast.error(textoDelFallo(error));
       terminar(invitationId);
       return;
@@ -159,7 +172,11 @@ export const useResponderInvitacion = ({
           await releer(alCambiar);
           return;
         }
-        console.error('Error declining invitation:', error);
+        registraElFallo(
+          'useResponderInvitacion.error-declining-invitation',
+          'Error declining invitation:',
+          error,
+        );
         avisarDelFallo(error);
         return;
       }

@@ -64,6 +64,7 @@ import { CompetitionName } from '../domain/value_objects/CompetitionName';
 import { diaDeLaSesion } from '../utils/diaDeLaSesion';
 import { PANTALLA_MENOS_BARRA_INFERIOR } from '../utils/barraInferior';
 import { mensajeDelError } from '../utils/mensajeDelError';
+import { registraElFallo } from '../utils/registraElFallo';
 
 // Helper function to get message className
 const getMessageClassName = (type) => {
@@ -126,7 +127,11 @@ const leeVecinos = async (countryId) => {
   try {
     return aPaises(await getAdjacentCountriesUseCase.execute(countryId));
   } catch (error) {
-    console.error('Error fetching adjacent countries:', error);
+    registraElFallo(
+      'CreateCompetition.error-fetching-adjacent-countries',
+      'Error fetching adjacent countries:',
+      error,
+    );
     return [];
   }
 };
@@ -213,7 +218,11 @@ const leeLaCompeticionParaEditar = async (competitionId) => {
       }));
     }
   } catch (error) {
-    console.error('Error loading golf courses:', error);
+    registraElFallo(
+      'CreateCompetition.error-loading-golf-courses',
+      'Error loading golf courses:',
+      error,
+    );
   }
 
   return {
@@ -456,7 +465,11 @@ const CreateCompetition = () => {
   useCargaCancelableEffect(() => fetchCountriesUseCase.execute(), [], {
     alCargar: (data) => setAllCountries(aPaises(data)),
     alFallar: (error) => {
-      console.error('Error fetching countries:', error);
+      registraElFallo(
+        'CreateCompetition.error-fetching-countries',
+        'Error fetching countries:',
+        error,
+      );
       setAllCountries([]);
     },
   });
@@ -1050,7 +1063,8 @@ const CreateCompetition = () => {
           try {
             await (ajustesPrimero ? guardaLoGeneral : guardaLosAjustes)();
           } catch (error) {
-            console.error(
+            registraElFallo(
+              'CreateCompetition.error-updating-competition-second-reques',
               'Error updating competition (second request):',
               error,
             );
@@ -1138,7 +1152,11 @@ const CreateCompetition = () => {
               propuesta,
             );
           } catch (error) {
-            console.error('No se ha podido proponer la agenda:', error);
+            registraElFallo(
+              'CreateCompetition.no-se-ha-podido-proponer-la-agenda',
+              'No se ha podido proponer la agenda:',
+              error,
+            );
           }
         }
 
@@ -1148,7 +1166,8 @@ const CreateCompetition = () => {
         }, 1500);
       }
     } catch (error) {
-      console.error(
+      registraElFallo(
+        'CreateCompetition.7',
         `Error ${isEditMode ? 'updating' : 'creating'} competition:`,
         error,
       );

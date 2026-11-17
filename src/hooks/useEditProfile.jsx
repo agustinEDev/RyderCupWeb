@@ -18,6 +18,7 @@ import { buildGoogleOAuthUrl } from '../utils/googleOAuth';
 
 import { useAuth } from './useAuth';
 import { mensajeDelError } from '../utils/mensajeDelError';
+import { registraElFallo } from '../utils/registraElFallo';
 
 // 409 Conflict: el alias pedido ya lo tiene otra persona (BE #239)
 const CONFLICTO = 409;
@@ -85,7 +86,11 @@ export const useEditProfile = () => {
           gender: authUser.gender || '',
         });
       } catch (error) {
-        console.error('❌ [useEditProfile] Error fetching user data:', error);
+        registraElFallo(
+          'useEditProfile.useeditprofile-error-fetching-user-data',
+          '❌ [useEditProfile] Error fetching user data:',
+          error,
+        );
       } finally {
         setIsLoading(false);
       }
@@ -102,7 +107,11 @@ export const useEditProfile = () => {
         const countriesData = await fetchCountriesUseCase.execute();
         setCountries(countriesData || []);
       } catch (error) {
-        console.error('❌ [useEditProfile] Error loading countries:', error);
+        registraElFallo(
+          'useEditProfile.useeditprofile-error-loading-countries',
+          '❌ [useEditProfile] Error loading countries:',
+          error,
+        );
         setCountries([]);
       } finally {
         setIsLoadingCountries(false);
@@ -134,7 +143,11 @@ export const useEditProfile = () => {
       // refetchUser actualizará authUser, y por tanto el useEffect
       // recargará user + formData.
     } catch (error) {
-      console.error('Error refreshing user data:', error);
+      registraElFallo(
+        'useEditProfile.error-refreshing-user-data',
+        'Error refreshing user data:',
+        error,
+      );
       customToast.error(t('toasts.failedToRefreshData'));
     } finally {
       setIsRefreshing(false);
@@ -165,7 +178,11 @@ export const useEditProfile = () => {
       await refetchUser();
       customToast.success(t('toasts.handicapUpdated'));
     } catch (error) {
-      console.error('Error updating handicap:', error);
+      registraElFallo(
+        'useEditProfile.error-updating-handicap',
+        'Error updating handicap:',
+        error,
+      );
       customToast.error(
         mensajeDelError(error, t('toasts.failedToUpdateHandicap')),
       );
@@ -191,7 +208,11 @@ export const useEditProfile = () => {
 
       customToast.success(t('toasts.handicapUpdatedRFEG'));
     } catch (error) {
-      console.error('Error updating handicap from RFEG:', error);
+      registraElFallo(
+        'useEditProfile.error-updating-handicap-from-rfeg',
+        'Error updating handicap from RFEG:',
+        error,
+      );
       customToast.error(
         mensajeDelError(error, t('toasts.failedToUpdateHandicapRFEG')),
       );
@@ -282,7 +303,11 @@ export const useEditProfile = () => {
 
       customToast.success(t('toasts.profileUpdated'));
     } catch (error) {
-      console.error('Error updating profile:', error);
+      registraElFallo(
+        'useEditProfile.error-updating-profile',
+        'Error updating profile:',
+        error,
+      );
       // 409: el alias lo tiene otra persona. Va al campo y NO como toast,
       // conservando lo tecleado para que se pueda retocar en vez de escribirlo
       // otra vez.
@@ -347,7 +372,11 @@ export const useEditProfile = () => {
     }
     vaAGoogle().catch((error) => {
       // Sin la configuración de Google (o sin `crypto.subtle`) no hay a dónde ir
-      console.error('Google OAuth URL error:', error);
+      registraElFallo(
+        'useEditProfile.google-oauth-url-error',
+        'Google OAuth URL error:',
+        error,
+      );
       customToast.error(t('auth:google.genericError'));
     });
   };
@@ -374,7 +403,11 @@ export const useEditProfile = () => {
       // La marca caducó o ya se usó: que la confirme otra vez, en la ventana
       if (error?.errorCode === 'REAUTHENTICATION_REQUIRED')
         return 'edit.linkedAccounts.reauthExpired';
-      console.error('Error unlinking Google:', error);
+      registraElFallo(
+        'useEditProfile.error-unlinking-google',
+        'Error unlinking Google:',
+        error,
+      );
       customToast.error(
         mensajeDelError(error, t('edit.linkedAccounts.unlinkError')),
       );
@@ -418,7 +451,11 @@ export const useEditProfile = () => {
       await vaAGoogle();
     } catch (error) {
       // Sin la configuración de Google no hay a dónde ir: que no se quede comprobando
-      console.error('Google OAuth URL error:', error);
+      registraElFallo(
+        'useEditProfile.google-oauth-url-error-after-password',
+        'Google OAuth URL error:',
+        error,
+      );
       return 'auth:google.genericError';
     }
     return null;
@@ -518,7 +555,11 @@ export const useEditProfile = () => {
         customToast.success(t('toasts.securityUpdated'));
       }
     } catch (error) {
-      console.error('Error updating security:', error);
+      registraElFallo(
+        'useEditProfile.error-updating-security',
+        'Error updating security:',
+        error,
+      );
 
       const contrasena = passwordErrorMessage(error, t);
       // Los errores de Seguridad con código: los límites (RyderCupAm #753) y los que
@@ -564,7 +605,11 @@ export const useEditProfile = () => {
       await refetchUser();
       customToast.success(t('toasts.emailChangeCancelled'));
     } catch (error) {
-      console.error('Error cancelling the email change:', error);
+      registraElFallo(
+        'useEditProfile.error-cancelling-the-email-change',
+        'Error cancelling the email change:',
+        error,
+      );
       customToast.error(t('toasts.failedToCancelEmailChange'));
     } finally {
       anulando.current = false;

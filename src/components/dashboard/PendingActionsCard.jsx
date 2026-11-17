@@ -39,6 +39,7 @@ import { diaDeLaSesion } from '../../utils/diaDeLaSesion';
 import { CompetitionStatusEnum } from '../../domain/value_objects/CompetitionStatus';
 import EnrollmentStatus from '../../domain/value_objects/EnrollmentStatus';
 import InvitationStatus from '../../domain/value_objects/InvitationStatus';
+import { registraElFallo } from '../../utils/registraElFallo';
 
 /** Lo que la tarjeta recuerda, con sus valores por defecto. */
 const loRecordado = (r) => ({
@@ -281,7 +282,11 @@ const PendingActionsCard = ({
         ultimoAplicado.current = aplicado;
         recuerdaLasAccionesPendientes({ ...aplicado }, user.id);
       } catch (error) {
-        console.error('Error loading pending actions:', error);
+        registraElFallo(
+          'PendingActionsCard.error-loading-pending-actions',
+          'Error loading pending actions:',
+          error,
+        );
       } finally {
         if (!cancelado) setIsLoading(false);
       }
@@ -338,7 +343,11 @@ const PendingActionsCard = ({
       setPlazasAsignadas(quedan);
     } catch (error) {
       // El nuestro, traducido: el del servidor puede venir en otro idioma (CodeRabbit)
-      console.error('No se ha podido marcar la plaza como vista:', error);
+      registraElFallo(
+        'PendingActionsCard.no-se-ha-podido-marcar-la-plaza-como-vis',
+        'No se ha podido marcar la plaza como vista:',
+        error,
+      );
       customToast.error(t('pendingActions.placeAssignedOkFailed'));
     } finally {
       if (montada.current && aplicadoDe.current === deQuien)

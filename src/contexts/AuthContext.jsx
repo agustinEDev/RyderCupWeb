@@ -23,6 +23,7 @@ import { olvidaLasAccionesPendientes } from '../services/accionesPendientes';
 import { abreLoGuardadoParaLaCuenta } from '../services/loUltimoConocido';
 // Rellena el registro que usa `olvidaLoDeLaCuenta` (también lo carga main.jsx)
 import { anotaLaCuentaDeEstaPestana } from '../utils/vueltaTrasEntrar';
+import { registraElFallo } from '../utils/registraElFallo';
 
 // Create the context
 const AuthContext = createContext(null);
@@ -60,14 +61,22 @@ export const AuthProvider = ({ children }) => {
           } catch (error) {
             // Sin espacio para reescribirla: se sigue con la reducida en memoria, sin
             // perder al usuario; se reescribe en el próximo arranque o al entrar
-            console.error('Failed to rewrite the stored user:', error);
+            registraElFallo(
+              'AuthContext.failed-to-rewrite-the-stored-user',
+              'Failed to rewrite the stored user:',
+              error,
+            );
           }
           return reducida;
         }
         return guardado;
       }
     } catch (error) {
-      console.error('Failed to parse stored user:', error);
+      registraElFallo(
+        'AuthContext.failed-to-parse-stored-user',
+        'Failed to parse stored user:',
+        error,
+      );
       // Safe cleanup: only remove if localStorage is available
       if (typeof localStorage !== 'undefined') {
         localStorage.removeItem('user');
@@ -123,7 +132,11 @@ export const AuthProvider = ({ children }) => {
       } catch (error) {
         // Sin espacio (o sin almacenamiento): se entra igual, con el usuario en memoria,
         // como en el arranque. Solo se pierde poder recordarlo al recargar
-        console.error('Failed to store the user:', error);
+        registraElFallo(
+          'AuthContext.failed-to-store-the-user',
+          'Failed to store the user:',
+          error,
+        );
       }
     } else {
       try {
@@ -181,7 +194,11 @@ export const AuthProvider = ({ children }) => {
     try {
       olvidaLoGuardadoDeLaCuenta();
     } catch (error) {
-      console.error('[Auth] Logout cleanup failed:', error);
+      registraElFallo(
+        'AuthContext.auth-logout-cleanup-failed',
+        '[Auth] Logout cleanup failed:',
+        error,
+      );
     }
     // Los avisos de golpes que no se pudieron guardar NO se tocan, ni aquí ni
     // en los cierres duros. Se intentó borrarlos y es un error: no se pueden

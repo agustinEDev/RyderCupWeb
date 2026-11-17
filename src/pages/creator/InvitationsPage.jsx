@@ -29,6 +29,7 @@ import { CompetitionStatusEnum } from '../../domain/value_objects/CompetitionSta
 import EnrollmentStatus from '../../domain/value_objects/EnrollmentStatus';
 import InvitationStatus from '../../domain/value_objects/InvitationStatus';
 import { mensajeDelError } from '../../utils/mensajeDelError';
+import { registraElFallo } from '../../utils/registraElFallo';
 
 // Ni `/friends/me` ni el listado de invitaciones dan más de 100 filas por
 // página. Pedir una sola dejaba fuera al amigo 101 y a la invitación pendiente
@@ -210,7 +211,11 @@ const InvitationsPage = () => {
         setTotalCount(invResult.totalCount);
       },
       alFallar: (error, { silenciosa }) => {
-        console.error('Error loading invitations:', error);
+        registraElFallo(
+          'InvitationsPage.error-loading-invitations',
+          'Error loading invitations:',
+          error,
+        );
         // En silencio, lo que ya se veía sigue valiendo: echar de la pantalla
         // con el modal abierto por un refresco fallido no es silencioso
         // (revisión local)
@@ -411,7 +416,11 @@ const InvitationsPage = () => {
       recargarEnSilencio();
       return true;
     } catch (error) {
-      console.error('Error sending invitation:', error);
+      registraElFallo(
+        'InvitationsPage.error-sending-invitation',
+        'Error sending invitation:',
+        error,
+      );
       avisarDelEnvioFallido(error);
       return false;
     } finally {
@@ -440,7 +449,11 @@ const InvitationsPage = () => {
       recargarEnSilencio();
       return true;
     } catch (error) {
-      console.error('Error sending invitation:', error);
+      registraElFallo(
+        'InvitationsPage.error-sending-invitation-2',
+        'Error sending invitation:',
+        error,
+      );
       avisarDelEnvioFallido(error);
       return false;
     } finally {
@@ -465,7 +478,11 @@ const InvitationsPage = () => {
         new Set([...enviadasAqui()].filter((clave) => !retiradas.has(clave))),
       );
     } catch (error) {
-      console.error('Error withdrawing invitation:', error);
+      registraElFallo(
+        'InvitationsPage.error-withdrawing-invitation',
+        'Error withdrawing invitation:',
+        error,
+      );
       customToast.error(
         error?.status === 409
           ? t('errors.notPendingAnymore')

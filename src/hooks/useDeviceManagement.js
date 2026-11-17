@@ -5,6 +5,7 @@ import { useCargaCancelableEffect } from './useCargaCancelableEffect';
 
 import { getActiveDevicesUseCase, revokeDeviceUseCase } from '../composition';
 import { mensajeDelError } from '../utils/mensajeDelError';
+import { registraElFallo } from '../utils/registraElFallo';
 
 /**
  * Custom hook for Device Management
@@ -28,7 +29,8 @@ export const useDeviceManagement = () => {
     {
       alCargar: (result) => setDevices(result.devices || []),
       alFallar: (error) => {
-        console.error(
+        registraElFallo(
+          'useDeviceManagement.usedevicemanagement-error-fetching-devic',
           '❌ [useDeviceManagement] Error fetching devices:',
           error,
         );
@@ -77,7 +79,11 @@ export const useDeviceManagement = () => {
       customToast.success(t('success.deviceRevoked'));
       return true;
     } catch (error) {
-      console.error('❌ [useDeviceManagement] Error revoking device:', error);
+      registraElFallo(
+        'useDeviceManagement.usedevicemanagement-error-revoking-devic',
+        '❌ [useDeviceManagement] Error revoking device:',
+        error,
+      );
 
       // Translate domain error code (Repository returns error codes, not messages)
       const errorMessage = error.code

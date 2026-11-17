@@ -50,6 +50,7 @@ import FullScreenLoader from '../../components/ui/FullScreenLoader';
 import BlockLoader from '../../components/ui/BlockLoader';
 import { PANTALLA_MENOS_BARRA_INFERIOR } from '../../utils/barraInferior';
 import { mensajeDelError } from '../../utils/mensajeDelError';
+import { registraElFallo } from '../../utils/registraElFallo';
 
 const TRANSITION_USE_CASES = {
   activate: activateCompetitionUseCase,
@@ -189,7 +190,11 @@ const AdminPanel = () => {
       activa: Boolean(user),
       alCargar: setStats,
       alFallar: (error) => {
-        console.error('Error loading admin stats:', error);
+        registraElFallo(
+          'AdminPanel.error-loading-admin-stats',
+          'Error loading admin stats:',
+          error,
+        );
         customToast.error(mensajeDelError(error, t('overview.loadError')));
       },
     });
@@ -213,7 +218,11 @@ const AdminPanel = () => {
         setTotalCount(data.totalCount);
       },
       alFallar: (error) => {
-        console.error('Error loading users:', error);
+        registraElFallo(
+          'AdminPanel.error-loading-users',
+          'Error loading users:',
+          error,
+        );
         customToast.error(mensajeDelError(error, t('users.loadError')));
       },
     },
@@ -237,7 +246,11 @@ const AdminPanel = () => {
           setCompetitions(data.slice(0, PAGE_SIZE));
         },
         alFallar: (error) => {
-          console.error('Error loading competitions:', error);
+          registraElFallo(
+            'AdminPanel.error-loading-competitions',
+            'Error loading competitions:',
+            error,
+          );
           customToast.error(
             mensajeDelError(error, t('competitions.loadError')),
           );
@@ -319,7 +332,11 @@ const AdminPanel = () => {
       customToast.success(t('competitions.transitionSuccess'));
       recargarCompetitions();
     } catch (error) {
-      console.error(`Error running competition transition "${action}":`, error);
+      registraElFallo(
+        'AdminPanel.4',
+        `Error running competition transition "${action}":`,
+        error,
+      );
       customToast.error(
         mensajeDelError(error, t('competitions.transitionError')),
       );

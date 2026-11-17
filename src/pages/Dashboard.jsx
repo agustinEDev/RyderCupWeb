@@ -65,6 +65,7 @@ import {
   quitaRecordatorioDeHandicap,
 } from '../services/refrescoDeHandicapApuntes';
 import { PANTALLA_MENOS_BARRA_INFERIOR } from '../utils/barraInferior';
+import { registraElFallo } from '../utils/registraElFallo';
 
 // El panel enseña un resumen, no el historial entero
 const RECENT_MATCHES_SHOWN = 3;
@@ -300,7 +301,11 @@ const Dashboard = () => {
           recuerdaElPanel(user.id, { competiciones: lista });
         }
       } catch (error) {
-        console.error('Failed to load dashboard data:', error);
+        registraElFallo(
+          'Dashboard.failed-to-load-dashboard-data',
+          'Failed to load dashboard data:',
+          error,
+        );
         if (!cancelled) {
           // Sin red se queda lo que se ve (lo guardado). Una respuesta con error
           // no se tapa: como siempre. Los próximos lo saben por el error
@@ -364,7 +369,11 @@ const Dashboard = () => {
           recuerdaElPanel(user.id, { estadisticas: stats });
         }
       } catch (error) {
-        console.error('Failed to load player stats:', error);
+        registraElFallo(
+          'Dashboard.failed-to-load-player-stats',
+          'Failed to load player stats:',
+          error,
+        );
         // Sin red se quedan las de la última vez; con respuesta, como siempre
         if (!cancelled && !esFalloDeRedDeLaApi(error)) {
           setPlayerStats(null);
@@ -419,7 +428,11 @@ const Dashboard = () => {
           recuerdaElPanel(user.id, { ultimasPartidas: matches });
         }
       } catch (error) {
-        console.error('Failed to load recent matches:', error);
+        registraElFallo(
+          'Dashboard.failed-to-load-recent-matches',
+          'Failed to load recent matches:',
+          error,
+        );
         // Sin red se queda lo que se ve; con respuesta, como siempre
         if (!cancelled && !esFalloDeRedDeLaApi(error)) {
           setRecentMatches([]);
@@ -701,7 +714,8 @@ const Dashboard = () => {
             try {
               await refetchUser();
             } catch (err) {
-              console.error(
+              registraElFallo(
+                'Dashboard.no-se-pudo-refrescar-el-usuario-tras-el',
                 'No se pudo refrescar el usuario tras el alias:',
                 err,
               );

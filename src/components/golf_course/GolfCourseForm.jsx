@@ -18,6 +18,7 @@ import {
   slopeRangeFor,
 } from '../../domain/services/courseTypeRanges';
 import { mensajeDelError } from '../../utils/mensajeDelError';
+import { registraElFallo } from '../../utils/registraElFallo';
 
 // Los diez colores admitidos, ordenados de barras mas largas a mas cortas
 // segun el uso habitual. OTHER cubre las salidas cuyo nombre no es un color
@@ -130,7 +131,11 @@ const GolfCourseForm = ({ initialData = null, onSubmit, onCancel }) => {
           : [];
         setAllCountries(validCountries);
       } catch (error) {
-        console.error('Error fetching countries:', error);
+        registraElFallo(
+          'GolfCourseForm.error-fetching-countries',
+          'Error fetching countries:',
+          error,
+        );
         setAllCountries([]);
       }
     };
@@ -436,7 +441,11 @@ const GolfCourseForm = ({ initialData = null, onSubmit, onCancel }) => {
 
       await onSubmit(formData);
     } catch (error) {
-      console.error('Error submitting form:', error);
+      registraElFallo(
+        'GolfCourseForm.error-submitting-form',
+        'Error submitting form:',
+        error,
+      );
       customToast.error(mensajeDelError(error, t('form.errors.submitFailed')));
     } finally {
       setIsSubmitting(false);

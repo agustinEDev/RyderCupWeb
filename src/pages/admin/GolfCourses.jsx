@@ -19,6 +19,7 @@ import {
 import FullScreenLoader from '../../components/ui/FullScreenLoader';
 import BlockLoader from '../../components/ui/BlockLoader';
 import { mensajeDelError } from '../../utils/mensajeDelError';
+import { registraElFallo } from '../../utils/registraElFallo';
 
 /**
  * GolfCourses Page (Admin)
@@ -63,7 +64,11 @@ const GolfCourses = ({ embedded = false }) => {
         activa: Boolean(user),
         alCargar: (page) => setCourses(page.courses),
         alFallar: (error) => {
-          console.error('Error loading golf courses:', error);
+          registraElFallo(
+            'GolfCourses.error-loading-golf-courses',
+            'Error loading golf courses:',
+            error,
+          );
           customToast.error(
             mensajeDelError(error, t('pages.admin.errorLoading')),
           );
@@ -80,7 +85,11 @@ const GolfCourses = ({ embedded = false }) => {
       setShowCreateModal(false);
       recargarCourses();
     } catch (error) {
-      console.error('Error creating golf course:', error);
+      registraElFallo(
+        'GolfCourses.error-creating-golf-course',
+        'Error creating golf course:',
+        error,
+      );
       throw error; // Let form handle the error
     } finally {
       setIsSavingCourse(false);
@@ -101,7 +110,11 @@ const GolfCourses = ({ embedded = false }) => {
       setSelectedCourse(null);
       recargarCourses();
     } catch (error) {
-      console.error('Error updating golf course:', error);
+      registraElFallo(
+        'GolfCourses.error-updating-golf-course',
+        'Error updating golf course:',
+        error,
+      );
       throw error; // Let form handle the error
     } finally {
       setIsSavingCourse(false);
@@ -120,7 +133,11 @@ const GolfCourses = ({ embedded = false }) => {
     try {
       return await getGolfCourseUseCase.execute(course.id);
     } catch (error) {
-      console.error('Error loading golf course:', error);
+      registraElFallo(
+        'GolfCourses.error-loading-golf-course',
+        'Error loading golf course:',
+        error,
+      );
       customToast.error(mensajeDelError(error, t('pages.admin.errorLoading')));
       return null;
     } finally {

@@ -20,6 +20,7 @@ import {
   resetPasswordUseCase,
 } from '../composition';
 import { mensajeDelError } from '../utils/mensajeDelError';
+import { registraElFallo } from '../utils/registraElFallo';
 
 /**
  * ResetPasswordPage Component
@@ -123,7 +124,11 @@ const ResetPassword = () => {
         // o un 4xx que no sea 408 ni 429—. Todo lo demás no dice nada del enlace
         // —sin conexión, 408, 429, 5xx, un 200 que no es JSON (el portal de una
         // wifi), un error sin status— y se ofrece reintentar (FE #785)
-        console.error('Token validation error:', error);
+        registraElFallo(
+          'ResetPassword.token-validation-error',
+          'Token validation error:',
+          error,
+        );
         const status = error?.status;
         const sinRed = esFalloDeRedDeLaApi(error);
         const enlaceMalo =
@@ -237,7 +242,11 @@ const ResetPassword = () => {
         });
       }, 2000);
     } catch (error) {
-      console.error('Reset password error:', error);
+      registraElFallo(
+        'ResetPassword.reset-password-error',
+        'Reset password error:',
+        error,
+      );
 
       // Manejo de errores específicos
       const contrasena = passwordErrorMessage(error, t);

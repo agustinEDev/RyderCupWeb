@@ -22,6 +22,7 @@ import {
   recuerdaLasPartidas,
   recuerdaLosPartidos,
 } from './loUltimoConocido';
+import { registraElFallo } from '../utils/registraElFallo';
 
 /** Mañana y tarde. Caben tres y lo precargado deja sitio a lo que se abre. */
 const CUANTAS_SE_PRECARGAN = 2;
@@ -156,7 +157,11 @@ export const leeLosProximosPartidos = async ({
       };
     }
   } catch (err) {
-    console.error('Error loading upcoming matches:', err);
+    registraElFallo(
+      'partidosSinCobertura.error-loading-upcoming-matches',
+      'Error loading upcoming matches:',
+      err,
+    );
     // El 401 y el 403 desmienten: no hemos entrado, o esto no es nuestro. Y se
     // borra lo guardado, como en partida rápida: seguía ahí para el siguiente
     // fallo de red. Con `err.status` a secas por lo mismo que allí —el del
@@ -220,7 +225,11 @@ export const leeLasProximasPartidas = async ({
       };
     }
   } catch (err) {
-    console.error('Error loading upcoming tee groups:', err);
+    registraElFallo(
+      'partidosSinCobertura.error-loading-upcoming-tee-groups',
+      'Error loading upcoming tee groups:',
+      err,
+    );
     // Un 401 o un 403 desmienten lo guardado, como con los partidos (CodeRabbit)
     if (err?.status === 401 || err?.status === 403) {
       olvidaLoDeEstaCuenta();

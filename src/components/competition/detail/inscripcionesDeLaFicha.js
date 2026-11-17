@@ -10,6 +10,7 @@ import {
   setNamePreferenceUseCase,
 } from '../../../composition';
 import { mensajeDelError } from '../../../utils/mensajeDelError';
+import { registraElFallo } from '../../../utils/registraElFallo';
 
 /**
  * Las inscripciones desde la ficha de una competición: apuntarse, aprobar o
@@ -69,7 +70,11 @@ export const crearAccionesDeInscripcion = (contexto) => {
       );
     } catch (error) {
       // El mensaje de la API es técnico y viene en inglés: a la consola
-      console.error('Error updating name preference:', error);
+      registraElFallo(
+        'inscripcionesDeLaFicha.error-updating-name-preference',
+        'Error updating name preference:',
+        error,
+      );
       customToast.error(t('detail.namePreference.failed'));
       setSavingNamePreference(false);
       return;
@@ -94,7 +99,8 @@ export const crearAccionesDeInscripcion = (contexto) => {
         );
       }
     } catch (error) {
-      console.error(
+      registraElFallo(
+        'inscripcionesDeLaFicha.error-reloading-enrollments-after-name-p',
         'Error reloading enrollments after name preference:',
         error,
       );
@@ -133,7 +139,11 @@ export const crearAccionesDeInscripcion = (contexto) => {
       setVersionFranjas((n) => n + 1);
       await loadCompetition();
     } catch (error) {
-      console.error('Error enrolling:', error);
+      registraElFallo(
+        'inscripcionesDeLaFicha.error-enrolling',
+        'Error enrolling:',
+        error,
+      );
       const motivo = MOTIVOS_PARA_NO_APUNTARSE[error?.errorCode];
       if (motivo) {
         setErrorAlApuntarse(t(motivo));
@@ -191,7 +201,11 @@ export const crearAccionesDeInscripcion = (contexto) => {
       );
       setEnrollments(enrollmentsData);
     } catch (error) {
-      console.error('Error approving enrollment:', error);
+      registraElFallo(
+        'inscripcionesDeLaFicha.error-approving-enrollment',
+        'Error approving enrollment:',
+        error,
+      );
       // Solo falla así con partidos, que ya no se deshacen (30 oct 2026): se
       // dice y la ficha, al día
       if (error?.errorCode === 'TEAMS_FORMED') {
@@ -232,7 +246,11 @@ export const crearAccionesDeInscripcion = (contexto) => {
       );
       setEnrollments(enrollmentsData);
     } catch (error) {
-      console.error('Error rejecting enrollment:', error);
+      registraElFallo(
+        'inscripcionesDeLaFicha.error-rejecting-enrollment',
+        'Error rejecting enrollment:',
+        error,
+      );
       customToast.error(mensajeDelError(error, t('detail.failedToReject')));
     }
   };

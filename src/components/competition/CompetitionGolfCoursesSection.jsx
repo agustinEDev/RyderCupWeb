@@ -38,6 +38,7 @@ import {
   CompetitionStatusEnum,
 } from '../../domain/value_objects/CompetitionStatus';
 import { mensajeDelError } from '../../utils/mensajeDelError';
+import { registraElFallo } from '../../utils/registraElFallo';
 
 /**
  * El color de cada tipo de campo. El TEXTO sale de i18n: escrito aquí a mano
@@ -379,7 +380,11 @@ const CompetitionGolfCoursesSection = ({
         setGolfCourses(mappedCourses);
       },
       alFallar: (error) => {
-        console.error('Error loading golf courses:', error);
+        registraElFallo(
+          'CompetitionGolfCoursesSection.error-loading-golf-courses',
+          'Error loading golf courses:',
+          error,
+        );
         customToast.error(
           t('detail.golfCourses.errorLoading') + ': ' + error.message,
         );
@@ -418,7 +423,11 @@ const CompetitionGolfCoursesSection = ({
       await recargar();
       onCamposCambiados?.();
     } catch (error) {
-      console.error('Error adding golf course:', error);
+      registraElFallo(
+        'CompetitionGolfCoursesSection.error-adding-golf-course',
+        'Error adding golf course:',
+        error,
+      );
       customToast.error(
         mensajeDelError(error, t('detail.golfCourses.errorAdding')),
       );
@@ -447,7 +456,11 @@ const CompetitionGolfCoursesSection = ({
       await recargar();
       onCamposCambiados?.();
     } catch (error) {
-      console.error('Error removing golf course:', error);
+      registraElFallo(
+        'CompetitionGolfCoursesSection.error-removing-golf-course',
+        'Error removing golf course:',
+        error,
+      );
       customToast.error(
         mensajeDelError(error, t('detail.golfCourses.errorRemoving')),
       );
@@ -475,7 +488,11 @@ const CompetitionGolfCoursesSection = ({
       customToast.success(t('detail.golfCourses.reordered'));
       onCamposCambiados?.();
     } catch (error) {
-      console.error('Error reordering golf courses:', error);
+      registraElFallo(
+        'CompetitionGolfCoursesSection.error-reordering-golf-courses',
+        'Error reordering golf courses:',
+        error,
+      );
       customToast.error(t('detail.golfCourses.errorReordering'));
       // Revert on error. Sin esperarla: detrás no hay nada que dependa de ella
       recargar();

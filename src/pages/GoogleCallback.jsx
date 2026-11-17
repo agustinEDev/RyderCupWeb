@@ -16,6 +16,7 @@ import { vuelvenLosAvisosDeCierre } from '../utils/avisoDeCierreForzado';
 import { stripSecretsFromAddressBar } from '../utils/stripSecretsFromAddressBar';
 import customToast from '../utils/toast';
 import FullScreenLoader from '../components/ui/FullScreenLoader';
+import { registraElFallo } from '../utils/registraElFallo';
 
 const GoogleCallback = () => {
   const { t } = useTranslation('auth');
@@ -134,7 +135,11 @@ const GoogleCallback = () => {
         }
       }
     } catch (err) {
-      console.error('Google OAuth callback error:', err);
+      registraElFallo(
+        'GoogleCallback.google-oauth-callback-error',
+        'Google OAuth callback error:',
+        err,
+      );
       // La página guardada se conserva: solo una entrada con éxito la gasta, y quien
       // entre después con contraseña vuelve a ella (Agustín, 8 nov 2026)
 

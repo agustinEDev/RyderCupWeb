@@ -5,6 +5,7 @@ import {
   removeCustomHandicapUseCase,
 } from '../../../composition';
 import { mensajeDelError } from '../../../utils/mensajeDelError';
+import { registraElFallo } from '../../../utils/registraElFallo';
 
 /**
  * El hándicap personalizado de un inscrito, desde la ficha: abrir el editor,
@@ -68,7 +69,11 @@ export const crearEdicionDeHandicaps = (contexto) => {
       setEnrollments(enrollmentsData);
       setEditingHandicapId(null);
     } catch (error) {
-      console.error('Error setting custom handicap:', error);
+      registraElFallo(
+        'edicionDeHandicaps.error-setting-custom-handicap',
+        'Error setting custom handicap:',
+        error,
+      );
       customToast.error(
         mensajeDelError(error, t('detail.failedToUpdateHandicap')),
       );
@@ -88,7 +93,11 @@ export const crearEdicionDeHandicaps = (contexto) => {
       setEnrollments(enrollmentsData);
       setEditingHandicapId(null);
     } catch (error) {
-      console.error('Error reverting custom handicap:', error);
+      registraElFallo(
+        'edicionDeHandicaps.error-reverting-custom-handicap',
+        'Error reverting custom handicap:',
+        error,
+      );
       customToast.error(
         mensajeDelError(error, t('detail.failedToRevertHandicap')),
       );

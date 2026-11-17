@@ -3,6 +3,7 @@ import {
   getCompetitionDetailUseCase,
   listEnrollmentsUseCase,
 } from '../composition';
+import { registraElFallo } from '../utils/registraElFallo';
 
 /**
  * Lo de los hándicaps y las inscripciones en la ficha de una competición, sin
@@ -57,7 +58,13 @@ export const useReleerHandicaps = ({
         }
         return undefined;
       })
-      .catch((e) => console.error('Error reloading handicap updates:', e));
+      .catch((e) =>
+        registraElFallo(
+          'useReleerHandicaps.error-reloading-handicap-updates',
+          'Error reloading handicap updates:',
+          e,
+        ),
+      );
   }, [
     id,
     lecturasDeLaFicha,

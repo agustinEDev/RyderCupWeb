@@ -7,6 +7,7 @@ import { validateEmail } from '../utils/validation';
 import { requestPasswordResetUseCase } from '../composition';
 import BrandMark from '../components/ui/BrandMark';
 import { mensajeDelError } from '../utils/mensajeDelError';
+import { registraElFallo } from '../utils/registraElFallo';
 
 const ForgotPassword = () => {
   const { t } = useTranslation(['auth', 'common']);
@@ -52,7 +53,11 @@ const ForgotPassword = () => {
       customToast.success(t('forgotPassword.success'));
       setSubmitted(true);
     } catch (error) {
-      console.error('Forgot password error:', error);
+      registraElFallo(
+        'ForgotPassword.forgot-password-error',
+        'Forgot password error:',
+        error,
+      );
 
       // Manejo de rate limiting (429)
       if (error.status === 429) {

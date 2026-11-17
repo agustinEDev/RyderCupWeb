@@ -44,6 +44,7 @@ import FullScreenLoader from '../components/ui/FullScreenLoader';
 import { formatCountryName } from '../services/countries';
 import { formatoDeIndice } from '../utils/formatoDeHandicap';
 import { PANTALLA_MENOS_BARRA_INFERIOR } from '../utils/barraInferior';
+import { registraElFallo } from '../utils/registraElFallo';
 
 const Profile = () => {
   const navigate = useNavigate();
@@ -75,7 +76,11 @@ const Profile = () => {
             // del código nuevo— y el nombre —el viejo— se contradicen
             setCountry(suyo ?? null);
           } catch (error) {
-            console.error('Error fetching country name:', error);
+            registraElFallo(
+              'Profile.error-fetching-country-name',
+              'Error fetching country name:',
+              error,
+            );
           }
         }
 
@@ -98,11 +103,19 @@ const Profile = () => {
 
           setCompetitionsCount(list.length);
         } catch (error) {
-          console.error('Error fetching competitions count:', error);
+          registraElFallo(
+            'Profile.error-fetching-competitions-count',
+            'Error fetching competitions count:',
+            error,
+          );
           setCompetitionsCount(0);
         }
       } catch (error) {
-        console.error('Error fetching user data:', error);
+        registraElFallo(
+          'Profile.error-fetching-user-data',
+          'Error fetching user data:',
+          error,
+        );
       } finally {
         setIsLoadingData(false);
       }

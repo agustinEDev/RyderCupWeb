@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { resendVerificationEmailUseCase } from '../composition';
+import { registraElFallo } from '../utils/registraElFallo';
 
 /**
  * Reenviar el correo de verificación a la dirección de la cuenta (con sesión). Lo usan
@@ -32,7 +33,11 @@ export const useReenvioDeVerificacion = (correo) => {
       setEsError(false);
       setMensaje(t('emailVerification.sent'));
     } catch (error) {
-      console.error('Error resending email:', error);
+      registraElFallo(
+        'useReenvioDeVerificacion.error-resending-email',
+        'Error resending email:',
+        error,
+      );
       setEsError(true);
       setMensaje(t('emailVerification.failed'));
     } finally {

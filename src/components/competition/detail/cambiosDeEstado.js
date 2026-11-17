@@ -29,6 +29,7 @@ import {
 import { CompetitionStatusEnum } from '../../../domain/value_objects/CompetitionStatus';
 import EnrollmentStatus from '../../../domain/value_objects/EnrollmentStatus';
 import { mensajeDelError } from '../../../utils/mensajeDelError';
+import { registraElFallo } from '../../../utils/registraElFallo';
 
 /**
  * Lo que el organizador hace con la competición desde su ficha: cambiar su
@@ -85,7 +86,11 @@ export const crearCambiosDeEstado = (contexto) => {
         setEnrollments(lista);
     } catch (error) {
       // Lo de antes sigue a la vista; el siguiente refresco lo pondrá al día
-      console.error('Error reloading after removing a player:', error);
+      registraElFallo(
+        'cambiosDeEstado.error-reloading-after-removing-a-player',
+        'Error reloading after removing a player:',
+        error,
+      );
     }
     // Y sus franjas: quitarle no mueve la fecha de la ficha (/code-review)
     if (deEsta === idActual.current) setVersionFranjas((v) => v + 1);
@@ -204,7 +209,11 @@ export const crearCambiosDeEstado = (contexto) => {
           return;
         }
       } catch (error) {
-        console.error('Error validating golf courses for activation:', error);
+        registraElFallo(
+          'cambiosDeEstado.error-validating-golf-courses-for-activa',
+          'Error validating golf courses for activation:',
+          error,
+        );
         customToast.error(t('detail.errors.golfCoursesFetchFailed'));
         return;
       }
@@ -258,7 +267,11 @@ export const crearCambiosDeEstado = (contexto) => {
               await assignTeamsUseCase.execute(id, { mode: 'AUTOMATIC' });
               customToast.success(t('detail.success.teamsAutoAssigned'));
             } catch (assignError) {
-              console.error('Error auto-assigning teams:', assignError);
+              registraElFallo(
+                'cambiosDeEstado.error-auto-assigning-teams',
+                'Error auto-assigning teams:',
+                assignError,
+              );
               customToast.error(porQueNoSeFormaron(t, assignError));
               yaLosHabia(assignError, setCompetition);
             }
@@ -317,7 +330,8 @@ export const crearCambiosDeEstado = (contexto) => {
             return lista;
           })
           .catch((e) => {
-            console.error(
+            registraElFallo(
+              'cambiosDeEstado.error-reloading-enrollments-after-status',
               'Error reloading enrollments after status change:',
               e,
             );
@@ -356,8 +370,9 @@ export const crearCambiosDeEstado = (contexto) => {
         }
       }
     } catch (error) {
-      console.error(`Error ${action}:`, error);
-      console.error(
+      registraElFallo('cambiosDeEstado.5', `Error ${action}:`, error);
+      registraElFallo(
+        'cambiosDeEstado.error-details',
         'Error details:',
         error.stack || error.message || String(error),
       );
@@ -392,7 +407,8 @@ export const crearCambiosDeEstado = (contexto) => {
               ?.scrollIntoView({ behavior: 'smooth', block: 'center' });
           }
         } catch (e) {
-          console.error(
+          registraElFallo(
+            'cambiosDeEstado.error-reloading-enrollments-after-missin',
             'Error reloading enrollments after missing handicaps:',
             e,
           );
@@ -457,14 +473,22 @@ export const crearCambiosDeEstado = (contexto) => {
           setCompetition((prev) => ({ ...prev, teamsAssigned: true }));
           customToast.success(t('detail.success.teamsAutoAssigned'));
         } catch (assignError) {
-          console.error('Error auto-assigning teams:', assignError);
+          registraElFallo(
+            'cambiosDeEstado.error-auto-assigning-teams-2',
+            'Error auto-assigning teams:',
+            assignError,
+          );
           customToast.error(porQueNoSeFormaron(t, assignError));
           yaLosHabia(assignError, setCompetition);
         }
       }
       refrescarCanDelete();
     } catch (error) {
-      console.error('Error naming captains:', error);
+      registraElFallo(
+        'cambiosDeEstado.error-naming-captains',
+        'Error naming captains:',
+        error,
+      );
       // El motivo del servidor tal cual («ya hay equipos»...): dice qué hacer.
       // El modal sigue abierto para corregir la elección
       customToast.error(
@@ -487,7 +511,11 @@ export const crearCambiosDeEstado = (contexto) => {
       customToast.success(t('detail.success.deleted'));
       navigate('/competitions');
     } catch (error) {
-      console.error('Error deleting competition:', error);
+      registraElFallo(
+        'cambiosDeEstado.error-deleting-competition',
+        'Error deleting competition:',
+        error,
+      );
       // El motivo del servidor se enseña tal cual («ya tiene calendario»...):
       // es lo que dice qué hacer. Sin red o sin respuesta, el texto de la app
       customToast.error(

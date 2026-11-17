@@ -27,6 +27,7 @@ import {
   PanelDePestana,
 } from '../../components/ui/Pestanas';
 import { mensajeDelError } from '../../utils/mensajeDelError';
+import { registraElFallo } from '../../utils/registraElFallo';
 
 /**
  * PendingGolfCourses Page (Admin)
@@ -71,7 +72,11 @@ const PendingGolfCourses = ({ embedded = false, onCambio }) => {
         activa: Boolean(user),
         alCargar: setPendingCourses,
         alFallar: (error) => {
-          console.error('Error loading pending golf courses:', error);
+          registraElFallo(
+            'PendingGolfCourses.error-loading-pending-golf-courses',
+            'Error loading pending golf courses:',
+            error,
+          );
           customToast.error(
             mensajeDelError(error, t('pages.pending.errorLoading')),
           );
@@ -86,7 +91,11 @@ const PendingGolfCourses = ({ embedded = false, onCambio }) => {
         const data = await fetchCountriesUseCase.execute();
         setAllCountries(data || []);
       } catch (error) {
-        console.error('Error fetching countries:', error);
+        registraElFallo(
+          'PendingGolfCourses.error-fetching-countries',
+          'Error fetching countries:',
+          error,
+        );
       }
     };
     fetchCountries();
@@ -114,7 +123,11 @@ const PendingGolfCourses = ({ embedded = false, onCambio }) => {
       onCambio?.();
       recargarPendientes();
     } catch (error) {
-      console.error('Error approving golf course:', error);
+      registraElFallo(
+        'PendingGolfCourses.error-approving-golf-course',
+        'Error approving golf course:',
+        error,
+      );
       customToast.error(
         mensajeDelError(error, t('pages.pending.approveFailed')),
       );
@@ -155,7 +168,11 @@ const PendingGolfCourses = ({ embedded = false, onCambio }) => {
       setRejectReason('');
       recargarPendientes();
     } catch (error) {
-      console.error('Error rejecting golf course:', error);
+      registraElFallo(
+        'PendingGolfCourses.error-rejecting-golf-course',
+        'Error rejecting golf course:',
+        error,
+      );
       customToast.error(
         mensajeDelError(error, t('pages.pending.rejectFailed')),
       );
@@ -178,7 +195,11 @@ const PendingGolfCourses = ({ embedded = false, onCambio }) => {
       onCambio?.();
       recargarPendientes();
     } catch (error) {
-      console.error('Error approving update:', error);
+      registraElFallo(
+        'PendingGolfCourses.error-approving-update',
+        'Error approving update:',
+        error,
+      );
       customToast.error(
         mensajeDelError(error, t('pages.pending.approveUpdateFailed')),
       );
@@ -201,7 +222,11 @@ const PendingGolfCourses = ({ embedded = false, onCambio }) => {
       onCambio?.();
       recargarPendientes();
     } catch (error) {
-      console.error('Error rejecting update:', error);
+      registraElFallo(
+        'PendingGolfCourses.error-rejecting-update',
+        'Error rejecting update:',
+        error,
+      );
       customToast.error(
         mensajeDelError(error, t('pages.pending.rejectUpdateFailed')),
       );

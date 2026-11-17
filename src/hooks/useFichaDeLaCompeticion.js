@@ -13,6 +13,7 @@ import {
 } from '../composition';
 import { useLaMasNueva } from './useLaMasNueva';
 import { mensajeDelError } from '../utils/mensajeDelError';
+import { registraElFallo } from '../utils/registraElFallo';
 
 /**
  * La ficha de una competición y sus inscripciones, tal como las lee
@@ -83,7 +84,11 @@ export const useFichaDeLaCompeticion = ({ id, userId, t, navigate }) => {
       }
     } catch (error) {
       if (!sigueEnPantalla()) return;
-      console.error('Error loading competition:', error);
+      registraElFallo(
+        'useFichaDeLaCompeticion.error-loading-competition',
+        'Error loading competition:',
+        error,
+      );
       // Falló porque se está cerrando la sesión: la redirección al login llega ya; ir a la
       // lista solo enseñaba otro fallo (A2, 8 nov 2026)
       if (seEstaCerrandoLaSesion()) return;

@@ -2,6 +2,7 @@ import { consultaLaSesion, loQueHaySobreLaSesion } from './sesionCompartida';
 import { guardaEnMemoria, loGuardadoEnMemoria } from './memoriaDeLasListas';
 import { debeAceptarLosTerminos } from '../domain/services/aceptacionDeTerminos';
 import { esFalloDeRed } from '../utils/sinCobertura';
+import { registraElFallo } from '../utils/registraElFallo';
 
 /**
  * Lo común de los `loader` de las pantallas (FE #647, fase 3; diseño aprobado
@@ -161,7 +162,8 @@ export const cargaDeLaPantalla = async ({ clave, pedir }) => {
     const sinRespuesta = error === SIN_RESPUESTA;
     if (sinRespuesta && compartida) dejaDeCompartir(clave, compartida);
     // Como antes del `loader`, todo fallo a la consola; el tope no es un fallo
-    if (!sinRespuesta) console.error(`Error loading ${clave}:`, error);
+    if (!sinRespuesta)
+      registraElFallo('cargaDeLaPantalla.1', `Error loading ${clave}:`, error);
     const resultado = {
       estado: sinRespuesta || esFalloDeRed(error) ? 'sinRed' : 'error',
       datos: usuario ? loGuardadoEnMemoria(clave, usuario.id) : null,

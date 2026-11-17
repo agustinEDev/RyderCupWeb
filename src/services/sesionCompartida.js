@@ -50,6 +50,7 @@ import { fetchWithTokenRefresh } from '../infrastructure/http/tokenRefreshInterc
 import { mandaElCierrePendiente } from '../infrastructure/http/cierrePendiente';
 import { registraElUsuarioDeLaPestana } from '../utils/usuarioDeLaPestana';
 import { olvidaLasNovedades } from './novedadesDeActividad';
+import { registraElFallo } from '../utils/registraElFallo';
 
 // Misma prioridad que el resto: la configuración de ejecución manda sobre la del
 // build, o en un despliegue en contenedor se acaba preguntando a hosts distintos
@@ -297,7 +298,11 @@ const publicaSinSesion = () => {
     olvidaLoGuardadoDeLaCuenta();
   } catch (error) {
     // Lo de arriba ya está hecho; lo que falle aquí no puede dejar la sesión a medias
-    console.error('[sesion] cleanup without session failed:', error);
+    registraElFallo(
+      'sesionCompartida.sesion-cleanup-without-session-failed',
+      '[sesion] cleanup without session failed:',
+      error,
+    );
   }
   anota({
     user: null,
@@ -351,7 +356,11 @@ const pideAlBackend = async (miGeneracion) => {
     publicaConfirmada(usuario);
     return usuario;
   } catch (error) {
-    console.error('Error loading user:', error);
+    registraElFallo(
+      'sesionCompartida.error-loading-user',
+      'Error loading user:',
+      error,
+    );
     if (!sigoValiendo()) return null;
 
     // Un tropiezo no es una respuesta. Con nada apuntado, `resuelta` se queda
