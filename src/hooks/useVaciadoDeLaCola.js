@@ -145,7 +145,7 @@ export const useVaciadoDeLaCola = ({ activo, userId = null }) => {
         // Nunca hacia arriba: esto corre de fondo y un fallo aquí no puede
         // tumbar la pantalla que el usuario esté mirando
         registraElFallo(
-          'useVaciadoDeLaCola.vaciadodelacola-no-se-pudo-vaciar-la-col',
+          'useVaciadoDeLaCola.emptying-the-queue',
           '[VaciadoDeLaCola] No se pudo vaciar la cola:',
           err,
         );

@@ -91,7 +91,10 @@ class CompetitionMapper {
         updatedAt: instanteDeLaApi(apiData.updated_at),
       });
     } catch (error) {
-      throw new Error(`Failed to map competition data: ${error.message}`);
+      throw Object.assign(
+        new Error(`Failed to map competition data: ${error.message}`),
+        { mensajeTecnico: true },
+      );
     }
   }
 

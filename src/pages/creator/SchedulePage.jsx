@@ -225,7 +225,7 @@ const SchedulePage = () => {
     } catch (error) {
       // El servidor es quien sabe si esa sesión ya se jugó o si no había nada
       // que rehacer: aquí se enseña lo que diga
-      customToast.error(error.message);
+      customToast.error(mensajeDelError(error, t('common:errors.generic')));
     } finally {
       setIsProcessing(false);
     }
@@ -300,11 +300,13 @@ const SchedulePage = () => {
           // Sin la sesión recargada no hay motivo que enseñar: la frase del
           // servidor, que también dice quién
           registraElFallo(
-            'SchedulePage.error-reloading-after-a-blocked-generati',
+            'SchedulePage.reloading-after-a-blocked-generation',
             'Error reloading after a blocked generation:',
             recarga,
           );
-          customToast.error(error.message);
+          customToast.error(
+            mensajeDelError(error, t('errors.failedToGenerateMatches')),
+          );
         }
       } else {
         customToast.error(

@@ -56,7 +56,7 @@ describe('registraElFallo', () => {
       registraElFallo('ficha.aprobar', 'Error approving:', error);
 
       expect(captureError).toHaveBeenCalledTimes(1);
-      expect(captureError).toHaveBeenCalledWith(error, {
+      expect(captureError).toHaveBeenCalledWith(expect.any(Error), {
         level: 'warning',
         tags: { fallo: 'ficha.aprobar', status: '500', errorCode: 'BOOM' },
         fingerprint: ['registraElFallo', 'ficha.aprobar'],
@@ -83,11 +83,68 @@ describe('registraElFallo', () => {
 
       registraElFallo('sesion', 'x', error);
 
-      expect(captureError).toHaveBeenCalledWith(error, {
+      expect(captureError).toHaveBeenCalledWith(expect.any(Error), {
         level: 'warning',
         tags: { fallo: 'sesion', status: '502' },
         fingerprint: ['registraElFallo', 'sesion'],
       });
+    });
+
+    it('never sends the original message: only the site and the kind of error', async () => {
+      const registraElFallo = await carga();
+      // El JSON.parse de AuthContext cita un trozo de lo guardado
+      const error = new SyntaxError(
+        'Unexpected token in JSON at position 3: {"email":"ana@club.es","name":"Ana"}',
+      );
+
+      registraElFallo(
+        'AuthContext.parse',
+        'Failed to parse stored user:',
+        error,
+      );
+
+      const [enviado, contexto] = captureError.mock.calls[0];
+      expect(enviado).toBeInstanceOf(Error);
+      expect(enviado.message).toBe('Fallo en AuthContext.parse (SyntaxError)');
+      expect(enviado.name).toBe('SyntaxError');
+      const todo = JSON.stringify({
+        message: enviado.message,
+        stack: enviado.stack,
+        contexto,
+      });
+      expect(todo).not.toContain('ana@club.es');
+      expect(todo).not.toContain('Ana');
+    });
+
+    it('keeps the stack frames of the original, without its first line', async () => {
+      const registraElFallo = await carga();
+      const error = http(500);
+      error.stack =
+        'Error: Internal Server Error para ana@club.es\n    at carga (x.js:1:1)';
+
+      registraElFallo('panel', 'x', error);
+
+      const [enviado] = captureError.mock.calls[0];
+      expect(enviado.stack).toBe(
+        'Error: Fallo en panel (Error)\n    at carga (x.js:1:1)',
+      );
+    });
+
+    it('a non-Error rejection without network is not reported', async () => {
+      Object.defineProperty(globalThis.navigator, 'onLine', {
+        value: false,
+        configurable: true,
+      });
+      try {
+        const registraElFallo = await carga();
+        registraElFallo('panel', 'Something odd', 'sin error');
+        expect(captureError).not.toHaveBeenCalled();
+      } finally {
+        Object.defineProperty(globalThis.navigator, 'onLine', {
+          value: true,
+          configurable: true,
+        });
+      }
     });
 
     it('a code failure without status is reported too', async () => {
@@ -96,7 +153,7 @@ describe('registraElFallo', () => {
 
       registraElFallo('panel', 'Error:', error);
 
-      expect(captureError).toHaveBeenCalledWith(error, {
+      expect(captureError).toHaveBeenCalledWith(expect.any(Error), {
         level: 'warning',
         tags: { fallo: 'panel' },
         fingerprint: ['registraElFallo', 'panel'],

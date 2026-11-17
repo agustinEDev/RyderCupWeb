@@ -386,7 +386,7 @@ const CompetitionGolfCoursesSection = ({
           error,
         );
         customToast.error(
-          t('detail.golfCourses.errorLoading') + ': ' + error.message,
+          mensajeDelError(error, t('detail.golfCourses.errorLoading')),
         );
       },
     },

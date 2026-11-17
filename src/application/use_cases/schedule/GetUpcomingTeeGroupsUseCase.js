@@ -44,7 +44,10 @@ class GetUpcomingTeeGroupsUseCase {
     ahora = new Date(),
   ) {
     if (!userId)
-      throw new Error('GetUpcomingTeeGroupsUseCase requires a userId');
+      throw Object.assign(
+        new Error('GetUpcomingTeeGroupsUseCase requires a userId'),
+        { mensajeTecnico: true },
+      );
     const todas =
       competitions ?? (await this.#listUserCompetitionsUseCase.execute(userId));
     const deStrokePlay = (todas || []).filter(

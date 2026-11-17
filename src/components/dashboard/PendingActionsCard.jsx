@@ -344,7 +344,7 @@ const PendingActionsCard = ({
     } catch (error) {
       // El nuestro, traducido: el del servidor puede venir en otro idioma (CodeRabbit)
       registraElFallo(
-        'PendingActionsCard.no-se-ha-podido-marcar-la-plaza-como-vis',
+        'PendingActionsCard.marking-the-place-as-seen',
         'No se ha podido marcar la plaza como vista:',
         error,
       );

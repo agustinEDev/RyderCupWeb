@@ -30,7 +30,7 @@ export const useDeviceManagement = () => {
       alCargar: (result) => setDevices(result.devices || []),
       alFallar: (error) => {
         registraElFallo(
-          'useDeviceManagement.usedevicemanagement-error-fetching-devic',
+          'useDeviceManagement.fetching-devices',
           '❌ [useDeviceManagement] Error fetching devices:',
           error,
         );
@@ -80,7 +80,7 @@ export const useDeviceManagement = () => {
       return true;
     } catch (error) {
       registraElFallo(
-        'useDeviceManagement.usedevicemanagement-error-revoking-devic',
+        'useDeviceManagement.revoking-device',
         '❌ [useDeviceManagement] Error revoking device:',
         error,
       );

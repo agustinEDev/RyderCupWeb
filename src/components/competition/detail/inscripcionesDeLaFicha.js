@@ -100,7 +100,7 @@ export const crearAccionesDeInscripcion = (contexto) => {
       }
     } catch (error) {
       registraElFallo(
-        'inscripcionesDeLaFicha.error-reloading-enrollments-after-name-p',
+        'inscripcionesDeLaFicha.reloading-enrollments-after-name-preference',
         'Error reloading enrollments after name preference:',
         error,
       );

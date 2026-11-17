@@ -87,7 +87,7 @@ export const crearCambiosDeEstado = (contexto) => {
     } catch (error) {
       // Lo de antes sigue a la vista; el siguiente refresco lo pondrá al día
       registraElFallo(
-        'cambiosDeEstado.error-reloading-after-removing-a-player',
+        'cambiosDeEstado.reloading-after-removing-a-player',
         'Error reloading after removing a player:',
         error,
       );
@@ -210,7 +210,7 @@ export const crearCambiosDeEstado = (contexto) => {
         }
       } catch (error) {
         registraElFallo(
-          'cambiosDeEstado.error-validating-golf-courses-for-activa',
+          'cambiosDeEstado.validating-golf-courses-to-activate',
           'Error validating golf courses for activation:',
           error,
         );
@@ -331,7 +331,7 @@ export const crearCambiosDeEstado = (contexto) => {
           })
           .catch((e) => {
             registraElFallo(
-              'cambiosDeEstado.error-reloading-enrollments-after-status',
+              'cambiosDeEstado.reloading-enrollments-after-status-change',
               'Error reloading enrollments after status change:',
               e,
             );
@@ -370,7 +370,7 @@ export const crearCambiosDeEstado = (contexto) => {
         }
       }
     } catch (error) {
-      registraElFallo('cambiosDeEstado.5', `Error ${action}:`, error);
+      registraElFallo(`cambiosDeEstado.${action}`, `Error ${action}:`, error);
       // Un stroke play no se cierra ni se inicia con aprobados sin franja: se
       // dice quiénes y se lleva a «Sin franja», donde se colocan (FE #824)
       // Y sin hándicap tampoco se cierra: se dice quiénes, se marcan en la lista
@@ -403,7 +403,7 @@ export const crearCambiosDeEstado = (contexto) => {
           }
         } catch (e) {
           registraElFallo(
-            'cambiosDeEstado.error-reloading-enrollments-after-missin',
+            'cambiosDeEstado.reloading-enrollments-after-missing-handicaps',
             'Error reloading enrollments after missing handicaps:',
             e,
           );

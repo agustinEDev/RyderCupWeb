@@ -1064,7 +1064,7 @@ const CreateCompetition = () => {
             await (ajustesPrimero ? guardaLoGeneral : guardaLosAjustes)();
           } catch (error) {
             registraElFallo(
-              'CreateCompetition.error-updating-competition-second-reques',
+              'CreateCompetition.updating-competition-second-request',
               'Error updating competition (second request):',
               error,
             );
@@ -1167,7 +1167,9 @@ const CreateCompetition = () => {
       }
     } catch (error) {
       registraElFallo(
-        'CreateCompetition.7',
+        isEditMode
+          ? 'CreateCompetition.updating-competition'
+          : 'CreateCompetition.creating-competition',
         `Error ${isEditMode ? 'updating' : 'creating'} competition:`,
         error,
       );

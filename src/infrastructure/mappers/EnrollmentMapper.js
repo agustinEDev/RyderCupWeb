@@ -43,7 +43,10 @@ class EnrollmentMapper {
    */
   static toDomain(apiData) {
     if (!apiData) {
-      throw new Error('EnrollmentMapper.toDomain: apiData is required');
+      throw Object.assign(
+        new Error('EnrollmentMapper.toDomain: apiData is required'),
+        { mensajeTecnico: true },
+      );
     }
 
     // Validar campos requeridos
@@ -53,8 +56,11 @@ class EnrollmentMapper {
       !apiData.user_id ||
       !apiData.status
     ) {
-      throw new Error(
-        'EnrollmentMapper.toDomain: Missing required fields (id, competition_id, user_id, status)',
+      throw Object.assign(
+        new Error(
+          'EnrollmentMapper.toDomain: Missing required fields (id, competition_id, user_id, status)',
+        ),
+        { mensajeTecnico: true },
       );
     }
 
@@ -88,8 +94,11 @@ class EnrollmentMapper {
    */
   static toDomainMany(apiDataArray) {
     if (!Array.isArray(apiDataArray)) {
-      throw new Error(
-        'EnrollmentMapper.toDomainMany: apiDataArray must be an array',
+      throw Object.assign(
+        new Error(
+          'EnrollmentMapper.toDomainMany: apiDataArray must be an array',
+        ),
+        { mensajeTecnico: true },
       );
     }
 
@@ -111,8 +120,11 @@ class EnrollmentMapper {
    */
   static toDTO(enrollment) {
     if (!(enrollment instanceof Enrollment)) {
-      throw new Error(
-        'EnrollmentMapper.toDTO: enrollment must be an Enrollment instance',
+      throw Object.assign(
+        new Error(
+          'EnrollmentMapper.toDTO: enrollment must be an Enrollment instance',
+        ),
+        { mensajeTecnico: true },
       );
     }
 

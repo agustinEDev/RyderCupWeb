@@ -45,8 +45,35 @@ describe('mensajeDelError', () => {
     ).toBe('El hándicap se sale de rango');
   });
 
+  it('a reason marked as technical (an internal invariant) is not shown', () => {
+    expect(
+      mensajeDelError(
+        Object.assign(
+          new Error('EnrollmentMapper.toDomain: apiData is required'),
+          {
+            mensajeTecnico: true,
+          },
+        ),
+        ALTERNATIVA,
+      ),
+    ).toBe(ALTERNATIVA);
+  });
+
   it.each([
     ['a 5xx', http(500, 'Internal Server Error')],
+    [
+      'a 503 of the refresh (status in .response)',
+      Object.assign(new Error('Failed to refresh token'), {
+        response: { status: 503 },
+      }),
+    ],
+    [
+      'a 401 of the refresh (status in .response)',
+      Object.assign(new Error('Refresh token expired. Please login again.'), {
+        response: { status: 401 },
+      }),
+    ],
+    ['a 401', http(401, 'Token inválido o expirado')],
     ['a 503 of the service worker', http(503, 'Service Unavailable')],
     [
       'a technical 422 list',

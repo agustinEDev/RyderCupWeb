@@ -29,6 +29,9 @@ export const mensajeDelError = (error, alternativa, codigos = {}) => {
   return alternativa;
 };
 
+// El refresco y el dispositivo revocado llevan el estado en `.response`
+const estadoDe = (error) => error?.status ?? error?.response?.status;
+
 const tieneTexto = (texto) => typeof texto === 'string' && texto.trim() !== '';
 
 // Los errores del propio JavaScript: un fallo del código, o el `fetch` sin red
@@ -37,7 +40,9 @@ const FALLOS_DEL_CODIGO = [TypeError, ReferenceError, RangeError, SyntaxError];
 const esElMotivoDelServidor = (error) =>
   error instanceof Error &&
   !FALLOS_DEL_CODIGO.some((clase) => error instanceof clase) &&
-  !(error.status >= 500) &&
+  !(estadoDe(error) >= 500) &&
+  // Un 401 es la sesión, no un motivo que enseñar
+  estadoDe(error) !== 401 &&
   error.sinConexion !== true &&
   error.mensajeTecnico !== true &&
   tieneTexto(error.message) &&

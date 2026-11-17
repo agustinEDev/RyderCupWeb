@@ -15,9 +15,12 @@ import { captureError } from './sentryHelpers';
  *     y los cierres de sesión (refresco rechazado, dispositivo revocado, CSRF)
  *     ya los avisa `avisaASentryDelCierre`.
  *
- * Sin datos de la persona: solo el error y, como etiquetas, el sitio, el
- * estado HTTP y el código del servidor. El resto de argumentos (textos que
- * pueden llevar un correo o un nombre) se quedan en la consola de desarrollo.
+ * Sin datos de la persona: el texto del error no sale nunca (el `JSON.parse`
+ * de lo guardado cita un trozo con el correo; un 5xx puede repetir lo
+ * escrito). Se manda otro error, «Fallo en <sitio> (<clase>)», con las líneas
+ * de la pila del original sin la primera, que es la que lleva el texto; y como
+ * etiquetas, el sitio, el estado HTTP y el código del servidor. El resto de
+ * argumentos se quedan en la consola de desarrollo.
  *
  * @param {string} sitio - Fijo por sitio: agrupa en Sentry y limita el ritmo
  * @param {...unknown} argumentos - Los del `console.error` de antes
@@ -31,7 +34,7 @@ export const registraElFallo = (sitio, ...argumentos) => {
   if (!merecePorAviso(error)) return;
   if (!tocaAvisar(sitio)) return;
   try {
-    captureError(error ?? `Fallo en ${sitio}`, {
+    captureError(error ? sinSuTexto(sitio, error) : `Fallo en ${sitio}`, {
       level: 'warning',
       tags: etiquetas(sitio, error),
       fingerprint: ['registraElFallo', sitio],
@@ -39,6 +42,21 @@ export const registraElFallo = (sitio, ...argumentos) => {
   } catch {
     // Sentry caído no rompe el catch de quien llama
   }
+};
+
+// El error que se manda: el sitio y la clase, nunca el texto del original
+const sinSuTexto = (sitio, original) => {
+  const clase = original.name || 'Error';
+  const enviado = new Error(`Fallo en ${sitio} (${clase})`);
+  enviado.name = clase;
+  const marcos =
+    typeof original.stack === 'string'
+      ? original.stack.split('\n').slice(1).join('\n')
+      : '';
+  enviado.stack = marcos
+    ? `${clase}: ${enviado.message}\n${marcos}`
+    : `${clase}: ${enviado.message}`;
+  return enviado;
 };
 
 const UN_MINUTO = 60_000;
@@ -64,9 +82,10 @@ const estadoDe = (error) => error?.status ?? error?.response?.status;
 const codigoDe = (error) => error?.errorCode ?? error?.errorData?.error_code;
 
 const merecePorAviso = (error) => {
+  // Sin red, nada: tampoco un rechazo que no es un Error (revisión local)
+  if (globalThis.navigator?.onLine === false) return false;
   if (!error) return true;
-  if (error.sinConexion === true || globalThis.navigator?.onLine === false)
-    return false;
+  if (error.sinConexion === true) return false;
   if (CIERRES_DE_SESION.has(codigoDe(error))) return false;
   const status = estadoDe(error);
   return !(typeof status === 'number' && status >= 400 && status < 500);

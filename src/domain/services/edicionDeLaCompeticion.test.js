@@ -59,4 +59,12 @@ describe('edicionDeLaCompeticion', () => {
       );
     },
   );
+
+  // Revisión local: con un estado que falta o no se conoce, la ficha se caía
+  it.each([[undefined], [null], [{}], [{ status: 'ENROLLING' }]])(
+    'seEditaLaCompeticion(%j) is false and does not throw',
+    (competition) => {
+      expect(seEditaLaCompeticion(competition)).toBe(false);
+    },
+  );
 });

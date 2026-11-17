@@ -22,6 +22,10 @@ export const soloSePuedenEditarLasFechas = (competition) =>
  * @param {{status: string, enrollmentClosedByDeadline?: boolean}} competition
  * @returns {boolean}
  */
-export const seEditaLaCompeticion = (competition) =>
-  soloSePuedenEditarLasFechas(competition) ||
-  new CompetitionStatus(competition.status).allowsModifications();
+export const seEditaLaCompeticion = (competition) => {
+  if (soloSePuedenEditarLasFechas(competition)) return true;
+  const status = competition?.status;
+  // Sin estado, o uno que no se conoce: no se edita, y la ficha no se cae
+  if (!Object.values(CompetitionStatusEnum).includes(status)) return false;
+  return new CompetitionStatus(status).allowsModifications();
+};

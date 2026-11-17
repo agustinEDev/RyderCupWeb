@@ -87,7 +87,7 @@ export const useEditProfile = () => {
         });
       } catch (error) {
         registraElFallo(
-          'useEditProfile.useeditprofile-error-fetching-user-data',
+          'useEditProfile.fetching-user-data',
           '❌ [useEditProfile] Error fetching user data:',
           error,
         );
@@ -108,7 +108,7 @@ export const useEditProfile = () => {
         setCountries(countriesData || []);
       } catch (error) {
         registraElFallo(
-          'useEditProfile.useeditprofile-error-loading-countries',
+          'useEditProfile.loading-countries',
           '❌ [useEditProfile] Error loading countries:',
           error,
         );

@@ -72,7 +72,7 @@ export const useResponderInvitacion = ({
       await hacer(...argumentos);
     } catch (error) {
       registraElFallo(
-        'useResponderInvitacion.error-reloading-after-answering-an-invit',
+        'useResponderInvitacion.reloading-after-answering',
         'Error reloading after answering an invitation:',
         error,
       );

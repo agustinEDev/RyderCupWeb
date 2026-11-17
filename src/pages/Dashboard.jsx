@@ -715,7 +715,7 @@ const Dashboard = () => {
               await refetchUser();
             } catch (err) {
               registraElFallo(
-                'Dashboard.no-se-pudo-refrescar-el-usuario-tras-el',
+                'Dashboard.refreshing-the-user-after-the-alias',
                 'No se pudo refrescar el usuario tras el alias:',
                 err,
               );

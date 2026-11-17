@@ -22,8 +22,11 @@ class BrowseJoinableCompetitionsUseCase {
    */
   constructor(competitionRepository) {
     if (!competitionRepository) {
-      throw new Error(
-        'BrowseJoinableCompetitionsUseCase requires a competitionRepository',
+      throw Object.assign(
+        new Error(
+          'BrowseJoinableCompetitionsUseCase requires a competitionRepository',
+        ),
+        { mensajeTecnico: true },
       );
     }
     this.competitionRepository = competitionRepository;

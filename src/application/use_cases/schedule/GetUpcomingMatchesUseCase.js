@@ -38,8 +38,11 @@ class GetUpcomingMatchesUseCase {
       !getScheduleUseCase ||
       !listEnrollmentsUseCase
     ) {
-      throw new Error(
-        'GetUpcomingMatchesUseCase requires listUserCompetitionsUseCase, getScheduleUseCase and listEnrollmentsUseCase',
+      throw Object.assign(
+        new Error(
+          'GetUpcomingMatchesUseCase requires listUserCompetitionsUseCase, getScheduleUseCase and listEnrollmentsUseCase',
+        ),
+        { mensajeTecnico: true },
       );
     }
     this.#listUserCompetitionsUseCase = listUserCompetitionsUseCase;
@@ -64,7 +67,10 @@ class GetUpcomingMatchesUseCase {
    */
   async executeWithCompleteness(userId, competitions = null) {
     if (!userId) {
-      throw new Error('GetUpcomingMatchesUseCase requires a userId');
+      throw Object.assign(
+        new Error('GetUpcomingMatchesUseCase requires a userId'),
+        { mensajeTecnico: true },
+      );
     }
 
     const all =

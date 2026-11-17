@@ -333,7 +333,7 @@ const AdminPanel = () => {
       recargarCompetitions();
     } catch (error) {
       registraElFallo(
-        'AdminPanel.4',
+        `AdminPanel.transition-${action}`,
         `Error running competition transition "${action}":`,
         error,
       );
