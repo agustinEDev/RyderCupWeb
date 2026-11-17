@@ -24,6 +24,13 @@ describe('contieneEnlace (SB-05)', () => {
     'sms:+34600000000?body=x',
     'mailto:gana@premio.com',
     'cafe\u0301.fr',
+    'premio.cat',
+    'premio.eus',
+    'www.premio.bet',
+    'gana@premio.lat',
+    'premio\u200e.com',
+    'premio\u2063.com',
+    'Club.golf',
   ])('detecta «%s»', (texto) => {
     expect(contieneEnlace(texto)).toBe(true);
   });
@@ -37,6 +44,13 @@ describe('contieneEnlace (SB-05)', () => {
     'j.garcia',
     'Ana.Maria',
     'Copa St.Andrews',
+    'Hola Juan.Te invito',
+    'Nos vemos el sabado.Un abrazo',
+    'Copa Pro.Am 2026',
+    'Torneo Ed.II',
+    'Pepe.Jr',
+    'Dr.No',
+    'Club.Golf',
     '',
     null,
   ])('no ve enlace en «%s»', (texto) => {

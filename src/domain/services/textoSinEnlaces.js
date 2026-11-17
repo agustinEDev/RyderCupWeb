@@ -1,39 +1,62 @@
 /**
  * Si un texto que escribe un usuario lleva un enlace o una dirección web (SB-05).
  *
- * Espejo de `contiene_enlace` del servidor (`shared/domain/services/texto_sin_enlaces`):
- * el nombre de una competición, el alias y el mensaje de una invitación salen en
- * correos que firma la app, y un «entra en premio.com» ahí era un enlace pulsable.
- * Decidido por Agustín el 17 nov 2026: no se deja escribir. Esto solo evita el viaje
- * a la API para decir algo que ya se sabe aquí; quien manda es el servidor.
+ * Espejo de `contiene_enlace` del servidor (`shared/domain/services/texto_sin_enlaces`),
+ * con los mismos casos de prueba: el nombre de una competición, el alias y el mensaje
+ * de una invitación salen en correos que firma la app, y un «entra en premio.com» ahí
+ * era un enlace pulsable. Decidido por Agustín el 17 nov 2026: no se deja escribir.
+ * Esto solo evita el viaje a la API para decir algo que ya se sabe aquí.
+ *
+ * Cuenta como enlace, siempre: un esquema («https://», «tel:»…), lo que empieza por
+ * «www.», una dirección de correo y una IPv4. Y «algo.terminación» solo si la
+ * terminación existe (la lista de la IANA) y no está escrita «Mayúscula+minúsculas»,
+ * que es como empieza una frase o un nombre («Juan.Te invito», «Copa Pro.Am»).
  */
+import { TERMINACIONES_DE_DOMINIO } from './terminacionesDeDominio';
 
 // Puntos de otros alfabetos que los detectores de enlaces leen como un punto
-const PUNTOS = /[\u3002\uff0e\uff61]/g;
-// Invisibles: de anchura cero, unión de palabras, marca de orden, guion blando
-const INVISIBLES = /[\u200b-\u200d\u2060\ufeff\u00ad]/g;
+const PUNTOS = /[。．｡]/g;
+// Caracteres de formato (invisibles): de anchura cero, de dirección, guion blando…
+const INVISIBLES = /\p{Cf}/gu;
 
-// Las terminaciones que un cliente de correo convierte en enlace (las mismas que el
-// servidor): dos letras, las genéricas de siempre y las que más usa el spam
-const TERMINACIONES =
-  'com|net|org|info|biz|edu|gov|mil|int|name|pro|mobi|app|dev|page|io|ai|co|me|tv|' +
-  'xyz|top|site|online|shop|store|club|link|click|live|life|world|today|news|blog|' +
-  'cloud|tech|fun|icu|vip|win|bid|loan|work|space|website|email|support|help|' +
-  'login|secure|bank|money|pay|wallet|crypto|golf|gift|deals|sale|promo';
+const ESQUEMA = /[a-z][a-z0-9+.-]*:\/\//i;
+const ESQUEMA_SIN_BARRAS =
+  /(?<![a-z])(?:tel|sms|mailto|callto|whatsapp):(?!\/\/)/i;
+const WWW = /(?<![a-z0-9])www\.[^\s.]/i;
+const CORREO = /[^\s@]+@[^\s@.]+\.[^\s@]+/;
+const IP = /(?<![0-9.])(?:[0-9]{1,3}\.){3}[0-9]{1,3}(?![0-9]|\.[0-9])/;
+
 const ETIQUETA = String.raw`[\p{L}\p{N}](?:[\p{L}\p{N}_-]{0,61}[\p{L}\p{N}])?`;
 const DOMINIO = new RegExp(
-  String.raw`(?<![\p{L}\p{N}_-])(?:${ETIQUETA}\.)+` +
-    String.raw`(?:${TERMINACIONES}|[a-z]{2}|[^\P{L}a-z]{2,63}|xn--[a-z0-9-]{1,59})` +
-    String.raw`(?![\p{L}\p{N}_-])`,
-  'iu',
+  String.raw`(?<![\p{L}\p{N}_-])(?:${ETIQUETA}\.)+(\p{L}{2,63}|xn--[a-z0-9-]{1,59})(?![\p{L}\p{N}_-])`,
+  'giu',
 );
-const IP = /(?<![\d.])(?:\d{1,3}\.){3}\d{1,3}(?!\d|\.\d)/;
-const ESQUEMA = /\b[a-z][a-z0-9+.-]*:\/\//i;
-const ESQUEMA_SIN_BARRAS = /\b(?:tel|sms|mailto|callto|whatsapp):(?!\/\/)/i;
+
+/** Si la última etiqueta es una terminación de dominio, escrita como dirección. */
+const esTerminacion = (final) => {
+  // «Te», «Am», «Golf»: una palabra que empieza frase o nombre, no una dirección
+  if (
+    final.length > 1 &&
+    final[0] === final[0].toUpperCase() &&
+    final[0] !== final[0].toLowerCase() &&
+    final.slice(1) === final.slice(1).toLowerCase()
+  )
+    return false;
+  // eslint-disable-next-line no-control-regex
+  if (/^[\x00-\x7f]*$/.test(final))
+    return TERMINACIONES_DE_DOMINIO.has(final.toLowerCase());
+  // Otro alfabeto («рф»): la IANA la lista en punycode
+  try {
+    const host = new globalThis.URL(`http://a.${final}`).hostname;
+    return TERMINACIONES_DE_DOMINIO.has(host.split('.').pop());
+  } catch {
+    return false;
+  }
+};
 
 /**
  * @param {string|null|undefined} texto - Lo que escribió un usuario
- * @returns {boolean} Si lleva un esquema, una IP o un dominio
+ * @returns {boolean} Si lleva un esquema, «www.», un correo, una IP o un dominio
  */
 export const contieneEnlace = (texto) => {
   if (!texto) return false;
@@ -41,7 +64,9 @@ export const contieneEnlace = (texto) => {
     .normalize('NFC')
     .replace(PUNTOS, '.')
     .replace(INVISIBLES, '');
-  return [ESQUEMA, ESQUEMA_SIN_BARRAS, IP, DOMINIO].some((patron) =>
-    patron.test(limpio),
-  );
+  if (
+    [ESQUEMA, ESQUEMA_SIN_BARRAS, WWW, CORREO, IP].some((p) => p.test(limpio))
+  )
+    return true;
+  return [...limpio.matchAll(DOMINIO)].some((m) => esTerminacion(m[1]));
 };
