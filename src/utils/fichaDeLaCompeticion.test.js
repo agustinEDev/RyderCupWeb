@@ -81,7 +81,9 @@ describe('porQueNoSeFormaron / yaLosHabia', () => {
   });
 
   it('given an unknown error with a message, when explaining, then it shows the server message', () => {
-    expect(porQueNoSeFormaron(t, { message: 'boom' })).toBe('boom');
+    expect(
+      porQueNoSeFormaron(t, Object.assign(new Error('boom'), { status: 409 })),
+    ).toBe('boom');
   });
 
   it('given no error at all, when explaining, then it uses the generic text', () => {

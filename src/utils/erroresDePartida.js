@@ -1,3 +1,4 @@
+import { mensajeDelError } from './mensajeDelError';
 /**
  * Los errores del servidor al anotar o corregir una partida de stroke play
  * (FE #824, PR 7; RyderCupAm#535), con su texto en `scoring.partida.errors`.
@@ -44,5 +45,5 @@ export const mensajeDeErrorDePartida = (t, error) => {
     });
   }
   if (CODIGOS_DE_PARTIDA.includes(codigo)) return t(`partida.errors.${codigo}`);
-  return error?.message || t('partida.errors.generic');
+  return mensajeDelError(error, t('partida.errors.generic'));
 };

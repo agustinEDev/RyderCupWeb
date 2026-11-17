@@ -20,6 +20,8 @@ import {
   lanzaElRefrescoDeHandicap,
   APUNTE_REFRESCAR,
 } from '../../services/refrescoDeHandicap';
+import { mensajeDelError } from '../../utils/mensajeDelError';
+import { registraElFallo } from '../../utils/registraElFallo';
 
 /**
  * El acceso con correo y contraseña, con Google debajo: el formulario entero y
@@ -155,7 +157,7 @@ const SignInForm = () => {
         },
       );
     } catch (error) {
-      console.error('Login error:', error);
+      registraElFallo('SignInForm.login-error', 'Login error:', error);
 
       // Limpiar el password por seguridad (OWASP A07 - Authentication Failures)
       setFormData((prev) => ({
@@ -177,7 +179,7 @@ const SignInForm = () => {
         // Con su código, como la vuelta de Google: el texto, traducido (RyderCupAm #750)
         customToast.error(t('google.accountDeactivated'), { duration: 10000 });
       } else {
-        customToast.error(error.message || t('login.error'), {
+        customToast.error(mensajeDelError(error, t('login.error')), {
           duration: 5000,
         });
       }

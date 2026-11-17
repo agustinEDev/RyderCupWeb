@@ -622,7 +622,7 @@ describe('MyQuickMatchesPage', () => {
     ).not.toBeInTheDocument();
   });
 
-  it('un fallo del servidor se enseña con su mensaje', async () => {
+  it('un fallo del servidor se enseña con el texto de la app (Q-FE-06)', async () => {
     mockListMyQuickMatches.mockRejectedValue(
       Object.assign(new Error('Server error'), { status: 500 }),
     );
@@ -630,7 +630,7 @@ describe('MyQuickMatchesPage', () => {
     renderPage();
 
     await waitFor(() => {
-      expect(screen.getByText('Server error')).toBeInTheDocument();
+      expect(screen.getByText('scoring.errors.generic')).toBeInTheDocument();
     });
   });
 
@@ -1175,7 +1175,10 @@ describe('MyQuickMatchesPage · llegar a la partida sin cobertura (FE #524, tabl
       );
 
       renderPage();
-      await screen.findByText('fuera');
+      // Un 401 es la sesión: sale el texto de la app, no el suyo (Q-FE-06)
+      await screen.findByText(
+        status === 401 ? 'scoring.errors.generic' : 'fuera',
+      );
 
       expect(localStorage.getItem('rydercup-ultima-lista')).toBeNull();
     },
@@ -1231,10 +1234,13 @@ describe('MyQuickMatchesPage · llegar a la partida sin cobertura (FE #524, tabl
 
     renderPage();
 
-    // Se espera a que la pantalla haya reaccionado —el 401 sale con su mensaje—
-    // y solo entonces se mira la ausencia: si no, la comprobación gana la
-    // carrera y pasaría igual aunque la lista se pintara un instante después
-    expect(await screen.findByText('fuera')).toBeInTheDocument();
+    // Se espera a que la pantalla haya reaccionado —el 401 sale con el texto
+    // de la app (Q-FE-06)— y solo entonces se mira la ausencia: si no, la
+    // comprobación gana la carrera y pasaría igual aunque la lista se pintara
+    // un instante después
+    expect(
+      await screen.findByText('scoring.errors.generic'),
+    ).toBeInTheDocument();
     expect(screen.queryByText('Meis Foursomes')).not.toBeInTheDocument();
   });
 });

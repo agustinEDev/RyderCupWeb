@@ -10,6 +10,7 @@ import {
   stripSecretsFromAddressBar,
   readStrippedSecret,
 } from '../utils/stripSecretsFromAddressBar';
+import { registraElFallo } from '../utils/registraElFallo';
 
 const VerifyEmail = () => {
   const navigate = useNavigate();
@@ -44,7 +45,11 @@ const VerifyEmail = () => {
         setReenvio('limited');
         return;
       }
-      console.error('Error resending the verification link:', error);
+      registraElFallo(
+        'VerifyEmail.error-resending-the-verification-link',
+        'Error resending the verification link:',
+        error,
+      );
       setReenvio('failed');
     } finally {
       // Enviado, el botón queda desactivado; si falló, se puede volver a pedir
@@ -71,7 +76,11 @@ const VerifyEmail = () => {
         // una sesión ya abierta, el enlace de iniciar sesión lleva al panel
         setStatus('verifiedSignIn');
       } catch (error) {
-        console.error('❌ Verification error:', error);
+        registraElFallo(
+          'VerifyEmail.verification-error',
+          '❌ Verification error:',
+          error,
+        );
         await new Promise((resolve) => setTimeout(resolve, 1500));
         if (error?.errorCode === 'VERIFICATION_TOKEN_EXPIRED') {
           // Es el de la cuenta, pero pasaron sus 48 horas: se ofrece otro (fase 3)

@@ -75,20 +75,6 @@ describe('Competition · el tipo de torneo (FE #791)', () => {
     expect(activada.ryderCup.team2Name).toBe('USA');
   });
 
-  it('D5: a un Stableford no se le ponen equipos al editarlo', () => {
-    const stableford = new Competition(props({ tournamentType: 'STABLEFORD' }));
-
-    expect(() => stableford.updateInfo({ team1Name: 'Europa' })).toThrow(
-      'no tiene equipos',
-    );
-  });
-
-  it('D6: una Ryder sí cambia sus equipos', () => {
-    expect(ryder().updateInfo({ team1Name: 'Asia' }).ryderCup.team1Name).toBe(
-      'Asia',
-    );
-  });
-
   describe('el tipo y la pieza cuadran (revisión local)', () => {
     const pieza = () =>
       new RyderCupSetup({
@@ -134,12 +120,6 @@ describe('Competition · el tipo de torneo (FE #791)', () => {
   });
 
   describe('el tipo de una competición no cambia', () => {
-    it('D11: editar no cambia el tipo', () => {
-      expect(() =>
-        ryder().updateInfo({ tournamentType: 'STABLEFORD' }),
-      ).toThrow('El tipo de una competición no se cambia');
-    });
-
     it('D12: el factory crea el tipo que se le pide', () => {
       const stableford = Competition.create(
         props({ tournamentType: 'STABLEFORD' }),

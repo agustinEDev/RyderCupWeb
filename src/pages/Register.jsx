@@ -19,6 +19,8 @@ import FullScreenLoader from '../components/ui/FullScreenLoader';
 import { useRedirectIfAuthenticated } from '../hooks/useRedirectIfAuthenticated';
 import BrandMark from '../components/ui/BrandMark';
 import AceptacionDeTerminos from '../components/auth/AceptacionDeTerminos';
+import { mensajeDelError } from '../utils/mensajeDelError';
+import { registraElFallo } from '../utils/registraElFallo';
 
 const Register = () => {
   const { t } = useTranslation(['auth', 'common']);
@@ -77,7 +79,11 @@ const Register = () => {
         setCountries(validCountries);
       } catch (error) {
         if (controller.signal.aborted) return;
-        console.error('Error loading countries:', error);
+        registraElFallo(
+          'Register.error-loading-countries',
+          'Error loading countries:',
+          error,
+        );
         setCountries([]);
       } finally {
         if (!controller.signal.aborted) {
@@ -192,7 +198,8 @@ const Register = () => {
       // El backend dice por qué rechaza la contraseña con un código (BE #519):
       // su texto va en español, así que se dice con la clave del idioma de la app
       customToast.error(
-        passwordErrorMessage(error, t) || error.message || t('register.error'),
+        passwordErrorMessage(error, t) ||
+          mensajeDelError(error, t('register.error')),
       );
     } finally {
       setIsLoading(false);

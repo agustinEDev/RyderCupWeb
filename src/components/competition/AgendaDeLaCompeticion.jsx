@@ -24,6 +24,7 @@ import {
   partidosDeLaSesion,
 } from '../../utils/agenda';
 import { aCamposDeLaCompeticion } from '../../utils/camposDeLaCompeticion';
+import { mensajeDelError } from '../../utils/mensajeDelError';
 
 const FORMATOS = ['SINGLES', 'FOURBALL', 'FOURSOMES'];
 
@@ -168,8 +169,7 @@ const AgendaDeLaCompeticion = ({
       // Con la lista de afectados, sus nombres; si no, el motivo del servidor
       customToast.error(
         mensajeConJugadores(t, error, 'agenda.errors') ||
-          error.message ||
-          t('agenda.error'),
+          mensajeDelError(error, t('agenda.error')),
       );
     } finally {
       // Sin espera: la agenda de ahora se queda a la vista hasta que llega la nueva

@@ -21,6 +21,7 @@ import { formatDateRange } from '../services/competitions';
 import { PANTALLA_MENOS_BARRA_INFERIOR } from '../utils/barraInferior';
 import { MOTIVOS_PARA_NO_APUNTARSE } from '../utils/fichaDeLaCompeticion';
 import { nombrePequeno } from '../utils/nombreVisible';
+import { registraElFallo } from '../utils/registraElFallo';
 
 const BrowseCompetitions = () => {
   // El género para apuntarse, solo a quien le falta (#710)
@@ -76,7 +77,11 @@ const BrowseCompetitions = () => {
 
         setJoinableCompetitions(safeCompetitions);
       } catch (error) {
-        console.error('Error loading joinable competitions:', error);
+        registraElFallo(
+          'BrowseCompetitions.error-loading-joinable-competitions',
+          'Error loading joinable competitions:',
+          error,
+        );
         customToast.error(t('browse.errors.failedToLoadJoinable'));
       } finally {
         setIsLoadingJoinable(false);
@@ -96,7 +101,11 @@ const BrowseCompetitions = () => {
         const competitions = await browseExploreCompetitionsUseCase.execute();
         setExploreCompetitions(competitions);
       } catch (error) {
-        console.error('Error loading explore competitions:', error);
+        registraElFallo(
+          'BrowseCompetitions.error-loading-explore-competitions',
+          'Error loading explore competitions:',
+          error,
+        );
         customToast.error(t('browse.errors.failedToLoadExplore'));
       } finally {
         setIsLoadingExplore(false);
@@ -245,11 +254,19 @@ const BrowseCompetitions = () => {
 
           setJoinableCompetitions(safeCompetitions);
         } catch (err) {
-          console.error('Error reloading competitions:', err);
+          registraElFallo(
+            'BrowseCompetitions.error-reloading-competitions',
+            'Error reloading competitions:',
+            err,
+          );
         }
       }, 1000);
     } catch (error) {
-      console.error('❌ Error requesting enrollment:', error);
+      registraElFallo(
+        'BrowseCompetitions.error-requesting-enrollment',
+        '❌ Error requesting enrollment:',
+        error,
+      );
 
       // Con la sala de draft abierta, pasado el plazo (15 nov 2026) o con la
       // franja que ya no vale, no entra: se dice en el diálogo, que sigue

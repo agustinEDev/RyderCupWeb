@@ -26,6 +26,7 @@ import FullScreenLoader from '../components/ui/FullScreenLoader';
 import BlockLoader from '../components/ui/BlockLoader';
 import { formatoDeIndice } from '../utils/formatoDeHandicap';
 import { PANTALLA_MENOS_BARRA_INFERIOR } from '../utils/barraInferior';
+import { registraElFallo } from '../utils/registraElFallo';
 
 /**
  * Las estadísticas completas del jugador (FE #306, fase 2).
@@ -68,7 +69,11 @@ const leeLasEstadisticas = () =>
     // esté desplegado responde 404, y un `Promise.all` convertiría eso en
     // una pantalla de estadísticas vacía para todo el mundo
     getScoringBreakdownUseCase.execute().catch((error) => {
-      console.error('Failed to load the scoring breakdown:', error);
+      registraElFallo(
+        'PlayerStatsPage.failed-to-load-the-scoring-breakdown',
+        'Failed to load the scoring breakdown:',
+        error,
+      );
       return FALLO_DEL_DESGLOSE;
     }),
   ]);
@@ -103,7 +108,11 @@ const PlayerStatsPage = () => {
         setBreakdownFailed(fallo);
       },
       alFallar: (error) => {
-        console.error('Failed to load player statistics:', error);
+        registraElFallo(
+          'PlayerStatsPage.failed-to-load-player-statistics',
+          'Failed to load player statistics:',
+          error,
+        );
         setGlobalStats(null);
         setMatches([]);
         setBreakdown(null);
@@ -129,7 +138,11 @@ const PlayerStatsPage = () => {
           setCourseStats(stats);
         }
       } catch (error) {
-        console.error('Failed to load golf course statistics:', error);
+        registraElFallo(
+          'PlayerStatsPage.failed-to-load-golf-course-statistics',
+          'Failed to load golf course statistics:',
+          error,
+        );
         if (!cancelled) {
           setCourseStats(null);
         }

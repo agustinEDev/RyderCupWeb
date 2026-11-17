@@ -1,8 +1,12 @@
 import { siViene } from '../../../utils/campoSiViene';
+import { CompetitionStatusEnum } from '../../../domain/value_objects/CompetitionStatus';
 
 const SESSION_ORDER = { MORNING: 0, AFTERNOON: 1, EVENING: 2 };
 const UPCOMING_STATUSES = ['SCHEDULED', 'IN_PROGRESS'];
-const COMPETICIONES_CON_PARTIDOS = ['CLOSED', 'IN_PROGRESS'];
+const COMPETICIONES_CON_PARTIDOS = [
+  CompetitionStatusEnum.CLOSED,
+  CompetitionStatusEnum.IN_PROGRESS,
+];
 
 /**
  * Use Case: Get Upcoming Matches
@@ -34,8 +38,11 @@ class GetUpcomingMatchesUseCase {
       !getScheduleUseCase ||
       !listEnrollmentsUseCase
     ) {
-      throw new Error(
-        'GetUpcomingMatchesUseCase requires listUserCompetitionsUseCase, getScheduleUseCase and listEnrollmentsUseCase',
+      throw Object.assign(
+        new Error(
+          'GetUpcomingMatchesUseCase requires listUserCompetitionsUseCase, getScheduleUseCase and listEnrollmentsUseCase',
+        ),
+        { mensajeTecnico: true },
       );
     }
     this.#listUserCompetitionsUseCase = listUserCompetitionsUseCase;
@@ -60,7 +67,10 @@ class GetUpcomingMatchesUseCase {
    */
   async executeWithCompleteness(userId, competitions = null) {
     if (!userId) {
-      throw new Error('GetUpcomingMatchesUseCase requires a userId');
+      throw Object.assign(
+        new Error('GetUpcomingMatchesUseCase requires a userId'),
+        { mensajeTecnico: true },
+      );
     }
 
     const all =

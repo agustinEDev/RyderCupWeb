@@ -4,6 +4,7 @@ import { useLocation } from 'react-router';
 import { SE_ARREGLA_ESPERANDO } from '../services/vaciaAnotaciones';
 import * as cerrojo from '../utils/scoringSessionLock';
 import { vaciaLaColaEntera } from '../services/vaciadoDeLaCola';
+import { registraElFallo } from '../utils/registraElFallo';
 
 // Espera creciente Y con tope de intentos: insistir cada pocos segundos contra
 // un servidor caído gasta batería sin arreglar nada, y sin tope una sesión
@@ -143,7 +144,11 @@ export const useVaciadoDeLaCola = ({ activo, userId = null }) => {
       .catch((err) => {
         // Nunca hacia arriba: esto corre de fondo y un fallo aquí no puede
         // tumbar la pantalla que el usuario esté mirando
-        console.error('[VaciadoDeLaCola] No se pudo vaciar la cola:', err);
+        registraElFallo(
+          'useVaciadoDeLaCola.emptying-the-queue',
+          '[VaciadoDeLaCola] No se pudo vaciar la cola:',
+          err,
+        );
         programaReintento();
       });
   }, [activo, userId, programaReintento, cancelaReintento]);

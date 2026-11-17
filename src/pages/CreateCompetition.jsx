@@ -55,11 +55,16 @@ import {
   errorDeAjustes,
 } from '../utils/ajustesDeStrokePlay';
 import { cupoDeJugadores, CUPO_POR_DEFECTO } from '../utils/cupoDeJugadores';
-import { CompetitionStatus } from '../domain/value_objects/CompetitionStatus';
+import {
+  soloSePuedenEditarLasFechas,
+  seEditaLaCompeticion,
+} from '../domain/services/edicionDeLaCompeticion';
 import { MAX_PLAYERS, MIN_PLAYERS } from '../domain/entities/Competition';
 import { CompetitionName } from '../domain/value_objects/CompetitionName';
 import { diaDeLaSesion } from '../utils/diaDeLaSesion';
 import { PANTALLA_MENOS_BARRA_INFERIOR } from '../utils/barraInferior';
+import { mensajeDelError } from '../utils/mensajeDelError';
+import { registraElFallo } from '../utils/registraElFallo';
 
 // Helper function to get message className
 const getMessageClassName = (type) => {
@@ -122,7 +127,11 @@ const leeVecinos = async (countryId) => {
   try {
     return aPaises(await getAdjacentCountriesUseCase.execute(countryId));
   } catch (error) {
-    console.error('Error fetching adjacent countries:', error);
+    registraElFallo(
+      'CreateCompetition.error-fetching-adjacent-countries',
+      'Error fetching adjacent countries:',
+      error,
+    );
     return [];
   }
 };
@@ -161,13 +170,8 @@ const leeLaCompeticionParaEditar = async (competitionId) => {
   // ofrece «Editar» en la ficha
   // Cerrada por el plazo (no por el organizador), se mueve: solo las fechas
   // (15 nov 2026, RyderCupAm #865)
-  const soloFechas =
-    competition.status === 'CLOSED' &&
-    competition.enrollmentClosedByDeadline === true;
-  if (
-    !soloFechas &&
-    !new CompetitionStatus(competition.status).allowsModifications()
-  ) {
+  const soloFechas = soloSePuedenEditarLasFechas(competition);
+  if (!seEditaLaCompeticion(competition)) {
     return { competition, editable: false };
   }
 
@@ -214,7 +218,11 @@ const leeLaCompeticionParaEditar = async (competitionId) => {
       }));
     }
   } catch (error) {
-    console.error('Error loading golf courses:', error);
+    registraElFallo(
+      'CreateCompetition.error-loading-golf-courses',
+      'Error loading golf courses:',
+      error,
+    );
   }
 
   return {
@@ -457,7 +465,11 @@ const CreateCompetition = () => {
   useCargaCancelableEffect(() => fetchCountriesUseCase.execute(), [], {
     alCargar: (data) => setAllCountries(aPaises(data)),
     alFallar: (error) => {
-      console.error('Error fetching countries:', error);
+      registraElFallo(
+        'CreateCompetition.error-fetching-countries',
+        'Error fetching countries:',
+        error,
+      );
       setAllCountries([]);
     },
   });
@@ -857,7 +869,7 @@ const CreateCompetition = () => {
     if (sesiones) return sesiones;
     if (error?.errorCode)
       return t(MOTIVOS_AL_EDITAR[error.errorCode] ?? 'edit.error');
-    return error?.message || t('edit.error');
+    return mensajeDelError(error, t('edit.error'));
   };
 
   // El aviso del nombre, y el campo a la vista y con el foco: el botón queda
@@ -1051,7 +1063,8 @@ const CreateCompetition = () => {
           try {
             await (ajustesPrimero ? guardaLoGeneral : guardaLosAjustes)();
           } catch (error) {
-            console.error(
+            registraElFallo(
+              'CreateCompetition.updating-competition-second-request',
               'Error updating competition (second request):',
               error,
             );
@@ -1139,7 +1152,11 @@ const CreateCompetition = () => {
               propuesta,
             );
           } catch (error) {
-            console.error('No se ha podido proponer la agenda:', error);
+            registraElFallo(
+              'CreateCompetition.no-se-ha-podido-proponer-la-agenda',
+              'No se ha podido proponer la agenda:',
+              error,
+            );
           }
         }
 
@@ -1149,7 +1166,10 @@ const CreateCompetition = () => {
         }, 1500);
       }
     } catch (error) {
-      console.error(
+      registraElFallo(
+        isEditMode
+          ? 'CreateCompetition.updating-competition'
+          : 'CreateCompetition.creating-competition',
         `Error ${isEditMode ? 'updating' : 'creating'} competition:`,
         error,
       );
@@ -1184,8 +1204,7 @@ const CreateCompetition = () => {
       }
       const texto =
         sesionesQueQuedanFuera(error) ||
-        error.message ||
-        t(isEditMode ? 'edit.error' : 'create.error');
+        mensajeDelError(error, t(isEditMode ? 'edit.error' : 'create.error'));
       customToast.error(texto);
       setMessage({ type: 'error', text: texto });
     } finally {

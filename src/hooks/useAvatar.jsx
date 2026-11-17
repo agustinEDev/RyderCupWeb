@@ -9,6 +9,8 @@ import {
   activateUploadedAvatarUseCase,
   removeAvatarUseCase,
 } from '../composition';
+import { mensajeDelError } from '../utils/mensajeDelError';
+import { registraElFallo } from '../utils/registraElFallo';
 
 /**
  * useAvatar - Avatar picker state and handlers for the Edit Profile page.
@@ -58,7 +60,11 @@ export const useAvatar = (user, refetchUser) => {
         setUploads(myUploads || []);
       }
     } catch (error) {
-      console.error('Error loading avatar uploads:', error);
+      registraElFallo(
+        'useAvatar.error-loading-avatar-uploads',
+        'Error loading avatar uploads:',
+        error,
+      );
     }
   }, []);
 
@@ -81,7 +87,11 @@ export const useAvatar = (user, refetchUser) => {
         ]);
         if (!ignore) setPresets(presetList || []);
       } catch (error) {
-        console.error('Error loading avatar options:', error);
+        registraElFallo(
+          'useAvatar.error-loading-avatar-options',
+          'Error loading avatar options:',
+          error,
+        );
         if (!ignore) customToast.error(t('toasts.failedToLoadAvatarOptions'));
       } finally {
         if (!ignore) setIsLoadingOptions(false);
@@ -112,11 +122,15 @@ export const useAvatar = (user, refetchUser) => {
     try {
       await action();
     } catch (error) {
-      console.error('Error updating avatar:', error);
+      registraElFallo(
+        'useAvatar.error-updating-avatar',
+        'Error updating avatar:',
+        error,
+      );
       customToast.error(
         mapError
           ? mapError(error)
-          : error.message || t('toasts.failedToUpdateAvatar'),
+          : mensajeDelError(error, t('toasts.failedToUpdateAvatar')),
       );
       setBusy(false);
       return;
@@ -128,7 +142,11 @@ export const useAvatar = (user, refetchUser) => {
       await refetchUser();
       if (refreshUploads) await loadUploads();
     } catch (error) {
-      console.error('Error refreshing after avatar update:', error);
+      registraElFallo(
+        'useAvatar.error-refreshing-after-avatar-update',
+        'Error refreshing after avatar update:',
+        error,
+      );
     } finally {
       setBusy(false);
     }
@@ -156,7 +174,7 @@ export const useAvatar = (user, refetchUser) => {
         // código —un servidor anterior— se enseña su texto, como antes
         if (error.errorCode === 'IMAGES_BUSY')
           return t('toasts.avatarImagesBusy');
-        return error.message || t('toasts.failedToUpdateAvatar');
+        return mensajeDelError(error, t('toasts.failedToUpdateAvatar'));
       },
     });
   };
@@ -172,7 +190,8 @@ export const useAvatar = (user, refetchUser) => {
     runAvatarAction({
       setBusy: setIsRemoving,
       action: () => removeAvatarUseCase.execute(),
-      mapError: (error) => error.message || t('toasts.failedToRemoveAvatar'),
+      mapError: (error) =>
+        mensajeDelError(error, t('toasts.failedToRemoveAvatar')),
       successMessage: t('toasts.avatarRemoved'),
     });
 

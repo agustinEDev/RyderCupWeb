@@ -36,6 +36,10 @@ import FullScreenLoader from '../../components/ui/FullScreenLoader';
 import { aCamposDeLaCompeticion } from '../../utils/camposDeLaCompeticion';
 import { PANTALLA_MENOS_BARRA_INFERIOR } from '../../utils/barraInferior';
 import { mensajeDeError } from '../../utils/sinCobertura';
+import { CompetitionStatusEnum } from '../../domain/value_objects/CompetitionStatus';
+import EnrollmentStatus from '../../domain/value_objects/EnrollmentStatus';
+import { mensajeDelError } from '../../utils/mensajeDelError';
+import { registraElFallo } from '../../utils/registraElFallo';
 
 // El toast de «no se han podido cargar los inscritos»: uno solo, y se va al volver la lista
 const AVISO_INSCRITOS = 'inscritos-sin-cargar';
@@ -147,7 +151,11 @@ const SchedulePage = () => {
           }
         },
         alFallar: (error) => {
-          console.error('Error loading schedule data:', error);
+          registraElFallo(
+            'SchedulePage.error-loading-schedule-data',
+            'Error loading schedule data:',
+            error,
+          );
           customToast.error(t('errors.failedToLoadSchedule'));
           navigate(`/competitions/${id}`);
         },
@@ -170,7 +178,9 @@ const SchedulePage = () => {
     // Los que siguen inscritos: el reparto guarda la lista tal cual y una baja
     // no la toca, así que quien se retiró sigue ahí y ya no puede capitanear
     const aprobados = new Set(
-      enrollments.filter((e) => e.status === 'APPROVED').map((e) => e.userId),
+      enrollments
+        .filter((e) => e.status === EnrollmentStatus.APPROVED)
+        .map((e) => e.userId),
     );
     return (lista || [])
       .filter((id) => aprobados.has(id))
@@ -192,8 +202,14 @@ const SchedulePage = () => {
       setCubriendoCapitan(null);
       customToast.success(t('success.captainFilled'));
     } catch (error) {
-      console.error('Error filling captain:', error);
-      customToast.error(error.message || t('errors.failedToFillCaptain'));
+      registraElFallo(
+        'SchedulePage.error-filling-captain',
+        'Error filling captain:',
+        error,
+      );
+      customToast.error(
+        mensajeDelError(error, t('errors.failedToFillCaptain')),
+      );
     } finally {
       setIsProcessing(false);
     }
@@ -209,7 +225,7 @@ const SchedulePage = () => {
     } catch (error) {
       // El servidor es quien sabe si esa sesión ya se jugó o si no había nada
       // que rehacer: aquí se enseña lo que diga
-      customToast.error(error.message);
+      customToast.error(mensajeDelError(error, t('common:errors.generic')));
     } finally {
       setIsProcessing(false);
     }
@@ -219,7 +235,11 @@ const SchedulePage = () => {
     try {
       setCompetition(await getCompetitionDetailUseCase.execute(id));
     } catch (error) {
-      console.error('Error reloading competition:', error);
+      registraElFallo(
+        'SchedulePage.error-reloading-competition',
+        'Error reloading competition:',
+        error,
+      );
     }
   };
 
@@ -228,7 +248,11 @@ const SchedulePage = () => {
       const scheduleData = await getScheduleUseCase.execute(id);
       setSchedule(scheduleData);
     } catch (error) {
-      console.error('Error reloading schedule:', error);
+      registraElFallo(
+        'SchedulePage.error-reloading-schedule',
+        'Error reloading schedule:',
+        error,
+      );
       customToast.error(t('errors.failedToLoadSchedule'));
     }
   };
@@ -247,7 +271,11 @@ const SchedulePage = () => {
       setGenerateRound(null);
       await reloadSchedule();
     } catch (error) {
-      console.error('Error generating matches:', error);
+      registraElFallo(
+        'SchedulePage.error-generating-matches',
+        'Error generating matches:',
+        error,
+      );
       if (error?.errorCode === 'MATCH_GENERATION_BLOCKED') {
         // El servidor lo ha apuntado en la sesión, en claves (BE #360), y el
         // modal lo enseña en su idioma, con quién y qué. Abierto: cerrarlo
@@ -271,11 +299,19 @@ const SchedulePage = () => {
         } catch (recarga) {
           // Sin la sesión recargada no hay motivo que enseñar: la frase del
           // servidor, que también dice quién
-          console.error('Error reloading after a blocked generation:', recarga);
-          customToast.error(error.message);
+          registraElFallo(
+            'SchedulePage.reloading-after-a-blocked-generation',
+            'Error reloading after a blocked generation:',
+            recarga,
+          );
+          customToast.error(
+            mensajeDelError(error, t('errors.failedToGenerateMatches')),
+          );
         }
       } else {
-        customToast.error(error.message || t('errors.failedToGenerateMatches'));
+        customToast.error(
+          mensajeDelError(error, t('errors.failedToGenerateMatches')),
+        );
       }
     } finally {
       setIsProcessing(false);
@@ -295,8 +331,14 @@ const SchedulePage = () => {
       customToast.success(t('success.matchStatusUpdated'));
       await reloadSchedule();
     } catch (error) {
-      console.error('Error starting match:', error);
-      customToast.error(error.message || t('errors.failedToUpdateMatchStatus'));
+      registraElFallo(
+        'SchedulePage.error-starting-match',
+        'Error starting match:',
+        error,
+      );
+      customToast.error(
+        mensajeDelError(error, t('errors.failedToUpdateMatchStatus')),
+      );
     } finally {
       setIsProcessing(false);
     }
@@ -309,8 +351,14 @@ const SchedulePage = () => {
       customToast.success(t('success.matchStatusUpdated'));
       await reloadSchedule();
     } catch (error) {
-      console.error('Error completing match:', error);
-      customToast.error(error.message || t('errors.failedToUpdateMatchStatus'));
+      registraElFallo(
+        'SchedulePage.error-completing-match',
+        'Error completing match:',
+        error,
+      );
+      customToast.error(
+        mensajeDelError(error, t('errors.failedToUpdateMatchStatus')),
+      );
     } finally {
       setIsProcessing(false);
     }
@@ -330,8 +378,14 @@ const SchedulePage = () => {
       setWalkoverMatch(null);
       await reloadSchedule();
     } catch (error) {
-      console.error('Error declaring walkover:', error);
-      customToast.error(error.message || t('errors.failedToDeclareWalkover'));
+      registraElFallo(
+        'SchedulePage.error-declaring-walkover',
+        'Error declaring walkover:',
+        error,
+      );
+      customToast.error(
+        mensajeDelError(error, t('errors.failedToDeclareWalkover')),
+      );
     } finally {
       setIsProcessing(false);
     }
@@ -351,8 +405,14 @@ const SchedulePage = () => {
       setReassignMatch(null);
       await reloadSchedule();
     } catch (error) {
-      console.error('Error reassigning players:', error);
-      customToast.error(error.message || t('errors.failedToReassignPlayers'));
+      registraElFallo(
+        'SchedulePage.error-reassigning-players',
+        'Error reassigning players:',
+        error,
+      );
+      customToast.error(
+        mensajeDelError(error, t('errors.failedToReassignPlayers')),
+      );
     } finally {
       setIsProcessing(false);
     }
@@ -370,7 +430,11 @@ const SchedulePage = () => {
       // ya no lo es
       await Promise.all([reloadSchedule(), recargarCompeticion()]);
     } catch (error) {
-      console.error('Error assigning teams:', error);
+      registraElFallo(
+        'SchedulePage.error-assigning-teams',
+        'Error assigning teams:',
+        error,
+      );
       // Con su código, en cristiano (29 oct 2026): formados quedan así, y con
       // la sala de draft abierta se espera a que termine
       if (error?.errorCode === 'DRAFT_IN_PROGRESS') {
@@ -380,7 +444,9 @@ const SchedulePage = () => {
         setShowTeamsModal(false);
         await Promise.all([reloadSchedule(), recargarCompeticion()]);
       } else {
-        customToast.error(error.message || t('errors.failedToAssignTeams'));
+        customToast.error(
+          mensajeDelError(error, t('errors.failedToAssignTeams')),
+        );
       }
     } finally {
       setIsProcessing(false);
@@ -395,7 +461,11 @@ const SchedulePage = () => {
       await undoTeamsUseCase.execute(id);
       customToast.success(t('success.teamsUndone'));
     } catch (error) {
-      console.error('Error undoing teams:', error);
+      registraElFallo(
+        'SchedulePage.error-undoing-teams',
+        'Error undoing teams:',
+        error,
+      );
       // Ya deshechos (otra pestaña, o al quitar a alguien): basta con releer
       if (error?.errorCode !== 'NO_TEAMS') {
         customToast.error(
@@ -472,8 +542,9 @@ const SchedulePage = () => {
   // Con partidos, o ya en juego, los equipos son lo jugado: el servidor no los
   // deshace (TEAMS_LOCKED), así que ni se ofrece
   const sePuedenDeshacer =
-    ['ACTIVE', 'CLOSED'].includes(competition.status) &&
-    !rounds.some((r) => r.matches?.length > 0);
+    [CompetitionStatusEnum.ACTIVE, CompetitionStatusEnum.CLOSED].includes(
+      competition.status,
+    ) && !rounds.some((r) => r.matches?.length > 0);
 
   return (
     <div
@@ -596,9 +667,10 @@ const SchedulePage = () => {
                         round={round}
                         onGenerateMatches={() => openGenerateModal(round)}
                         soloReintento={competition.setupMode === 'RYDER_CUP'}
-                        competicionCerrada={['CLOSED', 'IN_PROGRESS'].includes(
-                          competition.status,
-                        )}
+                        competicionCerrada={[
+                          CompetitionStatusEnum.CLOSED,
+                          CompetitionStatusEnum.IN_PROGRESS,
+                        ].includes(competition.status)}
                         onToggleExpand={() => toggleRoundExpand(round.id)}
                         isExpanded={!!expandedRounds[round.id]}
                         canEdit={canManage}

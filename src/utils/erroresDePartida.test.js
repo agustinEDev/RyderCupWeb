@@ -27,7 +27,10 @@ describe('mensajeDeErrorDePartida (FE #824, PR 7)', () => {
 
   it('un código desconocido, el texto del servidor; sin nada, uno genérico', () => {
     expect(
-      mensajeDeErrorDePartida(t, { errorCode: 'OTRO', message: 'detail' }),
+      mensajeDeErrorDePartida(
+        t,
+        Object.assign(new Error('detail'), { errorCode: 'OTRO', status: 409 }),
+      ),
     ).toBe('detail');
     expect(mensajeDeErrorDePartida(t, {})).toBe('partida.errors.generic');
   });

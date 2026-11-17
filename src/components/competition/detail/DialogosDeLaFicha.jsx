@@ -1,6 +1,7 @@
 import ConfirmModal from '../../modals/ConfirmModal';
 import NameCaptainsModal from '../NameCaptainsModal';
 import { textoDelBorrado } from '../../../utils/fichaDeLaCompeticion';
+import { CompetitionStatusEnum } from '../../../domain/value_objects/CompetitionStatus';
 
 /**
  * Los diálogos de la ficha: la pregunta de cada acción (con sus palabras, FE
@@ -79,7 +80,7 @@ const DialogosDeLaFicha = ({
       }))}
       teamNames={{ a: competition.team1Name, b: competition.team2Name }}
       current={competition.captains}
-      closesEnrollment={competition.status === 'ACTIVE'}
+      closesEnrollment={competition.status === CompetitionStatusEnum.ACTIVE}
       playersUnavailable={inscripcionesSinCargar}
       onConfirm={confirmarCapitanes}
       onClose={alCerrarCapitanes}

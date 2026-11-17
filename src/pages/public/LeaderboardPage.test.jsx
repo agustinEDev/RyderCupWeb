@@ -705,7 +705,8 @@ describe('LeaderboardPage', () => {
         Object.assign(new Error('caído'), { status: 500 }),
       );
       render(<LeaderboardPage />);
-      expect(await screen.findByText('caído')).toBeInTheDocument();
+      // Un 500 no se enseña tal cual (re-auditoría Q-FE-06)
+      expect(await screen.findByText('errors.generic')).toBeInTheDocument();
       expect(mockDetalle).not.toHaveBeenCalled();
     });
 
@@ -1641,7 +1642,7 @@ describe('LeaderboardPage · el nombre de la competición', () => {
     );
     render(<LeaderboardPage />);
 
-    await screen.findByText('caída');
+    await screen.findByText('errors.generic');
     expect(nombre()).not.toBeInTheDocument();
     expect(titulo().className.split(' ')).toContain('mb-6');
   });
@@ -1660,7 +1661,7 @@ describe('LeaderboardPage · el nombre de la competición', () => {
         await vi.advanceTimersByTimeAsync(30000);
       });
 
-      expect(screen.getByText('caída')).toBeInTheDocument();
+      expect(screen.getByText('errors.generic')).toBeInTheDocument();
       expect(nombre()).not.toBeInTheDocument();
     } finally {
       vi.useRealTimers();

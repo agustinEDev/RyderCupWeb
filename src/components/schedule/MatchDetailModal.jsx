@@ -10,6 +10,8 @@ import {
   formatoDeIndice,
   formatoDeHandicapDeJuego,
 } from '../../utils/formatoDeHandicap';
+import { mensajeDelError } from '../../utils/mensajeDelError';
+import { registraElFallo } from '../../utils/registraElFallo';
 
 const MatchDetailModal = ({
   isOpen,
@@ -40,8 +42,12 @@ const MatchDetailModal = ({
         const data = await getMatchDetailUseCase.execute(matchId);
         setMatch(data);
       } catch (err) {
-        console.error('Error loading match detail:', err);
-        setError(err.message || t('errors.failedToLoadMatch'));
+        registraElFallo(
+          'MatchDetailModal.error-loading-match-detail',
+          'Error loading match detail:',
+          err,
+        );
+        setError(mensajeDelError(err, t('errors.failedToLoadMatch')));
       } finally {
         setIsLoading(false);
       }

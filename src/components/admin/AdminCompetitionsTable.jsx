@@ -2,6 +2,7 @@ import { useId, useState } from 'react';
 import { Edit, ChevronRight } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import FichaDeFila from './FichaDeFila';
+import { CompetitionStatusEnum } from '../../domain/value_objects/CompetitionStatus';
 
 const STATUS_BADGE_CLASSES = {
   ACTIVE: 'bg-green-100 text-green-800',
@@ -13,7 +14,8 @@ const STATUS_BADGE_CLASSES = {
 };
 
 // Solo se edita en borrador: la tabla y la ficha del móvil lo leen de aquí
-const seEdita = (competition) => competition?.status === 'DRAFT';
+const seEdita = (competition) =>
+  competition?.status === CompetitionStatusEnum.DRAFT;
 
 // Actions available per current status, matching the backend state machine
 // (DRAFT -> ACTIVE -> CLOSED -> IN_PROGRESS -> COMPLETED, + CANCELLED from any non-final state).
