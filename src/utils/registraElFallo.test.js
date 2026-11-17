@@ -130,6 +130,66 @@ describe('registraElFallo', () => {
       );
     });
 
+    it('a multi-line message leaves none of its lines in the stack', async () => {
+      const registraElFallo = await carga();
+      const error = http(500);
+      error.message = 'Fallo para Ana\nana@club.es\n612 345 678';
+      error.stack =
+        'Error: Fallo para Ana\nana@club.es\n612 345 678\n    at carga (x.js:1:1)\n    at panel (y.js:2:2)';
+
+      registraElFallo('panel', 'x', error);
+
+      const [enviado] = captureError.mock.calls[0];
+      expect(enviado.stack).toBe(
+        'Error: Fallo en panel (Error)\n    at carga (x.js:1:1)\n    at panel (y.js:2:2)',
+      );
+    });
+
+    it('a Safari or Firefox stack (no message, frames with @) keeps every frame', async () => {
+      const registraElFallo = await carga();
+      const error = http(500);
+      error.stack =
+        'carga@https://www.x.com/a.js:1:1\npanel@https://www.x.com/b.js:2:2';
+
+      registraElFallo('panel', 'x', error);
+
+      const [enviado] = captureError.mock.calls[0];
+      expect(enviado.stack).toBe(
+        'Error: Fallo en panel (Error)\ncarga@https://www.x.com/a.js:1:1\npanel@https://www.x.com/b.js:2:2',
+      );
+    });
+
+    it('a header whose message changed after the stack was taken is dropped whole', async () => {
+      const registraElFallo = await carga();
+      const error = http(500);
+      error.message = 'Otro texto';
+      error.stack =
+        'Error: Sin plaza para ana@club.es\nana@club.es\n    at carga (x.js:1:1)';
+
+      registraElFallo('panel', 'x', error);
+
+      const [enviado] = captureError.mock.calls[0];
+      expect(enviado.stack).toBe(
+        'Error: Fallo en panel (Error)\n    at carga (x.js:1:1)',
+      );
+    });
+
+    it('a subclass that renamed itself after the stack was taken loses its message too', async () => {
+      const registraElFallo = await carga();
+      const error = http(422);
+      error.status = 500;
+      error.name = 'ApiError';
+      error.message = 'Sin plaza para ana@club.es';
+      error.stack =
+        'Error: Sin plaza para ana@club.es\n    at carga (x.js:1:1)';
+
+      registraElFallo('panel', 'x', error);
+
+      const [enviado] = captureError.mock.calls[0];
+      expect(enviado.stack).not.toContain('ana@club.es');
+      expect(enviado.stack).toContain('    at carga (x.js:1:1)');
+    });
+
     it('a non-Error rejection without network is not reported', async () => {
       Object.defineProperty(globalThis.navigator, 'onLine', {
         value: false,

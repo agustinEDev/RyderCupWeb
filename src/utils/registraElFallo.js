@@ -17,8 +17,8 @@ import { captureError } from './sentryHelpers';
  *
  * Sin datos de la persona: el texto del error no sale nunca (el `JSON.parse`
  * de lo guardado cita un trozo con el correo; un 5xx puede repetir lo
- * escrito). Se manda otro error, «Fallo en <sitio> (<clase>)», con las líneas
- * de la pila del original sin la primera, que es la que lleva el texto; y como
+ * escrito). Se manda otro error, «Fallo en <sitio> (<clase>)», con los marcos
+ * de la pila del original sin su texto (`soloLosMarcos`); y como
  * etiquetas, el sitio, el estado HTTP y el código del servidor. El resto de
  * argumentos se quedan en la consola de desarrollo.
  *
@@ -50,14 +50,34 @@ const sinSuTexto = (sitio, original) => {
   const enviado = new Error(`Fallo en ${sitio} (${clase})`);
   enviado.name = clase;
   const marcos =
-    typeof original.stack === 'string'
-      ? original.stack.split('\n').slice(1).join('\n')
-      : '';
+    typeof original.stack === 'string' ? soloLosMarcos(original) : '';
   enviado.stack = marcos
     ? `${clase}: ${enviado.message}\n${marcos}`
     : `${clase}: ${enviado.message}`;
   return enviado;
 };
+
+// La pila sin el texto del error. V8 la empieza con «Clase: texto», y un texto
+// de varias líneas ocupa varias; Safari y Firefox no lo ponen y sus marcos
+// («sitio@url:línea:col») no empiezan por «at». Se corta tras la línea donde
+// acaba el texto, y luego se quita todo lo que no sea un marco hasta el
+// primero (una cabecera cuyo texto cambió después de tomar la pila)
+const soloLosMarcos = (original) => {
+  let pila = original.stack;
+  const texto = typeof original.message === 'string' ? original.message : '';
+  const donde = texto === '' ? -1 : pila.indexOf(texto);
+  if (donde !== -1) {
+    const finDeLinea = pila.indexOf('\n', donde + texto.length);
+    pila = finDeLinea === -1 ? '' : pila.slice(finDeLinea + 1);
+  }
+  const lineas = pila.split('\n');
+  const primerMarco = lineas.findIndex(esUnMarco);
+  return primerMarco === -1 ? '' : lineas.slice(primerMarco).join('\n');
+};
+
+// «    at f (x.js:1:1)» en V8; «f@https://x/a.js:1:1» en Safari y Firefox
+const esUnMarco = (linea) =>
+  /^\s+at /.test(linea) || /@.*:\d+:\d+$/.test(linea);
 
 const UN_MINUTO = 60_000;
 const ultimoAviso = new Map();
