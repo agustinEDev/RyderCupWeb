@@ -380,6 +380,7 @@
     "enrollmentStatus": "Tu estado de inscripción:",
     "namePreference": {
       "label": "Usar mi alias en esta competición",
+      "publicShowsRealName": "En las competiciones públicas se ve tu nombre, {{realName}}, con tu alias {{alias}} debajo.",
       "helpUsingRealName": "En esta competición apareces como {{realName}}. En las partidas rápidas sigues siendo {{alias}}.",
       "helpUsingAlias": "En esta competición apareces como {{alias}}, igual que en las partidas rápidas.",
       "visibility": "Los demás lo ven en la clasificación y en las tarjetas.",
