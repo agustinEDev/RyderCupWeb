@@ -155,7 +155,7 @@ describe('registraElFallo', () => {
 
       const [enviado] = captureError.mock.calls[0];
       expect(enviado.stack).toBe(
-        'Error: Fallo en panel (Error)\ncarga@https://www.x.com/a.js:1:1\npanel@https://www.x.com/b.js:2:2',
+        'Error: Fallo en panel (Error)\n    at carga (https://www.x.com/a.js:1:1)\n    at panel (https://www.x.com/b.js:2:2)',
       );
     });
 
@@ -221,20 +221,23 @@ describe('registraElFallo', () => {
         'the message inside a frame',
         'panel',
         'carga@https://x/a.js:1:1\npanel@https://x/b.js:2:2\nglobal code@https://x/c.js:3:3',
+        '    at carga (https://x/a.js:1:1)\n    at panel (https://x/b.js:2:2)\n    at global code (https://x/c.js:3:3)',
       ],
       [
         'native code first',
         'Unexpected token',
         'parse@[native code]\ncarga@https://x/a.js:1:1',
+        '    at parse ([native code])\n    at carga (https://x/a.js:1:1)',
       ],
       [
         'Firefox async frames and a trailing newline',
         'x',
         'carga@https://x/a.js:1:1\nasync*panel@https://x/b.js:2:2\n',
+        '    at carga (https://x/a.js:1:1)\n    at async*panel (https://x/b.js:2:2)',
       ],
     ])(
       'a Safari or Firefox stack keeps every frame (%s)',
-      async (_caso, message, stack) => {
+      async (_caso, message, stack, marcos) => {
         const registraElFallo = await carga();
         const error = http(500);
         error.message = message;
@@ -243,8 +246,36 @@ describe('registraElFallo', () => {
         registraElFallo('panel', 'x', error);
 
         const [enviado] = captureError.mock.calls[0];
+        expect(enviado.stack).toBe(`Error: Fallo en panel (Error)\n${marcos}`);
+      },
+    );
+
+    it.each([
+      [
+        'an email followed by line:col',
+        'Error: fallo de ana@club.es:12:30\nTel 612 345 678\n    at f (https://x/a.js:1:1)',
+      ],
+      [
+        'an @ before a URL',
+        'Error: fallo @ https://api.x.com/u/ana:1:2\n    at f (https://x/a.js:1:1)',
+      ],
+      [
+        'a frame-like line followed by text',
+        'Error: datos\nana@club.es:1:2\nTel 612 345 678\n    at f (https://x/a.js:1:1)',
+      ],
+    ])(
+      'message text that looks like a location never leaves (%s)',
+      async (_caso, stack) => {
+        const registraElFallo = await carga();
+        const error = http(500);
+        error.message = 'otro';
+        error.stack = stack;
+
+        registraElFallo('panel', 'x', error);
+
+        const [enviado] = captureError.mock.calls[0];
         expect(enviado.stack).toBe(
-          `Error: Fallo en panel (Error)\n${stack.replace(/\n$/, '')}`,
+          'Error: Fallo en panel (Error)\n    at f (https://x/a.js:1:1)',
         );
       },
     );

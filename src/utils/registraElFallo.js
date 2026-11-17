@@ -1,3 +1,4 @@
+import { defaultStackParser } from '@sentry/react';
 import { captureError } from './sentryHelpers';
 
 /**
@@ -57,41 +58,31 @@ const sinSuTexto = (sitio, original) => {
   return enviado;
 };
 
-// La pila sin el texto del error. Safari y Firefox no lo ponen: su pila
-// empieza ya por un marco («sitio@url:línea:col») y se manda entera. V8 la
-// empieza con «Clase: texto», que puede ocupar varias líneas: se corta tras la
-// línea donde acaba el texto, y luego se quita todo lo que no sea un marco
-// hasta el primero (una cabecera cuyo texto cambió después de tomar la pila)
-const soloLosMarcos = (original) => {
-  const pila = original.stack.replace(/\n+$/, '');
-  if (esUnMarco(pila.split('\n')[0])) return pila;
-  const texto = typeof original.message === 'string' ? original.message : '';
-  const donde = texto === '' ? -1 : pila.indexOf(texto);
-  let resto = pila;
-  if (donde !== -1) {
-    const finDeLinea = pila.indexOf('\n', donde + texto.length);
-    resto = finDeLinea === -1 ? '' : pila.slice(finDeLinea + 1);
-  }
-  const lineas = resto.split('\n');
-  const primerMarco = lineas.findIndex(esUnMarco);
-  return primerMarco === -1 ? '' : lineas.slice(primerMarco).join('\n');
+// La pila sin el texto del error: solo los marcos que reconoce el parser de
+// Sentry (Chrome, Safari y Firefox, con eval, blob y código nativo), reescritos
+// en el formato de V8. Las líneas del texto, aunque ocupe varias o cambiara
+// después de tomar la pila, no son marcos y no salen
+const soloLosMarcos = (original) =>
+  defaultStackParser(original.stack)
+    .filter(esUnSitioDeCodigo)
+    .reverse()
+    .map(comoLineaDeV8)
+    .join('\n');
+
+// Con línea, o código nativo o anónimo: «at casa de ana@club.es» lo acepta el
+// parser como marco, pero no apunta a ningún sitio y es texto
+const SIN_LINEA = new Set(['<anonymous>', '[native code]', 'native']);
+const esUnSitioDeCodigo = ({ filename, lineno }) =>
+  typeof lineno === 'number' || SIN_LINEA.has(filename);
+
+const comoLineaDeV8 = ({ function: funcion, filename, lineno, colno }) => {
+  const sitio = [filename, lineno, colno]
+    .filter((parte) => parte != null)
+    .join(':');
+  return funcion && funcion !== '?'
+    ? `    at ${funcion} (${sitio})`
+    : `    at ${sitio}`;
 };
-
-// Un marco de verdad acaba en un sitio de código: una URL, una ruta o un
-// fichero con «:línea:col», o código nativo. Un texto con un correo y una hora
-// no lo es. Las líneas muy largas no son marcos (y no pasan por las regex)
-const SITIO = String.raw`(?:(?:[a-z][\w+.-]*://|/)\S*|[\w.-]+\.\w+):\d+:\d+`;
-const MARCO_DE_V8 = new RegExp(
-  String.raw`^\s+at (?:async )?(?:[^()]*\((?:${SITIO}|native|<anonymous>)\)|${SITIO})$`,
-);
-const MARCO_DE_SAFARI_O_FIREFOX = new RegExp(
-  String.raw`^[^@]*@(?:${SITIO}|\[native code\])$`,
-);
-const LARGO_MAXIMO_DE_UN_MARCO = 2000;
-
-const esUnMarco = (linea) =>
-  linea.length <= LARGO_MAXIMO_DE_UN_MARCO &&
-  (MARCO_DE_V8.test(linea) || MARCO_DE_SAFARI_O_FIREFOX.test(linea));
 
 const UN_MINUTO = 60_000;
 const ultimoAviso = new Map();
