@@ -42,9 +42,10 @@ export function esFalloDeRedDeLaApi(err) {
  * Tres casos y no dos, que es donde estuvo el error al escribir esto: forzar
  * siempre el texto genérico se llevaba por delante lo que dice el servidor
  * —«ese jugador ya es participante», «el hándicap se sale de rango»— y dejaba
- * al jugador sin saber qué cambiar. Una respuesta CON estado trae el motivo y
- * ese motivo se enseña; lo que no tiene estado es un fallo del código o el
- * aviso crudo del service worker, y eso no se le cuenta a nadie.
+ * al jugador sin saber qué cambiar. El motivo de un 4xx (no un 401) se
+ * enseña; lo demás —un 5xx, lo que `api.js` marcó como técnico, lo que no trae
+ * estado porque lo lanzó el propio front— va con el genérico. La regla es
+ * `esElMotivoDelServidor`, la misma de `mensajeDelError` (17 nov 2026).
  *
  * @param {Error} err
  * @param {{sinConexion: string, generico: string}} textos ya traducidos

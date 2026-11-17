@@ -590,8 +590,8 @@ jobs:
     name: 🎭 E2E smoke
     runs-on: ubuntu-24.04
     # Columna 2, junto a los tests (re-auditoría Q-FE-09): los e2e que no
-    # necesitan el back —portada, contraseña olvidada y restablecer, escapado
-    # de HTML, tope de longitud—, marcados con @smoke. Los que piden el back o
+    # necesitan el back —portada, contraseña olvidada, enlace de restablecer
+    # sin token, escapado de HTML, tope de longitud—, marcados con @smoke. Los que piden el back o
     # una sesión se quedan fuera hasta que el CI levante uno
     needs: [lint, type-check, architecture, owasp-semgrep, dependency-audit, secret-scanning, license-check, dependency-review, commit-verification, outdated-dependencies]
     if: ${{ !cancelled() && !contains(needs.*.result, 'failure') }}
@@ -621,7 +621,8 @@ jobs:
         id: e2e
         run: |
           set -o pipefail
-          npm run test:e2e:smoke -- --reporter=line 2>&1 | tee "$RUNNER_TEMP/e2e.log"
+          # line para el log y la tarjeta; html para el artefacto si falla
+          npm run test:e2e:smoke -- --reporter=line,html 2>&1 | tee "$RUNNER_TEMP/e2e.log"
 
       - name: Upload the Playwright report
         if: failure()
@@ -642,7 +643,7 @@ jobs:
           RESULT=$(grep -E '^ +[0-9]+ (passed|failed|flaky|skipped)' "$RUNNER_TEMP/e2e.log" 2>/dev/null | sed 's/^ *//' | paste -sd ',' - | sed 's/,/, /g')
           python3 .github/scripts/summary_card.py \
             --title "🎭 E2E smoke" \
-            --what "Runs the Playwright tests tagged @smoke in Chromium against the dev server: the landing page, forgot and reset password, HTML escaping and the input length limit. They need no backend." \
+            --what "Runs the Playwright tests tagged @smoke in Chromium against the dev server: the landing page, the forgot password page and its validation, the reset password link without a token, HTML escaping and the input length limit. They need no backend." \
             --status "$STATUS" --result "${RESULT:-No result}" \
             --if-fails "Run 'npm run test:e2e:smoke' locally ('npx playwright install chromium' first). On failure the playwright-report artifact has the trace of each test."
 

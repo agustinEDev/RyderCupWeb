@@ -90,7 +90,9 @@ class EnrollmentMapper {
       });
     } catch (error) {
       throw Object.assign(
-        new Error(`Failed to map enrollment data: ${error.message}`),
+        new Error(`Failed to map enrollment data: ${error.message}`, {
+          cause: error,
+        }),
         { mensajeTecnico: true },
       );
     }
