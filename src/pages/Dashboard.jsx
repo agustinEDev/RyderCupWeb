@@ -52,7 +52,6 @@ import {
   updateUserProfileUseCase,
 } from '../composition';
 import {
-  APUNTE_REFRESCAR,
   EVENTO_HANDICAP_AL_DIA,
   EVENTO_HANDICAP_POR_PEDIR,
   lanzaElRefrescoDeHandicap,
@@ -61,6 +60,8 @@ import {
 import {
   apuntaRecordatorioDeHandicap,
   hayRecordatorioDeHandicap,
+  hayRefrescoPendiente,
+  olvidaElApunteAntiguo,
   quitaRecordatorioDeHandicap,
 } from '../services/refrescoDeHandicapApuntes';
 import { PANTALLA_MENOS_BARRA_INFERIOR } from '../utils/barraInferior';
@@ -202,7 +203,7 @@ const Dashboard = () => {
   // apunte sigue puesto (no contestó), se relanza: el módulo no manda dos a la vez
   useEffect(() => {
     // Apunte de la versión anterior: su información es de otro día
-    localStorage.removeItem('needs_handicap');
+    olvidaElApunteAntiguo();
     if (!user) return undefined;
 
     const abreSiHayQuePedirlo = () => {
@@ -223,7 +224,7 @@ const Dashboard = () => {
     window.addEventListener(EVENTO_HANDICAP_AL_DIA, retiraElRecordatorio);
     // Sin red la copia del dispositivo no trae el hándicap (fase 3): el «antes» sería
     // inventado. Se lanza cuando el servidor confirme la sesión (cambia `user`)
-    if (localStorage.getItem(APUNTE_REFRESCAR) === 'true' && !sinConfirmar) {
+    if (hayRefrescoPendiente() && !sinConfirmar) {
       lanzaElRefrescoDeHandicap({ handicapDeAntes: user.handicap ?? null });
     }
     return () => {

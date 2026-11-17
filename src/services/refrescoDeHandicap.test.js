@@ -238,3 +238,28 @@ describe('refrescoDeHandicap (FE #677)', () => {
     expect(aviso).toHaveBeenCalledTimes(1);
   });
 });
+
+describe('los apuntes del hándicap con el almacenamiento bloqueado (CodeRabbit)', () => {
+  it('leer el recordatorio o el refresco pendiente no lanza: dice que no hay', async () => {
+    const {
+      hayRecordatorioDeHandicap,
+      hayRefrescoPendiente,
+      olvidaElApunteAntiguo,
+    } = await import('./refrescoDeHandicapApuntes');
+    const leer = vi.spyOn(localStorage, 'getItem').mockImplementation(() => {
+      throw new Error('SecurityError');
+    });
+    const borrar = vi
+      .spyOn(localStorage, 'removeItem')
+      .mockImplementation(() => {
+        throw new Error('SecurityError');
+      });
+
+    expect(hayRecordatorioDeHandicap()).toBe(false);
+    expect(hayRefrescoPendiente()).toBe(false);
+    expect(() => olvidaElApunteAntiguo()).not.toThrow();
+
+    leer.mockRestore();
+    borrar.mockRestore();
+  });
+});
