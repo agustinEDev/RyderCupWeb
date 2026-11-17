@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import { X, Zap, Plus, Trash2 } from 'lucide-react';
 import BloqueoDePartidos from './BloqueoDePartidos';
 import { formatoDeIndice } from '../../utils/formatoDeHandicap';
+import EnrollmentStatus from '../../domain/value_objects/EnrollmentStatus';
 
 let matchIdCounter = 0;
 const createEmptyMatch = () => ({
@@ -42,7 +43,7 @@ const GenerateMatchesModalContent = ({
   const playersPerSide = round.matchFormat === 'SINGLES' ? 1 : 2;
 
   const approvedPlayers = useMemo(
-    () => enrollments.filter((e) => e.status === 'APPROVED'),
+    () => enrollments.filter((e) => e.status === EnrollmentStatus.APPROVED),
     [enrollments],
   );
 

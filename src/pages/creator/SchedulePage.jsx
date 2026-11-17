@@ -36,6 +36,8 @@ import FullScreenLoader from '../../components/ui/FullScreenLoader';
 import { aCamposDeLaCompeticion } from '../../utils/camposDeLaCompeticion';
 import { PANTALLA_MENOS_BARRA_INFERIOR } from '../../utils/barraInferior';
 import { mensajeDeError } from '../../utils/sinCobertura';
+import { CompetitionStatusEnum } from '../../domain/value_objects/CompetitionStatus';
+import EnrollmentStatus from '../../domain/value_objects/EnrollmentStatus';
 
 // El toast de «no se han podido cargar los inscritos»: uno solo, y se va al volver la lista
 const AVISO_INSCRITOS = 'inscritos-sin-cargar';
@@ -170,7 +172,9 @@ const SchedulePage = () => {
     // Los que siguen inscritos: el reparto guarda la lista tal cual y una baja
     // no la toca, así que quien se retiró sigue ahí y ya no puede capitanear
     const aprobados = new Set(
-      enrollments.filter((e) => e.status === 'APPROVED').map((e) => e.userId),
+      enrollments
+        .filter((e) => e.status === EnrollmentStatus.APPROVED)
+        .map((e) => e.userId),
     );
     return (lista || [])
       .filter((id) => aprobados.has(id))
@@ -472,8 +476,9 @@ const SchedulePage = () => {
   // Con partidos, o ya en juego, los equipos son lo jugado: el servidor no los
   // deshace (TEAMS_LOCKED), así que ni se ofrece
   const sePuedenDeshacer =
-    ['ACTIVE', 'CLOSED'].includes(competition.status) &&
-    !rounds.some((r) => r.matches?.length > 0);
+    [CompetitionStatusEnum.ACTIVE, CompetitionStatusEnum.CLOSED].includes(
+      competition.status,
+    ) && !rounds.some((r) => r.matches?.length > 0);
 
   return (
     <div
@@ -596,9 +601,10 @@ const SchedulePage = () => {
                         round={round}
                         onGenerateMatches={() => openGenerateModal(round)}
                         soloReintento={competition.setupMode === 'RYDER_CUP'}
-                        competicionCerrada={['CLOSED', 'IN_PROGRESS'].includes(
-                          competition.status,
-                        )}
+                        competicionCerrada={[
+                          CompetitionStatusEnum.CLOSED,
+                          CompetitionStatusEnum.IN_PROGRESS,
+                        ].includes(competition.status)}
                         onToggleExpand={() => toggleRoundExpand(round.id)}
                         isExpanded={!!expandedRounds[round.id]}
                         canEdit={canManage}

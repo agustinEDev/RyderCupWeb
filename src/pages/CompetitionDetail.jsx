@@ -36,6 +36,7 @@ import {
 import { faltaElHandicap } from '../utils/datosQueFaltanSinConexion';
 import { PANTALLA_MENOS_BARRA_INFERIOR } from '../utils/barraInferior';
 import { hayHistorialPropio } from '../hooks/useGoBack';
+import EnrollmentStatus from '../domain/value_objects/EnrollmentStatus';
 
 /**
  * La ficha de una competición. Esta página orquesta: lee la ficha y sus
@@ -135,7 +136,7 @@ const CompetitionDetail = () => {
   const isLoading = isLoadingUser || isLoadingCompetition || isLoadingRoles;
 
   const approvedEnrollments = useMemo(
-    () => enrollments.filter((e) => e.status === 'APPROVED'),
+    () => enrollments.filter((e) => e.status === EnrollmentStatus.APPROVED),
     [enrollments],
   );
 

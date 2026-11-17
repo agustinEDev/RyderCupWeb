@@ -12,6 +12,7 @@ import {
   Pause,
   Swords,
 } from 'lucide-react';
+import { CompetitionStatusEnum } from '../../../domain/value_objects/CompetitionStatus';
 
 /**
  * Las acciones de la ficha: UNA principal —la que toca ahora (`paso`)— y el
@@ -42,7 +43,7 @@ export const accionesDelOrganizador = ({
       icon: Play,
       onClick: () => handleStatusChange('activate'),
       disabled: isProcessing,
-      cuando: competition.status === 'DRAFT',
+      cuando: competition.status === CompetitionStatusEnum.DRAFT,
     },
     nameCaptains: {
       id: 'nameCaptains',
@@ -60,7 +61,9 @@ export const accionesDelOrganizador = ({
       // tocan: el servidor lo rechaza, así que no se ofrece
       cuando:
         conEquipos &&
-        ['ACTIVE', 'CLOSED'].includes(competition.status) &&
+        [CompetitionStatusEnum.ACTIVE, CompetitionStatusEnum.CLOSED].includes(
+          competition.status,
+        ) &&
         !competition.teamsAssigned,
     },
     'close-enrollments': {
@@ -73,7 +76,7 @@ export const accionesDelOrganizador = ({
       // solo vuelve con los equipos ya hechos (una reabierta). Un Stableford o
       // un Medal no tiene capitanes: se cierra aquí (FE #824)
       cuando:
-        competition.status === 'ACTIVE' &&
+        competition.status === CompetitionStatusEnum.ACTIVE &&
         (competition.teamsAssigned || esStrokePlay),
     },
     draft: {
@@ -84,7 +87,7 @@ export const accionesDelOrganizador = ({
       // Sin los dos capitanes la sala no tiene quién elija, y con los equipos
       // ya hechos la sala terminó: se ven en la agenda
       cuando:
-        competition.status === 'CLOSED' &&
+        competition.status === CompetitionStatusEnum.CLOSED &&
         competition.setupMode === 'RYDER_CUP' &&
         !competition.teamsAssigned &&
         Boolean(competition.captains?.teamA && competition.captains?.teamB),
@@ -97,7 +100,9 @@ export const accionesDelOrganizador = ({
       disabled: isProcessing,
       // Sin sesiones el servidor lo rechaza (FE #710); lo sabe la agenda, y
       // mientras no lo ha dicho no se ofrece
-      cuando: competition.status === 'CLOSED' && numeroDeSesiones > 0,
+      cuando:
+        competition.status === CompetitionStatusEnum.CLOSED &&
+        numeroDeSesiones > 0,
     },
     'reopen-enrollments': {
       id: 'reopen-enrollments',
@@ -105,7 +110,7 @@ export const accionesDelOrganizador = ({
       icon: Undo2,
       onClick: () => handleStatusChange('reopen-enrollments'),
       disabled: isProcessing,
-      cuando: competition.status === 'CLOSED',
+      cuando: competition.status === CompetitionStatusEnum.CLOSED,
     },
     complete: {
       id: 'complete',
@@ -113,7 +118,7 @@ export const accionesDelOrganizador = ({
       icon: CheckCircle,
       onClick: () => handleStatusChange('complete'),
       disabled: isProcessing,
-      cuando: competition.status === 'IN_PROGRESS',
+      cuando: competition.status === CompetitionStatusEnum.IN_PROGRESS,
     },
     'revert-status': {
       id: 'revert-status',
@@ -121,7 +126,7 @@ export const accionesDelOrganizador = ({
       icon: Undo2,
       onClick: () => handleStatusChange('revert-status'),
       disabled: isProcessing,
-      cuando: competition.status === 'IN_PROGRESS',
+      cuando: competition.status === CompetitionStatusEnum.IN_PROGRESS,
     },
     'revert-to-in-progress': {
       id: 'revert-to-in-progress',
@@ -129,7 +134,7 @@ export const accionesDelOrganizador = ({
       icon: Undo2,
       onClick: () => handleStatusChange('revert-to-in-progress'),
       disabled: isProcessing,
-      cuando: competition.status === 'COMPLETED',
+      cuando: competition.status === CompetitionStatusEnum.COMPLETED,
     },
     manageSchedule: {
       id: 'manageSchedule',
@@ -140,15 +145,15 @@ export const accionesDelOrganizador = ({
       // sus franjas en la ficha, y sus partidas llegan con la PR 6 (FE #824)
       cuando:
         !esStrokePlay &&
-        competition.status !== 'DRAFT' &&
-        competition.status !== 'CANCELLED',
+        competition.status !== CompetitionStatusEnum.DRAFT &&
+        competition.status !== CompetitionStatusEnum.CANCELLED,
     },
     manageInvitations: {
       id: 'manageInvitations',
       label: t('detail.actions.manageInvitations'),
       icon: Mail,
       onClick: () => navigate(`/creator/competitions/${id}/invitations`),
-      cuando: competition.status !== 'CANCELLED',
+      cuando: competition.status !== CompetitionStatusEnum.CANCELLED,
     },
     edit: {
       id: 'edit',
@@ -163,8 +168,8 @@ export const accionesDelOrganizador = ({
       icon: BarChart3,
       onClick: irALaClasificacion,
       cuando:
-        competition.status === 'IN_PROGRESS' ||
-        competition.status === 'COMPLETED',
+        competition.status === CompetitionStatusEnum.IN_PROGRESS ||
+        competition.status === CompetitionStatusEnum.COMPLETED,
     },
   };
 
@@ -181,7 +186,10 @@ export const accionesDelOrganizador = ({
       icon: XCircle,
       onClick: () => handleStatusChange('cancel'),
       disabled: isProcessing,
-      cuando: !['CANCELLED', 'COMPLETED'].includes(competition.status),
+      cuando: ![
+        CompetitionStatusEnum.CANCELLED,
+        CompetitionStatusEnum.COMPLETED,
+      ].includes(competition.status),
     },
     {
       id: 'delete',

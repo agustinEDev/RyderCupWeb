@@ -17,6 +17,7 @@ import BlockLoader from '../../components/ui/BlockLoader';
 import { esFalloDeRed } from '../../utils/sinCobertura';
 import { useSondeoMientras } from '../../hooks/useSondeoMientras';
 import { PANTALLA_MENOS_BARRA_INFERIOR } from '../../utils/barraInferior';
+import { CompetitionStatusEnum } from '../../domain/value_objects/CompetitionStatus';
 
 const POLL_INTERVAL = 30000; // 30 seconds
 // La ficha de un stroke play en juego, para enterarse de que empieza o acaba
@@ -78,7 +79,10 @@ const LeaderboardPage = () => {
   // la general de antes debajo (revisor)
   const general = esDeUnaPrivada(error) ? null : laDeStrokePlay;
   // Se relee mientras se juega o está a punto de jugarse (/code-review)
-  const enJuego = ['CLOSED', 'IN_PROGRESS'].includes(general?.status);
+  const enJuego = [
+    CompetitionStatusEnum.CLOSED,
+    CompetitionStatusEnum.IN_PROGRESS,
+  ].includes(general?.status);
   // De qué torneo es, bajo el título: la de una Ryder lo trae ella (pasada del
   // Kind, 30 oct 2026: sin sesión, el enlace no decía de cuál era)
   const nombre = general

@@ -26,6 +26,8 @@ import {
   removeEnrolledPlayerUseCase,
   assignTeamsUseCase,
 } from '../../../composition';
+import { CompetitionStatusEnum } from '../../../domain/value_objects/CompetitionStatus';
+import EnrollmentStatus from '../../../domain/value_objects/EnrollmentStatus';
 
 /**
  * Lo que el organizador hace con la competición desde su ficha: cambiar su
@@ -334,7 +336,9 @@ export const crearCambiosDeEstado = (contexto) => {
           await Promise.all([fichaReleida, listaReleida])
             .then(([ficha, lista]) => {
               if (!ficha?.strokePlay || !lista) return;
-              const aprobados = lista.filter((e) => e.status === 'APPROVED');
+              const aprobados = lista.filter(
+                (e) => e.status === EnrollmentStatus.APPROVED,
+              );
               const aviso = categoriasQueSalen(
                 ficha.strokePlay,
                 aprobados.map((e) => e.category ?? null),
@@ -377,7 +381,7 @@ export const crearCambiosDeEstado = (contexto) => {
           setEnrollments(lista);
           const primero = lista.find(
             (e) =>
-              e.status === 'APPROVED' &&
+              e.status === EnrollmentStatus.APPROVED &&
               faltan.some((p) => p.user_id === e.userId),
           );
           if (primero) {
@@ -418,7 +422,7 @@ export const crearCambiosDeEstado = (contexto) => {
   };
 
   const confirmarCapitanes = async (capitanes) => {
-    const cerraba = competition.status === 'ACTIVE';
+    const cerraba = competition.status === CompetitionStatusEnum.ACTIVE;
     setGuardandoCapitanes(true);
     try {
       const result = await nameCaptainsUseCase.execute(id, capitanes);

@@ -25,6 +25,9 @@ import {
 import BlockLoader from '../../components/ui/BlockLoader';
 import { PANTALLA_MENOS_BARRA_INFERIOR } from '../../utils/barraInferior';
 import { quienEsElInvitado } from '../../utils/quienEsElInvitado';
+import { CompetitionStatusEnum } from '../../domain/value_objects/CompetitionStatus';
+import EnrollmentStatus from '../../domain/value_objects/EnrollmentStatus';
+import InvitationStatus from '../../domain/value_objects/InvitationStatus';
 
 // Ni `/friends/me` ni el listado de invitaciones dan más de 100 filas por
 // página. Pedir una sola dejaba fuera al amigo 101 y a la invitación pendiente
@@ -32,7 +35,12 @@ import { quienEsElInvitado } from '../../utils/quienEsElInvitado';
 const POR_PAGINA = 100;
 
 // Las que se pueden volver a mandar (release social 2): ya no esperan respuesta
-const REINVITABLES = new Set(['DECLINED', 'EXPIRED', 'CANCELLED', 'NO_ROOM']);
+const REINVITABLES = new Set([
+  InvitationStatus.DECLINED,
+  InvitationStatus.EXPIRED,
+  InvitationStatus.CANCELLED,
+  InvitationStatus.NO_ROOM,
+]);
 // Una red por si el total promete más de lo que el servidor acaba dando: sin
 // ella, un `total_count` equivocado deja el bucle dando vueltas
 const TOPE_DE_PAGINAS = 20;
@@ -64,7 +72,7 @@ const todasLasPaginas = async (pideLaPagina, sacaLasFilas) => {
 // sin estado y se elige aquí (15 nov 2026): el servidor de antes no conoce
 // ON_HOLD, contesta 400 y la pantalla echaría al organizador
 const lasDeLaPantalla = (competitionId, statusFilter) => {
-  if (statusFilter !== 'ON_HOLD')
+  if (statusFilter !== InvitationStatus.ON_HOLD)
     return listCompetitionInvitationsUseCase.execute(
       competitionId,
       statusFilter ? { status: statusFilter } : {},
@@ -77,7 +85,9 @@ const lasDeLaPantalla = (competitionId, statusFilter) => {
       }),
     (res) => res.invitations ?? [],
   ).then((lista) => {
-    const enEspera = lista.filter((inv) => inv.status === 'ON_HOLD');
+    const enEspera = lista.filter(
+      (inv) => inv.status === InvitationStatus.ON_HOLD,
+    );
     return { invitations: enEspera, totalCount: enEspera.length };
   });
 };
@@ -95,7 +105,7 @@ const pedirLaPantalla = (competitionId, statusFilter) =>
 // volver a invitar. Marcarlos habría bloqueado a quien el backend acepta
 const idsDeLosInscritos = (competitionId) =>
   listEnrollmentsUseCase
-    .execute(competitionId, { status: 'APPROVED' })
+    .execute(competitionId, { status: EnrollmentStatus.APPROVED })
     .then((res) => {
       const inscripciones = Array.isArray(res) ? res : (res?.enrollments ?? []);
       return inscripciones.map((e) => e.userId ?? e.user_id).filter(Boolean);
@@ -106,7 +116,7 @@ const idsDeLosInscritos = (competitionId) =>
 // Enteras y sin el filtro de la pantalla (`invitations` está filtrada por lo
 // que el creador haya elegido arriba y paginada), y en UNA lectura sin estado:
 // el servidor de antes no conoce ON_HOLD y contestaría 400 si se le pidiera
-const VIVAS = new Set(['PENDING', 'ON_HOLD']);
+const VIVAS = new Set([InvitationStatus.PENDING, InvitationStatus.ON_HOLD]);
 const lasPendientes = (competitionId) =>
   todasLasPaginas(
     (page) =>
@@ -126,7 +136,10 @@ const clavesDe = (invitation) =>
 
 // Solo se invita con la inscripción por abrir o abierta: es lo que acepta el
 // servidor (#710). Cerrada, en juego o terminada, no
-const SE_PUEDE_INVITAR = new Set(['DRAFT', 'ACTIVE']);
+const SE_PUEDE_INVITAR = new Set([
+  CompetitionStatusEnum.DRAFT,
+  CompetitionStatusEnum.ACTIVE,
+]);
 
 const InvitationsPage = () => {
   const navigate = useNavigate();
@@ -634,7 +647,7 @@ const InvitationsPage = () => {
               <button
                 onClick={() => {
                   const acceptedCount = invitations.filter(
-                    (inv) => inv.status === 'ACCEPTED',
+                    (inv) => inv.status === InvitationStatus.ACCEPTED,
                   ).length;
                   if (
                     competition?.maxPlayers &&

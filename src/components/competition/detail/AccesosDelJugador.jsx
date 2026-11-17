@@ -1,4 +1,6 @@
 import { Calendar, UserPlus, BarChart3 } from 'lucide-react';
+import { CompetitionStatusEnum } from '../../../domain/value_objects/CompetitionStatus';
+import EnrollmentStatus from '../../../domain/value_objects/EnrollmentStatus';
 
 /**
  * Lo que la ficha ofrece a quien no la organiza: la clasificación, el
@@ -24,8 +26,8 @@ const AccesosDelJugador = ({
         repite: en un torneo en juego es su acción principal, y
         ofrecerla dos veces es lo que venía a arreglar el FE #705 */}
     {!canManage &&
-      (competition.status === 'IN_PROGRESS' ||
-        competition.status === 'COMPLETED') && (
+      (competition.status === CompetitionStatusEnum.IN_PROGRESS ||
+        competition.status === CompetitionStatusEnum.COMPLETED) && (
         <div className="p-4">
           <button
             onClick={irALaClasificacion}
@@ -40,10 +42,10 @@ const AccesosDelJugador = ({
     {/* View Schedule Button - For enrolled players (not creators/admins) */}
     {!canManage &&
       !esStrokePlay &&
-      competition.status !== 'DRAFT' &&
-      competition.status !== 'CANCELLED' &&
-      (userEnrollment?.status === 'APPROVED' ||
-        competition.enrollment_status === 'APPROVED') && (
+      competition.status !== CompetitionStatusEnum.DRAFT &&
+      competition.status !== CompetitionStatusEnum.CANCELLED &&
+      (userEnrollment?.status === EnrollmentStatus.APPROVED ||
+        competition.enrollment_status === EnrollmentStatus.APPROVED) && (
         <div className="p-4">
           <button
             onClick={alVerCalendario}
@@ -59,7 +61,7 @@ const AccesosDelJugador = ({
         creó, sin invitación pendiente, y con sitio. En una privada se entra por invitación, y el
         servidor lo rechaza (FE #734) */}
     {!isCreator &&
-      competition.status === 'ACTIVE' &&
+      competition.status === CompetitionStatusEnum.ACTIVE &&
       competition.visibility === 'PUBLIC' &&
       !hasEnrollment &&
       // Con invitación pendiente, el cuadro: aceptarla ya inscribe
@@ -81,7 +83,7 @@ const AccesosDelJugador = ({
       )}
 
     {!isCreator &&
-      competition.status === 'ACTIVE' &&
+      competition.status === CompetitionStatusEnum.ACTIVE &&
       competition.visibility === 'PUBLIC' &&
       !hasEnrollment &&
       !competition.myPendingInvitation &&

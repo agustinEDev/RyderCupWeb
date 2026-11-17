@@ -4,9 +4,13 @@ import {
   companerosDe,
   seRetiro,
 } from '../../../domain/services/PartidasDeLaFranja';
+import { CompetitionStatusEnum } from '../../../domain/value_objects/CompetitionStatus';
 
 const POR_JUGAR = ['SCHEDULED', 'IN_PROGRESS'];
-const COMPETICIONES_CON_PARTIDAS = ['CLOSED', 'IN_PROGRESS'];
+const COMPETICIONES_CON_PARTIDAS = [
+  CompetitionStatusEnum.CLOSED,
+  CompetitionStatusEnum.IN_PROGRESS,
+];
 
 /**
  * Las próximas partidas de stroke play del jugador, de todas sus competiciones

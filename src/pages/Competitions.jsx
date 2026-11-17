@@ -40,15 +40,16 @@ import { diaCorto } from '../utils/diaDeLaSesion';
 import EtiquetaDelTipo from '../components/competition/EtiquetaDelTipo';
 import { PANTALLA_MENOS_BARRA_INFERIOR } from '../utils/barraInferior';
 import BlockLoader from '../components/ui/BlockLoader';
+import EnrollmentStatus from '../domain/value_objects/EnrollmentStatus';
 
 // Helper function to get enrollment status classes
 const getEnrollmentStatusClasses = (status) => {
   switch (status) {
-    case 'APPROVED':
+    case EnrollmentStatus.APPROVED:
       return 'bg-green-100 text-green-800 border border-green-200';
     case 'PENDING':
       return 'bg-yellow-100 text-yellow-800 border border-yellow-200';
-    case 'REJECTED':
+    case EnrollmentStatus.REJECTED:
       return 'bg-red-100 text-red-800 border border-red-200';
     default:
       return 'bg-gray-100 text-gray-800 border border-gray-200';
@@ -68,7 +69,7 @@ const Competitions = () => {
   // «Organizas» o «Juegas» (FE #846); pendiente o rechazada, ninguno
   const papelEn = (competition) => {
     if (competition.creatorId === user?.id) return 'myCompetitions.youOrganise';
-    return competition.enrollment_status === 'APPROVED'
+    return competition.enrollment_status === EnrollmentStatus.APPROVED
       ? 'myCompetitions.youPlay'
       : null;
   };
@@ -399,15 +400,16 @@ const Competitions = () => {
                     {/* La inscripción que aún no es «Juegas»: pendiente o rechazada */}
                     {competition.creatorId !== user?.id &&
                       competition.enrollment_status &&
-                      competition.enrollment_status !== 'APPROVED' && (
+                      competition.enrollment_status !==
+                        EnrollmentStatus.APPROVED && (
                         <div className="mt-1">
                           <span
                             className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ${getEnrollmentStatusClasses(competition.enrollment_status)}`}
                           >
                             {competition.enrollment_status === 'PENDING' &&
                               '⏳ '}
-                            {competition.enrollment_status === 'REJECTED' &&
-                              '✗ '}
+                            {competition.enrollment_status ===
+                              EnrollmentStatus.REJECTED && '✗ '}
                             {t('myCompetitions.enrollmentStatus', {
                               status: etiquetaDeInscripcion(
                                 t,

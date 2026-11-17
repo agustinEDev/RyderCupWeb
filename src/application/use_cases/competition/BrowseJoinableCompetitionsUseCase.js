@@ -1,6 +1,7 @@
 // src/application/use-cases/competition/BrowseJoinableCompetitionsUseCase.js
 
 import CompetitionAssembler from '../../assemblers/CompetitionAssembler';
+import { CompetitionStatusEnum } from '../../../domain/value_objects/CompetitionStatus';
 
 /**
  * Use case for browsing competitions that are available to join.
@@ -45,7 +46,7 @@ class BrowseJoinableCompetitionsUseCase {
   async execute(filters = {}) {
     // Build repository filters
     const repositoryFilters = {
-      status: 'ACTIVE', // Only competitions accepting enrollments
+      status: CompetitionStatusEnum.ACTIVE, // Only competitions accepting enrollments
       excludeMyCompetitions: true, // Don't show competitions where I'm creator/enrolled
       searchName: filters.searchName,
       searchCreator: filters.searchCreator,

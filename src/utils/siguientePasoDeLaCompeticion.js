@@ -10,6 +10,8 @@
  * una tabla de estados.
  */
 
+import { CompetitionStatusEnum } from '../domain/value_objects/CompetitionStatus';
+
 /**
  * @param {Object|null} competition - La competición, tal como la trae la ficha
  * @param {Object} [opciones]
@@ -32,14 +34,18 @@ export const siguientePasoDeLaCompeticion = (
 
   // Con el torneo en marcha o terminado, lo que todo el mundo quiere ver es
   // cómo va: también quien no organiza nada
-  if (status === 'IN_PROGRESS' || status === 'COMPLETED') return 'leaderboard';
+  if (
+    status === CompetitionStatusEnum.IN_PROGRESS ||
+    status === CompetitionStatusEnum.COMPLETED
+  )
+    return 'leaderboard';
 
   // Lo demás son pasos de organizador
   if (!puedeGestionar) return null;
 
-  if (status === 'DRAFT') return 'activate';
+  if (status === CompetitionStatusEnum.DRAFT) return 'activate';
 
-  if (status === 'ACTIVE') {
+  if (status === CompetitionStatusEnum.ACTIVE) {
     // Nombrar a los capitanes es lo que cierra las inscripciones. Con los
     // equipos ya repartidos —una reabierta— los capitanes ya no se tocan, así
     // que lo que queda es volver a cerrar
@@ -56,7 +62,7 @@ export const siguientePasoDeLaCompeticion = (
     return conEquipos ? 'nameCaptains' : 'close-enrollments';
   }
 
-  if (status === 'CLOSED') {
+  if (status === CompetitionStatusEnum.CLOSED) {
     // Un Stableford o un Medal tiene sus franjas a la vista en la ficha: lo
     // que toca es iniciar (FE #824). Sus partidas llegan con la PR 6
     if (hasTeams === false) return 'start-competition';

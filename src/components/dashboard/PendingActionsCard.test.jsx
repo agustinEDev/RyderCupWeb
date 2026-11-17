@@ -3,6 +3,7 @@ import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import { MemoryRouter } from 'react-router';
 import PendingActionsCard from './PendingActionsCard';
 import { olvidaTodo } from '../../services/loUltimoConocido';
+import { CompetitionStatus } from '../../domain/value_objects/CompetitionStatus';
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
@@ -239,6 +240,27 @@ describe('PendingActionsCard', () => {
       expect(
         screen.getByTestId('pending-enrollments-action'),
       ).toBeInTheDocument();
+    });
+  });
+
+  // Re-auditoría Q-FE-02: la tarjeta preguntaba también por un estado ENROLLING
+  // que no existe ni aquí ni en el backend. Las competiciones llegan por el
+  // mapper, que construye un CompetitionStatus y lo rechaza
+  it('asks for requests only in ACTIVE competitions (ENROLLING never reached it)', async () => {
+    expect(() => new CompetitionStatus('ENROLLING')).toThrow();
+    const competitions = [
+      { id: 'c-draft', name: 'A', status: 'DRAFT' },
+      { id: 'c-active', name: 'B', status: 'ACTIVE' },
+      { id: 'c-closed', name: 'C', status: 'CLOSED' },
+      { id: 'c-progress', name: 'D', status: 'IN_PROGRESS' },
+    ];
+
+    renderCard(creatorUser, competitions);
+
+    await waitFor(() => expect(mockListEnrollments).toHaveBeenCalled());
+    expect(mockListEnrollments).toHaveBeenCalledTimes(1);
+    expect(mockListEnrollments).toHaveBeenCalledWith('c-active', {
+      status: 'REQUESTED',
     });
   });
 
@@ -681,7 +703,7 @@ describe('PendingActionsCard al volver al panel', () => {
       );
 
       rerender(
-        pinta([lista()[0], { id: 'c-2', name: 'Copa', status: 'ENROLLING' }]),
+        pinta([lista()[0], { id: 'c-2', name: 'Copa', status: 'ACTIVE' }]),
       );
 
       await waitFor(() =>

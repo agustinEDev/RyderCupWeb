@@ -1,4 +1,5 @@
 import HandicapsDeLaCompeticion from '../HandicapsDeLaCompeticion';
+import { CompetitionStatusEnum } from '../../../domain/value_objects/CompetitionStatus';
 
 /**
  * Lo que solo lee quien organiza bajo los ajustes: la tarjeta de hándicaps,
@@ -26,7 +27,10 @@ const PanelesDelOrganizador = ({
         programada. La ventana solo le llega al organizador */}
     {canManage &&
       competition.handicapUpdateWindow &&
-      ['CLOSED', 'IN_PROGRESS'].includes(competition.status) && (
+      [
+        CompetitionStatusEnum.CLOSED,
+        CompetitionStatusEnum.IN_PROGRESS,
+      ].includes(competition.status) && (
         <div className="p-4">
           <HandicapsDeLaCompeticion
             competitionId={competition.id}
@@ -41,7 +45,7 @@ const PanelesDelOrganizador = ({
 
     {/* Salieron menos categorías: al organizador, hasta que empiece (PR 8) */}
     {canManage &&
-      competition.status === 'CLOSED' &&
+      competition.status === CompetitionStatusEnum.CLOSED &&
       !releyendoTrasCerrar &&
       textoDelAvisoDeCategorias && (
         <div className="px-4 pt-4">

@@ -36,6 +36,9 @@ import {
 } from '../../services/accionesPendientes';
 import BlockLoader from '../ui/BlockLoader';
 import { diaDeLaSesion } from '../../utils/diaDeLaSesion';
+import { CompetitionStatusEnum } from '../../domain/value_objects/CompetitionStatus';
+import EnrollmentStatus from '../../domain/value_objects/EnrollmentStatus';
+import InvitationStatus from '../../domain/value_objects/InvitationStatus';
 
 /** Lo que la tarjeta recuerda, con sus valores por defecto. */
 const loRecordado = (r) => ({
@@ -194,7 +197,11 @@ const PendingActionsCard = ({
         // en síncrono, queda como un rechazo más y no tumba el panel entero
         const pedir = (peticion) => (async () => peticion())();
         const results = await Promise.allSettled([
-          pedir(() => listMyInvitationsUseCase.execute({ status: 'PENDING' })),
+          pedir(() =>
+            listMyInvitationsUseCase.execute({
+              status: InvitationStatus.PENDING,
+            }),
+          ),
           isCreator
             ? pedir(() => loadPendingEnrollments(competiciones))
             : Promise.resolve([]),
@@ -734,13 +741,13 @@ async function loadPendingEnrollments(competitions) {
   if (!competitions || competitions.length === 0) return [];
 
   const createdCompetitions = competitions.filter(
-    (c) => c.status === 'ACTIVE' || c.status === 'ENROLLING',
+    (c) => c.status === CompetitionStatusEnum.ACTIVE,
   );
 
   const results = await Promise.allSettled(
     createdCompetitions.map(async (comp) => {
       const enrollments = await listEnrollmentsUseCase.execute(comp.id, {
-        status: 'REQUESTED',
+        status: EnrollmentStatus.REQUESTED,
       });
       return {
         competitionId: comp.id,

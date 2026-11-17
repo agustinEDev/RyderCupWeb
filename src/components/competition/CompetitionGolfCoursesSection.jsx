@@ -329,7 +329,11 @@ const CompetitionGolfCoursesSection = ({
   // Los campos se pueden tocar mientras haya inscripciones abiertas (BE #323):
   // quien invita antes de poner el campo —y con ello abre el torneo— tiene que
   // poder ponerlo después, que es justo el caso que motivó el cambio
-  const canEdit = canManage && ['DRAFT', 'ACTIVE'].includes(competition.status);
+  const canEdit =
+    canManage &&
+    [CompetitionStatusEnum.DRAFT, CompetitionStatusEnum.ACTIVE].includes(
+      competition.status,
+    );
 
   // Añadir, en cambio, vale hasta que la competición se acaba (FE #713, BE #368):
   // con la agenda propuesta al crear, toda competición Ryder nace con sesiones.

@@ -1,6 +1,7 @@
 // src/application/use-cases/competition/BrowseExploreCompetitionsUseCase.js
 
 import CompetitionAssembler from '../../assemblers/CompetitionAssembler';
+import { CompetitionStatusEnum } from '../../../domain/value_objects/CompetitionStatus';
 
 /**
  * Use case for browsing competitions that are in progress, closed, or completed.
@@ -48,7 +49,11 @@ class BrowseExploreCompetitionsUseCase {
   async execute(filters = {}) {
     // Build repository filters
     const repositoryFilters = {
-      status: ['CLOSED', 'IN_PROGRESS', 'COMPLETED'], // Only competitions that are not accepting enrollments
+      status: [
+        CompetitionStatusEnum.CLOSED,
+        CompetitionStatusEnum.IN_PROGRESS,
+        CompetitionStatusEnum.COMPLETED,
+      ], // Only competitions that are not accepting enrollments
       excludeMyCompetitions: false, // Include all competitions (including mine)
       searchName: filters.searchName,
       searchCreator: filters.searchCreator,
