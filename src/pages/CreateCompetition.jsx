@@ -7,25 +7,22 @@ import { usePaisesDeLaCompeticion } from '../hooks/usePaisesDeLaCompeticion';
 import { useEdicionDeLaCompeticion } from '../hooks/useEdicionDeLaCompeticion';
 import { useLlevaALaVista } from '../hooks/useLlevaALaVista';
 import { useNavegacionDiferida } from '../hooks/useNavegacionDiferida';
-import customToast from '../utils/toast';
+import { useCamposElegidos } from '../hooks/useCamposElegidos';
 import { crearEnvio } from '../components/competition/create/envioDeLaCompeticion';
 import HeaderAuth from '../components/layout/HeaderAuth';
 import { useAuth } from '../hooks/useAuth';
 import { useCorreoVerificado } from '../hooks/useCorreoVerificado';
 import AvisoVerificaParaLlegarAOtros from '../components/auth/AvisoVerificaParaLlegarAOtros';
 import { useGeneroParaApuntarse } from '../hooks/useGeneroParaApuntarse';
-import SelectorDeGenero from '../components/profile/SelectorDeGenero';
 import { createGolfCourseRequestUseCase } from '../composition';
 import GolfCourseRequestModal from '../components/golf_course/GolfCourseRequestModal';
 import EnrollmentOpeningModal from '../components/competition/EnrollmentOpeningModal';
-import SoloLectura from '../components/competition/create/SoloLectura';
 import CamposDeLaCompeticion from '../components/competition/create/CamposDeLaCompeticion';
 import DatosBasicos from '../components/competition/create/DatosBasicos';
 import AvisoDelFormulario from '../components/competition/create/AvisoDelFormulario';
-import FormatoDeLaCompeticion from '../components/competition/create/FormatoDeLaCompeticion';
-import AjustesDeStrokePlayDelAlta from '../components/competition/create/AjustesDeStrokePlayDelAlta';
-import MasOpciones from '../components/competition/create/MasOpciones';
 import BotonesDelFormulario from '../components/competition/create/BotonesDelFormulario';
+import InicioDelFormulario from '../components/competition/create/InicioDelFormulario';
+import ConfiguracionDeLaCompeticion from '../components/competition/create/ConfiguracionDeLaCompeticion';
 import FullScreenLoader from '../components/ui/FullScreenLoader';
 import CompetitionTypeChooser from '../components/competition/CompetitionTypeChooser';
 import SetupModeChooser from '../components/competition/SetupModeChooser';
@@ -100,7 +97,7 @@ const CreateCompetition = () => {
   // A la ficha tras guardar, salvo que ya se haya salido de aquí
   const navegaDentroDe = useNavegacionDiferida(navigate);
 
-  const { formData, setFormData, escribeElCampo } =
+  const { formData, setFormData, escribeElCampo, cambia } =
     useFormularioDeLaCompeticion({ t, idioma: i18n.language, isEditMode });
   const {
     allCountries,
@@ -150,9 +147,12 @@ const CreateCompetition = () => {
   const avisoRef = useRef(null);
   const faltaAlgoPlegado = faltaAlgoEnLoPlegado(formData);
 
-  // Golf Course Request Modal
-  const [showRequestModal, setShowRequestModal] = useState(false);
-  const [requestModalCountry, setRequestModalCountry] = useState(null);
+  const {
+    handleGolfCourseSelect,
+    handleRemoveGolfCourse,
+    handleRequestNewCourse,
+    modalDePedirCampo,
+  } = useCamposElegidos({ t, formData, setFormData });
 
   useLlevaALaVista(avisoRef, message, Boolean(message.text));
 
@@ -168,55 +168,6 @@ const CreateCompetition = () => {
         ...prev,
         playMode: value,
       }));
-    }
-  };
-
-  // Un campo ya añadido no se añade otra vez (FE #644). El buscador tampoco lo
-  // ofrece, pero la guarda se queda: el torneo se crea ANTES de enganchar los
-  // campos, así que un duplicado que se colara dejaba el torneo hecho y un error
-  // listando el mismo campo varias veces
-  const handleGolfCourseSelect = (countryCode, course) => {
-    // La comprobación va FUERA del `setFormData`: React ejecuta el actualizador
-    // dos veces en desarrollo (StrictMode) y puede repetirlo en un render que
-    // descarta, así que un aviso ahí dentro salía por duplicado. Un actualizador
-    // tiene que ser puro.
-    //
-    // Y se exige que el campo traiga `id`: sin eso, dos campos DISTINTOS sin id
-    // se tomaban por el mismo y el segundo se descartaba diciendo que ya estaba
-    const yaEsta =
-      Boolean(course?.id) &&
-      formData.golfCourses.some((gc) => gc.course?.id === course.id);
-    if (yaEsta) {
-      customToast.info(t('create.courseAlreadyAdded'));
-      return;
-    }
-    setFormData((prev) => ({
-      ...prev,
-      golfCourses: [...prev.golfCourses, { countryCode, course }],
-    }));
-  };
-
-  const handleRemoveGolfCourse = (index) => {
-    setFormData((prev) => ({
-      ...prev,
-      golfCourses: prev.golfCourses.filter((_, i) => i !== index),
-    }));
-  };
-
-  const handleRequestNewCourse = (countryCode) => {
-    setRequestModalCountry(countryCode);
-    setShowRequestModal(true);
-  };
-
-  const handleRequestModalClose = () => {
-    setShowRequestModal(false);
-    setRequestModalCountry(null);
-  };
-
-  const handleRequestSuccess = (createdCourse) => {
-    // Auto-select the newly requested course for its country
-    if (requestModalCountry) {
-      handleGolfCourseSelect(requestModalCountry, createdCourse);
     }
   };
 
@@ -328,55 +279,20 @@ const CreateCompetition = () => {
                 onSubmit={handleSubmit}
                 className="flex flex-col gap-6 px-4"
               >
-                {/* Volver a elegir el tipo. Lo escrito se queda: `formData` no se
-                  toca al cambiar de paso, que perder el formulario por mirar
-                  los otros tipos es peor que no dejar mirarlos */}
-                {!isEditMode && (
-                  <button
-                    type="button"
-                    data-testid="volver-al-tipo"
-                    onClick={() => {
-                      setTipoElegido(null);
-                      setFormData((prev) => ({ ...prev, setupMode: null }));
-                    }}
-                    className="self-start text-sm text-gray-600 hover:text-gray-900"
-                  >
-                    {t('create.type.back')}
-                  </button>
-                )}
-
-                {/* Cerrada por el plazo, solo las fechas: se dice arriba */}
-                {soloFechas && (
-                  <p
-                    data-testid="solo-las-fechas"
-                    role="status"
-                    className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900"
-                  >
-                    {t('edit.onlyDates')}
-                  </p>
-                )}
-
-                {/* El modo, a la vista y no dentro de «más opciones»: decide qué
-                  pasos existen después, así que esconderlo sería esconder el
-                  resto del camino (FE #695). Al crear ya viene elegido del paso
-                  anterior; aquí se cambia */}
-                {conEquipos && (
-                  <SoloLectura activa={soloFechas}>
-                    <div className="border border-gray-200 rounded-xl p-4">
-                      <SetupModeChooser
-                        value={formData.setupMode}
-                        onSelect={eligeElModo}
-                      />
-                    </div>
-                  </SoloLectura>
-                )}
-
-                {/* El organizador juega: su género, solo si le falta (#710) */}
-                {pideGenero && (
-                  <div className="border border-gray-200 rounded-xl p-4">
-                    <SelectorDeGenero value={genero} onChange={setGenero} />
-                  </div>
-                )}
+                <InicioDelFormulario
+                  isEditMode={isEditMode}
+                  soloFechas={soloFechas}
+                  conEquipos={conEquipos}
+                  setupMode={formData.setupMode}
+                  onVolverAlTipo={() => {
+                    setTipoElegido(null);
+                    setFormData((prev) => ({ ...prev, setupMode: null }));
+                  }}
+                  onElegirModo={eligeElModo}
+                  pideGenero={pideGenero}
+                  genero={genero}
+                  onGenero={setGenero}
+                />
 
                 <DatosBasicos
                   soloFechas={soloFechas}
@@ -408,52 +324,30 @@ const CreateCompetition = () => {
                   />
                 )}
 
-                <SoloLectura
-                  activa={soloFechas}
-                  className="flex flex-col gap-6"
-                >
-                  <FormatoDeLaCompeticion
-                    playMode={formData.playMode}
-                    onElegirModo={(mode) =>
-                      setFormData((prev) => ({
-                        ...prev,
-                        playMode: mode,
-                      }))
-                    }
-                    numberOfPlayers={formData.numberOfPlayers}
-                    onChange={handleInputChange}
-                    onBlurDelCupo={() =>
-                      setFormData((prev) => ({
-                        ...prev,
-                        // Dejarlo en blanco no es «sin límite»: hay cupo igual, y
-                        // callárselo es enterarse con el jugador 13 fuera
-                        numberOfPlayers: cupoDeJugadores(
-                          prev.numberOfPlayers,
-                          cupoCargado.current,
-                        ),
-                      }))
-                    }
-                    inscritos={inscritos}
-                  />
-
-                  {!conEquipos && (
-                    <AjustesDeStrokePlayDelAlta
-                      formData={formData}
-                      onCambio={(strokePlay) =>
-                        setFormData((prev) => ({ ...prev, strokePlay }))
-                      }
-                    />
-                  )}
-
-                  <MasOpciones
-                    abierto={masOpciones}
-                    onAlternar={() => setMasOpciones((abierto) => !abierto)}
-                    faltaAlgoPlegado={faltaAlgoPlegado}
-                    conEquipos={conEquipos}
-                    formData={formData}
-                    onChange={handleInputChange}
-                  />
-                </SoloLectura>
+                <ConfiguracionDeLaCompeticion
+                  soloFechas={soloFechas}
+                  conEquipos={conEquipos}
+                  formData={formData}
+                  cambia={cambia}
+                  onChange={handleInputChange}
+                  onBlurDelCupo={() =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      // Dejarlo en blanco no es «sin límite»: hay cupo igual, y
+                      // callárselo es enterarse con el jugador 13 fuera
+                      numberOfPlayers: cupoDeJugadores(
+                        prev.numberOfPlayers,
+                        cupoCargado.current,
+                      ),
+                    }))
+                  }
+                  inscritos={inscritos}
+                  masOpciones={masOpciones}
+                  onAlternarMasOpciones={() =>
+                    setMasOpciones((abierto) => !abierto)
+                  }
+                  faltaAlgoPlegado={faltaAlgoPlegado}
+                />
 
                 <BotonesDelFormulario
                   isEditMode={isEditMode}
@@ -475,10 +369,7 @@ const CreateCompetition = () => {
 
       {/* Golf Course Request Modal */}
       <GolfCourseRequestModal
-        isOpen={showRequestModal}
-        onClose={handleRequestModalClose}
-        onSuccess={handleRequestSuccess}
-        countryCode={requestModalCountry}
+        {...modalDePedirCampo}
         createGolfCourseRequestUseCase={createGolfCourseRequestUseCase}
       />
 

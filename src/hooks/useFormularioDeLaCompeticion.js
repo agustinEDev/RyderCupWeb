@@ -52,5 +52,9 @@ export const useFormularioDeLaCompeticion = ({ t, idioma, isEditMode }) => {
     }));
   };
 
-  return { formData, setFormData, escribeElCampo };
+  // Un valor elegido (no escrito): un botón, una casilla, los ajustes
+  const cambia = (campo, valor) =>
+    setFormData((prev) => ({ ...prev, [campo]: valor }));
+
+  return { formData, setFormData, escribeElCampo, cambia };
 };
