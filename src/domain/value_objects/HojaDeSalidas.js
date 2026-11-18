@@ -1,3 +1,5 @@
+import { SessionType } from './SessionType';
+
 /**
  * La hoja de salidas de una franja de stroke play (FE #824, RyderCupAm#251).
  *
@@ -16,9 +18,9 @@ export const TAMANOS_DE_PARTIDA = [3, 4];
 // jornada, y la última salida un intervalo antes de la hora redonda para que la
 // siguiente empiece en punto sin pisarse
 const HORAS_PROPUESTAS = {
-  MORNING: ['08:00', '11:50'],
-  AFTERNOON: ['12:00', '17:50'],
-  EVENING: ['18:00', '23:50'],
+  [SessionType.MORNING]: ['08:00', '11:50'],
+  [SessionType.AFTERNOON]: ['12:00', '17:50'],
+  [SessionType.EVENING]: ['18:00', '23:50'],
 };
 const INTERVALO_PROPUESTO = 10;
 const TAMANO_PROPUESTO = 4;

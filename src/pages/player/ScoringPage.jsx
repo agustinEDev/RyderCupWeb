@@ -35,6 +35,8 @@ import {
   ganadorDelResumen,
   textoDelMarcador,
 } from '../../utils/lecturaDelPartido';
+import MatchStatus from '../../domain/value_objects/MatchStatus';
+import { MatchFormat } from '../../domain/value_objects/MatchFormat';
 
 const TABS = PESTANAS_DEL_PARTIDO;
 
@@ -172,7 +174,7 @@ const ScoringPage = () => {
   const { currentHoleData } = hoyo;
 
   // Players who still need to submit their scorecard for the match to complete
-  const esFoursomes = scoringView?.matchFormat === 'FOURSOMES';
+  const esFoursomes = scoringView?.matchFormat === MatchFormat.FOURSOMES;
   // El retirado no entrega: no se le espera (F4)
   const retirados = scoringView?.withdrawnPlayerIds ?? [];
   const pendingPlayers =
@@ -265,7 +267,7 @@ const ScoringPage = () => {
     cargada: Boolean(scoringView) && !isLoading,
     // Cerrado, concedido o walkover, con mi tarjeta entregada o retirado yo
     terminada:
-      scoringView?.matchStatus === 'COMPLETED' ||
+      scoringView?.matchStatus === MatchStatus.COMPLETED ||
       cerradoSinJugar ||
       hasSubmitted ||
       Boolean(currentUserId && retirados.includes(currentUserId)),

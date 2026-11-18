@@ -6,7 +6,9 @@
  * para no enseñar un botón que va a devolver un 409: solo fourball, programado o
  * en juego, sin tarjetas entregadas, y nunca dejar un bando sin nadie.
  */
-const ESTADOS_EN_JUEGO = new Set(['SCHEDULED', 'IN_PROGRESS']);
+
+import { MatchFormat } from '../value_objects/MatchFormat';
+import MatchStatus from '../value_objects/MatchStatus';
 
 const NADA = Object.freeze({
   pareja: null,
@@ -34,8 +36,8 @@ export const opcionesDeRetirada = (vista, yo) => {
     ? { userId: companero.userId, userName: companero.userName }
     : null;
   const disponible =
-    vista.matchFormat === 'FOURBALL' &&
-    ESTADOS_EN_JUEGO.has(vista.matchStatus) &&
+    vista.matchFormat === MatchFormat.FOURBALL &&
+    MatchStatus.isPlayable(vista.matchStatus) &&
     (vista.scorecardSubmittedBy ?? []).length === 0;
   if (!disponible)
     return { ...NADA, pareja, yoRetirado: retirados.includes(yo) };

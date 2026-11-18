@@ -5,10 +5,17 @@ import {
   MAX_SCORERS,
   NO_TEE_KEY,
   oppositeTeam,
-  TEAM_FORMATS,
   teeKey,
 } from './asistenteDePartidaRapida';
 import { jugadorInvitado, jugadorRegistrado } from './jugadoresDelAsistente';
+import {
+  MatchFormat,
+  isTeamMatchFormat,
+} from '../domain/value_objects/MatchFormat';
+import {
+  ScoringFormat,
+  isFreePlay,
+} from '../domain/value_objects/ScoringFormat';
 
 // Dónde se arregla cada cosa: el campo y tu barra, en el paso 1; los
 // jugadores, en el 2. El asistente enseña cada aviso solo en su paso
@@ -31,7 +38,7 @@ const PASO_DE_LOS_JUGADORES = 2;
  * @returns {{inicial: Object, paso: number, avisos: Array<Object>}}
  */
 export const borradorParaRepetir = ({ partida, yo, amigos, campo }) => {
-  const juegoLibre = Boolean(partida.scoringFormat);
+  const juegoLibre = isFreePlay(partida.scoringFormat);
   // El % por defecto de ese formato: si es el copiado, no cuenta como elegido
   // a mano, y cambiar de formato lo sigue moviendo (revisor)
   const copiado = partida.allowancePercentage ?? null;
@@ -41,8 +48,8 @@ export const borradorParaRepetir = ({ partida, yo, amigos, campo }) => {
   const comun = {
     matchName: partida.name ?? '',
     mode: juegoLibre ? 'FREE_PLAY' : 'MATCH_PLAY',
-    matchFormat: partida.matchFormat ?? 'SINGLES',
-    scoringFormat: partida.scoringFormat ?? 'STABLEFORD',
+    matchFormat: partida.matchFormat ?? MatchFormat.SINGLES,
+    scoringFormat: partida.scoringFormat ?? ScoringFormat.STABLEFORD,
     allowanceOverride: copiado === porDefecto ? null : copiado,
     playMode: partida.playMode ?? 'HANDICAP',
     parejasDeAnotadores: parejasElegidas(partida, yo),
@@ -84,7 +91,7 @@ export const borradorParaRepetir = ({ partida, yo, amigos, campo }) => {
     genero: p.teeGender,
     paso: nombre ? PASO_DE_LOS_JUGADORES : PASO_DEL_CAMPO,
   });
-  const porEquipos = !juegoLibre && TEAM_FORMATS.includes(partida.matchFormat);
+  const porEquipos = !juegoLibre && isTeamMatchFormat(partida.matchFormat);
   const equipo = (p) => (porEquipos ? (p.team ?? null) : null);
   const avisos = [];
 
@@ -202,7 +209,8 @@ export const borradorParaRepetir = ({ partida, yo, amigos, campo }) => {
  * ya no vale (sin jugadores): es de la partida, no de sus jugadores.
  */
 const parejasElegidas = (partida, yo) => {
-  if (partida.scoringFormat || partida.matchFormat !== 'FOURSOMES') return null;
+  if (partida.scoringFormat || partida.matchFormat !== MatchFormat.FOURSOMES)
+    return null;
   // La eligió quien la creó: a otro que la repite no le toca heredarla
   // (`/code-review`)
   if (partida.creatorId !== yo.id) return null;

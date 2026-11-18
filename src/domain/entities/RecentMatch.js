@@ -1,3 +1,5 @@
+import { MatchOutcome } from '../value_objects/MatchOutcome';
+
 /**
  * Entity: RecentMatch
  *
@@ -189,7 +191,7 @@ class RecentMatch {
    * tiempo ni con los mismos hoyos, 9 o más, en los dos bandos (24 oct 2026).
    */
   isUnfinished() {
-    return this.#result === 'UNFINISHED';
+    return this.#result === MatchOutcome.UNFINISHED;
   }
 
   /** El marcador que se enseña: sin terminar no hay, aunque llegara uno. */

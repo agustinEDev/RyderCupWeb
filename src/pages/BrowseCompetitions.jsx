@@ -22,6 +22,7 @@ import { PANTALLA_MENOS_BARRA_INFERIOR } from '../utils/barraInferior';
 import { MOTIVOS_PARA_NO_APUNTARSE } from '../utils/fichaDeLaCompeticion';
 import { nombrePequeno } from '../utils/nombreVisible';
 import { registraElFallo } from '../utils/registraElFallo';
+import { CompetitionStatusEnum } from '../domain/value_objects/CompetitionStatus';
 
 const BrowseCompetitions = () => {
   // El género para apuntarse, solo a quien le falta (#710)
@@ -596,12 +597,12 @@ const CompetitionCard = ({
   // Get status badge
   const getStatusBadge = () => {
     const badges = {
-      ACTIVE: 'bg-green-100 text-green-800',
-      CLOSED: 'bg-yellow-100 text-yellow-800',
-      IN_PROGRESS: 'bg-blue-100 text-blue-800',
-      COMPLETED: 'bg-gray-100 text-gray-800',
-      DRAFT: 'bg-gray-100 text-gray-800',
-      CANCELLED: 'bg-red-100 text-red-800',
+      [CompetitionStatusEnum.ACTIVE]: 'bg-green-100 text-green-800',
+      [CompetitionStatusEnum.CLOSED]: 'bg-yellow-100 text-yellow-800',
+      [CompetitionStatusEnum.IN_PROGRESS]: 'bg-blue-100 text-blue-800',
+      [CompetitionStatusEnum.COMPLETED]: 'bg-gray-100 text-gray-800',
+      [CompetitionStatusEnum.DRAFT]: 'bg-gray-100 text-gray-800',
+      [CompetitionStatusEnum.CANCELLED]: 'bg-red-100 text-red-800',
     };
 
     return (

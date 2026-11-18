@@ -11,6 +11,7 @@ import {
   makeDraftPickUseCase,
 } from '../composition';
 import { useCargaCancelableEffect } from './useCargaCancelableEffect';
+import { DraftStatus } from '../domain/value_objects/DraftStatus';
 
 /**
  * La sala de draft en directo (FE #653).
@@ -240,7 +241,8 @@ const useDraftRoom = (competitionId, userId) => {
   const esperandoElSorteo =
     !cargando && cargada && lectura.vista && sala === null;
   useEffect(() => {
-    if (sala?.status !== 'IN_PROGRESS' && !esperandoElSorteo) return undefined;
+    if (sala?.status !== DraftStatus.IN_PROGRESS && !esperandoElSorteo)
+      return undefined;
     const id = setInterval(() => recargar({ silenciosa: true }), INTERVALO_MS);
     return () => clearInterval(id);
   }, [sala?.status, esperandoElSorteo, recargar]);
@@ -254,7 +256,7 @@ const useDraftRoom = (competitionId, userId) => {
     : Number.NaN;
   const porTurno = Number(sala?.secondsPerTurn);
   const hayContador =
-    sala?.status === 'IN_PROGRESS' &&
+    sala?.status === DraftStatus.IN_PROGRESS &&
     !Number.isNaN(empezo) &&
     Number.isFinite(porTurno);
   const ahora = useSyncExternalStore(
@@ -303,7 +305,7 @@ const useDraftRoom = (competitionId, userId) => {
         if (
           recarga.estado === 'cargada' &&
           recarga.datos === aplicadaRef.current &&
-          recarga.datos?.status === 'COMPLETED'
+          recarga.datos?.status === DraftStatus.COMPLETED
         ) {
           escribir(id, { error: 'turnoPerdidoYTerminado' });
         }

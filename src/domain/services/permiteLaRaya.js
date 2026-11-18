@@ -1,3 +1,5 @@
+import { ScoringFormat } from '../value_objects/ScoringFormat';
+
 /**
  * Si en una partida rápida se puede anotar una raya (hoyo recogido sin acabar).
  *
@@ -14,4 +16,5 @@
  */
 export const permiteLaRaya = (partida) =>
   partida != null &&
-  (partida.matchFormat != null || partida.scoringFormat === 'STABLEFORD');
+  (partida.matchFormat != null ||
+    partida.scoringFormat === ScoringFormat.STABLEFORD);

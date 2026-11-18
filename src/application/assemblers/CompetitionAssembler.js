@@ -1,5 +1,6 @@
 import { nombreVisible } from '../../utils/nombreVisible';
 import { getCountryFlag } from '../../utils/countryUtils';
+import { Modality } from '../../domain/value_objects/Modality';
 
 // Un jugador de la actualización de hándicaps: el que falta por preguntar y el
 // que se quedó sin actualizar llegan igual
@@ -167,7 +168,7 @@ class CompetitionAssembler {
             expiresAt: apiData.my_pending_invitation.expires_at ?? null,
           }
         : null,
-      modality: apiData?.modality || 'MATCH_PLAY',
+      modality: apiData?.modality || Modality.MATCH_PLAY,
       // Cuánto monta la app por su cuenta (FE #695). De él sale además cómo se
       // reparten los equipos, que ya no se pregunta aparte (RyderCupAm#351).
       // Solo una Ryder lo tiene: a un Stableford no se le inventa

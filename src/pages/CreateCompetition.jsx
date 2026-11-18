@@ -65,6 +65,7 @@ import { diaDeLaSesion } from '../utils/diaDeLaSesion';
 import { PANTALLA_MENOS_BARRA_INFERIOR } from '../utils/barraInferior';
 import { mensajeDelError } from '../utils/mensajeDelError';
 import { registraElFallo } from '../utils/registraElFallo';
+import { GolfCourseApprovalStatus } from '../domain/value_objects/GolfCourseApprovalStatus';
 
 // Helper function to get message className
 const getMessageClassName = (type) => {
@@ -1775,7 +1776,7 @@ const CreateCompetition = () => {
                                       {gc.course.name}
                                     </p>
                                     {gc.course.approvalStatus ===
-                                      'PENDING_APPROVAL' && (
+                                      GolfCourseApprovalStatus.PENDING_APPROVAL && (
                                       <p className="text-xs text-yellow-700 mt-1 flex items-center gap-1">
                                         <span className="inline-block w-2 h-2 bg-yellow-500 rounded-full"></span>
                                         {t('create.coursePendingApproval')}
@@ -1868,7 +1869,7 @@ const CreateCompetition = () => {
                                       {gc.course.name}
                                     </p>
                                     {gc.course.approvalStatus ===
-                                      'PENDING_APPROVAL' && (
+                                      GolfCourseApprovalStatus.PENDING_APPROVAL && (
                                       <p className="text-xs text-yellow-700 mt-1 flex items-center gap-1">
                                         <span className="inline-block w-2 h-2 bg-yellow-500 rounded-full"></span>
                                         {t('create.coursePendingApproval')}
@@ -1963,7 +1964,7 @@ const CreateCompetition = () => {
                                       {gc.course.name}
                                     </p>
                                     {gc.course.approvalStatus ===
-                                      'PENDING_APPROVAL' && (
+                                      GolfCourseApprovalStatus.PENDING_APPROVAL && (
                                       <p className="text-xs text-yellow-700 mt-1 flex items-center gap-1">
                                         <span className="inline-block w-2 h-2 bg-yellow-500 rounded-full"></span>
                                         {t('create.coursePendingApproval')}

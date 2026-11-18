@@ -1,4 +1,5 @@
 import BarraDeEntrega from './BarraDeEntrega';
+import MatchStatus from '../../domain/value_objects/MatchStatus';
 
 /**
  * La barra fija de entregar la tarjeta de la anotación de competición
@@ -28,7 +29,9 @@ const EntregaDelPartido = ({
       esFoursomes={esFoursomes}
       pendientes={pendientes}
       // Concedido o walkover también lo terminan: ya no se espera a nadie
-      completado={scoringView?.matchStatus === 'COMPLETED' || cerradoSinJugar}
+      completado={
+        scoringView?.matchStatus === MatchStatus.COMPLETED || cerradoSinJugar
+      }
       // Todo anotado y sin validar, sin decidir: no «Partido terminado»
       soloAnotado={estado === 'faltaValidar' && !scoringView?.isDecided}
       // Decidido no es acabado: se puede seguir jugando hasta el 18

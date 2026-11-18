@@ -5,12 +5,12 @@ import FichaDeFila from './FichaDeFila';
 import { CompetitionStatusEnum } from '../../domain/value_objects/CompetitionStatus';
 
 const STATUS_BADGE_CLASSES = {
-  ACTIVE: 'bg-green-100 text-green-800',
-  CLOSED: 'bg-yellow-100 text-yellow-800',
-  IN_PROGRESS: 'bg-blue-100 text-blue-800',
-  COMPLETED: 'bg-gray-100 text-gray-800',
-  DRAFT: 'bg-gray-100 text-gray-800',
-  CANCELLED: 'bg-red-100 text-red-800',
+  [CompetitionStatusEnum.ACTIVE]: 'bg-green-100 text-green-800',
+  [CompetitionStatusEnum.CLOSED]: 'bg-yellow-100 text-yellow-800',
+  [CompetitionStatusEnum.IN_PROGRESS]: 'bg-blue-100 text-blue-800',
+  [CompetitionStatusEnum.COMPLETED]: 'bg-gray-100 text-gray-800',
+  [CompetitionStatusEnum.DRAFT]: 'bg-gray-100 text-gray-800',
+  [CompetitionStatusEnum.CANCELLED]: 'bg-red-100 text-red-800',
 };
 
 // Solo se edita en borrador: la tabla y la ficha del móvil lo leen de aquí
@@ -20,12 +20,12 @@ const seEdita = (competition) =>
 // Actions available per current status, matching the backend state machine
 // (DRAFT -> ACTIVE -> CLOSED -> IN_PROGRESS -> COMPLETED, + CANCELLED from any non-final state).
 const TRANSITIONS_BY_STATUS = {
-  DRAFT: ['activate', 'cancel'],
-  ACTIVE: ['closeEnrollments', 'cancel'],
-  CLOSED: ['start', 'reopenEnrollments', 'cancel'],
-  IN_PROGRESS: ['complete', 'revertStatus', 'cancel'],
-  COMPLETED: ['revertToInProgress'],
-  CANCELLED: [],
+  [CompetitionStatusEnum.DRAFT]: ['activate', 'cancel'],
+  [CompetitionStatusEnum.ACTIVE]: ['closeEnrollments', 'cancel'],
+  [CompetitionStatusEnum.CLOSED]: ['start', 'reopenEnrollments', 'cancel'],
+  [CompetitionStatusEnum.IN_PROGRESS]: ['complete', 'revertStatus', 'cancel'],
+  [CompetitionStatusEnum.COMPLETED]: ['revertToInProgress'],
+  [CompetitionStatusEnum.CANCELLED]: [],
 };
 
 /**

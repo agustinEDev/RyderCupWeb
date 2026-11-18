@@ -292,6 +292,61 @@ describe('LeaderboardView', () => {
     expect(matchCard).not.toHaveTextContent('leaderboard.wins');
   });
 
+  // E1-8: el backend manda el walkover con el tanteo «W/O»; lo reconoce el estado
+  it('should show a walkover from its status, with the W/O score the backend sends', () => {
+    const walkover = {
+      ...mockLeaderboard,
+      matches: [
+        {
+          matchId: 'm-7',
+          matchNumber: 7,
+          matchFormat: 'SINGLES',
+          status: 'WALKOVER',
+          currentHole: null,
+          standing: null,
+          leadingTeam: null,
+          teamAPlayers: [{ userId: 'u11', userName: 'Player K' }],
+          teamBPlayers: [{ userId: 'u12', userName: 'Player L' }],
+          result: { winner: 'A', score: 'W/O' },
+        },
+      ],
+    };
+    render(<LeaderboardView leaderboard={walkover} />);
+    const matchCard = screen.getByTestId('leaderboard-match-m-7');
+    expect(matchCard).toHaveTextContent('leaderboard.walkover');
+    expect(matchCard).toHaveTextContent('Team Red');
+    expect(matchCard).not.toHaveTextContent('leaderboard.wins');
+  });
+
+  // E1-8: walkover y concedido los dice el estado, no el tanteo
+  it.each(['CONCEDED', 'W/O', 'WALKOVER'])(
+    'should not show a completed match as conceded or walkover because of a %s score',
+    (score) => {
+      const completado = {
+        ...mockLeaderboard,
+        matches: [
+          {
+            matchId: 'm-8',
+            matchNumber: 8,
+            matchFormat: 'SINGLES',
+            status: 'COMPLETED',
+            currentHole: null,
+            standing: null,
+            leadingTeam: null,
+            teamAPlayers: [{ userId: 'u13', userName: 'Player M' }],
+            teamBPlayers: [{ userId: 'u14', userName: 'Player N' }],
+            result: { winner: 'A', score },
+          },
+        ],
+      };
+      render(<LeaderboardView leaderboard={completado} />);
+      const matchCard = screen.getByTestId('leaderboard-match-m-8');
+      expect(matchCard).toHaveTextContent('leaderboard.wins');
+      expect(matchCard).not.toHaveTextContent('leaderboard.conceded');
+      expect(matchCard).not.toHaveTextContent('leaderboard.walkover');
+    },
+  );
+
   it('should show allSquare label for a completed halved match, not wins template', () => {
     const halved = {
       ...mockLeaderboard,

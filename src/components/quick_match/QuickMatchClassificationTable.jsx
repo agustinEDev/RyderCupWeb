@@ -3,6 +3,10 @@ import StablefordCalculator from '../../domain/services/StablefordCalculator';
 import MatchPlayStrokeAllocator from '../../domain/services/MatchPlayStrokeAllocator';
 import PersonalRoundCalculator from '../../domain/services/PersonalRoundCalculator';
 import { cuentaElMatchPlay } from '../../domain/services/matchPlayQueCuenta';
+import {
+  ScoringFormat,
+  isFreePlay as esJuegoLibre,
+} from '../../domain/value_objects/ScoringFormat';
 
 // Mirrors the backend's ScoringService._compute_standing SINGLES fallback:
 // team is only set for FOURBALL/FOURSOMES, so a 2-participant match without
@@ -209,8 +213,7 @@ const QuickMatchClassificationTable = ({
 }) => {
   const { t } = useTranslation('quickMatch');
 
-  const isFreePlay =
-    scoringFormat === 'MEDAL' || scoringFormat === 'STABLEFORD';
+  const isFreePlay = esJuegoLibre(scoringFormat);
 
   // La vuelta propia se enseña en los dos formatos. En juego libre la columna
   // "Resultado" va con el reparto del partido —el allowance WHS del 95%— y el
@@ -250,7 +253,7 @@ const QuickMatchClassificationTable = ({
     );
   }
 
-  const isMedal = scoringFormat === 'MEDAL';
+  const isMedal = scoringFormat === ScoringFormat.MEDAL;
   // Exactamente el mismo reparto que pinta la tarjeta: el del servidor si hay
   // red, el local si no. Recalcularlo aquí por separado abría la puerta a que
   // las dos pestañas diesen puntos distintos para el mismo jugador, que es el

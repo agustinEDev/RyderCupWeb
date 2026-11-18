@@ -23,6 +23,7 @@ import {
   recuerdaLosPartidos,
 } from './loUltimoConocido';
 import { registraElFallo } from '../utils/registraElFallo';
+import MatchStatus from '../domain/value_objects/MatchStatus';
 
 /** Mañana y tarde. Caben tres y lo precargado deja sitio a lo que se abre. */
 const CUANTAS_SE_PRECARGAN = 2;
@@ -347,7 +348,9 @@ export const abreMasTarde = (
   { status, scoringOpensAt },
   ahora = new Date(),
 ) => {
-  if (status !== 'SCHEDULED' || !scoringOpensAt) return null;
+  // Partido de la Ryder o partida de franja: los dos estados se llaman igual
+  // (MatchStatus y TeeGroupStatus)
+  if (status !== MatchStatus.SCHEDULED || !scoringOpensAt) return null;
   const abre = new Date(scoringOpensAt);
   if (Number.isNaN(abre.getTime()) || ahora >= abre) return null;
   return abre;
@@ -379,8 +382,10 @@ export const sePuedeAnotar = (
   partido,
   { desdeMemoria, ahora = new Date() },
 ) => {
-  if (partido?.status === 'IN_PROGRESS') return true;
-  if (partido?.status !== 'SCHEDULED') return false;
+  // Partido de la Ryder o partida de franja: los dos estados se llaman igual
+  // (MatchStatus y TeeGroupStatus)
+  if (partido?.status === MatchStatus.IN_PROGRESS) return true;
+  if (partido?.status !== MatchStatus.SCHEDULED) return false;
 
   const deHoyYSinPoderPreguntar = () =>
     Boolean(desdeMemoria && partido.roundDate === fechaLocal(ahora));

@@ -1,3 +1,5 @@
+import { MatchFormat } from '../value_objects/MatchFormat';
+
 /**
  * Cuándo cuenta un match play de partida rápida ya cerrado: decidido antes
  * del 18, o los dos bandos con los mismos hoyos y al menos nueve. Es la regla
@@ -23,7 +25,7 @@ const hoyosDe = (holeScores, participantId) =>
 const hoyosDelBando = (holeScores, bando, matchFormat) => {
   const porJugador = bando.map((p) => hoyosDe(holeScores, p.participantId));
   if (porJugador.length === 0) return new Set();
-  if (matchFormat !== 'FOURSOMES') {
+  if (matchFormat !== MatchFormat.FOURSOMES) {
     return new Set(
       [...porJugador[0]].filter((hoyo) => porJugador.every((h) => h.has(hoyo))),
     );

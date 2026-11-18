@@ -66,8 +66,8 @@ export const useCargaDePartidaRapida = ({
   //   que con mala cobertura cada respuesta llegaba con otra ya en camino y la
   //   pantalla no se movía nunca —ni para decir que había un error—
   // - Y sí lo que es más viejo que un cierre: un sondeo que salió ANTES del
-  //   POST volvía a aplicar su `IN_PROGRESS`, la pantalla dejaba anotar otra
-  //   vez y cada guardado se estrellaba con un 409
+  //   POST volvía a aplicar su `QuickMatchStatus.IN_PROGRESS`, la pantalla
+  //   dejaba anotar otra vez y cada guardado se estrellaba con un 409
   const relojRef = useRef(0);
   const ultimaAplicadaRef = useRef(0);
   const marcaEscritura = useCallback(() => {

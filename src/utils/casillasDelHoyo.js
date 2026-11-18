@@ -8,6 +8,7 @@ import {
 } from '../domain/services/FoursomesSides';
 import MatchPlayStrokeAllocator from '../domain/services/MatchPlayStrokeAllocator';
 import { conMiNombrePrimero } from './ordenDeLasTarjetas';
+import { MatchFormat } from '../domain/value_objects/MatchFormat';
 
 export const casillasDelHoyo = ({
   quickMatch,
@@ -131,7 +132,7 @@ export const casillasDelHoyo = ({
       })
       .filter(Boolean);
 
-  const isFoursomes = quickMatch?.matchFormat === 'FOURSOMES';
+  const isFoursomes = quickMatch?.matchFormat === MatchFormat.FOURSOMES;
   const entries = isFoursomes ? sideEntries() : playerEntries();
 
   return { currentHoleData, entries };

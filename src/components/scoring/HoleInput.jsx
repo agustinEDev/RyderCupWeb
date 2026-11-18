@@ -4,6 +4,7 @@ import ValidationIcon from './ValidationIcon';
 import ScoreInputPanel from './ScoreInputPanel';
 import { HuecoParaAnotar } from './HuecoParaAnotar';
 import { clasesDelHueco } from './clasesDelHueco';
+import { MatchFormat } from '../../domain/value_objects/MatchFormat';
 
 // Un golpe de la casilla: el botón que abre el teclado o, bloqueado, el número.
 // Uno para los tres —el tuyo y el de cada marcado— para que digan lo mismo
@@ -107,7 +108,7 @@ const HoleInput = ({
   const idSegundo = useId();
   // En foursomes hay una bola por pareja (#710): «Tu anotación» y «Anotación
   // marcador» hablaban como si cada uno jugara la suya
-  const enParejas = matchFormat === 'FOURSOMES';
+  const enParejas = matchFormat === MatchFormat.FOURSOMES;
   const etiquetaPropia = t(enParejas ? 'input.pairBall' : 'input.yourScore');
   // Con la pareja detrás (16 oct): al quitar «Info del Partido», era el único
   // sitio que decía a quién se marca

@@ -3,6 +3,7 @@
 // de cada barra y los hoyos que no se pudieron guardar.
 import { aQuienesMarco } from '../domain/services/retiradaDelFourball';
 import { rivalDe } from './golpesDelHoyo';
+import { MatchFormat } from '../domain/value_objects/MatchFormat';
 
 /**
  * Los hoyos que no se pudieron guardar, en orden (FE #622). Los que ya no se
@@ -86,7 +87,7 @@ export const lecturaDelHoyo = ({
   const jugadores = scoringView?.players;
   const marcoAId = markerAssignment?.marksUserId;
   const equipoMarcado =
-    formato === 'FOURSOMES' && marcoAId
+    formato === MatchFormat.FOURSOMES && marcoAId
       ? jugadores?.find((p) => p.userId === marcoAId)?.team
       : null;
   const parejaMarcada = equipoMarcado

@@ -5,8 +5,8 @@ import {
   seRetiro,
 } from '../../../domain/services/PartidasDeLaFranja';
 import { CompetitionStatusEnum } from '../../../domain/value_objects/CompetitionStatus';
+import TeeGroupStatus from '../../../domain/value_objects/TeeGroupStatus';
 
-const POR_JUGAR = ['SCHEDULED', 'IN_PROGRESS'];
 const COMPETICIONES_CON_PARTIDAS = [
   CompetitionStatusEnum.CLOSED,
   CompetitionStatusEnum.IN_PROGRESS,
@@ -80,7 +80,7 @@ class GetUpcomingTeeGroupsUseCase {
     const mias = await this.#getMyTeeGroupsUseCase.execute(competicion.id);
     return (
       mias
-        .filter(({ group }) => POR_JUGAR.includes(group.status))
+        .filter(({ group }) => TeeGroupStatus.isPlayable(group.status))
         // Solo si sigue jugando: no presentado (revisor, 12 oct 2026), o con la
         // tarjeta entregada o retirado mientras los demás acaban, ya no es su
         // próxima partida —ni para la lista ni para el contador del panel—

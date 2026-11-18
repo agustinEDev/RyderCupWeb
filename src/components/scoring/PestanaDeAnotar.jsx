@@ -3,6 +3,8 @@ import HoleSelector from './HoleSelector';
 import RetiradaDelFourball from './RetiradaDelFourball';
 import BotonMapa from './mapa/BotonMapa';
 import VentanaDelMapa from './mapa/VentanaDelMapa';
+import MatchStatus from '../../domain/value_objects/MatchStatus';
+import { MatchFormat } from '../../domain/value_objects/MatchFormat';
 
 /**
  * La pestaña «Anotar» de la anotación de competición (`ScoringPage`): el
@@ -115,7 +117,7 @@ const PestanaDeAnotar = ({
               className="mt-1 font-medium text-amber-900"
             >
               {t(
-                scoringView?.matchFormat === 'FOURSOMES'
+                scoringView?.matchFormat === MatchFormat.FOURSOMES
                   ? 'notOpenYet.youWillMarkPair'
                   : 'notOpenYet.youWillMark',
                 { nombre: aQuienMarco },
@@ -236,7 +238,7 @@ const PestanaDeAnotar = ({
           todos los hoyos anotados, tampoco: solo falta validar (16 oct) */}
       {canScore &&
         !hasSubmitted &&
-        scoringView?.matchStatus === 'IN_PROGRESS' &&
+        scoringView?.matchStatus === MatchStatus.IN_PROGRESS &&
         !scoringView?.isDecided &&
         !partidoAcabado && (
           <button

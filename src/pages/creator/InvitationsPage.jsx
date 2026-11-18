@@ -30,6 +30,7 @@ import EnrollmentStatus from '../../domain/value_objects/EnrollmentStatus';
 import InvitationStatus from '../../domain/value_objects/InvitationStatus';
 import { mensajeDelError } from '../../utils/mensajeDelError';
 import { registraElFallo } from '../../utils/registraElFallo';
+import { ESTADOS_DEL_FILTRO } from '../../components/invitation/estadosDelFiltro';
 
 // Ni `/friends/me` ni el listado de invitaciones dan más de 100 filas por
 // página. Pedir una sola dejaba fuera al amigo 101 y a la invitación pendiente
@@ -698,13 +699,11 @@ const InvitationsPage = () => {
             data-testid="status-filter"
           >
             <option value="">{t('filter.allStatuses')}</option>
-            <option value="PENDING">{t('status.PENDING')}</option>
-            <option value="ACCEPTED">{t('status.ACCEPTED')}</option>
-            <option value="DECLINED">{t('status.DECLINED')}</option>
-            <option value="EXPIRED">{t('status.EXPIRED')}</option>
-            <option value="ON_HOLD">{t('status.ON_HOLD')}</option>
-            <option value="NO_ROOM">{t('status.NO_ROOM')}</option>
-            <option value="CANCELLED">{t('status.CANCELLED')}</option>
+            {ESTADOS_DEL_FILTRO.map((estado) => (
+              <option key={estado} value={estado}>
+                {t(`status.${estado}`)}
+              </option>
+            ))}
           </select>
         </div>
 

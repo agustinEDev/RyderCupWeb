@@ -1,3 +1,5 @@
+import TeeGroupStatus from '../value_objects/TeeGroupStatus';
+
 /**
  * Las reglas de las partidas de una franja que el organizador ve antes de
  * pedir nada (FE #824, PR 6). Son las del backend (RyderCupAm#534), que es
@@ -29,7 +31,7 @@ export const anotaSuTarjeta = (partida, userId) => {
   return (
     Boolean(yo) &&
     (yo.cardStatus ?? 'JUGANDO') === 'JUGANDO' &&
-    partida.status !== 'COMPLETED'
+    partida.status !== TeeGroupStatus.COMPLETED
   );
 };
 
@@ -153,7 +155,8 @@ export const todasLasFranjasCerradas = (vistas) =>
   vistas.length > 0 &&
   vistas.every(
     (v) =>
-      v.groups.length > 0 && v.groups.every((g) => g.status === 'COMPLETED'),
+      v.groups.length > 0 &&
+      v.groups.every((g) => g.status === TeeGroupStatus.COMPLETED),
   );
 
 /**

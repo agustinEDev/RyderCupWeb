@@ -20,6 +20,7 @@ import FullScreenLoader from '../../components/ui/FullScreenLoader';
 import BlockLoader from '../../components/ui/BlockLoader';
 import { mensajeDelError } from '../../utils/mensajeDelError';
 import { registraElFallo } from '../../utils/registraElFallo';
+import { GolfCourseApprovalStatus } from '../../domain/value_objects/GolfCourseApprovalStatus';
 
 /**
  * GolfCourses Page (Admin)
@@ -58,7 +59,10 @@ const GolfCourses = ({ embedded = false }) => {
   // la lista no se vuelve a pedir por cambiar de idioma
   const { cargando: isLoading, recargar: recargarCourses } =
     useCargaCancelableEffect(
-      () => listGolfCoursesUseCase.execute({ approvalStatus: 'APPROVED' }),
+      () =>
+        listGolfCoursesUseCase.execute({
+          approvalStatus: GolfCourseApprovalStatus.APPROVED,
+        }),
       [user],
       {
         activa: Boolean(user),

@@ -20,6 +20,7 @@ vi.mock('./RetiradaPorElOrganizador', () => ({
 }));
 
 const { default: MatchDetailModal } = await import('./MatchDetailModal');
+const { getMatchDetailUseCase } = await import('../../composition');
 
 const pinta = (canManage, matchFormat = 'FOURBALL') =>
   render(
@@ -63,5 +64,48 @@ describe('MatchDetailModal · retirada del organizador', () => {
     expect(
       screen.queryByTestId('retirada-organizador'),
     ).not.toBeInTheDocument();
+  });
+});
+
+// Un partido concedido está terminado: su color es el de COMPLETED, no el azul
+// de reserva de un programado (18 nov 2026, como en MatchCard)
+describe('MatchDetailModal · color del estado', () => {
+  it.each(['COMPLETED', 'CONCEDED'])(
+    '%s se pinta en gris oscuro',
+    async (status) => {
+      getMatchDetailUseCase.execute.mockResolvedValueOnce({
+        id: 'm-1',
+        status,
+        teamAPlayers: [],
+        teamBPlayers: [],
+      });
+      pinta(false, 'SINGLES');
+      const etiqueta = await screen.findByText(`status.${status}`);
+      expect(etiqueta).toHaveClass('bg-gray-100', 'text-gray-800');
+      expect(etiqueta).not.toHaveClass('bg-blue-100');
+    },
+  );
+});
+
+// «Ver tarjeta»: un partido en juego o terminado jugando, también el concedido
+// (18 nov 2026: está terminado, y la anotación lo dice como cerrado). El
+// walkover no se jugó: sin tarjeta que ver
+describe('MatchDetailModal · ver la tarjeta', () => {
+  it.each([
+    ['IN_PROGRESS', true],
+    ['COMPLETED', true],
+    ['CONCEDED', true],
+    ['WALKOVER', false],
+    ['SCHEDULED', false],
+  ])('%s: botón %s', async (status, sale) => {
+    getMatchDetailUseCase.execute.mockResolvedValueOnce({
+      id: 'm-1',
+      status,
+      teamAPlayers: [],
+      teamBPlayers: [],
+    });
+    pinta(false, 'SINGLES');
+    await screen.findByText(`status.${status}`);
+    expect(Boolean(screen.queryByText('matches.viewScorecard'))).toBe(sale);
   });
 });

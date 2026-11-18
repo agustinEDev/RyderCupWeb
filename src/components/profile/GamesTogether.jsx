@@ -2,11 +2,12 @@ import { Link } from 'react-router';
 import { diaDeLaSesion } from '../../utils/diaDeLaSesion';
 import { ChevronRight, Loader } from 'lucide-react';
 import { rutaDeAnotacion } from '../../utils/rutaDeAnotacion';
+import { MatchOutcome } from '../../domain/value_objects/MatchOutcome';
 
 const ESTILO_DEL_RESULTADO = {
-  WON: 'text-emerald-700 bg-emerald-50 border-emerald-200',
-  HALVED: 'text-gray-700 bg-gray-50 border-gray-200',
-  LOST: 'text-red-700 bg-red-50 border-red-200',
+  [MatchOutcome.WON]: 'text-emerald-700 bg-emerald-50 border-emerald-200',
+  [MatchOutcome.HALVED]: 'text-gray-700 bg-gray-50 border-gray-200',
+  [MatchOutcome.LOST]: 'text-red-700 bg-red-50 border-red-200',
 };
 const SIN_RESULTADO = 'text-gray-500 bg-white border-gray-200';
 

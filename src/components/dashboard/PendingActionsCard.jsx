@@ -40,6 +40,7 @@ import { CompetitionStatusEnum } from '../../domain/value_objects/CompetitionSta
 import EnrollmentStatus from '../../domain/value_objects/EnrollmentStatus';
 import InvitationStatus from '../../domain/value_objects/InvitationStatus';
 import { registraElFallo } from '../../utils/registraElFallo';
+import QuickMatchStatus from '../../domain/value_objects/QuickMatchStatus';
 
 /** Lo que la tarjeta recuerda, con sus valores por defecto. */
 const loRecordado = (r) => ({
@@ -210,7 +211,9 @@ const PendingActionsCard = ({
             listPendingFriendRequestsUseCase.execute(user.id, 'received'),
           ),
           pedir(() =>
-            listMyQuickMatchesUseCase.execute({ status: 'IN_PROGRESS' }),
+            listMyQuickMatchesUseCase.execute({
+              status: QuickMatchStatus.IN_PROGRESS,
+            }),
           ),
           pedir(() => listMyPendingEnvelopesUseCase.execute()),
           // Solo quien organiza algo: para los demás siempre es vacía, y cada

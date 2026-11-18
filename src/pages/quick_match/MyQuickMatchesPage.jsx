@@ -34,10 +34,10 @@ import QuickMatchStatus from '../../domain/value_objects/QuickMatchStatus';
 const DETALLES_A_LA_VEZ = 5;
 
 const STATUS_STYLES = {
-  PENDING: 'bg-amber-100 text-amber-800',
-  IN_PROGRESS: 'bg-green-100 text-green-800',
-  COMPLETED: 'bg-gray-100 text-gray-700',
-  CANCELLED: 'bg-red-100 text-red-700',
+  [QuickMatchStatus.PENDING]: 'bg-amber-100 text-amber-800',
+  [QuickMatchStatus.IN_PROGRESS]: 'bg-green-100 text-green-800',
+  [QuickMatchStatus.COMPLETED]: 'bg-gray-100 text-gray-700',
+  [QuickMatchStatus.CANCELLED]: 'bg-red-100 text-red-700',
 };
 
 const MyQuickMatchesPage = () => {
@@ -547,7 +547,10 @@ const MyQuickMatchesPage = () => {
           // que el grupo va a jugar, y quitarla deja al usuario sin forma de
           // volver a entrar. Lo que separa los dos avisos es si la partida
           // sigue su curso, no si ha empezado.
-          return ['PENDING', 'IN_PROGRESS'].includes(pendiente?.status)
+          return [
+            QuickMatchStatus.PENDING,
+            QuickMatchStatus.IN_PROGRESS,
+          ].includes(pendiente?.status)
             ? t('history.deleteBodyInPlay')
             : t('history.deleteBodyPlain');
         })()}
