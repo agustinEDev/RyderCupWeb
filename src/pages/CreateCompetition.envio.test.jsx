@@ -652,4 +652,167 @@ describe('CreateCompetition · lo que se envía y lo que pasa después (caracter
     expect(screen.queryByTestId('titulo-pantalla')).not.toBeInTheDocument();
     expect(screen.queryByTestId('tipo-RYDER_CUP')).not.toBeInTheDocument();
   });
+  describe('D: un solo envío a la vez', () => {
+    const botonDeCrear = () =>
+      screen.getByRole('button', {
+        name: /^create\.(createCompetition|creating)$/,
+      });
+    const botonDeEditar = () =>
+      screen.getByRole('button', {
+        name: /^edit\.(updateCompetition|updating)$/,
+      });
+
+    it('D1: tras crear, el botón sigue en «creando» y deshabilitado hasta ir a la ficha; otro envío no manda nada', async () => {
+      await abreElAlta('MEDAL');
+      rellenaLoBasico();
+      vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+      enviar();
+      await dejaCorrerLasPromesas();
+      expect(mockToast.success).toHaveBeenCalledWith('create.success');
+
+      expect(botonDeCrear()).toHaveTextContent('create.creating');
+      expect(botonDeCrear()).toBeDisabled();
+      enviar();
+      await dejaCorrerLasPromesas();
+      expect(
+        composicion.createCompetitionWithGolfCoursesUseCase.execute,
+      ).toHaveBeenCalledTimes(1);
+
+      act(() => vi.advanceTimersByTime(1500));
+      expect(screen.getByTestId('donde')).toHaveTextContent(
+        '/competitions/nueva',
+      );
+    });
+
+    it('D2: tras editar, igual hasta ir a la ficha', async () => {
+      await abreLaEdicion();
+      vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+      enviar();
+      await dejaCorrerLasPromesas();
+      expect(mockToast.success).toHaveBeenCalledWith('edit.success');
+
+      expect(botonDeEditar()).toHaveTextContent('edit.updating');
+      expect(botonDeEditar()).toBeDisabled();
+      enviar();
+      await dejaCorrerLasPromesas();
+      expect(
+        composicion.updateCompetitionUseCase.execute,
+      ).toHaveBeenCalledTimes(1);
+
+      act(() => vi.advanceTimersByTime(1000));
+      expect(screen.getByTestId('donde')).toHaveTextContent(
+        /^\/competitions\/c-1$/,
+      );
+    });
+
+    it('D3a: si crear falla, el botón vuelve para reintentar', async () => {
+      composicion.createCompetitionWithGolfCoursesUseCase.execute.mockRejectedValueOnce(
+        new Error('caído'),
+      );
+      await abreElAlta('MEDAL');
+      rellenaLoBasico();
+      enviar();
+      await waitFor(() => expect(mockToast.error).toHaveBeenCalled());
+
+      expect(botonDeCrear()).toHaveTextContent('create.createCompetition');
+      expect(botonDeCrear()).toBeEnabled();
+      enviar();
+      await waitFor(() =>
+        expect(
+          composicion.createCompetitionWithGolfCoursesUseCase.execute,
+        ).toHaveBeenCalledTimes(2),
+      );
+    });
+
+    it('D3b: si editar falla, el botón vuelve para reintentar', async () => {
+      composicion.updateCompetitionUseCase.execute.mockRejectedValueOnce(
+        new Error('caído'),
+      );
+      await abreLaEdicion();
+      enviar();
+      await waitFor(() => expect(mockToast.error).toHaveBeenCalled());
+
+      expect(botonDeEditar()).toHaveTextContent('edit.updateCompetition');
+      expect(botonDeEditar()).toBeEnabled();
+      enviar();
+      await waitFor(() =>
+        expect(
+          composicion.updateCompetitionUseCase.execute,
+        ).toHaveBeenCalledTimes(2),
+      );
+    });
+
+    it('D3c: si falla la segunda petición de la edición, el botón vuelve para reintentar', async () => {
+      composicion.updateStrokePlaySettingsUseCase.execute.mockRejectedValueOnce(
+        Object.assign(new Error('motivo del servidor'), { status: 400 }),
+      );
+      await abreLaEdicion(MEDAL_GUARDADO);
+      // Más días y más jornadas: primero lo general, y fallan los ajustes
+      escribe(document.querySelector('#endDate'), '2030-10-13');
+      escribe(screen.getByLabelText('create.strokePlay.matchdays'), '4');
+      enviar();
+      expect(
+        await screen.findByText(
+          'edit.strokePlayNotSaved {"motivo":"motivo del servidor"}',
+        ),
+      ).toBeInTheDocument();
+
+      expect(botonDeEditar()).toHaveTextContent('edit.updateCompetition');
+      expect(botonDeEditar()).toBeEnabled();
+    });
+
+    it('D4: dos envíos seguidos, antes de que acabe el primero, mandan uno', async () => {
+      composicion.createCompetitionWithGolfCoursesUseCase.execute.mockReturnValue(
+        new Promise(() => {}),
+      );
+      await abreElAlta('MEDAL');
+      rellenaLoBasico();
+      const formulario = document.querySelector('form');
+      act(() => {
+        fireEvent.submit(formulario);
+        fireEvent.submit(formulario);
+      });
+      await dejaCorrerLasPromesas();
+
+      expect(
+        composicion.createCompetitionWithGolfCoursesUseCase.execute,
+      ).toHaveBeenCalledTimes(1);
+    });
+
+    it('D4: en una pública, dos «crear» del modal de la apertura mandan uno', async () => {
+      composicion.createCompetitionWithGolfCoursesUseCase.execute.mockReturnValue(
+        new Promise(() => {}),
+      );
+      await abreElAlta('MEDAL');
+      rellenaLoBasico();
+      fireEvent.click(screen.getByTestId('visibilidad-PUBLIC'));
+      enviar();
+      const crear = await screen.findByTestId('confirmar-apertura');
+      act(() => {
+        crear.click();
+        crear.click();
+      });
+      await dejaCorrerLasPromesas();
+
+      expect(
+        composicion.createCompetitionWithGolfCoursesUseCase.execute,
+      ).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  it('D4: creada una pública y camino de la ficha, otro envío no vuelve a preguntar la apertura', async () => {
+    await abreElAlta('MEDAL');
+    rellenaLoBasico();
+    fireEvent.click(screen.getByTestId('visibilidad-PUBLIC'));
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+    enviar();
+    fireEvent.click(screen.getByTestId('confirmar-apertura'));
+    await dejaCorrerLasPromesas();
+    expect(mockToast.success).toHaveBeenCalledWith('create.success');
+    expect(screen.queryByTestId('confirmar-apertura')).toBeNull();
+
+    enviar();
+
+    expect(screen.queryByTestId('confirmar-apertura')).toBeNull();
+  });
 });

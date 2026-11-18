@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import {
   createCompetitionWithGolfCoursesUseCase,
   configureScheduleUseCase,
@@ -78,8 +78,12 @@ export const useEnvioDeLaCompeticion = ({
   const { copiaSinVerificar, confirmaVerificado } = correo;
   const { campoDelNombre, setErrorDeLasFechas, setMasOpciones } = avisos;
 
-  // Lo que solo cambia el envío. Enviando, el botón se deshabilita
+  // Lo que solo cambia el envío. Enviando, el botón se deshabilita, y tras
+  // guardar sigue así hasta ir a la ficha: si no, se podía crear otra igual
   const [isSubmitting, setIsSubmitting] = useState(false);
+  // Lo mismo, pero leído en el acto: dos envíos en el mismo instante ven aún
+  // el `isSubmitting` de antes y mandaban dos peticiones
+  const enVuelo = useRef(false);
   // Una pública pregunta antes cuándo abrir las inscripciones
   const [preguntandoApertura, setPreguntandoApertura] = useState(false);
   // El aviso general, arriba del todo
@@ -213,7 +217,7 @@ export const useEnvioDeLaCompeticion = ({
         await (ajustesPrimero ? guardaLoGeneral : guardaLosAjustes)();
       } catch (error) {
         avisaDelSegundoFallo(error, ajustesPrimero, esElNombreYaUsado);
-        return;
+        return false;
       }
     }
 
@@ -221,6 +225,7 @@ export const useEnvioDeLaCompeticion = ({
 
     // Navigate to competition detail
     navegaDentroDe(`/competitions/${competitionId}`, 1000);
+    return true;
   };
 
   // Show appropriate message based on results
@@ -288,6 +293,7 @@ export const useEnvioDeLaCompeticion = ({
 
     // Navigate to competition detail
     navegaDentroDe(`/competitions/${createdCompetition.id}`, 1500);
+    return true;
   };
 
   const avisaDelFallo = (error, esElNombreYaUsado) => {
@@ -339,6 +345,9 @@ export const useEnvioDeLaCompeticion = ({
    * como el backend entiende «ábrela ya» (RyderCupAM#332).
    */
   const crear = async (diasDeApertura) => {
+    // Uno a la vez: el «crear» del modal o un segundo envío no lanzan otro
+    if (enVuelo.current) return;
+    enVuelo.current = true;
     // El modal NO se cierra aquí: se queda con su botón deshabilitado mientras
     // la petición está en vuelo. Cerrándolo antes, el `isLoading` que recibe es
     // siempre falso y devuelve el formulario a la mano justo cuando no se puede
@@ -352,6 +361,8 @@ export const useEnvioDeLaCompeticion = ({
     const esElNombreYaUsado = (error) =>
       envio.enLaCompeticion && error?.status === 409 && !error?.errorCode;
 
+    // Guardado: el botón sigue deshabilitado hasta ir a la ficha
+    let guardadaYa = false;
     try {
       const payload = cargaDeLaCompeticion(formData, {
         conEquipos,
@@ -360,15 +371,17 @@ export const useEnvioDeLaCompeticion = ({
         cupoCargado: guardado.cupo(),
         diasDeApertura,
       });
-      if (isEditMode) {
-        await guardaLaEdicion(payload, envio, esElNombreYaUsado);
-      } else {
-        await creaLaCompeticion(payload, envio);
-      }
+      guardadaYa = isEditMode
+        ? await guardaLaEdicion(payload, envio, esElNombreYaUsado)
+        : await creaLaCompeticion(payload, envio);
     } catch (error) {
       avisaDelFallo(error, esElNombreYaUsado);
     } finally {
-      setIsSubmitting(false);
+      // Si falló (también la segunda petición de la edición), se reintenta
+      if (!guardadaYa) {
+        enVuelo.current = false;
+        setIsSubmitting(false);
+      }
       // Se cierra tanto si salió bien como si falló: si falló, el aviso está en
       // el formulario, y dejarlo tapado por el modal lo esconde
       setPreguntandoApertura(false);
@@ -379,6 +392,8 @@ export const useEnvioDeLaCompeticion = ({
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    // Con uno en vuelo, o ya guardado camino de la ficha, no se envía otro
+    if (enVuelo.current) return;
     setMessage({ type: '', text: '' });
     if (!isEditMode) {
       // Solo se espera si la copia dice que no: verificado, sigue en el acto
