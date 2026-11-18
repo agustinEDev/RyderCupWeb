@@ -26,6 +26,10 @@ import { tokenize } from 'espree';
 
 const SRC = join(globalThis.process.cwd(), 'src');
 
+// Las palabras de los estados y formatos que ya viven en el dominio. La lista
+// es parcial a propósito: faltan las de los conceptos de la tanda E2 (equipos
+// A/B, género, tipos de actividad, modo de juego, visibilidad, modo de
+// montaje, roles…), que hoy saldrían por todas partes
 const PALABRAS = [
   'IN_PROGRESS',
   'COMPLETED',
@@ -49,87 +53,126 @@ const PALABRAS = [
   'PENDING_APPROVAL',
   'MEDAL',
   'STABLEFORD',
+  'MORNING',
+  'AFTERNOON',
+  'EVENING',
+  'PENDING_TEAMS',
+  'PENDING_MATCHES',
+  'WON',
+  'LOST',
+  'INCOMPLETE',
+  'STOPPED',
+  'DECLINED',
+  'EXPIRED',
+  'NO_ROOM',
+  'ON_HOLD',
+  'REQUESTED',
+  'INVITED',
+  'WITHDRAWN',
+  'BLOCKED',
 ];
 
 const TIPO_DE_TORNEO =
   'tipo de torneo (TournamentType), no formato de puntuación: queda para otra tanda';
 const TANTEO =
   'tanteo del resultado («CONCEDED», «W/O»), no estado del partido: el backend lo manda así en result.score';
+const RELACION_DEL_PERFIL =
+  'relación de amistad del perfil (NONE / PENDING_SENT / PENDING_RECEIVED / ACCEPTED / BLOCKED), no FriendshipStatus: queda para otra tanda';
 const MODO_DE_PARTIDA_RAPIDA =
   'modo del asistente de partida rápida (MATCH_PLAY / FREE_PLAY): estado de la interfaz, no del backend';
 
 /**
- * Las excepciones: fichero (relativo a src), palabra y por qué se queda.
+ * Las excepciones: fichero (relativo a src), palabra, por qué se queda y
+ * cuántas veces sale. Va por recuento: una vez más de la palabra en un
+ * fichero con excepción también falla, que la excepción es para lo que hay,
+ * no para todo el fichero.
  *
  * Fuera de la lista, a propósito: el 'RETIRADO' de Clasificacion.jsx es un
  * estado solo del frontend, pendiente de revisar (E1-11). No es una de las
  * palabras vigiladas, así que no necesita excepción.
  *
- * @type {Array<{fichero: string, palabra: string, motivo: string}>}
+ * @type {Array<{fichero: string, palabra: string, motivo: string, veces: number}>}
  */
 const PERMITIDOS = [
   {
     fichero: 'components/competition/CompetitionTypeChooser.jsx',
     palabra: 'STABLEFORD',
     motivo: TIPO_DE_TORNEO,
+    veces: 1,
   },
   {
     fichero: 'components/competition/CompetitionTypeChooser.jsx',
     palabra: 'MEDAL',
     motivo: TIPO_DE_TORNEO,
+    veces: 1,
   },
   {
     fichero: 'components/scoring/Clasificacion.jsx',
     palabra: 'MEDAL',
     motivo: TIPO_DE_TORNEO,
+    veces: 1,
   },
   {
     fichero: 'components/scoring/TarjetasDeLaPartida.jsx',
     palabra: 'MEDAL',
     motivo: TIPO_DE_TORNEO,
+    veces: 1,
   },
   {
     fichero: 'components/feed/ActivityEventCard.jsx',
     palabra: 'CONCEDED',
     motivo: TANTEO,
+    veces: 1,
   },
   {
     fichero: 'components/quick_match/CourseStep.jsx',
     palabra: 'MATCH_PLAY',
     motivo: MODO_DE_PARTIDA_RAPIDA,
+    veces: 1,
   },
   {
     fichero: 'components/quick_match/CreateQuickMatchModal.jsx',
     palabra: 'MATCH_PLAY',
     motivo: MODO_DE_PARTIDA_RAPIDA,
+    veces: 1,
   },
   {
     fichero: 'components/quick_match/createQuickMatchModalConstants.js',
     palabra: 'MATCH_PLAY',
     motivo: MODO_DE_PARTIDA_RAPIDA,
+    veces: 1,
   },
   {
     fichero: 'utils/borradorParaRepetir.js',
     palabra: 'MATCH_PLAY',
     motivo: MODO_DE_PARTIDA_RAPIDA,
+    veces: 1,
   },
   {
     fichero: 'infrastructure/mappers/TeeGroupScoringMapper.js',
     palabra: 'PENDING',
     motivo:
       'estado de validación del hoyo (validation status), no de la partida: queda para otra tanda',
+    veces: 1,
   },
   {
     fichero: 'pages/player/PlayerProfilePage.jsx',
     palabra: 'ACCEPTED',
-    motivo:
-      'relación de amistad del perfil (NONE / PENDING_SENT / PENDING_RECEIVED / ACCEPTED / BLOCKED), no FriendshipStatus: queda para otra tanda',
+    motivo: RELACION_DEL_PERFIL,
+    veces: 1,
+  },
+  {
+    fichero: 'pages/player/PlayerProfilePage.jsx',
+    palabra: 'BLOCKED',
+    motivo: RELACION_DEL_PERFIL,
+    veces: 1,
   },
   {
     fichero: 'utils/fichaDeLaCompeticion.js',
     palabra: 'PENDING',
     motivo:
       'reparto de equipos pendiente de una Ryder sin reparto todavía: estado solo del frontend, no del backend',
+    veces: 1,
   },
 ];
 
@@ -168,6 +211,37 @@ const literalesVigilados = (codigo) =>
     .filter(({ m }) => m)
     .map(({ m, linea }) => ({ palabra: m[2], linea }));
 
+/**
+ * Lo encontrado frente a las excepciones.
+ * @param {Array<{fichero: string, palabra: string, linea: number}>} encontrados
+ * @param {Array<{fichero: string, palabra: string, veces: number}>} permitidos
+ * @returns {{sueltos: string[], descuadrados: string[], sobran: string[]}}
+ *   sin excepción; con excepción pero otro número de veces; excepciones de
+ *   algo que ya no está
+ */
+const frenteALasExcepciones = (encontrados, permitidos) => {
+  const excepcionDe = ({ fichero, palabra }) =>
+    permitidos.find((p) => p.fichero === fichero && p.palabra === palabra);
+  const vecesDe = ({ fichero, palabra }) =>
+    encontrados.filter((l) => l.fichero === fichero && l.palabra === palabra)
+      .length;
+
+  return {
+    sueltos: encontrados
+      .filter((l) => !excepcionDe(l))
+      .map(({ fichero, linea, palabra }) => `${fichero}:${linea} '${palabra}'`),
+    descuadrados: permitidos
+      .filter((p) => vecesDe(p) > 0 && vecesDe(p) !== p.veces)
+      .map(
+        (p) =>
+          `${p.fichero} '${p.palabra}': ${vecesDe(p)} veces, la excepción dice ${p.veces}`,
+      ),
+    sobran: permitidos
+      .filter((p) => vecesDe(p) === 0)
+      .map((p) => `${p.fichero} '${p.palabra}'`),
+  };
+};
+
 describe('estados del negocio, con nombre fuera del dominio', () => {
   const encontrados = ficheros(SRC).flatMap((ruta) => {
     const fichero = relative(SRC, ruta).split(sep).join('/');
@@ -176,30 +250,44 @@ describe('estados del negocio, con nombre fuera del dominio', () => {
       ...l,
     }));
   });
-
-  const permitido = ({ fichero, palabra }) =>
-    PERMITIDOS.some((p) => p.fichero === fichero && p.palabra === palabra);
+  const resultado = frenteALasExcepciones(encontrados, PERMITIDOS);
 
   it('ningún estado ni formato escrito a mano fuera de src/domain', () => {
-    const sueltos = encontrados
-      .filter((l) => !permitido(l))
-      .map(({ fichero, linea, palabra }) => `${fichero}:${linea} '${palabra}'`);
+    expect(resultado.sueltos).toEqual([]);
+  });
 
-    expect(sueltos).toEqual([]);
+  it('cada excepción cubre las veces que sale, ni una más', () => {
+    expect(resultado.descuadrados).toEqual([]);
   });
 
   it('cada excepción tiene motivo y sigue haciendo falta', () => {
     for (const p of PERMITIDOS) {
       expect(p.motivo, `${p.fichero} '${p.palabra}'`).toMatch(/\S{3,}/);
+      expect(p.veces, `${p.fichero} '${p.palabra}'`).toBeGreaterThan(0);
     }
-    const sobran = PERMITIDOS.filter(
-      (p) =>
-        !encontrados.some(
-          (l) => l.fichero === p.fichero && l.palabra === p.palabra,
-        ),
-    ).map((p) => `${p.fichero} '${p.palabra}'`);
+    expect(resultado.sobran).toEqual([]);
+  });
 
-    expect(sobran).toEqual([]);
+  it('las excepciones van por recuento: una vez de más en el mismo fichero falla', () => {
+    const en = (fichero, palabra, linea) => ({ fichero, palabra, linea });
+    const permitidos = [{ fichero: 'a.js', palabra: 'PENDING', veces: 1 }];
+
+    expect(
+      frenteALasExcepciones([en('a.js', 'PENDING', 3)], permitidos),
+    ).toEqual({ sueltos: [], descuadrados: [], sobran: [] });
+    expect(
+      frenteALasExcepciones(
+        [en('a.js', 'PENDING', 3), en('a.js', 'PENDING', 9)],
+        permitidos,
+      ).descuadrados,
+    ).toEqual(["a.js 'PENDING': 2 veces, la excepción dice 1"]);
+    expect(frenteALasExcepciones([en('a.js', 'DRAFT', 3)], permitidos)).toEqual(
+      {
+        sueltos: ["a.js:3 'DRAFT'"],
+        descuadrados: [],
+        sobran: ["a.js 'PENDING'"],
+      },
+    );
   });
 
   it('el escáner ve el texto literal y deja pasar comentarios, nombres y otras palabras', () => {
