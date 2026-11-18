@@ -3,14 +3,8 @@ import { tieneEquipos } from '../domain/value_objects/TournamentType';
 import { CompetitionName } from '../domain/value_objects/CompetitionName';
 import { numeroEntero } from './numeroEntero';
 import { diasDelTorneo, errorDeAjustes } from './ajustesDeStrokePlay';
+import { CLAVES_DE_LOS_PROBLEMAS_DEL_NOMBRE } from './clavesDelNombre';
 
-const ERRORES_DEL_NOMBRE = {
-  REQUIRED: 'nameRequired',
-  TOO_SHORT: 'nameTooShort',
-  UNREADABLE: 'nameUnreadable',
-  TOO_LONG: 'nameTooLong',
-  HAS_LINK: 'nameHasLink',
-};
 const MIN_TEAM_NAME = 3;
 const MAX_TEAM_NAME = 50;
 const MIN_HANDICAP = 1;
@@ -37,7 +31,7 @@ export const validateCompetitionForm = (
   // aquí solo se traduce a la clave de su aviso
   const problema = CompetitionName.problemWith(formData.competitionName);
   if (problema) {
-    return { key: ERRORES_DEL_NOMBRE[problema] };
+    return { key: CLAVES_DE_LOS_PROBLEMAS_DEL_NOMBRE[problema] };
   }
 
   // Los dos nombres se normalizan UNA vez y las tres comprobaciones miran lo
@@ -117,6 +111,17 @@ export const validateCompetitionForm = (
     : [];
   if (missingCourseCountryCodes.length > 0) {
     return { key: 'golfCoursesRequired', missingCourseCountryCodes };
+  }
+
+  // Un campo de un país que ya no está en la competición no se manda: al
+  // cambiar de país sus campos se van, y esto es la red si alguno se colara
+  const campoDeOtroPais =
+    exigirCampos &&
+    formData.golfCourses.some(
+      (gc) => !selectedCountryCodes.includes(gc.countryCode),
+    );
+  if (campoDeOtroPais) {
+    return { key: 'golfCoursesOutsideCountries' };
   }
 
   // Sin número no hay error: la competición sale con el cupo por defecto. Era

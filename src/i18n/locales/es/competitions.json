@@ -110,6 +110,7 @@
       "countryRequired": "Por favor selecciona un país",
       "golfCourseRequired": "Por favor selecciona un campo de golf",
       "golfCoursesRequired": "Por favor selecciona campos de golf para: {{countries}}",
+      "golfCoursesOutsideCountries": "Hay campos de golf de un país que ya no forma parte de la competición. Revisa los países y sus campos.",
       "playersMinimum": "El número de jugadores debe ser al menos 2",
       "playersMaximum": "El número de jugadores no puede exceder {{max}}",
       "teamNamesTooShort": "Los nombres de los equipos necesitan al menos 3 letras",

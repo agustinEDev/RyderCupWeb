@@ -20,8 +20,11 @@ const CamposDeUnPais = ({
   onQuitar,
 }) => {
   const { t, i18n } = useTranslation('competitions');
-  // Get courses for a specific country
-  const delPais = golfCourses.filter((gc) => gc.countryCode === codigo);
+  // Los de este país, cada uno con su posición en la lista de todos: buscarla
+  // por id confundía dos campos sin id y la papelera quitaba el primero
+  const delPais = golfCourses
+    .map((gc, posicion) => ({ gc, posicion }))
+    .filter(({ gc }) => gc.countryCode === codigo);
 
   return (
     <div className="border border-gray-200 rounded-lg p-4">
@@ -43,15 +46,15 @@ const CamposDeUnPais = ({
       </div>
 
       {/* List of selected courses */}
-      {delPais.map((gc, index) => {
-        const globalIndex = golfCourses.findIndex(
-          (item) =>
-            item.countryCode === gc.countryCode &&
-            item.course.id === gc.course.id,
-        );
+      {delPais.map(({ gc, posicion }) => {
         return (
           <div
-            key={`${gc.course.id}-${index}`}
+            // Estable: el id del campo o, sin él, la clave que le dio el
+            // formulario al añadirlo. Con la posición, quitar el primero
+            // reutilizaba su fila para el siguiente con el foco en su papelera,
+            // y un segundo Enter lo quitaba también. La posición, solo para
+            // quitar
+            key={gc.course.id ?? gc.clave}
             className="mb-2 p-3 bg-gray-50 border border-gray-200 rounded-lg flex items-center justify-between"
           >
             <div className="flex-1">
@@ -68,7 +71,7 @@ const CamposDeUnPais = ({
             </div>
             <button
               type="button"
-              onClick={() => onQuitar(globalIndex)}
+              onClick={() => onQuitar(posicion)}
               aria-label={t('detail.golfCourses.remove', {
                 name: gc.course.name,
               })}

@@ -13,6 +13,8 @@ import {
   alElegirPais,
   alVaciarPais,
   alCambiarAdyacente1,
+  alCambiarAdyacente2,
+  esElMismoPais,
   alQuitarAdyacente1,
   alQuitarAdyacente2,
 } from '../utils/formularioDeLaCompeticion';
@@ -120,6 +122,9 @@ export const usePaisesDeLaCompeticion = ({ idioma, formData, setFormData }) => {
 
   const handleAdjacentCountry1Change = (e) => {
     const countryId = e.target.value;
+    // El mismo otra vez no cambia nada (como `alCambiarAdyacente1`): ni se
+    // vacían ni se vuelven a pedir los vecinos del tercer país
+    if (esElMismoPais(formData, 'adjacentCountry1', countryId)) return;
     setFormData((prev) => alCambiarAdyacente1(prev, countryId));
     // Los vecinos del tercer país eran del adyacente anterior: ni se enseñan
     // mientras llegan los del nuevo ni, si llegan tarde, valen
@@ -149,6 +154,12 @@ export const usePaisesDeLaCompeticion = ({ idioma, formData, setFormData }) => {
     setAdjacentCountries2([]);
   };
 
+  // El tercer país elegido, o ninguno: los campos del anterior se van
+  const handleAdjacentCountry2Change = (e) => {
+    const countryId = e.target.value;
+    setFormData((prev) => alCambiarAdyacente2(prev, countryId));
+  };
+
   const handleRemoveAdjacentCountry2 = () => {
     setFormData(alQuitarAdyacente2);
   };
@@ -172,6 +183,7 @@ export const usePaisesDeLaCompeticion = ({ idioma, formData, setFormData }) => {
       onCambiarAdyacente1: handleAdjacentCountry1Change,
       onQuitarAdyacente1: handleRemoveAdjacentCountry1,
       onAnadirAdyacente2: handleAddAdjacentCountry2,
+      onCambiarAdyacente2: handleAdjacentCountry2Change,
       onQuitarAdyacente2: handleRemoveAdjacentCountry2,
     },
   };

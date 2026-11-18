@@ -1,5 +1,6 @@
 import { CompetitionName } from '../domain/value_objects/CompetitionName';
 import { validateCompetitionForm } from './competitionFormValidation';
+import { CLAVES_DE_LOS_PROBLEMAS_DEL_NOMBRE } from './clavesDelNombre';
 import { CUPO_POR_DEFECTO } from './cupoDeJugadores';
 import { formularioDeAjustes, separadorDecimal } from './ajustesDeStrokePlay';
 
@@ -23,12 +24,11 @@ export const FORMULARIO_MINIMO = {
 };
 
 // Los del nombre se dicen junto a su campo, no en el aviso de arriba
-// (RyderCupAm#540): «nameTaken» es el 409 del servidor
-export const ERRORES_DEL_NOMBRE = new Set([
-  'nameRequired',
-  'nameTooShort',
-  'nameTooLong',
-  'nameUnreadable',
+// (RyderCupAm#540): todos los que da la validación, de la misma lista con la que
+// ella traduce (una copia a mano se quedó sin «nameHasLink»), más «nameTaken»,
+// el 409 del servidor
+export const ERRORES_JUNTO_AL_NOMBRE = new Set([
+  ...Object.values(CLAVES_DE_LOS_PROBLEMAS_DEL_NOMBRE),
   'nameTaken',
 ]);
 
@@ -223,13 +223,45 @@ export const alVaciarPais = (prev) => ({
   showAdjacentCountry2: false,
 });
 
-// Otro adyacente: el tercer país era vecino del anterior
-export const alCambiarAdyacente1 = (prev, countryId) => ({
-  ...prev,
-  adjacentCountry1: countryId,
-  adjacentCountry2: '',
-  showAdjacentCountry2: false,
-});
+// Los campos que se quedan sin los de esos países: un país que deja de estar en
+// la competición se lleva los suyos, o se mandarían con ella sin verse
+const sinLosCamposDe = (golfCourses, ...codigos) =>
+  golfCourses.filter((gc) => !codigos.includes(gc.countryCode));
+
+// Si lo elegido en un selector de país vecino es lo que ya había: entonces no
+// cambia nada. La única regla: la usan los reductores y el manejador del hook
+export const esElMismoPais = (formulario, campo, codigo) =>
+  formulario[campo] === codigo;
+
+// Otro adyacente: el tercer país era vecino del anterior, así que se van los
+// dos con sus campos. El mismo otra vez no cambia nada
+export const alCambiarAdyacente1 = (prev, countryId) =>
+  esElMismoPais(prev, 'adjacentCountry1', countryId)
+    ? prev
+    : {
+        ...prev,
+        adjacentCountry1: countryId,
+        adjacentCountry2: '',
+        showAdjacentCountry2: false,
+        // Menos el elegido: si era el tercer país, sigue en la competición
+        golfCourses: sinLosCamposDe(
+          prev.golfCourses,
+          ...[prev.adjacentCountry1, prev.adjacentCountry2].filter(
+            (codigo) => codigo !== countryId,
+          ),
+        ),
+      };
+
+// Otro tercer país, o ninguno: se van los campos del anterior, como con su
+// papelera, pero el selector sigue a la vista. El mismo otra vez no cambia nada
+export const alCambiarAdyacente2 = (prev, countryId) =>
+  esElMismoPais(prev, 'adjacentCountry2', countryId)
+    ? prev
+    : {
+        ...prev,
+        adjacentCountry2: countryId,
+        golfCourses: sinLosCamposDe(prev.golfCourses, prev.adjacentCountry2),
+      };
 
 // Sin adyacente no hay tercer país: fuera los dos y sus campos
 export const alQuitarAdyacente1 = (prev) => ({
@@ -238,10 +270,10 @@ export const alQuitarAdyacente1 = (prev) => ({
   adjacentCountry2: '',
   showAdjacentCountry1: false,
   showAdjacentCountry2: false,
-  golfCourses: prev.golfCourses.filter(
-    (gc) =>
-      gc.countryCode !== prev.adjacentCountry1 &&
-      gc.countryCode !== prev.adjacentCountry2,
+  golfCourses: sinLosCamposDe(
+    prev.golfCourses,
+    prev.adjacentCountry1,
+    prev.adjacentCountry2,
   ),
 });
 
@@ -250,7 +282,5 @@ export const alQuitarAdyacente2 = (prev) => ({
   ...prev,
   adjacentCountry2: '',
   showAdjacentCountry2: false,
-  golfCourses: prev.golfCourses.filter(
-    (gc) => gc.countryCode !== prev.adjacentCountry2,
-  ),
+  golfCourses: sinLosCamposDe(prev.golfCourses, prev.adjacentCountry2),
 });

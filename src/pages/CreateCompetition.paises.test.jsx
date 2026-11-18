@@ -109,6 +109,8 @@ vi.mock('../components/golf_course/GolfCourseSearchBox', () => ({
     </div>
   ),
 }));
+// Lo que «crea» el modal: un test puede cambiarlo (B1, campos sin id)
+const campoPedido = vi.hoisted(() => ({ siguiente: null }));
 vi.mock('../components/golf_course/GolfCourseRequestModal', () => ({
   default: ({ isOpen, countryCode, onClose, onSuccess }) => (
     <div>
@@ -116,11 +118,13 @@ vi.mock('../components/golf_course/GolfCourseRequestModal', () => ({
       <button
         type="button"
         onClick={() =>
-          onSuccess({
-            id: 'pedido',
-            name: 'Campo pedido',
-            approvalStatus: 'PENDING_APPROVAL',
-          })
+          onSuccess(
+            campoPedido.siguiente ?? {
+              id: 'pedido',
+              name: 'Campo pedido',
+              approvalStatus: 'PENDING_APPROVAL',
+            },
+          )
         }
       >
         campo pedido creado
@@ -214,6 +218,7 @@ const bloqueDe = (code) =>
 describe('CreateCompetition · países y campos del alta (caracterización)', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    campoPedido.siguiente = null;
     vi.spyOn(console, 'error').mockImplementation(() => {});
     mockValidar.mockImplementation(() => null);
     composicion.fetchCountriesUseCase.execute.mockResolvedValue(PAISES);
@@ -416,6 +421,196 @@ describe('CreateCompetition · países y campos del alta (caracterización)', ()
     expect(
       within(bloqueDe('PT')).getByText(/create\.coursesSelected/),
     ).toHaveTextContent('(create.coursesSelected {"count":0})');
+  });
+
+  it('B3: al quitar el primero, la fila del segundo es la suya (no la del quitado reutilizada)', async () => {
+    await abreElAlta();
+    fireEvent.click(screen.getByText('elegir ES'));
+    fireEvent.click(await screen.findByText('campo 1 de ES'));
+    fireEvent.click(screen.getByText('campo 2 de ES'));
+    const papelera = (campo) =>
+      screen.getByRole('button', {
+        name: `detail.golfCourses.remove {"name":"${campo}"}`,
+      });
+    const delSegundo = papelera('Campo ES-2');
+    const delPrimero = papelera('Campo ES-1');
+    // Con el teclado: el foco en la papelera del primero
+    delPrimero.focus();
+
+    quitar('Campo ES-1');
+
+    // La del primero se va con su fila: un segundo Enter no quita el otro
+    expect(delPrimero).not.toBeInTheDocument();
+    expect(papelera('Campo ES-2')).toBe(delSegundo);
+  });
+
+  it('B3: sin id también: al quitar el primero, la fila y la papelera del segundo siguen siendo suyas, y la clave no se manda', async () => {
+    await abreElAlta();
+    fireEvent.click(screen.getByText('elegir ES'));
+    for (const nombre of ['Campo sin id A', 'Campo sin id B']) {
+      campoPedido.siguiente = { name: nombre };
+      fireEvent.click(await screen.findByText('pedir campo en ES'));
+      fireEvent.click(screen.getByText('campo pedido creado'));
+    }
+    const papelera = (campo) =>
+      screen.getByRole('button', {
+        name: `detail.golfCourses.remove {"name":"${campo}"}`,
+      });
+    const delSegundo = papelera('Campo sin id B');
+    const delPrimero = papelera('Campo sin id A');
+    delPrimero.focus();
+
+    quitar('Campo sin id A');
+
+    expect(delPrimero).not.toBeInTheDocument();
+    expect(papelera('Campo sin id B')).toBe(delSegundo);
+    // La identidad de la fila es del formulario: no viaja en la petición
+    expect(await camposEnviados()).toEqual([
+      { id: undefined, name: 'Campo sin id B' },
+    ]);
+  });
+
+  it('B1: dos campos sin id del mismo país; la papelera del segundo quita el segundo', async () => {
+    await abreElAlta();
+    fireEvent.click(screen.getByText('elegir ES'));
+    for (const nombre of ['Campo sin id A', 'Campo sin id B']) {
+      campoPedido.siguiente = { name: nombre };
+      fireEvent.click(await screen.findByText('pedir campo en ES'));
+      fireEvent.click(screen.getByText('campo pedido creado'));
+    }
+    expect(camposALaVista()).toEqual(['Campo sin id A', 'Campo sin id B']);
+
+    quitar('Campo sin id B');
+
+    expect(camposALaVista()).toEqual(['Campo sin id A']);
+  });
+
+  describe('A: los campos de un país que deja de estar en la competición', () => {
+    // España, Francia de adyacente e Italia de tercero, con un campo cada uno
+    const conLosTres = async () => {
+      fireEvent.click(screen.getByText('elegir ES'));
+      fireEvent.click(await screen.findByText('create.addAdjacentCountry'));
+      escribe(document.querySelector('#adjacentCountry1'), 'FR');
+      fireEvent.click(await screen.findByText('create.addThirdCountry'));
+      escribe(document.querySelector('#adjacentCountry2'), 'IT');
+      fireEvent.click(screen.getByText('campo 1 de ES'));
+      fireEvent.click(screen.getByText('campo 1 de FR'));
+      fireEvent.click(screen.getByText('campo 1 de IT'));
+      expect(camposALaVista()).toEqual([
+        'Campo ES-1',
+        'Campo FR-1',
+        'Campo IT-1',
+      ]);
+    };
+
+    it('A1: cambiar el adyacente quita los campos del anterior; los del principal se quedan', async () => {
+      await abreElAlta();
+      fireEvent.click(screen.getByText('elegir ES'));
+      fireEvent.click(await screen.findByText('create.addAdjacentCountry'));
+      escribe(document.querySelector('#adjacentCountry1'), 'FR');
+      fireEvent.click(await screen.findByText('campo 1 de ES'));
+      fireEvent.click(screen.getByText('campo 1 de FR'));
+
+      escribe(document.querySelector('#adjacentCountry1'), 'PT');
+
+      expect(camposALaVista()).toEqual(['Campo ES-1']);
+      expect(await camposEnviados()).toEqual([
+        { id: 'ES-1', name: 'Campo ES-1' },
+      ]);
+    });
+
+    it('A2: con tercer país, cambiar el adyacente quita los campos de los dos', async () => {
+      await abreElAlta();
+      await conLosTres();
+
+      escribe(document.querySelector('#adjacentCountry1'), 'PT');
+
+      expect(document.querySelector('#adjacentCountry2')).toBeNull();
+      expect(camposALaVista()).toEqual(['Campo ES-1']);
+      expect(await camposEnviados()).toEqual([
+        { id: 'ES-1', name: 'Campo ES-1' },
+      ]);
+    });
+
+    it('A8: el tercer país elegido como adyacente conserva sus campos; los del adyacente anterior se van', async () => {
+      await abreElAlta();
+      await eligeLosTresPaises();
+      fireEvent.click(screen.getByText('campo 1 de ES'));
+      fireEvent.click(screen.getByText('campo 1 de FR'));
+      fireEvent.click(screen.getByText('campo 1 de PT'));
+      // Portugal es vecino de España: el selector del adyacente lo ofrece
+      expect(opciones('adjacentCountry1')).toContain('PT');
+
+      escribe(document.querySelector('#adjacentCountry1'), 'PT');
+
+      expect(camposALaVista()).toEqual(['Campo ES-1', 'Campo PT-1']);
+      expect(await camposEnviados()).toEqual([
+        { id: 'ES-1', name: 'Campo ES-1' },
+        { id: 'PT-1', name: 'Campo PT-1' },
+      ]);
+    });
+
+    it('A3: cambiar el tercer país quita los suyos; los del principal y el adyacente se quedan', async () => {
+      await abreElAlta();
+      await conLosTres();
+
+      escribe(document.querySelector('#adjacentCountry2'), 'PT');
+
+      expect(camposALaVista()).toEqual(['Campo ES-1', 'Campo FR-1']);
+      expect(await camposEnviados()).toEqual([
+        { id: 'ES-1', name: 'Campo ES-1' },
+        { id: 'FR-1', name: 'Campo FR-1' },
+      ]);
+    });
+
+    it('A4: el tercer país en «ninguno» quita sus campos, como su papelera', async () => {
+      await abreElAlta();
+      await conLosTres();
+
+      escribe(document.querySelector('#adjacentCountry2'), '');
+
+      expect(document.querySelector('#adjacentCountry2')).toHaveValue('');
+      expect(camposALaVista()).toEqual(['Campo ES-1', 'Campo FR-1']);
+      expect(await camposEnviados()).toEqual([
+        { id: 'ES-1', name: 'Campo ES-1' },
+        { id: 'FR-1', name: 'Campo FR-1' },
+      ]);
+    });
+  });
+
+  // A5 con la validación DE VERDAD. Ningún selector deja ya ese estado; se
+  // llega por el modal de pedir campo, que aquí es un doble que sigue a mano
+  // tras quitar el país desde el que se pidió (el real tapa la pantalla). Así
+  // entra un campo de Francia en una competición solo de España
+  it('A5: un campo de un país que ya no está no se manda y se avisa (validación real)', async () => {
+    const { validateCompetitionForm } = await vi.importActual(
+      '../utils/competitionFormValidation',
+    );
+    mockValidar.mockImplementation(validateCompetitionForm);
+    await abreElAlta('MEDAL');
+    escribe(screen.getByTestId('campo-nombre'), 'Medal de junio');
+    escribe(document.querySelector('#startDate'), '2030-06-01');
+    escribe(document.querySelector('#endDate'), '2030-06-03');
+    fireEvent.click(screen.getByText('elegir ES'));
+    fireEvent.click(await screen.findByText('campo 1 de ES'));
+    fireEvent.click(await screen.findByText('create.addAdjacentCountry'));
+    escribe(document.querySelector('#adjacentCountry1'), 'FR');
+    fireEvent.click(await screen.findByText('pedir campo en FR'));
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: 'create.removeCountryField {"field":"create.adjacentCountry"}',
+      }),
+    );
+    fireEvent.click(screen.getByText('campo pedido creado'));
+
+    fireEvent.submit(document.querySelector('form'));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'create.errors.golfCoursesOutsideCountries',
+    );
+    expect(
+      composicion.createCompetitionWithGolfCoursesUseCase.execute,
+    ).not.toHaveBeenCalled();
   });
 
   describe('PA10: los pasos del alta', () => {

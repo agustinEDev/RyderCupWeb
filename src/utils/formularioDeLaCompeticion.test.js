@@ -12,9 +12,13 @@ import {
   alCambiarAdyacente1,
   alQuitarAdyacente1,
   alQuitarAdyacente2,
-  ERRORES_DEL_NOMBRE,
+  alCambiarAdyacente2,
+  esElMismoPais,
+  ERRORES_JUNTO_AL_NOMBRE,
+  FORMULARIO_MINIMO,
   ERRORES_DE_LAS_OPCIONES,
 } from './formularioDeLaCompeticion';
+import { validateCompetitionForm } from './competitionFormValidation';
 import { CUPO_POR_DEFECTO } from './cupoDeJugadores';
 import { formularioDeAjustes } from './ajustesDeStrokePlay';
 
@@ -227,8 +231,29 @@ describe('faltaAlgoPlegado', () => {
   });
 
   it('las dos listas no se pisan', () => {
-    for (const clave of ERRORES_DEL_NOMBRE)
+    for (const clave of ERRORES_JUNTO_AL_NOMBRE)
       expect(ERRORES_DE_LAS_OPCIONES.has(clave)).toBe(false);
+  });
+
+  // C2: lo que diga la validación del nombre, sea cual sea el problema, va
+  // junto a su campo (con la regla de verdad, no una lista copiada)
+  it.each([
+    ['vacío', ''],
+    ['corto', 'ab'],
+    ['ilegible', '...'],
+    ['largo', 'x'.repeat(101)],
+    ['con enlace', 'Ryder en www.ejemplo.com'],
+  ])('C2: el nombre %s se dice junto al campo', (_caso, nombre) => {
+    const error = validateCompetitionForm({
+      ...FORMULARIO_MINIMO,
+      competitionName: nombre,
+    });
+    expect(error?.key).toMatch(/^name/);
+    expect(ERRORES_JUNTO_AL_NOMBRE.has(error.key)).toBe(true);
+  });
+
+  it('C2: el 409 del servidor (ya usado) también', () => {
+    expect(ERRORES_JUNTO_AL_NOMBRE.has('nameTaken')).toBe(true);
   });
 });
 
@@ -307,13 +332,48 @@ describe('la cascada de los países', () => {
     });
   });
 
-  it('otro adyacente quita el tercer país pero no los campos', () => {
+  it('A1/A2: otro adyacente quita el tercer país y los campos de los dos', () => {
     expect(alCambiarAdyacente1(conTres, 'IT')).toEqual({
       ...conTres,
       adjacentCountry1: 'IT',
       adjacentCountry2: '',
       showAdjacentCountry2: false,
+      golfCourses: [campo('ES', 1), campo('ES', 4)],
     });
+  });
+
+  it('A8: el tercer país pasa a adyacente: sus campos se quedan, los del adyacente anterior no', () => {
+    expect(alCambiarAdyacente1(conTres, 'PT')).toEqual({
+      ...conTres,
+      adjacentCountry1: 'PT',
+      adjacentCountry2: '',
+      showAdjacentCountry2: false,
+      golfCourses: [campo('ES', 1), campo('PT', 3), campo('ES', 4)],
+    });
+  });
+
+  it('A6: volver a elegir el mismo adyacente no quita nada', () => {
+    expect(alCambiarAdyacente1(conTres, 'FR')).toBe(conTres);
+  });
+
+  it('A3: otro tercer país quita los campos del anterior y nada más', () => {
+    expect(alCambiarAdyacente2(conTres, 'IT')).toEqual({
+      ...conTres,
+      adjacentCountry2: 'IT',
+      golfCourses: [campo('ES', 1), campo('FR', 2), campo('ES', 4)],
+    });
+  });
+
+  it('A4: el tercer país en «ninguno» quita sus campos', () => {
+    expect(alCambiarAdyacente2(conTres, '')).toEqual({
+      ...conTres,
+      adjacentCountry2: '',
+      golfCourses: [campo('ES', 1), campo('FR', 2), campo('ES', 4)],
+    });
+  });
+
+  it('A6: volver a elegir el mismo tercer país no quita nada', () => {
+    expect(alCambiarAdyacente2(conTres, 'PT')).toBe(conTres);
   });
 
   it('PA2: quitar el adyacente quita los dos y sus campos', () => {
@@ -333,11 +393,19 @@ describe('la cascada de los países', () => {
     });
   });
 
+  it('esElMismoPais: el elegido es el que ya estaba en ese selector', () => {
+    expect(esElMismoPais(conTres, 'adjacentCountry1', 'FR')).toBe(true);
+    expect(esElMismoPais(conTres, 'adjacentCountry1', 'PT')).toBe(false);
+    expect(esElMismoPais(conTres, 'adjacentCountry2', 'PT')).toBe(true);
+    expect(esElMismoPais(conTres, 'adjacentCountry2', '')).toBe(false);
+  });
+
   it('no tocan el formulario que reciben', () => {
     const copia = globalThis.structuredClone(conTres);
     alElegirPais(conTres, pais('FR'));
     alVaciarPais(conTres);
     alCambiarAdyacente1(conTres, 'IT');
+    alCambiarAdyacente2(conTres, 'IT');
     alQuitarAdyacente1(conTres);
     alQuitarAdyacente2(conTres);
     expect(conTres).toEqual(copia);

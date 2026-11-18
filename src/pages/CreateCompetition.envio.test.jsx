@@ -13,6 +13,7 @@ import {
   Route,
   useParams,
   useLocation,
+  useNavigate,
 } from 'react-router';
 import { agendaPropuesta } from '../utils/agenda';
 import {
@@ -68,6 +69,11 @@ const USUARIO = vi.hoisted(() => ({
   loading: false,
 }));
 vi.mock('../hooks/useAuth', () => ({ useAuth: () => USUARIO }));
+// El correo verificado, a mano: cuántas veces se pregunta (D5)
+const correo = vi.hoisted(() => ({ sinVerificar: false, confirma: null }));
+vi.mock('../hooks/useCorreoVerificado', () => ({
+  useCorreoVerificado: () => correo,
+}));
 const mockToast = vi.hoisted(() => ({
   error: vi.fn(),
   success: vi.fn(),
@@ -144,6 +150,16 @@ const VECINOS = {
 
 const Ficha = () => <p data-testid="ficha">{useParams().id}</p>;
 const Donde = () => <p data-testid="donde">{useLocation().pathname}</p>;
+// Ir al alta sin desmontar la página (F1): la app remonta (`key` en App.jsx),
+// pero el hook se defiende de un `competitionId` que cambie sin remontar
+const IrAlAlta = () => {
+  const navigate = useNavigate();
+  return (
+    <button type="button" onClick={() => navigate('/competitions/create')}>
+      ir al alta
+    </button>
+  );
+};
 const Desmontable = () => {
   const [montada, setMontada] = useState(true);
   return (
@@ -160,6 +176,7 @@ const renderEn = (ruta) =>
   render(
     <MemoryRouter initialEntries={[ruta]}>
       <Donde />
+      <IrAlAlta />
       <Routes>
         <Route path="/competitions/create" element={<Desmontable />} />
         <Route path="/competitions/:id/edit" element={<Desmontable />} />
@@ -277,6 +294,8 @@ const dejaCorrerLasPromesas = () =>
 describe('CreateCompetition · lo que se envía y lo que pasa después (caracterización)', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    correo.sinVerificar = false;
+    correo.confirma = vi.fn(async () => true);
     idioma.actual = 'es';
     USUARIO.user = { id: 'u-1', gender: 'MALE' };
     USUARIO.loading = false;
@@ -651,5 +670,296 @@ describe('CreateCompetition · lo que se envía y lo que pasa después (caracter
     expect(screen.queryByTestId('cargando')).not.toBeInTheDocument();
     expect(screen.queryByTestId('titulo-pantalla')).not.toBeInTheDocument();
     expect(screen.queryByTestId('tipo-RYDER_CUP')).not.toBeInTheDocument();
+  });
+  describe('D: un solo envío a la vez', () => {
+    const botonDeCrear = () =>
+      screen.getByRole('button', {
+        name: /^create\.(createCompetition|creating)$/,
+      });
+    const botonDeEditar = () =>
+      screen.getByRole('button', {
+        name: /^edit\.(updateCompetition|updating)$/,
+      });
+
+    it('D1: tras crear, el botón sigue en «creando» y deshabilitado hasta ir a la ficha; otro envío no manda nada', async () => {
+      await abreElAlta('MEDAL');
+      rellenaLoBasico();
+      vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+      enviar();
+      await dejaCorrerLasPromesas();
+      expect(mockToast.success).toHaveBeenCalledWith('create.success');
+
+      expect(botonDeCrear()).toHaveTextContent('create.creating');
+      expect(botonDeCrear()).toBeDisabled();
+      enviar();
+      await dejaCorrerLasPromesas();
+      expect(
+        composicion.createCompetitionWithGolfCoursesUseCase.execute,
+      ).toHaveBeenCalledTimes(1);
+
+      act(() => vi.advanceTimersByTime(1500));
+      expect(screen.getByTestId('donde')).toHaveTextContent(
+        '/competitions/nueva',
+      );
+    });
+
+    it('D2: tras editar, igual hasta ir a la ficha', async () => {
+      await abreLaEdicion();
+      vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+      enviar();
+      await dejaCorrerLasPromesas();
+      expect(mockToast.success).toHaveBeenCalledWith('edit.success');
+
+      expect(botonDeEditar()).toHaveTextContent('edit.updating');
+      expect(botonDeEditar()).toBeDisabled();
+      enviar();
+      await dejaCorrerLasPromesas();
+      expect(
+        composicion.updateCompetitionUseCase.execute,
+      ).toHaveBeenCalledTimes(1);
+
+      act(() => vi.advanceTimersByTime(1000));
+      expect(screen.getByTestId('donde')).toHaveTextContent(
+        /^\/competitions\/c-1$/,
+      );
+    });
+
+    it('D3a: si crear falla, el botón vuelve para reintentar', async () => {
+      composicion.createCompetitionWithGolfCoursesUseCase.execute.mockRejectedValueOnce(
+        new Error('caído'),
+      );
+      await abreElAlta('MEDAL');
+      rellenaLoBasico();
+      enviar();
+      await waitFor(() => expect(mockToast.error).toHaveBeenCalled());
+
+      expect(botonDeCrear()).toHaveTextContent('create.createCompetition');
+      expect(botonDeCrear()).toBeEnabled();
+      enviar();
+      await waitFor(() =>
+        expect(
+          composicion.createCompetitionWithGolfCoursesUseCase.execute,
+        ).toHaveBeenCalledTimes(2),
+      );
+    });
+
+    it('D3b: si editar falla, el botón vuelve para reintentar', async () => {
+      composicion.updateCompetitionUseCase.execute.mockRejectedValueOnce(
+        new Error('caído'),
+      );
+      await abreLaEdicion();
+      enviar();
+      await waitFor(() => expect(mockToast.error).toHaveBeenCalled());
+
+      expect(botonDeEditar()).toHaveTextContent('edit.updateCompetition');
+      expect(botonDeEditar()).toBeEnabled();
+      enviar();
+      await waitFor(() =>
+        expect(
+          composicion.updateCompetitionUseCase.execute,
+        ).toHaveBeenCalledTimes(2),
+      );
+    });
+
+    it('D3c: si falla la segunda petición de la edición, el botón vuelve para reintentar', async () => {
+      composicion.updateStrokePlaySettingsUseCase.execute.mockRejectedValueOnce(
+        Object.assign(new Error('motivo del servidor'), { status: 400 }),
+      );
+      await abreLaEdicion(MEDAL_GUARDADO);
+      // Más días y más jornadas: primero lo general, y fallan los ajustes
+      escribe(document.querySelector('#endDate'), '2030-10-13');
+      escribe(screen.getByLabelText('create.strokePlay.matchdays'), '4');
+      enviar();
+      expect(
+        await screen.findByText(
+          'edit.strokePlayNotSaved {"motivo":"motivo del servidor"}',
+        ),
+      ).toBeInTheDocument();
+
+      expect(botonDeEditar()).toHaveTextContent('edit.updateCompetition');
+      expect(botonDeEditar()).toBeEnabled();
+    });
+
+    it('D4: dos envíos seguidos, antes de que acabe el primero, mandan uno', async () => {
+      composicion.createCompetitionWithGolfCoursesUseCase.execute.mockReturnValue(
+        new Promise(() => {}),
+      );
+      await abreElAlta('MEDAL');
+      rellenaLoBasico();
+      const formulario = document.querySelector('form');
+      act(() => {
+        fireEvent.submit(formulario);
+        fireEvent.submit(formulario);
+      });
+      await dejaCorrerLasPromesas();
+
+      expect(
+        composicion.createCompetitionWithGolfCoursesUseCase.execute,
+      ).toHaveBeenCalledTimes(1);
+    });
+
+    it('D4: en una pública, dos «crear» del modal de la apertura mandan uno', async () => {
+      composicion.createCompetitionWithGolfCoursesUseCase.execute.mockReturnValue(
+        new Promise(() => {}),
+      );
+      await abreElAlta('MEDAL');
+      rellenaLoBasico();
+      fireEvent.click(screen.getByTestId('visibilidad-PUBLIC'));
+      enviar();
+      const crear = await screen.findByTestId('confirmar-apertura');
+      act(() => {
+        crear.click();
+        crear.click();
+      });
+      await dejaCorrerLasPromesas();
+
+      expect(
+        composicion.createCompetitionWithGolfCoursesUseCase.execute,
+      ).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  it('D5: dos envíos seguidos con la copia sin verificar preguntan una vez', async () => {
+    correo.sinVerificar = true;
+    correo.confirma = vi.fn(() => new Promise(() => {}));
+    await abreElAlta('MEDAL');
+    rellenaLoBasico();
+    const formulario = document.querySelector('form');
+    act(() => {
+      fireEvent.submit(formulario);
+      fireEvent.submit(formulario);
+    });
+    await dejaCorrerLasPromesas();
+
+    expect(correo.confirma).toHaveBeenCalledTimes(1);
+  });
+
+  it('D5: dos envíos seguidos de una pública validan y piden la apertura una vez', async () => {
+    await abreElAlta('MEDAL');
+    rellenaLoBasico();
+    fireEvent.click(screen.getByTestId('visibilidad-PUBLIC'));
+    const formulario = document.querySelector('form');
+    const validacionesDelEnvio = () =>
+      mockValidar.mock.calls.filter((llamada) => llamada.length > 1).length;
+    act(() => {
+      fireEvent.submit(formulario);
+      fireEvent.submit(formulario);
+    });
+    await dejaCorrerLasPromesas();
+
+    expect(validacionesDelEnvio()).toBe(1);
+    expect(screen.getAllByTestId('confirmar-apertura')).toHaveLength(1);
+  });
+
+  it('D5: cerrada la pregunta de la apertura sin crear, se puede volver a enviar', async () => {
+    await abreElAlta('MEDAL');
+    rellenaLoBasico();
+    fireEvent.click(screen.getByTestId('visibilidad-PUBLIC'));
+    enviar();
+    await screen.findByTestId('confirmar-apertura');
+    fireEvent.click(screen.getByTestId('volver-al-formulario'));
+    expect(screen.queryByTestId('confirmar-apertura')).toBeNull();
+
+    enviar();
+
+    expect(await screen.findByTestId('confirmar-apertura')).toBeInTheDocument();
+  });
+
+  it('D5: si la validación falla, se puede volver a enviar', async () => {
+    mockValidar.mockImplementation((_f, opciones) =>
+      opciones ? { key: 'datesRequired' } : null,
+    );
+    await abreElAlta('MEDAL');
+    enviar();
+    expect(await screen.findByRole('alert')).toBeInTheDocument();
+    mockValidar.mockImplementation(() => null);
+    rellenaLoBasico();
+
+    enviar();
+
+    await waitFor(() =>
+      expect(
+        composicion.createCompetitionWithGolfCoursesUseCase.execute,
+      ).toHaveBeenCalledTimes(1),
+    );
+  });
+
+  it('D5: si el correo no está verificado, se puede volver a enviar al verificarlo', async () => {
+    correo.sinVerificar = true;
+    correo.confirma = vi.fn(async () => false);
+    await abreElAlta('MEDAL');
+    rellenaLoBasico();
+    enviar();
+    await waitFor(() => expect(correo.confirma).toHaveBeenCalledTimes(1));
+    correo.confirma.mockResolvedValue(true);
+
+    enviar();
+
+    await waitFor(() =>
+      expect(
+        composicion.createCompetitionWithGolfCoursesUseCase.execute,
+      ).toHaveBeenCalledTimes(1),
+    );
+  });
+
+  it('D4: creada una pública y camino de la ficha, otro envío no vuelve a preguntar la apertura', async () => {
+    await abreElAlta('MEDAL');
+    rellenaLoBasico();
+    fireEvent.click(screen.getByTestId('visibilidad-PUBLIC'));
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+    enviar();
+    fireEvent.click(screen.getByTestId('confirmar-apertura'));
+    await dejaCorrerLasPromesas();
+    expect(mockToast.success).toHaveBeenCalledWith('create.success');
+    expect(screen.queryByTestId('confirmar-apertura')).toBeNull();
+
+    enviar();
+
+    expect(screen.queryByTestId('confirmar-apertura')).toBeNull();
+  });
+
+  it('E1: si se sale de la página mientras se guarda, al acabar no navega (el aviso sí sale)', async () => {
+    let termina;
+    composicion.createCompetitionWithGolfCoursesUseCase.execute.mockReturnValue(
+      new Promise((resolver) => {
+        termina = resolver;
+      }),
+    );
+    await abreElAlta('MEDAL');
+    rellenaLoBasico();
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+    enviar();
+    await dejaCorrerLasPromesas();
+    fireEvent.click(screen.getByText('desmontar'));
+
+    await act(async () => {
+      termina({
+        competition: { id: 'nueva' },
+        successCount: 1,
+        failedCourses: [],
+      });
+    });
+    await dejaCorrerLasPromesas();
+    act(() => vi.advanceTimersByTime(5000));
+
+    expect(mockToast.success).toHaveBeenCalledWith('create.success');
+    expect(screen.getByTestId('donde')).toHaveTextContent(
+      '/competitions/create',
+    );
+  });
+
+  it('F1: si competitionId desaparece sin remontar a mitad de una carga, la espera se apaga', async () => {
+    composicion.getCompetitionDetailUseCase.execute.mockReturnValue(
+      new Promise(() => {}),
+    );
+    renderEn('/competitions/c-1/edit');
+    expect(await screen.findByTestId('cargando')).toHaveTextContent(
+      'edit.loading',
+    );
+
+    fireEvent.click(screen.getByText('ir al alta'));
+
+    expect(await screen.findByTestId('tipo-RYDER_CUP')).toBeInTheDocument();
+    expect(screen.queryByTestId('cargando')).not.toBeInTheDocument();
   });
 });
