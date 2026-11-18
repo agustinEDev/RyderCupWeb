@@ -486,7 +486,11 @@ const fraseDeMatchPlay = (
       : fraseCon(t, 'feed:cards.friendUnfinishedMatch', {}, { persona: autor });
   }
   if (mia) {
-    const clave = { WON: 'won', LOST: 'lost' }[payload.outcome] || 'halved';
+    const clave =
+      {
+        [MatchOutcome.WON]: 'won',
+        [MatchOutcome.LOST]: 'lost',
+      }[payload.outcome] || 'halved';
     return fraseCon(
       t,
       `feed:cards.${clave}`,
@@ -498,7 +502,10 @@ const fraseDeMatchPlay = (
     );
   }
   const clave =
-    { WON: 'friendWon', LOST: 'friendLost' }[payload.outcome] || 'friendHalved';
+    {
+      [MatchOutcome.WON]: 'friendWon',
+      [MatchOutcome.LOST]: 'friendLost',
+    }[payload.outcome] || 'friendHalved';
   return fraseCon(t, `feed:cards.${clave}`, { score }, { persona: autor });
 };
 

@@ -14,7 +14,7 @@ import { tokenize } from 'espree';
  * MatchStatus, MatchFormat…) y fuera de él se usan por su nombre.
  *
  * Este test falla si una de esas palabras vuelve a aparecer como texto literal
- * fuera de src/domain. Los comentarios no cuentan (se lee el código por
+ * o como clave de un objeto (`{ COMPLETED: '…' }`) fuera de src/domain. Los comentarios no cuentan (se lee el código por
  * fichas, no por líneas), ni los tests, ni src/pruebas, ni las traducciones.
  * Un código de error de la API que contiene la palabra ('DRAFT_IN_PROGRESS') es
  * otra palabra y no salta.
@@ -70,6 +70,7 @@ const PALABRAS = [
   'INVITED',
   'WITHDRAWN',
   'BLOCKED',
+  'HALVED',
 ];
 
 const TIPO_DE_TORNEO =
@@ -78,6 +79,8 @@ const TANTEO =
   'tanteo del resultado («CONCEDED», «W/O»), no estado del partido: el backend lo manda así en result.score';
 const RELACION_DEL_PERFIL =
   'relación de amistad del perfil (NONE / PENDING_SENT / PENDING_RECEIVED / ACCEPTED / BLOCKED), no FriendshipStatus: queda para otra tanda';
+const GANADOR =
+  'ganador del hoyo o del partido (A / B / HALVED), no el resultado para un jugador (MatchOutcome): queda para la tanda E2';
 const MODO_DE_PARTIDA_RAPIDA =
   'modo del asistente de partida rápida (MATCH_PLAY / FREE_PLAY): estado de la interfaz, no del backend';
 
@@ -94,6 +97,42 @@ const MODO_DE_PARTIDA_RAPIDA =
  * @type {Array<{fichero: string, palabra: string, motivo: string, veces: number}>}
  */
 const PERMITIDOS = [
+  {
+    fichero: 'components/competition/EtiquetaDelTipo.jsx',
+    palabra: 'STABLEFORD',
+    motivo: TIPO_DE_TORNEO,
+    veces: 1,
+  },
+  {
+    fichero: 'components/competition/EtiquetaDelTipo.jsx',
+    palabra: 'MEDAL',
+    motivo: TIPO_DE_TORNEO,
+    veces: 1,
+  },
+  {
+    fichero: 'components/scoring/HoleInput.jsx',
+    palabra: 'HALVED',
+    motivo: GANADOR,
+    veces: 1,
+  },
+  {
+    fichero: 'components/scoring/LeaderboardView.jsx',
+    palabra: 'HALVED',
+    motivo: GANADOR,
+    veces: 1,
+  },
+  {
+    fichero: 'components/scoring/MatchSummaryCard.jsx',
+    palabra: 'HALVED',
+    motivo: GANADOR,
+    veces: 1,
+  },
+  {
+    fichero: 'components/scoring/ScorecardTable.jsx',
+    palabra: 'HALVED',
+    motivo: GANADOR,
+    veces: 2,
+  },
   {
     fichero: 'components/competition/CompetitionTypeChooser.jsx',
     palabra: 'STABLEFORD',
@@ -198,18 +237,34 @@ const LITERAL = new RegExp(`^(['"\`])(${PALABRAS.join('|')})\\1$`);
  * @param {string} codigo
  * @returns {Array<{palabra: string, linea: number}>}
  */
-const literalesVigilados = (codigo) =>
-  tokenize(codigo, {
+const literalesVigilados = (codigo) => {
+  const fichas = tokenize(codigo, {
     ecmaVersion: 'latest',
     sourceType: 'module',
     ecmaFeatures: { jsx: true },
     loc: true,
-  })
+  });
+  const es = (ficha, valor) =>
+    ficha?.type === 'Punctuator' && ficha.value === valor;
+  // Una clave de objeto sin comillas, `{ COMPLETED: 'x' }`: el nombre, justo
+  // tras `{` o `,` y antes de `:`. No lo es `a.COMPLETED` (va tras un punto),
+  // ni `[X.COMPLETED]:`, ni `case COMPLETED:` ni `a ? COMPLETED : b`
+  const esClave = (i) =>
+    fichas[i].type === 'Identifier' &&
+    es(fichas[i + 1], ':') &&
+    (es(fichas[i - 1], '{') || es(fichas[i - 1], ','));
+
+  return fichas.flatMap((t, i) => {
     // String: '…' y "…"; Template: `…` sin huecos; JSXText: value="…"
-    .filter((t) => ['String', 'Template', 'JSXText'].includes(t.type))
-    .map((t) => ({ m: LITERAL.exec(t.value.trim()), linea: t.loc.start.line }))
-    .filter(({ m }) => m)
-    .map(({ m, linea }) => ({ palabra: m[2], linea }));
+    if (['String', 'Template', 'JSXText'].includes(t.type)) {
+      const m = LITERAL.exec(t.value.trim());
+      return m ? [{ palabra: m[2], linea: t.loc.start.line }] : [];
+    }
+    return esClave(i) && PALABRAS.includes(t.value)
+      ? [{ palabra: t.value, linea: t.loc.start.line }]
+      : [];
+  });
+};
 
 /**
  * Lo encontrado frente a las excepciones.
@@ -302,7 +357,18 @@ describe('estados del negocio, con nombre fuera del dominio', () => {
     ]);
     expect(palabras("// a === 'IN_PROGRESS'\n/* 'DRAFT' */ x")).toEqual([]);
     expect(palabras('a === MatchStatus.IN_PROGRESS')).toEqual([]);
-    expect(palabras("const m = { COMPLETED: 'x' };")).toEqual([]);
+    // Una clave de un objeto también es la palabra escrita a mano
+    expect(palabras("const m = { COMPLETED: 'x' };")).toEqual(['COMPLETED']);
+    expect(palabras("const m = { a: 1, PENDING: 'x' };")).toEqual(['PENDING']);
+    expect(palabras("const m = { 'DRAFT': 'x' };")).toEqual(['DRAFT']);
+    // …pero no la propiedad de otro, una clave calculada, una variable, un
+    // import, una etiqueta de case ni una rama de un ternario
+    expect(palabras('const m = { [MatchStatus.COMPLETED]: 1 };')).toEqual([]);
+    expect(palabras('x = a.COMPLETED;')).toEqual([]);
+    expect(palabras('const { COMPLETED } = estados;')).toEqual([]);
+    expect(palabras("import { COMPLETED } from './x';")).toEqual([]);
+    expect(palabras('switch (a) { case COMPLETED: break; }')).toEqual([]);
+    expect(palabras('x = a ? COMPLETED : PENDING;')).toEqual([]);
     expect(palabras("a === 'DRAFT_IN_PROGRESS'")).toEqual([]);
     expect(palabras("a === 'in_progress'")).toEqual([]);
     expect(palabras('const s = `status.${estado}`;')).toEqual([]);
