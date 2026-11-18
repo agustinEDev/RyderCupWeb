@@ -113,7 +113,7 @@ const LeaderboardView = ({ leaderboard, jugador = null }) => {
               </span>
             ) : match.result ? (
               <span className="text-lg font-bold text-primary">
-                {/* El tanteo de un walkover es «W/O», nunca «WALKOVER»: lo dice el estado (E1-8) */}
+                {/* Walkover y concedido se reconocen por el estado, no por el tanteo (E1-8) */}
                 {match.status === MatchStatus.WALKOVER
                   ? t('leaderboard.walkover', {
                       team:
@@ -121,8 +121,7 @@ const LeaderboardView = ({ leaderboard, jugador = null }) => {
                           ? leaderboard.teamAName
                           : leaderboard.teamBName,
                     })
-                  : match.status === MatchStatus.CONCEDED ||
-                      match.result.score === 'CONCEDED'
+                  : match.status === MatchStatus.CONCEDED
                     ? t('leaderboard.conceded', {
                         team:
                           match.result.winner === 'A'

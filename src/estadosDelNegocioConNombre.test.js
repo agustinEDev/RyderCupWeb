@@ -94,11 +94,6 @@ const PERMITIDOS = [
     motivo: TANTEO,
   },
   {
-    fichero: 'components/scoring/LeaderboardView.jsx',
-    palabra: 'CONCEDED',
-    motivo: TANTEO,
-  },
-  {
     fichero: 'components/quick_match/CourseStep.jsx',
     palabra: 'MATCH_PLAY',
     motivo: MODO_DE_PARTIDA_RAPIDA,
