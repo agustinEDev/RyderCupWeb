@@ -8,6 +8,10 @@ import { ScoringFormat } from '../domain/value_objects/ScoringFormat';
 import { SessionType } from '../domain/value_objects/SessionType';
 import { MatchOutcome } from '../domain/value_objects/MatchOutcome';
 import { GolfCourseApprovalStatus } from '../domain/value_objects/GolfCourseApprovalStatus';
+import { CompetitionStatusEnum } from '../domain/value_objects/CompetitionStatus';
+import InvitationStatus from '../domain/value_objects/InvitationStatus';
+import FriendshipStatus from '../domain/value_objects/FriendshipStatus';
+import { ESTADOS_DEL_FILTRO } from '../components/invitation/estadosDelFiltro';
 
 /**
  * Cada valor de los estados y formatos del dominio que se enseña tiene su
@@ -32,6 +36,12 @@ import { GolfCourseApprovalStatus } from '../domain/value_objects/GolfCourseAppr
  *   quickMatch     | history.format                 | MatchFormat y ScoringFormat
  *   quickMatch     | create.course.corto            | MatchFormat y ScoringFormat
  *   golfCourses    | table.statuses                 | GolfCourseApprovalStatus
+ *   competitions   | status                         | CompetitionStatusEnum (*)
+ *   invitations    | status                         | el filtro y InvitationStatus
+ *   friends        | status                         | FriendshipStatus
+ *
+ * (*) La tabla del admin busca en ['admin', 'competitions']: admin no tiene
+ * `status`, así que el texto sale de competitions.
  */
 
 const IDIOMAS = ['es', 'en'];
@@ -73,6 +83,10 @@ const FAMILIAS = [
   ['quickMatch', 'history.format', FORMATOS],
   ['quickMatch', 'create.course.corto', FORMATOS],
   ['golfCourses', 'table.statuses', Object.values(GolfCourseApprovalStatus)],
+  ['competitions', 'status', Object.values(CompetitionStatusEnum)],
+  ['invitations', 'status', ESTADOS_DEL_FILTRO],
+  ['invitations', 'status', InvitationStatus.getAllValues()],
+  ['friends', 'status', FriendshipStatus.getAllValues()],
 ];
 
 describe('estados y formatos del dominio, con su texto', () => {
