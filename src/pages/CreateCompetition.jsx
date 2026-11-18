@@ -1,7 +1,7 @@
 import { useState, useEffect, useEffectEvent, useRef, useMemo } from 'react';
 import { tieneEquipos } from '../domain/value_objects/TournamentType';
 import { useNavigate, useParams } from 'react-router';
-import { Trophy, Settings } from 'lucide-react';
+import { Settings } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useCargaCancelableEffect } from '../hooks/useCargaCancelableEffect';
 import { nombresPorDefectoDeLosEquipos } from './nombresPorDefectoDeLosEquipos';
@@ -30,7 +30,8 @@ import GolfCourseRequestModal from '../components/golf_course/GolfCourseRequestM
 import EnrollmentOpeningModal from '../components/competition/EnrollmentOpeningModal';
 import SoloLectura from '../components/competition/create/SoloLectura';
 import CamposDeLaCompeticion from '../components/competition/create/CamposDeLaCompeticion';
-import PaisesDeLaCompeticion from '../components/competition/create/PaisesDeLaCompeticion';
+import DatosBasicos from '../components/competition/create/DatosBasicos';
+import AvisoDelFormulario from '../components/competition/create/AvisoDelFormulario';
 import customToast from '../utils/toast';
 import FullScreenLoader from '../components/ui/FullScreenLoader';
 import CompetitionTypeChooser from '../components/competition/CompetitionTypeChooser';
@@ -74,14 +75,6 @@ import {
   motivoDelFalloAlEditar as motivoAlEditar,
   textoDelAvisoDeValidacion,
 } from '../utils/peticionDeLaCompeticion';
-
-// Helper function to get message className
-const getMessageClassName = (type) => {
-  if (type === 'success')
-    return 'bg-green-50 text-green-800 border border-green-200';
-  if (type === 'error') return 'bg-red-50 text-red-800 border border-red-200';
-  return 'bg-yellow-50 text-yellow-800 border border-yellow-200';
-};
 
 // Los vecinos de un país; sin poder leerlos, ninguno
 const leeVecinos = async (countryId) => {
@@ -951,15 +944,7 @@ const CreateCompetition = () => {
 
             {/* Message Display */}
             {message.text && (
-              <div
-                ref={avisoRef}
-                role={message.type === 'error' ? 'alert' : 'status'}
-                tabIndex={-1}
-                // Recibe el foco al fallar: con un anillo que se vea (CodeRabbit)
-                className={`mx-4 mb-4 p-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2 ${message.type === 'error' ? 'focus:ring-red-400' : 'focus:ring-primary-400'} ${getMessageClassName(message.type)}`}
-              >
-                {message.text}
-              </div>
+              <AvisoDelFormulario ref={avisoRef} message={message} />
             )}
 
             {paso === 'tipo' && (
@@ -1010,9 +995,6 @@ const CreateCompetition = () => {
                   </p>
                 )}
 
-                {/* Lo básico de la competición, en UNA tarjeta: nombre, fechas y
-                  país eran tres, y cada una pagaba su icono y su marco. Medido a
-                  360 px, ese adorno costaba 230 px de scroll (Agustín, 19 sep) */}
                 {/* El modo, a la vista y no dentro de «más opciones»: decide qué
                   pasos existen después, así que esconderlo sería esconder el
                   resto del camino (FE #695). Al crear ya viene elegido del paso
@@ -1035,218 +1017,32 @@ const CreateCompetition = () => {
                   </div>
                 )}
 
-                <div
-                  data-testid="bloque-basico"
-                  className="border border-gray-200 rounded-xl p-4"
-                >
-                  <div className="flex items-center gap-3 mb-3">
-                    <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
-                      <Trophy className="w-4 h-4 text-primary" />
-                    </div>
-                    <h3 className="text-gray-900 font-bold text-base">
-                      {t('create.competitionDetails')}
-                    </h3>
-                  </div>
-
-                  <div className="space-y-3">
-                    <SoloLectura activa={soloFechas} className="space-y-3">
-                      {/* Arriba y pequeño: de quién es el torneo se decide al montarlo,
-                      no en «Más opciones». Privada por defecto, que es lo que hay
-                      hoy y lo que no enseña nada a nadie por error (FE #664) */}
-                      <div>
-                        <span
-                          id="etiqueta-visibilidad"
-                          className="block text-sm font-medium text-gray-700 mb-2"
-                        >
-                          {t('create.visibility')}
-                        </span>
-                        {/* Los dos botones van juntos y con su pregunta: sueltos, un
-                        lector de pantalla dice «Solo invitados, pulsado» sin
-                        decir a qué pregunta responde */}
-                        <div
-                          role="group"
-                          aria-labelledby="etiqueta-visibilidad"
-                          className="flex flex-wrap gap-2"
-                        >
-                          {['PRIVATE', 'PUBLIC'].map((cual) => (
-                            <button
-                              key={cual}
-                              type="button"
-                              data-testid={`visibilidad-${cual}`}
-                              aria-pressed={formData.visibility === cual}
-                              onClick={() =>
-                                setFormData((prev) => ({
-                                  ...prev,
-                                  visibility: cual,
-                                }))
-                              }
-                              className={`border-2 rounded-lg text-sm px-3 py-2 transition-colors ${
-                                formData.visibility === cual
-                                  ? 'bg-primary text-white border-primary'
-                                  : 'bg-white text-gray-600 border-gray-200 hover:border-primary hover:text-primary'
-                              }`}
-                            >
-                              {t(
-                                `create.visibility${cual === 'PRIVATE' ? 'Private' : 'Public'}`,
-                              )}
-                            </button>
-                          ))}
-                        </div>
-                        {/* «Privada» a secas no dice si la gente puede apuntarse sola */}
-                        <p
-                          data-testid="visibilidad-explicacion"
-                          className="text-xs text-gray-500 mt-1"
-                        >
-                          {t(
-                            formData.visibility === 'PUBLIC'
-                              ? 'create.visibilityPublicHelp'
-                              : 'create.visibilityPrivateHelp',
-                          )}
-                        </p>
-                      </div>
-
-                      <div>
-                        <label
-                          htmlFor="competitionName"
-                          className="block text-sm font-medium text-gray-700 mb-1"
-                        >
-                          {t('create.competitionName')}
-                        </label>
-                        <input
-                          ref={campoDelNombre}
-                          id="competitionName"
-                          data-testid="campo-nombre"
-                          type="text"
-                          name="competitionName"
-                          value={formData.competitionName}
-                          onChange={handleInputChange}
-                          aria-invalid={errorDelNombre ? 'true' : undefined}
-                          aria-describedby={
-                            errorDelNombre ? 'error-del-nombre' : undefined
-                          }
-                          // El ejemplo, del tipo elegido: «Ryder Cup de amigos» en un Medal no (pasada)
-                          placeholder={t(
-                            formData.tournamentType && !conEquipos
-                              ? `create.competitionNamePlaceholderFor.${formData.tournamentType}`
-                              : 'create.competitionNamePlaceholder',
-                          )}
-                          className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary ${errorDelNombre ? 'border-red-400' : 'border-gray-300'}`}
-                        />
-                        {errorDelNombre && (
-                          <p
-                            id="error-del-nombre"
-                            data-testid="error-del-nombre"
-                            className="mt-1 text-sm text-red-700"
-                          >
-                            {t(`create.errors.${errorDelNombre}`)}
-                          </p>
-                        )}
-                      </div>
-
-                      {/* ¿Juega el organizador? Solo al crear un Stableford o un
-                      Medal: si no, no queda inscrito (RyderCupAm#552) */}
-                      {!isEditMode &&
-                        formData.tournamentType &&
-                        !conEquipos && (
-                          <label className="flex min-h-11 items-center gap-2 text-sm text-gray-700">
-                            <input
-                              type="checkbox"
-                              checked={formData.organizerPlays}
-                              onChange={(e) =>
-                                setFormData((prev) => ({
-                                  ...prev,
-                                  organizerPlays: e.target.checked,
-                                }))
-                              }
-                              className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
-                            />
-                            {t('create.organizerPlays')}
-                          </label>
-                        )}
-                    </SoloLectura>
-
-                    {/* Los campos de fecha se salían de la tarjeta en el iPhone (FE #648).
-                    Medido en un iPhone 14 real: con el mismo `w-full`, el campo de
-                    texto medía 292 px y el de fecha 318. Safari en iOS dibuja
-                    `input[type="date"]` como control nativo y ese control IMPONE su
-                    ancho: no lo arreglan `w-full`, ni `min-w-0`, ni `max-w-full`.
-                    Lo único que lo libera es quitarle la apariencia nativa
-                    (`appearance-none`), y entonces mide los mismos 292.
-
-                    No se reproduce en ningún navegador de escritorio, ni siquiera en
-                    WebKit, que ahí dibuja otro control. Solo se ve en un teléfono. */}
-                    <div
-                      data-testid="fila-fechas"
-                      className="grid grid-cols-1 min-[400px]:grid-cols-2 gap-3"
-                    >
-                      <div className="min-w-0">
-                        <label
-                          htmlFor="startDate"
-                          className="block text-sm font-medium text-gray-700 mb-1"
-                        >
-                          {t('create.startDate')}
-                        </label>
-                        <input
-                          id="startDate"
-                          type="date"
-                          name="startDate"
-                          value={formData.startDate}
-                          onChange={handleInputChange}
-                          className="w-full min-w-0 max-w-full appearance-none px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-                        />
-                      </div>
-
-                      <div className="min-w-0">
-                        <label
-                          htmlFor="endDate"
-                          className="block text-sm font-medium text-gray-700 mb-1"
-                        >
-                          {t('create.endDate')}
-                        </label>
-                        <input
-                          id="endDate"
-                          type="date"
-                          name="endDate"
-                          value={formData.endDate}
-                          onChange={handleInputChange}
-                          className="w-full min-w-0 max-w-full appearance-none px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-                        />
-                      </div>
-                    </div>
-
-                    {/* Lo que el servidor no aceptó de las fechas nuevas: junto a
-                        ellas, que son lo único que se puede cambiar */}
-                    {errorDeLasFechas && (
-                      <p
-                        ref={avisoDeLasFechas}
-                        tabIndex={-1}
-                        data-testid="error-de-las-fechas"
-                        role="alert"
-                        // Recibe el foco: con un anillo que se vea, como el aviso general
-                        className="rounded text-sm text-red-700 focus:outline-none focus:ring-2 focus:ring-red-400 focus:ring-offset-2"
-                      >
-                        {errorDeLasFechas.texto}
-                      </p>
-                    )}
-
-                    <PaisesDeLaCompeticion
-                      soloFechas={soloFechas}
-                      formData={formData}
-                      allCountries={allCountries}
-                      adjacentCountries1={adjacentCountries1}
-                      adjacentCountries2={adjacentCountries2}
-                      sortedAdjacentCountries1={sortedAdjacentCountries1}
-                      sortedAdjacentCountries2={sortedAdjacentCountries2}
-                      onElegirPais={alCambiarElPais}
-                      onAnadirAdyacente1={handleAddAdjacentCountry1}
-                      onCambiarAdyacente1={handleAdjacentCountry1Change}
-                      onQuitarAdyacente1={handleRemoveAdjacentCountry1}
-                      onAnadirAdyacente2={handleAddAdjacentCountry2}
-                      onCambiarAdyacente2={handleInputChange}
-                      onQuitarAdyacente2={handleRemoveAdjacentCountry2}
-                    />
-                  </div>
-                </div>
+                <DatosBasicos
+                  soloFechas={soloFechas}
+                  isEditMode={isEditMode}
+                  conEquipos={conEquipos}
+                  formData={formData}
+                  setFormData={setFormData}
+                  onChange={handleInputChange}
+                  errorDelNombre={errorDelNombre}
+                  campoDelNombre={campoDelNombre}
+                  errorDeLasFechas={errorDeLasFechas}
+                  avisoDeLasFechas={avisoDeLasFechas}
+                  paises={{
+                    allCountries,
+                    adjacentCountries1,
+                    adjacentCountries2,
+                    sortedAdjacentCountries1,
+                    sortedAdjacentCountries2,
+                    onElegirPais: alCambiarElPais,
+                    onAnadirAdyacente1: handleAddAdjacentCountry1,
+                    onCambiarAdyacente1: handleAdjacentCountry1Change,
+                    onQuitarAdyacente1: handleRemoveAdjacentCountry1,
+                    onAnadirAdyacente2: handleAddAdjacentCountry2,
+                    onCambiarAdyacente2: handleInputChange,
+                    onQuitarAdyacente2: handleRemoveAdjacentCountry2,
+                  }}
+                />
 
                 {/* Section 4: Golf Courses - Hidden in edit mode */}
                 {!isEditMode && (
