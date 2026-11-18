@@ -18,3 +18,17 @@ export const ScoringFormat = Object.freeze({
  */
 export const isValidScoringFormat = (value) =>
   Object.values(ScoringFormat).includes(value);
+
+/**
+ * Si una partida es de juego libre (stroke play): tiene formato de puntuación.
+ * Una partida rápida tiene o formato de match play o formato de puntuación,
+ * nunca los dos, así que basta con mirar este.
+ *
+ * Un formato que esta versión no conoce NO es juego libre: no se pinta como
+ * medal ni como stableford algo que no se sabe puntuar.
+ *
+ * @param {?string} scoringFormat
+ * @returns {boolean}
+ */
+export const isFreePlay = (scoringFormat) =>
+  isValidScoringFormat(scoringFormat);

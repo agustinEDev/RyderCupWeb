@@ -5,7 +5,7 @@ import PersonalRoundCalculator from '../../domain/services/PersonalRoundCalculat
 import { cuentaElMatchPlay } from '../../domain/services/matchPlayQueCuenta';
 import {
   ScoringFormat,
-  isValidScoringFormat,
+  isFreePlay as esJuegoLibre,
 } from '../../domain/value_objects/ScoringFormat';
 
 // Mirrors the backend's ScoringService._compute_standing SINGLES fallback:
@@ -213,7 +213,7 @@ const QuickMatchClassificationTable = ({
 }) => {
   const { t } = useTranslation('quickMatch');
 
-  const isFreePlay = isValidScoringFormat(scoringFormat);
+  const isFreePlay = esJuegoLibre(scoringFormat);
 
   // La vuelta propia se enseña en los dos formatos. En juego libre la columna
   // "Resultado" va con el reparto del partido —el allowance WHS del 95%— y el

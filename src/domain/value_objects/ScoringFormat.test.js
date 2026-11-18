@@ -1,5 +1,9 @@
 import { describe, it, expect } from 'vitest';
-import { ScoringFormat, isValidScoringFormat } from './ScoringFormat';
+import {
+  ScoringFormat,
+  isValidScoringFormat,
+  isFreePlay,
+} from './ScoringFormat';
 
 // Los valores, tal cual los manda el backend (shared/domain/value_objects/scoring_format.py)
 const DEL_BACKEND = ['MEDAL', 'STABLEFORD'];
@@ -35,5 +39,22 @@ describe('ScoringFormat', () => {
     ]) {
       expect(isValidScoringFormat(valor)).toBe(false);
     }
+  });
+});
+
+describe('isFreePlay', () => {
+  it('juego libre: la partida tiene formato de puntuación (medal o stableford)', () => {
+    expect(isFreePlay(ScoringFormat.MEDAL)).toBe(true);
+    expect(isFreePlay(ScoringFormat.STABLEFORD)).toBe(true);
+  });
+
+  it('match play: sin formato de puntuación', () => {
+    expect(isFreePlay(null)).toBe(false);
+    expect(isFreePlay(undefined)).toBe(false);
+    expect(isFreePlay('')).toBe(false);
+  });
+
+  it('un formato que esta versión no conoce no se trata como juego libre', () => {
+    expect(isFreePlay('SKINS')).toBe(false);
   });
 });

@@ -10,7 +10,10 @@ import {
 } from './asistenteDePartidaRapida';
 import { jugadorInvitado, jugadorRegistrado } from './jugadoresDelAsistente';
 import { MatchFormat } from '../domain/value_objects/MatchFormat';
-import { ScoringFormat } from '../domain/value_objects/ScoringFormat';
+import {
+  ScoringFormat,
+  isFreePlay,
+} from '../domain/value_objects/ScoringFormat';
 
 // Dónde se arregla cada cosa: el campo y tu barra, en el paso 1; los
 // jugadores, en el 2. El asistente enseña cada aviso solo en su paso
@@ -33,7 +36,7 @@ const PASO_DE_LOS_JUGADORES = 2;
  * @returns {{inicial: Object, paso: number, avisos: Array<Object>}}
  */
 export const borradorParaRepetir = ({ partida, yo, amigos, campo }) => {
-  const juegoLibre = Boolean(partida.scoringFormat);
+  const juegoLibre = isFreePlay(partida.scoringFormat);
   // El % por defecto de ese formato: si es el copiado, no cuenta como elegido
   // a mano, y cambiar de formato lo sigue moviendo (revisor)
   const copiado = partida.allowancePercentage ?? null;
