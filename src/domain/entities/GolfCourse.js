@@ -1,5 +1,6 @@
 import Tee from '../value_objects/Tee';
 import Hole from '../value_objects/Hole';
+import { GolfCourseApprovalStatus } from '../value_objects/GolfCourseApprovalStatus';
 
 /**
  * GolfCourse Entity
@@ -115,21 +116,21 @@ class GolfCourse {
    * Check if the course is approved
    */
   isApproved() {
-    return this.approvalStatus === 'APPROVED';
+    return this.approvalStatus === GolfCourseApprovalStatus.APPROVED;
   }
 
   /**
    * Check if the course is pending approval
    */
   isPending() {
-    return this.approvalStatus === 'PENDING_APPROVAL';
+    return this.approvalStatus === GolfCourseApprovalStatus.PENDING_APPROVAL;
   }
 
   /**
    * Check if the course was rejected
    */
   isRejected() {
-    return this.approvalStatus === 'REJECTED';
+    return this.approvalStatus === GolfCourseApprovalStatus.REJECTED;
   }
 
   /**
@@ -137,11 +138,11 @@ class GolfCourse {
    */
   getStatusColor() {
     switch (this.approvalStatus) {
-      case 'APPROVED':
+      case GolfCourseApprovalStatus.APPROVED:
         return 'green';
-      case 'PENDING_APPROVAL':
+      case GolfCourseApprovalStatus.PENDING_APPROVAL:
         return 'yellow';
-      case 'REJECTED':
+      case GolfCourseApprovalStatus.REJECTED:
         return 'red';
       default:
         return 'gray';
