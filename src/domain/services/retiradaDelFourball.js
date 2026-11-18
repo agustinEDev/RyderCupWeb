@@ -1,6 +1,3 @@
-import { MatchFormat } from '../value_objects/MatchFormat';
-import MatchStatus from '../value_objects/MatchStatus';
-
 /**
  * La retirada de un jugador de un fourball de torneo, vista desde la pantalla
  * de anotar (25 oct 2026, tabla F1–F10; regla en RyderCupAM#665).
@@ -9,6 +6,9 @@ import MatchStatus from '../value_objects/MatchStatus';
  * para no enseñar un botón que va a devolver un 409: solo fourball, programado o
  * en juego, sin tarjetas entregadas, y nunca dejar un bando sin nadie.
  */
+
+import { MatchFormat } from '../value_objects/MatchFormat';
+import MatchStatus from '../value_objects/MatchStatus';
 
 const NADA = Object.freeze({
   pareja: null,

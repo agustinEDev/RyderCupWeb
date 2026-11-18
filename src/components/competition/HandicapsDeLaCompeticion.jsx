@@ -219,8 +219,8 @@ const HandicapsDeLaCompeticion = ({
         : t('handicaps.completed', { cuando: cuando(finishedAt) });
     if (status === HandicapUpdateStatus.INCOMPLETE)
       return t('handicaps.incomplete', { cuando: cuando(finishedAt) });
-    if (status === HandicapUpdateStatus.STOPPED) return t('handicaps.stopped');
-    // Un estado que esta versión no conoce se dice como la cortada, como antes
+    // HandicapUpdateStatus.STOPPED, la cortada; y un estado que esta versión no
+    // conoce se dice igual, como antes
     return t('handicaps.stopped');
   };
 

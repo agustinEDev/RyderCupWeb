@@ -382,6 +382,8 @@ export const sePuedeAnotar = (
   partido,
   { desdeMemoria, ahora = new Date() },
 ) => {
+  // Partido de la Ryder o partida de franja: los dos estados se llaman igual
+  // (MatchStatus y TeeGroupStatus)
   if (partido?.status === MatchStatus.IN_PROGRESS) return true;
   if (partido?.status !== MatchStatus.SCHEDULED) return false;
 
