@@ -1,8 +1,12 @@
-import { useState, useEffect, useEffectEvent, useRef, useMemo } from 'react';
+import { useState, useEffect, useEffectEvent, useRef } from 'react';
 import { tieneEquipos } from '../domain/value_objects/TournamentType';
 import { useNavigate, useParams } from 'react-router';
 import { useTranslation } from 'react-i18next';
-import { useCargaCancelableEffect } from '../hooks/useCargaCancelableEffect';
+import { useFormularioDeLaCompeticion } from '../hooks/useFormularioDeLaCompeticion';
+import {
+  usePaisesDeLaCompeticion,
+  leeVecinos,
+} from '../hooks/usePaisesDeLaCompeticion';
 import { nombresPorDefectoDeLosEquipos } from './nombresPorDefectoDeLosEquipos';
 import { agendaPropuesta } from '../utils/agenda';
 import { aCamposDeLaCompeticion } from '../utils/camposDeLaCompeticion';
@@ -19,11 +23,9 @@ import {
   updateStrokePlaySettingsUseCase,
   getCompetitionDetailUseCase,
   getCompetitionGolfCoursesUseCase,
-  fetchCountriesUseCase,
-  getAdjacentCountriesUseCase,
   createGolfCourseRequestUseCase,
 } from '../composition';
-import { formatCountryName, sortCountriesByName } from '../services/countries';
+import { formatCountryName } from '../services/countries';
 import { validateCompetitionForm } from '../utils/competitionFormValidation';
 import GolfCourseRequestModal from '../components/golf_course/GolfCourseRequestModal';
 import EnrollmentOpeningModal from '../components/competition/EnrollmentOpeningModal';
@@ -55,18 +57,11 @@ import { registraElFallo } from '../utils/registraElFallo';
 import {
   ERRORES_DEL_NOMBRE,
   ERRORES_DE_LAS_OPCIONES,
-  aPaises,
   vecinosDelSegundoNivel,
-  formularioInicial,
   formularioDeLaEdicion,
   faltaAlgoPlegado as faltaAlgoEnLoPlegado,
   pideGenero as hayQuePedirElGenero,
   pasoDelAlta,
-  alElegirPais,
-  alVaciarPais,
-  alCambiarAdyacente1,
-  alQuitarAdyacente1,
-  alQuitarAdyacente2,
 } from '../utils/formularioDeLaCompeticion';
 import {
   cargaDeLaCompeticion,
@@ -76,20 +71,6 @@ import {
   motivoDelFalloAlEditar as motivoAlEditar,
   textoDelAvisoDeValidacion,
 } from '../utils/peticionDeLaCompeticion';
-
-// Los vecinos de un país; sin poder leerlos, ninguno
-const leeVecinos = async (countryId) => {
-  try {
-    return aPaises(await getAdjacentCountriesUseCase.execute(countryId));
-  } catch (error) {
-    registraElFallo(
-      'CreateCompetition.error-fetching-adjacent-countries',
-      'Error fetching adjacent countries:',
-      error,
-    );
-    return [];
-  }
-};
 
 // Todo lo que hace falta para editar una competición, leído de una vez: la
 // competición, los vecinos de sus países y sus campos. Una cerrada vuelve sin
@@ -242,27 +223,34 @@ const CreateCompetition = () => {
   // Ref para cleanup del timer de navegación (prevenir memory leak)
   const navigationTimerRef = useRef(null);
 
-  // Countries data
-  const [allCountries, setAllCountries] = useState([]);
-  const [adjacentCountries1, setAdjacentCountries1] = useState([]);
-  const [adjacentCountries2, setAdjacentCountries2] = useState([]);
+  /**
+   * Cleanup: limpiar timer de navegación al desmontar
+   * Previene memory leak si el componente se desmonta antes de que se ejecute setTimeout
+   */
+  useEffect(() => {
+    return () => {
+      if (navigationTimerRef.current) {
+        clearTimeout(navigationTimerRef.current);
+      }
+    };
+  }, []);
 
-  // Los dos desplegables se pintan en el idioma activo, así que se ordenan por
-  // él. La segunda lista además se construye concatenando dos, de modo que sin
-  // esto no sale ordenada en ningún idioma.
-  const sortedAdjacentCountries1 = useMemo(
-    () => sortCountriesByName(adjacentCountries1, i18n.language),
-    [adjacentCountries1, i18n.language],
-  );
-  const sortedAdjacentCountries2 = useMemo(
-    () => sortCountriesByName(adjacentCountries2, i18n.language),
-    [adjacentCountries2, i18n.language],
-  );
+  const { formData, setFormData, escribeElCampo } =
+    useFormularioDeLaCompeticion({ t, idioma: i18n.language, isEditMode });
+  const {
+    allCountries,
+    adjacentCountries1,
+    adjacentCountries2,
+    setAdjacentCountries1,
+    setAdjacentCountries2,
+    olvidaLosVecinosPedidos,
+    selectores,
+  } = usePaisesDeLaCompeticion({
+    idioma: i18n.language,
+    formData,
+    setFormData,
+  });
 
-  // Form data
-  const [formData, setFormData] = useState(
-    formularioInicial(nombresPorDefectoDeLosEquipos(t)),
-  );
   // Solo una Ryder tiene equipos y modo de montaje (FE #791). Sin tipo todavía,
   // la de siempre: así se cargaba y se creaba todo antes del tipo
   const conEquipos = tieneEquipos(formData.tournamentType);
@@ -297,70 +285,6 @@ const CreateCompetition = () => {
   // Golf Course Request Modal
   const [showRequestModal, setShowRequestModal] = useState(false);
   const [requestModalCountry, setRequestModalCountry] = useState(null);
-
-  /**
-   * Cleanup: limpiar timer de navegación al desmontar
-   * Previene memory leak si el componente se desmonta antes de que se ejecute setTimeout
-   */
-  useEffect(() => {
-    return () => {
-      if (navigationTimerRef.current) {
-        clearTimeout(navigationTimerRef.current);
-      }
-    };
-  }, []);
-
-  // Los namespaces se cargan con `import()` y sin suspense, así que la primera
-  // renderización puede llegar con `t` sin resolver: los equipos nacerían con
-  // su respaldo en inglés y, por ser el valor inicial de `useState`, se
-  // quedarían congelados en una app en español. Aquí se corrigen en cuanto el
-  // idioma esté, y solo mientras el organizador no haya escrito el suyo.
-  //
-  // Si lo ha escrito se sabe por el campo, no por el texto: comparar con los
-  // nombres de la app tomaba por no tocado un «USA» escrito a propósito, y lo
-  // cambiaba al pasar de idioma (revisión de la FE #707)
-  //
-  // NUNCA al editar: ahí los nombres vienen del servidor, y cambiar de idioma
-  // le renombraría los equipos ya guardados a una competición en marcha
-  const nombresEditados = useRef({ teamOneName: false, teamTwoName: false });
-  useEffect(() => {
-    if (isEditMode) return;
-    const porDefecto = nombresPorDefectoDeLosEquipos(t);
-    setFormData((antes) => {
-      const uno = nombresEditados.current.teamOneName
-        ? antes.teamOneName
-        : porDefecto.uno;
-      const dos = nombresEditados.current.teamTwoName
-        ? antes.teamTwoName
-        : porDefecto.dos;
-      // Sin cambios, el MISMO objeto: uno nuevo vuelve a pintar, y si `t`
-      // cambia en cada pintada el efecto no acaba nunca
-      if (uno === antes.teamOneName && dos === antes.teamTwoName) return antes;
-      return { ...antes, teamOneName: uno, teamTwoName: dos };
-    });
-  }, [t, i18n.language, isEditMode]);
-
-  // Todos los países, una vez
-  useCargaCancelableEffect(() => fetchCountriesUseCase.execute(), [], {
-    alCargar: (data) => setAllCountries(aPaises(data)),
-    alFallar: (error) => {
-      registraElFallo(
-        'CreateCompetition.error-fetching-countries',
-        'Error fetching countries:',
-        error,
-      );
-      setAllCountries([]);
-    },
-  });
-
-  // Cuál es la última petición de vecinos de cada nivel: la que llegue después
-  // de otra más nueva (se cambió de país antes de que respondiera) no pisa la
-  // lista. También cuentan como más nuevas vaciar la lista y la carga de la
-  // edición, que trae las suyas
-  const vecinosPedidos = useRef({ 1: 0, 2: 0 });
-  const olvidaLosVecinosPedidos = (...niveles) => {
-    for (const nivel of niveles) vecinosPedidos.current[nivel] += 1;
-  };
 
   /**
    * Load competition data when in edit mode
@@ -451,41 +375,9 @@ const CreateCompetition = () => {
     // y tiene que volver a llevar el foco (revisión local de la FE #731)
   }, [message]);
 
-  // Los vecinos para los selectores de país adyacente: el nivel 1 son los del
-  // principal y el 2, los del tercer país. Solo se aplica la última petición
-  // de cada nivel
-  const fetchAdjacentCountries = async (countryId, level, context = {}) => {
-    olvidaLosVecinosPedidos(level);
-    const peticion = vecinosPedidos.current[level];
-    const mappedData = await leeVecinos(countryId);
-    if (peticion !== vecinosPedidos.current[level]) return;
-
-    if (level === 1) {
-      setAdjacentCountries1(mappedData);
-    } else if (level === 2) {
-      const {
-        currentAdjacentCountries1 = [],
-        mainCountryCode = null,
-        adjacentCountry1Code = null,
-      } = context;
-      setAdjacentCountries2(
-        vecinosDelSegundoNivel(
-          currentAdjacentCountries1,
-          mappedData,
-          mainCountryCode,
-          adjacentCountry1Code,
-        ),
-      );
-    }
-  };
-
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    if (name in nombresEditados.current) nombresEditados.current[name] = true;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
+    escribeElCampo(name, value);
 
     if (message.text) setMessage({ type: '', text: '' });
     if (name === 'competitionName') setErrorDelNombre(null);
@@ -496,67 +388,6 @@ const CreateCompetition = () => {
         playMode: value,
       }));
     }
-  };
-
-  const handleCountrySelect = (country) => {
-    setFormData((prev) => alElegirPais(prev, country));
-    // Los vecinos del tercer país eran del principal anterior: si llegan tarde,
-    // tampoco valen
-    olvidaLosVecinosPedidos(2);
-    setAdjacentCountries1([]);
-    setAdjacentCountries2([]);
-    fetchAdjacentCountries(country.code, 1);
-  };
-
-  // El autocompletado avisa con el código, o '' al vaciarlo
-  const alCambiarElPais = (code) => {
-    const selectedCountry = allCountries.find((c) => c.code === code);
-    if (selectedCountry) {
-      handleCountrySelect(selectedCountry);
-    } else {
-      setFormData(alVaciarPais);
-    }
-  };
-
-  const handleAddAdjacentCountry1 = () => {
-    if (formData.country) {
-      setFormData((prev) => ({ ...prev, showAdjacentCountry1: true }));
-    }
-  };
-
-  const handleAdjacentCountry1Change = (e) => {
-    const countryId = e.target.value;
-    setFormData((prev) => alCambiarAdyacente1(prev, countryId));
-    // Los vecinos del tercer país eran del adyacente anterior: ni se enseñan
-    // mientras llegan los del nuevo ni, si llegan tarde, valen
-    olvidaLosVecinosPedidos(2);
-    setAdjacentCountries2([]);
-    if (countryId) {
-      fetchAdjacentCountries(countryId, 2, {
-        currentAdjacentCountries1: adjacentCountries1,
-        mainCountryCode: formData.country?.code,
-        adjacentCountry1Code: countryId,
-      });
-    }
-  };
-
-  const handleAddAdjacentCountry2 = () => {
-    if (formData.adjacentCountry1) {
-      setFormData((prev) => ({
-        ...prev,
-        showAdjacentCountry2: true,
-      }));
-    }
-  };
-
-  const handleRemoveAdjacentCountry1 = () => {
-    setFormData(alQuitarAdyacente1);
-    olvidaLosVecinosPedidos(2);
-    setAdjacentCountries2([]);
-  };
-
-  const handleRemoveAdjacentCountry2 = () => {
-    setFormData(alQuitarAdyacente2);
   };
 
   // Un campo ya añadido no se añade otra vez (FE #644). El buscador tampoco lo
@@ -1030,18 +861,8 @@ const CreateCompetition = () => {
                   errorDeLasFechas={errorDeLasFechas}
                   avisoDeLasFechas={avisoDeLasFechas}
                   paises={{
-                    allCountries,
-                    adjacentCountries1,
-                    adjacentCountries2,
-                    sortedAdjacentCountries1,
-                    sortedAdjacentCountries2,
-                    onElegirPais: alCambiarElPais,
-                    onAnadirAdyacente1: handleAddAdjacentCountry1,
-                    onCambiarAdyacente1: handleAdjacentCountry1Change,
-                    onQuitarAdyacente1: handleRemoveAdjacentCountry1,
-                    onAnadirAdyacente2: handleAddAdjacentCountry2,
+                    ...selectores,
                     onCambiarAdyacente2: handleInputChange,
-                    onQuitarAdyacente2: handleRemoveAdjacentCountry2,
                   }}
                 />
 
