@@ -46,10 +46,11 @@ const CamposDeUnPais = ({
       </div>
 
       {/* List of selected courses */}
-      {delPais.map(({ gc, posicion }, index) => {
+      {delPais.map(({ gc, posicion }) => {
         return (
           <div
-            key={`${gc.course.id}-${index}`}
+            // La posición en la lista de todos: única aunque falte el id
+            key={posicion}
             className="mb-2 p-3 bg-gray-50 border border-gray-200 rounded-lg flex items-center justify-between"
           >
             <div className="flex-1">
