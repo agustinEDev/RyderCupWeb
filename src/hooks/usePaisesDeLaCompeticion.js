@@ -121,6 +121,9 @@ export const usePaisesDeLaCompeticion = ({ idioma, formData, setFormData }) => {
 
   const handleAdjacentCountry1Change = (e) => {
     const countryId = e.target.value;
+    // El mismo otra vez no cambia nada (como `alCambiarAdyacente1`): ni se
+    // vacían ni se vuelven a pedir los vecinos del tercer país
+    if (countryId === formData.adjacentCountry1) return;
     setFormData((prev) => alCambiarAdyacente1(prev, countryId));
     // Los vecinos del tercer país eran del adyacente anterior: ni se enseñan
     // mientras llegan los del nuevo ni, si llegan tarde, valen
