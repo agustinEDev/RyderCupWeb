@@ -815,4 +815,34 @@ describe('CreateCompetition · lo que se envía y lo que pasa después (caracter
 
     expect(screen.queryByTestId('confirmar-apertura')).toBeNull();
   });
+
+  it('E1: si se sale de la página mientras se guarda, al acabar no navega (el aviso sí sale)', async () => {
+    let termina;
+    composicion.createCompetitionWithGolfCoursesUseCase.execute.mockReturnValue(
+      new Promise((resolver) => {
+        termina = resolver;
+      }),
+    );
+    await abreElAlta('MEDAL');
+    rellenaLoBasico();
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+    enviar();
+    await dejaCorrerLasPromesas();
+    fireEvent.click(screen.getByText('desmontar'));
+
+    await act(async () => {
+      termina({
+        competition: { id: 'nueva' },
+        successCount: 1,
+        failedCourses: [],
+      });
+    });
+    await dejaCorrerLasPromesas();
+    act(() => vi.advanceTimersByTime(5000));
+
+    expect(mockToast.success).toHaveBeenCalledWith('create.success');
+    expect(screen.getByTestId('donde')).toHaveTextContent(
+      '/competitions/create',
+    );
+  });
 });
