@@ -1,7 +1,6 @@
 import { useState, useEffect, useEffectEvent, useRef, useMemo } from 'react';
 import { tieneEquipos } from '../domain/value_objects/TournamentType';
 import { useNavigate, useParams } from 'react-router';
-import { Settings } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useCargaCancelableEffect } from '../hooks/useCargaCancelableEffect';
 import { nombresPorDefectoDeLosEquipos } from './nombresPorDefectoDeLosEquipos';
@@ -32,11 +31,14 @@ import SoloLectura from '../components/competition/create/SoloLectura';
 import CamposDeLaCompeticion from '../components/competition/create/CamposDeLaCompeticion';
 import DatosBasicos from '../components/competition/create/DatosBasicos';
 import AvisoDelFormulario from '../components/competition/create/AvisoDelFormulario';
+import FormatoDeLaCompeticion from '../components/competition/create/FormatoDeLaCompeticion';
+import AjustesDeStrokePlayDelAlta from '../components/competition/create/AjustesDeStrokePlayDelAlta';
+import MasOpciones from '../components/competition/create/MasOpciones';
+import BotonesDelFormulario from '../components/competition/create/BotonesDelFormulario';
 import customToast from '../utils/toast';
 import FullScreenLoader from '../components/ui/FullScreenLoader';
 import CompetitionTypeChooser from '../components/competition/CompetitionTypeChooser';
 import SetupModeChooser from '../components/competition/SetupModeChooser';
-import StrokePlaySettings from '../components/competition/StrokePlaySettings';
 import {
   diasDelTorneo,
   cambiosDeAjustes,
@@ -47,7 +49,6 @@ import {
   soloSePuedenEditarLasFechas,
   seEditaLaCompeticion,
 } from '../domain/services/edicionDeLaCompeticion';
-import { MAX_PLAYERS, MIN_PLAYERS } from '../domain/entities/Competition';
 import { PANTALLA_MENOS_BARRA_INFERIOR } from '../utils/barraInferior';
 import { mensajeDelError } from '../utils/mensajeDelError';
 import { registraElFallo } from '../utils/registraElFallo';
@@ -1061,285 +1062,54 @@ const CreateCompetition = () => {
                   activa={soloFechas}
                   className="flex flex-col gap-6"
                 >
-                  {/* Section 5: RyderCup Settings — el formato se decide aquí, a la
-                  vista: cuántos sois y si se juega con hándicap son las dos
-                  preguntas que el organizador SÍ contesta (Agustín, 19 sep) */}
-                  <div className="border border-gray-200 rounded-xl p-4">
-                    <div className="flex items-center gap-3 mb-3">
-                      <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
-                        <Settings className="w-4 h-4 text-primary" />
-                      </div>
-                      <h3 className="text-gray-900 font-bold text-base">
-                        {t('create.settingsTitle')}
-                      </h3>
-                    </div>
+                  <FormatoDeLaCompeticion
+                    playMode={formData.playMode}
+                    onElegirModo={(mode) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        playMode: mode,
+                      }))
+                    }
+                    numberOfPlayers={formData.numberOfPlayers}
+                    onChange={handleInputChange}
+                    onBlurDelCupo={() =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        // Dejarlo en blanco no es «sin límite»: hay cupo igual, y
+                        // callárselo es enterarse con el jugador 13 fuera
+                        numberOfPlayers: cupoDeJugadores(
+                          prev.numberOfPlayers,
+                          cupoCargado.current,
+                        ),
+                      }))
+                    }
+                    inscritos={inscritos}
+                  />
 
-                    <div className="space-y-4">
-                      {/* Play Mode */}
-                      <div>
-                        <span className="block text-sm font-medium text-gray-700 mb-2">
-                          {t('create.playMode')}
-                        </span>
-                        <div className="flex flex-wrap gap-2">
-                          {['HANDICAP', 'SCRATCH'].map((mode) => (
-                            <button
-                              key={mode}
-                              type="button"
-                              aria-pressed={formData.playMode === mode}
-                              onClick={() =>
-                                setFormData((prev) => ({
-                                  ...prev,
-                                  playMode: mode,
-                                }))
-                              }
-                              className={`border-2 rounded-lg text-sm px-3 py-2 transition-colors ${
-                                formData.playMode === mode
-                                  ? 'bg-primary text-white border-primary'
-                                  : 'bg-white text-gray-600 border-gray-200 hover:border-primary hover:text-primary'
-                              }`}
-                            >
-                              {t(`create.${mode.toLowerCase()}`)}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-
-                      {/* Number of Players */}
-                      <div>
-                        <label
-                          htmlFor="numberOfPlayers"
-                          className="block text-sm font-medium text-gray-700 mb-1"
-                        >
-                          {t('create.numberOfPlayers')}
-                        </label>
-                        <input
-                          id="numberOfPlayers"
-                          data-testid="campo-jugadores"
-                          type="number"
-                          name="numberOfPlayers"
-                          value={
-                            formData.numberOfPlayers === undefined
-                              ? ''
-                              : formData.numberOfPlayers
-                          }
-                          onChange={handleInputChange}
-                          onBlur={() =>
-                            setFormData((prev) => ({
-                              ...prev,
-                              // Dejarlo en blanco no es «sin límite»: hay cupo igual, y
-                              // callárselo es enterarse con el jugador 13 fuera
-                              numberOfPlayers: cupoDeJugadores(
-                                prev.numberOfPlayers,
-                                cupoCargado.current,
-                              ),
-                            }))
-                          }
-                          min={Math.max(MIN_PLAYERS, inscritos)}
-                          max={MAX_PLAYERS}
-                          aria-describedby={
-                            inscritos > 0 ? 'cupo-minimo' : undefined
-                          }
-                          placeholder={t('create.numberOfPlayersPlaceholder')}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-                        />
-                        {/* Por qué no baja de ahí (FE #662): sin decirlo, el número
-                        se rechazaba sin motivo */}
-                        {inscritos > 0 && (
-                          <p
-                            id="cupo-minimo"
-                            data-testid="cupo-minimo"
-                            className="mt-1 text-xs text-gray-500"
-                          >
-                            {t('create.capFloor', { count: inscritos })}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Los ajustes de un Stableford o un Medal, a la vista: las
-                  categorías y las jornadas sí se deciden al crear (FE #824) */}
                   {!conEquipos && (
-                    <div
-                      data-testid="ajustes-stroke-play"
-                      className="border border-gray-200 rounded-xl p-4"
-                    >
-                      <div className="flex items-center gap-3 mb-3">
-                        <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
-                          <Settings className="w-4 h-4 text-primary" />
-                        </div>
-                        <h3 className="text-gray-900 font-bold text-base">
-                          {t('create.strokePlay.title', {
-                            tipo: t(
-                              `create.type.${formData.tournamentType}.title`,
-                            ),
-                          })}
-                        </h3>
-                      </div>
-                      <StrokePlaySettings
-                        valor={formData.strokePlay}
-                        onCambio={(strokePlay) =>
-                          setFormData((prev) => ({ ...prev, strokePlay }))
-                        }
-                        tipo={formData.tournamentType}
-                        dias={diasDelTorneo(
-                          formData.startDate,
-                          formData.endDate,
-                        )}
-                      />
-                    </div>
+                    <AjustesDeStrokePlayDelAlta
+                      formData={formData}
+                      onCambio={(strokePlay) =>
+                        setFormData((prev) => ({ ...prev, strokePlay }))
+                      }
+                    />
                   )}
 
-                  {/* Lo que no hay que decidir para crear: se pliega, pero se dice
-                  qué se acepta si nadie lo toca (FE #637) */}
-                  <div className="border border-gray-200 rounded-xl">
-                    <button
-                      type="button"
-                      data-testid="mas-opciones"
-                      onClick={() => setMasOpciones((abierto) => !abierto)}
-                      aria-expanded={masOpciones}
-                      className="flex w-full items-center justify-between gap-3 p-4 text-left"
-                    >
-                      <span className="font-medium text-gray-900">
-                        {t('create.moreOptions')}
-                      </span>
-                      <span className="text-gray-500">
-                        {masOpciones ? '−' : '+'}
-                      </span>
-                    </button>
-
-                    {!masOpciones && (
-                      <p
-                        data-testid="resumen-opciones"
-                        className="px-4 pb-4 text-sm text-gray-600"
-                      >
-                        {faltaAlgoPlegado
-                          ? t('create.moreOptionsIncomplete')
-                          : // Sin el reparto de equipos: ya no se decide aquí, lo
-                            // decide el modo, que está a la vista arriba (FE #695)
-                            t(
-                              conEquipos
-                                ? 'create.moreOptionsSummary'
-                                : 'create.moreOptionsSummaryNoTeams',
-                              {
-                                equipo1: formData.teamOneName,
-                                equipo2: formData.teamTwoName,
-                                handicap: formData.maxPlayingHandicap
-                                  ? t('create.summaryHandicapLimit', {
-                                      limite: formData.maxPlayingHandicap,
-                                    })
-                                  : t('create.summaryNoHandicapLimit'),
-                              },
-                            )}
-                      </p>
-                    )}
-
-                    {masOpciones && (
-                      <div className="space-y-4 border-t border-gray-200 p-4">
-                        {conEquipos && (
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                              <label
-                                htmlFor="teamOneName"
-                                className="block text-sm font-medium text-gray-700 mb-1"
-                              >
-                                {t('create.teamOneName')}
-                              </label>
-                              <input
-                                id="teamOneName"
-                                data-testid="campo-equipo-1"
-                                type="text"
-                                name="teamOneName"
-                                value={formData.teamOneName}
-                                onChange={handleInputChange}
-                                placeholder={t('create.teamOneNamePlaceholder')}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-                              />
-                            </div>
-
-                            <div>
-                              <label
-                                htmlFor="teamTwoName"
-                                className="block text-sm font-medium text-gray-700 mb-1"
-                              >
-                                {t('create.teamTwoName')}
-                              </label>
-                              <input
-                                id="teamTwoName"
-                                data-testid="campo-equipo-2"
-                                type="text"
-                                name="teamTwoName"
-                                value={formData.teamTwoName}
-                                onChange={handleInputChange}
-                                placeholder={t('create.teamTwoNamePlaceholder')}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-                              />
-                            </div>
-                          </div>
-                        )}
-                        {/* Max Playing Handicap */}
-                        <div>
-                          <label
-                            htmlFor="maxPlayingHandicap"
-                            className="block text-sm font-medium text-gray-700 mb-1"
-                          >
-                            {t('create.maxPlayingHandicap')}
-                          </label>
-                          <input
-                            id="maxPlayingHandicap"
-                            data-testid="campo-handicap"
-                            type="number"
-                            name="maxPlayingHandicap"
-                            value={
-                              formData.maxPlayingHandicap === undefined
-                                ? ''
-                                : formData.maxPlayingHandicap
-                            }
-                            onChange={handleInputChange}
-                            min="1"
-                            max="54"
-                            placeholder={t(
-                              'create.maxPlayingHandicapPlaceholder',
-                            )}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-                          />
-                          <p className="mt-1 text-xs text-gray-500">
-                            {t('create.maxPlayingHandicapHint')}
-                          </p>
-                        </div>
-                      </div>
-                    )}
-                  </div>
+                  <MasOpciones
+                    abierto={masOpciones}
+                    onAlternar={() => setMasOpciones((abierto) => !abierto)}
+                    faltaAlgoPlegado={faltaAlgoPlegado}
+                    conEquipos={conEquipos}
+                    formData={formData}
+                    onChange={handleInputChange}
+                  />
                 </SoloLectura>
 
-                {/* Submit Button */}
-                {/* En el móvil la fila ocupa el ancho, alineada con las tarjetas:
-                  pegada a la derecha quedaba descolgada. Pero el que crece es
-                  «Crear», no «Cancelar»: con los dos a mitad y mitad, cancelar se
-                  convertía en un objetivo enorme justo bajo el pulgar, al lado del
-                  de enviar, y se lleva el formulario entero sin preguntar */}
-                <div className="flex gap-3 pt-2 pb-6 sm:justify-end">
-                  <button
-                    type="button"
-                    onClick={() => navigate('/competitions')}
-                    className="px-6 py-2.5 bg-gray-100 text-gray-900 text-sm font-bold rounded-lg hover:bg-gray-200 transition-colors"
-                  >
-                    {t('create.cancel')}
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={isSubmitting}
-                    className="flex-1 sm:flex-none px-6 py-2.5 bg-primary text-white text-sm font-bold rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {isSubmitting
-                      ? isEditMode
-                        ? t('edit.updating') || 'Updating...'
-                        : t('create.creating')
-                      : isEditMode
-                        ? t('edit.updateCompetition') || 'Update Competition'
-                        : t('create.createCompetition')}
-                  </button>
-                </div>
+                <BotonesDelFormulario
+                  isEditMode={isEditMode}
+                  isSubmitting={isSubmitting}
+                  onCancelar={() => navigate('/competitions')}
+                />
               </form>
             )}
 
