@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join, relative, sep } from 'node:path';
-import { tokenize } from 'espree';
+import { parse, tokenize } from 'espree';
 
 /**
  * Los estados y formatos del negocio, fuera del dominio, con nombre (Tabla E1,
@@ -244,26 +244,48 @@ const literalesVigilados = (codigo) => {
     ecmaFeatures: { jsx: true },
     loc: true,
   });
-  const es = (ficha, valor) =>
-    ficha?.type === 'Punctuator' && ficha.value === valor;
-  // Una clave de objeto sin comillas, `{ COMPLETED: 'x' }`: el nombre, justo
-  // tras `{` o `,` y antes de `:`. No lo es `a.COMPLETED` (va tras un punto),
-  // ni `[X.COMPLETED]:`, ni `case COMPLETED:` ni `a ? COMPLETED : b`
-  const esClave = (i) =>
-    fichas[i].type === 'Identifier' &&
-    es(fichas[i + 1], ':') &&
-    (es(fichas[i - 1], '{') || es(fichas[i - 1], ','));
-
-  return fichas.flatMap((t, i) => {
-    // String: '…' y "…"; Template: `…` sin huecos; JSXText: value="…"
-    if (['String', 'Template', 'JSXText'].includes(t.type)) {
-      const m = LITERAL.exec(t.value.trim());
-      return m ? [{ palabra: m[2], linea: t.loc.start.line }] : [];
+  // Una clave de objeto sin comillas, `{ COMPLETED: 'x' }`: solo las propiedades
+  // de un objeto que se construye (ObjectExpression), con nombre y sin `[…]`. No
+  // cuentan los patrones (`const { COMPLETED: x } = o`, CodeRabbit #1185), ni
+  // `{ COMPLETED }` abreviado, ni `a.COMPLETED`, `case COMPLETED:` o `a ? X : b`
+  const claves = [];
+  const recorre = (nodo) => {
+    if (!nodo || typeof nodo.type !== 'string') return;
+    if (nodo.type === 'ObjectExpression') {
+      for (const p of nodo.properties) {
+        if (
+          p.type === 'Property' &&
+          !p.computed &&
+          !p.shorthand &&
+          p.key.type === 'Identifier' &&
+          PALABRAS.includes(p.key.name)
+        ) {
+          claves.push({ palabra: p.key.name, linea: p.key.loc.start.line });
+        }
+      }
     }
-    return esClave(i) && PALABRAS.includes(t.value)
-      ? [{ palabra: t.value, linea: t.loc.start.line }]
-      : [];
+    for (const [campo, valor] of Object.entries(nodo)) {
+      if (campo === 'parent' || campo === 'loc' || campo === 'range') continue;
+      if (Array.isArray(valor)) valor.forEach(recorre);
+      else if (valor && typeof valor === 'object') recorre(valor);
+    }
+  };
+  recorre(
+    parse(codigo, {
+      ecmaVersion: 'latest',
+      sourceType: 'module',
+      ecmaFeatures: { jsx: true },
+      loc: true,
+    }),
+  );
+
+  const literales = fichas.flatMap((t) => {
+    // String: '…' y "…"; Template: `…` sin huecos; JSXText: value="…"
+    if (!['String', 'Template', 'JSXText'].includes(t.type)) return [];
+    const m = LITERAL.exec(t.value.trim());
+    return m ? [{ palabra: m[2], linea: t.loc.start.line }] : [];
   });
+  return [...literales, ...claves];
 };
 
 /**
@@ -366,6 +388,9 @@ describe('estados del negocio, con nombre fuera del dominio', () => {
     expect(palabras('const m = { [MatchStatus.COMPLETED]: 1 };')).toEqual([]);
     expect(palabras('x = a.COMPLETED;')).toEqual([]);
     expect(palabras('const { COMPLETED } = estados;')).toEqual([]);
+    // Desestructurar con alias tampoco es escribir un estado (CodeRabbit, #1185)
+    expect(palabras('const { COMPLETED: hecho } = estados;')).toEqual([]);
+    expect(palabras('const f = ({ PENDING: p }) => p;')).toEqual([]);
     expect(palabras("import { COMPLETED } from './x';")).toEqual([]);
     expect(palabras('switch (a) { case COMPLETED: break; }')).toEqual([]);
     expect(palabras('x = a ? COMPLETED : PENDING;')).toEqual([]);
