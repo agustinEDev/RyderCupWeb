@@ -10,7 +10,6 @@ import { ScoringFormat } from '../../domain/value_objects/ScoringFormat';
 // components. Se reexportan aquí para que los pasos sigan importando de un sitio
 export {
   FORMAT_CAPACITY,
-  TEAM_FORMATS,
   oppositeTeam,
   MAX_SCORERS,
   NO_TEE_KEY,

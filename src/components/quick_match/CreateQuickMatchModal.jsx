@@ -31,7 +31,6 @@ import {
   MAX_SCORERS,
   oppositeTeam,
   NO_TEE_KEY,
-  TEAM_FORMATS,
   initialGuestForm,
   parseTeeKey,
   teeKey,
@@ -43,7 +42,10 @@ import {
   jugadorInvitado,
   jugadorRegistrado,
 } from '../../utils/jugadoresDelAsistente';
-import { MatchFormat } from '../../domain/value_objects/MatchFormat';
+import {
+  MatchFormat,
+  isTeamMatchFormat,
+} from '../../domain/value_objects/MatchFormat';
 import { ScoringFormat } from '../../domain/value_objects/ScoringFormat';
 
 // Cuánto se espera a tus partidas antes de sugerir la barra por tu género
@@ -384,7 +386,7 @@ const CreateQuickMatchModal = ({
   const capacity = isFreePlay
     ? FREE_PLAY_CAPACITY
     : (FORMAT_CAPACITY[matchFormat] ?? 2);
-  const isTeamFormat = !isFreePlay && TEAM_FORMATS.includes(matchFormat);
+  const isTeamFormat = !isFreePlay && isTeamMatchFormat(matchFormat);
   const isFoursomes = !isFreePlay && matchFormat === MatchFormat.FOURSOMES;
   const rosterFull = participants.length >= capacity;
   const registeredParticipants = participants.filter((p) => !p.isGuest);

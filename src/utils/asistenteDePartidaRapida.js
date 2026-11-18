@@ -2,8 +2,9 @@ import { MatchFormat } from '../domain/value_objects/MatchFormat';
 
 /**
  * Las reglas sin interfaz del asistente de partida rápida: cuántos jugadores
- * caben por formato, qué formatos van por equipos, el bando contrario, el tope
- * de anotadores y la clave con la que se elige una barra (color + género).
+ * caben por formato, el bando contrario, el tope de anotadores y la clave con
+ * la que se elige una barra (color + género). Qué formatos van por equipos lo
+ * dice el dominio: `isTeamMatchFormat`.
  *
  * Vivían en `components/quick_match/createQuickMatchModalConstants.js` (que las
  * reexporta); salieron de ahí el 9 nov 2026 porque utils/borradorParaRepetir y
@@ -16,7 +17,6 @@ export const FORMAT_CAPACITY = {
   [MatchFormat.FOURBALL]: 4,
   [MatchFormat.FOURSOMES]: 4,
 };
-export const TEAM_FORMATS = [MatchFormat.FOURBALL, MatchFormat.FOURSOMES];
 
 // En un formato por equipos solo hay dos bandos, A y B, y el contrario es
 // SIEMPRE la otra letra. Preguntar por "el que no es el mío" contaba como rival

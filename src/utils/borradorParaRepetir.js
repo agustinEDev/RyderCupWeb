@@ -5,11 +5,13 @@ import {
   MAX_SCORERS,
   NO_TEE_KEY,
   oppositeTeam,
-  TEAM_FORMATS,
   teeKey,
 } from './asistenteDePartidaRapida';
 import { jugadorInvitado, jugadorRegistrado } from './jugadoresDelAsistente';
-import { MatchFormat } from '../domain/value_objects/MatchFormat';
+import {
+  MatchFormat,
+  isTeamMatchFormat,
+} from '../domain/value_objects/MatchFormat';
 import {
   ScoringFormat,
   isFreePlay,
@@ -89,7 +91,7 @@ export const borradorParaRepetir = ({ partida, yo, amigos, campo }) => {
     genero: p.teeGender,
     paso: nombre ? PASO_DE_LOS_JUGADORES : PASO_DEL_CAMPO,
   });
-  const porEquipos = !juegoLibre && TEAM_FORMATS.includes(partida.matchFormat);
+  const porEquipos = !juegoLibre && isTeamMatchFormat(partida.matchFormat);
   const equipo = (p) => (porEquipos ? (p.team ?? null) : null);
   const avisos = [];
 
