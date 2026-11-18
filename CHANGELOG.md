@@ -5,6 +5,32 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.86.0] - 2026-11-18
+
+**Calidad de la auditoría del 18 nov: los estados y formatos del negocio, con nombre en el
+dominio; y el partido concedido, como terminado** (#1185; merge-back de la 2.85.0 en #1184).
+Va con el backend 2.74.0, ya en producción; no hay cambio de contrato. Probado en el Kind
+con la copia anonimizada de producción, en Chrome a 360 px.
+
+### Changed
+
+- **Los estados y formatos escritos a mano fuera del dominio pasan de 107 a 10**: se usan
+  los enums del dominio que ya existían y otros nuevos (`MatchStatus`, `TeeGroupStatus`,
+  `RoundStatus`, `DraftStatus`, `HandicapUpdateStatus`, `MatchFormat`, `ScoringFormat`,
+  `Modality`, `MatchOutcome`, `GolfCourseApprovalStatus`, `SessionType`), con los mismos
+  valores que el backend. Las cinco listas repetidas de formatos de partido quedan en una.
+  Los textos, colores, filtros y valores por defecto no cambian.
+- **La clasificación reconoce el partido concedido y el walkover por su estado**, no por el
+  texto del tanteo (el backend manda `W/O`, nunca `WALKOVER`).
+- Un vigilante impide volver a escribir esos estados a mano fuera del dominio, y otro
+  comprueba que cada valor que se enseña tiene su texto en los dos idiomas.
+
+### Fixed
+
+- **Un partido concedido se pinta como terminado** en su tarjeta del calendario y en su
+  detalle (antes salía en gris claro o en azul), y **el detalle ofrece «Ver tarjeta»**,
+  que abre su anotación cerrada.
+
 ## [2.85.0] - 2026-11-18
 
 **Calidad de la re-auditoría: errores traducidos en vez de textos técnicos, fallos
