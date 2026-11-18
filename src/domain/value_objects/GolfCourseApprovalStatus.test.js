@@ -1,8 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import {
-  GolfCourseApprovalStatus,
-  isValidGolfCourseApprovalStatus,
-} from './GolfCourseApprovalStatus';
+import { GolfCourseApprovalStatus } from './GolfCourseApprovalStatus';
 
 // Los valores, tal cual los manda el backend (modules/golf_course/domain/value_objects/approval_status.py)
 const DEL_BACKEND = ['PENDING_APPROVAL', 'APPROVED', 'REJECTED'];
@@ -20,23 +17,5 @@ describe('GolfCourseApprovalStatus', () => {
 
   it('no se puede cambiar', () => {
     expect(Object.isFrozen(GolfCourseApprovalStatus)).toBe(true);
-  });
-
-  it('isValidGolfCourseApprovalStatus acepta cada valor', () => {
-    for (const valor of DEL_BACKEND) {
-      expect(isValidGolfCourseApprovalStatus(valor)).toBe(true);
-    }
-  });
-
-  it('isValidGolfCourseApprovalStatus rechaza lo que no es un valor', () => {
-    for (const valor of [
-      undefined,
-      null,
-      '',
-      'DESCONOCIDO',
-      DEL_BACKEND[0].toLowerCase(),
-    ]) {
-      expect(isValidGolfCourseApprovalStatus(valor)).toBe(false);
-    }
   });
 });

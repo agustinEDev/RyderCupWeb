@@ -11,10 +11,3 @@ export const SessionType = Object.freeze({
   AFTERNOON: 'AFTERNOON',
   EVENING: 'EVENING',
 });
-
-/**
- * @param {unknown} value
- * @returns {boolean} Si es uno de los valores de SessionType
- */
-export const isValidSessionType = (value) =>
-  Object.values(SessionType).includes(value);

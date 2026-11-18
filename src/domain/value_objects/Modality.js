@@ -11,10 +11,3 @@ export const Modality = Object.freeze({
   MATCH_PLAY: 'MATCH_PLAY',
   STROKE_PLAY: 'STROKE_PLAY',
 });
-
-/**
- * @param {unknown} value
- * @returns {boolean} Si es uno de los valores de Modality
- */
-export const isValidModality = (value) =>
-  Object.values(Modality).includes(value);

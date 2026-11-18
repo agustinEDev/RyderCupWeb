@@ -20,47 +20,21 @@ describe('MatchStatus', () => {
     }
   });
 
-  it('isValid acepta cada valor y rechaza lo demás', () => {
-    for (const valor of DEL_BACKEND) {
-      expect(MatchStatus.isValid(valor)).toBe(true);
-    }
-    for (const valor of [undefined, null, '', 'DESCONOCIDO', 'scheduled']) {
-      expect(MatchStatus.isValid(valor)).toBe(false);
-    }
-  });
-
-  it('el constructor valida y guarda el valor', () => {
-    expect(new MatchStatus('IN_PROGRESS').toString()).toBe('IN_PROGRESS');
-    expect(() => new MatchStatus('DESCONOCIDO')).toThrow(
-      'Invalid MatchStatus: DESCONOCIDO',
-    );
-  });
-
-  it('equals compara por valor', () => {
-    expect(
-      new MatchStatus('SCHEDULED').equals(new MatchStatus('SCHEDULED')),
-    ).toBe(true);
-    expect(
-      new MatchStatus('SCHEDULED').equals(new MatchStatus('IN_PROGRESS')),
-    ).toBe(false);
-    expect(new MatchStatus('SCHEDULED').equals('SCHEDULED')).toBe(false);
+  it('no se puede cambiar', () => {
+    expect(Object.isFrozen(MatchStatus)).toBe(true);
   });
 
   it('por jugar: programado o en juego', () => {
     for (const valor of DEL_BACKEND) {
-      const esperado = POR_JUGAR.includes(valor);
-      expect(MatchStatus.isPlayable(valor)).toBe(esperado);
-      expect(new MatchStatus(valor).isPlayable()).toBe(esperado);
+      expect(MatchStatus.isPlayable(valor)).toBe(POR_JUGAR.includes(valor));
     }
     expect(MatchStatus.isPlayable(undefined)).toBe(false);
     expect(MatchStatus.isPlayable('DESCONOCIDO')).toBe(false);
   });
 
-  it('terminado: COMPLETED/WALKOVER/CONCEDED', () => {
+  it('terminado: COMPLETED, WALKOVER o CONCEDED', () => {
     for (const valor of DEL_BACKEND) {
-      const esperado = TERMINADOS.includes(valor);
-      expect(MatchStatus.isFinished(valor)).toBe(esperado);
-      expect(new MatchStatus(valor).isFinished()).toBe(esperado);
+      expect(MatchStatus.isFinished(valor)).toBe(TERMINADOS.includes(valor));
     }
     expect(MatchStatus.isFinished(undefined)).toBe(false);
     expect(MatchStatus.isFinished('DESCONOCIDO')).toBe(false);

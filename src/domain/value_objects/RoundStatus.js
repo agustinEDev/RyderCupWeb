@@ -14,10 +14,3 @@ export const RoundStatus = Object.freeze({
   IN_PROGRESS: 'IN_PROGRESS',
   COMPLETED: 'COMPLETED',
 });
-
-/**
- * @param {unknown} value
- * @returns {boolean} Si es uno de los valores de RoundStatus
- */
-export const isValidRoundStatus = (value) =>
-  Object.values(RoundStatus).includes(value);

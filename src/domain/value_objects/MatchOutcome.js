@@ -14,10 +14,3 @@ export const MatchOutcome = Object.freeze({
   HALVED: 'HALVED',
   UNFINISHED: 'UNFINISHED',
 });
-
-/**
- * @param {unknown} value
- * @returns {boolean} Si es uno de los valores de MatchOutcome
- */
-export const isValidMatchOutcome = (value) =>
-  Object.values(MatchOutcome).includes(value);

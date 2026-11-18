@@ -12,10 +12,3 @@ export const GolfCourseApprovalStatus = Object.freeze({
   APPROVED: 'APPROVED',
   REJECTED: 'REJECTED',
 });
-
-/**
- * @param {unknown} value
- * @returns {boolean} Si es uno de los valores de GolfCourseApprovalStatus
- */
-export const isValidGolfCourseApprovalStatus = (value) =>
-  Object.values(GolfCourseApprovalStatus).includes(value);

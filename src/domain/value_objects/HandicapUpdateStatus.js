@@ -14,10 +14,3 @@ export const HandicapUpdateStatus = Object.freeze({
   INCOMPLETE: 'INCOMPLETE',
   STOPPED: 'STOPPED',
 });
-
-/**
- * @param {unknown} value
- * @returns {boolean} Si es uno de los valores de HandicapUpdateStatus
- */
-export const isValidHandicapUpdateStatus = (value) =>
-  Object.values(HandicapUpdateStatus).includes(value);

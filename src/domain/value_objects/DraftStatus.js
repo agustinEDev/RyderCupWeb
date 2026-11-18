@@ -12,10 +12,3 @@ export const DraftStatus = Object.freeze({
   IN_PROGRESS: 'IN_PROGRESS',
   COMPLETED: 'COMPLETED',
 });
-
-/**
- * @param {unknown} value
- * @returns {boolean} Si es uno de los valores de DraftStatus
- */
-export const isValidDraftStatus = (value) =>
-  Object.values(DraftStatus).includes(value);
