@@ -81,9 +81,11 @@ export const useEnvioDeLaCompeticion = ({
   // Lo que solo cambia el envío. Enviando, el botón se deshabilita, y tras
   // guardar sigue así hasta ir a la ficha: si no, se podía crear otra igual
   const [isSubmitting, setIsSubmitting] = useState(false);
-  // Lo mismo, pero leído en el acto: dos envíos en el mismo instante ven aún
-  // el `isSubmitting` de antes y mandaban dos peticiones
-  const enVuelo = useRef(false);
+  // El candado del envío, leído en el acto: dos envíos en el mismo instante ven
+  // aún el `isSubmitting` de antes y mandaban dos peticiones. `false` libre;
+  // 'envio' desde que se pulsa hasta que falla (o, si sale bien, hasta ir a la
+  // ficha); 'pregunta' mientras el modal de la apertura espera respuesta
+  const candado = useRef(false);
   // Una pública pregunta antes cuándo abrir las inscripciones
   const [preguntandoApertura, setPreguntandoApertura] = useState(false);
   // El aviso general, arriba del todo
@@ -345,9 +347,14 @@ export const useEnvioDeLaCompeticion = ({
    * como el backend entiende «ábrela ya» (RyderCupAM#332).
    */
   const crear = async (diasDeApertura) => {
-    // Uno a la vez: el «crear» del modal o un segundo envío no lanzan otro
-    if (enVuelo.current) return;
-    enVuelo.current = true;
+    // Uno a la vez: dos «crear» del modal, o uno con otro envío, no lanzan dos
+    if (candado.current === 'envio') return;
+    candado.current = 'envio';
+    await envia(diasDeApertura);
+  };
+
+  // El envío en sí, con el candado ya echado: lo suelta si no se guarda
+  const envia = async (diasDeApertura) => {
     // El modal NO se cierra aquí: se queda con su botón deshabilitado mientras
     // la petición está en vuelo. Cerrándolo antes, el `isLoading` que recibe es
     // siempre falso y devuelve el formulario a la mano justo cuando no se puede
@@ -379,7 +386,7 @@ export const useEnvioDeLaCompeticion = ({
     } finally {
       // Si falló (también la segunda petición de la edición), se reintenta
       if (!guardadaYa) {
-        enVuelo.current = false;
+        candado.current = false;
         setIsSubmitting(false);
       }
       // Se cierra tanto si salió bien como si falló: si falló, el aviso está en
@@ -392,34 +399,55 @@ export const useEnvioDeLaCompeticion = ({
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    // Con uno en vuelo, o ya guardado camino de la ficha, no se envía otro
-    if (enVuelo.current) return;
-    setMessage({ type: '', text: '' });
-    if (!isEditMode) {
-      // Solo se espera si la copia dice que no: verificado, sigue en el acto
-      const verificado = copiaSinVerificar ? await confirmaVerificado() : true;
-      if (!sigueTrasVerificar(verificado)) return;
-    }
+    // Con uno en marcha (verificando, preguntando la apertura, en vuelo o ya
+    // guardado camino de la ficha) no empieza otro. El candado se echa ANTES
+    // de esperar nada, y se suelta en todo camino que no acabe en un envío
+    if (candado.current) return;
+    candado.current = 'envio';
+    let enManosDelEnvio = false;
+    try {
+      setMessage({ type: '', text: '' });
+      if (!isEditMode) {
+        // Solo se espera si la copia dice que no: verificado, sigue en el acto
+        const verificado = copiaSinVerificar
+          ? await confirmaVerificado()
+          : true;
+        if (!sigueTrasVerificar(verificado)) return;
+      }
 
-    // Solo las fechas (15 nov 2026): se comprueban ellas, aquí mismo
-    if (soloFechas) {
-      const fallo = errorDeLasFechasNuevas(formData, { conEquipos, t });
-      setErrorDeLasFechas(fallo ? { texto: fallo } : null);
-      if (fallo) return;
-      await crear(null);
-      return;
-    }
-    if (!validaYAvisa()) return;
+      // Solo las fechas (15 nov 2026): se comprueban ellas, aquí mismo
+      if (soloFechas) {
+        const fallo = errorDeLasFechasNuevas(formData, { conEquipos, t });
+        setErrorDeLasFechas(fallo ? { texto: fallo } : null);
+        if (fallo) return;
+        enManosDelEnvio = true;
+        await envia(null);
+        return;
+      }
+      if (!validaYAvisa()) return;
 
-    // Una pública se publica al crearse, y eso es lo que hay que decir antes de
-    // hacerlo. En una privada no hay nada que avisar: no la ve nadie y se entra
-    // por invitación (FE #666). Al editar tampoco: ya existe
-    if (!isEditMode && formData.visibility === 'PUBLIC') {
-      setPreguntandoApertura(true);
-      return;
-    }
+      // Una pública se publica al crearse, y eso es lo que hay que decir antes
+      // de hacerlo. En una privada no hay nada que avisar: no la ve nadie y se
+      // entra por invitación (FE #666). Al editar tampoco: ya existe. Mientras
+      // pregunta, otro envío no la vuelve a pedir; el «crear» del modal sí pasa
+      if (!isEditMode && formData.visibility === 'PUBLIC') {
+        candado.current = 'pregunta';
+        enManosDelEnvio = true;
+        setPreguntandoApertura(true);
+        return;
+      }
 
-    await crear(null);
+      enManosDelEnvio = true;
+      await envia(null);
+    } finally {
+      if (!enManosDelEnvio) candado.current = false;
+    }
+  };
+
+  // Cerrar la pregunta de la apertura sin enviar suelta el candado
+  const cierraLaApertura = () => {
+    if (candado.current === 'pregunta') candado.current = false;
+    setPreguntandoApertura(false);
   };
 
   return {
@@ -428,7 +456,7 @@ export const useEnvioDeLaCompeticion = ({
     isSubmitting,
     preguntandoApertura,
     // Cerrar la pregunta de la apertura sin enviar
-    cierraLaApertura: () => setPreguntandoApertura(false),
+    cierraLaApertura,
     message,
     // Escribir en el formulario quita el aviso general
     borraElAviso: () => setMessage({ type: '', text: '' }),

@@ -69,6 +69,11 @@ const USUARIO = vi.hoisted(() => ({
   loading: false,
 }));
 vi.mock('../hooks/useAuth', () => ({ useAuth: () => USUARIO }));
+// El correo verificado, a mano: cuántas veces se pregunta (D5)
+const correo = vi.hoisted(() => ({ sinVerificar: false, confirma: null }));
+vi.mock('../hooks/useCorreoVerificado', () => ({
+  useCorreoVerificado: () => correo,
+}));
 const mockToast = vi.hoisted(() => ({
   error: vi.fn(),
   success: vi.fn(),
@@ -289,6 +294,8 @@ const dejaCorrerLasPromesas = () =>
 describe('CreateCompetition · lo que se envía y lo que pasa después (caracterización)', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    correo.sinVerificar = false;
+    correo.confirma = vi.fn(async () => true);
     idioma.actual = 'es';
     USUARIO.user = { id: 'u-1', gender: 'MALE' };
     USUARIO.loading = false;
@@ -810,6 +817,89 @@ describe('CreateCompetition · lo que se envía y lo que pasa después (caracter
         composicion.createCompetitionWithGolfCoursesUseCase.execute,
       ).toHaveBeenCalledTimes(1);
     });
+  });
+
+  it('D5: dos envíos seguidos con la copia sin verificar preguntan una vez', async () => {
+    correo.sinVerificar = true;
+    correo.confirma = vi.fn(() => new Promise(() => {}));
+    await abreElAlta('MEDAL');
+    rellenaLoBasico();
+    const formulario = document.querySelector('form');
+    act(() => {
+      fireEvent.submit(formulario);
+      fireEvent.submit(formulario);
+    });
+    await dejaCorrerLasPromesas();
+
+    expect(correo.confirma).toHaveBeenCalledTimes(1);
+  });
+
+  it('D5: dos envíos seguidos de una pública validan y piden la apertura una vez', async () => {
+    await abreElAlta('MEDAL');
+    rellenaLoBasico();
+    fireEvent.click(screen.getByTestId('visibilidad-PUBLIC'));
+    const formulario = document.querySelector('form');
+    const validacionesDelEnvio = () =>
+      mockValidar.mock.calls.filter((llamada) => llamada.length > 1).length;
+    act(() => {
+      fireEvent.submit(formulario);
+      fireEvent.submit(formulario);
+    });
+    await dejaCorrerLasPromesas();
+
+    expect(validacionesDelEnvio()).toBe(1);
+    expect(screen.getAllByTestId('confirmar-apertura')).toHaveLength(1);
+  });
+
+  it('D5: cerrada la pregunta de la apertura sin crear, se puede volver a enviar', async () => {
+    await abreElAlta('MEDAL');
+    rellenaLoBasico();
+    fireEvent.click(screen.getByTestId('visibilidad-PUBLIC'));
+    enviar();
+    await screen.findByTestId('confirmar-apertura');
+    fireEvent.click(screen.getByTestId('volver-al-formulario'));
+    expect(screen.queryByTestId('confirmar-apertura')).toBeNull();
+
+    enviar();
+
+    expect(await screen.findByTestId('confirmar-apertura')).toBeInTheDocument();
+  });
+
+  it('D5: si la validación falla, se puede volver a enviar', async () => {
+    mockValidar.mockImplementation((_f, opciones) =>
+      opciones ? { key: 'datesRequired' } : null,
+    );
+    await abreElAlta('MEDAL');
+    enviar();
+    expect(await screen.findByRole('alert')).toBeInTheDocument();
+    mockValidar.mockImplementation(() => null);
+    rellenaLoBasico();
+
+    enviar();
+
+    await waitFor(() =>
+      expect(
+        composicion.createCompetitionWithGolfCoursesUseCase.execute,
+      ).toHaveBeenCalledTimes(1),
+    );
+  });
+
+  it('D5: si el correo no está verificado, se puede volver a enviar al verificarlo', async () => {
+    correo.sinVerificar = true;
+    correo.confirma = vi.fn(async () => false);
+    await abreElAlta('MEDAL');
+    rellenaLoBasico();
+    enviar();
+    await waitFor(() => expect(correo.confirma).toHaveBeenCalledTimes(1));
+    correo.confirma.mockResolvedValue(true);
+
+    enviar();
+
+    await waitFor(() =>
+      expect(
+        composicion.createCompetitionWithGolfCoursesUseCase.execute,
+      ).toHaveBeenCalledTimes(1),
+    );
   });
 
   it('D4: creada una pública y camino de la ficha, otro envío no vuelve a preguntar la apertura', async () => {
