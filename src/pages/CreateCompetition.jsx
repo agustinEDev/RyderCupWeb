@@ -162,13 +162,6 @@ const CreateCompetition = () => {
 
     if (message.text) setMessage({ type: '', text: '' });
     if (name === 'competitionName') setErrorDelNombre(null);
-
-    if (name === 'playMode') {
-      setFormData((prev) => ({
-        ...prev,
-        playMode: value,
-      }));
-    }
   };
 
   // El envío, con los valores de este render: se arma al usarlo, en el evento,

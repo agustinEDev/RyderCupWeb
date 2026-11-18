@@ -9,7 +9,8 @@ import { formularioInicial } from '../utils/formularioDeLaCompeticion';
  * @param {{t: Function, idioma: string, isEditMode: boolean}} opciones
  */
 export const useFormularioDeLaCompeticion = ({ t, idioma, isEditMode }) => {
-  const [formData, setFormData] = useState(
+  // Solo en el primer render: después manda el efecto de los nombres
+  const [formData, setFormData] = useState(() =>
     formularioInicial(nombresPorDefectoDeLosEquipos(t)),
   );
 
