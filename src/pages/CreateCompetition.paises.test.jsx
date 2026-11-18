@@ -423,6 +423,27 @@ describe('CreateCompetition · países y campos del alta (caracterización)', ()
     ).toHaveTextContent('(create.coursesSelected {"count":0})');
   });
 
+  it('B3: al quitar el primero, la fila del segundo es la suya (no la del quitado reutilizada)', async () => {
+    await abreElAlta();
+    fireEvent.click(screen.getByText('elegir ES'));
+    fireEvent.click(await screen.findByText('campo 1 de ES'));
+    fireEvent.click(screen.getByText('campo 2 de ES'));
+    const papelera = (campo) =>
+      screen.getByRole('button', {
+        name: `detail.golfCourses.remove {"name":"${campo}"}`,
+      });
+    const delSegundo = papelera('Campo ES-2');
+    const delPrimero = papelera('Campo ES-1');
+    // Con el teclado: el foco en la papelera del primero
+    delPrimero.focus();
+
+    quitar('Campo ES-1');
+
+    // La del primero se va con su fila: un segundo Enter no quita el otro
+    expect(delPrimero).not.toBeInTheDocument();
+    expect(papelera('Campo ES-2')).toBe(delSegundo);
+  });
+
   it('B1: dos campos sin id del mismo país; la papelera del segundo quita el segundo', async () => {
     await abreElAlta();
     fireEvent.click(screen.getByText('elegir ES'));
