@@ -86,3 +86,26 @@ describe('MatchDetailModal · color del estado', () => {
     },
   );
 });
+
+// «Ver tarjeta»: un partido en juego o terminado jugando, también el concedido
+// (18 nov 2026: está terminado, y la anotación lo dice como cerrado). El
+// walkover no se jugó: sin tarjeta que ver
+describe('MatchDetailModal · ver la tarjeta', () => {
+  it.each([
+    ['IN_PROGRESS', true],
+    ['COMPLETED', true],
+    ['CONCEDED', true],
+    ['WALKOVER', false],
+    ['SCHEDULED', false],
+  ])('%s: botón %s', async (status, sale) => {
+    getMatchDetailUseCase.execute.mockResolvedValueOnce({
+      id: 'm-1',
+      status,
+      teamAPlayers: [],
+      teamBPlayers: [],
+    });
+    pinta(false, 'SINGLES');
+    await screen.findByText(`status.${status}`);
+    expect(Boolean(screen.queryByText('matches.viewScorecard'))).toBe(sale);
+  });
+});

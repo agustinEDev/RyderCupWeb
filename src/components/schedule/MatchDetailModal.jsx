@@ -301,9 +301,11 @@ const MatchDetailModal = ({
 
         {/* Footer */}
         <div className="flex justify-end gap-3 p-6 border-t border-gray-200">
+          {/* En juego o terminado jugando, también concedido; el walkover no se jugó */}
           {match &&
             (match.status === MatchStatus.IN_PROGRESS ||
-              match.status === MatchStatus.COMPLETED) && (
+              match.status === MatchStatus.COMPLETED ||
+              match.status === MatchStatus.CONCEDED) && (
               <button
                 onClick={() => {
                   onClose();
