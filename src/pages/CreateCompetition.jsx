@@ -8,7 +8,7 @@ import { useEdicionDeLaCompeticion } from '../hooks/useEdicionDeLaCompeticion';
 import { useLlevaALaVista } from '../hooks/useLlevaALaVista';
 import { useNavegacionDiferida } from '../hooks/useNavegacionDiferida';
 import { useCamposElegidos } from '../hooks/useCamposElegidos';
-import { crearEnvio } from '../components/competition/create/envioDeLaCompeticion';
+import { useEnvioDeLaCompeticion } from '../hooks/useEnvioDeLaCompeticion';
 import HeaderAuth from '../components/layout/HeaderAuth';
 import { useAuth } from '../hooks/useAuth';
 import { useCorreoVerificado } from '../hooks/useCorreoVerificado';
@@ -119,6 +119,7 @@ const CreateCompetition = () => {
     cupoCargado,
     ajustesCargados,
     diasCargados,
+    recuerdaLosAjustes,
   } = useEdicionDeLaCompeticion({
     competitionId,
     allCountries,
@@ -164,31 +165,30 @@ const CreateCompetition = () => {
     if (name === 'competitionName') setErrorDelNombre(null);
   };
 
-  // El envío, con los valores de este render: se arma al usarlo, en el evento,
-  // que es donde puede leer los refs
-  const envio = () =>
-    crearEnvio({
-      t,
-      idioma: i18n.language,
+  const { handleSubmit, crear } = useEnvioDeLaCompeticion({
+    t,
+    idioma: i18n.language,
+    formulario: {
       isEditMode,
       competitionId,
       formData,
       conEquipos,
       tipoElegido,
-      soloFechas,
-      inscritos,
       pideGenero,
       genero,
       generoParaApuntarse,
-      copiaSinVerificar,
-      confirmaVerificado,
-      allCountries,
-      adjacentCountries1,
-      adjacentCountries2,
+    },
+    edicion: {
+      soloFechas,
+      inscritos,
       cupoCargado,
       ajustesCargados,
       diasCargados,
-      navegaDentroDe,
+      recuerdaLosAjustes,
+    },
+    paises: { allCountries, adjacentCountries1, adjacentCountries2 },
+    correo: { copiaSinVerificar, confirmaVerificado },
+    avisos: {
       campoDelNombre,
       setMessage,
       setErrorDelNombre,
@@ -197,9 +197,9 @@ const CreateCompetition = () => {
       setMasOpciones,
       setPreguntandoApertura,
       setIsSubmitting,
-    });
-  const handleSubmit = (e) => envio().handleSubmit(e);
-  const crear = (diasDeApertura) => envio().crear(diasDeApertura);
+    },
+    navegaDentroDe,
+  });
 
   const paso = pasoDelAlta({
     isEditMode,

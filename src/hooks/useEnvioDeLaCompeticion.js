@@ -3,21 +3,21 @@ import {
   configureScheduleUseCase,
   updateCompetitionUseCase,
   updateStrokePlaySettingsUseCase,
-} from '../../../composition';
-import { formatCountryName } from '../../../services/countries';
-import { validateCompetitionForm } from '../../../utils/competitionFormValidation';
-import { agendaPropuesta } from '../../../utils/agenda';
+} from '../composition';
+import { formatCountryName } from '../services/countries';
+import { validateCompetitionForm } from '../utils/competitionFormValidation';
+import { agendaPropuesta } from '../utils/agenda';
 import {
   cambiosDeAjustes,
   primeroLosAjustes,
-} from '../../../utils/ajustesDeStrokePlay';
-import { mensajeDelError } from '../../../utils/mensajeDelError';
-import { registraElFallo } from '../../../utils/registraElFallo';
-import customToast from '../../../utils/toast';
+} from '../utils/ajustesDeStrokePlay';
+import { mensajeDelError } from '../utils/mensajeDelError';
+import { registraElFallo } from '../utils/registraElFallo';
+import customToast from '../utils/toast';
 import {
   ERRORES_DEL_NOMBRE,
   ERRORES_DE_LAS_OPCIONES,
-} from '../../../utils/formularioDeLaCompeticion';
+} from '../utils/formularioDeLaCompeticion';
 import {
   cargaDeLaCompeticion,
   camposParaElAlta,
@@ -25,47 +25,75 @@ import {
   sesionesQueQuedanFuera,
   motivoDelFalloAlEditar,
   textoDelAvisoDeValidacion,
-} from '../../../utils/peticionDeLaCompeticion';
+} from '../utils/peticionDeLaCompeticion';
 
 /**
  * El envío del formulario de competición: validar, crear o editar, y avisar de
- * lo que salga. Se crea en cada render con los valores de ese render, igual
- * que cuando vivía en el cuerpo de la página.
+ * lo que salga. Los manejadores se definen en cada render con los valores de
+ * ese render, igual que cuando vivían en el cuerpo de la página; los refs se
+ * leen solo dentro de ellos, al enviar, nunca al pintar.
  *
+ * @param {object} opciones
+ * @param {Function} opciones.t
+ * @param {string} opciones.idioma
+ * @param {{isEditMode: boolean, competitionId: ?string, formData: object,
+ *   conEquipos: boolean, tipoElegido: ?string, pideGenero: boolean,
+ *   genero: string, generoParaApuntarse: object}} opciones.formulario
+ * @param {{soloFechas: boolean, inscritos: number, cupoCargado: object,
+ *   ajustesCargados: object, diasCargados: object,
+ *   recuerdaLosAjustes: Function}} opciones.edicion lo leído al editar
+ * @param {{allCountries: Array, adjacentCountries1: Array,
+ *   adjacentCountries2: Array}} opciones.paises
+ * @param {{copiaSinVerificar: boolean, confirmaVerificado: Function}} opciones.correo
+ * @param {{campoDelNombre: object, setMessage: Function,
+ *   setErrorDelNombre: Function, setFaltaVerificar: Function,
+ *   setErrorDeLasFechas: Function, setMasOpciones: Function,
+ *   setPreguntandoApertura: Function, setIsSubmitting: Function}} opciones.avisos
+ * @param {(ruta: string, ms: number) => void} opciones.navegaDentroDe
  * @returns {{handleSubmit: (e: Event) => Promise<void>,
  *   crear: (diasDeApertura: ?number) => Promise<void>}}
  */
-export const crearEnvio = ({
+export const useEnvioDeLaCompeticion = ({
   t,
   idioma,
-  isEditMode,
-  competitionId,
-  formData,
-  conEquipos,
-  tipoElegido,
-  soloFechas,
-  inscritos,
-  pideGenero,
-  genero,
-  generoParaApuntarse,
-  copiaSinVerificar,
-  confirmaVerificado,
-  allCountries,
-  adjacentCountries1,
-  adjacentCountries2,
-  cupoCargado,
-  ajustesCargados,
-  diasCargados,
+  formulario,
+  edicion,
+  paises,
+  correo,
+  avisos,
   navegaDentroDe,
-  campoDelNombre,
-  setMessage,
-  setErrorDelNombre,
-  setFaltaVerificar,
-  setErrorDeLasFechas,
-  setMasOpciones,
-  setPreguntandoApertura,
-  setIsSubmitting,
 }) => {
+  const {
+    isEditMode,
+    competitionId,
+    formData,
+    conEquipos,
+    tipoElegido,
+    pideGenero,
+    genero,
+    generoParaApuntarse,
+  } = formulario;
+  const {
+    soloFechas,
+    inscritos,
+    cupoCargado,
+    ajustesCargados,
+    diasCargados,
+    recuerdaLosAjustes,
+  } = edicion;
+  const { allCountries, adjacentCountries1, adjacentCountries2 } = paises;
+  const { copiaSinVerificar, confirmaVerificado } = correo;
+  const {
+    campoDelNombre,
+    setMessage,
+    setErrorDelNombre,
+    setFaltaVerificar,
+    setErrorDeLasFechas,
+    setMasOpciones,
+    setPreguntandoApertura,
+    setIsSubmitting,
+  } = avisos;
+
   const enElIdioma = { t, idioma };
 
   // El aviso del nombre, y el campo a la vista y con el foco: el botón queda
@@ -177,9 +205,8 @@ export const crearEnvio = ({
     const guardaLosAjustes = async () => {
       envio.enLaCompeticion = false;
       // Lo guardado pasa a ser la referencia: reintentar no los reenvía
-      ajustesCargados.current = await updateStrokePlaySettingsUseCase.execute(
-        competitionId,
-        cambios,
+      recuerdaLosAjustes(
+        await updateStrokePlaySettingsUseCase.execute(competitionId, cambios),
       );
     };
     const ajustesPrimero =
