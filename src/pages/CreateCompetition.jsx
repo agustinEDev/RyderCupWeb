@@ -46,9 +46,7 @@ import CompetitionTypeChooser from '../components/competition/CompetitionTypeCho
 import SetupModeChooser from '../components/competition/SetupModeChooser';
 import StrokePlaySettings from '../components/competition/StrokePlaySettings';
 import {
-  formularioDeAjustes,
   diasDelTorneo,
-  separadorDecimal,
   ajustesParaCrear,
   cambiosDeAjustes,
   primeroLosAjustes,
@@ -66,6 +64,22 @@ import { PANTALLA_MENOS_BARRA_INFERIOR } from '../utils/barraInferior';
 import { mensajeDelError } from '../utils/mensajeDelError';
 import { registraElFallo } from '../utils/registraElFallo';
 import { GolfCourseApprovalStatus } from '../domain/value_objects/GolfCourseApprovalStatus';
+import {
+  ERRORES_DEL_NOMBRE,
+  ERRORES_DE_LAS_OPCIONES,
+  aPaises,
+  vecinosDelSegundoNivel,
+  formularioInicial,
+  formularioDeLaEdicion,
+  faltaAlgoPlegado as faltaAlgoEnLoPlegado,
+  pideGenero as hayQuePedirElGenero,
+  pasoDelAlta,
+  alElegirPais,
+  alVaciarPais,
+  alCambiarAdyacente1,
+  alQuitarAdyacente1,
+  alQuitarAdyacente2,
+} from '../utils/formularioDeLaCompeticion';
 
 // Helper function to get message className
 const getMessageClassName = (type) => {
@@ -74,54 +88,6 @@ const getMessageClassName = (type) => {
   if (type === 'error') return 'bg-red-50 text-red-800 border border-red-200';
   return 'bg-yellow-50 text-yellow-800 border border-yellow-200';
 };
-
-// Los avisos que apuntan a un campo de «Más opciones»: si salta uno de estos,
-// el plegable tiene que abrirse o el organizador no ve lo que le piden. El cupo
-// y el modo de juego ya no están aquí dentro: subieron al formulario
-// Para preguntar «¿vale lo que está plegado?» hay que dar por buenos los campos
-// de fuera: si no, el primer error de ellos taparía siempre al del plegable
-const FORMULARIO_MINIMO = {
-  competitionName: 'x'.repeat(CompetitionName.MIN_LENGTH),
-  startDate: '2026-01-01',
-  endDate: '2026-01-02',
-  country: { code: 'ES' },
-  adjacentCountry1: '',
-  adjacentCountry2: '',
-  golfCourses: [{ countryCode: 'ES' }],
-  numberOfPlayers: null,
-};
-
-// Los del nombre se dicen junto a su campo, no en el aviso de arriba
-// (RyderCupAm#540): «nameTaken» es el 409 del servidor
-const ERRORES_DEL_NOMBRE = new Set([
-  'nameRequired',
-  'nameTooShort',
-  'nameTooLong',
-  'nameUnreadable',
-  'nameTaken',
-]);
-
-const ERRORES_DE_LAS_OPCIONES = new Set([
-  'teamNamesRequired',
-  'teamNamesTooShort',
-  'teamNamesTooLong',
-  'handicapLimitRange',
-]);
-
-// Un país de la API, con lo que usan los selectores; los que no traen código o
-// nombre se descartan
-const aPaises = (data) =>
-  Array.isArray(data)
-    ? data
-        .filter((c) => c?.code && (c?.name_en || c?.name_es))
-        .map((c) => ({
-          id: c.code,
-          name: c.name_en || c.name_es,
-          code: c.code,
-          name_en: c.name_en,
-          name_es: c.name_es,
-        }))
-    : [];
 
 // Los vecinos de un país; sin poder leerlos, ninguno
 const leeVecinos = async (countryId) => {
@@ -135,28 +101,6 @@ const leeVecinos = async (countryId) => {
     );
     return [];
   }
-};
-
-// Los que ofrece el tercer país: los del primer adyacente más los vecinos del
-// adyacente, sin repetir y sin el principal ni el propio adyacente
-const vecinosDelSegundoNivel = (
-  vecinosDelPrimero,
-  vecinosDelAdyacente,
-  mainCountryCode,
-  adjacentCountry1Code,
-) => {
-  const existingIds = new Set(vecinosDelPrimero.map((c) => c.code));
-  const combined = [...vecinosDelPrimero];
-  for (const country of vecinosDelAdyacente) {
-    if (
-      !existingIds.has(country.code) &&
-      country.code !== mainCountryCode &&
-      country.code !== adjacentCountry1Code
-    ) {
-      combined.push(country);
-    }
-  }
-  return combined;
 };
 
 // Todo lo que hace falta para editar una competición, leído de una vez: la
@@ -341,54 +285,18 @@ const CreateCompetition = () => {
   );
 
   // Form data
-  const [formData, setFormData] = useState({
-    // Competition Details
-    competitionName: '',
-    // Si el organizador de un Stableford o un Medal juega (RyderCupAm#552): si
-    // no, no queda inscrito. Lo normal es que sí
-    organizerPlays: true,
-    // Nacen en el idioma de la app: son texto libre del organizador, así que
-    // traducirlos al pintar le cambiaría el nombre a quien llame a su equipo
-    // «USA» a propósito
-    teamOneName: nombresPorDefectoDeLosEquipos(t).uno,
-    teamTwoName: nombresPorDefectoDeLosEquipos(t).dos,
-
-    // Schedule
-    startDate: '',
-    endDate: '',
-
-    // Location
-    country: null,
-    adjacentCountry1: '',
-    adjacentCountry2: '',
-    showAdjacentCountry1: false,
-    showAdjacentCountry2: false,
-
-    // Golf Courses (array of { countryCode, course })
-    golfCourses: [],
-
-    // RyderCup Settings
-    playMode: 'HANDICAP',
-    visibility: 'PRIVATE',
-    numberOfPlayers: CUPO_POR_DEFECTO,
-    // Cuánto monta la app por su cuenta (FE #695). Al crear se elige en su paso;
-    // el reparto de equipos sale de él, así que ya no se pregunta aparte
-    setupMode: null,
-    tournamentType: null,
-    maxPlayingHandicap: undefined,
-    // Categorías, jornadas por jugador y general de un Stableford o un Medal
-    // (FE #824); una Ryder no los usa ni los manda
-    strokePlay: formularioDeAjustes(null),
-  });
+  const [formData, setFormData] = useState(
+    formularioInicial(nombresPorDefectoDeLosEquipos(t)),
+  );
   // Solo una Ryder tiene equipos y modo de montaje (FE #791). Sin tipo todavía,
   // la de siempre: así se cargaba y se creaba todo antes del tipo
   const conEquipos = tieneEquipos(formData.tournamentType);
-  // Y si no juega («¿Juegas tú?» desmarcada, solo en stroke play), ni se pide
-  // ni se guarda: el servidor tampoco lo exige (Agustín, 13 oct)
-  const pideGenero =
-    !isEditMode &&
-    generoParaApuntarse.falta &&
-    (conEquipos || formData.organizerPlays);
+  const pideGenero = hayQuePedirElGenero({
+    isEditMode,
+    falta: generoParaApuntarse.falta,
+    conEquipos,
+    organizerPlays: formData.organizerPlays,
+  });
 
   // El resumen del plegable no puede prometer un equipo que ya no está escrito
   // Vaciar el campo en edición no puede recortar el cupo de una competición con
@@ -409,12 +317,7 @@ const CreateCompetition = () => {
   // pulsa «Crear» y no pasa nada visible. Hay que llevarlo a los ojos
   // (`/code-review`)
   const avisoRef = useRef(null);
-  // El resumen no puede prometer lo que el envío va a rechazar, y quien sabe si
-  // vale es la validación: aquí se le pregunta a ella, no a una copia de sus
-  // reglas que se quedaría vieja al añadir la siguiente (`/code-review`)
-  const faltaAlgoPlegado = ERRORES_DE_LAS_OPCIONES.has(
-    validateCompetitionForm({ ...formData, ...FORMULARIO_MINIMO })?.key,
-  );
+  const faltaAlgoPlegado = faltaAlgoEnLoPlegado(formData);
 
   // Golf Course Request Modal
   const [showRequestModal, setShowRequestModal] = useState(false);
@@ -502,41 +405,11 @@ const CreateCompetition = () => {
       return;
     }
 
-    // Find main country object from allCountries
-    const mainCountry = allCountries.find(
-      (c) => c.code === datos.mainCountryCode,
-    );
-
-    // Populate form with competition data
-    // NOTE: The mapper returns camelCase, not snake_case
-    const formDataToSet = {
-      competitionName: competition.name || '',
-      teamOneName:
-        competition.team1Name || nombresPorDefectoDeLosEquipos(t).uno,
-      teamTwoName:
-        competition.team2Name || nombresPorDefectoDeLosEquipos(t).dos,
-      startDate: competition.startDate || '',
-      endDate: competition.endDate || '',
-      country: mainCountry || null,
-      adjacentCountry1: datos.adjacentCountry1,
-      adjacentCountry2: datos.adjacentCountry2,
-      showAdjacentCountry1: !!datos.adjacentCountry1,
-      showAdjacentCountry2: !!datos.adjacentCountry2,
-      golfCourses: datos.golfCoursesData,
-      playMode: competition.playMode || 'HANDICAP',
-      visibility: competition.visibility || 'PRIVATE',
-      numberOfPlayers: competition.maxPlayers || CUPO_POR_DEFECTO,
-      tournamentType: competition.tournamentType || 'RYDER_CUP',
-      // Solo una Ryder tiene modo de montaje: a un Stableford no se le pone
-      setupMode:
-        competition.setupMode || (competition.hasTeams ? 'RYDER_CUP' : null),
-      maxPlayingHandicap: competition.maxPlayingHandicap ?? undefined,
-      // Con el decimal del idioma: «12,0» en español, «12.0» en inglés
-      strokePlay: formularioDeAjustes(
-        competition.strokePlay ?? null,
-        separadorDecimal(i18n.language),
-      ),
-    };
+    const formDataToSet = formularioDeLaEdicion(datos, {
+      equipos: nombresPorDefectoDeLosEquipos(t),
+      idioma: i18n.language,
+      allCountries,
+    });
 
     // Los vecinos de esta competición: lo que se pidiera antes ya no vale
     if (datos.vecinos1) {
@@ -651,22 +524,7 @@ const CreateCompetition = () => {
   };
 
   const handleCountrySelect = (country) => {
-    setFormData((prev) => {
-      // Keep only golf courses for the main country
-      const newGolfCourses = prev.golfCourses.filter(
-        (gc) => gc.countryCode === country.code,
-      );
-
-      return {
-        ...prev,
-        country: country,
-        adjacentCountry1: '',
-        adjacentCountry2: '',
-        showAdjacentCountry1: false,
-        showAdjacentCountry2: false,
-        golfCourses: newGolfCourses,
-      };
-    });
+    setFormData((prev) => alElegirPais(prev, country));
     // Los vecinos del tercer país eran del principal anterior: si llegan tarde,
     // tampoco valen
     olvidaLosVecinosPedidos(2);
@@ -683,12 +541,7 @@ const CreateCompetition = () => {
 
   const handleAdjacentCountry1Change = (e) => {
     const countryId = e.target.value;
-    setFormData((prev) => ({
-      ...prev,
-      adjacentCountry1: countryId,
-      adjacentCountry2: '',
-      showAdjacentCountry2: false,
-    }));
+    setFormData((prev) => alCambiarAdyacente1(prev, countryId));
     // Los vecinos del tercer país eran del adyacente anterior: ni se enseñan
     // mientras llegan los del nuevo ni, si llegan tarde, valen
     olvidaLosVecinosPedidos(2);
@@ -712,41 +565,13 @@ const CreateCompetition = () => {
   };
 
   const handleRemoveAdjacentCountry1 = () => {
-    setFormData((prev) => {
-      // Remove golf courses for both adjacent countries
-      const newGolfCourses = prev.golfCourses.filter(
-        (gc) =>
-          gc.countryCode !== prev.adjacentCountry1 &&
-          gc.countryCode !== prev.adjacentCountry2,
-      );
-
-      return {
-        ...prev,
-        adjacentCountry1: '',
-        adjacentCountry2: '',
-        showAdjacentCountry1: false,
-        showAdjacentCountry2: false,
-        golfCourses: newGolfCourses,
-      };
-    });
+    setFormData(alQuitarAdyacente1);
     olvidaLosVecinosPedidos(2);
     setAdjacentCountries2([]);
   };
 
   const handleRemoveAdjacentCountry2 = () => {
-    setFormData((prev) => {
-      // Remove golf courses for second adjacent country
-      const newGolfCourses = prev.golfCourses.filter(
-        (gc) => gc.countryCode !== prev.adjacentCountry2,
-      );
-
-      return {
-        ...prev,
-        adjacentCountry2: '',
-        showAdjacentCountry2: false,
-        golfCourses: newGolfCourses,
-      };
-    });
+    setFormData(alQuitarAdyacente2);
   };
 
   // Un campo ya añadido no se añade otra vez (FE #644). El buscador tampoco lo
@@ -1218,6 +1043,13 @@ const CreateCompetition = () => {
     }
   };
 
+  const paso = pasoDelAlta({
+    isEditMode,
+    tipoElegido,
+    conEquipos,
+    setupMode: formData.setupMode,
+  });
+
   if (isLoading || loadingCompetition) {
     return (
       <FullScreenLoader
@@ -1270,7 +1102,7 @@ const CreateCompetition = () => {
               </div>
             )}
 
-            {!isEditMode && !tipoElegido && (
+            {paso === 'tipo' && (
               <div className="px-4">
                 <CompetitionTypeChooser onSelect={eligeElTipo} />
               </div>
@@ -1279,17 +1111,13 @@ const CreateCompetition = () => {
             {/* Y detrás del tipo, cuánto hace la app por su cuenta (FE #695).
                 Editando no es un paso: la competición ya existe y el modo se
                 cambia dentro del formulario, como el resto de su configuración */}
-            {!isEditMode &&
-              tipoElegido &&
-              conEquipos &&
-              !formData.setupMode && (
-                <div className="px-4">
-                  <SetupModeChooser onSelect={eligeElModo} />
-                </div>
-              )}
+            {paso === 'modo' && (
+              <div className="px-4">
+                <SetupModeChooser onSelect={eligeElModo} />
+              </div>
+            )}
 
-            {(isEditMode ||
-              (tipoElegido && (formData.setupMode || !conEquipos))) && (
+            {paso === 'formulario' && (
               <form
                 onSubmit={handleSubmit}
                 className="flex flex-col gap-6 px-4"
@@ -1558,14 +1386,7 @@ const CreateCompetition = () => {
                           if (selectedCountry) {
                             handleCountrySelect(selectedCountry);
                           } else {
-                            setFormData((prev) => ({
-                              ...prev,
-                              country: null,
-                              adjacentCountry1: '',
-                              adjacentCountry2: '',
-                              showAdjacentCountry1: false,
-                              showAdjacentCountry2: false,
-                            }));
+                            setFormData(alVaciarPais);
                           }
                         }}
                       />
