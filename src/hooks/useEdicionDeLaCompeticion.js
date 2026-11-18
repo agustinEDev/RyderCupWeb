@@ -3,7 +3,7 @@ import {
   getCompetitionDetailUseCase,
   getCompetitionGolfCoursesUseCase,
 } from '../composition';
-import { nombresPorDefectoDeLosEquipos } from '../pages/nombresPorDefectoDeLosEquipos';
+import { nombresPorDefectoDeLosEquipos } from '../utils/nombresPorDefectoDeLosEquipos';
 import { leeVecinos } from './usePaisesDeLaCompeticion';
 import {
   soloSePuedenEditarLasFechas,

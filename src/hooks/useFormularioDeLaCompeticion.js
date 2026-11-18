@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { nombresPorDefectoDeLosEquipos } from '../pages/nombresPorDefectoDeLosEquipos';
+import { nombresPorDefectoDeLosEquipos } from '../utils/nombresPorDefectoDeLosEquipos';
 import { formularioInicial } from '../utils/formularioDeLaCompeticion';
 
 /**
