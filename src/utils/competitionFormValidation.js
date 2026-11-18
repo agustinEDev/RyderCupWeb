@@ -3,14 +3,8 @@ import { tieneEquipos } from '../domain/value_objects/TournamentType';
 import { CompetitionName } from '../domain/value_objects/CompetitionName';
 import { numeroEntero } from './numeroEntero';
 import { diasDelTorneo, errorDeAjustes } from './ajustesDeStrokePlay';
+import { CLAVES_DE_LOS_PROBLEMAS_DEL_NOMBRE } from './clavesDelNombre';
 
-const ERRORES_DEL_NOMBRE = {
-  REQUIRED: 'nameRequired',
-  TOO_SHORT: 'nameTooShort',
-  UNREADABLE: 'nameUnreadable',
-  TOO_LONG: 'nameTooLong',
-  HAS_LINK: 'nameHasLink',
-};
 const MIN_TEAM_NAME = 3;
 const MAX_TEAM_NAME = 50;
 const MIN_HANDICAP = 1;
@@ -37,7 +31,7 @@ export const validateCompetitionForm = (
   // aquí solo se traduce a la clave de su aviso
   const problema = CompetitionName.problemWith(formData.competitionName);
   if (problema) {
-    return { key: ERRORES_DEL_NOMBRE[problema] };
+    return { key: CLAVES_DE_LOS_PROBLEMAS_DEL_NOMBRE[problema] };
   }
 
   // Los dos nombres se normalizan UNA vez y las tres comprobaciones miran lo

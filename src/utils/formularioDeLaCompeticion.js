@@ -1,5 +1,6 @@
 import { CompetitionName } from '../domain/value_objects/CompetitionName';
 import { validateCompetitionForm } from './competitionFormValidation';
+import { CLAVES_DE_LOS_PROBLEMAS_DEL_NOMBRE } from './clavesDelNombre';
 import { CUPO_POR_DEFECTO } from './cupoDeJugadores';
 import { formularioDeAjustes, separadorDecimal } from './ajustesDeStrokePlay';
 
@@ -23,12 +24,11 @@ export const FORMULARIO_MINIMO = {
 };
 
 // Los del nombre se dicen junto a su campo, no en el aviso de arriba
-// (RyderCupAm#540): «nameTaken» es el 409 del servidor
-export const ERRORES_DEL_NOMBRE = new Set([
-  'nameRequired',
-  'nameTooShort',
-  'nameTooLong',
-  'nameUnreadable',
+// (RyderCupAm#540): todos los que da la validación, de la misma lista con la que
+// ella traduce (una copia a mano se quedó sin «nameHasLink»), más «nameTaken»,
+// el 409 del servidor
+export const ERRORES_JUNTO_AL_NOMBRE = new Set([
+  ...Object.values(CLAVES_DE_LOS_PROBLEMAS_DEL_NOMBRE),
   'nameTaken',
 ]);
 

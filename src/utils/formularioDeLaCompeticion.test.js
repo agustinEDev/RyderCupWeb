@@ -13,9 +13,11 @@ import {
   alQuitarAdyacente1,
   alQuitarAdyacente2,
   alCambiarAdyacente2,
-  ERRORES_DEL_NOMBRE,
+  ERRORES_JUNTO_AL_NOMBRE,
+  FORMULARIO_MINIMO,
   ERRORES_DE_LAS_OPCIONES,
 } from './formularioDeLaCompeticion';
+import { validateCompetitionForm } from './competitionFormValidation';
 import { CUPO_POR_DEFECTO } from './cupoDeJugadores';
 import { formularioDeAjustes } from './ajustesDeStrokePlay';
 
@@ -228,8 +230,29 @@ describe('faltaAlgoPlegado', () => {
   });
 
   it('las dos listas no se pisan', () => {
-    for (const clave of ERRORES_DEL_NOMBRE)
+    for (const clave of ERRORES_JUNTO_AL_NOMBRE)
       expect(ERRORES_DE_LAS_OPCIONES.has(clave)).toBe(false);
+  });
+
+  // C2: lo que diga la validación del nombre, sea cual sea el problema, va
+  // junto a su campo (con la regla de verdad, no una lista copiada)
+  it.each([
+    ['vacío', ''],
+    ['corto', 'ab'],
+    ['ilegible', '...'],
+    ['largo', 'x'.repeat(101)],
+    ['con enlace', 'Ryder en www.ejemplo.com'],
+  ])('C2: el nombre %s se dice junto al campo', (_caso, nombre) => {
+    const error = validateCompetitionForm({
+      ...FORMULARIO_MINIMO,
+      competitionName: nombre,
+    });
+    expect(error?.key).toMatch(/^name/);
+    expect(ERRORES_JUNTO_AL_NOMBRE.has(error.key)).toBe(true);
+  });
+
+  it('C2: el 409 del servidor (ya usado) también', () => {
+    expect(ERRORES_JUNTO_AL_NOMBRE.has('nameTaken')).toBe(true);
   });
 });
 

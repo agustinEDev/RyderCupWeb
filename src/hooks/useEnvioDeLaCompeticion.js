@@ -16,7 +16,7 @@ import { mensajeDelError } from '../utils/mensajeDelError';
 import { registraElFallo } from '../utils/registraElFallo';
 import customToast from '../utils/toast';
 import {
-  ERRORES_DEL_NOMBRE,
+  ERRORES_JUNTO_AL_NOMBRE,
   ERRORES_DE_LAS_OPCIONES,
 } from '../utils/formularioDeLaCompeticion';
 import {
@@ -141,7 +141,7 @@ export const useEnvioDeLaCompeticion = ({
       inscritos,
     });
     if (!validationError) return true;
-    if (ERRORES_DEL_NOMBRE.has(validationError.key)) {
+    if (ERRORES_JUNTO_AL_NOMBRE.has(validationError.key)) {
       senalaElNombre(validationError.key);
       return false;
     }

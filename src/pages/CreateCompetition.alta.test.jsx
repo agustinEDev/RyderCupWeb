@@ -264,26 +264,30 @@ describe('CreateCompetition · BE-B en el alta (FE)', () => {
     ).not.toHaveProperty('organizer_plays');
   });
 
-  it.each(['nameRequired', 'nameTooShort', 'nameTooLong', 'nameUnreadable'])(
-    '21: %s, junto al campo y no arriba',
-    async (clave) => {
-      mockValidar.mockReturnValue({ key: clave });
-      await alTipo('MEDAL');
-      const campo = await screen.findByTestId('campo-nombre');
+  it.each([
+    'nameRequired',
+    'nameTooShort',
+    'nameTooLong',
+    'nameUnreadable',
+    'nameHasLink',
+  ])('21 (C1): %s, junto al campo, con el foco, y no arriba', async (clave) => {
+    mockValidar.mockReturnValue({ key: clave });
+    await alTipo('MEDAL');
+    const campo = await screen.findByTestId('campo-nombre');
 
-      enviar();
+    enviar();
 
-      const aviso = await screen.findByTestId('error-del-nombre');
-      expect(aviso).toHaveTextContent(`create.errors.${clave}`);
-      expect(campo).toHaveAttribute('aria-invalid', 'true');
-      expect(campo).toHaveAttribute('aria-describedby', aviso.id);
-      // Una vez: junto al campo, no repetido en el aviso de arriba
-      expect(screen.getAllByText(`create.errors.${clave}`)).toHaveLength(1);
-      expect(
-        composicion.createCompetitionWithGolfCoursesUseCase.execute,
-      ).not.toHaveBeenCalled();
-    },
-  );
+    const aviso = await screen.findByTestId('error-del-nombre');
+    expect(aviso).toHaveTextContent(`create.errors.${clave}`);
+    expect(campo).toHaveAttribute('aria-invalid', 'true');
+    expect(campo).toHaveAttribute('aria-describedby', aviso.id);
+    expect(campo).toHaveFocus();
+    // Una vez: junto al campo, no repetido en el aviso de arriba
+    expect(screen.getAllByText(`create.errors.${clave}`)).toHaveLength(1);
+    expect(
+      composicion.createCompetitionWithGolfCoursesUseCase.execute,
+    ).not.toHaveBeenCalled();
+  });
 
   it('21b: un 409 (ya tienes una con ese nombre), traducido junto al campo', async () => {
     composicion.createCompetitionWithGolfCoursesUseCase.execute.mockRejectedValue(
