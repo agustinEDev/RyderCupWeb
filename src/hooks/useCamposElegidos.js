@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import customToast from '../utils/toast';
 
 /**
@@ -12,6 +12,9 @@ export const useCamposElegidos = ({ t, formData, setFormData }) => {
   // Golf Course Request Modal
   const [showRequestModal, setShowRequestModal] = useState(false);
   const [requestModalCountry, setRequestModalCountry] = useState(null);
+  // Un campo sin id (recién pedido) no tiene con qué distinguir su fila: se le
+  // da una clave del formulario al añadirlo, que nunca viaja en la petición
+  const ultimaClave = useRef(0);
 
   // Un campo ya añadido no se añade otra vez (FE #644). El buscador tampoco lo
   // ofrece, pero la guarda se queda: el torneo se crea ANTES de enganchar los
@@ -32,9 +35,12 @@ export const useCamposElegidos = ({ t, formData, setFormData }) => {
       customToast.info(t('create.courseAlreadyAdded'));
       return;
     }
+    const sinId = course?.id
+      ? {}
+      : { clave: `sin-id-${(ultimaClave.current += 1)}` };
     setFormData((prev) => ({
       ...prev,
-      golfCourses: [...prev.golfCourses, { countryCode, course }],
+      golfCourses: [...prev.golfCourses, { countryCode, course, ...sinId }],
     }));
   };
 

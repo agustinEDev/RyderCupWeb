@@ -444,6 +444,32 @@ describe('CreateCompetition · países y campos del alta (caracterización)', ()
     expect(papelera('Campo ES-2')).toBe(delSegundo);
   });
 
+  it('B3: sin id también: al quitar el primero, la fila y la papelera del segundo siguen siendo suyas, y la clave no se manda', async () => {
+    await abreElAlta();
+    fireEvent.click(screen.getByText('elegir ES'));
+    for (const nombre of ['Campo sin id A', 'Campo sin id B']) {
+      campoPedido.siguiente = { name: nombre };
+      fireEvent.click(await screen.findByText('pedir campo en ES'));
+      fireEvent.click(screen.getByText('campo pedido creado'));
+    }
+    const papelera = (campo) =>
+      screen.getByRole('button', {
+        name: `detail.golfCourses.remove {"name":"${campo}"}`,
+      });
+    const delSegundo = papelera('Campo sin id B');
+    const delPrimero = papelera('Campo sin id A');
+    delPrimero.focus();
+
+    quitar('Campo sin id A');
+
+    expect(delPrimero).not.toBeInTheDocument();
+    expect(papelera('Campo sin id B')).toBe(delSegundo);
+    // La identidad de la fila es del formulario: no viaja en la petición
+    expect(await camposEnviados()).toEqual([
+      { id: undefined, name: 'Campo sin id B' },
+    ]);
+  });
+
   it('B1: dos campos sin id del mismo país; la papelera del segundo quita el segundo', async () => {
     await abreElAlta();
     fireEvent.click(screen.getByText('elegir ES'));

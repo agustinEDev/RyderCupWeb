@@ -134,6 +134,14 @@ describe('cargaDeLaCompeticion', () => {
 });
 
 describe('camposParaElAlta', () => {
+  it('la clave de la fila de un campo sin id no se manda', () => {
+    const [enviado] = camposParaElAlta([
+      { countryCode: 'ES', clave: 'sin-id-1', course: { name: 'Sin id' } },
+    ]);
+    expect(enviado).toEqual({ id: undefined, name: 'Sin id' });
+    expect(enviado).not.toHaveProperty('clave');
+  });
+
   it('cada campo, con su id y su nombre', () => {
     expect(
       camposParaElAlta([

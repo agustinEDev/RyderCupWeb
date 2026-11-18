@@ -49,10 +49,12 @@ const CamposDeUnPais = ({
       {delPais.map(({ gc, posicion }) => {
         return (
           <div
-            // Estable: el id del campo. Con la posición, quitar el primero
+            // Estable: el id del campo o, sin él, la clave que le dio el
+            // formulario al añadirlo. Con la posición, quitar el primero
             // reutilizaba su fila para el siguiente con el foco en su papelera,
-            // y un segundo Enter lo quitaba también. La posición, solo sin id
-            key={gc.course.id ?? `sin-id-${posicion}`}
+            // y un segundo Enter lo quitaba también. La posición, solo para
+            // quitar
+            key={gc.course.id ?? gc.clave}
             className="mb-2 p-3 bg-gray-50 border border-gray-200 rounded-lg flex items-center justify-between"
           >
             <div className="flex-1">
