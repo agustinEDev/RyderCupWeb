@@ -3,6 +3,7 @@ import { Link } from 'react-router';
 import { Mail, Clock, User, MessageSquare, ChevronRight } from 'lucide-react';
 import InvitationBadge from './InvitationBadge';
 import { quienEsElInvitado } from '../../utils/quienEsElInvitado';
+import InvitationStatus from '../../domain/value_objects/InvitationStatus';
 
 // Una sola regla para «Caducada» y para dejar de ofrecer la ficha (/code-review)
 const haCaducado = (expiresAt) =>
@@ -42,8 +43,8 @@ const getExpirationText = (expiresAt, t) => {
 // La fecha dice qué pasó (FE #724): retirarla y quedarse sin plaza también la
 // apuntan en el servidor, y «Respondida» decía que el invitado contestó
 const CLAVE_DE_LA_FECHA = {
-  CANCELLED: 'card.withdrawnAt',
-  NO_ROOM: 'card.noRoomSince',
+  [InvitationStatus.CANCELLED]: 'card.withdrawnAt',
+  [InvitationStatus.NO_ROOM]: 'card.noRoomSince',
 };
 
 const InvitationCard = ({

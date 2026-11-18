@@ -1,3 +1,5 @@
+import { GolfCourseApprovalStatus } from '../domain/value_objects/GolfCourseApprovalStatus';
+
 /**
  * Los campos de una competición, de la respuesta de la API a la pantalla.
  *
@@ -18,7 +20,9 @@ export const aCamposDeLaCompeticion = (resultado) => {
       id: item.golf_course?.id || item.golf_course_id,
       name: item.golf_course?.name || item.name || '',
       approvalStatus:
-        item.golf_course?.approval_status || item.approval_status || 'APPROVED',
+        item.golf_course?.approval_status ||
+        item.approval_status ||
+        GolfCourseApprovalStatus.APPROVED,
       // La zona del campo (FE #824): la hora del campo para programar
       timezone: item.golf_course?.timezone ?? item.timezone ?? null,
       countryCode: item.golf_course?.country_code || item.country_code || null,

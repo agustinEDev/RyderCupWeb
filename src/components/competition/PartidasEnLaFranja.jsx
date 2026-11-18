@@ -36,6 +36,7 @@ import {
   formatoDeHandicapDeJuego,
 } from '../../utils/formatoDeHandicap';
 import { mensajeDelError } from '../../utils/mensajeDelError';
+import TeeGroupStatus from '../../domain/value_objects/TeeGroupStatus';
 
 /**
  * Las partidas de una franja de stroke play, en la ficha (FE #824, PR 6;
@@ -612,7 +613,7 @@ const PartidasEnLaFranja = ({
                       })}
                     </span>
                     {/* Cerrada, ya no le falta nadie (QA 3) */}
-                    {g.incomplete && g.status !== 'COMPLETED' && (
+                    {g.incomplete && g.status !== TeeGroupStatus.COMPLETED && (
                       <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs text-amber-800">
                         {t('partidas.incomplete')}
                       </span>
@@ -809,7 +810,7 @@ const PartidasEnLaFranja = ({
               anotación lo rechaza el servidor, y se dice por qué */}
           {organiza &&
             !vista.editable &&
-            grupos.some((g) => g.status !== 'COMPLETED') &&
+            grupos.some((g) => g.status !== TeeGroupStatus.COMPLETED) &&
             (confirmando === 'cerrar' ? (
               confirmacion(
                 t('partidas.closeWindowConfirm'),

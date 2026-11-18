@@ -31,7 +31,6 @@ import {
   MAX_SCORERS,
   oppositeTeam,
   NO_TEE_KEY,
-  TEAM_FORMATS,
   initialGuestForm,
   parseTeeKey,
   teeKey,
@@ -43,6 +42,11 @@ import {
   jugadorInvitado,
   jugadorRegistrado,
 } from '../../utils/jugadoresDelAsistente';
+import {
+  MatchFormat,
+  isTeamMatchFormat,
+} from '../../domain/value_objects/MatchFormat';
+import { ScoringFormat } from '../../domain/value_objects/ScoringFormat';
 
 // Cuánto se espera a tus partidas antes de sugerir la barra por tu género
 export const ESPERA_DE_TUS_PARTIDAS_MS = 2000;
@@ -132,10 +136,10 @@ const CreateQuickMatchModal = ({
   const [abiertoEl] = useState(() => new Date());
   const [mode, setMode] = useState(copia?.mode ?? 'MATCH_PLAY');
   const [matchFormat, setMatchFormat] = useState(
-    copia?.matchFormat ?? 'SINGLES',
+    copia?.matchFormat ?? MatchFormat.SINGLES,
   );
   const [scoringFormat, setScoringFormat] = useState(
-    copia?.scoringFormat ?? 'STABLEFORD',
+    copia?.scoringFormat ?? ScoringFormat.STABLEFORD,
   );
   const [selectedCourse, setSelectedCourse] = useState(
     copia?.selectedCourse ?? null,
@@ -382,8 +386,8 @@ const CreateQuickMatchModal = ({
   const capacity = isFreePlay
     ? FREE_PLAY_CAPACITY
     : (FORMAT_CAPACITY[matchFormat] ?? 2);
-  const isTeamFormat = !isFreePlay && TEAM_FORMATS.includes(matchFormat);
-  const isFoursomes = !isFreePlay && matchFormat === 'FOURSOMES';
+  const isTeamFormat = !isFreePlay && isTeamMatchFormat(matchFormat);
+  const isFoursomes = !isFreePlay && matchFormat === MatchFormat.FOURSOMES;
   const rosterFull = participants.length >= capacity;
   const registeredParticipants = participants.filter((p) => !p.isGuest);
   const availableFriends = friends.filter(

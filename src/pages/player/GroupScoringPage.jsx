@@ -42,6 +42,7 @@ import {
   PESTANAS_DE_LA_PARTIDA_DE_QUIEN_MIRA,
   PESTANAS_DE_LA_PARTIDA_DEL_JUGADOR,
 } from '../../utils/pestanasDeLaAnotacion';
+import TeeGroupStatus from '../../domain/value_objects/TeeGroupStatus';
 
 // Quien juega anota; quien no, mira las tarjetas y la clasificación (caso 13)
 const PESTANAS_DEL_JUGADOR = PESTANAS_DE_LA_PARTIDA_DEL_JUGADOR;
@@ -146,7 +147,7 @@ const GroupScoringPage = () => {
     cargada: Boolean(scoringView) && !isLoading,
     // Cerrada, o mi tarjeta ya no se juega: entregada, retirada o no presentado
     terminada:
-      scoringView?.matchStatus === 'COMPLETED' ||
+      scoringView?.matchStatus === TeeGroupStatus.COMPLETED ||
       Boolean(
         scoringView?.strokePlay?.cards?.some(
           (c) => c.userId === user?.id && c.cardStatus !== 'JUGANDO',
@@ -639,7 +640,7 @@ const GroupScoringPage = () => {
               enviando={isSubmitting}
               esFoursomes={false}
               pendientes={[]}
-              completado={scoringView.matchStatus === 'COMPLETED'}
+              completado={scoringView.matchStatus === TeeGroupStatus.COMPLETED}
               sePuedeSeguir={false}
               dePartida
             />

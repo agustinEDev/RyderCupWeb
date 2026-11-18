@@ -4,6 +4,7 @@ import {
   listEnrollmentsUseCase,
 } from '../composition';
 import { registraElFallo } from '../utils/registraElFallo';
+import { HandicapUpdateStatus } from '../domain/value_objects/HandicapUpdateStatus';
 
 /**
  * Lo de los hándicaps y las inscripciones en la ficha de una competición, sin
@@ -43,8 +44,9 @@ export const useReleerHandicaps = ({
           handicapUpdateWindow: data.handicapUpdateWindow,
         }));
         if (
-          estadoDeLaActualizacion.current !== 'IN_PROGRESS' ||
-          estaba !== 'IN_PROGRESS'
+          estadoDeLaActualizacion.current !==
+            HandicapUpdateStatus.IN_PROGRESS ||
+          estaba !== HandicapUpdateStatus.IN_PROGRESS
         ) {
           const deLaLista = lecturasDeInscripciones.turno();
           return listEnrollmentsUseCase

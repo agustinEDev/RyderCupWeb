@@ -11,6 +11,7 @@ import { useCargaCancelableEffect } from '../hooks/useCargaCancelableEffect';
 import { getCompetitionDetailUseCase } from '../composition';
 import { formatoDeIndice } from '../utils/formatoDeHandicap';
 import { PANTALLA_MENOS_BARRA_INFERIOR } from '../utils/barraInferior';
+import { DraftStatus } from '../domain/value_objects/DraftStatus';
 
 /**
  * La sala de draft en directo (FE #653).
@@ -208,7 +209,7 @@ const DraftRoomPage = () => {
 
         {sala && (
           <div data-testid="sala-de-draft" className="space-y-4">
-            {sala.status === 'IN_PROGRESS' && (
+            {sala.status === DraftStatus.IN_PROGRESS && (
               <div
                 className={`rounded-xl border p-4 ${
                   esMiTurno
@@ -250,7 +251,7 @@ const DraftRoomPage = () => {
               </div>
             )}
 
-            {sala.status === 'COMPLETED' && (
+            {sala.status === DraftStatus.COMPLETED && (
               <div
                 data-testid="draft-terminado"
                 className="flex items-center gap-2 rounded-xl border border-green-600 bg-green-50 p-4 text-green-800"

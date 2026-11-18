@@ -6,6 +6,7 @@ import {
   sideCardHolder,
 } from './FoursomesSides';
 import { defaultAllowanceFor } from './defaultAllowance';
+import { MatchFormat } from '../value_objects/MatchFormat';
 
 // La lectura personal de `compute` (la de la clasificación de la partida) se
 // mide con el hándicap de juego entero. «Tu vuelta» al anotar y en el historial
@@ -213,7 +214,7 @@ class PersonalRoundCalculator {
     // historial, que además se ahorraba la petición de detalle, y cualquier
     // formato nuevo a golpes alternos habría que acordarse de añadirlo en los
     // dos sitios.
-    if (matchFormat === 'FOURSOMES') {
+    if (matchFormat === MatchFormat.FOURSOMES) {
       // Las salidas y el reparto del partido hacen falta para la raya: su par
       // es el de la barra del bando y vale su doble bogey neto
       const teamTotals = sideTotals(
@@ -329,7 +330,7 @@ class PersonalRoundCalculator {
    * @returns {?{personalToPar: ?string, matchToPar: null, totalStrokes: number}}
    */
   static vueltaDelHistorial(params) {
-    if (params?.matchFormat === 'FOURSOMES')
+    if (params?.matchFormat === MatchFormat.FOURSOMES)
       return PersonalRoundCalculator.compute(params);
     const totals = totalesDeLaPartida(params);
     if (!totals?.holesPlayed) return null;
@@ -351,7 +352,7 @@ class PersonalRoundCalculator {
 function totalesDeLaPartida(params) {
   const p = conDefectos(params);
   const { me, holes, holeScores, tees, matchFormat, playMode } = p;
-  if (!me || matchFormat === 'FOURSOMES') return null;
+  if (!me || matchFormat === MatchFormat.FOURSOMES) return null;
 
   // En SCRATCH nadie recibe golpes, diga lo que diga un reparto viejo
   const playingHandicap =

@@ -1,10 +1,11 @@
 import { useTranslation } from 'react-i18next';
+import FriendshipStatus from '../../domain/value_objects/FriendshipStatus';
 
 const STATUS_COLORS = {
-  PENDING: 'bg-yellow-100 text-yellow-800',
-  ACCEPTED: 'bg-green-100 text-green-800',
-  DECLINED: 'bg-red-100 text-red-800',
-  BLOCKED: 'bg-gray-200 text-gray-700',
+  [FriendshipStatus.PENDING]: 'bg-yellow-100 text-yellow-800',
+  [FriendshipStatus.ACCEPTED]: 'bg-green-100 text-green-800',
+  [FriendshipStatus.DECLINED]: 'bg-red-100 text-red-800',
+  [FriendshipStatus.BLOCKED]: 'bg-gray-200 text-gray-700',
 };
 
 const FriendshipBadge = ({ status }) => {

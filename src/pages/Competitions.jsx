@@ -41,6 +41,17 @@ import EtiquetaDelTipo from '../components/competition/EtiquetaDelTipo';
 import { PANTALLA_MENOS_BARRA_INFERIOR } from '../utils/barraInferior';
 import BlockLoader from '../components/ui/BlockLoader';
 import EnrollmentStatus from '../domain/value_objects/EnrollmentStatus';
+import { CompetitionStatusEnum } from '../domain/value_objects/CompetitionStatus';
+
+// Cómo se llama cada estado en el filtro: se ofrecen en el orden del dominio
+const ETIQUETA_DEL_FILTRO = {
+  [CompetitionStatusEnum.DRAFT]: 'myCompetitions.draft',
+  [CompetitionStatusEnum.ACTIVE]: 'myCompetitions.active',
+  [CompetitionStatusEnum.CLOSED]: 'myCompetitions.closed',
+  [CompetitionStatusEnum.IN_PROGRESS]: 'myCompetitions.inProgress',
+  [CompetitionStatusEnum.COMPLETED]: 'myCompetitions.completed',
+  [CompetitionStatusEnum.CANCELLED]: 'myCompetitions.cancelled',
+};
 
 // Helper function to get enrollment status classes
 const getEnrollmentStatusClasses = (status) => {
@@ -610,24 +621,11 @@ const Competitions = () => {
                         <option value="ALL">
                           {t('myCompetitions.allStatuses')}
                         </option>
-                        <option value="DRAFT">
-                          {t('myCompetitions.draft')}
-                        </option>
-                        <option value="ACTIVE">
-                          {t('myCompetitions.active')}
-                        </option>
-                        <option value="CLOSED">
-                          {t('myCompetitions.closed')}
-                        </option>
-                        <option value="IN_PROGRESS">
-                          {t('myCompetitions.inProgress')}
-                        </option>
-                        <option value="COMPLETED">
-                          {t('myCompetitions.completed')}
-                        </option>
-                        <option value="CANCELLED">
-                          {t('myCompetitions.cancelled')}
-                        </option>
+                        {Object.values(CompetitionStatusEnum).map((estado) => (
+                          <option key={estado} value={estado}>
+                            {t(ETIQUETA_DEL_FILTRO[estado])}
+                          </option>
+                        ))}
                       </select>
                     </div>
                   </div>

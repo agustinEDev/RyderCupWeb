@@ -1,13 +1,15 @@
 // Shared constants and pure helpers for CreateQuickMatchModal and its wizard steps
 // (CourseStep, ParticipantsStep, ScorersStep, SummaryStep).
 
+import { MatchFormat } from '../../domain/value_objects/MatchFormat';
+import { ScoringFormat } from '../../domain/value_objects/ScoringFormat';
+
 // Las reglas sin interfaz (cupos, equipos, claves de barra) viven en
 // `utils/asistenteDePartidaRapida` desde el 9 nov 2026: también las usan
 // utils/borradorParaRepetir y utils/barraPorDefecto, y utils no importa de
 // components. Se reexportan aquí para que los pasos sigan importando de un sitio
 export {
   FORMAT_CAPACITY,
-  TEAM_FORMATS,
   oppositeTeam,
   MAX_SCORERS,
   NO_TEE_KEY,
@@ -16,15 +18,15 @@ export {
 } from '../../utils/asistenteDePartidaRapida';
 
 export const FORMAT_LABEL_KEY = {
-  SINGLES: 'formatSingles',
-  FOURBALL: 'formatFourball',
-  FOURSOMES: 'formatFoursomes',
+  [MatchFormat.SINGLES]: 'formatSingles',
+  [MatchFormat.FOURBALL]: 'formatFourball',
+  [MatchFormat.FOURSOMES]: 'formatFoursomes',
 };
 // Mirrors backend MAX_FREE_PLAY_PLAYERS (quick_match domain entity)
 export const FREE_PLAY_CAPACITY = 4;
 export const SCORING_FORMAT_LABEL_KEY = {
-  MEDAL: 'formatMedal',
-  STABLEFORD: 'formatStableford',
+  [ScoringFormat.MEDAL]: 'formatMedal',
+  [ScoringFormat.STABLEFORD]: 'formatStableford',
 };
 
 // Mirrors backend WHS allowance defaults (quick_match domain entity get_effective_allowance()).

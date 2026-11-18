@@ -1,3 +1,5 @@
+import { MatchFormat } from '../value_objects/MatchFormat';
+
 /**
  * El allowance WHS por defecto de cada formato de la partida rápida: el mismo
  * que `QuickMatch.get_effective_allowance()` del backend. Match play por su
@@ -8,9 +10,9 @@
  * necesita (`PersonalRoundCalculator`) y no puede importar de `components`.
  */
 export const DEFAULT_ALLOWANCE_BY_MATCH_FORMAT = Object.freeze({
-  SINGLES: 100,
-  FOURBALL: 90,
-  FOURSOMES: 50,
+  [MatchFormat.SINGLES]: 100,
+  [MatchFormat.FOURBALL]: 90,
+  [MatchFormat.FOURSOMES]: 50,
 });
 export const DEFAULT_FREE_PLAY_ALLOWANCE = 95;
 

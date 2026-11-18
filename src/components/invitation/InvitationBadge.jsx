@@ -1,15 +1,16 @@
 import { useTranslation } from 'react-i18next';
+import InvitationStatus from '../../domain/value_objects/InvitationStatus';
 
 const STATUS_COLORS = {
-  PENDING: 'bg-yellow-100 text-yellow-800',
-  ACCEPTED: 'bg-green-100 text-green-800',
-  DECLINED: 'bg-red-100 text-red-800',
-  EXPIRED: 'bg-gray-100 text-gray-600',
-  NO_ROOM: 'bg-orange-100 text-orange-800',
+  [InvitationStatus.PENDING]: 'bg-yellow-100 text-yellow-800',
+  [InvitationStatus.ACCEPTED]: 'bg-green-100 text-green-800',
+  [InvitationStatus.DECLINED]: 'bg-red-100 text-red-800',
+  [InvitationStatus.EXPIRED]: 'bg-gray-100 text-gray-600',
+  [InvitationStatus.NO_ROOM]: 'bg-orange-100 text-orange-800',
   // La retiró quien invita (FE #724): distinta de la caducada
-  CANCELLED: 'bg-slate-100 text-slate-700',
+  [InvitationStatus.CANCELLED]: 'bg-slate-100 text-slate-700',
   // En lista de espera hasta que se reabra la inscripción (15 nov 2026)
-  ON_HOLD: 'bg-amber-100 text-amber-800',
+  [InvitationStatus.ON_HOLD]: 'bg-amber-100 text-amber-800',
 };
 
 const InvitationBadge = ({ status }) => {

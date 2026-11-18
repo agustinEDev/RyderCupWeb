@@ -1,4 +1,5 @@
 import PlayingHandicapCalculator from './PlayingHandicapCalculator';
+import { MatchFormat } from '../value_objects/MatchFormat';
 
 /**
  * Domain Service: MatchPlayStrokeAllocator
@@ -360,7 +361,7 @@ class MatchPlayStrokeAllocator {
       );
     }
 
-    if (matchFormat === 'SINGLES') {
+    if (matchFormat === MatchFormat.SINGLES) {
       return MatchPlayStrokeAllocator.#singles(
         participants,
         holes,
@@ -369,7 +370,7 @@ class MatchPlayStrokeAllocator {
       );
     }
 
-    if (matchFormat === 'FOURBALL') {
+    if (matchFormat === MatchFormat.FOURBALL) {
       return MatchPlayStrokeAllocator.#fourball(
         participants,
         holes,

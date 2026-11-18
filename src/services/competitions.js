@@ -6,6 +6,8 @@
  */
 
 import { diaDeLaSesion } from '../utils/diaDeLaSesion';
+import { CompetitionStatusEnum } from '../domain/value_objects/CompetitionStatus';
+import EnrollmentStatus from '../domain/value_objects/EnrollmentStatus';
 
 /**
  * Get competition status badge color
@@ -14,12 +16,12 @@ import { diaDeLaSesion } from '../utils/diaDeLaSesion';
  */
 export const getStatusColor = (status) => {
   const colors = {
-    DRAFT: 'bg-gray-100 text-gray-700',
-    ACTIVE: 'bg-green-100 text-green-700',
-    CLOSED: 'bg-yellow-100 text-yellow-700',
-    IN_PROGRESS: 'bg-blue-100 text-blue-700',
-    COMPLETED: 'bg-purple-100 text-purple-700',
-    CANCELLED: 'bg-red-100 text-red-700',
+    [CompetitionStatusEnum.DRAFT]: 'bg-gray-100 text-gray-700',
+    [CompetitionStatusEnum.ACTIVE]: 'bg-green-100 text-green-700',
+    [CompetitionStatusEnum.CLOSED]: 'bg-yellow-100 text-yellow-700',
+    [CompetitionStatusEnum.IN_PROGRESS]: 'bg-blue-100 text-blue-700',
+    [CompetitionStatusEnum.COMPLETED]: 'bg-purple-100 text-purple-700',
+    [CompetitionStatusEnum.CANCELLED]: 'bg-red-100 text-red-700',
   };
   return colors[status] || 'bg-gray-100 text-gray-700';
 };
@@ -31,12 +33,12 @@ export const getStatusColor = (status) => {
  */
 export const getEnrollmentStatusColor = (status) => {
   const colors = {
-    REQUESTED: 'bg-yellow-100 text-yellow-700',
-    INVITED: 'bg-blue-100 text-blue-700',
-    APPROVED: 'bg-green-100 text-green-700',
-    REJECTED: 'bg-red-100 text-red-700',
-    CANCELLED: 'bg-gray-100 text-gray-700',
-    WITHDRAWN: 'bg-orange-100 text-orange-700',
+    [EnrollmentStatus.REQUESTED]: 'bg-yellow-100 text-yellow-700',
+    [EnrollmentStatus.INVITED]: 'bg-blue-100 text-blue-700',
+    [EnrollmentStatus.APPROVED]: 'bg-green-100 text-green-700',
+    [EnrollmentStatus.REJECTED]: 'bg-red-100 text-red-700',
+    [EnrollmentStatus.CANCELLED]: 'bg-gray-100 text-gray-700',
+    [EnrollmentStatus.WITHDRAWN]: 'bg-orange-100 text-orange-700',
   };
   return colors[status] || 'bg-gray-100 text-gray-700';
 };

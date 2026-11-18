@@ -11,13 +11,15 @@ import EnrollmentAssembler from '../../assemblers/EnrollmentAssembler';
  * 3. Convertir a DTOs simples para la UI
  *
  * Filtros disponibles:
- * - status: Filtrar por estado (ej: "APPROVED", "REQUESTED")
+ * - status: Filtrar por estado (ej: EnrollmentStatus.APPROVED, EnrollmentStatus.REQUESTED)
  * - userId: Filtrar por usuario específico
  * - teamId: Filtrar por equipo específico
  *
  * @example
  * const useCase = new ListEnrollmentsUseCase(enrollmentRepository);
- * const enrollments = await useCase.execute('comp-123', { status: 'APPROVED' });
+ * const enrollments = await useCase.execute('comp-123', {
+ *   status: EnrollmentStatus.APPROVED,
+ * });
  * console.log(enrollments.length); // 10
  */
 class ListEnrollmentsUseCase {

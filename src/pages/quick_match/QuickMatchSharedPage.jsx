@@ -21,6 +21,7 @@ import {
   getSharedQuickMatchUseCase,
 } from '../../composition';
 import { PANTALLA_MENOS_BARRA_INFERIOR } from '../../utils/barraInferior';
+import { isFreePlay } from '../../domain/value_objects/ScoringFormat';
 
 const TABS = ['classification', 'scorecard'];
 const HTTP_FORBIDDEN = 403;
@@ -175,8 +176,7 @@ const QuickMatchSharedPage = () => {
     );
   }
 
-  const esJuegoLibre =
-    partida.scoringFormat === 'MEDAL' || partida.scoringFormat === 'STABLEFORD';
+  const esJuegoLibre = isFreePlay(partida.scoringFormat);
   const errorDelCampo = (
     <ErrorDelCampo
       onReintentar={() => cargaElCampo(partida.golfCourseId)}

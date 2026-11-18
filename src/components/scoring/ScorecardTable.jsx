@@ -12,6 +12,10 @@ import {
   conLaMiaPrimero,
   conMiNombrePrimero,
 } from '../../utils/ordenDeLasTarjetas';
+import {
+  MatchFormat,
+  isTeamMatchFormat,
+} from '../../domain/value_objects/MatchFormat';
 
 /**
  * La coincidencia entre los dos anotadores no se marca aquí. Es un dato de la
@@ -63,8 +67,7 @@ const ScorecardTable = ({
   const outHoles = holes.filter((h) => h.holeNumber <= 9);
   const inHoles = holes.filter((h) => h.holeNumber > 9);
 
-  const isTeamFormat =
-    matchFormat === 'FOURBALL' || matchFormat === 'FOURSOMES';
+  const isTeamFormat = isTeamMatchFormat(matchFormat);
 
   // El bando de foursomes ocupa UNA fila, así que subirla no basta para que
   // quien mira se lea a sí mismo primero: el nombre propio va delante dentro de
@@ -119,7 +122,7 @@ const ScorecardTable = ({
 
   // Build display rows based on match format
   const displayRows = (() => {
-    if (matchFormat === 'FOURSOMES') {
+    if (matchFormat === MatchFormat.FOURSOMES) {
       const teamA = players.filter((p) => p.team === 'A');
       const teamB = players.filter((p) => p.team === 'B');
       const rows = [];
@@ -228,7 +231,7 @@ const ScorecardTable = ({
   // En fourball, si la bola de esta fila fue la que contó en el hoyo. En
   // foursomes la bola es del bando entero y no hay nada que resaltar
   const esMejorBola = (holeNumber, row) => {
-    if (matchFormat === 'FOURSOMES') return false;
+    if (matchFormat === MatchFormat.FOURSOMES) return false;
     const result = getHoleResult(holeNumber);
     return Boolean(
       (row.team === 'A' &&
@@ -335,7 +338,9 @@ const ScorecardTable = ({
       <table className={CLASE_DE_LA_TABLA}>
         <ColumnasDeLaVuelta
           hoyos={sectionHoles}
-          anchoPrimera={matchFormat === 'FOURSOMES' ? 'w-[120px]' : 'w-24'}
+          anchoPrimera={
+            matchFormat === MatchFormat.FOURSOMES ? 'w-[120px]' : 'w-24'
+          }
         />
         <thead>
           <tr className="bg-gray-50">

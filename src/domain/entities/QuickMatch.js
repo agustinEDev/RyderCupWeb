@@ -1,7 +1,7 @@
 import QuickMatchStatus from '../value_objects/QuickMatchStatus';
+import { isValidMatchFormat } from '../value_objects/MatchFormat';
+import { isValidScoringFormat } from '../value_objects/ScoringFormat';
 
-const VALID_MATCH_FORMATS = ['SINGLES', 'FOURBALL', 'FOURSOMES'];
-const VALID_SCORING_FORMATS = ['MEDAL', 'STABLEFORD'];
 const MAX_NAME_LENGTH = 100;
 
 /**
@@ -72,13 +72,10 @@ class QuickMatch {
         'Exactly one of matchFormat or scoringFormat must be provided',
       );
     }
-    if (matchFormat != null && !VALID_MATCH_FORMATS.includes(matchFormat)) {
+    if (matchFormat != null && !isValidMatchFormat(matchFormat)) {
       throw new TypeError(`Invalid matchFormat: ${matchFormat}`);
     }
-    if (
-      scoringFormat != null &&
-      !VALID_SCORING_FORMATS.includes(scoringFormat)
-    ) {
+    if (scoringFormat != null && !isValidScoringFormat(scoringFormat)) {
       throw new TypeError(`Invalid scoringFormat: ${scoringFormat}`);
     }
     if (

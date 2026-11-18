@@ -7,6 +7,7 @@ import {
   IconoRepetir,
 } from '../quick_match/RepetirPartida';
 import { useRepetirPartida } from '../quick_match/useRepetirPartida';
+import { MatchOutcome } from '../../domain/value_objects/MatchOutcome';
 
 /**
  * Las últimas partidas del jugador: la respuesta a "¿cómo quedó lo último?".
@@ -17,12 +18,12 @@ import { useRepetirPartida } from '../quick_match/useRepetirPartida';
  */
 
 const RESULT_TONES = {
-  WON: 'bg-green-100 text-green-700',
-  LOST: 'bg-red-100 text-red-700',
-  HALVED: 'bg-gray-100 text-gray-700',
+  [MatchOutcome.WON]: 'bg-green-100 text-green-700',
+  [MatchOutcome.LOST]: 'bg-red-100 text-red-700',
+  [MatchOutcome.HALVED]: 'bg-gray-100 text-gray-700',
   // Una partida rápida de match play que no cuenta: más apagado que el
   // empate, porque no es un resultado (Agustín, 24 oct 2026)
-  UNFINISHED: 'bg-gray-100 text-gray-500',
+  [MatchOutcome.UNFINISHED]: 'bg-gray-100 text-gray-500',
 };
 
 const MatchRow = ({ match, onOpen, t, formatDate, repetir }) => {

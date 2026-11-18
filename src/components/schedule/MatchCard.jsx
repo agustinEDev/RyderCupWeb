@@ -10,12 +10,16 @@ import {
   formatoDeIndice,
   formatoDeHandicapDeJuego,
 } from '../../utils/formatoDeHandicap';
+import MatchStatus from '../../domain/value_objects/MatchStatus';
+import { isTeamMatchFormat } from '../../domain/value_objects/MatchFormat';
 
 const STATUS_COLORS = {
-  SCHEDULED: 'bg-blue-100 text-blue-800',
-  IN_PROGRESS: 'bg-green-100 text-green-800',
-  COMPLETED: 'bg-gray-100 text-gray-800',
-  WALKOVER: 'bg-orange-100 text-orange-800',
+  [MatchStatus.SCHEDULED]: 'bg-blue-100 text-blue-800',
+  [MatchStatus.IN_PROGRESS]: 'bg-green-100 text-green-800',
+  [MatchStatus.COMPLETED]: 'bg-gray-100 text-gray-800',
+  [MatchStatus.WALKOVER]: 'bg-orange-100 text-orange-800',
+  // Concedido es un partido terminado: su color (E1-9, 18 nov 2026)
+  [MatchStatus.CONCEDED]: 'bg-gray-100 text-gray-800',
 };
 
 const getPlayerName = (playerId, playerNameMap, t) => {
@@ -39,14 +43,13 @@ const MatchCard = ({
   t,
 }) => {
   const status = match.status;
-  const isEditable = status === 'SCHEDULED';
-  const isInProgress = status === 'IN_PROGRESS';
+  const isEditable = status === MatchStatus.SCHEDULED;
+  const isInProgress = status === MatchStatus.IN_PROGRESS;
 
   const teamA = match.teamAPlayers || [];
   const teamB = match.teamBPlayers || [];
 
-  const isTeamFormat =
-    matchFormat === 'FOURBALL' || matchFormat === 'FOURSOMES';
+  const isTeamFormat = isTeamMatchFormat(matchFormat);
 
   const renderTeamPlayers = (players, teamColor) => {
     if (players.length === 0)

@@ -1,13 +1,14 @@
 import { ChevronDown, ChevronUp, Zap } from 'lucide-react';
 import MatchCard from './MatchCard';
 import BloqueoDePartidos from './BloqueoDePartidos';
+import { RoundStatus } from '../../domain/value_objects/RoundStatus';
 
 const STATUS_COLORS = {
-  PENDING_TEAMS: 'bg-yellow-100 text-yellow-800',
-  PENDING_MATCHES: 'bg-orange-100 text-orange-800',
-  SCHEDULED: 'bg-blue-100 text-blue-800',
-  IN_PROGRESS: 'bg-green-100 text-green-800',
-  COMPLETED: 'bg-gray-100 text-gray-800',
+  [RoundStatus.PENDING_TEAMS]: 'bg-yellow-100 text-yellow-800',
+  [RoundStatus.PENDING_MATCHES]: 'bg-orange-100 text-orange-800',
+  [RoundStatus.SCHEDULED]: 'bg-blue-100 text-blue-800',
+  [RoundStatus.IN_PROGRESS]: 'bg-green-100 text-green-800',
+  [RoundStatus.COMPLETED]: 'bg-gray-100 text-gray-800',
 };
 
 const RoundCard = ({
@@ -41,7 +42,7 @@ const RoundCard = ({
   const canGenerate =
     canEdit &&
     competicionCerrada &&
-    status === 'PENDING_MATCHES' &&
+    status === RoundStatus.PENDING_MATCHES &&
     (!soloReintento || Boolean(round.matchGenerationBlock));
   const matches = round.matches || [];
   // Todos cuentan: sin su nombre (inscripciones sin cargar) se dice «un

@@ -12,6 +12,8 @@ import {
 } from '../../utils/formatoDeHandicap';
 import { mensajeDelError } from '../../utils/mensajeDelError';
 import { registraElFallo } from '../../utils/registraElFallo';
+import MatchStatus from '../../domain/value_objects/MatchStatus';
+import { MatchFormat } from '../../domain/value_objects/MatchFormat';
 
 const MatchDetailModal = ({
   isOpen,
@@ -153,11 +155,13 @@ const MatchDetailModal = ({
                 </span>
                 <span
                   className={`px-2 py-0.5 rounded-full text-xs font-semibold ${
-                    match.status === 'COMPLETED'
+                    // Concedido es un partido terminado: su color (18 nov 2026)
+                    match.status === MatchStatus.COMPLETED ||
+                    match.status === MatchStatus.CONCEDED
                       ? 'bg-gray-100 text-gray-800'
-                      : match.status === 'IN_PROGRESS'
+                      : match.status === MatchStatus.IN_PROGRESS
                         ? 'bg-green-100 text-green-800'
-                        : match.status === 'WALKOVER'
+                        : match.status === MatchStatus.WALKOVER
                           ? 'bg-orange-100 text-orange-800'
                           : 'bg-blue-100 text-blue-800'
                   }`}
@@ -210,9 +214,8 @@ const MatchDetailModal = ({
 
               {/* Fourball: el organizador retira o devuelve a un jugador (F10) */}
               {canManage &&
-                matchFormat === 'FOURBALL' &&
-                (match.status === 'SCHEDULED' ||
-                  match.status === 'IN_PROGRESS') && (
+                matchFormat === MatchFormat.FOURBALL &&
+                MatchStatus.isPlayable(match.status) && (
                   <RetiradaPorElOrganizador key={matchId} matchId={matchId} />
                 )}
 
@@ -242,7 +245,8 @@ const MatchDetailModal = ({
               {match.result &&
                 (() => {
                   const isWalkover =
-                    match.result.score === 'W/O' || match.status === 'WALKOVER';
+                    match.result.score === 'W/O' ||
+                    match.status === MatchStatus.WALKOVER;
                   const bgClass = isWalkover
                     ? 'bg-orange-50 border-orange-200'
                     : 'bg-green-50 border-green-200';
@@ -297,9 +301,11 @@ const MatchDetailModal = ({
 
         {/* Footer */}
         <div className="flex justify-end gap-3 p-6 border-t border-gray-200">
+          {/* En juego o terminado jugando, también concedido; el walkover no se jugó */}
           {match &&
-            (match.status === 'IN_PROGRESS' ||
-              match.status === 'COMPLETED') && (
+            (match.status === MatchStatus.IN_PROGRESS ||
+              match.status === MatchStatus.COMPLETED ||
+              match.status === MatchStatus.CONCEDED) && (
               <button
                 onClick={() => {
                   onClose();

@@ -25,12 +25,17 @@ import {
 } from '../../utils/agenda';
 import { aCamposDeLaCompeticion } from '../../utils/camposDeLaCompeticion';
 import { mensajeDelError } from '../../utils/mensajeDelError';
+import { RoundStatus } from '../../domain/value_objects/RoundStatus';
+import { MatchFormat } from '../../domain/value_objects/MatchFormat';
 
-const FORMATOS = ['SINGLES', 'FOURBALL', 'FOURSOMES'];
+const FORMATOS = Object.values(MatchFormat);
 
 // Solo se toca una sesión que todavía no tiene partidos: con ellos, cambiarle
 // el formato o el campo dejaría los partidos sin relación con lo que dice
-const SE_PUEDE_TOCAR = new Set(['PENDING_TEAMS', 'PENDING_MATCHES']);
+const SE_PUEDE_TOCAR = new Set([
+  RoundStatus.PENDING_TEAMS,
+  RoundStatus.PENDING_MATCHES,
+]);
 
 /**
  * La agenda de la competición (FE #654): el torneo ES su agenda.
@@ -201,7 +206,7 @@ const AgendaDeLaCompeticion = ({
         golf_course_id: campos[0]?.id,
         round_date: diaNuevo,
         session_type: franjaNueva,
-        match_format: esElUltimo ? 'SINGLES' : 'FOURBALL',
+        match_format: esElUltimo ? MatchFormat.SINGLES : MatchFormat.FOURBALL,
       });
       setAnadiendo(false);
     });
@@ -302,7 +307,7 @@ const AgendaDeLaCompeticion = ({
                                   });
                                 // Con equipos puede haber sobres entregados, y cambiar el
                                 // formato los tira: eso no puede ser un toque de pasada
-                                if (s.status === 'PENDING_MATCHES') {
+                                if (s.status === RoundStatus.PENDING_MATCHES) {
                                   setConfirmando({
                                     id: s.id,
                                     texto: 'agenda.confirmFormat',

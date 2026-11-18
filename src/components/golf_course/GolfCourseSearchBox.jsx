@@ -7,6 +7,7 @@ import { roundCoordinate } from '../../utils/geo';
 import { getCountryFlag } from '../../utils/countryUtils';
 import BlockLoader from '../ui/BlockLoader';
 import { registraElFallo } from '../../utils/registraElFallo';
+import { GolfCourseApprovalStatus } from '../../domain/value_objects/GolfCourseApprovalStatus';
 
 /**
  * GolfCourseSearchBox Component
@@ -147,7 +148,7 @@ const GolfCourseSearchBox = ({
       const buscar = (pais) =>
         listGolfCoursesUseCase.execute({
           countryCode: pais,
-          approvalStatus: 'APPROVED',
+          approvalStatus: GolfCourseApprovalStatus.APPROVED,
           name: searchQuery.trim() || undefined,
           limit: PAGE_SIZE,
           // Sin radio a propósito: el backend ordena en vez de cortar porque un

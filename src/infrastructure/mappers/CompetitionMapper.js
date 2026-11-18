@@ -6,7 +6,10 @@ import { Location } from '../../domain/value_objects/Location';
 import { CountryCode } from '../../domain/value_objects/CountryCode';
 import { HandicapSettings } from '../../domain/value_objects/HandicapSettings';
 import { TeamAssignment } from '../../domain/value_objects/TeamAssignment';
-import { CompetitionStatus } from '../../domain/value_objects/CompetitionStatus';
+import {
+  CompetitionStatus,
+  CompetitionStatusEnum,
+} from '../../domain/value_objects/CompetitionStatus';
 import { StrokePlaySetup } from '../../domain/value_objects/StrokePlaySetup';
 import { instanteDeLaApi } from '../../utils/instanteDeLaApi';
 
@@ -86,7 +89,9 @@ class CompetitionMapper {
         // Sin el campo, privada: una respuesta de antes de que existiera no
         // convierte en pública una competición que no lo es (FE #664)
         visibility: apiData.visibility || 'PRIVATE',
-        status: new CompetitionStatus(apiData.status || 'DRAFT'),
+        status: new CompetitionStatus(
+          apiData.status || CompetitionStatusEnum.DRAFT,
+        ),
         createdAt: instanteDeLaApi(apiData.created_at),
         updatedAt: instanteDeLaApi(apiData.updated_at),
       });

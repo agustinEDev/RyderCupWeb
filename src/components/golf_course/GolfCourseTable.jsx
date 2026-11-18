@@ -2,6 +2,7 @@ import { Eye, Edit, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import TeeColorBadge from './TeeColorBadge';
 import { CountryFlag } from '../ui/CountryFlag';
+import { GolfCourseApprovalStatus } from '../../domain/value_objects/GolfCourseApprovalStatus';
 
 /**
  * GolfCourseTable Component
@@ -20,11 +21,11 @@ const GolfCourseTable = ({
 
   const getStatusColor = (status) => {
     switch (status) {
-      case 'APPROVED':
+      case GolfCourseApprovalStatus.APPROVED:
         return 'bg-green-100 text-green-800 border-green-200';
-      case 'PENDING_APPROVAL':
+      case GolfCourseApprovalStatus.PENDING_APPROVAL:
         return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-      case 'REJECTED':
+      case GolfCourseApprovalStatus.REJECTED:
         return 'bg-red-100 text-red-800 border-red-200';
       default:
         return 'bg-gray-100 text-gray-800 border-gray-200';
@@ -33,11 +34,11 @@ const GolfCourseTable = ({
 
   const getStatusIcon = (status) => {
     switch (status) {
-      case 'APPROVED':
+      case GolfCourseApprovalStatus.APPROVED:
         return <CheckCircle className="w-4 h-4" />;
-      case 'PENDING_APPROVAL':
+      case GolfCourseApprovalStatus.PENDING_APPROVAL:
         return <AlertCircle className="w-4 h-4" />;
-      case 'REJECTED':
+      case GolfCourseApprovalStatus.REJECTED:
         return <XCircle className="w-4 h-4" />;
       default:
         return null;

@@ -100,7 +100,8 @@ class ApiCompetitionRepository extends ICompetitionRepository {
    * Finds public competitions with optional filters.
    * @override
    * @param {object} filters - Optional filters for the search.
-   * @param {string|string[]} filters.status - Competition status (e.g., 'ACTIVE', ['CLOSED', 'IN_PROGRESS'])
+   * @param {string|string[]} filters.status - Competition status (e.g., CompetitionStatusEnum.ACTIVE, or
+   *   [CompetitionStatusEnum.CLOSED, CompetitionStatusEnum.IN_PROGRESS])
    * @param {string} filters.searchName - Search by competition name (partial match)
    * @param {string} filters.searchCreator - Search by creator name (partial match)
    * @param {boolean} filters.excludeMyCompetitions - If true, excludes competitions where user is creator or enrolled
