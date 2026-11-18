@@ -243,10 +243,12 @@ export const alCambiarAdyacente1 = (prev, countryId) =>
         adjacentCountry1: countryId,
         adjacentCountry2: '',
         showAdjacentCountry2: false,
+        // Menos el elegido: si era el tercer país, sigue en la competición
         golfCourses: sinLosCamposDe(
           prev.golfCourses,
-          prev.adjacentCountry1,
-          prev.adjacentCountry2,
+          ...[prev.adjacentCountry1, prev.adjacentCountry2].filter(
+            (codigo) => codigo !== countryId,
+          ),
         ),
       };
 

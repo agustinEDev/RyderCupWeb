@@ -342,6 +342,16 @@ describe('la cascada de los países', () => {
     });
   });
 
+  it('A8: el tercer país pasa a adyacente: sus campos se quedan, los del adyacente anterior no', () => {
+    expect(alCambiarAdyacente1(conTres, 'PT')).toEqual({
+      ...conTres,
+      adjacentCountry1: 'PT',
+      adjacentCountry2: '',
+      showAdjacentCountry2: false,
+      golfCourses: [campo('ES', 1), campo('PT', 3), campo('ES', 4)],
+    });
+  });
+
   it('A6: volver a elegir el mismo adyacente no quita nada', () => {
     expect(alCambiarAdyacente1(conTres, 'FR')).toBe(conTres);
   });

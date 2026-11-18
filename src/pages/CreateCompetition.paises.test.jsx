@@ -506,6 +506,24 @@ describe('CreateCompetition · países y campos del alta (caracterización)', ()
       ]);
     });
 
+    it('A8: el tercer país elegido como adyacente conserva sus campos; los del adyacente anterior se van', async () => {
+      await abreElAlta();
+      await eligeLosTresPaises();
+      fireEvent.click(screen.getByText('campo 1 de ES'));
+      fireEvent.click(screen.getByText('campo 1 de FR'));
+      fireEvent.click(screen.getByText('campo 1 de PT'));
+      // Portugal es vecino de España: el selector del adyacente lo ofrece
+      expect(opciones('adjacentCountry1')).toContain('PT');
+
+      escribe(document.querySelector('#adjacentCountry1'), 'PT');
+
+      expect(camposALaVista()).toEqual(['Campo ES-1', 'Campo PT-1']);
+      expect(await camposEnviados()).toEqual([
+        { id: 'ES-1', name: 'Campo ES-1' },
+        { id: 'PT-1', name: 'Campo PT-1' },
+      ]);
+    });
+
     it('A3: cambiar el tercer país quita los suyos; los del principal y el adyacente se quedan', async () => {
       await abreElAlta();
       await conLosTres();
