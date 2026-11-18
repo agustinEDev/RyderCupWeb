@@ -210,7 +210,14 @@ export const useEdicionDeLaCompeticion = ({
     // ni los vecinos (CodeRabbit en la #722)
     let vigente = true;
     const loadCompetitionData = async () => {
-      if (!competitionId || !allCountries.length) return;
+      // Sin competición o sin países aún, no se carga nada, y la espera se
+      // apaga. Defensa del hook: la app monta el alta y cada edición como
+      // árboles distintos (`key` en App.jsx), pero si `competitionId` cambiara
+      // sin remontar a mitad de una carga, su espera se quedaría puesta
+      if (!competitionId || !allCountries.length) {
+        setLoadingCompetition(false);
+        return;
+      }
 
       setLoadingCompetition(true);
       try {

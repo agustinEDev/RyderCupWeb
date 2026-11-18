@@ -13,6 +13,7 @@ import {
   Route,
   useParams,
   useLocation,
+  useNavigate,
 } from 'react-router';
 import { agendaPropuesta } from '../utils/agenda';
 import {
@@ -144,6 +145,16 @@ const VECINOS = {
 
 const Ficha = () => <p data-testid="ficha">{useParams().id}</p>;
 const Donde = () => <p data-testid="donde">{useLocation().pathname}</p>;
+// Ir al alta sin desmontar la página (F1): la app remonta (`key` en App.jsx),
+// pero el hook se defiende de un `competitionId` que cambie sin remontar
+const IrAlAlta = () => {
+  const navigate = useNavigate();
+  return (
+    <button type="button" onClick={() => navigate('/competitions/create')}>
+      ir al alta
+    </button>
+  );
+};
 const Desmontable = () => {
   const [montada, setMontada] = useState(true);
   return (
@@ -160,6 +171,7 @@ const renderEn = (ruta) =>
   render(
     <MemoryRouter initialEntries={[ruta]}>
       <Donde />
+      <IrAlAlta />
       <Routes>
         <Route path="/competitions/create" element={<Desmontable />} />
         <Route path="/competitions/:id/edit" element={<Desmontable />} />
@@ -844,5 +856,20 @@ describe('CreateCompetition · lo que se envía y lo que pasa después (caracter
     expect(screen.getByTestId('donde')).toHaveTextContent(
       '/competitions/create',
     );
+  });
+
+  it('F1: si competitionId desaparece sin remontar a mitad de una carga, la espera se apaga', async () => {
+    composicion.getCompetitionDetailUseCase.execute.mockReturnValue(
+      new Promise(() => {}),
+    );
+    renderEn('/competitions/c-1/edit');
+    expect(await screen.findByTestId('cargando')).toHaveTextContent(
+      'edit.loading',
+    );
+
+    fireEvent.click(screen.getByText('ir al alta'));
+
+    expect(await screen.findByTestId('tipo-RYDER_CUP')).toBeInTheDocument();
+    expect(screen.queryByTestId('cargando')).not.toBeInTheDocument();
   });
 });
