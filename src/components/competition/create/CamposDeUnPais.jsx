@@ -21,7 +21,7 @@ const CamposDeUnPais = ({
 }) => {
   const { t, i18n } = useTranslation('competitions');
   // Get courses for a specific country
-  const delPais = () => golfCourses.filter((gc) => gc.countryCode === codigo);
+  const delPais = golfCourses.filter((gc) => gc.countryCode === codigo);
 
   return (
     <div className="border border-gray-200 rounded-lg p-4">
@@ -36,14 +36,14 @@ const CamposDeUnPais = ({
         <span className="text-xs text-gray-500">
           (
           {t('create.coursesSelected', {
-            count: delPais().length,
+            count: delPais.length,
           })}
           )
         </span>
       </div>
 
       {/* List of selected courses */}
-      {delPais().map((gc, index) => {
+      {delPais.map((gc, index) => {
         const globalIndex = golfCourses.findIndex(
           (item) =>
             item.countryCode === gc.countryCode &&
