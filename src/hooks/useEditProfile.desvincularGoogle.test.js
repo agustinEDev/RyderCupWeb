@@ -211,7 +211,9 @@ describe('useEditProfile · la contraseña antes de desvincular Google', () => {
     );
 
     expect(await confirma(result)).toBeNull();
-    expect(customToast.error).toHaveBeenCalledWith('Server error');
+    expect(customToast.error).toHaveBeenCalledWith(
+      'edit.linkedAccounts.unlinkError',
+    );
     console.error.mockRestore();
   });
 

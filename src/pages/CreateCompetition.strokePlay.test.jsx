@@ -306,7 +306,7 @@ describe('CreateCompetition · Stableford y Medal con sus ajustes (FE #824)', ()
 
   it('18: si fallan los ajustes tras guardar lo general, lo dice y no se va', async () => {
     composicion.updateStrokePlaySettingsUseCase.execute.mockRejectedValue(
-      new Error('motivo del servidor'),
+      Object.assign(new Error('motivo del servidor'), { status: 400 }),
     );
     const jornadas = await alEditar();
     fireEvent.change(screen.getByLabelText(/endDate/), {
@@ -326,8 +326,9 @@ describe('CreateCompetition · Stableford y Medal con sus ajustes (FE #824)', ()
   });
 
   it('18b: si falla lo general tras guardar los ajustes, también lo dice', async () => {
+    // Un 400 con su motivo: el 409 sin código sería el nombre ya usado
     composicion.updateCompetitionUseCase.execute.mockRejectedValue(
-      new Error('nombre repetido'),
+      Object.assign(new Error('nombre repetido'), { status: 400 }),
     );
     const jornadas = await alEditar();
     fireEvent.change(jornadas, { target: { value: '2' } });
@@ -364,7 +365,7 @@ describe('CreateCompetition · Stableford y Medal con sus ajustes (FE #824)', ()
 
   it('18c: y al reintentar no vuelve a mandar los ajustes que ya se guardaron', async () => {
     composicion.updateCompetitionUseCase.execute.mockRejectedValueOnce(
-      new Error('nombre repetido'),
+      Object.assign(new Error('nombre repetido'), { status: 400 }),
     );
     const jornadas = await alEditar();
     fireEvent.change(jornadas, { target: { value: '2' } });
@@ -387,7 +388,9 @@ describe('CreateCompetition · Stableford y Medal con sus ajustes (FE #824)', ()
 
   it('19: si el servidor rechaza los ajustes (que van primero), se ve su motivo', async () => {
     composicion.updateStrokePlaySettingsUseCase.execute.mockRejectedValue(
-      new Error('Hay jugadores que ya juegan 2 jornadas'),
+      Object.assign(new Error('Hay jugadores que ya juegan 2 jornadas'), {
+        status: 409,
+      }),
     );
     const jornadas = await alEditar({
       ...MEDAL_GUARDADO,

@@ -166,10 +166,10 @@ describe('CreateQuickMatchModal · el aviso, por su clave', () => {
   });
 
   it('el motivo que manda el servidor sale tal cual', async () => {
-    mockIniciar.mockRejectedValue({
-      status: 400,
-      message: 'Motivo del servidor',
-    });
+    // Como llega de `api.js`: un Error con su estado
+    mockIniciar.mockRejectedValue(
+      Object.assign(new Error('Motivo del servidor'), { status: 400 }),
+    );
     render(pinta({ borrador: BORRADOR }));
 
     fireEvent.click(await screen.findByTestId('quick-match-start'));

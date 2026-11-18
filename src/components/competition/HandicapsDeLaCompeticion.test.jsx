@@ -407,7 +407,9 @@ describe('HandicapsDeLaCompeticion (FE #824, PR 5)', () => {
 
   it('12c: un 409, su motivo', async () => {
     mockLanzar.mockRejectedValue(
-      new Error('Ya se están actualizando los hándicaps.'),
+      Object.assign(new Error('Ya se están actualizando los hándicaps.'), {
+        status: 409,
+      }),
     );
     pinta();
 
@@ -465,8 +467,11 @@ describe('HandicapsDeLaCompeticion (FE #824, PR 5)', () => {
 
   it('14b: si el servidor no lo acepta, su motivo y el formulario sigue', async () => {
     mockProgramar.mockRejectedValue(
-      new Error(
-        'Demasiado justo: prográmala con al menos 2 minutos de margen.',
+      Object.assign(
+        new Error(
+          'Demasiado justo: prográmala con al menos 2 minutos de margen.',
+        ),
+        { status: 400 },
       ),
     );
     pinta();

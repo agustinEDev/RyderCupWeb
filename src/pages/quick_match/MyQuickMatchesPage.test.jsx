@@ -653,7 +653,7 @@ describe('MyQuickMatchesPage', () => {
   it('un fallo del código NO se disfraza de falta de señal', async () => {
     // Un mapeador que revienta con un dato inesperado también llega sin
     // estado. Decir «sin conexión» ahí esconde un defecto de verdad, y quien
-    // lo reporte contará algo que no pasó
+    // lo reporte contará algo que no pasó. Sale el aviso genérico, no el texto crudo
     mockListMyQuickMatches.mockRejectedValue(
       new Error('cannot read x of undefined'),
     );
@@ -661,8 +661,11 @@ describe('MyQuickMatchesPage', () => {
     renderPage();
 
     expect(
-      await screen.findByText('cannot read x of undefined'),
+      await screen.findByText('scoring.errors.generic'),
     ).toBeInTheDocument();
+    expect(
+      screen.queryByText('cannot read x of undefined'),
+    ).not.toBeInTheDocument();
     expect(
       screen.queryByTestId('quick-matches-sin-conexion'),
     ).not.toBeInTheDocument();

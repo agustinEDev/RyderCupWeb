@@ -270,8 +270,9 @@ describe('CompleteProfile · aceptar antes de guardar (F2)', () => {
 
     guardar();
 
+    // Sin estado HTTP no es un motivo del servidor: el aviso de siempre
     await waitFor(() =>
-      expect(toastError).toHaveBeenCalledWith('no se pudo guardar'),
+      expect(toastError).toHaveBeenCalledWith('google.genericError'),
     );
     expect(anotaLaSesion).toHaveBeenCalledWith(DTO);
     expect(screen.queryByText('panel')).toBeNull();

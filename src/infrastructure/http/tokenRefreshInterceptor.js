@@ -179,9 +179,11 @@ const pideElRefresco = async () => {
         throw error;
       }
 
+      // Técnico: su texto en inglés no es un motivo que enseñar (mensajeDelError)
       const error = new Error('Failed to refresh token');
       error.response = response;
       error.errorData = errorData;
+      error.mensajeTecnico = true;
       throw error;
     }
 

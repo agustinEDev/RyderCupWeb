@@ -412,7 +412,9 @@ describe('FranjasDeLaCompeticion · plazas y esperas (FE #824, PR 4)', () => {
     });
 
     it('10: si el servidor lo rechaza, su motivo', async () => {
-      mockCoger.mockRejectedValue(new Error('La franja está llena.'));
+      mockCoger.mockRejectedValue(
+        Object.assign(new Error('La franja está llena.'), { status: 409 }),
+      );
       mockLeer.mockResolvedValue({
         rounds: [franja('m', '2030-10-12', 'MORNING')],
       });

@@ -47,7 +47,7 @@ const getEnrollmentStatusClasses = (status) => {
   switch (status) {
     case EnrollmentStatus.APPROVED:
       return 'bg-green-100 text-green-800 border border-green-200';
-    case 'PENDING':
+    case EnrollmentStatus.REQUESTED:
       return 'bg-yellow-100 text-yellow-800 border border-yellow-200';
     case EnrollmentStatus.REJECTED:
       return 'bg-red-100 text-red-800 border border-red-200';
@@ -406,8 +406,8 @@ const Competitions = () => {
                           <span
                             className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ${getEnrollmentStatusClasses(competition.enrollment_status)}`}
                           >
-                            {competition.enrollment_status === 'PENDING' &&
-                              '⏳ '}
+                            {competition.enrollment_status ===
+                              EnrollmentStatus.REQUESTED && '⏳ '}
                             {competition.enrollment_status ===
                               EnrollmentStatus.REJECTED && '✗ '}
                             {t('myCompetitions.enrollmentStatus', {

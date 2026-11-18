@@ -92,7 +92,9 @@ class CompetitionMapper {
       });
     } catch (error) {
       throw Object.assign(
-        new Error(`Failed to map competition data: ${error.message}`),
+        new Error(`Failed to map competition data: ${error.message}`, {
+          cause: error,
+        }),
         { mensajeTecnico: true },
       );
     }

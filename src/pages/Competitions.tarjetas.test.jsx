@@ -154,15 +154,31 @@ describe('Mis competiciones · tarjetas (FE #846)', () => {
     ).not.toBeInTheDocument();
   });
 
-  it('9d · pendiente de aprobar: la inscripción, como antes', async () => {
+  // El servidor manda REQUESTED, nunca «PENDING»: la etiqueta amarilla con ⏳
+  // no salía nunca (Agustín, 17 nov: sí para REQUESTED; INVITED sigue en gris)
+  it('9d · pendiente de aprobar (REQUESTED): amarilla y con ⏳', async () => {
     const [ajena] = await tarjeta([
-      competicion({ enrollment_status: 'PENDING' }),
+      competicion({ enrollment_status: 'REQUESTED' }),
     ]);
 
     expect(within(ajena).queryByTestId('mi-papel')).not.toBeInTheDocument();
-    expect(
-      within(ajena).getByText(/myCompetitions\.enrollmentStatus/),
-    ).toBeInTheDocument();
+    const etiqueta = within(ajena)
+      .getByText(/myCompetitions\.enrollmentStatus/)
+      .closest('span');
+    expect(etiqueta).toHaveTextContent(/^⏳/);
+    expect(etiqueta.className.split(' ')).toContain('bg-yellow-100');
+  });
+
+  it('9e · invitado (INVITED): la etiqueta en gris y sin ⏳', async () => {
+    const [ajena] = await tarjeta([
+      competicion({ enrollment_status: 'INVITED' }),
+    ]);
+
+    const etiqueta = within(ajena)
+      .getByText(/myCompetitions\.enrollmentStatus/)
+      .closest('span');
+    expect(etiqueta).not.toHaveTextContent(/⏳/);
+    expect(etiqueta.className.split(' ')).toContain('bg-gray-100');
   });
 
   it('10 · mi próxima salida, con su hora', async () => {

@@ -232,7 +232,9 @@ describe('SchedulePage · cubrir el puesto de un capitán (FE #692)', () => {
   });
 
   it('P4: si el servidor lo rechaza, lo dice y el puesto sigue vacío', async () => {
-    mockCubrir.mockRejectedValue(new Error('Ese equipo ya tiene capitán'));
+    mockCubrir.mockRejectedValue(
+      Object.assign(new Error('Ese equipo ya tiene capitán'), { status: 409 }),
+    );
     pintar();
     await abrirCubrir();
 
