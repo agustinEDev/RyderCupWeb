@@ -186,7 +186,10 @@ describe('ManageAccountModal', () => {
       screen.getByRole('button', { name: 'manageModal.confirmDeactivate' }),
     );
 
-    expect(await screen.findByText('Network error')).toBeInTheDocument();
+    // Un fallo sin estado HTTP no se enseña tal cual: el aviso traducido
+    expect(
+      await screen.findByText('manageModal.genericError'),
+    ).toBeInTheDocument();
   });
 
   it('calls onCancel when the cancel button is clicked', () => {

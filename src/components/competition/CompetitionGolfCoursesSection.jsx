@@ -37,6 +37,8 @@ import {
   CompetitionStatus,
   CompetitionStatusEnum,
 } from '../../domain/value_objects/CompetitionStatus';
+import { mensajeDelError } from '../../utils/mensajeDelError';
+import { registraElFallo } from '../../utils/registraElFallo';
 
 /**
  * El color de cada tipo de campo. El TEXTO sale de i18n: escrito aquí a mano
@@ -329,7 +331,11 @@ const CompetitionGolfCoursesSection = ({
   // Los campos se pueden tocar mientras haya inscripciones abiertas (BE #323):
   // quien invita antes de poner el campo —y con ello abre el torneo— tiene que
   // poder ponerlo después, que es justo el caso que motivó el cambio
-  const canEdit = canManage && ['DRAFT', 'ACTIVE'].includes(competition.status);
+  const canEdit =
+    canManage &&
+    [CompetitionStatusEnum.DRAFT, CompetitionStatusEnum.ACTIVE].includes(
+      competition.status,
+    );
 
   // Añadir, en cambio, vale hasta que la competición se acaba (FE #713, BE #368):
   // con la agenda propuesta al crear, toda competición Ryder nace con sesiones.
@@ -374,9 +380,13 @@ const CompetitionGolfCoursesSection = ({
         setGolfCourses(mappedCourses);
       },
       alFallar: (error) => {
-        console.error('Error loading golf courses:', error);
+        registraElFallo(
+          'CompetitionGolfCoursesSection.error-loading-golf-courses',
+          'Error loading golf courses:',
+          error,
+        );
         customToast.error(
-          t('detail.golfCourses.errorLoading') + ': ' + error.message,
+          mensajeDelError(error, t('detail.golfCourses.errorLoading')),
         );
       },
     },
@@ -413,8 +423,14 @@ const CompetitionGolfCoursesSection = ({
       await recargar();
       onCamposCambiados?.();
     } catch (error) {
-      console.error('Error adding golf course:', error);
-      customToast.error(error.message || t('detail.golfCourses.errorAdding'));
+      registraElFallo(
+        'CompetitionGolfCoursesSection.error-adding-golf-course',
+        'Error adding golf course:',
+        error,
+      );
+      customToast.error(
+        mensajeDelError(error, t('detail.golfCourses.errorAdding')),
+      );
     } finally {
       enVuelo.current.delete(course.id);
       setIsAdding(false);
@@ -440,8 +456,14 @@ const CompetitionGolfCoursesSection = ({
       await recargar();
       onCamposCambiados?.();
     } catch (error) {
-      console.error('Error removing golf course:', error);
-      customToast.error(error.message || t('detail.golfCourses.errorRemoving'));
+      registraElFallo(
+        'CompetitionGolfCoursesSection.error-removing-golf-course',
+        'Error removing golf course:',
+        error,
+      );
+      customToast.error(
+        mensajeDelError(error, t('detail.golfCourses.errorRemoving')),
+      );
     }
   };
 
@@ -466,7 +488,11 @@ const CompetitionGolfCoursesSection = ({
       customToast.success(t('detail.golfCourses.reordered'));
       onCamposCambiados?.();
     } catch (error) {
-      console.error('Error reordering golf courses:', error);
+      registraElFallo(
+        'CompetitionGolfCoursesSection.error-reordering-golf-courses',
+        'Error reordering golf courses:',
+        error,
+      );
       customToast.error(t('detail.golfCourses.errorReordering'));
       // Revert on error. Sin esperarla: detrás no hay nada que dependa de ella
       recargar();

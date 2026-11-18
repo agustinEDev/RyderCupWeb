@@ -157,6 +157,21 @@ describe('la consulta compartida de la sesión', () => {
     expect(loQueHaySobreLaSesion().cargando).toBe(true);
   });
 
+  it('otro estado sale como error con su status, para no avisar de un 4xx (Q-FE-07)', async () => {
+    const consola = vi.spyOn(console, 'error').mockImplementation(() => {});
+    respuestas.push({ ok: false, status: 403 });
+
+    await consultaLaSesion();
+
+    const error = consola.mock.calls
+      .flat()
+      .find(
+        (a) => a instanceof Error && a.message.includes('Failed to fetch user'),
+      );
+    expect(error).toBeDefined();
+    expect(error.status).toBe(403);
+  });
+
   it('avisa a quien se haya suscrito, y deja de hacerlo al darse de baja', async () => {
     const avisos = [];
     const baja = suscribeALaSesion(() =>

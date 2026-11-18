@@ -346,7 +346,10 @@ describe('CreateCompetition · elegir el modo de configuración (FE #695)', () =
   it('E4: si la ubicación nueva deja campos fuera, se ve el motivo del servidor (BE #481)', async () => {
     const motivo =
       'Quita antes desde la ficha los campos de ES: quedarían fuera de los países de la competición';
-    updateCompetitionUseCase.execute.mockRejectedValueOnce(new Error(motivo));
+    // Un 400: el 409 sin código de lo general es el nombre ya usado
+    updateCompetitionUseCase.execute.mockRejectedValueOnce(
+      Object.assign(new Error(motivo), { status: 400 }),
+    );
     pintaEdicion();
     await screen.findByDisplayValue('Ryder de los amigos');
 

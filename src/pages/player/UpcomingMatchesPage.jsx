@@ -21,6 +21,7 @@ import { porCuandoSeJuega } from '../../utils/elMasCercano';
 import BlockLoader from '../../components/ui/BlockLoader';
 import TarjetaDeLoProximo from '../../components/schedule/TarjetaDeLoProximo';
 import { PANTALLA_MENOS_BARRA_INFERIOR } from '../../utils/barraInferior';
+import { registraElFallo } from '../../utils/registraElFallo';
 
 // `setTimeout` no aguanta más de 2^31-1 ms: por encima dispara INMEDIATAMENTE y
 // en bucle. Una ronda a más de 24 días vista no necesita despertar a nadie
@@ -105,7 +106,11 @@ const UpcomingMatchesPage = () => {
       // cobertura y sin nada guardado, en vez de esperar para siempre
       alFallar: (error) => {
         // Que quede rastro: antes era un rechazo sin capturar, que Sentry recogía
-        console.error('Error loading upcoming matches:', error);
+        registraElFallo(
+          'UpcomingMatchesPage.error-loading-upcoming-matches',
+          'Error loading upcoming matches:',
+          error,
+        );
         setMatches([]);
         setDesdeMemoria({ partidos: false, partidas: false });
         setSinRespuesta(true);

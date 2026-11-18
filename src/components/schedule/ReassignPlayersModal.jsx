@@ -2,6 +2,7 @@ import { useState } from 'react';
 import ModalShell, { CAJA_PROPIA } from '../ui/ModalShell';
 import { motion } from 'framer-motion';
 import { X, Users } from 'lucide-react';
+import EnrollmentStatus from '../../domain/value_objects/EnrollmentStatus';
 
 // Wrapper: controls mount/unmount so inner component always has fresh state.
 // key={match?.id} forces remount if the match changes while the modal is open.
@@ -31,7 +32,9 @@ const ReassignPlayersModalContent = ({
   );
 
   // Only approved enrollments
-  const approvedPlayers = enrollments.filter((e) => e.status === 'APPROVED');
+  const approvedPlayers = enrollments.filter(
+    (e) => e.status === EnrollmentStatus.APPROVED,
+  );
 
   const togglePlayer = (playerId, team) => {
     if (team === 'A') {

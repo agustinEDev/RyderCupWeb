@@ -1,5 +1,6 @@
 import AgendaDeLaCompeticion from '../AgendaDeLaCompeticion';
 import FranjasDeLaCompeticion from '../FranjasDeLaCompeticion';
+import { CompetitionStatusEnum } from '../../../domain/value_objects/CompetitionStatus';
 
 /**
  * La agenda: el torneo ES su agenda, a la vista de todos, y el organizador la
@@ -38,11 +39,18 @@ const AgendaDeLaFicha = ({
         endDate={competition.endDate}
         canManage={
           canManage &&
-          ['DRAFT', 'ACTIVE', 'CLOSED'].includes(competition.status)
+          [
+            CompetitionStatusEnum.DRAFT,
+            CompetitionStatusEnum.ACTIVE,
+            CompetitionStatusEnum.CLOSED,
+          ].includes(competition.status)
         }
         maxPlayers={competition.maxPlayers}
         // «Caben N de los M», solo mientras se apunta gente (FE #856)
-        inscripcionesAbiertas={['DRAFT', 'ACTIVE'].includes(competition.status)}
+        inscripcionesAbiertas={[
+          CompetitionStatusEnum.DRAFT,
+          CompetitionStatusEnum.ACTIVE,
+        ].includes(competition.status)}
         // Las plazas (PR 4): el jugador elige con las inscripciones
         // abiertas; el organizador coloca y mueve hasta iniciar, y
         // quita solo con ellas abiertas
@@ -56,7 +64,7 @@ const AgendaDeLaFicha = ({
             : null
         }
         estoyInscrito={estoyInscrito}
-        puedeElegir={competition.status === 'ACTIVE'}
+        puedeElegir={competition.status === CompetitionStatusEnum.ACTIVE}
         maxMatchdaysPerPlayer={competition.strokePlay?.maxMatchdaysPerPlayer}
         inscritos={approvedEnrollments.map((e) => ({
           userId: e.userId,
@@ -64,9 +72,15 @@ const AgendaDeLaFicha = ({
         }))}
         puedeColocar={
           canManage &&
-          ['DRAFT', 'ACTIVE', 'CLOSED'].includes(competition.status)
+          [
+            CompetitionStatusEnum.DRAFT,
+            CompetitionStatusEnum.ACTIVE,
+            CompetitionStatusEnum.CLOSED,
+          ].includes(competition.status)
         }
-        puedeQuitar={canManage && competition.status === 'ACTIVE'}
+        puedeQuitar={
+          canManage && competition.status === CompetitionStatusEnum.ACTIVE
+        }
         version={`${competition.updatedAt}|${competition.status}|${versionFranjas}`}
         versionCampos={versionCampos}
         onAgenda={recibirAgenda}
@@ -74,13 +88,17 @@ const AgendaDeLaFicha = ({
         // Las partidas (PR 6): existen desde el cierre y se siguen
         // viendo acabada, sin nada que cambiar (Agustín, 11 oct);
         // hasta cuándo se cambian lo dice el servidor (la 1.ª salida)
-        verPartidas={['CLOSED', 'IN_PROGRESS', 'COMPLETED'].includes(
-          competition.status,
-        )}
+        verPartidas={[
+          CompetitionStatusEnum.CLOSED,
+          CompetitionStatusEnum.IN_PROGRESS,
+          CompetitionStatusEnum.COMPLETED,
+        ].includes(competition.status)}
         // Verlas y cambiarlas son dos cosas: acabada, quien organiza
         // y no juega las sigue viendo (CodeRabbit)
         puedeVerPartidas={canManage}
-        organizaPartidas={canManage && competition.status !== 'COMPLETED'}
+        organizaPartidas={
+          canManage && competition.status !== CompetitionStatusEnum.COMPLETED
+        }
         onCambioEnPartidas={() => setVersionDePartidas((n) => n + 1)}
       />
     ) : (
@@ -90,7 +108,11 @@ const AgendaDeLaFicha = ({
         endDate={competition.endDate}
         // Terminada o cancelada ya no se toca: el servidor lo rechaza
         canManage={
-          canManage && !['COMPLETED', 'CANCELLED'].includes(competition.status)
+          canManage &&
+          ![
+            CompetitionStatusEnum.COMPLETED,
+            CompetitionStatusEnum.CANCELLED,
+          ].includes(competition.status)
         }
         jugadores={canManage ? approvedEnrollments.length : approvedCount}
         // Cuando cambia la competición —estado, equipos— se vuelve a leer

@@ -3,6 +3,7 @@ import ModalShell, { CAJA_PROPIA } from '../ui/ModalShell';
 import { motion } from 'framer-motion';
 import { X, Users } from 'lucide-react';
 import { formatoDeIndice } from '../../utils/formatoDeHandicap';
+import EnrollmentStatus from '../../domain/value_objects/EnrollmentStatus';
 
 // Wrapper: controls mount/unmount so inner component always has fresh state
 const AssignTeamsModal = ({ isOpen, ...props }) => {
@@ -37,7 +38,9 @@ const AssignTeamsModalContent = ({
     hayCapitanes ? [captains.teamB] : [],
   );
 
-  const approvedPlayers = enrollments.filter((e) => e.status === 'APPROVED');
+  const approvedPlayers = enrollments.filter(
+    (e) => e.status === EnrollmentStatus.APPROVED,
+  );
   const esCapitan = (playerId) =>
     hayCapitanes &&
     (playerId === captains.teamA || playerId === captains.teamB);

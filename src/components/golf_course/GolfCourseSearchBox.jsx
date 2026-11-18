@@ -6,6 +6,7 @@ import { listGolfCoursesUseCase } from '../../composition';
 import { roundCoordinate } from '../../utils/geo';
 import { getCountryFlag } from '../../utils/countryUtils';
 import BlockLoader from '../ui/BlockLoader';
+import { registraElFallo } from '../../utils/registraElFallo';
 
 /**
  * GolfCourseSearchBox Component
@@ -193,7 +194,11 @@ const GolfCourseSearchBox = ({
         setResult({ countryCode, courses, total, widened });
       } catch (err) {
         if (cancelled) return;
-        console.error('Error loading golf courses:', err);
+        registraElFallo(
+          'GolfCourseSearchBox.error-loading-golf-courses',
+          'Error loading golf courses:',
+          err,
+        );
         // El `message` va a la consola y NO a la pantalla: sin cobertura, en la
         // aplicación instalada, ahí venía el aviso crudo del service worker
         // —«FetchEvent.respondWith received an error»— con la URL de la API

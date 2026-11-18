@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import { X, Loader } from 'lucide-react';
 import CampoDeHandicap from '../ui/CampoDeHandicap';
 import { useTranslation } from 'react-i18next';
+import { mensajeDelError } from '../../utils/mensajeDelError';
 
 /**
  * EditUserModal Component
@@ -41,7 +42,7 @@ const EditUserModal = ({ user, onSubmit, onCancel }) => {
       setError(
         err?.errorCode === 'EMAIL_ALREADY_IN_USE'
           ? t('editModal.emailAlreadyInUse')
-          : err?.message || t('editModal.error'),
+          : mensajeDelError(err, t('editModal.error')),
       );
     } finally {
       setIsSaving(false);

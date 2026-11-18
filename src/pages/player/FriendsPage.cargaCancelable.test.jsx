@@ -125,7 +125,8 @@ describe('FriendsPage: las listas descartan lo que llega tarde (T2)', () => {
 
     await act(async () => {});
 
-    expect(toastError).toHaveBeenCalledWith('caído');
+    // Sin estado HTTP no es un motivo del servidor: el aviso traducido
+    expect(toastError).toHaveBeenCalledWith('errors.failedToLoad');
     expect(espera()).not.toBeInTheDocument();
   });
 

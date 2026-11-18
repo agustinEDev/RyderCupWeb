@@ -125,10 +125,7 @@ Por lo mismo, un cambio de cabeceras tarda en llegar a los usuarios recurrentes.
 
 ## Notas sobre la arquitectura
 
-`www` y `api` son registros **"Solo DNS"** (nube gris) en Cloudflare, apuntando a Render.
-El tráfico **no** pasa por el proxy de Cloudflare de la cuenta, así que las *Transform
-Rules* de Cloudflare no se aplican y no sirven para inyectar cabeceras aquí.
-
-Las respuestas incluyen `cf-ray` y `server: cloudflare` porque **Render sirve sus Static
-Sites a través de su propio Cloudflare**. No confundir eso con que el dominio esté
-proxied: comprobar siempre el registro DNS.
+`www`, `api` y la raíz pasan por el **proxy de Cloudflare** (nube naranja), con SSL
+**Full (strict)** (ADR-012). Por eso funcionan las reglas de Cloudflare que ponen el HSTS y
+la CORP de `/images/*`, y la que añade `X-Origin-Verify` a las peticiones a la API. El resto
+de cabeceras las sirve Render.

@@ -124,6 +124,9 @@ jobs:
           # aprobado). Ver .github/scripts/npm-audit-gate.sh
           npm audit --json > audit-report.json || true
           set +e
+          # Avisos exceptuados por un tiempo (solo de desarrollo y sin versión corregida):
+          # .github/npm-audit-excepciones.json; uno caducado vuelve a bloquear
+          python3 .github/scripts/npm_audit_excepciones.py audit-report.json .github/npm-audit-excepciones.json
           bash .github/scripts/npm-audit-gate.sh audit-report.json
           PUERTA=$?
           set -e
@@ -583,6 +586,67 @@ jobs:
             --status "$STATUS" --result "$RESULT" \
             --if-fails "Run 'npm test -- --run --coverage' locally. For coverage, add tests for the new code; the coverage-report artifact has the per-file HTML report."
 
+  e2e-smoke:
+    name: 🎭 E2E smoke
+    runs-on: ubuntu-24.04
+    # Columna 2, junto a los tests (re-auditoría Q-FE-09): los e2e que no
+    # necesitan el back —portada, contraseña olvidada, enlace de restablecer
+    # sin token, escapado de HTML, tope de longitud—, marcados con @smoke. Los que piden el back o
+    # una sesión se quedan fuera hasta que el CI levante uno
+    needs: [lint, type-check, architecture, owasp-semgrep, dependency-audit, secret-scanning, license-check, dependency-review, commit-verification, outdated-dependencies]
+    if: ${{ !cancelled() && !contains(needs.*.result, 'failure') }}
+    timeout-minutes: 15
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+
+      - name: Setup Node.js
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1  # v7.1.0
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Upgrade npm
+        # Same pin as the test job (npm 10 fails npm ci with ERESOLVE)
+        run: npm install -g npm@11.17.0
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Chromium for Playwright
+        # The browser that matches the @playwright/test version in the lock file
+        run: npx playwright install --with-deps chromium
+
+      - name: Run the smoke e2e
+        id: e2e
+        run: |
+          set -o pipefail
+          # line para el log y la tarjeta; html para el artefacto si falla
+          npm run test:e2e:smoke -- --reporter=line,html 2>&1 | tee "$RUNNER_TEMP/e2e.log"
+
+      - name: Upload the Playwright report
+        if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
+        with:
+          name: playwright-report
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 14
+
+      - name: Summary card
+        if: always()
+        continue-on-error: true  # la tarjeta nunca tumba el job
+        env:
+          STATUS: ${{ job.status }}
+        run: |
+          RESULT=$(grep -E '^ +[0-9]+ (passed|failed|flaky|skipped)' "$RUNNER_TEMP/e2e.log" 2>/dev/null | sed 's/^ *//' | paste -sd ',' - | sed 's/,/, /g')
+          python3 .github/scripts/summary_card.py \
+            --title "🎭 E2E smoke" \
+            --what "Runs the Playwright tests tagged @smoke in Chromium against the dev server: the landing page, the forgot password page and its validation, the reset password link without a token, HTML escaping and the input length limit. They need no backend." \
+            --status "$STATUS" --result "${RESULT:-No result}" \
+            --if-fails "Run 'npm run test:e2e:smoke' locally ('npx playwright install chromium' first). On failure the playwright-report artifact has the trace of each test."
+
   type-check:
     name: 📝 Type Check
     runs-on: ubuntu-24.04
@@ -903,7 +967,7 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     # commit-verification solo pinta su fila: no entra en la decisión de abajo
-    needs: [commit-verification, dependency-audit, secret-scanning, license-check, dependency-review, owasp-semgrep, outdated-dependencies, lint, test, type-check, architecture, build]
+    needs: [commit-verification, dependency-audit, secret-scanning, license-check, dependency-review, owasp-semgrep, outdated-dependencies, lint, test, e2e-smoke, type-check, architecture, build]
     if: always()
     steps:
       # El índice: el veredicto y una fila por job. El detalle de cada uno está
@@ -921,13 +985,15 @@ jobs:
           TYPES: ${{ needs.type-check.result }}
           ARCHITECTURE: ${{ needs.architecture.result }}
           TEST: ${{ needs.test.result }}
+          E2E: ${{ needs.e2e-smoke.result }}
           BUILD: ${{ needs.build.result }}
         run: |
-          # Falla con los mismos ocho de siempre, y solo con success pasan (un
-          # skipped tampoco). Los otros no lo tumban aquí, pero si fallan, tests y
-          # build se saltan, y eso sí. Entre comillas: uno vacío no se pierde
+          # Falla con estos nueve (los ocho de siempre y, desde el 18 nov, el e2e
+          # smoke), y solo con success pasan (un skipped tampoco). Los otros no
+          # lo tumban aquí, pero si fallan, tests y build se saltan, y eso sí.
+          # Entre comillas: uno vacío no se pierde
           FALLA=0
-          for r in "$AUDIT" "$SECRETS" "$LICENSES" "$LINT" "$TEST" "$SEMGREP" "$ARCHITECTURE" "$BUILD"; do
+          for r in "$AUDIT" "$SECRETS" "$LICENSES" "$LINT" "$TEST" "$E2E" "$SEMGREP" "$ARCHITECTURE" "$BUILD"; do
             [ "$r" = success ] || FALLA=1
           done
 
@@ -953,6 +1019,7 @@ jobs:
             "$TYPES|📝 Type Check|tsc --noEmit over the TypeScript files"
             "$ARCHITECTURE|🏛️ Architecture|Layer contracts and no circular imports (dependency-cruiser)"
             "$TEST|🧪 Tests + coverage|Vitest suite and the four coverage thresholds"
+            "$E2E|🎭 E2E smoke|Playwright tests tagged @smoke, without a backend"
             "$BUILD|🏗️ Build · 🚀 Deploy like Render|Production build within budget, and Render's own build served as a static site"
           )
 

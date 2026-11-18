@@ -26,6 +26,10 @@ import {
   removeEnrolledPlayerUseCase,
   assignTeamsUseCase,
 } from '../../../composition';
+import { CompetitionStatusEnum } from '../../../domain/value_objects/CompetitionStatus';
+import EnrollmentStatus from '../../../domain/value_objects/EnrollmentStatus';
+import { mensajeDelError } from '../../../utils/mensajeDelError';
+import { registraElFallo } from '../../../utils/registraElFallo';
 
 /**
  * Lo que el organizador hace con la competición desde su ficha: cambiar su
@@ -82,7 +86,11 @@ export const crearCambiosDeEstado = (contexto) => {
         setEnrollments(lista);
     } catch (error) {
       // Lo de antes sigue a la vista; el siguiente refresco lo pondrá al día
-      console.error('Error reloading after removing a player:', error);
+      registraElFallo(
+        'cambiosDeEstado.reloading-after-removing-a-player',
+        'Error reloading after removing a player:',
+        error,
+      );
     }
     // Y sus franjas: quitarle no mueve la fecha de la ficha (/code-review)
     if (deEsta === idActual.current) setVersionFranjas((v) => v + 1);
@@ -201,7 +209,11 @@ export const crearCambiosDeEstado = (contexto) => {
           return;
         }
       } catch (error) {
-        console.error('Error validating golf courses for activation:', error);
+        registraElFallo(
+          'cambiosDeEstado.validating-golf-courses-to-activate',
+          'Error validating golf courses for activation:',
+          error,
+        );
         customToast.error(t('detail.errors.golfCoursesFetchFailed'));
         return;
       }
@@ -255,7 +267,11 @@ export const crearCambiosDeEstado = (contexto) => {
               await assignTeamsUseCase.execute(id, { mode: 'AUTOMATIC' });
               customToast.success(t('detail.success.teamsAutoAssigned'));
             } catch (assignError) {
-              console.error('Error auto-assigning teams:', assignError);
+              registraElFallo(
+                'cambiosDeEstado.error-auto-assigning-teams',
+                'Error auto-assigning teams:',
+                assignError,
+              );
               customToast.error(porQueNoSeFormaron(t, assignError));
               yaLosHabia(assignError, setCompetition);
             }
@@ -314,7 +330,8 @@ export const crearCambiosDeEstado = (contexto) => {
             return lista;
           })
           .catch((e) => {
-            console.error(
+            registraElFallo(
+              'cambiosDeEstado.reloading-enrollments-after-status-change',
               'Error reloading enrollments after status change:',
               e,
             );
@@ -334,7 +351,9 @@ export const crearCambiosDeEstado = (contexto) => {
           await Promise.all([fichaReleida, listaReleida])
             .then(([ficha, lista]) => {
               if (!ficha?.strokePlay || !lista) return;
-              const aprobados = lista.filter((e) => e.status === 'APPROVED');
+              const aprobados = lista.filter(
+                (e) => e.status === EnrollmentStatus.APPROVED,
+              );
               const aviso = categoriasQueSalen(
                 ficha.strokePlay,
                 aprobados.map((e) => e.category ?? null),
@@ -351,11 +370,7 @@ export const crearCambiosDeEstado = (contexto) => {
         }
       }
     } catch (error) {
-      console.error(`Error ${action}:`, error);
-      console.error(
-        'Error details:',
-        error.stack || error.message || String(error),
-      );
+      registraElFallo(`cambiosDeEstado.${action}`, `Error ${action}:`, error);
       // Un stroke play no se cierra ni se inicia con aprobados sin franja: se
       // dice quiénes y se lleva a «Sin franja», donde se colocan (FE #824)
       // Y sin hándicap tampoco se cierra: se dice quiénes, se marcan en la lista
@@ -377,7 +392,7 @@ export const crearCambiosDeEstado = (contexto) => {
           setEnrollments(lista);
           const primero = lista.find(
             (e) =>
-              e.status === 'APPROVED' &&
+              e.status === EnrollmentStatus.APPROVED &&
               faltan.some((p) => p.user_id === e.userId),
           );
           if (primero) {
@@ -387,7 +402,8 @@ export const crearCambiosDeEstado = (contexto) => {
               ?.scrollIntoView({ behavior: 'smooth', block: 'center' });
           }
         } catch (e) {
-          console.error(
+          registraElFallo(
+            'cambiosDeEstado.reloading-enrollments-after-missing-handicaps',
             'Error reloading enrollments after missing handicaps:',
             e,
           );
@@ -411,14 +427,16 @@ export const crearCambiosDeEstado = (contexto) => {
         customToast.error(t('detail.errors.waitForDraft'));
         return;
       }
-      customToast.error(error.message || t('detail.failedToUpdateCompetition'));
+      customToast.error(
+        mensajeDelError(error, t('detail.failedToUpdateCompetition')),
+      );
     } finally {
       setIsProcessing(false);
     }
   };
 
   const confirmarCapitanes = async (capitanes) => {
-    const cerraba = competition.status === 'ACTIVE';
+    const cerraba = competition.status === CompetitionStatusEnum.ACTIVE;
     setGuardandoCapitanes(true);
     try {
       const result = await nameCaptainsUseCase.execute(id, capitanes);
@@ -450,14 +468,22 @@ export const crearCambiosDeEstado = (contexto) => {
           setCompetition((prev) => ({ ...prev, teamsAssigned: true }));
           customToast.success(t('detail.success.teamsAutoAssigned'));
         } catch (assignError) {
-          console.error('Error auto-assigning teams:', assignError);
+          registraElFallo(
+            'cambiosDeEstado.error-auto-assigning-teams-2',
+            'Error auto-assigning teams:',
+            assignError,
+          );
           customToast.error(porQueNoSeFormaron(t, assignError));
           yaLosHabia(assignError, setCompetition);
         }
       }
       refrescarCanDelete();
     } catch (error) {
-      console.error('Error naming captains:', error);
+      registraElFallo(
+        'cambiosDeEstado.error-naming-captains',
+        'Error naming captains:',
+        error,
+      );
       // El motivo del servidor tal cual («ya hay equipos»...): dice qué hacer.
       // El modal sigue abierto para corregir la elección
       customToast.error(
@@ -480,7 +506,11 @@ export const crearCambiosDeEstado = (contexto) => {
       customToast.success(t('detail.success.deleted'));
       navigate('/competitions');
     } catch (error) {
-      console.error('Error deleting competition:', error);
+      registraElFallo(
+        'cambiosDeEstado.error-deleting-competition',
+        'Error deleting competition:',
+        error,
+      );
       // El motivo del servidor se enseña tal cual («ya tiene calendario»...):
       // es lo que dice qué hacer. Sin red o sin respuesta, el texto de la app
       customToast.error(

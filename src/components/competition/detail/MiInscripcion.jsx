@@ -2,6 +2,7 @@ import { AlertCircle } from 'lucide-react';
 import { getEnrollmentStatusColor } from '../../../services/competitions';
 import { etiquetaDeInscripcion } from '../../../utils/etiquetaDeInscripcion';
 import { diaCortoDeLaFicha } from '../../../utils/fichaDeLaCompeticion';
+import EnrollmentStatus from '../../../domain/value_objects/EnrollmentStatus';
 
 /**
  * El estado de la inscripción propia (o su puesto en una espera) y, si tiene
@@ -65,7 +66,7 @@ const MiInscripcion = ({
       {!isCreator &&
         competition.teamsAssigned &&
         (userEnrollment?.status || competition.enrollment_status) ===
-          'APPROVED' && (
+          EnrollmentStatus.APPROVED && (
           <p className="mt-2 text-sm text-blue-900">
             {t('detail.teamsFormed.enrolled')}
           </p>

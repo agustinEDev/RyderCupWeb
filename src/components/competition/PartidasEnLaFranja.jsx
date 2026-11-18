@@ -35,6 +35,7 @@ import {
   formatoDeIndice,
   formatoDeHandicapDeJuego,
 } from '../../utils/formatoDeHandicap';
+import { mensajeDelError } from '../../utils/mensajeDelError';
 
 /**
  * Las partidas de una franja de stroke play, en la ficha (FE #824, PR 6;
@@ -225,7 +226,7 @@ const PartidasEnLaFranja = ({
     );
     if (conNombres) return conNombres;
     if (CON_TEXTO.includes(codigo)) return t(`partidas.errors.${codigo}`);
-    return error?.message || t('partidas.error');
+    return mensajeDelError(error, t('partidas.error'));
   };
 
   /**

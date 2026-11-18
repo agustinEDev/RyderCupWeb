@@ -7,6 +7,8 @@
  * pasado el plazo. Aquí no se calcula nada: solo se decide si se enseña.
  */
 
+import { CompetitionStatusEnum } from '../value_objects/CompetitionStatus';
+
 // Fecha y hora con su desfase, tal como lo escribe el servidor
 const CON_DESFASE =
   /^(\d{4}-\d{2}-\d{2})T(\d{2}:\d{2})(?::\d{2}(?:\.\d+)?)?(?:Z|[+-]\d{2}:\d{2})$/;
@@ -22,7 +24,7 @@ const CON_DESFASE =
  * @returns {{dia: string, hora: string}|null} `dia` en YYYY-MM-DD, `hora` en HH:MM
  */
 export const plazoQueSeEnseña = (competition, ahora) => {
-  if (competition?.status !== 'ACTIVE') return null;
+  if (competition?.status !== CompetitionStatusEnum.ACTIVE) return null;
   if (competition.enrollmentDeadlineApplies !== true) return null;
   const plazo = competition.enrollmentDeadline;
   const partes = typeof plazo === 'string' ? CON_DESFASE.exec(plazo) : null;

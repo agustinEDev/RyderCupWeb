@@ -2,6 +2,7 @@ import { AlertCircle, UserX, ChevronRight } from 'lucide-react';
 import TituloConNumero from '../../ui/TituloConNumero';
 import { formatoDeIndice } from '../../../utils/formatoDeHandicap';
 import NombrePequeno from '../../ui/NombrePequeno';
+import EnrollmentStatus from '../../../domain/value_objects/EnrollmentStatus';
 
 /**
  * Las solicitudes pendientes (aprobar o rechazar) y las rechazadas, plegadas.
@@ -18,19 +19,23 @@ const SolicitudesDeInscripcion = ({
 }) => (
   <div className="px-4 space-y-4">
     {/* Pending Requests Section */}
-    {enrollments.filter((e) => e.status === 'REQUESTED').length > 0 && (
+    {enrollments.filter((e) => e.status === EnrollmentStatus.REQUESTED).length >
+      0 && (
       <div className="bg-white border border-orange-200 rounded-xl p-6 shadow-sm">
         <h3 className="text-gray-900 font-bold text-base sm:text-lg mb-4 flex items-center gap-2">
           <AlertCircle className="w-5 h-5 flex-none text-orange-600" />
           <TituloConNumero
             texto={t('detail.pendingRequests')}
-            numero={enrollments.filter((e) => e.status === 'REQUESTED').length}
+            numero={
+              enrollments.filter((e) => e.status === EnrollmentStatus.REQUESTED)
+                .length
+            }
           />
         </h3>
 
         <div className="space-y-3">
           {enrollments
-            .filter((e) => e.status === 'REQUESTED')
+            .filter((e) => e.status === EnrollmentStatus.REQUESTED)
             .map((enrollment) => (
               <div
                 key={enrollment.id}
@@ -96,7 +101,7 @@ const SolicitudesDeInscripcion = ({
         no es un error. Flecha propia en vez del triángulo del
         navegador, que iba suelto en su línea, y filas que no se
         salen de su tarjeta aunque el correo sea largo */}
-    {enrollments.some((e) => e.status === 'REJECTED') && (
+    {enrollments.some((e) => e.status === EnrollmentStatus.REJECTED) && (
       <details
         data-testid="solicitudes-rechazadas"
         className="group bg-white border border-gray-200 rounded-xl shadow-sm"
@@ -107,7 +112,10 @@ const SolicitudesDeInscripcion = ({
           </span>
           <TituloConNumero
             texto={t('detail.rejectedRequests')}
-            numero={enrollments.filter((e) => e.status === 'REJECTED').length}
+            numero={
+              enrollments.filter((e) => e.status === EnrollmentStatus.REJECTED)
+                .length
+            }
             claseDelTexto="font-semibold text-gray-700"
           />
           <ChevronRight
@@ -117,7 +125,7 @@ const SolicitudesDeInscripcion = ({
         </summary>
         <div className="space-y-2 border-t border-gray-100 px-4 pb-4 pt-3">
           {enrollments
-            .filter((e) => e.status === 'REJECTED')
+            .filter((e) => e.status === EnrollmentStatus.REJECTED)
             .map((enrollment) => (
               <div
                 key={enrollment.id}

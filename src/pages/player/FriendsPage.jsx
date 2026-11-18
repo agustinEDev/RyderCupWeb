@@ -23,6 +23,8 @@ import {
   PanelDePestana,
 } from '../../components/ui/Pestanas';
 import { PANTALLA_MENOS_BARRA_INFERIOR } from '../../utils/barraInferior';
+import { mensajeDelError } from '../../utils/mensajeDelError';
+import { registraElFallo } from '../../utils/registraElFallo';
 
 const TABS = ['friends', 'received', 'sent'];
 
@@ -72,8 +74,12 @@ const FriendsPage = () => {
         setSent(sentResult.friendships);
       },
       alFallar: (error) => {
-        console.error('Error loading friends:', error);
-        customToast.error(error.message || t('errors.failedToLoad'));
+        registraElFallo(
+          'FriendsPage.error-loading-friends',
+          'Error loading friends:',
+          error,
+        );
+        customToast.error(mensajeDelError(error, t('errors.failedToLoad')));
       },
     },
   );
@@ -93,8 +99,12 @@ const FriendsPage = () => {
       customToast.success(t('success.accepted'));
       await recargarTrasLaAccion();
     } catch (error) {
-      console.error('Error accepting friend request:', error);
-      customToast.error(error.message || t('errors.failedToRespond'));
+      registraElFallo(
+        'FriendsPage.error-accepting-friend-request',
+        'Error accepting friend request:',
+        error,
+      );
+      customToast.error(mensajeDelError(error, t('errors.failedToRespond')));
     } finally {
       stopProcessing(key);
     }
@@ -108,8 +118,12 @@ const FriendsPage = () => {
       customToast.success(t('success.declined'));
       await recargarTrasLaAccion();
     } catch (error) {
-      console.error('Error declining friend request:', error);
-      customToast.error(error.message || t('errors.failedToRespond'));
+      registraElFallo(
+        'FriendsPage.error-declining-friend-request',
+        'Error declining friend request:',
+        error,
+      );
+      customToast.error(mensajeDelError(error, t('errors.failedToRespond')));
     } finally {
       stopProcessing(key);
     }
@@ -123,8 +137,12 @@ const FriendsPage = () => {
       customToast.success(t('success.removed'));
       await recargarTrasLaAccion();
     } catch (error) {
-      console.error('Error removing friendship:', error);
-      customToast.error(error.message || t('errors.failedToRemove'));
+      registraElFallo(
+        'FriendsPage.error-removing-friendship',
+        'Error removing friendship:',
+        error,
+      );
+      customToast.error(mensajeDelError(error, t('errors.failedToRemove')));
     } finally {
       stopProcessing(key);
     }
@@ -139,8 +157,12 @@ const FriendsPage = () => {
       customToast.success(t('success.blocked'));
       await recargarTrasLaAccion();
     } catch (error) {
-      console.error('Error blocking user:', error);
-      customToast.error(error.message || t('errors.failedToBlock'));
+      registraElFallo(
+        'FriendsPage.error-blocking-user',
+        'Error blocking user:',
+        error,
+      );
+      customToast.error(mensajeDelError(error, t('errors.failedToBlock')));
     } finally {
       stopProcessing(key);
     }

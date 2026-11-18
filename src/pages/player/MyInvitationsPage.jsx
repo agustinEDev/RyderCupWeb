@@ -14,6 +14,7 @@ import AvisoVerificaParaVerInvitaciones from '../../components/invitation/AvisoV
 import { listMyInvitationsUseCase } from '../../composition';
 import BlockLoader from '../../components/ui/BlockLoader';
 import { PANTALLA_MENOS_BARRA_INFERIOR } from '../../utils/barraInferior';
+import { registraElFallo } from '../../utils/registraElFallo';
 
 const MyInvitationsPage = () => {
   const navigate = useNavigate();
@@ -48,7 +49,11 @@ const MyInvitationsPage = () => {
         setCargaFallida(null);
       },
       alFallar: (error) => {
-        console.error('Error loading invitations:', error);
+        registraElFallo(
+          'MyInvitationsPage.error-loading-invitations',
+          'Error loading invitations:',
+          error,
+        );
         setCargaFallida(esFalloDeRed(error) ? 'red' : 'otro');
         customToast.error(
           mensajeDeError(error, {

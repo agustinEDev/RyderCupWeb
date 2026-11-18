@@ -27,6 +27,8 @@ import BlockLoader from '../../components/ui/BlockLoader';
 import { esFalloDeRed } from '../../utils/sinCobertura';
 import { recorreConTope } from '../../utils/recorreConTope';
 import { PANTALLA_MENOS_BARRA_INFERIOR } from '../../utils/barraInferior';
+import { mensajeDelError } from '../../utils/mensajeDelError';
+import QuickMatchStatus from '../../domain/value_objects/QuickMatchStatus';
 
 // Cuántos detalles de partida terminada se piden a la vez (FE #418)
 const DETALLES_A_LA_VEZ = 5;
@@ -68,7 +70,7 @@ const MyQuickMatchesPage = () => {
   // Donde aplica el OJO: solo una partida terminada se puede marcar, el
   // servidor rechaza el resto con un 409. Ojo con el nombre —no dice si la
   // partida cuenta: una terminada y excluida es elegible y no cuenta—.
-  const esElegibleParaElOjo = (qm) => qm.status === 'COMPLETED';
+  const esElegibleParaElOjo = (qm) => qm.status === QuickMatchStatus.COMPLETED;
 
   // Y la marca de «no cuenta»: la etiqueta y el gris de la fila van SIEMPRE
   // juntos —una tarjeta apagada sin nada que lo explique es lo peor de los dos
@@ -77,7 +79,7 @@ const MyQuickMatchesPage = () => {
   // algo, porque cuando termine no contara. En una cancelada no, que no contara
   // nunca.
   const llevaMarcaDeNoCuenta = (qm) =>
-    qm.status !== 'CANCELLED' && excludedIds.has(qm.id);
+    qm.status !== QuickMatchStatus.CANCELLED && excludedIds.has(qm.id);
 
   // El ojo: la partida deja de contar en MIS estadísticas, pero sigue en la
   // lista. Es la otra mitad de la separación que dejó a la papelera como
@@ -218,7 +220,7 @@ const MyQuickMatchesPage = () => {
   // match (course lookups deduplicated), same approach the scoring page uses.
   useEffect(() => {
     const completedMatches = quickMatches.filter(
-      (qm) => qm.status === 'COMPLETED',
+      (qm) => qm.status === QuickMatchStatus.COMPLETED,
     );
     if (!user || completedMatches.length === 0) return;
 
@@ -324,7 +326,7 @@ const MyQuickMatchesPage = () => {
         ) : (
           error && (
             <p className="text-sm text-red-600 mb-4">
-              {error.message || t('scoring.errors.generic')}
+              {mensajeDelError(error, t('scoring.errors.generic'))}
             </p>
           )
         )}
@@ -460,8 +462,8 @@ const MyQuickMatchesPage = () => {
                     </span>
                     <div className="pointer-events-auto flex items-center gap-2">
                       {/* Una que ya acabó se puede repetir (FE #1021) */}
-                      {(qm.status === 'COMPLETED' ||
-                        qm.status === 'CANCELLED') &&
+                      {(qm.status === QuickMatchStatus.COMPLETED ||
+                        qm.status === QuickMatchStatus.CANCELLED) &&
                         user && <RepetirPartida partida={qm} usuario={user} />}
                       {/* El ojo solo en las terminadas: una partida a medias no
                           cuenta todavia en ninguna estadistica, asi que el

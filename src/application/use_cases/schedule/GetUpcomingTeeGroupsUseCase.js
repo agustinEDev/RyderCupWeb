@@ -4,9 +4,13 @@ import {
   companerosDe,
   seRetiro,
 } from '../../../domain/services/PartidasDeLaFranja';
+import { CompetitionStatusEnum } from '../../../domain/value_objects/CompetitionStatus';
 
 const POR_JUGAR = ['SCHEDULED', 'IN_PROGRESS'];
-const COMPETICIONES_CON_PARTIDAS = ['CLOSED', 'IN_PROGRESS'];
+const COMPETICIONES_CON_PARTIDAS = [
+  CompetitionStatusEnum.CLOSED,
+  CompetitionStatusEnum.IN_PROGRESS,
+];
 
 /**
  * Las próximas partidas de stroke play del jugador, de todas sus competiciones
@@ -40,7 +44,10 @@ class GetUpcomingTeeGroupsUseCase {
     ahora = new Date(),
   ) {
     if (!userId)
-      throw new Error('GetUpcomingTeeGroupsUseCase requires a userId');
+      throw Object.assign(
+        new Error('GetUpcomingTeeGroupsUseCase requires a userId'),
+        { mensajeTecnico: true },
+      );
     const todas =
       competitions ?? (await this.#listUserCompetitionsUseCase.execute(userId));
     const deStrokePlay = (todas || []).filter(

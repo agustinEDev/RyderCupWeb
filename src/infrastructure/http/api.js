@@ -59,6 +59,8 @@ const sinConexion = (causa) =>
     }),
     {
       sinConexion: true,
+      // Ya en el idioma de la app (re-auditoría Q-FE-06)
+      mensajeTraducido: true,
     },
   );
 
@@ -80,6 +82,8 @@ const cierraPorCsrf = (errorData, contexto) => {
 const errorDeCsrf = () =>
   Object.assign(new Error('CSRF validation failed. Please log in again.'), {
     errorCode: 'CSRF_VALIDATION_FAILED',
+    // En inglés: la pantalla dice el suyo (re-auditoría Q-FE-06)
+    mensajeTecnico: true,
   });
 
 /**
@@ -111,6 +115,8 @@ const renuevaTrasCsrf = async () => {
       status: respuesta.status,
       statusCode: respuesta.status,
       errorCode: null,
+      mensajeTraducido: respuesta.status === 429,
+      mensajeTecnico: respuesta.status !== 429,
     });
   }
 };
@@ -281,17 +287,24 @@ export const apiRequest = async (endpoint, { topeMs, ...options } = {}) => {
 
       // Extract error message with proper fallback chain
       let errorMessage = '';
+      // Si el texto ya es de la app, o si es técnico y no se le enseña a nadie
+      // tal cual (re-auditoría Q-FE-06: `utils/mensajeDelError`)
+      let mensajeTraducido = false;
+      let mensajeTecnico = false;
 
       if (seVaAAceptar) {
         errorMessage = interfaz().traduce('common:terminosPendientes');
+        mensajeTraducido = true;
         interfaz().silenciaElAviso(errorMessage);
       } else if (terminosPendientes) {
         errorMessage = interfaz().traduce('common:terminosNoDisponible');
+        mensajeTraducido = true;
       } else if (response.status === 429) {
         // El del backend es técnico y en inglés («Rate limit exceeded: 10 per
         // 1 minute»): se dice el de la app. El `status` sigue en el error, que
         // es por lo que lo reconocen la cola y las pantallas (4 oct 2026)
         errorMessage = interfaz().traduce('common:demasiadasPeticiones');
+        mensajeTraducido = true;
       } else if (errorData.detail) {
         // FastAPI returns errors in 'detail' field. On 422s it's a list of
         // Pydantic error objects ({ type, loc, msg, input, ctx }) rather than
@@ -303,8 +316,10 @@ export const apiRequest = async (endpoint, { topeMs, ...options } = {}) => {
           errorMessage = errorData.detail
             .map((err) => err?.msg || JSON.stringify(err))
             .join('; ');
+          mensajeTecnico = true;
         } else {
           errorMessage = JSON.stringify(errorData.detail);
+          mensajeTecnico = true;
         }
       } else if (errorData.message) {
         // Some APIs use 'message' field
@@ -315,6 +330,7 @@ export const apiRequest = async (endpoint, { topeMs, ...options } = {}) => {
       } else {
         // Fallback to HTTP status text
         errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+        mensajeTecnico = true;
       }
 
       // Create structured error with status code for better error handling
@@ -322,6 +338,8 @@ export const apiRequest = async (endpoint, { topeMs, ...options } = {}) => {
       error.status = response.status;
       error.statusCode = response.status; // Alias for compatibility
       error.errorCode = errorData.error_code || null;
+      error.mensajeTraducido = mensajeTraducido;
+      error.mensajeTecnico = mensajeTecnico;
       // Lo que el servidor manda además del mensaje, para que la pantalla lo
       // diga en su idioma (claves siempre, BE #360)
       error.data = errorData;

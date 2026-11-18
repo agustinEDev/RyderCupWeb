@@ -107,7 +107,7 @@ describe('useAvatar', () => {
     expect(refetchUser).not.toHaveBeenCalled();
   });
 
-  it('handleUpload shows the server text when other images are being processed (503)', async () => {
+  it('handleUpload does not show the raw text of a 503 without its code (Q-FE-06)', async () => {
     // Given the server is busy with other images and answers 503 with its text,
     // turned into an Error by apiRequest (message = detail)
     const refetchUser = vi.fn();
@@ -126,8 +126,11 @@ describe('useAvatar', () => {
       await result.current.handleUpload({ size: 999 });
     });
 
-    // Then the user reads that exact text
-    expect(customToast.error).toHaveBeenCalledWith(texto);
+    // Then the user reads the app's own text: a 5xx is not shown raw
+    // (re-audit Q-FE-06); with IMAGES_BUSY it is translated (next test)
+    expect(customToast.error).toHaveBeenCalledWith(
+      'toasts.failedToUpdateAvatar',
+    );
     expect(refetchUser).not.toHaveBeenCalled();
   });
 

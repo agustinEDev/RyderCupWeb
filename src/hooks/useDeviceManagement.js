@@ -4,6 +4,8 @@ import customToast from '../utils/toast';
 import { useCargaCancelableEffect } from './useCargaCancelableEffect';
 
 import { getActiveDevicesUseCase, revokeDeviceUseCase } from '../composition';
+import { mensajeDelError } from '../utils/mensajeDelError';
+import { registraElFallo } from '../utils/registraElFallo';
 
 /**
  * Custom hook for Device Management
@@ -27,7 +29,8 @@ export const useDeviceManagement = () => {
     {
       alCargar: (result) => setDevices(result.devices || []),
       alFallar: (error) => {
-        console.error(
+        registraElFallo(
+          'useDeviceManagement.fetching-devices',
           '❌ [useDeviceManagement] Error fetching devices:',
           error,
         );
@@ -37,7 +40,7 @@ export const useDeviceManagement = () => {
           ? t(`errors.${error.code}`, {
               defaultValue: t('errors.FAILED_TO_LOAD_DEVICES'),
             })
-          : error.message || t('errors.FAILED_TO_LOAD_DEVICES');
+          : mensajeDelError(error, t('errors.FAILED_TO_LOAD_DEVICES'));
 
         customToast.error(errorMessage);
       },
@@ -76,14 +79,18 @@ export const useDeviceManagement = () => {
       customToast.success(t('success.deviceRevoked'));
       return true;
     } catch (error) {
-      console.error('❌ [useDeviceManagement] Error revoking device:', error);
+      registraElFallo(
+        'useDeviceManagement.revoking-device',
+        '❌ [useDeviceManagement] Error revoking device:',
+        error,
+      );
 
       // Translate domain error code (Repository returns error codes, not messages)
       const errorMessage = error.code
         ? t(`errors.${error.code}`, {
             defaultValue: t('errors.FAILED_TO_REVOKE_DEVICE'),
           })
-        : error.message || t('errors.FAILED_TO_REVOKE_DEVICE');
+        : mensajeDelError(error, t('errors.FAILED_TO_REVOKE_DEVICE'));
 
       // Show toast AND save error for inline display
       customToast.error(errorMessage);

@@ -36,6 +36,10 @@ import {
 } from '../../services/accionesPendientes';
 import BlockLoader from '../ui/BlockLoader';
 import { diaDeLaSesion } from '../../utils/diaDeLaSesion';
+import { CompetitionStatusEnum } from '../../domain/value_objects/CompetitionStatus';
+import EnrollmentStatus from '../../domain/value_objects/EnrollmentStatus';
+import InvitationStatus from '../../domain/value_objects/InvitationStatus';
+import { registraElFallo } from '../../utils/registraElFallo';
 
 /** Lo que la tarjeta recuerda, con sus valores por defecto. */
 const loRecordado = (r) => ({
@@ -194,7 +198,11 @@ const PendingActionsCard = ({
         // en síncrono, queda como un rechazo más y no tumba el panel entero
         const pedir = (peticion) => (async () => peticion())();
         const results = await Promise.allSettled([
-          pedir(() => listMyInvitationsUseCase.execute({ status: 'PENDING' })),
+          pedir(() =>
+            listMyInvitationsUseCase.execute({
+              status: InvitationStatus.PENDING,
+            }),
+          ),
           isCreator
             ? pedir(() => loadPendingEnrollments(competiciones))
             : Promise.resolve([]),
@@ -274,7 +282,11 @@ const PendingActionsCard = ({
         ultimoAplicado.current = aplicado;
         recuerdaLasAccionesPendientes({ ...aplicado }, user.id);
       } catch (error) {
-        console.error('Error loading pending actions:', error);
+        registraElFallo(
+          'PendingActionsCard.error-loading-pending-actions',
+          'Error loading pending actions:',
+          error,
+        );
       } finally {
         if (!cancelado) setIsLoading(false);
       }
@@ -331,7 +343,11 @@ const PendingActionsCard = ({
       setPlazasAsignadas(quedan);
     } catch (error) {
       // El nuestro, traducido: el del servidor puede venir en otro idioma (CodeRabbit)
-      console.error('No se ha podido marcar la plaza como vista:', error);
+      registraElFallo(
+        'PendingActionsCard.marking-the-place-as-seen',
+        'No se ha podido marcar la plaza como vista:',
+        error,
+      );
       customToast.error(t('pendingActions.placeAssignedOkFailed'));
     } finally {
       if (montada.current && aplicadoDe.current === deQuien)
@@ -734,13 +750,13 @@ async function loadPendingEnrollments(competitions) {
   if (!competitions || competitions.length === 0) return [];
 
   const createdCompetitions = competitions.filter(
-    (c) => c.status === 'ACTIVE' || c.status === 'ENROLLING',
+    (c) => c.status === CompetitionStatusEnum.ACTIVE,
   );
 
   const results = await Promise.allSettled(
     createdCompetitions.map(async (comp) => {
       const enrollments = await listEnrollmentsUseCase.execute(comp.id, {
-        status: 'REQUESTED',
+        status: EnrollmentStatus.REQUESTED,
       });
       return {
         competitionId: comp.id,

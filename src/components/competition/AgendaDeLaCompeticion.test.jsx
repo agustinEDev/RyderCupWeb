@@ -306,8 +306,11 @@ describe('AgendaDeLaCompeticion · lo que cambia el organizador', () => {
   });
 
   it('AG11: si el servidor lo rechaza, dice por qué y la agenda sigue como estaba', async () => {
+    // Un 409 del servidor: su motivo se enseña
     mockCambiar.mockRejectedValue(
-      new Error('Ya existe una sesión MORNING en la fecha'),
+      Object.assign(new Error('Ya existe una sesión MORNING en la fecha'), {
+        status: 409,
+      }),
     );
     pintar();
 
@@ -543,6 +546,7 @@ describe('AgendaDeLaCompeticion · lo leído, para la ficha (FE #710)', () => {
 describe('AgendaDeLaCompeticion · avisos con nombres', () => {
   const rechazo = (errorCode, players) =>
     Object.assign(new Error('Hay jugadores afectados'), {
+      status: 409,
       errorCode,
       data: { detail: 'x', error_code: errorCode, players },
     });

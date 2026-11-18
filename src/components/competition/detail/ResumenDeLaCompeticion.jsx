@@ -16,6 +16,7 @@ import { formatCountryName } from '../../../services/countries';
 import { plazoQueSeEnseña } from '../../../domain/services/plazoDeInscripcion';
 import NombrePequeno from '../../ui/NombrePequeno';
 import { nombrePequeno } from '../../../utils/nombreVisible';
+import { CompetitionStatusEnum } from '../../../domain/value_objects/CompetitionStatus';
 
 /**
  * «Inscripción abierta hasta el 13 de noviembre a las 12:00» (15 nov 2026): el
@@ -93,7 +94,7 @@ const ResumenDeLaCompeticion = ({
         siguiente paso y ya la ofrece el botón de arriba (FE #705) */}
       {!canManage &&
         competition.setupMode === 'RYDER_CUP' &&
-        competition.status === 'CLOSED' &&
+        competition.status === CompetitionStatusEnum.CLOSED &&
         !competition.teamsAssigned &&
         competition.captains?.teamA &&
         competition.captains?.teamB && (

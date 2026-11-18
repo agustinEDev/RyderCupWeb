@@ -90,6 +90,49 @@ describe('mensajeDeError · un fallo del servidor (FE #710)', () => {
 
     expect(mensajeDeError(error, textos)).toBe('El torneo ya ha empezado');
   });
+
+  // Re-auditoría Q-FE-06: la misma regla que `mensajeDelError`, no otra
+  const http = (status, mensaje, extra = {}) =>
+    Object.assign(new Error(mensaje), { status, ...extra });
+
+  it.each([
+    [
+      'a technical 422 list',
+      http(422, 'Field required', { mensajeTecnico: true }),
+    ],
+    ['a 401', http(401, 'Token inválido o expirado')],
+    ['a JSON body', http(400, '{"detail":"x"}')],
+    ['a bare code', http(409, 'FAILED_TO_REVOKE_DEVICE')],
+    [
+      'a refresh failure with its status in .response',
+      Object.assign(new Error('Refresh token expired'), {
+        response: { status: 401 },
+      }),
+    ],
+  ])('%s is not a reason to show: the generic text', (_caso, error) => {
+    fingeConexion(true);
+
+    expect(motivoDelError(error)).toBe('generico');
+    expect(mensajeDeError(error, textos)).toBe('algo ha fallado');
+  });
+
+  it('the text api.js already translated (429) is shown', () => {
+    fingeConexion(true);
+    const error = http(429, 'Demasiados intentos, espera un minuto', {
+      mensajeTraducido: true,
+    });
+
+    expect(motivoDelError(error)).toEqual({
+      delServidor: 'Demasiados intentos, espera un minuto',
+    });
+  });
+
+  it('a code failure is never shown', () => {
+    fingeConexion(true);
+    const error = new RangeError('Invalid time value');
+
+    expect(motivoDelError(error)).toBe('generico');
+  });
 });
 
 /**
@@ -165,7 +208,7 @@ describe('motivoDelError · la misma regla, sin textos (4 nov 2026)', () => {
     ['un 5xx', { status: 503, message: 'Service Unavailable' }, 'generico'],
     [
       'un 4xx con motivo',
-      { status: 409, message: 'Ya es participante' },
+      Object.assign(new Error('Ya es participante'), { status: 409 }),
       { delServidor: 'Ya es participante' },
     ],
     ['un 4xx sin motivo', { status: 400 }, 'generico'],

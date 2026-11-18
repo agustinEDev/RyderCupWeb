@@ -32,68 +32,76 @@ test.describe('Password Reset System', () => {
       );
     });
 
-    test('should display forgot password form with correct elements', async ({
-      page,
-    }) => {
-      await page.goto('/forgot-password');
+    test(
+      'should display forgot password form with correct elements',
+      { tag: '@smoke' },
+      async ({ page }) => {
+        await page.goto('/forgot-password');
 
-      // Check for email input
-      const emailInput = page.locator('input[type="email"]');
-      await expect(emailInput).toBeVisible();
-      await expect(emailInput).toHaveAttribute('placeholder', /email/i);
+        // Check for email input
+        const emailInput = page.locator('input[type="email"]');
+        await expect(emailInput).toBeVisible();
+        await expect(emailInput).toHaveAttribute('placeholder', /email/i);
 
-      // Check for submit button
-      const submitButton = page.locator('button[type="submit"]');
-      await expect(submitButton).toBeVisible();
-      await expect(submitButton).toContainText('Send Reset Link');
+        // Check for submit button
+        const submitButton = page.locator('button[type="submit"]');
+        await expect(submitButton).toBeVisible();
+        await expect(submitButton).toContainText('Send Reset Link');
 
-      // Check for navigation links (Back to Sign In)
-      await expect(page.locator('a[href="/login"]')).toBeVisible();
-    });
+        // Check for navigation links (Back to Sign In)
+        await expect(page.locator('a[href="/login"]')).toBeVisible();
+      },
+    );
 
-    test('should show validation error for empty email', async ({ page }) => {
-      await page.goto('/forgot-password');
+    test(
+      'should show validation error for empty email',
+      { tag: '@smoke' },
+      async ({ page }) => {
+        await page.goto('/forgot-password');
 
-      // Submit form without email
-      await page.click('button[type="submit"]');
+        // Submit form without email
+        await page.click('button[type="submit"]');
 
-      // Should show validation error
-      await expect(
-        page.locator('text=/Email is required|Invalid email/i'),
-      ).toBeVisible();
-    });
+        // Should show validation error
+        await expect(
+          page.locator('text=/Email is required|Invalid email/i'),
+        ).toBeVisible();
+      },
+    );
 
-    test('should show validation error for invalid email format', async ({
-      page,
-    }) => {
-      await page.goto('/forgot-password');
+    test(
+      'should show validation error for invalid email format',
+      { tag: '@smoke' },
+      async ({ page }) => {
+        await page.goto('/forgot-password');
 
-      // Enter invalid email (HTML5 validation may prevent submit, so use valid format but check validation logic)
-      await page.fill('input[type="email"]', 'invalid@test');
+        // Enter invalid email (HTML5 validation may prevent submit, so use valid format but check validation logic)
+        await page.fill('input[type="email"]', 'invalid@test');
 
-      // Trigger blur to show validation
-      await page.locator('input[type="email"]').blur();
+        // Trigger blur to show validation
+        await page.locator('input[type="email"]').blur();
 
-      // Submit form
-      await page.click('button[type="submit"]');
+        // Submit form
+        await page.click('button[type="submit"]');
 
-      // Wait a bit for validation to trigger
-      await page.waitForTimeout(500);
+        // Wait a bit for validation to trigger
+        await page.waitForTimeout(500);
 
-      // Should show validation error OR browser validation message
-      const hasValidationError = await page
-        .locator('.text-red-500')
-        .first()
-        .isVisible()
-        .catch(() => false);
-      const hasNativeValidation = await page
-        .locator('input[type="email"]:invalid')
-        .count()
-        .then((c) => c > 0)
-        .catch(() => false);
+        // Should show validation error OR browser validation message
+        const hasValidationError = await page
+          .locator('.text-red-500')
+          .first()
+          .isVisible()
+          .catch(() => false);
+        const hasNativeValidation = await page
+          .locator('input[type="email"]:invalid')
+          .count()
+          .then((c) => c > 0)
+          .catch(() => false);
 
-      expect(hasValidationError || hasNativeValidation).toBeTruthy();
-    });
+        expect(hasValidationError || hasNativeValidation).toBeTruthy();
+      },
+    );
 
     test('should accept valid email format and show generic success message', async ({
       page,
@@ -181,28 +189,30 @@ test.describe('Password Reset System', () => {
   });
 
   test.describe('Reset Password Page', () => {
-    test('should show invalid token message for missing token', async ({
-      page,
-    }) => {
-      // Navigate to reset password without token
-      await page.goto('/reset-password');
+    test(
+      'should show invalid token message for missing token',
+      { tag: '@smoke' },
+      async ({ page }) => {
+        // Navigate to reset password without token
+        await page.goto('/reset-password');
 
-      // Wait for validation
-      await page.waitForTimeout(1500);
+        // Wait for validation
+        await page.waitForTimeout(1500);
 
-      // Should show error message - use first() to avoid strict mode
-      await expect(
-        page
-          .locator('h2')
-          .filter({ hasText: /Invalid Reset Link/i })
-          .first(),
-      ).toBeVisible();
+        // Should show error message - use first() to avoid strict mode
+        await expect(
+          page
+            .locator('h2')
+            .filter({ hasText: /Invalid Reset Link/i })
+            .first(),
+        ).toBeVisible();
 
-      // Should show link to request new reset
-      await expect(
-        page.locator('a').filter({ hasText: /Request New Reset Link/i }),
-      ).toBeVisible();
-    });
+        // Should show link to request new reset
+        await expect(
+          page.locator('a').filter({ hasText: /Request New Reset Link/i }),
+        ).toBeVisible();
+      },
+    );
 
     test('should show invalid token message for invalid token', async ({
       page,
@@ -380,15 +390,19 @@ test.describe('Password Reset System', () => {
       await expect(page).toHaveURL('/login');
     });
 
-    test('should navigate from forgot password to home', async ({ page }) => {
-      await page.goto('/forgot-password');
+    test(
+      'should navigate from forgot password to home',
+      { tag: '@smoke' },
+      async ({ page }) => {
+        await page.goto('/forgot-password');
 
-      // Click "Back to home" link
-      await page.click('text=Back to home');
+        // Click "Back to home" link
+        await page.click('text=Back to home');
 
-      // Should be on landing page
-      await expect(page).toHaveURL('/');
-    });
+        // Should be on landing page
+        await expect(page).toHaveURL('/');
+      },
+    );
 
     test('should navigate from reset password error to forgot password', async ({
       page,
@@ -406,37 +420,41 @@ test.describe('Password Reset System', () => {
       await expect(page).toHaveURL('/forgot-password');
     });
 
-    test('should navigate from reset password error to login', async ({
-      page,
-    }) => {
-      await page.goto('/reset-password/invalid');
-      await page.waitForTimeout(1500);
+    test(
+      'should navigate from reset password error to login',
+      { tag: '@smoke' },
+      async ({ page }) => {
+        await page.goto('/reset-password/invalid');
+        await page.waitForTimeout(1500);
 
-      // Click back to login
-      await page.click('text=Back to Login');
+        // Click back to login
+        await page.click('text=Back to Login');
 
-      // Should be on login page
-      await expect(page).toHaveURL('/login');
-    });
+        // Should be on login page
+        await expect(page).toHaveURL('/login');
+      },
+    );
   });
 
   test.describe('Responsive Design', () => {
-    test('should display mobile-friendly layout on forgot password page', async ({
-      page,
-    }) => {
-      // Set mobile viewport
-      await page.setViewportSize({ width: 375, height: 667 });
+    test(
+      'should display mobile-friendly layout on forgot password page',
+      { tag: '@smoke' },
+      async ({ page }) => {
+        // Set mobile viewport
+        await page.setViewportSize({ width: 375, height: 667 });
 
-      await page.goto('/forgot-password');
+        await page.goto('/forgot-password');
 
-      // Form should still be visible
-      await expect(page.locator('input[type="email"]')).toBeVisible();
-      await expect(page.locator('button[type="submit"]')).toBeVisible();
+        // Form should still be visible
+        await expect(page.locator('input[type="email"]')).toBeVisible();
+        await expect(page.locator('button[type="submit"]')).toBeVisible();
 
-      // Mobile logo should be visible (desktop logo hidden)
-      const mobileLogo = page.locator('.lg\\:hidden').first();
-      await expect(mobileLogo).toBeVisible();
-    });
+        // Mobile logo should be visible (desktop logo hidden)
+        const mobileLogo = page.locator('.lg\\:hidden').first();
+        await expect(mobileLogo).toBeVisible();
+      },
+    );
 
     test('should display mobile-friendly layout on reset password page', async ({
       page,
@@ -453,15 +471,17 @@ test.describe('Password Reset System', () => {
   });
 
   test.describe('Accessibility', () => {
-    test('should have proper form labels on forgot password page', async ({
-      page,
-    }) => {
-      await page.goto('/forgot-password');
+    test(
+      'should have proper form labels on forgot password page',
+      { tag: '@smoke' },
+      async ({ page }) => {
+        await page.goto('/forgot-password');
 
-      // Check for label
-      const emailLabel = page.locator('label[for="email"]');
-      await expect(emailLabel).toBeVisible();
-    });
+        // Check for label
+        const emailLabel = page.locator('label[for="email"]');
+        await expect(emailLabel).toBeVisible();
+      },
+    );
 
     test('should have proper form labels on reset password page', async ({
       page,

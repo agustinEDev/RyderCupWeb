@@ -1,5 +1,7 @@
 import { Users } from 'lucide-react';
 import { formatoDeIndice } from '../../utils/formatoDeHandicap';
+import { CompetitionStatusEnum } from '../../domain/value_objects/CompetitionStatus';
+import EnrollmentStatus from '../../domain/value_objects/EnrollmentStatus';
 
 const TeamAssignmentSection = ({
   teamAssignment,
@@ -31,10 +33,13 @@ const TeamAssignmentSection = ({
   // y ofrecerlo sería mandar al organizador a un error
   const inscritos = new Set(
     (enrollments || [])
-      .filter((e) => e.status === 'APPROVED')
+      .filter((e) => e.status === EnrollmentStatus.APPROVED)
       .map((e) => e.userId),
   );
-  const sePuedeCubrir = ['ACTIVE', 'CLOSED'].includes(status);
+  const sePuedeCubrir = [
+    CompetitionStatusEnum.ACTIVE,
+    CompetitionStatusEnum.CLOSED,
+  ].includes(status);
   const sinCapitan = (equipo) => {
     if (!captains || !sePuedeCubrir || inscritosSinCargar) return false;
     const capitan = equipo === 'A' ? captains.teamA : captains.teamB;

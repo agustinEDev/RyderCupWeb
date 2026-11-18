@@ -1,4 +1,5 @@
 import AccionesDeLaFicha from '../AccionesDeLaFicha';
+import { CompetitionStatusEnum } from '../../../domain/value_objects/CompetitionStatus';
 
 /**
  * Las acciones de quien organiza: la principal, el menú y las destructivas, y
@@ -20,7 +21,7 @@ const GestionDeLaFicha = ({
       t={t}
     />
 
-    {competition.status === 'DRAFT' && (
+    {competition.status === CompetitionStatusEnum.DRAFT && (
       // Invitar abre el torneo, y eso no se adivina mirando el botón.
       // También una programada: la política solo mira el estado
       <p

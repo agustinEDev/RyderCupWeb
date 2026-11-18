@@ -187,9 +187,9 @@ describe('useEditProfile - Password History', () => {
         await result.current.handleUpdateSecurity({ preventDefault: vi.fn() });
       });
 
-      // Should show generic error, not password history error
+      // Should show generic error (no HTTP status: not a server reason), not password history error
       expect(customToast.error).toHaveBeenCalledWith(
-        'Invalid current password',
+        'toasts.failedToUpdateSecurity',
       );
     });
 

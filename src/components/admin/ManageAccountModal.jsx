@@ -10,6 +10,7 @@ import {
   AlertTriangle,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { mensajeDelError } from '../../utils/mensajeDelError';
 
 /**
  * ManageAccountModal Component
@@ -45,7 +46,7 @@ const ManageAccountModal = ({ user, onToggleActive, onDelete, onCancel }) => {
         setBlocked(true);
         setOption(safeOption);
       } else {
-        setError(err.message || t('manageModal.genericError'));
+        setError(mensajeDelError(err, t('manageModal.genericError')));
       }
     } finally {
       setIsProcessing(false);

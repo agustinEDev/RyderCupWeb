@@ -12,33 +12,37 @@ import { test, expect } from '@playwright/test';
  */
 
 test.describe('XSS Protection', () => {
-  test('should escape HTML in form inputs (React auto-escaping)', async ({
-    page,
-  }) => {
-    await page.goto('/register');
+  test(
+    'should escape HTML in form inputs (React auto-escaping)',
+    { tag: '@smoke' },
+    async ({ page }) => {
+      await page.goto('/register');
 
-    const xssPayload = '<script>alert("XSS")</script>';
+      const xssPayload = '<script>alert("XSS")</script>';
 
-    // Try to inject script in first name
-    await page.getByPlaceholder('John').fill(xssPayload);
-    await page.getByPlaceholder('Doe').fill('Test');
-    await page.getByPlaceholder('your.email@example.com').fill('xss@test.com');
-    await page
-      .getByPlaceholder('Minimum 12 characters')
-      .fill('ValidPassword123.');
+      // Try to inject script in first name
+      await page.getByPlaceholder('John').fill(xssPayload);
+      await page.getByPlaceholder('Doe').fill('Test');
+      await page
+        .getByPlaceholder('your.email@example.com')
+        .fill('xss@test.com');
+      await page
+        .getByPlaceholder('Minimum 12 characters')
+        .fill('ValidPassword123.');
 
-    // Click outside to trigger any rendering
-    await page.click('body');
+      // Click outside to trigger any rendering
+      await page.click('body');
 
-    // Get page HTML
-    const html = await page.content();
+      // Get page HTML
+      const html = await page.content();
 
-    // Verify script tag is escaped
-    expect(html).not.toContain('<script>alert("XSS")</script>');
-    expect(html).toContain('&lt;script&gt;'); // Should be escaped
+      // Verify script tag is escaped
+      expect(html).not.toContain('<script>alert("XSS")</script>');
+      expect(html).toContain('&lt;script&gt;'); // Should be escaped
 
-    console.log('✅ React auto-escaping working correctly');
-  });
+      console.log('✅ React auto-escaping working correctly');
+    },
+  );
 
   test('should prevent XSS execution via event handlers', async ({ page }) => {
     await page.goto('/login');
@@ -329,22 +333,26 @@ test.describe('Input Validation', () => {
     }
   });
 
-  test('should prevent excessively long inputs', async ({ page }) => {
-    await page.goto('/register');
+  test(
+    'should prevent excessively long inputs',
+    { tag: '@smoke' },
+    async ({ page }) => {
+      await page.goto('/register');
 
-    // Try extremely long name
-    const longString = 'A'.repeat(200);
+      // Try extremely long name
+      const longString = 'A'.repeat(200);
 
-    await page.getByPlaceholder('John').fill(longString);
+      await page.getByPlaceholder('John').fill(longString);
 
-    // Check input value length (should be limited by maxLength)
-    const actualValue = await page.getByPlaceholder('John').inputValue();
+      // Check input value length (should be limited by maxLength)
+      const actualValue = await page.getByPlaceholder('John').inputValue();
 
-    expect(actualValue.length).toBeLessThanOrEqual(100);
-    console.log(
-      `✅ Long input truncated: ${longString.length} → ${actualValue.length}`,
-    );
-  });
+      expect(actualValue.length).toBeLessThanOrEqual(100);
+      console.log(
+        `✅ Long input truncated: ${longString.length} → ${actualValue.length}`,
+      );
+    },
+  );
 });
 
 test.describe('Rate Limiting Awareness', () => {

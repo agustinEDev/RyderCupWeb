@@ -4,8 +4,8 @@
 **Implementation Date**: December 21, 2025
 **Status**: ✅ Implemented (v1.8.0)
 **Decision Makers**: Frontend + backend development team
-**Supersedes**: ADR-003 (sessionStorage Authentication)
-**Extended by**: ADR-011 (Subdomain Architecture with Cloudflare) - Cookie domain updated to `.rydercupfriends.com` for cross-subdomain support
+**Supersedes**: ADR-003 (sessionStorage Authentication; removed on 17 Nov 2026, this ADR replaces it)
+**Extended by**: ADR-012 (Subdomains behind the Cloudflare Proxy) - Cookie domain `.rydercupfriends.com`
 
 ## Context and Problem
 

@@ -16,6 +16,8 @@ import { anotaLaSesion } from '../services/sesionCompartida';
 import { debeAceptarLosTerminos } from '../domain/services/aceptacionDeTerminos';
 import CampoDeHandicap from '../components/ui/CampoDeHandicap';
 import { olvidaLaMarcaDeTerminos } from '../utils/terminosPendientes';
+import { mensajeDelError } from '../utils/mensajeDelError';
+import { registraElFallo } from '../utils/registraElFallo';
 
 const CompleteProfile = () => {
   const { t } = useTranslation('auth');
@@ -44,7 +46,11 @@ const CompleteProfile = () => {
         const countriesData = await fetchCountriesUseCase.execute();
         setCountries(countriesData || []);
       } catch (error) {
-        console.error('Error loading countries:', error);
+        registraElFallo(
+          'CompleteProfile.error-loading-countries',
+          'Error loading countries:',
+          error,
+        );
         setCountries([]);
       } finally {
         setIsLoadingCountries(false);
@@ -136,8 +142,12 @@ const CompleteProfile = () => {
       customToast.success(t('google.completeProfile.success'));
       navigate('/dashboard', { replace: true });
     } catch (error) {
-      console.error('Error completing profile:', error);
-      customToast.error(error.message || t('google.genericError'));
+      registraElFallo(
+        'CompleteProfile.error-completing-profile',
+        'Error completing profile:',
+        error,
+      );
+      customToast.error(mensajeDelError(error, t('google.genericError')));
     } finally {
       setIsSaving(false);
     }

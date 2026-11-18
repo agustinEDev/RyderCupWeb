@@ -9,8 +9,11 @@ import {
   salenDeLosInscritos,
 } from '../domain/services/CategoriasQueSalen';
 import { fechaDeApertura } from '../domain/services/aperturaDeInscripciones';
-import { CompetitionStatus } from '../domain/value_objects/CompetitionStatus';
+import { CompetitionStatusEnum } from '../domain/value_objects/CompetitionStatus';
+import { seEditaLaCompeticion } from '../domain/services/edicionDeLaCompeticion';
 import { siguientePasoDeLaCompeticion } from './siguientePasoDeLaCompeticion';
+import EnrollmentStatus from '../domain/value_objects/EnrollmentStatus';
+import { mensajeDelError } from './mensajeDelError';
 
 // «Volver» lleva a donde se vino: explorar, las invitaciones (FE #682) o, por
 // defecto, las competiciones propias
@@ -27,7 +30,11 @@ export const vueltaDeLaFicha = (origen) =>
   Object.hasOwn(VUELTAS, origen ?? '') ? VUELTAS[origen] : VUELTA_POR_DEFECTO;
 
 // Antes de empezar se puede quitar a un inscrito (release social 2)
-export const SE_PUEDE_QUITAR = new Set(['DRAFT', 'ACTIVE', 'CLOSED']);
+export const SE_PUEDE_QUITAR = new Set([
+  CompetitionStatusEnum.DRAFT,
+  CompetitionStatusEnum.ACTIVE,
+  CompetitionStatusEnum.CLOSED,
+]);
 
 // Sin franjas: el mismo array siempre
 const SIN_FRANJAS = [];
@@ -74,7 +81,7 @@ export const porQueNoSeFormaron = (t, error) => {
   const motivo = MOTIVOS_PARA_NO_FORMAR[error?.errorCode];
   return motivo
     ? t(motivo)
-    : error?.message || t('detail.errors.teamAssignmentFailed');
+    : mensajeDelError(error, t('detail.errors.teamAssignmentFailed'));
 };
 
 // Por qué no se pudo quitar, por el código del servidor
@@ -205,7 +212,10 @@ export const avisoYClasificacion = (t, competition, approvedEnrollments) => {
     : null;
   const conClasificacion =
     competition?.hasTeams === false &&
-    ['IN_PROGRESS', 'COMPLETED'].includes(competition?.status);
+    [
+      CompetitionStatusEnum.IN_PROGRESS,
+      CompetitionStatusEnum.COMPLETED,
+    ].includes(competition?.status);
   return { textoDelAvisoDeCategorias, conClasificacion };
 };
 
@@ -247,11 +257,7 @@ export const derivarLaFicha = ({
   // quien invita antes de poner el campo de golf tiene que poder ponerlo después
   // Cerrada por el plazo (no a mano), también: se mueve, solo las fechas
   // (15 nov 2026, RyderCupAm #865)
-  const canEdit =
-    canManage &&
-    (new CompetitionStatus(competition.status).allowsModifications() ||
-      (competition.status === 'CLOSED' &&
-        competition.enrollmentClosedByDeadline === true));
+  const canEdit = canManage && seEditaLaCompeticion(competition);
   // Quién puede y cuándo lo decide el backend con la misma regla que el borrado
   // (RyderCupAM#347): estado, calendario y rol. Copiar aquí la lista de estados
   // ofrecería el botón en una cancelada ya jugada, donde siempre falla (FE #667)
@@ -276,8 +282,12 @@ export const derivarLaFicha = ({
   const canEditHandicap =
     canManage &&
     (esStrokePlay
-      ? ['DRAFT', 'ACTIVE']
-      : ['DRAFT', 'ACTIVE', 'CLOSED']
+      ? [CompetitionStatusEnum.DRAFT, CompetitionStatusEnum.ACTIVE]
+      : [
+          CompetitionStatusEnum.DRAFT,
+          CompetitionStatusEnum.ACTIVE,
+          CompetitionStatusEnum.CLOSED,
+        ]
     ).includes(competition.status);
   // Un hándicap con un decimal en el idioma de quien mira: «12,3» / «12.3»
   const unDecimal = (n) =>
@@ -321,7 +331,7 @@ export const derivarLaFicha = ({
   // cuanto abre deja de ser borrador, así que la fecha solo se enseña mientras
   // espera: una vez abierta ya no dice nada (FE #678)
   const aperturaProgramada =
-    competition.status === 'DRAFT'
+    competition.status === CompetitionStatusEnum.DRAFT
       ? fechaDeApertura(
           competition.startDate,
           competition.enrollmentOpensDaysBefore,
@@ -351,7 +361,7 @@ export const derivarLaFicha = ({
   // Quien solo espera: sin plaza en ninguna franja y con su puesto en una espera
   // Su puesto como en las franjas: el del servidor o, si no viene, el de la lista
   const miEspera =
-    esStrokePlay && userEnrollment?.status === 'APPROVED'
+    esStrokePlay && userEnrollment?.status === EnrollmentStatus.APPROVED
       ? rondasLeidas.find(
           (r) =>
             r.teeSheet?.myWaitingPosition ||
@@ -376,7 +386,11 @@ export const derivarLaFicha = ({
   // - y la competición es privada: en las públicas delante va siempre el nombre
   //   real, con el alias debajo (17 nov 2026), y el interruptor no cambiaría
   //   nada de lo que se ve. Ahí se explica con una línea fija.
-  const NOMBRE_A_LA_VISTA = ['APPROVED', 'REQUESTED', 'INVITED'];
+  const NOMBRE_A_LA_VISTA = [
+    EnrollmentStatus.APPROVED,
+    EnrollmentStatus.REQUESTED,
+    EnrollmentStatus.INVITED,
+  ];
   const suNombreSeVe =
     Boolean(user.alias) &&
     Boolean(userEnrollment?.id) &&

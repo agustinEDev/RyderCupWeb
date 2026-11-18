@@ -5,6 +5,64 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.85.0] - 2026-11-18
+
+**Calidad de la re-auditoría: errores traducidos en vez de textos técnicos, fallos
+capturados en Sentry, estados con las constantes del dominio y e2e de humo en el CI**
+(#1179, #1180, #1181, #1182; merge-back de la 2.84.0 en #1178). Va con el backend 2.73.0,
+que sale antes; no hay cambio de contrato. Probado en el Kind con la copia anonimizada de
+producción.
+
+### Added
+
+- **Los fallos capturados llegan a Sentry en producción** como avisos (Q-FE-07,
+  `utils/registraElFallo.js`): una huella por sitio, como mucho uno por sitio y minuto, sin
+  los 4xx, los cierres de sesión rutinarios (refresco, dispositivo revocado, CSRF, sesión
+  sustituida) ni los fallos sin conexión. **Sin datos personales**: solo el sitio y la clase
+  del error; el mensaje original no sale del dispositivo. La pila se reconstruye con el
+  parser de Sentry y solo con marcos de código (V8, Safari y Firefox).
+- **E2E de humo en cada pipeline** (Q-FE-09): 11 tests de Playwright que no necesitan
+  backend (portada, olvidé la contraseña, enlace de restablecer sin token, escapado de
+  HTML, límite de longitud) con la etiqueta `@smoke`, `npm run test:e2e:smoke` y un job
+  `e2e-smoke` que cuenta en el veredicto del resumen.
+- **Tests de los seis adaptadores que no tenían** (Q-FE-08): `ActivityEventMapper`,
+  `ApiCountryRepository`, `ApiFriendRepository`, `ApiPlayerStatsRepository`,
+  `ApiSupportRepository` y `LocalStorageHoleReportStore`.
+
+### Changed
+
+- **Una sola regla para el texto del servidor que llega a la pantalla** (Q-FE-06,
+  `utils/mensajeDelError.js`): sustituye 65 `error.message ||` en 34 ficheros, y
+  `motivoDelError`/`mensajeDeError` usan la misma. Se enseña el motivo legible de un 4xx
+  del servidor (no el 401, ni JSON, ni un código suelto, ni lo marcado como técnico) o el
+  texto que la app ya tradujo; lo demás, el texto traducido de cada pantalla. Ya no se ven
+  «Internal Server Error», «HTTP 500…», «Failed to fetch», listas de Pydantic ni códigos.
+  Un refresco de sesión fallido que no es 401 y una inscripción que no se puede leer se
+  marcan como técnicos.
+- **Los estados se comparan con las constantes del dominio** (Q-FE-02): competición,
+  inscripción, invitación, amistad y partida rápida. La tarjeta del panel ya no pregunta
+  por un estado `ENROLLING` que no existe.
+- **`Competition.allowsModifications` sigue la regla de estados** (DRAFT o ACTIVE) y
+  **una sola regla de dominio para editar solo las fechas**
+  (`domain/services/edicionDeLaCompeticion.js`), usada por la página de edición y la ficha;
+  con un estado desconocido no rompe la pantalla (Q-FE-03, Q-FE-04).
+- **Las excepciones de `npm audit`, con fecha de caducidad** (#1181): el aviso de ReDoS de
+  `picomatch` (GHSA-fc5q-39xc-vjpf, sin versión arreglada) solo alcanza herramientas de
+  desarrollo y caduca el 24 nov 2026; una excepción caducada vuelve a bloquear.
+
+### Fixed
+
+- **Una solicitud de inscripción pendiente lleva otra vez la etiqueta amarilla con ⏳** en
+  Mis competiciones: se comparaba con `'PENDING'`, que el servidor nunca envía, en vez de
+  `REQUESTED`. `INVITED` sigue en gris.
+
+### Removed
+
+- **DTOs de mapeadores obsoletos** y métodos de entidad sin uso (Q-FE-03, Q-FE-05).
+- **ADR-003 y ADR-011** (#1179), obsoletos: la sesión vive solo en cookies httpOnly
+  (ADR-004) y `www`, `api` y la raíz van por el proxy de Cloudflare, lo que recoge el nuevo
+  **ADR-012**.
+
 ## [2.84.0] - 2026-11-17
 
 **Nombre y alias a la vista, avisos de «no puede llevar enlaces» y endurecimiento de la

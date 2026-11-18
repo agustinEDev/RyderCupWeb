@@ -407,7 +407,12 @@ describe('FranjasDeLaCompeticion (FE #824)', () => {
 
   it('7: si el servidor la rechaza, su motivo, y lo escrito sigue ahí', async () => {
     mockCrear.mockRejectedValue(
-      new Error('Se solapa con la franja MORNING de ese día en el mismo campo'),
+      Object.assign(
+        new Error(
+          'Se solapa con la franja MORNING de ese día en el mismo campo',
+        ),
+        { status: 409 },
+      ),
     );
     pinta();
     fireEvent.click(await screen.findByRole('button', { name: 'franjas.add' }));
@@ -491,7 +496,12 @@ describe('FranjasDeLaCompeticion (FE #824)', () => {
 
   it('8c: si el servidor no deja (alguien perdería su plaza), su motivo', async () => {
     mockCambiar.mockRejectedValue(
-      new Error('La franja quedaría con 40 plazas y tiene 48 jugadores dentro'),
+      Object.assign(
+        new Error(
+          'La franja quedaría con 40 plazas y tiene 48 jugadores dentro',
+        ),
+        { status: 409 },
+      ),
     );
     pinta();
     fireEvent.click(
@@ -538,7 +548,9 @@ describe('FranjasDeLaCompeticion (FE #824)', () => {
 
   it('9b: con gente dentro, el motivo del servidor', async () => {
     mockBorrar.mockRejectedValue(
-      new Error('La franja tiene 12 jugadores con plaza'),
+      Object.assign(new Error('La franja tiene 12 jugadores con plaza'), {
+        status: 409,
+      }),
     );
     pinta();
     fireEvent.click(
@@ -800,7 +812,9 @@ describe('FranjasDeLaCompeticion (FE #824)', () => {
   );
 
   it('13b: si falla la acción, no se dice que salió bien', async () => {
-    mockCrear.mockRejectedValue(new Error('Se solapa'));
+    mockCrear.mockRejectedValue(
+      Object.assign(new Error('Se solapa'), { status: 409 }),
+    );
     pinta();
     fireEvent.click(await screen.findByRole('button', { name: 'franjas.add' }));
 
@@ -852,6 +866,7 @@ describe('FranjasDeLaCompeticion · avisos con nombres', () => {
 
   const rechazo = (errorCode, players) =>
     Object.assign(new Error('Hay jugadores afectados'), {
+      status: 409,
       errorCode,
       data: { detail: 'x', error_code: errorCode, players },
     });

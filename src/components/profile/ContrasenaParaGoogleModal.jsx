@@ -1,6 +1,7 @@
 import { useId, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import ModalShell from '../ui/ModalShell';
+import { registraElFallo } from '../../utils/registraElFallo';
 
 /**
  * Pide la contraseña actual antes de ir a Google a vincularlo (RyderCupAm #753), o antes
@@ -57,7 +58,11 @@ const ContrasenaParaGoogleModal = ({
     try {
       fallo = await alConfirmar(password);
     } catch (errorAlComprobar) {
-      console.error('Password check failed:', errorAlComprobar);
+      registraElFallo(
+        'ContrasenaParaGoogleModal.password-check-failed',
+        'Password check failed:',
+        errorAlComprobar,
+      );
       fallo = 'edit.linkedAccounts.passwordCheckFailed';
     }
     if (esta !== comprobacion.current) return;

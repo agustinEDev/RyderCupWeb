@@ -486,7 +486,11 @@ describe('SignInForm · contraseña mala, traducida', () => {
 
   it('sin conexión sigue con su propio mensaje', async () => {
     await fallaCon(
-      Object.assign(new TypeError('Sin conexión'), { sinConexion: true }),
+      // Como lo crea api.js: ya traducido (re-auditoría Q-FE-06)
+      Object.assign(new TypeError('Sin conexión'), {
+        sinConexion: true,
+        mensajeTraducido: true,
+      }),
     );
 
     expect(errorToast).toHaveBeenCalledWith('Sin conexión', { duration: 5000 });
