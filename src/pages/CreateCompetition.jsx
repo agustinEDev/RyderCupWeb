@@ -1,7 +1,7 @@
 import { useState, useEffect, useEffectEvent, useRef, useMemo } from 'react';
 import { tieneEquipos } from '../domain/value_objects/TournamentType';
 import { useNavigate, useParams } from 'react-router';
-import { Trophy, Settings, Plus, X, ChevronDown } from 'lucide-react';
+import { Trophy, Settings } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useCargaCancelableEffect } from '../hooks/useCargaCancelableEffect';
 import { nombresPorDefectoDeLosEquipos } from './nombresPorDefectoDeLosEquipos';
@@ -24,14 +24,13 @@ import {
   getAdjacentCountriesUseCase,
   createGolfCourseRequestUseCase,
 } from '../composition';
-import { CountryFlag } from '../components/ui/CountryFlag';
 import { formatCountryName, sortCountriesByName } from '../services/countries';
 import { validateCompetitionForm } from '../utils/competitionFormValidation';
-import CountryAutocomplete from '../components/ui/CountryAutocomplete';
 import GolfCourseRequestModal from '../components/golf_course/GolfCourseRequestModal';
 import EnrollmentOpeningModal from '../components/competition/EnrollmentOpeningModal';
 import SoloLectura from '../components/competition/create/SoloLectura';
 import CamposDeLaCompeticion from '../components/competition/create/CamposDeLaCompeticion';
+import PaisesDeLaCompeticion from '../components/competition/create/PaisesDeLaCompeticion';
 import customToast from '../utils/toast';
 import FullScreenLoader from '../components/ui/FullScreenLoader';
 import CompetitionTypeChooser from '../components/competition/CompetitionTypeChooser';
@@ -513,6 +512,16 @@ const CreateCompetition = () => {
     setAdjacentCountries1([]);
     setAdjacentCountries2([]);
     fetchAdjacentCountries(country.code, 1);
+  };
+
+  // El autocompletado avisa con el código, o '' al vaciarlo
+  const alCambiarElPais = (code) => {
+    const selectedCountry = allCountries.find((c) => c.code === code);
+    if (selectedCountry) {
+      handleCountrySelect(selectedCountry);
+    } else {
+      setFormData(alVaciarPais);
+    }
   };
 
   const handleAddAdjacentCountry1 = () => {
@@ -1220,169 +1229,22 @@ const CreateCompetition = () => {
                       </p>
                     )}
 
-                    <SoloLectura activa={soloFechas} className="space-y-3">
-                      {/* El país principal se elige entre los 200: es el único de
-                      los tres selectores que necesita búsqueda, porque los
-                      adyacentes ya listan solo países fronterizos */}
-                      <CountryAutocomplete
-                        id="country"
-                        countries={allCountries}
-                        value={formData.country?.code || ''}
-                        label={t('create.country')}
-                        placeholder={t('create.selectCountry')}
-                        onChange={(code) => {
-                          const selectedCountry = allCountries.find(
-                            (c) => c.code === code,
-                          );
-                          if (selectedCountry) {
-                            handleCountrySelect(selectedCountry);
-                          } else {
-                            setFormData(alVaciarPais);
-                          }
-                        }}
-                      />
-
-                      {/* Adjacent Country 1 */}
-                      {formData.country &&
-                        !formData.showAdjacentCountry1 &&
-                        adjacentCountries1.length > 0 && (
-                          <button
-                            type="button"
-                            onClick={handleAddAdjacentCountry1}
-                            className="flex items-center gap-2 text-sm text-primary hover:text-primary/80 font-medium"
-                          >
-                            <Plus className="w-4 h-4" />
-                            {t('create.addAdjacentCountry')}
-                          </button>
-                        )}
-
-                      {formData.showAdjacentCountry1 && (
-                        <div className="flex items-end gap-2">
-                          <div className="flex-1">
-                            <label
-                              htmlFor="adjacentCountry1"
-                              className="block text-sm font-medium text-gray-700 mb-1"
-                            >
-                              {t('create.adjacentCountry')}
-                            </label>
-                            <div className="relative">
-                              <select
-                                id="adjacentCountry1"
-                                name="adjacentCountry1"
-                                value={formData.adjacentCountry1}
-                                onChange={handleAdjacentCountry1Change}
-                                className={`w-full py-2 px-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary appearance-none pr-10 ${
-                                  formData.adjacentCountry1 ? 'pl-12' : 'pl-3'
-                                }`}
-                              >
-                                <option value="">
-                                  {t('create.selectAdjacentCountry')}
-                                </option>
-                                {sortedAdjacentCountries1.map((country) => (
-                                  <option key={country.id} value={country.id}>
-                                    {formatCountryName(country, i18n.language)}
-                                  </option>
-                                ))}
-                              </select>
-                              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" />
-                              {/* Show flag if country is selected */}
-                              {formData.adjacentCountry1 && (
-                                <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none">
-                                  <CountryFlag
-                                    countryCode={formData.adjacentCountry1}
-                                    style={{ width: '24px', height: 'auto' }}
-                                  />
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                          <button
-                            type="button"
-                            onClick={handleRemoveAdjacentCountry1}
-                            aria-label={t('create.removeCountryField', {
-                              field: t('create.adjacentCountry'),
-                            })}
-                            className="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg"
-                          >
-                            <X className="w-5 h-5" />
-                          </button>
-                        </div>
-                      )}
-
-                      {/* Adjacent Country 2 */}
-                      {formData.adjacentCountry1 &&
-                        !formData.showAdjacentCountry2 &&
-                        adjacentCountries2.length > 0 && (
-                          <button
-                            type="button"
-                            onClick={handleAddAdjacentCountry2}
-                            className="flex items-center gap-2 text-sm text-primary hover:text-primary/80 font-medium"
-                          >
-                            <Plus className="w-4 h-4" />
-                            {t('create.addThirdCountry')}
-                          </button>
-                        )}
-
-                      {formData.showAdjacentCountry2 && (
-                        <div className="flex items-end gap-2">
-                          <div className="flex-1">
-                            <label
-                              htmlFor="adjacentCountry2"
-                              className="block text-sm font-medium text-gray-700 mb-1"
-                            >
-                              {t('create.thirdCountry')}
-                            </label>
-                            <div className="relative">
-                              <select
-                                id="adjacentCountry2"
-                                name="adjacentCountry2"
-                                value={formData.adjacentCountry2}
-                                onChange={handleInputChange}
-                                className={`w-full py-2 px-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary appearance-none pr-10 ${
-                                  formData.adjacentCountry2 ? 'pl-12' : 'pl-3'
-                                }`}
-                              >
-                                <option value="">
-                                  {t('create.selectThirdCountry')}
-                                </option>
-                                {sortedAdjacentCountries2
-                                  .filter(
-                                    (c) => c.code !== formData.adjacentCountry1,
-                                  )
-                                  .map((country) => (
-                                    <option key={country.id} value={country.id}>
-                                      {formatCountryName(
-                                        country,
-                                        i18n.language,
-                                      )}
-                                    </option>
-                                  ))}
-                              </select>
-                              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" />
-                              {/* Show flag if country is selected */}
-                              {formData.adjacentCountry2 && (
-                                <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none">
-                                  <CountryFlag
-                                    countryCode={formData.adjacentCountry2}
-                                    style={{ width: '24px', height: 'auto' }}
-                                  />
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                          <button
-                            type="button"
-                            onClick={handleRemoveAdjacentCountry2}
-                            aria-label={t('create.removeCountryField', {
-                              field: t('create.thirdCountry'),
-                            })}
-                            className="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg"
-                          >
-                            <X className="w-5 h-5" />
-                          </button>
-                        </div>
-                      )}
-                    </SoloLectura>
+                    <PaisesDeLaCompeticion
+                      soloFechas={soloFechas}
+                      formData={formData}
+                      allCountries={allCountries}
+                      adjacentCountries1={adjacentCountries1}
+                      adjacentCountries2={adjacentCountries2}
+                      sortedAdjacentCountries1={sortedAdjacentCountries1}
+                      sortedAdjacentCountries2={sortedAdjacentCountries2}
+                      onElegirPais={alCambiarElPais}
+                      onAnadirAdyacente1={handleAddAdjacentCountry1}
+                      onCambiarAdyacente1={handleAdjacentCountry1Change}
+                      onQuitarAdyacente1={handleRemoveAdjacentCountry1}
+                      onAnadirAdyacente2={handleAddAdjacentCountry2}
+                      onCambiarAdyacente2={handleInputChange}
+                      onQuitarAdyacente2={handleRemoveAdjacentCountry2}
+                    />
                   </div>
                 </div>
 
