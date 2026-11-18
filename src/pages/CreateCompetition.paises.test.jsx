@@ -513,6 +513,41 @@ describe('CreateCompetition · países y campos del alta (caracterización)', ()
     });
   });
 
+  // A5 con la validación DE VERDAD. Ningún selector deja ya ese estado; se
+  // llega por el modal de pedir campo, que aquí es un doble que sigue a mano
+  // tras quitar el país desde el que se pidió (el real tapa la pantalla). Así
+  // entra un campo de Francia en una competición solo de España
+  it('A5: un campo de un país que ya no está no se manda y se avisa (validación real)', async () => {
+    const { validateCompetitionForm } = await vi.importActual(
+      '../utils/competitionFormValidation',
+    );
+    mockValidar.mockImplementation(validateCompetitionForm);
+    await abreElAlta('MEDAL');
+    escribe(screen.getByTestId('campo-nombre'), 'Medal de junio');
+    escribe(document.querySelector('#startDate'), '2030-06-01');
+    escribe(document.querySelector('#endDate'), '2030-06-03');
+    fireEvent.click(screen.getByText('elegir ES'));
+    fireEvent.click(await screen.findByText('campo 1 de ES'));
+    fireEvent.click(await screen.findByText('create.addAdjacentCountry'));
+    escribe(document.querySelector('#adjacentCountry1'), 'FR');
+    fireEvent.click(await screen.findByText('pedir campo en FR'));
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: 'create.removeCountryField {"field":"create.adjacentCountry"}',
+      }),
+    );
+    fireEvent.click(screen.getByText('campo pedido creado'));
+
+    fireEvent.submit(document.querySelector('form'));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'create.errors.golfCoursesOutsideCountries',
+    );
+    expect(
+      composicion.createCompetitionWithGolfCoursesUseCase.execute,
+    ).not.toHaveBeenCalled();
+  });
+
   describe('PA10: los pasos del alta', () => {
     const pinta = (ruta = '/competitions/create') =>
       render(
