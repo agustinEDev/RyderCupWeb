@@ -47,10 +47,8 @@ import SetupModeChooser from '../components/competition/SetupModeChooser';
 import StrokePlaySettings from '../components/competition/StrokePlaySettings';
 import {
   diasDelTorneo,
-  ajustesParaCrear,
   cambiosDeAjustes,
   primeroLosAjustes,
-  errorDeAjustes,
 } from '../utils/ajustesDeStrokePlay';
 import { cupoDeJugadores, CUPO_POR_DEFECTO } from '../utils/cupoDeJugadores';
 import {
@@ -58,8 +56,6 @@ import {
   seEditaLaCompeticion,
 } from '../domain/services/edicionDeLaCompeticion';
 import { MAX_PLAYERS, MIN_PLAYERS } from '../domain/entities/Competition';
-import { CompetitionName } from '../domain/value_objects/CompetitionName';
-import { diaDeLaSesion } from '../utils/diaDeLaSesion';
 import { PANTALLA_MENOS_BARRA_INFERIOR } from '../utils/barraInferior';
 import { mensajeDelError } from '../utils/mensajeDelError';
 import { registraElFallo } from '../utils/registraElFallo';
@@ -80,6 +76,14 @@ import {
   alQuitarAdyacente1,
   alQuitarAdyacente2,
 } from '../utils/formularioDeLaCompeticion';
+import {
+  cargaDeLaCompeticion,
+  camposParaElAlta,
+  errorDeLasFechasNuevas,
+  sesionesQueQuedanFuera as sesionesFuera,
+  motivoDelFalloAlEditar as motivoAlEditar,
+  textoDelAvisoDeValidacion,
+} from '../utils/peticionDeLaCompeticion';
 
 // Helper function to get message className
 const getMessageClassName = (type) => {
@@ -638,65 +642,9 @@ const CreateCompetition = () => {
     return formData.golfCourses.filter((gc) => gc.countryCode === countryCode);
   };
 
-  // Acortar las fechas con sesiones fuera: el servidor dice cuáles y aquí se
-  // escriben en el idioma de quien mira (FE #710). null si es otro error
-  const sesionesQueQuedanFuera = (error) => {
-    const fuera =
-      error?.errorCode === 'DATES_LEAVE_SESSIONS_OUT' &&
-      error.data?.sessions_outside;
-    if (!Array.isArray(fuera) || fuera.length === 0) return null;
-    const dia = (iso) => {
-      const fecha = diaDeLaSesion(iso);
-      if (!fecha) return iso;
-      try {
-        return fecha.toLocaleDateString(i18n.language, {
-          weekday: 'short',
-          day: 'numeric',
-          month: 'short',
-        });
-      } catch {
-        return fecha.toLocaleDateString(undefined, {
-          weekday: 'short',
-          day: 'numeric',
-          month: 'short',
-        });
-      }
-    };
-    const sesiones = fuera
-      .map(
-        (s) =>
-          `${dia(s.round_date)} · ${t(`schedule:sessions.${s.session_type}`)}`,
-      )
-      .join(', ');
-    return t('edit.datesLeaveSessionsOut', { sesiones });
-  };
-
-  // Solo las fechas (15 nov 2026): se comprueban ellas, aquí mismo, y que las
-  // jornadas de cada jugador quepan; lo demás no se puede tocar. Sin petición
-  // que vaya a fallar
-  const errorDeLasFechasNuevas = () => {
-    const { startDate, endDate } = formData;
-    if (!startDate || !endDate) return t('create.errors.datesRequired');
-    if (new Date(startDate) > new Date(endDate))
-      return t('create.errors.endDateAfterStart');
-    if (conEquipos || !formData.strokePlay) return null;
-    const dias = diasDelTorneo(startDate, endDate);
-    return errorDeAjustes(formData.strokePlay, dias) === 'matchdaysMoreThanDays'
-      ? t('create.errors.matchdaysMoreThanDays', { count: dias })
-      : null;
-  };
-
-  // Por qué no se guardó al editar: las sesiones que se quedan fuera, con sus
-  // días; con un código conocido, su texto; con otro, el genérico; sin código,
-  // lo que diga el servidor, como siempre (15 nov 2026)
-  const MOTIVOS_AL_EDITAR = { DRAFT_IN_PROGRESS: 'edit.datesDuringDraft' };
-  const motivoDelFalloAlEditar = (error) => {
-    const sesiones = sesionesQueQuedanFuera(error);
-    if (sesiones) return sesiones;
-    if (error?.errorCode)
-      return t(MOTIVOS_AL_EDITAR[error.errorCode] ?? 'edit.error');
-    return mensajeDelError(error, t('edit.error'));
-  };
+  const enElIdioma = { t, idioma: i18n.language };
+  const sesionesQueQuedanFuera = (error) => sesionesFuera(error, enElIdioma);
+  const motivoDelFalloAlEditar = (error) => motivoAlEditar(error, enElIdioma);
 
   // El aviso del nombre, y el campo a la vista y con el foco: el botón queda
   // abajo y en un teléfono no se vería qué falló (como el aviso de arriba)
@@ -722,7 +670,7 @@ const CreateCompetition = () => {
     }
 
     if (soloFechas) {
-      const fallo = errorDeLasFechasNuevas();
+      const fallo = errorDeLasFechasNuevas(formData, { conEquipos, t });
       setErrorDeLasFechas(fallo ? { texto: fallo } : null);
       if (fallo) return;
       await crear(null);
@@ -739,31 +687,22 @@ const CreateCompetition = () => {
       return;
     }
     if (validationError) {
-      if (validationError.key === 'golfCoursesRequired') {
-        const countryNames = validationError.missingCourseCountryCodes
-          .map((code) => {
-            const country =
-              allCountries.find((c) => c.code === code) ||
-              adjacentCountries1.find((c) => c.code === code) ||
-              adjacentCountries2.find((c) => c.code === code);
-            return formatCountryName(country, i18n.language);
-          })
-          .join(', ');
-        setMessage({
-          type: 'error',
-          text: t(`create.errors.${validationError.key}`, {
-            countries: countryNames,
-          }),
-        });
-      } else {
-        setMessage({
-          type: 'error',
-          text: t(`create.errors.${validationError.key}`, {
-            count: validationError.count,
-            max: validationError.max,
-          }),
-        });
-      }
+      const paises =
+        validationError.key === 'golfCoursesRequired'
+          ? validationError.missingCourseCountryCodes
+              .map((code) => {
+                const country =
+                  allCountries.find((c) => c.code === code) ||
+                  adjacentCountries1.find((c) => c.code === code) ||
+                  adjacentCountries2.find((c) => c.code === code);
+                return formatCountryName(country, i18n.language);
+              })
+              .join(', ')
+          : undefined;
+      setMessage({
+        type: 'error',
+        text: textoDelAvisoDeValidacion(validationError, { t, paises }),
+      });
       // Si lo que falla vive dentro de «Más opciones», el aviso hablaba de un
       // campo que no estaba en pantalla (`/code-review`)
       if (ERRORES_DE_LAS_OPCIONES.has(validationError.key)) {
@@ -805,61 +744,13 @@ const CreateCompetition = () => {
       enLaCompeticion && error?.status === 409 && !error?.errorCode;
 
     try {
-      const numPlayers = cupoDeJugadores(
-        formData.numberOfPlayers,
-        cupoCargado.current,
-      );
-      const countries = [];
-      if (formData.adjacentCountry1) {
-        countries.push(formData.adjacentCountry1);
-      }
-      if (formData.adjacentCountry2) {
-        countries.push(formData.adjacentCountry2);
-      }
-
-      const payload = {
-        // Como la guarda la API, que mide el texto en bruto (`/code-review`)
-        name: CompetitionName.normalize(formData.competitionName),
-        start_date: formData.startDate,
-        end_date: formData.endDate,
-        main_country: formData.country?.code,
-        countries: countries,
-        play_mode: formData.playMode.toUpperCase(),
-        visibility: formData.visibility,
-        number_of_players: numPlayers,
-        // Equipos y modo, solo en una Ryder: a un Stableford el servidor se los
-        // rechaza con un 400 (FE #791). El reparto no se manda: lo deriva el
-        // servidor del modo (RyderCupAm#351)
-        ...(conEquipos
-          ? {
-              team_1_name: formData.teamOneName.trim(),
-              team_2_name: formData.teamTwoName.trim(),
-              setup_mode: formData.setupMode,
-            }
-          : {}),
-        // El tipo, solo al crear: el de una competición que ya existe no se
-        // cambia (FE #791, RyderCupAm#251)
-        ...(!isEditMode && tipoElegido ? { tournament_type: tipoElegido } : {}),
-        // Los ajustes de un Stableford o un Medal van en el alta; al editar,
-        // por su propio PATCH y solo si cambian (FE #824)
-        ...(!isEditMode && !conEquipos
-          ? { stroke_play: ajustesParaCrear(formData.strokePlay) }
-          : {}),
-        // Si el organizador juega, solo al crear un Stableford o un Medal: en una
-        // Ryder siempre queda inscrito (RyderCupAm#552)
-        ...(!isEditMode && !conEquipos
-          ? { organizer_plays: formData.organizerPlays }
-          : {}),
-        max_playing_handicap: formData.maxPlayingHandicap
-          ? parseInt(formData.maxPlayingHandicap, 10)
-          : null,
-        // Solo cuando hay apertura programada: mandarlo en `null` seria decir
-        // «quitale la programacion», que es lo mismo aqui pero ensucia el
-        // contrato de la creacion
-        ...(diasDeApertura != null
-          ? { enrollment_opens_days_before: diasDeApertura }
-          : {}),
-      };
+      const payload = cargaDeLaCompeticion(formData, {
+        conEquipos,
+        isEditMode,
+        tipoElegido,
+        cupoCargado: cupoCargado.current,
+        diasDeApertura,
+      });
 
       if (isEditMode) {
         // EDIT MODE: lo general y, en un stroke play, los ajustes que cambien.
@@ -931,10 +822,7 @@ const CreateCompetition = () => {
         }
 
         // CREATE MODE: Create new competition and attach its golf courses
-        const golfCourses = formData.golfCourses.map((gc) => ({
-          id: gc.course.id,
-          name: gc.course.name,
-        }));
+        const golfCourses = camposParaElAlta(formData.golfCourses);
         enLaCompeticion = true;
         const {
           competition: createdCompetition,

@@ -183,6 +183,21 @@ describe('formularioDeLaEdicion', () => {
     expect(formulario).not.toHaveProperty('organizerPlays');
   });
 
+  it('los ajustes, con el decimal del idioma', () => {
+    const ajustes = {
+      categoryLimits: [12.5],
+      categoryCount: null,
+      maxMatchdaysPerPlayer: 1,
+      overallStanding: 'ACCUMULATED',
+    };
+    expect(
+      formularioDeLaEdicion(datos({ strokePlay: ajustes }), {
+        ...contexto,
+        idioma: 'en',
+      }).strokePlay,
+    ).toEqual(formularioDeAjustes(ajustes, '.'));
+  });
+
   it('el modo guardado manda sobre el de equipos', () => {
     expect(
       formularioDeLaEdicion(
