@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import {
   createCompetitionWithGolfCoursesUseCase,
   configureScheduleUseCase,
@@ -45,10 +46,9 @@ import {
  * @param {{allCountries: Array, adjacentCountries1: Array,
  *   adjacentCountries2: Array}} opciones.paises
  * @param {{copiaSinVerificar: boolean, confirmaVerificado: Function}} opciones.correo
- * @param {{campoDelNombre: object, setMessage: Function,
- *   setErrorDelNombre: Function, setFaltaVerificar: Function,
- *   setErrorDeLasFechas: Function, setMasOpciones: Function,
- *   setPreguntandoApertura: Function, setIsSubmitting: Function}} opciones.avisos
+ * @param {{campoDelNombre: object, setErrorDeLasFechas: Function,
+ *   setMasOpciones: Function}} opciones.avisos lo que también cambia la
+ *   página: el aviso de las fechas (su efecto va el primero) y el plegable
  * @param {(ruta: string, ms: number) => void} opciones.navegaDentroDe
  * @returns {{handleSubmit: (e: Event) => Promise<void>,
  *   crear: (diasDeApertura: ?number) => Promise<void>}}
@@ -76,16 +76,19 @@ export const useEnvioDeLaCompeticion = ({
   const { soloFechas, inscritos, guardado } = edicion;
   const { allCountries, adjacentCountries1, adjacentCountries2 } = paises;
   const { copiaSinVerificar, confirmaVerificado } = correo;
-  const {
-    campoDelNombre,
-    setMessage,
-    setErrorDelNombre,
-    setFaltaVerificar,
-    setErrorDeLasFechas,
-    setMasOpciones,
-    setPreguntandoApertura,
-    setIsSubmitting,
-  } = avisos;
+  const { campoDelNombre, setErrorDeLasFechas, setMasOpciones } = avisos;
+
+  // Lo que solo cambia el envío. Enviando, el botón se deshabilita
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  // Una pública pregunta antes cuándo abrir las inscripciones
+  const [preguntandoApertura, setPreguntandoApertura] = useState(false);
+  // El aviso general, arriba del todo
+  const [message, setMessage] = useState({ type: '', text: '' });
+  // Sin el correo verificado no se crea una competición (B-17): el aviso arriba, y el
+  // envío no llama a la API; también si la API lo dice
+  const [faltaVerificar, setFaltaVerificar] = useState(false);
+  // El aviso del nombre, junto a su campo: la clave de `create.errors`
+  const [errorDelNombre, setErrorDelNombre] = useState(null);
 
   const enElIdioma = { t, idioma };
 
@@ -404,5 +407,19 @@ export const useEnvioDeLaCompeticion = ({
     await crear(null);
   };
 
-  return { handleSubmit, crear };
+  return {
+    handleSubmit,
+    crear,
+    isSubmitting,
+    preguntandoApertura,
+    // Cerrar la pregunta de la apertura sin enviar
+    cierraLaApertura: () => setPreguntandoApertura(false),
+    message,
+    // Escribir en el formulario quita el aviso general
+    borraElAviso: () => setMessage({ type: '', text: '' }),
+    faltaVerificar,
+    errorDelNombre,
+    // Corregir el nombre quita su aviso
+    borraElErrorDelNombre: () => setErrorDelNombre(null),
+  };
 };

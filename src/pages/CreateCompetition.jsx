@@ -39,8 +39,6 @@ const CreateCompetition = () => {
   const { id: competitionId } = useParams();
   const { t, i18n } = useTranslation('competitions');
   const { user, loading: isLoading } = useAuth();
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [preguntandoApertura, setPreguntandoApertura] = useState(false);
   // Editar o crear lo dice la URL, y se sabe desde el primer render. Vivía en un
   // estado que se encendía DENTRO del efecto que carga la competición, y ese
   // efecto sale antes si los países aún no han llegado: sin cobertura la
@@ -84,14 +82,9 @@ const CreateCompetition = () => {
     setFormData((prev) => ({ ...prev, setupMode: modo }));
     globalThis.scrollTo?.(0, 0);
   };
-  const [message, setMessage] = useState({ type: '', text: '' });
-  // Sin el correo verificado no se crea una competición (B-17): el aviso arriba, y el
-  // envío no llama a la API; también si la API lo dice
-  const [faltaVerificar, setFaltaVerificar] = useState(false);
   const { sinVerificar: copiaSinVerificar, confirma: confirmaVerificado } =
     useCorreoVerificado();
-  // El aviso del nombre, junto a su campo: la clave de `create.errors`
-  const [errorDelNombre, setErrorDelNombre] = useState(null);
+  // El campo del nombre: al fallar, el envío lo trae a la vista
   const campoDelNombre = useRef(null);
 
   // A la ficha tras guardar, salvo que ya se haya salido de aquí
@@ -148,17 +141,18 @@ const CreateCompetition = () => {
     modalDePedirCampo,
   } = useCamposElegidos({ t, formData, setFormData });
 
-  useLlevaALaVista(avisoRef, message, Boolean(message.text));
-
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    escribeElCampo(name, value);
-
-    if (message.text) setMessage({ type: '', text: '' });
-    if (name === 'competitionName') setErrorDelNombre(null);
-  };
-
-  const { handleSubmit, crear } = useEnvioDeLaCompeticion({
+  const {
+    handleSubmit,
+    crear,
+    isSubmitting,
+    preguntandoApertura,
+    cierraLaApertura,
+    message,
+    borraElAviso,
+    faltaVerificar,
+    errorDelNombre,
+    borraElErrorDelNombre,
+  } = useEnvioDeLaCompeticion({
     t,
     idioma: i18n.language,
     formulario: {
@@ -180,16 +174,21 @@ const CreateCompetition = () => {
     correo: { copiaSinVerificar, confirmaVerificado },
     avisos: {
       campoDelNombre,
-      setMessage,
-      setErrorDelNombre,
-      setFaltaVerificar,
       setErrorDeLasFechas,
       setMasOpciones,
-      setPreguntandoApertura,
-      setIsSubmitting,
     },
     navegaDentroDe,
   });
+
+  useLlevaALaVista(avisoRef, message, Boolean(message.text));
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    escribeElCampo(name, value);
+
+    if (message.text) borraElAviso();
+    if (name === 'competitionName') borraElErrorDelNombre();
+  };
 
   const paso = pasoDelAlta({
     isEditMode,
@@ -364,7 +363,7 @@ const CreateCompetition = () => {
           isOpen
           startDate={formData.startDate}
           onConfirm={crear}
-          onClose={() => setPreguntandoApertura(false)}
+          onClose={cierraLaApertura}
           isLoading={isSubmitting}
         />
       )}
