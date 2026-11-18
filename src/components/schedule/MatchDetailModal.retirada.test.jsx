@@ -20,6 +20,7 @@ vi.mock('./RetiradaPorElOrganizador', () => ({
 }));
 
 const { default: MatchDetailModal } = await import('./MatchDetailModal');
+const { getMatchDetailUseCase } = await import('../../composition');
 
 const pinta = (canManage, matchFormat = 'FOURBALL') =>
   render(
@@ -64,4 +65,24 @@ describe('MatchDetailModal · retirada del organizador', () => {
       screen.queryByTestId('retirada-organizador'),
     ).not.toBeInTheDocument();
   });
+});
+
+// Un partido concedido está terminado: su color es el de COMPLETED, no el azul
+// de reserva de un programado (18 nov 2026, como en MatchCard)
+describe('MatchDetailModal · color del estado', () => {
+  it.each(['COMPLETED', 'CONCEDED'])(
+    '%s se pinta en gris oscuro',
+    async (status) => {
+      getMatchDetailUseCase.execute.mockResolvedValueOnce({
+        id: 'm-1',
+        status,
+        teamAPlayers: [],
+        teamBPlayers: [],
+      });
+      pinta(false, 'SINGLES');
+      const etiqueta = await screen.findByText(`status.${status}`);
+      expect(etiqueta).toHaveClass('bg-gray-100', 'text-gray-800');
+      expect(etiqueta).not.toHaveClass('bg-blue-100');
+    },
+  );
 });

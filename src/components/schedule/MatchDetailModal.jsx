@@ -155,7 +155,9 @@ const MatchDetailModal = ({
                 </span>
                 <span
                   className={`px-2 py-0.5 rounded-full text-xs font-semibold ${
-                    match.status === MatchStatus.COMPLETED
+                    // Concedido es un partido terminado: su color (18 nov 2026)
+                    match.status === MatchStatus.COMPLETED ||
+                    match.status === MatchStatus.CONCEDED
                       ? 'bg-gray-100 text-gray-800'
                       : match.status === MatchStatus.IN_PROGRESS
                         ? 'bg-green-100 text-green-800'
