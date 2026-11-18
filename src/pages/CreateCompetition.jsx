@@ -289,7 +289,12 @@ const CreateCompetition = () => {
                   avisoDeLasFechas={avisoDeLasFechas}
                   paises={{
                     ...selectores,
-                    onCambiarAdyacente2: handleInputChange,
+                    // Cambiar el tercer país también quita el aviso, como
+                    // escribir en cualquier otro campo
+                    onCambiarAdyacente2: (e) => {
+                      selectores.onCambiarAdyacente2(e);
+                      if (message.text) borraElAviso();
+                    },
                   }}
                 />
 

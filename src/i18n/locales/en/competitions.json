@@ -110,6 +110,7 @@
       "countryRequired": "Please select a country",
       "golfCourseRequired": "Please select a golf course",
       "golfCoursesRequired": "Please select golf courses for: {{countries}}",
+      "golfCoursesOutsideCountries": "Some golf courses belong to a country that is no longer part of the competition. Review the countries and their courses.",
       "playersMinimum": "Number of players must be at least 2",
       "playersMaximum": "Number of players cannot exceed {{max}}",
       "teamNamesTooShort": "Team names need at least 3 characters",

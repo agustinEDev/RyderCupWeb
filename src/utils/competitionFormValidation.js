@@ -119,6 +119,17 @@ export const validateCompetitionForm = (
     return { key: 'golfCoursesRequired', missingCourseCountryCodes };
   }
 
+  // Un campo de un país que ya no está en la competición no se manda: al
+  // cambiar de país sus campos se van, y esto es la red si alguno se colara
+  const campoDeOtroPais =
+    exigirCampos &&
+    formData.golfCourses.some(
+      (gc) => !selectedCountryCodes.includes(gc.countryCode),
+    );
+  if (campoDeOtroPais) {
+    return { key: 'golfCoursesOutsideCountries' };
+  }
+
   // Sin número no hay error: la competición sale con el cupo por defecto. Era
   // obligatorio y nacía vacío, así que obligaba a decidir un tope de inscritos
   // antes de poder crear nada — y quien monta una Ryder con sus amigos no tiene

@@ -418,6 +418,81 @@ describe('CreateCompetition · países y campos del alta (caracterización)', ()
     ).toHaveTextContent('(create.coursesSelected {"count":0})');
   });
 
+  describe('A: los campos de un país que deja de estar en la competición', () => {
+    // España, Francia de adyacente e Italia de tercero, con un campo cada uno
+    const conLosTres = async () => {
+      fireEvent.click(screen.getByText('elegir ES'));
+      fireEvent.click(await screen.findByText('create.addAdjacentCountry'));
+      escribe(document.querySelector('#adjacentCountry1'), 'FR');
+      fireEvent.click(await screen.findByText('create.addThirdCountry'));
+      escribe(document.querySelector('#adjacentCountry2'), 'IT');
+      fireEvent.click(screen.getByText('campo 1 de ES'));
+      fireEvent.click(screen.getByText('campo 1 de FR'));
+      fireEvent.click(screen.getByText('campo 1 de IT'));
+      expect(camposALaVista()).toEqual([
+        'Campo ES-1',
+        'Campo FR-1',
+        'Campo IT-1',
+      ]);
+    };
+
+    it('A1: cambiar el adyacente quita los campos del anterior; los del principal se quedan', async () => {
+      await abreElAlta();
+      fireEvent.click(screen.getByText('elegir ES'));
+      fireEvent.click(await screen.findByText('create.addAdjacentCountry'));
+      escribe(document.querySelector('#adjacentCountry1'), 'FR');
+      fireEvent.click(await screen.findByText('campo 1 de ES'));
+      fireEvent.click(screen.getByText('campo 1 de FR'));
+
+      escribe(document.querySelector('#adjacentCountry1'), 'PT');
+
+      expect(camposALaVista()).toEqual(['Campo ES-1']);
+      expect(await camposEnviados()).toEqual([
+        { id: 'ES-1', name: 'Campo ES-1' },
+      ]);
+    });
+
+    it('A2: con tercer país, cambiar el adyacente quita los campos de los dos', async () => {
+      await abreElAlta();
+      await conLosTres();
+
+      escribe(document.querySelector('#adjacentCountry1'), 'PT');
+
+      expect(document.querySelector('#adjacentCountry2')).toBeNull();
+      expect(camposALaVista()).toEqual(['Campo ES-1']);
+      expect(await camposEnviados()).toEqual([
+        { id: 'ES-1', name: 'Campo ES-1' },
+      ]);
+    });
+
+    it('A3: cambiar el tercer país quita los suyos; los del principal y el adyacente se quedan', async () => {
+      await abreElAlta();
+      await conLosTres();
+
+      escribe(document.querySelector('#adjacentCountry2'), 'PT');
+
+      expect(camposALaVista()).toEqual(['Campo ES-1', 'Campo FR-1']);
+      expect(await camposEnviados()).toEqual([
+        { id: 'ES-1', name: 'Campo ES-1' },
+        { id: 'FR-1', name: 'Campo FR-1' },
+      ]);
+    });
+
+    it('A4: el tercer país en «ninguno» quita sus campos, como su papelera', async () => {
+      await abreElAlta();
+      await conLosTres();
+
+      escribe(document.querySelector('#adjacentCountry2'), '');
+
+      expect(document.querySelector('#adjacentCountry2')).toHaveValue('');
+      expect(camposALaVista()).toEqual(['Campo ES-1', 'Campo FR-1']);
+      expect(await camposEnviados()).toEqual([
+        { id: 'ES-1', name: 'Campo ES-1' },
+        { id: 'FR-1', name: 'Campo FR-1' },
+      ]);
+    });
+  });
+
   describe('PA10: los pasos del alta', () => {
     const pinta = (ruta = '/competitions/create') =>
       render(

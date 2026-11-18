@@ -12,6 +12,7 @@ import {
   alCambiarAdyacente1,
   alQuitarAdyacente1,
   alQuitarAdyacente2,
+  alCambiarAdyacente2,
   ERRORES_DEL_NOMBRE,
   ERRORES_DE_LAS_OPCIONES,
 } from './formularioDeLaCompeticion';
@@ -307,13 +308,38 @@ describe('la cascada de los países', () => {
     });
   });
 
-  it('otro adyacente quita el tercer país pero no los campos', () => {
+  it('A1/A2: otro adyacente quita el tercer país y los campos de los dos', () => {
     expect(alCambiarAdyacente1(conTres, 'IT')).toEqual({
       ...conTres,
       adjacentCountry1: 'IT',
       adjacentCountry2: '',
       showAdjacentCountry2: false,
+      golfCourses: [campo('ES', 1), campo('ES', 4)],
     });
+  });
+
+  it('A6: volver a elegir el mismo adyacente no quita nada', () => {
+    expect(alCambiarAdyacente1(conTres, 'FR')).toBe(conTres);
+  });
+
+  it('A3: otro tercer país quita los campos del anterior y nada más', () => {
+    expect(alCambiarAdyacente2(conTres, 'IT')).toEqual({
+      ...conTres,
+      adjacentCountry2: 'IT',
+      golfCourses: [campo('ES', 1), campo('FR', 2), campo('ES', 4)],
+    });
+  });
+
+  it('A4: el tercer país en «ninguno» quita sus campos', () => {
+    expect(alCambiarAdyacente2(conTres, '')).toEqual({
+      ...conTres,
+      adjacentCountry2: '',
+      golfCourses: [campo('ES', 1), campo('FR', 2), campo('ES', 4)],
+    });
+  });
+
+  it('A6: volver a elegir el mismo tercer país no quita nada', () => {
+    expect(alCambiarAdyacente2(conTres, 'PT')).toBe(conTres);
   });
 
   it('PA2: quitar el adyacente quita los dos y sus campos', () => {
@@ -338,6 +364,7 @@ describe('la cascada de los países', () => {
     alElegirPais(conTres, pais('FR'));
     alVaciarPais(conTres);
     alCambiarAdyacente1(conTres, 'IT');
+    alCambiarAdyacente2(conTres, 'IT');
     alQuitarAdyacente1(conTres);
     alQuitarAdyacente2(conTres);
     expect(conTres).toEqual(copia);

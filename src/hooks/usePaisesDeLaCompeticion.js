@@ -13,6 +13,7 @@ import {
   alElegirPais,
   alVaciarPais,
   alCambiarAdyacente1,
+  alCambiarAdyacente2,
   alQuitarAdyacente1,
   alQuitarAdyacente2,
 } from '../utils/formularioDeLaCompeticion';
@@ -149,6 +150,12 @@ export const usePaisesDeLaCompeticion = ({ idioma, formData, setFormData }) => {
     setAdjacentCountries2([]);
   };
 
+  // El tercer país elegido, o ninguno: los campos del anterior se van
+  const handleAdjacentCountry2Change = (e) => {
+    const countryId = e.target.value;
+    setFormData((prev) => alCambiarAdyacente2(prev, countryId));
+  };
+
   const handleRemoveAdjacentCountry2 = () => {
     setFormData(alQuitarAdyacente2);
   };
@@ -172,6 +179,7 @@ export const usePaisesDeLaCompeticion = ({ idioma, formData, setFormData }) => {
       onCambiarAdyacente1: handleAdjacentCountry1Change,
       onQuitarAdyacente1: handleRemoveAdjacentCountry1,
       onAnadirAdyacente2: handleAddAdjacentCountry2,
+      onCambiarAdyacente2: handleAdjacentCountry2Change,
       onQuitarAdyacente2: handleRemoveAdjacentCountry2,
     },
   };

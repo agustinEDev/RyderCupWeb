@@ -223,13 +223,38 @@ export const alVaciarPais = (prev) => ({
   showAdjacentCountry2: false,
 });
 
-// Otro adyacente: el tercer país era vecino del anterior
-export const alCambiarAdyacente1 = (prev, countryId) => ({
-  ...prev,
-  adjacentCountry1: countryId,
-  adjacentCountry2: '',
-  showAdjacentCountry2: false,
-});
+// Los campos que se quedan sin los de esos países: un país que deja de estar en
+// la competición se lleva los suyos, o se mandarían con ella sin verse
+const sinLosCamposDe = (golfCourses, ...codigos) =>
+  golfCourses.filter((gc) => !codigos.includes(gc.countryCode));
+
+// Otro adyacente: el tercer país era vecino del anterior, así que se van los
+// dos con sus campos. El mismo otra vez no cambia nada
+export const alCambiarAdyacente1 = (prev, countryId) =>
+  countryId === prev.adjacentCountry1
+    ? prev
+    : {
+        ...prev,
+        adjacentCountry1: countryId,
+        adjacentCountry2: '',
+        showAdjacentCountry2: false,
+        golfCourses: sinLosCamposDe(
+          prev.golfCourses,
+          prev.adjacentCountry1,
+          prev.adjacentCountry2,
+        ),
+      };
+
+// Otro tercer país, o ninguno: se van los campos del anterior, como con su
+// papelera, pero el selector sigue a la vista. El mismo otra vez no cambia nada
+export const alCambiarAdyacente2 = (prev, countryId) =>
+  countryId === prev.adjacentCountry2
+    ? prev
+    : {
+        ...prev,
+        adjacentCountry2: countryId,
+        golfCourses: sinLosCamposDe(prev.golfCourses, prev.adjacentCountry2),
+      };
 
 // Sin adyacente no hay tercer país: fuera los dos y sus campos
 export const alQuitarAdyacente1 = (prev) => ({
@@ -238,10 +263,10 @@ export const alQuitarAdyacente1 = (prev) => ({
   adjacentCountry2: '',
   showAdjacentCountry1: false,
   showAdjacentCountry2: false,
-  golfCourses: prev.golfCourses.filter(
-    (gc) =>
-      gc.countryCode !== prev.adjacentCountry1 &&
-      gc.countryCode !== prev.adjacentCountry2,
+  golfCourses: sinLosCamposDe(
+    prev.golfCourses,
+    prev.adjacentCountry1,
+    prev.adjacentCountry2,
   ),
 });
 
@@ -250,7 +275,5 @@ export const alQuitarAdyacente2 = (prev) => ({
   ...prev,
   adjacentCountry2: '',
   showAdjacentCountry2: false,
-  golfCourses: prev.golfCourses.filter(
-    (gc) => gc.countryCode !== prev.adjacentCountry2,
-  ),
+  golfCourses: sinLosCamposDe(prev.golfCourses, prev.adjacentCountry2),
 });
