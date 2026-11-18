@@ -6,7 +6,6 @@ import { diaCorto } from '../../utils/diaDeLaSesion';
 import { rutaDeAnotacion } from '../../utils/rutaDeAnotacion';
 import { nombresDeCompaneros } from '../../utils/nombreDeCompanero';
 import MatchStatus from '../../domain/value_objects/MatchStatus';
-import TeeGroupStatus from '../../domain/value_objects/TeeGroupStatus';
 
 /**
  * Una tarjeta de «Mis próximos partidos» (FE #845): un partido de la Ryder o
@@ -39,10 +38,9 @@ const TarjetaDeLoProximo = ({ partido, puedeAnotar }) => {
   };
 
   const esPartida = Boolean(partido.esPartidaDeFranja);
-  // Una partida de franja y un partido de la Ryder dicen «en juego» con su estado
-  const enJuego = esPartida
-    ? partido.status === TeeGroupStatus.IN_PROGRESS
-    : partido.status === MatchStatus.IN_PROGRESS;
+  // Partido de la Ryder o partida de franja: los dos llaman igual a «en juego»
+  // (MatchStatus y TeeGroupStatus)
+  const enJuego = partido.status === MatchStatus.IN_PROGRESS;
   const cuando = [
     diaCorto(partido.roundDate, i18n.language),
     ...(esPartida
