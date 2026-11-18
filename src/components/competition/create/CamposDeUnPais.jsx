@@ -20,8 +20,11 @@ const CamposDeUnPais = ({
   onQuitar,
 }) => {
   const { t, i18n } = useTranslation('competitions');
-  // Get courses for a specific country
-  const delPais = golfCourses.filter((gc) => gc.countryCode === codigo);
+  // Los de este país, cada uno con su posición en la lista de todos: buscarla
+  // por id confundía dos campos sin id y la papelera quitaba el primero
+  const delPais = golfCourses
+    .map((gc, posicion) => ({ gc, posicion }))
+    .filter(({ gc }) => gc.countryCode === codigo);
 
   return (
     <div className="border border-gray-200 rounded-lg p-4">
@@ -43,12 +46,7 @@ const CamposDeUnPais = ({
       </div>
 
       {/* List of selected courses */}
-      {delPais.map((gc, index) => {
-        const globalIndex = golfCourses.findIndex(
-          (item) =>
-            item.countryCode === gc.countryCode &&
-            item.course.id === gc.course.id,
-        );
+      {delPais.map(({ gc, posicion }, index) => {
         return (
           <div
             key={`${gc.course.id}-${index}`}
@@ -68,7 +66,7 @@ const CamposDeUnPais = ({
             </div>
             <button
               type="button"
-              onClick={() => onQuitar(globalIndex)}
+              onClick={() => onQuitar(posicion)}
               aria-label={t('detail.golfCourses.remove', {
                 name: gc.course.name,
               })}

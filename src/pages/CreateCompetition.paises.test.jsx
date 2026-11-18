@@ -109,6 +109,8 @@ vi.mock('../components/golf_course/GolfCourseSearchBox', () => ({
     </div>
   ),
 }));
+// Lo que «crea» el modal: un test puede cambiarlo (B1, campos sin id)
+const campoPedido = vi.hoisted(() => ({ siguiente: null }));
 vi.mock('../components/golf_course/GolfCourseRequestModal', () => ({
   default: ({ isOpen, countryCode, onClose, onSuccess }) => (
     <div>
@@ -116,11 +118,13 @@ vi.mock('../components/golf_course/GolfCourseRequestModal', () => ({
       <button
         type="button"
         onClick={() =>
-          onSuccess({
-            id: 'pedido',
-            name: 'Campo pedido',
-            approvalStatus: 'PENDING_APPROVAL',
-          })
+          onSuccess(
+            campoPedido.siguiente ?? {
+              id: 'pedido',
+              name: 'Campo pedido',
+              approvalStatus: 'PENDING_APPROVAL',
+            },
+          )
         }
       >
         campo pedido creado
@@ -214,6 +218,7 @@ const bloqueDe = (code) =>
 describe('CreateCompetition · países y campos del alta (caracterización)', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    campoPedido.siguiente = null;
     vi.spyOn(console, 'error').mockImplementation(() => {});
     mockValidar.mockImplementation(() => null);
     composicion.fetchCountriesUseCase.execute.mockResolvedValue(PAISES);
@@ -416,6 +421,21 @@ describe('CreateCompetition · países y campos del alta (caracterización)', ()
     expect(
       within(bloqueDe('PT')).getByText(/create\.coursesSelected/),
     ).toHaveTextContent('(create.coursesSelected {"count":0})');
+  });
+
+  it('B1: dos campos sin id del mismo país; la papelera del segundo quita el segundo', async () => {
+    await abreElAlta();
+    fireEvent.click(screen.getByText('elegir ES'));
+    for (const nombre of ['Campo sin id A', 'Campo sin id B']) {
+      campoPedido.siguiente = { name: nombre };
+      fireEvent.click(await screen.findByText('pedir campo en ES'));
+      fireEvent.click(screen.getByText('campo pedido creado'));
+    }
+    expect(camposALaVista()).toEqual(['Campo sin id A', 'Campo sin id B']);
+
+    quitar('Campo sin id B');
+
+    expect(camposALaVista()).toEqual(['Campo sin id A']);
   });
 
   describe('A: los campos de un país que deja de estar en la competición', () => {
