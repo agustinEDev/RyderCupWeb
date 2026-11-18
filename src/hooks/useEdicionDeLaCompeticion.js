@@ -1,10 +1,11 @@
 import { useEffect, useEffectEvent, useRef, useState } from 'react';
 import {
+  getAdjacentCountriesUseCase,
   getCompetitionDetailUseCase,
   getCompetitionGolfCoursesUseCase,
 } from '../composition';
 import { nombresPorDefectoDeLosEquipos } from '../utils/nombresPorDefectoDeLosEquipos';
-import { leeVecinos } from './usePaisesDeLaCompeticion';
+import { leeVecinos } from '../utils/vecinosDelPais';
 import {
   soloSePuedenEditarLasFechas,
   seEditaLaCompeticion,
@@ -41,11 +42,13 @@ const paisesGuardados = (competition) => {
 // Fetch adjacent countries lists if needed. Sin país principal la lista del
 // primer nivel no se toca, y sin adyacente tampoco la del segundo
 const leeLosVecinos = async (mainCountryCode, adjacentCountry1) => {
-  const vecinos1 = mainCountryCode ? await leeVecinos(mainCountryCode) : null;
+  const vecinos1 = mainCountryCode
+    ? await leeVecinos(getAdjacentCountriesUseCase, mainCountryCode)
+    : null;
   const vecinos2 = adjacentCountry1
     ? vecinosDelSegundoNivel(
         vecinos1 ?? [],
-        await leeVecinos(adjacentCountry1),
+        await leeVecinos(getAdjacentCountriesUseCase, adjacentCountry1),
         mainCountryCode,
         adjacentCountry1,
       )

@@ -6,6 +6,7 @@ import {
 } from '../composition';
 import { sortCountriesByName } from '../services/countries';
 import { registraElFallo } from '../utils/registraElFallo';
+import { leeVecinos } from '../utils/vecinosDelPais';
 import {
   aPaises,
   vecinosDelSegundoNivel,
@@ -15,20 +16,6 @@ import {
   alQuitarAdyacente1,
   alQuitarAdyacente2,
 } from '../utils/formularioDeLaCompeticion';
-
-// Los vecinos de un país; sin poder leerlos, ninguno
-export const leeVecinos = async (countryId) => {
-  try {
-    return aPaises(await getAdjacentCountriesUseCase.execute(countryId));
-  } catch (error) {
-    registraElFallo(
-      'CreateCompetition.error-fetching-adjacent-countries',
-      'Error fetching adjacent countries:',
-      error,
-    );
-    return [];
-  }
-};
 
 /**
  * Los países del formulario de competición: todos (una vez) y los vecinos del
@@ -83,7 +70,7 @@ export const usePaisesDeLaCompeticion = ({ idioma, formData, setFormData }) => {
   const fetchAdjacentCountries = async (countryId, level, context = {}) => {
     olvidaLosVecinosPedidos(level);
     const peticion = vecinosPedidos.current[level];
-    const mappedData = await leeVecinos(countryId);
+    const mappedData = await leeVecinos(getAdjacentCountriesUseCase, countryId);
     if (peticion !== vecinosPedidos.current[level]) return;
 
     if (level === 1) {
