@@ -33,6 +33,8 @@ import {
   unaTrasOtra,
 } from './textosDeActividad';
 import NombrePequeno from '../ui/NombrePequeno';
+import { MatchOutcome } from '../../domain/value_objects/MatchOutcome';
+import { ScoringFormat } from '../../domain/value_objects/ScoringFormat';
 
 /**
  * Un icono por tipo. Sin esto todas las entradas se ven iguales y el feed se
@@ -219,7 +221,7 @@ const puesto = (payload, t) => {
 };
 
 const esMedal = (payload) =>
-  payload.scoring_format === 'MEDAL' ||
+  payload.scoring_format === ScoringFormat.MEDAL ||
   (payload.points == null && payload.net_strokes != null);
 
 // «34 puntos» o «72 netos»; con los golpes brutos detrás si se piden y vienen
@@ -238,7 +240,7 @@ const nombreDelTorneo = (payload, t) =>
 // Una partida rápida que se cerró sin acabar: no se gana, no se empata ni
 // tiene puesto. Vale cualquiera de las dos señales del backend
 const sinTerminar = (payload) =>
-  payload.unfinished === true || payload.outcome === 'UNFINISHED';
+  payload.unfinished === true || payload.outcome === MatchOutcome.UNFINISHED;
 
 // Hay número que decir: los netos en Medal, los puntos en Stableford. Una
 // partida sin terminar puede llegar sin él, y «· netos» a secas no se dice
@@ -612,9 +614,9 @@ const puntosDeRyder = (n) => {
 };
 
 const RESULTADOS_DE_RYDER = {
-  WON: 'ryderWon',
-  LOST: 'ryderLost',
-  HALVED: 'ryderHalved',
+  [MatchOutcome.WON]: 'ryderWon',
+  [MatchOutcome.LOST]: 'ryderLost',
+  [MatchOutcome.HALVED]: 'ryderHalved',
 };
 
 /**

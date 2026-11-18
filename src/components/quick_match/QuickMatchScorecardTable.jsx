@@ -22,6 +22,11 @@ import {
 import PlayingHandicapCalculator from '../../domain/services/PlayingHandicapCalculator';
 import { formatoDeHandicapDeJuego } from '../../utils/formatoDeHandicap';
 import { nombreDeLaBarra } from '../../utils/nombreDeLaBarra';
+import { ScoringFormat } from '../../domain/value_objects/ScoringFormat';
+import {
+  MatchFormat,
+  isTeamMatchFormat,
+} from '../../domain/value_objects/MatchFormat';
 
 const MAX_STROKE_DOTS = 2;
 
@@ -65,8 +70,8 @@ const QuickMatchScorecardTable = ({
   const { t: tCourses } = useTranslation('golfCourses');
   const esMovil = useEsMovil();
 
-  const isStableford = scoringFormat === 'STABLEFORD';
-  const isMedal = scoringFormat === 'MEDAL';
+  const isStableford = scoringFormat === ScoringFormat.STABLEFORD;
+  const isMedal = scoringFormat === ScoringFormat.MEDAL;
   // Cómo se llama la cifra pequeña: columna en el móvil, cabecera de la fila en
   // la horizontal. En match play no hay
   const etiquetaDeLaCifra = isStableford
@@ -124,8 +129,7 @@ const QuickMatchScorecardTable = ({
   //              de los dos números de la cabecera cuadra siempre. Decir aquí
   //              "el N% de la diferencia" sería falso.
   //   libre      cada uno recibe su Playing Handicap entero, sin diferencia.
-  const explainsAllowance =
-    matchFormat === 'FOURBALL' || matchFormat === 'FOURSOMES';
+  const explainsAllowance = isTeamMatchFormat(matchFormat);
 
   const withAllowanceNote = (text) =>
     explainsAllowance
@@ -154,7 +158,7 @@ const QuickMatchScorecardTable = ({
   // El reparto de foursomes ya es de equipo: los dos compañeros reciben los
   // mismos golpes, así que leerlos del primero no pierde nada.
   const buildCards = () => {
-    if (matchFormat !== 'FOURSOMES') {
+    if (matchFormat !== MatchFormat.FOURSOMES) {
       return participants.map((p) => ({
         key: p.participantId,
         title: p.name,
@@ -248,7 +252,7 @@ const QuickMatchScorecardTable = ({
   // a pelo y la cabecera se separaría varios golpes de los puntos que pinta
   // debajo, que sí son del servidor.
   const playingHandicapOf = (card) => {
-    if (matchFormat !== 'FOURSOMES' || card.members.length < 2) {
+    if (matchFormat !== MatchFormat.FOURSOMES || card.members.length < 2) {
       return allocation[card.strokesId]?.playingHandicap ?? null;
     }
     const sinCampo = holes.length === 0 || tees.length === 0;

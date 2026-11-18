@@ -30,6 +30,7 @@ import {
   loadErrorKeyFor,
 } from '../../utils/textosDePartidaRapida';
 import { PESTANAS_DE_LA_RAPIDA } from '../../utils/pestanasDeLaAnotacion';
+import { isValidScoringFormat } from '../../domain/value_objects/ScoringFormat';
 
 const TABS = PESTANAS_DE_LA_RAPIDA;
 
@@ -137,9 +138,7 @@ const QuickMatchScoringPage = () => {
   const hayQuienNoAnoto = (quickMatch?.participants ?? []).some(
     (p) => !coveredParticipantIds.includes(p.participantId),
   );
-  const esJuegoLibre =
-    quickMatch?.scoringFormat === 'MEDAL' ||
-    quickMatch?.scoringFormat === 'STABLEFORD';
+  const esJuegoLibre = isValidScoringFormat(quickMatch?.scoringFormat);
   const faltanDatosDeOtros = pendientes > 0 && hayQuienNoAnoto;
 
   const hayDiscrepancia =

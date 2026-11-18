@@ -9,6 +9,8 @@ import {
   teeKey,
 } from './asistenteDePartidaRapida';
 import { jugadorInvitado, jugadorRegistrado } from './jugadoresDelAsistente';
+import { MatchFormat } from '../domain/value_objects/MatchFormat';
+import { ScoringFormat } from '../domain/value_objects/ScoringFormat';
 
 // Dónde se arregla cada cosa: el campo y tu barra, en el paso 1; los
 // jugadores, en el 2. El asistente enseña cada aviso solo en su paso
@@ -41,8 +43,8 @@ export const borradorParaRepetir = ({ partida, yo, amigos, campo }) => {
   const comun = {
     matchName: partida.name ?? '',
     mode: juegoLibre ? 'FREE_PLAY' : 'MATCH_PLAY',
-    matchFormat: partida.matchFormat ?? 'SINGLES',
-    scoringFormat: partida.scoringFormat ?? 'STABLEFORD',
+    matchFormat: partida.matchFormat ?? MatchFormat.SINGLES,
+    scoringFormat: partida.scoringFormat ?? ScoringFormat.STABLEFORD,
     allowanceOverride: copiado === porDefecto ? null : copiado,
     playMode: partida.playMode ?? 'HANDICAP',
     parejasDeAnotadores: parejasElegidas(partida, yo),
@@ -202,7 +204,8 @@ export const borradorParaRepetir = ({ partida, yo, amigos, campo }) => {
  * ya no vale (sin jugadores): es de la partida, no de sus jugadores.
  */
 const parejasElegidas = (partida, yo) => {
-  if (partida.scoringFormat || partida.matchFormat !== 'FOURSOMES') return null;
+  if (partida.scoringFormat || partida.matchFormat !== MatchFormat.FOURSOMES)
+    return null;
   // La eligió quien la creó: a otro que la repite no le toca heredarla
   // (`/code-review`)
   if (partida.creatorId !== yo.id) return null;
