@@ -15,6 +15,7 @@ import { listMyInvitationsUseCase } from '../../composition';
 import BlockLoader from '../../components/ui/BlockLoader';
 import { PANTALLA_MENOS_BARRA_INFERIOR } from '../../utils/barraInferior';
 import { registraElFallo } from '../../utils/registraElFallo';
+import { ESTADOS_DEL_FILTRO } from '../../components/invitation/estadosDelFiltro';
 
 const MyInvitationsPage = () => {
   const navigate = useNavigate();
@@ -131,13 +132,11 @@ const MyInvitationsPage = () => {
             data-testid="status-filter"
           >
             <option value="">{t('filter.allStatuses')}</option>
-            <option value="PENDING">{t('status.PENDING')}</option>
-            <option value="ACCEPTED">{t('status.ACCEPTED')}</option>
-            <option value="DECLINED">{t('status.DECLINED')}</option>
-            <option value="EXPIRED">{t('status.EXPIRED')}</option>
-            <option value="ON_HOLD">{t('status.ON_HOLD')}</option>
-            <option value="NO_ROOM">{t('status.NO_ROOM')}</option>
-            <option value="CANCELLED">{t('status.CANCELLED')}</option>
+            {ESTADOS_DEL_FILTRO.map((estado) => (
+              <option key={estado} value={estado}>
+                {t(`status.${estado}`)}
+              </option>
+            ))}
           </select>
         </div>
 

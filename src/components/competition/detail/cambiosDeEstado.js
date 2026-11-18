@@ -30,6 +30,7 @@ import { CompetitionStatusEnum } from '../../../domain/value_objects/Competition
 import EnrollmentStatus from '../../../domain/value_objects/EnrollmentStatus';
 import { mensajeDelError } from '../../../utils/mensajeDelError';
 import { registraElFallo } from '../../../utils/registraElFallo';
+import { GolfCourseApprovalStatus } from '../../../domain/value_objects/GolfCourseApprovalStatus';
 
 /**
  * Lo que el organizador hace con la competición desde su ficha: cambiar su
@@ -186,7 +187,8 @@ export const crearCambiosDeEstado = (contexto) => {
         }
 
         const pendingCourses = golfCourses.filter(
-          (gc) => gc.approvalStatus === 'PENDING_APPROVAL',
+          (gc) =>
+            gc.approvalStatus === GolfCourseApprovalStatus.PENDING_APPROVAL,
         );
         if (pendingCourses.length > 0) {
           const courseNames = pendingCourses.map((gc) => gc.name).join(', ');
@@ -199,7 +201,7 @@ export const crearCambiosDeEstado = (contexto) => {
         }
 
         const rejectedCourses = golfCourses.filter(
-          (gc) => gc.approvalStatus === 'REJECTED',
+          (gc) => gc.approvalStatus === GolfCourseApprovalStatus.REJECTED,
         );
         if (rejectedCourses.length > 0) {
           const courseNames = rejectedCourses.map((gc) => gc.name).join(', ');

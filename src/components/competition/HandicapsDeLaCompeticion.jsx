@@ -18,6 +18,7 @@ import {
 } from '../../utils/horaDelCampo';
 import { useSondeoMientras } from '../../hooks/useSondeoMientras';
 import { mensajeDelError } from '../../utils/mensajeDelError';
+import { HandicapUpdateStatus } from '../../domain/value_objects/HandicapUpdateStatus';
 
 // Mientras hay una en marcha, cada cuánto se mira cómo va
 const CADA = 15000;
@@ -125,7 +126,7 @@ const HandicapsDeLaCompeticion = ({
     };
   }, [competitionId, lectura]);
 
-  const enMarcha = handicapUpdate?.status === 'IN_PROGRESS';
+  const enMarcha = handicapUpdate?.status === HandicapUpdateStatus.IN_PROGRESS;
   // En un hook propio, como el resto de sondeos del proyecto (así lo hace
   // ADR-010 con la anotación)
   useSondeoMientras(enMarcha, onReleer, CADA);
@@ -196,8 +197,8 @@ const HandicapsDeLaCompeticion = ({
     if (!handicapUpdate) return [];
     const { status, pendingPlayers, notUpdatedPlayers } = handicapUpdate;
     if (!notUpdatedPlayers)
-      return status === 'INCOMPLETE' ? pendingPlayers : [];
-    if (status !== 'INCOMPLETE') return notUpdatedPlayers;
+      return status === HandicapUpdateStatus.INCOMPLETE ? pendingPlayers : [];
+    if (status !== HandicapUpdateStatus.INCOMPLETE) return notUpdatedPlayers;
     const nombrados = new Set(notUpdatedPlayers.map((p) => p.userId));
     return [
       ...notUpdatedPlayers,
@@ -208,16 +209,18 @@ const HandicapsDeLaCompeticion = ({
   const estado = () => {
     if (!handicapUpdate) return null;
     const { status, finishedAt, pendingPlayers } = handicapUpdate;
-    if (status === 'IN_PROGRESS')
+    if (status === HandicapUpdateStatus.IN_PROGRESS)
       return t('handicaps.inProgress', { count: pendingPlayers.length });
     // Con alguien sin actualizar no se dice «Actualizados»: lo dice la línea
     // de quiénes
-    if (status === 'COMPLETED')
+    if (status === HandicapUpdateStatus.COMPLETED)
       return sinActualizar.length > 0
         ? null
         : t('handicaps.completed', { cuando: cuando(finishedAt) });
-    if (status === 'INCOMPLETE')
+    if (status === HandicapUpdateStatus.INCOMPLETE)
       return t('handicaps.incomplete', { cuando: cuando(finishedAt) });
+    if (status === HandicapUpdateStatus.STOPPED) return t('handicaps.stopped');
+    // Un estado que esta versión no conoce se dice como la cortada, como antes
     return t('handicaps.stopped');
   };
 
