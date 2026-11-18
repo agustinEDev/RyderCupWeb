@@ -228,10 +228,15 @@ export const alVaciarPais = (prev) => ({
 const sinLosCamposDe = (golfCourses, ...codigos) =>
   golfCourses.filter((gc) => !codigos.includes(gc.countryCode));
 
+// Si lo elegido en un selector de país vecino es lo que ya había: entonces no
+// cambia nada. La única regla: la usan los reductores y el manejador del hook
+export const esElMismoPais = (formulario, campo, codigo) =>
+  formulario[campo] === codigo;
+
 // Otro adyacente: el tercer país era vecino del anterior, así que se van los
 // dos con sus campos. El mismo otra vez no cambia nada
 export const alCambiarAdyacente1 = (prev, countryId) =>
-  countryId === prev.adjacentCountry1
+  esElMismoPais(prev, 'adjacentCountry1', countryId)
     ? prev
     : {
         ...prev,
@@ -248,7 +253,7 @@ export const alCambiarAdyacente1 = (prev, countryId) =>
 // Otro tercer país, o ninguno: se van los campos del anterior, como con su
 // papelera, pero el selector sigue a la vista. El mismo otra vez no cambia nada
 export const alCambiarAdyacente2 = (prev, countryId) =>
-  countryId === prev.adjacentCountry2
+  esElMismoPais(prev, 'adjacentCountry2', countryId)
     ? prev
     : {
         ...prev,

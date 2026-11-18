@@ -13,6 +13,7 @@ import {
   alQuitarAdyacente1,
   alQuitarAdyacente2,
   alCambiarAdyacente2,
+  esElMismoPais,
   ERRORES_JUNTO_AL_NOMBRE,
   FORMULARIO_MINIMO,
   ERRORES_DE_LAS_OPCIONES,
@@ -380,6 +381,13 @@ describe('la cascada de los países', () => {
       showAdjacentCountry2: false,
       golfCourses: [campo('ES', 1), campo('FR', 2), campo('ES', 4)],
     });
+  });
+
+  it('esElMismoPais: el elegido es el que ya estaba en ese selector', () => {
+    expect(esElMismoPais(conTres, 'adjacentCountry1', 'FR')).toBe(true);
+    expect(esElMismoPais(conTres, 'adjacentCountry1', 'PT')).toBe(false);
+    expect(esElMismoPais(conTres, 'adjacentCountry2', 'PT')).toBe(true);
+    expect(esElMismoPais(conTres, 'adjacentCountry2', '')).toBe(false);
   });
 
   it('no tocan el formulario que reciben', () => {
