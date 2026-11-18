@@ -39,9 +39,9 @@ import {
  * @param {{isEditMode: boolean, competitionId: ?string, formData: object,
  *   conEquipos: boolean, tipoElegido: ?string, pideGenero: boolean,
  *   genero: string, generoParaApuntarse: object}} opciones.formulario
- * @param {{soloFechas: boolean, inscritos: number, cupoCargado: object,
- *   ajustesCargados: object, diasCargados: object,
- *   recuerdaLosAjustes: Function}} opciones.edicion lo leído al editar
+ * @param {{soloFechas: boolean, inscritos: number, guardado: {cupo: Function,
+ *   ajustes: Function, dias: Function, recuerdaLosAjustes: Function}}}
+ *   opciones.edicion lo leído al editar
  * @param {{allCountries: Array, adjacentCountries1: Array,
  *   adjacentCountries2: Array}} opciones.paises
  * @param {{copiaSinVerificar: boolean, confirmaVerificado: Function}} opciones.correo
@@ -73,14 +73,7 @@ export const useEnvioDeLaCompeticion = ({
     genero,
     generoParaApuntarse,
   } = formulario;
-  const {
-    soloFechas,
-    inscritos,
-    cupoCargado,
-    ajustesCargados,
-    diasCargados,
-    recuerdaLosAjustes,
-  } = edicion;
+  const { soloFechas, inscritos, guardado } = edicion;
   const { allCountries, adjacentCountries1, adjacentCountries2 } = paises;
   const { copiaSinVerificar, confirmaVerificado } = correo;
   const {
@@ -195,8 +188,8 @@ export const useEnvioDeLaCompeticion = ({
   // dos peticiones: si la segunda falla, la primera ya está guardada (FE #824)
   const guardaLaEdicion = async (payload, envio, esElNombreYaUsado) => {
     const cambios =
-      !conEquipos && ajustesCargados.current
-        ? cambiosDeAjustes(ajustesCargados.current, formData.strokePlay)
+      !conEquipos && guardado.ajustes()
+        ? cambiosDeAjustes(guardado.ajustes(), formData.strokePlay)
         : null;
     const guardaLoGeneral = () => {
       envio.enLaCompeticion = true;
@@ -205,12 +198,12 @@ export const useEnvioDeLaCompeticion = ({
     const guardaLosAjustes = async () => {
       envio.enLaCompeticion = false;
       // Lo guardado pasa a ser la referencia: reintentar no los reenvía
-      recuerdaLosAjustes(
+      guardado.recuerdaLosAjustes(
         await updateStrokePlaySettingsUseCase.execute(competitionId, cambios),
       );
     };
     const ajustesPrimero =
-      cambios && primeroLosAjustes(cambios, diasCargados.current);
+      cambios && primeroLosAjustes(cambios, guardado.dias());
     await (ajustesPrimero ? guardaLosAjustes : guardaLoGeneral)();
     if (cambios) {
       try {
@@ -361,7 +354,7 @@ export const useEnvioDeLaCompeticion = ({
         conEquipos,
         isEditMode,
         tipoElegido,
-        cupoCargado: cupoCargado.current,
+        cupoCargado: guardado.cupo(),
         diasDeApertura,
       });
       if (isEditMode) {

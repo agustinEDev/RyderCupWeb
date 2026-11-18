@@ -112,25 +112,18 @@ const CreateCompetition = () => {
     formData,
     setFormData,
   });
-  const {
-    loadingCompetition,
-    soloFechas,
-    inscritos,
-    cupoCargado,
-    ajustesCargados,
-    diasCargados,
-    recuerdaLosAjustes,
-  } = useEdicionDeLaCompeticion({
-    competitionId,
-    allCountries,
-    t,
-    idioma: i18n.language,
-    navigate,
-    setFormData,
-    setAdjacentCountries1,
-    setAdjacentCountries2,
-    olvidaLosVecinosPedidos,
-  });
+  const { loadingCompetition, soloFechas, inscritos, guardado } =
+    useEdicionDeLaCompeticion({
+      competitionId,
+      allCountries,
+      t,
+      idioma: i18n.language,
+      navigate,
+      setFormData,
+      setAdjacentCountries1,
+      setAdjacentCountries2,
+      olvidaLosVecinosPedidos,
+    });
 
   // Solo una Ryder tiene equipos y modo de montaje (FE #791). Sin tipo todavía,
   // la de siempre: así se cargaba y se creaba todo antes del tipo
@@ -181,10 +174,7 @@ const CreateCompetition = () => {
     edicion: {
       soloFechas,
       inscritos,
-      cupoCargado,
-      ajustesCargados,
-      diasCargados,
-      recuerdaLosAjustes,
+      guardado,
     },
     paises: { allCountries, adjacentCountries1, adjacentCountries2 },
     correo: { copiaSinVerificar, confirmaVerificado },
@@ -330,7 +320,7 @@ const CreateCompetition = () => {
                       // callárselo es enterarse con el jugador 13 fuera
                       numberOfPlayers: cupoDeJugadores(
                         prev.numberOfPlayers,
-                        cupoCargado.current,
+                        guardado.cupo(),
                       ),
                     }))
                   }

@@ -229,18 +229,21 @@ export const useEdicionDeLaCompeticion = ({
     };
   }, [competitionId, allCountries]);
 
-  // Lo guardado pasa a ser la referencia: lo dice el envío al guardar los ajustes
-  const recuerdaLosAjustes = (ajustes) => {
-    ajustesCargados.current = ajustes;
+  // Lo guardado, para leerlo al enviar (nunca al pintar). Los ajustes que se
+  // acaban de guardar pasan a ser la referencia: lo dice el envío
+  const guardado = {
+    cupo: () => cupoCargado.current,
+    ajustes: () => ajustesCargados.current,
+    dias: () => diasCargados.current,
+    recuerdaLosAjustes: (ajustes) => {
+      ajustesCargados.current = ajustes;
+    },
   };
 
   return {
     loadingCompetition,
     soloFechas,
     inscritos,
-    cupoCargado,
-    ajustesCargados,
-    diasCargados,
-    recuerdaLosAjustes,
+    guardado,
   };
 };
