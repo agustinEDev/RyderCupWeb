@@ -5,6 +5,8 @@ import EtiquetaDelTipo from '../competition/EtiquetaDelTipo';
 import { diaCorto } from '../../utils/diaDeLaSesion';
 import { rutaDeAnotacion } from '../../utils/rutaDeAnotacion';
 import { nombresDeCompaneros } from '../../utils/nombreDeCompanero';
+import MatchStatus from '../../domain/value_objects/MatchStatus';
+import TeeGroupStatus from '../../domain/value_objects/TeeGroupStatus';
 
 /**
  * Una tarjeta de «Mis próximos partidos» (FE #845): un partido de la Ryder o
@@ -37,6 +39,10 @@ const TarjetaDeLoProximo = ({ partido, puedeAnotar }) => {
   };
 
   const esPartida = Boolean(partido.esPartidaDeFranja);
+  // Una partida de franja y un partido de la Ryder dicen «en juego» con su estado
+  const enJuego = esPartida
+    ? partido.status === TeeGroupStatus.IN_PROGRESS
+    : partido.status === MatchStatus.IN_PROGRESS;
   const cuando = [
     diaCorto(partido.roundDate, i18n.language),
     ...(esPartida
@@ -85,7 +91,7 @@ const TarjetaDeLoProximo = ({ partido, puedeAnotar }) => {
         >
           {partido.competitionName}
         </Link>
-        {partido.status === 'IN_PROGRESS' && (
+        {enJuego && (
           <span className="ml-auto shrink-0 rounded-full bg-green-100 px-2 py-0.5 text-[11px] font-medium text-green-700">
             {t('upcomingMatches.inPlay')}
           </span>

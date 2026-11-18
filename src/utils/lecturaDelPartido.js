@@ -1,3 +1,5 @@
+import MatchStatus from '../domain/value_objects/MatchStatus';
+
 // Lo que la pantalla de anotación de competición (`ScoringPage`) cuenta del
 // partido entero: sus fallos, su marcador, su cierre y la entrega. Las que
 // devuelven texto reciben la `t` de la pantalla (espacio `scoring`).
@@ -65,10 +67,10 @@ export const cierreDelPartido = (scoringView) => {
   // Cerrado sin jugarlo hasta el final —concedido o walkover—: ya no queda
   // nada que anotar ni que entregar, y se dice como en la clasificación (#732)
   const cerradoSinJugar =
-    scoringView?.matchStatus === 'CONCEDED' ||
-    scoringView?.matchStatus === 'WALKOVER';
+    scoringView?.matchStatus === MatchStatus.CONCEDED ||
+    scoringView?.matchStatus === MatchStatus.WALKOVER;
   const claveDelCierre =
-    scoringView?.matchStatus === 'WALKOVER' ? 'walkover' : 'conceded';
+    scoringView?.matchStatus === MatchStatus.WALKOVER ? 'walkover' : 'conceded';
   const cierre =
     cerradoSinJugar && resultadoDecidido
       ? { team: resultadoDecidido.team }

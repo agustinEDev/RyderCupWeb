@@ -1,4 +1,10 @@
-const ORDEN_DE_FRANJA = { MORNING: 0, AFTERNOON: 1, EVENING: 2 };
+import { SessionType } from '../domain/value_objects/SessionType';
+
+const ORDEN_DE_FRANJA = {
+  [SessionType.MORNING]: 0,
+  [SessionType.AFTERNOON]: 1,
+  [SessionType.EVENING]: 2,
+};
 
 /**
  * El que se juega antes de dos (FE #824, PR 7): el banner del panel enseña uno

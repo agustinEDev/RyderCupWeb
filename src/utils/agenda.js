@@ -1,3 +1,6 @@
+import { SessionType } from '../domain/value_objects/SessionType';
+import { MatchFormat } from '../domain/value_objects/MatchFormat';
+
 /**
  * Las cuentas de la agenda de una competición (FE #654).
  *
@@ -8,13 +11,17 @@
  */
 
 // Las franjas de un día, en el orden en que se juegan
-export const FRANJAS = ['MORNING', 'AFTERNOON', 'EVENING'];
+export const FRANJAS = Object.values(SessionType);
 
 // Lo que acepta el servidor en una agenda automática
 const MAX_SESIONES = 18;
 
 // Cuántos jugadores de cada equipo juegan un partido de ese formato
-const POR_LADO = { SINGLES: 1, FOURBALL: 2, FOURSOMES: 2 };
+const POR_LADO = {
+  [MatchFormat.SINGLES]: 1,
+  [MatchFormat.FOURBALL]: 2,
+  [MatchFormat.FOURSOMES]: 2,
+};
 
 const UN_DIA = 24 * 60 * 60 * 1000;
 

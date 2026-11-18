@@ -1,8 +1,13 @@
 import { siViene } from '../../../utils/campoSiViene';
 import { CompetitionStatusEnum } from '../../../domain/value_objects/CompetitionStatus';
+import MatchStatus from '../../../domain/value_objects/MatchStatus';
+import { SessionType } from '../../../domain/value_objects/SessionType';
 
-const SESSION_ORDER = { MORNING: 0, AFTERNOON: 1, EVENING: 2 };
-const UPCOMING_STATUSES = ['SCHEDULED', 'IN_PROGRESS'];
+const SESSION_ORDER = {
+  [SessionType.MORNING]: 0,
+  [SessionType.AFTERNOON]: 1,
+  [SessionType.EVENING]: 2,
+};
 const COMPETICIONES_CON_PARTIDOS = [
   CompetitionStatusEnum.CLOSED,
   CompetitionStatusEnum.IN_PROGRESS,
@@ -124,7 +129,7 @@ class GetUpcomingMatchesUseCase {
 
         if (
           (!playsInTeamA && !playsInTeamB) ||
-          !UPCOMING_STATUSES.includes(match.status)
+          !MatchStatus.isPlayable(match.status)
         ) {
           return;
         }

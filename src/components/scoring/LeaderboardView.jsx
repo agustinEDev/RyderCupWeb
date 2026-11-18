@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import TeamStandingsHeader from './TeamStandingsHeader';
+import MatchStatus from '../../domain/value_objects/MatchStatus';
 
 // Converts "5UP" at hole 14 → "5&4" (5 up with 4 to play).
 // If match ended on hole 18, keeps "2UP" format.
@@ -37,13 +38,8 @@ const LeaderboardView = ({ leaderboard, jugador = null }) => {
   // destacados y el primero en pantalla (release social 2, /code-review)
   const primeroSuyoRef = useRef(null);
   const partidos = leaderboard?.matches ?? [];
-  const enJuego = partidos.filter((m) => m.status === 'IN_PROGRESS');
-  const acabados = partidos.filter(
-    (m) =>
-      m.status === 'COMPLETED' ||
-      m.status === 'CONCEDED' ||
-      m.status === 'WALKOVER',
-  );
+  const enJuego = partidos.filter((m) => m.status === MatchStatus.IN_PROGRESS);
+  const acabados = partidos.filter((m) => MatchStatus.isFinished(m.status));
   // El primero suyo en el orden en que se pintan: en juego, luego acabados
   const primeroSuyo = jugador
     ? [...enJuego, ...acabados].find((m) => juegaEn(m, jugador))?.matchId
@@ -96,7 +92,7 @@ const LeaderboardView = ({ leaderboard, jugador = null }) => {
             {match.matchFormat &&
               ` - ${t(`formats.${match.matchFormat}`, { ns: 'schedule', defaultValue: match.matchFormat })}`}
           </span>
-          {match.status === 'IN_PROGRESS' && match.currentHole && (
+          {match.status === MatchStatus.IN_PROGRESS && match.currentHole && (
             <span className="text-xs text-gray-500">
               {t('leaderboard.hole')} {match.currentHole}
             </span>
@@ -117,15 +113,15 @@ const LeaderboardView = ({ leaderboard, jugador = null }) => {
               </span>
             ) : match.result ? (
               <span className="text-lg font-bold text-primary">
-                {match.status === 'WALKOVER' ||
-                match.result.score === 'WALKOVER'
+                {/* El tanteo de un walkover es «W/O», nunca «WALKOVER»: lo dice el estado (E1-8) */}
+                {match.status === MatchStatus.WALKOVER
                   ? t('leaderboard.walkover', {
                       team:
                         match.result.winner === 'A'
                           ? leaderboard.teamAName
                           : leaderboard.teamBName,
                     })
-                  : match.status === 'CONCEDED' ||
+                  : match.status === MatchStatus.CONCEDED ||
                       match.result.score === 'CONCEDED'
                     ? t('leaderboard.conceded', {
                         team:
