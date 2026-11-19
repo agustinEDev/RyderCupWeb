@@ -1,10 +1,10 @@
 import { useId } from 'react';
 import { useTranslation } from 'react-i18next';
-import ScoreInputPanel from './ScoreInputPanel';
 import CabeceraDelHoyo from './CabeceraDelHoyo';
 import PieDelHoyo from './PieDelHoyo';
 import HuecosDelHoyo from './HuecosDelHoyo';
 import GolpesEnSoloLectura from './GolpesEnSoloLectura';
+import TecladosDelHoyo from './TecladosDelHoyo';
 import { etiquetasDeLaCasilla } from './textosDeLaCasilla';
 import { useValoresDeLaCasilla } from './useValoresDeLaCasilla';
 import { MatchFormat } from '../../domain/value_objects/MatchFormat';
@@ -184,36 +184,27 @@ const HoleInput = ({
         teamBName={teamBName}
       />
 
-      {openPanel === 'own' && (
-        <ScoreInputPanel
-          value={ownValue}
-          onSelect={handleOwnSelect}
-          onClose={() => setOpenPanel(null)}
-          label={etiquetas.propia}
-          par={par}
-          allowPickedUp={allowPickedUp}
-        />
-      )}
-      {openPanel === 'marked' && (
-        <ScoreInputPanel
-          value={markedValue}
-          onSelect={handleMarkedSelect}
-          onClose={() => setOpenPanel(null)}
-          label={etiquetas.marcado}
-          par={markedPar ?? par}
-          allowPickedUp={allowPickedUp}
-        />
-      )}
-      {openPanel === 'second' && (
-        <ScoreInputPanel
-          value={segundoValue}
-          onSelect={handleSegundoSelect}
-          onClose={() => setOpenPanel(null)}
-          label={etiquetas.segundo}
-          par={secondMarked?.par ?? par}
-          allowPickedUp={allowPickedUp}
-        />
-      )}
+      <TecladosDelHoyo
+        openPanel={openPanel}
+        cerrar={() => setOpenPanel(null)}
+        valores={{
+          propio: ownValue,
+          marcado: markedValue,
+          segundo: segundoValue,
+        }}
+        alElegir={{
+          propio: handleOwnSelect,
+          marcado: handleMarkedSelect,
+          segundo: handleSegundoSelect,
+        }}
+        etiquetas={etiquetas}
+        pares={{
+          propio: par,
+          marcado: markedPar ?? par,
+          segundo: secondMarked?.par ?? par,
+        }}
+        allowPickedUp={allowPickedUp}
+      />
     </div>
   );
 };
