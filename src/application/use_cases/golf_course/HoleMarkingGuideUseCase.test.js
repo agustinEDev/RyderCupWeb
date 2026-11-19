@@ -12,7 +12,9 @@ const almacenFalso = (vistas = []) => {
 describe('HoleMarkingGuideUseCase (T1)', () => {
   it('lee y apunta la guía vista del usuario', () => {
     const almacen = almacenFalso();
-    const caso = new HoleMarkingGuideUseCase({ holeMarkingGuideStore: almacen });
+    const caso = new HoleMarkingGuideUseCase({
+      holeMarkingGuideStore: almacen,
+    });
 
     expect(caso.yaVista('u-1')).toBe(false);
     caso.marcarVista('u-1');
@@ -23,7 +25,9 @@ describe('HoleMarkingGuideUseCase (T1)', () => {
 
   it('sin usuario, no vista y no se apunta (no hay de quién)', () => {
     const almacen = almacenFalso([null, undefined]);
-    const caso = new HoleMarkingGuideUseCase({ holeMarkingGuideStore: almacen });
+    const caso = new HoleMarkingGuideUseCase({
+      holeMarkingGuideStore: almacen,
+    });
 
     expect(caso.yaVista(null)).toBe(false);
     caso.marcarVista(null);
