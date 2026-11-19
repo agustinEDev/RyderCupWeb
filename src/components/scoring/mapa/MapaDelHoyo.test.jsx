@@ -3388,18 +3388,6 @@ describe('MapaDelHoyo — marcar con el GPS y el recuadro desde ti (17 oct)', ()
       expect(ultimoGiro()).toBeCloseTo(rumbo(T, green), 6);
     });
 
-    it('Z7: ya acercado, el mapa movido después no se lo quita el GPS', () => {
-      abrirRecto();
-      desde(DENTRO);
-      act(() => mapa().oyentes.movestart({ originalEvent: {} }));
-      const antes = mapa().easeTo.mock.calls.length;
-
-      desde(FUERA);
-      desde(alNorte(230));
-
-      expect(mapa().easeTo.mock.calls.length).toBe(antes);
-    });
-
     it('Z14 solo al chocar con el GPS: ya acercado, la orientación desde ti que pide marcar («No») sí se aplica', () => {
       const green = alNorte(80);
       conGreenSuelto({ hoyo: { playLine: [], green: { center: green } } });

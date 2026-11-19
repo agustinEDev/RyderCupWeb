@@ -1,5 +1,20 @@
 import { useState } from 'react';
-import { tocaAcercarseAlGreen } from '../../../domain/services/acercarseAlGreen';
+import {
+  tocaAcercarseAlGreen,
+  vistaAlGreen,
+} from '../../../domain/services/acercarseAlGreen';
+
+/**
+ * La vista si acaba de cambiar (en este render o en los que React encadena
+ * antes de pintar), o `null` si ya estaba: lo que se pidió ahora, no lo que se
+ * aplicó hace rato. Con el patrón de React de guardar el valor anterior.
+ */
+export const useVistaRecienPedida = (vista) => {
+  const [anterior, setAnterior] = useState(vista);
+  if (vista === anterior) return null;
+  setAnterior(vista);
+  return vista;
+};
 
 /**
  * El zoom al green en los últimos 100 m, una vez por apertura del mapa (Z1-Z3):
@@ -10,7 +25,7 @@ import { tocaAcercarseAlGreen } from '../../../domain/services/acercarseAlGreen'
  * Devuelve `sinZoomAlGreen`: tras «Ver hoyo» ya no se acerca solo (Z7).
  */
 export const useAcercarseAlGreen = (
-  { posicionBuena, green, lejos, fase, medido, reporte },
+  { posicionBuena, green, lejos, fase, medido, reporte, vistaRecien },
   setVista,
 ) => {
   const [yaAcercado, setYaAcercado] = useState(false);
@@ -28,7 +43,8 @@ export const useAcercarseAlGreen = (
     })
   ) {
     setYaAcercado(true);
-    setVista({ tipo: 'alGreen', desde: posicionBuena, green });
+    // Tras marcar, gana el zoom aunque el mapa se hubiera movido (19 nov)
+    setVista(vistaAlGreen(posicionBuena, green, vistaRecien));
   }
   return () => setYaAcercado(true);
 };

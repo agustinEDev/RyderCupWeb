@@ -60,8 +60,27 @@ export const encuadreAlGreen = (desde, green) => ({
 });
 
 /**
- * La vista que se queda cuando llega otra: la orientación desde ti (a mitad de
- * hoyo) no pisa el zoom al green; todo lo demás, sí (Z14).
+ * La vista del zoom al green. Si sustituye a una que acaba de pedir el jugador
+ * (marcar el hoyo), hereda su `porElJugador`: tras marcar gana el zoom, aunque
+ * hubiera movido el mapa (Agustín, 19 nov).
+ *
+ * @param {{lat: number, lon: number}} desde
+ * @param {Object} green
+ * @param {{porElJugador?: boolean}|null} recienPedida la vista pedida en este mismo cambio, o `null`
+ * @returns {{tipo: string, desde: Object, green: Object, porElJugador?: boolean}}
+ */
+export const vistaAlGreen = (desde, green, recienPedida) => ({
+  tipo: 'alGreen',
+  desde,
+  green,
+  ...(recienPedida?.porElJugador ? { porElJugador: true } : {}),
+});
+
+/**
+ * La vista que se queda cuando llega otra: la orientación desde ti no pisa un
+ * zoom al green recién decidido (Z14, el GPS al abrir); todo lo demás, sí.
+ * `actual` es la vista de este mismo cambio, o `null` si ya se aplicó: lo que
+ * se pida después (marcar, el «No») se aplica siempre.
  *
  * @param {{tipo: string}|null} actual
  * @param {{tipo: string}} nueva

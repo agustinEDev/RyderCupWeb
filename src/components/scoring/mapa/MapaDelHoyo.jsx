@@ -27,7 +27,10 @@ import { useMapaDeMapLibre } from './useMapaDeMapLibre';
 import { useGpsDelHoyo } from './useGpsDelHoyo';
 import { decidirConElGps, useLineaQueSeVe } from './useLineaQueSeVe';
 import { useEstadoDeLaMarca } from './useEstadoDeLaMarca';
-import { useAcercarseAlGreen } from './useAcercarseAlGreen';
+import {
+  useAcercarseAlGreen,
+  useVistaRecienPedida,
+} from './useAcercarseAlGreen';
 import { vistaQueGana } from '../../../domain/services/acercarseAlGreen';
 import { salidaQueSePinta, sePuedeReportarElHoyo } from './reglasDelMapa';
 import {
@@ -126,12 +129,11 @@ const MapaDelHoyo = ({
   // Hacia dónde se ha orientado el mapa después de abrir (O2-O5): `{ tipo:
   // 'hoyo' }`, o de ti a un punto. Cada cambio gira el mapa una vez
   const [vista, setVista] = useState(null);
-  // La orientación desde ti no pisa el zoom al green (Z14): solo el encuadre,
-  // la línea desde ti y su codo siguen
-  const ponerVistaDelGps = useCallback(
-    (nueva) => setVista((actual) => vistaQueGana(actual, nueva)),
-    [],
-  );
+  // La orientación desde ti no pisa el zoom al green recién decidido (Z14): solo
+  // el encuadre, la línea desde ti y su codo siguen. Lo de después, sí
+  const vistaRecien = useVistaRecienPedida(vista);
+  const ponerVistaDelGps = (nueva) =>
+    setVista(vistaQueGana(vistaRecien, nueva));
   const conVistaRef = useRef(false);
   // Sin WebGL (móviles viejos, o desactivado) no hay mapa, pero el recuadro de
   // la tarjeta sigue, que no lo necesita
@@ -406,7 +408,7 @@ const MapaDelHoyo = ({
   );
   // Después de lo del GPS: el zoom al green gana (Z14)
   const sinZoomAlGreen = useAcercarseAlGreen(
-    { posicionBuena, green, lejos, fase, medido, reporte },
+    { posicionBuena, green, lejos, fase, medido, reporte, vistaRecien },
     setVista,
   );
   const textoDeTramo = useCallback(
