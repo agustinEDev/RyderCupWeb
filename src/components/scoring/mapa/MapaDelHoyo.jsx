@@ -615,6 +615,7 @@ const MapaDelHoyo = ({
     greenConocido,
     greenMarcado,
     par,
+    hoyo,
   });
 
   return (

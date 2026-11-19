@@ -18,6 +18,7 @@ export const useAyudaParaMarcar = ({
   greenConocido,
   greenMarcado,
   par,
+  hoyo,
 }) => {
   const { vista, marcarVista } = useGuiaParaMarcarVista(userId);
   const [pedida, setPedida] = useState(false);
@@ -41,6 +42,8 @@ export const useAyudaParaMarcar = ({
       // El que trae el hoyo o el recién tocado tras el «No»
       greenYaPuesto: greenConocido ?? greenMarcado,
       par,
+      // La línea aprobada: si ya trae sus codos, no habrá placa del último paso
+      lineaAprobada: hoyo?.playLine,
     }),
   };
 };
