@@ -34,17 +34,6 @@ class IEnrollmentRepository {
   }
 
   /**
-   * Buscar enrollment por su ID
-   *
-   * @param {EnrollmentId|string} enrollmentId - ID del enrollment
-   * @returns {Promise<Enrollment|null>} Enrollment encontrado o null si no existe
-   * @throws {Error} Si falla la operación
-   */
-  async findById(enrollmentId) {
-    throw new Error('Method findById() must be implemented');
-  }
-
-  /**
    * Buscar enrollments de una competición
    *
    * Equivalente a backend: enrollment_repository.find_by_competition()

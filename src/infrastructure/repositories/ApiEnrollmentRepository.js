@@ -115,34 +115,6 @@ class ApiEnrollmentRepository extends IEnrollmentRepository {
   }
 
   /**
-   * Buscar enrollment por ID
-   *
-   * @param {string} competitionId
-   * @param {string} enrollmentId
-   * @returns {Promise<Enrollment|null>}
-   */
-  // @ts-expect-error -- IEnrollmentRepository declara findById(enrollmentId) y aquí son dos parámetros; nadie lo llama. Pendiente de decidir (alinear o quitar)
-  async findById(competitionId, enrollmentId) {
-    try {
-      const apiData = await this.#request(
-        `/api/v1/competitions/${segmento(competitionId)}/enrollments/${segmento(enrollmentId)}`,
-      );
-
-      if (!apiData) {
-        return null;
-      }
-
-      return EnrollmentMapper.toDomain(apiData);
-    } catch (error) {
-      // Si es 404, retornar null en lugar de lanzar error
-      if (error.message.includes('404')) {
-        return null;
-      }
-      throw error;
-    }
-  }
-
-  /**
    * Buscar enrollments de una competición
    *
    * @param {string} competitionId
