@@ -3,6 +3,23 @@ import Password from '../../../domain/value_objects/Password';
 
 /** @typedef {import('../../../domain/repositories/IUserRepository').default} IUserRepository */
 
+/**
+ * Los datos de seguridad mientras se convierten: llegan como cadenas y cada
+ * campo pasa a su value object antes de ir al repositorio.
+ * @typedef {Object} DatosDeSeguridadEnCurso
+ * @property {string|Password} [current_password]
+ * @property {string|Password} [new_password]
+ * @property {string|Email} [new_email]
+ */
+
+/**
+ * Lo que recibe el repositorio: los mismos campos, ya como value objects.
+ * @typedef {Object} DatosDeSeguridadConvertidos
+ * @property {Password} [current_password]
+ * @property {Password} [new_password]
+ * @property {Email} [new_email]
+ */
+
 class UpdateUserSecurityUseCase {
   /**
    * @param {Object} dependencies - Objeto de dependencias.
@@ -27,14 +44,16 @@ class UpdateUserSecurityUseCase {
       throw new Error('User ID and security data are required');
     }
 
-    // Llegan cadenas y al repositorio van sus value objects (Email, Password):
-    // el mismo objeto cambia de forma, de ahí el tipo abierto
-    /** @type {Record<string, any>} */
+    // Llegan cadenas y al repositorio van sus value objects (Email, Password).
+    // Cada campo se lee como cadena justo antes de convertirlo
+    /** @type {DatosDeSeguridadEnCurso} */
     const dataToUpdate = { ...securityData };
 
     // Si existe new_email, convertirlo a Email Value Object
     if (dataToUpdate.new_email) {
-      dataToUpdate.new_email = new Email(dataToUpdate.new_email);
+      dataToUpdate.new_email = new Email(
+        /** @type {string} */ (dataToUpdate.new_email),
+      );
     }
 
     // 2. Si existe current_password, convertirlo a Password Value Object.
@@ -42,7 +61,7 @@ class UpdateUserSecurityUseCase {
     // puso antes de la política actual no podría cambiarla nunca
     if (dataToUpdate.current_password) {
       dataToUpdate.current_password = new Password(
-        dataToUpdate.current_password,
+        /** @type {string} */ (dataToUpdate.current_password),
         {
           validateStrength: false,
         },
@@ -51,13 +70,16 @@ class UpdateUserSecurityUseCase {
 
     // 3. Si existe new_password, convertirlo a Password Value Object
     if (dataToUpdate.new_password) {
-      dataToUpdate.new_password = new Password(dataToUpdate.new_password);
+      dataToUpdate.new_password = new Password(
+        /** @type {string} */ (dataToUpdate.new_password),
+      );
     }
     // Nota: El confirm_password se valida en la capa de UI. El VO Password solo valida una contraseña.
 
+    // Aquí cada campo que venía ya es su value object
     const updatedUser = await this.userRepository.updateSecurity(
       userId,
-      dataToUpdate,
+      /** @type {DatosDeSeguridadConvertidos} */ (dataToUpdate),
     );
 
     return updatedUser;
