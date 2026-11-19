@@ -137,7 +137,8 @@ const API_URL = getApiBaseUrl();
 /**
  * Make authenticated API request with httpOnly cookies and automatic token refresh
  * @param {string} endpoint - API endpoint (e.g., '/api/v1/competitions')
- * @param {RequestInit & {topeMs?: number}} [options] - Fetch options. Con `topeMs`, la petición se corta
+ * @param {Omit<RequestInit, 'headers'> & {headers?: Record<string, string>, topeMs?: number}} [options] -
+ *   Fetch options; the headers are spread into a plain object, so only a string record. Con `topeMs`, la petición se corta
  *   a ese tiempo y se trata como falta de cobertura (FE #624). Cubre la petición
  *   ENTERA: un refresco del token y su reintento, y el cuerpo, que puede
  *   colgarse después de las cabeceras. No se le pasa a `fetch`, y no se combina
