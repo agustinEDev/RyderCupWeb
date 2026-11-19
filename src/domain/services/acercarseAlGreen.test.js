@@ -138,9 +138,20 @@ describe('giroAlGreen', () => {
   });
 
   it('en el centro, sin línea: de la salida al green', () => {
+    // Una salida al suroeste: su giro no es el norte que da un rumbo nulo
+    const salida = puntoDesde(CENTRO, 225, 300);
+
     expect(
-      giroAlGreen({ desde: CENTRO, green: GREEN, linea: [SALIDA], par: 4 }),
-    ).toBeCloseTo(rumbo(SALIDA, CENTRO), 9);
+      giroAlGreen({ desde: CENTRO, green: GREEN, linea: [salida], par: 4 }),
+    ).toBeCloseTo(rumbo(salida, CENTRO), 9);
+  });
+
+  it('en el centro y sin salida no se rompe: un giro de verdad', () => {
+    expect(
+      Number.isFinite(
+        giroAlGreen({ desde: CENTRO, green: GREEN, linea: [], par: 4 }),
+      ),
+    ).toBe(true);
   });
 
   it('cerca y sin salida, de ti al green', () => {
