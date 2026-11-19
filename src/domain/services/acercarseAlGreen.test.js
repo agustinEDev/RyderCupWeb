@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   ZOOM_AL_GREEN_M,
-  GIRO_DEL_HOYO_M,
+  SIN_RUMBO_M,
   tocaAcercarseAlGreen,
   encuadreAlGreen,
   giroAlGreen,
@@ -103,73 +103,53 @@ const DEL_HOYO = rumboDeLaLinea(LINEA, 4);
 const delante = (m) => puntoDesde(CENTRO, 160, m);
 
 describe('giroAlGreen', () => {
-  it('cerca del green, a menos de 30 m, el del hoyo', () => {
-    expect(GIRO_DEL_HOYO_M).toBe(30);
+  // Agustín, 19 nov: siempre de ti al centro del green; en el centro, sin rumbo
+  // posible (a menos de 1 m), el del hoyo
+  it('a menos de 1 m del centro no hay rumbo fiable', () => {
+    expect(SIN_RUMBO_M).toBe(1);
   });
 
   it.each([
-    ['lejos (80 m): de ti al green', delante(80), 'deTi'],
-    ['a 31 m: de ti al green', delante(31), 'deTi'],
-    ['a 29 m: el del hoyo', delante(29), 'hoyo'],
-    ['en el centro exacto: el del hoyo', CENTRO, 'hoyo'],
-    [
-      'pasado el green (50 m más allá del último tramo): el del hoyo',
-      puntoDesde(CENTRO, rumbo(CODO, CENTRO), 50),
-      'hoyo',
-    ],
-  ])('%s', (_caso, desde, esperado) => {
-    const giro = giroAlGreen({ desde, green: GREEN, linea: LINEA, par: 4 });
-
-    expect(giro).toBeCloseTo(
-      esperado === 'hoyo' ? DEL_HOYO : rumbo(desde, CENTRO),
-      9,
-    );
-  });
-
-  it('pasado el green se mide sobre el último tramo, no de la salida al green (dogleg)', () => {
-    // Codo al oeste del green: el último tramo va al este; tú, al sureste
-    const codo = puntoDesde(CENTRO, 270, 150);
-    const linea = [SALIDA, codo, CENTRO];
-    const desde = puntoDesde(CENTRO, 135, 50);
-
-    expect(giroAlGreen({ desde, green: GREEN, linea, par: 4 })).toBeCloseTo(
-      rumboDeLaLinea(linea, 4),
-      9,
-    );
-  });
-
-  it('el del hoyo es el que se juega: un par 3, de la salida al green', () => {
+    ['lejos (80 m)', delante(80)],
+    ['a 31 m', delante(31)],
+    ['a 29 m', delante(29)],
+    ['a 1,5 m', delante(1.5)],
+    ['pasado el green', puntoDesde(CENTRO, rumbo(CODO, CENTRO), 50)],
+    ['pasado el green en un dogleg', puntoDesde(CENTRO, 135, 50)],
+  ])('%s: de ti al green', (_caso, desde) => {
     expect(
-      giroAlGreen({ desde: delante(10), green: GREEN, linea: LINEA, par: 3 }),
+      giroAlGreen({ desde, green: GREEN, linea: LINEA, par: 4 }),
+    ).toBeCloseTo(rumbo(desde, CENTRO), 9);
+  });
+
+  it.each([
+    ['en el centro exacto', CENTRO],
+    ['a medio metro', delante(0.5)],
+  ])('%s: el del hoyo, con el que se juega', (_caso, desde) => {
+    expect(
+      giroAlGreen({ desde, green: GREEN, linea: LINEA, par: 4 }),
+    ).toBeCloseTo(DEL_HOYO, 9);
+  });
+
+  it('en el centro, un par 3: de la salida al green', () => {
+    expect(
+      giroAlGreen({ desde: CENTRO, green: GREEN, linea: LINEA, par: 3 }),
     ).toBeCloseTo(rumbo(SALIDA, CENTRO), 9);
   });
 
-  it('sin línea, de la salida al green', () => {
+  it('en el centro, sin línea: de la salida al green', () => {
     expect(
-      giroAlGreen({
-        desde: delante(10),
-        green: GREEN,
-        linea: [SALIDA],
-        par: 4,
-      }),
+      giroAlGreen({ desde: CENTRO, green: GREEN, linea: [SALIDA], par: 4 }),
     ).toBeCloseTo(rumbo(SALIDA, CENTRO), 9);
   });
 
-  it('sin salida, de ti al green, también cerca', () => {
+  it('cerca y sin salida, de ti al green', () => {
     const desde = delante(10);
 
     expect(giroAlGreen({ desde, green: GREEN, linea: [], par: 4 })).toBeCloseTo(
       rumbo(desde, CENTRO),
       9,
     );
-  });
-
-  it('sin el green en la línea, el último tramo acaba en su último punto', () => {
-    const desde = puntoDesde(CENTRO, rumbo(CODO, CENTRO), 50);
-
-    expect(
-      giroAlGreen({ desde, green: GREEN, linea: [SALIDA, CODO], par: 4 }),
-    ).toBeCloseTo(DEL_HOYO, 9);
   });
 });
 

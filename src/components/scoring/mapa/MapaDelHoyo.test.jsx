@@ -3521,14 +3521,14 @@ describe('MapaDelHoyo — marcar con el GPS y el recuadro desde ti (17 oct)', ()
       expect(mapa().easeTo.mock.calls.length).toBe(antes);
     });
 
-    it('G: a menos de 30 m del green, el giro del hoyo (con el que se juega)', () => {
+    it('G (Agustín, 19 nov): a menos de 30 m del green, el giro sigue siendo de ti al green', () => {
       abrirRecto();
       const aqui = { lat: alNorte(285).lat, lon: T.lon + 0.0001 };
 
       desde(aqui);
 
-      expect(ultimoGiro()).toBeCloseTo(rumbo(T, alNorte(150)), 6);
-      expect(ultimoGiro()).not.toBeCloseTo(rumbo(aqui, VERDE.center), 1);
+      expect(ultimoGiro()).toBeCloseTo(rumbo(aqui, VERDE.center), 6);
+      expect(ultimoGiro()).not.toBeCloseTo(rumbo(T, alNorte(150)), 1);
     });
 
     it('Z13: con el «⋮» abierto espera; al cerrarlo, se acerca', () => {
