@@ -7151,6 +7151,62 @@ describe('MapaDelHoyo — ayuda para marcar (19 nov)', () => {
       },
     );
 
+    it.each([
+      ['par 4', {}, ['mapa.guia.salida', 'mapa.guia.green', 'mapa.guia.curva']],
+      [
+        'par 5',
+        { par: 5 },
+        ['mapa.guia.salida', 'mapa.guia.green', 'mapa.guia.curva'],
+      ],
+      [
+        'par 3',
+        { par: 3, metros: 150 },
+        ['mapa.guia.salida', 'mapa.guia.green'],
+      ],
+    ])(
+      'el hoyo entero en un %s: la curva solo si habrá puntos',
+      (_caso, props, pasos) => {
+        sinPregunta(props);
+
+        expect(pasosDeLaGuia(laGuia())).toEqual(pasos);
+      },
+    );
+
+    it('tras el «No», el «?» abre «Marca el green»', () => {
+      guia.vistas.add('u-1');
+      conPregunta();
+      no();
+
+      fireEvent.click(ayuda());
+
+      expect(laGuiaDelGreen()).toBeInTheDocument();
+      expect(laGuia()).toBeNull();
+    });
+
+    it.each([
+      [
+        'con puntos en medio (OSM casi recta): sin número, y la placa sale igual',
+        [T, alNorte(100), alNorte(200), alNorte(280)],
+        null,
+        true,
+      ],
+      [
+        'salida y final: «Paso 1 de 2», y la placa',
+        [T, alNorte(280)],
+        [1, 2],
+        true,
+      ],
+    ])('solo el green %s', (_caso, playLine, numero, conPlaca) => {
+      guia.vistas.add('u-1');
+      soloGreen({ hoyo: { playLine, green: null } });
+
+      if (numero) expect(screen.getByText(paso(...numero))).toBeInTheDocument();
+      else expect(pasoVisto()).toBeNull();
+      tocar(G);
+
+      expect(Boolean(screen.queryByText('mapa.ultimoPaso'))).toBe(conPlaca);
+    });
+
     it('vista la del green, tampoco sale la del hoyo entero (una sola marca)', () => {
       const { unmount } = soloGreen();
       empezarGuia();

@@ -41,6 +41,33 @@ describe('useGuiaParaMarcarVista (T1)', () => {
     ).toBe(false);
   });
 
+  it('si cambia el usuario, se vuelve a leer: el nuevo, que no la vio, la ve', () => {
+    caso.vistas.add('u-1');
+    const { result, rerender } = renderHook(
+      ({ id }) => useGuiaParaMarcarVista(id),
+      { initialProps: { id: 'u-1' } },
+    );
+    expect(result.current.vista).toBe(true);
+
+    rerender({ id: 'u-2' });
+
+    expect(result.current.vista).toBe(false);
+  });
+
+  it('marcada por uno, al cambiar a otro que la vio, vista; y a uno que no, no', () => {
+    caso.vistas.add('u-3');
+    const { result, rerender } = renderHook(
+      ({ id }) => useGuiaParaMarcarVista(id),
+      { initialProps: { id: 'u-2' } },
+    );
+    act(() => result.current.marcarVista());
+
+    rerender({ id: 'u-3' });
+    expect(result.current.vista).toBe(true);
+    rerender({ id: 'u-4' });
+    expect(result.current.vista).toBe(false);
+  });
+
   it('sin usuario: vista mientras dure el mapa, aunque no se guarde', () => {
     const { result } = renderHook(() => useGuiaParaMarcarVista(null));
 

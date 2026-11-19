@@ -71,6 +71,23 @@ describe('GuiaParaMarcar', () => {
     },
   );
 
+  it.each([
+    ['con puntos que arrastrar', true, ['salida', 'green', 'curva']],
+    ['sin puntos que arrastrar (par 3)', false, ['salida', 'green']],
+  ])('la guía completa, %s', (_caso, conCurva, pasos) => {
+    render(
+      <GuiaParaMarcar t={t} abierta conCurva={conCurva} onCerrar={vi.fn()} />,
+    );
+
+    expect(
+      within(screen.getByRole('dialog'))
+        .getAllByRole('listitem')
+        .map((li) => li.textContent),
+    ).toEqual(
+      pasos.map((paso) => `mapa.guia.${paso}Titulomapa.guia.${paso}Texto`),
+    );
+  });
+
   it('B2: es un diálogo modal con su título enlazado, y el foco entra', () => {
     const { dialogo } = abrir();
 

@@ -114,9 +114,9 @@ describe('pasoDeLaMarca (P1-P5 y par 3)', () => {
       null,
     ],
     [
-      'solo el green sobre una línea con un codo en un par 5 (falta otro): «1 de 2»',
+      'solo el green sobre una línea con un codo en un par 5: con puntos en medio, sin número',
       { marcandoSalida: false, lineaAprobada: [T, CODO, G], par: 5 },
-      { n: 1, de: 2 },
+      null,
     ],
     [
       'solo el green sobre una línea con dos codos en un par 5: sin número',
@@ -124,16 +124,26 @@ describe('pasoDeLaMarca (P1-P5 y par 3)', () => {
       null,
     ],
     [
-      'solo el green sobre una línea de OSM casi recta: se añadirá el codo, «1 de 2»',
+      'solo el green sobre una línea de OSM casi recta: depende del toque, sin número',
       {
         marcandoSalida: false,
         lineaAprobada: [T, EN_LA_RECTA(0.3), EN_LA_RECTA(0.6), G],
       },
+      null,
+    ],
+    [
+      'solo el green sobre una línea con la salida repetida: con puntos en medio, sin número',
+      { marcandoSalida: false, lineaAprobada: [T, T, G] },
+      null,
+    ],
+    [
+      'solo el green sobre salida y final (sin puntos en medio), par 4: «1 de 2»',
+      { marcandoSalida: false, lineaAprobada: [T, G] },
       { n: 1, de: 2 },
     ],
     [
-      'solo el green sobre una línea con la salida repetida: «1 de 2»',
-      { marcandoSalida: false, lineaAprobada: [T, T, G] },
+      'solo el green sobre salida y final, par 5: «1 de 2»',
+      { marcandoSalida: false, lineaAprobada: [T, G], par: 5 },
       { n: 1, de: 2 },
     ],
     [
@@ -151,20 +161,22 @@ describe('pasoDeLaMarca (P1-P5 y par 3)', () => {
   });
 });
 
-describe('habraPuntosQueArrastrar (la misma regla que construye la línea)', () => {
+describe('habraPuntosQueArrastrar (solo el green: seguro, o sin número)', () => {
   it.each([
     ['la salida sola, par 4', [T], 4, true],
+    ['la salida sola, par 5', [T], 5, true],
     ['la salida sola, par 3', [T], 3, false],
+    ['salida y final, par 4', [T, G], 4, true],
+    ['salida y final, par 3', [T, G], 3, false],
     ['con su codo, par 4', [T, CODO, G], 4, false],
-    ['con un codo, par 5 (falta otro)', [T, CODO, G], 5, true],
-    ['con dos codos, par 5', [T, CODO, CODO_2, G], 5, false],
+    ['con un codo, par 5: puntos en medio, no se sabe', [T, CODO, G], 5, false],
     [
-      'OSM casi recta, par 4',
+      'OSM casi recta, par 4: puntos en medio, no se sabe',
       [T, EN_LA_RECTA(0.3), EN_LA_RECTA(0.6), G],
       4,
-      true,
+      false,
     ],
-    ['la salida repetida, par 4', [T, T, G], 4, true],
+    ['la salida repetida, par 4', [T, T, G], 4, false],
     ['sin línea', [], 4, false],
   ])('%s', (_caso, linea, par, esperado) => {
     expect(habraPuntosQueArrastrar(linea, par)).toBe(esperado);
