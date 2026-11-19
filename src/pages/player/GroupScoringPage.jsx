@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { barraDe } from '../../domain/services/muestrasDeLaBarra';
 import { useParams, useSearchParams, Link } from 'react-router';
 import { useTranslation } from 'react-i18next';
@@ -10,15 +10,9 @@ import { useMapaDelHoyo } from '../../hooks/useMapaDelHoyo';
 import BotonMapa from '../../components/scoring/mapa/BotonMapa';
 import VentanaDelMapa from '../../components/scoring/mapa/VentanaDelMapa';
 import { ORIGEN_PARTIDA_DE_FRANJA } from '../../hooks/origenesDeAnotacion';
-import { retireFromTeeGroupUseCase } from '../../composition';
-import customToast from '../../utils/toast';
-import { mensajeDeErrorDePartida } from '../../utils/erroresDePartida';
 import { conGenero } from '../../utils/genero';
 import { claveDelAvisoDelVaciado } from '../../utils/erroresDeAnotacion';
-import {
-  abreMasTarde,
-  horaDelCampo,
-} from '../../services/partidosSinCobertura';
+import { horaDelCampo } from '../../services/partidosSinCobertura';
 import HoleInput from '../../components/scoring/HoleInput';
 import CampoDeLaPartida from '../../components/scoring/CampoDeLaPartida';
 import HoleSelector from '../../components/scoring/HoleSelector';
@@ -37,6 +31,8 @@ import {
 } from '../../components/ui/Pestanas';
 import { useAnotacionEnCurso } from '../../hooks/useAnotacionEnCurso';
 import { useGoBack } from '../../hooks/useGoBack';
+import { useAvisoDeQueAunNoAbre } from '../../hooks/useAvisoDeQueAunNoAbre';
+import { useRetiradaDeLaPartida } from '../../hooks/useRetiradaDeLaPartida';
 import {
   PESTANAS_DE_LA_PARTIDA_DE_QUIEN_MIRA,
   PESTANAS_DE_LA_PARTIDA_DEL_JUGADOR,
@@ -58,8 +54,6 @@ import {
 // Quien juega anota; quien no, mira las tarjetas y la clasificación (caso 13)
 const PESTANAS_DEL_JUGADOR = PESTANAS_DE_LA_PARTIDA_DEL_JUGADOR;
 const PESTANAS_DE_QUIEN_MIRA = PESTANAS_DE_LA_PARTIDA_DE_QUIEN_MIRA;
-// El temporizador más largo que admite el navegador
-const MAXIMO_TEMPORIZADOR_MS = 2 ** 31 - 1;
 
 /**
  * Anotar una partida de stroke play (FE #824, PR 7; tabla aprobada por
@@ -82,9 +76,6 @@ const GroupScoringPage = () => {
   const { isAdmin, isCreator } = useUserRoles(competitionId, user?.id);
   const [pestana, setPestana] = useState(null);
   const [verEntrega, setVerEntrega] = useState(false);
-  const [retirandose, setRetirandose] = useState(false);
-  const [ocupado, setOcupado] = useState(false);
-  const [, marcaLaHora] = useState(0);
 
   const {
     scoringView,
@@ -122,11 +113,9 @@ const GroupScoringPage = () => {
     user?.is_admin ?? false,
     ORIGEN_PARTIDA_DE_FRANJA,
   );
+  const { retirandose, ocupado, retirarse, pedirRetirada, cancelarRetirada } =
+    useRetiradaDeLaPartida({ groupId, t, refetch });
 
-  const aunNoAbre = abreMasTarde({
-    status: scoringView?.matchStatus,
-    scoringOpensAt: scoringView?.scoringOpensAt,
-  });
   // El mapa del hoyo (BE #532): «Mapa» en la tarjeta lo abre a pantalla completa
   const mapaDelHoyo = useMapaDelHoyo({
     golfCourseId: scoringView?.roundInfo?.golfCourseId ?? null,
@@ -134,14 +123,8 @@ const GroupScoringPage = () => {
     // Su país: solo hay imagen en España (19 oct)
     pais: scoringView?.roundInfo?.golfCourseCountryCode ?? null,
   });
-  // Que el aviso caduque solo: sin cobertura el sondeo no corre
-  useEffect(() => {
-    if (!aunNoAbre) return undefined;
-    const falta = aunNoAbre.getTime() - Date.now();
-    if (falta <= 0 || falta > MAXIMO_TEMPORIZADOR_MS) return undefined;
-    const aviso = setTimeout(() => marcaLaHora((n) => n + 1), falta + 1000);
-    return () => clearTimeout(aviso);
-  }, [aunNoAbre]);
+  // El aviso de que aún no abre, que caduca solo: sin cobertura el sondeo no corre
+  const aunNoAbre = useAvisoDeQueAunNoAbre(scoringView);
 
   const pestanas = isMatchPlayer
     ? PESTANAS_DEL_JUGADOR
@@ -249,22 +232,6 @@ const GroupScoringPage = () => {
     canSubmitScorecard,
     partidoAcabado,
   });
-
-  const retirarse = async () => {
-    setOcupado(true);
-    try {
-      await retireFromTeeGroupUseCase.execute(groupId);
-      setRetirandose(false);
-      customToast.success(t('partida.retired'));
-      await refetch();
-    } catch (err) {
-      customToast.error(mensajeDeErrorDePartida(t, err));
-      // La confirmación no se queda abierta tras el error (revisor)
-      setRetirandose(false);
-    } finally {
-      setOcupado(false);
-    }
-  };
 
   const hoyosNoGuardados = hoyosNoGuardadosDe(noGuardados);
   const golpesDelSelector = golpesDelSelectorDeLaPartida({
@@ -536,7 +503,7 @@ const GroupScoringPage = () => {
                       </button>
                       <button
                         type="button"
-                        onClick={() => setRetirandose(false)}
+                        onClick={cancelarRetirada}
                         className="min-h-11 rounded-md px-3"
                       >
                         {t('partida.no')}
@@ -545,7 +512,7 @@ const GroupScoringPage = () => {
                   ) : (
                     <button
                       type="button"
-                      onClick={() => setRetirandose(true)}
+                      onClick={pedirRetirada}
                       className="min-h-11 w-full rounded-lg border border-red-200 text-sm font-medium text-red-600"
                     >
                       {t('partida.retire')}
