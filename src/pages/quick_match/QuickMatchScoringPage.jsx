@@ -8,27 +8,26 @@ import { useAuth } from '../../hooks/useAuth';
 import { useQuickMatchScoring } from '../../hooks/useQuickMatchScoring';
 import { useMapaDelHoyo } from '../../hooks/useMapaDelHoyo';
 import AvisosDePartidaRapida from '../../components/quick_match/AvisosDePartidaRapida';
+import AvisoDePendientesRapida from '../../components/quick_match/AvisoDePendientesRapida';
+import AvisoSinActualizarRapida from '../../components/quick_match/AvisoSinActualizarRapida';
+import ErrorDeCargaRapida from '../../components/quick_match/ErrorDeCargaRapida';
 import DialogosDePartidaRapida from '../../components/quick_match/DialogosDePartidaRapida';
 import PestanaDeAnotarRapida from '../../components/quick_match/PestanaDeAnotarRapida';
 import CampoDeLaPartida from '../../components/scoring/CampoDeLaPartida';
 import PestanaDeClasificacionRapida from '../../components/quick_match/PestanaDeClasificacionRapida';
 import QuickMatchScorecardTable from '../../components/quick_match/QuickMatchScorecardTable';
 import BlockLoader from '../../components/ui/BlockLoader';
-import AnotarSinConexion from '../../components/scoring/AnotarSinConexion';
 import {
   GrupoDePestanas,
   ListaDePestanas,
   PanelDePestana,
 } from '../../components/ui/Pestanas';
-import { useSinConexion } from '../../hooks/useSinConexion';
+import { useSinConexionDeLaRapida } from '../../hooks/useSinConexionDeLaRapida';
 import { useAnotacionEnCurso } from '../../hooks/useAnotacionEnCurso';
 import { useMiVueltaRapida } from '../../hooks/useMiVueltaRapida';
 import { useFocoDeLosDialogos } from '../../hooks/useFocoDeLosDialogos';
 import { casillasDelHoyo } from '../../utils/casillasDelHoyo';
-import {
-  claveDeFallo,
-  loadErrorKeyFor,
-} from '../../utils/textosDePartidaRapida';
+import { claveDeFallo } from '../../utils/textosDePartidaRapida';
 import { PESTANAS_DE_LA_RAPIDA } from '../../utils/pestanasDeLaAnotacion';
 import { isFreePlay } from '../../domain/value_objects/ScoringFormat';
 
@@ -128,43 +127,22 @@ const QuickMatchScoringPage = () => {
       ? t('scoring.offline.pickedUp')
       : valor;
 
-  // Quedarse sin cobertura no es un error: el sondeo falla cada diez segundos
-  // y la pantalla ya lo cuenta en ámbar. El rojo, además, quedaba justo debajo
-  // del ámbar diciendo lo contrario. Un fallo CON estado sí es un error de
-  // verdad —el servidor contestó algo— y ese se sigue enseñando
-  // O bien no hubo respuesta, o bien lo que se está viendo sale de la memoria
-  // del móvil: en los dos casos lo que hay en pantalla puede no estar al día, y
-  // en ninguno es un error. Con un 5xx la pantalla se pintaba entera desde el
-  // móvil bajo un recuadro rojo, sin decir que era una foto de antes
-  const sinConexion = useSinConexion();
-  const sondeoSinRespuesta =
-    (!!loadError &&
-      (loadError.status ?? loadError.response?.status) === undefined) ||
-    !!pintadoDeMemoria;
-  const errorDeVerdad = saveError || (loadError && !sondeoSinRespuesta);
+  // Sin cobertura no es un error; un fallo con estado, sí
+  const { sinConexion, sondeoSinRespuesta, errorDeVerdad } =
+    useSinConexionDeLaRapida({ loadError, saveError, pintadoDeMemoria });
 
   const hoyosPerdidos = [
     ...new Set((perdidos ?? []).map((x) => x.holeNumber)),
   ].sort((a, b) => a - b);
 
-  // Sin red (lo dice el navegador), las pendientes van en el aviso de arriba,
-  // uno solo, como en la Ryder y las partidas (regresión del 12 oct 2026). Con
-  // red pero sin salir (dos barras), el recuadro de siempre
-  const avisoDePendientes =
-    sinConexion && (isScorer || pendientes > 0) ? (
-      <AnotarSinConexion pendingCount={pendientes} />
-    ) : (
-      pendientes > 0 && (
-        <div className="max-w-4xl mx-auto px-4 pt-4">
-          <p
-            data-testid="quick-match-pendientes"
-            className="bg-amber-50 border border-amber-200 text-amber-800 rounded-lg p-3 text-sm"
-          >
-            {t('scoring.offline.pending', { count: pendientes })}
-          </p>
-        </div>
-      )
-    );
+  const avisoDePendientes = (
+    <AvisoDePendientesRapida
+      t={t}
+      sinConexion={sinConexion}
+      isScorer={isScorer}
+      pendientes={pendientes}
+    />
+  );
   const nombreDelAnotador = discrepancia
     ? quickMatch?.participants?.find(
         (p) => p.participantId === discrepancia.anotadoPor,
@@ -214,25 +192,12 @@ const QuickMatchScoringPage = () => {
       <div className="min-h-screen bg-gray-50">
         <HeaderAuth user={user} />
         {avisoDePendientes}
-        <div className="max-w-4xl mx-auto px-4 py-6 text-center">
-          {/* La misma regla que en el resto de la pantalla: quedarse sin
-              cobertura no es un error, y aquí llegaba como «ha ocurrido un
-              error», que suena a que algo se ha roto */}
-          <p
-            className={sondeoSinRespuesta ? 'text-amber-800' : 'text-red-600'}
-            data-testid="quick-match-scoring-error"
-          >
-            {sondeoSinRespuesta
-              ? t('scoring.offline.noSeActualiza')
-              : t(loadErrorKeyFor(loadError))}
-          </p>
-          <button
-            onClick={refetch}
-            className="mt-4 px-4 py-2 bg-primary text-white rounded-lg"
-          >
-            {t('scoring.retry')}
-          </button>
-        </div>
+        <ErrorDeCargaRapida
+          t={t}
+          sondeoSinRespuesta={sondeoSinRespuesta}
+          loadError={loadError}
+          refetch={refetch}
+        />
       </div>
     );
   }
@@ -320,19 +285,12 @@ const QuickMatchScoringPage = () => {
           guardar primero porque es lo que el anotador acaba de intentar. */}
       {avisoDePendientes}
 
-      {/* Que no haya golpes pendientes no quita que la pantalla lleve un rato
-          sin actualizarse: sin decirlo, se lee como si estuviera al día */}
-      {/* Sin red, ya lo dice el aviso de arriba: uno solo (revisor) */}
-      {sondeoSinRespuesta && !sinConexion && quickMatch && pendientes === 0 && (
-        <div className="max-w-4xl mx-auto px-4 pt-4">
-          <p
-            data-testid="quick-match-sin-conexion"
-            className="bg-amber-50 border border-amber-200 text-amber-800 rounded-lg p-3 text-sm"
-          >
-            {t('scoring.offline.noSeActualiza')}
-          </p>
-        </div>
-      )}
+      <AvisoSinActualizarRapida
+        t={t}
+        visible={
+          sondeoSinRespuesta && !sinConexion && quickMatch && pendientes === 0
+        }
+      />
 
       <AvisosDePartidaRapida
         t={t}
