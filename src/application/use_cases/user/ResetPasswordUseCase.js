@@ -1,7 +1,6 @@
 import Password from '../../../domain/value_objects/Password.js';
 
 /** @typedef {import('../../../domain/repositories/IAuthRepository').default} IAuthRepository */
-/** @typedef {import('../../../domain/repositories/IAuthRepository').PasswordResetMethods} PasswordResetMethods */
 
 /**
  * Use Case para completar el reset de contraseña
@@ -13,7 +12,7 @@ import Password from '../../../domain/value_objects/Password.js';
 class ResetPasswordUseCase {
   /**
    * @param {Object} dependencies - Objeto de dependencias
-   * @param {IAuthRepository & PasswordResetMethods} dependencies.authRepository - Repositorio de autenticación
+   * @param {IAuthRepository} dependencies.authRepository - Repositorio de autenticación
    */
   constructor({ authRepository }) {
     this.authRepository = authRepository;

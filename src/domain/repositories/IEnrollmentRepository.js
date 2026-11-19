@@ -1,11 +1,11 @@
 /** @typedef {import('../entities/Enrollment').default} Enrollment */
-/** @typedef {import('../value_objects/EnrollmentId').default} EnrollmentId */
 
 /**
  * Interface: IEnrollmentRepository
  *
  * Define el contrato de persistencia para Enrollments.
- * Compatible con backend Python: IEnrollmentRepository (Abstract Base Class).
+ * Se inspira en el IEnrollmentRepository del backend, pero solo declara lo que el
+ * front usa (por ejemplo, no tiene find_by_id).
  *
  * Responsabilidades:
  * - Definir operaciones de persistencia (CRUD + queries)
@@ -17,9 +17,8 @@
  * - El Infrastructure Layer implementa el contrato (ApiEnrollmentRepository)
  * - Los Use Cases dependen de la interfaz, NO de la implementación
  *
- * Implementaciones esperadas:
- * - ApiEnrollmentRepository (REST API con fetch)
- * - MockEnrollmentRepository (para tests)
+ * Implementación: ApiEnrollmentRepository (REST API con fetch). Los tests usan
+ * dobles con vi.fn().
  */
 class IEnrollmentRepository {
   /**
@@ -31,17 +30,6 @@ class IEnrollmentRepository {
    */
   async save(enrollment) {
     throw new Error('Method save() must be implemented');
-  }
-
-  /**
-   * Buscar enrollment por su ID
-   *
-   * @param {EnrollmentId|string} enrollmentId - ID del enrollment
-   * @returns {Promise<Enrollment|null>} Enrollment encontrado o null si no existe
-   * @throws {Error} Si falla la operación
-   */
-  async findById(enrollmentId) {
-    throw new Error('Method findById() must be implemented');
   }
 
   /**

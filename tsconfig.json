@@ -3,7 +3,8 @@
     // Target and Module
     "target": "ES2020",
     "module": "ESNext",
-    "lib": ["ES2020", "DOM", "DOM.Iterable"],
+    // El código ya usa Array.prototype.at, Object.hasOwn y demás de ES2022, que el build admite
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
     "moduleResolution": "bundler",
 
     // JSX Support for React

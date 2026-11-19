@@ -102,6 +102,7 @@ class ApiAuthRepository extends IAuthRepository {
    * Request password reset email
    * @param {string} email - User email address
    * @returns {Promise<{message: string}>} Success message (always generic for anti-enumeration)
+   * @override
    */
   async requestPasswordReset(email) {
     const data = await apiRequest('/api/v1/auth/forgot-password', {
@@ -121,6 +122,7 @@ class ApiAuthRepository extends IAuthRepository {
    * @returns {Promise<{valid: boolean, message: string}>} Token validation result.
    *   An invalid or expired token is a 200 with valid:false, not an error (FE #775)
    * @throws {Error} On network or HTTP errors (e.g. 429 from the rate limit)
+   * @override
    */
   async validateResetToken(token) {
     // POST con el token en el cuerpo (fase 3): en la URL acababa en los logs de acceso
@@ -143,6 +145,7 @@ class ApiAuthRepository extends IAuthRepository {
    * @param {string} newPassword - New password (already validated by Use Case)
    * @returns {Promise<{message: string}>} Success message
    * @throws {Error} If token is invalid/expired or password doesn't meet requirements
+   * @override
    */
   async resetPassword(token, newPassword) {
     const data = await apiRequest('/api/v1/auth/reset-password', {
