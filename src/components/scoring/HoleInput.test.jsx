@@ -1554,6 +1554,54 @@ describe('HoleInput · caracterización (partir el componente)', () => {
     expect(huecos.children[2]).toHaveTextContent('input.otherPut');
   });
 
+  it.each([
+    ['own', true],
+    ['own', false],
+    ['marked', true],
+    ['marked', false],
+    ['second-marked', true],
+    ['second-marked', false],
+  ])(
+    'el teclado de la casilla %s ofrece la raya solo si se permite (%s)',
+    (prefijo, permitida) => {
+      render(
+        <HoleInput
+          {...props}
+          onScoreChange={vi.fn()}
+          secondMarked={dani}
+          onSecondMarkedChange={vi.fn()}
+          allowPickedUp={permitida}
+        />,
+      );
+
+      fireEvent.click(screen.getByTestId(`${prefijo}-score-button`));
+
+      expect(screen.queryByTestId('picked-up-button') !== null).toBe(permitida);
+    },
+  );
+
+  it('el teclado del segundo, sin su par, usa el del hoyo', () => {
+    render(
+      <HoleInput
+        {...props}
+        onScoreChange={vi.fn()}
+        secondMarked={{ ...dani, par: undefined }}
+        onSecondMarkedChange={vi.fn()}
+      />,
+    );
+
+    fireEvent.click(screen.getByTestId('second-marked-score-button'));
+
+    // Par 4 del hoyo: el 4 es el par y el 3, birdie
+    const teclado = screen.getByRole('dialog');
+    expect(
+      within(teclado).getByRole('button', { name: /^4/ }),
+    ).toHaveTextContent('input.par');
+    expect(
+      within(teclado).getByRole('button', { name: /^3/ }),
+    ).toHaveTextContent('input.scoreBirdie');
+  });
+
   it('el pie: un neto de 0 se enseña (no es «sin neto»)', () => {
     render(<HoleInput {...props} onScoreChange={vi.fn()} netScore={0} />);
 
