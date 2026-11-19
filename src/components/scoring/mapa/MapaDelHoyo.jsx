@@ -48,12 +48,15 @@ import {
 } from './useLineaEnElMapa';
 import { useMarcarElHoyo } from './useMarcarElHoyo';
 import { useReporteDelHoyo } from './useReporteDelHoyo';
+import { useAyudaParaMarcar } from './useAyudaParaMarcar';
 import CabeceraDelMapa from './CabeceraDelMapa';
 import IndicacionesDelMapa from './IndicacionesDelMapa';
 import RecuadroDeDistancias from './RecuadroDeDistancias';
 import PieDelMapa from './PieDelMapa';
 import AvisosDelMapa from './AvisosDelMapa';
 import BotonesDeMarcar from './BotonesDeMarcar';
+import GuiaParaMarcar from './GuiaParaMarcar';
+import { seVeElUltimoPaso } from './ayudaParaMarcar';
 
 // Empaquetado, MapLibre no encuentra solo su worker: va como fichero aparte
 setWorkerUrl(urlDelWorker);
@@ -100,6 +103,7 @@ const MapaDelHoyo = ({
   onEmpezar = null,
   colocarSalida = true,
   onReporte = null,
+  userId,
 }) => {
   const { t } = useTranslation('scoring');
   const conMapa = orientacionDelHoyo(hoyo) !== null;
@@ -599,6 +603,19 @@ const MapaDelHoyo = ({
     green,
   });
   const aviso = avisoDelGps(estadoDelGps, t);
+  // La guía y el «Paso N de M» (19 nov): sin WebGL ni reportando, no
+  const ayuda = useAyudaParaMarcar({
+    userId,
+    fase,
+    pidiendo,
+    sinMapa,
+    reporte,
+    marca,
+    marcandoSalida,
+    greenConocido,
+    greenMarcado,
+    par,
+  });
 
   return (
     // `ModalShell`: el foco entra (por «Cerrar», lo primero) y vuelve a «Mapa» al
@@ -652,7 +669,11 @@ const MapaDelHoyo = ({
           posicionBuena={posicionBuena}
           aviso={aviso}
           tocado={tocado}
-          conAyudaDeCodos={conAyudaDeCodos}
+          ultimoPaso={seVeElUltimoPaso({ conAyudaDeCodos, avisoDeMarca })}
+          paso={ayuda.paso}
+          botonDeAyudaRef={ayuda.botonDeAyudaRef}
+          onAyuda={ayuda.abrirGuia}
+          onListo={() => setConAyudaDeCodos(false)}
           linea={linea}
           hastaAhi={hastaAhi}
           deAhiAlGreen={deAhiAlGreen}
@@ -719,6 +740,12 @@ const MapaDelHoyo = ({
           }}
         />
       </div>
+
+      <GuiaParaMarcar
+        t={t}
+        abierta={ayuda.guiaAbierta}
+        onCerrar={ayuda.cerrarGuia}
+      />
     </ModalShell>
   );
 };

@@ -434,7 +434,25 @@
       "WRONG_LINE": "The line is wrong",
       "HOLE_CHANGED": "The hole has changed"
     },
-    "reporteSinCodos": "Move the tee or the green if needed"
+    "reporteSinCodos": "Move the tee or the green if needed",
+    "paso": "Step {{n}} of {{de}}",
+    "ultimoPaso": "Last step",
+    "ultimoPasoCurva_one": "If the hole bends, drag the point to the middle of the fairway",
+    "ultimoPasoCurva_other": "If the hole bends, drag the points to the middle of the fairway",
+    "listo": "Done",
+    "comoMarcar": "How to mark a hole",
+    "guia": {
+      "titulo": "Mark this hole",
+      "intro": "This hole isn't on the map yet. By marking it you help everyone who plays this course.",
+      "salidaTitulo": "Your tee",
+      "salidaTexto": "Tap where your tee markers are: distances are measured from there.",
+      "greenTitulo": "The centre of the green",
+      "greenTexto": "Tap the centre, not the flag: the flag moves every day.",
+      "curvaTitulo": "If the hole bends",
+      "curvaTexto": "Drag the point to the middle of the fairway.",
+      "pie": "If you make a mistake, you can mark it again.",
+      "empezar": "Start"
+    }
   },
   "tabsLabel": "Match view",
   "withdraw": {

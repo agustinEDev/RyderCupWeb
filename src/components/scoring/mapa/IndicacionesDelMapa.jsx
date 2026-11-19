@@ -1,5 +1,35 @@
 import { PLACA } from './clasesDelMapa';
 
+// Delante de lo que se pide, en su propio trozo: «Paso 1 de 3 · » (19 nov)
+const Prefijo = ({ texto }) =>
+  texto ? <span className="text-yellow-300">{`${texto} · `}</span> : null;
+
+// El número del paso, si lo lleva: la pregunta y algunos casos van sin él
+const PasoDeLaMarca = ({ t, paso }) =>
+  paso ? <Prefijo texto={t('mapa.paso', paso)} /> : null;
+
+// Tras guardar, llevar los puntos a la calle (P4): «el punto» o «los puntos»
+const PlacaDelUltimoPaso = ({ t, linea, botonDeAyuda, onListo }) => (
+  <div
+    className={`${PLACA} pointer-events-auto flex items-center justify-between gap-2 px-3.5 py-2`}
+  >
+    <span aria-live="polite" className="text-sm">
+      <Prefijo texto={t('mapa.ultimoPaso')} />
+      {t('mapa.ultimoPasoCurva', { count: (linea?.length ?? 3) - 2 })}
+    </span>
+    <span className="flex shrink-0 items-center gap-1">
+      <button
+        type="button"
+        onClick={onListo}
+        className="min-h-11 rounded-xl bg-white px-4 text-[15px] font-semibold text-gray-900"
+      >
+        {t('mapa.listo')}
+      </button>
+      {botonDeAyuda}
+    </span>
+  </div>
+);
+
 // Los motivos de un reporte, en el orden del menú (entrega 7, 18 oct)
 const MOTIVOS_DEL_REPORTE = ['WRONG_HOLE', 'WRONG_LINE', 'HOLE_CHANGED'];
 
@@ -24,7 +54,9 @@ const IndicacionesDelMapa = ({
   posicionBuena,
   aviso,
   tocado,
-  conAyudaDeCodos,
+  ultimoPaso,
+  paso,
+  botonDeAyudaRef,
   linea,
   hastaAhi,
   deAhiAlGreen,
@@ -37,7 +69,22 @@ const IndicacionesDelMapa = ({
   onAhoraNo,
   onQuitarMedido,
   onQuitarTocado,
+  onAyuda,
+  onListo,
 }) => {
+  // El «?» que abre la guía para marcar (B1): 44 px, dentro de su placa
+  const botonDeAyuda = (
+    <button
+      ref={botonDeAyudaRef}
+      type="button"
+      onClick={onAyuda}
+      aria-label={t('mapa.comoMarcar')}
+      className="min-h-11 min-w-11 shrink-0 rounded-xl bg-white/15 text-[15px] font-bold text-white"
+    >
+      ?
+    </button>
+  );
+
   // «Quitar» y, para quien no ve el mapa, los metros (en el mapa van junto a cada línea)
   const quitarYSusMetros = (alQuitar) => (
     <div className="flex items-center">
@@ -156,6 +203,7 @@ const IndicacionesDelMapa = ({
         >
           {t('mapa.no')}
         </button>
+        {botonDeAyuda}
       </span>
     </div>
   ) : pidiendo ? (
@@ -168,6 +216,7 @@ const IndicacionesDelMapa = ({
         aria-live="polite"
         className="text-base font-semibold"
       >
+        <PasoDeLaMarca t={t} paso={paso} />
         {t(
           marca.soloGreen
             ? 'mapa.pideGreen'
@@ -178,13 +227,16 @@ const IndicacionesDelMapa = ({
               : 'mapa.pideGreen',
         )}
       </span>
-      <button
-        type="button"
-        onClick={onAhoraNo}
-        className="min-h-11 px-2 text-sm font-semibold text-yellow-300 underline"
-      >
-        {t('mapa.ahoraNo')}
-      </button>
+      <span className="flex shrink-0 items-center gap-1">
+        <button
+          type="button"
+          onClick={onAhoraNo}
+          className="min-h-11 px-2 text-sm font-semibold text-yellow-300 underline"
+        >
+          {t('mapa.ahoraNo')}
+        </button>
+        {botonDeAyuda}
+      </span>
     </div>
   ) : medido ? (
     // Primero el punto tocado; a mitad de hoyo, luego el codo (T5)
@@ -204,10 +256,13 @@ const IndicacionesDelMapa = ({
   ) : tocado ? (
     // Solo con el codo movido: lo devuelve a sin tocar (C9, 20 oct)
     quitarYSusMetros(onQuitarTocado)
-  ) : conAyudaDeCodos ? (
-    <p className={`${PLACA} self-start px-3.5 py-2 text-sm`}>
-      {t('mapa.ayudaCodo')}
-    </p>
+  ) : ultimoPaso ? (
+    <PlacaDelUltimoPaso
+      t={t}
+      linea={linea}
+      botonDeAyuda={botonDeAyuda}
+      onListo={onListo}
+    />
   ) : (
     <p className={`${PLACA} self-start px-3.5 py-2 text-sm`}>
       {t('mapa.ayudaMedir')}
