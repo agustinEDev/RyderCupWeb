@@ -1,4 +1,3 @@
-import { useTranslation } from 'react-i18next';
 import ValidationIcon from './ValidationIcon';
 import { HuecoParaAnotar } from './HuecoParaAnotar';
 import { clasesDelHueco } from './clasesDelHueco';
@@ -75,6 +74,7 @@ const EtiquetaDelMarcado = ({ id, etiqueta, markedValidationStatus }) => (
 // El golpe del marcado. Si lo puso otro marcador, su número con su nombre y
 // sin poder tocarlo: no se toca desde aquí
 const CasillaDelMarcado = ({
+  t,
   id,
   valor,
   bloqueado,
@@ -83,7 +83,6 @@ const CasillaDelMarcado = ({
   onAbrir,
   pinta,
 }) => {
-  const { t } = useTranslation('scoring');
   return bloqueado && markedScoredBy ? (
     <div className="flex h-12 flex-col items-center justify-center">
       <p
@@ -185,6 +184,7 @@ const SegundoMarcado = ({
  * comparten fila.
  *
  * @param {{
+ *   t: (clave: string, valores?: object) => string,
  *   ids: { propio: string, marcado: string, segundo: string },
  *   etiquetas: { propia: string, marcado: string, segundo: string },
  *   valores: { propio: number | null | undefined, marcado: number | null | undefined, segundo: number | null | undefined },
@@ -203,6 +203,7 @@ const SegundoMarcado = ({
  * }} props
  */
 const HuecosDelHoyo = ({
+  t,
   ids,
   etiquetas,
   valores,
@@ -219,7 +220,6 @@ const HuecosDelHoyo = ({
   secondMarked,
   onAbrir,
 }) => {
-  const { t } = useTranslation('scoring');
   const pinta = (val) => pintaGolpe(val, t);
   const loQuePuso = loQuePusoElOtro(t, {
     enParejas,
@@ -269,6 +269,7 @@ const HuecosDelHoyo = ({
 
       {conMarcado && (
         <CasillaDelMarcado
+          t={t}
           id={ids.marcado}
           valor={valores.marcado}
           bloqueado={bloqueos.marcado}

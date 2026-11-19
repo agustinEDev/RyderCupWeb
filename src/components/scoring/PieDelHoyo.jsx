@@ -1,4 +1,3 @@
-import { useTranslation } from 'react-i18next';
 import { nombreDelEquipo } from '../../utils/lecturaDelPartido';
 
 /**
@@ -6,6 +5,7 @@ import { nombreDelEquipo } from '../../utils/lecturaDelPartido';
  * Sin nada que decir, sin pie: era una franja vacía que empujaba la navegación.
  *
  * @param {{
+ *   t: (clave: string, valores?: object) => string,
  *   netScore?: number | null,
  *   holeResult?: { winner?: string, standingTeam?: string | null } | null,
  *   standing?: string | null,
@@ -14,13 +14,13 @@ import { nombreDelEquipo } from '../../utils/lecturaDelPartido';
  * }} props
  */
 const PieDelHoyo = ({
+  t,
   netScore,
   holeResult,
   standing,
   teamAName,
   teamBName,
 }) => {
-  const { t } = useTranslation('scoring');
   const conNeto = netScore !== null && netScore !== undefined;
   if (!conNeto && !holeResult && !standing) return null;
 

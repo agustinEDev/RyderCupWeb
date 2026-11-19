@@ -1,10 +1,10 @@
-import { useTranslation } from 'react-i18next';
 import { pintaGolpe } from './golpeDeLaCasilla';
 
 /**
  * En solo lectura, tu golpe y el que te apuntó tu marcador, sin botones.
  *
  * @param {{
+ *   t: (clave: string, valores?: object) => string,
  *   playerScore: { ownScore?: number | null, ownSubmitted?: boolean, markerScore?: number | null, markerSubmitted?: boolean },
  *   conMarcador: boolean,
  *   etiquetaPropia: string,
@@ -12,12 +12,12 @@ import { pintaGolpe } from './golpeDeLaCasilla';
  * }} props
  */
 const GolpesEnSoloLectura = ({
+  t,
   playerScore,
   conMarcador,
   etiquetaPropia,
   etiquetaDelMarcador,
 }) => {
-  const { t } = useTranslation('scoring');
   return (
     <div
       className={`grid ${conMarcador ? 'grid-cols-2' : 'grid-cols-1'} gap-4 text-center`}

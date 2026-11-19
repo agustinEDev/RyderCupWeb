@@ -132,6 +132,7 @@ const HoleInput = ({
       className="bg-white rounded-lg border border-gray-200 p-4 space-y-4"
     >
       <CabeceraDelHoyo
+        t={t}
         holeNumber={holeNumber}
         par={par}
         strokeIndex={strokeIndex}
@@ -141,6 +142,7 @@ const HoleInput = ({
 
       {!isReadOnly && (
         <HuecosDelHoyo
+          t={t}
           ids={{ propio: idPropio, marcado: idMarcado, segundo: idSegundo }}
           etiquetas={etiquetas}
           valores={{
@@ -169,6 +171,7 @@ const HoleInput = ({
 
       {isReadOnly && playerScore && (
         <GolpesEnSoloLectura
+          t={t}
           playerScore={playerScore}
           conMarcador={conMarcador}
           etiquetaPropia={etiquetas.propia}
@@ -177,6 +180,7 @@ const HoleInput = ({
       )}
 
       <PieDelHoyo
+        t={t}
         netScore={netScore}
         holeResult={holeResult}
         standing={standing}

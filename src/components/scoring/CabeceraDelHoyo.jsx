@@ -1,4 +1,3 @@
-import { useTranslation } from 'react-i18next';
 import ValidationIcon from './ValidationIcon';
 
 /**
@@ -6,6 +5,7 @@ import ValidationIcon from './ValidationIcon';
  * o se dan y la marca de TU resultado.
  *
  * @param {{
+ *   t: (clave: string, valores?: object) => string,
  *   holeNumber: number,
  *   par: number,
  *   strokeIndex?: number | null,
@@ -14,13 +14,13 @@ import ValidationIcon from './ValidationIcon';
  * }} props
  */
 const CabeceraDelHoyo = ({
+  t,
   holeNumber,
   par,
   strokeIndex,
   strokesReceived,
   validationStatus,
 }) => {
-  const { t } = useTranslation('scoring');
   return (
     <div className="flex items-center justify-between gap-2">
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
