@@ -445,8 +445,8 @@
       "HOLE_CHANGED": "El hoyo ha cambiado"
     },
     "reporteSinCodos": "Mueve la salida o el green si hace falta",
-    "paso": "Paso {{n}} de {{de}}",
-    "ultimoPaso": "Último paso",
+    "paso": "Paso {{n}} de {{de}} · ",
+    "ultimoPaso": "Último paso · ",
     "ultimoPasoCurva_one": "Si el hoyo hace curva, arrastra el punto al centro de la calle",
     "ultimoPasoCurva_other": "Si el hoyo hace curva, arrastra los puntos al centro de la calle",
     "listo": "Listo",
@@ -461,8 +461,11 @@
       "curvaTitulo": "Si el hoyo hace curva",
       "curvaTexto": "Arrastra el punto al centro de la calle.",
       "pie": "Si te equivocas, puedes volver a marcarlo.",
-      "empezar": "Empezar"
-    }
+      "empezar": "Empezar",
+      "tituloGreen": "Marca el green",
+      "introGreen": "A este hoyo le falta el green. Si lo marcas, ayudas a todos los que juegan este campo."
+    },
+    "signoDeAyuda": "?"
   },
   "tabsLabel": "Vista del partido",
   "withdraw": {

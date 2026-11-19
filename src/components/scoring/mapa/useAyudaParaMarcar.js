@@ -1,6 +1,13 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useGuiaParaMarcarVista } from '../../../hooks/useGuiaParaMarcarVista';
-import { pasoDeLaMarca, seVeLaGuia } from './ayudaParaMarcar';
+import {
+  habraPuntosQueArrastrar,
+  pasoDeLaMarca,
+  seVeLaGuia,
+} from './ayudaParaMarcar';
+
+// Enfocar sin desplazar la pantalla, como `useFocoRetenido`
+const SIN_DESPLAZAR = { preventScroll: true };
 
 /**
  * La ayuda para marcar un hoyo sin datos (Agustín, 19 nov): la guía (sola la
@@ -19,6 +26,7 @@ export const useAyudaParaMarcar = ({
   greenMarcado,
   par,
   hoyo,
+  setConAyudaDeCodos,
 }) => {
   const { vista, marcarVista } = useGuiaParaMarcarVista(userId);
   const [pedida, setPedida] = useState(false);
@@ -28,13 +36,30 @@ export const useAyudaParaMarcar = ({
   const cerrarGuia = () => {
     marcarVista();
     setPedida(false);
-    botonDeAyudaRef.current?.focus();
+    botonDeAyudaRef.current?.focus(SIN_DESPLAZAR);
   };
+  // «Listo» se va con la placa: el foco pasa a lo que queda en su sitio (la
+  // ayuda de medir), para que no caiga al body
+  const [listo, setListo] = useState(0);
+  const trasListoRef = useRef(null);
+  useEffect(() => {
+    if (listo) trasListoRef.current?.focus(SIN_DESPLAZAR);
+  }, [listo]);
+  const alListo = () => {
+    setConAyudaDeCodos(false);
+    setListo((n) => n + 1);
+  };
+  const lineaAprobada = hoyo?.playLine ?? [];
   return {
     guiaAbierta: seVeLaGuia({ fase, sinMapa, reporte, vista, pedida }),
     abrirGuia: () => setPedida(true),
     cerrarGuia,
     botonDeAyudaRef,
+    alListo,
+    trasListoRef,
+    // Con la salida ya puesta, la guía del green (Agustín, 19 nov)
+    soloGreen: !marcandoSalida,
+    conCurva: habraPuntosQueArrastrar(lineaAprobada, par),
     paso: pasoDeLaMarca({
       pidiendo,
       marca,
@@ -43,7 +68,7 @@ export const useAyudaParaMarcar = ({
       greenYaPuesto: greenConocido ?? greenMarcado,
       par,
       // La línea aprobada: si ya trae sus codos, no habrá placa del último paso
-      lineaAprobada: hoyo?.playLine,
+      lineaAprobada,
     }),
   };
 };

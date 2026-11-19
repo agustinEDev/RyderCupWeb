@@ -97,13 +97,29 @@ const PASOS = [
   ['curva', DibujoDeLaCurva],
 ];
 
+// Solo el green (el hoyo ya tiene salida, 19 nov): sin el paso de la salida, y
+// sin el de la curva si no habrá puntos que arrastrar
+const pasosDeLaGuia = (soloGreen, conCurva) =>
+  soloGreen
+    ? PASOS.filter(
+        ([paso]) => paso === 'green' || (conCurva && paso === 'curva'),
+      )
+    : PASOS;
+
 /**
  * La guía «Marca este hoyo» (G2): sale la primera vez que se empieza a marcar
  * y con el «?». Un diálogo encima del mapa (`ModalShell`: el foco entra y
  * vuelve, Escape cierra). Tocar fuera no cierra: en el campo se toca sin querer.
- * Oscura como las placas del mapa, que no cambia con el tema.
+ * Oscura como las placas del mapa, que no cambia con el tema. Si solo falta el
+ * green (`soloGreen`), «Marca el green», con sus pasos (Agustín, 19 nov).
  */
-const GuiaParaMarcar = ({ t, abierta, onCerrar }) => (
+const GuiaParaMarcar = ({
+  t,
+  abierta,
+  soloGreen = false,
+  conCurva = true,
+  onCerrar,
+}) => (
   <ModalShell
     isOpen={abierta}
     onClose={onCerrar}
@@ -113,7 +129,7 @@ const GuiaParaMarcar = ({ t, abierta, onCerrar }) => (
   >
     <div className="flex items-start justify-between gap-2">
       <h2 id="titulo-de-la-guia-para-marcar" className="pt-2 text-lg font-bold">
-        {t('mapa.guia.titulo')}
+        {t(soloGreen ? 'mapa.guia.tituloGreen' : 'mapa.guia.titulo')}
       </h2>
       <button
         type="button"
@@ -124,9 +140,11 @@ const GuiaParaMarcar = ({ t, abierta, onCerrar }) => (
         <X className="h-5 w-5" aria-hidden="true" />
       </button>
     </div>
-    <p className="mt-1 text-sm text-gray-300">{t('mapa.guia.intro')}</p>
+    <p className="mt-1 text-sm text-gray-300">
+      {t(soloGreen ? 'mapa.guia.introGreen' : 'mapa.guia.intro')}
+    </p>
     <ol className="mt-4 flex flex-col gap-3">
-      {PASOS.map(([paso, DibujoDelPaso]) => (
+      {pasosDeLaGuia(soloGreen, conCurva).map(([paso, DibujoDelPaso]) => (
         <li key={paso} className="flex items-center gap-3">
           <DibujoDelPaso />
           <span className="min-w-0">

@@ -435,8 +435,8 @@
       "HOLE_CHANGED": "The hole has changed"
     },
     "reporteSinCodos": "Move the tee or the green if needed",
-    "paso": "Step {{n}} of {{de}}",
-    "ultimoPaso": "Last step",
+    "paso": "Step {{n}} of {{de}} · ",
+    "ultimoPaso": "Last step · ",
     "ultimoPasoCurva_one": "If the hole bends, drag the point to the middle of the fairway",
     "ultimoPasoCurva_other": "If the hole bends, drag the points to the middle of the fairway",
     "listo": "Done",
@@ -451,8 +451,11 @@
       "curvaTitulo": "If the hole bends",
       "curvaTexto": "Drag the point to the middle of the fairway.",
       "pie": "If you make a mistake, you can mark it again.",
-      "empezar": "Start"
-    }
+      "empezar": "Start",
+      "tituloGreen": "Mark the green",
+      "introGreen": "This hole is missing its green. By marking it you help everyone who plays this course."
+    },
+    "signoDeAyuda": "?"
   },
   "tabsLabel": "Match view",
   "withdraw": {

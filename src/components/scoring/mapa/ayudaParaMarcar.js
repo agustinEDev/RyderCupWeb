@@ -1,4 +1,8 @@
-import { codosDelPar } from '../../../domain/services/hoyoMarcado';
+import {
+  aCodosDelPar,
+  codosDelPar,
+  conCodosDelPar,
+} from '../../../domain/services/hoyoMarcado';
 
 // Reglas puras de la ayuda para marcar un hoyo sin datos: sin React, sin estado
 
@@ -13,9 +17,18 @@ const marcando = (fase) => fase === 'pregunta' || fase === 'pidiendo';
 export const seVeLaGuia = ({ fase, sinMapa, reporte, vista, pedida }) =>
   sinMapa === false && !reporte && (pedida || (!vista && marcando(fase)));
 
-// Los codos de la línea aprobada que se quedan al tocar el green: su final (el
-// green de OSM) se cambia por el tocado (como `useToquesDelMapa`)
-const codosQueYaTrae = (linea) => Math.max(0, linea.length - 2);
+/**
+ * Si al tocar el green sobre la línea aprobada se añadirán puntos que llevar a
+ * la calle (y con ellos la placa del último paso). Con la misma regla que la
+ * construye en `useToquesDelMapa`: se queda con los codos de verdad de su par
+ * (`aCodosDelPar`) y pone los que falten (`conCodosDelPar`). El final de OSM
+ * hace aquí de green, que aún no se ha tocado.
+ */
+export const habraPuntosQueArrastrar = (aprobada, par) => {
+  if (aprobada.length === 1) return codosDelPar(par) > 0;
+  const reducida = aCodosDelPar(aprobada, par);
+  return conCodosDelPar(reducida, par).length > reducida.length;
+};
 
 /**
  * El «Paso N de M» del aviso de lo que se pide (P1-P3). La pregunta de la
@@ -38,19 +51,17 @@ export const pasoDeLaMarca = ({
   // Tras el «No», el green se mide desde ti: no hay línea ni placa
   if (marca.soloGreen) return null;
   if (!marcandoSalida)
-    return codosQueYaTrae(lineaAprobada) < codosDelPar(par)
-      ? { n: 1, de: 2 }
-      : null;
+    return habraPuntosQueArrastrar(lineaAprobada, par) ? { n: 1, de: 2 } : null;
   const de = par === 3 ? 2 : 3;
   if (marca.tee) return { n: 2, de };
   return greenYaPuesto ? null : { n: 1, de };
 };
 
 /**
- * La placa «Último paso» (P4): tras guardar, mientras quedan puntos puestos por
- * nosotros que llevar a la calle (`conAyudaDeCodos`: un par 3 no tiene; se va
- * al arrastrar uno o con «Listo»). Con un aviso de la marca delante, espera a
- * que se resuelva.
+ * Los puntos de la placa «Último paso» (P4), o 0 sin placa: tras guardar, los
+ * que puso la app y quedan por llevar a la calle (`conAyudaDeCodos`; un par 3
+ * no tiene; se van al arrastrar uno o con «Listo»). No cuenta los codos que ya
+ * traía la línea. Con un aviso de la marca delante, espera a que se resuelva.
  */
-export const seVeElUltimoPaso = ({ conAyudaDeCodos, avisoDeMarca }) =>
-  conAyudaDeCodos && !avisoDeMarca;
+export const puntosDelUltimoPaso = ({ conAyudaDeCodos, avisoDeMarca }) =>
+  avisoDeMarca ? 0 : Number(conAyudaDeCodos);

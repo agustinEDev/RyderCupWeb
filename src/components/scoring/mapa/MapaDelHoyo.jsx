@@ -56,7 +56,7 @@ import PieDelMapa from './PieDelMapa';
 import AvisosDelMapa from './AvisosDelMapa';
 import BotonesDeMarcar from './BotonesDeMarcar';
 import GuiaParaMarcar from './GuiaParaMarcar';
-import { seVeElUltimoPaso } from './ayudaParaMarcar';
+import { puntosDelUltimoPaso } from './ayudaParaMarcar';
 
 // Empaquetado, MapLibre no encuentra solo su worker: va como fichero aparte
 setWorkerUrl(urlDelWorker);
@@ -617,6 +617,7 @@ const MapaDelHoyo = ({
     greenMarcado,
     par,
     hoyo,
+    setConAyudaDeCodos,
   });
 
   return (
@@ -671,11 +672,12 @@ const MapaDelHoyo = ({
           posicionBuena={posicionBuena}
           aviso={aviso}
           tocado={tocado}
-          ultimoPaso={seVeElUltimoPaso({ conAyudaDeCodos, avisoDeMarca })}
+          ultimoPaso={puntosDelUltimoPaso({ conAyudaDeCodos, avisoDeMarca })}
           paso={ayuda.paso}
           botonDeAyudaRef={ayuda.botonDeAyudaRef}
           onAyuda={ayuda.abrirGuia}
-          onListo={() => setConAyudaDeCodos(false)}
+          onListo={ayuda.alListo}
+          trasListoRef={ayuda.trasListoRef}
           linea={linea}
           hastaAhi={hastaAhi}
           deAhiAlGreen={deAhiAlGreen}
@@ -746,6 +748,8 @@ const MapaDelHoyo = ({
       <GuiaParaMarcar
         t={t}
         abierta={ayuda.guiaAbierta}
+        soloGreen={ayuda.soloGreen}
+        conCurva={ayuda.conCurva}
         onCerrar={ayuda.cerrarGuia}
       />
     </ModalShell>

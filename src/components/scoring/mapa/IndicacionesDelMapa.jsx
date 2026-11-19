@@ -1,21 +1,21 @@
 import { PLACA } from './clasesDelMapa';
 
-// Delante de lo que se pide, en su propio trozo: «Paso 1 de 3 · » (19 nov)
-const Prefijo = ({ texto }) =>
-  texto ? <span className="text-yellow-300">{`${texto} · `}</span> : null;
+// Delante de lo que se pide, en su propio trozo: «Paso 1 de 3 · » (19 nov). El
+// separador va en el texto traducido
+const Prefijo = ({ texto }) => <span className="text-yellow-300">{texto}</span>;
 
 // El número del paso, si lo lleva: la pregunta y algunos casos van sin él
 const PasoDeLaMarca = ({ t, paso }) =>
   paso ? <Prefijo texto={t('mapa.paso', paso)} /> : null;
 
 // Tras guardar, llevar los puntos a la calle (P4): «el punto» o «los puntos»
-const PlacaDelUltimoPaso = ({ t, linea, botonDeAyuda, onListo }) => (
+const PlacaDelUltimoPaso = ({ t, puntos, botonDeAyuda, onListo }) => (
   <div
     className={`${PLACA} pointer-events-auto flex items-center justify-between gap-2 px-3.5 py-2`}
   >
     <span aria-live="polite" className="text-sm">
       <Prefijo texto={t('mapa.ultimoPaso')} />
-      {t('mapa.ultimoPasoCurva', { count: (linea?.length ?? 3) - 2 })}
+      {t('mapa.ultimoPasoCurva', { count: puntos })}
     </span>
     <span className="flex shrink-0 items-center gap-1">
       <button
@@ -57,6 +57,7 @@ const IndicacionesDelMapa = ({
   ultimoPaso,
   paso,
   botonDeAyudaRef,
+  trasListoRef,
   linea,
   hastaAhi,
   deAhiAlGreen,
@@ -81,7 +82,7 @@ const IndicacionesDelMapa = ({
       aria-label={t('mapa.comoMarcar')}
       className="min-h-11 min-w-11 shrink-0 rounded-xl bg-white/15 text-[15px] font-bold text-white"
     >
-      ?
+      {t('mapa.signoDeAyuda')}
     </button>
   );
 
@@ -259,12 +260,17 @@ const IndicacionesDelMapa = ({
   ) : ultimoPaso ? (
     <PlacaDelUltimoPaso
       t={t}
-      linea={linea}
+      puntos={ultimoPaso}
       botonDeAyuda={botonDeAyuda}
       onListo={onListo}
     />
   ) : (
-    <p className={`${PLACA} self-start px-3.5 py-2 text-sm`}>
+    // Enfocable a mano: aquí cae el foco tras «Listo»
+    <p
+      ref={trasListoRef}
+      tabIndex={-1}
+      className={`${PLACA} self-start px-3.5 py-2 text-sm`}
+    >
       {t('mapa.ayudaMedir')}
     </p>
   );
