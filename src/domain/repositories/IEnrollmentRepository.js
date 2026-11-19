@@ -4,7 +4,8 @@
  * Interface: IEnrollmentRepository
  *
  * Define el contrato de persistencia para Enrollments.
- * Compatible con backend Python: IEnrollmentRepository (Abstract Base Class).
+ * Se inspira en el IEnrollmentRepository del backend, pero solo declara lo que el
+ * front usa (por ejemplo, no tiene find_by_id).
  *
  * Responsabilidades:
  * - Definir operaciones de persistencia (CRUD + queries)
@@ -16,9 +17,8 @@
  * - El Infrastructure Layer implementa el contrato (ApiEnrollmentRepository)
  * - Los Use Cases dependen de la interfaz, NO de la implementación
  *
- * Implementaciones esperadas:
- * - ApiEnrollmentRepository (REST API con fetch)
- * - MockEnrollmentRepository (para tests)
+ * Implementación: ApiEnrollmentRepository (REST API con fetch). Los tests usan
+ * dobles con vi.fn().
  */
 class IEnrollmentRepository {
   /**
