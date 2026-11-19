@@ -1,4 +1,4 @@
-import { useId, useState } from 'react';
+import { useId } from 'react';
 import { useTranslation } from 'react-i18next';
 import ValidationIcon from './ValidationIcon';
 import ScoreInputPanel from './ScoreInputPanel';
@@ -8,6 +8,7 @@ import {
   pintaGolpe,
   siguienteHueco as calculaSiguienteHueco,
 } from './golpeDeLaCasilla';
+import { useValoresDeLaCasilla } from './useValoresDeLaCasilla';
 import { MatchFormat } from '../../domain/value_objects/MatchFormat';
 
 // Un golpe de la casilla: el botón que abre el teclado o, bloqueado, el número.
@@ -133,72 +134,32 @@ const HoleInput = ({
   // Lo que puso otro marcador no se toca desde aquí
   const marcadoBloqueado =
     isMarkerScoreLocked || !conMarcado || Boolean(markedScoredBy);
-  // undefined = hole not scored yet (nothing persisted); null = explicitly picked up.
-  const ownDeLaVista = playerScore?.ownSubmitted
-    ? playerScore.ownScore
-    : undefined;
-  const markedDeLaVista = markedPlayerScore?.markerSubmitted
-    ? markedPlayerScore.markerScore
-    : undefined;
-  const [ownValue, setOwnValue] = useState(ownDeLaVista);
-  const [markedValue, setMarkedValue] = useState(markedDeLaVista);
-
-  // Una vista más nueva tiene que llegar a la casilla (FE #606). Solo se tomaba
-  // al montar, y la pantalla no la vuelve a montar hasta cambiar de hoyo: si la
-  // vista cargaba antes de que el vaciado de entrada mandara el golpe, la casilla
-  // seguía vacía con el golpe ya en el servidor. Se adopta solo cuando lo que dice
-  // la vista CAMBIA, no en cada render: así no se pisa lo que el jugador acaba de
-  // elegir mientras la vista sigue diciendo lo mismo. Durante el render y no en un
-  // efecto, que encadena renders y el lint del repo prohíbe
-  const [ownVisto, setOwnVisto] = useState(ownDeLaVista);
-  if (ownVisto !== ownDeLaVista) {
-    setOwnVisto(ownDeLaVista);
-    setOwnValue(ownDeLaVista);
-  }
-  const [markedVisto, setMarkedVisto] = useState(markedDeLaVista);
-  // Otro marcado: su marca es la de la vista, no lo tecleado para el anterior,
-  // aunque las dos digan lo mismo y lo de abajo no lo vea (CodeRabbit, FE #970)
-  const [marcadoVisto, setMarcadoVisto] = useState(markedPlayerId);
-  if (marcadoVisto !== markedPlayerId) {
-    setMarcadoVisto(markedPlayerId);
-    setMarkedVisto(markedDeLaVista);
-    setMarkedValue(markedDeLaVista);
-  }
-  if (markedVisto !== markedDeLaVista) {
-    setMarkedVisto(markedDeLaVista);
-    setMarkedValue(markedDeLaVista);
-  }
-  // El segundo marcado, con la misma regla: lo tecleado se queda hasta que la
-  // vista diga otra cosa, o hasta que el segundo pase a ser otro, como el primero
-  const segundoDeLaVista = secondMarked?.playerScore?.markerSubmitted
-    ? secondMarked.playerScore.markerScore
-    : undefined;
-  const [segundoValue, setSegundoValue] = useState(segundoDeLaVista);
-  const [segundoVisto, setSegundoVisto] = useState(segundoDeLaVista);
-  const [segundoQuien, setSegundoQuien] = useState(secondMarked?.id);
-  if (segundoQuien !== secondMarked?.id) {
-    setSegundoQuien(secondMarked?.id);
-    setSegundoVisto(segundoDeLaVista);
-    setSegundoValue(segundoDeLaVista);
-  }
-  if (segundoVisto !== segundoDeLaVista) {
-    setSegundoVisto(segundoDeLaVista);
-    setSegundoValue(segundoDeLaVista);
-  }
   const segundoBloqueado = Boolean(secondMarked?.isLocked);
   // Sin su nombre, las palabras de siempre, como el primero
   const etiquetaSegundo = secondMarked?.name
     ? t('input.youMark', { nombre: secondMarked.name })
     : t('input.markerScore');
-  const [openPanel, setOpenPanel] = useState(null); // 'own' | 'marked' | 'second' | null
-  // Si su casilla se bloquea con el teclado abierto (el rival entrega su
-  // tarjeta), el teclado se cierra: abierto, sus números ya no hacían nada
-  const panelBloqueado =
-    (openPanel !== null && isReadOnly) ||
-    (openPanel === 'own' && isOwnScoreLocked) ||
-    (openPanel === 'marked' && marcadoBloqueado) ||
-    (openPanel === 'second' && segundoBloqueado);
-  if (panelBloqueado) setOpenPanel(null);
+  const {
+    ownValue,
+    setOwnValue,
+    markedValue,
+    setMarkedValue,
+    segundoValue,
+    setSegundoValue,
+    openPanel,
+    setOpenPanel,
+  } = useValoresDeLaCasilla({
+    playerScore,
+    markedPlayerScore,
+    markedPlayerId,
+    secondMarked,
+    bloqueos: {
+      soloLectura: isReadOnly,
+      propio: isOwnScoreLocked,
+      marcado: marcadoBloqueado,
+      segundo: segundoBloqueado,
+    },
+  });
 
   const handleOwnSelect = (val) => {
     if (isReadOnly || isOwnScoreLocked) return;
