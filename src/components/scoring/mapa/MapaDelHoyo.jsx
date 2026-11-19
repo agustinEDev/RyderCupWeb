@@ -1,6 +1,5 @@
 import { useCallback, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { MapPin } from 'lucide-react';
 import { setWorkerUrl } from 'maplibre-gl';
 import urlDelWorker from 'maplibre-gl/dist/maplibre-gl-worker.mjs?url';
 import './mapa.css';
@@ -14,7 +13,6 @@ import {
 } from '../../../domain/services/geometriaDelHoyo';
 import { salidaPorMetros } from '../../../domain/services/hoyoMarcado';
 import ModalShell from '../../ui/ModalShell';
-import { BOTON, PLACA } from './clasesDelMapa';
 import {
   fraseDeLaLinea as fraseDeLosTramos,
   geojsonDeLaMedida,
@@ -56,6 +54,8 @@ import CabeceraDelMapa from './CabeceraDelMapa';
 import IndicacionesDelMapa from './IndicacionesDelMapa';
 import RecuadroDeDistancias from './RecuadroDeDistancias';
 import PieDelMapa from './PieDelMapa';
+import AvisosDelMapa from './AvisosDelMapa';
+import BotonesDeMarcar from './BotonesDeMarcar';
 
 // Empaquetado, MapLibre no encuentra solo su worker: va como fichero aparte
 setWorkerUrl(urlDelWorker);
@@ -612,32 +612,14 @@ const MapaDelHoyo = ({
         data-testid="mapa-abajo"
         className="pointer-events-none absolute inset-x-0 bottom-0 z-10 flex flex-col gap-2.5 pt-4 pb-[calc(1rem+env(safe-area-inset-bottom))] pr-[calc(1rem+env(safe-area-inset-right))] pl-[calc(1rem+env(safe-area-inset-left))]"
       >
-        {sinMapa && (
-          <p className={`${PLACA} self-start px-3.5 py-2 text-sm`}>
-            {t('mapa.sinMapaEnEsteMovil')}
-          </p>
-        )}
-        {aviso && (
-          <p className={`${PLACA} self-start px-3.5 py-2 text-sm`}>{aviso}</p>
-        )}
-
-        {avisoDeMarca && (
-          <p
-            role="alert"
-            className={`${PLACA} self-start px-3.5 py-2 text-sm text-yellow-300`}
-          >
-            {avisoDeMarca}
-          </p>
-        )}
-
-        {/* Siempre montado, para que el lector de pantalla diga las gracias */}
-        <div aria-live="polite" className="contents">
-          {gracias && !reporte && (
-            <p className={`${PLACA} self-start px-3.5 py-2 text-sm`}>
-              {t('mapa.reporteGracias')}
-            </p>
-          )}
-        </div>
+        <AvisosDelMapa
+          t={t}
+          sinMapa={sinMapa}
+          aviso={aviso}
+          avisoDeMarca={avisoDeMarca}
+          gracias={gracias}
+          reporte={reporte}
+        />
 
         <IndicacionesDelMapa
           t={t}
@@ -667,29 +649,18 @@ const MapaDelHoyo = ({
           onQuitarTocado={() => setTocado(null)}
         />
 
-        {/* Tras el «No», por si quiere marcarlo igualmente (D1, D6, D8) */}
-        {((desdeMi && preguntaPrimero) || (pidiendo && marca.soloGreen)) &&
-          !reporte && (
-            <button
-              ref={enlaceEnteroRef}
-              type="button"
-              onClick={marcarEntero}
-              className="pointer-events-auto min-h-11 self-end px-2 text-sm font-semibold text-white underline [text-shadow:0_1px_2px_#000]"
-            >
-              {t('mapa.marcarEntero')}
-            </button>
-          )}
-
-        {marca.fase === 'pausado' && !sinMapa && !reporte && (
-          <button
-            type="button"
-            onClick={empezarAMarcar}
-            className={`${BOTON} pointer-events-auto self-end`}
-          >
-            <MapPin className="h-4 w-4" aria-hidden="true" />
-            {t('mapa.marcarHoyo')}
-          </button>
-        )}
+        <BotonesDeMarcar
+          t={t}
+          sinMapa={sinMapa}
+          reporte={reporte}
+          marca={marca}
+          desdeMi={desdeMi}
+          preguntaPrimero={preguntaPrimero}
+          pidiendo={pidiendo}
+          enlaceEnteroRef={enlaceEnteroRef}
+          onMarcarEntero={marcarEntero}
+          onEmpezarAMarcar={empezarAMarcar}
+        />
 
         {/* Las cifras de la línea, en una frase, para quien no ve el mapa */}
         {fraseDeLaLinea && (
