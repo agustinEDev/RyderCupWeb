@@ -1353,3 +1353,310 @@ describe('HoleInput · con un segundo marcado', () => {
     ).not.toBeInTheDocument();
   });
 });
+
+// Caracterización antes de partir el componente en piezas: lo que aún no
+// fijaba ningún test y un refactor podría cambiar sin que nadie lo viera
+describe('HoleInput · caracterización (partir el componente)', () => {
+  const props = {
+    holeNumber: 2,
+    par: 4,
+    strokeIndex: 9,
+    markedName: 'Carlos',
+    markedPlayerId: 'u2',
+  };
+  const dani = {
+    id: 'u4',
+    name: 'Dani',
+    par: 4,
+    playerScore: null,
+    validationStatus: null,
+    isLocked: false,
+  };
+
+  it.each([['own'], ['marked'], ['second-marked']])(
+    'el teclado de la casilla %s se cierra con la X sin mandar nada',
+    (prefijo) => {
+      const onScoreChange = vi.fn();
+      const onSecondMarkedChange = vi.fn();
+      render(
+        <HoleInput
+          {...props}
+          onScoreChange={onScoreChange}
+          secondMarked={dani}
+          onSecondMarkedChange={onSecondMarkedChange}
+        />,
+      );
+
+      fireEvent.click(screen.getByTestId(`${prefijo}-score-button`));
+      expect(screen.getByRole('dialog')).toBeInTheDocument();
+      fireEvent.click(screen.getByRole('button', { name: 'input.close' }));
+
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+      expect(onScoreChange).not.toHaveBeenCalled();
+      expect(onSecondMarkedChange).not.toHaveBeenCalled();
+    },
+  );
+
+  it.each([['own'], ['marked'], ['second-marked']])(
+    'al volver a abrir el teclado de la casilla %s, sale marcado lo elegido',
+    (prefijo) => {
+      render(
+        <HoleInput
+          {...props}
+          onScoreChange={vi.fn()}
+          secondMarked={dani}
+          onSecondMarkedChange={vi.fn()}
+        />,
+      );
+
+      fireEvent.click(screen.getByTestId(`${prefijo}-score-button`));
+      fireEvent.click(screen.getByRole('button', { name: /^6/ }));
+      fireEvent.click(screen.getByTestId(`${prefijo}-score-button`));
+
+      const teclado = screen.getByRole('dialog');
+      expect(within(teclado).getByRole('button', { name: /^6/ })).toHaveClass(
+        'bg-primary',
+      );
+      expect(
+        within(teclado).getByRole('button', { name: /^5/ }),
+      ).not.toHaveClass('bg-primary');
+    },
+  );
+
+  it('cada envío lleva el último golpe de la otra casilla', () => {
+    const onScoreChange = vi.fn();
+    render(<HoleInput {...props} onScoreChange={onScoreChange} />);
+
+    fireEvent.click(screen.getByTestId('own-score-button'));
+    fireEvent.click(screen.getByRole('button', { name: /^5/ }));
+    fireEvent.click(screen.getByTestId('marked-score-button'));
+    fireEvent.click(screen.getByRole('button', { name: /^4/ }));
+    expect(onScoreChange).toHaveBeenLastCalledWith(
+      { ownScore: 5, markedScore: 4 },
+      'markedScore',
+    );
+
+    fireEvent.click(screen.getByTestId('own-score-value').closest('button'));
+    fireEvent.click(screen.getByRole('button', { name: /^6/ }));
+    expect(onScoreChange).toHaveBeenLastCalledWith(
+      { ownScore: 6, markedScore: 4 },
+      'ownScore',
+    );
+  });
+
+  it('sin nadie a quien marcar, tu golpe no arrastra el número del marcado', () => {
+    const onScoreChange = vi.fn();
+    render(
+      <HoleInput
+        {...props}
+        marksSomeone={false}
+        onScoreChange={onScoreChange}
+        markedPlayerScore={{ markerScore: 6, markerSubmitted: true }}
+      />,
+    );
+
+    fireEvent.click(screen.getByTestId('own-score-button'));
+    fireEvent.click(screen.getByRole('button', { name: /^5/ }));
+
+    expect(onScoreChange).toHaveBeenCalledWith(
+      { ownScore: 5, markedScore: undefined },
+      'ownScore',
+    );
+  });
+
+  it('si otro marcador anota al marcado con su teclado abierto, el teclado se cierra', () => {
+    const onScoreChange = vi.fn();
+    const { rerender } = render(
+      <HoleInput {...props} onScoreChange={onScoreChange} />,
+    );
+    fireEvent.click(screen.getByTestId('marked-score-button'));
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+
+    rerender(
+      <HoleInput
+        {...props}
+        onScoreChange={onScoreChange}
+        markedScoredBy="Ulises"
+        markedPlayerScore={{ markerScore: 6, markerSubmitted: true }}
+      />,
+    );
+
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(onScoreChange).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ['tuya', 'own', { playerScore: { ownScore: 6, ownSubmitted: false } }],
+    [
+      'del marcado',
+      'marked',
+      { markedPlayerScore: { markerScore: 6, markerSubmitted: false } },
+    ],
+    [
+      'del segundo',
+      'second-marked',
+      {
+        secondMarked: {
+          ...dani,
+          playerScore: { markerScore: 6, markerSubmitted: false },
+        },
+      },
+    ],
+  ])(
+    'un golpe que la vista trae sin enviar no llena la casilla %s',
+    (_caso, prefijo, extra) => {
+      render(<HoleInput {...props} onScoreChange={vi.fn()} {...extra} />);
+
+      expect(screen.getByTestId(`${prefijo}-score-button`)).toBeInTheDocument();
+      expect(
+        screen.queryByTestId(`${prefijo}-score-value`),
+      ).not.toBeInTheDocument();
+    },
+  );
+
+  it('en un desacuerdo sin el número del otro todavía, no dice qué puso', () => {
+    render(
+      <HoleInput
+        {...props}
+        onScoreChange={vi.fn()}
+        validationStatus="mismatch"
+        markedValidationStatus="mismatch"
+        playerScore={{ markerScore: 6, markerSubmitted: false }}
+        markedPlayerScore={{ ownScore: 5, ownSubmitted: false }}
+        secondMarked={{
+          ...dani,
+          validationStatus: 'mismatch',
+          playerScore: { ownScore: 7, ownSubmitted: false },
+        }}
+        onSecondMarkedChange={vi.fn()}
+      />,
+    );
+
+    expect(screen.queryByTestId('lo-que-puso-el-otro-own')).toBeNull();
+    expect(screen.queryByTestId('lo-que-puso-el-otro-marked')).toBeNull();
+    expect(screen.queryByTestId('lo-que-puso-el-otro-second')).toBeNull();
+  });
+
+  it('sin nadie a quien marcar, el desacuerdo ocupa una sola columna', () => {
+    render(
+      <HoleInput
+        {...props}
+        onScoreChange={vi.fn()}
+        marksSomeone={false}
+        validationStatus="mismatch"
+        playerScore={{ markerScore: 6, markerSubmitted: true }}
+      />,
+    );
+
+    // Tu etiqueta, tu hueco y lo que puso tu marcador: nada de la otra columna
+    const huecos = screen.getByTestId('huecos-del-hoyo');
+    expect(huecos.children).toHaveLength(3);
+    expect(huecos.children[2]).toHaveTextContent('input.otherPut');
+  });
+
+  it.each([
+    ['own', true],
+    ['own', false],
+    ['marked', true],
+    ['marked', false],
+    ['second-marked', true],
+    ['second-marked', false],
+  ])(
+    'el teclado de la casilla %s ofrece la raya solo si se permite (%s)',
+    (prefijo, permitida) => {
+      render(
+        <HoleInput
+          {...props}
+          onScoreChange={vi.fn()}
+          secondMarked={dani}
+          onSecondMarkedChange={vi.fn()}
+          allowPickedUp={permitida}
+        />,
+      );
+
+      fireEvent.click(screen.getByTestId(`${prefijo}-score-button`));
+
+      expect(screen.queryByTestId('picked-up-button') !== null).toBe(permitida);
+    },
+  );
+
+  it('el teclado del segundo, sin su par, usa el del hoyo', () => {
+    render(
+      <HoleInput
+        {...props}
+        onScoreChange={vi.fn()}
+        secondMarked={{ ...dani, par: undefined }}
+        onSecondMarkedChange={vi.fn()}
+      />,
+    );
+
+    fireEvent.click(screen.getByTestId('second-marked-score-button'));
+
+    // Par 4 del hoyo: el 4 es el par y el 3, birdie
+    const teclado = screen.getByRole('dialog');
+    expect(
+      within(teclado).getByRole('button', { name: /^4/ }),
+    ).toHaveTextContent('input.par');
+    expect(
+      within(teclado).getByRole('button', { name: /^3/ }),
+    ).toHaveTextContent('input.scoreBirdie');
+  });
+
+  it('el pie: un neto de 0 se enseña (no es «sin neto»)', () => {
+    render(<HoleInput {...props} onScoreChange={vi.fn()} netScore={0} />);
+
+    expect(screen.getByTestId('pie-del-hoyo')).toHaveTextContent(
+      'input.netScore: 0',
+    );
+  });
+
+  it('el pie: sin nombre del equipo, su letra delante de la ventaja', () => {
+    render(
+      <HoleInput
+        {...props}
+        onScoreChange={vi.fn()}
+        standing="2UP"
+        holeResult={{ winner: 'HALVED', standingTeam: 'A' }}
+      />,
+    );
+
+    expect(screen.getByTestId('pie-del-hoyo')).toHaveTextContent(
+      'input.halvedA 2UP',
+    );
+  });
+
+  it('el pie: un ganador desconocido sale tal cual y la ventaja sin equipo, sola', () => {
+    render(
+      <HoleInput
+        {...props}
+        onScoreChange={vi.fn()}
+        standing="2UP"
+        holeResult={{ winner: 'OTRO', standingTeam: null }}
+        teamAName="Europe"
+        teamBName="USA"
+      />,
+    );
+
+    const pie = screen.getByTestId('pie-del-hoyo');
+    expect(pie).toHaveTextContent('OTRO');
+    expect(pie).not.toHaveTextContent('Europe');
+    expect(pie).not.toHaveTextContent('USA');
+    expect(pie).toHaveTextContent('2UP');
+  });
+
+  it('el pie: la ventaja del equipo B lleva su nombre', () => {
+    render(
+      <HoleInput
+        {...props}
+        onScoreChange={vi.fn()}
+        standing="3UP"
+        // Ganador del hoyo empatado: «USA» solo puede salir de la ventaja
+        holeResult={{ winner: 'HALVED', standingTeam: 'B' }}
+        teamAName="Europe"
+        teamBName="USA"
+      />,
+    );
+
+    expect(screen.getByTestId('pie-del-hoyo')).toHaveTextContent('USA 3UP');
+  });
+});

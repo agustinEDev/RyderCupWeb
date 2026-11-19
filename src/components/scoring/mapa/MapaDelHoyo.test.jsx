@@ -3329,6 +3329,28 @@ describe('MapaDelHoyo — marcar con el GPS y el recuadro desde ti (17 oct)', ()
     },
   );
 
+  it('L1: sin GPS en el navegador, tampoco se pregunta: se toca la salida', () => {
+    vi.stubGlobal('navigator', {
+      ...globalThis.navigator,
+      geolocation: undefined,
+    });
+
+    abrirSinLinea();
+
+    expect(screen.queryByText('mapa.preguntaSalida')).toBeNull();
+    expect(screen.getByText('mapa.pideSalida')).toBeInTheDocument();
+  });
+
+  it('D8: pidiendo la salida de siempre (sin el «No»), no sale «Marcar el hoyo entero»', () => {
+    abrirSinLinea();
+    act(() => gps.error({ code: 1 }));
+
+    expect(screen.getByText('mapa.pideSalida')).toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: 'mapa.marcarEntero' }),
+    ).toBeNull();
+  });
+
   it('L1: si te pregunta y resulta que estás lejos, la pregunta se va y se marca tocando', () => {
     abrirSinLinea();
     expect(screen.getByText('mapa.preguntaSalida')).toBeInTheDocument();
