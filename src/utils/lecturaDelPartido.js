@@ -147,6 +147,16 @@ export const ganadorDelResumen = (matchSummary, scoringView) => {
     : winnerTeamName;
 };
 
+/**
+ * El nombre del equipo `A` o `B`, o su letra si no lo trae. Con cualquier otro
+ * valor (`HALVED`, nada…), `undefined`: cada sitio pone lo suyo con `??`.
+ */
+export const nombreDelEquipo = (equipo, teamAName, teamBName) => {
+  if (equipo === 'A') return teamAName || 'A';
+  if (equipo === 'B') return teamBName || 'B';
+  return undefined;
+};
+
 // El resultado decidido para el aviso de partido decidido, con el nombre del
 // equipo en vez de su letra
 export const resultadoParaElAviso = (scoringView) =>
@@ -154,10 +164,10 @@ export const resultadoParaElAviso = (scoringView) =>
     ? {
         ...scoringView.decidedResult,
         winner:
-          scoringView.decidedResult.winner === 'A'
-            ? scoringView.teamAName || 'A'
-            : scoringView.decidedResult.winner === 'B'
-              ? scoringView.teamBName || 'B'
-              : scoringView.decidedResult.winner,
+          nombreDelEquipo(
+            scoringView.decidedResult.winner,
+            scoringView.teamAName,
+            scoringView.teamBName,
+          ) ?? scoringView.decidedResult.winner,
       }
     : null;

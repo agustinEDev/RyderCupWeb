@@ -6,6 +6,7 @@ import {
   estadoDeEntrega,
   ganadorDelResumen,
   motivoDe,
+  nombreDelEquipo,
   resultadoParaElAviso,
   textoDelFallo,
   textoDelMarcador,
@@ -266,6 +267,27 @@ describe('lecturaDelPartido', () => {
         ganadorDelResumen({ result: { winner: 'HALVED' } }, vista),
       ).toBeNull();
       expect(ganadorDelResumen({}, vista)).toBeNull();
+    });
+  });
+
+  describe('nombreDelEquipo', () => {
+    it('dado A o B con nombre, cuando se nombra, entonces su nombre', () => {
+      expect(nombreDelEquipo('A', 'Azules', 'Rojos')).toBe('Azules');
+      expect(nombreDelEquipo('B', 'Azules', 'Rojos')).toBe('Rojos');
+    });
+
+    it('dado A o B sin nombre (o vacío), cuando se nombra, entonces su letra', () => {
+      expect(nombreDelEquipo('A')).toBe('A');
+      expect(nombreDelEquipo('B')).toBe('B');
+      expect(nombreDelEquipo('A', '', 'Rojos')).toBe('A');
+      expect(nombreDelEquipo('B', 'Azules', '')).toBe('B');
+    });
+
+    it('dado otro valor, cuando se nombra, entonces undefined', () => {
+      expect(nombreDelEquipo('HALVED', 'Azules', 'Rojos')).toBeUndefined();
+      expect(nombreDelEquipo(null, 'Azules', 'Rojos')).toBeUndefined();
+      expect(nombreDelEquipo(undefined, 'Azules', 'Rojos')).toBeUndefined();
+      expect(nombreDelEquipo('a', 'Azules', 'Rojos')).toBeUndefined();
     });
   });
 

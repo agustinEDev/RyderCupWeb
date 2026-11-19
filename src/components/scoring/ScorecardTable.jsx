@@ -12,6 +12,7 @@ import {
   conLaMiaPrimero,
   conMiNombrePrimero,
 } from '../../utils/ordenDeLasTarjetas';
+import { nombreDelEquipo } from '../../utils/lecturaDelPartido';
 import {
   MatchFormat,
   isTeamMatchFormat,
@@ -491,11 +492,7 @@ const ScorecardTable = ({
                 })
                 .filter(Boolean);
               const fallbackLabel =
-                result?.winner === 'A'
-                  ? teamAName || 'A'
-                  : result?.winner === 'B'
-                    ? teamBName || 'B'
-                    : null;
+                nombreDelEquipo(result?.winner, teamAName, teamBName) ?? null;
               const winnerColor =
                 result?.winner === 'A'
                   ? 'bg-blue-100 text-blue-700 font-bold'

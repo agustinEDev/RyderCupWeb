@@ -1,11 +1,5 @@
 import { useTranslation } from 'react-i18next';
-
-/** El nombre del equipo `A` o `B`, o su letra si no lo trae. */
-const nombreDelEquipo = (equipo, teamAName, teamBName) => {
-  if (equipo === 'A') return teamAName || 'A';
-  if (equipo === 'B') return teamBName || 'B';
-  return undefined;
-};
+import { nombreDelEquipo } from '../../utils/lecturaDelPartido';
 
 /**
  * Pie de la casilla del hoyo: neto, quién ganó el hoyo y cómo va el partido.
