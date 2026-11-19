@@ -15,11 +15,14 @@ const MAXIMO_TEMPORIZADOR_MS = 2 ** 31 - 1;
  */
 export const useDespertarALaHora = (hora) => {
   const [, marcaLaHora] = useState(0);
+  // El instante, no el objeto: quien llama suele construir un `Date` nuevo en
+  // cada render, y con él de dependencia el temporizador se rearmaba cada vez
+  const instante = hora ? hora.getTime() : null;
   useEffect(() => {
-    if (!hora) return undefined;
-    const falta = hora.getTime() - Date.now();
+    if (instante === null) return undefined;
+    const falta = instante - Date.now();
     if (falta <= 0 || falta > MAXIMO_TEMPORIZADOR_MS) return undefined;
     const aviso = setTimeout(() => marcaLaHora((n) => n + 1), falta + 1000);
     return () => clearTimeout(aviso);
-  }, [hora]);
+  }, [instante]);
 };
