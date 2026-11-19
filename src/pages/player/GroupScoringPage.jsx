@@ -1,28 +1,22 @@
 import { useState } from 'react';
 import { barraDe } from '../../domain/services/muestrasDeLaBarra';
-import { useParams, useSearchParams, Link } from 'react-router';
+import { useParams, useSearchParams } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import HeaderAuth from '../../components/layout/HeaderAuth';
 import { useAuth } from '../../hooks/useAuth';
 import { useUserRoles } from '../../hooks/useUserRoles';
 import { useScoring } from '../../hooks/useScoring';
 import { useMapaDelHoyo } from '../../hooks/useMapaDelHoyo';
-import BotonMapa from '../../components/scoring/mapa/BotonMapa';
-import VentanaDelMapa from '../../components/scoring/mapa/VentanaDelMapa';
 import { ORIGEN_PARTIDA_DE_FRANJA } from '../../hooks/origenesDeAnotacion';
-import { conGenero } from '../../utils/genero';
-import { claveDelAvisoDelVaciado } from '../../utils/erroresDeAnotacion';
-import { horaDelCampo } from '../../services/partidosSinCobertura';
-import HoleInput from '../../components/scoring/HoleInput';
-import CampoDeLaPartida from '../../components/scoring/CampoDeLaPartida';
-import HoleSelector from '../../components/scoring/HoleSelector';
 import AnotarSinConexion from '../../components/scoring/AnotarSinConexion';
 import PendientesASalvo from '../../components/scoring/PendientesASalvo';
 import SessionBlockedModal from '../../components/scoring/SessionBlockedModal';
-import BarraDeEntrega from '../../components/scoring/BarraDeEntrega';
 import SubmitScorecardModal from '../../components/scoring/SubmitScorecardModal';
-import ClasificacionDeLaFranja from '../../components/scoring/ClasificacionDeLaFranja';
-import TarjetasDeLaPartida from '../../components/scoring/TarjetasDeLaPartida';
+import AvisosDeLaPartida from '../../components/scoring/AvisosDeLaPartida';
+import CabeceraDeLaPartida from '../../components/scoring/CabeceraDeLaPartida';
+import PestanaDeAnotarLaPartida from '../../components/scoring/PestanaDeAnotarLaPartida';
+import ConsultaDeLaPartida from '../../components/scoring/ConsultaDeLaPartida';
+import EntregaDeLaPartida from '../../components/scoring/EntregaDeLaPartida';
 import BlockLoader from '../../components/ui/BlockLoader';
 import {
   GrupoDePestanas,
@@ -37,18 +31,15 @@ import {
   PESTANAS_DE_LA_PARTIDA_DE_QUIEN_MIRA,
   PESTANAS_DE_LA_PARTIDA_DEL_JUGADOR,
 } from '../../utils/pestanasDeLaAnotacion';
-import TeeGroupStatus from '../../domain/value_objects/TeeGroupStatus';
 import {
   anotacionTerminada,
   candadosDeLaCasilla,
   estadoDeEntregaDeLaPartida,
   golpesDelSelectorDeLaPartida,
-  hoyoDeLaTarjetaDe,
   hoyosNoGuardadosDe,
   motivoDelFalloDeCarga,
   nombreDe,
   rolesEnLaPartida,
-  textoDelFalloDeLaPartida,
 } from '../../utils/lecturaDeLaPartida';
 
 // Quien juega anota; quien no, mira las tarjetas y la clasificación (caso 13)
@@ -73,7 +64,8 @@ const GroupScoringPage = () => {
   const competitionId = busqueda.get('competition');
   const { t, i18n } = useTranslation('scoring');
   const { user, loading: isLoadingUser } = useAuth();
-  const { isAdmin, isCreator } = useUserRoles(competitionId, user?.id);
+  const userId = user?.id;
+  const { isAdmin, isCreator } = useUserRoles(competitionId, userId);
   const [pestana, setPestana] = useState(null);
   const [verEntrega, setVerEntrega] = useState(false);
 
@@ -109,12 +101,11 @@ const GroupScoringPage = () => {
     refetch,
   } = useScoring(
     groupId,
-    user?.id,
+    userId,
     user?.is_admin ?? false,
     ORIGEN_PARTIDA_DE_FRANJA,
   );
-  const { retirandose, ocupado, retirarse, pedirRetirada, cancelarRetirada } =
-    useRetiradaDeLaPartida({ groupId, t, refetch });
+  const retirada = useRetiradaDeLaPartida({ groupId, t, refetch });
 
   // El mapa del hoyo (BE #532): «Mapa» en la tarjeta lo abre a pantalla completa
   const mapaDelHoyo = useMapaDelHoyo({
@@ -135,7 +126,7 @@ const GroupScoringPage = () => {
   useAnotacionEnCurso({
     cargada: Boolean(scoringView) && !isLoading,
     // Cerrada, o mi tarjeta ya no se juega: entregada, retirada o no presentado
-    terminada: anotacionTerminada(scoringView, user?.id),
+    terminada: anotacionTerminada(scoringView, userId),
     pestana: activa,
     pestanas,
     alCambiarDePestana: setPestana,
@@ -182,23 +173,9 @@ const GroupScoringPage = () => {
     );
   }
 
-  const userId = user?.id;
-  const { strokePlay } = scoringView;
   // Sin competición, `useUserRoles` no sabe de quién es: no organiza
   const organiza = isCreator || isAdmin;
-  const {
-    miTarjeta,
-    marcoA,
-    seJuegaElMarcado,
-    cerradaSinEntregar,
-    noPresentado,
-    sigueMarcandome,
-    sinMarcador,
-    miGolpe,
-    suGolpe,
-    loPusoOtro,
-    meAnoto,
-  } = rolesEnLaPartida({
+  const roles = rolesEnLaPartida({
     t,
     scoringView,
     scoresVisibles,
@@ -206,8 +183,7 @@ const GroupScoringPage = () => {
     userId,
     isMatchPlayer,
   });
-  const parDe = (jugador) =>
-    hoyoDeLaTarjetaDe(scoringView.players, jugador, currentHole)?.par ?? null;
+  const { marcoA, noPresentado } = roles;
   // Mi barra (color y sexo): las muestras del mapa de hoyos van por barra
   const miBarra = barraDe(scoringView.players.find((p) => p.userId === userId));
   // Con nombre: «Anotas a Bruno» y, en un desacuerdo, qué puso (QA del 11 oct 2026)
@@ -227,29 +203,13 @@ const GroupScoringPage = () => {
 
   const estadoDeEntrega = estadoDeEntregaDeLaPartida({
     isMatchPlayer,
-    cerradaSinEntregar,
+    cerradaSinEntregar: roles.cerradaSinEntregar,
     hasSubmitted,
     canSubmitScorecard,
     partidoAcabado,
   });
 
   const hoyosNoGuardados = hoyosNoGuardadosDe(noGuardados);
-  const golpesDelSelector = golpesDelSelectorDeLaPartida({
-    tarjetas: strokePlay.cards,
-    scoresVisibles,
-    userId,
-    isMatchPlayer,
-  });
-  const candados = candadosDeLaCasilla({
-    canScore,
-    isFullyLocked,
-    isSessionBlocked,
-    isOwnScoreLocked,
-    isMarkerScoreLocked,
-    cerradaSinEntregar,
-    marcoA,
-    seJuegaElMarcado,
-  });
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -264,76 +224,23 @@ const GroupScoringPage = () => {
       )}
 
       <div className="mx-auto max-w-4xl space-y-3 px-4 py-4">
-        {hoyosNoGuardados.length > 0 && !noPresentado && (
-          <p
-            data-testid="no-guardados"
-            className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700"
-          >
-            {t('offline.noGuardados', {
-              count: hoyosNoGuardados.length,
-              holes: hoyosNoGuardados.join(', '),
-            })}
-          </p>
-        )}
-        {avisoDelVaciado && (
-          <p
-            role="status"
-            className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900"
-          >
-            {t(claveDelAvisoDelVaciado(avisoDelVaciado))}
-          </p>
-        )}
-        {/* Lo que se ve es la foto del móvil, no el servidor (FE #614): con
-            un 5xx o sin cobertura se leería como lo de ahora mismo */}
-        {/* Sin conexión ya lo dice el aviso de arriba: dos casi iguales a la
-            vez sobraban (QA del 11 oct 2026) */}
-        {pintadoDeMemoria && !isOffline && (
-          <p
-            data-testid="pintado-de-memoria"
-            className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800"
-          >
-            {t('offline.noSeActualiza')}
-          </p>
-        )}
-        {error && (
-          <div
-            role="alert"
-            className="flex items-center justify-between gap-2 rounded-lg border border-red-200 bg-red-50 p-3"
-          >
-            <p className="text-sm text-red-600">
-              {textoDelFalloDeLaPartida(t, error, origenDelError)}
-            </p>
-            <button
-              type="button"
-              onClick={refetch}
-              className="rounded bg-red-600 px-3 py-1 text-xs text-white"
-            >
-              {t('retry')}
-            </button>
-          </div>
-        )}
+        <AvisosDeLaPartida
+          t={t}
+          hoyosNoGuardados={hoyosNoGuardados}
+          noPresentado={noPresentado}
+          avisoDelVaciado={avisoDelVaciado}
+          pintadoDeMemoria={pintadoDeMemoria}
+          isOffline={isOffline}
+          error={error}
+          origenDelError={origenDelError}
+          onReintentar={refetch}
+        />
 
-        {competitionId && (
-          <Link
-            to={`/competitions/${competitionId}`}
-            className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-primary"
-          >
-            &larr; {t('partida.backToCompetition')}
-          </Link>
-        )}
-
-        <div>
-          <h1 className="text-xl font-bold text-gray-900">
-            {t('partida.header', {
-              numero: scoringView.matchNumber,
-              hora: strokePlay.teeTime,
-            })}
-          </h1>
-          <p className="text-sm text-gray-500">
-            {t(`partida.type.${strokePlay.tournamentType}`)}
-          </p>
-          <CampoDeLaPartida nombre={scoringView.roundInfo?.golfCourseName} />
-        </div>
+        <CabeceraDeLaPartida
+          t={t}
+          competitionId={competitionId}
+          scoringView={scoringView}
+        />
 
         <GrupoDePestanas actual={activa} onElegir={setPestana}>
           <ListaDePestanas
@@ -354,208 +261,58 @@ const GroupScoringPage = () => {
           />
 
           <PanelDePestana id="input" className="space-y-4">
-            {/* El no presentado no anota: se le dice por qué (#854) */}
-            {noPresentado ? (
-              <p
-                data-testid="no-presentado"
-                className="rounded-lg border border-gray-200 bg-gray-50 p-3 text-sm text-gray-700"
-              >
-                {t('partida.youAreNoShowHere', conGenero(miTarjeta?.teeGender))}
-              </p>
-            ) : (
-              <>
-                {/* Sin nadie en juego que le marque (se fue o ya entregó): sus hoyos
-                  los valida el organizador (QA del 11 oct 2026, BE #539) */}
-                {sinMarcador && (
-                  <p
-                    data-testid="sin-marcador"
-                    className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900"
-                  >
-                    {t('partida.organiserValidates')}
-                  </p>
-                )}
-                {marcoA && (
-                  <p className="text-sm text-gray-700">
-                    {t('partida.youMark', {
-                      jugador: nombreDelMarcado ?? '',
-                    })}
-                  </p>
-                )}
-                <HoleSelector
-                  currentHole={currentHole}
-                  onSelect={setCurrentHole}
-                  scores={golpesDelSelector}
-                  totalHoles={totalHoles}
-                  noGuardados={hoyosNoGuardados}
-                />
-                {aunNoAbre && (
-                  <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm">
-                    <p className="font-medium text-amber-900">
-                      {t('partida.notOpenYet')}
-                    </p>
-                    <p className="mt-1 text-amber-800">
-                      {t('notOpenYet.opensAt', {
-                        hora: horaDelCampo(
-                          scoringView.scoringOpensAt,
-                          i18n.language,
-                        ),
-                      })}
-                    </p>
-                    {/* A quién vas a marcar, como en la Ryder (16 oct) */}
-                    {nombreDelMarcado && (
-                      <p
-                        data-testid="anotaras-a"
-                        className="mt-1 font-medium text-amber-900"
-                      >
-                        {t('notOpenYet.youWillMark', {
-                          nombre: nombreDelMarcado,
-                        })}
-                      </p>
-                    )}
-                  </div>
-                )}
-                {!aunNoAbre && (
-                  <>
-                    <HoleInput
-                      key={`${currentHole}-${noGuardados[currentHole]?.turno ?? ''}`}
-                      holeNumber={currentHole}
-                      par={parDe(userId)}
-                      markedPar={parDe(marcoA)}
-                      markedName={nombreDelMarcado}
-                      markerName={meAnoto}
-                      marksSomeone={Boolean(marcoA)}
-                      hasMarker={
-                        sigueMarcandome || Boolean(miGolpe?.markerSubmitted)
-                      }
-                      markedScoredBy={loPusoOtro}
-                      strokeIndex={null}
-                      playerScore={miGolpe}
-                      markedPlayerScore={suGolpe}
-                      validationStatus={miGolpe?.validationStatus}
-                      markedValidationStatus={suGolpe?.validationStatus}
-                      strokesReceived={miGolpe?.strokesReceivedThisHole}
-                      // Su tarjeta cerrada sin entregar se lee: así ve quién le anotó (QA 3)
-                      isReadOnly={candados.isReadOnly}
-                      isOwnScoreLocked={candados.isOwnScoreLocked}
-                      isMarkerScoreLocked={candados.isMarkerScoreLocked}
-                      onScoreChange={anotar}
-                      allowPickedUp={strokePlay.pickedUpAllowed === true}
-                    />
-                    <VentanaDelMapa
-                      mapaDelHoyo={mapaDelHoyo}
-                      golfCourseId={
-                        scoringView?.roundInfo?.golfCourseId ?? null
-                      }
-                      numeroDeHoyo={currentHole}
-                      par={parDe(userId)}
-                      // Los metros desde mi barra, para el recuadro del mapa (16 oct)
-                      metros={
-                        hoyoDeLaTarjetaDe(
-                          scoringView.players,
-                          userId,
-                          currentHole,
-                        )?.meters ?? null
-                      }
-                      userId={userId ?? null}
-                      barra={miBarra}
-                    />
-                  </>
-                )}
-                <div className="flex items-center justify-between gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setCurrentHole(currentHole - 1)}
-                    disabled={currentHole <= 1}
-                    className="min-h-11 rounded-lg border border-gray-300 bg-white px-4 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-40"
-                  >
-                    {t('input.prevHole')}
-                  </button>
-                  {/* «Mapa», entre Anterior y Siguiente (Agustín, 16 oct): ni dentro de la tarjeta del hoyo ni en una fila más, que empujaba la navegación fuera de la pantalla */}
-                  {/* Solo con el hoyo a la vista: la ventana del mapa va con él. Y en España, la única con imagen (19 oct) */}
-                  {!aunNoAbre && mapaDelHoyo.disponible && (
-                    <BotonMapa onAbrir={mapaDelHoyo.abrir} />
-                  )}
-                  <button
-                    type="button"
-                    onClick={() => setCurrentHole(currentHole + 1)}
-                    disabled={currentHole >= totalHoles}
-                    className="min-h-11 rounded-lg border border-gray-300 bg-white px-4 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-40"
-                  >
-                    {t('input.nextHole')}
-                  </button>
-                </div>
-
-                {/* Antes de abrir no hay de qué retirarse: el servidor lo rechaza */}
-                {miTarjeta?.cardStatus === 'JUGANDO' &&
-                  !aunNoAbre &&
-                  (retirandose ? (
-                    <div className="flex min-w-0 flex-wrap items-center gap-2 rounded-lg bg-amber-50 p-3 text-sm text-amber-900">
-                      <span className="min-w-0 flex-1">
-                        {t('partida.retireConfirm')}
-                      </span>
-                      <button
-                        type="button"
-                        disabled={ocupado}
-                        onClick={retirarse}
-                        className="min-h-11 rounded-md bg-amber-600 px-3 font-semibold text-white"
-                      >
-                        {t('partida.retireYes')}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={cancelarRetirada}
-                        className="min-h-11 rounded-md px-3"
-                      >
-                        {t('partida.no')}
-                      </button>
-                    </div>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={pedirRetirada}
-                      className="min-h-11 w-full rounded-lg border border-red-200 text-sm font-medium text-red-600"
-                    >
-                      {t('partida.retire')}
-                    </button>
-                  ))}
-              </>
-            )}
-          </PanelDePestana>
-
-          {/* Montada siempre: se pide al abrir su pestaña y deja de releerse al cerrarla */}
-          <PanelDePestana id="standings" montadoSiempre enfocable>
-            <ClasificacionDeLaFranja
-              roundId={strokePlay.roundId}
-              userId={userId}
-              activa={activa === 'standings'}
-            />
-          </PanelDePestana>
-
-          <PanelDePestana id="cards">
-            <TarjetasDeLaPartida
+            <PestanaDeAnotarLaPartida
+              t={t}
+              idioma={i18n.language}
               scoringView={scoringView}
               userId={userId}
-              organiza={organiza}
-              onCambio={refetch}
+              roles={roles}
+              nombreDelMarcado={nombreDelMarcado}
+              candados={candadosDeLaCasilla({
+                canScore,
+                isFullyLocked,
+                isSessionBlocked,
+                isOwnScoreLocked,
+                isMarkerScoreLocked,
+                cerradaSinEntregar: roles.cerradaSinEntregar,
+                marcoA,
+                seJuegaElMarcado: roles.seJuegaElMarcado,
+              })}
+              currentHole={currentHole}
+              totalHoles={totalHoles}
+              onElegirHoyo={setCurrentHole}
+              golpesDelSelector={golpesDelSelectorDeLaPartida({
+                tarjetas: scoringView.strokePlay.cards,
+                scoresVisibles,
+                userId,
+                isMatchPlayer,
+              })}
+              hoyosNoGuardados={hoyosNoGuardados}
+              noGuardados={noGuardados}
+              aunNoAbre={aunNoAbre}
+              onScoreChange={anotar}
+              mapaDelHoyo={mapaDelHoyo}
+              miBarra={miBarra}
+              retirada={retirada}
             />
           </PanelDePestana>
+
+          <ConsultaDeLaPartida
+            scoringView={scoringView}
+            userId={userId}
+            organiza={organiza}
+            activa={activa}
+            onCambio={refetch}
+          />
         </GrupoDePestanas>
 
         {estadoDeEntrega && (
-          <div data-testid="estado-de-entrega" data-estado={estadoDeEntrega}>
-            <div className="h-36" aria-hidden="true" />
-            <BarraDeEntrega
-              estado={estadoDeEntrega}
-              marcador={null}
-              onEntregar={() => setVerEntrega(true)}
-              enviando={isSubmitting}
-              esFoursomes={false}
-              pendientes={[]}
-              completado={scoringView.matchStatus === TeeGroupStatus.COMPLETED}
-              sePuedeSeguir={false}
-              dePartida
-            />
-          </div>
+          <EntregaDeLaPartida
+            estado={estadoDeEntrega}
+            onEntregar={() => setVerEntrega(true)}
+            enviando={isSubmitting}
+            scoringView={scoringView}
+          />
         )}
       </div>
 
