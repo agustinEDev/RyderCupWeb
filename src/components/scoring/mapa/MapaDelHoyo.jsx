@@ -132,7 +132,8 @@ const MapaDelHoyo = ({
   const conVistaRef = useRef(false);
   // Sin WebGL (móviles viejos, o desactivado) no hay mapa, pero el recuadro de
   // la tarjeta sigue, que no lo necesita
-  const [sinMapa, setSinMapa] = useState(false);
+  // null hasta crear el mapa: la guía para marcar espera a saberlo
+  const [sinMapa, setSinMapa] = useState(null);
 
   const contenedorRef = useRef(null);
   const arribaRef = useRef(null);

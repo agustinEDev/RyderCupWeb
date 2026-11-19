@@ -12,7 +12,8 @@ import { opcionesDelMapa, ponerCapasDelHoyo } from './estiloDelMapa';
  * el estilo pone la ortofoto de la comunidad y las capas del hoyo; en cuanto la
  * ventana está pintada, y cada vez que el panel de abajo crece, lo encuadra.
  *
- * Sin WebGL no hay mapa: lo apunta en Sentry y llama a `setSinMapa(true)`.
+ * Sin WebGL no hay mapa: lo apunta en Sentry y llama a `setSinMapa(true)`;
+ * creado, `setSinMapa(false)`.
  */
 export const useMapaDeMapLibre = (
   {
@@ -77,6 +78,8 @@ export const useMapaDeMapLibre = (
         return undefined;
       }
       mapaRef.current = mapa;
+      // Ya se sabe que hay mapa (la guía para marcar lo espera)
+      setSinMapa(false);
       if (orientado) {
         mapa.touchZoomRotate.disableRotation();
         mapa.keyboard.disableRotation();
