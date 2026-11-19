@@ -1,15 +1,6 @@
 /** @typedef {import('../value_objects/Email').default} Email */
 /** @typedef {import('../value_objects/Password').default} Password */
 
-/**
- * La recuperación de contraseña: la implementan los repositorios de
- * autenticación (ApiAuthRepository) aunque esta interfaz todavía no la declare.
- * @typedef {Object} PasswordResetMethods
- * @property {(email: string) => Promise<{message: string}>} requestPasswordReset
- * @property {(token: string) => Promise<{valid: boolean, message: string}>} validateResetToken
- * @property {(token: string, newPassword: string) => Promise<{message: string}>} resetPassword
- */
-
 class IAuthRepository {
   /**
    * Autentica a un usuario.
@@ -111,6 +102,36 @@ class IAuthRepository {
    */
   async resendVerificationLink(token) {
     throw new Error('Method not implemented: resendVerificationLink');
+  }
+
+  /**
+   * Pide el correo de recuperación de contraseña. La respuesta es siempre genérica,
+   * exista o no la cuenta (anti-enumeración).
+   * @param {string} email
+   * @returns {Promise<{message: string}>}
+   */
+  async requestPasswordReset(email) {
+    throw new Error('Method not implemented: requestPasswordReset');
+  }
+
+  /**
+   * Comprueba un token de recuperación antes de pedir la contraseña nueva. Un token
+   * inválido o caducado es `valid: false`, no un error.
+   * @param {string} token
+   * @returns {Promise<{valid: boolean, message: string}>}
+   */
+  async validateResetToken(token) {
+    throw new Error('Method not implemented: validateResetToken');
+  }
+
+  /**
+   * Cambia la contraseña con el token de recuperación.
+   * @param {string} token
+   * @param {string} newPassword
+   * @returns {Promise<{message: string}>}
+   */
+  async resetPassword(token, newPassword) {
+    throw new Error('Method not implemented: resetPassword');
   }
 }
 

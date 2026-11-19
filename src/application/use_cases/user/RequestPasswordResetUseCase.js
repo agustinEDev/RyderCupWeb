@@ -1,7 +1,6 @@
 import Email from '../../../domain/value_objects/Email.js';
 
 /** @typedef {import('../../../domain/repositories/IAuthRepository').default} IAuthRepository */
-/** @typedef {import('../../../domain/repositories/IAuthRepository').PasswordResetMethods} PasswordResetMethods */
 
 /**
  * Use Case para solicitar reset de contraseña
@@ -10,7 +9,7 @@ import Email from '../../../domain/value_objects/Email.js';
 class RequestPasswordResetUseCase {
   /**
    * @param {Object} dependencies - Objeto de dependencias
-   * @param {IAuthRepository & PasswordResetMethods} dependencies.authRepository - Repositorio de autenticación
+   * @param {IAuthRepository} dependencies.authRepository - Repositorio de autenticación
    */
   constructor({ authRepository }) {
     this.authRepository = authRepository;
