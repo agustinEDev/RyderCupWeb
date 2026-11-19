@@ -3,6 +3,8 @@ import InvitationMapper from '../mappers/InvitationMapper';
 import apiRequest from '../http/api.js';
 import { segmento } from '../http/api';
 
+/** @typedef {import('../../domain/entities/Invitation').default} Invitation */
+
 /**
  * ApiInvitationRepository - REST API implementation
  *
@@ -48,6 +50,7 @@ class ApiInvitationRepository extends IInvitationRepository {
       },
     );
 
+    /** @type {Invitation & {_apiData?: Object}} */
     const invitation = InvitationMapper.toDomain(apiData);
     invitation._apiData = apiData;
     return invitation;
@@ -73,6 +76,7 @@ class ApiInvitationRepository extends IInvitationRepository {
       },
     );
 
+    /** @type {Invitation & {_apiData?: Object}} */
     const invitation = InvitationMapper.toDomain(apiData);
     invitation._apiData = apiData;
     return invitation;
@@ -88,6 +92,7 @@ class ApiInvitationRepository extends IInvitationRepository {
     const response = await apiRequest(`/api/v1/invitations/me${queryString}`);
 
     const apiDataArray = response.invitations || [];
+    /** @type {Array<Invitation & {_apiData?: Object}>} */
     const invitations = InvitationMapper.toDomainMany(apiDataArray);
 
     invitations.forEach((invitation, index) => {
@@ -118,6 +123,7 @@ class ApiInvitationRepository extends IInvitationRepository {
       },
     );
 
+    /** @type {Invitation & {_apiData?: Object}} */
     const invitation = InvitationMapper.toDomain(apiData);
     invitation._apiData = apiData;
     return invitation;
@@ -135,6 +141,7 @@ class ApiInvitationRepository extends IInvitationRepository {
     );
 
     const apiDataArray = response.invitations || [];
+    /** @type {Array<Invitation & {_apiData?: Object}>} */
     const invitations = InvitationMapper.toDomainMany(apiDataArray);
 
     invitations.forEach((invitation, index) => {

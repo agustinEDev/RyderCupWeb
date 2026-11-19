@@ -176,14 +176,20 @@ export class ICompetitionRepository {
     );
   }
 
-  /** Lanza la actualización de hándicaps con la RFEG (FE #824). */
+  /**
+   * Lanza la actualización de hándicaps con la RFEG (FE #824).
+   * @returns {Promise<{status: string, resumed: boolean}>} `resumed` si retoma una a medias
+   */
   async launchHandicapUpdate(competitionId) {
     throw new Error(
       'ICompetitionRepository.launchHandicapUpdate must be implemented',
     );
   }
 
-  /** Programa la actualización de hándicaps; `runAt` con su huso. */
+  /**
+   * Programa la actualización de hándicaps; `runAt` con su huso.
+   * @returns {Promise<{runAt: string}>} La hora que queda programada
+   */
   async scheduleHandicapUpdate(competitionId, runAt) {
     throw new Error(
       'ICompetitionRepository.scheduleHandicapUpdate must be implemented',

@@ -103,9 +103,9 @@ class ScheduleMapper {
   }
 
   /**
-   * Mapea un partido individual de la API a DTO.
-   * @param {Object} apiMatch - Partido de la API (snake_case)
-   * @returns {Object} Match DTO (camelCase)
+   * Mapea un jugador de un partido de la API a DTO.
+   * @param {Object} p - Jugador del partido en la API (snake_case)
+   * @returns {Object} DTO del jugador (camelCase)
    */
   static toMatchPlayerDTO(p) {
     return {
@@ -118,6 +118,12 @@ class ScheduleMapper {
     };
   }
 
+  /**
+   * Mapea un partido individual de la API a DTO.
+   * @param {Object} apiMatch - Partido de la API (snake_case)
+   * @returns {Object} Match DTO (camelCase): id, roundId, matchNumber, los
+   *   jugadores de cada equipo (toMatchPlayerDTO), estado, golpes dados y resultado
+   */
   static toMatchDTO(apiMatch) {
     return {
       id: apiMatch.id,

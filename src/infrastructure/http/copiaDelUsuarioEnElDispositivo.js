@@ -37,8 +37,8 @@ const CAMPOS_QUE_SE_GUARDAN = [
 ];
 
 /**
- * @param {unknown} usuario
- * @returns {Object|null} Solo los campos que se pueden guardar; null si no es un usuario.
+ * @param {unknown} valor
+ * @returns {valor is Record<string, unknown>} Si es un objeto y no una lista
  */
 const esObjeto = (valor) =>
   Boolean(valor) && typeof valor === 'object' && !Array.isArray(valor);

@@ -30,6 +30,7 @@ class ApiAuthRepository extends IAuthRepository {
       // HTTP 423: demasiados fallos desde esta red para esta cuenta (BE #732). Con su
       // código: el texto, traducido, lo pone la pantalla
       if (error.status === 423 || error.statusCode === 423) {
+        /** @type {Error & {code?: string}} */
         const bloqueo = new Error('Too many failed attempts from this network');
         bloqueo.code = 'LOGIN_LOCKED';
         throw bloqueo;
@@ -38,6 +39,7 @@ class ApiAuthRepository extends IAuthRepository {
       // HTTP 401: correo o contraseña mal. Con su código: el texto, traducido, lo pone
       // la pantalla (antes salía este mensaje, en inglés, en cualquier idioma)
       if (error.status === 401 || error.statusCode === 401) {
+        /** @type {Error & {code?: string}} */
         const credenciales = new Error('Incorrect email or password');
         credenciales.code = 'INVALID_CREDENTIALS';
         throw credenciales;
@@ -98,7 +100,6 @@ class ApiAuthRepository extends IAuthRepository {
 
   /**
    * Request password reset email
-   * @override
    * @param {string} email - User email address
    * @returns {Promise<{message: string}>} Success message (always generic for anti-enumeration)
    */
@@ -116,7 +117,6 @@ class ApiAuthRepository extends IAuthRepository {
 
   /**
    * Validate password reset token
-   * @override
    * @param {string} token - Reset token from email
    * @returns {Promise<{valid: boolean, message: string}>} Token validation result.
    *   An invalid or expired token is a 200 with valid:false, not an error (FE #775)
@@ -139,7 +139,6 @@ class ApiAuthRepository extends IAuthRepository {
 
   /**
    * Reset user password with token
-   * @override
    * @param {string} token - Reset token from email
    * @param {string} newPassword - New password (already validated by Use Case)
    * @returns {Promise<{message: string}>} Success message

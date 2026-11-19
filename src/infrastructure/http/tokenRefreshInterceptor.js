@@ -171,6 +171,7 @@ const pideElRefresco = async () => {
 
       // Refresh token expired or invalid
       if (response.status === 401) {
+        /** @type {Error & {response?: Response, errorData?: Object}} */
         const error = new Error(
           errorData.detail || 'Refresh token expired. Please login again.',
         );
@@ -180,6 +181,7 @@ const pideElRefresco = async () => {
       }
 
       // Técnico: su texto en inglés no es un motivo que enseñar (mensajeDelError)
+      /** @type {Error & {response?: Response, errorData?: Object, mensajeTecnico?: boolean}} */
       const error = new Error('Failed to refresh token');
       error.response = response;
       error.errorData = errorData;
@@ -449,7 +451,7 @@ const vigilaLaRepetida = async (url, opciones, repetida) => {
  *    d. If refresh fails: logout and redirect
  *
  * @param {string} url - Request URL
- * @param {RequestInit} options - Fetch options
+ * @param {RequestInit} [options] - Fetch options
  * @returns {Promise<Response>} - Fetch response
  */
 export const fetchWithTokenRefresh = async (url, options = {}) => {
@@ -459,6 +461,7 @@ export const fetchWithTokenRefresh = async (url, options = {}) => {
   await esperaAlCierrePendiente();
 
   // Ensure credentials are always included for httpOnly cookies
+  /** @type {RequestInit} */
   const fetchOptions = {
     ...options,
     credentials: 'include',
@@ -515,6 +518,7 @@ export const fetchWithTokenRefresh = async (url, options = {}) => {
     // refresco como si nada. Es el mismo patrón que se quitó de las otras dos
     // ramas; esta se había quedado
     if (revocado) {
+      /** @type {Error & {response?: Response, errorData?: Object}} */
       const revocacion = new Error('Device revoked');
       revocacion.response = response;
       revocacion.errorData = errorData;
