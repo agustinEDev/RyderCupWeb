@@ -3421,6 +3421,37 @@ describe('MapaDelHoyo — marcar con el GPS y el recuadro desde ti (17 oct)', ()
       expect(ultimoGiro()).toBeCloseTo(rumbo(aqui, green), 6);
     });
 
+    it('Z1 tras el «No» con el green conocido y el mapa movido: gana el zoom', () => {
+      const green = alNorte(80);
+      conGreenSuelto({ hoyo: { playLine: [], green: { center: green } } });
+      const aqui = alLado(30);
+      desde(aqui);
+      act(() => mapa().oyentes.movestart({ originalEvent: {} }));
+
+      no();
+
+      expect(mapa().easeTo).toHaveBeenCalledTimes(1);
+      expect(ultimoGiro()).toBeCloseTo(rumbo(aqui, green), 6);
+    });
+
+    it('Z1 ya acercado, una marca vuelve a acercar aunque el mapa se moviera', () => {
+      const green = alNorte(80);
+      conGreenSuelto({ hoyo: { playLine: [], green: { center: green } } });
+      enLaSalida(25);
+      si();
+      fireEvent.click(screen.getByRole('button', { name: 'mapa.ahoraNo' }));
+      const aqui = alLado(30);
+      desde(aqui);
+      act(() => mapa().oyentes.movestart({ originalEvent: {} }));
+      const antes = mapa().easeTo.mock.calls.length;
+      fireEvent.click(screen.getByRole('button', { name: /mapa\.marcarHoyo/ }));
+
+      no();
+
+      expect(mapa().easeTo.mock.calls.length).toBeGreaterThan(antes);
+      expect(ultimoGiro()).toBeCloseTo(rumbo(aqui, green), 6);
+    });
+
     it('Z7: tras «Norte», no se acerca solo después', () => {
       abrir({
         hoyo: { playLine: [], green: { center: alNorte(300) } },
@@ -3466,6 +3497,38 @@ describe('MapaDelHoyo — marcar con el GPS y el recuadro desde ti (17 oct)', ()
 
       expect(mapa().easeTo).toHaveBeenCalledTimes(1);
       expect(ultimoGiro()).toBeCloseTo(rumbo(aqui, verde.center), 6);
+    });
+
+    it('Z14: acercado al abrir, el codo sigue como hoy: al alejarte a 250 m del green, sale', () => {
+      abrirRecto();
+      desde(DENTRO);
+
+      desde(alNorte(50));
+
+      expect(elCodo()).toHaveLength(1);
+    });
+
+    it('S1: marcado el hoyo en la salida, la marca no deja el zoom armado: movido el mapa, al andar no se acerca', () => {
+      abrirSinLinea({ par: 3 });
+      enLaSalida();
+      si();
+      tocar(alNorte(90));
+      act(() => mapa().oyentes.movestart({ originalEvent: {} }));
+      const antes = mapa().easeTo.mock.calls.length;
+
+      desde(alLado(5, alNorte(45)));
+
+      expect(mapa().easeTo.mock.calls.length).toBe(antes);
+    });
+
+    it('G: a menos de 30 m del green, el giro del hoyo (con el que se juega)', () => {
+      abrirRecto();
+      const aqui = { lat: alNorte(285).lat, lon: T.lon + 0.0001 };
+
+      desde(aqui);
+
+      expect(ultimoGiro()).toBeCloseTo(rumbo(T, alNorte(150)), 6);
+      expect(ultimoGiro()).not.toBeCloseTo(rumbo(aqui, VERDE.center), 1);
     });
 
     it('Z13: con el «⋮» abierto espera; al cerrarlo, se acerca', () => {

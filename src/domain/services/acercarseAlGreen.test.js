@@ -126,6 +126,18 @@ describe('giroAlGreen', () => {
     );
   });
 
+  it('pasado el green se mide sobre el último tramo, no de la salida al green (dogleg)', () => {
+    // Codo al oeste del green: el último tramo va al este; tú, al sureste
+    const codo = puntoDesde(CENTRO, 270, 150);
+    const linea = [SALIDA, codo, CENTRO];
+    const desde = puntoDesde(CENTRO, 135, 50);
+
+    expect(giroAlGreen({ desde, green: GREEN, linea, par: 4 })).toBeCloseTo(
+      rumboDeLaLinea(linea, 4),
+      9,
+    );
+  });
+
   it('el del hoyo es el que se juega: un par 3, de la salida al green', () => {
     expect(
       giroAlGreen({ desde: delante(10), green: GREEN, linea: LINEA, par: 3 }),
