@@ -182,6 +182,7 @@ class IScheduleRepository {
   }
 
   // Partidas de las franjas de stroke play (FE #824, PR 6)
+  /** @returns {Promise<Object>} Las partidas de la franja, como quedan */
   async getTeeGroups(roundId) {
     throw new Error('IScheduleRepository.getTeeGroups must be implemented');
   }
@@ -190,22 +191,26 @@ class IScheduleRepository {
     throw new Error('IScheduleRepository.getMyTeeGroups must be implemented');
   }
 
+  /** @returns {Promise<Object>} Las partidas de la franja, como quedan */
   async generateTeeGroups(roundId, order) {
     throw new Error(
       'IScheduleRepository.generateTeeGroups must be implemented',
     );
   }
 
+  /** @returns {Promise<Object>} Las partidas de la franja, como quedan */
   async moveTeeGroupPlayer(roundId, movimiento) {
     throw new Error(
       'IScheduleRepository.moveTeeGroupPlayer must be implemented',
     );
   }
 
+  /** @returns {Promise<Object>} Las partidas de la franja, como quedan */
   async reorderTeeGroups(roundId, groupIds) {
     throw new Error('IScheduleRepository.reorderTeeGroups must be implemented');
   }
 
+  /** @returns {Promise<Object>} Las partidas de la franja, como quedan */
   async setTeeGroupMarkers(groupId, markers) {
     throw new Error(
       'IScheduleRepository.setTeeGroupMarkers must be implemented',
