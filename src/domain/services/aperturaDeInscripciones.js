@@ -26,18 +26,20 @@ export const MAX_DIAS_DE_APERTURA = 14;
 export const diasHastaElTorneo = (startDate) => {
   if (!startDate) return null;
 
-  // `any` solo para el tipado: abajo se restan dos Date, que restan sus
-  // milisegundos (valueOf), y TypeScript solo deja restar números
-  /** @type {any} */
   const comienzo = new Date(`${startDate}T00:00:00`);
   if (Number.isNaN(comienzo.getTime())) return null;
 
-  /** @type {any} */
   const hoy = new Date();
   hoy.setHours(0, 0, 0, 0);
 
   const MILISEGUNDOS_POR_DIA = 86400000;
-  return Math.round((comienzo - hoy) / MILISEGUNDOS_POR_DIA);
+  // Restar dos Date resta sus milisegundos (valueOf); los `any` son solo para
+  // el tipado, que solo deja restar números. Sin formatear: Prettier saca el
+  // primer cast del paréntesis y pasaría a envolver la resta entera
+  // prettier-ignore
+  return Math.round(
+    (/** @type {any} */ (comienzo) - /** @type {any} */ (hoy)) / MILISEGUNDOS_POR_DIA,
+  );
 };
 
 /**
