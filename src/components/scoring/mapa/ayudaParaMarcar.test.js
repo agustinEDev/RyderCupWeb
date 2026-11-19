@@ -1,8 +1,21 @@
 import { describe, it, expect } from 'vitest';
-import { pasoDeLaMarca, seVeElUltimoPaso, seVeLaGuia } from './ayudaParaMarcar';
+import {
+  habraPuntosQueArrastrar,
+  pasoDeLaMarca,
+  puntosDelUltimoPaso,
+  seVeLaGuia,
+} from './ayudaParaMarcar';
 
 const T = { lat: 36.28, lon: -5.33 };
 const G = { lat: 36.29, lon: -5.332 };
+// Codos de verdad: a cientos de metros de la recta de la salida al green
+const CODO = { lat: 36.284, lon: -5.335 };
+const CODO_2 = { lat: 36.287, lon: -5.336 };
+// Vértices de OSM casi sobre la recta (a menos de 15 m): no cuentan como codos
+const EN_LA_RECTA = (f) => ({
+  lat: T.lat + (G.lat - T.lat) * f,
+  lon: T.lon + (G.lon - T.lon) * f,
+});
 
 describe('seVeLaGuia (G1, G4)', () => {
   const base = {
@@ -74,7 +87,7 @@ describe('pasoDeLaMarca (P1-P5 y par 3)', () => {
     ],
     [
       'P3: con la salida conocida, solo el green',
-      { marcandoSalida: false },
+      { marcandoSalida: false, lineaAprobada: [T] },
       { n: 1, de: 2 },
     ],
     ['par 5: como el par 4', { par: 5 }, { n: 1, de: 3 }],
@@ -97,18 +110,31 @@ describe('pasoDeLaMarca (P1-P5 y par 3)', () => {
     ],
     [
       'solo el green sobre una línea aprobada con su codo (par 4): sin número',
-      { marcandoSalida: false, lineaAprobada: [T, T, G] },
+      { marcandoSalida: false, lineaAprobada: [T, CODO, G] },
       null,
     ],
     [
       'solo el green sobre una línea con un codo en un par 5 (falta otro): «1 de 2»',
-      { marcandoSalida: false, lineaAprobada: [T, T, G], par: 5 },
+      { marcandoSalida: false, lineaAprobada: [T, CODO, G], par: 5 },
       { n: 1, de: 2 },
     ],
     [
       'solo el green sobre una línea con dos codos en un par 5: sin número',
-      { marcandoSalida: false, lineaAprobada: [T, T, T, G], par: 5 },
+      { marcandoSalida: false, lineaAprobada: [T, CODO, CODO_2, G], par: 5 },
       null,
+    ],
+    [
+      'solo el green sobre una línea de OSM casi recta: se añadirá el codo, «1 de 2»',
+      {
+        marcandoSalida: false,
+        lineaAprobada: [T, EN_LA_RECTA(0.3), EN_LA_RECTA(0.6), G],
+      },
+      { n: 1, de: 2 },
+    ],
+    [
+      'solo el green sobre una línea con la salida repetida: «1 de 2»',
+      { marcandoSalida: false, lineaAprobada: [T, T, G] },
+      { n: 1, de: 2 },
     ],
     [
       'solo el green con la salida sola (sin codos): «1 de 2»',
@@ -125,17 +151,36 @@ describe('pasoDeLaMarca (P1-P5 y par 3)', () => {
   });
 });
 
-describe('seVeElUltimoPaso (P4)', () => {
+describe('habraPuntosQueArrastrar (la misma regla que construye la línea)', () => {
   it.each([
-    ['tras guardar con puntos que arrastrar', true, null, true],
+    ['la salida sola, par 4', [T], 4, true],
+    ['la salida sola, par 3', [T], 3, false],
+    ['con su codo, par 4', [T, CODO, G], 4, false],
+    ['con un codo, par 5 (falta otro)', [T, CODO, G], 5, true],
+    ['con dos codos, par 5', [T, CODO, CODO_2, G], 5, false],
     [
-      'sin puntos que arrastrar (par 3, o ya movidos, o «Listo»)',
-      false,
-      null,
-      false,
+      'OSM casi recta, par 4',
+      [T, EN_LA_RECTA(0.3), EN_LA_RECTA(0.6), G],
+      4,
+      true,
     ],
-    ['con un aviso pendiente, espera', true, 'mapa.fueraDeLimites', false],
+    ['la salida repetida, par 4', [T, T, G], 4, true],
+    ['sin línea', [], 4, false],
+  ])('%s', (_caso, linea, par, esperado) => {
+    expect(habraPuntosQueArrastrar(linea, par)).toBe(esperado);
+  });
+});
+
+describe('puntosDelUltimoPaso (P4)', () => {
+  it.each([
+    ['con un punto añadido', 1, null, 1],
+    ['con dos puntos añadidos (par 5)', 2, null, 2],
+    ['sin puntos que arrastrar (par 3, movidos o «Listo»)', false, null, 0],
+    ['sin puntos añadidos', 0, null, 0],
+    ['con un aviso pendiente, espera', 2, 'mapa.fueraDeLimites', 0],
   ])('%s', (_caso, conAyudaDeCodos, avisoDeMarca, esperado) => {
-    expect(seVeElUltimoPaso({ conAyudaDeCodos, avisoDeMarca })).toBe(esperado);
+    expect(puntosDelUltimoPaso({ conAyudaDeCodos, avisoDeMarca })).toBe(
+      esperado,
+    );
   });
 });

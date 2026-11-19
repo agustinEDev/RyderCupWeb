@@ -38,6 +38,39 @@ describe('GuiaParaMarcar', () => {
     expect(en.getByRole('button', { name: 'mapa.guia.empezar' })).toBeTruthy();
   });
 
+  it.each([
+    ['con puntos que arrastrar', true, ['green', 'curva']],
+    ['sin puntos que arrastrar (par 3 o con sus codos)', false, ['green']],
+  ])(
+    'solo el green (19 nov), %s: su título, su intro y sin el paso de la salida',
+    (_caso, conCurva, pasos) => {
+      render(
+        <GuiaParaMarcar
+          t={t}
+          abierta
+          soloGreen
+          conCurva={conCurva}
+          onCerrar={vi.fn()}
+        />,
+      );
+      const en = within(screen.getByRole('dialog'));
+
+      expect(
+        en.getByRole('heading', { name: 'mapa.guia.tituloGreen' }),
+      ).toBeTruthy();
+      expect(en.getByText('mapa.guia.introGreen')).toBeTruthy();
+      expect(en.queryByText('mapa.guia.intro')).toBeNull();
+      expect(en.queryByText('mapa.guia.salidaTitulo')).toBeNull();
+      expect(en.getAllByRole('listitem').map((li) => li.textContent)).toEqual(
+        pasos.map((paso) => `mapa.guia.${paso}Titulomapa.guia.${paso}Texto`),
+      );
+      expect(en.getByText('mapa.guia.pie')).toBeTruthy();
+      expect(
+        en.getByRole('button', { name: 'mapa.guia.empezar' }),
+      ).toBeTruthy();
+    },
+  );
+
   it('B2: es un diálogo modal con su título enlazado, y el foco entra', () => {
     const { dialogo } = abrir();
 

@@ -134,17 +134,21 @@ vi.mock('../../../hooks/useCentroSinMapa', () => ({
   },
 }));
 
-// La guía para marcar, vista o no por usuario (T1). Los tests de antes no
-// pasan usuario: para ellos cuenta como vista, que no tape lo que prueban
-const guia = vi.hoisted(() => ({ vistas: new Set([null]) }));
+// La guía para marcar, vista o no por usuario (T1), como el caso de uso real:
+// sin usuario, no vista y no se apunta. Los tests de antes abren el mapa con un
+// jugador que ya la vio, para que no tape lo que prueban
+const JUGADOR_QUE_YA_LA_VIO = 'u-ya-la-vio';
+const guia = vi.hoisted(() => ({ vistas: new Set() }));
 vi.mock('../../../composition', () => ({
   holeMarkingGuideUseCase: {
-    yaVista: (id) => guia.vistas.has(id),
-    marcarVista: (id) => guia.vistas.add(id),
+    yaVista: (id) => Boolean(id) && guia.vistas.has(id),
+    marcarVista: (id) => {
+      if (id) guia.vistas.add(id);
+    },
   },
 }));
 beforeEach(() => {
-  guia.vistas = new Set([null]);
+  guia.vistas = new Set([JUGADOR_QUE_YA_LA_VIO]);
 });
 
 const { default: MapaDelHoyo } = await import('./MapaDelHoyo');
@@ -204,6 +208,7 @@ const abrir = (props = {}) =>
       hoyo={HOYO}
       atribucion={null}
       onCerrar={() => {}}
+      userId={JUGADOR_QUE_YA_LA_VIO}
       {...props}
     />,
   );
@@ -1614,8 +1619,9 @@ describe('MapaDelHoyo — marcar, mover y la muestra al cerrar', () => {
 
       tocar(G);
 
+      // Uno de los dos codos ya venía en la línea: la app solo añade uno
       expect(
-        screen.getByText('mapa.ultimoPasoCurva {"count":2}'),
+        screen.getByText('mapa.ultimoPasoCurva {"count":1}'),
       ).toBeInTheDocument();
     });
 
@@ -6717,10 +6723,27 @@ describe('MapaDelHoyo — ayuda para marcar (19 nov)', () => {
     });
   const laGuia = () =>
     screen.queryByRole('dialog', { name: 'mapa.guia.titulo' });
+  const laGuiaDelGreen = () =>
+    screen.queryByRole('dialog', { name: 'mapa.guia.tituloGreen' });
+  const pasosDeLaGuia = (dialogo) =>
+    within(dialogo)
+      .getAllByRole('listitem')
+      .map((li) => li.textContent.replace(/Texto$/, '').split('Titulo')[0]);
+  const elMapa = () =>
+    screen
+      .getAllByRole('dialog')
+      .find((d) => d.getAttribute('aria-labelledby') === 'titulo-del-mapa');
+  // Solo el green: el hoyo ya tiene salida
+  const soloGreen = (props = {}) =>
+    sinPregunta({
+      hoyo: { playLine: [T], green: null },
+      porMarcar: 'green',
+      ...props,
+    });
   const ayuda = () => screen.getByRole('button', { name: 'mapa.comoMarcar' });
   const empezarGuia = () =>
     fireEvent.click(screen.getByRole('button', { name: 'mapa.guia.empezar' }));
-  const paso = (n, de) => `mapa.paso ${JSON.stringify({ n, de })} ·`;
+  const paso = (n, de) => `mapa.paso ${JSON.stringify({ n, de })}`;
   const pasoVisto = () => screen.queryByText(/^mapa\.paso /);
   const si = () =>
     fireEvent.click(screen.getByRole('button', { name: 'mapa.si' }));
@@ -6949,7 +6972,7 @@ describe('MapaDelHoyo — ayuda para marcar (19 nov)', () => {
         expect(pasoVisto()).toBeNull();
         tocar(G);
 
-        expect(screen.queryByText('mapa.ultimoPaso ·')).toBeNull();
+        expect(screen.queryByText('mapa.ultimoPaso')).toBeNull();
       },
     );
 
@@ -6993,7 +7016,7 @@ describe('MapaDelHoyo — ayuda para marcar (19 nov)', () => {
 
       tocar(G);
 
-      expect(screen.queryByText('mapa.ultimoPaso ·')).toBeNull();
+      expect(screen.queryByText('mapa.ultimoPaso')).toBeNull();
     });
 
     it('con el green ya puesto, solo la salida: sin número (19 nov)', () => {
@@ -7054,7 +7077,7 @@ describe('MapaDelHoyo — ayuda para marcar (19 nov)', () => {
         tocar(T);
         tocar(G);
 
-        expect(screen.getByText('mapa.ultimoPaso ·')).toBeInTheDocument();
+        expect(screen.getByText('mapa.ultimoPaso')).toBeInTheDocument();
         expect(screen.getByText(ultimo(puntos))).toBeInTheDocument();
         expect(
           screen.getByRole('button', { name: 'mapa.listo' }),
@@ -7089,7 +7112,7 @@ describe('MapaDelHoyo — ayuda para marcar (19 nov)', () => {
       tocar(T);
       tocar(alNorte(150));
 
-      expect(screen.queryByText('mapa.ultimoPaso ·')).toBeNull();
+      expect(screen.queryByText('mapa.ultimoPaso')).toBeNull();
       expect(screen.queryByRole('button', { name: 'mapa.listo' })).toBeNull();
     });
 
@@ -7101,6 +7124,150 @@ describe('MapaDelHoyo — ayuda para marcar (19 nov)', () => {
       tocar(G);
 
       expect(screen.getByText(ultimo(1))).toBeInTheDocument();
+    });
+  });
+
+  describe('la guía del green (19 nov)', () => {
+    it.each([
+      ['par 4 con la salida sola', {}, ['mapa.guia.green', 'mapa.guia.curva']],
+      ['par 3', { par: 3, metros: 150 }, ['mapa.guia.green']],
+      [
+        'línea aprobada con su codo (no habrá puntos)',
+        {
+          hoyo: {
+            playLine: [T, alEste(60, alNorte(150)), alNorte(280)],
+            green: null,
+          },
+        },
+        ['mapa.guia.green'],
+      ],
+    ])(
+      'si solo falta el green (%s), sale «Marca el green» con sus pasos',
+      (_caso, props, pasos) => {
+        soloGreen(props);
+
+        expect(laGuia()).toBeNull();
+        expect(pasosDeLaGuia(laGuiaDelGreen())).toEqual(pasos);
+      },
+    );
+
+    it('vista la del green, tampoco sale la del hoyo entero (una sola marca)', () => {
+      const { unmount } = soloGreen();
+      empezarGuia();
+      expect(laGuiaDelGreen()).toBeNull();
+      unmount();
+
+      sinPregunta();
+
+      expect(laGuia()).toBeNull();
+    });
+
+    it('el «?» abre la del caso en curso: solo el green, la del green', () => {
+      guia.vistas.add('u-1');
+      soloGreen();
+
+      fireEvent.click(ayuda());
+
+      expect(laGuiaDelGreen()).toBeInTheDocument();
+      expect(laGuia()).toBeNull();
+    });
+
+    it('el «?» abre la del caso en curso: el hoyo entero, la de siempre', () => {
+      guia.vistas.add('u-1');
+      sinPregunta();
+
+      fireEvent.click(ayuda());
+
+      expect(pasosDeLaGuia(laGuia())).toEqual([
+        'mapa.guia.salida',
+        'mapa.guia.green',
+        'mapa.guia.curva',
+      ]);
+    });
+  });
+
+  describe('sin usuario (aún sin sesión cargada)', () => {
+    it('la guía sale, pero no se apunta: al volver a abrir, sale otra vez', () => {
+      const { unmount } = sinPregunta({ userId: null });
+      expect(laGuia()).toBeInTheDocument();
+      empezarGuia();
+      expect(laGuia()).toBeNull();
+      unmount();
+
+      sinPregunta({ userId: null });
+
+      expect(laGuia()).toBeInTheDocument();
+    });
+  });
+
+  describe('P4 y el foco', () => {
+    beforeEach(() => guia.vistas.add('u-1'));
+
+    it('par 5 con un codo de verdad en la línea: la app añade 1 punto y va en singular', () => {
+      soloGreen({
+        par: 5,
+        hoyo: {
+          playLine: [T, alEste(60, alNorte(150)), alNorte(280)],
+          green: null,
+        },
+      });
+
+      tocar(G);
+
+      expect(
+        screen.getByText('mapa.ultimoPasoCurva {"count":1}'),
+      ).toBeInTheDocument();
+    });
+
+    it('par 5 con el green ya puesto: al tocar la salida, la app pone 2 puntos (plural)', () => {
+      sinPregunta({
+        par: 5,
+        hoyo: { playLine: [], green: { center: alNorte(450) } },
+        porMarcar: 'salidaAlGreen',
+      });
+
+      tocar(T);
+
+      expect(
+        screen.getByText('mapa.ultimoPasoCurva {"count":2}'),
+      ).toBeInTheDocument();
+    });
+
+    it('tras «Listo», el foco sigue dentro del mapa (no en el body), sin desplazar', () => {
+      sinPregunta();
+      tocar(T);
+      tocar(G);
+      const enfocar = vi.spyOn(globalThis.HTMLElement.prototype, 'focus');
+      const listo = screen.getByRole('button', { name: 'mapa.listo' });
+      listo.focus();
+
+      fireEvent.click(listo);
+
+      expect(document.activeElement).not.toBe(document.body);
+      expect(elMapa().contains(document.activeElement)).toBe(true);
+      expect(enfocar).toHaveBeenLastCalledWith({ preventScroll: true });
+      enfocar.mockRestore();
+    });
+
+    it('al cerrar la guía, el foco vuelve al «?» sin desplazar la pantalla', () => {
+      sinPregunta();
+      fireEvent.click(ayuda());
+      const enfocar = vi.spyOn(globalThis.HTMLElement.prototype, 'focus');
+
+      empezarGuia();
+
+      expect(ayuda()).toHaveFocus();
+      expect(enfocar.mock.calls.some(([o]) => o?.preventScroll === true)).toBe(
+        true,
+      );
+      expect(enfocar.mock.calls.every(([o]) => o?.preventScroll)).toBe(true);
+      enfocar.mockRestore();
+    });
+
+    it('el «?» y su texto pasan por t()', () => {
+      sinPregunta();
+
+      expect(ayuda()).toHaveTextContent(/^mapa\.signoDeAyuda$/);
     });
   });
 
