@@ -1,4 +1,4 @@
-import { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { MapPin } from 'lucide-react';
 import { setWorkerUrl } from 'maplibre-gl';
@@ -12,25 +12,15 @@ import {
 import {
   orientacionDelHoyo,
   rumboDeLaLinea,
-  siguientePuntoDeLaLinea,
 } from '../../../domain/services/geometriaDelHoyo';
-import {
-  hoyoDeUnaMarca,
-  salidaPorMetros,
-} from '../../../domain/services/hoyoMarcado';
+import { salidaPorMetros } from '../../../domain/services/hoyoMarcado';
 import ModalShell from '../../ui/ModalShell';
 import { BOTON, PLACA } from './clasesDelMapa';
 import {
-  CODO_DESDE_M,
-  CODO_HASTA_M,
-  FUERA_DE_LA_SALIDA_M,
-  enMedio,
   fraseDeLaLinea as fraseDeLosTramos,
-  geojsonDeLaLinea,
   geojsonDeLaMedida,
   lineaParaMover,
   lngLat,
-  mismoPunto,
 } from './geometriaDelMapa';
 import { margenMedido } from './margenDelMapa';
 import { useToquesDelMapa } from './useToquesDelMapa';
@@ -38,6 +28,7 @@ import { useEnvioAlCerrar } from './useEnvioAlCerrar';
 import { useEncuadreDelHoyo } from './useEncuadreDelHoyo';
 import { useMapaDeMapLibre } from './useMapaDeMapLibre';
 import { useGpsDelHoyo } from './useGpsDelHoyo';
+import { useDecisionesConElGps, useLineaQueSeVe } from './useLineaQueSeVe';
 import { salidaQueSePinta, useEstadoDeLaMarca } from './useEstadoDeLaMarca';
 import {
   useCentrarEnElCampo,
@@ -129,7 +120,6 @@ const MapaDelHoyo = ({
   // 'hoyo' }`, o de ti a un punto. Cada cambio gira el mapa una vez
   const [vista, setVista] = useState(null);
   const conVistaRef = useRef(false);
-  const tocadoAhoraRef = useRef(null);
   // Sin WebGL (móviles viejos, o desactivado) no hay mapa, pero el recuadro de
   // la tarjeta sigue, que no lo necesita
   const [sinMapa, setSinMapa] = useState(false);
@@ -213,70 +203,29 @@ const MapaDelHoyo = ({
   // La salida de la línea que se ve (la de mi barra, o la editada), o la del hoyo:
   // desde ella se mide sin tu posición (T4), y cerca de ella el mapa gira (T6)
   const salidaDelHoyo = (linea ?? hoyo?.playLine)?.[0] ?? null;
-  // El hoyo tal y como está ahora: con la línea movida y, si el green no se
-  // movió, el suyo (con su contorno); si no, delante y fondo a 10 m
   const greenMarcado = edicion.green;
-  const hoyoAhora = useMemo(() => {
-    if (!linea)
-      return greenMarcado
-        ? { playLine: [], green: { center: greenMarcado } }
-        : hoyo;
-    if (hoyo?.green && mismoPunto(hoyo.green.center, linea.at(-1)))
-      return { ...hoyo, playLine: linea };
-    return hoyoDeUnaMarca({
-      tee: linea[0],
-      bends: linea.slice(1, -1),
-      greenCenter: linea.at(-1),
-    });
-  }, [hoyo, linea, greenMarcado]);
-  // El codo sin tocar, en medio de ti al green: sale a más de 200 m y se va al
-  // bajar de 190 (Agustín, 20 oct). Solo midiendo desde ti. Sin GPS bueno, a la
-  // vista o no, se recuerda (el punto no se ve: no hay línea desde ti)
-  const green = hoyoAhora?.green ?? null;
-  const centroDelGreen = green?.center ?? null;
-  const [codoALaVista, setCodoALaVista] = useState(false);
-  const alGreen =
-    posicionBuena && centroDelGreen
-      ? distanciaEnMetros(posicionBuena, centroDelGreen)
-      : null;
-  const codoSeVe =
-    alGreen !== null &&
-    (codoALaVista ? alGreen >= CODO_HASTA_M : alGreen > CODO_DESDE_M);
-  if (alGreen !== null && codoSeVe !== codoALaVista) setCodoALaVista(codoSeVe);
-  const codoEnMedio = useMemo(
-    () =>
-      desdeMi && !tocado && codoSinTocar && codoSeVe
-        ? enMedio(posicionBuena, centroDelGreen)
-        : null,
-    [desdeMi, tocado, codoSinTocar, codoSeVe, posicionBuena, centroDelGreen],
-  );
-  // Con un punto tocado, solo la línea de ti a él: la de ti al green y su codo
-  // se esconden, y «Quitar» los devuelve como estaban (M1, Agustín, 24 oct)
-  const codoAhora = medido ? null : (tocado ?? codoEnMedio);
-  useLayoutEffect(() => {
-    // El codo sin tocar cuenta mientras está a la vista, también con el GPS
-    // flojo, que no lo pinta (/code-review)
-    tocadoAhoraRef.current =
-      medido ?? tocado ?? ((desdeMi && codoSinTocar && codoALaVista) || null);
-  }, [medido, tocado, desdeMi, codoSinTocar, codoALaVista]);
-  // Lo que encuadra «Ver hoyo»: la línea de ahora con su rumbo (O5, O7)
-  const delEncuadreRef = useRef(null);
-  useLayoutEffect(() => {
-    // Proponiendo un reporte, la de al abrir, no la propuesta (O9)
-    delEncuadreRef.current =
-      linea && hoyoAhora && !reporte
-        ? { hoyo: hoyoAhora, rumbo: rumboDeLaLinea(linea, par) }
-        : null;
+  const {
+    hoyoAhora,
+    green,
+    codoAhora,
+    ocultaAhora,
+    lineaQueSePinta,
+    datosDeLaLinea,
+    tocadoAhoraRef,
+    delEncuadreRef,
+  } = useLineaQueSeVe({
+    hoyo,
+    par,
+    linea,
+    greenMarcado,
+    posicionBuena,
+    desdeMi,
+    tocado,
+    codoSinTocar,
+    medido,
+    reporte,
+    lineaOculta,
   });
-  // Sin un GPS bueno no hay línea desde ti: mientras dure, la del hoyo (H14)
-  const ocultaAhora = lineaOculta && !reporte && !!posicionBuena;
-  // Con un punto tocado, la línea del hoyo se va entera: solo la tuya al punto
-  // (Agustín, 19 oct, en el móvil: las dos a la vez se pisaban); «Quitar» la trae
-  const lineaQueSePinta = ocultaAhora || medido ? null : linea;
-  const datosDeLaLinea = useMemo(
-    () => geojsonDeLaLinea(lineaQueSePinta ?? []),
-    [lineaQueSePinta],
-  );
   const ultimaLineaRef = useRef(datosDeLaLinea);
   const ultimaMedidaRef = useRef(geojsonDeLaMedida([]));
   const etiquetasDeLaMedidaRef = useRef([]);
@@ -417,62 +366,32 @@ const MapaDelHoyo = ({
   );
   useMarcaMedida({ mapaRef, marcaMedidaRef }, medido);
 
-  // A mitad de un hoyo con línea y green: la línea desde ti, sin preguntar (H1, H2)
-  const salidaDeMiBarra = lineaInicial?.[0] ?? null;
-  // Con el «⋮» abierto se espera a cerrarlo: no se pinta nada sobre la línea que se propone (revisor, 18 oct)
-  if (
-    !mitadDecidida &&
-    !reporte &&
-    green &&
-    (hoyo?.playLine?.length ?? 0) >= 2 &&
-    salidaDeMiBarra &&
-    posicionBuena
-  ) {
-    setMitadDecidida(true);
-    // Con la línea ya movida se queda el hoyo entero, con lo editado (H13)
-    if (
-      !edicion.cambiada &&
-      distanciaEnMetros(posicionBuena, salidaDeMiBarra) > FUERA_DE_LA_SALIDA_M
-    ) {
-      setLineaOculta(true);
-      setDesdeMi(true);
-      setCodoPendiente(true);
-      setHastaLaSalida(true);
-    }
-  }
-  // Ibas hacia la salida: al llegar, el hoyo entero, una vez (H12)
-  // Proponiendo un reporte se espera a acabarlo: no gira (O9)
-  if (
-    hastaLaSalida &&
-    !reporte &&
-    posicionBuena &&
-    distanciaEnMetros(posicionBuena, salidaDeMiBarra) <= FUERA_DE_LA_SALIDA_M
-  ) {
-    setHastaLaSalida(false);
-    setLineaOculta(false);
-    setDesdeMi(false);
-    setTocado(null);
-    setCodoSinTocar(false);
-    setVista({ tipo: 'hoyo' });
-  }
-  // El codo, una vez: con el primer GPS bueno, sin tocar (te sigue en medio si
-  // pasa de 200 m, C2, C3). Movido no se mueve, y quitado no vuelve (D3, D10).
-  // Durante el render, como se ajusta un estado a otro en React
-  if (codoPendiente && desdeMi && posicionBuena && green) {
-    setCodoPendiente(false);
-    // Hacia el siguiente punto de la línea del hoyo, o al green sin ella (O2, O4)
-    const hacia =
-      (lineaOculta && siguientePuntoDeLaLinea(posicionBuena, lineaInicial)) ||
-      green.center;
-    setVista({
-      tipo: 'desdeMi',
-      desde: posicionBuena,
-      hacia,
-      green: green.center,
-    });
-    // Tocar mide (19 oct): el codo sale siempre en medio, y uno que ya hubiera se queda
-    if (!tocado) setCodoSinTocar(true);
-  }
+  useDecisionesConElGps(
+    {
+      mitadDecidida,
+      reporte,
+      green,
+      hoyo,
+      lineaInicial,
+      posicionBuena,
+      edicion,
+      hastaLaSalida,
+      codoPendiente,
+      desdeMi,
+      lineaOculta,
+      tocado,
+    },
+    {
+      setMitadDecidida,
+      setLineaOculta,
+      setDesdeMi,
+      setCodoPendiente,
+      setHastaLaSalida,
+      setTocado,
+      setCodoSinTocar,
+      setVista,
+    },
+  );
   const textoDeTramo = useCallback(
     (metros) => t('mapa.tramo', { metros }),
     [t],
