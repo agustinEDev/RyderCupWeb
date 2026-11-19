@@ -1,59 +1,13 @@
 import { useId } from 'react';
 import { useTranslation } from 'react-i18next';
-import ValidationIcon from './ValidationIcon';
 import ScoreInputPanel from './ScoreInputPanel';
 import CabeceraDelHoyo from './CabeceraDelHoyo';
 import PieDelHoyo from './PieDelHoyo';
-import { HuecoParaAnotar } from './HuecoParaAnotar';
-import { clasesDelHueco } from './clasesDelHueco';
-import {
-  pintaGolpe,
-  siguienteHueco as calculaSiguienteHueco,
-} from './golpeDeLaCasilla';
+import HuecosDelHoyo from './HuecosDelHoyo';
+import GolpesEnSoloLectura from './GolpesEnSoloLectura';
+import { etiquetasDeLaCasilla } from './textosDeLaCasilla';
 import { useValoresDeLaCasilla } from './useValoresDeLaCasilla';
 import { MatchFormat } from '../../domain/value_objects/MatchFormat';
-
-// Un golpe de la casilla: el botón que abre el teclado o, bloqueado, el número.
-// Uno para los tres —el tuyo y el de cada marcado— para que digan lo mismo
-const HuecoDelGolpe = ({
-  id,
-  prefijo,
-  valor,
-  bloqueado,
-  siguiente,
-  onAbrir,
-  pinta,
-}) =>
-  !bloqueado ? (
-    <button
-      id={id}
-      data-testid={`${prefijo}-score-button`}
-      onClick={onAbrir}
-      className={`w-full h-12 flex items-center justify-center rounded-xl transition-colors ${
-        valor === undefined
-          ? clasesDelHueco(siguiente)
-          : 'bg-gray-100 hover:bg-gray-200 active:bg-gray-300'
-      }`}
-    >
-      {valor === undefined ? (
-        <HuecoParaAnotar siguiente={siguiente} />
-      ) : (
-        <span
-          data-testid={`${prefijo}-score-value`}
-          className="text-2xl font-bold text-gray-900"
-        >
-          {pinta(valor)}
-        </span>
-      )}
-    </button>
-  ) : (
-    <p
-      data-testid={`${prefijo}-score-value`}
-      className="h-12 flex items-center justify-center text-2xl font-bold text-gray-400"
-    >
-      {pinta(valor)}
-    </p>
-  );
 
 const HoleInput = ({
   holeNumber,
@@ -109,34 +63,20 @@ const HoleInput = ({
   const idPropio = useId();
   const idMarcado = useId();
   const idSegundo = useId();
-  // En foursomes hay una bola por pareja (#710): «Tu anotación» y «Anotación
-  // marcador» hablaban como si cada uno jugara la suya
+  // En foursomes hay una bola por pareja (#710)
   const enParejas = matchFormat === MatchFormat.FOURSOMES;
-  const etiquetaPropia = t(enParejas ? 'input.pairBall' : 'input.yourScore');
-  // Con la pareja detrás (16 oct): al quitar «Info del Partido», era el único
-  // sitio que decía a quién se marca
-  const etiquetaMarcado = enParejas
-    ? markedName
-      ? t('input.rivalBallOf', { nombre: markedName })
-      : t('input.rivalBall')
-    : markedName
-      ? t('input.youMark', { nombre: markedName })
-      : t('input.markerScore');
-  const etiquetaDelMarcador = enParejas
-    ? t('input.rivalCount')
-    : markerName
-      ? t('input.scoredForYou', { nombre: markerName })
-      : t('input.markerScore');
+  const etiquetas = etiquetasDeLaCasilla(t, {
+    enParejas,
+    markedName,
+    markerName,
+    nombreDelSegundo: secondMarked?.name,
+  });
   const conMarcado = enParejas || marksSomeone;
   const conMarcador = enParejas || hasMarker;
   // Lo que puso otro marcador no se toca desde aquí
   const marcadoBloqueado =
     isMarkerScoreLocked || !conMarcado || Boolean(markedScoredBy);
   const segundoBloqueado = Boolean(secondMarked?.isLocked);
-  // Sin su nombre, las palabras de siempre, como el primero
-  const etiquetaSegundo = secondMarked?.name
-    ? t('input.youMark', { nombre: secondMarked.name })
-    : t('input.markerScore');
   const {
     ownValue,
     setOwnValue,
@@ -186,48 +126,6 @@ const HoleInput = ({
     if (onSecondMarkedChange) onSecondMarkedChange(val);
   };
 
-  const pinta = (val) => pintaGolpe(val, t);
-
-  // En foursomes la bola es de la pareja: «La pareja rival puso…» (/code-review)
-  const nombreDelOtro = (nombre, porDefecto) =>
-    enParejas ? t('input.rivalPair') : nombre || t(porDefecto);
-  const golpesEnTexto = (golpes) =>
-    golpes === null ? t('input.pickedUp') : golpes;
-  const loQuePuso = {
-    own:
-      validationStatus === 'mismatch' && playerScore?.markerSubmitted
-        ? t('input.otherPut', {
-            nombre: nombreDelOtro(markerName, 'input.yourMarker'),
-            golpes: golpesEnTexto(playerScore.markerScore),
-          })
-        : null,
-    marked:
-      markedValidationStatus === 'mismatch' && markedPlayerScore?.ownSubmitted
-        ? t('input.otherPut', {
-            nombre: nombreDelOtro(markedName, 'input.theMarkedPlayer'),
-            golpes: golpesEnTexto(markedPlayerScore.ownScore),
-          })
-        : null,
-    second:
-      secondMarked?.validationStatus === 'mismatch' &&
-      secondMarked.playerScore?.ownSubmitted
-        ? t('input.otherPut', {
-            nombre: nombreDelOtro(secondMarked.name, 'input.theMarkedPlayer'),
-            golpes: golpesEnTexto(secondMarked.playerScore.ownScore),
-          })
-        : null,
-  };
-
-  const siguienteHueco = calculaSiguienteHueco({
-    propioBloqueado: isOwnScoreLocked,
-    propio: ownValue,
-    marcadoBloqueado,
-    marcado: markedValue,
-    haySegundo: Boolean(secondMarked),
-    segundoBloqueado,
-    segundo: segundoValue,
-  });
-
   return (
     <div
       data-testid="hole-input"
@@ -242,175 +140,40 @@ const HoleInput = ({
       />
 
       {!isReadOnly && (
-        // Etiquetas en una fila de la rejilla y huecos en la siguiente (FE #736):
-        // la cabecera del marcado lleva su marca y es más alta que la tuya, y con
-        // una columna por jugador su hueco quedaba más abajo. Así comparten fila
-        <div
-          data-testid="huecos-del-hoyo"
-          className={`grid ${conMarcado ? 'grid-cols-2' : 'grid-cols-1'} gap-x-4 gap-y-1 items-end`}
-        >
-          <label
-            htmlFor={idPropio}
-            className="min-w-0 break-words text-xs font-medium text-gray-500"
-          >
-            {etiquetaPropia}
-          </label>
-          {/* La marca del jugador al que anotas va aquí y no en la cabecera:
-              la de arriba es la de TU resultado, y son dos acuerdos distintos.
-              Sin esta, un anotador veía su tick verde mientras la tira de
-              hoyos se ponía roja por el otro, sin forma de saber por quién.
-              La tarjeta ya no la lleva, así que este es el único sitio. */}
-          {conMarcado && (
-            <div className="flex items-center justify-between gap-2">
-              {/* min-w-0 y break-words: en foursomes lleva la pareja, y un nombre largo ensanchaba la columna (scroll lateral a 360 px) */}
-              <label
-                htmlFor={idMarcado}
-                className="min-w-0 break-words text-xs font-medium text-gray-500"
-              >
-                {etiquetaMarcado}
-              </label>
-              {markedValidationStatus && (
-                <span data-testid="marked-validation">
-                  <ValidationIcon status={markedValidationStatus} />
-                </span>
-              )}
-            </div>
-          )}
-
-          <HuecoDelGolpe
-            id={idPropio}
-            prefijo="own"
-            valor={ownValue}
-            bloqueado={isOwnScoreLocked}
-            siguiente={siguienteHueco === 'own'}
-            onAbrir={() => setOpenPanel('own')}
-            pinta={pinta}
-          />
-
-          {/* Marker score */}
-          {!conMarcado ? null : marcadoBloqueado && markedScoredBy ? (
-            <div className="flex h-12 flex-col items-center justify-center">
-              <p
-                data-testid="marked-score-value"
-                className="text-2xl font-bold text-gray-400"
-              >
-                {pinta(markedValue)}
-              </p>
-              <p
-                data-testid="anotado-por-otro"
-                className="text-xs text-gray-500"
-              >
-                {t('input.scoredBy', { nombre: markedScoredBy })}
-              </p>
-            </div>
-          ) : (
-            <HuecoDelGolpe
-              id={idMarcado}
-              prefijo="marked"
-              valor={markedValue}
-              bloqueado={marcadoBloqueado}
-              siguiente={siguienteHueco === 'marked'}
-              onAbrir={() => setOpenPanel('marked')}
-              pinta={pinta}
-            />
-          )}
-
-          {/* En un desacuerdo, lo que puso el otro: con solo la ✗ no se sabía
-              qué discutir (QA del 11 oct 2026) */}
-          {(validationStatus === 'mismatch' ||
-            markedValidationStatus === 'mismatch') && (
-            <>
-              {/* Cada uno en su columna; vacío, un hueco sin texto (revisor) */}
-              <p className="text-xs text-red-700">
-                {loQuePuso.own && (
-                  <span data-testid="lo-que-puso-el-otro-own">
-                    {loQuePuso.own}
-                  </span>
-                )}
-              </p>
-              {conMarcado && (
-                <p className="text-xs text-red-700">
-                  {loQuePuso.marked && (
-                    <span data-testid="lo-que-puso-el-otro-marked">
-                      {loQuePuso.marked}
-                    </span>
-                  )}
-                </p>
-              )}
-            </>
-          )}
-
-          {/* El segundo marcado, en la columna de la derecha bajo el primero;
-              a la izquierda, hueco (26 oct 2026) */}
-          {secondMarked && (
-            <>
-              <span aria-hidden="true" />
-              <div className="flex items-center justify-between gap-2 pt-2">
-                <label
-                  htmlFor={idSegundo}
-                  className="min-w-0 break-words text-xs font-medium text-gray-500"
-                >
-                  {etiquetaSegundo}
-                </label>
-                {secondMarked.validationStatus && (
-                  <span data-testid="second-marked-validation">
-                    <ValidationIcon status={secondMarked.validationStatus} />
-                  </span>
-                )}
-              </div>
-              <span aria-hidden="true" />
-              <HuecoDelGolpe
-                id={idSegundo}
-                prefijo="second-marked"
-                valor={segundoValue}
-                bloqueado={segundoBloqueado}
-                siguiente={siguienteHueco === 'second'}
-                onAbrir={() => setOpenPanel('second')}
-                pinta={pinta}
-              />
-              {loQuePuso.second && (
-                <>
-                  <span aria-hidden="true" />
-                  <p className="text-xs text-red-700">
-                    <span data-testid="lo-que-puso-el-otro-second">
-                      {loQuePuso.second}
-                    </span>
-                  </p>
-                </>
-              )}
-            </>
-          )}
-        </div>
+        <HuecosDelHoyo
+          ids={{ propio: idPropio, marcado: idMarcado, segundo: idSegundo }}
+          etiquetas={etiquetas}
+          valores={{
+            propio: ownValue,
+            marcado: markedValue,
+            segundo: segundoValue,
+          }}
+          bloqueos={{
+            propio: isOwnScoreLocked,
+            marcado: marcadoBloqueado,
+            segundo: segundoBloqueado,
+          }}
+          conMarcado={conMarcado}
+          enParejas={enParejas}
+          validationStatus={validationStatus}
+          markedValidationStatus={markedValidationStatus}
+          playerScore={playerScore}
+          markedPlayerScore={markedPlayerScore}
+          markerName={markerName}
+          markedName={markedName}
+          markedScoredBy={markedScoredBy}
+          secondMarked={secondMarked}
+          onAbrir={setOpenPanel}
+        />
       )}
 
       {isReadOnly && playerScore && (
-        <div
-          className={`grid ${conMarcador ? 'grid-cols-2' : 'grid-cols-1'} gap-4 text-center`}
-        >
-          <div>
-            <p className="text-xs text-gray-500">{etiquetaPropia}</p>
-            {/* Sin anotar, hueco y no la raya de «recogió» (revisor, QA 3) */}
-            <p className="text-xl font-bold">
-              {pinta(
-                playerScore.ownSubmitted === false
-                  ? undefined
-                  : playerScore.ownScore,
-              )}
-            </p>
-          </div>
-          {conMarcador && (
-            <div>
-              <p className="text-xs text-gray-500">{etiquetaDelMarcador}</p>
-              <p className="text-xl font-bold">
-                {pinta(
-                  playerScore.markerSubmitted === false
-                    ? undefined
-                    : playerScore.markerScore,
-                )}
-              </p>
-            </div>
-          )}
-        </div>
+        <GolpesEnSoloLectura
+          playerScore={playerScore}
+          conMarcador={conMarcador}
+          etiquetaPropia={etiquetas.propia}
+          etiquetaDelMarcador={etiquetas.delMarcador}
+        />
       )}
 
       <PieDelHoyo
@@ -426,7 +189,7 @@ const HoleInput = ({
           value={ownValue}
           onSelect={handleOwnSelect}
           onClose={() => setOpenPanel(null)}
-          label={etiquetaPropia}
+          label={etiquetas.propia}
           par={par}
           allowPickedUp={allowPickedUp}
         />
@@ -436,7 +199,7 @@ const HoleInput = ({
           value={markedValue}
           onSelect={handleMarkedSelect}
           onClose={() => setOpenPanel(null)}
-          label={etiquetaMarcado}
+          label={etiquetas.marcado}
           par={markedPar ?? par}
           allowPickedUp={allowPickedUp}
         />
@@ -446,7 +209,7 @@ const HoleInput = ({
           value={segundoValue}
           onSelect={handleSegundoSelect}
           onClose={() => setOpenPanel(null)}
-          label={etiquetaSegundo}
+          label={etiquetas.segundo}
           par={secondMarked?.par ?? par}
           allowPickedUp={allowPickedUp}
         />
