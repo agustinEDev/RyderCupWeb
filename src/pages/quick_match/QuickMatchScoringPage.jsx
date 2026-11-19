@@ -26,8 +26,11 @@ import { useSinConexionDeLaRapida } from '../../hooks/useSinConexionDeLaRapida';
 import { useAnotacionEnCurso } from '../../hooks/useAnotacionEnCurso';
 import { useMiVueltaRapida } from '../../hooks/useMiVueltaRapida';
 import { useFocoDeLosDialogos } from '../../hooks/useFocoDeLosDialogos';
+import {
+  accionesDeAnotarRapida,
+  useDialogosDeCierreRapida,
+} from '../../hooks/useNavegacionYCierreRapida';
 import { casillasDelHoyo } from '../../utils/casillasDelHoyo';
-import { claveDeFallo } from '../../utils/textosDePartidaRapida';
 import { PESTANAS_DE_LA_RAPIDA } from '../../utils/pestanasDeLaAnotacion';
 import { isFreePlay } from '../../domain/value_objects/ScoringFormat';
 
@@ -40,12 +43,18 @@ const QuickMatchScoringPage = () => {
   const { user, loading: isLoadingUser } = useAuth();
 
   const [activeTab, setActiveTab] = useState('input');
-  const [showFinishConfirm, setShowFinishConfirm] = useState(false);
-  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
-  // La clave del aviso, no un booleano: un 409 —ya la cerro otro— y quedarse
-  // sin cobertura piden explicaciones distintas.
-  const [cancelFailedKey, setCancelFailedKey] = useState(null);
-  const [finishFailedKey, setFinishFailedKey] = useState(null);
+  // Terminar y anular: abiertos o no, y la clave del fallo de cada uno
+  const dialogos = useDialogosDeCierreRapida();
+  const {
+    showFinishConfirm,
+    setShowFinishConfirm,
+    showCancelConfirm,
+    setShowCancelConfirm,
+    cancelFailedKey,
+    setCancelFailedKey,
+    finishFailedKey,
+    setFinishFailedKey,
+  } = dialogos;
 
   const {
     quickMatch,
@@ -233,48 +242,29 @@ const QuickMatchScoringPage = () => {
   const isReadOnly =
     !isScorer || quickMatch?.isCompleted || quickMatch?.isCancelled;
 
-  const handleScoreChange = (participantId, score) => {
-    submitScore(currentHole, participantId, score);
-  };
-
-  const handlePrevHole = () => {
-    if (currentHole > 1) setCurrentHole(currentHole - 1);
-  };
-
-  const handleNextHole = () => {
-    if (currentHole < totalHoles) setCurrentHole(currentHole + 1);
-  };
-
   // El sondeo puede cerrar la partida mientras el aviso esta abierto
   const yaCerrada = !!quickMatch?.isCompleted || !!quickMatch?.isCancelled;
 
-  const handleFinishConfirm = async () => {
-    setFinishFailedKey(null);
-    const { ok, error } = (await completeMatch()) ?? {};
-    if (ok) {
-      setShowFinishConfirm(false);
-      return;
-    }
-    setFinishFailedKey(claveDeFallo('scoring.finish', error));
-    refetch();
-  };
-
-  const handleCancelConfirm = async () => {
-    // Solo se cierra si de verdad se cancelo, y el fallo se cuenta AQUI dentro:
-    // el aviso general vive detras del velo del dialogo y su texto habla de
-    // anotar —«no se ha podido guardar el resultado»—, que no es lo que acaba
-    // de pasar.
-    setCancelFailedKey(null);
-    const { ok, error } = (await cancelMatch()) ?? {};
-    if (ok) {
-      setShowCancelConfirm(false);
-      return;
-    }
-    setCancelFailedKey(claveDeFallo('scoring.cancelMatch', error));
-    // Recargar: si fallo porque otro dispositivo ya la cerro, el estado nuevo
-    // se lleva por delante los botones que ya no valen.
-    refetch();
-  };
+  const {
+    handleScoreChange,
+    handlePrevHole,
+    handleNextHole,
+    handleFinishConfirm,
+    handleCancelConfirm,
+    pedirTerminar,
+    pedirCancelar,
+    cerrarTerminar,
+    cerrarCancelar,
+  } = accionesDeAnotarRapida({
+    dialogos,
+    currentHole,
+    totalHoles,
+    setCurrentHole,
+    submitScore,
+    completeMatch,
+    cancelMatch,
+    refetch,
+  });
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -388,8 +378,8 @@ const QuickMatchScoringPage = () => {
               mapaDelHoyo={mapaDelHoyo}
               userId={user?.id}
               miBarra={miBarra}
-              onPedirTerminar={() => setShowFinishConfirm(true)}
-              onPedirCancelar={() => setShowCancelConfirm(true)}
+              onPedirTerminar={pedirTerminar}
+              onPedirCancelar={pedirCancelar}
             />
           </PanelDePestana>
 
@@ -439,15 +429,9 @@ const QuickMatchScoringPage = () => {
         isSubmitting={isSubmitting}
         finishFailedKey={finishFailedKey}
         cancelFailedKey={cancelFailedKey}
-        onCerrarTerminar={() => {
-          setFinishFailedKey(null);
-          setShowFinishConfirm(false);
-        }}
+        onCerrarTerminar={cerrarTerminar}
         onTerminar={handleFinishConfirm}
-        onCerrarCancelar={() => {
-          setCancelFailedKey(null);
-          setShowCancelConfirm(false);
-        }}
+        onCerrarCancelar={cerrarCancelar}
         onCancelar={handleCancelConfirm}
         resuelveDiscrepancia={resuelveDiscrepancia}
         myParticipant={myParticipant}
