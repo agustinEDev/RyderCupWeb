@@ -53,12 +53,14 @@ export const useEncuadreDelHoyo = (
     },
     [encuadrar, delEncuadreRef, inicioRef],
   );
-  // Lo que se orientó después de abrir (O2-O5): el hoyo, o de ti hacia un punto
-  // con ese punto y el green a la vista (/code-review)
+  // Lo que se orientó después de abrir (O2-O5): el hoyo, de ti hacia un punto
+  // con ese punto y el green a la vista (/code-review), o de ti al green (Z1)
   const ultimaVistaRef = useRef(null);
   const aplicarVista = useCallback(
     (v, animar) => {
       if (v.tipo === 'hoyo') encuadrarHoyo(animar);
+      // En los últimos 100 m: tú y el green, lo más grandes que quepan
+      else if (v.tipo === 'alGreen') encuadrar(v.hoyo, v.rumbo, animar);
       else
         encuadrar(
           { playLine: [v.desde, v.hacia, v.green], green: null },

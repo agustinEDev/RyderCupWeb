@@ -1,5 +1,9 @@
 import { describe, it, expect } from 'vitest';
-import { salidaQueSePinta, sePuedeReportarElHoyo } from './reglasDelMapa';
+import {
+  salidaQueSePinta,
+  sePuedeReportarElHoyo,
+  vistaAlGreen,
+} from './reglasDelMapa';
 
 const salidaDelHoyo = { lat: 40.401, lon: -3.7 };
 const greenDelHoyo = { lat: 40.404, lon: -3.702 };
@@ -141,5 +145,29 @@ describe('sePuedeReportarElHoyo', () => {
 
   it('pidiendo una marca, no', () => {
     expect(sePuedeReportarElHoyo({ ...base, pidiendo: true })).toBe(false);
+  });
+});
+
+describe('vistaAlGreen', () => {
+  const encuadre = {
+    hoyo: { playLine: [recienTocada], green: { center: greenDelHoyo } },
+    rumbo: 33,
+  };
+
+  it('la vista del zoom al green lleva su encuadre', () => {
+    expect(vistaAlGreen(encuadre, false)).toEqual({
+      tipo: 'alGreen',
+      hoyo: encuadre.hoyo,
+      rumbo: 33,
+    });
+  });
+
+  it('tras una marca la pidió el jugador: se aplica aunque moviera el mapa', () => {
+    expect(vistaAlGreen(encuadre, true)).toEqual({
+      tipo: 'alGreen',
+      hoyo: encuadre.hoyo,
+      rumbo: 33,
+      porElJugador: true,
+    });
   });
 });

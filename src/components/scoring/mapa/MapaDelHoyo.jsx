@@ -27,6 +27,7 @@ import { useMapaDeMapLibre } from './useMapaDeMapLibre';
 import { useGpsDelHoyo } from './useGpsDelHoyo';
 import { decidirConElGps, useLineaQueSeVe } from './useLineaQueSeVe';
 import { useEstadoDeLaMarca } from './useEstadoDeLaMarca';
+import { useAcercarseAlGreen } from './useAcercarseAlGreen';
 import { salidaQueSePinta, sePuedeReportarElHoyo } from './reglasDelMapa';
 import {
   avisoDelGps,
@@ -230,6 +231,26 @@ const MapaDelHoyo = ({
     reporte,
     lineaOculta,
   });
+  // El zoom al green, antes que lo del GPS (Z14); acabar una marca vuelve a acercar
+  const {
+    alGreen,
+    sinZoomAlGreen,
+    setMarca: setMarcaConZoom,
+  } = useAcercarseAlGreen(
+    {
+      posicionBuena,
+      green,
+      lejos,
+      fase,
+      medido,
+      reporte,
+      lineaInicial,
+      salidaDeLaLinea: salidaDelHoyo,
+      hoyoAhora,
+      par,
+    },
+    { setVista, setMarca },
+  );
   const ultimaLineaRef = useRef(datosDeLaLinea);
   const ultimaMedidaRef = useRef(geojsonDeLaMedida([]));
   const etiquetasDeLaMedidaRef = useRef([]);
@@ -305,7 +326,7 @@ const MapaDelHoyo = ({
       setAvisoDeMarca,
       setEdicion,
       setConAyudaDeCodos,
-      setMarca,
+      setMarca: setMarcaConZoom,
       setVista,
       setReporte,
       setGracias,
@@ -395,6 +416,7 @@ const MapaDelHoyo = ({
       setCodoSinTocar,
       setVista,
     },
+    alGreen,
   );
   const textoDeTramo = useCallback(
     (metros) => t('mapa.tramo', { metros }),
@@ -478,7 +500,7 @@ const MapaDelHoyo = ({
     { posicionBuena, greenConocido, marcandoSalida, empezar },
     {
       setAvisoDeMarca,
-      setMarca,
+      setMarca: setMarcaConZoom,
       setDesdeMi,
       setCodoPendiente,
       setTocado,
@@ -680,14 +702,21 @@ const MapaDelHoyo = ({
           onVerHoyo={() => {
             // A mitad de hoyo, vuelve también su línea (H3); y lo último
             // orientado es ya el hoyo, que el panel no vuelva a «desde ti» (CodeRabbit)
+            // Tras «Ver hoyo», el mapa ya no se acerca solo al green (Z7)
             setLineaOculta(false);
+            sinZoomAlGreen();
             ultimaVistaRef.current = { tipo: 'hoyo' };
             encuadrarHoyo(true);
           }}
-          onNorte={() => mapaRef.current?.resetNorth()}
-          onCentrame={() =>
-            mapaRef.current?.easeTo({ center: lngLat(posicion) })
-          }
+          // «Norte» y «Céntrame» también apagan el zoom al green (Z7)
+          onNorte={() => {
+            sinZoomAlGreen();
+            mapaRef.current?.resetNorth();
+          }}
+          onCentrame={() => {
+            sinZoomAlGreen();
+            mapaRef.current?.easeTo({ center: lngLat(posicion) });
+          }}
         />
       </div>
     </ModalShell>

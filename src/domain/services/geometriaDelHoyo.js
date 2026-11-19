@@ -35,6 +35,9 @@ export const orientacionDelHoyo = (hoyo) => {
   return rumbo(linea[0], destino);
 };
 
+/** Más lejos que esto de la salida de tu barra, estás a mitad de hoyo (Agustín, 18 oct). */
+export const FUERA_DE_LA_SALIDA_M = 40;
+
 // El radio de la Tierra de las distancias del campo, y lo que yerra un GPS bueno
 const RADIO_TERRESTRE_M = 6371008.8;
 const CERCA_DEL_PUNTO_M = 20;

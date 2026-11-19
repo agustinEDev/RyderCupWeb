@@ -16,8 +16,9 @@ export const CODO_DESDE_M = 200;
 // Sin tocar, a la vista no se va hasta bajar de aquí: que el GPS, quieto cerca
 // de los 200 m, no lo haga parpadear (Agustín, 20 oct)
 export const CODO_HASTA_M = 190;
-// Más lejos que esto de la salida de tu barra, estás a mitad de hoyo (Agustín, 18 oct)
-export const FUERA_DE_LA_SALIDA_M = 40;
+// Más lejos que esto de la salida, a mitad de hoyo: vive en el dominio (también
+// lo usa el zoom al green)
+export { FUERA_DE_LA_SALIDA_M } from '../../../domain/services/geometriaDelHoyo';
 
 export const lngLat = (p) => [p.lon, p.lat];
 

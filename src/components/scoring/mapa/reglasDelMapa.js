@@ -31,3 +31,15 @@ export const sePuedeReportarElHoyo = ({
   (hoyo?.playLine?.length ?? 0) >= 2 &&
   !reporte &&
   !pidiendo;
+
+/**
+ * La vista del zoom al green (`encuadreAlGreen`). Tras una marca la pidió el
+ * jugador (`porElJugador`): se aplica aunque hubiera movido el mapa (Agustín,
+ * 19 nov); la que llega sola con el GPS, no.
+ */
+export const vistaAlGreen = ({ hoyo, rumbo }, trasMarcar) => ({
+  tipo: 'alGreen',
+  hoyo,
+  rumbo,
+  ...(trasMarcar ? { porElJugador: true } : {}),
+});
