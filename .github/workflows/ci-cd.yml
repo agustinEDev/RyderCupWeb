@@ -688,7 +688,7 @@ jobs:
           set -o pipefail
           npx tsc --noEmit 2>&1 | tee "$RUNNER_TEMP/tsc.log"
 
-      # El núcleo en JavaScript (domain y application) con checkJs: sus JSDoc
+      # El núcleo en JavaScript (domain, application e infrastructure) con checkJs: sus JSDoc
       # son el contrato de tipos y un error en ellos tumba el job
       # (tsconfig.nucleo.json). Corre aunque el paso de arriba falle, para ver
       # los dos resultados en la misma vuelta; no si la instalación falló, que
@@ -715,7 +715,7 @@ jobs:
             has_ts=true log="$RUNNER_TEMP/tsc-nucleo.log")
           python3 .github/scripts/summary_card.py \
             --title "📝 Type Check" \
-            --what "Runs the TypeScript compiler without emitting (tsc --noEmit) over the project's .ts files, and with checkJs over the JavaScript of src/domain and src/application, plus the src/utils files they import (npm run typecheck:nucleo), so a type error never reaches the build." \
+            --what "Runs the TypeScript compiler without emitting (tsc --noEmit) over the project's .ts files, and with checkJs over the JavaScript of src/domain, src/application and src/infrastructure, plus the src/utils files they import (npm run typecheck:nucleo), so a type error never reaches the build." \
             --status "$STATUS" --result "TypeScript files: $RESULT Core JS (checkJs): $RESULT_NUCLEO" \
             --if-fails "Run 'npx tsc --noEmit' and 'npm run typecheck:nucleo' locally and fix the reported types."
 
@@ -1031,7 +1031,7 @@ jobs:
             "$OUTDATED|📦 Outdated deps|Lists packages with newer releases (informational)"
             "$SEMGREP|🛡️ OWASP (Semgrep)|OWASP Top 10, React and JavaScript rules over src"
             "$LINT|🔍 Lint|ESLint with zero warnings allowed"
-            "$TYPES|📝 Type Check|tsc --noEmit over the TypeScript files, and checkJs over domain and application"
+            "$TYPES|📝 Type Check|tsc --noEmit over the TypeScript files, and checkJs over domain, application and infrastructure"
             "$ARCHITECTURE|🏛️ Architecture|Layer contracts and no circular imports (dependency-cruiser)"
             "$TEST|🧪 Tests + coverage|Vitest suite and the four coverage thresholds"
             "$E2E|🎭 E2E smoke|Playwright tests tagged @smoke, without a backend"
