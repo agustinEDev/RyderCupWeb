@@ -4,7 +4,6 @@ import { MapPin } from 'lucide-react';
 import { setWorkerUrl } from 'maplibre-gl';
 import urlDelWorker from 'maplibre-gl/dist/maplibre-gl-worker.mjs?url';
 import './mapa.css';
-import { distanciaEnMetros } from '../../../domain/services/distanciasAlGreen';
 import {
   distanciasDelHoyo,
   distanciasDesdeLaPosicion,
@@ -29,7 +28,16 @@ import { useEncuadreDelHoyo } from './useEncuadreDelHoyo';
 import { useMapaDeMapLibre } from './useMapaDeMapLibre';
 import { useGpsDelHoyo } from './useGpsDelHoyo';
 import { useDecisionesConElGps, useLineaQueSeVe } from './useLineaQueSeVe';
-import { salidaQueSePinta, useEstadoDeLaMarca } from './useEstadoDeLaMarca';
+import {
+  salidaQueSePinta,
+  sePuedeReportar,
+  useEstadoDeLaMarca,
+} from './useEstadoDeLaMarca';
+import {
+  avisoDelGps,
+  loQueSeAnuncia,
+  textosDelRecuadro,
+} from './textosDelMapa';
 import {
   useCentrarEnElCampo,
   useMarcaDelCodo,
@@ -532,21 +540,20 @@ const MapaDelHoyo = ({
     },
   );
 
-  // «⋮», solo en un hoyo con línea y sin marcar otra cosa (la pregunta de la
-  // salida solo sale en un hoyo sin línea)
-  const sePuedeReportar =
-    Boolean(onReporte) &&
-    !sinMapa &&
-    (hoyo?.playLine?.length ?? 0) >= 2 &&
-    !reporte &&
-    !pidiendo;
+  const conReporte = sePuedeReportar({
+    onReporte,
+    sinMapa,
+    hoyo,
+    reporte,
+    pidiendo,
+  });
 
   const fraseDeLaLinea = useMemo(
     () => fraseDeLosTramos(lineaVisible, t),
     [lineaVisible, t],
   );
-  // Desde ti, si el GPS es bueno y estás en el hoyo (Agustín, 17 oct); si no,
-  // con los metros de tu barra (sin ellos, la línea como está ahora)
+  // Desde ti, si el GPS es bueno y estás en el hoyo; si no, la tarjeta
+  // (`textosDelRecuadro`)
   const desdeAqui = useMemo(
     () =>
       distanciasDesdeLaPosicion({
@@ -560,30 +567,20 @@ const MapaDelHoyo = ({
     () => distanciasDelHoyo({ metros, hoyo: hoyoAhora }),
     [metros, hoyoAhora],
   );
-  const distancias = desdeAqui ?? deLaTarjeta;
-  // De dónde salen las cifras: tu posición, tu barra (la tarjeta) o la salida (la línea)
-  const origenDelRecuadro = t(
-    desdeAqui
-      ? 'mapa.desdeTuPosicion'
-      : metros
-        ? 'mapa.desdeTuBarra'
-        : 'mapa.desdeLaSalida',
-  );
-  // Lo que se anuncia: del punto tocado (T8) o, sin él, del codo de la línea al green
-  const [haciaAhi, deDondeAhi] = medido
-    ? [medido, origenDeLaMedida]
-    : [tocado, posicionEnElCampo];
-  const hastaAhi =
-    haciaAhi && deDondeAhi ? distanciaEnMetros(deDondeAhi, haciaAhi) : null;
-  const deAhiAlGreen =
-    haciaAhi && green && !(medido && origenDeLaMedida)
-      ? distanciaEnMetros(haciaAhi, green.center)
-      : null;
-  const aviso = {
-    buscando: t('mapa.buscando'),
-    denegado: t('mapa.denegado'),
-    'no-disponible': t('mapa.noDisponible'),
-  }[estadoDelGps];
+  const { distancias, origen: origenDelRecuadro } = textosDelRecuadro({
+    t,
+    desdeAqui,
+    deLaTarjeta,
+    metros,
+  });
+  const { hastaAhi, deAhiAlGreen } = loQueSeAnuncia({
+    medido,
+    tocado,
+    origenDeLaMedida,
+    posicionEnElCampo,
+    green,
+  });
+  const aviso = avisoDelGps(estadoDelGps, t);
 
   return (
     // `ModalShell`: el foco entra (por «Cerrar», lo primero) y vuelve a «Mapa» al
@@ -602,7 +599,7 @@ const MapaDelHoyo = ({
         arribaRef={arribaRef}
         numeroDeHoyo={numeroDeHoyo}
         par={par}
-        sePuedeReportar={sePuedeReportar}
+        sePuedeReportar={conReporte}
         botonDeReportarRef={botonDeReportarRef}
         onReportar={abrirElMenu}
         onCerrar={onCerrar}
