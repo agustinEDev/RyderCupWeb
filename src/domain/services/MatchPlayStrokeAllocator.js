@@ -92,8 +92,8 @@ class MatchPlayStrokeAllocator {
    * valora la misma barra por separado para cada género, y la diferencia de
    * CR/SR entre ambas vale varios golpes.
    *
-   * @param {{color: ?string, teeGender: ?string}} participant
-   * @param {Array<Object>} tees
+   * @param {{color?: ?string, teeGender?: ?string}} participant
+   * @param {Array<Object>} [tees=[]]
    * @returns {?Object}
    */
   static findTee(participant, tees = []) {
@@ -144,9 +144,9 @@ class MatchPlayStrokeAllocator {
    * metros, porque la tarjeta del campo no los guarda: quien la use vera el
    * hueco, no un numero de otra barra.
    *
-   * @param {{color: ?string, teeGender: ?string}} participant
-   * @param {Array<Object>} holes Tarjeta de referencia del campo
-   * @param {Array<Object>} tees Salidas del campo, con su tarjeta si la tienen
+   * @param {{color?: ?string, teeGender?: ?string}} participant
+   * @param {Array<Object>} [holes=[]] Tarjeta de referencia del campo
+   * @param {Array<Object>} [tees=[]] Salidas del campo, con su tarjeta si la tienen
    * @returns {Array<Object>} Hoyos de la barra, en el orden en que vinieran
    */
   static holeCardFor(participant, holes = [], tees = []) {
@@ -332,12 +332,12 @@ class MatchPlayStrokeAllocator {
    * Reparto completo de la partida.
    *
    * @param {Object} params
-   * @param {Array<Object>} params.participants
-   * @param {Array<{holeNumber: number, par: number, strokeIndex: number}>} params.holes
-   * @param {Array<Object>} params.tees
-   * @param {?string} params.matchFormat - SINGLES/FOURBALL/FOURSOMES, o null en partido libre
-   * @param {number} params.allowancePercentage
-   * @param {string} params.playMode - 'SCRATCH' | 'HANDICAP'
+   * @param {Array<Object>} [params.participants=[]]
+   * @param {Array<{holeNumber: number, par: number, strokeIndex: number}>} [params.holes=[]]
+   * @param {Array<Object>} [params.tees=[]]
+   * @param {?string} [params.matchFormat=null] - SINGLES/FOURBALL/FOURSOMES, o null en partido libre
+   * @param {number} [params.allowancePercentage=100]
+   * @param {string} [params.playMode='HANDICAP'] - 'SCRATCH' | 'HANDICAP'
    * @returns {Object<string, {playingHandicap: number, strokesByHole: Object<number, number>}>}
    */
   static allocate({
@@ -394,8 +394,14 @@ class MatchPlayStrokeAllocator {
    * pestaña decidiese por su cuenta cuándo fiarse del servidor, una diferencia
    * entre las dos implementaciones se vería en una sí y en la otra no.
    *
-   * @param {Object} params
-   * @param {Array<{participantId: string, playingHandicap: number, strokesByHole: Object}>} params.participantStrokes
+   * @param {Object} params - Lo del servidor y, para el reparto local, los mismos parámetros que `allocate`
+   * @param {Array<{participantId: string, playingHandicap: number, strokesByHole: Object}>} [params.participantStrokes=[]]
+   * @param {Array<Object>} [params.participants]
+   * @param {Array<{holeNumber: number, par: number, strokeIndex: number}>} [params.holes]
+   * @param {Array<Object>} [params.tees]
+   * @param {?string} [params.matchFormat]
+   * @param {number} [params.allowancePercentage]
+   * @param {string} [params.playMode]
    * @returns {Object<string, {playingHandicap: number, strokesByHole: Object<number, number>}>}
    */
   static resolve({ participantStrokes = [], ...localParams }) {

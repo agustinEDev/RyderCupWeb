@@ -5,19 +5,16 @@ import { InvalidLocationError } from './InvalidLocationError';
 export class Location {
   /**
    * @type {CountryCode}
-   * @private
    */
   #mainCountry;
 
   /**
    * @type {?CountryCode}
-   * @private
    */
   #adjacentCountry1;
 
   /**
    * @type {?CountryCode}
-   * @private
    */
   #adjacentCountry2;
 

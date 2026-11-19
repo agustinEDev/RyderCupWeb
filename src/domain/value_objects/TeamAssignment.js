@@ -3,6 +3,7 @@
 /**
  * @readonly
  * @enum {string}
+ * @type {Readonly<Record<'MANUAL'|'AUTOMATIC', string>>}
  */
 export const TeamAssignmentEnum = Object.freeze({
   MANUAL: 'MANUAL',
@@ -12,7 +13,6 @@ export const TeamAssignmentEnum = Object.freeze({
 export class TeamAssignment {
   /**
    * @type {string}
-   * @private
    */
   #value;
 

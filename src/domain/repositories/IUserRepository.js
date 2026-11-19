@@ -1,5 +1,6 @@
 /** @typedef {import('../value_objects/Email').default} Email */
 /** @typedef {import('../value_objects/Password').default} Password */
+/** @typedef {import('../entities/User').default} User */
 
 class IUserRepository {
   /**

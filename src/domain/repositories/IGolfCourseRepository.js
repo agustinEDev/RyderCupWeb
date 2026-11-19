@@ -1,3 +1,5 @@
+/** @typedef {import('../entities/GolfCourse').default} GolfCourse */
+
 /**
  * Golf Course Repository Interface
  * Defines the contract for golf course data operations
@@ -5,8 +7,8 @@
 class IGolfCourseRepository {
   /**
    * List all golf courses (with optional filtering)
-   * @param {Object} filters - Optional filters
-   * @param {string} filters.approvalStatus - Filter by approval status (APPROVED, PENDING_APPROVAL, REJECTED)
+   * @param {Object} [filters] - Optional filters
+   * @param {string} [filters.approvalStatus] - Filter by approval status (APPROVED, PENDING_APPROVAL, REJECTED)
    * @returns {Promise<GolfCourse[]>} Array of golf courses
    */
   async list(filters = {}) {

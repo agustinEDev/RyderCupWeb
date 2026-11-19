@@ -5,7 +5,6 @@ import { contieneEnlace } from '../services/textoSinEnlaces';
 export class CompetitionName {
   /**
    * @type {string}
-   * @private
    */
   #value;
 

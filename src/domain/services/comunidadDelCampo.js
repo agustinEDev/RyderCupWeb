@@ -22,6 +22,12 @@ const dentroDelAnillo = (lon, lat, anillo) => {
 };
 
 // Dentro del borde y fuera de sus huecos (el enclave de Treviño en Álava)
+/**
+ * @param {number} lon
+ * @param {number} lat
+ * @param {Array<Array<Array<number>>>} poligono - El borde y, detrás, sus huecos
+ * @returns {boolean}
+ */
 const dentroDelPoligono = (lon, lat, [borde, ...huecos]) =>
   dentroDelAnillo(lon, lat, borde) &&
   !huecos.some((hueco) => dentroDelAnillo(lon, lat, hueco));

@@ -215,7 +215,7 @@ class StablefordCalculator {
    * exact handicap index (none counts as 0). Each row carries its `position`
    * and `tied`: only the same points AND the same exact index share a place.
    *
-   * @param {Array<{participantId: string, name: string, handicap: number|null}>} participants
+   * @param {Array<{participantId: string, name: string, handicap: number|null, team?: string|null}>} participants
    * @param {Array<{holeNumber: number, par: number, strokeIndex: number}>} holes
    * @param {Array<{holeNumber: number, participantId: string, score: number}>} holeScores
    * @param {Object<string, {strokesByHole: Object<number, number>}>} allocation
@@ -256,7 +256,7 @@ class StablefordCalculator {
    * bottom. Ties go to the lower exact handicap index, with `position` and
    * `tied` as in `rankParticipants`.
    *
-   * @param {Array<{participantId: string, name: string, handicap: number|null}>} participants
+   * @param {Array<{participantId: string, name: string, handicap: number|null, team?: string|null}>} participants
    * @param {Array<{holeNumber: number, par: number, strokeIndex: number}>} holes
    * @param {Array<{holeNumber: number, participantId: string, score: number}>} holeScores
    * @param {Object<string, {strokesByHole: Object<number, number>}>} allocation

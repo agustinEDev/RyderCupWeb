@@ -26,9 +26,13 @@ export const MAX_DIAS_DE_APERTURA = 14;
 export const diasHastaElTorneo = (startDate) => {
   if (!startDate) return null;
 
+  // `any` solo para el tipado: abajo se restan dos Date, que restan sus
+  // milisegundos (valueOf), y TypeScript solo deja restar números
+  /** @type {any} */
   const comienzo = new Date(`${startDate}T00:00:00`);
   if (Number.isNaN(comienzo.getTime())) return null;
 
+  /** @type {any} */
   const hoy = new Date();
   hoy.setHours(0, 0, 0, 0);
 

@@ -42,6 +42,7 @@ const PERSONAL_ROUND_ALLOWANCE = 100;
 
 // Los parámetros de `compute` y `runningResult`, con sus valores por defecto.
 // Como en un parámetro por defecto, solo se rellena lo que llega `undefined`
+/** @type {Readonly<{me: Object|null, participants: Array<Object>, holes: Array<Object>, holeScores: Array<Object>, tees: Array<Object>, participantStrokes: Array<Object>, matchFormat: ?string, allowancePercentage: ?number, playMode: string}>} */
 const PARAMETROS_POR_DEFECTO = Object.freeze({
   me: null,
   participants: [],
@@ -181,16 +182,16 @@ const sideTotals = (
  */
 class PersonalRoundCalculator {
   /**
-   * @param {Object} params
-   * @param {Object|null} params.me Participante del que es la vuelta
-   * @param {Array<Object>} params.participants Todos los participantes
-   * @param {Array<Object>} params.holes Tarjeta de referencia del campo
-   * @param {Array<Object>} params.holeScores Golpes anotados
-   * @param {Array<Object>} params.tees Salidas del campo
-   * @param {Array<Object>} params.participantStrokes Reparto que mandó el backend
-   * @param {?string} params.matchFormat SINGLES/FOURBALL/FOURSOMES, o null en juego libre
-   * @param {?number} params.allowancePercentage Allowance efectivo del partido
-   * @param {string} params.playMode HANDICAP o SCRATCH
+   * @param {Object} params Lo que no llegue (o llegue `undefined`) toma el valor de PARAMETROS_POR_DEFECTO
+   * @param {Object|null} [params.me] Participante del que es la vuelta
+   * @param {Array<Object>} [params.participants] Todos los participantes
+   * @param {Array<Object>} [params.holes] Tarjeta de referencia del campo
+   * @param {Array<Object>} [params.holeScores] Golpes anotados
+   * @param {Array<Object>} [params.tees] Salidas del campo
+   * @param {Array<Object>} [params.participantStrokes] Reparto que mandó el backend
+   * @param {?string} [params.matchFormat] SINGLES/FOURBALL/FOURSOMES, o null en juego libre
+   * @param {?number} [params.allowancePercentage] Allowance efectivo del partido
+   * @param {string} [params.playMode] HANDICAP o SCRATCH
    * @returns {?{personalToPar: ?string, matchToPar: ?string, totalStrokes: number}}
    *   `matchToPar` es null cuando coincide con la personal: no hay nada que
    *   aclarar y repetir el mismo número al lado solo es ruido. En foursomes las
@@ -327,7 +328,8 @@ class PersonalRoundCalculator {
    * partido al lado, que ya es esta. En foursomes, los golpes del bando.
    *
    * @param {Object} params Los de `compute`
-   * @returns {?{personalToPar: ?string, matchToPar: null, totalStrokes: number}}
+   * @returns {?{personalToPar: ?string, matchToPar: ?string, totalStrokes: number}}
+   *   `matchToPar` siempre llega null (también en foursomes, por `compute`)
    */
   static vueltaDelHistorial(params) {
     if (params?.matchFormat === MatchFormat.FOURSOMES)

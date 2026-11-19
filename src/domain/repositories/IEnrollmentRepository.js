@@ -1,3 +1,6 @@
+/** @typedef {import('../entities/Enrollment').default} Enrollment */
+/** @typedef {import('../value_objects/EnrollmentId').default} EnrollmentId */
+
 /**
  * Interface: IEnrollmentRepository
  *
@@ -47,10 +50,10 @@ class IEnrollmentRepository {
    * Equivalente a backend: enrollment_repository.find_by_competition()
    *
    * @param {string} competitionId - UUID de la competición
-   * @param {Object} filters - Filtros opcionales
-   * @param {string} filters.status - Filtrar por estado (ej: "APPROVED", "REQUESTED")
-   * @param {string} filters.userId - Filtrar por usuario específico
-   * @param {string} filters.teamId - Filtrar por equipo específico
+   * @param {Object} [filters] - Filtros opcionales
+   * @param {string} [filters.status] - Filtrar por estado (ej: "APPROVED", "REQUESTED")
+   * @param {string} [filters.userId] - Filtrar por usuario específico
+   * @param {string} [filters.teamId] - Filtrar por equipo específico
    * @returns {Promise<Enrollment[]>} Lista de enrollments
    * @throws {Error} Si falla la operación
    */
@@ -76,8 +79,8 @@ class IEnrollmentRepository {
    * Buscar enrollments de un usuario (todas sus inscripciones)
    *
    * @param {string} userId - UUID del usuario
-   * @param {Object} filters - Filtros opcionales
-   * @param {string} filters.status - Filtrar por estado
+   * @param {Object} [filters] - Filtros opcionales
+   * @param {string} [filters.status] - Filtrar por estado
    * @returns {Promise<Enrollment[]>} Lista de enrollments del usuario
    * @throws {Error} Si falla la operación
    */
