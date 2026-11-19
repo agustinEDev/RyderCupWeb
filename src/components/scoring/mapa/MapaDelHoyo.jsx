@@ -48,12 +48,15 @@ import {
 } from './useLineaEnElMapa';
 import { useMarcarElHoyo } from './useMarcarElHoyo';
 import { useReporteDelHoyo } from './useReporteDelHoyo';
+import { useAyudaParaMarcar } from './useAyudaParaMarcar';
 import CabeceraDelMapa from './CabeceraDelMapa';
 import IndicacionesDelMapa from './IndicacionesDelMapa';
 import RecuadroDeDistancias from './RecuadroDeDistancias';
 import PieDelMapa from './PieDelMapa';
 import AvisosDelMapa from './AvisosDelMapa';
 import BotonesDeMarcar from './BotonesDeMarcar';
+import GuiaParaMarcar from './GuiaParaMarcar';
+import { puntosDelUltimoPaso } from './ayudaParaMarcar';
 
 // Empaquetado, MapLibre no encuentra solo su worker: va como fichero aparte
 setWorkerUrl(urlDelWorker);
@@ -100,6 +103,7 @@ const MapaDelHoyo = ({
   onEmpezar = null,
   colocarSalida = true,
   onReporte = null,
+  userId,
 }) => {
   const { t } = useTranslation('scoring');
   const conMapa = orientacionDelHoyo(hoyo) !== null;
@@ -128,7 +132,8 @@ const MapaDelHoyo = ({
   const conVistaRef = useRef(false);
   // Sin WebGL (móviles viejos, o desactivado) no hay mapa, pero el recuadro de
   // la tarjeta sigue, que no lo necesita
-  const [sinMapa, setSinMapa] = useState(false);
+  // null hasta crear el mapa: la guía para marcar espera a saberlo
+  const [sinMapa, setSinMapa] = useState(null);
 
   const contenedorRef = useRef(null);
   const arribaRef = useRef(null);
@@ -599,6 +604,21 @@ const MapaDelHoyo = ({
     green,
   });
   const aviso = avisoDelGps(estadoDelGps, t);
+  // La guía y el «Paso N de M» (19 nov): sin WebGL ni reportando, no
+  const ayuda = useAyudaParaMarcar({
+    userId,
+    fase,
+    pidiendo,
+    sinMapa,
+    reporte,
+    marca,
+    marcandoSalida,
+    greenConocido,
+    greenMarcado,
+    par,
+    hoyo,
+    setConAyudaDeCodos,
+  });
 
   return (
     // `ModalShell`: el foco entra (por «Cerrar», lo primero) y vuelve a «Mapa» al
@@ -652,7 +672,12 @@ const MapaDelHoyo = ({
           posicionBuena={posicionBuena}
           aviso={aviso}
           tocado={tocado}
-          conAyudaDeCodos={conAyudaDeCodos}
+          ultimoPaso={puntosDelUltimoPaso({ conAyudaDeCodos, avisoDeMarca })}
+          paso={ayuda.paso}
+          botonDeAyudaRef={ayuda.botonDeAyudaRef}
+          onAyuda={ayuda.abrirGuia}
+          onListo={ayuda.alListo}
+          trasListoRef={ayuda.trasListoRef}
           linea={linea}
           hastaAhi={hastaAhi}
           deAhiAlGreen={deAhiAlGreen}
@@ -719,6 +744,14 @@ const MapaDelHoyo = ({
           }}
         />
       </div>
+
+      <GuiaParaMarcar
+        t={t}
+        abierta={ayuda.guiaAbierta}
+        soloGreen={ayuda.soloGreen}
+        conCurva={ayuda.conCurva}
+        onCerrar={ayuda.cerrarGuia}
+      />
     </ModalShell>
   );
 };

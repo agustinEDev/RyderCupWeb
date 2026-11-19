@@ -58,7 +58,9 @@ import SendHoleSampleUseCase from '../application/use_cases/golf_course/SendHole
 import SendPendingHoleSamplesUseCase from '../application/use_cases/golf_course/SendPendingHoleSamplesUseCase';
 import SendHoleReportUseCase from '../application/use_cases/golf_course/SendHoleReportUseCase';
 import SendPendingHoleReportsUseCase from '../application/use_cases/golf_course/SendPendingHoleReportsUseCase';
+import HoleMarkingGuideUseCase from '../application/use_cases/golf_course/HoleMarkingGuideUseCase';
 import LocalStorageHoleReportStore from '../infrastructure/repositories/LocalStorageHoleReportStore';
+import LocalStorageHoleMarkingGuideStore from '../infrastructure/repositories/LocalStorageHoleMarkingGuideStore';
 import GetHoleSamplesUseCase from '../application/use_cases/golf_course/GetHoleSamplesUseCase';
 import { crearRecienEnviadas } from '../application/use_cases/golf_course/recienEnviadas';
 import { captureError } from '../utils/sentryHelpers';
@@ -906,6 +908,10 @@ const sendPendingHoleReportsUseCase = new SendPendingHoleReportsUseCase({
   reportarFallo: reportarFalloDeReporte,
   enVuelo: reportesEnVuelo,
 });
+// La guía para marcar un hoyo, vista o no por cada jugador en este móvil
+const holeMarkingGuideUseCase = new HoleMarkingGuideUseCase({
+  holeMarkingGuideStore: new LocalStorageHoleMarkingGuideStore(),
+});
 const getHoleSamplesUseCase = new GetHoleSamplesUseCase({
   golfCourseRepository: apiGolfCourseRepository,
   holeSampleStore,
@@ -1036,6 +1042,7 @@ export {
   sendPendingHoleSamplesUseCase,
   sendHoleReportUseCase,
   sendPendingHoleReportsUseCase,
+  holeMarkingGuideUseCase,
   getHoleSamplesUseCase,
   createGolfCourseAdminUseCase,
   createGolfCourseRequestUseCase,

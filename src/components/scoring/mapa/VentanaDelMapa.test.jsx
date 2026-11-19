@@ -483,6 +483,13 @@ describe('VentanaDelMapa — muestras del hoyo', () => {
     expect(carga.props.recoge).toBe(false);
   });
 
+  it('T1 (19 nov): el mapa sabe quién es el jugador, para recordar su guía', async () => {
+    abrirEn({ holes: {} });
+    await screen.findByTestId('mapa-del-hoyo');
+
+    expect(carga.props.userId).toBe('u-1');
+  });
+
   it('V6: sin saber nada del hoyo (sin red la primera vez), recoge', async () => {
     abrirEn({ holes: {} });
     await screen.findByTestId('mapa-del-hoyo');

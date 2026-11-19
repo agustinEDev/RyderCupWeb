@@ -444,7 +444,28 @@
       "WRONG_LINE": "La línea es incorrecta",
       "HOLE_CHANGED": "El hoyo ha cambiado"
     },
-    "reporteSinCodos": "Mueve la salida o el green si hace falta"
+    "reporteSinCodos": "Mueve la salida o el green si hace falta",
+    "paso": "Paso {{n}} de {{de}} · ",
+    "ultimoPaso": "Último paso · ",
+    "ultimoPasoCurva_one": "Si el hoyo hace curva, arrastra el punto al centro de la calle",
+    "ultimoPasoCurva_other": "Si el hoyo hace curva, arrastra los puntos al centro de la calle",
+    "listo": "Listo",
+    "comoMarcar": "Cómo marcar un hoyo",
+    "guia": {
+      "titulo": "Marca este hoyo",
+      "intro": "Este hoyo aún no está en el mapa. Marcándolo ayudas a todos los que juegan este campo.",
+      "salidaTitulo": "La salida de tu barra",
+      "salidaTexto": "Toca donde están las marcas de tu barra: las distancias se miden desde ahí.",
+      "greenTitulo": "El centro del green",
+      "greenTexto": "Toca el centro, no la bandera: la bandera cambia cada día.",
+      "curvaTitulo": "Si el hoyo hace curva",
+      "curvaTexto": "Arrastra el punto al centro de la calle.",
+      "pie": "Si te equivocas, puedes volver a marcarlo.",
+      "empezar": "Empezar",
+      "tituloGreen": "Marca el green",
+      "introGreen": "A este hoyo le falta el green. Si lo marcas, ayudas a todos los que juegan este campo."
+    },
+    "signoDeAyuda": "?"
   },
   "tabsLabel": "Vista del partido",
   "withdraw": {
