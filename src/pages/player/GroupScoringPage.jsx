@@ -33,9 +33,11 @@ import {
 } from '../../utils/pestanasDeLaAnotacion';
 import {
   anotacionTerminada,
+  golpesDelSelectorDeLaPartida,
+} from '../../domain/services/PartidasDeLaFranja';
+import {
   candadosDeLaCasilla,
   estadoDeEntregaDeLaPartida,
-  golpesDelSelectorDeLaPartida,
   hoyosNoGuardadosDe,
   motivoDelFalloDeCarga,
   nombreDe,
