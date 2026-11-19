@@ -10,9 +10,7 @@
   // no activa noImplicitOverride. Apretarla es trabajo pendiente.
   "extends": "./tsconfig.json",
   "compilerOptions": {
-    "checkJs": true,
-    // El código ya usa Array.prototype.at y demás de ES2022, que el build admite
-    "lib": ["ES2022", "DOM", "DOM.Iterable"]
+    "checkJs": true
   },
   "include": [
     "src/domain/**/*.js",
