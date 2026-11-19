@@ -1514,6 +1514,29 @@ describe('HoleInput · caracterización (partir el componente)', () => {
     },
   );
 
+  it('el pie: un neto de 0 se enseña (no es «sin neto»)', () => {
+    render(<HoleInput {...props} onScoreChange={vi.fn()} netScore={0} />);
+
+    expect(screen.getByTestId('pie-del-hoyo')).toHaveTextContent(
+      'input.netScore: 0',
+    );
+  });
+
+  it('el pie: sin nombre del equipo, su letra delante de la ventaja', () => {
+    render(
+      <HoleInput
+        {...props}
+        onScoreChange={vi.fn()}
+        standing="2UP"
+        holeResult={{ winner: 'HALVED', standingTeam: 'A' }}
+      />,
+    );
+
+    expect(screen.getByTestId('pie-del-hoyo')).toHaveTextContent(
+      'input.halvedA 2UP',
+    );
+  });
+
   it('el pie: un ganador desconocido sale tal cual y la ventaja sin equipo, sola', () => {
     render(
       <HoleInput
