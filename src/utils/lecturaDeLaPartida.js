@@ -5,7 +5,7 @@
 // pantalla (espacio `scoring`). Las reglas de las tarjetas —a quién marco,
 // quién me marca, quién sigue en juego— viven en el dominio
 // (`domain/services/PartidasDeLaFranja`).
-import { rolesDeLasTarjetas } from '../domain/services/PartidasDeLaFranja';
+import { rolesDeLasTarjetas } from '../domain/services/rolesEnLaPartida';
 import { mensajeDeErrorDePartida } from './erroresDePartida';
 
 /** El nombre de un jugador de la partida, o `null` si no está en ella. */

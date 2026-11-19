@@ -34,7 +34,7 @@ import {
 import {
   anotacionTerminada,
   golpesDelSelectorDeLaPartida,
-} from '../../domain/services/PartidasDeLaFranja';
+} from '../../domain/services/rolesEnLaPartida';
 import {
   candadosDeLaCasilla,
   estadoDeEntregaDeLaPartida,
