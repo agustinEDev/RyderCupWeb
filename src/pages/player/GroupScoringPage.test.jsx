@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import {
+  act,
   render,
   screen,
   fireEvent,
@@ -74,6 +75,7 @@ vi.mock('../../composition', () => ({
 const llamadas = vi.hoisted(() => ({
   useScoring: null,
   casilla: null,
+  montajesDeLaCasilla: 0,
   clasificacion: null,
   tarjetas: null,
   selector: null,
@@ -112,12 +114,19 @@ vi.mock('../../components/scoring/mapa/VentanaDelMapa', () => ({
   },
 }));
 
-vi.mock('../../components/scoring/HoleInput', () => ({
-  default: (props) => {
+vi.mock('../../components/scoring/HoleInput', async () => {
+  const { useState } = await import('react');
+  const CasillaFalsa = (props) => {
+    // Cuenta los montajes: la casilla se reinicia cambiando su `key`
+    useState(() => {
+      llamadas.montajesDeLaCasilla += 1;
+    });
     llamadas.casilla = props;
     return <div data-testid="hole-input" />;
-  },
-}));
+  };
+  return { default: CasillaFalsa };
+});
+
 vi.mock('../../components/scoring/HoleSelector', () => ({
   default: (props) => {
     llamadas.selector = props;
@@ -1327,5 +1336,187 @@ describe('GroupScoringPage: la anotación en curso', () => {
 
     expect(localStorage.getItem(CLAVE)).toBeNull();
     expect(mockHook.setCurrentHole).not.toHaveBeenCalled();
+  });
+});
+
+/**
+ * Caracterización antes de partir la pantalla en piezas (refactor sin cambio de
+ * comportamiento): lo que no tenía test y tiene que seguir igual.
+ */
+describe('GroupScoringPage: lo que no cambia al partirla', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockBusqueda = new URLSearchParams('competition=c-1');
+    mockRoles = { isAdmin: false, isCreator: false, isLoading: false };
+    mockHook = hook();
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('cargando: la espera, sin cabecera de la partida', () => {
+    mockHook = hook({ isLoading: true });
+    render(<GroupScoringPage />);
+
+    expect(screen.getByText('loading')).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { level: 1 })).toBeNull();
+  });
+
+  it.each([
+    [{ status: 403 }, 'errors.forbidden'],
+    [{ response: { status: 404 } }, 'errors.notFound'],
+    [new Error('crudo'), 'offline.noSePudoCargar'],
+    [null, 'offline.nothingCached'],
+  ])('sin vista (%o): %s, y «Reintentar» vuelve a pedirla', (error, texto) => {
+    mockHook = hook({ scoringView: null, error });
+    render(<GroupScoringPage />);
+
+    expect(screen.getByText(texto)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'retry' }));
+    expect(mockHook.refetch).toHaveBeenCalledTimes(1);
+  });
+
+  it.each([
+    [{ status: 500 }, 'golpe', 'errors.failedToSubmitScore'],
+    [{ status: 500 }, 'tarjeta', 'errors.failedToSubmitScorecard'],
+    [{ i18nKey: 'offline.lleno' }, 'golpe', 'offline.lleno'],
+    [{ status: 404 }, null, 'errors.notFound'],
+    [{ status: 500 }, null, 'offline.noSePudoCargar'],
+  ])('el recuadro del fallo (%o, %s): %s', (error, origenDelError, texto) => {
+    mockHook = hook({ error, origenDelError });
+    render(<GroupScoringPage />);
+
+    const recuadro = screen.getByRole('alert');
+    expect(recuadro).toHaveTextContent(texto);
+    fireEvent.click(within(recuadro).getByRole('button', { name: 'retry' }));
+    expect(mockHook.refetch).toHaveBeenCalledTimes(1);
+  });
+
+  it('el aviso del vaciado sale y quita el de «a salvo»', () => {
+    mockHook = hook({ avisoDelVaciado: 'lleno', pendingQueueSize: 2 });
+    render(<GroupScoringPage />);
+
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'scoring:errors.vaciado.lleno',
+    );
+    expect(screen.queryByTestId('pendientes-a-salvo')).toBeNull();
+  });
+
+  it('los hoyos sin guardar, contados y en orden', () => {
+    mockHook = hook({ noGuardados: { 7: { turno: 1 }, 3: { turno: 2 } } });
+    render(<GroupScoringPage />);
+
+    expect(screen.getByTestId('no-guardados')).toHaveTextContent(
+      'offline.noGuardados {"count":2,"holes":"3, 7"}',
+    );
+    expect(llamadas.selector.noGuardados).toEqual([3, 7]);
+  });
+
+  it('dice a quién marco, con su nombre', () => {
+    render(<GroupScoringPage />);
+
+    expect(
+      screen.getByText('partida.youMark {"jugador":"BEA"}'),
+    ).toBeInTheDocument();
+  });
+
+  it('Anterior y Siguiente mueven de hoyo, sin salirse de la tarjeta', () => {
+    mockHook = hook({ currentHole: 5 });
+    const { unmount } = render(<GroupScoringPage />);
+    fireEvent.click(screen.getByRole('button', { name: 'input.prevHole' }));
+    fireEvent.click(screen.getByRole('button', { name: 'input.nextHole' }));
+    expect(mockHook.setCurrentHole.mock.calls).toEqual([[4], [6]]);
+    unmount();
+
+    mockHook = hook({ currentHole: 1 });
+    const { unmount: quita } = render(<GroupScoringPage />);
+    expect(
+      screen.getByRole('button', { name: 'input.prevHole' }),
+    ).toBeDisabled();
+    quita();
+
+    mockHook = hook({ currentHole: 18 });
+    render(<GroupScoringPage />);
+    expect(
+      screen.getByRole('button', { name: 'input.nextHole' }),
+    ).toBeDisabled();
+  });
+
+  it.each([
+    [{}, [false, false, false]],
+    [{ canScore: false }, [true, true, true]],
+    [{ isFullyLocked: true }, [true, false, false]],
+    [{ isSessionBlocked: true }, [true, true, true]],
+    [{ isOwnScoreLocked: true }, [false, true, false]],
+    [{ isMarkerScoreLocked: true }, [false, false, true]],
+  ])('los candados de la casilla (%o)', (extra, [lectura, mio, suyo]) => {
+    mockHook = hook(extra);
+    render(<GroupScoringPage />);
+
+    expect(llamadas.casilla.isReadOnly).toBe(lectura);
+    expect(llamadas.casilla.isOwnScoreLocked).toBe(mio);
+    expect(llamadas.casilla.isMarkerScoreLocked).toBe(suyo);
+  });
+
+  it('con la sesión en otro móvil, el aviso: «Tomar el control» la recupera', () => {
+    mockHook = hook({ isSessionBlocked: true });
+    render(<GroupScoringPage />);
+
+    fireEvent.click(screen.getByTestId('session-take-over'));
+    expect(mockHook.takeOverSession).toHaveBeenCalledTimes(1);
+  });
+
+  it('la casilla se reinicia al cambiar el turno de lo no guardado de SU hoyo, y solo entonces', () => {
+    llamadas.montajesDeLaCasilla = 0;
+    const { rerender } = render(<GroupScoringPage />);
+    const conNoGuardados = (noGuardados, extra = {}) => {
+      mockHook = { ...mockHook, noGuardados, ...extra };
+      rerender(<GroupScoringPage />);
+      return llamadas.montajesDeLaCasilla;
+    };
+    expect(llamadas.montajesDeLaCasilla).toBe(1);
+
+    expect(conNoGuardados({ 1: { turno: 1 } })).toBe(2);
+    // Otro hoyo sin guardar no toca la casilla de este
+    expect(conNoGuardados({ 1: { turno: 1 }, 4: { turno: 7 } })).toBe(2);
+    expect(conNoGuardados({ 1: { turno: 2 } })).toBe(3);
+    expect(conNoGuardados({})).toBe(4);
+    // Y cambiar de hoyo, también
+    expect(conNoGuardados({}, { currentHole: 2 })).toBe(5);
+  });
+
+  it('«aún no abre» caduca solo un segundo después de la hora, sin sondeo', () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'Date'] });
+    vi.setSystemTime(new Date('2030-05-01T10:00:00Z'));
+    mockHook = hook({
+      scoringView: vista({
+        status: 'SCHEDULED',
+        scoring_opens_at: '2030-05-01T10:00:05Z',
+      }),
+    });
+    render(<GroupScoringPage />);
+    expect(screen.queryByTestId('hole-input')).toBeNull();
+
+    act(() => vi.advanceTimersByTime(5999));
+    expect(screen.queryByTestId('hole-input')).toBeNull();
+
+    act(() => vi.advanceTimersByTime(1));
+    expect(screen.getByTestId('hole-input')).toBeInTheDocument();
+  });
+
+  it('«aún no abre» más allá de lo que aguanta un temporizador: no se programa', () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'Date'] });
+    vi.setSystemTime(new Date('2030-05-01T10:00:00Z'));
+    const MAXIMO = 2 ** 31 - 1;
+    mockHook = hook({
+      scoringView: vista({
+        status: 'SCHEDULED',
+        scoring_opens_at: new Date(Date.now() + MAXIMO + 1).toISOString(),
+      }),
+    });
+    render(<GroupScoringPage />);
+
+    act(() => vi.advanceTimersByTime(MAXIMO + 5000));
+    expect(screen.queryByTestId('hole-input')).toBeNull();
   });
 });
