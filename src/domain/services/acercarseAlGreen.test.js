@@ -4,6 +4,7 @@ import {
   tocaAcercarseAlGreen,
   encuadreAlGreen,
   vistaQueGana,
+  vistaAlGreen,
 } from './acercarseAlGreen';
 import { camaraGirada, rumbo } from './geometriaDelHoyo';
 import { puntoDesde } from './hoyoMarcado';
@@ -134,5 +135,29 @@ describe('vistaQueGana', () => {
     ['el hoyo entero pisa el zoom', alGreen, { tipo: 'hoyo' }],
   ])('%s', (_caso, actual, nueva) => {
     expect(vistaQueGana(actual, nueva)).toBe(nueva);
+  });
+});
+
+describe('vistaAlGreen', () => {
+  const desde = alSur(80);
+
+  it('la vista al green, de ti al green', () => {
+    expect(vistaAlGreen(desde, GREEN, null)).toEqual({
+      tipo: 'alGreen',
+      desde,
+      green: GREEN,
+    });
+  });
+
+  it('tras marcar (una vista que pidió el jugador), gana el zoom aunque el mapa se moviera: hereda `porElJugador`', () => {
+    expect(
+      vistaAlGreen(desde, GREEN, { tipo: 'hoyo', porElJugador: true }),
+    ).toEqual({ tipo: 'alGreen', desde, green: GREEN, porElJugador: true });
+  });
+
+  it('lo que decide el GPS no lo hereda', () => {
+    expect(
+      vistaAlGreen(desde, GREEN, { tipo: 'desdeMi', desde, hacia: CENTRO }),
+    ).toEqual({ tipo: 'alGreen', desde, green: GREEN });
   });
 });
