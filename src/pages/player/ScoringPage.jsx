@@ -6,10 +6,7 @@ import HeaderAuth from '../../components/layout/HeaderAuth';
 import { useAuth } from '../../hooks/useAuth';
 import { useScoring } from '../../hooks/useScoring';
 import { useMapaDelHoyo } from '../../hooks/useMapaDelHoyo';
-import {
-  abreMasTarde,
-  horaDelCampo,
-} from '../../services/partidosSinCobertura';
+import { horaDelCampo } from '../../services/partidosSinCobertura';
 import AvisosDelPartido from '../../components/scoring/AvisosDelPartido';
 import CabeceraDelPartido from '../../components/scoring/CabeceraDelPartido';
 import MatchSummaryCard from '../../components/scoring/MatchSummaryCard';
@@ -24,7 +21,7 @@ import SinNadaQuePintar from '../../components/scoring/SinNadaQuePintar';
 import BlockLoader from '../../components/ui/BlockLoader';
 import { useAnotacionEnCurso } from '../../hooks/useAnotacionEnCurso';
 import { useClasificacionAlAbrir } from '../../hooks/useClasificacionAlAbrir';
-import { useDespertarALaHora } from '../../hooks/useDespertarALaHora';
+import { useAvisoDeQueAunNoAbre } from '../../hooks/useAvisoDeQueAunNoAbre';
 import { useGoBack } from '../../hooks/useGoBack';
 import { PESTANAS_DEL_PARTIDO } from '../../utils/pestanasDeLaAnotacion';
 import { hoyosSinGuardar, lecturaDelHoyo } from '../../utils/lecturaDelHoyo';
@@ -193,11 +190,9 @@ const ScoringPage = () => {
 
   // La anotación de un partido programado abre sola a una hora (BE #305). Antes
   // de esa hora no se ofrecen casillas: el servidor las rechazaría y el golpe
-  // se quedaría esperando en la cola sin que el jugador entienda por qué
-  const aunNoAbre = abreMasTarde({
-    status: scoringView?.matchStatus,
-    scoringOpensAt: scoringView?.scoringOpensAt,
-  });
+  // se quedaría esperando en la cola sin que el jugador entienda por qué. Y
+  // que el aviso caduque solo: se despierta a la hora en punto
+  const aunNoAbre = useAvisoDeQueAunNoAbre(scoringView);
   // El mapa del hoyo (BE #532): «Mapa» en la tarjeta lo abre a pantalla completa
   const mapaDelHoyo = useMapaDelHoyo({
     golfCourseId: scoringView?.roundInfo?.golfCourseId ?? null,
@@ -212,9 +207,6 @@ const ScoringPage = () => {
   const horaDeApertura = aunNoAbre
     ? horaDelCampo(scoringView?.scoringOpensAt, i18n.language)
     : null;
-
-  // Y que el aviso caduque solo: se despierta a la hora en punto
-  useDespertarALaHora(aunNoAbre);
 
   const handleTabChange = (tab) => {
     setActiveTab(tab);
