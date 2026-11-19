@@ -48,7 +48,8 @@ const base = {
   marcando: false,
   medido: null,
   reporte: null,
-  salida: null,
+  salidaDeMiBarra: null,
+  salidaDeLaLinea: null,
 };
 const PANTALLA = {
   ancho: 360,
@@ -62,8 +63,33 @@ describe('tocaAcercarseAlGreen', () => {
     expect(FUERA_DE_LA_SALIDA_M).toBe(40);
   });
 
+  it('S1: en la salida se mide desde la de mi barra, como al llegar a ella (H12), no desde la de la línea', () => {
+    expect(
+      tocaAcercarseAlGreen({
+        ...base,
+        salidaDeMiBarra: alSur(110),
+        salidaDeLaLinea: alSur(200),
+      }),
+    ).toBe(false);
+    expect(
+      tocaAcercarseAlGreen({
+        ...base,
+        salidaDeMiBarra: alSur(200),
+        salidaDeLaLinea: alSur(110),
+      }),
+    ).toBe(true);
+  });
+
+  it('S1: sin la de mi barra, la de la línea', () => {
+    expect(tocaAcercarseAlGreen({ ...base, salidaDeLaLinea: alSur(110) })).toBe(
+      false,
+    );
+  });
+
   it('S2: fuera de la salida (a 45 m de ella), sí', () => {
-    expect(tocaAcercarseAlGreen({ ...base, salida: alSur(125) })).toBe(true);
+    expect(tocaAcercarseAlGreen({ ...base, salidaDeMiBarra: alSur(125) })).toBe(
+      true,
+    );
   });
 
   it.each([
@@ -86,8 +112,8 @@ describe('tocaAcercarseAlGreen', () => {
     ['Z12: con un punto medido', { medido: alSur(40) }],
     ['Z13: con el «⋮» abierto', { reporte: { fase: 'motivos' } }],
     ['Z13: proponiendo un reporte', { reporte: { fase: 'salida' } }],
-    ['S1: en la salida (a 30 m de ella)', { salida: alSur(110) }],
-    ['S1: en la salida, al límite (40 m)', { salida: alSur(120) }],
+    ['S1: en la salida (a 30 m de ella)', { salidaDeMiBarra: alSur(110) }],
+    ['S1: en la salida, al límite (40 m)', { salidaDeMiBarra: alSur(120) }],
   ])('%s: no', (_caso, cambio) => {
     expect(tocaAcercarseAlGreen({ ...base, ...cambio })).toBe(false);
   });
