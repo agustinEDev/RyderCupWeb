@@ -4,6 +4,10 @@ import ValidationIcon from './ValidationIcon';
 import ScoreInputPanel from './ScoreInputPanel';
 import { HuecoParaAnotar } from './HuecoParaAnotar';
 import { clasesDelHueco } from './clasesDelHueco';
+import {
+  pintaGolpe,
+  siguienteHueco as calculaSiguienteHueco,
+} from './golpeDeLaCasilla';
 import { MatchFormat } from '../../domain/value_objects/MatchFormat';
 
 // Un golpe de la casilla: el botón que abre el teclado o, bloqueado, el número.
@@ -223,28 +227,7 @@ const HoleInput = ({
     if (onSecondMarkedChange) onSecondMarkedChange(val);
   };
 
-  // La raya (`null`, bola recogida) se pinta distinta del hoyo sin anotar
-  // (`undefined`): los dos llegan sin número y significan lo contrario, y con
-  // el mismo guion para ambos solo los distinguía quien usara lector de
-  // pantalla. Mismo trazo que `GolfFigure` en la tarjeta, para que la casilla y
-  // la tarjeta digan lo mismo.
-  const displayScore = (val, ariaLabelNull = null) => {
-    // Hoyo sin anotar: hueco, no guion. El guion se confundía con la raya
-    // (`null`, bola recogida), que es lo contrario: un hoyo ya cerrado. Se
-    // sigue anunciando a quien no lo ve.
-    if (val === undefined) {
-      return <span className="sr-only">{t('input.notEntered')}</span>;
-    }
-    return val === null ? (
-      <span aria-label={ariaLabelNull || undefined} className="text-gray-600">
-        —
-      </span>
-    ) : (
-      val
-    );
-  };
-
-  const pinta = (val) => displayScore(val, t('input.pickedUp'));
+  const pinta = (val) => pintaGolpe(val, t);
 
   // En foursomes la bola es de la pareja: «La pareja rival puso…» (/code-review)
   const nombreDelOtro = (nombre, porDefecto) =>
@@ -276,16 +259,15 @@ const HoleInput = ({
         : null,
   };
 
-  // El siguiente hueco por anotar: el tuyo antes que el del rival (FE #725).
-  // La raya ya es un golpe anotado; solo cuenta lo que se puede tocar
-  const siguienteHueco =
-    !isOwnScoreLocked && ownValue === undefined
-      ? 'own'
-      : !marcadoBloqueado && markedValue === undefined
-        ? 'marked'
-        : secondMarked && !segundoBloqueado && segundoValue === undefined
-          ? 'second'
-          : null;
+  const siguienteHueco = calculaSiguienteHueco({
+    propioBloqueado: isOwnScoreLocked,
+    propio: ownValue,
+    marcadoBloqueado,
+    marcado: markedValue,
+    haySegundo: Boolean(secondMarked),
+    segundoBloqueado,
+    segundo: segundoValue,
+  });
 
   return (
     <div
@@ -375,7 +357,7 @@ const HoleInput = ({
                 data-testid="marked-score-value"
                 className="text-2xl font-bold text-gray-400"
               >
-                {displayScore(markedValue, t('input.pickedUp'))}
+                {pinta(markedValue)}
               </p>
               <p
                 data-testid="anotado-por-otro"
@@ -472,11 +454,10 @@ const HoleInput = ({
             <p className="text-xs text-gray-500">{etiquetaPropia}</p>
             {/* Sin anotar, hueco y no la raya de «recogió» (revisor, QA 3) */}
             <p className="text-xl font-bold">
-              {displayScore(
+              {pinta(
                 playerScore.ownSubmitted === false
                   ? undefined
                   : playerScore.ownScore,
-                t('input.pickedUp'),
               )}
             </p>
           </div>
@@ -484,11 +465,10 @@ const HoleInput = ({
             <div>
               <p className="text-xs text-gray-500">{etiquetaDelMarcador}</p>
               <p className="text-xl font-bold">
-                {displayScore(
+                {pinta(
                   playerScore.markerSubmitted === false
                     ? undefined
                     : playerScore.markerScore,
-                  t('input.pickedUp'),
                 )}
               </p>
             </div>
