@@ -27,6 +27,8 @@ import { useMapaDeMapLibre } from './useMapaDeMapLibre';
 import { useGpsDelHoyo } from './useGpsDelHoyo';
 import { decidirConElGps, useLineaQueSeVe } from './useLineaQueSeVe';
 import { useEstadoDeLaMarca } from './useEstadoDeLaMarca';
+import { useAcercarseAlGreen } from './useAcercarseAlGreen';
+import { vistaQueGana } from '../../../domain/services/acercarseAlGreen';
 import { salidaQueSePinta, sePuedeReportarElHoyo } from './reglasDelMapa';
 import {
   avisoDelGps,
@@ -124,6 +126,12 @@ const MapaDelHoyo = ({
   // Hacia dónde se ha orientado el mapa después de abrir (O2-O5): `{ tipo:
   // 'hoyo' }`, o de ti a un punto. Cada cambio gira el mapa una vez
   const [vista, setVista] = useState(null);
+  // La orientación desde ti no pisa el zoom al green (Z14): solo el encuadre,
+  // la línea desde ti y su codo siguen
+  const ponerVistaDelGps = useCallback(
+    (nueva) => setVista((actual) => vistaQueGana(actual, nueva)),
+    [],
+  );
   const conVistaRef = useRef(false);
   // Sin WebGL (móviles viejos, o desactivado) no hay mapa, pero el recuadro de
   // la tarjeta sigue, que no lo necesita
@@ -393,8 +401,13 @@ const MapaDelHoyo = ({
       setHastaLaSalida,
       setTocado,
       setCodoSinTocar,
-      setVista,
+      setVista: ponerVistaDelGps,
     },
+  );
+  // Después de lo del GPS: el zoom al green gana (Z14)
+  const sinZoomAlGreen = useAcercarseAlGreen(
+    { posicionBuena, green, lejos, fase, medido, reporte },
+    setVista,
   );
   const textoDeTramo = useCallback(
     (metros) => t('mapa.tramo', { metros }),
@@ -680,7 +693,9 @@ const MapaDelHoyo = ({
           onVerHoyo={() => {
             // A mitad de hoyo, vuelve también su línea (H3); y lo último
             // orientado es ya el hoyo, que el panel no vuelva a «desde ti» (CodeRabbit)
+            // Tras «Ver hoyo», el mapa ya no se acerca solo al green (Z7)
             setLineaOculta(false);
+            sinZoomAlGreen();
             ultimaVistaRef.current = { tipo: 'hoyo' };
             encuadrarHoyo(true);
           }}

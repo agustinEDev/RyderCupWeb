@@ -2816,7 +2816,8 @@ describe('MapaDelHoyo — marcar con el GPS y el recuadro desde ti (17 oct)', ()
       expect(ultimoGiro()).toBeCloseTo(rumbo(aqui, VERDE), 6);
       const giradas = mapa().easeTo.mock.calls.length;
 
-      desde(alEste(150, CODO));
+      // A 110 m del green: a 100 o menos, se acercaría (Z2)
+      desde(alEste(140, CODO));
 
       expect(mapa().easeTo.mock.calls.length).toBe(giradas);
     });
