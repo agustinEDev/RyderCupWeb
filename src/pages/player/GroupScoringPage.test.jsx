@@ -1485,6 +1485,74 @@ describe('GroupScoringPage: lo que no cambia al partirla', () => {
     expect(conNoGuardados({}, { currentHole: 2 })).toBe(5);
   });
 
+  it('retirarse bien: lo dice y vuelve a pedir la vista', async () => {
+    mockRetirarse.mockResolvedValue({});
+    render(<GroupScoringPage />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'partida.retire' }));
+    fireEvent.click(screen.getByRole('button', { name: 'partida.retireYes' }));
+
+    await waitFor(() => expect(mockHook.refetch).toHaveBeenCalledTimes(1));
+    expect(mockRetirarse).toHaveBeenCalledWith('g-1');
+    expect(mockToast.success).toHaveBeenCalledWith('partida.retired');
+    expect(
+      screen.queryByRole('button', { name: 'partida.retireYes' }),
+    ).toBeNull();
+  });
+
+  it('mientras se retira, «Sí» no se puede pulsar otra vez', async () => {
+    let acaba;
+    mockRetirarse.mockReturnValue(
+      new Promise((resolve) => {
+        acaba = resolve;
+      }),
+    );
+    render(<GroupScoringPage />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'partida.retire' }));
+    const si = screen.getByRole('button', { name: 'partida.retireYes' });
+    expect(si).toBeEnabled();
+    fireEvent.click(si);
+
+    await waitFor(() => expect(si).toBeDisabled());
+    await act(async () => acaba({}));
+  });
+
+  it('antes de que abra, sin «Mapa»: la ventana va con la casilla', () => {
+    mapaHoyo.valor = { ...mapaHoyo.valor, disponible: true };
+    const { unmount } = render(<GroupScoringPage />);
+    expect(
+      screen.getByRole('button', { name: 'mapa.abrir' }),
+    ).toBeInTheDocument();
+    unmount();
+
+    mockHook = hook({
+      scoringView: vista({
+        status: 'SCHEDULED',
+        scoring_opens_at: '2999-01-01T08:00:00+01:00',
+      }),
+    });
+    render(<GroupScoringPage />);
+
+    expect(screen.queryByRole('button', { name: 'mapa.abrir' })).toBeNull();
+    expect(
+      screen.getByRole('button', { name: 'input.nextHole' }),
+    ).toBeInTheDocument();
+  });
+
+  it('en juego, aunque la hora de abrir no haya llegado, se anota', () => {
+    mockHook = hook({
+      scoringView: vista({
+        status: 'IN_PROGRESS',
+        scoring_opens_at: '2999-01-01T08:00:00+01:00',
+      }),
+    });
+    render(<GroupScoringPage />);
+
+    expect(screen.getByTestId('hole-input')).toBeInTheDocument();
+    expect(screen.queryByText('partida.notOpenYet')).toBeNull();
+  });
+
   it('«aún no abre» caduca solo un segundo después de la hora, sin sondeo', () => {
     vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'Date'] });
     vi.setSystemTime(new Date('2030-05-01T10:00:00Z'));
