@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { accionesDeAnotarRapida } from './useNavegacionYCierreRapida';
+import { accionesDeAnotarRapida } from './useDialogosDeCierreRapida';
 
 /**
  * Los topes de anterior y siguiente, sin depender de que el botón esté

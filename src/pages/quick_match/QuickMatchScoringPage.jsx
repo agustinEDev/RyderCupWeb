@@ -28,7 +28,7 @@ import { useFocoDeLosDialogos } from '../../hooks/useFocoDeLosDialogos';
 import {
   accionesDeAnotarRapida,
   useDialogosDeCierreRapida,
-} from '../../hooks/useNavegacionYCierreRapida';
+} from '../../hooks/useDialogosDeCierreRapida';
 import { casillasDelHoyo } from '../../utils/casillasDelHoyo';
 import { PESTANAS_DE_LA_RAPIDA } from '../../utils/pestanasDeLaAnotacion';
 import {
