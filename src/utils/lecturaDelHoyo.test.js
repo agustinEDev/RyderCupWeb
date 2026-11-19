@@ -1,10 +1,21 @@
 import { describe, expect, it } from 'vitest';
 
-import { hoyosSinGuardar, lecturaDelHoyo } from './lecturaDelHoyo';
+import {
+  hoyosNoGuardadosDe,
+  hoyosSinGuardar,
+  lecturaDelHoyo,
+} from './lecturaDelHoyo';
 
 const bloqueadaPara = (entregadas) => (id) => !id || entregadas.includes(id);
 
 describe('lecturaDelHoyo', () => {
+  describe('hoyosNoGuardadosDe', () => {
+    it('los hoyos no guardados, en orden numérico', () => {
+      expect(hoyosNoGuardadosDe({ 12: {}, 3: {}, 1: {} })).toEqual([1, 3, 12]);
+      expect(hoyosNoGuardadosDe({})).toEqual([]);
+    });
+  });
+
   describe('hoyosSinGuardar', () => {
     const markerAssignments = [
       { scorerUserId: 'yo', marksUserId: 'r1' },
