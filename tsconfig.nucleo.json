@@ -2,7 +2,12 @@
   // Comprobación de tipos del núcleo (domain y application) con checkJs: sus
   // JSDoc dejan de ser comentarios y pasan a ser contratos que el CI vigila
   // (npm run typecheck:nucleo). Solo el código de producción: los tests y
-  // src/pruebas quedan fuera.
+  // src/pruebas quedan fuera. Los ficheros de src/utils que estas capas
+  // importan también se comprueban, porque checkJs alcanza a todo lo que entra
+  // en el programa.
+  //
+  // Es una puerta permisiva: hereda strict: false y noImplicitAny: false, y
+  // no activa noImplicitOverride. Apretarla es trabajo pendiente.
   "extends": "./tsconfig.json",
   "compilerOptions": {
     "checkJs": true,

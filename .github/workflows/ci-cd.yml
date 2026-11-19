@@ -691,9 +691,10 @@ jobs:
       # El núcleo en JavaScript (domain y application) con checkJs: sus JSDoc
       # son el contrato de tipos y un error en ellos tumba el job
       # (tsconfig.nucleo.json). Corre aunque el paso de arriba falle, para ver
-      # los dos resultados en la misma vuelta
+      # los dos resultados en la misma vuelta; no si la instalación falló, que
+      # deja sin correr check-ts (la tarjeta lo da entonces como «Not run»)
       - name: Run core type check (checkJs)
-        if: ${{ !cancelled() }}
+        if: ${{ !cancelled() && steps.check-ts.outcome == 'success' }}
         id: tsc-nucleo
         run: |
           set -o pipefail
@@ -714,7 +715,7 @@ jobs:
             has_ts=true log="$RUNNER_TEMP/tsc-nucleo.log")
           python3 .github/scripts/summary_card.py \
             --title "📝 Type Check" \
-            --what "Runs the TypeScript compiler without emitting (tsc --noEmit) over the project's .ts files, and with checkJs over the JavaScript of src/domain and src/application (npm run typecheck:nucleo), so a type error never reaches the build." \
+            --what "Runs the TypeScript compiler without emitting (tsc --noEmit) over the project's .ts files, and with checkJs over the JavaScript of src/domain and src/application, plus the src/utils files they import (npm run typecheck:nucleo), so a type error never reaches the build." \
             --status "$STATUS" --result "TypeScript files: $RESULT Core JS (checkJs): $RESULT_NUCLEO" \
             --if-fails "Run 'npx tsc --noEmit' and 'npm run typecheck:nucleo' locally and fix the reported types."
 
