@@ -1,3 +1,5 @@
+/** @typedef {import('../entities/QuickMatch').default} QuickMatch */
+
 /**
  * Interface: IQuickMatchRepository
  *

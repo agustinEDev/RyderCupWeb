@@ -18,7 +18,7 @@ export const MatchFormat = Object.freeze({
  * @returns {boolean} Si es uno de los valores de MatchFormat
  */
 export const isValidMatchFormat = (value) =>
-  Object.values(MatchFormat).includes(value);
+  /** @type {unknown[]} */ (Object.values(MatchFormat)).includes(value);
 
 /**
  * Si el formato se juega por parejas (fourball y foursomes).

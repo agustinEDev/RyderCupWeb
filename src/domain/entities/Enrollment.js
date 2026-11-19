@@ -55,11 +55,12 @@ class Enrollment {
    * @param {string} props.competitionId - ID de la competición (UUID)
    * @param {string} props.userId - ID del usuario (UUID)
    * @param {EnrollmentStatus} props.status - Estado actual
-   * @param {string|null} props.teamId - ID del equipo asignado (opcional)
-   * @param {number|null} props.customHandicap - Handicap personalizado (opcional)
-   * @param {boolean} props.useRealName - Si esta inscripción muestra el nombre legal en vez del alias (FE #571). Por defecto sí: en una competición manda el nombre legal salvo que el jugador pida su alias
-   * @param {Date|string|null} props.createdAt - Fecha de creación
-   * @param {Date|string|null} props.updatedAt - Fecha de última actualización
+   * @param {string|null} [props.teamId=null] - ID del equipo asignado (opcional)
+   * @param {number|null} [props.customHandicap=null] - Handicap personalizado (opcional)
+   * @param {TeeColor|null} [props.color=null] - Barra de salida elegida (opcional)
+   * @param {boolean} [props.useRealName=true] - Si esta inscripción muestra el nombre legal en vez del alias (FE #571). Por defecto sí: en una competición manda el nombre legal salvo que el jugador pida su alias
+   * @param {Date|string|null} [props.createdAt=null] - Fecha de creación
+   * @param {Date|string|null} [props.updatedAt=null] - Fecha de última actualización
    */
   constructor({
     enrollmentId,
@@ -176,7 +177,7 @@ class Enrollment {
    * @param {EnrollmentId} props.enrollmentId
    * @param {string} props.competitionId
    * @param {string} props.userId
-   * @param {number|null} props.customHandicap - Handicap personalizado (opcional)
+   * @param {number|null} [props.customHandicap=null] - Handicap personalizado (opcional)
    * @returns {Enrollment}
    */
   static directEnroll({
@@ -327,7 +328,6 @@ class Enrollment {
    *
    * @param {Object} cambios - Campos a sobrescribir
    * @returns {Enrollment} Nueva instancia
-   * @private
    */
   #copiaCon(cambios = {}) {
     return new Enrollment({

@@ -17,7 +17,7 @@ export const ScoringFormat = Object.freeze({
  * @returns {boolean} Si es uno de los valores de ScoringFormat
  */
 export const isValidScoringFormat = (value) =>
-  Object.values(ScoringFormat).includes(value);
+  /** @type {unknown[]} */ (Object.values(ScoringFormat)).includes(value);
 
 /**
  * Si una partida es de juego libre (stroke play): tiene formato de puntuación.

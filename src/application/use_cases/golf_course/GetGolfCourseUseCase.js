@@ -1,3 +1,5 @@
+/** @typedef {import('../../../domain/entities/GolfCourse').default} GolfCourse */
+
 /**
  * GetGolfCourseUseCase
  * Gets a golf course by ID

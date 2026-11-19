@@ -10,6 +10,14 @@ class CorrectTeeGroupHoleUseCase {
     this.teeGroupScoringRepository = teeGroupScoringRepository;
   }
 
+  /**
+   * @param {string} groupId
+   * @param {string} userId
+   * @param {number} holeNumber
+   * @param {Object} [lados] - Al menos uno: sin ninguno, lanza
+   * @param {?number} [lados.ownScore] - El lado del jugador; null es recogida
+   * @param {?number} [lados.markerScore] - El del marcador; null es recogida
+   */
   async execute(groupId, userId, holeNumber, { ownScore, markerScore } = {}) {
     if (!groupId) throw new Error('Group ID is required');
     if (!userId) throw new Error('User ID is required');

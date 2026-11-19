@@ -1,3 +1,6 @@
+/** @typedef {import('../../../domain/repositories/IHandicapRepository').default} IHandicapRepository */
+/** @typedef {import('../../../domain/repositories/IUserRepository').default} IUserRepository */
+
 class UpdateRfegHandicapUseCase {
   /**
    * @param {Object} dependencies - Objeto de dependencias.

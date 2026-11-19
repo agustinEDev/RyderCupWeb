@@ -5,6 +5,13 @@ import { tieneEquipos } from '../value_objects/TournamentType';
 import { RyderCupSetup } from '../value_objects/RyderCupSetup';
 import { StrokePlaySetup } from '../value_objects/StrokePlaySetup';
 
+/** @typedef {import('../value_objects/CompetitionId').CompetitionId} CompetitionId */
+/** @typedef {import('../value_objects/CompetitionName').CompetitionName} CompetitionName */
+/** @typedef {import('../value_objects/DateRange').DateRange} DateRange */
+/** @typedef {import('../value_objects/Location').Location} Location */
+/** @typedef {import('../value_objects/HandicapSettings').HandicapSettings} HandicapSettings */
+/** @typedef {import('../value_objects/TeamAssignment').TeamAssignment} TeamAssignment */
+
 // Cuántos inscritos admite, el mismo rango que la API (`ge=2`, `le=200` desde
 // la BE #314: antes eran 100 por un límite oculto al leer inscripciones)
 export const MIN_PLAYERS = 2;
@@ -49,6 +56,26 @@ export default class Competition {
   #createdAt;
   #updatedAt;
 
+  /**
+   * @param {Object} props
+   * @param {CompetitionId} props.id
+   * @param {string} props.creatorId
+   * @param {CompetitionName} props.name
+   * @param {DateRange} props.dates
+   * @param {Location} props.location
+   * @param {string} [props.team1Name] - Solo para construir la pieza de la Ryder
+   * @param {string} [props.team2Name] - Solo para construir la pieza de la Ryder
+   * @param {HandicapSettings} props.handicapSettings
+   * @param {number} [props.maxPlayers=24]
+   * @param {string} [props.visibility='PRIVATE'] - PRIVATE o PUBLIC
+   * @param {TeamAssignment} [props.teamAssignment] - Solo para construir la pieza de la Ryder
+   * @param {CompetitionStatus} [props.status=CompetitionStatus.DRAFT]
+   * @param {Date} [props.createdAt]
+   * @param {Date} [props.updatedAt]
+   * @param {string} [props.tournamentType='RYDER_CUP']
+   * @param {RyderCupSetup|null} [props.ryderCup] - La pieza ya hecha; sin ella se construye con team1Name, team2Name y teamAssignment
+   * @param {StrokePlaySetup|null} [props.strokePlay] - La pieza ya hecha; sin ella, la de por defecto en un stroke play
+   */
   constructor({
     id,
     creatorId,

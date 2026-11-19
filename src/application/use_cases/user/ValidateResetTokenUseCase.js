@@ -1,3 +1,6 @@
+/** @typedef {import('../../../domain/repositories/IAuthRepository').default} IAuthRepository */
+/** @typedef {import('../../../domain/repositories/IAuthRepository').PasswordResetMethods} PasswordResetMethods */
+
 /**
  * Use Case para validar un token de reset de contraseña
  * Pre-valida el token antes de mostrar el formulario de nueva contraseña (mejor UX)
@@ -5,7 +8,7 @@
 class ValidateResetTokenUseCase {
   /**
    * @param {Object} dependencies - Objeto de dependencias
-   * @param {IAuthRepository} dependencies.authRepository - Repositorio de autenticación
+   * @param {IAuthRepository & PasswordResetMethods} dependencies.authRepository - Repositorio de autenticación
    */
   constructor({ authRepository }) {
     this.authRepository = authRepository;

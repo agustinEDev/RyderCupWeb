@@ -1,3 +1,5 @@
+/** @typedef {import('../../../domain/entities/GolfCourse').default} GolfCourse */
+
 /**
  * ListPendingGolfCoursesUseCase
  * Lists pending golf courses (admin only)

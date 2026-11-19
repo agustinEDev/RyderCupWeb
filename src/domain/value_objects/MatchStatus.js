@@ -21,7 +21,9 @@ const VALORES = Object.freeze({
   CONCEDED: 'CONCEDED',
 });
 
+/** @type {Set<string>} */
 const POR_JUGAR = new Set([VALORES.SCHEDULED, VALORES.IN_PROGRESS]);
+/** @type {Set<string>} */
 const TERMINADOS = new Set([
   VALORES.COMPLETED,
   VALORES.WALKOVER,

@@ -1,4 +1,11 @@
 // src/domain/repositories/ICompetitionRepository.js
+/** @typedef {import('../entities/Competition').default} Competition */
+/** @typedef {import('../value_objects/CompetitionStatus').CompetitionStatus} CompetitionStatus */
+/**
+ * La entidad tal como la devuelve un repositorio: la implementación de la API
+ * le cuelga la respuesta original en `_apiData`, que leen los assemblers.
+ * @typedef {Competition & {_apiData?: Object}} CompetitionFromRepository
+ */
 
 /**
  * Interface for a competition repository.
@@ -9,9 +16,9 @@
  */
 export class ICompetitionRepository {
   /**
-   * Saves a competition (either creates a new one or updates an existing one).
-   * @param {Competition} competition The competition entity to save.
-   * @returns {Promise<void>}
+   * Creates a competition.
+   * @param {Object} competition The data for the new competition (API DTO format).
+   * @returns {Promise<Competition>} The newly created competition entity.
    * @throws {Error} If the method is not implemented.
    */
   async save(competition) {
@@ -20,9 +27,10 @@ export class ICompetitionRepository {
 
   /**
    * Finds a competition by its unique ID.
-   * @param {CompetitionId} competitionId The ID of the competition to find.
-   * @returns {Promise<?Competition>} The competition entity or null if not found.
-   * @throws {Error} If the method is not implemented.
+   * @param {string} competitionId The ID of the competition to find.
+   * @returns {Promise<CompetitionFromRepository>} The competition entity. It never resolves to null.
+   * @throws {Error} If the competition is not found (the API answers 404) or the request fails,
+   *   or if the method is not implemented.
    */
   async findById(competitionId) {
     throw new Error('ICompetitionRepository.findById must be implemented');
@@ -41,7 +49,7 @@ export class ICompetitionRepository {
 
   /**
    * Finds all competitions.
-   * @returns {Promise<Competition[]>} A list of all competition entities.
+   * @returns {Promise<CompetitionFromRepository[]>} A list of all competition entities.
    * @throws {Error} If the method is not implemented.
    */
   async findAll() {
@@ -50,7 +58,7 @@ export class ICompetitionRepository {
 
   /**
    * Deletes a competition by its unique ID.
-   * @param {CompetitionId} competitionId The ID of the competition to delete.
+   * @param {string} competitionId The ID of the competition to delete.
    * @returns {Promise<void>}
    * @throws {Error} If the method is not implemented.
    */
@@ -61,7 +69,7 @@ export class ICompetitionRepository {
   /**
    * Finds competitions by their status.
    * @param {CompetitionStatus} status The status to filter by.
-   * @returns {Promise<Competition[]>} A list of competitions with the given status.
+   * @returns {Promise<CompetitionFromRepository[]>} A list of competitions with the given status.
    * @throws {Error} If the method is not implemented.
    */
   async findByStatus(status) {
@@ -71,8 +79,8 @@ export class ICompetitionRepository {
   /**
    * Finds all competitions for a specific user (creator).
    * @param {string} userId The ID of the user/creator.
-   * @param {object} filters Optional filters (status, etc.)
-   * @returns {Promise<Competition[]>} A list of competitions created by the user.
+   * @param {object} [filters] Optional filters (status, etc.)
+   * @returns {Promise<CompetitionFromRepository[]>} A list of competitions created by the user.
    * @throws {Error} If the method is not implemented.
    */
   async findByCreator(userId, filters = {}) {
@@ -83,14 +91,14 @@ export class ICompetitionRepository {
    * Finds public competitions with optional filters.
    * This method is used to browse competitions that are publicly visible.
    *
-   * @param {object} filters Optional filters for the search.
-   * @param {string|string[]} filters.status Competition status (e.g., 'ACTIVE', ['CLOSED', 'IN_PROGRESS'])
-   * @param {string} filters.searchName Search by competition name (partial match)
-   * @param {string} filters.searchCreator Search by creator name (partial match)
-   * @param {boolean} filters.excludeMyCompetitions If true, excludes competitions where user is creator or enrolled
-   * @param {number} filters.limit Maximum number of results
-   * @param {number} filters.offset Pagination offset
-   * @returns {Promise<Competition[]>} A list of public competitions matching the filters.
+   * @param {object} [filters] Optional filters for the search.
+   * @param {string|string[]} [filters.status] Competition status (e.g., 'ACTIVE', ['CLOSED', 'IN_PROGRESS'])
+   * @param {string} [filters.searchName] Search by competition name (partial match)
+   * @param {string} [filters.searchCreator] Search by creator name (partial match)
+   * @param {boolean} [filters.excludeMyCompetitions] If true, excludes competitions where user is creator or enrolled
+   * @param {number} [filters.limit] Maximum number of results
+   * @param {number} [filters.offset] Pagination offset
+   * @returns {Promise<CompetitionFromRepository[]>} A list of public competitions matching the filters.
    * @throws {Error} If the method is not implemented.
    */
   async findPublic(filters = {}) {
@@ -168,12 +176,6 @@ export class ICompetitionRepository {
     );
   }
 
-  /**
-   * Cambia los ajustes de un Stableford o un Medal (FE #824). Solo lo que llega.
-   * @param {string} competitionId
-   * @param {{categoryLimits?: number[], categoryCount?: number, maxMatchdaysPerPlayer?: number, overallStanding?: string}} cambios
-   * @returns {Promise<import('../value_objects/StrokePlaySetup').StrokePlaySetup>} Los ajustes como quedan
-   */
   /** Lanza la actualización de hándicaps con la RFEG (FE #824). */
   async launchHandicapUpdate(competitionId) {
     throw new Error(
@@ -205,6 +207,12 @@ export class ICompetitionRepository {
     );
   }
 
+  /**
+   * Cambia los ajustes de un Stableford o un Medal (FE #824). Solo lo que llega.
+   * @param {string} competitionId
+   * @param {{categoryLimits?: number[], categoryCount?: number, maxMatchdaysPerPlayer?: number, overallStanding?: string}} cambios
+   * @returns {Promise<import('../value_objects/StrokePlaySetup').StrokePlaySetup>} Los ajustes como quedan
+   */
   async updateStrokePlay(competitionId, cambios) {
     throw new Error(
       'ICompetitionRepository.updateStrokePlay must be implemented',

@@ -1,3 +1,6 @@
+/** @typedef {import('../../../domain/repositories/IGolfCourseRepository').default} IGolfCourseRepository */
+/** @typedef {import('../../../domain/repositories/IHoleMapCache').default} IHoleMapCache */
+
 /**
  * GetHoleMapUseCase: el mapa de hoyos de un campo para la anotación (BE #532).
  *
@@ -6,14 +9,15 @@
  *
  * `guardado` da la copia al momento: con mala cobertura la petición no falla,
  * se queda sin contestar, y la copia es justo para ese caso.
- *
- * @param {Object} dependencies
- * @param {IGolfCourseRepository} dependencies.golfCourseRepository
- * @param {IHoleMapCache} dependencies.holeMapCache
- * @param {Function} [dependencies.reportarFallo] - avisa de un mapa que no se
- *   entiende (no de la falta de red, que en el campo es lo normal)
  */
 class GetHoleMapUseCase {
+  /**
+   * @param {Object} dependencies
+   * @param {IGolfCourseRepository} dependencies.golfCourseRepository
+   * @param {IHoleMapCache} dependencies.holeMapCache
+   * @param {(error: Error, contexto?: Object) => void} [dependencies.reportarFallo] - avisa de un mapa que no se
+   *   entiende (no de la falta de red, que en el campo es lo normal)
+   */
   constructor({
     golfCourseRepository,
     holeMapCache,

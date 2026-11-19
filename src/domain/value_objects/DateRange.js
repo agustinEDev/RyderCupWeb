@@ -3,12 +3,10 @@
 export class DateRange {
   /**
    * @type {Date}
-   * @private
    */
   #startDate;
   /**
    * @type {Date}
-   * @private
    */
   #endDate;
 

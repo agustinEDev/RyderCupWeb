@@ -1,3 +1,5 @@
+/** @typedef {import('../entities/Invitation').default} Invitation */
+
 /**
  * Interface: IInvitationRepository
  *
@@ -37,10 +39,10 @@ class IInvitationRepository {
   /**
    * Get invitations received by the current user
    *
-   * @param {Object} filters - Optional filters
-   * @param {string} filters.status - Filter by status (PENDING, ACCEPTED, DECLINED, EXPIRED)
-   * @param {number} filters.page - Page number (1-indexed)
-   * @param {number} filters.limit - Items per page
+   * @param {Object} [filters] - Optional filters
+   * @param {string} [filters.status] - Filter by status (PENDING, ACCEPTED, DECLINED, EXPIRED)
+   * @param {number} [filters.page] - Page number (1-indexed)
+   * @param {number} [filters.limit] - Items per page
    * @returns {Promise<{invitations: Invitation[], totalCount: number}>}
    * @throws {Error} If operation fails
    */
@@ -75,10 +77,10 @@ class IInvitationRepository {
    * Get invitations sent for a competition (creator view)
    *
    * @param {string} competitionId - UUID of the competition
-   * @param {Object} filters - Optional filters
-   * @param {string} filters.status - Filter by status
-   * @param {number} filters.page - Page number
-   * @param {number} filters.limit - Items per page
+   * @param {Object} [filters] - Optional filters
+   * @param {string} [filters.status] - Filter by status
+   * @param {number} [filters.page] - Page number
+   * @param {number} [filters.limit] - Items per page
    * @returns {Promise<{invitations: Invitation[], totalCount: number}>}
    * @throws {Error} If operation fails
    */

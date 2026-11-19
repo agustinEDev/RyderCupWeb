@@ -23,18 +23,23 @@ export const PlayModeType = Object.freeze({
 
 export class HandicapSettings {
   /**
-   * @type {PlayModeType}
-   * @private
+   * @type {string} Uno de los valores de PlayModeType
    */
   #type;
 
   /**
    * Creates an instance of HandicapSettings (PlayMode).
-   * @param {PlayModeType} type The play mode (SCRATCH or HANDICAP).
+   * @param {string} type The play mode (SCRATCH or HANDICAP), one of PlayModeType.
    * @throws {InvalidHandicapSettingsError} If the type is invalid.
    */
   constructor(type) {
-    if (!Object.values(PlayModeType).includes(type)) {
+    if (
+      !(
+        /** @type {readonly string[]} */ (Object.values(PlayModeType)).includes(
+          type,
+        )
+      )
+    ) {
       throw new InvalidHandicapSettingsError(`Invalid PlayModeType: ${type}`);
     }
 
@@ -44,7 +49,7 @@ export class HandicapSettings {
 
   /**
    * Returns the play mode type.
-   * @returns {PlayModeType}
+   * @returns {string} One of PlayModeType
    */
   type() {
     return this.#type;

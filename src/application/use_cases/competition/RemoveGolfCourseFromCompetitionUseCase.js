@@ -1,3 +1,5 @@
+/** @typedef {import('../../../domain/repositories/ICompetitionRepository').ICompetitionRepository} ICompetitionRepository */
+
 /**
  * Use Case: Remove Golf Course from Competition
  *

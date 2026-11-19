@@ -1,5 +1,7 @@
 import { isValidHandicap } from '../../../domain/services/handicapRange';
 
+/** @typedef {import('../../../domain/repositories/IHandicapRepository').default} IHandicapRepository */
+
 class UpdateManualHandicapUseCase {
   /**
    * @param {Object} dependencies - Objeto de dependencias.
@@ -11,9 +13,9 @@ class UpdateManualHandicapUseCase {
 
   /**
    * Ejecuta el caso de uso para actualizar manualmente el hándicap.
-   * @param {Object} params - Parámetros para la actualización.
-   * @param {string} params.userId - El ID del usuario.
-   * @param {number} params.handicap - El valor del hándicap.
+   * @param {Object} [params] - Parámetros para la actualización.
+   * @param {string} [params.userId] - El ID del usuario. Obligatorio: sin él, lanza.
+   * @param {number|string} [params.handicap] - El valor del hándicap. Obligatorio: sin él, lanza.
    * @returns {Promise<import('../../../domain/entities/User').default>} El usuario actualizado.
    */
   async execute(params = {}) {

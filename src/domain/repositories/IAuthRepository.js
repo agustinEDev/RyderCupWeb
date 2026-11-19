@@ -1,6 +1,15 @@
 /** @typedef {import('../value_objects/Email').default} Email */
 /** @typedef {import('../value_objects/Password').default} Password */
 
+/**
+ * La recuperación de contraseña: la implementan los repositorios de
+ * autenticación (ApiAuthRepository) aunque esta interfaz todavía no la declare.
+ * @typedef {Object} PasswordResetMethods
+ * @property {(email: string) => Promise<{message: string}>} requestPasswordReset
+ * @property {(token: string) => Promise<{valid: boolean, message: string}>} validateResetToken
+ * @property {(token: string, newPassword: string) => Promise<{message: string}>} resetPassword
+ */
+
 class IAuthRepository {
   /**
    * Autentica a un usuario.
@@ -20,6 +29,9 @@ class IAuthRepository {
    * @param {string} userData.lastName - El apellido del usuario.
    * @param {Email} userData.email - El email del usuario como Value Object.
    * @param {Password} userData.password - La contraseña del usuario como Value Object. // <-- CAMBIO AQUÍ
+   * @param {?import('../value_objects/CountryCode').CountryCode} [userData.countryCode] - Opcional
+   * @param {?string} [userData.gender] - MALE, FEMALE o null
+   * @param {boolean} [userData.acceptTerms] - Solo vale `true`: sin él, el backend responde 422
    * @returns {Promise<import('../entities/User').default>} El objeto User recién creado.
    */
   async register(userData) {

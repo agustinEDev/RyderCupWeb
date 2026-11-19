@@ -7,6 +7,8 @@ import {
   parRangeFor,
 } from '../../../domain/services/courseTypeRanges';
 
+/** @typedef {import('../../../domain/entities/GolfCourse').default} GolfCourse */
+
 /**
  * UpdateGolfCourseUseCase
  * Updates a golf course

@@ -1,3 +1,5 @@
+/** @typedef {import('../entities/Friendship').default} Friendship */
+
 /**
  * Interface: IFriendRepository
  *
