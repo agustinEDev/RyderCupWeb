@@ -2825,3 +2825,196 @@ describe('QuickMatchScoringPage: la anotación en curso', () => {
     expect(terminada.setCurrentHole).not.toHaveBeenCalled();
   });
 });
+
+/**
+ * Caracterización antes de partir la página (refactor puro): moverse entre
+ * hoyos y lo que pasa tras confirmar o cerrar terminar y anular.
+ *
+ *   caso                                  | qué se ve
+ *   --------------------------------------|-----------------------------------
+ *   hoyo intermedio, «Siguiente»          | pide el hoyo de después
+ *   hoyo intermedio, «Anterior»           | pide el hoyo de antes
+ *   primer hoyo                           | «Anterior» apagado, no se mueve
+ *   último hoyo                           | «Siguiente» apagado, no se mueve
+ *   terminar sale bien                    | se cierra el aviso, sin recargar
+ *   terminar falla                        | se queda abierto y recarga
+ *   anular sale bien                      | se cierra el aviso, sin recargar
+ *   anular falla                          | se queda abierto y recarga
+ *   cerrar tras un fallo y volver a abrir | ya no está el aviso del fallo
+ */
+describe('QuickMatchScoringPage · moverse entre hoyos, terminar y anular', () => {
+  const enCurso = {
+    ...baseQuickMatch,
+    status: 'IN_PROGRESS',
+    isCompleted: false,
+  };
+  const hoyos = [1, 2, 3].map((holeNumber) => ({
+    holeNumber,
+    par: 4,
+    strokeIndex: holeNumber,
+  }));
+
+  const monta = (extra = {}) => {
+    const estado = {
+      ...baseHookState,
+      quickMatch: enCurso,
+      holes: hoyos,
+      totalHoles: 3,
+      currentHole: 2,
+      isCreator: true,
+      isScorer: true,
+      coveredParticipantIds: ['user-1'],
+      setCurrentHole: vi.fn(),
+      submitScore: vi.fn(),
+      completeMatch: vi.fn().mockResolvedValue({ ok: true }),
+      cancelMatch: vi.fn().mockResolvedValue({ ok: true }),
+      refetch: vi.fn(),
+      ...extra,
+    };
+    mockUseQuickMatchScoring.mockReturnValue(estado);
+    renderPage();
+    return estado;
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('en un hoyo intermedio, «Siguiente» pide el de después', () => {
+    const { setCurrentHole } = monta();
+
+    fireEvent.click(screen.getByTestId('quick-match-next-hole'));
+
+    expect(setCurrentHole).toHaveBeenCalledTimes(1);
+    expect(setCurrentHole).toHaveBeenCalledWith(3);
+  });
+
+  it('en un hoyo intermedio, «Anterior» pide el de antes', () => {
+    const { setCurrentHole } = monta();
+
+    fireEvent.click(screen.getByTestId('quick-match-prev-hole'));
+
+    expect(setCurrentHole).toHaveBeenCalledTimes(1);
+    expect(setCurrentHole).toHaveBeenCalledWith(1);
+  });
+
+  it('en el primer hoyo no se va más atrás', () => {
+    const { setCurrentHole } = monta({ currentHole: 1 });
+
+    const anterior = screen.getByTestId('quick-match-prev-hole');
+    expect(anterior).toBeDisabled();
+    fireEvent.click(anterior);
+
+    expect(setCurrentHole).not.toHaveBeenCalled();
+  });
+
+  it('en el último hoyo no se va más adelante', () => {
+    const { setCurrentHole } = monta({ currentHole: 3 });
+
+    const siguiente = screen.getByTestId('quick-match-next-hole');
+    expect(siguiente).toBeDisabled();
+    fireEvent.click(siguiente);
+
+    expect(setCurrentHole).not.toHaveBeenCalled();
+  });
+
+  it('terminar con éxito cierra el aviso y no recarga', async () => {
+    const { completeMatch, refetch } = monta();
+
+    fireEvent.click(screen.getByText('scoring.finish.button'));
+    await act(async () => {
+      fireEvent.click(screen.getByText('scoring.finish.confirm'));
+    });
+
+    expect(completeMatch).toHaveBeenCalledTimes(1);
+    expect(
+      screen.queryByText('scoring.finish.confirm'),
+    ).not.toBeInTheDocument();
+    expect(refetch).not.toHaveBeenCalled();
+  });
+
+  it('terminar con fallo deja el aviso abierto y recarga', async () => {
+    const { refetch } = monta({
+      completeMatch: vi.fn().mockResolvedValue({ ok: false }),
+    });
+
+    fireEvent.click(screen.getByText('scoring.finish.button'));
+    await act(async () => {
+      fireEvent.click(screen.getByText('scoring.finish.confirm'));
+    });
+
+    expect(screen.getByText('scoring.finish.confirm')).toBeInTheDocument();
+    expect(refetch).toHaveBeenCalledTimes(1);
+  });
+
+  it('anular con éxito cierra el aviso y no recarga', async () => {
+    const { cancelMatch, refetch } = monta();
+
+    fireEvent.click(screen.getByTestId('quick-match-cancel-button'));
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('quick-match-cancel-confirm'));
+    });
+
+    expect(cancelMatch).toHaveBeenCalledTimes(1);
+    expect(
+      screen.queryByTestId('quick-match-cancel-confirm'),
+    ).not.toBeInTheDocument();
+    expect(refetch).not.toHaveBeenCalled();
+  });
+
+  it('anular con fallo deja el aviso abierto y recarga', async () => {
+    const { refetch } = monta({
+      cancelMatch: vi.fn().mockResolvedValue({ ok: false }),
+    });
+
+    fireEvent.click(screen.getByTestId('quick-match-cancel-button'));
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('quick-match-cancel-confirm'));
+    });
+
+    expect(
+      screen.getByTestId('quick-match-cancel-confirm'),
+    ).toBeInTheDocument();
+    expect(refetch).toHaveBeenCalledTimes(1);
+  });
+
+  it('cerrar terminar tras un fallo olvida el fallo al volver a abrirlo', async () => {
+    monta({ completeMatch: vi.fn().mockResolvedValue({ ok: false }) });
+
+    fireEvent.click(screen.getByText('scoring.finish.button'));
+    await act(async () => {
+      fireEvent.click(screen.getByText('scoring.finish.confirm'));
+    });
+    expect(screen.getByTestId('quick-match-finish-error')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByText('scoring.finish.cancel'));
+    expect(
+      screen.queryByText('scoring.finish.confirm'),
+    ).not.toBeInTheDocument();
+    fireEvent.click(screen.getByText('scoring.finish.button'));
+
+    expect(
+      screen.queryByTestId('quick-match-finish-error'),
+    ).not.toBeInTheDocument();
+  });
+
+  it('cerrar anular tras un fallo olvida el fallo al volver a abrirlo', async () => {
+    monta({ cancelMatch: vi.fn().mockResolvedValue({ ok: false }) });
+
+    fireEvent.click(screen.getByTestId('quick-match-cancel-button'));
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('quick-match-cancel-confirm'));
+    });
+    expect(screen.getByTestId('quick-match-cancel-error')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByText('scoring.cancelMatch.cancel'));
+    expect(
+      screen.queryByTestId('quick-match-cancel-confirm'),
+    ).not.toBeInTheDocument();
+    fireEvent.click(screen.getByTestId('quick-match-cancel-button'));
+
+    expect(
+      screen.queryByTestId('quick-match-cancel-error'),
+    ).not.toBeInTheDocument();
+  });
+});
