@@ -122,7 +122,7 @@ export const useLineaQueSeVe = ({
  * ajustar un estado a otro, no un efecto): a mitad de un hoyo con línea, la línea
  * desde ti; al llegar a la salida, el hoyo entero; y el codo, una vez.
  */
-export const useDecisionesConElGps = (
+export const decidirConElGps = (
   {
     mitadDecidida,
     reporte,

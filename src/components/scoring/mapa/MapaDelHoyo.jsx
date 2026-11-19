@@ -25,7 +25,7 @@ import { useEnvioAlCerrar } from './useEnvioAlCerrar';
 import { useEncuadreDelHoyo } from './useEncuadreDelHoyo';
 import { useMapaDeMapLibre } from './useMapaDeMapLibre';
 import { useGpsDelHoyo } from './useGpsDelHoyo';
-import { useDecisionesConElGps, useLineaQueSeVe } from './useLineaQueSeVe';
+import { decidirConElGps, useLineaQueSeVe } from './useLineaQueSeVe';
 import {
   salidaQueSePinta,
   sePuedeReportar,
@@ -374,7 +374,7 @@ const MapaDelHoyo = ({
   );
   useMarcaMedida({ mapaRef, marcaMedidaRef }, medido);
 
-  useDecisionesConElGps(
+  decidirConElGps(
     {
       mitadDecidida,
       reporte,
