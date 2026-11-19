@@ -1,5 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { validateCompetitionForm } from './competitionFormValidation';
+import es from '../i18n/locales/es/competitions.json';
+import en from '../i18n/locales/en/competitions.json';
 
 const validFormData = {
   competitionName: 'Ryder Cup 2026',
@@ -201,6 +203,33 @@ describe('validateCompetitionForm', () => {
       key: 'golfCoursesRequired',
       missingCourseCountryCodes: ['PT', 'FR'],
     });
+  });
+
+  it('A5: rechaza un campo de un país que ya no está en la competición', () => {
+    const result = validateCompetitionForm({
+      ...validFormData,
+      adjacentCountry1: 'PT',
+      golfCourses: [
+        { countryCode: 'ES' },
+        { countryCode: 'PT' },
+        { countryCode: 'FR' },
+      ],
+    });
+    expect(result).toEqual({ key: 'golfCoursesOutsideCountries' });
+    // Su aviso, en los dos idiomas: sin él se pintaría la clave
+    for (const idioma of [es, en])
+      expect(idioma.create.errors.golfCoursesOutsideCountries).toEqual(
+        expect.any(String),
+      );
+  });
+
+  it('A5: al editar los campos no se miran (los gestiona la ficha)', () => {
+    expect(
+      validateCompetitionForm(
+        { ...validFormData, golfCourses: [{ countryCode: 'FR' }] },
+        { exigirCampos: false },
+      ),
+    ).toBeNull();
   });
 
   it('does not require a course for an adjacent country that already has one', () => {
