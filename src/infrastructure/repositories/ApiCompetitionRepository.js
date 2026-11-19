@@ -3,6 +3,9 @@ import CompetitionMapper from '../mappers/CompetitionMapper';
 import apiRequest from '../http/api.js';
 import { segmento } from '../http/api';
 
+/** @typedef {import('../../domain/entities/Competition').default} Competition */
+/** @typedef {import('../../domain/repositories/ICompetitionRepository').CompetitionFromRepository} CompetitionFromRepository */
+
 class ApiCompetitionRepository extends ICompetitionRepository {
   /**
    * Creates a new competition via the API.
@@ -35,6 +38,7 @@ class ApiCompetitionRepository extends ICompetitionRepository {
     );
 
     // Map API response to Competition domain entity
+    /** @type {CompetitionFromRepository} */
     const competition = CompetitionMapper.toDomain(apiData);
 
     // Attach original API data for mapper to use (for location names, etc.)
@@ -69,7 +73,7 @@ class ApiCompetitionRepository extends ICompetitionRepository {
    * Finds all competitions for a specific user (creator OR enrolled).
    * @override
    * @param {string} userId - The ID of the user/creator.
-   * @param {object} filters - Optional filters (status, etc.)
+   * @param {Record<string, string>} [filters] - Optional filters (status, etc.), sent as query parameters
    * @returns {Promise<Competition[]>} - Array of competition entities.
    */
   async findByCreator(userId, filters = {}) {
@@ -88,6 +92,7 @@ class ApiCompetitionRepository extends ICompetitionRepository {
     // Map each API response to Competition domain entity
     // Attach original API data for mapper to use
     const competitions = apiDataArray.map((apiData) => {
+      /** @type {CompetitionFromRepository} */
       const competition = CompetitionMapper.toDomain(apiData);
       competition._apiData = apiData;
       return competition;
@@ -99,14 +104,14 @@ class ApiCompetitionRepository extends ICompetitionRepository {
   /**
    * Finds public competitions with optional filters.
    * @override
-   * @param {object} filters - Optional filters for the search.
-   * @param {string|string[]} filters.status - Competition status (e.g., CompetitionStatusEnum.ACTIVE, or
+   * @param {object} [filters] - Optional filters for the search.
+   * @param {string|string[]} [filters.status] - Competition status (e.g., CompetitionStatusEnum.ACTIVE, or
    *   [CompetitionStatusEnum.CLOSED, CompetitionStatusEnum.IN_PROGRESS])
-   * @param {string} filters.searchName - Search by competition name (partial match)
-   * @param {string} filters.searchCreator - Search by creator name (partial match)
-   * @param {boolean} filters.excludeMyCompetitions - If true, excludes competitions where user is creator or enrolled
-   * @param {number} filters.limit - Maximum number of results
-   * @param {number} filters.offset - Pagination offset
+   * @param {string} [filters.searchName] - Search by competition name (partial match)
+   * @param {string} [filters.searchCreator] - Search by creator name (partial match)
+   * @param {boolean} [filters.excludeMyCompetitions] - If true, excludes competitions where user is creator or enrolled
+   * @param {number} [filters.limit] - Maximum number of results
+   * @param {number} [filters.offset] - Pagination offset
    * @returns {Promise<Competition[]>} - Array of public competition entities.
    */
   async findPublic(filters = {}) {
@@ -155,6 +160,7 @@ class ApiCompetitionRepository extends ICompetitionRepository {
 
     // Map each API response to Competition domain entity
     const competitions = apiDataArray.map((apiData) => {
+      /** @type {CompetitionFromRepository} */
       const competition = CompetitionMapper.toDomain(apiData);
       competition._apiData = apiData;
       return competition;
@@ -250,6 +256,7 @@ class ApiCompetitionRepository extends ICompetitionRepository {
     );
 
     // Map API response to Competition domain entity
+    /** @type {CompetitionFromRepository} */
     const competition = CompetitionMapper.toDomain(apiData);
 
     // Attach original API data for mapper to use

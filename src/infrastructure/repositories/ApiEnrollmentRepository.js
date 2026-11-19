@@ -3,6 +3,8 @@ import EnrollmentMapper from '../mappers/EnrollmentMapper';
 import apiRequest from '../http/api.js';
 import { segmento } from '../http/api';
 
+/** @typedef {import('../../domain/entities/Enrollment').default} Enrollment */
+
 /**
  * ApiEnrollmentRepository - Implementación del repositorio con API REST
  *
@@ -46,7 +48,6 @@ class ApiEnrollmentRepository extends IEnrollmentRepository {
    * @param {string} endpoint - Ruta del endpoint (ej: "/api/v1/enrollments")
    * @param {Object} options - Opciones de fetch
    * @returns {Promise<any>} Respuesta parseada
-   * @private
    */
   async #request(endpoint, options = {}) {
     try {
@@ -67,7 +68,6 @@ class ApiEnrollmentRepository extends IEnrollmentRepository {
    *
    * @param {Object} filters
    * @returns {string} Query string (ej: "?status=APPROVED&team_id=1")
-   * @private
    */
   #buildQueryString(filters) {
     const params = new URLSearchParams();
@@ -121,6 +121,7 @@ class ApiEnrollmentRepository extends IEnrollmentRepository {
    * @param {string} enrollmentId
    * @returns {Promise<Enrollment|null>}
    */
+  // @ts-expect-error -- IEnrollmentRepository declara findById(enrollmentId) y aquí son dos parámetros; nadie lo llama. Pendiente de decidir (alinear o quitar)
   async findById(competitionId, enrollmentId) {
     try {
       const apiData = await this.#request(
@@ -165,6 +166,7 @@ class ApiEnrollmentRepository extends IEnrollmentRepository {
     }
 
     // Convertir a entidades del dominio y guardar apiData original
+    /** @type {Array<Enrollment & {_apiData?: Object}>} */
     const enrollments = EnrollmentMapper.toDomainMany(apiDataArray);
 
     // Adjuntar _apiData a cada enrollment para preservar campos extra (user, etc.)

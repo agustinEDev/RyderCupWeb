@@ -99,6 +99,8 @@ class ApiScheduleRepository extends IScheduleRepository {
    * `userId`, para uno mismo; con él, el organizador coloca a otro. Con
    * `insteadOfRoundId`, se cambia desde esa en un solo paso.
    * POST /api/v1/competitions/rounds/{roundId}/places
+   * @param {string} roundId
+   * @param {{userId?: string, insteadOfRoundId?: string}} [opciones]
    */
   async takePlace(roundId, { userId, insteadOfRoundId } = {}) {
     return apiRequest(

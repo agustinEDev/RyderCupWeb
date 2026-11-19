@@ -137,7 +137,7 @@ const API_URL = getApiBaseUrl();
 /**
  * Make authenticated API request with httpOnly cookies and automatic token refresh
  * @param {string} endpoint - API endpoint (e.g., '/api/v1/competitions')
- * @param {object} options - Fetch options. Con `topeMs`, la petición se corta
+ * @param {RequestInit & {topeMs?: number}} [options] - Fetch options. Con `topeMs`, la petición se corta
  *   a ese tiempo y se trata como falta de cobertura (FE #624). Cubre la petición
  *   ENTERA: un refresco del token y su reintento, y el cuerpo, que puede
  *   colgarse después de las cabeceras. No se le pasa a `fetch`, y no se combina
@@ -334,6 +334,7 @@ export const apiRequest = async (endpoint, { topeMs, ...options } = {}) => {
       }
 
       // Create structured error with status code for better error handling
+      /** @type {Error & {status?: number, statusCode?: number, errorCode?: ?string, mensajeTraducido?: boolean, mensajeTecnico?: boolean, data?: Object}} */
       const error = new Error(errorMessage);
       error.status = response.status;
       error.statusCode = response.status; // Alias for compatibility

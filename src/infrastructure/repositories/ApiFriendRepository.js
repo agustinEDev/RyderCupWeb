@@ -3,6 +3,8 @@ import FriendshipMapper from '../mappers/FriendshipMapper';
 import apiRequest from '../http/api.js';
 import { segmento } from '../http/api';
 
+/** @typedef {import('../../domain/entities/Friendship').default} Friendship */
+
 /**
  * ApiFriendRepository - REST API implementation
  *
@@ -38,6 +40,7 @@ class ApiFriendRepository extends IFriendRepository {
       body: JSON.stringify({ addressee_id: addresseeId }),
     });
 
+    /** @type {Friendship & {_apiData?: Object}} */
     const friendship = FriendshipMapper.toDomain(apiData);
     friendship._apiData = apiData;
     return friendship;
@@ -52,6 +55,7 @@ class ApiFriendRepository extends IFriendRepository {
       },
     );
 
+    /** @type {Friendship & {_apiData?: Object}} */
     const friendship = FriendshipMapper.toDomain(apiData);
     friendship._apiData = apiData;
     return friendship;
@@ -71,6 +75,7 @@ class ApiFriendRepository extends IFriendRepository {
       },
     );
 
+    /** @type {Friendship & {_apiData?: Object}} */
     const friendship = FriendshipMapper.toDomain(apiData);
     friendship._apiData = apiData;
     return friendship;
@@ -85,6 +90,7 @@ class ApiFriendRepository extends IFriendRepository {
     const response = await apiRequest(`/api/v1/friends/me${queryString}`);
 
     const apiDataArray = response.friendships || [];
+    /** @type {Array<Friendship & {_apiData?: Object}>} */
     const friendships = FriendshipMapper.toDomainMany(apiDataArray);
 
     friendships.forEach((friendship, index) => {
@@ -108,6 +114,7 @@ class ApiFriendRepository extends IFriendRepository {
     );
 
     const apiDataArray = response.friendships || [];
+    /** @type {Array<Friendship & {_apiData?: Object}>} */
     const friendships = FriendshipMapper.toDomainMany(apiDataArray);
 
     friendships.forEach((friendship, index) => {
