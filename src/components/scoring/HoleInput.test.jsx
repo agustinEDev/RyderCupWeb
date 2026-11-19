@@ -1485,6 +1485,35 @@ describe('HoleInput · caracterización (partir el componente)', () => {
     expect(onScoreChange).not.toHaveBeenCalled();
   });
 
+  it.each([
+    ['tuya', 'own', { playerScore: { ownScore: 6, ownSubmitted: false } }],
+    [
+      'del marcado',
+      'marked',
+      { markedPlayerScore: { markerScore: 6, markerSubmitted: false } },
+    ],
+    [
+      'del segundo',
+      'second-marked',
+      {
+        secondMarked: {
+          ...dani,
+          playerScore: { markerScore: 6, markerSubmitted: false },
+        },
+      },
+    ],
+  ])(
+    'un golpe que la vista trae sin enviar no llena la casilla %s',
+    (_caso, prefijo, extra) => {
+      render(<HoleInput {...props} onScoreChange={vi.fn()} {...extra} />);
+
+      expect(screen.getByTestId(`${prefijo}-score-button`)).toBeInTheDocument();
+      expect(
+        screen.queryByTestId(`${prefijo}-score-value`),
+      ).not.toBeInTheDocument();
+    },
+  );
+
   it('el pie: un ganador desconocido sale tal cual y la ventaja sin equipo, sola', () => {
     render(
       <HoleInput
