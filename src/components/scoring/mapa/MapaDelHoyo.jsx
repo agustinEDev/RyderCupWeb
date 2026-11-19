@@ -38,6 +38,7 @@ import { useEnvioAlCerrar } from './useEnvioAlCerrar';
 import { useEncuadreDelHoyo } from './useEncuadreDelHoyo';
 import { useMapaDeMapLibre } from './useMapaDeMapLibre';
 import { useGpsDelHoyo } from './useGpsDelHoyo';
+import { salidaQueSePinta, useEstadoDeLaMarca } from './useEstadoDeLaMarca';
 import {
   useCentrarEnElCampo,
   useMarcaDelCodo,
@@ -169,45 +170,36 @@ const MapaDelHoyo = ({
     metros,
   });
 
-  // Marcar el hoyo: sin salida, primero se pregunta si estás en ella (17 oct);
-  // con salida, se pide el green. «Ahora no» deja medir como siempre
-  const preguntaPrimero =
-    porMarcar === 'salida' || porMarcar === 'salidaAlGreen';
-  const [marca, setMarca] = useState({
-    fase: preguntaPrimero ? 'pregunta' : porMarcar ? 'pidiendo' : null,
-    tee: null,
-  });
-  const [avisoDeMarca, setAvisoDeMarca] = useState(null);
-  // «No» a «¿Estás en la salida?»: de ti al green, con el codo en medio si pasa
-  // de 200 m (Agustín, 18 oct; sin tocar, te sigue: 20 oct). Nada de esto es una
-  // muestra
-  const [desdeMi, setDesdeMi] = useState(false);
-  const [codoPendiente, setCodoPendiente] = useState(false);
-  // En un hoyo con línea, abierto a mitad de hoyo: la línea se oculta hasta
-  // «Ver hoyo» (H1, H3). Se decide una vez, con el primer GPS bueno (H4, H5)
-  const [lineaOculta, setLineaOculta] = useState(false);
-  const [mitadDecidida, setMitadDecidida] = useState(false);
-  const [hastaLaSalida, setHastaLaSalida] = useState(false);
-  const loQueSePideRef = useRef(null);
-  // El reporte en curso (entrega 7): eligiendo el motivo, tocando la salida, el
-  // green, o con la propuesta lista. Lo que había antes se guarda para volver a
-  // ello: la propuesta no es una muestra
-  const [reporte, setReporte] = useState(null);
-  const [gracias, setGracias] = useState(false);
-  const menuDeMotivos = reporte?.fase === 'motivos';
-  const antesDelReporteRef = useRef(null);
-  const botonDeReportarRef = useRef(null);
-  const primerMotivoRef = useRef(null);
-  const marcandoSalida = preguntaPrimero;
-  // El green que ya trae el hoyo (de una muestra solo green): con la salida basta
-  const greenConocido =
-    porMarcar === 'salidaAlGreen' ? (hoyo?.green?.center ?? null) : null;
-  // Lejos del campo o sin ubicación no se pregunta: se toca la salida (L1, 17 oct)
-  const fase =
-    marca.fase === 'pregunta' && (lejos || sinUbicacion)
-      ? 'pidiendo'
-      : marca.fase;
-  const pidiendo = fase === 'pidiendo';
+  const {
+    preguntaPrimero,
+    marcandoSalida,
+    greenConocido,
+    marca,
+    setMarca,
+    fase,
+    pidiendo,
+    avisoDeMarca,
+    setAvisoDeMarca,
+    desdeMi,
+    setDesdeMi,
+    codoPendiente,
+    setCodoPendiente,
+    lineaOculta,
+    setLineaOculta,
+    mitadDecidida,
+    setMitadDecidida,
+    hastaLaSalida,
+    setHastaLaSalida,
+    loQueSePideRef,
+    reporte,
+    setReporte,
+    menuDeMotivos,
+    gracias,
+    setGracias,
+    antesDelReporteRef,
+    botonDeReportarRef,
+    primerMotivoRef,
+  } = useEstadoDeLaMarca({ porMarcar, hoyo, lejos, sinUbicacion });
   // La línea que se ve y se mueve; `cambiada`, si el jugador la hizo o la movió.
   // `green`: el que marcó quien no está en la salida (solo green, sin línea)
   const [edicion, setEdicion] = useState(() => ({
@@ -595,14 +587,6 @@ const MapaDelHoyo = ({
         setCodoSinTocar,
       },
     );
-  // La salida mientras se pide el green: la recién tocada o, pidiendo solo el
-  // green, la aprobada (para ver desde dónde se mide)
-  const salidaQueSePinta =
-    reporte?.fase === 'green'
-      ? reporte.tee
-      : pidiendo
-        ? (marca.tee ?? (marcandoSalida ? null : (hoyo?.playLine?.[0] ?? null)))
-        : null;
   usePuntosDeLaLinea(
     {
       mapaRef,
@@ -612,7 +596,13 @@ const MapaDelHoyo = ({
       empezarAlArrastrarRef,
     },
     {
-      salidaQueSePinta,
+      salidaQueSePinta: salidaQueSePinta({
+        reporte,
+        pidiendo,
+        marca,
+        marcandoSalida,
+        hoyo,
+      }),
       datosDeLaLinea,
       lineaQueSePinta,
       linea,
