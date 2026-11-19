@@ -33,7 +33,9 @@ export const diasHastaElTorneo = (startDate) => {
   hoy.setHours(0, 0, 0, 0);
 
   const MILISEGUNDOS_POR_DIA = 86400000;
-  return Math.round((comienzo - hoy) / MILISEGUNDOS_POR_DIA);
+  return Math.round(
+    (comienzo.getTime() - hoy.getTime()) / MILISEGUNDOS_POR_DIA,
+  );
 };
 
 /**

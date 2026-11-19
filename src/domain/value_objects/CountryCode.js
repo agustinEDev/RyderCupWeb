@@ -13,7 +13,6 @@ export class InvalidCountryCodeError extends Error {
 export class CountryCode {
   /**
    * @type {string}
-   * @private
    */
   #value;
 

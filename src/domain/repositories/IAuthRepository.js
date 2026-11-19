@@ -20,6 +20,9 @@ class IAuthRepository {
    * @param {string} userData.lastName - El apellido del usuario.
    * @param {Email} userData.email - El email del usuario como Value Object.
    * @param {Password} userData.password - La contraseña del usuario como Value Object. // <-- CAMBIO AQUÍ
+   * @param {?import('../value_objects/CountryCode').CountryCode} [userData.countryCode] - Opcional
+   * @param {?string} [userData.gender] - MALE, FEMALE o null
+   * @param {boolean} [userData.acceptTerms] - Solo vale `true`: sin él, el backend responde 422
    * @returns {Promise<import('../entities/User').default>} El objeto User recién creado.
    */
   async register(userData) {
@@ -99,6 +102,36 @@ class IAuthRepository {
    */
   async resendVerificationLink(token) {
     throw new Error('Method not implemented: resendVerificationLink');
+  }
+
+  /**
+   * Pide el correo de recuperación de contraseña. La respuesta es siempre genérica,
+   * exista o no la cuenta (anti-enumeración).
+   * @param {string} email
+   * @returns {Promise<{message: string}>}
+   */
+  async requestPasswordReset(email) {
+    throw new Error('Method not implemented: requestPasswordReset');
+  }
+
+  /**
+   * Comprueba un token de recuperación antes de pedir la contraseña nueva. Un token
+   * inválido o caducado es `valid: false`, no un error.
+   * @param {string} token
+   * @returns {Promise<{valid: boolean, message: string}>}
+   */
+  async validateResetToken(token) {
+    throw new Error('Method not implemented: validateResetToken');
+  }
+
+  /**
+   * Cambia la contraseña con el token de recuperación.
+   * @param {string} token
+   * @param {string} newPassword
+   * @returns {Promise<{message: string}>}
+   */
+  async resetPassword(token, newPassword) {
+    throw new Error('Method not implemented: resetPassword');
   }
 }
 

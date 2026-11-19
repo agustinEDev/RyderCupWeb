@@ -1,3 +1,5 @@
+/** @typedef {import('../../../domain/entities/GolfCourse').default} GolfCourse */
+
 /**
  * RejectGolfCourseUpdateUseCase
  * Rejects a golf course update (admin only)

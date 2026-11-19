@@ -101,14 +101,17 @@ class ApiDeviceRepository extends IDeviceRepository {
         const codigo = MOTIVOS_DE_UN_403.has(error.errorCode)
           ? error.errorCode
           : 'FORBIDDEN';
+        /** @type {Error & {code?: string}} */
         const domainError = new Error(codigo);
         domainError.code = codigo;
         throw domainError;
       } else if (statusCode === 404) {
+        /** @type {Error & {code?: string}} */
         const domainError = new Error('DEVICE_NOT_FOUND');
         domainError.code = 'DEVICE_NOT_FOUND';
         throw domainError;
       } else if (statusCode === 409) {
+        /** @type {Error & {code?: string}} */
         const domainError = new Error('DEVICE_ALREADY_REVOKED');
         domainError.code = 'DEVICE_ALREADY_REVOKED';
         throw domainError;
@@ -117,6 +120,7 @@ class ApiDeviceRepository extends IDeviceRepository {
         throw error;
       } else {
         // For other errors, return generic error code with original message
+        /** @type {Error & {code?: string, originalMessage?: string}} */
         const domainError = new Error(
           error.message || 'FAILED_TO_REVOKE_DEVICE',
         );

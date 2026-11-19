@@ -1,3 +1,5 @@
+/** @typedef {import('../../../domain/repositories/ICompetitionRepository').ICompetitionRepository} ICompetitionRepository */
+
 /**
  * Use Case: Admin partial update of a competition's basic fields.
  *

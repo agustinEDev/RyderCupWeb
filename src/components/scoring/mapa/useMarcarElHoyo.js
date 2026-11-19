@@ -14,7 +14,7 @@ export const useMarcarElHoyo = (
     hacerLineaAhoraRef,
     alejarAhoraRef,
   },
-  { posicionBuena, greenConocido, preguntaPrimero, empezar },
+  { posicionBuena, greenConocido, marcandoSalida, empezar },
   {
     setAvisoDeMarca,
     setMarca,
@@ -100,7 +100,7 @@ export const useMarcarElHoyo = (
     setDesdeMi(false);
     // Sin salida, otra vez la pregunta: si no, el «No» se perdía y el primer
     // toque se tomaba por la salida (revisión, 17 oct)
-    setMarca({ fase: preguntaPrimero ? 'pregunta' : 'pidiendo', tee: null });
+    setMarca({ fase: marcandoSalida ? 'pregunta' : 'pidiendo', tee: null });
   };
 
   return { responder, marcarEntero, ahoraNo, empezarAMarcar };

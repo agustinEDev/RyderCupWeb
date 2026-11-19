@@ -1,3 +1,5 @@
+/** @typedef {import('../../../domain/repositories/IAuthRepository').default} IAuthRepository */
+
 /**
  * Use Case para validar un token de reset de contraseña
  * Pre-valida el token antes de mostrar el formulario de nueva contraseña (mejor UX)

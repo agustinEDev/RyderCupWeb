@@ -688,21 +688,36 @@ jobs:
           set -o pipefail
           npx tsc --noEmit 2>&1 | tee "$RUNNER_TEMP/tsc.log"
 
+      # El núcleo en JavaScript (domain, application e infrastructure) con checkJs: sus JSDoc
+      # son el contrato de tipos y un error en ellos tumba el job
+      # (tsconfig.nucleo.json). Corre aunque el paso de arriba falle, para ver
+      # los dos resultados en la misma vuelta; no si la instalación falló, que
+      # deja sin correr check-ts (la tarjeta lo da entonces como «Not run»)
+      - name: Run core type check (checkJs)
+        if: ${{ !cancelled() && steps.check-ts.outcome == 'success' }}
+        id: tsc-nucleo
+        run: |
+          set -o pipefail
+          npm run typecheck:nucleo 2>&1 | tee "$RUNNER_TEMP/tsc-nucleo.log"
+
       - name: Summary card
         if: always()
         continue-on-error: true  # la tarjeta nunca tumba el job
         env:
           STATUS: ${{ job.status }}
           OUTCOME: ${{ steps.tsc.outcome }}
+          OUTCOME_NUCLEO: ${{ steps.tsc-nucleo.outcome }}
           HAS_TS: ${{ steps.check-ts.outputs.has_typescript }}
         run: |
           RESULT=$(python3 .github/scripts/summary_results.py typecheck outcome="$OUTCOME" \
             has_ts="$HAS_TS" log="$RUNNER_TEMP/tsc.log")
+          RESULT_NUCLEO=$(python3 .github/scripts/summary_results.py typecheck outcome="$OUTCOME_NUCLEO" \
+            has_ts=true log="$RUNNER_TEMP/tsc-nucleo.log")
           python3 .github/scripts/summary_card.py \
             --title "📝 Type Check" \
-            --what "Runs the TypeScript compiler without emitting (tsc --noEmit) over the project's .ts files, so a type error never reaches the build." \
-            --status "$STATUS" --result "$RESULT" \
-            --if-fails "Run 'npx tsc --noEmit' locally and fix the reported types."
+            --what "Runs the TypeScript compiler without emitting (tsc --noEmit) over the project's .ts files, and with checkJs over the JavaScript of src/domain, src/application and src/infrastructure, plus the src/utils files they import (npm run typecheck:nucleo), so a type error never reaches the build." \
+            --status "$STATUS" --result "TypeScript files: $RESULT Core JS (checkJs): $RESULT_NUCLEO" \
+            --if-fails "Run 'npx tsc --noEmit' and 'npm run typecheck:nucleo' locally and fix the reported types."
 
   # Contratos de arquitectura (dependency-cruiser, .dependency-cruiser.cjs): dominio
   # puro, casos de uso que solo dependen del dominio, infraestructura que no sube de
@@ -1016,7 +1031,7 @@ jobs:
             "$OUTDATED|📦 Outdated deps|Lists packages with newer releases (informational)"
             "$SEMGREP|🛡️ OWASP (Semgrep)|OWASP Top 10, React and JavaScript rules over src"
             "$LINT|🔍 Lint|ESLint with zero warnings allowed"
-            "$TYPES|📝 Type Check|tsc --noEmit over the TypeScript files"
+            "$TYPES|📝 Type Check|tsc --noEmit over the TypeScript files, and checkJs over domain, application and infrastructure"
             "$ARCHITECTURE|🏛️ Architecture|Layer contracts and no circular imports (dependency-cruiser)"
             "$TEST|🧪 Tests + coverage|Vitest suite and the four coverage thresholds"
             "$E2E|🎭 E2E smoke|Playwright tests tagged @smoke, without a backend"

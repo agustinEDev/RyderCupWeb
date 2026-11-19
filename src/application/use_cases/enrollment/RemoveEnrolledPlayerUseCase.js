@@ -1,3 +1,5 @@
+/** @typedef {import('../../../domain/repositories/IEnrollmentRepository').default} IEnrollmentRepository */
+
 /**
  * Use Case: el organizador quita a un inscrito (release social 2, 27 oct 2026).
  *

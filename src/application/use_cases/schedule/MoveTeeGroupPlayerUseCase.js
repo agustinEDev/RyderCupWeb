@@ -8,6 +8,13 @@ class MoveTeeGroupPlayerUseCase {
     this.scheduleRepository = scheduleRepository;
   }
 
+  /**
+   * @param {string} roundId
+   * @param {Object} [movimiento]
+   * @param {string} [movimiento.userId] - Obligatorio: sin él, lanza
+   * @param {string} [movimiento.groupId] - Sin ella, a una partida nueva al final
+   * @param {string} [movimiento.swapWithUserId] - Con quién intercambiarlo; pide `groupId`
+   */
   async execute(roundId, { userId, groupId, swapWithUserId } = {}) {
     if (!roundId) throw new Error('Round ID is required');
     if (!userId) throw new Error('User ID is required');

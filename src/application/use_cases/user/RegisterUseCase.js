@@ -2,6 +2,8 @@ import Email from '../../../domain/value_objects/Email';
 import Password from '../../../domain/value_objects/Password';
 import { CountryCode } from '../../../domain/value_objects/CountryCode';
 
+/** @typedef {import('../../../domain/repositories/IAuthRepository').default} IAuthRepository */
+
 class RegisterUseCase {
   /**
    * @param {Object} dependencies - Objeto de dependencias.
@@ -19,6 +21,7 @@ class RegisterUseCase {
    * @param {string} userData.email - El email del usuario (cadena de texto).
    * @param {string} userData.password - La contraseña del usuario (cadena de texto).
    * @param {string} [userData.countryCode] - El código de país del usuario (opcional, ISO 3166-1 alpha-2).
+   * @param {?string} [userData.gender=null] - MALE, FEMALE o null (opcional).
    * @param {boolean} userData.acceptTerms - Que acepta los Términos y tiene 16 años o más. Solo
    *   vale `true`: el backend rechaza el registro sin ello (422).
    * @returns {Promise<import('../../../domain/entities/User').default>} El objeto User recién creado.

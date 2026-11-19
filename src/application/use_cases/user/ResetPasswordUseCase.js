@@ -1,5 +1,7 @@
 import Password from '../../../domain/value_objects/Password.js';
 
+/** @typedef {import('../../../domain/repositories/IAuthRepository').default} IAuthRepository */
+
 /**
  * Use Case para completar el reset de contraseña
  * Valida la nueva contraseña y llama al backend para cambiarla

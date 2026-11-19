@@ -1,3 +1,5 @@
+/** @typedef {import('../entities/GolfCourse').default} GolfCourse */
+
 /**
  * Golf Course Repository Interface
  * Defines the contract for golf course data operations
@@ -5,9 +7,16 @@
 class IGolfCourseRepository {
   /**
    * List all golf courses (with optional filtering)
-   * @param {Object} filters - Optional filters
-   * @param {string} filters.approvalStatus - Filter by approval status (APPROVED, PENDING_APPROVAL, REJECTED)
-   * @returns {Promise<GolfCourse[]>} Array of golf courses
+   * @param {Object} [filters] - Optional filters
+   * @param {string} [filters.approvalStatus] - Filter by approval status (APPROVED, PENDING_APPROVAL, REJECTED)
+   * @param {string} [filters.countryCode] - Filter by ISO country code
+   * @param {string} [filters.name] - Partial name search, filtered in the database
+   * @param {number} [filters.limit] - Page size. Without it every course comes back
+   * @param {number} [filters.offset] - Courses to skip
+   * @param {number} [filters.lat] - Latitude. With lon, sorts nearest first
+   * @param {number} [filters.lon] - Longitude. Required alongside lat
+   * @param {number} [filters.radiusKm] - Optional cap in km. Needs a position
+   * @returns {Promise<{courses: GolfCourse[], total: number}>} Page and how many match
    */
   async list(filters = {}) {
     throw new Error('Method not implemented: list');
@@ -32,9 +41,9 @@ class IGolfCourseRepository {
   }
 
   /**
-   * El resumen de las muestras (anónimas) de cada hoyo, por barra (BE #532, marcado por par)
+   * El resumen de las muestras (anónimas) de cada hoyo (BE #532, marcado por par; una referencia por hoyo desde BE #575)
    * @param {string} id - Golf course ID
-   * @returns {Promise<Object<number, {color: string, gender: string|null, primera: Object|null, recoge: boolean}[]>>} por número de hoyo
+   * @returns {Promise<Object<number, {guardada: Object|null, primera: Object|null, green: Object|null, recoge: boolean}>>} por número de hoyo
    */
   async getHoleSamples(id) {
     throw new Error('Method not implemented: getHoleSamples');
@@ -75,6 +84,7 @@ class IGolfCourseRepository {
   /**
    * Los 18 hoyos de un campo para revisarlos: línea guardada, muestras y tarjeta de cada barra (BE #575, admin)
    * @param {string} id - Golf course ID
+   * @returns {Promise<{golfCourseId: string, name: string, ubicacion: Object|null, holes: Array<Object>}>}
    */
   async getHoleReview(id) {
     throw new Error('Method not implemented: getHoleReview');

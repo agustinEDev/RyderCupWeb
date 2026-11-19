@@ -96,7 +96,8 @@ export const useToquesDelMapa = (
         cambiada: true,
         version: e.version + 1,
       }));
-      setConAyudaDeCodos(nueva.length > 2);
+      // Los puntos que puso la app (0, ninguno): el plural de la placa los cuenta
+      setConAyudaDeCodos(nueva.length - 2);
       setMarca({ fase: null, tee: null });
       // Marcado, el mapa se orienta como se juega (O5); lo pidió el jugador
       setVista({ tipo: 'hoyo', porElJugador: true });
@@ -207,8 +208,9 @@ export const useToquesDelMapa = (
           cambiada: true,
           version: e.version + 1,
         }));
-        // La ayuda, solo si se pusieron codos (no si la línea ya traía los suyos)
-        setConAyudaDeCodos(nueva.length > reducida.length);
+        // La ayuda, solo si se pusieron codos (no si la línea ya traía los
+        // suyos), y cuántos: el plural de la placa no cuenta los de OSM
+        setConAyudaDeCodos(nueva.length - reducida.length);
         setMarca({ fase: null, tee: null });
         setVista({ tipo: 'hoyo', porElJugador: true });
         return;

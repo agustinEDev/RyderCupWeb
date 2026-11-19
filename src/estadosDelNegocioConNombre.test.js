@@ -110,7 +110,7 @@ const PERMITIDOS = [
     veces: 1,
   },
   {
-    fichero: 'components/scoring/HoleInput.jsx',
+    fichero: 'components/scoring/PieDelHoyo.jsx',
     palabra: 'HALVED',
     motivo: GANADOR,
     veces: 1,

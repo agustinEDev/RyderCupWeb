@@ -14,6 +14,7 @@ const VALORES = Object.freeze({
   COMPLETED: 'COMPLETED',
 });
 
+/** @type {Set<string>} */
 const POR_JUGAR = new Set([VALORES.SCHEDULED, VALORES.IN_PROGRESS]);
 
 const TeeGroupStatus = Object.freeze({

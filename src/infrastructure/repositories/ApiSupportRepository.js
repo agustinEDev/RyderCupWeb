@@ -26,12 +26,14 @@ class ApiSupportRepository extends ISupportRepository {
         body: JSON.stringify(formData),
       });
     } catch {
+      /** @type {Error & {code?: string}} */
       const error = new Error('NETWORK_ERROR');
       error.code = 'NETWORK_ERROR';
       throw error;
     }
 
     if (!response.ok) {
+      /** @type {Error & {code?: string, status?: number}} */
       const error = new Error('SUBMIT_FAILED');
       error.code = 'SUBMIT_FAILED';
       error.status = response.status;
@@ -44,6 +46,7 @@ class ApiSupportRepository extends ISupportRepository {
     try {
       return JSON.parse(bodyText);
     } catch (parseError) {
+      /** @type {Error & {code?: string, status?: number}} */
       const error = new Error(
         `Invalid JSON response (status ${response.status}): ${bodySnippet} — ${parseError.message}`,
       );

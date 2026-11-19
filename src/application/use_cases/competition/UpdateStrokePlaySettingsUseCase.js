@@ -11,7 +11,7 @@ import CompetitionAssembler from '../../assemblers/CompetitionAssembler';
 class UpdateStrokePlaySettingsUseCase {
   /**
    * @param {Object} deps
-   * @param {import('../../../domain/repositories/ICompetitionRepository').default} deps.competitionRepository
+   * @param {import('../../../domain/repositories/ICompetitionRepository').ICompetitionRepository} deps.competitionRepository
    */
   constructor({ competitionRepository }) {
     this.competitionRepository = competitionRepository;

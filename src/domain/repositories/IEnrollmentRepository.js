@@ -1,8 +1,11 @@
+/** @typedef {import('../entities/Enrollment').default} Enrollment */
+
 /**
  * Interface: IEnrollmentRepository
  *
  * Define el contrato de persistencia para Enrollments.
- * Compatible con backend Python: IEnrollmentRepository (Abstract Base Class).
+ * Se inspira en el IEnrollmentRepository del backend, pero solo declara lo que el
+ * front usa (por ejemplo, no tiene find_by_id).
  *
  * Responsabilidades:
  * - Definir operaciones de persistencia (CRUD + queries)
@@ -14,9 +17,8 @@
  * - El Infrastructure Layer implementa el contrato (ApiEnrollmentRepository)
  * - Los Use Cases dependen de la interfaz, NO de la implementación
  *
- * Implementaciones esperadas:
- * - ApiEnrollmentRepository (REST API con fetch)
- * - MockEnrollmentRepository (para tests)
+ * Implementación: ApiEnrollmentRepository (REST API con fetch). Los tests usan
+ * dobles con vi.fn().
  */
 class IEnrollmentRepository {
   /**
@@ -31,26 +33,15 @@ class IEnrollmentRepository {
   }
 
   /**
-   * Buscar enrollment por su ID
-   *
-   * @param {EnrollmentId|string} enrollmentId - ID del enrollment
-   * @returns {Promise<Enrollment|null>} Enrollment encontrado o null si no existe
-   * @throws {Error} Si falla la operación
-   */
-  async findById(enrollmentId) {
-    throw new Error('Method findById() must be implemented');
-  }
-
-  /**
    * Buscar enrollments de una competición
    *
    * Equivalente a backend: enrollment_repository.find_by_competition()
    *
    * @param {string} competitionId - UUID de la competición
-   * @param {Object} filters - Filtros opcionales
-   * @param {string} filters.status - Filtrar por estado (ej: "APPROVED", "REQUESTED")
-   * @param {string} filters.userId - Filtrar por usuario específico
-   * @param {string} filters.teamId - Filtrar por equipo específico
+   * @param {Object} [filters] - Filtros opcionales
+   * @param {string} [filters.status] - Filtrar por estado (ej: "APPROVED", "REQUESTED")
+   * @param {string} [filters.userId] - Filtrar por usuario específico
+   * @param {string} [filters.teamId] - Filtrar por equipo específico
    * @returns {Promise<Enrollment[]>} Lista de enrollments
    * @throws {Error} Si falla la operación
    */
@@ -76,8 +67,8 @@ class IEnrollmentRepository {
    * Buscar enrollments de un usuario (todas sus inscripciones)
    *
    * @param {string} userId - UUID del usuario
-   * @param {Object} filters - Filtros opcionales
-   * @param {string} filters.status - Filtrar por estado
+   * @param {Object} [filters] - Filtros opcionales
+   * @param {string} [filters.status] - Filtrar por estado
    * @returns {Promise<Enrollment[]>} Lista de enrollments del usuario
    * @throws {Error} Si falla la operación
    */

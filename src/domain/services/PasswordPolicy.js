@@ -130,11 +130,11 @@ export const validatePassword = (password) => {
   // Validation: Check complexity (uppercase + lowercase + numbers required).
   // Una sola clave para la interfaz; el texto dice qué falta, que es lo que
   // lanza el value object `Password`
-  const missing = [
+  const missing = /** @type {Array<[boolean, string]>} */ ([
     [hasUpperCase, 'an uppercase letter'],
     [hasLowerCase, 'a lowercase letter'],
     [hasNumbers, 'a number'],
-  ].find(([ok]) => !ok);
+  ]).find(([ok]) => !ok);
   if (missing) {
     return {
       isValid: false,

@@ -1,5 +1,7 @@
 import CompetitionAssembler from '../../assemblers/CompetitionAssembler';
 
+/** @typedef {import('../../../domain/repositories/ICompetitionRepository').ICompetitionRepository} ICompetitionRepository */
+
 class ListUserCompetitionsUseCase {
   /**
    * @param {Object} deps - The dependencies object.

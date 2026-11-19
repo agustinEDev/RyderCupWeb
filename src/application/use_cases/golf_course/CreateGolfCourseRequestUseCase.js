@@ -7,6 +7,8 @@ import {
   parRangeFor,
 } from '../../../domain/services/courseTypeRanges';
 
+/** @typedef {import('../../../domain/entities/GolfCourse').default} GolfCourse */
+
 /**
  * Create Golf Course Request Use Case
  * Allows creators to request a new golf course (status: PENDING_APPROVAL)
@@ -24,7 +26,9 @@ class CreateGolfCourseRequestUseCase {
 
   /**
    * Execute use case
-   * @param {object} golfCourseData - Golf course data
+   * @param {{name: string, countryCode: string, courseType?: string,
+   *   tees: Array<{color: string, identifier?: string, slopeRating: number, courseRating: number}>,
+   *   holes: Array<{par: number}>}} golfCourseData - Golf course data (more fields go through to the repository)
    * @returns {Promise<GolfCourse>} Created golf course (PENDING_APPROVAL)
    */
   async execute(golfCourseData) {

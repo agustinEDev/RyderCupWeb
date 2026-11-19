@@ -227,6 +227,8 @@ const MapaAbierto = ({
           }
           onEmpezar={() => setCongelado((c) => c ?? ahora)}
           onReporte={reportar ? (datos) => reportar(numeroDeHoyo, datos) : null}
+          // La guía para marcar se recuerda por jugador (19 nov)
+          userId={userId}
         />
       </Suspense>
     </SiNoCarga>

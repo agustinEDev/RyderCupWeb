@@ -20,7 +20,9 @@ const NADA = Object.freeze({
 });
 
 /**
- * @param {object|null} vista - La vista de anotar (`ScoringMapper`)
+ * @param {{players?: Array<{userId: string, userName: string, team: string}>,
+ *   withdrawnPlayerIds?: Array<string>, matchFormat?: string, matchStatus?: string,
+ *   scorecardSubmittedBy?: Array<string>}|null} vista - La vista de anotar (`ScoringMapper`)
  * @param {string} yo - El id de quien mira
  * @returns {{pareja: {userId: string, userName: string}|null, yoRetirado: boolean,
  *   retirarme: boolean, retirarPareja: boolean, volver: boolean, deshacerPareja: boolean}}

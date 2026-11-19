@@ -36,10 +36,16 @@ const validTransitions = {
 
 export class CompetitionStatus {
   /**
-   * @param {CompetitionStatusEnum} value
+   * @param {string} value - Uno de los valores de CompetitionStatusEnum; si no, lanza
    */
   constructor(value) {
-    if (!Object.values(CompetitionStatusEnum).includes(value)) {
+    if (
+      !(
+        /** @type {readonly string[]} */ (
+          Object.values(CompetitionStatusEnum)
+        ).includes(value)
+      )
+    ) {
       throw new Error(`Invalid competition status: ${value}`);
     }
     this.value = value;

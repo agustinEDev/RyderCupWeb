@@ -1,3 +1,5 @@
+/** @typedef {import('../../../domain/entities/GolfCourse').default} GolfCourse */
+
 /**
  * ApproveGolfCourseUseCase
  * Approves a golf course (admin only)

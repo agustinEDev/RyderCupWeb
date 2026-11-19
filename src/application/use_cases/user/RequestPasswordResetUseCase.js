@@ -1,5 +1,7 @@
 import Email from '../../../domain/value_objects/Email.js';
 
+/** @typedef {import('../../../domain/repositories/IAuthRepository').default} IAuthRepository */
+
 /**
  * Use Case para solicitar reset de contraseña
  * Maneja la validación del email y delega al repositorio el envío del email de recuperación
