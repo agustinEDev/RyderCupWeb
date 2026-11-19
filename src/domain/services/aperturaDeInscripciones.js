@@ -33,12 +33,8 @@ export const diasHastaElTorneo = (startDate) => {
   hoy.setHours(0, 0, 0, 0);
 
   const MILISEGUNDOS_POR_DIA = 86400000;
-  // Restar dos Date resta sus milisegundos (valueOf); los `any` son solo para
-  // el tipado, que solo deja restar números. Sin formatear: Prettier saca el
-  // primer cast del paréntesis y pasaría a envolver la resta entera
-  // prettier-ignore
   return Math.round(
-    (/** @type {any} */ (comienzo) - /** @type {any} */ (hoy)) / MILISEGUNDOS_POR_DIA,
+    (comienzo.getTime() - hoy.getTime()) / MILISEGUNDOS_POR_DIA,
   );
 };
 

@@ -13,9 +13,10 @@ class ISocialFeedRepository {
    * arriba: con un desplazamiento numérico se repetirían entradas cada vez que
    * alguien publica algo mientras se navega.
    *
-   * @type {(options?: { limit?: number, cursor?: string|null }) => Promise<{ events: Array<any>, authors: Object, nextCursor: string|null, unseenCount: number, pendingFriendRequests: Array<any> }>}
+   * @param {{ limit?: number, cursor?: string|null }} [options]
+   * @returns {Promise<{ events: Array<Object>, authors: Object, nextCursor: string|null, unseenCount: number, pendingFriendRequests: Array<Object> }>}
    */
-  async getFeed() {
+  async getFeed(options) {
     throw new Error('Not implemented');
   }
 
@@ -46,18 +47,21 @@ class ISocialFeedRepository {
    * El perfil de un jugador. Siempre devuelve la ficha mínima; los campos
    * privados llegan en null si no sois amigos.
    *
-   * @type {(userId: string) => Promise<Object>}
+   * @param {string} userId
+   * @returns {Promise<Object>}
    */
-  async getPlayerProfile() {
+  async getPlayerProfile(userId) {
     throw new Error('Not implemented');
   }
 
   /**
    * La actividad publicada por un jugador. Solo entre amigos.
    *
-   * @type {(userId: string, options?: { limit?: number, cursor?: string|null }) => Promise<{ events: Array<any>, nextCursor: string|null }>}
+   * @param {string} userId
+   * @param {{ limit?: number, cursor?: string|null }} [options]
+   * @returns {Promise<{ events: Array<Object>, nextCursor: string|null }>}
    */
-  async getPlayerActivity() {
+  async getPlayerActivity(userId, options) {
     throw new Error('Not implemented');
   }
 
@@ -66,9 +70,11 @@ class ISocialFeedRepository {
    * antigua, de 5 en 5. La primera página llega ya con el perfil. Solo entre
    * amigos: a cualquier otro, 403.
    *
-   * @type {(userId: string, options?: { cursor?: string|null }) => Promise<{ games: Array<any>, nextCursor: string|null }>}
+   * @param {string} userId
+   * @param {{ cursor?: string|null }} [options]
+   * @returns {Promise<{ games: Array<Object>, nextCursor: string|null }>}
    */
-  async getGamesTogether() {
+  async getGamesTogether(userId, options) {
     throw new Error('Not implemented');
   }
 
@@ -79,9 +85,10 @@ class ISocialFeedRepository {
    * el feed se vuelve a llenar con las vueltas que se jueguen a partir de ahí.
    * Por eso devuelve cuántas entradas se retiraron, para poder decirlo.
    *
-   * @type {(enabled: boolean) => Promise<{ shareActivity: boolean, removedEvents: number }>}
+   * @param {boolean} enabled
+   * @returns {Promise<{ shareActivity: boolean, removedEvents: number }>}
    */
-  async setActivitySharing() {
+  async setActivitySharing(enabled) {
     throw new Error('Not implemented');
   }
 }

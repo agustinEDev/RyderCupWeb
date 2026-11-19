@@ -15,7 +15,6 @@ export class InvalidHandicapSettingsError extends Error {
  * Breaking change from v2.0.x: handicap_type/handicap_percentage -> play_mode
  * @readonly
  * @enum {string}
- * @type {Readonly<Record<'SCRATCH'|'HANDICAP', string>>}
  */
 export const PlayModeType = Object.freeze({
   SCRATCH: 'SCRATCH',
@@ -34,7 +33,13 @@ export class HandicapSettings {
    * @throws {InvalidHandicapSettingsError} If the type is invalid.
    */
   constructor(type) {
-    if (!Object.values(PlayModeType).includes(type)) {
+    if (
+      !(
+        /** @type {readonly string[]} */ (Object.values(PlayModeType)).includes(
+          type,
+        )
+      )
+    ) {
       throw new InvalidHandicapSettingsError(`Invalid PlayModeType: ${type}`);
     }
 

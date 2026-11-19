@@ -3,7 +3,6 @@
 /**
  * @readonly
  * @enum {string}
- * @type {Readonly<Record<'MANUAL'|'AUTOMATIC', string>>}
  */
 export const TeamAssignmentEnum = Object.freeze({
   MANUAL: 'MANUAL',
@@ -22,7 +21,13 @@ export class TeamAssignment {
    * @throws {Error} If the provided value is not a valid TeamAssignmentEnum member.
    */
   constructor(value) {
-    if (!Object.values(TeamAssignmentEnum).includes(value)) {
+    if (
+      !(
+        /** @type {readonly string[]} */ (
+          Object.values(TeamAssignmentEnum)
+        ).includes(value)
+      )
+    ) {
       throw new Error(`Invalid TeamAssignment: ${value}`);
     }
     this.#value = value;

@@ -3,7 +3,6 @@
 /**
  * @readonly
  * @enum {string}
- * @type {Readonly<Record<'DRAFT'|'ACTIVE'|'CLOSED'|'IN_PROGRESS'|'COMPLETED'|'CANCELLED', string>>}
  */
 export const CompetitionStatusEnum = Object.freeze({
   DRAFT: 'DRAFT',
@@ -37,10 +36,16 @@ const validTransitions = {
 
 export class CompetitionStatus {
   /**
-   * @param {string} value - Uno de los valores de CompetitionStatusEnum
+   * @param {string} value - Uno de los valores de CompetitionStatusEnum; si no, lanza
    */
   constructor(value) {
-    if (!Object.values(CompetitionStatusEnum).includes(value)) {
+    if (
+      !(
+        /** @type {readonly string[]} */ (
+          Object.values(CompetitionStatusEnum)
+        ).includes(value)
+      )
+    ) {
       throw new Error(`Invalid competition status: ${value}`);
     }
     this.value = value;

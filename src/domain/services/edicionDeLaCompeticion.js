@@ -26,6 +26,13 @@ export const seEditaLaCompeticion = (competition) => {
   if (soloSePuedenEditarLasFechas(competition)) return true;
   const status = competition?.status;
   // Sin estado, o uno que no se conoce: no se edita, y la ficha no se cae
-  if (!Object.values(CompetitionStatusEnum).includes(status)) return false;
+  if (
+    !(
+      /** @type {readonly string[]} */ (
+        Object.values(CompetitionStatusEnum)
+      ).includes(status)
+    )
+  )
+    return false;
   return new CompetitionStatus(status).allowsModifications();
 };

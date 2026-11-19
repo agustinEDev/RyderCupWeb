@@ -28,8 +28,9 @@ export class ICompetitionRepository {
   /**
    * Finds a competition by its unique ID.
    * @param {string} competitionId The ID of the competition to find.
-   * @returns {Promise<?CompetitionFromRepository>} The competition entity or null if not found.
-   * @throws {Error} If the method is not implemented.
+   * @returns {Promise<CompetitionFromRepository>} The competition entity. It never resolves to null.
+   * @throws {Error} If the competition is not found (the API answers 404) or the request fails,
+   *   or if the method is not implemented.
    */
   async findById(competitionId) {
     throw new Error('ICompetitionRepository.findById must be implemented');

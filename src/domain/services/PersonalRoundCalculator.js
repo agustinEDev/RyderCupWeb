@@ -328,15 +328,13 @@ class PersonalRoundCalculator {
    * partido al lado, que ya es esta. En foursomes, los golpes del bando.
    *
    * @param {Object} params Los de `compute`
-   * @returns {?{personalToPar: ?string, matchToPar: null, totalStrokes: number}}
+   * @returns {?{personalToPar: ?string, matchToPar: ?string, totalStrokes: number}}
+   *   `matchToPar` llega siempre null: aquí no se calcula, y en foursomes
+   *   `compute` también lo deja en null
    */
   static vueltaDelHistorial(params) {
-    // En foursomes `compute` también deja `matchToPar` en null; su tipo
-    // general (`?string`) no lo sabe
     if (params?.matchFormat === MatchFormat.FOURSOMES)
-      return /** @type {?{personalToPar: ?string, matchToPar: null, totalStrokes: number}} */ (
-        PersonalRoundCalculator.compute(params)
-      );
+      return PersonalRoundCalculator.compute(params);
     const totals = totalesDeLaPartida(params);
     if (!totals?.holesPlayed) return null;
     return {
