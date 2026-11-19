@@ -2,6 +2,8 @@ import { useId } from 'react';
 import { useTranslation } from 'react-i18next';
 import ValidationIcon from './ValidationIcon';
 import ScoreInputPanel from './ScoreInputPanel';
+import CabeceraDelHoyo from './CabeceraDelHoyo';
+import PieDelHoyo from './PieDelHoyo';
 import { HuecoParaAnotar } from './HuecoParaAnotar';
 import { clasesDelHueco } from './clasesDelHueco';
 import {
@@ -101,10 +103,6 @@ const HoleInput = ({
   allowPickedUp = false,
 }) => {
   const { t } = useTranslation('scoring');
-  const conPie =
-    (netScore !== null && netScore !== undefined) ||
-    Boolean(holeResult) ||
-    Boolean(standing);
   // Cada etiqueta, atada a su botón: con los dos huecos vacíos los dos se
   // anunciaban «Anotar» y un lector de pantalla no sabía cuál era el tuyo
   // (CodeRabbit en la #747)
@@ -235,35 +233,13 @@ const HoleInput = ({
       data-testid="hole-input"
       className="bg-white rounded-lg border border-gray-200 p-4 space-y-4"
     >
-      <div className="flex items-center justify-between gap-2">
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-          <span className="text-lg font-bold text-gray-900">
-            {t('input.hole')} {holeNumber}
-          </span>
-          <span className="text-sm text-gray-500">
-            {t('input.par')} {par}
-          </span>
-          {/* Las partidas de stroke play no traen el índice: sin él, ni la etiqueta (pasada, FE #824) */}
-          {strokeIndex != null && (
-            <span className="text-sm text-gray-500">
-              {t('input.strokeIndex')} {strokeIndex}
-            </span>
-          )}
-          {/* Cuántos: con 2 golpes decía lo mismo que con 1, y el plus que da
-              golpe no veía nada (QA del 11 oct 2026) */}
-          {strokesReceived > 0 && (
-            <span className="text-xs bg-blue-100 text-blue-800 px-1.5 py-0.5 rounded">
-              {t('input.strokesReceived', { count: strokesReceived })}
-            </span>
-          )}
-          {strokesReceived < 0 && (
-            <span className="text-xs bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded">
-              {t('input.strokesGiven', { count: -strokesReceived })}
-            </span>
-          )}
-        </div>
-        <ValidationIcon status={validationStatus || 'pending'} />
-      </div>
+      <CabeceraDelHoyo
+        holeNumber={holeNumber}
+        par={par}
+        strokeIndex={strokeIndex}
+        strokesReceived={strokesReceived}
+        validationStatus={validationStatus}
+      />
 
       {!isReadOnly && (
         // Etiquetas en una fila de la rejilla y huecos en la siguiente (FE #736):
@@ -437,37 +413,13 @@ const HoleInput = ({
         </div>
       )}
 
-      {/* Sin nada que decir, sin pie: era una franja vacía que empujaba la navegación */}
-      {conPie && (
-        <div
-          data-testid="pie-del-hoyo"
-          className="flex flex-wrap items-center justify-between gap-2 text-sm border-t border-gray-100 pt-3"
-        >
-          {netScore !== null && netScore !== undefined && (
-            <span className="text-gray-600">
-              {t('input.netScore')}: <strong>{netScore}</strong>
-            </span>
-          )}
-          {holeResult && (
-            <span className="text-gray-600">
-              {holeResult.winner === 'HALVED'
-                ? t('input.halved')
-                : holeResult.winner === 'A'
-                  ? teamAName || 'A'
-                  : holeResult.winner === 'B'
-                    ? teamBName || 'B'
-                    : holeResult.winner}
-            </span>
-          )}
-          {standing && (
-            <span className="font-medium text-primary">
-              {standing === 'AS'
-                ? t('input.allSquare')
-                : `${holeResult?.standingTeam === 'A' ? teamAName || 'A' : holeResult?.standingTeam === 'B' ? teamBName || 'B' : ''} ${standing}`}
-            </span>
-          )}
-        </div>
-      )}
+      <PieDelHoyo
+        netScore={netScore}
+        holeResult={holeResult}
+        standing={standing}
+        teamAName={teamAName}
+        teamBName={teamBName}
+      />
 
       {openPanel === 'own' && (
         <ScoreInputPanel
