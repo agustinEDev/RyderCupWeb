@@ -5,6 +5,38 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.87.0] - 2026-11-19
+
+**Calidad de la auditoría del 18 nov: la pantalla de crear y editar competición, partida en
+piezas pequeñas; y siete fallos que ya tenía, arreglados** (#1188, #1189; merge-back de la
+2.86.0 en #1187). Va con el backend 2.74.0, ya en producción; no hay cambio de contrato.
+Probada a fondo en el Kind con la copia anonimizada de producción, en Chrome a 360 px y en
+escritorio, comprobando cada alta y edición contra la API.
+
+### Changed
+
+- **La página de crear y editar competición pasa de 2.340 líneas a 374** (la función de la
+  página, de complejidad 84 a 17; el envío, de 45 a 4): reglas y petición en módulos puros
+  con sus tests, la carga, los países, el envío y la navegación en hooks, y cada sección en
+  su componente de `components/competition/create/`. Para el usuario no cambia nada: el
+  HTML es idéntico en todos los recorridos comparados, y 35 tests nuevos fijan lo que se
+  envía, la navegación, los avisos y la cascada de países.
+
+### Fixed
+
+- **Al cambiar el país adyacente o el tercer país, sus campos de golf ya no se quedan
+  elegidos** (se creaban enganchados a una competición que no tenía ese país). Si se elige
+  de adyacente el que era tercer país, sus campos se conservan. Al crear, la validación
+  rechaza cualquier campo de un país que no esté en la competición.
+- **La papelera quita el campo pulsado**, también con dos campos sin identificador del mismo
+  país, y con el teclado el foco ya no salta a la papelera del campo siguiente.
+- **El error de un nombre con enlace sale junto al campo del nombre**, como los demás
+  errores del nombre, en vez de arriba del todo.
+- **El formulario se envía una sola vez**: el botón queda en «Creando…» o «Actualizando…»
+  hasta llegar a la ficha, un doble clic no crea dos competiciones ni abre dos veces el
+  aviso de apertura de una pública, y si algo falla se puede volver a intentar.
+- **Si se sale de la página mientras guarda, ya no lleva luego a la ficha.**
+
 ## [2.86.0] - 2026-11-18
 
 **Calidad de la auditoría del 18 nov: los estados y formatos del negocio, con nombre en el
