@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { StrictMode } from 'react';
-import { render, screen, fireEvent, act } from '@testing-library/react';
+import { render, screen, fireEvent, act, within } from '@testing-library/react';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import {
@@ -133,6 +133,19 @@ vi.mock('../../../hooks/useCentroSinMapa', () => ({
     return centro.valor;
   },
 }));
+
+// La guía para marcar, vista o no por usuario (T1). Los tests de antes no
+// pasan usuario: para ellos cuenta como vista, que no tape lo que prueban
+const guia = vi.hoisted(() => ({ vistas: new Set([null]) }));
+vi.mock('../../../composition', () => ({
+  holeMarkingGuideUseCase: {
+    yaVista: (id) => guia.vistas.has(id),
+    marcarVista: (id) => guia.vistas.add(id),
+  },
+}));
+beforeEach(() => {
+  guia.vistas = new Set([null]);
+});
 
 const { default: MapaDelHoyo } = await import('./MapaDelHoyo');
 const { ORTOFOTOS } = await import('./teselas');
@@ -1494,16 +1507,18 @@ describe('MapaDelHoyo — marcar, mover y la muestra al cerrar', () => {
       const { unmount } = marcar({ metros: 300, par: 4 });
       tocar(T);
       tocar(G);
-      expect(screen.getByText('mapa.ayudaCodo')).toBeInTheDocument();
+      expect(
+        screen.getByText('mapa.ultimoPasoCurva {"count":1}'),
+      ).toBeInTheDocument();
 
       soltar(arrastrables()[1], alEste(40, alNorte(150)));
-      expect(screen.queryByText('mapa.ayudaCodo')).toBeNull();
+      expect(screen.queryByText(/mapa\.ultimoPasoCurva/)).toBeNull();
       unmount();
 
       marcar({ metros: 150, par: 3 });
       tocar(T);
       tocar(alNorte(150));
-      expect(screen.queryByText('mapa.ayudaCodo')).toBeNull();
+      expect(screen.queryByText(/mapa\.ultimoPasoCurva/)).toBeNull();
     });
 
     it('P6: solo el green, sobre la línea aprobada: su final (donde acaba en OSM) pasa a ser el green tocado', () => {
@@ -1599,7 +1614,9 @@ describe('MapaDelHoyo — marcar, mover y la muestra al cerrar', () => {
 
       tocar(G);
 
-      expect(screen.getByText('mapa.ayudaCodo')).toBeInTheDocument();
+      expect(
+        screen.getByText('mapa.ultimoPasoCurva {"count":2}'),
+      ).toBeInTheDocument();
     });
 
     it('P5: la ayuda de los codos solo si se añadieron (sobre una línea aprobada con su codo, no)', () => {
@@ -1612,7 +1629,7 @@ describe('MapaDelHoyo — marcar, mover y la muestra al cerrar', () => {
 
       tocar(G);
 
-      expect(screen.queryByText('mapa.ayudaCodo')).toBeNull();
+      expect(screen.queryByText(/mapa\.ultimoPasoCurva/)).toBeNull();
     });
 
     it('P7: el doble toque (dos toques seguidos) no pone salida y green en el mismo sitio', () => {
@@ -6652,6 +6669,476 @@ describe('MapaDelHoyo — medir tocando, de ti al punto (19 oct)', () => {
       conP();
 
       expect(elPunto()[0].opciones.element).toHaveClass('pointer-events-none');
+    });
+  });
+});
+
+// Agustín, 19 nov: ayuda para marcar un hoyo sin datos
+//
+// | Caso | Situación                                         | Qué se ve                                              |
+// |------|---------------------------------------------------|--------------------------------------------------------|
+// | G1   | primera vez que se empieza a marcar (por usuario) | la guía, antes de la pregunta o del primer «Toca…»     |
+// | G3   | «Empezar», X o Escape                             | se cierra, cuenta como vista, la fase no cambia        |
+// | G4   | sin conexión / sin WebGL / reportando             | sale / no sale / no sale                               |
+// | P1   | salida y green                                    | «Paso 1 de 3» salida → «Paso 2 de 3» green             |
+// | P2   | «Sí» con buen GPS                                 | «Paso 2 de 3» green                                    |
+// | P3   | solo el green                                     | «Paso 1 de 2» green                                    |
+// | P4   | guardado con puntos que arrastrar                 | «Último paso» + «Listo»; se va con «Listo» o arrastrando |
+// | P5   | la pregunta                                       | sin número                                             |
+// | par 3| salida y green / solo el green                    | «de 2», sin placa / sin número                         |
+// | B1/B2| el «?» en la pregunta, cada aviso y la placa      | abre la guía; el foco vuelve a él                      |
+describe('MapaDelHoyo — ayuda para marcar (19 nov)', () => {
+  const M_POR_GRADO = (6371008.8 * Math.PI) / 180;
+  const T = { lat: 36.28, lon: -5.33 };
+  const alNorte = (m, de = T) => ({
+    lat: de.lat + m / M_POR_GRADO,
+    lon: de.lon,
+  });
+  const alEste = (m, de = T) => ({
+    lat: de.lat,
+    lon: de.lon + m / (M_POR_GRADO * Math.cos((de.lat * Math.PI) / 180)),
+  });
+  const G = alNorte(300);
+  const tocar = (p) => pulsar({ lngLat: { lat: p.lat, lng: p.lon } });
+  const arrastrables = () =>
+    mapas.marcas.filter((m) => !m.quitada && m.opciones.draggable);
+  const soltar = (marca, p) =>
+    act(() => {
+      marca.setLngLat([p.lon, p.lat]);
+      marca.oyentes.dragend({ target: marca });
+    });
+  const laGuia = () =>
+    screen.queryByRole('dialog', { name: 'mapa.guia.titulo' });
+  const ayuda = () => screen.getByRole('button', { name: 'mapa.comoMarcar' });
+  const empezarGuia = () =>
+    fireEvent.click(screen.getByRole('button', { name: 'mapa.guia.empezar' }));
+  const paso = (n, de) => `mapa.paso ${JSON.stringify({ n, de })} ·`;
+  const pasoVisto = () => screen.queryByText(/^mapa\.paso /);
+  const si = () =>
+    fireEvent.click(screen.getByRole('button', { name: 'mapa.si' }));
+  const no = () =>
+    fireEvent.click(screen.getByRole('button', { name: 'mapa.no' }));
+  // Cerca del campo y con GPS: la pregunta «¿Estás en la salida?»
+  const conPregunta = (props = {}) => {
+    const r = abrir({
+      hoyo: null,
+      porMarcar: 'salida',
+      recoge: true,
+      onMuestra: vi.fn(),
+      par: 4,
+      metros: 300,
+      userId: 'u-1',
+      ...props,
+    });
+    act(() => mapa().oyentes.load());
+    return r;
+  };
+  // Sin permiso de ubicación: sin pregunta, se toca la salida y el green
+  const sinPregunta = (props = {}) => {
+    const r = conPregunta(props);
+    act(() => gps.error({ code: 1 }));
+    return r;
+  };
+
+  let gps;
+  let reloj;
+  beforeEach(() => {
+    mapas.length = 0;
+    mapas.marcas = [];
+    mapas.sinWebgl = false;
+    centro.valor = T;
+    gps = gpsFalso();
+    vi.stubGlobal('navigator', { ...globalThis.navigator, geolocation: gps });
+    let ahora = 0;
+    reloj = vi
+      .spyOn(globalThis.performance, 'now')
+      .mockImplementation(() => (ahora += 1000));
+  });
+  afterEach(() => {
+    reloj.mockRestore();
+    vi.unstubAllGlobals();
+  });
+
+  describe('G: la guía', () => {
+    it('G1: sale la primera vez, antes de la pregunta, que sigue detrás', () => {
+      conPregunta();
+
+      expect(laGuia()).toBeInTheDocument();
+      expect(screen.getByText('mapa.preguntaSalida')).toBeInTheDocument();
+    });
+
+    it('G1: sin pregunta, sale antes del primer «Toca…»', () => {
+      sinPregunta();
+
+      expect(laGuia()).toBeInTheDocument();
+      expect(screen.getByText('mapa.pideSalida')).toBeInTheDocument();
+    });
+
+    it('G1/G3: vista, no vuelve a salir sola (ni al volver a abrir el mapa)', () => {
+      const { unmount } = conPregunta();
+      empezarGuia();
+      expect(laGuia()).toBeNull();
+      expect(guia.vistas.has('u-1')).toBe(true);
+      unmount();
+
+      conPregunta();
+
+      expect(laGuia()).toBeNull();
+    });
+
+    it('G1: se recuerda por usuario: otro en el mismo móvil la ve', () => {
+      guia.vistas.add('u-1');
+
+      conPregunta({ userId: 'u-2' });
+
+      expect(laGuia()).toBeInTheDocument();
+    });
+
+    it('G1: en un hoyo con línea, sin marcar nada, no sale', () => {
+      abrir({ userId: 'u-1' });
+      act(() => mapa().oyentes.load());
+
+      expect(laGuia()).toBeNull();
+    });
+
+    it.each([
+      [
+        'la X',
+        () =>
+          fireEvent.click(
+            within(laGuia()).getByRole('button', { name: 'mapa.cerrar' }),
+          ),
+      ],
+      ['Escape', () => fireEvent.keyDown(document, { key: 'Escape' })],
+      ['«Empezar»', () => empezarGuia()],
+    ])(
+      'G3: con %s se cierra, cuenta como vista y el flujo sigue donde estaba',
+      (_caso, cerrar) => {
+        const onCerrar = vi.fn();
+        sinPregunta({ onCerrar });
+
+        cerrar();
+
+        expect(laGuia()).toBeNull();
+        expect(onCerrar).not.toHaveBeenCalled();
+        expect(guia.vistas.has('u-1')).toBe(true);
+        expect(screen.getByText('mapa.pideSalida')).toBeInTheDocument();
+        tocar(T);
+        expect(screen.getByText('mapa.pideGreen')).toBeInTheDocument();
+      },
+    );
+
+    it('G3: en la pregunta, cerrarla deja la pregunta', () => {
+      conPregunta();
+
+      empezarGuia();
+
+      expect(screen.getByText('mapa.preguntaSalida')).toBeInTheDocument();
+    });
+
+    it('G4: sin conexión sale igual', () => {
+      vi.stubGlobal('navigator', {
+        ...globalThis.navigator,
+        geolocation: gps,
+        onLine: false,
+      });
+
+      sinPregunta();
+
+      expect(laGuia()).toBeInTheDocument();
+    });
+
+    it('G4: sin WebGL no sale', () => {
+      mapas.sinWebgl = true;
+
+      abrir({ hoyo: null, porMarcar: 'salida', userId: 'u-1' });
+      act(() => gps.error({ code: 1 }));
+
+      expect(laGuia()).toBeNull();
+      expect(guia.vistas.has('u-1')).toBe(false);
+    });
+
+    it('G4: reportando un hoyo no sale', () => {
+      abrir({ userId: 'u-1', onReporte: vi.fn() });
+      act(() => mapa().oyentes.load());
+
+      fireEvent.click(screen.getByRole('button', { name: 'mapa.reportar' }));
+      fireEvent.click(screen.getByText('mapa.motivos.WRONG_LINE'));
+
+      expect(laGuia()).toBeNull();
+      expect(
+        screen.queryByRole('button', { name: 'mapa.comoMarcar' }),
+      ).toBeNull();
+    });
+  });
+
+  describe('P: el paso N de M', () => {
+    beforeEach(() => guia.vistas.add('u-1'));
+
+    it('P1: salida y green: «Paso 1 de 3» la salida, «Paso 2 de 3» el green', () => {
+      sinPregunta();
+      expect(screen.getByText(paso(1, 3))).toBeInTheDocument();
+      expect(screen.getByText('mapa.pideSalida')).toBeInTheDocument();
+
+      tocar(T);
+
+      expect(screen.getByText(paso(2, 3))).toBeInTheDocument();
+      expect(screen.getByText('mapa.pideGreen')).toBeInTheDocument();
+    });
+
+    it('P1: con mal GPS en la salida, también «Paso 1 de 3»', () => {
+      conPregunta();
+      act(() => gps.exito(lectura(T.lat, T.lon, 80)));
+
+      si();
+
+      expect(screen.getByText(paso(1, 3))).toBeInTheDocument();
+      expect(screen.getByText('mapa.malGps')).toBeInTheDocument();
+    });
+
+    it('P2: «Sí» con buen GPS: el primer aviso es «Paso 2 de 3» el green', () => {
+      conPregunta();
+      act(() => gps.exito(lectura(T.lat, T.lon, 5)));
+
+      si();
+
+      expect(screen.getByText(paso(2, 3))).toBeInTheDocument();
+      expect(screen.getByText('mapa.pideGreen')).toBeInTheDocument();
+    });
+
+    it('P3: tras el «No», solo el green: «Paso 1 de 2»', () => {
+      conPregunta();
+
+      no();
+
+      expect(screen.getByText(paso(1, 2))).toBeInTheDocument();
+      expect(screen.getByText('mapa.pideGreen')).toBeInTheDocument();
+    });
+
+    it('P3: con la salida ya conocida, solo el green: «Paso 1 de 2»', () => {
+      sinPregunta({
+        hoyo: { playLine: [T], green: null },
+        porMarcar: 'green',
+      });
+
+      expect(screen.getByText(paso(1, 2))).toBeInTheDocument();
+      expect(screen.getByText('mapa.pideGreen')).toBeInTheDocument();
+    });
+
+    it('P5: la pregunta «¿Estás en la salida?» no lleva número', () => {
+      conPregunta();
+
+      expect(screen.getByText('mapa.preguntaSalida')).toBeInTheDocument();
+      expect(pasoVisto()).toBeNull();
+    });
+
+    it('tras el «No» y el green tocado, «Marcar el hoyo entero»: la salida sin número', () => {
+      conPregunta();
+      no();
+      tocar(G);
+
+      fireEvent.click(
+        screen.getByRole('button', { name: 'mapa.marcarEntero' }),
+      );
+
+      expect(screen.getByText('mapa.pideSalida')).toBeInTheDocument();
+      expect(pasoVisto()).toBeNull();
+    });
+
+    it('con el green ya puesto (no está en la tabla), la salida va sin número', () => {
+      sinPregunta({
+        hoyo: { playLine: [], green: { center: G } },
+        porMarcar: 'salidaAlGreen',
+      });
+
+      expect(screen.getByText('mapa.pideSalida')).toBeInTheDocument();
+      expect(pasoVisto()).toBeNull();
+    });
+
+    it.each([
+      ['salida y green, la salida', [], paso(1, 2), 'mapa.pideSalida'],
+      ['salida y green, el green', [T], paso(2, 2), 'mapa.pideGreen'],
+    ])('par 3: %s', (_caso, toques, esperado, aviso) => {
+      sinPregunta({ par: 3, metros: 150 });
+
+      toques.forEach(tocar);
+
+      expect(screen.getByText(esperado)).toBeInTheDocument();
+      expect(screen.getByText(aviso)).toBeInTheDocument();
+    });
+
+    it.each([
+      ['tras el «No»', () => no(), () => conPregunta({ par: 3 })],
+      [
+        'con la salida conocida',
+        () => {},
+        () =>
+          sinPregunta({
+            par: 3,
+            hoyo: { playLine: [T], green: null },
+            porMarcar: 'green',
+          }),
+      ],
+    ])('par 3: solo el green %s, sin número', (_caso, hacer, abrirlo) => {
+      abrirlo();
+
+      hacer();
+
+      expect(screen.getByText('mapa.pideGreen')).toBeInTheDocument();
+      expect(pasoVisto()).toBeNull();
+    });
+  });
+
+  describe('P4: el último paso', () => {
+    beforeEach(() => guia.vistas.add('u-1'));
+    const ultimo = (count) => `mapa.ultimoPasoCurva {"count":${count}}`;
+
+    it.each([
+      [4, 1],
+      [5, 2],
+    ])(
+      'tras guardar un par %i: «Último paso» con %i punto(s) y «Listo»',
+      (par, puntos) => {
+        sinPregunta({ par });
+        tocar(T);
+        tocar(G);
+
+        expect(screen.getByText('mapa.ultimoPaso ·')).toBeInTheDocument();
+        expect(screen.getByText(ultimo(puntos))).toBeInTheDocument();
+        expect(
+          screen.getByRole('button', { name: 'mapa.listo' }),
+        ).toBeInTheDocument();
+        expect(pasoVisto()).toBeNull();
+      },
+    );
+
+    it('se quita con «Listo» y no vuelve', () => {
+      sinPregunta();
+      tocar(T);
+      tocar(G);
+
+      fireEvent.click(screen.getByRole('button', { name: 'mapa.listo' }));
+
+      expect(screen.queryByText(ultimo(1))).toBeNull();
+      expect(screen.getByText('mapa.ayudaMedir')).toBeInTheDocument();
+    });
+
+    it('se quita al arrastrar un punto', () => {
+      sinPregunta();
+      tocar(T);
+      tocar(G);
+
+      soltar(arrastrables()[1], alEste(40, alNorte(150)));
+
+      expect(screen.queryByText(ultimo(1))).toBeNull();
+    });
+
+    it('par 3: sin placa del último paso', () => {
+      sinPregunta({ par: 3, metros: 150 });
+      tocar(T);
+      tocar(alNorte(150));
+
+      expect(screen.queryByText('mapa.ultimoPaso ·')).toBeNull();
+      expect(screen.queryByRole('button', { name: 'mapa.listo' })).toBeNull();
+    });
+
+    it('también tras «Sí» con buen GPS y el green tocado', () => {
+      conPregunta();
+      act(() => gps.exito(lectura(T.lat, T.lon, 5)));
+      si();
+
+      tocar(G);
+
+      expect(screen.getByText(ultimo(1))).toBeInTheDocument();
+    });
+  });
+
+  describe('B: el «?»', () => {
+    it.each([
+      ['la pregunta', () => conPregunta()],
+      ['el aviso de la salida', () => sinPregunta()],
+      [
+        'el aviso del green',
+        () => {
+          sinPregunta();
+          tocar(T);
+        },
+      ],
+      [
+        'la placa del último paso',
+        () => {
+          sinPregunta();
+          tocar(T);
+          tocar(G);
+        },
+      ],
+    ])('B1: en %s, abre la guía aunque ya se viera', (_caso, preparar) => {
+      guia.vistas.add('u-1');
+      preparar();
+      expect(laGuia()).toBeNull();
+
+      fireEvent.click(ayuda());
+
+      expect(laGuia()).toBeInTheDocument();
+    });
+
+    it('B1: junto a «Ahora no» en el aviso', () => {
+      guia.vistas.add('u-1');
+      sinPregunta();
+
+      expect(ayuda().parentElement).toBe(
+        screen.getByRole('button', { name: 'mapa.ahoraNo' }).parentElement,
+      );
+    });
+
+    it('B1: sin marcar ni placa, no hay «?»', () => {
+      guia.vistas.add('u-1');
+      sinPregunta();
+      tocar(T);
+      tocar(G);
+      fireEvent.click(screen.getByRole('button', { name: 'mapa.listo' }));
+
+      expect(
+        screen.queryByRole('button', { name: 'mapa.comoMarcar' }),
+      ).toBeNull();
+    });
+
+    it('B2: 44 px de alto y de ancho, con su nombre accesible', () => {
+      guia.vistas.add('u-1');
+      sinPregunta();
+
+      expect(ayuda()).toHaveClass('min-h-11', 'min-w-11');
+    });
+
+    it('B2: abierta con el «?», al cerrarla el foco vuelve al «?»', () => {
+      guia.vistas.add('u-1');
+      sinPregunta();
+      ayuda().focus();
+      fireEvent.click(ayuda());
+      expect(laGuia().contains(document.activeElement)).toBe(true);
+
+      fireEvent.keyDown(document, { key: 'Escape' });
+
+      expect(laGuia()).toBeNull();
+      expect(ayuda()).toHaveFocus();
+    });
+
+    it('B2: abierta sola, al cerrarla el foco va al «?» del aviso', () => {
+      sinPregunta();
+      expect(laGuia().contains(document.activeElement)).toBe(true);
+
+      empezarGuia();
+
+      expect(ayuda()).toHaveFocus();
+    });
+
+    it('B2: abierta sola en la pregunta, el foco vuelve al «?» de la pregunta', () => {
+      conPregunta();
+
+      empezarGuia();
+
+      expect(ayuda()).toHaveFocus();
+      expect(screen.getByText('mapa.preguntaSalida')).toBeInTheDocument();
     });
   });
 });
