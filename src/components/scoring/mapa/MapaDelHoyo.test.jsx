@@ -3461,6 +3461,23 @@ describe('MapaDelHoyo — marcar con el GPS y el recuadro desde ti (17 oct)', ()
       expect(ultimoGiro()).toBeCloseTo(rumbo(aqui, green), 6);
     });
 
+    it('Z1 tras marcar con el GPS flojo, empezar otra marca la desarma: movido el mapa, no se acerca', () => {
+      abrirSinLinea();
+      const aqui = alNorte(150);
+      desde(aqui, 25);
+      no();
+      const green = alLado(60, aqui);
+      tocar(green);
+      hoyoEntero();
+      fireEvent.click(screen.getByRole('button', { name: 'mapa.ahoraNo' }));
+      act(() => mapa().oyentes.movestart({ originalEvent: {} }));
+      const antes = mapa().easeTo.mock.calls.length;
+
+      desde(aqui);
+
+      expect(mapa().easeTo.mock.calls.length).toBe(antes);
+    });
+
     it('Z1 tras marcar con el GPS flojo, fuera de los 100 m se desarma: movido el mapa, al entrar no se acerca', () => {
       abrirSinLinea();
       const aqui = alNorte(150);
