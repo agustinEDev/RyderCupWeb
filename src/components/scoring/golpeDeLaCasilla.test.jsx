@@ -70,9 +70,9 @@ describe('siguienteHueco', () => {
       'second',
     ],
     [
-      'sin segundo, aunque su valor esté vacío: ninguno',
-      { propio: 4, marcado: 5, segundo: undefined },
-      null,
+      'el marcado y el segundo vacíos: primero el marcado',
+      { propio: 4, haySegundo: true },
+      'marked',
     ],
   ])('%s', (_caso, cambios, esperado) => {
     expect(siguienteHueco({ ...vacio, ...cambios })).toBe(esperado);
