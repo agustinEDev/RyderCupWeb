@@ -6,7 +6,6 @@ import urlDelWorker from 'maplibre-gl/dist/maplibre-gl-worker.mjs?url';
 import './mapa.css';
 import { distanciaEnMetros } from '../../../domain/services/distanciasAlGreen';
 import {
-  PRECISION_PARA_MEDIR_M,
   distanciasDelHoyo,
   distanciasDesdeLaPosicion,
 } from '../../../domain/services/distanciasDelHoyo';
@@ -16,13 +15,9 @@ import {
   siguientePuntoDeLaLinea,
 } from '../../../domain/services/geometriaDelHoyo';
 import {
-  estaLejosDelCampo,
   hoyoDeUnaMarca,
   salidaPorMetros,
 } from '../../../domain/services/hoyoMarcado';
-import { usePosicionGps } from '../../../hooks/usePosicionGps';
-import { comunidadDelPunto } from '../../../domain/services/comunidadDelCampo';
-import { useCentroSinMapa } from '../../../hooks/useCentroSinMapa';
 import ModalShell from '../../ui/ModalShell';
 import { BOTON, PLACA } from './clasesDelMapa';
 import {
@@ -42,6 +37,7 @@ import { useToquesDelMapa } from './useToquesDelMapa';
 import { useEnvioAlCerrar } from './useEnvioAlCerrar';
 import { useEncuadreDelHoyo } from './useEncuadreDelHoyo';
 import { useMapaDeMapLibre } from './useMapaDeMapLibre';
+import { useGpsDelHoyo } from './useGpsDelHoyo';
 import {
   useCentrarEnElCampo,
   useMarcaDelCodo,
@@ -109,42 +105,18 @@ const MapaDelHoyo = ({
 }) => {
   const { t } = useTranslation('scoring');
   const conMapa = orientacionDelHoyo(hoyo) !== null;
-  const gps = usePosicionGps({ activo: true });
-  const posicion = gps.estado === 'listo' ? gps.posicion : null;
-  const precision = gps.estado === 'listo' ? (gps.precision ?? null) : null;
-  // Sin permiso o sin GPS en el móvil, no hay posición que preguntar
-  const sinUbicacion =
-    gps.estado === 'denegado' || gps.estado === 'no-disponible';
-  const centroSinMapa = useCentroSinMapa({ golfCourseId, activo: !conMapa });
-  // Si estás en el campo: si el hoyo tiene salida (aunque no tenga green), se
-  // mide desde ella; si no, desde la ubicación del campo (sin ninguna de las
-  // dos, se da por hecho que sí)
-  const referenciaDelCampo =
-    hoyo?.playLine?.[0] ?? centroSinMapa ?? hoyo?.green?.center ?? null;
-  // Lejos (no estás jugando): el mapa no se va a tu casa, no se mide desde ti
-  // y «Céntrame» no se puede pulsar (16 oct)
-  // Con ortofoto de su comunidad, más reciente que la PNOA, si la hay (19 oct)
-  // Solo cuando cambia la posición, no en cada aviso del GPS (/code-review)
-  const latDelCampo = referenciaDelCampo?.lat ?? null;
-  const lonDelCampo = referenciaDelCampo?.lon ?? null;
-  const comunidad = useMemo(
-    () =>
-      comunidadDelPunto(
-        latDelCampo === null || lonDelCampo === null
-          ? null
-          : { lat: latDelCampo, lon: lonDelCampo },
-      ),
-    [latDelCampo, lonDelCampo],
-  );
-  const lejos = estaLejosDelCampo(posicion, referenciaDelCampo);
-  const posicionEnElCampo = lejos ? null : posicion;
-  // La que vale para medir desde ti: en el campo y con el GPS bueno
-  const posicionBuena =
-    posicionEnElCampo &&
-    precision !== null &&
-    precision <= PRECISION_PARA_MEDIR_M
-      ? posicionEnElCampo
-      : null;
+  const {
+    estadoDelGps,
+    posicion,
+    precision,
+    sinUbicacion,
+    centroSinMapa,
+    referenciaDelCampo,
+    comunidad,
+    lejos,
+    posicionEnElCampo,
+    posicionBuena,
+  } = useGpsDelHoyo({ golfCourseId, hoyo, conMapa });
   // A mitad de hoyo, el codo de la línea de ti al green (D2): sin tocar, en
   // medio y siguiéndote (`codoSinTocar`); arrastrado, donde se deja (`tocado`)
   const [tocado, setTocado] = useState(null);
@@ -702,7 +674,7 @@ const MapaDelHoyo = ({
     buscando: t('mapa.buscando'),
     denegado: t('mapa.denegado'),
     'no-disponible': t('mapa.noDisponible'),
-  }[gps.estado];
+  }[estadoDelGps];
 
   return (
     // `ModalShell`: el foco entra (por «Cerrar», lo primero) y vuelve a «Mapa» al
