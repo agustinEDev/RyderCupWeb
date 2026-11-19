@@ -1,8 +1,8 @@
 import { useRef, useState } from 'react';
 
 // La primera fase: sin salida, se pregunta; con salida, se pide el green
-const faseInicial = (preguntaPrimero, porMarcar) => {
-  if (preguntaPrimero) return 'pregunta';
+const faseInicial = (marcandoSalida, porMarcar) => {
+  if (marcandoSalida) return 'pregunta';
   return porMarcar ? 'pidiendo' : null;
 };
 
@@ -52,10 +52,10 @@ export const useEstadoDeLaMarca = ({
 }) => {
   // Marcar el hoyo: sin salida, primero se pregunta si estás en ella (17 oct);
   // con salida, se pide el green. «Ahora no» deja medir como siempre
-  const preguntaPrimero =
+  const marcandoSalida =
     porMarcar === 'salida' || porMarcar === 'salidaAlGreen';
   const [marca, setMarca] = useState({
-    fase: faseInicial(preguntaPrimero, porMarcar),
+    fase: faseInicial(marcandoSalida, porMarcar),
     tee: null,
   });
   const [avisoDeMarca, setAvisoDeMarca] = useState(null);
@@ -87,8 +87,7 @@ export const useEstadoDeLaMarca = ({
       ? 'pidiendo'
       : marca.fase;
   return {
-    preguntaPrimero,
-    marcandoSalida: preguntaPrimero,
+    marcandoSalida,
     greenConocido,
     marca,
     setMarca,

@@ -169,7 +169,6 @@ const MapaDelHoyo = ({
   });
 
   const {
-    preguntaPrimero,
     marcandoSalida,
     greenConocido,
     marca,
@@ -479,7 +478,7 @@ const MapaDelHoyo = ({
       hacerLineaAhoraRef,
       alejarAhoraRef,
     },
-    { posicionBuena, greenConocido, preguntaPrimero, empezar },
+    { posicionBuena, greenConocido, marcandoSalida, empezar },
     {
       setAvisoDeMarca,
       setMarca,
@@ -655,7 +654,7 @@ const MapaDelHoyo = ({
           reporte={reporte}
           marca={marca}
           desdeMi={desdeMi}
-          preguntaPrimero={preguntaPrimero}
+          marcandoSalida={marcandoSalida}
           pidiendo={pidiendo}
           enlaceEnteroRef={enlaceEnteroRef}
           onMarcarEntero={marcarEntero}

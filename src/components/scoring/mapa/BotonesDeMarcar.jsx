@@ -9,7 +9,7 @@ const BotonesDeMarcar = ({
   reporte,
   marca,
   desdeMi,
-  preguntaPrimero,
+  marcandoSalida,
   pidiendo,
   enlaceEnteroRef,
   onMarcarEntero,
@@ -17,7 +17,7 @@ const BotonesDeMarcar = ({
 }) => {
   if (reporte) return null;
   const conEnlaceEntero =
-    (desdeMi && preguntaPrimero) || (pidiendo && marca.soloGreen);
+    (desdeMi && marcandoSalida) || (pidiendo && marca.soloGreen);
   return (
     <>
       {conEnlaceEntero && (
