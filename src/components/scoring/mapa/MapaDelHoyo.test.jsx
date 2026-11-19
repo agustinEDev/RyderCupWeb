@@ -5868,6 +5868,14 @@ describe('MapaDelHoyo — reportar un hoyo (entrega 7)', () => {
     expect(mapa().doubleClickZoom.enable).not.toHaveBeenCalled();
   });
 
+  it('R-4: en un par 4 (con codo), la propuesta dice que se arrastre', () => {
+    abrirConLinea({ par: 4 });
+    proponer();
+
+    expect(screen.getByText('mapa.ayudaCodo')).toBeInTheDocument();
+    expect(screen.queryByText('mapa.reporteSinCodos')).toBeNull();
+  });
+
   it('R-4: en un par 3 (sin codos), la propuesta no habla de codos', () => {
     abrirConLinea({ par: 3 });
     proponer();
@@ -6848,6 +6856,31 @@ describe('MapaDelHoyo — ayuda para marcar (19 nov)', () => {
       expect(laGuia()).toBeInTheDocument();
     });
 
+    it('G4: sin WebGL, la primera vez, el foco no se va de detrás del mapa ni se apunta vista', () => {
+      mapas.sinWebgl = true;
+      const botonMapa = document.createElement('button');
+      document.body.appendChild(botonMapa);
+      botonMapa.focus();
+
+      abrir({ hoyo: null, porMarcar: 'salida', userId: 'u-1' });
+      act(() => gps.error({ code: 1 }));
+
+      expect(laGuia()).toBeNull();
+      expect(screen.getByRole('dialog').contains(document.activeElement)).toBe(
+        true,
+      );
+      expect(guia.vistas.has('u-1')).toBe(false);
+      botonMapa.remove();
+    });
+
+    it('G1: con WebGL, la primera vez sale nada más abrir (antes del load)', () => {
+      abrir({ hoyo: null, porMarcar: 'salida', userId: 'u-1' });
+      act(() => gps.error({ code: 1 }));
+
+      expect(laGuia()).toBeInTheDocument();
+      expect(laGuia().contains(document.activeElement)).toBe(true);
+    });
+
     it('G4: sin WebGL no sale', () => {
       mapas.sinWebgl = true;
 
@@ -6906,14 +6939,19 @@ describe('MapaDelHoyo — ayuda para marcar (19 nov)', () => {
       expect(screen.getByText('mapa.pideGreen')).toBeInTheDocument();
     });
 
-    it('P3: tras el «No», solo el green: «Paso 1 de 2»', () => {
-      conPregunta();
+    it.each([4, 5])(
+      'tras el «No» en un par %i, el green sin número: se mide desde ti y no hay placa',
+      (par) => {
+        conPregunta({ par });
 
-      no();
+        no();
+        expect(screen.getByText('mapa.pideGreen')).toBeInTheDocument();
+        expect(pasoVisto()).toBeNull();
+        tocar(G);
 
-      expect(screen.getByText(paso(1, 2))).toBeInTheDocument();
-      expect(screen.getByText('mapa.pideGreen')).toBeInTheDocument();
-    });
+        expect(screen.queryByText('mapa.ultimoPaso ·')).toBeNull();
+      },
+    );
 
     it('P3: con la salida ya conocida, solo el green: «Paso 1 de 2»', () => {
       sinPregunta({

@@ -22,6 +22,12 @@ describe('seVeLaGuia (G1, G4)', () => {
     ['B1: ya vista, pedida con el «?»', { vista: true, pedida: true }, true],
     ['B1: pedida aunque no se marque', { fase: null, pedida: true }, true],
     ['G4: sin WebGL no sale', { sinMapa: true }, false],
+    ['sin saber aún si hay mapa, no sale', { sinMapa: null }, false],
+    [
+      'sin saber aún si hay mapa, tampoco pedida',
+      { sinMapa: null, pedida: true },
+      false,
+    ],
     ['G4: sin WebGL tampoco pedida', { sinMapa: true, pedida: true }, false],
     ['G4: reportando no sale', { reporte: { fase: 'salida' } }, false],
     [
@@ -57,9 +63,14 @@ describe('pasoDeLaMarca (P1-P5 y par 3)', () => {
       { n: 2, de: 3 },
     ],
     [
-      'P3: tras el «No», solo el green',
+      'tras el «No», solo el green: sin número (se mide desde ti, no habrá placa)',
       { marca: { fase: 'pidiendo', tee: null, soloGreen: true } },
-      { n: 1, de: 2 },
+      null,
+    ],
+    [
+      'tras el «No» en un par 5, también sin número',
+      { par: 5, marca: { fase: 'pidiendo', tee: null, soloGreen: true } },
+      null,
     ],
     [
       'P3: con la salida conocida, solo el green',
