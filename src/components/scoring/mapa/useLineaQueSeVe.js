@@ -117,90 +117,91 @@ export const useLineaQueSeVe = ({
   };
 };
 
+// A mitad de un hoyo con línea y green: la línea desde ti, sin preguntar (H1, H2).
+// Con el «⋮» abierto se espera a cerrarlo: no se pinta nada sobre la línea que
+// se propone (revisor, 18 oct)
+const decidirLaMitad = (e, s, alGreen) => {
+  const salidaDeMiBarra = e.lineaInicial?.[0] ?? null;
+  if (
+    e.mitadDecidida ||
+    e.reporte ||
+    !e.green ||
+    (e.hoyo?.playLine?.length ?? 0) < 2 ||
+    !salidaDeMiBarra ||
+    !e.posicionBuena
+  )
+    return;
+  s.setMitadDecidida(true);
+  // Con la línea ya movida se queda el hoyo entero, con lo editado (H13)
+  if (
+    e.edicion.cambiada ||
+    distanciaEnMetros(e.posicionBuena, salidaDeMiBarra) <= FUERA_DE_LA_SALIDA_M
+  )
+    return;
+  s.setLineaOculta(true);
+  s.setDesdeMi(true);
+  s.setHastaLaSalida(true);
+  // Con el zoom al green en este render, el codo sale ya y el mapa no gira
+  // hacia ti: gana el zoom (Z14). Si no, en el siguiente, con su giro
+  if (!alGreen) s.setCodoPendiente(true);
+  else if (!e.tocado) s.setCodoSinTocar(true);
+};
+
+// Ibas hacia la salida: al llegar, el hoyo entero, una vez (H12). Proponiendo
+// un reporte se espera a acabarlo: no gira (O9)
+const decidirLaSalida = (e, s) => {
+  const salidaDeMiBarra = e.lineaInicial?.[0] ?? null;
+  if (
+    !e.hastaLaSalida ||
+    e.reporte ||
+    !e.posicionBuena ||
+    distanciaEnMetros(e.posicionBuena, salidaDeMiBarra) > FUERA_DE_LA_SALIDA_M
+  )
+    return;
+  s.setHastaLaSalida(false);
+  s.setLineaOculta(false);
+  s.setDesdeMi(false);
+  s.setTocado(null);
+  s.setCodoSinTocar(false);
+  s.setVista({ tipo: 'hoyo' });
+};
+
+// El codo, una vez: con el primer GPS bueno, sin tocar (te sigue en medio si
+// pasa de 200 m, C2, C3). Movido no se mueve, y quitado no vuelve (D3, D10)
+const decidirElCodo = (e, s, alGreen) => {
+  if (!e.codoPendiente || !e.desdeMi || !e.posicionBuena || !e.green) return;
+  s.setCodoPendiente(false);
+  // Con el zoom al green en este render (tras una marca), gana el zoom (Z14)
+  if (!alGreen) {
+    // Hacia el siguiente punto de la línea del hoyo, o al green sin ella (O2, O4)
+    const hacia =
+      (e.lineaOculta &&
+        siguientePuntoDeLaLinea(e.posicionBuena, e.lineaInicial)) ||
+      e.green.center;
+    s.setVista({
+      tipo: 'desdeMi',
+      desde: e.posicionBuena,
+      hacia,
+      green: e.green.center,
+    });
+  }
+  // Tocar mide (19 oct): el codo sale siempre en medio, y uno que ya hubiera se queda
+  if (!e.tocado) s.setCodoSinTocar(true);
+};
+
 /**
  * Lo que se decide con el GPS bueno, durante el render (el patrón de React para
  * ajustar un estado a otro, no un efecto): a mitad de un hoyo con línea, la línea
- * desde ti; al llegar a la salida, el hoyo entero; y el codo, una vez.
+ * desde ti; al llegar a la salida, el hoyo entero; y el codo, una vez. Con
+ * `alGreen` (el zoom al green se decidió en este render), el mapa no gira hacia
+ * ti: la línea y el codo, igual.
+ *
+ * `estado`: mitadDecidida, reporte, green, hoyo, lineaInicial, posicionBuena,
+ * edicion, hastaLaSalida, codoPendiente, desdeMi, lineaOculta y tocado.
+ * `setters`: los de ese estado y `setVista`.
  */
-export const decidirConElGps = (
-  {
-    mitadDecidida,
-    reporte,
-    green,
-    hoyo,
-    lineaInicial,
-    posicionBuena,
-    edicion,
-    hastaLaSalida,
-    codoPendiente,
-    desdeMi,
-    lineaOculta,
-    tocado,
-  },
-  {
-    setMitadDecidida,
-    setLineaOculta,
-    setDesdeMi,
-    setCodoPendiente,
-    setHastaLaSalida,
-    setTocado,
-    setCodoSinTocar,
-    setVista,
-  },
-) => {
-  // A mitad de un hoyo con línea y green: la línea desde ti, sin preguntar (H1, H2)
-  const salidaDeMiBarra = lineaInicial?.[0] ?? null;
-  // Con el «⋮» abierto se espera a cerrarlo: no se pinta nada sobre la línea que se propone (revisor, 18 oct)
-  if (
-    !mitadDecidida &&
-    !reporte &&
-    green &&
-    (hoyo?.playLine?.length ?? 0) >= 2 &&
-    salidaDeMiBarra &&
-    posicionBuena
-  ) {
-    setMitadDecidida(true);
-    // Con la línea ya movida se queda el hoyo entero, con lo editado (H13)
-    if (
-      !edicion.cambiada &&
-      distanciaEnMetros(posicionBuena, salidaDeMiBarra) > FUERA_DE_LA_SALIDA_M
-    ) {
-      setLineaOculta(true);
-      setDesdeMi(true);
-      setCodoPendiente(true);
-      setHastaLaSalida(true);
-    }
-  }
-  // Ibas hacia la salida: al llegar, el hoyo entero, una vez (H12)
-  // Proponiendo un reporte se espera a acabarlo: no gira (O9)
-  if (
-    hastaLaSalida &&
-    !reporte &&
-    posicionBuena &&
-    distanciaEnMetros(posicionBuena, salidaDeMiBarra) <= FUERA_DE_LA_SALIDA_M
-  ) {
-    setHastaLaSalida(false);
-    setLineaOculta(false);
-    setDesdeMi(false);
-    setTocado(null);
-    setCodoSinTocar(false);
-    setVista({ tipo: 'hoyo' });
-  }
-  // El codo, una vez: con el primer GPS bueno, sin tocar (te sigue en medio si
-  // pasa de 200 m, C2, C3). Movido no se mueve, y quitado no vuelve (D3, D10)
-  if (codoPendiente && desdeMi && posicionBuena && green) {
-    setCodoPendiente(false);
-    // Hacia el siguiente punto de la línea del hoyo, o al green sin ella (O2, O4)
-    const hacia =
-      (lineaOculta && siguientePuntoDeLaLinea(posicionBuena, lineaInicial)) ||
-      green.center;
-    setVista({
-      tipo: 'desdeMi',
-      desde: posicionBuena,
-      hacia,
-      green: green.center,
-    });
-    // Tocar mide (19 oct): el codo sale siempre en medio, y uno que ya hubiera se queda
-    if (!tocado) setCodoSinTocar(true);
-  }
+export const decidirConElGps = (estado, setters, alGreen = false) => {
+  decidirLaMitad(estado, setters, alGreen);
+  decidirLaSalida(estado, setters);
+  decidirElCodo(estado, setters, alGreen);
 };

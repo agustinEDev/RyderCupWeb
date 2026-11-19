@@ -27,11 +27,7 @@ import { useMapaDeMapLibre } from './useMapaDeMapLibre';
 import { useGpsDelHoyo } from './useGpsDelHoyo';
 import { decidirConElGps, useLineaQueSeVe } from './useLineaQueSeVe';
 import { useEstadoDeLaMarca } from './useEstadoDeLaMarca';
-import {
-  useAcercarseAlGreen,
-  useVistaRecienPedida,
-} from './useAcercarseAlGreen';
-import { vistaQueGana } from '../../../domain/services/acercarseAlGreen';
+import { useAcercarseAlGreen } from './useAcercarseAlGreen';
 import { salidaQueSePinta, sePuedeReportarElHoyo } from './reglasDelMapa';
 import {
   avisoDelGps,
@@ -129,11 +125,6 @@ const MapaDelHoyo = ({
   // Hacia dónde se ha orientado el mapa después de abrir (O2-O5): `{ tipo:
   // 'hoyo' }`, o de ti a un punto. Cada cambio gira el mapa una vez
   const [vista, setVista] = useState(null);
-  // La orientación desde ti no pisa el zoom al green recién decidido (Z14): solo
-  // el encuadre, la línea desde ti y su codo siguen. Lo de después, sí
-  const vistaRecien = useVistaRecienPedida(vista);
-  const ponerVistaDelGps = (nueva) =>
-    setVista(vistaQueGana(vistaRecien, nueva));
   const conVistaRef = useRef(false);
   // Sin WebGL (móviles viejos, o desactivado) no hay mapa, pero el recuadro de
   // la tarjeta sigue, que no lo necesita
@@ -240,6 +231,25 @@ const MapaDelHoyo = ({
     reporte,
     lineaOculta,
   });
+  // El zoom al green, antes que lo del GPS (Z14); acabar una marca vuelve a acercar
+  const {
+    alGreen,
+    sinZoomAlGreen,
+    setMarca: setMarcaConZoom,
+  } = useAcercarseAlGreen(
+    {
+      posicionBuena,
+      green,
+      lejos,
+      fase,
+      medido,
+      reporte,
+      salida: salidaDelHoyo,
+      hoyoAhora,
+      par,
+    },
+    { setVista, setMarca },
+  );
   const ultimaLineaRef = useRef(datosDeLaLinea);
   const ultimaMedidaRef = useRef(geojsonDeLaMedida([]));
   const etiquetasDeLaMedidaRef = useRef([]);
@@ -315,7 +325,7 @@ const MapaDelHoyo = ({
       setAvisoDeMarca,
       setEdicion,
       setConAyudaDeCodos,
-      setMarca,
+      setMarca: setMarcaConZoom,
       setVista,
       setReporte,
       setGracias,
@@ -403,13 +413,9 @@ const MapaDelHoyo = ({
       setHastaLaSalida,
       setTocado,
       setCodoSinTocar,
-      setVista: ponerVistaDelGps,
+      setVista,
     },
-  );
-  // Después de lo del GPS: el zoom al green gana (Z14)
-  const sinZoomAlGreen = useAcercarseAlGreen(
-    { posicionBuena, green, lejos, fase, medido, reporte, vistaRecien },
-    setVista,
+    alGreen,
   );
   const textoDeTramo = useCallback(
     (metros) => t('mapa.tramo', { metros }),
@@ -493,7 +499,7 @@ const MapaDelHoyo = ({
     { posicionBuena, greenConocido, marcandoSalida, empezar },
     {
       setAvisoDeMarca,
-      setMarca,
+      setMarca: setMarcaConZoom,
       setDesdeMi,
       setCodoPendiente,
       setTocado,
@@ -701,10 +707,15 @@ const MapaDelHoyo = ({
             ultimaVistaRef.current = { tipo: 'hoyo' };
             encuadrarHoyo(true);
           }}
-          onNorte={() => mapaRef.current?.resetNorth()}
-          onCentrame={() =>
-            mapaRef.current?.easeTo({ center: lngLat(posicion) })
-          }
+          // «Norte» y «Céntrame» también apagan el zoom al green (Z7)
+          onNorte={() => {
+            sinZoomAlGreen();
+            mapaRef.current?.resetNorth();
+          }}
+          onCentrame={() => {
+            sinZoomAlGreen();
+            mapaRef.current?.easeTo({ center: lngLat(posicion) });
+          }}
         />
       </div>
     </ModalShell>

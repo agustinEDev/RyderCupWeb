@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useRef } from 'react';
 import { camaraGirada, rumbo } from '../../../domain/services/geometriaDelHoyo';
-import { encuadreAlGreen } from '../../../domain/services/acercarseAlGreen';
 import { lngLat } from './geometriaDelMapa';
 
 /**
@@ -60,14 +59,9 @@ export const useEncuadreDelHoyo = (
   const aplicarVista = useCallback(
     (v, animar) => {
       if (v.tipo === 'hoyo') encuadrarHoyo(animar);
-      else if (v.tipo === 'alGreen') {
-        // En los últimos 100 m: tú abajo y el green arriba, lo más grandes que quepan
-        const { hoyo: h, rumbo: orientacion } = encuadreAlGreen(
-          v.desde,
-          v.green,
-        );
-        encuadrar(h, orientacion, animar);
-      } else
+      // En los últimos 100 m: tú y el green, lo más grandes que quepan
+      else if (v.tipo === 'alGreen') encuadrar(v.hoyo, v.rumbo, animar);
+      else
         encuadrar(
           { playLine: [v.desde, v.hacia, v.green], green: null },
           rumbo(v.desde, v.hacia),
