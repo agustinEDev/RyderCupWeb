@@ -1,5 +1,4 @@
 /** @typedef {import('../entities/Enrollment').default} Enrollment */
-/** @typedef {import('../value_objects/EnrollmentId').default} EnrollmentId */
 
 /**
  * Interface: IEnrollmentRepository
