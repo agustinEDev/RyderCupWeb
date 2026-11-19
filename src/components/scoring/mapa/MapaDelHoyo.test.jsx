@@ -6945,7 +6945,20 @@ describe('MapaDelHoyo — ayuda para marcar (19 nov)', () => {
       expect(pasoVisto()).toBeNull();
     });
 
-    it('con el green ya puesto (no está en la tabla), la salida va sin número', () => {
+    it('solo el green sobre una línea aprobada con su codo: sin número (no habrá placa)', () => {
+      sinPregunta({
+        hoyo: { playLine: [T, alNorte(150), alNorte(280)], green: null },
+        porMarcar: 'green',
+      });
+      expect(screen.getByText('mapa.pideGreen')).toBeInTheDocument();
+      expect(pasoVisto()).toBeNull();
+
+      tocar(G);
+
+      expect(screen.queryByText('mapa.ultimoPaso ·')).toBeNull();
+    });
+
+    it('con el green ya puesto, solo la salida: sin número (19 nov)', () => {
       sinPregunta({
         hoyo: { playLine: [], green: { center: G } },
         porMarcar: 'salidaAlGreen',

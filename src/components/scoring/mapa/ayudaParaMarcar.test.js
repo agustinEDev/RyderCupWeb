@@ -85,7 +85,27 @@ describe('pasoDeLaMarca (P1-P5 y par 3)', () => {
       null,
     ],
     [
-      'con el green ya puesto, la salida va sin número (no está en la tabla)',
+      'solo el green sobre una línea aprobada con su codo (par 4): sin número',
+      { marcandoSalida: false, lineaAprobada: [T, T, G] },
+      null,
+    ],
+    [
+      'solo el green sobre una línea con un codo en un par 5 (falta otro): «1 de 2»',
+      { marcandoSalida: false, lineaAprobada: [T, T, G], par: 5 },
+      { n: 1, de: 2 },
+    ],
+    [
+      'solo el green sobre una línea con dos codos en un par 5: sin número',
+      { marcandoSalida: false, lineaAprobada: [T, T, T, G], par: 5 },
+      null,
+    ],
+    [
+      'solo el green con la salida sola (sin codos): «1 de 2»',
+      { marcandoSalida: false, lineaAprobada: [T] },
+      { n: 1, de: 2 },
+    ],
+    [
+      'con el green ya puesto, solo la salida: sin número (19 nov)',
       { greenYaPuesto: G },
       null,
     ],
