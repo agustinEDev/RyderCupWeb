@@ -7,18 +7,17 @@
  * comunidad, la menor de las dos capas (la PNOA llega a 20).
  */
 
-import { distanciaEnMetros } from './distanciasAlGreen';
+import { distanciaEnMetros, distanciaExacta } from './distanciasAlGreen';
 import {
   FUERA_DE_LA_SALIDA_M,
-  proyeccionEnElTramo,
   rumbo,
   rumboDeLaLinea,
 } from './geometriaDelHoyo';
 
 /** A esta distancia del centro del green, o menos, el mapa se acerca. */
 export const ZOOM_AL_GREEN_M = 100;
-/** Más cerca que esto del centro, el giro de ti al green bailaría: el del hoyo. */
-export const GIRO_DEL_HOYO_M = 30;
+/** Más cerca que esto del centro no hay rumbo de ti al green fiable: el del hoyo. */
+export const SIN_RUMBO_M = 1;
 
 /**
  * Si toca acercarse al green ahora. No: si ya se acercó, lejos del campo, sin
@@ -57,14 +56,12 @@ export const tocaAcercarseAlGreen = ({
   distanciaEnMetros(posicionBuena, green.center) <= ZOOM_AL_GREEN_M &&
   !(salida && distanciaEnMetros(posicionBuena, salida) <= FUERA_DE_LA_SALIDA_M);
 
-const mismoPunto = (a, b) => a.lat === b.lat && a.lon === b.lon;
-
 /**
- * El giro del zoom al green. Lejos, de ti al centro del green (tú abajo, el
- * green arriba). A menos de 30 m o pasado el green (más allá de su centro en la
- * dirección del último tramo), el del hoyo, con el que se juega
- * (`rumboDeLaLinea`; sin línea, de la salida al green). Sin salida, siempre de
- * ti al green.
+ * El giro del zoom al green: siempre de ti al centro del green, tú abajo y el
+ * green arriba (Agustín, 19 nov), también encima de él y pasado. Solo en el
+ * centro (a menos de `SIN_RUMBO_M`), donde no hay rumbo fiable, el del hoyo:
+ * con el que se juega (`rumboDeLaLinea`) o, sin línea, de la salida al green.
+ * Sin salida, de ti al green siempre.
  *
  * @param {{desde: Object, green: {center: Object}, linea: Object[]|null, par: number|null}} datos
  * @returns {number}
@@ -72,14 +69,9 @@ const mismoPunto = (a, b) => a.lat === b.lat && a.lon === b.lon;
 export const giroAlGreen = ({ desde, green, linea, par }) => {
   const centro = green.center;
   const salida = linea?.[0] ?? null;
-  if (!salida) return rumbo(desde, centro);
-  const delHoyo = rumboDeLaLinea(linea, par) ?? rumbo(salida, centro);
-  // El último tramo acaba en el green: empieza en el último punto que no es él
-  const antes = linea.filter((p) => !mismoPunto(p, centro)).at(-1) ?? salida;
-  const pasado = proyeccionEnElTramo(desde, antes, centro).t === 1;
-  return pasado || distanciaEnMetros(desde, centro) < GIRO_DEL_HOYO_M
-    ? delHoyo
-    : rumbo(desde, centro);
+  if (!salida || distanciaExacta(desde, centro) >= SIN_RUMBO_M)
+    return rumbo(desde, centro);
+  return rumboDeLaLinea(linea, par) ?? rumbo(salida, centro);
 };
 
 /**
