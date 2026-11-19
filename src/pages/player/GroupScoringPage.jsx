@@ -26,7 +26,6 @@ import AnotarSinConexion from '../../components/scoring/AnotarSinConexion';
 import PendientesASalvo from '../../components/scoring/PendientesASalvo';
 import SessionBlockedModal from '../../components/scoring/SessionBlockedModal';
 import BarraDeEntrega from '../../components/scoring/BarraDeEntrega';
-import { sinMarcadorEnJuego } from '../../domain/services/PartidasDeLaFranja';
 import SubmitScorecardModal from '../../components/scoring/SubmitScorecardModal';
 import ClasificacionDeLaFranja from '../../components/scoring/ClasificacionDeLaFranja';
 import TarjetasDeLaPartida from '../../components/scoring/TarjetasDeLaPartida';
@@ -43,17 +42,24 @@ import {
   PESTANAS_DE_LA_PARTIDA_DEL_JUGADOR,
 } from '../../utils/pestanasDeLaAnotacion';
 import TeeGroupStatus from '../../domain/value_objects/TeeGroupStatus';
+import {
+  anotacionTerminada,
+  candadosDeLaCasilla,
+  estadoDeEntregaDeLaPartida,
+  golpesDelSelectorDeLaPartida,
+  hoyoDeLaTarjetaDe,
+  hoyosNoGuardadosDe,
+  motivoDelFalloDeCarga,
+  nombreDe,
+  rolesEnLaPartida,
+  textoDelFalloDeLaPartida,
+} from '../../utils/lecturaDeLaPartida';
 
 // Quien juega anota; quien no, mira las tarjetas y la clasificación (caso 13)
 const PESTANAS_DEL_JUGADOR = PESTANAS_DE_LA_PARTIDA_DEL_JUGADOR;
 const PESTANAS_DE_QUIEN_MIRA = PESTANAS_DE_LA_PARTIDA_DE_QUIEN_MIRA;
 // El temporizador más largo que admite el navegador
 const MAXIMO_TEMPORIZADOR_MS = 2 ** 31 - 1;
-const CLAVE_POR_ESTADO = { 403: 'errors.forbidden', 404: 'errors.notFound' };
-const CLAVE_POR_ACCION = {
-  golpe: 'errors.failedToSubmitScore',
-  tarjeta: 'errors.failedToSubmitScorecard',
-};
 
 /**
  * Anotar una partida de stroke play (FE #824, PR 7; tabla aprobada por
@@ -146,13 +152,7 @@ const GroupScoringPage = () => {
   useAnotacionEnCurso({
     cargada: Boolean(scoringView) && !isLoading,
     // Cerrada, o mi tarjeta ya no se juega: entregada, retirada o no presentado
-    terminada:
-      scoringView?.matchStatus === TeeGroupStatus.COMPLETED ||
-      Boolean(
-        scoringView?.strokePlay?.cards?.some(
-          (c) => c.userId === user?.id && c.cardStatus !== 'JUGANDO',
-        ),
-      ),
+    terminada: anotacionTerminada(scoringView, user?.id),
     pestana: activa,
     pestanas,
     alCambiarDePestana: setPestana,
@@ -174,11 +174,6 @@ const GroupScoringPage = () => {
     );
   }
 
-  const motivoDe = (err) => {
-    const clave = CLAVE_POR_ESTADO[err?.status ?? err?.response?.status];
-    return clave ? t(clave) : t('offline.noSePudoCargar');
-  };
-
   if (!scoringView) {
     return (
       <div className="min-h-screen bg-gray-50">
@@ -188,7 +183,9 @@ const GroupScoringPage = () => {
         {!isOffline && <PendientesASalvo count={pendingQueueSize} />}
         <div className="mx-auto max-w-4xl px-4 py-6 text-center">
           <p className="text-gray-700">
-            {error ? motivoDe(error) : t('offline.nothingCached')}
+            {error
+              ? motivoDelFalloDeCarga(t, error)
+              : t('offline.nothingCached')}
           </p>
           <button
             type="button"
@@ -206,62 +203,32 @@ const GroupScoringPage = () => {
   const { strokePlay } = scoringView;
   // Sin competición, `useUserRoles` no sabe de quién es: no organiza
   const organiza = isCreator || isAdmin;
-  const miTarjeta = strokePlay.cards.find((c) => c.userId === userId);
-  // Solo en su partida (bajas): no marca a nadie, su golpe lo valida el organizador
-  const marcoA = strokePlay.iMarkUserId;
-  // Una tarjeta retirada o de no presentado ya no se anota: el servidor tira
-  // ese lado con un 200 y el golpe desaparecería sin aviso (revisor). La
-  // entregada ya la bloquea `useScoring`
-  const seJuega = (jugador) =>
-    strokePlay.cards.find((c) => c.userId === jugador)?.cardStatus ===
-    'JUGANDO';
-  const cerradaSinEntregar =
-    Boolean(miTarjeta) &&
-    !seJuega(userId) &&
-    miTarjeta.cardStatus !== 'ENTREGADA';
-  const noPresentado = miTarjeta?.cardStatus === 'NO_PRESENTADO';
-
-  const hoyoDeLaTarjetaDe = (jugador) =>
-    scoringView.players
-      .find((p) => p.userId === jugador)
-      ?.holeCard.find((h) => h.holeNumber === currentHole);
-  const parDe = (jugador) => hoyoDeLaTarjetaDe(jugador)?.par ?? null;
+  const {
+    miTarjeta,
+    marcoA,
+    seJuegaElMarcado,
+    cerradaSinEntregar,
+    noPresentado,
+    sigueMarcandome,
+    sinMarcador,
+    miGolpe,
+    suGolpe,
+    loPusoOtro,
+    meAnoto,
+  } = rolesEnLaPartida({
+    t,
+    scoringView,
+    scoresVisibles,
+    currentHole,
+    userId,
+    isMatchPlayer,
+  });
+  const parDe = (jugador) =>
+    hoyoDeLaTarjetaDe(scoringView.players, jugador, currentHole)?.par ?? null;
   // Mi barra (color y sexo): las muestras del mapa de hoyos van por barra
-  const yo = scoringView.players.find((p) => p.userId === userId);
-  const miBarra = barraDe(yo);
-  const golpesDelHoyo = scoresVisibles.find(
-    (s) => s.holeNumber === currentHole,
-  );
-  const miGolpe = golpesDelHoyo?.playerScores.find((p) => p.userId === userId);
-  const suGolpe = golpesDelHoyo?.playerScores.find((p) => p.userId === marcoA);
+  const miBarra = barraDe(scoringView.players.find((p) => p.userId === userId));
   // Con nombre: «Anotas a Bruno» y, en un desacuerdo, qué puso (QA del 11 oct 2026)
-  const nombreDe = (jugador) =>
-    scoringView.players.find((p) => p.userId === jugador)?.userName ?? null;
-  // El número del marcado que puso otro (el marcador de antes, o el
-  // organizador): con su nombre y sin tocarlo (2.ª pasada del QA)
-  const loPusoOtro =
-    suGolpe?.markerSubmitted && suGolpe.markerBy && suGolpe.markerBy !== userId
-      ? (suGolpe.markerByName ??
-        nombreDe(suGolpe.markerBy) ??
-        t('partida.anotherMarker'))
-      : null;
-  const meMarca = miTarjeta?.markedByUserId;
-  // Si quien me marcaba se retiró o no se presentó, ya no me marca (CodeRabbit)
-  const sigueMarcandome =
-    Boolean(meMarca) &&
-    !['RETIRADO', 'NO_PRESENTADO'].includes(
-      strokePlay.cards.find((c) => c.userId === meMarca)?.cardStatus,
-    );
-  // Quién me anotó ESTE hoyo: tras cambiar el círculo puede no ser mi marcador
-  // de ahora (revisor)
-  const meAnoto =
-    miGolpe?.markerSubmitted && miGolpe.markerBy
-      ? (miGolpe.markerByName ?? nombreDe(miGolpe.markerBy))
-      : cerradaSinEntregar
-        ? null
-        : nombreDe(meMarca);
-  const sinMarcador =
-    isMatchPlayer && sinMarcadorEnJuego(strokePlay.cards, userId);
+  const nombreDelMarcado = nombreDe(scoringView.players, marcoA);
 
   const anotar = (golpes, tocado) =>
     submitScore(
@@ -275,16 +242,13 @@ const GroupScoringPage = () => {
       { tocado },
     );
 
-  const estadoDeEntrega =
-    !isMatchPlayer || cerradaSinEntregar
-      ? null
-      : hasSubmitted
-        ? 'entregada'
-        : canSubmitScorecard
-          ? 'entregar'
-          : partidoAcabado
-            ? 'faltaValidar'
-            : null;
+  const estadoDeEntrega = estadoDeEntregaDeLaPartida({
+    isMatchPlayer,
+    cerradaSinEntregar,
+    hasSubmitted,
+    canSubmitScorecard,
+    partidoAcabado,
+  });
 
   const retirarse = async () => {
     setOcupado(true);
@@ -302,32 +266,23 @@ const GroupScoringPage = () => {
     }
   };
 
-  const textoDelFallo = (err) => {
-    if (!CLAVE_POR_ACCION[origenDelError]) return motivoDe(err);
-    if (err?.errorCode) return mensajeDeErrorDePartida(t, err);
-    return err?.i18nKey ? t(err.i18nKey) : t(CLAVE_POR_ACCION[origenDelError]);
-  };
-  const hoyosNoGuardados = Object.keys(noGuardados)
-    .map(Number)
-    .sort((a, b) => a - b);
-  // El selector pinta un hoyo como hecho si todos lo tienen validado: quien se
-  // retiró o no se presentó ya no anota, y con él dentro ningún hoyo volvía a
-  // ponerse en verde (/code-review)
-  const siguen = new Set(
-    strokePlay.cards
-      .filter((c) => !['RETIRADO', 'NO_PRESENTADO'].includes(c.cardStatus))
-      .map((c) => c.userId),
-  );
-  // Y quien ya no sigue (retirado, no presentado) ve la suya: los hoyos que no
-  // jugó no son verdes para él (3.ª pasada del QA)
-  const delSelector =
-    isMatchPlayer && !siguen.has(userId) ? new Set([userId]) : siguen;
-  const golpesDelSelector = scoresVisibles
-    // Lo que nadie anotó sale vacío en el selector (#847)
-    .map((s) => ({
-      ...s,
-      playerScores: s.playerScores.filter((p) => delSelector.has(p.userId)),
-    }));
+  const hoyosNoGuardados = hoyosNoGuardadosDe(noGuardados);
+  const golpesDelSelector = golpesDelSelectorDeLaPartida({
+    tarjetas: strokePlay.cards,
+    scoresVisibles,
+    userId,
+    isMatchPlayer,
+  });
+  const candados = candadosDeLaCasilla({
+    canScore,
+    isFullyLocked,
+    isSessionBlocked,
+    isOwnScoreLocked,
+    isMarkerScoreLocked,
+    cerradaSinEntregar,
+    marcoA,
+    seJuegaElMarcado,
+  });
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -378,7 +333,9 @@ const GroupScoringPage = () => {
             role="alert"
             className="flex items-center justify-between gap-2 rounded-lg border border-red-200 bg-red-50 p-3"
           >
-            <p className="text-sm text-red-600">{textoDelFallo(error)}</p>
+            <p className="text-sm text-red-600">
+              {textoDelFalloDeLaPartida(t, error, origenDelError)}
+            </p>
             <button
               type="button"
               onClick={refetch}
@@ -453,9 +410,7 @@ const GroupScoringPage = () => {
                 {marcoA && (
                   <p className="text-sm text-gray-700">
                     {t('partida.youMark', {
-                      jugador:
-                        scoringView.players.find((p) => p.userId === marcoA)
-                          ?.userName ?? '',
+                      jugador: nombreDelMarcado ?? '',
                     })}
                   </p>
                 )}
@@ -480,13 +435,13 @@ const GroupScoringPage = () => {
                       })}
                     </p>
                     {/* A quién vas a marcar, como en la Ryder (16 oct) */}
-                    {nombreDe(marcoA) && (
+                    {nombreDelMarcado && (
                       <p
                         data-testid="anotaras-a"
                         className="mt-1 font-medium text-amber-900"
                       >
                         {t('notOpenYet.youWillMark', {
-                          nombre: nombreDe(marcoA),
+                          nombre: nombreDelMarcado,
                         })}
                       </p>
                     )}
@@ -499,7 +454,7 @@ const GroupScoringPage = () => {
                       holeNumber={currentHole}
                       par={parDe(userId)}
                       markedPar={parDe(marcoA)}
-                      markedName={nombreDe(marcoA)}
+                      markedName={nombreDelMarcado}
                       markerName={meAnoto}
                       marksSomeone={Boolean(marcoA)}
                       hasMarker={
@@ -513,26 +468,9 @@ const GroupScoringPage = () => {
                       markedValidationStatus={suGolpe?.validationStatus}
                       strokesReceived={miGolpe?.strokesReceivedThisHole}
                       // Su tarjeta cerrada sin entregar se lee: así ve quién le anotó (QA 3)
-                      isReadOnly={
-                        !canScore ||
-                        isFullyLocked ||
-                        isSessionBlocked ||
-                        cerradaSinEntregar
-                      }
-                      isOwnScoreLocked={
-                        isOwnScoreLocked ||
-                        cerradaSinEntregar ||
-                        !canScore ||
-                        isSessionBlocked
-                      }
-                      // Sin a quién marcar, o con su tarjeta ya cerrada, su casilla no se toca
-                      isMarkerScoreLocked={
-                        !marcoA ||
-                        !seJuega(marcoA) ||
-                        isMarkerScoreLocked ||
-                        !canScore ||
-                        isSessionBlocked
-                      }
+                      isReadOnly={candados.isReadOnly}
+                      isOwnScoreLocked={candados.isOwnScoreLocked}
+                      isMarkerScoreLocked={candados.isMarkerScoreLocked}
                       onScoreChange={anotar}
                       allowPickedUp={strokePlay.pickedUpAllowed === true}
                     />
@@ -544,7 +482,13 @@ const GroupScoringPage = () => {
                       numeroDeHoyo={currentHole}
                       par={parDe(userId)}
                       // Los metros desde mi barra, para el recuadro del mapa (16 oct)
-                      metros={hoyoDeLaTarjetaDe(userId)?.meters ?? null}
+                      metros={
+                        hoyoDeLaTarjetaDe(
+                          scoringView.players,
+                          userId,
+                          currentHole,
+                        )?.meters ?? null
+                      }
                       userId={userId ?? null}
                       barra={miBarra}
                     />
