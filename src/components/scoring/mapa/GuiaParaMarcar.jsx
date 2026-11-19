@@ -97,14 +97,13 @@ const PASOS = [
   ['curva', DibujoDeLaCurva],
 ];
 
-// Solo el green (el hoyo ya tiene salida, 19 nov): sin el paso de la salida, y
-// sin el de la curva si no habrá puntos que arrastrar
+// Solo el green (el hoyo ya tiene salida, 19 nov): sin el paso de la salida.
+// Sin puntos que arrastrar (par 3), sin el de la curva, en las dos guías
 const pasosDeLaGuia = (soloGreen, conCurva) =>
-  soloGreen
-    ? PASOS.filter(
-        ([paso]) => paso === 'green' || (conCurva && paso === 'curva'),
-      )
-    : PASOS;
+  PASOS.filter(
+    ([paso]) =>
+      (paso !== 'salida' || !soloGreen) && (paso !== 'curva' || conCurva),
+  );
 
 /**
  * La guía «Marca este hoyo» (G2): sale la primera vez que se empieza a marcar

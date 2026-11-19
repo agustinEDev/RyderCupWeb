@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useGuiaParaMarcarVista } from '../../../hooks/useGuiaParaMarcarVista';
+import { codosDelPar } from '../../../domain/services/hoyoMarcado';
 import {
   habraPuntosQueArrastrar,
   pasoDeLaMarca,
@@ -50,6 +51,8 @@ export const useAyudaParaMarcar = ({
     setListo((n) => n + 1);
   };
   const lineaAprobada = hoyo?.playLine ?? [];
+  // Falta solo el green: el hoyo ya tiene salida, o se contestó «No»
+  const soloGreen = !marcandoSalida || marca.soloGreen === true;
   return {
     guiaAbierta: seVeLaGuia({ fase, sinMapa, reporte, vista, pedida }),
     abrirGuia: () => setPedida(true),
@@ -58,8 +61,12 @@ export const useAyudaParaMarcar = ({
     alListo,
     trasListoRef,
     // Con la salida ya puesta, la guía del green (Agustín, 19 nov)
-    soloGreen: !marcandoSalida,
-    conCurva: habraPuntosQueArrastrar(lineaAprobada, par),
+    soloGreen,
+    // La curva, si habrá puntos que arrastrar: en el hoyo entero, los codos del
+    // par; solo el green, lo que se sabe seguro (como el «Paso N de M»)
+    conCurva: soloGreen
+      ? habraPuntosQueArrastrar(lineaAprobada, par)
+      : codosDelPar(par) > 0,
     paso: pasoDeLaMarca({
       pidiendo,
       marca,

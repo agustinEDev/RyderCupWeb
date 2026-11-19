@@ -1,8 +1,4 @@
-import {
-  aCodosDelPar,
-  codosDelPar,
-  conCodosDelPar,
-} from '../../../domain/services/hoyoMarcado';
+import { codosDelPar } from '../../../domain/services/hoyoMarcado';
 
 // Reglas puras de la ayuda para marcar un hoyo sin datos: sin React, sin estado
 
@@ -18,17 +14,15 @@ export const seVeLaGuia = ({ fase, sinMapa, reporte, vista, pedida }) =>
   sinMapa === false && !reporte && (pedida || (!vista && marcando(fase)));
 
 /**
- * Si al tocar el green sobre la línea aprobada se añadirán puntos que llevar a
- * la calle (y con ellos la placa del último paso). Con la misma regla que la
- * construye en `useToquesDelMapa`: se queda con los codos de verdad de su par
- * (`aCodosDelPar`) y pone los que falten (`conCodosDelPar`). El final de OSM
- * hace aquí de green, que aún no se ha tocado.
+ * Si se sabe SEGURO que al tocar el green sobre la línea aprobada habrá puntos
+ * que llevar a la calle (y la placa del último paso): solo sin puntos en medio
+ * (la salida, o salida y final) y en un par con codos. Con puntos en medio
+ * depende de dónde se toque el green (la línea se reduce contra él), así que no
+ * se sabe: el aviso va sin número, y si al final hay puntos, la placa sale
+ * igual (Agustín, 19 nov).
  */
-export const habraPuntosQueArrastrar = (aprobada, par) => {
-  if (aprobada.length === 1) return codosDelPar(par) > 0;
-  const reducida = aCodosDelPar(aprobada, par);
-  return conCodosDelPar(reducida, par).length > reducida.length;
-};
+export const habraPuntosQueArrastrar = (aprobada, par) =>
+  aprobada.length >= 1 && aprobada.length <= 2 && codosDelPar(par) > 0;
 
 /**
  * El «Paso N de M» del aviso de lo que se pide (P1-P3). La pregunta de la
