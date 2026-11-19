@@ -5,6 +5,44 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.88.0] - 2026-11-19
+
+**El mapa del hoyo se acerca solo al green en los últimos 100 metros y ayuda a marcar los
+hoyos que faltan; y la calidad de la auditoría sigue: el mapa y la entrada de hoyo, partidos
+en piezas pequeñas, y los tipos del núcleo, vigilados en el CI** (#1193, #1194, #1195,
+#1198, #1199, #1200; merge-back de la 2.87.0 en #1192). Va con el backend 2.74.0, ya en
+producción; no hay cambio de contrato. Probada a fondo en el Kind con la copia anonimizada
+de producción (Chrome a 360 px y en escritorio, con el GPS simulado) y en el iPhone.
+
+### Added
+
+- **Zoom al green en los últimos 100 metros.** Con buena señal de GPS, a 100 m o menos del
+  centro del green el mapa se acerca solo, contigo abajo y el green arriba, para tocar la
+  bandera y medir mejor. Se acerca al abrir el mapa ya dentro de los 100 m o al entrar en
+  ellos con el mapa abierto, una vez por apertura y con animación. No se acerca si has
+  movido el mapa con los dedos o pulsado «Ver hoyo», «Norte» o «Céntrame», con el GPS
+  flojo, lejos del campo, en hoyos sin green, mientras marcas el hoyo, con un punto medido
+  ni en la salida (en un par 3 corto ves primero el hoyo entero). Al terminar de marcar sí
+  se acerca, aunque hubieras movido el mapa.
+- **Ayuda para marcar los hoyos que aún no están en el mapa.** La primera vez que marcas un
+  hoyo sale una guía de tres pasos con dibujos (la salida de tu barra, el centro del green y
+  no la bandera, y arrastrar el punto si el hoyo hace curva); si solo falta el green, una
+  guía corta del green. Cada aviso dice en qué paso vas («Paso 1 de 3»), al guardar una
+  placa recuerda el último paso, y un botón «?» vuelve a abrir la guía. Se recuerda por
+  jugador en el móvil.
+
+### Changed
+
+- **El mapa del hoyo y la entrada de golpes, partidos en piezas pequeñas** (complejidad de
+  136 a 28 y de 116 a 24): GPS, marcas, línea y textos del mapa en hooks y funciones puras
+  con sus tests, y la entrada de hoyo en cabecera, casillas, teclados y pie. Para el
+  usuario no cambia nada: el HTML de la entrada de hoyo es idéntico en los 33 escenarios
+  comparados.
+- **Los tipos de `domain`, `application` e `infrastructure` se comprueban en el CI**
+  (`npm run typecheck:nucleo`, con `checkJs`): el núcleo está a 0 errores y un error de
+  tipos en él tumba el CI. El contrato de autenticación declara ya la recuperación de
+  contraseña, y se quita la búsqueda de inscripciones por id, que nadie usaba.
+
 ## [2.87.0] - 2026-11-19
 
 **Calidad de la auditoría del 18 nov: la pantalla de crear y editar competición, partida en
