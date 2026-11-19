@@ -19,6 +19,12 @@ export const ZOOM_AL_GREEN_M = 100;
 /** Más cerca que esto del centro no hay rumbo de ti al green fiable: el del hoyo. */
 export const SIN_RUMBO_M = 1;
 
+// En la salida de tu barra, la misma con la que el mapa vuelve al hoyo entero
+// al llegar a ella (H12); sin barra, la de la línea
+const enLaSalida = (posicion, salida) =>
+  Boolean(salida) &&
+  distanciaEnMetros(posicion, salida) <= FUERA_DE_LA_SALIDA_M;
+
 /**
  * Si toca acercarse al green ahora. No: si ya se acercó, lejos del campo, sin
  * GPS bueno, sin green, en la salida (un hoyo corto se ve entero), marcando el
@@ -33,7 +39,8 @@ export const SIN_RUMBO_M = 1;
  *   marcando: boolean,
  *   medido: Object|null,
  *   reporte: Object|null,
- *   salida: {lat: number, lon: number}|null,
+ *   salidaDeMiBarra: {lat: number, lon: number}|null,
+ *   salidaDeLaLinea: {lat: number, lon: number}|null,
  * }} estado
  * @returns {boolean}
  */
@@ -45,7 +52,8 @@ export const tocaAcercarseAlGreen = ({
   marcando,
   medido,
   reporte,
-  salida,
+  salidaDeMiBarra,
+  salidaDeLaLinea,
 }) =>
   !yaAcercado &&
   !lejos &&
@@ -54,7 +62,7 @@ export const tocaAcercarseAlGreen = ({
   !reporte &&
   Boolean(posicionBuena && green?.center) &&
   distanciaEnMetros(posicionBuena, green.center) <= ZOOM_AL_GREEN_M &&
-  !(salida && distanciaEnMetros(posicionBuena, salida) <= FUERA_DE_LA_SALIDA_M);
+  !enLaSalida(posicionBuena, salidaDeMiBarra ?? salidaDeLaLinea);
 
 /**
  * El giro del zoom al green: siempre de ti al centro del green, tú abajo y el

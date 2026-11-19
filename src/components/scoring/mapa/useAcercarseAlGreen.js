@@ -23,7 +23,8 @@ export const useAcercarseAlGreen = (
     fase,
     medido,
     reporte,
-    salida,
+    lineaInicial,
+    salidaDeLaLinea,
     hoyoAhora,
     par,
   },
@@ -40,7 +41,9 @@ export const useAcercarseAlGreen = (
     marcando,
     medido,
     reporte,
-    salida,
+    // La de tu barra, como al llegar a la salida (H12)
+    salidaDeMiBarra: lineaInicial?.[0] ?? null,
+    salidaDeLaLinea,
   });
   if (alGreen) {
     setZoom({ hecho: true, trasMarcar: false });
@@ -51,9 +54,10 @@ export const useAcercarseAlGreen = (
       par,
     });
     setVista(vistaAlGreen(encuadre, zoom.trasMarcar));
-  } else if (zoom.trasMarcar && (posicionBuena || marcando)) {
-    // La marca espera a un GPS bueno; si no toca por otra cosa (fuera de los
-    // 100 m, en la salida, otra marca), se desarma: el mapa movido vuelve a mandar
+  } else if (zoom.trasMarcar && (marcando || (posicionBuena && !reporte))) {
+    // La marca espera a un GPS bueno y a que se cierre un reporte (Z13); si no
+    // toca por otra cosa (fuera de los 100 m, en la salida, otra marca), se
+    // desarma: el mapa movido vuelve a mandar
     setZoom((z) => ({ ...z, trasMarcar: false }));
   }
   // Una marca acaba cuando su fase vuelve a nada (el hoyo, el green o el «No»)
