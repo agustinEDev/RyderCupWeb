@@ -30,13 +30,14 @@ export const useAcercarseAlGreen = (
   { setVista, setMarca },
 ) => {
   const [zoom, setZoom] = useState({ hecho: false, trasMarcar: false });
+  // Preguntando o pidiendo la salida o el green, se está marcando (Z11)
+  const marcando = fase === 'pregunta' || fase === 'pidiendo';
   const alGreen = tocaAcercarseAlGreen({
     posicionBuena,
     green,
     lejos,
     yaAcercado: zoom.hecho && !zoom.trasMarcar,
-    // Preguntando o pidiendo la salida o el green, se está marcando (Z11)
-    marcando: fase === 'pregunta' || fase === 'pidiendo',
+    marcando,
     medido,
     reporte,
     salida,
@@ -50,8 +51,9 @@ export const useAcercarseAlGreen = (
       par,
     });
     setVista(vistaAlGreen(encuadre, zoom.trasMarcar));
-  } else if (zoom.trasMarcar) {
-    // La marca vale para su render: después, el mapa movido vuelve a mandar
+  } else if (zoom.trasMarcar && (posicionBuena || marcando)) {
+    // La marca espera a un GPS bueno; si no toca por otra cosa (fuera de los
+    // 100 m, en la salida, otra marca), se desarma: el mapa movido vuelve a mandar
     setZoom((z) => ({ ...z, trasMarcar: false }));
   }
   // Una marca acaba cuando su fase vuelve a nada (el hoyo, el green o el «No»)
