@@ -1,0 +1,24 @@
+{
+  // Comprobación de tipos del núcleo (domain y application) con checkJs: sus
+  // JSDoc dejan de ser comentarios y pasan a ser contratos que el CI vigila
+  // (npm run typecheck:nucleo). Solo el código de producción: los tests y
+  // src/pruebas quedan fuera.
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "checkJs": true,
+    // El código ya usa Array.prototype.at y demás de ES2022, que el build admite
+    "lib": ["ES2022", "DOM", "DOM.Iterable"]
+  },
+  "include": [
+    "src/domain/**/*.js",
+    "src/application/**/*.js",
+    "src/vite-env.d.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "coverage",
+    "src/**/*.test.js",
+    "src/pruebas"
+  ]
+}
