@@ -13,7 +13,7 @@ class NameCaptainsUseCase {
 
   /**
    * @param {string} competitionId
-   * @param {{teamA: string, teamB: string}} capitanes - Los userId de los dos
+   * @param {{teamA?: string, teamB?: string}} [capitanes] - Los userId de los dos; sin alguno, lanza
    * @returns {Promise<{id, status, captains: {teamA, teamB}, totalPlayers, unevenTeams}>}
    */
   async execute(competitionId, { teamA, teamB } = {}) {

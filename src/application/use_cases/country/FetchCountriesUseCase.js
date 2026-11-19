@@ -1,3 +1,5 @@
+/** @typedef {import('../../../domain/repositories/ICountryRepository').default} ICountryRepository */
+
 /**
  * Fetch Countries Use Case
  * Retrieves all active countries for competition creation

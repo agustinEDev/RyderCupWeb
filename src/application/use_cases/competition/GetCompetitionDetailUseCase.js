@@ -1,5 +1,7 @@
 import CompetitionAssembler from '../../assemblers/CompetitionAssembler';
 
+/** @typedef {import('../../../domain/repositories/ICompetitionRepository').ICompetitionRepository} ICompetitionRepository */
+
 /**
  * Use Case: Get Competition Detail
  *

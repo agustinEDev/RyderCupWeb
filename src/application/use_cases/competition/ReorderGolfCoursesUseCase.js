@@ -1,3 +1,5 @@
+/** @typedef {import('../../../domain/repositories/ICompetitionRepository').ICompetitionRepository} ICompetitionRepository */
+
 /**
  * Use Case: Reorder Golf Courses in Competition
  *

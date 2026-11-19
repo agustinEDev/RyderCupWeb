@@ -1,6 +1,8 @@
 import Email from '../../../domain/value_objects/Email';
 import Password from '../../../domain/value_objects/Password';
 
+/** @typedef {import('../../../domain/repositories/IAuthRepository').default} IAuthRepository */
+
 class LoginUseCase {
   /**
    * @param {Object} dependencies - Objeto de dependencias.
@@ -14,7 +16,8 @@ class LoginUseCase {
    * Ejecuta el caso de uso para el login del usuario.
    * @param {string} emailString - El email del usuario como cadena de texto.
    * @param {string} passwordString - La contraseña del usuario como cadena de texto. // Renombrado
-   * @returns {Promise<import('../../../domain/entities/User').default>} El objeto User autenticado.
+   * @returns {Promise<{user: import('../../../domain/entities/User').default, csrfToken: string}>} El
+   *   usuario autenticado y el token CSRF.
    */
   async execute(emailString, passwordString) {
     // Renombrado 'password' a 'passwordString'

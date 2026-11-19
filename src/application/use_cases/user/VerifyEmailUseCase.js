@@ -1,3 +1,5 @@
+/** @typedef {import('../../../domain/repositories/IAuthRepository').default} IAuthRepository */
+
 class VerifyEmailUseCase {
   /**
    * @param {Object} dependencies - Objeto de dependencias.

@@ -1,5 +1,8 @@
 import { enviarReporteDeHoyo } from './enviarReporteDeHoyo';
 
+/** @typedef {import('../../../domain/repositories/IGolfCourseRepository').default} IGolfCourseRepository */
+/** @typedef {import('../../../domain/repositories/IHoleReportStore').default} IHoleReportStore */
+
 const esPunto = (p) =>
   Boolean(p) && Number.isFinite(p.lat) && Number.isFinite(p.lon);
 
@@ -11,15 +14,16 @@ const esPunto = (p) =>
  * Va a la cola del móvil antes de nada: sin cobertura se queda ahí y sale sola
  * cuando vuelva (R5). El `id` lo pone el mapa: el mismo reporte enviado otra vez
  * sustituye al de la cola, y en el servidor cuenta una vez.
- *
- * @param {Object} dependencies
- * @param {IGolfCourseRepository} dependencies.golfCourseRepository
- * @param {IHoleReportStore} dependencies.holeReportStore
- * @param {Function} [dependencies.ahora] - la hora, en ISO con zona
- * @param {Function} [dependencies.reportarFallo] - avisa de un fallo nuestro (a Sentry)
- * @param {Set} [dependencies.enVuelo] - los que van de camino, compartido con el vaciado de la cola
  */
 class SendHoleReportUseCase {
+  /**
+   * @param {Object} dependencies
+   * @param {IGolfCourseRepository} dependencies.golfCourseRepository
+   * @param {IHoleReportStore} dependencies.holeReportStore
+   * @param {() => string} [dependencies.ahora] - la hora, en ISO con zona
+   * @param {(error: Error, contexto?: Object) => void} [dependencies.reportarFallo] - avisa de un fallo nuestro (a Sentry)
+   * @param {Set<string>} [dependencies.enVuelo] - los que van de camino, compartido con el vaciado de la cola
+   */
   constructor({
     golfCourseRepository,
     holeReportStore,

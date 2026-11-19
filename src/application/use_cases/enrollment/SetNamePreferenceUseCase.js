@@ -1,5 +1,7 @@
 import EnrollmentAssembler from '../../assemblers/EnrollmentAssembler';
 
+/** @typedef {import('../../../domain/repositories/IEnrollmentRepository').default} IEnrollmentRepository */
+
 /**
  * Use Case: Set Name Preference (FE #571, backend en BE #254)
  *

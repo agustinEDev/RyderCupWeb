@@ -1,5 +1,7 @@
 import EnrollmentAssembler from '../../assemblers/EnrollmentAssembler';
 
+/** @typedef {import('../../../domain/repositories/IEnrollmentRepository').default} IEnrollmentRepository */
+
 /**
  * Use Case: List Enrollments
  *
@@ -39,10 +41,10 @@ class ListEnrollmentsUseCase {
    * Ejecutar caso de uso
    *
    * @param {string} competitionId - UUID de la competición
-   * @param {Object} filters - Filtros opcionales
-   * @param {string} filters.status - Filtrar por estado
-   * @param {string} filters.userId - Filtrar por usuario
-   * @param {string} filters.teamId - Filtrar por equipo
+   * @param {Object} [filters] - Filtros opcionales
+   * @param {string} [filters.status] - Filtrar por estado
+   * @param {string} [filters.userId] - Filtrar por usuario
+   * @param {string} [filters.teamId] - Filtrar por equipo
    * @returns {Promise<Array<Object>>} Array de DTOs simples
    * @throws {Error} Si falla la operación
    */

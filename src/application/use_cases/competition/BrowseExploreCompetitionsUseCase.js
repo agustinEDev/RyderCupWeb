@@ -3,6 +3,8 @@
 import CompetitionAssembler from '../../assemblers/CompetitionAssembler';
 import { CompetitionStatusEnum } from '../../../domain/value_objects/CompetitionStatus';
 
+/** @typedef {import('../../../domain/repositories/ICompetitionRepository').ICompetitionRepository} ICompetitionRepository */
+
 /**
  * Use case for browsing competitions that are in progress, closed, or completed.
  *
@@ -38,11 +40,11 @@ class BrowseExploreCompetitionsUseCase {
   /**
    * Execute the use case to get explorable competitions.
    *
-   * @param {object} filters - Optional search filters
-   * @param {string} filters.searchName - Search by competition name (partial match)
-   * @param {string} filters.searchCreator - Search by creator name (partial match)
-   * @param {number} filters.limit - Maximum number of results (default: 50)
-   * @param {number} filters.offset - Pagination offset (default: 0)
+   * @param {object} [filters] - Optional search filters
+   * @param {string} [filters.searchName] - Search by competition name (partial match)
+   * @param {string} [filters.searchCreator] - Search by creator name (partial match)
+   * @param {number} [filters.limit] - Maximum number of results (default: 50)
+   * @param {number} [filters.offset] - Pagination offset (default: 0)
    * @returns {Promise<object[]>} Array of competition DTOs
    *
    * @example

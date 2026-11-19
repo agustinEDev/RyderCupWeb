@@ -1,6 +1,8 @@
 import Email from '../../../domain/value_objects/Email';
 import Password from '../../../domain/value_objects/Password';
 
+/** @typedef {import('../../../domain/repositories/IUserRepository').default} IUserRepository */
+
 class UpdateUserSecurityUseCase {
   /**
    * @param {Object} dependencies - Objeto de dependencias.
@@ -25,6 +27,9 @@ class UpdateUserSecurityUseCase {
       throw new Error('User ID and security data are required');
     }
 
+    // Llegan cadenas y al repositorio van sus value objects (Email, Password):
+    // el mismo objeto cambia de forma, de ahí el tipo abierto
+    /** @type {Record<string, any>} */
     const dataToUpdate = { ...securityData };
 
     // Si existe new_email, convertirlo a Email Value Object

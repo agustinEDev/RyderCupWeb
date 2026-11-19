@@ -2,6 +2,8 @@ import { nombreVisible } from '../../utils/nombreVisible';
 import { getCountryFlag } from '../../utils/countryUtils';
 import { Modality } from '../../domain/value_objects/Modality';
 
+/** @typedef {import('../../domain/entities/Competition').default} Competition */
+
 // Un jugador de la actualización de hándicaps: el que falta por preguntar y el
 // que se quedó sin actualizar llegan igual
 const aJugadorDeLaActualizacion = (p) => ({ userId: p.user_id, name: p.name });
