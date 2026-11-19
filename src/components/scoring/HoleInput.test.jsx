@@ -1514,6 +1514,46 @@ describe('HoleInput · caracterización (partir el componente)', () => {
     },
   );
 
+  it('en un desacuerdo sin el número del otro todavía, no dice qué puso', () => {
+    render(
+      <HoleInput
+        {...props}
+        onScoreChange={vi.fn()}
+        validationStatus="mismatch"
+        markedValidationStatus="mismatch"
+        playerScore={{ markerScore: 6, markerSubmitted: false }}
+        markedPlayerScore={{ ownScore: 5, ownSubmitted: false }}
+        secondMarked={{
+          ...dani,
+          validationStatus: 'mismatch',
+          playerScore: { ownScore: 7, ownSubmitted: false },
+        }}
+        onSecondMarkedChange={vi.fn()}
+      />,
+    );
+
+    expect(screen.queryByTestId('lo-que-puso-el-otro-own')).toBeNull();
+    expect(screen.queryByTestId('lo-que-puso-el-otro-marked')).toBeNull();
+    expect(screen.queryByTestId('lo-que-puso-el-otro-second')).toBeNull();
+  });
+
+  it('sin nadie a quien marcar, el desacuerdo ocupa una sola columna', () => {
+    render(
+      <HoleInput
+        {...props}
+        onScoreChange={vi.fn()}
+        marksSomeone={false}
+        validationStatus="mismatch"
+        playerScore={{ markerScore: 6, markerSubmitted: true }}
+      />,
+    );
+
+    // Tu etiqueta, tu hueco y lo que puso tu marcador: nada de la otra columna
+    const huecos = screen.getByTestId('huecos-del-hoyo');
+    expect(huecos.children).toHaveLength(3);
+    expect(huecos.children[2]).toHaveTextContent('input.otherPut');
+  });
+
   it('el pie: un neto de 0 se enseña (no es «sin neto»)', () => {
     render(<HoleInput {...props} onScoreChange={vi.fn()} netScore={0} />);
 
