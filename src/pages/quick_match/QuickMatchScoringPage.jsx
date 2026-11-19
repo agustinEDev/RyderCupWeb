@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { barraDe } from '../../domain/services/muestrasDeLaBarra';
 import { permiteLaRaya } from '../../domain/services/permiteLaRaya';
 import { useParams, useNavigate } from 'react-router';
 import { useTranslation } from 'react-i18next';
@@ -13,7 +12,7 @@ import AvisoSinActualizarRapida from '../../components/quick_match/AvisoSinActua
 import ErrorDeCargaRapida from '../../components/quick_match/ErrorDeCargaRapida';
 import DialogosDePartidaRapida from '../../components/quick_match/DialogosDePartidaRapida';
 import PestanaDeAnotarRapida from '../../components/quick_match/PestanaDeAnotarRapida';
-import CampoDeLaPartida from '../../components/scoring/CampoDeLaPartida';
+import CabeceraDePartidaRapida from '../../components/quick_match/CabeceraDePartidaRapida';
 import PestanaDeClasificacionRapida from '../../components/quick_match/PestanaDeClasificacionRapida';
 import QuickMatchScorecardTable from '../../components/quick_match/QuickMatchScorecardTable';
 import BlockLoader from '../../components/ui/BlockLoader';
@@ -32,7 +31,12 @@ import {
 } from '../../hooks/useNavegacionYCierreRapida';
 import { casillasDelHoyo } from '../../utils/casillasDelHoyo';
 import { PESTANAS_DE_LA_RAPIDA } from '../../utils/pestanasDeLaAnotacion';
-import { isFreePlay } from '../../domain/value_objects/ScoringFormat';
+import {
+  cierreDeLaRapida,
+  discrepanciaEnPantalla,
+  hoyosPerdidosDe,
+  participacionEnLaRapida,
+} from '../../utils/estadoDeLaAnotacionRapida';
 
 const TABS = PESTANAS_DE_LA_RAPIDA;
 
@@ -102,47 +106,30 @@ const QuickMatchScoringPage = () => {
     pais: courseCountryCode ?? null,
   });
 
-  // De una en una: dos avisos superpuestos no se pueden usar, y la siguiente
-  // no se pierde porque el hook la mantiene en la lista hasta resolverla
-  const discrepancia = discrepancias?.[0] ?? null;
-  // El conflicto lo destapa el sondeo, no un toque del jugador, así que puede
-  // aparecer con otro aviso ya abierto. Espera su turno: dos ventanas a la
-  // misma altura se tapan, y el foco guardado para volver se perdería
-  // Si el grupo entero se anota desde este móvil —lo normal en un cuarteto con
-  // invitados— no falta nada de nadie: la clasificación está completa, así que
-  // ni se avisa ni se le quita el puesto a nadie
-  // Mi barra (color y sexo): las muestras del mapa de hoyos van por barra (16 oct)
-  const yoEnLaPartida = (quickMatch?.participants ?? []).find(
-    (p) => p.userId && p.userId === user?.id,
+  // Mi barra, juego libre y si faltan datos de otros para la clasificación
+  const { miBarra, esJuegoLibre, faltanDatosDeOtros } = participacionEnLaRapida(
+    { quickMatch, userId: user?.id, coveredParticipantIds, pendientes },
   );
-  const miBarra = barraDe(yoEnLaPartida);
-  const hayQuienNoAnoto = (quickMatch?.participants ?? []).some(
-    (p) => !coveredParticipantIds.includes(p.participantId),
-  );
-  const esJuegoLibre = isFreePlay(quickMatch?.scoringFormat);
-  const faltanDatosDeOtros = pendientes > 0 && hayQuienNoAnoto;
-
-  const hayDiscrepancia =
-    discrepancia != null && !showCancelConfirm && !showFinishConfirm;
-  const jugadorEnDisputa = discrepancia
-    ? quickMatch?.participants?.find(
-        (p) => p.participantId === discrepancia.participantId,
-      )
-    : null;
-  // Una bola recogida llega sin número y significa lo contrario que no tener
-  // anotación: sin esto los botones leían «Poner el mío ()»
-  const comoSeLee = (valor) =>
-    valor === null || valor === undefined
-      ? t('scoring.offline.pickedUp')
-      : valor;
+  // El desacuerdo que se enseña ahora: de uno en uno y esperando su turno
+  const {
+    discrepancia,
+    hayDiscrepancia,
+    jugadorEnDisputa,
+    comoSeLee,
+    nombreDelAnotador,
+  } = discrepanciaEnPantalla({
+    discrepancias,
+    quickMatch,
+    showCancelConfirm,
+    showFinishConfirm,
+    t,
+  });
 
   // Sin cobertura no es un error; un fallo con estado, sí
   const { sinConexion, sondeoSinRespuesta, errorDeVerdad } =
     useSinConexionDeLaRapida({ loadError, saveError, pintadoDeMemoria });
 
-  const hoyosPerdidos = [
-    ...new Set((perdidos ?? []).map((x) => x.holeNumber)),
-  ].sort((a, b) => a - b);
+  const hoyosPerdidos = hoyosPerdidosDe(perdidos);
 
   const avisoDePendientes = (
     <AvisoDePendientesRapida
@@ -152,11 +139,6 @@ const QuickMatchScoringPage = () => {
       pendientes={pendientes}
     />
   );
-  const nombreDelAnotador = discrepancia
-    ? quickMatch?.participants?.find(
-        (p) => p.participantId === discrepancia.anotadoPor,
-      )?.name
-    : null;
 
   // El foco de los avisos y su tecla Escape
   const { cancelDialogRef, finishDialogRef, discrepanciaDialogRef, tabsRef } =
@@ -228,22 +210,8 @@ const QuickMatchScoringPage = () => {
   // permite expresamente: Stableford y match play
   const allowsPickedUp = permiteLaRaya(quickMatch);
 
-  // `isCancelled` cuenta igual que `isCompleted`: la partida ya no admite
-  // anotaciones. Sin el, la pantalla seguia viva y cada guardado se estrellaba
-  // contra un 409 que se traduce como «vuelve a cargarla» —y recargar no la
-  // resucita, asi que el usuario se queda reintentando para siempre—.
-  // `isSubmitting` NO entra aquí: dejaba la casilla de solo lectura mientras
-  // el golpe estaba de camino, y sin cobertura eso son los diez segundos que
-  // el móvil tarda en rendirse. El jugador que anotaba un hoyo no podía anotar
-  // el siguiente hasta que la petición del anterior muriera (FE #564).
-  // Bloquear ya no protege de nada: el golpe se guarda antes de enviarse
-  // (FE #561) y el hook serializa los envíos, así que una anotación que llega
-  // con otra en vuelo se guarda y sale en el vaciado siguiente
-  const isReadOnly =
-    !isScorer || quickMatch?.isCompleted || quickMatch?.isCancelled;
-
-  // El sondeo puede cerrar la partida mientras el aviso esta abierto
-  const yaCerrada = !!quickMatch?.isCompleted || !!quickMatch?.isCancelled;
+  // Solo lectura y ya cerrada: terminada o anulada no admite anotaciones
+  const { isReadOnly, yaCerrada } = cierreDeLaRapida(quickMatch, isScorer);
 
   const {
     handleScoreChange,
@@ -302,39 +270,11 @@ const QuickMatchScoringPage = () => {
           &larr; {t('scoring.backToMyQuickMatches')}
         </button>
 
-        <div className="flex items-center justify-between gap-3 mb-4">
-          {/* min-w-0: sin él, un nombre de campo largo no se recorta y la cabecera se sale */}
-          <div className="min-w-0 flex-1">
-            <h1 className="text-xl font-bold text-gray-900">
-              {quickMatch?.name || t('scoring.matchHeader')}
-            </h1>
-            <p className="text-sm text-gray-500">
-              {quickMatch?.name ? `${t('scoring.matchHeader')} · ` : ''}
-              {(quickMatch?.matchFormat ?? quickMatch?.scoringFormat) &&
-                t(
-                  `history.format.${quickMatch.matchFormat ?? quickMatch.scoringFormat}`,
-                  quickMatch.matchFormat ?? quickMatch.scoringFormat,
-                )}
-            </p>
-            <CampoDeLaPartida nombre={courseName} />
-          </div>
-          {quickMatch?.isCompleted && (
-            <span className="shrink-0 text-sm font-medium text-green-700 bg-green-100 px-2.5 py-1 rounded-full">
-              {t('scoring.finish.completed')}
-            </span>
-          )}
-          {/* El resto del grupo no vio el aviso: se entera por aqui, cuando el
-              sondeo traiga el estado nuevo. Sin esto su pantalla quedaba
-              exactamente igual que antes de cancelarse la partida. */}
-          {quickMatch?.isCancelled && (
-            <span
-              data-testid="quick-match-cancelled-badge"
-              className="text-sm font-medium text-red-700 bg-red-100 px-2.5 py-1 rounded-full"
-            >
-              {t('history.status.CANCELLED')}
-            </span>
-          )}
-        </div>
+        <CabeceraDePartidaRapida
+          t={t}
+          quickMatch={quickMatch}
+          courseName={courseName}
+        />
 
         <GrupoDePestanas actual={activeTab} onElegir={setActiveTab}>
           {/* Su pestaña abierta recibe el foco al cerrarse un aviso cuyo botón ya no existe */}
