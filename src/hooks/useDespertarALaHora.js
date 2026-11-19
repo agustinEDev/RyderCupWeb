@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 
 // `setTimeout` no aguanta más de 2^31-1 ms: pasado eso dispara INMEDIATAMENTE y
-// en bucle. Una ronda a más de 24 días vista no necesita despertar a nadie
+// en bucle. Más lejos se encadena: se espera el máximo y se vuelve a calcular
 const MAXIMO_TEMPORIZADOR_MS = 2 ** 31 - 1;
 
 /**
@@ -20,9 +20,18 @@ export const useDespertarALaHora = (hora) => {
   const instante = hora ? hora.getTime() : null;
   useEffect(() => {
     if (instante === null) return undefined;
-    const falta = instante - Date.now();
-    if (falta <= 0 || falta > MAXIMO_TEMPORIZADOR_MS) return undefined;
-    const aviso = setTimeout(() => marcaLaHora((n) => n + 1), falta + 1000);
+    let aviso;
+    // Con el efecto atado al instante ya no hay renders que lo rearmen: a más
+    // de 24 días vista se espera el máximo y se vuelve a mirar (CodeRabbit #1204)
+    const armar = () => {
+      const falta = instante - Date.now() + 1000;
+      if (falta <= 1000) return;
+      aviso =
+        falta > MAXIMO_TEMPORIZADOR_MS
+          ? setTimeout(armar, MAXIMO_TEMPORIZADOR_MS)
+          : setTimeout(() => marcaLaHora((n) => n + 1), falta);
+    };
+    armar();
     return () => clearTimeout(aviso);
   }, [instante]);
 };

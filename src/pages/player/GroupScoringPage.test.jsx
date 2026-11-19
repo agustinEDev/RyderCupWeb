@@ -1572,7 +1572,7 @@ describe('GroupScoringPage: lo que no cambia al partirla', () => {
     expect(screen.getByTestId('hole-input')).toBeInTheDocument();
   });
 
-  it('«aún no abre» más allá de lo que aguanta un temporizador: no se programa', () => {
+  it('«aún no abre» más allá de lo que aguanta un temporizador: se encadena y abre a su hora (CodeRabbit #1204)', () => {
     vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'Date'] });
     vi.setSystemTime(new Date('2030-05-01T10:00:00Z'));
     const MAXIMO = 2 ** 31 - 1;
@@ -1584,7 +1584,9 @@ describe('GroupScoringPage: lo que no cambia al partirla', () => {
     });
     render(<GroupScoringPage />);
 
-    act(() => vi.advanceTimersByTime(MAXIMO + 5000));
+    act(() => vi.advanceTimersByTime(MAXIMO - 1));
     expect(screen.queryByTestId('hole-input')).toBeNull();
+    act(() => vi.advanceTimersByTime(5000));
+    expect(screen.getByTestId('hole-input')).toBeInTheDocument();
   });
 });
