@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import { barraDe } from '../../domain/services/muestrasDeLaBarra';
 import { permiteLaRaya } from '../../domain/services/permiteLaRaya';
 import { useParams, useNavigate } from 'react-router';
@@ -13,7 +13,6 @@ import PestanaDeAnotarRapida from '../../components/quick_match/PestanaDeAnotarR
 import CampoDeLaPartida from '../../components/scoring/CampoDeLaPartida';
 import PestanaDeClasificacionRapida from '../../components/quick_match/PestanaDeClasificacionRapida';
 import QuickMatchScorecardTable from '../../components/quick_match/QuickMatchScorecardTable';
-import PersonalRoundCalculator from '../../domain/services/PersonalRoundCalculator';
 import BlockLoader from '../../components/ui/BlockLoader';
 import AnotarSinConexion from '../../components/scoring/AnotarSinConexion';
 import {
@@ -23,6 +22,7 @@ import {
 } from '../../components/ui/Pestanas';
 import { useSinConexion } from '../../hooks/useSinConexion';
 import { useAnotacionEnCurso } from '../../hooks/useAnotacionEnCurso';
+import { useMiVueltaRapida } from '../../hooks/useMiVueltaRapida';
 import { useFocoDeLosDialogos } from '../../hooks/useFocoDeLosDialogos';
 import { casillasDelHoyo } from '../../utils/casillasDelHoyo';
 import {
@@ -78,41 +78,14 @@ const QuickMatchScoringPage = () => {
     resuelveDiscrepancia,
   } = useQuickMatchScoring(quickMatchId, user?.id);
 
-  // «Tu vuelta» (21 oct): el acumulado neto de quien anota con SU hándicap de
-  // juego, sobre lo visible —lo pendiente de enviar incluido—. En foursomes
-  // sale null: una bola por bando, no hay vuelta propia. En un useMemo y aquí
-  // arriba, antes de las salidas tempranas: es un hook, y la pantalla se pinta
-  // de nuevo con cada sondeo aunque no cambie ningún golpe
-  const participants = quickMatch?.participants;
-  const participantStrokes = quickMatch?.participantStrokes;
-  const matchFormat = quickMatch?.matchFormat ?? null;
-  const effectiveAllowance = quickMatch?.effectiveAllowance ?? null;
-  const playMode = quickMatch?.playMode ?? 'HANDICAP';
-  const myRound = useMemo(
-    () =>
-      PersonalRoundCalculator.runningResult({
-        me: myParticipant,
-        participants: participants ?? [],
-        holes,
-        holeScores: holeScoresVisibles,
-        tees,
-        participantStrokes: participantStrokes ?? [],
-        matchFormat,
-        allowancePercentage: effectiveAllowance,
-        playMode,
-      }),
-    [
-      myParticipant,
-      participants,
-      holes,
-      holeScoresVisibles,
-      tees,
-      participantStrokes,
-      matchFormat,
-      effectiveAllowance,
-      playMode,
-    ],
-  );
+  // «Tu vuelta»: aquí arriba, antes de las salidas tempranas (es un hook)
+  const myRound = useMiVueltaRapida({
+    quickMatch,
+    myParticipant,
+    holes,
+    holeScoresVisibles,
+    tees,
+  });
   // El mapa del hoyo (BE #532): «Mapa» en la tarjeta lo abre a pantalla completa
   // El mapa, cuando ya llegó el campo (sus hoyos) y con él su país: antes,
   // fuera de España se pedía para nada (CodeRabbit)
@@ -280,8 +253,6 @@ const QuickMatchScoringPage = () => {
   // así que ahí la raya ni se ofrece —y el backend la rechaza—. Solo donde se
   // permite expresamente: Stableford y match play
   const allowsPickedUp = permiteLaRaya(quickMatch);
-
-  // «Tu vuelta»: calculada arriba, antes de las salidas tempranas (es un hook)
 
   // `isCancelled` cuenta igual que `isCompleted`: la partida ya no admite
   // anotaciones. Sin el, la pantalla seguia viva y cada guardado se estrellaba
