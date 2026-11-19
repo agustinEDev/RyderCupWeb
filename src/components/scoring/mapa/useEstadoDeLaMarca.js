@@ -7,38 +7,6 @@ const faseInicial = (marcandoSalida, porMarcar) => {
 };
 
 /**
- * La salida que se pinta mientras se pide el green: la recién tocada o, pidiendo
- * solo el green, la aprobada (para ver desde dónde se mide). Reportando, la que
- * se propone.
- */
-export const salidaQueSePinta = ({
-  reporte,
-  pidiendo,
-  marca,
-  marcandoSalida,
-  hoyo,
-}) => {
-  if (reporte?.fase === 'green') return reporte.tee;
-  if (!pidiendo) return null;
-  return marca.tee ?? (marcandoSalida ? null : (hoyo?.playLine?.[0] ?? null));
-};
-
-// «⋮», solo en un hoyo con línea y sin marcar otra cosa (la pregunta de la
-// salida solo sale en un hoyo sin línea)
-export const sePuedeReportar = ({
-  onReporte,
-  sinMapa,
-  hoyo,
-  reporte,
-  pidiendo,
-}) =>
-  Boolean(onReporte) &&
-  !sinMapa &&
-  (hoyo?.playLine?.length ?? 0) >= 2 &&
-  !reporte &&
-  !pidiendo;
-
-/**
  * El estado de marcar el hoyo y de reportarlo: en qué fase va la marca, el aviso,
  * si se mide desde ti (tras el «No» o a mitad de hoyo), lo que se decide con el
  * primer GPS bueno y el reporte en curso. Solo estado: lo que hacen los botones

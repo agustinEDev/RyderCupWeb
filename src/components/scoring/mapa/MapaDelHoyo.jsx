@@ -26,11 +26,8 @@ import { useEncuadreDelHoyo } from './useEncuadreDelHoyo';
 import { useMapaDeMapLibre } from './useMapaDeMapLibre';
 import { useGpsDelHoyo } from './useGpsDelHoyo';
 import { decidirConElGps, useLineaQueSeVe } from './useLineaQueSeVe';
-import {
-  salidaQueSePinta,
-  sePuedeReportar,
-  useEstadoDeLaMarca,
-} from './useEstadoDeLaMarca';
+import { useEstadoDeLaMarca } from './useEstadoDeLaMarca';
+import { salidaQueSePinta, sePuedeReportarElHoyo } from './reglasDelMapa';
 import {
   avisoDelGps,
   loQueSeAnuncia,
@@ -539,7 +536,7 @@ const MapaDelHoyo = ({
     },
   );
 
-  const conReporte = sePuedeReportar({
+  const sePuedeReportar = sePuedeReportarElHoyo({
     onReporte,
     sinMapa,
     hoyo,
@@ -598,7 +595,7 @@ const MapaDelHoyo = ({
         arribaRef={arribaRef}
         numeroDeHoyo={numeroDeHoyo}
         par={par}
-        sePuedeReportar={conReporte}
+        sePuedeReportar={sePuedeReportar}
         botonDeReportarRef={botonDeReportarRef}
         onReportar={abrirElMenu}
         onCerrar={onCerrar}
