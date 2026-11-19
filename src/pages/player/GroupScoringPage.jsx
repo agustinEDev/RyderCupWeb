@@ -38,11 +38,11 @@ import {
 import {
   candadosDeLaCasilla,
   estadoDeEntregaDeLaPartida,
-  hoyosNoGuardadosDe,
   motivoDelFalloDeCarga,
   nombreDe,
   rolesEnLaPartida,
 } from '../../utils/lecturaDeLaPartida';
+import { hoyosNoGuardadosDe } from '../../utils/lecturaDelHoyo';
 
 // Quien juega anota; quien no, mira las tarjetas y la clasificación (caso 13)
 const PESTANAS_DEL_JUGADOR = PESTANAS_DE_LA_PARTIDA_DEL_JUGADOR;

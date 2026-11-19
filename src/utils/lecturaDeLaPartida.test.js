@@ -4,7 +4,6 @@ import {
   rolesEnLaPartida,
   candadosDeLaCasilla,
   estadoDeEntregaDeLaPartida,
-  hoyosNoGuardadosDe,
   motivoDelFalloDeCarga,
   textoDelFalloDeLaPartida,
   nombreDe,
@@ -188,13 +187,6 @@ describe('estadoDeEntregaDeLaPartida', () => {
     [{ hasSubmitted: true, cerradaSinEntregar: true }, null],
   ])('%o → %s', (extra, esperado) => {
     expect(estadoDeEntregaDeLaPartida({ ...base, ...extra })).toBe(esperado);
-  });
-});
-
-describe('los no guardados', () => {
-  it('los hoyos no guardados, en orden numérico', () => {
-    expect(hoyosNoGuardadosDe({ 12: {}, 3: {}, 1: {} })).toEqual([1, 3, 12]);
-    expect(hoyosNoGuardadosDe({})).toEqual([]);
   });
 });
 

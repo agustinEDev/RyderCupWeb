@@ -6,6 +6,19 @@ import { rivalDe } from './golpesDelHoyo';
 import { MatchFormat } from '../domain/value_objects/MatchFormat';
 
 /**
+ * Los números de los hoyos que no se pudieron guardar, en orden numérico (el
+ * 12 detrás del 3). `noGuardados` va por número de hoyo, así que sus claves
+ * son texto.
+ *
+ * @param {Object<string, unknown>} noGuardados
+ * @returns {number[]}
+ */
+export const hoyosNoGuardadosDe = (noGuardados) =>
+  Object.keys(noGuardados)
+    .map(Number)
+    .sort((a, b) => a - b);
+
+/**
  * Los hoyos que no se pudieron guardar, en orden (FE #622). Los que ya no se
  * pueden anotar —sin permiso, o con bloqueados los golpes que se perdieron— no
  * piden volver a anotarlos, que sería pedir algo imposible: van en otra frase.
@@ -18,9 +31,7 @@ export const hoyosSinGuardar = ({
   isOwnScoreLocked,
   marcaBloqueadaPara,
 }) => {
-  const hoyosNoGuardados = Object.keys(noGuardados)
-    .map(Number)
-    .sort((a, b) => a - b);
+  const hoyosNoGuardados = hoyosNoGuardadosDe(noGuardados);
   // Cada marca, con el bloqueo de SU rival: quien marca a dos las nombra con él
   // y puede tener uno entregado y el otro no. A quien ya no marca (se deshizo
   // la retirada) no se le puede volver a anotar (26 oct 2026)

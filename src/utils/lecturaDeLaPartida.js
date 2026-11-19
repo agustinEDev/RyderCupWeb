@@ -136,12 +136,6 @@ export const estadoDeEntregaDeLaPartida = ({
   return partidoAcabado ? 'faltaValidar' : null;
 };
 
-/** Los hoyos que no se pudieron guardar, en orden. */
-export const hoyosNoGuardadosDe = (noGuardados) =>
-  Object.keys(noGuardados)
-    .map(Number)
-    .sort((a, b) => a - b);
-
 const CLAVE_POR_ESTADO = { 403: 'errors.forbidden', 404: 'errors.notFound' };
 const CLAVE_POR_ACCION = {
   golpe: 'errors.failedToSubmitScore',
