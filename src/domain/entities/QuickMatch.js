@@ -2,6 +2,7 @@ import QuickMatchStatus from '../value_objects/QuickMatchStatus';
 import { isValidMatchFormat } from '../value_objects/MatchFormat';
 import { isValidScoringFormat } from '../value_objects/ScoringFormat';
 
+import { PlayModeType } from '../value_objects/HandicapSettings';
 const MAX_NAME_LENGTH = 100;
 
 /**
@@ -44,7 +45,7 @@ class QuickMatch {
     scoringFormat = null,
     allowancePercentage = null,
     effectiveAllowance = 100,
-    playMode = 'HANDICAP',
+    playMode = PlayModeType.HANDICAP,
     participantStrokes = [],
     status,
     name = null,
@@ -164,7 +165,7 @@ class QuickMatch {
   }
 
   usesHandicap() {
-    return this.#playMode !== 'SCRATCH';
+    return this.#playMode !== PlayModeType.SCRATCH;
   }
 
   get status() {

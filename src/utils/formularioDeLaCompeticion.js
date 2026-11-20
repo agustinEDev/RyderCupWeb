@@ -5,6 +5,7 @@ import { CUPO_POR_DEFECTO } from './cupoDeJugadores';
 import { formularioDeAjustes, separadorDecimal } from './ajustesDeStrokePlay';
 
 import { TournamentType } from '../domain/value_objects/TournamentType';
+import { PlayModeType } from '../domain/value_objects/HandicapSettings';
 /**
  * El formulario de crear o editar una competición: cómo nace, cómo se rellena
  * al editar y qué le pasa al cambiar de país. Sin React: lo usa la página.
@@ -112,7 +113,7 @@ export const formularioInicial = (equipos) => ({
   golfCourses: [],
 
   // RyderCup Settings
-  playMode: 'HANDICAP',
+  playMode: PlayModeType.HANDICAP,
   visibility: 'PRIVATE',
   numberOfPlayers: CUPO_POR_DEFECTO,
   // Cuánto monta la app por su cuenta (FE #695). Al crear se elige en su paso;
@@ -153,7 +154,7 @@ export const formularioDeLaEdicion = (
     showAdjacentCountry1: !!datos.adjacentCountry1,
     showAdjacentCountry2: !!datos.adjacentCountry2,
     golfCourses: datos.golfCoursesData,
-    playMode: competition.playMode || 'HANDICAP',
+    playMode: competition.playMode || PlayModeType.HANDICAP,
     visibility: competition.visibility || 'PRIVATE',
     numberOfPlayers: competition.maxPlayers || CUPO_POR_DEFECTO,
     tournamentType: competition.tournamentType || TournamentType.RYDER_CUP,

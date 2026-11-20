@@ -4,6 +4,7 @@ import apiRequest from '../http/api.js';
 import { TOPE_DE_ANOTAR_MS } from './topeDeAnotar';
 import { segmento } from '../http/api';
 
+import { PlayModeType } from '../../domain/value_objects/HandicapSettings';
 /**
  * ApiQuickMatchRepository - REST API implementation
  *
@@ -48,7 +49,7 @@ class ApiQuickMatchRepository extends IQuickMatchRepository {
         scoring_format: peticion.scoringFormat ?? null,
         name: peticion.name ?? null,
         allowance_percentage: peticion.allowancePercentage ?? null,
-        play_mode: peticion.playMode ?? 'HANDICAP',
+        play_mode: peticion.playMode ?? PlayModeType.HANDICAP,
         creator_tee_color: peticion.creatorTeeColor ?? null,
         creator_tee_gender: peticion.creatorTeeGender ?? null,
         creator_handicap: peticion.creatorHandicap ?? null,

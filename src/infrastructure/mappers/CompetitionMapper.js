@@ -4,7 +4,10 @@ import { CompetitionName } from '../../domain/value_objects/CompetitionName';
 import { DateRange } from '../../domain/value_objects/DateRange';
 import { Location } from '../../domain/value_objects/Location';
 import { CountryCode } from '../../domain/value_objects/CountryCode';
-import { HandicapSettings } from '../../domain/value_objects/HandicapSettings';
+import {
+  HandicapSettings,
+  PlayModeType,
+} from '../../domain/value_objects/HandicapSettings';
 import { TeamAssignment } from '../../domain/value_objects/TeamAssignment';
 import {
   CompetitionStatus,
@@ -51,7 +54,7 @@ class CompetitionMapper {
 
       // Map handicap settings (play_mode replaces handicap_type/handicap_percentage)
       const handicapSettings = new HandicapSettings(
-        apiData.play_mode || apiData.handicap_type || 'SCRATCH',
+        apiData.play_mode || apiData.handicap_type || PlayModeType.SCRATCH,
       );
 
       // Map team assignment. Si el torneo no tiene equipos, la entidad lo

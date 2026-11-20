@@ -15,6 +15,7 @@ import {
 } from '../../domain/value_objects/MatchFormat';
 import { ScoringFormat } from '../../domain/value_objects/ScoringFormat';
 
+import { PlayModeType } from '../../domain/value_objects/HandicapSettings';
 // El nombre lleva escrito «Campo · dd/mm» y sigue al campo hasta que alguien
 // escribe el suyo; vacío, viaja ese (Agustín, 4 nov 2026). Al repetir, uno de
 // por defecto no se copia: llevaría la fecha de aquella
@@ -83,7 +84,9 @@ export const useAjustesDelBorrador = (copia) => {
   );
   // Por defecto con hándicap: es como se juega normalmente, y el scratch es
   // la excepción que hay que pedir a propósito.
-  const [playMode, setPlayMode] = useState(copia?.playMode ?? 'HANDICAP');
+  const [playMode, setPlayMode] = useState(
+    copia?.playMode ?? PlayModeType.HANDICAP,
+  );
 
   const formato = loQueDiceElFormato(mode, matchFormat);
   const allowancePercentage = allowanceOverride ?? formato.defaultAllowance;

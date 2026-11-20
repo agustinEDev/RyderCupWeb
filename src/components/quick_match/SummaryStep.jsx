@@ -6,6 +6,7 @@ import {
 import { formatoDeIndice } from '../../utils/formatoDeHandicap';
 
 import { Team } from '../../domain/value_objects/Team';
+import { PlayModeType } from '../../domain/value_objects/HandicapSettings';
 /**
  * Wizard step 4: pre-start summary — course/format/play-mode recap,
  * per-participant handicap review/override, and the scorer list.
@@ -37,7 +38,7 @@ const SummaryStep = ({
   onClose,
   onStart,
 }) => {
-  const isScratch = playMode === 'SCRATCH';
+  const isScratch = playMode === PlayModeType.SCRATCH;
 
   // Se busca la salida entera, no solo color y género, porque el identificador
   // es parte del nombre: en un campo federado cuya salida amarilla se llama
