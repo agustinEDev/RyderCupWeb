@@ -93,7 +93,8 @@ describe('back links vs the header arrow', () => {
   const REDUNDANTES = [
     'src/pages/DeviceManagement.jsx',
     'src/pages/quick_match/MyQuickMatchesPage.jsx',
-    'src/pages/creator/SchedulePage.jsx',
+    // La cabecera de la agenda vive en su componente desde la pieza 4
+    'src/components/schedule/CabeceraDeLaAgenda.jsx',
     'src/pages/creator/InvitationsPage.jsx',
     'src/pages/CompetitionDetail.jsx',
   ];
