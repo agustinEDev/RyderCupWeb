@@ -9,11 +9,18 @@ import {
   franjaLlena,
   plazasLibres,
 } from '../../domain/services/PlazasEnFranjas';
+import TeeColor from '../../domain/value_objects/TeeColor';
 
 // Sin franjas: el mismo array siempre, para que el orden no se recalcule
 const SIN_FRANJAS = [];
 
-const TEE_CATEGORIES = ['WHITE', 'YELLOW', 'BLUE', 'RED', 'GREEN'];
+const TEE_CATEGORIES = [
+  TeeColor.WHITE,
+  TeeColor.YELLOW,
+  TeeColor.BLUE,
+  TeeColor.RED,
+  TeeColor.GREEN,
+];
 
 /**
  * @param {Object} props

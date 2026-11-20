@@ -20,6 +20,7 @@ import {
 import { mensajeDelError } from '../../utils/mensajeDelError';
 import { registraElFallo } from '../../utils/registraElFallo';
 import { Gender } from '../../domain/value_objects/Gender';
+import { CourseType } from '../../domain/value_objects/CourseType';
 
 // Los diez colores admitidos, ordenados de barras mas largas a mas cortas
 // segun el uso habitual. OTHER cubre las salidas cuyo nombre no es un color
@@ -49,7 +50,10 @@ const GolfCourseForm = ({ initialData = null, onSubmit, onCancel }) => {
     () => initialData?.countryCode || initialData?.country_code || '',
   );
   const [courseType, setCourseType] = useState(
-    () => initialData?.courseType || initialData?.course_type || 'STANDARD_18',
+    () =>
+      initialData?.courseType ||
+      initialData?.course_type ||
+      CourseType.STANDARD_18,
   );
 
   // Countries data
@@ -67,14 +71,14 @@ const GolfCourseForm = ({ initialData = null, onSubmit, onCancel }) => {
         }))
       : [
           {
-            color: 'WHITE',
+            color: TeeColor.WHITE,
             teeGender: null,
             identifier: '',
             courseRating: '',
             slopeRating: '',
           },
           {
-            color: 'YELLOW',
+            color: TeeColor.YELLOW,
             teeGender: null,
             identifier: '',
             courseRating: '',
@@ -158,7 +162,7 @@ const GolfCourseForm = ({ initialData = null, onSubmit, onCancel }) => {
     setTees([
       ...tees,
       {
-        color: 'YELLOW',
+        color: TeeColor.YELLOW,
         teeGender: null,
         identifier: '',
         courseRating: '',

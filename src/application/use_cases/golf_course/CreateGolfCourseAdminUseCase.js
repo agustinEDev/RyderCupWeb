@@ -6,6 +6,7 @@ import {
   isTeeCountValid,
   parRangeFor,
 } from '../../../domain/services/courseTypeRanges';
+import { CourseType } from '../../../domain/value_objects/CourseType';
 
 /** @typedef {import('../../../domain/entities/GolfCourse').default} GolfCourse */
 
@@ -46,7 +47,11 @@ class CreateGolfCourseAdminUseCase {
     }
 
     if (
-      !['STANDARD_18', 'PITCH_AND_PUTT', 'EXECUTIVE'].includes(data.courseType)
+      !(
+        /** @type {readonly string[]} */ (Object.values(CourseType)).includes(
+          data.courseType,
+        )
+      )
     ) {
       throw new Error('Invalid course type');
     }
