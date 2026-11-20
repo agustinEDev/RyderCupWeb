@@ -137,13 +137,6 @@ const PERMITIDOS = [
     veces: 1,
   },
   {
-    fichero: 'infrastructure/mappers/TeeGroupScoringMapper.js',
-    palabra: 'PENDING',
-    motivo:
-      'estado de validación del hoyo (validation status), no de la partida: queda para otra tanda',
-    veces: 1,
-  },
-  {
     fichero: 'pages/player/PlayerProfilePage.jsx',
     palabra: 'ACCEPTED',
     motivo: RELACION_DEL_PERFIL,

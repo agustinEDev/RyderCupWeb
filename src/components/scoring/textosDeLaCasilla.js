@@ -3,6 +3,8 @@
  * qué puso el otro. Funciones puras de `t` y los datos del hoyo.
  */
 
+import { ValidationStatus } from '../../domain/value_objects/ValidationStatus';
+
 /**
  * @param {(clave: string, opciones?: object) => string} t
  * @param {{ enParejas: boolean, markedName?: string | null, markerName?: string | null, nombreDelSegundo?: string | null }} datos
@@ -79,7 +81,7 @@ export const loQuePusoElOtro = (
 ) => ({
   own: loQuePusoUno(t, {
     enParejas,
-    hayDesacuerdo: validationStatus === 'mismatch',
+    hayDesacuerdo: validationStatus === ValidationStatus.MISMATCH,
     enviado: playerScore?.markerSubmitted,
     nombre: markerName,
     porDefecto: 'input.yourMarker',
@@ -87,7 +89,7 @@ export const loQuePusoElOtro = (
   }),
   marked: loQuePusoUno(t, {
     enParejas,
-    hayDesacuerdo: markedValidationStatus === 'mismatch',
+    hayDesacuerdo: markedValidationStatus === ValidationStatus.MISMATCH,
     enviado: markedPlayerScore?.ownSubmitted,
     nombre: markedName,
     porDefecto: 'input.theMarkedPlayer',
@@ -95,7 +97,7 @@ export const loQuePusoElOtro = (
   }),
   second: loQuePusoUno(t, {
     enParejas,
-    hayDesacuerdo: secondMarked?.validationStatus === 'mismatch',
+    hayDesacuerdo: secondMarked?.validationStatus === ValidationStatus.MISMATCH,
     enviado: secondMarked?.playerScore?.ownSubmitted,
     nombre: secondMarked?.name,
     porDefecto: 'input.theMarkedPlayer',

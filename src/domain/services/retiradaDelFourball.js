@@ -9,6 +9,7 @@
 
 import { MatchFormat } from '../value_objects/MatchFormat';
 import MatchStatus from '../value_objects/MatchStatus';
+import { ValidationStatus } from '../value_objects/ValidationStatus';
 
 const NADA = Object.freeze({
   pareja: null,
@@ -75,4 +76,5 @@ export const aQuienesMarco = (asignaciones, yo) => [
  * ya estaba validada (F6, como `BolasFuera.cuenta` en el backend).
  */
 export const cuentaLaBola = (fila, retirados) =>
-  !(retirados ?? []).includes(fila.userId) || fila.validationStatus === 'match';
+  !(retirados ?? []).includes(fila.userId) ||
+  fila.validationStatus === ValidationStatus.MATCH;

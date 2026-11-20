@@ -1,4 +1,5 @@
 import ValidationIcon from './ValidationIcon';
+import { ValidationStatus } from '../../domain/value_objects/ValidationStatus';
 
 /**
  * Cabecera de la casilla del hoyo: número, par, índice, golpes que se reciben
@@ -49,7 +50,7 @@ const CabeceraDelHoyo = ({
           </span>
         )}
       </div>
-      <ValidationIcon status={validationStatus || 'pending'} />
+      <ValidationIcon status={validationStatus || ValidationStatus.PENDING} />
     </div>
   );
 };

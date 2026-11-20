@@ -6,6 +6,7 @@ import {
   siguienteHueco as calculaSiguienteHueco,
 } from './golpeDeLaCasilla';
 import { loQuePusoElOtro } from './textosDeLaCasilla';
+import { ValidationStatus } from '../../domain/value_objects/ValidationStatus';
 
 const CLASES_DE_ETIQUETA =
   'min-w-0 break-words text-xs font-medium text-gray-500';
@@ -292,8 +293,8 @@ const HuecosDelHoyo = ({
         />
       )}
 
-      {(validationStatus === 'mismatch' ||
-        markedValidationStatus === 'mismatch') && (
+      {(validationStatus === ValidationStatus.MISMATCH ||
+        markedValidationStatus === ValidationStatus.MISMATCH) && (
         <AvisoDeDesacuerdo loQuePuso={loQuePuso} conMarcado={conMarcado} />
       )}
 
