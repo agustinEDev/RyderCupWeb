@@ -547,10 +547,7 @@ const MyQuickMatchesPage = () => {
           // que el grupo va a jugar, y quitarla deja al usuario sin forma de
           // volver a entrar. Lo que separa los dos avisos es si la partida
           // sigue su curso, no si ha empezado.
-          return [
-            QuickMatchStatus.PENDING,
-            QuickMatchStatus.IN_PROGRESS,
-          ].includes(pendiente?.status)
+          return QuickMatchStatus.isLive(pendiente?.status)
             ? t('history.deleteBodyInPlay')
             : t('history.deleteBodyPlain');
         })()}

@@ -11,18 +11,19 @@ import {
 } from './createQuickMatchModalConstants';
 
 import { PlayModeType } from '../../domain/value_objects/HandicapSettings';
+import { QuickMatchMode } from '../../domain/value_objects/QuickMatchMode';
 
 // «¿A qué jugáis?»: los tres de match play y los dos de stroke play, en una
 // sola pregunta (FE #1025). Conservan los `data-testid` de antes
 const OPCIONES = [
   ...Object.keys(FORMAT_CAPACITY).map((formato) => ({
-    modo: 'MATCH_PLAY',
+    modo: QuickMatchMode.MATCH_PLAY,
     formato,
     testId: `format-option-${formato}`,
     etiqueta: FORMAT_LABEL_KEY[formato],
   })),
   ...Object.keys(SCORING_FORMAT_LABEL_KEY).map((formato) => ({
-    modo: 'FREE_PLAY',
+    modo: QuickMatchMode.FREE_PLAY,
     formato,
     testId: `scoring-format-option-${formato}`,
     etiqueta: SCORING_FORMAT_LABEL_KEY[formato],
@@ -89,7 +90,7 @@ const CourseStep = ({
     if (op.modo !== mode && allowanceAMano && masOpciones.current)
       masOpciones.current.open = true;
     if (op.modo !== mode) onModeChange(op.modo);
-    if (op.modo === 'FREE_PLAY') onScoringFormatChange(op.formato);
+    if (op.modo === QuickMatchMode.FREE_PLAY) onScoringFormatChange(op.formato);
     else onMatchFormatChange(op.formato);
   };
   // Lo que no es lo de por defecto, a la vista aunque esté plegado

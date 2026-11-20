@@ -1,6 +1,8 @@
 // Lo que la anotación de competición (`useScoring`) deriva de la vista: quién
 // puede anotar, qué está bloqueado y si la tarjeta se puede entregar.
 
+import { ValidationStatus } from '../domain/value_objects/ValidationStatus';
+
 // Always allow navigating all 18 holes, even if match decided early
 const TOTAL_HOLES = 18;
 
@@ -58,7 +60,7 @@ export const estadoDelPartido = (scoringView, currentUserId, isAdmin) => {
 
   // Count validated holes
   const validatedHoles = myHoleScores.filter(
-    (ps) => ps?.validationStatus === 'match',
+    (ps) => ps?.validationStatus === ValidationStatus.MATCH,
   ).length;
 
   // A hole counts as played when EITHER side has put a score on my line: a
@@ -73,7 +75,7 @@ export const estadoDelPartido = (scoringView, currentUserId, isAdmin) => {
   );
   const everyPlayedHoleValidated =
     playedHoles.length > 0 &&
-    playedHoles.every((ps) => ps.validationStatus === 'match');
+    playedHoles.every((ps) => ps.validationStatus === ValidationStatus.MATCH);
 
   const totalHoles = TOTAL_HOLES;
 

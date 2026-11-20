@@ -39,6 +39,7 @@ import {
 } from '../../domain/value_objects/CompetitionStatus';
 import { mensajeDelError } from '../../utils/mensajeDelError';
 import { registraElFallo } from '../../utils/registraElFallo';
+import { CourseType } from '../../domain/value_objects/CourseType';
 
 /**
  * El color de cada tipo de campo. El TEXTO sale de i18n: escrito aquí a mano
@@ -46,11 +47,11 @@ import { registraElFallo } from '../../utils/registraElFallo';
  */
 const colorDelTipoDeCampo = (courseType) => {
   switch (courseType) {
-    case 'STANDARD_18':
+    case CourseType.STANDARD_18:
       return 'bg-green-100 text-green-800 border-green-200';
-    case 'PITCH_AND_PUTT':
+    case CourseType.PITCH_AND_PUTT:
       return 'bg-amber-100 text-amber-800 border-amber-200';
-    case 'EXECUTIVE':
+    case CourseType.EXECUTIVE:
       return 'bg-blue-100 text-blue-800 border-blue-200';
     default:
       return 'bg-gray-100 text-gray-800 border-gray-200';

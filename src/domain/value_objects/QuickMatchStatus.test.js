@@ -100,3 +100,18 @@ describe('QuickMatchStatus', () => {
     });
   });
 });
+
+describe('QuickMatchStatus.isLive', () => {
+  // Viva = la que el grupo sigue jugando o va a jugar: pendiente o en curso
+  it.each([
+    [QuickMatchStatus.PENDING, true],
+    [QuickMatchStatus.IN_PROGRESS, true],
+    [QuickMatchStatus.COMPLETED, false],
+    [QuickMatchStatus.CANCELLED, false],
+    [undefined, false],
+    [null, false],
+    ['OTRO', false],
+  ])('%s → %s', (estado, esperado) => {
+    expect(QuickMatchStatus.isLive(estado)).toBe(esperado);
+  });
+});

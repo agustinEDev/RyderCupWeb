@@ -1,4 +1,5 @@
 import {
+  COURSE_TYPES,
   MAX_TEES,
   MIN_TEES,
   VALID_HOLE_PARS,
@@ -45,9 +46,7 @@ class CreateGolfCourseAdminUseCase {
       throw new Error('Country code must be 2 characters (ISO 3166-1 alpha-2)');
     }
 
-    if (
-      !['STANDARD_18', 'PITCH_AND_PUTT', 'EXECUTIVE'].includes(data.courseType)
-    ) {
+    if (!COURSE_TYPES.includes(data.courseType)) {
       throw new Error('Invalid course type');
     }
 

@@ -6,6 +6,7 @@ import {
   isTeeCountValid,
   parRangeFor,
 } from '../../../domain/services/courseTypeRanges';
+import TeeColor from '../../../domain/value_objects/TeeColor';
 
 /** @typedef {import('../../../domain/entities/GolfCourse').default} GolfCourse */
 
@@ -76,7 +77,7 @@ class CreateGolfCourseRequestUseCase {
       }
       // El color nombra la salida; el identificador solo hace falta cuando no
       // lo es, porque OTHER puede repetirse en un mismo campo
-      if (tee.color === 'OTHER' && !tee.identifier?.trim()) {
+      if (tee.color === TeeColor.OTHER && !tee.identifier?.trim()) {
         throw new Error(
           `Tee ${index + 1} must have an identifier when its colour is OTHER`,
         );

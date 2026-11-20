@@ -4,6 +4,7 @@ import ActivityEventMapper from '../mappers/ActivityEventMapper';
 import PlayerStatsMapper from '../mappers/PlayerStatsMapper';
 import apiRequest from '../http/api.js';
 import { segmento } from '../http/api';
+import { ProfileRelation } from '../../domain/value_objects/ProfileRelation';
 
 /**
  * ApiSocialFeedRepository - REST API implementation
@@ -93,7 +94,7 @@ class ApiSocialFeedRepository extends ISocialFeedRepository {
       friendsCount: data.friends_count ?? 0,
       isFriend: data.is_friend ?? false,
       friendship: {
-        status: data.friendship?.status ?? 'NONE',
+        status: data.friendship?.status ?? ProfileRelation.NONE,
         friendshipId: data.friendship?.friendship_id ?? null,
       },
       // Con un bloqueo, si lo puso quien mira (true) o el otro (false). Un

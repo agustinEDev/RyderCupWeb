@@ -16,6 +16,8 @@
  * formulario aceptaba un par 54 que el caso de uso rechazaba justo despues.
  */
 
+import { CourseType } from '../value_objects/CourseType';
+
 /**
  * El par de un hoyo y el numero de barras NO dependen del tipo de campo, asi
  * que son constantes y no tablas. Estan aqui, y no en cada validador, por lo
@@ -39,26 +41,26 @@ export const isHoleParValid = (par) => VALID_HOLE_PARS.includes(par);
 export const isTeeCountValid = (teeCount) =>
   teeCount >= MIN_TEES && teeCount <= MAX_TEES;
 
-const DEFAULT_COURSE_TYPE = 'STANDARD_18';
+const DEFAULT_COURSE_TYPE = CourseType.STANDARD_18;
 
-export const COURSE_TYPES = ['STANDARD_18', 'PITCH_AND_PUTT', 'EXECUTIVE'];
+export const COURSE_TYPES = Object.values(CourseType);
 
 export const PAR_RANGE_BY_COURSE_TYPE = {
-  STANDARD_18: [66, 76],
-  PITCH_AND_PUTT: [54, 60],
-  EXECUTIVE: [61, 65],
+  [CourseType.STANDARD_18]: [66, 76],
+  [CourseType.PITCH_AND_PUTT]: [54, 60],
+  [CourseType.EXECUTIVE]: [61, 65],
 };
 
 export const RATING_RANGE_BY_COURSE_TYPE = {
-  STANDARD_18: [50, 90],
-  PITCH_AND_PUTT: [45, 90],
-  EXECUTIVE: [45, 90],
+  [CourseType.STANDARD_18]: [50, 90],
+  [CourseType.PITCH_AND_PUTT]: [45, 90],
+  [CourseType.EXECUTIVE]: [45, 90],
 };
 
 export const SLOPE_RANGE_BY_COURSE_TYPE = {
-  STANDARD_18: [55, 160],
-  PITCH_AND_PUTT: [40, 155],
-  EXECUTIVE: [40, 155],
+  [CourseType.STANDARD_18]: [55, 160],
+  [CourseType.PITCH_AND_PUTT]: [40, 155],
+  [CourseType.EXECUTIVE]: [40, 155],
 };
 
 // Un tipo desconocido —o ausente, que es lo que llega desde los formularios mas

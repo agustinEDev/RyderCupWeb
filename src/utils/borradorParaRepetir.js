@@ -18,6 +18,7 @@ import {
 } from '../domain/value_objects/ScoringFormat';
 
 import { PlayModeType } from '../domain/value_objects/HandicapSettings';
+import { QuickMatchMode } from '../domain/value_objects/QuickMatchMode';
 
 // Dónde se arregla cada cosa: el campo y tu barra, en el paso 1; los
 // jugadores, en el 2. El asistente enseña cada aviso solo en su paso
@@ -49,7 +50,7 @@ export const borradorParaRepetir = ({ partida, yo, amigos, campo }) => {
   );
   const comun = {
     matchName: partida.name ?? '',
-    mode: juegoLibre ? 'FREE_PLAY' : 'MATCH_PLAY',
+    mode: juegoLibre ? QuickMatchMode.FREE_PLAY : QuickMatchMode.MATCH_PLAY,
     matchFormat: partida.matchFormat ?? MatchFormat.SINGLES,
     scoringFormat: partida.scoringFormat ?? ScoringFormat.STABLEFORD,
     allowanceOverride: copiado === porDefecto ? null : copiado,

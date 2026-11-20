@@ -5,8 +5,9 @@ import Header from '../../components/layout/Header';
 import Footer from '../../components/layout/Footer';
 import { submitContactFormUseCase } from '../../composition';
 import { customToast } from '../../utils/toast';
+import { ContactCategory } from '../../domain/value_objects/ContactCategory';
 
-const CATEGORIES = ['BUG', 'FEATURE', 'QUESTION', 'OTHER'];
+const CATEGORIES = Object.values(ContactCategory);
 
 const Contact = () => {
   const { t } = useTranslation('contact');

@@ -28,6 +28,7 @@ import {
 } from '../../components/ui/Pestanas';
 import { mensajeDelError } from '../../utils/mensajeDelError';
 import { registraElFallo } from '../../utils/registraElFallo';
+import { Role } from '../../domain/value_objects/Role';
 
 /**
  * PendingGolfCourses Page (Admin)
@@ -57,7 +58,7 @@ const PendingGolfCourses = ({ embedded = false, onCambio }) => {
   const isAdmin =
     user?.is_admin === true ||
     user?.roles?.some((role) =>
-      typeof role === 'string' ? role === 'ADMIN' : role.name === 'ADMIN',
+      typeof role === 'string' ? role === Role.ADMIN : role.name === Role.ADMIN,
     ) ||
     false;
 

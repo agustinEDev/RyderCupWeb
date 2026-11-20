@@ -1,6 +1,7 @@
-import { siViene } from '../../utils/campoSiViene';
-
 // src/infrastructure/mappers/ScoringMapper.js
+
+import { siViene } from '../../utils/campoSiViene';
+import { ValidationStatus } from '../../domain/value_objects/ValidationStatus';
 
 /**
  * Mapper for converting between API DTOs (snake_case) and
@@ -92,7 +93,7 @@ class ScoringMapper {
           ownSubmitted: ps.own_submitted ?? false,
           markerScore: ps.marker_score ?? null,
           markerSubmitted: ps.marker_submitted ?? false,
-          validationStatus: ps.validation_status || 'pending',
+          validationStatus: ps.validation_status || ValidationStatus.PENDING,
           netScore: ps.net_score ?? null,
           strokesReceivedThisHole: ps.strokes_received_this_hole ?? 0,
         })),

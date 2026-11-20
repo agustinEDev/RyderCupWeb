@@ -62,6 +62,7 @@ import {
 } from './utils/routerDeLaAplicacion';
 import { registrarRouterParaSentry } from './utils/routerParaSentry';
 import { apuntaElRouterDeLaAplicacion } from './utils/navegacionEnCurso';
+import { Role } from './domain/value_objects/Role';
 
 // Pantallas diferidas, con un reintento a los 1,5 s: `utils/lazyWithRetry`
 const Landing = lazyWithRetry(() => import('./pages/Landing'));
@@ -603,7 +604,7 @@ export const rutasDeLaApp = createRoutesFromElements(
         path="/admin/:seccion?"
         element={
           <ProtectedRoute>
-            <RoleGuard allowedRoles="ADMIN">
+            <RoleGuard allowedRoles={Role.ADMIN}>
               <AdminPanel />
             </RoleGuard>
           </ProtectedRoute>

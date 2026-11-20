@@ -1,4 +1,5 @@
 import { PLACA } from './clasesDelMapa';
+import { HoleReportReason } from '../../../domain/value_objects/HoleReportReason';
 
 // Delante de lo que se pide, en su propio trozo: «Paso 1 de 3 · » (19 nov). El
 // separador va en el texto traducido
@@ -31,7 +32,7 @@ const PlacaDelUltimoPaso = ({ t, puntos, botonDeAyuda, onListo }) => (
 );
 
 // Los motivos de un reporte, en el orden del menú (entrega 7, 18 oct)
-const MOTIVOS_DEL_REPORTE = ['WRONG_HOLE', 'WRONG_LINE', 'HOLE_CHANGED'];
+const MOTIVOS_DEL_REPORTE = Object.values(HoleReportReason);
 
 /**
  * Lo que el panel de abajo del mapa dice o pregunta ahora, una sola cosa: el

@@ -1,5 +1,7 @@
 // src/infrastructure/mappers/TeeGroupScoringMapper.js
 
+import { ValidationStatus } from '../../domain/value_objects/ValidationStatus';
+
 /**
  * La vista de anotar una partida de stroke play (FE #824, PR 7;
  * RyderCupAm#535), traducida a la forma de la del partido de la Ryder
@@ -99,7 +101,9 @@ class TeeGroupScoringMapper {
             // Quién puso el lado del marcador: tras cambiar el círculo, el de antes
             markerBy: h.marker_by ?? null,
             markerByName: h.marker_by_name ?? null,
-            validationStatus: (h.status || 'PENDING').toLowerCase(),
+            validationStatus: h.status
+              ? h.status.toLowerCase()
+              : ValidationStatus.PENDING,
             netScore: null,
             strokesReceivedThisHole: h.strokes_received ?? 0,
           };
