@@ -17,6 +17,7 @@ import { useJugadoresDelBorrador } from './useJugadoresDelBorrador';
  *   J7  invitado bien                                          | entra y el formulario se vacía
  *   J8  en el paso 2, los amigos (menos los ya añadidos)       | leeTodosLosAmigos
  *   J9  hándicap vacío de un registrado                        | el de su perfil
+ *   J10 2 → 3 → 2 rápido y las lecturas llegan al revés         | se queda la última
  */
 const mockLeeTodosLosAmigos = vi.fn();
 vi.mock('./leeTodosLosAmigos', () => ({
@@ -49,7 +50,7 @@ const useConJugadores = (inicial = {}) => {
     setError,
     ...opciones,
   });
-  return { ...jugadores, step, error, setOpciones };
+  return { ...jugadores, step, setStep, error, setOpciones };
 };
 
 const evento = { preventDefault: () => {} };
@@ -230,6 +231,25 @@ describe('useJugadoresDelBorrador', () => {
       expect(result.current.availableFriends).toEqual([{ otherUserId: 'u2' }]),
     );
     expect(mockLeeTodosLosAmigos).toHaveBeenCalledWith('u1');
+  });
+
+  it('J10: si vas y vuelves al paso 2, una lectura vieja no pisa la nueva', async () => {
+    const lecturas = [];
+    mockLeeTodosLosAmigos.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          lecturas.push(resolve);
+        }),
+    );
+    const { result } = renderHook(() => useConJugadores());
+    act(() => result.current.handleCourseNext());
+    act(() => result.current.setStep(3));
+    act(() => result.current.setStep(2));
+    expect(lecturas).toHaveLength(2);
+    // La nueva llega antes; la vieja, después
+    await act(async () => lecturas[1]([{ otherUserId: 'nuevo' }]));
+    await act(async () => lecturas[0]([{ otherUserId: 'viejo' }]));
+    expect(result.current.availableFriends).toEqual([{ otherUserId: 'nuevo' }]);
   });
 
   it('J9: el hándicap vacío de un registrado vuelve al de su perfil', () => {

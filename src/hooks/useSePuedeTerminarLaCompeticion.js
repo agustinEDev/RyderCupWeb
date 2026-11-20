@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { getTeeGroupsUseCase } from '../composition';
 import { todasLasFranjasCerradas } from '../domain/services/PartidasDeLaFranja';
 import { CompetitionStatusEnum } from '../domain/value_objects/CompetitionStatus';
+import { puedeGestionarLaCompeticion } from '../utils/puedeGestionarLaCompeticion';
 
 /**
  * Con todas las franjas jugadas y cerradas, «Terminar competición» a la
@@ -21,7 +22,12 @@ export const useSePuedeTerminarLaCompeticion = ({
   const leeSiTerminar =
     competition?.hasTeams === false &&
     competition?.status === CompetitionStatusEnum.IN_PROGRESS &&
-    (hasCreatorRole || isAdmin || competition?.creatorId === userId);
+    puedeGestionarLaCompeticion({
+      creatorId: competition?.creatorId,
+      userId,
+      hasCreatorRole,
+      isAdmin,
+    });
   // Solo las que tienen a alguien: una franja vacía no se juega (revisor). Se
   // mira con cada lectura de la agenda: también acaban partidas al entregar
   const franjasJugadas = (agendaLeida?.rounds ?? [])

@@ -3,15 +3,15 @@ import { renderHook, act } from '@testing-library/react';
 import { useModalesDeLaAgenda } from './useModalesDeLaAgenda';
 
 /**
- * Cada diálogo con partido o sesión se abre con los dos a la vez y se cierra
- * soltando los dos: la agenda solo lo pinta con ambos.
+ * Cada diálogo con partido o sesión guarda solo eso: con él, abierto; `null`,
+ * cerrado. La agenda lo pinta mientras lo haya.
  *
- *   diálogo    | abrir           | abierto          | con
- *   -----------|-----------------|------------------|---------------
- *   walkover   | abrirWalkover   | showWalkoverModal | walkoverMatch
- *   reasignar  | abrirReasignar  | showReassignModal | reassignMatch
- *   detalle    | abrirDetalle    | showMatchDetail…  | detailMatchId
- *   generar    | abrirGenerar    | showGenerateModal | generateRound
+ *   diálogo    | abrir           | cerrar          | con
+ *   -----------|-----------------|-----------------|---------------
+ *   walkover   | abrirWalkover   | cerrarWalkover  | walkoverMatch
+ *   reasignar  | abrirReasignar  | cerrarReasignar | reassignMatch
+ *   detalle    | abrirDetalle    | cerrarDetalle   | detailMatchId
+ *   generar    | abrirGenerar    | cerrarGenerar   | generateRound
  */
 describe('useModalesDeLaAgenda', () => {
   it('empieza con todo cerrado', () => {
@@ -19,34 +19,28 @@ describe('useModalesDeLaAgenda', () => {
     expect(result.current).toMatchObject({
       cubriendoCapitan: null,
       rehaciendoSobres: null,
-      showWalkoverModal: false,
       walkoverMatch: null,
-      showReassignModal: false,
       reassignMatch: null,
-      showMatchDetailModal: false,
       detailMatchId: null,
       showTeamsModal: false,
       deshaciendoEquipos: false,
-      showGenerateModal: false,
       generateRound: null,
     });
   });
 
   it.each([
-    ['abrirWalkover', 'cerrarWalkover', 'showWalkoverModal', 'walkoverMatch'],
-    ['abrirReasignar', 'cerrarReasignar', 'showReassignModal', 'reassignMatch'],
-    ['abrirDetalle', 'cerrarDetalle', 'showMatchDetailModal', 'detailMatchId'],
-    ['abrirGenerar', 'cerrarGenerar', 'showGenerateModal', 'generateRound'],
-  ])('%s y %s', (abrir, cerrar, abierto, con) => {
+    ['abrirWalkover', 'cerrarWalkover', 'walkoverMatch'],
+    ['abrirReasignar', 'cerrarReasignar', 'reassignMatch'],
+    ['abrirDetalle', 'cerrarDetalle', 'detailMatchId'],
+    ['abrirGenerar', 'cerrarGenerar', 'generateRound'],
+  ])('%s y %s', (abrir, cerrar, con) => {
     const { result } = renderHook(() => useModalesDeLaAgenda());
     const valor = { id: 'x' };
 
     act(() => result.current[abrir](valor));
-    expect(result.current[abierto]).toBe(true);
     expect(result.current[con]).toBe(valor);
 
     act(() => result.current[cerrar]());
-    expect(result.current[abierto]).toBe(false);
     expect(result.current[con]).toBe(null);
   });
 });
