@@ -165,6 +165,20 @@ class IEnrollmentRepository {
   }
 
   /**
+   * Cambiar la barra de una inscripción (FE #1214, RyderCupAm#912):
+   * PUT /enrollments/{id}/tee. Lo hace el propio jugador antes de empezar, el
+   * capitán de su equipo, el organizador o un admin; el backend lo decide.
+   *
+   * @param {string} enrollmentId - UUID del enrollment
+   * @param {string|null} teeColor - La barra, o null para volver a la de por defecto
+   * @returns {Promise<{id: string, teeColor: string|null}>} La barra que quedó
+   * @throws {Error} Si no se puede, con `status` y `errorCode`
+   */
+  async changeTee(enrollmentId, teeColor) {
+    throw new Error('Method changeTee() must be implemented');
+  }
+
+  /**
    * El organizador quita a un inscrito (release social 2): POST /enrollments/{id}/remove
    *
    * @param {string} enrollmentId - UUID del enrollment

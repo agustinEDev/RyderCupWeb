@@ -239,6 +239,7 @@ import RemoveEnrolledPlayerUseCase from '../application/use_cases/enrollment/Rem
 import SetCustomHandicapUseCase from '../application/use_cases/enrollment/SetCustomHandicapUseCase';
 import RemoveCustomHandicapUseCase from '../application/use_cases/enrollment/RemoveCustomHandicapUseCase';
 import SetNamePreferenceUseCase from '../application/use_cases/enrollment/SetNamePreferenceUseCase';
+import ChangeEnrollmentTeeUseCase from '../application/use_cases/enrollment/ChangeEnrollmentTeeUseCase';
 
 // Quick Match Use Cases (FE #236)
 import ApiQuickMatchRepository from '../infrastructure/repositories/ApiQuickMatchRepository';
@@ -772,6 +773,10 @@ const removeCustomHandicapUseCase = new RemoveCustomHandicapUseCase(
 const setNamePreferenceUseCase = new SetNamePreferenceUseCase(
   apiEnrollmentRepository,
 );
+// Cambiar la barra de una inscripción (FE #1214)
+const changeEnrollmentTeeUseCase = new ChangeEnrollmentTeeUseCase(
+  apiEnrollmentRepository,
+);
 
 // Quick Match Use Cases (FE #236)
 const createAndStartQuickMatchUseCase = puedeDarUnPartido(
@@ -1023,6 +1028,7 @@ export {
   setCustomHandicapUseCase,
   removeCustomHandicapUseCase,
   setNamePreferenceUseCase,
+  changeEnrollmentTeeUseCase,
   // Device Management Use Cases (v1.13.0)
   getActiveDevicesUseCase,
   revokeDeviceUseCase,
