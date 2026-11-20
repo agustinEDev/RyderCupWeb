@@ -88,8 +88,6 @@ const PALABRAS = [
 
 const TANTEO =
   'tanteo del resultado («CONCEDED», «W/O»), no estado del partido: el backend lo manda así en result.score';
-const RELACION_DEL_PERFIL =
-  'relación de amistad del perfil (NONE / PENDING_SENT / PENDING_RECEIVED / ACCEPTED / BLOCKED), no FriendshipStatus: queda para otra tanda';
 const MODO_DE_PARTIDA_RAPIDA =
   'modo del asistente de partida rápida (MATCH_PLAY / FREE_PLAY): estado de la interfaz, no del backend';
 
@@ -134,18 +132,6 @@ const PERMITIDOS = [
     fichero: 'utils/borradorParaRepetir.js',
     palabra: 'MATCH_PLAY',
     motivo: MODO_DE_PARTIDA_RAPIDA,
-    veces: 1,
-  },
-  {
-    fichero: 'pages/player/PlayerProfilePage.jsx',
-    palabra: 'ACCEPTED',
-    motivo: RELACION_DEL_PERFIL,
-    veces: 1,
-  },
-  {
-    fichero: 'pages/player/PlayerProfilePage.jsx',
-    palabra: 'BLOCKED',
-    motivo: RELACION_DEL_PERFIL,
     veces: 1,
   },
   {
