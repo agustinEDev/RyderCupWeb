@@ -363,6 +363,7 @@ describe('derivarLaFicha', () => {
         { user: {}, hasCreatorRole, isAdmin },
       );
       expect(ficha.canManage).toBe(false);
+      expect(ficha.isCreator).toBe(false);
     },
   );
 

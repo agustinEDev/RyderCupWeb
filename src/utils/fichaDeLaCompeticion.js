@@ -237,7 +237,8 @@ export const derivarLaFicha = ({
   agendaLeida,
   franjasDeLaAgenda,
 }) => {
-  const isCreator = competition.creatorId === user.id;
+  // Sin id, `undefined === undefined` lo daba por creador (punto gemelo)
+  const isCreator = Boolean(user.id) && competition.creatorId === user.id;
   const canManage = puedeGestionarLaCompeticion({
     creatorId: competition.creatorId,
     userId: user.id,
