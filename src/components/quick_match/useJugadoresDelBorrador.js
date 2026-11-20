@@ -91,13 +91,18 @@ export const useJugadoresDelBorrador = ({
   const [showGuestHandicapPanel, setShowGuestHandicapPanel] = useState(false);
 
   useEffect(() => {
-    if (step === 2 && currentUser?.id) {
-      // Todos, de 100 en 100 (el máximo del servidor): con los 20 de por
-      // defecto, a quien tiene más amigos le faltaban en la lista
-      leeTodosLosAmigos(currentUser.id)
-        .then(setFriends)
-        .catch(() => setFriends([]));
-    }
+    if (step !== 2 || !currentUser?.id) return undefined;
+    // Todos, de 100 en 100 (el máximo del servidor): con los 20 de por
+    // defecto, a quien tiene más amigos le faltaban en la lista. Al salir
+    // del paso, lo que llegue tarde ya no se pinta: ir y volver rápido no
+    // deja que una lectura vieja pise la nueva
+    let vigente = true;
+    leeTodosLosAmigos(currentUser.id)
+      .then((amigos) => vigente && setFriends(amigos))
+      .catch(() => vigente && setFriends([]));
+    return () => {
+      vigente = false;
+    };
   }, [step, currentUser?.id]);
 
   const rosterFull = participants.length >= capacity;
