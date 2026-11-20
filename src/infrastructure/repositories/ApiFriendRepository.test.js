@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import ApiFriendRepository from './ApiFriendRepository';
 import IFriendRepository from '../../domain/repositories/IFriendRepository';
 import Friendship from '../../domain/entities/Friendship';
+import FriendshipMapper from '../mappers/FriendshipMapper';
 import { RutaDeLaApiNoValida } from '../http/rutaDeLaApi';
 import * as apiModule from '../http/api';
 
@@ -40,7 +41,7 @@ describe('ApiFriendRepository', () => {
       const apiData = apiFriendship();
       apiRequestMock.mockResolvedValue(apiData);
 
-      const result = await repository.sendRequest('u-2');
+      const { entity: result, extras } = await repository.sendRequest('u-2');
 
       expect(apiRequestMock).toHaveBeenCalledWith('/api/v1/friends/requests', {
         method: 'POST',
@@ -54,7 +55,7 @@ describe('ApiFriendRepository', () => {
       expect(result.respondedAt).toBeNull();
       // Sin huso se lee como UTC
       expect(result.createdAt.toISOString()).toBe('2026-10-01T08:00:00.000Z');
-      expect(result._apiData).toBe(apiData);
+      expect(extras).toEqual(FriendshipMapper.toExtras(apiData));
     });
 
     it('propagates the HTTP error', async () => {
@@ -80,7 +81,10 @@ describe('ApiFriendRepository', () => {
       });
       apiRequestMock.mockResolvedValue(apiData);
 
-      const result = await repository.respondToRequest('f 1', 'ACCEPT');
+      const { entity: result, extras } = await repository.respondToRequest(
+        'f 1',
+        'ACCEPT',
+      );
 
       expect(apiRequestMock).toHaveBeenCalledWith(
         '/api/v1/friends/requests/f%201/respond',
@@ -88,7 +92,7 @@ describe('ApiFriendRepository', () => {
       );
       expect(result.isAccepted()).toBe(true);
       expect(result.respondedAt).toEqual(new Date('2026-10-02T09:30:00Z'));
-      expect(result._apiData).toBe(apiData);
+      expect(extras).toEqual(FriendshipMapper.toExtras(apiData));
     });
 
     it('rejects an id that would change the path, without calling the API', async () => {
@@ -135,16 +139,19 @@ describe('ApiFriendRepository', () => {
 
   describe('blockUser', () => {
     it('POSTs to the block endpoint without body and maps the friendship', async () => {
-      const apiData = apiFriendship({ status: 'BLOCKED' });
+      const apiData = apiFriendship({
+        status: 'BLOCKED',
+        addressee_name: 'Rafa',
+      });
       apiRequestMock.mockResolvedValue(apiData);
 
-      const result = await repository.blockUser('u-2');
+      const { entity: result, extras } = await repository.blockUser('u-2');
 
       expect(apiRequestMock).toHaveBeenCalledWith('/api/v1/friends/u-2/block', {
         method: 'POST',
       });
       expect(result.isBlocked()).toBe(true);
-      expect(result._apiData).toBe(apiData);
+      expect(extras.addresseeName).toBe('Rafa');
     });
 
     it('propagates the HTTP error', async () => {
@@ -192,10 +199,15 @@ describe('ApiFriendRepository', () => {
       expect(apiRequestMock).toHaveBeenCalledWith('/api/v1/friends/me');
     });
 
-    it('maps each friendship and keeps its raw API data', async () => {
+    it('maps each friendship with its extras', async () => {
       const raw = [
-        apiFriendship({ id: 'f-1', status: 'ACCEPTED' }),
-        apiFriendship({ id: 'f-2', status: 'ACCEPTED', addressee_id: 'u-3' }),
+        apiFriendship({ id: 'f-1', status: 'ACCEPTED', addressee_name: 'Ana' }),
+        apiFriendship({
+          id: 'f-2',
+          status: 'ACCEPTED',
+          addressee_id: 'u-3',
+          addressee_handicap: 7.5,
+        }),
       ];
       apiRequestMock.mockResolvedValue({ friendships: raw, total_count: 12 });
 
@@ -203,13 +215,12 @@ describe('ApiFriendRepository', () => {
 
       expect(result.totalCount).toBe(12);
       expect(result.friendships).toHaveLength(2);
-      expect(result.friendships.every((f) => f instanceof Friendship)).toBe(
-        true,
-      );
-      expect(result.friendships.map((f) => f.id)).toEqual(['f-1', 'f-2']);
-      expect(result.friendships[1].addresseeId).toBe('u-3');
-      expect(result.friendships[0]._apiData).toBe(raw[0]);
-      expect(result.friendships[1]._apiData).toBe(raw[1]);
+      const entities = result.friendships.map((f) => f.entity);
+      expect(entities.every((f) => f instanceof Friendship)).toBe(true);
+      expect(entities.map((f) => f.id)).toEqual(['f-1', 'f-2']);
+      expect(entities[1].addresseeId).toBe('u-3');
+      expect(result.friendships[0].extras.addresseeName).toBe('Ana');
+      expect(result.friendships[1].extras.addresseeHandicap).toBe(7.5);
     });
 
     it('defaults to an empty list and zero total when the fields are missing', async () => {
@@ -272,17 +283,18 @@ describe('ApiFriendRepository', () => {
       );
     });
 
-    it('maps the requests and keeps their raw API data', async () => {
-      const raw = [apiFriendship({ id: 'f-9' })];
+    it('maps the requests with their extras', async () => {
+      const raw = [apiFriendship({ id: 'f-9', requester_alias: 'Trinx' })];
       apiRequestMock.mockResolvedValue({ friendships: raw, total_count: 1 });
 
       const result = await repository.getPendingRequests('incoming');
 
       expect(result.totalCount).toBe(1);
-      expect(result.friendships[0]).toBeInstanceOf(Friendship);
-      expect(result.friendships[0].id).toBe('f-9');
-      expect(result.friendships[0].isPending()).toBe(true);
-      expect(result.friendships[0]._apiData).toBe(raw[0]);
+      const { entity, extras } = result.friendships[0];
+      expect(entity).toBeInstanceOf(Friendship);
+      expect(entity.id).toBe('f-9');
+      expect(entity.isPending()).toBe(true);
+      expect(extras.requesterAlias).toBe('Trinx');
     });
 
     it('defaults to an empty list and zero total when the fields are null', async () => {

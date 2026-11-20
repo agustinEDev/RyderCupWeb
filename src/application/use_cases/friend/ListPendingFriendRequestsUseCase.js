@@ -27,12 +27,8 @@ class ListPendingFriendRequestsUseCase {
       filters,
     );
 
-    const dtos = result.friendships.map((friendship) =>
-      FriendshipAssembler.toSimpleDTO(
-        friendship,
-        friendship._apiData,
-        currentUserId,
-      ),
+    const dtos = result.friendships.map(({ entity, extras }) =>
+      FriendshipAssembler.toSimpleDTO(entity, extras, currentUserId),
     );
 
     return {

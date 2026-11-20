@@ -1,6 +1,19 @@
 import Friendship from '../../domain/entities/Friendship';
 import FriendshipStatus from '../../domain/value_objects/FriendshipStatus';
 import { instanteDeLaApi } from '../../utils/instanteDeLaApi';
+import { aCamelCase } from './aCamelCase';
+
+/**
+ * @typedef {Object} FriendshipExtras
+ * @property {string|null|undefined} requesterName
+ * @property {string|null|undefined} addresseeName
+ * @property {string|null|undefined} requesterAlias
+ * @property {string|null|undefined} addresseeAlias
+ * @property {string|null|undefined} requesterRealName
+ * @property {string|null|undefined} addresseeRealName
+ * @property {number|null|undefined} requesterHandicap
+ * @property {number|null|undefined} addresseeHandicap
+ */
 
 /**
  * FriendshipMapper - Anti-Corruption Layer
@@ -42,6 +55,18 @@ class FriendshipMapper {
       createdAt: apiData.created_at && instanteDeLaApi(apiData.created_at),
       updatedAt: apiData.updated_at && instanteDeLaApi(apiData.updated_at),
     });
+  }
+
+  /**
+   * Los datos de la API que no son de la entidad y la pantalla necesita (los
+   * nombres, alias, nombres reales y hándicaps de los dos lados), en camelCase.
+   * Los valores van tal cual: si la API no manda un campo, queda undefined.
+   *
+   * @param {Object|null|undefined} apiData - API response data (snake_case)
+   * @returns {FriendshipExtras|null} null si no hay datos de la API
+   */
+  static toExtras(apiData) {
+    return apiData ? aCamelCase(apiData) : null;
   }
 
   /**

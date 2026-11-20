@@ -21,7 +21,7 @@ const api = (extra = {}) => ({
 const dto = (apiData, yo) =>
   FriendshipAssembler.toSimpleDTO(
     FriendshipMapper.toDomain(apiData),
-    apiData,
+    FriendshipMapper.toExtras(apiData),
     yo,
   );
 
