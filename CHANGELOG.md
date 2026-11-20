@@ -5,6 +5,41 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.89.0] - 2026-11-20
+
+**La calidad de la auditoría sigue: las pantallas de anotar, el asistente de la partida
+rápida, la agenda y las pantallas de acceso, partidas en piezas pequeñas; las entidades sin
+`_apiData`; y dos arreglos de la anotación** (#1204, #1205, #1206, #1208, #1209). Va con el
+backend 2.75.0, que no cambia el contrato. Probada a fondo en el Kind con la copia
+anonimizada de producción (Playwright a 360 px: acceso, sesión, dispositivos, competiciones,
+invitaciones, amigos, agenda, partida rápida y anotación de competición) y en el iPhone,
+anotando sin cobertura.
+
+### Changed
+
+- **Las pantallas de anotar, partidas en piezas** (#1204): la del grupo de salida (complejidad
+  111 a 29) y la de la partida rápida (87 a 28), con las reglas de los papeles en el grupo en
+  el dominio. El HTML es idéntico en los 304 escenarios comparados.
+- **El asistente de la partida rápida (90 a 21), la agenda (47 a 18) y las pantallas de
+  acceso, partidos en hooks y piezas** (#1205); las cinco vistas de acceso comparten un marco.
+- **Una sola regla para quién gestiona una competición** (#1206), en la ficha, la agenda y
+  el aviso de terminarla: sin usuario identificado no gestiona nadie.
+- **Las entidades ya no llevan la respuesta cruda de la API (`_apiData`)** (#1208): los
+  repositorios de competiciones, inscripciones, invitaciones y amigos devuelven la entidad y
+  sus datos extra ya traducidos. Un guardián impide volver a leer la respuesta cruda fuera de
+  la infraestructura.
+
+### Fixed
+
+- **Reintentar la creación de una partida rápida no la duplica** (#1206): si un intento falló
+  sin respuesta, la duda de que se hubiera creado se mantiene aunque el siguiente falle de
+  otra forma, y se reutiliza el mismo id.
+- **Volver al paso 2 del asistente no pisa la lista de amigos con una lectura vieja** (#1206).
+- **Un golpe que ya no se puede tocar va unido a su etiqueta** («Tu anotación», «Anotas a X»)
+  para el lector de pantalla (#1209, #1196).
+- **El pie del hoyo ya no dice « 2UP» con un espacio y sin equipo** si faltara el equipo que
+  va por delante: dice «2UP» (#1209, #1196).
+
 ## [2.88.0] - 2026-11-19
 
 **El mapa del hoyo se acerca solo al green en los últimos 100 metros y ayuda a marcar los

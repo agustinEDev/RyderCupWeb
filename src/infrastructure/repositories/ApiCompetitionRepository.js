@@ -2,9 +2,10 @@ import { ICompetitionRepository } from '../../domain/repositories/ICompetitionRe
 import CompetitionMapper from '../mappers/CompetitionMapper';
 import apiRequest from '../http/api.js';
 import { segmento } from '../http/api';
+import { conExtras } from '../mappers/conExtras';
 
 /** @typedef {import('../../domain/entities/Competition').default} Competition */
-/** @typedef {import('../../domain/repositories/ICompetitionRepository').CompetitionFromRepository} CompetitionFromRepository */
+/** @typedef {import('../../domain/repositories/ICompetitionRepository').CompetitionWithExtras} CompetitionWithExtras */
 
 class ApiCompetitionRepository extends ICompetitionRepository {
   /**
@@ -29,7 +30,8 @@ class ApiCompetitionRepository extends ICompetitionRepository {
    * Finds a competition by its unique ID.
    * @override
    * @param {string} competitionId - The ID of the competition to find.
-   * @returns {Promise<Competition>} - The competition entity.
+   * @returns {Promise<CompetitionWithExtras>} - La entidad y lo que la ficha
+   *   enseña y la entidad no guarda.
    * @throws {Error} If the competition is not found or the request fails.
    */
   async findById(competitionId) {
@@ -37,14 +39,7 @@ class ApiCompetitionRepository extends ICompetitionRepository {
       `/api/v1/competitions/${segmento(competitionId)}`,
     );
 
-    // Map API response to Competition domain entity
-    /** @type {CompetitionFromRepository} */
-    const competition = CompetitionMapper.toDomain(apiData);
-
-    // Attach original API data for mapper to use (for location names, etc.)
-    competition._apiData = apiData;
-
-    return competition;
+    return conExtras(CompetitionMapper.toDomain(apiData), apiData);
   }
 
   /**
@@ -74,7 +69,7 @@ class ApiCompetitionRepository extends ICompetitionRepository {
    * @override
    * @param {string} userId - The ID of the user/creator.
    * @param {Record<string, string>} [filters] - Optional filters (status, etc.), sent as query parameters
-   * @returns {Promise<Competition[]>} - Array of competition entities.
+   * @returns {Promise<CompetitionWithExtras[]>} - Cada competición con sus extras.
    */
   async findByCreator(userId, filters = {}) {
     // Build query parameters
@@ -89,16 +84,9 @@ class ApiCompetitionRepository extends ICompetitionRepository {
 
     const apiDataArray = await apiRequest(endpoint);
 
-    // Map each API response to Competition domain entity
-    // Attach original API data for mapper to use
-    const competitions = apiDataArray.map((apiData) => {
-      /** @type {CompetitionFromRepository} */
-      const competition = CompetitionMapper.toDomain(apiData);
-      competition._apiData = apiData;
-      return competition;
-    });
-
-    return competitions;
+    return apiDataArray.map((apiData) =>
+      conExtras(CompetitionMapper.toDomain(apiData), apiData),
+    );
   }
 
   /**
@@ -112,7 +100,7 @@ class ApiCompetitionRepository extends ICompetitionRepository {
    * @param {boolean} [filters.excludeMyCompetitions] - If true, excludes competitions where user is creator or enrolled
    * @param {number} [filters.limit] - Maximum number of results
    * @param {number} [filters.offset] - Pagination offset
-   * @returns {Promise<Competition[]>} - Array of public competition entities.
+   * @returns {Promise<CompetitionWithExtras[]>} - Cada competición pública con sus extras.
    */
   async findPublic(filters = {}) {
     // Build query parameters
@@ -158,15 +146,9 @@ class ApiCompetitionRepository extends ICompetitionRepository {
 
     const apiDataArray = await apiRequest(endpoint);
 
-    // Map each API response to Competition domain entity
-    const competitions = apiDataArray.map((apiData) => {
-      /** @type {CompetitionFromRepository} */
-      const competition = CompetitionMapper.toDomain(apiData);
-      competition._apiData = apiData;
-      return competition;
-    });
-
-    return competitions;
+    return apiDataArray.map((apiData) =>
+      conExtras(CompetitionMapper.toDomain(apiData), apiData),
+    );
   }
 
   /**
@@ -256,13 +238,7 @@ class ApiCompetitionRepository extends ICompetitionRepository {
     );
 
     // Map API response to Competition domain entity
-    /** @type {CompetitionFromRepository} */
-    const competition = CompetitionMapper.toDomain(apiData);
-
-    // Attach original API data for mapper to use
-    competition._apiData = apiData;
-
-    return competition;
+    return CompetitionMapper.toDomain(apiData);
   }
   /** POST /competitions/{id}/handicap-updates → 202 (RyderCupAM#509). */
   async launchHandicapUpdate(competitionId) {

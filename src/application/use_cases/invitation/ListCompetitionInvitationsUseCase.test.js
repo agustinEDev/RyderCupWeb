@@ -13,10 +13,10 @@ const mockInvitation = Invitation.fromPersistence({
   createdAt: '2026-02-18T10:00:00Z',
   updatedAt: '2026-02-18T10:00:00Z',
 });
-mockInvitation._apiData = {
-  competition_name: 'Summer Cup',
-  inviter_name: 'Creator',
-  invitee_name: 'Player',
+const mockInvitationExtras = {
+  competitionName: 'Summer Cup',
+  inviterName: 'Creator',
+  inviteeName: 'Player',
 };
 
 describe('ListCompetitionInvitationsUseCase', () => {
@@ -26,7 +26,7 @@ describe('ListCompetitionInvitationsUseCase', () => {
   beforeEach(() => {
     mockRepo = {
       getCompetitionInvitations: vi.fn().mockResolvedValue({
-        invitations: [mockInvitation],
+        invitations: [{ entity: mockInvitation, extras: mockInvitationExtras }],
         totalCount: 1,
       }),
     };

@@ -32,13 +32,14 @@ class SendInvitationByEmailUseCase {
       throw new Error('Personal message must be 500 characters or less');
     }
 
-    const invitation = await this.#invitationRepository.sendInvitationByEmail(
-      competitionId,
-      email.getValue(),
-      personalMessage,
-    );
+    const { entity, extras } =
+      await this.#invitationRepository.sendInvitationByEmail(
+        competitionId,
+        email.getValue(),
+        personalMessage,
+      );
 
-    return InvitationAssembler.toSimpleDTO(invitation, invitation._apiData);
+    return InvitationAssembler.toSimpleDTO(entity, extras);
   }
 }
 

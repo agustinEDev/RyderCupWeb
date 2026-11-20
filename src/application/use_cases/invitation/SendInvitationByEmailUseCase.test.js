@@ -13,9 +13,9 @@ const mockInvitation = Invitation.fromPersistence({
   createdAt: '2026-02-18T10:00:00Z',
   updatedAt: '2026-02-18T10:00:00Z',
 });
-mockInvitation._apiData = {
-  competition_name: 'Summer Cup',
-  inviter_name: 'Creator',
+const mockInvitationExtras = {
+  competitionName: 'Summer Cup',
+  inviterName: 'Creator',
 };
 
 describe('SendInvitationByEmailUseCase', () => {
@@ -24,7 +24,10 @@ describe('SendInvitationByEmailUseCase', () => {
 
   beforeEach(() => {
     mockRepo = {
-      sendInvitationByEmail: vi.fn().mockResolvedValue(mockInvitation),
+      sendInvitationByEmail: vi.fn().mockResolvedValue({
+        entity: mockInvitation,
+        extras: mockInvitationExtras,
+      }),
     };
     useCase = new SendInvitationByEmailUseCase({
       invitationRepository: mockRepo,

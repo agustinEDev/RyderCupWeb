@@ -23,16 +23,15 @@ class ListUserCompetitionsUseCase {
       throw new Error('User ID is required');
     }
 
-    // Fetch competitions from repository (returns domain entities)
+    // Fetch competitions from repository (domain entities + extras)
     const competitions = await this.competitionRepository.findByCreator(
       userId,
       filters,
     );
 
-    // Convert domain entities to simple DTOs for UI
-    // Pass original API data for location names parsing
-    return competitions.map((competition) =>
-      CompetitionAssembler.toSimpleDTO(competition, competition._apiData),
+    // Convert domain entities to simple DTOs for UI, with their extras
+    return competitions.map(({ entity, extras }) =>
+      CompetitionAssembler.toSimpleDTO(entity, extras),
     );
   }
 }

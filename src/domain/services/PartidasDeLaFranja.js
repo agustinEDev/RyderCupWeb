@@ -1,3 +1,4 @@
+import CardStatus from '../value_objects/CardStatus';
 import TeeGroupStatus from '../value_objects/TeeGroupStatus';
 
 /**
@@ -15,7 +16,7 @@ const enLaPartida = (partida, userId) =>
 // Un no presentado sigue en su partida (su NP sale en la clasificación), pero
 // no ocupa sitio, no se mueve y no es compañero de nadie (RyderCupAm#543)
 export const esNoPresentado = (jugador) =>
-  jugador?.cardStatus === 'NO_PRESENTADO';
+  jugador?.cardStatus === CardStatus.NO_PRESENTADO;
 
 /** Los de la partida que juegan: sin los no presentados. */
 export const juegan = (partida) =>
@@ -30,7 +31,7 @@ export const anotaSuTarjeta = (partida, userId) => {
   // Ni en una partida ya cerrada, aunque su tarjeta quedara abierta (/code-review)
   return (
     Boolean(yo) &&
-    (yo.cardStatus ?? 'JUGANDO') === 'JUGANDO' &&
+    (yo.cardStatus ?? CardStatus.JUGANDO) === CardStatus.JUGANDO &&
     partida.status !== TeeGroupStatus.COMPLETED
   );
 };
@@ -44,7 +45,8 @@ export const companerosDe = (partida, userId) =>
  * (retirada)»— en vez de esconderlo, que dejaba «de momento sin compañeros»
  * junto a «marcas a Bea» (QA de la release, 14 oct).
  */
-export const seRetiro = (jugador) => jugador?.cardStatus === 'RETIRADO';
+export const seRetiro = (jugador) =>
+  jugador?.cardStatus === CardStatus.RETIRADO;
 
 /** Si una partida aún se puede tocar: no ha salido (#544). Sin el campo, sí. */
 export const seCambia = (partida) => partida.canChange !== false;
@@ -171,7 +173,8 @@ export const sinMarcadorEnJuego = (tarjetas, jugador) => {
   const estadoDe = (id) => tarjetas.find((c) => c.userId === id)?.cardStatus;
   const suya = tarjetas.find((c) => c.userId === jugador);
   return (
-    suya?.cardStatus === 'JUGANDO' &&
-    (!suya.markedByUserId || estadoDe(suya.markedByUserId) !== 'JUGANDO')
+    suya?.cardStatus === CardStatus.JUGANDO &&
+    (!suya.markedByUserId ||
+      estadoDe(suya.markedByUserId) !== CardStatus.JUGANDO)
   );
 };

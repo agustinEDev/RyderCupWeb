@@ -10,10 +10,11 @@ class InvitationAssembler {
    * Converts a domain entity to a simple DTO for the UI.
    *
    * @param {Invitation} invitation - Domain entity
-   * @param {Object} apiData - Original API data (optional, for extra fields)
+   * @param {{competitionName?: string, inviterName?: string, inviteeName?: string}|null} extras
+   *   - Join fields from the repository (optional, camelCase)
    * @returns {Object} - Simple DTO for UI (camelCase, flat)
    */
-  static toSimpleDTO(invitation, apiData = null) {
+  static toSimpleDTO(invitation, extras = null) {
     if (!(invitation instanceof Invitation)) {
       throw new Error(
         'InvitationAssembler.toSimpleDTO: invitation must be an Invitation instance',
@@ -43,16 +44,16 @@ class InvitationAssembler {
       hasInviteeUser: invitation.hasInviteeUser(),
     };
 
-    // Extra fields from API join data
-    if (apiData) {
-      if (apiData.competition_name) {
-        simpleDTO.competitionName = apiData.competition_name;
+    // Extra fields from the join (names)
+    if (extras) {
+      if (extras.competitionName) {
+        simpleDTO.competitionName = extras.competitionName;
       }
-      if (apiData.inviter_name) {
-        simpleDTO.inviterName = apiData.inviter_name;
+      if (extras.inviterName) {
+        simpleDTO.inviterName = extras.inviterName;
       }
-      if (apiData.invitee_name) {
-        simpleDTO.inviteeName = apiData.invitee_name;
+      if (extras.inviteeName) {
+        simpleDTO.inviteeName = extras.inviteeName;
       }
     }
 
@@ -63,10 +64,10 @@ class InvitationAssembler {
    * Converts multiple domain entities to simple DTOs for the UI.
    *
    * @param {Array<Invitation>} invitations - Array of domain entities
-   * @param {Array<Object>} apiDataArray - Array of original API data (optional)
+   * @param {Array<Object|null>} extrasArray - Array of join fields (optional)
    * @returns {Array<Object>} Array of simple DTOs for UI
    */
-  static toSimpleDTOMany(invitations, apiDataArray = null) {
+  static toSimpleDTOMany(invitations, extrasArray = null) {
     if (!Array.isArray(invitations)) {
       throw new Error(
         'InvitationAssembler.toSimpleDTOMany: invitations must be an array',
@@ -74,8 +75,8 @@ class InvitationAssembler {
     }
 
     return invitations.map((invitation, index) => {
-      const apiData = apiDataArray ? apiDataArray[index] : null;
-      return InvitationAssembler.toSimpleDTO(invitation, apiData);
+      const extras = extrasArray ? extrasArray[index] : null;
+      return InvitationAssembler.toSimpleDTO(invitation, extras);
     });
   }
 }

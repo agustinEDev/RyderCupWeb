@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import CompetitionAssembler from './CompetitionAssembler';
 import CompetitionMapper from '../../infrastructure/mappers/CompetitionMapper';
+import { aExtras } from '../../infrastructure/mappers/conExtras';
 
 /**
  * El tipo de torneo llega a la pantalla (FE #791, RyderCupAm#251).
@@ -26,7 +27,7 @@ const respuestaDeLaApi = (extra = {}) => ({
 const loQueLlegaALaPantalla = (apiData) =>
   CompetitionAssembler.toSimpleDTO(
     CompetitionMapper.toDomain(apiData),
-    apiData,
+    aExtras(apiData),
   );
 
 describe('CompetitionAssembler · el tipo de torneo (FE #791)', () => {

@@ -1,48 +1,24 @@
-import { useState, useEffect, useMemo } from 'react';
-import { useNavigate, useParams, Link } from 'react-router';
-import { ArrowLeft, Calendar, Mail, RotateCcw } from 'lucide-react';
+import { useState } from 'react';
+import { useNavigate, useParams } from 'react-router';
 import { useTranslation } from 'react-i18next';
-import customToast from '../../utils/toast';
 import HeaderAuth from '../../components/layout/HeaderAuth';
 import { useAuth } from '../../hooks/useAuth';
-import { useCargaCancelableEffect } from '../../hooks/useCargaCancelableEffect';
 import { useUserRoles } from '../../hooks/useUserRoles';
-import RoundCard from '../../components/schedule/RoundCard';
+import { useDatosDeLaAgenda } from '../../hooks/useDatosDeLaAgenda';
+import { useModalesDeLaAgenda } from '../../hooks/useModalesDeLaAgenda';
+import { useAccionesDeLaAgenda } from '../../hooks/useAccionesDeLaAgenda';
 import TeamAssignmentSection from '../../components/schedule/TeamAssignmentSection';
-import WalkoverModal from '../../components/schedule/WalkoverModal';
-import ReassignPlayersModal from '../../components/schedule/ReassignPlayersModal';
-import MatchDetailModal from '../../components/schedule/MatchDetailModal';
-import AssignTeamsModal from '../../components/schedule/AssignTeamsModal';
-import FillCaptainModal from '../../components/schedule/FillCaptainModal';
-import GenerateMatchesModal from '../../components/schedule/GenerateMatchesModal';
-import ResetEnvelopesModal from '../../components/schedule/ResetEnvelopesModal';
-import ConfirmModal from '../../components/modals/ConfirmModal';
-import {
-  getScheduleUseCase,
-  getCompetitionDetailUseCase,
-  getCompetitionGolfCoursesUseCase,
-  listEnrollmentsUseCase,
-  generateMatchesUseCase,
-  assignTeamsUseCase,
-  undoTeamsUseCase,
-  fillCaptainUseCase,
-  updateMatchStatusUseCase,
-  declareWalkoverUseCase,
-  reassignPlayersUseCase,
-  resetEnvelopesUseCase,
-} from '../../composition';
-import { useLaMasNueva } from '../../hooks/useLaMasNueva';
+import CabeceraDeLaAgenda from '../../components/schedule/CabeceraDeLaAgenda';
+import SesionesDeLaAgenda from '../../components/schedule/SesionesDeLaAgenda';
+import ModalesDeLaAgenda from '../../components/schedule/ModalesDeLaAgenda';
 import FullScreenLoader from '../../components/ui/FullScreenLoader';
-import { aCamposDeLaCompeticion } from '../../utils/camposDeLaCompeticion';
 import { PANTALLA_MENOS_BARRA_INFERIOR } from '../../utils/barraInferior';
-import { mensajeDeError } from '../../utils/sinCobertura';
-import { CompetitionStatusEnum } from '../../domain/value_objects/CompetitionStatus';
-import EnrollmentStatus from '../../domain/value_objects/EnrollmentStatus';
-import { mensajeDelError } from '../../utils/mensajeDelError';
-import { registraElFallo } from '../../utils/registraElFallo';
-
-// El toast de «no se han podido cargar los inscritos»: uno solo, y se va al volver la lista
-const AVISO_INSCRITOS = 'inscritos-sin-cargar';
+import { puedeGestionarLaCompeticion } from '../../utils/puedeGestionarLaCompeticion';
+import {
+  entraALosSobres,
+  botonesDeLosSobres,
+  sePuedenDeshacerLosEquipos,
+} from '../../utils/permisosDeLaAgenda';
 
 const SchedulePage = () => {
   const navigate = useNavigate();
@@ -56,457 +32,26 @@ const SchedulePage = () => {
     isLoading: isLoadingRoles,
   } = useUserRoles(id, user?.id);
 
-  // Data state
-  const [competition, setCompetition] = useState(null);
-  const [schedule, setSchedule] = useState(null);
-  const [golfCourses, setGolfCourses] = useState([]);
-  const [enrollments, setEnrollments] = useState([]);
-  // Si la lista de inscritos no se pudo cargar: vacía no es «no hay nadie», y
-  // con ella el reparto manual mandaría solo a los capitanes (31 oct 2026)
-  const [inscritosSinCargar, setInscritosSinCargar] = useState(false);
-  // Las lecturas de inscritos pueden cruzarse (StrictMode, cambio de idioma, la
-  // recarga tras «Generar»): un fallo viejo no pisa una lista nueva (CodeRabbit)
-  const ordenInscritos = useLaMasNueva();
-  // Cubrir el puesto de un capitán que se fue tras el reparto (FE #692)
-  const [cubriendoCapitan, setCubriendoCapitan] = useState(null);
-  const [isProcessing, setIsProcessing] = useState(false);
-
-  // UI state
+  const datos = useDatosDeLaAgenda({ id, user, navigate, t });
+  const { competition, schedule, enrollments, isLoading } = datos;
+  // Lo abierto y lo desplegado viven aquí y no en lo que se pinta: mientras la
+  // agenda recarga entera sale la espera, y al volver sigue igual
+  const modales = useModalesDeLaAgenda();
+  const acciones = useAccionesDeLaAgenda({ id, t, tComp, datos, modales });
+  const { isProcessing } = acciones;
   const [expandedRounds, setExpandedRounds] = useState({});
-  // La sesión cuyos sobres se van a rehacer, mientras se confirma
-  const [rehaciendoSobres, setRehaciendoSobres] = useState(null);
-  const [showWalkoverModal, setShowWalkoverModal] = useState(false);
-  const [walkoverMatch, setWalkoverMatch] = useState(null);
-  const [showReassignModal, setShowReassignModal] = useState(false);
-  const [reassignMatch, setReassignMatch] = useState(null);
-  const [showMatchDetailModal, setShowMatchDetailModal] = useState(false);
-  const [detailMatchId, setDetailMatchId] = useState(null);
-  const [showTeamsModal, setShowTeamsModal] = useState(false);
-  const [deshaciendoEquipos, setDeshaciendoEquipos] = useState(false);
-  const [showGenerateModal, setShowGenerateModal] = useState(false);
-  const [generateRound, setGenerateRound] = useState(null);
-
-  // Build player name map from enrollments
-  const playerNameMap = useMemo(() => {
-    const map = new Map();
-    enrollments.forEach((e) => {
-      if (e.userId && e.userName) {
-        map.set(e.userId, e.userName);
-      }
-    });
-    return map;
-  }, [enrollments]);
-
-  const playerHandicapMap = useMemo(() => {
-    const map = new Map();
-    enrollments.forEach((e) => {
-      if (e.userId && e.userHandicap != null) {
-        map.set(e.userId, Number(e.userHandicap));
-      }
-    });
-    return map;
-  }, [enrollments]);
-
-  // La carga de la agenda, con useCargaCancelableEffect: al cambiar de idioma,
-  // al volver a pedirla o al salir, la anterior ya no toca nada, ni avisa ni se
-  // lleva a nadie a la ficha. Con `t` entre las dependencias, como antes:
-  // cambiar de idioma la vuelve a pedir
-  const { cargando: isLoading, recargar: recargarTodo } =
-    useCargaCancelableEffect(
-      () => {
-        const turno = ordenInscritos.turno();
-        return Promise.all([
-          getCompetitionDetailUseCase.execute(id),
-          getScheduleUseCase.execute(id).catch(() => null),
-          getCompetitionGolfCoursesUseCase.execute(id).catch(() => []),
-          listEnrollmentsUseCase.execute(id).then(
-            (lista) => ({ ok: true, lista }),
-            () => ({ ok: false, lista: [] }),
-          ),
-        ]).then((datos) => ({ turno, datos }));
-      },
-      [id, user, navigate, t, ordenInscritos],
-      {
-        activa: Boolean(user),
-        alCargar: ({
-          turno,
-          datos: [compData, scheduleData, coursesResult, enrollmentsData],
-        }) => {
-          setCompetition(compData);
-          setSchedule(scheduleData);
-
-          setGolfCourses(aCamposDeLaCompeticion(coursesResult));
-
-          if (ordenInscritos.aplicar(turno)) {
-            setEnrollments(enrollmentsData.lista);
-            setInscritosSinCargar(!enrollmentsData.ok);
-            // Con id: si la carga se repite (StrictMode, cambio de idioma), un solo aviso
-            if (enrollmentsData.ok) {
-              customToast.dismiss(AVISO_INSCRITOS);
-            } else {
-              customToast.error(t('errors.failedToLoadEnrollments'), {
-                id: AVISO_INSCRITOS,
-              });
-            }
-          }
-        },
-        alFallar: (error) => {
-          registraElFallo(
-            'SchedulePage.error-loading-schedule-data',
-            'Error loading schedule data:',
-            error,
-          );
-          customToast.error(t('errors.failedToLoadSchedule'));
-          navigate(`/competitions/${id}`);
-        },
-      },
-    );
-
-  // El toast de los inscritos es de la agenda: al salir se va con ella (pasada
-  // del Kind, 31 oct 2026: seguía ~1 s en la ficha)
-  useEffect(() => {
-    return () => {
-      customToast.dismiss(AVISO_INSCRITOS);
-    };
-  }, []);
-
-  const jugadoresDelEquipo = (equipo) => {
-    const lista =
-      equipo === 'A'
-        ? teamAssignment?.teamAPlayerIds
-        : teamAssignment?.teamBPlayerIds;
-    // Los que siguen inscritos: el reparto guarda la lista tal cual y una baja
-    // no la toca, así que quien se retiró sigue ahí y ya no puede capitanear
-    const aprobados = new Set(
-      enrollments
-        .filter((e) => e.status === EnrollmentStatus.APPROVED)
-        .map((e) => e.userId),
-    );
-    return (lista || [])
-      .filter((id) => aprobados.has(id))
-      .map((id) => ({
-        userId: id,
-        name: playerNameMap.get(id) || t('unnamedPlayer'),
-      }));
-  };
-
-  const cubrirCapitan = async (playerId) => {
-    setIsProcessing(true);
-    try {
-      const { captains } = await fillCaptainUseCase.execute(
-        id,
-        cubriendoCapitan,
-        playerId,
-      );
-      setCompetition((prev) => ({ ...prev, captains }));
-      setCubriendoCapitan(null);
-      customToast.success(t('success.captainFilled'));
-    } catch (error) {
-      registraElFallo(
-        'SchedulePage.error-filling-captain',
-        'Error filling captain:',
-        error,
-      );
-      customToast.error(
-        mensajeDelError(error, t('errors.failedToFillCaptain')),
-      );
-    } finally {
-      setIsProcessing(false);
-    }
-  };
-
-  const rehacerSobres = async () => {
-    setIsProcessing(true);
-    try {
-      await resetEnvelopesUseCase.execute(rehaciendoSobres);
-      setRehaciendoSobres(null);
-      customToast.success(tComp('envelope.resetDone'));
-      recargarTodo();
-    } catch (error) {
-      // El servidor es quien sabe si esa sesión ya se jugó o si no había nada
-      // que rehacer: aquí se enseña lo que diga
-      customToast.error(mensajeDelError(error, t('common:errors.generic')));
-    } finally {
-      setIsProcessing(false);
-    }
-  };
-
-  const recargarCompeticion = async () => {
-    try {
-      setCompetition(await getCompetitionDetailUseCase.execute(id));
-    } catch (error) {
-      registraElFallo(
-        'SchedulePage.error-reloading-competition',
-        'Error reloading competition:',
-        error,
-      );
-    }
-  };
-
-  const reloadSchedule = async () => {
-    try {
-      const scheduleData = await getScheduleUseCase.execute(id);
-      setSchedule(scheduleData);
-    } catch (error) {
-      registraElFallo(
-        'SchedulePage.error-reloading-schedule',
-        'Error reloading schedule:',
-        error,
-      );
-      customToast.error(t('errors.failedToLoadSchedule'));
-    }
-  };
 
   // --- Permissions ---
-  const isCreator = competition?.creatorId === user?.id;
-  const canManage = isCreator || hasCreatorRole || isAdmin;
-
-  const handleGenerateMatches = async (roundId, manualPairings = null) => {
-    setIsProcessing(true);
-    try {
-      const pairings = manualPairings ? { manualPairings } : {};
-      await generateMatchesUseCase.execute(roundId, pairings);
-      customToast.success(t('success.matchesGenerated'));
-      setShowGenerateModal(false);
-      setGenerateRound(null);
-      await reloadSchedule();
-    } catch (error) {
-      registraElFallo(
-        'SchedulePage.error-generating-matches',
-        'Error generating matches:',
-        error,
-      );
-      if (error?.errorCode === 'MATCH_GENERATION_BLOCKED') {
-        // El servidor lo ha apuntado en la sesión, en claves (BE #360), y el
-        // modal lo enseña en su idioma, con quién y qué. Abierto: cerrarlo
-        // tiraba los emparejamientos hechos a mano. Con las inscripciones:
-        // un retirado no puede seguir ofreciéndose. Y con la competición: si
-        // la reabrieron entretanto, «Generar» deja de ofrecerse
-        const turno = ordenInscritos.turno();
-        try {
-          const [competicion, agenda, inscripciones] = await Promise.all([
-            getCompetitionDetailUseCase.execute(id),
-            getScheduleUseCase.execute(id),
-            listEnrollmentsUseCase.execute(id),
-          ]);
-          setCompetition(competicion);
-          setSchedule(agenda);
-          if (ordenInscritos.aplicar(turno)) {
-            setEnrollments(inscripciones);
-            setInscritosSinCargar(false);
-            customToast.dismiss(AVISO_INSCRITOS);
-          }
-        } catch (recarga) {
-          // Sin la sesión recargada no hay motivo que enseñar: la frase del
-          // servidor, que también dice quién
-          registraElFallo(
-            'SchedulePage.reloading-after-a-blocked-generation',
-            'Error reloading after a blocked generation:',
-            recarga,
-          );
-          customToast.error(
-            mensajeDelError(error, t('errors.failedToGenerateMatches')),
-          );
-        }
-      } else {
-        customToast.error(
-          mensajeDelError(error, t('errors.failedToGenerateMatches')),
-        );
-      }
-    } finally {
-      setIsProcessing(false);
-    }
-  };
-
-  const openGenerateModal = (round) => {
-    setGenerateRound(round);
-    setShowGenerateModal(true);
-  };
-
-  // --- Match handlers ---
-  const handleStartMatch = async (matchId) => {
-    setIsProcessing(true);
-    try {
-      await updateMatchStatusUseCase.execute(matchId, 'start');
-      customToast.success(t('success.matchStatusUpdated'));
-      await reloadSchedule();
-    } catch (error) {
-      registraElFallo(
-        'SchedulePage.error-starting-match',
-        'Error starting match:',
-        error,
-      );
-      customToast.error(
-        mensajeDelError(error, t('errors.failedToUpdateMatchStatus')),
-      );
-    } finally {
-      setIsProcessing(false);
-    }
-  };
-
-  const handleCompleteMatch = async (matchId) => {
-    setIsProcessing(true);
-    try {
-      await updateMatchStatusUseCase.execute(matchId, 'complete');
-      customToast.success(t('success.matchStatusUpdated'));
-      await reloadSchedule();
-    } catch (error) {
-      registraElFallo(
-        'SchedulePage.error-completing-match',
-        'Error completing match:',
-        error,
-      );
-      customToast.error(
-        mensajeDelError(error, t('errors.failedToUpdateMatchStatus')),
-      );
-    } finally {
-      setIsProcessing(false);
-    }
-  };
-
-  const handleDeclareWalkover = async (winningTeam, reason) => {
-    if (!walkoverMatch) return;
-    setIsProcessing(true);
-    try {
-      await declareWalkoverUseCase.execute(
-        walkoverMatch.id,
-        winningTeam,
-        reason,
-      );
-      customToast.success(t('success.walkoverDeclared'));
-      setShowWalkoverModal(false);
-      setWalkoverMatch(null);
-      await reloadSchedule();
-    } catch (error) {
-      registraElFallo(
-        'SchedulePage.error-declaring-walkover',
-        'Error declaring walkover:',
-        error,
-      );
-      customToast.error(
-        mensajeDelError(error, t('errors.failedToDeclareWalkover')),
-      );
-    } finally {
-      setIsProcessing(false);
-    }
-  };
-
-  const handleReassignPlayers = async (teamAIds, teamBIds) => {
-    if (!reassignMatch) return;
-    setIsProcessing(true);
-    try {
-      await reassignPlayersUseCase.execute(
-        reassignMatch.id,
-        teamAIds,
-        teamBIds,
-      );
-      customToast.success(t('success.playersReassigned'));
-      setShowReassignModal(false);
-      setReassignMatch(null);
-      await reloadSchedule();
-    } catch (error) {
-      registraElFallo(
-        'SchedulePage.error-reassigning-players',
-        'Error reassigning players:',
-        error,
-      );
-      customToast.error(
-        mensajeDelError(error, t('errors.failedToReassignPlayers')),
-      );
-    } finally {
-      setIsProcessing(false);
-    }
-  };
-
-  // --- Team assignment handler ---
-  const handleAssignTeams = async (teamData) => {
-    setIsProcessing(true);
-    try {
-      await assignTeamsUseCase.execute(id, teamData);
-      customToast.success(t('success.teamsAssigned'));
-      setShowTeamsModal(false);
-      // La competición también: repartir libera los subcapitanes en el servidor
-      // (RyderCupAM#320), y sin recargarla la etiqueta seguiría pegada a quien
-      // ya no lo es
-      await Promise.all([reloadSchedule(), recargarCompeticion()]);
-    } catch (error) {
-      registraElFallo(
-        'SchedulePage.error-assigning-teams',
-        'Error assigning teams:',
-        error,
-      );
-      // Con su código, en cristiano (29 oct 2026): formados quedan así, y con
-      // la sala de draft abierta se espera a que termine
-      if (error?.errorCode === 'DRAFT_IN_PROGRESS') {
-        customToast.error(t('errors.waitForDraft'));
-      } else if (error?.errorCode === 'TEAMS_FORMED') {
-        customToast.error(t('errors.teamsFormed'));
-        setShowTeamsModal(false);
-        await Promise.all([reloadSchedule(), recargarCompeticion()]);
-      } else {
-        customToast.error(
-          mensajeDelError(error, t('errors.failedToAssignTeams')),
-        );
-      }
-    } finally {
-      setIsProcessing(false);
-    }
-  };
-
-  // Deshacer los equipos para que entre alguien (30 oct 2026): el mismo
-  // reinicio que al quitar a un jugador, y se repite el draft
-  const handleUndoTeams = async () => {
-    setIsProcessing(true);
-    try {
-      await undoTeamsUseCase.execute(id);
-      customToast.success(t('success.teamsUndone'));
-    } catch (error) {
-      registraElFallo(
-        'SchedulePage.error-undoing-teams',
-        'Error undoing teams:',
-        error,
-      );
-      // Ya deshechos (otra pestaña, o al quitar a alguien): basta con releer
-      if (error?.errorCode !== 'NO_TEAMS') {
-        customToast.error(
-          error?.errorCode === 'TEAMS_LOCKED'
-            ? t('errors.teamsLocked')
-            : mensajeDeError(error, {
-                sinConexion: t('common:sinConexion.mensaje'),
-                generico: t('errors.failedToUndoTeams'),
-              }),
-        );
-      }
-    }
-    setDeshaciendoEquipos(false);
-    // Haya ido bien o no, la agenda al día: sin equipos, o con los partidos
-    // que no se veían. Hasta entonces sigue en curso: si no, el botón volvía
-    // antes y un segundo toque daba NO_TEAMS (revisor)
-    try {
-      await Promise.all([reloadSchedule(), recargarCompeticion()]);
-    } finally {
-      setIsProcessing(false);
-    }
-  };
+  const canManage = puedeGestionarLaCompeticion({
+    creatorId: competition?.creatorId,
+    userId: user?.id,
+    hasCreatorRole,
+    isAdmin,
+  });
 
   // --- UI helpers ---
   const toggleRoundExpand = (roundId) => {
     setExpandedRounds((prev) => ({ ...prev, [roundId]: !prev[roundId] }));
-  };
-
-  const openWalkover = (match) => {
-    setWalkoverMatch(match);
-    setShowWalkoverModal(true);
-  };
-
-  const openReassign = (match) => {
-    setReassignMatch(match);
-    setShowReassignModal(true);
-  };
-
-  const openMatchDetail = (matchId) => {
-    setDetailMatchId(matchId);
-    setShowMatchDetailModal(true);
   };
 
   const handleScoreMatch = (matchId) => {
@@ -528,23 +73,16 @@ const SchedulePage = () => {
     teamA: competition.team1Name || 'Team A',
     teamB: competition.team2Name || 'Team B',
   };
-  // Quien capitanea un equipo tiene un sobre que entregar en cada sesión, y
-  // sin equipos repartidos no hay a quién ordenar (FE #655). El organizador
-  // entra también: es quien los abre cuando un capitán no aparece
-  const esCapitan =
-    Boolean(user?.id) &&
-    [competition.captains?.teamA, competition.captains?.teamB].includes(
-      user.id,
-    );
-  const entraALosSobres =
-    esCapitan || (Boolean(user?.id) && competition.creatorId === user.id);
-  const hayEquipos = Boolean(teamAssignment);
-  // Con partidos, o ya en juego, los equipos son lo jugado: el servidor no los
-  // deshace (TEAMS_LOCKED), así que ni se ofrece
-  const sePuedenDeshacer =
-    [CompetitionStatusEnum.ACTIVE, CompetitionStatusEnum.CLOSED].includes(
-      competition.status,
-    ) && !rounds.some((r) => r.matches?.length > 0);
+  const botones = botonesDeLosSobres({
+    entra: entraALosSobres({
+      userId: user?.id,
+      captains: competition.captains,
+      creatorId: competition.creatorId,
+    }),
+    canManage,
+    setupMode: competition.setupMode,
+    hayEquipos: Boolean(teamAssignment),
+  });
 
   return (
     <div
@@ -555,145 +93,64 @@ const SchedulePage = () => {
 
         <div className="px-4 md:px-40 flex flex-1 justify-center py-5">
           <div className="layout-content-container flex flex-col max-w-[960px] flex-1">
-            {/* Header */}
-            <div className="p-4">
-              <button
-                onClick={() => navigate(`/competitions/${id}`)}
-                className="hidden md:flex items-center gap-2 text-gray-600 hover:text-primary transition-colors mb-4"
-              >
-                <ArrowLeft className="w-4 h-4" />
-                <span className="text-sm font-medium">{t('backToDetail')}</span>
-              </button>
-
-              <div className="flex flex-wrap justify-between items-center gap-3">
-                <div>
-                  <h1 className="hidden md:block text-gray-900 text-3xl md:text-4xl font-bold">
-                    {t('title')}
-                  </h1>
-                  <p className="text-gray-500 text-sm mt-1">
-                    {competition.name}
-                  </p>
-                </div>
-                {/* La agenda se cambia en la ficha (FE #654): aquí se quedan los
-                    equipos, los partidos y los sobres. Solo para quien la puede
-                    cambiar: los demás entran aquí por la ruta pública y en la
-                    ficha no tienen nada que tocar */}
-                {canManage && (
-                  <Link
-                    to={`/competitions/${id}`}
-                    data-testid="agenda-en-la-ficha"
-                    className="flex items-center gap-2 rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
-                  >
-                    <Calendar className="w-4 h-4" />
-                    <span>{t('agenda.inDetail')}</span>
-                  </Link>
-                )}
-              </div>
-            </div>
+            <CabeceraDeLaAgenda
+              competitionId={id}
+              competitionName={competition.name}
+              canManage={canManage}
+              onVolver={() => navigate(`/competitions/${id}`)}
+              t={t}
+            />
 
             {/* Team Assignment Section: solo una Ryder tiene equipos (FE #791) */}
             {competition.hasTeams && (
               <div className="p-4">
                 <TeamAssignmentSection
                   teamAssignment={teamAssignment}
-                  onAssignTeams={() => setShowTeamsModal(true)}
+                  onAssignTeams={() => modales.setShowTeamsModal(true)}
                   onUndoTeams={() => {
-                    if (!isProcessing) setDeshaciendoEquipos(true);
+                    if (!isProcessing) modales.setDeshaciendoEquipos(true);
                   }}
-                  sePuedenDeshacer={sePuedenDeshacer}
+                  sePuedenDeshacer={sePuedenDeshacerLosEquipos({
+                    status: competition.status,
+                    rounds,
+                  })}
                   canManage={canManage}
-                  playerNameMap={playerNameMap}
+                  playerNameMap={datos.playerNameMap}
                   enrollments={enrollments}
                   teamNames={teamNames}
                   maxPlayingHandicap={competition.maxPlayingHandicap ?? null}
                   captains={competition.captains}
                   status={competition.status}
-                  onFillCaptain={setCubriendoCapitan}
-                  inscritosSinCargar={inscritosSinCargar}
+                  onFillCaptain={modales.setCubriendoCapitan}
+                  inscritosSinCargar={datos.inscritosSinCargar}
                   t={t}
                 />
               </div>
             )}
 
-            {/* Rounds List */}
-            <div className="p-4">
-              <h2 className="text-gray-900 font-bold text-xl mb-4 flex items-center gap-2">
-                <Calendar className="w-5 h-5 text-primary" />
-                {t('rounds.title')} ({rounds.length})
-              </h2>
-
-              {rounds.length === 0 ? (
-                <div className="text-center py-12 bg-gray-50 rounded-xl border border-gray-200">
-                  <Calendar className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                  <p className="text-gray-500">{t('rounds.noRounds')}</p>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {rounds.map((round) => (
-                    <div key={round.id} className="space-y-2">
-                      {/* El sobre del capitán para ESTA sesión (FE #655). Aquí
-                          y no en la ficha porque el sobre es de una sesión, no
-                          de la competición; esta pantalla la ven también los
-                          capitanes que no organizan, por la ruta pública */}
-                      {entraALosSobres &&
-                        competition.setupMode === 'RYDER_CUP' &&
-                        hayEquipos && (
-                          <Link
-                            to={`/competitions/${id}/rounds/${round.id}/envelope`}
-                            data-testid={`ir-al-sobre-${round.id}`}
-                            className="flex items-center justify-center gap-2 rounded-lg bg-yellow-600 px-4 py-2 text-sm font-semibold text-white hover:bg-yellow-700"
-                          >
-                            <Mail className="h-4 w-4" />
-                            {tComp('envelope.open')}
-                          </Link>
-                        )}
-                      {/* Rehacer el proceso entero es cosa del organizador: el
-                          capitán que entregó a tiempo no se queda sin su lista
-                          por culpa del que se olvidó */}
-                      {canManage &&
-                        competition.setupMode === 'RYDER_CUP' &&
-                        hayEquipos && (
-                          <button
-                            type="button"
-                            data-testid={`rehacer-sobres-${round.id}`}
-                            onClick={() => setRehaciendoSobres(round.id)}
-                            className="flex w-full items-center justify-center gap-2 rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50"
-                          >
-                            <RotateCcw className="h-4 w-4" />
-                            {tComp('envelope.reset')}
-                          </button>
-                        )}
-                      <RoundCard
-                        round={round}
-                        onGenerateMatches={() => openGenerateModal(round)}
-                        soloReintento={competition.setupMode === 'RYDER_CUP'}
-                        competicionCerrada={[
-                          CompetitionStatusEnum.CLOSED,
-                          CompetitionStatusEnum.IN_PROGRESS,
-                        ].includes(competition.status)}
-                        onToggleExpand={() => toggleRoundExpand(round.id)}
-                        isExpanded={!!expandedRounds[round.id]}
-                        canEdit={canManage}
-                        onStartMatch={handleStartMatch}
-                        onCompleteMatch={handleCompleteMatch}
-                        onDeclareWalkover={openWalkover}
-                        onReassignPlayers={openReassign}
-                        onViewMatchDetail={openMatchDetail}
-                        onScoreMatch={handleScoreMatch}
-                        playerNameMap={playerNameMap}
-                        playerHandicapMap={playerHandicapMap}
-                        maxPlayingHandicap={
-                          competition.maxPlayingHandicap ?? null
-                        }
-                        golfCourses={golfCourses}
-                        teamNames={teamNames}
-                        t={t}
-                      />
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
+            <SesionesDeLaAgenda
+              rounds={rounds}
+              competitionId={id}
+              competition={competition}
+              botones={botones}
+              expandedRounds={expandedRounds}
+              onToggleExpand={toggleRoundExpand}
+              onGenerateMatches={modales.abrirGenerar}
+              onRehacerSobres={modales.setRehaciendoSobres}
+              onScoreMatch={handleScoreMatch}
+              onStartMatch={acciones.handleStartMatch}
+              onCompleteMatch={acciones.handleCompleteMatch}
+              onDeclareWalkover={modales.abrirWalkover}
+              onReassignPlayers={modales.abrirReasignar}
+              onViewMatchDetail={modales.abrirDetalle}
+              canManage={canManage}
+              playerNameMap={datos.playerNameMap}
+              playerHandicapMap={datos.playerHandicapMap}
+              golfCourses={datos.golfCourses}
+              teamNames={teamNames}
+              t={t}
+              tComp={tComp}
+            />
 
             {/* Footer */}
             <footer className="flex flex-col gap-6 px-5 py-10 text-center">
@@ -705,142 +162,21 @@ const SchedulePage = () => {
         </div>
       </div>
 
-      {/* Walkover Modal */}
-      {showWalkoverModal && walkoverMatch && (
-        <WalkoverModal
-          isOpen={showWalkoverModal}
-          onClose={() => {
-            setShowWalkoverModal(false);
-            setWalkoverMatch(null);
-          }}
-          onConfirm={handleDeclareWalkover}
-          matchNumber={walkoverMatch.matchNumber}
-          isProcessing={isProcessing}
-          teamNames={teamNames}
-          t={t}
-        />
-      )}
-
-      {/* Reassign Players Modal */}
-      {showReassignModal && reassignMatch && (
-        <ReassignPlayersModal
-          isOpen={showReassignModal}
-          onClose={() => {
-            setShowReassignModal(false);
-            setReassignMatch(null);
-          }}
-          onConfirm={handleReassignPlayers}
-          match={reassignMatch}
-          enrollments={enrollments}
-          isProcessing={isProcessing}
-          teamNames={teamNames}
-          inscritosSinCargar={inscritosSinCargar}
-          t={t}
-        />
-      )}
-
-      {/* Match Detail Modal */}
-      {showMatchDetailModal && detailMatchId && (
-        <MatchDetailModal
-          isOpen={showMatchDetailModal}
-          onClose={() => {
-            setShowMatchDetailModal(false);
-            setDetailMatchId(null);
-          }}
-          matchId={detailMatchId}
-          playerNameMap={playerNameMap}
-          playerHandicapMap={playerHandicapMap}
-          maxPlayingHandicap={competition.maxPlayingHandicap ?? null}
-          teamNames={teamNames}
-          t={t}
-          canManage={canManage}
-          matchFormat={
-            rounds.find((r) => r.matches?.some((m) => m.id === detailMatchId))
-              ?.matchFormat ?? null
-          }
-        />
-      )}
-
-      {/* Deshacer los equipos: siempre con confirmación (F7, 30 oct 2026) */}
-      <ConfirmModal
-        isOpen={deshaciendoEquipos}
-        title={t('teams.undoConfirm.title')}
-        message={t('teams.undoConfirm.body')}
-        confirmText={t('teams.undoConfirm.confirm')}
-        cancelText={t('teams.undoConfirm.keep')}
-        onConfirm={handleUndoTeams}
-        onCancel={() => setDeshaciendoEquipos(false)}
-        isDestructive
-        isLoading={isProcessing}
+      <ModalesDeLaAgenda
+        modales={modales}
+        acciones={acciones}
+        enrollments={enrollments}
+        inscritosSinCargar={datos.inscritosSinCargar}
+        playerNameMap={datos.playerNameMap}
+        playerHandicapMap={datos.playerHandicapMap}
+        competition={competition}
+        rounds={rounds}
+        teamAssignment={teamAssignment}
+        teamNames={teamNames}
+        canManage={canManage}
+        t={t}
+        tComp={tComp}
       />
-
-      {/* Assign Teams Modal */}
-      {showTeamsModal && (
-        <AssignTeamsModal
-          isOpen={showTeamsModal}
-          onClose={() => setShowTeamsModal(false)}
-          onConfirm={handleAssignTeams}
-          enrollments={enrollments}
-          isProcessing={isProcessing}
-          teamNames={teamNames}
-          captains={competition.captains}
-          inscritosSinCargar={inscritosSinCargar}
-          t={t}
-        />
-      )}
-
-      {/* Cubrir el puesto de un capitán que se fue tras el reparto (FE #692) */}
-      {cubriendoCapitan && (
-        <FillCaptainModal
-          isOpen
-          team={cubriendoCapitan}
-          teamName={
-            cubriendoCapitan === 'A' ? teamNames.teamA : teamNames.teamB
-          }
-          players={jugadoresDelEquipo(cubriendoCapitan)}
-          onConfirm={cubrirCapitan}
-          onClose={() => setCubriendoCapitan(null)}
-          isLoading={isProcessing}
-          t={t}
-        />
-      )}
-
-      {/* Generate Matches Modal */}
-      {showGenerateModal && generateRound && (
-        <GenerateMatchesModal
-          isOpen={showGenerateModal}
-          onClose={() => {
-            setShowGenerateModal(false);
-            setGenerateRound(null);
-          }}
-          onConfirm={(pairings) =>
-            handleGenerateMatches(generateRound.id, pairings)
-          }
-          round={generateRound}
-          bloqueo={
-            rounds.find((r) => r.id === generateRound.id)
-              ?.matchGenerationBlock ?? null
-          }
-          enrollments={enrollments}
-          teamAssignment={teamAssignment}
-          isProcessing={isProcessing}
-          teamNames={teamNames}
-          playerNameMap={playerNameMap}
-          setupMode={competition?.setupMode}
-          t={t}
-        />
-      )}
-
-      {/* Rehacer los sobres de una sesión (FE #655) */}
-      {rehaciendoSobres && (
-        <ResetEnvelopesModal
-          isOpen={Boolean(rehaciendoSobres)}
-          onConfirm={rehacerSobres}
-          onClose={() => setRehaciendoSobres(null)}
-          isLoading={isProcessing}
-          t={tComp}
-        />
-      )}
     </div>
   );
 };

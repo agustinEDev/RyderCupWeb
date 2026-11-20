@@ -13,9 +13,9 @@ const mockInvitation = Invitation.fromPersistence({
   createdAt: '2026-02-18T10:00:00Z',
   updatedAt: '2026-02-18T10:00:00Z',
 });
-mockInvitation._apiData = {
-  competition_name: 'Summer Cup',
-  inviter_name: 'Creator',
+const mockInvitationExtras = {
+  competitionName: 'Summer Cup',
+  inviterName: 'Creator',
 };
 
 describe('ListMyInvitationsUseCase', () => {
@@ -25,7 +25,7 @@ describe('ListMyInvitationsUseCase', () => {
   beforeEach(() => {
     mockRepo = {
       getMyInvitations: vi.fn().mockResolvedValue({
-        invitations: [mockInvitation],
+        invitations: [{ entity: mockInvitation, extras: mockInvitationExtras }],
         totalCount: 1,
       }),
     };

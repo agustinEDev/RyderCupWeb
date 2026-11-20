@@ -170,7 +170,7 @@ const PERMITIDOS = [
     veces: 1,
   },
   {
-    fichero: 'components/quick_match/CreateQuickMatchModal.jsx',
+    fichero: 'components/quick_match/useAjustesDelBorrador.js',
     palabra: 'MATCH_PLAY',
     motivo: MODO_DE_PARTIDA_RAPIDA,
     veces: 1,

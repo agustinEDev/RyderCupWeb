@@ -2,8 +2,9 @@ import IFriendRepository from '../../domain/repositories/IFriendRepository';
 import FriendshipMapper from '../mappers/FriendshipMapper';
 import apiRequest from '../http/api.js';
 import { segmento } from '../http/api';
+import { conExtras, conExtrasLista } from '../mappers/conExtras';
 
-/** @typedef {import('../../domain/entities/Friendship').default} Friendship */
+/** @typedef {import('../../domain/repositories/IFriendRepository').FriendshipWithExtras} FriendshipWithExtras */
 
 /**
  * ApiFriendRepository - REST API implementation
@@ -34,18 +35,17 @@ class ApiFriendRepository extends IFriendRepository {
     return queryString ? `?${queryString}` : '';
   }
 
+  /** @returns {Promise<FriendshipWithExtras>} */
   async sendRequest(addresseeId) {
     const apiData = await apiRequest('/api/v1/friends/requests', {
       method: 'POST',
       body: JSON.stringify({ addressee_id: addresseeId }),
     });
 
-    /** @type {Friendship & {_apiData?: Object}} */
-    const friendship = FriendshipMapper.toDomain(apiData);
-    friendship._apiData = apiData;
-    return friendship;
+    return conExtras(FriendshipMapper.toDomain(apiData), apiData);
   }
 
+  /** @returns {Promise<FriendshipWithExtras>} */
   async respondToRequest(friendshipId, action) {
     const apiData = await apiRequest(
       `/api/v1/friends/requests/${segmento(friendshipId)}/respond`,
@@ -55,10 +55,7 @@ class ApiFriendRepository extends IFriendRepository {
       },
     );
 
-    /** @type {Friendship & {_apiData?: Object}} */
-    const friendship = FriendshipMapper.toDomain(apiData);
-    friendship._apiData = apiData;
-    return friendship;
+    return conExtras(FriendshipMapper.toDomain(apiData), apiData);
   }
 
   async removeFriend(friendshipId) {
@@ -67,6 +64,7 @@ class ApiFriendRepository extends IFriendRepository {
     });
   }
 
+  /** @returns {Promise<FriendshipWithExtras>} */
   async blockUser(userId) {
     const apiData = await apiRequest(
       `/api/v1/friends/${segmento(userId)}/block`,
@@ -75,12 +73,10 @@ class ApiFriendRepository extends IFriendRepository {
       },
     );
 
-    /** @type {Friendship & {_apiData?: Object}} */
-    const friendship = FriendshipMapper.toDomain(apiData);
-    friendship._apiData = apiData;
-    return friendship;
+    return conExtras(FriendshipMapper.toDomain(apiData), apiData);
   }
 
+  /** @returns {Promise<{friendships: FriendshipWithExtras[], totalCount: number}>} */
   async getFriends(filters = {}) {
     const apiFilters = {};
     if (filters.page) apiFilters.page = filters.page;
@@ -90,19 +86,15 @@ class ApiFriendRepository extends IFriendRepository {
     const response = await apiRequest(`/api/v1/friends/me${queryString}`);
 
     const apiDataArray = response.friendships || [];
-    /** @type {Array<Friendship & {_apiData?: Object}>} */
-    const friendships = FriendshipMapper.toDomainMany(apiDataArray);
-
-    friendships.forEach((friendship, index) => {
-      friendship._apiData = apiDataArray[index];
-    });
+    const entities = FriendshipMapper.toDomainMany(apiDataArray);
 
     return {
-      friendships,
+      friendships: conExtrasLista(entities, apiDataArray),
       totalCount: response.total_count || 0,
     };
   }
 
+  /** @returns {Promise<{friendships: FriendshipWithExtras[], totalCount: number}>} */
   async getPendingRequests(direction, filters = {}) {
     const apiFilters = { direction };
     if (filters.page) apiFilters.page = filters.page;
@@ -114,15 +106,10 @@ class ApiFriendRepository extends IFriendRepository {
     );
 
     const apiDataArray = response.friendships || [];
-    /** @type {Array<Friendship & {_apiData?: Object}>} */
-    const friendships = FriendshipMapper.toDomainMany(apiDataArray);
-
-    friendships.forEach((friendship, index) => {
-      friendship._apiData = apiDataArray[index];
-    });
+    const entities = FriendshipMapper.toDomainMany(apiDataArray);
 
     return {
-      friendships,
+      friendships: conExtrasLista(entities, apiDataArray),
       totalCount: response.total_count || 0,
     };
   }

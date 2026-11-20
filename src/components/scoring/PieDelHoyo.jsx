@@ -29,10 +29,17 @@ const PieDelHoyo = ({
       ? t('input.halved')
       : (nombreDelEquipo(holeResult?.winner, teamAName, teamBName) ??
         holeResult?.winner);
+  // Sin el equipo que va por delante, solo la ventaja: « 2UP» no decía quién
+  // y dejaba un espacio delante (FE #1196)
+  const quienVaDelante = nombreDelEquipo(
+    holeResult?.standingTeam,
+    teamAName,
+    teamBName,
+  );
   const ventaja =
     standing === 'AS'
       ? t('input.allSquare')
-      : `${nombreDelEquipo(holeResult?.standingTeam, teamAName, teamBName) ?? ''} ${standing}`;
+      : [quienVaDelante, standing].filter(Boolean).join(' ');
 
   return (
     <div

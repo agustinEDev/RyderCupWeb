@@ -31,18 +31,18 @@ class GetCompetitionDetailUseCase {
       throw new Error('Competition ID is required');
     }
 
-    // Fetch competition from repository (returns domain entity)
-    const competition =
-      await this.competitionRepository.findById(competitionId);
+    // Fetch competition from repository (domain entity + extras)
+    const found = await this.competitionRepository.findById(competitionId);
 
     // If competition is not found, throw an error
-    if (!competition) {
+    if (!found) {
       throw new Error('Competition not found');
     }
 
-    // Convert domain entity to simple DTO for UI
-    // Pass original API data for location names parsing
-    return CompetitionAssembler.toSimpleDTO(competition, competition._apiData);
+    // Convert domain entity to simple DTO for UI, with what the entity
+    // doesn't keep (location names, creator, etc.)
+    const { entity, extras } = found;
+    return CompetitionAssembler.toSimpleDTO(entity, extras);
   }
 }
 

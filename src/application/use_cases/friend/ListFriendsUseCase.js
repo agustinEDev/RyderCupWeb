@@ -18,12 +18,8 @@ class ListFriendsUseCase {
   async execute(currentUserId, filters = {}) {
     const result = await this.#friendRepository.getFriends(filters);
 
-    const dtos = result.friendships.map((friendship) =>
-      FriendshipAssembler.toSimpleDTO(
-        friendship,
-        friendship._apiData,
-        currentUserId,
-      ),
+    const dtos = result.friendships.map(({ entity, extras }) =>
+      FriendshipAssembler.toSimpleDTO(entity, extras, currentUserId),
     );
 
     return {

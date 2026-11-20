@@ -1660,3 +1660,135 @@ describe('HoleInput · caracterización (partir el componente)', () => {
     expect(screen.getByTestId('pie-del-hoyo')).toHaveTextContent('USA 3UP');
   });
 });
+
+/**
+ * FE #1196 · 2: sin el equipo que va por delante, el pie decía « 2UP» (con un
+ * espacio delante y sin nadie). Decidido el 20 nov 2026: solo la ventaja.
+ */
+describe('HoleInput · ventaja sin equipo (FE #1196)', () => {
+  const props = {
+    holeNumber: 5,
+    par: 4,
+    strokeIndex: 7,
+    onScoreChange: vi.fn(),
+  };
+  const ventaja = () => screen.getByTestId('pie-del-hoyo').lastChild;
+
+  it.each([
+    ['sin resultado del hoyo', null],
+    [
+      'con resultado pero sin equipo que vaya por delante',
+      { winner: 'A', standingTeam: null },
+    ],
+    ['con un equipo que no es ni A ni B', { winner: 'A', standingTeam: 'Z' }],
+  ])('%s, solo «2UP», sin espacio delante', (_caso, holeResult) => {
+    render(
+      <HoleInput
+        {...props}
+        standing="2UP"
+        holeResult={holeResult}
+        teamAName="Europe"
+        teamBName="USA"
+      />,
+    );
+    expect(ventaja().textContent).toBe('2UP');
+  });
+
+  it('con el equipo, su nombre y la ventaja como siempre', () => {
+    render(
+      <HoleInput
+        {...props}
+        standing="2UP"
+        holeResult={{ winner: 'A', standingTeam: 'B' }}
+        teamAName="Europe"
+        teamBName="USA"
+      />,
+    );
+    expect(ventaja().textContent).toBe('USA 2UP');
+  });
+});
+
+/**
+ * FE #1196 · 1: bloqueada, la casilla pinta el número sin el `id` al que
+ * apunta su etiqueta, y un lector de pantalla no los une. El número bloqueado
+ * tiene que llevar su etiqueta, sin anunciarse solo cada vez que cambia.
+ */
+describe('HoleInput · etiquetas de las casillas bloqueadas (FE #1196)', () => {
+  const props = {
+    holeNumber: 3,
+    par: 4,
+    strokeIndex: 6,
+    markedName: 'Carlos',
+    onScoreChange: vi.fn(),
+  };
+  const etiquetadoComo = (valor, texto) => {
+    expect(valor.getAttribute('aria-live')).toBe('off');
+    expect(screen.getByLabelText(texto)).toBe(valor);
+  };
+
+  it('tu golpe bloqueado va con «Tu anotación»', () => {
+    render(
+      <HoleInput {...props} isOwnScoreLocked playerScore={{ ownScore: 5 }} />,
+    );
+    etiquetadoComo(screen.getByTestId('own-score-value'), 'input.yourScore');
+  });
+
+  it('el golpe bloqueado del marcado va con «Anotas a Carlos»', () => {
+    render(
+      <HoleInput
+        {...props}
+        isMarkerScoreLocked
+        playerScore={{ markerScore: 6 }}
+      />,
+    );
+    etiquetadoComo(
+      screen.getByTestId('marked-score-value'),
+      'input.youMark {"nombre":"Carlos"}',
+    );
+  });
+
+  it('el del marcado que puso otro marcador va con su etiqueta y sigue diciendo quién', () => {
+    render(
+      <HoleInput
+        {...props}
+        markedScoredBy="Ulises"
+        markedPlayerScore={{ markerScore: 6, markerSubmitted: true }}
+      />,
+    );
+    etiquetadoComo(
+      screen.getByTestId('marked-score-value'),
+      'input.youMark {"nombre":"Carlos"}',
+    );
+    expect(screen.getByTestId('anotado-por-otro')).toHaveTextContent(
+      'input.scoredBy {"nombre":"Ulises"}',
+    );
+  });
+
+  it('el del segundo marcado bloqueado va con la suya', () => {
+    render(
+      <HoleInput
+        {...props}
+        secondMarked={{
+          id: 'u4',
+          name: 'Dani',
+          par: 4,
+          validationStatus: null,
+          isLocked: true,
+          playerScore: { markerSubmitted: true, markerScore: 4 },
+        }}
+        onSecondMarkedChange={vi.fn()}
+      />,
+    );
+    etiquetadoComo(
+      screen.getByTestId('second-marked-score-value'),
+      'input.youMark {"nombre":"Dani"}',
+    );
+  });
+
+  it('sin bloquear, la etiqueta sigue yendo con el botón', () => {
+    render(<HoleInput {...props} />);
+    expect(screen.getByLabelText('input.yourScore')).toBe(
+      screen.getByTestId('own-score-button'),
+    );
+  });
+});

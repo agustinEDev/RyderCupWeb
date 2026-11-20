@@ -20,8 +20,9 @@ class SendFriendRequestUseCase {
       throw new Error('addresseeId is required');
     }
 
-    const friendship = await this.#friendRepository.sendRequest(addresseeId);
-    return FriendshipAssembler.toSimpleDTO(friendship, friendship._apiData);
+    const { entity, extras } =
+      await this.#friendRepository.sendRequest(addresseeId);
+    return FriendshipAssembler.toSimpleDTO(entity, extras);
   }
 }
 

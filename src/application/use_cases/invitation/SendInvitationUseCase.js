@@ -23,13 +23,13 @@ class SendInvitationUseCase {
       throw new Error('inviteeUserId is required and must be a string');
     }
 
-    const invitation = await this.#invitationRepository.sendInvitation(
+    const { entity, extras } = await this.#invitationRepository.sendInvitation(
       competitionId,
       inviteeUserId,
       personalMessage,
     );
 
-    return InvitationAssembler.toSimpleDTO(invitation, invitation._apiData);
+    return InvitationAssembler.toSimpleDTO(entity, extras);
   }
 }
 

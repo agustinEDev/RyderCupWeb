@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import CompetitionAssembler from './CompetitionAssembler';
 import CompetitionMapper from '../../infrastructure/mappers/CompetitionMapper';
+import { aExtras } from '../../infrastructure/mappers/conExtras';
 
 /**
  * Lo que la tarjeta de «Mis competiciones» necesita del listado (FE #846,
@@ -36,7 +37,7 @@ const api = (extra = {}) => ({
 const tarjeta = (apiData) =>
   CompetitionAssembler.toSimpleDTO(
     CompetitionMapper.toDomain(apiData),
-    apiData,
+    aExtras(apiData),
   );
 
 describe('CompetitionAssembler · resumen de la tarjeta (FE #846)', () => {

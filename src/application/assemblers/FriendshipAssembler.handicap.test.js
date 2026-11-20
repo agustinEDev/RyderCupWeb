@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import FriendshipAssembler from './FriendshipAssembler';
 import FriendshipMapper from '../../infrastructure/mappers/FriendshipMapper';
+import { aExtras } from '../../infrastructure/mappers/conExtras';
 
 /**
  * El hándicap del amigo, para el resumen del asistente de partida rápida
@@ -21,7 +22,7 @@ const api = (extra = {}) => ({
 const dto = (apiData, yo) =>
   FriendshipAssembler.toSimpleDTO(
     FriendshipMapper.toDomain(apiData),
-    apiData,
+    aExtras(apiData),
     yo,
   );
 

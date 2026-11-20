@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import FriendshipMapper from './FriendshipMapper';
+import { aExtras } from './conExtras';
 
 const respuesta = (extra = {}) => ({
   id: 'f-1',
@@ -29,5 +30,55 @@ describe('FriendshipMapper · horas sin huso', () => {
     );
 
     expect(amistad.respondedAt).toBeNull();
+  });
+});
+
+/** Lo que acompaña a la amistad para la pantalla, en camelCase y tal cual. */
+describe('aExtras con la respuesta de Friendship', () => {
+  it('traduce los nombres, alias, nombres reales y hándicaps de los dos lados', () => {
+    expect(
+      aExtras(
+        respuesta({
+          requester_name: 'Trinx',
+          addressee_name: 'Rafa',
+          requester_alias: 'Trinx',
+          addressee_alias: null,
+          requester_real_name: 'Agustín Estévez',
+          addressee_real_name: '',
+          requester_handicap: 12.4,
+          addressee_handicap: 0,
+        }),
+      ),
+    ).toMatchObject({
+      requesterName: 'Trinx',
+      addresseeName: 'Rafa',
+      requesterAlias: 'Trinx',
+      addresseeAlias: null,
+      requesterRealName: 'Agustín Estévez',
+      addresseeRealName: '',
+      requesterHandicap: 12.4,
+      addresseeHandicap: 0,
+    });
+  });
+
+  it('sin datos de la API: null', () => {
+    expect(aExtras(null)).toBeNull();
+    expect(aExtras(undefined)).toBeNull();
+  });
+
+  it('lo que la API no manda queda undefined, sin valores por defecto', () => {
+    const extras = aExtras(respuesta());
+
+    for (const clave of [
+      'addresseeAlias',
+      'addresseeHandicap',
+      'addresseeName',
+      'addresseeRealName',
+      'requesterAlias',
+      'requesterHandicap',
+      'requesterName',
+      'requesterRealName',
+    ])
+      expect(extras[clave]).toBeUndefined();
   });
 });

@@ -2,8 +2,10 @@ import IEnrollmentRepository from '../../domain/repositories/IEnrollmentReposito
 import EnrollmentMapper from '../mappers/EnrollmentMapper';
 import apiRequest from '../http/api.js';
 import { segmento } from '../http/api';
+import { conExtrasLista } from '../mappers/conExtras';
 
 /** @typedef {import('../../domain/entities/Enrollment').default} Enrollment */
+/** @typedef {import('../../domain/repositories/IEnrollmentRepository').EnrollmentWithExtras} EnrollmentWithExtras */
 
 /**
  * ApiEnrollmentRepository - Implementación del repositorio con API REST
@@ -119,7 +121,9 @@ class ApiEnrollmentRepository extends IEnrollmentRepository {
    *
    * @param {string} competitionId
    * @param {Object} filters - { status?, userId?, teamId? }
-   * @returns {Promise<Enrollment[]>}
+   * @returns {Promise<EnrollmentWithExtras[]>}
+   *   Cada inscripción con los campos de la respuesta que no son del dominio
+   *   (el usuario, el hándicap fijado, la categoría), en camelCase
    */
   async findByCompetition(competitionId, filters = {}) {
     // Mapear camelCase → snake_case para la API
@@ -137,16 +141,10 @@ class ApiEnrollmentRepository extends IEnrollmentRepository {
       return [];
     }
 
-    // Convertir a entidades del dominio y guardar apiData original
-    /** @type {Array<Enrollment & {_apiData?: Object}>} */
+    // Entidades del dominio y, aparte, los campos extra que pinta la lista
     const enrollments = EnrollmentMapper.toDomainMany(apiDataArray);
 
-    // Adjuntar _apiData a cada enrollment para preservar campos extra (user, etc.)
-    enrollments.forEach((enrollment, index) => {
-      enrollment._apiData = apiDataArray[index];
-    });
-
-    return enrollments;
+    return conExtrasLista(enrollments, apiDataArray);
   }
 
   /**
@@ -160,7 +158,7 @@ class ApiEnrollmentRepository extends IEnrollmentRepository {
     const enrollments = await this.findByCompetition(competitionId, { userId });
 
     // Debería haber máximo 1 enrollment por usuario por competición
-    return enrollments.length > 0 ? enrollments[0] : null;
+    return enrollments.length > 0 ? enrollments[0].entity : null;
   }
 
   /**

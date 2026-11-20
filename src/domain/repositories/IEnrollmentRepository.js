@@ -1,4 +1,12 @@
 /** @typedef {import('../entities/Enrollment').default} Enrollment */
+/**
+ * La respuesta de la API en camelCase, tal cual llegó: lo que falta,
+ * undefined. `EnrollmentAssembler` lee de ella lo que la entidad no guarda
+ * (user con sus nombres, userName, userEmail, userHandicap, fixedHandicap,
+ * category).
+ * @typedef {Object<string, any>} EnrollmentExtras
+ */
+/** @typedef {{entity: Enrollment, extras: EnrollmentExtras|null}} EnrollmentWithExtras */
 
 /**
  * Interface: IEnrollmentRepository
@@ -42,7 +50,9 @@ class IEnrollmentRepository {
    * @param {string} [filters.status] - Filtrar por estado (ej: "APPROVED", "REQUESTED")
    * @param {string} [filters.userId] - Filtrar por usuario específico
    * @param {string} [filters.teamId] - Filtrar por equipo específico
-   * @returns {Promise<Enrollment[]>} Lista de enrollments
+   * @returns {Promise<EnrollmentWithExtras[]>} Lista
+   *   de enrollments, cada uno con los campos extra de la respuesta (el usuario,
+   *   el hándicap fijado, la categoría) en camelCase, que pinta la lista
    * @throws {Error} Si falla la operación
    */
   async findByCompetition(competitionId, filters = {}) {
