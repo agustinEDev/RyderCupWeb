@@ -2,9 +2,14 @@
 /** @typedef {import('../entities/Competition').default} Competition */
 /** @typedef {import('../value_objects/CompetitionStatus').CompetitionStatus} CompetitionStatus */
 /**
- * La entidad tal como la devuelve un repositorio: la implementación de la API
- * le cuelga la respuesta original en `_apiData`, que leen los assemblers.
- * @typedef {Competition & {_apiData?: Object}} CompetitionFromRepository
+ * Lo que la ficha y los listados enseñan y la entidad no guarda (país con sus
+ * nombres, ficha del organizador, plazo, actualización de hándicaps…), en
+ * camelCase y tal cual llegó: lo que falta, undefined. Lo lee `CompetitionAssembler`.
+ * @typedef {Object<string, any>} CompetitionExtras
+ */
+/**
+ * Una competición tal como la devuelve una lectura del repositorio.
+ * @typedef {{ entity: Competition, extras: CompetitionExtras|null }} CompetitionWithExtras
  */
 
 /**
@@ -28,7 +33,7 @@ export class ICompetitionRepository {
   /**
    * Finds a competition by its unique ID.
    * @param {string} competitionId The ID of the competition to find.
-   * @returns {Promise<CompetitionFromRepository>} The competition entity. It never resolves to null.
+   * @returns {Promise<CompetitionWithExtras>} The competition entity and its extras. It never resolves to null.
    * @throws {Error} If the competition is not found (the API answers 404) or the request fails,
    *   or if the method is not implemented.
    */
@@ -49,7 +54,7 @@ export class ICompetitionRepository {
 
   /**
    * Finds all competitions.
-   * @returns {Promise<CompetitionFromRepository[]>} A list of all competition entities.
+   * @returns {Promise<Competition[]>} A list of all competition entities.
    * @throws {Error} If the method is not implemented.
    */
   async findAll() {
@@ -69,7 +74,7 @@ export class ICompetitionRepository {
   /**
    * Finds competitions by their status.
    * @param {CompetitionStatus} status The status to filter by.
-   * @returns {Promise<CompetitionFromRepository[]>} A list of competitions with the given status.
+   * @returns {Promise<Competition[]>} A list of competitions with the given status.
    * @throws {Error} If the method is not implemented.
    */
   async findByStatus(status) {
@@ -80,7 +85,7 @@ export class ICompetitionRepository {
    * Finds all competitions for a specific user (creator).
    * @param {string} userId The ID of the user/creator.
    * @param {object} [filters] Optional filters (status, etc.)
-   * @returns {Promise<CompetitionFromRepository[]>} A list of competitions created by the user.
+   * @returns {Promise<CompetitionWithExtras[]>} A list of competitions created by the user, each with its extras.
    * @throws {Error} If the method is not implemented.
    */
   async findByCreator(userId, filters = {}) {
@@ -98,7 +103,7 @@ export class ICompetitionRepository {
    * @param {boolean} [filters.excludeMyCompetitions] If true, excludes competitions where user is creator or enrolled
    * @param {number} [filters.limit] Maximum number of results
    * @param {number} [filters.offset] Pagination offset
-   * @returns {Promise<CompetitionFromRepository[]>} A list of public competitions matching the filters.
+   * @returns {Promise<CompetitionWithExtras[]>} A list of public competitions matching the filters, each with its extras.
    * @throws {Error} If the method is not implemented.
    */
   async findPublic(filters = {}) {

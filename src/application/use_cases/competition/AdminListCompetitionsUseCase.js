@@ -44,8 +44,8 @@ class AdminListCompetitionsUseCase {
     const competitions =
       await this.competitionRepository.findPublic(repositoryFilters);
 
-    return competitions.map((competition) =>
-      CompetitionAssembler.toSimpleDTO(competition, competition._apiData),
+    return competitions.map(({ entity, extras }) =>
+      CompetitionAssembler.toSimpleDTO(entity, extras),
     );
   }
 }

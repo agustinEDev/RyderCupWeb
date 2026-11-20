@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import AdminListCompetitionsUseCase from './AdminListCompetitionsUseCase';
+import CompetitionAssembler from '../../assemblers/CompetitionAssembler';
 
 vi.mock('../../assemblers/CompetitionAssembler', () => ({
   default: {
@@ -61,7 +62,15 @@ describe('AdminListCompetitionsUseCase', () => {
 
   it('maps entities returned by the repository to simple DTOs', async () => {
     competitionRepository.findPublic.mockResolvedValue([
-      { id: 'c1', name: 'Draft Cup', status: 'DRAFT', creator: { id: 'u1' } },
+      {
+        entity: {
+          id: 'c1',
+          name: 'Draft Cup',
+          status: 'DRAFT',
+          creator: { id: 'u1' },
+        },
+        extras: null,
+      },
     ]);
 
     const result = await useCase.execute();
@@ -69,5 +78,18 @@ describe('AdminListCompetitionsUseCase', () => {
     expect(result).toEqual([
       { id: 'c1', name: 'Draft Cup', status: 'DRAFT', creator: { id: 'u1' } },
     ]);
+  });
+
+  it('hands each entity to the assembler together with its extras', async () => {
+    const entity = { id: 'c2', name: 'Open', status: 'ACTIVE' };
+    const extras = { isCreator: true, enrolledCount: 4 };
+    competitionRepository.findPublic.mockResolvedValue([{ entity, extras }]);
+
+    await useCase.execute();
+
+    expect(CompetitionAssembler.toSimpleDTO).toHaveBeenCalledWith(
+      entity,
+      extras,
+    );
   });
 });

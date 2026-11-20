@@ -36,7 +36,7 @@ const api = (extra = {}) => ({
 const tarjeta = (apiData) =>
   CompetitionAssembler.toSimpleDTO(
     CompetitionMapper.toDomain(apiData),
-    apiData,
+    CompetitionMapper.toExtras(apiData),
   );
 
 describe('CompetitionAssembler · resumen de la tarjeta (FE #846)', () => {

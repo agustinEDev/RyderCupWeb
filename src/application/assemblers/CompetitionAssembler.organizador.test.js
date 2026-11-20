@@ -28,7 +28,7 @@ describe('CompetitionAssembler · el organizador', () => {
   const dto = (apiData) =>
     CompetitionAssembler.toSimpleDTO(
       CompetitionMapper.toDomain(apiData),
-      apiData,
+      CompetitionMapper.toExtras(apiData),
     );
 
   it('privada con alias: se pinta el alias aunque no lleguen nombre ni apellidos', () => {

@@ -26,7 +26,7 @@ const respuestaDeLaApi = (extra = {}) => ({
 const loQueLlegaALaPantalla = (apiData) =>
   CompetitionAssembler.toSimpleDTO(
     CompetitionMapper.toDomain(apiData),
-    apiData,
+    CompetitionMapper.toExtras(apiData),
   );
 
 describe('CompetitionAssembler · los ajustes del stroke play (FE #824)', () => {

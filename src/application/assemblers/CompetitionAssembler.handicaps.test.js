@@ -25,7 +25,7 @@ const api = (extra = {}) => ({
 const ficha = (apiData) =>
   CompetitionAssembler.toSimpleDTO(
     CompetitionMapper.toDomain(apiData),
-    apiData,
+    CompetitionMapper.toExtras(apiData),
   );
 
 describe('CompetitionAssembler · actualizaciones de hándicap (FE #824)', () => {

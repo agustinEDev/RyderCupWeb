@@ -31,7 +31,7 @@ const respuestaDeLaApi = (extra = {}) => ({
 const loQueLlegaALaPantalla = (apiData) =>
   CompetitionAssembler.toSimpleDTO(
     CompetitionMapper.toDomain(apiData),
-    apiData,
+    CompetitionMapper.toExtras(apiData),
   );
 
 describe('CompetitionAssembler · el plazo de inscripción', () => {
