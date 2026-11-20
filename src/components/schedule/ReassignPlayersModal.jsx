@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import { X, Users } from 'lucide-react';
 import EnrollmentStatus from '../../domain/value_objects/EnrollmentStatus';
 
+import { Team } from '../../domain/value_objects/Team';
 // Wrapper: controls mount/unmount so inner component always has fresh state.
 // key={match?.id} forces remount if the match changes while the modal is open.
 const ReassignPlayersModal = ({ isOpen, match, ...props }) => {
@@ -37,7 +38,7 @@ const ReassignPlayersModalContent = ({
   );
 
   const togglePlayer = (playerId, team) => {
-    if (team === 'A') {
+    if (team === Team.A) {
       // Remove from B if present
       setTeamBIds((prev) => prev.filter((id) => id !== playerId));
       setTeamAIds((prev) =>
@@ -64,8 +65,8 @@ const ReassignPlayersModalContent = ({
   };
 
   const getPlayerTeam = (playerId) => {
-    if (teamAIds.includes(playerId)) return 'A';
-    if (teamBIds.includes(playerId)) return 'B';
+    if (teamAIds.includes(playerId)) return Team.A;
+    if (teamBIds.includes(playerId)) return Team.B;
     return null;
   };
 
@@ -129,9 +130,9 @@ const ReassignPlayersModalContent = ({
                 <div
                   key={player.userId}
                   className={`flex items-center justify-between p-3 rounded-lg border ${
-                    team === 'A'
+                    team === Team.A
                       ? 'border-blue-300 bg-blue-50'
-                      : team === 'B'
+                      : team === Team.B
                         ? 'border-red-300 bg-red-50'
                         : 'border-gray-200 bg-white'
                   }`}
@@ -142,9 +143,9 @@ const ReassignPlayersModalContent = ({
                   <div className="flex gap-2">
                     <button
                       type="button"
-                      onClick={() => togglePlayer(player.userId, 'A')}
+                      onClick={() => togglePlayer(player.userId, Team.A)}
                       className={`px-3 py-1 rounded text-xs font-medium transition-colors ${
-                        team === 'A'
+                        team === Team.A
                           ? 'bg-blue-600 text-white'
                           : 'bg-gray-100 text-gray-600 hover:bg-blue-100'
                       }`}
@@ -153,9 +154,9 @@ const ReassignPlayersModalContent = ({
                     </button>
                     <button
                       type="button"
-                      onClick={() => togglePlayer(player.userId, 'B')}
+                      onClick={() => togglePlayer(player.userId, Team.B)}
                       className={`px-3 py-1 rounded text-xs font-medium transition-colors ${
-                        team === 'B'
+                        team === Team.B
                           ? 'bg-red-600 text-white'
                           : 'bg-gray-100 text-gray-600 hover:bg-red-100'
                       }`}

@@ -18,6 +18,8 @@ import {
   isTeamMatchFormat,
 } from '../../domain/value_objects/MatchFormat';
 
+import { Team } from '../../domain/value_objects/Team';
+import { Winner } from '../../domain/value_objects/Winner';
 /**
  * La coincidencia entre los dos anotadores no se marca aquí. Es un dato de la
  * anotación —dice si hay que hablar con el otro anotador ANTES de seguir— y
@@ -124,15 +126,15 @@ const ScorecardTable = ({
   // Build display rows based on match format
   const displayRows = (() => {
     if (matchFormat === MatchFormat.FOURSOMES) {
-      const teamA = players.filter((p) => p.team === 'A');
-      const teamB = players.filter((p) => p.team === 'B');
+      const teamA = players.filter((p) => p.team === Team.A);
+      const teamB = players.filter((p) => p.team === Team.B);
       const rows = [];
       if (teamA.length > 0) {
         rows.push({
           id: 'team-a',
           label: nombreDelBando(teamA),
           miembros: enOrdenDeLectura(teamA),
-          team: 'A',
+          team: Team.A,
           playerIds: teamA.map((p) => p.userId),
           isCurrentUser: teamA.some((p) => p.userId === currentUserId),
         });
@@ -142,7 +144,7 @@ const ScorecardTable = ({
           id: 'team-b',
           label: nombreDelBando(teamB),
           miembros: enOrdenDeLectura(teamB),
-          team: 'B',
+          team: Team.B,
           playerIds: teamB.map((p) => p.userId),
           isCurrentUser: teamB.some((p) => p.userId === currentUserId),
         });
@@ -224,7 +226,7 @@ const ScorecardTable = ({
 
   const getTeamBorderClass = (team) => {
     if (!isTeamFormat) return '';
-    return team === 'A'
+    return team === Team.A
       ? 'border-l-4 border-l-blue-500'
       : 'border-l-4 border-l-red-500';
   };
@@ -235,9 +237,10 @@ const ScorecardTable = ({
     if (matchFormat === MatchFormat.FOURSOMES) return false;
     const result = getHoleResult(holeNumber);
     return Boolean(
-      (row.team === 'A' &&
+      (row.team === Team.A &&
         result?.bestBallPlayerA?.includes(row.playerIds[0])) ||
-      (row.team === 'B' && result?.bestBallPlayerB?.includes(row.playerIds[0])),
+      (row.team === Team.B &&
+        result?.bestBallPlayerB?.includes(row.playerIds[0])),
     );
   };
 
@@ -285,7 +288,7 @@ const ScorecardTable = ({
   const resultadoPara = (holeNumber, row) => {
     const result = getHoleResult(holeNumber);
     if (!result) return { texto: '', clase: '' };
-    if (result.winner === 'HALVED')
+    if (result.winner === Winner.HALVED)
       return { texto: t('scorecard.halved'), clase: 'text-gray-500' };
     return result.winner === row.team
       ? { texto: t('scorecard.holeWon'), clase: 'bg-green-100 text-green-800' }
@@ -296,7 +299,7 @@ const ScorecardTable = ({
   // abajo: la horizontal no cabía a 360 px y se desplazaba de lado
   const tarjetaVertical = (row) => {
     const nombreDelEquipo =
-      row.team === 'A' ? teamAName : row.team === 'B' ? teamBName : null;
+      row.team === Team.A ? teamAName : row.team === Team.B ? teamBName : null;
     return (
       <TarjetaVertical
         clave={row.id}
@@ -436,7 +439,7 @@ const ScorecardTable = ({
                 >
                   {isTeamFormat && (
                     <span className="block text-[10px] text-gray-400 leading-tight">
-                      {row.team === 'A' ? teamAName : teamBName}
+                      {row.team === Team.A ? teamAName : teamBName}
                     </span>
                   )}
                   {nombresConHandicap(row)}
@@ -472,9 +475,9 @@ const ScorecardTable = ({
             {sectionHoles.map((h) => {
               const result = getHoleResult(h.holeNumber);
               const bestBallIds =
-                result?.winner === 'A'
+                result?.winner === Winner.A
                   ? result.bestBallPlayerA
-                  : result?.winner === 'B'
+                  : result?.winner === Winner.B
                     ? result.bestBallPlayerB
                     : [];
               const bestNames = (bestBallIds ?? [])
@@ -494,14 +497,14 @@ const ScorecardTable = ({
               const fallbackLabel =
                 nombreDelEquipo(result?.winner, teamAName, teamBName) ?? null;
               const winnerColor =
-                result?.winner === 'A'
+                result?.winner === Winner.A
                   ? 'bg-blue-100 text-blue-700 font-bold'
-                  : result?.winner === 'B'
+                  : result?.winner === Winner.B
                     ? 'bg-red-100 text-red-700 font-bold'
                     : '';
               const winnerContent = !result ? (
                 ''
-              ) : result.winner === 'HALVED' ? (
+              ) : result.winner === Winner.HALVED ? (
                 t('scorecard.halved')
               ) : bestNames.length > 0 ? (
                 <span className="flex flex-col leading-tight">

@@ -1,8 +1,11 @@
 import { useId, useLayoutEffect, useRef, useState } from 'react';
 
+import { Team } from '../../domain/value_objects/Team';
 const COLOR_DEL_NOMBRE = {
-  A: 'border-l-blue-500 aria-selected:bg-blue-100 aria-selected:text-blue-700 aria-selected:border-blue-300',
-  B: 'border-l-red-500 aria-selected:bg-red-100 aria-selected:text-red-700 aria-selected:border-red-300',
+  [Team.A]:
+    'border-l-blue-500 aria-selected:bg-blue-100 aria-selected:text-blue-700 aria-selected:border-blue-300',
+  [Team.B]:
+    'border-l-red-500 aria-selected:bg-red-100 aria-selected:text-red-700 aria-selected:border-red-300',
 };
 
 const sinMovimiento = () =>

@@ -1,6 +1,7 @@
 import { CompetitionStatusEnum } from '../domain/value_objects/CompetitionStatus';
 import EnrollmentStatus from '../domain/value_objects/EnrollmentStatus';
 
+import { Team } from '../domain/value_objects/Team';
 /**
  * Quien capitanea un equipo tiene un sobre que entregar en cada sesión (FE
  * #655). El organizador entra también: es quien los abre cuando un capitán no
@@ -70,7 +71,7 @@ export const jugadoresDelEquipo = ({
   sinNombre,
 }) => {
   const lista =
-    equipo === 'A'
+    equipo === Team.A
       ? teamAssignment?.teamAPlayerIds
       : teamAssignment?.teamBPlayerIds;
   const aprobados = new Set(

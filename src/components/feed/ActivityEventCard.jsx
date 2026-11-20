@@ -36,6 +36,7 @@ import NombrePequeno from '../ui/NombrePequeno';
 import { MatchOutcome } from '../../domain/value_objects/MatchOutcome';
 import { ScoringFormat } from '../../domain/value_objects/ScoringFormat';
 
+import { Team } from '../../domain/value_objects/Team';
 /**
  * Un icono por tipo. Sin esto todas las entradas se ven iguales y el feed se
  * lee como una lista de texto.
@@ -636,7 +637,7 @@ const fraseDeLaRyder = (payload, t, { mia = true, autor } = {}) => {
   const clave = RESULTADOS_DE_RYDER[payload.outcome];
   const deA = payload.team_a_points;
   const deB = payload.team_b_points;
-  const esA = payload.my_team !== 'B';
+  const esA = payload.my_team !== Team.B;
   // La de un amigo, en tercera persona: «El equipo de Pedro (Europa) ganó…»
   // (release social 2); `my_team` es el suyo
   const deQuien = (c) => claveDeQuien(mia, c);

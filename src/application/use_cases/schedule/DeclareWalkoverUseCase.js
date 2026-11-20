@@ -1,3 +1,4 @@
+import { Team } from '../../../domain/value_objects/Team';
 class DeclareWalkoverUseCase {
   constructor({ scheduleRepository }) {
     this.scheduleRepository = scheduleRepository;
@@ -7,7 +8,7 @@ class DeclareWalkoverUseCase {
     if (!matchId) {
       throw new Error('Match ID is required');
     }
-    if (!winningTeam || !['A', 'B'].includes(winningTeam)) {
+    if (!winningTeam || ![Team.A, Team.B].includes(winningTeam)) {
       throw new Error('Winning team must be A or B');
     }
     if (!reason || typeof reason !== 'string' || reason.trim().length === 0) {

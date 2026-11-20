@@ -3,6 +3,7 @@ import { formatoDeIndice } from '../../utils/formatoDeHandicap';
 import { CompetitionStatusEnum } from '../../domain/value_objects/CompetitionStatus';
 import EnrollmentStatus from '../../domain/value_objects/EnrollmentStatus';
 
+import { Team } from '../../domain/value_objects/Team';
 const TeamAssignmentSection = ({
   teamAssignment,
   onAssignTeams,
@@ -42,7 +43,7 @@ const TeamAssignmentSection = ({
   ].includes(status);
   const sinCapitan = (equipo) => {
     if (!captains || !sePuedeCubrir || inscritosSinCargar) return false;
-    const capitan = equipo === 'A' ? captains.teamA : captains.teamB;
+    const capitan = equipo === Team.A ? captains.teamA : captains.teamB;
     return !capitan || !inscritos.has(capitan);
   };
   // Sin la lista no se sabe quién sigue: solo consta que falta el que no está
@@ -51,7 +52,7 @@ const TeamAssignmentSection = ({
     inscritosSinCargar &&
     sePuedeCubrir &&
     Boolean(captains) &&
-    !(equipo === 'A' ? captains.teamA : captains.teamB);
+    !(equipo === Team.A ? captains.teamA : captains.teamB);
 
   // Sin el nombre del equipo: cada lista ya lo lleva en su título, y uno largo
   // dejaba la etiqueta en «Capitán de E...»
@@ -60,8 +61,9 @@ const TeamAssignmentSection = ({
   // no puede aparecer en el equipo contrario
   const papelDe = (playerId, equipo) => {
     if (!captains) return null;
-    const capitan = equipo === 'A' ? captains.teamA : captains.teamB;
-    const subcapitan = equipo === 'A' ? captains.viceTeamA : captains.viceTeamB;
+    const capitan = equipo === Team.A ? captains.teamA : captains.teamB;
+    const subcapitan =
+      equipo === Team.A ? captains.viceTeamA : captains.viceTeamB;
     if (playerId === capitan) return t('teams.captainTag');
     if (playerId === subcapitan) return t('teams.viceCaptainTag');
     return null;
@@ -165,9 +167,9 @@ const TeamAssignmentSection = ({
               >
                 <span className="text-gray-800 min-w-0">
                   {nombreDe(playerId, posicion)}
-                  {papelDe(playerId, 'A') && (
+                  {papelDe(playerId, Team.A) && (
                     <span className="block text-xs text-yellow-800 truncate">
-                      {papelDe(playerId, 'A')}
+                      {papelDe(playerId, Team.A)}
                     </span>
                   )}
                 </span>
@@ -176,7 +178,7 @@ const TeamAssignmentSection = ({
             ))}
           </ul>
 
-          {canManage && faltaSinLista('A') && (
+          {canManage && faltaSinLista(Team.A) && (
             <p
               data-testid="capitan-inscritos-sin-cargar-A"
               className="mt-3 text-sm text-red-700"
@@ -184,11 +186,11 @@ const TeamAssignmentSection = ({
               {t('teams.fillCaptainNeedsEnrollments')}
             </p>
           )}
-          {canManage && sinCapitan('A') && (
+          {canManage && sinCapitan(Team.A) && (
             <button
               type="button"
               data-testid="cubrir-capitan-A"
-              onClick={() => onFillCaptain('A')}
+              onClick={() => onFillCaptain(Team.A)}
               className="mt-3 w-full rounded-lg border border-blue-300 bg-white px-3 py-2 text-sm font-medium text-blue-800 hover:bg-blue-100"
             >
               {t('teams.fillCaptain')}
@@ -210,9 +212,9 @@ const TeamAssignmentSection = ({
               >
                 <span className="text-gray-800 min-w-0">
                   {nombreDe(playerId, posicion)}
-                  {papelDe(playerId, 'B') && (
+                  {papelDe(playerId, Team.B) && (
                     <span className="block text-xs text-yellow-800 truncate">
-                      {papelDe(playerId, 'B')}
+                      {papelDe(playerId, Team.B)}
                     </span>
                   )}
                 </span>
@@ -221,7 +223,7 @@ const TeamAssignmentSection = ({
             ))}
           </ul>
 
-          {canManage && faltaSinLista('B') && (
+          {canManage && faltaSinLista(Team.B) && (
             <p
               data-testid="capitan-inscritos-sin-cargar-B"
               className="mt-3 text-sm text-red-700"
@@ -229,11 +231,11 @@ const TeamAssignmentSection = ({
               {t('teams.fillCaptainNeedsEnrollments')}
             </p>
           )}
-          {canManage && sinCapitan('B') && (
+          {canManage && sinCapitan(Team.B) && (
             <button
               type="button"
               data-testid="cubrir-capitan-B"
-              onClick={() => onFillCaptain('B')}
+              onClick={() => onFillCaptain(Team.B)}
               className="mt-3 w-full rounded-lg border border-red-300 bg-white px-3 py-2 text-sm font-medium text-red-800 hover:bg-red-100"
             >
               {t('teams.fillCaptain')}

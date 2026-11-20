@@ -5,6 +5,7 @@ import {
 } from './createQuickMatchModalConstants';
 import { formatoDeIndice } from '../../utils/formatoDeHandicap';
 
+import { Team } from '../../domain/value_objects/Team';
 /**
  * Wizard step 4: pre-start summary — course/format/play-mode recap,
  * per-participant handicap review/override, and the scorer list.
@@ -114,7 +115,7 @@ const SummaryStep = ({
                 )}
                 {isTeamFormat && p.team && (
                   <span className="text-xs text-gray-400 flex-shrink-0">
-                    {p.team === 'A'
+                    {p.team === Team.A
                       ? t('create.participants.teamA')
                       : t('create.participants.teamB')}
                   </span>

@@ -1,3 +1,4 @@
+import { Team } from '../../../domain/value_objects/Team';
 class ConcedeMatchUseCase {
   constructor({ scoringRepository }) {
     this.scoringRepository = scoringRepository;
@@ -7,7 +8,7 @@ class ConcedeMatchUseCase {
     if (!matchId) {
       throw new Error('Match ID is required');
     }
-    if (!concedingTeam || !['A', 'B'].includes(concedingTeam)) {
+    if (!concedingTeam || ![Team.A, Team.B].includes(concedingTeam)) {
       throw new Error('Conceding team must be A or B');
     }
     return await this.scoringRepository.concedeMatch(

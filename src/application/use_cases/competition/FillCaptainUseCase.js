@@ -1,3 +1,4 @@
+import { Team } from '../../../domain/value_objects/Team';
 /**
  * Use Case: Cubrir el puesto de capitán de un equipo (FE #692).
  *
@@ -9,7 +10,7 @@
  * Solo cubre un puesto vacío: a un capitán que sigue no se le cambia por aquí,
  * y de eso se encarga el servidor.
  */
-const EQUIPOS = ['A', 'B'];
+const EQUIPOS = [Team.A, Team.B];
 
 class FillCaptainUseCase {
   constructor({ competitionRepository }) {

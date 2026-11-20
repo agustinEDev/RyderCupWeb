@@ -5,6 +5,7 @@ import { X, Users } from 'lucide-react';
 import { formatoDeIndice } from '../../utils/formatoDeHandicap';
 import EnrollmentStatus from '../../domain/value_objects/EnrollmentStatus';
 
+import { Team } from '../../domain/value_objects/Team';
 // Wrapper: controls mount/unmount so inner component always has fresh state
 const AssignTeamsModal = ({ isOpen, ...props }) => {
   if (!isOpen) return null;
@@ -48,7 +49,7 @@ const AssignTeamsModalContent = ({
   // Los capitanes no se mueven: sus botones van desactivados, y eso ya impide
   // que llegue aquí un clic suyo
   const togglePlayer = (playerId, team) => {
-    if (team === 'A') {
+    if (team === Team.A) {
       setManualTeamB((prev) => prev.filter((id) => id !== playerId));
       setManualTeamA((prev) =>
         prev.includes(playerId)
@@ -66,8 +67,8 @@ const AssignTeamsModalContent = ({
   };
 
   const getPlayerTeam = (playerId) => {
-    if (manualTeamA.includes(playerId)) return 'A';
-    if (manualTeamB.includes(playerId)) return 'B';
+    if (manualTeamA.includes(playerId)) return Team.A;
+    if (manualTeamB.includes(playerId)) return Team.B;
     return null;
   };
 
@@ -208,9 +209,9 @@ const AssignTeamsModalContent = ({
                     <div
                       key={player.userId}
                       className={`flex items-center justify-between p-3 rounded-lg border ${
-                        team === 'A'
+                        team === Team.A
                           ? 'border-blue-300 bg-blue-50'
-                          : team === 'B'
+                          : team === Team.B
                             ? 'border-red-300 bg-red-50'
                             : 'border-gray-200 bg-white'
                       }`}
@@ -235,10 +236,10 @@ const AssignTeamsModalContent = ({
                       <div className="flex gap-2">
                         <button
                           type="button"
-                          onClick={() => togglePlayer(player.userId, 'A')}
+                          onClick={() => togglePlayer(player.userId, Team.A)}
                           disabled={esCapitan(player.userId)}
                           className={`px-3 py-1 rounded text-xs font-medium transition-colors disabled:opacity-60 ${
-                            team === 'A'
+                            team === Team.A
                               ? 'bg-blue-600 text-white'
                               : 'bg-gray-100 text-gray-600 hover:bg-blue-100'
                           }`}
@@ -247,10 +248,10 @@ const AssignTeamsModalContent = ({
                         </button>
                         <button
                           type="button"
-                          onClick={() => togglePlayer(player.userId, 'B')}
+                          onClick={() => togglePlayer(player.userId, Team.B)}
                           disabled={esCapitan(player.userId)}
                           className={`px-3 py-1 rounded text-xs font-medium transition-colors disabled:opacity-60 ${
-                            team === 'B'
+                            team === Team.B
                               ? 'bg-red-600 text-white'
                               : 'bg-gray-100 text-gray-600 hover:bg-red-100'
                           }`}

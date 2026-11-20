@@ -1,5 +1,6 @@
 import { MatchFormat } from '../domain/value_objects/MatchFormat';
 
+import { Team } from '../domain/value_objects/Team';
 /**
  * Las reglas sin interfaz del asistente de partida rápida: cuántos jugadores
  * caben por formato, el bando contrario, el tope de anotadores y la clave con
@@ -21,7 +22,7 @@ export const FORMAT_CAPACITY = {
 // En un formato por equipos solo hay dos bandos, A y B, y el contrario es
 // SIEMPRE la otra letra. Preguntar por "el que no es el mío" contaba como rival
 // a un registrado sin equipo, que no está en ninguno de los dos.
-export const oppositeTeam = (team) => (team === 'A' ? 'B' : 'A');
+export const oppositeTeam = (team) => (team === Team.A ? Team.B : Team.A);
 
 // Mirrors backend MAX_SCORERS (quick_match domain entity)
 export const MAX_SCORERS = 4;

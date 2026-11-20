@@ -13,6 +13,7 @@ import { formatoDeIndice } from '../utils/formatoDeHandicap';
 import { PANTALLA_MENOS_BARRA_INFERIOR } from '../utils/barraInferior';
 import { DraftStatus } from '../domain/value_objects/DraftStatus';
 
+import { Team } from '../domain/value_objects/Team';
 /**
  * La sala de draft en directo (FE #653).
  *
@@ -82,13 +83,13 @@ const DraftRoomPage = () => {
   // —el mapper de competiciones ya rellena los que vengan vacíos—
   const nombreDe = (equipo) =>
     competition
-      ? equipo === 'A'
+      ? equipo === Team.A
         ? competition.team1Name
         : competition.team2Name
       : t(`draft.team${equipo}`);
 
   const capitanDe = (equipo) =>
-    equipo === 'A' ? sala?.teamACaptainName : sala?.teamBCaptainName;
+    equipo === Team.A ? sala?.teamACaptainName : sala?.teamBCaptainName;
 
   const elegidosDe = (equipo) =>
     (sala?.picks || []).filter((pick) => pick.team === equipo);
@@ -105,9 +106,9 @@ const DraftRoomPage = () => {
   // El equipo que capitanea quien mira, y el último que entró solo en él (#723)
   const capitaneo =
     user?.id && sala?.teamACaptainId === user.id
-      ? 'A'
+      ? Team.A
       : user?.id && sala?.teamBCaptainId === user.id
-        ? 'B'
+        ? Team.B
         : null;
   const ultimoParaMi = (sala?.picks || []).find(
     (pick) => pick.lastRemaining && pick.team === capitaneo,
@@ -264,7 +265,7 @@ const DraftRoomPage = () => {
             {/* Los dos equipos, uno al lado del otro también en el móvil: es lo
                 que la gente mira, y apilados obligaría a bajar para comparar */}
             <div className="grid grid-cols-2 gap-3">
-              {['A', 'B'].map((equipo) => (
+              {[Team.A, Team.B].map((equipo) => (
                 <div
                   key={equipo}
                   data-testid={`equipo-${equipo}`}

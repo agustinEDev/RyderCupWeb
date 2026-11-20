@@ -79,8 +79,6 @@ const TANTEO =
   'tanteo del resultado («CONCEDED», «W/O»), no estado del partido: el backend lo manda así en result.score';
 const RELACION_DEL_PERFIL =
   'relación de amistad del perfil (NONE / PENDING_SENT / PENDING_RECEIVED / ACCEPTED / BLOCKED), no FriendshipStatus: queda para otra tanda';
-const GANADOR =
-  'ganador del hoyo o del partido (A / B / HALVED), no el resultado para un jugador (MatchOutcome): queda para la tanda E2';
 const MODO_DE_PARTIDA_RAPIDA =
   'modo del asistente de partida rápida (MATCH_PLAY / FREE_PLAY): estado de la interfaz, no del backend';
 
@@ -108,30 +106,6 @@ const PERMITIDOS = [
     palabra: 'MEDAL',
     motivo: TIPO_DE_TORNEO,
     veces: 1,
-  },
-  {
-    fichero: 'components/scoring/PieDelHoyo.jsx',
-    palabra: 'HALVED',
-    motivo: GANADOR,
-    veces: 1,
-  },
-  {
-    fichero: 'components/scoring/LeaderboardView.jsx',
-    palabra: 'HALVED',
-    motivo: GANADOR,
-    veces: 1,
-  },
-  {
-    fichero: 'components/scoring/MatchSummaryCard.jsx',
-    palabra: 'HALVED',
-    motivo: GANADOR,
-    veces: 1,
-  },
-  {
-    fichero: 'components/scoring/ScorecardTable.jsx',
-    palabra: 'HALVED',
-    motivo: GANADOR,
-    veces: 2,
   },
   {
     fichero: 'components/competition/CompetitionTypeChooser.jsx',

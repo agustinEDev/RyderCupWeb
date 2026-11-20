@@ -12,6 +12,7 @@ import {
 } from './createQuickMatchModalConstants';
 import { leeTodosLosAmigos } from './leeTodosLosAmigos';
 
+import { Team } from '../../domain/value_objects/Team';
 // Con qué campo y formato se hizo la plantilla: volver al paso 1 sin
 // cambiarlos la conserva (Agustín, 3 nov 2026); cambiarlos la vacía
 const plantillaCopiada = (copia) =>
@@ -81,7 +82,7 @@ export const useJugadoresDelBorrador = ({
   const plantillaDe = useRef(plantillaCopiada(copia));
   const [participantTab, setParticipantTab] = useState('friends');
   const [friends, setFriends] = useState([]);
-  const [selectedTeam, setSelectedTeam] = useState('A');
+  const [selectedTeam, setSelectedTeam] = useState(Team.A);
   const [guestTeeKey, setGuestTeeKey] = useState(NO_TEE_KEY);
   const [guestForm, setGuestForm] = useState(initialGuestForm);
   // Which participant's handicap keypad is open (step 4 summary), or null when closed.
@@ -148,7 +149,7 @@ export const useJugadoresDelBorrador = ({
         userId: currentUser.id,
         name: nombreVisible(currentUser),
         handicap: currentUser?.handicap ?? null,
-        team: isTeamFormat ? 'A' : null,
+        team: isTeamFormat ? Team.A : null,
         color,
         teeGender,
       }),

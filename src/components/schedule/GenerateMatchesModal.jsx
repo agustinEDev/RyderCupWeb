@@ -7,6 +7,7 @@ import { formatoDeIndice } from '../../utils/formatoDeHandicap';
 import EnrollmentStatus from '../../domain/value_objects/EnrollmentStatus';
 import { MatchFormat } from '../../domain/value_objects/MatchFormat';
 
+import { Team } from '../../domain/value_objects/Team';
 let matchIdCounter = 0;
 const createEmptyMatch = () => ({
   id: ++matchIdCounter,
@@ -95,7 +96,7 @@ const GenerateMatchesModalContent = ({
     setMatches((prev) =>
       prev.map((match, i) => {
         if (i !== matchIndex) return match;
-        const key = team === 'A' ? 'teamAPlayerIds' : 'teamBPlayerIds';
+        const key = team === Team.A ? 'teamAPlayerIds' : 'teamBPlayerIds';
         const updated = [...match[key]];
         if (playerId === '') {
           updated[slotIndex] = '';
@@ -121,7 +122,7 @@ const GenerateMatchesModalContent = ({
         m.teamAPlayerIds.some(
           (id, si) =>
             id === playerId &&
-            !(i === currentMatchIndex && team === 'A' && si === slotIndex),
+            !(i === currentMatchIndex && team === Team.A && si === slotIndex),
         )
       )
         return true;
@@ -129,7 +130,7 @@ const GenerateMatchesModalContent = ({
         m.teamBPlayerIds.some(
           (id, si) =>
             id === playerId &&
-            !(i === currentMatchIndex && team === 'B' && si === slotIndex),
+            !(i === currentMatchIndex && team === Team.B && si === slotIndex),
         )
       )
         return true;
@@ -201,7 +202,7 @@ const GenerateMatchesModalContent = ({
   };
 
   const renderPlayerSelect = (matchIndex, team, slotIndex, players) => {
-    const key = team === 'A' ? 'teamAPlayerIds' : 'teamBPlayerIds';
+    const key = team === Team.A ? 'teamAPlayerIds' : 'teamBPlayerIds';
     const currentValue = matches[matchIndex][key][slotIndex] || '';
 
     return (
@@ -387,7 +388,7 @@ const GenerateMatchesModalContent = ({
                           <div key={`a-${slotIndex}`}>
                             {renderPlayerSelect(
                               matchIndex,
-                              'A',
+                              Team.A,
                               slotIndex,
                               teamAPlayers,
                             )}
@@ -414,7 +415,7 @@ const GenerateMatchesModalContent = ({
                           <div key={`b-${slotIndex}`}>
                             {renderPlayerSelect(
                               matchIndex,
-                              'B',
+                              Team.B,
                               slotIndex,
                               teamBPlayers,
                             )}
