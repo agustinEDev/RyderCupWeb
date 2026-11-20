@@ -42,16 +42,7 @@ import { PANTALLA_MENOS_BARRA_INFERIOR } from '../utils/barraInferior';
 import BlockLoader from '../components/ui/BlockLoader';
 import EnrollmentStatus from '../domain/value_objects/EnrollmentStatus';
 import { CompetitionStatusEnum } from '../domain/value_objects/CompetitionStatus';
-
-// Cómo se llama cada estado en el filtro: se ofrecen en el orden del dominio
-const ETIQUETA_DEL_FILTRO = {
-  [CompetitionStatusEnum.DRAFT]: 'myCompetitions.draft',
-  [CompetitionStatusEnum.ACTIVE]: 'myCompetitions.active',
-  [CompetitionStatusEnum.CLOSED]: 'myCompetitions.closed',
-  [CompetitionStatusEnum.IN_PROGRESS]: 'myCompetitions.inProgress',
-  [CompetitionStatusEnum.COMPLETED]: 'myCompetitions.completed',
-  [CompetitionStatusEnum.CANCELLED]: 'myCompetitions.cancelled',
-};
+import { ETIQUETA_DEL_FILTRO } from '../utils/etiquetaDelFiltroDeCompeticiones';
 
 // Helper function to get enrollment status classes
 const getEnrollmentStatusClasses = (status) => {
