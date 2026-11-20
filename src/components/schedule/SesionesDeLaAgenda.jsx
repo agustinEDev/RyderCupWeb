@@ -2,6 +2,7 @@ import { Calendar } from 'lucide-react';
 import SesionDeLaAgenda from './SesionDeLaAgenda';
 import { esCompeticionCerrada } from '../../utils/permisosDeLaAgenda';
 
+import { SetupMode } from '../../domain/value_objects/SetupMode';
 /**
  * Las sesiones de la agenda (`SchedulePage`): el título con cuántas hay, el
  * aviso de que no hay ninguna o cada sesión con su tarjeta. Lo abierto y lo
@@ -52,7 +53,7 @@ const SesionesDeLaAgenda = ({
             onRehacerSobres={onRehacerSobres}
             tComp={tComp}
             onGenerateMatches={() => onGenerateMatches(round)}
-            soloReintento={competition.setupMode === 'RYDER_CUP'}
+            soloReintento={competition.setupMode === SetupMode.RYDER_CUP}
             competicionCerrada={esCompeticionCerrada(competition.status)}
             onToggleExpand={() => onToggleExpand(round.id)}
             isExpanded={!!expandedRounds[round.id]}

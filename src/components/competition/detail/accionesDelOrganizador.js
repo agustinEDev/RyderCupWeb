@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { CompetitionStatusEnum } from '../../../domain/value_objects/CompetitionStatus';
 
+import { SetupMode } from '../../../domain/value_objects/SetupMode';
 /**
  * Las acciones de la ficha: UNA principal —la que toca ahora (`paso`)— y el
  * resto en un menú. Antes eran hasta siete botones del mismo peso en seis
@@ -88,7 +89,7 @@ export const accionesDelOrganizador = ({
       // ya hechos la sala terminó: se ven en la agenda
       cuando:
         competition.status === CompetitionStatusEnum.CLOSED &&
-        competition.setupMode === 'RYDER_CUP' &&
+        competition.setupMode === SetupMode.RYDER_CUP &&
         !competition.teamsAssigned &&
         Boolean(competition.captains?.teamA && competition.captains?.teamB),
     },

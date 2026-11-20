@@ -12,6 +12,7 @@
 
 import { CompetitionStatusEnum } from '../domain/value_objects/CompetitionStatus';
 
+import { SetupMode } from '../domain/value_objects/SetupMode';
 /**
  * @param {Object|null} competition - La competición, tal como la trae la ficha
  * @param {Object} [opciones]
@@ -71,7 +72,7 @@ export const siguientePasoDeLaCompeticion = (
       // hay capitanes: sin esto la ficha se quedaba sin acción principal
       // —la del draft no se ofrece— justo cuando nombrarlos es lo único que
       // hay que hacer
-      if (setupMode !== 'RYDER_CUP') return 'manageSchedule';
+      if (setupMode !== SetupMode.RYDER_CUP) return 'manageSchedule';
       return hayCapitanes ? 'draft' : 'nameCaptains';
     }
     return 'manageSchedule';

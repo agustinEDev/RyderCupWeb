@@ -7,6 +7,7 @@ import { formularioDeAjustes, separadorDecimal } from './ajustesDeStrokePlay';
 import { TournamentType } from '../domain/value_objects/TournamentType';
 import { PlayModeType } from '../domain/value_objects/HandicapSettings';
 import { Visibility } from '../domain/value_objects/Visibility';
+import { SetupMode } from '../domain/value_objects/SetupMode';
 /**
  * El formulario de crear o editar una competición: cómo nace, cómo se rellena
  * al editar y qué le pasa al cambiar de país. Sin React: lo usa la página.
@@ -161,7 +162,8 @@ export const formularioDeLaEdicion = (
     tournamentType: competition.tournamentType || TournamentType.RYDER_CUP,
     // Solo una Ryder tiene modo de montaje: a un Stableford no se le pone
     setupMode:
-      competition.setupMode || (competition.hasTeams ? 'RYDER_CUP' : null),
+      competition.setupMode ||
+      (competition.hasTeams ? SetupMode.RYDER_CUP : null),
     maxPlayingHandicap: competition.maxPlayingHandicap ?? undefined,
     // Con el decimal del idioma: «12,0» en español, «12.0» en inglés
     strokePlay: formularioDeAjustes(

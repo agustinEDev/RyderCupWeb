@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import { Wand2, Hand, Trophy } from 'lucide-react';
 
+import { SetupMode } from '../../domain/value_objects/SetupMode';
 /**
  * Cuánto hace la aplicación por su cuenta (FE #695).
  *
@@ -22,9 +23,9 @@ import { Wand2, Hand, Trophy } from 'lucide-react';
  * @param {(modo: string) => void} props.onSelect
  */
 const MODOS = [
-  { id: 'AUTOMATIC', icono: Wand2, disponible: false },
-  { id: 'MANUAL', icono: Hand, disponible: true },
-  { id: 'RYDER_CUP', icono: Trophy, disponible: true },
+  { id: SetupMode.AUTOMATIC, icono: Wand2, disponible: false },
+  { id: SetupMode.MANUAL, icono: Hand, disponible: true },
+  { id: SetupMode.RYDER_CUP, icono: Trophy, disponible: true },
 ];
 
 const SetupModeChooser = ({ value, onSelect }) => {

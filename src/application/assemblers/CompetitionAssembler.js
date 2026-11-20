@@ -2,6 +2,7 @@ import { nombreVisible } from '../../utils/nombreVisible';
 import { getCountryFlag } from '../../utils/countryUtils';
 import { Modality } from '../../domain/value_objects/Modality';
 
+import { SetupMode } from '../../domain/value_objects/SetupMode';
 /** @typedef {import('../../domain/entities/Competition').default} Competition */
 /** @typedef {import('../../domain/repositories/ICompetitionRepository').CompetitionExtras} CompetitionExtras */
 
@@ -176,7 +177,8 @@ class CompetitionAssembler {
       // reparten los equipos, que ya no se pregunta aparte (RyderCupAm#351).
       // Solo una Ryder lo tiene: a un Stableford no se le inventa
       setupMode:
-        extras?.setupMode || (competition.hasTeams ? 'RYDER_CUP' : null),
+        extras?.setupMode ||
+        (competition.hasTeams ? SetupMode.RYDER_CUP : null),
       // Si ya hay equipos repartidos: con ellos los capitanes no se cambian, y una
       // reabierta se vuelve a cerrar con «Cerrar inscripciones» (FE #692). Solo lo
       // manda la ficha; sin el campo, no se afirma un reparto que nadie ha dicho

@@ -19,6 +19,7 @@ import { nombrePequeno } from '../../../utils/nombreVisible';
 import { CompetitionStatusEnum } from '../../../domain/value_objects/CompetitionStatus';
 
 import { Visibility } from '../../../domain/value_objects/Visibility';
+import { SetupMode } from '../../../domain/value_objects/SetupMode';
 /**
  * «Inscripción abierta hasta el 13 de noviembre a las 12:00» (15 nov 2026): el
  * día del campo, tal como lo manda el servidor, escrito en el idioma de la app.
@@ -94,7 +95,7 @@ const ResumenDeLaCompeticion = ({
         A quien organiza no se le repite aquí: para él la sala es el
         siguiente paso y ya la ofrece el botón de arriba (FE #705) */}
       {!canManage &&
-        competition.setupMode === 'RYDER_CUP' &&
+        competition.setupMode === SetupMode.RYDER_CUP &&
         competition.status === CompetitionStatusEnum.CLOSED &&
         !competition.teamsAssigned &&
         competition.captains?.teamA &&

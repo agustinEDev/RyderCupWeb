@@ -2,6 +2,7 @@ import { CompetitionStatusEnum } from '../domain/value_objects/CompetitionStatus
 import EnrollmentStatus from '../domain/value_objects/EnrollmentStatus';
 
 import { Team } from '../domain/value_objects/Team';
+import { SetupMode } from '../domain/value_objects/SetupMode';
 /**
  * Quien capitanea un equipo tiene un sobre que entregar en cada sesión (FE
  * #655). El organizador entra también: es quien los abre cuando un capitán no
@@ -25,7 +26,7 @@ export const botonesDeLosSobres = ({
   setupMode,
   hayEquipos,
 }) => {
-  const conSobres = setupMode === 'RYDER_CUP' && hayEquipos;
+  const conSobres = setupMode === SetupMode.RYDER_CUP && hayEquipos;
   return {
     abrirSobre: Boolean(entra && conSobres),
     rehacerSobres: Boolean(canManage && conSobres),

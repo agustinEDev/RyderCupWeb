@@ -8,7 +8,10 @@ import {
   HandicapSettings,
   PlayModeType,
 } from '../../domain/value_objects/HandicapSettings';
-import { TeamAssignment } from '../../domain/value_objects/TeamAssignment';
+import {
+  TeamAssignment,
+  TeamAssignmentEnum,
+} from '../../domain/value_objects/TeamAssignment';
 import {
   CompetitionStatus,
   CompetitionStatusEnum,
@@ -61,7 +64,7 @@ class CompetitionMapper {
       // Map team assignment. Si el torneo no tiene equipos, la entidad lo
       // descarta: la regla vive en ella (FE #791)
       const teamAssignment = new TeamAssignment(
-        apiData.team_assignment || 'MANUAL',
+        apiData.team_assignment || TeamAssignmentEnum.MANUAL,
       );
 
       // Bidirectional mapping for maxPlayers/number_of_players

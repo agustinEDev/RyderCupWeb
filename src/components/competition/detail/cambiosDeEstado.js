@@ -32,6 +32,7 @@ import { mensajeDelError } from '../../../utils/mensajeDelError';
 import { registraElFallo } from '../../../utils/registraElFallo';
 import { GolfCourseApprovalStatus } from '../../../domain/value_objects/GolfCourseApprovalStatus';
 
+import { TeamAssignmentEnum } from '../../../domain/value_objects/TeamAssignment';
 /**
  * Lo que el organizador hace con la competición desde su ficha: cambiar su
  * estado, nombrar capitanes, borrarla y quitar a un inscrito, con las
@@ -262,11 +263,13 @@ export const crearCambiosDeEstado = (contexto) => {
           // Formados, quedan así (29 oct 2026): al volver a cerrar una reabierta
           // no se reparten otra vez, que el servidor lo rechaza (revisor)
           if (
-            competition.teamAssignment === 'AUTOMATIC' &&
+            competition.teamAssignment === TeamAssignmentEnum.AUTOMATIC &&
             !competition.teamsAssigned
           ) {
             try {
-              await assignTeamsUseCase.execute(id, { mode: 'AUTOMATIC' });
+              await assignTeamsUseCase.execute(id, {
+                mode: TeamAssignmentEnum.AUTOMATIC,
+              });
               customToast.success(t('detail.success.teamsAutoAssigned'));
             } catch (assignError) {
               registraElFallo(
@@ -461,11 +464,16 @@ export const crearCambiosDeEstado = (contexto) => {
         customToast.warning(
           t('detail.captains.uneven', { count: result.totalPlayers }),
         );
-      } else if (cerraba && competition.teamAssignment === 'AUTOMATIC') {
+      } else if (
+        cerraba &&
+        competition.teamAssignment === TeamAssignmentEnum.AUTOMATIC
+      ) {
         // Lo mismo que hacía «Cerrar inscripciones»: el reparto automático vive
         // aquí, en el navegador, hasta que lo haga el servidor
         try {
-          await assignTeamsUseCase.execute(id, { mode: 'AUTOMATIC' });
+          await assignTeamsUseCase.execute(id, {
+            mode: TeamAssignmentEnum.AUTOMATIC,
+          });
           // Con equipos, «Cambiar capitanes» ya no se ofrece: fallaría siempre
           setCompetition((prev) => ({ ...prev, teamsAssigned: true }));
           customToast.success(t('detail.success.teamsAutoAssigned'));

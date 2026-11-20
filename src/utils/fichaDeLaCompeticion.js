@@ -17,6 +17,7 @@ import { mensajeDelError } from './mensajeDelError';
 import { puedeGestionarLaCompeticion } from './puedeGestionarLaCompeticion';
 
 import { Visibility } from '../domain/value_objects/Visibility';
+import { SetupMode } from '../domain/value_objects/SetupMode';
 // «Volver» lleva a donde se vino: explorar, las invitaciones (FE #682) o, por
 // defecto, las competiciones propias
 const VUELTAS = {
@@ -257,7 +258,7 @@ export const derivarLaFicha = ({
   const esStrokePlay = competition.hasTeams === false;
   const repartoAMostrar =
     competition.actualTeamAssignment ??
-    (competition.setupMode === 'RYDER_CUP'
+    (competition.setupMode === SetupMode.RYDER_CUP
       ? 'PENDING'
       : competition.teamAssignment);
   // La configuración se corrige mientras haya inscripciones abiertas (BE #323):

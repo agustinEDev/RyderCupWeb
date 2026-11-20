@@ -8,6 +8,7 @@ import EnrollmentStatus from '../../domain/value_objects/EnrollmentStatus';
 import { MatchFormat } from '../../domain/value_objects/MatchFormat';
 
 import { Team } from '../../domain/value_objects/Team';
+import { SetupMode } from '../../domain/value_objects/SetupMode';
 let matchIdCounter = 0;
 const createEmptyMatch = () => ({
   id: ++matchIdCounter,
@@ -37,7 +38,7 @@ const GenerateMatchesModalContent = ({
   // En modo Ryder los enfrentamientos salen de los sobres de los capitanes, y
   // el servidor rechaza los que se manden a mano: ofrecerlos era dejar colocar
   // a todo el mundo para recibir un error al final (BE #361)
-  const emparejanLosSobres = setupMode === 'RYDER_CUP';
+  const emparejanLosSobres = setupMode === SetupMode.RYDER_CUP;
   const [mode, setMode] = useState('automatic');
   const [matches, setMatches] = useState([createEmptyMatch()]);
   const [validationError, setValidationError] = useState(null);
