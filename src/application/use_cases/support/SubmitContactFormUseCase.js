@@ -1,4 +1,8 @@
-const VALID_CATEGORIES = ['BUG', 'FEATURE', 'QUESTION', 'OTHER'];
+import { ContactCategory } from '../../../domain/value_objects/ContactCategory';
+
+const VALID_CATEGORIES = /** @type {readonly string[]} */ (
+  Object.values(ContactCategory)
+);
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 /**
