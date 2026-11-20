@@ -538,6 +538,28 @@
     "teamsFormed": {
       "enrolled": "Los equipos ya están formados. Si no puedes jugar, avisa al organizador.",
       "closed": "Los equipos ya están formados"
+    },
+    "tee": {
+      "label": "Barras",
+      "default": "Por defecto ({{color}})",
+      "defaultNoColor": "Por defecto",
+      "change": "Cambiar barra",
+      "modalTitle": "Barras de {{name}}",
+      "hint": "Lo ya jugado no cambia: sus partidos pendientes se recalculan con la barra nueva.",
+      "save": "Guardar",
+      "close": "Cerrar",
+      "saved": "Barra cambiada",
+      "loading": "Leyendo las barras de los campos…",
+      "notLoaded": "No se pudieron leer las barras de los campos: solo se puede volver a la de por defecto.",
+      "noneForGender": "Los campos de esta competición no tienen barras valoradas para este jugador.",
+      "errors": {
+        "TEE_NOT_AVAILABLE": "Esa barra no está valorada para este jugador en los campos que le quedan por jugar.",
+        "TEE_CHANGE_CLOSED": "La competición ya terminó o se canceló: la barra ya no se puede cambiar.",
+        "ENROLLMENT_NOT_APPROVED": "Solo se puede cambiar la barra de una inscripción aprobada.",
+        "PENDING_GAME_NOT_RECALCULABLE": "Un partido pendiente no se pudo recalcular con la barra nueva. Avisa al organizador.",
+        "FORBIDDEN": "No puedes cambiar la barra de este jugador.",
+        "generic": "No se pudo cambiar la barra. Inténtalo de nuevo."
+      }
     }
   },
   "browse": {

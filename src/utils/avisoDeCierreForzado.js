@@ -207,6 +207,7 @@ const TRAMOS_FIJOS = new Set([
   'stroke-play',
   'submit',
   'summary',
+  'tee',
   'teams',
   'unlink',
   'unseen-count',

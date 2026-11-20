@@ -37,6 +37,8 @@ const FilaDeAprobado = ({
   handleRevertToRfegHandicap,
   quitandoId,
   handleQuitar,
+  puedeCambiarSuBarra,
+  onCambiarBarra,
 }) => (
   <div
     data-testid={`aprobado-${enrollment.userId}`}
@@ -70,6 +72,24 @@ const FilaDeAprobado = ({
             </span>
           </span>
         )}
+      {/* Cambiar su barra (FE #1214): organizador, admin o el capitán de
+          su equipo, mientras se pueda */}
+      {puedeCambiarSuBarra?.(enrollment) && (
+        <button
+          type="button"
+          data-testid={`cambiar-barra-${enrollment.userId}`}
+          onClick={() => onCambiarBarra(enrollment)}
+          className="block min-h-11 text-sm font-semibold text-primary underline"
+        >
+          {t('detail.tee.change')}
+          {enrollment.color && (
+            <span className="font-normal text-gray-700">
+              {' · '}
+              {t(`golfCourses:form.teeColors.${enrollment.color}`)}
+            </span>
+          )}
+        </button>
+      )}
       {/* Que se vea a quién le falta, no solo en un atributo (revisor) */}
       {sinHandicap.has(enrollment.userId) && (
         <span className="inline-flex mt-1 px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 text-xs font-semibold">

@@ -37,6 +37,9 @@ import { faltaElHandicap } from '../utils/datosQueFaltanSinConexion';
 import { PANTALLA_MENOS_BARRA_INFERIOR } from '../utils/barraInferior';
 import { hayHistorialPropio } from '../hooks/useGoBack';
 import EnrollmentStatus from '../domain/value_objects/EnrollmentStatus';
+import CambiarBarraModal from '../components/competition/detail/CambiarBarraModal';
+import { useCambioDeBarra } from '../components/competition/detail/useCambioDeBarra';
+import { puedeCambiarLaBarra } from '../utils/puedeCambiarLaBarra';
 
 /**
  * La ficha de una competición. Esta página orquesta: lee la ficha y sus
@@ -48,7 +51,8 @@ const CompetitionDetail = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { id } = useParams();
-  const { t, i18n } = useTranslation('competitions');
+  // golfCourses: los nombres de las barras (FE #1214)
+  const { t, i18n } = useTranslation(['competitions', 'golfCourses']);
   const { t: tComun } = useTranslation('common');
   const { user, loading: isLoadingUser, sinConfirmar } = useAuth();
   // El género para apuntarse, solo a quien le falta (#710)
@@ -149,6 +153,8 @@ const CompetitionDetail = () => {
       agendaLeida,
       versionDePartidas,
     });
+  // Cambiar la barra de un inscrito (FE #1214)
+  const cambioDeBarra = useCambioDeBarra({ t, setEnrollments });
   const releerHandicaps = useReleerHandicaps({
     id,
     competition,
@@ -193,6 +199,19 @@ const CompetitionDetail = () => {
     fechaDeAperturaLegible,
     isFull,
   } = ficha;
+
+  // Quién puede cambiar la barra de cada aprobado: la regla del backend
+  // (RyderCupAm#912), con el reparto de la agenda para saber su capitán
+  const puedeCambiarSuBarra = (inscripcion) =>
+    inscripcion?.status === EnrollmentStatus.APPROVED &&
+    puedeCambiarLaBarra({
+      estado: competition.status,
+      userId,
+      jugadorId: inscripcion.userId,
+      gestiona: Boolean(canManage),
+      captains: competition.captains,
+      reparto: agendaLeida?.teamAssignment,
+    });
 
   // Abre el modal y espera la respuesta: el flujo de cada acción no cambia.
   // Cada acción trae sus palabras —título, consecuencia y dos verbos—: con
@@ -398,6 +417,13 @@ const CompetitionDetail = () => {
                 handleToggleNamePreference={
                   inscripciones.handleToggleNamePreference
                 }
+                puedeCambiarMiBarra={puedeCambiarSuBarra(ficha.userEnrollment)}
+                onCambiarMiBarra={(mia) =>
+                  cambioDeBarra.abrir({
+                    ...mia,
+                    userGender: mia.userGender ?? user?.gender ?? null,
+                  })
+                }
               />
             )}
 
@@ -477,7 +503,19 @@ const CompetitionDetail = () => {
               {...handicaps}
               quitandoId={quitandoId}
               handleQuitar={cambios.handleQuitar}
+              puedeCambiarSuBarra={puedeCambiarSuBarra}
+              onCambiarBarra={cambioDeBarra.abrir}
             />
+            {cambioDeBarra.cambiandoDe && (
+              <CambiarBarraModal
+                t={t}
+                competitionId={id}
+                inscripcion={cambioDeBarra.cambiandoDe}
+                guardando={cambioDeBarra.guardando}
+                onGuardar={cambioDeBarra.guardar}
+                onClose={cambioDeBarra.cerrar}
+              />
+            )}
 
             {/* Pending & Rejected Enrollments - Only visible to creator/admin */}
             {canManage && (
