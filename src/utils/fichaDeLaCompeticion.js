@@ -16,6 +16,7 @@ import EnrollmentStatus from '../domain/value_objects/EnrollmentStatus';
 import { mensajeDelError } from './mensajeDelError';
 import { puedeGestionarLaCompeticion } from './puedeGestionarLaCompeticion';
 
+import { Visibility } from '../domain/value_objects/Visibility';
 // «Volver» lleva a donde se vino: explorar, las invitaciones (FE #682) o, por
 // defecto, las competiciones propias
 const VUELTAS = {
@@ -401,7 +402,7 @@ export const derivarLaFicha = ({
     Boolean(user.alias) &&
     Boolean(userEnrollment?.id) &&
     NOMBRE_A_LA_VISTA.includes(userEnrollment.status);
-  const esPublica = competition.visibility === 'PUBLIC';
+  const esPublica = competition.visibility === Visibility.PUBLIC;
   const puedeElegirNombre = suNombreSeVe && !esPublica;
   const nombreFijoEnPublica = suNombreSeVe && esPublica;
   const nombreLegal = [user.first_name, user.last_name]

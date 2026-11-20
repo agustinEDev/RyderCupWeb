@@ -28,6 +28,7 @@ import {
   textoDelAvisoDeValidacion,
 } from '../utils/peticionDeLaCompeticion';
 
+import { Visibility } from '../domain/value_objects/Visibility';
 /**
  * El envío del formulario de competición: validar, crear o editar, y avisar de
  * lo que salga. Los manejadores se definen en cada render con los valores de
@@ -430,7 +431,7 @@ export const useEnvioDeLaCompeticion = ({
       // de hacerlo. En una privada no hay nada que avisar: no la ve nadie y se
       // entra por invitación (FE #666). Al editar tampoco: ya existe. Mientras
       // pregunta, otro envío no la vuelve a pedir; el «crear» del modal sí pasa
-      if (!isEditMode && formData.visibility === 'PUBLIC') {
+      if (!isEditMode && formData.visibility === Visibility.PUBLIC) {
         candado.current = 'pregunta';
         enManosDelEnvio = true;
         setPreguntandoApertura(true);

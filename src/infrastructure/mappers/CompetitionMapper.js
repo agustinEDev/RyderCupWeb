@@ -17,6 +17,7 @@ import { StrokePlaySetup } from '../../domain/value_objects/StrokePlaySetup';
 import { instanteDeLaApi } from '../../utils/instanteDeLaApi';
 
 import { TournamentType } from '../../domain/value_objects/TournamentType';
+import { Visibility } from '../../domain/value_objects/Visibility';
 /**
  * Mapper to convert between API DTOs and Domain Entities
  */
@@ -92,7 +93,7 @@ class CompetitionMapper {
         teamAssignment,
         // Sin el campo, privada: una respuesta de antes de que existiera no
         // convierte en pública una competición que no lo es (FE #664)
-        visibility: apiData.visibility || 'PRIVATE',
+        visibility: apiData.visibility || Visibility.PRIVATE,
         status: new CompetitionStatus(
           apiData.status || CompetitionStatusEnum.DRAFT,
         ),

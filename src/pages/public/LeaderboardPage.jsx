@@ -20,6 +20,7 @@ import { PANTALLA_MENOS_BARRA_INFERIOR } from '../../utils/barraInferior';
 import { CompetitionStatusEnum } from '../../domain/value_objects/CompetitionStatus';
 import { mensajeDelError } from '../../utils/mensajeDelError';
 
+import { Visibility } from '../../domain/value_objects/Visibility';
 const POLL_INTERVAL = 30000; // 30 seconds
 // La ficha de un stroke play en juego, para enterarse de que empieza o acaba
 const CADA_FICHA = 5 * 60000;
@@ -228,7 +229,7 @@ const LeaderboardPage = () => {
         } else {
           const resumen = await delResumen();
           if (!vigente) return;
-          if (resumen?.visibility === 'PRIVATE') throw privada();
+          if (resumen?.visibility === Visibility.PRIVATE) throw privada();
           competicion = resumen?.hasTeams === false ? resumen : null;
         }
         if (!vigente) return;

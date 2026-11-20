@@ -6,6 +6,7 @@ import { formularioDeAjustes, separadorDecimal } from './ajustesDeStrokePlay';
 
 import { TournamentType } from '../domain/value_objects/TournamentType';
 import { PlayModeType } from '../domain/value_objects/HandicapSettings';
+import { Visibility } from '../domain/value_objects/Visibility';
 /**
  * El formulario de crear o editar una competición: cómo nace, cómo se rellena
  * al editar y qué le pasa al cambiar de país. Sin React: lo usa la página.
@@ -114,7 +115,7 @@ export const formularioInicial = (equipos) => ({
 
   // RyderCup Settings
   playMode: PlayModeType.HANDICAP,
-  visibility: 'PRIVATE',
+  visibility: Visibility.PRIVATE,
   numberOfPlayers: CUPO_POR_DEFECTO,
   // Cuánto monta la app por su cuenta (FE #695). Al crear se elige en su paso;
   // el reparto de equipos sale de él, así que ya no se pregunta aparte
@@ -155,7 +156,7 @@ export const formularioDeLaEdicion = (
     showAdjacentCountry2: !!datos.adjacentCountry2,
     golfCourses: datos.golfCoursesData,
     playMode: competition.playMode || PlayModeType.HANDICAP,
-    visibility: competition.visibility || 'PRIVATE',
+    visibility: competition.visibility || Visibility.PRIVATE,
     numberOfPlayers: competition.maxPlayers || CUPO_POR_DEFECTO,
     tournamentType: competition.tournamentType || TournamentType.RYDER_CUP,
     // Solo una Ryder tiene modo de montaje: a un Stableford no se le pone

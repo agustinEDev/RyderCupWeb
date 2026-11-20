@@ -18,6 +18,7 @@ import NombrePequeno from '../../ui/NombrePequeno';
 import { nombrePequeno } from '../../../utils/nombreVisible';
 import { CompetitionStatusEnum } from '../../../domain/value_objects/CompetitionStatus';
 
+import { Visibility } from '../../../domain/value_objects/Visibility';
 /**
  * «Inscripción abierta hasta el 13 de noviembre a las 12:00» (15 nov 2026): el
  * día del campo, tal como lo manda el servidor, escrito en el idioma de la app.
@@ -69,7 +70,7 @@ const ResumenDeLaCompeticion = ({
               className="px-3 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-700"
             >
               {t(
-                competition.visibility === 'PUBLIC'
+                competition.visibility === Visibility.PUBLIC
                   ? 'detail.visibilityPublic'
                   : 'detail.visibilityPrivate',
               )}

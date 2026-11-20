@@ -5,6 +5,7 @@ import { tieneEquipos, TournamentType } from '../value_objects/TournamentType';
 import { RyderCupSetup } from '../value_objects/RyderCupSetup';
 import { StrokePlaySetup } from '../value_objects/StrokePlaySetup';
 
+import { Visibility } from '../value_objects/Visibility';
 /** @typedef {import('../value_objects/CompetitionId').CompetitionId} CompetitionId */
 /** @typedef {import('../value_objects/CompetitionName').CompetitionName} CompetitionName */
 /** @typedef {import('../value_objects/DateRange').DateRange} DateRange */
@@ -86,7 +87,7 @@ export default class Competition {
     team2Name,
     handicapSettings,
     maxPlayers = 24,
-    visibility = 'PRIVATE',
+    visibility = Visibility.PRIVATE,
     teamAssignment,
     status = CompetitionStatus.DRAFT,
     createdAt = new Date(),

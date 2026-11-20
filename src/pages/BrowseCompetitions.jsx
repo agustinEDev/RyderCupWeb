@@ -24,6 +24,7 @@ import { nombrePequeno } from '../utils/nombreVisible';
 import { registraElFallo } from '../utils/registraElFallo';
 import { CompetitionStatusEnum } from '../domain/value_objects/CompetitionStatus';
 
+import { Visibility } from '../domain/value_objects/Visibility';
 const BrowseCompetitions = () => {
   // El género para apuntarse, solo a quien le falta (#710)
   const generoParaApuntarse = useGeneroParaApuntarse();
@@ -592,7 +593,7 @@ const CompetitionCard = ({
   const llena = competition.hasTeams !== false && enrolledCount >= maxPlayers;
   // Solo en una pública se pide plaza: un admin ve también las privadas en esta
   // lista, y en ellas se entra por invitación (FE #734)
-  const sePidePlaza = mode === 'joinable' && visibility === 'PUBLIC';
+  const sePidePlaza = mode === 'joinable' && visibility === Visibility.PUBLIC;
 
   // Get status badge
   const getStatusBadge = () => {
