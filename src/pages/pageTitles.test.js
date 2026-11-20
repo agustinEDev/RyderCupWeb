@@ -73,6 +73,21 @@ describe('page titles vs the contextual header', () => {
     },
   );
 
+  // Los h1 que salieron de una página a su componente (pieza 4): fuera del
+  // barrido de src/pages, pero con la misma regla. Debe seguir habiendo h1:
+  // si no, la comprobación no miraría nada
+  it.each(['src/components/schedule/CabeceraDeLaAgenda.jsx'])(
+    '%s keeps its h1 out of mobile',
+    (ruta) => {
+      const encabezados = read(ruta).match(/<h1[^>]*>/g) ?? [];
+
+      expect(encabezados.length).toBeGreaterThan(0);
+      for (const encabezado of encabezados) {
+        expect(encabezado).toContain('hidden md:block');
+      }
+    },
+  );
+
   it('keeps the header as the only h1 on mobile', () => {
     // La cabecera si pinta el suyo sin condicion: es la fuente del titulo
     const header = read('src/components/layout/HeaderAuth.jsx');

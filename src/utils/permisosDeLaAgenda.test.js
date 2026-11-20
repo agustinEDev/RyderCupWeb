@@ -33,16 +33,23 @@ describe('puedeGestionarLaAgenda', () => {
     ).toBe(esperado);
   });
 
-  it('sin usuario identificado nadie es el creador, aunque falte también el creador', () => {
-    expect(
-      puedeGestionarLaAgenda({
-        creatorId: undefined,
-        userId: undefined,
-        hasCreatorRole: false,
-        isAdmin: false,
-      }),
-    ).toBe(false);
-  });
+  it.each([
+    ['ni aunque falte también el creador', false, false],
+    ['ni con el rol de organizador', true, false],
+    ['ni como admin', false, true],
+  ])(
+    'sin usuario identificado nadie gestiona: %s',
+    (_, hasCreatorRole, isAdmin) => {
+      expect(
+        puedeGestionarLaAgenda({
+          creatorId: undefined,
+          userId: undefined,
+          hasCreatorRole,
+          isAdmin,
+        }),
+      ).toBe(false);
+    },
+  );
 });
 
 describe('entraALosSobres', () => {

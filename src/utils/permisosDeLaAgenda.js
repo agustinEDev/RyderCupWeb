@@ -5,16 +5,16 @@ import EnrollmentStatus from '../domain/value_objects/EnrollmentStatus';
  * Quién puede tocar la agenda: quien creó la competición, quien tiene el rol de
  * organizador en ella o un admin. Devuelve lo mismo que la expresión de antes
  * (no siempre un booleano): los componentes lo reciben tal cual. Sin usuario
- * identificado nadie es «el creador»: dentro de la página no pasa (no pinta
- * sin usuario), pero suelta, `undefined === undefined` daba permiso
- * (`/code-review`).
+ * identificado nadie gestiona: dentro de la página no pasa (no pinta sin
+ * usuario), pero suelta, `undefined === undefined` daba permiso
+ * (`/code-review`, CodeRabbit).
  */
 export const puedeGestionarLaAgenda = ({
   creatorId,
   userId,
   hasCreatorRole,
   isAdmin,
-}) => (Boolean(userId) && creatorId === userId) || hasCreatorRole || isAdmin;
+}) => Boolean(userId) && (creatorId === userId || hasCreatorRole || isAdmin);
 
 /**
  * Quien capitanea un equipo tiene un sobre que entregar en cada sesión (FE

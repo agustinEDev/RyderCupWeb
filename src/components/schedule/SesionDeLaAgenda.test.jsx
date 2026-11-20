@@ -49,6 +49,22 @@ describe('SesionDeLaAgenda', () => {
     expect(tarjeta).toHaveAttribute('data-edita', 'true');
   });
 
+  // Cada botón por su permiso: un capitán abre su sobre, pero rehacerlos es
+  // cosa del organizador (CodeRabbit)
+  it('un capitán: solo el sobre', () => {
+    pintar({ abrirSobre: true, rehacerSobres: false });
+
+    expect(screen.getByTestId('ir-al-sobre-r1')).toBeInTheDocument();
+    expect(screen.queryByTestId('rehacer-sobres-r1')).toBeNull();
+  });
+
+  it('quien gestiona sin ser capitán: solo rehacerlos', () => {
+    pintar({ abrirSobre: false, rehacerSobres: true });
+
+    expect(screen.queryByTestId('ir-al-sobre-r1')).toBeNull();
+    expect(screen.getByTestId('rehacer-sobres-r1')).toBeInTheDocument();
+  });
+
   it('los botones, antes que la tarjeta', () => {
     pintar({ abrirSobre: true, rehacerSobres: true });
     const orden = [
