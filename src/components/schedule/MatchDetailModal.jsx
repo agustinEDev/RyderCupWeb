@@ -14,9 +14,9 @@ import { mensajeDelError } from '../../utils/mensajeDelError';
 import { registraElFallo } from '../../utils/registraElFallo';
 import MatchStatus from '../../domain/value_objects/MatchStatus';
 import { MatchFormat } from '../../domain/value_objects/MatchFormat';
-
 import { Team } from '../../domain/value_objects/Team';
 import { Winner } from '../../domain/value_objects/Winner';
+
 const MatchDetailModal = ({
   isOpen,
   onClose,

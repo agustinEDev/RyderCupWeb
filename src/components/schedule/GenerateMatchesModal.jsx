@@ -6,9 +6,9 @@ import BloqueoDePartidos from './BloqueoDePartidos';
 import { formatoDeIndice } from '../../utils/formatoDeHandicap';
 import EnrollmentStatus from '../../domain/value_objects/EnrollmentStatus';
 import { MatchFormat } from '../../domain/value_objects/MatchFormat';
-
 import { Team } from '../../domain/value_objects/Team';
 import { SetupMode } from '../../domain/value_objects/SetupMode';
+
 let matchIdCounter = 0;
 const createEmptyMatch = () => ({
   id: ++matchIdCounter,

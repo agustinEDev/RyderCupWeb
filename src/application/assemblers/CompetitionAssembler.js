@@ -1,8 +1,8 @@
 import { nombreVisible } from '../../utils/nombreVisible';
 import { getCountryFlag } from '../../utils/countryUtils';
 import { Modality } from '../../domain/value_objects/Modality';
-
 import { SetupMode } from '../../domain/value_objects/SetupMode';
+
 /** @typedef {import('../../domain/entities/Competition').default} Competition */
 /** @typedef {import('../../domain/repositories/ICompetitionRepository').CompetitionExtras} CompetitionExtras */
 

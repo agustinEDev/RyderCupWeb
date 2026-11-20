@@ -4,8 +4,8 @@ import { useTranslation } from 'react-i18next';
 import { teeKey, resolveTeeColor } from './createQuickMatchModalConstants';
 import { useFocoRetenido } from '../../hooks/useFocoRetenido';
 import { nombreDeLaBarra } from '../../utils/nombreDeLaBarra';
-
 import { Gender } from '../../domain/value_objects/Gender';
+
 /**
  * Bottom-sheet tee picker, opened from the + of each friend — same pattern as
  * `HandicapInputPanel` and `scoring/ScoreInputPanel`.

@@ -1,7 +1,7 @@
 import MatchStatus from '../domain/value_objects/MatchStatus';
-
 import { Winner } from '../domain/value_objects/Winner';
 import { Team } from '../domain/value_objects/Team';
+
 // Lo que la pantalla de anotación de competición (`ScoringPage`) cuenta del
 // partido entero: sus fallos, su marcador, su cierre y la entrega. Las que
 // devuelven texto reciben la `t` de la pantalla (espacio `scoring`).

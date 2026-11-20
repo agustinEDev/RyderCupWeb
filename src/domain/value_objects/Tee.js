@@ -1,6 +1,6 @@
 import TeeColor from './TeeColor';
-
 import { Gender } from './Gender';
+
 /**
  * Tee Value Object
  * Represents a tee position on a golf course

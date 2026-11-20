@@ -14,8 +14,8 @@ import {
   isTeamMatchFormat,
 } from '../../domain/value_objects/MatchFormat';
 import { ScoringFormat } from '../../domain/value_objects/ScoringFormat';
-
 import { PlayModeType } from '../../domain/value_objects/HandicapSettings';
+
 // El nombre lleva escrito «Campo · dd/mm» y sigue al campo hasta que alguien
 // escribe el suyo; vacío, viaja ese (Agustín, 4 nov 2026). Al repetir, uno de
 // por defecto no se copia: llevaría la fecha de aquella

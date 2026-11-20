@@ -1,6 +1,6 @@
 import { useTranslation } from 'react-i18next';
-
 import { Gender } from '../../domain/value_objects/Gender';
+
 /**
  * El género, para quien no lo tiene y se apunta a una competición (#710).
  *

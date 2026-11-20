@@ -18,6 +18,7 @@ import {
 } from '../domain/value_objects/ScoringFormat';
 
 import { PlayModeType } from '../domain/value_objects/HandicapSettings';
+
 // Dónde se arregla cada cosa: el campo y tu barra, en el paso 1; los
 // jugadores, en el 2. El asistente enseña cada aviso solo en su paso
 const PASO_DEL_CAMPO = 1;

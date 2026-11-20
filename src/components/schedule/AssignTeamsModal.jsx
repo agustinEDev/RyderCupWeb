@@ -4,8 +4,8 @@ import { motion } from 'framer-motion';
 import { X, Users } from 'lucide-react';
 import { formatoDeIndice } from '../../utils/formatoDeHandicap';
 import EnrollmentStatus from '../../domain/value_objects/EnrollmentStatus';
-
 import { Team } from '../../domain/value_objects/Team';
+
 // Wrapper: controls mount/unmount so inner component always has fresh state
 const AssignTeamsModal = ({ isOpen, ...props }) => {
   if (!isOpen) return null;

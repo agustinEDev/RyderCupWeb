@@ -10,6 +10,7 @@ import {
 } from '../../domain/services/PlazasEnFranjas';
 
 import { Gender } from '../../domain/value_objects/Gender';
+
 /**
  * Las piezas de las plazas de una franja de stroke play (FE #824, PR 4),
  * para `FranjasDeLaCompeticion`: lo que puede hacer el jugador, quién juega y

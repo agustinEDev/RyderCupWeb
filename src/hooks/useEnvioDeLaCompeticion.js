@@ -30,6 +30,7 @@ import {
 
 import { Visibility } from '../domain/value_objects/Visibility';
 import { SetupMode } from '../domain/value_objects/SetupMode';
+
 /**
  * El envío del formulario de competición: validar, crear o editar, y avisar de
  * lo que salga. Los manejadores se definen en cada render con los valores de

@@ -1,4 +1,5 @@
 import { Gender } from '../domain/value_objects/Gender';
+
 /**
  * El texto del estado de una inscripción, para la etiqueta de la ficha y de la
  * lista de competiciones.

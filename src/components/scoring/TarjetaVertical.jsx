@@ -1,7 +1,7 @@
 import { Fragment } from 'react';
 import { useTranslation } from 'react-i18next';
-
 import { Team } from '../../domain/value_objects/Team';
+
 const CABECERA_DEL_EQUIPO = {
   [Team.A]: 'bg-blue-50 border-b-2 border-blue-500',
   [Team.B]: 'bg-red-50 border-b-2 border-red-500',

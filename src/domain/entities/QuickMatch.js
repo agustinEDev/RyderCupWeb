@@ -1,8 +1,8 @@
 import QuickMatchStatus from '../value_objects/QuickMatchStatus';
 import { isValidMatchFormat } from '../value_objects/MatchFormat';
 import { isValidScoringFormat } from '../value_objects/ScoringFormat';
-
 import { PlayModeType } from '../value_objects/HandicapSettings';
+
 const MAX_NAME_LENGTH = 100;
 
 /**

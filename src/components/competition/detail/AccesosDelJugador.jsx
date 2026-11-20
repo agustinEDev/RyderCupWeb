@@ -1,8 +1,8 @@
 import { Calendar, UserPlus, BarChart3 } from 'lucide-react';
 import { CompetitionStatusEnum } from '../../../domain/value_objects/CompetitionStatus';
 import EnrollmentStatus from '../../../domain/value_objects/EnrollmentStatus';
-
 import { Visibility } from '../../../domain/value_objects/Visibility';
+
 /**
  * Lo que la ficha ofrece a quien no la organiza: la clasificación, el
  * calendario de sus partidos, pedir plaza o, con los equipos formados, por

@@ -35,9 +35,9 @@ import {
 import NombrePequeno from '../ui/NombrePequeno';
 import { MatchOutcome } from '../../domain/value_objects/MatchOutcome';
 import { ScoringFormat } from '../../domain/value_objects/ScoringFormat';
-
 import { Team } from '../../domain/value_objects/Team';
 import { TournamentType } from '../../domain/value_objects/TournamentType';
+
 /**
  * Un icono por tipo. Sin esto todas las entradas se ven iguales y el feed se
  * lee como una lista de texto.

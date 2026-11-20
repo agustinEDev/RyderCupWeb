@@ -2,8 +2,8 @@ import { Users } from 'lucide-react';
 import { formatoDeIndice } from '../../utils/formatoDeHandicap';
 import { CompetitionStatusEnum } from '../../domain/value_objects/CompetitionStatus';
 import EnrollmentStatus from '../../domain/value_objects/EnrollmentStatus';
-
 import { Team } from '../../domain/value_objects/Team';
+
 const TeamAssignmentSection = ({
   teamAssignment,
   onAssignTeams,

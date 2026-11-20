@@ -1,4 +1,5 @@
 import { Gender } from '../domain/value_objects/Gender';
+
 /**
  * Las opciones de `t()` con el contexto femenino si toca: «Retirada», «No
  * presentada», «1.ª en espera». Una sola regla para todas las pantallas

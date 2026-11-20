@@ -19,8 +19,8 @@ import {
 } from '../../domain/services/courseTypeRanges';
 import { mensajeDelError } from '../../utils/mensajeDelError';
 import { registraElFallo } from '../../utils/registraElFallo';
-
 import { Gender } from '../../domain/value_objects/Gender';
+
 // Los diez colores admitidos, ordenados de barras mas largas a mas cortas
 // segun el uso habitual. OTHER cubre las salidas cuyo nombre no es un color
 // (las "Championship" britanicas, las combinadas o las numeradas por metros) y

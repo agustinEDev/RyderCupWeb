@@ -1,4 +1,5 @@
 import { Team } from '../../../domain/value_objects/Team';
+
 /**
  * Use Case: Cubrir el puesto de capitán de un equipo (FE #692).
  *

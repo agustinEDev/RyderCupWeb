@@ -4,8 +4,8 @@ import { CompetitionStatus } from '../value_objects/CompetitionStatus';
 import { tieneEquipos, TournamentType } from '../value_objects/TournamentType';
 import { RyderCupSetup } from '../value_objects/RyderCupSetup';
 import { StrokePlaySetup } from '../value_objects/StrokePlaySetup';
-
 import { Visibility } from '../value_objects/Visibility';
+
 /** @typedef {import('../value_objects/CompetitionId').CompetitionId} CompetitionId */
 /** @typedef {import('../value_objects/CompetitionName').CompetitionName} CompetitionName */
 /** @typedef {import('../value_objects/DateRange').DateRange} DateRange */

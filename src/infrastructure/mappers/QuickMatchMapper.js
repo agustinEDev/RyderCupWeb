@@ -6,6 +6,7 @@ import {
 } from '../../utils/instanteDeLaApi';
 
 import { PlayModeType } from '../../domain/value_objects/HandicapSettings';
+
 /**
  * QuickMatchMapper - Anti-Corruption Layer
  *

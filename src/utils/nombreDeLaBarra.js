@@ -1,4 +1,5 @@
 import { Gender } from '../domain/value_objects/Gender';
+
 /**
  * El nombre de una barra, igual en todas las pantallas (4 nov 2026): su nombre
  * propio si lo tiene («Campeonato») o su color traducido, y el género detrás,

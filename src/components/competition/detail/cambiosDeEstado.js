@@ -31,8 +31,8 @@ import EnrollmentStatus from '../../../domain/value_objects/EnrollmentStatus';
 import { mensajeDelError } from '../../../utils/mensajeDelError';
 import { registraElFallo } from '../../../utils/registraElFallo';
 import { GolfCourseApprovalStatus } from '../../../domain/value_objects/GolfCourseApprovalStatus';
-
 import { TeamAssignmentEnum } from '../../../domain/value_objects/TeamAssignment';
+
 /**
  * Lo que el organizador hace con la competición desde su ficha: cambiar su
  * estado, nombrar capitanes, borrarla y quitar a un inscrito, con las

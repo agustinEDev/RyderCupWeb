@@ -1,6 +1,6 @@
 import { useId, useLayoutEffect, useRef, useState } from 'react';
-
 import { Team } from '../../domain/value_objects/Team';
+
 const COLOR_DEL_NOMBRE = {
   [Team.A]:
     'border-l-blue-500 aria-selected:bg-blue-100 aria-selected:text-blue-700 aria-selected:border-blue-300',

@@ -1,4 +1,5 @@
 import { Team } from '../../../domain/value_objects/Team';
+
 class DeclareWalkoverUseCase {
   constructor({ scheduleRepository }) {
     this.scheduleRepository = scheduleRepository;

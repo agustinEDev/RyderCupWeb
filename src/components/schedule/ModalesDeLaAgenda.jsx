@@ -7,8 +7,8 @@ import GenerateMatchesModal from './GenerateMatchesModal';
 import ResetEnvelopesModal from './ResetEnvelopesModal';
 import ConfirmModal from '../modals/ConfirmModal';
 import { jugadoresDelEquipo } from '../../utils/permisosDeLaAgenda';
-
 import { Team } from '../../domain/value_objects/Team';
+
 /**
  * Los diálogos de la agenda (`SchedulePage`), en el orden de siempre. Qué está
  * abierto viene de `useModalesDeLaAgenda` y qué hace cada uno de

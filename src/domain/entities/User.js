@@ -2,8 +2,8 @@ import Email from '../value_objects/Email';
 import Password from '../value_objects/Password'; // 1. Importar Password VO
 import { CountryCode } from '../value_objects/CountryCode';
 import { debeAceptarLosTerminos } from '../services/aceptacionDeTerminos';
-
 import { Gender } from '../value_objects/Gender';
+
 class User {
   constructor({
     id,

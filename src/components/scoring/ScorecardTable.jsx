@@ -20,6 +20,7 @@ import {
 
 import { Team } from '../../domain/value_objects/Team';
 import { Winner } from '../../domain/value_objects/Winner';
+
 /**
  * La coincidencia entre los dos anotadores no se marca aquí. Es un dato de la
  * anotación —dice si hay que hablar con el otro anotador ANTES de seguir— y

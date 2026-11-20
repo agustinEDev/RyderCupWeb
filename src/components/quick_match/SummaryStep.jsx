@@ -4,9 +4,9 @@ import {
   SCORING_FORMAT_LABEL_KEY,
 } from './createQuickMatchModalConstants';
 import { formatoDeIndice } from '../../utils/formatoDeHandicap';
-
 import { Team } from '../../domain/value_objects/Team';
 import { PlayModeType } from '../../domain/value_objects/HandicapSettings';
+
 /**
  * Wizard step 4: pre-start summary — course/format/play-mode recap,
  * per-participant handicap review/override, and the scorer list.

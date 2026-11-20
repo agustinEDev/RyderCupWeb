@@ -14,8 +14,8 @@ import CampoDeHandicap from '../components/ui/CampoDeHandicap';
 import { formatoDeIndice } from '../utils/formatoDeHandicap';
 import { PANTALLA_MENOS_BARRA_INFERIOR } from '../utils/barraInferior';
 import ContrasenaParaGoogleModal from '../components/profile/ContrasenaParaGoogleModal';
-
 import { Gender } from '../domain/value_objects/Gender';
+
 const EditProfile = () => {
   const { t, i18n } = useTranslation('profile');
   // Toda la lógica ahora reside en el hook. Obtenemos todo lo que necesitamos de él.

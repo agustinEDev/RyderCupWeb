@@ -3,8 +3,8 @@ import QuickMatchMapper from '../mappers/QuickMatchMapper';
 import apiRequest from '../http/api.js';
 import { TOPE_DE_ANOTAR_MS } from './topeDeAnotar';
 import { segmento } from '../http/api';
-
 import { PlayModeType } from '../../domain/value_objects/HandicapSettings';
+
 /**
  * ApiQuickMatchRepository - REST API implementation
  *

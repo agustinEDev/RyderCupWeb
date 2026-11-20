@@ -30,6 +30,7 @@ import {
 
 import { Team } from '../../domain/value_objects/Team';
 import { PlayModeType } from '../../domain/value_objects/HandicapSettings';
+
 const MAX_STROKE_DOTS = 2;
 
 // La letra de la cifra pequeña (puntos o neto), y la de su etiqueta en la

@@ -18,8 +18,8 @@ import CampoDeHandicap from '../components/ui/CampoDeHandicap';
 import { olvidaLaMarcaDeTerminos } from '../utils/terminosPendientes';
 import { mensajeDelError } from '../utils/mensajeDelError';
 import { registraElFallo } from '../utils/registraElFallo';
-
 import { Gender } from '../domain/value_objects/Gender';
+
 const CompleteProfile = () => {
   const { t } = useTranslation('auth');
   const navigate = useNavigate();

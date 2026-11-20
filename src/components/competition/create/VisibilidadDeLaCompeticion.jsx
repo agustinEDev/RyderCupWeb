@@ -1,6 +1,6 @@
 import { useTranslation } from 'react-i18next';
-
 import { Visibility } from '../../../domain/value_objects/Visibility';
+
 /**
  * Privada o pública, arriba y pequeño: de quién es el torneo se decide al
  * montarlo, no en «Más opciones». Privada por defecto, que es lo que hay hoy y

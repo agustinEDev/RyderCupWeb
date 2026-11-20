@@ -1,8 +1,8 @@
 import { CompetitionStatusEnum } from '../domain/value_objects/CompetitionStatus';
 import EnrollmentStatus from '../domain/value_objects/EnrollmentStatus';
-
 import { Team } from '../domain/value_objects/Team';
 import { SetupMode } from '../domain/value_objects/SetupMode';
+
 /**
  * Quien capitanea un equipo tiene un sobre que entregar en cada sesión (FE
  * #655). El organizador entra también: es quien los abre cuando un capitán no

@@ -12,8 +12,8 @@ import {
 } from '../composition';
 import { useCargaCancelableEffect } from './useCargaCancelableEffect';
 import { DraftStatus } from '../domain/value_objects/DraftStatus';
-
 import { Team } from '../domain/value_objects/Team';
+
 /**
  * La sala de draft en directo (FE #653).
  *

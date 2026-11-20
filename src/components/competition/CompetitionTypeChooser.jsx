@@ -1,7 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import { Trophy, ListOrdered, Flag } from 'lucide-react';
-
 import { TournamentType } from '../../domain/value_objects/TournamentType';
+
 /**
  * Qué tipo de competición se va a crear (FE #639).
  *

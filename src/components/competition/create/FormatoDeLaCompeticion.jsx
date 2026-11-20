@@ -1,8 +1,8 @@
 import { Settings } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { MAX_PLAYERS, MIN_PLAYERS } from '../../../domain/entities/Competition';
-
 import { PlayModeType } from '../../../domain/value_objects/HandicapSettings';
+
 /**
  * El formato, a la vista: cuántos sois y si se juega con hándicap son las dos
  * preguntas que el organizador SÍ contesta (Agustín, 19 sep).

@@ -3,11 +3,11 @@ import { validateCompetitionForm } from './competitionFormValidation';
 import { CLAVES_DE_LOS_PROBLEMAS_DEL_NOMBRE } from './clavesDelNombre';
 import { CUPO_POR_DEFECTO } from './cupoDeJugadores';
 import { formularioDeAjustes, separadorDecimal } from './ajustesDeStrokePlay';
-
 import { TournamentType } from '../domain/value_objects/TournamentType';
 import { PlayModeType } from '../domain/value_objects/HandicapSettings';
 import { Visibility } from '../domain/value_objects/Visibility';
 import { SetupMode } from '../domain/value_objects/SetupMode';
+
 /**
  * El formulario de crear o editar una competición: cómo nace, cómo se rellena
  * al editar y qué le pasa al cambiar de país. Sin React: lo usa la página.

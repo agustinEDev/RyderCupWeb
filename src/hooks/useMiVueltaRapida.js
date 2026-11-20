@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import PersonalRoundCalculator from '../domain/services/PersonalRoundCalculator';
-
 import { PlayModeType } from '../domain/value_objects/HandicapSettings';
+
 /**
  * «Tu vuelta» en la anotación de partida rápida (21 oct): el acumulado neto
  * de quien anota con SU hándicap de juego, sobre lo visible —lo pendiente de

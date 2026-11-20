@@ -15,8 +15,8 @@ import { mensajeDeErrorDePartida } from '../../utils/erroresDePartida';
 import { sinMarcadorEnJuego } from '../../domain/services/PartidasDeLaFranja';
 import { conGenero } from '../../utils/genero';
 import NombreConHandicap from './NombreConHandicap';
-
 import { TournamentType } from '../../domain/value_objects/TournamentType';
+
 const RECOGIDA = 'RECOGIDA';
 const SIN_GOLPE = '';
 const GOLPES = Array.from({ length: 15 }, (_, i) => i + 1);

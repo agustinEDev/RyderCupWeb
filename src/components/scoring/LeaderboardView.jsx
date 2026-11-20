@@ -2,9 +2,9 @@ import { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import TeamStandingsHeader from './TeamStandingsHeader';
 import MatchStatus from '../../domain/value_objects/MatchStatus';
-
 import { Winner } from '../../domain/value_objects/Winner';
 import { Team } from '../../domain/value_objects/Team';
+
 // Converts "5UP" at hole 14 → "5&4" (5 up with 4 to play).
 // If match ended on hole 18, keeps "2UP" format.
 const formatMatchPlayResult = (score, currentHole) => {

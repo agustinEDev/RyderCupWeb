@@ -11,8 +11,8 @@ import {
   teeKey,
 } from './createQuickMatchModalConstants';
 import { leeTodosLosAmigos } from './leeTodosLosAmigos';
-
 import { Team } from '../../domain/value_objects/Team';
+
 // Con qué campo y formato se hizo la plantilla: volver al paso 1 sin
 // cambiarlos la conserva (Agustín, 3 nov 2026); cambiarlos la vacía
 const plantillaCopiada = (copia) =>

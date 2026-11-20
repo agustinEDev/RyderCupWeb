@@ -12,8 +12,8 @@ import { getCompetitionDetailUseCase } from '../composition';
 import { formatoDeIndice } from '../utils/formatoDeHandicap';
 import { PANTALLA_MENOS_BARRA_INFERIOR } from '../utils/barraInferior';
 import { DraftStatus } from '../domain/value_objects/DraftStatus';
-
 import { Team } from '../domain/value_objects/Team';
+
 /**
  * La sala de draft en directo (FE #653).
  *

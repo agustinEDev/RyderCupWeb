@@ -1,4 +1,5 @@
 import { Team } from '../../../domain/value_objects/Team';
+
 class ConcedeMatchUseCase {
   constructor({ scoringRepository }) {
     this.scoringRepository = scoringRepository;

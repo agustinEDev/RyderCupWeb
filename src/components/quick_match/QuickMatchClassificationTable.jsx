@@ -10,6 +10,7 @@ import {
 
 import { Team } from '../../domain/value_objects/Team';
 import { PlayModeType } from '../../domain/value_objects/HandicapSettings';
+
 // Mirrors the backend's ScoringService._compute_standing SINGLES fallback:
 // team is only set for FOURBALL/FOURSOMES, so a 2-participant match without
 // team assignments is resolved positionally (first participant is "team A").

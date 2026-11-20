@@ -18,8 +18,8 @@ import {
 import BloqueoDePartidos from '../components/schedule/BloqueoDePartidos';
 import { formatoDeIndice } from '../utils/formatoDeHandicap';
 import { PANTALLA_MENOS_BARRA_INFERIOR } from '../utils/barraInferior';
-
 import { Team } from '../domain/value_objects/Team';
+
 /**
  * El sobre de un capitán (FE #655).
  *

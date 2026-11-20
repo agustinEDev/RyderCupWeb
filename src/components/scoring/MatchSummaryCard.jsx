@@ -1,6 +1,6 @@
 import { useTranslation } from 'react-i18next';
-
 import { Winner } from '../../domain/value_objects/Winner';
+
 const MatchSummaryCard = ({ summary, winnerName }) => {
   const { t } = useTranslation('scoring');
 

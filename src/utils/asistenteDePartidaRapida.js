@@ -1,6 +1,6 @@
 import { MatchFormat } from '../domain/value_objects/MatchFormat';
-
 import { Team } from '../domain/value_objects/Team';
+
 /**
  * Las reglas sin interfaz del asistente de partida rápida: cuántos jugadores
  * caben por formato, el bando contrario, el tope de anotadores y la clave con

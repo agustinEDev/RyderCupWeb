@@ -11,6 +11,7 @@ import {
 } from '../ui/Pestanas';
 
 import { Team } from '../../domain/value_objects/Team';
+
 /**
  * Wizard step 2: current roster + add participants (friends or guests).
  *

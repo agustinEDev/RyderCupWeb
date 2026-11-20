@@ -1,7 +1,7 @@
 import { SessionType } from '../domain/value_objects/SessionType';
 import { MatchFormat } from '../domain/value_objects/MatchFormat';
-
 import { ScheduleConfigMode } from '../domain/value_objects/ScheduleConfigMode';
+
 /**
  * Las cuentas de la agenda de una competición (FE #654).
  *

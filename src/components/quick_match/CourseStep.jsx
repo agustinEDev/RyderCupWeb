@@ -11,6 +11,7 @@ import {
 } from './createQuickMatchModalConstants';
 
 import { PlayModeType } from '../../domain/value_objects/HandicapSettings';
+
 // «¿A qué jugáis?»: los tres de match play y los dos de stroke play, en una
 // sola pregunta (FE #1025). Conservan los `data-testid` de antes
 const OPCIONES = [

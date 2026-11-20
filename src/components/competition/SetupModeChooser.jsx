@@ -1,7 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import { Wand2, Hand, Trophy } from 'lucide-react';
-
 import { SetupMode } from '../../domain/value_objects/SetupMode';
+
 /**
  * Cuánto hace la aplicación por su cuenta (FE #695).
  *

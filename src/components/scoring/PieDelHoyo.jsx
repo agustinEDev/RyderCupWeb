@@ -1,6 +1,6 @@
 import { nombreDelEquipo } from '../../utils/lecturaDelPartido';
-
 import { Winner } from '../../domain/value_objects/Winner';
+
 /**
  * Pie de la casilla del hoyo: neto, quién ganó el hoyo y cómo va el partido.
  * Sin nada que decir, sin pie: era una franja vacía que empujaba la navegación.

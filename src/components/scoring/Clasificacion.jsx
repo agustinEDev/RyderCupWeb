@@ -6,8 +6,8 @@ import { useSondeoMientras } from '../../hooks/useSondeoMientras';
 import { useCentrarEnMiFila } from '../../hooks/useCentrarEnMiFila';
 import { conGenero } from '../../utils/genero';
 import { esDeUnaPrivada } from '../../utils/competicionPrivada';
-
 import { TournamentType } from '../../domain/value_objects/TournamentType';
+
 const HOYOS = 18;
 
 /**

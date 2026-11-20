@@ -21,8 +21,8 @@ import MarcoDeAcceso from '../components/auth/MarcoDeAcceso';
 import AceptacionDeTerminos from '../components/auth/AceptacionDeTerminos';
 import { mensajeDelError } from '../utils/mensajeDelError';
 import { registraElFallo } from '../utils/registraElFallo';
-
 import { Gender } from '../domain/value_objects/Gender';
+
 const Register = () => {
   const { t } = useTranslation(['auth', 'common']);
   const navigate = useNavigate();

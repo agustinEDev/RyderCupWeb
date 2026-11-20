@@ -23,8 +23,8 @@ import { MOTIVOS_PARA_NO_APUNTARSE } from '../utils/fichaDeLaCompeticion';
 import { nombrePequeno } from '../utils/nombreVisible';
 import { registraElFallo } from '../utils/registraElFallo';
 import { CompetitionStatusEnum } from '../domain/value_objects/CompetitionStatus';
-
 import { Visibility } from '../domain/value_objects/Visibility';
+
 const BrowseCompetitions = () => {
   // El género para apuntarse, solo a quien le falta (#710)
   const generoParaApuntarse = useGeneroParaApuntarse();

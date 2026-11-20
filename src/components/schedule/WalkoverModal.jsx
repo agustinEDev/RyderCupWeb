@@ -2,8 +2,8 @@ import { useState } from 'react';
 import ModalShell, { CAJA_PROPIA } from '../ui/ModalShell';
 import { motion } from 'framer-motion';
 import { X, AlertTriangle } from 'lucide-react';
-
 import { Team } from '../../domain/value_objects/Team';
+
 // Wrapper: controls mount/unmount so inner component always has fresh state
 const WalkoverModal = ({ isOpen, ...props }) => {
   if (!isOpen) return null;

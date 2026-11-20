@@ -1,4 +1,5 @@
 import { Gender } from '../domain/value_objects/Gender';
+
 // La barra de un aviso: color y género (el campo puede tener las amarillas de
 // hombre y no las de mujer), o «sin barra». No es `nombreDeLaBarra`: va dentro
 // de una frase, así que el género se escribe («amarillas de hombre») en vez

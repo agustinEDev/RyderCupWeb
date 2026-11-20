@@ -17,9 +17,9 @@ import { plazoQueSeEnseña } from '../../../domain/services/plazoDeInscripcion';
 import NombrePequeno from '../../ui/NombrePequeno';
 import { nombrePequeno } from '../../../utils/nombreVisible';
 import { CompetitionStatusEnum } from '../../../domain/value_objects/CompetitionStatus';
-
 import { Visibility } from '../../../domain/value_objects/Visibility';
 import { SetupMode } from '../../../domain/value_objects/SetupMode';
+
 /**
  * «Inscripción abierta hasta el 13 de noviembre a las 12:00» (15 nov 2026): el
  * día del campo, tal como lo manda el servidor, escrito en el idioma de la app.

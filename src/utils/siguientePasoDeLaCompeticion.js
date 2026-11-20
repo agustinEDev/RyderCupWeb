@@ -11,8 +11,8 @@
  */
 
 import { CompetitionStatusEnum } from '../domain/value_objects/CompetitionStatus';
-
 import { SetupMode } from '../domain/value_objects/SetupMode';
+
 /**
  * @param {Object|null} competition - La competición, tal como la trae la ficha
  * @param {Object} [opciones]

@@ -3,8 +3,8 @@ import ModalShell, { CAJA_PROPIA } from '../ui/ModalShell';
 import { motion } from 'framer-motion';
 import { X, Users } from 'lucide-react';
 import EnrollmentStatus from '../../domain/value_objects/EnrollmentStatus';
-
 import { Team } from '../../domain/value_objects/Team';
+
 // Wrapper: controls mount/unmount so inner component always has fresh state.
 // key={match?.id} forces remount if the match changes while the modal is open.
 const ReassignPlayersModal = ({ isOpen, match, ...props }) => {
