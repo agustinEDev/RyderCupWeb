@@ -17,6 +17,7 @@ import { useEnvioDelBorrador } from './useEnvioDelBorrador';
  *   E8  sin respuesta → 4xx → borrador cambiado             | la duda sigue: el mismo id y se dice
  *   E9  sin respuesta → sin red → bien                      | el mismo id las tres veces
  *   E10 sin respuesta → bien → borrador cambiado            | la duda acabó: id nuevo, sin aviso
+ *   E11 creada, pero falla lo de después (onStarted)        | ya existe: otro borrador, el mismo id
  */
 const mockCrear = vi.fn();
 vi.mock('../../composition', () => ({
@@ -193,6 +194,28 @@ describe('useEnvioDelBorrador', () => {
     expect(segundo).toBe(primero);
     expect(tercero).not.toBe(primero);
     expect(mockInfo).not.toHaveBeenCalled();
+  });
+
+  it('E11: si falla lo de después de crearla, el reintento no crea otra', async () => {
+    mockCrear.mockResolvedValue({ id: 'qm-1' });
+    const onStarted = vi.fn().mockImplementationOnce(() => {
+      throw new Error('al navegar');
+    });
+    const peticion = { actual: { name: 'A' } };
+    const { result } = renderHook(() =>
+      useEnvioDelBorrador({
+        armaLaPeticion: () => peticion.actual,
+        onStarted,
+        t,
+        ponElAviso: vi.fn(),
+      }),
+    );
+    await empieza(result);
+    peticion.actual = { name: 'B' };
+    await empieza(result);
+    const [primero, segundo] = idsMandados();
+    expect(segundo).toBe(primero);
+    expect(onStarted).toHaveBeenLastCalledWith('qm-1');
   });
 
   it('si armar la petición lanza, es un fallo más y no se manda nada', async () => {

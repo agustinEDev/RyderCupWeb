@@ -50,7 +50,8 @@ export const useEnvioDelBorrador = ({
 }) => {
   // El id del último intento y lo que se mandó: reintentar LO MISMO tras un
   // fallo reusa el id —si la respuesta se perdió, el servidor devuelve la que
-  // ya creó—; cualquier cambio en el borrador estrena uno
+  // ya creó—; un cambio en el borrador estrena uno, salvo que la partida
+  // pudiera haberse creado ya (`idDelIntento`)
   const ultimoIntento = useRef(null);
   const [isProcessing, setIsProcessing] = useState(false);
 
@@ -83,10 +84,12 @@ export const useEnvioDelBorrador = ({
         quickMatchId,
         ...peticion,
       });
+      // Ya existe: si lo de después falla, reintentar no puede crear otra
+      ultimoIntento.current.quizaCreada = true;
       if (cambiado) customToast.info(t('create.alreadyCreated'));
-      // Salió bien: ya no hay duda que arrastrar
-      ultimoIntento.current = null;
       onStarted(started.id);
+      // Todo bien: ya no hay duda que arrastrar
+      ultimoIntento.current = null;
     } catch (err) {
       // La duda no se borra con un fallo posterior: un 4xx o un fallo en el
       // móvil hablan de ESTE intento, no de si se creó uno anterior
