@@ -1,3 +1,4 @@
+import { esPosicionValida } from './posicionValida';
 /**
  * La geometría que necesita el mapa del hoyo (BE #532): hacia dónde mira el
  * hoyo, qué hay que encuadrar y si una posición del GPS se puede usar.
@@ -200,12 +201,8 @@ export const encuadreGirado = (hoyo, rumboGrados, { ancho, alto, padding }) => {
   return { center, zoom };
 };
 
-/** Una posición con coordenadas de verdad: hay GPS y extensiones que dan NaN. */
-export const esPosicionValida = (posicion) =>
-  Number.isFinite(posicion?.lat) &&
-  Number.isFinite(posicion?.lon) &&
-  Math.abs(posicion.lat) <= 90 &&
-  Math.abs(posicion.lon) <= 180;
+// Vive aparte para no meter esta geometría en el arranque (ver posicionValida)
+export { esPosicionValida };
 
 /**
  * La cámara de un encuadre girado: el centro, el zoom y el rumbo, para el mapa
