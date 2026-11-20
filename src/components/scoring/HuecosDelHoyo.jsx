@@ -99,7 +99,7 @@ const CasillaDelMarcado = ({
       <NumeroBloqueado
         id={id}
         testId="marked-score-value"
-        className="text-2xl font-bold text-gray-400"
+        className="block text-2xl font-bold text-gray-400"
       >
         {pinta(valor)}
       </NumeroBloqueado>
