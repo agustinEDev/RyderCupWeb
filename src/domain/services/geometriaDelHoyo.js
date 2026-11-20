@@ -1,4 +1,3 @@
-import { esPosicionValida } from './posicionValida';
 /**
  * La geometría que necesita el mapa del hoyo (BE #532): hacia dónde mira el
  * hoyo, qué hay que encuadrar y si una posición del GPS se puede usar.
@@ -6,6 +5,8 @@ import { esPosicionValida } from './posicionValida';
  * Los puntos son `{ lat, lon }`; los límites, en el orden de los mapas
  * (`[[oeste, sur], [este, norte]]`, longitud primero).
  */
+
+import { esPosicionValida } from './posicionValida';
 
 export const radianes = (grados) => (grados * Math.PI) / 180;
 const grados = (rad) => (rad * 180) / Math.PI;

@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { existsSync, readFileSync } from 'node:fs';
 import { dirname, relative, resolve } from 'node:path';
+import { parse } from 'espree';
 
 /**
  * La geometría del mapa del hoyo no va en el arranque.
@@ -25,18 +26,25 @@ const resuelve = (desde, ruta) => {
 };
 
 // Los imports estáticos (`import … from '…'`, `import '…'`, `export … from '…'`),
-// sin los `import()` dinámicos, que no van en el arranque
-const importsEstaticos = (fichero) => {
-  const codigo = readFileSync(fichero, 'utf8')
-    .replace(/\/\*[\s\S]*?\*\//g, '')
-    .replace(/^\s*\/\/.*$/gm, '');
-  const rutas = [];
-  for (const m of codigo.matchAll(
-    /^\s*(?:import|export)\s[^;]*?\bfrom\s*['"]([^'"]+)['"]|^\s*import\s*['"]([^'"]+)['"]/gm,
-  ))
-    rutas.push(m[1] ?? m[2]);
-  return rutas;
-};
+// sin los `import()` dinámicos, que no van en el arranque. Con el árbol de
+// espree y no con expresiones regulares: un texto con `/*` dentro se comía
+// código al quitar los comentarios (revisor)
+const importsEstaticos = (fichero) =>
+  parse(readFileSync(fichero, 'utf8'), {
+    ecmaVersion: 'latest',
+    sourceType: 'module',
+    ecmaFeatures: { jsx: true },
+  })
+    .body.filter(
+      (n) =>
+        n.source &&
+        [
+          'ImportDeclaration',
+          'ExportNamedDeclaration',
+          'ExportAllDeclaration',
+        ].includes(n.type),
+    )
+    .map((n) => n.source.value);
 
 const delArranque = () => {
   const vistos = new Set();
