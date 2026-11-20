@@ -60,11 +60,15 @@ const PERMITIDOS = {
   // B2: el error de cada campo y los requisitos de la contraseña
   'components/auth/SignInForm.jsx': { 'motion.p': 2 },
   'components/ui/PasswordRequirements.jsx': { 'motion.div': 1 },
-  // A5: las de acceso conservan su entrada (div) y los errores de sus campos (p)
-  'pages/Login.jsx': { 'motion.div': 4 },
-  'pages/Register.jsx': { 'motion.div': 3, 'motion.p': 5 },
-  'pages/ForgotPassword.jsx': { 'motion.div': 5, 'motion.p': 1 },
-  'pages/ResetPassword.jsx': { 'motion.div': 6, 'motion.p': 2 },
+  // A5: las de acceso conservan su entrada (div) y los errores de sus campos (p).
+  // La entrada del marco (panel, cada ventaja y el lado del formulario) vive en
+  // MarcoDeAcceso; en Login queda el aviso verde y en Restablecer sus tarjetas
+  // de espera y de enlace malo
+  'components/auth/MarcoDeAcceso.jsx': { 'motion.div': 3 },
+  'pages/Login.jsx': { 'motion.div': 1 },
+  'pages/Register.jsx': { 'motion.p': 5 },
+  'pages/ForgotPassword.jsx': { 'motion.p': 1 },
+  'pages/ResetPassword.jsx': { 'motion.div': 3, 'motion.p': 2 },
   'pages/CompleteProfile.jsx': { 'motion.div': 1 },
   // B3: obsoleto
   'components/golf_course/GolfCourseForm.jsx': { 'motion.div': 1 },
