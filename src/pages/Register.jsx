@@ -251,7 +251,7 @@ const Register = () => {
         </div>
       }
       variante="acento"
-      foto="https://images.unsplash.com/photo-1593111774240-d529f12cf4bb?q=80&w=1000"
+      foto="registro"
       textoDeVolver={t('register.backToHome')}
     >
       {/* Form Card */}

@@ -35,8 +35,16 @@ const VARIANTES = {
   },
 };
 
-const FOTO_DEL_ACCESO =
-  'https://images.unsplash.com/photo-1535131749006-b7f58c99034b?q=80&w=2000';
+// Las fotos del panel, por nombre: la URL va dentro de un `url("…")` del CSS,
+// así que solo entra una de estas. Un nombre que no está, la de siempre
+const FOTOS = {
+  acceso:
+    'https://images.unsplash.com/photo-1535131749006-b7f58c99034b?q=80&w=2000',
+  registro:
+    'https://images.unsplash.com/photo-1593111774240-d529f12cf4bb?q=80&w=1000',
+};
+const fotoDelPanel = (foto) =>
+  Object.hasOwn(FOTOS, foto) ? FOTOS[foto] : FOTOS.acceso;
 
 /**
  * @param {object} props
@@ -47,7 +55,7 @@ const FOTO_DEL_ACCESO =
  * @param {import('react').ReactNode} [props.extraDelHeroe] - Lo que va tras la
  *        lista en el panel (las cifras del Registro)
  * @param {'primario'|'acento'} [props.variante]
- * @param {string} [props.foto] - URL de la foto de fondo del panel
+ * @param {'acceso'|'registro'} [props.foto] - Qué foto lleva el panel
  * @param {boolean} [props.soloAparece] - El contenido entra sin desplazarse (Login)
  * @param {import('react').ReactNode} [props.textoDeVolver] - Texto del enlace a
  *        la portada; sin él no se pinta (la vista «enviado» lleva otra cosa debajo)
@@ -60,7 +68,7 @@ const MarcoDeAcceso = ({
   ventajas,
   extraDelHeroe,
   variante = 'primario',
-  foto = FOTO_DEL_ACCESO,
+  foto = 'acceso',
   soloAparece = false,
   textoDeVolver,
   children,
@@ -88,7 +96,7 @@ const MarcoDeAcceso = ({
           <div
             className="absolute inset-0 bg-cover bg-center mix-blend-overlay opacity-20"
             style={{
-              backgroundImage: `url("${foto}")`,
+              backgroundImage: `url("${fotoDelPanel(foto)}")`,
             }}
           />
 

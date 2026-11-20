@@ -119,7 +119,7 @@ describe('MarcoDeAcceso', () => {
   });
 
   it('M9: la variante del Registro, en acento con las manchas en espejo y su foto', () => {
-    const { container } = abrir({ variante: 'acento', foto: 'https://x/y' });
+    const { container } = abrir({ variante: 'acento', foto: 'registro' });
     expect(panel(container).className).toContain('bg-accent');
     expect(panel(container).className).not.toContain('bg-primary');
     expect(container.querySelector('.bg-white.rounded-full').className).toBe(
@@ -130,9 +130,19 @@ describe('MarcoDeAcceso', () => {
     );
     expect(siglasDelPanel(container).className).toContain('text-white/90');
     expect(container.querySelector('.bg-cover').style.backgroundImage).toBe(
-      'url("https://x/y")',
+      'url("https://images.unsplash.com/photo-1593111774240-d529f12cf4bb?q=80&w=1000")',
     );
   });
+
+  it.each(['https://x/y', 'otra', 'toString', '__proto__'])(
+    'M9b: una foto que no está en la lista (%s) no llega al CSS: la de siempre',
+    (foto) => {
+      const { container } = abrir({ foto });
+      expect(container.querySelector('.bg-cover').style.backgroundImage).toBe(
+        'url("https://images.unsplash.com/photo-1535131749006-b7f58c99034b?q=80&w=2000")',
+      );
+    },
+  );
 
   it('M10: el panel entra desde la izquierda y el formulario sube', () => {
     const { container } = abrir();
