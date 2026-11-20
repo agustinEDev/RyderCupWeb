@@ -1707,3 +1707,88 @@ describe('HoleInput · ventaja sin equipo (FE #1196)', () => {
     expect(ventaja().textContent).toBe('USA 2UP');
   });
 });
+
+/**
+ * FE #1196 · 1: bloqueada, la casilla pinta el número sin el `id` al que
+ * apunta su etiqueta, y un lector de pantalla no los une. El número bloqueado
+ * tiene que llevar su etiqueta, sin anunciarse solo cada vez que cambia.
+ */
+describe('HoleInput · etiquetas de las casillas bloqueadas (FE #1196)', () => {
+  const props = {
+    holeNumber: 3,
+    par: 4,
+    strokeIndex: 6,
+    markedName: 'Carlos',
+    onScoreChange: vi.fn(),
+  };
+  const etiquetadoComo = (valor, texto) => {
+    expect(valor.getAttribute('aria-live')).toBe('off');
+    expect(screen.getByLabelText(texto)).toBe(valor);
+  };
+
+  it('tu golpe bloqueado va con «Tu anotación»', () => {
+    render(
+      <HoleInput {...props} isOwnScoreLocked playerScore={{ ownScore: 5 }} />,
+    );
+    etiquetadoComo(screen.getByTestId('own-score-value'), 'input.yourScore');
+  });
+
+  it('el golpe bloqueado del marcado va con «Anotas a Carlos»', () => {
+    render(
+      <HoleInput
+        {...props}
+        isMarkerScoreLocked
+        playerScore={{ markerScore: 6 }}
+      />,
+    );
+    etiquetadoComo(
+      screen.getByTestId('marked-score-value'),
+      'input.youMark {"nombre":"Carlos"}',
+    );
+  });
+
+  it('el del marcado que puso otro marcador va con su etiqueta y sigue diciendo quién', () => {
+    render(
+      <HoleInput
+        {...props}
+        markedScoredBy="Ulises"
+        markedPlayerScore={{ markerScore: 6, markerSubmitted: true }}
+      />,
+    );
+    etiquetadoComo(
+      screen.getByTestId('marked-score-value'),
+      'input.youMark {"nombre":"Carlos"}',
+    );
+    expect(screen.getByTestId('anotado-por-otro')).toHaveTextContent(
+      'input.scoredBy {"nombre":"Ulises"}',
+    );
+  });
+
+  it('el del segundo marcado bloqueado va con la suya', () => {
+    render(
+      <HoleInput
+        {...props}
+        secondMarked={{
+          id: 'u4',
+          name: 'Dani',
+          par: 4,
+          validationStatus: null,
+          isLocked: true,
+          playerScore: { markerSubmitted: true, markerScore: 4 },
+        }}
+        onSecondMarkedChange={vi.fn()}
+      />,
+    );
+    etiquetadoComo(
+      screen.getByTestId('second-marked-score-value'),
+      'input.youMark {"nombre":"Dani"}',
+    );
+  });
+
+  it('sin bloquear, la etiqueta sigue yendo con el botón', () => {
+    render(<HoleInput {...props} />);
+    expect(screen.getByLabelText('input.yourScore')).toBe(
+      screen.getByTestId('own-score-button'),
+    );
+  });
+});

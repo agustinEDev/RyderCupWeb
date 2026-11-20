@@ -10,6 +10,16 @@ import { loQuePusoElOtro } from './textosDeLaCasilla';
 const CLASES_DE_ETIQUETA =
   'min-w-0 break-words text-xs font-medium text-gray-500';
 
+// Un golpe que ya no se toca. `<output>` con el `id` al que apunta su
+// etiqueta, para que un lector de pantalla diga de quién es el número (con un
+// `<p>` la etiqueta apuntaba a un id que no existía, FE #1196); sin anunciarse
+// solo cada vez que cambia
+const NumeroBloqueado = ({ id, testId, className, children }) => (
+  <output id={id} data-testid={testId} aria-live="off" className={className}>
+    {children}
+  </output>
+);
+
 // Un golpe de la casilla: el botón que abre el teclado o, bloqueado, el número.
 // Uno para los tres —el tuyo y el de cada marcado— para que digan lo mismo
 const HuecoDelGolpe = ({
@@ -44,12 +54,13 @@ const HuecoDelGolpe = ({
       )}
     </button>
   ) : (
-    <p
-      data-testid={`${prefijo}-score-value`}
+    <NumeroBloqueado
+      id={id}
+      testId={`${prefijo}-score-value`}
       className="h-12 flex items-center justify-center text-2xl font-bold text-gray-400"
     >
       {pinta(valor)}
-    </p>
+    </NumeroBloqueado>
   );
 
 // La marca del jugador al que anotas va aquí y no en la cabecera: la de arriba
@@ -85,12 +96,13 @@ const CasillaDelMarcado = ({
 }) => {
   return bloqueado && markedScoredBy ? (
     <div className="flex h-12 flex-col items-center justify-center">
-      <p
-        data-testid="marked-score-value"
+      <NumeroBloqueado
+        id={id}
+        testId="marked-score-value"
         className="text-2xl font-bold text-gray-400"
       >
         {pinta(valor)}
-      </p>
+      </NumeroBloqueado>
       <p data-testid="anotado-por-otro" className="text-xs text-gray-500">
         {t('input.scoredBy', { nombre: markedScoredBy })}
       </p>
