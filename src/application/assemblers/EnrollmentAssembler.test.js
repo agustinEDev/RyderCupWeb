@@ -17,12 +17,12 @@ describe('EnrollmentAssembler', () => {
   describe('el nombre que se pinta', () => {
     // FE #571: esta lista componía nombre + apellidos y se saltaba el alias,
     // así que era el único sitio de la aplicación donde no se veía nunca
-    it('usa el display_name que ya resolvió el servidor', () => {
+    it('usa el displayName que ya resolvió el servidor', () => {
       const dto = EnrollmentAssembler.toSimpleDTO(unaInscripcion(), {
         user: {
-          first_name: 'Agustín',
-          last_name: 'Estévez',
-          display_name: 'Chuchi',
+          firstName: 'Agustín',
+          lastName: 'Estévez',
+          displayName: 'Chuchi',
           email: 'a@example.com',
         },
       });
@@ -30,9 +30,9 @@ describe('EnrollmentAssembler', () => {
       expect(dto.userName).toBe('Chuchi');
     });
 
-    it('cae a nombre y apellidos si la respuesta no trae display_name', () => {
+    it('cae a nombre y apellidos si la respuesta no trae displayName', () => {
       const dto = EnrollmentAssembler.toSimpleDTO(unaInscripcion(), {
-        user: { first_name: 'Agustín', last_name: 'Estévez' },
+        user: { firstName: 'Agustín', lastName: 'Estévez' },
       });
 
       expect(dto.userName).toBe('Agustín Estévez');
@@ -46,9 +46,9 @@ describe('EnrollmentAssembler', () => {
       expect(dto.userName).toBeNull();
     });
 
-    it('sigue aceptando el user_name plano de las respuestas antiguas', () => {
+    it('sigue aceptando el userName plano de las respuestas antiguas', () => {
       const dto = EnrollmentAssembler.toSimpleDTO(unaInscripcion(), {
-        user_name: 'Meis',
+        userName: 'Meis',
       });
 
       expect(dto.userName).toBe('Meis');
@@ -76,10 +76,10 @@ describe('EnrollmentAssembler · el otro nombre, debajo (SB-08)', () => {
   it('con el alias delante, el nombre real debajo', () => {
     const dto = EnrollmentAssembler.toSimpleDTO(unaInscripcion(), {
       user: {
-        first_name: 'Agustín',
-        last_name: 'Estévez',
+        firstName: 'Agustín',
+        lastName: 'Estévez',
         alias: 'Trinx',
-        display_name: 'Trinx',
+        displayName: 'Trinx',
       },
     });
 
@@ -89,10 +89,10 @@ describe('EnrollmentAssembler · el otro nombre, debajo (SB-08)', () => {
   it('con el nombre real delante (pública), el alias debajo', () => {
     const dto = EnrollmentAssembler.toSimpleDTO(unaInscripcion(), {
       user: {
-        first_name: 'Agustín',
-        last_name: 'Estévez',
+        firstName: 'Agustín',
+        lastName: 'Estévez',
         alias: 'Trinx',
-        display_name: 'Agustín Estévez',
+        displayName: 'Agustín Estévez',
       },
     });
 

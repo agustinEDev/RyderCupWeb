@@ -14,7 +14,10 @@ const api = (extra = {}) => ({
   ...extra,
 });
 const dto = (apiData) =>
-  EnrollmentAssembler.toSimpleDTO(EnrollmentMapper.toDomain(apiData), apiData);
+  EnrollmentAssembler.toSimpleDTO(
+    EnrollmentMapper.toDomain(apiData),
+    EnrollmentMapper.toExtras(apiData),
+  );
 
 describe('EnrollmentAssembler · hándicap fijado y categoría (FE #824)', () => {
   it('desde el cierre, el fijado (llega como texto) y la categoría', () => {

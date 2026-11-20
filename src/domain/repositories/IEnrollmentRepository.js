@@ -42,7 +42,9 @@ class IEnrollmentRepository {
    * @param {string} [filters.status] - Filtrar por estado (ej: "APPROVED", "REQUESTED")
    * @param {string} [filters.userId] - Filtrar por usuario específico
    * @param {string} [filters.teamId] - Filtrar por equipo específico
-   * @returns {Promise<Enrollment[]>} Lista de enrollments
+   * @returns {Promise<Array<{entity: Enrollment, extras: Object|null}>>} Lista
+   *   de enrollments, cada uno con los campos extra de la respuesta (el usuario,
+   *   el hándicap fijado, la categoría) en camelCase, que pinta la lista
    * @throws {Error} Si falla la operación
    */
   async findByCompetition(competitionId, filters = {}) {
