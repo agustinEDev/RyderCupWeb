@@ -1,11 +1,15 @@
 import { useTranslation } from 'react-i18next';
-import { RYDER_CUP } from '../../domain/value_objects/TournamentType';
+import {
+  RYDER_CUP,
+  TournamentType,
+} from '../../domain/value_objects/TournamentType';
 
 // Un color por tipo, para distinguirlos de un vistazo en una lista
 const COLORES = {
-  RYDER_CUP: 'bg-blue-50 text-blue-800 border-blue-200',
-  STABLEFORD: 'bg-emerald-50 text-emerald-800 border-emerald-200',
-  MEDAL: 'bg-amber-50 text-amber-800 border-amber-200',
+  [TournamentType.RYDER_CUP]: 'bg-blue-50 text-blue-800 border-blue-200',
+  [TournamentType.STABLEFORD]:
+    'bg-emerald-50 text-emerald-800 border-emerald-200',
+  [TournamentType.MEDAL]: 'bg-amber-50 text-amber-800 border-amber-200',
 };
 
 /**

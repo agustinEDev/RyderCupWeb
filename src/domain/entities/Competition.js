@@ -1,7 +1,7 @@
 // src/domain/entities/Competition.js
 
 import { CompetitionStatus } from '../value_objects/CompetitionStatus';
-import { tieneEquipos } from '../value_objects/TournamentType';
+import { tieneEquipos, TournamentType } from '../value_objects/TournamentType';
 import { RyderCupSetup } from '../value_objects/RyderCupSetup';
 import { StrokePlaySetup } from '../value_objects/StrokePlaySetup';
 
@@ -91,7 +91,7 @@ export default class Competition {
     status = CompetitionStatus.DRAFT,
     createdAt = new Date(),
     updatedAt = new Date(),
-    tournamentType = 'RYDER_CUP',
+    tournamentType = TournamentType.RYDER_CUP,
     ryderCup,
     strokePlay,
   }) {
@@ -139,7 +139,7 @@ export default class Competition {
     handicapSettings,
     maxPlayers = 24,
     teamAssignment,
-    tournamentType = 'RYDER_CUP',
+    tournamentType = TournamentType.RYDER_CUP,
   }) {
     // El cupo, en el rango de la API (BE #314)
     comprobarCupo(maxPlayers);

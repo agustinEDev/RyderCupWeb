@@ -37,6 +37,7 @@ import { MatchOutcome } from '../../domain/value_objects/MatchOutcome';
 import { ScoringFormat } from '../../domain/value_objects/ScoringFormat';
 
 import { Team } from '../../domain/value_objects/Team';
+import { TournamentType } from '../../domain/value_objects/TournamentType';
 /**
  * Un icono por tipo. Sin esto todas las entradas se ven iguales y el feed se
  * lee como una lista de texto.
@@ -819,7 +820,7 @@ const contenidoDe = (tarjeta, { t, idioma, autores, campos, yoId, ahora }) => {
 
   if (
     tarjeta.tipo === 'TOURNAMENT_FINAL_STANDING' &&
-    payload.tournament_type === 'RYDER_CUP'
+    payload.tournament_type === TournamentType.RYDER_CUP
   ) {
     return { frase: fraseDeLaRyder(payload, t, { mia, autor }), detalles: [] };
   }

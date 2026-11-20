@@ -4,6 +4,7 @@ import { CLAVES_DE_LOS_PROBLEMAS_DEL_NOMBRE } from './clavesDelNombre';
 import { CUPO_POR_DEFECTO } from './cupoDeJugadores';
 import { formularioDeAjustes, separadorDecimal } from './ajustesDeStrokePlay';
 
+import { TournamentType } from '../domain/value_objects/TournamentType';
 /**
  * El formulario de crear o editar una competición: cómo nace, cómo se rellena
  * al editar y qué le pasa al cambiar de país. Sin React: lo usa la página.
@@ -155,7 +156,7 @@ export const formularioDeLaEdicion = (
     playMode: competition.playMode || 'HANDICAP',
     visibility: competition.visibility || 'PRIVATE',
     numberOfPlayers: competition.maxPlayers || CUPO_POR_DEFECTO,
-    tournamentType: competition.tournamentType || 'RYDER_CUP',
+    tournamentType: competition.tournamentType || TournamentType.RYDER_CUP,
     // Solo una Ryder tiene modo de montaje: a un Stableford no se le pone
     setupMode:
       competition.setupMode || (competition.hasTeams ? 'RYDER_CUP' : null),

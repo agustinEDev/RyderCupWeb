@@ -7,6 +7,7 @@ import { useCentrarEnMiFila } from '../../hooks/useCentrarEnMiFila';
 import { conGenero } from '../../utils/genero';
 import { esDeUnaPrivada } from '../../utils/competicionPrivada';
 
+import { TournamentType } from '../../domain/value_objects/TournamentType';
 const HOYOS = 18;
 
 /**
@@ -141,7 +142,7 @@ const Clasificacion = ({
   // Lo pintado no responde a la pregunta de ahora: sus filas no se enseñan
   const ajena = deOtraFranja || leidaPara?.categoria !== categoria;
 
-  const esMedal = clasificacion.tournamentType === 'MEDAL';
+  const esMedal = clasificacion.tournamentType === TournamentType.MEDAL;
   const SIN = t('partida.none');
   const valor = (fila) =>
     fila.value == null

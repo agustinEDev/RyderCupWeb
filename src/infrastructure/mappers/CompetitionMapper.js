@@ -13,6 +13,7 @@ import {
 import { StrokePlaySetup } from '../../domain/value_objects/StrokePlaySetup';
 import { instanteDeLaApi } from '../../utils/instanteDeLaApi';
 
+import { TournamentType } from '../../domain/value_objects/TournamentType';
 /**
  * Mapper to convert between API DTOs and Domain Entities
  */
@@ -81,7 +82,7 @@ class CompetitionMapper {
           apiData.team2_name ||
           'Team 2',
         // Una respuesta de antes del tipo es una Ryder Cup
-        tournamentType: apiData.tournament_type || 'RYDER_CUP',
+        tournamentType: apiData.tournament_type || TournamentType.RYDER_CUP,
         strokePlay: CompetitionMapper.ajustesDeStrokePlay(apiData),
         handicapSettings,
         maxPlayers,

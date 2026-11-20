@@ -73,8 +73,6 @@ const PALABRAS = [
   'HALVED',
 ];
 
-const TIPO_DE_TORNEO =
-  'tipo de torneo (TournamentType), no formato de puntuación: queda para otra tanda';
 const TANTEO =
   'tanteo del resultado («CONCEDED», «W/O»), no estado del partido: el backend lo manda así en result.score';
 const RELACION_DEL_PERFIL =
@@ -95,42 +93,6 @@ const MODO_DE_PARTIDA_RAPIDA =
  * @type {Array<{fichero: string, palabra: string, motivo: string, veces: number}>}
  */
 const PERMITIDOS = [
-  {
-    fichero: 'components/competition/EtiquetaDelTipo.jsx',
-    palabra: 'STABLEFORD',
-    motivo: TIPO_DE_TORNEO,
-    veces: 1,
-  },
-  {
-    fichero: 'components/competition/EtiquetaDelTipo.jsx',
-    palabra: 'MEDAL',
-    motivo: TIPO_DE_TORNEO,
-    veces: 1,
-  },
-  {
-    fichero: 'components/competition/CompetitionTypeChooser.jsx',
-    palabra: 'STABLEFORD',
-    motivo: TIPO_DE_TORNEO,
-    veces: 1,
-  },
-  {
-    fichero: 'components/competition/CompetitionTypeChooser.jsx',
-    palabra: 'MEDAL',
-    motivo: TIPO_DE_TORNEO,
-    veces: 1,
-  },
-  {
-    fichero: 'components/scoring/Clasificacion.jsx',
-    palabra: 'MEDAL',
-    motivo: TIPO_DE_TORNEO,
-    veces: 1,
-  },
-  {
-    fichero: 'components/scoring/TarjetasDeLaPartida.jsx',
-    palabra: 'MEDAL',
-    motivo: TIPO_DE_TORNEO,
-    veces: 1,
-  },
   {
     fichero: 'components/feed/ActivityEventCard.jsx',
     palabra: 'CONCEDED',
