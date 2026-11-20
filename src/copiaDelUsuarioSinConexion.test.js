@@ -101,6 +101,11 @@ const AUDITADOS = {
     'espera: el panel no lo abre sin confirmar',
   '/src/components/quick_match/CreateQuickMatchModal.jsx':
     'espera: el panel no lo abre sin confirmar',
+  // El asistente, partido en hooks (pieza 4): lo mismo que el modal
+  '/src/components/quick_match/useBarrasDelCampo.js':
+    'espera: el panel no lo abre sin confirmar',
+  '/src/components/quick_match/useJugadoresDelBorrador.js':
+    'espera: el panel no lo abre sin confirmar',
   '/src/pages/CompetitionDetail.jsx':
     'desconocido: etiquetas neutras; falta el hándicap por la regla',
   '/src/pages/Competitions.jsx': 'desconocido: etiqueta de inscripción neutra',
