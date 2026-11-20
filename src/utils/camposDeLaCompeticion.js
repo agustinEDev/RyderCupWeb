@@ -29,3 +29,23 @@ export const aCamposDeLaCompeticion = (resultado) => {
     }))
     .filter((campo) => campo.id);
 };
+
+/**
+ * Las barras de los campos de una competición, color y género (FE #1214): lo
+ * que se puede elegir al apuntarse o al cambiar la barra sale de aquí, no de
+ * una lista fija. Sin género (mixta), `null`.
+ *
+ * @param {Array|{golf_courses: Array}|null|undefined} resultado
+ * @returns {Array<{color: string, gender: string|null}>}
+ */
+export const barrasDeLosCampos = (resultado) => {
+  const lista = Array.isArray(resultado)
+    ? resultado
+    : resultado?.golf_courses || [];
+  return lista.flatMap((item) =>
+    (item.golf_course?.tees ?? []).map((tee) => ({
+      color: tee.color,
+      gender: tee.gender ?? null,
+    })),
+  );
+};

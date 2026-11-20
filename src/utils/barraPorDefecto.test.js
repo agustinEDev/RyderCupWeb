@@ -2,6 +2,8 @@ import { describe, it, expect } from 'vitest';
 import {
   barraPorDefecto,
   barrasDeMiGenero,
+  barrasParaElegir,
+  colorHabitual,
   ultimasBarras,
 } from './barraPorDefecto';
 
@@ -152,5 +154,60 @@ describe('barrasDeMiGenero', () => {
 
   it('U8: sin género no se filtra: va el panel de siempre', () => {
     expect(barrasDeMiGenero(FEDERADO, null)).toBeNull();
+  });
+});
+
+/**
+ * Lo que se ofrece al elegir o cambiar la barra en una competición (FE #1214):
+ *
+ *   #    caso                                         | resultado
+ *   -----|---------------------------------------------|----------------------------------
+ *   E1   mujer: las de mujer y las mixtas de todos     | sin repetir, en el orden de
+ *        los campos                                   | TeeColor; las de hombre no
+ *   E2   hombre                                       | las de hombre y las mixtas
+ *   E3   sin género                                   | solo las mixtas
+ *   E4   sin barras                                   | ninguna
+ *   H1   la habitual de cada género                   | hombre amarillas, mujer rojas,
+ *        |                                             | sin género ninguna
+ */
+describe('barrasParaElegir', () => {
+  const barras = [
+    { color: 'RED', gender: 'FEMALE' },
+    { color: 'YELLOW', gender: 'MALE' },
+    { color: 'BLUE', gender: null },
+    { color: 'RED', gender: 'FEMALE' },
+    { color: 'WHITE', gender: 'MALE' },
+    { color: 'YELLOW', gender: 'FEMALE' },
+  ];
+
+  it('E1: mujer, las suyas y las mixtas, sin repetir y en orden', () => {
+    expect(barrasParaElegir(barras, 'FEMALE')).toEqual([
+      'YELLOW',
+      'BLUE',
+      'RED',
+    ]);
+  });
+
+  it('E2: hombre, las suyas y las mixtas', () => {
+    expect(barrasParaElegir(barras, 'MALE')).toEqual([
+      'WHITE',
+      'YELLOW',
+      'BLUE',
+    ]);
+  });
+
+  it('E3: sin género, solo las mixtas', () => {
+    expect(barrasParaElegir(barras, null)).toEqual(['BLUE']);
+  });
+
+  it('E4: sin barras, ninguna', () => {
+    expect(barrasParaElegir([], 'MALE')).toEqual([]);
+    expect(barrasParaElegir(null, 'MALE')).toEqual([]);
+  });
+
+  it('H1: la habitual de cada género', () => {
+    expect(colorHabitual('MALE')).toBe('YELLOW');
+    expect(colorHabitual('FEMALE')).toBe('RED');
+    expect(colorHabitual(null)).toBeNull();
   });
 });

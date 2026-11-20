@@ -1,5 +1,8 @@
 import { describe, it, expect } from 'vitest';
-import { aCamposDeLaCompeticion } from './camposDeLaCompeticion';
+import {
+  aCamposDeLaCompeticion,
+  barrasDeLosCampos,
+} from './camposDeLaCompeticion';
 
 /**
  * Los campos de una competición, como los devuelve la API (FE #654).
@@ -79,5 +82,50 @@ describe('aCamposDeLaCompeticion · el huso del campo (FE #824, PR 5)', () => {
 
     expect(conZona.timezone).toBe('Europe/Madrid');
     expect(sinZona.timezone).toBeNull();
+  });
+});
+
+/**
+ * Las barras de los campos de una competición (FE #1214): el selector de la
+ * inscripción y el de «Cambiar barra» ofrecen las que tiene algún campo, no
+ * una lista fija de cinco colores.
+ */
+describe('barrasDeLosCampos', () => {
+  it('B1: color y género de cada barra de cada campo', () => {
+    expect(
+      barrasDeLosCampos([
+        {
+          golf_course: {
+            id: 'g1',
+            tees: [
+              { color: 'YELLOW', gender: 'MALE', course_rating: 70 },
+              { color: 'RED', gender: null },
+            ],
+          },
+        },
+        { golf_course: { id: 'g2', tees: [{ color: 'BLUE' }] } },
+      ]),
+    ).toEqual([
+      { color: 'YELLOW', gender: 'MALE' },
+      { color: 'RED', gender: null },
+      { color: 'BLUE', gender: null },
+    ]);
+  });
+
+  it('B2: de la respuesta envuelta, y sin barras ni campos, nada', () => {
+    expect(
+      barrasDeLosCampos({
+        golf_courses: [
+          {
+            golf_course: {
+              id: 'g1',
+              tees: [{ color: 'RED', gender: 'FEMALE' }],
+            },
+          },
+        ],
+      }),
+    ).toEqual([{ color: 'RED', gender: 'FEMALE' }]);
+    expect(barrasDeLosCampos([{ golf_course: { id: 'g1' } }])).toEqual([]);
+    expect(barrasDeLosCampos(null)).toEqual([]);
   });
 });
