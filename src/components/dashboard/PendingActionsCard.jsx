@@ -41,6 +41,7 @@ import EnrollmentStatus from '../../domain/value_objects/EnrollmentStatus';
 import InvitationStatus from '../../domain/value_objects/InvitationStatus';
 import { registraElFallo } from '../../utils/registraElFallo';
 import QuickMatchStatus from '../../domain/value_objects/QuickMatchStatus';
+import { Role } from '../../domain/value_objects/Role';
 
 /** Lo que la tarjeta recuerda, con sus valores por defecto. */
 const loRecordado = (r) => ({
@@ -154,8 +155,8 @@ const PendingActionsCard = ({
         Array.isArray(user.roles) &&
         user.roles.some(
           (r) =>
-            (typeof r === 'string' ? r : r.name) === 'CREATOR' ||
-            (typeof r === 'string' ? r : r.name) === 'ADMIN',
+            (typeof r === 'string' ? r : r.name) === Role.CREATOR ||
+            (typeof r === 'string' ? r : r.name) === Role.ADMIN,
         )),
     [user],
   );
