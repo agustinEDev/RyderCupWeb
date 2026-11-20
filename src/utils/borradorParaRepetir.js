@@ -17,6 +17,8 @@ import {
   isFreePlay,
 } from '../domain/value_objects/ScoringFormat';
 
+import { PlayModeType } from '../domain/value_objects/HandicapSettings';
+
 // Dónde se arregla cada cosa: el campo y tu barra, en el paso 1; los
 // jugadores, en el 2. El asistente enseña cada aviso solo en su paso
 const PASO_DEL_CAMPO = 1;
@@ -51,7 +53,7 @@ export const borradorParaRepetir = ({ partida, yo, amigos, campo }) => {
     matchFormat: partida.matchFormat ?? MatchFormat.SINGLES,
     scoringFormat: partida.scoringFormat ?? ScoringFormat.STABLEFORD,
     allowanceOverride: copiado === porDefecto ? null : copiado,
-    playMode: partida.playMode ?? 'HANDICAP',
+    playMode: partida.playMode ?? PlayModeType.HANDICAP,
     parejasDeAnotadores: parejasElegidas(partida, yo),
   };
 

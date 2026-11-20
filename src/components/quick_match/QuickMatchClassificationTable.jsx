@@ -8,12 +8,15 @@ import {
   isFreePlay as esJuegoLibre,
 } from '../../domain/value_objects/ScoringFormat';
 
+import { Team } from '../../domain/value_objects/Team';
+import { PlayModeType } from '../../domain/value_objects/HandicapSettings';
+
 // Mirrors the backend's ScoringService._compute_standing SINGLES fallback:
 // team is only set for FOURBALL/FOURSOMES, so a 2-participant match without
 // team assignments is resolved positionally (first participant is "team A").
 const resolveMatchTeams = (participants) => {
-  const teamA = participants.filter((p) => (p.team ?? 'A') === 'A');
-  const teamB = participants.filter((p) => p.team === 'B');
+  const teamA = participants.filter((p) => (p.team ?? Team.A) === Team.A);
+  const teamB = participants.filter((p) => p.team === Team.B);
   if (teamB.length === 0 && participants.length === 2) {
     return { teamA: [participants[0]], teamB: [participants[1]] };
   }
@@ -65,7 +68,7 @@ const MatchStandingSummary = ({
 
   const { teamA, teamB } = resolveMatchTeams(participants);
   const lead = standing.leadingTeam ? parseInt(standing.status, 10) : 0;
-  const leaders = standing.leadingTeam === 'A' ? teamA : teamB;
+  const leaders = standing.leadingTeam === Team.A ? teamA : teamB;
   const leaderNames = leaders.map((p) => p.name).join(' & ');
   const sinTerminar =
     terminada &&
@@ -199,7 +202,7 @@ const QuickMatchClassificationTable = ({
   standing = null,
   tees = [],
   allowancePercentage = 100,
-  playMode = 'HANDICAP',
+  playMode = PlayModeType.HANDICAP,
   participantStrokes = [],
   // Lo que tiene el servidor, sin la cola de este móvil: con eso dice
   // Actividad si una partida terminada cuenta. Sin él, lo que se pinta

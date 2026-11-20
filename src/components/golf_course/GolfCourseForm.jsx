@@ -19,6 +19,7 @@ import {
 } from '../../domain/services/courseTypeRanges';
 import { mensajeDelError } from '../../utils/mensajeDelError';
 import { registraElFallo } from '../../utils/registraElFallo';
+import { Gender } from '../../domain/value_objects/Gender';
 
 // Los diez colores admitidos, ordenados de barras mas largas a mas cortas
 // segun el uso habitual. OTHER cubre las salidas cuyo nombre no es un color
@@ -26,7 +27,7 @@ import { registraElFallo } from '../../utils/registraElFallo';
 // por eso exige identificador.
 const TEE_COLORS = TeeColor.getAllValues();
 
-const TEE_GENDERS = [null, 'MALE', 'FEMALE'];
+const TEE_GENDERS = [null, Gender.MALE, Gender.FEMALE];
 
 /**
  * GolfCourseForm Component

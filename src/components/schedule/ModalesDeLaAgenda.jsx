@@ -7,6 +7,7 @@ import GenerateMatchesModal from './GenerateMatchesModal';
 import ResetEnvelopesModal from './ResetEnvelopesModal';
 import ConfirmModal from '../modals/ConfirmModal';
 import { jugadoresDelEquipo } from '../../utils/permisosDeLaAgenda';
+import { Team } from '../../domain/value_objects/Team';
 
 /**
  * Los diálogos de la agenda (`SchedulePage`), en el orden de siempre. Qué está
@@ -116,7 +117,9 @@ const ModalesDeLaAgenda = ({
           isOpen
           team={modales.cubriendoCapitan}
           teamName={
-            modales.cubriendoCapitan === 'A' ? teamNames.teamA : teamNames.teamB
+            modales.cubriendoCapitan === Team.A
+              ? teamNames.teamA
+              : teamNames.teamB
           }
           players={jugadoresDelEquipo({
             equipo: modales.cubriendoCapitan,

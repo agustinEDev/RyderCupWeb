@@ -3,6 +3,10 @@ import { validateCompetitionForm } from './competitionFormValidation';
 import { CLAVES_DE_LOS_PROBLEMAS_DEL_NOMBRE } from './clavesDelNombre';
 import { CUPO_POR_DEFECTO } from './cupoDeJugadores';
 import { formularioDeAjustes, separadorDecimal } from './ajustesDeStrokePlay';
+import { TournamentType } from '../domain/value_objects/TournamentType';
+import { PlayModeType } from '../domain/value_objects/HandicapSettings';
+import { Visibility } from '../domain/value_objects/Visibility';
+import { SetupMode } from '../domain/value_objects/SetupMode';
 
 /**
  * El formulario de crear o editar una competición: cómo nace, cómo se rellena
@@ -111,8 +115,8 @@ export const formularioInicial = (equipos) => ({
   golfCourses: [],
 
   // RyderCup Settings
-  playMode: 'HANDICAP',
-  visibility: 'PRIVATE',
+  playMode: PlayModeType.HANDICAP,
+  visibility: Visibility.PRIVATE,
   numberOfPlayers: CUPO_POR_DEFECTO,
   // Cuánto monta la app por su cuenta (FE #695). Al crear se elige en su paso;
   // el reparto de equipos sale de él, así que ya no se pregunta aparte
@@ -152,13 +156,14 @@ export const formularioDeLaEdicion = (
     showAdjacentCountry1: !!datos.adjacentCountry1,
     showAdjacentCountry2: !!datos.adjacentCountry2,
     golfCourses: datos.golfCoursesData,
-    playMode: competition.playMode || 'HANDICAP',
-    visibility: competition.visibility || 'PRIVATE',
+    playMode: competition.playMode || PlayModeType.HANDICAP,
+    visibility: competition.visibility || Visibility.PRIVATE,
     numberOfPlayers: competition.maxPlayers || CUPO_POR_DEFECTO,
-    tournamentType: competition.tournamentType || 'RYDER_CUP',
+    tournamentType: competition.tournamentType || TournamentType.RYDER_CUP,
     // Solo una Ryder tiene modo de montaje: a un Stableford no se le pone
     setupMode:
-      competition.setupMode || (competition.hasTeams ? 'RYDER_CUP' : null),
+      competition.setupMode ||
+      (competition.hasTeams ? SetupMode.RYDER_CUP : null),
     maxPlayingHandicap: competition.maxPlayingHandicap ?? undefined,
     // Con el decimal del idioma: «12,0» en español, «12.0» en inglés
     strokePlay: formularioDeAjustes(

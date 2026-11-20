@@ -4,14 +4,22 @@ import { CompetitionName } from '../../domain/value_objects/CompetitionName';
 import { DateRange } from '../../domain/value_objects/DateRange';
 import { Location } from '../../domain/value_objects/Location';
 import { CountryCode } from '../../domain/value_objects/CountryCode';
-import { HandicapSettings } from '../../domain/value_objects/HandicapSettings';
-import { TeamAssignment } from '../../domain/value_objects/TeamAssignment';
+import {
+  HandicapSettings,
+  PlayModeType,
+} from '../../domain/value_objects/HandicapSettings';
+import {
+  TeamAssignment,
+  TeamAssignmentEnum,
+} from '../../domain/value_objects/TeamAssignment';
 import {
   CompetitionStatus,
   CompetitionStatusEnum,
 } from '../../domain/value_objects/CompetitionStatus';
 import { StrokePlaySetup } from '../../domain/value_objects/StrokePlaySetup';
 import { instanteDeLaApi } from '../../utils/instanteDeLaApi';
+import { TournamentType } from '../../domain/value_objects/TournamentType';
+import { Visibility } from '../../domain/value_objects/Visibility';
 
 /**
  * Mapper to convert between API DTOs and Domain Entities
@@ -50,13 +58,13 @@ class CompetitionMapper {
 
       // Map handicap settings (play_mode replaces handicap_type/handicap_percentage)
       const handicapSettings = new HandicapSettings(
-        apiData.play_mode || apiData.handicap_type || 'SCRATCH',
+        apiData.play_mode || apiData.handicap_type || PlayModeType.SCRATCH,
       );
 
       // Map team assignment. Si el torneo no tiene equipos, la entidad lo
       // descarta: la regla vive en ella (FE #791)
       const teamAssignment = new TeamAssignment(
-        apiData.team_assignment || 'MANUAL',
+        apiData.team_assignment || TeamAssignmentEnum.MANUAL,
       );
 
       // Bidirectional mapping for maxPlayers/number_of_players
@@ -81,14 +89,14 @@ class CompetitionMapper {
           apiData.team2_name ||
           'Team 2',
         // Una respuesta de antes del tipo es una Ryder Cup
-        tournamentType: apiData.tournament_type || 'RYDER_CUP',
+        tournamentType: apiData.tournament_type || TournamentType.RYDER_CUP,
         strokePlay: CompetitionMapper.ajustesDeStrokePlay(apiData),
         handicapSettings,
         maxPlayers,
         teamAssignment,
         // Sin el campo, privada: una respuesta de antes de que existiera no
         // convierte en pública una competición que no lo es (FE #664)
-        visibility: apiData.visibility || 'PRIVATE',
+        visibility: apiData.visibility || Visibility.PRIVATE,
         status: new CompetitionStatus(
           apiData.status || CompetitionStatusEnum.DRAFT,
         ),

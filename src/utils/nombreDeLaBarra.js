@@ -1,3 +1,5 @@
+import { Gender } from '../domain/value_objects/Gender';
+
 /**
  * El nombre de una barra, igual en todas las pantallas (4 nov 2026): su nombre
  * propio si lo tiene («Campeonato») o su color traducido, y el género detrás,
@@ -13,7 +15,7 @@ export const nombreDeLaBarra = (t, { color, identifier, gender }) =>
   sufijo(gender);
 
 const sufijo = (gender) => {
-  if (gender === 'MALE') return ' (M)';
-  if (gender === 'FEMALE') return ' (F)';
+  if (gender === Gender.MALE) return ' (M)';
+  if (gender === Gender.FEMALE) return ' (F)';
   return '';
 };

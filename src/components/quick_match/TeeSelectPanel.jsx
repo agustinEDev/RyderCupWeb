@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { teeKey, resolveTeeColor } from './createQuickMatchModalConstants';
 import { useFocoRetenido } from '../../hooks/useFocoRetenido';
 import { nombreDeLaBarra } from '../../utils/nombreDeLaBarra';
+import { Gender } from '../../domain/value_objects/Gender';
 
 /**
  * Bottom-sheet tee picker, opened from the + of each friend — same pattern as
@@ -26,11 +27,11 @@ import { nombreDeLaBarra } from '../../utils/nombreDeLaBarra';
 // Las salidas se agrupan por género porque cada jugador elige entre las suyas.
 // Las mixtas van al final: un campo federado rara vez las tiene, y cuando las
 // tiene son la excepción, no el caso corriente.
-const GENDER_ORDER = ['MALE', 'FEMALE', null];
+const GENDER_ORDER = [Gender.MALE, Gender.FEMALE, null];
 
 const GENDER_LABEL_KEY = {
-  MALE: 'create.teePanel.male',
-  FEMALE: 'create.teePanel.female',
+  [Gender.MALE]: 'create.teePanel.male',
+  [Gender.FEMALE]: 'create.teePanel.female',
   null: 'create.teePanel.mixed',
 };
 

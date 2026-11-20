@@ -1,6 +1,7 @@
 import { Settings } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { MAX_PLAYERS, MIN_PLAYERS } from '../../../domain/entities/Competition';
+import { PlayModeType } from '../../../domain/value_objects/HandicapSettings';
 
 /**
  * El formato, a la vista: cuántos sois y si se juega con hándicap son las dos
@@ -33,7 +34,7 @@ const FormatoDeLaCompeticion = ({
             {t('create.playMode')}
           </span>
           <div className="flex flex-wrap gap-2">
-            {['HANDICAP', 'SCRATCH'].map((mode) => (
+            {[PlayModeType.HANDICAP, PlayModeType.SCRATCH].map((mode) => (
               <button
                 key={mode}
                 type="button"

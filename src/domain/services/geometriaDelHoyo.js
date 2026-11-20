@@ -6,6 +6,8 @@
  * (`[[oeste, sur], [este, norte]]`, longitud primero).
  */
 
+import { esPosicionValida } from './posicionValida';
+
 export const radianes = (grados) => (grados * Math.PI) / 180;
 const grados = (rad) => (rad * 180) / Math.PI;
 
@@ -199,13 +201,6 @@ export const encuadreGirado = (hoyo, rumboGrados, { ancho, alto, padding }) => {
   };
   return { center, zoom };
 };
-
-/** Una posición con coordenadas de verdad: hay GPS y extensiones que dan NaN. */
-export const esPosicionValida = (posicion) =>
-  Number.isFinite(posicion?.lat) &&
-  Number.isFinite(posicion?.lon) &&
-  Math.abs(posicion.lat) <= 90 &&
-  Math.abs(posicion.lon) <= 180;
 
 /**
  * La cámara de un encuadre girado: el centro, el zoom y el rumbo, para el mapa

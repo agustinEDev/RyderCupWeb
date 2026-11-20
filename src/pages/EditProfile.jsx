@@ -14,6 +14,7 @@ import CampoDeHandicap from '../components/ui/CampoDeHandicap';
 import { formatoDeIndice } from '../utils/formatoDeHandicap';
 import { PANTALLA_MENOS_BARRA_INFERIOR } from '../utils/barraInferior';
 import ContrasenaParaGoogleModal from '../components/profile/ContrasenaParaGoogleModal';
+import { Gender } from '../domain/value_objects/Gender';
 
 const EditProfile = () => {
   const { t, i18n } = useTranslation('profile');
@@ -349,10 +350,10 @@ const EditProfile = () => {
                         <option value="">
                           {t('edit.personalInfo.genderPlaceholder')}
                         </option>
-                        <option value="MALE">
+                        <option value={Gender.MALE}>
                           {t('edit.personalInfo.genderOptions.MALE')}
                         </option>
-                        <option value="FEMALE">
+                        <option value={Gender.FEMALE}>
                           {t('edit.personalInfo.genderOptions.FEMALE')}
                         </option>
                       </select>

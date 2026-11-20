@@ -1,4 +1,5 @@
 import { useTranslation } from 'react-i18next';
+import { Visibility } from '../../../domain/value_objects/Visibility';
 
 /**
  * Privada o pública, arriba y pequeño: de quién es el torneo se decide al
@@ -23,7 +24,7 @@ const VisibilidadDeLaCompeticion = ({ visibility, onElegir }) => {
         aria-labelledby="etiqueta-visibilidad"
         className="flex flex-wrap gap-2"
       >
-        {['PRIVATE', 'PUBLIC'].map((cual) => (
+        {[Visibility.PRIVATE, Visibility.PUBLIC].map((cual) => (
           <button
             key={cual}
             type="button"
@@ -36,7 +37,9 @@ const VisibilidadDeLaCompeticion = ({ visibility, onElegir }) => {
                 : 'bg-white text-gray-600 border-gray-200 hover:border-primary hover:text-primary'
             }`}
           >
-            {t(`create.visibility${cual === 'PRIVATE' ? 'Private' : 'Public'}`)}
+            {t(
+              `create.visibility${cual === Visibility.PRIVATE ? 'Private' : 'Public'}`,
+            )}
           </button>
         ))}
       </div>
@@ -46,7 +49,7 @@ const VisibilidadDeLaCompeticion = ({ visibility, onElegir }) => {
         className="text-xs text-gray-500 mt-1"
       >
         {t(
-          visibility === 'PUBLIC'
+          visibility === Visibility.PUBLIC
             ? 'create.visibilityPublicHelp'
             : 'create.visibilityPrivateHelp',
         )}

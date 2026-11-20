@@ -15,6 +15,7 @@ import { mensajeDeErrorDePartida } from '../../utils/erroresDePartida';
 import { sinMarcadorEnJuego } from '../../domain/services/PartidasDeLaFranja';
 import { conGenero } from '../../utils/genero';
 import NombreConHandicap from './NombreConHandicap';
+import { TournamentType } from '../../domain/value_objects/TournamentType';
 
 const RECOGIDA = 'RECOGIDA';
 const SIN_GOLPE = '';
@@ -59,7 +60,7 @@ const TarjetasDeLaPartida = ({ scoringView, userId, organiza, onCambio }) => {
   const [ocupado, setOcupado] = useState(false);
 
   const { strokePlay } = scoringView;
-  const esMedal = strokePlay.tournamentType === 'MEDAL';
+  const esMedal = strokePlay.tournamentType === TournamentType.MEDAL;
   const golpeDe = (userId, hoyo) =>
     scoringView.scores
       .find((s) => s.holeNumber === hoyo)

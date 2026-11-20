@@ -12,6 +12,7 @@ import {
 } from '../composition';
 import { useCargaCancelableEffect } from './useCargaCancelableEffect';
 import { DraftStatus } from '../domain/value_objects/DraftStatus';
+import { Team } from '../domain/value_objects/Team';
 
 /**
  * La sala de draft en directo (FE #653).
@@ -315,9 +316,9 @@ const useDraftRoom = (competitionId, userId) => {
   );
 
   const capitanDeTurno =
-    sala?.currentTeam === 'A'
+    sala?.currentTeam === Team.A
       ? sala?.teamACaptainId
-      : sala?.currentTeam === 'B'
+      : sala?.currentTeam === Team.B
         ? sala?.teamBCaptainId
         : null;
 

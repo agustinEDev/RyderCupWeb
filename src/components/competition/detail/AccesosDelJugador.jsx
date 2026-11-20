@@ -1,6 +1,7 @@
 import { Calendar, UserPlus, BarChart3 } from 'lucide-react';
 import { CompetitionStatusEnum } from '../../../domain/value_objects/CompetitionStatus';
 import EnrollmentStatus from '../../../domain/value_objects/EnrollmentStatus';
+import { Visibility } from '../../../domain/value_objects/Visibility';
 
 /**
  * Lo que la ficha ofrece a quien no la organiza: la clasificación, el
@@ -62,7 +63,7 @@ const AccesosDelJugador = ({
         servidor lo rechaza (FE #734) */}
     {!isCreator &&
       competition.status === CompetitionStatusEnum.ACTIVE &&
-      competition.visibility === 'PUBLIC' &&
+      competition.visibility === Visibility.PUBLIC &&
       !hasEnrollment &&
       // Con invitación pendiente, el cuadro: aceptarla ya inscribe
       // (decidido el 27 oct)
@@ -84,7 +85,7 @@ const AccesosDelJugador = ({
 
     {!isCreator &&
       competition.status === CompetitionStatusEnum.ACTIVE &&
-      competition.visibility === 'PUBLIC' &&
+      competition.visibility === Visibility.PUBLIC &&
       !hasEnrollment &&
       !competition.myPendingInvitation &&
       competition.teamsAssigned && (

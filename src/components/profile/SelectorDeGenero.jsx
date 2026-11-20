@@ -1,4 +1,5 @@
 import { useTranslation } from 'react-i18next';
+import { Gender } from '../../domain/value_objects/Gender';
 
 /**
  * El género, para quien no lo tiene y se apunta a una competición (#710).
@@ -34,10 +35,10 @@ const SelectorDeGenero = ({
         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm"
       >
         <option value="">{t('edit.personalInfo.genderPlaceholder')}</option>
-        <option value="MALE">
+        <option value={Gender.MALE}>
           {t('edit.personalInfo.genderOptions.MALE')}
         </option>
-        <option value="FEMALE">
+        <option value={Gender.FEMALE}>
           {t('edit.personalInfo.genderOptions.FEMALE')}
         </option>
       </select>

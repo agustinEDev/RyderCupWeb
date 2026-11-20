@@ -2,6 +2,7 @@ import { useState } from 'react';
 import ModalShell, { CAJA_PROPIA } from '../ui/ModalShell';
 import { motion } from 'framer-motion';
 import { X, AlertTriangle } from 'lucide-react';
+import { Team } from '../../domain/value_objects/Team';
 
 // Wrapper: controls mount/unmount so inner component always has fresh state
 const WalkoverModal = ({ isOpen, ...props }) => {
@@ -76,8 +77,8 @@ const WalkoverModalContent = ({
                 <input
                   type="radio"
                   name="winningTeam"
-                  value="A"
-                  checked={winningTeam === 'A'}
+                  value={Team.A}
+                  checked={winningTeam === Team.A}
                   onChange={(e) => setWinningTeam(e.target.value)}
                   required
                   className="text-primary focus:ring-primary"
@@ -88,8 +89,8 @@ const WalkoverModalContent = ({
                 <input
                   type="radio"
                   name="winningTeam"
-                  value="B"
-                  checked={winningTeam === 'B'}
+                  value={Team.B}
+                  checked={winningTeam === Team.B}
                   onChange={(e) => setWinningTeam(e.target.value)}
                   required
                   className="text-primary focus:ring-primary"

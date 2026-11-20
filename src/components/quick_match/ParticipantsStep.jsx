@@ -10,6 +10,8 @@ import {
   PanelDePestana,
 } from '../ui/Pestanas';
 
+import { Team } from '../../domain/value_objects/Team';
+
 /**
  * Wizard step 2: current roster + add participants (friends or guests).
  *
@@ -103,7 +105,7 @@ const ParticipantsStep = ({
                   )}
                   {isTeamFormat && p.team && (
                     <span className="text-xs text-gray-400 flex-shrink-0">
-                      {p.team === 'A'
+                      {p.team === Team.A
                         ? t('create.participants.teamA')
                         : t('create.participants.teamB')}
                     </span>
@@ -146,10 +148,10 @@ const ParticipantsStep = ({
             <div className="flex gap-2">
               <button
                 type="button"
-                onClick={() => onSelectedTeamChange('A')}
+                onClick={() => onSelectedTeamChange(Team.A)}
                 data-testid="quick-match-team-A"
                 className={`flex-1 px-3 py-1.5 rounded-md text-sm border transition-colors ${
-                  selectedTeam === 'A'
+                  selectedTeam === Team.A
                     ? 'border-primary text-primary bg-primary/5'
                     : 'border-gray-200 text-gray-600'
                 }`}
@@ -158,10 +160,10 @@ const ParticipantsStep = ({
               </button>
               <button
                 type="button"
-                onClick={() => onSelectedTeamChange('B')}
+                onClick={() => onSelectedTeamChange(Team.B)}
                 data-testid="quick-match-team-B"
                 className={`flex-1 px-3 py-1.5 rounded-md text-sm border transition-colors ${
-                  selectedTeam === 'B'
+                  selectedTeam === Team.B
                     ? 'border-primary text-primary bg-primary/5'
                     : 'border-gray-200 text-gray-600'
                 }`}

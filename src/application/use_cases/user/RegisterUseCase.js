@@ -1,6 +1,7 @@
 import Email from '../../../domain/value_objects/Email';
 import Password from '../../../domain/value_objects/Password';
 import { CountryCode } from '../../../domain/value_objects/CountryCode';
+import { Gender } from '../../../domain/value_objects/Gender';
 
 /** @typedef {import('../../../domain/repositories/IAuthRepository').default} IAuthRepository */
 
@@ -54,7 +55,9 @@ class RegisterUseCase {
       : null;
 
     // Validate gender if provided
-    const validGenders = ['MALE', 'FEMALE'];
+    const validGenders = /** @type {readonly string[]} */ (
+      Object.values(Gender)
+    );
     if (
       genderValue !== null &&
       genderValue !== '' &&

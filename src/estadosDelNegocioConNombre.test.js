@@ -27,9 +27,9 @@ import { parse, tokenize } from 'espree';
 const SRC = join(globalThis.process.cwd(), 'src');
 
 // Las palabras de los estados y formatos que ya viven en el dominio. La lista
-// es parcial a propósito: faltan las de los conceptos de la tanda E2 (equipos
-// A/B, género, tipos de actividad, modo de juego, visibilidad, modo de
-// montaje, roles…), que hoy saldrían por todas partes
+// es parcial a propósito: faltan las de los conceptos de la tanda E2b (tipos de
+// actividad, validación del hoyo, roles, relación del perfil…), que hoy
+// saldrían por todas partes
 const PALABRAS = [
   'IN_PROGRESS',
   'COMPLETED',
@@ -71,16 +71,25 @@ const PALABRAS = [
   'WITHDRAWN',
   'BLOCKED',
   'HALVED',
+  // Tanda E2a (20 nov 2026): códigos de equipo, tipo de torneo, modo de juego,
+  // género, visibilidad, montaje y reparto
+  'A',
+  'B',
+  'RYDER_CUP',
+  'SCRATCH',
+  'HANDICAP',
+  'MALE',
+  'FEMALE',
+  'PRIVATE',
+  'PUBLIC',
+  'AUTOMATIC',
+  'MANUAL',
 ];
 
-const TIPO_DE_TORNEO =
-  'tipo de torneo (TournamentType), no formato de puntuación: queda para otra tanda';
 const TANTEO =
   'tanteo del resultado («CONCEDED», «W/O»), no estado del partido: el backend lo manda así en result.score';
 const RELACION_DEL_PERFIL =
   'relación de amistad del perfil (NONE / PENDING_SENT / PENDING_RECEIVED / ACCEPTED / BLOCKED), no FriendshipStatus: queda para otra tanda';
-const GANADOR =
-  'ganador del hoyo o del partido (A / B / HALVED), no el resultado para un jugador (MatchOutcome): queda para la tanda E2';
 const MODO_DE_PARTIDA_RAPIDA =
   'modo del asistente de partida rápida (MATCH_PLAY / FREE_PLAY): estado de la interfaz, no del backend';
 
@@ -97,66 +106,6 @@ const MODO_DE_PARTIDA_RAPIDA =
  * @type {Array<{fichero: string, palabra: string, motivo: string, veces: number}>}
  */
 const PERMITIDOS = [
-  {
-    fichero: 'components/competition/EtiquetaDelTipo.jsx',
-    palabra: 'STABLEFORD',
-    motivo: TIPO_DE_TORNEO,
-    veces: 1,
-  },
-  {
-    fichero: 'components/competition/EtiquetaDelTipo.jsx',
-    palabra: 'MEDAL',
-    motivo: TIPO_DE_TORNEO,
-    veces: 1,
-  },
-  {
-    fichero: 'components/scoring/PieDelHoyo.jsx',
-    palabra: 'HALVED',
-    motivo: GANADOR,
-    veces: 1,
-  },
-  {
-    fichero: 'components/scoring/LeaderboardView.jsx',
-    palabra: 'HALVED',
-    motivo: GANADOR,
-    veces: 1,
-  },
-  {
-    fichero: 'components/scoring/MatchSummaryCard.jsx',
-    palabra: 'HALVED',
-    motivo: GANADOR,
-    veces: 1,
-  },
-  {
-    fichero: 'components/scoring/ScorecardTable.jsx',
-    palabra: 'HALVED',
-    motivo: GANADOR,
-    veces: 2,
-  },
-  {
-    fichero: 'components/competition/CompetitionTypeChooser.jsx',
-    palabra: 'STABLEFORD',
-    motivo: TIPO_DE_TORNEO,
-    veces: 1,
-  },
-  {
-    fichero: 'components/competition/CompetitionTypeChooser.jsx',
-    palabra: 'MEDAL',
-    motivo: TIPO_DE_TORNEO,
-    veces: 1,
-  },
-  {
-    fichero: 'components/scoring/Clasificacion.jsx',
-    palabra: 'MEDAL',
-    motivo: TIPO_DE_TORNEO,
-    veces: 1,
-  },
-  {
-    fichero: 'components/scoring/TarjetasDeLaPartida.jsx',
-    palabra: 'MEDAL',
-    motivo: TIPO_DE_TORNEO,
-    veces: 1,
-  },
   {
     fichero: 'components/feed/ActivityEventCard.jsx',
     palabra: 'CONCEDED',
