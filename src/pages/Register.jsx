@@ -22,6 +22,7 @@ import AceptacionDeTerminos from '../components/auth/AceptacionDeTerminos';
 import { mensajeDelError } from '../utils/mensajeDelError';
 import { registraElFallo } from '../utils/registraElFallo';
 
+import { Gender } from '../domain/value_objects/Gender';
 const Register = () => {
   const { t } = useTranslation(['auth', 'common']);
   const navigate = useNavigate();
@@ -380,8 +381,10 @@ const Register = () => {
                 disabled={isLoading}
               >
                 <option value="">{t('register.genderPlaceholder')}</option>
-                <option value="MALE">{t('register.genderOptions.MALE')}</option>
-                <option value="FEMALE">
+                <option value={Gender.MALE}>
+                  {t('register.genderOptions.MALE')}
+                </option>
+                <option value={Gender.FEMALE}>
                   {t('register.genderOptions.FEMALE')}
                 </option>
               </select>

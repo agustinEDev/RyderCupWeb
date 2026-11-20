@@ -1,5 +1,6 @@
 import TeeColor from './TeeColor';
 
+import { Gender } from './Gender';
 /**
  * Tee Value Object
  * Represents a tee position on a golf course
@@ -37,7 +38,7 @@ class Tee {
   }
 
   validate() {
-    const validGenders = ['MALE', 'FEMALE'];
+    const validGenders = [Gender.MALE, Gender.FEMALE];
 
     if (!TeeColor.isValid(this.color)) {
       throw new Error(`Invalid tee color: ${this.color}`);

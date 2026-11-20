@@ -1,6 +1,7 @@
 import { NO_TEE_KEY, teeKey } from './asistenteDePartidaRapida';
 import TeeColor from '../domain/value_objects/TeeColor';
 
+import { Gender } from '../domain/value_objects/Gender';
 /**
  * La barra que sale elegida y las que se ven al crear una partida rápida
  * (FE #1025, decidido con Agustín el 3 nov 2026).
@@ -9,7 +10,10 @@ import TeeColor from '../domain/value_objects/TeeColor';
  */
 
 // La habitual de cada género: amarillas los hombres y rojas las mujeres
-const COLOR_HABITUAL = { MALE: TeeColor.YELLOW, FEMALE: TeeColor.RED };
+const COLOR_HABITUAL = {
+  [Gender.MALE]: TeeColor.YELLOW,
+  [Gender.FEMALE]: TeeColor.RED,
+};
 
 const delGenero = (tee, genero) =>
   (tee.gender ?? null) === genero || (tee.gender ?? null) === null;

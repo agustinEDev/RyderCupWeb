@@ -1,3 +1,4 @@
+import { Gender } from '../domain/value_objects/Gender';
 /**
  * El texto del estado de una inscripción, para la etiqueta de la ficha y de la
  * lista de competiciones.
@@ -16,6 +17,6 @@ export const etiquetaDeInscripcion = (t, estado, genero) => {
   if (!estado) return '';
   return t(
     `enrollmentStatus.${estado}`,
-    genero === 'FEMALE' ? { context: 'female' } : undefined,
+    genero === Gender.FEMALE ? { context: 'female' } : undefined,
   );
 };

@@ -1,9 +1,14 @@
+import { Gender } from '../domain/value_objects/Gender';
 // La barra de un aviso: color y género (el campo puede tener las amarillas de
 // hombre y no las de mujer), o «sin barra». No es `nombreDeLaBarra`: va dentro
 // de una frase, así que el género se escribe («amarillas de hombre») en vez
 // de «(M)»; y el aviso guarda solo color y género, no el nombre propio que
 // tenía la barra (ya no está en el campo)
-const GENERO_DE_LA_BARRA = { MALE: 'male', FEMALE: 'female', MIXED: 'mixed' };
+const GENERO_DE_LA_BARRA = {
+  [Gender.MALE]: 'male',
+  [Gender.FEMALE]: 'female',
+  MIXED: 'mixed',
+};
 const barraDelAviso = (t, tCampos, aviso) => {
   const color = tCampos(`form.teeColors.${aviso.color}`, {
     defaultValue: aviso.color,

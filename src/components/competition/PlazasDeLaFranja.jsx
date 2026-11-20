@@ -9,6 +9,7 @@ import {
   DEJAR_DE_ESPERAR,
 } from '../../domain/services/PlazasEnFranjas';
 
+import { Gender } from '../../domain/value_objects/Gender';
 /**
  * Las piezas de las plazas de una franja de stroke play (FE #824, PR 4),
  * para `FranjasDeLaCompeticion`: lo que puede hacer el jugador, quién juega y
@@ -78,7 +79,7 @@ export const AccionDelJugador = ({
         {/* «la 1.ª» a una jugadora (QA del 11 oct 2026) */}
         {t(
           'franjas.waitingPosition',
-          genero === 'FEMALE'
+          genero === Gender.FEMALE
             ? { count: accion.posicion, context: 'female' }
             : { count: accion.posicion },
         )}
