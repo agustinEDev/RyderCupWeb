@@ -8,6 +8,11 @@ import ListFriendsUseCase from './ListFriendsUseCase';
 import ListPendingFriendRequestsUseCase from './ListPendingFriendRequestsUseCase';
 
 /**
+ * EXCEPCIÓN DELIBERADA a «mockear repositorios en los tests de casos de uso»
+ * (CLAUDE.md): aquí el repositorio es el real a propósito, con `apiRequest`
+ * simulado. Con un repositorio simulado no se vería lo que cambia entre la
+ * respuesta de la API y el DTO, que es justo lo que este test vigila.
+ *
  * Caracterización: lo que devuelve cada caso de uso de amistades con el
  * repositorio REAL y la API simulada. Fija el DTO de hoy, campos opcionales
  * incluidos, para que cambiar cómo viajan los datos extra de la API no cambie

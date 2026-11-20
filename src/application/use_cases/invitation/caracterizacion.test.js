@@ -15,6 +15,11 @@ vi.mock('../../../infrastructure/http/api.js', async () => ({
 import apiRequest from '../../../infrastructure/http/api.js';
 
 /**
+ * EXCEPCIÓN DELIBERADA a «mockear repositorios en los tests de casos de uso»
+ * (CLAUDE.md): aquí el repositorio es el real a propósito, con `apiRequest`
+ * simulado. Con un repositorio simulado no se vería lo que cambia entre la
+ * respuesta de la API y el DTO, que es justo lo que este test vigila.
+ *
  * Caracterización: el DTO que sale hoy de cada caso de uso de invitaciones,
  * con el repositorio REAL y la respuesta con la forma real de la API.
  * Fija los nombres que vienen del join (competición, quien invita, invitado)

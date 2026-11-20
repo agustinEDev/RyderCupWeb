@@ -14,6 +14,11 @@ vi.mock('../../../infrastructure/http/api', async () => ({
 }));
 
 /**
+ * EXCEPCIÓN DELIBERADA a «mockear repositorios en los tests de casos de uso»
+ * (CLAUDE.md): aquí el repositorio es el real a propósito, con `apiRequest`
+ * simulado. Con un repositorio simulado no se vería lo que cambia entre la
+ * respuesta de la API y el DTO, que es justo lo que este test vigila.
+ *
  * Caracterización: lo que llega a la interfaz desde la respuesta de la API, de
  * punta a punta (repositorio real + caso de uso + assembler), para que quitar
  * la respuesta cruda de la entidad no cambie nada. Los snapshots se sacaron del código de antes del
