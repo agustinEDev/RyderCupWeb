@@ -3,10 +3,11 @@ import { getCountryFlag } from '../../utils/countryUtils';
 import { Modality } from '../../domain/value_objects/Modality';
 
 /** @typedef {import('../../domain/entities/Competition').default} Competition */
+/** @typedef {import('../../domain/repositories/ICompetitionRepository').CompetitionExtras} CompetitionExtras */
 
 // Un jugador de la actualización de hándicaps: el que falta por preguntar y el
 // que se quedó sin actualizar llegan igual
-const aJugadorDeLaActualizacion = (p) => ({ userId: p.user_id, name: p.name });
+const aJugadorDeLaActualizacion = (p) => ({ userId: p.userId, name: p.name });
 
 /**
  * CompetitionAssembler - Application Layer
@@ -35,24 +36,25 @@ class CompetitionAssembler {
    * Maps Competition entity to a simple DTO for UI presentation.
    *
    * @param {Competition} competition - Domain entity
-   * @param {Object} apiData - Original API data (optional, for location string)
+   * @param {CompetitionExtras|null} [extras] - Lo que llegó de la API y la
+   *   entidad no guarda (país con nombres, ficha del organizador…), en camelCase
    * @returns {Object} - Simple DTO for UI
    */
-  static toSimpleDTO(competition, apiData = null) {
+  static toSimpleDTO(competition, extras = null) {
     // Use countries array from API if available, otherwise build from domain
     let countries = [];
 
-    if (apiData?.countries && Array.isArray(apiData.countries)) {
-      countries = apiData.countries.map((country, index) => ({
+    if (extras?.countries && Array.isArray(extras.countries)) {
+      countries = extras.countries.map((country, index) => ({
         code: country.code,
-        name: country.name_en,
-        nameEn: country.name_en,
-        nameEs: country.name_es,
+        name: country.nameEn,
+        nameEn: country.nameEn,
+        nameEs: country.nameEs,
         // También con la grafía del backend: es la que entienden `countries.js`
         // y sus ayudantes. Sin ella, un país de aquí se pintaba bien pero el
         // buscador de países lo filtraba a cero en cuanto se tecleaba algo
-        name_en: country.name_en,
-        name_es: country.name_es,
+        name_en: country.nameEn,
+        name_es: country.nameEs,
         flag: getCountryFlag(country.code),
         isMain: index === 0,
       }));
@@ -80,28 +82,27 @@ class CompetitionAssembler {
       team2Name: competition.ryderCup?.team2Name ?? null,
       startDate: competition.dates.startDate.toISOString().split('T')[0],
       endDate: competition.dates.endDate.toISOString().split('T')[0],
-      location: apiData?.location || competition.location.toString(),
+      location: extras?.location || competition.location.toString(),
       countries: countries,
       status: competition.status.value,
       maxPlayers: competition.maxPlayers,
       visibility: competition.visibility,
       // Cuántos días antes del torneo abren solas las inscripciones, o null si
       // se abren al invitar (FE #678). Sin esto la ficha no puede decir cuándo
-      enrollmentOpensDaysBefore: apiData?.enrollment_opens_days_before ?? null,
+      enrollmentOpensDaysBefore: extras?.enrollmentOpensDaysBefore ?? null,
       // El plazo de inscripción (15 nov 2026, RyderCupAm #865): las 12:00 del
       // día anterior con el desfase del campo; si vale para esta (no, si se
       // abrió a mano pasado el plazo), y si la cerró el plazo y no el organizador
       enrollmentDeadline:
-        typeof apiData?.enrollment_deadline === 'string'
-          ? apiData.enrollment_deadline
+        typeof extras?.enrollmentDeadline === 'string'
+          ? extras.enrollmentDeadline
           : null,
-      enrollmentDeadlineApplies: apiData?.enrollment_deadline_applies === true,
-      enrollmentClosedByDeadline:
-        apiData?.enrollment_closed_by_deadline === true,
+      enrollmentDeadlineApplies: extras?.enrollmentDeadlineApplies === true,
+      enrollmentClosedByDeadline: extras?.enrollmentClosedByDeadline === true,
       // Si quien la mira puede borrarla ahora (FE #667). Lo decide el backend con la
       // misma regla que el borrado —estado, nada jugado y quién— y solo lo manda la
       // ficha (RyderCupAM#347); sin el campo, no se ofrece
-      canDelete: apiData?.can_delete === true,
+      canDelete: extras?.canDelete === true,
       // Qué torneo es y su modalidad (FE #791, RyderCupAm#251). Una respuesta
       // de antes del tipo es una Ryder Cup: es lo que eran todas
       tournamentType: competition.tournamentType,
@@ -112,104 +113,104 @@ class CompetitionAssembler {
         : null,
       // La última actualización de hándicaps y la ventana del botón (FE #824).
       // Solo le llegan al organizador: a los demás, null
-      handicapUpdate: apiData?.handicap_update
+      handicapUpdate: extras?.handicapUpdate
         ? {
-            status: apiData.handicap_update.status,
-            origin: apiData.handicap_update.origin,
-            startedAt: apiData.handicap_update.started_at,
-            finishedAt: apiData.handicap_update.finished_at ?? null,
-            pendingPlayers: (apiData.handicap_update.pending_players || []).map(
+            status: extras.handicapUpdate.status,
+            origin: extras.handicapUpdate.origin,
+            startedAt: extras.handicapUpdate.startedAt,
+            finishedAt: extras.handicapUpdate.finishedAt ?? null,
+            pendingPlayers: (extras.handicapUpdate.pendingPlayers || []).map(
               aJugadorDeLaActualizacion,
             ),
             // Los mismos que el aviso al organizador «{N} jugadores sin
             // actualizar con la RFEG» (15 nov 2026). Null si el servidor es de
             // antes del campo: la tarjeta sigue con pendingPlayers
             notUpdatedPlayers: Array.isArray(
-              apiData.handicap_update.not_updated_players,
+              extras.handicapUpdate.notUpdatedPlayers,
             )
-              ? apiData.handicap_update.not_updated_players.map(
+              ? extras.handicapUpdate.notUpdatedPlayers.map(
                   aJugadorDeLaActualizacion,
                 )
               : null,
           }
         : null,
-      handicapUpdateWindow: apiData?.handicap_update_window
+      handicapUpdateWindow: extras?.handicapUpdateWindow
         ? {
-            open: apiData.handicap_update_window.open,
-            closesAt: apiData.handicap_update_window.closes_at ?? null,
-            reason: apiData.handicap_update_window.reason ?? null,
+            open: extras.handicapUpdateWindow.open,
+            closesAt: extras.handicapUpdateWindow.closesAt ?? null,
+            reason: extras.handicapUpdateWindow.reason ?? null,
             // El motivo como código, para decirlo en el idioma de la app (RyderCupAm#541)
-            reasonCode: apiData.handicap_update_window.reason_code ?? null,
-            scheduledAt: apiData.handicap_update_window.scheduled_at ?? null,
+            reasonCode: extras.handicapUpdateWindow.reasonCode ?? null,
+            scheduledAt: extras.handicapUpdateWindow.scheduledAt ?? null,
           }
         : null,
       // Lo que pinta la tarjeta de «Mis competiciones» (FE #846, RyderCupAm#558).
       // Sin el campo (un servidor anterior), null: no se sabe, que no es «ninguno»
-      golfCourses: Array.isArray(apiData?.golf_courses)
-        ? apiData.golf_courses.map((c) => ({
+      golfCourses: Array.isArray(extras?.golfCourses)
+        ? extras.golfCourses.map((c) => ({
             id: c.id,
             name: c.name,
-            countryCode: c.country_code,
+            countryCode: c.countryCode,
           }))
         : null,
       // Cuántos días se juega en un stroke play; null en una Ryder
-      playingDays: apiData?.playing_days ?? null,
+      playingDays: extras?.playingDays ?? null,
       // Mi próxima salida, solo si juego en ella; la hora, si ya se sabe
-      myNextSession: apiData?.my_next_session
+      myNextSession: extras?.myNextSession
         ? {
-            date: apiData.my_next_session.date,
-            sessionType: apiData.my_next_session.session_type,
-            teeTime: apiData.my_next_session.tee_time ?? null,
+            date: extras.myNextSession.date,
+            sessionType: extras.myNextSession.sessionType,
+            teeTime: extras.myNextSession.teeTime ?? null,
           }
         : null,
       // Mi invitación pendiente, solo si aceptarla puede salir bien: el cuadro
       // de la ficha (release social 2)
-      myPendingInvitation: apiData?.my_pending_invitation
+      myPendingInvitation: extras?.myPendingInvitation
         ? {
-            id: apiData.my_pending_invitation.id,
-            expiresAt: apiData.my_pending_invitation.expires_at ?? null,
+            id: extras.myPendingInvitation.id,
+            expiresAt: extras.myPendingInvitation.expiresAt ?? null,
           }
         : null,
-      modality: apiData?.modality || Modality.MATCH_PLAY,
+      modality: extras?.modality || Modality.MATCH_PLAY,
       // Cuánto monta la app por su cuenta (FE #695). De él sale además cómo se
       // reparten los equipos, que ya no se pregunta aparte (RyderCupAm#351).
       // Solo una Ryder lo tiene: a un Stableford no se le inventa
       setupMode:
-        apiData?.setup_mode || (competition.hasTeams ? 'RYDER_CUP' : null),
+        extras?.setupMode || (competition.hasTeams ? 'RYDER_CUP' : null),
       // Si ya hay equipos repartidos: con ellos los capitanes no se cambian, y una
       // reabierta se vuelve a cerrar con «Cerrar inscripciones» (FE #692). Solo lo
       // manda la ficha; sin el campo, no se afirma un reparto que nadie ha dicho
-      teamsAssigned: apiData?.teams_assigned === true,
+      teamsAssigned: extras?.teamsAssigned === true,
       // Qué ve quien mira de los inscritos: ALL, FRIENDS o NONE (release social 2).
       // Solo lo manda la ficha
-      enrolledVisibility: apiData?.enrolled_visibility ?? null,
+      enrolledVisibility: extras?.enrolledVisibility ?? null,
       // Capitanes y subcapitanes, uno por equipo (FE #692, RyderCupAM#320)
       captains: {
-        teamA: apiData?.team_a_captain_id ?? null,
-        teamB: apiData?.team_b_captain_id ?? null,
-        viceTeamA: apiData?.team_a_vice_captain_id ?? null,
-        viceTeamB: apiData?.team_b_vice_captain_id ?? null,
+        teamA: extras?.teamACaptainId ?? null,
+        teamB: extras?.teamBCaptainId ?? null,
+        viceTeamA: extras?.teamAViceCaptainId ?? null,
+        viceTeamB: extras?.teamBViceCaptainId ?? null,
       },
-      enrolledCount: apiData?.enrolled_count || 0,
-      isCreator: apiData?.is_creator || false,
+      enrolledCount: extras?.enrolledCount || 0,
+      isCreator: extras?.isCreator || false,
       creatorId: competition.creatorId,
-      creator: apiData?.creator
+      creator: extras?.creator
         ? {
-            id: apiData.creator.id,
-            firstName: apiData.creator.first_name,
-            lastName: apiData.creator.last_name,
+            id: extras.creator.id,
+            firstName: extras.creator.firstName,
+            lastName: extras.creator.lastName,
             // Lo que hay que pintar: en una privada con alias, nombre y apellidos
             // llegan vacíos para quien no es el organizador ni un admin (SB-08)
-            displayName: nombreVisible(apiData.creator),
-            alias: apiData.creator.alias ?? null,
-            handicap: apiData.creator.handicap,
-            countryCode: apiData.creator.country_code,
+            displayName: nombreVisible(extras.creator),
+            alias: extras.creator.alias ?? null,
+            handicap: extras.creator.handicap,
+            countryCode: extras.creator.countryCode,
           }
         : null,
       createdAt: competition.createdAt.toISOString(),
       updatedAt: competition.updatedAt.toISOString(),
-      enrollment_status: apiData?.user_enrollment_status || null,
-      pending_enrollments_count: apiData?.pending_enrollments_count || 0,
+      enrollment_status: extras?.userEnrollmentStatus || null,
+      pending_enrollments_count: extras?.pendingEnrollmentsCount || 0,
       playMode: competition.handicapSettings.type(),
       // El modo con el que se CONFIGURÓ: decide si se reparte solo al cerrar
       teamAssignment: competition.ryderCup?.teamAssignment?.value() ?? null,
@@ -219,8 +220,8 @@ class CompetitionAssembler {
       // configurado: una automática rehecha a mano, al reabrir y volver a
       // cerrar, dejaría sin equipo a los que entraron después. Solo lo manda
       // la ficha; los listados, no
-      actualTeamAssignment: apiData?.actual_team_assignment ?? null,
-      maxPlayingHandicap: apiData?.max_playing_handicap ?? null,
+      actualTeamAssignment: extras?.actualTeamAssignment ?? null,
+      maxPlayingHandicap: extras?.maxPlayingHandicap ?? null,
     };
   }
 }

@@ -1,10 +1,11 @@
 import { describe, it, expect } from 'vitest';
 import InvitationAssembler from './InvitationAssembler';
 import InvitationMapper from '../../infrastructure/mappers/InvitationMapper';
+import { aExtras } from '../../infrastructure/mappers/conExtras';
 
 /**
  * Una invitación en lista de espera (ON_HOLD, 15 nov 2026; RyderCupAm B-02)
- * llega a la pantalla por el camino real: respuesta → mapper → assembler.
+ * llega a la pantalla por el camino real: respuesta → mapper (entidad + extras) → assembler.
  *
  *   caso                  | qué llega
  *   ----------------------|-----------------------------------------------
@@ -26,7 +27,7 @@ const API = (status) => ({
 const llega = (status) =>
   InvitationAssembler.toSimpleDTO(
     InvitationMapper.toDomain(API(status)),
-    API(status),
+    aExtras(API(status)),
   );
 
 describe('InvitationAssembler · en lista de espera', () => {

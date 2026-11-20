@@ -9,6 +9,7 @@ describe('GetCompetitionDetailUseCase', () => {
   let useCase;
   let mockRepository;
   let mockCompetition;
+  let mockExtras;
 
   beforeEach(() => {
     // Reset mocks
@@ -19,14 +20,16 @@ describe('GetCompetitionDetailUseCase', () => {
       id: { toString: () => 'comp-123' },
       name: { toString: () => 'Test Competition' },
       status: { value: 'DRAFT' },
-      _apiData: {
-        countries: [{ code: 'ES', name_en: 'Spain', name_es: 'España' }],
-      },
+    };
+    mockExtras = {
+      countries: [{ code: 'ES', nameEn: 'Spain', nameEs: 'España' }],
     };
 
-    // Mock repository
+    // Mock repository: la entidad y sus extras
     mockRepository = {
-      findById: vi.fn().mockResolvedValue(mockCompetition),
+      findById: vi
+        .fn()
+        .mockResolvedValue({ entity: mockCompetition, extras: mockExtras }),
     };
 
     // Mock CompetitionAssembler.toSimpleDTO
@@ -50,7 +53,7 @@ describe('GetCompetitionDetailUseCase', () => {
       expect(mockRepository.findById).toHaveBeenCalledWith('comp-123');
       expect(CompetitionAssembler.toSimpleDTO).toHaveBeenCalledWith(
         mockCompetition,
-        mockCompetition._apiData,
+        mockExtras,
       );
       expect(result).toEqual({
         id: 'comp-123',
@@ -107,18 +110,18 @@ describe('GetCompetitionDetailUseCase', () => {
     });
 
     it('should handle competition with multiple countries', async () => {
-      const multiCountryCompetition = {
-        ...mockCompetition,
-        _apiData: {
-          countries: [
-            { code: 'ES', name_en: 'Spain', name_es: 'España' },
-            { code: 'FR', name_en: 'France', name_es: 'Francia' },
-            { code: 'PT', name_en: 'Portugal', name_es: 'Portugal' },
-          ],
-        },
+      const multiCountryExtras = {
+        countries: [
+          { code: 'ES', nameEn: 'Spain', nameEs: 'España' },
+          { code: 'FR', nameEn: 'France', nameEs: 'Francia' },
+          { code: 'PT', nameEn: 'Portugal', nameEs: 'Portugal' },
+        ],
       };
 
-      mockRepository.findById.mockResolvedValue(multiCountryCompetition);
+      mockRepository.findById.mockResolvedValue({
+        entity: mockCompetition,
+        extras: multiCountryExtras,
+      });
       CompetitionAssembler.toSimpleDTO.mockReturnValue({
         id: 'comp-123',
         name: 'Test Competition',

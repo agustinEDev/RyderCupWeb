@@ -95,7 +95,7 @@ describe('ListUserCompetitionsUseCase', () => {
 
     // Configure repository mock to return the competition entities
     competitionRepository.findByCreator.mockResolvedValue(
-      mockCompetitionEntities,
+      mockCompetitionEntities.map((entity) => ({ entity, extras: null })),
     );
 
     // Act

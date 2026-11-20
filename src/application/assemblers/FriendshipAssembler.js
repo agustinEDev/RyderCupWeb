@@ -11,11 +11,12 @@ class FriendshipAssembler {
    * Converts a domain entity to a simple DTO for the UI.
    *
    * @param {Friendship} friendship - Domain entity
-   * @param {Object} apiData - Original API data (optional, for requester_name/addressee_name)
+   * @param {Object|null} extras - Datos que acompañan a la amistad, en camelCase
+   *   (nombres, alias, nombres reales y hándicaps de los dos lados); opcional
    * @param {string|null} currentUserId - Current user id, used to compute "the other person" fields
    * @returns {Object} - Simple DTO for UI (camelCase, flat)
    */
-  static toSimpleDTO(friendship, apiData = null, currentUserId = null) {
+  static toSimpleDTO(friendship, extras = null, currentUserId = null) {
     if (!(friendship instanceof Friendship)) {
       throw new Error(
         'FriendshipAssembler.toSimpleDTO: friendship must be a Friendship instance',
@@ -38,11 +39,9 @@ class FriendshipAssembler {
       isBlocked: friendship.isBlocked(),
     };
 
-    if (apiData) {
-      if (apiData.requester_name)
-        simpleDTO.requesterName = apiData.requester_name;
-      if (apiData.addressee_name)
-        simpleDTO.addresseeName = apiData.addressee_name;
+    if (extras) {
+      if (extras.requesterName) simpleDTO.requesterName = extras.requesterName;
+      if (extras.addresseeName) simpleDTO.addresseeName = extras.addresseeName;
     }
 
     if (currentUserId) {
@@ -53,20 +52,24 @@ class FriendshipAssembler {
         : simpleDTO.requesterName;
       // El otro nombre del otro lado, pequeño debajo (SB-08). Lo traen la lista de
       // amigos y la de solicitudes; si no, null
-      const lado = isRequester ? 'addressee' : 'requester';
+      const otherAlias = isRequester
+        ? extras?.addresseeAlias
+        : extras?.requesterAlias;
+      const otherRealName = isRequester
+        ? extras?.addresseeRealName
+        : extras?.requesterRealName;
       simpleDTO.otherUserSubName =
         nombrePequeno({
           display_name: simpleDTO.otherUserName,
-          alias: apiData?.[`${lado}_alias`] ?? null,
+          alias: otherAlias ?? null,
           // El nombre real ya viene entero: va en `first_name` tal cual
-          first_name: apiData?.[`${lado}_real_name`] ?? '',
+          first_name: otherRealName ?? '',
         }) || null;
       // El del otro lado, para el resumen de la partida rápida antes de crear
       // nada (FE #848). Solo lo trae la lista de amigos; si no, null
       simpleDTO.otherUserHandicap =
-        (isRequester
-          ? apiData?.addressee_handicap
-          : apiData?.requester_handicap) ?? null;
+        (isRequester ? extras?.addresseeHandicap : extras?.requesterHandicap) ??
+        null;
       simpleDTO.isSentByMe = isRequester;
     }
 
@@ -77,13 +80,13 @@ class FriendshipAssembler {
    * Converts multiple domain entities to simple DTOs for the UI.
    *
    * @param {Array<Friendship>} friendships - Array of domain entities
-   * @param {Array<Object>} apiDataArray - Array of original API data (optional)
+   * @param {Array<Object|null>} extrasArray - Extras de cada amistad, en el mismo orden (opcional)
    * @param {string|null} currentUserId
    * @returns {Array<Object>} Array of simple DTOs for UI
    */
   static toSimpleDTOMany(
     friendships,
-    apiDataArray = null,
+    extrasArray = null,
     currentUserId = null,
   ) {
     if (!Array.isArray(friendships)) {
@@ -93,12 +96,8 @@ class FriendshipAssembler {
     }
 
     return friendships.map((friendship, index) => {
-      const apiData = apiDataArray ? apiDataArray[index] : null;
-      return FriendshipAssembler.toSimpleDTO(
-        friendship,
-        apiData,
-        currentUserId,
-      );
+      const extras = extrasArray ? extrasArray[index] : null;
+      return FriendshipAssembler.toSimpleDTO(friendship, extras, currentUserId);
     });
   }
 }

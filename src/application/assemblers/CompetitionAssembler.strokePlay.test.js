@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import CompetitionAssembler from './CompetitionAssembler';
 import CompetitionMapper from '../../infrastructure/mappers/CompetitionMapper';
+import { aExtras } from '../../infrastructure/mappers/conExtras';
 
 /**
  * Los ajustes del stroke play llegan a la pantalla (FE #824, RyderCupAm#536),
@@ -26,7 +27,7 @@ const respuestaDeLaApi = (extra = {}) => ({
 const loQueLlegaALaPantalla = (apiData) =>
   CompetitionAssembler.toSimpleDTO(
     CompetitionMapper.toDomain(apiData),
-    apiData,
+    aExtras(apiData),
   );
 
 describe('CompetitionAssembler · los ajustes del stroke play (FE #824)', () => {

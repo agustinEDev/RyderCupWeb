@@ -93,7 +93,9 @@ describe('BrowseJoinableCompetitionsUseCase', () => {
     ];
 
     // Configure repository mock to return the competition entities
-    competitionRepository.findPublic.mockResolvedValue(mockCompetitionEntities);
+    competitionRepository.findPublic.mockResolvedValue(
+      mockCompetitionEntities.map((entity) => ({ entity, extras: null })),
+    );
 
     // Act
     const result = await browseJoinableCompetitionsUseCase.execute(filters);

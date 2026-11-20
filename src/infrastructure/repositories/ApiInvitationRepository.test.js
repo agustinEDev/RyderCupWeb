@@ -53,8 +53,14 @@ describe('ApiInvitationRepository', () => {
           }),
         },
       );
-      expect(result.id).toBe('inv-1');
-      expect(result.status.toString()).toBe('PENDING');
+      expect(result.entity.id).toBe('inv-1');
+      expect(result.entity.status.toString()).toBe('PENDING');
+      expect(result.extras).toMatchObject({
+        competitionName: 'Summer Cup',
+        inviterName: 'Creator',
+        inviteeName: 'Player',
+      });
+      expect(Object.keys(result)).toEqual(['entity', 'extras']);
     });
   });
 
@@ -75,7 +81,8 @@ describe('ApiInvitationRepository', () => {
           body: JSON.stringify({ invitee_email: 'player@example.com' }),
         },
       );
-      expect(result.inviteeEmail).toBe('player@example.com');
+      expect(result.entity.inviteeEmail).toBe('player@example.com');
+      expect(result.extras.inviteeName).toBe('Player');
     });
   });
 
@@ -92,6 +99,8 @@ describe('ApiInvitationRepository', () => {
         '/api/v1/invitations/me?status=PENDING',
       );
       expect(result.invitations).toHaveLength(1);
+      expect(result.invitations[0].entity.id).toBe('inv-1');
+      expect(result.invitations[0].extras.inviterName).toBe('Creator');
       expect(result.totalCount).toBe(1);
     });
 
@@ -123,7 +132,8 @@ describe('ApiInvitationRepository', () => {
           body: JSON.stringify({ action: 'ACCEPT' }),
         },
       );
-      expect(result.status.toString()).toBe('ACCEPTED');
+      expect(result.entity.status.toString()).toBe('ACCEPTED');
+      expect(result.extras.competitionName).toBe('Summer Cup');
     });
   });
 
@@ -142,6 +152,8 @@ describe('ApiInvitationRepository', () => {
         '/api/v1/competitions/comp-1/invitations?status=PENDING',
       );
       expect(result.invitations).toHaveLength(1);
+      expect(result.invitations[0].entity.id).toBe('inv-1');
+      expect(result.invitations[0].extras.competitionName).toBe('Summer Cup');
       expect(result.totalCount).toBe(1);
     });
   });

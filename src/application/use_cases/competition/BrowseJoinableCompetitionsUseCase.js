@@ -64,12 +64,9 @@ class BrowseJoinableCompetitionsUseCase {
       await this.competitionRepository.findPublic(repositoryFilters);
 
     // Convert domain entities to simple DTOs for the UI
-    const competitionDTOs = competitions.map((competition) => {
-      return CompetitionAssembler.toSimpleDTO(
-        competition,
-        competition._apiData,
-      );
-    });
+    const competitionDTOs = competitions.map(({ entity, extras }) =>
+      CompetitionAssembler.toSimpleDTO(entity, extras),
+    );
 
     return competitionDTOs;
   }

@@ -27,8 +27,8 @@ class ListCompetitionInvitationsUseCase {
       filters,
     );
 
-    const dtos = result.invitations.map((invitation) =>
-      InvitationAssembler.toSimpleDTO(invitation, invitation._apiData),
+    const dtos = result.invitations.map(({ entity, extras }) =>
+      InvitationAssembler.toSimpleDTO(entity, extras),
     );
 
     return {

@@ -20,8 +20,8 @@ class BlockUserUseCase {
       throw new Error('userId is required');
     }
 
-    const friendship = await this.#friendRepository.blockUser(userId);
-    return FriendshipAssembler.toSimpleDTO(friendship, friendship._apiData);
+    const { entity, extras } = await this.#friendRepository.blockUser(userId);
+    return FriendshipAssembler.toSimpleDTO(entity, extras);
   }
 }
 

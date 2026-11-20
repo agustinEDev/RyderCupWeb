@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import InvitationMapper from './InvitationMapper';
+import { aExtras } from './conExtras';
 
 const invitacion = (status) => ({
   id: `inv-${status}`,
@@ -43,5 +44,39 @@ describe('InvitationMapper', () => {
         invitee_email: undefined,
       }),
     ).toThrow();
+  });
+});
+
+describe('aExtras con la respuesta de Invitation', () => {
+  it('traduce los nombres del join a camelCase', () => {
+    expect(
+      aExtras({
+        ...invitacion('PENDING'),
+        competition_name: 'Summer Cup',
+        inviter_name: 'Creator',
+        invitee_name: 'Player',
+      }),
+    ).toMatchObject({
+      competitionName: 'Summer Cup',
+      inviterName: 'Creator',
+      inviteeName: 'Player',
+    });
+  });
+
+  it('sin respuesta devuelve null', () => {
+    expect(aExtras(null)).toBeNull();
+    expect(aExtras(undefined)).toBeNull();
+  });
+
+  it('copia tal cual: lo que falta queda undefined, null y vacío se mantienen', () => {
+    const extras = aExtras({
+      ...invitacion('PENDING'),
+      inviter_name: null,
+      invitee_name: '',
+    });
+
+    expect(extras.competitionName).toBeUndefined();
+    expect(extras.inviterName).toBeNull();
+    expect(extras.inviteeName).toBe('');
   });
 });

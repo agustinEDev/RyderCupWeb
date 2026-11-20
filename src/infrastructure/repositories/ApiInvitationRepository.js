@@ -2,8 +2,7 @@ import IInvitationRepository from '../../domain/repositories/IInvitationReposito
 import InvitationMapper from '../mappers/InvitationMapper';
 import apiRequest from '../http/api.js';
 import { segmento } from '../http/api';
-
-/** @typedef {import('../../domain/entities/Invitation').default} Invitation */
+import { conExtras, conExtrasLista } from '../mappers/conExtras';
 
 /**
  * ApiInvitationRepository - REST API implementation
@@ -50,10 +49,7 @@ class ApiInvitationRepository extends IInvitationRepository {
       },
     );
 
-    /** @type {Invitation & {_apiData?: Object}} */
-    const invitation = InvitationMapper.toDomain(apiData);
-    invitation._apiData = apiData;
-    return invitation;
+    return conExtras(InvitationMapper.toDomain(apiData), apiData);
   }
 
   async sendInvitationByEmail(
@@ -76,10 +72,7 @@ class ApiInvitationRepository extends IInvitationRepository {
       },
     );
 
-    /** @type {Invitation & {_apiData?: Object}} */
-    const invitation = InvitationMapper.toDomain(apiData);
-    invitation._apiData = apiData;
-    return invitation;
+    return conExtras(InvitationMapper.toDomain(apiData), apiData);
   }
 
   async getMyInvitations(filters = {}) {
@@ -92,12 +85,10 @@ class ApiInvitationRepository extends IInvitationRepository {
     const response = await apiRequest(`/api/v1/invitations/me${queryString}`);
 
     const apiDataArray = response.invitations || [];
-    /** @type {Array<Invitation & {_apiData?: Object}>} */
-    const invitations = InvitationMapper.toDomainMany(apiDataArray);
-
-    invitations.forEach((invitation, index) => {
-      invitation._apiData = apiDataArray[index];
-    });
+    const invitations = conExtrasLista(
+      InvitationMapper.toDomainMany(apiDataArray),
+      apiDataArray,
+    );
 
     return {
       invitations,
@@ -123,10 +114,7 @@ class ApiInvitationRepository extends IInvitationRepository {
       },
     );
 
-    /** @type {Invitation & {_apiData?: Object}} */
-    const invitation = InvitationMapper.toDomain(apiData);
-    invitation._apiData = apiData;
-    return invitation;
+    return conExtras(InvitationMapper.toDomain(apiData), apiData);
   }
 
   async getCompetitionInvitations(competitionId, filters = {}) {
@@ -141,12 +129,10 @@ class ApiInvitationRepository extends IInvitationRepository {
     );
 
     const apiDataArray = response.invitations || [];
-    /** @type {Array<Invitation & {_apiData?: Object}>} */
-    const invitations = InvitationMapper.toDomainMany(apiDataArray);
-
-    invitations.forEach((invitation, index) => {
-      invitation._apiData = apiDataArray[index];
-    });
+    const invitations = conExtrasLista(
+      InvitationMapper.toDomainMany(apiDataArray),
+      apiDataArray,
+    );
 
     return {
       invitations,
