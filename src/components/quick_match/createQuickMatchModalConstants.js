@@ -3,6 +3,7 @@
 
 import { MatchFormat } from '../../domain/value_objects/MatchFormat';
 import { ScoringFormat } from '../../domain/value_objects/ScoringFormat';
+import { QuickMatchMode } from '../../domain/value_objects/QuickMatchMode';
 
 // Las reglas sin interfaz (cupos, equipos, claves de barra) viven en
 // `utils/asistenteDePartidaRapida` desde el 9 nov 2026: también las usan
@@ -108,7 +109,7 @@ export const initialGuestForm = { firstName: '', lastName: '', handicap: '' };
  * elegida).
  */
 export const formaDeAnotar = (modo, formatoDeJuego) =>
-  `${modo}:${modo === 'MATCH_PLAY' ? formatoDeJuego : ''}`;
+  `${modo}:${modo === QuickMatchMode.MATCH_PLAY ? formatoDeJuego : ''}`;
 
 export const firmaDeLosAnotadores = (jugadores, modo, formatoDeJuego) =>
   `${formaDeAnotar(modo, formatoDeJuego)}|` +

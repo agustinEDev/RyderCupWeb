@@ -88,8 +88,6 @@ const PALABRAS = [
 
 const TANTEO =
   'tanteo del resultado («CONCEDED», «W/O»), no estado del partido: el backend lo manda así en result.score';
-const MODO_DE_PARTIDA_RAPIDA =
-  'modo del asistente de partida rápida (MATCH_PLAY / FREE_PLAY): estado de la interfaz, no del backend';
 
 /**
  * Las excepciones: fichero (relativo a src), palabra, por qué se queda y
@@ -108,30 +106,6 @@ const PERMITIDOS = [
     fichero: 'components/feed/ActivityEventCard.jsx',
     palabra: 'CONCEDED',
     motivo: TANTEO,
-    veces: 1,
-  },
-  {
-    fichero: 'components/quick_match/CourseStep.jsx',
-    palabra: 'MATCH_PLAY',
-    motivo: MODO_DE_PARTIDA_RAPIDA,
-    veces: 1,
-  },
-  {
-    fichero: 'components/quick_match/useAjustesDelBorrador.js',
-    palabra: 'MATCH_PLAY',
-    motivo: MODO_DE_PARTIDA_RAPIDA,
-    veces: 1,
-  },
-  {
-    fichero: 'components/quick_match/createQuickMatchModalConstants.js',
-    palabra: 'MATCH_PLAY',
-    motivo: MODO_DE_PARTIDA_RAPIDA,
-    veces: 1,
-  },
-  {
-    fichero: 'utils/borradorParaRepetir.js',
-    palabra: 'MATCH_PLAY',
-    motivo: MODO_DE_PARTIDA_RAPIDA,
     veces: 1,
   },
   {

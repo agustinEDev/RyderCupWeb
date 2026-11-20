@@ -15,6 +15,7 @@ import {
 } from '../../domain/value_objects/MatchFormat';
 import { ScoringFormat } from '../../domain/value_objects/ScoringFormat';
 import { PlayModeType } from '../../domain/value_objects/HandicapSettings';
+import { QuickMatchMode } from '../../domain/value_objects/QuickMatchMode';
 
 // El nombre lleva escrito «Campo · dd/mm» y sigue al campo hasta que alguien
 // escribe el suyo; vacío, viaja ese (Agustín, 4 nov 2026). Al repetir, uno de
@@ -32,13 +33,16 @@ const nombreCopiadoAMano = (copia) =>
 // botón más aunque no sea de los habituales (pasada del Kind, 4 nov 2026)
 const porcentajeDeLaCopia = (copia) =>
   copia?.allowanceOverride != null
-    ? { pct: copia.allowanceOverride, libre: copia.mode === 'FREE_PLAY' }
+    ? {
+        pct: copia.allowanceOverride,
+        libre: copia.mode === QuickMatchMode.FREE_PLAY,
+      }
     : null;
 
 // Lo que se deduce de la modalidad y el formato: el % por defecto, cuántos
 // caben y si va por equipos o es foursomes
 const loQueDiceElFormato = (mode, matchFormat) => {
-  const isFreePlay = mode === 'FREE_PLAY';
+  const isFreePlay = mode === QuickMatchMode.FREE_PLAY;
   return {
     isFreePlay,
     defaultAllowance: isFreePlay
@@ -65,7 +69,7 @@ export const useAjustesDelBorrador = (copia) => {
     nombreCopiadoAMano(copia),
   );
   const [abiertoEl] = useState(() => new Date());
-  const [mode, setMode] = useState(copia?.mode ?? 'MATCH_PLAY');
+  const [mode, setMode] = useState(copia?.mode ?? QuickMatchMode.MATCH_PLAY);
   const [matchFormat, setMatchFormat] = useState(
     copia?.matchFormat ?? MatchFormat.SINGLES,
   );

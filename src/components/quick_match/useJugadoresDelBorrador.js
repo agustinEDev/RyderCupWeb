@@ -12,6 +12,7 @@ import {
 } from './createQuickMatchModalConstants';
 import { leeTodosLosAmigos } from './leeTodosLosAmigos';
 import { Team } from '../../domain/value_objects/Team';
+import { QuickMatchMode } from '../../domain/value_objects/QuickMatchMode';
 
 // Con qué campo y formato se hizo la plantilla: volver al paso 1 sin
 // cambiarlos la conserva (Agustín, 3 nov 2026); cambiarlos la vacía
@@ -27,7 +28,7 @@ const plantillaCopiada = (copia) =>
 const esLaMismaPlantilla = (misma, plantilla) =>
   misma.campo === plantilla.campo &&
   misma.mode === plantilla.mode &&
-  (plantilla.mode === 'FREE_PLAY' ||
+  (plantilla.mode === QuickMatchMode.FREE_PLAY ||
     misma.matchFormat === plantilla.matchFormat);
 
 // Por qué no se puede pasar del paso 1, o `null`
