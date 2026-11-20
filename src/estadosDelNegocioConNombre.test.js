@@ -26,10 +26,7 @@ import { parse, tokenize } from 'espree';
 
 const SRC = join(globalThis.process.cwd(), 'src');
 
-// Las palabras de los estados y formatos que ya viven en el dominio. La lista
-// es parcial a propósito: faltan las de los conceptos de la tanda E2b (tipos de
-// actividad, validación del hoyo, roles, relación del perfil…), que hoy
-// saldrían por todas partes
+// Las palabras de los estados y formatos que ya viven en el dominio
 const PALABRAS = [
   'IN_PROGRESS',
   'COMPLETED',
@@ -84,6 +81,67 @@ const PALABRAS = [
   'PUBLIC',
   'AUTOMATIC',
   'MANUAL',
+  // Tanda E2b (20 nov 2026): tipos de evento de Actividad, desacuerdo en la
+  // validación del hoyo, roles, relación del perfil, modo del asistente de la
+  // partida rápida, barras, categorías de contacto, motivos de reporte de un
+  // hoyo y tipos de campo. Fuera, a propósito, las palabras que son de varios
+  // conceptos a la vez: 'NONE' (relación del perfil, origen del avatar, quién
+  // ve los inscritos), 'BOTH' (qué bandos anotan en la partida rápida),
+  // 'OTHER' (barra, categoría de contacto, motivo de un bloqueo), y 'pending'
+  // y 'match' en minúsculas (pestañas, rutas de la API, claves de texto)
+  'HOLE_IN_ONE',
+  'EAGLE_OR_BETTER',
+  'BIRDIE',
+  'NEW_COURSE',
+  'PERSONAL_BEST',
+  'FIRST_TOURNAMENT',
+  'ENROLLMENT_APPROVED',
+  'INVITED_TO_TOURNAMENT',
+  'ENROLLMENT_REQUEST_CLOSED',
+  'ENROLLMENT_REJECTED',
+  'ENROLLED_IN_TOURNAMENT',
+  'TOURNAMENT_MATCH_RESULT',
+  'TOURNAMENT_FINAL_STANDING',
+  'QUICK_MATCH_FINISHED',
+  'ENROLLMENT_CONFIRMED',
+  'TEE_TIME_ASSIGNED',
+  'ENROLLMENT_REMOVED',
+  'PLAYER_JOINED',
+  'PLACE_FROM_WAITING_LIST',
+  'ENROLLMENT_NO_PLACE',
+  'TEE_WINDOW_REMOVED',
+  'HANDICAPS_NOT_UPDATED',
+  'RFEG_HANDICAP_NOT_FOUND',
+  'ENROLLMENTS_CLOSED',
+  'ENROLLMENT_CLOSE_BLOCKED',
+  'INVITATION_ACCEPTABLE_AGAIN',
+  'TEAMS_UNDONE_BY_ENTRY',
+  'TEAMS_CHANGED',
+  'mismatch',
+  'ADMIN',
+  'CREATOR',
+  'PLAYER',
+  'PENDING_SENT',
+  'PENDING_RECEIVED',
+  'FREE_PLAY',
+  'RED',
+  'YELLOW',
+  'BLUE',
+  'WHITE',
+  'GREEN',
+  'ORANGE',
+  'BLACK',
+  'PINK',
+  'GOLD',
+  'BUG',
+  'FEATURE',
+  'QUESTION',
+  'WRONG_HOLE',
+  'WRONG_LINE',
+  'HOLE_CHANGED',
+  'STANDARD_18',
+  'PITCH_AND_PUTT',
+  'EXECUTIVE',
 ];
 
 const TANTEO =
@@ -102,6 +160,13 @@ const TANTEO =
  * @type {Array<{fichero: string, palabra: string, motivo: string, veces: number}>}
  */
 const PERMITIDOS = [
+  {
+    fichero: 'components/scoring/HoleSelector.jsx',
+    palabra: 'mismatch',
+    motivo:
+      'estado del indicador del hoyo (empty / pending / validated / mismatch), no el de validación de un golpe: lo calcula la tira de hoyos',
+    veces: 2,
+  },
   {
     fichero: 'components/feed/ActivityEventCard.jsx',
     palabra: 'CONCEDED',
