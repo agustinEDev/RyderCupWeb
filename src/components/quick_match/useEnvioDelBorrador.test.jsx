@@ -14,6 +14,9 @@ import { useEnvioDelBorrador } from './useEnvioDelBorrador';
  *   E5  reintento igual tras un 4xx                        | el mismo id
  *   E6  borrador cambiado tras un 4xx                      | id nuevo
  *   E7  borrador cambiado tras un fallo sin respuesta      | el mismo id y «ya se creó»
+ *   E8  sin respuesta → 4xx → borrador cambiado             | la duda sigue: el mismo id y se dice
+ *   E9  sin respuesta → sin red → bien                      | el mismo id las tres veces
+ *   E10 sin respuesta → bien → borrador cambiado            | la duda acabó: id nuevo, sin aviso
  */
 const mockCrear = vi.fn();
 vi.mock('../../composition', () => ({
@@ -138,6 +141,58 @@ describe('useEnvioDelBorrador', () => {
     );
     expect(mockInfo).toHaveBeenCalledWith('create.alreadyCreated');
     expect(onStarted).toHaveBeenCalledWith('qm-1');
+  });
+
+  const idsMandados = () => mockCrear.mock.calls.map(([p]) => p.quickMatchId);
+
+  it('E8: un rechazo claro tras un fallo sin respuesta no quita la duda', async () => {
+    // El primero pudo crearse: un 4xx después no dice nada de aquel
+    mockCrear
+      .mockRejectedValueOnce(fallo(503))
+      .mockRejectedValueOnce(fallo(422))
+      .mockResolvedValueOnce({ id: 'qm-1' });
+    const peticion = { actual: { name: 'A' } };
+    const { result, onStarted } = usaEnvio(peticion);
+    await empieza(result);
+    await empieza(result);
+    peticion.actual = { name: 'B' };
+    await empieza(result);
+    const [primero, segundo, tercero] = idsMandados();
+    expect(segundo).toBe(primero);
+    expect(tercero).toBe(primero);
+    expect(mockInfo).toHaveBeenCalledWith('create.alreadyCreated');
+    expect(onStarted).toHaveBeenCalledWith('qm-1');
+  });
+
+  it('E9: sin respuesta, luego sin red y luego bien, siempre el mismo id', async () => {
+    mockCrear
+      .mockRejectedValueOnce(fallo(503))
+      .mockRejectedValueOnce(new TypeError('Failed to fetch'))
+      .mockResolvedValueOnce({ id: 'qm-1' });
+    const { result, onStarted } = usaEnvio({ actual: { name: 'A' } });
+    await empieza(result);
+    await empieza(result);
+    await empieza(result);
+    expect(new Set(idsMandados()).size).toBe(1);
+    expect(mockInfo).not.toHaveBeenCalled();
+    expect(onStarted).toHaveBeenCalledWith('qm-1');
+  });
+
+  it('E10: tras salir bien, la duda acaba y otro borrador estrena id', async () => {
+    mockCrear
+      .mockRejectedValueOnce(fallo(503))
+      .mockResolvedValueOnce({ id: 'qm-1' })
+      .mockResolvedValueOnce({ id: 'qm-2' });
+    const peticion = { actual: { name: 'A' } };
+    const { result } = usaEnvio(peticion);
+    await empieza(result);
+    await empieza(result);
+    peticion.actual = { name: 'B' };
+    await empieza(result);
+    const [primero, segundo, tercero] = idsMandados();
+    expect(segundo).toBe(primero);
+    expect(tercero).not.toBe(primero);
+    expect(mockInfo).not.toHaveBeenCalled();
   });
 
   it('si armar la petición lanza, es un fallo más y no se manda nada', async () => {

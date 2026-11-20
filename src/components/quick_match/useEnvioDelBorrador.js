@@ -83,10 +83,14 @@ export const useEnvioDelBorrador = ({
         ...peticion,
       });
       if (cambiado) customToast.info(t('create.alreadyCreated'));
+      // Salió bien: ya no hay duda que arrastrar
+      ultimoIntento.current = null;
       onStarted(started.id);
     } catch (err) {
+      // La duda no se borra con un fallo posterior: un 4xx o un fallo en el
+      // móvil hablan de ESTE intento, no de si se creó uno anterior
       if (ultimoIntento.current)
-        ultimoIntento.current.quizaCreada = pudoLlegar(err);
+        ultimoIntento.current.quizaCreada ||= pudoLlegar(err);
       ponElAviso(avisoDelFallo(err));
     } finally {
       setIsProcessing(false);
