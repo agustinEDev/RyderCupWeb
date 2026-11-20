@@ -70,6 +70,20 @@ class QuickMatchStatus {
     return QuickMatchStatus.getAllValues().includes(value);
   }
 
+  /**
+   * Si una partida con este estado sigue viva: pendiente o en curso, la que
+   * el grupo juega o va a jugar. Terminada, cancelada o sin estado, no.
+   *
+   * @param {string|null|undefined} value
+   * @returns {boolean}
+   */
+  static isLive(value) {
+    return (
+      value === QuickMatchStatus.PENDING ||
+      value === QuickMatchStatus.IN_PROGRESS
+    );
+  }
+
   static getAllValues() {
     return [
       QuickMatchStatus.PENDING,
