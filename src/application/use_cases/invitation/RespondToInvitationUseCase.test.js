@@ -14,9 +14,9 @@ const mockAccepted = Invitation.fromPersistence({
   createdAt: '2026-02-18T10:00:00Z',
   updatedAt: '2026-02-19T10:00:00Z',
 });
-mockAccepted._apiData = {
-  competition_name: 'Summer Cup',
-  inviter_name: 'Creator',
+const mockAcceptedExtras = {
+  competitionName: 'Summer Cup',
+  inviterName: 'Creator',
 };
 
 describe('RespondToInvitationUseCase', () => {
@@ -24,7 +24,12 @@ describe('RespondToInvitationUseCase', () => {
   let mockRepo;
 
   beforeEach(() => {
-    mockRepo = { respondToInvitation: vi.fn().mockResolvedValue(mockAccepted) };
+    mockRepo = {
+      respondToInvitation: vi.fn().mockResolvedValue({
+        entity: mockAccepted,
+        extras: mockAcceptedExtras,
+      }),
+    };
     useCase = new RespondToInvitationUseCase({
       invitationRepository: mockRepo,
     });

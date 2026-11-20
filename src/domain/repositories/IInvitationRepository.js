@@ -1,4 +1,9 @@
 /** @typedef {import('../entities/Invitation').default} Invitation */
+/**
+ * Names the API joins next to an invitation (any may be missing).
+ * @typedef {{competitionName?: string|null, inviterName?: string|null, inviteeName?: string|null}} InvitationExtras
+ */
+/** @typedef {{entity: Invitation, extras: InvitationExtras|null}} InvitationWithExtras */
 
 /**
  * Interface: IInvitationRepository
@@ -16,7 +21,7 @@ class IInvitationRepository {
    * @param {string} competitionId - UUID of the competition
    * @param {string} inviteeUserId - UUID of the user to invite
    * @param {string|null} personalMessage - Optional personal message (max 500 chars)
-   * @returns {Promise<Invitation>} Created invitation
+   * @returns {Promise<InvitationWithExtras>} Created invitation and its join names
    * @throws {Error} If operation fails
    */
   async sendInvitation(competitionId, inviteeUserId, personalMessage) {
@@ -29,7 +34,7 @@ class IInvitationRepository {
    * @param {string} competitionId - UUID of the competition
    * @param {string} inviteeEmail - Email of the person to invite
    * @param {string|null} personalMessage - Optional personal message (max 500 chars)
-   * @returns {Promise<Invitation>} Created invitation
+   * @returns {Promise<InvitationWithExtras>} Created invitation and its join names
    * @throws {Error} If operation fails
    */
   async sendInvitationByEmail(competitionId, inviteeEmail, personalMessage) {
@@ -43,7 +48,7 @@ class IInvitationRepository {
    * @param {string} [filters.status] - Filter by status (PENDING, ACCEPTED, DECLINED, EXPIRED)
    * @param {number} [filters.page] - Page number (1-indexed)
    * @param {number} [filters.limit] - Items per page
-   * @returns {Promise<{invitations: Invitation[], totalCount: number}>}
+   * @returns {Promise<{invitations: InvitationWithExtras[], totalCount: number}>}
    * @throws {Error} If operation fails
    */
   async getMyInvitations(filters = {}) {
@@ -55,7 +60,7 @@ class IInvitationRepository {
    *
    * @param {string} invitationId - UUID of the invitation
    * @param {string} action - 'ACCEPT' or 'DECLINE'
-   * @returns {Promise<Invitation>} Updated invitation
+   * @returns {Promise<InvitationWithExtras>} Updated invitation and its join names
    * @throws {Error} If operation fails
    */
   async respondToInvitation(invitationId, action) {
@@ -81,7 +86,7 @@ class IInvitationRepository {
    * @param {string} [filters.status] - Filter by status
    * @param {number} [filters.page] - Page number
    * @param {number} [filters.limit] - Items per page
-   * @returns {Promise<{invitations: Invitation[], totalCount: number}>}
+   * @returns {Promise<{invitations: InvitationWithExtras[], totalCount: number}>}
    * @throws {Error} If operation fails
    */
   async getCompetitionInvitations(competitionId, filters = {}) {

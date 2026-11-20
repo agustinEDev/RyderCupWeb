@@ -1,5 +1,6 @@
 import Invitation from '../../domain/entities/Invitation';
 import InvitationStatus from '../../domain/value_objects/InvitationStatus';
+import { aCamelCase } from './aCamelCase';
 
 /**
  * InvitationMapper - Anti-Corruption Layer
@@ -44,6 +45,18 @@ class InvitationMapper {
       createdAt: apiData.created_at,
       updatedAt: apiData.updated_at,
     });
+  }
+
+  /**
+   * Extract the join fields the API sends next to the invitation (names of the
+   * competition, inviter and invitee), copied as they come: a missing field
+   * stays undefined.
+   *
+   * @param {Object|null|undefined} apiData - API response data (snake_case)
+   * @returns {{competitionName: *, inviterName: *, inviteeName: *}|null}
+   */
+  static toExtras(apiData) {
+    return apiData ? aCamelCase(apiData) : null;
   }
 
   /**

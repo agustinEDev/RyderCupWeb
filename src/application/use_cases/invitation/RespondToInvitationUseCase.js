@@ -27,12 +27,13 @@ class RespondToInvitationUseCase {
       throw new Error(`action must be one of: ${validActions.join(', ')}`);
     }
 
-    const invitation = await this.#invitationRepository.respondToInvitation(
-      invitationId,
-      action,
-    );
+    const { entity, extras } =
+      await this.#invitationRepository.respondToInvitation(
+        invitationId,
+        action,
+      );
 
-    return InvitationAssembler.toSimpleDTO(invitation, invitation._apiData);
+    return InvitationAssembler.toSimpleDTO(entity, extras);
   }
 }
 
