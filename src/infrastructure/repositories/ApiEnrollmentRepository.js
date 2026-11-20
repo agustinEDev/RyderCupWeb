@@ -2,9 +2,10 @@ import IEnrollmentRepository from '../../domain/repositories/IEnrollmentReposito
 import EnrollmentMapper from '../mappers/EnrollmentMapper';
 import apiRequest from '../http/api.js';
 import { segmento } from '../http/api';
+import { conExtrasLista } from '../mappers/conExtras';
 
 /** @typedef {import('../../domain/entities/Enrollment').default} Enrollment */
-/** @typedef {import('../mappers/EnrollmentMapper').EnrollmentExtras} EnrollmentExtras */
+/** @typedef {import('../../domain/repositories/IEnrollmentRepository').EnrollmentWithExtras} EnrollmentWithExtras */
 
 /**
  * ApiEnrollmentRepository - Implementación del repositorio con API REST
@@ -120,7 +121,7 @@ class ApiEnrollmentRepository extends IEnrollmentRepository {
    *
    * @param {string} competitionId
    * @param {Object} filters - { status?, userId?, teamId? }
-   * @returns {Promise<Array<{entity: Enrollment, extras: EnrollmentExtras|null}>>}
+   * @returns {Promise<EnrollmentWithExtras[]>}
    *   Cada inscripción con los campos de la respuesta que no son del dominio
    *   (el usuario, el hándicap fijado, la categoría), en camelCase
    */
@@ -143,10 +144,7 @@ class ApiEnrollmentRepository extends IEnrollmentRepository {
     // Entidades del dominio y, aparte, los campos extra que pinta la lista
     const enrollments = EnrollmentMapper.toDomainMany(apiDataArray);
 
-    return enrollments.map((entity, index) => ({
-      entity,
-      extras: EnrollmentMapper.toExtras(apiDataArray[index]),
-    }));
+    return conExtrasLista(enrollments, apiDataArray);
   }
 
   /**

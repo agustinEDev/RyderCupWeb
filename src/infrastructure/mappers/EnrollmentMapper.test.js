@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import EnrollmentMapper from './EnrollmentMapper';
 import { mensajeDelError } from '../../utils/mensajeDelError';
+import { aExtras } from './conExtras';
 
 const ALTERNATIVA = 'No se pudo aprobar la inscripción';
 
@@ -43,9 +44,9 @@ describe('EnrollmentMapper', () => {
   );
 });
 
-describe('EnrollmentMapper.toExtras', () => {
+describe('aExtras con la respuesta de Enrollment', () => {
   it('traduce a camelCase los campos que pinta la lista, también dentro de user', () => {
-    const extras = EnrollmentMapper.toExtras(
+    const extras = aExtras(
       inscripcion({
         fixed_handicap: '12.3',
         category: 2,
@@ -90,13 +91,11 @@ describe('EnrollmentMapper.toExtras', () => {
   });
 
   it.each([null, undefined])('sin respuesta (%s) devuelve null', (vacio) => {
-    expect(EnrollmentMapper.toExtras(vacio)).toBeNull();
+    expect(aExtras(vacio)).toBeNull();
   });
 
   it('lo que la API no manda queda undefined, sin valores por defecto', () => {
-    const extras = EnrollmentMapper.toExtras(
-      inscripcion({ user: { first_name: 'Ana' } }),
-    );
+    const extras = aExtras(inscripcion({ user: { first_name: 'Ana' } }));
 
     expect(extras.fixedHandicap).toBeUndefined();
     expect(extras.category).toBeUndefined();
@@ -110,15 +109,15 @@ describe('EnrollmentMapper.toExtras', () => {
 
   it('copia null tal cual, y un user ausente o null no se inventa', () => {
     expect(
-      EnrollmentMapper.toExtras(
+      aExtras(
         inscripcion({ fixed_handicap: null, category: null, user: null }),
       ),
     ).toMatchObject({ fixedHandicap: null, category: null, user: null });
-    expect(EnrollmentMapper.toExtras(inscripcion()).user).toBeUndefined();
+    expect(aExtras(inscripcion()).user).toBeUndefined();
   });
 
   it('no deja pasar claves snake_case, ni dentro de user', () => {
-    const extras = EnrollmentMapper.toExtras(
+    const extras = aExtras(
       inscripcion({ user: { id: 'u', country_code: 'ES' } }),
     );
 

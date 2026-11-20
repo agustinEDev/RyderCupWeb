@@ -1,18 +1,18 @@
 import { describe, it, expect } from 'vitest';
-import CompetitionMapper from './CompetitionMapper';
+import { aExtras } from './conExtras';
 
 /**
  * Lo que la entidad no guarda y la ficha enseña, en camelCase y tal cual
  * llegó: sin valores por defecto, que los pone el assembler.
  */
-describe('CompetitionMapper.toExtras', () => {
+describe('aExtras con la respuesta de Competition', () => {
   it('sin respuesta, null', () => {
-    expect(CompetitionMapper.toExtras(null)).toBeNull();
-    expect(CompetitionMapper.toExtras(undefined)).toBeNull();
+    expect(aExtras(null)).toBeNull();
+    expect(aExtras(undefined)).toBeNull();
   });
 
   it('traduce los campos y lo que va dentro de los anidados', () => {
-    const extras = CompetitionMapper.toExtras({
+    const extras = aExtras({
       id: 'c-1',
       location: 'España',
       countries: [{ code: 'ES', name_en: 'Spain', name_es: 'España' }],
@@ -127,7 +127,7 @@ describe('CompetitionMapper.toExtras', () => {
   });
 
   it('lo que falta queda undefined, sin valores por defecto', () => {
-    const extras = CompetitionMapper.toExtras({ id: 'c-1' });
+    const extras = aExtras({ id: 'c-1' });
 
     expect(extras.location).toBeUndefined();
     expect(extras.creator).toBeUndefined();
@@ -135,7 +135,7 @@ describe('CompetitionMapper.toExtras', () => {
   });
 
   it('los anidados nulos o con huecos se quedan como llegan', () => {
-    const extras = CompetitionMapper.toExtras({
+    const extras = aExtras({
       countries: null,
       golf_courses: null,
       creator: null,

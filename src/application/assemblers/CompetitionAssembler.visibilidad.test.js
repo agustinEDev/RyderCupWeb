@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import CompetitionAssembler from './CompetitionAssembler';
 import CompetitionMapper from '../../infrastructure/mappers/CompetitionMapper';
+import { aExtras } from '../../infrastructure/mappers/conExtras';
 
 /**
  * El camino REAL, de punta a punta (FE #664).
@@ -30,7 +31,7 @@ const respuestaDeLaApi = (extra = {}) => ({
 const loQueLlegaALaPantalla = (apiData) =>
   CompetitionAssembler.toSimpleDTO(
     CompetitionMapper.toDomain(apiData),
-    CompetitionMapper.toExtras(apiData),
+    aExtras(apiData),
   );
 
 describe('CompetitionAssembler · la visibilidad llega a la pantalla (FE #664)', () => {

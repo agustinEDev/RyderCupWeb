@@ -2,31 +2,6 @@ import Enrollment from '../../domain/entities/Enrollment';
 import EnrollmentId from '../../domain/value_objects/EnrollmentId';
 import EnrollmentStatus from '../../domain/value_objects/EnrollmentStatus';
 import TeeColor from '../../domain/value_objects/TeeColor';
-import { aCamelCase } from './aCamelCase';
-
-/**
- * @typedef {Object} EnrollmentExtrasUser
- * @property {string} [displayName]
- * @property {string} [alias]
- * @property {string} [firstName]
- * @property {string} [lastName]
- * @property {string} [fullName]
- * @property {string} [name]
- * @property {string} [email]
- * @property {number|null} [handicap]
- * @property {string} [countryCode]
- * @property {string} [gender]
- */
-
-/**
- * @typedef {Object} EnrollmentExtras
- * @property {string|number|null} [fixedHandicap]
- * @property {number|null} [category]
- * @property {EnrollmentExtrasUser|null} [user]
- * @property {string} [userName]
- * @property {string} [userEmail]
- * @property {number|null} [userHandicap]
- */
 
 /**
  * EnrollmentMapper - Anti-Corruption Layer
@@ -140,20 +115,6 @@ class EnrollmentMapper {
     }
 
     return apiDataArray.map((apiData) => EnrollmentMapper.toDomain(apiData));
-  }
-
-  /**
-   * Los campos de la respuesta que no son del dominio y que el assembler pinta
-   * (joins con el usuario, hándicap fijado y categoría), en camelCase.
-   *
-   * Copia los valores tal cual, sin valores por defecto: si la API no manda un
-   * campo, aquí queda `undefined`, y es el assembler quien decide qué pintar.
-   *
-   * @param {Object|null|undefined} apiData - Datos de la API (snake_case)
-   * @returns {EnrollmentExtras|null} null si no hay datos
-   */
-  static toExtras(apiData) {
-    return apiData ? aCamelCase(apiData) : null;
   }
 
   /**

@@ -12,9 +12,6 @@ import {
 } from '../../domain/value_objects/CompetitionStatus';
 import { StrokePlaySetup } from '../../domain/value_objects/StrokePlaySetup';
 import { instanteDeLaApi } from '../../utils/instanteDeLaApi';
-import { aCamelCase } from './aCamelCase';
-
-/** @typedef {import('../../domain/repositories/ICompetitionRepository').CompetitionExtras} CompetitionExtras */
 
 /**
  * Mapper to convert between API DTOs and Domain Entities
@@ -106,17 +103,6 @@ class CompetitionMapper {
         { mensajeTecnico: true },
       );
     }
-  }
-
-  /**
-   * Lo que la ficha y los listados enseñan y la entidad no guarda, en camelCase:
-   * lo que lee `CompetitionAssembler`. Los valores van tal cual llegan, sin
-   * valores por defecto (los pone el assembler): lo que falta queda undefined.
-   * @param {Object|null|undefined} apiData - Raw data from API
-   * @returns {CompetitionExtras|null} null si no hay respuesta
-   */
-  static toExtras(apiData) {
-    return apiData ? aCamelCase(apiData) : null;
   }
 
   /**

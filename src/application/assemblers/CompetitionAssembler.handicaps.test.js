@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import CompetitionAssembler from './CompetitionAssembler';
 import CompetitionMapper from '../../infrastructure/mappers/CompetitionMapper';
+import { aExtras } from '../../infrastructure/mappers/conExtras';
 
 /**
  * D2 (FE #824, PR 5): el estado de la última actualización de hándicaps y la
@@ -25,7 +26,7 @@ const api = (extra = {}) => ({
 const ficha = (apiData) =>
   CompetitionAssembler.toSimpleDTO(
     CompetitionMapper.toDomain(apiData),
-    CompetitionMapper.toExtras(apiData),
+    aExtras(apiData),
   );
 
 describe('CompetitionAssembler · actualizaciones de hándicap (FE #824)', () => {

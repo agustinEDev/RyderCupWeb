@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import CompetitionAssembler from './CompetitionAssembler';
 import CompetitionMapper from '../../infrastructure/mappers/CompetitionMapper';
+import { aExtras } from '../../infrastructure/mappers/conExtras';
 
 /**
  * El plazo de inscripción llega a la pantalla (15 nov 2026; RyderCupAm #865),
@@ -31,7 +32,7 @@ const respuestaDeLaApi = (extra = {}) => ({
 const loQueLlegaALaPantalla = (apiData) =>
   CompetitionAssembler.toSimpleDTO(
     CompetitionMapper.toDomain(apiData),
-    CompetitionMapper.toExtras(apiData),
+    aExtras(apiData),
   );
 
 describe('CompetitionAssembler · el plazo de inscripción', () => {

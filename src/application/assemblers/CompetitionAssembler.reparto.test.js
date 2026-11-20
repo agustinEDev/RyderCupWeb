@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import CompetitionAssembler from './CompetitionAssembler';
 import CompetitionMapper from '../../infrastructure/mappers/CompetitionMapper';
+import { aExtras } from '../../infrastructure/mappers/conExtras';
 
 /**
  * Cómo se repartieron los equipos DE VERDAD (FE #705).
@@ -29,7 +30,7 @@ const respuestaDeLaApi = (extra = {}) => ({
 const loQueLlegaALaPantalla = (apiData) =>
   CompetitionAssembler.toSimpleDTO(
     CompetitionMapper.toDomain(apiData),
-    CompetitionMapper.toExtras(apiData),
+    aExtras(apiData),
   );
 
 describe('CompetitionAssembler · el reparto real llega a la pantalla', () => {

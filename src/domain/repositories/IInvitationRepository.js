@@ -1,7 +1,9 @@
 /** @typedef {import('../entities/Invitation').default} Invitation */
 /**
- * Names the API joins next to an invitation (any may be missing).
- * @typedef {{competitionName?: string|null, inviterName?: string|null, inviteeName?: string|null}} InvitationExtras
+ * La respuesta de la API en camelCase, tal cual llegó: lo que falta,
+ * undefined. `InvitationAssembler` lee de ella los nombres que la entidad no
+ * guarda (competitionName, inviterName, inviteeName).
+ * @typedef {Object<string, any>} InvitationExtras
  */
 /** @typedef {{entity: Invitation, extras: InvitationExtras|null}} InvitationWithExtras */
 

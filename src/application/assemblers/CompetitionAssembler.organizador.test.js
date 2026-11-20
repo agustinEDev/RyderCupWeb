@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import CompetitionMapper from '../../infrastructure/mappers/CompetitionMapper';
 import CompetitionAssembler from './CompetitionAssembler';
+import { aExtras } from '../../infrastructure/mappers/conExtras';
 
 /**
  * El nombre del organizador (SB-08, 17 nov 2026). En una privada con alias, el
@@ -28,7 +29,7 @@ describe('CompetitionAssembler · el organizador', () => {
   const dto = (apiData) =>
     CompetitionAssembler.toSimpleDTO(
       CompetitionMapper.toDomain(apiData),
-      CompetitionMapper.toExtras(apiData),
+      aExtras(apiData),
     );
 
   it('privada con alias: se pinta el alias aunque no lleguen nombre ni apellidos', () => {

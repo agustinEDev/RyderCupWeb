@@ -2,10 +2,9 @@ import IFriendRepository from '../../domain/repositories/IFriendRepository';
 import FriendshipMapper from '../mappers/FriendshipMapper';
 import apiRequest from '../http/api.js';
 import { segmento } from '../http/api';
+import { conExtras, conExtrasLista } from '../mappers/conExtras';
 
-/** @typedef {import('../../domain/entities/Friendship').default} Friendship */
-/** @typedef {import('../mappers/FriendshipMapper').FriendshipExtras} FriendshipExtras */
-/** @typedef {{entity: Friendship, extras: FriendshipExtras|null}} FriendshipWithExtras */
+/** @typedef {import('../../domain/repositories/IFriendRepository').FriendshipWithExtras} FriendshipWithExtras */
 
 /**
  * ApiFriendRepository - REST API implementation
@@ -43,10 +42,7 @@ class ApiFriendRepository extends IFriendRepository {
       body: JSON.stringify({ addressee_id: addresseeId }),
     });
 
-    return {
-      entity: FriendshipMapper.toDomain(apiData),
-      extras: FriendshipMapper.toExtras(apiData),
-    };
+    return conExtras(FriendshipMapper.toDomain(apiData), apiData);
   }
 
   /** @returns {Promise<FriendshipWithExtras>} */
@@ -59,10 +55,7 @@ class ApiFriendRepository extends IFriendRepository {
       },
     );
 
-    return {
-      entity: FriendshipMapper.toDomain(apiData),
-      extras: FriendshipMapper.toExtras(apiData),
-    };
+    return conExtras(FriendshipMapper.toDomain(apiData), apiData);
   }
 
   async removeFriend(friendshipId) {
@@ -80,10 +73,7 @@ class ApiFriendRepository extends IFriendRepository {
       },
     );
 
-    return {
-      entity: FriendshipMapper.toDomain(apiData),
-      extras: FriendshipMapper.toExtras(apiData),
-    };
+    return conExtras(FriendshipMapper.toDomain(apiData), apiData);
   }
 
   /** @returns {Promise<{friendships: FriendshipWithExtras[], totalCount: number}>} */
@@ -99,10 +89,7 @@ class ApiFriendRepository extends IFriendRepository {
     const entities = FriendshipMapper.toDomainMany(apiDataArray);
 
     return {
-      friendships: entities.map((entity, index) => ({
-        entity,
-        extras: FriendshipMapper.toExtras(apiDataArray[index]),
-      })),
+      friendships: conExtrasLista(entities, apiDataArray),
       totalCount: response.total_count || 0,
     };
   }
@@ -122,10 +109,7 @@ class ApiFriendRepository extends IFriendRepository {
     const entities = FriendshipMapper.toDomainMany(apiDataArray);
 
     return {
-      friendships: entities.map((entity, index) => ({
-        entity,
-        extras: FriendshipMapper.toExtras(apiDataArray[index]),
-      })),
+      friendships: conExtrasLista(entities, apiDataArray),
       totalCount: response.total_count || 0,
     };
   }

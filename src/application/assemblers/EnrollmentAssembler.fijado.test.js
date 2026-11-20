@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import EnrollmentAssembler from './EnrollmentAssembler';
 import EnrollmentMapper from '../../infrastructure/mappers/EnrollmentMapper';
+import { aExtras } from '../../infrastructure/mappers/conExtras';
 
 /** D1 (FE #824, PR 5): el hándicap fijado y la categoría, desde el cierre (RyderCupAM#506). */
 const api = (extra = {}) => ({
@@ -16,7 +17,7 @@ const api = (extra = {}) => ({
 const dto = (apiData) =>
   EnrollmentAssembler.toSimpleDTO(
     EnrollmentMapper.toDomain(apiData),
-    EnrollmentMapper.toExtras(apiData),
+    aExtras(apiData),
   );
 
 describe('EnrollmentAssembler · hándicap fijado y categoría (FE #824)', () => {

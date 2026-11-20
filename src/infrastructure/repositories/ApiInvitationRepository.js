@@ -2,6 +2,7 @@ import IInvitationRepository from '../../domain/repositories/IInvitationReposito
 import InvitationMapper from '../mappers/InvitationMapper';
 import apiRequest from '../http/api.js';
 import { segmento } from '../http/api';
+import { conExtras, conExtrasLista } from '../mappers/conExtras';
 
 /**
  * ApiInvitationRepository - REST API implementation
@@ -48,10 +49,7 @@ class ApiInvitationRepository extends IInvitationRepository {
       },
     );
 
-    return {
-      entity: InvitationMapper.toDomain(apiData),
-      extras: InvitationMapper.toExtras(apiData),
-    };
+    return conExtras(InvitationMapper.toDomain(apiData), apiData);
   }
 
   async sendInvitationByEmail(
@@ -74,10 +72,7 @@ class ApiInvitationRepository extends IInvitationRepository {
       },
     );
 
-    return {
-      entity: InvitationMapper.toDomain(apiData),
-      extras: InvitationMapper.toExtras(apiData),
-    };
+    return conExtras(InvitationMapper.toDomain(apiData), apiData);
   }
 
   async getMyInvitations(filters = {}) {
@@ -90,11 +85,9 @@ class ApiInvitationRepository extends IInvitationRepository {
     const response = await apiRequest(`/api/v1/invitations/me${queryString}`);
 
     const apiDataArray = response.invitations || [];
-    const invitations = InvitationMapper.toDomainMany(apiDataArray).map(
-      (entity, index) => ({
-        entity,
-        extras: InvitationMapper.toExtras(apiDataArray[index]),
-      }),
+    const invitations = conExtrasLista(
+      InvitationMapper.toDomainMany(apiDataArray),
+      apiDataArray,
     );
 
     return {
@@ -121,10 +114,7 @@ class ApiInvitationRepository extends IInvitationRepository {
       },
     );
 
-    return {
-      entity: InvitationMapper.toDomain(apiData),
-      extras: InvitationMapper.toExtras(apiData),
-    };
+    return conExtras(InvitationMapper.toDomain(apiData), apiData);
   }
 
   async getCompetitionInvitations(competitionId, filters = {}) {
@@ -139,11 +129,9 @@ class ApiInvitationRepository extends IInvitationRepository {
     );
 
     const apiDataArray = response.invitations || [];
-    const invitations = InvitationMapper.toDomainMany(apiDataArray).map(
-      (entity, index) => ({
-        entity,
-        extras: InvitationMapper.toExtras(apiDataArray[index]),
-      }),
+    const invitations = conExtrasLista(
+      InvitationMapper.toDomainMany(apiDataArray),
+      apiDataArray,
     );
 
     return {

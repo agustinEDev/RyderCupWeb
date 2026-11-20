@@ -2,9 +2,9 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import ApiFriendRepository from './ApiFriendRepository';
 import IFriendRepository from '../../domain/repositories/IFriendRepository';
 import Friendship from '../../domain/entities/Friendship';
-import FriendshipMapper from '../mappers/FriendshipMapper';
 import { RutaDeLaApiNoValida } from '../http/rutaDeLaApi';
 import * as apiModule from '../http/api';
+import { aExtras } from '../mappers/conExtras';
 
 vi.mock('../http/api', async () => ({
   segmento: (await vi.importActual('../http/rutaDeLaApi')).segmento,
@@ -55,7 +55,7 @@ describe('ApiFriendRepository', () => {
       expect(result.respondedAt).toBeNull();
       // Sin huso se lee como UTC
       expect(result.createdAt.toISOString()).toBe('2026-10-01T08:00:00.000Z');
-      expect(extras).toEqual(FriendshipMapper.toExtras(apiData));
+      expect(extras).toEqual(aExtras(apiData));
     });
 
     it('propagates the HTTP error', async () => {
@@ -92,7 +92,7 @@ describe('ApiFriendRepository', () => {
       );
       expect(result.isAccepted()).toBe(true);
       expect(result.respondedAt).toEqual(new Date('2026-10-02T09:30:00Z'));
-      expect(extras).toEqual(FriendshipMapper.toExtras(apiData));
+      expect(extras).toEqual(aExtras(apiData));
     });
 
     it('rejects an id that would change the path, without calling the API', async () => {

@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import InvitationAssembler from './InvitationAssembler';
 import InvitationMapper from '../../infrastructure/mappers/InvitationMapper';
+import { aExtras } from '../../infrastructure/mappers/conExtras';
 
 /**
  * Una invitación a una cuenta sin verificar llega sin invitee_name ni invitee_user_id
@@ -20,7 +21,7 @@ describe('InvitationAssembler · invitado sin nombre (fase 3)', () => {
   it('queda con el correo, sin nombre ni usuario', () => {
     const dto = InvitationAssembler.toSimpleDTO(
       InvitationMapper.toDomain(API),
-      InvitationMapper.toExtras(API),
+      aExtras(API),
     );
 
     expect(dto.inviteeEmail).toBe('sinverificar@example.com');

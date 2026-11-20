@@ -1,9 +1,11 @@
 /** @typedef {import('../entities/Friendship').default} Friendship */
 /**
- * La amistad y los datos que la acompañan para la pantalla (nombres, alias,
- * hándicaps de los dos lados), ya en camelCase; null si no hay.
- * @typedef {{entity: Friendship, extras: Object|null}} FriendshipWithExtras
+ * La respuesta de la API en camelCase, tal cual llegó: lo que falta,
+ * undefined. `FriendshipAssembler` lee de ella lo que la entidad no guarda
+ * (nombres, alias, nombres reales y hándicaps de los dos lados).
+ * @typedef {Object<string, any>} FriendshipExtras
  */
+/** @typedef {{entity: Friendship, extras: FriendshipExtras|null}} FriendshipWithExtras */
 
 /**
  * Interface: IFriendRepository

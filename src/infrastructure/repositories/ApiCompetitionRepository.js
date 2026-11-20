@@ -2,6 +2,7 @@ import { ICompetitionRepository } from '../../domain/repositories/ICompetitionRe
 import CompetitionMapper from '../mappers/CompetitionMapper';
 import apiRequest from '../http/api.js';
 import { segmento } from '../http/api';
+import { conExtras } from '../mappers/conExtras';
 
 /** @typedef {import('../../domain/entities/Competition').default} Competition */
 /** @typedef {import('../../domain/repositories/ICompetitionRepository').CompetitionWithExtras} CompetitionWithExtras */
@@ -38,10 +39,7 @@ class ApiCompetitionRepository extends ICompetitionRepository {
       `/api/v1/competitions/${segmento(competitionId)}`,
     );
 
-    return {
-      entity: CompetitionMapper.toDomain(apiData),
-      extras: CompetitionMapper.toExtras(apiData),
-    };
+    return conExtras(CompetitionMapper.toDomain(apiData), apiData);
   }
 
   /**
@@ -86,10 +84,9 @@ class ApiCompetitionRepository extends ICompetitionRepository {
 
     const apiDataArray = await apiRequest(endpoint);
 
-    return apiDataArray.map((apiData) => ({
-      entity: CompetitionMapper.toDomain(apiData),
-      extras: CompetitionMapper.toExtras(apiData),
-    }));
+    return apiDataArray.map((apiData) =>
+      conExtras(CompetitionMapper.toDomain(apiData), apiData),
+    );
   }
 
   /**
@@ -149,10 +146,9 @@ class ApiCompetitionRepository extends ICompetitionRepository {
 
     const apiDataArray = await apiRequest(endpoint);
 
-    return apiDataArray.map((apiData) => ({
-      entity: CompetitionMapper.toDomain(apiData),
-      extras: CompetitionMapper.toExtras(apiData),
-    }));
+    return apiDataArray.map((apiData) =>
+      conExtras(CompetitionMapper.toDomain(apiData), apiData),
+    );
   }
 
   /**
