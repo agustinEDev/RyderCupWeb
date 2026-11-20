@@ -57,7 +57,8 @@ export const useEnvioDelBorrador = ({
   // Tras un fallo SIN respuesta (sin red, 5xx, tiempo agotado) la partida
   // pudo crearse: el id se conserva aunque cambie el borrador, y el servidor
   // devuelve la que ya hay en vez de crear otra. Tras un rechazo claro (4xx)
-  // no se creó nada, y un borrador distinto estrena id
+  // no se creó nada, y un borrador distinto estrena id, salvo que un intento
+  // anterior ya dejara la duda: esa solo se va al salir bien
   const idDelIntento = (peticion) => {
     const firma = JSON.stringify(peticion);
     const previo = ultimoIntento.current;
