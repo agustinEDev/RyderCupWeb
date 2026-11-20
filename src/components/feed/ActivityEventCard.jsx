@@ -37,97 +37,99 @@ import { MatchOutcome } from '../../domain/value_objects/MatchOutcome';
 import { ScoringFormat } from '../../domain/value_objects/ScoringFormat';
 import { Team } from '../../domain/value_objects/Team';
 import { TournamentType } from '../../domain/value_objects/TournamentType';
+import { ActivityEventType } from '../../domain/value_objects/ActivityEventType';
 
 /**
  * Un icono por tipo. Sin esto todas las entradas se ven iguales y el feed se
  * lee como una lista de texto.
  */
 const ICONOS = {
-  HOLE_IN_ONE: Zap,
-  EAGLE_OR_BETTER: Star,
-  BIRDIE: Award,
-  NEW_COURSE: Flag,
-  PERSONAL_BEST: TrendingDown,
-  FIRST_TOURNAMENT: Trophy,
-  ENROLLMENT_APPROVED: CalendarCheck,
-  ENROLLMENT_CONFIRMED: CalendarCheck,
-  TEE_TIME_ASSIGNED: Clock,
-  INVITED_TO_TOURNAMENT: Mail,
-  ENROLLMENT_REQUEST_CLOSED: XCircle,
-  ENROLLMENT_REJECTED: XCircle,
-  ENROLLMENT_REMOVED: XCircle,
-  PLAYER_JOINED: UserPlus,
-  PLACE_FROM_WAITING_LIST: CalendarCheck,
-  ENROLLMENT_NO_PLACE: XCircle,
-  TEE_WINDOW_REMOVED: XCircle,
-  TEAMS_CHANGED: Mail,
-  ENROLLED_IN_TOURNAMENT: UserPlus,
-  TOURNAMENT_MATCH_RESULT: Swords,
-  TOURNAMENT_FINAL_STANDING: Medal,
-  QUICK_MATCH_FINISHED: Flag,
-  HANDICAPS_NOT_UPDATED: TrendingUp,
-  RFEG_HANDICAP_NOT_FOUND: TrendingUp,
-  ENROLLMENTS_CLOSED: CalendarCheck,
-  ENROLLMENT_CLOSE_BLOCKED: AlertTriangle,
-  INVITATION_ACCEPTABLE_AGAIN: Mail,
-  TEAMS_UNDONE_BY_ENTRY: UserPlus,
+  [ActivityEventType.HOLE_IN_ONE]: Zap,
+  [ActivityEventType.EAGLE_OR_BETTER]: Star,
+  [ActivityEventType.BIRDIE]: Award,
+  [ActivityEventType.NEW_COURSE]: Flag,
+  [ActivityEventType.PERSONAL_BEST]: TrendingDown,
+  [ActivityEventType.FIRST_TOURNAMENT]: Trophy,
+  [ActivityEventType.ENROLLMENT_APPROVED]: CalendarCheck,
+  [ActivityEventType.ENROLLMENT_CONFIRMED]: CalendarCheck,
+  [ActivityEventType.TEE_TIME_ASSIGNED]: Clock,
+  [ActivityEventType.INVITED_TO_TOURNAMENT]: Mail,
+  [ActivityEventType.ENROLLMENT_REQUEST_CLOSED]: XCircle,
+  [ActivityEventType.ENROLLMENT_REJECTED]: XCircle,
+  [ActivityEventType.ENROLLMENT_REMOVED]: XCircle,
+  [ActivityEventType.PLAYER_JOINED]: UserPlus,
+  [ActivityEventType.PLACE_FROM_WAITING_LIST]: CalendarCheck,
+  [ActivityEventType.ENROLLMENT_NO_PLACE]: XCircle,
+  [ActivityEventType.TEE_WINDOW_REMOVED]: XCircle,
+  [ActivityEventType.TEAMS_CHANGED]: Mail,
+  [ActivityEventType.ENROLLED_IN_TOURNAMENT]: UserPlus,
+  [ActivityEventType.TOURNAMENT_MATCH_RESULT]: Swords,
+  [ActivityEventType.TOURNAMENT_FINAL_STANDING]: Medal,
+  [ActivityEventType.QUICK_MATCH_FINISHED]: Flag,
+  [ActivityEventType.HANDICAPS_NOT_UPDATED]: TrendingUp,
+  [ActivityEventType.RFEG_HANDICAP_NOT_FOUND]: TrendingUp,
+  [ActivityEventType.ENROLLMENTS_CLOSED]: CalendarCheck,
+  [ActivityEventType.ENROLLMENT_CLOSE_BLOCKED]: AlertTriangle,
+  [ActivityEventType.INVITATION_ACCEPTABLE_AGAIN]: Mail,
+  [ActivityEventType.TEAMS_UNDONE_BY_ENTRY]: UserPlus,
 };
 
 const TONOS = {
-  HOLE_IN_ONE: 'bg-amber-100 text-amber-700',
-  EAGLE_OR_BETTER: 'bg-violet-100 text-violet-700',
-  BIRDIE: 'bg-emerald-100 text-emerald-700',
-  NEW_COURSE: 'bg-sky-100 text-sky-700',
-  PERSONAL_BEST: 'bg-rose-100 text-rose-700',
-  FIRST_TOURNAMENT: 'bg-indigo-100 text-indigo-700',
-  ENROLLMENT_APPROVED: 'bg-emerald-100 text-emerald-700',
-  ENROLLMENT_CONFIRMED: 'bg-emerald-100 text-emerald-700',
-  TEE_TIME_ASSIGNED: 'bg-sky-100 text-sky-700',
-  INVITED_TO_TOURNAMENT: 'bg-sky-100 text-sky-700',
-  ENROLLMENT_REQUEST_CLOSED: 'bg-gray-100 text-gray-600',
-  ENROLLMENT_REJECTED: 'bg-gray-100 text-gray-600',
-  ENROLLMENT_REMOVED: 'bg-gray-100 text-gray-600',
-  PLAYER_JOINED: 'bg-emerald-100 text-emerald-700',
-  PLACE_FROM_WAITING_LIST: 'bg-emerald-100 text-emerald-700',
-  ENROLLMENT_NO_PLACE: 'bg-gray-100 text-gray-600',
-  TEE_WINDOW_REMOVED: 'bg-gray-100 text-gray-600',
-  TEAMS_CHANGED: 'bg-sky-100 text-sky-700',
-  TOURNAMENT_MATCH_RESULT: 'bg-indigo-100 text-indigo-700',
-  TOURNAMENT_FINAL_STANDING: 'bg-amber-100 text-amber-700',
-  QUICK_MATCH_FINISHED: 'bg-primary-100 text-primary-700',
-  HANDICAPS_NOT_UPDATED: 'bg-amber-100 text-amber-700',
-  RFEG_HANDICAP_NOT_FOUND: 'bg-amber-100 text-amber-700',
-  ENROLLMENTS_CLOSED: 'bg-sky-100 text-sky-700',
-  ENROLLMENT_CLOSE_BLOCKED: 'bg-red-100 text-red-700',
-  INVITATION_ACCEPTABLE_AGAIN: 'bg-sky-100 text-sky-700',
-  TEAMS_UNDONE_BY_ENTRY: 'bg-amber-100 text-amber-700',
+  [ActivityEventType.HOLE_IN_ONE]: 'bg-amber-100 text-amber-700',
+  [ActivityEventType.EAGLE_OR_BETTER]: 'bg-violet-100 text-violet-700',
+  [ActivityEventType.BIRDIE]: 'bg-emerald-100 text-emerald-700',
+  [ActivityEventType.NEW_COURSE]: 'bg-sky-100 text-sky-700',
+  [ActivityEventType.PERSONAL_BEST]: 'bg-rose-100 text-rose-700',
+  [ActivityEventType.FIRST_TOURNAMENT]: 'bg-indigo-100 text-indigo-700',
+  [ActivityEventType.ENROLLMENT_APPROVED]: 'bg-emerald-100 text-emerald-700',
+  [ActivityEventType.ENROLLMENT_CONFIRMED]: 'bg-emerald-100 text-emerald-700',
+  [ActivityEventType.TEE_TIME_ASSIGNED]: 'bg-sky-100 text-sky-700',
+  [ActivityEventType.INVITED_TO_TOURNAMENT]: 'bg-sky-100 text-sky-700',
+  [ActivityEventType.ENROLLMENT_REQUEST_CLOSED]: 'bg-gray-100 text-gray-600',
+  [ActivityEventType.ENROLLMENT_REJECTED]: 'bg-gray-100 text-gray-600',
+  [ActivityEventType.ENROLLMENT_REMOVED]: 'bg-gray-100 text-gray-600',
+  [ActivityEventType.PLAYER_JOINED]: 'bg-emerald-100 text-emerald-700',
+  [ActivityEventType.PLACE_FROM_WAITING_LIST]:
+    'bg-emerald-100 text-emerald-700',
+  [ActivityEventType.ENROLLMENT_NO_PLACE]: 'bg-gray-100 text-gray-600',
+  [ActivityEventType.TEE_WINDOW_REMOVED]: 'bg-gray-100 text-gray-600',
+  [ActivityEventType.TEAMS_CHANGED]: 'bg-sky-100 text-sky-700',
+  [ActivityEventType.TOURNAMENT_MATCH_RESULT]: 'bg-indigo-100 text-indigo-700',
+  [ActivityEventType.TOURNAMENT_FINAL_STANDING]: 'bg-amber-100 text-amber-700',
+  [ActivityEventType.QUICK_MATCH_FINISHED]: 'bg-primary-100 text-primary-700',
+  [ActivityEventType.HANDICAPS_NOT_UPDATED]: 'bg-amber-100 text-amber-700',
+  [ActivityEventType.RFEG_HANDICAP_NOT_FOUND]: 'bg-amber-100 text-amber-700',
+  [ActivityEventType.ENROLLMENTS_CLOSED]: 'bg-sky-100 text-sky-700',
+  [ActivityEventType.ENROLLMENT_CLOSE_BLOCKED]: 'bg-red-100 text-red-700',
+  [ActivityEventType.INVITATION_ACCEPTABLE_AGAIN]: 'bg-sky-100 text-sky-700',
+  [ActivityEventType.TEAMS_UNDONE_BY_ENTRY]: 'bg-amber-100 text-amber-700',
 };
 
 const LOGROS = new Set([
-  'HOLE_IN_ONE',
-  'EAGLE_OR_BETTER',
-  'BIRDIE',
-  'NEW_COURSE',
-  'PERSONAL_BEST',
-  'FIRST_TOURNAMENT',
+  ActivityEventType.HOLE_IN_ONE,
+  ActivityEventType.EAGLE_OR_BETTER,
+  ActivityEventType.BIRDIE,
+  ActivityEventType.NEW_COURSE,
+  ActivityEventType.PERSONAL_BEST,
+  ActivityEventType.FIRST_TOURNAMENT,
 ]);
 
 const AVISOS_DE_INSCRIPCION = new Set([
-  'ENROLLMENT_APPROVED',
-  'ENROLLMENT_CONFIRMED',
-  'INVITED_TO_TOURNAMENT',
-  'ENROLLMENT_REQUEST_CLOSED',
-  'ENROLLMENT_REJECTED',
-  'ENROLLMENT_REMOVED',
+  ActivityEventType.ENROLLMENT_APPROVED,
+  ActivityEventType.ENROLLMENT_CONFIRMED,
+  ActivityEventType.INVITED_TO_TOURNAMENT,
+  ActivityEventType.ENROLLMENT_REQUEST_CLOSED,
+  ActivityEventType.ENROLLMENT_REJECTED,
+  ActivityEventType.ENROLLMENT_REMOVED,
 ]);
 
 // Los de la inscripción directa y los equipos que cambian (release social 3)
 const AVISOS_DE_LA_ESPERA = new Set([
-  'PLAYER_JOINED',
-  'PLACE_FROM_WAITING_LIST',
-  'ENROLLMENT_NO_PLACE',
-  'TEE_WINDOW_REMOVED',
-  'TEAMS_CHANGED',
+  ActivityEventType.PLAYER_JOINED,
+  ActivityEventType.PLACE_FROM_WAITING_LIST,
+  ActivityEventType.ENROLLMENT_NO_PLACE,
+  ActivityEventType.TEE_WINDOW_REMOVED,
+  ActivityEventType.TEAMS_CHANGED,
 ]);
 
 /**
@@ -144,7 +146,7 @@ const fraseDeLaEspera = (tipo, payload, t, { ahora, idioma } = {}) => {
       ? diaDeLaVuelta(payload.round_date, ahora ?? new Date(), idioma)
       : '';
   const time = dia ? `${hora} (${dia})` : hora;
-  if (tipo === 'PLAYER_JOINED') {
+  if (tipo === ActivityEventType.PLAYER_JOINED) {
     // `player` y no `name`: fraseCon reserva `name` para las personas con enlace
     const player = payload.player_name || t('feed:cards.aPlayer');
     let clave = 'feed:cards.playerJoinedNoWindow';
@@ -162,13 +164,13 @@ const fraseDeLaEspera = (tipo, payload, t, { ahora, idioma } = {}) => {
 // Los avisos al organizador o al jugador de los hándicaps con la RFEG y del
 // plazo de inscripción (15 nov 2026)
 const AVISOS_DEL_PLAZO_Y_LA_RFEG = new Set([
-  'HANDICAPS_NOT_UPDATED',
-  'RFEG_HANDICAP_NOT_FOUND',
-  'ENROLLMENTS_CLOSED',
-  'ENROLLMENT_CLOSE_BLOCKED',
+  ActivityEventType.HANDICAPS_NOT_UPDATED,
+  ActivityEventType.RFEG_HANDICAP_NOT_FOUND,
+  ActivityEventType.ENROLLMENTS_CLOSED,
+  ActivityEventType.ENROLLMENT_CLOSE_BLOCKED,
   // Invitaciones en espera y equipos deshechos al entrar alguien (15 nov 2026)
-  'INVITATION_ACCEPTABLE_AGAIN',
-  'TEAMS_UNDONE_BY_ENTRY',
+  ActivityEventType.INVITATION_ACCEPTABLE_AGAIN,
+  ActivityEventType.TEAMS_UNDONE_BY_ENTRY,
 ]);
 
 // Por qué no se pudieron cerrar solas: un motivo que no se conoce, sin cuántos
@@ -176,19 +178,19 @@ const MOTIVOS_DEL_BLOQUEO = new Set(['NO_TEE_WINDOW', 'NO_HANDICAP']);
 
 const fraseDelPlazoYLaRfeg = (tipo, payload, t) => {
   const competition = nombreDelTorneo(payload, t);
-  if (tipo === 'HANDICAPS_NOT_UPDATED')
+  if (tipo === ActivityEventType.HANDICAPS_NOT_UPDATED)
     return fraseCon(t, 'feed:cards.HANDICAPS_NOT_UPDATED', {
       competition,
       count: payload.count ?? 0,
     });
-  if (tipo === 'TEAMS_UNDONE_BY_ENTRY') {
+  if (tipo === ActivityEventType.TEAMS_UNDONE_BY_ENTRY) {
     // `player` y no `name`: fraseCon reserva `name` para las personas con enlace
     return fraseCon(t, 'feed:cards.TEAMS_UNDONE_BY_ENTRY', {
       competition,
       player: payload.player_name || t('feed:cards.aPlayer'),
     });
   }
-  if (tipo === 'ENROLLMENT_CLOSE_BLOCKED') {
+  if (tipo === ActivityEventType.ENROLLMENT_CLOSE_BLOCKED) {
     if (!MOTIVOS_DEL_BLOQUEO.has(payload.reason))
       return fraseCon(t, 'feed:cards.ENROLLMENT_CLOSE_BLOCKED', {
         competition,
@@ -410,7 +412,7 @@ const destinoDe = (tarjeta, yoId, autores) => {
         : null,
     };
   }
-  if (tarjeta.tipo === 'QUICK_MATCH_FINISHED') {
+  if (tarjeta.tipo === ActivityEventType.QUICK_MATCH_FINISHED) {
     return destinoDePartidaRapida(
       primero.sourceMatchId,
       jugo,
@@ -419,7 +421,7 @@ const destinoDe = (tarjeta, yoId, autores) => {
     );
   }
   // Solo llega a uno mismo (SELF): siempre lo jugó
-  if (tarjeta.tipo === 'TOURNAMENT_MATCH_RESULT') {
+  if (tarjeta.tipo === ActivityEventType.TOURNAMENT_MATCH_RESULT) {
     return {
       ruta: primero.sourceMatchId
         ? `/player/matches/${primero.sourceMatchId}/scoring`
@@ -427,18 +429,21 @@ const destinoDe = (tarjeta, yoId, autores) => {
     };
   }
   // La RFEG no le encontró: el nombre se arregla en su perfil (15 nov 2026)
-  if (tarjeta.tipo === 'RFEG_HANDICAP_NOT_FOUND')
+  if (tarjeta.tipo === ActivityEventType.RFEG_HANDICAP_NOT_FOUND)
     return { ruta: '/profile/edit' };
   // Los que no se actualizaron: a la ficha, con su tarjeta de hándicaps a la
   // vista, como desde «Requiere tu Atención»
-  if (tarjeta.tipo === 'HANDICAPS_NOT_UPDATED' && payload.competition_id)
+  if (
+    tarjeta.tipo === ActivityEventType.HANDICAPS_NOT_UPDATED &&
+    payload.competition_id
+  )
     return {
       ruta: `/competitions/${payload.competition_id}`,
       estado: { verHandicaps: true },
     };
   // La posición final de un amigo: la clasificación, en su fila (F5)
   if (
-    tarjeta.tipo === 'TOURNAMENT_FINAL_STANDING' &&
+    tarjeta.tipo === ActivityEventType.TOURNAMENT_FINAL_STANDING &&
     tarjeta.autorId !== yoId &&
     payload.competition_id
   ) {
@@ -779,7 +784,7 @@ const contenidoDe = (tarjeta, { t, idioma, autores, campos, yoId, ahora }) => {
     };
   }
 
-  if (tarjeta.tipo === 'QUICK_MATCH_FINISHED') {
+  if (tarjeta.tipo === ActivityEventType.QUICK_MATCH_FINISHED) {
     const esMatchPlay = !!payload.match_format || !!payload.outcome;
     const frase = esMatchPlay
       ? fraseDeMatchPlayRapida(payload, {
@@ -805,7 +810,7 @@ const contenidoDe = (tarjeta, { t, idioma, autores, campos, yoId, ahora }) => {
     };
   }
 
-  if (tarjeta.tipo === 'TOURNAMENT_MATCH_RESULT') {
+  if (tarjeta.tipo === ActivityEventType.TOURNAMENT_MATCH_RESULT) {
     return {
       frase: fraseDeMatchPlay(payload, {
         t,
@@ -819,13 +824,13 @@ const contenidoDe = (tarjeta, { t, idioma, autores, campos, yoId, ahora }) => {
   }
 
   if (
-    tarjeta.tipo === 'TOURNAMENT_FINAL_STANDING' &&
+    tarjeta.tipo === ActivityEventType.TOURNAMENT_FINAL_STANDING &&
     payload.tournament_type === TournamentType.RYDER_CUP
   ) {
     return { frase: fraseDeLaRyder(payload, t, { mia, autor }), detalles: [] };
   }
 
-  if (tarjeta.tipo === 'TOURNAMENT_FINAL_STANDING') {
+  if (tarjeta.tipo === ActivityEventType.TOURNAMENT_FINAL_STANDING) {
     const competition = nombreDelTorneo(payload, t);
     // La de un amigo, en tercera persona (release social 2)
     const clave = (c) => `feed:cards.${claveDeQuien(mia, c)}`;
@@ -851,7 +856,7 @@ const contenidoDe = (tarjeta, { t, idioma, autores, campos, yoId, ahora }) => {
     return { frase, detalles: [] };
   }
 
-  if (tarjeta.tipo === 'TEE_TIME_ASSIGNED') {
+  if (tarjeta.tipo === ActivityEventType.TEE_TIME_ASSIGNED) {
     return {
       frase: fraseDeSalida(payload, { t, idioma, autores, ahora }),
       detalles: [],
