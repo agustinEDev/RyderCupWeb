@@ -202,9 +202,6 @@ export const encuadreGirado = (hoyo, rumboGrados, { ancho, alto, padding }) => {
   return { center, zoom };
 };
 
-// Vive aparte para no meter esta geometría en el arranque (ver posicionValida)
-export { esPosicionValida };
-
 /**
  * La cámara de un encuadre girado: el centro, el zoom y el rumbo, para el mapa
  * del jugador y el de revisar (/code-review, 18 oct). `null` sin rumbo o sin

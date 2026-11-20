@@ -7,8 +7,8 @@ import {
 } from './FoursomesSides';
 import { defaultAllowanceFor } from './defaultAllowance';
 import { MatchFormat } from '../value_objects/MatchFormat';
-
 import { PlayModeType } from '../value_objects/HandicapSettings';
+
 // La lectura personal de `compute` (la de la clasificación de la partida) se
 // mide con el hándicap de juego entero. «Tu vuelta» al anotar y en el historial
 // es la real de la partida, con su allowance (Agustín, 24 oct 2026).

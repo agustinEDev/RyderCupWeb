@@ -1,8 +1,8 @@
 import PlayingHandicapCalculator from './PlayingHandicapCalculator';
 import { MatchFormat } from '../value_objects/MatchFormat';
-
 import { Team } from '../value_objects/Team';
 import { PlayModeType } from '../value_objects/HandicapSettings';
+
 /**
  * Domain Service: MatchPlayStrokeAllocator
  *
