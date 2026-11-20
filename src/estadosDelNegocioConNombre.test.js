@@ -27,9 +27,9 @@ import { parse, tokenize } from 'espree';
 const SRC = join(globalThis.process.cwd(), 'src');
 
 // Las palabras de los estados y formatos que ya viven en el dominio. La lista
-// es parcial a propósito: faltan las de los conceptos de la tanda E2 (equipos
-// A/B, género, tipos de actividad, modo de juego, visibilidad, modo de
-// montaje, roles…), que hoy saldrían por todas partes
+// es parcial a propósito: faltan las de los conceptos de la tanda E2b (tipos de
+// actividad, validación del hoyo, roles, relación del perfil…), que hoy
+// saldrían por todas partes
 const PALABRAS = [
   'IN_PROGRESS',
   'COMPLETED',
@@ -71,6 +71,19 @@ const PALABRAS = [
   'WITHDRAWN',
   'BLOCKED',
   'HALVED',
+  // Tanda E2a (20 nov 2026): códigos de equipo, tipo de torneo, modo de juego,
+  // género, visibilidad, montaje y reparto
+  'A',
+  'B',
+  'RYDER_CUP',
+  'SCRATCH',
+  'HANDICAP',
+  'MALE',
+  'FEMALE',
+  'PRIVATE',
+  'PUBLIC',
+  'AUTOMATIC',
+  'MANUAL',
 ];
 
 const TANTEO =
