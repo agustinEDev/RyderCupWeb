@@ -1660,3 +1660,50 @@ describe('HoleInput · caracterización (partir el componente)', () => {
     expect(screen.getByTestId('pie-del-hoyo')).toHaveTextContent('USA 3UP');
   });
 });
+
+/**
+ * FE #1196 · 2: sin el equipo que va por delante, el pie decía « 2UP» (con un
+ * espacio delante y sin nadie). Decidido el 20 nov 2026: solo la ventaja.
+ */
+describe('HoleInput · ventaja sin equipo (FE #1196)', () => {
+  const props = {
+    holeNumber: 5,
+    par: 4,
+    strokeIndex: 7,
+    onScoreChange: vi.fn(),
+  };
+  const ventaja = () => screen.getByTestId('pie-del-hoyo').lastChild;
+
+  it.each([
+    ['sin resultado del hoyo', null],
+    [
+      'con resultado pero sin equipo que vaya por delante',
+      { winner: 'A', standingTeam: null },
+    ],
+    ['con un equipo que no es ni A ni B', { winner: 'A', standingTeam: 'Z' }],
+  ])('%s, solo «2UP», sin espacio delante', (_caso, holeResult) => {
+    render(
+      <HoleInput
+        {...props}
+        standing="2UP"
+        holeResult={holeResult}
+        teamAName="Europe"
+        teamBName="USA"
+      />,
+    );
+    expect(ventaja().textContent).toBe('2UP');
+  });
+
+  it('con el equipo, su nombre y la ventaja como siempre', () => {
+    render(
+      <HoleInput
+        {...props}
+        standing="2UP"
+        holeResult={{ winner: 'A', standingTeam: 'B' }}
+        teamAName="Europe"
+        teamBName="USA"
+      />,
+    );
+    expect(ventaja().textContent).toBe('USA 2UP');
+  });
+});
