@@ -1,7 +1,7 @@
+// src/infrastructure/mappers/ScoringMapper.js
+
 import { siViene } from '../../utils/campoSiViene';
 import { ValidationStatus } from '../../domain/value_objects/ValidationStatus';
-
-// src/infrastructure/mappers/ScoringMapper.js
 
 /**
  * Mapper for converting between API DTOs (snake_case) and

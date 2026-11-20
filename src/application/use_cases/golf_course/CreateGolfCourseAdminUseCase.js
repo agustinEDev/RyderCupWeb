@@ -1,4 +1,5 @@
 import {
+  COURSE_TYPES,
   MAX_TEES,
   MIN_TEES,
   VALID_HOLE_PARS,
@@ -6,7 +7,6 @@ import {
   isTeeCountValid,
   parRangeFor,
 } from '../../../domain/services/courseTypeRanges';
-import { CourseType } from '../../../domain/value_objects/CourseType';
 
 /** @typedef {import('../../../domain/entities/GolfCourse').default} GolfCourse */
 
@@ -46,13 +46,7 @@ class CreateGolfCourseAdminUseCase {
       throw new Error('Country code must be 2 characters (ISO 3166-1 alpha-2)');
     }
 
-    if (
-      !(
-        /** @type {readonly string[]} */ (Object.values(CourseType)).includes(
-          data.courseType,
-        )
-      )
-    ) {
+    if (!COURSE_TYPES.includes(data.courseType)) {
       throw new Error('Invalid course type');
     }
 

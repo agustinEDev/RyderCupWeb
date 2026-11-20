@@ -1,12 +1,13 @@
 import { describe, it, expect } from 'vitest';
 import { ValidationStatus } from './ValidationStatus';
 
-// Los valores, tal cual circulan (en minúsculas: validation_status.py, pasado a minúsculas)
-const DEL_BACKEND = ['pending', 'match', 'mismatch'];
+// Los valores, tal cual circulan por el front: los de validation_status.py del
+// backend, que llegan ya en minúsculas en la vista del partido
+const EN_EL_FRONT = ['pending', 'match', 'mismatch'];
 
 describe('ValidationStatus', () => {
-  it('tiene los valores del backend, en el mismo orden y con la misma grafía', () => {
-    expect(Object.values(ValidationStatus)).toEqual(DEL_BACKEND);
+  it('tiene los valores que circulan por el front, en ese orden y con esa grafía', () => {
+    expect(Object.values(ValidationStatus)).toEqual(EN_EL_FRONT);
   });
 
   it('cada clave es su valor en mayúsculas', () => {
