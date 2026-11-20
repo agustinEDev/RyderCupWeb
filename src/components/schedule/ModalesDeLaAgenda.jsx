@@ -11,12 +11,16 @@ import { jugadoresDelEquipo } from '../../utils/permisosDeLaAgenda';
 /**
  * Los diálogos de la agenda (`SchedulePage`), en el orden de siempre. Qué está
  * abierto viene de `useModalesDeLaAgenda` y qué hace cada uno de
- * `useAccionesDeLaAgenda`: aquí solo se pintan.
+ * `useAccionesDeLaAgenda`: aquí solo se pintan. De los datos de la agenda,
+ * solo lo que usan.
  */
 const ModalesDeLaAgenda = ({
   modales,
   acciones,
-  datos,
+  enrollments,
+  inscritosSinCargar,
+  playerNameMap,
+  playerHandicapMap,
   competition,
   rounds,
   teamAssignment,
@@ -25,17 +29,15 @@ const ModalesDeLaAgenda = ({
   t,
   tComp,
 }) => {
-  const { enrollments, inscritosSinCargar, playerNameMap, playerHandicapMap } =
-    datos;
   const { isProcessing } = acciones;
   const maxPlayingHandicap = competition.maxPlayingHandicap ?? null;
 
   return (
     <>
       {/* Walkover Modal */}
-      {modales.showWalkoverModal && modales.walkoverMatch && (
+      {modales.walkoverMatch && (
         <WalkoverModal
-          isOpen={modales.showWalkoverModal}
+          isOpen
           onClose={modales.cerrarWalkover}
           onConfirm={acciones.handleDeclareWalkover}
           matchNumber={modales.walkoverMatch.matchNumber}
@@ -46,9 +48,9 @@ const ModalesDeLaAgenda = ({
       )}
 
       {/* Reassign Players Modal */}
-      {modales.showReassignModal && modales.reassignMatch && (
+      {modales.reassignMatch && (
         <ReassignPlayersModal
-          isOpen={modales.showReassignModal}
+          isOpen
           onClose={modales.cerrarReasignar}
           onConfirm={acciones.handleReassignPlayers}
           match={modales.reassignMatch}
@@ -61,9 +63,9 @@ const ModalesDeLaAgenda = ({
       )}
 
       {/* Match Detail Modal */}
-      {modales.showMatchDetailModal && modales.detailMatchId && (
+      {modales.detailMatchId && (
         <MatchDetailModal
-          isOpen={modales.showMatchDetailModal}
+          isOpen
           onClose={modales.cerrarDetalle}
           matchId={modales.detailMatchId}
           playerNameMap={playerNameMap}
@@ -131,9 +133,9 @@ const ModalesDeLaAgenda = ({
       )}
 
       {/* Generate Matches Modal */}
-      {modales.showGenerateModal && modales.generateRound && (
+      {modales.generateRound && (
         <GenerateMatchesModal
-          isOpen={modales.showGenerateModal}
+          isOpen
           onClose={modales.cerrarGenerar}
           onConfirm={(pairings) =>
             acciones.handleGenerateMatches(modales.generateRound.id, pairings)

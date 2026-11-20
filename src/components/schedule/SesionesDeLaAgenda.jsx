@@ -17,9 +17,12 @@ const SesionesDeLaAgenda = ({
   onGenerateMatches,
   onRehacerSobres,
   onScoreMatch,
+  onStartMatch,
+  onCompleteMatch,
+  onDeclareWalkover,
+  onReassignPlayers,
+  onViewMatchDetail,
   canManage,
-  acciones,
-  modales,
   playerNameMap,
   playerHandicapMap,
   golfCourses,
@@ -54,11 +57,11 @@ const SesionesDeLaAgenda = ({
             onToggleExpand={() => onToggleExpand(round.id)}
             isExpanded={!!expandedRounds[round.id]}
             canEdit={canManage}
-            onStartMatch={acciones.handleStartMatch}
-            onCompleteMatch={acciones.handleCompleteMatch}
-            onDeclareWalkover={modales.abrirWalkover}
-            onReassignPlayers={modales.abrirReasignar}
-            onViewMatchDetail={modales.abrirDetalle}
+            onStartMatch={onStartMatch}
+            onCompleteMatch={onCompleteMatch}
+            onDeclareWalkover={onDeclareWalkover}
+            onReassignPlayers={onReassignPlayers}
+            onViewMatchDetail={onViewMatchDetail}
             onScoreMatch={onScoreMatch}
             playerNameMap={playerNameMap}
             playerHandicapMap={playerHandicapMap}
