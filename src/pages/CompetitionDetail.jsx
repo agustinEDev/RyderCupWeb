@@ -509,6 +509,9 @@ const CompetitionDetail = () => {
         onConfirm={inscripciones.handleEnroll}
         isProcessing={isProcessing}
         pideGenero={generoParaApuntarse.falta}
+        // Las barras de sus campos, para su género (FE #1214)
+        competitionId={id}
+        generoDelJugador={user?.gender ?? null}
         // Sin hándicap no se entra en un Stableford o un Medal (FE #824, PR 5). Sin red
         // no se sabe (la copia del dispositivo no lo guarda): no se avisa (fase 3)
         faltaHandicap={esStrokePlay && faltaElHandicap(user, sinConfirmar)}

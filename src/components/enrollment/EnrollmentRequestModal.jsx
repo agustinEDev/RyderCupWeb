@@ -9,18 +9,11 @@ import {
   franjaLlena,
   plazasLibres,
 } from '../../domain/services/PlazasEnFranjas';
-import TeeColor from '../../domain/value_objects/TeeColor';
+import { useBarrasDeLaCompeticion } from '../../hooks/useBarrasDeLaCompeticion';
+import { barrasParaElegir, colorHabitual } from '../../utils/barraPorDefecto';
 
 // Sin franjas: el mismo array siempre, para que el orden no se recalcule
 const SIN_FRANJAS = [];
-
-const TEE_CATEGORIES = [
-  TeeColor.WHITE,
-  TeeColor.YELLOW,
-  TeeColor.BLUE,
-  TeeColor.RED,
-  TeeColor.GREEN,
-];
 
 /**
  * @param {Object} props
@@ -40,6 +33,10 @@ const TEE_CATEGORIES = [
  * @param {Function} [props.onReintentar] - Volver a leer la agenda
  * @param {Function} [props.onElegir] - Al cambiar de franja: quien lo abre borra
  *   el error de la elección anterior (revisor)
+ * @param {string} [props.competitionId] - Para ofrecer las barras de sus campos
+ *   (FE #1214) en vez de una lista fija
+ * @param {string|null} [props.generoDelJugador] - El de su perfil: se ofrecen
+ *   las de su género y las mixtas, y sale marcada su habitual
  */
 const EnrollmentRequestModal = ({
   isOpen,
@@ -54,6 +51,8 @@ const EnrollmentRequestModal = ({
   franjasSinCargar = false,
   onElegir,
   onReintentar,
+  competitionId,
+  generoDelJugador = null,
 }) => {
   if (!isOpen) return null;
   return (
@@ -69,6 +68,8 @@ const EnrollmentRequestModal = ({
       franjasSinCargar={franjasSinCargar}
       onElegir={onElegir}
       onReintentar={onReintentar}
+      competitionId={competitionId}
+      generoDelJugador={generoDelJugador}
     />
   );
 };
@@ -87,10 +88,19 @@ const EnrollmentRequestModalContent = ({
   franjasSinCargar,
   onElegir,
   onReintentar,
+  competitionId,
+  generoDelJugador,
 }) => {
   const { t, i18n } = useTranslation(['competitions', 'golfCourses']);
-  const [selectedTee, setSelectedTee] = useState('');
+  // null mientras no se toca: entonces sale su habitual, si está (FE #1214)
+  const [selectedTee, setSelectedTee] = useState(null);
   const [genero, setGenero] = useState('');
+  const barrasDeLosCampos = useBarrasDeLaCompeticion(competitionId, true);
+  const suGenero = (pideGenero ? genero : generoDelJugador) || null;
+  const colores = barrasParaElegir(barrasDeLosCampos.barras, suGenero);
+  const habitual = colorHabitual(suGenero);
+  const barraMarcada =
+    selectedTee ?? (colores.includes(habitual) ? habitual : '');
   const [elegida, setElegida] = useState(null);
   // Por día y hora: en el orden en que se juegan
   const ordenadas = useMemo(
@@ -123,7 +133,7 @@ const EnrollmentRequestModalContent = ({
     e.preventDefault();
     if (falta) return;
     onConfirm(
-      selectedTee || null,
+      barraMarcada || null,
       pideGenero ? genero : null,
       laElegida ? { roundId: laElegida.id, waiting: aLaEspera } : null,
     );
@@ -293,22 +303,46 @@ const EnrollmentRequestModalContent = ({
             </label>
             <select
               id="tee-category"
-              value={selectedTee}
+              value={barraMarcada}
               onChange={(e) => setSelectedTee(e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm"
             >
               <option value="">
                 {t('competitions:enrollment.noPreference')}
               </option>
-              {TEE_CATEGORIES.map((cat) => (
-                <option key={cat} value={cat}>
-                  {t(`golfCourses:form.teeColors.${cat}`)}
+              {colores.map((color) => (
+                <option key={color} value={color}>
+                  {t(`golfCourses:form.teeColors.${color}`)}
                 </option>
               ))}
             </select>
             <p className="mt-1 text-xs text-gray-500">
               {t('competitions:enrollment.colorHint')}
             </p>
+            {/* Las barras salen de sus campos (FE #1214): leyéndose, sin poder
+                leerlas o sin ninguna para su género, se dice; «sin
+                preferencia» sigue valiendo (la de por defecto) */}
+            {barrasDeLosCampos.cargando && (
+              <p role="status" className="mt-1 text-xs text-gray-500">
+                {t('competitions:enrollment.teesLoading')}
+              </p>
+            )}
+            {barrasDeLosCampos.fallo && (
+              <p
+                data-testid="barras-sin-cargar"
+                className="mt-1 text-xs text-amber-800"
+              >
+                {t('competitions:enrollment.teesNotLoaded')}
+              </p>
+            )}
+            {barrasDeLosCampos.barras !== null && colores.length === 0 && (
+              <p
+                data-testid="sin-barras-para-ti"
+                className="mt-1 text-xs text-amber-800"
+              >
+                {t('competitions:enrollment.noTeesForYou')}
+              </p>
+            )}
           </div>
 
           {/* Actions */}

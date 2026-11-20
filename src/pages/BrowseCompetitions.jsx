@@ -559,6 +559,9 @@ const BrowseCompetitions = () => {
         }
         isProcessing={!!requestingEnrollment[enrollTargetId]}
         pideGenero={generoParaApuntarse.falta}
+        // Las barras de sus campos, para su género (FE #1214)
+        competitionId={enrollTargetId}
+        generoDelJugador={user?.gender ?? null}
         // Un stroke play no abre este diálogo: se apunta en su ficha, que pide el
         // hándicap (release social 3)
         error={errorAlApuntarse}
