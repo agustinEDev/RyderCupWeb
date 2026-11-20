@@ -35,18 +35,25 @@ const assemblers = enAplicacion.filter(([ruta]) =>
   ruta.startsWith('/src/application/assemblers/'),
 );
 
-// Las líneas de código (sin comentarios de línea ni de bloque) que casan
-const lineasQueCasan = (codigo, patron) =>
+// El código sin comentarios de bloque ni de línea. Un `//` tras `:` es una URL
+// dentro de un texto, no un comentario
+const sinComentarios = (codigo) =>
   codigo
     .replace(/\/\*[\s\S]*?\*\//g, '')
     .split('\n')
-    // Un `//` tras `:` es una URL dentro de un texto, no un comentario
     .map((linea) => linea.replace(/(^|[^:])\/\/.*$/, '$1'))
-    .filter((linea) => patron.test(linea));
+    .join('\n');
+
+// Lo que casa, buscado sobre el código entero: una desestructuración o un
+// corchete que Prettier parte en varias líneas también cuenta (CodeRabbit)
+const coincidencias = (codigo, patron) =>
+  [...sinComentarios(codigo).matchAll(new RegExp(patron.source, 'g'))].map(
+    ([texto]) => texto.replace(/\s+/g, ' '),
+  );
 
 const hallazgos = (ficheros, patron) =>
   ficheros.flatMap(([ruta, codigo]) =>
-    lineasQueCasan(codigo, patron).map((linea) => `${ruta}: ${linea.trim()}`),
+    coincidencias(codigo, patron).map((texto) => `${ruta}: ${texto}`),
   );
 
 const LECTURA_SNAKE = /\??\.[a-z][a-z0-9]*_[a-z0-9_]+\b/;
@@ -93,11 +100,22 @@ describe('la respuesta cruda de la API no sale de infraestructura', () => {
     ['const { userName, team_a_id: a } = extras;', DESESTRUCTURA_SNAKE, true],
     ['const { userName } = extras;', DESESTRUCTURA_SNAKE, false],
     [
+      'const {\n  userName,\n  user_name,\n} = extras;',
+      DESESTRUCTURA_SNAKE,
+      true,
+    ],
+    [
+      'const {\n  userName,\n  teamId,\n} = extras;',
+      DESESTRUCTURA_SNAKE,
+      false,
+    ],
+    ["const n = extras[\n  'user_name'\n];", CORCHETE_SNAKE, true],
+    [
       "const url = 'https://x.y/z'; const n = e.user_name;",
       LECTURA_SNAKE,
       true,
     ],
   ])('el patrón ve «%s»: %s', (linea, patron, esperado) => {
-    expect(lineasQueCasan(linea, patron).length > 0).toBe(esperado);
+    expect(coincidencias(linea, patron).length > 0).toBe(esperado);
   });
 });
