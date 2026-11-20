@@ -18,7 +18,6 @@ import { peticionDelBorrador } from '../../utils/peticionDelBorrador';
 
 // Vive con la carga de tus partidas (`useBarrasDelCampo`); se sigue
 // exportando desde aquí, que es donde se buscaba
-export { ESPERA_DE_TUS_PARTIDAS_MS } from './useBarrasDelCampo';
 
 /**
  * El asistente de partida rápida (FE #848): un BORRADOR local hasta «Confirmar
@@ -136,7 +135,6 @@ const CreateQuickMatchModal = ({
       }),
     onStarted,
     t,
-    setError,
     ponElAviso,
   });
 

@@ -32,6 +32,17 @@ describe('puedeGestionarLaAgenda', () => {
       }),
     ).toBe(esperado);
   });
+
+  it('sin usuario identificado nadie es el creador, aunque falte también el creador', () => {
+    expect(
+      puedeGestionarLaAgenda({
+        creatorId: undefined,
+        userId: undefined,
+        hasCreatorRole: false,
+        isAdmin: false,
+      }),
+    ).toBe(false);
+  });
 });
 
 describe('entraALosSobres', () => {

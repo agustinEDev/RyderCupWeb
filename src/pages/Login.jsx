@@ -44,8 +44,7 @@ const Login = () => {
         { icon: '📊', text: t('login.features.liveScoring') },
         { icon: '👥', text: t('login.features.friends') },
       ]}
-      // Solo aparece: entrando desplazada, un clic en ese medio segundo podía
-      // soltarse fuera del botón, que se había movido (QA, FE #865-12)
+      // El porqué, en MarcoDeAcceso (FE #865-12)
       soloAparece
       textoDeVolver={t('login.backToHome')}
     >

@@ -178,7 +178,10 @@ export const useBarrasDelCampo = ({
   ) {
     setCreatorTeeKey(barraSugerida);
     // Si ya se pidió elegirla, el aviso sobra: ya hay una (/code-review). Solo
-    // si es ese, para no encolar nada durante el render sin motivo
+    // si es ese, para no encolar nada durante el render sin motivo. Es un
+    // ajuste durante el render: solo vale porque `setError` es del mismo
+    // componente que usa este hook (el asistente, con `useAvisoDelAsistente`);
+    // con el de un padre, React avisaría de actualizar otro componente
     if (error?.clave === 'create.course.errorTeeRequired') setError(null);
   }
   // La de cada amigo, para preelegirla al añadirlo (P8)

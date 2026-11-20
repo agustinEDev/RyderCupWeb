@@ -29,7 +29,6 @@ const fallo = (status, message = 'x') =>
   Object.assign(new Error(message), { status });
 
 const usaEnvio = (peticion) => {
-  const setError = vi.fn();
   const ponElAviso = vi.fn();
   const onStarted = vi.fn();
   const armaLaPeticion = vi.fn(() => peticion.actual);
@@ -38,11 +37,10 @@ const usaEnvio = (peticion) => {
       armaLaPeticion,
       onStarted,
       t,
-      setError,
       ponElAviso,
     }),
   );
-  return { ...hook, setError, ponElAviso, onStarted };
+  return { ...hook, ponElAviso, onStarted };
 };
 
 const empieza = (result) =>
@@ -59,7 +57,7 @@ describe('useEnvioDelBorrador', () => {
   it('E1: bien, avisa a quien abrió el asistente con el id', async () => {
     mockCrear.mockResolvedValue({ id: 'qm-1' });
     const peticion = { actual: { golfCourseId: 'gc-1' } };
-    const { result, onStarted, setError, ponElAviso } = usaEnvio(peticion);
+    const { result, onStarted, ponElAviso } = usaEnvio(peticion);
     await empieza(result);
     expect(mockCrear).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -68,8 +66,9 @@ describe('useEnvioDelBorrador', () => {
       }),
     );
     expect(onStarted).toHaveBeenCalledWith('qm-1');
-    expect(setError).toHaveBeenCalledWith(null);
-    expect(ponElAviso).not.toHaveBeenCalled();
+    // Al empezar se quita el aviso que hubiera, y bien no pone otro
+    expect(ponElAviso).toHaveBeenCalledTimes(1);
+    expect(ponElAviso).toHaveBeenCalledWith(null);
     expect(mockInfo).not.toHaveBeenCalled();
     expect(result.current.isProcessing).toBe(false);
   });
@@ -152,7 +151,6 @@ describe('useEnvioDelBorrador', () => {
         },
         onStarted: vi.fn(),
         t,
-        setError: vi.fn(),
         ponElAviso,
       }),
     );

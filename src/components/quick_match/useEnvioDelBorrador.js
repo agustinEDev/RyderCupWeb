@@ -39,7 +39,6 @@ const avisoDelFallo = (err) => {
  *   llama al confirmar (si lanza, es un fallo más)
  * @param {(id: string) => void} opciones.onStarted - Con la partida empezada
  * @param {Function} opciones.t - El de quickMatch
- * @param {Function} opciones.setError - El del aviso del asistente
  * @param {Function} opciones.ponElAviso - Pone el aviso tal cual
  * @returns {{ isProcessing: boolean, handleStart: () => Promise<void> }}
  */
@@ -47,7 +46,6 @@ export const useEnvioDelBorrador = ({
   armaLaPeticion,
   onStarted,
   t,
-  setError,
   ponElAviso,
 }) => {
   // El id del último intento y lo que se mandó: reintentar LO MISMO tras un
@@ -71,7 +69,7 @@ export const useEnvioDelBorrador = ({
 
   const handleStart = async () => {
     setIsProcessing(true);
-    setError(null);
+    ponElAviso(null);
     try {
       const peticion = armaLaPeticion();
       const quickMatchId = idDelIntento(peticion);
