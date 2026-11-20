@@ -1,56 +1,11 @@
 import { describe, it, expect } from 'vitest';
 import {
-  puedeGestionarLaAgenda,
   entraALosSobres,
   botonesDeLosSobres,
   sePuedenDeshacerLosEquipos,
   esCompeticionCerrada,
   jugadoresDelEquipo,
 } from './permisosDeLaAgenda';
-
-describe('puedeGestionarLaAgenda', () => {
-  /*
-   *   creador | rol de organizador | admin | gestiona
-   *   --------|--------------------|-------|---------
-   *   sí      | no                 | no    | sí
-   *   no      | sí                 | no    | sí
-   *   no      | no                 | sí    | sí
-   *   no      | no                 | no    | no
-   */
-  it.each([
-    ['el creador', 'yo', false, false, true],
-    ['quien tiene el rol', 'otro', true, false, true],
-    ['un admin', 'otro', false, true, true],
-    ['nadie más', 'otro', false, false, false],
-  ])('%s', (_, creatorId, hasCreatorRole, isAdmin, esperado) => {
-    expect(
-      puedeGestionarLaAgenda({
-        creatorId,
-        userId: 'yo',
-        hasCreatorRole,
-        isAdmin,
-      }),
-    ).toBe(esperado);
-  });
-
-  it.each([
-    ['ni aunque falte también el creador', false, false],
-    ['ni con el rol de organizador', true, false],
-    ['ni como admin', false, true],
-  ])(
-    'sin usuario identificado nadie gestiona: %s',
-    (_, hasCreatorRole, isAdmin) => {
-      expect(
-        puedeGestionarLaAgenda({
-          creatorId: undefined,
-          userId: undefined,
-          hasCreatorRole,
-          isAdmin,
-        }),
-      ).toBe(false);
-    },
-  );
-});
 
 describe('entraALosSobres', () => {
   const captains = { teamA: 'ana', teamB: 'bea' };

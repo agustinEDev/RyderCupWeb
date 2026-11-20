@@ -14,6 +14,7 @@ import { seEditaLaCompeticion } from '../domain/services/edicionDeLaCompeticion'
 import { siguientePasoDeLaCompeticion } from './siguientePasoDeLaCompeticion';
 import EnrollmentStatus from '../domain/value_objects/EnrollmentStatus';
 import { mensajeDelError } from './mensajeDelError';
+import { puedeGestionarLaCompeticion } from './puedeGestionarLaCompeticion';
 
 // «Volver» lleva a donde se vino: explorar, las invitaciones (FE #682) o, por
 // defecto, las competiciones propias
@@ -236,9 +237,13 @@ export const derivarLaFicha = ({
   agendaLeida,
   franjasDeLaAgenda,
 }) => {
-  // User is considered creator if they created the competition OR have CREATOR/ADMIN role
   const isCreator = competition.creatorId === user.id;
-  const canManage = isCreator || hasCreatorRole || isAdmin;
+  const canManage = puedeGestionarLaCompeticion({
+    creatorId: competition.creatorId,
+    userId: user.id,
+    hasCreatorRole,
+    isAdmin,
+  });
   // Cómo se repartieron los equipos DE VERDAD; sin reparto, el configurado
   // En estilo Ryder el configurado no dice nada —será draft o a mano, al
   // nombrar capitanes—, y salía «Manual» (#710): hasta que se hace, pendiente

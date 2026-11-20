@@ -13,8 +13,8 @@ import SesionesDeLaAgenda from '../../components/schedule/SesionesDeLaAgenda';
 import ModalesDeLaAgenda from '../../components/schedule/ModalesDeLaAgenda';
 import FullScreenLoader from '../../components/ui/FullScreenLoader';
 import { PANTALLA_MENOS_BARRA_INFERIOR } from '../../utils/barraInferior';
+import { puedeGestionarLaCompeticion } from '../../utils/puedeGestionarLaCompeticion';
 import {
-  puedeGestionarLaAgenda,
   entraALosSobres,
   botonesDeLosSobres,
   sePuedenDeshacerLosEquipos,
@@ -42,7 +42,7 @@ const SchedulePage = () => {
   const [expandedRounds, setExpandedRounds] = useState({});
 
   // --- Permissions ---
-  const canManage = puedeGestionarLaAgenda({
+  const canManage = puedeGestionarLaCompeticion({
     creatorId: competition?.creatorId,
     userId: user?.id,
     hasCreatorRole,
@@ -138,9 +138,12 @@ const SchedulePage = () => {
               onGenerateMatches={modales.abrirGenerar}
               onRehacerSobres={modales.setRehaciendoSobres}
               onScoreMatch={handleScoreMatch}
+              onStartMatch={acciones.handleStartMatch}
+              onCompleteMatch={acciones.handleCompleteMatch}
+              onDeclareWalkover={modales.abrirWalkover}
+              onReassignPlayers={modales.abrirReasignar}
+              onViewMatchDetail={modales.abrirDetalle}
               canManage={canManage}
-              acciones={acciones}
-              modales={modales}
               playerNameMap={datos.playerNameMap}
               playerHandicapMap={datos.playerHandicapMap}
               golfCourses={datos.golfCourses}
@@ -162,7 +165,10 @@ const SchedulePage = () => {
       <ModalesDeLaAgenda
         modales={modales}
         acciones={acciones}
-        datos={datos}
+        enrollments={enrollments}
+        inscritosSinCargar={datos.inscritosSinCargar}
+        playerNameMap={datos.playerNameMap}
+        playerHandicapMap={datos.playerHandicapMap}
         competition={competition}
         rounds={rounds}
         teamAssignment={teamAssignment}

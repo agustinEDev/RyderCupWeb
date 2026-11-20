@@ -350,6 +350,32 @@ describe('derivarLaFicha', () => {
     expect(ficha.listaAMedias).toBe(false);
   });
 
+  it.each([
+    ['without any role', false, false],
+    ['with the organiser role', true, false],
+    ['as admin', false, true],
+  ])(
+    'given no identified user %s, when deriving, then nobody manages it',
+    (_, hasCreatorRole, isAdmin) => {
+      // Sin id y sin creador, `undefined === undefined` daba permiso
+      const ficha = base(
+        { creatorId: undefined },
+        { user: {}, hasCreatorRole, isAdmin },
+      );
+      expect(ficha.canManage).toBe(false);
+    },
+  );
+
+  it.each([
+    ['the organiser role', true, false],
+    ['admin', false, true],
+  ])(
+    'given %s and an identified user, when deriving, then they manage it',
+    (_, hasCreatorRole, isAdmin) => {
+      expect(base({}, { hasCreatorRole, isAdmin }).canManage).toBe(true);
+    },
+  );
+
   it('given a player who only sees friends, when counting, then the server total wins over the visible rows', () => {
     const aprobados = [{ id: 'e1', userId: 'u-2', status: 'APPROVED' }];
     const ficha = base(
