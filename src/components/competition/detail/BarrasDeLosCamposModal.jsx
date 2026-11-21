@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import ModalShell from '../../ui/ModalShell';
+import ModalShell, { CAJA_CENTRADA_SI_CABE } from '../../ui/ModalShell';
 import { getCompetitionGolfCoursesUseCase } from '../../../composition';
 import { cargarBarras } from '../../../composition/cargarBarras';
 import { Gender } from '../../../domain/value_objects/Gender';
@@ -144,6 +144,9 @@ const BarrasDeLosCamposModal = ({
   return (
     <ModalShell
       isOpen
+      // Con muchos campos no cabe en el móvil: se desplaza hasta «Cerrar»
+      scrollableBackdrop
+      boxClassName={CAJA_CENTRADA_SI_CABE}
       closeOnBackdrop={false}
       onClose={onClose}
       labelledBy="barras-de-los-campos-titulo"

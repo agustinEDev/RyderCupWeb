@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import ModalShell from '../../ui/ModalShell';
+import ModalShell, { CAJA_CENTRADA_SI_CABE } from '../../ui/ModalShell';
 import { useBarrasDeLaInscripcion } from '../../../hooks/useBarrasDeLaInscripcion';
 import { cargarBarras } from '../../../composition/cargarBarras';
 import { BARRAS_GENERALES } from '../../../utils/barrasGenerales';
@@ -110,6 +110,9 @@ const BarrasDelJugadorModal = ({
   return (
     <ModalShell
       isOpen
+      // Con muchos campos no cabe en el móvil: se desplaza hasta «Cerrar»
+      scrollableBackdrop
+      boxClassName={CAJA_CENTRADA_SI_CABE}
       closeOnBackdrop={false}
       onClose={onClose}
       labelledBy="barras-del-jugador-titulo"

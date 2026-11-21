@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import ModalShell from '../ui/ModalShell';
+import ModalShell, { CAJA_CENTRADA_SI_CABE } from '../ui/ModalShell';
 import TeeColor from '../../domain/value_objects/TeeColor';
 
 /**
@@ -42,6 +42,9 @@ const Contenido = ({ campo, guardando, onGuardar, onSaltar, onClose }) => {
   return (
     <ModalShell
       isOpen
+      // Con muchos campos no cabe en el móvil: se desplaza hasta «Cerrar»
+      scrollableBackdrop
+      boxClassName={CAJA_CENTRADA_SI_CABE}
       closeOnBackdrop={false}
       onClose={onClose}
       labelledBy="barra-pendiente-titulo"
