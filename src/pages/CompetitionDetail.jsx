@@ -500,6 +500,7 @@ const CompetitionDetail = () => {
                 inscripcion={ficha.userEnrollment}
                 puedeCambiar={puedeCambiarSuBarra(ficha.userEnrollment)}
                 cerrada={terminada}
+                conEquipos={!esStrokePlay}
                 version={versionDeBarras}
                 onCambio={conSuGeneral(ficha.userEnrollment.id)}
               />

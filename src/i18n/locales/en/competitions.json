@@ -751,6 +751,8 @@
     "noTee": "No tee",
     "chooseOnCourse": "Choose your tee at {{course}}",
     "chooseOnCourseHint": "This course does not have your general tee. Choose which tees you play there.",
+    "askCaptainOrOrganiser": "You have no tee at {{course}}: ask your captain or the organiser",
+    "askOrganiser": "You have no tee at {{course}}: ask the organiser",
     "change": "Change",
     "save": "Save",
     "close": "Close",

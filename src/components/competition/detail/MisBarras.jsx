@@ -9,13 +9,17 @@ import BarrasDelJugadorModal from './BarrasDelJugadorModal';
  * «Mis barras» en la ficha (barras por campo, F2): mi barra general y, por
  * campo, la que juego y de dónde sale. Se leen siempre (el jugador puede
  * verlas aunque ya no pueda cambiarlas); «Cambiar» solo si puedo. Un campo
- * sin barra para mí se avisa. Sin poder leerlas, se dice y se reintenta.
+ * sin barra para mí se avisa: si aún puedo, que la elija; si ya no (en
+ * juego), a quién pedírsela (tabla del 21 nov 2026, C). Sin poder leerlas, se
+ * dice y se reintenta.
  *
  * @param {Object} props
  * @param {{id: string}} props.inscripcion - La mía, aprobada
  * @param {boolean} props.puedeCambiar
  * @param {boolean} [props.cerrada] - Competición terminada o cancelada: ya no
  *   se invita a elegir nada (sin el aviso de campo sin barra)
+ * @param {boolean} [props.conEquipos] - Una Ryder: sin barra y sin poder
+ *   cambiarla, se pide al capitán o al organizador; si no, al organizador
  * @param {number} [props.version] - La ficha la sube cuando cambia cualquier
  *   barra: se vuelven a leer
  * @param {(barras: Object) => void} [props.onCambio] - Al guardar en mis
@@ -25,6 +29,7 @@ const MisBarras = ({
   inscripcion,
   puedeCambiar,
   cerrada = false,
+  conEquipos = false,
   version = 0,
   onCambio,
 }) => {
@@ -95,14 +100,19 @@ const MisBarras = ({
         <p
           key={campo.golfCourseId}
           role="alert"
-          data-testid={`elige-barra-${campo.golfCourseId}`}
+          data-testid={`${puedeCambiar ? 'elige' : 'pide'}-barra-${campo.golfCourseId}`}
           className="mt-2 flex items-start gap-2 rounded-lg bg-amber-50 p-2 text-sm font-medium text-amber-900"
         >
           <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
           <span className="min-w-0 break-words">
-            {t('competitions:tees.chooseOnCourse', {
-              course: campo.golfCourseName,
-            })}
+            {t(
+              puedeCambiar
+                ? 'competitions:tees.chooseOnCourse'
+                : conEquipos
+                  ? 'competitions:tees.askCaptainOrOrganiser'
+                  : 'competitions:tees.askOrganiser',
+              { course: campo.golfCourseName },
+            )}
           </span>
         </p>
       ))}

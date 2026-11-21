@@ -108,6 +108,10 @@ const SIN_BARRA_EN_ALTEA = {
 vi.mock('../components/competition/CompetitionGolfCoursesSection', () => ({
   default: () => <div data-testid="golf-courses-section" />,
 }));
+// En stroke play la ficha pinta las franjas: aquí no se prueban
+vi.mock('../components/competition/FranjasDeLaCompeticion', () => ({
+  default: () => <div data-testid="franjas" />,
+}));
 
 const mockGetCompetitionDetail = vi.fn().mockResolvedValue({
   id: 'comp-1',
@@ -442,6 +446,31 @@ describe('CompetitionDetail · las barras que faltan tras aceptar', () => {
       }),
     ).not.toBeInTheDocument();
   });
+
+  it.each([
+    [undefined, 'competitions:tees.askCaptainOrOrganiser'],
+    [false, 'competitions:tees.askOrganiser'],
+  ])(
+    'C8: en juego (hasTeams %s), sin barra en un campo, a quién pedírsela',
+    async (hasTeams, clave) => {
+      mockGetCompetitionDetail.mockResolvedValue({
+        ...FICHA,
+        status: 'IN_PROGRESS',
+        hasTeams,
+        enrollment_status: 'APPROVED',
+      });
+      mockListEnrollments.mockResolvedValue([
+        { id: 'mia-1', userId: 'player-1', status: 'APPROVED' },
+      ]);
+      mockLeerBarras.mockResolvedValue(SIN_BARRA_EN_ALTEA);
+      renderPage();
+
+      expect(await screen.findByTestId('pide-barra-g2')).toHaveTextContent(
+        clave,
+      );
+      expect(screen.queryByTestId('elige-barra-g2')).not.toBeInTheDocument();
+    },
+  );
 
   it('6: cerrar las barras de OTRO jugador no relee las mías', async () => {
     mockGetCompetitionDetail.mockResolvedValue({

@@ -751,6 +751,8 @@
     "noTee": "Sin barra",
     "chooseOnCourse": "Elige tu barra en {{course}}",
     "chooseOnCourseHint": "Este campo no tiene tu barra general. Elige con qué barras juegas en él.",
+    "askCaptainOrOrganiser": "No tienes barra en {{course}}: pídesela a tu capitán o al organizador",
+    "askOrganiser": "No tienes barra en {{course}}: pídesela al organizador",
     "change": "Cambiar",
     "save": "Guardar",
     "close": "Cerrar",

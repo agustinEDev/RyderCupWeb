@@ -351,8 +351,8 @@ describe('MisBarras', () => {
     expect(screen.getByTestId('mi-barra-g1')).toHaveTextContent(
       'competitions:tees.source.DEFAULT',
     );
-    expect(screen.getByTestId('elige-barra-g2')).toHaveTextContent(
-      'competitions:tees.chooseOnCourse {"course":"Altea"}',
+    expect(screen.getByTestId('pide-barra-g2')).toHaveTextContent(
+      'competitions:tees.askOrganiser {"course":"Altea"}',
     );
     expect(
       screen.queryByText('competitions:tees.change'),
@@ -385,9 +385,44 @@ describe('MisBarras y el modal · competición cerrada y sin barra', () => {
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
   });
 
-  it('abierta: sigue avisando del campo sin barra', async () => {
+  it('C9: antes de empezar (puede cambiarla), «Elige tu barra en {campo}»', async () => {
+    render(<MisBarras inscripcion={{ id: 'e1' }} puedeCambiar />);
+    expect(await screen.findByTestId('elige-barra-g2')).toHaveTextContent(
+      'competitions:tees.chooseOnCourse {"course":"Altea"}',
+    );
+    expect(screen.queryByTestId('pide-barra-g2')).not.toBeInTheDocument();
+  });
+
+  it('C8: en juego, en una Ryder, que se la pida a su capitán o al organizador', async () => {
+    render(
+      <MisBarras inscripcion={{ id: 'e1' }} puedeCambiar={false} conEquipos />,
+    );
+    expect(await screen.findByTestId('pide-barra-g2')).toHaveTextContent(
+      'competitions:tees.askCaptainOrOrganiser {"course":"Altea"}',
+    );
+    expect(screen.queryByTestId('elige-barra-g2')).not.toBeInTheDocument();
+    expect(screen.getByRole('alert')).toBe(screen.getByTestId('pide-barra-g2'));
+  });
+
+  it('C8: en juego, en stroke play, que se la pida al organizador', async () => {
     render(<MisBarras inscripcion={{ id: 'e1' }} puedeCambiar={false} />);
-    expect(await screen.findByTestId('elige-barra-g2')).toBeInTheDocument();
+    expect(await screen.findByTestId('pide-barra-g2')).toHaveTextContent(
+      'competitions:tees.askOrganiser {"course":"Altea"}',
+    );
+    expect(screen.queryByTestId('elige-barra-g2')).not.toBeInTheDocument();
+  });
+
+  it('C9: cerrada, tampoco se pide', async () => {
+    render(
+      <MisBarras
+        inscripcion={{ id: 'e1' }}
+        puedeCambiar={false}
+        conEquipos
+        cerrada
+      />,
+    );
+    await screen.findByTestId('mis-barras');
+    expect(screen.queryByTestId('pide-barra-g2')).not.toBeInTheDocument();
   });
 
   it('cerrada: en el modal, el campo sin barra no se resalta como aviso', async () => {
