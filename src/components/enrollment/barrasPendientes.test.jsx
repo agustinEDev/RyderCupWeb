@@ -5,6 +5,7 @@ import {
   screen,
   fireEvent,
   act,
+  within,
 } from '@testing-library/react';
 import BarrasPendientesModal from './BarrasPendientesModal';
 import { useBarrasPendientes } from '../../hooks/useBarrasPendientes';
@@ -310,6 +311,15 @@ describe('BarrasPendientesModal', () => {
   it('CR3: guardando, «Cerrar» está desactivado', () => {
     pinta({ guardando: true });
     expect(screen.getByText('competitions:tees.close')).toBeDisabled();
+  });
+
+  it('E12: las opciones, en el orden de los selectores', () => {
+    pinta({ campo: campo('g2', 'NONE', ['RED', 'BLACK', 'WHITE']) });
+    expect(
+      within(screen.getByLabelText('competitions:tees.label'))
+        .getAllByRole('option')
+        .map((o) => o.value),
+    ).toEqual(['', 'BLACK', 'WHITE', 'RED']);
   });
 
   it('«Ahora no» pasa al siguiente; sin campo, nada', () => {

@@ -281,6 +281,28 @@ describe('BarrasDelJugadorModal', () => {
     await waitFor(() => expect(m.campo).toHaveBeenCalledWith('e1', 'g1', null));
   });
 
+  it('E12: las opciones de un campo, en el orden de los selectores', async () => {
+    m.leer.mockResolvedValue({
+      ...BARRAS,
+      courses: [
+        {
+          golfCourseId: 'g1',
+          golfCourseName: 'Aldeamayor',
+          tee: null,
+          source: 'GENERAL',
+          options: ['PINK', 'RED', 'BLACK', 'YELLOW'],
+        },
+      ],
+    });
+    abre();
+    const fila = await screen.findByTestId('fila-barra-g1');
+    expect(
+      within(within(fila).getByRole('combobox'))
+        .getAllByRole('option')
+        .map((o) => o.value),
+    ).toEqual(['', 'BLACK', 'YELLOW', 'RED', 'PINK']);
+  });
+
   it('sin permiso, solo se ven', async () => {
     abre({ puedeCambiar: false });
     await screen.findByTestId('fila-barra-g1');

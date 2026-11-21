@@ -44,7 +44,7 @@ const confirmar = () =>
  * todos los colores menos OTHER, con la habitual de su género marcada.
  */
 describe('EnrollmentRequestModal · la barra general', () => {
-  it('ofrece todos los colores menos OTHER, con «Elige una barra» delante', () => {
+  it('ofrece todos los colores menos OTHER, en el orden de los selectores, con «Elige una barra» delante', () => {
     abre({ generoDelJugador: 'MALE' });
     expect(
       within(selector())
@@ -52,15 +52,15 @@ describe('EnrollmentRequestModal · la barra general', () => {
         .map((o) => o.value),
     ).toEqual([
       '',
+      'BLACK',
       'WHITE',
       'YELLOW',
       'BLUE',
       'RED',
-      'BLACK',
+      'GOLD',
       'GREEN',
       'ORANGE',
       'PINK',
-      'GOLD',
     ]);
   });
 

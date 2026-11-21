@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import ModalShell from '../ui/ModalShell';
+import TeeColor from '../../domain/value_objects/TeeColor';
 
 /**
  * «Elige tu barra en {campo}» (barras por campo, F1): un campo que no tiene
@@ -83,7 +84,7 @@ const Contenido = ({ campo, guardando, onGuardar, onSaltar, onClose }) => {
             <option value="" disabled>
               {t('competitions:tees.choose')}
             </option>
-            {campo.options.map((opcion) => (
+            {TeeColor.ordenarParaSelector(campo.options).map((opcion) => (
               <option key={opcion} value={opcion}>
                 {t(`golfCourses:form.teeColors.${opcion}`)}
               </option>

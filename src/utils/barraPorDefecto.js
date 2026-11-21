@@ -87,8 +87,9 @@ export const barrasDeMiGenero = (tees, genero) =>
 /**
  * Los colores que se ofrecen al elegir o cambiar la barra en una competición
  * (FE #1214): las barras de su género y las mixtas de cualquiera de sus
- * campos, sin repetir y en el orden de `TeeColor`. Sin género, solo las
- * mixtas (nunca las valoradas para un solo género, como el backend).
+ * campos, sin repetir y en el orden de los selectores (`TeeColor`). Sin
+ * género, solo las mixtas (nunca las valoradas para un solo género, como el
+ * backend).
  *
  * @param {Array<{color: string, gender: string|null}>|null} barras
  * @param {string|null|undefined} genero
@@ -100,5 +101,5 @@ export const barrasParaElegir = (barras, genero) => {
       .filter((tee) => delGenero(tee, genero ?? null))
       .map((tee) => tee.color),
   );
-  return TeeColor.getAllValues().filter((color) => colores.has(color));
+  return TeeColor.getSelectorOrder().filter((color) => colores.has(color));
 };

@@ -125,3 +125,36 @@ describe('TeeColor', () => {
     });
   });
 });
+
+/**
+ * El orden de las barras en los selectores de las competiciones (tabla
+ * aprobada del 21 nov, E): de la más larga a la más corta las de siempre, y
+ * luego el resto. Uno solo para todos los selectores.
+ */
+describe('TeeColor · orden de los selectores', () => {
+  it('negras, blancas, amarillas, azules, rojas; después doradas, verdes, naranjas y rosas', () => {
+    expect(TeeColor.getSelectorOrder()).toEqual([
+      'BLACK',
+      'WHITE',
+      'YELLOW',
+      'BLUE',
+      'RED',
+      'GOLD',
+      'GREEN',
+      'ORANGE',
+      'PINK',
+    ]);
+  });
+
+  it('ordena una lista cualquiera; lo que no está en el orden va al final', () => {
+    expect(
+      TeeColor.ordenarParaSelector(['PINK', 'RED', 'OTHER', 'BLACK', 'YELLOW']),
+    ).toEqual(['BLACK', 'YELLOW', 'RED', 'PINK', 'OTHER']);
+  });
+
+  it('no toca la lista que recibe', () => {
+    const lista = ['RED', 'BLACK'];
+    TeeColor.ordenarParaSelector(lista);
+    expect(lista).toEqual(['RED', 'BLACK']);
+  });
+});

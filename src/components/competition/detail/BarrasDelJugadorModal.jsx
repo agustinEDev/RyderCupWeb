@@ -8,6 +8,7 @@ import { claveDelFalloDeLaBarra } from '../../../utils/falloDeLaBarra';
 import customToast from '../../../utils/toast';
 import { registraElFallo } from '../../../utils/registraElFallo';
 import { TeeSource } from '../../../domain/value_objects/TeeSource';
+import TeeColor from '../../../domain/value_objects/TeeColor';
 
 const GENERAL = 'general';
 
@@ -175,7 +176,8 @@ const BarrasDelJugadorModal = ({
                 // responde el servidor
                 quitableSinCambio={campo.source === TeeSource.NONE}
                 vacia={t('competitions:tees.noOwnOnCourse')}
-                opciones={campo.options}
+                // En el orden de todos los selectores (tabla del 21 nov, E)
+                opciones={TeeColor.ordenarParaSelector(campo.options)}
                 // Su barra propia, aunque el campo ya no la tenga: si no, el
                 // selector mostraría otra que no es la suya
                 yaNoDisponible={
