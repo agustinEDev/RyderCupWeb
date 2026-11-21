@@ -43,3 +43,20 @@ describe('InvitationAssembler · en lista de espera', () => {
     expect(llega('PENDING').isOnHold).toBe(false);
   });
 });
+
+/**
+ * Aceptar devuelve la inscripción que crea (barras por campo): la barra
+ * general elegida al aceptar se guarda en ella.
+ */
+describe('InvitationAssembler · la inscripción al aceptar', () => {
+  it('con enrollment_id, lo lleva; sin él, no', () => {
+    const aceptada = { ...API('ACCEPTED'), enrollment_id: 'e-9' };
+    expect(
+      InvitationAssembler.toSimpleDTO(
+        InvitationMapper.toDomain(aceptada),
+        aExtras(aceptada),
+      ).enrollmentId,
+    ).toBe('e-9');
+    expect(llega('PENDING').enrollmentId).toBeUndefined();
+  });
+});

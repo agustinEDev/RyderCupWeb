@@ -321,25 +321,6 @@ class ApiEnrollmentRepository extends IEnrollmentRepository {
   }
 
   /**
-   * Cambiar la barra de una inscripción (FE #1214, RyderCupAm#912)
-   *
-   * @override
-   * @param {string} enrollmentId - UUID del enrollment
-   * @param {string|null} teeColor - La barra, o null para la de por defecto
-   * @returns {Promise<{id: string, teeColor: string|null}>}
-   */
-  async changeTee(enrollmentId, teeColor) {
-    const respuesta = await this.#request(
-      `/api/v1/enrollments/${segmento(enrollmentId)}/tee`,
-      {
-        method: 'PUT',
-        body: JSON.stringify({ tee_color: teeColor }),
-      },
-    );
-    return { id: respuesta.id, teeColor: respuesta.tee_color ?? null };
-  }
-
-  /**
    * El organizador quita a un inscrito (release social 2)
    *
    * @param {string} enrollmentId
