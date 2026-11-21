@@ -366,6 +366,20 @@ describe('MisBarras y el modal · competición cerrada y sin barra', () => {
     );
   });
 
+  it('abierta: en el modal, el campo sin barra sigue resaltado como aviso', async () => {
+    render(
+      <BarrasDelJugadorModal
+        inscripcion={{ id: 'e1', userName: 'Ana' }}
+        puedeCambiar={false}
+        onClose={vi.fn()}
+      />,
+    );
+    const fila = await screen.findByTestId('fila-barra-g2');
+    expect(within(fila).getByText(/competitions:tees.noTee/)).toHaveClass(
+      'text-amber-800',
+    );
+  });
+
   it('sin barra: «Mis barras» dice «Sin barra» una vez, sin repetirlo como motivo', async () => {
     render(<MisBarras inscripcion={{ id: 'e1' }} puedeCambiar={false} />);
     const fila = await screen.findByTestId('mi-barra-g2');
