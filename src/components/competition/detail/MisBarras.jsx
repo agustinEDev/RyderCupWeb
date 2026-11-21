@@ -123,9 +123,13 @@ const MisBarras = ({ inscripcion, puedeCambiar, version = 0, onCambio }) => {
               <span className="font-medium">
                 {campo.tee ? color(campo.tee) : t('competitions:tees.noTee')}
               </span>
-              <span className="text-gray-500">
-                · {t(`competitions:tees.source.${campo.source}`)}
-              </span>
+              {/* Sin barra, el valor ya lo dice: el motivo («Sin barra») no
+                  se repite (pasada del Kind, 21 nov) */}
+              {campo.source !== TeeSource.NONE && (
+                <span className="text-gray-500">
+                  · {t(`competitions:tees.source.${campo.source}`)}
+                </span>
+              )}
               {cambiar(
                 t('competitions:tees.changeOn', {
                   course: campo.golfCourseName,

@@ -160,7 +160,12 @@ const BarrasDelJugadorModal = ({
                   course: campo.golfCourseName,
                 })}
                 actual={campo.source === TeeSource.OWN ? (campo.tee ?? '') : ''}
-                textoActual={`${campo.tee ? color(campo.tee) : t('competitions:tees.noTee')} · ${motivo(campo.source)}`}
+                // Sin barra, el valor ya lo dice: el motivo no se repite
+                textoActual={
+                  campo.source === TeeSource.NONE
+                    ? t('competitions:tees.noTee')
+                    : `${campo.tee ? color(campo.tee) : t('competitions:tees.noTee')} · ${motivo(campo.source)}`
+                }
                 aviso={campo.source === TeeSource.NONE}
                 // Sin barra en ese campo puede quedar un cambio propio que ya
                 // no vale y la API no lo dice: quitarlo se ofrece siempre, y

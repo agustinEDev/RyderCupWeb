@@ -100,7 +100,7 @@ describe('BarrasDelJugadorModal', () => {
       'competitions:tees.sourceOther.DEFAULT',
     );
     expect(screen.getByTestId('fila-barra-g2')).toHaveTextContent(
-      'competitions:tees.sourceOther.NONE',
+      'competitions:tees.noTee',
     );
   });
 
@@ -329,6 +329,39 @@ describe('MisBarras', () => {
         selector: 'h2#barras-del-jugador-titulo',
       }),
     ).toBeInTheDocument();
+  });
+});
+
+/**
+ * Pasada del Kind del 21 nov: con la competición terminada o cancelada no se
+ * invita a elegir nada, y «Sin barra» no se repite como valor y motivo.
+ */
+describe('MisBarras y el modal · competición cerrada y sin barra', () => {
+  it('sin barra: «Mis barras» dice «Sin barra» una vez, sin repetirlo como motivo', async () => {
+    render(<MisBarras inscripcion={{ id: 'e1' }} puedeCambiar={false} />);
+    const fila = await screen.findByTestId('mi-barra-g2');
+    expect(fila).toHaveTextContent('competitions:tees.noTee');
+    expect(fila).not.toHaveTextContent('competitions:tees.source.NONE');
+  });
+
+  it('sin barra: en el modal, igual', async () => {
+    render(
+      <BarrasDelJugadorModal
+        inscripcion={{ id: 'e1', userName: 'Ana' }}
+        puedeCambiar={false}
+        onClose={vi.fn()}
+      />,
+    );
+    const fila = await screen.findByTestId('fila-barra-g2');
+    expect(fila).toHaveTextContent('competitions:tees.noTee');
+    expect(fila).not.toHaveTextContent('competitions:tees.sourceOther.NONE');
+  });
+
+  it('con barra, el motivo sigue', async () => {
+    render(<MisBarras inscripcion={{ id: 'e1' }} puedeCambiar={false} />);
+    expect(await screen.findByTestId('mi-barra-g1')).toHaveTextContent(
+      'competitions:tees.source.DEFAULT',
+    );
   });
 });
 
