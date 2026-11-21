@@ -168,7 +168,8 @@
     "teamsLocked": "Matches already exist: the teams can't be undone",
     "failedToUndoTeams": "The teams couldn't be undone",
     "teamsFormed": "Teams are already formed: to let someone in, undo them first.",
-    "waitForDraft": "Wait until the draft is over"
+    "waitForDraft": "Wait until the draft is over",
+    "PAIRING_PLAYER_NOT_IN_TEAM": "A paired player is not on their team"
   },
   "success": {
     "roundCreated": "Round created successfully",

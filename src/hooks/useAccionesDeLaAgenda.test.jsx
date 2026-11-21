@@ -152,6 +152,29 @@ describe('useAccionesDeLaAgenda · generar bloqueado', () => {
   });
 });
 
+/**
+ * D11: un emparejado a mano fuera de su equipo (RyderCupAm #919) tiene su
+ * texto, no la frase del servidor.
+ */
+describe('useAccionesDeLaAgenda · generar con un emparejado fuera de su equipo', () => {
+  it('PAIRING_PLAYER_NOT_IN_TEAM: su texto, sin cerrar el modal', async () => {
+    mockGenerar.mockRejectedValue(
+      Object.assign(new Error('Player p9 is not on any team'), {
+        status: 422,
+        errorCode: 'PAIRING_PLAYER_NOT_IN_TEAM',
+      }),
+    );
+    const { hook, modales } = montar();
+    await act(() =>
+      hook.result.current.handleGenerateMatches('r1', [{ a: 1 }]),
+    );
+    expect(customToast.error).toHaveBeenCalledWith(
+      'errors.PAIRING_PLAYER_NOT_IN_TEAM',
+    );
+    expect(modales.cerrarGenerar).not.toHaveBeenCalled();
+  });
+});
+
 describe('useAccionesDeLaAgenda · repartir equipos', () => {
   it.each([
     ['DRAFT_IN_PROGRESS', 'errors.waitForDraft', false],

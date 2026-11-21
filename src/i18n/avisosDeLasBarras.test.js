@@ -1,6 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import es from './locales/es/competitions.json';
 import en from './locales/en/competitions.json';
+import esAgenda from './locales/es/schedule.json';
+import enAgenda from './locales/en/schedule.json';
 
 /**
  * C8: sin barra en un campo y sin poder cambiarla (competición en juego), a
@@ -50,5 +52,16 @@ describe('los fallos de lo pendiente según la modalidad', () => {
   it.each(CLAVES)('en · %s: con texto en las dos', (clave) => {
     expect(en.tees.errors[clave]).toBeTruthy();
     expect(en.tees.errorsStrokePlay[clave]).toBeTruthy();
+  });
+});
+
+describe('D11: el emparejado fuera de su equipo', () => {
+  it('es y en', () => {
+    expect(esAgenda.errors.PAIRING_PLAYER_NOT_IN_TEAM).toBe(
+      'Hay un jugador emparejado fuera de su equipo',
+    );
+    expect(enAgenda.errors.PAIRING_PLAYER_NOT_IN_TEAM).toBe(
+      'A paired player is not on their team',
+    );
   });
 });
