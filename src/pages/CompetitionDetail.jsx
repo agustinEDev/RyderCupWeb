@@ -323,7 +323,9 @@ const CompetitionDetail = () => {
     setSavingHandicapId,
     setRevertingHandicapId,
     setVersionFranjas,
-    comprobarBarrasPendientes: barrasPendientes.comprobar,
+    // Con su modalidad, para nombrar lo pendiente en un fallo (CodeRabbit)
+    comprobarBarrasPendientes: (enrollmentId) =>
+      barrasPendientes.comprobar(enrollmentId, { conEquipos: !esStrokePlay }),
     setIrASinFranja,
     setReleyendoTrasCerrar,
     setGuardandoCapitanes,
