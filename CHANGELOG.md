@@ -5,6 +5,48 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.90.0] - 2026-11-21
+
+**Barras por campo** (#1214, #1220-#1223) **y los nombres de los valores del negocio en el
+dominio** (#1212, #1213). Necesita el backend 2.76.0, que va primero (`PLAYED` nuevo en el
+contrato). Probada de punta a punta en el Kind con Playwright a 360 px (Ryder con hándicap y
+scratch, Stableford y Medal, varios campos, permisos por papel y estado, recálculo comprobado
+en la BD) y la regresión de los dos refactors; sin la pasada del iPhone: Agustín pidió cortar.
+
+### Added
+
+- **Barra general obligatoria al apuntarse y al aceptar una invitación**, con la habitual del
+  género marcada (hombres amarillas, mujeres rojas) (#1220).
+- **«Elige tu barra en {campo}»** tras apuntarse o aceptar con plaza, campo a campo, para los
+  campos donde no tiene barra (#1220).
+- **«Mis barras» en la ficha**: la general y, campo a campo, la barra y de dónde sale (tu barra,
+  la del campo, tu general, la habitual, sin barra o, terminada, la jugada), con «Cambiar»
+  donde se puede (#1220, #1222).
+- **Botón «Barras» por jugador** para el organizador, el admin y su capitán, y **«Barras de los
+  campos»** para el organizador y el admin, que enseña lo fijado por campo y género, con
+  «Fijar» y «Quitar» (#1220, #1222).
+
+### Changed
+
+- **El aviso de un campo sin barra dice a quién pedírsela** cuando el jugador ya no puede
+  cambiarla (en curso: capitán u organizador en la Ryder, organizador en stroke play), y con la
+  competición terminada o cancelada no avisa (#1221, #1222).
+- **Los errores de barras dicen «partido» en la Ryder y «partida» en stroke play**; emparejar a
+  alguien fuera de su equipo tiene su texto (#1222).
+- **Un solo orden de barras en los selectores**: negras, blancas, amarillas, azules, rojas y
+  luego oro, verdes, naranjas y rosas (#1222).
+- **Los avisos de los modales de barras salen arriba**, sin tapar «Quitar» ni «Cerrar» (#1222).
+- **Equipos, modalidades, géneros, visibilidades, eventos de la Actividad, validación de hoyos,
+  papeles, relaciones de amistad y demás códigos tienen nombre en el dominio** en vez de
+  escribirse a mano (#1212, #1213). Para el jugador no cambia nada; un guardián impide volver
+  a escribirlos.
+
+### Fixed
+
+- **«Sin barra» sale una vez**, no «Sin barra · Sin barra» (#1221).
+- **Los modales de barras se desplazan en el móvil** hasta «Cerrar» cuando hay varios campos;
+  con pocos siguen centrados (#1223).
+
 ## [2.89.0] - 2026-11-20
 
 **La calidad de la auditoría sigue: las pantallas de anotar, el asistente de la partida
