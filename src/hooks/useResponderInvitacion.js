@@ -7,6 +7,7 @@ import { respondToInvitationUseCase } from '../composition';
 import { cargarBarras } from '../composition/cargarBarras';
 import { registraElFallo } from '../utils/registraElFallo';
 import { claveDelFalloDeLaBarra } from '../utils/falloDeLaBarra';
+import { AVISO_ARRIBA } from '../utils/avisoArriba';
 import { aceptadaConPlaza } from '../utils/entraConPlaza';
 
 // Sin plaza, o con los equipos ya formados (29 oct 2026): se dice por qué y
@@ -41,13 +42,17 @@ const MOTIVOS_PARA_NO_ENTRAR = {
  *   alAceptar: (resultado: object) => void,
  *   alCambiar: () => unknown,
  *   textoYaNoPendiente?: string,
+ *   conEquipos?: boolean,
  * }} opciones - qué hacer al aceptar, cómo releer lo de la pantalla y con qué
- *   texto decir que ya no estaba pendiente
+ *   texto decir que ya no estaba pendiente. `conEquipos`: una Ryder (por
+ *   defecto; «Mis invitaciones» no sabe la modalidad) o stroke play, para
+ *   nombrar lo pendiente en un fallo de la barra
  */
 export const useResponderInvitacion = ({
   alAceptar,
   alCambiar,
   textoYaNoPendiente = 'errors.notPendingAnymore',
+  conEquipos = true,
 }) => {
   const { t } = useTranslation(['invitations', 'competitions']);
   const generoParaApuntarse = useGeneroParaApuntarse();
@@ -124,7 +129,10 @@ export const useResponderInvitacion = ({
         'Error saving the tee after accepting:',
         error,
       );
-      customToast.error(t(claveDelFalloDeLaBarra(error)));
+      customToast.error(
+        t(claveDelFalloDeLaBarra(error, { conEquipos })),
+        AVISO_ARRIBA,
+      );
     }
   };
 

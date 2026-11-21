@@ -327,6 +327,9 @@ function AppContent() {
         containerClassName={
           showBottomNav ? 'toast-container-above-bottom-nav' : undefined
         }
+        // Los avisos de arriba (los de los modales de barras) por debajo de la
+        // muesca: la app pinta bajo la barra de estado (viewport-fit=cover)
+        containerStyle={{ top: 'calc(16px + env(safe-area-inset-top))' }}
         toastOptions={{
           duration: 4000,
           style: {

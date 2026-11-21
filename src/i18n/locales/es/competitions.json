@@ -745,11 +745,14 @@
       "OWN": "Tu barra",
       "COURSE": "Barra del campo",
       "GENERAL": "Tu barra general",
-      "DEFAULT": "Habitual"
+      "DEFAULT": "Habitual",
+      "PLAYED": "Jugada"
     },
     "noTee": "Sin barra",
     "chooseOnCourse": "Elige tu barra en {{course}}",
     "chooseOnCourseHint": "Este campo no tiene tu barra general. Elige con qué barras juegas en él.",
+    "askCaptainOrOrganiser": "No tienes barra en {{course}}: pídesela a tu capitán o al organizador",
+    "askOrganiser": "No tienes barra en {{course}}: pídesela al organizador",
     "change": "Cambiar",
     "save": "Guardar",
     "close": "Cerrar",
@@ -796,11 +799,17 @@
       "TEE_NOT_ON_PENDING_COURSE": "Esa barra no existe en un campo con partidos pendientes: elige antes la barra de ese campo.",
       "cantRemove": "No se puede quitar: dejaría un partido pendiente sin una barra válida en este campo."
     },
+    "errorsStrokePlay": {
+      "PENDING_GAME_NOT_RECALCULABLE": "Una partida pendiente no se pudo recalcular con la barra nueva. Avisa al organizador.",
+      "TEE_NOT_ON_PENDING_COURSE": "Esa barra no existe en un campo con partidas pendientes: elige antes la barra de ese campo.",
+      "cantRemove": "No se puede quitar: dejaría una partida pendiente sin una barra válida en este campo."
+    },
     "sourceOther": {
       "OWN": "Su barra",
       "COURSE": "Barra del campo",
       "GENERAL": "Su barra general",
-      "DEFAULT": "Habitual"
+      "DEFAULT": "Habitual",
+      "PLAYED": "Jugada"
     },
     "usualMine": "Tu habitual ({{color}})",
     "usualMineNoColor": "Tu habitual",

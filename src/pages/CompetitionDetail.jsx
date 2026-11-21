@@ -175,7 +175,10 @@ const CompetitionDetail = () => {
       miAprobada &&
       !ESTADOS_CERRADOS.has(competition?.status)
     )
-      barrasPendientes.comprobar(miAprobada);
+      // Una Ryder salvo stroke play (`hasTeams === false`, como la ficha)
+      barrasPendientes.comprobar(miAprobada, {
+        conEquipos: competition?.hasTeams !== false,
+      });
     navigate(`${location.pathname}${location.search}`, {
       replace: true,
       state: { ...location.state, preguntarBarras: undefined },
@@ -320,7 +323,9 @@ const CompetitionDetail = () => {
     setSavingHandicapId,
     setRevertingHandicapId,
     setVersionFranjas,
-    comprobarBarrasPendientes: barrasPendientes.comprobar,
+    // Con su modalidad, para nombrar lo pendiente en un fallo (CodeRabbit)
+    comprobarBarrasPendientes: (enrollmentId) =>
+      barrasPendientes.comprobar(enrollmentId, { conEquipos: !esStrokePlay }),
     setIrASinFranja,
     setReleyendoTrasCerrar,
     setGuardandoCapitanes,
@@ -441,11 +446,14 @@ const CompetitionDetail = () => {
             <InvitacionEnLaFicha
               invitacion={competition.myPendingInvitation ?? null}
               alCambiar={loadCompetition}
+              conEquipos={!esStrokePlay}
               // Aceptada, la ficha pide la barra de los campos sin la general
               alAceptar={async (resultado) => {
                 await loadCompetition();
                 if (aceptadaConPlaza(resultado))
-                  barrasPendientes.comprobar(resultado.enrollmentId);
+                  barrasPendientes.comprobar(resultado.enrollmentId, {
+                    conEquipos: !esStrokePlay,
+                  });
               }}
             />
 
@@ -500,6 +508,7 @@ const CompetitionDetail = () => {
                 inscripcion={ficha.userEnrollment}
                 puedeCambiar={puedeCambiarSuBarra(ficha.userEnrollment)}
                 cerrada={terminada}
+                conEquipos={!esStrokePlay}
                 version={versionDeBarras}
                 onCambio={conSuGeneral(ficha.userEnrollment.id)}
               />
@@ -550,6 +559,7 @@ const CompetitionDetail = () => {
             {barrasDeLosCampos && (
               <BarrasDeLosCamposModal
                 competitionId={id}
+                conEquipos={!esStrokePlay}
                 onClose={() => setBarrasDeLosCampos(false)}
                 onCambio={barrasCambiadas}
               />
@@ -612,6 +622,7 @@ const CompetitionDetail = () => {
                 inscripcion={barrasDe}
                 puedeCambiar={puedeCambiarSuBarra(barrasDe)}
                 cerrada={terminada}
+                conEquipos={!esStrokePlay}
                 onClose={() => setBarrasDe(null)}
                 onCambio={conSuGeneral(barrasDe.id)}
               />

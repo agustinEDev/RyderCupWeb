@@ -6,8 +6,10 @@ import { cargarBarras } from '../../../composition/cargarBarras';
 import { BARRAS_GENERALES } from '../../../utils/barrasGenerales';
 import { claveDelFalloDeLaBarra } from '../../../utils/falloDeLaBarra';
 import customToast from '../../../utils/toast';
+import { AVISO_ARRIBA } from '../../../utils/avisoArriba';
 import { registraElFallo } from '../../../utils/registraElFallo';
 import { TeeSource } from '../../../domain/value_objects/TeeSource';
+import TeeColor from '../../../domain/value_objects/TeeColor';
 
 const GENERAL = 'general';
 
@@ -31,6 +33,8 @@ const sinClave = (elegidas, clave) =>
  *   un campo sin barra no se resalta como aviso (ya no se puede elegir)
  * @param {boolean} [props.propia=false] - Las mías: «Tu barra»; de otro, en
  *   tercera persona («Su barra»)
+ * @param {boolean} [props.conEquipos=true] - Una Ryder: lo pendiente de un
+ *   fallo es un «partido»; en stroke play, una «partida»
  */
 const BarrasDelJugadorModal = ({
   inscripcion,
@@ -40,6 +44,7 @@ const BarrasDelJugadorModal = ({
   titulo: tituloPropio,
   propia = false,
   cerrada = false,
+  conEquipos = true,
 }) => {
   const { t } = useTranslation(['competitions', 'golfCourses']);
   const { barras, cargando, fallo, recargar } = useBarrasDeLaInscripcion(
@@ -72,7 +77,7 @@ const BarrasDelJugadorModal = ({
           clave,
           valor,
         );
-      customToast.success(t('competitions:tees.saved'));
+      customToast.success(t('competitions:tees.saved'), AVISO_ARRIBA);
       setElegidas((e) => sinClave(e, clave));
       const leida = await recargar();
       if (leida.estado === 'cargada') onCambio?.(leida.datos);
@@ -83,7 +88,13 @@ const BarrasDelJugadorModal = ({
         error,
       );
       customToast.error(
-        t(claveDelFalloDeLaBarra(error, { quitando: valor === null })),
+        t(
+          claveDelFalloDeLaBarra(error, {
+            quitando: valor === null,
+            conEquipos,
+          }),
+        ),
+        AVISO_ARRIBA,
       );
     } finally {
       setGuardando(null);
@@ -175,7 +186,8 @@ const BarrasDelJugadorModal = ({
                 // responde el servidor
                 quitableSinCambio={campo.source === TeeSource.NONE}
                 vacia={t('competitions:tees.noOwnOnCourse')}
-                opciones={campo.options}
+                // En el orden de todos los selectores (tabla del 21 nov, E)
+                opciones={TeeColor.ordenarParaSelector(campo.options)}
                 // Su barra propia, aunque el campo ya no la tenga: si no, el
                 // selector mostraría otra que no es la suya
                 yaNoDisponible={

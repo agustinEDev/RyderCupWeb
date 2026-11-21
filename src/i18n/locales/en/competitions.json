@@ -745,11 +745,14 @@
       "OWN": "Your tee",
       "COURSE": "Course tee",
       "GENERAL": "Your general tee",
-      "DEFAULT": "Usual"
+      "DEFAULT": "Usual",
+      "PLAYED": "Played"
     },
     "noTee": "No tee",
     "chooseOnCourse": "Choose your tee at {{course}}",
     "chooseOnCourseHint": "This course does not have your general tee. Choose which tees you play there.",
+    "askCaptainOrOrganiser": "You have no tee at {{course}}: ask your captain or the organiser",
+    "askOrganiser": "You have no tee at {{course}}: ask the organiser",
     "change": "Change",
     "save": "Save",
     "close": "Close",
@@ -796,11 +799,17 @@
       "TEE_NOT_ON_PENDING_COURSE": "That tee does not exist on a course with pending games: choose that course's tee first.",
       "cantRemove": "It can't be removed: a game still to play would be left without a valid tee on this course."
     },
+    "errorsStrokePlay": {
+      "PENDING_GAME_NOT_RECALCULABLE": "A pending game could not be recalculated with the new tee. Tell the organiser.",
+      "TEE_NOT_ON_PENDING_COURSE": "That tee does not exist on a course with pending games: choose that course's tee first.",
+      "cantRemove": "It can't be removed: a game still to play would be left without a valid tee on this course."
+    },
     "sourceOther": {
       "OWN": "Their tee",
       "COURSE": "Course tee",
       "GENERAL": "Their general tee",
-      "DEFAULT": "Usual"
+      "DEFAULT": "Usual",
+      "PLAYED": "Played"
     },
     "usualMine": "Your usual ({{color}})",
     "usualMineNoColor": "Your usual",

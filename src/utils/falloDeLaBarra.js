@@ -9,6 +9,13 @@ const CON_SU_TEXTO = new Set([
   // La general en un campo con partidos pendientes que no la tiene
   'TEE_NOT_ON_PENDING_COURSE',
 ]);
+// Los que hablan de lo pendiente: un «partido» en una Ryder, una «partida»
+// en stroke play (tabla del 21 nov 2026, D)
+const DE_LO_PENDIENTE = new Set([
+  'PENDING_GAME_NOT_RECALCULABLE',
+  'TEE_NOT_ON_PENDING_COURSE',
+  'cantRemove',
+]);
 
 /**
  * La clave del texto de un fallo al guardar una barra: por su código, nunca
@@ -21,20 +28,26 @@ const CON_SU_TEXTO = new Set([
  * campo para un género, del organizador, con su texto: no habla de un
  * jugador).
  *
+ * Lo que habla de lo pendiente sale con «partida» en stroke play
+ * (`conEquipos: false`); sin decirlo, con «partido», el de la Ryder.
+ *
  * @param {Error & {status?: number, errorCode?: string|null}} error
- * @param {{ delCampo?: boolean, quitando?: boolean }} [contexto]
+ * @param {{ delCampo?: boolean, quitando?: boolean, conEquipos?: boolean }} [contexto]
  * @returns {string}
  */
 export const claveDelFalloDeLaBarra = (
   error,
-  { delCampo = false, quitando = false } = {},
+  { delCampo = false, quitando = false, conEquipos = true } = {},
 ) => {
+  const deLosFallos = (clave) =>
+    !conEquipos && DE_LO_PENDIENTE.has(clave)
+      ? `competitions:tees.errorsStrokePlay.${clave}`
+      : `competitions:tees.errors.${clave}`;
   if (quitando && error?.errorCode === 'TEE_NOT_AVAILABLE')
-    return 'competitions:tees.errors.cantRemove';
+    return deLosFallos('cantRemove');
   if (delCampo && error?.errorCode === 'TEE_NOT_AVAILABLE')
     return 'competitions:tees.courses.errors.TEE_NOT_AVAILABLE';
-  if (CON_SU_TEXTO.has(error?.errorCode))
-    return `competitions:tees.errors.${error.errorCode}`;
+  if (CON_SU_TEXTO.has(error?.errorCode)) return deLosFallos(error.errorCode);
   if (error?.status === 403) return 'competitions:tees.errors.FORBIDDEN';
   return 'competitions:tees.errors.generic';
 };

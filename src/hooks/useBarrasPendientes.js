@@ -2,6 +2,7 @@ import { useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { cargarBarras } from '../composition/cargarBarras';
 import customToast from '../utils/toast';
+import { AVISO_ARRIBA } from '../utils/avisoArriba';
 import { registraElFallo } from '../utils/registraElFallo';
 import { claveDelFalloDeLaBarra } from '../utils/falloDeLaBarra';
 import { TeeSource } from '../domain/value_objects/TeeSource';
@@ -23,7 +24,12 @@ export const useBarrasPendientes = ({ alGuardar } = {}) => {
   // después, no se aplica (/code-review)
   const ultimaComprobacion = useRef(0);
 
-  const comprobar = async (enrollmentId) => {
+  /**
+   * @param {string} enrollmentId
+   * @param {{ conEquipos?: boolean }} [competicion] - Una Ryder (por defecto):
+   *   lo pendiente de un fallo es un «partido»; en stroke play, una «partida»
+   */
+  const comprobar = async (enrollmentId, { conEquipos = true } = {}) => {
     if (!enrollmentId) return;
     const esta = ++ultimaComprobacion.current;
     try {
@@ -34,7 +40,7 @@ export const useBarrasPendientes = ({ alGuardar } = {}) => {
       const campos = barras.courses.filter(
         (campo) => campo.source === TeeSource.NONE && campo.options.length > 0,
       );
-      if (campos.length > 0) setPendiente({ enrollmentId, campos });
+      if (campos.length > 0) setPendiente({ enrollmentId, campos, conEquipos });
     } catch (error) {
       registraElFallo(
         'useBarrasPendientes.error-reading-tees',
@@ -56,7 +62,7 @@ export const useBarrasPendientes = ({ alGuardar } = {}) => {
 
   const guardar = async (color) => {
     if (!pendiente || guardando) return;
-    const { enrollmentId, campos } = pendiente;
+    const { enrollmentId, campos, conEquipos } = pendiente;
     const { golfCourseId } = campos[0];
     setGuardando(true);
     try {
@@ -66,7 +72,7 @@ export const useBarrasPendientes = ({ alGuardar } = {}) => {
         golfCourseId,
         color,
       );
-      customToast.success(t('tees.saved'));
+      customToast.success(t('tees.saved'), AVISO_ARRIBA);
       alGuardar?.();
       quitarCampo(enrollmentId, golfCourseId);
     } catch (error) {
@@ -75,7 +81,10 @@ export const useBarrasPendientes = ({ alGuardar } = {}) => {
         'Error saving a course tee:',
         error,
       );
-      customToast.error(t(claveDelFalloDeLaBarra(error)));
+      customToast.error(
+        t(claveDelFalloDeLaBarra(error, { conEquipos })),
+        AVISO_ARRIBA,
+      );
     } finally {
       setGuardando(false);
     }

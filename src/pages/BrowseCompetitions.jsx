@@ -182,12 +182,13 @@ const BrowseCompetitions = () => {
   });
 
   // Open modal to request enrollment
-  const openEnrollModal = (competitionId) => {
-    // En un stroke play la franja se elige en la ficha (release social 3)
-    const competicion = [...exploreCompetitions, ...joinableCompetitions].find(
+  const competicionDe = (competitionId) =>
+    [...exploreCompetitions, ...joinableCompetitions].find(
       (c) => c.id === competitionId,
     );
-    if (competicion?.hasTeams === false) {
+  const openEnrollModal = (competitionId) => {
+    // En un stroke play la franja se elige en la ficha (release social 3)
+    if (competicionDe(competitionId)?.hasTeams === false) {
       navigate(`/competitions/${competitionId}`, { state: { from: 'browse' } });
       return;
     }
@@ -231,7 +232,11 @@ const BrowseCompetitions = () => {
       // campo). Solo si sigue siendo su modal: si no, la pregunta saldría
       // encima del de otra competición (CodeRabbit)
       if (esSuModal() && entraConPlaza(hecho))
-        barrasPendientes.comprobar(hecho.id);
+        // Con su modalidad, para nombrar lo pendiente en un fallo (hoy siempre
+        // una Ryder: un stroke play se apunta en la ficha)
+        barrasPendientes.comprobar(hecho.id, {
+          conEquipos: competicionDe(competitionId)?.hasTeams !== false,
+        });
       customToast.success(
         t(
           hecho?.waiting

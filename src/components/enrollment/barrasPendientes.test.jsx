@@ -5,9 +5,13 @@ import {
   screen,
   fireEvent,
   act,
+  within,
 } from '@testing-library/react';
 import BarrasPendientesModal from './BarrasPendientesModal';
 import { useBarrasPendientes } from '../../hooks/useBarrasPendientes';
+
+// F13: en los modales de barras el aviso sale arriba, sin tapar sus botones
+const ARRIBA = { position: 'top-center' };
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
@@ -65,7 +69,7 @@ describe('useBarrasPendientes', () => {
 
     await act(() => result.current.guardar('RED'));
     expect(mocks.fijar).toHaveBeenCalledWith('e1', 'g2', 'RED');
-    expect(mocks.toast.success).toHaveBeenCalledWith('tees.saved');
+    expect(mocks.toast.success).toHaveBeenCalledWith('tees.saved', ARRIBA);
     expect(alGuardar).toHaveBeenCalledTimes(1);
     expect(result.current.campo.golfCourseId).toBe('g4');
 
@@ -248,6 +252,45 @@ describe('useBarrasPendientes', () => {
     await act(() => result.current.guardar('RED'));
     expect(mocks.toast.error).toHaveBeenCalledWith(
       'competitions:tees.errors.TEE_NOT_AVAILABLE',
+      ARRIBA,
+    );
+    expect(result.current.campo.golfCourseId).toBe('g2');
+    expect(result.current.guardando).toBe(false);
+  });
+
+  it('stroke play (conEquipos false): lo pendiente es una partida', async () => {
+    mocks.leer.mockResolvedValue({ courses: [campo('g2', 'NONE')] });
+    mocks.fijar.mockRejectedValue(
+      Object.assign(new Error('422'), {
+        status: 422,
+        errorCode: 'TEE_NOT_ON_PENDING_COURSE',
+      }),
+    );
+    const { result } = renderHook(() => useBarrasPendientes());
+    await act(() => result.current.comprobar('e1', { conEquipos: false }));
+    await act(() => result.current.guardar('RED'));
+    expect(mocks.toast.error).toHaveBeenCalledWith(
+      'competitions:tees.errorsStrokePlay.TEE_NOT_ON_PENDING_COURSE',
+      ARRIBA,
+    );
+    expect(result.current.campo.golfCourseId).toBe('g2');
+    expect(result.current.guardando).toBe(false);
+  });
+
+  it('sin decir la modalidad, una Ryder: lo pendiente es un partido', async () => {
+    mocks.leer.mockResolvedValue({ courses: [campo('g2', 'NONE')] });
+    mocks.fijar.mockRejectedValue(
+      Object.assign(new Error('422'), {
+        status: 422,
+        errorCode: 'TEE_NOT_ON_PENDING_COURSE',
+      }),
+    );
+    const { result } = renderHook(() => useBarrasPendientes());
+    await act(() => result.current.comprobar('e1'));
+    await act(() => result.current.guardar('RED'));
+    expect(mocks.toast.error).toHaveBeenCalledWith(
+      'competitions:tees.errors.TEE_NOT_ON_PENDING_COURSE',
+      ARRIBA,
     );
     expect(result.current.campo.golfCourseId).toBe('g2');
     expect(result.current.guardando).toBe(false);
@@ -310,6 +353,15 @@ describe('BarrasPendientesModal', () => {
   it('CR3: guardando, «Cerrar» está desactivado', () => {
     pinta({ guardando: true });
     expect(screen.getByText('competitions:tees.close')).toBeDisabled();
+  });
+
+  it('E12: las opciones, en el orden de los selectores', () => {
+    pinta({ campo: campo('g2', 'NONE', ['RED', 'BLACK', 'WHITE']) });
+    expect(
+      within(screen.getByLabelText('competitions:tees.label'))
+        .getAllByRole('option')
+        .map((o) => o.value),
+    ).toEqual(['', 'BLACK', 'WHITE', 'RED']);
   });
 
   it('«Ahora no» pasa al siguiente; sin campo, nada', () => {

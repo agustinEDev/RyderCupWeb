@@ -9,6 +9,7 @@ import { barrasDeCadaCampo } from '../../../utils/camposDeLaCompeticion';
 import { barrasParaElegir } from '../../../utils/barraPorDefecto';
 import { claveDelFalloDeLaBarra } from '../../../utils/falloDeLaBarra';
 import customToast from '../../../utils/toast';
+import { AVISO_ARRIBA } from '../../../utils/avisoArriba';
 import { registraElFallo } from '../../../utils/registraElFallo';
 
 // Primero las mujeres, como se juega: «para todas» y «para todos»
@@ -21,20 +22,37 @@ const GENEROS = [
  * La barra de cada campo para todos los de un género (barras por campo, R2,
  * F3): solo el organizador o un admin. Pisa la barra general de los de ese
  * género en ese campo, no el cambio propio de nadie. Las barras se leen al
- * abrir, de los campos de la competición. La API no dice cuál hay fijada:
- * se elige y se fija, o se quita.
+ * abrir, de los campos de la competición, y lo fijado, de su `course-tees`
+ * (tabla del 21 nov 2026, A): cada selector parte de lo fijado y «Quitar»
+ * solo se activa si hay algo que quitar. Si esa lectura falla, el modal sigue:
+ * se avisa, se puede fijar y «Quitar» queda a mano, que no se sabe.
  *
  * @param {Object} props
  * @param {string} props.competitionId
  * @param {Function} props.onClose
  * @param {Function} [props.onCambio]
+ * @param {boolean} [props.conEquipos=true] - Una Ryder: lo pendiente de un
+ *   fallo es un «partido»; en stroke play, una «partida»
  */
-const BarrasDeLosCamposModal = ({ competitionId, onClose, onCambio }) => {
+const BarrasDeLosCamposModal = ({
+  competitionId,
+  onClose,
+  onCambio,
+  conEquipos = true,
+}) => {
   const { t } = useTranslation(['competitions', 'golfCourses']);
   const [campos, setCampos] = useState(null);
   const [fallo, setFallo] = useState(false);
   const [elegidas, setElegidas] = useState({});
   const [guardando, setGuardando] = useState(null);
+  // Lo fijado, por clave (`{campo}:{género}`): el color, o null si se sabe que
+  // no hay nada (se acaba de quitar). Lo que no está, sin fijar, salvo si la
+  // lectura falló: entonces no se sabe. Lo fijado o quitado aquí gana a la
+  // lectura, que puede llegar después con lo de antes (revisor de la #1222)
+  const [delServidor, setDelServidor] = useState({});
+  const [cambiosLocales, setCambiosLocales] = useState({});
+  const [sinFijadas, setSinFijadas] = useState(false);
+  const fijadas = { ...delServidor, ...cambiosLocales };
   const { cargando, recargar } = useCargaCancelableEffect(
     () => getCompetitionGolfCoursesUseCase.execute(competitionId),
     [competitionId],
@@ -46,6 +64,37 @@ const BarrasDeLosCamposModal = ({ competitionId, onClose, onCambio }) => {
       alFallar: () => setFallo(true),
     },
   );
+  const { cargando: leyendoFijadas, recargar: releerFijadas } =
+    useCargaCancelableEffect(
+      () =>
+        cargarBarras().then(({ getCompetitionCourseTeesUseCase }) =>
+          getCompetitionCourseTeesUseCase.execute(competitionId),
+        ),
+      [competitionId],
+      {
+        alCargar: (filas) => {
+          setDelServidor(
+            Object.fromEntries(
+              filas.map((f) => [`${f.golfCourseId}:${f.gender}`, f.teeColor]),
+            ),
+          );
+          setSinFijadas(false);
+        },
+        alFallar: (error) => {
+          registraElFallo(
+            'BarrasDeLosCamposModal.error-reading-course-tees',
+            'Error reading the course tees:',
+            error,
+          );
+          setSinFijadas(true);
+          // Un texto de LECTURA: el de un fallo al guardar decía «No se pudo
+          // guardar» o, con un 403, «No puedes cambiar esta barra» (/code-review)
+          customToast.error(t('competitions:tees.notLoaded'), AVISO_ARRIBA);
+        },
+      },
+    );
+  const hayFijada = (clave) =>
+    clave in fijadas ? fijadas[clave] !== null : sinFijadas;
 
   const fijar = async (campo, genero, color) => {
     const clave = `${campo.id}:${genero}`;
@@ -64,7 +113,9 @@ const BarrasDeLosCamposModal = ({ competitionId, onClose, onCambio }) => {
             ? 'competitions:tees.courses.saved'
             : 'competitions:tees.courses.removed',
         ),
+        AVISO_ARRIBA,
       );
+      setCambiosLocales((v) => ({ ...v, [clave]: color }));
       setElegidas((v) =>
         Object.fromEntries(Object.entries(v).filter(([k]) => k !== clave)),
       );
@@ -80,8 +131,10 @@ const BarrasDeLosCamposModal = ({ competitionId, onClose, onCambio }) => {
           claveDelFalloDeLaBarra(error, {
             delCampo: true,
             quitando: color === null,
+            conEquipos,
           }),
         ),
+        AVISO_ARRIBA,
       );
     } finally {
       setGuardando(null);
@@ -112,7 +165,8 @@ const BarrasDeLosCamposModal = ({ competitionId, onClose, onCambio }) => {
             {t('competitions:tees.loading')}
           </p>
         )}
-        {fallo && !cargando && (
+        {/* Si falla cualquiera de las dos lecturas, se reintentan las dos */}
+        {(fallo || sinFijadas) && !cargando && !leyendoFijadas && (
           <div
             data-testid="campos-sin-cargar"
             className="rounded-lg bg-amber-50 p-3 text-sm text-amber-900"
@@ -120,7 +174,10 @@ const BarrasDeLosCamposModal = ({ competitionId, onClose, onCambio }) => {
             <p>{t('competitions:tees.notLoaded')}</p>
             <button
               type="button"
-              onClick={() => recargar()}
+              onClick={() => {
+                recargar();
+                releerFijadas();
+              }}
               className="mt-2 min-h-11 font-semibold underline"
             >
               {t('competitions:tees.retry')}
@@ -138,12 +195,18 @@ const BarrasDeLosCamposModal = ({ competitionId, onClose, onCambio }) => {
             {GENEROS.map(({ genero, clave: texto }) => {
               const clave = `${campo.id}:${genero}`;
               const opciones = barrasParaElegir(campo.tees, genero);
-              const elegida = elegidas[clave] ?? '';
+              const fijada = fijadas[clave] ?? null;
+              // La fijada que ya no está entre las opciones (el campo cambió
+              // sus barras): se ve, marcada, y no se vuelve a mandar
+              const yaNoDisponible =
+                fijada !== null && !opciones.includes(fijada) ? fijada : null;
+              const elegida = elegidas[clave] ?? fijada ?? '';
+              const conSelector = opciones.length > 0 || yaNoDisponible;
               const id = `barra-${clave}`;
               return (
                 <div key={genero} className="mt-2">
                   <label
-                    htmlFor={opciones.length > 0 ? id : undefined}
+                    htmlFor={conSelector ? id : undefined}
                     className="block text-sm text-gray-700"
                   >
                     {t(texto)}
@@ -156,7 +219,7 @@ const BarrasDeLosCamposModal = ({ competitionId, onClose, onCambio }) => {
                     </p>
                   )}
                   <div className="mt-1 flex flex-wrap items-center gap-2">
-                    {opciones.length > 0 && (
+                    {conSelector && (
                       <>
                         <select
                           id={id}
@@ -172,6 +235,15 @@ const BarrasDeLosCamposModal = ({ competitionId, onClose, onCambio }) => {
                           <option value="" disabled>
                             {t('competitions:tees.courses.notSet')}
                           </option>
+                          {yaNoDisponible && (
+                            <option value={yaNoDisponible}>
+                              {t('competitions:tees.notAvailableHere', {
+                                color: t(
+                                  `golfCourses:form.teeColors.${yaNoDisponible}`,
+                                ),
+                              })}
+                            </option>
+                          )}
                           {opciones.map((color) => (
                             <option key={color} value={color}>
                               {t(`golfCourses:form.teeColors.${color}`)}
@@ -181,7 +253,16 @@ const BarrasDeLosCamposModal = ({ competitionId, onClose, onCambio }) => {
                         <button
                           type="button"
                           data-testid={`fijar-${clave}`}
-                          disabled={!elegida || guardando !== null}
+                          disabled={
+                            // Sin elegir, o lo elegido ya no está entre las
+                            // opciones (tras «Reintentar»; CodeRabbit)
+                            !opciones.includes(elegida) ||
+                            // Lo ya fijado (también la que ya no está entre
+                            // las opciones) no se vuelve a mandar
+                            elegida === fijada ||
+                            leyendoFijadas ||
+                            guardando !== null
+                          }
                           onClick={() => fijar(campo, genero, elegida)}
                           className="min-h-11 px-3 py-2 bg-primary text-white rounded-lg text-sm font-medium disabled:opacity-50"
                         >
@@ -192,7 +273,13 @@ const BarrasDeLosCamposModal = ({ competitionId, onClose, onCambio }) => {
                     <button
                       type="button"
                       data-testid={`quitar-${clave}`}
-                      disabled={guardando !== null}
+                      // Mientras se lee lo fijado, nada: no se fija ni se
+                      // quita creyendo que no había nada (/code-review)
+                      disabled={
+                        guardando !== null ||
+                        leyendoFijadas ||
+                        !hayFijada(clave)
+                      }
                       onClick={() => fijar(campo, genero, null)}
                       className="min-h-11 px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 disabled:opacity-50"
                     >

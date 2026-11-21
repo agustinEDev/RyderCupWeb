@@ -226,14 +226,40 @@ describe('useResponderInvitacion — la barra al aceptar', () => {
     await aceptaCon(result, 'inv-1');
 
     expect(toast.success).toHaveBeenCalledWith('success.accepted');
+    // Arriba, como en los modales de barras; sin decir la modalidad, la Ryder
     expect(toast.error).toHaveBeenCalledWith(
       'competitions:tees.errors.TEE_NOT_ON_PENDING_COURSE',
+      { position: 'top-center' },
     );
     // La ficha sigue y pide la de los campos
     expect(alAceptar).toHaveBeenCalledWith({
       status: 'ACCEPTED',
       enrollmentId: 'e-1',
     });
+  });
+
+  it('en stroke play (conEquipos false), el fallo de la barra habla de partidas', async () => {
+    responder.mockResolvedValue({ status: 'ACCEPTED', enrollmentId: 'e-1' });
+    barras.general.mockRejectedValue(
+      Object.assign(new Error('422'), {
+        status: 422,
+        errorCode: 'TEE_NOT_ON_PENDING_COURSE',
+      }),
+    );
+    const { result } = renderHook(() =>
+      useResponderInvitacion({
+        alAceptar: vi.fn(),
+        alCambiar: vi.fn(),
+        conEquipos: false,
+      }),
+    );
+
+    await aceptaCon(result, 'inv-1');
+
+    expect(toast.error).toHaveBeenCalledWith(
+      'competitions:tees.errorsStrokePlay.TEE_NOT_ON_PENDING_COURSE',
+      { position: 'top-center' },
+    );
   });
 
   it('2+3: en lista de espera (sin plaza), ni se guarda la barra', async () => {
