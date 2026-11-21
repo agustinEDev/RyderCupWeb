@@ -169,7 +169,13 @@ const CompetitionDetail = () => {
     (e) => e.userId === userId && e.status === EnrollmentStatus.APPROVED,
   )?.id;
   const usarLaMarcaDeBarras = useEffectEvent(() => {
-    if (preguntarBarras && miAprobada) barrasPendientes.comprobar(miAprobada);
+    // Cerrada la competición, no se pregunta: ya no se puede elegir
+    if (
+      preguntarBarras &&
+      miAprobada &&
+      !ESTADOS_CERRADOS.has(competition?.status)
+    )
+      barrasPendientes.comprobar(miAprobada);
     navigate(`${location.pathname}${location.search}`, {
       replace: true,
       state: { ...location.state, preguntarBarras: undefined },
@@ -493,6 +499,7 @@ const CompetitionDetail = () => {
                 key={ficha.userEnrollment.id}
                 inscripcion={ficha.userEnrollment}
                 puedeCambiar={puedeCambiarSuBarra(ficha.userEnrollment)}
+                cerrada={terminada}
                 version={versionDeBarras}
                 onCambio={conSuGeneral(ficha.userEnrollment.id)}
               />
@@ -604,6 +611,7 @@ const CompetitionDetail = () => {
                 key={barrasDe.id}
                 inscripcion={barrasDe}
                 puedeCambiar={puedeCambiarSuBarra(barrasDe)}
+                cerrada={terminada}
                 onClose={() => setBarrasDe(null)}
                 onCambio={conSuGeneral(barrasDe.id)}
               />

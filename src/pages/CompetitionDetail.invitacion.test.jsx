@@ -1,5 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import {
+  render,
+  screen,
+  fireEvent,
+  waitFor,
+  act,
+} from '@testing-library/react';
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router';
 import CompetitionDetail from './CompetitionDetail';
 
@@ -459,4 +465,41 @@ describe('CompetitionDetail · las barras que faltan tras aceptar', () => {
     await new Promise((r) => setTimeout(r, 20));
     expect(mias()).toBe(antes);
   });
+
+  it.each(['COMPLETED', 'CANCELLED'])(
+    'cerrada (%s): ni se pregunta por los campos ni «Mis barras» avisa',
+    async (status) => {
+      mockGetCompetitionDetail.mockResolvedValue({
+        ...FICHA,
+        status,
+        enrollment_status: 'APPROVED',
+      });
+      mockListEnrollments.mockResolvedValue([
+        { id: 'mia-1', userId: 'player-1', status: 'APPROVED' },
+      ]);
+      renderPage({ from: 'invitations', preguntarBarras: true });
+
+      await screen.findByTestId('mis-barras');
+      await waitFor(() =>
+        expect(
+          screen.getByTestId('estado-de-navegacion').textContent,
+        ).not.toContain('preguntarBarras'),
+      );
+      // Sin depender del tiempo: que acabe cualquier comprobación en curso
+      // (es asíncrona) y entonces contar. Las barras de «mia-1» se leen UNA
+      // vez, las de «Mis barras»; la pregunta de pendientes sería la segunda
+      await act(async () => {
+        await new Promise((r) => setTimeout(r, 0));
+      });
+      expect(
+        mockLeerBarras.mock.calls.filter(([id]) => id === 'mia-1'),
+      ).toHaveLength(1);
+      expect(
+        screen.queryByText('competitions:tees.chooseOnCourse', {
+          selector: 'h2#barra-pendiente-titulo',
+        }),
+      ).not.toBeInTheDocument();
+      expect(screen.queryByTestId('elige-barra-g2')).not.toBeInTheDocument();
+    },
+  );
 });
