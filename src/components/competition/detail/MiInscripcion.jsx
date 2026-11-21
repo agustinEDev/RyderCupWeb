@@ -3,18 +3,6 @@ import { getEnrollmentStatusColor } from '../../../services/competitions';
 import { etiquetaDeInscripcion } from '../../../utils/etiquetaDeInscripcion';
 import { diaCortoDeLaFicha } from '../../../utils/fichaDeLaCompeticion';
 import EnrollmentStatus from '../../../domain/value_objects/EnrollmentStatus';
-import { colorHabitual } from '../../../utils/barraPorDefecto';
-
-// «Rojas», o «Por defecto (Rojas)» si no eligió (FE #1214)
-const textoDeLaBarra = (t, color, genero) => {
-  if (color) return t(`golfCourses:form.teeColors.${color}`);
-  const habitual = colorHabitual(genero);
-  return habitual
-    ? t('detail.tee.default', {
-        color: t(`golfCourses:form.teeColors.${habitual}`),
-      })
-    : t('detail.tee.defaultNoColor');
-};
 
 /**
  * El estado de la inscripción propia (o su puesto en una espera) y, si tiene
@@ -39,8 +27,6 @@ const MiInscripcion = ({
   nombreLegal,
   savingNamePreference,
   handleToggleNamePreference,
-  puedeCambiarMiBarra = false,
-  onCambiarMiBarra,
 }) => (
   <div className="p-4">
     <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
@@ -85,31 +71,6 @@ const MiInscripcion = ({
             {t('detail.teamsFormed.enrolled')}
           </p>
         )}
-
-      {/* Mi barra (FE #1214): la elegida o la de por defecto, y cambiarla
-          mientras se pueda */}
-      {userEnrollment?.status === EnrollmentStatus.APPROVED && (
-        <div
-          data-testid="mi-barra"
-          className="mt-3 pt-3 border-t border-blue-200 flex flex-wrap items-center justify-between gap-2 text-sm text-blue-900"
-        >
-          <span>
-            {t('detail.tee.label')}:{' '}
-            <span className="font-medium">
-              {textoDeLaBarra(t, userEnrollment.color, generoDelUsuario)}
-            </span>
-          </span>
-          {puedeCambiarMiBarra && (
-            <button
-              type="button"
-              onClick={() => onCambiarMiBarra(userEnrollment)}
-              className="min-h-11 px-3 font-semibold text-primary underline"
-            >
-              {t('detail.tee.change')}
-            </button>
-          )}
-        </div>
-      )}
 
       {/* En una pública no se elige: delante el nombre real y el alias debajo */}
       {nombreFijoEnPublica && (
