@@ -738,7 +738,8 @@
     "general": "General tee",
     "mine": "My tees",
     "label": "Tee",
-    "choose": "Choose",
+    "choose": "Choose a tee",
+    "chooseShort": "Choose",
     "usual": "Usual for their gender ({{color}})",
     "usualNoColor": "The usual for their gender",
     "source": {
@@ -774,7 +775,6 @@
       "forMen": "For men",
       "set": "Set",
       "remove": "Remove",
-      "notSet": "Choose",
       "hint": "It replaces the general tee of that gender on this course, not a tee someone chose for this course. What has been played does not change.",
       "saved": "Course tee saved",
       "removed": "Course tee removed",

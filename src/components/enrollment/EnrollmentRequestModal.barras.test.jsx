@@ -64,6 +64,13 @@ describe('EnrollmentRequestModal · la barra general', () => {
     ]);
   });
 
+  it('selector ancho: el texto vacío largo, «Elige una barra»', () => {
+    abre({ generoDelJugador: 'MALE' });
+    expect(within(selector()).getAllByRole('option')[0]).toHaveTextContent(
+      /^competitions:tees\.choose$/,
+    );
+  });
+
   it.each([
     ['MALE', 'YELLOW'],
     ['FEMALE', 'RED'],
