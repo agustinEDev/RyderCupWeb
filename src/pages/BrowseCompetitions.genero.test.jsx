@@ -32,10 +32,12 @@ vi.mock('../components/layout/HeaderAuth', () => ({ default: () => null }));
 vi.mock('../utils/toast', () => ({
   default: { success: vi.fn(), error: vi.fn() },
 }));
-const SESION = { user: { id: 'p1' }, loading: false };
+// Con género, sale marcada su barra habitual al apuntarse (barras por campo)
+const SESION = { user: { id: 'p1', gender: 'MALE' }, loading: false };
 let userCambiante = false;
 vi.mock('../hooks/useAuth', () => ({
-  useAuth: () => (userCambiante ? { ...SESION, user: { id: 'p1' } } : SESION),
+  useAuth: () =>
+    userCambiante ? { ...SESION, user: { id: 'p1', gender: 'MALE' } } : SESION,
 }));
 const mockUnirse = vi.fn();
 const mockExplorar = vi.fn().mockResolvedValue([]);

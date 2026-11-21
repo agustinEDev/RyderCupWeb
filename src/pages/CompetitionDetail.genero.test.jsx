@@ -19,6 +19,8 @@ const mockAuthUser = {
   id: 'player-1',
   first_name: 'Test',
   last_name: 'Player',
+  // Con género, sale marcada su barra habitual al apuntarse (barras por campo)
+  gender: 'MALE',
 };
 
 // Refrescar la sesión crea un `user` nuevo con el mismo id: se simula dando

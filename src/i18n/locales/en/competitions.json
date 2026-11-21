@@ -538,28 +538,6 @@
     "teamsFormed": {
       "enrolled": "Teams are already formed. If you can't play, let the organizer know.",
       "closed": "Teams are already formed"
-    },
-    "tee": {
-      "label": "Tees",
-      "default": "Default ({{color}})",
-      "defaultNoColor": "Default",
-      "change": "Change tee",
-      "modalTitle": "{{name}}'s tees",
-      "hint": "What has been played does not change: pending games are recalculated with the new tee.",
-      "save": "Save",
-      "close": "Close",
-      "saved": "Tee changed",
-      "loading": "Reading the course tees…",
-      "notLoaded": "The course tees could not be read: only going back to the default is possible.",
-      "noneForGender": "The courses of this competition have no tees rated for this player.",
-      "errors": {
-        "TEE_NOT_AVAILABLE": "That tee is not rated for this player on the courses still to be played.",
-        "TEE_CHANGE_CLOSED": "The competition has finished or was cancelled: the tee can no longer be changed.",
-        "ENROLLMENT_NOT_APPROVED": "Only an approved enrolment's tee can be changed.",
-        "PENDING_GAME_NOT_RECALCULABLE": "A pending game could not be recalculated with the new tee. Tell the organiser.",
-        "FORBIDDEN": "You cannot change this player's tee.",
-        "generic": "The tee could not be changed. Please try again."
-      }
     }
   },
   "browse": {
@@ -613,12 +591,8 @@
   },
   "enrollment": {
     "modalTitle": "Join",
-    "colorLabel": "Preferred tee colour",
-    "colorHint": "Used to assign the right tees in matches",
-    "noPreference": "No preference",
-    "teesLoading": "Reading the course tees…",
-    "teesNotLoaded": "The course tees could not be read. With no preference, you play from the usual tees for your gender.",
-    "noTeesForYou": "The courses of this competition have no tees rated for you. With no preference, you play from the usual tees for your gender.",
+    "colorLabel": "Your tee",
+    "colorHint": "Your usual tee: it is used on every course that has it.",
     "confirm": "Join",
     "cancel": "Cancel",
     "needsHandicap": "To join a Stableford or a Medal you need your handicap in your profile.",
@@ -759,5 +733,65 @@
     "zoneUnreadable": "The course time zone could not be read.",
     "retryZone": "Try again",
     "scheduledUnknownZone": "Scheduled: {{cuando}}, this device's time."
+  },
+  "tees": {
+    "general": "General tee",
+    "mine": "My tees",
+    "label": "Tee",
+    "choose": "Choose a tee",
+    "usual": "Usual for their gender ({{color}})",
+    "usualNoColor": "The usual for their gender",
+    "source": {
+      "OWN": "Your tee",
+      "COURSE": "Course tee",
+      "GENERAL": "Your general tee",
+      "DEFAULT": "Usual",
+      "NONE": "No tee"
+    },
+    "noTee": "No tee",
+    "chooseOnCourse": "Choose your tee at {{course}}",
+    "chooseOnCourseHint": "This course does not have your general tee. Choose which tees you play there.",
+    "change": "Change",
+    "save": "Save",
+    "close": "Close",
+    "notNow": "Not now",
+    "retry": "Retry",
+    "playerTitle": "{{name}}'s tees",
+    "playerTitleNoName": "Player's tees",
+    "playerButton": "Tees",
+    "onCourse": "At {{course}}",
+    "noOwnOnCourse": "No own tee on this course",
+    "saved": "Tee saved",
+    "loading": "Reading the tees…",
+    "notLoaded": "The tees could not be read.",
+    "noOptions": "This course has no tees for this player: tell the organiser.",
+    "courses": {
+      "button": "Course tees",
+      "title": "Course tees",
+      "forWomen": "For women",
+      "forMen": "For men",
+      "set": "Set",
+      "remove": "Remove",
+      "notSet": "Choose a tee",
+      "hint": "It replaces the general tee of that gender on this course, not a tee someone chose for this course. What has been played does not change.",
+      "saved": "Course tee saved",
+      "removed": "Course tee removed",
+      "noTees": "This course has no tees for that gender."
+    },
+    "accept": {
+      "title": "Accept the invitation",
+      "confirm": "Accept",
+      "cancel": "Cancel",
+      "teeSaveFailed": "Invitation accepted, but your tee could not be saved: change it on the competition page."
+    },
+    "errors": {
+      "TEE_NOT_AVAILABLE": "That tee is not rated for this player on the courses still to be played.",
+      "TEE_CHANGE_CLOSED": "The competition has finished or was cancelled: the tee can no longer be changed.",
+      "ENROLLMENT_NOT_APPROVED": "Only an approved enrolment's tee can be changed.",
+      "PENDING_GAME_NOT_RECALCULABLE": "A pending game could not be recalculated with the new tee. Tell the organiser.",
+      "COURSE_NOT_IN_COMPETITION": "That course is no longer part of this competition.",
+      "FORBIDDEN": "You cannot change this tee.",
+      "generic": "The tee could not be saved. Please try again."
+    }
   }
 }

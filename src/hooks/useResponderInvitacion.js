@@ -4,7 +4,9 @@ import customToast from '../utils/toast';
 import { mensajeDeError } from '../utils/sinCobertura';
 import { useGeneroParaApuntarse } from './useGeneroParaApuntarse';
 import { respondToInvitationUseCase } from '../composition';
+import { cargarBarras } from '../composition/cargarBarras';
 import { registraElFallo } from '../utils/registraElFallo';
+import { useBarrasPendientes } from '../components/enrollment/useBarrasPendientes';
 
 // Sin plaza, o con los equipos ya formados (29 oct 2026): se dice por qué y
 // la pantalla se pone al día
@@ -23,7 +25,10 @@ const MOTIVOS_PARA_NO_ENTRAR = {
  * Aceptar o rechazar una invitación: las mismas reglas en «Mis invitaciones» y
  * en el cuadro de la ficha (release social 2).
  *
- * - Sin género no se entra: se pregunta antes de aceptar (#710), y la sesión se
+ * - Se acepta con la barra general, obligatoria (barras por campo): se elige
+ *   antes, con la habitual de su género marcada, y se guarda en la inscripción
+ *   que crea la aceptación. Si algún campo no la tiene, se pide en el mismo
+ *   flujo. Sin género no se entra: se pregunta a la vez (#710), y la sesión se
  *   refresca al terminar.
  * - Sin plaza al cerrarse, el servidor lo dice con su código; un 409 sin código
  *   es que ya no estaba pendiente (retirada, caducada o contestada en otra
@@ -42,12 +47,14 @@ export const useResponderInvitacion = ({
   alCambiar,
   textoYaNoPendiente = 'errors.notPendingAnymore',
 }) => {
-  const { t } = useTranslation('invitations');
+  const { t } = useTranslation(['invitations', 'competitions']);
   const generoParaApuntarse = useGeneroParaApuntarse();
+  const barrasPendientes = useBarrasPendientes();
   // Las que se están respondiendo, y con qué: cada tarjeta, desactivada (y con
   // «Aceptando…» o «Rechazando…») mientras la suya
   const [enProceso, setEnProceso] = useState([]);
-  const [aceptandoSinGenero, setAceptandoSinGenero] = useState(null);
+  // La invitación que se va a aceptar: primero se elige la barra
+  const [aceptando, setAceptando] = useState(null);
   // Un doble toque antes de que se pinte el botón desactivado: una sola
   // respuesta. De cada invitación: en la lista, otra tarjeta se sigue
   // pudiendo responder mientras tanto (revisor)
@@ -102,9 +109,29 @@ export const useResponderInvitacion = ({
     customToast.error(textoDelFallo(error));
   };
 
+  // La barra general, en la inscripción que acaba de crear la aceptación. Si
+  // no se guarda, la invitación ya está aceptada: se dice y se cambia en la
+  // ficha (barras por campo)
+  const guardarLaBarra = async (enrollmentId, barra) => {
+    if (!enrollmentId) return;
+    try {
+      const { changeEnrollmentTeeUseCase } = await cargarBarras();
+      await changeEnrollmentTeeUseCase.execute(enrollmentId, barra);
+    } catch (error) {
+      registraElFallo(
+        'useResponderInvitacion.error-saving-tee',
+        'Error saving the tee after accepting:',
+        error,
+      );
+      customToast.error(t('competitions:tees.accept.teeSaveFailed'));
+      return;
+    }
+    await barrasPendientes.comprobar(enrollmentId);
+  };
+
   // Hasta que la pantalla se ha releído, sigue en curso: si no, el botón se
   // reactivaba antes y un segundo toque mandaba otra respuesta (/code-review)
-  const responderAceptando = async (invitationId) => {
+  const responderAceptando = async (invitationId, barra) => {
     try {
       let result;
       try {
@@ -122,39 +149,41 @@ export const useResponderInvitacion = ({
         return;
       }
       customToast.success(t('success.accepted'));
+      await guardarLaBarra(result?.enrollmentId, barra);
       await releer(alAceptar, result);
     } finally {
       terminar(invitationId);
     }
   };
 
+  // Aceptar pide antes la barra (y el género, a quien le falta)
   const aceptar = (invitationId) => {
-    if (generoParaApuntarse.falta) {
-      setAceptandoSinGenero(invitationId);
-      return;
-    }
-    if (empezar(invitationId, 'ACCEPT')) responderAceptando(invitationId);
+    if (enCurso.current.has(invitationId)) return;
+    setAceptando(invitationId);
   };
 
-  const aceptarConGenero = async (genero) => {
-    const invitationId = aceptandoSinGenero;
-    setAceptandoSinGenero(null);
-    if (!empezar(invitationId, 'ACCEPT')) return;
-    try {
-      await generoParaApuntarse.guardar(genero);
-    } catch (error) {
-      registraElFallo(
-        'useResponderInvitacion.error-saving-gender',
-        'Error saving gender:',
-        error,
-      );
-      customToast.error(textoDelFallo(error));
-      terminar(invitationId);
-      return;
+  const aceptarConBarra = async (barra, genero) => {
+    const invitationId = aceptando;
+    setAceptando(null);
+    // Sin invitación que aceptar (ya en curso, o cerrada la pregunta), nada
+    if (!invitationId || !empezar(invitationId, 'ACCEPT')) return;
+    if (genero) {
+      try {
+        await generoParaApuntarse.guardar(genero);
+      } catch (error) {
+        registraElFallo(
+          'useResponderInvitacion.error-saving-gender',
+          'Error saving gender:',
+          error,
+        );
+        customToast.error(textoDelFallo(error));
+        terminar(invitationId);
+        return;
+      }
     }
-    await responderAceptando(invitationId);
+    await responderAceptando(invitationId, barra);
     // Al final: refrescar la sesión antes recargaba la página en mitad
-    generoParaApuntarse.refrescar();
+    if (genero) generoParaApuntarse.refrescar();
   };
 
   const rechazar = async (invitationId) => {
@@ -194,10 +223,19 @@ export const useResponderInvitacion = ({
       enProceso.find((p) => p.id === invitationId)?.accion ?? null,
     aceptar,
     rechazar,
-    preguntaDelGenero: {
-      isOpen: aceptandoSinGenero !== null,
-      onClose: () => setAceptandoSinGenero(null),
-      onConfirm: aceptarConGenero,
+    preguntaDeLaBarra: {
+      isOpen: aceptando !== null,
+      pideGenero: generoParaApuntarse.falta,
+      generoDelJugador: generoParaApuntarse.genero,
+      onClose: () => setAceptando(null),
+      onConfirm: aceptarConBarra,
+    },
+    barrasPendientes: {
+      campo: barrasPendientes.campo,
+      guardando: barrasPendientes.guardando,
+      onGuardar: barrasPendientes.guardar,
+      onSaltar: barrasPendientes.saltar,
+      onClose: barrasPendientes.cerrar,
     },
   };
 };

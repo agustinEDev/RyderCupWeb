@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Mail } from 'lucide-react';
-import GeneroParaApuntarseModal from '../profile/GeneroParaApuntarseModal';
+import AceptarInvitacionModal from './AceptarInvitacionModal';
+import BarrasPendientesModal from '../enrollment/BarrasPendientesModal';
 import { useResponderInvitacion } from '../../hooks/useResponderInvitacion';
 import {
   instanteEnTexto,
@@ -46,7 +47,8 @@ const InvitacionEnLaFicha = ({ invitacion, alCambiar }) => {
     accionEnCurso,
     aceptar,
     rechazar,
-    preguntaDelGenero,
+    preguntaDeLaBarra,
+    barrasPendientes,
   } = useResponderInvitacion({
     alAceptar: alCambiar,
     alCambiar,
@@ -113,7 +115,8 @@ const InvitacionEnLaFicha = ({ invitacion, alCambiar }) => {
           {textoDe('DECLINE') ?? t('actions.decline')}
         </button>
       </div>
-      <GeneroParaApuntarseModal {...preguntaDelGenero} />
+      <AceptarInvitacionModal {...preguntaDeLaBarra} />
+      <BarrasPendientesModal {...barrasPendientes} />
     </section>
   );
 };

@@ -28,6 +28,7 @@ describe('EnrollmentRequestModal · el género', () => {
     const onConfirm = vi.fn();
     render(
       <EnrollmentRequestModal
+        generoDelJugador="MALE"
         isOpen
         onClose={() => {}}
         onConfirm={onConfirm}
@@ -36,13 +37,14 @@ describe('EnrollmentRequestModal · el género', () => {
 
     expect(screen.queryByTestId('selector-de-genero')).not.toBeInTheDocument();
     fireEvent.click(screen.getByText('competitions:enrollment.confirm'));
-    expect(onConfirm).toHaveBeenCalledWith(null, null, null);
+    expect(onConfirm).toHaveBeenCalledWith('YELLOW', null, null);
   });
 
   it('M2: sin género se pregunta, y no se envía hasta elegirlo', () => {
     const onConfirm = vi.fn();
     render(
       <EnrollmentRequestModal
+        generoDelJugador="MALE"
         isOpen
         pideGenero
         onClose={() => {}}
@@ -59,12 +61,13 @@ describe('EnrollmentRequestModal · el género', () => {
     expect(enviar).not.toBeDisabled();
     fireEvent.click(enviar);
 
-    expect(onConfirm).toHaveBeenCalledWith(null, 'FEMALE', null);
+    expect(onConfirm).toHaveBeenCalledWith('RED', 'FEMALE', null);
   });
 
   it('M3: si pedir plaza falló, el motivo se lee en el modal (#710)', () => {
     render(
       <EnrollmentRequestModal
+        generoDelJugador="MALE"
         isOpen
         onClose={() => {}}
         onConfirm={() => {}}
@@ -86,6 +89,7 @@ describe('EnrollmentRequestModal · el hándicap (FE #824)', () => {
     render(
       <MemoryRouter>
         <EnrollmentRequestModal
+          generoDelJugador="MALE"
           isOpen
           onClose={() => {}}
           onConfirm={vi.fn()}
@@ -136,6 +140,7 @@ describe('EnrollmentRequestModal · la franja (release social 3)', () => {
     const onConfirm = vi.fn();
     render(
       <EnrollmentRequestModal
+        generoDelJugador="MALE"
         isOpen
         onClose={() => {}}
         onConfirm={onConfirm}
@@ -144,13 +149,14 @@ describe('EnrollmentRequestModal · la franja (release social 3)', () => {
 
     expect(screen.queryByTestId('elegir-franja')).not.toBeInTheDocument();
     fireEvent.click(screen.getByText('competitions:enrollment.confirm'));
-    expect(onConfirm).toHaveBeenCalledWith(null, null, null);
+    expect(onConfirm).toHaveBeenCalledWith('YELLOW', null, null);
   });
 
   it('D4: con franjas no se envía hasta elegir una', () => {
     const onConfirm = vi.fn();
     render(
       <EnrollmentRequestModal
+        generoDelJugador="MALE"
         isOpen
         onClose={() => {}}
         onConfirm={onConfirm}
@@ -166,6 +172,7 @@ describe('EnrollmentRequestModal · la franja (release social 3)', () => {
     const onConfirm = vi.fn();
     render(
       <EnrollmentRequestModal
+        generoDelJugador="MALE"
         isOpen
         onClose={() => {}}
         onConfirm={onConfirm}
@@ -176,7 +183,7 @@ describe('EnrollmentRequestModal · la franja (release social 3)', () => {
     fireEvent.click(screen.getByTestId('franja-r1'));
     fireEvent.click(screen.getByText('competitions:enrollment.confirm'));
 
-    expect(onConfirm).toHaveBeenCalledWith(null, null, {
+    expect(onConfirm).toHaveBeenCalledWith('YELLOW', null, {
       roundId: 'r1',
       waiting: false,
     });
@@ -186,6 +193,7 @@ describe('EnrollmentRequestModal · la franja (release social 3)', () => {
     const onConfirm = vi.fn();
     render(
       <EnrollmentRequestModal
+        generoDelJugador="MALE"
         isOpen
         onClose={() => {}}
         onConfirm={onConfirm}
@@ -201,7 +209,7 @@ describe('EnrollmentRequestModal · la franja (release social 3)', () => {
       screen.getByText('competitions:enrollment.joinWaitingList'),
     );
 
-    expect(onConfirm).toHaveBeenCalledWith(null, null, {
+    expect(onConfirm).toHaveBeenCalledWith('YELLOW', null, {
       roundId: 'r1',
       waiting: true,
     });
@@ -210,6 +218,7 @@ describe('EnrollmentRequestModal · la franja (release social 3)', () => {
   it('las franjas van por día y hora', () => {
     render(
       <EnrollmentRequestModal
+        generoDelJugador="MALE"
         isOpen
         onClose={() => {}}
         onConfirm={() => {}}
@@ -243,6 +252,7 @@ describe('EnrollmentRequestModal · code-review (release social 3)', () => {
     };
     render(
       <EnrollmentRequestModal
+        generoDelJugador="MALE"
         isOpen
         onClose={() => {}}
         onConfirm={() => {}}
@@ -259,6 +269,7 @@ describe('EnrollmentRequestModal · code-review (release social 3)', () => {
     const onReintentar = vi.fn();
     render(
       <EnrollmentRequestModal
+        generoDelJugador="MALE"
         isOpen
         onClose={() => {}}
         onConfirm={() => {}}

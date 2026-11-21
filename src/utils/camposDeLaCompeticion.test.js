@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   aCamposDeLaCompeticion,
-  barrasDeLosCampos,
+  barrasDeCadaCampo,
 } from './camposDeLaCompeticion';
 
 /**
@@ -86,46 +86,44 @@ describe('aCamposDeLaCompeticion · el huso del campo (FE #824, PR 5)', () => {
 });
 
 /**
- * Las barras de los campos de una competición (FE #1214): el selector de la
- * inscripción y el de «Cambiar barra» ofrecen las que tiene algún campo, no
- * una lista fija de cinco colores.
+ * Cada campo con sus barras (barras por campo): el organizador fija la de un
+ * campo para cada género con las que ese campo tiene.
  */
-describe('barrasDeLosCampos', () => {
-  it('B1: color y género de cada barra de cada campo', () => {
+describe('barrasDeCadaCampo', () => {
+  it('B1: cada campo con el color y el género de sus barras', () => {
     expect(
-      barrasDeLosCampos([
+      barrasDeCadaCampo([
         {
           golf_course: {
             id: 'g1',
+            name: 'Aldeamayor',
             tees: [
               { color: 'YELLOW', gender: 'MALE', course_rating: 70 },
-              { color: 'RED', gender: null },
+              { color: 'RED' },
             ],
           },
         },
-        { golf_course: { id: 'g2', tees: [{ color: 'BLUE' }] } },
+        { golf_course: { id: 'g2', name: 'Altea' } },
       ]),
     ).toEqual([
-      { color: 'YELLOW', gender: 'MALE' },
-      { color: 'RED', gender: null },
-      { color: 'BLUE', gender: null },
+      {
+        id: 'g1',
+        name: 'Aldeamayor',
+        tees: [
+          { color: 'YELLOW', gender: 'MALE' },
+          { color: 'RED', gender: null },
+        ],
+      },
+      { id: 'g2', name: 'Altea', tees: [] },
     ]);
   });
 
-  it('B2: de la respuesta envuelta, y sin barras ni campos, nada', () => {
+  it('B2: de la respuesta envuelta; sin id se descarta; sin nada, nada', () => {
     expect(
-      barrasDeLosCampos({
-        golf_courses: [
-          {
-            golf_course: {
-              id: 'g1',
-              tees: [{ color: 'RED', gender: 'FEMALE' }],
-            },
-          },
-        ],
+      barrasDeCadaCampo({
+        golf_courses: [{ golf_course: { id: 'g1', name: 'A', tees: [] } }, {}],
       }),
-    ).toEqual([{ color: 'RED', gender: 'FEMALE' }]);
-    expect(barrasDeLosCampos([{ golf_course: { id: 'g1' } }])).toEqual([]);
-    expect(barrasDeLosCampos(null)).toEqual([]);
+    ).toEqual([{ id: 'g1', name: 'A', tees: [] }]);
+    expect(barrasDeCadaCampo(null)).toEqual([]);
   });
 });

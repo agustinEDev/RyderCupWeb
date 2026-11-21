@@ -15,6 +15,7 @@ import { faltaElGenero } from '../utils/datosQueFaltanSinConexion';
  *
  * @returns {{
  *   falta: boolean,
+ *   genero: string|null,
  *   guardar: (genero: string|null) => Promise<void>,
  *   refrescar: () => Promise<void>,
  * }}
@@ -30,6 +31,12 @@ export const useGeneroParaApuntarse = () => {
   // Para que no se le vuelva a preguntar
   const refrescar = () => refetch();
 
-  // Sin red no se sabe (la copia del dispositivo no guarda el género): no se pregunta
-  return { falta: faltaElGenero(user, sinConfirmar), guardar, refrescar };
+  // Sin red no se sabe (la copia del dispositivo no guarda el género): no se
+  // pregunta. `genero`, para marcar la barra habitual (barras por campo)
+  return {
+    falta: faltaElGenero(user, sinConfirmar),
+    genero: user?.gender ?? null,
+    guardar,
+    refrescar,
+  };
 };

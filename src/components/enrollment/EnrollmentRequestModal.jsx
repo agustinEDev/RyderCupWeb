@@ -9,8 +9,8 @@ import {
   franjaLlena,
   plazasLibres,
 } from '../../domain/services/PlazasEnFranjas';
-import { useBarrasDeLaCompeticion } from '../../hooks/useBarrasDeLaCompeticion';
-import { barrasParaElegir, colorHabitual } from '../../utils/barraPorDefecto';
+import { colorHabitual } from '../../utils/barraPorDefecto';
+import SelectorDeBarraGeneral from './SelectorDeBarraGeneral';
 
 // Sin franjas: el mismo array siempre, para que el orden no se recalcule
 const SIN_FRANJAS = [];
@@ -33,10 +33,9 @@ const SIN_FRANJAS = [];
  * @param {Function} [props.onReintentar] - Volver a leer la agenda
  * @param {Function} [props.onElegir] - Al cambiar de franja: quien lo abre borra
  *   el error de la elección anterior (revisor)
- * @param {string} [props.competitionId] - Para ofrecer las barras de sus campos
- *   (FE #1214) en vez de una lista fija
- * @param {string|null} [props.generoDelJugador] - El de su perfil: se ofrecen
- *   las de su género y las mixtas, y sale marcada su habitual
+ * @param {string|null} [props.generoDelJugador] - El de su perfil: sale marcada
+ *   la barra habitual de su género (barras por campo). La barra general es
+ *   obligatoria: `onConfirm` la recibe como primer argumento
  */
 const EnrollmentRequestModal = ({
   isOpen,
@@ -51,7 +50,6 @@ const EnrollmentRequestModal = ({
   franjasSinCargar = false,
   onElegir,
   onReintentar,
-  competitionId,
   generoDelJugador = null,
 }) => {
   if (!isOpen) return null;
@@ -68,7 +66,6 @@ const EnrollmentRequestModal = ({
       franjasSinCargar={franjasSinCargar}
       onElegir={onElegir}
       onReintentar={onReintentar}
-      competitionId={competitionId}
       generoDelJugador={generoDelJugador}
     />
   );
@@ -88,19 +85,19 @@ const EnrollmentRequestModalContent = ({
   franjasSinCargar,
   onElegir,
   onReintentar,
-  competitionId,
   generoDelJugador,
 }) => {
   const { t, i18n } = useTranslation(['competitions', 'golfCourses']);
-  // null mientras no se toca: entonces sale su habitual, si está (FE #1214)
+  // null mientras no se elige: entonces, la habitual de su género. Al cambiar
+  // el género en el modal vuelve a null, para no quedarse con la del otro
   const [selectedTee, setSelectedTee] = useState(null);
   const [genero, setGenero] = useState('');
-  const barrasDeLosCampos = useBarrasDeLaCompeticion(competitionId, true);
   const suGenero = (pideGenero ? genero : generoDelJugador) || null;
-  const colores = barrasParaElegir(barrasDeLosCampos.barras, suGenero);
-  const habitual = colorHabitual(suGenero);
-  const barraMarcada =
-    selectedTee ?? (colores.includes(habitual) ? habitual : '');
+  const barra = selectedTee ?? colorHabitual(suGenero) ?? '';
+  const cambiarGenero = (nuevo) => {
+    setGenero(nuevo);
+    setSelectedTee(null);
+  };
   const [elegida, setElegida] = useState(null);
   // Por día y hora: en el orden en que se juegan
   const ordenadas = useMemo(
@@ -118,6 +115,7 @@ const EnrollmentRequestModalContent = ({
   const laElegida = ordenadas.find((f) => f.id === elegida) ?? null;
   const aLaEspera = laElegida !== null && llena(laElegida);
   const falta =
+    !barra ||
     faltaHandicap ||
     (pideGenero && !genero) ||
     (conFranjas && !laElegida) ||
@@ -133,7 +131,7 @@ const EnrollmentRequestModalContent = ({
     e.preventDefault();
     if (falta) return;
     onConfirm(
-      barraMarcada || null,
+      barra,
       pideGenero ? genero : null,
       laElegida ? { roundId: laElegida.id, waiting: aLaEspera } : null,
     );
@@ -210,7 +208,7 @@ const EnrollmentRequestModalContent = ({
             </p>
           )}
           {pideGenero && (
-            <SelectorDeGenero value={genero} onChange={setGenero} />
+            <SelectorDeGenero value={genero} onChange={cambiarGenero} />
           )}
 
           {/* La franja, o la espera de una llena, en el mismo paso (release
@@ -293,57 +291,12 @@ const EnrollmentRequestModalContent = ({
             </fieldset>
           )}
 
-          {/* Tee Category Select */}
-          <div>
-            <label
-              htmlFor="tee-category"
-              className="block text-sm font-medium text-gray-700 mb-1"
-            >
-              {t('competitions:enrollment.colorLabel')}
-            </label>
-            <select
-              id="tee-category"
-              value={barraMarcada}
-              onChange={(e) => setSelectedTee(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm"
-            >
-              <option value="">
-                {t('competitions:enrollment.noPreference')}
-              </option>
-              {colores.map((color) => (
-                <option key={color} value={color}>
-                  {t(`golfCourses:form.teeColors.${color}`)}
-                </option>
-              ))}
-            </select>
-            <p className="mt-1 text-xs text-gray-500">
-              {t('competitions:enrollment.colorHint')}
-            </p>
-            {/* Las barras salen de sus campos (FE #1214): leyéndose, sin poder
-                leerlas o sin ninguna para su género, se dice; «sin
-                preferencia» sigue valiendo (la de por defecto) */}
-            {barrasDeLosCampos.cargando && (
-              <p role="status" className="mt-1 text-xs text-gray-500">
-                {t('competitions:enrollment.teesLoading')}
-              </p>
-            )}
-            {barrasDeLosCampos.fallo && (
-              <p
-                data-testid="barras-sin-cargar"
-                className="mt-1 text-xs text-amber-800"
-              >
-                {t('competitions:enrollment.teesNotLoaded')}
-              </p>
-            )}
-            {barrasDeLosCampos.barras !== null && colores.length === 0 && (
-              <p
-                data-testid="sin-barras-para-ti"
-                className="mt-1 text-xs text-amber-800"
-              >
-                {t('competitions:enrollment.noTeesForYou')}
-              </p>
-            )}
-          </div>
+          {/* Su barra general, obligatoria (barras por campo) */}
+          <SelectorDeBarraGeneral
+            id="tee-category"
+            value={barra}
+            onChange={setSelectedTee}
+          />
 
           {/* Actions */}
           <div className="flex justify-end gap-3 pt-4 border-t border-gray-200">

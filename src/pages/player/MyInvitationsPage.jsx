@@ -7,7 +7,8 @@ import { esFalloDeRed, mensajeDeError } from '../../utils/sinCobertura';
 import HeaderAuth from '../../components/layout/HeaderAuth';
 import { useAuth } from '../../hooks/useAuth';
 import { useCargaCancelableEffect } from '../../hooks/useCargaCancelableEffect';
-import GeneroParaApuntarseModal from '../../components/profile/GeneroParaApuntarseModal';
+import AceptarInvitacionModal from '../../components/invitation/AceptarInvitacionModal';
+import BarrasPendientesModal from '../../components/enrollment/BarrasPendientesModal';
 import { useResponderInvitacion } from '../../hooks/useResponderInvitacion';
 import InvitationCard from '../../components/invitation/InvitationCard';
 import AvisoVerificaParaVerInvitaciones from '../../components/invitation/AvisoVerificaParaVerInvitaciones';
@@ -70,18 +71,23 @@ const MyInvitationsPage = () => {
 
   // Aceptar o rechazar, con las mismas reglas que el cuadro de la ficha. Al
   // aceptar, a su ficha, con el origen para que «Volver» traiga de nuevo aquí
-  const { seEstaRespondiendo, aceptar, rechazar, preguntaDelGenero } =
-    useResponderInvitacion({
-      alAceptar: (result) => {
-        if (result?.competitionId) {
-          navigate(`/competitions/${result.competitionId}`, {
-            state: { from: 'invitations' },
-          });
-        }
-      },
-      // Releer con la espera, como antes; se espera a que llegue
-      alCambiar: () => recargar(),
-    });
+  const {
+    seEstaRespondiendo,
+    aceptar,
+    rechazar,
+    preguntaDeLaBarra,
+    barrasPendientes,
+  } = useResponderInvitacion({
+    alAceptar: (result) => {
+      if (result?.competitionId) {
+        navigate(`/competitions/${result.competitionId}`, {
+          state: { from: 'invitations' },
+        });
+      }
+    },
+    // Releer con la espera, como antes; se espera a que llegue
+    alCambiar: () => recargar(),
+  });
 
   const isPageLoading = isLoadingUser || isLoading;
 
@@ -196,7 +202,8 @@ const MyInvitationsPage = () => {
         )}
       </div>
 
-      <GeneroParaApuntarseModal {...preguntaDelGenero} />
+      <AceptarInvitacionModal {...preguntaDeLaBarra} />
+      <BarrasPendientesModal {...barrasPendientes} />
     </div>
   );
 };

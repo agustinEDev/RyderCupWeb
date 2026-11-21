@@ -16,6 +16,9 @@ import { useAuth } from '../hooks/useAuth';
 import { useGeneroParaApuntarse } from '../hooks/useGeneroParaApuntarse';
 import { mensajeDeError } from '../utils/sinCobertura';
 import EnrollmentRequestModal from '../components/enrollment/EnrollmentRequestModal';
+import BarrasPendientesModal from '../components/enrollment/BarrasPendientesModal';
+import { useBarrasPendientes } from '../components/enrollment/useBarrasPendientes';
+import { entraConPlaza } from '../utils/entraConPlaza';
 import BlockLoader from '../components/ui/BlockLoader';
 import { formatDateRange } from '../services/competitions';
 import { PANTALLA_MENOS_BARRA_INFERIOR } from '../utils/barraInferior';
@@ -28,6 +31,8 @@ import { Visibility } from '../domain/value_objects/Visibility';
 const BrowseCompetitions = () => {
   // El género para apuntarse, solo a quien le falta (#710)
   const generoParaApuntarse = useGeneroParaApuntarse();
+  // Tras apuntarse, la barra de los campos que no tienen la suya
+  const barrasPendientes = useBarrasPendientes();
   const navigate = useNavigate();
   const { t } = useTranslation('competitions');
   const { t: tComun } = useTranslation('common');
@@ -222,6 +227,8 @@ const BrowseCompetitions = () => {
       // Se cierra solo si ha ido bien (#710): cerrarlo antes dejaba un fallo
       // con cara de éxito. Y solo si sigue siendo el suyo (CodeRabbit, #721)
       if (esSuModal()) setEnrollModalOpen(false);
+      // Los campos que no tienen su barra, en el mismo flujo (barras por campo)
+      if (entraConPlaza(hecho)) barrasPendientes.comprobar(hecho.id);
       customToast.success(
         t(
           hecho?.waiting
@@ -559,12 +566,18 @@ const BrowseCompetitions = () => {
         }
         isProcessing={!!requestingEnrollment[enrollTargetId]}
         pideGenero={generoParaApuntarse.falta}
-        // Las barras de sus campos, para su género (FE #1214)
-        competitionId={enrollTargetId}
+        // Para marcar la barra habitual de su género (barras por campo)
         generoDelJugador={user?.gender ?? null}
         // Un stroke play no abre este diálogo: se apunta en su ficha, que pide el
         // hándicap (release social 3)
         error={errorAlApuntarse}
+      />
+      <BarrasPendientesModal
+        campo={barrasPendientes.campo}
+        guardando={barrasPendientes.guardando}
+        onGuardar={barrasPendientes.guardar}
+        onSaltar={barrasPendientes.saltar}
+        onClose={barrasPendientes.cerrar}
       />
     </div>
   );

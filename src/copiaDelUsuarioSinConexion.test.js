@@ -109,6 +109,9 @@ const AUDITADOS = {
   '/src/pages/CompetitionDetail.jsx':
     'desconocido: etiquetas neutras; falta el hándicap por la regla',
   '/src/pages/Competitions.jsx': 'desconocido: etiqueta de inscripción neutra',
+  // La barra habitual al aceptar una invitación (barras por campo)
+  '/src/hooks/useGeneroParaApuntarse.js':
+    'desconocido: ninguna barra marcada, hay que elegirla',
   // Las barras al apuntarse (FE #1214)
   '/src/pages/BrowseCompetitions.jsx':
     'desconocido: solo las barras mixtas y ninguna marcada',

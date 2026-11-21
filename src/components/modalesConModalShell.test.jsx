@@ -52,8 +52,10 @@ const { default: MatchDetailModal } =
   await import('./schedule/MatchDetailModal');
 const { default: EnrollmentRequestModal } =
   await import('./enrollment/EnrollmentRequestModal');
-const { default: GeneroParaApuntarseModal } =
-  await import('./profile/GeneroParaApuntarseModal');
+const { default: AceptarInvitacionModal } =
+  await import('./invitation/AceptarInvitacionModal');
+const { default: BarrasPendientesModal } =
+  await import('./enrollment/BarrasPendientesModal');
 const { default: SendInvitationModal } =
   await import('./invitation/SendInvitationModal');
 const { default: HandicapRequestModal } =
@@ -193,16 +195,34 @@ const MODALES = [
     true,
   ],
   [
-    'GeneroParaApuntarseModal',
-    (cerrar, ocupado = false) => (
-      <GeneroParaApuntarseModal
+    'AceptarInvitacionModal',
+    (cerrar) => (
+      <AceptarInvitacionModal
         isOpen
+        pideGenero
+        generoDelJugador={null}
         onClose={cerrar}
         onConfirm={vi.fn()}
-        isProcessing={ocupado}
       />
     ),
-    true,
+    false,
+  ],
+  [
+    'BarrasPendientesModal',
+    (cerrar) => (
+      <BarrasPendientesModal
+        campo={{
+          golfCourseId: 'g1',
+          golfCourseName: 'Altea',
+          options: ['RED'],
+        }}
+        guardando={false}
+        onGuardar={vi.fn()}
+        onSaltar={vi.fn()}
+        onClose={cerrar}
+      />
+    ),
+    false,
   ],
   [
     'SendInvitationModal',
