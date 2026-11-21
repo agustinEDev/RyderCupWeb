@@ -227,8 +227,11 @@ const BrowseCompetitions = () => {
       // Se cierra solo si ha ido bien (#710): cerrarlo antes dejaba un fallo
       // con cara de éxito. Y solo si sigue siendo el suyo (CodeRabbit, #721)
       if (esSuModal()) setEnrollModalOpen(false);
-      // Los campos que no tienen su barra, en el mismo flujo (barras por campo)
-      if (entraConPlaza(hecho)) barrasPendientes.comprobar(hecho.id);
+      // Los campos que no tienen su barra, en el mismo flujo (barras por
+      // campo). Solo si sigue siendo su modal: si no, la pregunta saldría
+      // encima del de otra competición (CodeRabbit)
+      if (esSuModal() && entraConPlaza(hecho))
+        barrasPendientes.comprobar(hecho.id);
       customToast.success(
         t(
           hecho?.waiting

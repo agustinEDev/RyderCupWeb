@@ -69,6 +69,15 @@ const COMPETICION = {
   countries: [],
   visibility: 'PUBLIC',
 };
+// Las barras de la inscripción, tras apuntarse (barras por campo)
+const mockLeerBarras = vi.fn();
+vi.mock('../composition/cargarBarras', () => ({
+  cargarBarras: () =>
+    Promise.resolve({
+      getEnrollmentTeesUseCase: { execute: (...a) => mockLeerBarras(...a) },
+      changeEnrollmentCourseTeeUseCase: { execute: vi.fn() },
+    }),
+}));
 vi.mock('../composition', () => ({
   browseJoinableCompetitionsUseCase: {
     execute: (...a) => mockUnirse(...a),
@@ -252,6 +261,51 @@ describe('BrowseCompetitions · el género al pedir plaza', () => {
     expect(
       screen.getByText('competitions:enrollment.confirm'),
     ).toBeInTheDocument();
+  });
+
+  it('CR6: si al contestar ya no es su modal, no se piden sus barras encima del de otra', async () => {
+    faltaGenero = false;
+    mockLeerBarras.mockResolvedValue({ courses: [] });
+    let terminaLaDeA;
+    mockUnirse.mockResolvedValue([
+      COMPETICION,
+      { ...COMPETICION, id: 'c2', name: 'Otra Ryder' },
+    ]);
+    mockPedir.mockImplementationOnce(
+      () =>
+        new Promise((listo) => {
+          terminaLaDeA = listo;
+        }),
+    );
+    pintar();
+
+    const botones = await screen.findAllByText('browse.card.request-to-join');
+    fireEvent.click(botones[0]);
+    fireEvent.click(screen.getByText('competitions:enrollment.confirm'));
+    fireEvent.click(screen.getByText('competitions:enrollment.cancel'));
+    fireEvent.click(screen.getAllByText('browse.card.request-to-join').at(-1));
+    await act(async () => {
+      terminaLaDeA({ id: 'e-a', status: 'APPROVED', waiting: false });
+    });
+
+    expect(mockLeerBarras).not.toHaveBeenCalled();
+  });
+
+  it('CR6: si sigue siendo su modal, sí se piden', async () => {
+    faltaGenero = false;
+    mockLeerBarras.mockResolvedValue({ courses: [] });
+    mockUnirse.mockResolvedValue([COMPETICION]);
+    mockPedir.mockResolvedValueOnce({
+      id: 'e-a',
+      status: 'APPROVED',
+      waiting: false,
+    });
+    pintar();
+
+    fireEvent.click(await screen.findByText('browse.card.request-to-join'));
+    fireEvent.click(screen.getByText('competitions:enrollment.confirm'));
+
+    await waitFor(() => expect(mockLeerBarras).toHaveBeenCalledWith('e-a'));
   });
 });
 
