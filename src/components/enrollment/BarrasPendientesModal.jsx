@@ -5,7 +5,8 @@ import ModalShell from '../ui/ModalShell';
 /**
  * «Elige tu barra en {campo}» (barras por campo, F1): un campo que no tiene
  * su barra general, con las que se le pueden fijar. «Ahora no» pasa al
- * siguiente; cerrar deja el resto para la ficha. De él se sale siempre.
+ * siguiente; «Cerrar» deja este y el resto para la ficha. De él se sale
+ * siempre, salvo mientras guarda (el guardado decide qué sigue).
  *
  * @param {Object} props
  * @param {{golfCourseId: string, golfCourseName: string, options: string[]}|null} props.campo
@@ -90,6 +91,15 @@ const Contenido = ({ campo, guardando, onGuardar, onSaltar, onClose }) => {
           </select>
         </div>
         <div className="flex flex-wrap justify-end gap-3 pt-2">
+          {/* Salir sin elegir y sin saltar: lo que falte lo avisa la ficha */}
+          <button
+            type="button"
+            disabled={guardando}
+            onClick={onClose}
+            className="min-h-11 px-4 py-2 text-gray-700 rounded-lg font-medium hover:bg-gray-100 disabled:opacity-50"
+          >
+            {t('competitions:tees.close')}
+          </button>
           <button
             type="button"
             disabled={guardando}

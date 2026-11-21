@@ -246,6 +246,18 @@ describe('BarrasPendientesModal', () => {
     expect(onGuardar).not.toHaveBeenCalled();
   });
 
+  it('CR3: «Cerrar» sale sin saltar el campo', () => {
+    const { onClose, onSaltar } = pinta();
+    fireEvent.click(screen.getByText('competitions:tees.close'));
+    expect(onClose).toHaveBeenCalledTimes(1);
+    expect(onSaltar).not.toHaveBeenCalled();
+  });
+
+  it('CR3: guardando, «Cerrar» está desactivado', () => {
+    pinta({ guardando: true });
+    expect(screen.getByText('competitions:tees.close')).toBeDisabled();
+  });
+
   it('«Ahora no» pasa al siguiente; sin campo, nada', () => {
     const { onSaltar } = pinta();
     fireEvent.click(screen.getByText('competitions:tees.notNow'));
