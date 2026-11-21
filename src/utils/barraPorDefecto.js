@@ -15,6 +15,15 @@ const COLOR_HABITUAL = {
   [Gender.FEMALE]: TeeColor.RED,
 };
 
+/**
+ * La barra habitual de un género: la que se pone por defecto en la partida
+ * rápida y en las competiciones (RyderCupAm#912). Sin género, ninguna.
+ *
+ * @param {string|null|undefined} genero
+ * @returns {string|null}
+ */
+export const colorHabitual = (genero) => COLOR_HABITUAL[genero] ?? null;
+
 const delGenero = (tee, genero) =>
   (tee.gender ?? null) === genero || (tee.gender ?? null) === null;
 
@@ -29,7 +38,7 @@ export const barraPorDefecto = ({ tees, genero, ultima }) => {
   if (!tees?.length) return NO_TEE_KEY;
   const claves = new Set(tees.map((t) => teeKey(t.color, t.gender)));
   if (ultima && claves.has(ultima)) return ultima;
-  const color = COLOR_HABITUAL[genero];
+  const color = colorHabitual(genero);
   if (!color) return NO_TEE_KEY;
   const suya = tees.find((t) => t.color === color && t.gender === genero);
   const mixta = tees.find(
@@ -74,3 +83,22 @@ export const ultimasBarras = (partidas, golfCourseId) => {
  */
 export const barrasDeMiGenero = (tees, genero) =>
   genero ? (tees ?? []).filter((t) => delGenero(t, genero)) : null;
+
+/**
+ * Los colores que se ofrecen al elegir o cambiar la barra en una competición
+ * (FE #1214): las barras de su género y las mixtas de cualquiera de sus
+ * campos, sin repetir y en el orden de `TeeColor`. Sin género, solo las
+ * mixtas (nunca las valoradas para un solo género, como el backend).
+ *
+ * @param {Array<{color: string, gender: string|null}>|null} barras
+ * @param {string|null|undefined} genero
+ * @returns {string[]}
+ */
+export const barrasParaElegir = (barras, genero) => {
+  const colores = new Set(
+    (barras ?? [])
+      .filter((tee) => delGenero(tee, genero ?? null))
+      .map((tee) => tee.color),
+  );
+  return TeeColor.getAllValues().filter((color) => colores.has(color));
+};

@@ -1,3 +1,4 @@
+import { entraConPlaza } from '../../../utils/entraConPlaza';
 import customToast from '../../../utils/toast';
 import { mensajeDeError } from '../../../utils/sinCobertura';
 import { MOTIVOS_PARA_NO_APUNTARSE } from '../../../utils/fichaDeLaCompeticion';
@@ -38,6 +39,7 @@ export const crearAccionesDeInscripcion = (contexto) => {
     setShowEnrollModal,
     setVersionFranjas,
     setSavingNamePreference,
+    comprobarBarrasPendientes,
   } = contexto;
 
   /**
@@ -129,6 +131,8 @@ export const crearAccionesDeInscripcion = (contexto) => {
       // Se cierra solo si ha ido bien (#710): cerrarlo antes dejaba un fallo
       // con cara de éxito
       setShowEnrollModal(false);
+      // Los campos que no tienen su barra, en el mismo flujo (barras por campo)
+      if (entraConPlaza(hecho)) comprobarBarrasPendientes?.(hecho.id);
       customToast.success(
         t(
           hecho?.waiting

@@ -37,6 +37,8 @@ const FilaDeAprobado = ({
   handleRevertToRfegHandicap,
   quitandoId,
   handleQuitar,
+  puedeVerSusBarras,
+  onAbrirBarras,
 }) => (
   <div
     data-testid={`aprobado-${enrollment.userId}`}
@@ -70,6 +72,19 @@ const FilaDeAprobado = ({
             </span>
           </span>
         )}
+      {/* Sus barras (barras por campo): organizador, admin o el capitán de
+          su equipo, también para solo verlas; se leen al abrir, no al
+          cargar la ficha */}
+      {puedeVerSusBarras?.(enrollment) && (
+        <button
+          type="button"
+          data-testid={`barras-de-${enrollment.userId}`}
+          onClick={() => onAbrirBarras(enrollment)}
+          className="block min-h-11 text-sm font-semibold text-primary underline"
+        >
+          {t('tees.playerButton')}
+        </button>
+      )}
       {/* Que se vea a quién le falta, no solo en un atributo (revisor) */}
       {sinHandicap.has(enrollment.userId) && (
         <span className="inline-flex mt-1 px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 text-xs font-semibold">

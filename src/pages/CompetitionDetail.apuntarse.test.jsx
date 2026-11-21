@@ -21,6 +21,8 @@ const mockAuthUser = {
   first_name: 'Test',
   last_name: 'Player',
   handicap: 12,
+  // Con género, sale marcada su barra habitual al apuntarse (barras por campo)
+  gender: 'MALE',
 };
 
 // Refrescar la sesión crea un `user` nuevo con el mismo id: se simula dando
@@ -86,6 +88,8 @@ let faltaGenero = false;
 vi.mock('../hooks/useGeneroParaApuntarse', () => ({
   useGeneroParaApuntarse: () => ({
     falta: faltaGenero,
+    // Con género, sale marcada su barra habitual (barras por campo)
+    genero: faltaGenero ? null : 'MALE',
     guardar: mockGuardarGenero,
     refrescar: mockRefrescarSesion,
   }),
@@ -214,7 +218,7 @@ describe('CompetitionDetail · apuntarse a una pública', () => {
 
     await waitFor(() =>
       expect(mockRequest).toHaveBeenCalledWith('comp-1', null, {
-        color: null,
+        color: 'YELLOW',
         roundId: null,
         waitingList: false,
       }),
@@ -250,7 +254,7 @@ describe('CompetitionDetail · apuntarse a una pública', () => {
 
     await waitFor(() =>
       expect(mockRequest).toHaveBeenCalledWith('comp-1', null, {
-        color: null,
+        color: 'YELLOW',
         roundId: 'r1',
         waitingList: true,
       }),

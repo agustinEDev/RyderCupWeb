@@ -591,9 +591,8 @@
   },
   "enrollment": {
     "modalTitle": "Apuntarme",
-    "colorLabel": "Color de barras preferido",
-    "colorHint": "Se usará para asignarte el tee adecuado en los partidos",
-    "noPreference": "Sin preferencia",
+    "colorLabel": "Tu barra",
+    "colorHint": "Tu barra de siempre: se usa en cada campo que la tenga.",
     "confirm": "Apuntarme",
     "cancel": "Cancelar",
     "needsHandicap": "Para apuntarte a un Stableford o un Medal necesitas tu hándicap en el perfil.",
@@ -734,5 +733,81 @@
     "zoneUnreadable": "No se ha podido leer la zona horaria del campo.",
     "retryZone": "Reintentar",
     "scheduledUnknownZone": "Programada: {{cuando}}, hora de este dispositivo."
+  },
+  "tees": {
+    "general": "Barra general",
+    "mine": "Mis barras",
+    "label": "Barra",
+    "choose": "Elige una barra",
+    "usual": "Habitual de su género ({{color}})",
+    "usualNoColor": "La habitual de su género",
+    "source": {
+      "OWN": "Tu barra",
+      "COURSE": "Barra del campo",
+      "GENERAL": "Tu barra general",
+      "DEFAULT": "Habitual",
+      "NONE": "Sin barra"
+    },
+    "noTee": "Sin barra",
+    "chooseOnCourse": "Elige tu barra en {{course}}",
+    "chooseOnCourseHint": "Este campo no tiene tu barra general. Elige con qué barras juegas en él.",
+    "change": "Cambiar",
+    "save": "Guardar",
+    "close": "Cerrar",
+    "notNow": "Ahora no",
+    "retry": "Reintentar",
+    "playerTitle": "Barras de {{name}}",
+    "playerTitleNoName": "Barras del jugador",
+    "playerButton": "Barras",
+    "onCourse": "En {{course}}",
+    "noOwnOnCourse": "Sin barra propia en este campo",
+    "saved": "Barra guardada",
+    "loading": "Leyendo las barras…",
+    "notLoaded": "No se pudieron leer las barras.",
+    "noOptions": "Este campo no tiene barras para este jugador: avisa al organizador.",
+    "courses": {
+      "button": "Barras de los campos",
+      "title": "Barras de los campos",
+      "forWomen": "Para todas",
+      "forMen": "Para todos",
+      "set": "Fijar",
+      "remove": "Quitar",
+      "notSet": "Elige una barra",
+      "hint": "Pisa la barra general de los de ese género en este campo, no la que alguien haya elegido para este campo. Lo ya jugado no cambia.",
+      "saved": "Barra del campo guardada",
+      "removed": "Barra del campo quitada",
+      "noTees": "Este campo no tiene barras para ese género.",
+      "errors": {
+        "TEE_NOT_AVAILABLE": "Ese campo no tiene esa barra para ese género, o no vale para algo pendiente."
+      }
+    },
+    "accept": {
+      "title": "Aceptar la invitación",
+      "confirm": "Aceptar",
+      "cancel": "Cancelar"
+    },
+    "errors": {
+      "TEE_NOT_AVAILABLE": "Esa barra no está valorada para este jugador en los campos que le quedan por jugar.",
+      "TEE_CHANGE_CLOSED": "La competición ya terminó o se canceló: la barra ya no se puede cambiar.",
+      "ENROLLMENT_NOT_APPROVED": "Solo se puede cambiar la barra de una inscripción aprobada.",
+      "PENDING_GAME_NOT_RECALCULABLE": "Un partido pendiente no se pudo recalcular con la barra nueva. Avisa al organizador.",
+      "COURSE_NOT_IN_COMPETITION": "Ese campo ya no es de esta competición.",
+      "FORBIDDEN": "No puedes cambiar esta barra.",
+      "generic": "No se pudo guardar la barra. Inténtalo de nuevo.",
+      "TEE_NOT_ON_PENDING_COURSE": "Esa barra no existe en un campo con partidos pendientes: elige antes la barra de ese campo.",
+      "cantRemove": "No se puede quitar: dejaría un partido pendiente sin una barra válida en este campo."
+    },
+    "sourceOther": {
+      "OWN": "Su barra",
+      "COURSE": "Barra del campo",
+      "GENERAL": "Su barra general",
+      "DEFAULT": "Habitual",
+      "NONE": "Sin barra"
+    },
+    "usualMine": "Tu habitual ({{color}})",
+    "usualMineNoColor": "Tu habitual",
+    "changeGeneral": "Cambiar tu barra general",
+    "changeOn": "Cambiar tu barra en {{course}}",
+    "notAvailableHere": "{{color}} (ya no disponible en este campo)"
   }
 }

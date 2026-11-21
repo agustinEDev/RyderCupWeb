@@ -1,5 +1,8 @@
 import { describe, it, expect } from 'vitest';
-import { aCamposDeLaCompeticion } from './camposDeLaCompeticion';
+import {
+  aCamposDeLaCompeticion,
+  barrasDeCadaCampo,
+} from './camposDeLaCompeticion';
 
 /**
  * Los campos de una competición, como los devuelve la API (FE #654).
@@ -79,5 +82,48 @@ describe('aCamposDeLaCompeticion · el huso del campo (FE #824, PR 5)', () => {
 
     expect(conZona.timezone).toBe('Europe/Madrid');
     expect(sinZona.timezone).toBeNull();
+  });
+});
+
+/**
+ * Cada campo con sus barras (barras por campo): el organizador fija la de un
+ * campo para cada género con las que ese campo tiene.
+ */
+describe('barrasDeCadaCampo', () => {
+  it('B1: cada campo con el color y el género de sus barras', () => {
+    expect(
+      barrasDeCadaCampo([
+        {
+          golf_course: {
+            id: 'g1',
+            name: 'Aldeamayor',
+            tees: [
+              { color: 'YELLOW', gender: 'MALE', course_rating: 70 },
+              { color: 'RED' },
+            ],
+          },
+        },
+        { golf_course: { id: 'g2', name: 'Altea' } },
+      ]),
+    ).toEqual([
+      {
+        id: 'g1',
+        name: 'Aldeamayor',
+        tees: [
+          { color: 'YELLOW', gender: 'MALE' },
+          { color: 'RED', gender: null },
+        ],
+      },
+      { id: 'g2', name: 'Altea', tees: [] },
+    ]);
+  });
+
+  it('B2: de la respuesta envuelta; sin id se descarta; sin nada, nada', () => {
+    expect(
+      barrasDeCadaCampo({
+        golf_courses: [{ golf_course: { id: 'g1', name: 'A', tees: [] } }, {}],
+      }),
+    ).toEqual([{ id: 'g1', name: 'A', tees: [] }]);
+    expect(barrasDeCadaCampo(null)).toEqual([]);
   });
 });

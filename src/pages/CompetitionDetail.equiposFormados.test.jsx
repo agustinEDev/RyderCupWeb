@@ -17,7 +17,13 @@ vi.mock('react-i18next', () => ({
   }),
 }));
 
-const mockAuthUser = { id: 'org-1', first_name: 'Org', last_name: 'Aniza' };
+// Con género, sale marcada su barra habitual al apuntarse (barras por campo)
+const mockAuthUser = {
+  id: 'org-1',
+  first_name: 'Org',
+  last_name: 'Aniza',
+  gender: 'MALE',
+};
 
 // Refrescar la sesión crea un `user` nuevo con el mismo id: se simula dando
 // uno nuevo en cada render (CodeRabbit en la #720)
@@ -76,6 +82,8 @@ let faltaGenero = true;
 vi.mock('../hooks/useGeneroParaApuntarse', () => ({
   useGeneroParaApuntarse: () => ({
     falta: faltaGenero,
+    // Con género, sale marcada su barra habitual (barras por campo)
+    genero: faltaGenero ? null : 'MALE',
     guardar: mockGuardarGenero,
     refrescar: mockRefrescarSesion,
   }),

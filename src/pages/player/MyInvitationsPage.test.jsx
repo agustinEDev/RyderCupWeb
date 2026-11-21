@@ -49,6 +49,8 @@ let faltaGenero = false;
 vi.mock('../../hooks/useGeneroParaApuntarse', () => ({
   useGeneroParaApuntarse: () => ({
     falta: faltaGenero,
+    // Un hombre: al aceptar sale marcada la amarilla (barras por campo)
+    genero: faltaGenero ? null : 'MALE',
     guardar: mockGuardarGenero,
     refrescar: mockRefrescarSesion,
   }),
@@ -63,6 +65,21 @@ vi.mock('../../composition', () => ({
   },
 }));
 
+vi.mock('../../composition/cargarBarras', () => ({
+  cargarBarras: () =>
+    Promise.resolve({
+      changeEnrollmentTeeUseCase: { execute: vi.fn() },
+      getEnrollmentTeesUseCase: {
+        execute: vi.fn().mockResolvedValue({ courses: [] }),
+      },
+    }),
+}));
+// Aceptar pasa antes por la barra general (barras por campo): si la pregunta
+// está abierta, se confirma con la marcada
+const confirmaLaBarra = async () => {
+  const boton = await screen.findByTestId('aceptar-con-barra');
+  fireEvent.click(boton);
+};
 vi.mock('../../utils/toast', () => ({
   default: { success: vi.fn(), error: vi.fn() },
 }));
@@ -226,11 +243,12 @@ describe('MyInvitationsPage', () => {
       renderPage();
 
       fireEvent.click(await screen.findByTestId('accept-button'));
+      await confirmaLaBarra();
       expect(mockRespondToInvitation).not.toHaveBeenCalled();
       fireEvent.change(await screen.findByTestId('selector-de-genero'), {
         target: { value: 'FEMALE' },
       });
-      fireEvent.click(screen.getByTestId('genero-confirmar'));
+      fireEvent.click(screen.getByTestId('aceptar-con-barra'));
 
       await waitFor(() =>
         expect(mockRespondToInvitation).toHaveBeenCalledWith('inv-1', 'ACCEPT'),
@@ -245,6 +263,7 @@ describe('MyInvitationsPage', () => {
       renderPage();
 
       fireEvent.click(await screen.findByTestId('accept-button'));
+      await confirmaLaBarra();
 
       await waitFor(() =>
         expect(mockRespondToInvitation).toHaveBeenCalledWith('inv-1', 'ACCEPT'),
@@ -274,6 +293,7 @@ describe('MyInvitationsPage', () => {
       const lecturas = mockListMyInvitations.mock.calls.length;
 
       fireEvent.click(screen.getByTestId('accept-button'));
+      await confirmaLaBarra();
 
       await waitFor(() =>
         expect(customToast.error).toHaveBeenCalledWith('errors.noRoom'),
@@ -343,6 +363,7 @@ describe('MyInvitationsPage', () => {
       renderPage();
 
       fireEvent.click(await screen.findByTestId(boton));
+      if (boton === 'accept-button') await confirmaLaBarra();
 
       await waitFor(() =>
         expect(customToast.error).toHaveBeenCalledWith(texto),
@@ -356,6 +377,7 @@ describe('MyInvitationsPage', () => {
       renderPage();
 
       fireEvent.click(await screen.findByTestId('accept-button'));
+      await confirmaLaBarra();
 
       await waitFor(() =>
         expect(customToast.error).toHaveBeenCalledWith(
@@ -385,6 +407,7 @@ describe('MyInvitationsPage', () => {
       const lecturas = mockListMyInvitations.mock.calls.length;
 
       fireEvent.click(screen.getByTestId('accept-button'));
+      await confirmaLaBarra();
 
       await waitFor(() =>
         expect(customToast.error).toHaveBeenCalledWith(
@@ -428,6 +451,7 @@ describe('MyInvitationsPage', () => {
       renderPage();
 
       fireEvent.click(await screen.findByTestId('accept-button'));
+      await confirmaLaBarra();
 
       await waitFor(() =>
         expect(customToast.error).toHaveBeenCalledWith('Some other conflict'),
@@ -462,7 +486,7 @@ describe('MyInvitationsPage', () => {
       fireEvent.change(await screen.findByTestId('selector-de-genero'), {
         target: { value: 'MALE' },
       });
-      fireEvent.click(screen.getByTestId('genero-confirmar'));
+      fireEvent.click(screen.getByTestId('aceptar-con-barra'));
 
       await waitFor(() =>
         expect(customToast.error).toHaveBeenCalledWith(
@@ -503,19 +527,22 @@ describe('MyInvitationsPage', () => {
       id: 'inv-1',
       competitionId: 'comp-123',
       status: 'ACCEPTED',
+      enrollmentId: 'e-1',
     });
 
     renderPage();
     const acceptButton = await screen.findByTestId('accept-button');
     fireEvent.click(acceptButton);
+    await confirmaLaBarra();
 
     await waitFor(() => {
       expect(mockRespondToInvitation).toHaveBeenCalledWith('inv-1', 'ACCEPT');
     });
     await waitFor(() => {
       // Con el origen, para que «Volver» lleve de nuevo aquí (FE #682)
+      // Y que la ficha pida la barra de los campos sin la general (barras por campo)
       expect(mockNavigate).toHaveBeenCalledWith('/competitions/comp-123', {
-        state: { from: 'invitations' },
+        state: { from: 'invitations', preguntarBarras: true },
       });
     });
   });
