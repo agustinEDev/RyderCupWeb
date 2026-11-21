@@ -745,8 +745,7 @@
       "OWN": "Your tee",
       "COURSE": "Course tee",
       "GENERAL": "Your general tee",
-      "DEFAULT": "Usual",
-      "NONE": "No tee"
+      "DEFAULT": "Usual"
     },
     "noTee": "No tee",
     "chooseOnCourse": "Choose your tee at {{course}}",
@@ -801,8 +800,7 @@
       "OWN": "Their tee",
       "COURSE": "Course tee",
       "GENERAL": "Their general tee",
-      "DEFAULT": "Usual",
-      "NONE": "No tee"
+      "DEFAULT": "Usual"
     },
     "usualMine": "Your usual ({{color}})",
     "usualMineNoColor": "Your usual",
