@@ -73,6 +73,99 @@ describe('useBarrasPendientes', () => {
     expect(result.current.campo).toBeNull();
   });
 
+  it('1: saltar mientras se guarda A no se come B', async () => {
+    mocks.leer.mockResolvedValue({
+      courses: [campo('gA', 'NONE'), campo('gB', 'NONE'), campo('gC', 'NONE')],
+    });
+    let termina;
+    mocks.fijar.mockReturnValue(
+      new Promise((r) => {
+        termina = r;
+      }),
+    );
+    const { result } = renderHook(() => useBarrasPendientes());
+    await act(() => result.current.comprobar('e1'));
+
+    let guardado;
+    act(() => {
+      guardado = result.current.guardar('RED');
+    });
+    await act(async () => {
+      await Promise.resolve();
+    });
+    act(() => result.current.saltar());
+    act(() => result.current.cerrar());
+    await act(async () => {
+      termina({ teeColor: 'RED' });
+      await guardado;
+    });
+
+    expect(mocks.fijar).toHaveBeenCalledWith('e1', 'gA', 'RED');
+    expect(result.current.campo.golfCourseId).toBe('gB');
+  });
+
+  it('1: mientras se guarda, saltar no cambia el campo de la pantalla', async () => {
+    mocks.leer.mockResolvedValue({
+      courses: [campo('gA', 'NONE'), campo('gB', 'NONE')],
+    });
+    mocks.fijar.mockReturnValue(new Promise(() => {}));
+    const { result } = renderHook(() => useBarrasPendientes());
+    await act(() => result.current.comprobar('e1'));
+
+    act(() => {
+      result.current.guardar('RED');
+    });
+    await act(async () => {
+      await Promise.resolve();
+    });
+    act(() => result.current.saltar());
+
+    expect(result.current.campo.golfCourseId).toBe('gA');
+  });
+
+  it('1: si la lista cambia mientras se guarda, se quita el guardado, no el primero', async () => {
+    mocks.leer.mockResolvedValueOnce({
+      courses: [campo('gA', 'NONE'), campo('gB', 'NONE')],
+    });
+    let termina;
+    mocks.fijar.mockReturnValue(
+      new Promise((r) => {
+        termina = r;
+      }),
+    );
+    const { result } = renderHook(() => useBarrasPendientes());
+    await act(() => result.current.comprobar('e1'));
+
+    let guardado;
+    act(() => {
+      guardado = result.current.guardar('RED');
+    });
+    // Otra comprobación deja delante otro campo
+    mocks.leer.mockResolvedValueOnce({
+      courses: [campo('gB', 'NONE'), campo('gA', 'NONE')],
+    });
+    await act(() => result.current.comprobar('e1'));
+    await act(async () => {
+      termina({ teeColor: 'RED' });
+      await guardado;
+    });
+
+    expect(result.current.campo.golfCourseId).toBe('gB');
+  });
+
+  it('1: guardando, «Ahora no» está desactivado', () => {
+    render(
+      <BarrasPendientesModal
+        campo={campo('g2', 'NONE')}
+        guardando
+        onGuardar={vi.fn()}
+        onSaltar={vi.fn()}
+        onClose={vi.fn()}
+      />,
+    );
+    expect(screen.getByText('competitions:tees.notNow')).toBeDisabled();
+  });
+
   it('sin campos en NONE, nada que pedir', async () => {
     mocks.leer.mockResolvedValue({ courses: [campo('g1', 'COURSE')] });
     const { result } = renderHook(() => useBarrasPendientes());

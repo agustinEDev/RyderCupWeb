@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { AlertTriangle } from 'lucide-react';
 import { useBarrasDeLaInscripcion } from '../../../hooks/useBarrasDeLaInscripcion';
@@ -16,8 +16,8 @@ import BarrasDelJugadorModal from './BarrasDelJugadorModal';
  * @param {boolean} props.puedeCambiar
  * @param {number} [props.version] - La ficha la sube cuando cambia cualquier
  *   barra: se vuelven a leer
- * @param {(barras: Object|null) => void} [props.onCambio] - Al guardar o al
- *   cerrar mis barras (pudo guardarse algo mientras se cerraba)
+ * @param {(barras: Object) => void} [props.onCambio] - Al guardar en mis
+ *   barras, con lo que quedó (la lista de la ficha se pone al día)
  */
 const MisBarras = ({ inscripcion, puedeCambiar, version = 0, onCambio }) => {
   const { t } = useTranslation(['competitions', 'golfCourses']);
@@ -27,6 +27,9 @@ const MisBarras = ({ inscripcion, puedeCambiar, version = 0, onCambio }) => {
     version,
   );
   const [abierto, setAbierto] = useState(false);
+  // Abiertas, el modal ya relee sus barras tras cada cambio: «Mis barras» se
+  // releen UNA vez, al cerrarlo; un guardado que acaba ya cerrado, al acabar
+  const abiertoRef = useRef(false);
 
   if (!barras) {
     if (!fallo) return null;
@@ -59,7 +62,10 @@ const MisBarras = ({ inscripcion, puedeCambiar, version = 0, onCambio }) => {
       <button
         type="button"
         aria-label={nombre}
-        onClick={() => setAbierto(true)}
+        onClick={() => {
+          abiertoRef.current = true;
+          setAbierto(true);
+        }}
         className="min-h-11 px-2 font-semibold text-primary underline"
       >
         {t('competitions:tees.change')}
@@ -136,13 +142,12 @@ const MisBarras = ({ inscripcion, puedeCambiar, version = 0, onCambio }) => {
           propia
           titulo={t('competitions:tees.mine')}
           onClose={() => {
+            abiertoRef.current = false;
             setAbierto(false);
-            // Pudo guardarse algo mientras se cerraba: se vuelven a leer
             recargar();
-            onCambio?.(null);
           }}
           onCambio={(nuevas) => {
-            recargar();
+            if (!abiertoRef.current) recargar();
             onCambio?.(nuevas);
           }}
         />

@@ -168,6 +168,15 @@ const BarrasDelJugadorModal = ({
                 quitableSinCambio={campo.source === TeeSource.NONE}
                 vacia={t('competitions:tees.noOwnOnCourse')}
                 opciones={campo.options}
+                // Su barra propia, aunque el campo ya no la tenga: si no, el
+                // selector mostraría otra que no es la suya
+                yaNoDisponible={
+                  campo.source === TeeSource.OWN &&
+                  campo.tee &&
+                  !campo.options.includes(campo.tee)
+                    ? campo.tee
+                    : null
+                }
                 sinOpciones={t('competitions:tees.noOptions')}
                 elegida={elegidas[campo.golfCourseId]}
                 onElegir={(v) =>
@@ -209,6 +218,7 @@ const FilaDeBarra = ({
   aviso = false,
   vacia,
   quitableSinCambio = false,
+  yaNoDisponible = null,
   opciones,
   sinOpciones,
   elegida,
@@ -256,6 +266,13 @@ const FilaDeBarra = ({
                     {t('competitions:tees.choose')}
                   </option>
                 )
+              )}
+              {yaNoDisponible && (
+                <option value={yaNoDisponible}>
+                  {t('competitions:tees.notAvailableHere', {
+                    color: color(yaNoDisponible),
+                  })}
+                </option>
               )}
               {opciones.map((opcion) => (
                 <option key={opcion} value={opcion}>

@@ -567,7 +567,7 @@ const BrowseCompetitions = () => {
         isProcessing={!!requestingEnrollment[enrollTargetId]}
         pideGenero={generoParaApuntarse.falta}
         // Para marcar la barra habitual de su género (barras por campo)
-        generoDelJugador={user?.gender ?? null}
+        generoDelJugador={generoParaApuntarse.genero}
         // Un stroke play no abre este diálogo: se apunta en su ficha, que pide el
         // hándicap (release social 3)
         error={errorAlApuntarse}

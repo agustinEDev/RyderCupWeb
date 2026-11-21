@@ -44,6 +44,7 @@ const Contenido = ({ campo, guardando, onGuardar, onSaltar, onClose }) => {
       onClose={onClose}
       labelledBy="barra-pendiente-titulo"
       describedBy="barra-pendiente-texto"
+      closeOnEscape={!guardando}
       busy={guardando}
     >
       <form
@@ -91,8 +92,9 @@ const Contenido = ({ campo, guardando, onGuardar, onSaltar, onClose }) => {
         <div className="flex flex-wrap justify-end gap-3 pt-2">
           <button
             type="button"
+            disabled={guardando}
             onClick={onSaltar}
-            className="min-h-11 px-4 py-2 text-gray-700 bg-gray-100 rounded-lg font-medium hover:bg-gray-200"
+            className="min-h-11 px-4 py-2 text-gray-700 bg-gray-100 rounded-lg font-medium hover:bg-gray-200 disabled:opacity-50"
           >
             {t('competitions:tees.notNow')}
           </button>

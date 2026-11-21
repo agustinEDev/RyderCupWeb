@@ -6,8 +6,8 @@ const ANTES_DE_EMPEZAR = new Set([
   CompetitionStatusEnum.ACTIVE,
   CompetitionStatusEnum.CLOSED,
 ]);
-// Terminada o cancelada, nadie
-const CERRADA = new Set([
+// Terminada o cancelada, nadie: ni cambiar barras ni fijar las de los campos
+export const ESTADOS_CERRADOS = new Set([
   CompetitionStatusEnum.COMPLETED,
   CompetitionStatusEnum.CANCELLED,
 ]);
@@ -44,7 +44,7 @@ export const puedeCambiarLaBarra = ({
   captains,
   reparto,
 }) => {
-  if (!userId || CERRADA.has(estado)) return false;
+  if (!userId || ESTADOS_CERRADOS.has(estado)) return false;
   if (gestiona || esSuCapitan({ userId, jugadorId, captains, reparto }))
     return true;
   return userId === jugadorId && ANTES_DE_EMPEZAR.has(estado);

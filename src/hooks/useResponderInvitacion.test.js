@@ -194,7 +194,7 @@ describe('useResponderInvitacion — la barra al aceptar', () => {
   });
 
   it('guarda la barra en su inscripción y entrega el resultado a quien pide las de los campos', async () => {
-    responder.mockResolvedValue({ enrollmentId: 'e-1' });
+    responder.mockResolvedValue({ status: 'ACCEPTED', enrollmentId: 'e-1' });
     const alAceptar = vi.fn();
     const { result } = renderHook(() =>
       useResponderInvitacion({ alAceptar, alCambiar: vi.fn() }),
@@ -204,11 +204,14 @@ describe('useResponderInvitacion — la barra al aceptar', () => {
 
     expect(responder).toHaveBeenCalledWith('inv-1', 'ACCEPT');
     expect(barras.general).toHaveBeenCalledWith('e-1', 'BLUE');
-    expect(alAceptar).toHaveBeenCalledWith({ enrollmentId: 'e-1' });
+    expect(alAceptar).toHaveBeenCalledWith({
+      status: 'ACCEPTED',
+      enrollmentId: 'e-1',
+    });
   });
 
   it('si la barra no se guarda, la invitación sigue aceptada, se dice por qué y se sigue', async () => {
-    responder.mockResolvedValue({ enrollmentId: 'e-1' });
+    responder.mockResolvedValue({ status: 'ACCEPTED', enrollmentId: 'e-1' });
     barras.general.mockRejectedValue(
       Object.assign(new Error('422'), {
         status: 422,
@@ -227,6 +230,23 @@ describe('useResponderInvitacion — la barra al aceptar', () => {
       'competitions:tees.errors.TEE_NOT_ON_PENDING_COURSE',
     );
     // La ficha sigue y pide la de los campos
-    expect(alAceptar).toHaveBeenCalledWith({ enrollmentId: 'e-1' });
+    expect(alAceptar).toHaveBeenCalledWith({
+      status: 'ACCEPTED',
+      enrollmentId: 'e-1',
+    });
+  });
+
+  it('2+3: en lista de espera (sin plaza), ni se guarda la barra', async () => {
+    responder.mockResolvedValue({ status: 'ON_HOLD', enrollmentId: 'e-1' });
+    const alAceptar = vi.fn();
+    const { result } = renderHook(() =>
+      useResponderInvitacion({ alAceptar, alCambiar: vi.fn() }),
+    );
+
+    await aceptaCon(result, 'inv-1');
+
+    expect(toast.success).toHaveBeenCalledWith('success.accepted');
+    expect(barras.general).not.toHaveBeenCalled();
+    expect(alAceptar).toHaveBeenCalled();
   });
 });

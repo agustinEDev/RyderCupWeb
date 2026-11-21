@@ -43,13 +43,14 @@ import { faltaElHandicap } from '../utils/datosQueFaltanSinConexion';
 import { PANTALLA_MENOS_BARRA_INFERIOR } from '../utils/barraInferior';
 import { hayHistorialPropio } from '../hooks/useGoBack';
 import EnrollmentStatus from '../domain/value_objects/EnrollmentStatus';
-import { CompetitionStatusEnum } from '../domain/value_objects/CompetitionStatus';
 import MisBarras from '../components/competition/detail/MisBarras';
 import BarrasDelJugadorModal from '../components/competition/detail/BarrasDelJugadorModal';
 import BarrasDeLosCamposModal from '../components/competition/detail/BarrasDeLosCamposModal';
 import BarrasPendientesModal from '../components/enrollment/BarrasPendientesModal';
 import { useBarrasPendientes } from '../hooks/useBarrasPendientes';
+import { aceptadaConPlaza } from '../utils/entraConPlaza';
 import {
+  ESTADOS_CERRADOS,
   puedeCambiarLaBarra,
   puedeLeerLasBarras,
 } from '../utils/puedeCambiarLaBarra';
@@ -160,21 +161,23 @@ const CompetitionDetail = () => {
 
   // Llegando de aceptar en «Mis invitaciones», la ficha pide la barra de los
   // campos que no tengan la general (barras por campo): aquella pantalla se
-  // fue. Una vez, y se quita del historial para no repetirla al volver
+  // fue. Leída la ficha, la marca se quita SIEMPRE del historial, se use o no:
+  // ni una recarga ni volver atrás la repiten (/code-review)
+  const hayMarcaDeBarras = location.state?.preguntarBarras !== undefined;
   const preguntarBarras = location.state?.preguntarBarras === true;
   const miAprobada = enrollments.find(
     (e) => e.userId === userId && e.status === EnrollmentStatus.APPROVED,
   )?.id;
-  const preguntarLasBarras = useEffectEvent((enrollmentId) => {
-    barrasPendientes.comprobar(enrollmentId);
+  const usarLaMarcaDeBarras = useEffectEvent(() => {
+    if (preguntarBarras && miAprobada) barrasPendientes.comprobar(miAprobada);
     navigate(`${location.pathname}${location.search}`, {
       replace: true,
       state: { ...location.state, preguntarBarras: undefined },
     });
   });
   useEffect(() => {
-    if (preguntarBarras && miAprobada) preguntarLasBarras(miAprobada);
-  }, [preguntarBarras, miAprobada]);
+    if (hayMarcaDeBarras && !isLoadingCompetition) usarLaMarcaDeBarras();
+  }, [hayMarcaDeBarras, isLoadingCompetition]);
 
   const isLoading = isLoadingUser || isLoadingCompetition || isLoadingRoles;
 
@@ -258,21 +261,16 @@ const CompetitionDetail = () => {
     inscripcion?.status === EnrollmentStatus.APPROVED &&
     inscripcion.userId !== userId &&
     puedeLeerLasBarras(quienEs(inscripcion));
-  // La lista se queda con la barra general que dice el servidor, y «Mis
-  // barras» se vuelven a leer. Sin barras (al cerrar un modal), solo lo segundo
-  const conSuGeneral = (enrollmentId) => (barras) => {
-    if (barras)
-      setEnrollments((previas) =>
-        previas.map((e) =>
-          e.id === enrollmentId ? { ...e, color: barras.generalTee } : e,
-        ),
-      );
-    barrasCambiadas();
-  };
-  const terminada = [
-    CompetitionStatusEnum.COMPLETED,
-    CompetitionStatusEnum.CANCELLED,
-  ].includes(competition.status);
+  // La lista se queda con la barra general que dice el servidor. «Mis
+  // barras» no se releen por esto: las mías se releen solas, y cambiar las de
+  // otro no toca las mías
+  const conSuGeneral = (enrollmentId) => (barras) =>
+    setEnrollments((previas) =>
+      previas.map((e) =>
+        e.id === enrollmentId ? { ...e, color: barras.generalTee } : e,
+      ),
+    );
+  const terminada = ESTADOS_CERRADOS.has(competition.status);
 
   // Abre el modal y espera la respuesta: el flujo de cada acción no cambia.
   // Cada acción trae sus palabras —título, consecuencia y dos verbos—: con
@@ -440,7 +438,8 @@ const CompetitionDetail = () => {
               // Aceptada, la ficha pide la barra de los campos sin la general
               alAceptar={async (resultado) => {
                 await loadCompetition();
-                barrasPendientes.comprobar(resultado?.enrollmentId);
+                if (aceptadaConPlaza(resultado))
+                  barrasPendientes.comprobar(resultado.enrollmentId);
               }}
             />
 
@@ -605,11 +604,7 @@ const CompetitionDetail = () => {
                 key={barrasDe.id}
                 inscripcion={barrasDe}
                 puedeCambiar={puedeCambiarSuBarra(barrasDe)}
-                onClose={() => {
-                  setBarrasDe(null);
-                  // Pudo guardarse algo mientras se cerraba
-                  barrasCambiadas();
-                }}
+                onClose={() => setBarrasDe(null)}
                 onCambio={conSuGeneral(barrasDe.id)}
               />
             )}
@@ -645,7 +640,7 @@ const CompetitionDetail = () => {
         isProcessing={isProcessing}
         pideGenero={generoParaApuntarse.falta}
         // Para marcar la barra habitual de su género (barras por campo)
-        generoDelJugador={user?.gender ?? null}
+        generoDelJugador={generoParaApuntarse.genero}
         // Sin hándicap no se entra en un Stableford o un Medal (FE #824, PR 5). Sin red
         // no se sabe (la copia del dispositivo no lo guarda): no se avisa (fase 3)
         faltaHandicap={esStrokePlay && faltaElHandicap(user, sinConfirmar)}

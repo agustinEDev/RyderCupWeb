@@ -232,6 +232,32 @@ describe('BarrasDelJugadorModal', () => {
     );
   });
 
+  it('7: su barra propia que el campo ya no tiene sale marcada como no disponible', async () => {
+    m.leer.mockResolvedValue({
+      ...BARRAS,
+      courses: [
+        {
+          golfCourseId: 'g1',
+          golfCourseName: 'Aldeamayor',
+          tee: 'GOLD',
+          source: 'OWN',
+          options: ['BLUE', 'RED'],
+        },
+      ],
+    });
+    abre();
+    await screen.findByTestId('fila-barra-g1');
+    const select = within(screen.getByTestId('fila-barra-g1')).getByRole(
+      'combobox',
+    );
+    expect(select.value).toBe('GOLD');
+    expect(
+      within(select).getByRole('option', {
+        name: /competitions:tees.notAvailableHere/,
+      }).value,
+    ).toBe('GOLD');
+  });
+
   it('sin permiso, solo se ven', async () => {
     abre({ puedeCambiar: false });
     await screen.findByTestId('fila-barra-g1');
@@ -304,7 +330,7 @@ describe('MisBarras · relectura y fallos', () => {
     await waitFor(() => expect(m.leer).toHaveBeenCalledTimes(2));
   });
 
-  it('3: al cerrar mis barras se vuelven a leer y se avisa', async () => {
+  it('5: guardar y cerrar mis barras: UNA sola relectura de «Mis barras»', async () => {
     const onCambio = vi.fn();
     render(
       <MisBarras inscripcion={{ id: 'e1' }} puedeCambiar onCambio={onCambio} />,
@@ -313,13 +339,19 @@ describe('MisBarras · relectura y fallos', () => {
     fireEvent.click(
       screen.getByRole('button', { name: 'competitions:tees.changeGeneral' }),
     );
-    await screen.findByTestId('fila-barra-general');
-    const lecturas = m.leer.mock.calls.length;
+    // «Mis barras» (1) y el modal (2)
+    const general = await screen.findByLabelText('competitions:tees.general');
+    expect(m.leer).toHaveBeenCalledTimes(2);
+    fireEvent.change(general, { target: { value: 'BLUE' } });
+    fireEvent.click(screen.getByTestId('guardar-general'));
+    // El modal relee tras guardar (3); «Mis barras», todavía no
+    await waitFor(() => expect(onCambio).toHaveBeenCalledWith(BARRAS));
+    expect(m.leer).toHaveBeenCalledTimes(3);
     fireEvent.click(screen.getByText('competitions:tees.close'));
-    await waitFor(() =>
-      expect(m.leer.mock.calls.length).toBeGreaterThan(lecturas),
-    );
-    expect(onCambio).toHaveBeenCalledWith(null);
+    // Al cerrar, una (4)
+    await waitFor(() => expect(m.leer).toHaveBeenCalledTimes(4));
+    await new Promise((r) => setTimeout(r, 20));
+    expect(m.leer).toHaveBeenCalledTimes(4);
   });
 
   it('9: cada «Cambiar» con su nombre accesible, con el campo', async () => {

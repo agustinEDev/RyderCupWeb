@@ -8,6 +8,7 @@ import HeaderAuth from '../../components/layout/HeaderAuth';
 import { useAuth } from '../../hooks/useAuth';
 import { useCargaCancelableEffect } from '../../hooks/useCargaCancelableEffect';
 import AceptarInvitacionModal from '../../components/invitation/AceptarInvitacionModal';
+import { aceptadaConPlaza } from '../../utils/entraConPlaza';
 import { useResponderInvitacion } from '../../hooks/useResponderInvitacion';
 import InvitationCard from '../../components/invitation/InvitationCard';
 import AvisoVerificaParaVerInvitaciones from '../../components/invitation/AvisoVerificaParaVerInvitaciones';
@@ -77,7 +78,10 @@ const MyInvitationsPage = () => {
           // La ficha pide la barra de los campos que no tengan la general
           // (barras por campo): esta pantalla se va
           navigate(`/competitions/${result.competitionId}`, {
-            state: { from: 'invitations', preguntarBarras: true },
+            state: {
+              from: 'invitations',
+              preguntarBarras: aceptadaConPlaza(result),
+            },
           });
         }
       },

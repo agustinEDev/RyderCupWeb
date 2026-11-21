@@ -88,6 +88,8 @@ let faltaGenero = false;
 vi.mock('../hooks/useGeneroParaApuntarse', () => ({
   useGeneroParaApuntarse: () => ({
     falta: faltaGenero,
+    // Con género, sale marcada su barra habitual (barras por campo)
+    genero: faltaGenero ? null : 'MALE',
     guardar: mockGuardarGenero,
     refrescar: mockRefrescarSesion,
   }),

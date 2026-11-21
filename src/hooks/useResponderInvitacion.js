@@ -7,6 +7,7 @@ import { respondToInvitationUseCase } from '../composition';
 import { cargarBarras } from '../composition/cargarBarras';
 import { registraElFallo } from '../utils/registraElFallo';
 import { claveDelFalloDeLaBarra } from '../utils/falloDeLaBarra';
+import { aceptadaConPlaza } from '../utils/entraConPlaza';
 
 // Sin plaza, o con los equipos ya formados (29 oct 2026): se dice por qué y
 // la pantalla se pone al día
@@ -147,7 +148,9 @@ export const useResponderInvitacion = ({
         return;
       }
       customToast.success(t('success.accepted'));
-      await guardarLaBarra(result?.enrollmentId, barra);
+      // Solo si quedó dentro: en lista de espera no hay barra que guardar
+      if (aceptadaConPlaza(result))
+        await guardarLaBarra(result.enrollmentId, barra);
       await releer(alAceptar, result);
     } finally {
       terminar(invitationId);

@@ -527,6 +527,7 @@ describe('MyInvitationsPage', () => {
       id: 'inv-1',
       competitionId: 'comp-123',
       status: 'ACCEPTED',
+      enrollmentId: 'e-1',
     });
 
     renderPage();

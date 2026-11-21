@@ -39,24 +39,29 @@ export const useBarrasPendientes = ({ alGuardar } = {}) => {
     }
   };
 
-  const siguiente = () =>
-    setPendiente((p) =>
-      p && p.campos.length > 1 ? { ...p, campos: p.campos.slice(1) } : null,
-    );
+  // Quita ESE campo, no «el primero»: si se salta uno mientras otro se
+  // guarda, el guardado no se come el siguiente (/code-review)
+  const quitarCampo = (golfCourseId) =>
+    setPendiente((p) => {
+      const quedan = p?.campos.filter((c) => c.golfCourseId !== golfCourseId);
+      return quedan?.length ? { ...p, campos: quedan } : null;
+    });
 
   const guardar = async (color) => {
+    if (!pendiente || guardando) return;
     const { enrollmentId, campos } = pendiente;
+    const { golfCourseId } = campos[0];
     setGuardando(true);
     try {
       const { changeEnrollmentCourseTeeUseCase } = await cargarBarras();
       await changeEnrollmentCourseTeeUseCase.execute(
         enrollmentId,
-        campos[0].golfCourseId,
+        golfCourseId,
         color,
       );
       customToast.success(t('tees.saved'));
       alGuardar?.();
-      siguiente();
+      quitarCampo(golfCourseId);
     } catch (error) {
       registraElFallo(
         'useBarrasPendientes.error-saving-course-tee',
@@ -74,7 +79,13 @@ export const useBarrasPendientes = ({ alGuardar } = {}) => {
     campo: pendiente?.campos[0] ?? null,
     guardando,
     guardar,
-    saltar: siguiente,
-    cerrar: () => setPendiente(null),
+    saltar: () => {
+      // Mientras guarda, no se salta: el guardado ya decide qué sigue
+      if (!guardando && pendiente)
+        quitarCampo(pendiente.campos[0].golfCourseId);
+    },
+    cerrar: () => {
+      if (!guardando) setPendiente(null);
+    },
   };
 };

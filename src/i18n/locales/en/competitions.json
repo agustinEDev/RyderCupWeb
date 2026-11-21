@@ -807,6 +807,7 @@
     "usualMine": "Your usual ({{color}})",
     "usualMineNoColor": "Your usual",
     "changeGeneral": "Change your general tee",
-    "changeOn": "Change your tee at {{course}}"
+    "changeOn": "Change your tee at {{course}}",
+    "notAvailableHere": "{{color}} (no longer available on this course)"
   }
 }
