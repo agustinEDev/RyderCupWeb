@@ -1,5 +1,6 @@
 import { useTranslation } from 'react-i18next';
 import { Trophy, ListOrdered, Flag } from 'lucide-react';
+import { TournamentType } from '../../domain/value_objects/TournamentType';
 
 /**
  * Qué tipo de competición se va a crear (FE #639).
@@ -19,9 +20,9 @@ import { Trophy, ListOrdered, Flag } from 'lucide-react';
  *     ancho completo es el que falla el dedo.
  */
 const TIPOS = [
-  { id: 'RYDER_CUP', icono: Trophy, disponible: true },
-  { id: 'STABLEFORD', icono: ListOrdered, disponible: true },
-  { id: 'MEDAL', icono: Flag, disponible: true },
+  { id: TournamentType.RYDER_CUP, icono: Trophy, disponible: true },
+  { id: TournamentType.STABLEFORD, icono: ListOrdered, disponible: true },
+  { id: TournamentType.MEDAL, icono: Flag, disponible: true },
 ];
 
 const CompetitionTypeChooser = ({ onSelect, tipos = TIPOS }) => {

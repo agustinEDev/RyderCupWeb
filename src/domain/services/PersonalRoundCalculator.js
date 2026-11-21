@@ -7,6 +7,7 @@ import {
 } from './FoursomesSides';
 import { defaultAllowanceFor } from './defaultAllowance';
 import { MatchFormat } from '../value_objects/MatchFormat';
+import { PlayModeType } from '../value_objects/HandicapSettings';
 
 // La lectura personal de `compute` (la de la clasificación de la partida) se
 // mide con el hándicap de juego entero. «Tu vuelta» al anotar y en el historial
@@ -52,7 +53,7 @@ const PARAMETROS_POR_DEFECTO = Object.freeze({
   participantStrokes: [],
   matchFormat: null,
   allowancePercentage: null,
-  playMode: 'HANDICAP',
+  playMode: PlayModeType.HANDICAP,
 });
 
 const conDefectos = (params = {}) => ({
@@ -359,7 +360,7 @@ function totalesDeLaPartida(params) {
 
   // En SCRATCH nadie recibe golpes, diga lo que diga un reparto viejo
   const playingHandicap =
-    playMode === 'SCRATCH'
+    playMode === PlayModeType.SCRATCH
       ? 0
       : (repartoDelPartido(p)[me.participantId]?.playingHandicap ??
         MatchPlayStrokeAllocator.playingHandicap(

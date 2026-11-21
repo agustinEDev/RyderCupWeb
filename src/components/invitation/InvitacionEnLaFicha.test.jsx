@@ -46,16 +46,33 @@ vi.mock('../../hooks/useGeneroParaApuntarse', () => ({
   useGeneroParaApuntarse: () => genero,
 }));
 
-vi.mock('../profile/GeneroParaApuntarseModal', () => ({
-  default: ({ isOpen, onConfirm }) =>
+// Aceptar pide antes la barra general (barras por campo): el modal, simulado,
+// confirma con la amarilla y, si falta, el género
+vi.mock('./AceptarInvitacionModal', () => ({
+  default: ({ isOpen, pideGenero, onConfirm }) =>
     isOpen ? (
       <button
         type="button"
-        data-testid="elegir-genero"
-        onClick={() => onConfirm('FEMALE')}
+        data-testid="aceptar-con-barra"
+        onClick={() => onConfirm('YELLOW', pideGenero ? 'FEMALE' : null)}
       />
     ) : null,
 }));
+const cambiarGeneral = vi.hoisted(() => vi.fn());
+vi.mock('../../composition/cargarBarras', () => ({
+  cargarBarras: () =>
+    Promise.resolve({
+      changeEnrollmentTeeUseCase: { execute: cambiarGeneral },
+      getEnrollmentTeesUseCase: {
+        execute: vi.fn().mockResolvedValue({ courses: [] }),
+      },
+    }),
+}));
+// Si la pregunta de la barra está abierta, se confirma
+const confirmaLaBarra = () => {
+  const boton = screen.queryByTestId('aceptar-con-barra');
+  if (boton) fireEvent.click(boton);
+};
 
 const responder = vi.hoisted(() => vi.fn());
 vi.mock('../../composition', () => ({
@@ -128,11 +145,42 @@ describe('InvitacionEnLaFicha — aceptar', () => {
     const { alCambiar } = pinta();
 
     fireEvent.click(screen.getByTestId('invitacion-aceptar'));
+    confirmaLaBarra();
 
     await waitFor(() => expect(alCambiar).toHaveBeenCalledTimes(1));
     expect(responder).toHaveBeenCalledWith('inv-1', 'ACCEPT');
     expect(toast.success).toHaveBeenCalledWith('success.accepted');
   });
+
+  it.each([
+    [false, 'competitions:tees.errorsStrokePlay.TEE_NOT_ON_PENDING_COURSE'],
+    [undefined, 'competitions:tees.errors.TEE_NOT_ON_PENDING_COURSE'],
+  ])(
+    'D: un fallo al guardar la barra, con la palabra de la modalidad (conEquipos %s)',
+    async (conEquipos, clave) => {
+      responder.mockResolvedValue({
+        competitionId: 'c-1',
+        status: 'ACCEPTED',
+        enrollmentId: 'e-1',
+      });
+      cambiarGeneral.mockRejectedValue(
+        Object.assign(new Error('422'), {
+          status: 422,
+          errorCode: 'TEE_NOT_ON_PENDING_COURSE',
+        }),
+      );
+      pinta({ conEquipos });
+
+      fireEvent.click(screen.getByTestId('invitacion-aceptar'));
+      confirmaLaBarra();
+
+      await waitFor(() =>
+        expect(toast.error).toHaveBeenCalledWith(clave, {
+          position: 'top-center',
+        }),
+      );
+    },
+  );
 
   it('I4: sin género, antes se pregunta; guardado, acepta y refresca la sesión al final', async () => {
     genero.falta = true;
@@ -140,7 +188,7 @@ describe('InvitacionEnLaFicha — aceptar', () => {
 
     fireEvent.click(screen.getByTestId('invitacion-aceptar'));
     expect(responder).not.toHaveBeenCalled();
-    fireEvent.click(screen.getByTestId('elegir-genero'));
+    fireEvent.click(screen.getByTestId('aceptar-con-barra'));
 
     await waitFor(() => expect(alCambiar).toHaveBeenCalledTimes(1));
     expect(genero.guardar).toHaveBeenCalledWith('FEMALE');
@@ -154,7 +202,7 @@ describe('InvitacionEnLaFicha — aceptar', () => {
     const { alCambiar } = pinta();
 
     fireEvent.click(screen.getByTestId('invitacion-aceptar'));
-    fireEvent.click(screen.getByTestId('elegir-genero'));
+    fireEvent.click(screen.getByTestId('aceptar-con-barra'));
 
     // Sin respuesta del servidor, el texto de «sin conexión» de la app (CodeRabbit)
     await waitFor(() =>
@@ -171,6 +219,7 @@ describe('InvitacionEnLaFicha — aceptar', () => {
     const { alCambiar } = pinta();
 
     fireEvent.click(screen.getByTestId('invitacion-aceptar'));
+    confirmaLaBarra();
 
     await waitFor(() => expect(alCambiar).toHaveBeenCalledTimes(1));
     expect(toast.error).toHaveBeenCalledWith('errors.noRoom');
@@ -181,6 +230,7 @@ describe('InvitacionEnLaFicha — aceptar', () => {
     const { alCambiar } = pinta();
 
     fireEvent.click(screen.getByTestId('invitacion-aceptar'));
+    confirmaLaBarra();
 
     await waitFor(() => expect(alCambiar).toHaveBeenCalledTimes(1));
     expect(toast.error).toHaveBeenCalledWith('inDetail.notPendingAnymore');
@@ -193,6 +243,7 @@ describe('InvitacionEnLaFicha — aceptar', () => {
     const { alCambiar } = pinta();
 
     fireEvent.click(screen.getByTestId('invitacion-aceptar'));
+    confirmaLaBarra();
 
     await waitFor(() =>
       expect(toast.error).toHaveBeenCalledWith('Te falta el hándicap'),
@@ -208,6 +259,7 @@ describe('InvitacionEnLaFicha — aceptar', () => {
     const { alCambiar } = pinta();
 
     fireEvent.click(screen.getByTestId('invitacion-aceptar'));
+    confirmaLaBarra();
     // El de la app, no el «Failed to fetch» del navegador (CodeRabbit)
     await waitFor(() =>
       expect(toast.error).toHaveBeenCalledWith('common:sinConexion.mensaje'),
@@ -215,6 +267,7 @@ describe('InvitacionEnLaFicha — aceptar', () => {
     expect(alCambiar).not.toHaveBeenCalled();
 
     fireEvent.click(screen.getByTestId('invitacion-aceptar'));
+    confirmaLaBarra();
     await waitFor(() => expect(alCambiar).toHaveBeenCalledTimes(1));
   });
 
@@ -223,6 +276,7 @@ describe('InvitacionEnLaFicha — aceptar', () => {
     pinta();
 
     fireEvent.click(screen.getByTestId('invitacion-aceptar'));
+    confirmaLaBarra();
 
     await waitFor(() =>
       expect(toast.error).toHaveBeenCalledWith('errors.failedToRespond'),
@@ -250,7 +304,7 @@ describe('InvitacionEnLaFicha — rechazar', () => {
     await waitFor(() =>
       expect(responder).toHaveBeenCalledWith('inv-1', 'DECLINE'),
     );
-    expect(screen.queryByTestId('elegir-genero')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('aceptar-con-barra')).not.toBeInTheDocument();
   });
 
   it.each([
@@ -293,7 +347,9 @@ describe('InvitacionEnLaFicha — I10: mientras responde', () => {
     const { alCambiar } = pinta();
 
     fireEvent.click(screen.getByTestId('invitacion-aceptar'));
+    confirmaLaBarra();
     fireEvent.click(screen.getByTestId('invitacion-aceptar'));
+    confirmaLaBarra();
     fireEvent.click(screen.getByTestId('invitacion-rechazar'));
 
     expect(screen.getByTestId('invitacion-aceptar')).toBeDisabled();
@@ -313,6 +369,8 @@ describe('InvitacionEnLaFicha — mientras responde, lo dice (revisor de la PR 3
     pinta();
 
     fireEvent.click(screen.getByTestId(boton));
+    // Aceptar pasa antes por la barra (barras por campo)
+    confirmaLaBarra();
 
     expect(screen.getByTestId(boton)).toHaveTextContent(texto);
     // El otro, con su texto de siempre

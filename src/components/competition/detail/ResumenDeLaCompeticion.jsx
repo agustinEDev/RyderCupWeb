@@ -17,6 +17,8 @@ import { plazoQueSeEnseña } from '../../../domain/services/plazoDeInscripcion';
 import NombrePequeno from '../../ui/NombrePequeno';
 import { nombrePequeno } from '../../../utils/nombreVisible';
 import { CompetitionStatusEnum } from '../../../domain/value_objects/CompetitionStatus';
+import { Visibility } from '../../../domain/value_objects/Visibility';
+import { SetupMode } from '../../../domain/value_objects/SetupMode';
 
 /**
  * «Inscripción abierta hasta el 13 de noviembre a las 12:00» (15 nov 2026): el
@@ -69,7 +71,7 @@ const ResumenDeLaCompeticion = ({
               className="px-3 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-700"
             >
               {t(
-                competition.visibility === 'PUBLIC'
+                competition.visibility === Visibility.PUBLIC
                   ? 'detail.visibilityPublic'
                   : 'detail.visibilityPrivate',
               )}
@@ -93,7 +95,7 @@ const ResumenDeLaCompeticion = ({
         A quien organiza no se le repite aquí: para él la sala es el
         siguiente paso y ya la ofrece el botón de arriba (FE #705) */}
       {!canManage &&
-        competition.setupMode === 'RYDER_CUP' &&
+        competition.setupMode === SetupMode.RYDER_CUP &&
         competition.status === CompetitionStatusEnum.CLOSED &&
         !competition.teamsAssigned &&
         competition.captains?.teamA &&

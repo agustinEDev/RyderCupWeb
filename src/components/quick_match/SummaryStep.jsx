@@ -4,6 +4,8 @@ import {
   SCORING_FORMAT_LABEL_KEY,
 } from './createQuickMatchModalConstants';
 import { formatoDeIndice } from '../../utils/formatoDeHandicap';
+import { Team } from '../../domain/value_objects/Team';
+import { PlayModeType } from '../../domain/value_objects/HandicapSettings';
 
 /**
  * Wizard step 4: pre-start summary — course/format/play-mode recap,
@@ -36,7 +38,7 @@ const SummaryStep = ({
   onClose,
   onStart,
 }) => {
-  const isScratch = playMode === 'SCRATCH';
+  const isScratch = playMode === PlayModeType.SCRATCH;
 
   // Se busca la salida entera, no solo color y género, porque el identificador
   // es parte del nombre: en un campo federado cuya salida amarilla se llama
@@ -114,7 +116,7 @@ const SummaryStep = ({
                 )}
                 {isTeamFormat && p.team && (
                   <span className="text-xs text-gray-400 flex-shrink-0">
-                    {p.team === 'A'
+                    {p.team === Team.A
                       ? t('create.participants.teamA')
                       : t('create.participants.teamB')}
                   </span>

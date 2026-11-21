@@ -21,6 +21,7 @@ import BlockLoader from '../../components/ui/BlockLoader';
 import { mensajeDelError } from '../../utils/mensajeDelError';
 import { registraElFallo } from '../../utils/registraElFallo';
 import { GolfCourseApprovalStatus } from '../../domain/value_objects/GolfCourseApprovalStatus';
+import { Role } from '../../domain/value_objects/Role';
 
 /**
  * GolfCourses Page (Admin)
@@ -50,7 +51,7 @@ const GolfCourses = ({ embedded = false }) => {
   const isAdmin =
     user?.is_admin === true ||
     user?.roles?.some((role) =>
-      typeof role === 'string' ? role === 'ADMIN' : role.name === 'ADMIN',
+      typeof role === 'string' ? role === Role.ADMIN : role.name === Role.ADMIN,
     ) ||
     false;
 

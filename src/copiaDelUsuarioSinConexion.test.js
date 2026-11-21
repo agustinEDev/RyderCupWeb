@@ -109,6 +109,12 @@ const AUDITADOS = {
   '/src/pages/CompetitionDetail.jsx':
     'desconocido: etiquetas neutras; falta el hándicap por la regla',
   '/src/pages/Competitions.jsx': 'desconocido: etiqueta de inscripción neutra',
+  // La barra habitual al aceptar una invitación (barras por campo)
+  '/src/hooks/useGeneroParaApuntarse.js':
+    'desconocido: ninguna barra marcada, hay que elegirla',
+  // Las barras al apuntarse (FE #1214)
+  '/src/pages/BrowseCompetitions.jsx':
+    'desconocido: solo las barras mixtas y ninguna marcada',
   '/src/pages/player/MyInvitationsPage.jsx':
     'desconocido: el aviso sin botón de reenviar',
   // B-17: la copia sin conexión guarda `email_verified` pero no el correo: el aviso

@@ -5,6 +5,8 @@ import {
   instanteSiEsValido,
 } from '../../utils/instanteDeLaApi';
 
+import { PlayModeType } from '../../domain/value_objects/HandicapSettings';
+
 /**
  * QuickMatchMapper - Anti-Corruption Layer
  *
@@ -107,7 +109,7 @@ class QuickMatchMapper {
       scoringFormat: apiData.scoring_format ?? null,
       allowancePercentage: apiData.allowance_percentage ?? null,
       effectiveAllowance: apiData.effective_allowance ?? 100,
-      playMode: apiData.play_mode ?? 'HANDICAP',
+      playMode: apiData.play_mode ?? PlayModeType.HANDICAP,
       status: QuickMatchStatus.fromString(apiData.status),
       name: apiData.name ?? null,
       participants,

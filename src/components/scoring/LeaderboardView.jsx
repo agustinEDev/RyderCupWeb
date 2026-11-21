@@ -2,6 +2,8 @@ import { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import TeamStandingsHeader from './TeamStandingsHeader';
 import MatchStatus from '../../domain/value_objects/MatchStatus';
+import { Winner } from '../../domain/value_objects/Winner';
+import { Team } from '../../domain/value_objects/Team';
 
 // Converts "5UP" at hole 14 → "5&4" (5 up with 4 to play).
 // If match ended on hole 18, keeps "2UP" format.
@@ -61,10 +63,10 @@ const LeaderboardView = ({ leaderboard, jugador = null }) => {
     const teamBNames = (match.teamBPlayers ?? [])
       .map((p) => p.userName)
       .join(' / ');
-    const teamAWon = match.result?.winner === 'A';
-    const teamBWon = match.result?.winner === 'B';
-    const isTeamALeading = match.leadingTeam === 'A';
-    const isTeamBLeading = match.leadingTeam === 'B';
+    const teamAWon = match.result?.winner === Winner.A;
+    const teamBWon = match.result?.winner === Winner.B;
+    const isTeamALeading = match.leadingTeam === Team.A;
+    const isTeamBLeading = match.leadingTeam === Team.B;
     const teamAHighlighted = isTeamALeading || teamAWon;
     const teamBHighlighted = isTeamBLeading || teamBWon;
     const suyo = !!jugador && juegaEn(match, jugador);
@@ -117,23 +119,23 @@ const LeaderboardView = ({ leaderboard, jugador = null }) => {
                 {match.status === MatchStatus.WALKOVER
                   ? t('leaderboard.walkover', {
                       team:
-                        match.result.winner === 'A'
+                        match.result.winner === Winner.A
                           ? leaderboard.teamAName
                           : leaderboard.teamBName,
                     })
                   : match.status === MatchStatus.CONCEDED
                     ? t('leaderboard.conceded', {
                         team:
-                          match.result.winner === 'A'
+                          match.result.winner === Winner.A
                             ? leaderboard.teamAName
                             : leaderboard.teamBName,
                       })
-                    : match.result.winner === 'HALVED'
+                    : match.result.winner === Winner.HALVED
                       ? t('leaderboard.allSquare')
                       : match.result.winner
                         ? t('leaderboard.wins', {
                             team:
-                              match.result.winner === 'A'
+                              match.result.winner === Winner.A
                                 ? leaderboard.teamAName
                                 : leaderboard.teamBName,
                             score: formatMatchPlayResult(

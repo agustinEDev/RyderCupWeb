@@ -7,7 +7,8 @@ import { esFalloDeRed, mensajeDeError } from '../../utils/sinCobertura';
 import HeaderAuth from '../../components/layout/HeaderAuth';
 import { useAuth } from '../../hooks/useAuth';
 import { useCargaCancelableEffect } from '../../hooks/useCargaCancelableEffect';
-import GeneroParaApuntarseModal from '../../components/profile/GeneroParaApuntarseModal';
+import AceptarInvitacionModal from '../../components/invitation/AceptarInvitacionModal';
+import { aceptadaConPlaza } from '../../utils/entraConPlaza';
 import { useResponderInvitacion } from '../../hooks/useResponderInvitacion';
 import InvitationCard from '../../components/invitation/InvitationCard';
 import AvisoVerificaParaVerInvitaciones from '../../components/invitation/AvisoVerificaParaVerInvitaciones';
@@ -70,12 +71,17 @@ const MyInvitationsPage = () => {
 
   // Aceptar o rechazar, con las mismas reglas que el cuadro de la ficha. Al
   // aceptar, a su ficha, con el origen para que «Volver» traiga de nuevo aquí
-  const { seEstaRespondiendo, aceptar, rechazar, preguntaDelGenero } =
+  const { seEstaRespondiendo, aceptar, rechazar, preguntaDeLaBarra } =
     useResponderInvitacion({
       alAceptar: (result) => {
         if (result?.competitionId) {
+          // La ficha pide la barra de los campos que no tengan la general
+          // (barras por campo): esta pantalla se va
           navigate(`/competitions/${result.competitionId}`, {
-            state: { from: 'invitations' },
+            state: {
+              from: 'invitations',
+              preguntarBarras: aceptadaConPlaza(result),
+            },
           });
         }
       },
@@ -196,7 +202,7 @@ const MyInvitationsPage = () => {
         )}
       </div>
 
-      <GeneroParaApuntarseModal {...preguntaDelGenero} />
+      <AceptarInvitacionModal {...preguntaDeLaBarra} />
     </div>
   );
 };

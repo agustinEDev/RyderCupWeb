@@ -18,6 +18,7 @@ import {
 import BloqueoDePartidos from '../components/schedule/BloqueoDePartidos';
 import { formatoDeIndice } from '../utils/formatoDeHandicap';
 import { PANTALLA_MENOS_BARRA_INFERIOR } from '../utils/barraInferior';
+import { Team } from '../domain/value_objects/Team';
 
 /**
  * El sobre de un capitán (FE #655).
@@ -207,7 +208,7 @@ const SobreDeLaRonda = ({
 
   // Qué sobres rellenó la aplicación, en UN aviso que dice de quién (#710):
   // eran dos avisos iguales, y «ese capitán» no decía cuál
-  const automaticos = ['A', 'B'].filter(
+  const automaticos = [Team.A, Team.B].filter(
     (equipo) => vista?.[`team${equipo}Automatic`],
   );
   let avisoAutomatico = null;
@@ -710,8 +711,8 @@ const EnvelopePage = () => {
       alCargar: (competicion) =>
         setNombresDeLosEquipos({
           id,
-          A: competicion.team1Name,
-          B: competicion.team2Name,
+          [Team.A]: competicion.team1Name,
+          [Team.B]: competicion.team2Name,
         }),
     },
   );

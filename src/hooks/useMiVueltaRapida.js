@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import PersonalRoundCalculator from '../domain/services/PersonalRoundCalculator';
+import { PlayModeType } from '../domain/value_objects/HandicapSettings';
 
 /**
  * «Tu vuelta» en la anotación de partida rápida (21 oct): el acumulado neto
@@ -31,7 +32,7 @@ export const useMiVueltaRapida = ({
   const participantStrokes = quickMatch?.participantStrokes;
   const matchFormat = quickMatch?.matchFormat ?? null;
   const effectiveAllowance = quickMatch?.effectiveAllowance ?? null;
-  const playMode = quickMatch?.playMode ?? 'HANDICAP';
+  const playMode = quickMatch?.playMode ?? PlayModeType.HANDICAP;
   return useMemo(
     () =>
       PersonalRoundCalculator.runningResult({

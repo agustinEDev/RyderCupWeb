@@ -15,6 +15,8 @@ import { mensajeDeErrorDePartida } from '../../utils/erroresDePartida';
 import { sinMarcadorEnJuego } from '../../domain/services/PartidasDeLaFranja';
 import { conGenero } from '../../utils/genero';
 import NombreConHandicap from './NombreConHandicap';
+import { TournamentType } from '../../domain/value_objects/TournamentType';
+import { ValidationStatus } from '../../domain/value_objects/ValidationStatus';
 
 const RECOGIDA = 'RECOGIDA';
 const SIN_GOLPE = '';
@@ -59,7 +61,7 @@ const TarjetasDeLaPartida = ({ scoringView, userId, organiza, onCambio }) => {
   const [ocupado, setOcupado] = useState(false);
 
   const { strokePlay } = scoringView;
-  const esMedal = strokePlay.tournamentType === 'MEDAL';
+  const esMedal = strokePlay.tournamentType === TournamentType.MEDAL;
   const golpeDe = (userId, hoyo) =>
     scoringView.scores
       .find((s) => s.holeNumber === hoyo)
@@ -79,7 +81,7 @@ const TarjetasDeLaPartida = ({ scoringView, userId, organiza, onCambio }) => {
     if (!golpe) return '·';
     const uno = (valor, enviado) =>
       !enviado ? '·' : valor == null ? '—' : `${valor}`;
-    if (golpe.validationStatus === 'mismatch') {
+    if (golpe.validationStatus === ValidationStatus.MISMATCH) {
       return `${uno(golpe.ownScore, golpe.ownSubmitted)}/${uno(golpe.markerScore, golpe.markerSubmitted)}`;
     }
     return golpe.ownSubmitted
@@ -334,11 +336,12 @@ const TarjetasDeLaPartida = ({ scoringView, userId, organiza, onCambio }) => {
                     (_, i) => desde + i + 1,
                   ).map((hoyo) => {
                     const golpe = golpeDe(jugador, hoyo);
-                    const estado = golpe?.validationStatus ?? 'pending';
+                    const estado =
+                      golpe?.validationStatus ?? ValidationStatus.PENDING;
                     const color =
-                      estado === 'match'
+                      estado === ValidationStatus.MATCH
                         ? 'text-green-800'
-                        : estado === 'mismatch'
+                        : estado === ValidationStatus.MISMATCH
                           ? 'bg-red-50 text-red-700'
                           : 'text-gray-500';
                     const celda = (
@@ -351,7 +354,7 @@ const TarjetasDeLaPartida = ({ scoringView, userId, organiza, onCambio }) => {
                         </span>
                         {/* Dos golpes («12/11») no caben a 360 px con la letra de uno */}
                         <span
-                          className={`block font-semibold ${estado === 'mismatch' ? 'text-[9px] tracking-tighter' : ''}`}
+                          className={`block font-semibold ${estado === ValidationStatus.MISMATCH ? 'text-[9px] tracking-tighter' : ''}`}
                         >
                           {textoDe(golpe)}
                         </span>

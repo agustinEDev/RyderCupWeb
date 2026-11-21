@@ -1,5 +1,6 @@
 import { useTranslation } from 'react-i18next';
 import { cuentaLaBola } from '../../domain/services/retiradaDelFourball';
+import { ValidationStatus } from '../../domain/value_objects/ValidationStatus';
 
 /**
  * @param {number[]} [props.noGuardados] Hoyos que no se pudieron guardar
@@ -33,7 +34,7 @@ const HoleSelector = ({
       cuentaLaBola(ps, retirados),
     );
     const hasMismatch = queCuentan.some(
-      (ps) => ps.validationStatus === 'mismatch',
+      (ps) => ps.validationStatus === ValidationStatus.MISMATCH,
     );
     if (hasMismatch) return 'mismatch';
     if (holeScore.playerScores.some((ps) => ps.enCola)) return 'pending';
@@ -43,7 +44,7 @@ const HoleSelector = ({
     if (holeScore.holeResult) return 'validated';
     const hasAllMatch =
       queCuentan.length > 0 &&
-      queCuentan.every((ps) => ps.validationStatus === 'match');
+      queCuentan.every((ps) => ps.validationStatus === ValidationStatus.MATCH);
     if (hasAllMatch) return 'validated';
     // Sin nada anotado aún, vacío: la API trae fila de los 18 hoyos, también de
     // los no jugados de un partido acabado (#847)

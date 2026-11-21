@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Mail } from 'lucide-react';
-import GeneroParaApuntarseModal from '../profile/GeneroParaApuntarseModal';
+import AceptarInvitacionModal from './AceptarInvitacionModal';
 import { useResponderInvitacion } from '../../hooks/useResponderInvitacion';
 import {
   instanteEnTexto,
@@ -36,9 +36,19 @@ const useCaducada = (expiresAt) => {
  * @param {{
  *   invitacion: {id: string, expiresAt: string|null}|null,
  *   alCambiar: () => unknown,
- * }} props - la invitación y cómo releer la ficha tras responder
+ *   alAceptar?: (resultado: object) => unknown,
+ *   conEquipos?: boolean,
+ * }} props - la invitación, cómo releer la ficha tras responder y, si se
+ *   quiere, qué hacer al aceptar (la ficha pide la barra de los campos que
+ *   no tengan la general); sin él, releerla. `conEquipos`: una Ryder (por
+ *   defecto) o stroke play, para nombrar lo pendiente en un fallo de la barra
  */
-const InvitacionEnLaFicha = ({ invitacion, alCambiar }) => {
+const InvitacionEnLaFicha = ({
+  invitacion,
+  alCambiar,
+  alAceptar,
+  conEquipos = true,
+}) => {
   const { t, i18n } = useTranslation('invitations');
   const caducada = useCaducada(invitacion?.expiresAt);
   const {
@@ -46,11 +56,12 @@ const InvitacionEnLaFicha = ({ invitacion, alCambiar }) => {
     accionEnCurso,
     aceptar,
     rechazar,
-    preguntaDelGenero,
+    preguntaDeLaBarra,
   } = useResponderInvitacion({
-    alAceptar: alCambiar,
+    alAceptar: alAceptar ?? alCambiar,
     alCambiar,
     textoYaNoPendiente: 'inDetail.notPendingAnymore',
+    conEquipos,
   });
 
   if (!invitacion || caducada) return null;
@@ -113,7 +124,7 @@ const InvitacionEnLaFicha = ({ invitacion, alCambiar }) => {
           {textoDe('DECLINE') ?? t('actions.decline')}
         </button>
       </div>
-      <GeneroParaApuntarseModal {...preguntaDelGenero} />
+      <AceptarInvitacionModal {...preguntaDeLaBarra} />
     </section>
   );
 };

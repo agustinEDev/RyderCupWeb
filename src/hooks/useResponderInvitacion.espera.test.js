@@ -47,8 +47,12 @@ describe('useResponderInvitacion · no puede entrar ahora', () => {
         useResponderInvitacion({ alAceptar: vi.fn(), alCambiar }),
       );
 
-      await act(async () => {
+      // Aceptar pasa antes por la barra general (barras por campo)
+      act(() => {
         result.current.aceptar('inv-1');
+      });
+      await act(async () => {
+        result.current.preguntaDeLaBarra.onConfirm('YELLOW', null);
       });
 
       await vi.waitFor(() => expect(toast.error).toHaveBeenCalledWith(texto));

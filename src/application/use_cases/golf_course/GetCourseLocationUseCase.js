@@ -1,4 +1,4 @@
-import { esPosicionValida } from '../../../domain/services/geometriaDelHoyo';
+import { esPosicionValida } from '../../../domain/services/posicionValida';
 
 /**
  * GetCourseLocationUseCase: dónde está un campo, para el mapa del hoyo (BE #532).

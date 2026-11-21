@@ -1,5 +1,7 @@
 import PlayingHandicapCalculator from './PlayingHandicapCalculator';
 import { MatchFormat } from '../value_objects/MatchFormat';
+import { Team } from '../value_objects/Team';
+import { PlayModeType } from '../value_objects/HandicapSettings';
 
 /**
  * Domain Service: MatchPlayStrokeAllocator
@@ -346,9 +348,9 @@ class MatchPlayStrokeAllocator {
     tees = [],
     matchFormat = null,
     allowancePercentage = 100,
-    playMode = 'HANDICAP',
+    playMode = PlayModeType.HANDICAP,
   }) {
-    if (playMode === 'SCRATCH') {
+    if (playMode === PlayModeType.SCRATCH) {
       return MatchPlayStrokeAllocator.#zeroed(participants);
     }
 
@@ -527,8 +529,8 @@ class MatchPlayStrokeAllocator {
   }
 
   static #foursomes(participants, holes, tees, allowance) {
-    const teamA = participants.filter((p) => p.team === 'A');
-    const teamB = participants.filter((p) => p.team === 'B');
+    const teamA = participants.filter((p) => p.team === Team.A);
+    const teamB = participants.filter((p) => p.team === Team.B);
     if (teamA.length === 0 || teamB.length === 0) {
       return MatchPlayStrokeAllocator.#zeroed(participants);
     }

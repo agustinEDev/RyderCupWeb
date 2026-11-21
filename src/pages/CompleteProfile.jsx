@@ -18,6 +18,7 @@ import CampoDeHandicap from '../components/ui/CampoDeHandicap';
 import { olvidaLaMarcaDeTerminos } from '../utils/terminosPendientes';
 import { mensajeDelError } from '../utils/mensajeDelError';
 import { registraElFallo } from '../utils/registraElFallo';
+import { Gender } from '../domain/value_objects/Gender';
 
 const CompleteProfile = () => {
   const { t } = useTranslation('auth');
@@ -245,10 +246,10 @@ const CompleteProfile = () => {
                   <option value="">
                     {t('google.completeProfile.genderPlaceholder')}
                   </option>
-                  <option value="MALE">
+                  <option value={Gender.MALE}>
                     {t('google.completeProfile.genderOptions.MALE')}
                   </option>
-                  <option value="FEMALE">
+                  <option value={Gender.FEMALE}>
                     {t('google.completeProfile.genderOptions.FEMALE')}
                   </option>
                 </select>

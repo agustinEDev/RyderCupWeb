@@ -12,6 +12,7 @@ import {
 } from '../../utils/formatoDeHandicap';
 import MatchStatus from '../../domain/value_objects/MatchStatus';
 import { isTeamMatchFormat } from '../../domain/value_objects/MatchFormat';
+import { Team } from '../../domain/value_objects/Team';
 
 const STATUS_COLORS = {
   [MatchStatus.SCHEDULED]: 'bg-blue-100 text-blue-800',
@@ -160,9 +161,9 @@ const MatchCard = ({
               (
               {t('matches.strokesGivenTo', {
                 team:
-                  match.strokesGivenToTeam === 'A'
+                  match.strokesGivenToTeam === Team.A
                     ? teamNames.teamA
-                    : match.strokesGivenToTeam === 'B'
+                    : match.strokesGivenToTeam === Team.B
                       ? teamNames.teamB
                       : '',
               })}

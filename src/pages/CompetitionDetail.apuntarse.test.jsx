@@ -21,6 +21,8 @@ const mockAuthUser = {
   first_name: 'Test',
   last_name: 'Player',
   handicap: 12,
+  // Con género, sale marcada su barra habitual al apuntarse (barras por campo)
+  gender: 'MALE',
 };
 
 // Refrescar la sesión crea un `user` nuevo con el mismo id: se simula dando
@@ -83,9 +85,23 @@ const mockRequest = vi.fn(async () => orden.push('plaza'));
 const mockGuardarGenero = vi.fn(async () => orden.push('genero'));
 const mockRefrescarSesion = vi.fn(async () => orden.push('sesion'));
 let faltaGenero = false;
+// La pregunta de los campos sin barra: aquí, con qué se pide tras apuntarse
+const mockComprobar = vi.hoisted(() => vi.fn());
+vi.mock('../hooks/useBarrasPendientes', () => ({
+  useBarrasPendientes: () => ({
+    comprobar: mockComprobar,
+    campo: null,
+    guardando: false,
+    guardar: vi.fn(),
+    saltar: vi.fn(),
+    cerrar: vi.fn(),
+  }),
+}));
 vi.mock('../hooks/useGeneroParaApuntarse', () => ({
   useGeneroParaApuntarse: () => ({
     falta: faltaGenero,
+    // Con género, sale marcada su barra habitual (barras por campo)
+    genero: faltaGenero ? null : 'MALE',
     guardar: mockGuardarGenero,
     refrescar: mockRefrescarSesion,
   }),
@@ -214,7 +230,7 @@ describe('CompetitionDetail · apuntarse a una pública', () => {
 
     await waitFor(() =>
       expect(mockRequest).toHaveBeenCalledWith('comp-1', null, {
-        color: null,
+        color: 'YELLOW',
         roundId: null,
         waitingList: false,
       }),
@@ -225,6 +241,45 @@ describe('CompetitionDetail · apuntarse a una pública', () => {
       ),
     );
   });
+
+  it.each([
+    [{}, true],
+    [{ tournamentType: 'MEDAL', hasTeams: false }, false],
+  ])(
+    'D: dentro con plaza, pregunta por los campos con su modalidad (%o → conEquipos %s)',
+    async (extra, conEquipos) => {
+      agenda = { rounds: [FRANJA] };
+      mockGetCompetitionDetail.mockResolvedValue(
+        ficha({
+          ...extra,
+          ...(extra.hasTeams === false && {
+            strokePlay: { categoryLimits: [], maxMatchdaysPerPlayer: 1 },
+          }),
+        }),
+      );
+      mockRequest.mockResolvedValue({
+        id: 'mia-1',
+        status: 'APPROVED',
+        waiting: false,
+        roundId: conEquipos ? null : 'r1',
+      });
+      renderPage();
+
+      await apuntarse();
+      if (!conEquipos) {
+        fireEvent.click(await screen.findByTestId('franja-r1'));
+        fireEvent.click(
+          screen.getByText('competitions:enrollment.joinWaitingList'),
+        );
+      } else {
+        fireEvent.click(screen.getByText('competitions:enrollment.confirm'));
+      }
+
+      await waitFor(() =>
+        expect(mockComprobar).toHaveBeenCalledWith('mia-1', { conEquipos }),
+      );
+    },
+  );
 
   it('D6: en un stroke play elige la espera de una franja llena', async () => {
     agenda = { rounds: [FRANJA] };
@@ -250,7 +305,7 @@ describe('CompetitionDetail · apuntarse a una pública', () => {
 
     await waitFor(() =>
       expect(mockRequest).toHaveBeenCalledWith('comp-1', null, {
-        color: null,
+        color: 'YELLOW',
         roundId: 'r1',
         waitingList: true,
       }),

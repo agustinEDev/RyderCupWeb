@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { esPosicionValida } from '../domain/services/geometriaDelHoyo';
+import { esPosicionValida } from '../domain/services/posicionValida';
 
 // Peor que esto, las distancias al green engañan más de lo que ayudan (G1)
 const PRECISION_MAXIMA_M = 30;

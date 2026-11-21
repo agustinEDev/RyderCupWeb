@@ -1,6 +1,13 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { MemoryRouter, Route, Routes } from 'react-router';
+import {
+  render,
+  screen,
+  fireEvent,
+  waitFor,
+  act,
+  within,
+} from '@testing-library/react';
+import { MemoryRouter, Route, Routes, useLocation } from 'react-router';
 import CompetitionDetail from './CompetitionDetail';
 
 vi.mock('react-i18next', () => ({
@@ -49,19 +56,72 @@ vi.mock('../components/layout/HeaderAuth', () => ({
 
 // El cuadro, con sus casos, se prueba aparte: aquí, cuándo sale y qué recarga
 vi.mock('../components/invitation/InvitacionEnLaFicha', () => ({
-  default: ({ invitacion, alCambiar }) =>
+  default: ({ invitacion, alCambiar, alAceptar, conEquipos }) =>
     invitacion ? (
-      <button
-        type="button"
-        data-testid="cuadro-invitacion"
-        data-id={invitacion.id}
-        onClick={alCambiar}
-      />
+      <>
+        <button
+          type="button"
+          data-testid="cuadro-invitacion"
+          data-id={invitacion.id}
+          data-con-equipos={String(conEquipos)}
+          onClick={alCambiar}
+        />
+        {/* Aceptarla: el resultado trae la inscripción que crea */}
+        <button
+          type="button"
+          data-testid="aceptar-invitacion"
+          onClick={() =>
+            alAceptar({
+              status: mockEstadoAlAceptar.valor,
+              enrollmentId: 'mia-1',
+            })
+          }
+        />
+      </>
     ) : null,
 }));
+// Cómo queda la invitación al aceptarla: dentro, o en lista de espera
+const mockEstadoAlAceptar = vi.hoisted(() => ({ valor: 'ACCEPTED' }));
+// Las barras de mi inscripción (barras por campo): un campo sin la general
+const mockLeerBarras = vi.fn();
+const mb = vi.hoisted(() => ({
+  general: vi.fn(),
+  campo: vi.fn(),
+  delCampo: vi.fn(),
+  fijadas: vi.fn(),
+  campos: vi.fn().mockResolvedValue([]),
+  toast: { success: vi.fn(), error: vi.fn() },
+}));
+vi.mock('../composition/cargarBarras', () => ({
+  cargarBarras: () =>
+    Promise.resolve({
+      getEnrollmentTeesUseCase: { execute: (...a) => mockLeerBarras(...a) },
+      changeEnrollmentCourseTeeUseCase: { execute: mb.campo },
+      changeEnrollmentTeeUseCase: { execute: mb.general },
+      setCompetitionCourseTeeUseCase: { execute: mb.delCampo },
+      getCompetitionCourseTeesUseCase: { execute: mb.fijadas },
+    }),
+}));
+const SIN_BARRA_EN_ALTEA = {
+  generalTee: 'YELLOW',
+  defaultTee: 'YELLOW',
+  courses: [
+    {
+      golfCourseId: 'g2',
+      golfCourseName: 'Altea',
+      tee: null,
+      source: 'NONE',
+      options: ['WHITE'],
+    },
+  ],
+};
 
 vi.mock('../components/competition/CompetitionGolfCoursesSection', () => ({
   default: () => <div data-testid="golf-courses-section" />,
+}));
+// En stroke play la ficha pinta las franjas: aquí no se prueban
+vi.mock('../components/competition/FranjasDeLaCompeticion', () => ({
+  default: () => <div data-testid="franjas" />,
 }));
 
 const mockGetCompetitionDetail = vi.fn().mockResolvedValue({
@@ -112,7 +172,7 @@ vi.mock('../composition', () => ({
   getCompetitionDetailUseCase: {
     execute: (...args) => mockGetCompetitionDetail(...args),
   },
-  getCompetitionGolfCoursesUseCase: { execute: vi.fn().mockResolvedValue([]) },
+  getCompetitionGolfCoursesUseCase: { execute: mb.campos },
   activateCompetitionUseCase: { execute: vi.fn() },
   closeEnrollmentsUseCase: {
     execute: (...args) => mockCloseEnrollments(...args),
@@ -144,15 +204,30 @@ vi.mock('../composition', () => ({
   },
 }));
 
-vi.mock('../utils/toast', () => ({
-  default: { success: vi.fn(), error: vi.fn() },
-}));
+vi.mock('../utils/toast', () => ({ default: mb.toast }));
 
-const renderPage = () => {
+// El estado de navegación, a la vista: la marca de las barras se quita
+const VerEstado = () => (
+  <output data-testid="estado-de-navegacion">
+    {JSON.stringify(useLocation().state ?? null)}
+  </output>
+);
+
+const renderPage = (estado) => {
   return render(
-    <MemoryRouter initialEntries={['/competitions/comp-1']}>
+    <MemoryRouter
+      initialEntries={[{ pathname: '/competitions/comp-1', state: estado }]}
+    >
       <Routes>
-        <Route path="/competitions/:id" element={<CompetitionDetail />} />
+        <Route
+          path="/competitions/:id"
+          element={
+            <>
+              <CompetitionDetail />
+              <VerEstado />
+            </>
+          }
+        />
       </Routes>
     </MemoryRouter>,
   );
@@ -191,6 +266,25 @@ describe('CompetitionDetail · mi invitación pendiente', () => {
       'inv-1',
     );
   });
+
+  it.each([
+    [undefined, 'true'],
+    [false, 'false'],
+  ])(
+    'D: el cuadro sabe la modalidad (hasTeams %s → conEquipos %s)',
+    async (hasTeams, conEquipos) => {
+      mockGetCompetitionDetail.mockResolvedValue({
+        ...FICHA,
+        hasTeams,
+        myPendingInvitation: { id: 'inv-1', expiresAt: null },
+      });
+      renderPage();
+      expect(await screen.findByTestId('cuadro-invitacion')).toHaveAttribute(
+        'data-con-equipos',
+        conEquipos,
+      );
+    },
+  );
 
   it('I2: sin ella, nada', async () => {
     mockGetCompetitionDetail.mockResolvedValue(FICHA);
@@ -245,4 +339,357 @@ describe('CompetitionDetail · mi invitación pendiente', () => {
     );
     expect(mockGetCompetitionDetail).toHaveBeenCalledTimes(2);
   });
+});
+
+/**
+ * Tras aceptar, la ficha pide la barra de los campos que no tienen la general
+ * (barras por campo, F1): es la pantalla que queda a la vista. Dos vías:
+ * aceptando en su cuadro, o llegando de «Mis invitaciones».
+ */
+describe('CompetitionDetail · las barras que faltan tras aceptar', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    faltaGenero = false;
+    mockEstadoAlAceptar.valor = 'ACCEPTED';
+    mockLeerBarras.mockResolvedValue(SIN_BARRA_EN_ALTEA);
+    mb.campos.mockResolvedValue([]);
+    mb.fijadas.mockResolvedValue([]);
+  });
+
+  it('2+3: aceptada pero en lista de espera, no se pregunta ni se leen', async () => {
+    mockEstadoAlAceptar.valor = 'ON_HOLD';
+    mockGetCompetitionDetail.mockResolvedValue({
+      ...FICHA,
+      myPendingInvitation: { id: 'inv-1', expiresAt: null },
+    });
+    renderPage();
+
+    fireEvent.click(await screen.findByTestId('aceptar-invitacion'));
+
+    await waitFor(() =>
+      expect(mockGetCompetitionDetail).toHaveBeenCalledTimes(2),
+    );
+    expect(mockLeerBarras).not.toHaveBeenCalledWith('mia-1');
+  });
+
+  it('aceptando en su cuadro: relee la ficha y pregunta por el campo', async () => {
+    mockGetCompetitionDetail.mockResolvedValue({
+      ...FICHA,
+      myPendingInvitation: { id: 'inv-1', expiresAt: null },
+    });
+    renderPage();
+
+    fireEvent.click(await screen.findByTestId('aceptar-invitacion'));
+
+    expect(
+      await screen.findByText('competitions:tees.chooseOnCourse', {
+        selector: 'h2#barra-pendiente-titulo',
+      }),
+    ).toBeInTheDocument();
+    expect(mockLeerBarras).toHaveBeenCalledWith('mia-1');
+    expect(mockGetCompetitionDetail).toHaveBeenCalledTimes(2);
+  });
+
+  describe('D: la pregunta de los campos, con la palabra de su modalidad', () => {
+    const guardaYFalla = async () => {
+      mb.campo.mockRejectedValue(
+        Object.assign(new Error('422'), {
+          status: 422,
+          errorCode: 'TEE_NOT_ON_PENDING_COURSE',
+        }),
+      );
+      fireEvent.change(
+        await screen.findByLabelText('competitions:tees.label'),
+        { target: { value: 'WHITE' } },
+      );
+      fireEvent.click(screen.getByText('competitions:tees.save'));
+    };
+
+    it.each([
+      [false, 'competitions:tees.errorsStrokePlay.TEE_NOT_ON_PENDING_COURSE'],
+      [undefined, 'competitions:tees.errors.TEE_NOT_ON_PENDING_COURSE'],
+    ])('aceptando en su cuadro (hasTeams %s)', async (hasTeams, clave) => {
+      mockGetCompetitionDetail.mockResolvedValue({
+        ...FICHA,
+        hasTeams,
+        myPendingInvitation: { id: 'inv-1', expiresAt: null },
+      });
+      renderPage();
+      fireEvent.click(await screen.findByTestId('aceptar-invitacion'));
+      await guardaYFalla();
+      await waitFor(() =>
+        expect(mb.toast.error).toHaveBeenCalledWith(clave, expect.anything()),
+      );
+    });
+
+    it.each([
+      [false, 'competitions:tees.errorsStrokePlay.TEE_NOT_ON_PENDING_COURSE'],
+      [undefined, 'competitions:tees.errors.TEE_NOT_ON_PENDING_COURSE'],
+    ])(
+      'llegando de «Mis invitaciones» (hasTeams %s)',
+      async (hasTeams, clave) => {
+        mockGetCompetitionDetail.mockResolvedValue({
+          ...FICHA,
+          hasTeams,
+          enrollment_status: 'APPROVED',
+        });
+        mockListEnrollments.mockResolvedValue([
+          { id: 'mia-1', userId: 'player-1', status: 'APPROVED' },
+        ]);
+        renderPage({ from: 'invitations', preguntarBarras: true });
+        await guardaYFalla();
+        await waitFor(() =>
+          expect(mb.toast.error).toHaveBeenCalledWith(clave, expect.anything()),
+        );
+      },
+    );
+  });
+
+  it('llegando de «Mis invitaciones»: pregunta por el campo, una vez', async () => {
+    mockGetCompetitionDetail.mockResolvedValue({
+      ...FICHA,
+      enrollment_status: 'APPROVED',
+    });
+    mockListEnrollments.mockResolvedValue([
+      { id: 'mia-1', userId: 'player-1', status: 'APPROVED' },
+    ]);
+    renderPage({ from: 'invitations', preguntarBarras: true });
+
+    expect(
+      await screen.findByText('competitions:tees.chooseOnCourse', {
+        selector: 'h2#barra-pendiente-titulo',
+      }),
+    ).toBeInTheDocument();
+    expect(
+      mockLeerBarras.mock.calls.filter(([id]) => id === 'mia-1').length,
+    ).toBeGreaterThanOrEqual(1);
+    // «Ahora no»: no vuelve a salir
+    fireEvent.click(screen.getByText('competitions:tees.notNow'));
+    await waitFor(() =>
+      expect(
+        screen.queryByText('competitions:tees.chooseOnCourse', {
+          selector: 'h2#barra-pendiente-titulo',
+        }),
+      ).not.toBeInTheDocument(),
+    );
+  });
+
+  it('sin la marca de navegación, no se pregunta nada', async () => {
+    mockGetCompetitionDetail.mockResolvedValue({
+      ...FICHA,
+      enrollment_status: 'APPROVED',
+    });
+    mockListEnrollments.mockResolvedValue([
+      { id: 'mia-1', userId: 'player-1', status: 'APPROVED' },
+    ]);
+    renderPage();
+
+    await screen.findByText('Summer Cup');
+    expect(
+      screen.queryByText('competitions:tees.chooseOnCourse', {
+        selector: 'h2#barra-pendiente-titulo',
+      }),
+    ).not.toBeInTheDocument();
+  });
+
+  it('8: la marca se quita siempre al llegar, también sin nada que preguntar', async () => {
+    mockGetCompetitionDetail.mockResolvedValue(FICHA);
+    mockListEnrollments.mockResolvedValue([]);
+    renderPage({ from: 'invitations', preguntarBarras: true });
+
+    await screen.findByText('Summer Cup');
+    await waitFor(() =>
+      expect(
+        screen.getByTestId('estado-de-navegacion').textContent,
+      ).not.toContain('preguntarBarras'),
+    );
+    expect(screen.getByTestId('estado-de-navegacion').textContent).toContain(
+      'invitations',
+    );
+    expect(mockLeerBarras).not.toHaveBeenCalled();
+  });
+
+  it('8: con la marca en falso (en lista de espera), tampoco se pregunta y se quita', async () => {
+    mockGetCompetitionDetail.mockResolvedValue({
+      ...FICHA,
+      enrollment_status: 'APPROVED',
+    });
+    mockListEnrollments.mockResolvedValue([
+      { id: 'mia-1', userId: 'player-1', status: 'APPROVED' },
+    ]);
+    renderPage({ from: 'invitations', preguntarBarras: false });
+
+    await screen.findByText('Summer Cup');
+    await waitFor(() =>
+      expect(
+        screen.getByTestId('estado-de-navegacion').textContent,
+      ).not.toContain('preguntarBarras'),
+    );
+    expect(
+      screen.queryByText('competitions:tees.chooseOnCourse', {
+        selector: 'h2#barra-pendiente-titulo',
+      }),
+    ).not.toBeInTheDocument();
+  });
+
+  it.each([
+    [undefined, 'competitions:tees.askCaptainOrOrganiser'],
+    [false, 'competitions:tees.askOrganiser'],
+  ])(
+    'C8: en juego (hasTeams %s), sin barra en un campo, a quién pedírsela',
+    async (hasTeams, clave) => {
+      mockGetCompetitionDetail.mockResolvedValue({
+        ...FICHA,
+        status: 'IN_PROGRESS',
+        hasTeams,
+        enrollment_status: 'APPROVED',
+      });
+      mockListEnrollments.mockResolvedValue([
+        { id: 'mia-1', userId: 'player-1', status: 'APPROVED' },
+      ]);
+      mockLeerBarras.mockResolvedValue(SIN_BARRA_EN_ALTEA);
+      renderPage();
+
+      expect(await screen.findByTestId('pide-barra-g2')).toHaveTextContent(
+        clave,
+      );
+      expect(screen.queryByTestId('elige-barra-g2')).not.toBeInTheDocument();
+    },
+  );
+
+  describe('D10: los modales de la ficha, con la palabra de su modalidad', () => {
+    const comoOrganizador = (hasTeams) => {
+      mockGetCompetitionDetail.mockResolvedValue({
+        ...FICHA,
+        status: 'IN_PROGRESS',
+        hasTeams,
+        creatorId: 'player-1',
+        enrollment_status: 'APPROVED',
+      });
+      mockListEnrollments.mockResolvedValue([
+        { id: 'mia-1', userId: 'player-1', status: 'APPROVED' },
+        { id: 'otra-1', userId: 'otra', userName: 'Otra', status: 'APPROVED' },
+      ]);
+    };
+
+    it.each([
+      [false, 'competitions:tees.errorsStrokePlay.TEE_NOT_ON_PENDING_COURSE'],
+      [undefined, 'competitions:tees.errors.TEE_NOT_ON_PENDING_COURSE'],
+    ])('las barras de otro (hasTeams %s)', async (hasTeams, clave) => {
+      comoOrganizador(hasTeams);
+      mb.general.mockRejectedValue(
+        Object.assign(new Error('422'), {
+          status: 422,
+          errorCode: 'TEE_NOT_ON_PENDING_COURSE',
+        }),
+      );
+      renderPage();
+      fireEvent.click(await screen.findByTestId('barras-de-otra'));
+      const dialogo = await screen.findByRole('dialog');
+      fireEvent.change(
+        await within(dialogo).findByLabelText('competitions:tees.general'),
+        { target: { value: 'BLUE' } },
+      );
+      fireEvent.click(within(dialogo).getByTestId('guardar-general'));
+      await waitFor(() =>
+        expect(mb.toast.error).toHaveBeenCalledWith(clave, expect.anything()),
+      );
+    });
+
+    it.each([
+      [false, 'competitions:tees.errorsStrokePlay.cantRemove'],
+      [undefined, 'competitions:tees.errors.cantRemove'],
+    ])('las de los campos (hasTeams %s)', async (hasTeams, clave) => {
+      comoOrganizador(hasTeams);
+      mb.campos.mockResolvedValue({
+        golf_courses: [
+          {
+            golf_course: {
+              id: 'g1',
+              name: 'Aldeamayor',
+              tees: [{ color: 'YELLOW', gender: 'MALE' }],
+            },
+          },
+        ],
+      });
+      mb.fijadas.mockResolvedValue([
+        { golfCourseId: 'g1', gender: 'MALE', teeColor: 'YELLOW' },
+      ]);
+      mb.delCampo.mockRejectedValue(
+        Object.assign(new Error('422'), {
+          status: 422,
+          errorCode: 'TEE_NOT_AVAILABLE',
+        }),
+      );
+      renderPage();
+      fireEvent.click(await screen.findByTestId('barras-de-los-campos'));
+      await waitFor(() =>
+        expect(screen.getByTestId('quitar-g1:MALE')).toBeEnabled(),
+      );
+      fireEvent.click(screen.getByTestId('quitar-g1:MALE'));
+      await waitFor(() =>
+        expect(mb.toast.error).toHaveBeenCalledWith(clave, expect.anything()),
+      );
+    });
+  });
+
+  it('6: cerrar las barras de OTRO jugador no relee las mías', async () => {
+    mockGetCompetitionDetail.mockResolvedValue({
+      ...FICHA,
+      creatorId: 'player-1',
+      enrollment_status: 'APPROVED',
+    });
+    mockListEnrollments.mockResolvedValue([
+      { id: 'mia-1', userId: 'player-1', status: 'APPROVED' },
+      { id: 'otra-1', userId: 'otra', userName: 'Otra', status: 'APPROVED' },
+    ]);
+    renderPage();
+
+    await screen.findByTestId('mis-barras');
+    const mias = () =>
+      mockLeerBarras.mock.calls.filter(([id]) => id === 'mia-1').length;
+    const antes = mias();
+    fireEvent.click(await screen.findByTestId('barras-de-otra'));
+    await waitFor(() => expect(mockLeerBarras).toHaveBeenCalledWith('otra-1'));
+    fireEvent.click(screen.getByText('competitions:tees.close'));
+    await new Promise((r) => setTimeout(r, 20));
+    expect(mias()).toBe(antes);
+  });
+
+  it.each(['COMPLETED', 'CANCELLED'])(
+    'cerrada (%s): ni se pregunta por los campos ni «Mis barras» avisa',
+    async (status) => {
+      mockGetCompetitionDetail.mockResolvedValue({
+        ...FICHA,
+        status,
+        enrollment_status: 'APPROVED',
+      });
+      mockListEnrollments.mockResolvedValue([
+        { id: 'mia-1', userId: 'player-1', status: 'APPROVED' },
+      ]);
+      renderPage({ from: 'invitations', preguntarBarras: true });
+
+      await screen.findByTestId('mis-barras');
+      await waitFor(() =>
+        expect(
+          screen.getByTestId('estado-de-navegacion').textContent,
+        ).not.toContain('preguntarBarras'),
+      );
+      // Sin depender del tiempo: que acabe cualquier comprobación en curso
+      // (es asíncrona) y entonces contar. Las barras de «mia-1» se leen UNA
+      // vez, las de «Mis barras»; la pregunta de pendientes sería la segunda
+      await act(async () => {
+        await new Promise((r) => setTimeout(r, 0));
+      });
+      expect(
+        mockLeerBarras.mock.calls.filter(([id]) => id === 'mia-1'),
+      ).toHaveLength(1);
+      expect(
+        screen.queryByText('competitions:tees.chooseOnCourse', {
+          selector: 'h2#barra-pendiente-titulo',
+        }),
+      ).not.toBeInTheDocument();
+      expect(screen.queryByTestId('elige-barra-g2')).not.toBeInTheDocument();
+    },
+  );
 });

@@ -10,7 +10,7 @@ class InvitationAssembler {
    * Converts a domain entity to a simple DTO for the UI.
    *
    * @param {Invitation} invitation - Domain entity
-   * @param {{competitionName?: string, inviterName?: string, inviteeName?: string}|null} extras
+   * @param {{competitionName?: string, inviterName?: string, inviteeName?: string, enrollmentId?: string}|null} extras
    *   - Join fields from the repository (optional, camelCase)
    * @returns {Object} - Simple DTO for UI (camelCase, flat)
    */
@@ -54,6 +54,11 @@ class InvitationAssembler {
       }
       if (extras.inviteeName) {
         simpleDTO.inviteeName = extras.inviteeName;
+      }
+      // La inscripción que crea aceptarla: su barra se guarda en ella
+      // (barras por campo)
+      if (extras.enrollmentId) {
+        simpleDTO.enrollmentId = extras.enrollmentId;
       }
     }
 

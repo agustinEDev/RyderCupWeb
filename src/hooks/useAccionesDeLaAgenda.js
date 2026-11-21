@@ -129,8 +129,11 @@ export const useAccionesDeLaAgenda = ({ id, t, tComp, datos, modales }) => {
       if (error?.errorCode === 'MATCH_GENERATION_BLOCKED') {
         await recargarTrasBloqueo(error);
       } else {
+        // Un emparejado a mano fuera de su equipo, con su texto (RyderCupAm #919)
         customToast.error(
-          mensajeDelError(error, t('errors.failedToGenerateMatches')),
+          mensajeDelError(error, t('errors.failedToGenerateMatches'), {
+            PAIRING_PLAYER_NOT_IN_TEAM: t('errors.PAIRING_PLAYER_NOT_IN_TEAM'),
+          }),
         );
       }
     } finally {

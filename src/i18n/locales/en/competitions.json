@@ -591,9 +591,8 @@
   },
   "enrollment": {
     "modalTitle": "Join",
-    "colorLabel": "Preferred tee colour",
-    "colorHint": "Used to assign the right tees in matches",
-    "noPreference": "No preference",
+    "colorLabel": "Your tee",
+    "colorHint": "Your usual tee: it is used on every course that has it.",
     "confirm": "Join",
     "cancel": "Cancel",
     "needsHandicap": "To join a Stableford or a Medal you need your handicap in your profile.",
@@ -734,5 +733,88 @@
     "zoneUnreadable": "The course time zone could not be read.",
     "retryZone": "Try again",
     "scheduledUnknownZone": "Scheduled: {{cuando}}, this device's time."
+  },
+  "tees": {
+    "general": "General tee",
+    "mine": "My tees",
+    "label": "Tee",
+    "choose": "Choose a tee",
+    "chooseShort": "Choose",
+    "usual": "Usual for their gender ({{color}})",
+    "usualNoColor": "The usual for their gender",
+    "source": {
+      "OWN": "Your tee",
+      "COURSE": "Course tee",
+      "GENERAL": "Your general tee",
+      "DEFAULT": "Usual",
+      "PLAYED": "Played"
+    },
+    "noTee": "No tee",
+    "chooseOnCourse": "Choose your tee at {{course}}",
+    "chooseOnCourseHint": "This course does not have your general tee. Choose which tees you play there.",
+    "askCaptainOrOrganiser": "You have no tee at {{course}}: ask your captain or the organiser",
+    "askOrganiser": "You have no tee at {{course}}: ask the organiser",
+    "change": "Change",
+    "save": "Save",
+    "close": "Close",
+    "notNow": "Not now",
+    "retry": "Retry",
+    "playerTitle": "{{name}}'s tees",
+    "playerTitleNoName": "Player's tees",
+    "playerButton": "Tees",
+    "onCourse": "At {{course}}",
+    "noOwnOnCourse": "No own change",
+    "saved": "Tee saved",
+    "loading": "Reading the tees…",
+    "notLoaded": "The tees could not be read.",
+    "noOptions": "This course has no tees for this player: tell the organiser.",
+    "courses": {
+      "button": "Course tees",
+      "title": "Course tees",
+      "forWomen": "For women",
+      "forMen": "For men",
+      "set": "Set",
+      "remove": "Remove",
+      "hint": "It replaces the general tee of that gender on this course, not a tee someone chose for this course. What has been played does not change.",
+      "saved": "Course tee saved",
+      "removed": "Course tee removed",
+      "noTees": "This course has no tees for that gender.",
+      "errors": {
+        "TEE_NOT_AVAILABLE": "That course does not have that tee for that gender, or it is not valid for something pending."
+      }
+    },
+    "accept": {
+      "title": "Accept the invitation",
+      "confirm": "Accept",
+      "cancel": "Cancel"
+    },
+    "errors": {
+      "TEE_NOT_AVAILABLE": "That tee is not rated for this player on the courses still to be played.",
+      "TEE_CHANGE_CLOSED": "The competition has finished or was cancelled: the tee can no longer be changed.",
+      "ENROLLMENT_NOT_APPROVED": "Only an approved enrolment's tee can be changed.",
+      "PENDING_GAME_NOT_RECALCULABLE": "A pending game could not be recalculated with the new tee. Tell the organiser.",
+      "COURSE_NOT_IN_COMPETITION": "That course is no longer part of this competition.",
+      "FORBIDDEN": "You cannot change this tee.",
+      "generic": "The tee could not be saved. Please try again.",
+      "TEE_NOT_ON_PENDING_COURSE": "That tee does not exist on a course with pending games: choose that course's tee first.",
+      "cantRemove": "It can't be removed: a game still to play would be left without a valid tee on this course."
+    },
+    "errorsStrokePlay": {
+      "PENDING_GAME_NOT_RECALCULABLE": "A pending game could not be recalculated with the new tee. Tell the organiser.",
+      "TEE_NOT_ON_PENDING_COURSE": "That tee does not exist on a course with pending games: choose that course's tee first.",
+      "cantRemove": "It can't be removed: a game still to play would be left without a valid tee on this course."
+    },
+    "sourceOther": {
+      "OWN": "Their tee",
+      "COURSE": "Course tee",
+      "GENERAL": "Their general tee",
+      "DEFAULT": "Usual",
+      "PLAYED": "Played"
+    },
+    "usualMine": "Your usual ({{color}})",
+    "usualMineNoColor": "Your usual",
+    "changeGeneral": "Change your general tee",
+    "changeOn": "Change your tee at {{course}}",
+    "notAvailableHere": "{{color}} (no longer available on this course)"
   }
 }

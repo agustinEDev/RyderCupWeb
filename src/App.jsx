@@ -62,6 +62,7 @@ import {
 } from './utils/routerDeLaAplicacion';
 import { registrarRouterParaSentry } from './utils/routerParaSentry';
 import { apuntaElRouterDeLaAplicacion } from './utils/navegacionEnCurso';
+import { Role } from './domain/value_objects/Role';
 
 // Pantallas diferidas, con un reintento a los 1,5 s: `utils/lazyWithRetry`
 const Landing = lazyWithRetry(() => import('./pages/Landing'));
@@ -326,6 +327,9 @@ function AppContent() {
         containerClassName={
           showBottomNav ? 'toast-container-above-bottom-nav' : undefined
         }
+        // Los avisos de arriba (los de los modales de barras) por debajo de la
+        // muesca: la app pinta bajo la barra de estado (viewport-fit=cover)
+        containerStyle={{ top: 'calc(16px + env(safe-area-inset-top))' }}
         toastOptions={{
           duration: 4000,
           style: {
@@ -603,7 +607,7 @@ export const rutasDeLaApp = createRoutesFromElements(
         path="/admin/:seccion?"
         element={
           <ProtectedRoute>
-            <RoleGuard allowedRoles="ADMIN">
+            <RoleGuard allowedRoles={Role.ADMIN}>
               <AdminPanel />
             </RoleGuard>
           </ProtectedRoute>

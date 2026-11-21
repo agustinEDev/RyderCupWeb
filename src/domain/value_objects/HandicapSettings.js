@@ -79,7 +79,7 @@ export class HandicapSettings {
     if (this.isScratch()) {
       return 'SCRATCH (No Handicap)';
     }
-    return 'HANDICAP';
+    return PlayModeType.HANDICAP;
   }
 
   /**

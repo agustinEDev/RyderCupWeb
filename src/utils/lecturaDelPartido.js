@@ -1,4 +1,6 @@
 import MatchStatus from '../domain/value_objects/MatchStatus';
+import { Winner } from '../domain/value_objects/Winner';
+import { Team } from '../domain/value_objects/Team';
 
 // Lo que la pantalla de anotación de competición (`ScoringPage`) cuenta del
 // partido entero: sus fallos, su marcador, su cierre y la entrega. Las que
@@ -55,10 +57,10 @@ export const cierreDelPartido = (scoringView) => {
   // El resultado de un partido ya decidido, con el nombre del equipo que gana
   const ganadorDecidido = scoringView?.decidedResult?.winner;
   const resultadoDecidido =
-    ganadorDecidido === 'A' || ganadorDecidido === 'B'
+    ganadorDecidido === Winner.A || ganadorDecidido === Winner.B
       ? {
           team:
-            ganadorDecidido === 'A'
+            ganadorDecidido === Winner.A
               ? scoringView.teamAName
               : scoringView.teamBName,
           score: scoringView.decidedResult.score,
@@ -98,7 +100,7 @@ export const textoDelMarcador = (
           ? null
           : scoringView.matchStanding.status === 'AS'
             ? t('input.allSquare')
-            : `${scoringView.matchStanding.status} ${scoringView.matchStanding.leadingTeam === 'A' ? scoringView.teamAName : scoringView.teamBName}`;
+            : `${scoringView.matchStanding.status} ${scoringView.matchStanding.leadingTeam === Team.A ? scoringView.teamAName : scoringView.teamBName}`;
 
 // La barra de entregar la tarjeta, en las tres pestañas (FE #745): el botón
 // vivía solo en Tarjeta y la pantalla abre en Anotar, así que quien acababa
@@ -130,13 +132,13 @@ export const estadoDeEntrega = ({
 export const ganadorDelResumen = (matchSummary, scoringView) => {
   const winnerTeam = matchSummary.result?.winner;
   const winnerTeamName =
-    winnerTeam === 'A'
+    winnerTeam === Winner.A
       ? scoringView?.teamAName
-      : winnerTeam === 'B'
+      : winnerTeam === Winner.B
         ? scoringView?.teamBName
         : null;
   const winnerPlayerNames =
-    winnerTeam === 'A' || winnerTeam === 'B'
+    winnerTeam === Winner.A || winnerTeam === Winner.B
       ? scoringView?.players
           ?.filter((p) => p.team === winnerTeam)
           .map((p) => p.userName)
@@ -152,8 +154,8 @@ export const ganadorDelResumen = (matchSummary, scoringView) => {
  * valor (`HALVED`, nada…), `undefined`: cada sitio pone lo suyo con `??`.
  */
 export const nombreDelEquipo = (equipo, teamAName, teamBName) => {
-  if (equipo === 'A') return teamAName || 'A';
-  if (equipo === 'B') return teamBName || 'B';
+  if (equipo === Team.A) return teamAName || Team.A;
+  if (equipo === Team.B) return teamBName || Team.B;
   return undefined;
 };
 

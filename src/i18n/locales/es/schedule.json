@@ -168,7 +168,8 @@
     "teamsLocked": "Ya hay partidos: los equipos no se pueden deshacer",
     "failedToUndoTeams": "No se pudieron deshacer los equipos",
     "teamsFormed": "Los equipos ya están formados: para que entre alguien, deshazlos primero.",
-    "waitForDraft": "Espera a que termine el draft"
+    "waitForDraft": "Espera a que termine el draft",
+    "PAIRING_PLAYER_NOT_IN_TEAM": "Hay un jugador emparejado fuera de su equipo"
   },
   "success": {
     "roundCreated": "Ronda creada exitosamente",

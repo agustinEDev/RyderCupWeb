@@ -29,3 +29,27 @@ export const aCamposDeLaCompeticion = (resultado) => {
     }))
     .filter((campo) => campo.id);
 };
+
+/**
+ * Cada campo de una competición con sus barras, color y género (barras por
+ * campo): el organizador fija la de un campo para cada género con las que ese
+ * campo tiene. Sin género (mixta), `null`.
+ *
+ * @param {Array|{golf_courses: Array}|null|undefined} resultado
+ * @returns {Array<{id: string, name: string, tees: Array<{color: string, gender: string|null}>}>}
+ */
+export const barrasDeCadaCampo = (resultado) => {
+  const lista = Array.isArray(resultado)
+    ? resultado
+    : resultado?.golf_courses || [];
+  return lista
+    .map((item) => ({
+      id: item.golf_course?.id || item.golf_course_id,
+      name: item.golf_course?.name || item.name || '',
+      tees: (item.golf_course?.tees ?? []).map((tee) => ({
+        color: tee.color,
+        gender: tee.gender ?? null,
+      })),
+    }))
+    .filter((campo) => campo.id);
+};

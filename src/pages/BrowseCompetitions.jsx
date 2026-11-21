@@ -16,6 +16,9 @@ import { useAuth } from '../hooks/useAuth';
 import { useGeneroParaApuntarse } from '../hooks/useGeneroParaApuntarse';
 import { mensajeDeError } from '../utils/sinCobertura';
 import EnrollmentRequestModal from '../components/enrollment/EnrollmentRequestModal';
+import BarrasPendientesModal from '../components/enrollment/BarrasPendientesModal';
+import { useBarrasPendientes } from '../hooks/useBarrasPendientes';
+import { entraConPlaza } from '../utils/entraConPlaza';
 import BlockLoader from '../components/ui/BlockLoader';
 import { formatDateRange } from '../services/competitions';
 import { PANTALLA_MENOS_BARRA_INFERIOR } from '../utils/barraInferior';
@@ -23,10 +26,13 @@ import { MOTIVOS_PARA_NO_APUNTARSE } from '../utils/fichaDeLaCompeticion';
 import { nombrePequeno } from '../utils/nombreVisible';
 import { registraElFallo } from '../utils/registraElFallo';
 import { CompetitionStatusEnum } from '../domain/value_objects/CompetitionStatus';
+import { Visibility } from '../domain/value_objects/Visibility';
 
 const BrowseCompetitions = () => {
   // El género para apuntarse, solo a quien le falta (#710)
   const generoParaApuntarse = useGeneroParaApuntarse();
+  // Tras apuntarse, la barra de los campos que no tienen la suya
+  const barrasPendientes = useBarrasPendientes();
   const navigate = useNavigate();
   const { t } = useTranslation('competitions');
   const { t: tComun } = useTranslation('common');
@@ -176,12 +182,13 @@ const BrowseCompetitions = () => {
   });
 
   // Open modal to request enrollment
-  const openEnrollModal = (competitionId) => {
-    // En un stroke play la franja se elige en la ficha (release social 3)
-    const competicion = [...exploreCompetitions, ...joinableCompetitions].find(
+  const competicionDe = (competitionId) =>
+    [...exploreCompetitions, ...joinableCompetitions].find(
       (c) => c.id === competitionId,
     );
-    if (competicion?.hasTeams === false) {
+  const openEnrollModal = (competitionId) => {
+    // En un stroke play la franja se elige en la ficha (release social 3)
+    if (competicionDe(competitionId)?.hasTeams === false) {
       navigate(`/competitions/${competitionId}`, { state: { from: 'browse' } });
       return;
     }
@@ -221,6 +228,15 @@ const BrowseCompetitions = () => {
       // Se cierra solo si ha ido bien (#710): cerrarlo antes dejaba un fallo
       // con cara de éxito. Y solo si sigue siendo el suyo (CodeRabbit, #721)
       if (esSuModal()) setEnrollModalOpen(false);
+      // Los campos que no tienen su barra, en el mismo flujo (barras por
+      // campo). Solo si sigue siendo su modal: si no, la pregunta saldría
+      // encima del de otra competición (CodeRabbit)
+      if (esSuModal() && entraConPlaza(hecho))
+        // Con su modalidad, para nombrar lo pendiente en un fallo (hoy siempre
+        // una Ryder: un stroke play se apunta en la ficha)
+        barrasPendientes.comprobar(hecho.id, {
+          conEquipos: competicionDe(competitionId)?.hasTeams !== false,
+        });
       customToast.success(
         t(
           hecho?.waiting
@@ -558,9 +574,18 @@ const BrowseCompetitions = () => {
         }
         isProcessing={!!requestingEnrollment[enrollTargetId]}
         pideGenero={generoParaApuntarse.falta}
+        // Para marcar la barra habitual de su género (barras por campo)
+        generoDelJugador={generoParaApuntarse.genero}
         // Un stroke play no abre este diálogo: se apunta en su ficha, que pide el
         // hándicap (release social 3)
         error={errorAlApuntarse}
+      />
+      <BarrasPendientesModal
+        campo={barrasPendientes.campo}
+        guardando={barrasPendientes.guardando}
+        onGuardar={barrasPendientes.guardar}
+        onSaltar={barrasPendientes.saltar}
+        onClose={barrasPendientes.cerrar}
       />
     </div>
   );
@@ -592,7 +617,7 @@ const CompetitionCard = ({
   const llena = competition.hasTeams !== false && enrolledCount >= maxPlayers;
   // Solo en una pública se pide plaza: un admin ve también las privadas en esta
   // lista, y en ellas se entra por invitación (FE #734)
-  const sePidePlaza = mode === 'joinable' && visibility === 'PUBLIC';
+  const sePidePlaza = mode === 'joinable' && visibility === Visibility.PUBLIC;
 
   // Get status badge
   const getStatusBadge = () => {

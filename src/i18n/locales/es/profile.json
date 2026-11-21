@@ -211,11 +211,6 @@
     }
   },
   "genderForCompetitions": "Hace falta para apuntarte a una competición: las barras de salida se valoran por género. Se guarda en tu perfil.",
-  "genderModal": {
-    "title": "Antes de apuntarte, indica tu género",
-    "cancel": "Cancelar",
-    "confirm": "Guardar y aceptar"
-  },
   "confirmEmailChange": {
     "title": "Confirmar tu correo nuevo",
     "confirming": "Confirmando tu correo nuevo…",

@@ -28,6 +28,9 @@ import {
   textoDelAvisoDeValidacion,
 } from '../utils/peticionDeLaCompeticion';
 
+import { Visibility } from '../domain/value_objects/Visibility';
+import { SetupMode } from '../domain/value_objects/SetupMode';
+
 /**
  * El envío del formulario de competición: validar, crear o editar, y avisar de
  * lo que salga. Los manejadores se definen en cada render con los valores de
@@ -255,7 +258,11 @@ export const useEnvioDeLaCompeticion = ({
   // aviso, y no se dice que falló el alta
   const proponeLaAgenda = async (createdCompetition, successCount) => {
     const propuesta = agendaPropuesta(formData.startDate, formData.endDate);
-    if (formData.setupMode === 'RYDER_CUP' && successCount > 0 && propuesta) {
+    if (
+      formData.setupMode === SetupMode.RYDER_CUP &&
+      successCount > 0 &&
+      propuesta
+    ) {
       try {
         await configureScheduleUseCase.execute(
           createdCompetition.id,
@@ -430,7 +437,7 @@ export const useEnvioDeLaCompeticion = ({
       // de hacerlo. En una privada no hay nada que avisar: no la ve nadie y se
       // entra por invitación (FE #666). Al editar tampoco: ya existe. Mientras
       // pregunta, otro envío no la vuelve a pedir; el «crear» del modal sí pasa
-      if (!isEditMode && formData.visibility === 'PUBLIC') {
+      if (!isEditMode && formData.visibility === Visibility.PUBLIC) {
         candado.current = 'pregunta';
         enManosDelEnvio = true;
         setPreguntandoApertura(true);

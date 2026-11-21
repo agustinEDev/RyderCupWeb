@@ -1,4 +1,5 @@
 import { useTranslation } from 'react-i18next';
+import { Winner } from '../../domain/value_objects/Winner';
 
 const MatchSummaryCard = ({ summary, winnerName }) => {
   const { t } = useTranslation('scoring');
@@ -18,7 +19,7 @@ const MatchSummaryCard = ({ summary, winnerName }) => {
           <p className="text-3xl font-bold text-primary mt-1">
             {summary.result.score}
           </p>
-          {summary.result.winner === 'HALVED' ? (
+          {summary.result.winner === Winner.HALVED ? (
             <p className="text-sm text-gray-600 mt-1">{t('summary.halved')}</p>
           ) : winnerName ? (
             <p className="text-sm text-gray-600 mt-1">

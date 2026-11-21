@@ -2,6 +2,7 @@ import Email from '../value_objects/Email';
 import Password from '../value_objects/Password'; // 1. Importar Password VO
 import { CountryCode } from '../value_objects/CountryCode';
 import { debeAceptarLosTerminos } from '../services/aceptacionDeTerminos';
+import { Gender } from '../value_objects/Gender';
 
 class User {
   constructor({
@@ -37,7 +38,7 @@ class User {
     }
 
     // Validate gender if provided
-    const validGenders = ['MALE', 'FEMALE'];
+    const validGenders = [Gender.MALE, Gender.FEMALE];
     if (gender !== null && !validGenders.includes(gender)) {
       throw new Error(
         `Invalid gender: ${gender}. Must be 'MALE', 'FEMALE', or null`,

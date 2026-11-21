@@ -1,9 +1,10 @@
 import { useTranslation } from 'react-i18next';
+import { ValidationStatus } from '../../domain/value_objects/ValidationStatus';
 
 const ValidationIcon = ({ status }) => {
   const { t } = useTranslation('scoring');
 
-  if (status === 'match')
+  if (status === ValidationStatus.MATCH)
     return (
       <span
         data-testid="validation-icon"
@@ -13,7 +14,7 @@ const ValidationIcon = ({ status }) => {
         &#10003;
       </span>
     );
-  if (status === 'mismatch')
+  if (status === ValidationStatus.MISMATCH)
     return (
       <span
         data-testid="validation-icon"

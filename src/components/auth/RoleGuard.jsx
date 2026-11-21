@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { respaldoDeCarga } from '../ui/textoDeEspera';
 import { useAuth } from '../../hooks/useAuth';
 import { estadoParaElLogin } from '../../utils/vueltaTrasEntrar';
+import { Role } from '../../domain/value_objects/Role';
 
 /**
  * RoleGuard Component
@@ -90,7 +91,7 @@ const RoleGuard = ({
 
   // Check for global admin flag (current backend implementation)
   if (user.is_admin === true) {
-    userRoleNames.push('ADMIN');
+    userRoleNames.push(Role.ADMIN);
   }
 
   // Check for roles array (future implementation)
@@ -107,12 +108,12 @@ const RoleGuard = ({
     : rolesArray.some((role) => userRoleNames.includes(role));
 
   // Special case: ADMIN has access to everything
-  const isAdmin = userRoleNames.includes('ADMIN');
+  const isAdmin = userRoleNames.includes(Role.ADMIN);
 
   // CREATOR can access PLAYER routes (ADR-009: Admin > Creator > Player)
-  const isCreator = userRoleNames.includes('CREATOR');
+  const isCreator = userRoleNames.includes(Role.CREATOR);
   const playerAccessGranted =
-    rolesArray.includes('PLAYER') && (isCreator || isAdmin);
+    rolesArray.includes(Role.PLAYER) && (isCreator || isAdmin);
 
   if (!hasAccess && !isAdmin && !playerAccessGranted) {
     console.warn(

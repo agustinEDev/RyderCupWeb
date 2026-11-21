@@ -1,6 +1,7 @@
 // Lo que pinta la anotación de competición (`useScoring`): la vista del
 // servidor, la cola encima y los hoyos que no se pudieron guardar.
 import { GOLPES_DEL_HOYO, golpeBase } from './golpesDelHoyo';
+import { ValidationStatus } from '../domain/value_objects/ValidationStatus';
 
 // El golpe de competición es un objeto —propio, marcado y a quién—, no un
 // número como en partida rápida: se compara entero
@@ -84,7 +85,7 @@ export const conLaColaEncima = (delServidor, guardadas, currentUserId) => {
           ...fila,
           [encima.campo]: encima.valor,
           [encima.marca]: true,
-          validationStatus: 'pending',
+          validationStatus: ValidationStatus.PENDING,
           // Para que el selector no lo dé por cerrado aunque el servidor ya
           // tenga resultado del hoyo: este golpe aún no ha llegado
           enCola: true,

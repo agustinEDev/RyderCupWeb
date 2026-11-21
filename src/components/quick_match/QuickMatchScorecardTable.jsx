@@ -28,6 +28,9 @@ import {
   isTeamMatchFormat,
 } from '../../domain/value_objects/MatchFormat';
 
+import { Team } from '../../domain/value_objects/Team';
+import { PlayModeType } from '../../domain/value_objects/HandicapSettings';
+
 const MAX_STROKE_DOTS = 2;
 
 // La letra de la cifra pequeña (puntos o neto), y la de su etiqueta en la
@@ -62,7 +65,7 @@ const QuickMatchScorecardTable = ({
   allowancePercentage = 100,
   scoringFormat = null,
   matchFormat = null,
-  playMode = 'HANDICAP',
+  playMode = PlayModeType.HANDICAP,
   participantStrokes = [],
 }) => {
   const { t } = useTranslation('quickMatch');
@@ -597,7 +600,7 @@ const QuickMatchScorecardTable = ({
         className="text-xs text-gray-500 leading-tight"
         data-testid={`quick-match-player-handicap-${card.key}`}
       >
-        {playMode === 'SCRATCH'
+        {playMode === PlayModeType.SCRATCH
           ? t('scoring.scorecard.scratchMatch')
           : [
               renderTeeLabel(card.teeParticipant),
@@ -620,7 +623,7 @@ const QuickMatchScorecardTable = ({
       clave={card.key}
       testId={`quick-match-player-card-${card.key}`}
       equipo={
-        card.members[0]?.team === 'A' || card.members[0]?.team === 'B'
+        card.members[0]?.team === Team.A || card.members[0]?.team === Team.B
           ? card.members[0].team
           : null
       }
@@ -679,7 +682,8 @@ const QuickMatchScorecardTable = ({
             clave: card.key,
             nombre: card.title,
             equipo:
-              card.members[0]?.team === 'A' || card.members[0]?.team === 'B'
+              card.members[0]?.team === Team.A ||
+              card.members[0]?.team === Team.B
                 ? card.members[0].team
                 : undefined,
             contenido: tarjetaVertical(card),

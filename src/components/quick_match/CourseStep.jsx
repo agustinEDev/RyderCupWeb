@@ -10,17 +10,20 @@ import {
   SCORING_FORMAT_LABEL_KEY,
 } from './createQuickMatchModalConstants';
 
+import { PlayModeType } from '../../domain/value_objects/HandicapSettings';
+import { QuickMatchMode } from '../../domain/value_objects/QuickMatchMode';
+
 // «¿A qué jugáis?»: los tres de match play y los dos de stroke play, en una
 // sola pregunta (FE #1025). Conservan los `data-testid` de antes
 const OPCIONES = [
   ...Object.keys(FORMAT_CAPACITY).map((formato) => ({
-    modo: 'MATCH_PLAY',
+    modo: QuickMatchMode.MATCH_PLAY,
     formato,
     testId: `format-option-${formato}`,
     etiqueta: FORMAT_LABEL_KEY[formato],
   })),
   ...Object.keys(SCORING_FORMAT_LABEL_KEY).map((formato) => ({
-    modo: 'FREE_PLAY',
+    modo: QuickMatchMode.FREE_PLAY,
     formato,
     testId: `scoring-format-option-${formato}`,
     etiqueta: SCORING_FORMAT_LABEL_KEY[formato],
@@ -58,7 +61,7 @@ const CourseStep = ({
   allowanceAMano = false,
   porcentajeCopiado = null,
   onAllowanceChange,
-  playMode = 'HANDICAP',
+  playMode = PlayModeType.HANDICAP,
   onPlayModeChange,
   isProcessing,
   teesLoading,
@@ -87,14 +90,18 @@ const CourseStep = ({
     if (op.modo !== mode && allowanceAMano && masOpciones.current)
       masOpciones.current.open = true;
     if (op.modo !== mode) onModeChange(op.modo);
-    if (op.modo === 'FREE_PLAY') onScoringFormatChange(op.formato);
+    if (op.modo === QuickMatchMode.FREE_PLAY) onScoringFormatChange(op.formato);
     else onMatchFormatChange(op.formato);
   };
   // Lo que no es lo de por defecto, a la vista aunque esté plegado
   const fueraDeLoNormal = [
     nombreAMano ? matchName.trim() : null,
-    playMode === 'SCRATCH' ? t('create.course.playModeScratch') : null,
-    playMode !== 'SCRATCH' && allowanceAMano ? `${allowancePercentage}%` : null,
+    playMode === PlayModeType.SCRATCH
+      ? t('create.course.playModeScratch')
+      : null,
+    playMode !== PlayModeType.SCRATCH && allowanceAMano
+      ? `${allowancePercentage}%`
+      : null,
   ].filter(Boolean);
 
   return (
@@ -210,7 +217,7 @@ const CourseStep = ({
               role="group"
               aria-label={t('create.course.playModeLabel')}
             >
-              {['HANDICAP', 'SCRATCH'].map((mode) => (
+              {[PlayModeType.HANDICAP, PlayModeType.SCRATCH].map((mode) => (
                 <button
                   key={mode}
                   type="button"
@@ -223,14 +230,14 @@ const CourseStep = ({
                       : 'border-gray-200 text-gray-700 hover:border-gray-300'
                   }`}
                 >
-                  {mode === 'SCRATCH'
+                  {mode === PlayModeType.SCRATCH
                     ? t('create.course.playModeScratch')
                     : t('create.course.playModeHandicap')}
                 </button>
               ))}
             </div>
             <p className="mt-1 text-xs text-gray-500">
-              {playMode === 'SCRATCH'
+              {playMode === PlayModeType.SCRATCH
                 ? t('create.course.playModeScratchHint')
                 : t('create.course.playModeHandicapHint')}
             </p>
@@ -253,15 +260,17 @@ const CourseStep = ({
                   key={pct}
                   type="button"
                   onClick={() => onAllowanceChange(pct)}
-                  disabled={playMode === 'SCRATCH'}
+                  disabled={playMode === PlayModeType.SCRATCH}
                   // El mismo guard que el estilo: si no, el lector anuncia "100%,
                   // pulsado" sobre un botón que se ve apagado y sin seleccionar
                   aria-pressed={
-                    allowancePercentage === pct && playMode !== 'SCRATCH'
+                    allowancePercentage === pct &&
+                    playMode !== PlayModeType.SCRATCH
                   }
                   data-testid={`quick-match-allowance-option-${pct}`}
                   className={`flex-1 px-3 py-2 rounded-lg border text-sm font-medium transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${
-                    allowancePercentage === pct && playMode !== 'SCRATCH'
+                    allowancePercentage === pct &&
+                    playMode !== PlayModeType.SCRATCH
                       ? 'border-primary bg-primary/5 text-primary'
                       : 'border-gray-200 text-gray-700 hover:border-gray-300'
                   }`}
@@ -270,7 +279,7 @@ const CourseStep = ({
                 </button>
               ))}
             </div>
-            {playMode === 'SCRATCH' && (
+            {playMode === PlayModeType.SCRATCH && (
               <p className="mt-1 text-xs text-gray-500">
                 {t('create.course.allowanceNotApplied')}
               </p>

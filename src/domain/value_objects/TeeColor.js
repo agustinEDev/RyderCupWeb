@@ -101,6 +101,44 @@ class TeeColor {
     return [...TeeColor.#ALL_VALUES];
   }
 
+  // El orden de los selectores de barra de las competiciones (tabla del 21
+  // nov 2026, E): las de siempre de la más larga a la más corta, y luego el
+  // resto. Sin OTHER, que no se elige (es un nombre libre de cada campo)
+  static #ORDEN_DEL_SELECTOR = [
+    TeeColor.BLACK,
+    TeeColor.WHITE,
+    TeeColor.YELLOW,
+    TeeColor.BLUE,
+    TeeColor.RED,
+    TeeColor.GOLD,
+    TeeColor.GREEN,
+    TeeColor.ORANGE,
+    TeeColor.PINK,
+  ];
+
+  /**
+   * @returns {string[]} Copia del orden de los selectores de barra de las
+   *   competiciones (sin OTHER)
+   */
+  static getSelectorOrder() {
+    return [...TeeColor.#ORDEN_DEL_SELECTOR];
+  }
+
+  /**
+   * Una lista de colores en el orden de los selectores; lo que no esté en él
+   * (OTHER) va al final, en el orden en que llegó. No toca la lista recibida.
+   *
+   * @param {string[]} colores
+   * @returns {string[]}
+   */
+  static ordenarParaSelector(colores) {
+    const posicion = (color) => {
+      const i = TeeColor.#ORDEN_DEL_SELECTOR.indexOf(color);
+      return i === -1 ? TeeColor.#ORDEN_DEL_SELECTOR.length : i;
+    };
+    return [...colores].sort((a, b) => posicion(a) - posicion(b));
+  }
+
   /**
    * Color con el que pintar la barra en la interfaz.
    *

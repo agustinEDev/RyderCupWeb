@@ -14,6 +14,8 @@ import { mensajeDelError } from '../../utils/mensajeDelError';
 import { registraElFallo } from '../../utils/registraElFallo';
 import MatchStatus from '../../domain/value_objects/MatchStatus';
 import { MatchFormat } from '../../domain/value_objects/MatchFormat';
+import { Team } from '../../domain/value_objects/Team';
+import { Winner } from '../../domain/value_objects/Winner';
 
 const MatchDetailModal = ({
   isOpen,
@@ -232,7 +234,7 @@ const MatchDetailModal = ({
                       <p className="text-sm text-gray-500">
                         {t('matches.strokesGivenTo', {
                           team:
-                            match.strokesGivenToTeam === 'A'
+                            match.strokesGivenToTeam === Team.A
                               ? teamNames.teamA
                               : teamNames.teamB,
                         })}
@@ -278,7 +280,7 @@ const MatchDetailModal = ({
                           <p>
                             {t('matches.resultWinner', {
                               team:
-                                match.result.winner === 'A'
+                                match.result.winner === Winner.A
                                   ? teamNames.teamA
                                   : teamNames.teamB,
                             })}

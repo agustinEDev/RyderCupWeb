@@ -15,6 +15,8 @@ import { siguientePasoDeLaCompeticion } from './siguientePasoDeLaCompeticion';
 import EnrollmentStatus from '../domain/value_objects/EnrollmentStatus';
 import { mensajeDelError } from './mensajeDelError';
 import { puedeGestionarLaCompeticion } from './puedeGestionarLaCompeticion';
+import { Visibility } from '../domain/value_objects/Visibility';
+import { SetupMode } from '../domain/value_objects/SetupMode';
 
 // «Volver» lleva a donde se vino: explorar, las invitaciones (FE #682) o, por
 // defecto, las competiciones propias
@@ -256,7 +258,7 @@ export const derivarLaFicha = ({
   const esStrokePlay = competition.hasTeams === false;
   const repartoAMostrar =
     competition.actualTeamAssignment ??
-    (competition.setupMode === 'RYDER_CUP'
+    (competition.setupMode === SetupMode.RYDER_CUP
       ? 'PENDING'
       : competition.teamAssignment);
   // La configuración se corrige mientras haya inscripciones abiertas (BE #323):
@@ -401,7 +403,7 @@ export const derivarLaFicha = ({
     Boolean(user.alias) &&
     Boolean(userEnrollment?.id) &&
     NOMBRE_A_LA_VISTA.includes(userEnrollment.status);
-  const esPublica = competition.visibility === 'PUBLIC';
+  const esPublica = competition.visibility === Visibility.PUBLIC;
   const puedeElegirNombre = suNombreSeVe && !esPublica;
   const nombreFijoEnPublica = suNombreSeVe && esPublica;
   const nombreLegal = [user.first_name, user.last_name]

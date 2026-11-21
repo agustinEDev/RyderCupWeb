@@ -62,6 +62,13 @@ import { useFocoRetenido } from '../../hooks/useFocoRetenido';
 // borde ni relleno, para que se vea como antes de pasar a este armazón
 export const CAJA_PROPIA = 'w-full mx-4 flex justify-center';
 
+// La caja de siempre para un diálogo que CRECE (los de barras, con un campo
+// por fila) junto con `scrollableBackdrop`: `my-auto` la centra si cabe, como
+// cualquier otro diálogo, y si no cabe se queda arriba y el fondo se desplaza
+// hasta su último botón (pasada del Kind del 21 nov, 4 campos a 360×780)
+export const CAJA_CENTRADA_SI_CABE =
+  'bg-white rounded-lg shadow-xl max-w-md w-full mx-4 p-6 my-auto';
+
 // El bloqueo del desplazamiento se cuenta entre TODOS los diálogos abiertos, no
 // por diálogo. Guardándolo cada uno por su cuenta, el segundo en abrirse copiaba
 // un `hidden` que ya no era del fondo, y al cerrarse el último lo devolvía: la

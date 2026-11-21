@@ -9,11 +9,11 @@ import {
   franjaLlena,
   plazasLibres,
 } from '../../domain/services/PlazasEnFranjas';
+import { colorHabitual } from '../../utils/barraPorDefecto';
+import SelectorDeBarraGeneral from './SelectorDeBarraGeneral';
 
 // Sin franjas: el mismo array siempre, para que el orden no se recalcule
 const SIN_FRANJAS = [];
-
-const TEE_CATEGORIES = ['WHITE', 'YELLOW', 'BLUE', 'RED', 'GREEN'];
 
 /**
  * @param {Object} props
@@ -33,6 +33,9 @@ const TEE_CATEGORIES = ['WHITE', 'YELLOW', 'BLUE', 'RED', 'GREEN'];
  * @param {Function} [props.onReintentar] - Volver a leer la agenda
  * @param {Function} [props.onElegir] - Al cambiar de franja: quien lo abre borra
  *   el error de la elección anterior (revisor)
+ * @param {string|null} [props.generoDelJugador] - El de su perfil: sale marcada
+ *   la barra habitual de su género (barras por campo). La barra general es
+ *   obligatoria: `onConfirm` la recibe como primer argumento
  */
 const EnrollmentRequestModal = ({
   isOpen,
@@ -47,6 +50,7 @@ const EnrollmentRequestModal = ({
   franjasSinCargar = false,
   onElegir,
   onReintentar,
+  generoDelJugador = null,
 }) => {
   if (!isOpen) return null;
   return (
@@ -62,6 +66,7 @@ const EnrollmentRequestModal = ({
       franjasSinCargar={franjasSinCargar}
       onElegir={onElegir}
       onReintentar={onReintentar}
+      generoDelJugador={generoDelJugador}
     />
   );
 };
@@ -80,10 +85,19 @@ const EnrollmentRequestModalContent = ({
   franjasSinCargar,
   onElegir,
   onReintentar,
+  generoDelJugador,
 }) => {
   const { t, i18n } = useTranslation(['competitions', 'golfCourses']);
-  const [selectedTee, setSelectedTee] = useState('');
+  // null mientras no se elige: entonces, la habitual de su género. Al cambiar
+  // el género en el modal vuelve a null, para no quedarse con la del otro
+  const [selectedTee, setSelectedTee] = useState(null);
   const [genero, setGenero] = useState('');
+  const suGenero = (pideGenero ? genero : generoDelJugador) || null;
+  const barra = selectedTee ?? colorHabitual(suGenero) ?? '';
+  const cambiarGenero = (nuevo) => {
+    setGenero(nuevo);
+    setSelectedTee(null);
+  };
   const [elegida, setElegida] = useState(null);
   // Por día y hora: en el orden en que se juegan
   const ordenadas = useMemo(
@@ -101,6 +115,7 @@ const EnrollmentRequestModalContent = ({
   const laElegida = ordenadas.find((f) => f.id === elegida) ?? null;
   const aLaEspera = laElegida !== null && llena(laElegida);
   const falta =
+    !barra ||
     faltaHandicap ||
     (pideGenero && !genero) ||
     (conFranjas && !laElegida) ||
@@ -116,7 +131,7 @@ const EnrollmentRequestModalContent = ({
     e.preventDefault();
     if (falta) return;
     onConfirm(
-      selectedTee || null,
+      barra,
       pideGenero ? genero : null,
       laElegida ? { roundId: laElegida.id, waiting: aLaEspera } : null,
     );
@@ -193,7 +208,7 @@ const EnrollmentRequestModalContent = ({
             </p>
           )}
           {pideGenero && (
-            <SelectorDeGenero value={genero} onChange={setGenero} />
+            <SelectorDeGenero value={genero} onChange={cambiarGenero} />
           )}
 
           {/* La franja, o la espera de una llena, en el mismo paso (release
@@ -276,33 +291,12 @@ const EnrollmentRequestModalContent = ({
             </fieldset>
           )}
 
-          {/* Tee Category Select */}
-          <div>
-            <label
-              htmlFor="tee-category"
-              className="block text-sm font-medium text-gray-700 mb-1"
-            >
-              {t('competitions:enrollment.colorLabel')}
-            </label>
-            <select
-              id="tee-category"
-              value={selectedTee}
-              onChange={(e) => setSelectedTee(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm"
-            >
-              <option value="">
-                {t('competitions:enrollment.noPreference')}
-              </option>
-              {TEE_CATEGORIES.map((cat) => (
-                <option key={cat} value={cat}>
-                  {t(`golfCourses:form.teeColors.${cat}`)}
-                </option>
-              ))}
-            </select>
-            <p className="mt-1 text-xs text-gray-500">
-              {t('competitions:enrollment.colorHint')}
-            </p>
-          </div>
+          {/* Su barra general, obligatoria (barras por campo) */}
+          <SelectorDeBarraGeneral
+            id="tee-category"
+            value={barra}
+            onChange={setSelectedTee}
+          />
 
           {/* Actions */}
           <div className="flex justify-end gap-3 pt-4 border-t border-gray-200">
