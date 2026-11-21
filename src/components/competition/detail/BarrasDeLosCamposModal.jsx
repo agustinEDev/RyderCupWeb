@@ -47,9 +47,12 @@ const BarrasDeLosCamposModal = ({
   const [guardando, setGuardando] = useState(null);
   // Lo fijado, por clave (`{campo}:{género}`): el color, o null si se sabe que
   // no hay nada (se acaba de quitar). Lo que no está, sin fijar, salvo si la
-  // lectura falló: entonces no se sabe
-  const [fijadas, setFijadas] = useState({});
+  // lectura falló: entonces no se sabe. Lo fijado o quitado aquí gana a la
+  // lectura, que puede llegar después con lo de antes (revisor de la #1222)
+  const [delServidor, setDelServidor] = useState({});
+  const [cambiosLocales, setCambiosLocales] = useState({});
   const [sinFijadas, setSinFijadas] = useState(false);
+  const fijadas = { ...delServidor, ...cambiosLocales };
   const { cargando, recargar } = useCargaCancelableEffect(
     () => getCompetitionGolfCoursesUseCase.execute(competitionId),
     [competitionId],
@@ -69,7 +72,7 @@ const BarrasDeLosCamposModal = ({
     [competitionId],
     {
       alCargar: (filas) => {
-        setFijadas(
+        setDelServidor(
           Object.fromEntries(
             filas.map((f) => [`${f.golfCourseId}:${f.gender}`, f.teeColor]),
           ),
@@ -109,7 +112,7 @@ const BarrasDeLosCamposModal = ({
         ),
         AVISO_ARRIBA,
       );
-      setFijadas((v) => ({ ...v, [clave]: color }));
+      setCambiosLocales((v) => ({ ...v, [clave]: color }));
       setElegidas((v) =>
         Object.fromEntries(Object.entries(v).filter(([k]) => k !== clave)),
       );
@@ -185,12 +188,18 @@ const BarrasDeLosCamposModal = ({
             {GENEROS.map(({ genero, clave: texto }) => {
               const clave = `${campo.id}:${genero}`;
               const opciones = barrasParaElegir(campo.tees, genero);
-              const elegida = elegidas[clave] ?? fijadas[clave] ?? '';
+              const fijada = fijadas[clave] ?? null;
+              // La fijada que ya no está entre las opciones (el campo cambió
+              // sus barras): se ve, marcada, y no se vuelve a mandar
+              const yaNoDisponible =
+                fijada !== null && !opciones.includes(fijada) ? fijada : null;
+              const elegida = elegidas[clave] ?? fijada ?? '';
+              const conSelector = opciones.length > 0 || yaNoDisponible;
               const id = `barra-${clave}`;
               return (
                 <div key={genero} className="mt-2">
                   <label
-                    htmlFor={opciones.length > 0 ? id : undefined}
+                    htmlFor={conSelector ? id : undefined}
                     className="block text-sm text-gray-700"
                   >
                     {t(texto)}
@@ -203,7 +212,7 @@ const BarrasDeLosCamposModal = ({
                     </p>
                   )}
                   <div className="mt-1 flex flex-wrap items-center gap-2">
-                    {opciones.length > 0 && (
+                    {conSelector && (
                       <>
                         <select
                           id={id}
@@ -219,6 +228,15 @@ const BarrasDeLosCamposModal = ({
                           <option value="" disabled>
                             {t('competitions:tees.courses.notSet')}
                           </option>
+                          {yaNoDisponible && (
+                            <option value={yaNoDisponible}>
+                              {t('competitions:tees.notAvailableHere', {
+                                color: t(
+                                  `golfCourses:form.teeColors.${yaNoDisponible}`,
+                                ),
+                              })}
+                            </option>
+                          )}
                           {opciones.map((color) => (
                             <option key={color} value={color}>
                               {t(`golfCourses:form.teeColors.${color}`)}
@@ -228,7 +246,11 @@ const BarrasDeLosCamposModal = ({
                         <button
                           type="button"
                           data-testid={`fijar-${clave}`}
-                          disabled={!elegida || guardando !== null}
+                          disabled={
+                            !elegida ||
+                            elegida === yaNoDisponible ||
+                            guardando !== null
+                          }
                           onClick={() => fijar(campo, genero, elegida)}
                           className="min-h-11 px-3 py-2 bg-primary text-white rounded-lg text-sm font-medium disabled:opacity-50"
                         >

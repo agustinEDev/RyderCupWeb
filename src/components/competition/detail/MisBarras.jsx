@@ -18,7 +18,8 @@ import BarrasDelJugadorModal from './BarrasDelJugadorModal';
  * @param {boolean} props.puedeCambiar
  * @param {boolean} [props.cerrada] - Competición terminada o cancelada: ya no
  *   se invita a elegir nada (sin el aviso de campo sin barra)
- * @param {boolean} [props.conEquipos] - Una Ryder: sin barra y sin poder
+ * @param {boolean} [props.conEquipos=true] - Una Ryder (por defecto, como
+ *   los modales): sin barra y sin poder
  *   cambiarla, se pide al capitán o al organizador; si no, al organizador.
  *   También dice cómo se llama lo pendiente en los fallos («partido» o
  *   «partida»)
@@ -31,7 +32,7 @@ const MisBarras = ({
   inscripcion,
   puedeCambiar,
   cerrada = false,
-  conEquipos = false,
+  conEquipos = true,
   version = 0,
   onCambio,
 }) => {

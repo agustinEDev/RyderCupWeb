@@ -5,6 +5,7 @@ import {
   fireEvent,
   waitFor,
   within,
+  act,
 } from '@testing-library/react';
 import BarrasDelJugadorModal from './BarrasDelJugadorModal';
 import MisBarras from './MisBarras';
@@ -343,7 +344,13 @@ describe('BarrasDelJugadorModal', () => {
 
 describe('MisBarras', () => {
   it('F2: mi general, lo que juego en cada campo y el aviso del campo sin barra', async () => {
-    render(<MisBarras inscripcion={{ id: 'e1' }} puedeCambiar={false} />);
+    render(
+      <MisBarras
+        inscripcion={{ id: 'e1' }}
+        puedeCambiar={false}
+        conEquipos={false}
+      />,
+    );
     await screen.findByTestId('mis-barras');
     expect(screen.getByTestId('mis-barras')).toHaveTextContent(
       'competitions:tees.usualMine',
@@ -404,8 +411,21 @@ describe('MisBarras y el modal · competición cerrada y sin barra', () => {
     expect(screen.getByRole('alert')).toBe(screen.getByTestId('pide-barra-g2'));
   });
 
-  it('C8: en juego, en stroke play, que se la pida al organizador', async () => {
+  it('C8: sin decir la modalidad, la de los modales: una Ryder', async () => {
     render(<MisBarras inscripcion={{ id: 'e1' }} puedeCambiar={false} />);
+    expect(await screen.findByTestId('pide-barra-g2')).toHaveTextContent(
+      'competitions:tees.askCaptainOrOrganiser {"course":"Altea"}',
+    );
+  });
+
+  it('C8: en juego, en stroke play, que se la pida al organizador', async () => {
+    render(
+      <MisBarras
+        inscripcion={{ id: 'e1' }}
+        puedeCambiar={false}
+        conEquipos={false}
+      />,
+    );
     expect(await screen.findByTestId('pide-barra-g2')).toHaveTextContent(
       'competitions:tees.askOrganiser {"course":"Altea"}',
     );
@@ -654,7 +674,9 @@ describe('BarrasDeLosCamposModal', () => {
     m.fijadas.mockResolvedValue([fijada('g1', 'MALE', 'YELLOW')]);
     m.delCampo.mockRejectedValue(fallo(422, 'TEE_NOT_AVAILABLE'));
     render(<BarrasDeLosCamposModal competitionId="c1" onClose={vi.fn()} />);
-    fireEvent.click(await screen.findByTestId('quitar-g1:MALE'));
+    const quitar = await screen.findByTestId('quitar-g1:MALE');
+    await waitFor(() => expect(quitar).toBeEnabled());
+    fireEvent.click(quitar);
     await waitFor(() =>
       expect(m.toast.error).toHaveBeenCalledWith(
         'competitions:tees.errors.cantRemove',
@@ -674,7 +696,9 @@ describe('BarrasDeLosCamposModal', () => {
       fijada('g9', 'MALE', 'YELLOW'),
     ]);
     render(<BarrasDeLosCamposModal competitionId="c1" onClose={vi.fn()} />);
-    fireEvent.click(await screen.findByTestId('quitar-g9:FEMALE'));
+    const quitar = await screen.findByTestId('quitar-g9:FEMALE');
+    await waitFor(() => expect(quitar).toBeEnabled());
+    fireEvent.click(quitar);
     await waitFor(() =>
       expect(m.delCampo).toHaveBeenCalledWith('c1', 'g9', 'FEMALE', null),
     );
@@ -687,7 +711,9 @@ describe('BarrasDeLosCamposModal', () => {
   it('F3: quitarla manda null', async () => {
     m.fijadas.mockResolvedValue([fijada('g1', 'MALE', 'YELLOW')]);
     render(<BarrasDeLosCamposModal competitionId="c1" onClose={vi.fn()} />);
-    fireEvent.click(await screen.findByTestId('quitar-g1:MALE'));
+    const quitar = await screen.findByTestId('quitar-g1:MALE');
+    await waitFor(() => expect(quitar).toBeEnabled());
+    fireEvent.click(quitar);
     await waitFor(() =>
       expect(m.delCampo).toHaveBeenCalledWith('c1', 'g1', 'MALE', null),
     );
@@ -737,21 +763,135 @@ describe('BarrasDeLosCamposModal · lo fijado', () => {
     );
     expect(await selector('forMen')).toHaveValue('WHITE');
     expect(m.fijadas).toHaveBeenCalledWith('c1');
+    // La fijada que sigue entre las opciones no se repite ni se marca
+    expect(
+      within(await selector('forWomen'))
+        .getAllByRole('option')
+        .map((o) => o.value),
+    ).toEqual(['', 'BLUE', 'RED']);
     expect(screen.getByTestId('quitar-g1:FEMALE')).toBeEnabled();
     expect(screen.getByTestId('quitar-g1:MALE')).toBeEnabled();
   });
 
+  // La lectura de lo fijado, retenida hasta soltarla con lo que diga: así
+  // se comprueba el estado DESPUÉS de recibirla, o con ella aún en camino
+  const lecturaRetenida = () => {
+    let soltar;
+    m.fijadas.mockReturnValue(
+      new Promise((resolver) => {
+        soltar = resolver;
+      }),
+    );
+    return (filas) =>
+      act(async () => {
+        soltar(filas);
+        await new Promise((r) => setTimeout(r, 0));
+      });
+  };
+
   it('A2: sin nada fijado, «Elige una barra» y «Quitar» desactivado', async () => {
+    const soltar = lecturaRetenida();
     abre();
+    await selector('forWomen');
+    await soltar([]);
     expect(await selector('forWomen')).toHaveValue('');
-    await waitFor(() => expect(m.fijadas).toHaveBeenCalled());
     expect(screen.getByTestId('quitar-g1:FEMALE')).toBeDisabled();
     expect(screen.getByTestId('quitar-g1:MALE')).toBeDisabled();
   });
 
-  it('A3: tras «Fijar», se queda en la elegida y «Quitar» se activa', async () => {
+  it('carrera: la lectura que llega tras «Fijar» no pisa lo fijado', async () => {
+    const soltar = lecturaRetenida();
     abre();
-    await waitFor(() => expect(m.fijadas).toHaveBeenCalled());
+    fireEvent.change(await selector('forWomen'), {
+      target: { value: 'BLUE' },
+    });
+    fireEvent.click(screen.getByTestId('fijar-g1:FEMALE'));
+    await waitFor(() =>
+      expect(m.toast.success).toHaveBeenCalledWith(
+        'competitions:tees.courses.saved',
+        ARRIBA,
+      ),
+    );
+    await soltar([fijada('g1', 'MALE', 'WHITE')]);
+    expect(await selector('forWomen')).toHaveValue('BLUE');
+    expect(screen.getByTestId('quitar-g1:FEMALE')).toBeEnabled();
+    // Lo que no se tocó, lo que dice la lectura
+    expect(await selector('forMen')).toHaveValue('WHITE');
+    expect(screen.getByTestId('quitar-g1:MALE')).toBeEnabled();
+  });
+
+  it('carrera: lo quitado tampoco vuelve con una lectura vieja', async () => {
+    const soltar = lecturaRetenida();
+    abre();
+    fireEvent.change(await selector('forMen'), {
+      target: { value: 'WHITE' },
+    });
+    fireEvent.click(screen.getByTestId('fijar-g1:MALE'));
+    await waitFor(() =>
+      expect(screen.getByTestId('quitar-g1:MALE')).toBeEnabled(),
+    );
+    fireEvent.click(screen.getByTestId('quitar-g1:MALE'));
+    await waitFor(() =>
+      expect(m.toast.success).toHaveBeenCalledWith(
+        'competitions:tees.courses.removed',
+        ARRIBA,
+      ),
+    );
+    await soltar([fijada('g1', 'MALE', 'WHITE')]);
+    expect(await selector('forMen')).toHaveValue('');
+    expect(screen.getByTestId('quitar-g1:MALE')).toBeDisabled();
+  });
+
+  it('la fijada que ya no está entre las opciones se ve marcada, y «Fijar» no la manda', async () => {
+    m.fijadas.mockResolvedValue([fijada('g1', 'FEMALE', 'GOLD')]);
+    abre();
+    await waitFor(async () =>
+      expect(await selector('forWomen')).toHaveValue('GOLD'),
+    );
+    const select = await selector('forWomen');
+    expect(
+      within(select).getByRole('option', {
+        name: 'competitions:tees.notAvailableHere {"color":"golfCourses:form.teeColors.GOLD"}',
+      }),
+    ).toHaveValue('GOLD');
+    expect(
+      within(select)
+        .getAllByRole('option')
+        .map((o) => o.value),
+    ).toEqual(['', 'GOLD', 'BLUE', 'RED']);
+    expect(screen.getByTestId('fijar-g1:FEMALE')).toBeDisabled();
+    expect(screen.getByTestId('quitar-g1:FEMALE')).toBeEnabled();
+    // Elegida otra, ya se puede fijar
+    fireEvent.change(select, { target: { value: 'RED' } });
+    expect(screen.getByTestId('fijar-g1:FEMALE')).toBeEnabled();
+  });
+
+  it('sin opciones para un género, la fijada se sigue viendo, marcada', async () => {
+    m.campos.mockResolvedValue({
+      golf_courses: [
+        {
+          golf_course: {
+            id: 'g1',
+            name: 'Aldeamayor',
+            tees: [{ color: 'YELLOW', gender: 'MALE' }],
+          },
+        },
+      ],
+    });
+    m.fijadas.mockResolvedValue([fijada('g1', 'FEMALE', 'RED')]);
+    abre();
+    await waitFor(async () =>
+      expect(await selector('forWomen')).toHaveValue('RED'),
+    );
+    expect(screen.getByTestId('fijar-g1:FEMALE')).toBeDisabled();
+    expect(screen.getByTestId('quitar-g1:FEMALE')).toBeEnabled();
+  });
+
+  it('A3: tras «Fijar», se queda en la elegida y «Quitar» se activa', async () => {
+    const soltar = lecturaRetenida();
+    abre();
+    await selector('forWomen');
+    await soltar([]);
     fireEvent.change(await selector('forWomen'), {
       target: { value: 'BLUE' },
     });
