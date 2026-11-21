@@ -1,5 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import {
+  render,
+  screen,
+  fireEvent,
+  waitFor,
+  act,
+} from '@testing-library/react';
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router';
 import CompetitionDetail from './CompetitionDetail';
 
@@ -479,6 +485,15 @@ describe('CompetitionDetail · las barras que faltan tras aceptar', () => {
           screen.getByTestId('estado-de-navegacion').textContent,
         ).not.toContain('preguntarBarras'),
       );
+      // Sin depender del tiempo: que acabe cualquier comprobación en curso
+      // (es asíncrona) y entonces contar. Las barras de «mia-1» se leen UNA
+      // vez, las de «Mis barras»; la pregunta de pendientes sería la segunda
+      await act(async () => {
+        await new Promise((r) => setTimeout(r, 0));
+      });
+      expect(
+        mockLeerBarras.mock.calls.filter(([id]) => id === 'mia-1'),
+      ).toHaveLength(1);
       expect(
         screen.queryByText('competitions:tees.chooseOnCourse', {
           selector: 'h2#barra-pendiente-titulo',
