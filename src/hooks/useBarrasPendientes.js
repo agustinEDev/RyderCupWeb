@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { cargarBarras } from '../composition/cargarBarras';
 import customToast from '../utils/toast';
@@ -19,12 +19,17 @@ export const useBarrasPendientes = ({ alGuardar } = {}) => {
   const { t } = useTranslation('competitions');
   const [pendiente, setPendiente] = useState(null);
   const [guardando, setGuardando] = useState(false);
+  // Cada comprobación con su número: la que llega tarde, si ya hubo otra
+  // después, no se aplica (/code-review)
+  const ultimaComprobacion = useRef(0);
 
   const comprobar = async (enrollmentId) => {
     if (!enrollmentId) return;
+    const esta = ++ultimaComprobacion.current;
     try {
       const { getEnrollmentTeesUseCase } = await cargarBarras();
       const barras = await getEnrollmentTeesUseCase.execute(enrollmentId);
+      if (esta !== ultimaComprobacion.current) return;
       // Sin opciones no hay nada que elegir: lo dice la ficha
       const campos = barras.courses.filter(
         (campo) => campo.source === TeeSource.NONE && campo.options.length > 0,

@@ -166,6 +166,31 @@ describe('useBarrasPendientes', () => {
     expect(screen.getByText('competitions:tees.notNow')).toBeDisabled();
   });
 
+  it('CR4: una comprobación que llega tarde no pisa la última', async () => {
+    let vieja;
+    mocks.leer
+      .mockReturnValueOnce(
+        new Promise((r) => {
+          vieja = r;
+        }),
+      )
+      .mockResolvedValueOnce({ courses: [campo('gNueva', 'NONE')] });
+    const { result } = renderHook(() => useBarrasPendientes());
+
+    let primera;
+    act(() => {
+      primera = result.current.comprobar('e-vieja');
+    });
+    await act(() => result.current.comprobar('e-nueva'));
+    expect(result.current.campo.golfCourseId).toBe('gNueva');
+
+    await act(async () => {
+      vieja({ courses: [campo('gVieja', 'NONE')] });
+      await primera;
+    });
+    expect(result.current.campo.golfCourseId).toBe('gNueva');
+  });
+
   it('sin campos en NONE, nada que pedir', async () => {
     mocks.leer.mockResolvedValue({ courses: [campo('g1', 'COURSE')] });
     const { result } = renderHook(() => useBarrasPendientes());
