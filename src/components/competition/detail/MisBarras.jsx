@@ -14,12 +14,20 @@ import BarrasDelJugadorModal from './BarrasDelJugadorModal';
  * @param {Object} props
  * @param {{id: string}} props.inscripcion - La mía, aprobada
  * @param {boolean} props.puedeCambiar
+ * @param {boolean} [props.cerrada] - Competición terminada o cancelada: ya no
+ *   se invita a elegir nada (sin el aviso de campo sin barra)
  * @param {number} [props.version] - La ficha la sube cuando cambia cualquier
  *   barra: se vuelven a leer
  * @param {(barras: Object) => void} [props.onCambio] - Al guardar en mis
  *   barras, con lo que quedó (la lista de la ficha se pone al día)
  */
-const MisBarras = ({ inscripcion, puedeCambiar, version = 0, onCambio }) => {
+const MisBarras = ({
+  inscripcion,
+  puedeCambiar,
+  cerrada = false,
+  version = 0,
+  onCambio,
+}) => {
   const { t } = useTranslation(['competitions', 'golfCourses']);
   const { barras, cargando, fallo, recargar } = useBarrasDeLaInscripcion(
     inscripcion.id,
@@ -53,9 +61,11 @@ const MisBarras = ({ inscripcion, puedeCambiar, version = 0, onCambio }) => {
   }
 
   const color = (c) => t(`golfCourses:form.teeColors.${c}`);
-  const sinBarra = barras.courses.filter(
-    (campo) => campo.source === TeeSource.NONE,
-  );
+  // Cerrada la competición, no se invita a elegir: ya no se puede (pasada del
+  // Kind, 21 nov)
+  const sinBarra = cerrada
+    ? []
+    : barras.courses.filter((campo) => campo.source === TeeSource.NONE);
   // Un «Cambiar» por fila, cada uno con su nombre accesible
   const cambiar = (nombre) =>
     puedeCambiar && (
@@ -143,6 +153,7 @@ const MisBarras = ({ inscripcion, puedeCambiar, version = 0, onCambio }) => {
         <BarrasDelJugadorModal
           inscripcion={inscripcion}
           puedeCambiar={puedeCambiar}
+          cerrada={cerrada}
           propia
           titulo={t('competitions:tees.mine')}
           onClose={() => {

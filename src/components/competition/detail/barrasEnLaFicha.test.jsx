@@ -337,6 +337,35 @@ describe('MisBarras', () => {
  * invita a elegir nada, y «Sin barra» no se repite como valor y motivo.
  */
 describe('MisBarras y el modal · competición cerrada y sin barra', () => {
+  it('cerrada: «Mis barras» no avisa de elegir barra en ningún campo', async () => {
+    render(
+      <MisBarras inscripcion={{ id: 'e1' }} puedeCambiar={false} cerrada />,
+    );
+    await screen.findByTestId('mis-barras');
+    expect(screen.queryByTestId('elige-barra-g2')).not.toBeInTheDocument();
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  });
+
+  it('abierta: sigue avisando del campo sin barra', async () => {
+    render(<MisBarras inscripcion={{ id: 'e1' }} puedeCambiar={false} />);
+    expect(await screen.findByTestId('elige-barra-g2')).toBeInTheDocument();
+  });
+
+  it('cerrada: en el modal, el campo sin barra no se resalta como aviso', async () => {
+    render(
+      <BarrasDelJugadorModal
+        inscripcion={{ id: 'e1', userName: 'Ana' }}
+        puedeCambiar={false}
+        cerrada
+        onClose={vi.fn()}
+      />,
+    );
+    const fila = await screen.findByTestId('fila-barra-g2');
+    expect(within(fila).getByText(/competitions:tees.noTee/)).not.toHaveClass(
+      'text-amber-800',
+    );
+  });
+
   it('sin barra: «Mis barras» dice «Sin barra» una vez, sin repetirlo como motivo', async () => {
     render(<MisBarras inscripcion={{ id: 'e1' }} puedeCambiar={false} />);
     const fila = await screen.findByTestId('mi-barra-g2');

@@ -459,4 +459,32 @@ describe('CompetitionDetail · las barras que faltan tras aceptar', () => {
     await new Promise((r) => setTimeout(r, 20));
     expect(mias()).toBe(antes);
   });
+
+  it.each(['COMPLETED', 'CANCELLED'])(
+    'cerrada (%s): ni se pregunta por los campos ni «Mis barras» avisa',
+    async (status) => {
+      mockGetCompetitionDetail.mockResolvedValue({
+        ...FICHA,
+        status,
+        enrollment_status: 'APPROVED',
+      });
+      mockListEnrollments.mockResolvedValue([
+        { id: 'mia-1', userId: 'player-1', status: 'APPROVED' },
+      ]);
+      renderPage({ from: 'invitations', preguntarBarras: true });
+
+      await screen.findByTestId('mis-barras');
+      await waitFor(() =>
+        expect(
+          screen.getByTestId('estado-de-navegacion').textContent,
+        ).not.toContain('preguntarBarras'),
+      );
+      expect(
+        screen.queryByText('competitions:tees.chooseOnCourse', {
+          selector: 'h2#barra-pendiente-titulo',
+        }),
+      ).not.toBeInTheDocument();
+      expect(screen.queryByTestId('elige-barra-g2')).not.toBeInTheDocument();
+    },
+  );
 });
