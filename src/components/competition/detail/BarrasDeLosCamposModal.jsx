@@ -31,8 +31,15 @@ const GENEROS = [
  * @param {string} props.competitionId
  * @param {Function} props.onClose
  * @param {Function} [props.onCambio]
+ * @param {boolean} [props.conEquipos=true] - Una Ryder: lo pendiente de un
+ *   fallo es un «partido»; en stroke play, una «partida»
  */
-const BarrasDeLosCamposModal = ({ competitionId, onClose, onCambio }) => {
+const BarrasDeLosCamposModal = ({
+  competitionId,
+  onClose,
+  onCambio,
+  conEquipos = true,
+}) => {
   const { t } = useTranslation(['competitions', 'golfCourses']);
   const [campos, setCampos] = useState(null);
   const [fallo, setFallo] = useState(false);
@@ -118,6 +125,7 @@ const BarrasDeLosCamposModal = ({ competitionId, onClose, onCambio }) => {
           claveDelFalloDeLaBarra(error, {
             delCampo: true,
             quitando: color === null,
+            conEquipos,
           }),
         ),
         AVISO_ARRIBA,

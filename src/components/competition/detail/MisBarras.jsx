@@ -19,7 +19,9 @@ import BarrasDelJugadorModal from './BarrasDelJugadorModal';
  * @param {boolean} [props.cerrada] - Competición terminada o cancelada: ya no
  *   se invita a elegir nada (sin el aviso de campo sin barra)
  * @param {boolean} [props.conEquipos] - Una Ryder: sin barra y sin poder
- *   cambiarla, se pide al capitán o al organizador; si no, al organizador
+ *   cambiarla, se pide al capitán o al organizador; si no, al organizador.
+ *   También dice cómo se llama lo pendiente en los fallos («partido» o
+ *   «partida»)
  * @param {number} [props.version] - La ficha la sube cuando cambia cualquier
  *   barra: se vuelven a leer
  * @param {(barras: Object) => void} [props.onCambio] - Al guardar en mis
@@ -164,6 +166,7 @@ const MisBarras = ({
           inscripcion={inscripcion}
           puedeCambiar={puedeCambiar}
           cerrada={cerrada}
+          conEquipos={conEquipos}
           propia
           titulo={t('competitions:tees.mine')}
           onClose={() => {

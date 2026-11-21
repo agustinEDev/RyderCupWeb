@@ -799,6 +799,11 @@
       "TEE_NOT_ON_PENDING_COURSE": "Esa barra no existe en un campo con partidos pendientes: elige antes la barra de ese campo.",
       "cantRemove": "No se puede quitar: dejaría un partido pendiente sin una barra válida en este campo."
     },
+    "errorsStrokePlay": {
+      "PENDING_GAME_NOT_RECALCULABLE": "Una partida pendiente no se pudo recalcular con la barra nueva. Avisa al organizador.",
+      "TEE_NOT_ON_PENDING_COURSE": "Esa barra no existe en un campo con partidas pendientes: elige antes la barra de ese campo.",
+      "cantRemove": "No se puede quitar: dejaría una partida pendiente sin una barra válida en este campo."
+    },
     "sourceOther": {
       "OWN": "Su barra",
       "COURSE": "Barra del campo",

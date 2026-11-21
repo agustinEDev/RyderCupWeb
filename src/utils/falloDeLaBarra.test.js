@@ -59,3 +59,50 @@ describe('claveDelFalloDeLaBarra · al quitar una barra', () => {
     ).toBe('competitions:tees.errors.TEE_CHANGE_CLOSED');
   });
 });
+
+/**
+ * D10: lo pendiente es un «partido» en una Ryder y una «partida» en stroke
+ * play (tabla del 21 nov 2026). Sin decirlo, el de la Ryder, como hasta ahora.
+ */
+describe('claveDelFalloDeLaBarra · lo pendiente según la modalidad', () => {
+  it.each(['PENDING_GAME_NOT_RECALCULABLE', 'TEE_NOT_ON_PENDING_COURSE'])(
+    '%s: en stroke play, su texto de partida',
+    (codigo) => {
+      expect(
+        claveDelFalloDeLaBarra(fallo(422, codigo), { conEquipos: false }),
+      ).toBe(`competitions:tees.errorsStrokePlay.${codigo}`);
+      expect(
+        claveDelFalloDeLaBarra(fallo(422, codigo), { conEquipos: true }),
+      ).toBe(`competitions:tees.errors.${codigo}`);
+      expect(claveDelFalloDeLaBarra(fallo(422, codigo))).toBe(
+        `competitions:tees.errors.${codigo}`,
+      );
+    },
+  );
+
+  it('no poder quitarla, igual', () => {
+    const error = fallo(422, 'TEE_NOT_AVAILABLE');
+    expect(
+      claveDelFalloDeLaBarra(error, { quitando: true, conEquipos: false }),
+    ).toBe('competitions:tees.errorsStrokePlay.cantRemove');
+    expect(
+      claveDelFalloDeLaBarra(error, { quitando: true, conEquipos: true }),
+    ).toBe('competitions:tees.errors.cantRemove');
+  });
+
+  it('lo que no habla de lo pendiente no cambia', () => {
+    expect(
+      claveDelFalloDeLaBarra(fallo(422, 'TEE_NOT_AVAILABLE'), {
+        conEquipos: false,
+      }),
+    ).toBe('competitions:tees.errors.TEE_NOT_AVAILABLE');
+    expect(
+      claveDelFalloDeLaBarra(fallo(409, 'TEE_CHANGE_CLOSED'), {
+        conEquipos: false,
+      }),
+    ).toBe('competitions:tees.errors.TEE_CHANGE_CLOSED');
+    expect(claveDelFalloDeLaBarra(fallo(500), { conEquipos: false })).toBe(
+      'competitions:tees.errors.generic',
+    );
+  });
+});

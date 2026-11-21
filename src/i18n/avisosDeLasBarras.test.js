@@ -26,3 +26,29 @@ describe('los avisos de pedir la barra', () => {
     );
   });
 });
+
+/**
+ * D10: en stroke play lo pendiente es una «partida»; en una Ryder, un
+ * «partido». Cada texto de lo pendiente tiene las dos.
+ */
+describe('los fallos de lo pendiente según la modalidad', () => {
+  const CLAVES = [
+    'PENDING_GAME_NOT_RECALCULABLE',
+    'TEE_NOT_ON_PENDING_COURSE',
+    'cantRemove',
+  ];
+
+  it.each(CLAVES)(
+    'es · %s: «partido» en la Ryder, «partida» en stroke play',
+    (clave) => {
+      expect(es.tees.errors[clave]).toMatch(/partido/);
+      expect(es.tees.errorsStrokePlay[clave]).toMatch(/partida/);
+      expect(es.tees.errorsStrokePlay[clave]).not.toMatch(/partido/);
+    },
+  );
+
+  it.each(CLAVES)('en · %s: con texto en las dos', (clave) => {
+    expect(en.tees.errors[clave]).toBeTruthy();
+    expect(en.tees.errorsStrokePlay[clave]).toBeTruthy();
+  });
+});

@@ -551,6 +551,7 @@ const CompetitionDetail = () => {
             {barrasDeLosCampos && (
               <BarrasDeLosCamposModal
                 competitionId={id}
+                conEquipos={!esStrokePlay}
                 onClose={() => setBarrasDeLosCampos(false)}
                 onCambio={barrasCambiadas}
               />
@@ -613,6 +614,7 @@ const CompetitionDetail = () => {
                 inscripcion={barrasDe}
                 puedeCambiar={puedeCambiarSuBarra(barrasDe)}
                 cerrada={terminada}
+                conEquipos={!esStrokePlay}
                 onClose={() => setBarrasDe(null)}
                 onCambio={conSuGeneral(barrasDe.id)}
               />

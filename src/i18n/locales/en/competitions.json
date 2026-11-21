@@ -799,6 +799,11 @@
       "TEE_NOT_ON_PENDING_COURSE": "That tee does not exist on a course with pending games: choose that course's tee first.",
       "cantRemove": "It can't be removed: a game still to play would be left without a valid tee on this course."
     },
+    "errorsStrokePlay": {
+      "PENDING_GAME_NOT_RECALCULABLE": "A pending game could not be recalculated with the new tee. Tell the organiser.",
+      "TEE_NOT_ON_PENDING_COURSE": "That tee does not exist on a course with pending games: choose that course's tee first.",
+      "cantRemove": "It can't be removed: a game still to play would be left without a valid tee on this course."
+    },
     "sourceOther": {
       "OWN": "Their tee",
       "COURSE": "Course tee",

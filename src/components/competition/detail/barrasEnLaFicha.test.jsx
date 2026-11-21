@@ -823,6 +823,91 @@ describe('BarrasDeLosCamposModal · lo fijado', () => {
   });
 });
 
+/**
+ * D10: en los modales de la ficha, lo pendiente con su palabra: «partida» en
+ * stroke play, «partido» en una Ryder.
+ */
+describe('Los fallos de lo pendiente según la modalidad', () => {
+  const guardaLaGeneral = async () => {
+    fireEvent.change(
+      await screen.findByLabelText('competitions:tees.general'),
+      { target: { value: 'BLUE' } },
+    );
+    fireEvent.click(screen.getByTestId('guardar-general'));
+  };
+
+  it.each([
+    [false, 'competitions:tees.errorsStrokePlay.TEE_NOT_ON_PENDING_COURSE'],
+    [true, 'competitions:tees.errors.TEE_NOT_ON_PENDING_COURSE'],
+  ])('el modal de un jugador (conEquipos %s)', async (conEquipos, clave) => {
+    m.general.mockRejectedValue(fallo(422, 'TEE_NOT_ON_PENDING_COURSE'));
+    render(
+      <BarrasDelJugadorModal
+        inscripcion={{ id: 'e1', userName: 'Ana' }}
+        puedeCambiar
+        conEquipos={conEquipos}
+        onClose={vi.fn()}
+      />,
+    );
+    await guardaLaGeneral();
+    await waitFor(() =>
+      expect(m.toast.error).toHaveBeenCalledWith(clave, ARRIBA),
+    );
+  });
+
+  it('«Mis barras» pasa la modalidad a su modal', async () => {
+    m.general.mockRejectedValue(fallo(422, 'PENDING_GAME_NOT_RECALCULABLE'));
+    render(
+      <MisBarras inscripcion={{ id: 'e1' }} puedeCambiar conEquipos={false} />,
+    );
+    await screen.findByTestId('mis-barras');
+    fireEvent.click(screen.getAllByText('competitions:tees.change')[0]);
+    await guardaLaGeneral();
+    await waitFor(() =>
+      expect(m.toast.error).toHaveBeenCalledWith(
+        'competitions:tees.errorsStrokePlay.PENDING_GAME_NOT_RECALCULABLE',
+        ARRIBA,
+      ),
+    );
+  });
+
+  it.each([
+    [false, 'competitions:tees.errorsStrokePlay.cantRemove'],
+    [true, 'competitions:tees.errors.cantRemove'],
+  ])(
+    'el modal de los campos, al no poder quitarla (conEquipos %s)',
+    async (conEquipos, clave) => {
+      m.campos.mockResolvedValue({
+        golf_courses: [
+          {
+            golf_course: {
+              id: 'g1',
+              name: 'Aldeamayor',
+              tees: [{ color: 'YELLOW', gender: 'MALE' }],
+            },
+          },
+        ],
+      });
+      m.fijadas.mockResolvedValue([fijada('g1', 'MALE', 'YELLOW')]);
+      m.delCampo.mockRejectedValue(fallo(422, 'TEE_NOT_AVAILABLE'));
+      render(
+        <BarrasDeLosCamposModal
+          competitionId="c1"
+          conEquipos={conEquipos}
+          onClose={vi.fn()}
+        />,
+      );
+      await waitFor(() =>
+        expect(screen.getByTestId('quitar-g1:MALE')).toBeEnabled(),
+      );
+      fireEvent.click(screen.getByTestId('quitar-g1:MALE'));
+      await waitFor(() =>
+        expect(m.toast.error).toHaveBeenCalledWith(clave, ARRIBA),
+      );
+    },
+  );
+});
+
 describe('FilaDeAprobado · sus barras', () => {
   const pinta = (puede) => {
     const onAbrirBarras = vi.fn();

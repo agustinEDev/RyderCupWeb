@@ -33,6 +33,8 @@ const sinClave = (elegidas, clave) =>
  *   un campo sin barra no se resalta como aviso (ya no se puede elegir)
  * @param {boolean} [props.propia=false] - Las mías: «Tu barra»; de otro, en
  *   tercera persona («Su barra»)
+ * @param {boolean} [props.conEquipos=true] - Una Ryder: lo pendiente de un
+ *   fallo es un «partido»; en stroke play, una «partida»
  */
 const BarrasDelJugadorModal = ({
   inscripcion,
@@ -42,6 +44,7 @@ const BarrasDelJugadorModal = ({
   titulo: tituloPropio,
   propia = false,
   cerrada = false,
+  conEquipos = true,
 }) => {
   const { t } = useTranslation(['competitions', 'golfCourses']);
   const { barras, cargando, fallo, recargar } = useBarrasDeLaInscripcion(
@@ -85,7 +88,12 @@ const BarrasDelJugadorModal = ({
         error,
       );
       customToast.error(
-        t(claveDelFalloDeLaBarra(error, { quitando: valor === null })),
+        t(
+          claveDelFalloDeLaBarra(error, {
+            quitando: valor === null,
+            conEquipos,
+          }),
+        ),
         AVISO_ARRIBA,
       );
     } finally {
