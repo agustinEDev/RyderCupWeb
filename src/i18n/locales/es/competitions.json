@@ -745,7 +745,8 @@
       "OWN": "Tu barra",
       "COURSE": "Barra del campo",
       "GENERAL": "Tu barra general",
-      "DEFAULT": "Habitual"
+      "DEFAULT": "Habitual",
+      "PLAYED": "Jugada"
     },
     "noTee": "Sin barra",
     "chooseOnCourse": "Elige tu barra en {{course}}",
@@ -800,7 +801,8 @@
       "OWN": "Su barra",
       "COURSE": "Barra del campo",
       "GENERAL": "Su barra general",
-      "DEFAULT": "Habitual"
+      "DEFAULT": "Habitual",
+      "PLAYED": "Jugada"
     },
     "usualMine": "Tu habitual ({{color}})",
     "usualMineNoColor": "Tu habitual",

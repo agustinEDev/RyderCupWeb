@@ -430,6 +430,51 @@ describe('MisBarras y el modal · competición cerrada y sin barra', () => {
   });
 });
 
+/**
+ * B6/B7: con la competición terminada o cancelada, la barra que jugó en un
+ * campo sale como «{Barra} · Jugada» (RyderCupAm #919, source PLAYED).
+ */
+describe('La barra jugada', () => {
+  const JUGADA = {
+    generalTee: 'YELLOW',
+    defaultTee: 'YELLOW',
+    courses: [
+      {
+        golfCourseId: 'g1',
+        golfCourseName: 'Aldeamayor',
+        tee: 'BLUE',
+        source: 'PLAYED',
+        options: [],
+      },
+    ],
+  };
+
+  it('B6: «Mis barras»: «Azules · Jugada»', async () => {
+    m.leer.mockResolvedValue(JUGADA);
+    render(
+      <MisBarras inscripcion={{ id: 'e1' }} puedeCambiar={false} cerrada />,
+    );
+    const fila = await screen.findByTestId('mi-barra-g1');
+    expect(fila).toHaveTextContent('golfCourses:form.teeColors.BLUE');
+    expect(fila).toHaveTextContent('competitions:tees.source.PLAYED');
+  });
+
+  it('B6: el modal de un jugador, igual', async () => {
+    m.leer.mockResolvedValue(JUGADA);
+    render(
+      <BarrasDelJugadorModal
+        inscripcion={{ id: 'e1', userName: 'Ana' }}
+        puedeCambiar={false}
+        cerrada
+        onClose={vi.fn()}
+      />,
+    );
+    const fila = await screen.findByTestId('fila-barra-g1');
+    expect(fila).toHaveTextContent('golfCourses:form.teeColors.BLUE');
+    expect(fila).toHaveTextContent('competitions:tees.sourceOther.PLAYED');
+  });
+});
+
 describe('MisBarras · relectura y fallos', () => {
   it('6: sin poder leerlas, se dice y se reintenta', async () => {
     m.leer.mockRejectedValueOnce(new Error('red'));
