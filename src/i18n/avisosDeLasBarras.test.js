@@ -65,3 +65,21 @@ describe('D11: el emparejado fuera de su equipo', () => {
     );
   });
 });
+
+/**
+ * Textos vacíos cortos (pasada del Kind del 21 nov): a 360 px, junto a
+ * «Fijar» y «Quitar», los largos no cabían.
+ */
+describe('los textos vacíos de los selectores de barra, cortos', () => {
+  it('es', () => {
+    expect(es.tees.choose).toBe('Elige');
+    expect(es.tees.courses.notSet).toBe('Elige');
+    expect(es.tees.noOwnOnCourse).toBe('Sin cambio propio');
+  });
+
+  it('en', () => {
+    expect(en.tees.choose).toBe('Choose');
+    expect(en.tees.courses.notSet).toBe('Choose');
+    expect(en.tees.noOwnOnCourse).toBe('No own change');
+  });
+});
