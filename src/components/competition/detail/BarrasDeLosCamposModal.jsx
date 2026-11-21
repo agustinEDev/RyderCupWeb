@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import ModalShell from '../../ui/ModalShell';
+import ModalShell, { CAJA_CENTRADA_SI_CABE } from '../../ui/ModalShell';
 import { getCompetitionGolfCoursesUseCase } from '../../../composition';
 import { cargarBarras } from '../../../composition/cargarBarras';
 import { Gender } from '../../../domain/value_objects/Gender';
@@ -144,6 +144,9 @@ const BarrasDeLosCamposModal = ({
   return (
     <ModalShell
       isOpen
+      // Con muchos campos no cabe en el móvil: se desplaza hasta «Cerrar»
+      scrollableBackdrop
+      boxClassName={CAJA_CENTRADA_SI_CABE}
       closeOnBackdrop={false}
       onClose={onClose}
       labelledBy="barras-de-los-campos-titulo"
@@ -233,7 +236,8 @@ const BarrasDeLosCamposModal = ({
                           className="min-h-11 min-w-0 flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary"
                         >
                           <option value="" disabled>
-                            {t('competitions:tees.courses.notSet')}
+                            {/* Corto: comparte fila con «Fijar» y «Quitar» */}
+                            {t('competitions:tees.chooseShort')}
                           </option>
                           {yaNoDisponible && (
                             <option value={yaNoDisponible}>

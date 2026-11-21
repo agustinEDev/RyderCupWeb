@@ -364,6 +364,15 @@ describe('BarrasPendientesModal', () => {
     ).toEqual(['', 'BLACK', 'WHITE', 'RED']);
   });
 
+  it('selector ancho: el texto vacío largo, «Elige una barra»', () => {
+    pinta();
+    expect(
+      within(screen.getByLabelText('competitions:tees.label')).getAllByRole(
+        'option',
+      )[0],
+    ).toHaveTextContent(/^competitions:tees\.choose$/);
+  });
+
   it('«Ahora no» pasa al siguiente; sin campo, nada', () => {
     const { onSaltar } = pinta();
     fireEvent.click(screen.getByText('competitions:tees.notNow'));

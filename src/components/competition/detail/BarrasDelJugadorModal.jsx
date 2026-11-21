@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import ModalShell from '../../ui/ModalShell';
+import ModalShell, { CAJA_CENTRADA_SI_CABE } from '../../ui/ModalShell';
 import { useBarrasDeLaInscripcion } from '../../../hooks/useBarrasDeLaInscripcion';
 import { cargarBarras } from '../../../composition/cargarBarras';
 import { BARRAS_GENERALES } from '../../../utils/barrasGenerales';
@@ -110,6 +110,9 @@ const BarrasDelJugadorModal = ({
   return (
     <ModalShell
       isOpen
+      // Con muchos campos no cabe en el móvil: se desplaza hasta «Cerrar»
+      scrollableBackdrop
+      boxClassName={CAJA_CENTRADA_SI_CABE}
       closeOnBackdrop={false}
       onClose={onClose}
       labelledBy="barras-del-jugador-titulo"
@@ -154,7 +157,7 @@ const BarrasDelJugadorModal = ({
                   : habitual(barras.defaultTee)
               }
               // La general es obligatoria: sin opción vacía (sin elegir, solo
-              // «Elige una barra», que no se puede guardar)
+              // «Elige», que no se puede guardar)
               vacia={null}
               opciones={BARRAS_GENERALES}
               elegida={elegidas[GENERAL]}
@@ -228,8 +231,8 @@ const BarrasDelJugadorModal = ({
 
 // Una barra: la general o la de un campo. Lo que juega, y con permiso, el
 // selector y Guardar si cambió algo. `vacia`: la opción de quitar la barra
-// propia del campo; sin ella (la general, obligatoria), solo «Elige una
-// barra» si aún no hay ninguna, que no se puede guardar
+// propia del campo; sin ella (la general, obligatoria), solo «Elige» (corto:
+// comparte fila con «Guardar») si aún no hay ninguna, que no se puede guardar
 const FilaDeBarra = ({
   id,
   etiqueta,
@@ -286,7 +289,7 @@ const FilaDeBarra = ({
               ) : (
                 actual === '' && (
                   <option value="" disabled>
-                    {t('competitions:tees.choose')}
+                    {t('competitions:tees.chooseShort')}
                   </option>
                 )
               )}

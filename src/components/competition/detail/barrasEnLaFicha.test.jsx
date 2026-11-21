@@ -299,6 +299,14 @@ describe('BarrasDelJugadorModal', () => {
     await waitFor(() => expect(m.campo).toHaveBeenCalledWith('e1', 'g1', null));
   });
 
+  it('fila estrecha: la general sin elegir dice el texto vacío corto, «Elige»', async () => {
+    abre();
+    const fila = await screen.findByTestId('fila-barra-general');
+    expect(
+      within(within(fila).getByRole('combobox')).getAllByRole('option')[0],
+    ).toHaveTextContent(/^competitions:tees\.chooseShort$/);
+  });
+
   it('E12: las opciones de un campo, en el orden de los selectores', async () => {
     m.leer.mockResolvedValue({
       ...BARRAS,
@@ -793,7 +801,14 @@ describe('BarrasDeLosCamposModal · lo fijado', () => {
       });
   };
 
-  it('A2: sin nada fijado, «Elige una barra» y «Quitar» desactivado', async () => {
+  it('fila estrecha: el texto vacío corto, «Elige»', async () => {
+    abre();
+    expect(
+      within(await selector('forWomen')).getAllByRole('option')[0],
+    ).toHaveTextContent(/^competitions:tees\.chooseShort$/);
+  });
+
+  it('A2: sin nada fijado, «Elige» y «Quitar» desactivado', async () => {
     const soltar = lecturaRetenida();
     abre();
     await selector('forWomen');
@@ -984,7 +999,7 @@ describe('BarrasDeLosCamposModal · lo fijado', () => {
     expect(screen.getByTestId('quitar-g1:MALE')).toBeDisabled();
   });
 
-  it('A4: tras «Quitar», vuelve a «Elige una barra» y «Quitar» se desactiva', async () => {
+  it('A4: tras «Quitar», vuelve a «Elige» y «Quitar» se desactiva', async () => {
     m.fijadas.mockResolvedValue([fijada('g1', 'MALE', 'WHITE')]);
     abre();
     await waitFor(async () =>

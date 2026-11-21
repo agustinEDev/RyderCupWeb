@@ -65,3 +65,24 @@ describe('D11: el emparejado fuera de su equipo', () => {
     );
   });
 });
+
+/**
+ * Textos vacíos cortos (pasada del Kind del 21 nov): a 360 px, junto a
+ * «Fijar» y «Quitar», los largos no cabían.
+ */
+describe('los textos vacíos de los selectores de barra', () => {
+  it('es: corto en las filas estrechas, largo en los selectores anchos', () => {
+    expect(es.tees.chooseShort).toBe('Elige');
+    expect(es.tees.choose).toBe('Elige una barra');
+    expect(es.tees.noOwnOnCourse).toBe('Sin cambio propio');
+    // Las filas de «Barras de los campos» usan la corta
+    expect(es.tees.courses.notSet).toBeUndefined();
+  });
+
+  it('en', () => {
+    expect(en.tees.chooseShort).toBe('Choose');
+    expect(en.tees.choose).toBe('Choose a tee');
+    expect(en.tees.noOwnOnCourse).toBe('No own change');
+    expect(en.tees.courses.notSet).toBeUndefined();
+  });
+});

@@ -35,6 +35,19 @@ vi.mock('../composition', () => ({
   // Peticiones que no acaban nunca: el modal se queda ocupado
   updateRfegHandicapUseCase: { execute: vi.fn(() => new Promise(() => {})) },
   updateManualHandicapUseCase: { execute: vi.fn(() => new Promise(() => {})) },
+  getCompetitionGolfCoursesUseCase: {
+    execute: vi.fn(() => new Promise(() => {})),
+  },
+}));
+// Las lecturas de barras, que no acaban: aquí solo importa el armazón
+vi.mock('../composition/cargarBarras', () => ({
+  cargarBarras: () =>
+    Promise.resolve({
+      getEnrollmentTeesUseCase: { execute: () => new Promise(() => {}) },
+      getCompetitionCourseTeesUseCase: {
+        execute: () => new Promise(() => {}),
+      },
+    }),
 }));
 vi.mock('../utils/toast', () => ({
   default: { success: vi.fn(), error: vi.fn(), info: vi.fn() },
@@ -56,6 +69,10 @@ const { default: AceptarInvitacionModal } =
   await import('./invitation/AceptarInvitacionModal');
 const { default: BarrasPendientesModal } =
   await import('./enrollment/BarrasPendientesModal');
+const { default: BarrasDelJugadorModal } =
+  await import('./competition/detail/BarrasDelJugadorModal');
+const { default: BarrasDeLosCamposModal } =
+  await import('./competition/detail/BarrasDeLosCamposModal');
 const { default: SendInvitationModal } =
   await import('./invitation/SendInvitationModal');
 const { default: HandicapRequestModal } =
@@ -462,4 +479,50 @@ describe('Modales sobre ModalShell', () => {
       expect(cerrar).not.toHaveBeenCalled();
     },
   );
+});
+
+/**
+ * Los modales de barras crecen con los campos de la competición: con 4 campos
+ * a 360×780 no cabían, el fondo no se desplazaba y no se llegaba a «Cerrar»
+ * (pasada del Kind del 21 nov). Se desplazan (`scrollableBackdrop`) y, si
+ * caben, siguen centrados como antes (`my-auto` en la caja).
+ */
+describe('Modales de barras: se desplazan si no caben', () => {
+  it.each([
+    [
+      'BarrasDeLosCamposModal',
+      () => <BarrasDeLosCamposModal competitionId="c1" onClose={vi.fn()} />,
+    ],
+    [
+      'BarrasDelJugadorModal',
+      () => (
+        <BarrasDelJugadorModal
+          inscripcion={{ id: 'e1', userName: 'Ana' }}
+          puedeCambiar
+          onClose={vi.fn()}
+        />
+      ),
+    ],
+    [
+      'BarrasPendientesModal',
+      () => (
+        <BarrasPendientesModal
+          campo={{
+            golfCourseId: 'g1',
+            golfCourseName: 'Altea',
+            options: ['RED'],
+          }}
+          guardando={false}
+          onGuardar={vi.fn()}
+          onSaltar={vi.fn()}
+          onClose={vi.fn()}
+        />
+      ),
+    ],
+  ])('%s: fondo desplazable y caja centrada si cabe', (_, pintar) => {
+    montar(pintar());
+    const dialogo = screen.getByRole('dialog');
+    expect(dialogo).toHaveClass('overflow-y-auto', 'items-start');
+    expect(dialogo.firstElementChild).toHaveClass('my-auto');
+  });
 });
