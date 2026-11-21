@@ -842,6 +842,37 @@ describe('BarrasDeLosCamposModal · lo fijado', () => {
     expect(screen.getByTestId('quitar-g1:MALE')).toBeEnabled();
   });
 
+  it('lo elegido que ya no está tras «Reintentar» no se fija; lo que sigue, sí', async () => {
+    const campo = (tees) => ({
+      golf_courses: [{ golf_course: { id: 'g1', name: 'Aldeamayor', tees } }],
+    });
+    m.campos
+      .mockResolvedValueOnce(
+        campo([
+          { color: 'YELLOW', gender: 'MALE' },
+          { color: 'WHITE', gender: 'MALE' },
+          { color: 'BLUE', gender: 'FEMALE' },
+        ]),
+      )
+      .mockResolvedValueOnce(
+        campo([
+          { color: 'YELLOW', gender: 'MALE' },
+          { color: 'BLUE', gender: 'FEMALE' },
+        ]),
+      );
+    const soltar = await fallaLaPrimeraLectura();
+    fireEvent.change(await selector('forMen'), { target: { value: 'WHITE' } });
+    fireEvent.change(await selector('forWomen'), { target: { value: 'BLUE' } });
+    expect(screen.getByTestId('fijar-g1:MALE')).toBeEnabled();
+    fireEvent.click(screen.getByText('competitions:tees.retry'));
+    await soltar([]);
+    await waitFor(() => expect(m.campos).toHaveBeenCalledTimes(2));
+    await waitFor(() =>
+      expect(screen.getByTestId('fijar-g1:FEMALE')).toBeEnabled(),
+    );
+    expect(screen.getByTestId('fijar-g1:MALE')).toBeDisabled();
+  });
+
   it('carrera: la lectura que llega tras «Fijar» no pisa lo fijado', async () => {
     const soltar = await fallaLaPrimeraLectura();
     fireEvent.change(await selector('forWomen'), {

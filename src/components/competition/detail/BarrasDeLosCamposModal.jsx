@@ -254,7 +254,9 @@ const BarrasDeLosCamposModal = ({
                           type="button"
                           data-testid={`fijar-${clave}`}
                           disabled={
-                            !elegida ||
+                            // Sin elegir, o lo elegido ya no está entre las
+                            // opciones (tras «Reintentar»; CodeRabbit)
+                            !opciones.includes(elegida) ||
                             // Lo ya fijado (también la que ya no está entre
                             // las opciones) no se vuelve a mandar
                             elegida === fijada ||
