@@ -464,6 +464,23 @@ describe('BarrasDeLosCamposModal', () => {
     );
   });
 
+  it('CR2: un campo sin barras: avisa y deja quitar para los dos géneros', async () => {
+    m.campos.mockResolvedValue({
+      golf_courses: [
+        { golf_course: { id: 'g9', name: 'Sin barras', tees: [] } },
+      ],
+    });
+    render(<BarrasDeLosCamposModal competitionId="c1" onClose={vi.fn()} />);
+    fireEvent.click(await screen.findByTestId('quitar-g9:FEMALE'));
+    await waitFor(() =>
+      expect(m.delCampo).toHaveBeenCalledWith('c1', 'g9', 'FEMALE', null),
+    );
+    expect(
+      screen.getAllByText('competitions:tees.courses.noTees'),
+    ).toHaveLength(2);
+    expect(screen.getByTestId('quitar-g9:MALE')).toBeInTheDocument();
+  });
+
   it('F3: quitarla manda null', async () => {
     render(<BarrasDeLosCamposModal competitionId="c1" onClose={vi.fn()} />);
     fireEvent.click(await screen.findByTestId('quitar-g1:MALE'));

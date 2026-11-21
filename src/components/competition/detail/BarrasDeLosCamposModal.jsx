@@ -142,55 +142,63 @@ const BarrasDeLosCamposModal = ({ competitionId, onClose, onCambio }) => {
               const id = `barra-${clave}`;
               return (
                 <div key={genero} className="mt-2">
-                  <label htmlFor={id} className="block text-sm text-gray-700">
+                  <label
+                    htmlFor={opciones.length > 0 ? id : undefined}
+                    className="block text-sm text-gray-700"
+                  >
                     {t(texto)}
                   </label>
-                  {opciones.length === 0 ? (
+                  {/* Sin barras para ese género se avisa; quitar la que hubiera
+                      fijada se puede siempre (/code-review) */}
+                  {opciones.length === 0 && (
                     <p className="text-xs text-amber-800">
                       {t('competitions:tees.courses.noTees')}
                     </p>
-                  ) : (
-                    <div className="mt-1 flex flex-wrap items-center gap-2">
-                      <select
-                        id={id}
-                        value={elegida}
-                        onChange={(e) =>
-                          setElegidas((v) => ({
-                            ...v,
-                            [clave]: e.target.value,
-                          }))
-                        }
-                        className="min-h-11 min-w-0 flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-                      >
-                        <option value="" disabled>
-                          {t('competitions:tees.courses.notSet')}
-                        </option>
-                        {opciones.map((color) => (
-                          <option key={color} value={color}>
-                            {t(`golfCourses:form.teeColors.${color}`)}
-                          </option>
-                        ))}
-                      </select>
-                      <button
-                        type="button"
-                        data-testid={`fijar-${clave}`}
-                        disabled={!elegida || guardando !== null}
-                        onClick={() => fijar(campo, genero, elegida)}
-                        className="min-h-11 px-3 py-2 bg-primary text-white rounded-lg text-sm font-medium disabled:opacity-50"
-                      >
-                        {t('competitions:tees.courses.set')}
-                      </button>
-                      <button
-                        type="button"
-                        data-testid={`quitar-${clave}`}
-                        disabled={guardando !== null}
-                        onClick={() => fijar(campo, genero, null)}
-                        className="min-h-11 px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 disabled:opacity-50"
-                      >
-                        {t('competitions:tees.courses.remove')}
-                      </button>
-                    </div>
                   )}
+                  <div className="mt-1 flex flex-wrap items-center gap-2">
+                    {opciones.length > 0 && (
+                      <>
+                        <select
+                          id={id}
+                          value={elegida}
+                          onChange={(e) =>
+                            setElegidas((v) => ({
+                              ...v,
+                              [clave]: e.target.value,
+                            }))
+                          }
+                          className="min-h-11 min-w-0 flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                        >
+                          <option value="" disabled>
+                            {t('competitions:tees.courses.notSet')}
+                          </option>
+                          {opciones.map((color) => (
+                            <option key={color} value={color}>
+                              {t(`golfCourses:form.teeColors.${color}`)}
+                            </option>
+                          ))}
+                        </select>
+                        <button
+                          type="button"
+                          data-testid={`fijar-${clave}`}
+                          disabled={!elegida || guardando !== null}
+                          onClick={() => fijar(campo, genero, elegida)}
+                          className="min-h-11 px-3 py-2 bg-primary text-white rounded-lg text-sm font-medium disabled:opacity-50"
+                        >
+                          {t('competitions:tees.courses.set')}
+                        </button>
+                      </>
+                    )}
+                    <button
+                      type="button"
+                      data-testid={`quitar-${clave}`}
+                      disabled={guardando !== null}
+                      onClick={() => fijar(campo, genero, null)}
+                      className="min-h-11 px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 disabled:opacity-50"
+                    >
+                      {t('competitions:tees.courses.remove')}
+                    </button>
+                  </div>
                 </div>
               );
             })}
