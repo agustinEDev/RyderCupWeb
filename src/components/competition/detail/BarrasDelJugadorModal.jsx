@@ -244,10 +244,13 @@ const FilaDeBarra = ({
       >
         {textoActual}
       </p>
+      {/* Sin opciones se avisa; aun así, si hay algo que quitar (su cambio
+          propio, o uno que ya no vale en un campo sin barra), se puede */}
+      {puedeCambiar && opciones.length === 0 && (
+        <p className="mt-1 text-xs text-amber-800">{sinOpciones}</p>
+      )}
       {puedeCambiar &&
-        (opciones.length === 0 && !quitableSinCambio ? (
-          <p className="mt-1 text-xs text-amber-800">{sinOpciones}</p>
-        ) : (
+        (opciones.length === 0 && !quitableSinCambio && actual === '' ? null : (
           <div className="mt-2 flex flex-wrap items-center gap-2">
             <label htmlFor={id} className="sr-only">
               {etiqueta}

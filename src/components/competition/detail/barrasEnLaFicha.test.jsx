@@ -258,6 +258,29 @@ describe('BarrasDelJugadorModal', () => {
     ).toBe('GOLD');
   });
 
+  it('CR1: un cambio propio en un campo ya sin opciones se puede quitar, y se sigue avisando', async () => {
+    m.leer.mockResolvedValue({
+      ...BARRAS,
+      courses: [
+        {
+          golfCourseId: 'g1',
+          golfCourseName: 'Aldeamayor',
+          tee: 'GOLD',
+          source: 'OWN',
+          options: [],
+        },
+      ],
+    });
+    abre();
+    const fila = await screen.findByTestId('fila-barra-g1');
+    expect(fila).toHaveTextContent('competitions:tees.noOptions');
+    fireEvent.change(within(fila).getByRole('combobox'), {
+      target: { value: '' },
+    });
+    fireEvent.click(screen.getByTestId('guardar-g1'));
+    await waitFor(() => expect(m.campo).toHaveBeenCalledWith('e1', 'g1', null));
+  });
+
   it('sin permiso, solo se ven', async () => {
     abre({ puedeCambiar: false });
     await screen.findByTestId('fila-barra-g1');
