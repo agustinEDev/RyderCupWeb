@@ -204,6 +204,34 @@ describe('BarrasDelJugadorModal', () => {
     );
   });
 
+  it('TEE_NOT_AVAILABLE al quitar la de un campo: no se puede quitar', async () => {
+    m.campo.mockRejectedValue(fallo(422, 'TEE_NOT_AVAILABLE'));
+    abre();
+    await screen.findByTestId('fila-barra-g2');
+    fireEvent.click(screen.getByTestId('guardar-g2'));
+    await waitFor(() =>
+      expect(m.toast.error).toHaveBeenCalledWith(
+        'competitions:tees.errors.cantRemove',
+      ),
+    );
+  });
+
+  it('TEE_NOT_AVAILABLE al fijar la de un campo: el campo no la tiene', async () => {
+    m.campo.mockRejectedValue(fallo(422, 'TEE_NOT_AVAILABLE'));
+    abre();
+    await screen.findByTestId('fila-barra-g2');
+    fireEvent.change(
+      within(screen.getByTestId('fila-barra-g2')).getByRole('combobox'),
+      { target: { value: 'YELLOW' } },
+    );
+    fireEvent.click(screen.getByTestId('guardar-g2'));
+    await waitFor(() =>
+      expect(m.toast.error).toHaveBeenCalledWith(
+        'competitions:tees.errors.TEE_NOT_AVAILABLE',
+      ),
+    );
+  });
+
   it('sin permiso, solo se ven', async () => {
     abre({ puedeCambiar: false });
     await screen.findByTestId('fila-barra-g1');
@@ -355,13 +383,28 @@ describe('BarrasDeLosCamposModal', () => {
     );
   });
 
-  it('5: TEE_NOT_AVAILABLE, con su texto de campo', async () => {
+  it('5: TEE_NOT_AVAILABLE al fijarla, con su texto de campo', async () => {
+    m.delCampo.mockRejectedValue(fallo(422, 'TEE_NOT_AVAILABLE'));
+    render(<BarrasDeLosCamposModal competitionId="c1" onClose={vi.fn()} />);
+    fireEvent.change(
+      await screen.findByLabelText('competitions:tees.courses.forWomen'),
+      { target: { value: 'RED' } },
+    );
+    fireEvent.click(screen.getByTestId('fijar-g1:FEMALE'));
+    await waitFor(() =>
+      expect(m.toast.error).toHaveBeenCalledWith(
+        'competitions:tees.courses.errors.TEE_NOT_AVAILABLE',
+      ),
+    );
+  });
+
+  it('TEE_NOT_AVAILABLE al quitarla: no se puede quitar', async () => {
     m.delCampo.mockRejectedValue(fallo(422, 'TEE_NOT_AVAILABLE'));
     render(<BarrasDeLosCamposModal competitionId="c1" onClose={vi.fn()} />);
     fireEvent.click(await screen.findByTestId('quitar-g1:MALE'));
     await waitFor(() =>
       expect(m.toast.error).toHaveBeenCalledWith(
-        'competitions:tees.courses.errors.TEE_NOT_AVAILABLE',
+        'competitions:tees.errors.cantRemove',
       ),
     );
   });

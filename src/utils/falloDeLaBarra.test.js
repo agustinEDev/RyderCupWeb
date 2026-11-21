@@ -39,3 +39,23 @@ describe('claveDelFalloDeLaBarra · la barra de un campo para un género', () =>
     );
   });
 });
+
+describe('claveDelFalloDeLaBarra · al quitar una barra', () => {
+  it('TEE_NOT_AVAILABLE al quitar: no se puede quitar, sea del jugador o del campo', () => {
+    const error = fallo(422, 'TEE_NOT_AVAILABLE');
+    expect(claveDelFalloDeLaBarra(error, { quitando: true })).toBe(
+      'competitions:tees.errors.cantRemove',
+    );
+    expect(
+      claveDelFalloDeLaBarra(error, { quitando: true, delCampo: true }),
+    ).toBe('competitions:tees.errors.cantRemove');
+  });
+
+  it('otro código al quitar, el suyo', () => {
+    expect(
+      claveDelFalloDeLaBarra(fallo(409, 'TEE_CHANGE_CLOSED'), {
+        quitando: true,
+      }),
+    ).toBe('competitions:tees.errors.TEE_CHANGE_CLOSED');
+  });
+});

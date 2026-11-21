@@ -79,7 +79,9 @@ const BarrasDelJugadorModal = ({
         'Error saving a tee:',
         error,
       );
-      customToast.error(t(claveDelFalloDeLaBarra(error)));
+      customToast.error(
+        t(claveDelFalloDeLaBarra(error, { quitando: valor === null })),
+      );
     } finally {
       setGuardando(null);
     }

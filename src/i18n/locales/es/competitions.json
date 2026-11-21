@@ -794,7 +794,8 @@
       "COURSE_NOT_IN_COMPETITION": "Ese campo ya no es de esta competición.",
       "FORBIDDEN": "No puedes cambiar esta barra.",
       "generic": "No se pudo guardar la barra. Inténtalo de nuevo.",
-      "TEE_NOT_ON_PENDING_COURSE": "Esa barra no existe en un campo con partidos pendientes: elige antes la barra de ese campo."
+      "TEE_NOT_ON_PENDING_COURSE": "Esa barra no existe en un campo con partidos pendientes: elige antes la barra de ese campo.",
+      "cantRemove": "No se puede quitar: dejaría un partido pendiente sin una barra válida en este campo."
     },
     "sourceOther": {
       "OWN": "Su barra",

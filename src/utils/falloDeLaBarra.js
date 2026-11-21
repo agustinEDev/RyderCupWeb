@@ -15,14 +15,22 @@ const CON_SU_TEXTO = new Set([
  * el texto del servidor, que es técnico y en inglés. Con el espacio de nombres
  * delante: sale en la ficha y en las invitaciones.
  *
- * La barra de un campo para un género (organizador) tiene su propio texto
- * para `TEE_NOT_AVAILABLE`: no habla de un jugador.
+ * El texto depende también de la acción (RyderCupAm #917): `TEE_NOT_AVAILABLE`
+ * al QUITAR una barra (null) es que la que quedaría no vale para algo
+ * pendiente en ese campo; al fijarla, que el campo no la tiene (la de un
+ * campo para un género, del organizador, con su texto: no habla de un
+ * jugador).
  *
  * @param {Error & {status?: number, errorCode?: string|null}} error
- * @param {{ delCampo?: boolean }} [contexto]
+ * @param {{ delCampo?: boolean, quitando?: boolean }} [contexto]
  * @returns {string}
  */
-export const claveDelFalloDeLaBarra = (error, { delCampo = false } = {}) => {
+export const claveDelFalloDeLaBarra = (
+  error,
+  { delCampo = false, quitando = false } = {},
+) => {
+  if (quitando && error?.errorCode === 'TEE_NOT_AVAILABLE')
+    return 'competitions:tees.errors.cantRemove';
   if (delCampo && error?.errorCode === 'TEE_NOT_AVAILABLE')
     return 'competitions:tees.courses.errors.TEE_NOT_AVAILABLE';
   if (CON_SU_TEXTO.has(error?.errorCode))
