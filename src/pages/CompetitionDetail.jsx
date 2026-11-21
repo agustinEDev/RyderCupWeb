@@ -1,4 +1,10 @@
-import { useState, useCallback, useMemo } from 'react';
+import {
+  useState,
+  useCallback,
+  useMemo,
+  useEffect,
+  useEffectEvent,
+} from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router';
 import { ArrowLeft } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
@@ -37,12 +43,16 @@ import { faltaElHandicap } from '../utils/datosQueFaltanSinConexion';
 import { PANTALLA_MENOS_BARRA_INFERIOR } from '../utils/barraInferior';
 import { hayHistorialPropio } from '../hooks/useGoBack';
 import EnrollmentStatus from '../domain/value_objects/EnrollmentStatus';
+import { CompetitionStatusEnum } from '../domain/value_objects/CompetitionStatus';
 import MisBarras from '../components/competition/detail/MisBarras';
 import BarrasDelJugadorModal from '../components/competition/detail/BarrasDelJugadorModal';
 import BarrasDeLosCamposModal from '../components/competition/detail/BarrasDeLosCamposModal';
 import BarrasPendientesModal from '../components/enrollment/BarrasPendientesModal';
-import { useBarrasPendientes } from '../components/enrollment/useBarrasPendientes';
-import { puedeCambiarLaBarra } from '../utils/puedeCambiarLaBarra';
+import { useBarrasPendientes } from '../hooks/useBarrasPendientes';
+import {
+  puedeCambiarLaBarra,
+  puedeLeerLasBarras,
+} from '../utils/puedeCambiarLaBarra';
 
 /**
  * La ficha de una competición. Esta página orquesta: lee la ficha y sus
@@ -76,7 +86,11 @@ const CompetitionDetail = () => {
   // campos (organizador) y las que faltan tras apuntarse
   const [barrasDe, setBarrasDe] = useState(null);
   const [barrasDeLosCampos, setBarrasDeLosCampos] = useState(false);
-  const barrasPendientes = useBarrasPendientes();
+  // Cualquier barra que cambie (la pregunta de pendientes, las de los campos,
+  // el modal de un jugador) hace releer «Mis barras»
+  const [versionDeBarras, setVersionDeBarras] = useState(0);
+  const barrasCambiadas = () => setVersionDeBarras((n) => n + 1);
+  const barrasPendientes = useBarrasPendientes({ alGuardar: barrasCambiadas });
   // Mientras borra, el modal desactiva sus botones: eso ya impide un segundo DELETE
   const [borrando, setBorrando] = useState(false);
   // Nombrar a los capitanes es lo que cierra las inscripciones (FE #692)
@@ -144,6 +158,24 @@ const CompetitionDetail = () => {
     lecturasDeInscripciones,
   } = useFichaDeLaCompeticion({ id, userId, t, navigate });
 
+  // Llegando de aceptar en «Mis invitaciones», la ficha pide la barra de los
+  // campos que no tengan la general (barras por campo): aquella pantalla se
+  // fue. Una vez, y se quita del historial para no repetirla al volver
+  const preguntarBarras = location.state?.preguntarBarras === true;
+  const miAprobada = enrollments.find(
+    (e) => e.userId === userId && e.status === EnrollmentStatus.APPROVED,
+  )?.id;
+  const preguntarLasBarras = useEffectEvent((enrollmentId) => {
+    barrasPendientes.comprobar(enrollmentId);
+    navigate(`${location.pathname}${location.search}`, {
+      replace: true,
+      state: { ...location.state, preguntarBarras: undefined },
+    });
+  });
+  useEffect(() => {
+    if (preguntarBarras && miAprobada) preguntarLasBarras(miAprobada);
+  }, [preguntarBarras, miAprobada]);
+
   const isLoading = isLoadingUser || isLoadingCompetition || isLoadingRoles;
 
   const approvedEnrollments = useMemo(
@@ -207,23 +239,40 @@ const CompetitionDetail = () => {
 
   // Quién puede cambiar las barras de cada aprobado: la regla del backend
   // (RyderCupAm#912), con el reparto de la agenda para saber su capitán
+  const quienEs = (inscripcion) => ({
+    userId,
+    jugadorId: inscripcion.userId,
+    gestiona: Boolean(canManage),
+    captains: competition.captains,
+    reparto: agendaLeida?.teamAssignment,
+  });
   const puedeCambiarSuBarra = (inscripcion) =>
     inscripcion?.status === EnrollmentStatus.APPROVED &&
     puedeCambiarLaBarra({
       estado: competition.status,
-      userId,
-      jugadorId: inscripcion.userId,
-      gestiona: Boolean(canManage),
-      captains: competition.captains,
-      reparto: agendaLeida?.teamAssignment,
+      ...quienEs(inscripcion),
     });
-  // La lista se queda con la barra general que dice el servidor
-  const conSuGeneral = (enrollmentId) => (barras) =>
-    setEnrollments((previas) =>
-      previas.map((e) =>
-        e.id === enrollmentId ? { ...e, color: barras.generalTee } : e,
-      ),
-    );
+  // «Barras» en la lista: a quien puede verlas (también con la competición
+  // terminada, solo para leer). En mi fila no: ya están «Mis barras»
+  const puedeVerSusBarras = (inscripcion) =>
+    inscripcion?.status === EnrollmentStatus.APPROVED &&
+    inscripcion.userId !== userId &&
+    puedeLeerLasBarras(quienEs(inscripcion));
+  // La lista se queda con la barra general que dice el servidor, y «Mis
+  // barras» se vuelven a leer. Sin barras (al cerrar un modal), solo lo segundo
+  const conSuGeneral = (enrollmentId) => (barras) => {
+    if (barras)
+      setEnrollments((previas) =>
+        previas.map((e) =>
+          e.id === enrollmentId ? { ...e, color: barras.generalTee } : e,
+        ),
+      );
+    barrasCambiadas();
+  };
+  const terminada = [
+    CompetitionStatusEnum.COMPLETED,
+    CompetitionStatusEnum.CANCELLED,
+  ].includes(competition.status);
 
   // Abre el modal y espera la respuesta: el flujo de cada acción no cambia.
   // Cada acción trae sus palabras —título, consecuencia y dos verbos—: con
@@ -388,6 +437,11 @@ const CompetitionDetail = () => {
             <InvitacionEnLaFicha
               invitacion={competition.myPendingInvitation ?? null}
               alCambiar={loadCompetition}
+              // Aceptada, la ficha pide la barra de los campos sin la general
+              alAceptar={async (resultado) => {
+                await loadCompetition();
+                barrasPendientes.comprobar(resultado?.enrollmentId);
+              }}
             />
 
             {/* Action Buttons */}
@@ -440,6 +494,7 @@ const CompetitionDetail = () => {
                 key={ficha.userEnrollment.id}
                 inscripcion={ficha.userEnrollment}
                 puedeCambiar={puedeCambiarSuBarra(ficha.userEnrollment)}
+                version={versionDeBarras}
                 onCambio={conSuGeneral(ficha.userEnrollment.id)}
               />
             )}
@@ -474,7 +529,7 @@ const CompetitionDetail = () => {
             />
 
             {/* La barra de cada campo para cada género (barras por campo, R2) */}
-            {canManage && (
+            {canManage && !terminada && (
               <div className="px-4">
                 <button
                   type="button"
@@ -490,6 +545,7 @@ const CompetitionDetail = () => {
               <BarrasDeLosCamposModal
                 competitionId={id}
                 onClose={() => setBarrasDeLosCampos(false)}
+                onCambio={barrasCambiadas}
               />
             )}
 
@@ -540,7 +596,7 @@ const CompetitionDetail = () => {
               {...handicaps}
               quitandoId={quitandoId}
               handleQuitar={cambios.handleQuitar}
-              puedeCambiarSuBarra={puedeCambiarSuBarra}
+              puedeVerSusBarras={puedeVerSusBarras}
               onAbrirBarras={setBarrasDe}
             />
             {/* Uno cada vez y con su id de llave: lo de otro no se mezcla */}
@@ -549,7 +605,11 @@ const CompetitionDetail = () => {
                 key={barrasDe.id}
                 inscripcion={barrasDe}
                 puedeCambiar={puedeCambiarSuBarra(barrasDe)}
-                onClose={() => setBarrasDe(null)}
+                onClose={() => {
+                  setBarrasDe(null);
+                  // Pudo guardarse algo mientras se cerraba
+                  barrasCambiadas();
+                }}
                 onCambio={conSuGeneral(barrasDe.id)}
               />
             )}

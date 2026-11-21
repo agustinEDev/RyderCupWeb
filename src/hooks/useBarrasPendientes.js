@@ -1,17 +1,21 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { cargarBarras } from '../../composition/cargarBarras';
-import customToast from '../../utils/toast';
-import { registraElFallo } from '../../utils/registraElFallo';
-import { claveDelFalloDeLaBarra } from '../../utils/falloDeLaBarra';
+import { cargarBarras } from '../composition/cargarBarras';
+import customToast from '../utils/toast';
+import { registraElFallo } from '../utils/registraElFallo';
+import { claveDelFalloDeLaBarra } from '../utils/falloDeLaBarra';
+import { TeeSource } from '../domain/value_objects/TeeSource';
 
 /**
  * Tras apuntarse o aceptar una invitación (barras por campo, F1): si algún
  * campo no tiene su barra general (`source: NONE`), se le pide en el mismo
  * flujo, campo a campo. Cerrarlo sin elegir no rompe nada: la ficha sigue
  * avisando (F2). Sin poder leer sus barras, tampoco se dice nada aquí.
+ *
+ * @param {{ alGuardar?: () => void }} [opciones] - Tras guardar una: la ficha
+ *   vuelve a leer «Mis barras»
  */
-export const useBarrasPendientes = () => {
+export const useBarrasPendientes = ({ alGuardar } = {}) => {
   const { t } = useTranslation('competitions');
   const [pendiente, setPendiente] = useState(null);
   const [guardando, setGuardando] = useState(false);
@@ -23,7 +27,7 @@ export const useBarrasPendientes = () => {
       const barras = await getEnrollmentTeesUseCase.execute(enrollmentId);
       // Sin opciones no hay nada que elegir: lo dice la ficha
       const campos = barras.courses.filter(
-        (campo) => campo.source === 'NONE' && campo.options.length > 0,
+        (campo) => campo.source === TeeSource.NONE && campo.options.length > 0,
       );
       if (campos.length > 0) setPendiente({ enrollmentId, campos });
     } catch (error) {
@@ -51,6 +55,7 @@ export const useBarrasPendientes = () => {
         color,
       );
       customToast.success(t('tees.saved'));
+      alGuardar?.();
       siguiente();
     } catch (error) {
       registraElFallo(

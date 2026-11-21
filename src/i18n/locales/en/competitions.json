@@ -776,13 +776,15 @@
       "hint": "It replaces the general tee of that gender on this course, not a tee someone chose for this course. What has been played does not change.",
       "saved": "Course tee saved",
       "removed": "Course tee removed",
-      "noTees": "This course has no tees for that gender."
+      "noTees": "This course has no tees for that gender.",
+      "errors": {
+        "TEE_NOT_AVAILABLE": "That course does not have that tee for that gender, or it is not valid for something pending."
+      }
     },
     "accept": {
       "title": "Accept the invitation",
       "confirm": "Accept",
-      "cancel": "Cancel",
-      "teeSaveFailed": "Invitation accepted, but your tee could not be saved: change it on the competition page."
+      "cancel": "Cancel"
     },
     "errors": {
       "TEE_NOT_AVAILABLE": "That tee is not rated for this player on the courses still to be played.",
@@ -791,7 +793,19 @@
       "PENDING_GAME_NOT_RECALCULABLE": "A pending game could not be recalculated with the new tee. Tell the organiser.",
       "COURSE_NOT_IN_COMPETITION": "That course is no longer part of this competition.",
       "FORBIDDEN": "You cannot change this tee.",
-      "generic": "The tee could not be saved. Please try again."
-    }
+      "generic": "The tee could not be saved. Please try again.",
+      "TEE_NOT_ON_PENDING_COURSE": "That tee does not exist on a course with pending games: choose that course's tee first."
+    },
+    "sourceOther": {
+      "OWN": "Their tee",
+      "COURSE": "Course tee",
+      "GENERAL": "Their general tee",
+      "DEFAULT": "Usual",
+      "NONE": "No tee"
+    },
+    "usualMine": "Your usual ({{color}})",
+    "usualMineNoColor": "Your usual",
+    "changeGeneral": "Change your general tee",
+    "changeOn": "Change your tee at {{course}}"
   }
 }

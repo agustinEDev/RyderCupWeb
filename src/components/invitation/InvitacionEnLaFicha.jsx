@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Mail } from 'lucide-react';
 import AceptarInvitacionModal from './AceptarInvitacionModal';
-import BarrasPendientesModal from '../enrollment/BarrasPendientesModal';
 import { useResponderInvitacion } from '../../hooks/useResponderInvitacion';
 import {
   instanteEnTexto,
@@ -37,9 +36,12 @@ const useCaducada = (expiresAt) => {
  * @param {{
  *   invitacion: {id: string, expiresAt: string|null}|null,
  *   alCambiar: () => unknown,
- * }} props - la invitación y cómo releer la ficha tras responder
+ *   alAceptar?: (resultado: object) => unknown,
+ * }} props - la invitación, cómo releer la ficha tras responder y, si se
+ *   quiere, qué hacer al aceptar (la ficha pide la barra de los campos que
+ *   no tengan la general); sin él, releerla
  */
-const InvitacionEnLaFicha = ({ invitacion, alCambiar }) => {
+const InvitacionEnLaFicha = ({ invitacion, alCambiar, alAceptar }) => {
   const { t, i18n } = useTranslation('invitations');
   const caducada = useCaducada(invitacion?.expiresAt);
   const {
@@ -48,9 +50,8 @@ const InvitacionEnLaFicha = ({ invitacion, alCambiar }) => {
     aceptar,
     rechazar,
     preguntaDeLaBarra,
-    barrasPendientes,
   } = useResponderInvitacion({
-    alAceptar: alCambiar,
+    alAceptar: alAceptar ?? alCambiar,
     alCambiar,
     textoYaNoPendiente: 'inDetail.notPendingAnymore',
   });
@@ -116,7 +117,6 @@ const InvitacionEnLaFicha = ({ invitacion, alCambiar }) => {
         </button>
       </div>
       <AceptarInvitacionModal {...preguntaDeLaBarra} />
-      <BarrasPendientesModal {...barrasPendientes} />
     </section>
   );
 };

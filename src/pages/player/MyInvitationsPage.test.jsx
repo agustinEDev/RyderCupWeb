@@ -539,8 +539,9 @@ describe('MyInvitationsPage', () => {
     });
     await waitFor(() => {
       // Con el origen, para que «Volver» lleve de nuevo aquí (FE #682)
+      // Y que la ficha pida la barra de los campos sin la general (barras por campo)
       expect(mockNavigate).toHaveBeenCalledWith('/competitions/comp-123', {
-        state: { from: 'invitations' },
+        state: { from: 'invitations', preguntarBarras: true },
       });
     });
   });

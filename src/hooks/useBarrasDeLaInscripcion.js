@@ -10,9 +10,12 @@ import { useCargaCancelableEffect } from './useCargaCancelableEffect';
  *
  * @param {string|null|undefined} enrollmentId
  * @param {boolean} activa
+ * @param {number} [version=0] - Al cambiar, se vuelven a leer: la ficha la
+ *   sube cuando cualquier barra cambia (la pregunta de pendientes, las de los
+ *   campos, el modal de un jugador)
  * @returns {{ barras: Object|null, cargando: boolean, fallo: boolean, recargar: () => Promise<Object> }}
  */
-export const useBarrasDeLaInscripcion = (enrollmentId, activa) => {
+export const useBarrasDeLaInscripcion = (enrollmentId, activa, version = 0) => {
   const [leidas, setLeidas] = useState({
     de: null,
     barras: null,
@@ -23,7 +26,7 @@ export const useBarrasDeLaInscripcion = (enrollmentId, activa) => {
       cargarBarras().then((casos) =>
         casos.getEnrollmentTeesUseCase.execute(enrollmentId),
       ),
-    [enrollmentId],
+    [enrollmentId, version],
     {
       activa: Boolean(activa && enrollmentId),
       alCargar: (barras) =>

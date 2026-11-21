@@ -2,36 +2,69 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { AlertTriangle } from 'lucide-react';
 import { useBarrasDeLaInscripcion } from '../../../hooks/useBarrasDeLaInscripcion';
+import { TeeSource } from '../../../domain/value_objects/TeeSource';
 import BarrasDelJugadorModal from './BarrasDelJugadorModal';
 
 /**
  * «Mis barras» en la ficha (barras por campo, F2): mi barra general y, por
  * campo, la que juego y de dónde sale. Se leen siempre (el jugador puede
  * verlas aunque ya no pueda cambiarlas); «Cambiar» solo si puedo. Un campo
- * sin barra para mí se avisa.
+ * sin barra para mí se avisa. Sin poder leerlas, se dice y se reintenta.
  *
  * @param {Object} props
  * @param {{id: string}} props.inscripcion - La mía, aprobada
  * @param {boolean} props.puedeCambiar
- * @param {(barras: Object) => void} [props.onCambio]
+ * @param {number} [props.version] - La ficha la sube cuando cambia cualquier
+ *   barra: se vuelven a leer
+ * @param {(barras: Object|null) => void} [props.onCambio] - Al guardar o al
+ *   cerrar mis barras (pudo guardarse algo mientras se cerraba)
  */
-const MisBarras = ({ inscripcion, puedeCambiar, onCambio }) => {
+const MisBarras = ({ inscripcion, puedeCambiar, version = 0, onCambio }) => {
   const { t } = useTranslation(['competitions', 'golfCourses']);
-  const { barras, recargar } = useBarrasDeLaInscripcion(inscripcion.id, true);
+  const { barras, cargando, fallo, recargar } = useBarrasDeLaInscripcion(
+    inscripcion.id,
+    true,
+    version,
+  );
   const [abierto, setAbierto] = useState(false);
-  if (!barras) return null;
+
+  if (!barras) {
+    if (!fallo) return null;
+    return (
+      <section
+        data-testid="mis-barras-sin-cargar"
+        className="mx-4 mb-4 rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900"
+      >
+        <h2 className="font-semibold">{t('competitions:tees.mine')}</h2>
+        <p className="mt-1">{t('competitions:tees.notLoaded')}</p>
+        <button
+          type="button"
+          disabled={cargando}
+          onClick={() => recargar()}
+          className="mt-2 min-h-11 font-semibold underline disabled:opacity-50"
+        >
+          {t('competitions:tees.retry')}
+        </button>
+      </section>
+    );
+  }
 
   const color = (c) => t(`golfCourses:form.teeColors.${c}`);
-  const sinBarra = barras.courses.filter((campo) => campo.source === 'NONE');
-  const cambiar = puedeCambiar && (
-    <button
-      type="button"
-      onClick={() => setAbierto(true)}
-      className="min-h-11 px-2 font-semibold text-primary underline"
-    >
-      {t('competitions:tees.change')}
-    </button>
+  const sinBarra = barras.courses.filter(
+    (campo) => campo.source === TeeSource.NONE,
   );
+  // Un «Cambiar» por fila, cada uno con su nombre accesible
+  const cambiar = (nombre) =>
+    puedeCambiar && (
+      <button
+        type="button"
+        aria-label={nombre}
+        onClick={() => setAbierto(true)}
+        className="min-h-11 px-2 font-semibold text-primary underline"
+      >
+        {t('competitions:tees.change')}
+      </button>
+    );
 
   return (
     <section
@@ -64,11 +97,11 @@ const MisBarras = ({ inscripcion, puedeCambiar, onCambio }) => {
             {barras.generalTee
               ? color(barras.generalTee)
               : barras.defaultTee
-                ? t('competitions:tees.usual', {
+                ? t('competitions:tees.usualMine', {
                     color: color(barras.defaultTee),
                   })
-                : t('competitions:tees.usualNoColor')}
-            {cambiar}
+                : t('competitions:tees.usualMineNoColor')}
+            {cambiar(t('competitions:tees.changeGeneral'))}
           </dd>
         </div>
         {barras.courses.map((campo) => (
@@ -87,7 +120,11 @@ const MisBarras = ({ inscripcion, puedeCambiar, onCambio }) => {
               <span className="text-gray-500">
                 · {t(`competitions:tees.source.${campo.source}`)}
               </span>
-              {cambiar}
+              {cambiar(
+                t('competitions:tees.changeOn', {
+                  course: campo.golfCourseName,
+                }),
+              )}
             </dd>
           </div>
         ))}
@@ -96,8 +133,14 @@ const MisBarras = ({ inscripcion, puedeCambiar, onCambio }) => {
         <BarrasDelJugadorModal
           inscripcion={inscripcion}
           puedeCambiar={puedeCambiar}
+          propia
           titulo={t('competitions:tees.mine')}
-          onClose={() => setAbierto(false)}
+          onClose={() => {
+            setAbierto(false);
+            // Pudo guardarse algo mientras se cerraba: se vuelven a leer
+            recargar();
+            onCambio?.(null);
+          }}
           onCambio={(nuevas) => {
             recargar();
             onCambio?.(nuevas);

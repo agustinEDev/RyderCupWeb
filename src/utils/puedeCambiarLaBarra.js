@@ -49,3 +49,23 @@ export const puedeCambiarLaBarra = ({
     return true;
   return userId === jugadorId && ANTES_DE_EMPEZAR.has(estado);
 };
+
+/**
+ * Quién puede VER las barras de una inscripción (barras por campo): el propio
+ * jugador, el capitán de su equipo o quien gestiona, en cualquier estado de la
+ * competición, también terminada o cancelada (entonces, sin poder cambiarlas).
+ *
+ * @param {Object} p - Como en `puedeCambiarLaBarra`, sin el estado
+ * @returns {boolean}
+ */
+export const puedeLeerLasBarras = ({
+  userId,
+  jugadorId,
+  gestiona,
+  captains,
+  reparto,
+}) =>
+  Boolean(userId) &&
+  (Boolean(gestiona) ||
+    userId === jugadorId ||
+    esSuCapitan({ userId, jugadorId, captains, reparto }));

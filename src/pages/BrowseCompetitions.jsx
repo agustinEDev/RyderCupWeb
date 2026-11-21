@@ -17,7 +17,7 @@ import { useGeneroParaApuntarse } from '../hooks/useGeneroParaApuntarse';
 import { mensajeDeError } from '../utils/sinCobertura';
 import EnrollmentRequestModal from '../components/enrollment/EnrollmentRequestModal';
 import BarrasPendientesModal from '../components/enrollment/BarrasPendientesModal';
-import { useBarrasPendientes } from '../components/enrollment/useBarrasPendientes';
+import { useBarrasPendientes } from '../hooks/useBarrasPendientes';
 import { entraConPlaza } from '../utils/entraConPlaza';
 import BlockLoader from '../components/ui/BlockLoader';
 import { formatDateRange } from '../services/competitions';

@@ -5,9 +5,10 @@ import ChangeEnrollmentCourseTeeUseCase from '../application/use_cases/barras/Ch
 import SetCompetitionCourseTeeUseCase from '../application/use_cases/barras/SetCompetitionCourseTeeUseCase';
 
 /**
- * Los casos de uso de las barras (RyderCupAm#912 y barras por campo), en un
- * trozo aparte: se cargan con `import()` al abrir una ficha o un selector, no
- * al arrancar (el arranque va justo de presupuesto, #374).
+ * Los casos de uso de las barras (RyderCupAm#912 y barras por campo), aparte
+ * de la composition root del arranque: solo los importan pantallas que ya se
+ * cargan aparte (la ficha, explorar, las invitaciones), por `cargarBarras`, así
+ * que no pesan en el arranque (#374).
  */
 const barrasRepository = new ApiBarrasRepository();
 

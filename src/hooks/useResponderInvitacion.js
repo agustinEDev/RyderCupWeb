@@ -6,7 +6,7 @@ import { useGeneroParaApuntarse } from './useGeneroParaApuntarse';
 import { respondToInvitationUseCase } from '../composition';
 import { cargarBarras } from '../composition/cargarBarras';
 import { registraElFallo } from '../utils/registraElFallo';
-import { useBarrasPendientes } from '../components/enrollment/useBarrasPendientes';
+import { claveDelFalloDeLaBarra } from '../utils/falloDeLaBarra';
 
 // Sin plaza, o con los equipos ya formados (29 oct 2026): se dice por qué y
 // la pantalla se pone al día
@@ -27,9 +27,10 @@ const MOTIVOS_PARA_NO_ENTRAR = {
  *
  * - Se acepta con la barra general, obligatoria (barras por campo): se elige
  *   antes, con la habitual de su género marcada, y se guarda en la inscripción
- *   que crea la aceptación. Si algún campo no la tiene, se pide en el mismo
- *   flujo. Sin género no se entra: se pregunta a la vez (#710), y la sesión se
- *   refresca al terminar.
+ *   que crea la aceptación. Los campos que no la tengan los pide la ficha de
+ *   la competición, que es la que queda a la vista (`alAceptar` recibe el
+ *   resultado, con su `enrollmentId`). Sin género no se entra: se pregunta a
+ *   la vez (#710), y la sesión se refresca al terminar.
  * - Sin plaza al cerrarse, el servidor lo dice con su código; un 409 sin código
  *   es que ya no estaba pendiente (retirada, caducada o contestada en otra
  *   pestaña). Al aceptar se dice; al rechazar, silencio (FE #737, 5 oct). En los
@@ -49,7 +50,6 @@ export const useResponderInvitacion = ({
 }) => {
   const { t } = useTranslation(['invitations', 'competitions']);
   const generoParaApuntarse = useGeneroParaApuntarse();
-  const barrasPendientes = useBarrasPendientes();
   // Las que se están respondiendo, y con qué: cada tarjeta, desactivada (y con
   // «Aceptando…» o «Rechazando…») mientras la suya
   const [enProceso, setEnProceso] = useState([]);
@@ -110,8 +110,8 @@ export const useResponderInvitacion = ({
   };
 
   // La barra general, en la inscripción que acaba de crear la aceptación. Si
-  // no se guarda, la invitación ya está aceptada: se dice y se cambia en la
-  // ficha (barras por campo)
+  // no se guarda, la invitación ya está aceptada: se dice por qué y se cambia
+  // en la ficha, que pide además la de los campos que no la tengan
   const guardarLaBarra = async (enrollmentId, barra) => {
     if (!enrollmentId) return;
     try {
@@ -123,10 +123,8 @@ export const useResponderInvitacion = ({
         'Error saving the tee after accepting:',
         error,
       );
-      customToast.error(t('competitions:tees.accept.teeSaveFailed'));
-      return;
+      customToast.error(t(claveDelFalloDeLaBarra(error)));
     }
-    await barrasPendientes.comprobar(enrollmentId);
   };
 
   // Hasta que la pantalla se ha releído, sigue en curso: si no, el botón se
@@ -229,13 +227,6 @@ export const useResponderInvitacion = ({
       generoDelJugador: generoParaApuntarse.genero,
       onClose: () => setAceptando(null),
       onConfirm: aceptarConBarra,
-    },
-    barrasPendientes: {
-      campo: barrasPendientes.campo,
-      guardando: barrasPendientes.guardando,
-      onGuardar: barrasPendientes.guardar,
-      onSaltar: barrasPendientes.saltar,
-      onClose: barrasPendientes.cerrar,
     },
   };
 };

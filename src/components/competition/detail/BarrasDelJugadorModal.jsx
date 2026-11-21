@@ -7,6 +7,7 @@ import { BARRAS_GENERALES } from '../../../utils/barrasGenerales';
 import { claveDelFalloDeLaBarra } from '../../../utils/falloDeLaBarra';
 import customToast from '../../../utils/toast';
 import { registraElFallo } from '../../../utils/registraElFallo';
+import { TeeSource } from '../../../domain/value_objects/TeeSource';
 
 const GENERAL = 'general';
 
@@ -26,6 +27,8 @@ const sinClave = (elegidas, clave) =>
  * @param {Function} props.onClose
  * @param {(barras: Object) => void} [props.onCambio] - Con lo que quedó
  * @param {string} [props.titulo] - En vez de «Barras de {nombre}» (las mías)
+ * @param {boolean} [props.propia=false] - Las mías: «Tu barra»; de otro, en
+ *   tercera persona («Su barra»)
  */
 const BarrasDelJugadorModal = ({
   inscripcion,
@@ -33,6 +36,7 @@ const BarrasDelJugadorModal = ({
   onClose,
   onCambio,
   titulo: tituloPropio,
+  propia = false,
 }) => {
   const { t } = useTranslation(['competitions', 'golfCourses']);
   const { barras, cargando, fallo, recargar } = useBarrasDeLaInscripcion(
@@ -44,6 +48,14 @@ const BarrasDelJugadorModal = ({
   const [elegidas, setElegidas] = useState({});
   const [guardando, setGuardando] = useState(null);
   const color = (c) => t(`golfCourses:form.teeColors.${c}`);
+  const motivo = (source) =>
+    t(`competitions:tees.${propia ? 'source' : 'sourceOther'}.${source}`);
+  const habitual = (c) =>
+    c
+      ? t(`competitions:tees.${propia ? 'usualMine' : 'usual'}`, {
+          color: color(c),
+        })
+      : t(`competitions:tees.${propia ? 'usualMineNoColor' : 'usualNoColor'}`);
 
   const guardar = async (clave, valor) => {
     setGuardando(clave);
@@ -123,19 +135,11 @@ const BarrasDelJugadorModal = ({
               textoActual={
                 barras.generalTee
                   ? color(barras.generalTee)
-                  : barras.defaultTee
-                    ? t('competitions:tees.usual', {
-                        color: color(barras.defaultTee),
-                      })
-                    : t('competitions:tees.usualNoColor')
+                  : habitual(barras.defaultTee)
               }
-              vacia={
-                barras.defaultTee
-                  ? t('competitions:tees.usual', {
-                      color: color(barras.defaultTee),
-                    })
-                  : t('competitions:tees.usualNoColor')
-              }
+              // La general es obligatoria: sin opción vacía (sin elegir, solo
+              // «Elige una barra», que no se puede guardar)
+              vacia={null}
               opciones={BARRAS_GENERALES}
               elegida={elegidas[GENERAL]}
               onElegir={(v) => setElegidas((e) => ({ ...e, [GENERAL]: v }))}
@@ -153,9 +157,13 @@ const BarrasDelJugadorModal = ({
                 etiqueta={t('competitions:tees.onCourse', {
                   course: campo.golfCourseName,
                 })}
-                actual={campo.source === 'OWN' ? (campo.tee ?? '') : ''}
-                textoActual={`${campo.tee ? color(campo.tee) : t('competitions:tees.noTee')} · ${t(`competitions:tees.source.${campo.source}`)}`}
-                aviso={campo.source === 'NONE'}
+                actual={campo.source === TeeSource.OWN ? (campo.tee ?? '') : ''}
+                textoActual={`${campo.tee ? color(campo.tee) : t('competitions:tees.noTee')} · ${motivo(campo.source)}`}
+                aviso={campo.source === TeeSource.NONE}
+                // Sin barra en ese campo puede quedar un cambio propio que ya
+                // no vale y la API no lo dice: quitarlo se ofrece siempre, y
+                // responde el servidor
+                quitableSinCambio={campo.source === TeeSource.NONE}
                 vacia={t('competitions:tees.noOwnOnCourse')}
                 opciones={campo.options}
                 sinOpciones={t('competitions:tees.noOptions')}
@@ -188,8 +196,9 @@ const BarrasDelJugadorModal = ({
 };
 
 // Una barra: la general o la de un campo. Lo que juega, y con permiso, el
-// selector con «sin elegir» (`vacia`: la habitual, o sin barra propia en el
-// campo) y Guardar si cambió algo
+// selector y Guardar si cambió algo. `vacia`: la opción de quitar la barra
+// propia del campo; sin ella (la general, obligatoria), solo «Elige una
+// barra» si aún no hay ninguna, que no se puede guardar
 const FilaDeBarra = ({
   id,
   etiqueta,
@@ -197,6 +206,7 @@ const FilaDeBarra = ({
   textoActual,
   aviso = false,
   vacia,
+  quitableSinCambio = false,
   opciones,
   sinOpciones,
   elegida,
@@ -223,7 +233,7 @@ const FilaDeBarra = ({
         {textoActual}
       </p>
       {puedeCambiar &&
-        (opciones.length === 0 ? (
+        (opciones.length === 0 && !quitableSinCambio ? (
           <p className="mt-1 text-xs text-amber-800">{sinOpciones}</p>
         ) : (
           <div className="mt-2 flex flex-wrap items-center gap-2">
@@ -236,7 +246,15 @@ const FilaDeBarra = ({
               onChange={(e) => onElegir(e.target.value)}
               className="min-h-11 min-w-0 flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary"
             >
-              <option value="">{vacia}</option>
+              {vacia !== null ? (
+                <option value="">{vacia}</option>
+              ) : (
+                actual === '' && (
+                  <option value="" disabled>
+                    {t('competitions:tees.choose')}
+                  </option>
+                )
+              )}
               {opciones.map((opcion) => (
                 <option key={opcion} value={opcion}>
                   {color(opcion)}
@@ -245,7 +263,10 @@ const FilaDeBarra = ({
             </select>
             <button
               type="button"
-              disabled={valor === actual || guardando !== null}
+              disabled={
+                guardando !== null ||
+                (valor === actual && !(quitableSinCambio && valor === ''))
+              }
               onClick={() => onGuardar(valor || null)}
               data-testid={`guardar-${clave}`}
               className="min-h-11 px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary/90 disabled:opacity-50"

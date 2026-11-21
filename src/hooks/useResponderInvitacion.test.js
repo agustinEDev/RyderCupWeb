@@ -21,13 +21,11 @@ vi.mock('../composition', () => ({
 
 const barras = vi.hoisted(() => ({
   general: vi.fn(),
-  leer: vi.fn(),
 }));
 vi.mock('../composition/cargarBarras', () => ({
   cargarBarras: () =>
     Promise.resolve({
       changeEnrollmentTeeUseCase: { execute: (...a) => barras.general(...a) },
-      getEnrollmentTeesUseCase: { execute: (...a) => barras.leer(...a) },
     }),
 }));
 
@@ -35,7 +33,6 @@ beforeEach(() => {
   vi.clearAllMocks();
   responder.mockReturnValue(new Promise(() => {}));
   barras.general.mockResolvedValue({ id: 'e-1', teeColor: 'YELLOW' });
-  barras.leer.mockResolvedValue({ courses: [] });
 });
 
 // Aceptar pide antes la barra general (barras por campo): se abre el modal
@@ -196,18 +193,8 @@ describe('useResponderInvitacion — la barra al aceptar', () => {
     expect(result.current.preguntaDeLaBarra.isOpen).toBe(false);
   });
 
-  it('guarda la barra en su inscripción y pide la de los campos sin ella', async () => {
+  it('guarda la barra en su inscripción y entrega el resultado a quien pide las de los campos', async () => {
     responder.mockResolvedValue({ enrollmentId: 'e-1' });
-    barras.leer.mockResolvedValue({
-      courses: [
-        {
-          golfCourseId: 'g1',
-          golfCourseName: 'Altea',
-          source: 'NONE',
-          options: ['RED'],
-        },
-      ],
-    });
     const alAceptar = vi.fn();
     const { result } = renderHook(() =>
       useResponderInvitacion({ alAceptar, alCambiar: vi.fn() }),
@@ -217,14 +204,17 @@ describe('useResponderInvitacion — la barra al aceptar', () => {
 
     expect(responder).toHaveBeenCalledWith('inv-1', 'ACCEPT');
     expect(barras.general).toHaveBeenCalledWith('e-1', 'BLUE');
-    expect(barras.leer).toHaveBeenCalledWith('e-1');
-    expect(result.current.barrasPendientes.campo.golfCourseId).toBe('g1');
-    expect(alAceptar).toHaveBeenCalled();
+    expect(alAceptar).toHaveBeenCalledWith({ enrollmentId: 'e-1' });
   });
 
-  it('si la barra no se guarda, la invitación sigue aceptada y se dice', async () => {
+  it('si la barra no se guarda, la invitación sigue aceptada, se dice por qué y se sigue', async () => {
     responder.mockResolvedValue({ enrollmentId: 'e-1' });
-    barras.general.mockRejectedValue(new Error('sin red'));
+    barras.general.mockRejectedValue(
+      Object.assign(new Error('422'), {
+        status: 422,
+        errorCode: 'TEE_NOT_ON_PENDING_COURSE',
+      }),
+    );
     const alAceptar = vi.fn();
     const { result } = renderHook(() =>
       useResponderInvitacion({ alAceptar, alCambiar: vi.fn() }),
@@ -234,9 +224,9 @@ describe('useResponderInvitacion — la barra al aceptar', () => {
 
     expect(toast.success).toHaveBeenCalledWith('success.accepted');
     expect(toast.error).toHaveBeenCalledWith(
-      'competitions:tees.accept.teeSaveFailed',
+      'competitions:tees.errors.TEE_NOT_ON_PENDING_COURSE',
     );
-    expect(barras.leer).not.toHaveBeenCalled();
-    expect(alAceptar).toHaveBeenCalled();
+    // La ficha sigue y pide la de los campos
+    expect(alAceptar).toHaveBeenCalledWith({ enrollmentId: 'e-1' });
   });
 });

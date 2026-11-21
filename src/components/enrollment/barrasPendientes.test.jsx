@@ -7,7 +7,7 @@ import {
   act,
 } from '@testing-library/react';
 import BarrasPendientesModal from './BarrasPendientesModal';
-import { useBarrasPendientes } from './useBarrasPendientes';
+import { useBarrasPendientes } from '../../hooks/useBarrasPendientes';
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
@@ -56,7 +56,8 @@ describe('useBarrasPendientes', () => {
       ],
     });
     mocks.fijar.mockResolvedValue({ teeColor: 'RED' });
-    const { result } = renderHook(() => useBarrasPendientes());
+    const alGuardar = vi.fn();
+    const { result } = renderHook(() => useBarrasPendientes({ alGuardar }));
 
     await act(() => result.current.comprobar('e1'));
     expect(mocks.leer).toHaveBeenCalledWith('e1');
@@ -65,6 +66,7 @@ describe('useBarrasPendientes', () => {
     await act(() => result.current.guardar('RED'));
     expect(mocks.fijar).toHaveBeenCalledWith('e1', 'g2', 'RED');
     expect(mocks.toast.success).toHaveBeenCalledWith('tees.saved');
+    expect(alGuardar).toHaveBeenCalledTimes(1);
     expect(result.current.campo.golfCourseId).toBe('g4');
 
     act(() => result.current.saltar());
@@ -140,6 +142,15 @@ describe('BarrasPendientesModal', () => {
     });
     fireEvent.click(screen.getByText('competitions:tees.save'));
     expect(onGuardar).toHaveBeenCalledWith('BLUE');
+  });
+
+  it('9: guardando, no se manda otra vez', () => {
+    const { onGuardar } = pinta({ guardando: true });
+    fireEvent.change(screen.getByLabelText('competitions:tees.label'), {
+      target: { value: 'BLUE' },
+    });
+    fireEvent.submit(screen.getByLabelText('competitions:tees.label').form);
+    expect(onGuardar).not.toHaveBeenCalled();
   });
 
   it('«Ahora no» pasa al siguiente; sin campo, nada', () => {

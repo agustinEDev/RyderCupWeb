@@ -49,7 +49,7 @@ const Contenido = ({ campo, guardando, onGuardar, onSaltar, onClose }) => {
       <form
         onSubmit={(e) => {
           e.preventDefault();
-          if (color) onGuardar(color);
+          if (color && !guardando) onGuardar(color);
         }}
         className="space-y-4"
       >

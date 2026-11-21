@@ -95,11 +95,12 @@ describe('BarrasDelJugadorModal', () => {
     expect(
       screen.getByText('competitions:tees.playerTitle {"name":"Ana"}'),
     ).toBeInTheDocument();
+    // De otro jugador, en tercera persona
     expect(screen.getByTestId('fila-barra-g1')).toHaveTextContent(
-      'competitions:tees.source.DEFAULT',
+      'competitions:tees.sourceOther.DEFAULT',
     );
     expect(screen.getByTestId('fila-barra-g2')).toHaveTextContent(
-      'competitions:tees.source.NONE',
+      'competitions:tees.sourceOther.NONE',
     );
   });
 
@@ -158,6 +159,51 @@ describe('BarrasDelJugadorModal', () => {
     expect(screen.getByTestId('fila-barra-general')).toBeInTheDocument();
   });
 
+  it('7: la general es obligatoria: sin opción vacía; sin general, hay que elegirla', async () => {
+    abre();
+    const general = await screen.findByLabelText('competitions:tees.general');
+    const opciones = within(general).getAllByRole('option');
+    expect(opciones[0].value).toBe('');
+    expect(opciones[0]).toBeDisabled();
+    expect(screen.getByTestId('guardar-general')).toBeDisabled();
+  });
+
+  it('7: con general, ninguna opción vacía', async () => {
+    m.leer.mockResolvedValue({ ...BARRAS, generalTee: 'YELLOW' });
+    abre();
+    const general = await screen.findByLabelText('competitions:tees.general');
+    expect(
+      within(general)
+        .getAllByRole('option')
+        .map((o) => o.value),
+    ).not.toContain('');
+  });
+
+  it('7: en un campo sin barra, quitar el cambio propio se puede guardar', async () => {
+    abre();
+    await screen.findByTestId('fila-barra-g2');
+    expect(screen.getByTestId('guardar-g2')).not.toBeDisabled();
+    fireEvent.click(screen.getByTestId('guardar-g2'));
+    await waitFor(() => expect(m.campo).toHaveBeenCalledWith('e1', 'g2', null));
+  });
+
+  it('7: en un campo con barra, sin cambiar nada no se guarda', async () => {
+    abre();
+    await screen.findByTestId('fila-barra-g1');
+    expect(screen.getByTestId('guardar-g1')).toBeDisabled();
+  });
+
+  it('4: las mías, en segunda persona', async () => {
+    abre({ propia: true });
+    await screen.findByTestId('fila-barra-g1');
+    expect(screen.getByTestId('fila-barra-g1')).toHaveTextContent(
+      'competitions:tees.source.DEFAULT',
+    );
+    expect(screen.getByTestId('fila-barra-general')).toHaveTextContent(
+      'competitions:tees.usualMine',
+    );
+  });
+
   it('sin permiso, solo se ven', async () => {
     abre({ puedeCambiar: false });
     await screen.findByTestId('fila-barra-g1');
@@ -184,7 +230,7 @@ describe('MisBarras', () => {
     render(<MisBarras inscripcion={{ id: 'e1' }} puedeCambiar={false} />);
     await screen.findByTestId('mis-barras');
     expect(screen.getByTestId('mis-barras')).toHaveTextContent(
-      'competitions:tees.usual',
+      'competitions:tees.usualMine',
     );
     expect(screen.getByTestId('mi-barra-g1')).toHaveTextContent(
       'competitions:tees.source.DEFAULT',
@@ -206,6 +252,68 @@ describe('MisBarras', () => {
         selector: 'h2#barras-del-jugador-titulo',
       }),
     ).toBeInTheDocument();
+  });
+});
+
+describe('MisBarras · relectura y fallos', () => {
+  it('6: sin poder leerlas, se dice y se reintenta', async () => {
+    m.leer.mockRejectedValueOnce(new Error('red'));
+    render(<MisBarras inscripcion={{ id: 'e1' }} puedeCambiar={false} />);
+    expect(
+      await screen.findByTestId('mis-barras-sin-cargar'),
+    ).toBeInTheDocument();
+    fireEvent.click(screen.getByText('competitions:tees.retry'));
+    expect(await screen.findByTestId('mis-barras')).toBeInTheDocument();
+  });
+
+  it('3: al subir la versión (cambió cualquier barra), se vuelven a leer', async () => {
+    const { rerender } = render(
+      <MisBarras inscripcion={{ id: 'e1' }} puedeCambiar version={0} />,
+    );
+    await screen.findByTestId('mis-barras');
+    expect(m.leer).toHaveBeenCalledTimes(1);
+    rerender(<MisBarras inscripcion={{ id: 'e1' }} puedeCambiar version={1} />);
+    await waitFor(() => expect(m.leer).toHaveBeenCalledTimes(2));
+  });
+
+  it('3: al cerrar mis barras se vuelven a leer y se avisa', async () => {
+    const onCambio = vi.fn();
+    render(
+      <MisBarras inscripcion={{ id: 'e1' }} puedeCambiar onCambio={onCambio} />,
+    );
+    await screen.findByTestId('mis-barras');
+    fireEvent.click(
+      screen.getByRole('button', { name: 'competitions:tees.changeGeneral' }),
+    );
+    await screen.findByTestId('fila-barra-general');
+    const lecturas = m.leer.mock.calls.length;
+    fireEvent.click(screen.getByText('competitions:tees.close'));
+    await waitFor(() =>
+      expect(m.leer.mock.calls.length).toBeGreaterThan(lecturas),
+    );
+    expect(onCambio).toHaveBeenCalledWith(null);
+  });
+
+  it('9: cada «Cambiar» con su nombre accesible, con el campo', async () => {
+    render(<MisBarras inscripcion={{ id: 'e1' }} puedeCambiar />);
+    await screen.findByTestId('mis-barras');
+    expect(
+      screen.getByRole('button', {
+        name: 'competitions:tees.changeOn {"course":"Aldeamayor"}',
+      }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', {
+        name: 'competitions:tees.changeOn {"course":"Altea"}',
+      }),
+    ).toBeInTheDocument();
+  });
+
+  it('4: mi general sin elegir, «Tu habitual»', async () => {
+    render(<MisBarras inscripcion={{ id: 'e1' }} puedeCambiar={false} />);
+    expect(await screen.findByTestId('mis-barras')).toHaveTextContent(
+      'competitions:tees.usualMine',
+    );
   });
 });
 
@@ -247,6 +355,17 @@ describe('BarrasDeLosCamposModal', () => {
     );
   });
 
+  it('5: TEE_NOT_AVAILABLE, con su texto de campo', async () => {
+    m.delCampo.mockRejectedValue(fallo(422, 'TEE_NOT_AVAILABLE'));
+    render(<BarrasDeLosCamposModal competitionId="c1" onClose={vi.fn()} />);
+    fireEvent.click(await screen.findByTestId('quitar-g1:MALE'));
+    await waitFor(() =>
+      expect(m.toast.error).toHaveBeenCalledWith(
+        'competitions:tees.courses.errors.TEE_NOT_AVAILABLE',
+      ),
+    );
+  });
+
   it('F3: quitarla manda null', async () => {
     render(<BarrasDeLosCamposModal competitionId="c1" onClose={vi.fn()} />);
     fireEvent.click(await screen.findByTestId('quitar-g1:MALE'));
@@ -271,7 +390,7 @@ describe('FilaDeAprobado · sus barras', () => {
         canManage
         esStrokePlay={false}
         sinHandicap={new Set()}
-        puedeCambiarSuBarra={() => puede}
+        puedeVerSusBarras={() => puede}
         onAbrirBarras={onAbrirBarras}
       />,
     );

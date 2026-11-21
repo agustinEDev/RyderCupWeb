@@ -75,7 +75,7 @@ const BarrasDeLosCamposModal = ({ competitionId, onClose, onCambio }) => {
         'Error setting a course tee:',
         error,
       );
-      customToast.error(t(claveDelFalloDeLaBarra(error)));
+      customToast.error(t(claveDelFalloDeLaBarra(error, { delCampo: true })));
     } finally {
       setGuardando(null);
     }

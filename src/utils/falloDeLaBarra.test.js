@@ -15,6 +15,7 @@ describe('claveDelFalloDeLaBarra', () => {
       'PENDING_GAME_NOT_RECALCULABLE',
     ],
     [fallo(404, 'COURSE_NOT_IN_COMPETITION'), 'COURSE_NOT_IN_COMPETITION'],
+    [fallo(422, 'TEE_NOT_ON_PENDING_COURSE'), 'TEE_NOT_ON_PENDING_COURSE'],
     [fallo(403, undefined), 'FORBIDDEN'],
     [fallo(409, 'OTRO_CODIGO'), 'generic'],
     [new Error('sin red'), 'generic'],
@@ -22,6 +23,19 @@ describe('claveDelFalloDeLaBarra', () => {
   ])('%s → %s', (error, clave) => {
     expect(claveDelFalloDeLaBarra(error)).toBe(
       `competitions:tees.errors.${clave}`,
+    );
+  });
+});
+
+describe('claveDelFalloDeLaBarra · la barra de un campo para un género', () => {
+  it('TEE_NOT_AVAILABLE con su texto propio; lo demás, como siempre', () => {
+    expect(
+      claveDelFalloDeLaBarra(fallo(422, 'TEE_NOT_AVAILABLE'), {
+        delCampo: true,
+      }),
+    ).toBe('competitions:tees.courses.errors.TEE_NOT_AVAILABLE');
+    expect(claveDelFalloDeLaBarra(fallo(403), { delCampo: true })).toBe(
+      'competitions:tees.errors.FORBIDDEN',
     );
   });
 });

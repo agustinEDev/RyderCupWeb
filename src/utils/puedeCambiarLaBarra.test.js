@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { puedeCambiarLaBarra } from './puedeCambiarLaBarra';
+import { puedeCambiarLaBarra, puedeLeerLasBarras } from './puedeCambiarLaBarra';
 
 /**
  * Quién puede cambiar la barra de una inscripción (FE #1214, la misma regla
@@ -100,5 +100,33 @@ describe('puedeCambiarLaBarra', () => {
   it('P8: el capitán sin equipos formados, no', () => {
     expect(puede('capi-a', 'CLOSED', { reparto: null })).toBe(false);
     expect(puede('capi-a', 'CLOSED', { captains: null })).toBe(false);
+  });
+});
+
+/**
+ * Quién puede VER sus barras (F3): el jugador, el capitán de su equipo o
+ * quien gestiona, en cualquier estado; nadie más.
+ */
+describe('puedeLeerLasBarras', () => {
+  const lee = (userId, extra = {}) =>
+    puedeLeerLasBarras({
+      userId,
+      jugadorId: 'ana',
+      gestiona: false,
+      captains,
+      reparto,
+      ...extra,
+    });
+
+  it.each([
+    ['el propio jugador', 'ana', {}, true],
+    ['su capitán', 'capi-a', {}, true],
+    ['quien gestiona', 'orga', { gestiona: true }, true],
+    ['el capitán del otro equipo', 'capi-b', {}, false],
+    ['el subcapitán', 'vice-a', {}, false],
+    ['otro jugador', 'beto', {}, false],
+    ['sin usuario', undefined, { gestiona: true }, false],
+  ])('%s: %s', (_quien, userId, extra, esperado) => {
+    expect(lee(userId, extra)).toBe(esperado);
   });
 });

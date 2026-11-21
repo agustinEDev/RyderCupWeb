@@ -37,7 +37,7 @@ const FilaDeAprobado = ({
   handleRevertToRfegHandicap,
   quitandoId,
   handleQuitar,
-  puedeCambiarSuBarra,
+  puedeVerSusBarras,
   onAbrirBarras,
 }) => (
   <div
@@ -73,8 +73,9 @@ const FilaDeAprobado = ({
           </span>
         )}
       {/* Sus barras (barras por campo): organizador, admin o el capitán de
-          su equipo; se leen al abrir, no al cargar la ficha */}
-      {puedeCambiarSuBarra?.(enrollment) && (
+          su equipo, también para solo verlas; se leen al abrir, no al
+          cargar la ficha */}
+      {puedeVerSusBarras?.(enrollment) && (
         <button
           type="button"
           data-testid={`barras-de-${enrollment.userId}`}

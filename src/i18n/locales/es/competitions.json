@@ -776,13 +776,15 @@
       "hint": "Pisa la barra general de los de ese género en este campo, no la que alguien haya elegido para este campo. Lo ya jugado no cambia.",
       "saved": "Barra del campo guardada",
       "removed": "Barra del campo quitada",
-      "noTees": "Este campo no tiene barras para ese género."
+      "noTees": "Este campo no tiene barras para ese género.",
+      "errors": {
+        "TEE_NOT_AVAILABLE": "Ese campo no tiene esa barra para ese género, o no vale para algo pendiente."
+      }
     },
     "accept": {
       "title": "Aceptar la invitación",
       "confirm": "Aceptar",
-      "cancel": "Cancelar",
-      "teeSaveFailed": "Invitación aceptada, pero no se pudo guardar tu barra: cámbiala en la ficha de la competición."
+      "cancel": "Cancelar"
     },
     "errors": {
       "TEE_NOT_AVAILABLE": "Esa barra no está valorada para este jugador en los campos que le quedan por jugar.",
@@ -791,7 +793,19 @@
       "PENDING_GAME_NOT_RECALCULABLE": "Un partido pendiente no se pudo recalcular con la barra nueva. Avisa al organizador.",
       "COURSE_NOT_IN_COMPETITION": "Ese campo ya no es de esta competición.",
       "FORBIDDEN": "No puedes cambiar esta barra.",
-      "generic": "No se pudo guardar la barra. Inténtalo de nuevo."
-    }
+      "generic": "No se pudo guardar la barra. Inténtalo de nuevo.",
+      "TEE_NOT_ON_PENDING_COURSE": "Esa barra no existe en un campo con partidos pendientes: elige antes la barra de ese campo."
+    },
+    "sourceOther": {
+      "OWN": "Su barra",
+      "COURSE": "Barra del campo",
+      "GENERAL": "Su barra general",
+      "DEFAULT": "Habitual",
+      "NONE": "Sin barra"
+    },
+    "usualMine": "Tu habitual ({{color}})",
+    "usualMineNoColor": "Tu habitual",
+    "changeGeneral": "Cambiar tu barra general",
+    "changeOn": "Cambiar tu barra en {{course}}"
   }
 }
