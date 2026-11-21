@@ -771,6 +771,10 @@ describe('BarrasDeLosCamposModal · lo fijado', () => {
     ).toEqual(['', 'BLUE', 'RED']);
     expect(screen.getByTestId('quitar-g1:FEMALE')).toBeEnabled();
     expect(screen.getByTestId('quitar-g1:MALE')).toBeEnabled();
+    // Lo elegido es lo fijado: nada que fijar; otra, sí
+    expect(screen.getByTestId('fijar-g1:FEMALE')).toBeDisabled();
+    fireEvent.change(await selector('forWomen'), { target: { value: 'RED' } });
+    expect(screen.getByTestId('fijar-g1:FEMALE')).toBeEnabled();
   });
 
   // La lectura de lo fijado, retenida hasta soltarla con lo que diga: así
@@ -799,9 +803,47 @@ describe('BarrasDeLosCamposModal · lo fijado', () => {
     expect(screen.getByTestId('quitar-g1:MALE')).toBeDisabled();
   });
 
-  it('carrera: la lectura que llega tras «Fijar» no pisa lo fijado', async () => {
+  it('mientras se lee lo fijado, ni «Fijar» ni «Quitar»', async () => {
     const soltar = lecturaRetenida();
     abre();
+    fireEvent.change(await selector('forWomen'), {
+      target: { value: 'BLUE' },
+    });
+    expect(screen.getByTestId('fijar-g1:FEMALE')).toBeDisabled();
+    expect(screen.getByTestId('quitar-g1:FEMALE')).toBeDisabled();
+    await soltar([fijada('g1', 'FEMALE', 'RED')]);
+    expect(screen.getByTestId('fijar-g1:FEMALE')).toBeEnabled();
+    expect(screen.getByTestId('quitar-g1:FEMALE')).toBeEnabled();
+  });
+
+  // La carrera: una relectura («Reintentar») que llega tras un cambio
+  const fallaLaPrimeraLectura = async () => {
+    m.fijadas.mockRejectedValueOnce(fallo(500));
+    const soltar = lecturaRetenida();
+    abre();
+    await screen.findByText('competitions:tees.retry');
+    return soltar;
+  };
+
+  it('releyendo tras un fallo: sin «Reintentar» ni «Quitar» hasta que llegue', async () => {
+    const soltar = await fallaLaPrimeraLectura();
+    expect(screen.getByTestId('quitar-g1:MALE')).toBeEnabled();
+    fireEvent.click(screen.getByText('competitions:tees.retry'));
+    // Los campos ya han vuelto; lo fijado, aún no
+    await waitFor(() => expect(m.campos).toHaveBeenCalledTimes(2));
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 0));
+    });
+    expect(
+      screen.queryByText('competitions:tees.retry'),
+    ).not.toBeInTheDocument();
+    expect(screen.getByTestId('quitar-g1:MALE')).toBeDisabled();
+    await soltar([fijada('g1', 'MALE', 'WHITE')]);
+    expect(screen.getByTestId('quitar-g1:MALE')).toBeEnabled();
+  });
+
+  it('carrera: la lectura que llega tras «Fijar» no pisa lo fijado', async () => {
+    const soltar = await fallaLaPrimeraLectura();
     fireEvent.change(await selector('forWomen'), {
       target: { value: 'BLUE' },
     });
@@ -812,6 +854,7 @@ describe('BarrasDeLosCamposModal · lo fijado', () => {
         ARRIBA,
       ),
     );
+    fireEvent.click(screen.getByText('competitions:tees.retry'));
     await soltar([fijada('g1', 'MALE', 'WHITE')]);
     expect(await selector('forWomen')).toHaveValue('BLUE');
     expect(screen.getByTestId('quitar-g1:FEMALE')).toBeEnabled();
@@ -821,12 +864,17 @@ describe('BarrasDeLosCamposModal · lo fijado', () => {
   });
 
   it('carrera: lo quitado tampoco vuelve con una lectura vieja', async () => {
-    const soltar = lecturaRetenida();
-    abre();
+    const soltar = await fallaLaPrimeraLectura();
     fireEvent.change(await selector('forMen'), {
       target: { value: 'WHITE' },
     });
     fireEvent.click(screen.getByTestId('fijar-g1:MALE'));
+    await waitFor(() =>
+      expect(m.toast.success).toHaveBeenCalledWith(
+        'competitions:tees.courses.saved',
+        ARRIBA,
+      ),
+    );
     await waitFor(() =>
       expect(screen.getByTestId('quitar-g1:MALE')).toBeEnabled(),
     );
@@ -837,6 +885,7 @@ describe('BarrasDeLosCamposModal · lo fijado', () => {
         ARRIBA,
       ),
     );
+    fireEvent.click(screen.getByText('competitions:tees.retry'));
     await soltar([fijada('g1', 'MALE', 'WHITE')]);
     expect(await selector('forMen')).toHaveValue('');
     expect(screen.getByTestId('quitar-g1:MALE')).toBeDisabled();
@@ -900,6 +949,7 @@ describe('BarrasDeLosCamposModal · lo fijado', () => {
       expect(screen.getByTestId('quitar-g1:FEMALE')).toBeEnabled(),
     );
     expect(await selector('forWomen')).toHaveValue('BLUE');
+    expect(screen.getByTestId('fijar-g1:FEMALE')).toBeDisabled();
     expect(screen.getByTestId('quitar-g1:MALE')).toBeDisabled();
   });
 
@@ -942,7 +992,7 @@ describe('BarrasDeLosCamposModal · lo fijado', () => {
     abre();
     await waitFor(() =>
       expect(m.toast.error).toHaveBeenCalledWith(
-        'competitions:tees.errors.generic',
+        'competitions:tees.notLoaded',
         ARRIBA,
       ),
     );
@@ -953,6 +1003,48 @@ describe('BarrasDeLosCamposModal · lo fijado', () => {
     await waitFor(() =>
       expect(m.delCampo).toHaveBeenCalledWith('c1', 'g1', 'FEMALE', 'RED'),
     );
+  });
+
+  it('A5: un 403 al leer también dice que no se pudo leer, no que no se puede cambiar', async () => {
+    m.fijadas.mockRejectedValue(fallo(403));
+    abre();
+    await waitFor(() =>
+      expect(m.toast.error).toHaveBeenCalledWith(
+        'competitions:tees.notLoaded',
+        ARRIBA,
+      ),
+    );
+    expect(m.toast.error).not.toHaveBeenCalledWith(
+      'competitions:tees.errors.FORBIDDEN',
+      ARRIBA,
+    );
+  });
+
+  it('A5: falla lo fijado, «Reintentar» lo vuelve a leer', async () => {
+    m.fijadas
+      .mockRejectedValueOnce(fallo(500))
+      .mockResolvedValueOnce([fijada('g1', 'MALE', 'WHITE')]);
+    abre();
+    fireEvent.click(await screen.findByText('competitions:tees.retry'));
+    await waitFor(async () =>
+      expect(await selector('forMen')).toHaveValue('WHITE'),
+    );
+    expect(m.fijadas).toHaveBeenCalledTimes(2);
+    expect(screen.getByTestId('quitar-g1:FEMALE')).toBeDisabled();
+    expect(
+      screen.queryByText('competitions:tees.retry'),
+    ).not.toBeInTheDocument();
+  });
+
+  it('fallan los campos: «Reintentar» relee también lo fijado', async () => {
+    m.campos.mockRejectedValueOnce(fallo(500));
+    abre();
+    fireEvent.click(await screen.findByText('competitions:tees.retry'));
+    await waitFor(async () =>
+      expect(await selector('forWomen')).toBeInTheDocument(),
+    );
+    expect(m.campos).toHaveBeenCalledTimes(2);
+    expect(m.fijadas).toHaveBeenCalledTimes(2);
   });
 
   it('A5: sin saber lo fijado, «Quitar» sigue a mano', async () => {

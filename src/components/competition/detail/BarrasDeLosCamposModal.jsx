@@ -64,32 +64,35 @@ const BarrasDeLosCamposModal = ({
       alFallar: () => setFallo(true),
     },
   );
-  useCargaCancelableEffect(
-    () =>
-      cargarBarras().then(({ getCompetitionCourseTeesUseCase }) =>
-        getCompetitionCourseTeesUseCase.execute(competitionId),
-      ),
-    [competitionId],
-    {
-      alCargar: (filas) => {
-        setDelServidor(
-          Object.fromEntries(
-            filas.map((f) => [`${f.golfCourseId}:${f.gender}`, f.teeColor]),
-          ),
-        );
-        setSinFijadas(false);
+  const { cargando: leyendoFijadas, recargar: releerFijadas } =
+    useCargaCancelableEffect(
+      () =>
+        cargarBarras().then(({ getCompetitionCourseTeesUseCase }) =>
+          getCompetitionCourseTeesUseCase.execute(competitionId),
+        ),
+      [competitionId],
+      {
+        alCargar: (filas) => {
+          setDelServidor(
+            Object.fromEntries(
+              filas.map((f) => [`${f.golfCourseId}:${f.gender}`, f.teeColor]),
+            ),
+          );
+          setSinFijadas(false);
+        },
+        alFallar: (error) => {
+          registraElFallo(
+            'BarrasDeLosCamposModal.error-reading-course-tees',
+            'Error reading the course tees:',
+            error,
+          );
+          setSinFijadas(true);
+          // Un texto de LECTURA: el de un fallo al guardar decía «No se pudo
+          // guardar» o, con un 403, «No puedes cambiar esta barra» (/code-review)
+          customToast.error(t('competitions:tees.notLoaded'), AVISO_ARRIBA);
+        },
       },
-      alFallar: (error) => {
-        registraElFallo(
-          'BarrasDeLosCamposModal.error-reading-course-tees',
-          'Error reading the course tees:',
-          error,
-        );
-        setSinFijadas(true);
-        customToast.error(t(claveDelFalloDeLaBarra(error)), AVISO_ARRIBA);
-      },
-    },
-  );
+    );
   const hayFijada = (clave) =>
     clave in fijadas ? fijadas[clave] !== null : sinFijadas;
 
@@ -162,7 +165,8 @@ const BarrasDeLosCamposModal = ({
             {t('competitions:tees.loading')}
           </p>
         )}
-        {fallo && !cargando && (
+        {/* Si falla cualquiera de las dos lecturas, se reintentan las dos */}
+        {(fallo || sinFijadas) && !cargando && !leyendoFijadas && (
           <div
             data-testid="campos-sin-cargar"
             className="rounded-lg bg-amber-50 p-3 text-sm text-amber-900"
@@ -170,7 +174,10 @@ const BarrasDeLosCamposModal = ({
             <p>{t('competitions:tees.notLoaded')}</p>
             <button
               type="button"
-              onClick={() => recargar()}
+              onClick={() => {
+                recargar();
+                releerFijadas();
+              }}
               className="mt-2 min-h-11 font-semibold underline"
             >
               {t('competitions:tees.retry')}
@@ -248,7 +255,10 @@ const BarrasDeLosCamposModal = ({
                           data-testid={`fijar-${clave}`}
                           disabled={
                             !elegida ||
-                            elegida === yaNoDisponible ||
+                            // Lo ya fijado (también la que ya no está entre
+                            // las opciones) no se vuelve a mandar
+                            elegida === fijada ||
+                            leyendoFijadas ||
                             guardando !== null
                           }
                           onClick={() => fijar(campo, genero, elegida)}
@@ -261,7 +271,13 @@ const BarrasDeLosCamposModal = ({
                     <button
                       type="button"
                       data-testid={`quitar-${clave}`}
-                      disabled={guardando !== null || !hayFijada(clave)}
+                      // Mientras se lee lo fijado, nada: no se fija ni se
+                      // quita creyendo que no había nada (/code-review)
+                      disabled={
+                        guardando !== null ||
+                        leyendoFijadas ||
+                        !hayFijada(clave)
+                      }
                       onClick={() => fijar(campo, genero, null)}
                       className="min-h-11 px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 disabled:opacity-50"
                     >
