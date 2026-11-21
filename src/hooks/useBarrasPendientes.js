@@ -2,6 +2,7 @@ import { useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { cargarBarras } from '../composition/cargarBarras';
 import customToast from '../utils/toast';
+import { AVISO_ARRIBA } from '../utils/avisoArriba';
 import { registraElFallo } from '../utils/registraElFallo';
 import { claveDelFalloDeLaBarra } from '../utils/falloDeLaBarra';
 import { TeeSource } from '../domain/value_objects/TeeSource';
@@ -66,7 +67,7 @@ export const useBarrasPendientes = ({ alGuardar } = {}) => {
         golfCourseId,
         color,
       );
-      customToast.success(t('tees.saved'));
+      customToast.success(t('tees.saved'), AVISO_ARRIBA);
       alGuardar?.();
       quitarCampo(enrollmentId, golfCourseId);
     } catch (error) {
@@ -75,7 +76,7 @@ export const useBarrasPendientes = ({ alGuardar } = {}) => {
         'Error saving a course tee:',
         error,
       );
-      customToast.error(t(claveDelFalloDeLaBarra(error)));
+      customToast.error(t(claveDelFalloDeLaBarra(error)), AVISO_ARRIBA);
     } finally {
       setGuardando(false);
     }

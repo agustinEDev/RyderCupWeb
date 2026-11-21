@@ -10,6 +10,9 @@ import {
 import BarrasPendientesModal from './BarrasPendientesModal';
 import { useBarrasPendientes } from '../../hooks/useBarrasPendientes';
 
+// F13: en los modales de barras el aviso sale arriba, sin tapar sus botones
+const ARRIBA = { position: 'top-center' };
+
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
     t: (clave, v) => (v ? `${clave} ${JSON.stringify(v)}` : clave),
@@ -66,7 +69,7 @@ describe('useBarrasPendientes', () => {
 
     await act(() => result.current.guardar('RED'));
     expect(mocks.fijar).toHaveBeenCalledWith('e1', 'g2', 'RED');
-    expect(mocks.toast.success).toHaveBeenCalledWith('tees.saved');
+    expect(mocks.toast.success).toHaveBeenCalledWith('tees.saved', ARRIBA);
     expect(alGuardar).toHaveBeenCalledTimes(1);
     expect(result.current.campo.golfCourseId).toBe('g4');
 
@@ -249,6 +252,7 @@ describe('useBarrasPendientes', () => {
     await act(() => result.current.guardar('RED'));
     expect(mocks.toast.error).toHaveBeenCalledWith(
       'competitions:tees.errors.TEE_NOT_AVAILABLE',
+      ARRIBA,
     );
     expect(result.current.campo.golfCourseId).toBe('g2');
     expect(result.current.guardando).toBe(false);

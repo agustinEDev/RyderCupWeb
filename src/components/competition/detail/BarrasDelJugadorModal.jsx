@@ -6,6 +6,7 @@ import { cargarBarras } from '../../../composition/cargarBarras';
 import { BARRAS_GENERALES } from '../../../utils/barrasGenerales';
 import { claveDelFalloDeLaBarra } from '../../../utils/falloDeLaBarra';
 import customToast from '../../../utils/toast';
+import { AVISO_ARRIBA } from '../../../utils/avisoArriba';
 import { registraElFallo } from '../../../utils/registraElFallo';
 import { TeeSource } from '../../../domain/value_objects/TeeSource';
 import TeeColor from '../../../domain/value_objects/TeeColor';
@@ -73,7 +74,7 @@ const BarrasDelJugadorModal = ({
           clave,
           valor,
         );
-      customToast.success(t('competitions:tees.saved'));
+      customToast.success(t('competitions:tees.saved'), AVISO_ARRIBA);
       setElegidas((e) => sinClave(e, clave));
       const leida = await recargar();
       if (leida.estado === 'cargada') onCambio?.(leida.datos);
@@ -85,6 +86,7 @@ const BarrasDelJugadorModal = ({
       );
       customToast.error(
         t(claveDelFalloDeLaBarra(error, { quitando: valor === null })),
+        AVISO_ARRIBA,
       );
     } finally {
       setGuardando(null);
