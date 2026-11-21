@@ -258,6 +258,44 @@ describe('useBarrasPendientes', () => {
     expect(result.current.guardando).toBe(false);
   });
 
+  it('stroke play (conEquipos false): lo pendiente es una partida', async () => {
+    mocks.leer.mockResolvedValue({ courses: [campo('g2', 'NONE')] });
+    mocks.fijar.mockRejectedValue(
+      Object.assign(new Error('422'), {
+        status: 422,
+        errorCode: 'TEE_NOT_ON_PENDING_COURSE',
+      }),
+    );
+    const { result } = renderHook(() => useBarrasPendientes());
+    await act(() => result.current.comprobar('e1', { conEquipos: false }));
+    await act(() => result.current.guardar('RED'));
+    expect(mocks.toast.error).toHaveBeenCalledWith(
+      'competitions:tees.errorsStrokePlay.TEE_NOT_ON_PENDING_COURSE',
+      ARRIBA,
+    );
+    expect(result.current.campo.golfCourseId).toBe('g2');
+    expect(result.current.guardando).toBe(false);
+  });
+
+  it('sin decir la modalidad, una Ryder: lo pendiente es un partido', async () => {
+    mocks.leer.mockResolvedValue({ courses: [campo('g2', 'NONE')] });
+    mocks.fijar.mockRejectedValue(
+      Object.assign(new Error('422'), {
+        status: 422,
+        errorCode: 'TEE_NOT_ON_PENDING_COURSE',
+      }),
+    );
+    const { result } = renderHook(() => useBarrasPendientes());
+    await act(() => result.current.comprobar('e1'));
+    await act(() => result.current.guardar('RED'));
+    expect(mocks.toast.error).toHaveBeenCalledWith(
+      'competitions:tees.errors.TEE_NOT_ON_PENDING_COURSE',
+      ARRIBA,
+    );
+    expect(result.current.campo.golfCourseId).toBe('g2');
+    expect(result.current.guardando).toBe(false);
+  });
+
   it('cerrar deja todos los demás', async () => {
     mocks.leer.mockResolvedValue({
       courses: [campo('g2', 'NONE'), campo('g4', 'NONE')],

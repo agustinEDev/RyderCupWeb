@@ -24,7 +24,12 @@ export const useBarrasPendientes = ({ alGuardar } = {}) => {
   // después, no se aplica (/code-review)
   const ultimaComprobacion = useRef(0);
 
-  const comprobar = async (enrollmentId) => {
+  /**
+   * @param {string} enrollmentId
+   * @param {{ conEquipos?: boolean }} [competicion] - Una Ryder (por defecto):
+   *   lo pendiente de un fallo es un «partido»; en stroke play, una «partida»
+   */
+  const comprobar = async (enrollmentId, { conEquipos = true } = {}) => {
     if (!enrollmentId) return;
     const esta = ++ultimaComprobacion.current;
     try {
@@ -35,7 +40,7 @@ export const useBarrasPendientes = ({ alGuardar } = {}) => {
       const campos = barras.courses.filter(
         (campo) => campo.source === TeeSource.NONE && campo.options.length > 0,
       );
-      if (campos.length > 0) setPendiente({ enrollmentId, campos });
+      if (campos.length > 0) setPendiente({ enrollmentId, campos, conEquipos });
     } catch (error) {
       registraElFallo(
         'useBarrasPendientes.error-reading-tees',
@@ -57,7 +62,7 @@ export const useBarrasPendientes = ({ alGuardar } = {}) => {
 
   const guardar = async (color) => {
     if (!pendiente || guardando) return;
-    const { enrollmentId, campos } = pendiente;
+    const { enrollmentId, campos, conEquipos } = pendiente;
     const { golfCourseId } = campos[0];
     setGuardando(true);
     try {
@@ -76,7 +81,10 @@ export const useBarrasPendientes = ({ alGuardar } = {}) => {
         'Error saving a course tee:',
         error,
       );
-      customToast.error(t(claveDelFalloDeLaBarra(error)), AVISO_ARRIBA);
+      customToast.error(
+        t(claveDelFalloDeLaBarra(error, { conEquipos })),
+        AVISO_ARRIBA,
+      );
     } finally {
       setGuardando(false);
     }

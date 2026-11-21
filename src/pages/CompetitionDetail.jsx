@@ -175,7 +175,10 @@ const CompetitionDetail = () => {
       miAprobada &&
       !ESTADOS_CERRADOS.has(competition?.status)
     )
-      barrasPendientes.comprobar(miAprobada);
+      // Una Ryder salvo stroke play (`hasTeams === false`, como la ficha)
+      barrasPendientes.comprobar(miAprobada, {
+        conEquipos: competition?.hasTeams !== false,
+      });
     navigate(`${location.pathname}${location.search}`, {
       replace: true,
       state: { ...location.state, preguntarBarras: undefined },
@@ -441,11 +444,14 @@ const CompetitionDetail = () => {
             <InvitacionEnLaFicha
               invitacion={competition.myPendingInvitation ?? null}
               alCambiar={loadCompetition}
+              conEquipos={!esStrokePlay}
               // Aceptada, la ficha pide la barra de los campos sin la general
               alAceptar={async (resultado) => {
                 await loadCompetition();
                 if (aceptadaConPlaza(resultado))
-                  barrasPendientes.comprobar(resultado.enrollmentId);
+                  barrasPendientes.comprobar(resultado.enrollmentId, {
+                    conEquipos: !esStrokePlay,
+                  });
               }}
             />
 

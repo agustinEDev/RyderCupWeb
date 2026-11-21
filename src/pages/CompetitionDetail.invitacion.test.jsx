@@ -56,13 +56,14 @@ vi.mock('../components/layout/HeaderAuth', () => ({
 
 // El cuadro, con sus casos, se prueba aparte: aquí, cuándo sale y qué recarga
 vi.mock('../components/invitation/InvitacionEnLaFicha', () => ({
-  default: ({ invitacion, alCambiar, alAceptar }) =>
+  default: ({ invitacion, alCambiar, alAceptar, conEquipos }) =>
     invitacion ? (
       <>
         <button
           type="button"
           data-testid="cuadro-invitacion"
           data-id={invitacion.id}
+          data-con-equipos={String(conEquipos)}
           onClick={alCambiar}
         />
         {/* Aceptarla: el resultado trae la inscripción que crea */}
@@ -85,6 +86,7 @@ const mockEstadoAlAceptar = vi.hoisted(() => ({ valor: 'ACCEPTED' }));
 const mockLeerBarras = vi.fn();
 const mb = vi.hoisted(() => ({
   general: vi.fn(),
+  campo: vi.fn(),
   delCampo: vi.fn(),
   fijadas: vi.fn(),
   campos: vi.fn().mockResolvedValue([]),
@@ -94,7 +96,7 @@ vi.mock('../composition/cargarBarras', () => ({
   cargarBarras: () =>
     Promise.resolve({
       getEnrollmentTeesUseCase: { execute: (...a) => mockLeerBarras(...a) },
-      changeEnrollmentCourseTeeUseCase: { execute: vi.fn() },
+      changeEnrollmentCourseTeeUseCase: { execute: mb.campo },
       changeEnrollmentTeeUseCase: { execute: mb.general },
       setCompetitionCourseTeeUseCase: { execute: mb.delCampo },
       getCompetitionCourseTeesUseCase: { execute: mb.fijadas },
@@ -265,6 +267,25 @@ describe('CompetitionDetail · mi invitación pendiente', () => {
     );
   });
 
+  it.each([
+    [undefined, 'true'],
+    [false, 'false'],
+  ])(
+    'D: el cuadro sabe la modalidad (hasTeams %s → conEquipos %s)',
+    async (hasTeams, conEquipos) => {
+      mockGetCompetitionDetail.mockResolvedValue({
+        ...FICHA,
+        hasTeams,
+        myPendingInvitation: { id: 'inv-1', expiresAt: null },
+      });
+      renderPage();
+      expect(await screen.findByTestId('cuadro-invitacion')).toHaveAttribute(
+        'data-con-equipos',
+        conEquipos,
+      );
+    },
+  );
+
   it('I2: sin ella, nada', async () => {
     mockGetCompetitionDetail.mockResolvedValue(FICHA);
 
@@ -367,6 +388,61 @@ describe('CompetitionDetail · las barras que faltan tras aceptar', () => {
     ).toBeInTheDocument();
     expect(mockLeerBarras).toHaveBeenCalledWith('mia-1');
     expect(mockGetCompetitionDetail).toHaveBeenCalledTimes(2);
+  });
+
+  describe('D: la pregunta de los campos, con la palabra de su modalidad', () => {
+    const guardaYFalla = async () => {
+      mb.campo.mockRejectedValue(
+        Object.assign(new Error('422'), {
+          status: 422,
+          errorCode: 'TEE_NOT_ON_PENDING_COURSE',
+        }),
+      );
+      fireEvent.change(
+        await screen.findByLabelText('competitions:tees.label'),
+        { target: { value: 'WHITE' } },
+      );
+      fireEvent.click(screen.getByText('competitions:tees.save'));
+    };
+
+    it.each([
+      [false, 'competitions:tees.errorsStrokePlay.TEE_NOT_ON_PENDING_COURSE'],
+      [undefined, 'competitions:tees.errors.TEE_NOT_ON_PENDING_COURSE'],
+    ])('aceptando en su cuadro (hasTeams %s)', async (hasTeams, clave) => {
+      mockGetCompetitionDetail.mockResolvedValue({
+        ...FICHA,
+        hasTeams,
+        myPendingInvitation: { id: 'inv-1', expiresAt: null },
+      });
+      renderPage();
+      fireEvent.click(await screen.findByTestId('aceptar-invitacion'));
+      await guardaYFalla();
+      await waitFor(() =>
+        expect(mb.toast.error).toHaveBeenCalledWith(clave, expect.anything()),
+      );
+    });
+
+    it.each([
+      [false, 'competitions:tees.errorsStrokePlay.TEE_NOT_ON_PENDING_COURSE'],
+      [undefined, 'competitions:tees.errors.TEE_NOT_ON_PENDING_COURSE'],
+    ])(
+      'llegando de «Mis invitaciones» (hasTeams %s)',
+      async (hasTeams, clave) => {
+        mockGetCompetitionDetail.mockResolvedValue({
+          ...FICHA,
+          hasTeams,
+          enrollment_status: 'APPROVED',
+        });
+        mockListEnrollments.mockResolvedValue([
+          { id: 'mia-1', userId: 'player-1', status: 'APPROVED' },
+        ]);
+        renderPage({ from: 'invitations', preguntarBarras: true });
+        await guardaYFalla();
+        await waitFor(() =>
+          expect(mb.toast.error).toHaveBeenCalledWith(clave, expect.anything()),
+        );
+      },
+    );
   });
 
   it('llegando de «Mis invitaciones»: pregunta por el campo, una vez', async () => {

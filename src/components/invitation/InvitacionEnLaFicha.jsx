@@ -37,11 +37,18 @@ const useCaducada = (expiresAt) => {
  *   invitacion: {id: string, expiresAt: string|null}|null,
  *   alCambiar: () => unknown,
  *   alAceptar?: (resultado: object) => unknown,
+ *   conEquipos?: boolean,
  * }} props - la invitación, cómo releer la ficha tras responder y, si se
  *   quiere, qué hacer al aceptar (la ficha pide la barra de los campos que
- *   no tengan la general); sin él, releerla
+ *   no tengan la general); sin él, releerla. `conEquipos`: una Ryder (por
+ *   defecto) o stroke play, para nombrar lo pendiente en un fallo de la barra
  */
-const InvitacionEnLaFicha = ({ invitacion, alCambiar, alAceptar }) => {
+const InvitacionEnLaFicha = ({
+  invitacion,
+  alCambiar,
+  alAceptar,
+  conEquipos = true,
+}) => {
   const { t, i18n } = useTranslation('invitations');
   const caducada = useCaducada(invitacion?.expiresAt);
   const {
@@ -54,6 +61,7 @@ const InvitacionEnLaFicha = ({ invitacion, alCambiar, alAceptar }) => {
     alAceptar: alAceptar ?? alCambiar,
     alCambiar,
     textoYaNoPendiente: 'inDetail.notPendingAnymore',
+    conEquipos,
   });
 
   if (!invitacion || caducada) return null;

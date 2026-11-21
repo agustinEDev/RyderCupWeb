@@ -58,10 +58,11 @@ vi.mock('./AceptarInvitacionModal', () => ({
       />
     ) : null,
 }));
+const cambiarGeneral = vi.hoisted(() => vi.fn());
 vi.mock('../../composition/cargarBarras', () => ({
   cargarBarras: () =>
     Promise.resolve({
-      changeEnrollmentTeeUseCase: { execute: vi.fn() },
+      changeEnrollmentTeeUseCase: { execute: cambiarGeneral },
       getEnrollmentTeesUseCase: {
         execute: vi.fn().mockResolvedValue({ courses: [] }),
       },
@@ -150,6 +151,36 @@ describe('InvitacionEnLaFicha — aceptar', () => {
     expect(responder).toHaveBeenCalledWith('inv-1', 'ACCEPT');
     expect(toast.success).toHaveBeenCalledWith('success.accepted');
   });
+
+  it.each([
+    [false, 'competitions:tees.errorsStrokePlay.TEE_NOT_ON_PENDING_COURSE'],
+    [undefined, 'competitions:tees.errors.TEE_NOT_ON_PENDING_COURSE'],
+  ])(
+    'D: un fallo al guardar la barra, con la palabra de la modalidad (conEquipos %s)',
+    async (conEquipos, clave) => {
+      responder.mockResolvedValue({
+        competitionId: 'c-1',
+        status: 'ACCEPTED',
+        enrollmentId: 'e-1',
+      });
+      cambiarGeneral.mockRejectedValue(
+        Object.assign(new Error('422'), {
+          status: 422,
+          errorCode: 'TEE_NOT_ON_PENDING_COURSE',
+        }),
+      );
+      pinta({ conEquipos });
+
+      fireEvent.click(screen.getByTestId('invitacion-aceptar'));
+      confirmaLaBarra();
+
+      await waitFor(() =>
+        expect(toast.error).toHaveBeenCalledWith(clave, {
+          position: 'top-center',
+        }),
+      );
+    },
+  );
 
   it('I4: sin género, antes se pregunta; guardado, acepta y refresca la sesión al final', async () => {
     genero.falta = true;
