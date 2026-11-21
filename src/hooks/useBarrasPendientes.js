@@ -44,12 +44,14 @@ export const useBarrasPendientes = ({ alGuardar } = {}) => {
     }
   };
 
-  // Quita ESE campo, no «el primero»: si se salta uno mientras otro se
-  // guarda, el guardado no se come el siguiente (/code-review)
-  const quitarCampo = (golfCourseId) =>
+  // Quita ESE campo de ESA inscripción, no «el primero»: si se salta uno
+  // mientras otro se guarda, o llega la cola de otra inscripción, el guardado
+  // no se come lo que no es suyo (/code-review, CodeRabbit)
+  const quitarCampo = (enrollmentId, golfCourseId) =>
     setPendiente((p) => {
-      const quedan = p?.campos.filter((c) => c.golfCourseId !== golfCourseId);
-      return quedan?.length ? { ...p, campos: quedan } : null;
+      if (!p || p.enrollmentId !== enrollmentId) return p;
+      const quedan = p.campos.filter((c) => c.golfCourseId !== golfCourseId);
+      return quedan.length ? { ...p, campos: quedan } : null;
     });
 
   const guardar = async (color) => {
@@ -66,7 +68,7 @@ export const useBarrasPendientes = ({ alGuardar } = {}) => {
       );
       customToast.success(t('tees.saved'));
       alGuardar?.();
-      quitarCampo(golfCourseId);
+      quitarCampo(enrollmentId, golfCourseId);
     } catch (error) {
       registraElFallo(
         'useBarrasPendientes.error-saving-course-tee',
@@ -87,7 +89,7 @@ export const useBarrasPendientes = ({ alGuardar } = {}) => {
     saltar: () => {
       // Mientras guarda, no se salta: el guardado ya decide qué sigue
       if (!guardando && pendiente)
-        quitarCampo(pendiente.campos[0].golfCourseId);
+        quitarCampo(pendiente.enrollmentId, pendiente.campos[0].golfCourseId);
     },
     cerrar: () => {
       if (!guardando) setPendiente(null);

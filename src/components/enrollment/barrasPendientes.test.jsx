@@ -191,6 +191,35 @@ describe('useBarrasPendientes', () => {
     expect(result.current.campo.golfCourseId).toBe('gNueva');
   });
 
+  it('CR5: el guardado de una inscripción no toca la cola de otra', async () => {
+    mocks.leer.mockResolvedValueOnce({
+      courses: [campo('gA', 'NONE'), campo('gB', 'NONE')],
+    });
+    let termina;
+    mocks.fijar.mockReturnValue(
+      new Promise((r) => {
+        termina = r;
+      }),
+    );
+    const { result } = renderHook(() => useBarrasPendientes());
+    await act(() => result.current.comprobar('e1'));
+
+    let guardado;
+    act(() => {
+      guardado = result.current.guardar('RED');
+    });
+    // Mientras, otra inscripción con el mismo campo pendiente
+    mocks.leer.mockResolvedValueOnce({ courses: [campo('gA', 'NONE')] });
+    await act(() => result.current.comprobar('e2'));
+    await act(async () => {
+      termina({ teeColor: 'RED' });
+      await guardado;
+    });
+
+    expect(mocks.fijar).toHaveBeenCalledWith('e1', 'gA', 'RED');
+    expect(result.current.campo?.golfCourseId).toBe('gA');
+  });
+
   it('sin campos en NONE, nada que pedir', async () => {
     mocks.leer.mockResolvedValue({ courses: [campo('g1', 'COURSE')] });
     const { result } = renderHook(() => useBarrasPendientes());
