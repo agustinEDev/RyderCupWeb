@@ -53,6 +53,17 @@ class IBarrasRepository {
   async setCourseTee(competitionId, golfCourseId, gender, teeColor) {
     throw new Error('Method setCourseTee() must be implemented');
   }
+
+  /**
+   * Lo fijado en cada campo de una competición para cada género (organizador
+   * o admin): GET /competitions/{id}/course-tees. Vacío si no hay nada.
+   *
+   * @param {string} competitionId
+   * @returns {Promise<Array<{golfCourseId: string, gender: string, teeColor: string}>>}
+   */
+  async getCourseTees(competitionId) {
+    throw new Error('Method getCourseTees() must be implemented');
+  }
 }
 
 export default IBarrasRepository;

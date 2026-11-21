@@ -123,6 +123,7 @@ const TRAMOS_FIJOS = new Set([
   'confirm',
   'countries',
   'courses',
+  'course-tees',
   'current-user',
   'devices',
   'draft',

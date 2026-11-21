@@ -53,6 +53,18 @@ class ApiBarrasRepository extends IBarrasRepository {
     );
     return { gender: r.gender, teeColor: r.tee_color ?? null };
   }
+
+  /** @override */
+  async getCourseTees(competitionId) {
+    const filas = await apiRequest(
+      `/api/v1/competitions/${segmento(competitionId)}/course-tees`,
+    );
+    return filas.map((f) => ({
+      golfCourseId: f.golf_course_id,
+      gender: f.gender,
+      teeColor: f.tee_color,
+    }));
+  }
 }
 
 export default ApiBarrasRepository;

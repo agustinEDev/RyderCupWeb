@@ -2,6 +2,7 @@ import { describe, it, expect, vi } from 'vitest';
 import GetEnrollmentTeesUseCase from './GetEnrollmentTeesUseCase';
 import ChangeEnrollmentCourseTeeUseCase from './ChangeEnrollmentCourseTeeUseCase';
 import SetCompetitionCourseTeeUseCase from './SetCompetitionCourseTeeUseCase';
+import GetCompetitionCourseTeesUseCase from './GetCompetitionCourseTeesUseCase';
 
 /**
  * Las barras por campo (RyderCupAm, barras por campo): leer las de una
@@ -12,6 +13,7 @@ const repo = () => ({
   getTees: vi.fn().mockResolvedValue({ generalTee: null, courses: [] }),
   changeCourseTee: vi.fn().mockResolvedValue({ teeColor: 'RED' }),
   setCourseTee: vi.fn().mockResolvedValue({ gender: 'MALE', teeColor: null }),
+  getCourseTees: vi.fn().mockResolvedValue([]),
 });
 
 describe('GetEnrollmentTeesUseCase', () => {
@@ -83,5 +85,25 @@ describe('SetCompetitionCourseTeeUseCase', () => {
     expect(() => new GetEnrollmentTeesUseCase()).toThrow();
     expect(() => new ChangeEnrollmentCourseTeeUseCase()).toThrow();
     expect(() => new SetCompetitionCourseTeeUseCase()).toThrow();
+  });
+});
+
+describe('GetCompetitionCourseTeesUseCase', () => {
+  it('lee las fijadas en los campos de la competición', async () => {
+    const r = repo();
+    await new GetCompetitionCourseTeesUseCase(r).execute('c1');
+    expect(r.getCourseTees).toHaveBeenCalledWith('c1');
+  });
+
+  it('sin competición, no llega a la API', async () => {
+    const r = repo();
+    await expect(
+      new GetCompetitionCourseTeesUseCase(r).execute(''),
+    ).rejects.toThrow();
+    expect(r.getCourseTees).not.toHaveBeenCalled();
+  });
+
+  it('sin repositorio, no se construye', () => {
+    expect(() => new GetCompetitionCourseTeesUseCase()).toThrow();
   });
 });

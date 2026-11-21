@@ -11,6 +11,9 @@ import MisBarras from './MisBarras';
 import BarrasDeLosCamposModal from './BarrasDeLosCamposModal';
 import FilaDeAprobado from './FilaDeAprobado';
 
+// F13: en los modales de barras el aviso sale arriba, sin tapar sus botones
+const ARRIBA = { position: 'top-center' };
+
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
     t: (clave, v) => (v ? `${clave} ${JSON.stringify(v)}` : clave),
@@ -22,6 +25,7 @@ const m = vi.hoisted(() => ({
   campo: vi.fn(),
   delCampo: vi.fn(),
   campos: vi.fn(),
+  fijadas: vi.fn(),
   toast: { success: vi.fn(), error: vi.fn() },
 }));
 vi.mock('../../../composition/cargarBarras', () => ({
@@ -31,6 +35,7 @@ vi.mock('../../../composition/cargarBarras', () => ({
       changeEnrollmentTeeUseCase: { execute: m.general },
       changeEnrollmentCourseTeeUseCase: { execute: m.campo },
       setCompetitionCourseTeeUseCase: { execute: m.delCampo },
+      getCompetitionCourseTeesUseCase: { execute: m.fijadas },
     }),
 }));
 vi.mock('../../../composition', () => ({
@@ -59,6 +64,11 @@ const BARRAS = {
     },
   ],
 };
+const fijada = (golfCourseId, gender, teeColor) => ({
+  golfCourseId,
+  gender,
+  teeColor,
+});
 const fallo = (status, errorCode) =>
   Object.assign(new Error(String(status)), { status, errorCode });
 
@@ -68,6 +78,7 @@ beforeEach(() => {
   m.general.mockResolvedValue({ id: 'e1', teeColor: 'BLUE' });
   m.campo.mockResolvedValue({ teeColor: 'YELLOW' });
   m.delCampo.mockResolvedValue({ gender: 'FEMALE', teeColor: 'RED' });
+  m.fijadas.mockResolvedValue([]);
 });
 
 /**
@@ -121,7 +132,10 @@ describe('BarrasDelJugadorModal', () => {
     await waitFor(() => expect(onCambio).toHaveBeenCalledWith(BARRAS));
     expect(m.general).toHaveBeenCalledWith('e1', 'BLUE');
     expect(m.leer).toHaveBeenCalledTimes(2);
-    expect(m.toast.success).toHaveBeenCalledWith('competitions:tees.saved');
+    expect(m.toast.success).toHaveBeenCalledWith(
+      'competitions:tees.saved',
+      ARRIBA,
+    );
   });
 
   it('cambia la de un campo con sus opciones', async () => {
@@ -153,6 +167,7 @@ describe('BarrasDelJugadorModal', () => {
     await waitFor(() =>
       expect(m.toast.error).toHaveBeenCalledWith(
         'competitions:tees.errors.TEE_CHANGE_CLOSED',
+        ARRIBA,
       ),
     );
     expect(onClose).not.toHaveBeenCalled();
@@ -212,6 +227,7 @@ describe('BarrasDelJugadorModal', () => {
     await waitFor(() =>
       expect(m.toast.error).toHaveBeenCalledWith(
         'competitions:tees.errors.cantRemove',
+        ARRIBA,
       ),
     );
   });
@@ -228,6 +244,7 @@ describe('BarrasDelJugadorModal', () => {
     await waitFor(() =>
       expect(m.toast.error).toHaveBeenCalledWith(
         'competitions:tees.errors.TEE_NOT_AVAILABLE',
+        ARRIBA,
       ),
     );
   });
@@ -578,6 +595,7 @@ describe('BarrasDeLosCamposModal', () => {
     );
     expect(m.toast.success).toHaveBeenCalledWith(
       'competitions:tees.courses.saved',
+      ARRIBA,
     );
   });
 
@@ -592,17 +610,20 @@ describe('BarrasDeLosCamposModal', () => {
     await waitFor(() =>
       expect(m.toast.error).toHaveBeenCalledWith(
         'competitions:tees.courses.errors.TEE_NOT_AVAILABLE',
+        ARRIBA,
       ),
     );
   });
 
   it('TEE_NOT_AVAILABLE al quitarla: no se puede quitar', async () => {
+    m.fijadas.mockResolvedValue([fijada('g1', 'MALE', 'YELLOW')]);
     m.delCampo.mockRejectedValue(fallo(422, 'TEE_NOT_AVAILABLE'));
     render(<BarrasDeLosCamposModal competitionId="c1" onClose={vi.fn()} />);
     fireEvent.click(await screen.findByTestId('quitar-g1:MALE'));
     await waitFor(() =>
       expect(m.toast.error).toHaveBeenCalledWith(
         'competitions:tees.errors.cantRemove',
+        ARRIBA,
       ),
     );
   });
@@ -613,6 +634,10 @@ describe('BarrasDeLosCamposModal', () => {
         { golf_course: { id: 'g9', name: 'Sin barras', tees: [] } },
       ],
     });
+    m.fijadas.mockResolvedValue([
+      fijada('g9', 'FEMALE', 'RED'),
+      fijada('g9', 'MALE', 'YELLOW'),
+    ]);
     render(<BarrasDeLosCamposModal competitionId="c1" onClose={vi.fn()} />);
     fireEvent.click(await screen.findByTestId('quitar-g9:FEMALE'));
     await waitFor(() =>
@@ -621,10 +646,11 @@ describe('BarrasDeLosCamposModal', () => {
     expect(
       screen.getAllByText('competitions:tees.courses.noTees'),
     ).toHaveLength(2);
-    expect(screen.getByTestId('quitar-g9:MALE')).toBeInTheDocument();
+    expect(screen.getByTestId('quitar-g9:MALE')).toBeEnabled();
   });
 
   it('F3: quitarla manda null', async () => {
+    m.fijadas.mockResolvedValue([fijada('g1', 'MALE', 'YELLOW')]);
     render(<BarrasDeLosCamposModal competitionId="c1" onClose={vi.fn()} />);
     fireEvent.click(await screen.findByTestId('quitar-g1:MALE'));
     await waitFor(() =>
@@ -632,7 +658,133 @@ describe('BarrasDeLosCamposModal', () => {
     );
     expect(m.toast.success).toHaveBeenCalledWith(
       'competitions:tees.courses.removed',
+      ARRIBA,
     );
+  });
+});
+
+/**
+ * A · «Barras de los campos» enseña lo fijado (tabla del 21 nov 2026), leído
+ * de GET /competitions/{id}/course-tees.
+ */
+describe('BarrasDeLosCamposModal · lo fijado', () => {
+  beforeEach(() => {
+    m.campos.mockResolvedValue({
+      golf_courses: [
+        {
+          golf_course: {
+            id: 'g1',
+            name: 'Aldeamayor',
+            tees: [
+              { color: 'YELLOW', gender: 'MALE' },
+              { color: 'WHITE', gender: 'MALE' },
+              { color: 'RED', gender: 'FEMALE' },
+              { color: 'BLUE', gender: 'FEMALE' },
+            ],
+          },
+        },
+      ],
+    });
+  });
+  const abre = () =>
+    render(<BarrasDeLosCamposModal competitionId="c1" onClose={vi.fn()} />);
+  const selector = (texto) =>
+    screen.findByLabelText(`competitions:tees.courses.${texto}`);
+
+  it('A1: al abrir, cada campo y género enseña la suya', async () => {
+    m.fijadas.mockResolvedValue([
+      fijada('g1', 'FEMALE', 'BLUE'),
+      fijada('g1', 'MALE', 'WHITE'),
+    ]);
+    abre();
+    await waitFor(async () =>
+      expect(await selector('forWomen')).toHaveValue('BLUE'),
+    );
+    expect(await selector('forMen')).toHaveValue('WHITE');
+    expect(m.fijadas).toHaveBeenCalledWith('c1');
+    expect(screen.getByTestId('quitar-g1:FEMALE')).toBeEnabled();
+    expect(screen.getByTestId('quitar-g1:MALE')).toBeEnabled();
+  });
+
+  it('A2: sin nada fijado, «Elige una barra» y «Quitar» desactivado', async () => {
+    abre();
+    expect(await selector('forWomen')).toHaveValue('');
+    await waitFor(() => expect(m.fijadas).toHaveBeenCalled());
+    expect(screen.getByTestId('quitar-g1:FEMALE')).toBeDisabled();
+    expect(screen.getByTestId('quitar-g1:MALE')).toBeDisabled();
+  });
+
+  it('A3: tras «Fijar», se queda en la elegida y «Quitar» se activa', async () => {
+    abre();
+    await waitFor(() => expect(m.fijadas).toHaveBeenCalled());
+    fireEvent.change(await selector('forWomen'), {
+      target: { value: 'BLUE' },
+    });
+    fireEvent.click(screen.getByTestId('fijar-g1:FEMALE'));
+    await waitFor(() =>
+      expect(screen.getByTestId('quitar-g1:FEMALE')).toBeEnabled(),
+    );
+    expect(await selector('forWomen')).toHaveValue('BLUE');
+    expect(screen.getByTestId('quitar-g1:MALE')).toBeDisabled();
+  });
+
+  it('A4: tras «Quitar», vuelve a «Elige una barra» y «Quitar» se desactiva', async () => {
+    m.fijadas.mockResolvedValue([fijada('g1', 'MALE', 'WHITE')]);
+    abre();
+    await waitFor(async () =>
+      expect(await selector('forMen')).toHaveValue('WHITE'),
+    );
+    fireEvent.click(screen.getByTestId('quitar-g1:MALE'));
+    await waitFor(() =>
+      expect(m.toast.success).toHaveBeenCalledWith(
+        'competitions:tees.courses.removed',
+        ARRIBA,
+      ),
+    );
+    await waitFor(() =>
+      expect(screen.getByTestId('fijar-g1:MALE')).toBeDisabled(),
+    );
+    expect(screen.getByTestId('quitar-g1:MALE')).toBeDisabled();
+    expect(await selector('forMen')).toHaveValue('');
+    expect(m.delCampo).toHaveBeenCalledWith('c1', 'g1', 'MALE', null);
+  });
+
+  it('A4: un fallo al quitar deja lo fijado como estaba', async () => {
+    m.fijadas.mockResolvedValue([fijada('g1', 'MALE', 'WHITE')]);
+    m.delCampo.mockRejectedValue(fallo(500));
+    abre();
+    await waitFor(async () =>
+      expect(await selector('forMen')).toHaveValue('WHITE'),
+    );
+    fireEvent.click(screen.getByTestId('quitar-g1:MALE'));
+    await waitFor(() => expect(m.toast.error).toHaveBeenCalled());
+    expect(await selector('forMen')).toHaveValue('WHITE');
+    expect(screen.getByTestId('quitar-g1:MALE')).toBeEnabled();
+  });
+
+  it('A5: si la lectura falla, el modal se abre, avisa y se puede fijar', async () => {
+    m.fijadas.mockRejectedValue(fallo(500));
+    abre();
+    await waitFor(() =>
+      expect(m.toast.error).toHaveBeenCalledWith(
+        'competitions:tees.errors.generic',
+        ARRIBA,
+      ),
+    );
+    fireEvent.change(await selector('forWomen'), {
+      target: { value: 'RED' },
+    });
+    fireEvent.click(screen.getByTestId('fijar-g1:FEMALE'));
+    await waitFor(() =>
+      expect(m.delCampo).toHaveBeenCalledWith('c1', 'g1', 'FEMALE', 'RED'),
+    );
+  });
+
+  it('A5: sin saber lo fijado, «Quitar» sigue a mano', async () => {
+    m.fijadas.mockRejectedValue(fallo(500));
+    abre();
+    await waitFor(() => expect(m.toast.error).toHaveBeenCalled());
+    expect(screen.getByTestId('quitar-g1:MALE')).toBeEnabled();
   });
 });
 

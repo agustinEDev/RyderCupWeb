@@ -90,6 +90,24 @@ describe('ApiBarrasRepository', () => {
     expect(cuerpo()).toEqual({ gender: 'FEMALE', tee_color: 'RED' });
   });
 
+  it('las fijadas en los campos de una competición: GET, por campo y género', async () => {
+    apiRequest.mockResolvedValue([
+      { golf_course_id: 'g1', gender: 'FEMALE', tee_color: 'RED' },
+      { golf_course_id: 'g2', gender: 'MALE', tee_color: 'WHITE' },
+    ]);
+    expect(await new ApiBarrasRepository().getCourseTees('c1')).toEqual([
+      { golfCourseId: 'g1', gender: 'FEMALE', teeColor: 'RED' },
+      { golfCourseId: 'g2', gender: 'MALE', teeColor: 'WHITE' },
+    ]);
+    expect(ruta()).toBe('/api/v1/competitions/c1/course-tees');
+    expect(metodo() ?? 'GET').toBe('GET');
+  });
+
+  it('sin nada fijado, lista vacía', async () => {
+    apiRequest.mockResolvedValue([]);
+    expect(await new ApiBarrasRepository().getCourseTees('c1')).toEqual([]);
+  });
+
   it('un rechazo sale tal cual, con su código', async () => {
     const error = Object.assign(new Error('409'), {
       status: 409,

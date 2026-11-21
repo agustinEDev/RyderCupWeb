@@ -3,6 +3,7 @@ import ChangeEnrollmentTeeUseCase from '../application/use_cases/barras/ChangeEn
 import GetEnrollmentTeesUseCase from '../application/use_cases/barras/GetEnrollmentTeesUseCase';
 import ChangeEnrollmentCourseTeeUseCase from '../application/use_cases/barras/ChangeEnrollmentCourseTeeUseCase';
 import SetCompetitionCourseTeeUseCase from '../application/use_cases/barras/SetCompetitionCourseTeeUseCase';
+import GetCompetitionCourseTeesUseCase from '../application/use_cases/barras/GetCompetitionCourseTeesUseCase';
 
 /**
  * Los casos de uso de las barras (RyderCupAm#912 y barras por campo), aparte
@@ -22,3 +23,5 @@ export const changeEnrollmentCourseTeeUseCase =
   new ChangeEnrollmentCourseTeeUseCase(barrasRepository);
 export const setCompetitionCourseTeeUseCase =
   new SetCompetitionCourseTeeUseCase(barrasRepository);
+export const getCompetitionCourseTeesUseCase =
+  new GetCompetitionCourseTeesUseCase(barrasRepository);

@@ -9,6 +9,7 @@ import { barrasDeCadaCampo } from '../../../utils/camposDeLaCompeticion';
 import { barrasParaElegir } from '../../../utils/barraPorDefecto';
 import { claveDelFalloDeLaBarra } from '../../../utils/falloDeLaBarra';
 import customToast from '../../../utils/toast';
+import { AVISO_ARRIBA } from '../../../utils/avisoArriba';
 import { registraElFallo } from '../../../utils/registraElFallo';
 
 // Primero las mujeres, como se juega: «para todas» y «para todos»
@@ -21,8 +22,10 @@ const GENEROS = [
  * La barra de cada campo para todos los de un género (barras por campo, R2,
  * F3): solo el organizador o un admin. Pisa la barra general de los de ese
  * género en ese campo, no el cambio propio de nadie. Las barras se leen al
- * abrir, de los campos de la competición. La API no dice cuál hay fijada:
- * se elige y se fija, o se quita.
+ * abrir, de los campos de la competición, y lo fijado, de su `course-tees`
+ * (tabla del 21 nov 2026, A): cada selector parte de lo fijado y «Quitar»
+ * solo se activa si hay algo que quitar. Si esa lectura falla, el modal sigue:
+ * se avisa, se puede fijar y «Quitar» queda a mano, que no se sabe.
  *
  * @param {Object} props
  * @param {string} props.competitionId
@@ -35,6 +38,11 @@ const BarrasDeLosCamposModal = ({ competitionId, onClose, onCambio }) => {
   const [fallo, setFallo] = useState(false);
   const [elegidas, setElegidas] = useState({});
   const [guardando, setGuardando] = useState(null);
+  // Lo fijado, por clave (`{campo}:{género}`): el color, o null si se sabe que
+  // no hay nada (se acaba de quitar). Lo que no está, sin fijar, salvo si la
+  // lectura falló: entonces no se sabe
+  const [fijadas, setFijadas] = useState({});
+  const [sinFijadas, setSinFijadas] = useState(false);
   const { cargando, recargar } = useCargaCancelableEffect(
     () => getCompetitionGolfCoursesUseCase.execute(competitionId),
     [competitionId],
@@ -46,6 +54,34 @@ const BarrasDeLosCamposModal = ({ competitionId, onClose, onCambio }) => {
       alFallar: () => setFallo(true),
     },
   );
+  useCargaCancelableEffect(
+    () =>
+      cargarBarras().then(({ getCompetitionCourseTeesUseCase }) =>
+        getCompetitionCourseTeesUseCase.execute(competitionId),
+      ),
+    [competitionId],
+    {
+      alCargar: (filas) => {
+        setFijadas(
+          Object.fromEntries(
+            filas.map((f) => [`${f.golfCourseId}:${f.gender}`, f.teeColor]),
+          ),
+        );
+        setSinFijadas(false);
+      },
+      alFallar: (error) => {
+        registraElFallo(
+          'BarrasDeLosCamposModal.error-reading-course-tees',
+          'Error reading the course tees:',
+          error,
+        );
+        setSinFijadas(true);
+        customToast.error(t(claveDelFalloDeLaBarra(error)), AVISO_ARRIBA);
+      },
+    },
+  );
+  const hayFijada = (clave) =>
+    clave in fijadas ? fijadas[clave] !== null : sinFijadas;
 
   const fijar = async (campo, genero, color) => {
     const clave = `${campo.id}:${genero}`;
@@ -64,7 +100,9 @@ const BarrasDeLosCamposModal = ({ competitionId, onClose, onCambio }) => {
             ? 'competitions:tees.courses.saved'
             : 'competitions:tees.courses.removed',
         ),
+        AVISO_ARRIBA,
       );
+      setFijadas((v) => ({ ...v, [clave]: color }));
       setElegidas((v) =>
         Object.fromEntries(Object.entries(v).filter(([k]) => k !== clave)),
       );
@@ -82,6 +120,7 @@ const BarrasDeLosCamposModal = ({ competitionId, onClose, onCambio }) => {
             quitando: color === null,
           }),
         ),
+        AVISO_ARRIBA,
       );
     } finally {
       setGuardando(null);
@@ -138,7 +177,7 @@ const BarrasDeLosCamposModal = ({ competitionId, onClose, onCambio }) => {
             {GENEROS.map(({ genero, clave: texto }) => {
               const clave = `${campo.id}:${genero}`;
               const opciones = barrasParaElegir(campo.tees, genero);
-              const elegida = elegidas[clave] ?? '';
+              const elegida = elegidas[clave] ?? fijadas[clave] ?? '';
               const id = `barra-${clave}`;
               return (
                 <div key={genero} className="mt-2">
@@ -192,7 +231,7 @@ const BarrasDeLosCamposModal = ({ competitionId, onClose, onCambio }) => {
                     <button
                       type="button"
                       data-testid={`quitar-${clave}`}
-                      disabled={guardando !== null}
+                      disabled={guardando !== null || !hayFijada(clave)}
                       onClick={() => fijar(campo, genero, null)}
                       className="min-h-11 px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 disabled:opacity-50"
                     >
